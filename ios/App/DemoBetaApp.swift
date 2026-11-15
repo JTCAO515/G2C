@@ -63,8 +63,8 @@ private struct LioAccountDeletion: View {
     var body: some View {
         Form {
             Text(language.text(
-                "This requests deletion of your G2C account and its data. Saved content may still be visible on other devices while they’re offline. Backups roll off after 30 days. Other services manage their own copies.",
-                "注销会申请删除你的 G2C 账号及其数据。其他设备离线时可能仍能看到已保存的内容。备份按 30 天滚动保留，其他服务的副本由各自管理。"))
+                "This requests deletion of your Go2China account and its data. Saved content may still be visible on other devices while they’re offline. Backups roll off after 30 days. Other services manage their own copies.",
+                "注销会申请删除你的 Go2China 账号及其数据。其他设备离线时可能仍能看到已保存的内容。备份按 30 天滚动保留，其他服务的副本由各自管理。"))
             if let host = root.cleanup {
                 controls(host)
             } else {

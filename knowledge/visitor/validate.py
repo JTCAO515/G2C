@@ -1,5 +1,6 @@
 """Validate visitor content files at the deserialization boundary; no network IO."""
 import argparse
+from collections.abc import Callable
 from datetime import date, datetime
 import json
 from pathlib import Path
@@ -37,16 +38,10 @@ def https_url(value: str) -> bool:
         return False
 
 
-def validate_entry(entry: object, *, as_of: date) -> None:
-    if not isinstance(entry, dict) or entry.keys() != FIELDS:
-        raise ValueError("entry must have exactly the documented fields")
+def validate_identity_fields(entry: dict, *, as_of: date) -> None:
+    """Validate shared fields after the caller establishes its exact record shape."""
     if not isinstance(entry["id"], str) or re.fullmatch(r"visitor\.[a-z0-9][a-z0-9.-]*", entry["id"]) is None:
         raise ValueError("invalid id")
-    if not isinstance(entry["topic"], str) or entry["topic"] not in TOPICS:
-        raise ValueError("invalid topic")
-    for field in ("text_zh", "text_en"):
-        if not nonblank(entry[field]):
-            raise ValueError(f"{field} must be nonblank text")
     for field in ("cities", "source_urls"):
         values = entry[field]
         if (not isinstance(values, list) or not values
@@ -68,12 +63,27 @@ def validate_entry(entry: object, *, as_of: date) -> None:
         raise ValueError("entry has expired")
 
 
+def validate_entry_fields(entry: dict, *, as_of: date, topics: frozenset[str]) -> None:
+    validate_identity_fields(entry, as_of=as_of)
+    if not isinstance(entry["topic"], str) or entry["topic"] not in topics:
+        raise ValueError("invalid topic")
+    for field in ("text_zh", "text_en"):
+        if not nonblank(entry[field]):
+            raise ValueError(f"{field} must be nonblank text")
+
+
+def validate_entry(entry: object, *, as_of: date) -> None:
+    if not isinstance(entry, dict) or entry.keys() != FIELDS:
+        raise ValueError("entry must have exactly the documented fields")
+    validate_entry_fields(entry, as_of=as_of, topics=TOPICS)
+
+
 def reject_constant(_: str) -> None:
     raise ValueError("non-finite JSON value")
 
 
-def load_entries(paths: list[Path], *, as_of: date) -> list[dict]:
-    """Read and validate the whole batch once; return only validated entries."""
+def load_records(paths: list[Path], *, validate_record: Callable[[object], None]) -> list[dict]:
+    """One strict JSON/file boundary shared by the three explicit content formats."""
     entries = []
     ids = set()
     for path in paths:
@@ -85,7 +95,7 @@ def load_entries(paths: list[Path], *, as_of: date) -> list[dict]:
                 raise ValueError("file must be a nonempty entry array")
             for index, entry in enumerate(payload):
                 try:
-                    validate_entry(entry, as_of=as_of)
+                    validate_record(entry)
                     if entry["id"] in ids:
                         raise ValueError("duplicate id in batch")
                 except ValueError as exc:
@@ -97,19 +107,28 @@ def load_entries(paths: list[Path], *, as_of: date) -> list[dict]:
     return entries
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+def load_entries(paths: list[Path], *, as_of: date) -> list[dict]:
+    """Legacy eight-field format; its field set and expiry rejection are unchanged."""
+    return load_records(paths, validate_record=lambda entry: validate_entry(entry, as_of=as_of))
+
+
+def validation_cli(loader, *, description: str, label: str) -> int:
+    parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--as-of", type=calendar_date,
                         help="test clock YYYY-MM-DD; default is today's Asia/Shanghai date")
     parser.add_argument("files", nargs="+", type=Path)
     args = parser.parse_args()
     as_of = args.as_of if args.as_of is not None else datetime.now(ZoneInfo("Asia/Shanghai")).date()
     try:
-        entries = load_entries(args.files, as_of=as_of)
+        entries = loader(args.files, as_of=as_of)
     except ValueError as exc:
         parser.exit(1, f"FAIL: {exc}\n")
-    print(f"PASS: {len(entries)} entries; as_of={as_of.isoformat()}")
+    print(f"PASS: {len(entries)} {label}; as_of={as_of.isoformat()}")
     return 0
+
+
+def main() -> int:
+    return validation_cli(load_entries, description=__doc__, label="entries")
 
 
 if __name__ == "__main__":

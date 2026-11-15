@@ -53,6 +53,98 @@ class PlanningFlow(unittest.TestCase):
                     self.assertEqual(context(events)['status'],'plan_preview')
                     self.assertIsNotNone(result)
 
+    def test_completed_explicit_request_after_hold_can_finish_on_later_followup(self):
+        hold='先别保存';request='规划上海四天豪华游 2026-11-17出发一个人';current='具体的行程呢'
+        wire=flow(current,city='上海',days=4,start='2026-11-17',party=1,index=2,questions=(),reply='已了解。')
+        wire['planning_request_index']=1;wire['city'].update(source_index=1,quote='上海')
+        wire['field_sources']=[dict(ref,source_index=1,quote=request)for ref in wire['field_sources']]
+        previous=dict(authority='none',status='consult',facts={},authority_barrier_message_id='prior-0',nonplanning_message_ids=[])
+        published,_,_,_=run(wire,current,turns=tuple(map(original,(hold,request,current))),previous=previous)
+        self.assertEqual(len(published),1)
+
+    def test_known_nonplanning_message_cannot_be_a_new_root_after_hold(self):
+        first='规划上海三天';translation='请翻译“规划旅行”';current='从2026-12-01开始'
+        wire=flow(current,city='上海',days=3,start='2026-12-01',index=2,questions=())
+        wire['planning_request_index']=1;wire['city'].update(source_index=0,quote='上海')
+        wire['field_sources'][0].update(source_index=0,quote='三天')
+        previous=dict(authority='none',status='consult',facts={},authority_barrier_message_id='prior-0',
+            nonplanning_message_ids=['prior-1'])
+        published,_,_,_=run(wire,current,turns=tuple(map(original,(first,translation,current))),previous=previous)
+        self.assertEqual(published,[])
+
+    def test_bare_destination_then_duration_enters_complete_undated_preview(self):
+        for first,last,city,locale in [('去成都','三天','成都','zh'),('Go to Chengdu','Three days','Chengdu','en')]:
+            with self.subTest(locale=locale):
+                wire=flow(first,city=city,days=None,intent='plan',questions=('duration_days',),
+                    reply='想玩几天？'if locale=='zh'else'How many days would you like?')
+                wire.update(planning_request_index=0,needs_tools=False)
+                _,events,lookups,_=run(wire,first,locale=locale)
+                self.assertEqual(lookups,[])
+                previous=context(events)
+                self.assertEqual(previous['status'],'needs_details')
+                self.assertEqual(previous['authority'],'none') # control question grants no execution
+                for item in previous['facts'].values():
+                    for reference in item['sources']:reference['message_id']='prior-0'
+                last_wire=flow(last,city=None,days=3,intent='plan',index=1,questions=(),reply='已了解。')
+                last_wire.update(planning_request_index=0,needs_tools=False)
+                published,events,lookups,_=run(last_wire,last,turns=(original(first),original(last)),
+                    previous=previous,locale=locale)
+                self.assertEqual(published,[])
+                self.assertEqual(len(lookups),1)
+                self.assertEqual(context(events)['status'],'plan_preview')
+                self.assertEqual(context(events)['facts']['duration_days']['value'],3)
+                for day in range(1,4):self.assertIn('第'+str(day)+'天'if locale=='zh'else'Day '+str(day),answer(events))
+                self.assertNotIn('哪天',answer(events));self.assertNotIn('几个人',answer(events))
+
+    def test_literal_destination_locator_and_multiple_questions_keep_one_missing_fact(self):
+        for first,city,reply,locale in [('去成都','去成都','去哪儿？这趟玩几天？','zh'),
+                ('Go to Chengdu','Go to Chengdu','Where do you want to go? How many days?','en')]:
+            with self.subTest(locale=locale):
+                wire=flow(first,city=city,days=None,intent='consult',questions=('duration_days',),reply=reply)
+                wire.update(planning_request_index=0,needs_tools=False)
+                _,events,lookups,_=run(wire,first,locale=locale)
+                stored=context(events)
+                self.assertEqual(stored['status'],'needs_details')
+                self.assertEqual(stored['authority'],'none')
+                self.assertEqual(stored['facts']['city']['value']['query'],'成都'if locale=='zh'else'Chengdu')
+                self.assertEqual(lookups,[])
+                self.assertEqual(answer(events),'你打算玩几天？'if locale=='zh'else'For how many days?')
+                self.assertEqual(answer(events).count('?')+answer(events).count('？'),1)
+                for fact in stored['facts'].values():
+                    for reference in fact['sources']:reference['message_id']='prior-0'
+                last='三天'if locale=='zh'else'Three days'
+                continuation=flow(last,city=None,days=3,intent='consult',index=1,questions=(),reply='已了解。')
+                continuation.update(planning_request_index=0,needs_tools=False)
+                _,later,_,_=run(continuation,last,turns=(original(first),original(last)),previous=stored,locale=locale)
+                self.assertEqual(context(later)['status'],'plan_preview')
+                for day in range(1,4):self.assertIn('第'+str(day)+'天'if locale=='zh'else'Day '+str(day),answer(later))
+
+    def test_bare_destination_never_clears_hold_or_classifies_a_missing_request(self):
+        for first,city,locale in [('去成都','成都','zh'),('Go to Chengdu','Chengdu','en')]:
+            for held in (True,False):
+                with self.subTest(locale=locale,held=held):
+                    history=(original('先别保存'),original(first))if held else(original(first),)
+                    index=len(history)-1
+                    wire=flow(first,city=city,days=None,intent='consult',index=index,
+                        questions=('duration_days',),reply='How many days?')
+                    wire.update(planning_request_index=index if held else None,needs_tools=False)
+                    previous=dict(authority='none',status='discussion',facts={},authority_barrier_message_id='prior-0')if held else None
+                    published,events,lookups,_=run(wire,first,turns=history,previous=previous,locale=locale)
+                    self.assertEqual((published,lookups),([],[]))
+                    value=context(events);self.assertEqual(value['authority'],'none')
+                    if held:self.assertEqual(value['authority_barrier_message_id'],'prior-0')
+                    else:self.assertIn('national-message',value['nonplanning_message_ids'])
+
+    def test_destination_literal_is_not_a_grammar_token_or_a_source_repair(self):
+        from cj_api.lio_positive_trip import destination_query
+        for text,query in [('请翻译“去成都”','成都'),('“去成都”','成都'),
+            ('不要去成都','成都'),('去成都吗？','成都'),('如果去成都','成都'),
+            ('Go to not Chengdu','not Chengdu'),('Translate Go to Chengdu','Chengdu'),
+            ('Go to Chengdu if possible','Chengdu if possible'),('Go to Chengdu','Beijing')]:
+            with self.subTest(text=text):self.assertIsNone(destination_query(text,query))
+        self.assertEqual(destination_query('Go to Chengdu','Go to Chengdu'),'Chengdu')
+        self.assertEqual(destination_query('去成都','去成都'),'成都')
+
     def test_missing_semantic_request_index_does_not_grant_save(self):
         text='去成都玩三天';wire=flow(text,questions=(),reply='成都适合安排街区散步。')
         wire.update(planning_request_index=None,needs_tools=False)
@@ -504,7 +596,15 @@ class PlanningFlow(unittest.TestCase):
 
     def test_capability_question_bypasses_planning_in_both_languages(self):
         planning=NationalLioPlanning(None,None)
-        for text in ('你能干啥','What can you do?'):
+        for text,locale in (('你能干啥','zh'),('你能做啥','zh'),('你会干嘛','zh'),('你能帮我做什么','zh'),
+                            ('What can you do?','en'),('What can you help me with?','en')):
+            events=[]
+            class Worker:
+                def _event(self,binding,state,kind,value=''):
+                    events.append((kind,value))
+                    return SimpleNamespace(sequence=state.sequence+1)
             with patch.object(planning,'context')as lookup:
-                self.assertIsNone(planning.execute(None,None,None,text,None))
+                planning.execute(Worker(),None,SimpleNamespace(sequence=0),text,SimpleNamespace(locale=locale))
                 lookup.assert_not_called()
+                self.assertEqual([kind for kind,_ in events],['text_delta','completed'])
+                self.assertIn('排行程'if locale=='zh'else'Plan your days',events[0][1])

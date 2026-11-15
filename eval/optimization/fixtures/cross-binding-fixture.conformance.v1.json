@@ -1,0 +1,188 @@
+{
+  "version": "G2C-cross-binding-fixture-conformance.1",
+  "record_version": "G2C-cross-binding-fixture.1",
+  "evidence_level": "synthetic_specification_only",
+  "E_runtime_execution": "UNRUN",
+  "vectors": [
+    {
+      "id": "complete-separate-owners",
+      "expected": "PASS",
+      "rule_ids": [
+        "X01",
+        "X02",
+        "X03",
+        "X04",
+        "X05",
+        "X06",
+        "X07",
+        "X08",
+        "X09",
+        "X10",
+        "X11",
+        "X12"
+      ],
+      "condition": "All referenced independent originals are authenticated, matching and complete; C preparation remains C; E task denied foreign data and makes no mutation; original bill may have paid amount UNKNOWN while original attempts settled."
+    },
+    {
+      "id": "C-ops-relabelled-E",
+      "expected": "FAIL",
+      "rule_ids": [
+        "X01",
+        "X02",
+        "X11"
+      ],
+      "condition": "C preparation RUN/op or ledger is inserted in E single-binding inventory or re-labelled as E."
+    },
+    {
+      "id": "same-owner-new-session",
+      "expected": "FAIL",
+      "rule_ids": [
+        "X01"
+      ],
+      "condition": "Producer and consumer have the same resolved owner scope but different session hashes."
+    },
+    {
+      "id": "self-hash-source-copy",
+      "expected": "UNKNOWN",
+      "rule_ids": [
+        "X02",
+        "X10",
+        "X11"
+      ],
+      "condition": "No independent protected source exists; source/check objects are copied from the submitted use, even if every hash is syntactically valid."
+    },
+    {
+      "id": "missing-C-cost-or-unknown-hold",
+      "expected": "UNKNOWN",
+      "rule_ids": [
+        "X05",
+        "X06"
+      ],
+      "condition": "Preparation has unresolved original fee/Meter/hold or no complete cost inventory; no new E dispatch may start."
+    },
+    {
+      "id": "duplicate-preparation-charge",
+      "expected": "FAIL",
+      "rule_ids": [
+        "X05",
+        "X06"
+      ],
+      "condition": "The same original C charge is charged/recorded anew per E candidate or hidden as free setup; reused report must only reference original charge."
+    },
+    {
+      "id": "observer-revoked-after-read",
+      "expected": "UNKNOWN",
+      "rule_ids": [
+        "X08"
+      ],
+      "condition": "Observer/producer source authority revoked after first read; cached observer content/refs must be withheld, not merely stamped UNKNOWN."
+    },
+    {
+      "id": "consumer-revoked-before-publication",
+      "expected": "UNKNOWN",
+      "rule_ids": [
+        "X08"
+      ],
+      "condition": "E metadata recipient revoked before return; entire use publication is withheld using original boundary."
+    },
+    {
+      "id": "expired-or-unregistered-reuse",
+      "expected": "FAIL",
+      "rule_ids": [
+        "X04",
+        "X07"
+      ],
+      "condition": "Reuse expired or changed fixture/candidate selected outside authoritative registry; no extra calls to reconstruct a good fixture."
+    },
+    {
+      "id": "changed-baseline-unattributed",
+      "expected": "UNKNOWN",
+      "rule_ids": [
+        "X07",
+        "X09"
+      ],
+      "condition": "Unexpected concurrent change cannot be attributed to E; stop reuse, retain old evidence, do not call unchanged."
+    },
+    {
+      "id": "known-foreign-mutation-or-disclosure",
+      "expected": "FAIL",
+      "rule_ids": [
+        "X09",
+        "X10"
+      ],
+      "condition": "Original E operation is proven to change foreign Trip or reveal protected sentinel/body in any E-visible surface."
+    },
+    {
+      "id": "read-denial-only",
+      "expected": "UNKNOWN",
+      "rule_ids": [
+        "X10"
+      ],
+      "condition": "Only foreign CID read rejection is provided; no complete E originals/disclosure scan or C after-state exists. This cannot certify write isolation."
+    },
+    {
+      "id": "no-write-dispatch-full-proof",
+      "expected": "PASS",
+      "rule_ids": [
+        "X09",
+        "X10"
+      ],
+      "condition": "Full original E inventory proves no mutation dispatch, observer before/after match and full private scan zero. No new destructive probe is required or invented."
+    },
+    {
+      "id": "hash-cycle",
+      "expected": "FAIL",
+      "rule_ids": [
+        "X11"
+      ],
+      "condition": "Use refers to G action/result/state whose own body includes that use hash/ref."
+    },
+    {
+      "id": "preparation-unready-consumer-not-started",
+      "expected": "UNRUN",
+      "rule_ids": [
+        "X03",
+        "X04",
+        "X12"
+      ],
+      "condition": "C preparation or legal setup unavailable; E task has not been dispatched, C prior unknown remains separately recorded."
+    },
+    {
+      "id": "session-rotation-no-v1-bridge",
+      "expected": "UNKNOWN",
+      "rule_ids": [
+        "X01",
+        "X07",
+        "X08"
+      ],
+      "condition": "Current C token belongs to a different Binding.key than original producer; old refs cannot resolve under new session. Stop reuse, no automatic rebind; unstarted E task is UNRUN, already-started use lacks current observation and is UNKNOWN."
+    },
+    {
+      "id": "no-isolation-fence",
+      "expected": "UNKNOWN",
+      "rule_ids": [
+        "X07",
+        "X09"
+      ],
+      "condition": "Observer can read but no protected isolation/admission/fence is valid at before/dispatch/after/publication; two equal hashes do not prove no intermediate change."
+    },
+    {
+      "id": "amortization-after-seeing-candidate",
+      "expected": "FAIL",
+      "rule_ids": [
+        "X05",
+        "X06"
+      ],
+      "condition": "C* is declared cheaper solely by switching preparation attribution after results, or prior original charge is omitted; keep historical billing and require predeclared consistent reporting."
+    },
+    {
+      "id": "known-local-fail-dominates",
+      "expected": "FAIL",
+      "rule_ids": [
+        "X10",
+        "X12"
+      ],
+      "condition": "Any authenticated coverage or check is FAIL, including a write-interface failure or independent semantic disclosure failure. Root evidence_status must be FAIL; UNKNOWN/UNRUN coverage alone may remain alongside bounded evidence PASS and must not be upgraded."
+    }
+  ]
+}

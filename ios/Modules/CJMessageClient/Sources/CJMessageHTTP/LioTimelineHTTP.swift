@@ -24,6 +24,19 @@ public final class LioTimelineHTTP {
     private let connectivity: LioConnectivity?
     private let firstChatRecovery: MessageRecovery?
     private var firstChatInFlight = false
+    private var defaultCalendarConversationID: String?
+
+    func observedDefaultCalendarConversationID() throws -> String {
+        guard let id = defaultCalendarConversationID else { throw MessageHTTPFailure.exchangeUnknown }
+        return id
+    }
+
+    private func bindDefaultCalendarConversation(_ id: String) throws {
+        guard defaultCalendarConversationID == nil || defaultCalendarConversationID == id else {
+            throw MessageHTTPFailure.invalidResponse
+        }
+        defaultCalendarConversationID = id
+    }
 
     public convenience init(endpoint: MessageEndpoint, scope: StorageScope, lease: Lease,
                             credentials: any MessageCredentialsProvider,
@@ -212,15 +225,23 @@ public final class LioTimelineHTTP {
         // The v2 route uses 400 for invalid input before acceptance. Access
         // failures can also come from reconciling an earlier uncertain commit.
         if status == 429 || (status == 400 && original.startsNewChat) {
-            try validateUnambiguousJSON(bytes)
             let expected = status == 429 ? "quota" : "unavailable"
-            guard try JSONDecoder().decode(Failure.self, from: bytes).failure == expected else {
-                throw MessageHTTPFailure.invalidResponse
+            if original.version == .v4 {
+                try LioNative4Envelope.rejection(bytes, expected: expected)
+            } else {
+                try validateUnambiguousJSON(bytes)
+                guard try JSONDecoder().decode(Failure.self, from: bytes).failure == expected else {
+                    throw MessageHTTPFailure.invalidResponse
+                }
             }
             return .rejected(status, bytes)
         }
         guard status == 200 else { throw MessageHTTPFailure.exchangeUnknown }
-        return .accepted(try original.confirm(bytes), bytes)
+        let id = try original.confirm(bytes)
+        if original.version == .v3, original.conversationID == nil, !original.startsNewChat {
+            try bindDefaultCalendarConversation(id)
+        }
+        return .accepted(id, bytes)
     }
 
     public func timeline(conversationID: String? = nil, before: String? = nil,
@@ -230,18 +251,37 @@ public final class LioTimelineHTTP {
         guard response.status.code == 200 else { throw MessageHTTPFailure.invalidResponse }
         let bytes = try await json(response, body, limit: 4_500_000)
         let page = try LioTimelineWire.decodePage(bytes, for: conversationID, version: version)
+        if version == .v3, conversationID == nil, let id = page.conversationID {
+            try bindDefaultCalendarConversation(id)
+        }
         if let before, page.messages.contains(where: { $0.id.utf8.elementsEqual(before.utf8) }) {
             throw MessageHTTPFailure.invalidResponse
         }
         return page
     }
 
-    func tripHistory(before: String?, conversationID: String? = nil) async throws -> LioTripHistoryWire.Page {
+    /// Explicit native4 read, preserving its typed presentation instead of using the legacy page decoder.
+    public func exploration(conversationID: String? = nil, before: String? = nil) async throws -> LioExplorationWire.Page {
         let token = try await bearer()
-        let (response, body) = try await transport.readLioTrip(before: before, bearer: token, conversationID: conversationID)
+        let (response, body) = try await transport.readLio(conversationID: conversationID, before: before,
+                                                         bearer: token, version: .v4)
         guard response.status.code == 200 else { throw MessageHTTPFailure.invalidResponse }
         let bytes = try await json(response, body, limit: 4_500_000)
-        return try LioTripHistoryWire.decodePage(bytes, before: before, conversationID: conversationID)
+        let page = try LioExplorationWire.decodePage(bytes, for: conversationID)
+        if let before, page.messages.contains(where: { $0.id.utf8.elementsEqual(before.utf8) }) {
+            throw MessageHTTPFailure.invalidResponse
+        }
+        return page
+    }
+
+    func tripHistory(before: String?, conversationID: String? = nil,
+                      version: LioTimelineWire.Version? = nil) async throws -> LioTripHistoryWire.Page {
+        let token = try await bearer()
+        let (response, body) = try await transport.readLioTrip(before: before, bearer: token,
+                                                            conversationID: conversationID, version: version)
+        guard response.status.code == 200 else { throw MessageHTTPFailure.invalidResponse }
+        let bytes = try await json(response, body, limit: 4_500_000)
+        return try LioTripHistoryWire.decodePage(bytes, before: before, conversationID: conversationID, version: version)
     }
 
     func submitUndo(_ undo: LioTripHistoryWire.Undo) async throws -> LioTripHistoryClient.SubmissionResult {

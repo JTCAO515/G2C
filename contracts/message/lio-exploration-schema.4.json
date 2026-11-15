@@ -1,0 +1,808 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://go2china.space/contracts/message/lio-exploration-schema.4.json",
+  "title": "#925 additive LIO-message.4 presentation contract (draft; no HTTP admission enabled)",
+  "$defs": {
+    "Factor": {
+      "enum": [
+        "city",
+        "duration_days",
+        "season",
+        "first_visit",
+        "party_type",
+        "interests",
+        "pace",
+        "lodging_tier",
+        "dietary",
+        "must_see",
+        "avoid",
+        "mobility",
+        "arrival",
+        "departure"
+      ]
+    },
+    "Id": {
+      "allOf": [
+        {
+          "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/Id"
+        },
+        {
+          "not": {
+            "pattern": "[\\u0000-\\u001f\\u007f-\\u009f\\u2028\\u2029]"
+          }
+        }
+      ]
+    },
+    "Segment": {
+      "type": "object",
+      "properties": {
+        "purpose": {
+          "enum": [
+            "response",
+            "direction",
+            "question",
+            "notice",
+            "summary"
+          ]
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 12000
+        }
+      },
+      "required": [
+        "purpose",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "Option": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "display_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "send_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "pattern": "\\S",
+          "not": {
+            "pattern": "[\\u0000-\\u001f\\u007f-\\u009f\\u2028\\u2029]"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "display_text",
+        "send_text"
+      ],
+      "additionalProperties": false
+    },
+    "QuestionGroup": {
+      "type": "object",
+      "properties": {
+        "factor_key": {
+          "$ref": "#/$defs/Factor"
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "multiple": {
+          "type": "boolean"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Option"
+          },
+          "maxItems": 4,
+          "minItems": 3
+        }
+      },
+      "required": [
+        "factor_key",
+        "question",
+        "multiple",
+        "options"
+      ],
+      "additionalProperties": false
+    },
+    "Profile": {
+      "type": "object",
+      "properties": {
+        "factor_key": {
+          "$ref": "#/$defs/Factor"
+        },
+        "display_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "state": {
+          "enum": [
+            "known",
+            "not_needed",
+            "inferred",
+            "default",
+            "memory"
+          ]
+        }
+      },
+      "required": [
+        "factor_key",
+        "display_text",
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "Notice": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "type": {
+          "enum": [
+            "weather",
+            "day_opening",
+            "reservation",
+            "holiday",
+            "long_transfer",
+            "season"
+          ]
+        },
+        "severity": {
+          "enum": [
+            "info",
+            "warning"
+          ]
+        },
+        "item_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "maxItems": 128,
+          "uniqueItems": true
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 12000
+        },
+        "source": {
+          "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/Citation"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "severity",
+        "item_ids",
+        "text",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "Exit": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "display_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "send_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "pattern": "\\S",
+          "not": {
+            "pattern": "[\\u0000-\\u001f\\u007f-\\u009f\\u2028\\u2029]"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "display_text",
+        "send_text"
+      ],
+      "additionalProperties": false
+    },
+    "Waiting": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "waiting"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "kind",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "PlanningStarted": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "planning_started"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "duration_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 366
+        }
+      },
+      "required": [
+        "kind",
+        "text",
+        "duration_days"
+      ],
+      "additionalProperties": false
+    },
+    "Progress": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Waiting"
+        },
+        {
+          "$ref": "#/$defs/PlanningStarted"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "LioMessage4": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "LIO-message.4"
+        },
+        "message_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 12000
+        },
+        "locale": {
+          "enum": [
+            "zh",
+            "en"
+          ]
+        },
+        "conversation_id": {
+          "type": "string",
+          "pattern": "^lio-dialogue-[0-9a-f]{32}$"
+        },
+        "new_conversation": {
+          "const": true
+        }
+      },
+      "required": [
+        "version",
+        "message_id",
+        "text",
+        "locale"
+      ],
+      "additionalProperties": false,
+      "not": {
+        "required": [
+          "conversation_id",
+          "new_conversation"
+        ]
+      }
+    },
+    "LioReceipt4": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "LIO-message-receipt.4"
+        },
+        "message_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "conversation_id": {
+          "type": "string",
+          "pattern": "^lio-dialogue-[0-9a-f]{32}$"
+        }
+      },
+      "required": [
+        "version",
+        "message_id",
+        "conversation_id"
+      ],
+      "additionalProperties": false
+    },
+    "LioLookup4": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "LIO-message-lookup.4"
+        },
+        "receipt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LioReceipt4"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "receipt"
+      ],
+      "additionalProperties": false
+    },
+    "TimelineMessage4": {
+      "type": "object",
+      "properties": {
+        "message_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string"
+        },
+        "answer": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "sending",
+            "answering",
+            "completed",
+            "failed"
+          ]
+        },
+        "failure": {
+          "enum": [
+            null,
+            "quota",
+            "unavailable"
+          ]
+        },
+        "activity": {
+          "enum": [
+            null,
+            "checking_places",
+            "checking_weather",
+            "checking_travel_information"
+          ]
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/Citation"
+          }
+        },
+        "trip": {
+          "anyOf": [
+            {
+              "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/Card2"
+            },
+            {
+              "$ref": "#/$defs/Card3"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "memory": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/MemoryTag"
+                  },
+                  "minItems": 1,
+                  "maxItems": 50
+                }
+              },
+              "required": [
+                "tags"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Segment"
+          },
+          "maxItems": 32
+        },
+        "question_groups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/QuestionGroup"
+          },
+          "maxItems": 4
+        },
+        "profile": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Profile"
+          },
+          "maxItems": 14
+        },
+        "notices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Notice"
+          },
+          "maxItems": 2
+        },
+        "exits": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Exit"
+          },
+          "maxItems": 4
+        },
+        "progress": {
+          "$ref": "#/$defs/Progress"
+        }
+      },
+      "required": [
+        "message_id",
+        "text",
+        "answer",
+        "status",
+        "failure",
+        "activity",
+        "sources",
+        "trip",
+        "memory",
+        "segments",
+        "question_groups",
+        "profile",
+        "notices",
+        "exits",
+        "progress"
+      ],
+      "additionalProperties": false
+    },
+    "Timeline4": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "LIO-timeline.4"
+        },
+        "conversation_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^lio-dialogue-[0-9a-f]{32}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TimelineMessage4"
+          }
+        },
+        "next_before": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "conversation_id",
+        "messages",
+        "next_before"
+      ],
+      "additionalProperties": false
+    },
+    "Card3": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "LIO-trip-card.3"
+        },
+        "trip_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "trip_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "content_version": {
+          "const": "structured.4"
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "not": {
+            "pattern": "[\\u0000-\\u001f\\u007f-\\u009f\\u2028\\u2029]"
+          }
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "calendar": {
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "const": "undated"
+                    }
+                  },
+                  "required": [
+                    "state"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "const": "dated"
+                    },
+                    "start_date": {
+                      "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/Date"
+                    }
+                  },
+                  "required": [
+                    "state",
+                    "start_date"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "days": {
+          "type": "array",
+          "items": {},
+          "minItems": 1,
+          "maxItems": 366
+        },
+        "date_checks": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/DateCheck3"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "trip_id",
+        "trip_version",
+        "content_version",
+        "content_sha256",
+        "title",
+        "calendar",
+        "days",
+        "date_checks"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "properties": {
+            "calendar": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "const": "undated"
+                    }
+                  },
+                  "required": [
+                    "state"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "const": "dated"
+                    },
+                    "start_date": {
+                      "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/Date"
+                    }
+                  },
+                  "required": [
+                    "state",
+                    "start_date"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "date_checks": {
+              "type": "array",
+              "items": {
+                "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/Check"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "calendar": {
+                    "properties": {
+                      "state": {
+                        "const": "undated"
+                      }
+                    }
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "days": {
+                    "items": {
+                      "$ref": "#/$defs/UndatedCardDay3"
+                    }
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "days": {
+                    "items": {
+                      "$ref": "#/$defs/DatedCardDay3"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "CardItem3": {
+      "allOf": [
+        {
+          "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/CardItem"
+        },
+        {
+          "properties": {
+            "item_id": {
+              "$ref": "#/$defs/Id"
+            }
+          }
+        }
+      ]
+    },
+    "UndatedCardDay3": {
+      "allOf": [
+        {
+          "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/UndatedCardDay"
+        },
+        {
+          "properties": {
+            "items": {
+              "items": {
+                "$ref": "#/$defs/CardItem3"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "DatedCardDay3": {
+      "allOf": [
+        {
+          "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/DatedCardDay"
+        },
+        {
+          "properties": {
+            "items": {
+              "items": {
+                "$ref": "#/$defs/CardItem3"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "DateCheck3": {
+      "allOf": [
+        {
+          "$ref": "https://go2china.space/contracts/message/trip-schema.2.json#/$defs/Check"
+        },
+        {
+          "properties": {
+            "evidence_refs": {
+              "items": {
+                "type": "string",
+                "pattern": "\\S"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/LioMessage4"
+    },
+    {
+      "$ref": "#/$defs/LioReceipt4"
+    },
+    {
+      "$ref": "#/$defs/LioLookup4"
+    },
+    {
+      "$ref": "#/$defs/Timeline4"
+    }
+  ]
+}

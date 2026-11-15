@@ -137,6 +137,36 @@ struct CheckedTransport: ClientTransport {
 }
 
 public final class NoRedirectTransport: ClientTransport, Sendable {
+    #if DEBUG && os(iOS) && targetEnvironment(simulator)
+    // One explicit local fixture for #691's real App-root lifecycle. Release
+    // builds have no installation API; ordinary Debug callers stay unchanged.
+    private final class B691Fixture: @unchecked Sendable {
+        private let lock = NSLock()
+        private var installed: URLProtocol.Type?
+        func install(_ value: URLProtocol.Type) throws {
+            lock.lock(); defer { lock.unlock() }
+            guard installed == nil else { throw MessageHTTPFailure.invalidConfiguration }
+            installed = value
+        }
+        func read() throws -> URLProtocol.Type {
+            lock.lock(); defer { lock.unlock() }
+            guard let installed else { throw MessageHTTPFailure.invalidConfiguration }
+            return installed
+        }
+    }
+    private static let b691Fixture = B691Fixture()
+    private static func requireB691Fixture() throws {
+        guard Bundle.main.bundleIdentifier == "space.go2china.app",
+              Bundle.main.object(forInfoDictionaryKey: "G2CDemoBeta") as? Bool == true,
+              Bundle.main.object(forInfoDictionaryKey: "G2CB691LocalFixture") as? Bool == true else {
+            throw MessageHTTPFailure.invalidConfiguration
+        }
+    }
+    public static func installB691LocalFixture(_ value: URLProtocol.Type) throws {
+        try requireB691Fixture()
+        try b691Fixture.install(value)
+    }
+    #endif
     private struct EndpointCapability: Sendable {
         let endpoint: MessageEndpoint
         let validate: @MainActor @Sendable () throws -> Void
@@ -188,8 +218,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     func sendLio(_ original: LioTimelineWire.Send, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
         guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
-        let path = original.version == .v1 ? messages.wire.path : "/v2/lio/messages"
-        let operation = original.version == .v1 ? messages.wire.operation : "sendLioMessageV2"
+        let path = original.version == .v1 ? messages.wire.path : "/v\(original.version.rawValue)/lio/messages"
+        let operation = original.version == .v1 ? messages.wire.operation : "sendLioMessageV\(original.version.rawValue)"
         var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: path)
         request.headerFields[.authorization] = "Bearer " + bearer
         request.headerFields[.contentType] = "application/octet-stream"
@@ -216,13 +246,15 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     func readLioFirstReceipt(_ original: LioTimelineWire.Send, inputSHA256: String,
                              bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
-        try await lioRead(path: "/v2/lio/messages", query: [
+        let version = original.version == .v1 ? 2 : original.version.rawValue
+        return try await lioRead(path: "/v\(version)/lio/messages", query: [
             URLQueryItem(name: "message_id", value: original.messageID),
             URLQueryItem(name: "input_sha256", value: inputSHA256)
-        ], operation: "readLioMessageV2", bearer: bearer)
+        ], operation: "readLioMessageV\(version)", bearer: bearer)
     }
 
-    func readLioTrip(before: String?, bearer: String, conversationID: String? = nil) async throws -> (HTTPResponse, HTTPBody?) {
+    func readLioTrip(before: String?, bearer: String, conversationID: String? = nil,
+                     version requestedVersion: LioTimelineWire.Version? = nil) async throws -> (HTTPResponse, HTTPBody?) {
         if let before, !LioTripHistoryWire.validCursor(before) { throw MessageHTTPFailure.invalidConfiguration }
         var query: [URLQueryItem] = []
         if let conversationID {
@@ -230,14 +262,16 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
             query.append(URLQueryItem(name: "conversation_id", value: conversationID))
         }
         if let before { query.append(URLQueryItem(name: "before", value: before)) }
-        let version = conversationID == nil ? 1 : 2
+        let version = requestedVersion?.rawValue ?? (conversationID == nil ? 1 : 2)
+        if version == 3, conversationID == nil { throw MessageHTTPFailure.invalidConfiguration }
         return try await lioRead(path: "/v\(version)/lio/trip", query: query,
                                  operation: "readLioTripHistoryV\(version)", bearer: bearer)
     }
 
     func sendLioUndo(_ undo: LioTripHistoryWire.Undo, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
         guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
-        var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: "/v\(undo.version)/lio/trip/undo")
+        let path = undo.version == 3 ? "/v3/lio/trip-undos" : "/v\(undo.version)/lio/trip/undo"
+        var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: path)
         request.headerFields[.authorization] = "Bearer " + bearer
         request.headerFields[.contentType] = "application/octet-stream"
         request.headerFields[.accept] = "application/json"
@@ -252,7 +286,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
             URLQueryItem(name: "target", value: undo.target)
         ]
         if let id = undo.conversationID { query.append(URLQueryItem(name: "conversation_id", value: id)) }
-        return try await lioRead(path: "/v\(undo.version)/lio/trip/undo", query: query,
+        let path = undo.version == 3 ? "/v3/lio/trip-undo-receipts" : "/v\(undo.version)/lio/trip/undo"
+        return try await lioRead(path: path, query: query,
                                  operation: "readLioTripUndoV\(undo.version)", bearer: bearer)
     }
 
@@ -598,6 +633,12 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
             throw MessageHTTPFailure.invalidConfiguration
         }
         let config = URLSessionConfiguration.ephemeral
+        #if DEBUG && os(iOS) && targetEnvironment(simulator)
+        if Bundle.main.object(forInfoDictionaryKey: "G2CB691LocalFixture") as? Bool == true {
+            try Self.requireB691Fixture()
+            config.protocolClasses = [try Self.b691Fixture.read()]
+        }
+        #endif
         config.httpCookieStorage = nil; config.urlCache = nil; config.urlCredentialStorage = nil
         config.timeoutIntervalForRequest = requestTimeout; config.timeoutIntervalForResource = resourceTimeout
         #if DEBUG && os(iOS) && !targetEnvironment(simulator) && G2C_M4_DEVICE_ACCEPTANCE

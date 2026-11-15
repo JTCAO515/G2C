@@ -9,7 +9,7 @@ from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 from cj_api.app import create_app
 from cj_api.composition import CompositionUnavailable
-from cj_api.local_app import LocalDatabase, scope_for
+from cj_api.local_app import LocalDatabase, scope_for, trip_resolver
 from cj_api.local_account_admission_v2 import account_checker_for
 from cj_api.message_routes import BodyError, _body_error, _error, _require_octets, _stream_octets, _token
 from cj_agent.draft import trip_scope_for
@@ -40,12 +40,7 @@ def register_local_manual_routes(app,*,database,auth_dir,confirmation_signer,max
     from cj_api.local_run_context import LocalRunContext
     if run_context is not None and type(run_context) is not LocalRunContext:
         raise CompositionUnavailable('canonical explicit local run context required')
-    def resolve(principal):
-        message_scope=scope_for(principal.issuer,principal.subject)
-        scope=trip_scope_for(message_scope)
-        with database.connect(message_scope) as conn:
-            conn.execute('INSERT INTO cj_trip_scope(scope) VALUES(%s) ON CONFLICT DO NOTHING',(scope,))
-        return lambda:database.connect(message_scope),scope
+    resolve=trip_resolver(database,provision=True)
     class ManualBoundary(Boundary):
         def _bind(self,token):
             repository,principal,check=super()._bind(token)

@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://go2china.invalid/contracts/fact/visitor-schema.2.json",
+  "$defs": {
+    "query": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "topic",
+        "city"
+      ],
+      "properties": {
+        "version": {
+          "const": "FACT-query.2"
+        },
+        "topic": {
+          "enum": [
+            "payment",
+            "passport_booking",
+            "transport",
+            "internet",
+            "emergency"
+          ]
+        },
+        "city": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "topic",
+        "cities",
+        "text_zh",
+        "text_en",
+        "source_urls",
+        "checked_on",
+        "expires_on"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^visitor\\.[a-z0-9][a-z0-9.-]*$",
+          "maxLength": 256
+        },
+        "topic": {
+          "enum": [
+            "payment",
+            "passport_booking",
+            "transport",
+            "internet",
+            "emergency"
+          ]
+        },
+        "cities": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "beijing",
+              "chengdu",
+              "xian",
+              "shanghai",
+              "hangzhou",
+              "chongqing",
+              "shenzhen"
+            ]
+          }
+        },
+        "text_zh": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "text_en": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "source_urls": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https://",
+            "maxLength": 2048
+          }
+        },
+        "checked_on": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "expires_on": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "request_ref",
+        "query",
+        "data_origin",
+        "status",
+        "evaluated_at",
+        "catalogue_sha256",
+        "entries"
+      ],
+      "properties": {
+        "version": {
+          "const": "FACT-result.2"
+        },
+        "request_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "query": {
+          "$ref": "#/$defs/query"
+        },
+        "data_origin": {
+          "const": "maintainer_summary"
+        },
+        "status": {
+          "enum": [
+            "matched",
+            "no_match"
+          ]
+        },
+        "evaluated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "catalogue_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/entry"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "matched"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "entries": {
+                "minItems": 1
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "entries": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/query"
+    },
+    {
+      "$ref": "#/$defs/result"
+    }
+  ]
+}

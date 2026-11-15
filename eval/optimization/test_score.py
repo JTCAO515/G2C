@@ -277,5 +277,7 @@ class LioV2ScoreTests(unittest.TestCase):
 # D-owned default CI seam: preserve the existing scorer tests and discover QA.
 from .test_teacher_quality import TeacherQualityTests
 
+from .test_cross_binding_fixture import CrossBindingFixtureSpecTests
+
 if __name__ == '__main__':
     unittest.main()

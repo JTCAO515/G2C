@@ -36,7 +36,7 @@ def parse_flat(raw,turns):
     return compile_flat(data,turns)
 
 
-def compile_flat(data,turns):
+def compile_flat(data,turns,*,current_dates=False):
     """Compile an already validated, code-owned flat DTO representation."""
     core=_observations({key:data[key] for key in ('start_date','party_size')},data['unknown_fields'],data['uncertain_fields'])
     extra=data['extra_fields']
@@ -54,7 +54,7 @@ def compile_flat(data,turns):
     if data['intent'] in ('consult','discuss','cancel'):
         compiled=dict(version='LIO-planning-intake.4',**common,duration_days=None,start_date=None,
             extraction=None,field_sources={})
-        return parse(json.dumps(compiled,ensure_ascii=False),turns,version='LIO-planning-intake.4')
+        return parse(json.dumps(compiled,ensure_ascii=False),turns,version='LIO-planning-intake.4',current_dates=current_dates)
     fields={}
     for key,item in extra.items():
         if key in EXTRA_OBSERVATIONS:
@@ -81,4 +81,4 @@ def compile_flat(data,turns):
         start_date=core['start_date'],
         extraction=dict(version='LIO-execution-extraction.1',fields=fields,
             unresolved=data['unresolved'],long_term_requests=data['long_term_requests']),field_sources=data['field_sources'])
-    return parse(json.dumps(compiled,ensure_ascii=False),turns,version='LIO-planning-intake.4')
+    return parse(json.dumps(compiled,ensure_ascii=False),turns,version='LIO-planning-intake.4',current_dates=current_dates)

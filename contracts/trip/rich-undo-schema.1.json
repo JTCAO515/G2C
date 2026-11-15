@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://go2china.space/contracts/trip/rich-undo-schema.1.json",
+  "title": "New source-aware undo input data; no dispatcher or write permission",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": "TRIP-lio-undo.3"
+    },
+    "action_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "trip_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "expected_version": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 9223372036854775806
+    },
+    "original_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "content_version": {
+      "enum": [
+        "structured.1",
+        "structured.2",
+        "structured.3",
+        "structured.4"
+      ]
+    }
+  },
+  "required": [
+    "version",
+    "action_id",
+    "trip_id",
+    "expected_version",
+    "original_hash",
+    "content_version"
+  ],
+  "additionalProperties": false
+}

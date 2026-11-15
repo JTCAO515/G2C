@@ -18,7 +18,7 @@
 
 1. 仅新增版本；FACT@1.0、旧示例、decoder 和合成路径不变。由 L 决定新版本号并按红线流程附正负例。
 2. 查询按五主题与七城显式匹配；只读取 `knowledge/visitor/entries/*.json`，不递归把 `examples/`、测试和文档当事实。
-3. 只返回已维护者核对且未失效的正式条目，带 `id/topic/cities/text_zh/text_en/source_urls/checked_on/expires_on`；
+3. 只返回经维护者核对且未失效的正式条目，带 `id/topic/cities/text_zh/text_en/source_urls/checked_on/expires_on`；
    新结果的证据类型明确是维护者概括，网址、日期留在内部结果中，不能因用户正文不显示依据而丢弃。
 4. 在文件反序列化边界校验一次，使用可信当前时间检查到期；不能固定历史 `--as-of` 延寿。
    明确无命中、过期及格式错误的行为，不把格式错静默转换为成功或真实知识。
@@ -27,4 +27,11 @@
 本目录的格式是内容文件约定，不是新 FACT wire，也不授予服务端上线或抓取权。
 L 接入须自行验证命中、无命中、失效、格式错误及本地签名链路中英问答。
 H1 历史：截至 #843 交付时正式条目 0、真实来源访问 0。
-H2 #846：经 JT 确认来源后已有 12 条维护者概括内容，覆盖及复核时间见 [COVERAGE.md](COVERAGE.md)；线上接入和 L 的本地签名问答仍为 UNRUN。本评估未改变 FACT@1.0 的合成来源限制。
+H2 #846 交付时：经 JT 确认来源后已有 12 条维护者概括内容，覆盖及复核时间见 [COVERAGE.md](COVERAGE.md)；当时线上接入和 L 的本地签名问答为 UNRUN。本评估未改变 FACT@1.0 的合成来源限制。
+
+## WP12 / #935：追加本地内容版本
+
+main 已有 L 的 `FACT-query.2/result.2` 与旧八字段读取器（`backend/fact/cj_fact/visitor.py`）；它严格拒绝额外字段，且只支持原五主题。
+本次把条件与官方渠道放在 `entries-v2/*.json`（visitor-entry.2），Wikidata 标签放在 `names/*.json`（visitor-name.1）；旧12条与旧目录原字节保留。
+新字段、visa_entry 主题和名称读取需 L 显式追加 wire/消费版本，不放宽旧 .2；C WP9 必须按具体 subject、时效、节假日例外及预约规则类型解释条件。
+边界、迁移退出条件和命令见 [WP12-FORMAT.md](WP12-FORMAT.md)。这不是 H 冻结的新 FACT wire，也不代表模型路由、提醒生成或新格式线上接入已通过。

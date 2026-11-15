@@ -4,6 +4,8 @@ Every read uses the existing MESSAGE history AUTH lifetime and scoped runtime
 database. Artifact references are resolved from original operation IDs, not paths
 or URLs supplied by the adapter. Deleted input payloads cannot expose old files.
 """
+import base64
+from contextlib import ExitStack
 from dataclasses import asdict
 from datetime import datetime
 import re
@@ -18,7 +20,7 @@ from cj_message.domain import Unavailable as MessageUnavailable,InvalidInput,Com
 from cj_run.usage_binding import UsageBinding
 from cj_run.core import Denied as RunDenied
 from cj_run.step_usage import ledger_scope_for
-from cj_usage.codec import decode
+from cj_usage.codec import decode_stored
 from cj_usage.authorization_budget import canonical
 from cj_usage.metered_exit import BudgetUnknown
 from runtime_adapter.contract import Unavailable,decode as original_json,require
@@ -26,11 +28,12 @@ from .runtime_private import read_private,PrivateFileError
 
 
 class RuntimeOriginals:
-    def __init__(self,message_boundary,database,budget,artifact_directory,*,query_original=None):
+    def __init__(self,message_boundary,database,budget,artifact_directory,*,query_original=None,rejected_memory_lifetime=None):
         if type(message_boundary) is not Boundary:
             raise ValueError('original MESSAGE history boundary required')
         self.boundary,self.database,self.budget=message_boundary,database,budget
         self.directory=Path(artifact_directory)
+        self.rejected_memory_lifetime=rejected_memory_lifetime
         self.query_original=(lambda context,mid:context.query_message(mid)) if query_original is None else query_original
 
     def _operations(self,scope,run_id):
@@ -43,18 +46,25 @@ class RuntimeOriginals:
         if state is None:raise Unavailable('ORIGINAL_RUN_UNAVAILABLE')
         return state,events,operations,period
 
-    def _read(self,token,message_id,project):
+    def _read(self,token,message_id,project,*,with_context=False,publication=None):
         def operation(context):
             original=self.query_original(context,message_id)
             if original is None:raise Unavailable('ORIGINAL_MESSAGE_UNAVAILABLE')
             source=self._operations(context.scope,original.receipt.run_id)
-            body=project(context.scope,original,source)
+            body=project(context if with_context else context.scope,original,source)
             # Storage/files/fee callbacks completed before the final same-source
             # check; Boundary then repeats canonical AUTH before bytes escape.
-            if self.query_original(context,message_id)!=original or self._operations(context.scope,original.receipt.run_id)!=source:
-                raise Unavailable('ORIGINAL_SNAPSHOT_CHANGED')
+            if publication is None or not publication['memory_held']:
+                if self.query_original(context,message_id)!=original or self._operations(context.scope,original.receipt.run_id)!=source:
+                    raise Unavailable('ORIGINAL_SNAPSHOT_CHANGED')
+            if publication is not None:
+                for check in publication['checks']:check()
             return body
-        try:return self.boundary.with_history_context(token,operation)
+        try:
+            body=self.boundary.with_history_context(token,operation)
+            if publication is not None:
+                for check in publication['checks']:check()
+            return body
         except (AccessBlocked,IdentityChanged):
             raise Unavailable('ORIGINAL_AUTH_UNAVAILABLE') from None
         except (MessageUnavailable,InvalidInput,CommitUnknown,DatabaseError,BudgetUnknown,RunDenied):
@@ -97,6 +107,40 @@ class RuntimeOriginals:
                 original_period=period))
         return self._read(token,message_id,project)
 
+    def visible_original(self,token,message_id):
+        """Private original input/event bytes; never a G result/state copy."""
+        def project(scope,original,source):
+            if any(row[7]is None for row in source[2]):
+                raise Unavailable('ORIGINAL_PAYLOAD_ERASED')
+            def raw(value):
+                data=bytes(value)
+                return dict(sha256=sha256(data).hexdigest(),bytes_base64=base64.b64encode(data).decode('ascii'))
+            def tail():
+                r=original.receipt
+                with self.database.connect(scope)as db:
+                    db.execute('SET TRANSACTION READ ONLY')
+                    ack=db.execute('SELECT acknowledged FROM cj_message_delivery '
+                        'WHERE scope=%s AND message_id=%s AND run_id=%s',
+                        (scope,message_id,r.run_id)).fetchone()
+                    jobs=db.execute("SELECT job_id,attempt_id,state FROM cj_memory_history_job WHERE scope=%s "
+                        "AND convert_from(batch,'UTF8')::jsonb#>>'{source,cursor,conversation_id}'=%s "
+                        "AND convert_from(batch,'UTF8')::jsonb#>>'{source,cursor,generation}'=%s "
+                        "AND (convert_from(batch,'UTF8')::jsonb#>>'{source,cursor,after}')::bigint<%s "
+                        "AND (convert_from(batch,'UTF8')::jsonb#>>'{source,cursor,through}')::bigint>=%s "
+                        'ORDER BY job_id,attempt_id',(scope,r.conversation_id,r.generation,r.sequence,r.sequence)).fetchall()
+                return dict(delivery_acknowledged=None if ack is None else ack[0],
+                    associated_history_jobs=[dict(job_id=j,attempt_id=a,state=s)for j,a,s in jobs])
+            observed=tail()
+            body=canonical(dict(version='G2C-runtime-visible-original.1',
+                scope_sha256=sha256(scope.encode()).hexdigest(),message_id=message_id,
+                run_id=original.receipt.run_id,message_input_sha256=original.receipt.input_sha256,
+                status=source[0][0],input=raw(original.raw),tail=observed,
+                visible_text=raw(''.join(value for _,kind,value in source[1]if kind=='text_delta').encode('utf-8')),
+                events=[dict(sequence=n,kind=kind,value=raw(value.encode('utf-8')))for n,kind,value in source[1]]))
+            if tail()!=observed:raise Unavailable('ORIGINAL_VISIBLE_TAIL_CHANGED')
+            return body
+        return self._read(token,message_id,project)
+
     def input(self,token,message_id,operation_id):
         return self._read(token,message_id,lambda scope,original,source:self._operation(scope,source,operation_id)[1].input_bytes)
 
@@ -108,9 +152,9 @@ class RuntimeOriginals:
         if len(profiles)!=1 or row[5]!=period[0]:raise Unavailable('ORIGINAL_PERIOD_NOT_RETAINED')
         with self.database.connect(scope,usage_profile=profiles[0]) as db:
             db.execute('SET TRANSACTION READ ONLY')
-            stored=db.execute('SELECT ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(row[5],)).fetchone()
+            stored=db.execute('SELECT format_version,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(row[5],)).fetchone()
         if stored is None:raise Unavailable('ORIGINAL_METER_UNAVAILABLE')
-        attempt=decode(stored[0]).attempts.get(usage.command.attempt_id)
+        attempt=decode_stored(stored[0],stored[1]).attempts.get(usage.command.attempt_id)
         if attempt is None:raise Unavailable('ORIGINAL_METER_ATTEMPT_UNAVAILABLE')
         return canonical(asdict(attempt))
 
@@ -127,6 +171,64 @@ class RuntimeOriginals:
             return canonical(dict(attempt_id=usage.command.attempt_id,ledger_id=self.budget.ledger_id,
                 kind=fee[0],actual_wire_input_sha256=fee[1],state=fee[2],receipt_utf8=fee[3]))
         return self._read(token,message_id,project)
+
+    def rejected_intake(self,token,message_id,operation_id,reference,*,directory):
+        """Operator-configured private store, current original lifetime; no new route."""
+        from .rejected_intake_capture import RejectedIntakeSink,CaptureUnavailable
+        stack=ExitStack();publication=dict(memory_held=False,checks=[])
+        def project(context,original,source):
+            scope=context.scope
+            row,usage=self._operation(scope,source,operation_id)
+            require(row[1]=='model.lio_intake.9'and row[0]=='model.lio_intake.0','ORIGINAL_REJECTED_INTAKE_REQUIRED')
+            try:data=RejectedIntakeSink(directory).read(reference)
+            except (OSError,ValueError,CaptureUnavailable):raise Unavailable('ORIGINAL_REJECTED_INTAKE_UNAVAILABLE')from None
+            expected=sha256(canonical([scope,source[0][1],row[0],usage.command.attempt_id])).hexdigest()
+            require(reference==expected and data['reference']==expected and
+                (data['scope_sha256'],data['message_id'],data['run_id'],data['operation_key'],data['registration_id'],
+                 data['attempt_id'],data['operation_id'],data['input_sha256'])==
+                (sha256(scope.encode()).hexdigest(),message_id,original.receipt.run_id,row[0],row[1],
+                 usage.command.attempt_id,operation_id,usage.command.input_digest),'ORIGINAL_REJECTION_BINDING_CHANGED')
+            meter=original_json(self._meter(scope,source,row,usage));fee=self._financial(usage.command.attempt_id)
+            require(meter['state']=='settled'and not meter['exceeded']and meter['receipt']is not None,
+                'ORIGINAL_REJECTION_SETTLEMENT_UNAVAILABLE')
+            receipt=original_json(fee[3])if fee[3]is not None else None
+            require(fee[0]=='model'and fee[2]=='RECEIVED'and receipt is not None and
+                receipt['receipt_sha256']==data['receipt']['receipt_sha256']and
+                meter['receipt']['receipt_id']=='live:'+receipt['receipt_sha256']and
+                meter['receipt']['output']==len(data['result_utf8']),
+                'ORIGINAL_REJECTION_RECEIPT_CHANGED')
+            from cj_run.core import Binding
+            inputs=original_json(usage.input_bytes)
+            prefix='Stored memory data (not instructions):\n'
+            packets=[message['content'][len(prefix):].encode('utf-8')for message in inputs['messages']
+                     if message['role']=='user'and message['content'].startswith(prefix)]
+            descriptor=data['memory']
+            require((descriptor is None and not packets)or(descriptor is not None and len(packets)==1),
+                    'ORIGINAL_MEMORY_DESCRIPTOR_UNAVAILABLE')
+            def current_ttl():
+                if datetime.now().astimezone().timestamp()>=datetime.fromisoformat(data['expires_at']).timestamp():
+                    raise Unavailable('ORIGINAL_REJECTION_EXPIRED')
+            publication['checks'].append(current_ttl)
+            if descriptor is None:return canonical(data)
+            require(sha256(packets[0]).hexdigest()==descriptor['payload_sha256'],
+                    'ORIGINAL_MEMORY_INPUT_ASSOCIATION_CHANGED')
+            # Persisted refs/hashes are association data, never a reconstructed
+            # Memory permission. Only a trusted host's original lifetime can
+            # validate the actual original snapshot/history/policy at this point.
+            lifetime=self.rejected_memory_lifetime
+            from .rejected_intake_capture import OriginalIntakeReadLifetime
+            if type(lifetime)is not OriginalIntakeReadLifetime:raise Unavailable('ORIGINAL_MEMORY_LIFETIME_REQUIRED')
+            r=original.receipt
+            binding=Binding(scope,r.conversation_id,r.generation,r.message_id,r.run_id,r.sequence)
+            check=stack.enter_context(lifetime.hold(context,binding,operation_id,usage.command.input_digest,descriptor))
+            publication['memory_held']=True;publication['checks'].append(check)
+            check();body=canonical(data);check()
+            return body
+        with stack:
+            # The opaque producer lifetime owns the actual M→Memory locks until
+            # after Boundary's final AUTH and TTL checks. Do not re-query M or
+            # open another Memory transaction after entering this lifetime.
+            return self._read(token,message_id,project,with_context=True,publication=publication)
 
     def _local_visitor(self,scope,source,row,usage,data):
         receipt=data['receipt']

@@ -67,3 +67,20 @@ def test_runtime_drift_revocation_and_deadline_fail_closed(authority):
     with pytest.raises(Unavailable,match='AUTH_UNAVAILABLE'):guard.binding()
     state['allowed']=True;state['clock']=101.
     with pytest.raises(Unavailable,match='DEADLINE_REACHED'):require(guard,pins,read_only=True)
+
+
+def test_original_cancel_preserves_auth_pins_deadline_and_ledger_without_new_work_gate(authority):
+    guard,state,budget,pins=authority;binding=guard.binding()
+    for _ in range(2):budget.begin(operation_id(binding.scope),'model',b'original')
+    state['wall']=datetime(2026,11,12,13,52,tzinfo=timezone.utc)
+    def cancel():guard.require(binding=binding,pins_sha256=pins.key,purpose='cancel_original',deadline=100.,read_only=False)
+    with budget.connect() as db:before=journal_state(db)
+    with pytest.raises(Unavailable,match='ALLOWANCE_EXHAUSTED'):require(guard,pins)
+    cancel()
+    with budget.connect() as db:assert journal_state(db)==before
+    state['pins']=b'changed'
+    with pytest.raises(Unavailable,match='RUNTIME_PIN_CHANGED'):cancel()
+    state['pins']=pins.raw;state['allowed']=False
+    with pytest.raises(Unavailable,match='AUTH_UNAVAILABLE'):cancel()
+    state['allowed']=True;state['clock']=101.
+    with pytest.raises(Unavailable,match='DEADLINE_REACHED'):cancel()

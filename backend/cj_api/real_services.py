@@ -5,7 +5,7 @@ client modes and draft/confirmation semantics remain unchanged.
 """
 import asyncio
 from copy import copy
-from contextlib import closing,contextmanager
+from contextlib import closing,contextmanager,nullcontext
 from dataclasses import dataclass
 from datetime import datetime,timedelta,timezone
 import hashlib
@@ -14,6 +14,7 @@ import logging
 import os
 from pathlib import Path
 import re
+import sys
 from time import monotonic
 from types import MappingProxyType
 from urllib.parse import urlencode
@@ -52,11 +53,11 @@ def _external_timing(kind, operation, admit):
     checks=0
     admission_time=0.0
 
-    def measured_admission():
+    def measured_admission(**kwargs):
         nonlocal checks,admission_time
         checked=monotonic()
         try:
-            return admit()
+            return admit(**kwargs)
         finally:
             checks+=1
             admission_time+=monotonic()-checked
@@ -96,6 +97,10 @@ for _tool in NATIONAL_TOOLS:
         _tool['function']['parameters']['properties']['city']={'type':'string','description':'Server-confirmed administrative code.'}
     elif _tool['function']['name']=='weather':
         _tool['function']['description']='Forecast for the server-confirmed administrative destination and ISO local dates. Returned provider dates only; never guaranteed.'
+VISITOR_TOOL=_function('visitor_fact','Read reviewed visitor guidance for the confirmed city: payment, passport booking, transport, internet or emergency. This is a local maintainer summary, not live policy or eligibility.',dict(
+    topic=dict(type='string',enum=['payment','passport_booking','transport','internet','emergency']),
+    city=dict(type='string',minLength=1,maxLength=128,description='The server-confirmed city; no default city.')))
+NATIONAL_TOOLS.append(VISITOR_TOOL)
 NATIVE_TOOLS=frozenset(t['function']['name'] for t in TOOLS)
 NATIVE_REGISTRATION={'place_search':'place','place_detail':'place','place_route':'place','weather':'weather','fact':'fact'}
 
@@ -110,11 +115,19 @@ class ModelInput:
     turn_profile:str=M4_NATIVE_TURN_PROFILE_V2
     lio_answer:bool=False
     national:bool=False
+    confirmed_destination:bool=True
 
 
 def canonical_tool(name,raw,*,city=None):
     """Native argument data → existing strict domain codec; no new wire version."""
     value=json.loads(raw)
+    if name=='visitor_fact':
+        from cj_fact.visitor import decode_query as visitor_query
+        if type(value)is not dict or value.keys()!={'topic','city'}:raise ProviderUnknown('visitor fact argument fields invalid')
+        raw=canonical(dict(version='FACT-query.2',topic=value['topic'],city=city.adcode if city is not None else value['city']))
+        try:visitor_query(raw)
+        except FactFailure:raise ProviderUnknown('visitor fact arguments unavailable')from None
+        return name,raw
     fields=next(t['function']['parameters']['required'] for t in TOOLS if t['function']['name']==name)
     if type(value) is not dict or set(value)!=set(fields):raise ProviderUnknown('native tool argument fields invalid')
     if name=='weather' and city is not None:
@@ -300,7 +313,7 @@ class RealServices:
 class RealTools:
     def __init__(self,services,*,allowed_native=NATIVE_TOOLS,coordinate_routes=True,streaming_subject=None,
                  assembly_streaming_subjects=frozenset(),buffered_streaming_subjects=frozenset(),controlled_probe=None,
-                 tool_evidence=None):
+                 tool_evidence=None,visitor_catalogue_directory=None):
         if type(coordinate_routes) is not bool:raise ValueError('explicit_coordinate_route_profile_required')
         self.services=services;self.coordinate_routes=coordinate_routes
         from .local_app import ISSUER,scope_for
@@ -317,11 +330,14 @@ class RealTools:
         self.buffered_streaming_scopes=frozenset(scope_for(ISSUER,subject) for subject in buffered_streaming_subjects)
         self.controlled_probe=controlled_probe
         self.tool_evidence=tool_evidence
+        self.visitor_catalogue_directory=(Path(sys.prefix)/'share/g2c/visitor/entries'
+            if visitor_catalogue_directory is None else visitor_catalogue_directory)
         if type(allowed_native) is not frozenset or not allowed_native or not allowed_native<=NATIVE_TOOLS:
             raise ValueError('explicit code-owned native tool subset required')
         self.names=allowed_native
         self.native_tools=[t for t in TOOLS if t['function']['name'] in allowed_native]
         self.national_tools=[t for t in NATIONAL_TOOLS if t['function']['name'] in allowed_native]
+        if 'fact'in allowed_native:self.national_tools.append(VISITOR_TOOL)
         self.runtime_fragments=None
         self.runtime_profile=None
         self.registrations=self._registrations()
@@ -338,9 +354,11 @@ class RealTools:
             'model.lio_intake.7':Registration('model',self._lio_intake_facts_input),
             'model.lio_intake.8':Registration('model',self._lio_intake_flow_input),
             'model.lio_intake.9':Registration('model',self._lio_intake_optional_input),
+            'model.lio_exploration.1':Registration('model',self._lio_exploration_input),
             'tool.lio_city.1':Registration('tool',self._city_input),
             'memory.lio_extract.1':Registration('memory',self._lio_memory_input),
-            **{'tool.'+name:Registration('tool',lambda argument,name=name:self._tool_input(name,argument)) for name in {NATIVE_REGISTRATION[n] for n in self.names}}})
+            **{'tool.'+name:Registration('tool',lambda argument,name=name:self._tool_input(name,argument)) for name in {NATIVE_REGISTRATION[n] for n in self.names}},
+            **({'tool.visitor_fact':Registration('tool',self._visitor_input)}if 'fact'in self.names else {})})
 
     def runtime_registrations(self, fragments,*,profile='national.1'):
         """One admitted RUN's immutable text candidate over the original exits.
@@ -438,10 +456,33 @@ class RealTools:
     def _lio_memory_input(self, argument):
         return self._model_input(argument, release_after_send=True)
 
+    def _lio_exploration_input(self,argument):
+        from cj_message.lio_exploration_schema import ExplorationInput,PROFILES
+        from cj_message.lio_wire import ExplorationOrigin
+        if (type(argument) is not ExplorationInput or argument.profile not in PROFILES or
+                type(argument.origin) is not ExplorationOrigin):
+            raise BudgetUnknown('explicit native4 exploration packet required')
+        argument.origin.check(argument.origin.binding)
+        return self._model_input(argument,national_intake=True,intake_profile=argument.profile)
+
     def _model_input(self,argument,*,release_after_send=False,national_intake=False,intake_profile='LIO-planning-intake.1',answer_preparation=False):
+        from cj_draft.grouped_plan import GroupedDraftInput,response_format_sha256 as grouped_schema_sha256
+        from cj_message.lio_exploration_schema import ExplorationInput,response_format_sha256 as exploration_sha
+        exploration=type(argument) is ExplorationInput
+        grouped=type(argument) is GroupedDraftInput
         native_turn = type(argument) is ModelInput
         indexed=intake_profile in ('LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5','LIO-planning-intake.6','LIO-planning-intake.7','LIO-planning-intake.8','LIO-planning-intake.9')
-        if indexed:
+        if exploration:
+            if not national_intake or release_after_send or answer_preparation:
+                raise BudgetUnknown('explicit exploration registration required')
+            messages,system,provider=json.loads(argument.messages),argument.system,argument.provider
+            native_reply=None;final_answer=False;turn_profile=M4_NATIVE_TURN_PROFILE_V2
+        elif grouped:
+            if release_after_send or national_intake or answer_preparation:
+                raise BudgetUnknown('explicit grouped draft registration required')
+            messages,system,provider=argument.messages,argument.system,argument.provider
+            native_reply=None;final_answer=False;turn_profile=M4_NATIVE_TURN_PROFILE_V2
+        elif indexed:
             messages,system,provider,source_index=argument
             native_reply=None;final_answer=False;turn_profile=M4_NATIVE_TURN_PROFILE_V2
         elif native_turn:
@@ -466,7 +507,12 @@ class RealTools:
         indexed_sha=(optional_sha256 if intake_profile=='LIO-planning-intake.9' else flow_sha256 if intake_profile=='LIO-planning-intake.8' else facts_sha256 if intake_profile=='LIO-planning-intake.7' else flat_sha256 if intake_profile=='LIO-planning-intake.6' else start_sha256 if intake_profile=='LIO-planning-intake.5' else
                      modes_sha256 if intake_profile=='LIO-planning-intake.4' else response_format_sha256)
         selected_tools=(self.national_tools if argument.national else self.native_tools) if native_turn else None
+        if native_turn and argument.national and not argument.confirmed_destination:
+            eligible=[tool for tool in selected_tools if tool['function']['name']=='fact']
+            if eligible:selected_tools=eligible
+            else:final_answer=True
         if self.runtime_fragments is not None:
+            if exploration:raise BudgetUnknown('native4 is not a legacy national runtime text slot')
             from runtime_adapter.contract import decode,Invalid
             from runtime_adapter.profiles import render
             fragments=decode(self.runtime_fragments)
@@ -488,8 +534,10 @@ class RealTools:
                 raise BudgetUnknown('original runtime text baseline changed') from None
         raw=canonical(dict(messages=messages,system=system,endpoint=M4_BASE,model=M4_MODEL,synthetic_only=True,
                            native_tools=selected_tools,
+                           **({'draft_profile':argument.profile,'response_format_sha256':grouped_schema_sha256(argument.profile)} if grouped else {}),
                            **({'response_mode':'lio-memory-json.1'} if release_after_send else {}),
                            **({'structured_profile':intake_profile} if national_intake else {}),
+                           **({'response_format_sha256':exploration_sha(intake_profile),'lio_origin':argument.origin.descriptor()} if exploration else {}),
                            **({'response_format_sha256':SCHEMA_SHA256} if national_intake and intake_profile=='LIO-planning-intake.2' else {}),
                            **({'current_source_index':source_index,'response_format_sha256':
                                indexed_sha(source_index)}
@@ -497,14 +545,18 @@ class RealTools:
                            **({'answer_format_profile':'lio-user.1'} if native_turn and argument.lio_answer else {}),
                            **({'native_turn_profile':turn_profile,'external_tools_disabled':final_answer} if native_turn else {})))
         inputs=json.loads(raw);metadata={}
+        rejection_memory=provider.memory if wrapped else None
         def bind(operation,guard):
+            if exploration:argument.origin.check(operation.binding)
             self.services.require_scope(operation.binding.scope)
-            if national_intake or native_turn and argument.national:
+            if grouped or national_intake or native_turn and argument.national:
                 self._require_national(operation.binding.scope)
             if turn_profile==M4_NATIVE_TURN_STREAM and operation.binding.scope not in self.streaming_scopes:
                 raise BudgetUnknown('original model streaming subject not admitted')
-            def admitted():
-                if wrapped:provider._check()
+            def admitted(*,memory_check=None):
+                if wrapped:
+                    if memory_check is None:provider._check()
+                    else:memory_check()
                 valid=guard()
                 self.services.require_scope(operation.binding.scope)
                 return valid
@@ -520,8 +572,23 @@ class RealTools:
                         release_after_send=inputs.get('response_mode')=='lio-memory-json.1',
                         lio_answer=inputs.get('answer_format_profile')=='lio-user.1',
                         **({'structured_profile':inputs['structured_profile']} if 'structured_profile' in inputs else {}),
+                        **({'exploration_schema_sha256':inputs['response_format_sha256']} if exploration else {}),
                         **({'intake_source_index':inputs['current_source_index']} if 'current_source_index' in inputs else {}),
+                        **({'draft_profile':inputs['draft_profile'],'draft_schema_sha256':inputs['response_format_sha256']}if 'draft_profile' in inputs else {}),
                         **capture)
+                    if national_intake and intake_profile=='LIO-planning-intake.9':
+                        from .rejected_intake_capture import observe_stream
+                        @contextmanager
+                        def rejection_lifetime():
+                            lease=rejection_memory.hold(operation.binding)if rejection_memory is not None else nullcontext(None)
+                            with lease as memory_check:
+                                def check():
+                                    if checked(memory_check=memory_check)is not True:
+                                        raise BudgetUnknown('original rejection source authority changed')
+                                check();yield check;check()
+                        memory_descriptor=(dict(epoch=rejection_memory.snapshot.epoch,
+                            payload_sha256=hashlib.sha256(rejection_memory.payload).hexdigest())if rejection_memory is not None else None)
+                        stream=observe_stream(operation,stream,metadata,rejection_lifetime,memory_descriptor)
                     if capture_model:
                         # Preserve streaming latency. A complete artifact is
                         # written only after the original provider completes;
@@ -530,8 +597,15 @@ class RealTools:
                         for part in stream:
                             chunks.append(part)
                             yield part
-                        if checked() is not True:raise BudgetUnknown('original model evidence authority changed')
-                        self.tool_evidence.record_model(operation,''.join(chunks).encode('utf-8'),metadata)
+                        # The worker releases its first-advance Memory lease
+                        # before draining the rest of this original stream.
+                        # Reacquire that same snapshot and source fence for the
+                        # complete artifact, retaining it through the write.
+                        lease=provider.memory.hold(operation.binding) if wrapped else nullcontext(None)
+                        with lease as memory_check:
+                            if checked(memory_check=memory_check) is not True:
+                                raise BudgetUnknown('original model evidence authority changed')
+                            self.tool_evidence.record_model(operation,''.join(chunks).encode('utf-8'),metadata)
                     elif national_intake and self.tool_evidence is not None and self.tool_evidence.intake_enabled:
                         result=''.join(stream)
                         if checked() is not True:raise BudgetUnknown('original intake evidence authority changed')
@@ -539,12 +613,44 @@ class RealTools:
                         yield result
                     else:yield from stream
             return invoke
-        return InvocationInput(raw,None,bind,_receipt(metadata))
+        from .rejected_intake_capture import acknowledge_settlement
+        settlement=(acknowledge_settlement if national_intake and intake_profile=='LIO-planning-intake.9'else None)
+        return InvocationInput(raw,None,bind,_receipt(metadata),on_settled=settlement)
 
     def _require_national(self,scope):
         from .local_app import ISSUER,scope_for
         if scope not in {scope_for(ISSUER,s) for s in self.services.national_subjects}:
             raise BudgetUnknown('national tools not enabled for this original identity')
+
+    def _visitor_input(self,argument):
+        from cj_fact.visitor import decode_query as visitor_query,lookup
+        raw_query,request_ref,city=argument
+        query=visitor_query(raw_query)
+        if query.city!=city.adcode:raise ProviderUnknown('visitor destination differs from original resolution')
+        original=canonical(dict(name='visitor_fact',query=json.loads(raw_query),request_ref=request_ref,
+                                destination_adcode=city.adcode,synthetic_only=True))
+        metadata={}
+        def bind(operation,guard):
+            def checked():
+                valid=guard()
+                self.services.require_scope(operation.binding.scope)
+                self._require_national(operation.binding.scope)
+                return valid
+            def invoke():
+                if checked()is not True:raise BudgetUnknown('original visitor authority unavailable')
+                try:
+                    raw=lookup(self.visitor_catalogue_directory,query,evaluated_at=datetime.now(timezone.utc),request_ref=request_ref)
+                except (FactFailure,ValueError):raise BudgetUnknown('original visitor catalogue unavailable')from None
+                if checked()is not True:raise BudgetUnknown('original visitor authority changed')
+                data=json.loads(raw)
+                metadata.update(endpoint='local:visitor-catalogue',response_sha256=hashlib.sha256(raw).hexdigest(),
+                                result_status=data['status'],actual_cost_cny='0',data_origin='maintainer_summary')
+                if self.tool_evidence is not None:self.tool_evidence.record(operation,'visitor_fact',raw,metadata)
+                yield raw.decode('utf8')
+            return invoke
+        def complete(attempt,unit,output):
+            return Receipt(attempt,'visitor-local:'+metadata['response_sha256'],unit,1,output)
+        return InvocationInput(original,None,bind,complete)
 
     def _tool_input(self,name,argument):
         from .lio_weather import decode_query as city_weather_query
@@ -654,7 +760,7 @@ class RealTools:
             chunks=worker._registered_stream(binding,'model.tool_turn.'+str(round_index),'model.tool_turn',
                 ModelInput(messages,system,worker.provider,native_reply,
                     final_answer=round_index==turns-1 or len(seen)==tool_limit,turn_profile=profile,
-                    lio_answer=lio_locale is not None,national=national))
+                    lio_answer=lio_locale is not None,national=national,confirmed_destination=city is not None))
             if incremental:
                 raw=None
                 saw_answer = False
@@ -673,8 +779,18 @@ class RealTools:
                         yield _lio_transit_answer(chinese, transit_evidence)
                     return
             else:raw=''.join(chunks)
-            try:turn=parse_turn(raw.encode(),self.names)
-            except ValueError:raise ProviderUnknown('live model tool turn unavailable') from None
+            names=self.names|{'visitor_fact'}if national and 'fact'in self.names else self.names
+            try:turn=parse_turn(raw.encode(),names)
+            except ValueError as error:
+                # parse_turn exposes only these fixed contract codes. Never log
+                # model values, exception text or Memory-bearing output.
+                code=(error.args[0]if error.args in tuple((value,)for value in (
+                    'bounded_tool_turn_required','invalid_tool_turn','unsupported_tool_turn',
+                    'invalid_bilingual_answer','invalid_tool_calls','unregistered_tool'))else'other_contract_error')
+                logging.getLogger('cj_usage.audit').warning(
+                    'LIO_TOOL_TURN_REJECTED run_id=%s code=%s output_chars=%s output_sha256=%s',
+                    binding.run_id,code,len(raw),hashlib.sha256(raw.encode('utf-8','surrogatepass')).hexdigest())
+                raise ProviderUnknown('live model tool turn unavailable') from None
             if not turn.calls:
                 answer = turn.answer_zh if chinese else turn.answer_en
                 yield _lio_transit_answer(chinese, transit_evidence) if transit_request or transit_evidence else answer
@@ -688,6 +804,8 @@ class RealTools:
                 key='tool.'+str(round_index)+'.'+str(index)
                 ref='op-'+hashlib.sha256((binding.run_id+'\0'+key).encode()).hexdigest()
                 if national and city is None and call.name not in ('fact',):
+                    logging.getLogger('cj_usage.audit').warning(
+                        'LIO_TOOL_CALL_WITHHELD run_id=%s code=unconfirmed_destination tool=%s',binding.run_id,call.name)
                     raise ProviderUnknown('original destination must be confirmed before this tool')
                 name,arguments=canonical_tool(call.name,call.arguments,city=city if national else None)
                 if name == 'weather' and weather_day is not None:
@@ -702,7 +820,7 @@ class RealTools:
                     result=''.join(worker._registered_stream(binding,key,'tool.'+name,(arguments,ref,city) if national and city is not None else (arguments,ref)))
                 else:
                     activity = {'place':'checking_places', 'weather':'checking_weather',
-                                'fact':'checking_travel_information'}[name]
+                                'fact':'checking_travel_information','visitor_fact':'checking_travel_information'}[name]
                     pieces = []
                     with closing(worker._registered_stream(binding,key,'tool.'+name,(arguments,ref,city) if national and city is not None else (arguments,ref),
                                                            progress=LioToolProgress(key, activity))) as stream:
@@ -719,6 +837,17 @@ class RealTools:
                 if name == 'place':
                     place_source = data.get('source')
                     source = place_source['endpoint'] if place_source is not None else None
+                elif name=='visitor_fact':
+                    for entry in data['entries']:
+                        label=('旅行信息（'+entry['checked_on']+'核对）'if chinese else 'Travel guidance (checked '+entry['checked_on']+')')
+                        yield LioCitation(key+':'+entry['id'],label,entry['source_urls'][0],None)
+                    model_result=dict(data_origin=data['data_origin'],status=data['status'],
+                        entries=[dict(text=entry['text_zh'if chinese else'text_en'],source_urls=entry['source_urls'],
+                                      checked_on=entry['checked_on'],expires_on=entry['expires_on'])for entry in data['entries']])
+                    if not data['entries']:
+                        system+=' No reviewed visitor entry matched this request; say what you can support from available evidence, explain the specific gap once in the first person, suggest the relevant official channel, and end with one useful question without inventing facts.'
+                    results.append(dict(index=index,name=call.name,tool=name,result=model_result))
+                    continue
                 else:
                     source = data['source_url']
                 public_source = None

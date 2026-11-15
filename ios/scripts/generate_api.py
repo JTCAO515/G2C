@@ -8,12 +8,39 @@ import argparse
 import copy
 import hashlib
 import json
+import re
 from pathlib import Path
 import subprocess
 import tempfile
 
 ROOT=Path(__file__).resolve().parents[2]
 NULL_NAME='CJExplicitJSONNull'
+
+
+def concrete_null_constructors(source):
+    """Keep required-null anyOf branches concrete, without changing SDK shapes.
+
+    The pinned generator's inferred `.init` can construct Optional.none for
+    JSON null instead of Some(ExplicitJSONNull). This compatibility step is a
+    no-op once the generator emits a concrete codec constructor itself.
+    """
+    declarations=list(re.finditer(r'public var (value\d+): Components\.Schemas\.CJExplicitJSONNull\?',source))
+    changed=0
+    for declaration in reversed(declarations):
+        field=declaration.group(1)
+        start=source.find('public init(from decoder:',declaration.end())
+        end=source.find('try Swift.DecodingError.verifyAtLeastOneSchemaIsNotNil(',start)
+        if start<0 or end<0 or re.search(r'public (?:struct|enum) ',source[declaration.end():end]):
+            raise ValueError('unsupported generated nullable branch')
+        original=f'self.{field} = try .init(from: decoder)'
+        concrete=f'self.{field} = try Components.Schemas.{NULL_NAME}(from: decoder)'
+        body=source[start:end]
+        if body.count(original)==1:
+            source=source[:start]+body.replace(original,concrete)+source[end:]
+            changed+=1
+        elif body.count(concrete)!=1:
+            raise ValueError('missing generated strict null constructor')
+    return source,changed
 
 
 def generator_input(canonical):
@@ -51,7 +78,10 @@ def main():
         generated=temporary/'swift'
         subprocess.run([str(ROOT/'scripts/swift.sh'),'run','swift-openapi-generator','generate',str(schema),
             '--config',str(ROOT/'ios/scripts/swift-generator.yaml'),'--output-directory',str(generated)],cwd=ROOT,check=True)
-        outputs={p.name:p.read_bytes() for p in generated.glob('*.swift')}
+        outputs={};constructor_rewrites=0
+        for path in generated.glob('*.swift'):
+            text,count=concrete_null_constructors(path.read_text())
+            outputs[path.name]=text.encode('utf-8');constructor_rewrites+=count
         if not outputs:raise RuntimeError('generator produced no Swift output')
         if args.check:
             existing={p.name:p.read_bytes() for p in args.output.glob('*.swift')}
@@ -66,7 +96,8 @@ def main():
             if path.is_relative_to(ROOT):raise ValueError('provenance artifacts must be outside the repository')
             path.write_text(json.dumps(dict(canonical_sha256=hashlib.sha256(original).hexdigest(),
                 null_paths=replacements,derived_input_sha256=hashlib.sha256(schema.read_bytes()).hexdigest(),
-                outputs={name:hashlib.sha256(data).hexdigest() for name,data in outputs.items()}),indent=2)+'\n')
+                outputs={name:hashlib.sha256(data).hexdigest() for name,data in outputs.items()},
+                explicit_null_constructor_rewrites=constructor_rewrites),indent=2)+'\n')
     print('Canonical contract unchanged; iOS SDK '+('checked' if args.check else 'generated')+'.')
 
 if __name__=='__main__':main()

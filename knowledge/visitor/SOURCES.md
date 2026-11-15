@@ -100,3 +100,10 @@ JT 本轮限定只列政府和官方机构公开网页。本清单采用政府�
 
 本次确认链接和版本已记录于本页开头；#846 首批内容见 `entries/*.json` 与 COVERAGE.md。
 来源不可达、语言不符或无法支持条目时记录缺口；需要替代来源先问 JT，不静默扩大范围。
+
+## WP12 Wikidata 名称来源（独立于政府事实）
+
+- JT 已在 H 会话确认新增范围，记录 [#843/6848295860](https://github.com/JTCAO515/G2C/issues/843#issuecomment-6848295860)；WP0 PR940 已合并为 `6790174865efba17237224cf400e446c27cde8f7` 后才开始查询。
+- 仅 `www.wikidata.org/w/api.php` 的名称搜索和标签/QID读取，以及同 hostname 下对应 `/wiki/Q…` 与 `/wiki/Wikidata:Licensing` 页。不自动扩到子域、SPARQL、Wikipedia 或其他站点。
+- 数据只为热门地点的中英文名/QID；不收坐标，不转换坐标，不把 Wikidata 作签证、入境、营业或预约规则来源。
+- 许可、限速、人工确认、7条结果与日期见 [NAMES.md](NAMES.md)。此段不扩大上方政府来源表，也不放宽旧 FACT `.2` 的政府来源白名单。

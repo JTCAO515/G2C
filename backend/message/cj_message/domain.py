@@ -352,27 +352,34 @@ class Service:
     def send_status_v2(self, conversation_id, message_id=None):
         return self._send_status(conversation_id,message_id,travel=True)
 
-    def _send_status(self, conversation_id, message_id, *, travel, formal=False, edit=False):
+    def _send_status(self, conversation_id, message_id, *, travel, formal=False, edit=False, transaction=None):
         if (type(conversation_id) is not str or not conversation_id.strip()
                 or len(conversation_id.encode('utf-8')) > 256 or '\x00' in conversation_id
                 or (message_id is not None and (type(message_id) is not str or not message_id.strip()))):
             raise InvalidInput('explicit conversation and optional message required')
+        if transaction is not None:
+            return self._send_status_in_transaction(transaction, conversation_id, message_id,
+                                                    travel=travel, formal=formal, edit=edit)
         with self.repository.transaction() as tx:
-            # Both reads must follow the same scope lock as receive. READ COMMITTED
-            # without this lock can combine an absent receipt with a newer head.
+            # Both reads still share the receive lock. A Lio projection may
+            # already hold this exact protected transaction for its callback.
             tx.lock_scope()
-            stored = tx.find(message_id) if message_id is not None else None
-            if stored is not None and stored.receipt.conversation_id != conversation_id:
-                stored = None
-            head = tx.active_head(conversation_id)
-            reference=None
-            if travel and stored is not None:
-                from .travel_reference import read_reference
-                reference=read_reference(tx,stored)
-                if not edit and reference.message_version=='MESSAGE-send.4':
-                    raise Unavailable('send.4 requires its read version')
-                if not formal and reference.message_version=='MESSAGE-send.3':
-                    raise Unavailable('send.3 requires explicit versioned read')
+            return self._send_status_in_transaction(tx, conversation_id, message_id,
+                                                    travel=travel, formal=formal, edit=edit)
+
+    def _send_status_in_transaction(self, tx, conversation_id, message_id, *, travel, formal, edit):
+        stored = tx.find(message_id) if message_id is not None else None
+        if stored is not None and stored.receipt.conversation_id != conversation_id:
+            stored = None
+        head = tx.active_head(conversation_id)
+        reference=None
+        if travel and stored is not None:
+            from .travel_reference import read_reference
+            reference=read_reference(tx,stored)
+            if not edit and reference.message_version=='MESSAGE-send.4':
+                raise Unavailable('send.4 requires its read version')
+            if not formal and reference.message_version=='MESSAGE-send.3':
+                raise Unavailable('send.3 requires explicit versioned read')
         return TravelSendStatus(stored,head,reference) if travel else SendStatus(stored, head)
 
     def _message_cursor(self, tx, conversation_id, cursor):

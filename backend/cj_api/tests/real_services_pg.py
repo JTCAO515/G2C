@@ -713,6 +713,20 @@ def exercise(auth,conninfo):
     snapshot=collector.inspect(route['attempt_id'],mid,deadline=time.monotonic()+30)
     verified=check_snapshot(snapshot,request=route,binding=authority.binding(),pins=pins,
         original=lambda ref:collector.original(ref,deadline=time.monotonic()+30))
+    # The old three-profile card must remain invalid: the actual observer now
+    # reports all ten typed draft caps, even for this original reflection. Keep
+    # this negative rather than copying the observer into its expected pin.
+    assert verified['status']=='UNKNOWN'
+    assert any(error['reason']=='ACTUAL_MODEL_PIN_MISMATCH'
+        for operation_check in verified['operation_checks'] for error in operation_check['errors'])
+    from cj_draft.grouped_plan import GENERATION_PROFILES as all_draft_profiles
+    from cj_draft.rich_schema import GENERATION_PROFILES as rich_profiles
+    pins.value['model']['parameters']['max_tokens_by_profile'].update({
+        profile:M4_REAL_OUTPUT_TOKENS if profile in rich_profiles else 1024
+        for profile in all_draft_profiles})
+    snapshot=collector.inspect(route['attempt_id'],mid,deadline=time.monotonic()+30)
+    verified=check_snapshot(snapshot,request=route,binding=authority.binding(),pins=pins,
+        original=lambda ref:collector.original(ref,deadline=time.monotonic()+30))
     assert verified['status']=='PASS' and verified['result']==json.loads(output)
     assert len(verified['operation_checks'])==1 and verified['operation_checks'][0]['status']=='PASS'
     assert model.calls==original_calls+1
@@ -871,6 +885,8 @@ def exercise(auth,conninfo):
     import runtime_memory_setup_pg
     for language in ('zh','en'):
         runtime_memory_setup_pg.exercise(auth.parent/('native-memory-controls-'+language),conninfo,language,lost_ack=language=='zh')
+    import runtime_model_capture_pg
+    runtime_model_capture_pg.exercise(auth.parent/'native-model-capture',conninfo)
     print('PASS actual private worker manifest/national.2 pins/canonical directory pin, concurrent G/native original worker, E/F full-setup gate before any intent or spend')
     print('PASS public G propose/query -> concrete native MESSAGE/RUN/registered reflection/collector; repeated query zero sends, unavailable all-task recipe stops before paid setup')
     print('PASS canonical MESSAGE -> original leased RUN/candidate/reflection -> actual original collector envelope verified by G; fixture model/wire/Meter/fee, no copied expected state')

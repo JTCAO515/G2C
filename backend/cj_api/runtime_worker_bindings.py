@@ -136,6 +136,13 @@ class RuntimeWorkerBindings:
         session=self._session(binding)
         return False if session is None else session['routing'].selects(binding)
 
+    def exit_observer(self,binding):
+        session=self._session(binding)
+        # Only canonical controlled-start admission creates a Pause. Ordinary
+        # runtime operations are no-ops in completed(); source rejection stays
+        # on registrations/reflection's existing UNKNOWN path before dispatch.
+        return None if session is None else session['controls']
+
     def _memory_services(self,session):
         from .lio_memory_routes import LioMemoryCards
         from .local_lio_memory import lio_candidates
@@ -192,6 +199,11 @@ class RuntimeWorkerBindings:
             def guard(*,read_only,original=authority,binding=session['binding']):
                 original.require(binding=binding,pins_sha256=self.pins.key,purpose='query',deadline=self.clock()+30,read_only=read_only)
             originals=RuntimeOriginals(boundary,self.database,self.services.model.authorization,evidence.directory,query_original=claims.query)
+            from .runtime_controlled_generation import ControlledGeneration
+            from .runtime_cancel import NativeCancellation
+            controls=ControlledGeneration(clock=self.clock);session['controls']=controls
+            cancellation=NativeCancellation(claims,boundary,self.database,token,controls,originals)
+
             from .runtime_weather_fault import NativeWeatherFault
             weather_fault=NativeWeatherFault(claims,session['routing'],self.database,self.services.model.authorization,
                 evidence.directory,self.pins)
@@ -213,7 +225,7 @@ class RuntimeWorkerBindings:
                 memory_setup=NativeMemorySetup(claims,boundary,self.database,token,configuration,candidates,memory_cards,wait)
             dialogue=NativeDialogue(claims,boundary,self.database,token,wait,
                 dataset_path=self.public_root/'eval/optimization/cases.v2.json',
-                trip_boundary=self._trip_boundary(session),memory_setup=memory_setup,weather_fault=weather_fault)
+                trip_boundary=self._trip_boundary(session),cancellation=cancellation,memory_setup=memory_setup,weather_fault=weather_fault)
             collector=RuntimeCollector(originals,claims,session['routing'],token,self.pins,session['references_directory'],
                 guard=guard,state_reader=self._state_reader(session),model_reader=RuntimeModel(originals,self.services.model,
                     native_turn_profile=M4_NATIVE_TURN_BUFFERED),dialogue=dialogue,clock=self.clock)

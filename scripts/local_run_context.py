@@ -10,7 +10,7 @@ from cj_api.local_run_context import load_run_context
 from cj_message.needs_binding import needs_scope_for
 from cj_run.step_usage import ledger_scope_for
 from cj_usage.core import Ledger
-from cj_usage.codec import encode, decode, CorruptLedger
+from cj_usage.codec import encode, decode_stored, CorruptLedger
 from cj_needs.domain import Command, Denied, Conflict, CommitUnknown
 from cj_needs.postgres import Repository as NeedsRepository
 
@@ -46,7 +46,7 @@ def provision_budget_connection(connection,context,subject):
         connection.execute('INSERT INTO cj_usage_ledger_candidate(scope_id,revision,format_version,ledger) VALUES(%s,0,1,%s::jsonb)',
                            (account,encode(Ledger(config=context.current.meter))))
         return 'created'
-    if row[0]!=1 or decode(row[1]).config!=context.current.meter:
+    if decode_stored(row[0],row[1]).config!=context.current.meter:
         raise ValueError('existing original budget differs; refusing reset')
     return 'existing'
 

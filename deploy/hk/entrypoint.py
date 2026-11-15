@@ -41,6 +41,18 @@ def _runtime_gate(database, runtime):
                 or marker['quota_policy_sha256']!=demo_quota.policy_digest(runtime.context_path.read_text(),
                     demo_quota.APPROVED_BUDGET)):
             raise ValueError('HK Demo quota cutover incomplete')
+        if checkpoint.versions()[-1]>=53:
+            marker=checkpoint.verified(control()/'demo-schema53.json')
+            if marker['state']!='COMPLETE' or marker['lineage']!=release['lineage']:
+                raise ValueError('HK wire-origin cutover incomplete')
+        if checkpoint.versions()[-1]>=54:
+            marker=checkpoint.verified(control()/'demo-schema54.json')
+            if marker['state']!='COMPLETE' or marker['lineage']!=release['lineage']:
+                raise ValueError('HK exploration-origin cutover incomplete')
+        if checkpoint.versions()[-1]>=55:
+            marker=checkpoint.verified(control()/'demo-schema55.json')
+            if marker['state']!='COMPLETE'or marker['lineage']!=release['lineage']:
+                raise ValueError('HK native4 accounting cutover incomplete')
 
 
 def ready(database, runtime=None):
@@ -126,11 +138,15 @@ def _run_worker(runtime, *, tool_evidence=None,runtime_manifest=None):
 
 
 def _worker_loop(runtime,services,tools,database,lio_confirmation,bindings=None):
+    from cj_api.rejected_intake_capture import RejectedIntakeSink,use_rejected_intake_sink
+    rejected=RejectedIntakeSink('/rejected-intakes')
+    rejected.prune()
     while True:
         component='deployment_gate';status='unavailable'
         try:
             _runtime_gate(database,runtime)
-            with worker_pulse():
+            rejected.prune()
+            with use_rejected_intake_sink(rejected),worker_pulse():
                 outcomes=run_worker.run_once(database,services.model,runtime.auth,tools_configuration=tools,real_services=services,account_admission=True,
                     hk_beta_b_run_credential=True,
                     hk_assembly_scopes=frozenset(scope_for(ISSUER,subject) for subject in runtime.assembly_subjects),
@@ -140,7 +156,8 @@ def _worker_loop(runtime,services,tools,database,lio_confirmation,bindings=None)
                         scope_for(ISSUER,subject) for subject in runtime.assembly_run_credential_subjects),
                     memory_configuration_for_scope=None if runtime.memory_runtime is None else runtime.memory_configuration_for_scope,
                     runtime_registrations_for_run=None if bindings is None else bindings.registrations,
-                    runtime_reflection=None if bindings is None else bindings.reflection)
+                    runtime_reflection=None if bindings is None else bindings.reflection,
+                    runtime_exit_observer_for_run=None if bindings is None else bindings.exit_observer)
             for outcome in outcomes:
                 if outcome.status in ('unknown','failed'):
                     print('ALERT run_'+outcome.status+' run_id='+outcome.run_id,file=sys.stderr,flush=True)

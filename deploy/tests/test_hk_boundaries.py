@@ -3,6 +3,7 @@ from datetime import datetime,timezone
 import json
 import hashlib
 import io
+import gzip
 import os
 from unittest.mock import patch
 from pathlib import Path
@@ -15,8 +16,202 @@ from cryptography.hazmat.primitives import serialization
 from cj_usage.authorization_budget import AuthorizationBudget,BudgetUnknown,HK_PRODUCER
 from cj_usage import authorization_budget as budget_module
 from deploy.hk import configuration,checkpoint,oss_backup
+
+
+@pytest.mark.parametrize('demo',[False,True])
+def test_hk_app_epoch_display_uses_api_policy_without_worker_configuration(tmp_path,monkeypatch,demo):
+    from contextlib import nullcontext
+    from fastapi import FastAPI
+    from cj_memory.typed_local import TypedConfiguration
+    from cj_memory.epoch_projection import CurrentScopeEpochReader
+    from cj_memory import typed_api
+    from cj_trip import local_needs_app,local_manual_app,local_structured_read
+    from deploy.hk import demo_login
+    who='m4-synthetic-demo-0123456789ab';subjects=frozenset({who})if demo else frozenset()
+    profile=dict(subjects=['self'],extents=['long_term'],context_ids=[],slots={
+        'travel.pace':dict(kind='preference',collection_allowed=True,semantic_resolved=True)})
+    typed=TypedConfiguration.from_bytes(json.dumps(dict(version='local-memory-typed.1',
+        collection=dict(version='local-memory-policy.1',expires_at='2099-12-31T00:00:00Z',
+            profiles={who:profile}),travel_contexts={who:[]})).encode())if demo else None
+    connection=SimpleNamespace(execute=lambda *args:SimpleNamespace(fetchone=lambda:(True,)))
+    database=SimpleNamespace(connect=lambda scope:nullcontext(connection),travel_profile=lambda scope:True)
+    runtime=configuration.Runtime(tmp_path,object(),tmp_path/'unused-context',[],typed_memory=typed,
+        subjects=subjects,typed_message_subjects=subjects,demo_subjects=subjects)
+    assert runtime.memory_runtime is None  # This is the real API-only shape.
+    monkeypatch.setattr(runtime,'database',lambda:database)
+    monkeypatch.setattr(configuration,'decoded',lambda name,*,length:b'x'*length)
+    monkeypatch.setenv('CJ_LOCAL_NEEDS_PROFILE','manual-v1')
+    monkeypatch.setattr(configuration,'assembly_cleanup',lambda db:None)
+    monkeypatch.setattr(configuration,'register_assembly_erasure',lambda *args:None)
+    for module,name in ((typed_api,'register_typed_routes'),(local_needs_app,'register_local_needs_routes'),
+            (local_manual_app,'register_local_manual_routes'),
+            (local_structured_read,'register_local_structured_read_routes'),(demo_login,'register_demo_login')):
+        monkeypatch.setattr(module,name,lambda *args,**kwargs:None)
+    calls=[];factory=CurrentScopeEpochReader.for_api
+    def for_api(db,policy):
+        calls.append((db,policy));return factory(db,policy)
+    monkeypatch.setattr(CurrentScopeEpochReader,'for_api',for_api)
+    supplied={}
+    def create(**kwargs):supplied.update(kwargs);return FastAPI()
+    monkeypatch.setattr(configuration,'create_local_app',create)
+    runtime.app()
+    assert supplied['lio_exploration_subjects']==(subjects or None)
+    assert supplied['lio_dialogue_subjects']==supplied['lio_calendar_subjects']==(subjects or None)
+    if demo:
+        assert calls==[(database,typed)]
+        assert type(supplied['lio_profile_epoch_reader'])is CurrentScopeEpochReader
+    else:
+        assert not calls and supplied['lio_profile_epoch_reader']is None
 from scripts.m4_budget_transfer import seal,adopt
 from scripts import m4_budget_transfer as transfer
+
+
+@pytest.mark.parametrize('schema',[53,54,55])
+def test_schema53_readiness_requires_its_completed_signed_anchor_and_keeps_quota_gate(tmp_path,monkeypatch,schema):
+    from deploy.hk import demo_quota,entrypoint
+    from contextlib import nullcontext
+    key=Ed25519PrivateKey.generate()
+    monkeypatch.setenv('CJ_BETA_RECOVERY_PRIVATE_B64',base64.b64encode(
+        key.private_bytes(serialization.Encoding.Raw,serialization.PrivateFormat.Raw,
+                          serialization.NoEncryption())).decode())
+    monkeypatch.setenv('CJ_BETA_RECOVERY_PUBLIC_B64',base64.b64encode(
+        key.public_key().public_bytes(serialization.Encoding.Raw,serialization.PublicFormat.Raw)).decode())
+    raw=json.dumps({'current':{'meter':{'budget':800}}})
+    policy=tmp_path/'context.json';policy.write_text(raw)
+    runtime=SimpleNamespace(context_path=policy,context=SimpleNamespace(
+        current=SimpleNamespace(meter=SimpleNamespace(budget=800))))
+    database=SimpleNamespace(_open_runtime_connection=lambda:nullcontext(object()))
+    monkeypatch.setattr(entrypoint,'authorization',lambda:None)
+    monkeypatch.setattr(entrypoint,'local_database_target',lambda:True)
+    monkeypatch.setattr(entrypoint,'control',lambda:tmp_path)
+    monkeypatch.setattr(entrypoint.local_postgres,'require_serving',lambda control:None)
+    monkeypatch.setattr(checkpoint,'require_release',lambda db,control:{'lineage':'original-lineage'})
+    monkeypatch.setattr(checkpoint,'versions',lambda:list(range(1,schema+1)))
+    checkpoint.atomic(tmp_path/'demo-schema52.json',dict(state='COMPLETE',lineage='original-lineage',
+        quota_policy_sha256=demo_quota.policy_digest(raw,800)))
+    for marker in ({'state':'INTENT','lineage':'original-lineage'},
+                   {'state':'COMPLETE','lineage':'foreign-lineage'}):
+        checkpoint.atomic(tmp_path/'demo-schema53.json',marker)
+        with pytest.raises(ValueError,match='wire-origin cutover incomplete'):
+            entrypoint._runtime_gate(database,runtime)
+    checkpoint.atomic(tmp_path/'demo-schema53.json',dict(state='COMPLETE',lineage='original-lineage'))
+    if schema>=54:
+        for marker in ({'state':'INTENT','lineage':'original-lineage'},
+                       {'state':'COMPLETE','lineage':'foreign-lineage'}):
+            checkpoint.atomic(tmp_path/'demo-schema54.json',marker)
+            with pytest.raises(ValueError,match='exploration-origin cutover incomplete'):
+                entrypoint._runtime_gate(database,runtime)
+        checkpoint.atomic(tmp_path/'demo-schema54.json',dict(state='COMPLETE',lineage='original-lineage'))
+    if schema==55:
+        for marker in ({'state':'INTENT','lineage':'original-lineage'},
+                       {'state':'COMPLETE','lineage':'foreign-lineage'}):
+            checkpoint.atomic(tmp_path/'demo-schema55.json',marker)
+            with pytest.raises(ValueError,match='native4 accounting cutover incomplete'):
+                entrypoint._runtime_gate(database,runtime)
+        checkpoint.atomic(tmp_path/'demo-schema55.json',dict(state='COMPLETE',lineage='original-lineage'))
+    entrypoint._runtime_gate(database,runtime)
+    runtime.context.current.meter.budget=80
+    with pytest.raises(ValueError,match='quota cutover incomplete'):
+        entrypoint._runtime_gate(database,runtime)
+
+
+def test_typed_policy_encodings_preserve_bytes_and_reject_ambiguous_configuration(monkeypatch):
+    raw=b'{"version":"local-memory-typed.1","same":"policy bytes"}'
+    monkeypatch.delenv(configuration.TYPED_POLICY,raising=False)
+    monkeypatch.delenv(configuration.TYPED_POLICY_GZIP,raising=False)
+    monkeypatch.setenv(configuration.TYPED_POLICY,base64.b64encode(raw).decode())
+    assert configuration.typed_policy_bytes()==raw
+    monkeypatch.setenv(configuration.TYPED_POLICY_GZIP,base64.b64encode(gzip.compress(raw)).decode())
+    with pytest.raises(ValueError,match='one_typed'):configuration.typed_policy_bytes()
+    monkeypatch.delenv(configuration.TYPED_POLICY)
+    assert configuration.typed_policy_bytes()==raw
+
+
+@pytest.mark.parametrize('plain,field,decoder',[
+    (configuration.TYPED_POLICY,configuration.TYPED_POLICY_GZIP,configuration.typed_policy_bytes),
+    (configuration.MEMORY_RUN_POLICY,configuration.MEMORY_RUN_POLICY_GZIP,configuration.memory_run_policy_bytes)])
+def test_compressed_typed_policy_retains_existing_decoded_bound_and_integrity(monkeypatch,plain,field,decoder):
+    monkeypatch.delenv(plain,raising=False)
+    exact=b'X'*262144;packed=gzip.compress(exact)
+    monkeypatch.setenv(field,base64.b64encode(packed).decode())
+    assert decoder()==exact
+    bad=[gzip.compress(exact+b'X'),packed[:-4],packed+packed,packed+b'junk',b'not-gzip']
+    corrupt=bytearray(packed);corrupt[-8]^=1;bad.append(bytes(corrupt))
+    for value in bad:
+        monkeypatch.setenv(field,base64.b64encode(value).decode())
+        with pytest.raises(ValueError):decoder()
+
+
+def test_worker_policy_encoding_is_explicit_and_stays_worker_only(tmp_path,monkeypatch):
+    raw=b'{"same":"worker runtime policy"}'
+    plain=base64.b64encode(raw).decode();packed=base64.b64encode(gzip.compress(raw)).decode()
+    with patch.dict(os.environ,{configuration.MEMORY_RUN_POLICY:plain},clear=True):
+        assert configuration.memory_run_policy_bytes()==raw
+        monkeypatch.setenv(configuration.MEMORY_RUN_POLICY_GZIP,packed)
+        with pytest.raises(ValueError,match='one_memory_run'):configuration.memory_run_policy_bytes()
+    for role in ('worker','api'):
+        text=''.join(name+'=fixture-only\n'for name in sorted(configuration.SECRET_FILES[role][role]))
+        path=tmp_path/(role+'.env');path.write_text(text+configuration.MEMORY_RUN_POLICY_GZIP+'='+packed+'\n');path.chmod(0o600)
+        with patch.dict(os.environ,{},clear=True):
+            if role=='api':
+                with pytest.raises(ValueError):configuration.load_secret_environment(role,root=tmp_path)
+            else:
+                configuration.load_secret_environment(role,root=tmp_path)
+                assert configuration.memory_run_policy_bytes()==raw
+
+
+def test_compressed_policy_enters_only_through_api_owned_secret_file(tmp_path):
+    raw=b'{"same":"bounded policy"}'
+    packed=base64.b64encode(gzip.compress(raw)).decode()
+    def secret(role):
+        names=configuration.SECRET_FILES[role][role]
+        text=''.join(name+'=fixture-only\n'for name in sorted(names))
+        path=tmp_path/(role+'.env')
+        path.write_text(text+configuration.TYPED_POLICY_GZIP+'='+packed+'\n')
+        path.chmod(0o600)
+    secret('api')
+    with patch.dict(os.environ,{},clear=True):
+        configuration.load_secret_environment('api',root=tmp_path)
+        assert configuration.typed_policy_bytes()==raw
+    secret('worker')
+    with patch.dict(os.environ,{},clear=True),pytest.raises(ValueError):
+        configuration.load_secret_environment('worker',root=tmp_path)
+
+
+@pytest.mark.parametrize('count',[205,206])
+def test_full_profile_policy_fits_secret_bound_without_changing_permissions(tmp_path,count):
+    from cj_memory.typed_local import TypedConfiguration
+    profile=dict(subjects=['self'],extents=['long_term','current'],context_ids=[],slots={
+        name:dict(kind='preference',collection_allowed=True,semantic_resolved=True)
+        for name in ('travel.pace','travel.budget','lodging.style','travel.interests','diet.taste')})
+    subjects=['m4-synthetic-demo-'+format(i,'012x')for i in range(count)]
+    value=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
+        expires_at='2026-12-31T00:00:00+00:00',profiles={s:profile for s in subjects}),
+        travel_contexts={s:[]for s in subjects})
+    raw=json.dumps(value,separators=(',',':')).encode()
+    assert len(base64.b64encode(raw))>65536
+    original=TypedConfiguration.from_bytes(raw)
+    text=''.join(name+'=fixture-only\n'for name in sorted(configuration.SECRET_FILES['api']['api']))
+    text+=configuration.TYPED_POLICY_GZIP+'='+base64.b64encode(gzip.compress(raw)).decode()+'\n'
+    assert len(text.encode())<=65536
+    path=tmp_path/'api.env';path.write_text(text);path.chmod(0o600)
+    with patch.dict(os.environ,{},clear=True):
+        configuration.load_secret_environment('api',root=tmp_path)
+        decoded=TypedConfiguration.from_bytes(configuration.typed_policy_bytes())
+    assert decoded==original and len(decoded.collection.profiles)==count
+    from cj_memory.typed_runtime import TypedRuntimeConfiguration
+    runtime=dict(version='local-memory-run.2',collection=value,selections={
+        s:dict(subject='self',slots=list(profile['slots']),max_bytes=1000)for s in subjects})
+    runtime_raw=json.dumps(runtime,separators=(',',':')).encode()
+    assert len(base64.b64encode(runtime_raw))>65536
+    text=''.join(name+'=fixture-only\n'for name in sorted(configuration.SECRET_FILES['worker']['worker']))
+    text+=configuration.MEMORY_RUN_POLICY_GZIP+'='+base64.b64encode(gzip.compress(runtime_raw)).decode()+'\n'
+    assert len(text.encode())<=65536
+    path=tmp_path/'worker.env';path.write_text(text);path.chmod(0o600)
+    with patch.dict(os.environ,{},clear=True):
+        configuration.load_secret_environment('worker',root=tmp_path)
+        decoded_runtime=TypedRuntimeConfiguration.from_bytes(configuration.memory_run_policy_bytes())
+    assert decoded_runtime==TypedRuntimeConfiguration.from_bytes(runtime_raw)
 
 
 class Clock(datetime):
@@ -500,3 +695,29 @@ def test_hk_cli_requires_explicit_persistent_mount_and_fixed_identity(tmp_path,m
     with pytest.raises(ValueError):recovery.persistent_target('../outside')
     (base/identity).symlink_to(tmp_path/'other')
     with pytest.raises(ValueError):recovery.persistent_target(identity)
+
+
+@pytest.mark.parametrize('version',[1,2])
+@pytest.mark.parametrize('approved_budget',[80,800])
+def test_existing_quota_inspection_accepts_both_formats_without_reset(monkeypatch,version,approved_budget):
+    from dataclasses import asdict,replace
+    from cj_api.local_run_context import LocalRunContext,RunProfile,load_run_context
+    from cj_usage.core import Config,Ledger,LedgerV2
+    from deploy.hk import demo_quota
+    cfg=Config('provider_call',80,100,200,24,12,65536,600)
+    current=LocalRunContext(RunProfile(cfg,dict(model=12000,tool=48000,memory=1000)),(),'CJ-LOCAL-RUN@2')
+    following=LocalRunContext(RunProfile(replace(cfg,period_start=200,period_end=300),current.current.output_limits),(),current.version)
+    document=dict(version=current.version,current=dict(meter=asdict(cfg),output_limits=current.current.output_limits),history=[])
+    monkeypatch.setenv('CJ_BETA_RUN_CONTEXT_JSON',json.dumps(document))
+    monkeypatch.setattr(demo_quota,'authorization',lambda:None)
+    monkeypatch.setattr(demo_quota,'beta_subjects',lambda:({'synthetic-one'},{'synthetic-one'}))
+    monkeypatch.setattr(demo_quota,'demo_periods',lambda original,now:(current,following))
+    seen=[]
+    class Database:
+        def execute(self,sql,args):
+            assert sql.startswith('SELECT format_version,ledger')
+            seen.append(args[0]);profile=current if len(seen)==1 else following
+            ledger=(Ledger if version==1 else LedgerV2)(config=replace(profile.current.meter,budget=approved_budget))
+            return SimpleNamespace(fetchone=lambda:(version,asdict(ledger)))
+    keys,count,next_count=demo_quota._existing_ledgers(Database(),approved_budget,resume=True)
+    assert keys==seen and len(set(keys))==2 and(count,next_count)==(1,1)

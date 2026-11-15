@@ -445,7 +445,8 @@ class MeteredDashScopeProvider:
                 finally:loop.close()
 
     def invoke(self,messages,system,attempt,*,tools=None,receipt,guard,native_reply=None,tool_choice=None,
-               native_turn_profile=None,final_answer=False,release_after_send=False,lio_answer=False,structured_profile=None,intake_source_index=None,wire_observer=None):
+               native_turn_profile=None,final_answer=False,release_after_send=False,lio_answer=False,structured_profile=None,intake_source_index=None,wire_observer=None,
+               draft_profile=None,draft_schema_sha256=None,exploration_schema_sha256=None):
         from cj_usage.authorization_budget import canonical
         native_tools=tools or []
         buffered=native_turn_profile==M4_NATIVE_TURN_BUFFERED
@@ -457,8 +458,26 @@ class MeteredDashScopeProvider:
                 or (proxy or incremental) and (not native_tools or tool_choice is not None)
                 or final_answer and not (proxy or incremental)):
             raise ProviderFailed('explicit native turn transport required')
-        if structured_profile not in (None,'LIO-planning-intake.1','LIO-planning-intake.2','LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5','LIO-planning-intake.6','LIO-planning-intake.7','LIO-planning-intake.8','LIO-planning-intake.9') or structured_profile is not None and (native_tools or system is None):
+        from cj_message.lio_exploration_schema import PROFILES as exploration_profiles,response_format as exploration_format,response_format_sha256 as exploration_sha
+        exploration=structured_profile in exploration_profiles
+        if exploration and (exploration_schema_sha256!=exploration_sha(structured_profile) or
+                native_turn_profile is not None or release_after_send or lio_answer or native_reply is not None):
+            raise ProviderFailed('explicit source-bound exploration schema required')
+        if exploration_schema_sha256 is not None and not exploration:
+            raise ProviderFailed('unexpected exploration schema')
+        if structured_profile not in (None,'LIO-planning-intake.1','LIO-planning-intake.2','LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5','LIO-planning-intake.6','LIO-planning-intake.7','LIO-planning-intake.8','LIO-planning-intake.9',*exploration_profiles) or structured_profile is not None and (native_tools or system is None):
             raise ProviderFailed('explicit nationwide structured profile required')
+        grouped_format=None
+        rich_draft=False
+        if draft_profile is not None or draft_schema_sha256 is not None:
+            from cj_draft.grouped_plan import GENERATION_PROFILES,response_format,response_format_sha256
+            if (draft_profile not in GENERATION_PROFILES or native_tools or system is None
+                    or structured_profile is not None or native_turn_profile is not None or release_after_send or lio_answer
+                    or draft_schema_sha256!=response_format_sha256(draft_profile)):
+                raise ProviderFailed('explicit source-bound grouped schema required')
+            grouped_format=response_format(draft_profile)
+            from cj_draft.rich_schema import GENERATION_PROFILES as rich_profiles
+            rich_draft=draft_profile in rich_profiles
         if release_after_send and (native_tools or system is None):
             raise ProviderFailed('explicit structured model input required')
         if tool_choice is not None and (tool_choice!='none' or not native_tools):
@@ -495,7 +514,7 @@ class MeteredDashScopeProvider:
             prompt+='\nReturn a single JSON object matching the requested output format.'
         body=dict(model=M4_MODEL,messages=[dict(role='system',content=prompt),*wire_messages],stream=True,
                   stream_options={'include_usage':True},enable_thinking=False,
-                  max_tokens=self.config.max_output_tokens if compact or incremental or structured_profile is not None else min(1024,self.config.max_output_tokens))
+                  max_tokens=self.config.max_output_tokens if compact or incremental or structured_profile is not None or rich_draft else min(1024,self.config.max_output_tokens))
         if proxy:
             definition=(_m4_compact_turn_function(native_tools,final_answer) if compact else
                         _m4_turn_function(native_tools,final_answer))
@@ -507,7 +526,11 @@ class MeteredDashScopeProvider:
         if tool_choice is not None:body['tool_choice']=tool_choice
         if native_tools and not (proxy or incremental):body['response_format']=_m4_native_answer_format()
         elif not native_tools and system is not None:
-            if structured_profile=='LIO-planning-intake.9':
+            if grouped_format is not None:
+                body['response_format']=grouped_format
+            elif exploration:
+                body['response_format']=exploration_format(structured_profile)
+            elif structured_profile=='LIO-planning-intake.9':
                 from .lio_intake_optional_schema import response_format
                 body['response_format']=response_format(intake_source_index)
             elif structured_profile=='LIO-planning-intake.8':
@@ -545,13 +568,13 @@ class MeteredDashScopeProvider:
         finished=False;done=False;response_ids=set();usage=None;calls={};texts=[];pending='';first_output=None
         observation=dict(http_status=None)
         phase='transport';committed=False;failure_reason='none';observed_finish='unseen';choice_rejection='none'
-        envelope_shape=None
+        envelope_shape=None;identity_rejection=None
         try:
             with self._chunks(raw,guard,observation) as chunks:
                 if self.transport is None:
                     if next(chunks,None) is not _M4_REQUEST_SENT:
                         raise ProviderUnknown('M4 original request send unavailable')
-                    if compact or incremental or release_after_send:
+                    if compact or incremental or release_after_send or exploration:
                         # The first advance runs under the RUN dispatch fence.
                         # Release it after the one send and before reading the
                         # structured reply. This carries no display text.
@@ -570,12 +593,17 @@ class MeteredDashScopeProvider:
                     if self.config.api_key in json.dumps(value,ensure_ascii=False):
                         raise ProviderUnknown('M4 model secret echo rejected')
                     phase='model_identity'
-                    if value.get('model')!=M4_MODEL:raise ProviderUnknown('M4 model identity mismatch')
+                    if value.get('model')!=M4_MODEL:
+                        identity_rejection='model_mismatch'
+                        raise ProviderUnknown('M4 model identity mismatch')
                     rid=value.get('id')
                     if type(rid) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{1,128}',rid):
+                        identity_rejection='receipt_identity_unavailable'
                         raise ProviderUnknown('M4 model receipt identity unavailable')
                     response_ids.add(rid)
-                    if len(response_ids)!=1:raise ProviderUnknown('M4 model response identity changed')
+                    if len(response_ids)!=1:
+                        identity_rejection='response_identity_changed'
+                        raise ProviderUnknown('M4 model response identity changed')
                     phase='usage'
                     supplied=value.get('usage')
                     if supplied is not None:
@@ -768,6 +796,21 @@ class MeteredDashScopeProvider:
                     attempt_sha,phase,observation['http_status'],done,finished,
                     usage is not None,sum(map(len,texts)),len(calls),failure_reason,choice_rejection,observed_finish,
                     sum(len(call['arguments']) for call in calls.values()))
+                if identity_rejection is not None:
+                    # Fingerprints distinguish missing/changed stream metadata
+                    # without publishing provider IDs, error bodies or deltas.
+                    observed_model=value.get('model')
+                    model_state=('missing' if 'model' not in value else
+                        'string' if type(observed_model) is str else
+                        'null' if observed_model is None else 'other_type')
+                    model_chars=len(observed_model) if type(observed_model) is str else 0
+                    model_sha=(hashlib.sha256(observed_model.encode('utf-8','surrogatepass')).hexdigest()
+                        if type(observed_model) is str else 'NONE')
+                    rid_state=('missing' if 'id' not in value else
+                        'valid_string' if type(value['id']) is str and re.fullmatch(r'[A-Za-z0-9_-]{1,128}',value['id']) else
+                        'invalid_string' if type(value['id']) is str else 'other_type')
+                    audit.warning('M4_MODEL_IDENTITY_REJECTION attempt_sha256=%s code=%s model_state=%s model_chars=%d model_sha256=%s receipt_state=%s error_envelope=%s',
+                        attempt_sha,identity_rejection,model_state,model_chars,model_sha,rid_state,'error' in value)
                 if envelope_shape is not None:
                     # Separate event preserves the existing UNKNOWN log format.
                     audit.warning('M4_NATIVE_ENVELOPE_SHAPE attempt_sha256=%s present_mask=%d extra_count=%d',

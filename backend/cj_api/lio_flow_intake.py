@@ -1,11 +1,15 @@
 """One validated cumulative fact flow; no defaults and no model write capability."""
-from dataclasses import replace
+from dataclasses import dataclass,replace
 import json
 import re
-from pydantic import ValidationError
+from typing import Literal
+from pydantic import ConfigDict,Field,ValidationError
 from cj_agent.lio_intake_flow_schema import FlowIntake
+from cj_agent.lio_intake_optional_schema import OptionalIntake
+from cj_agent.lio_intake_flat_schema import DTO,City
 from cj_needs.domain import InvalidInput,decode
 from .lio_sourced_intake import parse_sourced,BookingSourceUnclear
+from .lio_positive_trip import destination_query
 
 CORE=('start_date','duration_days','party_size')
 # Presence check only, never a date extractor or a default. The original
@@ -16,10 +20,123 @@ DATE_EVIDENCE=re.compile(r'\d{4}[-/年]\d{1,2}|[0-9一二三四五六七八九�
     r"january|february|march|april|may|june|july|august|september|october|november|december|"
     r"jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\b|\b[0-9]+[/-][0-9]+\b|\bin [a-z0-9 -]+ days?\b",re.I)
 
-def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake):
+
+@dataclass(frozen=True)
+class ReadOnlyPlanningQuestion:
+    reply:str
+
+
+class _MissingDurationQuestion(DTO):
+    # A control-only view. Source/unknown metadata is not accepted as facts;
+    # the executable DTO and compiler below retain their original checks.
+    model_config=ConfigDict(strict=True,extra='ignore',frozen=True)
+    version:Literal['LIO-planning-intake.8']
+    intent:Literal['plan','save','consult','discuss']
+    reply:str=Field(min_length=1,max_length=12000)
+    question_fields:list[Literal['duration_days']]=Field(min_length=1,max_length=1)
+    current_source_index:int=Field(ge=0,le=0)
+    planning_request_index:int=Field(ge=0,le=0)
+    city:City
+    duration_days:None
+    start_date:None
+    party_size:None
+    publication_hold:None
+    needs_tools:bool
+    fixed_items:list=Field(max_length=0)
+    extra_fields:dict=Field(max_length=0)
+    extra_unknown_fields:list=Field(max_length=0)
+    extra_uncertain_fields:dict=Field(max_length=0)
+    unresolved:list=Field(max_length=0)
+    long_term_requests:list=Field(max_length=0)
+
+
+def _missing_duration_question(value,turns,refs,message_id,previous,schema):
+    if (schema is not OptionalIntake or previous is not None or refs or len(turns)!=1
+            or type(value)is not dict or value.keys()!=OptionalIntake.model_fields.keys()):
+        return None
+    try:control=_MissingDurationQuestion.model_validate(value)
+    except ValidationError:return None
+    text=turns[0].text;city=control.city
+    if (city.source_index!=0 or not city.query.strip()or not city.quote.strip()
+            or city.quote not in text or city.query not in city.quote):return None
+    query=re.escape(city.query)
+    direct=(re.fullmatch(r'\s*(?:(?:请|麻烦)\s*)?(?:(?:帮|给|为)(?:我|我们)\s*)?'
+        r'(?:规划|安排|设计)\s*'+query+r'\s*的?(?:行程|旅行|旅游)\s*[。.!！?？]*',text,re.I)
+        or re.fullmatch(r'\s*(?:please\s+)?(?:plan|organize|create)\s+'
+        r'(?:(?:(?:a|my|our|the)\s+)?(?:trip|itinerary)\s+(?:to|in|for)\s+)?'+query+
+        r'(?:\s+(?:trip|itinerary))?\s*[.?!]*',text,re.I))
+    literal=destination_query(text,city.query)
+    if (direct is None and literal is None)or not control.reply.strip():return None
+    try:reply_bytes=control.reply.encode('utf-8')
+    except UnicodeError:return None
+    if len(reply_bytes)>12000:return None
+    # Only the literal query is retained, never proposed province/name or any
+    # ignored execution metadata. Actual city resolution remains a later tool.
+    fact=dict(value=dict(query=literal if literal is not None else city.query,normalized_name=None,province=None,source_index=0,quote=city.quote),
+              sources=[dict(message_id=message_id,quote=city.quote)])
+    return ReadOnlyPlanningQuestion(control.reply),['duration_days'],{'city':fact}
+
+def _rebind(ref,turns,offset):
+    """Undo a Memory-slot count in one {source_index,quote} locator (#994).
+
+    The quote stays the evidence: after the shift it must still be an exact
+    span of that original traveler message, so Memory/system text never becomes
+    a source. Any other wrong locator is not repaired and is rejected as before.
+    """
+    index,quote=ref.get('source_index'),ref.get('quote')
+    if type(index)is not int or type(quote)is not str or not quote:return 0
+    if 0<=index<len(turns)and quote in turns[index].text:return 0
+    shifted=index-offset
+    if 0<=shifted<len(turns)and quote in turns[shifted].text:
+        ref['source_index']=shifted;return 1
+    return 0
+
+
+def rebind_sources(value,turns,*,memory_offset=0):
+    """Correct Memory-shifted source locators before validation.
+
+    memory_offset is the number of code-owned Memory user slots sent before the
+    original traveler messages; the model may count them as traveler messages.
+    Returns how many locators changed. Without Memory nothing is changed.
+    """
+    if type(value)is not dict or memory_offset<=0:return 0
+    changed=0
+    def walk(node):
+        nonlocal changed
+        if type(node)is dict:
+            if 'source_index'in node and 'quote'in node:changed+=_rebind(node,turns,memory_offset)
+            for child in node.values():walk(child)
+        elif type(node)is list:
+            for child in node:walk(child)
+    walk(value)
+    if memory_offset:
+        for key in ('current_source_index','planning_request_index'):
+            index=value.get(key)
+            if type(index)is int and index>=len(turns)and 0<=index-memory_offset<len(turns):
+                value[key]=index-memory_offset;changed+=1
+    return changed
+
+
+def schema_detail(error,schema):
+    """Code-owned field/type names of a schema failure; never model values."""
+    names=set(schema.model_fields)
+    return ','.join(sorted({str(item['loc'][0])+':'+str(item['type'])for item in error.errors()
+                            if item.get('loc')and item['loc'][0]in names})[:8])
+
+
+def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_offset=0):
     value=decode(raw.encode() if type(raw)is str else raw)
+    rebound=rebind_sources(value,turns,memory_offset=memory_offset)
+    if rebound:
+        import logging
+        logging.getLogger('cj_usage.audit').info('LIO_INTAKE_SOURCE_REBOUND message_id=%s count=%s',message_id,rebound)
+    question=_missing_duration_question(value,turns,refs,message_id,previous,schema)
+    if question is not None:return question
     try:dto=schema.model_validate(value)
-    except ValidationError:raise InvalidInput('exact unified planning facts required')from None
+    except ValidationError as failure:
+        error=InvalidInput('exact unified planning facts required')
+        error.detail=schema_detail(failure,schema)
+        raise error from None
     data=dto.model_dump(by_alias=True,exclude_unset=True)
     intent=data['intent'];questions=data.pop('question_fields');hold=data.pop('publication_hold');request_index=data.pop('planning_request_index')
     if request_index is not None and request_index>=len(turns):raise InvalidInput('intake must bind the complete latest request')
@@ -50,20 +167,11 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake):
     # The original compiler is reused unchanged; its temporary plan discriminator
     # grants nothing. The host determines authority only from traveler context.
     data.update(version='LIO-planning-intake.6',intent='plan'if intent!='cancel'else'cancel')
-    try:intake=parse_sourced(json.dumps(data,ensure_ascii=False),turns)
+    try:intake=parse_sourced(json.dumps(data,ensure_ascii=False),turns,current_dates=dto.version=='LIO-planning-intake.8')
     except BookingSourceUnclear as error:
         error.control=replace(error.control,intent=intent,publication_hold=hold is not None,planning_request_index=request_index)
         raise
     intake=replace(intake,intent=intent,publication_hold=hold is not None,planning_request_index=request_index)
-    if dto.version=='LIO-planning-intake.8':
-        from .lio_national_intake import _week_source
-        if intake.start_date is not None and intake.start_date['state']=='known':
-            _week_source(intake.start_date['value'],intake.sources['start_date'],turns)
-        for edge in (()if intake.extraction is None else ('arrival','departure','overseas_departure')):
-            event=intake.extraction['fields'].get(edge)
-            if event is not None and event['date']['state']=='known':
-                references=intake.sources.get(edge+'.date',[])
-                _week_source(event['date']['value'],references,turns,departure=edge=='departure')
     if intent=='cancel':return intake,questions,{}
     # A previously classified ordinary consultation cannot later supply
     # execution facts merely because a model quotes it again on "continue".
@@ -88,7 +196,8 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake):
         if any(field.startswith('fixed_items')for field in blocked):blocked.update(field for field in intake.sources if field.startswith('fixed_items'))
         intake=replace(intake,**changes,extraction=dict(intake.extraction,fields=fields),
             sources={field:sources for field,sources in intake.sources.items()if field not in blocked})
-    if data['start_date']is not None and not any(ref['field']=='start_date'and DATE_EVIDENCE.search(ref['quote'])for ref in data['field_sources']):
+    if dto.version!='LIO-planning-intake.8'and data['start_date']is not None and not any(ref['field']=='start_date'and DATE_EVIDENCE.search(ref['quote'])
+            for ref in data['field_sources']):
         raise InvalidInput('original trip start source required')
     snapshot={}
     for field in ('city',*CORE):

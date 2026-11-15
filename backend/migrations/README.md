@@ -53,6 +53,7 @@ refuses any file whose bytes differ from the manifest.
 | 45 | memory_payload_erasure | `backend/migrations/0045_memory_payload_erasure.sql` |
 | 46 | formal_memory_activation | `backend/migrations/0046_formal_memory_activation.sql` |
 | 47 | device_erasure_journals | `backend/migrations/0047_device_erasure_journals.sql` |
+| 53 | lio_wire_origin | `backend/migrations/0053_lio_wire_origin.sql` (exact new LIO3 envelope, same receipt/RLS/cleanup) |
 
 Domain SQL stays in each domain directory so tests and the chain use the same bytes.
 Changing a registered file requires updating its manifest sha256 in the same PR; once a

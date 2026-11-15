@@ -61,6 +61,50 @@ def turn_sse(*,tool=False,usage=True,model=M4_MODEL,done=True,turn=None,compact=
 
 
 class Boundaries(unittest.TestCase):
+    def test_stream_identity_failures_keep_original_intent_and_only_log_fingerprints(self):
+        private_model='private-supplier-model-do-not-publish'
+        private_id='private_supplier_receipt_do_not_publish'
+        for label,expected in (('model','model_mismatch'),('missing-model','model_mismatch'),
+                               ('null-model','model_mismatch'),('object-model','model_mismatch'),
+                               ('id-shape','receipt_identity_unavailable'),
+                               ('id-change','response_identity_changed')):
+            with self.subTest(label=label):
+                events=[json.loads(line[6:])for line in sse().splitlines()if line.startswith('data: {')]
+                # Fail after a genuine content chunk, before terminal usage/DONE.
+                if label=='model':events[1]['model']=private_model
+                elif label=='missing-model':
+                    del events[1]['model'];events[1]['error']={'detail':'private-error-body'}
+                elif label=='null-model':events[1]['model']=None
+                elif label=='object-model':events[1]['model']={'private':'private-error-body'}
+                elif label=='id-shape':events[1]['id']='private invalid receipt / not logged'
+                else:events[1]['id']=private_id
+                body=''.join('data: '+json.dumps(event)+'\n\n'for event in events)+'data: [DONE]\n\n'
+                provider=self.provider(body);receipt={};before=len(self.sent)
+                with self.assertLogs('cj_provider.audit',level='WARNING')as captured,self.assertRaises(ProviderUnknown):
+                    list(provider.invoke([dict(role='user',content='private-prompt-body')],TOOL_SYSTEM,
+                        'identity-observe-'+label,receipt=receipt,guard=lambda:True))
+                logs='\n'.join(captured.output)
+                self.assertIn('M4_MODEL_UNKNOWN',logs)
+                self.assertIn('M4_MODEL_IDENTITY_REJECTION',logs)
+                self.assertIn('code='+expected,logs)
+                self.assertIn('done=False finished=False usage=False',logs)
+                if label=='model':self.assertIn('model_sha256='+hashlib.sha256(private_model.encode()).hexdigest(),logs)
+                if label=='null-model':self.assertIn('model_state=null',logs)
+                if label=='object-model':self.assertIn('model_state=other_type',logs)
+                if label=='missing-model':self.assertIn('model_state=missing',logs);self.assertIn('error_envelope=True',logs)
+                for hidden in (private_model,private_id,'private invalid receipt','private-error-body','private-prompt-body',KEY):self.assertNotIn(hidden,logs)
+                self.assertEqual(len(self.sent),before+1)
+                self.assertEqual(receipt,{})
+                self.assertEqual(self.budget.inspect()[-1]['state'],'INTENT')
+
+    def test_valid_stream_does_not_emit_identity_rejection(self):
+        provider=self.provider(sse());receipt={}
+        with patch.object(logging.getLogger('cj_provider.audit'),'warning')as warning:
+            value=''.join(provider.invoke([],TOOL_SYSTEM,'identity-observe-valid',receipt=receipt,guard=lambda:True))
+        self.assertTrue(value);self.assertEqual(receipt['usage']['total_tokens'],50)
+        self.assertEqual(self.budget.inspect()[-1]['state'],'RECEIVED')
+        self.assertFalse(any('M4_MODEL_IDENTITY_REJECTION'in call.args[0]for call in warning.call_args_list))
+
     def test_slow_protected_body_writes_leave_time_to_read_terminal_usage(self):
         # Hong Kong observed about 17 s for each protected partial write.
         # Model transport is paused while each yielded fragment is persisted.
@@ -570,6 +614,48 @@ class Boundaries(unittest.TestCase):
         ordinary=tools._model_input(([dict(role='user',content='Synthetic draft')],'existing structured system',provider))
         self.assertNotIn('answer_format_profile',json.loads(ordinary.original_bytes))
 
+    def test_unconfirmed_destination_still_rejects_a_forged_tool_turn_without_dispatch(self):
+        from cj_api.local_app import ISSUER,scope_for
+        subject='m4-synthetic-one';subjects=frozenset({subject})
+        provider=self.provider(sse());tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects))
+        dispatched=[]
+        class Worker:
+            lio_planning=None
+            def _model_history(self,*args,**kwargs):pass
+            def _registered_stream(self,binding,key,registration,argument,**kwargs):
+                dispatched.append(registration)
+                self.assert_argument=argument
+                argument.native_reply['assistant']=dict(role='assistant',content=None,tool_calls=[])
+                return iter((json.dumps(dict(version='MODEL-tool-turn.1',kind='tool',answer=None,
+                    calls=[dict(name='place_search',arguments={'private-marker':'must-not-log'})])),))
+        worker=Worker();worker.provider=provider
+        binding=SimpleNamespace(scope=scope_for(ISSUER,subject),run_id='local-unconfirmed')
+        with self.assertLogs('cj_usage.audit',level='WARNING')as logs:
+            with self.assertRaises(ProviderUnknown):list(tools.answer(worker,binding,[dict(role='user',content='Synthetic')],lio_locale='zh'))
+        self.assertEqual(dispatched,['model.tool_turn'])
+        self.assertFalse(worker.assert_argument.confirmed_destination)
+        self.assertIn('code=unconfirmed_destination',' '.join(logs.output))
+        self.assertNotIn('must-not-log',' '.join(logs.output));self.assertEqual(self.sent,[])
+
+    def test_unconfirmed_national_destination_only_offers_already_permitted_fact_tool(self):
+        provider=self.provider(sse());services=RealServices(provider,KEY,frozenset({'m4-synthetic-one'}))
+        for allowed,expected in ((None,{'fact'}),(frozenset({'place_search'}),{'place_search'})):
+            with self.subTest(allowed=allowed):
+                tools=RealTools(services,**({}if allowed is None else dict(allowed_native=allowed)))
+                question=ModelInput([dict(role='user',content='Synthetic question')],TOOL_SYSTEM,provider,{},
+                    national=True,confirmed_destination=False)
+                frozen=json.loads(tools._model_input(question).original_bytes)
+                self.assertEqual({t['function']['name']for t in frozen['native_tools']},expected)
+                self.assertEqual(frozen['external_tools_disabled'],allowed is not None)
+                known=json.loads(tools._model_input(ModelInput(question.messages,TOOL_SYSTEM,provider,{},
+                    national=True,confirmed_destination=True)).original_bytes)
+                self.assertEqual(known['native_tools'],tools.national_tools)
+                ordinary=json.loads(tools._model_input(ModelInput(question.messages,TOOL_SYSTEM,provider,{},
+                    national=False,confirmed_destination=False)).original_bytes)
+                self.assertEqual(ordinary['native_tools'],tools.native_tools)
+                self.assertFalse(ordinary['external_tools_disabled'])
+        self.assertEqual(self.sent,[])
+
     def test_national_structured_intake_is_pinned_and_keeps_the_configured_ceiling(self):
         from cj_api.local_app import ISSUER,scope_for
         provider=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY,max_output_tokens=M4_REAL_OUTPUT_TOKENS),
@@ -738,6 +824,88 @@ class Boundaries(unittest.TestCase):
         self.assertLessEqual(len(self.sent[0].content),32768)
         self.assertEqual(len(self.sent),1)
         self.assertEqual(self.budget.inspect()[0]['state'],'RECEIVED')
+
+    def test_local_visitor_exit_preserves_original_scope_and_has_no_external_call(self):
+        from cj_api.lio_city import CityReference
+        from cj_api.local_app import ISSUER,scope_for
+        subject='m4-synthetic-one';subjects=frozenset({subject})
+        provider=self.provider(sse())
+        directory=Path(__file__).resolve().parents[3]/'knowledge/visitor/entries'
+        tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects),
+                        visitor_catalogue_directory=directory)
+        city=CityReference('510100','成都市','四川省','成都市','city','Asia/Shanghai')
+        name,query=canonical_tool('visitor_fact',json.dumps(dict(topic='payment',city='Beijing')),city=city)
+        self.assertEqual((name,json.loads(query)['city']),('visitor_fact','510100'))
+        prepared=tools.registrations['tool.visitor_fact'].prepare_input((query,'original-ref',city))
+        original=json.loads(prepared.original_bytes)
+        self.assertEqual(original['destination_adcode'],'510100')
+        operation=SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,subject)))
+        before=self.budget.inspect()
+        result=json.loads(''.join(prepared.bind_operation(operation,lambda:True)()))
+        self.assertEqual(result['data_origin'],'maintainer_summary')
+        self.assertEqual(result['request_ref'],'original-ref')
+        self.assertEqual(result['status'],'matched')
+        self.assertEqual(self.budget.inspect(),before);self.assertEqual(self.sent,[])
+        with self.assertRaises(BudgetUnknown):list(prepared.bind_operation(operation,lambda:False)())
+        foreign=SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,'m4-synthetic-foreign')))
+        with self.assertRaises(BudgetUnknown):list(prepared.bind_operation(foreign,lambda:True)())
+        with self.assertRaises(ProviderUnknown):
+            tools.registrations['tool.visitor_fact'].prepare_input((query.replace(b'510100',b'110000'),'original-ref',city))
+        self.assertNotIn('visitor_fact',{t['function']['name']for t in tools.native_tools})
+        self.assertIn('visitor_fact',{t['function']['name']for t in tools.national_tools})
+
+    def test_visitor_no_match_retains_uncertainty_and_no_source_claim(self):
+        from cj_api.lio_city import CityReference
+        from cj_api.local_app import ISSUER,scope_for
+        from cj_fact.visitor import decode_query as visitor_query,lookup
+        subject='m4-synthetic-one';subjects=frozenset({subject});provider=self.provider(sse())
+        tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects))
+        city=CityReference('440100','广州市','广东省','广州市','city','Asia/Shanghai')
+        directory=Path(__file__).resolve().parents[3]/'knowledge/visitor/entries'
+        binding=SimpleNamespace(scope=scope_for(ISSUER,subject),run_id='visitor-no-match')
+        recorded=[]
+        class Worker:
+            lio_planning=None
+            def _model_history(self,*args):pass
+            def _registered_stream(self,original,key,registration,argument,**kwargs):
+                if registration=='tool.visitor_fact':
+                    raw,ref,actual_city=argument
+                    assert actual_city==city
+                    yield lookup(directory,visitor_query(raw),evaluated_at=datetime.now(timezone.utc),request_ref=ref).decode()
+                elif key=='model.tool_turn.0':
+                    argument.native_reply['assistant']=dict(tool_calls=[dict(id='visitor-no-match-tool')])
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='tool',answer=None,
+                        calls=[dict(name='visitor_fact',arguments=dict(topic='payment',city='Beijing'))]))
+                else:
+                    recorded.append(argument)
+                    result=json.loads(argument.messages[-1]['content'])['results'][0]['result']
+                    assert result['status']=='no_match'and result['entries']==[]
+                    assert 'No reviewed visitor entry matched'in argument.system
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='answer',calls=[],
+                        answer=dict(zh='这部分我暂不能确认。你想先查看哪个官方渠道？',en='I cannot confirm that detail yet. Which official channel would you like to check?')))
+        worker=Worker();worker.provider=provider
+        chunks=list(tools.answer(worker,binding,[dict(role='user',content='How can I pay in Guangzhou?')],lio_locale='en',lio_city=city))
+        self.assertEqual(len(recorded),1)
+        from cj_message.lio_context import LioCitation,LioToolProgress
+        self.assertEqual([part for part in chunks if type(part)is str],['I cannot confirm that detail yet. Which official channel would you like to check?'])
+        self.assertIn(LioToolProgress('tool.0.0',None),chunks)
+        self.assertFalse(any(isinstance(part,LioCitation)for part in chunks))
+        self.assertEqual(self.sent,[])
+
+    def test_invalid_visitor_resource_is_not_successful_no_match(self):
+        from cj_api.lio_city import CityReference
+        from cj_api.local_app import ISSUER,scope_for
+        subject='m4-synthetic-one';subjects=frozenset({subject});provider=self.provider(sse())
+        with tempfile.TemporaryDirectory()as folder:
+            directory=Path(folder);(directory/'broken.json').write_text('{bad JSON')
+            tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects),
+                            visitor_catalogue_directory=directory)
+            city=CityReference('510100','成都市','四川省','成都市','city','Asia/Shanghai')
+            _,raw=canonical_tool('visitor_fact',json.dumps(dict(topic='payment',city='chengdu')),city=city)
+            prepared=tools.registrations['tool.visitor_fact'].prepare_input((raw,'original-ref',city))
+            original=SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,subject)))
+            with self.assertRaises(BudgetUnknown):list(prepared.bind_operation(original,lambda:True)())
+            self.assertEqual(self.sent,[]);self.assertEqual(self.budget.inspect(),[])
 
     def test_optional_flow_profile_keeps_exact_wire_hash_and_bounded_original_call(self):
         from cj_api.lio_scene import scene_prompt

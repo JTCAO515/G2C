@@ -9,23 +9,47 @@ from zoneinfo import ZoneInfo
 
 from cj_agent.provider import ProviderUnknown
 from cj_agent.lio_intake_optional_schema import SYSTEM as FACTS_SYSTEM,OptionalIntake
-from cj_message.demo_dialogue import LIO_VERSION
+from cj_message.demo_dialogue import LIO_VERSION, LIO_VERSION_V3
 from cj_message.domain import Command,Unavailable
-from cj_message.lio_context import answer_prompt
+from cj_message.lio_context import answer_prompt,self_description,CAPABILITY_PATTERN
 from cj_message.lio_plan_needs import BOUND_EFFECT
 from cj_needs.domain import InvalidInput
 
 from .lio_city import CityReference,forms,_normalize
 from .lio_sourced_intake import BookingSourceUnclear
-from .lio_flow_intake import parse_flow
-from .lio_national_intake import NONPERSISTENT,fields_for,fixed_sources_complete,province_evidence,diagnostic_code,StartDateConflict,FixedTimezoneConflict
-from .lio_planning_grounding import PlanningTurn,standalone_question
+from .lio_positive_trip import destination_request
+from .lio_flow_intake import ReadOnlyPlanningQuestion,parse_flow
+from .lio_national_intake import NONPERSISTENT,fields_for,fixed_sources_complete,province_evidence,diagnostic_code,StartDateConflict,FixedTimezoneConflict,DateDurationConflict,DateSourceUnclear
+from .lio_planning_grounding import PlanningTurn,standalone_question,NUMBER,_number
 from .local_lio_planning import PlanningDetails,register,discuss
+from .rejected_intake_capture import capture_rejected_intake
 
 CONTEXT='lio_planning_context.1:'
 CITY='lio_city_resolution.1:'
 MAX_TURNS=8
-CURRENT_SYSTEM=FACTS_SYSTEM
+CURRENT_SYSTEM=FACTS_SYSTEM.replace(
+    'A short reply to a pending request continues that original request; never replace its source index.',
+    'A complete new request, even repeated, uses the latest planning_request_index. Only a short parameter answer keeps the earlier request index.')
+_DURATION_QUESTION=re.compile(
+    rf'(?:(?P<zh>(?P<zh_number>{NUMBER})[天日])(?:怎么玩|怎么安排)|'
+    rf'(?:how (?:should|can) I spend|what (?:can|should) I do (?:in|for))\s+'
+    rf'(?P<en>(?P<en_number>{NUMBER})\s+days?))[?？。.!！\s]*',re.I)
+
+
+def literal_duration_question(text):
+    """One complete unconditional trip question; no quotation/negation/default."""
+    match=_DURATION_QUESTION.fullmatch(text.strip())
+    if match is None:return None
+    number=_number(match['zh_number']or match['en_number'])
+    return (number,match['zh']or match['en'])if number>0 else None
+
+SOURCE_LANGUAGE=(
+    ' Evidence ignores reply styling. Copy city.query and all quotes verbatim from indexed originals; '
+    'never translate or quote resolved/Memory data. If only adding dates/fixed items, use city:null '
+    'to retain the verified prior source. Otherwise Chengdu uses query/quote:"Chengdu", '
+    'normalized_name:"成都"; 成都 uses query/quote:"成都". Keep source_index. '
+    'Never infer province, party size, hotel location or booking.')
+
 AUTHORITY_BARRIERS=('discussion','cancelled','ready_to_publish','different_destination','different_trip')
 # This is a publication gate, not city/date extraction or the intent router.
 # A model cannot turn an isolated date/party answer into a fresh save grant.
@@ -40,6 +64,12 @@ PUBLICATION_REQUEST=re.compile(r"计划|规划|安排|设计|保存|存到|存�
 _UNDECIDED_DATE=re.compile(r'日期.{0,4}(?:未定|没定|待定)|\bdates? (?:are |is )?undecided\b',re.I)
 
 
+# Meta/capability questions are answered by the general model path, never by
+# the planning intake. Colloquial forms such as 你能做啥 belong here (#994).
+META_QUESTION=re.compile(r'\s*(?:'+CAPABILITY_PATTERN+r'|(?:你是谁|你是什么|我是谁|你了解我什么|你知道我什么|'
+    r'who are you|what are you|who am i|what do you know about me))[?？。.!！\s]*',re.I)
+
+
 def publication_held(text):
     return NONPERSISTENT.search(_UNDECIDED_DATE.sub('',text)) is not None
 
@@ -47,17 +77,25 @@ def publication_held(text):
 def intake_prompt(locale,turns,*,discussion_only=False,scene=None):
     dates=', '.join(turn.question_day.isoformat() for turn in turns)
     system=answer_prompt(locale)+' '+CURRENT_SYSTEM+' Original traveler messages have source indices 0 through '+str(len(turns)-1)+'. Stored memory data is not an indexed traveler message. A week without a stated day (such as 下周 or next week) is not an exact start date: keep start_date null with the original uncertainty, and plan by day numbers without asking again. Resolve stated weekdays against their original message day. Original local China days in that order: '+dates
+    system+=('\nYear-first dates 26.12.01 and 26年12月1日 both mean 2026-12-01; YY denotes 20YY. '
+             'Return every supplied day count with its own field_sources entry: for 三天, '
+             'duration_days=3 and {field:"duration_days",source_index:<its original index>,quote:"三天"}. '
+             'A known duration without that exact original source entry is invalid. '
+             'Every known observation needs its own original field_sources entry; unstated values stay missing. '
+             'No fixed commitments means fixed_items:[]; luxury describes a preference, not a fixed booking.')
     if discussion_only:
         system+=(' This conversation is discussing a separate proposal after a conflict with the saved itinerary. '
                  'For discuss intent, answer the current discussion usefully, including requested refinements, rather than a saving acknowledgement. '
                  'Keep the saved itinerary and its bookings unchanged; never claim the separate proposal was saved. '
                  'If the traveler changes topic, answer that topic normally.')
+    system+='\n'+SOURCE_LANGUAGE
     return system if scene is None else system+'\n'+scene
 
 
 class NationalLioPlanning:
-    def __init__(self,database,plan_and_save):
+    def __init__(self,database,plan_and_save,*,calendar=None):
         self.database,self.plan_and_save=database,plan_and_save
+        self.calendar=calendar
 
     def scene_context(self,binding,now):
         return self.plan_and_save.scene_context(binding,now)
@@ -118,26 +156,78 @@ class NationalLioPlanning:
         return [*messages[:-1],*(dict(role='user',content=t.text) for t in turns)],refs
 
     def execute(self,worker,binding,state,text,original):
-        if re.fullmatch(r'\s*(?:你是谁|你是什么|我是谁|你了解我什么|你能做什么|你能干啥|你有什么能力|who are you|what are you|who am i|what do you know about me|what can you do)[?？。.!！\s]*',text,re.I):return None
+        fixed=self_description(text,original.locale)
+        if fixed is not None:return self._reply(worker,binding,state,fixed)
+        if re.fullmatch(r'\s*(?:第一次来中国(?:旅行)?(?:建议|应该|可以)?怎么玩|first time in china[,，]?\s*(?:any tips|any advice))[?？。.!！\s]*',text,re.I):return None
+        if META_QUESTION.fullmatch(text):return None
         today=original.question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
         turns,refs,previous=self.context(binding,PlanningTurn(text,today))
-        messages=[dict(role='user',content=t.text) for t in turns]
+        literal=literal_duration_question(text)
+        if (literal is not None and previous is None and binding.message_sequence==len(turns)
+                and all(self_description(turn.text,original.locale)is not None for turn in turns[:-1])
+                and not self.plan_and_save.has_saved_itinerary(binding)):
+            days,quote=literal
+            # This is sourced code-owned state, not a fabricated model result
+            # or publication grant. The ordinary compiler rechecks these exact
+            # originals if a later sourced follow-up supplies a destination.
+            state=self._context(worker,binding,state,dict(authority='none',status='needs_details',
+                facts={'duration_days':dict(value=days,sources=[dict(message_id=binding.message_id,quote=quote)])},
+                nonplanning_message_ids=[]))
+            reply=('你想去哪个城市玩'+str(days)+'天？'if original.locale=='zh'else
+                   'Which city would you like to visit for '+str(days)+(' day?'if days==1 else' days?'))
+            return self._reply(worker,binding,state,reply)
+        # Label originals independently of unindexed Memory packets. The
+        # accepted main parser and its Memory-offset rules remain unchanged.
+        messages=[dict(role='user',content='Original traveler source_index='+str(index)+
+            ' (quote only the following original text):\n'+turn.text)for index,turn in enumerate(turns)]
+        memory_offset=0
         if worker.memory_run is not None:
             memory_messages=worker.memory_run.messages(text)
             messages=[*memory_messages[:-1],*messages]
+            # Code-owned Memory user slots precede the indexed originals; the
+            # model may count them, so source locators are corrected by quote.
+            memory_offset=len(memory_messages)-1
         if worker.message_context is not None:messages=worker.message_context.answer_messages(binding,messages)
         system=intake_prompt(original.locale,turns,discussion_only=previous is not None and previous.get('status')=='different_trip',
                              scene=self.scene_context(binding,datetime.now(timezone.utc)))
-        raw=''.join(worker._registered_stream(binding,'model.lio_intake.0','model.lio_intake.9',
-                    (messages,system,worker.provider,len(turns)-1),message_refs=refs))
-        booking_unclear=False;question_fields=[];facts={}
-        try:intake,question_fields,facts=parse_flow(raw,turns,refs,binding.message_id,previous,schema=OptionalIntake)
-        except BookingSourceUnclear as error:
-            intake=error.control;booking_unclear=True
-        except (InvalidInput,ValueError,UnicodeError) as error:
-            logging.getLogger('cj_usage.audit').warning('LIO_INTAKE_REJECTED run_id=%s code=%s output_sha256=%s output_bytes=%s',
-                binding.run_id,diagnostic_code(error),sha256(raw.encode('utf-8','surrogatepass')).hexdigest(),len(raw.encode('utf-8','surrogatepass')))
-            raise ProviderUnknown('nationwide structured intake unavailable') from error
+        booking_unclear=False;question_fields=[];facts={};rejected=False
+        with capture_rejected_intake(binding,check_running=lambda:worker._running(binding))as capture:
+            raw=''.join(worker._registered_stream(binding,'model.lio_intake.0','model.lio_intake.9',
+                        (messages,system,worker.provider,len(turns)-1),message_refs=refs))
+            try:intake,question_fields,facts=parse_flow(raw,turns,refs,binding.message_id,previous,schema=OptionalIntake,memory_offset=memory_offset)
+            except DateSourceUnclear:
+                return self._answer(worker,binding,state,original.locale,
+                    '这个日期表达我还拿不准，可以给出具体的年月日吗？',
+                    'I am not sure which date that expression means. Could you give the year, month and day?')
+            except BookingSourceUnclear as error:
+                intake=error.control;booking_unclear=True
+            except (InvalidInput,ValueError,UnicodeError) as error:
+                logging.getLogger('cj_usage.audit').warning('LIO_INTAKE_REJECTED run_id=%s code=%s detail=%s output_sha256=%s output_bytes=%s',
+                    binding.run_id,diagnostic_code(error),getattr(error,'detail','')or'-',sha256(raw.encode('utf-8','surrogatepass')).hexdigest(),len(raw.encode('utf-8','surrogatepass')))
+                capture.reject(diagnostic_code(error),raw.encode('utf-8'))
+                rejected=True
+        if rejected:
+            # The rejected projection grants no planning authority. Keep the
+            # original traveler messages for ordinary conversation, but do not
+            # carry an older save grant across this unparsed request (which
+            # may contain a cancellation or a changed destination).
+            self._context(worker,binding,state,dict(authority='none',status='discussion',facts={},
+                nonplanning_message_ids=[],authority_barrier_message_id=binding.message_id))
+            # The existing Worker continuation performs the real general answer
+            # through its original registered exits and fee/Memory guards.
+            return None
+        if isinstance(intake,ReadOnlyPlanningQuestion):
+            held=publication_held(text)
+            # A control-only question grants no publication authority. A later
+            # full intake must ground any grant in the original traveler text.
+            state=self._context(worker,binding,state,dict(authority='none',
+                status='discussion'if held else'needs_details',facts=facts,nonplanning_message_ids=[],
+                **({'authority_barrier_message_id':binding.message_id}if held else {})))
+            return self._clarify(worker,binding,state,original.locale,intake.reply,question_fields,['duration_days'])
+        calendar=self.calendar if self.calendar is not None and original.protocol==LIO_VERSION_V3 else None
+        if calendar is not None:
+            converted=calendar.convert(worker,binding,state,intake,original,turns,refs)
+            if converted is not None:return converted
         source_ids=[ref['message_id']for ref in refs]+[binding.message_id]
         boundary_mid=None if previous is None else previous.get('date_boundary_message_id')
         barrier_mid=None if previous is None else previous.get('authority_barrier_message_id')
@@ -158,6 +248,11 @@ class NationalLioPlanning:
                 **({'resolved_city_source_message_id':resolved_mid}if resolved_mid is not None else {}),
                 **({'authority_barrier_message_id':barrier_mid}if barrier_mid is not None else {})))
         authority=self._authority(intake,previous,current_index=len(turns)-1,turns=turns,source_ids=source_ids)
+        logging.getLogger('cj_usage.audit').info(
+            'LIO_PLANNING_DISPOSITION run_id=%s current_index=%s request_index=%s intent=%s '
+            'publication_hold=%s barrier_index=%s authority=%s',
+            binding.run_id,len(turns)-1,intake.planning_request_index,intake.intent,
+            intake.publication_hold,source_ids.index(barrier_mid)if barrier_mid is not None else None,authority)
         if intake.intent=='cancel':
             state=context(worker,binding,state,dict(authority='none',status='cancelled'))
             return self._answer(worker,binding,state,original.locale,'好，先不保存或修改行程。',"Okay, I won't save or change an itinerary.")
@@ -255,6 +350,11 @@ class NationalLioPlanning:
             return self._answer(worker,binding,state,original.locale,
                 '这项固定安排的时区与目的地不同或不明确，请确认应使用哪个时区；尚未保存。',
                 'The fixed arrangement has a different or unclear timezone. Please confirm which timezone to use; nothing has been saved.')
+        except DateDurationConflict:
+            state=context(worker,binding,state,dict(authority=authority,status='needs_details',city=resolution))
+            return self._answer(worker,binding,state,original.locale,
+                '起止日期和天数对不上，你想按这个日期范围，还是按说的天数来安排？',
+                'The date range and day count do not match. Should I use the date range or the number of days you gave?')
         except (InvalidInput,ValueError) as error:
             raise ProviderUnknown('original nationwide planning fields unavailable') from error
         if not self.plan_and_save.supports_destination(binding,city):
@@ -286,15 +386,16 @@ class NationalLioPlanning:
                     evidence=intake.sources.get('arrival.date',[])or intake.sources.get('start_date',[])
                 if evidence and all(ref['source_index']<date_boundary for ref in evidence):
                     fields[edge]['date']=dict(state='missing')
-        if intake.duration_days is not None and (intake.start_date is None
-                or intake.start_date['state']!='known' or fields['arrival']['date']['state']!='known'):
+        undated=intake.duration_days is not None and (intake.start_date is None
+                or intake.start_date['state']!='known' or fields['arrival']['date']['state']!='known')
+        if undated and calendar is None:
             state=context(worker,binding,state,dict(authority=authority,status='plan_preview',city=resolution))
             return discuss(worker,binding,state,original.locale,turns,refs,day_count=intake.duration_days)
         missing=[]
-        if intake.start_date is not None and intake.start_date['state']!='known':missing.append('start_date')
+        if calendar is None and intake.start_date is not None and intake.start_date['state']!='known':missing.append('start_date')
         for edge in ('arrival','departure'):
-            if fields.get(edge,{}).get('date',{}).get('state')!='known':missing.append(edge+'.date')
-        if not missing and authority!='none' and self.plan_and_save.planning_window_conflict(binding,fields):
+            if calendar is None and fields.get(edge,{}).get('date',{}).get('state')!='known':missing.append(edge+'.date')
+        if not undated and not missing and authority!='none' and self.plan_and_save.planning_window_conflict(binding,fields):
             state=context(worker,binding,state,dict(authority='none',status='different_trip',city=resolution))
             from datetime import date
             window=tuple(fields[edge]['date']['value']for edge in ('arrival','departure'))
@@ -304,7 +405,8 @@ class NationalLioPlanning:
             return discuss(worker,binding,state,original.locale,turns,refs,day_count=days,
                            planning_window=window,introduction=introduction)
         questions=[q for q in checked.get('questions',[]) if q['field']=='fixed_items']
-        complete_fixed=fixed_sources_complete(intake,fields,turns,city)
+        complete_fixed=fixed_sources_complete(intake,fields,turns,city,
+            ordinal_days=intake.duration_days if calendar is not None and undated else None)
         if missing or questions or not complete_fixed:
             state=context(worker,binding,state,dict(authority=authority,status='needs_details',city=resolution))
             required=[]
@@ -314,8 +416,17 @@ class NationalLioPlanning:
             return self._clarify(worker,binding,state,original.locale,intake.reply,question_fields,required)
         if authority=='none':return self._reply(worker,binding,state,intake.reply)
         state=context(worker,binding,state,dict(authority='none',status='ready_to_publish',city=resolution))
-        details=PlanningDetails(city.name,fields,None,refs)
+        from .lio_plan_pace import from_needs_fields
+        details=PlanningDetails(city.name,fields,None,refs,pace=from_needs_fields(fields))
         state=register(worker,binding,state,details)
+        if calendar is not None:
+            from datetime import date
+            start=fields['arrival']['date']
+            start=start['value'] if start['state']=='known' else None
+            count=intake.duration_days
+            if count is None:
+                count=(date.fromisoformat(fields['departure']['date']['value'])-date.fromisoformat(start)).days+1
+            return calendar.plan(worker,binding,state,details,original.locale,day_count=count,start_date=start)
         return self.plan_and_save(worker,binding,state,details,original.locale)
 
     @staticmethod
@@ -340,15 +451,20 @@ class NationalLioPlanning:
         # Publication still requires a traveler request, not a model label.
         # The semantic request is separate from facts mentioned in consultation.
         request_index=intake.planning_request_index
+        if (request_index is not None and previous is not None and source_ids[request_index]in previous.get('nonplanning_message_ids',[])):return 'none'
         barrier=None if previous is None else previous.get('authority_barrier_message_id')
         if request_index is not None and barrier is not None and request_index<=source_ids.index(barrier):return 'none'
         request=None if request_index is None else turns[request_index].text
         explicit=request is not None and PUBLICATION_REQUEST.search(request)is not None
-        denied=previous is not None and previous.get('status')in AUTHORITY_BARRIERS
+        # A harmless intervening reply may change the display status. It does
+        # not revoke an original refusal or create a fresh publication grant.
+        denied=barrier is not None or previous is not None and previous.get('status')in AUTHORITY_BARRIERS
         fresh_fact=any(ref['source_index']==request_index for ref in intake.sources.get('duration_days',[]))
-        current_trip=(intake.city is not None and intake.duration_days is not None and fresh_fact)
+        destination=(request is not None and intake.city is not None
+            and intake.city['source_index']==request_index and destination_request(request,intake.city['query']))
+        current_trip=(intake.city is not None and (destination or intake.duration_days is not None and fresh_fact))
         if request is not None and not publication_held(request)and (explicit or current_trip):
-            if not denied or request_index==current_index and explicit:
+            if not denied or explicit and (request_index==current_index or barrier is not None and request_index>source_ids.index(barrier)):
                 return 'save'if intake.intent=='save'else'plan'
         if previous is not None and previous.get('status')in ('needs_city','needs_details','ambiguous','confirmation_required','not_found','plan_preview'):
             return previous['authority']
@@ -357,7 +473,11 @@ class NationalLioPlanning:
     def _clarify(self,worker,binding,state,locale,reply,question_fields,missing,*,arrival=None):
         # Preserve the model's natural wording when it asks exactly what is
         # missing. The host repairs omissions/repeated known fields, not style.
-        if set(question_fields)==set(missing):return self._reply(worker,binding,state,reply)
+        if set(question_fields)==set(missing):
+            if missing!=['duration_days']or reply.count('?')+reply.count('？')<=1:
+                return self._reply(worker,binding,state,reply)
+            logging.getLogger('cj_usage.audit').info(
+                'LIO_CLARIFICATION_REPAIRED run_id=%s field=duration_days reason=multiple_questions',binding.run_id)
         zh={'city':'想去哪个城市？','duration_days':'你打算玩几天？','start_date':'你打算哪天开始？','party_size':'一共几个人出行？',
             'fixed_items':'固定安排谁参加、哪天以及开始和结束时间分别是什么？'}
         en={'city':'Which city would you like to visit?','duration_days':'For how many days?',

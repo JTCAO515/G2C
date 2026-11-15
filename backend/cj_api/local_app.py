@@ -35,7 +35,7 @@ from .local_run_context import load_run_context
 from cj_message.needs_binding import needs_scope_for
 from cj_message.travel import ABI as TRAVEL_ABI, PROFILE as TRAVEL_PROFILE
 from cj_run.step_usage import ledger_scope_for
-from cj_usage.codec import decode as decode_ledger
+from cj_usage.codec import decode_stored
 from cj_strict_json import reject_duplicates
 from .run_display_composition import RunDisplayWireConfiguration
 from .run_events_routes import RunEventsConfiguration
@@ -51,11 +51,19 @@ def scope_for(issuer, subject):
     return f'local:{issuer}:{subject}'
 
 
-def trip_resolver(database):
-    """TRIP boundary resolver: the principal's own connection and derived Trip scope."""
+def trip_resolver(database, *, provision=False):
+    """TRIP boundary resolver: the principal's own connection and derived Trip scope.
+
+    provision registers the Trip scope first (existing host provisioning only;
+    no formal record or Proposal is created).
+    """
     def resolve(principal):
         owner = scope_for(principal.issuer, principal.subject)
-        return lambda: database.connect(owner), trip_scope_for(owner)
+        scope = trip_scope_for(owner)
+        if provision:
+            with database.connect(owner) as conn:
+                conn.execute('INSERT INTO cj_trip_scope(scope) VALUES(%s) ON CONFLICT DO NOTHING', (scope,))
+        return lambda: database.connect(owner), scope
     return resolve
 
 
@@ -264,14 +272,17 @@ class LocalDatabase:
         if self.run_context is None: return
         profile=self.run_context.current if profile is None else profile
         with self.connect(scope,usage_profile=profile) as conn:
-            self._check_budget_account(conn, scope, profile)
+            return self._check_budget_account(conn, scope, profile)
 
     def _check_budget_account(self, executor, scope, profile):
         account = ledger_scope_for(scope, profile.meter)
         row = executor.execute('SELECT format_version,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',
                                (account,)).fetchone()
-        if row is None or row[0] != 1 or decode_ledger(row[1]).config != profile.meter:
+        if row is None:
             raise CompositionUnavailable('original budget account unavailable or changed')
+        if decode_stored(row[0],row[1]).config != profile.meter:
+            raise CompositionUnavailable('original budget account unavailable or changed')
+        return row[0]
 
     def provision(self, scope):
         """Trusted, idempotent scope provisioning for the local host only."""
@@ -424,7 +435,8 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
                      memory_configuration=None, run_context=None, travel_context=False, needs_profile=None, trip_context=False,edit_configuration=None,
                      cleanup_configuration=None,formal_memory_configuration=None,database=None,account_admission=False,message_subjects=None,
                      existing_display_reads=False,cleanup_subjects=None,demo_dialogue_subjects=None,
-                     lio_dialogue_subjects=None,lio_memory_factory=None):
+                     lio_dialogue_subjects=None,lio_memory_factory=None,lio_calendar_subjects=None,
+                     lio_exploration_subjects=None,lio_profile_epoch_reader=None):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
     auth_dir = Path(auth_dir)
@@ -632,6 +644,12 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         trip_confirmation_signer=confirmation_signer)
     if lio_dialogue_subjects and (not demo_dialogue_subjects or not lio_dialogue_subjects <= demo_dialogue_subjects):
         raise CompositionUnavailable('Lio subjects must belong to the admitted Demo scope')
+    if lio_calendar_subjects and (type(lio_calendar_subjects) is not frozenset
+            or not lio_dialogue_subjects or not lio_calendar_subjects <= lio_dialogue_subjects):
+        raise CompositionUnavailable('calendar subjects require an explicit admitted Lio consumer')
+    if lio_exploration_subjects and (type(lio_exploration_subjects) is not frozenset
+            or not lio_calendar_subjects or not lio_exploration_subjects<=lio_calendar_subjects):
+        raise CompositionUnavailable('exploration subjects require an explicit calendar/Lio consumer')
     if demo_dialogue_subjects:
         if not account_admission or not database.travel_context or database.run_context is None:
             raise CompositionUnavailable('Demo dialogue requires original Travel and account admission')
@@ -663,15 +681,34 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         if lio_dialogue_subjects:
             lio_boundary, lio_checker = dialogue_binding(lio_dialogue_subjects)
             memory_cards = lio_memory_factory(lio_boundary) if lio_memory_factory is not None else None
+            calendar_boundary, calendar_checker = (dialogue_binding(lio_calendar_subjects)
+                if lio_calendar_subjects else (None,None))
             register_lio_dialogue_routes(app, lio_boundary, database.run_repository,
                                          LioTripCards(database, lio_checker), prepare_scope=database._provision_scope,
-                                         memory_cards=memory_cards)
+                                         memory_cards=memory_cards,calendar_boundary=calendar_boundary,
+                                         calendar_cards=(LioTripCards(database,calendar_checker,calendar=True)
+                                             if lio_calendar_subjects else None))
+            if lio_exploration_subjects:
+                if lio_profile_epoch_reader is None:
+                    raise CompositionUnavailable('native4 requires the current Memory epoch reader')
+                from .lio_exploration_routes import register_lio_exploration_routes
+                from .lio_profile_cards import LioProfileCards
+                exploration_boundary,exploration_checker=dialogue_binding(lio_exploration_subjects)
+                register_lio_exploration_routes(app,exploration_boundary,database.run_repository,
+                    LioTripCards(database,exploration_checker,calendar=True),LioProfileCards(lio_profile_epoch_reader),
+                    prepare_scope=database._provision_scope,memory_cards=memory_cards)
             if memory_cards is not None:
                 from .lio_memory_routes import register_lio_memory_routes
                 register_lio_memory_routes(app, memory_cards)
             if confirmation_signer is not None:
                 from .lio_trip_routes import LioTripBoundary, register_lio_trip_routes
                 register_lio_trip_routes(app, LioTripBoundary(database, lio_checker, confirmation_signer))
+                if lio_calendar_subjects:
+                    from .lio_calendar_trip_routes import register_lio_calendar_trip_routes
+                    from cj_trip.local_calendar_read import register_local_calendar_read_routes
+                    register_lio_calendar_trip_routes(app,LioTripBoundary(database,calendar_checker,confirmation_signer,calendar=True))
+                    register_local_calendar_read_routes(app,database=database,auth_dir=auth_dir,
+                                                       selected_subjects=lio_calendar_subjects)
     if database.edit_results:
         from .run_display_composition import build_run_display_reader
         from .scoped_result_routes import register_scoped_result_routes

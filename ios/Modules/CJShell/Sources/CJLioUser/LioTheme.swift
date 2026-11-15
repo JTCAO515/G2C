@@ -76,10 +76,29 @@ public enum LioTheme {
     public static let outlineWidth: CGFloat = 1
 
     public enum Motion {
+        public static let streamingStep = Duration.milliseconds(20)
+        public static let reducedStreamingStep = Duration.milliseconds(100)
+        public static let markdownStep = Duration.milliseconds(40)
+        public static let glyphFade = Duration.milliseconds(150)
+        public static let resultDelay = Duration.milliseconds(200)
         /// Something appearing.
         public static let appear = Animation.spring(duration: 0.3)
         /// A change of state.
         public static let change = Animation.easeOut(duration: 0.2)
+        /// Small feedback such as a pressed control.
+        public static let micro = Animation.easeOut(duration: 0.12)
+        /// A message or card entering the conversation.
+        public static let enter = Animation.spring(response: 0.35, dampingFraction: 0.85)
+        /// A moment worth noticing, such as a saved trip.
+        public static let emphasis = Animation.spring(response: 0.45, dampingFraction: 0.75)
+        /// Seconds for one full breath (in and out) of a waiting avatar.
+        public static let breathingCycle: Double = 1.6
+        /// Half a breath, repeated with autoreverse for a `breathingCycle` loop.
+        public static let breathing = Animation.easeInOut(duration: breathingCycle / 2).repeatForever(autoreverses: true)
+        /// The first frame's avatar, played once per launch.
+        public static let launch = Animation.spring(duration: 0.4, bounce: 0.2)
+        /// Seconds the old conversation takes to fade out when a new chat starts.
+        public static let chatFadeOut: Double = 0.15
 
         /// No animation when Reduce Motion is on.
         public static func animation(_ animation: Animation, reduceMotion: Bool) -> Animation? {

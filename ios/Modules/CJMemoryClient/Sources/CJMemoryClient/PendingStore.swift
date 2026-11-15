@@ -234,11 +234,26 @@ struct MemoryRejectedOperation<Original: MemoryJournalRecord>: MemoryJournalReco
     /// Exact per-record plan for item erasure. Building it decrypts/validates the
     /// whole bounded journal before any deletion; execution invokes no key or
     /// caller callback and never follows a supplied path or a replaced file.
+    /// It also erases every writer temporary entry: one left by a crash before its
+    /// rename may hold this item's complete or truncated ciphertext, and an
+    /// uncommitted entry cannot be attributed to an item without the key.
     struct Removal {
         fileprivate let owner: MemoryEncryptedRecords<Record>
         fileprivate let inventory: [Durability]
         fileprivate let selected: Set<String>
         fileprivate let identities: [String: (dev_t, ino_t)]
+        fileprivate let temporaries: [String: (dev_t, ino_t)]
+    }
+    /// Same preflight as LocalJournalCleanup.clear: no symlink follow, a regular
+    /// file with a single link, owned by this UID.
+    private func temporaryIdentity(_ name: String) throws -> (dev_t, ino_t) {
+        var entry = stat()
+        guard LocalJournalFile.isTemporary(name), fstatat(directory, name, &entry, AT_SYMLINK_NOFOLLOW) == 0,
+              entry.st_mode & S_IFMT == S_IFREG, entry.st_nlink == 1, entry.st_uid == getuid() else { throw MemoryFailure.storageUnavailable }
+        return (entry.st_dev, entry.st_ino)
+    }
+    private func temporaryNames() throws -> Set<String> {
+        Set(try FileManager.default.contentsOfDirectory(atPath: root.path).filter(LocalJournalFile.isTemporary))
     }
     func prepareRemoval(where matches: (Record) throws -> Bool) throws -> Removal {
         let records = try pending()
@@ -264,7 +279,9 @@ struct MemoryRejectedOperation<Original: MemoryJournalRecord>: MemoryJournalReco
             inventory.append(proof)
             if try matches(record) { selected.insert(filename) }
         }
-        let plan = Removal(owner: self, inventory: inventory, selected: selected, identities: identities)
+        var temporaries: [String: (dev_t, ino_t)] = [:]
+        for name in try temporaryNames() { temporaries[name] = try temporaryIdentity(name) }
+        let plan = Removal(owner: self, inventory: inventory, selected: selected, identities: identities, temporaries: temporaries)
         try validateRemoval(plan)
         return plan
     }
@@ -275,6 +292,10 @@ struct MemoryRejectedOperation<Original: MemoryJournalRecord>: MemoryJournalReco
             throw MemoryFailure.storageUnavailable
         }
         for proof in plan.inventory { try validateRemovalEntry(proof, plan: plan) }
+        guard try temporaryNames() == Set(plan.temporaries.keys) else { throw MemoryFailure.storageUnavailable }
+        for (name, identity) in plan.temporaries {
+            guard try temporaryIdentity(name) == identity else { throw MemoryFailure.storageUnavailable }
+        }
     }
     private func validateRemovalEntry(_ proof: Durability, plan: Removal) throws {
         var entry = stat()
@@ -290,9 +311,15 @@ struct MemoryRejectedOperation<Original: MemoryJournalRecord>: MemoryJournalReco
             try validateRemovalEntry(proof, plan: plan)
             guard unlinkat(directory, proof.filename, 0) == 0 else { throw MemoryFailure.exchangeUnknown }
         }
+        for (name, identity) in plan.temporaries {
+            // Same name, inode and file checks immediately before unlink; earlier unlinks may have happened.
+            guard (try? temporaryIdentity(name)).map({ $0 == identity }) == true,
+                  unlinkat(directory, name, 0) == 0 else { throw MemoryFailure.exchangeUnknown }
+        }
         guard fsync(directory) == 0 else { throw MemoryFailure.exchangeUnknown }
         try validateDirectory()
-        guard try Set(LocalJournalFile.recordNames(atPath: root.path)) == Set(plan.inventory.map(\.filename)).subtracting(plan.selected) else {
+        guard try Set(LocalJournalFile.recordNames(atPath: root.path)) == Set(plan.inventory.map(\.filename)).subtracting(plan.selected),
+              try temporaryNames().isEmpty else {
             throw MemoryFailure.exchangeUnknown
         }
         for proof in plan.inventory where !plan.selected.contains(proof.filename) { try validateDurability(proof) }

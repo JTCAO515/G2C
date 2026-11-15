@@ -8,8 +8,11 @@ import CJTripClient
 struct LioItineraryCard<Actions: View>: View {
     let itinerary: LioItinerary
     let language: LioLanguage
+    var celebrate = false
     let showTrips: () -> Void
     @ViewBuilder let actions: () -> Actions
+    @State private var savedAppeared = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -19,19 +22,28 @@ struct LioItineraryCard<Actions: View>: View {
                 .foregroundStyle(LioTheme.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
+            LioTripCalendarLabel(calendar: itinerary.calendar, language: language)
             ForEach(itinerary.days) { day in
                 DisclosureGroup {
                     LioDayStops(day: day, language: language)
                         .padding(.vertical, 6)
                 } label: {
-                    Text(dayTitle(day, language))
+                    Text(dayTitle(day, language, calendar: itinerary.calendar))
+                        .foregroundStyle(LioTheme.ink)
                         .frame(minHeight: 44, alignment: .leading)
                 }
-                .accessibilityIdentifier("lio.trip.day.\(day.number)")
+                .disclosureGroupStyle(LioDayDisclosureStyle(language: language,
+                    identifier: "lio.trip.day.\(day.number)"))
             }
             Button(action: showTrips) {
-                RunReadableText(text: language.text("Saved to Trips · View", "已保存到行程 · 查看"))
-                    .frame(minHeight: 44, alignment: .leading)
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(LioTheme.jade)
+                        .symbolEffect(.bounce, options: .nonRepeating, value: savedAppeared)
+                        .accessibilityHidden(true)
+                    RunReadableText(text: language.text("Saved to Trips · View", "已保存到行程 · 查看"))
+                        .frame(minHeight: 44, alignment: .leading)
+                }
             }
             .buttonStyle(.bordered)
             .accessibilityIdentifier("lio.trip.show")
@@ -40,6 +52,41 @@ struct LioItineraryCard<Actions: View>: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+        .onAppear { if celebrate && !reduceMotion { savedAppeared = true } }
+    }
+}
+
+private struct LioDayDisclosureStyle: DisclosureGroupStyle {
+    let language: LioLanguage
+    let identifier: String
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(LioTheme.Motion.animation(LioTheme.Motion.change, reduceMotion: reduceMotion)) {
+                    configuration.isExpanded.toggle()
+                }
+            } label: {
+                HStack {
+                    configuration.label
+                    Spacer(minLength: LioTheme.Spacing.sm)
+                    Image(systemName: "chevron.right")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(LioTheme.inkSecondary)
+                        .rotationEffect(.degrees(configuration.isExpanded ? 90 : 0))
+                        .accessibilityHidden(true)
+                }
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityValue(configuration.isExpanded
+                ? language.text("Expanded", "已展开") : language.text("Collapsed", "已收起"))
+            .accessibilityIdentifier(identifier)
+            if configuration.isExpanded { configuration.content }
+        }
+        .accessibilityElement(children: .contain)
     }
 }
 
@@ -63,10 +110,10 @@ struct LioTripsView: View {
     let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
     @Binding var path: [LioTripRoute]
     let openChat: () -> Void
-    @State private var mapDay: LioItinerary.Day?
-    @State private var saved: [StructuredTripSummary]?
+    @State private var saved: [LioTripLibrary.Entry]?
     @State private var listUnavailable = false
     @State private var listAttempt = 0
+    @Environment(\.colorScheme) private var colorScheme
 
     private var shownItineraries: [LioItinerary] {
         guard let currentPlan else { return itineraries }
@@ -75,7 +122,16 @@ struct LioTripsView: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            Group {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(language.text("Trips", "行程"))
+                    .font(LioTheme.display(.largeTitle))
+                    .foregroundStyle(LioTheme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 8)
+                Group {
                 if library != nil {
                     if listUnavailable {
                         ContentUnavailableView {
@@ -87,11 +143,15 @@ struct LioTripsView: View {
                         if saved.isEmpty {
                             emptyTrips
                         } else {
-                            List(saved, id: \.tripID) { trip in
-                                NavigationLink(trip.title, value: LioTripRoute(id: trip.tripID))
-                                    .lioRow()
+                            tripList {
+                                ForEach(saved, id: \.tripID) { trip in
+                                    NavigationLink(value: LioTripRoute(id: trip.tripID)) {
+                                        LioTripListCard(title: trip.title, itinerary: nil, language: language,
+                                                       calendar: trip.calendar, dayCount: trip.dayCount)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
                             }
-                            .listStyle(.insetGrouped)
                         }
                     } else {
                         ProgressView()
@@ -99,27 +159,52 @@ struct LioTripsView: View {
                 } else if shownItineraries.isEmpty {
                     emptyTrips
                 } else {
-                    List {
+                    tripList {
                         ForEach(shownItineraries) { itinerary in
-                            Section(itinerary.title) {
-                                LioTripDays(itinerary: itinerary, language: language) { mapDay = $0 }
+                            NavigationLink(value: LioTripRoute(id: itinerary.id)) {
+                                LioTripListCard(title: itinerary.title, itinerary: itinerary, language: language)
                             }
-                            .lioRow()
+                            .buttonStyle(.plain)
                         }
                     }
-                    .listStyle(.insetGrouped)
                 }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .lioPage()
             .navigationTitle(language.text("Trips", "行程"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(LioTheme.paper, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(colorScheme, for: .navigationBar)
             .navigationDestination(for: LioTripRoute.self) { route in
                 if let library {
                     LioTripDetail(tripID: String(decoding: route.tripID, as: UTF8.self), library: library,
                                   language: language, recordedMap: recordedMap)
                         .id(route)
+                } else if let itinerary = shownItineraries.first(where: { $0.id == String(decoding: route.tripID, as: UTF8.self) }) {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 20) {
+                            Text(itinerary.title)
+                                .font(LioTheme.display(.title).weight(.semibold))
+                                .foregroundColor(LioTheme.ink)
+                                .background(LioTheme.paper)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityAddTraits(.isHeader)
+                            LioTripTimeline(itinerary: itinerary, language: language)
+                        }
+                        .padding(16)
+                    }
+                        .lioPage()
+                        .navigationTitle("")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbarBackground(LioTheme.paper, for: .navigationBar)
+                        .toolbarBackground(.visible, for: .navigationBar)
                 }
             }
             .toolbar {
+                // The full-size D5 title is in the page; navigation keeps its actions and back label.
+                ToolbarItem(placement: .principal) { Color.clear.frame(width: 1, height: 1).accessibilityHidden(true) }
                 if let tripPlan {
                     ToolbarItem(placement: .topBarTrailing) {
                         NavigationLink(language.text("Previous plans", "此前的安排")) {
@@ -128,9 +213,6 @@ struct LioTripsView: View {
                         .accessibilityIdentifier("lio.trip.history")
                     }
                 }
-            }
-            .sheet(item: $mapDay) { day in
-                LioDayMap(day: day, language: language)
             }
             .task(id: listAttempt) {
                 guard let library else { return }
@@ -149,15 +231,30 @@ struct LioTripsView: View {
         }
     }
 
-    private var emptyTrips: some View {
-        ContentUnavailableView {
-            Label(language.text("No trips yet", "还没有行程"), systemImage: "suitcase")
-        } description: {
-            Text(language.text("Tell Lio where you’d like to go.", "告诉 Lio 你想去哪儿。"))
-        } actions: {
-            Button(language.text("Chat with Lio", "和 Lio 聊聊"), action: openChat)
-                .buttonStyle(.bordered)
+    private func tripList<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        ScrollView {
+            VStack(spacing: 16, content: content)
+                .padding(16)
         }
+        .clipped()
+        .accessibilityIdentifier("lio.trip.list")
+    }
+
+    private var emptyTrips: some View {
+        VStack(spacing: 16) {
+            LioPortrait(size: 80)
+            Text(language.text("No trips yet", "还没有行程"))
+                .font(LioTheme.display(.title2))
+                .accessibilityAddTraits(.isHeader)
+            Text(language.text("Tell Lio where you’d like to go.", "告诉 Lio 你想去哪儿。"))
+                .foregroundStyle(LioTheme.inkSecondary)
+            Button(language.text("Chat with Lio", "和 Lio 聊聊"), action: openChat)
+                .buttonStyle(.borderedProminent)
+                .frame(minHeight: 44)
+        }
+        .multilineTextAlignment(.center)
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -166,18 +263,31 @@ private struct LioTripDetail: View {
     let library: LioTripLibrary
     let language: LioLanguage
     let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
-    @State private var record: StructuredTripRecord?
+    @State private var record: LioTripLibrary.Record?
     @State private var unavailable = false
     @State private var attempt = 0
-    @State private var mapDay: LioItinerary.Day?
 
     var body: some View {
         Group {
             if let record {
-                List {
-                    LioTripDays(itinerary: LioItinerary(record), language: language) { mapDay = $0 }
-                        .lioRow()
-                    if let recordedMap { recordedMap(record.document).lioRow() }
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        Text(record.title)
+                            .font(LioTheme.display(.title).weight(.semibold))
+                            .foregroundColor(LioTheme.ink)
+                            .background(LioTheme.paper)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityAddTraits(.isHeader)
+                        switch record {
+                        case .legacy(let value):
+                            LioSavedTripTimeline(record: value, language: language)
+                            if let recordedMap { recordedMap(value.document) }
+                        case .calendar(let value):
+                            LioCalendarSavedTripTimeline(record: value, language: language)
+                            if case .legacy(let document) = value.content, let recordedMap { recordedMap(document) }
+                        }
+                    }
+                    .padding(16)
                 }
             } else if unavailable {
                 ContentUnavailableView {
@@ -190,10 +300,10 @@ private struct LioTripDetail: View {
             }
         }
         .lioPage()
-        .navigationTitle(record?.document.title ?? language.text("Trip details", "行程详情"))
-        .sheet(item: $mapDay) { day in
-            LioDayMap(day: day, language: language)
-        }
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(LioTheme.paper, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
         .task(id: attempt) {
             record = nil
             unavailable = false
@@ -212,23 +322,68 @@ private struct LioTripDetail: View {
     }
 }
 
+private struct LioCalendarSavedTripTimeline: View {
+    let record: CalendarStructuredTripRecord
+    let language: LioLanguage
+    private let places: Result<[TripPlaceProjection], any Error>
+
+    init(record: CalendarStructuredTripRecord, language: LioLanguage) {
+        self.record = record
+        self.language = language
+        places = Result {
+            switch record.content {
+            case .legacy(let document): try TripPlaceProjection.read(from: document)
+            case .calendar(let document): try TripPlaceProjection.read(from: document)
+            }
+        }
+    }
+
+    var body: some View {
+        switch places {
+        case .success(let places):
+            LioTripTimeline(itinerary: LioItinerary(record, places: places), language: language)
+        case .failure:
+            Text(language.text("Map unavailable", "暂时无法显示地图"))
+            LioTripTimeline(itinerary: LioItinerary(record), language: language)
+        }
+    }
+}
+
+private struct LioSavedTripTimeline: View {
+    let record: StructuredTripRecord
+    let language: LioLanguage
+    private let places: Result<[TripPlaceProjection], any Error>
+
+    init(record: StructuredTripRecord, language: LioLanguage) {
+        self.record = record
+        self.language = language
+        places = Result { try TripPlaceProjection.read(from: record.document) }
+    }
+
+    var body: some View {
+        switch places {
+        case .success(let places):
+            LioTripTimeline(itinerary: LioItinerary(record, places: places), language: language)
+        case .failure:
+            Text(language.text("Map unavailable", "暂时无法显示地图"))
+            LioTripTimeline(itinerary: LioItinerary(record), language: language)
+        }
+    }
+}
+
 struct LioTripDays: View {
     let itinerary: LioItinerary
     let language: LioLanguage
     let showMap: (LioItinerary.Day) -> Void
 
     var body: some View {
+        LioTripCalendarLabel(calendar: itinerary.calendar, language: language)
         ForEach(itinerary.days) { day in
             VStack(alignment: .leading, spacing: 10) {
-                Text(dayTitle(day, language))
+                Text(dayTitle(day, language, calendar: itinerary.calendar))
                     .font(.headline)
                     .accessibilityAddTraits(.isHeader)
                 LioDayStops(day: day, language: language)
-                if day.stops.contains(where: { $0.point != nil }) {
-                    Button(language.text("Show on map", "在地图上看")) { showMap(day) }
-                        .frame(minHeight: 44, alignment: .leading)
-                        .accessibilityIdentifier("lio.trip.map.\(day.number)")
-                }
             }
             .padding(.vertical, 8)
         }
@@ -249,7 +404,7 @@ private struct LioDayStops: View {
                         .frame(width: 20, height: 20)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
-                        let ending = [stop.endDate, stop.endTime].compactMap { $0 }.joined(separator: " ")
+                        let ending = stop.endingText(language)
                         Group {
                             if let start = stop.time, !ending.isEmpty {
                                 Text("\(start)–\(ending)")
@@ -272,34 +427,7 @@ private struct LioDayStops: View {
     }
 }
 
-private struct LioDayMap: View {
-    let day: LioItinerary.Day
-    let language: LioLanguage
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            Map {
-                ForEach(day.stops) { stop in
-                    if let point = stop.point {
-                        Marker(stop.name, coordinate: CLLocationCoordinate2D(latitude: point.latitude, longitude: point.longitude))
-                    }
-                }
-            }
-            .navigationTitle(dayTitle(day, language))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(language.text("Done", "完成")) { dismiss() }
-                }
-            }
-        }
-    }
-}
-
-private func dayTitle(_ day: LioItinerary.Day, _ language: LioLanguage) -> String {
-    if let date = day.date { return date }
-    if day.datePending { return language.text("Date to be decided", "日期待定") }
-    return language.text("Day \(day.number)", "第 \(day.number) 天")
+func dayTitle(_ day: LioItinerary.Day, _ language: LioLanguage, calendar: LioItinerary.CalendarState? = nil) -> String {
+    day.title(language, calendar: calendar)
 }
 #endif

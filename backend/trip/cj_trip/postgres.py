@@ -8,11 +8,21 @@ import logging
 import json
 
 logger = logging.getLogger(__name__)
-from .domain import Action, Proposal, ProposalDetail, Receipt, Trip, Conflict, Denied, CommitUnknown, identifier
+from .domain import Action, Proposal, ProposalDetail, Receipt, Trip, Conflict, Denied, CommitUnknown, identifier, packed
+
+# Canonical .4 has exactly these first two root fields (the existing encoder
+# sorts keys). This only excludes a new, unsupported representation; it cannot
+# admit content. Do not cast old bytea documents to PostgreSQL json/jsonb:
+# otherwise valid legacy strings such as an escaped NUL become unreadable.
+_RICH_UNDATED = packed(dict(calendar=dict(state='undated'),content_version='structured.4'))[:-1]+b','
+_DATE_MARKER = b'2000-01-01'
+_RICH_DATED_BEGIN, _RICH_DATED_END = (
+    packed(dict(calendar=dict(state='dated',start_date=_DATE_MARKER.decode()),content_version='structured.4'))[:-1]+b','
+).split(_DATE_MARKER)
 
 
 class Repository:
-    def __init__(self, connect, scope, confirm=None, guard=None, *, structured=False, calendar=False):
+    def __init__(self, connect, scope, confirm=None, guard=None, *, structured=False, calendar=False, rich=False):
         self.connect, self.scope = connect, identifier(scope)
         self.confirm = confirm
         self.guard = guard or (lambda stage: None)
@@ -20,6 +30,9 @@ class Repository:
         if calendar and not structured:
             raise ValueError('calendar consumer requires structured capability')
         self.calendar = calendar
+        if rich and not calendar:
+            raise ValueError('rich consumer requires explicit calendar capability')
+        self.rich = rich
         self.manual_origin = None
         self.needs_actions = None
         self.needs_edits = None
@@ -125,6 +138,15 @@ class Repository:
 
     def _content(self, content, *, validated=False):
         document = json.loads(content)
+        if type(document) is dict and document.get('content_version') == 'structured.4':
+            if not self.rich:
+                raise Denied('rich Trip requires explicit versioned consumer')
+            if not validated:
+                from .structured_v4 import validate_document
+                from .domain import packed
+                validate_document(document)
+                if packed(document) != content: raise ValueError('canonical stored Trip required')
+            return content
         if type(document) is dict and document.get('content_version') == 'structured.3':
             if not self.calendar:
                 raise Denied('calendar Trip requires explicit versioned consumer')
@@ -163,6 +185,12 @@ class Repository:
             return self._publish_in_tx(cur, proposal)
 
     def _publish_in_tx(self, cur, proposal):
+        # Preserve the accepted legacy direct source-writer ingress. Only the
+        # new rich representation adds an explicit consumer requirement here;
+        # public publish/read/act retain their existing version admission.
+        document = json.loads(proposal.content)
+        if type(document) is dict and document.get('content_version') == 'structured.4':
+            self._content(proposal.content, validated=True)
         cur.execute('SELECT candidate_hash FROM cj_trip_proposal WHERE scope=%s AND proposal_id=%s', (self.scope,proposal.proposal_id))
         old = cur.fetchone()
         digest = proposal.digest(self.scope)
@@ -373,5 +401,15 @@ class Repository:
         if not isinstance(after, str): raise ValueError('invalid cursor')
         if after: identifier(after)
         with self.transaction() as cur:
-            cur.execute('SELECT trip_id,version,content FROM cj_trip_record WHERE scope=%s AND trip_id COLLATE "C">%s COLLATE "C" ORDER BY trip_id COLLATE "C" LIMIT %s', (self.scope,after,limit))
+            # Filter an unsupported new representation before LIMIT, so old
+            # keyset pages can still reach old records after a rich Trip.
+            # Detail and write paths reject the representation in _content.
+            representation=''
+            parameters=(self.scope,after)
+            if not self.rich:
+                representation=(' AND NOT (substring(content from 1 for %s)=%s OR '
+                    '(substring(content from 1 for %s)=%s AND substring(content from %s for %s)=%s))')
+                parameters+=(len(_RICH_UNDATED),_RICH_UNDATED,len(_RICH_DATED_BEGIN),_RICH_DATED_BEGIN,
+                             len(_RICH_DATED_BEGIN)+len(_DATE_MARKER)+1,len(_RICH_DATED_END),_RICH_DATED_END)
+            cur.execute('SELECT trip_id,version,content FROM cj_trip_record WHERE scope=%s AND trip_id COLLATE "C">%s COLLATE "C"'+representation+' ORDER BY trip_id COLLATE "C" LIMIT %s', (*parameters,limit))
             return [Trip(r[0],r[1],self._content(bytes(r[2]))) for r in cur.fetchall()]

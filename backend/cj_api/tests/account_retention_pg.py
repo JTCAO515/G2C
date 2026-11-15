@@ -105,6 +105,16 @@ def main(root,conninfo):
     for user in subjects:local_run_context.provision_budget(conninfo,old_context,user)
     old_owner_ledger=ledger_scope_for(owner,old_context.current.meter)
     old_other_ledger=ledger_scope_for(other,old_context.current.meter)
+    # Retained v2 accounting must obey the same approved owner cleanup. Keep
+    # original v1 behavior above; here upgrade only the fixture's stored format.
+    from cj_usage.codec import decode_stored,decode_v2,encode_v2
+    with psycopg.connect(**config)as conn:
+        for who,key in ((owner,ledger_scope_for(owner,context.current.meter)),
+                        (owner,old_owner_ledger),(other,ledger_scope_for(other,context.current.meter))):
+            version,raw=conn.execute('SELECT format_version,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(key,)).fetchone()
+            data=asdict(decode_stored(version,raw));data.update(run_profiles={},attempt_providers={})
+            conn.execute('UPDATE cj_usage_ledger_candidate SET format_version=2,ledger=%s::jsonb WHERE scope_id=%s',(encode_v2(decode_v2(data)),key))
+            conn.execute("INSERT INTO cj_native4_usage_profile VALUES(%s,%s,'lio-native4.1')",(who,key))
     names=('checkpoints/run','business/message','business/needs-current-planning','business/usage')
     reg=encode(dict(version='b-domain-proof',stores=[dict(id='checkpoints',objects=[dict(id='run',cleanup_protocol='CLEANUP@1.1')]),
         dict(id='business',objects=[dict(id=x.split('/')[1],cleanup_protocol='CLEANUP@1.1') for x in names[1:]])]))
@@ -136,12 +146,14 @@ def main(root,conninfo):
         assert conn.execute('SELECT count(*) FROM cj_usage_ledger_candidate WHERE scope_id=%s',(old_owner_ledger,)).fetchone()[0]==0
         assert conn.execute('SELECT count(*) FROM cj_usage_ledger_candidate WHERE scope_id=%s',(old_other_ledger,)).fetchone()[0]==1
         assert conn.execute('SELECT count(*) FROM cj_message_receipt WHERE scope=%s',(other,)).fetchone()[0]==1
+        assert conn.execute('SELECT count(*) FROM cj_native4_usage_profile WHERE scope=%s',(owner,)).fetchone()==(0,)
+        assert conn.execute('SELECT count(*) FROM cj_native4_usage_profile WHERE scope=%s',(other,)).fetchone()==(1,)
     # Bare old runtime credentials cannot reconstruct the erased account scope.
     try:
         with database.connect(owner) as conn:conn.execute('INSERT INTO cj_message_scope(scope) VALUES(%s)',(owner,))
     except psycopg.Error:pass
     else:raise AssertionError('runtime recreated a retired account namespace')
-    print('PASS real message/run/needs/usage B hooks after actual FakeProvider, original task ownership stop, cross-owner preservation and database non-resurrection fence')
+    print('PASS format2 original current/historical accounting + qualification cascade and foreign qualification retention; real message/run/needs/usage B hooks after actual FakeProvider, original task ownership stop, cross-owner preservation and database non-resurrection fence')
 
 
 if __name__=='__main__':

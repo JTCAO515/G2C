@@ -57,7 +57,27 @@ def main():
     if app.count(preview) != 1:
         raise ValueError("Expected a single sample preview")
     fixture_routes = (
-        '        if ProcessInfo.processInfo.arguments.contains("--lio-scene-privacy-acceptance") {\n'
+        '        if ProcessInfo.processInfo.arguments.contains("--lio-result-visibility-acceptance") {\n'
+        '            LioResultVisibilityFixture()\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-streaming-acceptance") {\n'
+        '            LioStreamingFixture(chinese: UserDefaults.standard.string(forKey: "cj.ui.language.v1") == "zh-Hans")\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-thinking-lifecycle-acceptance") {\n'
+        '            LioThinkingLifecycleFixture()\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-retry-timing-acceptance") {\n'
+        '            LioRetryTimingFixture(shell: shell)\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-calendar-wire-acceptance") {\n'
+        '            LioCalendarWireFixture(shell: shell)\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-thinking-acceptance") {\n'
+        '            LioThinkingFixture(chinese: UserDefaults.standard.string(forKey: "cj.ui.language.v1") == "zh-Hans")\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-exploration-read-acceptance") {\n'
+        '            LioExplorationReadFixture(chinese: UserDefaults.standard.string(forKey: "cj.ui.language.v1") == "zh-Hans")\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-rich-itinerary-acceptance") {\n'
+        '            LioRichItineraryFixture(chinese: UserDefaults.standard.string(forKey: "cj.ui.language.v1") == "zh-Hans")\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-exploration-reply-acceptance") {\n'
+        '            LioExplorationReplyFixture(chinese: UserDefaults.standard.string(forKey: "cj.ui.language.v1") == "zh-Hans")\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-question-controls-acceptance") {\n'
+        '            LioExplorationQuestionsFixture(chinese: UserDefaults.standard.string(forKey: "cj.ui.language.v1") == "zh-Hans")\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-scene-privacy-acceptance") {\n'
         '            LioScenePrivacyFixture(shell: shell)\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-session-recovery-acceptance") {\n'
         '            LioSessionRecoveryFixture(shell: shell)\n'
@@ -72,7 +92,8 @@ def main():
         '        } else ' + preview.lstrip()
     )
     fixtures = ("LioScrollFixture.swift", "LioTimelineFixture.swift", "LioJourneyFixture.swift",
-                "LioMemoryJourneyFixture.swift", "LioChatHistoryFixture.swift", "LioSessionRecoveryFixture.swift", "LioScenePrivacyFixture.swift")
+                "LioMemoryJourneyFixture.swift", "LioChatHistoryFixture.swift", "LioSessionRecoveryFixture.swift",
+                "LioScenePrivacyFixture.swift", "LioExplorationQuestionsFixture.swift", "LioExplorationReplyFixture.swift", "LioRichItineraryFixture.swift", "LioExplorationReadFixture.swift", "LioCalendarWireFixture.swift", "LioThinkingFixture.swift", "LioStreamingFixture.swift")
     generated_source.write_text(app.replace(preview, fixture_routes)
                                 .replace("import CJLioUser\n", "@testable import CJLioUser\n")
                                 + "\n" + "\n".join((HERE / name).read_text() for name in fixtures))
@@ -94,7 +115,7 @@ def main():
         subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=600)
     summary = subprocess.check_output(["xcrun", "xcresulttool", "get", "test-results", "summary", "--path", str(result)])
     (output / "summary.json").write_bytes(summary)
-    assert json.loads(summary)["passedTests"] == (len(args.case) if args.case else 32), summary
+    assert json.loads(summary)["passedTests"] == (len(args.case) if args.case else 68), summary
 
 
 if __name__ == "__main__":

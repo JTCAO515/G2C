@@ -1,7 +1,8 @@
 """Injected DB-API repository. No DSN, role, provider or automatic provisioning."""
 from contextlib import contextmanager
 import logging
-from .codec import decode, encode, CorruptLedger
+from .codec import decode, encode, decode_stored, encode_v2, CorruptLedger
+from .core import LedgerV2
 from .core import integer, label
 
 
@@ -17,17 +18,16 @@ def _ledger_row(row):
     """Database read boundary: (revision, format_version, ledger) -> (revision, Ledger)."""
     revision, version, raw = row
     integer(revision)
-    if type(version) is not int or version != 1:
-        raise CorruptLedger('unsupported ledger version')
-    return revision, decode(raw)
+    return revision, decode_stored(version,raw)
 
 
 class PostgresRepository:
-    def __init__(self, connect, scope):
+    def __init__(self, connect, scope, *, read_binder=None):
         label(scope)
         if connect is None:
             raise ValueError('connection factory required')
         self.connect, self.scope = connect, scope
+        self.read_binder = read_binder
 
     @contextmanager
     def transaction(self):
@@ -59,7 +59,7 @@ class PostgresRepository:
                     raise RepositoryUnavailable('scope unavailable')
                 revision, ledger = _ledger_row(row)
                 yield ledger
-                encoded = encode(ledger)
+                encoded = encode_v2(ledger) if isinstance(ledger,LedgerV2) else encode(ledger)
                 cur.execute('UPDATE public.cj_usage_ledger_candidate SET ledger=%s::jsonb, revision=revision+1 WHERE scope_id=%s AND revision=%s', (encoded, self.scope, revision))
                 if cur.rowcount != 1:
                     raise RepositoryUnavailable('scope changed')
@@ -83,9 +83,35 @@ class PostgresRepository:
         This storage seam does not authenticate, resolve identity or grant access.
         project receives only minimal status bytes, never ledger/input digest.
         """
-        import inspect
-        from .read_status import ReadUnavailable, encode_status, status_of
         label(attempt_id)
+        from .read_status import encode_status,status_of
+        def status(ledger):
+            attempt=ledger.attempts.get(attempt_id)
+            if attempt is None:raise RepositoryUnavailable('attempt unavailable')
+            return encode_status(status_of(attempt,ledger.config))
+        return self._read_ledger(status,guard=guard,max_response_bytes=max_response_bytes,
+            project=project,expected_period=expected_period)
+
+    def read_run_capacity(self,run_id,*,guard,max_response_bytes,expected_period):
+        """Original exhaustive ledger snapshot, never dispatch authorization."""
+        label(run_id)
+        from .read_status import ReadUnavailable
+        if expected_period is None:raise ReadUnavailable('original period required')
+        from .run_capacity import encode_capacity
+        return self._read_ledger(lambda ledger:encode_capacity(ledger,run_id),guard=guard,
+            max_response_bytes=max_response_bytes,project=None,expected_period=expected_period)
+
+    def read_run_capacity_v2(self,run_id,*,guard,max_response_bytes,expected_period):
+        label(run_id)
+        from .read_status import ReadUnavailable
+        if expected_period is None:raise ReadUnavailable('original period required')
+        from .run_capacity import encode_capacity_v2
+        return self._read_ledger(lambda ledger:encode_capacity_v2(ledger,run_id),guard=guard,
+            max_response_bytes=max_response_bytes,project=None,expected_period=expected_period)
+
+    def _read_ledger(self,projection,*,guard,max_response_bytes,project,expected_period):
+        import inspect
+        from .read_status import ReadUnavailable
         integer(max_response_bytes, 1)
         if not callable(guard):
             raise ReadUnavailable('original authority guard required')
@@ -94,7 +120,7 @@ class PostgresRepository:
                 raise ReadUnavailable('explicit historical period required')
             integer(expected_period[0])
             integer(expected_period[1], expected_period[0] + 1)
-        scope, connect = self.scope, self.connect
+        scope, connect, read_binder = self.scope, self.connect, self.read_binder
         conn = cur = None
         encoded = None
         primary = cleanup_error = None
@@ -103,7 +129,7 @@ class PostgresRepository:
             result = guard()
             if inspect.iscoroutine(result):
                 result.close()
-            if result is not None or self.scope != scope or self.connect is not connect:
+            if result is not None or self.scope != scope or self.connect is not connect or self.read_binder is not read_binder:
                 raise ReadUnavailable('read binding changed or invalid guard')
 
         try:
@@ -115,6 +141,7 @@ class PostgresRepository:
             cur = conn.cursor()
             check()
             cur.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY')
+            if read_binder is not None:read_binder(conn,cur)
             check()
             cur.execute('SELECT revision, format_version, ledger FROM public.cj_usage_ledger_candidate WHERE scope_id=%s', (scope,))
             check()
@@ -125,10 +152,7 @@ class PostgresRepository:
             _, ledger = _ledger_row(row)
             if expected_period is not None and (ledger.config.period_start, ledger.config.period_end) != expected_period:
                 raise ReadUnavailable('historical period binding changed')
-            attempt = ledger.attempts.get(attempt_id)
-            if attempt is None:
-                raise RepositoryUnavailable('attempt unavailable')
-            encoded = encode_status(status_of(attempt, ledger.config))
+            encoded = projection(ledger)
             if len(encoded) > max_response_bytes:
                 raise ReadUnavailable('status exceeds configured bound')
             if project is not None:

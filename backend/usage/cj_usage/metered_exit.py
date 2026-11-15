@@ -25,9 +25,11 @@ class _PreparedCall:
     materialize: object
     step_key: str
     guard: object
+    on_settled: object = None
     consumed: bool = False
     receipt: object = None
     materialize_with_guard: object = None
+    provider_kind: str | None = None
 
 
 class MeteredExitCore:
@@ -75,7 +77,9 @@ class MeteredExitCore:
         try:
             audit_prepared(command,self.config.unit)
             if call.guard() is not True: raise Denied('original authority unavailable before reserve')
-            try: meter.reserve(command)
+            try:
+                if call.provider_kind is None:meter.reserve(command)
+                else:meter.reserve(command,provider_kind=call.provider_kind)
             except Blocked as error:
                 if error.reason == 'limit_exceeded' or self._stopped_before_reserve(meter,command,error.reason):
                     raise BudgetExceeded(call.step_key) from None
@@ -115,7 +119,8 @@ class MeteredExitCore:
             # Only a complete local invocation supplies its original receipt.
             receipt=(Receipt(command.attempt_id,'local:'+command.attempt_id,self.config.unit,1,output)
                      if call.receipt is None else call.receipt(command.attempt_id,self.config.unit,output))
-            meter.settle(receipt)
+            settled=meter.settle(receipt)
+            if call.on_settled is not None:call.on_settled(step,settled)
         except (CommitUnknown,RepositoryUnavailable,CorruptLedger,DatabaseError,Blocked,UnicodeError,AuditUnavailable):
             raise BudgetUnknown('original budget outcome unavailable') from None
         finally:

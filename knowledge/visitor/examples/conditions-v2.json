@@ -1,0 +1,91 @@
+[
+  {
+    "format_version": "visitor-entry.2",
+    "id": "visitor.example.conditions",
+    "entry_kind": "fact",
+    "topic": "passport_booking",
+    "cities": [
+      "beijing"
+    ],
+    "text_zh": "合成格式示例，不代表真实场馆规则。",
+    "text_en": "Synthetic format example, not a real venue rule.",
+    "source_urls": [
+      "https://www.beijing.gov.cn/"
+    ],
+    "checked_on": "2026-11-13",
+    "expires_on": "2026-11-27",
+    "subject": {
+      "key": "synthetic.place",
+      "name_zh": "合成地点",
+      "name_en": "Synthetic Place",
+      "wikidata_qid": null
+    },
+    "conditions": {
+      "reservation_required": true,
+      "closed_weekdays": [
+        1
+      ],
+      "advance_booking_days": 1,
+      "closed_weekdays_public_holiday_exception": true,
+      "advance_booking_rule": "minimum_lead"
+    }
+  },
+  {
+    "format_version": "visitor-entry.2",
+    "id": "visitor.example.unknown",
+    "entry_kind": "fact",
+    "topic": "passport_booking",
+    "cities": [
+      "beijing"
+    ],
+    "text_zh": "合成格式示例，不代表真实场馆规则。",
+    "text_en": "Synthetic format example, not a real venue rule.",
+    "source_urls": [
+      "https://www.beijing.gov.cn/"
+    ],
+    "checked_on": "2026-11-13",
+    "expires_on": "2026-11-27",
+    "subject": {
+      "key": "synthetic.place",
+      "name_zh": "合成地点",
+      "name_en": "Synthetic Place",
+      "wikidata_qid": null
+    },
+    "conditions": {
+      "reservation_required": null,
+      "closed_weekdays": null,
+      "advance_booking_days": null,
+      "closed_weekdays_public_holiday_exception": null,
+      "advance_booking_rule": null
+    }
+  },
+  {
+    "format_version": "visitor-entry.2",
+    "id": "visitor.example.no-reservation",
+    "entry_kind": "fact",
+    "topic": "passport_booking",
+    "cities": [
+      "beijing"
+    ],
+    "text_zh": "合成格式示例，不代表真实场馆规则。",
+    "text_en": "Synthetic format example, not a real venue rule.",
+    "source_urls": [
+      "https://www.beijing.gov.cn/"
+    ],
+    "checked_on": "2026-11-13",
+    "expires_on": "2026-11-27",
+    "subject": {
+      "key": "synthetic.place",
+      "name_zh": "合成地点",
+      "name_en": "Synthetic Place",
+      "wikidata_qid": null
+    },
+    "conditions": {
+      "reservation_required": false,
+      "closed_weekdays": [],
+      "advance_booking_days": null,
+      "closed_weekdays_public_holiday_exception": false,
+      "advance_booking_rule": null
+    }
+  }
+]

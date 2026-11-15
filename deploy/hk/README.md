@@ -32,7 +32,7 @@
 ## 日常 API/worker 发布（B/L 标准流程）
 
 职责以 [JT 的 B/L 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6814548220) 为准。
-L 拥有 Lio 业务源码及对应测试，可以在 B 排定的窗口内自行执行 API/worker 镜像发布。
+L 拥有 Lio 业务源码及对应测试；其他线未实际占用时，可随时按标准流程自行部署可回退的 API/worker 应用镜像。
 B 拥有香港调度、账本与额度、运行配置、基础设施及发布入口；协调文件仍按 PR 文件锁使用。
 以下流程不授权新账号、延长邀请资格、改变预算、数据库迁移或新增云资源。
 
@@ -40,7 +40,8 @@ B 拥有香港调度、账本与额度、运行配置、基础设施及发布入
 
 B 在 #759、#702 给出固定日窗或临时变更、执行人和允许操作。已交付的固定日窗、独立身份、
 原账子额度及现役固定发布模板可在原范围内重复使用，不逐次等待 B 再发 ACTIVE。
-当前日窗和实际资源交付分别见 [窗口表](https://github.com/JTCAO515/G2C/issues/759#issuecomment-6818911393)
+L 闲时部署规则见 [JT 11-13 调整](https://github.com/JTCAO515/G2C/issues/759#issuecomment-6840048978)；原表保留其他线合成时段。今天 11-13 09:00–11:00 优先保障 L 发布已合 main，未合功能不阻挡已合修复上线。
+原合成日窗和实际资源交付分别见 [原窗口表](https://github.com/JTCAO515/G2C/issues/759#issuecomment-6818911393)
 及 [身份/子额度](https://github.com/JTCAO515/G2C/issues/759#issuecomment-6820312748)。条件预留不是 ACTIVE；
 部署窗也不是模型／工具／MESSAGE 验收窗。包中固定：
 
@@ -102,6 +103,7 @@ pending/inflight Memory 任务；历史 UNKNOWN 原件和占用保留，不能�
 
 ### 3. L 执行 B 的固定应用切换
 
+发布前核 #759/#702 无其他 ACTIVE 批次，公告本次开始/结束；活动轨迹未归还时不穿插。B 的版本化入口 `deploy.hk.application_release` 去掉固定小时限制，仍要求最长两小时的明确 gate 时段，保留部署互斥锁和全部在途检查。
 B 的发布脚本负责：互斥锁、窗口和精确源／镜像／门禁检查；关闭 API 入口后再次检查排空；
 停止旧 worker；应用 B 已批准的唯一镜像选择；只重建 API/worker；核同实际镜像和源码、
 API readiness 与 worker 存活。L 不手改 `compose.env`、任何秘密文件、Compose 或采集清单。
@@ -410,7 +412,7 @@ Typed 保存、管理及既有 `/v1/memory-erasures` 不安装 V1 记忆写入�
 
 ### Demo 邀请码
 
-按 #685 指定的代号配置 `CJ_BETA_DEMO_SUBJECTS_JSON`，至多十个
+按 #685 指定的代号配置 `CJ_BETA_DEMO_SUBJECTS_JSON`，至多 206 个
 `m4-synthetic-demo-<12位代号>`，同时纳入原邀请、Typed API 策略和 worker 记忆选择。
 创建 UID10001 所有的 0700 `/srv/g2c-beta/demo-auth-socket`，worker 保留原签名私钥，
 API 只读挂载 Unix socket 目录。公网 `POST /v1/demo-invite-sessions` 的接口见 #685。
@@ -428,6 +430,31 @@ Lio 的本机追加迁移使用 `python -B -m deploy.hk.demo_schema --target 51`
 `python -B -m deploy.hk.demo_accounts bootstrap <subject> --digest <sha256> --expires-at <RFC3339>`，
 再运行 `insert <subject>` 做原 canonical Typed 预检和单次 profile 激活。
 邀请码原文只在开发 Mac 的 0600 文件，服务端仅保存摘要。
+长码 `D1-<12位账号代号>.<22位凭据>` 保持兼容。短码仅接受区分大小写的
+`G2C@<两位数字>` 和 `CJ_Tester@<两位数字>`（两组各 `01`–`99`，不含 `00`）；账号代号取完整短码 ASCII
+SHA-256 的前十二位十六进制。只有已配置主体且原数据库中的完整邀请码摘要、
+资格期限和撤销状态全部匹配时才签发会话；短码格式本身不创建账号或授予资格。
+
+批量账号的 API typed Memory 策略可显式使用 `CJ_BETA_TYPED_MEMORY_POLICY_GZIP_B64`：
+对原完整策略 JSON 做单个 gzip member 后 base64 编码，仍只放在 API 的原 0600 环境文件。
+它与旧 `CJ_BETA_TYPED_MEMORY_POLICY_B64` 互斥，旧格式继续支持；解压后仍逐项验证原策略和主体名单，
+不生成默认权限。环境文件仍限制 65,536 字节，解压策略仍限制 262,144 字节；
+截断、CRC 错误、额外 gzip member 或尾随数据均拒绝，worker 不接受该 API 配置。
+worker 的双层运行策略可单独显式使用 `CJ_BETA_MEMORY_RUN_POLICY_GZIP_B64`，与原
+`CJ_BETA_MEMORY_RUN_POLICY_B64` 互斥，仅进入原 worker 0600 文件；API 不接受该字段。
+它复用相同限长解压，结果仍经原 TypedRuntimeConfiguration 和全部主体/selection 校验，
+不会从 API 策略推断 worker 权限。批量配置必须同时核对两个角色的完整策略及原有身份不变。
+第 206 个位置用于 JT 已批准的 L P0 新合成身份（#495/6879334775）；
+名单容量不创建账号、不改变每周期/每日额度或各线费用子额。
+实际增加名单前先预检完整环境文件及原策略边界，不能仅凭名单容量宣布账号已开通。
+先以原名单和原配置发布兼容新表示的应用，再由 B 在独立维护阶段备份并启用批量名单和策略。
+启用新表示后，退到不识别该字段的旧镜像前，须先恢复其兼容配置；不能只用应用镜像切换入口回退。
+配置回退保留账号原件、资格/撤销记录、业务数据和唯一费用账，不恢复旧账或删除新账号来过门禁。
+新增手工测试主体的费用归属用 B-only `python -B -m deploy.hk.manual_test_allocations MANIFEST` 先只读核对，
+明确核同后才加 `--apply`。原 0600 清单格式为 `G2C-manual-test-allocation.1` 加 `subjects` 数组，
+只接受已配置 Demo 主体、每批最多 198 个；只向现有 A 组追加，不允许改绑已有其他线身份。
+该入口使用原账本事务和非恢复控制锚，不调用首次 `activate`、不改任何限额或费用/占用记录。
+结果不明先读取同一原账与控制状态，不重复初始化或建立另一账本。
 
 `revoke <subject>` 立即拒绝原邀请码和会话；确认原 scope 无在途后，`rotate <subject>` 可登记
 新摘要与有效期，旧会话继续拒绝，每日计数保留。结果不明先 `inspect <subject>` 和原动作日志。
@@ -471,6 +498,25 @@ MESSAGE 只对实际新接受的原件计数。0052 将北京时间每日上限�
 `python -B -m deploy.hk.demo_schema --resume-quota` 续结原签名备份，保留未发布的备份尝试。
 已轮换 identity 时，先核对原签名备份与活库行集、序列和 fence，再补发同一 release。
 API/worker 只在签名标记完成且运行配置为 800 后就绪。
+
+### 0053 原始 Lio 协议升级（B-only）
+
+0053 与日常应用发布分开：先保持原名单、原配置和原账，关闭入口、核空在途并暂停
+API/worker；B 用精确已审的同源 operator 镜像运行
+`python -B -m deploy.hk.demo_schema --target 53`。仅接受原 1..52 的已签名 release，
+追加已接受的 0053，保存原 lineage/fence 并生成新的签名备份锚 `demo-schema53`。
+原 quota52 标记与 800/400 配置保持；没有更新额度或修改邀请资格的隐含步骤。
+
+发生未知或中断先读取同一签名 INTENT、数据库版本、release 与原备份，
+再用同一镜像运行 `python -B -m deploy.hk.demo_schema --resume-schema53`：
+事务回滚时只续原升级，已提交时只补原备份/发布。部分备份和临时文件保留，
+已发布的备份不重复生成。服务要求 53 签名完成标记与当前 lineage 一致才就绪。
+
+切换使用含原始协议兼容守卫和当前配置编码的 schema53 应用；不通过 schema52 的
+app-only gate，不使用不识别当前 worker gzip 字段的旧镜像。失败后保持入口关闭，
+核同原动作并续接；完成后可回退到已核同的 schema53 兼容应用。已有 LIO-message.3
+原件时 0053 down 明确拒绝，不删原件、不恢复旧账本或覆盖删除 fence 来回退。
+
 Demo 及已启用流式的组装两主体使用 [STREAM@2](../../contracts/run/MODEL-TOOL-TURN-STREAM-V2.md)，
 可调用工具的轮次先收齐原回执。混合响应仅执行通过原门禁的工具，丢弃未核实的同轮正文。
 过旧服务期限后，实际模型和工具仅允许显式 Demo scope。首次开户同时在原 PG Meter 中准备
@@ -499,6 +545,51 @@ erase经原账号注销API和单条MEMORY-ERASURE服务、独立已批准cleanup
 它在release守卫下固定同一run ID及message hash，写SEED_RESUME_INTENT后由原worker接续该delivery；
 不再次send A、不初始化账号或预算、不重开出口。任何可能已派发或再次中断的状态保持HOLD/只读。
 worker脏会话审计在受信scope binder之前执行，保留零初始advisory锁检查；binder安装的事务级release共享锁不再误报脏会话。
+
+### schema54 / 原生 Lio4 发布与回退
+
+此升级由 B 操作，L 的闲时应用发布授权不包含迁移、签名控制、operator
+selector、环境文件或预算改动。候选应用与 PG17 operator 须固定已审完整源码和
+镜像，精确 CI 全绿；A 的固定 SHA 归档短冻结期间可构建、验证，不合并新 PR。
+
+先按原部署锁和双排空确认没有其他实际 ACTIVE 批次，停入口与原 worker，保留
+原账、所有 INTENT/UNKNOWN 和旧采集文件。核同当前 schema53 的签名安全点、
+完整删除 fences、数据与序列，再用包含54的已审 operator 执行明确的升级入口：
+
+```sh
+python -B -m deploy.hk.demo_schema --target 54
+```
+
+升级只追加54，不重建预算账户、不改800额度、已用数、原费用或 hold。原52额度
+和53来源 marker 必须均为 COMPLETE 且同 lineage；缺失、未决或错 lineage 时停下
+核原动作，不跨过旧阶段。54沿现有 `demo-schema54` 签名 INTENT、原 release/
+latest 身份、完整 fences 和新 PG17 checkpoint 流程。DDL事务、导出、latest、release
+或完成 marker 中断后仅核对并续结该原阶段：
+
+```sh
+python -B -m deploy.hk.demo_schema --resume-schema54
+```
+
+已发布的签名 archive 不重导，未发布残件保留。数据或序列晚变时拒绝续结，不以新
+备份掩盖原差异。readiness 在54仍校验原52、53门禁，并要求同 lineage 的54
+COMPLETE marker；数据库版本为54本身不代表发布完成。
+
+B核对新签名备份、兼容应用镜像、原件读回和发布策略后，才更新现有 idle helper
+的 schema/source 白名单与 operator selector；L不能编辑这些文件放行自己的候选。
+应用 source/image 变化会撤回旧 C 采集租约，须按新源重签。准备时保留迁移前镜像和
+备份，不把它们自动登记为54可用的回退目标。
+
+出现任何真正 Lio4 原件后，回退必须保留54、原4准入与兼容 reader。旧 schema53/
+9406 binary 不属于已证明的兼容回退；不得删除、改标或还原旧数据来绕过54的 down
+拒绝。新代码的 `CJ_LIO_EXPLORATION_ENABLED=0` 仅关闭探索策略，保留4数据读取，
+可作为同兼容镜像的待验证回退方案。此非秘密服务端开关由 B 在原 common 环境文件
+中按固定字节配置并重建 API/worker，其他字段保持原值；不移除4名单或凭客户端参数
+授予权限。兼容方案必须核同原4字节、同身份续读及跨身份/旧1–3读取拒绝，并保留旧
+1–3正例。完成前不宣称回退已验证；失败时保持停新和已知兼容代码，修复后前滚。
+
+本机 PG17 覆盖53及54的原 quota bytes/未知占用保留、签名发布中断、原阶段续结、
+晚写拒绝与不重复应用；原生4 reader/rollback策略测试与香港实际切换、合成和真机
+验收分列。marker、脚本或本机 PASS 不授予 E/F 实验资格。
 `hk_cloud_rehearsal` PG组验证这套生产者组合，实际生成native checkpoint；另以签名hash-only假包验证删除前拒绝，不冒充真实云备份。
 
 恢复operator仅接受32位十六进制 `--rehearsal-id`，目标固定在已核持久bind卷 `/rehearsals/ID`（宿主 `/srv/g2c-beta/rehearsals`，UID10001/0700）；拒绝tmpfs、容器overlay、缺挂载和符号链接逃逸。示例：
@@ -508,3 +599,24 @@ docker compose --env-file /srv/g2c-beta/compose.env -f /srv/g2c-beta/deploy/hk/c
 ```
 
 续结在同命令追加 `--resume`，仍用原ID；先由PG17 `pg_controldata`只读核system ID，wrong/unknown集群不得启停。失败不销毁目标。
+
+### Native4 accounting schema55
+
+Schema55 and original-account qualification are separate B operations. With the
+API and worker stopped in the announced, empty maintenance window, B uses the
+reviewed operator image's `deploy.hk.demo_schema --target 55`; existing signed
+52/53/54 COMPLETE anchors and the original lineage are required. A partial
+upgrade stays unavailable until `--resume-schema55` reconciles that same intent,
+exports the complete signed55 backup and marks its original anchor COMPLETE.
+Readiness requires that anchor. Never repeat an unknown write or restore a
+ledger/database to make a check pass.
+
+Keep an immutable compatible55 application/worker rollback image before
+qualifying any original account. Format2 data, native RUN profiles and UNKNOWN
+holds must remain readable after deactivation; a schema54/v1-only image is not a
+rollback target. Qualification preserves the original Config, period and all
+attempts and is not a quota grant. Only B changes ledger metadata, deployment
+policy or Hong Kong configuration. L can resume the normal idle app-deployment
+flow after B updates and verifies the standing55 gate; API and worker must share
+the actual qualified source/image. Local migration/fixture results do not enable
+Home default4 or prove live-provider/native4 acceptance.

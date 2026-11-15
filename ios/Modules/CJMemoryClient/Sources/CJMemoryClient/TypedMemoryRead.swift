@@ -1,6 +1,8 @@
 import Foundation
 import CJAPI
 
+public enum TypedMemoryReadVersion: Sendable { case v2, v3 }
+
 public enum TypedMemoryScope: Sendable, Equatable {
     case longTerm
     case legacyConversation(String)
@@ -9,7 +11,26 @@ public enum TypedMemoryScope: Sendable, Equatable {
 public struct TypedMemoryItem: Sendable {
     public let value: Components.Schemas.MemoryItemV2
     public let scope: TypedMemoryScope
+    /// Advisory display text only; never part of an action or source proof.
+    public let title: String?
     init(_ value: Components.Schemas.MemoryItemV2) throws {
+        try self.init(value, title: nil)
+    }
+    init(_ value: Components.Schemas.MemoryItemV3) throws {
+        let status: Components.Schemas.MemoryItemV2.statusPayload
+        switch value.status {
+        case .active: status = .active
+        case .candidate: status = .candidate
+        case .disabled: status = .disabled
+        case .withdrawn: status = .withdrawn
+        }
+        let title = value.title.value1.flatMap {
+            $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0
+        }
+        try self.init(.init(command: value.command, version: value.version, status: status,
+                            recorded_at: value.recorded_at), title: title)
+    }
+    private init(_ value: Components.Schemas.MemoryItemV2, title: String?) throws {
         let command = value.command
         guard value.version > 0,command.source_version > 0,
               [command.operation_id,command.item_id,command.subject,command.slot,command.text,command.occurred_at,command.source_id].allSatisfy(memoryText),
@@ -39,7 +60,7 @@ public struct TypedMemoryItem: Sendable {
             default:throw MemoryFailure.invalidResponse
             }
         }
-        self.value = value;self.scope = scope
+        self.value = value;self.scope = scope;self.title = title
     }
 }
 /// Session-only read proof. Data is never an execution lease or source approval.

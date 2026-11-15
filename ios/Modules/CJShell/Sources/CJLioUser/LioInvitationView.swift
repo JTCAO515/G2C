@@ -2,10 +2,12 @@
 import SwiftUI
 import CJRunClient
 
-struct LioPortrait: View {
+public struct LioPortrait: View {
     let size: CGFloat
 
-    var body: some View {
+    public init(size: CGFloat) { self.size = size }
+
+    public var body: some View {
         Image("LioAvatar", bundle: .module)
             .resizable()
             .scaledToFill()

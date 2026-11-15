@@ -1,0 +1,121 @@
+{
+  "mixed_history": {
+    "version": "LIO-trip-history.4",
+    "conversation_id": "lio-dialogue-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "current": {
+      "version": "LIO-trip-card.3",
+      "trip_id": "synthetic-s4-trip",
+      "trip_version": 3,
+      "content_version": "structured.4",
+      "content_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "title": "Synthetic S4 summary",
+      "calendar": {
+        "state": "undated"
+      },
+      "days": [
+        {
+          "day_index": 1,
+          "items": [
+            {
+              "item_id": "s4-one",
+              "label": "Museum（博物馆）",
+              "start_time": "14:00",
+              "end_time": "15:00",
+              "fixed": false
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "items": []
+        },
+        {
+          "day_index": 3,
+          "items": []
+        }
+      ],
+      "date_checks": [
+        {
+          "kind": "weather",
+          "state": "not_checked",
+          "day_indices": [
+            1,
+            2,
+            3
+          ],
+          "item_ids": [],
+          "reason": "date_not_set",
+          "evidence_refs": []
+        },
+        {
+          "kind": "day_opening",
+          "state": "not_checked",
+          "day_indices": [
+            1,
+            2,
+            3
+          ],
+          "item_ids": [],
+          "reason": "date_not_set",
+          "evidence_refs": []
+        }
+      ]
+    },
+    "history": [
+      {
+        "version": "LIO-trip-card.2",
+        "trip_id": "synthetic-s4-trip",
+        "trip_version": 2,
+        "content_version": "structured.2",
+        "content_sha256": "986d90376b57cc4fa2d46dd4678bb572566715d606d435e2d5dc687bd7d26b1b",
+        "title": "原有行程 / old trip",
+        "calendar": null,
+        "date_checks": null,
+        "days": [
+          {
+            "date": null,
+            "items": [
+              {
+                "item_id": "hotel-meetup",
+                "label": "酒店集合 / hotel meetup",
+                "start_time": "09:00:00",
+                "end_time": "09:00:00",
+                "fixed": true
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "undo_target": {
+      "trip_id": "synthetic-s4-trip",
+      "expected_version": 3,
+      "original_hash": "4444444444444444444444444444444444444444444444444444444444444444",
+      "content_version": "structured.4",
+      "restore_version": 2,
+      "restore_hash": "986d90376b57cc4fa2d46dd4678bb572566715d606d435e2d5dc687bd7d26b1b",
+      "restore_content_version": "structured.2"
+    },
+    "next_before": "2"
+  },
+  "undo": {
+    "version": "LIO-trip-undo.4",
+    "action_id": "same-original-action",
+    "conversation_id": "lio-dialogue-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "target": {
+      "trip_id": "synthetic-s4-trip",
+      "expected_version": 3,
+      "original_hash": "4444444444444444444444444444444444444444444444444444444444444444",
+      "content_version": "structured.4",
+      "restore_version": 2,
+      "restore_hash": "986d90376b57cc4fa2d46dd4678bb572566715d606d435e2d5dc687bd7d26b1b",
+      "restore_content_version": "structured.2"
+    }
+  },
+  "not_yet_committed": {
+    "version": "LIO-trip-undo-receipt.4",
+    "action_id": "same-original-action",
+    "conversation_id": "lio-dialogue-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "committed": false
+  }
+}

@@ -1,0 +1,803 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://go2china.space/contracts/trip/rich-source-schema.1.json",
+  "title": "Private rich source binding data, never AUTH or model input",
+  "$defs": {
+    "Id": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/Id"
+    },
+    "DayIndex": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/DayIndex"
+    },
+    "Date": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/Date"
+    },
+    "Time": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/Time"
+    },
+    "Zone": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/Zone"
+    },
+    "Offset": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/Offset"
+    },
+    "Fixed": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/Fixed"
+    },
+    "UndatedDay": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/UndatedDay"
+    },
+    "DatedDay": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/DatedDay"
+    },
+    "Event": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/Event"
+    },
+    "Item": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/Item"
+    },
+    "Source": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/Source"
+    },
+    "Check": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.3.json#/$defs/Check"
+    },
+    "Coordinate": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.4.json#/$defs/Coordinate"
+    },
+    "Role": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.4.json#/$defs/Role"
+    },
+    "Hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "Original4": {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "const": "LIO-message.4"
+        },
+        "message_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "run_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "input_sha256": {
+          "$ref": "#/$defs/Hash"
+        },
+        "question_day": {
+          "$ref": "#/$defs/Date"
+        }
+      },
+      "required": [
+        "protocol",
+        "message_id",
+        "run_id",
+        "input_sha256",
+        "question_day"
+      ],
+      "additionalProperties": false
+    },
+    "Policy": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "sha256": {
+          "$ref": "#/$defs/Hash"
+        }
+      },
+      "required": [
+        "id",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "PlanNow": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "plan_now"
+        },
+        "original": {
+          "$ref": "#/$defs/Original4"
+        },
+        "policy": {
+          "$ref": "#/$defs/Policy"
+        }
+      },
+      "required": [
+        "kind",
+        "original",
+        "policy"
+      ],
+      "additionalProperties": false
+    },
+    "ProfileStates": {
+      "type": "object",
+      "properties": {
+        "city": {
+          "enum": [
+            "unknown",
+            "known",
+            "not_needed",
+            "inferred",
+            "default",
+            "memory"
+          ]
+        },
+        "duration_days": {
+          "enum": [
+            "unknown",
+            "known",
+            "not_needed",
+            "inferred",
+            "default",
+            "memory"
+          ]
+        },
+        "season": {
+          "enum": [
+            "unknown",
+            "known",
+            "not_needed",
+            "inferred",
+            "default",
+            "memory"
+          ]
+        },
+        "first_visit": {
+          "enum": [
+            "unknown",
+            "known",
+            "not_needed",
+            "inferred",
+            "default",
+            "memory"
+          ]
+        },
+        "party_type": {
+          "enum": [
+            "unknown",
+            "known",
+            "not_needed",
+            "inferred",
+            "default",
+            "memory"
+          ]
+        },
+        "interests": {
+          "enum": [
+            "unknown",
+            "known",
+            "not_needed",
+            "inferred",
+            "default",
+            "memory"
+          ]
+        },
+        "pace": {
+          "enum": [
+            "unknown",
+            "known",
+            "not_needed",
+            "inferred",
+            "default",
+            "memory"
+          ]
+        },
+        "lodging_tier": {
+          "enum": [
+            "unknown",
+            "known",
+            "not_needed",
+            "inferred",
+            "default",
+            "memory"
+          ]
+        },
+        "dietary": {
+          "enum": [
+            "unknown",
+            "known",
+            "not_needed",
+            "inferred",
+            "default",
+            "memory"
+          ]
+        },
+        "must_see": {
+          "enum": [
+            "unknown",
+            "known",
+            "not_needed",
+            "inferred",
+            "default",
+            "memory"
+          ]
+        },
+        "avoid": {
+          "enum": [
+            "unknown",
+            "known",
+            "not_needed",
+            "inferred",
+            "default",
+            "memory"
+          ]
+        },
+        "mobility": {
+          "enum": [
+            "unknown",
+            "known",
+            "not_needed",
+            "inferred",
+            "default",
+            "memory"
+          ]
+        },
+        "arrival": {
+          "enum": [
+            "unknown",
+            "known",
+            "not_needed",
+            "inferred",
+            "default",
+            "memory"
+          ]
+        },
+        "departure": {
+          "enum": [
+            "unknown",
+            "known",
+            "not_needed",
+            "inferred",
+            "default",
+            "memory"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "maxProperties": 14
+    },
+    "PlacePayload": {
+      "type": "object",
+      "properties": {
+        "amap_id": {
+          "$ref": "#/$defs/ProviderId"
+        },
+        "name_zh": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "coordinate": {
+          "$ref": "#/$defs/Coordinate"
+        },
+        "coordinate_role": {
+          "$ref": "#/$defs/Role"
+        },
+        "address": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "amap_id",
+        "name_zh",
+        "coordinate",
+        "coordinate_role",
+        "address"
+      ],
+      "additionalProperties": false
+    },
+    "RoutePayload": {
+      "type": "object",
+      "properties": {
+        "from_amap_id": {
+          "$ref": "#/$defs/ProviderId"
+        },
+        "to_amap_id": {
+          "$ref": "#/$defs/ProviderId"
+        },
+        "from_coordinate": {
+          "$ref": "#/$defs/Coordinate"
+        },
+        "to_coordinate": {
+          "$ref": "#/$defs/Coordinate"
+        },
+        "from_coordinate_role": {
+          "$ref": "#/$defs/Role"
+        },
+        "to_coordinate_role": {
+          "$ref": "#/$defs/Role"
+        },
+        "mode": {
+          "enum": [
+            "walking",
+            "transit",
+            "taxi"
+          ]
+        },
+        "duration_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "distance_m": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "from_amap_id",
+        "to_amap_id",
+        "from_coordinate",
+        "to_coordinate",
+        "from_coordinate_role",
+        "to_coordinate_role",
+        "mode",
+        "duration_seconds",
+        "distance_m"
+      ],
+      "additionalProperties": false
+    },
+    "NamePayload": {
+      "type": "object",
+      "properties": {
+        "name_zh": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "name_en": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "name_zh",
+        "name_en"
+      ],
+      "additionalProperties": false
+    },
+    "TipPayload": {
+      "type": "object",
+      "properties": {
+        "entry_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "entry_sha256": {
+          "$ref": "#/$defs/Hash"
+        },
+        "checked_on": {
+          "$ref": "#/$defs/Date"
+        },
+        "expires_on": {
+          "$ref": "#/$defs/Date"
+        },
+        "subject_key": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "item_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "minItems": 1,
+          "maxItems": 60,
+          "uniqueItems": true
+        },
+        "amap_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProviderId"
+          },
+          "minItems": 0,
+          "maxItems": 60,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "entry_id",
+        "entry_sha256",
+        "checked_on",
+        "expires_on",
+        "subject_key",
+        "item_ids",
+        "amap_ids"
+      ],
+      "additionalProperties": false
+    },
+    "RetainedPayload": {
+      "type": "object",
+      "properties": {
+        "trip_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "trip_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "content_sha256": {
+          "$ref": "#/$defs/Hash"
+        },
+        "item": {
+          "$ref": "#/$defs/Item"
+        }
+      },
+      "required": [
+        "trip_id",
+        "trip_version",
+        "content_sha256",
+        "item"
+      ],
+      "additionalProperties": false
+    },
+    "FixedPayload": {
+      "type": "object",
+      "properties": {
+        "needs_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "needs_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "content_sha256": {
+          "$ref": "#/$defs/Hash"
+        },
+        "item": {
+          "$ref": "#/$defs/Item"
+        }
+      },
+      "required": [
+        "needs_id",
+        "needs_version",
+        "content_sha256",
+        "item"
+      ],
+      "additionalProperties": false
+    },
+    "Record": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "const": "amap"
+            },
+            "kind": {
+              "const": "place"
+            },
+            "reference": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "sha256": {
+              "$ref": "#/$defs/Hash"
+            },
+            "payload": {
+              "$ref": "#/$defs/PlacePayload"
+            }
+          },
+          "required": [
+            "provider",
+            "kind",
+            "reference",
+            "sha256",
+            "payload"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "const": "amap"
+            },
+            "kind": {
+              "const": "route"
+            },
+            "reference": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "sha256": {
+              "$ref": "#/$defs/Hash"
+            },
+            "payload": {
+              "$ref": "#/$defs/RoutePayload"
+            }
+          },
+          "required": [
+            "provider",
+            "kind",
+            "reference",
+            "sha256",
+            "payload"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "const": "amap"
+            },
+            "kind": {
+              "const": "name"
+            },
+            "reference": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "sha256": {
+              "$ref": "#/$defs/Hash"
+            },
+            "payload": {
+              "$ref": "#/$defs/NamePayload"
+            }
+          },
+          "required": [
+            "provider",
+            "kind",
+            "reference",
+            "sha256",
+            "payload"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "const": "wikidata"
+            },
+            "kind": {
+              "const": "name"
+            },
+            "reference": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "sha256": {
+              "$ref": "#/$defs/Hash"
+            },
+            "payload": {
+              "$ref": "#/$defs/NamePayload"
+            }
+          },
+          "required": [
+            "provider",
+            "kind",
+            "reference",
+            "sha256",
+            "payload"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "const": "visitor"
+            },
+            "kind": {
+              "const": "tip"
+            },
+            "reference": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "sha256": {
+              "$ref": "#/$defs/Hash"
+            },
+            "payload": {
+              "$ref": "#/$defs/TipPayload"
+            }
+          },
+          "required": [
+            "provider",
+            "kind",
+            "reference",
+            "sha256",
+            "payload"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "const": "checks"
+            },
+            "kind": {
+              "const": "weather"
+            },
+            "reference": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "sha256": {
+              "$ref": "#/$defs/Hash"
+            },
+            "payload": {
+              "$ref": "#/$defs/Check"
+            }
+          },
+          "required": [
+            "provider",
+            "kind",
+            "reference",
+            "sha256",
+            "payload"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "const": "checks"
+            },
+            "kind": {
+              "const": "day_opening"
+            },
+            "reference": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "sha256": {
+              "$ref": "#/$defs/Hash"
+            },
+            "payload": {
+              "$ref": "#/$defs/Check"
+            }
+          },
+          "required": [
+            "provider",
+            "kind",
+            "reference",
+            "sha256",
+            "payload"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "const": "trip"
+            },
+            "kind": {
+              "const": "retained_item"
+            },
+            "reference": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "sha256": {
+              "$ref": "#/$defs/Hash"
+            },
+            "payload": {
+              "$ref": "#/$defs/RetainedPayload"
+            }
+          },
+          "required": [
+            "provider",
+            "kind",
+            "reference",
+            "sha256",
+            "payload"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "const": "needs"
+            },
+            "kind": {
+              "const": "fixed_item"
+            },
+            "reference": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "sha256": {
+              "$ref": "#/$defs/Hash"
+            },
+            "payload": {
+              "$ref": "#/$defs/FixedPayload"
+            }
+          },
+          "required": [
+            "provider",
+            "kind",
+            "reference",
+            "sha256",
+            "payload"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ProviderId": {
+      "$ref": "https://go2china.space/contracts/trip/structured-schema.4.json#/$defs/ProviderId"
+    }
+  },
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": "TRIP-rich-source.1"
+    },
+    "original": {
+      "$ref": "#/$defs/Original4"
+    },
+    "plan_now": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/PlanNow"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "policy": {
+      "$ref": "#/$defs/Policy"
+    },
+    "profile_states": {
+      "$ref": "#/$defs/ProfileStates"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Record"
+      },
+      "minItems": 0,
+      "maxItems": 256,
+      "uniqueItems": true
+    }
+  },
+  "required": [
+    "version",
+    "original",
+    "plan_now",
+    "policy",
+    "profile_states",
+    "records"
+  ],
+  "additionalProperties": false
+}

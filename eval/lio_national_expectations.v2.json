@@ -1,0 +1,86 @@
+{
+  "version": "LIO-national-expectations.2",
+  "issue": 815,
+  "updated_by": 864,
+  "authority": [
+    "JT #859: city and days required; dates/party optional; undated formal saving uses new consumer",
+    "#922 and its two dispatch comments; old frozen versions and negative evidence retained"
+  ],
+  "base_inputs": {
+    "path": "eval/lio_national_cases.v1.json",
+    "sha256": "478f772d6b78817c8a88b9d48448f3f05c0bb5c0f31661ade3f6edec5fddce7f",
+    "unchanged": true
+  },
+  "synthetic_only": true,
+  "public_acceptance_not_holdout": true,
+  "planned_n": 16,
+  "locale_denominators": {
+    "zh": 8,
+    "en": 8
+  },
+  "scope": {
+    "message_wire": "LIO-message.2",
+    "source_window_policy": "LIO-source-window.1",
+    "consumer": "preserved legacy dated consumer",
+    "unsupported": "Do not apply this two-turn/fixed-hotel/version oracle to native3 or exploration4. Use independently frozen trajectories and explicit actual-source qualification."
+  },
+  "common_rules": {
+    "missing_city_or_days": "Ask the missing city/duration only; ambiguous administrative city requires actual user selection, zero formal save until resolved.",
+    "city_days_without_date": "Return a complete day-index conversational preview without saving; no required date/party question, no invented date/party and no saved claim. Legacy2 cannot save an undated Trip.",
+    "chengdu_followup": "The frozen Start tomorrow plus fixed-hotel text is a voluntary additional user request after the preview, not evidence that dates are mandatory.",
+    "party_size": "Optional. Preserve unknown rather than infer a party count from first person or Memory. The predeclared one-person answer is an optional source-clarification slot only if genuinely required to resolve fixed-item participants; never send after an already complete save merely to use the slot.",
+    "fixed_items": "Do not drop/modify the actual 09:00-10:00 self meetup or invent hotel name/location/booking. Resolve genuinely missing fixed-item scope from a real user answer, without imposing optional whole-party size.",
+    "dated_save": "When source city/days/date and original fixed constraints are complete, append exactly one formal initial version without candidate confirmation. No mandatory party question.",
+    "edit": "Use the actual full label/time of the unlocked day2-afternoon target; replace only that target, append one version, preserve all other and fixed bytes.",
+    "undo": "Native original target/receipt; append one version restoring exact pre-edit canonical content; keep history. No text-only success or original action replay.",
+    "date_clock": "Tomorrow is anchored to the persisted question_day of the date-bearing original, never the first turn or later clarification/analysis day.",
+    "stop": "Any product FAIL/UNKNOWN stops new dispatch. A preflight oracle/consumer mismatch is UNRUN, not product FAIL or PASS; diagnose, retain old stage, prepare new IDs/qualification.",
+    "unchanged": "All original source, owner isolation, raw GCJ-02, fixed-item, same-attempt Meter/Fee, severe-error, timing and cost gates remain; no replacement of missing evidence with model assertions."
+  },
+  "cases": [
+    {
+      "case_id": "national-chengdu",
+      "required_clarification": null,
+      "planned_followup_kind": "voluntary_date_and_fixed_item_detail"
+    },
+    {
+      "case_id": "national-xian",
+      "required_clarification": null,
+      "planned_followup_kind": "none"
+    },
+    {
+      "case_id": "national-shanghai",
+      "required_clarification": "duration",
+      "planned_followup_kind": "required_source_clarification"
+    },
+    {
+      "case_id": "national-hangzhou",
+      "required_clarification": null,
+      "planned_followup_kind": "none"
+    },
+    {
+      "case_id": "national-chongqing",
+      "required_clarification": "city",
+      "planned_followup_kind": "required_source_clarification"
+    },
+    {
+      "case_id": "national-shenzhen",
+      "required_clarification": null,
+      "planned_followup_kind": "none"
+    },
+    {
+      "case_id": "national-taizhou-zhejiang",
+      "required_clarification": "administrative_ambiguity",
+      "planned_followup_kind": "required_source_clarification"
+    },
+    {
+      "case_id": "national-suzhou-anhui",
+      "required_clarification": "administrative_ambiguity",
+      "planned_followup_kind": "required_source_clarification"
+    }
+  ],
+  "results": {
+    "state": "UNRUN",
+    "note": "Expectation/data delivery only. No real calls; no inheritance of old PASS/FAIL."
+  }
+}

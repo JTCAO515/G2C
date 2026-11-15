@@ -11,6 +11,7 @@ owner or scope from request data. Recovery rules (ADR-0003):
 from dataclasses import dataclass
 from contextlib import contextmanager, ExitStack, nullcontext
 import json
+import logging
 
 # The worker must be ready (or fail startup) before accepting any work (#176).
 from cj_feasibility import solver as _solver_runtime
@@ -25,7 +26,7 @@ from cj_memory.runtime import RuntimeDenied, RuntimeUnknown
 from cj_place.draft_source import PlaceSourceUnavailable
 
 from .draft import DRAFT_SYSTEM, DraftRejected
-from .provider import FakeProvider, ProviderFailed, ProviderUnknown
+from .provider import FakeProvider, MeteredDashScopeProvider, ProviderFailed, ProviderUnknown
 
 FLUSH_CHARS = 24
 _END = object()
@@ -266,21 +267,30 @@ class RunWorker:
             raise
         return state, result
 
-    def _stream(self, binding, messages, system=None, *, answer=False):
+    def _stream(self, binding, messages, system=None, *, answer=False, grouped_input=None):
+        if grouped_input is not None:
+            messages,system=grouped_input.messages,grouped_input.system
         self._model_history(binding,messages,system)
         draft = system is not None and not answer
         prepared = None
         if self.budget_exit is not None:
-            prepared = self.budget_exit.prepare(self.runs,binding,'draft' if draft else 'answer',
-                                                messages,system,self.provider)
+            if grouped_input is not None:
+                prepared=self.budget_exit.prepare_operation(self.runs,binding,'model.draft','model.draft',
+                    grouped_input,stage='draft')
+            else:
+                prepared = self.budget_exit.prepare(self.runs,binding,'draft' if draft else 'answer',
+                                                    messages,system,self.provider)
         def source():
             return (self.budget_exit.stream(prepared) if prepared is not None else
                     self.provider.stream(messages) if system is None else self.provider.stream(messages,system=system))
         yield from self._stream_source(binding,source,draft=draft)
 
     def _registered_stream(self,binding,key,registration,argument,*,progress=None,message_refs=()):
-        if self.memory_history and registration in ('model.answer','model.draft','model.lio_intake.1','model.lio_intake.2','model.lio_intake.3','model.lio_intake.4','model.lio_intake.5','model.lio_intake.6','model.lio_intake.7','model.lio_intake.8'):
-            if registration in ('model.lio_intake.3','model.lio_intake.4','model.lio_intake.5','model.lio_intake.6','model.lio_intake.7','model.lio_intake.8'):messages,system,_,_=argument
+        if self.memory_history and registration=='model.lio_exploration.1':
+            import json
+            self._model_history(binding,json.loads(argument.messages),argument.system,message_refs=message_refs)
+        if self.memory_history and registration in ('model.answer','model.draft','model.lio_intake.1','model.lio_intake.2','model.lio_intake.3','model.lio_intake.4','model.lio_intake.5','model.lio_intake.6','model.lio_intake.7','model.lio_intake.8','model.lio_intake.9'):
+            if registration in ('model.lio_intake.3','model.lio_intake.4','model.lio_intake.5','model.lio_intake.6','model.lio_intake.7','model.lio_intake.8','model.lio_intake.9'):messages,system,_,_=argument
             else:messages,system,_=argument
             self._model_history(binding,messages,system,message_refs=message_refs)
         options={'reserve_final_model':True} if self._lio_active and registration.startswith('tool.') else {}
@@ -349,8 +359,15 @@ class RunWorker:
                 if self.message_context is None:raise DraftRejected('canonical original message context required')
                 _,sources=self._step(binding,lambda:self.drafts.sources_for(binding),draft=True)
                 messages=self.drafts.model_messages(binding,text,sources,messages)
-            if planning_refs:self._model_history(binding,messages,self.drafts.system if structured else DRAFT_SYSTEM,message_refs=planning_refs)
-            reply = ''.join(self._stream(binding, messages, system=self.drafts.system if structured else DRAFT_SYSTEM))
+            grouped=None
+            original_provider=(self.provider.original if type(self.provider) in (_MemoryProvider,_EditMemoryProvider)
+                               else self.provider)
+            if structured and type(original_provider) is MeteredDashScopeProvider:
+                from cj_draft.grouped_plan import grouped_input
+                grouped=grouped_input(self.drafts,sources,messages,self.provider)
+            system=grouped.system if grouped is not None else self.drafts.system if structured else DRAFT_SYSTEM
+            if planning_refs:self._model_history(binding,messages,system,message_refs=planning_refs)
+            reply = ''.join(self._stream(binding,messages,system=system,**({'grouped_input':grouped}if grouped is not None else {})))
             if self.drafts.content_version == 'legacy':
                 def publish():
                     check=self._publication_check or (self.memory_run.check if self.memory_run is not None else None)
@@ -490,17 +507,21 @@ class RunWorker:
             return execute(self,receipt,binding,state,inputs,deadline=result_deadline) if self.edit_results else execute(self,receipt,binding,state,inputs)
         proposal_id = None
         buffer = ''
+        phase='answer_preparation'
         try:
             from cj_message.lio_context import LioCitation, LioToolProgress, answer_prompt
 
             if lio_replacement:
+                phase='lio_edit'
                 edited = self.lio_edit.execute(self, binding, state, stored, text, locale, result_deadline)
                 return self._finish(receipt, edited)
             if locale is not None and self.lio_planning is not None:
+                phase='lio_planning'
                 planning = self.lio_planning.execute(self, binding, state, text, original)
                 if planning is not None:
                     return self._finish(receipt, planning)
                 state=self.runs.snapshot(binding)
+            phase='answer_context'
             inputs = ([{'role': 'user', 'content': text}] if self.memory_run is None
                       else self.memory_run.messages(text))
             if self.message_context is not None:
@@ -515,6 +536,7 @@ class RunWorker:
             else:
                 chunks = self.tools.answer(self, binding, inputs, lio_locale=locale, lio_question_day=original.question_day,**({'message_refs':message_refs} if message_refs else {}),
                                            **({'lio_city':self.lio_city_context} if self.lio_city_context is not None else {}))
+            phase='answer_stream'
             for chunk in chunks:
                 if isinstance(chunk, (LioCitation, LioToolProgress)):
                     state = self._event(binding, state, 'effect_committed', chunk.effect())
@@ -525,17 +547,24 @@ class RunWorker:
             if buffer:
                 state = self._event(binding, state, 'text_delta', buffer)
             if self.drafts is not None and command['creation_intent'] == 'consider_trip':
+                phase='draft'
                 state, proposal_id = self._draft(binding, state, text, stored)
+            phase='memory_extract'
             publish_memory = (self.lio_memory.extract(self, binding)
                               if locale is not None and self.lio_memory is not None else None)
+            phase='completion_event'
             state = self._event(binding, state, 'completed')
             if publish_memory is not None:
+                phase='memory_publish'
                 publish_memory()
         except BudgetExceeded:
             state = self._budget_rejection(binding,'answer')
         except ProviderFailed:
             state = self._event(binding, self.runs.snapshot(binding), 'failed')
-        except ProviderUnknown:
+        except ProviderUnknown as error:
+            if locale is not None:
+                logging.getLogger('cj_usage.audit').warning(
+                    'LIO_RUN_UNKNOWN run_id=%s phase=%s error_class=%s',binding.run_id,phase,type(error).__name__)
             state = self._event(binding, self.runs.snapshot(binding), 'unknown')
         return self._finish(receipt, state, proposal_id)
 

@@ -1,5 +1,6 @@
 """Fixed AUTH interface + injected repository, no database/credentials/network."""
 import unittest
+import threading
 from contextlib import contextmanager
 from dataclasses import replace
 from cj_auth.admission import AdmissionChecker
@@ -82,6 +83,63 @@ class ContextTests(unittest.TestCase):
             return ctx.conversations()
         with self.assertRaises(IdentityChanged): self.boundary.with_history_context('synthetic',operation)
         self.assertEqual(self.reads,0)
+
+    def test_lio_projection_holds_scope_until_sync_callback_finishes(self):
+        events=[]
+        repository=self.repository
+        @contextmanager
+        def transaction():
+            events.append('enter')
+            try:yield repository
+            finally:events.append('exit')
+        repository.transaction=transaction
+        repository.lock_scope=lambda:events.append('lock')
+        def read(ctx):
+            def projection():
+                self.assertEqual(events,['enter','lock'])
+                self.assertEqual(ctx.principal,self.principal)
+                events.append('body')
+                return b'owned-projection'
+            return ctx.with_lio_timeline_projection(projection)
+        self.assertEqual(self.boundary.with_history_context('synthetic',read),b'owned-projection')
+        self.assertEqual(events,['enter','lock','body','exit'])
+
+    def test_lio_projection_does_not_issue_processing_or_nested_permits(self):
+        def read(ctx):
+            def projection():
+                with self.assertRaises(RuntimeError):ctx.with_lio_timeline_projection(lambda:b'nested')
+                with self.assertRaises(RuntimeError):ctx.with_enabled_source(None,None,lambda:b'processing')
+                with self.assertRaises(RuntimeError):ctx.with_enabled_source_and_travel(None,None,None,lambda:b'processing')
+                return b'projection'
+            return ctx.with_lio_timeline_projection(projection)
+        self.assertEqual(self.boundary.with_history_context('synthetic',read),b'projection')
+
+    def test_lio_projection_final_identity_or_access_change_withholds_bytes(self):
+        for change in ('denied','identity'):
+            self.setUp()
+            def read(ctx):
+                def projection():
+                    if change=='identity':self.principal=replace(self.principal,subject='user-b')
+                    else:self.invited=Fact.NO
+                    return b'private-frame'
+                return ctx.with_lio_timeline_projection(projection)
+            with self.assertRaises((AccessBlocked,IdentityChanged)):
+                self.boundary.with_history_context('synthetic',read)
+
+    def test_lio_projection_rejects_other_thread_and_expires_after_failure(self):
+        captured=[];errors=[]
+        def read(ctx):
+            captured.append(ctx)
+            def foreign():
+                try:ctx.with_lio_timeline_projection(lambda:b'foreign')
+                except RuntimeError:errors.append('refused')
+            thread=threading.Thread(target=foreign);thread.start();thread.join()
+            def broken():raise ValueError('local projection failed')
+            with self.assertRaises(ValueError):ctx.with_lio_timeline_projection(broken)
+            return ctx.with_lio_timeline_projection(lambda:b'new-protected-frame')
+        self.assertEqual(self.boundary.with_history_context('synthetic',read),b'new-protected-frame')
+        self.assertEqual(errors,['refused'])
+        with self.assertRaises(RuntimeError):captured[0].with_lio_timeline_projection(lambda:b'expired')
 
     def test_entry_denial_never_calls_codec_or_resolver(self):
         self.invited=Fact.UNKNOWN
