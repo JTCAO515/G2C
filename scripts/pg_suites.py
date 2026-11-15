@@ -731,6 +731,13 @@ def group_lio_exploration():
 GROUPS.update(lio_exploration=group_lio_exploration)
 
 
+def group_runtime_actor():
+    return script('backend/cj_api/tests/runtime_actor_pg.py')
+
+
+GROUPS.update(runtime_actor=group_runtime_actor)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))
