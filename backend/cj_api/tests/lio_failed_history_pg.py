@@ -27,9 +27,16 @@ from fastapi.testclient import TestClient
 from test_lio_planning_flow import flow
 from test_lio_city import data as city_catalog
 
-def exercise(root,config):
+def exercise(root,config,*,locale):
     auth=root/'auth';conninfo=root/'connection.json';conninfo.write_text(json.dumps(config))
     subject='m4-synthetic-demo-0123456789ab';owner=scope_for(ISSUER,subject)
+    english=locale=='en';city='Chengdu'if english else'成都';days_quote='three days'if english else'三天'
+    first_text='Go to Chengdu for three days'if english else'去成都玩三天'
+    second_text='Please plan my trip starting 2026-12-01'if english else'从2026-12-01开始，请继续规划'
+    translated_text='Please translate "Start on 2026-12-10, two people"'if english else'请翻译“从2026-12-10开始，两个人”'
+    after_text='Please plan my trip for three days'if english else'请继续规划三天'
+    party_quote='two people'if english else'两个人'
+
     dev_auth.init(auth,[subject]);now=int(time.time());meter=auth.parent/'probe-meter.json'
     meter.write_text(json.dumps(dict(version='CJ-LOCAL-RUN@2',current=dict(meter=dict(unit='provider_call',budget=80,
         period_start=now-60,period_end=now+3600,max_steps=24,max_tools=12,max_output=65536,max_seconds=600),
@@ -71,24 +78,24 @@ def exercise(root,config):
             if phase[0]=='translation':
                 raise httpx.ReadTimeout('synthetic translation UNKNOWN; no candidate bytes',request=request)
             if phase[0]=='after-translation':
-                value=flow('请继续规划三天',city='成都',days=3,start='2026-12-10',party=2,intent='plan',questions=(),index=3)
+                value=flow(after_text,city=city,days=3,start='2026-12-10',party=2,intent='plan',questions=(),index=3)
                 value.update(version='LIO-planning-intake.8',planning_request_index=3,needs_tools=False)
-                value['city'].update(source_index=0,quote='成都')
-                value['field_sources']=[dict(field='duration_days',source_index=3,quote='三天'),
-                    dict(field='start_date',source_index=2,quote='2026-12-10'),dict(field='party_size',source_index=2,quote='两个人')]
+                value['city'].update(source_index=0,quote=city)
+                value['field_sources']=[dict(field='duration_days',source_index=3,quote=days_quote),
+                    dict(field='start_date',source_index=2,quote='2026-12-10'),dict(field='party_size',source_index=2,quote=party_quote)]
             elif phase[0]=='first':
-                value=flow('去成都玩三天',city='成都',days=3,intent='plan',questions=(),index=0)
+                value=flow(first_text,city=city,days=3,intent='plan',questions=(),index=0)
                 value.update(version='LIO-planning-intake.8',planning_request_index=0,needs_tools=False)
-                value['field_sources']=[dict(field='duration_days',source_index=0,quote='三天')]
+                value['field_sources']=[dict(field='duration_days',source_index=0,quote=days_quote)]
             else:
                 assert len([m for m in body['messages'][1:]if m['role']=='user'and m['content'].startswith('Original traveler')])==2
-                value=flow('从2026-12-01开始，请继续规划',city='成都',days=3,start='2026-12-01',intent='plan',questions=(),index=1)
+                value=flow(second_text,city=city,days=3,start='2026-12-01',intent='plan',questions=(),index=1)
                 value.update(version='LIO-planning-intake.8',planning_request_index=1,needs_tools=False)
-                value['city'].update(source_index=0,quote='成都')
-                value['field_sources']=[dict(field='duration_days',source_index=0,quote='三天'),dict(field='start_date',source_index=1,quote='2026-12-01')]
+                value['city'].update(source_index=0,quote=city)
+                value['field_sources']=[dict(field='duration_days',source_index=0,quote=days_quote),dict(field='start_date',source_index=1,quote='2026-12-01')]
         elif 'The traveler requested a complete 'in system:
             if phase[0]=='after-translation':
-                value=dict(answer='第1天逛街区，第2天看博物馆，第3天试当地美食。想先细化哪一天？')
+                value=dict(answer='Day 1: neighbourhoods. Day 2: museums. Day 3: local food. Which day should I expand?'if english else'第1天逛街区，第2天看博物馆，第3天试当地美食。想先细化哪一天？')
             else:
                 assert phase[0]=='first'
                 raise httpx.ReadTimeout('one synthetic original discussion UNKNOWN; never retried',request=request)
@@ -110,7 +117,7 @@ def exercise(root,config):
     def worker():return run_worker._worker_for_scope(database,model,auth,owner,checker,memory_configuration=memory,tools_configuration=tools,
         draft_profile='needs-structured.1',assembly_planning=True,demo_planning=True,national_planning=True,
         lio_confirmation=load_confirmation_signer(auth),lio_memory_enabled=True)
-    first=boundary.receive_lio(token,json.dumps(dict(version='LIO-message.2',message_id='old-unknown',text='去成都玩三天',locale='zh',new_conversation=True)).encode(),prepare_scope=database._provision_scope,version='LIO-message.2')
+    first=boundary.receive_lio(token,json.dumps(dict(version='LIO-message.2',message_id='old-unknown',text=first_text,locale=locale,new_conversation=True)).encode(),prepare_scope=database._provision_scope,version='LIO-message.2')
     async def catalogue(key,guard):assert guard()is True;return city_catalog()
     with patch('cj_api.lio_city._catalog_exchange',side_effect=catalogue):
         one=worker();outcome,=one.process();assert outcome.status=='unknown',outcome
@@ -120,7 +127,7 @@ def exercise(root,config):
     assert any(json.loads(v.split(':',1)[1])['authority']=='plan'for v, in old_effects)
     old_fees=budget.inspect();unknowns=[r for r in old_fees if r['state']!='RECEIVED'];assert len(unknowns)==1
     print('PASS baseline native UNKNOWN retains a committed plan effect and original unknown financial attempt',flush=True)
-    second=boundary.receive_lio(token,json.dumps(dict(version='LIO-message.2',message_id='new-plan',text='从2026-12-01开始，请继续规划',locale='zh',conversation_id=first.conversation_id)).encode(),prepare_scope=database._provision_scope,version='LIO-message.2')
+    second=boundary.receive_lio(token,json.dumps(dict(version='LIO-message.2',message_id='new-plan',text=second_text,locale=locale,conversation_id=first.conversation_id)).encode(),prepare_scope=database._provision_scope,version='LIO-message.2')
     phase[0]='second';history=HistoryMemory.before_model;references_seen=[]
     def record_history(self,binding,original,messages,system,*,message_refs=()):
         references_seen.extend(r['message_id']for r in message_refs)
@@ -139,12 +146,12 @@ def exercise(root,config):
     print('PASS no old planning effects inherited; old native UNKNOWN/financial bytes unchanged; no original unknown resend; all HTTP fixtures,0 real service calls',flush=True)
     phase[0]='translation'
     translated=boundary.receive_lio(token,json.dumps(dict(version='LIO-message.2',message_id='unknown-translation',
-        text='请翻译“从2026-12-10开始，两个人”',locale='zh',conversation_id=first.conversation_id)).encode(),
+        text=translated_text,locale=locale,conversation_id=first.conversation_id)).encode(),
         prepare_scope=database._provision_scope,version='LIO-message.2')
     third=worker();outcome,=third.process();assert outcome.status=='unknown',outcome
     phase[0]='after-translation'
     boundary.receive_lio(token,json.dumps(dict(version='LIO-message.2',message_id='after-translation',
-        text='请继续规划三天',locale='zh',conversation_id=first.conversation_id)).encode(),
+        text=after_text,locale=locale,conversation_id=first.conversation_id)).encode(),
         prepare_scope=database._provision_scope,version='LIO-message.2')
     with patch('cj_api.lio_city._catalog_exchange',side_effect=catalogue):
         fourth=worker();outcome,=fourth.process();assert outcome.status=='completed',outcome
@@ -162,7 +169,10 @@ def exercise(root,config):
 
 
 def main():
-    with patch.object(harness,'exercise',exercise):harness.main()
+    for locale in ('zh','en'):
+        def run(root,config):return exercise(root,config,locale=locale)
+        with patch.object(harness,'exercise',run):harness.main()
+        print('PASS signed failed-history locale '+locale,flush=True)
 
 
 if __name__=='__main__':main()
