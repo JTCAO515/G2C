@@ -59,6 +59,13 @@ class LocalBudgetRouter:
         from cj_message.demo_dialogue import LIO_VERSION_V4
         from cj_message.lio_wire import exploration_original_protocol
         from cj_message.domain import read_active_message,Unavailable as MessageUnavailable
+        # Retained pre-53 databases cannot admit Lio4 and have no outer-wire
+        # columns. Keep their original MESSAGE path without querying new SQL.
+        # This compatibility branch ends when pre-53 consumers are retired.
+        available=connection.execute("SELECT EXISTS (SELECT 1 FROM pg_attribute "
+            "WHERE attrelid='cj_message_receipt'::regclass AND attname='lio_wire_protocol' "
+            "AND attnum>0 AND NOT attisdropped)").fetchone()[0]
+        if not available:return False
         wire=connection.execute('SELECT lio_wire_protocol FROM cj_message_receipt WHERE scope=%s '
             'AND conversation_id=%s AND generation=%s AND message_id=%s AND run_id=%s',
             (binding.scope,binding.conversation_id,binding.generation,binding.message_id,binding.run_id)).fetchone()
@@ -91,10 +98,15 @@ class LocalBudgetRouter:
     def _resolve_original(self, binding, state):
         context=self.database.run_context
         matches=[]
+        native_message=None
+        original_checked=False
         for profile in context.profiles:
             account=ledger_scope_for(binding.scope,profile.meter)
             with self.database.connect(binding.scope,usage_profile=profile) as conn:
                 registered=context.version=='CJ-LOCAL-RUN@2'
+                if registered and not original_checked:
+                    native_message=self._native4_message(conn,binding)
+                    original_checked=True
                 table='cj_run_metered_binding' if registered else 'cj_run_step_usage'
                 fields='ledger_scope,unit,period_start,period_end'+(',source_abi' if registered else '')
                 rows=conn.execute('SELECT '+fields+' FROM '+table+
@@ -118,9 +130,8 @@ class LocalBudgetRouter:
                 else:
                     # Retain format1's independence from append55. Actual Lio4
                     # must still be refused instead of silently using legacy caps.
-                    with self.database.connect(binding.scope,usage_profile=profile)as conn:
-                        if self._native4_message(conn,binding)is True:
-                            raise _Native4QualificationRequired('original native4 account qualification unavailable')
+                    if native_message is True:
+                        raise _Native4QualificationRequired('original native4 account qualification unavailable')
             except _Native4QualificationRequired:
                 refused=True
         def resolve(original, account):
