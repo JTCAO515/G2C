@@ -186,8 +186,10 @@ import Testing
         await #expect(throws: MessageHTTPFailure.exchangeUnknown) { _ = try await library.restore?() }
         let diagnosis = try #require(library.diagnose?(MessageHTTPFailure.exchangeUnknown))
         #expect(diagnosis == LioFailureDiagnosis(category: category, stage: .firstSendLookup,
-                                                 request: .firstLookup, httpStatus: code))
+                                                 request: .firstLookup, httpStatus: code,
+                                                 serverReference: ChatContinuityTransport.trace))
         #expect(fixture.notes.entries.map(\.category) == [category])
+        #expect(fixture.notes.entries.first?.reference == ChatContinuityTransport.trace)
         #expect(fixture.notes.entries.first?.stage == .firstSendLookup && fixture.notes.entries.first?.httpStatus == code)
         #expect(await fixture.transport.lookups == 1)
         try await expectRetained(fixture, position, selected, original)
@@ -214,7 +216,8 @@ import Testing
         await #expect(throws: MessageHTTPFailure.exchangeUnknown) { _ = try await library.restore?() }
         let diagnosis = try #require(library.diagnose?(MessageHTTPFailure.exchangeUnknown))
         #expect(diagnosis == LioFailureDiagnosis(category: .unclear, stage: .firstSendLookup,
-                                                 request: .firstLookup, httpStatus: 200))
+                                                 request: .firstLookup, httpStatus: 200,
+                                                 serverReference: ChatContinuityTransport.trace))
         // The lookup proved nothing either way; the original action stays for its own later lookup.
         try await expectRetained(fixture, position, selected, original, phase: .notObserved)
     }
@@ -341,6 +344,7 @@ import Testing
 }
 
 private actor ChatContinuityTransport: ClientTransport {
+    static let trace = "6F9619FF-8B86-D011-B42D-00C04FC964FF"
     private let id = "lio-dialogue-0123456789abcdef0123456789abcdef"
     private var original: LioTimelineWire.Send?
     private var originalDigest: String?
@@ -395,6 +399,7 @@ private actor ChatContinuityTransport: ClientTransport {
     private func reply(_ fields: [String: Any], status: HTTPResponse.Status = .ok) throws -> (HTTPResponse, HTTPBody?) {
         var response = HTTPResponse(status: status)
         response.headerFields[.contentType] = "application/json"
+        response.headerFields[HTTPField.Name("X-Request-ID")!] = Self.trace
         return (response, HTTPBody(try JSONSerialization.data(withJSONObject: fields)))
     }
 

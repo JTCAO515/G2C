@@ -2,14 +2,16 @@ import CJMessageHTTP
 import Foundation
 
 /// Bounded problem notes kept only on this device and never sent anywhere.
-/// An entry holds a category, stage, request kind, HTTP status, time and build;
-/// it has no field for tokens, invitation codes, identifiers or message text.
+/// An entry holds a category, stage, request kind, HTTP status, the service's request
+/// reference, time and build; it has no field for tokens, invitation codes, account or
+/// conversation identifiers, or message text.
 @MainActor public final class LioDiagnosticLog {
     public struct Entry: Codable, Sendable, Equatable {
         public let category: LioFailureDiagnosis.Category
         public let stage: LioFailureDiagnosis.Stage
         public let request: String?
         public let httpStatus: Int?
+        public let reference: String?
         public let time: Date
         public let build: String
     }
@@ -39,7 +41,7 @@ import Foundation
     public func record(_ diagnosis: LioFailureDiagnosis, at time: Date = Date()) {
         let entry = Entry(category: diagnosis.category, stage: diagnosis.stage,
                           request: diagnosis.request.map(Self.code), httpStatus: diagnosis.httpStatus,
-                          time: time, build: build)
+                          reference: diagnosis.serverReference, time: time, build: build)
         if let latest = entries.first, latest.category == entry.category, latest.stage == entry.stage,
            latest.request == entry.request, latest.httpStatus == entry.httpStatus,
            abs(time.timeIntervalSince(latest.time)) < Self.repeatWindow { return }
@@ -69,7 +71,8 @@ import Foundation
         return entries.map { entry in
             [formatter.string(from: entry.time), language.text("build", "构建") + " " + entry.build,
              entry.category.rawValue, entry.stage.rawValue, entry.request ?? "-",
-             "HTTP " + (entry.httpStatus.map(String.init) ?? "-")].joined(separator: " · ")
+             "HTTP " + (entry.httpStatus.map(String.init) ?? "-"),
+             "ref " + (entry.reference ?? "-")].joined(separator: " · ")
         }.joined(separator: "\n")
     }
 }

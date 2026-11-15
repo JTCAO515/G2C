@@ -115,13 +115,13 @@ import Testing
         notes.record(.init(category: .signIn, stage: .firstSendLookup, request: .firstLookup, httpStatus: 401))
         notes.record(.init(category: .localRecord, stage: .localRecord, request: nil, httpStatus: nil))
         let text = notes.text(.chinese)
-        #expect(text.contains("构建 45 · localRecord · localRecord · - · HTTP -"))
-        #expect(text.contains("signIn · firstSendLookup · first-send-lookup · HTTP 401"))
+        #expect(text.contains("构建 45 · localRecord · localRecord · - · HTTP - · ref -"))
+        #expect(text.contains("signIn · firstSendLookup · first-send-lookup · HTTP 401 · ref -"))
         // The stored form has exactly these fields: no token, invitation, identifier or message text.
         let stored = try #require(defaults.data(forKey: "g2c.lio.problem-notes.v1"))
         let entries = try #require(JSONSerialization.jsonObject(with: stored) as? [[String: Any]])
         for entry in entries {
-            #expect(Set(entry.keys).isSubset(of: ["category", "stage", "request", "httpStatus", "time", "build"]))
+            #expect(Set(entry.keys).isSubset(of: ["category", "stage", "request", "httpStatus", "reference", "time", "build"]))
         }
     }
 }

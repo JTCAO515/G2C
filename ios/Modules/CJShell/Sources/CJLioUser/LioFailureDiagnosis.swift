@@ -19,12 +19,16 @@ public struct LioFailureDiagnosis: Sendable, Equatable {
     public let stage: Stage
     public let request: LioTimelineHTTP.RequestKind?
     public let httpStatus: Int?
+    /// The service's request reference (`X-Request-ID`), when a response arrived.
+    public let serverReference: String?
 
-    public init(category: Category, stage: Stage, request: LioTimelineHTTP.RequestKind?, httpStatus: Int?) {
+    public init(category: Category, stage: Stage, request: LioTimelineHTTP.RequestKind?, httpStatus: Int?,
+                serverReference: String? = nil) {
         self.category = category
         self.stage = stage
         self.request = request
         self.httpStatus = httpStatus
+        self.serverReference = serverReference
     }
 
     /// `observation` must be the client's record of the request that belongs to this stage, if any.
@@ -48,7 +52,8 @@ public struct LioFailureDiagnosis: Sendable, Equatable {
         } else {
             category = .unclear
         }
-        return Self(category: category, stage: stage, request: observation?.kind, httpStatus: status)
+        return Self(category: category, stage: stage, request: observation?.kind, httpStatus: status,
+                    serverReference: observation?.serverReference)
     }
 
     /// The account host's saved sign-in check, which uses its own request outside this client.

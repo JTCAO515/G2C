@@ -34,16 +34,28 @@ public final class LioTimelineHTTP {
     /// The latest attempted request of this client. It never decides an outcome:
     /// thrown errors, fences and retries are unchanged. `httpStatus` is nil when
     /// no response arrived (or the attempt stopped before the transport).
+    /// `serverReference` is the response's `X-Request-ID` when it is a UUID; it is not a
+    /// secret and lets a reported failure be matched with the service's own request log.
     public struct Observation: Sendable, Equatable {
         public let kind: RequestKind
         public let httpStatus: Int?
         public let offline: Bool
+        public let serverReference: String?
+
+        public init(kind: RequestKind, httpStatus: Int?, offline: Bool, serverReference: String? = nil) {
+            self.kind = kind
+            self.httpStatus = httpStatus
+            self.offline = offline
+            self.serverReference = serverReference
+        }
     }
     public private(set) var lastObservation: Observation?
 
     private func observe(_ kind: RequestKind, _ response: HTTPResponse? = nil) {
+        let traces = response?.headerFields.filter { $0.name.canonicalName == "x-request-id" } ?? []
+        let reference = traces.count == 1 ? traces.first.flatMap { UUID(uuidString: $0.value)?.uuidString } : nil
         lastObservation = Observation(kind: kind, httpStatus: response.map { $0.status.code },
-                                      offline: connectivity?.offline == true)
+                                      offline: connectivity?.offline == true, serverReference: reference)
     }
 
     func observedDefaultCalendarConversationID() throws -> String {
