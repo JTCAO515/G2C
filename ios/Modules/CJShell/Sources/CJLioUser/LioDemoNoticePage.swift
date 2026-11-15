@@ -16,8 +16,8 @@ public struct LioDemoNoticePage<Actions: View>: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 LioPortrait(size: 58)
-                Text(language.text("Use fictional trip details", "请使用虚构旅行信息"))
-                    .font(LioTheme.display(.headline))
+                RunReadableText(text: language.text("Use fictional trip details", "请使用虚构旅行信息"),
+                                style: .displayHeadline, color: LioTheme.ink)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityAddTraits(.isHeader)
                 // Interim internal-demo wording until #225 is decided; consent is unchanged.

@@ -96,14 +96,20 @@
           },
           "items": {
             "en": [
-              "The Hong Kong online service is using source 7750871.",
-              "Failure diagnostics are live; this server update does not require an app update.",
-              "Basic questions have not passed every check; diagnostics do not mean planning is fixed."
+              "Latest verified Hong Kong service source: 70a157d.",
+              "Translated text is now isolated from trip dates and party size.",
+              "Stale translated facts are filtered from the old cache.",
+              "This server update does not require an app update.",
+              "Live basic questions and nationwide planning checks are pending.",
+              "Planning retest remains on hold."
             ],
             "zh": [
-              "香港在线服务来源为 7750871。",
-              "失败诊断已上线，这项在线更新不需要更新应用。",
-              "基础问答尚未全部通过，新增诊断不代表规划已经修复。"
+              "最近核对的香港在线服务来源为 70a157d。",
+              "服务端加强翻译文本与行程日期、人数的隔离。",
+              "旧缓存中的翻译污染信息会被过滤。",
+              "这项服务端更新不需要更新应用。",
+              "真实基础问答和全国规划验证尚未完成。",
+              "规划复试继续暂缓。"
             ]
           }
         }

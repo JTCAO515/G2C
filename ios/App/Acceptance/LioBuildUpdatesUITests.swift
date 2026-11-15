@@ -8,6 +8,10 @@ import XCTest
     func testChinese() throws { try exercise(chinese: true, largest: false) }
     func testEnglishLargest() throws { try exercise(chinese: false, largest: true) }
     func testChineseLargest() throws { try exercise(chinese: true, largest: true) }
+    func testEnglishLargestLight() throws { try exercise(chinese: false, largest: true, appearances: ["light"]) }
+    func testEnglishLargestDark() throws { try exercise(chinese: false, largest: true, appearances: ["dark"]) }
+    func testChineseLargestLight() throws { try exercise(chinese: true, largest: true, appearances: ["light"]) }
+    func testChineseLargestDark() throws { try exercise(chinese: true, largest: true, appearances: ["dark"]) }
 
     func testLargestDarkScrollContrastInBothLanguages() throws {
         continueAfterFailure = false
@@ -33,10 +37,56 @@ import XCTest
         }
     }
 
-    private func exercise(chinese: Bool, largest: Bool) throws {
+    func testLargestChinesePreviousServiceDirect() throws {
+        try exerciseDirectSection(chinese: true, appearance: "light", build: previousBuild, section: "service")
+    }
+    func testLargestDirectSection() throws {
+        let env = ProcessInfo.processInfo.environment
+        if env["LIO_UPDATES_TEST_LANGUAGE"] == nil && env["LIO_UPDATES_TEST_APPEARANCE"] == nil
+            && env["LIO_UPDATES_TEST_PERIOD"] == nil && env["LIO_UPDATES_TEST_SECTION"] == nil {
+            try exerciseDirectSection(chinese: false, appearance: "dark", build: currentBuild, section: "changes")
+            return
+        }
+        guard let locale = env["LIO_UPDATES_TEST_LANGUAGE"], let appearance = env["LIO_UPDATES_TEST_APPEARANCE"],
+              let period = env["LIO_UPDATES_TEST_PERIOD"], let section = env["LIO_UPDATES_TEST_SECTION"] else {
+            XCTFail("Explicit section diagnostic parameters are required")
+            return
+        }
+        XCTAssertTrue(["zh", "en"].contains(locale))
+        XCTAssertTrue(["light", "dark"].contains(appearance))
+        XCTAssertTrue(["current", "previous"].contains(period))
+        XCTAssertTrue(["changes", "comparison", "testing", "known", "service"].contains(section))
+        try exerciseDirectSection(chinese: locale == "zh", appearance: appearance,
+                                  build: period == "current" ? currentBuild : previousBuild, section: section)
+    }
+    private func exerciseDirectSection(chinese: Bool, appearance: String, build: String, section: String) throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.updates.acceptance")
-        for appearance in ["light", "dark"] {
+        app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", chinese ? "zh-Hans" : "en", "-lio.ui.appearance.v1", appearance,
+                               "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch()
+        defer { app.terminate() }
+        XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 12))
+        app.buttons["lio.menu"].tap()
+        XCTAssertTrue(app.buttons["lio.information"].waitForExistence(timeout: 5))
+        app.buttons["lio.information"].tap()
+        let paragraph = app.textViews["lio.updates.\(build).\(section).0"]
+        reveal(paragraph, app: app)
+        XCTAssertFalse((paragraph.value as? String ?? "").isEmpty)
+        try audit(app)
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "updates-direct-\(chinese ? "zh" : "en")-\(appearance)-\(build)-\(section)"
+        shot.lifetime = .keepAlways; add(shot)
+        let done = app.buttons["lio.information.done"]
+        XCTAssertTrue(done.isHittable)
+        done.tap()
+        XCTAssertTrue(app.buttons["lio.information"].waitForExistence(timeout: 5))
+    }
+
+    private func exercise(chinese: Bool, largest: Bool, appearances: [String] = ["light", "dark"]) throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.updates.acceptance")
+        for appearance in appearances {
             app.launchArguments = ["--lio-preview", "--lio-onboarding-preview", "-cj.ui.language.v1", chinese ? "zh-Hans" : "en",
                                    "-lio.ui.appearance.v1", appearance]
             if largest { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
@@ -137,7 +187,7 @@ import XCTest
             let target = element.exists && !element.frame.isEmpty ? element.frame : CGRect(x: frame.midX, y: frame.maxY + frame.height, width: 1, height: 1)
             let delta = target.minY < frame.minY ? min(frame.height * 0.4, max(80, frame.minY - target.minY + 12))
                 : -min(frame.height * 0.4, max(80, target.maxY - frame.maxY + 12))
-            let start = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            let start = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5))
             start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: delta)))
         }
         XCTAssertTrue(element.isHittable, app.debugDescription)

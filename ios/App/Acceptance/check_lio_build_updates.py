@@ -19,6 +19,10 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--build-dir', type=Path, required=True)
     parser.add_argument('--case', action='append')
+    parser.add_argument('--section-language', choices=('zh', 'en'))
+    parser.add_argument('--section-appearance', choices=('light', 'dark'))
+    parser.add_argument('--section-period', choices=('current', 'previous'))
+    parser.add_argument('--section', choices=('changes', 'comparison', 'testing', 'known', 'service'))
     args = parser.parse_args()
     output, build = args.output.resolve(), args.build_dir.resolve()
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):
@@ -32,6 +36,14 @@ def main():
     previous = str(book['releases'][0]['previousBuild'])
     older = str(book['releases'][1]['previousBuild'])
     tests = (HERE/'LioBuildUpdatesUITests.swift').read_text().replace('__UPDATES_CURRENT_BUILD__', current).replace('__UPDATES_PREVIOUS_BUILD__', previous).replace('__UPDATES_OLDER_BUILD__', older)
+    parameters = [args.section_language, args.section_appearance, args.section_period, args.section]
+    if any(value is not None for value in parameters):
+        if not all(value is not None for value in parameters):
+            parser.error('All four direct-section parameters are required')
+        pairs = dict(zip(['LIO_UPDATES_TEST_LANGUAGE', 'LIO_UPDATES_TEST_APPEARANCE', 'LIO_UPDATES_TEST_PERIOD', 'LIO_UPDATES_TEST_SECTION'], parameters))
+        literal = '[' + ', '.join(json.dumps(key) + ': ' + json.dumps(value) for key, value in pairs.items()) + ']'
+        tests = tests.replace('let env = ProcessInfo.processInfo.environment', 'let env: [String: String] = ' + literal)
+        (output/'section-parameters.json').write_text(json.dumps(pairs, indent=2)+'\n')
     (output/'G2CControl.swift').write_text(tests)
     original_info = ROOT/'ios/App/Info.plist'
     info = original_info.read_text()
@@ -49,7 +61,7 @@ def main():
                'ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-',f'CURRENT_PROJECT_VERSION={current}',*selectors,'test']
     (output/'command.json').write_text(json.dumps(command, indent=2)+'\n')
     env = {k:v for k,v in os.environ.items() if not k.startswith(('G2C_DEV_','SIMCTL_CHILD_'))}
-    expected = len(args.case) if args.case else 5
+    expected = len(args.case) if args.case else 11
     with (output/'updates.log').open('w') as log:
         subprocess.run(command,cwd=ROOT,env=env,stdout=log,stderr=subprocess.STDOUT,check=True,timeout=900 * expected)
     summary = subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)])

@@ -1,6 +1,6 @@
 import SwiftUI
 
-public enum RunReadableTextStyle: Sendable { case body, caption, headline, displayTitle2 }
+public enum RunReadableTextStyle: Sendable { case body, caption, headline, displayTitle2, displayHeadline }
 
 #if os(iOS)
 import UIKit
@@ -40,12 +40,12 @@ public struct RunReadableText: UIViewRepresentable {
         switch style {
         case .body: textStyle = .body
         case .caption: textStyle = .caption1
-        case .headline: textStyle = .headline
+        case .headline, .displayHeadline: textStyle = .headline
         case .displayTitle2: textStyle = .title2
         }
         let preferred = UIFont.preferredFont(forTextStyle: textStyle,
             compatibleWith: UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(size)))
-        if style == .displayTitle2, let serif = preferred.fontDescriptor.withDesign(.serif) {
+        if (style == .displayTitle2 || style == .displayHeadline), let serif = preferred.fontDescriptor.withDesign(.serif) {
             label.font = UIFont(descriptor: serif, size: preferred.pointSize)
         } else {
             // UIKit retains its preferred font when the requested family has no serif design.
@@ -114,6 +114,7 @@ public struct RunReadableText: View {
         case .caption: .caption
         case .headline: .headline
         case .displayTitle2: .system(.title2, design: .serif)
+        case .displayHeadline: .system(.headline, design: .serif)
         }
     }
     private var label: some View { Text(text).font(font).lineSpacing(lineSpacing).fixedSize(horizontal: false, vertical: true) }

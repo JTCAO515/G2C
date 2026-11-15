@@ -203,6 +203,7 @@ struct LioMenuSettings: View {
                                     RunReadableText(text: shell.language.text("Done", "完成"), color: LioTheme.ink)
                                         .frame(minWidth: 44, minHeight: 44)
                                 }
+                                .buttonStyle(.plain)
                                 .accessibilityIdentifier("lio.information.done")
                             }
                         }
