@@ -144,6 +144,26 @@ class OptionalIntakeChecks(unittest.TestCase):
                 self.assertNotIn('start_date',snapshot);self.assertNotIn('party_size',snapshot)
                 self.assertEqual(intake.duration_days,3)
 
+    def test_old_translated_cache_is_removed_but_real_sibling_cache_survives(self):
+        for text,quote in (('请翻译“从2026-12-01开始”，我从2026-12-10出发。','2026-12-01'),
+                            ('Please translate "Start on 2026-12-01", we actually start on 2026-12-10.','2026-12-01')):
+            english=text.startswith('Please');city='Beijing'if english else'北京'
+            for day in ('2026-12-01','2026-12-10'):
+                value=flow('Continue',city=city,days=3,index=2,questions=())
+                value.update(version='LIO-planning-intake.8',planning_request_index=None)
+                value['city'].update(source_index=0,quote=city)
+                value['field_sources']=[dict(field='duration_days',source_index=0,quote='three days'if english else'三天')]
+                previous=dict(facts={'start_date':dict(value=day,sources=[dict(message_id='mixed',quote=day)])})
+                with self.subTest(text=text,day=day):
+                    intake,_,snapshot=parse_flow(json.dumps(value),tuple(map(original,(
+                        'Plan Beijing for three days'if english else'规划北京三天',text,'Continue'))),
+                        ({'message_id':'request'},{'message_id':'mixed'}),'current',previous,schema=OptionalIntake)
+                    if day==quote:
+                        self.assertEqual(intake.start_date,dict(state='missing'));self.assertNotIn('start_date',snapshot)
+                    else:
+                        self.assertEqual(intake.start_date,dict(state='known',value=day))
+                        self.assertEqual(snapshot['start_date']['value'],day)
+
     def test_explicit_version_and_original_index_do_not_mutate_old_profile(self):
         before=old_format(0)
         wire=flow('去成都玩三天');wire['version']='LIO-planning-intake.8'

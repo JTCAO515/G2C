@@ -207,6 +207,13 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_off
     # only facts whose original MESSAGE is still present and checked by context.
     # The normal source/compiler boundary checks restored values and quotes too.
     saved={}if previous is None else previous.get('facts',{})
+    if dto.version=='LIO-planning-intake.8':
+        # Historical snapshots may predate the task-scope filter. Reuse only
+        # affirmative source spans; returning an unchanged cache must not keep
+        # translated facts alive after the execution projection withheld them.
+        saved={field:fact for field,fact in saved.items()if not any(
+            ref['message_id']in source_ids and _nonplanning_fact_source(
+                turns[source_ids.index(ref['message_id'])].text,ref['quote'])for ref in fact['sources'])}
     city=data['city'];old_city=saved.get('city')
     same_city=(city is None or old_city is None or
         city['query'].casefold()==old_city['value']['query'].casefold()and
