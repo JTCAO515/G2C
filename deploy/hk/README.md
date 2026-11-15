@@ -620,3 +620,10 @@ policy or Hong Kong configuration. L can resume the normal idle app-deployment
 flow after B updates and verifies the standing55 gate; API and worker must share
 the actual qualified source/image. Local migration/fixture results do not enable
 Home default4 or prove live-provider/native4 acceptance.
+# Protected original reader
+
+Run `python -m deploy.hk.protected_capture_read --qualification <owned-0600-qualification.json> L <original-MID> inventory --output <fresh-private-result.json>` from the approved B helper package. Its qualification and adjacent `read_server.py` must retain their issued hashes; credentials are read from the issued 0600 file and sent through stdin, never argv. This is a read interface, not a dispatch permit.
+
+The host takes the existing deployment shared lock, then the root-owned 0600 `qualified-reader.lock` with a ten-second queue bound. It permits one native Docker read at a time, with a 45-second wait and ten-second inspect bounds; the outer SSH budget is 90 seconds. A durable `qualified-reader.inflight.json` records the original worker/source/image/lease/MID/kind/nonce before execution. Only a successful same-worker, same-qualification read clears it. Timeout, nonzero return or post-read drift keeps UNKNOWN sticky even after flock is released; B must prove the original nonce process ended before a separately reviewed reconciliation. Never delete the marker to retry a request.
+
+Native failure metadata contains only the fixed phase, actual return code (null for a wait timeout), stderr SHA-256 and exact original selectors. It does not publish stderr, credentials, raw model text or a guessed OOM diagnosis. The native reader still owns current AUTH, scope/M/selection, source, erasure and retention checks; serialization does not replace them. Successful output preserves `G2C-protected-capture-read.3`, uses a fresh exclusive 0600 file, and never overwrites evidence.
