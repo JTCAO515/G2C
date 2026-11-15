@@ -1,6 +1,6 @@
 import SwiftUI
 
-public enum RunReadableTextStyle: Sendable { case body, caption, headline }
+public enum RunReadableTextStyle: Sendable { case body, caption, headline, displayTitle2, displayHeadline }
 
 #if os(iOS)
 import UIKit
@@ -37,9 +37,20 @@ public struct RunReadableText: UIViewRepresentable {
         if let color { label.textColor = UIColor(color) }
         else { label.textColor = .label }
         let textStyle: UIFont.TextStyle
-        switch style { case .body:textStyle = .body;case .caption:textStyle = .caption1;case .headline:textStyle = .headline }
-        label.font = UIFont.preferredFont(forTextStyle:textStyle,
+        switch style {
+        case .body: textStyle = .body
+        case .caption: textStyle = .caption1
+        case .headline, .displayHeadline: textStyle = .headline
+        case .displayTitle2: textStyle = .title2
+        }
+        let preferred = UIFont.preferredFont(forTextStyle: textStyle,
             compatibleWith: UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(size)))
+        if (style == .displayTitle2 || style == .displayHeadline), let serif = preferred.fontDescriptor.withDesign(.serif) {
+            label.font = UIFont(descriptor: serif, size: preferred.pointSize)
+        } else {
+            // UIKit retains its preferred font when the requested family has no serif design.
+            label.font = preferred
+        }
     }
     public func sizeThatFits(_ proposal: ProposedViewSize, uiView: UILabel, context: Context) -> CGSize? {
         guard let width = proposal.width, width.isFinite, width > 0 else { return nil }
@@ -97,7 +108,16 @@ public struct RunReadableText: View {
     public init(text: String, style: RunReadableTextStyle = .body, color: Color? = nil, lineSpacing: CGFloat = 0) {
         self.text = text; self.style = style; self.color = color; self.lineSpacing = lineSpacing
     }
-    private var label: some View { Text(text).font(style == .body ? .body : style == .headline ? .headline : .caption).lineSpacing(lineSpacing).fixedSize(horizontal: false, vertical: true) }
+    private var font: Font {
+        switch style {
+        case .body: .body
+        case .caption: .caption
+        case .headline: .headline
+        case .displayTitle2: .system(.title2, design: .serif)
+        case .displayHeadline: .system(.headline, design: .serif)
+        }
+    }
+    private var label: some View { Text(text).font(font).lineSpacing(lineSpacing).fixedSize(horizontal: false, vertical: true) }
     @ViewBuilder public var body: some View {
         if let color { label.foregroundStyle(color) }
         else { label }
