@@ -149,6 +149,10 @@ class NationalLioPlanning:
                 continuous=[]
                 for row in rows:
                     if row[-1]not in TERMINAL:break
+                    # A failed original without its own question day (every
+                    # receipt outside Demo scopes) is unusable DATA: it ends
+                    # the window as on main and grants nothing (#1025 P1-C).
+                    if row[-1]!='completed'and row[4]is None:break
                     continuous.append(row)
             anchors=set()if previous is None else {ref['message_id']for fact in previous.get('facts',{}).values()for ref in fact['sources']}
             for key in ('date_boundary_message_id','resolved_city_source_message_id','authority_barrier_message_id'):
@@ -498,7 +502,10 @@ class NationalLioPlanning:
     @staticmethod
     def _same_prior_city(intake,previous):
         old=previous.get('city')
-        if old is None:return True
+        if old is None:
+            # Before resolution, keep only the city the completed root adopted.
+            adopted=previous.get('facts',{}).get('city',{}).get('value')
+            return adopted is not None and _normalize(intake.city['query'])==_normalize(adopted['query'])
         if old.get('status')!='resolved'or len(old.get('candidates',[]))!=1:return False
         city=old['candidates'][0]
         return _normalize(intake.city['query'])in forms(city['name'],city['level'])

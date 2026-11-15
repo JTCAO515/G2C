@@ -745,6 +745,18 @@ def group_release_export():
 GROUPS.update(release_export=group_release_export)
 
 
+def group_lio_failed_history():
+    # #994: signed failed/unknown follow-up history, Demo and non-Demo scopes.
+    pg=Path(os.environ.get('CJ_PG17_BINDIR',bindir()))
+    env=dict(clean_env(),CJ_PG_BINDIR=str(pg),PATH=str(pg)+os.pathsep+os.environ['PATH'])
+    results=[script('backend/cj_api/tests/'+name,env=env) for name in
+             ('lio_failed_history_pg.py','lio_failed_history_nondemo_pg.py')]
+    return 1 if any(results) else 0
+
+
+GROUPS.update(lio_failed_history=group_lio_failed_history)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))
