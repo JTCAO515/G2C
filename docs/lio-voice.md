@@ -284,7 +284,7 @@ JT 决定依据不向用户展示。用户无法核对出处，所以措辞的�
 | 1′ | 与阶段 1 并行 | 事实库（[#841](https://github.com/JTCAO515/G2C/issues/841)）：H 来源清单与格式（[#843](https://github.com/JTCAO515/G2C/issues/843)）→ 首批条目（[#846](https://github.com/JTCAO515/G2C/issues/846)，北京及 #815 六城 × 五主题）；L 接入（[#847](https://github.com/JTCAO515/G2C/issues/847)） | H、L | 首批条目带来源和日期，Lio 能检索并引用 |
 | 2 | 内测期间 | 每周复盘（第 10 节），按数据调整长度档位和结尾问句规则 | Claude 预标，JT 审阅，各线修改 | 每轮调整都有评测对比 |
 
-L 线的顺序（B 线拆分前由 B 承担）：#839 → [#858](https://github.com/JTCAO515/G2C/issues/858)（规划不再强制日期和人数，JT 2026-11-12 TestFlight（29）反馈）→ [#862](https://github.com/JTCAO515/G2C/issues/862)（无日期行程保存，等 C 的 #860、#861）→ #842 → #845 → #847。每线同一时间最多一个开着的 PR。
+L 线的顺序（B 线拆分前由 B 承担）：#839 → [#858](https://github.com/JTCAO515/G2C/issues/858)（规划不再强制日期和人数，JT 2026-11-12 TestFlight（29）反馈）→ [#862](https://github.com/JTCAO515/G2C/issues/862)（无日期行程保存，等 C 的 #860、#861）→ #842 → #845 → #847。同线可同时开多个 PR，条件见 ADR-0007 第 2 条。
 
 ## 13. 风险
 

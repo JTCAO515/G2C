@@ -60,7 +60,7 @@
 
 ### 并行线（2026-10-28 起；M2 修订：JT 批准，2026-10-30）
 
-每条线一个 Codex 会话、同一时间 1 张父票、最多 1 个开着的 PR（ADR-0007 第 2 条）。线内依赖未满足时按子票级停点跳过或等待。M1 已交付记录保留在 Issue 与本线 handoff；#194、#159 仍等 JT 确认文案。
+每条线一个 Codex 会话，可同时推进多张票、同时开多个 PR（JT 2026-11-15 修订，条件见 ADR-0007 第 2 条：开放 PR 之间文件不重叠，依赖用堆叠 PR 按序合并）。线内依赖未满足时按子票级停点跳过或等待。M1 已交付记录保留在 Issue 与本线 handoff；#194、#159 仍等 JT 确认文案。
 
 | 线 | 队列 | 本线拥有的文件 | 跨线依赖 |
 |---|---|---|---|
@@ -211,7 +211,7 @@
 
 | 阶段 | 工作包（子票 · 负责） | 前置 | 可并行 |
 |---|---|---|---|
-| 一（立即） | WP0 [#923](https://github.com/JTCAO515/G2C/issues/923) 授权清单 · Claude 起草 / JT 合并；WP1 [#924](https://github.com/JTCAO515/G2C/issues/924) 快速修正 · L；WP2 [#925](https://github.com/JTCAO515/G2C/issues/925) 消息新契约 · L（A 确认）；WP6 [#929](https://github.com/JTCAO515/G2C/issues/929) 管线 v2 设计 · L（C 会签）；WP12 [#935](https://github.com/JTCAO515/G2C/issues/935) 事实库扩展 · H；WP13 [#936](https://github.com/JTCAO515/G2C/issues/936) 模拟用户基线 · C；WP15 [#938](https://github.com/JTCAO515/G2C/issues/938) 回答规范文档 · Claude | WP1 等 #919；WP12 等 WP0；WP15 等 PR894 | 各线之间并行；同线串行（每线一个开放 PR） |
+| 一（立即） | WP0 [#923](https://github.com/JTCAO515/G2C/issues/923) 授权清单 · Claude 起草 / JT 合并；WP1 [#924](https://github.com/JTCAO515/G2C/issues/924) 快速修正 · L；WP2 [#925](https://github.com/JTCAO515/G2C/issues/925) 消息新契约 · L（A 确认）；WP6 [#929](https://github.com/JTCAO515/G2C/issues/929) 管线 v2 设计 · L（C 会签）；WP12 [#935](https://github.com/JTCAO515/G2C/issues/935) 事实库扩展 · H；WP13 [#936](https://github.com/JTCAO515/G2C/issues/936) 模拟用户基线 · C；WP15 [#938](https://github.com/JTCAO515/G2C/issues/938) 回答规范文档 · Claude | WP1 等 #919；WP12 等 WP0；WP15 等 PR894 | 各线之间并行；同线可多 PR 并行（文件不重叠，依赖用堆叠 PR） |
 | 二 | WP3 [#926](https://github.com/JTCAO515/G2C/issues/926) 因子表与画像 · L；WP4 [#927](https://github.com/JTCAO515/G2C/issues/927) 场景策略与选题 · L；WP7 [#930](https://github.com/JTCAO515/G2C/issues/930) structured.4 · C；WP10 [#933](https://github.com/JTCAO515/G2C/issues/933) App 探索交互 · A 或 #913 线程（待 JT 定） | WP3 等 WP2 设计；WP4 等 WP3；WP7 等 WP6；WP10 等 WP2 | L 内 WP3→WP4 串行；C 的 WP7、A/#913 的 WP10 与 L 并行 |
 | 三 | WP5 [#928](https://github.com/JTCAO515/G2C/issues/928) 调整模式 · L；WP8 [#931](https://github.com/JTCAO515/G2C/issues/931) 管线 v2 编排 · L；WP9 [#932](https://github.com/JTCAO515/G2C/issues/932) 组装排程与提醒 · C；WP11 [#934](https://github.com/JTCAO515/G2C/issues/934) App 丰富行程 · A；WP14 [#937](https://github.com/JTCAO515/G2C/issues/937) 丰富度与理由评测 · C | WP5 等 WP4；WP8 等 WP0、WP6、WP7；WP9 等 WP7；WP11 等 WP7；WP14 等 WP8、WP9 | L 的 WP5、WP8 串行；C 的 WP9→WP14 串行；A 的 WP11 并行 |
 | 四 | 香港部署、内部 TestFlight、#922 G12 走查、WP13 模拟评测回归 | 一至三阶段完成 | — |
