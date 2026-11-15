@@ -61,10 +61,11 @@ def main():
         groups.append(denied)
     with patch.object(native,'exercise',exercise),patch.object(RejectedIntakeSink,'persist',persist), \
             patch.object(httpx.MockTransport,'handle_request',http):
-        native.main(basic_memory=True,fallback_only=True)
-        native.main(basic_memory=True,fallback_only=True,max_steps=1)
-    assert groups==[False,True]and len(captures)==len(set(captures))==4
-    print('PASS signed ZH/EN a+c: four exact private original captures at actual settled intake ACK; full budget generic+Memory outside capture, one-step budget denies before next supplier; original receipts/active Memory preserved, zero NEEDS/Trip; fixture HTTP only',flush=True)
+        for mode in ('buffered','compact','stream'):
+            native.main(basic_memory=True,fallback_only=True,native_mode=mode)
+            native.main(basic_memory=True,fallback_only=True,max_steps=1,native_mode=mode)
+    assert groups==[False,True]*3 and len(captures)==len(set(captures))==12
+    print('PASS signed ZH/EN a+c BUFFERED/compact/STREAM: 12 exact private original captures at actual settled intake ACK; full budget generic+Memory outside capture, one-step budget denies before next supplier; original receipts/active Memory preserved, zero NEEDS/Trip; fixture HTTP only',flush=True)
 
 
 if __name__=='__main__':main()

@@ -35,7 +35,7 @@ CASE=json.loads((Path(__file__).parent/'fixtures/lio982-source-rejection.json').
 FIXED_CASE=json.loads((Path(__file__).parent/'fixtures/lio991-duplicate-fixed.json').read_bytes())
 
 
-def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24):
+def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24,native_mode='buffered'):
     auth=root/'auth';dev_auth.init(auth,[SUBJECT]);now=int(time.time())
     config=root/'connection.json';config.write_text(json.dumps(conninfo))
     meter=root/'meter.json';meter.write_text(json.dumps(dict(version='CJ-LOCAL-RUN@2',current=dict(meter=dict(
@@ -131,14 +131,24 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
                 else:value['days'][0][1].pop(0) # compliant fixture, never server-side repair
         identity=dict(id='cross-language-fixture-'+str(len(wire)),model=M4_MODEL)
         content=value if type(value)is str else json.dumps(value,ensure_ascii=False)
-        frames=[dict(**identity,choices=[dict(index=0,delta=dict(content=content),finish_reason=None)]),
-                dict(**identity,choices=[dict(index=0,delta={},finish_reason='stop')]),
+        if body.get('tools')and native_mode=='compact':
+            from cj_agent.provider import M4_TURN_FUNCTION_V2
+            assert body['tools'][0]['function']['name']==M4_TURN_FUNCTION_V2
+            arguments=json.dumps(dict(answer=dict(zh='我可以帮你梳理三天的旅行。想去哪个城市？',
+                en='I can help shape those three days. Which city would you like to visit?')),ensure_ascii=False)
+            delta=dict(tool_calls=[dict(index=0,id='fixture-turn',type='function',
+                function=dict(name=M4_TURN_FUNCTION_V2,arguments=arguments))])
+            finish='tool_calls'
+        else:delta=dict(content=content);finish='stop'
+        frames=[dict(**identity,choices=[dict(index=0,delta=delta,finish_reason=None)]),
+                dict(**identity,choices=[dict(index=0,delta={},finish_reason=finish)]),
                 dict(**identity,choices=[],usage=dict(prompt_tokens=40,completion_tokens=10,total_tokens=50))]
         raw=''.join('data: '+json.dumps(frame)+'\n\n'for frame in frames)+'data: [DONE]\n\n'
         return httpx.Response(200,stream=httpx.ByteStream(raw.encode()))
     model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,KEY,max_output_tokens=1536),journal,transport=httpx.MockTransport(response))
     services=RealServices(model,KEY,subjects,demo_subjects=subjects,national_subjects=subjects)
-    tools=RealTools(services,buffered_streaming_subjects=subjects)
+    tools=RealTools(services,buffered_streaming_subjects=subjects if native_mode=='buffered'else frozenset(),
+        assembly_streaming_subjects=subjects if native_mode=='stream'else frozenset())
     signer=load_confirmation_signer(auth)
     app=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context,account_admission=True,
         confirmation_signer=signer,demo_dialogue_subjects=subjects,lio_dialogue_subjects=subjects)
@@ -262,7 +272,7 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
     print('PASS signed ZH/EN strict rejected intake -> charged generic/Memory path or pre-dispatch budget denial, zero NEEDS/Trip; valid plan/fixed-ID guards retained; HTTP fixtures only',flush=True)
 
 
-def main(*,basic_memory=False,fallback_only=False,max_steps=24):
+def main(*,basic_memory=False,fallback_only=False,max_steps=24,native_mode='buffered'):
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     from cryptography.hazmat.primitives.serialization import Encoding,PrivateFormat,PublicFormat,NoEncryption
     import base64
@@ -277,7 +287,7 @@ def main(*,basic_memory=False,fallback_only=False,max_steps=24):
                 CJ_BETA_RECOVERY_PRIVATE_B64=base64.b64encode(key.private_bytes(Encoding.Raw,PrivateFormat.Raw,NoEncryption())).decode(),
                 CJ_BETA_RECOVERY_PUBLIC_B64=base64.b64encode(key.public_key().public_bytes(Encoding.Raw,PublicFormat.Raw)).decode())
             with patch.dict(os.environ,env):exercise(root,conninfo,basic_memory=basic_memory,
-                fallback_only=fallback_only,max_steps=max_steps)
+                fallback_only=fallback_only,max_steps=max_steps,native_mode=native_mode)
 
 
 if __name__=='__main__':main()
