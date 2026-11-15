@@ -8,7 +8,7 @@ The single content source is `ios/Modules/CJShell/Sources/CJLioUser/Resources/Li
 
 Signed-in users open the same page through **Internal demo information / 内部演示说明** in the existing Lio menu, below appearance. This is the smallest new route because the signed-in menu had no existing information route. Its close action only dismisses the sheet. There is no automatic upgrade popup, remembered-seen flag, account-page entry, authentication call or new network request.
 
-The title uses the existing native readable-text measurement with the title2 serif design and dynamic type. UIKit retains its preferred font where a requested family has no serif design; this does not cap text sizes or replace content. Test audits remain unfiltered `.all`. Long release notes reuse the native selectable text reader in lazy sections with individually identified rows, retaining the entire content and native text sizing as the reader scrolls. No accessibility issue type or offscreen element is manually filtered.
+The title uses the existing native readable-text measurement with the title2 serif design and dynamic type. UIKit retains its preferred font where a requested family has no serif design; this does not cap text sizes or replace content. Test audits remain unfiltered `.all`. Long release notes reuse the native selectable text reader in stable sections with individually identified rows, retaining the entire content and native text sizing as the reader scrolls. No accessibility issue type or offscreen element is manually filtered.
 
 ## Publication
 

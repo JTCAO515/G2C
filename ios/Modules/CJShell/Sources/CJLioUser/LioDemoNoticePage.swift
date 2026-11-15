@@ -105,7 +105,7 @@ private struct LioBuildUpdatesSection: View {
                     ReleaseRow(id: "\(prefix).\(index)", text: "• " + text, isHeading: false)
                 }
         }
-        return LazyVStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+        return VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
             ForEach(rows) { row in
                 Group {
                     if row.isHeading {

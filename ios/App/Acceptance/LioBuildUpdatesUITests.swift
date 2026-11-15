@@ -103,21 +103,29 @@ import XCTest
 
     private func reveal(_ element: XCUIElement, app: XCUIApplication) {
         let scroll = app.scrollViews["lio.information.scroll"]
+        guard let navigationBottom = app.navigationBars.allElementsBoundByIndex.map({ $0.frame.maxY }).max() else {
+            XCTFail("Expected the existing information navigation bar", file: #filePath, line: #line)
+            return
+        }
+        let bounds = scroll.frame
+        let top = max(bounds.minY, navigationBottom)
+        let viewport = CGRect(x: bounds.minX, y: top, width: bounds.width, height: bounds.maxY - top)
+        XCTAssertGreaterThan(viewport.height, 0)
         var returnedToHeading = false
         for _ in 0..<80 {
             if !returnedToHeading && (!element.exists || element.frame.isEmpty) {
                 let heading = app.staticTexts["lio.updates.heading"]
                 for _ in 0..<30 {
-                    if heading.exists && scroll.frame.contains(heading.frame) { break }
+                    if heading.exists && viewport.contains(heading.frame) { break }
                     scroll.swipeDown(velocity: .fast)
                 }
-                XCTAssertTrue(heading.exists && scroll.frame.contains(heading.frame), app.debugDescription)
+                XCTAssertTrue(heading.exists && viewport.contains(heading.frame), app.debugDescription)
                 returnedToHeading = true
             }
-            if element.exists && element.isHittable && scroll.frame.contains(element.frame) {
+            if element.exists && !element.frame.isEmpty && viewport.contains(element.frame) {
                 var lastFrame: CGRect?
                 let stable = NSPredicate { _, _ in
-                    guard element.exists, element.isHittable, scroll.frame.contains(element.frame) else { return false }
+                    guard element.exists, element.isHittable, viewport.contains(element.frame) else { return false }
                     let current = element.frame
                     defer { lastFrame = current }
                     return lastFrame == current
@@ -125,15 +133,15 @@ import XCTest
                 XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: stable, object: nil)], timeout: 5), .completed)
                 return
             }
-            let frame = scroll.frame
+            let frame = viewport
             let target = element.exists && !element.frame.isEmpty ? element.frame : CGRect(x: frame.midX, y: frame.maxY + frame.height, width: 1, height: 1)
-            let delta = target.minY < frame.minY ? min(frame.height * 0.4, frame.minY - target.minY + 12)
-                : -min(frame.height * 0.4, target.maxY - frame.maxY + 12)
+            let delta = target.minY < frame.minY ? min(frame.height * 0.4, max(80, frame.minY - target.minY + 12))
+                : -min(frame.height * 0.4, max(80, target.maxY - frame.maxY + 12))
             let start = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
             start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: delta)))
         }
         XCTAssertTrue(element.isHittable, app.debugDescription)
-        XCTAssertTrue(scroll.frame.contains(element.frame), app.debugDescription)
+        XCTAssertTrue(viewport.contains(element.frame), app.debugDescription)
     }
     private func audit(_ app: XCUIApplication) throws {
         try app.performAccessibilityAudit(for: .all) { issue in
