@@ -22,6 +22,7 @@ from cj_message.domain import Unavailable as MessageUnavailable
 from cj_needs.domain import Denied as NeedsDenied
 from cj_needs.revision_lease import LeaseUnavailable
 from cj_usage.local_provider_exit import BudgetExceeded, BudgetUnknown
+from cj_usage.metered_exit import ExitAdmissionDenied
 from cj_memory.runtime import RuntimeDenied, RuntimeUnknown
 from cj_place.draft_source import PlaceSourceUnavailable
 
@@ -468,7 +469,18 @@ class RunWorker:
         self._lio_active = original is not None
         state = self.runs.accept(binding)
         if self.budget_exit is not None:
-            self.budget_exit = self.budget_exit.for_run(binding,state)
+            try:self.budget_exit = self.budget_exit.for_run(binding,state)
+            except ExitAdmissionDenied as denied:
+                self.budget_exit=denied.original_exit
+                if state.status=='queued':
+                    # Bind through this original RUN service before any terminal
+                    # event. No operation/reserve/claim/provider is created.
+                    self.budget_exit.prepare_result_publication(self.runs,binding)
+                    state=self._event(binding,state,'context_invalid')
+                elif state.status not in TERMINAL:
+                    # An interrupted original may already have supplier cost.
+                    state=self._event(binding,state,'unknown')
+                return self._finish(receipt,state)
         if state.status in TERMINAL:
             return self._finish(receipt, state)
         if state.status == 'running':

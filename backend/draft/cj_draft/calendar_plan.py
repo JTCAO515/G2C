@@ -6,7 +6,7 @@ import json
 from cj_strict_json import reject_duplicates
 from cj_needs.domain import subjects
 from cj_trip.domain import packed
-from cj_trip.structured import FieldRejected, SourceRejected, _fields
+from cj_trip.structured import FieldRejected, SourceRejected, _fields, _date
 from cj_trip.structured_v3 import calendar_dates, validate_document
 
 FIRST_PLAN = 'TRIP-lio-day-plan.1'
@@ -34,31 +34,26 @@ def parse_model(raw, *, retained):
     return value
 
 
-def compose(raw, snapshot, fixed_days, day_count, *, start_date=None, retained=None, date_checks=None):
-    """No writer. Caller must supply a current issued source and protected day map.
-
-    The model proposes only new stops. It cannot change source, fixed/current
-    content, calendar mode, title on replan or participant count.
-    """
+def _day_count(day_count):
     if type(day_count) is not int or not 1 <= day_count <= 1_000_000 // 16:
         raise FieldRejected('days', 'requested days must fit the existing content byte bound')
-    model = parse_model(raw, retained=retained is not None)
+
+
+def _calendar(start_date, retained):
     if retained is not None:
-        if retained['content_version'] != 'structured.3':
-            raise SourceRejected('content_version', 'legacy context requires its original publisher')
         # Calendar changes require the explicit source-bound conversion operation.
         calendar = deepcopy(retained['calendar'])
         if start_date is not None and (calendar['state'] != 'dated' or calendar['start_date'] != start_date):
             raise SourceRejected('calendar', 'replan cannot silently convert or change calendar dates')
         start_date = calendar.get('start_date')
-    calendar = dict(state='undated') if start_date is None else dict(state='dated', start_date=start_date)
-    days = [dict(day_index=i) for i in range(1, day_count+1)]
-    if start_date is not None:
-        dates = calendar_dates(date.fromisoformat(start_date), day_count)
-        days = [dict(day_index=i+1, date=d) for i, d in enumerate(dates)]
+    return dict(state='undated') if start_date is None else dict(state='dated', start_date=start_date)
+
+
+def _protected_items(fields, fixed_days, day_count, retained):
+    """Shared merge of already checked data; no source or model abstraction."""
     current = [] if retained is None else deepcopy(retained['items'])
     current_by_id = {i['id']: i for i in current}
-    originals = snapshot.fields.get('fixed_items', ())
+    originals = fields.get('fixed_items', ())
     if set(fixed_days) != {i['item_id'] for i in originals}:
         raise SourceRejected('fixed_items', 'complete protected fixed-day mapping required')
     for original in originals:
@@ -75,6 +70,70 @@ def compose(raw, snapshot, fixed_days, day_count, *, start_date=None, retained=N
                     for edge, index in (('start', first), ('end', last))}
         current.append(dict(id=original['item_id'], text=original['description'], verification='pending', evidence=[],
             schedule=schedule, fixed=deepcopy(original['locked']), source_category='user_provided', source_refs=[]))
+    return current
+
+
+def protected_base_data(fields, fixed_days, day_count, *, start_date=None, retained=None):
+    """Pure pre-city data for complete-graph capacity checks, not source authority.
+
+    fields/fixed_days are source-span-checked projections with the same final
+    code-owned fixed IDs used after city binding. retained is the actual read,
+    validated structured.3/.4 document, never a fabricated Snapshot/capture.
+    No timezone, date evidence, party or provider fact is inferred here. Unknown
+    observations remain original. All retained rich metadata/sources is copied.
+
+    This is not a Trip document or feasibility verdict. The caller adds the full
+    skeleton, hotel/edge items and legs before measuring canonical bytes. It must
+    bind the real city, run original fields/date/fixed guards and recapture/rebuild
+    the final candidate afterwards. No preflight result supplies that permission.
+    """
+    _day_count(day_count)
+    if type(fields) is not dict:
+        raise FieldRejected('fields', 'checked projected fields data required')
+    if retained is not None and (type(retained) is not dict
+            or retained.get('content_version') not in ('structured.3', 'structured.4')):
+        raise SourceRejected('content_version', 'explicit original calendar/rich data required')
+    originals = fields.get('fixed_items', ())
+    ids = [item['item_id'] for item in originals]
+    if len(ids) != len(set(ids)):
+        raise SourceRejected('fixed_items', 'distinct original fixed IDs required')
+    calendar = _calendar(start_date, retained)
+    days = [dict(day_index=i) for i in range(1, day_count+1)]
+    if calendar['state'] == 'dated':
+        _date(calendar['start_date'])
+        dates = calendar_dates(date.fromisoformat(calendar['start_date']), day_count)
+        days = [dict(day_index=i+1, date=d) for i, d in enumerate(dates)]
+    items = _protected_items(fields, fixed_days, day_count, retained)
+    for item in items:
+        first, last = (item['schedule'][edge]['day_index'] for edge in ('start', 'end'))
+        if (any(type(index) is not int for index in (first, last)) or not 1 <= first <= last <= day_count):
+            raise SourceRejected('fixed_items', 'complete protected endpoints outside requested calendar')
+    retained_ids = set() if retained is None else {item['id'] for item in retained['items']}
+    fixed_ids = set(ids)
+    return dict(calendar=calendar, days=days, items=items,
+        sources=[] if retained is None else deepcopy(retained['sources']),
+        origins={item['id']: [name for name, present in
+            (('current_trip', item['id'] in retained_ids), ('fixed_fields', item['id'] in fixed_ids)) if present]
+            for item in items})
+
+
+def compose(raw, snapshot, fixed_days, day_count, *, start_date=None, retained=None, date_checks=None):
+    """No writer. Caller must supply a current issued source and protected day map.
+
+    The model proposes only new stops. It cannot change source, fixed/current
+    content, calendar mode, title on replan or participant count.
+    """
+    _day_count(day_count)
+    model = parse_model(raw, retained=retained is not None)
+    if retained is not None and retained['content_version'] != 'structured.3':
+        raise SourceRejected('content_version', 'legacy context requires its original publisher')
+    calendar = _calendar(start_date, retained)
+    start_date = calendar.get('start_date')
+    days = [dict(day_index=i) for i in range(1, day_count+1)]
+    if start_date is not None:
+        dates = calendar_dates(date.fromisoformat(start_date), day_count)
+        days = [dict(day_index=i+1, date=d) for i, d in enumerate(dates)]
+    current = _protected_items(snapshot.fields, fixed_days, day_count, retained)
     if type(model['items']) is not list or len(model['items']) + len(current) > 60:
         raise FieldRejected('items', 'bounded new and retained stops required')
     new_ids = set()
