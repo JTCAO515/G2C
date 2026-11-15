@@ -107,7 +107,7 @@ public struct LioInvitationView<Settings: View>: View {
             Button {
                 agree(to: action)
             } label: {
-                RunReadableText(text: language.text("Agree and continue", "同意并继续"))
+                RunReadableText(text: language.text("Agree and continue", "同意并继续"), color: LioTheme.ink)
                     .frame(minHeight: 44, alignment: .leading)
             }
             .buttonStyle(.bordered)
@@ -116,7 +116,7 @@ public struct LioInvitationView<Settings: View>: View {
             Button {
                 consent = nil
             } label: {
-                RunReadableText(text: language.text("Back", "返回"))
+                RunReadableText(text: language.text("Back", "返回"), color: LioTheme.ink)
                     .frame(minHeight: 44, alignment: .leading)
             }
             .buttonStyle(.bordered)

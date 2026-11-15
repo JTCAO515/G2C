@@ -30,6 +30,16 @@ struct LioBuildUpdatesTests {
         #expect(throws: LioBuildUpdates.Failure.invalidBook) { try LioBuildUpdates.decode(Data("{}".utf8)) }
     }
 
+    @Test func duplicateFieldsAreRejectedAtBothLevels() throws {
+        let valid = String(decoding: try data(fixture()), as: UTF8.self)
+        let duplicateRoot = valid.replacingOccurrences(of: "\"schema\":1", with: "\"schema\":1,\"schema\":1")
+        #expect(duplicateRoot != valid)
+        #expect(throws: LioBuildUpdates.Failure.invalidBook) { try LioBuildUpdates.decode(Data(duplicateRoot.utf8)) }
+        let duplicateNested = valid.replacingOccurrences(of: "\"en\":\"Heading\"", with: "\"en\":\"Heading\",\"en\":\"Heading\"")
+        #expect(duplicateNested != valid)
+        #expect(throws: LioBuildUpdates.Failure.invalidBook) { try LioBuildUpdates.decode(Data(duplicateNested.utf8)) }
+    }
+
     @Test func missingTranslationOrTooManySuggestedChecksIsRejected() throws {
         var root = fixture()
         var releases = root["releases"] as! [[String: Any]]

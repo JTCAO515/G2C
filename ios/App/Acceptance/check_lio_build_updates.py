@@ -5,9 +5,12 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 
 ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / 'backend/strict_json'))
+from cj_strict_json import reject_duplicates
 
 
 def main():
@@ -24,7 +27,7 @@ def main():
     spec = importlib.util.spec_from_file_location('trip_acceptance', ROOT / 'scripts/check_ios_trip_confirm.py')
     module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
     driver = object.__new__(module.XCTestDriver); driver.directory = output; driver.write_project(0)
-    book = json.loads((ROOT/'ios/Modules/CJShell/Sources/CJLioUser/Resources/LioBuildUpdates.v1.json').read_text())
+    book = json.loads((ROOT/'ios/Modules/CJShell/Sources/CJLioUser/Resources/LioBuildUpdates.v1.json').read_text(), object_pairs_hook=reject_duplicates(ValueError, 'duplicate build update field'))
     current = str(book['currentBuild'])
     previous = str(book['releases'][0]['previousBuild'])
     older = str(book['releases'][1]['previousBuild'])

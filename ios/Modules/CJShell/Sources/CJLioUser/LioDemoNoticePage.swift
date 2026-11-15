@@ -23,7 +23,7 @@ public struct LioDemoNoticePage<Actions: View>: View {
                 // Interim internal-demo wording until #225 is decided; consent is unchanged.
                 RunReadableText(text: language.text(
                     "This is an internal demo. Please use fictional trip details and leave out personal information.",
-                    "这是内部演示。请使用虚构的旅行信息，别填写个人信息。"))
+                    "这是内部演示。请使用虚构的旅行信息，别填写个人信息。"), color: LioTheme.ink)
                     .accessibilityIdentifier("demo.invite.consent")
                 actions
                 Divider().accessibilityHidden(true)

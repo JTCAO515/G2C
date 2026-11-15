@@ -1,4 +1,5 @@
 import Foundation
+import CJStrictJSON
 
 /// The packaged release book is also the source used to export TestFlight and issue text.
 public struct LioBuildUpdates: Decodable, Sendable {
@@ -47,7 +48,11 @@ public struct LioBuildUpdates: Decodable, Sendable {
     /// Validate the local configuration once at its decoding boundary; views then trust it.
     public static func decode(_ data: Data) throws -> LioBuildUpdates {
         let book: LioBuildUpdates
-        do { book = try JSONDecoder().decode(Self.self, from: data) }
+        do {
+            var reader = StrictJSONReader<LioBuildUpdatesJSONPolicy>(bytes: Array(data))
+            try reader.check()
+            book = try JSONDecoder().decode(Self.self, from: data)
+        }
         catch { throw Failure.invalidBook }
         guard book.schema == 1, book.releases.count == 2,
               book.releases[0].build == book.currentBuild,
@@ -71,4 +76,10 @@ public struct LioBuildUpdates: Decodable, Sendable {
         guard let release = releases.first(where: { $0.build == build }) else { throw Failure.unlistedBuild }
         return release
     }
+}
+
+private enum LioBuildUpdatesJSONPolicy: StrictJSONPolicy {
+    static var failure: LioBuildUpdates.Failure { .invalidBook }
+    static var requiresObjectRoot: Bool { true }
+    static var maximumDepth: Int { 16 }
 }

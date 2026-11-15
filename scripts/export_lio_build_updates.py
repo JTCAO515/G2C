@@ -3,8 +3,19 @@ import argparse
 import json
 from pathlib import Path
 import re
+import sys
 
-RESOURCE = Path(__file__).resolve().parents[1] / 'ios/Modules/CJShell/Sources/CJLioUser/Resources/LioBuildUpdates.v1.json'
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'backend/strict_json'))
+from cj_strict_json import reject_duplicates
+
+RESOURCE = ROOT / 'ios/Modules/CJShell/Sources/CJLioUser/Resources/LioBuildUpdates.v1.json'
+
+
+def load_book(path):
+    def reject_constant(value):
+        raise ValueError('non-finite build update number')
+    return json.loads(path.read_text(), object_pairs_hook=reject_duplicates(ValueError, 'duplicate build update field'), parse_constant=reject_constant)
 
 
 def render(release, language):
@@ -21,7 +32,7 @@ def main():
     parser.add_argument('--source-commit', help='Public source commit for the issue heading; never a credential or request identifier.')
     parser.add_argument('--output', type=Path)
     args = parser.parse_args()
-    book = json.loads(RESOURCE.read_text())
+    book = load_book(RESOURCE)
     if book['schema'] != 1 or len(book['releases']) != 2:
         parser.error('Unsupported release book')
     matching = [r for r in book['releases'] if r['build'] == args.build]
