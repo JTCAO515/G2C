@@ -95,7 +95,7 @@ class _MissingDurationQuestion(DTO):
     reply:str=Field(min_length=1,max_length=12000)
     question_fields:list[Literal['duration_days']]=Field(min_length=1,max_length=1)
     current_source_index:int=Field(ge=0,le=0)
-    planning_request_index:int=Field(ge=0,le=0)
+    planning_request_index:int|None=Field(ge=0,le=0)
     city:City
     duration_days:None
     start_date:None
@@ -110,12 +110,16 @@ class _MissingDurationQuestion(DTO):
     long_term_requests:list=Field(max_length=0)
 
 
-def _missing_duration_question(value,turns,refs,message_id,previous,schema):
+def _missing_duration_question(value,turns,refs,message_id,previous,schema,*,validated_plan=False):
     if (schema is not OptionalIntake or previous is not None or refs or len(turns)!=1
             or type(value)is not dict or value.keys()!=OptionalIntake.model_fields.keys()):
         return None
     try:control=_MissingDurationQuestion.model_validate(value)
     except ValidationError:return None
+    # A plan-labelled city question can leave its future planning root unset.
+    # This still retains only literal city DATA and grants no execution; the
+    # later complete intake must supply its own validated planning root.
+    if control.planning_request_index is None and (not validated_plan or control.intent!='plan'):return None
     text=turns[0].text;city=control.city
     if (city.source_index!=0 or not city.query.strip()or not city.quote.strip()
             or city.quote not in text or city.query not in city.quote):return None
@@ -239,6 +243,11 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_off
         error.control=replace(error.control,intent=intent,publication_hold=hold is not None,planning_request_index=request_index)
         raise
     intake=replace(intake,intent=intent,publication_hold=hold is not None,planning_request_index=request_index)
+    if schema is OptionalIntake and intent=='plan'and request_index is None:
+        # This null-root variant only reaches the DATA-only question after the
+        # complete DTO and original source/compiler checks above have passed.
+        question=_missing_duration_question(value,turns,refs,message_id,previous,schema,validated_plan=True)
+        if question is not None:return question
     if intent=='cancel':return intake,questions,{}
     # A previously classified ordinary consultation cannot later supply
     # execution facts merely because a model quotes it again on "continue".

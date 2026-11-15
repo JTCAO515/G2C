@@ -4,17 +4,22 @@ The deliberately partial observer below proves only current public presentation.
 It cannot certify accepted profiles, injected Memory or an exploration boundary.
 """
 from datetime import datetime, timezone
+from contextlib import contextmanager
 from hashlib import sha256
 import json
+import os,base64
 from pathlib import Path
 import sys
 import time
 import uuid
+from types import SimpleNamespace
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path[:0] = [str(ROOT), str(ROOT/'scripts')]
 
 import httpx
+import psycopg
 import dev_auth, local_run_context, run_worker
 import local_history_pg as harness
 from cj_agent.provider import DashScopeConfig, MeteredDashScopeProvider, M4_BASE, M4_MODEL
@@ -36,6 +41,7 @@ from cj_strict_json import compact
 from cj_usage.authorization_budget import AuthorizationBudget
 from runtime_adapter import Binding
 from runtime_adapter.contract import Unavailable
+from deploy.hk import checkpoint,native4_usage
 from eval.lio_simulated_user.core import SIMULATOR_SYSTEM, actor_output_schema, simulator_messages, render_choice, InputError
 from eval.lio_simulated_user.runner import HostUnavailable
 
@@ -52,9 +58,28 @@ def exercise(auth, conninfo):
         max_steps=12, max_tools=12, max_output=65536, max_seconds=600),
         output_limits=dict(model=12000, tool=48000, memory=2000)), history=[])))
     context = load_run_context(meter)
+    # Explicit fixture operator admission, before any MESSAGE. A format1
+    # account is no longer permission to run native4 under legacy limits.
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives.serialization import Encoding,PrivateFormat,PublicFormat,NoEncryption
+    recovery=Ed25519PrivateKey.generate()
+    os.environ.update(CJ_DEPLOY_TARGET='hk-beta',CJ_M4_SYNTHETIC_ONLY='1',CJ_BETA_DB_TARGET='hk-local',CJ_TRIAL_VALID_UNTIL='2026-12-31T16:00:00+00:00',
+        CJ_BETA_RECOVERY_PRIVATE_B64=base64.b64encode(recovery.private_bytes(Encoding.Raw,PrivateFormat.Raw,NoEncryption())).decode(),
+        CJ_BETA_RECOVERY_PUBLIC_B64=base64.b64encode(recovery.public_key().public_bytes(Encoding.Raw,PublicFormat.Raw)).decode())
+    control=root/'control'
+    @contextmanager
+    def operator():
+        with psycopg.connect(**json.loads(conninfo.read_bytes()),autocommit=True)as db:
+            yield db,json.loads(conninfo.read_bytes())
+    with patch.object(checkpoint,'operator',operator):
+        checkpoint.bootstrap(control,lambda _:None)
     for name in subjects:
         local_run_context.provision_budget(conninfo, context, name)
         dev_auth.activate_travel(conninfo, name, context, ABI)
+    qualified=SimpleNamespace(planning_subjects=subjects,context=context,
+        demo_subjects=frozenset(),demo_next_context=None)
+    with checkpoint.lock(control),psycopg.connect(**json.loads(conninfo.read_bytes()))as db:
+        native4_usage.qualify(db,qualified,subject,control,apply=True)
     database = LocalDatabase(conninfo, run_context=context, travel_context=True, needs_context=True)
     checker = checker_for(auth);token = dev_auth.token(auth, subject, 300)
     current_token = [token];scope = scope_for(ISSUER, subject)

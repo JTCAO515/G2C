@@ -116,20 +116,7 @@ class RuntimeOriginals:
                 data=bytes(value)
                 return dict(sha256=sha256(data).hexdigest(),bytes_base64=base64.b64encode(data).decode('ascii'))
             def tail():
-                r=original.receipt
-                with self.database.connect(scope)as db:
-                    db.execute('SET TRANSACTION READ ONLY')
-                    ack=db.execute('SELECT acknowledged FROM cj_message_delivery '
-                        'WHERE scope=%s AND message_id=%s AND run_id=%s',
-                        (scope,message_id,r.run_id)).fetchone()
-                    jobs=db.execute("SELECT job_id,attempt_id,state FROM cj_memory_history_job WHERE scope=%s "
-                        "AND convert_from(batch,'UTF8')::jsonb#>>'{source,cursor,conversation_id}'=%s "
-                        "AND convert_from(batch,'UTF8')::jsonb#>>'{source,cursor,generation}'=%s "
-                        "AND (convert_from(batch,'UTF8')::jsonb#>>'{source,cursor,after}')::bigint<%s "
-                        "AND (convert_from(batch,'UTF8')::jsonb#>>'{source,cursor,through}')::bigint>=%s "
-                        'ORDER BY job_id,attempt_id',(scope,r.conversation_id,r.generation,r.sequence,r.sequence)).fetchall()
-                return dict(delivery_acknowledged=None if ack is None else ack[0],
-                    associated_history_jobs=[dict(job_id=j,attempt_id=a,state=s)for j,a,s in jobs])
+                return self._cost_tail(scope,original)
             observed=tail()
             body=canonical(dict(version='G2C-runtime-visible-original.1',
                 scope_sha256=sha256(scope.encode()).hexdigest(),message_id=message_id,
@@ -139,6 +126,32 @@ class RuntimeOriginals:
                 events=[dict(sequence=n,kind=kind,value=raw(value.encode('utf-8')))for n,kind,value in source[1]]))
             if tail()!=observed:raise Unavailable('ORIGINAL_VISIBLE_TAIL_CHANGED')
             return body
+        return self._read(token,message_id,project)
+
+    def _cost_tail(self,scope,original):
+        r=original.receipt
+        with self.database.connect(scope)as db:
+            db.execute('SET TRANSACTION READ ONLY')
+            ack=db.execute('SELECT acknowledged FROM cj_message_delivery '
+                'WHERE scope=%s AND message_id=%s AND run_id=%s',
+                (scope,r.message_id,r.run_id)).fetchone()
+            jobs=db.execute("SELECT job_id,attempt_id,state FROM cj_memory_history_job WHERE scope=%s "
+                "AND convert_from(batch,'UTF8')::jsonb#>>'{source,cursor,conversation_id}'=%s "
+                "AND convert_from(batch,'UTF8')::jsonb#>>'{source,cursor,generation}'=%s "
+                "AND (convert_from(batch,'UTF8')::jsonb#>>'{source,cursor,after}')::bigint<%s "
+                "AND (convert_from(batch,'UTF8')::jsonb#>>'{source,cursor,through}')::bigint>=%s "
+                'ORDER BY job_id,attempt_id',(scope,r.conversation_id,r.generation,r.sequence,r.sequence)).fetchall()
+        return dict(delivery_acknowledged=None if ack is None else ack[0],
+            associated_history_jobs=[dict(job_id=j,attempt_id=a,state=s)for j,a,s in jobs])
+
+    def cost_tail(self,token,message_id):
+        """Original ACK/history-job metadata under the same MESSAGE AUTH lifetime."""
+        def project(scope,original,source):
+            before=self._cost_tail(scope,original)
+            value=canonical(dict(message_id=message_id,run_id=original.receipt.run_id,**before))
+            if self._cost_tail(scope,original)!=before:
+                raise Unavailable('ORIGINAL_COST_TAIL_CHANGED')
+            return value
         return self._read(token,message_id,project)
 
     def input(self,token,message_id,operation_id):

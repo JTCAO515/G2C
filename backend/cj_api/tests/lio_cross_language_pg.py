@@ -58,7 +58,7 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
         demo_accounts.manage(runtime,'bootstrap',SUBJECT,control,operations,(sha256(invite.encode()).hexdigest(),datetime.now(timezone.utc)+timedelta(hours=1)))
         demo_accounts.manage(runtime,'insert',SUBJECT,control,operations)
     journal=AuthorizationBudget(root/'fixture-journal',clock=lambda:datetime(2026,11,9,tzinfo=timezone.utc))
-    locale='en';text='';bad=False;wire=[];start=None;basic=False;regression=False;duplicate=False;city_chain=False
+    locale='en';text='';bad=False;wire=[];start=None;basic=False;regression=False;duplicate=False;city_chain=False;city_root=0
     fixed={'en':'On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged',
            'zh':'第一天我9:00到10:00要在酒店集合，保持不变'}
     original_fixed='第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变；酒店名称和位置尚未确定。'
@@ -75,9 +75,9 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
             if city_chain:
                 assert 'Prefers a relaxed pace.'in body['messages'][1]['content']
                 if index==0:
-                    value=flow(text,city=text,days=None,intent='consult',questions=('duration_days',),
+                    value=flow(text,city=text,days=None,intent='plan'if city_root is None else'consult',questions=('duration_days',),
                         reply='去哪儿？想玩几天？'if locale=='zh'else'Where are you going? How many days?')
-                    value.update(version='LIO-planning-intake.8',planning_request_index=0,needs_tools=False)
+                    value.update(version='LIO-planning-intake.8',planning_request_index=city_root,needs_tools=False)
                 else:
                     value=flow(text,city=None,days=3,intent='consult',index=1,questions=(),reply='已了解。')
                     value.update(version='LIO-planning-intake.8',planning_request_index=0,needs_tools=False)
@@ -233,36 +233,37 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
             basic=False;bad=False
             if not fallback_only:
                 city_chain=True
-                for locale,phrases in (('zh',('去成都','三天')),('en',('Go to Chengdu','Three days'))):
-                    cid=None
-                    for index,text in enumerate(phrases):
-                        mid='literal-city-'+locale+'-'+str(index)
-                        request=dict(version='LIO-message.2',message_id=mid,text=text,locale=locale,
-                            **({'conversation_id':cid}if cid else{'new_conversation':True}))
-                        before=len(wire)
-                        sent=api.post('/v2/lio/messages',headers=headers,content=json.dumps(request,ensure_ascii=False).encode())
-                        assert sent.status_code==200,sent.text;cid=sent.json()['conversation_id']
-                        outcome,=run_worker.run_once(database,model,auth,tools_configuration=tools,real_services=services,
-                            memory_configuration_for_scope=lambda owner:memory if owner==scope else None,
-                            account_admission=True,hk_demo_scopes=frozenset({scope}),lio_confirmation=signer)
-                        assert outcome.status=='completed',outcome
-                        message=api.get('/v2/lio/timeline',headers=headers,params=dict(conversation_id=cid)).json()['messages'][-1]
-                        with database.connect(scope)as db:
-                            effect=db.execute("SELECT value FROM cj_run_event WHERE scope=%s AND run_id=%s AND value LIKE 'lio_planning_context.1:%%' ORDER BY sequence DESC LIMIT 1",(scope,outcome.run_id)).fetchone()
-                        saved=json.loads(effect[0].split(':',1)[1])
-                        if index==0:
-                            assert saved['status']=='needs_details'and saved['authority']=='none'
-                            assert saved['facts']['city']['value']['query']==('成都'if locale=='zh'else'Chengdu')
-                            assert message['answer']==('你打算玩几天？'if locale=='zh'else'For how many days?')
-                            assert len(wire)==before+1
-                        else:
-                            assert saved['status']=='plan_preview'and saved['facts']['duration_days']['value']==3
-                            for day in range(1,4):assert ('第'+str(day)+'天'if locale=='zh'else'Day '+str(day))in message['answer']
-                            assert len(wire)==before+2
-                        assert api.get('/v2/lio/trip',headers=headers,params=dict(conversation_id=cid)).json()['current']is None
-                        print(json.dumps(dict(case='literal-city-duration',locale=locale,mid=mid,cid=cid,run=outcome.run_id,
-                            status=outcome.status,planning_status=saved['status'],model_calls=len(wire)-before,
-                            memory='actual native active source')),flush=True)
+                for city_root in (0,None):
+                    for locale,phrases in (('zh',('去成都','三天')),('en',('Go to Chengdu','Three days'))):
+                        cid=None
+                        for index,text in enumerate(phrases):
+                            mid='literal-city-'+locale+('-null'if city_root is None else'')+'-'+str(index)
+                            request=dict(version='LIO-message.2',message_id=mid,text=text,locale=locale,
+                                **({'conversation_id':cid}if cid else{'new_conversation':True}))
+                            before=len(wire)
+                            sent=api.post('/v2/lio/messages',headers=headers,content=json.dumps(request,ensure_ascii=False).encode())
+                            assert sent.status_code==200,sent.text;cid=sent.json()['conversation_id']
+                            outcome,=run_worker.run_once(database,model,auth,tools_configuration=tools,real_services=services,
+                                memory_configuration_for_scope=lambda owner:memory if owner==scope else None,
+                                account_admission=True,hk_demo_scopes=frozenset({scope}),lio_confirmation=signer)
+                            assert outcome.status=='completed',outcome
+                            message=api.get('/v2/lio/timeline',headers=headers,params=dict(conversation_id=cid)).json()['messages'][-1]
+                            with database.connect(scope)as db:
+                                effect=db.execute("SELECT value FROM cj_run_event WHERE scope=%s AND run_id=%s AND value LIKE 'lio_planning_context.1:%%' ORDER BY sequence DESC LIMIT 1",(scope,outcome.run_id)).fetchone()
+                            saved=json.loads(effect[0].split(':',1)[1])
+                            if index==0:
+                                assert saved['status']=='needs_details'and saved['authority']=='none'
+                                assert saved['facts']['city']['value']['query']==('成都'if locale=='zh'else'Chengdu')
+                                assert message['answer']==('你打算玩几天？'if locale=='zh'else'For how many days?')
+                                assert len(wire)==before+1
+                            else:
+                                assert saved['status']=='plan_preview'and saved['facts']['duration_days']['value']==3
+                                for day in range(1,4):assert ('第'+str(day)+'天'if locale=='zh'else'Day '+str(day))in message['answer']
+                                assert len(wire)==before+2
+                            assert api.get('/v2/lio/trip',headers=headers,params=dict(conversation_id=cid)).json()['current']is None
+                            print(json.dumps(dict(case='literal-city-duration',null_root=city_root is None,locale=locale,mid=mid,cid=cid,run=outcome.run_id,
+                                status=outcome.status,planning_status=saved['status'],model_calls=len(wire)-before,
+                                memory='actual native active source')),flush=True)
                 city_chain=False
         plan_cases=()if fallback_only else(('en','en',False),('zh','zh',False),('translated','en',True),
                 ('r09-zh','zh',False),('r09-en','en',False),('r09-duplicate','zh',False))
