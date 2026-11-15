@@ -58,8 +58,9 @@ def _nonplanning_fact_source(text,quote):
         if _META_REQUEST.search(text[start:found.end()]):
             # A quoted task object has ended. A separate explicit first-person
             # assertion after its separator is not part of that quoted task.
-            ended=[right for left,right in spans if start<=left and right<=found.start()]
-            declaration=''if not ended else re.split(r'[,，]',text[ended[-1]:found.end()])[-1]
+            ended=[right for left,right in spans if start<=left and right<=found.start()
+                and _META_REQUEST.fullmatch(text[start:left].strip().rstrip(':：').strip())]
+            declaration=''if not ended else text[ended[-1]:found.end()].lstrip(' ,，')
             if not (_SELF_FACT.search(declaration)and not _META_TASK_WORD.search(declaration)):
                 return True
         for left,right in spans:

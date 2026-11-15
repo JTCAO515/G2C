@@ -125,6 +125,25 @@ class OptionalIntakeChecks(unittest.TestCase):
             self.assertEqual(intake.extraction['fields']['party_size'],dict(state='missing'))
             self.assertNotIn('start_date',snapshot);self.assertNotIn('party_size',snapshot)
 
+    def test_internal_quote_does_not_end_a_whole_sentence_translation(self):
+        for text,city,request,days,party in (
+                ('请翻译以下整句：他说“你好”，我们实际从2026-12-01出发两个人。',
+                 '北京','规划北京三天','三天','两个人'),
+                ('Please translate this entire sentence: he said "hello", we actually start on 2026-12-01 with two people.',
+                 'Beijing','Plan Beijing for three days','three days','two people')):
+            value=flow('Continue',city=city,days=3,start='2026-12-01',party=2,index=2,questions=())
+            value.update(version='LIO-planning-intake.8',planning_request_index=0)
+            value['city'].update(source_index=0,quote=city)
+            value['field_sources']=[dict(field='duration_days',source_index=0,quote=days),
+                dict(field='start_date',source_index=1,quote='2026-12-01'),dict(field='party_size',source_index=1,quote=party)]
+            with self.subTest(text=text):
+                intake,_,snapshot=parse_flow(json.dumps(value),tuple(map(original,(request,text,'Continue'))),
+                    ({'message_id':'real-request'},{'message_id':'translation'}),'current',None,schema=OptionalIntake)
+                self.assertEqual(intake.start_date,dict(state='missing'))
+                self.assertEqual(intake.extraction['fields']['party_size'],dict(state='missing'))
+                self.assertNotIn('start_date',snapshot);self.assertNotIn('party_size',snapshot)
+                self.assertEqual(intake.duration_days,3)
+
     def test_explicit_version_and_original_index_do_not_mutate_old_profile(self):
         before=old_format(0)
         wire=flow('去成都玩三天');wire['version']='LIO-planning-intake.8'
