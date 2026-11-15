@@ -8,6 +8,7 @@ struct LioExplorationReplyView: View {
     @Binding var questions: LioQuestionDraft
     let language: LioLanguage
     let canSend: Bool
+    var editProfile: ((LioExplorationPresentation.ProfileEntry) -> Void)? = nil
     let onSend: (String) -> Void
     @State private var editing: LioExplorationPresentation.ProfileEntry?
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -31,19 +32,27 @@ struct LioExplorationReplyView: View {
             }
             ForEach(presentation.notices) { notice in
                 VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
-                    Label(language.text("Lio noticed", "Lio 注意到"),
-                          systemImage: notice.severity == .warning ? "exclamationmark.circle" : "bell")
-                        .font(.headline)
-                        .foregroundStyle(LioTheme.ink)
+                    HStack(spacing: LioTheme.Spacing.xs) {
+                        Image(systemName: notice.severity == .warning ? "exclamationmark.circle" : "bell")
+                            .font(.headline).foregroundStyle(LioTheme.ink).accessibilityHidden(true)
+                        RunReadableText(text: language.text("Lio noticed", "Lio 注意到"), style: .headline, color: LioTheme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                         .accessibilityAddTraits(.isHeader)
                     replyText(notice.text)
                     if let url = notice.source.url {
                         Link(destination: url) {
-                            Label(language.text("Source", "来源"), systemImage: "link")
+                            HStack(spacing: LioTheme.Spacing.xs) {
+                                Image(systemName: "link").font(.body).foregroundStyle(LioTheme.vermilion)
+                                    .accessibilityHidden(true)
+                                RunReadableText(text: language.text("Source", "来源"), color: LioTheme.vermilion)
+
+                            }
                                 .fixedSize(horizontal: false, vertical: true)
                                 .frame(minHeight: 44, alignment: .leading)
                         }
                         .foregroundStyle(LioTheme.vermilion)
+                        .accessibilityLabel(language.text("Source", "来源"))
                         .accessibilityIdentifier("lio.notice.source.\(notice.id)")
                     }
                 }
@@ -54,45 +63,60 @@ struct LioExplorationReplyView: View {
             }
             ForEach(presentation.exits) { exit in
                 Button { onSend(exit.sendText) } label: {
-                    Label(exit.displayText, systemImage: "arrow.right")
+                    HStack(spacing: LioTheme.Spacing.xs) {
+                        Image(systemName: "arrow.right").font(.body)
+                            .foregroundStyle(canSend ? LioTheme.vermilion : LioTheme.inkSecondary)
+                            .accessibilityHidden(true)
+                        RunReadableText(text: exit.displayText, color: canSend ? LioTheme.vermilion : LioTheme.inkSecondary)
+
+                    }
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                         .padding(.horizontal, LioTheme.Spacing.sm)
                         .padding(.vertical, LioTheme.Spacing.xxs)
+                        .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: LioTheme.Radius.small)
+                                .stroke(canSend ? LioTheme.vermilion : LioTheme.hairline, lineWidth: 1)
+                                .allowsHitTesting(false).accessibilityHidden(true)
+                        }
                 }
-                .buttonStyle(.bordered)
-                .tint(LioTheme.vermilion)
+                .buttonStyle(.plain)
                 .disabled(!canSend)
+                .accessibilityLabel(exit.displayText)
                 .accessibilityIdentifier("lio.exit.\(exit.id)")
             }
         }
+        .accessibilityElement(children: .contain)
+        .font(.body)
         .sheet(item: $editing) { entry in
             LioProfileChangeSheet(entry: entry, language: language, canSend: canSend, onSend: onSend)
         }
     }
 
-    @ViewBuilder private var profile: some View {
-        if typeSize.isAccessibilitySize {
-            VStack(spacing: LioTheme.Spacing.xs) { profileEntries }
-        } else {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())],
-                      alignment: .leading, spacing: LioTheme.Spacing.xs) { profileEntries }
-        }
+    private var profile: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: typeSize.isAccessibilitySize ? 1 : 2),
+                  alignment: .leading, spacing: LioTheme.Spacing.xs) { profileEntries }
     }
 
     private var profileEntries: some View {
         ForEach(presentation.profile) { entry in
-            Button { editing = entry } label: {
+            Button {
+                if let editProfile { editProfile(entry) }
+                else { editing = entry }
+            } label: {
                 VStack(alignment: .leading, spacing: LioTheme.Spacing.xxs) {
                     HStack(alignment: .firstTextBaseline, spacing: LioTheme.Spacing.xs) {
                         RunReadableText(text: entry.displayText)
-                            .id(typeSize)
+
                             .fixedSize(horizontal: false, vertical: true)
                         Image(systemName: "pencil").foregroundStyle(LioTheme.inkSecondary)
                             .accessibilityHidden(true)
                     }
                     if let annotation = entry.annotation(language) {
-                        Text(annotation).font(.caption).foregroundStyle(LioTheme.inkSecondary)
+                        RunReadableText(text: annotation, style: .caption, color: LioTheme.inkSecondary)
+
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
@@ -102,6 +126,8 @@ struct LioExplorationReplyView: View {
             }
             .buttonStyle(.plain)
             .disabled(!canSend)
+            .accessibilityLabel(entry.displayText)
+            .accessibilityValue(entry.annotation(language) ?? "")
             .accessibilityIdentifier("lio.profile.\(entry.id)")
         }
     }
@@ -127,7 +153,7 @@ struct LioExplorationReplyView: View {
                         .font(blocks[index].font ?? .body)
                         .foregroundStyle(LioTheme.ink)
                         .lineSpacing(4)
-                        .id(typeSize)
+
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(blocks[index].font == nil ? [] : .isHeader)
                         .padding(.top, CGFloat(max(0, blocks[index].leadingSeparator.count - 1)) * LioTheme.Spacing.sm)
@@ -141,7 +167,7 @@ struct LioExplorationReplyView: View {
     }
 }
 
-private struct LioProfileChangeSheet: View {
+struct LioProfileChangeSheet: View {
     let entry: LioExplorationPresentation.ProfileEntry
     let language: LioLanguage
     let canSend: Bool
