@@ -46,13 +46,14 @@ def exercise(root,config):
             db.execute("INSERT INTO cj_message_context_profile VALUES(%s,'message-travel.1')",(scope_for(ISSUER,subject),))
     scope=scope_for(ISSUER,'native-a');account=ledger_scope_for(scope,context.current.meter)
     boundary=Boundary(checker_for(auth),lambda principal:database.message_repository(scope_for(principal.issuer,principal.subject)),lambda:str(uuid.uuid4()))
-    def send(mid,version):
-        token=dev_auth.token(auth,'native-a',3600)
+    def send(mid,version,subject='native-a'):
+        selected_scope=scope_for(ISSUER,subject)
+        token=dev_auth.token(auth,subject,3600)
         value=dict(version=version,message_id=mid,text='Synthetic planning input',locale='en',new_conversation=True)
         receipt=boundary.receive_lio(token,json.dumps(value).encode(),prepare_scope=database._provision_scope,version=version)
-        with database.message_repository(scope).transaction()as tx:stored=tx.find(mid)
+        with database.message_repository(selected_scope).transaction()as tx:stored=tx.find(mid)
         r=stored.receipt
-        return Binding(scope,r.conversation_id,r.generation,r.message_id,r.run_id,r.sequence)
+        return Binding(selected_scope,r.conversation_id,r.generation,r.message_id,r.run_id,r.sequence)
     runtime=SimpleNamespace(planning_subjects=frozenset(('native-a','native-b')),context=context,
         demo_subjects=frozenset(('native-a',)),demo_next_context=following)
     with checkpoint.lock(control),psycopg.connect(**config)as db:
@@ -78,7 +79,31 @@ def exercise(root,config):
     database.require_budget_account(scope)
     assert router._native4_policy(old,context.current)is None
     assert router._native4_policy(native,context.current)==NATIVE4_PROFILE
+    try:router._native4_policy(replace(native,message_sequence=native.message_sequence+1),context.current)
+    except BudgetUnknown as error:assert str(error)=='original native4 MESSAGE unavailable'
+    else:raise AssertionError('native4 policy accepted a different original MESSAGE sequence')
     other=scope_for(ISSUER,'native-b')
+    unqualified_worker=run_worker._worker_for_scope(database,FakeProvider(),auth,other,checker_for(auth))
+    unqualified=send('unqualified-four','LIO-message.4','native-b')
+    unqualified_state=unqualified_worker.runs.accept(unqualified)
+    def rejects_unqualified():
+        try:LocalBudgetRouter(database).for_run(unqualified,unqualified_state)
+        except BudgetUnknown as error:assert str(error)=='original native4 account qualification unavailable'
+        else:raise AssertionError('genuine native4 selected legacy limits without original qualification')
+        with database.connect(other)as db:
+            assert db.execute('SELECT count(*) FROM cj_run_metered_operation WHERE scope=%s',(other,)).fetchone()==(0,)
+    rejects_unqualified()  # An original v1 account cannot silently select old caps.
+    with psycopg.connect(**config)as db:
+        from cj_usage.codec import decode_stored,encode_v2
+        other_account=ledger_scope_for(other,context.current.meter)
+        version,raw=db.execute('SELECT format_version,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(other_account,)).fetchone()
+        old_other=asdict(decode_stored(version,raw));assert old_other['attempts']=={}
+        upgraded=decode_v2(dict(old_other,run_profiles={},attempt_providers={}))
+        db.execute('UPDATE cj_usage_ledger_candidate SET format_version=2,ledger=%s::jsonb WHERE scope_id=%s',(encode_v2(upgraded),other_account))
+    rejects_unqualified()  # Format2 alone is not an operator qualification.
+    old_unqualified=send('unqualified-old-three','LIO-message.3','native-b')
+    old_unqualified_state=unqualified_worker.runs.accept(old_unqualified)
+    assert type(LocalBudgetRouter(database).for_run(old_unqualified,old_unqualified_state))is not Native4RegisteredExit
     with database.connect(other)as db:
         assert db.execute('SELECT * FROM cj_native4_usage_profile').fetchall()==[]
         for sql in('INSERT INTO cj_native4_usage_profile VALUES(%s,%s,%s)',):
@@ -86,8 +111,9 @@ def exercise(root,config):
                 with db.transaction():db.execute(sql,(other,account,NATIVE4_PROFILE))
             except psycopg.errors.InsufficientPrivilege:pass
             else:raise AssertionError('runtime gained native4 qualification writer')
-    calls=[]
+    calls=[];prepared_arguments=[]
     def prepare(argument):
+        prepared_arguments.append(argument)
         raw=str(argument).encode()
         def materialize():
             def invoke():
@@ -117,7 +143,7 @@ def exercise(root,config):
     try:''.join(worker._registered_stream(native,'unknown','tool.unknown','unknown'))
     except BudgetUnknown:pass
     else:raise AssertionError('unclassified native4 paid tool accepted')
-    assert calls==before_calls and len(calls)==51
+    assert calls==before_calls and len(calls)==51 and 'unknown'not in prepared_arguments
     def capacity_guard():
         if worker.runs.valid(native)is not True:raise BudgetUnknown('original signed RUN unavailable')
     cap=json.loads(selected.read_run_capacity(native,guard=capacity_guard))
@@ -159,7 +185,7 @@ def exercise(root,config):
         try:migrate.down(db,migrate.load(),54)
         except psycopg.errors.RaiseException:pass
         else:raise AssertionError('populated version2 downgrade was allowed')
-    print('PASS signed genuine4 qualification; same800 account/51 native complete sends+1 original UNKNOWN/6model inclMemory/45amap/legacy12+13 refusal/unknown-tool and46+7 refusal/rebuild no replay; runtime cross-owner/qualification-write denial; populated55 down refused',flush=True)
+    print('PASS signed genuine4 qualification; unqualified v1/v2 four refused before operation, legacy3 retained, forged original sequence denied; same800 account/51 native complete sends+1 original UNKNOWN/6model inclMemory/45amap/legacy12+13 refusal/unknown-tool before prepare and46+7 refusal/rebuild no replay; runtime cross-owner/qualification-write denial; populated55 down refused',flush=True)
 
 
 def main():
