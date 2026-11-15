@@ -73,23 +73,27 @@ class OptionalIntakeChecks(unittest.TestCase):
         from cj_api.lio_flow_intake import _nonplanning_fact_source
         for text,real,translated in (
                 ('请翻译“从2026-12-01开始，两个人”。我从2026-12-10出发，三个人。','2026-12-10','2026-12-01'),
+                ('请翻译“两个人”，我从2026-12-10出发。','2026-12-10','两个人'),
                 ('Please translate "Start on 2026-12-01, two people". I start on 2026-12-10 with three people.',
-                 '2026-12-10','2026-12-01')):
+                 '2026-12-10','2026-12-01'),
+                ('Please translate "two people", and we actually start on 2026-12-10 with three people.',
+                 '2026-12-10','two people')):
             with self.subTest(text=text):
                 self.assertFalse(_nonplanning_fact_source(text,real))
                 self.assertTrue(_nonplanning_fact_source(text,translated))
                 english=text.startswith('Please')
-                value=flow('Continue',city='Beijing'if english else'北京',days=3,start=real,party=3,index=2,questions=())
+                party=3 if 'three people'in text or'三个人'in text else None
+                value=flow('Continue',city='Beijing'if english else'北京',days=3,start=real,party=party,index=2,questions=())
                 value.update(version='LIO-planning-intake.8',planning_request_index=0)
                 value['city'].update(source_index=0,quote='Beijing'if english else'北京')
                 value['field_sources']=[dict(field='duration_days',source_index=0,quote='three days'if english else'三天'),
-                    dict(field='start_date',source_index=1,quote=real),
-                    dict(field='party_size',source_index=1,quote='three people'if english else'三个人')]
+                    dict(field='start_date',source_index=1,quote=real)]
+                if party is not None:value['field_sources'].append(dict(field='party_size',source_index=1,quote='three people'if english else'三个人'))
                 request='Plan Beijing for three days'if english else'规划北京三天'
                 intake,_,snapshot=parse_flow(json.dumps(value),tuple(map(original,(request,text,'Continue'))),
                     ({'message_id':'real-request'},{'message_id':'mixed'}),'current',None,schema=OptionalIntake)
                 self.assertEqual(intake.start_date,dict(state='known',value=real))
-                self.assertEqual(intake.extraction['fields']['party_size'],dict(state='known',value=3))
+                self.assertEqual(intake.extraction['fields']['party_size'],dict(state='missing')if party is None else dict(state='known',value=party))
                 self.assertEqual(snapshot['start_date']['value'],real)
 
     def test_help_translate_wrapper_never_makes_translated_fields_executable(self):

@@ -19,6 +19,9 @@ _META_REQUEST=re.compile(r'^\s*(?:(?:请帮我|请|帮我)?(?:(?:把|将)[^。�
     r'\b(?:for example|suppose|assuming|if|(?:he|she|they|someone) (?:said|says))\b)',re.I)
 _META_SUFFIX=re.compile(r'^\s*(?:这(?:句|段)(?:话|内容)?|该句)?\s*(?:怎么|如何|怎样)(?:翻译|复述|改写|引用)',re.I)
 _SOURCE_BREAK=re.compile(r'[。！？!?；;\n]|\.(?=\s+[A-Z]|$)|\b(?:but|however)\b|但是|不过|而是',re.I)
+_SELF_FACT=re.compile(r'^\s*(?:(?:and|but)\s+)?(?:(?:I|we)\s+(?:actually\s+)?(?:start|depart|leave|arrive|are|will|plan|have)\b|'
+    r'(?:我(?:们)?|本次行程)(?:实际|确定|将|会|要|计划|从|是|有|共|一共))',re.I)
+_META_TASK_WORD=re.compile(r'翻译|复述|改写|引用|\b(?:translat\w*|rephras\w*|paraphras\w*|repeat\w*|quot\w*)\b',re.I)
 
 
 def _quoted_data_spans(text):
@@ -52,7 +55,13 @@ def _nonplanning_fact_source(text,quote):
         before=[part.end()for part in breaks if part.end()<=found.start()]
         after=[part.start()for part in breaks if part.start()>=found.end()]
         start=before[-1]if before else 0;end=after[0]if after else len(text)
-        if _META_REQUEST.search(text[start:found.end()]):return True
+        if _META_REQUEST.search(text[start:found.end()]):
+            # A quoted task object has ended. A separate explicit first-person
+            # assertion after its separator is not part of that quoted task.
+            ended=[right for left,right in spans if start<=left and right<=found.start()]
+            declaration=''if not ended else re.split(r'[,，]',text[ended[-1]:found.end()])[-1]
+            if not (_SELF_FACT.search(declaration)and not _META_TASK_WORD.search(declaration)):
+                return True
         for left,right in spans:
             if not left<=found.start()or not found.end()<=right:continue
             prefixes=re.split(r'[,，]',text[start:left])
