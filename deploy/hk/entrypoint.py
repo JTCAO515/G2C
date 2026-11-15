@@ -71,10 +71,14 @@ def api(runtime):
     async def deployment_gate(request,call_next):
         if request.url.path=='/health/live':return JSONResponse({'status':'alive'})
         reason=await run_in_threadpool(ready,database,runtime)
+        if reason is not None:request.state.access_gate=reason
         if request.url.path=='/health/ready':
             return JSONResponse({'status':'ready' if reason is None else 'unavailable','component':reason},status_code=200 if reason is None else 503)
         if reason is not None:return JSONResponse({'error':'deployment_unavailable'},status_code=503)
         return await call_next(request)
+    # Outermost: sees gate 503s too. Content-free; see deploy/hk/access_log.py (#1036).
+    from .access_log import AccessLog,Sink
+    app.add_middleware(AccessLog,sink=Sink())
     import uvicorn
     uvicorn.run(app,host='0.0.0.0',port=8765,access_log=False)
 

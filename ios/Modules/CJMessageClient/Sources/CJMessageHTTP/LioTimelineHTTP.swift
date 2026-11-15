@@ -26,6 +26,38 @@ public final class LioTimelineHTTP {
     private var firstChatInFlight = false
     private var defaultCalendarConversationID: String?
 
+    /// Request kinds named only for on-device problem notes.
+    public enum RequestKind: Sendable, Equatable, CaseIterable {
+        case send, firstLookup, timeline, exploration, tripHistory, undo, memoryChoice
+    }
+
+    /// The latest attempted request of this client. It never decides an outcome:
+    /// thrown errors, fences and retries are unchanged. `httpStatus` is nil when
+    /// no response arrived (or the attempt stopped before the transport).
+    /// `serverReference` is the response's `X-Request-ID` when it is a UUID; it is not a
+    /// secret and lets a reported failure be matched with the service's own request log.
+    public struct Observation: Sendable, Equatable {
+        public let kind: RequestKind
+        public let httpStatus: Int?
+        public let offline: Bool
+        public let serverReference: String?
+
+        public init(kind: RequestKind, httpStatus: Int?, offline: Bool, serverReference: String? = nil) {
+            self.kind = kind
+            self.httpStatus = httpStatus
+            self.offline = offline
+            self.serverReference = serverReference
+        }
+    }
+    public private(set) var lastObservation: Observation?
+
+    private func observe(_ kind: RequestKind, _ response: HTTPResponse? = nil) {
+        let traces = response?.headerFields.filter { $0.name.canonicalName == "x-request-id" } ?? []
+        let reference = traces.count == 1 ? traces.first.flatMap { UUID(uuidString: $0.value)?.uuidString } : nil
+        lastObservation = Observation(kind: kind, httpStatus: response.map { $0.status.code },
+                                      offline: connectivity?.offline == true, serverReference: reference)
+    }
+
     func observedDefaultCalendarConversationID() throws -> String {
         guard let id = defaultCalendarConversationID else { throw MessageHTTPFailure.exchangeUnknown }
         return id
@@ -62,6 +94,7 @@ public final class LioTimelineHTTP {
         if original.startsNewChat, firstChatRecovery == nil {
             throw MessageHTTPFailure.productionActivationUnavailable
         }
+        observe(.send)
         let token = try await bearer()
         if connectivity?.offline == true { return .notSent }
         if original.startsNewChat, let firstChatRecovery {
@@ -113,6 +146,7 @@ public final class LioTimelineHTTP {
               messageID.map({ entry.record.messageID.utf8.elementsEqual($0.utf8) }) ?? true else { return nil }
         firstChatInFlight = true
         defer { firstChatInFlight = false }
+        observe(.firstLookup)
         let token = try await bearer()
         let operation = try firstChatRecovery.beginQuery(messageID: entry.record.messageID, lease: lease)
         let result: FirstChatLookup
@@ -144,6 +178,7 @@ public final class LioTimelineHTTP {
     private func readFirstChat(_ original: LioTimelineWire.Send, inputSHA256: String,
                                bearer: String) async throws -> FirstChatLookup {
         let (response, body) = try await transport.readLioFirstReceipt(original, inputSHA256: inputSHA256, bearer: bearer)
+        observe(.firstLookup, response)
         let bytes = try await json(response, body, limit: 65_536)
         switch response.status.code {
         case 200:
@@ -220,6 +255,7 @@ public final class LioTimelineHTTP {
 
     private func exchange(_ original: LioTimelineWire.Send, bearer token: String) async throws -> SendOutcome {
         let (response, body) = try await transport.sendLio(original, bearer: token)
+        observe(.send, response)
         let bytes = try await json(response, body, limit: 65_536)
         let status = response.status.code
         // The v2 route uses 400 for invalid input before acceptance. Access
@@ -246,8 +282,10 @@ public final class LioTimelineHTTP {
 
     public func timeline(conversationID: String? = nil, before: String? = nil,
                          version: LioTimelineWire.Version = .v1) async throws -> LioTimelineWire.Page {
+        observe(.timeline)
         let token = try await bearer()
         let (response, body) = try await transport.readLio(conversationID: conversationID, before: before, bearer: token, version: version)
+        observe(.timeline, response)
         guard response.status.code == 200 else { throw MessageHTTPFailure.invalidResponse }
         let bytes = try await json(response, body, limit: 4_500_000)
         let page = try LioTimelineWire.decodePage(bytes, for: conversationID, version: version)
@@ -262,9 +300,11 @@ public final class LioTimelineHTTP {
 
     /// Explicit native4 read, preserving its typed presentation instead of using the legacy page decoder.
     public func exploration(conversationID: String? = nil, before: String? = nil) async throws -> LioExplorationWire.Page {
+        observe(.exploration)
         let token = try await bearer()
         let (response, body) = try await transport.readLio(conversationID: conversationID, before: before,
                                                          bearer: token, version: .v4)
+        observe(.exploration, response)
         guard response.status.code == 200 else { throw MessageHTTPFailure.invalidResponse }
         let bytes = try await json(response, body, limit: 4_500_000)
         let page = try LioExplorationWire.decodePage(bytes, for: conversationID)
@@ -276,17 +316,21 @@ public final class LioTimelineHTTP {
 
     func tripHistory(before: String?, conversationID: String? = nil,
                       version: LioTimelineWire.Version? = nil) async throws -> LioTripHistoryWire.Page {
+        observe(.tripHistory)
         let token = try await bearer()
         let (response, body) = try await transport.readLioTrip(before: before, bearer: token,
                                                             conversationID: conversationID, version: version)
+        observe(.tripHistory, response)
         guard response.status.code == 200 else { throw MessageHTTPFailure.invalidResponse }
         let bytes = try await json(response, body, limit: 4_500_000)
         return try LioTripHistoryWire.decodePage(bytes, before: before, conversationID: conversationID, version: version)
     }
 
     func submitUndo(_ undo: LioTripHistoryWire.Undo) async throws -> LioTripHistoryClient.SubmissionResult {
+        observe(.undo)
         let token = try await bearer()
         let (response, body) = try await transport.sendLioUndo(undo, bearer: token)
+        observe(.undo, response)
         let bytes = try await json(response, body, limit: 65_536)
         switch response.status.code {
         case 200:
@@ -304,16 +348,20 @@ public final class LioTimelineHTTP {
     }
 
     func readUndo(_ undo: LioTripHistoryWire.Undo) async throws -> Data? {
+        observe(.undo)
         let token = try await bearer()
         let (response, body) = try await transport.readLioUndo(undo, bearer: token)
+        observe(.undo, response)
         guard response.status.code == 200 else { throw MessageHTTPFailure.exchangeUnknown }
         let bytes = try await json(response, body, limit: 65_536)
         return try undo.committed(bytes) ? bytes : nil
     }
 
     func submitMemoryChoice(_ action: LioMemoryWire.Action) async throws -> LioMemoryActionsClient.SubmissionResult {
+        observe(.memoryChoice)
         let token = try await bearer()
         let (response, body) = try await transport.sendLioMemoryChoice(action, bearer: token)
+        observe(.memoryChoice, response)
         let bytes = try await json(response, body, limit: 65_536)
         switch response.status.code {
         case 200: return .receipt(bytes)
@@ -329,8 +377,10 @@ public final class LioTimelineHTTP {
     }
 
     func readMemoryChoice(_ action: LioMemoryWire.Action) async throws -> Data {
+        observe(.memoryChoice)
         let token = try await bearer()
         let (response, body) = try await transport.readLioMemoryChoice(action, bearer: token)
+        observe(.memoryChoice, response)
         guard response.status.code == 200 else { throw MessageHTTPFailure.exchangeUnknown }
         return try await json(response, body, limit: 65_536)
     }

@@ -31,6 +31,7 @@ services:
       - /srv/g2c-beta/supabase-ca.crt:/run/config/supabase-ca.crt:ro
       - /srv/g2c-beta/control:/control:ro
       - /srv/g2c-beta/heartbeat:/heartbeat:ro
+      - /srv/g2c-beta/access-log:/access-log
     depends_on: {migrate: {condition: service_completed_successfully}}
     healthcheck:
       test: [CMD, python, -m, deploy.hk.healthcheck]

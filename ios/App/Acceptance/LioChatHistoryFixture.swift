@@ -41,6 +41,7 @@ private struct ChatHistoryClients {
     let original: LioService
     let library: LioChatLibrary
     private let source: ChatHistorySource
+    private let lease: Lease
 
     init(shell: ShellState) throws {
         try self.init(shell: shell, source: ChatHistorySource(shell: shell), continuity: LioChatContinuity())
@@ -56,6 +57,7 @@ private struct ChatHistoryClients {
         self.source = source
         let recovery = source.recovery, scope = source.scope
         let lease = try recovery.activate(scope)
+        self.lease = lease
         let client = source.client(lease: lease)
         let original = LioService.signedTimeline(client)
         self.original = original
@@ -65,6 +67,13 @@ private struct ChatHistoryClients {
     }
 
     func recreated(shell: ShellState) throws -> Self {
+        if ProcessInfo.processInfo.arguments.contains("--lio-chat-unrelated-recovery-acceptance") {
+            let original = try LioTimelineWire.Send(messageID: "unrelated-first-pending", text: "Synthetic pending chat",
+                                                    locale: .english, destination: .newChat)
+            try source.recovery.stage(messageID: original.messageID, originalUTF8: original.originalUTF8, lease: lease)
+            let attempt = try source.recovery.beginSubmission(messageID: original.messageID, lease: lease)
+            try source.recovery.observeUnknown(attempt.operation)
+        }
         let continuity = LioChatContinuity()
         if let previous = library.continuity { continuity.inherit(previous) }
         return try Self(shell: shell, source: source, continuity: continuity)
@@ -83,7 +92,8 @@ private struct ChatHistoryClients {
                                            maximumRequestBytes: 16_384, maximumResponseBytes: 65_536)
         let locale: LioTimelineWire.Locale = shell.language == .chinese ? .chinese : .english
         let rejectsFirst = ProcessInfo.processInfo.arguments.contains("--lio-chat-first-refusal-acceptance")
-        let scenario = ChatHistoryTransport(locale: locale, rejectsFirst: rejectsFirst)
+        let lookupFails = ProcessInfo.processInfo.arguments.contains("--lio-chat-selected-lookup-failure-acceptance")
+        let scenario = ChatHistoryTransport(locale: locale, rejectsFirst: rejectsFirst, lookupFails: lookupFails)
         let transport = try NoRedirectTransport(interceptedTransport: scenario, messageEndpoint: endpoint,
                                                 validateMessage: {}, lio: true)
         self.scope = scope; self.recovery = recovery; self.transport = transport
@@ -100,13 +110,15 @@ private actor ChatHistoryTransport: ClientTransport {
     private let newID = "lio-dialogue-abcdef0123456789abcdef0123456789"
     private let locale: LioTimelineWire.Locale
     private let rejectsFirst: Bool
+    private let lookupFails: Bool
     private var refusedMessageID: String?
     private var first: (id: String, text: String, digest: String)?
     private var receiptRead = false
 
-    init(locale: LioTimelineWire.Locale, rejectsFirst: Bool) {
+    init(locale: LioTimelineWire.Locale, rejectsFirst: Bool, lookupFails: Bool) {
         self.locale = locale
         self.rejectsFirst = rejectsFirst
+        self.lookupFails = lookupFails
     }
 
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
@@ -139,9 +151,14 @@ private actor ChatHistoryTransport: ClientTransport {
             first = (id, question, SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined())
             throw URLError(.networkConnectionLost)
         case (.get, "/v2/lio/messages"):
+            if value("message_id") == "unrelated-first-pending" {
+                return try response(["failure": "unavailable"], status: .serviceUnavailable)
+            }
             guard let first, value("message_id") == first.id, value("input_sha256") == first.digest else {
                 throw MessageHTTPFailure.invalidConfiguration
             }
+            // A synthetic outage of the selected chat's own lookup: its action and draft must stay.
+            if lookupFails { return try response(["failure": "unavailable"], status: .serviceUnavailable) }
             receiptRead = true
             return try response(["version": "LIO-message-lookup.2", "receipt": [
                 "version": "LIO-message-receipt.2", "message_id": first.id, "conversation_id": newID

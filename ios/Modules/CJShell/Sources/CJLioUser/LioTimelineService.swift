@@ -99,21 +99,24 @@ struct LioTimelinePage: Sendable {
 }
 
 extension LioService {
-    public static func signedTimeline(_ client: LioTimelineHTTP) -> LioService {
+    /// `readFailed` adds an on-device note for a failed timeline read; the failure itself is unchanged.
+    public static func signedTimeline(_ client: LioTimelineHTTP,
+                                      readFailed: (@MainActor @Sendable (any Error) -> Void)? = nil) -> LioService {
         timeline(send: { original in
             try await signedSend(client, original)
         }, read: { id, before in
-            try await client.timeline(conversationID: id, before: before)
+            try await noted(readFailed) { try await client.timeline(conversationID: id, before: before) }
         })
     }
 
     public static func signedConversation(_ client: LioTimelineHTTP, destination: LioTimelineWire.V2Destination,
                                           version: LioTimelineWire.Version = .v2,
+                                          readFailed: (@MainActor @Sendable (any Error) -> Void)? = nil,
                                           didCreate: @escaping @Sendable (String) async -> Void) -> LioService {
         timeline(send: { original in
             try await signedSend(client, original)
         }, read: { id, before in
-            try await client.timeline(conversationID: id, before: before, version: version)
+            try await noted(readFailed) { try await client.timeline(conversationID: id, before: before, version: version) }
         }, destination: destination, scopedVersion: version, recoverFirst: { id in
             try await client.reconcileFirstChat(messageID: id)
         }, didCreate: didCreate)
@@ -127,6 +130,14 @@ extension LioService {
         }, destination: destination, recoverFirst: { id in
             try await client.reconcileFirstChat(messageID: id)
         }, didCreate: didCreate)
+    }
+
+    private static func noted<Value>(_ readFailed: (@MainActor @Sendable (any Error) -> Void)?,
+                                     _ read: () async throws -> Value) async throws -> Value {
+        do { return try await read() } catch {
+            if let readFailed, !(error is CancellationError) { await readFailed(error) }
+            throw error
+        }
     }
 
     private static func signedSend(_ client: LioTimelineHTTP, _ original: LioTimelineWire.Send) async throws -> SendResult {

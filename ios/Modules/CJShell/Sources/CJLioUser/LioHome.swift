@@ -18,8 +18,9 @@ public struct LioHome<MenuContent: View>: View {
     @State private var defaultTripPlan: LioTripPlan?
     @State private var selectedChat: LioChatSession?
     @State private var restoringChat: Bool
-    @State private var restoreChatFailed = false
+    @State private var restoreChatFailure: LioFailureDiagnosis?
     @State private var restoreChatRequest = 0
+    @State private var showsProblemNotes = false
     @State private var draft = ""
     @State private var chatDrafts: [Data: String] = [:]
     @State private var questionDrafts: [Data: LioQuestionDraft] = [:]
@@ -131,21 +132,61 @@ public struct LioHome<MenuContent: View>: View {
         .overlay {
             if restoringChat {
                 VStack(spacing: 20) {
-                    if restoreChatFailed {
-                        Text(language.text("Couldn’t open your conversation. Try again when you’re connected.", "暂时无法打开对话，请联网后重试。"))
-                        Button(language.text("Try again", "重试")) { restoreChatRequest += 1 }
+                    if let failure = restoreChatFailure {
+                        Text(failure.message(language))
+                            .foregroundStyle(LioTheme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(failure.nextStep(language))
+                            .foregroundStyle(LioTheme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        // Same accessible actions as the saved sign-in recovery page.
+                        Button { restoreChatRequest += 1 } label: {
+                            Text(language.text("Try again", "重试")).frame(minHeight: 44)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .foregroundStyle(LioTheme.onVermilion)
+                        Button { showsProblemNotes = true } label: {
+                            Text(language.text("View problem notes", "查看问题记录"))
+                                .foregroundStyle(LioTheme.inkSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(minHeight: 44)
+                        }
+                        .buttonStyle(.plain)
                     } else {
                         ProgressView(language.text("Opening your conversation…", "正在打开你的对话…"))
                     }
                 }
                 .multilineTextAlignment(.center)
+                .frame(maxWidth: 420)
                 .padding(28)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(LioTheme.paper)
+                .tint(LioTheme.vermilion)
                 .accessibilityIdentifier("lio.chat.recovery")
+                .sheet(isPresented: $showsProblemNotes) {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: LioTheme.Spacing.md) {
+                            Button { showsProblemNotes = false } label: {
+                                Text(language.text("Done", "完成"))
+                                    .foregroundStyle(LioTheme.ink)
+                                    .frame(minWidth: 44, minHeight: 44)
+                            }
+                            .buttonStyle(.plain)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                            .accessibilityIdentifier("lio.problems.done")
+                            LioProblemNotesSection(language: language, notes: .shared)
+                        }
+                        .frame(maxWidth: 480, alignment: .leading)
+                        .padding(24)
+                        .frame(maxWidth: .infinity)
+                    }
+                    .background(LioTheme.paper)
+                }
             }
         }
         .task(id: restoreChatRequest) {
             guard restoringChat else { return }
-            restoreChatFailed = false
+            restoreChatFailure = nil
             do {
                 if let chat = try await chatLibrary?.restore?() {
                     try Task.checkCancellation()
@@ -158,7 +199,10 @@ public struct LioHome<MenuContent: View>: View {
                 restoringChat = false
             } catch is CancellationError {
                 return
-            } catch { restoreChatFailed = true }
+            } catch {
+                restoreChatFailure = chatLibrary?.diagnose?(error)
+                    ?? .classify(error, stage: .selectedChat, observation: nil)
+            }
         }
         .onChange(of: draft) { _, value in chatLibrary?.continuity?.draft = value }
         .onChange(of: tab) { _, _ in typing = false }
