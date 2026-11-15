@@ -23,6 +23,7 @@ from deploy.hk import checkpoint,native4_usage
 from cj_usage.core import LedgerV2,NATIVE4_PROFILE,Meter
 from cj_usage.registered_exit import Native4RegisteredExit,Registration,InvocationInput
 from cj_usage.metered_exit import BudgetExceeded,BudgetUnknown
+from cj_usage.metered_exit import ExitAdmissionDenied
 import dev_auth,local_run_context,migrate,pg_suites,run_worker
 
 
@@ -88,11 +89,13 @@ def exercise(root,config):
     unqualified_state=unqualified_worker.runs.accept(unqualified)
     def rejects_unqualified():
         try:LocalBudgetRouter(database).for_run(unqualified,unqualified_state)
-        except BudgetUnknown as error:assert str(error)=='original native4 account qualification unavailable'
+        except ExitAdmissionDenied as error:assert not error.original_exit.registrations
         else:raise AssertionError('genuine native4 selected legacy limits without original qualification')
         with database.connect(other)as db:
             assert db.execute('SELECT count(*) FROM cj_run_metered_operation WHERE scope=%s',(other,)).fetchone()==(0,)
     rejects_unqualified()  # An original v1 account cannot silently select old caps.
+    assert [outcome.status for outcome in unqualified_worker.process()]==['context_invalid']
+    assert unqualified_worker.process()==[]
     with psycopg.connect(**config)as db:
         from cj_usage.codec import decode_stored,encode_v2
         other_account=ledger_scope_for(other,context.current.meter)
@@ -100,10 +103,33 @@ def exercise(root,config):
         old_other=asdict(decode_stored(version,raw));assert old_other['attempts']=={}
         upgraded=decode_v2(dict(old_other,run_profiles={},attempt_providers={}))
         db.execute('UPDATE cj_usage_ledger_candidate SET format_version=2,ledger=%s::jsonb WHERE scope_id=%s',(encode_v2(upgraded),other_account))
+    unqualified=send('unqualified-four-v2','LIO-message.4','native-b')
+    unqualified_state=unqualified_worker.runs.accept(unqualified)
     rejects_unqualified()  # Format2 alone is not an operator qualification.
+    assert [outcome.status for outcome in unqualified_worker.process()]==['context_invalid']
+    cancelled=send('unqualified-four-cancelled','LIO-message.4','native-b')
+    unqualified_worker.runs.accept(cancelled);unqualified_worker.runs.cancel(cancelled)
+    assert [outcome.status for outcome in unqualified_worker.process()]==['cancelled']
+    with database.connect(other)as db:
+        assert db.execute('SELECT count(*) FROM cj_message_delivery WHERE scope=%s AND NOT acknowledged',(other,)).fetchone()==(0,)
+        assert db.execute('SELECT count(*) FROM cj_run_metered_operation WHERE scope=%s',(other,)).fetchone()==(0,)
+    unresolved=send('ordinary-unknown-still-withheld','LIO-message.3','native-b')
+    with patch.object(LocalBudgetRouter,'for_run',side_effect=BudgetUnknown('fixture original context uncertain')):
+        try:unqualified_worker.process()
+        except BudgetUnknown:pass
+        else:raise AssertionError('general queued BudgetUnknown was fabricated into a terminal refusal')
+    assert unqualified_worker.runs.snapshot(unresolved).status=='queued'
+    with database.connect(other)as db:
+        assert db.execute('SELECT acknowledged FROM cj_message_delivery WHERE scope=%s AND message_id=%s',
+            (other,unresolved.message_id)).fetchone()==(False,)
+    # Explicitly cancel that same no-operation fixture after restoring its
+    # original context. No provider call or replacement MESSAGE is permitted.
+    unqualified_worker.runs.cancel(unresolved)
+    assert [outcome.status for outcome in unqualified_worker.process()]==['cancelled']
     old_unqualified=send('unqualified-old-three','LIO-message.3','native-b')
     old_unqualified_state=unqualified_worker.runs.accept(old_unqualified)
     assert type(LocalBudgetRouter(database).for_run(old_unqualified,old_unqualified_state))is not Native4RegisteredExit
+    assert [outcome.status for outcome in unqualified_worker.process()]==['completed']
     with database.connect(other)as db:
         assert db.execute('SELECT * FROM cj_native4_usage_profile').fetchall()==[]
         for sql in('INSERT INTO cj_native4_usage_profile VALUES(%s,%s,%s)',):
@@ -185,7 +211,7 @@ def exercise(root,config):
         try:migrate.down(db,migrate.load(),54)
         except psycopg.errors.RaiseException:pass
         else:raise AssertionError('populated version2 downgrade was allowed')
-    print('PASS signed genuine4 qualification; unqualified v1/v2 four refused before operation, legacy3 retained, forged original sequence denied; same800 account/51 native complete sends+1 original UNKNOWN/6model inclMemory/45amap/legacy12+13 refusal/unknown-tool before prepare and46+7 refusal/rebuild no replay; runtime cross-owner/qualification-write denial; populated55 down refused',flush=True)
+    print('PASS signed genuine4 qualification; unqualified v1/v2 four durable context_invalid/ACK before operation, cancelled original ACK/rebuild, general queued BudgetUnknown stays withheld, legacy3 still completes, forged original sequence denied; same800 account/51 native complete sends+1 original UNKNOWN/6model inclMemory/45amap/legacy12+13 refusal/unknown-tool before prepare and46+7 refusal/rebuild no replay; runtime cross-owner/qualification-write denial; populated55 down refused',flush=True)
 
 
 def main():

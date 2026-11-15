@@ -11,7 +11,12 @@ from cj_usage.core import Meter, NATIVE4_PROFILE
 from cj_usage.postgres import PostgresRepository
 from cj_usage.local_provider_exit import LocalProviderExit, BudgetUnknown
 from cj_usage.registered_exit import RegisteredExit, Native4RegisteredExit, MODEL_REGISTRY
+from cj_usage.metered_exit import ExitAdmissionDenied
 from .local_app import ISSUER, AUDIENCE, KEY_ID, InvitedSubjects, needs_lease_resolver
+
+
+class _Native4QualificationRequired(BudgetUnknown):
+    pass
 
 
 def checker_factory_for(auth_dir, *, selected_subjects=None):
@@ -80,7 +85,7 @@ class LocalBudgetRouter:
                 if row is not None:raise BudgetUnknown('original native4 MESSAGE unavailable')
                 return None
             if original is False:return None
-            if row!=(NATIVE4_PROFILE,2):raise BudgetUnknown('original native4 account qualification unavailable')
+            if row!=(NATIVE4_PROFILE,2):raise _Native4QualificationRequired('original native4 account qualification unavailable')
         return NATIVE4_PROFILE
 
     def _resolve_original(self, binding, state):
@@ -106,20 +111,31 @@ class LocalBudgetRouter:
         else: profile=context.current
         ledger_version=self.database.require_budget_account(binding.scope,profile=profile)
         run_profile=None
+        refused=False
         if context.version=='CJ-LOCAL-RUN@2':
-            if ledger_version==2:run_profile=self._native4_policy(binding,profile)
-            else:
-                # Retain format1's independence from append55. Actual Lio4
-                # must still be refused instead of silently using legacy caps.
-                with self.database.connect(binding.scope,usage_profile=profile)as conn:
-                    if self._native4_message(conn,binding)is True:
-                        raise BudgetUnknown('original native4 account qualification unavailable')
+            try:
+                if ledger_version==2:run_profile=self._native4_policy(binding,profile)
+                else:
+                    # Retain format1's independence from append55. Actual Lio4
+                    # must still be refused instead of silently using legacy caps.
+                    with self.database.connect(binding.scope,usage_profile=profile)as conn:
+                        if self._native4_message(conn,binding)is True:
+                            raise _Native4QualificationRequired('original native4 account qualification unavailable')
+            except _Native4QualificationRequired:
+                refused=True
         def resolve(original, account):
             if original.scope!=binding.scope or account!=ledger_scope_for(binding.scope,profile.meter):
                 raise BudgetUnknown('original quota owner changed')
             return Meter(PostgresRepository(lambda:self.database.connect(binding.scope,usage_profile=profile),account,
                 read_binder=lambda connection,cursor:connection.bind_scope(cursor)),profile.meter,time.time,run_profile=run_profile)
         if context.version=='CJ-LOCAL-RUN@2':
+            if refused:
+                # No producer registration is available. The genuine worker
+                # uses this resolved original account only to pin its zero-op
+                # period, persist refusal and reconcile cancellation before ACK.
+                original=RegisteredExit(profile.meter,resolve,clock=time.time,
+                    output_limits=profile.output_limits,environment='local',registrations={})
+                raise ExitAdmissionDenied(original)
             registrations=(self.registrations if self.registrations_for_run is None else
                            self.registrations_for_run(binding))
             options=dict(clock=time.time,output_limits=profile.output_limits,environment='local',registrations=registrations)
