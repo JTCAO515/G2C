@@ -12,6 +12,31 @@ from .lio_sourced_intake import parse_sourced,BookingSourceUnclear
 from .lio_positive_trip import destination_query
 
 CORE=('start_date','duration_days','party_size')
+_META_REQUEST=re.compile(r'^\s*(?:(?:请帮我|请|帮我)?(?:把|将)?[^。！？!?\n]{0,40}(?:翻译|复述|改写|引用)|'
+    r'(?:(?:can|could|would) you\s+)?(?:please\s+)?(?:translate|rephrase|paraphrase|repeat|quote)\b|'
+    r'how (?:do|would) (?:you|I) say\b|(?:例如|示例|举例|假设|假如|如果|他说|她说|有人说)|'
+    r'\b(?:for example|suppose|assuming|if|(?:he|she|they|someone) (?:said|says))\b)',re.I)
+_META_WORD=re.compile(r'翻译|复述|改写|引用|示例|\b(?:translat\w*|rephras\w*|paraphras\w*|quot\w*|example)\b',re.I)
+_QUOTED_DATA=re.compile(r'"[^"\n]*"|“[^”]*”|「[^」]*」|『[^』]*』')
+_SOURCE_BREAK=re.compile(r'[。！？!?；;\n]|\.(?=\s+[A-Z]|$)')
+
+
+def _nonplanning_fact_source(text,quote):
+    """Text may remain in dialogue without becoming affirmative trip evidence.
+
+    A failed translator/quotation RUN is not a source of traveler dates/party.
+    Ordinary failed parameter answers remain eligible for the full validators.
+    This selects provenance only; no value, locator, date or subject is repaired.
+    """
+    if _META_REQUEST.search(text):return True
+    if _QUOTED_DATA.fullmatch(text.strip().rstrip('。.!！').strip()):return True
+    for found in re.finditer(re.escape(quote),text):
+        before=[part.end()for part in _SOURCE_BREAK.finditer(text,0,found.start())]
+        clause=text[before[-1]if before else 0:found.end()]
+        if _META_REQUEST.search(clause):return True
+        if _META_WORD.search(text)and any(span.start()<=found.start()and found.end()<=span.end()
+                for span in _QUOTED_DATA.finditer(text)):return True
+    return False
 # Presence check only, never a date extractor or a default. The original
 # compiler independently checks exact ISO/relative dates against their day.
 DATE_EVIDENCE=re.compile(r'\d{4}[-/年]\d{1,2}|[0-9一二三四五六七八九十]+月|[0-9]+[日号]|'
@@ -178,8 +203,18 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_off
     # Validate the received sources first, then withhold these known nonplanning
     # facts. This is a semantic hold, not repair of an invalid source/DTO.
     excluded=set()if previous is None else set(previous.get('nonplanning_message_ids',[]))
-    blocked={field for field,sources in intake.sources.items()if any(source_ids[ref['source_index']]in excluded for ref in sources)}
-    if intake.city is not None and source_ids[intake.city['source_index']]in excluded:
+    meta_blocked=set();meta_city=False
+    if dto.version=='LIO-planning-intake.8':
+        # Meta-text remains ordinary dialogue, regardless of its RUN outcome.
+        # Its otherwise valid quotes cannot become affirmative planning facts.
+        meta_blocked={field for field,sources in intake.sources.items()if any(
+            _nonplanning_fact_source(turns[ref['source_index']].text,ref['quote'])for ref in sources)}
+        meta_city=intake.city is not None and _nonplanning_fact_source(
+            turns[intake.city['source_index']].text,intake.city['quote'])
+        if request_index is not None and _nonplanning_fact_source(turns[request_index].text,turns[request_index].text):
+            intake=replace(intake,planning_request_index=None)
+    blocked=meta_blocked|{field for field,sources in intake.sources.items()if any(source_ids[ref['source_index']]in excluded for ref in sources)}
+    if intake.city is not None and (meta_city or source_ids[intake.city['source_index']]in excluded):
         intake=replace(intake,city=None);data['city']=None
     if blocked:
         fields=dict(intake.extraction['fields']);changes={}
