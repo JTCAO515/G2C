@@ -926,7 +926,10 @@ private var developmentHostEnvironment: [String: String] {
         let lioClient = try LioTimelineHTTP(endpoint: lioEndpoint, scope: scope, lease: lease,
                                            credentials: credentials, firstChatRecovery: recovery,
                                            validate: { try lifetime.validate() })
-        let lioService = LioService.signedTimeline(lioClient)
+        let lioService = LioService.signedTimeline(lioClient, readFailed: { error in
+            let observation = lioClient.lastObservation.flatMap { $0.kind == .timeline ? $0 : nil }
+            LioDiagnosticLog.shared.record(.classify(error, stage: .timeline, observation: observation))
+        })
         lio = lioService
         lioChats = .signed(client: lioClient, defaultService: lioService, language: { shell.language.lio },
                            tripHistory: { conversationID in
@@ -1291,9 +1294,21 @@ private var developmentHostEnvironment: [String: String] {
                 guard UUID(uuidString: body.request_id) != nil,
                       body.request_id == response.headers.X_hyphen_Request_hyphen_ID else { return .networkUnknown }
                 return .accepted(account: configuration.subject)
-            case .default(let status, _): return status == 401 || status == 403 ? .serverRejected : .networkUnknown
+            case .default(let status, _):
+                noteSessionCheck(httpStatus: status, error: nil)
+                return status == 401 || status == 403 ? .serverRejected : .networkUnknown
             }
-        } catch { return .networkUnknown }
+        } catch {
+            noteSessionCheck(httpStatus: nil, error: (error as? ClientError)?.underlyingError ?? error)
+            return .networkUnknown
+        }
+    }
+
+    /// Adds an on-device note only; the verification outcome above is unchanged.
+    private func noteSessionCheck(httpStatus: Int?, error: (any Error)?) {
+        #if G2C_DEMO_BETA
+        LioDiagnosticLog.shared.record(.sessionCheck(httpStatus: httpStatus, error: error))
+        #endif
     }
 }
 

@@ -1,5 +1,6 @@
 #if os(iOS)
 import SwiftUI
+import UIKit
 import CJRunClient
 
 /// Shared by the invitation consent and the existing signed-in menu.
@@ -28,6 +29,8 @@ public struct LioDemoNoticePage<Actions: View>: View {
                 actions
                 Divider().accessibilityHidden(true)
                 LioBuildUpdatesSection(language: language)
+                Divider().accessibilityHidden(true)
+                LioProblemNotesSection(language: language, notes: .shared)
             }
             .frame(maxWidth: 480, alignment: .leading)
             .padding(24)
@@ -45,6 +48,39 @@ public struct LioDemoNoticePage<Actions: View>: View {
                 RunReadableText(text: language.text("Internal demo consent", "内部演示同意"), style: .headline, color: LioTheme.ink)
                     .fixedSize()
                     .accessibilityAddTraits(.isHeader)
+            }
+        }
+    }
+}
+
+/// On-device problem notes, shown for screenshots or copying; nothing is uploaded.
+struct LioProblemNotesSection: View {
+    let language: LioLanguage
+    let notes: LioDiagnosticLog
+    @State private var copied = false
+
+    var body: some View {
+        let text = notes.text(language)
+        VStack(alignment: .leading, spacing: LioTheme.Spacing.md) {
+            RunReadableText(text: language.text("Problem notes", "问题记录"), style: .displayTitle2, color: LioTheme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("lio.problems.heading")
+            RunReadableText(text: language.text(
+                "Kept only on this device, up to \(LioDiagnosticLog.limit) notes. No message text or sign-in details.",
+                "只保存在本机，最多 \(LioDiagnosticLog.limit) 条，不含消息内容或登录信息。"), color: LioTheme.inkSecondary)
+                .accessibilityIdentifier("lio.problems.privacy")
+            RunSelectableText(text: text, color: LioTheme.ink)
+                .accessibilityIdentifier("lio.problems.list")
+            if !notes.entries.isEmpty {
+                Button {
+                    UIPasteboard.general.string = text
+                    copied = true
+                } label: {
+                    Text(copied ? language.text("Copied", "已复制") : language.text("Copy notes", "复制记录"))
+                        .frame(minHeight: 44)
+                }
+                .accessibilityIdentifier("lio.problems.copy")
             }
         }
     }

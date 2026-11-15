@@ -1,0 +1,75 @@
+import CJMessageHTTP
+import Foundation
+
+/// Bounded problem notes kept only on this device and never sent anywhere.
+/// An entry holds a category, stage, request kind, HTTP status, time and build;
+/// it has no field for tokens, invitation codes, identifiers or message text.
+@MainActor public final class LioDiagnosticLog {
+    public struct Entry: Codable, Sendable, Equatable {
+        public let category: LioFailureDiagnosis.Category
+        public let stage: LioFailureDiagnosis.Stage
+        public let request: String?
+        public let httpStatus: Int?
+        public let time: Date
+        public let build: String
+    }
+
+    public static let limit = 20
+    /// Repeated identical failures (for example timeline polling) are kept once per window.
+    static let repeatWindow: TimeInterval = 60
+
+    public static let shared = LioDiagnosticLog(
+        defaults: .standard,
+        build: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?")
+
+    private let defaults: UserDefaults
+    private let key: String
+    private let build: String
+    public private(set) var entries: [Entry]
+
+    init(defaults: UserDefaults, key: String = "g2c.lio.problem-notes.v1", build: String) {
+        self.defaults = defaults
+        self.key = key
+        self.build = build
+        // Notes are advisory; unreadable saved notes start an empty list instead of failing a screen.
+        let saved = defaults.data(forKey: key).flatMap { try? JSONDecoder().decode([Entry].self, from: $0) } ?? []
+        entries = Array(saved.prefix(Self.limit))
+    }
+
+    public func record(_ diagnosis: LioFailureDiagnosis, at time: Date = Date()) {
+        let entry = Entry(category: diagnosis.category, stage: diagnosis.stage,
+                          request: diagnosis.request.map(Self.code), httpStatus: diagnosis.httpStatus,
+                          time: time, build: build)
+        if let latest = entries.first, latest.category == entry.category, latest.stage == entry.stage,
+           latest.request == entry.request, latest.httpStatus == entry.httpStatus,
+           abs(time.timeIntervalSince(latest.time)) < Self.repeatWindow { return }
+        entries.insert(entry, at: 0)
+        if entries.count > Self.limit { entries.removeLast(entries.count - Self.limit) }
+        if let data = try? JSONEncoder().encode(entries) { defaults.set(data, forKey: key) }
+    }
+
+    static func code(_ kind: LioTimelineHTTP.RequestKind) -> String {
+        switch kind {
+        case .send: "send"
+        case .firstLookup: "first-send-lookup"
+        case .timeline: "timeline"
+        case .exploration: "exploration"
+        case .tripHistory: "trip-history"
+        case .undo: "undo"
+        case .memoryChoice: "memory-choice"
+        }
+    }
+
+    /// Plain lines for a screenshot or copy; English codes keep notes comparable across languages.
+    public func text(_ language: LioLanguage) -> String {
+        guard !entries.isEmpty else { return language.text("No problems noted.", "暂无问题记录。") }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        formatter.timeZone = .current
+        return entries.map { entry in
+            [formatter.string(from: entry.time), language.text("build", "构建") + " " + entry.build,
+             entry.category.rawValue, entry.stage.rawValue, entry.request ?? "-",
+             "HTTP " + (entry.httpStatus.map(String.init) ?? "-")].joined(separator: " · ")
+        }.joined(separator: "\n")
+    }
+}

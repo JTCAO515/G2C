@@ -499,6 +499,59 @@ import CryptoKit
         }
     }
 
+    func testFailedRestoreNamesTheServiceProblemAndShowsOnDeviceNotes() throws {
+        for language in ["en", "zh-Hans"] {
+            for appearance in ["light", "dark"] {
+                try exerciseFailedRestore(language, appearance: appearance)
+            }
+        }
+    }
+
+    private func exerciseFailedRestore(_ language: String, appearance: String) throws {
+        continueAfterFailure = false
+        let english = language == "en"
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-chat-history-acceptance", "--lio-chat-recovery-acceptance",
+                               "--lio-chat-selected-lookup-failure-acceptance", "-cj.ui.language.v1", language,
+                               "-lio.ui.appearance.v1", appearance]
+        app.launch()
+        defer { app.terminate() }
+        let menu = app.buttons["lio.menu"]
+        XCTAssertTrue(menu.waitForExistence(timeout: 12))
+        menu.tap(); app.buttons["lio.chat.new"].tap()
+        XCTAssertTrue(app.buttons["lio.example.0"].waitForExistence(timeout: 8))
+        enterSampleQuestion(in: app, index: 0); app.buttons["lio.send"].tap()
+        menu.tap(); app.buttons["synthetic.chat.recreate"].tap()
+        let service = english ? "Our service is having a problem or is under maintenance. This isn’t your connection."
+                              : "服务暂时出错或正在维护，不是你的网络问题。"
+        XCTAssertTrue(app.staticTexts[service].waitForExistence(timeout: 12), app.debugDescription)
+        XCTAssertFalse(app.staticTexts[english ? "Couldn’t open your conversation. Try again when you’re connected."
+                                               : "暂时无法打开对话，请联网后重试。"].exists)
+        XCTAssertTrue(app.staticTexts[english ? "Please try again later. Your messages and draft stay on this device."
+                                              : "请稍后再试。你的消息和草稿仍保留在本机。"].exists)
+        try app.performAccessibilityAudit(for: .all)
+        attach(app, "restore-service-\(language)-\(appearance)")
+        app.buttons[english ? "View problem notes" : "查看问题记录"].tap()
+        let list = app.descendants(matching: .any).matching(identifier: "lio.problems.list").firstMatch
+        XCTAssertTrue(list.waitForExistence(timeout: 8), app.debugDescription)
+        let notes = (list.value as? String) ?? list.label
+        XCTAssertTrue(notes.contains("service · firstSendLookup · first-send-lookup · HTTP 503"), notes)
+        XCTAssertFalse(notes.contains("SYNTHETIC"))
+        try app.performAccessibilityAudit(for: .all)
+        attach(app, "restore-notes-\(language)-\(appearance)")
+        app.buttons["lio.problems.done"].tap()
+        // Retrying shows the same cause again; the uncertain first send is never posted twice.
+        app.buttons[english ? "Try again" : "重试"].tap()
+        XCTAssertTrue(app.staticTexts[service].waitForExistence(timeout: 12), app.debugDescription)
+    }
+
+    private func attach(_ app: XCUIApplication, _ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+
     func testNewChatCanAcceptAnotherMessageAfterAnInputRefusal() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
