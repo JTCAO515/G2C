@@ -9,6 +9,7 @@ from cj_agent.lio_intake_optional_schema import OptionalIntake
 from cj_agent.lio_intake_flat_schema import DTO,City
 from cj_needs.domain import InvalidInput,decode
 from .lio_sourced_intake import parse_sourced,BookingSourceUnclear
+from .lio_positive_trip import destination_query
 
 CORE=('start_date','duration_days','party_size')
 # Presence check only, never a date extractor or a default. The original
@@ -64,13 +65,14 @@ def _missing_duration_question(value,turns,refs,message_id,previous,schema):
         or re.fullmatch(r'\s*(?:please\s+)?(?:plan|organize|create)\s+'
         r'(?:(?:(?:a|my|our|the)\s+)?(?:trip|itinerary)\s+(?:to|in|for)\s+)?'+query+
         r'(?:\s+(?:trip|itinerary))?\s*[.?!]*',text,re.I))
-    if direct is None or not control.reply.strip():return None
+    literal=destination_query(text,city.query)
+    if (direct is None and literal is None)or not control.reply.strip():return None
     try:reply_bytes=control.reply.encode('utf-8')
     except UnicodeError:return None
     if len(reply_bytes)>12000:return None
     # Only the literal query is retained, never proposed province/name or any
     # ignored execution metadata. Actual city resolution remains a later tool.
-    fact=dict(value=dict(query=city.query,normalized_name=None,province=None,source_index=0,quote=city.quote),
+    fact=dict(value=dict(query=literal if literal is not None else city.query,normalized_name=None,province=None,source_index=0,quote=city.quote),
               sources=[dict(message_id=message_id,quote=city.quote)])
     return ReadOnlyPlanningQuestion(control.reply),['duration_days'],{'city':fact}
 
