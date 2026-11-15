@@ -14,14 +14,16 @@
           },
           "items": {
             "en": [
-              "Added this build update section to the existing internal demo information page. You can reopen the same page from the Lio menu.",
-              "Improved the display of greetings and sent messages while keeping larger text sizes and light and dark appearances.",
-              "Long-press the greeting to copy it in full. Sent messages keep native selection and copying of part of the text."
+              "Added offline build updates to the internal demo information page.",
+              "Reopen the same information page from the Lio menu.",
+              "Improved greetings and sent-message display at larger text sizes.",
+              "Copy a whole greeting or select part of a sent message."
             ],
             "zh": [
-              "现有内部演示说明中新增本版更新，可从 Lio 菜单重新打开同一页面。",
-              "改善开场白和已发消息的文字显示，保留完整内容、大字号和浅深色外观。",
-              "开场白可长按复制整段，已发消息继续支持选择一个词或一段文字复制。"
+              "内部演示说明中新增离线的本版更新。",
+              "可以从 Lio 菜单重新打开同一页面。",
+              "改善开场白和已发消息的显示，保留大字号和浅深色。",
+              "开场白可整段复制，已发消息可选择部分文字复制。"
             ]
           }
         },
@@ -33,12 +35,12 @@
           },
           "items": {
             "en": [
-              "Compared with build 43, this build adds offline update information and improves conversation text display and copying.",
-              "It does not fix trip planning or change the conversation experience enabled by default for everyday accounts."
+              "Since build 43: offline notes and clearer, selectable chat text.",
+              "Trip planning and default chat access remain unchanged."
             ],
             "zh": [
-              "与构建 43 相比，这一版新增离线更新说明，并改善对话文字显示和复制操作。",
-              "规划功能没有因此修好，日常账号的默认对话方式也没有改变。"
+              "与构建 43 相比，新增离线说明，改善对话文字显示和复制。",
+              "规划功能没有因此修好，日常账号的默认对话方式没有改变。"
             ]
           }
         },
@@ -50,16 +52,16 @@
           },
           "items": {
             "en": [
-              "In the Lio menu, open Internal demo information and check the current and previous build updates.",
-              "Switch between light and dark appearances, increase the system text size, and check that existing messages remain readable and complete.",
-              "Copy the full greeting, then select and copy one word from a sent message. Paste into the input field to check it without sending.",
-              "Leave an unsent draft, put the app in the background, and return. Check that the same conversation and draft remain."
+              "Open Internal demo information in the Lio menu; read both builds.",
+              "Try light and dark appearances, then increase system text size.",
+              "Copy a greeting or one sent word; paste without sending.",
+              "Keep an unsent draft, leave the app, then check the same chat."
             ],
             "zh": [
-              "从 Lio 菜单打开内部演示说明，查看本版和上一版更新。",
-              "切换浅色和深色，并调大系统文字，查看已有对话是否清楚、完整。",
-              "复制整段开场白，再从已发消息中选一个词复制，粘到输入框核对，先不要发送。",
-              "留下一段未发送文字，切到后台再返回，查看是否仍是同一对话和草稿。"
+              "从 Lio 菜单打开内部演示说明，查看本版和上一版。",
+              "切换浅色和深色，并调大系统文字，查看内容是否完整。",
+              "复制开场白或已发消息中的一个词，粘贴核对但先不发送。",
+              "留一段未发送文字，切后台再返回，检查同一对话和草稿。"
             ]
           }
         },
@@ -71,14 +73,18 @@
           },
           "items": {
             "en": [
-              "Trip planning is still being fixed; we do not recommend testing it yet.",
-              "The complete planning, saving, editing, undo, and remembering-preferences journey has not passed this round of live verification. Please hold off on that acceptance test.",
-              "The new segmented replies, multiple-choice questions, and preference tags remain limited to designated testing and are not enabled by default for everyday accounts."
+              "Trip planning is still being fixed. Please do not test it yet.",
+              "Planning, saving, edits, undo and preferences await live checks.",
+              "Please hold off on accepting that complete trip journey.",
+              "Segmented replies, choices and profile tags are designated tests.",
+              "They are not on by default for everyday accounts."
             ],
             "zh": [
               "规划功能仍在修复，暂不建议测试规划。",
-              "规划、保存、修改、撤销及记住偏好的完整流程尚未完成本轮真实验证，请暂不进行这组验收。",
-              "新版分段、多选和画像交互目前仅供指定测试使用，未向日常账号默认开启。"
+              "规划、保存、修改、撤销和记住偏好尚待本轮真实验证。",
+              "请暂不进行这组完整流程的验收。",
+              "新版分段、多选和画像交互目前仅供指定测试。",
+              "这些交互未向日常账号默认开启。"
             ]
           }
         },
@@ -115,10 +121,10 @@
           },
           "items": {
             "en": [
-              "Improved the display of trip detail titles, retaining complete titles and larger text sizes."
+              "Improved trip detail titles at larger text sizes."
             ],
             "zh": [
-              "改善行程详情标题的显示，保留完整标题和大字号。"
+              "改善行程详情标题显示，保留完整标题和大字号。"
             ]
           }
         },
@@ -130,10 +136,10 @@
           },
           "items": {
             "en": [
-              "Compared with build 42, build 43 focused on trip detail title display. Trip planning was not considered fixed."
+              "Since build 42: title display only; planning remained unfixed."
             ],
             "zh": [
-              "与构建 42 相比，构建 43 主要调整行程详情标题显示，未宣告规划功能修复。"
+              "与构建 42 相比，仅调整标题显示，未宣告规划修复。"
             ]
           }
         },
@@ -145,11 +151,11 @@
           },
           "items": {
             "en": [
-              "Open an existing trip and inspect its title in light and dark appearances.",
-              "Increase the system text size and check that the complete title remains available."
+              "Open an existing trip; check its title in light and dark.",
+              "Increase system text size; check that the full title is readable."
             ],
             "zh": [
-              "打开已有行程，在浅色和深色下查看标题。",
+              "打开已有行程，在浅深色下查看标题。",
               "调大系统文字，查看是否仍能读到完整标题。"
             ]
           }
