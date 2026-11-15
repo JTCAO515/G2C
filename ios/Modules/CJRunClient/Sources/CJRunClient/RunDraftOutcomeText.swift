@@ -51,7 +51,11 @@ public struct RunReadableText: UIViewRepresentable {
 public struct RunSelectableText: UIViewRepresentable {
     let text: String
     let minimumHeight: CGFloat
-    public init(text: String, minimumHeight: CGFloat = 0) { self.text = text; self.minimumHeight = minimumHeight }
+    let color: Color?
+    let fitsContentWidth: Bool
+    public init(text: String, minimumHeight: CGFloat = 0, color: Color? = nil, fitsContentWidth: Bool = false) {
+        self.text = text; self.minimumHeight = minimumHeight; self.color = color; self.fitsContentWidth = fitsContentWidth
+    }
     @Environment(\.dynamicTypeSize) private var size
     public func makeUIView(context: Context) -> UITextView {
         let view = UITextView()
@@ -64,12 +68,22 @@ public struct RunSelectableText: UIViewRepresentable {
     }
     public func updateUIView(_ view: UITextView, context: Context) {
         if view.text?.utf8.elementsEqual(text.utf8) != true { view.text = text }
+        if let color { view.textColor = UIColor(color) }
+        else { view.textColor = .label }
         view.font = UIFont.preferredFont(forTextStyle: .body,
             compatibleWith: UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(size)))
     }
     public func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
         guard let width = proposal.width, width.isFinite, width > 0 else { return nil }
-        let measured = uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+        let fittingWidth: CGFloat
+        if fitsContentWidth {
+            let bounds = uiView.attributedText.boundingRect(with: CGSize(width: width, height: .greatestFiniteMagnitude),
+                                                           options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
+            fittingWidth = max(1, min(width, ceil(bounds.width)))
+        } else {
+            fittingWidth = width
+        }
+        let measured = uiView.sizeThatFits(CGSize(width: fittingWidth, height: .greatestFiniteMagnitude))
         return CGSize(width: measured.width, height: max(minimumHeight, measured.height))
     }
     public static func dismantleUIView(_ uiView: UITextView, coordinator: ()) { uiView.text = nil }
@@ -92,7 +106,15 @@ public struct RunReadableText: View {
 public struct RunSelectableText: View {
     let text: String
     let minimumHeight: CGFloat
-    public init(text: String, minimumHeight: CGFloat = 0) { self.text = text; self.minimumHeight = minimumHeight }
-    public var body: some View { Text(text).textSelection(.enabled).fixedSize(horizontal: false, vertical: true).frame(minHeight: minimumHeight) }
+    let color: Color?
+    let fitsContentWidth: Bool
+    public init(text: String, minimumHeight: CGFloat = 0, color: Color? = nil, fitsContentWidth: Bool = false) {
+        self.text = text; self.minimumHeight = minimumHeight; self.color = color; self.fitsContentWidth = fitsContentWidth
+    }
+    private var content: some View { Text(text).textSelection(.enabled).fixedSize(horizontal: false, vertical: true).frame(minHeight: minimumHeight) }
+    @ViewBuilder public var body: some View {
+        if let color { content.foregroundStyle(color) }
+        else { content }
+    }
 }
 #endif

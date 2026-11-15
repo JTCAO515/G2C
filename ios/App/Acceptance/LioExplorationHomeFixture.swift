@@ -1,6 +1,7 @@
 // Generated actual-App simulator acceptance only; no external requests or credentials.
 #if DEBUG && G2C_LIO_APP && targetEnvironment(simulator)
 import HTTPTypes
+import CryptoKit
 import OpenAPIRuntime
 import CJMessageClient
 @testable import CJMessageHTTP
@@ -14,7 +15,7 @@ private struct LioExplorationHomeFixture: View {
         Group {
             if let host {
                 LioHome(language: shell.language.lio, service: host.service, isDemo: false) {
-                    ExplorationHomeCounts(wire: host.wire)
+                    ExplorationHomeCounts(wire: host.wire, timingsSince: host.timingsSince)
                 }
             } else if failed {
                 Text("Sample unavailable").accessibilityIdentifier("fixture.failed")
@@ -30,14 +31,38 @@ private struct LioExplorationHomeFixture: View {
 
 private struct ExplorationHomeCounts: View {
     let wire: ExplorationHomeWire
+    let timingsSince: TimeInterval
     @State private var count = ""
     @State private var last = ""
     @State private var lastID = ""
+    @State private var finishedTimings = 0
+    @State private var timingComplete = false
+    @State private var copiedDigest = ""
     var body: some View {
         VStack {
             Text(count).accessibilityValue(lastID).accessibilityIdentifier("fixture.send-count")
             Text(last).accessibilityIdentifier("fixture.last-text")
-        }.task { (count, last, lastID) = await wire.counts() }
+            Text(String(finishedTimings)).accessibilityValue(timingComplete ? "complete" : "incomplete")
+                .accessibilityIdentifier("fixture.finished-timings")
+            Button {
+                if let copied = UIPasteboard.general.string {
+                    copiedDigest = SHA256.hash(data: Data(copied.utf8)).map { String(format: "%02x", $0) }.joined()
+                } else { copiedDigest = "unavailable" }
+            } label: {
+                Text("Inspect copied text").frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            }
+            .accessibilityIdentifier("fixture.clipboard.probe")
+            Text("Copy result").accessibilityValue(copiedDigest).accessibilityIdentifier("fixture.clipboard.digest")
+        }.task {
+            (count, last, lastID) = await wire.counts()
+            let entries = LioTimingLog().entries().filter { $0.sentAt >= timingsSince }
+            finishedTimings = entries.count
+            let requiresIndicator = ProcessInfo.processInfo.arguments.contains("--lio-home-progress-acceptance")
+            timingComplete = entries.allSatisfy { entry in
+                guard let first = entry.firstTextMs, let finished = entry.finishedMs else { return false }
+                return first >= 0 && first <= finished && (!requiresIndicator || entry.indicatorMs != nil)
+            }
+        }
     }
 }
 
@@ -52,6 +77,7 @@ private struct ExplorationHomeCounts: View {
 }
 
 @MainActor private final class ExplorationHomeHost {
+    let timingsSince = Date().timeIntervalSince1970
     let wire: ExplorationHomeWire
     let service: LioService
     init() throws {

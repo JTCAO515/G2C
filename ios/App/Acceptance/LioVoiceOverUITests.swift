@@ -79,7 +79,7 @@ import XCTest
             try hear(chinese ? "来源" : "Source")
             try activate(app.buttons["lio.questions.continue"], spokenLabel: chinese ? "好了，继续" : "Done, continue")
             let joint = chinese ? "兴趣：历史\n兴趣：自然" : "Interests: History\nInterests: Nature"
-            let jointQuestions = app.staticTexts.matching(identifier: "lio.question").matching(NSPredicate(format: "label == %@", joint))
+            let jointQuestions = app.textViews.matching(identifier: "lio.question").matching(NSPredicate(format: "value == %@", joint))
             XCTAssertTrue(jointQuestions.firstMatch.waitForExistence(timeout: 12))
             XCTAssertEqual(jointQuestions.count, 1)
 
@@ -108,7 +108,7 @@ import XCTest
             XCTAssertEqual(field.value as? String, change)
             try activate(app.buttons["lio.profile.edit.send"], spokenLabel: chinese ? "发送" : "Send")
             XCTAssertTrue(field.waitForNonExistence(timeout: 8))
-            let editedQuestions = app.staticTexts.matching(identifier: "lio.question").matching(NSPredicate(format: "label == %@", change))
+            let editedQuestions = app.textViews.matching(identifier: "lio.question").matching(NSPredicate(format: "value == %@", change))
             XCTAssertTrue(editedQuestions.firstMatch.waitForExistence(timeout: 12))
             XCTAssertEqual(editedQuestions.count, 1)
             let thirdID = try readCount(3)
@@ -119,7 +119,7 @@ import XCTest
             let followUp = chinese ? "还可以聊些什么？" : "What can we discuss next?"
             composer.typeText(followUp)
             try activate(app.buttons["lio.send"], spokenLabel: chinese ? "发送" : "Send")
-            let followUpQuestions = app.staticTexts.matching(identifier: "lio.question").matching(NSPredicate(format: "label == %@", followUp))
+            let followUpQuestions = app.textViews.matching(identifier: "lio.question").matching(NSPredicate(format: "value == %@", followUp))
             XCTAssertTrue(followUpQuestions.firstMatch.waitForExistence(timeout: 12))
             XCTAssertEqual(followUpQuestions.count, 1)
             _ = try readCount(5)

@@ -1,4 +1,6 @@
 import XCTest
+import UIKit
+import CryptoKit
 
 @MainActor final class LioHomeUITests: XCTestCase {
     func testSavedResultWaitsWhileCoveredAndCelebratesOnlyOnce() throws {
@@ -321,7 +323,7 @@ import XCTest
                 XCTAssertTrue(app.staticTexts[chinese ? "正在恢复对话…" : "Restoring your chat…"].exists)
                 XCTAssertFalse(app.buttons["lio.session.retry"].exists)
                 XCTAssertFalse(app.secureTextFields["demo.invite.code"].exists)
-                XCTAssertFalse(app.staticTexts["lio.question"].exists)
+                XCTAssertFalse(app.textViews["lio.question"].exists)
                 XCTAssertFalse(app.staticTexts["lio.answer"].exists)
                 try app.performAccessibilityAudit(for: .all)
                 let loading = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
@@ -414,13 +416,14 @@ import XCTest
             XCTAssertTrue(greeting.waitForExistence(timeout: 12))
             enterSampleQuestion(in: app, index: 0)
             app.buttons["lio.send"].tap()
-            let question = app.staticTexts["lio.question"], answer = app.staticTexts["lio.answer"]
+            let question = app.textViews["lio.question"], answer = app.staticTexts["lio.answer"]
             XCTAssertTrue(answer.waitForExistence(timeout: 8))
             let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
             composer.tap(); composer.typeText("Unsent follow-up")
             let sendReady = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: app.buttons["lio.send"])
             XCTAssertEqual(XCTWaiter.wait(for: [sendReady], timeout: 8), .completed)
-            let sentText = question.label, replyText = answer.label
+            let sentText = question.value as? String, replyText = answer.label
+            XCTAssertNotNil(sentText)
             XCUIDevice.shared.press(.home)
             XCTAssertTrue(app.wait(for: .runningBackground, timeout: 5) || app.state == .runningBackgroundSuspended)
             app.activate()
@@ -429,11 +432,11 @@ import XCTest
             app.scrollViews.firstMatch.swipeDown()
             app.scrollViews.firstMatch.swipeDown()
             XCTAssertTrue(greeting.exists)
-            XCTAssertEqual(question.label, sentText)
+            XCTAssertEqual(question.value as? String, sentText)
             XCTAssertEqual(answer.label, replyText)
             XCTAssertLessThan(greeting.frame.minY, question.frame.minY)
             XCTAssertEqual(app.staticTexts.matching(identifier: "lio.opening").count, 1)
-            XCTAssertEqual(app.staticTexts.matching(identifier: "lio.question").count, 1)
+            XCTAssertEqual(app.textViews.matching(identifier: "lio.question").count, 1)
             app.terminate()
         }
     }
@@ -532,7 +535,7 @@ import XCTest
         XCTAssertTrue(example.waitForExistence(timeout: 8))
         XCTAssertTrue(app.staticTexts["lio.opening"].exists)
         XCTAssertFalse(oldReply.exists)
-        XCTAssertFalse(app.staticTexts["lio.question"].exists)
+        XCTAssertFalse(app.textViews["lio.question"].exists)
         enterSampleQuestion(in: app, index: 0)
         let firstQuestion = chinese ? "在上海怎么坐地铁？" : "How do I take the metro in Shanghai?"
         XCTAssertEqual(composer.value as? String, firstQuestion)
@@ -637,7 +640,7 @@ import XCTest
         let metro = app.buttons["lio.example.0"]
         XCTAssertTrue(metro.waitForExistence(timeout: 12))
         enterSampleQuestion(in: app, index: 0)
-        XCTAssertFalse(app.staticTexts["lio.question"].exists)
+        XCTAssertFalse(app.textViews["lio.question"].exists)
         send.tap()
         XCTAssertTrue(app.staticTexts[chinese ? "Lio 正在回复…" : "Lio is replying…"]
             .waitForExistence(timeout: 3))
@@ -1166,7 +1169,7 @@ import XCTest
 
         let failure = app.staticTexts["lio.failure"]
         let resend = app.buttons["lio.resend"]
-        let questions = app.staticTexts.matching(identifier: "lio.question")
+        let questions = app.textViews.matching(identifier: "lio.question")
         XCTAssertTrue(resend.waitForExistence(timeout: 8))
         XCTAssertTrue(resend.isHittable)
         XCTAssertEqual(failure.label, "消息没发出去。检查网络后，点感叹号重发。")
@@ -1178,7 +1181,7 @@ import XCTest
             .firstMatch
         XCTAssertTrue(quota.waitForExistence(timeout: 8))
         XCTAssertEqual(questions.count, 1)
-        XCTAssertEqual(questions.firstMatch.label, "在上海怎么坐地铁？")
+        XCTAssertEqual(questions.firstMatch.value as? String, "在上海怎么坐地铁？")
         XCTAssertEqual(app.staticTexts["lio.fixture.send-count"].label, "2")
         XCTAssertFalse(resend.exists)
         XCTAssertFalse(app.buttons["lio.askAgain"].exists)
@@ -1233,7 +1236,7 @@ import XCTest
         composer.tap()
         composer.typeText("北京明天天气")
         app.buttons["lio.send"].tap()
-        XCTAssertTrue(app.staticTexts["lio.question"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.textViews["lio.question"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.staticTexts["Lio 正在回复…"].exists)
 
         step.tap()
@@ -1268,7 +1271,7 @@ import XCTest
         )
         XCTAssertEqual(XCTWaiter.wait(for: [reread], timeout: 8), .completed)
         XCTAssertGreaterThan(try XCTUnwrap(Int(readCount.label)), before)
-        XCTAssertEqual(app.staticTexts.matching(identifier: "lio.question").count, 1)
+        XCTAssertEqual(app.textViews.matching(identifier: "lio.question").count, 1)
         XCTAssertEqual(answer.label, "北京明天有小雨。")
         XCTAssertEqual(app.staticTexts["lio.fixture.send-count"].label, "1")
     }
@@ -1370,7 +1373,7 @@ import XCTest
         XCTAssertTrue(app.buttons["lio.example.0"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.staticTexts["lio.opening"].exists)
         XCTAssertFalse(oldReply.exists)
-        XCTAssertFalse(app.staticTexts["lio.question"].exists)
+        XCTAssertFalse(app.textViews["lio.question"].exists)
     }
 
     func testJumpToLatestReturnsToTheNewestReply() {
@@ -1422,7 +1425,7 @@ import XCTest
         app.buttons["lio.send"].tap()
         let answer = app.staticTexts["lio.answer"]
         XCTAssertTrue(answer.waitForExistence(timeout: 8))
-        XCTAssertTrue(app.staticTexts["lio.question"].exists)
+        XCTAssertTrue(app.textViews["lio.question"].exists)
         answer.press(forDuration: 1.2)
         XCTAssertTrue(app.menuItems["Copy"].waitForExistence(timeout: 4), app.debugDescription)
     }
@@ -1468,7 +1471,7 @@ import XCTest
         let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
         let starter = composer.value as? String ?? ""
         XCTAssertFalse(starter.isEmpty)
-        XCTAssertFalse(app.staticTexts["lio.question"].exists)
+        XCTAssertFalse(app.textViews["lio.question"].exists)
         composer.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: starter.count) + questions[index])
         XCTAssertEqual(composer.value as? String, questions[index])
     }
@@ -1499,14 +1502,14 @@ import XCTest
                 XCTAssertEqual(button.label, labels[index])
                 button.tap()
                 XCTAssertEqual(composer.value as? String, prefixes[index])
-                XCTAssertFalse(app.staticTexts["lio.question"].exists)
+                XCTAssertFalse(app.textViews["lio.question"].exists)
                 XCTAssertFalse(app.staticTexts["lio.answer"].exists)
                 XCTAssertTrue(button.exists)
             }
             composer.typeText(chinese ? "北京三天" : "three days in Beijing")
             app.buttons["lio.send"].tap()
-            XCTAssertTrue(app.staticTexts["lio.question"].waitForExistence(timeout: 8))
-            XCTAssertEqual(app.staticTexts["lio.question"].label,
+            XCTAssertTrue(app.textViews["lio.question"].waitForExistence(timeout: 8))
+            XCTAssertEqual(app.textViews["lio.question"].value as? String,
                            prefixes[3] + (chinese ? "北京三天" : "three days in Beijing"))
             XCTAssertFalse(first.exists)
             XCTAssertFalse(last.exists)
@@ -1617,7 +1620,7 @@ import XCTest
         XCTAssertTrue(greeting.exists)
         XCTAssertEqual(greeting.label, language == "en" ? "Hi, I'm Lio. Tell me the city, how many days you have and what you enjoy, and I'll plan where to go and how to get around each day. Where are you headed?"
                        : "你好，我是 Lio。告诉我城市、天数和喜好，我帮你排好每天去哪、怎么走。这次想去哪儿？")
-        XCTAssertFalse(app.staticTexts["lio.question"].exists)
+        XCTAssertFalse(app.textViews["lio.question"].exists)
         XCTAssertFalse(app.navigationBars.firstMatch.exists)
         XCTAssertTrue(app.tabBars.buttons[language == "en" ? "Trips" : "行程"].exists)
         XCTAssertFalse(app.buttons["lio.send"].isEnabled)
@@ -1629,11 +1632,11 @@ import XCTest
         enterSampleQuestion(in: app, index: 0)
         let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
         XCTAssertEqual(composer.value as? String, question)
-        XCTAssertFalse(app.staticTexts["lio.question"].exists)
+        XCTAssertFalse(app.textViews["lio.question"].exists)
         XCTAssertTrue(app.buttons["lio.send"].isEnabled)
         app.buttons["lio.send"].tap()
 
-        let sentQuestion = app.staticTexts["lio.question"]
+        let sentQuestion = app.textViews["lio.question"]
         let answer = app.staticTexts["lio.answer"]
         XCTAssertTrue(sentQuestion.waitForExistence(timeout: 8))
         XCTAssertTrue(answer.waitForExistence(timeout: 8))
@@ -1759,8 +1762,67 @@ import XCTest
             }
             XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: settled, object: nil)], timeout: 12), .completed)
             try app.performAccessibilityAudit(for: .all)
+            app.buttons["lio.menu"].tap()
+            let stored = app.staticTexts["fixture.finished-timings"]
+            XCTAssertTrue(stored.waitForExistence(timeout: 5))
+            XCTAssertEqual(stored.label, "1")
+            XCTAssertEqual(stored.value as? String, "complete")
             app.terminate()
         }
+    }
+
+    func testNativeQuestionKeepsSelectionAndOpeningCopies() throws {
+        continueAfterFailure = false
+        let clipboard = LioClipboardSnapshot()
+        addTeardownBlock { await clipboard.restore() }
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-exploration-home-acceptance", "--lio-home-legacy1-acceptance",
+                               "-cj.ui.language.v1", "en", "-lio.ui.appearance.v1", "light"]
+        app.launch()
+        addTeardownBlock { await MainActor.run { app.terminate() } }
+        let opening = app.staticTexts["lio.opening"]
+        XCTAssertTrue(opening.waitForExistence(timeout: 12))
+        let openingText = opening.label
+        opening.press(forDuration: 1.2)
+        let copyOpening = app.buttons["lio.copy.opening"]
+        XCTAssertTrue(copyOpening.waitForExistence(timeout: 5))
+        copyOpening.tap()
+        XCTAssertTrue(copyOpening.waitForNonExistence(timeout: 5))
+        func copiedDigest() -> String? {
+            app.buttons["lio.menu"].tap()
+            let probe = app.buttons["fixture.clipboard.probe"]
+            XCTAssertTrue(probe.waitForExistence(timeout: 5))
+            probe.tap()
+            let digest = app.staticTexts["fixture.clipboard.digest"].value as? String
+            app.buttons["Done"].tap()
+            XCTAssertTrue(probe.waitForNonExistence(timeout: 5))
+            return digest
+        }
+        func digest(_ text: String) -> String {
+            SHA256.hash(data: Data(text.utf8)).map { String(format: "%02x", $0) }.joined()
+        }
+        XCTAssertEqual(copiedDigest(), digest(openingText))
+        let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+        composer.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        composer.typeText("Slow travel please")
+        app.buttons["lio.send"].tap()
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "lio.answer").firstMatch.waitForExistence(timeout: 12))
+        let question = app.textViews["lio.question"]
+        for _ in 0..<8 {
+            if question.exists && question.isHittable && app.scrollViews.firstMatch.frame.contains(question.frame) { break }
+            app.swipeDown()
+        }
+        XCTAssertTrue(question.isHittable)
+        XCTAssertEqual(question.value as? String, "Slow travel please")
+        question.press(forDuration: 1.2)
+        let copy = app.descendants(matching: .any).matching(NSPredicate(format: "label IN %@", ["Copy", "拷贝", "复制"])).firstMatch
+        XCTAssertTrue(copy.waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertTrue(copy.isEnabled)
+        copy.tap()
+        XCTAssertTrue(copy.waitForNonExistence(timeout: 5))
+        let selected = copiedDigest()
+        XCTAssertTrue(["Slow", "travel", "please"].map(digest).contains { $0 == selected }, "Copy must retain selection of a fragment")
     }
 
     func testOrdinaryHomeLegacyMessagesEnglish() throws { try exerciseOrdinaryHomeLegacy(chinese: false) }
@@ -1791,7 +1853,7 @@ import XCTest
             XCTAssertTrue(visible.contains(chinese ? "之前的回答" : "Earlier reply"))
             XCTAssertTrue(visible.contains(chinese ? "大致安排" : "outline"))
             XCTAssertFalse(visible.contains("##")); XCTAssertFalse(visible.contains("**"))
-            XCTAssertEqual(app.staticTexts.matching(identifier: "lio.question").count, 1)
+            XCTAssertEqual(app.textViews.matching(identifier: "lio.question").count, 1)
             XCTAssertFalse(app.buttons["lio.questions.continue"].exists)
             XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "lio.segment.0").firstMatch.exists)
             try app.performAccessibilityAudit(for: .all)
@@ -1853,6 +1915,8 @@ import XCTest
             let messageID = value.value as! String
             XCTAssertFalse(messageID.isEmpty)
             if let last { XCTAssertEqual(app.staticTexts["fixture.last-text"].label, last) }
+            XCTAssertEqual(app.staticTexts["fixture.finished-timings"].label, String(expected))
+            XCTAssertEqual(app.staticTexts["fixture.finished-timings"].value as? String, "complete")
             try audit()
             app.buttons[chinese ? "完成" : "Done"].tap()
             XCTAssertTrue(value.waitForNonExistence(timeout: 5))
@@ -2265,4 +2329,9 @@ import XCTest
  private func captureCalendarWire(_ app:XCUIApplication,_ label:String,_ chinese:Bool) {
   let shot=XCTAttachment(screenshot:app.screenshot());shot.name=label+(chinese ? "-zh":"-en");shot.lifetime = .keepAlways;add(shot)
  }
+}
+
+@MainActor private final class LioClipboardSnapshot {
+    private let items = UIPasteboard.general.items
+    func restore() { UIPasteboard.general.items = items }
 }

@@ -1,5 +1,6 @@
 #if os(iOS)
 import SwiftUI
+import UIKit
 import CJMessageHTTP
 import CJRunClient
 import CJTripClient
@@ -467,13 +468,24 @@ public struct LioHome<MenuContent: View>: View {
             .contentShape(Circle())
     }
 
+    private var openingText: String {
+        language.text("Hi, I'm Lio. Tell me the city, how many days you have and what you enjoy, and I'll plan where to go and how to get around each day. Where are you headed?",
+                      "你好，我是 Lio。告诉我城市、天数和喜好，我帮你排好每天去哪、怎么走。这次想去哪儿？")
+    }
+
     private var openingMessage: some View {
         lioReply {
-            RunReadableText(text: language.text("Hi, I'm Lio. Tell me the city, how many days you have and what you enjoy, and I'll plan where to go and how to get around each day. Where are you headed?",
-                                               "你好，我是 Lio。告诉我城市、天数和喜好，我帮你排好每天去哪、怎么走。这次想去哪儿？"),
-                            color: LioTheme.ink, lineSpacing: 4)
+            RunReadableText(text: openingText, color: LioTheme.ink, lineSpacing: 4)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("lio.opening")
+                .contextMenu {
+                    Button {
+                        UIPasteboard.general.string = openingText
+                    } label: {
+                        Label(language.text("Copy", "复制"), systemImage: "doc.on.doc")
+                    }
+                    .accessibilityIdentifier("lio.copy.opening")
+                }
         }
     }
 
@@ -724,14 +736,13 @@ public struct LioHome<MenuContent: View>: View {
                     .accessibilityLabel(language.text("Send again", "重新发送"))
                     .accessibilityIdentifier("lio.resend")
                 }
-                RunReadableText(text: turn.question.text, color: LioTheme.ink)
+                RunSelectableText(text: turn.question.text, color: LioTheme.ink, fitsContentWidth: true)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
                     .background(LioTheme.surfaceSunken,
                                 in: UnevenRoundedRectangle(topLeadingRadius: LioTheme.Radius.card, bottomLeadingRadius: LioTheme.Radius.card,
                                                            bottomTrailingRadius: LioTheme.Radius.tail, topTrailingRadius: LioTheme.Radius.card))
-                    .textSelection(.enabled)
                     .accessibilityIdentifier("lio.question")
                     .lioEntrance(.rise, active: entering.contains(LioEntranceKey(turn: turn.id, part: .question))) {
                         entering.remove(LioEntranceKey(turn: turn.id, part: .question))
@@ -856,11 +867,22 @@ public struct LioHome<MenuContent: View>: View {
                 selection.apply(messageID: value.messageID, questions: value.questions)
                 questionDrafts[turn.id] = selection
                 if !value.presentation.segments.isEmpty || !value.presentation.answer.isEmpty {
-                    timing.mark(.firstText, turn.id)
+                    recordExplorationBody(turn, presentation: value.presentation)
                     if followsAnswer, owner.turns.last?.id == turn.id { followReply(turn, scroll: scroll) }
                 }
             }
+            .onChange(of: turn.status) { _, _ in
+                guard conversation === owner else { return }
+                recordExplorationBody(turn, presentation: presentation)
+            }
         }
+    }
+
+    private func recordExplorationBody(_ turn: LioTurn, presentation: LioExplorationPresentation) {
+        guard !presentation.segments.isEmpty || !presentation.answer.isEmpty else { return }
+        timing.mark(.firstText, turn.id)
+        // This renderer exposes the admitted body at once. #913's segment pacing will own completion later.
+        if turn.status == .finished { timing.mark(.finished, turn.id) }
     }
 
     private func followReply(_ turn: LioTurn, scroll: ScrollViewProxy) {
