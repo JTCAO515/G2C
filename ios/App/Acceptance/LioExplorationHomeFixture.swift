@@ -55,7 +55,7 @@ private struct ExplorationHomeCounts: View {
     let wire: ExplorationHomeWire
     let service: LioService
     init() throws {
-        let wire = ExplorationHomeWire()
+        let wire = ExplorationHomeWire(showsProgress: ProcessInfo.processInfo.arguments.contains("--lio-home-progress-acceptance"))
         self.wire = wire
         let recovery = MessageRecovery(storage: ExplorationHomeStorage())
         let scope = try StorageScope(environment: "synthetic", account: UUID().uuidString)
@@ -72,8 +72,12 @@ private struct ExplorationHomeCounts: View {
 
 private actor ExplorationHomeWire: ClientTransport {
     private static let conversation = "lio-dialogue-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    private let showsProgress: Bool
+    private var progressReads = 0
+    private var chinese = false
     private var messages: [[String: Any]] = []
     private var sent: [String] = []
+    init(showsProgress: Bool) { self.showsProgress = showsProgress }
     func counts() -> (String, String, String) {
         ("\(sent.count)", sent.last ?? "", messages.last?["message_id"] as? String ?? "")
     }
@@ -85,14 +89,29 @@ private actor ExplorationHomeWire: ClientTransport {
         if request.method == .post, path == "/v4/lio/messages" {
             let input = try JSONSerialization.jsonObject(with: await Data(collecting: body!, upTo: 16384)) as! [String: Any]
             precondition(input["version"] as? String == "LIO-message.4")
-            let text = input["text"] as! String, chinese = input["locale"] as? String == "zh"
+            let text = input["text"] as! String
+            chinese = input["locale"] as? String == "zh"
             sent.append(text)
             messages.append(message(input, chinese: chinese, first: sent.count == 1))
             output = ["version": "LIO-message-receipt.4", "message_id": input["message_id"]!,
                       "conversation_id": Self.conversation]
         } else if request.method == .get, path.hasPrefix("/v4/lio/timeline") {
+            var visible = messages
+            if showsProgress, !messages.isEmpty {
+                progressReads += 1
+                if progressReads < 9 {
+                    var waiting = messages[0]
+                    waiting["answer"] = ""
+                    waiting["status"] = "answering"
+                    for field in ["segments", "question_groups", "profile", "notices", "exits"] { waiting[field] = [] }
+                    waiting["progress"] = progressReads < 5
+                        ? ["kind": "waiting", "text": chinese ? "正在比较酒店的位置" : "Comparing hotel locations"]
+                        : ["kind": "planning_started", "text": chinese ? "开始安排三天行程" : "Starting your three-day plan", "duration_days": 3]
+                    visible = [waiting]
+                }
+            }
             output = ["version": "LIO-timeline.4", "conversation_id": Self.conversation,
-                      "messages": messages, "next_before": null]
+                      "messages": visible, "next_before": null]
         } else { throw URLError(.unsupportedURL) }
         let data = try JSONSerialization.data(withJSONObject: output, options: [.sortedKeys])
         var response = HTTPResponse(status: .ok)

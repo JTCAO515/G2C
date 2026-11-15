@@ -1720,6 +1720,38 @@ import XCTest
             app.terminate()
         }
     }
+    func testExplorationHomeProgressInBothLanguages() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        for chinese in [false, true] {
+            app.launchArguments = ["--lio-preview", "--lio-exploration-home-acceptance", "--lio-home-progress-acceptance",
+                                   "-cj.ui.language.v1", chinese ? "zh-Hans" : "en", "-lio.ui.appearance.v1", "light"]
+            app.launch()
+            let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+            XCTAssertTrue(composer.waitForExistence(timeout: 10))
+            composer.tap()
+            composer.typeText(chinese ? "北京三天" : "Beijing for three days")
+            app.buttons["lio.send"].tap()
+            let indicator = app.staticTexts["lio.progress"]
+            func expectProgress(_ text: String) {
+                let expected = NSPredicate(format: "value == %@", text)
+                XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: expected, object: indicator)],
+                                              timeout: 12), .completed)
+                let image = XCTAttachment(screenshot: app.screenshot())
+                image.name = "home-progress-\(chinese ? "zh" : "en")-\(text)"
+                image.lifetime = .keepAlways
+                add(image)
+            }
+            expectProgress(chinese ? "正在比较酒店的位置" : "Comparing hotel locations")
+            expectProgress(chinese ? "开始安排三天行程" : "Starting your three-day plan")
+            let reply = app.descendants(matching: .any).matching(identifier: "lio.segment.0").firstMatch
+            XCTAssertTrue(reply.waitForExistence(timeout: 20))
+            XCTAssertTrue(indicator.waitForNonExistence(timeout: 5))
+            try app.performAccessibilityAudit(for: .all)
+            app.terminate()
+        }
+    }
+
     func testExplorationHomeEnglish() throws { try exerciseExplorationHome(chinese: false) }
     func testExplorationHomeChinese() throws { try exerciseExplorationHome(chinese: true) }
 
