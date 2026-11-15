@@ -88,13 +88,10 @@ def intake_prompt(locale,turns,*,discussion_only=False,scene=None):
                  'For discuss intent, answer the current discussion usefully, including requested refinements, rather than a saving acknowledgement. '
                  'Keep the saved itinerary and its bookings unchanged; never claim the separate proposal was saved. '
                  'If the traveler changes topic, answer that topic normally.')
-    system+=(' The latest original traveler message has source_index='+str(len(turns)-1)+'. '
-             'If that message itself makes a new complete planning request, including a repeated request '
-             'identical to an earlier message, planning_request_index must identify this latest request. '
-             'Only a short parameter answer continuing an earlier request retains that earlier request index. '
-             'Fact source indices still identify their exact original quotes independently; do not move '
-             'historical facts to the latest message. A previous refusal remains a hold unless a new '
-             'explicit planning request resumes planning; translation, quotation and consultation remain nonplanning.')
+    system+=(' A new complete/repeated request uses latest source_index='+str(len(turns)-1)+
+             ' as planning_request_index; short parameter replies keep the earlier root. '
+             'Fact quotes keep original indices. Refusal holds until a new explicit request; '
+             'translation, quotation and consultation grant nothing.')
     system+='\n'+SOURCE_LANGUAGE
     return system if scene is None else system+'\n'+scene
 
