@@ -9,6 +9,7 @@ private struct LioStreamingFixture: View {
     @State private var shown = true
     @State private var firstTexts = 0
     @State private var completions = 0
+    @Environment(\.colorScheme) private var scheme
 
     init(chinese: Bool) {
         self.chinese = chinese
@@ -28,6 +29,7 @@ private struct LioStreamingFixture: View {
                 Text(String(firstTexts)).accessibilityIdentifier("fixture.streaming.first")
                 Text(String(completions)).accessibilityIdentifier("fixture.streaming.complete")
                 Text(shown ? "1" : "0").accessibilityIdentifier("fixture.streaming.shown")
+                Text(scheme == .dark ? "dark" : "light").accessibilityIdentifier("fixture.streaming.scheme")
                 Button("Heading") {
                     if inlineMode { source += chinese ? "**轻松的" : "**an easy " }
                     else { source += chinese ? "\n\n# 第1天" : "\n\n# Day 1" }
@@ -51,11 +53,21 @@ private struct LioStreamingFixture: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(20)
         }
-        .buttonStyle(.borderedProminent)
+        .buttonStyle(LioFixtureActionStyle())
         .controlSize(.large)
         .tint(LioTheme.vermilion)
         .background(LioTheme.paper)
         .preferredColorScheme(ProcessInfo.processInfo.arguments.contains("--lio-streaming-dark-acceptance") ? .dark : .light)
+    }
+}
+
+@MainActor private struct LioFixtureActionStyle: SwiftUI.ButtonStyle {
+    func makeBody(configuration: SwiftUI.ButtonStyleConfiguration) -> some View {
+        return configuration.label
+            .foregroundStyle(LioTheme.onVermilion)
+            .frame(minHeight: 44)
+            .padding(.horizontal, 16)
+            .background(LioTheme.vermilion, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
     }
 }
 

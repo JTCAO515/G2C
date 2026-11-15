@@ -68,11 +68,13 @@ import XCTest
         for chinese in [false, true] {
             for dark in [false, true] {
                 app.launchArguments = ["--lio-preview", "--lio-streaming-acceptance",
-                                       "-cj.ui.language.v1", chinese ? "zh-Hans" : "en"]
+                                       "-cj.ui.language.v1", chinese ? "zh-Hans" : "en",
+                                       "-lio.ui.appearance.v1", dark ? "dark" : "light"]
                 if dark { app.launchArguments.append("--lio-streaming-dark-acceptance") }
                 app.launch()
                 let answer = app.staticTexts["lio.answer"]
                 XCTAssertTrue(answer.waitForExistence(timeout: 8))
+                XCTAssertEqual(app.staticTexts["fixture.streaming.scheme"].label, dark ? "dark" : "light", app.debugDescription)
                 app.buttons["fixture.streaming.heading"].tap()
                 let heading = chinese ? "第1天" : "Day 1"
                 let partialHeading = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", heading), object: answer)
