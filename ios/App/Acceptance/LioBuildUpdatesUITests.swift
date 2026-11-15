@@ -1,0 +1,110 @@
+import XCTest
+
+@MainActor final class LioBuildUpdatesUITests: XCTestCase {
+    private let currentBuild = "__UPDATES_CURRENT_BUILD__"
+    private let previousBuild = "__UPDATES_PREVIOUS_BUILD__"
+    private let olderBuild = "__UPDATES_OLDER_BUILD__"
+    func testEnglish() throws { try exercise(chinese: false, largest: false) }
+    func testChinese() throws { try exercise(chinese: true, largest: false) }
+    func testEnglishLargest() throws { try exercise(chinese: false, largest: true) }
+    func testChineseLargest() throws { try exercise(chinese: true, largest: true) }
+
+    private func exercise(chinese: Bool, largest: Bool) throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.updates.acceptance")
+        for appearance in ["light", "dark"] {
+            app.launchArguments = ["--lio-preview", "--lio-onboarding-preview", "-cj.ui.language.v1", chinese ? "zh-Hans" : "en",
+                                   "-lio.ui.appearance.v1", appearance]
+            if largest { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
+            app.launch()
+            defer { app.terminate() }
+            let code = app.secureTextFields["demo.invite.code"]
+            XCTAssertTrue(code.waitForExistence(timeout: 12))
+            XCTAssertFalse(app.buttons["demo.invite.continue"].isEnabled)
+            code.tap(); code.typeText("synthetic-only")
+            app.buttons["demo.invite.continue"].tap()
+            let consent = app.staticTexts["demo.invite.consent"]
+            XCTAssertTrue(consent.waitForExistence(timeout: 5))
+            XCTAssertEqual(consent.label, chinese ? "这是内部演示。请使用虚构的旅行信息，别填写个人信息。" : "This is an internal demo. Please use fictional trip details and leave out personal information.")
+            try audit(app)
+            reveal(app.buttons["lio.invite.back"], app: app)
+            app.buttons["lio.invite.back"].tap()
+            XCTAssertTrue(code.waitForExistence(timeout: 5))
+            XCTAssertTrue(app.buttons["demo.invite.continue"].isEnabled)
+            app.buttons["demo.invite.continue"].tap()
+            let agree = app.buttons["demo.invite.signin"]
+            reveal(agree, app: app)
+            XCTAssertTrue(agree.isEnabled)
+            agree.tap()
+            let menu = app.buttons["lio.menu"]
+            XCTAssertTrue(menu.waitForExistence(timeout: 10))
+            menu.tap()
+            let info = app.buttons["lio.information"]
+            XCTAssertTrue(info.waitForExistence(timeout: 5))
+            info.tap()
+            XCTAssertTrue(consent.waitForExistence(timeout: 5))
+            XCTAssertFalse(app.buttons["demo.invite.signin"].exists)
+            let build = app.staticTexts["lio.updates.current-build"]
+            reveal(build, app: app)
+            XCTAssertEqual(build.label, chinese ? "当前构建：\(currentBuild)" : "Current build: \(currentBuild)")
+            for section in ["changes", "comparison", "testing", "known", "service"] {
+                let heading = app.staticTexts["lio.updates.\(currentBuild)." + section]
+                reveal(heading, app: app)
+                XCTAssertTrue(heading.exists)
+                let paragraph = app.staticTexts["lio.updates.\(currentBuild)." + section + ".0"]
+                reveal(paragraph, app: app)
+                try audit(app)
+                let image = XCTAttachment(screenshot: app.screenshot())
+                image.name = "updates-\(chinese ? "zh" : "en")-\(appearance)-\(largest ? "largest" : "normal")-\(section)"
+                image.lifetime = .keepAlways; add(image)
+            }
+            let previous = app.staticTexts["lio.updates.previous"]
+            reveal(previous, app: app)
+            XCTAssertEqual(previous.label, chinese ? "上一构建：\(previousBuild)" : "Previous build: \(previousBuild)")
+            for section in ["changes", "comparison", "testing", "known", "service"] {
+                reveal(app.staticTexts["lio.updates.\(previousBuild)." + section + ".0"], app: app)
+                try audit(app)
+            }
+            XCTAssertFalse(app.staticTexts["lio.updates.\(olderBuild).changes"].exists)
+            let done = app.buttons["lio.information.done"]
+            XCTAssertTrue(done.isHittable)
+            XCTAssertTrue(app.frame.contains(done.frame))
+            XCTAssertGreaterThanOrEqual(done.frame.height, 44)
+            done.tap()
+            XCTAssertTrue(info.waitForExistence(timeout: 5))
+            app.terminate()
+        }
+    }
+
+    private func reveal(_ element: XCUIElement, app: XCUIApplication) {
+        let scroll = app.scrollViews["lio.information.scroll"]
+        for _ in 0..<30 {
+            if element.exists && element.isHittable && scroll.frame.contains(element.frame) {
+                var lastFrame: CGRect?
+                let stable = NSPredicate { _, _ in
+                    guard element.exists, element.isHittable, scroll.frame.contains(element.frame) else { return false }
+                    let current = element.frame
+                    defer { lastFrame = current }
+                    return lastFrame == current
+                }
+                XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: stable, object: nil)], timeout: 5), .completed)
+                return
+            }
+            let frame = scroll.frame
+            let target = element.exists ? element.frame : CGRect(x: frame.midX, y: frame.maxY + frame.height, width: 1, height: 1)
+            let delta = target.minY < frame.minY ? min(frame.height * 0.55, frame.minY - target.minY + 12)
+                : -min(frame.height * 0.55, target.maxY - frame.maxY + 12)
+            let start = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: delta)))
+        }
+        XCTAssertTrue(element.isHittable, app.debugDescription)
+        XCTAssertTrue(scroll.frame.contains(element.frame), app.debugDescription)
+    }
+    private func audit(_ app: XCUIApplication) throws {
+        try app.performAccessibilityAudit(for: .all) { issue in
+            let detail = XCTAttachment(string: issue.compactDescription + "\n" + issue.detailedDescription + "\n" + (issue.element?.debugDescription ?? "No audit element") + "\n" + app.debugDescription)
+            detail.name = "updates-audit"; detail.lifetime = .keepAlways; self.add(detail)
+            return false
+        }
+    }
+}

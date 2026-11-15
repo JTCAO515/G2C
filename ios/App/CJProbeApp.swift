@@ -2,6 +2,7 @@ import SwiftUI
 import CJShell
 #if G2C_LIO_APP
 import CJLioUser
+import CJRunClient
 #endif
 #if DEBUG && G2C_LIO_APP && targetEnvironment(simulator)
 import CJTripClient
@@ -185,10 +186,29 @@ struct LioLanguagePicker: View {
 
 struct LioMenuSettings: View {
     let shell: ShellState
+    @State private var showingInformation = false
 
     var body: some View {
         LioLanguagePicker(shell: shell)
         LioAppearancePicker(language: shell.language.lio)
+        Button(shell.language.text("Internal demo information", "内部演示说明")) { showingInformation = true }
+            .frame(minHeight: 44, alignment: .leading)
+            .accessibilityIdentifier("lio.information")
+            .sheet(isPresented: $showingInformation) {
+                NavigationStack {
+                    LioDemoNoticePage(language: shell.language.lio) { EmptyView() }
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button { showingInformation = false } label: {
+                                    RunReadableText(text: shell.language.text("Done", "完成"), color: LioTheme.ink)
+                                        .frame(minWidth: 44, minHeight: 44)
+                                }
+                                .accessibilityIdentifier("lio.information.done")
+                            }
+                        }
+                }
+                .tint(LioTheme.vermilion)
+            }
     }
 }
 #endif

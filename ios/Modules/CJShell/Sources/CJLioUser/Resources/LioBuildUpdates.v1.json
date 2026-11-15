@@ -1,0 +1,188 @@
+{
+  "schema": 1,
+  "currentBuild": 44,
+  "releases": [
+    {
+      "build": 44,
+      "previousBuild": 43,
+      "sections": [
+        {
+          "id": "changes",
+          "title": {
+            "en": "New and improved",
+            "zh": "本版新增和修改"
+          },
+          "items": {
+            "en": [
+              "Added this build update section to the existing internal demo information page. You can reopen the same page from the Lio menu.",
+              "Improved the display of greetings and sent messages while keeping larger text sizes and light and dark appearances.",
+              "Long-press the greeting to copy it in full. Sent messages keep native selection and copying of part of the text."
+            ],
+            "zh": [
+              "现有内部演示说明中新增本版更新，可从 Lio 菜单重新打开同一页面。",
+              "改善开场白和已发消息的文字显示，保留完整内容、大字号和浅深色外观。",
+              "开场白可长按复制整段，已发消息继续支持选择一个词或一段文字复制。"
+            ]
+          }
+        },
+        {
+          "id": "comparison",
+          "title": {
+            "en": "Changes since the previous build",
+            "zh": "与上一版的区别"
+          },
+          "items": {
+            "en": [
+              "Compared with build 43, this build adds offline update information and improves conversation text display and copying.",
+              "It does not fix trip planning or change the conversation experience enabled by default for everyday accounts."
+            ],
+            "zh": [
+              "与构建 43 相比，这一版新增离线更新说明，并改善对话文字显示和复制操作。",
+              "规划功能没有因此修好，日常账号的默认对话方式也没有改变。"
+            ]
+          }
+        },
+        {
+          "id": "testing",
+          "title": {
+            "en": "Suggested checks",
+            "zh": "建议怎么测"
+          },
+          "items": {
+            "en": [
+              "In the Lio menu, open Internal demo information and check the current and previous build updates.",
+              "Switch between light and dark appearances, increase the system text size, and check that existing messages remain readable and complete.",
+              "Copy the full greeting, then select and copy one word from a sent message. Paste into the input field to check it without sending.",
+              "Leave an unsent draft, put the app in the background, and return. Check that the same conversation and draft remain."
+            ],
+            "zh": [
+              "从 Lio 菜单打开内部演示说明，查看本版和上一版更新。",
+              "切换浅色和深色，并调大系统文字，查看已有对话是否清楚、完整。",
+              "复制整段开场白，再从已发消息中选一个词复制，粘到输入框核对，先不要发送。",
+              "留下一段未发送文字，切到后台再返回，查看是否仍是同一对话和草稿。"
+            ]
+          }
+        },
+        {
+          "id": "known",
+          "title": {
+            "en": "Known issues and checks to avoid",
+            "zh": "已知问题和暂不测试内容"
+          },
+          "items": {
+            "en": [
+              "Trip planning is still being fixed; we do not recommend testing it yet.",
+              "The complete planning, saving, editing, undo, and remembering-preferences journey has not passed this round of live verification. Please hold off on that acceptance test.",
+              "The new segmented replies, multiple-choice questions, and preference tags remain limited to designated testing and are not enabled by default for everyday accounts."
+            ],
+            "zh": [
+              "规划功能仍在修复，暂不建议测试规划。",
+              "规划、保存、修改、撤销及记住偏好的完整流程尚未完成本轮真实验证，请暂不进行这组验收。",
+              "新版分段、多选和画像交互目前仅供指定测试使用，未向日常账号默认开启。"
+            ]
+          }
+        },
+        {
+          "id": "service",
+          "title": {
+            "en": "Online service changes",
+            "zh": "在线服务变化"
+          },
+          "items": {
+            "en": [
+              "Hong Kong online service source: 7750871. Failure diagnostics have been added; this server update is already live and does not require an app update.",
+              "Basic Q&A has not passed every check. These diagnostics do not mean planning has been fixed."
+            ],
+            "zh": [
+              "香港在线服务来源为 7750871，已增加失败诊断。这项在线更新已单独生效，不需要更新应用。",
+              "基础问答尚未全部通过，新增诊断不代表规划已经修复。"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "build": 43,
+      "previousBuild": 42,
+      "sections": [
+        {
+          "id": "changes",
+          "title": {
+            "en": "New and improved",
+            "zh": "本版新增和修改"
+          },
+          "items": {
+            "en": [
+              "Improved the display of trip detail titles, retaining complete titles and larger text sizes."
+            ],
+            "zh": [
+              "改善行程详情标题的显示，保留完整标题和大字号。"
+            ]
+          }
+        },
+        {
+          "id": "comparison",
+          "title": {
+            "en": "Changes since the previous build",
+            "zh": "与上一版的区别"
+          },
+          "items": {
+            "en": [
+              "Compared with build 42, build 43 focused on trip detail title display. Trip planning was not considered fixed."
+            ],
+            "zh": [
+              "与构建 42 相比，构建 43 主要调整行程详情标题显示，未宣告规划功能修复。"
+            ]
+          }
+        },
+        {
+          "id": "testing",
+          "title": {
+            "en": "Suggested checks",
+            "zh": "建议怎么测"
+          },
+          "items": {
+            "en": [
+              "Open an existing trip and inspect its title in light and dark appearances.",
+              "Increase the system text size and check that the complete title remains available."
+            ],
+            "zh": [
+              "打开已有行程，在浅色和深色下查看标题。",
+              "调大系统文字，查看是否仍能读到完整标题。"
+            ]
+          }
+        },
+        {
+          "id": "known",
+          "title": {
+            "en": "Known issues and checks to avoid",
+            "zh": "已知问题和暂不测试内容"
+          },
+          "items": {
+            "en": [
+              "Trip planning was still being fixed; planning acceptance was on hold."
+            ],
+            "zh": [
+              "规划功能当时仍在修复，规划验收暂未开放。"
+            ]
+          }
+        },
+        {
+          "id": "service",
+          "title": {
+            "en": "Online service changes",
+            "zh": "在线服务变化"
+          },
+          "items": {
+            "en": [
+              "This is a retrospective note for build 43. Server work was tracked separately and was not proof of successful planning. No server fix should be inferred from that app update."
+            ],
+            "zh": [
+              "这是构建 43 的补记说明。在线服务进展单独记录，不应把该次应用更新理解为规划已经修复。"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

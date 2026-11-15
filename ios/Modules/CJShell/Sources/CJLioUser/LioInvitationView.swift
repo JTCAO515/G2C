@@ -103,43 +103,25 @@ public struct LioInvitationView<Settings: View>: View {
     }
 
     private func consentPage(_ action: Consent) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                LioPortrait(size: 58)
-                Text(language.text("Use fictional trip details", "请使用虚构旅行信息"))
-                    .font(LioTheme.display(.headline))
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityAddTraits(.isHeader)
-                // Interim internal-demo wording until #225 is decided.
-                RunReadableText(text: language.text(
-                    "This is an internal demo. Please use fictional trip details and leave out personal information.",
-                    "这是内部演示。请使用虚构的旅行信息，别填写个人信息。"))
-                    .accessibilityIdentifier("demo.invite.consent")
-                Button {
-                    agree(to: action)
-                } label: {
-                    RunReadableText(text: language.text("Agree and continue", "同意并继续"))
-                        .frame(minHeight: 44, alignment: .leading)
-                }
-                .buttonStyle(.bordered)
-                .disabled(isBusy || (action == .invite && code.isEmpty))
-                .accessibilityIdentifier("demo.invite.signin")
-                Button {
-                    consent = nil
-                } label: {
-                    RunReadableText(text: language.text("Back", "返回"))
-                        .frame(minHeight: 44, alignment: .leading)
-                }
-                .buttonStyle(.bordered)
-                .accessibilityIdentifier("lio.invite.back")
+        LioDemoNoticePage(language: language) {
+            Button {
+                agree(to: action)
+            } label: {
+                RunReadableText(text: language.text("Agree and continue", "同意并继续"))
+                    .frame(minHeight: 44, alignment: .leading)
             }
-            .frame(maxWidth: 480, alignment: .leading)
-            .padding(24)
-            .frame(maxWidth: .infinity, alignment: .center)
+            .buttonStyle(.bordered)
+            .disabled(isBusy || (action == .invite && code.isEmpty))
+            .accessibilityIdentifier("demo.invite.signin")
+            Button {
+                consent = nil
+            } label: {
+                RunReadableText(text: language.text("Back", "返回"))
+                    .frame(minHeight: 44, alignment: .leading)
+            }
+            .buttonStyle(.bordered)
+            .accessibilityIdentifier("lio.invite.back")
         }
-        .background(LioTheme.paper)
-        .navigationTitle(language.text("Internal demo consent", "内部演示同意"))
-        .navigationBarTitleDisplayMode(.inline)
     }
 
     private func agree(to action: Consent) {
