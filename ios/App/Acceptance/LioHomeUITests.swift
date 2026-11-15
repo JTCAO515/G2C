@@ -449,14 +449,23 @@ import CryptoKit
         exerciseChatHistory("zh-Hans")
     }
 
-    func testRecreatedClientReturnsToEnglishConversationAndDraft() { exerciseRecreatedChat("en") }
-    func testRecreatedClientReturnsToChineseConversationAndDraft() { exerciseRecreatedChat("zh-Hans") }
+    func testRecreatedClientReturnsToEnglishConversationAndDraft() throws { try exerciseRecreatedChat("en") }
+    func testRecreatedClientReturnsToChineseConversationAndDraft() throws { try exerciseRecreatedChat("zh-Hans") }
 
-    private func exerciseRecreatedChat(_ language: String) {
+    func testSavedChatRestoresWhileAnUnrelatedFirstSendNeedsRecovery() throws {
+        for language in ["en", "zh-Hans"] {
+            for appearance in ["light", "dark"] {
+                try exerciseRecreatedChat(language, appearance: appearance, unrelatedRecovery: true)
+            }
+        }
+    }
+
+    private func exerciseRecreatedChat(_ language: String, appearance: String = "light", unrelatedRecovery: Bool = false) throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
         app.launchArguments = ["--lio-preview", "--lio-chat-history-acceptance", "--lio-chat-recovery-acceptance", "-cj.ui.language.v1", language]
-        app.launchArguments += ["--lio-chat-before-stage-acceptance"]
+        app.launchArguments += ["--lio-chat-before-stage-acceptance", "-lio.ui.appearance.v1", appearance]
+        if unrelatedRecovery { app.launchArguments += ["--lio-chat-unrelated-recovery-acceptance"] }
         app.launch()
         defer { app.terminate() }
         let menu = app.buttons["lio.menu"]
@@ -482,6 +491,12 @@ import CryptoKit
         XCTAssertEqual(composer.value as? String, "My unsent follow-up")
         XCTAssertFalse(app.otherElements["lio.chat.recovery"].exists)
         XCTAssertFalse(app.staticTexts["lio.opening"].exists)
+        if unrelatedRecovery {
+            try app.performAccessibilityAudit(for: .all)
+            let shot = XCTAttachment(screenshot: app.screenshot())
+            shot.name = "restored-chat-\(language)-\(appearance)"
+            shot.lifetime = .keepAlways; add(shot)
+        }
     }
 
     func testNewChatCanAcceptAnotherMessageAfterAnInputRefusal() {

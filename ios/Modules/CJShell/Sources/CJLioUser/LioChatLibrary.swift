@@ -103,7 +103,11 @@ private final class LioSignedChatSessions {
 
     func history() async throws -> [LioChatSession] {
         _ = try await client.reconcileFirstChat()
-        return try client.savedChats().map { saved in
+        return try recordedSessions()
+    }
+
+    private func recordedSessions() throws -> [LioChatSession] {
+        try client.savedChats().map { saved in
             let service = LioService.signedConversation(client, destination: .existing(saved.id), version: version) { _ in }
             let trips = LioChatTrips(plan: LioTripPlan(client: tripHistory(saved.id)))
             return LioChatSession(id: continuity.localIDs[Data(saved.id.utf8)] ?? saved.id, title: saved.title,
@@ -146,7 +150,9 @@ private final class LioSignedChatSessions {
             continuity.firstQuestions.removeValue(forKey: selected)
             continuity.blankIDs.remove(selected)
         }
-        let chats = try await history()
+        // A verified saved conversation is readable without reconciling a different first send.
+        // The selected first send above and HTTP submission fences retain their original checks.
+        let chats = try recordedSessions()
         if let chat = chats.first(where: { $0.id == selected }) { return chat }
         // A blank conversation has no server identity until its first send.
         guard continuity.blankIDs.contains(selected) else { throw MessageHTTPFailure.exchangeUnknown }
