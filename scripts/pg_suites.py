@@ -738,6 +738,13 @@ def group_runtime_actor():
 GROUPS.update(runtime_actor=group_runtime_actor)
 
 
+def group_release_export():
+    return script('backend/cj_api/tests/release_export_pg.py')
+
+
+GROUPS.update(release_export=group_release_export)
+
+
 def main(argv):
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))

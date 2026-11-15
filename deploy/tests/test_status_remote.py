@@ -21,7 +21,7 @@ def observer(tmp_path,monkeypatch):
    row=dict(Id=role,Image=q['image'],Config={'Labels':{'org.opencontainers.image.revision':q['source']},'Cmd':['api']if role=='api'else['worker','--tool-evidence-manifest','/run/tool-evidence/window.json']},State={'Running':True,'Health':{'Status':'healthy'}},Mounts=mounts)
    if fault['value']=='source':row['Image']='sha256:'+'c'*64
    return json.dumps([row]).encode()
-  if args[:2]==['docker','compose']:return json.dumps(dict(global_pending=0,global_active=1 if fault['value']=='inflight'else 0,background_states={},memory_states={'unknown':2},ledger={'count':1,'sha256':'d'*64})).encode()
+  if args[:2]==['docker','compose']:return json.dumps(dict(global_pending=0,global_active=1 if fault['value']=='inflight'else 0,background_states={},memory_states={'unknown':2},ledger={'count':1,'sha256':'d'*64},observations=[dict(message_record=dict(status=None))]if fault['value']=='missing_run'else [])).encode()
   if args[:2]==['docker','exec']:
    if fault['value']=='late_source':fault['value']='source'
    if fault['value']=='late_stop':q['state']='STOP_NEW';path.write_text(json.dumps(q))
@@ -48,6 +48,16 @@ def test_dispatch_requires_actual_idle(observer,capsys):
  assert x['status']=='STOP_NEW_OR_NOT_READY'and x['business_dispatch_allowed_by_observed_conditions']is False
  run('query');x=json.loads(capsys.readouterr().out)
  assert x['status']=='READY_FOR_FIXED_WINDOW'and x['business_dispatch_allowed_by_observed_conditions']is False
+
+
+def test_missing_original_run_is_readable_but_never_dispatch_idle(observer,capsys):
+ q,p,f,run,calls=observer;f['value']='missing_run'
+ run('query');x=json.loads(capsys.readouterr().out)
+ assert x['status']=='READY_FOR_FIXED_WINDOW'and x['empty_inflight']is False
+ assert x['business_dispatch_allowed_by_observed_conditions']is False
+ run('dispatch');x=json.loads(capsys.readouterr().out)
+ assert x['status']=='STOP_NEW_OR_NOT_READY'and x['empty_inflight']is False
+ assert x['business_dispatch_allowed_by_observed_conditions']is False
 
 
 @pytest.mark.parametrize('fault',['hold','source','stop_new','closed'])

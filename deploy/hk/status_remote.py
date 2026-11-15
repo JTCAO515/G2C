@@ -50,7 +50,8 @@ def main():
  observed_unchanged=(qpath.read_bytes()==qraw and fingerprint(after_api)==fingerprint(api)and fingerprint(after_worker)==fingerprint(worker))
  now=datetime.now(timezone.utc);start=instant(q['starts_at']);stop=instant(q['stop_new_at']);end=instant(q['ends_at'])
  healthy=api['State']['Running']and worker['State']['Running']and api['State'].get('Health',{}).get('Status')=='healthy'
- empty=(proof['global_pending']==proof['global_active']==0 and not any(proof['background_states'].get(k,0)for k in('queued','running','publishing'))and not any(proof['memory_states'].get(k,0)for k in('pending','inflight')))
+ original_runs=all(row['message_record']is None or row['message_record']['status']is not None for row in proof['observations'])
+ empty=(original_runs and proof['global_pending']==proof['global_active']==0 and not any(proof['background_states'].get(k,0)for k in('queued','running','publishing'))and not any(proof['memory_states'].get(k,0)for k in('pending','inflight')))
  common=observed_unchanged and actual and capture and healthy and q['state']=='ACTIVE'and not q.get('incident_hold',False)
  read_ready=common and start<=now<end
  line=financial['lines'][q['line']];used=line['usage'];policy=line['policy']
