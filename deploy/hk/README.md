@@ -152,6 +152,36 @@ E/F 登记预算或 source-only C0 不是可执行子额／实呼资格，也不
 结束时先停止新派发、核原动作／费用／在途，由 B 关闭租约并处理采集配置。
 发生 FAIL/UNKNOWN 立即 STOP_NEW，只读核原 attempt；不能把旧结果带入新分母或用新 ID 补跑。
 
+## API 访问日志（#1036）
+
+API 最外层的纯 ASGI 中间件 `deploy/hk/access_log.py` 对每个 HTTP 交换写一行 JSON（`G2C-HK-access-log.1`）：
+UTC 时间、匹配到的**路由模板**（不含路径参数值，未匹配为 `null`）、方法、状态码、总耗时与首字节耗时、
+服务端生成的 `X-Request-ID`、客户端构建号（只从原生 iOS `User-Agent` 的 `名称/构建号 CFNetwork/… Darwin/…`
+或显式 `X-G2C-App-Build` 中取经校验的数字）、错误类别（由状态码映射；部署门禁拒绝记 `deployment_<原因>`）
+及结果（completed / incomplete / exception / no_response）。
+
+- 不读取、不记录：查询串、其他请求头值（Authorization、Cookie、邀请码）、请求/响应正文（消息、Memory）、
+  客户端地址、账号或主体标识、异常文本。健康检查 200 不记录（容器每 15 秒自检），非 200 照记。
+- 存放于宿主 `/srv/g2c-beta/access-log`（仅挂给 API 的 `/access-log`；目录 10001:10001 `0700`），
+  与原件、证据和 rejected-intakes 存储分离。每 UTC 日一个 `access-YYYY-MM-DD.jsonl`（`0600`），
+  保留 14 天（切日时删除更早的同名格式文件），每日上限 16 MiB，超限丢弃并 ALERT。
+- 目录缺失或属主/权限不符时，改写到容器 stderr（`ACCESS {...}`）并 ALERT；日志失败不改变任何 HTTP 响应。
+  容器重建会丢失 stderr，所以宿主目录须由 B 预先建好。
+- 回退：旧镜像忽略该挂载；移除挂载行并重建 API 即停止写入，已写文件按保留期自然清除或由 B 删除。
+
+按时间窗只读查询（时间必须带时区；窗口不超过保留期）：
+
+```sh
+docker run --rm --network=none --read-only --user 10001:10001 \
+  -v /srv/g2c-beta/access-log:/access-log:ro --entrypoint python "g2c-beta:$CURRENT_SOURCE" \
+  -B -m deploy.hk.access_log query --since 2026-11-15T21:30:00+08:00 --until 2026-11-15T22:00:00+08:00 \
+  [--min-status 400] [--route '/v1/...']
+```
+
+输出按时间排序的原始行，最后一行是 `{"summary":true,...,"by_status":{...}}`。JT 报故障时，
+按其报告时间前后取窗口，用状态码、路由模板、构建号和 `request_id` 对应失败请求；
+请求 ID 与 App 显示或日志中的 `X-Request-ID` 一致时可唯一定位。
+
 ## 配置与构建
 
 `*.env.example` 只有占位符。正式配置在服务器 `/srv/g2c-beta/`，目录0700，所有实际环境文件0600；
