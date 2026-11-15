@@ -12,6 +12,60 @@ from test_lio_planning_flow import flow,original
 
 
 class OptionalIntakeChecks(unittest.TestCase):
+    def test_plan_with_null_root_keeps_readonly_city_then_plans_sourced_duration(self):
+        from test_lio_planning_flow import run,context,answer
+        for first,last,city,locale in (('去成都','三天','成都','zh'),
+                                      ('Go to Chengdu','Three days','Chengdu','en')):
+            with self.subTest(locale=locale):
+                wire=flow(first,city=first,days=None,intent='plan',questions=('duration_days',),
+                    reply='想玩几天？'if locale=='zh'else'How many days would you like?')
+                wire.update(planning_request_index=None,needs_tools=True)
+                saved,events,lookups,_=run(wire,first,locale=locale)
+                self.assertEqual((saved,lookups),([],[]))
+                pending=context(events)
+                self.assertEqual(pending['status'],'needs_details')
+                self.assertEqual(pending['authority'],'none')
+                self.assertEqual(pending['nonplanning_message_ids'],[])
+                self.assertEqual(pending['facts']['city']['value']['query'],city)
+                self.assertEqual(set(pending['facts']),{'city'})
+                for fact in pending['facts'].values():
+                    for source in fact['sources']:source['message_id']='prior-0'
+                next_wire=flow(last,city=city,days=3,intent='plan',index=1,questions=(),
+                    reply='你想什么时候开始？'if locale=='zh'else'When would you like to start?')
+                next_wire.update(planning_request_index=0,needs_tools=False)
+                next_wire['city'].update(source_index=0,quote=first)
+                next_wire['field_sources']=[dict(field='duration_days',source_index=1,quote=last)]
+                saved,events,lookups,_=run(next_wire,last,turns=(original(first),original(last)),
+                    previous=pending,locale=locale)
+                self.assertEqual(saved,[])
+                self.assertEqual(len(lookups),1)
+                self.assertEqual(context(events)['status'],'plan_preview')
+                self.assertEqual(context(events)['facts']['duration_days']['value'],3)
+                for day in range(1,4):self.assertIn('第'+str(day)+'天'if locale=='zh'else'Day '+str(day),answer(events))
+                self.assertNotIn('什么时候开始',answer(events));self.assertNotIn('When would you like to start',answer(events))
+
+    def test_null_root_plan_control_keeps_existing_scope_and_execution_guards(self):
+        from cj_api.lio_flow_intake import ReadOnlyPlanningQuestion
+        for text,city in (('去成都','成都'),('Go to Chengdu','Chengdu')):
+            base=flow(text,city=city,days=None,intent='plan',questions=('duration_days',))
+            base.update(version='LIO-planning-intake.8',planning_request_index=None)
+            for mutate in (lambda v:v.update(intent='consult'),lambda v:v.update(intent='discuss'),
+                    lambda v:v.update(intent='save'),lambda v:v.update(start_date='2026-12-01'),
+                    lambda v:v.update(party_size=2),lambda v:v['city'].update(source_index=1),
+                    lambda v:v['city'].update(quote='a different source'),
+                    lambda v:v.update(question_fields=['duration_days','start_date'])):
+                value=deepcopy(base);mutate(value)
+                with self.subTest(text=text,variant=value):
+                    try:intake,_,_=parse_flow(json.dumps(value),(original(text),),(),'current',None,schema=OptionalIntake)
+                    except InvalidInput:continue
+                    self.assertNotIsInstance(intake,ReadOnlyPlanningQuestion)
+            # An earlier refusal is never replaced with the fresh-city control.
+            previous=dict(authority='none',status='discussion',facts={},authority_barrier_message_id='old')
+            value=deepcopy(base);value.update(current_source_index=1);value['city'].update(source_index=1)
+            intake,_,_=parse_flow(json.dumps(value),(original('Do not save'),original(text)),
+                ({'message_id':'old'},),'current',previous,schema=OptionalIntake)
+            self.assertNotIsInstance(intake,ReadOnlyPlanningQuestion)
+
     def test_plain_failed_parameter_text_remains_data_without_a_failed_execution_grant(self):
         for text,quote in (('从2026-12-01开始，两个人','两个人'),('Start on 2026-12-01, two people','two people')):
             value=flow('继续',city='北京',days=3,start='2026-12-01',party=2,index=2,questions=())

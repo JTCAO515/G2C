@@ -95,7 +95,7 @@ class _MissingDurationQuestion(DTO):
     reply:str=Field(min_length=1,max_length=12000)
     question_fields:list[Literal['duration_days']]=Field(min_length=1,max_length=1)
     current_source_index:int=Field(ge=0,le=0)
-    planning_request_index:int=Field(ge=0,le=0)
+    planning_request_index:int|None=Field(ge=0,le=0)
     city:City
     duration_days:None
     start_date:None
@@ -116,6 +116,10 @@ def _missing_duration_question(value,turns,refs,message_id,previous,schema):
         return None
     try:control=_MissingDurationQuestion.model_validate(value)
     except ValidationError:return None
+    # A plan-labelled city question can leave its future planning root unset.
+    # This still retains only literal city DATA and grants no execution; the
+    # later complete intake must supply its own validated planning root.
+    if control.planning_request_index is None and control.intent!='plan':return None
     text=turns[0].text;city=control.city
     if (city.source_index!=0 or not city.query.strip()or not city.quote.strip()
             or city.quote not in text or city.query not in city.quote):return None
