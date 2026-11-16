@@ -12,81 +12,87 @@ struct LioItineraryCard<Actions: View>: View {
     let showTrips: () -> Void
     @ViewBuilder let actions: () -> Actions
     @State private var savedAppeared = false
+    @State private var selectedDay: Int?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var typeSize
+    private var day: LioItinerary.Day? {
+        itinerary.days.first { $0.number == selectedDay } ?? itinerary.days.first
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if let introduction = itinerary.planningIntroduction(language) { RunReadableText(text: introduction) }
-            Text(itinerary.title)
-                .font(LioTheme.display(.headline))
-                .foregroundStyle(LioTheme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityAddTraits(.isHeader)
-            LioTripCalendarLabel(calendar: itinerary.calendar, language: language)
-            ForEach(itinerary.days) { day in
-                DisclosureGroup {
-                    LioDayStops(day: day, language: language)
-                        .padding(.vertical, 6)
-                } label: {
-                    Text(dayTitle(day, language, calendar: itinerary.calendar))
-                        .foregroundStyle(LioTheme.ink)
-                        .frame(minHeight: 44, alignment: .leading)
+            if let introduction = itinerary.planningIntroduction(language) { RunReadableText(text: introduction, color: LioTheme.ink) }
+            VStack(alignment: .leading, spacing: 12) {
+                Label(language.text("Itinerary", "行程"), systemImage: "map")
+                    .font(.caption.weight(.semibold)).foregroundStyle(LioTheme.inkSecondary)
+                Text(itinerary.title)
+                    .font(LioTheme.display(.headline))
+                    .foregroundStyle(LioTheme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
+                LioTripCalendarLabel(calendar: itinerary.calendar, language: language)
+                Text(language.text("\(itinerary.days.count) days · \(itinerary.days.reduce(0) { $0 + $1.stops.count }) stops",
+                                   "\(itinerary.days.count) 天 · \(itinerary.days.reduce(0) { $0 + $1.stops.count }) 项安排"))
+                    .font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
+                if typeSize.isAccessibilitySize {
+                    VStack(alignment: .leading, spacing: 8) { dayChips }
+                } else {
+                    ScrollView(.horizontal) {
+                        HStack(spacing: 8) { dayChips }.padding(.vertical, 2)
+                    }
+                    .scrollIndicators(.hidden)
                 }
-                .disclosureGroupStyle(LioDayDisclosureStyle(language: language,
-                    identifier: "lio.trip.day.\(day.number)"))
-            }
-            Button(action: showTrips) {
-                HStack {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(LioTheme.jade)
-                        .symbolEffect(.bounce, options: .nonRepeating, value: savedAppeared)
-                        .accessibilityHidden(true)
-                    RunReadableText(text: language.text("Saved to Trips · View", "已保存到行程 · 查看"))
-                        .frame(minHeight: 44, alignment: .leading)
+                if let day {
+                    if day.stops.isEmpty {
+                        Text(language.text("No plans for this day yet.", "这一天还没有安排。"))
+                            .foregroundStyle(LioTheme.inkSecondary)
+                            .accessibilityIdentifier("lio.trip.day.empty")
+                    } else {
+                        LioDayStops(day: day, language: language, maximumStops: 4)
+                        if day.stops.count > 4 {
+                            Text(language.text("\(day.stops.count - 4) more stops", "还有 \(day.stops.count - 4) 项安排"))
+                                .font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                                .accessibilityIdentifier("lio.trip.more-stops")
+                        }
+                    }
                 }
+                Button(action: showTrips) {
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(LioTheme.jade)
+                            .symbolEffect(.bounce, options: .nonRepeating, value: savedAppeared)
+                            .accessibilityHidden(true)
+                        RunReadableText(text: language.text("Saved to Trips · View", "已保存到行程 · 查看"))
+                            .frame(minHeight: 44, alignment: .leading)
+                    }
+                }
+                .buttonStyle(.bordered)
+                .accessibilityIdentifier("lio.trip.show")
+                actions()
             }
-            .buttonStyle(.bordered)
-            .accessibilityIdentifier("lio.trip.show")
-            actions()
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
         .onAppear { if celebrate && !reduceMotion { savedAppeared = true } }
     }
-}
 
-private struct LioDayDisclosureStyle: DisclosureGroupStyle {
-    let language: LioLanguage
-    let identifier: String
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func makeBody(configuration: Configuration) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Button {
-                withAnimation(LioTheme.Motion.animation(LioTheme.Motion.change, reduceMotion: reduceMotion)) {
-                    configuration.isExpanded.toggle()
-                }
-            } label: {
-                HStack {
-                    configuration.label
-                    Spacer(minLength: LioTheme.Spacing.sm)
-                    Image(systemName: "chevron.right")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(LioTheme.inkSecondary)
-                        .rotationEffect(.degrees(configuration.isExpanded ? 90 : 0))
-                        .accessibilityHidden(true)
-                }
-                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                .contentShape(Rectangle())
+    private var dayChips: some View {
+        ForEach(itinerary.days) { choice in
+            Button { selectedDay = choice.number } label: {
+                Text(dayTitle(choice, language, calendar: itinerary.calendar))
+                    .font(.subheadline.weight(.semibold))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 16)
+                    .frame(minHeight: 44, alignment: .leading)
+                    .background(day?.number == choice.number ? LioTheme.surfaceSunken : LioTheme.surface,
+                                in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+                    .overlay { RoundedRectangle(cornerRadius: LioTheme.Radius.small).stroke(LioTheme.hairline, lineWidth: 1) }
             }
-            .buttonStyle(.plain)
-            .accessibilityValue(configuration.isExpanded
-                ? language.text("Expanded", "已展开") : language.text("Collapsed", "已收起"))
-            .accessibilityIdentifier(identifier)
-            if configuration.isExpanded { configuration.content }
+            .buttonStyle(.plain).foregroundStyle(LioTheme.ink)
+            .accessibilityAddTraits(day?.number == choice.number ? [.isSelected] : [])
+            .accessibilityIdentifier("lio.trip.day.\(choice.number)")
         }
-        .accessibilityElement(children: .contain)
     }
 }
 
@@ -403,10 +409,11 @@ struct LioTripDays: View {
 private struct LioDayStops: View {
     let day: LioItinerary.Day
     let language: LioLanguage
+    var maximumStops: Int? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            ForEach(day.stops) { stop in
+            ForEach(maximumStops.map { Array(day.stops.prefix($0)) } ?? day.stops) { stop in
                 HStack(alignment: .top, spacing: 10) {
                     Image(systemName: stop.fixed == true ? "lock.fill" : "circle.fill")
                         .font(.caption)

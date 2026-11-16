@@ -1334,13 +1334,14 @@ import CryptoKit
         app.buttons["lio.send"].tap()
         let show = app.buttons["lio.trip.show"]
         XCTAssertTrue(show.waitForExistence(timeout: 12))
-        XCTAssertFalse(app.staticTexts[fixed].exists)
-
-        let disclosure = app.descendants(matching: .any).matching(identifier: "lio.trip.day.1").firstMatch
-        XCTAssertTrue(disclosure.waitForExistence(timeout: 6), app.debugDescription)
-        disclosure.tap()
+        let firstDay = app.buttons["lio.trip.day.1"]
+        XCTAssertTrue(firstDay.waitForExistence(timeout: 6), app.debugDescription)
+        XCTAssertTrue(firstDay.isSelected)
         XCTAssertTrue(app.staticTexts[fixed].waitForExistence(timeout: 6))
-        disclosure.tap()
+        app.buttons["lio.trip.day.2"].tap()
+        XCTAssertFalse(app.staticTexts[fixed].exists)
+        firstDay.tap()
+        XCTAssertTrue(app.staticTexts[fixed].waitForExistence(timeout: 6))
         show.tap()
 
         XCTAssertTrue(app.navigationBars[trips].waitForExistence(timeout: 8))
