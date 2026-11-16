@@ -92,11 +92,11 @@
           },
           "items": {
             "en": [
-              "The paired Hong Kong service changes concern trip discussions, preference understanding and failure tracking.",
+              "The paired Hong Kong service source 064b3c99 changes trip discussions, preference understanding and failure tracking.",
               "Service fixes apply automatically without reinstalling the App. Account qualification and allowances do not change when you install an update."
             ],
             "zh": [
-              "配套香港服务端改动涉及行程讨论、偏好理解和失败定位。",
+              "配套香港服务来源 064b3c99，改动涉及行程讨论、偏好理解和失败定位。",
               "服务端修复自动生效，无需重新安装应用；安装更新不会改变账号资格和额度。"
             ]
           }
