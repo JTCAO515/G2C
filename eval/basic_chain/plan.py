@@ -67,6 +67,9 @@ def make_plan(*,app,old_chats,first_setup=False,run_id=None,version=VERSION):
             steps.append(dict(gate_id=gate,locale=locale,text=text,
                 text_sha256=None if text is None else sha256(text.encode()).hexdigest(),
                 new_conversation=text is not None,expected_mid=None,nonce=uuid.uuid4().hex,kind='gate'))
+            if version==VERSION and gate=='SM04':
+                steps[-1]['read_actions']=[dict(action=action,nonce=uuid.uuid4().hex)
+                    for action in('background_return','lock_return')]
     budget=design['budget']['first_setup'if first_setup else'standard_run']
     result=dict(version=version,run_id=run_id,design_sha256=sha256(raw).hexdigest(),
         synthetic_only=True,app=app,old_chats=old_chats,first_setup=first_setup,
@@ -95,10 +98,19 @@ def check_plan(plan):
     nonces=set()
     for actual,wanted in zip(plan['steps'],expected['steps'],strict=True):
         require(type(actual)is dict and set(actual)==set(wanted),'exact step fields required')
-        require(all(actual[key]==wanted[key] for key in wanted if key!='nonce'),'frozen input/locale/order changed')
+        require(all(actual[key]==wanted[key] for key in wanted if key not in('nonce','read_actions')),'frozen input/locale/order changed')
         require(type(actual['nonce'])is str and re.fullmatch('[a-f0-9]{32}',actual['nonce'])is not None
                 and actual['nonce'] not in nonces,'unique original step nonce required')
         nonces.add(actual['nonce'])
+        if 'read_actions'in wanted:
+            actions=actual['read_actions']
+            require(type(actions)is list and len(actions)==2,'both lifecycle actions required')
+            for action,name in zip(actions,('background_return','lock_return'),strict=True):
+                require(type(action)is dict and set(action)=={'action','nonce'}and action['action']==name,
+                        'ordered exact lifecycle action fields required')
+                require(type(action['nonce'])is str and re.fullmatch('[a-f0-9]{32}',action['nonce'])is not None
+                        and action['nonce']not in nonces,'globally unique lifecycle nonce required')
+                nonces.add(action['nonce'])
     require(plan['planned_message_count']==expected['planned_message_count'],'message bound changed')
     if plan['version']==VERSION:
         require(plan.get('execution_profile')==expected['execution_profile'],'actual source call/cash profile changed')

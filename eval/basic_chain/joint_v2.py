@@ -6,6 +6,8 @@ exact text projection. No approximate whitespace or time-only join is used.
 """
 from dataclasses import dataclass,field
 
+from cj_message.lio_context import display_answer
+
 from .plan import Invalid,require
 from .semantics_v2 import semantic
 
@@ -15,6 +17,7 @@ class Conversations:
     views:dict=field(default_factory=dict)
     old_cid:str|None=None
     qa_cid:str|None=None
+    history_targets:dict=field(default_factory=dict)
 
 
 def _transcript(view,project):
@@ -84,7 +87,7 @@ def assess(plan,step,point,native,ui,conversations,project,money):
     caller verifies producer programs and artifact bytes; these facts do not
     claim a physical device when the actual surface is a simulator.
     """
-    fail=[];unknown=[];reasons=[];next_view=None;timing=None
+    fail=[];unknown=[];reasons=[];next_view=None;timing=None;accepted_views=dict(conversations.views)
     try:
         _ui(ui,plan,step)
         if ui['after']['errors']or ui['after'].get('spinner_past_deadline')is True:
@@ -103,8 +106,8 @@ def assess(plan,step,point,native,ui,conversations,project,money):
             require(cid in views,'actual App final timeline/response is missing')
             view=views[cid]
             require(view['messages'][-1]['message_id']==message['message_id']
-                    and view['messages'][-1]['answer']==message['answer'],
-                    'actual App response differs from original native answer')
+                    and view['messages'][-1]['answer']==display_answer(message['answer'],step['locale']),
+                    'actual App response differs from same-source server projection of original native answer')
             if step['new_conversation']:
                 require(len(view['messages'])==1,'new conversation contains other user messages')
             else:
@@ -132,30 +135,38 @@ def assess(plan,step,point,native,ui,conversations,project,money):
             if before['trip_sha256']!=after['trip_sha256']:fail.append('read_only_Trip_mutation')
             require(ui['after']['new_greeting_count']==0,'restored conversation inserted a new greeting')
             claimed={c['binding']['conversation_id']for c in point.claims}
-            require(claimed==set(conversations.views),'admissible current-window candidate census is incomplete')
+            historical={value['conversation_id']:value for value in point.history_targets}
+            require(historical==conversations.history_targets,'actual old history targets differ from accepted metadata')
+            claimed|=set(historical)
+            require(claimed==set(conversations.views)|set(historical),'admissible current-window candidate census is incomplete')
+            # Body references only enter from actual App GET responses whose
+            # source/owner/exchange and full native MESSAGE census were checked.
+            for cid in historical.keys()-accepted_views.keys():
+                if cid in views:accepted_views[cid]=views[cid]
             if gate=='SM03':require(claimed<=set(views),'actual App reads do not cover the required candidates')
             if gate in('SM01','SM04'):
+                require(claimed<=set(accepted_views),'complete old candidate bodies are not available for a unique restore')
                 expected_cid=conversations.old_cid if gate=='SM01'else conversations.qa_cid
                 require(expected_cid in views,'required actual App restore/resume read is missing')
                 require(ui['before']['draft']==ui['after']['draft']==draft_marker(plan,step),'unique unsent draft changed or was not prepared')
-                matches=[cid for cid,view in conversations.views.items()if _transcript(view,project)==actual_ax]
+                matches=[cid for cid,view in accepted_views.items()if _transcript(view,project)==actual_ax]
                 require(matches==[expected_cid],'actual restored transcript has no unique native CID match')
                 require(_ax_transcript(ui['before']['transcript'])==actual_ax,'original conversation differed before lifecycle action')
                 require(actual_ax==_transcript(views[expected_cid],project),'actual App read did not restore the original full transcript')
                 require('cold_launch'in ui['actions']if gate=='SM01'else
-                        {'background_return','lock_return'}<=set(ui['actions']),'required actual lifecycle transitions missing')
+                        ui['actions']==[step['action']],'required actual lifecycle transition missing')
                 if gate=='SM04':
                     checkpoints=ui['lifecycle']
-                    require({p['action']for p in checkpoints}=={'background_return','lock_return'}and len(checkpoints)==2,
-                            'both actual lifecycle result snapshots required')
+                    require(len(checkpoints)==1 and checkpoints[0]['action']==step['action'],
+                            'this independently admitted lifecycle action snapshot required')
                     for entry in checkpoints:
                         if entry['errors']:fail.append('actual_intermediate_lifecycle_failure')
                         require(_ax_transcript(entry['transcript'])==actual_ax
                                 and entry['draft']==draft_marker(plan,step)and not entry['errors']and entry['body_complete']is True,
                                 'an intermediate lifecycle return failed')
-                    require(len({r['exchange_id']for r in native.actual_reads if r['binding']['conversation_id']==expected_cid
-                                 and r['route']in('/v1/lio/timeline','/v2/lio/timeline')})>=2,
-                            'both lifecycle returns need distinct actual App reads')
+                    require(any(r['binding']['conversation_id']==expected_cid
+                                 and r['route']in('/v1/lio/timeline','/v2/lio/timeline')for r in native.actual_reads),
+                            'this lifecycle action needs its own checkpoint-fenced actual App read')
             elif gate=='SM03':
                 rows=ui['history']['rows'];opened=ui['history']['opened']
                 require(len(rows)==len(opened)==len(claimed),'every listed admissible row must be opened')
@@ -164,7 +175,7 @@ def assess(plan,step,point,native,ui,conversations,project,money):
                 found=[]
                 for entry in opened:
                     transcript=_ax_transcript(entry['transcript'])
-                    matches=[cid for cid,view in conversations.views.items()if _transcript(view,project)==transcript]
+                    matches=[cid for cid,view in accepted_views.items()if _transcript(view,project)==transcript]
                     require(len(matches)==1,'history selected row cannot uniquely identify a native conversation')
                     cid=matches[0];require(transcript==_transcript(views[cid],project),'actual history read differs')
                     found.append(cid)
@@ -174,6 +185,7 @@ def assess(plan,step,point,native,ui,conversations,project,money):
     except (Invalid,KeyError,TypeError,ValueError)as error:
         unknown.append('required_joint_evidence_unavailable:'+type(error).__name__)
         status='FAIL'if fail else'UNKNOWN'
+    if status=='PASS':conversations.views.update(accepted_views)
     if status=='PASS'and next_view is not None:
         cid=next_view['conversation_id'];conversations.views[cid]=next_view
         if step['gate_id']in('SEED1','SEED2'):conversations.old_cid=cid

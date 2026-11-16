@@ -10,10 +10,12 @@ import time
 from pathlib import Path
 
 from cj_api.local_app import ISSUER,scope_for
+from cj_message import lio_context
 
 from . import native
 from .cost_v2 import costs
 from .joint_v2 import Conversations,assess,draft_marker
+from .history_v2 import targets
 from .plan import VERSION,Invalid,check_plan,decode,digest,packed,require
 from .runner import Programs,day_guard,private_read,save
 
@@ -36,6 +38,28 @@ def _request(plan,step,kind,reference=None):
                plan_sha256=digest(plan),nonce=step['nonce'],locale=step['locale'])
     if reference is not None:value['checkpoint_ref']=reference
     return value
+
+
+def _actions(plan):
+    for index,parent in enumerate(plan['steps']):
+        if parent['gate_id']=='SM04':
+            for number,action in enumerate(parent['read_actions'],1):
+                yield f'{index:02d}-{number}',dict(parent,**action,parent_nonce=parent['nonce'])
+        else:yield f'{index:02d}',parent
+
+
+def _gate_rows(plan,results):
+    rows=[]
+    for step in plan['steps']:
+        if step['kind']!='gate':continue
+        found=[r for r in results if(r['gate_id'],r['locale'])==(step['gate_id'],step['locale'])]
+        if step['gate_id']=='SM04':
+            status=('FAIL'if any(r['status']=='FAIL'for r in found)else
+                    'UNKNOWN'if any(r['status']=='UNKNOWN'for r in found)else
+                    'PASS'if len(found)==2 and all(r['status']=='PASS'for r in found)else'UNRUN')
+            rows.append(dict(gate_id=step['gate_id'],locale=step['locale'],status=status,actions=found))
+        else:rows.append(found[0]if found else dict(gate_id=step['gate_id'],locale=step['locale'],status='UNRUN'))
+    return rows
 
 
 def _purpose(config,plan):
@@ -66,14 +90,18 @@ def execute(plan,config,directory,*,now=lambda:datetime.now(timezone.utc),clock=
     require(config['app']==plan['app']and config['synthetic_only']is True,'actual synthetic App candidate required')
     require(plan['app']['surface']in('simulator','physical_device'),'actual App surface required')
     require(plan['app']['protocol']=='LIO-message.2','this ordinary-Home cohort is not native3/4 autosave acceptance')
+    require(sha256(Path(lio_context.__file__).read_bytes()).hexdigest()==config['candidate']['display_answer_source_sha256'],
+            'local server display projection differs from B actual deployed source qualification')
     _purpose(config,plan)
+    contexts={language:Conversations(
+        old_cid=None if plan['first_setup']else plan['old_chats'][language]['conversation_id'],
+        history_targets={value['conversation_id']:value for value in targets(plan,language)})for language in('zh','en')}
     root=Path(directory);root.mkdir(mode=0o700,exist_ok=False)
     save(root/'plan.json',plan)
     controls=call is not None
     call=call or Programs(config,root)
-    contexts={language:Conversations()for language in('zh','en')}
-    results=[];attempts=set();stopped=False
-    for index,step in enumerate(plan['steps']):
+    results=[];attempts=set();stopped=False;read_references=set()
+    for stem,step in _actions(plan):
         if stopped:break
         reference=None;money=None
         try:
@@ -83,8 +111,8 @@ def execute(plan,config,directory,*,now=lambda:datetime.now(timezone.utc),clock=
                 expected_draft=draft_marker(plan,step)if step['gate_id']in('SM01','SM04')else None,
                 accepted_conversations=state.views,
                 rule='Prepare only; do not send, terminate, background, lock or open history until admission file exists')
-            save(root/f'{index:02d}-prepare.json',instruction)
-            prepared=_wait(root/f'{index:02d}-A-prepared.json',clock()+config['ui_prepare_seconds'],clock,sleep)
+            save(root/f'{stem}-prepare.json',instruction)
+            prepared=_wait(root/f'{stem}-A-prepared.json',clock()+config['ui_prepare_seconds'],clock,sleep)
             require(prepared['version']=='LIO-basic-app-prepared.2'
                     and (prepared['run_id'],prepared['nonce'])==(plan['run_id'],step['nonce'])
                     and prepared['send_taps']==0 and prepared['app']==plan['app'],
@@ -94,10 +122,12 @@ def execute(plan,config,directory,*,now=lambda:datetime.now(timezone.utc),clock=
             request=_request(plan,step,'checkpoint');request['expected_source']=expected['source']
             host=call('backend',request)
             point=native.checkpoint(host,expected,plan,step);reference=point.reference
+            require(reference not in read_references,'server checkpoint reused across distinct actions')
+            read_references.add(reference)
             day_guard(now())
-            save(root/f'{index:02d}-admission.json',dict(version='LIO-basic-ui-admission.2',run_id=plan['run_id'],
+            save(root/f'{stem}-admission.json',dict(version='LIO-basic-ui-admission.2',run_id=plan['run_id'],
                 nonce=step['nonce'],checkpoint_ref=reference,qualification_sha256=expected['qualification_sha256']))
-            ui=_wait(root/f'{index:02d}-A-completed.json',clock()+config['ui_action_seconds'],clock,sleep)
+            ui=_wait(root/f'{stem}-A-completed.json',clock()+config['ui_action_seconds'],clock,sleep)
             _original_files(ui['artifacts'])
             require(ui['before']==prepared['ui_before'],'A actual pre-action state changed after server checkpoint')
             kind='observe_read'if step['text']is None else'observe'
@@ -107,6 +137,10 @@ def execute(plan,config,directory,*,now=lambda:datetime.now(timezone.utc),clock=
             collection_end=clock()+config['original_collection_seconds']
             while True:
                 host=call('backend',request)
+                if native.collection_pending(host,expected):
+                    require(clock()<collection_end,'original HTTP publication remained PENDING')
+                    sleep(.25)
+                    continue
                 observed=native.observation(host,point,expected,plan,step)
                 original=observed.original
                 terminal_unknown=step['text']is not None and original['inventory']['status']in('unknown','failed','cancelled','context_invalid')
@@ -142,7 +176,8 @@ def execute(plan,config,directory,*,now=lambda:datetime.now(timezone.utc),clock=
         except (Invalid,KeyError,TypeError,ValueError,OSError)as error:
             result=dict(gate_id=step['gate_id'],locale=step['locale'],status='UNKNOWN',
                         reasons=['execution_stopped:'+type(error).__name__],cost=money,timing=None)
-        results.append(result);save(root/f'{index:02d}-result.json',result)
+        if 'action'in step:result['action']=step['action']
+        results.append(result);save(root/f'{stem}-result.json',result)
         if result['status']!='PASS':
             stopped=True
             try:
@@ -150,9 +185,7 @@ def execute(plan,config,directory,*,now=lambda:datetime.now(timezone.utc),clock=
                 call('backend',request)
             except (Invalid,KeyError,TypeError,ValueError,OSError):
                 save(root/'stop-new-UNKNOWN.json',dict(status='UNKNOWN',reason='B control receipt unavailable; C sends no further action'))
-    rows=[r for r in results if r['gate_id'].startswith('SM')]
-    for step in plan['steps'][len(results):]:
-        if step['kind']=='gate':rows.append(dict(gate_id=step['gate_id'],locale=step['locale'],status='UNRUN'))
+    rows=_gate_rows(plan,results)
     counts={status:sum(r['status']==status for r in rows)for status in('PASS','FAIL','UNKNOWN','UNRUN')}
     passed=counts['PASS']==14 and not stopped
     amounts=[r.get('cost')for r in results]
@@ -163,7 +196,8 @@ def execute(plan,config,directory,*,now=lambda:datetime.now(timezone.utc),clock=
     known=sum((Decimal(a['observed_conservative_cny'])for a in amounts if a and a.get('observed_conservative_cny')is not None),Decimal(0))
     report=dict(version='LIO-basic-chain-result.2',run_id=plan['run_id'],app=plan['app'],candidate=config['candidate'],
         denominator=14,rows=rows,attempt_results=results,totals=counts,success_rate=f'{counts["PASS"]}/14',
-        status='PASS'if passed else results[-1]['status'],release_allowed=passed and not controls,
+        status='PASS'if passed else results[-1]['status'],release_allowed=False,
+        jt_invitation_status='UNRUN',
         service_layer='L0_CONTROL'if controls else'L2',
         app_layer='L0_CONTROL'if controls else'L1'if plan['app']['surface']=='simulator'else'L3',
         physical_device_acceptance=False,real_gate_status='UNRUN'if controls else'PASS'if passed else results[-1]['status'],

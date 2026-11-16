@@ -23,6 +23,19 @@ PRICING=dict(scale=10_000_000,source_sha256=H,model_input_per_token=8,
 NOW=datetime(2026,11,16,6,tzinfo=timezone.utc)
 
 
+def test_v2_lifecycle_nonces_are_unique_and_legacy_plan_shape_is_retained():
+    plan=make_plan(app=APP,old_chats={'zh':'old','en':'old-en'})
+    check_plan(plan)
+    parent=next(s for s in plan['steps']if s['gate_id']=='SM04')
+    parent['read_actions'][1]['nonce']=parent['read_actions'][0]['nonce']
+    with pytest.raises(Invalid):check_plan(plan)
+    parent['read_actions'][1]['nonce']=plan['steps'][0]['nonce']
+    with pytest.raises(Invalid):check_plan(plan)
+    old=make_plan(app=APP,old_chats={'zh':'old','en':'old-en'},version='LIO-basic-chain-plan.1')
+    assert all('read_actions'not in s for s in old['steps'])
+    check_plan(old)
+
+
 def fixture():
     plan=make_plan(app=APP,old_chats=dict(zh='old-zh',en='old-en'),run_id='OFFLINE-CONTROL')
     step=plan['steps'][1]

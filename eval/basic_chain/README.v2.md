@@ -40,6 +40,12 @@ simulator可以分别绑定C中英身份；实际UI为L1、香港为L2，不能�
 checkpoint**，再写`NN-admission.json`。A看到admission才执行该步发送/冷启动/
 后台和锁屏返回/历史逐行打开，并写`NN-A-completed.json`。
 
+SM04在同一门禁下用两个`read_actions`：`background_return`、`lock_return`。
+各有全计划唯一nonce和独立服务端checkpoint，分别使用`NN-1-*`、`NN-2-*`
+两阶段文件；第一转场采集闭合才准入第二转场。每份witness只记录对应的一次
+action/lifecycle快照。两个都PASS才计该语言SM04一个PASS；首FAIL/UNKNOWN即停，
+不以同次转场的两个GET替代，不增加MESSAGE、模型调用或14项分母。
+
 这样，准备时的旧GET不能替代真正恢复/返回后的读取。B以请求started/finished
 exchange与服务端checkpoint前缀划步，不能以原件文件的迟发布时间划步。
 
@@ -51,6 +57,14 @@ ui_before、artifacts。completed格式`LIO-basic-app-witness.2`的当前字段�
 真实样件**；A尚不能观测的内容不手填或复制B ID凑数，缺证UNKNOWN。
 
 冷启动/后台/锁屏必须保留本步唯一未发送草稿`SYNTH-DRAFT-<run>-<locale>-<gate>`。
+standard的`old_chats[locale]`由实际App本地savedChats清单与B当前owner原M核对后
+冻结：选中项含version=`LIO-readonly-history-anchor.1`、conversation_id、generation、
+messages（每条message_id/run_id/sequence/canonical_sha256）；可附conversations数组，
+包含同形全部App-local候选及与根字段一致的selected项。无数组时仅一个候选。
+这些只读元数据不是正文、model claim或Memory权限；checkpoint返回分列的
+history_targets，C再核原生CID/gen/完整有序M并从实际AppGET建立正文参考。
+首次setup由真实seed逐步建立参考，不手填既有正文。App历史是该安装本地列表，
+并非服务器全部CID；其他server-only记录保留在native_state，不冒称已删除或UI漏行。
 历史每行都打开，完整有序问答在合法候选CID集合中必须恰一匹配。重名标题、行号、
 通用能力正文或时间接近都不构成身份。需要远程读取的普通App路径须有该次真实
 GET/完整原响应；A缓存正常加C另行读成功不能拼成PASS。当前实际normal Home
@@ -66,7 +80,14 @@ GET/完整原响应；A缓存正常加C另行读成功不能拼成PASS。当前�
 `native.py`核实际source/image/最小role/scoped census、原生before引用、实际新MID
 集合、typed claim、raw HTTP outer/canonical摘要分列、去重前POST数及实际GET原件。
 post_count=null、http_coverage UNKNOWN、gap、guard失败、timeout/nonzero不重试；
-只有显式PENDING在同原ID/checkpoint上等采集，不发新消息。
+只有显式PENDING及精确`UNAVAILABLE/APP_SMOKE_HTTP_OUTER_PENDING`在同原
+nonce/checkpoint/MID上有界等采集，不发新消息；后者仍须核实际host资格/source/
+image/health，最终READ须通过全部身份、原件与费用检查。其他UNAVAILABLE即停。
+
+原RUN正文与App timeline正文分别保留。用当前部署相同文件的
+`cj_message.lio_context.display_answer(raw,locale)`核服务端已有投影，再将实际
+timeline正文交A renderer核AX；不改写raw。host candidate的
+`display_answer_source_sha256`必须来自B部署原文件，并与本地该模块文件SHA相同。
 
 `programs.projector`是A提供的同源只读render出口。输入
 `LIO-reply-projection-request.1`含app/raw_utf8/input_sha256；输出
@@ -94,7 +115,9 @@ subjects、native_ledger_id、pricing、B实际purpose_receipt的path/SHA、三�
 
 每项保留三栏费用/已知小计、实际时间、source与UI ID为空的真实来源说明。总额只在
 全部原账覆盖完整且不重复时相加；缺实付发票不填0。14项固定分母，首FAIL/UNKNOWN
-停新，其余UNRUN，结果写#1048；只有同候选真实全PASS才可#702邀请JT。
+停新，其余UNRUN，结果写#1048。`real_gate_status`仅表示该候选基础链路；
+`release_allowed=false`、`jt_invitation_status=UNRUN`始终保留，脚本不签发发布或
+JT邀请。只有另行核实目标构建/发行产物及所需App证据、真实全PASS后才能写#702。
 
 注入测试callback的执行始终标L0_CONTROL、real_gate_status=UNRUN、release_allowed=false。
 本地fixture的14个逻辑PASS不能生成真实发布证书。23:00–08:00不开始UI准备/新请求；

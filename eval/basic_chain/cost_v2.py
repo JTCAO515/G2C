@@ -9,12 +9,13 @@ from hashlib import sha256
 from .cost import costs as legacy_costs
 from .plan import Invalid,decode,is_sha,require
 
+NIA_URL='https://en.nia.gov.cn/n147418/n147463/c183412/content.html'
 ENDPOINTS={
     ('tool.lio_city.1','place'):frozenset({'https://restapi.amap.com/v3/config/district'}),
     ('tool.place','place'):frozenset({'https://restapi.amap.com/v3/place/text','https://restapi.amap.com/v3/place/detail'}),
     ('tool.place','route'):frozenset({'https://restapi.amap.com/v3/direction/walking','https://restapi.amap.com/v3/direction/driving'}),
     ('tool.weather','weather'):frozenset({'https://restapi.amap.com/v3/weather/weatherInfo'}),
-    ('tool.fact','fact'):frozenset({'https://en.nia.gov.cn/'}),
+    ('tool.fact','fact'):frozenset({NIA_URL}),
 }
 
 
@@ -130,7 +131,7 @@ def costs(accounting,pricing,components,expected):
                 if row['kind']=='fact':
                     require(hold==0 and row['receipt']['actual_cost_cny']=='0','registered NIA zero maximum is required')
                     body=decode(component['artifact']['result_utf8'].encode())
-                    require(body['source_url']=='https://en.nia.gov.cn/'and is_sha(body['original_sha256'])
+                    require(body['source_url']==NIA_URL and is_sha(body['original_sha256'])
                             and type(body['original_bytes'])is int and body['original_bytes']>0
                             and type(body['excerpts'])is list and bool(body['excerpts']),
                             'actual NIA public fetch original proof required')

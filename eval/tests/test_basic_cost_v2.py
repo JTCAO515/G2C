@@ -24,11 +24,12 @@ def fixture(kind='place'):
             registration_id={'place':'tool.lio_city.1','fact':'tool.fact','model':'model.tool_turn'}[kind],
             operation_key='original-step',input_erased=False)
     expected['operations']={op['operation_id']:deepcopy(op)}
-    body=({'source_url':'https://en.nia.gov.cn/','original_sha256':H,'original_bytes':100,
+    nia='https://en.nia.gov.cn/n147418/n147463/c183412/content.html'
+    body=({'source_url':nia,'original_sha256':H,'original_bytes':100,
            'excerpts':[{'text':'synthetic'}]}if kind=='fact'else{'status':'confirmed'})
     raw=json.dumps(body,ensure_ascii=False);response_sha=sha256(raw.encode()).hexdigest()
     logical='{"version":"synthetic-input"}';logical_sha=sha256(logical.encode()).hexdigest()
-    receipt=dict(endpoint='https://restapi.amap.com/v3/config/district'if kind=='place'else'https://en.nia.gov.cn/',
+    receipt=dict(endpoint='https://restapi.amap.com/v3/config/district'if kind=='place'else nia,
                  response_sha256=response_sha,actual_cost_cny='0'if kind=='fact'else'UNKNOWN')
     if kind=='model':
         receipt=dict(model_id=PRICE['model_id'],endpoint=PRICE['endpoint'],region=PRICE['region'],

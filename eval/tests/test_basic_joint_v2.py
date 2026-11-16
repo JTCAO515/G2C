@@ -41,6 +41,22 @@ def test_ui_ids_stay_null_native_single_write_and_actual_read_match():
     assert len(args[5].views)==1 and args[5].qa_cid==args[3].original['message']['conversation_id']
 
 
+def test_raw_RUN_and_projected_timeline_are_separate_originals():
+    args=write_fixture();n=args[3];raw='是的，北京是中国的首都。可以查询官方资料核实。'
+    n.original['message']['answer']=raw
+    record=n.actual_reads[0];view=json.loads(record['response_utf8'])
+    displayed=raw.replace('查询','查看').replace('核实','确认')
+    view['messages'][-1]['answer']=displayed
+    record['response_utf8']=json.dumps(view,ensure_ascii=False)
+    record['response_sha256']=sha256(record['response_utf8'].encode()).hexdigest()
+    args[4]['after']['transcript'][-1]['answer']=displayed
+    assert evaluate(args)['status']=='PASS'
+    assert n.original['message']['answer']==raw
+    view['messages'][-1]['answer']=raw
+    record['response_utf8']=json.dumps(view,ensure_ascii=False)
+    assert evaluate(args)['status']=='UNKNOWN'
+
+
 @pytest.mark.parametrize('mutate',[
     lambda a:a[4].update(message_id_observed=a[3].original['message']['message_id']),
     lambda a:a[4].update(submitted_text='another question'),
@@ -67,7 +83,7 @@ def read_fixture(gate='SM01'):
     cid=native.original['message']['conversation_id'];view=json.loads(native.actual_reads[0]['response_utf8'])
     step=next(s for s in plan['steps']if s['gate_id']==gate and s['locale']=='zh')
     context.views[cid]=view;context.old_cid=context.qa_cid=cid
-    point=type('ControlCheckpoint',(),{'claims':({'binding':{'conversation_id':cid}},)})()
+    point=type('ControlCheckpoint',(),{'claims':({'binding':{'conversation_id':cid}},),'history_targets':()})()
     before=deepcopy(native.after);after=deepcopy(native.after)
     n=type(native)(native.original,before,after,(),native.actual_reads,(),native.read_collection_status)
     ui.update(gate_id=gate,nonce=step['nonce'],send_taps=0,submitted_text=None,actions=['cold_launch'])
@@ -98,8 +114,20 @@ def test_both_lifecycle_returns_must_be_observed_not_only_final_repair():
     n=args[3];second=deepcopy(n.actual_reads[0]);second['exchange_id']='second-lifecycle-get'
     tworeads=type(n)(n.original,n.before,n.after,(),(*n.actual_reads,second),(),n.read_collection_status)
     amended=(*args[:3],tworeads,*args[4:])
+    # Two reads of one fenced parent cannot certify two distinct transitions.
+    assert evaluate(amended)['status']=='UNKNOWN'
+
+
+@pytest.mark.parametrize('number',[0,1])
+def test_each_lifecycle_action_needs_its_own_nonce_and_actual_read(number):
+    args=read_fixture('SM04');parent=args[1];child=parent['read_actions'][number]
+    step=dict(parent,**child,parent_nonce=parent['nonce']);ui=args[4]
+    ui.update(nonce=step['nonce'],actions=[step['action']])
+    ui['lifecycle']=[dict(action=step['action'],transcript=deepcopy(ui['after']['transcript']),
+        draft=ui['after']['draft'],errors=[],body_complete=True)]
+    amended=(args[0],step,*args[2:])
     assert evaluate(amended)['status']=='PASS'
-    ui['lifecycle'][0]['errors']=['first return failed']
+    ui['lifecycle'][0]['errors']=['this return failed']
     assert evaluate(amended)['status']=='FAIL'
 
 
@@ -118,7 +146,7 @@ def test_history_opens_every_unique_native_conversation_not_just_matching_titles
     second['exchange_id']='second-history-read';second['response_utf8']=json.dumps(second_view)
     second['response_sha256']=sha256(second['response_utf8'].encode()).hexdigest()
     native=type(n)(n.original,state,state,(),(*n.actual_reads,second),(),n.read_collection_status)
-    point=type('ControlCheckpoint',(),{'claims':tuple({'binding':{'conversation_id':cid}}for cid in context.views)})()
+    point=type('ControlCheckpoint',(),{'claims':tuple({'binding':{'conversation_id':cid}}for cid in context.views),'history_targets':()})()
     opened=[dict(row_key=str(index),transcript=[{'question':m['text'],'answer':m['answer']}for m in view['messages']])
             for index,view in enumerate(context.views.values())]
     ui.update(gate_id='SM03',nonce=step['nonce'],actions=['open_history'],

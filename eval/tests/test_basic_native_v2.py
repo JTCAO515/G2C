@@ -5,17 +5,29 @@ import json
 
 import pytest
 
-from eval.basic_chain.native import checkpoint,observation
+from eval.basic_chain.native import checkpoint,observation,collection_pending
 from eval.basic_chain.plan import Invalid,digest,make_plan,packed
 
 H='a'*64
 
 
+def test_only_explicit_HTTP_publication_pending_with_qualified_live_roles_can_wait():
+    host,_,expected,_,_=fixture()
+    host['original']={'version':'G2C-App-smoke-read.1','status':'UNAVAILABLE','reason':'APP_SMOKE_HTTP_OUTER_PENDING'}
+    assert collection_pending(host,expected)
+    for reason in('CAPTURE_UNKNOWN','AUTH_UNAVAILABLE','APP_SMOKE_HTTP_OUTER_UNAVAILABLE'):
+        host['original']['reason']=reason
+        assert not collection_pending(host,expected)
+    host['original']['reason']='APP_SMOKE_HTTP_OUTER_PENDING'
+    host['actual_roles']['api']['source']='0'*40
+    with pytest.raises(Invalid):collection_pending(host,expected)
+
+
 def fixture():
     scope='synthetic-only-owner';scope_sha=sha256(scope.encode()).hexdigest()
     app=dict(build=46,source_sha='b'*40,artifact_sha256=H,protocol='LIO-message.2')
-    plan=make_plan(app=app,old_chats={'zh':'old','en':'old-en'},run_id='OFFLINE-NATIVE-CONTROL')
-    step=plan['steps'][1]
+    plan=make_plan(app=app,old_chats={'zh':'old','en':'old-en'},first_setup=True,run_id='OFFLINE-NATIVE-CONTROL')
+    step=next(s for s in plan['steps']if s['locale']=='zh'and s['gate_id']=='SM02')
     expected=dict(source='c'*40,image='sha256:'+H,qualification_sha256=H,
                   policy_sha256='d'*64,scope_sha256=scope_sha)
     state=dict(version='G2C-App-smoke-state.1',scope_sha256=scope_sha,runtime_role='cj_m1_runtime',

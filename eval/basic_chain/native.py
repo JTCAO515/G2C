@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from hashlib import sha256
 
 from .plan import decode,digest,is_sha,packed,require
+from .history_v2 import targets,check_native
 
 
 def _state(value,scope):
@@ -26,7 +27,7 @@ def _state(value,scope):
     return value
 
 
-def _host(value,expected,plan,step,kind):
+def _envelope(value,expected):
     require(value['version']=='G2C-App-smoke-host-read.1'
             and value['qualification_sha256']==expected['qualification_sha256'],'actual B host response required')
     roles=value['actual_roles'];require(set(roles)=={'api','worker'},'both actual native roles required')
@@ -34,7 +35,23 @@ def _host(value,expected,plan,step,kind):
         require((role['source'],role['image'],role['running'])==
                 (expected['source'],expected['image'],True),'actual native source/image drift')
     require(roles['api']['health']=='healthy','actual API health missing')
-    original=value['original']
+    return value['original']
+
+
+def collection_pending(value,expected):
+    """Only B's explicit asynchronous HTTP publication can be awaited.
+
+    It is never an observation or permission for another App action. A final
+    READ must still pass every original source/owner/checkpoint check.
+    """
+    original=_envelope(value,expected)
+    return (original['version']=='G2C-App-smoke-read.1'
+            and original['status']=='UNAVAILABLE'
+            and original.get('reason')=='APP_SMOKE_HTTP_OUTER_PENDING')
+
+
+def _host(value,expected,plan,step,kind):
+    original=_envelope(value,expected)
     require(original['version']=='G2C-App-smoke-read.1'and original['status']=='READ',
             'original protected read unavailable')
     require((original['source'],original['plan_sha256'],original['window_id'],original['nonce'],original['kind'])==
@@ -51,6 +68,7 @@ class Checkpoint:
     native_state:dict
     ledger_anchor:dict
     claims:tuple
+    history_targets:tuple=()
 
 
 def checkpoint(value,expected,plan,step):
@@ -59,7 +77,10 @@ def checkpoint(value,expected,plan,step):
     reference=original['checkpoint_ref'];require(is_sha(reference),'actual server checkpoint reference required')
     state=_state(original['native_state'],expected['scope_sha256'])
     require(state['active']==state['pending']==0,'actual original work remains in flight')
-    return Checkpoint(reference,state,original['ledger_anchor'],tuple(original['claims']))
+    history=targets(plan,step['locale']);claims=tuple(original['claims'])
+    require(tuple(original.get('history_targets',[]))==history,'actual B validated history targets differ from frozen plan')
+    check_native(history,state)
+    return Checkpoint(reference,state,original['ledger_anchor'],claims,history)
 
 
 def _components(value):
