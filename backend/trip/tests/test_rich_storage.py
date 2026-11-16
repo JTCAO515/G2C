@@ -43,6 +43,7 @@ def test_rich_proposal_data_is_canonical_but_old_ingress_does_not_gain_admission
         proposal=Proposal('fixture-proposal','fixture-trip',0,'fixture-rich-read',9999999999,raw)
         for flags in ({},{'structured':True},{'structured':True,'calendar':True}):
             repository=Repository(no_connection,'owner',**flags)
+            with pytest.raises(Denied):repository.rich_plan_receipt(None)
             with pytest.raises(Denied):repository.publish(proposal)
             with pytest.raises(Denied):repository._publish_in_tx(None,proposal)
             with pytest.raises(Denied):repository._content(raw)
