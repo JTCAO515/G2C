@@ -164,7 +164,7 @@
       "chongqing"
     ],
     "topic": "passport_booking",
-    "checked_on": "2026-11-16",
+    "checked_on": "2026-11-17",
     "expires_on": "2026-11-23",
     "subject": {
       "key": "chongqing.zoo",
@@ -173,16 +173,17 @@
       "wikidata_qid": null
     },
     "conditions": {
-      "reservation_required": null,
+      "reservation_required": false,
       "closed_weekdays": [],
       "closed_weekdays_public_holiday_exception": false,
       "advance_booking_days": null,
       "advance_booking_rule": null
     },
-    "text_zh": "九龙坡区政府公开名录列重庆动物园每日开放，未设常规每周闭园日，并列有“重庆动物园”官方公众号等预约购票渠道。本条未核定是否必须提前预约或提前窗口，不把列出购票渠道当作强制预约证明。票种、临时限流、特别活动和当天开放应另查最新公告；园内单独设施不随整园规则推定开放。",
-    "text_en": "The Jiulongpo district government directory lists Chongqing Zoo as open daily and identifies its official WeChat account among ticket-booking channels. No regular weekly closure is listed in that daily schedule. Mandatory advance reservation and its window are unconfirmed here; a booking channel alone does not establish a requirement. Check current notices for ticket categories, crowd controls, special events and opening on your visit date. Individual facilities may differ.",
+    "text_zh": "重庆市政府公布的A级景区普通准入安排允许未达到最大承载量时现场购票、免预约入园；重庆动物园为4A级景区，不在该安排列出的六个例外之内。该规则仅用于没有临时管控的普通散客入园，不保证现场余票或即时入园。区文旅部门2026年名录明确动物园每日开放，同时列有公众号和平台预约购票渠道；提供这些渠道不等于一律强制提前预约。周末、法定节假日客流增多时可能另行限流或错峰，需查新公告；团队、专项活动另查具体安排。",
+    "text_en": "The city government’s ordinary-entry policy for A-rated attractions allows visitors to buy tickets on arrival without advance reservations while capacity permits. Chongqing Zoo is rated 4A and is outside the six named exceptions. This covers ordinary individual admission when no temporary restrictions apply; it does not guarantee tickets or immediate entry. The district’s 2026 list describes daily opening and lists online booking channels, which do not by themselves make advance reservations compulsory. Busy weekends and statutory public holidays may bring additional crowd controls or staggered entry. Check current notices; group services and separately organised programmes have their own arrangements.",
     "source_urls": [
-      "https://cqjlp.gov.cn/bmjz/qzfbm_97119/qwhlyw_97727/zwgk_97124/gkml/jczwgk/ggwhfwly/ggfw/ggwljgml/202608/t20260807_15904141.html"
+      "https://cqjlp.gov.cn/bmjz/qzfbm_97119/qwhlyw_97727/zwgk_97124/gkml/jczwgk/ggwhfwly/ggfw/ggwljgml/202608/t20260807_15904141.html",
+      "https://www.cq.gov.cn/zwgk/zfxxgkml/zdlyxxgk/ggwh/ly/zxdt/202408/t20240802_13458146.html"
     ]
   },
   {
