@@ -1,0 +1,21 @@
+# Ordinary App basic-smoke coordinator (preparation)
+
+These tools collect the separately installed ordinary Beta App through native UI. They do not qualify an App artifact, issue an account, grant a deployment window, run the C judge, or approve a release. Only the initial-setup profile of `LIO-basic-chain-plan.2` is implemented. Old default conversations and publicly failed messages remain intact.
+
+## Inputs and separation
+
+- C supplies the immutable plan and the complete App pin; B supplies a separately issued sign-in-only lease and the real source/image metadata. Every private file is externally SHA-pinned, strict JSON, owner-owned single-link regular0600, bounded, and opened without following a leaf symlink. The issued lease must cover the actual dispatch time and exact locale, subject, simulator and full App pin.
+- `official_lio_sign_in.py` validates that lease before any input. Only the native XCTest process opens the existing invitation file; it types unchanged bytes into the existing SecureField and uses the normal Continue/consent action. The Python process does not read invitation contents. An existing signed-in session is preserved and requires B identity readback; neither branch signs out or swaps identity. A missing ACK or uncertain result stops that attempt.
+- Login is not business admission. `watch_lio_basic_smoke.py` separately checks C's next immutable step, then publishes a prepared UI observation. It waits for the matching server checkpoint/admission, checks the UI has not changed, and dispatches the one permitted action. No native message/conversation ID is invented from AX text. Every mutation is fenced again at actual native dispatch, including the configured interval and Beijing 08:00–23:00 restriction.
+
+## Full history
+
+`lio_history_projection.py` consumes the actual Lio byline position and the existing question/answer/failure elements from the same native snapshot. The App position is a UI ordinal and loaded-page count, **not** a business identity or permission. The producer requires the compatible App positions; older Apps remain unqualified rather than falling back to text matching.
+
+`lio_paginated_capture.py` uses the actual Earlier button and real scroll-container bounds. It retains every repeated row, resets ordinal observations after prepend, and requires a complete census with no unread page/error/spinner. A historical visible failure has `answer: null`, `visible_failure: true` and its actual label; hidden partial wire text is never a UI body. A failure in a newly submitted last turn is still a failed smoke. Incomplete alternative histories cannot establish a unique conversation match.
+
+The first body and completed-body times come from native monotonic observations, before the later offscreen-history census. An unobserved progress signal remains `NOT_OBSERVED`. A cold-launch observation is captured before navigating history; subsequent reads cannot replace that immediate lifecycle result.
+
+## Evidence limits
+
+Pure Python controls and simulator fixtures are local evidence only. Before any real run, review the precise producer head, qualify the actual App/binary and renderer, verify B's current source and issued lease, and obtain C's current checkpoint-fenced window. The coordinator currently has no real Hong Kong qualification; UI contrast failures and the unfinished full-history App surface remain separate blockers. No command here grants TestFlight or deployment approval.
