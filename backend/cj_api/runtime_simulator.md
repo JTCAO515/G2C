@@ -50,6 +50,21 @@ different bytes cannot be overwritten. The product input receives only the
 ordinary rendered text and native conversation selectors; the hidden profile,
 actor system, choice object and sidecar never become DUT input.
 
+`SimulatorRunRequests` supplies the normal worker's per-RUN registration and
+post-start refusal seams for this namespace. Only a native input whose capability
+was actually consumed by the same in-process DUT host can select registrations.
+The initial check compares the actual MID/RUN/CID/generation/sequence and genuine
+outer Lio receipt; legacy normalized storage is not mistaken for those outer
+bytes. Missing, restarted, stopped or changed originals have no C0 fallback.
+Ordinary messages retain their exact original registry.
+
+Every registered preparation/bind/send retains the original registration kind,
+input, receipt and limits. The native source guard is surrounded by current
+canonical-claim/AUTH/pin/window/deadline checks, without another M transaction or
+an extra financial hold. A rejected original stays query-only. The consumed-input
+record is in-process only: restarting cannot reconstruct execution authority from
+the durable claim. This component alone is not an installed factory or RPC.
+
 The composition must supply C's pinned renderer and error classes, separately
 pinned actor/DUT authorities over the same original C identity and fee journal,
 an original worker wait, and a qualified observer. A received invalid actor
@@ -57,13 +72,20 @@ choice remains an original paid attempt; operational UNKNOWN stops new sends.
 Programming errors propagate. All originals are retained before dispatch for
 read-only reconciliation and accounting, including failed or uncertain calls.
 
-Still required before real use: the installed worker factory and per-operation
-window/pin checks for this namespace; actual source/image/model/prompt/schema
-qualification; current accepted-context and injected-Memory observations; an
-independent full factor-question census; original exploration-ending evidence;
-whole-lifecycle DUT/actor/background fee inventory and ledger anchors; and a
-formal exclusive window. Presentation labels, parsed model output or a declared
-MESSAGE list cannot certify these missing observations. They stay UNKNOWN.
+Still required before real use: the installed worker factory/RPC consuming these
+guards; actual source/image/model/prompt/schema qualification; whole-lifecycle
+DUT/actor/background fee inventory and ledger anchors; and a formal exclusive
+window. Presentation labels, parsed model output or a declared MESSAGE list
+cannot certify these missing qualifications.
+
+For the existing legacy baseline, missing accepted-profile, injected-Memory or
+complete question-census observations remain explicitly unavailable. No observed
+native exploration ending at the evaluator's declared bound produces the existing
+`evaluation_bound_before_observed_exploration_end` measurement UNKNOWN; it is not
+permission to claim G2/G3 PASS or zero errors, nor a requirement to upgrade the
+baseline to native4 first. This differs from source/AUTH/native-action/actor-contract
+or accounting-coverage failures, which stop new work and retain original costs.
+The fixed sixty slots and 840 factors remain unchanged.
 
 `tests/runtime_simulator_dut_pg.py` exercises signed native admission, the actual
 native4 worker and registered HTTP fixture provider, independent actor RUN,
@@ -71,3 +93,7 @@ unchanged C renderer, next native input, and separate original fee records. Its
 observer deliberately reports incomplete profile/Memory/question/boundary
 evidence. It also verifies restart and lost-ACK query-only behavior and changed
 identity denial. These are private-PG/fixture results, not live-service evidence.
+The existing `runtime_actor` PG group runs that native4 control, the original actor
+control and `runtime_simulator_requests_pg.py`'s legacy2 registered-send control;
+the latter also denies an unclaimed native c936 message with zero operations and
+zero additional fixture provider calls. It does not certify a real baseline.

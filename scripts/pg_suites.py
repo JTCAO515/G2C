@@ -732,7 +732,9 @@ GROUPS.update(lio_exploration=group_lio_exploration)
 
 
 def group_runtime_actor():
-    return script('backend/cj_api/tests/runtime_actor_pg.py')
+    results = [script('backend/cj_api/tests/' + name) for name in (
+        'runtime_actor_pg.py', 'runtime_simulator_dut_pg.py', 'runtime_simulator_requests_pg.py')]
+    return 1 if any(results) else 0
 
 
 GROUPS.update(runtime_actor=group_runtime_actor)

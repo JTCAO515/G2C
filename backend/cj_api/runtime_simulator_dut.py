@@ -125,6 +125,7 @@ class NativeSimulatorDut:
         self.claims = DutMessageClaims(directory, boundary, token_supplier, authority,
                                       specification, history_profile='lio.2')
         self.originals = []
+        self.consumed_inputs = {}
         self.latest = None
         self.previous = None
         self.last_observation = None
@@ -169,6 +170,7 @@ class NativeSimulatorDut:
             if not prepared.fresh:
                 raise Unavailable('SIMULATOR_DUT_ALREADY_CLAIMED_QUERY_ONLY')
             self.claims.consume(raw, prepared.capability, deadline=self.deadline)
+            self.consumed_inputs[mid] = raw
             self.authority.require(binding=self.owner, pins_sha256=self.specification.key,
                 purpose='message', deadline=self.deadline, read_only=False)
             previous = self.previous
