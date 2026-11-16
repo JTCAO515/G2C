@@ -39,7 +39,7 @@ def draft_marker(plan,step):
 
 def _views(native):
     from .plan import decode
-    pages={};expected={}
+    pages={};expected={};message_versions={}
     require(native.read_collection_status=='OBSERVED','actual App read collection is not closed')
     for record in native.actual_reads:
         if record['route']not in('/v1/lio/timeline','/v2/lio/timeline'):continue
@@ -63,10 +63,13 @@ def _views(native):
         # newly admitted MESSAGE. Page publication order is never authority.
         if (not mids and eligible)or mids and mids!=eligible[-len(mids):]:continue
         if view['next_before']is not None and(not mids or view['next_before']!=mids[0]):continue
+        for message in view['messages']:
+            message_versions.setdefault(cid,{}).setdefault(message['message_id'],set()).add(packed(message))
         key=packed(view)
         pages.setdefault(cid,{}).setdefault(cursor,{})[key]=(view,record['exchange_id'])
     result={}
     for cid,by_cursor in pages.items():
+        if any(len(versions)!=1 for versions in message_versions.get(cid,{}).values()):continue
         cursor=None;seen=set();chunks=[];refs=[];root=None
         while cursor not in seen:
             seen.add(cursor);variants=by_cursor.get(cursor,{})

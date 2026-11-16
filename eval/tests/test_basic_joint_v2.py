@@ -72,6 +72,19 @@ def test_old_complete_pre_accept_poll_does_not_replace_the_final_cursor_chain():
     assert _views(actual)[cid]['messages']==messages
 
 
+@pytest.mark.parametrize('conflict',[False,True])
+def test_overlapping_extra_cursor_read_must_agree_with_the_complete_chain(conflict):
+    native,cid,messages=paged_history(41,1)
+    extra=deepcopy(native.actual_reads[-1]);extra['exchange_id']='extra-overlapping-cursor'
+    extra['selector']['before']=messages[30]['message_id']
+    value=json.loads(extra['response_utf8']);value['messages']=deepcopy(messages[10:30])
+    value['next_before']=messages[10]['message_id']
+    if conflict:value['messages'][-1]['trip']={'inconsistent':'card'}
+    extra['response_utf8']=json.dumps(value);extra['response_sha256']=sha256(extra['response_utf8'].encode()).hexdigest()
+    views=_views(replace(native,actual_reads=(*native.actual_reads,extra)))
+    assert (cid not in views)if conflict else views[cid]['messages']==messages
+
+
 @pytest.mark.parametrize('fault',['missing_root','missing_older','wrong_cursor','cycle','changed_page'])
 def test_incomplete_or_ambiguous_cursor_chains_never_become_a_complete_history(fault):
     native,cid,_=paged_history(41,1);reads=list(native.actual_reads)

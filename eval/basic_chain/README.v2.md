@@ -90,6 +90,8 @@ UI独立看见了CID。默认正文与其他行同文时，默认角色来自此
 C仅在完整链有唯一内容且有序MID恰等当前原生全量清单时组合正文参考。页等价比较完整
 wire对象的严格canonical字节（含卡片/来源/失败等字段），不能只比正文。缺首页/中页、
 错cursor、循环、相同cursor的冲突完整内容仍UNKNOWN；相同完整页的重复poll可去重。
+不同cursor的有效重叠页也必须对同一MID完整内容一致，不能只挑可连通链而忽略冲突页；
+额外但一致的实际读页不要求删去。缺新MID的旧pre-accept poll不当最终内容。
 accepted_conversations中的view_origin=actual_GET_cursor_chain和source_exchange_ids
 标明它是C内部组合参考，version标记输入wire来源，不能将它当作某次原HTTP响应回传。
 全部原页字节/摘要留在受保护读回中，准备期旧GET不能拼入，UI也须实际读全对应正文。
