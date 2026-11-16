@@ -96,44 +96,66 @@ class SmokeOriginals:
         return dict(ledger_id=budget.ledger_id,producer_id=budget.producer,
                     anchor=dict(count=count,sha256=digest),c_rows=[list(row)for row in rows])
 
-    def http_checkpoint(self,token):
+    def _http_view(self,token):
         def project(context):
             scope=context.scope
             if scope not in self.controls.scopes:raise Unavailable('APP_SMOKE_HTTP_OWNER_CHANGED')
             with self.controls.directory()as directory:
-                try:raw=read_private('http-attempts.jsonl',262144,directory_fd=directory)
+                try:raw=read_private('http-attempts.jsonl',16*1024*1024,directory_fd=directory)
                 except FileNotFoundError:raw=b''
+                try:gap=decode(read_private('http-coverage-lost.json',16384,directory_fd=directory))
+                except FileNotFoundError:gap=None
+                if gap is not None and gap!=dict(version='G2C-App-smoke-HTTP-gap.1',policy_sha256=self.controls.window['policy_sha256']):
+                    raise Unavailable('APP_SMOKE_HTTP_GAP_MARKER_CHANGED')
+                incomplete=gap is not None or len(raw)>16*1024*1024-4096
                 files=[]
                 scope_hash=sha256(scope.encode()).hexdigest()
                 for name in sorted(os.listdir(directory)):
                     if not name.endswith('.read.json'):continue
-                    header=decode(read_private(name,300000,directory_fd=directory))
+                    header=decode(read_private(name,600000,directory_fd=directory))
                     if header.get('scope_sha256')==scope_hash:files.append(name)
             lines=[decode(line)for line in raw.splitlines()]
             if any(x.get('policy_sha256')!=self.controls.window['policy_sha256']for x in lines):
                 raise Unavailable('APP_SMOKE_HTTP_POLICY_CHANGED')
             raw=b''.join(canonical(row)+b'\n'for row in lines if row['scope_sha256']==scope_hash)
-            return dict(log_utf8=raw.decode(),log_sha256=sha256(raw).hexdigest(),read_files=files)
+            return dict(log_utf8=raw.decode(),log_sha256=sha256(raw).hexdigest(),read_files=files,coverage_lost=incomplete)
         return self.originals.boundary.with_history_context(token,project)
 
+    def http_checkpoint(self,token):
+        value=self._http_view(token)
+        raw=value['log_utf8'].encode()
+        # The immutable prefix fence is small even after many actual polls.
+        # Publication filenames are not request/step evidence.
+        return dict(log_bytes=len(raw),log_sha256=sha256(raw).hexdigest())
+
     def http_observed(self,token,before):
-        current=self.http_checkpoint(token)
-        if not current['log_utf8'].startswith(before['log_utf8']):
+        current=self._http_view(token);raw=current['log_utf8'].encode()
+        offset=before['log_bytes']
+        if len(raw)<offset or sha256(raw[:offset]).hexdigest()!=before['log_sha256']:
             raise Unavailable('APP_SMOKE_HTTP_LOG_REWRITTEN')
         def project(context):
             scope_hash=sha256(context.scope.encode()).hexdigest()
-            delta=current['log_utf8'][len(before['log_utf8']):]
-            rows=[decode(line)for line in delta.encode().splitlines()]
+            rows=[decode(line)for line in raw[offset:].splitlines()]
             rows=[x for x in rows if x['scope_sha256']==scope_hash]
             return rows
         rows=self.originals.boundary.with_history_context(token,project)
+        starts={row['exchange_id']:row for row in rows if row['method']=='GET'and row['phase']=='started'}
+        finishes={row['exchange_id']:row for row in rows if row['method']=='GET'and row['phase']=='finished'}
         reads=[]
-        for name in sorted(set(current['read_files'])-set(before['read_files'])):
+        for name in current['read_files']:
             with self.controls.directory()as directory:
-                data_raw=read_private(name,300000,directory_fd=directory)
+                data_raw=read_private(name,600000,directory_fd=directory)
                 try:receipt=decode(read_private(name+'.receipt',16384,directory_fd=directory))
                 except FileNotFoundError:continue
             data=decode(data_raw)
+            exchange=data.get('exchange_id')
+            if exchange not in starts:continue
+            finish=finishes.get(exchange);start=starts[exchange]
+            if(finish is None or finish.get('route')!=data.get('route')or start.get('route')!=data.get('route')
+                    or finish.get('selector')!=data.get('selector')or finish.get('status')!=200
+                    or finish.get('body_fully_observed')is not True
+                    or finish.get('response_sha256')!=data.get('response_sha256')):
+                raise Unavailable('APP_SMOKE_ACTUAL_GET_EXCHANGE_CHANGED')
             def read(context):
                 if data.get('scope_sha256')!=sha256(context.scope.encode()).hexdigest():return None
                 if (data.get('version')!='G2C-App-smoke-read.1'or data.get('method')!='GET'or
@@ -155,8 +177,16 @@ class SmokeOriginals:
             result=self.originals.boundary.with_history_context(token,read)
             if result is not None:reads.append(result)
         self.controls.guard()
-        return dict(post_count=sum(x['phase']=='started'for x in rows),post_exchanges=rows,
-                    actual_reads=reads,checkpoint=current)
+        unknown=[x['exchange_id']for x in rows if x['method']=='GET'and x['phase']=='capture_result'
+                 and x['exchange_id']in starts and x.get('capture_status')=='UNKNOWN']
+        outcomes={x['exchange_id']for x in rows if x['method']=='GET'and x['phase']=='capture_result'}
+        pending=sorted(set(starts)-outcomes)
+        return dict(post_count=sum(x['method']=='POST'and x['phase']=='started'for x in rows),
+                    post_exchanges=[x for x in rows if x['method']=='POST'],
+                    read_exchanges=[x for x in rows if x['method']=='GET'],unknown_read_exchanges=unknown,
+                    pending_read_exchanges=pending,http_coverage_lost=current['coverage_lost'],
+                    read_coverage='UNKNOWN'if unknown or current['coverage_lost']else'PENDING'if pending else'OBSERVED',
+                    actual_reads=reads,checkpoint=dict(log_bytes=len(raw),log_sha256=sha256(raw).hexdigest()))
 
     def accounting(self,token,mid,before,*,background_before,background_after):
         """Use all original ops, including failed/UNKNOWN, with exact C delta.

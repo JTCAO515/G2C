@@ -62,6 +62,7 @@ def exercise(auth,conninfo):
     # The normal Home new-chat wire is accepted by the actual signed boundary.
     # Only its outer digest is stored by the legacy path: do not invent bytes.
     text='你是谁';f.policy['slots'][0]['text_sha256']=sha256(text.encode()).hexdigest()
+    f.policy['slots'][1]['text_sha256']=sha256('你能做啥'.encode()).hexdigest()
     write(f.path,f.policy)
     write(f.claims/'claims.json',dict(version=CLAIMS,policy_sha256=sha256(f.path.read_bytes()).hexdigest(),state='ACTIVE',claims=[]))
     local_budget=AuthorizationBudget(root/'financial',clock=lambda:datetime(2026,11,16,tzinfo=timezone.utc))
@@ -141,8 +142,8 @@ def exercise(auth,conninfo):
     try:
         asyncio.run(call())
         end=time.monotonic()+5
-        while observer.queue.unfinished_tasks and time.monotonic()<end:time.sleep(.01)
-        assert observer.queue.unfinished_tasks==0
+        while (observer.queue.unfinished_tasks or observer.read_queue.unfinished_tasks)and time.monotonic()<end:time.sleep(.01)
+        assert observer.queue.unfinished_tasks==observer.read_queue.unfinished_tasks==0
         protected=SmokeOriginals(controls,originals)
         footprint=SmokeState(controls,boundary,database).read(token)
         assert footprint['runtime_role']=='cj_m1_runtime'and footprint['role_flags']==[False]*7
@@ -161,24 +162,65 @@ def exercise(auth,conninfo):
         from cj_api.lio_dialogue_routes import _timeline
         actual_read=_timeline(boundary,lambda scope:database.run_repository(scope),None,None,
             token,b.conversation_id,None,multiple=True).body
-        async def call_read():
+        async def call_read(target=b,body=actual_read):
             sent=[]
             async def app(scope,receive,send):
                 await send(dict(type='http.response.start',status=200,headers=[]))
-                await send(dict(type='http.response.body',body=actual_read,more_body=False))
+                await send(dict(type='http.response.body',body=body,more_body=False))
             async def receive():raise AssertionError('no GET body read')
             async def send(message):sent.append(message)
             await OuterMiddleware(app,observer)(dict(type='http',method='GET',path='/v2/lio/timeline',
-                query_string=('conversation_id='+b.conversation_id).encode(),
+                query_string=('conversation_id='+target.conversation_id).encode(),
                 headers=[(b'authorization',('Bearer '+token).encode())]),receive,send)
-            assert sent[-1]['body']==actual_read
+            assert sent[-1]['body']==body
+        # The actual GET begins before the next checkpoint, but publication
+        # deliberately completes after it. Its bytes belong only to the
+        # original request fence, never to that later step.
+        from threading import Event
+        entered=Event();release=Event();publish=observer.publish_read
+        def delayed_read(item,claim):
+            entered.set()
+            if not release.wait(10):raise AssertionError('fixture publication fence not released')
+            return publish(item,claim)
+        observer.publish_read=delayed_read
         asyncio.run(call_read())
+        assert entered.wait(3)
+        next_step=protected.http_checkpoint(token)
+        release.set()
         end=time.monotonic()+5
-        while observer.queue.unfinished_tasks and time.monotonic()<end:time.sleep(.01)
-        assert observer.queue.unfinished_tasks==0
+        while (observer.queue.unfinished_tasks or observer.read_queue.unfinished_tasks)and time.monotonic()<end:time.sleep(.01)
+        assert observer.queue.unfinished_tasks==observer.read_queue.unfinished_tasks==0
         observed=protected.http_observed(token,http_before)
         assert observed['post_count']==0 and len(observed['actual_reads'])==1
         assert observed['actual_reads'][0]['response_utf8'].encode()==actual_read
+        assert protected.http_observed(token,next_step)['actual_reads']==[]
+        assert observed['read_coverage']=='OBSERVED'and observed['pending_read_exchanges']==[]
+        # A terminal native timeline can be returned before the host records
+        # run_once-return. Keep that exact HTTP response, without inventing the
+        # missing producer witness or waiting at the head of the reader queue.
+        raw2=compact(dict(version='LIO-message.2',message_id=str(uuid.uuid4()),text='你能做啥',locale='zh',new_conversation=True))
+        receipt2=boundary.receive_lio(token,raw2,prepare_scope=database._provision_scope,version='LIO-message.2')
+        def second(context):
+            item=context.query_lio_message(receipt2.message_id);r=item.receipt
+            return Binding(context.scope,r.conversation_id,r.generation,r.message_id,r.run_id,r.sequence)
+        b2=boundary.with_history_context(token,second)
+        worker2=run_worker._worker_for_scope(database,model,auth,b.scope,checker,tools_configuration=tools,
+            draft_profile='needs-structured.1',assembly_planning=True,demo_planning=True,national_planning=True,
+            lio_confirmation=load_confirmation_signer(auth),runtime_registrations_for_run=smoke.registrations)
+        outcomes2=worker2.process();assert len(outcomes2)==1 and outcomes2[0].status=='completed'
+        assert controls.claim(b2.scope,b2.message_id)['producer_return']is None
+        actual_read2=_timeline(boundary,lambda scope:database.run_repository(scope),None,None,
+            token,b2.conversation_id,None,multiple=True).body
+        point2=protected.http_checkpoint(token)
+        asyncio.run(call_read(b2,actual_read2))
+        end=time.monotonic()+5
+        while (observer.queue.unfinished_tasks or observer.read_queue.unfinished_tasks)and time.monotonic()<end:time.sleep(.01)
+        assert observer.queue.unfinished_tasks==observer.read_queue.unfinished_tasks==0
+        observed2=protected.http_observed(token,point2)
+        assert len(observed2['actual_reads'])==1 and observed2['actual_reads'][0]['response_utf8'].encode()==actual_read2
+        assert controls.claim(b2.scope,b2.message_id)['producer_return']is None
+        smoke.completed(outcomes2)
+        assert controls.claim(b2.scope,b2.message_id)['producer_return']['acknowledged']is True
         try:protected.outer(dev_auth.token(auth,foreign,30),b.message_id)
         except Exception as error:
             from runtime_adapter.contract import Unavailable

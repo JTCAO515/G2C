@@ -61,8 +61,8 @@ def setup(tmp_path,*,claim=True):
 
 def drain(observer):
     end=time.monotonic()+3
-    while observer.queue.unfinished_tasks and time.monotonic()<end:time.sleep(.01)
-    assert observer.queue.unfinished_tasks==0,'bounded fixture observer did not finish'
+    while (observer.queue.unfinished_tasks or observer.read_queue.unfinished_tasks)and time.monotonic()<end:time.sleep(.01)
+    assert observer.queue.unfinished_tasks==observer.read_queue.unfinished_tasks==0,'bounded fixture observer did not finish'
 
 
 def exchange(observer,raw,*,token=TOKEN,path='/v2/lio/messages'):
@@ -178,6 +178,8 @@ def test_actual_scoped_get_response_is_retained_without_issuing_another_get(tmp_
 
 def test_unscoped_or_incomplete_get_cannot_become_a_completed_read(tmp_path):
     f,b,raw,directory,observer,originals=setup(tmp_path)
+    protected=protected_fixture(observer,originals,b)
+    point=protected.http_checkpoint(TOKEN)
     async def scenario():
         async def app(scope,receive,send):
             await send(dict(type='http.response.start',status=200,headers=[]))
@@ -190,6 +192,8 @@ def test_unscoped_or_incomplete_get_cannot_become_a_completed_read(tmp_path):
     try:
         asyncio.run(scenario());assert observer.queue.unfinished_tasks==0
         assert not list(directory.glob('*.read.json'))
+        observed=protected.http_observed(TOKEN,point)
+        assert observed['read_coverage']=='UNKNOWN'and len(observed['unknown_read_exchanges'])==1
     finally:observer.close()
 
 
@@ -218,3 +222,149 @@ def test_dynamic_mid_is_only_the_current_frozen_step_claim_after_checkpoint():
         step_claim(capture,[claim],dict(nonce=slot['nonce'],text=None),None,checkpoint)
     with pytest.raises(Unavailable,match='NO_SEND_SLOT'):
         step_claim(capture,[claim],dict(nonce='c'*32,text='unfrozen'),None,checkpoint)
+
+
+def get_exchange(observer,cid,response):
+    async def scenario():
+        sent=[]
+        async def app(scope,receive,send):
+            await send(dict(type='http.response.start',status=200,headers=[]))
+            await send(dict(type='http.response.body',body=response,more_body=False))
+        async def receive():raise AssertionError('no GET request body')
+        async def send(message):sent.append(message)
+        await OuterMiddleware(app,observer)(dict(type='http',method='GET',path='/v2/lio/timeline',
+            query_string=('conversation_id='+cid).encode(),
+            headers=[(b'authorization',('Bearer '+TOKEN).encode())]),receive,send)
+        assert sent[-1]['body']==response
+    asyncio.run(scenario())
+
+
+def protected_fixture(observer,originals,binding):
+    from cj_api.app_smoke_originals import SmokeOriginals
+    def history(token,project):
+        if token!=TOKEN:raise Unavailable('FIXTURE_AUTH_DENIED')
+        return project(SimpleNamespace(scope=binding.scope))
+    original=SimpleNamespace(raw=originals.raw,receipt=SimpleNamespace(
+        conversation_id=binding.conversation_id,generation=binding.generation,message_id=binding.message_id,
+        run_id=binding.run_id,sequence=binding.message_sequence,input_sha256=sha256(originals.raw).hexdigest()))
+    originals.query_original=lambda context,mid:original
+    originals.boundary=SimpleNamespace(with_history_context=history)
+    return SmokeOriginals(observer.controls,originals)
+
+
+def test_previous_step_get_published_late_is_not_a_new_step_read(tmp_path):
+    import threading
+    f,b,raw,directory,observer,originals=setup(tmp_path)
+    protected=protected_fixture(observer,originals,b)
+    response=canonical(dict(conversation_id=b.conversation_id,messages=[]))
+    entered=threading.Event();release=threading.Event();publish=observer.publish_read
+    def delayed(item,claim):
+        entered.set();assert release.wait(10);return publish(item,claim)
+    observer.publish_read=delayed
+    try:
+        original_point=protected.http_checkpoint(TOKEN)
+        get_exchange(observer,b.conversation_id,response)
+        assert entered.wait(2)
+        next_step=protected.http_checkpoint(TOKEN)
+        assert not list(directory.glob('*.read.json'))
+        release.set();drain(observer)
+        assert protected.http_observed(TOKEN,next_step)['actual_reads']==[]
+        actual=protected.http_observed(TOKEN,original_point)
+        assert actual['post_count']==0 and len(actual['actual_reads'])==1
+        data=actual['actual_reads'][0]
+        phases=[row['phase']for row in actual['read_exchanges']if row['exchange_id']==data['exchange_id']]
+        assert phases==['started','finished','capture_result']
+        assert actual['read_coverage']=='OBSERVED'
+    finally:release.set();observer.close()
+
+
+def test_twenty_unclosed_polls_do_not_wait_or_starve_original_post_and_final_get(tmp_path):
+    f,b,raw,directory,observer,originals=setup(tmp_path,claim=False)
+    response=canonical(dict(conversation_id=b.conversation_id,messages=[]))
+    try:
+        for _ in range(20):get_exchange(observer,b.conversation_id,response)
+        assert observer.queue.unfinished_tasks==observer.read_queue.unfinished_tasks==0
+        smoke=f.load();smoke.registrations(b)
+        f.database.statuses[(b.scope,b.run_id,b.message_id)]=('completed',3,True)
+        smoke.completed([SimpleNamespace(message_id=b.message_id,run_id=b.run_id,status='completed')])
+        exchange(observer,raw);drain(observer)
+        assert json.loads(next(directory.glob('*.receipt.json')).read_bytes())['status']=='CAPTURED'
+        get_exchange(observer,b.conversation_id,response);drain(observer)
+        assert len(list(directory.glob('*.read.json')))==1
+        rows=[json.loads(line)for line in(directory/'http-attempts.jsonl').read_text().splitlines()]
+        assert sum(row.get('capture_status')=='NOT_READY'for row in rows)==20
+    finally:observer.close()
+
+
+def test_full_read_queue_does_not_consume_post_capacity_and_overflow_stays_unknown(tmp_path):
+    import threading
+    f,b,raw,directory,observer,originals=setup(tmp_path)
+    protected=protected_fixture(observer,originals,b)
+    response=canonical(dict(conversation_id=b.conversation_id,messages=[]))
+    entered=threading.Event();release=threading.Event();publish=observer.publish_read
+    def blocked(item,claim):
+        entered.set();assert release.wait(10);return publish(item,claim)
+    observer.publish_read=blocked
+    try:
+        point=protected.http_checkpoint(TOKEN)
+        get_exchange(observer,b.conversation_id,response);assert entered.wait(2)
+        for _ in range(13):get_exchange(observer,b.conversation_id,response)
+        assert observer.read_queue.qsize()==12
+        exchange(observer,raw)
+        assert observer.queue.qsize()==1
+        release.set();drain(observer)
+        assert json.loads(next(directory.glob('*.receipt.json')).read_bytes())['status']=='CAPTURED'
+        result=protected.http_observed(TOKEN,point)
+        assert result['post_count']==1 and result['read_coverage']=='UNKNOWN'
+        assert len(result['unknown_read_exchanges'])==1
+    finally:release.set();observer.close()
+
+
+def test_read_artifact_bound_preserves_prior_bytes_and_reports_unknown(tmp_path,monkeypatch):
+    from deploy.hk import app_smoke_outer
+    monkeypatch.setattr(app_smoke_outer,'MAX_READ_ARTIFACTS',1)
+    f,b,raw,directory,observer,originals=setup(tmp_path)
+    protected=protected_fixture(observer,originals,b)
+    response=canonical(dict(conversation_id=b.conversation_id,messages=[]))
+    try:
+        point=protected.http_checkpoint(TOKEN)
+        get_exchange(observer,b.conversation_id,response);drain(observer)
+        old={p.name:p.read_bytes()for p in directory.glob('*.read.json')}
+        get_exchange(observer,b.conversation_id,response);drain(observer)
+        assert {p.name:p.read_bytes()for p in directory.glob('*.read.json')}==old
+        result=protected.http_observed(TOKEN,point)
+        assert result['read_coverage']=='UNKNOWN'and len(result['actual_reads'])==1
+    finally:observer.close()
+
+
+def test_completed_http_snapshot_before_worker_witness_is_retained_without_wait(tmp_path):
+    f,b,raw,directory,observer,originals=setup(tmp_path,claim=False)
+    smoke=f.load();smoke.registrations(b)  # producer return deliberately not yet recorded
+    response=canonical(dict(conversation_id=b.conversation_id,
+        messages=[dict(message_id=b.message_id,status='completed',answer='actual terminal HTTP snapshot')]))
+    try:
+        get_exchange(observer,b.conversation_id,response);drain(observer)
+        assert len(list(directory.glob('*.read.json')))==1
+        data=json.loads(next(directory.glob('*.read.json')).read_bytes())
+        assert data['response_utf8'].encode()==response
+        claim=json.loads((f.claims/'claims.json').read_bytes())['claims'][0]
+        assert claim['producer_return']is None  # read evidence never fabricates a completion witness
+    finally:observer.close()
+
+
+def test_http_metadata_capacity_gap_remains_unknown_after_later_success(tmp_path,monkeypatch):
+    from deploy.hk import app_smoke_outer
+    f,b,raw,directory,observer,originals=setup(tmp_path)
+    protected=protected_fixture(observer,originals,b)
+    point=protected.http_checkpoint(TOKEN)
+    try:
+        monkeypatch.setattr(app_smoke_outer,'HTTP_LOG_LIMIT',10)
+        exchange(observer,raw);drain(observer)
+        assert(directory/'http-coverage-lost.json').exists()
+        monkeypatch.setattr(app_smoke_outer,'HTTP_LOG_LIMIT',16*1024*1024)
+        get_exchange(observer,b.conversation_id,canonical(dict(conversation_id=b.conversation_id,messages=[])))
+        drain(observer)
+        result=protected.http_observed(TOKEN,point)
+        assert len(result['actual_reads'])==1
+        assert result['http_coverage_lost']is True and result['read_coverage']=='UNKNOWN'
+    finally:observer.close()

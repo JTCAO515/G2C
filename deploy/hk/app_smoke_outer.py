@@ -39,6 +39,8 @@ OUTER='G2C-App-smoke-outer.1'
 ROUTES={'/v1/lio/messages':'LIO-message.1','/v2/lio/messages':'LIO-message.2'}
 MAX_BODY=16384
 READ_ROUTES=frozenset(('/v1/lio/timeline','/v2/lio/timeline','/v2/lio/messages'))
+HTTP_LOG_LIMIT=16*1024*1024
+MAX_READ_ARTIFACTS=64
 
 
 def decoded(raw):
@@ -65,6 +67,7 @@ class ReceivedRead:
     response:bytes=field(repr=False)
     status:int
     deadline:float
+    exchange_id:str
 
 
 class OuterControls:
@@ -163,7 +166,7 @@ class OuterControls:
             raise Unavailable('APP_SMOKE_ORIGINAL_PRODUCER_RETURN_UNAVAILABLE')
         return claim
 
-    def read_anchor(self,scope,route,selector):
+    def read_anchor(self,scope,route,selector,*,require_return=True):
         self.guard();p=self.policy
         with private_directory(p['directory'],Unavailable('APP_SMOKE_CLAIM_DIRECTORY_AUTHORITY'))as directory:
             info=os.fstat(directory)
@@ -171,7 +174,8 @@ class OuterControls:
                 raise Unavailable('APP_SMOKE_CLAIM_DIRECTORY_REPLACED')
             value=decoded(read_private('claims.json',65536,directory_fd=directory))
         if value.get('policy_sha256')!=self.window['policy_sha256']:raise Unavailable('APP_SMOKE_READ_CLAIM_CHANGED')
-        rows=[x for x in value['claims']if x['binding']['scope']==scope and x.get('producer_return')is not None]
+        rows=[x for x in value['claims']if x['binding']['scope']==scope
+              and (not require_return or x.get('producer_return')is not None)]
         if route=='/v2/lio/messages':
             rows=[x for x in rows if x['binding']['message_id']==selector['message_id']and x['input_sha256']==selector['input_sha256']]
         else:
@@ -185,7 +189,7 @@ class OuterControls:
 class OuterCapture:
     def __init__(self,controls,fast_checker,originals,*,clock=time.time):
         self.controls,self.checker,self.originals,self.clock=controls,fast_checker,originals,clock
-        self.queue=Queue(maxsize=12);self.stop=threading.Event()
+        self.queue=Queue(maxsize=12);self.read_queue=Queue(maxsize=12);self.stop=threading.Event()
         self.http_lock=threading.Lock()
         self.thread=threading.Thread(target=self._loop,name='app-smoke-outer',daemon=True);self.thread.start()
 
@@ -194,6 +198,21 @@ class OuterCapture:
         return (decision.status is AdmissionStatus.ALLOWED and decision.principal.subject in self.controls.subjects)
 
     def _http(self,value):
+        try:return self._write_http(value)
+        except (OSError,ValueError,Unavailable):
+            # Keep a one-way gap marker; later successful observations cannot
+            # turn a lost part of this window into complete HTTP coverage.
+            with self.controls.directory()as directory:
+                try:fd=os.open('http-coverage-lost.json',os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600,dir_fd=directory)
+                except FileExistsError:pass
+                else:
+                    with os.fdopen(fd,'wb')as output:
+                        output.write(canonical(dict(version='G2C-App-smoke-HTTP-gap.1',
+                            policy_sha256=self.controls.window['policy_sha256'])));output.flush();os.fsync(output.fileno())
+                    os.fsync(directory)
+            raise
+
+    def _write_http(self,value):
         controls=self.controls
         with self.http_lock,controls.directory()as directory:
             fd=os.open('http-attempts.jsonl',os.O_WRONLY|os.O_APPEND|os.O_CREAT|os.O_NOFOLLOW,0o600,dir_fd=directory)
@@ -201,21 +220,21 @@ class OuterCapture:
                 info=os.fstat(fd)
                 import stat
                 if(not stat.S_ISREG(info.st_mode)or info.st_uid!=os.getuid()or info.st_mode&0o777!=0o600
-                        or info.st_nlink!=1 or info.st_size>262144):
+                        or info.st_nlink!=1 or info.st_size>HTTP_LOG_LIMIT):
                     raise Unavailable('APP_SMOKE_HTTP_LOG_UNQUALIFIED')
                 line=canonical(value)+b'\n'
-                if info.st_size+len(line)>262144 or os.write(fd,line)!=len(line):
+                if info.st_size+len(line)>HTTP_LOG_LIMIT or os.write(fd,line)!=len(line):
                     raise Unavailable('APP_SMOKE_HTTP_LOG_COVERAGE_LOST')
                 os.fsync(fd)
             finally:os.close(fd)
 
-    def begin(self,token,route):
+    def begin(self,token,route,*,method='POST'):
         self.controls.guard();decision=self.checker.check(token)
         if decision.status is not AdmissionStatus.ALLOWED or decision.principal.subject not in self.controls.subjects:return None
         scope=scope_for(decision.principal.issuer,decision.principal.subject);exchange=str(uuid4())
         self._http(dict(version='G2C-App-smoke-HTTP.1',phase='started',exchange_id=exchange,
             policy_sha256=self.controls.window['policy_sha256'],scope_sha256=sha256(scope.encode()).hexdigest(),
-            ts=datetime.fromtimestamp(self.clock(),timezone.utc).isoformat(),method='POST',route=route))
+            ts=datetime.fromtimestamp(self.clock(),timezone.utc).isoformat(),method=method,route=route))
         return scope,exchange
 
     def finish(self,identity,route,raw,*,status,request_id):
@@ -243,9 +262,44 @@ class OuterCapture:
         item=Received(token,scope,raw,route,command.id,sha256(raw).hexdigest(),min(self.controls.ends,self.clock()+90))
         self.queue.put_nowait(item)
 
-    def submit_read(self,token,route,query,response,status):
+    def submit_read(self,token,route,query,response,status,*,identity):
         self.controls.guard();decision=self.checker.check(token)
         if decision.status is not AdmissionStatus.ALLOWED or decision.principal.subject not in self.controls.subjects:return
+        scope=scope_for(decision.principal.issuer,decision.principal.subject)
+        if identity is None or identity[0]!=scope:raise Unavailable('APP_SMOKE_GET_EXCHANGE_REQUIRED')
+        exchange=identity[1]
+        try:selector=self._read_selector(route,query)
+        except (ValueError,UnicodeError):selector=None
+        self._http(dict(version='G2C-App-smoke-HTTP.1',phase='finished',exchange_id=exchange,
+            policy_sha256=self.controls.window['policy_sha256'],scope_sha256=sha256(scope.encode()).hexdigest(),
+            ts=datetime.fromtimestamp(self.clock(),timezone.utc).isoformat(),method='GET',route=route,
+            selector=selector,status=status,body_fully_observed=response is not None,
+            response_sha256=None if response is None else sha256(response).hexdigest()))
+        if selector is None or status!=200 or response is None or len(response)>262144:
+            self._read_outcome(scope,exchange,'UNKNOWN');return
+        # A pending poll is not a future completed-read witness. Do not wait
+        # ninety seconds at the head of the queue for an absent/old anchor.
+        claim=self.controls.read_anchor(scope,route,selector,require_return=False)
+        if claim is None:
+            self._read_outcome(scope,exchange,'NOT_READY');return
+        if claim.get('producer_return')is None:
+            payload=decoded(response)
+            # A completed HTTP snapshot may precede the worker-return witness
+            # by a few instructions. Retain those actual bytes immediately;
+            # ordinary in-progress polling is still not queued for ninety s.
+            terminal=(route in('/v1/lio/timeline','/v2/lio/timeline')and
+                any(row.get('message_id')==claim['binding']['message_id']and row.get('status')in('completed','failed')
+                    for row in payload.get('messages',[])))
+            if not terminal:
+                self._read_outcome(scope,exchange,'NOT_READY');return
+        try:self.read_queue.put_nowait(ReceivedRead(token,scope,route,selector,response,status,
+            min(self.controls.ends,self.clock()+90),exchange))
+        except Full:
+            self._read_outcome(scope,exchange,'UNKNOWN');raise
+
+    @staticmethod
+    def _read_selector(route,query):
+        if len(query)>2048:raise ValueError('bounded actual GET selector required')
         pairs=parse_qsl(query.decode('ascii'),keep_blank_values=True,strict_parsing=True)
         selector=dict(pairs)
         if len(selector)!=len(pairs):raise ValueError('duplicate App read selector')
@@ -256,21 +310,28 @@ class OuterCapture:
             if set(selector)!={'conversation_id'}or re.fullmatch('lio-dialogue-[0-9a-f]{32}',selector['conversation_id'])is None:
                 raise ValueError('exact scoped timeline required')
         elif selector:raise ValueError('default timeline has no selector')
-        if status!=200 or len(response)>262144:raise ValueError('bounded actual successful App read required')
-        scope=scope_for(decision.principal.issuer,decision.principal.subject)
-        self.queue.put_nowait(ReceivedRead(token,scope,route,selector,response,status,
-            min(self.controls.ends,self.clock()+90)))
+        return selector
+
+    def _read_outcome(self,scope,exchange,status):
+        self._http(dict(version='G2C-App-smoke-HTTP.1',phase='capture_result',exchange_id=exchange,
+            policy_sha256=self.controls.window['policy_sha256'],scope_sha256=sha256(scope.encode()).hexdigest(),
+            ts=datetime.fromtimestamp(self.clock(),timezone.utc).isoformat(),method='GET',capture_status=status))
 
     def _loop(self):
         while not self.stop.is_set():
-            try:item=self.queue.get(timeout=.1)
-            except Empty:continue
+            try:item=self.queue.get_nowait();selected_queue=self.queue
+            except Empty:
+                try:item=self.read_queue.get(timeout=.05);selected_queue=self.read_queue
+                except Empty:continue
             try:
+                if isinstance(item,ReceivedRead):
+                    if self.clock()>=item.deadline:raise Unavailable('APP_SMOKE_READ_CAPTURE_DEADLINE')
+                    claim=self.controls.read_anchor(item.scope,item.route,item.selector,require_return=False)
+                    if claim is None:raise Unavailable('APP_SMOKE_READ_ANCHOR_NOT_CLOSED')
+                    self.publish_read(item,claim)
+                    self._read_outcome(item.scope,item.exchange_id,'CAPTURED')
+                    continue
                 while not self.stop.is_set()and self.clock()<item.deadline:
-                    if isinstance(item,ReceivedRead):
-                        claim=self.controls.read_anchor(item.scope,item.route,item.selector)
-                        if claim is not None:self.publish_read(item,claim);break
-                        self.stop.wait(.05);continue
                     claim=self.controls.claim(item.scope,item.message_id)
                     if claim is not None and claim.get('producer_return')is not None:
                         self.publish(item,claim);break
@@ -280,9 +341,10 @@ class OuterCapture:
                 from .access_log import alert
                 alert('app_smoke_outer_capture_unavailable')
                 try:
-                    if not isinstance(item,ReceivedRead):self._receipt(item,'UNKNOWN')
+                    if isinstance(item,ReceivedRead):self._read_outcome(item.scope,item.exchange_id,'UNKNOWN')
+                    else:self._receipt(item,'UNKNOWN')
                 except (OSError,ValueError,Unavailable):alert('app_smoke_outer_receipt_unavailable')
-            finally:self.queue.task_done()
+            finally:selected_queue.task_done()
 
     def publish(self,item,claim):
         controls=self.controls
@@ -353,6 +415,8 @@ class OuterCapture:
             b=Binding(scope,r.conversation_id,r.generation,r.message_id,r.run_id,r.sequence)
             if(scope!=item.scope or asdict(b)!=claim['binding']or sha256(original.raw).hexdigest()!=claim['canonical_sha256']):
                 raise Unavailable('APP_SMOKE_HTTP_READ_OWNER_CHANGED')
+            if claim.get('producer_return')is None and source[0][0]not in('completed','failed','cancelled','context_invalid','unknown'):
+                raise Unavailable('APP_SMOKE_HTTP_READ_NOT_TERMINAL')
             payload=decoded(item.response)
             if item.route in('/v1/lio/timeline','/v2/lio/timeline')and payload.get('conversation_id')!=b.conversation_id:
                 raise Unavailable('APP_SMOKE_HTTP_READ_CONVERSATION_CHANGED')
@@ -360,13 +424,16 @@ class OuterCapture:
             value=dict(version='G2C-App-smoke-read.1',source_commit=controls.policy['source_commit'],
                 policy_sha256=controls.window['policy_sha256'],scope_sha256=sha256(scope.encode()).hexdigest(),
                 binding=claim['binding'],method='GET',route=item.route,selector=item.selector,status=item.status,
+                exchange_id=item.exchange_id,
                 response_utf8=item.response.decode('utf-8'),response_sha256=sha256(item.response).hexdigest(),
                 observed_at=datetime.fromtimestamp(self.clock(),timezone.utc).isoformat())
             identity=sha256(canonical(value)).hexdigest()+'.read.json'
             with controls.directory()as directory:
+                if sum(name.endswith('.read.json')for name in os.listdir(directory))>=MAX_READ_ARTIFACTS:
+                    raise Unavailable('APP_SMOKE_READ_ARTIFACT_BOUND_REACHED')
                 try:fd=os.open(identity,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600,dir_fd=directory)
                 except FileExistsError:
-                    if read_private(identity,300000,directory_fd=directory)!=canonical(value):
+                    if read_private(identity,600000,directory_fd=directory)!=canonical(value):
                         raise Unavailable('APP_SMOKE_HTTP_READ_BYTES_CHANGED')
                 else:
                     with os.fdopen(fd,'wb')as output:
@@ -397,6 +464,8 @@ class OuterMiddleware:
         if scope['type']=='http'and scope.get('method')=='GET'and scope.get('path')in READ_ROUTES:
             token=_token(Request(scope))
             if token is None or not self.observer.eligible(token):return await self.app(scope,receive,send)
+            try:identity=self.observer.begin(token,scope['path'],method='GET')
+            except (OSError,ValueError,Unavailable):identity=None
             response=bytearray();status=None;complete=False
             async def record(message):
                 nonlocal response,status,complete
@@ -409,11 +478,11 @@ class OuterMiddleware:
                 if message['type']=='http.response.body'and not message.get('more_body',False):complete=True
             try:await self.app(scope,receive,record)
             finally:
-                if response is not None and complete:
-                    try:self.observer.submit_read(token,scope['path'],scope.get('query_string',b''),bytes(response),status)
-                    except (OSError,ValueError,Unavailable,Full):
-                        from .access_log import alert
-                        alert('app_smoke_read_capture_unavailable')
+                raw=bytes(response)if response is not None and complete else None
+                try:self.observer.submit_read(token,scope['path'],scope.get('query_string',b''),raw,status,identity=identity)
+                except (OSError,ValueError,Unavailable,Full):
+                    from .access_log import alert
+                    alert('app_smoke_read_capture_unavailable')
             return
         if scope['type']!='http'or scope.get('method')!='POST'or scope.get('path')not in ROUTES:
             return await self.app(scope,receive,send)

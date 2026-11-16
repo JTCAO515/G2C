@@ -15,7 +15,8 @@ POST仅观察现有/v1或/v2/lio/messages，原请求仍由正常App/原API处�
 推断只收了一次POST。正文上界沿现有16384字节；只保留固定输入的普通App UUID。
 未授权主体、登录路由、query/认证字段不进入原文采集。
 
-一个队列线程最多保留12个请求，不新建Runtime。它等待真正worker claim和return，
+一个线程复用原Runtime；POST与GET各有12位有界队列，优先处理POST。
+POST等待真正worker claim和return，
 再用原RuntimeOriginals的当前AUTH/MESSAGE边界核原绑定与两种摘要，发布0600原文及receipt。
 原HTTP响应和异常不改写。缺claim、失败最终检查、过期或队列溢出只会缺证/UNKNOWN，
 不重发、不重建bytes，不因稍后读成功改旧UNKNOWN capture receipt。
@@ -23,6 +24,13 @@ POST仅观察现有/v1或/v2/lio/messages，原请求仍由正常App/原API处�
 GET仅观察同资格下实际App的/v1或/v2/lio/timeline及/v2/lio/messages查询。
 只认已登记且闭合原件的CID/MID；未知旧对话不放宽为通配，首次可由真实seed4闭合。
 保存实际选择器和完整response body（≤256KiB），当前AUTH/原M-frame通过后才有capture receipt。
+GET在请求开始/完整响应后记录同一exchange，原件绑定该exchange；检查点只保存原owner日志前缀
+长度和SHA。只有started在检查点之后的原件属于本步，上一步迟发布的文件不算新请求。
+未知CID/尚进行中的轮询标NOT_READY，不在队头等待90秒；已经完成的原HTTP正文即使早于
+worker-return见证，也可由原M读取守卫保留，但不会生成或替代producer见证/完整费用证明。
+HTTP元数据上界16MiB，完整读原件最多64份；不足、溢出和失败显式UNKNOWN，不删除旧原件。
+元数据丢失另留单向gap标记，后续成功不能覆盖该窗口的丢证。返回read_coverage的PENDING
+仅表示原请求/原件尚未闭合，UNKNOWN不得判PASS；actual_reads仍须有本步真实GET和当前守卫。
 未完成body、超限、未知选择器或缺receipt不能拼成恢复PASS。
 纯本地历史列举不虚构远程API。A旧缓存加B另一次GET也不能代替实际App读请求。
 
@@ -31,7 +39,7 @@ GET仅观察同资格下实际App的/v1或/v2/lio/timeline及/v2/lio/messages查
 `python -B -m deploy.hk.app_smoke_read <B的API策略路径>` 从stdin接既有token，
 不在argv、日志或输出回传token。原请求G2C-App-smoke-read-request.1绑定expected_source、
 plan_sha256、冻结step nonce。checkpoint在服务端以O_EXCL写owner/plan/nonce绑定原生状态、
-唯一账本行集和HTTP基线；observe只认这份原件的checkpoint_ref，不接受client自带before。
+唯一账本行集和HTTP前缀基线；observe只认这份原件的checkpoint_ref，不接受client自带before。
 普通App没有独立MID时，observe的message_id可为null：只按当前已鉴权owner、冻结step nonce
 对应的唯一slot取实际typed claim，且该MID必须不在服务端checkpoint中。缺claim、多义、读步骤、
 其他slot或显式MID不符一律不返回成功；不把null用于历史通配，也不按相邻时间任选。
