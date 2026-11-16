@@ -7,6 +7,19 @@ from deploy.hk import app_smoke_close as close
 from deploy.tests.test_app_smoke_install import point
 
 
+@pytest.mark.parametrize('end',[
+    '2026-11-16T09:00:00+00:00','2026-11-16T09:00:00.000000+00:00',
+    '2026-11-16T17:00:00+08:00','2026-11-16T04:00:00-05:00'])
+def test_host_expiry_aware_offsets_preserve_exact_boundary(end):
+    epoch=1794819600
+    assert close.expired(end,epoch)is True
+    assert close.expired(end,epoch-.001)is False
+
+
+def test_host_expiry_does_not_infer_timezone_from_naive_input():
+    with pytest.raises(ValueError):close.expired('2026-11-16T09:00:00',1794819600)
+
+
 def test_closed_capture_drains_and_restores_default_roles_without_fee_or_PASS_claim(tmp_path):
     calls=[]
     result=close.transition(tmp_path,point(),lambda:point(),lambda captured:calls.append(('check',captured)),
