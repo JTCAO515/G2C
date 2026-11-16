@@ -231,7 +231,7 @@ def selected_provider_join(host,worker,binding,bundle,skeleton,calls,scenario):
     return len(writers)
 
 
-def main(*,natural_direct=False,early_departure=True,production=False):
+def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1,2),followups=True):
     original_model=ExplorationPlanning._model
     original_http=httpx.MockTransport.handle_request
     original_post=TestClient.post
@@ -395,14 +395,14 @@ def main(*,natural_direct=False,early_departure=True,production=False):
             # ledger merely to run unrelated regression cases in one cohort.
             for language in ('zh','en'):
                 saved_runs.clear()
-                native.main(saved_runs=saved_runs,generation=True,languages=(language,))
-                assert len(saved_runs)==3
+                native.main(saved_runs=saved_runs,generation=True,languages=(language,),cases=cases,followups=followups)
+                assert len(saved_runs)==len(cases)
                 all_saved.update(saved_runs)
         else:native.main(saved_runs=saved_runs)
 
     if production:
-        assert len(all_saved)==len(completed)==6 and len(wires)==30
-        print('PASS default production factory ZH3/EN3 complete skeleton/selected retrieval/order/routes/schedule/final wording/sole writer and actual timeline Card3; '+str(len(supplier_wires))+' fixture supplier calls; real/G6/G9 UNRUN',flush=True)
+        assert len(all_saved)==len(completed)==2*len(cases) and len(wires)==10*len(cases)
+        print('PASS default production factory '+str(len(cases))+'ZH/'+str(len(cases))+'EN complete skeleton/selected retrieval/order/routes/schedule/final wording/sole writer and actual timeline Card3; '+str(len(supplier_wires))+' fixture supplier calls; real/G6/G9 UNRUN',flush=True)
         return
     assert len(saved_runs)==2
     assert len(completed)==6 and len(wires)==24 and lookups==([2,13,2,2,13,2]if early_departure else[2,11,2,2,11,2])
