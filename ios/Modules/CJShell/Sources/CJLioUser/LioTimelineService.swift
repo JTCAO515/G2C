@@ -110,7 +110,7 @@ extension LioService {
         timeline(send: { original in
             try await signedSend(client, original, readFailed: readFailed)
         }, read: { id, before in
-            try await noted(readFailed, observation: { client.lastObservation.flatMap { $0.kind == .timeline ? $0 : nil } }) {
+            try await noted(readFailed) {
                 try await client.timeline(conversationID: id, before: before)
             }
         })
@@ -123,12 +123,11 @@ extension LioService {
         timeline(send: { original in
             try await signedSend(client, original, readFailed: readFailed)
         }, read: { id, before in
-            try await noted(readFailed, observation: { client.lastObservation.flatMap { $0.kind == .timeline ? $0 : nil } }) {
+            try await noted(readFailed) {
                 try await client.timeline(conversationID: id, before: before, version: version)
             }
         }, destination: destination, scopedVersion: version, recoverFirst: { id in
-            try await noted(readFailed, stage: .firstSendLookup,
-                observation: { client.lastObservation.flatMap { $0.kind == .firstLookup ? $0 : nil } }) {
+            try await noted(readFailed, stage: .firstSendLookup) {
                 try await client.reconcileFirstChat(messageID: id)
             }
         }, didCreate: didCreate)
@@ -138,35 +137,35 @@ extension LioService {
     public static func signedExplorationConversation(_ client: LioTimelineHTTP,
         destination: LioTimelineWire.V2Destination, didCreate: @escaping @Sendable (String) async -> Void) -> LioService {
         exploration(send: { original in try await signedSend(client, original) }, read: { id, before in
-            try await noted(nil, observation: { client.lastObservation.flatMap { $0.kind == .exploration ? $0 : nil } }) {
+            try await noted(nil) {
                 try await client.exploration(conversationID: id, before: before)
             }
         }, destination: destination, recoverFirst: { id in
-            try await noted(nil, stage: .firstSendLookup,
-                observation: { client.lastObservation.flatMap { $0.kind == .firstLookup ? $0 : nil } }) {
+            try await noted(nil, stage: .firstSendLookup) {
                 try await client.reconcileFirstChat(messageID: id)
             }
         }, didCreate: didCreate)
     }
 
-    private static func noted<Value>(_ readFailed: (@MainActor @Sendable (any Error) -> Void)?,
+    static func noted<Value: Sendable>(_ readFailed: (@MainActor @Sendable (any Error) -> Void)?,
         stage: LioFailureDiagnosis.Stage = .timeline,
-        observation: @escaping @MainActor @Sendable () -> LioTimelineHTTP.Observation? = { nil },
-        _ read: () async throws -> Value) async throws -> Value {
-        do { return try await read() }
-        catch is CancellationError { throw CancellationError() }
-        catch {
-            if Task.isCancelled { throw CancellationError() }
-            let failure = await MainActor.run { LioRequestProblem(error, stage: stage, observation: observation()) }
-            if let readFailed { await readFailed(failure) }
-            throw failure
+        _ read: @Sendable () async throws -> Value) async throws -> Value {
+        let record = await LioOperationObservation()
+        return try await LioTimelineHTTP.observing({ record.value = $0 }) {
+            do { return try await read() }
+            catch is CancellationError { throw CancellationError() }
+            catch {
+                if Task.isCancelled { throw CancellationError() }
+                let failure = await MainActor.run { LioRequestProblem(error, stage: stage, observation: record.value) }
+                if let readFailed { await readFailed(failure) }
+                throw failure
+            }
         }
     }
 
     private static func signedSend(_ client: LioTimelineHTTP, _ original: LioTimelineWire.Send,
         readFailed: (@MainActor @Sendable (any Error) -> Void)? = nil) async throws -> SendResult {
-        let result = try await noted(readFailed, stage: .send,
-            observation: { client.lastObservation.flatMap { $0.kind == .send ? $0 : nil } }) {
+        let result = try await noted(readFailed, stage: .send) {
             try await client.submit(original)
         }
         return switch result {
@@ -432,4 +431,8 @@ private actor LioTimelineSession {
         if let id = page.conversationID { conversationID = id }
         return page
     }
+}
+
+@MainActor private final class LioOperationObservation {
+    var value: LioTimelineHTTP.Observation?
 }

@@ -88,7 +88,7 @@ public struct LioChatLibrary {
                 return try await sessions.restore(selected)
             } catch {
                 // The original error is rethrown unchanged; only a local note is added.
-                if !(error is CancellationError) { notes.record(sessions.problem(error)) }
+                if !(error is CancellationError) && !Task.isCancelled { notes.record(sessions.problem(error)) }
                 throw error
             }
         }
@@ -104,8 +104,7 @@ private final class LioSignedChatSessions {
     private let continuity: LioChatContinuity
     private let version: LioTimelineWire.Version
     private let notes: LioDiagnosticLog
-    /// The restore step in progress, kept so a failure names where it happened.
-    private var stage = LioFailureDiagnosis.Stage.selectedChat
+    private var lastRestoreProblem: LioRequestProblem?
 
     init(client: LioTimelineHTTP, continuity: LioChatContinuity, version: LioTimelineWire.Version,
          notes: LioDiagnosticLog, tripHistory: @escaping @MainActor (String) -> LioTripHistoryClient) {
@@ -119,8 +118,7 @@ private final class LioSignedChatSessions {
     func diagnose(_ error: any Error) -> LioFailureDiagnosis { problem(error).diagnosis }
 
     func problem(_ error: any Error) -> LioRequestProblem {
-        let observation = stage == .firstSendLookup ? client.lastObservation.flatMap { $0.kind == .firstLookup ? $0 : nil } : nil
-        return LioRequestProblem(error, stage: stage, observation: observation)
+        lastRestoreProblem ?? LioRequestProblem(error, stage: .selectedChat)
     }
 
     private func conversationService(_ destination: LioTimelineWire.V2Destination,
@@ -133,13 +131,15 @@ private final class LioSignedChatSessions {
     }
 
     func history() async throws -> [LioChatSession] {
+        let attempt = LioRestoreAttempt(stage: .history)
         do {
-            _ = try await client.reconcileFirstChat()
-            return try recordedSessions()
+            return try await LioTimelineHTTP.observing({ attempt.observation = $0 }) { @MainActor [self] in
+                _ = try await client.reconcileFirstChat()
+                return try recordedSessions()
+            }
         } catch {
-            if !(error is CancellationError) {
-                let observation = client.lastObservation.flatMap { $0.kind == .firstLookup ? $0 : nil }
-                notes.record(error: error, stage: .history, observation: observation)
+            if !(error is CancellationError) && !Task.isCancelled {
+                notes.record(LioRequestProblem(error, stage: .history, observation: attempt.observation))
             }
             throw error
         }
@@ -176,14 +176,30 @@ private final class LioSignedChatSessions {
     }
 
     func restore(_ selected: Data) async throws -> LioChatSession {
+        let attempt = LioRestoreAttempt(stage: .selectedChat)
+        lastRestoreProblem = nil
+        do {
+            return try await LioTimelineHTTP.observing({ attempt.observation = $0 }) { @MainActor [self] in
+                try await restore(selected, attempt: attempt)
+            }
+        } catch {
+            if Task.isCancelled { throw CancellationError() }
+            if !(error is CancellationError) {
+                lastRestoreProblem = LioRequestProblem(error, stage: attempt.stage, observation: attempt.observation)
+            }
+            throw error
+        }
+    }
+
+    private func restore(_ selected: Data, attempt: LioRestoreAttempt) async throws -> LioChatSession {
         if let first = continuity.firstQuestions[selected] {
-            stage = .localRecord
+            attempt.stage = .localRecord
             if try client.firstChatCanReturnToDraft(messageID: first.messageID) {
                 continuity.firstQuestions.removeValue(forKey: selected)
                 if continuity.draft.isEmpty { continuity.draft = first.text }
                 return blank(String(decoding: selected, as: UTF8.self))
             }
-            stage = .firstSendLookup
+            attempt.stage = .firstSendLookup
             guard let id = try await client.reconcileFirstChat(messageID: first.messageID) else {
                 throw MessageHTTPFailure.exchangeUnknown
             }
@@ -193,12 +209,18 @@ private final class LioSignedChatSessions {
         }
         // A verified saved conversation is readable without reconciling a different first send.
         // The selected first send above and HTTP submission fences retain their original checks.
-        stage = .localRecord
+        attempt.stage = .localRecord
         let chats = try recordedSessions()
         if let chat = chats.first(where: { $0.id == selected }) { return chat }
         // A blank conversation has no server identity until its first send.
-        stage = .selectedChat
+        attempt.stage = .selectedChat
         guard continuity.blankIDs.contains(selected) else { throw MessageHTTPFailure.exchangeUnknown }
         return blank(String(decoding: selected, as: UTF8.self))
     }
+}
+
+@MainActor private final class LioRestoreAttempt {
+    var stage: LioFailureDiagnosis.Stage
+    var observation: LioTimelineHTTP.Observation?
+    init(stage: LioFailureDiagnosis.Stage) { self.stage = stage }
 }

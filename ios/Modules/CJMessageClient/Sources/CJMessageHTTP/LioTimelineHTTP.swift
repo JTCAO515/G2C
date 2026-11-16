@@ -57,12 +57,22 @@ public final class LioTimelineHTTP {
     }
     public private(set) var lastObservation: Observation?
 
+    @TaskLocal private static var observationSink: (@MainActor @Sendable (Observation) -> Void)?
+
+    /// A diagnostic scope follows this async operation, including actor hops.
+    /// Concurrent operations never share its response metadata or gain authority.
+    public static func observing<Value: Sendable>(
+        _ sink: @escaping @MainActor @Sendable (Observation) -> Void,
+        operation: @Sendable () async throws -> Value
+    ) async rethrows -> Value {
+        try await $observationSink.withValue(sink, operation: operation)
+    }
+
     private func observe(_ kind: RequestKind, _ response: HTTPResponse? = nil) {
-        if let response {
-            lastObservation = Observation(kind: kind, response: response, offline: connectivity?.offline == true)
-        } else {
-            lastObservation = Observation(kind: kind, httpStatus: nil, offline: connectivity?.offline == true)
-        }
+        let observation = response.map { Observation(kind: kind, response: $0, offline: connectivity?.offline == true) }
+            ?? Observation(kind: kind, httpStatus: nil, offline: connectivity?.offline == true)
+        lastObservation = observation
+        Self.observationSink?(observation)
     }
 
     func observedDefaultCalendarConversationID() throws -> String {
