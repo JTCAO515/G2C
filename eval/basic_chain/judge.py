@@ -103,15 +103,21 @@ def judge(plan,step,observation,context,pricing):
                 require(ui['selected_cids_verified']is True,'listed entries did not open correct CIDs')
             else:unknown.append('unsupported_read_only_gate')
         else:
-            original=backend['message'];wire=decode(ui['intent_utf8'].encode())
+            original=backend['message'];outer=backend['outer_request']
+            require(outer['provenance']=='B_actual_HTTP_boundary'and outer['protected_capture_verified']is True,
+                    'actual protected HTTP outer original required; reconstructed JSON is not evidence')
+            wire=decode(outer['utf8'].encode())
             require(wire.get('version')==plan['app']['protocol']and wire.get('locale')==step['locale']
                     and wire.get('text')==step['text'],'actual App outer input changed')
+            require(outer['method']=='POST'and outer['route']=='/v'+plan['app']['protocol'].rsplit('.',1)[1]+'/lio/messages',
+                    'actual native HTTP route/protocol differs')
             if step['new_conversation']:
                 require(wire.get('new_conversation')is True and 'conversation_id'not in wire,'fresh user conversation required')
             else:
                 require(wire.get('conversation_id')==context['old_cid'] and 'new_conversation'not in wire,'seed continuation changed conversation')
             require(wire.get('message_id')==original['message_id']==ui['render_source_mid'],'UI/native MID mismatch')
-            require(sha256(ui['intent_utf8'].encode()).hexdigest()==original['outer_input_sha256'],'actual outer SHA mismatch')
+            require(sha256(outer['utf8'].encode()).hexdigest()==outer['sha256']==original['outer_input_sha256'],
+                    'actual outer SHA mismatch')
             require(is_sha(original['canonical_sha256'])and original['canonical_sha256']==backend['inventory']['message_input_sha256'],
                     'native canonical input SHA mismatch')
             require(original['run_id']==backend['inventory']['run_id'],'native RUN mismatch')

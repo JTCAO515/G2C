@@ -42,6 +42,8 @@ def fixture():
             after_cid='new-zh',post_count=1,received_answer_sha256=sha256(answer.encode()).hexdigest(),
             answer_visible=True,visible_answer=answer),
         backend=dict(protected_read_verified=True,source_unchanged=True,evidence_sha256=H,accounting=accounting,
+            outer_request=dict(provenance='B_actual_HTTP_boundary',protected_capture_verified=True,
+                utf8=raw,sha256=sha256(raw.encode()).hexdigest(),method='POST',route='/v2/lio/messages'),
             timing=dict(source='A_actual_App_monotonic',first_progress_ms=None,progress_status='NOT_EMITTED',first_body_ms=20,complete_ms=30),
             before=state.copy(),after=state.copy(),bounded_claim_verified=True,new_message_ids=[wire['message_id']],
             inventory=dict(status='completed',message_input_sha256='d'*64,run_id='run'),
@@ -61,12 +63,22 @@ def test_dual_hashes_are_distinct_and_all_joint_evidence_needed():
         assert judge(plan,step,changed,context,PRICING)['status']=='UNKNOWN'
 
 
+def test_A_need_not_export_wire_but_B_actual_outer_is_mandatory():
+    plan,step,obs,context=fixture();del obs['ui']['intent_utf8']
+    assert judge(plan,step,obs,context,PRICING)['status']=='PASS'
+    del obs['backend']['outer_request']
+    assert judge(plan,step,obs,context,PRICING)['status']=='UNKNOWN'
+
+
 @pytest.mark.parametrize('mutation',[
     lambda o:o['ui'].update(answer_visible=False),
     lambda o:o['ui'].update(post_count=2),
     lambda o:o['backend'].update(bounded_claim_verified=False),
     lambda o:o['backend']['after'].update(memory_sha256='e'*64),
     lambda o:o['binding'].update(subject='other-owner'),
+    lambda o:o['backend']['outer_request'].update(provenance='reconstructed_from_canonical'),
+    lambda o:o['backend']['outer_request'].update(route='/v1/lio/messages'),
+    lambda o:o['backend']['outer_request'].update(protected_capture_verified=False),
     lambda o:o['backend']['accounting'].update(producer_closure_verified=False),
     lambda o:o['backend']['accounting']['attempts'][0]['receipt']['usage'].update(total_tokens=999),
 ])
@@ -242,6 +254,7 @@ def test_control_steps_serial_first_failure_stops_and_costs_not_double_counted(f
                           received_answer_sha256=answer_sha,visible_answer=answer,three_day_readback_verified=True)
                 backend['message'].update(message_id=mid,conversation_id=cid,answer=answer,answer_sha256=answer_sha,
                     outer_input_sha256=sha256(ui['intent_utf8'].encode()).hexdigest())
+                backend['outer_request'].update(utf8=ui['intent_utf8'],sha256=sha256(ui['intent_utf8'].encode()).hexdigest())
                 backend.update(new_message_ids=[mid],itinerary_verified=True,claims_saved=False,unrequested_date_or_party=False)
                 backend['accounting']['attempts'][0]['attempt_id']=mid
             if locale+'-'+gate==failure_at:ui['error_visible']=True

@@ -70,9 +70,13 @@ Home 实际版本，不切 native4 或临时宽权限路径代过。
 两个 producer 必须提供非空 `artifacts=[{path,sha256}]`；C 再读取 owner-only 原件核
 哈希，stdout/stderr 和请求也保留在私有目录。不把历史报表里手写 PASS 当原件。
 
-写入项关联：A 实际 outer UTF-8 JSON → B 同 MID 的 outer `input_sha256`；原生
+写入项关联：B 实际 HTTP 边界捕获的 outer UTF-8 JSON → 同 MID 的 outer `input_sha256`；原生
 canonical MESSAGE hash → inventory；原模型/工具 wire hash → 原 Meter/fee。
-三种哈希分别核对，legacy1/2 不凭空声称服务端保存了未保存的 outer/protocol 字节。
+三种哈希分别核对，legacy1/2 原数据库没有完整 outer/protocol 原件，不能从摘要或
+canonical 重建。新增独立 HTTP 捕获须实际部署、受审及取得资格后才能使用；B
+`outer_request` 提供 `utf8/sha256/method/route`、`provenance=B_actual_HTTP_boundary` 及
+`protected_capture_verified=true`，C核真实POST路由、外层协议/文本/locale/新会话与原摘要。
+A不需导出无法取得的wire原字节，但仍须提供真实普通App动作/UI/候选与同原动作关联。
 `native_origin_verified` 必须由实际 App/原路由/typed claim 证据推导。实际 receipt、
 RUN、正文、UI 展示来源都要关联，server completed 单独不足。SM07 还要三天实际地点、
 原行程对象和展开/回看：legacy2 完整预览不计自动保存 PASS；native3/4 或声称保存时
