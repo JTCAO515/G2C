@@ -1,4 +1,5 @@
 import CryptoKit
+import CJStrictJSON
 import Foundation
 @testable import CJLioUser
 
@@ -6,8 +7,10 @@ import Foundation
     static func sha(_ bytes: Data) -> String { SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined() }
     @MainActor static func run() throws {
         let bytes = FileHandle.standardInput.readDataToEndOfFile()
-        guard bytes.count <= 5_000_000,
-              let input = try JSONSerialization.jsonObject(with: bytes) as? [String: Any],
+        guard bytes.count <= 5_000_000 else { throw ProjectorFailure.invalidInput }
+        var reader = StrictJSONReader<ProjectorJSONPolicy>(bytes: Array(bytes))
+        try reader.check()
+        guard let input = try JSONSerialization.jsonObject(with: bytes) as? [String: Any],
               input["version"] as? String == "LIO-reply-projection-request.1",
               let app = input["app"] as? [String: Any],
               app["source_commit"] as? String == ProjectorPin.source,
@@ -37,3 +40,8 @@ import Foundation
     }
 }
 private enum ProjectorFailure: Error { case invalidInput }
+
+private enum ProjectorJSONPolicy: StrictJSONPolicy {
+    static let failure = ProjectorFailure.invalidInput
+    static let requiresObjectRoot = true
+}

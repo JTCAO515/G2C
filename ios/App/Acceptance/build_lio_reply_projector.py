@@ -46,8 +46,9 @@ def main():
     (output / 'Package.swift').write_text('''// swift-tools-version: 6.1
 import PackageDescription
 let package = Package(name: "LioReplyProjector", platforms: [.macOS(.v14)], dependencies: [
-    .package(path: ''' + json.dumps(str(root / 'ios/Modules/CJShell')) + ''')
-], targets: [.executableTarget(name: "LioReplyProjector", dependencies: [.product(name: "CJLioUser", package: "CJShell")])])
+    .package(path: ''' + json.dumps(str(root / 'ios/Modules/CJShell')) + '''),
+    .package(path: ''' + json.dumps(str(root / 'ios/Modules/CJStrictJSON')) + ''')
+], targets: [.executableTarget(name: "LioReplyProjector", dependencies: [.product(name: "CJLioUser", package: "CJShell"), .product(name: "CJStrictJSON", package: "CJStrictJSON")])])
 ''')
     shutil.copy2(root / 'ios/Package.resolved', output / 'Package.resolved')
     with (output / 'build.log').open('w') as log:
