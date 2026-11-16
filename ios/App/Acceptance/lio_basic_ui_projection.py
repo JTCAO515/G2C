@@ -11,7 +11,7 @@ class EvidenceUnknown(ValueError):
 
 ERROR_IDENTIFIERS = frozenset({
     'lio.failure', 'lio.read.failure', 'lio.chat.recovery', 'lio.reply.unavailable',
-    'lio.position.notice', 'lio.session.notice',
+    'lio.position.notice', 'lio.session.notice', 'lio.read.retry',
 })
 HISTORY_ERRORS = frozenset({'Couldn’t show your conversations.', '暂时看不到对话。'})
 
@@ -36,6 +36,7 @@ def project(nodes):
     draft, composer_seen, ready, progress, greetings = '', False, False, False, 0
     progress = any(node['progress_indicator'] for node in nodes)
     answers_complete = True
+    loaded_empty_content = False
     for node in semantic_nodes(nodes):
         identifier = node['identifier']
         text = node['value'] if node['value'] else node['label']
@@ -58,8 +59,12 @@ def project(nodes):
             progress = True
         elif identifier == 'lio.opening':
             greetings += 1
+            loaded_empty_content = True
+        elif identifier.startswith('lio.example.'):
+            loaded_empty_content = True
         if identifier in ERROR_IDENTIFIERS or node['label'] in HISTORY_ERRORS:
             errors.append(text)
     return dict(transcript=transcript, draft=draft, errors=errors, greeting_count=greetings,
                 body_complete=composer_seen and ready and not progress and not errors
-                    and answers_complete and all(turn['answer'] for turn in transcript))
+                    and answers_complete and (bool(transcript) or loaded_empty_content)
+                    and all(turn['answer'] for turn in transcript))
