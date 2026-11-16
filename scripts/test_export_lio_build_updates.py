@@ -16,7 +16,7 @@ class ExportBuildUpdatesTests(unittest.TestCase):
     def test_testflight_body_matches_normal_export_and_fits_with_issue_heading(self):
         def export(*args):
             output = io.StringIO()
-            with patch('sys.argv', ['export', '--build', '45', *args]), contextlib.redirect_stdout(output):
+            with patch('sys.argv', ['export', '--build', '46', *args]), contextlib.redirect_stdout(output):
                 EXPORT.main()
             return output.getvalue()
         body = export('--testflight')
@@ -32,7 +32,7 @@ class ExportBuildUpdatesTests(unittest.TestCase):
             book['releases'][0]['sections'][0]['items']['en'] = ['😀' * 2001]
             cases = [(['--source-commit', 'a' * 40], None), ([], book)]
             for args, oversized in cases:
-                with self.subTest(args=args), patch('sys.argv', ['export', '--build', '45', '--testflight', '--output', str(output), *args]), contextlib.redirect_stderr(io.StringIO()):
+                with self.subTest(args=args), patch('sys.argv', ['export', '--build', '46', '--testflight', '--output', str(output), *args]), contextlib.redirect_stderr(io.StringIO()):
                     with patch.object(EXPORT, 'load_book', return_value=oversized) if oversized else contextlib.nullcontext():
                         with self.assertRaises(SystemExit):
                             EXPORT.main()
@@ -47,7 +47,7 @@ class ExportBuildUpdatesTests(unittest.TestCase):
 
     def test_export_uses_packaged_current_and_previous_content(self):
         book = EXPORT.load_book(EXPORT.RESOURCE)
-        self.assertEqual([release['build'] for release in book['releases']], [45,44])
+        self.assertEqual([release['build'] for release in book['releases']], [46,45])
         for release in book['releases']:
             for language in ['en','zh']:
                 rendered = EXPORT.render(release, language)
