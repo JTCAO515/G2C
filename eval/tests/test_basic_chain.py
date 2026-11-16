@@ -115,12 +115,15 @@ def test_received_tool_missing_price_is_unknown_and_retains_original_hold():
 
 @pytest.mark.parametrize('gate,text,expected',[
     ('SM05','Hello!','UNKNOWN'),('SM05','I am Lio.','PASS'),
-    ('SM06','Hello!','FAIL'),('SM06','I help you plan travel in China.','PASS'),
+    ('SM06','Hello!','UNKNOWN'),('SM06','I help you plan travel in China.','PASS'),
     ('SM02','Beijing is not the capital of China.','FAIL'),
     ('SM02','Is Beijing the capital of China?','UNKNOWN'),
     ('SM02',"I don't know whether Beijing is the capital of China.",'UNKNOWN'),
     ('SM06','I do not offer travel planning services.','FAIL'),
     ('SM06',"I cannot help with travel planning.",'FAIL'),
+    ('SM06','I am unable to provide travel planning services.','FAIL'),
+    ('SM06','Sorry, travel planning is unavailable.','FAIL'),
+    ('SM06','旅行行程规划','UNKNOWN'),
     ('SM07','Sure, I will plan Beijing.','FAIL'),
     ('SM07','Beijing: Day 1 Forbidden City. Day 2 Summer Palace. Day 3 Temple of Heaven.','PASS'),
     ('SM07','Beijing: Day 1 sightseeing. Day 2 sightseeing. Day 3 sightseeing.','UNKNOWN'),

@@ -34,11 +34,11 @@ def semantic(gate,text,locale):
         identity=re.search(r'(?:我是|我叫)\s*Lio|\b(?:I am|I.m|This is)\s+Lio\b',text,re.I)
         return ('PASS','lio_identity')if identity else('UNKNOWN','identity_not_established')
     if gate=='SM06':
-        useful=(re.search(r'规划|行程|旅行|天气|景点|住宿',text)if locale=='zh'else
-                re.search(r'\b(?:plan|itinerar\w*|travel|weather|accommodation|attractions)\b',text,re.I))
-        if re.search(r'不能.*(?:规划|行程)|(?:cannot|can.t|do not|don.t|not able to)(?:\s+[A-Za-z]+){0,5}\s+(?:plan\w*|travel|itinerar\w*)',text,re.I):
+        if re.search(r'(?:不能|无法).*?(?:规划|行程|旅行)|(?:cannot|can.t|do not|don.t|not able to|unable to)(?:\s+[A-Za-z]+){0,5}\s+(?:plan\w*|travel|itinerar\w*)|(?:travel|planning|itinerary).{0,30}unavailable',text,re.I):
             return 'FAIL','travel_capability_denied'
-        return ('PASS','travel_capability')if useful else('FAIL','no_travel_capability')
+        positive=(r'我(?:可以|能|会|擅长|帮)[^。！？\n]{0,35}(?:规划|行程|旅行|天气|景点|住宿)'
+                  if locale=='zh'else r'\bI (?:can (?!not\b)|help\b|offer\b|provide\b|am able to\b)[^.!?\n]{0,65}\b(?:plan\w*|itinerar\w*|travel|weather|accommodation|attractions)\b')
+        return ('PASS','travel_capability')if re.search(positive,text,re.I)else('UNKNOWN','travel_capability_not_affirmed')
     if gate=='SM07':
         if not re.search(r'北京|Beijing',text,re.I):return 'UNKNOWN','plan_city_not_established'
         marker=re.compile(r'第\s*([123一二三])\s*天|\bDay\s*([123])\b',re.I)
@@ -161,4 +161,4 @@ def judge(plan,step,observation,context,pricing):
     except (Invalid,KeyError,TypeError,ValueError) as error:
         return dict(gate_id=step['gate_id'],locale=step['locale'],status='FAIL'if fail else'UNKNOWN',
             reasons=[*fail,*unknown,'required_joint_evidence_unavailable:'+type(error).__name__],
-            cost=money or dict(conservative_cny=None,token_estimate_cny=None,actual_paid_cny=None),timing=None)
+            cost=money or dict(conservative_cny=None,token_estimate_cny=None,actual_paid_cny=None,full_coverage=False),timing=None)
