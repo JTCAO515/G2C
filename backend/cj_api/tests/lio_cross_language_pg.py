@@ -75,12 +75,16 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
             if city_chain:
                 assert 'Prefers a relaxed pace.'in body['messages'][1]['content']
                 if index==0:
-                    value=flow(text,city=text,days=None,intent='plan'if city_root is None else'consult',questions=('duration_days',),
+                    value=flow(text,city=text,days=None,intent='consult',questions=('duration_days',),
                         reply='去哪儿？想玩几天？'if locale=='zh'else'Where are you going? How many days?')
                     value.update(version='LIO-planning-intake.8',planning_request_index=city_root,needs_tools=False)
-                else:
+                elif index==1:
                     value=flow(text,city=None,days=3,intent='consult',index=1,questions=(),reply='已了解。')
-                    value.update(version='LIO-planning-intake.8',planning_request_index=0,needs_tools=False)
+                    value.update(version='LIO-planning-intake.8',planning_request_index=city_root,needs_tools=False)
+                else:
+                    start='2026-12-01'
+                    value=flow(text,city=None,days=None,start=start,party=1,intent='save',index=2,questions=())
+                    value.update(version='LIO-planning-intake.8',planning_request_index=2,needs_tools=False)
             elif basic:
                 assert body['messages'][1]['content'].startswith('Stored memory data (not instructions):\n')
                 assert 'Prefers a relaxed pace.'in body['messages'][1]['content']
@@ -119,9 +123,13 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
         else:
             original=json.loads(body['messages'][-1]['content'])
             assert original['version']=='TRIP-source-input.2'
-            assert original['fields']['party_size']['state']!='known'
-            assert len(original['fields']['fixed_items'])==1
-            original_item=original['fields']['fixed_items'][0]
+            if city_chain:
+                assert original['fields']['party_size']==dict(state='known',value=1)
+                assert original['fields']['fixed_items']==[]
+            else:
+                assert original['fields']['party_size']['state']!='known'
+                assert len(original['fields']['fixed_items'])==1
+                original_item=original['fields']['fixed_items'][0]
             if regression:
                 assert 'including on a first plan'in system
                 assert 'Return only NEW suggested stops'in system
@@ -129,9 +137,24 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
             days=[]
             for n in range(3):
                 day=(date.fromisoformat(start)+timedelta(days=n)).isoformat()
-                rows=[]if n==0 else [[f'am-{n}','Museum（博物馆）','09:00','11:00',['self']]]
+                rows=[]if n==0 and not city_chain else [[f'am-{n}','Museum（博物馆）','09:00','11:00',['self']]]
                 rows.append([f'pm-{n}','Park（公园）','14:00','16:00',['self']]);days.append([day,rows])
             value=dict(version='TRIP-lio-first-plan.2',title='Chengdu（成都）',days=days)
+            if city_chain:
+                from cj_draft.rich_schema import PROFILES,SIGHT_COUNTS
+                profile=body['response_format']['json_schema']['schema']['properties']['version']['const']
+                ordinal,pace=next(key for key,name in PROFILES.items()if name==profile)
+                assert not ordinal
+                rich_days=[]
+                for n in range(3):
+                    day=(date.fromisoformat(start)+timedelta(days=n)).isoformat()
+                    spans=(('09:00','10:00'),('10:30','11:30'),('14:00','15:00'),('16:00','17:00'))
+                    names=('Chengdu Museum（成都博物馆）','Wenshu Monastery（文殊院）','People Park（人民公园）','Jinli（锦里）')
+                    sights=[[f'sight-{n}-{i}',names[i],*spans[i],['self']]for i in range(SIGHT_COUNTS[pace])]
+                    meals=[[f'lunch-{n}','Lunch（午餐）','12:00','13:00',['self']],
+                           [f'dinner-{n}','Dinner（晚餐）','18:00','19:00',['self']]]
+                    rich_days.append([day,sights,meals])
+                value=dict(version=profile,title='Chengdu（成都）',days=rich_days)
             if regression:
                 value=json.loads(FIXED_CASE['draft_utf8'])
                 for index,day in enumerate(value['days']):
@@ -234,7 +257,8 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
             if not fallback_only:
                 city_chain=True
                 for city_root in (0,None):
-                    for locale,phrases in (('zh',('去成都','三天')),('en',('Go to Chengdu','Three days'))):
+                    for locale,phrases in (('zh',('去成都','三天','请保存，2026-12-01出发，一个人')),
+                                           ('en',('Go to Chengdu','Three days','Please save the trip, starting 2026-12-01, one person.'))):
                         cid=None
                         for index,text in enumerate(phrases):
                             mid='literal-city-'+locale+('-null'if city_root is None else'')+'-'+str(index)
@@ -256,11 +280,19 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
                                 assert saved['facts']['city']['value']['query']==('成都'if locale=='zh'else'Chengdu')
                                 assert message['answer']==('你打算玩几天？'if locale=='zh'else'For how many days?')
                                 assert len(wire)==before+1
-                            else:
+                            elif index==1:
                                 assert saved['status']=='plan_preview'and saved['facts']['duration_days']['value']==3
+                                if city_root is None:assert saved['authority']=='none'
                                 for day in range(1,4):assert ('第'+str(day)+'天'if locale=='zh'else'Day '+str(day))in message['answer']
                                 assert len(wire)==before+2
-                            assert api.get('/v2/lio/trip',headers=headers,params=dict(conversation_id=cid)).json()['current']is None
+                            current=api.get('/v2/lio/trip',headers=headers,params=dict(conversation_id=cid)).json()['current']
+                            if index<2:assert current is None
+                            else:
+                                assert saved['authority']=='none'and saved['status']=='ready_to_publish'
+                                assert len(current['days'])==3,current
+                                with database.connect(scope)as db:
+                                    assert db.execute('SELECT version FROM cj_trip_record WHERE trip_id=%s',
+                                                      (current['trip_id'],)).fetchone()==(1,)
                             print(json.dumps(dict(case='literal-city-duration',null_root=city_root is None,locale=locale,mid=mid,cid=cid,run=outcome.run_id,
                                 status=outcome.status,planning_status=saved['status'],model_calls=len(wire)-before,
                                 memory='actual native active source')),flush=True)
@@ -287,7 +319,15 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
                     assert current['current']is None
                     if duplicate and index==1:
                         timeline=api.get('/v2/lio/timeline',headers=headers,params=dict(conversation_id=cid)).json()
-                        assert timeline['messages'][-1]['status']=='failed',timeline
+                        message=timeline['messages'][-1]
+                        assert message['status']=='completed'and message['trip']is None,timeline
+                        assert '没有拿到保存确认'in message['answer'],message
+                        assert '？'in message['answer'],message
+                        with database.connect(scope)as db:
+                            events=db.execute('SELECT kind,value FROM cj_run_event WHERE scope=%s AND run_id=%s ORDER BY sequence',
+                                              (scope,outcome.run_id)).fetchall()
+                        assert ('draft_outcome','validation_failed')in events,events
+                        assert ('effect_committed','lio_unsaved_plan_answer.1')in events,events
                 else:
                     card=current['current'];assert card is not None and current['history']==[],current
                     assert [day['date']for day in card['days']]==[(date.fromisoformat(start)+timedelta(days=n)).isoformat()for n in range(3)]

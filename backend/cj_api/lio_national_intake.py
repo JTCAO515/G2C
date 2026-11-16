@@ -193,7 +193,7 @@ _WEEKDAY_WORD='|'.join(_WEEKDAYS)
 _WEEK_SOURCE=re.compile(
  r'(?P<zh_modifier>下+|本|这)(?:个)?(?:周|星期|礼拜)(?P<zh_day>[一二三四五六日天])?'
  r'|\b(?P<en_before>'+_WEEKDAY_WORD+r')\s+(?P<en_after_modifier>next|this) week\b'
- r'|\b(?P<en_modifier>next|this) week(?:end)?\b(?:\s+(?P<en_day>'+_WEEKDAY_WORD+r')\b)?'
+ r'|\b(?P<en_modifier>next|this) week(?:end)?\b(?:\s+(?:on\s+)?(?P<en_day>'+_WEEKDAY_WORD+r')\b)?'
  r'|\bnext (?P<next_day>'+_WEEKDAY_WORD+r')\b',re.I)
 
 _WEEK_RANGE=re.compile(r'\s*(?:到|至|[-–—]|through|to|until)\s*',re.I)
@@ -226,6 +226,8 @@ def _week_source(value,references,turns,*,departure=False):
     continue
    weekday=(6 if zh_day in ('日','天')else '一二三四五六'.index(zh_day))if zh_day else _WEEKDAYS[en_day.casefold()]
    if selected.weekday()!=weekday:
+    raise InvalidInput('date differs from its original weekday')
+   if 'weekend'in match[0].casefold()and weekday not in (5,6):
     raise InvalidInput('date differs from its original weekday')
    if match['next_day']:
     if not 0<(selected-original).days<=7:
