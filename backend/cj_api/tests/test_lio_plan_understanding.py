@@ -118,6 +118,44 @@ class PlanUnderstandingBoundary(unittest.TestCase):
                     else:
                         with self.assertRaises(InvalidInput):self.compile(value,turns)
 
+    def test_latest_explicit_party_count_cannot_be_omitted_or_restored_from_an_older_source(self):
+        for texts,old_index,new_index,old_quote,new_quote in (
+                (('Two people','Three people','Plan now'),0,1,'Two people','Three people'),
+                (('两个人','三个人','直接出方案'),0,1,'两个人','三个人'),
+                (('Two people; Three people.','Plan now'),0,0,'Two people','Three people'),
+                (('两个人；三个人。','直接出方案'),0,0,'两个人','三个人')):
+            turns=tuple(PlanningTurn(text,date(2026,11,14+i))for i,text in enumerate(texts))
+            for count,index,quote,accepted in ((2,old_index,old_quote,False),(3,new_index,new_quote,True),
+                                               (None,0,'',False)):
+                value=self.packet();value['current_source_index']=len(turns)-1
+                value['observations']=[]if count is None else[dict(field='party_size',state='known',value=count,note=None,
+                    sources=[dict(source_index=index,quote=quote)])]
+                with self.subTest(texts=texts,count=count):
+                    if accepted:self.compile(value,turns)
+                    else:
+                        with self.assertRaises(InvalidInput):self.compile(value,turns)
+
+    def test_party_questions_conditions_translation_and_third_party_do_not_replace_a_real_count(self):
+        for followup in ('Three people?', 'If three people come', 'Translate "Three people"',
+                         'My friend travels with three people', '三个人吗？','如果三个人去','请翻译“三个人”'):
+            turns=(PlanningTurn('Two people',date(2026,11,14)),PlanningTurn(followup,date(2026,11,15)),
+                   PlanningTurn('Plan now',date(2026,11,16)))
+            value=self.packet();value['current_source_index']=2;value['observations']=[dict(field='party_size',
+                state='known',value=2,note=None,sources=[dict(source_index=0,quote='Two people')])]
+            with self.subTest(followup=followup):self.compile(value,turns)
+
+    def test_explicitly_undecided_party_is_not_replaced_by_its_old_known_count(self):
+        for reset in ('Party size undecided','人数未定'):
+            turns=(PlanningTurn('Two people',date(2026,11,14)),PlanningTurn(reset,date(2026,11,15)),
+                   PlanningTurn('Plan now',date(2026,11,16)))
+            for count,index,quote,state,accepted in ((2,0,'Two people','known',False),(None,1,reset,'unknown',True)):
+                value=self.packet();value['current_source_index']=2;value['observations']=[dict(field='party_size',
+                    state=state,value=count,note=None,sources=[dict(source_index=index,quote=quote)])]
+                with self.subTest(reset=reset,state=state):
+                    if accepted:self.compile(value,turns)
+                    else:
+                        with self.assertRaises(InvalidInput):self.compile(value,turns)
+
     def test_date_uses_its_source_mid_day_not_plan_trigger_day(self):
         result=parse_plan_understanding(packed(self.packet()),self.turns())
         self.assertEqual(result.observations[0].value,'2026-11-15')

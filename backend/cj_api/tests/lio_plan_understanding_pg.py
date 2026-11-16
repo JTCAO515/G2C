@@ -30,7 +30,7 @@ def main():
         if url=='/v4/lio/messages':
             body=json.loads(kwargs['content'])
             if body['text']in ('我想去中国玩几天','I want to explore China'):
-                body['text']+='；预算 CNY 500 总计'if body['locale']=='zh'else'; Budget USD 500 total'
+                body['text']+='；两个人；三个人；预算 CNY 500 总计'if body['locale']=='zh'else'; Two people; Three people; Budget USD 500 total'
                 kwargs['content']=packed(body)
         return original_post(api,url,**kwargs)
     def response(transport,request):
@@ -47,6 +47,8 @@ def main():
                 sources=[dict(source_index=0,quote=quote)])for field,amount in (
                 ('budget_currency',currency),('budget_total','500'),('budget_basis','total'))],
             companions=[],fixed_items=[],temporary_conditions=[])
+        value['observations'].append(dict(field='party_size',state='known',value=3,note=None,
+            sources=[dict(source_index=0,quote='三个人'if extra['locale']=='zh'else'Three people')]))
         wires.append(extra)
         identity=dict(id='compiler-component-'+str(len(wires)),model=body['model'])
         chunks=[dict(**identity,choices=[dict(index=0,delta=dict(content=packed(value).decode()),finish_reason=None)]),
@@ -67,7 +69,7 @@ def main():
                 message_id=binding.message_id,run_id=binding.run_id)
             details=planning_details(compiled,city,())
             assert details.fields['fixed_items']==[]
-            assert details.fields['party_size']==dict(state='missing')
+            assert details.fields['party_size']==dict(state='known',value=3)
             assert details.fields['budget_currency']==dict(state='known',value='CNY'if extra['locale']=='zh'else'USD')
             assert details.fields['budget_total']==dict(state='known',value='500')
             assert details.fields['budget_basis']==dict(state='known',value='total')
@@ -79,7 +81,7 @@ def main():
     with patch.object(TestClient,'post',post),patch.object(httpx.MockTransport,'handle_request',response),patch.object(ExplorationPlanning,'_model',model):
         native.main()
     assert len(observed)==len(wires)==6
-    print('PASS ZH3/EN3 signed native4 original M frames/question_day + registered typed plan model + source-bound budget amount/currency/basis and missing date/party/legal empty fixed; explicit fixture city data only; 0 NEEDS/Trip/real supplier, full factory UNRUN',flush=True)
+    print('PASS ZH3/EN3 signed native4 original M frames/question_day + registered typed plan model + source-bound budget amount/currency/basis, latest party3 after party2 and missing date/legal empty fixed; explicit fixture city data only; 0 NEEDS/Trip/real supplier, full factory UNRUN',flush=True)
 
 
 if __name__=='__main__':main()
