@@ -1,0 +1,60 @@
+[
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "topic": "passport_booking",
+    "cities": [
+      "hangzhou"
+    ],
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-11-23",
+    "source_urls": [
+      "https://wgly.hangzhou.gov.cn/art/2024/7/12/art_1229505585_58956471.html"
+    ],
+    "id": "visitor.v3.hangzhou.west-lake-public-visit",
+    "subject": {
+      "key": "hangzhou.west-lake",
+      "name_zh": "西湖",
+      "name_en": "West Lake",
+      "wikidata_qid": "Q502371"
+    },
+    "conditions": {
+      "reservation_required": false,
+      "closed_weekdays": null,
+      "closed_weekdays_public_holiday_exception": null,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    },
+    "text_zh": "杭州市文旅局公开的A级景区入园通知取消普通景区预约要求，并将西湖风景名胜区列为对象。本条仅指公共湖滨步行游览，不含灵隐飞来峰等独立景区、内设文博场馆、收费点、游船和活动。免预约不表示所有内部场所免票或全天开放；每周闭园日和提前购票窗口尚未核定，行前查具体地点最新公告。",
+    "text_en": "Hangzhou’s culture and tourism bureau lists West Lake Scenic Area under its published policy removing ordinary scenic-area admission reservations. This entry covers public lakeside walking only, excluding independent attractions such as Lingyin Feilai Peak, museums, ticketed sites, boats and events. It does not establish free admission or all-day opening for every site within the area. Weekly closures and advance ticket-purchase windows remain unconfirmed here; check the specific destination’s latest notice."
+  },
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "topic": "passport_booking",
+    "cities": [
+      "hangzhou"
+    ],
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-11-23",
+    "source_urls": [
+      "https://wgly.hangzhou.gov.cn/art/2024/7/12/art_1229505585_58956471.html"
+    ],
+    "id": "visitor.v3.hangzhou.xixi-wetland-admission",
+    "subject": {
+      "key": "hangzhou.xixi-national-wetland-park",
+      "name_zh": "西溪国家湿地公园",
+      "name_en": "Xixi National Wetland Park",
+      "wikidata_qid": null
+    },
+    "conditions": {
+      "reservation_required": false,
+      "closed_weekdays": null,
+      "closed_weekdays_public_holiday_exception": null,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    },
+    "text_zh": "杭州市文旅局入园通知将西溪湿地旅游区列为取消预约的景区，普通园区入园不需另行预约。免预约不等于免门票、保证当天有票或所有项目都免约；内设文博场馆、游船及具体活动另查。固定每周闭园日和提前购票窗口本条未核定，行前应查所选区域与项目的最新开放和票务公告。",
+    "text_en": "Hangzhou’s culture and tourism bureau names Xixi Wetland among scenic areas whose ordinary park admission no longer needs a separate reservation. This does not mean free tickets, guaranteed availability or reservation-free access to every facility. Museums, boats and specific events have separate arrangements. Regular weekly closures and advance ticket-purchase windows are unconfirmed here; check current opening and ticket notices for the area and activity you choose."
+  }
+]
