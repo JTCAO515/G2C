@@ -8,7 +8,7 @@ WP12 新格式、条件语义、官方渠道与名称目录见 [WP12-FORMAT.md](
 
 ## 文件与格式
 
-- `SOURCES.md`：JT 已确认的来源范围；不据首页地址推断具体事实。
+- `SOURCES.md`：首批 JT 确认范围及 H 依授权代批的后续记录；不据首页地址推断具体事实。
 - `examples/format.json`：3 条**合成格式样例**，正文和日期均为测试数据，不是已核对的游客须知，禁止接入检索。
 - `entries/*.json`：正式内容文件，每个文件为非空 JSON 数组；`mainland-basics.json` 为 5 条全国适用基础指引，`city-services.json` 为 7 条城市专有事项。目录中的“正式”区分合成样例，不代表已上线。
 - `validate.py` / `test_validate.py`：只读本地格式检查与测试；不联网、不抓取、不写条目。
