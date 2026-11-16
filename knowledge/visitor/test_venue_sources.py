@@ -28,6 +28,24 @@ class VenueSourceScopeTests(unittest.TestCase):
             with self.subTest(host=host), self.assertRaises(ValueError):
                 validate_entry_v3(record, as_of=TODAY)
 
+    def test_provincial_source_still_requires_one_explicit_venue_city(self):
+        record = deepcopy(self.venue)
+        record['source_urls'] = ['https://ct.zj.gov.cn/example-venue.html']
+        for city in ('hangzhou', 'taizhou-zhejiang'):
+            validate_entry_v3({**record, 'cities': [city]}, as_of=TODAY)
+        for cities in (['beijing'], ['hangzhou', 'taizhou-zhejiang']):
+            with self.subTest(cities=cities), self.assertRaises(ValueError):
+                validate_entry_v3({**record, 'cities': cities}, as_of=TODAY)
+
+    def test_one_approved_static_page_does_not_authorize_its_cdn(self):
+        record = deepcopy(self.venue)
+        record['cities'] = ['shenzhen']
+        page = 'https://cdn3.shenzhenmuseum.com/museum/html/aboutus/visit-service.html'
+        validate_entry_v3({**record, 'source_urls': [page]}, as_of=TODAY)
+        for url in (page + '?extra=1', 'https://cdn3.shenzhenmuseum.com/other.html'):
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                validate_entry_v3({**record, 'source_urls': [url]}, as_of=TODAY)
+
     def test_one_static_guide_approval_does_not_expand_cdn_or_city(self):
         guide = 'https://cdn3.shenzhenmuseum.com/museum/html/aboutus/visit-service.html'
         record = {**self.venue, 'cities': ['shenzhen'], 'source_urls': [guide]}

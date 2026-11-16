@@ -14,7 +14,7 @@ V3_TOPICS = V2_TOPICS | {"seasonal_holiday"}
 # JT approved these exact hostnames in #702/6907792461, without subdomains.
 V3_GOVERNMENT_HOSTS = GOVERNMENT_HOSTS | {"www.zjtz.gov.cn", "www.ahsz.gov.cn", "www.gov.cn"}
 # JT venue approvals: #702/6908024069, 6908348251; candidates failing identity are excluded.
-VENUE_SOURCE_CITIES = {
+VENUE_SOURCE_CITIES = {host: frozenset({city}) for host, city in {
     "www.zjtz.gov.cn": "taizhou-zhejiang", "www.ahsz.gov.cn": "suzhou-anhui",
     "www.cdmuseum.com": "chengdu", "www.cddfct.cn": "chengdu", "www.panda.org.cn": "chengdu",
     "www.bmy.com.cn": "xian", "www.beilin-museum.com": "xian", "beilin-museum.com": "xian",
@@ -25,9 +25,15 @@ VENUE_SOURCE_CITIES = {
     "qjxq.xa.gov.cn": "xian",
     "www.shanghaimuseum.net": "shanghai", "www.shanghaimuseum.cn": "shanghai",
     "www.shenzhenmuseum.com": "shenzhen", "www.szwwco.com": "shenzhen",
-}
+}.items()}
+VENUE_SOURCE_CITIES.update({
+    "wlt.sc.gov.cn": frozenset({"chengdu"}),
+    "ct.zj.gov.cn": frozenset({"hangzhou", "taizhou-zhejiang"}),
+    "whlyw.cq.gov.cn": frozenset({"chongqing"}),
+    "wlj.xa.gov.cn": frozenset({"xian"}),
+})
 VENUE_PAGE_CITIES = {
-    "https://cdn3.shenzhenmuseum.com/museum/html/aboutus/visit-service.html": "shenzhen",
+    "https://cdn3.shenzhenmuseum.com/museum/html/aboutus/visit-service.html": frozenset({"shenzhen"}),
 }
 V3_APPROVED_HOSTS = V3_GOVERNMENT_HOSTS | VENUE_SOURCE_CITIES.keys()
 
@@ -46,8 +52,8 @@ def validate_entry_v3(entry: object, *, as_of: date) -> None:
         host = urlsplit(url).hostname
         if host == "www.gov.cn" and entry["topic"] != "seasonal_holiday":
             raise ValueError("new gov.cn approval is limited to holiday guidance")
-        local_city = VENUE_SOURCE_CITIES.get(host, VENUE_PAGE_CITIES.get(url))
-        if local_city is not None and (entry["cities"] != [local_city]
+        local_cities = VENUE_SOURCE_CITIES.get(host, VENUE_PAGE_CITIES.get(url))
+        if local_cities is not None and (len(entry["cities"]) != 1 or entry["cities"][0] not in local_cities
                                       or entry["topic"] != "passport_booking" or entry["subject"] is None):
             raise ValueError("new local source approval is limited to that city's venue guidance")
     validate_conditions(entry["conditions"])
