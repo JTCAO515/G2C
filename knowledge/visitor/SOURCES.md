@@ -246,3 +246,12 @@ GoChengdu发布的[2025入境旅游指南介绍](https://www.gochengdu.cn/en/art
 - [#702/6923072320](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6923072320)与[6923118760](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6923118760)仅批准第三方Haoliday的`/zh/sources/`下xian、chengdu、shanghai、hangzhou、chongqing、shenzhen六个精确城市索引作为原始URL定位辅助。它不是政府或运营方；其标签、核实日期、摘要、推断均不作本库证据，不写入source_urls，不取地图资料。仅已批官方原页的实际正文支持条目；新host另核主体与范围。索引把秦陵“每日售票”标为闭馆支持，本库未据此写全院每周无闭馆。
 - [#702/6923199526](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6923199526)批准中旅国际官网[www.ctgii.com](https://www.ctgii.com/)同host的深圳世界之窗公开介绍、参观/预约和开放说明；语言中文/英文，城市仅深圳、具体场馆范围，不扩其他项目或交易。已实读[企业介绍](https://www.ctgii.com/about/company_detail)明确投资运营管理世界之窗，[主题公园栏目](https://www.ctgii.com/scenic/theme_park)直链[世界之窗详情](https://www.ctgii.com/scenic/theme_park/62)，页脚为港中旅（深圳）旅游管理有限公司、粤ICP备2021122029号。此为运营方集团官网，不冒政府网站。详情确认现场售票，但未明确常规每周关闭日；本批未从时刻表或全年营销活动推出新条件，未加入v3正式条目源接受集合。
 - [#702/6923314756](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6923314756)的单个公众号候选仅获身份核读范围。实际读取被浏览器安全策略拒绝，原文及公众号主体均未核清，未通过其他工具、浏览器或代理读取；不能作事实来源，不批准整个微信域名，也不采用第三方转述来补条件。
+
+
+## 台州市博物馆具名采访报道（2026-11-17）
+
+[#702/6924357886](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6924357886)仅批准[潮新闻这篇公开报道](https://tidenews.com.cn/news.html?id=3612168)，中文，浙江台州市博物馆的具体展览与参观说明。不是政府或博物馆官网，也不批准整个媒体host或用户投稿。已实读官网新闻许可33120210001、浙ICP备2021004289；浙江省社科院[这篇机构说明](https://sky.zj.gov.cn/kydt_show?id=20136)明确其属浙报集团旗下并直链同域新闻页，该社科院页仅作身份核实，不纳事实源。
+
+原报道2026-11-12、具名共享联盟·台州作者及责任编辑，正文记载记者到馆采访副馆长；本批仅概括特展独立收费/优待的安排，未把报道当实际现场开幕证明，未录价格、年龄优惠条件、票量、早鸟期限或原段。普通散客预约仍null，未采用媒体身份推规则；旧2019政府介绍的所有展览免费说法不当2026特展保证。正式接受只增该精确URL，限单个台州场馆passport_booking主题及非空subject，其他ID/附加参数/host路径/城市/主题均拒绝。内容与subject的实际对应另由人工核读负责，格式检查不是语义正确性证明。
+
+宿州文旅局[ct.ahsz.gov.cn](https://ct.ahsz.gov.cn/)另经[#702/6924119353](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6924119353)代批，中文，仅安徽宿州具体公共文旅场馆的参观、预约和开放独立指南。主办单位、网站标识3413000037及银河一路561号地址已实际核同；本轮读到的独立机构介绍仅有工作人员办公时间，未把它当游客开放或免约依据，未加入正式条目源接受集合。
