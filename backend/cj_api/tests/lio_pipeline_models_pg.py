@@ -54,7 +54,10 @@ def main():
                 dict(locale=extra['locale'],items=batch))for batch in batches))
             for result,batch in zip(results,batches,strict=True):
                 parse_wording(result.encode(),batch,allowed_reason_keys=set())
-            assert calls.model==4 # one reserved understanding slot, three actual dispatches
+            # Understanding and enabled final Memory are both reserved; the
+            # three actual pipeline dispatches do not consume their slots.
+            assert worker.lio_memory is not None
+            assert calls.model==5 and calls.model_slots_left==1
             completed.append(binding.run_id)
             print('PASS native4 skeleton + two separately registered wording calls '+binding.message_id+' RUN '+binding.run_id+'; no Trip publication',flush=True)
         return original_model(host,worker,binding,view,profile,system,extra)
