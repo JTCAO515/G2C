@@ -1,0 +1,127 @@
+[
+  {
+    "id": "visitor.v3.taizhou-suzhou.payment-options",
+    "topic": "payment",
+    "cities": [
+      "taizhou-zhejiang",
+      "suzhou-anhui"
+    ],
+    "text_zh": "来华旅行可选择手机支付、银行卡或人民币现金；银行卡是否受理看商户标识，不把手机支付当唯一办法。",
+    "text_en": "In mainland China, payment options include mobile payments, bank cards and RMB cash. Check merchant acceptance signs; a payment app is not the only option.",
+    "source_urls": [
+      "https://english.www.gov.cn/news/202404/11/content_WS6617c858c6d0868f4e8e5f4d.html"
+    ],
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-12-16",
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "subject": null,
+    "conditions": {
+      "reservation_required": null,
+      "closed_weekdays": null,
+      "advance_booking_days": null,
+      "advance_booking_rule": null,
+      "closed_weekdays_public_holiday_exception": null
+    }
+  },
+  {
+    "id": "visitor.v3.taizhou-suzhou.rail-passport",
+    "topic": "passport_booking",
+    "cities": [
+      "taizhou-zhejiang",
+      "suzhou-anhui"
+    ],
+    "text_zh": "铁路票可用护照在12306英文网站或应用办理实名核验和购票，乘车带购票证件原件；景区预约规则另查。",
+    "text_en": "For mainland rail tickets, verify your passport through 12306 English and book there. Carry the original booking document. Attraction reservations have separate rules.",
+    "source_urls": [
+      "https://english.www.gov.cn/2025special/bizexpatsinchina2025"
+    ],
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-12-16",
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "subject": null,
+    "conditions": {
+      "reservation_required": null,
+      "closed_weekdays": null,
+      "advance_booking_days": null,
+      "advance_booking_rule": null,
+      "closed_weekdays_public_holiday_exception": null
+    }
+  },
+  {
+    "id": "visitor.v3.taizhou-suzhou.transport-tickets",
+    "topic": "transport",
+    "cities": [
+      "taizhou-zhejiang",
+      "suzhou-anhui"
+    ],
+    "text_zh": "在浙江台州或安徽宿州乘坐中国内地铁路、高铁时，携带购票所用有效证件原件，按站内指引走自动或人工核验通道；当地公交可向工作人员确认人民币现金等付款方式。本条不表示当地有地铁。",
+    "text_en": "For mainland rail or high-speed train travel in Taizhou, Zhejiang, or Suzhou, Anhui, carry the original valid document used to book and follow station guidance for automatic or manual checks. Ask local bus staff about RMB cash and other payment methods. This does not establish that either city has a metro.",
+    "source_urls": [
+      "https://english.www.gov.cn/2025special/bizexpatsinchina2025"
+    ],
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-12-16",
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "subject": null,
+    "conditions": {
+      "reservation_required": null,
+      "closed_weekdays": null,
+      "advance_booking_days": null,
+      "advance_booking_rule": null,
+      "closed_weekdays_public_holiday_exception": null
+    }
+  },
+  {
+    "id": "visitor.v3.taizhou-suzhou.passport-sim",
+    "topic": "internet",
+    "cities": [
+      "taizhou-zhejiang",
+      "suzhou-anhui"
+    ],
+    "text_zh": "可带护照到电信、移动或联通营业厅申请手机卡；套餐和设备适用情况先问营业厅。",
+    "text_en": "Apply for a SIM with your passport at a China Telecom, China Mobile or China Unicom service office. Confirm the plan and device suitability there.",
+    "source_urls": [
+      "https://english.www.gov.cn/2025special/bizexpatsinchina2025"
+    ],
+    "checked_on": "2026-11-16",
+    "expires_on": "2027-01-15",
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "subject": null,
+    "conditions": {
+      "reservation_required": null,
+      "closed_weekdays": null,
+      "advance_booking_days": null,
+      "advance_booking_rule": null,
+      "closed_weekdays_public_holiday_exception": null
+    }
+  },
+  {
+    "id": "visitor.v3.taizhou-suzhou.emergency-numbers",
+    "topic": "emergency",
+    "cities": [
+      "taizhou-zhejiang",
+      "suzhou-anhui"
+    ],
+    "text_zh": "在中国内地，遭人身侵害或财产案件拨110，火灾拨119，需要急救拨120。",
+    "text_en": "In mainland China, call 110 for assault or property crime, 119 for fire, and 120 for emergency medical help.",
+    "source_urls": [
+      "https://english.www.gov.cn/2025special/bizexpatsinchina2025"
+    ],
+    "checked_on": "2026-11-16",
+    "expires_on": "2027-02-14",
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "subject": null,
+    "conditions": {
+      "reservation_required": null,
+      "closed_weekdays": null,
+      "advance_booking_days": null,
+      "advance_booking_rule": null,
+      "closed_weekdays_public_holiday_exception": null
+    }
+  }
+]
