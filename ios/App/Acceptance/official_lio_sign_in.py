@@ -6,14 +6,44 @@ the real SecureField. This process reads lease metadata, never invite contents.
 import argparse
 from datetime import datetime, timezone
 import hashlib
+import os
+import stat
 from pathlib import Path
 import time
 
 from lio_basic_smoke_capture import artifact, verify_installation
-from lio_basic_ui_driver import decode, write
+from lio_basic_ui_driver import compact, decode, write
 from lio_basic_ui_projection import EvidenceUnknown
 from lio_login_lease import validate_login_lease
 from watch_lio_basic_smoke import AdmittedNativeUI, read_private_bytes
+
+
+ATTEMPT_DIRECTORY = Path.home() / '.local/share/g2c/a1048-official-login-attempts'
+
+
+def claim_login_attempt(lease_id, locale):
+    """Durable single attempt, independent of caller-selected output paths."""
+    directory = ATTEMPT_DIRECTORY
+    directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+    descriptor = os.open(directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        info = os.fstat(descriptor)
+        if info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o700:
+            raise EvidenceUnknown('The fixed private login-attempt directory is unavailable')
+        name = hashlib.sha256(compact([lease_id, locale])).hexdigest() + '.intent.json'
+        try:
+            attempt = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=descriptor)
+        except FileExistsError:
+            raise EvidenceUnknown('This lease and locale already have an original attempt; do not retry') from None
+        # Keep the marker even if writing, building or login later fails. Its
+        # existence denotes an attempted operation, not a successful sign-in.
+        with os.fdopen(attempt, 'wb') as stream:
+            stream.write(compact(dict(version='LIO-official-login-attempt.1', lease_id=lease_id,
+                                      locale=locale, state='ATTEMPT_OUTCOME_UNKNOWN'), sort_keys=True))
+            stream.flush(); os.fsync(stream.fileno())
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
 
 
 def main():
@@ -52,6 +82,8 @@ def main():
         verify_installation(simulator, packet['artifact'])
         return dict(startsAt=current['starts_at'], endsAt=current['ends_at'])
 
+    grant(); verify_installation(simulator, packet['artifact'])
+    claim_login_attempt(lease['lease_id'], args.locale)
     native = AdmittedNativeUI(input_guard, output / 'native', simulator, 'space.go2china.app',
                              build_directory=packet['build_directory'])
     outcome = 'UNKNOWN'

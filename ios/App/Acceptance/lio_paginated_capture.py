@@ -12,8 +12,11 @@ class PagedCapture(Capture):
         self.projection = HistoryProjection()
 
     def state(self):
+        return self.observe(self.projection)
+
+    def observe(self, projection):
         raw = self.raw()
-        view = self.projection.ingest(raw['nodes'])
+        view = projection.ingest(raw['nodes'])
         composers = [node for node in raw['nodes'] if node['identifier'] == 'lio.composer']
         shortcuts = [node for node in raw['nodes'] if node['identifier'] == 'lio.chat.newShortcut']
         view['draft'] = composers[0]['value'] if len(composers) == 1 else None
@@ -23,6 +26,21 @@ class PagedCapture(Capture):
         view['page_ready'] = page_ready
         view['body_complete'] = view['body_complete'] and page_ready
         return raw, view
+
+    def immediate(self, *, timeout=90):
+        """Observe lifecycle recovery without history navigation or old census."""
+        self.projection = HistoryProjection()
+        deadline = time.monotonic() + timeout
+        while True:
+            fresh = HistoryProjection()
+            raw, view = self.observe(fresh)
+            if view['errors'] or view['body_complete']:
+                self.projection = fresh
+                return raw, view
+            if time.monotonic() >= deadline:
+                view['spinner_past_deadline'] = True
+                return raw, view
+            time.sleep(.2)
 
     @staticmethod
     def visible(nodes, identifier):

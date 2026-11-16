@@ -91,6 +91,12 @@ def three_days(answer, locale):
         re.search(r'\bday\s*' + number + r'\b', answer, flags=re.IGNORECASE) for number, _ in words)
 
 
+def lifecycle_snapshot(action, view):
+    # Later history errors/selection must not rewrite the immediate UI record.
+    return dict(action=action, transcript=[dict(row) for row in view['transcript']],
+                draft=view['draft'], errors=list(view['errors']), body_complete=view['body_complete'])
+
+
 class Coordinator:
     def __init__(self, config, plan_directory, output):
         self.config, self.root, self.output = config, Path(plan_directory), Path(output)
@@ -154,13 +160,17 @@ class Coordinator:
         capture.originals = []
         actions = []
         targets = self.targets.setdefault(step['locale'], {})
+        # In C's approved first-setup order, SM01 has not yet added the
+        # default to accepted views. After that gate C includes it (even when
+        # empty); SM03/SM04 must not count it again or guess its CID from a title.
+        history_count = len(instruction['accepted_conversations']) + int(step['gate_id'] == 'SM01')
         if step['new_conversation']:
             capture.new_chat(); actions.append('new_chat')
         elif step['gate_id'] in ('SM01', 'SM04'):
             role = 'old' if step['gate_id'] == 'SM01' else 'qa'
             if role not in targets:
                 raise EvidenceUnknown('No previously observed target; standard-run selection is not implemented')
-            capture.select_transcript(targets[role], len(instruction['accepted_conversations']) + 1)
+            capture.select_transcript(targets[role], history_count)
         expected = step['text'] if step['text'] is not None else instruction['expected_draft']
         if expected is not None:
             _, before = capture.draft(expected)
@@ -193,26 +203,25 @@ class Coordinator:
                 if step['gate_id'] == 'SEED2': targets['old'] = after['transcript']
                 if step['gate_id'] == 'SM02': targets['qa'] = after['transcript']
         elif step['gate_id'] == 'SM03':
-            history = capture.history(len(instruction['accepted_conversations']) + 1)
+            history = capture.history(history_count)
             actions = ['history']
             _, after = capture.ready()
         elif step['gate_id'] == 'SM01':
             capture.action('terminate'); self.guard(); capture.action('launch', language=step['locale'])
-            _, after = capture.ready()
+            _, after = capture.immediate()
             actions = ['cold_launch']
-            lifecycle = [dict(action='cold_launch', transcript=after['transcript'], draft=after['draft'],
-                              errors=after['errors'], body_complete=after['body_complete'])]
+            lifecycle = [lifecycle_snapshot('cold_launch', after)]
             # Keep the immediate cold result immutable. Only then collect the
             # complete default/local candidate bodies needed for C's unique join.
             if after['body_complete'] and not after['errors']:
-                history = capture.history(len(instruction['accepted_conversations']) + 1)
+                history = capture.history(history_count)
                 history_errors = [error for entry in history['opened'] for error in entry['errors']]
                 if (history_errors or len(history['opened']) != len(history['rows'])
                         or any(not entry['body_complete'] for entry in history['opened'])):
                     after['errors'].extend(history_errors)
                     after['body_complete'] = False
                 else:
-                    _, after = capture.select_transcript(targets['old'], len(instruction['accepted_conversations']) + 1)
+                    _, after = capture.select_transcript(targets['old'], history_count)
         elif step['gate_id'] == 'SM04':
             action = step['action']
             if action == 'background_return':
@@ -222,10 +231,9 @@ class Coordinator:
             else:
                 raise EvidenceUnknown('Unknown lifecycle action')
             self.guard(); capture.action('activate')
-            _, after = capture.ready()
+            _, after = capture.immediate()
             actions = [action]
-            lifecycle = [dict(action=action, transcript=after['transcript'], draft=after['draft'],
-                              errors=after['errors'], body_complete=after['body_complete'])]
+            lifecycle = [lifecycle_snapshot(action, after)]
         else:
             raise EvidenceUnknown('Unknown read-only gate')
         after['new_greeting_count'] = max(0, after['greeting_count'] - before['greeting_count'])

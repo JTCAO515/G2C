@@ -81,5 +81,73 @@ class CoordinatorFences(unittest.TestCase):
                                   action=lambda *args, **kwargs: self.fail('Whole visible reply needs no scrolling'))
         read_full_reply(capture, 'Day 1\nDay 2\nDay 3')
 
+    def test_cold_failure_is_recorded_before_any_history_navigation(self):
+        app = self.app
+        step = dict(gate_id='SM01', locale='zh', text=None, nonce='synthetic-cold', new_conversation=False)
+        plan = dict(self.plan, steps=[step])
+        plan_path = self.root / 'cold-plan.json'; save(plan_path, plan)
+        config = dict(self.config, plan=dict(path=str(plan_path), sha256=hashlib.sha256(plan_path.read_bytes()).hexdigest()),
+                      qualification_sha256='synthetic-q', admission_wait_seconds=1)
+        runner = Coordinator(config, self.root, self.root / 'cold-out')
+        runner.targets = {'zh': {'old': [dict(question='Q', answer='A', visible_failure=False)]}}
+        instruction = self.root / '00-prepare.json'
+        save(instruction, dict(version='LIO-basic-ui-instruction.2', app=app, run_id=plan['run_id'], step=step,
+                               expected_draft='keep draft', accepted_conversations={'old': {}}))
+        save(self.root / '00-admission.json', dict(version='LIO-basic-ui-admission.2', run_id=plan['run_id'],
+             nonce=step['nonce'], qualification_sha256='synthetic-q', checkpoint_ref='synthetic-checkpoint'))
+        before = dict(errors=[], body_complete=True, transcript=runner.targets['zh']['old'], draft='keep draft', greeting_count=0)
+        after = dict(before, errors=['Actual read failure'], body_complete=False, transcript=[])
+        immediate_calls = []
+        fake = SimpleNamespace(native=SimpleNamespace(simulator='synthetic'), originals=[],
+            select_transcript=lambda *args: None, draft=lambda *args: ({}, dict(before)),
+            ready=lambda **kwargs: ({}, dict(before)), action=lambda *args, **kwargs: None,
+            immediate=lambda **kwargs: immediate_calls.append(True) or ({}, dict(after)),
+            history=lambda *args: self.fail('Do not repair an immediate cold failure through history navigation'))
+        with patch.object(runner, 'guard', return_value={}), patch.object(runner, 'client', return_value=fake), \
+                patch('watch_lio_basic_smoke.verify_installation'):
+            runner.phase(instruction)
+        from lio_basic_ui_driver import decode
+        witness = decode((self.root / '00-A-completed.json').read_bytes())
+        self.assertEqual(immediate_calls, [True])
+        self.assertFalse(witness['lifecycle'][0]['body_complete'])
+        self.assertEqual(witness['lifecycle'][0]['errors'], ['Actual read failure'])
+
+    def test_history_does_not_count_the_default_again_after_c_accepted_it(self):
+        step = dict(gate_id='SM03', locale='zh', text=None, nonce='synthetic-history', new_conversation=False)
+        plan = dict(self.plan, steps=[step])
+        path = self.root / 'history-plan.json'; save(path, plan)
+        config = dict(self.config, plan=dict(path=str(path), sha256=hashlib.sha256(path.read_bytes()).hexdigest()),
+                      qualification_sha256='q', admission_wait_seconds=1)
+        runner = Coordinator(config, self.root, self.root / 'history-out')
+        instruction = self.root / '00-prepare.json'
+        save(instruction, dict(version='LIO-basic-ui-instruction.2', app=self.app, run_id=plan['run_id'], step=step,
+                               expected_draft=None, accepted_conversations={'cid-a': {}, 'cid-b': {}, 'cid-c': {}}))
+        save(self.root / '00-admission.json', dict(version='LIO-basic-ui-admission.2', run_id=plan['run_id'],
+             nonce=step['nonce'], qualification_sha256='q', checkpoint_ref='synthetic-checkpoint'))
+        before = dict(errors=[], body_complete=True, transcript=[], draft='', greeting_count=0)
+        counts = []
+        def history(count):
+            counts.append(count)
+            self.assertEqual(count, 3)
+            return dict(rows=[], opened=[])
+        fake = SimpleNamespace(native=SimpleNamespace(simulator='synthetic'), originals=[],
+                               ready=lambda **kwargs: ({}, dict(before)), history=history)
+        with patch.object(runner, 'guard', return_value={}), patch.object(runner, 'client', return_value=fake), \
+                patch('watch_lio_basic_smoke.verify_installation'):
+            runner.phase(instruction)
+        self.assertEqual(counts, [3])
+
+    def test_lifecycle_record_cannot_be_rewritten_by_later_navigation(self):
+        from watch_lio_basic_smoke import lifecycle_snapshot
+        view = dict(transcript=[dict(question='Q', answer='A', visible_failure=False)],
+                    draft='keep', errors=[], body_complete=True)
+        sealed = lifecycle_snapshot('cold_launch', view)
+        view['errors'].append('Later navigation failure')
+        view['transcript'][0]['answer'] = 'Later answer'
+        view['body_complete'] = False
+        self.assertEqual(sealed['errors'], [])
+        self.assertEqual(sealed['transcript'][0]['answer'], 'A')
+        self.assertTrue(sealed['body_complete'])
+
 
 if __name__ == '__main__': unittest.main()

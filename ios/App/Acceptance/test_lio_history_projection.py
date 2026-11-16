@@ -67,5 +67,20 @@ class CompleteHistoryProjectionTests(unittest.TestCase):
         from lio_basic_ui_projection import EvidenceUnknown
         with self.assertRaises(EvidenceUnknown): projection.ingest(row(0, 1, answer='Changed'))
 
+    def test_same_count_pending_answer_cannot_reuse_a_previous_completed_row(self):
+        from lio_basic_ui_projection import EvidenceUnknown
+        projection = HistoryProjection()
+        self.assertTrue(projection.ingest(row(0, 1))['body_complete'])
+        changed = row(0, 1, answer='Partial', complete=False)
+        changed[0]['value'] = 'Different current question'
+        with self.assertRaises(EvidenceUnknown): projection.ingest(changed)
+
+    def test_pending_rendering_of_the_same_question_invalidates_cached_completion(self):
+        projection = HistoryProjection()
+        projection.ingest(row(0, 1))
+        view = projection.ingest(row(0, 1, answer='Partial', complete=False))
+        self.assertFalse(view['body_complete'])
+        self.assertEqual(view['observed_indices'], [])
+
 
 if __name__ == '__main__': unittest.main()

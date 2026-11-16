@@ -67,5 +67,20 @@ class PaginationNavigationTests(unittest.TestCase):
         capture.action = lambda *args, **kwargs: self.fail('Do not choose among incompletely read candidates')
         with self.assertRaises(EvidenceUnknown): capture.select_transcript(target, 2)
 
+    def test_immediate_snapshot_never_uses_the_previous_complete_census(self):
+        from lio_history_projection import HistoryProjection
+        from test_lio_history_projection import row
+        capture = object.__new__(PagedCapture)
+        capture.projection = HistoryProjection()
+        capture.projection.ingest(row(0, 1))
+        nodes = row(0, 1, answer='Partial', complete=False) + [
+            dict(identifier='lio.composer', value='draft', label='', enabled=True, depth=0, progress_indicator=False),
+            dict(identifier='lio.chat.newShortcut', value='', label='', enabled=True, depth=0, progress_indicator=False)]
+        capture.raw = lambda: dict(nodes=nodes)
+        capture.action = lambda *args, **kwargs: self.fail('Immediate observation must not navigate')
+        _, view = capture.immediate(timeout=0)
+        self.assertFalse(view['body_complete'])
+        self.assertEqual(view['transcript'], [])
+
 
 if __name__ == '__main__': unittest.main()

@@ -19,7 +19,9 @@ class HistoryProjection:
         counts = {int(match[2]) for _, match in groups}
         more_values = {match[3] for _, match in groups}
         errors = [node['label'] or node['value'] for node in nodes if node['identifier'] in GLOBAL_ERRORS]
-        progress = any(node['progress_indicator'] for node in nodes)
+        progress = (any(node['progress_indicator'] for node in nodes)
+                    or any(node['identifier'] == 'lio.answer' and node['value'] not in COMPLETE
+                           for node in semantic_nodes(nodes)))
         if len(counts) > 1 or len(more_values) > 1:
             return self.view(errors, progress=True, earlier=True)
         if not groups:
@@ -57,11 +59,14 @@ class HistoryProjection:
             question = questions[0]['value'] or questions[0]['label']
             if not question:
                 continue
+            if ordinal in self.rows and self.rows[ordinal]['question'] != question:
+                raise EvidenceUnknown('An observed UI question changed without a page-generation change')
             if len(failures) == 1 and failures[0]['label'] and not answers:
                 row = dict(question=question, answer=None, visible_failure=True, failure_label=failures[0]['label'])
             elif len(answers) == 1 and answers[0]['label'] and answers[0]['value'] in COMPLETE and not failures:
                 row = dict(question=question, answer=answers[0]['label'], visible_failure=False)
             else:
+                self.rows.pop(ordinal, None)
                 continue
             if ordinal in self.rows and self.rows[ordinal] != row:
                 raise EvidenceUnknown('An observed UI position changed without a page-generation change')

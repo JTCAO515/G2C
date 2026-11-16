@@ -3,6 +3,11 @@ from datetime import datetime, timezone
 import hashlib
 import unittest
 import io
+import tempfile
+from pathlib import Path
+from types import SimpleNamespace
+import official_lio_sign_in as login
+from lio_basic_ui_projection import EvidenceUnknown
 from contextlib import redirect_stderr
 from unittest.mock import patch
 from official_lio_sign_in import main as sign_in
@@ -75,6 +80,36 @@ class LoginLeaseTests(unittest.TestCase):
             self.assertEqual(failure.exception.code, 2)
             self.assertEqual(read.call_count, 1)
             native.assert_not_called()
+
+    def test_same_lease_locale_cannot_repeat_official_submit_with_a_new_output_directory(self):
+        packet = dict(version='LIO-A-official-sign-in-packet.1', expected_login=self.expected,
+                      artifact=dict(app=self.app), build_directory='/synthetic/build')
+        packet_raw, lease_raw = compact(packet, sort_keys=True), compact(self.value, sort_keys=True)
+        calls = []
+        class Native:
+            def __init__(self, *args, **kwargs):
+                self.sequence = 0; self.commands = Path('/synthetic/commands')
+                self.snapshots = iter([[dict(identifier='demo.invite.code')],
+                                       [dict(identifier='demo.invite.signin', enabled=True)],
+                                       [dict(identifier='demo.invite.error')]])
+            def command(self, kind, **fields):
+                self.sequence += 1; calls.append((kind, fields.get('identifier')))
+                if kind == 'snapshot': return dict(nodes=next(self.snapshots), screenshot='synthetic.png')
+                return {}
+            def close(self): pass
+        with tempfile.TemporaryDirectory() as folder:
+            for number in (1, 2):
+                argv = ['login', '--packet', '/synthetic/packet', '--packet-sha256', hashlib.sha256(packet_raw).hexdigest(),
+                        '--lease', '/synthetic/lease', '--lease-sha256', hashlib.sha256(lease_raw).hexdigest(),
+                        '--locale', 'zh', '--output', str(Path(folder) / str(number))]
+                with patch('sys.argv', argv), patch.object(login, 'ATTEMPT_DIRECTORY', Path(folder) / 'attempts', create=True), \
+                        patch.object(login, 'read_private_bytes', side_effect=lambda path: packet_raw if str(path).endswith('packet') else lease_raw), \
+                        patch.object(login, 'datetime', SimpleNamespace(now=lambda tz: self.now)), \
+                        patch.object(login, 'verify_installation'), patch.object(login, 'AdmittedNativeUI', Native), \
+                        patch.object(login, 'artifact', return_value=dict(path='/synthetic', sha256='0' * 64)):
+                    with self.assertRaises(EvidenceUnknown): login.main()
+            self.assertEqual(sum(kind == 'private_invite' for kind, _ in calls), 1)
+            self.assertEqual(sum(kind == 'tap' and identifier == 'demo.invite.signin' for kind, identifier in calls), 1)
 
 
 if __name__ == '__main__': unittest.main()
