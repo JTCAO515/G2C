@@ -347,7 +347,11 @@ def main(*,natural_direct=False,early_departure=True,production=False):
                 dict(locale=extra['locale'],items=batch))for batch in batches))
             for result,batch in zip(results,batches,strict=True):
                 parse_wording(result.encode(),batch,allowed_reason_keys=set())
-            assert calls.model==5 # includes prefix extraction when present and reserved final Memory
+            # Includes actual constraint understanding/skeleton/wording, any
+            # prior prefix extraction, and reserved final Memory. The fixture
+            # leaves one slot for its separate historical preview model.
+            assert worker.lio_memory is not None
+            assert calls.model==5 and calls.model_slots_left==1
             completed.append(binding.run_id)
             print('PASS native4 sourced plan understanding -> original NEEDS/calendar/profile hold + skeleton + two registered wording calls '+binding.message_id+' RUN '+binding.run_id+('; sole writer saved'if binding.message_id in saved_runs else'; no Trip publication'),flush=True)
         return original_model(host,worker,binding,view,profile,system,extra)
