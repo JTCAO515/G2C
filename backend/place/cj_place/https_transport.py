@@ -288,16 +288,21 @@ async def _fetch_bound(config,request,credentials,*,before_send,paths,reprepare)
 
 POI2_REQUEST_SENT=object()
 _POI2_PATHS=frozenset(('/v5/place/text','/v5/place/around','/v5/place/detail'))
+ROUTE_REQUEST_SENT=POI2_REQUEST_SENT
 
 
-async def _poi2_events(config,request,credentials,before_send):
-    """Two advances on one loop: send under dispatch fence, receive outside it."""
+def _poi2_events(config,request,credentials,before_send):
     from .gaode_v2 import prepare as prepare_poi2
+    return _registered_candidate_events(config,request,credentials,before_send,
+        lambda:prepare_poi2(config,request.query,request.request_ref,request.started_at),_POI2_PATHS)
+
+
+async def _registered_candidate_events(config,request,credentials,before_send,prepare_request,paths):
+    """Two advances on one loop: send under dispatch fence, receive outside it."""
     if before_send is None:
         yield TransportResult('rejected','original_source_guard_required');return
     try:
-        target,expires,remaining=_candidate_target(config,request,credentials,
-            lambda:prepare_poi2(config,request.query,request.request_ref,request.started_at),_POI2_PATHS)
+        target,expires,remaining=_candidate_target(config,request,credentials,prepare_request,paths)
     except _WireFailure as error:
         yield TransportResult('rejected',error.args[0]);return
     except Exception:
@@ -349,10 +354,22 @@ def poi2_candidate_stream(config,request,credentials,*,before_send):
     Consume the first POI2_REQUEST_SENT under the original dispatch fence, then
     release it before the next advance. Closing the iterator closes that socket.
     """
+    yield from _registered_candidate_stream(_poi2_events(config,request,credentials,before_send))
+
+
+def route_candidate_stream(config,request,credentials,*,before_send):
+    """Explicit rich route entry; old v3/POI2 entry-point gates are unchanged."""
+    from .rich_routes import prepare as prepare_route
+    events=_registered_candidate_events(config,request,credentials,before_send,
+        lambda:prepare_route(config,request.query,request.request_ref,request.started_at),
+        frozenset(('/v3/direction/walking','/v3/direction/driving','/v3/direction/transit/integrated')))
+    yield from _registered_candidate_stream(events)
+
+
+def _registered_candidate_stream(events):
     import sys
     from contextvars import copy_context
     with asyncio.Runner()as runner:
-        events=_poi2_events(config,request,credentials,before_send)
         try:
             while True:
                 # Do not retain the first advance's now-expired M/Memory

@@ -31,11 +31,13 @@ class FixtureWriter:
     def __init__(self,reader,send_check,available=True):
         self.reader,self.send_check,self.available=reader,send_check,available
         self.closed=False;self.transport=self;self.writes=[]
-    def write(self,data):
-        self.send_check();self.writes.append(data)
-        value=(dict(status='1',infocode='10000',count='1',pois=[dict(
+    def response_value(self):
+        return (dict(status='1',infocode='10000',count='1',pois=[dict(
             id='B000SYNTH1',name='合成博物馆',cityname='北京市',adcode='110101',location='116.4,39.9')])
             if self.available else dict(status='0',infocode='10001',info='INVALID_USER_KEY'))
+    def write(self,data):
+        self.send_check();self.writes.append(data)
+        value=self.response_value()
         body=json.dumps(value,ensure_ascii=False).encode()
         self.reader.feed_data(b'HTTP/1.1 200 OK\r\nContent-Length: '+str(len(body)).encode()+b'\r\n\r\n'+body)
         self.reader.feed_eof()
