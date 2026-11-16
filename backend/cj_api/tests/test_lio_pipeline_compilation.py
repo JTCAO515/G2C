@@ -34,6 +34,25 @@ def build(value,*,retained=None,hotel=None):
 
 
 class RetrievedCompilation(unittest.TestCase):
+    def test_suggested_order_leaves_narrow_meal_windows_before_flexible_sights(self):
+        locked=fixed();locked['description']='第一天固定集合'
+        for edge,clock in (('start','09:00'),('end','10:00')):
+            locked[edge]['time']={'state':'known','value':clock}
+            locked[edge]['timezone']={'state':'known','value':'Asia/Shanghai'}
+        value=prepared({'fixed_items':[locked]})
+        value.edges=activity_windows(3,first_day_full=True)
+        expected=recipes(3,'relaxed',light_first=False,light_last=True)
+        value.skeleton=parse_skeleton(packed(proposal(expected)),expected,id_prefix=value.id_prefix)
+        result=build(value);validate_document(result.document)
+        proposed=[i for i in result.document['items']if i['schedule']['start']['day_index']==1
+            and i['id']in result.proposed_subjects and i['kind']in ('sight','meal')]
+        self.assertEqual(proposed[0]['kind'],'meal')
+        self.assertEqual(next(a for a in result.order_activities if a.item_id==proposed[0]['id']).meal_period,'lunch')
+        actual=next(i for i in result.document['items']if i['id']==locked['item_id'])
+        self.assertEqual(actual['schedule']['start']['time'],locked['start']['time'])
+        self.assertEqual(actual['schedule']['end']['time'],locked['end']['time'])
+        self.assertTrue(all(leg['state']=='unconfirmed'and leg['source']is None for leg in result.document['legs']))
+
     def test_complete_post_lookup_graph_keeps_preflight_ids_and_all_hotel_pairs(self):
         value=prepared();before=preflight_document(value.skeleton,value.projection,value.edges,
             id_prefix=value.id_prefix,locale='en')

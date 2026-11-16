@@ -13,7 +13,7 @@ from cj_feasibility.rich_solver import DAY,Window
 from cj_place.models import Coordinate,Endpoint
 from cj_place.rich_routes import initial_mode
 
-from .lio_pipeline_document import compile_document,lodging_anchors,representation_size,transfer_items,unconfirmed_place
+from .lio_pipeline_document import compile_document,lodging_anchors,representation_size,transfer_items,unconfirmed_place,unconfirmed_legs
 from .lio_pipeline_preflight import _CalendarData,fixed_day_map
 
 
@@ -93,5 +93,18 @@ def compile_retrieved(prepared,places,hotel_places,*,checks,subjects,locale,reta
         if activity.item_id in stops else activity for activity in activities)
     schedule_hotels={activity.item_id:activity for activity in anchor_schedule}
     schedule=tuple(schedule_hotels.get(activity.item_id,activity)for activity in order)
+    # Give the order solver tighter proposed meal windows first. This is a
+    # search preference, not a new time constraint or travel estimate. Original
+    # fixed/retained items keep their values and positions; C still chooses and
+    # validates the actual order before any route can populate a leg.
+    bounds={activity.item_id:activity for activity in order}
+    for day in document['days']:
+        positions=[index for index,item in enumerate(document['items'])
+            if item['schedule']['start']['day_index']==day['day_index']
+            and item['id']in proposed and item['kind']in ('sight','meal')]
+        suggestions=sorted((document['items'][index]for index in positions),
+            key=lambda item:min(window.end for window in bounds[item['id']].windows))
+        for index,item in zip(positions,suggestions,strict=True):document['items'][index]=item
+    document['legs']=unconfirmed_legs(document)
     representation_size(document) # Full observed UTF-8 bytes, including sources and all legs.
     return CompiledPlanData(document,order,schedule,proposed)
