@@ -1,0 +1,360 @@
+{
+  "version": "M4-basic-chain-smoke-design.1",
+  "issue": 1048,
+  "design_only": true,
+  "execution_enabled": false,
+  "required_gate_count": 7,
+  "locale_check_count": 14,
+  "planned_message_posts": 8,
+  "subjects": [
+    "existing_C_synthetic_zh",
+    "existing_C_synthetic_en"
+  ],
+  "target": "actual Hong Kong qualified candidate; actual ordinary user App mode, not Debug-only/new-mode bypass",
+  "gate_items": [
+    {
+      "gate_id": "SM01",
+      "title": "启动恢复旧对话",
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "actions": {
+        "zh": [
+          "准备合成旧CID和未发送草稿，强制结束App后启动。"
+        ],
+        "en": [
+          "Prepare an existing synthetic chat and an unsent draft; terminate and relaunch."
+        ]
+      },
+      "expected": {
+        "zh": "真实旧对话/顺序/草稿恢复，CID一致；不能一直转圈；不新建、不重发、不清数据。",
+        "en": "Restore the same real existing synthetic chat and draft, without endless loading, replacement chats or resending."
+      },
+      "judgement": "A核三个spinner入口/选中CID/journal；C只读核该CID原消息与无新提交。缓存欢迎文案或receipts:null不证明timeline已恢复。",
+      "regression_case_refs": [
+        "UI01"
+      ],
+      "server_automation_design": "脚本读取原CID timeline/原lookup（原默认可v1、选中v2），记录实际请求；账户检查的v1/message-receipts与timeline分开。",
+      "app_automation_design": "A使用普通用户Home的UI测试/获准真机步骤；真实HK、同一subject/CID/MID；现有fixture UI测试只作可复用骨架，不能直接给HK PASS。",
+      "estimated_calls_per_locale": {
+        "message_posts": 0,
+        "foreground_models_max": 0,
+        "paid_tools_max": 0,
+        "background_model_allowance": 0,
+        "read_only_meter_calls": 0
+      },
+      "execution_status": "UNRUN",
+      "execution_enabled_in_stage0": false,
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "gate_id": "SM02",
+      "title": "新建对话问答一次",
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "actions": {
+        "zh": [
+          "新建对话，发送：北京是中国的首都吗？"
+        ],
+        "en": [
+          "Start a new chat and ask: Is Beijing the capital of China?"
+        ]
+      },
+      "expected": {
+        "zh": "真实新MID受理后有完整、语言正确、内容正确的服务端回答；本地开场白不计。",
+        "en": "The unique App-submitted message has an actual server receipt and a complete, correct English or Chinese answer; the local greeting is insufficient."
+      },
+      "judgement": "A普通Home发起唯一POST；C核原receipt/RUN终态/原正文/界面相符，正常QA不产生Trip或静默Saved Memory。",
+      "regression_case_refs": [
+        "UI02"
+      ],
+      "server_automation_design": "同一次App实际POST的只读lookup/timeline/原ops与费用收集，不另由脚本POST一份；server-only诊断另分阶段、费用、结果，不能替代App门禁。",
+      "app_automation_design": "A使用普通用户Home的UI测试/获准真机步骤；真实HK、同一subject/CID/MID；现有fixture UI测试只作可复用骨架，不能直接给HK PASS。",
+      "estimated_calls_per_locale": {
+        "message_posts": 1,
+        "foreground_models_max": 3,
+        "paid_tools_max": 1,
+        "background_model_allowance": 2,
+        "read_only_meter_calls": 0
+      },
+      "execution_status": "UNRUN",
+      "execution_enabled_in_stage0": false,
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "gate_id": "SM03",
+      "title": "历史对话列表",
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "actions": {
+        "zh": [
+          "打开历史，确认旧对话和刚创建的新对话，分别选择。"
+        ],
+        "en": [
+          "Open chat history, find the old and newly created chats, and select them."
+        ]
+      },
+      "expected": {
+        "zh": "两段真实对话均可找到并打开正确CID，不报列表不可用或推定数据删除，不产生新提交。",
+        "en": "Both the old and new chats are listed and open under their correct IDs. The current local-journal list is not a conversations API and a Trip-list HTTP 200 cannot pass it."
+      },
+      "judgement": "A核local savedChats与合法reconcile；C核已知原CID可读。当前列表不是GET conversations，Trip列表200不替代聊天列表。",
+      "regression_case_refs": [
+        "UI03"
+      ],
+      "server_automation_design": "C只读查询已知CID/原首发；A采本地journal与UI映射。未来若历史API版本改变须明确版本后适配，不能臆造接口。",
+      "app_automation_design": "A使用普通用户Home的UI测试/获准真机步骤；真实HK、同一subject/CID/MID；现有fixture UI测试只作可复用骨架，不能直接给HK PASS。",
+      "estimated_calls_per_locale": {
+        "message_posts": 0,
+        "foreground_models_max": 0,
+        "paid_tools_max": 0,
+        "background_model_allowance": 0,
+        "read_only_meter_calls": 0
+      },
+      "execution_status": "UNRUN",
+      "execution_enabled_in_stage0": false,
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "gate_id": "SM04",
+      "title": "切后台再返回原对话",
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "actions": {
+        "zh": [
+          "在SM02完成的对话留草稿，后台10秒再返回；另作锁屏60秒返回。"
+        ],
+        "en": [
+          "Leave a draft in the completed SM02 chat; background for 10 seconds and return, then lock for 60 seconds and return."
+        ]
+      },
+      "expected": {
+        "zh": "同一CID/消息/草稿恢复，无重复开场、自动重发、退出登录或强关才能恢复。两个转场断言均通过。",
+        "en": "Return to the same messages and draft after both background and lock transitions, without an extra greeting or send."
+      },
+      "judgement": "A前后台状态与截图；C前后只读原件/attempt差值0。后台和强杀重开是不同判定，不能互相抵销。",
+      "regression_case_refs": [
+        "UI04",
+        "UI06"
+      ],
+      "server_automation_design": "前后同CID读timeline；仅GET不启动新RUN/后台模型。若确有新attempt，按原件记录并判相应副作用，不把读调用算0费掩盖。",
+      "app_automation_design": "A使用普通用户Home的UI测试/获准真机步骤；真实HK、同一subject/CID/MID；现有fixture UI测试只作可复用骨架，不能直接给HK PASS。",
+      "estimated_calls_per_locale": {
+        "message_posts": 0,
+        "foreground_models_max": 0,
+        "paid_tools_max": 0,
+        "background_model_allowance": 0,
+        "read_only_meter_calls": 0
+      },
+      "execution_status": "UNRUN",
+      "execution_enabled_in_stage0": false,
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "gate_id": "SM05",
+      "title": "你是谁",
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "actions": {
+        "zh": [
+          "在新的合成对话发送：你是谁"
+        ],
+        "en": [
+          "In a new synthetic chat ask: Who are you?"
+        ]
+      },
+      "expected": {
+        "zh": "首轮完整可读Lio身份回答且语言正确，不能只在第二次成功或被UI隐藏。",
+        "en": "The first identity request displays a complete, language-correct Lio answer; server completed plus hidden UI text is a failure."
+      },
+      "judgement": "对照原server正文与UI；server completed与UI成功分列，不能只看RUN状态。",
+      "regression_case_refs": [
+        "QA01"
+      ],
+      "server_automation_design": "记录唯一新MID、receipt/原状态/实际正文；可由服务端codebank零模型完成，不强迫调用模型，但仍须真实HK受理证据。",
+      "app_automation_design": "A使用普通用户Home的UI测试/获准真机步骤；真实HK、同一subject/CID/MID；现有fixture UI测试只作可复用骨架，不能直接给HK PASS。",
+      "estimated_calls_per_locale": {
+        "message_posts": 1,
+        "foreground_models_max": 3,
+        "paid_tools_max": 0,
+        "background_model_allowance": 2,
+        "read_only_meter_calls": 0
+      },
+      "execution_status": "UNRUN",
+      "execution_enabled_in_stage0": false,
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "gate_id": "SM06",
+      "title": "你能做啥",
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "actions": {
+        "zh": [
+          "在新的合成对话发送：你能做啥"
+        ],
+        "en": [
+          "In a new synthetic chat ask: What can you do?"
+        ]
+      },
+      "expected": {
+        "zh": "完整准确的旅行助手能力与可继续入口；不失败、不只普通问候，首轮即可读。",
+        "en": "The first capability request displays useful accurate travel-assistant capabilities rather than a generic greeting or error."
+      },
+      "judgement": "同输入/原正文/UI/locale与实际能力核对，不把重问或旧对话缓存当通过。",
+      "regression_case_refs": [
+        "QA02"
+      ],
+      "server_automation_design": "实际Home同协议的原MSG/原状态/原正文/全ops只读，显示来源不是计量/健康证明。",
+      "app_automation_design": "A使用普通用户Home的UI测试/获准真机步骤；真实HK、同一subject/CID/MID；现有fixture UI测试只作可复用骨架，不能直接给HK PASS。",
+      "estimated_calls_per_locale": {
+        "message_posts": 1,
+        "foreground_models_max": 3,
+        "paid_tools_max": 0,
+        "background_model_allowance": 2,
+        "read_only_meter_calls": 0
+      },
+      "execution_status": "UNRUN",
+      "execution_enabled_in_stage0": false,
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "gate_id": "SM07",
+      "title": "北京三日游得到实际行程",
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "actions": {
+        "zh": [
+          "在新的合成对话发送：北京三日游"
+        ],
+        "en": [
+          "In a new synthetic chat ask: A three-day trip to Beijing."
+        ]
+      },
+      "expected": {
+        "zh": "可读、完整、可展开/回看的day1–3具体行程对象/正文；ACK、复述、半句、空卡或只索日期/人数都不通过。无日期不编造日历日期，人数保持未知。",
+        "en": "Display all three concrete itinerary days and allow real readback/expansion. An acknowledgement, fragment, empty card or date/party questionnaire is insufficient. Apply the explicitly qualified preview/save semantics; a preview never proves automatic saving."
+      },
+      "judgement": "C核原规划结果/对象和实际正文，A展示三天及展开；按明示模式核预览/正式保存：legacy2完整真实预览仅是基础出行程，不计自动保存PASS；native3/4或任何“已保存”必须有同原动作持久版本和历史回读。其余M4保存/丰富度门槛继续独立保留。",
+      "regression_case_refs": [
+        "PLAN01",
+        "PLAN05",
+        "PLAN06"
+      ],
+      "server_automation_design": "同App原MID→RUN→实际draft/preview或Trip只读回读；原模型/工具/Memory全收，不能脚本走v4而普通Home走v2来代过。",
+      "app_automation_design": "A使用普通用户Home的UI测试/获准真机步骤；真实HK、同一subject/CID/MID；现有fixture UI测试只作可复用骨架，不能直接给HK PASS。",
+      "estimated_calls_per_locale": {
+        "message_posts": 1,
+        "foreground_models_max": 6,
+        "paid_tools_max": 4,
+        "background_model_allowance": 2,
+        "read_only_meter_calls": 0
+      },
+      "execution_status": "UNRUN",
+      "execution_enabled_in_stage0": false,
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    }
+  ],
+  "execution_order": "zh SM01–SM07 then en SM01–SM07; sequential writes and protected readers; first unexpected FAIL/UNKNOWN stops new dispatch, unexecuted remain UNRUN.",
+  "automation_boundary": "A sends the eight actual App messages; C scripts observe those same originals. An independent API-only run is additional, not included in this quote or a substitute for UI PASS.",
+  "required_run_pins": [
+    "new run_id/stage_id and never-used original IDs",
+    "actual app build/client source/IPA or candidate archive identity",
+    "actual API+worker source/image/schema/config/model/prompt",
+    "explicit ordinary Home protocol/mode",
+    "subject/owner/period/current native admission",
+    "B formal lease/collector/read helpers exact hashes",
+    "same unique financial ledger/prior holds/remaining C sublimit"
+  ],
+  "deadlines": "Use the stricter existing qualified transport deadline, with a maximum 90-second observation cap per item; capture first genuine server progress/body/completion separately. Existing #630/#32 and native4 performance gates remain; 14 checks cannot establish population p95.",
+  "outcomes": {
+    "PASS": "All required UI and native/backend evidence present, same-candidate and expected side effects.",
+    "FAIL": "Visible or deterministic behavior contradicts expectation; source/mode/seed is actually qualified.",
+    "UNKNOWN": "Evidence, identity/source join, write outcome or accounting unavailable; not zero, not PASS.",
+    "UNRUN": "No admitted window/fixture or stopped before this item."
+  },
+  "release_condition": "14/14 checks must be PASS; any FAIL/UNKNOWN/UNRUN blocks candidate promotion. Basic smoke does not close historical regressions or M4.",
+  "predeployment_condition": "Before deployment/release promotion B must provide an already-authorized isolated HK candidate slot with the exact candidate image and correct worker. Testing the old live image cannot authorize a later new image. If only direct cutover exists, the run is post-deploy verification, not pre-deploy PASS; keep release blocked/maintenance or rollback per B authority. Stage0 does not provision or authorize any slot.",
+  "budget": {
+    "quote_type": "DESIGN_ESTIMATE_NOT_ALLOWANCE_OR_ACTUAL_COST",
+    "line": "C existing sublimit only",
+    "standard_run": {
+      "message_posts": 8,
+      "foreground_plus_background_model_cap": 46,
+      "paid_tool_cap": 10,
+      "full_hold_cny": "56",
+      "requested_temporary_spend_ceiling_cny": "60.0000000"
+    },
+    "first_setup": {
+      "extra_message_posts": 4,
+      "extra_model_allowance": 20,
+      "extra_paid_tools": 0,
+      "total_message_posts": 12,
+      "total_models": 66,
+      "total_tools": 10,
+      "full_hold_cny": "76.0000000",
+      "requested_temporary_spend_ceiling_cny": "80.0000000",
+      "purpose": "Each locale needs one older completed synthetic conversation with two real turns and an unsent local draft. Reuse if already prepared; setup must be independently admitted and reconciled, not fabricated."
+    },
+    "estimated_columns": {
+      "conservative_cny": "56.0000000 standard / 76.0000000 with initial setup: all native attempts at current ¥1 hold; prior holds excluded from these deltas but retained in admission.",
+      "token_estimate_model_cny": "0.341504",
+      "priceable_tools_estimate_cny": "0.03",
+      "priceable_estimate_total_cny": "0.371504",
+      "estimate_assumptions": "46 model calls × 4096 input +1536 output tokens, qwen3.8-flash Beijing; ten priceable v3 Gaode calls. These are explicit estimates, not promises/observations. Nonpriceable v5/tool or missing receipts stay UNKNOWN with original hold.",
+      "supplier_actual_paid_cny": null,
+      "supplier_actual_paid_status": "UNKNOWN until actual invoices; zero calls in stage0 is not a future zero bill."
+    },
+    "current_reference": {
+      "at_ref": "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905940894",
+      "cap_cny": "100.0000000",
+      "used_conservative_cny": "8.0472741",
+      "calculated_remaining_cny": "91.9527259",
+      "status": "B read-only snapshot, not a future balance/admission guarantee"
+    },
+    "required_pre_run": "B rechecks current C owner/period, unique ledger/prior UNKNOWN holds, quotas and source-specific total calls including Memory. May tighten only within the existing C balance; no new budget/account/env tweak. If insufficient, block and re-quote, do not shrink itinerary or relax behavior.",
+    "limitations": "Tool cap4/plan and foreground max6/plan are this low-complexity ordinary-mode budget proposal, not product limits. If audited candidate can require more (e.g. native4 up to45 Gaode/plan), this quote is not applicable: re-quote before any send within existing C allocation, without weakening G10 or ordinary-Home coverage. Background allowance is financial headroom, not permission to exceed product call gates."
+  },
+  "window": {
+    "standard_minutes": 60,
+    "first_setup_minutes": 90,
+    "stop_new_margin_minutes": 10,
+    "serial_protected_readers": true,
+    "requirement": "Future separate B-issued C window, no JT/other writer overlap, valid same-source collector/credentials/seed. Raw must be collected before ends_at; metadata-only reconciliation may follow under current protection. No automatic retry or reader parallelism; UNKNOWN native-reader marker requires B reconciliation.",
+    "scope": "This is a requested design window, not an ACTIVE lease or scheduled execution; JT must first authorize the later stage."
+  }
+}

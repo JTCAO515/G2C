@@ -1,0 +1,1257 @@
+{
+  "version": "M4-stage0-regressions.1",
+  "issue": 1048,
+  "design_only": true,
+  "authoritative_observation_map": "build-source-map.v1.json",
+  "base_case_count": 25,
+  "locale_variants": 50,
+  "all_execution_status": "UNRUN",
+  "all_product_repairs": "NOT_ASSERTED",
+  "cases": [
+    {
+      "case_id": "UI01",
+      "title": "旧对话冷启动恢复",
+      "observation_ids": [
+        "H09",
+        "H10",
+        "F45_1",
+        "P03"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "已有合成旧CID和可核server记录；另列已保存旧会话+合法new_chat queryRequired原件的回归变体。",
+        "queryRequired变体需A用合法同源测试/预备合成原件建立；B先只读核原服务器终态；不读JT journal、不删除/重发未知原件。"
+      ],
+      "inputs": {
+        "zh": [
+          "选中一段已真实完成的合成旧对话，保留未发送草稿。",
+          "终止App再启动；检查原对话、消息顺序与草稿。"
+        ],
+        "en": [
+          "Select an existing completed synthetic chat and leave an unsent draft.",
+          "Terminate and reopen the app; check the same chat, message order and draft."
+        ]
+      },
+      "expected_behavior": {
+        "zh": "在限定观察窗口内恢复同一CID和已确认消息；不无限转圈、不丢草稿、不创建新对话/重发旧消息。",
+        "en": "Restore the same existing chat, ordered messages and unsent draft within the observation deadline. Do not spin indefinitely, resend, create a replacement chat, sign out or clear data."
+      },
+      "judgement_method": "A录制launch/selection/journal/lifetime状态与UI；C只读核目标CID原消息及提交差值0。分别标账户恢复、选中对话恢复、首次timeline加载三个spinner。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048",
+        "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905939029",
+        "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905940894"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "UI02",
+      "title": "新建对话真实回答",
+      "observation_ids": [
+        "H10",
+        "F45_2",
+        "P02"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "使用B另行资格的C合成主体；当前候选/模式与普通Home一致；新阶段/新MID，原账和旧失败保留。"
+      ],
+      "inputs": {
+        "zh": [
+          "新建对话。",
+          "北京三日游"
+        ],
+        "en": [
+          "Start a new conversation.",
+          "A three-day trip to Beijing."
+        ]
+      },
+      "expected_behavior": {
+        "zh": "本地开场白不计服务成功；新消息必须有真实受理/非空完整回答及实际三日行程，不显示waiting占位或仅复述。",
+        "en": "A local greeting is not backend success. The unique new message must be accepted and produce a complete answer and a concrete three-day itinerary, not a waiting placeholder or acknowledgement."
+      },
+      "judgement_method": "绑定本机原INTENT到POST /v2/lio/messages及原receipt；只读原lookup/timeline和行程对象，核完整day1–3与界面；若版本改变用正式契约适配而不改输入。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048",
+        "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905939029"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "UI03",
+      "title": "历史对话列表",
+      "observation_ids": [
+        "H10",
+        "F45_3"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "使用B另行资格的C合成主体；当前候选/模式与普通Home一致；新阶段/新MID，原账和旧失败保留。"
+      ],
+      "inputs": {
+        "zh": [
+          "打开历史对话列表，选择已存在的合成旧对话。"
+        ],
+        "en": [
+          "Open chat history and select the existing synthetic chat."
+        ]
+      },
+      "expected_behavior": {
+        "zh": "旧对话可列出且可打开同一CID；不得把“暂时看不到”当数据已删除；无额外POST。",
+        "en": "List and open the existing synthetic chats with their correct IDs. A failed list is not evidence of data deletion. No new message is submitted."
+      },
+      "judgement_method": "A核本机savedChats及未决首发reconcile、owner/lifetime；C核已知CID仍可读。当前build45列表是本地journal，不能虚构GET conversations或拿trip-list 200当列表成功。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048",
+        "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905939029",
+        "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905940894"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "UI04",
+      "title": "后台及锁屏返回",
+      "observation_ids": [
+        "H06",
+        "H09",
+        "H10",
+        "F45_4",
+        "P03"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "使用B另行资格的C合成主体；当前候选/模式与普通Home一致；新阶段/新MID，原账和旧失败保留。"
+      ],
+      "inputs": {
+        "zh": [
+          "在已完成对话留草稿，切后台10秒再返回。",
+          "锁屏约60秒后解锁返回。"
+        ],
+        "en": [
+          "Leave a draft in a completed chat, background for 10 seconds and return.",
+          "Lock for about 60 seconds, unlock and return."
+        ]
+      },
+      "expected_behavior": {
+        "zh": "两次均返回同一CID、原消息和未发送草稿；不需强关/退出登录/清数据；不新增提交或另起开场。",
+        "en": "Both background and lock transitions return to the same chat and draft without a new greeting, resend, sign-out or force-quit workaround."
+      },
+      "judgement_method": "A核foreground/background事件及UI/CID/draft；C比对前后原消息、Trip及attempt差值0。重开仅作独立UI01，不用它掩盖本项失败。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048",
+        "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905939029"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "UI05",
+      "title": "结果展示与内部来源项隔离",
+      "observation_ids": [
+        "H04",
+        "P05"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "使用B另行资格的C合成主体；当前候选/模式与普通Home一致；新阶段/新MID，原账和旧失败保留。"
+      ],
+      "inputs": {
+        "zh": [
+          "请规划北京三天，并给出结果。"
+        ],
+        "en": [
+          "Please plan three days in Beijing and show me the result."
+        ]
+      },
+      "expected_behavior": {
+        "zh": "聊天主区呈现完整用户结果，不出现Amap/天气工具调用与内部来源条目堆栈；需要的原工具证据仍在受保护取证通道。",
+        "en": "Show the complete user result without tool invocations or internal source-item stacks occupying chat. Preserve actual tool evidence in the protected evidence channel."
+      },
+      "judgement_method": "A界面截图/无障碍树检查工具和来源条目；C核原工具attempt仍保留，未把隐藏过程变成声称查询成功；不通过删实际原件达成。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "UI06",
+      "title": "来电/系统中断不重复开场",
+      "observation_ids": [
+        "H07",
+        "F45_4",
+        "P03"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "使用B另行资格的C合成主体；当前候选/模式与普通Home一致；新阶段/新MID，原账和旧失败保留。"
+      ],
+      "inputs": {
+        "zh": [
+          "已有合成对话中讨论北京行程。",
+          "后台/锁屏或获准的本机模拟来电中断后返回。"
+        ],
+        "en": [
+          "Discuss a Beijing itinerary in an existing synthetic chat.",
+          "Return after backgrounding, locking or an approved on-device simulated call interruption."
+        ]
+      },
+      "expected_behavior": {
+        "zh": "同一上下文继续；新增开场白/新对话/重复发送均为0，已有本地欢迎内容不作为服务答复。",
+        "en": "Continue the same conversation after interruption with no appended greeting, replacement chat or duplicate send. A local welcome is not a server answer."
+      },
+      "judgement_method": "比较原CID/MID序列、上下文和greeting插入次数；来电仅A本机步骤，不拨打他人号码；无安全前置的变体保留UNRUN。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "QA01",
+      "title": "身份首问可读且语言正确",
+      "observation_ids": [
+        "H02",
+        "H05",
+        "H06"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "使用B另行资格的C合成主体；当前候选/模式与普通Home一致；新阶段/新MID，原账和旧失败保留。"
+      ],
+      "inputs": {
+        "zh": [
+          "你是谁"
+        ],
+        "en": [
+          "Who are you?"
+        ]
+      },
+      "expected_behavior": {
+        "zh": "第一轮就有完整可读Lio身份回答、语言正确；不以“再问就成功”通过，不因英文混内部禁词而整条隐藏。",
+        "en": "The first identity question gets a complete, readable Lio answer in the requested language. A successful second attempt does not erase the first failure; server completion alone does not prove display success."
+      },
+      "judgement_method": "核本机显示与server原completed正文；原生completed但UI隐藏为FAIL，不能合并为provider UNKNOWN。独立新尝试使用新MID，首败即停。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048",
+        "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905939029",
+        "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905940894"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "QA02",
+      "title": "能力及口语同义说法",
+      "observation_ids": [
+        "H02",
+        "H06"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "使用B另行资格的C合成主体；当前候选/模式与普通Home一致；新阶段/新MID，原账和旧失败保留。"
+      ],
+      "inputs": {
+        "zh": [
+          "你能干啥"
+        ],
+        "en": [
+          "What can you do?"
+        ]
+      },
+      "expected_behavior": {
+        "zh": "给出有用的旅行助手能力与可继续入口；不失败、不只回通用问候。",
+        "en": "Give a useful travel-assistant capability answer and a next step, not an error or an unrelated greeting. Registered wording variants are separate observations."
+      },
+      "judgement_method": "对照原输入、原答复与普通Home语言；“你能做啥/What can you help me with?”作为已登记另一个变体，不临时换词躲失败。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "QA03",
+      "title": "继续使用原上下文",
+      "observation_ids": [
+        "H06"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "已存在完成的合成北京三日对话与可核原件；没有前置则UNRUN，不借JT实际对话。"
+      ],
+      "inputs": {
+        "zh": [
+          "继续"
+        ],
+        "en": [
+          "Continue."
+        ]
+      },
+      "expected_behavior": {
+        "zh": "围绕已有三日行程继续给细节或恰当的一项澄清，不丢上下文、不重置成自我介绍。",
+        "en": "Continue the existing itinerary context with useful details or a justified clarification, without resetting to an introduction or silently changing saved state."
+      },
+      "judgement_method": "准备真实完成的合成对话/行程，记原CID及内容指纹；此输入用同CID新MID，核回答关联与未经请求的Trip/Memory变更为0。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "QA04",
+      "title": "同一构建的先成功后失败对照",
+      "observation_ids": [
+        "H02",
+        "H05"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "使用B另行资格的C合成主体；当前候选/模式与普通Home一致；新阶段/新MID，原账和旧失败保留。"
+      ],
+      "inputs": {
+        "zh": [
+          "在独立合成新对话问：你是谁。",
+          "在另一个独立合成新对话问：你能干啥。"
+        ],
+        "en": [
+          "Ask Who are you? in a fresh synthetic conversation.",
+          "Ask What can you do? in another fresh synthetic conversation."
+        ]
+      },
+      "expected_behavior": {
+        "zh": "两次均完整可读；分别记录runtime/source/config/额度，不用同一App构建号假定相同服务。",
+        "en": "Each independently identified probe succeeds. Record its own server source, configuration, identity and quota; an unchanged app build does not prove unchanged backend behavior."
+      },
+      "judgement_method": "首个FAIL/UNKNOWN后停第二次；若两次都执行，分列各自MID/时点/源像/日志，不把后一次成功回填前一次；不得重置额度或更换身份。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "QA05",
+      "title": "首次来华开放问题",
+      "observation_ids": [
+        "H07"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "使用B另行资格的C合成主体；当前候选/模式与普通Home一致；新阶段/新MID，原账和旧失败保留。"
+      ],
+      "inputs": {
+        "zh": [
+          "第一次来中国建议怎么玩"
+        ],
+        "en": [
+          "It is my first visit to China. What would you recommend?"
+        ]
+      },
+      "expected_behavior": {
+        "zh": "先给有用建议/可选方向或可解释默认值；不因没有日期、人数、城市就失败或强制完整问卷，不擅自保存多城市行程。",
+        "en": "Give useful first-visit advice, choices or explained defaults before forcing a complete questionnaire. Do not invent bookings or silently save a multi-city trip."
+      },
+      "judgement_method": "检查完整正文、问题与默认值说明，实际保存/工具事实按各自正式契约核；建议不是已预订或已验证事实。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "QA06",
+      "title": "信息齐全后的具体行程追问",
+      "observation_ids": [
+        "H08"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "使用B另行资格的C合成主体；当前候选/模式与普通Home一致；新阶段/新MID，原账和旧失败保留。"
+      ],
+      "inputs": {
+        "zh": [
+          "规划北京四天豪华游  下周二出发一个人",
+          "具体的行程呢"
+        ],
+        "en": [
+          "Plan a luxury four-day trip to Beijing, leaving next week on Tuesday, for one person.",
+          "What is the detailed itinerary?"
+        ]
+      },
+      "expected_behavior": {
+        "zh": "首轮给实际四日行程；同CID追问保留城市/四天/豪华/出发日/一人并提供细节，不再只确认或转无关通用回答。",
+        "en": "Return the complete four-day plan and answer the same-chat detail followup using the given city, duration, preference, departure and party facts. Stop new dispatch if the first step fails; do not recreate a failed original capability."
+      },
+      "judgement_method": "首轮若FAIL/UNKNOWN立即停，不能为了发第二轮绕STOP；失败后追问原状态的精确复现另需合法合成前置/新诊断窗。旧seq52 barrier未知，不从effect重建权限。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048",
+        "https://github.com/JTCAO515/G2C/issues/994#issuecomment-6886576679"
+      ],
+      "notes": [
+        "中文首句保留公开诊断的游后双空格；英文是合成对应说法。",
+        "两轮新合成执行不是重放JT MID/RUN。"
+      ],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "PLAN01",
+      "title": "北京三日豪华规划",
+      "observation_ids": [
+        "H01",
+        "H02"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "使用B另行资格的C合成主体；当前候选/模式与普通Home一致；新阶段/新MID，原账和旧失败保留。"
+      ],
+      "inputs": {
+        "zh": [
+          "规划北京三日豪华游"
+        ],
+        "en": [
+          "Plan a luxury three-day trip to Beijing."
+        ]
+      },
+      "expected_behavior": {
+        "zh": "给完整三日具体安排，使用已给城市/天数/豪华偏好；不重复追问这些信息，不要求可选日期/人数才开始。",
+        "en": "Return a concrete three-day luxury Beijing itinerary using the supplied facts. Do not re-ask the known city or duration, or require optional dates and party size first."
+      },
+      "judgement_method": "独立原消息核完整day1–3与实际可读行程对象/卡片；ack、半句、空卡、只有追问均不通过；保存声明另核真实版本。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "PLAN02",
+      "title": "历史成功行程与展开对照",
+      "observation_ids": [
+        "H03"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "使用B另行资格的C合成主体；当前候选/模式与普通Home一致；新阶段/新MID，原账和旧失败保留。"
+      ],
+      "inputs": {
+        "zh": [
+          "规划北京三日豪华游。",
+          "展开第二天并继续询问当天安排。"
+        ],
+        "en": [
+          "Plan a luxury three-day trip to Beijing.",
+          "Expand day two and ask about its arrangements."
+        ]
+      },
+      "expected_behavior": {
+        "zh": "中英分别生成完整可展开行程、后续上下文连贯；成功样本保留作对照，不选择一个新source冒充历史成功source。",
+        "en": "Return a complete itinerary in each language, expand day two and retain context. Preserve historical success samples without assigning them an unproven build or server source."
+      },
+      "judgement_method": "核真实行程对象、界面展开与当前CID；历史截图只证明当时观察，build/source未知仍UNKNOWN，新执行全用新ID和实际候选。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "PLAN03",
+      "title": "长回答/英文不截成半句",
+      "observation_ids": [
+        "H04",
+        "P02"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "使用B另行资格的C合成主体；当前候选/模式与普通Home一致；新阶段/新MID，原账和旧失败保留。"
+      ],
+      "inputs": {
+        "zh": [
+          "规划北京三日豪华游，给出每天完整安排。"
+        ],
+        "en": [
+          "Plan a luxury three-day trip to Beijing with complete arrangements for each day."
+        ]
+      },
+      "expected_behavior": {
+        "zh": "完整非空答复及三日行程，不能以半句/本地等待文案当成功；真实失败不得隐藏费用或伪造complete。",
+        "en": "Return the complete answer and itinerary, not a fragment. HTTP 200 or a partial provider stream is not completion. Preserve all actual costs on failure."
+      },
+      "judgement_method": "核原RUN终态、实际provider完成/usage证据及UI正文一致性；HTTP200部分流不是completed。区分model_identity/length/界面隐藏，未证根因写UNKNOWN。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "PLAN04",
+      "title": "高档住宿建议真实存在",
+      "observation_ids": [
+        "H05"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "使用B另行资格的C合成主体；当前候选/模式与普通Home一致；新阶段/新MID，原账和旧失败保留。"
+      ],
+      "inputs": {
+        "zh": [
+          "规划北京三天豪华游，给我高档住宿建议。"
+        ],
+        "en": [
+          "Plan a luxury three-day trip to Beijing and suggest upscale places to stay."
+        ]
+      },
+      "expected_behavior": {
+        "zh": "完整行程与高档住宿建议可读；偏好被使用，住宿建议不冒已入住/已预订或已知价格。",
+        "en": "Return a complete luxury itinerary with readable upscale stay suggestions. Recommendations are not booked stays, verified prices or unsupported provider facts."
+      },
+      "judgement_method": "核原profile/输入与可读推荐内容，供应商事实只按实际证据；不是只写“豪华”标签或因第一次失败后重问才通过。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "PLAN05",
+      "title": "无日期/人数也可规划",
+      "observation_ids": [
+        "H01",
+        "H07",
+        "F45_2",
+        "P01"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "使用B另行资格的C合成主体；当前候选/模式与普通Home一致；新阶段/新MID，原账和旧失败保留。"
+      ],
+      "inputs": {
+        "zh": [
+          "北京三日游"
+        ],
+        "en": [
+          "A three-day trip to Beijing."
+        ]
+      },
+      "expected_behavior": {
+        "zh": "得到完整三日行程；日期与人数可选，不反复索要；无日期用第N天且出发日期待定，不编日历日期或人数。",
+        "en": "Return all three undated days without forcing dates or party size, inventing dates or inferring a party from first-person wording. A real legacy preview is not a saved native3/native4 version."
+      },
+      "judgement_method": "按已资格模式核实际正文/行程对象：legacy2完整预览不冒正式保存；native3/4承诺保存时核真实版本。不得把仅复述或继续追问当实际行程。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048",
+        "https://github.com/JTCAO515/G2C/issues/859"
+      ],
+      "notes": [
+        "模式差异用显式期望，不修改原全国v1/v2或无日期轨迹。"
+      ],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "PLAN06",
+      "title": "明确没定也推进",
+      "observation_ids": [
+        "H07",
+        "P01"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "使用B另行资格的C合成主体；当前候选/模式与普通Home一致；新阶段/新MID，原账和旧失败保留。"
+      ],
+      "inputs": {
+        "zh": [
+          "规划北京三日游，日期和人数都没定。"
+        ],
+        "en": [
+          "Plan three days in Beijing. I have not decided the dates or the number of travelers."
+        ]
+      },
+      "expected_behavior": {
+        "zh": "保留明确未知，给可用的完整无日期行程，不把“没定”当非法输入或继续重复前置追问。",
+        "en": "Keep undecided dates and party size explicitly unknown and still provide a usable three-day plan. Do not turn undecided into an error or repeat the optional prerequisites."
+      },
+      "judgement_method": "核实际unknown状态与day1–3，没有从第一人称补人数，没有取分析时钟补日期；原件不足保持UNKNOWN。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "PLAN07",
+      "title": "补三人和明天沿用原城市天数",
+      "observation_ids": [
+        "H07",
+        "P01"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "同一合成CID已有已知北京三天、日期人数未定的真实可读状态；缺前置不编Snapshot，不从旧失败继承执行许可。"
+      ],
+      "inputs": {
+        "zh": [
+          "三个人，明天开始"
+        ],
+        "en": [
+          "Three people, starting tomorrow."
+        ]
+      },
+      "expected_behavior": {
+        "zh": "沿用该合成对话已知北京/三天；采用三人，以本条原消息日解释明天，出实际行程/日期转换新版本，不重问原信息。",
+        "en": "Retain the existing Beijing/three-day context, apply three travelers and resolve tomorrow from this original message day. Check the actual mode-specific preview/save/conversion and preserved history."
+      },
+      "judgement_method": "前置为可核已完成的无日期合成计划；原date-bearing MID/question_day→日期，核同Trip/history/固定项。legacy2预览→正式与native3无日期v1→dated v2分模式，不暗换。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "PLAN08",
+      "title": "完整四天原话不是复述",
+      "observation_ids": [
+        "H08",
+        "P02"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "使用B另行资格的C合成主体；当前候选/模式与普通Home一致；新阶段/新MID，原账和旧失败保留。"
+      ],
+      "inputs": {
+        "zh": [
+          "规划北京四天豪华游  下周二出发一个人"
+        ],
+        "en": [
+          "Plan a luxury four-day trip to Beijing, leaving next week on Tuesday, for one person."
+        ]
+      },
+      "expected_behavior": {
+        "zh": "城市/天数/偏好/日期/人数已齐就给实际四日行程，不只复述、不重新要已给参数。",
+        "en": "Produce the actual four-day itinerary from the complete request, not just a restatement or another request for already supplied parameters."
+      },
+      "judgement_method": "核原输入源span、实际question_day与日期规则、day1–4、原draft/Trip对象及UI；只有intake completed而零draft/行程仍FAIL。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048",
+        "https://github.com/JTCAO515/G2C/issues/994#issuecomment-6886576679"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "PLAN09",
+      "title": "补充后沿用原城市完成规划",
+      "observation_ids": [
+        "H01"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "使用B另行资格的C合成主体；当前候选/模式与普通Home一致；新阶段/新MID，原账和旧失败保留。"
+      ],
+      "inputs": {
+        "zh": [
+          "想去北京玩。",
+          "三天，豪华一些。"
+        ],
+        "en": [
+          "I would like to visit Beijing.",
+          "Three days, with a luxury budget."
+        ]
+      },
+      "expected_behavior": {
+        "zh": "只缺天数时首轮有用地澄清天数，补齐后保留原城市并给完整三日行程；不变成一般问候、重复问城市或强迫日期人数。",
+        "en": "Clarify the genuinely missing duration, then retain Beijing and produce the full three-day luxury plan after the answer. Do not lose the city, greet generically or demand optional dates and party size."
+      },
+      "judgement_method": "固定同CID两条新MID；核首轮缺项确实存在、第二轮实际source引用城市与新天数/偏好；若首轮已FAIL则停，新诊断前置另签，不能用新结果覆盖build20旧补充失败。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048"
+      ],
+      "notes": [
+        "这是归纳出的合成补充流程，历史build20精确补答原字节UNKNOWN，不冒充同原件重放。"
+      ],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "STATE01",
+      "title": "额度提示必须符合真实原账",
+      "observation_ids": [
+        "H04"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "有当前同subject/period的可用性原件；不得用219个账均未耗尽替代该主体证明或借他线身份。"
+      ],
+      "inputs": {
+        "zh": [
+          "你好，请介绍一下你能提供的旅行帮助。"
+        ],
+        "en": [
+          "Hello, what travel help can you offer?"
+        ]
+      },
+      "expected_behavior": {
+        "zh": "在已核仍可用的合成资格/原账下得到答复，不错误显示no chat allowance；真正耗尽则尊重拒绝、不调额度强过。",
+        "en": "With independently verified available admission and original quota, answer normally rather than falsely report no allowance. Respect a genuine exhausted limit; never raise quota to make the test pass."
+      },
+      "judgement_method": "B先核该主体当前period/原native Meter/资金账/会话资格；合法额度不足为前置BLOCKED/UNRUN，不能由网页文案推根因。旧失败原动作只读对账，另一次新输入须新资格/ID。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "MEM01",
+      "title": "豪华偏好候选与未点击不保存",
+      "observation_ids": [
+        "P04"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "使用B另行资格的C合成主体；当前候选/模式与普通Home一致；新阶段/新MID，原账和旧失败保留。"
+      ],
+      "inputs": {
+        "zh": [
+          "我喜欢豪华酒店。"
+        ],
+        "en": [
+          "I prefer luxury hotels."
+        ]
+      },
+      "expected_behavior": {
+        "zh": "识别为合成住宿偏好并提供明确记住候选/标签；未点击前不激活Saved Memory，不说已记住来掩盖未保存。",
+        "en": "Recognize the stated luxury preference and offer a Remember candidate. Do not activate saved memory or claim it was saved before explicit confirmation."
+      },
+      "judgement_method": "A核标签可点与文本；C/B核点击前Memory原状态、候选与Saved分开；已有相同值需先记录，不用无变化误报失败。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "MEM02",
+      "title": "确认记住后真实更新",
+      "observation_ids": [
+        "P04"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "使用B另行资格的C合成主体；当前候选/模式与普通Home一致；新阶段/新MID，原账和旧失败保留。"
+      ],
+      "inputs": {
+        "zh": [
+          "我喜欢豪华酒店。",
+          "点击对应的“记住”。",
+          "打开记忆页核对。"
+        ],
+        "en": [
+          "I prefer luxury hotels.",
+          "Tap Remember for this preference.",
+          "Open Memory and inspect it."
+        ]
+      },
+      "expected_behavior": {
+        "zh": "一次显式确认保存住宿豪华偏好，原action/CAS回执与页面新值一致；不把纯回复、候选或旧列表当保存成功。",
+        "en": "One explicit Remember action persists the preference once, with the same owner/action/version reflected in Memory. Text, a pending candidate or a stale list is not persistence proof."
+      },
+      "judgement_method": "核同subject/action/version/原值/新值和UI；未知写入仅查原action，不重复点或退款旧费；没有可用候选则本项UNRUN而MEM01另判。",
+      "automation": "A_UI_PLUS_C_READONLY",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    },
+    {
+      "case_id": "MEM03",
+      "title": "记忆等大格子布局",
+      "observation_ids": [
+        "P04"
+      ],
+      "locales": [
+        "zh",
+        "en"
+      ],
+      "synthetic_only": true,
+      "input_provenance": "从公开观察归纳的合成可重放输入；英文为合成对应说法，非JT英文原件；精确原字节缺失不得冒充原尝试重放。",
+      "preconditions": [
+        "使用B另行资格的C合成主体；当前候选/模式与普通Home一致；新阶段/新MID，原账和旧失败保留。"
+      ],
+      "inputs": {
+        "zh": [
+          "在合成账号记忆页查看多个已有偏好。"
+        ],
+        "en": [
+          "Open Memory with several saved synthetic preferences."
+        ]
+      },
+      "expected_behavior": {
+        "zh": "显示JT要求的等大格子，不是旧列表；内容对应实际Saved项。布局合格不能代替偏好识别和保存。",
+        "en": "Show actual saved synthetic preferences in the required equal-sized grid, not the old list. Layout success does not prove recognition or saving."
+      },
+      "judgement_method": "A对照正式UI规格与中英文截图/AX框架测量格子，使用实际Saved合成项；缺视觉基准或前置则UNKNOWN/UNRUN，不造演示数据冒真实。",
+      "automation": "A_UI_OR_DEVICE_PLUS_READONLY_STATE",
+      "evidence_required": [
+        "客户端build/source与IPA身份",
+        "实际API/worker source/image/模式/配置pin",
+        "原CID/MID/RUN/request_id或明确UNKNOWN",
+        "对应原HTTP/时间线/界面/持久状态",
+        "全部前台后台attempt/Meter/费用；缺项不补零"
+      ],
+      "execution_status": "UNRUN",
+      "historical_result_unchanged": true,
+      "source_refs": [
+        "https://github.com/JTCAO515/G2C/issues/1048"
+      ],
+      "notes": [],
+      "judgement_applies_independently_to": [
+        "zh",
+        "en"
+      ]
+    }
+  ],
+  "batch_policy": {
+    "unexpected_failure": "First operational FAIL/UNKNOWN stops new dispatch; rest UNRUN; no replay or better-trial selection.",
+    "synthetic_preconditions": "Existing safe fixtures or separately admitted setup; never JT originals/credentials/account data.",
+    "exact_replay": "Missing historical raw/MID/source is recorded; symptom-equivalent synthetic replay is not a claim of byte-identical historical replay.",
+    "no_mutation": "Do not modify frozen national16/66/renderer/scorer/contracts/authorization/production code."
+  }
+}

@@ -1,0 +1,647 @@
+{
+  "version": "M4-stage0-build-source-map.1",
+  "issue": 1048,
+  "authoritative_table": "https://github.com/JTCAO515/G2C/issues/1048",
+  "design_only": true,
+  "builds": {
+    "18": {
+      "build": 18,
+      "client_source_sha": null,
+      "client_source_status": "UNKNOWN",
+      "client_evidence": [
+        "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6763855176"
+      ],
+      "notes": "等待A现有归档/源身份；不以相邻构建或PR merge倒推。"
+    },
+    "19": {
+      "build": 19,
+      "client_source_sha": null,
+      "client_source_status": "UNKNOWN",
+      "client_evidence": [
+        "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6765143617"
+      ],
+      "notes": "等待A现有归档/源身份；不以相邻构建或PR merge倒推。"
+    },
+    "20": {
+      "build": 20,
+      "client_source_sha": null,
+      "client_source_status": "UNKNOWN",
+      "client_evidence": [
+        "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6765810148"
+      ],
+      "notes": "等待A现有归档/源身份；不以相邻构建或PR merge倒推。"
+    },
+    "21": {
+      "build": 21,
+      "client_source_sha": null,
+      "client_source_status": "UNKNOWN",
+      "client_evidence": [
+        "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6766420056"
+      ],
+      "notes": "等待A现有归档/源身份；不以相邻构建或PR merge倒推。",
+      "client_source_candidates": [
+        {
+          "sha_prefix": "f1d5f072",
+          "status": "PACKAGE_CANDIDATE_NOT_CONFIRMED_INSTALLED_SOURCE",
+          "evidence": "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905939029"
+        }
+      ],
+      "code_baseline_merge_prefix": "973f06fa"
+    },
+    "24": {
+      "build": 24,
+      "client_source_sha": null,
+      "client_source_status": "UNKNOWN",
+      "client_evidence": [
+        "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6782227956"
+      ],
+      "notes": "等待A现有归档/源身份；不以相邻构建或PR merge倒推。"
+    },
+    "25": {
+      "build": 25,
+      "client_source_sha": null,
+      "client_source_status": "UNKNOWN",
+      "client_evidence": [
+        "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6784019745"
+      ],
+      "notes": "等待A现有归档/源身份；不以相邻构建或PR merge倒推。"
+    },
+    "28": {
+      "build": 28,
+      "client_source_sha": "d4389899385bd4a740b42163f24b40b8fff88df0",
+      "client_source_status": "CONFIRMED_PUBLISHED_BUILD_SOURCE",
+      "client_evidence": [
+        "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6792474923"
+      ],
+      "notes": "A原发布记录明确给出该构建source；不据此补现场MID、身份或当时服务端source。"
+    },
+    "30": {
+      "build": 30,
+      "client_source_sha": "bff7eb9a025c6742b42ec837ec01e12ca2f0166d",
+      "client_source_status": "CONFIRMED_PUBLISHED_BUILD_SOURCE",
+      "client_evidence": [
+        "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6826490203"
+      ],
+      "notes": "A原发布记录明确给出该构建source；不据此补现场MID、身份或当时服务端source。"
+    },
+    "31": {
+      "build": 31,
+      "client_source_sha": "d8296df9615e2c37224d76c7492196f916298f62",
+      "client_source_status": "CONFIRMED_PUBLISHED_BUILD_SOURCE",
+      "client_evidence": [
+        "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6831789979"
+      ],
+      "notes": "A原发布记录明确给出该构建source；不据此补现场MID、身份或当时服务端source。"
+    },
+    "41": {
+      "build": 41,
+      "client_source_sha": "942e27b582a0d43ec194aa5d9680ed71f4be45d9",
+      "client_source_status": "CONFIRMED_PUBLISHED_BUILD_SOURCE",
+      "client_evidence": [
+        "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6884173424"
+      ],
+      "notes": "A原发布记录明确给出该构建source；不据此补现场MID、身份或当时服务端source。"
+    },
+    "43": {
+      "build": 43,
+      "client_source_sha": "8f7ae03ce4ae7edfcd5b6b09cd44ce21c37def7f",
+      "client_source_status": "CONFIRMED_PUBLISHED_BUILD_SOURCE",
+      "client_evidence": [
+        "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6889327012"
+      ],
+      "notes": "A原发布记录明确给出该构建source；不据此补现场MID、身份或当时服务端source。"
+    },
+    "45": {
+      "build": 45,
+      "client_source_sha": "28f70861b0df4b2d75ea6a388f9a84723342de85",
+      "client_source_status": "CONFIRMED_ARCHIVE_SOURCE",
+      "client_evidence": [
+        "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6905479666",
+        "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905939029"
+      ],
+      "notes": "A归档与发布说明身份已核；不是对手机现场进程的逐请求认证。",
+      "ipa_sha256": "1639cf4b188898935de1719ce40d77060f6c96e77a6bda1924a2b9b43e98e263"
+    },
+    "unknown_after_21": {
+      "build": null,
+      "build_label": "21之后，构建号不明的成功样本",
+      "client_source_sha": null,
+      "client_source_status": "UNKNOWN",
+      "client_evidence": [
+        "https://github.com/JTCAO515/G2C/issues/1048",
+        "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905939029",
+        "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905940894"
+      ],
+      "notes": "不得补成22、23或25；唯一成功规划source/MID/时点仍UNKNOWN。"
+    }
+  },
+  "service_windows": {
+    "UNKNOWN": {
+      "server_source_sha": null,
+      "server_source_prefix": null,
+      "image_sha256": null,
+      "status": "UNKNOWN",
+      "evidence": [
+        "https://github.com/JTCAO515/G2C/issues/1048"
+      ],
+      "request_serving_source_sha": null,
+      "request_binding_status": "UNKNOWN"
+    },
+    "W45": {
+      "server_source_sha": "2e5560cf3c794df4aff48c8431e8424330580e10",
+      "server_source_prefix": "2e5560cf",
+      "image_sha256": "0ad586bea92662028112887ba37351fb307a06717cb84e17a507039c727feeba",
+      "status": "CONFIRMED_RUNTIME_INTERVAL",
+      "schema": 55,
+      "interval_cst": "2026-11-16 03:54:47起；B核10:10–10:35目标窗口",
+      "evidence": [
+        "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905940894",
+        "https://github.com/JTCAO515/G2C/issues/815#issuecomment-6900382855"
+      ],
+      "request_serving_source_sha": null,
+      "request_binding_status": "UNKNOWN_PHONE_REQUEST_JOIN",
+      "notes": "23条GET/200只能证明完成的访问；JT的3条ref均空。没有Lio完成行不等于绝对未到达；无新MESSAGE不等于已定位根因。"
+    },
+    "W21_QA_EARLY": {
+      "server_source_sha": null,
+      "server_source_prefix": "87eb8f09",
+      "image_sha256": null,
+      "image_prefix": "476293e0",
+      "status": "CONFIRMED_RUNTIME_PREFIX_FOR_EARLY_QA_ONLY",
+      "schema": 51,
+      "interval_cst": "2026-11-10 20:23–20:24",
+      "evidence": [
+        "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905940894",
+        "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6767295539",
+        "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6767494160"
+      ],
+      "request_serving_source_sha": null,
+      "request_binding_status": "PARTIAL_PUBLIC_BINDING",
+      "notes": "只绑定身份/能力成功窗口，非规划成功，也不覆盖同build稍后失败。"
+    },
+    "W25_QA_CANDIDATE": {
+      "server_source_sha": null,
+      "server_source_prefix": "bfd77e54",
+      "image_sha256": null,
+      "image_prefix": "2ca31efe",
+      "status": "CANDIDATE_INTERVAL_NOT_UNIQUE_REQUEST_BINDING",
+      "schema": 52,
+      "interval_cst": "2026-11-11早间问答；成功规划时点UNKNOWN",
+      "evidence": [
+        "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905939029",
+        "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905940894",
+        "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6786134187"
+      ],
+      "request_serving_source_sha": null,
+      "request_binding_status": "UNKNOWN_UNIQUE_SOURCE",
+      "notes": "A证实首问server completed但App隐藏英文locale中的中文词；不能据此绑定成功规划source。"
+    },
+    "W30_LATE": {
+      "server_source_sha": null,
+      "server_source_prefix": "12a47298",
+      "image_sha256": null,
+      "image_prefix": "8aa4a0f5",
+      "status": "PUBLIC_RUNTIME_PREFIX_FOR_BUILD30_LATE_ONLY",
+      "schema": 52,
+      "interval_cst": "2026-11-12约23:03",
+      "evidence": [
+        "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6827615836",
+        "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905940894"
+      ],
+      "request_serving_source_sha": null,
+      "request_binding_status": "PARTIAL_PUBLIC_BINDING",
+      "notes": "该条原件核回含finish_reason=length；不覆盖build31所有反馈，也不把历史截断套到45。"
+    },
+    "W41": {
+      "server_source_sha": "ba98eb321ba03b4f447d0995474175ae3934d443",
+      "server_source_prefix": "ba98eb32",
+      "image_sha256": "1f9e5d2ef4434fb5e3cc3ff17dc8f2a496df48b3f6ba1ff80244f7a23405301c",
+      "status": "PUBLIC_DIAGNOSED_RUNTIME_INTERVAL",
+      "schema": 55,
+      "interval_cst": "2026-11-15约08:10–08:12",
+      "evidence": [
+        "https://github.com/JTCAO515/G2C/issues/994#issuecomment-6886554350",
+        "https://github.com/JTCAO515/G2C/issues/994#issuecomment-6886576679"
+      ],
+      "request_serving_source_sha": null,
+      "request_binding_status": "PUBLIC_MID_RUN_DIAGNOSIS_C_DID_NOT_READ_JT_RAW",
+      "notes": "首轮completed仅intake无draft/Trip；次轮RUN UNKNOWN。旧barrier/精确原intake仍未知，不造重放权限。"
+    }
+  },
+  "observations": [
+    {
+      "observation_id": "H01",
+      "source_section": "historical",
+      "build_keys": [
+        "18",
+        "19",
+        "20"
+      ],
+      "observed_description": "规划北京三日豪华游失败；20已有北京/三天仍追问，补充后又失败",
+      "historical_assessment": "FAIL",
+      "source_ref": "https://github.com/JTCAO515/G2C/issues/1048",
+      "service_window_by_variant": {
+        "all": "UNKNOWN"
+      },
+      "regression_case_ids": [
+        "PLAN01",
+        "PLAN05",
+        "PLAN09"
+      ],
+      "root_cause": "UNKNOWN",
+      "product_repair_status": "NOT_ASSERTED"
+    },
+    {
+      "observation_id": "H02",
+      "source_section": "historical",
+      "build_keys": [
+        "21"
+      ],
+      "observed_description": "开场白/身份/能力一度能答，规划失败；同版后来身份能力也失败",
+      "historical_assessment": "MIXED",
+      "source_ref": "https://github.com/JTCAO515/G2C/issues/1048",
+      "service_window_by_variant": {
+        "early_identity_capability": "W21_QA_EARLY",
+        "late_and_planning": "UNKNOWN"
+      },
+      "regression_case_ids": [
+        "QA01",
+        "QA02",
+        "QA04",
+        "PLAN01"
+      ],
+      "root_cause": "UNKNOWN",
+      "product_repair_status": "NOT_ASSERTED"
+    },
+    {
+      "observation_id": "H03",
+      "source_section": "historical",
+      "build_keys": [
+        "unknown_after_21"
+      ],
+      "observed_description": "中英文对话没有问题；北京三日豪华行程可展开某天",
+      "historical_assessment": "REPORTED_SUCCESS_SAMPLE",
+      "source_ref": "https://github.com/JTCAO515/G2C/issues/1048",
+      "service_window_by_variant": {
+        "all": "UNKNOWN"
+      },
+      "regression_case_ids": [
+        "PLAN02"
+      ],
+      "root_cause": "UNKNOWN",
+      "product_repair_status": "NOT_ASSERTED"
+    },
+    {
+      "observation_id": "H04",
+      "source_section": "historical",
+      "build_keys": [
+        "24"
+      ],
+      "observed_description": "英文规划半句后失败；再次显示no chat allowance；Amap/天气来源项占聊天区",
+      "historical_assessment": "FAIL",
+      "source_ref": "https://github.com/JTCAO515/G2C/issues/1048",
+      "service_window_by_variant": {
+        "all": "UNKNOWN"
+      },
+      "regression_case_ids": [
+        "PLAN03",
+        "STATE01",
+        "UI05"
+      ],
+      "root_cause": "UNKNOWN",
+      "product_repair_status": "NOT_ASSERTED"
+    },
+    {
+      "observation_id": "H05",
+      "source_section": "historical",
+      "build_keys": [
+        "25"
+      ],
+      "observed_description": "可以正常使用；首问身份无法显示、再问成功；规划/高档住宿有实际回答",
+      "historical_assessment": "MIXED",
+      "source_ref": "https://github.com/JTCAO515/G2C/issues/1048",
+      "service_window_by_variant": {
+        "identity_only_candidate": "W25_QA_CANDIDATE",
+        "successful_planning": "UNKNOWN"
+      },
+      "regression_case_ids": [
+        "QA01",
+        "QA04",
+        "PLAN04"
+      ],
+      "root_cause": "UNKNOWN",
+      "product_repair_status": "NOT_ASSERTED"
+    },
+    {
+      "observation_id": "H06",
+      "source_section": "historical",
+      "build_keys": [
+        "28"
+      ],
+      "observed_description": "继续/能力反复失败，身份曾成功；后台等几秒可恢复",
+      "historical_assessment": "MIXED",
+      "source_ref": "https://github.com/JTCAO515/G2C/issues/1048",
+      "service_window_by_variant": {
+        "all": "UNKNOWN"
+      },
+      "regression_case_ids": [
+        "QA01",
+        "QA02",
+        "QA03",
+        "UI04"
+      ],
+      "root_cause": "UNKNOWN",
+      "product_repair_status": "NOT_ASSERTED"
+    },
+    {
+      "observation_id": "H07",
+      "source_section": "historical",
+      "build_keys": [
+        "30",
+        "31"
+      ],
+      "observed_description": "日期人数被当必需、没定不推进；三人明天仍失败；首次来华失败；后台/来电重复开场断上下文",
+      "historical_assessment": "FAIL",
+      "source_ref": "https://github.com/JTCAO515/G2C/issues/1048",
+      "service_window_by_variant": {
+        "build30_late_known_sample": "W30_LATE",
+        "other_build30_and_build31": "UNKNOWN"
+      },
+      "regression_case_ids": [
+        "PLAN05",
+        "PLAN06",
+        "PLAN07",
+        "QA05",
+        "UI06"
+      ],
+      "root_cause": "UNKNOWN",
+      "product_repair_status": "NOT_ASSERTED"
+    },
+    {
+      "observation_id": "H08",
+      "source_section": "historical",
+      "build_keys": [
+        "41"
+      ],
+      "observed_description": "北京四天豪华/下周二/一人已齐，仅复述；具体行程追问失败",
+      "historical_assessment": "FAIL",
+      "source_ref": "https://github.com/JTCAO515/G2C/issues/1048",
+      "service_window_by_variant": {
+        "08_12_diagnosis": "W41"
+      },
+      "regression_case_ids": [
+        "PLAN08",
+        "QA06"
+      ],
+      "root_cause": "UNKNOWN",
+      "product_repair_status": "NOT_ASSERTED"
+    },
+    {
+      "observation_id": "H09",
+      "source_section": "historical",
+      "build_keys": [
+        "43"
+      ],
+      "observed_description": "后台或锁屏后连接失败，强制关闭重开仍失败",
+      "historical_assessment": "FAIL",
+      "source_ref": "https://github.com/JTCAO515/G2C/issues/1048",
+      "service_window_by_variant": {
+        "all": "UNKNOWN"
+      },
+      "regression_case_ids": [
+        "UI01",
+        "UI04"
+      ],
+      "root_cause": "UNKNOWN",
+      "product_repair_status": "NOT_ASSERTED"
+    },
+    {
+      "observation_id": "H10",
+      "source_section": "historical",
+      "build_keys": [
+        "45"
+      ],
+      "observed_description": "当前四项基础链路全部失败",
+      "historical_assessment": "FAIL",
+      "source_ref": "https://github.com/JTCAO515/G2C/issues/1048",
+      "service_window_by_variant": {
+        "all": "W45"
+      },
+      "regression_case_ids": [
+        "UI01",
+        "UI02",
+        "UI03",
+        "UI04"
+      ],
+      "root_cause": "UNKNOWN",
+      "product_repair_status": "NOT_ASSERTED"
+    },
+    {
+      "observation_id": "F45_1",
+      "source_section": "build45_current",
+      "build_keys": [
+        "45"
+      ],
+      "observed_description": "启动恢复旧消息不显示、一直转圈",
+      "historical_assessment": "FAIL",
+      "source_ref": "https://github.com/JTCAO515/G2C/issues/1048",
+      "service_window_by_variant": {
+        "all": "W45"
+      },
+      "regression_case_ids": [
+        "UI01"
+      ],
+      "root_cause": "UNKNOWN",
+      "product_repair_status": "NOT_ASSERTED"
+    },
+    {
+      "observation_id": "F45_2",
+      "source_section": "build45_current",
+      "build_keys": [
+        "45"
+      ],
+      "observed_description": "本地开场正常；北京三日游后没有回答",
+      "historical_assessment": "FAIL",
+      "source_ref": "https://github.com/JTCAO515/G2C/issues/1048",
+      "service_window_by_variant": {
+        "all": "W45"
+      },
+      "regression_case_ids": [
+        "UI02",
+        "PLAN05"
+      ],
+      "root_cause": "UNKNOWN",
+      "product_repair_status": "NOT_ASSERTED"
+    },
+    {
+      "observation_id": "F45_3",
+      "source_section": "build45_current",
+      "build_keys": [
+        "45"
+      ],
+      "observed_description": "历史暂时看不到；不能据此认定数据丢失",
+      "historical_assessment": "FAIL",
+      "source_ref": "https://github.com/JTCAO515/G2C/issues/1048",
+      "service_window_by_variant": {
+        "all": "W45"
+      },
+      "regression_case_ids": [
+        "UI03"
+      ],
+      "root_cause": "UNKNOWN",
+      "product_repair_status": "NOT_ASSERTED"
+    },
+    {
+      "observation_id": "F45_4",
+      "source_section": "build45_current",
+      "build_keys": [
+        "45"
+      ],
+      "observed_description": "后台回来对话打不开，原因不清楚",
+      "historical_assessment": "FAIL",
+      "source_ref": "https://github.com/JTCAO515/G2C/issues/1048",
+      "service_window_by_variant": {
+        "all": "W45"
+      },
+      "regression_case_ids": [
+        "UI04",
+        "UI06"
+      ],
+      "root_cause": "UNKNOWN",
+      "product_repair_status": "NOT_ASSERTED"
+    },
+    {
+      "observation_id": "P01",
+      "source_section": "persistent",
+      "build_keys": [
+        "30",
+        "31"
+      ],
+      "observed_description": "日期/人数被当规划前提，没有可靠现场修复证据",
+      "historical_assessment": "UNRESOLVED",
+      "source_ref": "https://github.com/JTCAO515/G2C/issues/1048",
+      "service_window_by_variant": {
+        "all": "UNKNOWN"
+      },
+      "regression_case_ids": [
+        "PLAN05",
+        "PLAN06",
+        "PLAN07"
+      ],
+      "root_cause": "UNKNOWN",
+      "product_repair_status": "NOT_ASSERTED"
+    },
+    {
+      "observation_id": "P02",
+      "source_section": "persistent",
+      "build_keys": [],
+      "observed_description": "请求失败、半句、只复述不给实际行程",
+      "historical_assessment": "UNRESOLVED",
+      "source_ref": "https://github.com/JTCAO515/G2C/issues/1048",
+      "service_window_by_variant": {
+        "all": "UNKNOWN"
+      },
+      "regression_case_ids": [
+        "PLAN03",
+        "PLAN08",
+        "UI02"
+      ],
+      "root_cause": "UNKNOWN",
+      "product_repair_status": "NOT_ASSERTED"
+    },
+    {
+      "observation_id": "P03",
+      "source_section": "persistent",
+      "build_keys": [
+        "30",
+        "31",
+        "43",
+        "45"
+      ],
+      "observed_description": "后台上下文断开、重复开场白",
+      "historical_assessment": "UNRESOLVED",
+      "source_ref": "https://github.com/JTCAO515/G2C/issues/1048",
+      "service_window_by_variant": {
+        "all": "UNKNOWN"
+      },
+      "regression_case_ids": [
+        "UI01",
+        "UI04",
+        "UI06"
+      ],
+      "root_cause": "UNKNOWN",
+      "product_repair_status": "NOT_ASSERTED"
+    },
+    {
+      "observation_id": "P04",
+      "source_section": "persistent",
+      "build_keys": [
+        "31"
+      ],
+      "observed_description": "豪华偏好后Memory未更新；识别、确认保存、等大格子布局须分开",
+      "historical_assessment": "UNRESOLVED",
+      "source_ref": "https://github.com/JTCAO515/G2C/issues/1048",
+      "service_window_by_variant": {
+        "all": "UNKNOWN"
+      },
+      "regression_case_ids": [
+        "MEM01",
+        "MEM02",
+        "MEM03"
+      ],
+      "root_cause": "UNKNOWN",
+      "product_repair_status": "NOT_ASSERTED"
+    },
+    {
+      "observation_id": "P05",
+      "source_section": "persistent",
+      "build_keys": [
+        "24"
+      ],
+      "observed_description": "工具调用/来源项占聊天区；只显示结果、不显示内部过程",
+      "historical_assessment": "UNRESOLVED",
+      "source_ref": "https://github.com/JTCAO515/G2C/issues/1048",
+      "service_window_by_variant": {
+        "all": "UNKNOWN"
+      },
+      "regression_case_ids": [
+        "UI05"
+      ],
+      "root_cause": "UNKNOWN",
+      "product_repair_status": "NOT_ASSERTED"
+    }
+  ],
+  "owner_evidence": [
+    {
+      "owner": "A",
+      "ref": "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905939029"
+    },
+    {
+      "owner": "B",
+      "ref": "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905940894"
+    }
+  ],
+  "unknown_policy": "null表示UNKNOWN，不补零SHA、不把prefix/候选/merge当已装包或实际请求绑定；同build每个观察窗口独立。",
+  "request_join_policy": "只有真实共同request_id/MID/RUN或同等原件关联才能绑定；同秒/邻近GET与HTTP–不能互相补值。",
+  "preserved_successes": [
+    "H03",
+    "H05",
+    "H06"
+  ],
+  "independent_current_45_facts": {
+    "completed_accesses": 23,
+    "methods": {
+      "GET /v1/message-receipts": 10,
+      "GET /v1/trip-structured-list": 7,
+      "GET /v5/trip-structured": 6
+    },
+    "all_http_200": true,
+    "lio_send_timeline_completed_rows": 0,
+    "phone_subject": "UNKNOWN",
+    "first_failure_point": "UNKNOWN",
+    "access_log_limitation": "finally完成日志；缺行不证明绝对未到",
+    "worker_log_gap": "10:10–10:14:48.230 UNKNOWN",
+    "api_runtime_interval_ref": "W45",
+    "source_ref": "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905940894"
+  }
+}
