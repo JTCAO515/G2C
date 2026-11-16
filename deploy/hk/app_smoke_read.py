@@ -11,6 +11,7 @@ from pathlib import Path
 import sys
 import tempfile
 from uuid import uuid4
+import re
 
 from cj_api.app_smoke_capture import AppSmokeCapture
 from cj_api.app_smoke_originals import SmokeOriginals
@@ -67,6 +68,36 @@ def step_claim(capture,selected,step,message_id,checkpoint):
     return claim
 
 
+def frozen_action(plan,nonce,kind):
+    """Resolve only a globally unique frozen action; children never send."""
+    seen=set();matches=[]
+    for parent in plan['steps']:
+        actions=parent.get('read_actions')
+        entries=[parent]
+        if actions is not None:
+            if(parent['gate_id']!='SM04'or parent['text']is not None or type(actions)is not list
+                    or len(actions)!=2 or any(type(a)is not dict or set(a)!={'action','nonce'}
+                        or type(a['action'])is not str for a in actions)
+                    or {a.get('action')for a in actions}!={'background_return','lock_return'}):
+                raise Unavailable('APP_SMOKE_INVALID_READ_ACTIONS')
+            for action in actions:
+                entries.append(dict(parent,nonce=action['nonce'],read_action=action['action'],parent_nonce=parent['nonce']))
+        for entry in entries:
+            value=entry['nonce']
+            if type(value)is not str or re.fullmatch('[a-f0-9]{32}',value)is None or value in seen:
+                raise Unavailable('APP_SMOKE_ACTION_NONCE_NOT_UNIQUE')
+            seen.add(value)
+            if value==nonce:matches.append(entry)
+    if len(matches)!=1:raise Unavailable('APP_SMOKE_UNKNOWN_STEP_NONCE')
+    step=matches[0]
+    if 'read_action'in step:
+        if kind not in('checkpoint','observe_read','stop_new'):
+            raise Unavailable('APP_SMOKE_READ_ACTION_CANNOT_SEND_OR_SELECT_OPERATION')
+    elif step.get('read_actions')is not None and kind!='stop_new':
+        raise Unavailable('APP_SMOKE_LIFECYCLE_CHILD_CHECKPOINT_REQUIRED')
+    return step
+
+
 def perform(request,controls,capture,originals,state):
     required={'version','kind','token','message_id','operation_id','expected_source','plan_sha256','nonce'}
     if(type(request)is not dict or not required<=request.keys()or request['version']!='G2C-App-smoke-read-request.1'
@@ -82,8 +113,7 @@ def perform(request,controls,capture,originals,state):
     plan=decode(read_private(Path(controls.window['policy_path']).parent/'plan.json',262144))
     if sha256(canonical(plan)).hexdigest()!=capture.policy['plan_sha256']:
         raise Unavailable('APP_SMOKE_FROZEN_PLAN_CHANGED')
-    step=next((x for x in plan['steps']if x['nonce']==request['nonce']),None)
-    if step is None:raise Unavailable('APP_SMOKE_UNKNOWN_STEP_NONCE')
+    step=frozen_action(plan,request['nonce'],kind)
     owners={sha256(x['scope'].encode()).hexdigest():x['locale']for x in capture.slots}
     if owners.get(scope_hash)!=step['locale']:raise Unavailable('APP_SMOKE_STEP_OWNER_CHANGED')
     claims=decode(capture.claims_snapshot())
@@ -94,6 +124,8 @@ def perform(request,controls,capture,originals,state):
     if kind=='stop_new':
         result=decode(capture.stop_new())
         return dict(base,status='READ',control_state=result['state'])
+    history=originals.verified_history(token,before_state)
+    default_history=originals.default_history(token,before_state)
     if kind=='checkpoint':
         point=dict(version='G2C-App-smoke-checkpoint.1',policy_sha256=capture.digest,
             plan_sha256=capture.policy['plan_sha256'],nonce=request['nonce'],scope_sha256=scope_hash,
@@ -105,7 +137,7 @@ def perform(request,controls,capture,originals,state):
                 raise Unavailable('APP_SMOKE_CHECKPOINT_DIRECTORY_CHANGED')
             write_new(identity,point,directory_fd=directory)
         return dict(base,status='READ',native_state=before_state,ledger_anchor=point['financial']['anchor'],claims=selected,
-            checkpoint_ref=sha256(canonical(point)).hexdigest())
+            history_targets=history,default_history_target=default_history,checkpoint_ref=sha256(canonical(point)).hexdigest())
     if kind in('observe','observe_read'):
         reference=request.get('checkpoint_ref')
         if type(reference)is not str or len(reference)!=64:

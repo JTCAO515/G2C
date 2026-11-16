@@ -34,6 +34,27 @@ class SmokeOriginals:
             raise Unavailable('APP_SMOKE_ORIGINAL_BINDING_CHANGED')
         return original
 
+    def history_query(self,context,mid):
+        self.lifecycle_guard()
+        from .app_smoke_history import require_original
+        target=next((x for x in self.controls.history_targets()
+            if x['binding']['scope']==context.scope and x['binding']['message_id']==mid),None)
+        if target is None:raise Unavailable('APP_SMOKE_HISTORY_TARGET_UNDECLARED')
+        return require_original(context,self.native_query(context,mid),target)
+
+    def verified_history(self,token,state):
+        from .app_smoke_history import anchors,require_census
+        def project(context):
+            selected=[x for x in self.controls.history_targets()if x['binding']['scope']==context.scope]
+            require_census(selected,state)
+            for target in selected:self.history_query(context,target['binding']['message_id'])
+            return anchors(selected)
+        return self.originals.boundary.with_history_context(token,project)
+
+    def default_history(self,token,state):
+        from .app_smoke_history import default_anchor
+        return default_anchor(self.originals.boundary,self.originals.database,token,self.controls.scopes)
+
     def _outer(self,scope,original,source):
         claim=self.controls.claim(scope,original.receipt.message_id)
         if claim is None:raise Unavailable('APP_SMOKE_ORIGINAL_CLAIM_MISSING')
@@ -175,7 +196,19 @@ class SmokeOriginals:
                         receipt.get('sha256')!=sha256(data_raw).hexdigest()or receipt.get('file')!=name or
                         sha256(data['response_utf8'].encode()).hexdigest()!=data['response_sha256']):
                     raise Unavailable('APP_SMOKE_ACTUAL_HTTP_READ_CHANGED')
-                b=Binding(**data['binding']);original=self.query(context,b.message_id)
+                if data.get('origin')=='readonly_default':
+                    from .app_smoke_history import default_response_in_context
+                    def unchanged(scope,page,binding):
+                        from cj_message.demo_dialogue import lio_conversation
+                        expected=None if binding is None else asdict(binding)
+                        if(data['binding']!=expected or data['default_generation']!=page.generation
+                                or data['default_conversation_id']!=lio_conversation(scope)):
+                            raise Unavailable('APP_SMOKE_DEFAULT_READ_BINDING_CHANGED')
+                        return dict(data,artifact_sha256=sha256(data_raw).hexdigest(),artifact_file=name)
+                    return default_response_in_context(self.originals,context,data['selector'],data['response_utf8'],unchanged)
+                b=Binding(**data['binding'])
+                if data.get('origin')=='readonly_history':original=self.history_query(context,b.message_id)
+                else:original=self.query(context,b.message_id)
                 r=original.receipt
                 if (context.scope,r.conversation_id,r.generation,r.run_id,r.sequence)!=(
                         b.scope,b.conversation_id,b.generation,b.run_id,b.message_sequence):
