@@ -42,11 +42,23 @@ class Originals:
         return result
 
 
-def setup(tmp_path,*,claim=True):
+def setup(tmp_path,*,claim=True,historical=False):
     f=fixture(tmp_path);scope=scope_for(ISSUER,SUBJECTS[0]);mid=str(uuid.uuid4())
     b=Binding(scope,'lio-dialogue-'+_identity(scope,'lio-new:'+mid),'generation',mid,'native-run',1)
     raw=canonical(dict(version='LIO-message.2',message_id=mid,text='question-0',locale='zh',new_conversation=True))
-    f.database.original(b,'question-0','zh');smoke=f.load()
+    f.database.original(b,'question-0','zh')
+    if historical:
+        from cj_api.app_smoke_history import VERSION as HISTORY_VERSION
+        def old(cid,message,run):
+            return dict(version=HISTORY_VERSION,conversation_id=cid,generation='generation',messages=[dict(
+                message_id=message,run_id=run,sequence=1,canonical_sha256=sha256(canonical(dict(text='question-0'))).hexdigest())])
+        plan=dict(version='LIO-basic-chain-plan.2',first_setup=False,old_chats=dict(
+            zh=old(b.conversation_id,b.message_id,b.run_id),
+            en=old('lio-dialogue-'+'f'*32,'old-en','old-en-run')))
+        write(tmp_path/'plan.json',plan)
+        f.policy['plan_sha256']=sha256(canonical(plan)).hexdigest();write(f.path,f.policy)
+        write(f.claims/'claims.json',dict(version='G2C-App-smoke-claims.1',policy_sha256=sha256(f.path.read_bytes()).hexdigest(),state='ACTIVE',claims=[]))
+    smoke=f.load()
     if claim:
         smoke.registrations(b)
         f.database.statuses[(scope,b.run_id,mid)]=('completed',3,True)
@@ -491,4 +503,21 @@ def test_live_lifecycle_socket_loss_never_becomes_an_empty_success(tmp_path):
     try:
         observer.lifecycle.close()
         with pytest.raises(Unavailable,match='STATUS_UNAVAILABLE'):protected.http_observed(TOKEN,point)
+    finally:observer.close()
+
+
+def test_declared_historical_get_does_not_create_a_worker_or_model_claim(tmp_path):
+    f,b,raw,directory,observer,originals=setup(tmp_path,claim=False,historical=True)
+    protected=protected_fixture(observer,originals,b)
+    response=canonical(dict(conversation_id=b.conversation_id,
+        messages=[dict(message_id=b.message_id,status='completed',answer='original historical answer')]))
+    try:
+        point=protected.http_checkpoint(TOKEN)
+        get_exchange(observer,b.conversation_id,response);drain(observer)
+        result=protected.http_observed(TOKEN,point)
+        assert len(result['actual_reads'])==1 and result['actual_reads'][0]['origin']=='readonly_history'
+        assert result['actual_reads'][0]['response_utf8'].encode()==response
+        assert json.loads((f.claims/'claims.json').read_bytes())['claims']==[]
+        with pytest.raises(Unavailable,match='ORIGINAL_UNAVAILABLE'):
+            protected.query(SimpleNamespace(scope=b.scope),b.message_id)
     finally:observer.close()
