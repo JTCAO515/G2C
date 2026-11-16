@@ -60,6 +60,27 @@ not existing user databases. Nothing was deployed or connected to Auth/RUN/API.
 
 ## SELECT-only original-attempt status increment
 
+### Bounded batch storage seam (#931)
+
+`PostgresRepository.read_status_many(attempt_ids, *, guard, expected_period,
+max_response_bytes)` returns UTF-8 JSON array bytes in the requested order.
+`attempt_ids` is a tuple of 1–45 distinct original IDs. Each element is exactly
+the existing minimal `AttemptStatus`, capped at 8192 bytes; the caller supplies
+a positive total byte bound no greater than 368686 (45 × 8192 + JSON separators).
+It requires one explicit original period; consumers must verify that all their
+operations belong to that period and the repository's original scope/config.
+
+The batch uses one existing `_read_ledger` transaction: REPEATABLE READ READ ONLY,
+original `read_binder`, one ledger SELECT/decode, and the same live authority
+checks through completion and cleanup. Missing rows/members, changed period or
+authority, oversized output, failed cleanup or uncertain completion withhold the
+entire result. It returns neither ledger nor input digests and grants no dispatch,
+settlement, release or retry authority. Consumers still validate each distinct
+attempt's run, operation, receipt, cancellation and exceeded state. The original
+single-attempt method and old metering versions are unchanged; no result or
+ALLOWED decision is cached. This storage seam alone does not wire the Lio host or
+prove its timing target, Hong Kong deployment or real-provider acceptance.
+
 Runtime source commit `68763c44fddf2e6d11799d1311dbd497d9c657c9` adds
 `read_status()` and a minimal bilingual historical status projection. See
 [read contract](../../contracts/usage/READ-STATUS.md). Unlike Meter.query(), it does
