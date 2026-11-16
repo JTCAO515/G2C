@@ -63,8 +63,11 @@ class PipelineGeneration:
                 DestinationUnresolved,PlaceSelectionBlocked):
             return self._refused(host,worker,binding,locale)
         state=worker.runs.snapshot(binding)
-        body=(worded.summary+'\n\n'+('行程已保存；天气和当天开放情况尚未确认。想先看哪一天？'if locale=='zh'else
-            'The itinerary is saved. Weather and opening information remain unverified. Which day would you like to see first?'))
+        unverified=('天气、当天开放情况和部分交通尚未确认'if worded.unknown_transfers else'天气和当天开放情况尚未确认')if locale=='zh'else(
+            'Weather, opening information and some routes remain unverified'if worded.unknown_transfers else
+            'Weather and opening information remain unverified')
+        body=(worded.summary+'\n\n'+('行程已保存；'+unverified+'。想先看哪一天？'if locale=='zh'else
+            'The itinerary is saved. '+unverified+'. Which day would you like to see first?'))
         return host._finish(worker,binding,state,body,Scene.ADJUSTMENT,locale)
 
     @staticmethod

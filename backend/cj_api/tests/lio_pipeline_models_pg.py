@@ -231,11 +231,13 @@ def selected_provider_join(host,worker,binding,bundle,skeleton,calls,scenario):
     return len(writers)
 
 
-def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1,2),followups=True):
+def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1,2),followups=True,duration_days=3,travel_pace='relaxed'):
     original_model=ExplorationPlanning._model
     original_http=httpx.MockTransport.handle_request
     original_post=TestClient.post
     wires=[];completed=[];lookups=[];posted={};saved_runs={};active={};supplier_wires=[];all_saved={}
+    duration_quote=('三','四','五')[duration_days-3]+'天'
+    pace_quote='适中'if travel_pace=='moderate'else'轻松'
     def post(api,url,**kwargs):
         if url=='/v4/lio/messages':
             value=json.loads(kwargs['content'])
@@ -243,7 +245,11 @@ def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1
                 value['text']=('节奏改为：轻松。 直接出方案。'if value['locale']=='zh'else
                     'Pace: relaxed. Please give me a plan now.')
                 kwargs['content']=packed(value)
+            if travel_pace!='relaxed'and value['text']in ('节奏改为：轻松','Change my travel pace to relaxed'):
+                value['text']='节奏改为：'+pace_quote if value['locale']=='zh'else'Change my travel pace to '+travel_pace
+                kwargs['content']=packed(value)
             if value['text']in ('我想去中国玩几天','I want to explore China'):
+                if duration_days!=3:value['text']+=('。'+duration_quote if value['locale']=='zh'else'. '+str(duration_days)+' days')
                 value['text']+='。明天出发。两个人。第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变'if value['locale']=='zh'else(
                     '. Start my trip tomorrow. Two people. On day 1 I have a hotel meetup from 9:00 to 10:00. Keep this arrangement unchanged.')
                 if early_departure:
@@ -257,11 +263,21 @@ def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1
         version=body.get('response_format',{}).get('json_schema',{}).get('schema',{}).get('properties',{}).get('version',{}).get('const')
         natural=(natural_direct and version==UNDERSTANDING and
             posted['text'].endswith(('直接出方案。','Please give me a plan now.')))
-        if version not in (PLAN_UNDERSTANDING,SKELETON,WORDING)and not natural:return original_http(transport,request)
+        duration_update=(production and duration_days!=3 and version==UNDERSTANDING and
+            posted['text'].startswith(('我想去中国玩几天','I want to explore China')))
+        pace_update=(production and travel_pace!='relaxed'and version==UNDERSTANDING and
+            posted['text']in ('节奏改为：'+pace_quote,'Change my travel pace to '+travel_pace))
+        if version not in (PLAN_UNDERSTANDING,SKELETON,WORDING)and not(natural or duration_update or pace_update):return original_http(transport,request)
         extra=json.loads(body['messages'][-1]['content'])
         assert body['response_format']==response_format(version)
         assert 1<=body['max_tokens']<=1536
-        if natural:
+        if duration_update or pace_update:
+            factor='duration_days'if duration_update else'pace'
+            proposal_value=duration_days if duration_update else travel_pace
+            quote=(duration_quote if posted['locale']=='zh'else str(duration_days)+' days')if duration_update else(pace_quote if posted['locale']=='zh'else travel_pace)
+            value=dict(version=UNDERSTANDING,intent='explore',current_source_index=extra['current_source_index'],updates=[
+                dict(factor_key=factor,state='known',value=proposal_value,sources=[dict(source_index=extra['current_source_index'],quote=quote)])])
+        elif natural:
             value=dict(version=UNDERSTANDING,intent='plan',current_source_index=extra['current_source_index'],
                 updates=[dict(factor_key='pace',state='known',value='relaxed',sources=[dict(
                     source_index=extra['current_source_index'],quote='节奏改为：轻松。'if posted['locale']=='zh'else'Pace: relaxed.')])])
@@ -395,13 +411,13 @@ def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1
             # ledger merely to run unrelated regression cases in one cohort.
             for language in ('zh','en'):
                 saved_runs.clear()
-                native.main(saved_runs=saved_runs,generation=True,languages=(language,),cases=cases,followups=followups)
+                native.main(saved_runs=saved_runs,generation=True,languages=(language,),cases=cases,followups=followups,trip_days=duration_days,pace_labels=(pace_quote,travel_pace.title()))
                 assert len(saved_runs)==len(cases)
                 all_saved.update(saved_runs)
         else:native.main(saved_runs=saved_runs)
 
     if production:
-        assert len(all_saved)==len(completed)==2*len(cases) and len(wires)==10*len(cases)
+        assert len(all_saved)==len(completed)==2*len(cases) and sum(v in (PLAN_UNDERSTANDING,SKELETON,WORDING)for v,_ in wires)==10*len(cases)
         print('PASS default production factory '+str(len(cases))+'ZH/'+str(len(cases))+'EN complete skeleton/selected retrieval/order/routes/schedule/final wording/sole writer and actual timeline Card3; '+str(len(supplier_wires))+' fixture supplier calls; real/G6/G9 UNRUN',flush=True)
         return
     assert len(saved_runs)==2

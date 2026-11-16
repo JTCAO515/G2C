@@ -2,11 +2,31 @@
 from copy import deepcopy
 import re
 from cj_trip.rich_reasons import filter_reason_text
+from cj_trip.rich_reasons import ProfileFact
 from cj_message.lio_context import display_answer
+from pypinyin import lazy_pinyin
 from .lio_pipeline_model import parse_wording
 from .lio_exploration_policy import _ACTION_CLAIM,_CONTROL
+from .lio_profile_cards import value_text
 
 _TOOL_METADATA=re.compile(r'(?<![A-Za-z0-9_])tool_call_id(?![A-Za-z0-9_])',re.I)
+
+
+def profile_facts(capture,locale):
+    """Format accepted values without changing their full source or states."""
+    facts=[]
+    han=lambda value:any('\u3400'<=char<='\u9fff'for char in value)
+    for row in capture.profile.profile['factors']:
+        key,state,value=row['factor_key'],row['state'],row['value']
+        display=value_text(key,value,state,locale)
+        if key=='city'and locale=='en'and han(str(value)):
+            english=display.replace(value,'').strip(' ()（）')
+            display=(english or' '.join(lazy_pinyin(value)))+' ('+value+')'
+        safe=display_answer(display,locale)
+        if safe is None:safe='该偏好暂无法显示'if locale=='zh'else'This preference cannot be displayed'
+        if len(safe)>500:safe=safe[:499]+'…' # Presentation only; the source is intact.
+        facts.append(ProfileFact(key,state,safe))
+    return tuple(facts)
 
 
 def wording_items(document,proposed_subjects):

@@ -13,13 +13,13 @@ from cj_place.models import Coordinate
 from cj_feasibility.rich_assembly import assemble,assemble_unconfirmed
 from cj_feasibility.rich_solver import Limits
 from cj_agent.draft import DraftRejected
-from cj_trip.rich_reasons import ProfileFact
 from cj_trip.domain import packed
+from cj_trip.rich_reasons import brief
 
 from .lio_city import CityReference
 from .lio_pipeline_document import representation_size
 from .lio_pipeline_model import SKELETON_SYSTEM,WORDING_SYSTEM,skeleton_data,wording_batches
-from .lio_pipeline_wording import wording_items,apply_wording
+from .lio_pipeline_wording import wording_items,apply_wording,profile_facts
 from .lio_pipeline_preflight import admit_city_lookup,recipes_for_edges
 from .lio_pipeline_skeleton import parse_skeleton
 from .local_lio_pipeline_calls import PipelineCalls,PipelineCapacity,model_call
@@ -169,8 +169,7 @@ def _assemble_retrieved(prepared,compiled,capture,document,*,phase,locale,stop):
         with bundle.source.hold_for_publication(binding):
             issued=checks.capture(binding,capture,document)
             rich=publisher.conditional_source(binding,capture,issued,document)
-            facts=tuple(ProfileFact(row['factor_key'],row['state'],row['value']if type(row['value'])is str
-                else json.dumps(row['value'],ensure_ascii=False))for row in capture.profile.profile['factors'])
+            facts=profile_facts(capture,locale)
             unconfirmed=frozenset(item['id']for item in document['items']
                 if item['id']in compiled.proposed_subjects and item['kind']in ('sight','meal')
                 and item['place']['state']=='unconfirmed')
@@ -228,8 +227,7 @@ def word_retrieved_plan(host,prepared,compiled,capture,assembly,view,*,locale):
     if assembly.content is None:
         raise DraftRejected('complete scheduled candidate required before wording')
     document=json.loads(assembly.content)
-    facts=tuple(ProfileFact(row['factor_key'],row['state'],row['value']if type(row['value'])is str
-        else json.dumps(row['value'],ensure_ascii=False))for row in capture.profile.profile['factors'])
+    facts=profile_facts(capture,locale)
     items=wording_items(document,compiled.proposed_subjects)
     batches=wording_batches(items,available_models=prepared.calls.model_slots_left)
     bundle=prepared.sources
@@ -240,5 +238,12 @@ def word_retrieved_plan(host,prepared,compiled,capture,assembly,view,*,locale):
     value=apply_wording(document,tuple((batch,result.encode())for batch,result in zip(batches,results,strict=True)),
         facts=facts,locale=locale)
     representation_size(value)
-    return replace(assembly,content=packed(value),
+    # Preserve every code-owned provenance group, using clause separators so
+    # the saved overview stays within the 2–4-sentence reply tier.
+    parts=[brief(tuple(fact for fact in facts if fact.state==state),locale=locale)
+        for state in ('known','memory','default')]
+    if prepared.edges.override_explanations:parts.append(brief((),locale=locale,first_day_full=True))
+    summary=('；'if locale=='zh'else'; ').join(part[:-1]for part in parts if part)
+    if summary:summary+='。'if locale=='zh'else'.'
+    return replace(assembly,content=packed(value),summary=summary,
         date_checks_must_be_recomputed=assembly.date_checks_must_be_recomputed or value['calendar']['state']=='dated')
