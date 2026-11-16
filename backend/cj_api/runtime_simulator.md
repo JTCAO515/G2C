@@ -97,3 +97,19 @@ The existing `runtime_actor` PG group runs that native4 control, the original ac
 control and `runtime_simulator_requests_pg.py`'s legacy2 registered-send control;
 the latter also denies an unclaimed native c936 message with zero operations and
 zero additional fixture provider calls. It does not certify a real baseline.
+
+`runtime_simulator_cost.original_charges` reads the existing protected originals
+without sending or settling anything. Each native operation remains a separate
+attempt and must join its original settled Meter, logical-input digest, financial
+ledger/RECEIVED receipt and protected output/wire artifacts. A registered local
+visitor catalogue operation may have no financial attempt only when the original
+artifact reader verifies its zero-cost local receipt. Unpriced received calls
+retain their full conservative hold and an unknown estimate; invoices are not
+inferred.
+
+Actor raw evidence is captured while its original DUT frame is current. Later
+`recheck_charge_metadata` checks the captured inventory/Meter/fee hashes under
+original AUTH without reopening historical raw access. Deletion continues to
+deny a new raw capture, and revocation denies metadata too. These per-operation
+proofs do not certify whole-episode cost: the concrete host must separately close
+the actual DUT/actor/background producers and reconcile the original journal.
