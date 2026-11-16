@@ -89,7 +89,8 @@ def readonly_plan_requested(text,city):
     zh=rf'(?:去\s*)?{query}\s*(?:玩\s*)?(?:{NUMBER})\s*[天日]\s*(?:豪华)?(?:游|旅行|旅游|行程)?'
     en=(rf'(?:(?:a|an)\s+)?(?:{NUMBER})(?:\s*-\s*|\s+)days?\s+'
         rf'(?:(?:luxury|budget)\s+)?(?:trip|itinerary|visit)\s+(?:to|in)\s+{query}'
-        rf'|{query}\s+for\s+(?:{NUMBER})\s+days?')
+        rf'|{query}\s+for\s+(?:{NUMBER})\s+days?'
+        rf'|(?:please\s+)?(?:go\s+to|visit)\s+{query}\s+for\s+(?:{NUMBER})\s+days?')
     return re.fullmatch(rf'\s*(?:{zh}|{en})[。.!！\s]*',text,re.I)is not None
 
 

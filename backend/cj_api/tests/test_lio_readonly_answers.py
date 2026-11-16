@@ -121,23 +121,27 @@ class ReadOnlyAnswers(unittest.TestCase):
         self.assertEqual(context(events)['facts']['city']['sources'],[dict(message_id='prior-0',quote='成都')])
 
     def test_new_explicit_save_reuses_readonly_human_city_and_days(self):
-        first='规划成都三天';current='请保存，2026-12-01出发，两个人'
-        wire=flow(first,city='成都',days=3,questions=())
-        wire.update(planning_request_index=None,needs_tools=False)
-        _,events,_,_=run(wire,first)
-        previous=previous_turn(events)
-        followup=flow(current,city=None,days=None,start='2026-12-01',party=2,intent='save',index=1,questions=())
-        followup.update(planning_request_index=1,needs_tools=False)
-        published,events,_,_=run(followup,current,turns=(original(first),original(current)),previous=previous)
-        self.assertEqual(len(published),1)
-        self.assertNotIn('哪个城市',answer(events))
-        self.assertNotIn('几天',answer(events))
-        # A model-labelled save rooted only at a new "continue" is no grant.
-        current='继续'
-        forged=flow(current,city=None,days=None,intent='save',index=1,questions=())
-        forged.update(planning_request_index=1,needs_tools=False)
-        published,_,_,_=run(forged,current,turns=(original(first),original(current)),previous=previous)
-        self.assertEqual(published,[])
+        for locale,city,first,current in (
+            ('zh','成都','去成都玩三天','请规划并保存这个行程，2026-12-01出发，两个人。'),
+            ('en','Chengdu','Go to Chengdu for three days','Please plan and save this trip, starting 2026-12-01, two people.'),
+        ):
+            with self.subTest(locale=locale):
+                wire=flow(first,city=city,days=3,questions=())
+                wire.update(planning_request_index=None,needs_tools=False)
+                _,events,_,_=run(wire,first,locale=locale)
+                self.assertIn('第1天'if locale=='zh'else'Day 1',answer(events))
+                previous=previous_turn(events)
+                followup=flow(current,city=None,days=None,start='2026-12-01',party=2,intent='save',index=1,questions=())
+                followup.update(planning_request_index=1,needs_tools=False)
+                published,events,_,_=run(followup,current,turns=(original(first),original(current)),previous=previous,locale=locale)
+                self.assertEqual(len(published),1)
+                self.assertNotIn('哪个城市',answer(events));self.assertNotIn('Which city',answer(events))
+                # A model-labelled save rooted only at a new "continue" is no grant.
+                current='继续'if locale=='zh'else'Continue'
+                forged=flow(current,city=None,days=None,intent='save',index=1,questions=())
+                forged.update(planning_request_index=1,needs_tools=False)
+                published,_,_,_=run(forged,current,turns=(original(first),original(current)),previous=previous,locale=locale)
+                self.assertEqual(published,[])
 
     def test_readonly_known_date_party_are_data_but_an_old_root_stays_denied(self):
         first='规划成都三天，2026-12-01出发，两个人'
