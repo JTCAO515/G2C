@@ -263,4 +263,4 @@ if __name__=='__main__':
     subprocess.run([sys.executable,'-B','-m','pytest','-q','-p','no:cacheprovider',
                     str(ROOT/'backend/memory/tests/test_api_scope_hold.py')],check=True)
     for script in ('rich_selection_pg.py','rich_selection_undo_pg.py'):
-        subprocess.run([sys.executable,'-B',str(ROOT/'backend/draft/tests'/script)],check=True)
+        subprocess.run([sys.executable,'-B',str(ROOT/'backend/cj_api/tests/lio_rich_component_pg.py'),script],check=True)
