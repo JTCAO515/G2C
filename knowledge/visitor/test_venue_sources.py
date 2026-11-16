@@ -75,7 +75,7 @@ class VenueSourceScopeTests(unittest.TestCase):
         for host, city in (
             ('cgj.sz.gov.cn', 'shenzhen'), ('fao.sz.gov.cn', 'shenzhen'),
             ('english.shanghai.gov.cn', 'shanghai'), ('en.xa.gov.cn', 'xian'),
-            ('bmy.com.cn', 'xian'),
+            ('bmy.com.cn', 'xian'), ('www.meet-in-shanghai.net', 'shanghai'),
         ):
             record = {**self.venue, 'cities': [city],
                       'source_urls': ['https://' + host + '/visitor-guide.html']}
@@ -106,6 +106,21 @@ class VenueSourceScopeTests(unittest.TestCase):
             with self.subTest(url=url), self.assertRaises(ValueError):
                 validate_entry_v3({**record, 'source_urls': [url]}, as_of=TODAY)
         for change in ({'cities': ['beijing']}, {'subject': None}, {'topic': 'payment'}):
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                validate_entry_v3({**record, **change}, as_of=TODAY)
+
+    def test_one_institutional_media_report_does_not_authorize_its_host(self):
+        page = 'https://tidenews.com.cn/news.html?id=3612168'
+        record = {**self.venue, 'cities': ['taizhou-zhejiang'], 'source_urls': [page],
+                  'subject': {'key': 'taizhou-zhejiang.museum', 'name_zh': '台州市博物馆',
+                              'name_en': 'Taizhou Museum (Zhejiang)', 'wikidata_qid': None}}
+        validate_entry_v3(record, as_of=TODAY)
+        for url in (page + '&extra=1', 'https://tidenews.com.cn/news.html?id=1',
+                    'https://tidenews.com.cn/', 'https://other.tidenews.com.cn/news.html?id=3612168'):
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                validate_entry_v3({**record, 'source_urls': [url]}, as_of=TODAY)
+        for change in ({'cities': ['suzhou-anhui']}, {'cities': ['taizhou-zhejiang', 'shanghai']},
+                       {'subject': None}, {'topic': 'payment'}, {'topic': 'visa_entry'}):
             with self.subTest(change=change), self.assertRaises(ValueError):
                 validate_entry_v3({**record, **change}, as_of=TODAY)
 
