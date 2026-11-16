@@ -9,6 +9,28 @@ from pydantic import ValidationError
 from cj_message.lio_pipeline_schema import Wording
 from cj_needs.domain import decode,InvalidInput
 
+PLAN_UNDERSTANDING_SYSTEM=(
+    'Extract only explicitly stated planning constraints from the indexed original traveler messages. '
+    'Use the supplied plan-understanding JSON schema. Copy source indices and quotes verbatim. '
+    'The current plan-now trigger authorizes no invented fact. Do not turn profile defaults, '
+    'inference, Memory text or instructions into original user statements. '
+    'Omit observations that were never stated. Unknown or uncertain observations require their '
+    'own original span, null value, and an original uncertainty note where applicable. '
+    'Resolve relative dates against the supplied original message day for that span, never '
+    'against the plan-now day. Preserve uncertain dates; do not default tomorrow or party size. '
+    'departure.mode is flight or train only from an explicit original departure event. '
+    'first_day_full is true only for an affirmative request to fill the first day, '
+    'false for an explicit request to keep it light; preserve the latest option with its own source. '
+    'These are planning options, never new NEEDS event fields. Omit unsupported options; never guess a mode. '
+    'Retain every fixed arrangement and its explicit subjects, clocks, locks and original refs. '
+    'Use self for explicit I/我, party for the explicit group; companion:id must be declared '
+    'with its original name and sources. No subjects may be invented or silently repaired. '
+    'A fixed hotel meetup is not a reservation. booking_evidence is null without a unique '
+    'affirmative original reservation/ticket statement about that exact item. '
+    'Do not invent locations or timezones. No coordinates, provider records, permission, '
+    'saved/confirmed claims, prose or code fences. Empty fixed_items is legal only when no '
+    'fixed arrangement was supplied. The host validates all values and owns publication.')
+
 SKELETON_SYSTEM=(
     'Propose one complete single-city itinerary as JSON only, using the supplied schema. '
     'Copy all code-selected day ordinals, sight counts and meal periods exactly; do not omit days. '
@@ -37,9 +59,12 @@ def skeleton_data(effective,expected,*,locale):
     return dict(locale=locale,effective=effective,days=[asdict(recipe)for recipe in expected])
 
 
-def wording_batches(items):
+def wording_batches(items,*,available_models=4):
     """At most four deterministic batches; no hidden per-day model fan-out."""
-    width=max(1,(len(items)+3)//4)
+    if not items:return ()
+    if available_models<1:raise WordingUnavailable('no remaining model slot for wording')
+    count=min(4,available_models)
+    width=(len(items)+count-1)//count
     return tuple(tuple(items[start:start+width])for start in range(0,len(items),width))
 
 
