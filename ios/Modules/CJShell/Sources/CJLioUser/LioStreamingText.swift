@@ -89,6 +89,13 @@ struct LioStreamingText: View {
         visible && (sourceChanged || buffer.hasPending || !births.isEmpty || (!streaming && !completed))
     }
 
+    // `completed` is established by report() only while this presentation is
+    // visible. A later source change must not reuse that older completion.
+    private var hasCompleteBody: Bool {
+        completed && !streaming && parsedCompleted && !buffer.hasPending
+            && births.isEmpty && !sourceChanged && !rejected
+    }
+
     var body: some View {
         Group {
                 if rejected {
@@ -98,6 +105,9 @@ struct LioStreamingText: View {
                     Text(display(rendered, at: paintTime))
                         .textSelection(.enabled)
                         .accessibilityIdentifier(identifier)
+                        .accessibilityValue(hasCompleteBody
+                            ? language.text("Reply complete", "回复已完成")
+                            : language.text("Replying…", "正在回复…"))
                 } else {
                     Text("")
                 }
