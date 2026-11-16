@@ -67,13 +67,13 @@ class ConditionsTests(unittest.TestCase):
     def test_old_reader_and_old_catalog_are_preserved(self):
         with self.assertRaises(ValueError):
             validate_entry(self.entry, as_of=TODAY)
-        legacy = load_entries(sorted((ROOT / "entries").glob("*.json")), as_of=TODAY)
+        legacy = load_entries(sorted((ROOT / "entries").glob("*.json")), as_of=date(2026, 11, 16))
         self.assertEqual(len(legacy), 12)
         with self.assertRaises(ValueError):
-            validate_entry_v2(legacy[0], as_of=TODAY)
+            validate_entry_v2(legacy[0], as_of=date(2026, 11, 16))
 
     def test_real_optional_booking_window_is_not_a_minimum_lead_requirement(self):
-        entries = load_entries_v2(sorted((ROOT / "entries-v2").glob("*.json")), as_of=TODAY)
+        entries = load_entries_v2(sorted((ROOT / "entries-v2").glob("*.json")), as_of=date(2026, 11, 16))
         self.assertEqual(len(entries), 3)
         venue = next(entry for entry in entries if entry["entry_kind"] == "fact")
         self.assertIs(venue["conditions"]["reservation_required"], False)
