@@ -76,6 +76,8 @@ origin=readonly_default、binding=null、实际default_conversation_id/default_g
 SM03的history.default_row_key指完整实际AX列表末行；rows/opened同序逐行核，
 由已核同源signed.history固定追加顺序关联默认角色，不能仅按标题猜，也不宣称
 UI独立看见了CID。默认正文与其他行同文时，默认角色来自此实际顺序和点击原件。
+SM01须在冷启动恢复后、其他导航前立即留一个cold_launch lifecycle快照；如为
+完整候选关联补读其他历史/默认项，后续成功不能修饰这张原快照的错误、草稿或正文。
 历史每行都打开，完整有序问答在合法候选CID集合中必须恰一匹配。重名标题、行号、
 通用能力正文或时间接近都不构成身份。需要远程读取的普通App路径须有该次真实
 GET/完整原响应；A缓存正常加C另行读成功不能拼成PASS。当前实际normal Home

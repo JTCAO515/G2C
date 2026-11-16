@@ -96,7 +96,7 @@ def assess(plan,step,point,native,ui,conversations,project,money):
             fail.append('actual_App_visible_failure')
         if step['gate_id']=='SM03':
             if any(entry['errors']for entry in ui['history']['opened']):fail.append('actual_history_row_open_failure')
-        if step['gate_id']=='SM04':
+        if step['gate_id']in('SM01','SM04'):
             if any(entry['errors']for entry in ui['lifecycle']):fail.append('actual_intermediate_lifecycle_failure')
         require(ui['after']['body_complete']is True,'actual final AX has not completed')
         if not money['full_coverage']or money['unresolved_attempt_count']:
@@ -168,14 +168,14 @@ def assess(plan,step,point,native,ui,conversations,project,money):
                 require(actual_ax==_transcript(views[expected_cid],project),'actual App read did not restore the original full transcript')
                 require('cold_launch'in ui['actions']if gate=='SM01'else
                         ui['actions']==[step['action']],'required actual lifecycle transition missing')
+                checkpoints=ui['lifecycle'];action='cold_launch'if gate=='SM01'else step['action']
+                require(len(checkpoints)==1 and checkpoints[0]['action']==action,
+                        'the immediate independently admitted lifecycle snapshot is required')
+                for entry in checkpoints:
+                    require(_ax_transcript(entry['transcript'])==actual_ax
+                            and entry['draft']==draft_marker(plan,step)and not entry['errors']and entry['body_complete']is True,
+                            'the immediate lifecycle result failed; later navigation cannot repair it')
                 if gate=='SM04':
-                    checkpoints=ui['lifecycle']
-                    require(len(checkpoints)==1 and checkpoints[0]['action']==step['action'],
-                            'this independently admitted lifecycle action snapshot required')
-                    for entry in checkpoints:
-                        require(_ax_transcript(entry['transcript'])==actual_ax
-                                and entry['draft']==draft_marker(plan,step)and not entry['errors']and entry['body_complete']is True,
-                                'an intermediate lifecycle return failed')
                     require(any(r['binding']is not None and r['binding']['conversation_id']==expected_cid
                                  and r['route']in('/v1/lio/timeline','/v2/lio/timeline')for r in native.actual_reads),
                             'this lifecycle action needs its own checkpoint-fenced actual App read')

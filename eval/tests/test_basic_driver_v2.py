@@ -159,7 +159,8 @@ def test_standard_driver_bootstraps_old_chat_from_qualified_read_without_seed_or
                 save(root/'00-A-completed.json',dict(version='LIO-basic-app-witness.2',source='actual_ordinary_Home_AX',
                     app=plan['app'],run_id=plan['run_id'],gate_id='SM01',locale='zh',nonce=s['nonce'],artifacts=artifacts,
                     message_id_observed=None,conversation_id_observed=None,send_taps=0,submitted_text=None,
-                    before=before,after=deepcopy(before),actions=['cold_launch']))
+                    before=before,after=deepcopy(before),actions=['cold_launch'],
+                    lifecycle=[dict(action='cold_launch',transcript=transcript,draft=before['draft'],errors=[],body_complete=True)]))
     def call(program,request):
         if program=='projector':
             return dict(version='LIO-reply-projection.1',app=plan['app'],input_sha256=request['input_sha256'],

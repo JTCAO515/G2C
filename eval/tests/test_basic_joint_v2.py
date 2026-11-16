@@ -97,6 +97,8 @@ def read_fixture(gate='SM01'):
     n=type(native)(native.original,before,after,(),native.actual_reads,(),native.read_collection_status,native.default_history_target)
     ui.update(gate_id=gate,nonce=step['nonce'],send_taps=0,submitted_text=None,actions=['cold_launch'])
     ui['before']=deepcopy(ui['after']);ui['before']['draft']=ui['after']['draft']=draft_marker(plan,step)
+    if gate=='SM01':ui['lifecycle']=[dict(action='cold_launch',transcript=deepcopy(ui['after']['transcript']),
+        draft=ui['after']['draft'],errors=[],body_complete=True)]
     return plan,step,point,n,ui,context,money
 
 
@@ -110,6 +112,13 @@ def test_restore_needs_actual_App_read_not_cache_and_independent_server_lookup()
 
 def test_repeated_body_or_incomplete_candidate_census_is_not_unique_restore():
     args=read_fixture();args[5].views['another-cid']=deepcopy(next(iter(args[5].views.values())))
+    assert evaluate(args)['status']=='UNKNOWN'
+
+
+def test_cold_restore_failure_cannot_be_repaired_by_later_history_navigation():
+    args=read_fixture();args[4]['lifecycle'][0].update(errors=['cold restore failed'],body_complete=False)
+    assert evaluate(args)['status']=='FAIL'
+    args=read_fixture();args[4]['lifecycle'][0]['body_complete']=False
     assert evaluate(args)['status']=='UNKNOWN'
     args=read_fixture();args[4]['after']['draft']=''
     assert evaluate(args)['status']=='UNKNOWN'
