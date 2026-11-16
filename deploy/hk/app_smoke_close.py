@@ -16,6 +16,14 @@ if __package__ in(None,''):sys.path.insert(0,str(Path(__file__).resolve().parent
 from deploy.hk.app_smoke_install import ROOT,STATIC,FILES,EXPORTER_SHA,private,sha,save,idle,override,require_no_pending_reader
 
 
+def expired(ends_at,now):
+    # Match the existing standalone status_remote aware-ISO format. Python
+    # 3.6 needs +HHMM and has no datetime.fromisoformat.
+    pattern='%Y-%m-%dT%H:%M:%S.%f%z'if'.'in ends_at else'%Y-%m-%dT%H:%M:%S%z'
+    end=datetime.strptime(ends_at[:-3]+ends_at[-2:],pattern)
+    return now>=end.timestamp()
+
+
 def transition(directory,before,proof,check,stop,start,ready,window,unchanged):
     if not idle(before):raise ValueError('original producers are not idle')
     check(True);unchanged();window()
@@ -66,7 +74,7 @@ def main():
         claims=json.loads(private(directory/'claims/claims.json',10001))
         if (policy['version']!='G2C-App-smoke-capture.1'or policy['source_commit']!=plan['source']
                 or claims['version']!='G2C-App-smoke-claims.1'or claims['policy_sha256']!=sha(directory/'policy.json')
-                or claims['state']!='STOP_NEW'and time.time()<datetime.fromisoformat(policy['ends_at']).timestamp()):
+                or claims['state']!='STOP_NEW'and not expired(policy['ends_at'],time.time())):
             raise ValueError('original capture must stop new work before return')
         if sha(ROOT/'probes/836-release-export.py')!=EXPORTER_SHA:raise ValueError('original exporter changed')
         static={name:sha(ROOT/name)for name in STATIC}
