@@ -57,8 +57,8 @@ def fixture():
         ledger_id='original',producer_id='producer',mounts={'api':{},'worker':{}})
     values={role:dict(Id=role,Image=plan['image'],Config=dict(Cmd=[role],Labels={'org.opencontainers.image.revision':plan['source']}),
         State=dict(Running=True,Health=dict(Status='healthy')),Mounts=[])for role in('api','worker')}
-    closed=dict(version='G2C-App-smoke-close.1',state='DEFAULT_ROLES_RESTORED',ledger_before={'count':1232},
-        ledger_after={'count':1232},budget_restored=False)
+    closed=dict(version='G2C-App-smoke-close.1',state='DEFAULT_ROLES_RESTORED',ledger_before={'count':1232,'sha256':'a'*64},
+        ledger_after={'count':1232,'sha256':'a'*64},budget_restored=False)
     return plan,values,closed
 
 
@@ -108,3 +108,24 @@ def test_host_cannot_restore_with_unconfirmed_close_or_changed_role_after_mutati
     with pytest.raises(ValueError,match='roles changed'):
         host.perform(tmp_path,plan,{},closed,lambda role:values[role],native,apply=True)
     assert(tmp_path/'standing-restore.intent.json').exists()and not(tmp_path/'standing-restore.result.json').exists()
+
+
+@pytest.mark.parametrize('anchor',[None,{},dict(count=1232),dict(sha256='a'*64),
+    dict(count=-1,sha256='a'*64),dict(count=True,sha256='a'*64),dict(count=0,sha256='bad'),
+    dict(count=0,sha256='A'*64),dict(count=0,sha256=None)])
+def test_missing_or_malformed_equal_anchors_never_reach_native_restore(tmp_path,anchor):
+    plan,values,closed=fixture();calls=[]
+    closed.update(ledger_before=anchor,ledger_after=anchor)
+    with pytest.raises(ValueError,match='ledger anchors'):
+        host.perform(tmp_path,plan,{},closed,lambda role:values[role],lambda *args:calls.append(args),apply=True)
+    assert calls==[]and not(tmp_path/'standing-restore.intent.json').exists()
+
+
+def test_absent_both_anchors_and_valid_changed_anchor_are_not_closed_proof(tmp_path):
+    plan,values,closed=fixture();calls=[]
+    missing={k:v for k,v in closed.items()if not k.startswith('ledger_')}
+    changed=dict(closed,ledger_after=dict(count=1233,sha256='b'*64))
+    for value in(missing,changed):
+        with pytest.raises(ValueError):
+            host.perform(tmp_path,plan,{},value,lambda role:values[role],lambda *args:calls.append(args),apply=True)
+    assert calls==[]and not(tmp_path/'standing-restore.intent.json').exists()

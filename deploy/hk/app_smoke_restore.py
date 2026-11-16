@@ -7,6 +7,7 @@ import fcntl
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -35,6 +36,13 @@ def roles(plan,inspect):
 
 
 def perform(directory,plan,restriction,closed,inspect,native,*,apply):
+    if type(closed)is not dict:raise ValueError('actual acknowledged formal close receipt required')
+    for key in('ledger_before','ledger_after'):
+        anchor=closed.get(key)
+        if(type(anchor)is not dict or set(anchor)!={'count','sha256'}
+                or type(anchor['count'])is not int or anchor['count']<0
+                or type(anchor['sha256'])is not str or re.fullmatch('[a-f0-9]{64}',anchor['sha256'])is None):
+            raise ValueError('complete original close ledger anchors required')
     if(closed.get('version')!='G2C-App-smoke-close.1'or closed.get('state')!='DEFAULT_ROLES_RESTORED'
             or closed.get('ledger_before')!=closed.get('ledger_after')or closed.get('budget_restored')is not False):
         raise ValueError('actual acknowledged formal close receipt required')
