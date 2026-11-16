@@ -870,6 +870,8 @@ private var developmentHostEnvironment: [String: String] {
     let lioChats: LioChatLibrary
     let lioTripHistory: LioTripHistoryClient
     let lioMemoryActions: LioMemoryActionsClient
+    private let lioPosition: LioChatContinuity
+    private let lioPositionStore: LioChatPositionStore
     #endif
     private let lifetime: DevelopmentMessageLifetime
     private let keyAdapter: ExistingMessageKeyAdapter
@@ -931,7 +933,11 @@ private var developmentHostEnvironment: [String: String] {
             LioDiagnosticLog.shared.record(error: error, stage: .timeline, observation: observation)
         })
         lio = lioService
-        lioChats = .signed(client: lioClient, defaultService: lioService, language: { shell.language.lio },
+        let position = LioChatContinuity()
+        lioPosition = position
+        lioPositionStore = try LioChatPositionStore(directory: root, namespace: namespace, keys: keys,
+                                                   validate: { try lifetime.validate() })
+        lioChats = .signed(client: lioClient, defaultService: lioService, language: { shell.language.lio }, continuity: position,
                            tripHistory: { conversationID in
             LioTripHistoryClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease,
                                  conversationID: conversationID)
@@ -999,6 +1005,13 @@ private var developmentHostEnvironment: [String: String] {
         travelSelection = selectedTravel
     }
 
+    #if G2C_DEMO_BETA
+    func restoreLioPosition(previous: LioChatContinuity?) throws -> LioChatContinuity {
+        try restoreLioChatPosition(lioPosition, store: lioPositionStore, previous: previous)
+        return lioPosition
+    }
+    #endif
+
     func invalidate() {
         lifetime.active = false
         travelSelection?.invalidate()
@@ -1059,9 +1072,8 @@ private var developmentHostEnvironment: [String: String] {
                             lease: DevelopmentSessionLease(session: session, operation: operation), offline: self.offline,
                             memoryExtensionsAllowed: self.cleanupWorkflow?.version == .v4, betaComposition: inputs.composition)
                         #if G2C_DEMO_BETA
-                        if let current = self.trip?.messages.lioChats.continuity {
-                            if let previous = self.lioChatContinuity { current.inherit(previous) }
-                            self.lioChatContinuity = current
+                        if let messages = self.trip?.messages {
+                            self.lioChatContinuity = try messages.restoreLioPosition(previous: self.lioChatContinuity)
                         }
                         #endif
                         #if !G2C_DEMO_BETA
@@ -1504,6 +1516,9 @@ private struct DevelopmentVerificationTransport: ClientTransport {
             let store = try EncryptedFileStorage(directory: url, keys: adapter)
             for directory in captured { try directory.validateIdentity() }
             try store.clearLocalSnapshot(scope: scope)
+            let position = try LioChatPositionStore(directory: url, namespace: provider.namespace, keys: provider,
+                                                    validate: { throw RecoveryError.inactive })
+            try position.clearRetiredPosition()
         case .tripPending:
             guard let url else { throw CleanupFailure.unavailable }
             let (provider, id) = try provider(.localTripPendingV1)

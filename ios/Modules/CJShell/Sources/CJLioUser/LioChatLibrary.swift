@@ -27,24 +27,86 @@ final class LioChatTrips {
     init(plan: LioTripPlan? = nil) { self.plan = plan }
 }
 
-/// In-memory position only. The account root discards it on an identity change;
-/// a new authenticated client must read the conversation again before use.
-@MainActor public final class LioChatContinuity {
-    var selectedID: Data?
-    var draft = ""
-    var firstQuestions: [Data: LioQuestion] = [:]
-    var localIDs: [Data: String] = [:]
-    var blankIDs: Set<Data> = []
+/// Position and draft only; restoring it grants no sending or account authority.
+@MainActor @Observable public final class LioChatContinuity {
+    var selectedID: Data? { didSet { positionChanged() } }
+    var draft = "" { didSet { positionChanged() } }
+    var drafts: [Data: String] = [:] { didSet { positionChanged() } }
+    var retainedUnsent: [Data: [LioQuestion]] = [:] { didSet { positionChanged() } }
+    var firstQuestions: [Data: LioQuestion] = [:] { didSet { positionChanged() } }
+    var localIDs: [Data: String] = [:] { didSet { positionChanged() } }
+    var blankIDs: Set<Data> = [] { didSet { positionChanged() } }
+    private(set) var positionIssue: LioPositionSaveIssue?
+    @ObservationIgnored private var positionWriter: (@MainActor (Data) throws -> Void)?
+    @ObservationIgnored private var replacingPosition = false
 
     public init() {}
 
-    public func inherit(_ previous: LioChatContinuity) {
-        selectedID = previous.selectedID
-        draft = previous.draft
-        firstQuestions = previous.firstQuestions
-        localIDs = previous.localIDs
-        blankIDs = previous.blankIDs
+    /// The authenticated App root supplies the existing owner-bound encrypted store.
+    public func bindPositionWriter(_ writer: @escaping @MainActor (Data) throws -> Void) { positionWriter = writer }
+
+    public func retryKeepingPosition() {
+        guard let positionWriter else { return }
+        do {
+            try positionWriter(encodedPosition())
+            positionIssue = nil
+        } catch {
+            positionIssue = .init(problem: LioRequestProblem(error, stage: .localRecord), at: Date())
+        }
     }
+
+    func withPositionChange(_ change: () -> Void) {
+        let previous = replacingPosition
+        replacingPosition = true
+        change()
+        replacingPosition = previous
+        if !previous { retryKeepingPosition() }
+    }
+
+    private func positionChanged() {
+        if !replacingPosition { retryKeepingPosition() }
+    }
+
+    func updateDraft(_ value: String, for id: Data?) {
+        let known = id.flatMap { drafts[$0] } ?? ""
+        guard !draft.utf8.elementsEqual(value.utf8) || (id != nil && !known.utf8.elementsEqual(value.utf8)) else { return }
+        withPositionChange {
+            draft = value
+            if let id {
+                if value.isEmpty { drafts.removeValue(forKey: id) }
+                else { drafts[id] = value }
+            }
+        }
+    }
+
+    func switchChat(to id: Data, leaving previous: Data?, currentDraft: String) -> String {
+        withPositionChange {
+            if let previous {
+                if currentDraft.isEmpty { drafts.removeValue(forKey: previous) }
+                else { drafts[previous] = currentDraft }
+            }
+            selectedID = id
+            draft = drafts[id] ?? ""
+        }
+        return draft
+    }
+
+    public func inherit(_ previous: LioChatContinuity) {
+        withPositionChange {
+            selectedID = previous.selectedID
+            draft = previous.draft
+            drafts = previous.drafts
+            retainedUnsent = previous.retainedUnsent
+            firstQuestions = previous.firstQuestions
+            localIDs = previous.localIDs
+            blankIDs = previous.blankIDs
+        }
+    }
+}
+
+struct LioPositionSaveIssue: Equatable {
+    let problem: LioRequestProblem
+    let at: Date
 }
 
 /// Supplies conversation-scoped services for the current account. Starting a
@@ -169,9 +231,11 @@ private final class LioSignedChatSessions {
     }
 
     private func bind(_ id: String, localID: String, trips: LioChatTrips) {
-        continuity.localIDs[Data(id.utf8)] = localID
-        continuity.firstQuestions.removeValue(forKey: Data(localID.utf8))
-        continuity.blankIDs.remove(Data(localID.utf8))
+        continuity.withPositionChange {
+            continuity.localIDs[Data(id.utf8)] = localID
+            continuity.firstQuestions.removeValue(forKey: Data(localID.utf8))
+            continuity.blankIDs.remove(Data(localID.utf8))
+        }
         trips.plan = LioTripPlan(client: tripHistory(id))
     }
 
@@ -195,17 +259,25 @@ private final class LioSignedChatSessions {
         if let first = continuity.firstQuestions[selected] {
             attempt.stage = .localRecord
             if try client.firstChatCanReturnToDraft(messageID: first.messageID) {
-                continuity.firstQuestions.removeValue(forKey: selected)
-                if continuity.draft.isEmpty { continuity.draft = first.text }
+                continuity.withPositionChange {
+                    continuity.firstQuestions.removeValue(forKey: selected)
+                    if continuity.draft.isEmpty {
+                        continuity.updateDraft(first.text, for: selected)
+                    } else {
+                        continuity.retainedUnsent[selected, default: []].append(first)
+                    }
+                }
                 return blank(String(decoding: selected, as: UTF8.self))
             }
             attempt.stage = .firstSendLookup
             guard let id = try await client.reconcileFirstChat(messageID: first.messageID) else {
                 throw MessageHTTPFailure.exchangeUnknown
             }
-            continuity.localIDs[Data(id.utf8)] = String(decoding: selected, as: UTF8.self)
-            continuity.firstQuestions.removeValue(forKey: selected)
-            continuity.blankIDs.remove(selected)
+            continuity.withPositionChange {
+                continuity.localIDs[Data(id.utf8)] = String(decoding: selected, as: UTF8.self)
+                continuity.firstQuestions.removeValue(forKey: selected)
+                continuity.blankIDs.remove(selected)
+            }
         }
         // A verified saved conversation is readable without reconciling a different first send.
         // The selected first send above and HTTP submission fences retain their original checks.

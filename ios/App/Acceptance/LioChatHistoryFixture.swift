@@ -85,8 +85,8 @@ private struct ChatHistoryClients {
     let recovery: MessageRecovery
     private let transport: NoRedirectTransport
 
-    init(shell: ShellState) throws {
-        let scope = try StorageScope(environment: "synthetic", account: UUID().uuidString)
+    init(shell: ShellState, account: String? = nil) throws {
+        let scope = try StorageScope(environment: "synthetic", account: account ?? UUID().uuidString)
         let recovery = MessageRecovery(storage: JourneyStorage())
         let endpoint = try MessageEndpoint(url: URL(string: "https://synthetic.invalid")!,
                                            maximumRequestBytes: 16_384, maximumResponseBytes: 65_536)
