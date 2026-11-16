@@ -37,6 +37,7 @@ def main():
     parser.add_argument('--build-dir', type=Path, required=True)
     parser.add_argument('--language', choices=('en', 'zh-Hans'), default='en')
     parser.add_argument('--baseline-root', action='store_true')
+    parser.add_argument('--cold-restart', action='store_true')
     args = parser.parse_args()
     output = args.output.resolve()
     if output.is_relative_to(ROOT) or args.build_dir.resolve().is_relative_to(ROOT):
@@ -45,7 +46,7 @@ def main():
     simulator = subprocess.check_output(['xcrun', 'simctl', 'create', 'G2C-A-Warm-Root-Local-' + output.name,
         'com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro', 'com.apple.CoreSimulator.SimRuntime.iOS-17-5'], text=True).strip()
     report = dict(layer='actual Root/account/clients + synthetic loopback + fresh simulator', simulator=simulator,
-                  language=args.language, baseline_root=args.baseline_root, baseline_commit=BASELINE_COMMIT if args.baseline_root else None,
+                  language=args.language, cold_restart=args.cold_restart, baseline_root=args.baseline_root, baseline_commit=BASELINE_COMMIT if args.baseline_root else None,
                   real_service='UNRUN', requests=[])
     lock = threading.Lock()
     released = threading.Event(); released.set()
@@ -147,7 +148,7 @@ def main():
         spec = importlib.util.spec_from_file_location('original_builder', ROOT / 'scripts/check_ios_trip_confirm.py')
         module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
         builder = object.__new__(module.XCTestDriver); builder.directory = output; builder.write_project(0)
-        tests = (HERE / 'LioWarmRootUITests.swift').read_text().replace('__WARM_ENDPOINT__', endpoint).replace('__WARM_LANGUAGE__', args.language)
+        tests = (HERE / 'LioWarmRootUITests.swift').read_text().replace('__WARM_ENDPOINT__', endpoint).replace('__WARM_LANGUAGE__', args.language).replace('__WARM_COLD_RESTART__', '1' if args.cold_restart else '0')
         (output / 'G2CControl.swift').write_text(tests)
         entry = ROOT / 'ios/App/CJProbeApp.swift'
         source = entry.read_text().replace('@main\nstruct CJProbeApp: App', 'struct CJProbeApp: App')

@@ -14,7 +14,7 @@
       "wikidata_qid": null
     },
     "conditions": {
-      "reservation_required": null,
+      "reservation_required": false,
       "closed_weekdays": [
         1
       ],
@@ -24,11 +24,12 @@
     },
     "checked_on": "2026-11-17",
     "expires_on": "2026-11-23",
-    "text_zh": "台州文旅部门公开参观说明列台州市博物馆通常周一闭馆，法定节假日除外。本条机器条件仅适用浙江台州的市博物馆常规参观，不是江苏泰州或其他县区场馆；普通散客是否必须预约及提前窗口仍未核定。潮新闻近期具名采访馆方，报道古埃及文明特展另有收费与优待安排。不能把旧介绍中的全部展览免费表述或本条常规条件套到该特展；其实际开放、预约及优惠资格应查馆方最新公告。",
-    "text_en": "The Taizhou cultural-tourism department lists the municipal museum in Zhejiang as normally closed on Mondays except statutory public holidays. These machine-readable conditions cover ordinary visits to Taizhou Museum in Zhejiang, not Taizhou in Jiangsu or other district museums. Mandatory individual reservations and the advance window remain unconfirmed. A recent Tide News report interviewing museum staff describes separate charges and concessions for the temporary ancient Egyptian civilisation exhibition. The older general statement that all exhibitions are free, and the ordinary-visit conditions here, must not be applied to that exhibition. Check current museum notices for its actual opening, reservations and concession eligibility.",
+    "text_zh": "台州发布刊载的免预约国有文博场馆清单明确列出台州市博物馆，常规散客参观无需提前预约；台州文旅部门参观说明列通常周一闭馆，法定节假日除外。本条机器条件仅适用浙江台州的市博物馆常规参观，不是江苏泰州或其他县区场馆。古埃及文明特展另有收费与优待安排，不能把常规免预约条件或旧介绍中全部展览免费的表述套到该特展；特展的实际开放、预约及优惠资格应查馆方最新公告。",
+    "text_en": "The Taizhou Fabu list of State-owned cultural venues with reservation-free admission explicitly includes Taizhou Museum. Ordinary individual visits do not require advance reservations. The local cultural-tourism department lists normal Monday closures except statutory public holidays. These machine-readable conditions cover ordinary visits to the municipal museum in Zhejiang, not Taizhou in Jiangsu or other district museums. The temporary ancient Egyptian civilisation exhibition has separate charges and concessions. Neither ordinary reservation-free admission nor the older general claim that all exhibitions are free should be applied to that exhibition. Check current museum notices for its actual opening, reservations and concession eligibility.",
     "source_urls": [
       "https://wgltj.zjtz.gov.cn/art/2019/7/24/art_1229890282_58910790.html",
-      "https://tidenews.com.cn/news.html?id=3612168"
+      "https://tidenews.com.cn/news.html?id=3612168",
+      "https://tidenews.com.cn/news.html?id=2858557"
     ]
   },
   {
