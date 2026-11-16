@@ -197,15 +197,23 @@ struct LioMenuSettings: View {
             .sheet(isPresented: $showingInformation) {
                 NavigationStack {
                     LioDemoNoticePage(language: shell.language.lio) { EmptyView() }
-                        .toolbar {
-                            ToolbarItem(placement: .confirmationAction) {
+                        .safeAreaInset(edge: .top, spacing: 0) {
+                            HStack {
+                                Spacer()
                                 Button { showingInformation = false } label: {
-                                    RunReadableText(text: shell.language.text("Done", "完成"), color: LioTheme.ink)
+                                    Text(shell.language.text("Done", "完成"))
+                                        .font(.body)
+                                        .foregroundStyle(LioTheme.ink)
+                                        .fixedSize()
                                         .frame(minWidth: 44, minHeight: 44)
+                                        .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityIdentifier("lio.information.done")
                             }
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 8)
+                            .background(LioTheme.paper)
                         }
                 }
                 .tint(LioTheme.vermilion)
