@@ -1,5 +1,6 @@
 """Drive the actual Lio App in a simulator with sample replies only."""
 import argparse
+import hashlib
 import base64
 import importlib.util
 import json
@@ -58,7 +59,11 @@ def main():
     if app.count(preview) != 1:
         raise ValueError("Expected a single sample preview")
     fixture_routes = (
-        '        if ProcessInfo.processInfo.arguments.contains("--lio-exploration-home-acceptance") {\n'
+        '        if ProcessInfo.processInfo.arguments.contains("--lio-root-activation-failure-acceptance") {\n'
+        '            LioRootActivationFailureFixture(shell: shell)\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-read-failure-acceptance") {\n'
+        '            LioReadFailureFixture(shell: shell)\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-exploration-home-acceptance") {\n'
         '            LioExplorationHomeFixture(shell: shell)\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-result-visibility-acceptance") {\n'
         '            LioResultVisibilityFixture()\n'
@@ -94,12 +99,32 @@ def main():
         '            LioTimelineFixture(shell: shell, exerciseResend: ProcessInfo.processInfo.arguments.contains("--lio-resend-acceptance"))\n'
         '        } else ' + preview.lstrip()
     )
-    fixtures = ("LioScrollFixture.swift", "LioTimelineFixture.swift", "LioJourneyFixture.swift",
+    fixtures = ("LioRootActivationFailureFixture.swift", "LioReadFailureFixture.swift", "LioScrollFixture.swift", "LioTimelineFixture.swift", "LioJourneyFixture.swift",
                 "LioMemoryJourneyFixture.swift", "LioChatHistoryFixture.swift", "LioSessionRecoveryFixture.swift",
                 "LioScenePrivacyFixture.swift", "LioExplorationQuestionsFixture.swift", "LioExplorationReplyFixture.swift", "LioRichItineraryFixture.swift", "LioExplorationReadFixture.swift", "LioThinkingFixture.swift", "LioExplorationHomeFixture.swift", "LioCalendarWireFixture.swift", "LioStreamingFixture.swift")
+    beta_source = (ROOT / "ios/App/DemoBetaApp.swift").read_text()
+    branch_start = beta_source.index("                LioSessionRecoveryView(language:")
+    branch_end = beta_source.index("            } else {", branch_start)
+    recovery_branch = beta_source[branch_start:branch_end]
+    # Compile the production recovery expression and callbacks unchanged against
+    # the actual account host, with a synthetic failing activation and no network.
+    beta_root = """
+private struct LioRootFailureView: View {
+    let shell: ShellState
+    let root: LioActivationFailureRoot
+    var body: some View {
+        if root.accounts.isResuming {
+""" + recovery_branch + """
+        } else {
+            Text("Synthetic invitation fallback").accessibilityIdentifier("fixture.activation.invitation")
+        }
+    }
+}
+"""
+    (output / "root-view-source.sha256").write_text(hashlib.sha256(recovery_branch.encode()).hexdigest() + "\n")
     generated_source.write_text(app.replace(preview, fixture_routes)
                                 .replace("import CJLioUser\n", "@testable import CJLioUser\n")
-                                + "\n" + "\n".join((HERE / name).read_text() for name in fixtures))
+                                + "\n" + "\n".join((HERE / name).read_text() for name in fixtures) + "\n" + beta_root)
     settings.write_text(settings.read_text().replace("space.go2china.foundation.local", "space.go2china.lio.acceptance")
                         .replace(json.dumps(str(app_source)), json.dumps(str(generated_source))))
     result = output / "lio-home.xcresult"
@@ -118,7 +143,7 @@ def main():
         subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=600)
     summary = subprocess.check_output(["xcrun", "xcresulttool", "get", "test-results", "summary", "--path", str(result)])
     (output / "summary.json").write_bytes(summary)
-    expected = 1 if args.voiceover else 75
+    expected = 1 if args.voiceover else 79
     assert json.loads(summary)["passedTests"] == (len(args.case) if args.case else expected), summary
 
 

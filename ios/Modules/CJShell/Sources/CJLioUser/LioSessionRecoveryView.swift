@@ -6,13 +6,15 @@ import SwiftUI
 public struct LioSessionRecoveryView: View {
     private let language: LioLanguage
     private let showsRetry: Bool
+    private let problem: LioRequestProblem?
     private let retry: () -> Void
     private let signOut: () -> Void
 
-    public init(language: LioLanguage, showsRetry: Bool,
+    public init(language: LioLanguage, showsRetry: Bool, problem: LioRequestProblem? = nil,
                 retry: @escaping () -> Void, signOut: @escaping () -> Void) {
         self.language = language
         self.showsRetry = showsRetry
+        self.problem = problem
         self.retry = retry
         self.signOut = signOut
     }
@@ -29,7 +31,7 @@ public struct LioSessionRecoveryView: View {
             Spacer(minLength: LioTheme.Spacing.lg)
             VStack(spacing: LioTheme.Spacing.md) {
                 if showsRetry {
-                    Text(language.text("Couldn’t connect. Your sign-in is still saved.",
+                    Text(problem?.message(language) ?? language.text("Couldn’t connect. Your sign-in is still saved.",
                                        "暂时连接不上，登录信息仍已保留。"))
                         .font(.body)
                         .multilineTextAlignment(.center)
