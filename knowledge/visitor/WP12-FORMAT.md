@@ -76,6 +76,27 @@ uv run --locked python -B knowledge/visitor/review_due.py --format names knowled
 
 2026-11-25 前的常规复核已于 **2026-11-16**完成：旧格式 10 条、v2 3 条重新读取原政府来源后更新日期，内容/条件不变；另 9 条不满足本轮筛选条件，保留日期。见 [复核记录](reviews/2026-11-16.md)。以上为手工维护约定，没有创建自动任务。
 
+## visitor-entry.3：九城追加格式（#1056）
+
+旧八字段、visitor-entry.2、visitor-name.1 的字段、城市/主题接受集合和原22条保持不变。新增文件在 `entries-v3/*.json`，只通过 `load_entries_v3` / `validate_v3.py` 显式读取，不递归混入旧目录。它是本地内容版本，不冻结或启用任何 FACT wire。
+
+键集合与 v2 相同，`format_version` 固定 `visitor-entry.3`；新增城市键 `taizhou-zhejiang` / `suzhou-anhui`，分别指浙江台州/安徽宿州，拒绝裸 `taizhou` / `suzhou`，不得绑定江苏城市。主题在 v2 基础上允许 `seasonal_holiday`。
+
+五个 conditions 字段及其 `null`、周几、假日例外、`window_max` / `minimum_lead` 语义完全沿用。地点事实仍要求 exact subject 四键；**城域通用事实可 `subject=null`，但五条件必须全null**，不能把通用铁路指引套作整座城市的景区免预约或闭馆规则。
+`official_channel` 仅用于 `visa_entry` 或 `seasonal_holiday`，subject及五条件全null。免签/入境仍仅允许已批 NIA/MFA 官方渠道，禁止生成资格事实。
+
+三个新增来源批准仅在新版本生效：`www.zjtz.gov.cn` 限浙江台州场馆规则，`www.ahsz.gov.cn` 限安徽宿州场馆规则（主题passport_booking、单城且有subject）；`www.gov.cn` 限seasonal_holiday。子域和其他网站拒绝。清单与批准证据见 SOURCES.md。
+
+```sh
+uv run --locked python -B knowledge/visitor/validate_v3.py knowledge/visitor/entries-v3/*.json
+uv run --locked python -B knowledge/visitor/review_due.py --format v3 knowledge/visitor/entries-v3/*.json
+```
+
+复核输出沿用v2的完整subject/conditions字段，不做格式猜测。首批五条补两城五主题，核对2026-11-16；三条30天指引12-16日初失效，手机卡2027-01-15、紧急号码2027-02-14。原7城旧目录不重复写入新城市。
+L需显式追加城市/主题及新格式消费者，C按实际subject与时效使用；旧FACT .2不直接接受新数据。旧路径退出仍须L核迁移/已保存结果/回退，本次不删旧路径。覆盖和票据见 ACCEPTANCE-COVERAGE.md。
+
+经JT在#702逐批确认后，v3可追加对应政府部门、公共文博机构及限定景区官方经营机构的参观来源，详见SOURCES.md。新增机构host在验证器同时绑定城市、passport_booking主题和非空subject，不自动扩大到同市全部主题或机构子域；原三格式不采用这些新来源。候选www.szmuseum.com实为江苏苏州博物馆，已从本Goal清单及验证器排除。
+
 ## 来源与证据边界
 
 新政府材料均在 #843/6818584957 已确认范围内：

@@ -38,7 +38,7 @@ def https_url(value: str) -> bool:
         return False
 
 
-def validate_identity_fields(entry: dict, *, as_of: date) -> None:
+def validate_identity_fields(entry: dict, *, as_of: date, cities: frozenset[str] = CITIES) -> None:
     """Validate shared fields after the caller establishes its exact record shape."""
     if not isinstance(entry["id"], str) or re.fullmatch(r"visitor\.[a-z0-9][a-z0-9.-]*", entry["id"]) is None:
         raise ValueError("invalid id")
@@ -49,7 +49,7 @@ def validate_identity_fields(entry: dict, *, as_of: date) -> None:
             raise ValueError(f"{field} must be a nonempty text array")
         if len(values) != len(set(values)):
             raise ValueError(f"duplicate {field}")
-    if any(city not in CITIES for city in entry["cities"]):
+    if any(city not in cities for city in entry["cities"]):
         raise ValueError("invalid city")
     if any(not https_url(url) for url in entry["source_urls"]):
         raise ValueError("invalid source URL")
@@ -63,8 +63,9 @@ def validate_identity_fields(entry: dict, *, as_of: date) -> None:
         raise ValueError("entry has expired")
 
 
-def validate_entry_fields(entry: dict, *, as_of: date, topics: frozenset[str]) -> None:
-    validate_identity_fields(entry, as_of=as_of)
+def validate_entry_fields(entry: dict, *, as_of: date, topics: frozenset[str],
+                          cities: frozenset[str] = CITIES) -> None:
+    validate_identity_fields(entry, as_of=as_of, cities=cities)
     if not isinstance(entry["topic"], str) or entry["topic"] not in topics:
         raise ValueError("invalid topic")
     for field in ("text_zh", "text_en"):

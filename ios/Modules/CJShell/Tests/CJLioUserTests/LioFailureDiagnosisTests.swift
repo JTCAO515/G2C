@@ -87,6 +87,18 @@ import Testing
         #expect(relaunched.entries == notes.entries)
     }
 
+    @Test func distinctServerReferencesAreNotDeduplicated() {
+        let (notes, _) = log()
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let first = UUID().uuidString, second = UUID().uuidString
+        notes.record(.init(category: .service, stage: .timeline, request: .timeline, httpStatus: 503,
+                           serverReference: first), at: now)
+        notes.record(.init(category: .service, stage: .timeline, request: .timeline, httpStatus: 503,
+                           serverReference: second), at: now.addingTimeInterval(1))
+        #expect(notes.entries.count == 2)
+        #expect(notes.entries.map(\.reference) == [second, first])
+    }
+
     @Test func repeatedPollingFailureIsKeptOncePerWindow() {
         let (notes, _) = log()
         let start = Date(timeIntervalSince1970: 1_800_000_000)

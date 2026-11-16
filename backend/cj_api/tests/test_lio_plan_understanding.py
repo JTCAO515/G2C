@@ -25,6 +25,192 @@ class PlanUnderstandingBoundary(unittest.TestCase):
     def turns(self):
         return (PlanningTurn('明天出发',date(2026,11,14)),PlanningTurn('直接出方案',date(2026,11,16)))
 
+    def test_known_constraints_need_their_specific_original_value_not_just_an_existing_quote(self):
+        cases=[('Hello','pace','relaxed',False),
+            ('I want a packed itinerary','pace','relaxed',False),
+            ('I want a packed itinerary','pace','packed',True),
+            ('我喜欢轻松行程','pace','relaxed',True),
+            ('My friend prefers relaxed travel','pace','relaxed',False),
+            ('Hello','budget_currency','CNY',False),
+            ('My budget is in USD','budget_currency','CNY',False),
+            ('My budget is in USD','budget_currency','USD',True),
+            ('My budget is 500','budget_total','1000',False),
+            ('Budget USD 500 total','budget_total','500',True),
+            ('预算 CNY 500 总计','budget_total','500',True),
+            ('Budget USD 500 per person','budget_total','500',False),
+            ('Budget USD 500 per person','budget_per_person','500',True),
+            ('Paid CNY 200','budget_paid','100',False),
+            ('Paid CNY 200','budget_paid','200',True),
+            ('Budget USD 500 per person','budget_basis','total',False),
+            ('Budget USD 500 per person','budget_basis','per_person',True),
+            ('Budget USD 500 PER PERSON','budget_basis','total',False),
+            ('Budget USD 500 PER PERSON','budget_basis','per_person',True),
+            ('Budget USD 500 total','budget_total','not-an-amount',False),
+            ('Hello','budget_includes',['hotels'],False),
+            ('Budget includes hotels and trains','budget_includes',['flights'],False),
+            ('Budget includes hotels and trains','budget_includes',['hotels','trains'],True),
+            ('My friend has a budget of USD 500 total','budget_total','500',False),
+            ('Hello','overseas_timezone','Asia/Tokyo',False),
+            ('Asia/Tokyo','overseas_timezone','Asia/Shanghai',False),
+            ('Asia/Tokyo','overseas_timezone','Asia/Tokyo',True)]
+        for text,field,amount,accepted in cases:
+            value=self.packet();value['observations']=[dict(field=field,state='known',value=amount,note=None,
+                sources=[dict(source_index=0,quote=text)])]
+            turns=(PlanningTurn(text,date(2026,11,14)),self.turns()[1])
+            with self.subTest(text=text,field=field,value=amount):
+                if accepted:
+                    actual=self.compile(value,turns)
+                    self.assertEqual(actual.fields[field],dict(state='known',value=amount))
+                else:
+                    with self.assertRaises(InvalidInput):self.compile(value,turns)
+
+    def test_budget_quote_itself_covers_the_observed_value_within_its_own_clause(self):
+        for text,field,amount,quote,accepted in (
+                ('Budget USD 500 total','budget_total','500','USD',False),
+                ('Budget USD 500 total','budget_total','500','500',True),
+                ('Budget USD 500 total','budget_currency','USD','500',False),
+                ('Budget USD 500 total','budget_currency','USD','USD',True),
+                ('Budget USD 500 total','budget_basis','total','Budget',False),
+                ('Budget USD 500 total','budget_basis','total','total',True),
+                ('Budget includes hotels and trains','budget_includes',['hotels','trains'],'Budget',False),
+                ('Budget includes hotels and trains','budget_includes',['hotels','trains'],'hotels and trains',True),
+                ('Budget includes hotels','budget_includes',['hotels'],'Budget',False),
+                ('Budget includes hotels','budget_includes',['hotels'],'hotels',True)):
+            value=self.packet()
+            value['observations']=[dict(field=field,state='known',value=amount,note=None,
+                sources=[dict(source_index=0,quote=quote)])]
+            turns=(PlanningTurn(text,date(2026,11,14)),self.turns()[1])
+            with self.subTest(field=field,quote=quote):
+                if accepted:self.compile(value,turns)
+                else:
+                    with self.assertRaises(InvalidInput):self.compile(value,turns)
+
+    def test_friend_endpoint_does_not_replace_the_travelers_own_endpoint_in_the_same_message(self):
+        cases=[('My friend Alice leaves from Beijing Capital Airport; I leave from Shanghai Hongqiao Airport.',
+            'departure.place','Beijing Capital Airport',False),
+            ('My friend Alice leaves from Beijing Capital Airport; I leave from Shanghai Hongqiao Airport.',
+            'departure.place','Shanghai Hongqiao Airport',True),
+            ('My friend Alice arrives at Beijing Capital Airport; I arrive at Beijing Daxing Airport.',
+            'arrival.place','Beijing Capital Airport',False),
+            ('My friend Alice arrives at Beijing Capital Airport; I arrive at Beijing Daxing Airport.',
+            'arrival.place','Beijing Daxing Airport',True),
+            ('朋友小王从北京首都机场出发；我从北京大兴机场出发。','departure.place','北京首都机场',False),
+            ('朋友小王从北京首都机场出发；我从北京大兴机场出发。','departure.place','北京大兴机场',True),
+            ('Beijing Capital Airport','arrival.place','Beijing Capital Airport',True)]
+        for text,field,place,accepted in cases:
+            value=self.packet();value['observations']=[dict(field=field,state='known',value=place,note=None,
+                sources=[dict(source_index=0,quote=place)])]
+            turns=(PlanningTurn(text,date(2026,11,14)),self.turns()[1])
+            with self.subTest(text=text,field=field,place=place):
+                if accepted:self.compile(value,turns)
+                else:
+                    with self.assertRaises(InvalidInput):self.compile(value,turns)
+
+    def test_friend_event_date_is_not_the_travelers_start_or_departure_date(self):
+        text='My friend Alice leaves on 2026-12-01; I leave on 2026-12-03.'
+        turns=(PlanningTurn(text,date(2026,11,14)),self.turns()[1])
+        for field in ('start_date','departure.date'):
+            for quoted,accepted in (('2026-12-01',False),('2026-12-03',True)):
+                value=self.packet();value['observations']=[dict(field=field,state='known',value=quoted,note=None,
+                    sources=[dict(source_index=0,quote=quoted)])]
+                with self.subTest(field=field,quote=quoted):
+                    if accepted:self.compile(value,turns)
+                    else:
+                        with self.assertRaises(InvalidInput):self.compile(value,turns)
+
+    def test_latest_explicit_party_count_cannot_be_omitted_or_restored_from_an_older_source(self):
+        for texts,old_index,new_index,old_quote,new_quote in (
+                (('Two people','Three people','Plan now'),0,1,'Two people','Three people'),
+                (('两个人','三个人','直接出方案'),0,1,'两个人','三个人'),
+                (('Two people; Three people.','Plan now'),0,0,'Two people','Three people'),
+                (('两个人；三个人。','直接出方案'),0,0,'两个人','三个人')):
+            turns=tuple(PlanningTurn(text,date(2026,11,14+i))for i,text in enumerate(texts))
+            for count,index,quote,accepted in ((2,old_index,old_quote,False),(3,new_index,new_quote,True),
+                                               (None,0,'',False)):
+                value=self.packet();value['current_source_index']=len(turns)-1
+                value['observations']=[]if count is None else[dict(field='party_size',state='known',value=count,note=None,
+                    sources=[dict(source_index=index,quote=quote)])]
+                with self.subTest(texts=texts,count=count):
+                    if accepted:self.compile(value,turns)
+                    else:
+                        with self.assertRaises(InvalidInput):self.compile(value,turns)
+
+    def test_party_questions_conditions_translation_and_third_party_do_not_replace_a_real_count(self):
+        for followup in ('Three people?', 'If three people come', 'Translate "Three people"',
+                         'My friend travels with three people', '三个人吗？','如果三个人去','请翻译“三个人”',
+                         'If three people come, do not save','Not two people? Do not save',
+                         'Translate "Three people, do not save"','My friend travels with three people, do not save'):
+            turns=(PlanningTurn('Two people',date(2026,11,14)),PlanningTurn(followup,date(2026,11,15)),
+                   PlanningTurn('Plan now',date(2026,11,16)))
+            value=self.packet();value['current_source_index']=2;value['observations']=[dict(field='party_size',
+                state='known',value=2,note=None,sources=[dict(source_index=0,quote='Two people')])]
+            with self.subTest(followup=followup):self.compile(value,turns)
+
+    def test_same_message_party_a_b_a_uses_the_last_count_not_the_unique_middle_clause(self):
+        text='Two people; Three people; Two people.'
+        turns=(PlanningTurn(text,date(2026,11,14)),self.turns()[1])
+        for count,quote,accepted in ((3,'Three people',False),(2,'Two people.',True)):
+            value=self.packet();value['observations']=[dict(field='party_size',state='known',value=count,note=None,
+                sources=[dict(source_index=0,quote=quote)])]
+            with self.subTest(count=count):
+                if accepted:self.compile(value,turns)
+                else:
+                    with self.assertRaises(InvalidInput):self.compile(value,turns)
+
+    def test_denied_current_party_stays_unknown_instead_of_restoring_the_old_count(self):
+        for denial in ('Not two people anymore','We are no longer two people','不是两个人','不再是两个人'):
+            turns=(PlanningTurn('Two people',date(2026,11,14)),PlanningTurn(denial,date(2026,11,15)),
+                   PlanningTurn('Plan now',date(2026,11,16)))
+            for state,number,index,quote,accepted in (('known',2,0,'Two people',False),
+                                                     ('unknown',None,1,denial,True)):
+                value=self.packet();value['current_source_index']=2;value['observations']=[dict(field='party_size',
+                    state=state,value=number,note=None,sources=[dict(source_index=index,quote=quote)])]
+                with self.subTest(denial=denial,state=state):
+                    if accepted:self.compile(value,turns)
+                    else:
+                        with self.assertRaises(InvalidInput):self.compile(value,turns)
+
+    def test_unquoted_multiline_translation_never_replaces_real_date_and_party_context(self):
+        turns=(PlanningTurn('Two people; Start my trip tomorrow',date(2026,11,14)),
+               PlanningTurn('Translate the following:\nThree people; Start my trip on 2026-12-01',date(2026,11,15)),
+               PlanningTurn('Plan now',date(2026,11,16)))
+        value=self.packet();value['current_source_index']=2
+        value['observations']=[dict(field='party_size',state='known',value=2,note=None,
+            sources=[dict(source_index=0,quote='Two people')]),dict(field='start_date',state='known',
+            value='2026-11-15',note=None,sources=[dict(source_index=0,quote='Start my trip tomorrow')])]
+        self.compile(value,turns)
+        value['observations'][0].update(value=3,sources=[dict(source_index=1,quote='Three people')])
+        with self.assertRaises(InvalidInput):self.compile(value,turns)
+
+    def test_write_refusal_does_not_erase_an_independent_current_party_statement(self):
+        for update,count,state,quote in (
+                ('Three people, do not save',3,'known','Three people'),
+                ('三个人，不要保存',3,'known','三个人'),
+                ('Party size undecided, do not save',None,'unknown','Party size undecided'),
+                ('人数未定，不要保存',None,'unknown','人数未定')):
+            turns=(PlanningTurn('Two people',date(2026,11,14)),PlanningTurn(update,date(2026,11,15)),
+                   PlanningTurn('Plan now',date(2026,11,16)))
+            for number,label,index,reference,accepted in ((2,'known',0,'Two people',False),
+                    (count,state,1,quote,True),(count,state,1,update,True)):
+                value=self.packet();value['current_source_index']=2;value['observations']=[dict(field='party_size',
+                    state=label,value=number,note=None,sources=[dict(source_index=index,quote=reference)])]
+                with self.subTest(update=update,value=number,quote=reference):
+                    if accepted:self.compile(value,turns)
+                    else:
+                        with self.assertRaises(InvalidInput):self.compile(value,turns)
+
+    def test_explicitly_undecided_party_is_not_replaced_by_its_old_known_count(self):
+        for reset in ('Party size undecided','人数未定'):
+            turns=(PlanningTurn('Two people',date(2026,11,14)),PlanningTurn(reset,date(2026,11,15)),
+                   PlanningTurn('Plan now',date(2026,11,16)))
+            for count,index,quote,state,accepted in ((2,0,'Two people','known',False),(None,1,reset,'unknown',True)):
+                value=self.packet();value['current_source_index']=2;value['observations']=[dict(field='party_size',
+                    state=state,value=count,note=None,sources=[dict(source_index=index,quote=quote)])]
+                with self.subTest(reset=reset,state=state):
+                    if accepted:self.compile(value,turns)
+                    else:
+                        with self.assertRaises(InvalidInput):self.compile(value,turns)
+
     def test_date_uses_its_source_mid_day_not_plan_trigger_day(self):
         result=parse_plan_understanding(packed(self.packet()),self.turns())
         self.assertEqual(result.observations[0].value,'2026-11-15')
