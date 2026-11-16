@@ -13,6 +13,19 @@ V3_CITIES = CITIES | {"taizhou-zhejiang", "suzhou-anhui"}
 V3_TOPICS = V2_TOPICS | {"seasonal_holiday"}
 # JT approved these exact hostnames in #702/6907792461, without subdomains.
 V3_GOVERNMENT_HOSTS = GOVERNMENT_HOSTS | {"www.zjtz.gov.cn", "www.ahsz.gov.cn", "www.gov.cn"}
+# JT's second batch #702/6908024069 covers only these institutions' venue pages.
+VENUE_SOURCE_CITIES = {
+    "www.zjtz.gov.cn": "taizhou-zhejiang", "www.ahsz.gov.cn": "suzhou-anhui",
+    "www.cdmuseum.com": "chengdu", "www.cddfct.cn": "chengdu", "www.panda.org.cn": "chengdu",
+    "www.bmy.com.cn": "xian", "www.beilin-museum.com": "xian", "beilin-museum.com": "xian",
+    "www.dpm.org.cn": "beijing", "westlake.hangzhou.gov.cn": "hangzhou",
+    "wgltj.zjtz.gov.cn": "taizhou-zhejiang", "www.linhai.gov.cn": "taizhou-zhejiang",
+    "www.sz-museum.com": "suzhou-anhui", "cgj.ahsz.gov.cn": "suzhou-anhui",
+    "www.badaling.cn": "beijing", "cgj.cq.gov.cn": "chongqing",
+    "www.xixishidi.cn": "hangzhou", "qjxq.xa.gov.cn": "xian",
+    "www.shanghaimuseum.net": "shanghai", "www.szwwco.com": "shenzhen",
+}
+V3_APPROVED_HOSTS = V3_GOVERNMENT_HOSTS | VENUE_SOURCE_CITIES.keys()
 
 
 def validate_entry_v3(entry: object, *, as_of: date) -> None:
@@ -21,14 +34,14 @@ def validate_entry_v3(entry: object, *, as_of: date) -> None:
     if entry["format_version"] != VERSION:
         raise ValueError("unsupported visitor format_version")
     validate_entry_fields(entry, as_of=as_of, topics=V3_TOPICS, cities=V3_CITIES)
-    if any(urlsplit(url).hostname not in V3_GOVERNMENT_HOSTS for url in entry["source_urls"]):
-        raise ValueError("v3 facts require confirmed government source hosts")
+    if any(urlsplit(url).hostname not in V3_APPROVED_HOSTS for url in entry["source_urls"]):
+        raise ValueError("v3 facts require confirmed source hosts")
     # The three new hostname approvals are narrower than the existing inventory.
     for url in entry["source_urls"]:
         host = urlsplit(url).hostname
         if host == "www.gov.cn" and entry["topic"] != "seasonal_holiday":
             raise ValueError("new gov.cn approval is limited to holiday guidance")
-        local_city = {"www.zjtz.gov.cn": "taizhou-zhejiang", "www.ahsz.gov.cn": "suzhou-anhui"}.get(host)
+        local_city = VENUE_SOURCE_CITIES.get(host)
         if local_city is not None and (entry["cities"] != [local_city]
                                       or entry["topic"] != "passport_booking" or entry["subject"] is None):
             raise ValueError("new local source approval is limited to that city's venue guidance")

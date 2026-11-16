@@ -95,6 +95,8 @@ uv run --locked python -B knowledge/visitor/review_due.py --format v3 knowledge/
 复核输出沿用v2的完整subject/conditions字段，不做格式猜测。首批五条补两城五主题，核对2026-11-16；三条30天指引12-16日初失效，手机卡2027-01-15、紧急号码2027-02-14。原7城旧目录不重复写入新城市。
 L需显式追加城市/主题及新格式消费者，C按实际subject与时效使用；旧FACT .2不直接接受新数据。旧路径退出仍须L核迁移/已保存结果/回退，本次不删旧路径。覆盖和票据见 ACCEPTANCE-COVERAGE.md。
 
+经JT在#702逐批确认后，v3可追加对应政府部门、公共文博机构及限定景区官方经营机构的参观来源，详见SOURCES.md。新增机构host在验证器同时绑定城市、passport_booking主题和非空subject，不自动扩大到同市全部主题或机构子域；原三格式不采用这些新来源。候选www.szmuseum.com实为江苏苏州博物馆，已从本Goal清单及验证器排除。
+
 ## 来源与证据边界
 
 新政府材料均在 #843/6818584957 已确认范围内：

@@ -1,0 +1,63 @@
+[
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "topic": "passport_booking",
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-11-23",
+    "id": "visitor.v3.beijing.palace-museum",
+    "cities": [
+      "beijing"
+    ],
+    "subject": {
+      "key": "beijing.palace-museum",
+      "name_zh": "故宫博物院",
+      "name_en": "The Palace Museum",
+      "wikidata_qid": "Q2047427"
+    },
+    "text_zh": "故宫博物院常规散客参观需提前订票，最早可在参观7日前开始预订；通常周一闭馆，法定节假日除外。7天是可预订窗口，不是最少提前天数。年票、团体、专题开放日和临时停展另查。",
+    "text_en": "Regular individual visits to the Palace Museum require advance ticket booking. Booking opens up to seven days ahead; this is a maximum window, not a seven-day minimum. Mondays are normally closed except statutory public holidays. Annual passes, groups, themed opening days and temporary gallery closures have separate arrangements.",
+    "source_urls": [
+      "https://www.dpm.org.cn/",
+      "https://www.dpm.org.cn/Visit.html"
+    ],
+    "conditions": {
+      "reservation_required": true,
+      "closed_weekdays": [
+        1
+      ],
+      "closed_weekdays_public_holiday_exception": true,
+      "advance_booking_days": 7,
+      "advance_booking_rule": "window_max"
+    }
+  },
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "topic": "passport_booking",
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-11-23",
+    "id": "visitor.v3.xian.beilin-museum",
+    "cities": [
+      "xian"
+    ],
+    "subject": {
+      "key": "xian.beilin-museum",
+      "name_zh": "西安碑林博物馆",
+      "name_en": "Xi'an Beilin Museum",
+      "wikidata_qid": null
+    },
+    "text_zh": "西安碑林博物馆常规散客需实名预约购票，最多可提前5天；官网参观指南列明周一至周日正常开放，没有常规每周闭馆日。5天不是最少提前要求；临时公告和特殊参观另核，证件支持按官方渠道办理。",
+    "text_en": "Regular individual admission to Xi'an Beilin Museum requires real-name ticket booking, available up to five days ahead. Its visitor guide lists opening Monday through Sunday, with no regular weekly closure. Five days is not a minimum lead time. Check temporary notices, special visits and supported identity documents through official channels.",
+    "source_urls": [
+      "https://www.beilin-museum.com/index.php?m=home&c=Lists&a=index&tid=68"
+    ],
+    "conditions": {
+      "reservation_required": true,
+      "closed_weekdays": [],
+      "closed_weekdays_public_holiday_exception": false,
+      "advance_booking_days": 5,
+      "advance_booking_rule": "window_max"
+    }
+  }
+]
