@@ -106,6 +106,18 @@ class PlanUnderstandingBoundary(unittest.TestCase):
                 else:
                     with self.assertRaises(InvalidInput):self.compile(value,turns)
 
+    def test_friend_event_date_is_not_the_travelers_start_or_departure_date(self):
+        text='My friend Alice leaves on 2026-12-01; I leave on 2026-12-03.'
+        turns=(PlanningTurn(text,date(2026,11,14)),self.turns()[1])
+        for field in ('start_date','departure.date'):
+            for quoted,accepted in (('2026-12-01',False),('2026-12-03',True)):
+                value=self.packet();value['observations']=[dict(field=field,state='known',value=quoted,note=None,
+                    sources=[dict(source_index=0,quote=quoted)])]
+                with self.subTest(field=field,quote=quoted):
+                    if accepted:self.compile(value,turns)
+                    else:
+                        with self.assertRaises(InvalidInput):self.compile(value,turns)
+
     def test_date_uses_its_source_mid_day_not_plan_trigger_day(self):
         result=parse_plan_understanding(packed(self.packet()),self.turns())
         self.assertEqual(result.observations[0].value,'2026-11-15')
