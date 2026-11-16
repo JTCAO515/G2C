@@ -100,7 +100,8 @@ struct LioTurn: Identifiable {
 
 @MainActor @Observable
 final class LioConversation {
-    private let service: LioService
+    private var service: LioService
+    private(set) var sessionSuspended = false
     private(set) var turns: [LioTurn] = []
     private(set) var conversationID: String?
     var itineraries: [LioItinerary] {
@@ -118,6 +119,7 @@ final class LioConversation {
     private(set) var timelineUnavailable = false
     private(set) var timelineFailure: LioRequestProblem?
     private var sendGeneration = 0
+    private var serviceGeneration = 0
     private var receiving = false
 
     init(service: LioService) {
@@ -125,17 +127,52 @@ final class LioConversation {
         hasLoadedTimeline = service.updates == nil
     }
 
-    func send(_ text: String, language: LioLanguage) {
+    /// Keep the visible conversation while the App retires its authenticated
+    /// clients. An unsettled question remains read-only under its original ID.
+    func suspendForSessionRefresh() {
+        guard !sessionSuspended else { return }
+        sessionSuspended = true
+        sendGeneration += 1
+        serviceGeneration += 1
+        if let pending, let index = turns.firstIndex(where: { $0.id == pending.id }) {
+            switch turns[index].status {
+            case .thinking, .working, .answering, .failed(.waiting):
+                turns[index].status = .failed(.waiting)
+            case .finished, .failed: break
+            }
+        }
+        pending = nil
+        receiving = false
+        loadingEarlier = false
+    }
+
+    /// The authenticated App composition supplies the newly verified reader.
+    /// Rebinding never resubmits a question or recreates the displayed turns.
+    func resumeAfterSessionRefresh(service: LioService, restoredUnsentFirst: LioQuestion? = nil) {
+        sendGeneration += 1
+        serviceGeneration += 1
+        if let first = restoredUnsentFirst {
+            // The exact question remains in continuity's Unsent card and draft.
+            // Never remove a server-read turn or reinterpret an unknown send.
+            turns.removeAll { $0.id == first.id && !$0.fromTimeline }
+        }
+        self.service = service
+        sessionSuspended = false
+    }
+
+    @discardableResult
+    func send(_ text: String, language: LioLanguage) -> Bool {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, pending == nil else { return }
+        guard !sessionSuspended, !text.isEmpty, pending == nil else { return false }
         let question = LioQuestion(messageID: UUID().uuidString, text: text, language: language)
         turns.append(LioTurn(question: question))
         sendGeneration += 1
         pending = question
+        return true
     }
 
     func resend(_ id: Data) {
-        guard pending == nil,
+        guard !sessionSuspended, pending == nil,
               let index = turns.firstIndex(where: { $0.id == id }),
               turns[index].status == .failed(.notSent) else { return }
         turns[index].status = .thinking
@@ -152,14 +189,17 @@ final class LioConversation {
     }
 
     func receive(_ question: LioQuestion) async {
-        guard pending == question, !receiving else { return }
+        guard !sessionSuspended, pending == question, !receiving else { return }
+        let generation = sendGeneration
         receiving = true
         defer {
-            receiving = false
-            pending = nil
+            if generation == sendGeneration {
+                receiving = false
+                pending = nil
+            }
         }
         for await event in service.events(question) {
-            guard !Task.isCancelled else { break }
+            guard !Task.isCancelled, !sessionSuspended, generation == sendGeneration else { return }
             if case .snapshot(let timeline) = event {
                 display(timeline)
                 continue
@@ -196,14 +236,14 @@ final class LioConversation {
                 return
             }
         }
-        if Task.isCancelled { return }
+        guard !Task.isCancelled, !sessionSuspended, generation == sendGeneration else { return }
         if let index = turns.firstIndex(where: { $0.id == question.id }), !turns[index].hasTimelineResult {
             turns[index].status = .failed(.waiting)
         }
     }
 
     func refreshTimeline() async {
-        guard pending == nil, let updates = service.updates else { return }
+        guard !sessionSuspended, pending == nil, let updates = service.updates else { return }
         let generation = sendGeneration
         timelineUnavailable = false
         timelineFailure = nil
@@ -233,13 +273,16 @@ final class LioConversation {
     }
 
     func loadEarlier() async -> Data? {
-        guard let cursor = nextBefore, let earlier = service.earlier, !loadingEarlier else { return nil }
+        guard !sessionSuspended, let cursor = nextBefore, let earlier = service.earlier, !loadingEarlier else { return nil }
+        let generation = serviceGeneration
         loadingEarlier = true
         earlierUnavailable = false
-        defer { loadingEarlier = false }
+        defer {
+            if generation == serviceGeneration { loadingEarlier = false }
+        }
         do {
             let page = try await earlier(cursor)
-            guard !Task.isCancelled, nextBefore == cursor,
+            guard !Task.isCancelled, !sessionSuspended, generation == serviceGeneration, nextBefore == cursor,
                   let boundary = turns.firstIndex(where: { $0.id == Data(cursor.utf8) }) else { return nil }
             var insertion = boundary
             var firstInserted: Data?
@@ -267,6 +310,7 @@ final class LioConversation {
         } catch is CancellationError {
             return nil
         } catch {
+            guard !sessionSuspended, generation == serviceGeneration else { return nil }
             earlierUnavailable = true
             return nil
         }

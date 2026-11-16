@@ -85,6 +85,63 @@ import Testing
         #expect(await fixture.transport.posts == 0)
     }
 
+
+    @Test func warmRestoreKeepsTheIdentityOfAnUnstagedFirstQuestionWithoutLeavingAPhantomWait() async throws {
+        let fixture = try ChatContinuityFixture()
+        let library = try fixture.library()
+        let chat = library.newChat()
+        let position = try #require(library.continuity)
+        position.selectedID = chat.id
+        let model = LioConversation(service: chat.service)
+        model.send("A synthetic never-staged question", language: .english)
+        let original = try #require(model.pending)
+        position.firstQuestions[chat.id] = original
+        model.suspendForSessionRefresh()
+        let renewedPosition = LioChatContinuity(); renewedPosition.inherit(position)
+        let renewed = try fixture.library(continuity: renewedPosition)
+        let restored = try #require(try await renewed.restore?())
+        model.resumeAfterSessionRefresh(service: restored.service, restoredUnsentFirst: restored.restoredUnsentFirst)
+        #expect(renewedPosition.draft == original.text)
+        #expect(renewedPosition.retainedUnsent[chat.id] == [original])
+        #expect(model.turns.isEmpty)
+        #expect(model.pending == nil)
+        #expect(await fixture.transport.posts == 0)
+        #expect(await fixture.transport.lookups == 0)
+    }
+
+
+    @Test func warmUnknownFirstKeepsItsExactJournalAndCannotTurnIntoAnUnsentRetry() async throws {
+        let fixture = try ChatContinuityFixture()
+        let library = try fixture.library()
+        let chat = library.newChat()
+        let position = try #require(library.continuity)
+        position.selectedID = chat.id
+        let model = LioConversation(service: chat.service)
+        model.send("An original uncertain first question", language: .english)
+        let original = try #require(model.pending)
+        position.firstQuestions[chat.id] = original
+        position.draft = "Keep this separate draft"
+        let request = try LioTimelineWire.Send(messageID: original.messageID, text: original.text, locale: .english, destination: .newChat)
+        await fixture.transport.loseNextReceipt()
+        do { _ = try await fixture.client().submit(request); Issue.record("Expected a lost receipt") }
+        catch let error as URLError { #expect(error.code == .networkConnectionLost) }
+        let before = try #require(try fixture.recovery.action(messageID: original.messageID, lease: fixture.lease))
+        model.suspendForSessionRefresh()
+        let renewedPosition = LioChatContinuity(); renewedPosition.inherit(position)
+        let renewed = try fixture.library(continuity: renewedPosition)
+        await fixture.transport.holdLookup(true)
+        await #expect(throws: MessageHTTPFailure.exchangeUnknown) { _ = try await renewed.restore?() }
+        let after = try #require(try fixture.recovery.action(messageID: original.messageID, lease: fixture.lease))
+        #expect(after.messageID == before.messageID)
+        #expect(after.originalUTF8 == before.originalUTF8)
+        #expect(model.turns.first?.question == original)
+        #expect(model.turns.first?.status == .failed(.waiting))
+        #expect(renewedPosition.firstQuestions[chat.id] == original)
+        #expect(renewedPosition.retainedUnsent[chat.id] == nil)
+        #expect(renewedPosition.draft == "Keep this separate draft")
+        #expect(await fixture.transport.posts == 1)
+    }
+
     @Test func reauthenticatedClientReturnsToTheSameChatAndDraftWithoutSendingAgain() async throws {
         let fixture = try ChatContinuityFixture()
         let old = try fixture.library()

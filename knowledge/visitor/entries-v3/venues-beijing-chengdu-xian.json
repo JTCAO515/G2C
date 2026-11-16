@@ -76,11 +76,12 @@
       "name_en": "Chengdu Museum",
       "wikidata_qid": null
     },
-    "text_zh": "成都博物馆常规周一闭馆，法定节假日除外。馆方以线上预约为主要入馆方式，并为免预约人群、部分境外观众等提供人工窗口换票和咨询协助；不要把这项协助理解为所有外国游客均可免预约。各人群的强制预约条件与提前窗口本条未核定，行前查官方平台或咨询馆方；临展和活动另查。",
-    "text_en": "Chengdu Museum normally closes on Mondays except statutory public holidays. Online reservation is its main entry method; service windows assist exempt visitors and some international visitors with ticket exchange or enquiries. This does not establish an exemption for every foreign visitor. Mandatory booking conditions for each visitor category and the advance window are unconfirmed here; consult the official platform or museum before visiting. Exhibitions and events may differ.",
+    "text_zh": "成都博物馆常规周一闭馆，法定节假日除外。馆方公开个人预约须知列明14天预约周期，这是可预约窗口，不是最少提前天数；证件类型提供“护照及其他”选项。馆方以线上预约为主要入馆方式，并为免预约人群、部分境外观众等提供人工窗口换票和咨询协助；不要把这项协助理解为所有外国游客均可免预约。各人群的强制预约条件本条未核定，证件与手机验证、优待和人工协助应行前咨询馆方；临展和活动另查。",
+    "text_en": "Chengdu Museum normally closes on Mondays except statutory public holidays. Its public individual-reservation notice specifies a 14-day booking window, not a minimum lead time; the form includes a passport-and-other-documents option. Online reservation is its main entry method, with service-window assistance for exempt visitors and some international visitors. This does not establish an exemption for every foreign visitor. Mandatory booking conditions for each category remain unconfirmed here. Check identity and phone verification, concessions and assisted access with the museum; exhibitions and events may differ.",
     "source_urls": [
       "https://www.cdmuseum.com/zhinan/",
-      "https://www.cdmuseum.com/xinwen/202602/4250.html"
+      "https://www.cdmuseum.com/xinwen/202602/4250.html",
+      "https://museum-guanwang.leleu.cn/"
     ],
     "conditions": {
       "reservation_required": null,
@@ -88,8 +89,8 @@
         1
       ],
       "closed_weekdays_public_holiday_exception": true,
-      "advance_booking_days": null,
-      "advance_booking_rule": null
+      "advance_booking_days": 14,
+      "advance_booking_rule": "window_max"
     }
   },
   {
@@ -137,10 +138,12 @@
       "name_en": "Chengdu Research Base of Giant Panda Breeding",
       "wikidata_qid": "Q1067861"
     },
-    "text_zh": "成都熊猫基地不享受免票、免预约或特殊办理优待的普通散客须线上实名预约购票，可选最多提前14天的票；到场使用与订单一致的有效证件核验，护照在支持证件范围内。优待人群及无法线上支付等情况另查官方说明。本条未核定每周闭园日，不以季节时刻表推定全年无休；熊猫谷和园内单独场馆不在本条范围。",
-    "text_en": "Ordinary individual visitors to Chengdu Panda Base who do not qualify for free entry, reservation exemptions or special handling must book real-name tickets online, up to 14 days ahead. Present the matching valid identity document; passports are supported. Consult official rules for concessions and difficulties paying online. Weekly closing days remain unconfirmed here; seasonal hours alone do not prove year-round opening. Panda Valley and individual facilities have separate rules.",
+    "text_zh": "成都熊猫基地不享受免票、免预约或特殊办理优待的普通散客须线上实名预约购票，可选最多提前14天的票；到场使用与订单一致的有效证件核验，护照在支持证件范围内。优待人群及无法线上支付等情况另查官方说明。本条未核定每周闭园日，不以季节时刻表推定全年无休；熊猫谷和园内单独场馆不在本条范围。 官网另列6号大熊猫别墅区域试行周一轮休、熊猫美术馆周一维护，均有法定节假日例外；这是子设施规则，不代表整园周一闭园。",
+    "text_en": "Ordinary individual visitors to Chengdu Panda Base who do not qualify for free entry, reservation exemptions or special handling must book real-name tickets online, up to 14 days ahead. Present the matching valid identity document; passports are supported. Consult official rules for concessions and difficulties paying online. Weekly closing days remain unconfirmed here; seasonal hours alone do not prove year-round opening. Panda Valley and individual facilities have separate rules. Separate official rules give Monday closures, with statutory-holiday exceptions, for a trial rest at No.6 Giant Panda Villa and maintenance at the Panda Art Museum. These are facility rules, not evidence that the whole Base closes on Mondays.",
     "source_urls": [
-      "https://www.panda.org.cn/cn/service/ticket/"
+      "https://www.panda.org.cn/cn/service/ticket/",
+      "https://www.panda.org.cn/cn/service/notice/",
+      "https://www.panda.org.cn/en/service/notice/"
     ],
     "conditions": {
       "reservation_required": true,
@@ -208,5 +211,69 @@
       "https://www.badaling.cn/website/pc/index.html",
       "https://www.beijing.gov.cn/fuwu/lqfw/ztzl/jrfw/shrl/202407/t20240725_3758812.html"
     ]
+  },
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "id": "visitor.v3.chengdu.panda-base.villa-6-area",
+    "topic": "passport_booking",
+    "cities": [
+      "chengdu"
+    ],
+    "subject": {
+      "key": "chengdu.panda-base.villa-6-area",
+      "name_zh": "成都熊猫基地6号大熊猫别墅区域",
+      "name_en": "Chengdu Panda Base – No.6 Giant Panda Villa Area",
+      "wikidata_qid": null
+    },
+    "conditions": {
+      "reservation_required": null,
+      "closed_weekdays": [
+        1
+      ],
+      "closed_weekdays_public_holiday_exception": true,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    },
+    "text_zh": "成都熊猫基地的6号大熊猫别墅区域正在试行周一轮休，国家法定节假日除外。本条仅指这个子设施，不表示整个基地周一闭园；临时调整查基地公告。本设施是否另需预约及提前窗口尚未单独核定，不能把unknown当作免预约。",
+    "text_en": "No.6 Giant Panda Villa Area inside Chengdu Panda Base has a trial Monday rest closure, except on statutory public holidays. This applies only to the named facility, not the whole Base. Check Base notices for temporary changes. Any separate facility reservation requirement and advance window are unconfirmed here; unknown does not mean reservation-free.",
+    "source_urls": [
+      "https://www.panda.org.cn/cn/service/notice/",
+      "https://www.panda.org.cn/en/service/notice/"
+    ],
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-11-23"
+  },
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "id": "visitor.v3.chengdu.panda-base.art-museum",
+    "topic": "passport_booking",
+    "cities": [
+      "chengdu"
+    ],
+    "subject": {
+      "key": "chengdu.panda-base.art-museum",
+      "name_zh": "成都熊猫基地熊猫美术馆",
+      "name_en": "Chengdu Panda Base – Panda Art Museum",
+      "wikidata_qid": null
+    },
+    "conditions": {
+      "reservation_required": null,
+      "closed_weekdays": [
+        1
+      ],
+      "closed_weekdays_public_holiday_exception": true,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    },
+    "text_zh": "成都熊猫基地内的熊猫美术馆周一闭馆维护，国家法定节假日除外。本条仅指这个子设施，不表示整个基地周一闭园；临时调整查基地公告。本设施是否另需预约及提前窗口尚未单独核定，不能把unknown当作免预约。",
+    "text_en": "The Panda Art Museum inside Chengdu Panda Base closes for maintenance on Mondays, except on statutory public holidays. This applies only to the named facility, not the whole Base. Check Base notices for temporary changes. Any separate facility reservation requirement and advance window are unconfirmed here; unknown does not mean reservation-free.",
+    "source_urls": [
+      "https://www.panda.org.cn/cn/service/notice/",
+      "https://www.panda.org.cn/en/service/notice/"
+    ],
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-11-23"
   }
 ]

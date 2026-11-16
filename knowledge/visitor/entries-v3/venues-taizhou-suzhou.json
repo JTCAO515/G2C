@@ -22,12 +22,13 @@
       "advance_booking_days": null,
       "advance_booking_rule": null
     },
-    "checked_on": "2026-11-16",
+    "checked_on": "2026-11-17",
     "expires_on": "2026-11-23",
-    "text_zh": "台州文旅部门公开参观说明列台州市博物馆通常周一闭馆，法定节假日除外。本条适用浙江台州的市博物馆常规参观，不是江苏泰州或其他县区场馆；散客是否必须预约、提前窗口及当前临展安排尚未核定，行前应再查馆方最新通知。",
-    "text_en": "The Taizhou cultural-tourism department lists the municipal museum in Zhejiang as normally closed on Mondays except statutory public holidays. This covers ordinary visits to Taizhou Museum in Zhejiang, not Taizhou in Jiangsu or other district museums. Mandatory individual reservations, the advance window and current exhibition arrangements remain unconfirmed here; check the museum’s latest notices before visiting.",
+    "text_zh": "台州文旅部门公开参观说明列台州市博物馆通常周一闭馆，法定节假日除外。本条机器条件仅适用浙江台州的市博物馆常规参观，不是江苏泰州或其他县区场馆；普通散客是否必须预约及提前窗口仍未核定。潮新闻近期具名采访馆方，报道古埃及文明特展另有收费与优待安排。不能把旧介绍中的全部展览免费表述或本条常规条件套到该特展；其实际开放、预约及优惠资格应查馆方最新公告。",
+    "text_en": "The Taizhou cultural-tourism department lists the municipal museum in Zhejiang as normally closed on Mondays except statutory public holidays. These machine-readable conditions cover ordinary visits to Taizhou Museum in Zhejiang, not Taizhou in Jiangsu or other district museums. Mandatory individual reservations and the advance window remain unconfirmed. A recent Tide News report interviewing museum staff describes separate charges and concessions for the temporary ancient Egyptian civilisation exhibition. The older general statement that all exhibitions are free, and the ordinary-visit conditions here, must not be applied to that exhibition. Check current museum notices for its actual opening, reservations and concession eligibility.",
     "source_urls": [
-      "https://wgltj.zjtz.gov.cn/art/2019/7/24/art_1229890282_58910790.html"
+      "https://wgltj.zjtz.gov.cn/art/2019/7/24/art_1229890282_58910790.html",
+      "https://tidenews.com.cn/news.html?id=3612168"
     ]
   },
   {

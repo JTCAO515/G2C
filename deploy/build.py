@@ -10,6 +10,8 @@ def source_context(root, destination,revision='HEAD'):
     entries=subprocess.check_output(['git','ls-tree','-rz',revision,'--',
         'pyproject.toml','uv.lock','backend','scripts','deploy',
         'eval/optimization/cases.v2.json','eval/optimization/score_v2.py','tooling/optimization/uv.lock',
+        'eval/lio_simulated_user/__init__.py','eval/lio_simulated_user/core.py',
+        'eval/lio_simulated_user/runner.py','eval/lio_simulated_user/profiles.v1.json',
         'knowledge/visitor/entries'],cwd=root).split(b'\0')
     for entry in entries:
         if not entry:continue

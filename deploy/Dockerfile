@@ -9,6 +9,7 @@ COPY backend ./backend
 COPY scripts ./scripts
 COPY deploy ./deploy
 COPY eval/optimization/cases.v2.json eval/optimization/score_v2.py ./eval/optimization/
+COPY eval/lio_simulated_user ./eval/lio_simulated_user
 COPY tooling/optimization/uv.lock ./tooling/optimization/uv.lock
 COPY knowledge/visitor/entries ./knowledge/visitor/entries
 RUN uv sync --locked --no-dev

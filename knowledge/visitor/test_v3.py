@@ -1,10 +1,11 @@
 from copy import deepcopy
-from datetime import date
+from datetime import date, datetime
 import json
 from pathlib import Path
 import subprocess
 import sys
 import unittest
+from zoneinfo import ZoneInfo
 
 from review_due import FORMATS, expiring_entries
 from validate import CITIES, TOPICS, validate_entry
@@ -18,8 +19,11 @@ TODAY = date(2026, 11, 16)
 
 class NineCityContentTests(unittest.TestCase):
     def setUp(self):
-        self.records = load_entries_v3(sorted((ROOT / 'entries-v3').glob('*.json')), as_of=TODAY)
+        self.observed_on = datetime.now(ZoneInfo('Asia/Shanghai')).date()
+        self.records = load_entries_v3(sorted((ROOT / 'entries-v3').glob('*.json')), as_of=self.observed_on)
         self.entry = deepcopy(self.records[0])
+        # Boundary probes retain their fixed clock; the real catalog is checked above.
+        self.entry.update(checked_on=TODAY.isoformat(), expires_on='2026-12-16')
 
     def test_new_city_first_visit_cells_and_explicit_unknown_conditions(self):
         basics = [e for e in self.records if e['id'].startswith('visitor.v3.taizhou-suzhou.')]
@@ -51,7 +55,7 @@ class NineCityContentTests(unittest.TestCase):
     def test_explicit_place_conditions_preserve_optional_booking_meaning(self):
         entry = json.loads((ROOT / 'entries-v2/venue-conditions.json').read_text())[0]
         entry['format_version'] = 'visitor-entry.3'
-        validate_entry_v3(entry, as_of=TODAY)
+        validate_entry_v3(entry, as_of=self.observed_on)
         self.assertFalse(entry['conditions']['reservation_required'])
         self.assertEqual(entry['conditions']['advance_booking_rule'], 'window_max')
 
@@ -81,11 +85,11 @@ class NineCityContentTests(unittest.TestCase):
         self.assertEqual(FORMATS['legacy'][0].__name__, 'load_entries')
         paths = sorted((ROOT / 'entries-v3').glob('*.json'))
         result = subprocess.run([sys.executable, '-B', str(ROOT / 'review_due.py'),
-                                 '--format', 'v3', '--as-of', TODAY.isoformat(), *map(str, paths)],
+                                 '--format', 'v3', '--as-of', self.observed_on.isoformat(), *map(str, paths)],
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        expected = expiring_entries(self.records, as_of=TODAY)
+        expected = expiring_entries(self.records, as_of=self.observed_on)
         self.assertEqual(report['count'], len(expected))
         for value in report['entries']:
             original = next(e for e in expected if e['id'] == value['id'])

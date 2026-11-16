@@ -9,6 +9,11 @@ public struct LioHome<MenuContent: View>: View {
     private let language: LioLanguage
     private let isDemo: Bool
     private let reconnect: (@MainActor () -> Void)?
+    private let session: LioSessionAvailability?
+    private let runtimeService: LioService
+    private let runtimeTripHistory: LioTripHistoryClient?
+    @State private var boundRuntime: UUID?
+    @State private var warmRestoration = false
     private let menu: MenuContent
     private let chatLibrary: LioChatLibrary?
     private let tripLibrary: LioTripLibrary?
@@ -51,6 +56,12 @@ public struct LioHome<MenuContent: View>: View {
         let active: Bool
         let request: Int
     }
+    private struct Restoration: Equatable {
+        let request: Int
+        let revision: UUID?
+        let available: Bool
+    }
+    private enum SessionRefreshFailure: Error { case changedConversation }
     private struct TripObservation: Equatable {
         let active: Bool
         let card: LioTripCard?
@@ -76,10 +87,15 @@ public struct LioHome<MenuContent: View>: View {
                 memoryActions: LioMemoryActionsClient? = nil,
                 savedMemory: AnyView? = nil,
                 recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)? = nil,
+                session: LioSessionAvailability? = nil,
                 reconnect: (@MainActor () -> Void)? = nil, @ViewBuilder menu: () -> MenuContent) {
         self.language = language
         self.isDemo = isDemo
         self.reconnect = reconnect
+        self.session = session
+        self.runtimeService = service
+        self.runtimeTripHistory = tripHistory
+        _boundRuntime = State(initialValue: session?.revision)
         self.menu = menu()
         self.chatLibrary = chatLibrary
         self.tripLibrary = tripLibrary
@@ -109,7 +125,7 @@ public struct LioHome<MenuContent: View>: View {
     public var body: some View {
         let currentConversation = conversation
         let pending = conversation.pending
-        let canObserve = scenePhase == .active && pending == nil && !restoringChat
+        let canObserve = scenePhase == .active && pending == nil && !restoringChat && session?.available != false
         let tripCard = latestTripCard
         let tripPlan = tripPlan
         TabView(selection: $tab) {
@@ -122,7 +138,7 @@ public struct LioHome<MenuContent: View>: View {
             LioTripsView(itineraries: conversation.itineraries, language: language, library: tripLibrary,
                          tripPlan: tripPlan, currentPlan: tripPlan?.current(for: tripCard),
                          canUndo: canObserve && tripPlan?.requestedCard == tripCard,
-                         recordedMap: recordedMap, path: $tripPath) { tab = .chat }
+                         recordedMap: recordedMap, sessionRevision: session?.revision, path: $tripPath) { tab = .chat }
                 .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
                 .tag(Tab.trips)
             if let savedMemory {
@@ -133,10 +149,10 @@ public struct LioHome<MenuContent: View>: View {
         }
         .tint(LioTheme.vermilion)
         .sensoryFeedback(.success, trigger: savedCelebrations)
-        .disabled(restoringChat)
-        .opacity(restoringChat ? 0 : 1)
+        .disabled(restoringChat || session?.available == false)
+        .opacity(restoringChat && !warmRestoration ? 0 : 1)
         .overlay {
-            if restoringChat {
+            if restoringChat && !warmRestoration {
                 VStack(spacing: 20) {
                     if let failure = restoreChatFailure {
                         Text(failure.message(language))
@@ -172,19 +188,50 @@ public struct LioHome<MenuContent: View>: View {
             }
         }
         .sheet(isPresented: $showsProblemNotes) { problemNotesSheet }
-        .task(id: restoreChatRequest) {
-            guard restoringChat else { return }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if restoringChat && warmRestoration { sessionRecoveryBanner }
+        }
+        .task(id: Restoration(request: restoreChatRequest, revision: session?.revision, available: session?.available != false)) {
+            if session?.available == false {
+                warmRestoration = true
+                restoringChat = true
+                restoreChatFailure = nil
+                conversation.suspendForSessionRefresh()
+                return
+            }
+            let rebind = session?.revision != boundRuntime
+            guard restoringChat || rebind else { return }
+            if rebind {
+                warmRestoration = true
+                restoringChat = true
+                conversation.suspendForSessionRefresh()
+            }
             restoreChatFailure = nil
+            let expected = chatID
             do {
-                if let chat = try await chatLibrary?.restore?() {
-                    try Task.checkCancellation()
+                let chat = try await chatLibrary?.restore?()
+                try Task.checkCancellation()
+                if warmRestoration {
+                    guard (chat?.id ?? chatLibrary?.currentID) == expected else {
+                        throw SessionRefreshFailure.changedConversation
+                    }
+                    selectedChat = chat
+                    defaultTripPlan = runtimeTripHistory.map { LioTripPlan(client: $0) }
+                    conversation.resumeAfterSessionRefresh(service: chat?.service ?? runtimeService,
+                                                           restoredUnsentFirst: chat?.restoredUnsentFirst)
+                    if chat?.restoredUnsentFirst != nil, let continuity = chatLibrary?.continuity {
+                        setDraft(continuity.draft)
+                    }
+                } else if let chat {
                     selectedChat = chat
                     conversation = LioConversation(service: chat.service)
                     opening = .hidden
                 }
-                try Task.checkCancellation()
-                if let continuity = chatLibrary?.continuity { setDraft(continuity.draft) }
+                if !warmRestoration, let continuity = chatLibrary?.continuity { setDraft(continuity.draft) }
+                boundRuntime = session?.revision
                 restoringChat = false
+                warmRestoration = false
+                refreshRequest += 1
             } catch is CancellationError {
                 return
             } catch {
@@ -400,11 +447,45 @@ public struct LioHome<MenuContent: View>: View {
         }
     }
 
+    private var sessionRecoveryBanner: some View {
+        HStack(alignment: .center, spacing: 12) {
+            if let failure = restoreChatFailure {
+                RunReadableText(text: failure.message(language), color: LioTheme.ink)
+                    .accessibilityIdentifier("lio.session.notice")
+                Button(language.text("Try again", "重试")) { restoreChatRequest += 1 }
+                    .frame(minHeight: 44)
+                    .accessibilityIdentifier("lio.session.retry")
+            } else if session?.showsRetry == true {
+                RunReadableText(text: session?.problem?.message(language)
+                    ?? language.text("Couldn’t connect. Your sign-in is still saved.", "暂时连接不上，登录信息仍已保留。"), color: LioTheme.ink)
+                    .accessibilityIdentifier("lio.session.notice")
+                if let reconnect {
+                    Button(language.text("Try again", "重试"), action: reconnect)
+                        .frame(minHeight: 44)
+                        .accessibilityIdentifier("lio.session.retry")
+                }
+            } else {
+                ProgressView()
+                RunReadableText(text: language.text("Restoring your chat…", "正在恢复对话…"), color: LioTheme.ink)
+                    .accessibilityIdentifier("lio.session.progress")
+            }
+        }
+        .font(.body)
+        .tint(LioTheme.vermilion)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .background(LioTheme.surfaceSunken)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("lio.session.recovery.banner")
+    }
+
     private var timingLanguage: String { language == .english ? "en" : "zh-Hans" }
 
     private var canSwitchChat: Bool {
         scenePhase == .active && conversation.pending == nil && !memoryBusy && !memoryPending
             && tripPlan?.busy != true && tripPlan?.pending != true && !chatFading
+            && !restoringChat && !conversation.sessionSuspended && session?.available != false
     }
 
     /// Fades the current conversation out for `chatFadeOut` seconds, switches, then fades the opening in.
@@ -639,12 +720,11 @@ public struct LioHome<MenuContent: View>: View {
     }
 
     private func sendQuestion(_ text: String) -> Bool {
-        guard conversation.pending == nil, !chatFading, scenePhase == .active,
-              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+        guard !chatFading, scenePhase == .active else { return false }
         let showedWelcome = opening == .beforeNext && conversation.turns.isEmpty && conversation.hasLoadedTimeline
+        guard conversation.send(text, language: language) else { return false }
         followsAnswer = true
         sendCount += 1
-        conversation.send(text, language: language)
         if let id = conversation.pending?.id {
             timing.start(id, language: timingLanguage)
             entering.formUnion([LioEntranceKey(turn: id, part: .question), LioEntranceKey(turn: id, part: .answer)])
