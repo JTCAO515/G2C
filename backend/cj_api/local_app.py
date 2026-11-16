@@ -695,7 +695,7 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
                 from .lio_profile_cards import LioProfileCards
                 exploration_boundary,exploration_checker=dialogue_binding(lio_exploration_subjects)
                 register_lio_exploration_routes(app,exploration_boundary,database.run_repository,
-                    LioTripCards(database,exploration_checker,calendar=True),LioProfileCards(lio_profile_epoch_reader),
+                    LioTripCards(database,exploration_checker,calendar=True,rich=True),LioProfileCards(lio_profile_epoch_reader),
                     prepare_scope=database._provision_scope,memory_cards=memory_cards)
             if memory_cards is not None:
                 from .lio_memory_routes import register_lio_memory_routes

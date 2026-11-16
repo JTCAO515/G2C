@@ -49,6 +49,10 @@ class PipelineCalls:
         """Code allocation only; original live reserve still decides admission."""
         return 6-self.model
 
+    @property
+    def gaode_slots_left(self):
+        return 45-self.gaode
+
     def _reserve(self,models,gaode):
         if self.model+models>6 or self.gaode+gaode>45:
             raise PipelineCapacity('complete fan-out exceeds the per-plan allowance')

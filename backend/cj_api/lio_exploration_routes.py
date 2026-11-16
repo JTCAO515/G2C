@@ -97,14 +97,14 @@ def timeline(boundary,resolve_runs,trip_cards,memory_cards,profile_cards,token,c
             states=resolve_runs(context.scope).lio_timeline(bindings)
             messages=[]
             for item,binding,(state,expired) in zip(page.messages,bindings,states,strict=True):
-                # Actual4 is a separate source capability. Before WP8 installs
-                # the rich writer/read interface, a4 preview has no Trip receipt.
-                if item.protocol==LIO_VERSION_V4:
+                # Actual4 needs its explicit rich receipt/history consumer.
+                # An old reader still cannot interpret a new writer outcome.
+                if item.protocol==LIO_VERSION_V4 and not trip_cards.rich:
                     if state is not None and state.draft_outcome is not None:
                         raise Unavailable('rich itinerary requires its explicit reader')
                     trip=None
                 else:
-                    trip=trip_cards.read(token,binding,protocol=item.protocol)
+                    trip=trip_cards.read(token,binding,protocol=item.protocol,locale=item.locale)
                 memory=(memory_cards.project(context,token,item.message_id,item.run_id)
                         if memory_cards is not None and state is not None and state.status=='completed' else None)
                 # Native4 stores the deterministic identity as real sections.
