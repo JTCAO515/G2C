@@ -11,6 +11,8 @@ struct LioPublicDisplayTests {
         "已生成规划候选，请等待。",
         "message_id: 20be0897-2fe5-4136-bf73-5966edb64a3a",
         "Conversation 20be0897-2fe5-4136-bf73-5966edb64a3a",
+        "运行20be0897-2fe5-4136-bf73-5966edb64a3a已完成。",
+        "会话20be0897-2fe5-4136-bf73-5966edb64a3a已完成。",
         "The input_sha256 is synthetic.",
         "<tool_call>amap_weather</tool_call>",
         "Calling Amap now.",

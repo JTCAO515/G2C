@@ -16,6 +16,7 @@ struct LioOrdinaryReplyTests {
 
     @Test(arguments: [
         "message_id: 20be0897-2fe5-4136-bf73-5966edb64a3a",
+        "运行20be0897-2fe5-4136-bf73-5966edb64a3a已完成。",
         "<tool_call>amap_weather</tool_call>",
         "Forecast: https://%61pi-beta.go2china.space/v1/lio/timeline"
     ])
