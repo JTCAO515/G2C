@@ -21,7 +21,7 @@ class FinalWording(unittest.TestCase):
     def test_only_generated_sight_meal_prose_changes_without_mutating_source_document(self):
         compiled,items,reply=self.case();before=deepcopy(compiled.document)
         value=apply_wording(compiled.document,((items,reply),),
-            facts=(ProfileFact('interests','known','history'),))
+            locale='en',facts=(ProfileFact('interests','known','history'),))
         selected={row['item_id']for row in items}
         self.assertTrue(selected)
         for old,new in zip(before['items'],value['items'],strict=True):
@@ -39,8 +39,19 @@ class FinalWording(unittest.TestCase):
         compiled,items,reply=self.case();before=deepcopy(compiled.document)
         for response,facts in ((reply,(ProfileFact('interests','default','history'),)),
                 (b'{',()),(packed(dict(version=WORDING,items=[dict(item_id='foreign',reason=None,reason_refs=[],tip=None)])),())):
-            with self.assertRaises(WordingUnavailable):apply_wording(compiled.document,((items,response),),facts=facts)
+            with self.assertRaises(WordingUnavailable):apply_wording(compiled.document,((items,response),),locale='en',facts=facts)
             self.assertEqual(compiled.document,before)
+
+    def test_late_wording_cannot_make_saved_booking_or_internal_metadata_claims(self):
+        compiled,items,_=self.case()
+        for reason in ('I have booked your hotel.','行程已为你保存。','tool_call_id=private-example'):
+            reply=packed(dict(version=WORDING,items=[dict(item_id=row['item_id'],
+                reason=reason,reason_refs=['interests'],tip=None)for row in items]))
+            result=apply_wording(compiled.document,((items,reply),),
+                locale='en',facts=(ProfileFact('interests','known','history'),))
+            for item in result['items']:
+                if item['id']in {row['item_id']for row in items}:
+                    self.assertIsNone(item['note']);self.assertEqual(item['reason_refs'],[])
 
 
 if __name__=='__main__':unittest.main()

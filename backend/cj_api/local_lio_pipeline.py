@@ -237,7 +237,8 @@ def word_retrieved_plan(host,prepared,compiled,capture,assembly,view,*,locale):
         dict(locale=locale,items=batch,factors=[dict(key=fact.key,state=fact.state,value=fact.display_value)
             for fact in facts if fact.state in ('known','memory')]))for batch in batches)
     results=prepared.calls.parallel(calls)
-    value=apply_wording(document,tuple((batch,result.encode())for batch,result in zip(batches,results,strict=True)),facts=facts)
+    value=apply_wording(document,tuple((batch,result.encode())for batch,result in zip(batches,results,strict=True)),
+        facts=facts,locale=locale)
     representation_size(value)
     return replace(assembly,content=packed(value),
         date_checks_must_be_recomputed=assembly.date_checks_must_be_recomputed or value['calendar']['state']=='dated')

@@ -235,7 +235,7 @@ def main(*,natural_direct=False,early_departure=True,production=False):
     original_model=ExplorationPlanning._model
     original_http=httpx.MockTransport.handle_request
     original_post=TestClient.post
-    wires=[];completed=[];lookups=[];posted={};saved_runs={};active={};supplier_wires=[]
+    wires=[];completed=[];lookups=[];posted={};saved_runs={};active={};supplier_wires=[];all_saved={}
     def post(api,url,**kwargs):
         if url=='/v4/lio/messages':
             value=json.loads(kwargs['content'])
@@ -385,9 +385,19 @@ def main(*,natural_direct=False,early_departure=True,production=False):
         if production:
             stack.enter_context(patch.object(https_transport,'_connect',dial))
             stack.enter_context(patch.object(TripRepository,'rich_plan_receipt',receipt))
-        native.main(saved_runs=saved_runs,generation=production)
+        if production:
+            # Each language is an independent fresh private fixture account.
+            # Keep the original200 account budget; never reset/top up a live
+            # ledger merely to run unrelated regression cases in one cohort.
+            for language in ('zh','en'):
+                saved_runs.clear()
+                native.main(saved_runs=saved_runs,generation=True,languages=(language,))
+                assert len(saved_runs)==3
+                all_saved.update(saved_runs)
+        else:native.main(saved_runs=saved_runs)
+
     if production:
-        assert len(saved_runs)==len(completed)==6 and len(wires)==30
+        assert len(all_saved)==len(completed)==6 and len(wires)==30
         print('PASS default production factory ZH3/EN3 complete skeleton/selected retrieval/order/routes/schedule/final wording/sole writer and actual timeline Card3; '+str(len(supplier_wires))+' fixture supplier calls; real/G6/G9 UNRUN',flush=True)
         return
     assert len(saved_runs)==2

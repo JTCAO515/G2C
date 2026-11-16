@@ -1,7 +1,12 @@
 """Bounded final prose over generated stops; source and schedule stay code-owned."""
 from copy import deepcopy
+import re
 from cj_trip.rich_reasons import filter_reason_text
+from cj_message.lio_context import display_answer
 from .lio_pipeline_model import parse_wording
+from .lio_exploration_policy import _ACTION_CLAIM,_CONTROL
+
+_TOOL_METADATA=re.compile(r'(?<![A-Za-z0-9_])tool_call_id(?![A-Za-z0-9_])',re.I)
 
 
 def wording_items(document,proposed_subjects):
@@ -10,7 +15,13 @@ def wording_items(document,proposed_subjects):
         for item in document['items']if item['id']in proposed_subjects and item['kind']in ('sight','meal'))
 
 
-def apply_wording(document,batches,*,facts):
+def _public(value,locale):
+    return value is None or (_ACTION_CLAIM.search(value.replace('’',"'"))is None
+        and _CONTROL.search(value)is None and _TOOL_METADATA.search(value)is None
+        and display_answer(value,locale)==value)
+
+
+def apply_wording(document,batches,*,facts,locale):
     """Parse every complete response before projecting any model prose.
 
     The exact batches are host-owned. Only known/Memory profile keys may support
@@ -26,5 +37,7 @@ def apply_wording(document,batches,*,facts):
         if item['id']not in patches:continue
         text=patches[item['id']]
         note,refs,_=filter_reason_text(text['note'],text['reason_refs'],facts)
-        item.update(note=note,reason_refs=list(refs),tip=text['tip'])
+        if not _public(note,locale):note,refs=None,()
+        tip=text['tip']if _public(text['tip'],locale)else None
+        item.update(note=note,reason_refs=list(refs),tip=tip)
     return value

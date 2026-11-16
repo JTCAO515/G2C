@@ -256,6 +256,6 @@ if __name__=='__main__':
     from lio_provider_sources_pg import main as providers_main
     providers_main()
     from lio_qualified_pipeline_pg import main as qualified_pipeline_main
-    qualified_pipeline_main()
+    qualified_pipeline_main(production=True)
     import runpy
     runpy.run_path(str(ROOT/'backend/draft/tests/rich_provider_pg.py'),run_name='__main__')

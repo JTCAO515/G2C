@@ -24,7 +24,7 @@ import lio_pipeline_models_pg
 import lio_route_sources_pg
 
 
-def main(*,natural_direct=False):
+def main(*,natural_direct=False,production=False):
     original_manage=demo_accounts.manage
     original_router=LocalBudgetRouter.for_run
     original_run_once=native.run_worker.run_once
@@ -63,9 +63,10 @@ def main(*,natural_direct=False):
     with patch.object(demo_accounts,'manage',manage),patch.object(LocalBudgetRouter,'for_run',router), \
             patch.object(native.run_worker,'run_once',run_once):
         lio_pipeline_models_pg.main(natural_direct=natural_direct)
+        if production:lio_pipeline_models_pg.main(natural_direct=natural_direct,production=True)
         lio_route_sources_pg.main()
-    assert len(qualified)==2 and selected and checked
-    print('PASS two fresh same-account native4 qualifications via accepted B operator; original budget/config unchanged; actual registered plan-model and place/route consumers selected Native4RegisteredExit; every observed RUN <=6 model including Memory and <=45 amap; fixture HTTP/0 real/0 Trip; complete host/G6 UNRUN',flush=True)
+    assert len(qualified)==(4 if production else 2)and selected and checked
+    print('PASS '+str(len(qualified))+' fresh same-account native4 qualifications via accepted B operator; original budget/config unchanged; actual registered plan-model and place/route consumers selected Native4RegisteredExit; every observed RUN <=6 model including Memory and <=45 amap; fixture HTTP/0 real; '+('full generation exercised'if production else'component generation only')+'; real G6 UNRUN',flush=True)
 
 
 if __name__=='__main__':main()
