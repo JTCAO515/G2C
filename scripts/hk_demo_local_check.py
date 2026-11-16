@@ -43,6 +43,47 @@ NEW_CODE='D1-0123456789ab.'+'y'*22
 def digest(code):return hashlib.sha256(code.encode('ascii')).hexdigest()
 
 
+def fill_daily_questions(post_question,post_limit,day_counts,question_day):
+    """Fill one actual server day; a real midnight is not a quota failure.
+
+    Keep every admitted original. Only a recorded new day permits another
+    bounded day cohort; a same-day acceptance still hits the original 429
+    assertion. No production clock, counter or admitted day is rewritten.
+    """
+    day,counts=day_counts()
+    assert sum(counts.values())==4,'the four original dialogue questions must remain'
+    receipts=[]
+    def rollover(response,mid,expected_day):
+        if response.status_code!=200:return False
+        assert response.json()['receipt']['message_id']==mid
+        admitted=question_day(mid)
+        if admitted is None or admitted==expected_day:return False
+        current,actual=day_counts()
+        assert max(actual.values())<=400,'native day admitted more than 400 questions'
+        return admitted==current
+    for cohort in range(2):
+        if cohort:day,counts=day_counts()
+        assert max(counts.values())<=400,'native day admitted more than 400 questions'
+        for _ in range(400-counts.get(day,0)):
+            number=len(receipts)+1;response=post_question(number)
+            assert response.status_code==200,(number,response.status_code,response.text)
+            receipts.append(response.json()['receipt'])
+        current,counts=day_counts()
+        assert max(counts.values())<=400,'native day admitted more than 400 questions'
+        if current!=day:continue
+        assert counts[day]==400,'actual tested day must contain 400 originals'
+        mid='daily-limit-'+str(cohort)
+        limited=post_limit('demo',mid)
+        if rollover(limited,mid,day):continue
+        assert limited.status_code==429 and limited.json()['error']['code']=='DEMO_DAILY_LIMIT',limited.text
+        mid='lio-limit-'+str(cohort)
+        lio_limited=post_limit('lio',mid)
+        if rollover(lio_limited,mid,day):continue
+        assert lio_limited.status_code==429 and lio_limited.json()=={'failure':'quota'}
+        return receipts,day
+    raise AssertionError('quota fixture crossed more than one native day before completing its checks')
+
+
 def quota_fixture(root,env):
     """Seed old owner ledgers, including a held original, under the real operator."""
     from cj_usage.codec import decode, encode
@@ -2153,21 +2194,29 @@ def exercise(root,conninfo):
                 return json.dumps(dict(version='MESSAGE-send.2',conversation_id=params['conversation_id'],
                     message_id='demo-'+str(number),text='Fictional trip',trip_id=None,creation_intent='none',
                     expected_generation=generation,expected_sequence=number-1,travel_context=None,needs_reference=None)).encode()
-            receipts=[]
-            for number in range(1,397):
-                response=api.post('/v2/messages',content=command(number),headers=headers)
-                assert response.status_code==200,(number,response.status_code,response.text)
-                receipts.append(response.json()['receipt'])
-            limited=api.post(route,content=dialogue('daily-limit'),headers=headers)
-            assert limited.status_code==429 and limited.json()['error']['code']=='DEMO_DAILY_LIMIT',limited.text
-            lio_limited=api.post('/v1/lio/messages',content=dialogue('lio-limit').replace(
-                b'DEMO-dialogue-message.1', b'LIO-message.1'),headers=headers)
-            assert lio_limited.status_code==429 and lio_limited.json()=={'failure':'quota'}
+            scope=scope_for(ISSUER,SUBJECT)
+            def day_counts():
+                with psycopg.connect(**conninfo) as db:
+                    day=db.execute("SELECT (clock_timestamp() AT TIME ZONE 'Asia/Shanghai')::date").fetchone()[0]
+                    rows=db.execute('SELECT demo_question_day,count(*) FROM public.cj_message_receipt '
+                        'WHERE scope=%s AND demo_question_day IS NOT NULL GROUP BY demo_question_day',(scope,)).fetchall()
+                return day,dict(rows)
+            def question_day(mid):
+                with psycopg.connect(**conninfo) as db:
+                    row=db.execute('SELECT demo_question_day FROM public.cj_message_receipt '
+                        'WHERE scope=%s AND message_id=%s',(scope,mid)).fetchone()
+                return None if row is None else row[0]
+            def post_limit(kind,mid):
+                raw=dialogue(mid)
+                if kind=='lio':raw=raw.replace(b'DEMO-dialogue-message.1',b'LIO-message.1')
+                return api.post(route if kind=='demo'else'/v1/lio/messages',content=raw,headers=headers)
+            receipts,quota_day=fill_daily_questions(
+                lambda number:api.post('/v2/messages',content=command(number),headers=headers),
+                post_limit,day_counts,question_day)
             replay=api.post('/v2/messages',content=command(1),headers=headers)
             assert replay.status_code==200 and replay.json()['receipt']==receipts[0]
-            scope=scope_for(ISSUER,SUBJECT)
             with psycopg.connect(**conninfo) as db:
-                assert db.execute("SELECT count(*) FROM public.cj_message_receipt WHERE scope=%s AND demo_question_day=(clock_timestamp() AT TIME ZONE 'Asia/Shanghai')::date",(scope,)).fetchone()==(400,)
+                assert db.execute('SELECT count(*) FROM public.cj_message_receipt WHERE scope=%s AND demo_question_day=%s',(scope,quota_day)).fetchone()==(400,)
                 try:
                     with db.transaction():
                         migrate.down(db,migrate.load(),51)
@@ -2190,9 +2239,12 @@ def exercise(root,conninfo):
                     except psycopg.errors.InsufficientPrivilege:pass
                     else:raise AssertionError('runtime changed protected state: '+label)
                 db.execute("UPDATE public.cj_message_receipt SET demo_question_day=demo_question_day-1 WHERE scope=%s",(scope,))
-            assert api.post('/v2/messages',content=command(397),headers=headers).status_code==200
+            next_number=len(receipts)+1
+            assert api.post('/v2/messages',content=command(next_number),headers=headers).status_code==200
             with psycopg.connect(**conninfo) as db:
-                assert db.execute("SELECT count(*) FROM public.cj_message_receipt WHERE scope=%s AND demo_question_day=(clock_timestamp() AT TIME ZONE 'Asia/Shanghai')::date",(scope,)).fetchone()==(1,)
+                admitted_day=db.execute('SELECT demo_question_day FROM public.cj_message_receipt '
+                    'WHERE scope=%s AND message_id=%s',(scope,'demo-'+str(next_number))).fetchone()[0]
+                assert db.execute('SELECT count(*) FROM public.cj_message_receipt WHERE scope=%s AND demo_question_day=%s',(scope,admitted_day)).fetchone()==(1,)
     print('PASS signed zero-setup dialogue, concurrent original replay, default Travel, no downgrade, revoke, 400/day, migration data protection and Beijing day rollover')
 
 
