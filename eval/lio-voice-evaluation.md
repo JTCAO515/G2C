@@ -1,8 +1,9 @@
 # WP14 offline voice layer · #937 / #844
 
 JT's 2026-11-14 evening Goal authorizes this offline work now. The detailed
-JT-approved voice text is pinned to PR894 `530e97f7`; its file remains absent
-from accepted main. This implementation does not claim that documentation merged.
+JT-approved voice text is now on main: PR894 merged on 2026-11-15
+(final PR head `45a8451303cb500c525abcbb1f9ee50137ba3061`). The old readiness v1
+retains its original pre-merge snapshot; current readiness is appended in v2.
 For native4, #922 is the unique behavior authority: exploration has 3–4 question
 groups and per-segment limits, practical answers have no exploration questions.
 The retained30-case PERSONA prose comparison below is a separate, explicitly
@@ -59,7 +60,9 @@ default test entry gains this module's controls; no existing check is removed or
 Three separate binary prompts are in `lio_voice_judge_prompts.md` (items1/4/6).
 The 20 synthetic mixed-quality examples are in `lio_voice_calibration.v1.json`;
 the ready-to-fill worksheet is [lio_voice_jt_review.md](lio_voice_jt_review.md).
-JT has agreed to label them. Human reviewer/reference and all labels start null;
+JT has agreed to label the written examples, **without using the Go2China app or
+sending any test messages**. The worksheet states the task and response format in
+both languages. Human reviewer/reference and all labels start null;
 neither C nor another model supplies purported human gold labels.
 
 Current agreement: **UNRUN**, 0/20 paired labels for each of the three criteria;

@@ -1,5 +1,17 @@
 # #844 · JT 人工标注表（20 条）
 
+**不用打开 Go2China App，也不用把题目发给 Lio。** 这是阅读标注：下面每条已经有
+「游客问题、背景证据、Lio示例回答」。请只读这些文字，为示例回答的 A/B/C 三项打分。
+这些示例是合成材料，不是当前 App 实测结果；真实 App 测试另由 A/C 执行。
+
+每题回复一行即可，例如 `01: PASS/PASS/FAIL` 表示 A通过、B通过、C不通过。
+看不准可写 `UNKNOWN` 并简单说明；C会保留为未定标签，不把它算成通过或编造人工答案。
+不需要检查代码、操作行程、查真实天气或测试保存。
+
+**No app testing is required.** Read the supplied visitor question, evidence context,
+and example Lio answer. Rate the written example on A/B/C below. These synthetic
+examples calibrate the evaluator; they are not results from the current app.
+
 审阅人：**JT**。这些是 C 编写的合成正反样例，尚无人工标签。预计 **15–20 分钟**。只判断下面三项，不必核查真实地点或票价；背景说明就是本题证据范围。
 
 Reviewer: **JT**. These are 20 synthetic calibration examples with no human
