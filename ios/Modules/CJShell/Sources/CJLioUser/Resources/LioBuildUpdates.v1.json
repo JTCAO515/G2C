@@ -20,9 +20,9 @@
               "Improve invitation format guidance and avoid automatic input replacements; give screen readers a separate reply-complete state."
             ],
             "zh": [
-              "重新打开应用时恢复原对话，并在本机保留各段对话的未发送草稿。",
-              "原问题尚未发出、输入框又有另一段草稿时，两份内容分别保留，原问题显示为“未发送的内容”。",
-              "恢复或读取失败时，问题记录保留更具体的情况和下一步。",
+              "重新打开应用时恢复同一对话，并在本机保留各段对话的未发送草稿。",
+              "问题尚未发出、输入框又有另一段草稿时，两份内容分别保留，先前的问题显示为“未发送的内容”。",
+              "恢复或打开失败时，问题记录保留更具体的情况和下一步。",
               "改进邀请码格式提示，关闭自动输入替换；为读屏单独提供回复完成状态。"
             ]
           }
@@ -36,11 +36,11 @@
           "items": {
             "en": [
               "Since build 45: fix a local recovery error involving unrelated messages and keep sign-in available after recoverable local failures.",
-              "Ordinary words such as “查询” no longer hide an entire reply by themselves. Earlier failed requests keep their original results."
+              "Ordinary travel wording no longer hides an entire reply by itself. Earlier failed messages keep the results shown at that time."
             ],
             "zh": [
               "与构建 45 相比：修复一种由无关消息影响对话恢复的本机错误；可恢复的本机故障不再直接丢失登录。",
-              "“查询”等普通词不再单独导致整段回答隐藏；过去失败的消息仍保留原先结果。"
+              "普通旅行用语不再单独导致整段回答消失；过去失败的消息仍保留当时结果。"
             ]
           }
         },
