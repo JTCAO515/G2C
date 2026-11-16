@@ -1,0 +1,131 @@
+[
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "official_channel",
+    "cities": [
+      "beijing",
+      "chengdu",
+      "xian",
+      "shanghai",
+      "hangzhou",
+      "chongqing",
+      "shenzhen",
+      "taizhou-zhejiang",
+      "suzhou-anhui"
+    ],
+    "subject": null,
+    "conditions": {
+      "reservation_required": null,
+      "closed_weekdays": null,
+      "closed_weekdays_public_holiday_exception": null,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    },
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-12-16",
+    "id": "visitor.v3.holiday.official-channel",
+    "topic": "seasonal_holiday",
+    "text_zh": "计划假期出游，可从中国政府网英文版相应年度页面查询官方假期安排；场馆开放和预约仍查该馆公告。本查询指引不替场馆判断普通周末、补班日或连休中的某日是否触发法定假日例外。",
+    "text_en": "For holiday travel, consult the relevant year's public-holiday page on the English Chinese government website and check the venue's own opening and booking notice. This guide does not decide whether a weekend, adjusted workday or a day in an extended break triggers a venue's statutory-holiday exception.",
+    "source_urls": [
+      "https://english.www.gov.cn/policies/featured/202511/04/content_WS6909c915c6d00ca5f9a074f7.html",
+      "https://english.www.gov.cn/policies/latestreleases/202611/06/content_WS6aed74dcc6d00ca5f9a0e22e.html"
+    ]
+  },
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "official_channel",
+    "cities": [
+      "beijing",
+      "chengdu",
+      "xian",
+      "shanghai",
+      "hangzhou",
+      "chongqing",
+      "shenzhen",
+      "taizhou-zhejiang",
+      "suzhou-anhui"
+    ],
+    "subject": null,
+    "conditions": {
+      "reservation_required": null,
+      "closed_weekdays": null,
+      "closed_weekdays_public_holiday_exception": null,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    },
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-12-16",
+    "id": "visitor.v3.seasonal-transport.official-channel",
+    "topic": "seasonal_holiday",
+    "text_zh": "遇到雨雪、大风、大雾等季节性出行问题，可从交通运输部的预警提示栏目查询相关公路气象和交通信息，再核目的地与场馆公告。本条只提供查询渠道，不把历史预警当作你出发当天的天气或通行结论。",
+    "text_en": "For travel affected by rain, snow, wind or fog, consult the Ministry of Transport's warning channel for relevant road-weather and transport information, then check destination and venue notices. This guide does not turn a past warning into a forecast or access decision for your travel day.",
+    "source_urls": [
+      "https://www.mot.gov.cn/fuwu/yujingtishi/index.html"
+    ]
+  },
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "official_channel",
+    "cities": [
+      "beijing",
+      "chengdu",
+      "xian",
+      "shanghai",
+      "hangzhou",
+      "chongqing",
+      "shenzhen",
+      "taizhou-zhejiang",
+      "suzhou-anhui"
+    ],
+    "subject": null,
+    "conditions": {
+      "reservation_required": null,
+      "closed_weekdays": null,
+      "closed_weekdays_public_holiday_exception": null,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    },
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-12-16",
+    "id": "visitor.v3.visa-free.official-channel",
+    "topic": "visa_entry",
+    "text_zh": "免签问题请到国家移民管理局官网的政策解读栏目查询官方说明，并向主管机关确认个人适用情况；本条不概括资格条件。",
+    "text_en": "For visa-free entry questions, consult the National Immigration Administration’s official policy-explanation channel and confirm your circumstances with the competent authority. This entry does not summarize eligibility rules.",
+    "source_urls": [
+      "https://www.nia.gov.cn/n741440/n741577/index.html"
+    ]
+  },
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "official_channel",
+    "cities": [
+      "beijing",
+      "chengdu",
+      "xian",
+      "shanghai",
+      "hangzhou",
+      "chongqing",
+      "shenzhen",
+      "taizhou-zhejiang",
+      "suzhou-anhui"
+    ],
+    "subject": null,
+    "conditions": {
+      "reservation_required": null,
+      "closed_weekdays": null,
+      "closed_weekdays_public_holiday_exception": null,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    },
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-12-16",
+    "id": "visitor.v3.entry.official-channel",
+    "topic": "visa_entry",
+    "text_zh": "入境要求请通过国家移民管理局官方入口查询，并向主管机关确认；本条不判断你是否可以入境，也不列停留期限或材料清单。",
+    "text_en": "For entry requirements, use the National Immigration Administration’s official channel and confirm with the competent authority. This entry does not decide admissibility or list stay limits or required documents.",
+    "source_urls": [
+      "https://www.nia.gov.cn/index.html"
+    ]
+  }
+]

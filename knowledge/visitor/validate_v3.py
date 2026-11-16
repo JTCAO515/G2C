@@ -32,9 +32,17 @@ VENUE_SOURCE_CITIES.update({
     "whlyw.cq.gov.cn": frozenset({"chongqing"}),
     "cqjlp.gov.cn": frozenset({"chongqing"}),
     "wlj.xa.gov.cn": frozenset({"xian"}),
+    "www.ehangzhou.gov.cn": frozenset({"hangzhou"}),
+    "wgly.hangzhou.gov.cn": frozenset({"hangzhou"}),
+    "cgj.sz.gov.cn": frozenset({"shenzhen"}),
+    "fao.sz.gov.cn": frozenset({"shenzhen"}),
+    "english.shanghai.gov.cn": frozenset({"shanghai"}),
+    "en.xa.gov.cn": frozenset({"xian"}),
+    "bmy.com.cn": frozenset({"xian"}),
 })
 VENUE_PAGE_CITIES = {
     "https://cdn3.shenzhenmuseum.com/museum/html/aboutus/visit-service.html": frozenset({"shenzhen"}),
+    "https://museum-guanwang.leleu.cn/": frozenset({"chengdu"}),
 }
 V3_APPROVED_HOSTS = V3_GOVERNMENT_HOSTS | VENUE_SOURCE_CITIES.keys()
 
