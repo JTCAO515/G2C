@@ -28,10 +28,12 @@ App source只是待与A实包交叉核对的pin，服务器不把配置中的SHA
 输入槽只存正文SHA；不得把邀请码、Bearer或模型密钥放入策略。
 
 目录由B显式预建，内含0600 `claims.lock` 和 `claims.json`；后者初始内容为
-`{version: "G2C-App-smoke-claims.1", policy_sha256: <策略原字节SHA>, claims: []}`。
+`{version: "G2C-App-smoke-claims.1", policy_sha256: <策略原字节SHA>, state: "ACTIVE", claims: []}`。
 组件不自动创建、恢复或清空这些控制文件。每轮用全新目录；旧UNKNOWN、claim和pending文件保留。
 文件锁互斥；原子写通过O_EXCL的claims.pending、fsync、replace和目录fsync发布。
 残留pending是待核原动作，不覆盖后重放。重启读取同一原claim，同MID/绑定不新增槽。
+`stop_new()`只将同一控制目录单向改成STOP_NEW；保留旧claim和在途原件采集，
+拒绝新MID登记，不提供恢复ACTIVE或重置计数的接口。
 
 ## 准入与原件
 

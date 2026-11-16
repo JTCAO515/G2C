@@ -88,7 +88,7 @@ def fixture(tmp_path):
         artifact_device=evidence.stat().st_dev,artifact_inode=evidence.stat().st_ino,
         slots=specs,ledger_id='original-ledger',producer_id=HK_PRODUCER)
     write(p,policy)
-    write(claims/'claims.json',dict(version=CLAIMS,policy_sha256=sha256(p.read_bytes()).hexdigest(),claims=[]))
+    write(claims/'claims.json',dict(version=CLAIMS,policy_sha256=sha256(p.read_bytes()).hexdigest(),state='ACTIVE',claims=[]))
     budget=tmp_path/'original.sqlite'
     with sqlite3.connect(budget)as db:
         db.execute('CREATE TABLE producer(producer)');db.execute('INSERT INTO producer VALUES(?)',(HK_PRODUCER,))
@@ -198,12 +198,12 @@ def test_crash_pending_file_is_not_overwritten_or_replayed(tmp_path):
 
 def test_seed_continuation_is_bound_to_the_prior_original_and_not_a_new_chat(tmp_path):
     f=fixture(tmp_path);base=f.policy['slots'][0]
-    first=dict(base,slot_id='seed-zh-1',setup=True,text_sha256=sha256(b'seed-first').hexdigest())
-    second=dict(base,slot_id='seed-zh-2',setup=True,text_sha256=sha256(b'seed-next').hexdigest(),
+    first=dict(base,slot_id='seed-zh-1',nonce=sha256(b'seed-first').hexdigest()[:32],setup=True,text_sha256=sha256(b'seed-first').hexdigest())
+    second=dict(base,slot_id='seed-zh-2',nonce=sha256(b'seed-next').hexdigest()[:32],setup=True,text_sha256=sha256(b'seed-next').hexdigest(),
                 conversation_mode='continuation',prior_slot_id='seed-zh-1')
     f.policy['slots']=[first,second,*f.policy['slots']]
     write(f.path,f.policy)
-    write(f.claims/'claims.json',dict(version=CLAIMS,policy_sha256=sha256(f.path.read_bytes()).hexdigest(),claims=[]))
+    write(f.claims/'claims.json',dict(version=CLAIMS,policy_sha256=sha256(f.path.read_bytes()).hexdigest(),state='ACTIVE',claims=[]))
     a=f.load();b=binding();f.database.original(b,'seed-first','zh');a.registrations(b)
     wrong=binding(1);f.database.original(wrong,'seed-next','zh')
     with pytest.raises(BudgetUnknown,match='seed continuation'):a.registrations(wrong)
@@ -218,3 +218,13 @@ def test_missing_lock_is_not_created_automatically(tmp_path):
     f=fixture(tmp_path);(f.claims/'claims.lock').unlink()
     with pytest.raises(FileNotFoundError):f.load()
     assert not (f.claims/'claims.lock').exists()
+
+
+def test_stop_new_is_persistent_and_does_not_erase_existing_capture_authority(tmp_path):
+    f=fixture(tmp_path);a=f.load();b=binding();f.database.original(b,'question-0','zh');a.registrations(b)
+    before=json.loads(a.claims_snapshot())['claims'];a.stop_new()
+    again=f.load();assert json.loads(again.claims_snapshot())['state']=='STOP_NEW'
+    assert json.loads(again.stop_new())['claims']==before and again.selects(b)
+    new=binding(1);f.database.original(new,'question-1','zh')
+    with pytest.raises(BudgetUnknown,match='stopped'):again.registrations(new)
+    assert json.loads(again.claims_snapshot())['claims']==before

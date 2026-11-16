@@ -63,7 +63,7 @@ def exercise(auth,conninfo):
     # Only its outer digest is stored by the legacy path: do not invent bytes.
     text='你是谁';f.policy['slots'][0]['text_sha256']=sha256(text.encode()).hexdigest()
     write(f.path,f.policy)
-    write(f.claims/'claims.json',dict(version=CLAIMS,policy_sha256=sha256(f.path.read_bytes()).hexdigest(),claims=[]))
+    write(f.claims/'claims.json',dict(version=CLAIMS,policy_sha256=sha256(f.path.read_bytes()).hexdigest(),state='ACTIVE',claims=[]))
     local_budget=AuthorizationBudget(root/'financial',clock=lambda:datetime(2026,11,16,tzinfo=timezone.utc))
     sent=[]
     def no_provider(request):

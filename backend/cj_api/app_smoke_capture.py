@@ -58,11 +58,12 @@ class AppSmokeCapture:
             raise ValueError('bounded App smoke time required')
         self.start, self.end, self.clock = start.timestamp(), end.timestamp(), clock
         self.slots = []
-        owners, names = set(), set()
+        owners, names, nonces = set(), set(), set()
         for slot in p['slots']:
             if (type(slot) is not dict or set(slot) != {'slot_id', 'nonce', 'subject', 'locale', 'protocol', 'text_sha256', 'setup', 'conversation_mode', 'prior_slot_id'}
                     or type(slot['slot_id']) is not str or re.fullmatch('[A-Za-z0-9_.-]{1,80}', slot['slot_id']) is None
                     or type(slot['nonce']) is not str or re.fullmatch('[0-9a-f]{32}',slot['nonce']) is None
+                    or slot['nonce'] in nonces
                     or slot['slot_id'] in names or type(slot['subject']) is not str or slot['subject'] not in subjects
                     or slot['locale'] not in ('zh', 'en') or slot['protocol'] not in ('LIO-message.1', 'LIO-message.2')
                     or type(slot['text_sha256']) is not str or _SHA.fullmatch(slot['text_sha256']) is None
@@ -72,7 +73,7 @@ class AppSmokeCapture:
                     or (slot['conversation_mode']!='continuation' and slot['prior_slot_id'] is not None)
                     or (slot['protocol']=='LIO-message.1') != (slot['conversation_mode']=='default')):
                 raise ValueError('fixed ordinary Home smoke slot required')
-            names.add(slot['slot_id']); owners.add(slot['subject'])
+            names.add(slot['slot_id']); nonces.add(slot['nonce']); owners.add(slot['subject'])
             self.slots.append(dict(slot, scope=scope_for(ISSUER, slot['subject'])))
         if (len(owners) != 2 or sum(not x['setup'] for x in self.slots) != 8
                 or sum(x['setup'] for x in self.slots) > 4
@@ -137,8 +138,9 @@ class AppSmokeCapture:
 
     def _claims(self, directory):
         value = _json(read_private('claims.json', 65536, directory_fd=directory))
-        if (type(value) is not dict or set(value) != {'version', 'policy_sha256', 'claims'}
+        if (type(value) is not dict or set(value) != {'version', 'policy_sha256', 'state', 'claims'}
                 or value['version'] != CLAIMS or value['policy_sha256'] != self.digest
+                or value['state'] not in ('ACTIVE','STOP_NEW')
                 or type(value['claims']) is not list or len(value['claims']) > len(self.slots)):
             raise BudgetUnknown('original App smoke claims required')
         used = set()
@@ -224,6 +226,8 @@ class AppSmokeCapture:
                 if prior['binding'] != original or (prior['input_sha256'],prior['canonical_sha256']) != (wire,canonical_sha):
                     raise BudgetUnknown('App smoke original binding changed')
             else:
+                if value['state']!='ACTIVE':
+                    raise BudgetUnknown('App smoke stopped; no new original may enter')
                 used = {x['slot_id'] for x in value['claims']}
                 slot = next((x for x in self.slots if x['scope'] == binding.scope and x['slot_id'] not in used), None)
                 if slot is None or (locale, text) != (slot['locale'], slot['text_sha256']):
@@ -267,6 +271,15 @@ class AppSmokeCapture:
             result=canonical(self._claims(directory))
         self._guard()
         return result
+
+    def stop_new(self):
+        """One-way within this control directory; retain every original claim."""
+        self._guard()
+        with self._locked(True) as directory:
+            value=self._claims(directory)
+            if value['state']=='ACTIVE':
+                value['state']='STOP_NEW';self._save(directory,value)
+        return self.claims_snapshot()
 
     def reflection(self, binding):
         return None
