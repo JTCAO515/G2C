@@ -7,7 +7,7 @@ are subsequent steps; the old preview factory is not replaced by preparation.
 from dataclasses import dataclass,replace
 import json
 
-from cj_message.lio_pipeline_schema import SKELETON
+from cj_message.lio_pipeline_schema import SKELETON,WORDING
 from cj_message.lio_wire import ExplorationOrigin
 from cj_place.models import Coordinate
 from cj_feasibility.rich_assembly import assemble,assemble_unconfirmed
@@ -18,7 +18,8 @@ from cj_trip.domain import packed
 
 from .lio_city import CityReference
 from .lio_pipeline_document import representation_size
-from .lio_pipeline_model import SKELETON_SYSTEM,skeleton_data
+from .lio_pipeline_model import SKELETON_SYSTEM,WORDING_SYSTEM,skeleton_data,wording_batches
+from .lio_pipeline_wording import wording_items,apply_wording
 from .lio_pipeline_preflight import admit_city_lookup,recipes_for_edges
 from .lio_pipeline_skeleton import parse_skeleton
 from .local_lio_pipeline_calls import PipelineCalls,PipelineCapacity,model_call
@@ -215,3 +216,28 @@ def publish_retrieved_plan(prepared,compiled,capture,assembly):
         return worker._step(binding,publish,lambda receipt:'trip_proposal:'+receipt.proposal_id,draft=True)
     finally:
         worker.drafts=previous
+
+
+def word_retrieved_plan(host,prepared,compiled,capture,assembly,view,*,locale):
+    """Spend only remaining model slots and retain every final item unchanged.
+
+    Protected items, hotel disclaimers and route facts are not model targets.
+    Wording has no source/write authority; the final checks/publisher must run
+    after this returns, including when no date-specific evidence was collected.
+    """
+    if assembly.content is None:
+        raise DraftRejected('complete scheduled candidate required before wording')
+    document=json.loads(assembly.content)
+    facts=tuple(ProfileFact(row['factor_key'],row['state'],row['value']if type(row['value'])is str
+        else json.dumps(row['value'],ensure_ascii=False))for row in capture.profile.profile['factors'])
+    items=wording_items(document,compiled.proposed_subjects)
+    batches=wording_batches(items,available_models=prepared.calls.model_slots_left)
+    bundle=prepared.sources
+    calls=tuple(model_call(host,bundle.worker,bundle.binding,view,WORDING,WORDING_SYSTEM,
+        dict(locale=locale,items=batch,factors=[dict(key=fact.key,state=fact.state,value=fact.display_value)
+            for fact in facts if fact.state in ('known','memory')]))for batch in batches)
+    results=prepared.calls.parallel(calls)
+    value=apply_wording(document,tuple((batch,result.encode())for batch,result in zip(batches,results,strict=True)),facts=facts)
+    representation_size(value)
+    return replace(assembly,content=packed(value),
+        date_checks_must_be_recomputed=assembly.date_checks_must_be_recomputed or value['calendar']['state']=='dated')
