@@ -52,7 +52,16 @@ def main():
     (output/'Info.plist').write_text(info.replace(marker, f'<key>CFBundleVersion</key><string>{current}</string>'))
     project = output/'G2CAcceptance.xcodeproj'
     settings = project/'project.pbxproj'
-    settings.write_text(settings.read_text().replace('space.go2china.foundation.local', 'space.go2china.updates.acceptance').replace(str(original_info), str(output/'Info.plist')))
+    app_source = ROOT/'ios/App/CJProbeApp.swift'
+    generated_app = output/'CJProbeApp.swift'
+    app = app_source.read_text()
+    marker = 'LioOnboardingPreview(shell: shell)'
+    assert app.count(marker) == 1
+    generated_app.write_text(app.replace(marker, 'if ProcessInfo.processInfo.arguments.contains("--lio-invitation-traits-acceptance") { LioInvitationInputFixture { LioOnboardingPreview(shell: shell) } } else { LioOnboardingPreview(shell: shell) }')
+                             + '\n' + (HERE/'LioInvitationInputFixture.swift').read_text())
+    settings.write_text(settings.read_text().replace('space.go2china.foundation.local', 'space.go2china.updates.acceptance')
+                        .replace(str(original_info), str(output/'Info.plist'))
+                        .replace(str(app_source), str(generated_app)))
     result = output/'updates.xcresult'
     suite = 'G2CControl/LioBuildUpdatesUITests'
     selectors = [f'-only-testing:{suite}/{case}' for case in args.case] if args.case else [f'-only-testing:{suite}']
