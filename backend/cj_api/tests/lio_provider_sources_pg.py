@@ -5,7 +5,6 @@ from hashlib import sha256
 import json
 from pathlib import Path
 import sys
-from types import MappingProxyType
 from unittest.mock import patch
 
 ROOT=Path(__file__).resolve().parents[3]
@@ -14,7 +13,6 @@ from cj_api.local_lio_exploration import ExplorationPlanning
 from cj_api.local_lio_provider_sources import RegisteredProviderSources,POI2_REGISTRATION
 from cj_api.lio_poi2_tool import POI2Input,registration
 from cj_api.local_lio_pipeline_calls import Call,PipelineCalls
-from cj_api.real_services import RealTools
 from cj_memory.runtime import RuntimeDenied
 from cj_message.lio_wire import ExplorationOrigin
 from cj_message.lio_exploration_schema import RESPONSE
@@ -48,11 +46,8 @@ class FixtureWriter:
 
 
 def main():
-    original_registry=RealTools._registrations
     original_model=ExplorationPlanning._model
     captures=[];writers=[]
-    def registry(tools):
-        return MappingProxyType(dict(original_registry(tools),**{POI2_REGISTRATION:registration(tools.services)}))
     def model(host,worker,binding,view,profile,system,extra):
         if profile==RESPONSE and extra.get('scene')=='plan_now_preview':
             sources=RegisteredProviderSources(worker,binding)
@@ -116,7 +111,7 @@ def main():
         except (BudgetUnknown,RuntimeUnknown,RuntimeDenied)as error:
             print('PROVIDER_SOURCE_REJECTED '+type(error).__name__+': '+str(error)+' cause='+repr(error.__cause__),flush=True)
             raise
-    with patch.object(RealTools,'_registrations',registry),patch.object(ExplorationPlanning,'_model',diagnosed):native.main()
+    with patch.object(ExplorationPlanning,'_model',diagnosed):native.main()
     assert len(captures)==6 and len(writers)==12
     assert all(writer.closed and len(writer.writes)==1 for writer in writers)
     print('PASS ZH3/EN3 native4 parallel tools/12 distinct financial RECEIVED including six known-unavailable outcomes/SELECT-only proof; HTTP fixture only, no real supplier claim',flush=True)
