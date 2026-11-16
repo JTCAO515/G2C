@@ -4,10 +4,17 @@ import Testing
 
 struct LioPublicDisplayTests {
     @Test(arguments: [
-        "我查询了北京明天的预报。你可以核实来源。",
         "北京预报：https://restapi.amap.com/v3/weather/weatherInfo",
         "Please verify the request ID with the backend.",
-        "This RUN is still UNKNOWN."
+        "This RUN is still UNKNOWN.",
+        "消息投递还在等待原回执。",
+        "已生成规划候选，请等待。",
+        "message_id: 20be0897-2fe5-4136-bf73-5966edb64a3a",
+        "Conversation 20be0897-2fe5-4136-bf73-5966edb64a3a",
+        "The input_sha256 is synthetic.",
+        "<tool_call>amap_weather</tool_call>",
+        "Calling Amap now.",
+        "工具调用：高德天气"
     ])
     func withholdsTechnicalReplies(_ text: String) {
         #expect(!LioPublicDisplay.permitsText(text))
@@ -40,6 +47,18 @@ struct LioPublicDisplayTests {
     ])
     func findsServiceHostsInsideTextPunctuation(_ text: String) {
         #expect(!LioPublicDisplay.permitsText(text))
+    }
+
+    @Test(arguments: [
+        "地铁以原运行时刻作参考，出发前再查看站内公告。想去哪个站？",
+        "Here '原运行时刻' means the published operating times. Which line do you need?",
+        "我们仍在同一个会话上下文里，可以继续看第二天。想先看上午还是下午？",
+        "我查询了北京明天的预报。你可以核实来源。",
+        "Here are two hotel candidates. Check the version number on your ticket.",
+        "请保留酒店回执，出发前核实候选餐厅的营业时间。"
+    ])
+    func preservesOrdinaryTravelWords(_ text: String) {
+        #expect(LioPublicDisplay.permitsText(text))
     }
 
     @Test func preservesTravelLanguageAndPublicAttribution() throws {
