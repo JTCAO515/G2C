@@ -79,7 +79,7 @@ def exercise(root,conninfo,*,saved_runs=(),generation=False,languages=('zh','en'
     from contracts.message.check_lio_v4 import validate
     from test_lio_exploration_profile import packet
     journal=AuthorizationBudget(root/'native4-flow-journal',clock=lambda:datetime(2026,11,9,tzinfo=timezone.utc))
-    locale='zh';current_text='';wire=[];fault=None
+    locale='zh';current_text='';wire=[];fault=None;rollback_probe=False;rollback_factory_calls=[];saved_cids=[]
     def response(request):
         body=json.loads(request.content);wire.append(body)
         if 'response_format' not in body:
@@ -89,10 +89,21 @@ def exercise(root,conninfo,*,saved_runs=(),generation=False,languages=('zh','en'
                 dict(**identity,choices=[],usage=dict(prompt_tokens=50,completion_tokens=20,total_tokens=70))]
             raw=''.join('data: '+json.dumps(chunk)+'\n\n'for chunk in chunks)+'data: [DONE]\n\n'
             return httpx.Response(200,stream=httpx.ByteStream(raw.encode()))
-        schema=body['response_format']['json_schema']['schema']
-        version=schema['properties']['version']['const']
-        extra=json.loads(body['messages'][-1]['content'])
-        if version==UNDERSTANDING:
+        if body['response_format']['type']=='json_object':
+            assert any('MEMORY-EXTRACT@2'in row['content']for row in body['messages']if row['role']=='system')
+            version='MEMORY-EXTRACT@2'
+        else:
+            schema=body['response_format']['json_schema']['schema']
+            version=schema['properties']['version']['const']
+        extra=json.loads(body['messages'][-1]['content'])if version not in ('LIO-planning-intake.8','MEMORY-EXTRACT@2')else None
+        if version=='MEMORY-EXTRACT@2':
+            value=dict(version=version,entries=[])
+        elif version=='LIO-planning-intake.8':
+            value=flow(current_text,city=None,days=None,questions=(),reply=(
+                '可以先讨论未保存的方案。你想先看什么？'if locale=='zh'else
+                'We can discuss an unsaved outline. What would you like to see first?'))
+            value.update(version=version,needs_tools=False)
+        elif version==UNDERSTANDING:
             index=extra['current_source_index'];updates=[]
             if current_text in ('节奏改为：轻松','Change my travel pace to relaxed'):
                 updates=[packet('pace','relaxed','轻松' if locale=='zh' else 'relaxed',index=index)]
@@ -144,6 +155,11 @@ def exercise(root,conninfo,*,saved_runs=(),generation=False,languages=('zh','en'
         # This historical component harness explicitly selects its unsaved
         # preview planner. The complete factory harness keeps the real default.
         planning={}if generation else dict(lio_generation_factory=lambda:None)
+        if rollback_probe:
+            def observed_factory():
+                rollback_factory_calls.append(True)
+                return run_worker._lio_generation()
+            planning=dict(lio_generation_factory=observed_factory)
         outcomes=run_worker.run_once(database,model,auth,tools_configuration=tools,real_services=services,
             memory_configuration_for_scope=lambda owner:memory if owner==scope else None,
             account_admission=True,hk_demo_scopes=frozenset({scope}),lio_confirmation=signer,**planning)
@@ -203,6 +219,7 @@ def exercise(root,conninfo,*,saved_runs=(),generation=False,languages=('zh','en'
                     assert ('交通'in message['answer'])if locale=='zh'else('routes'in message['answer'])
                     assert '已保存'in message['answer']if locale=='zh'else'itinerary is saved'in message['answer']
                     assert [day['day_index']for day in message['trip']['days']]==list(range(1,trip_days+1))
+                    saved_cids.append(cid)
                     if unconfirmed_places:
                         prefix_label='地点未确认：'if locale=='zh'else'Unconfirmed place: '
                         assert all(row['label'].startswith(prefix_label)for day in message['trip']['days']for row in day['items'])
@@ -263,11 +280,29 @@ def exercise(root,conninfo,*,saved_runs=(),generation=False,languages=('zh','en'
             original_before=db.execute('SELECT conversation_id,run_id,input_sha256,raw_input,lio_wire_protocol,lio_wire_input,'
                 'demo_dialogue_input_sha256 FROM cj_message_receipt WHERE scope=%s AND message_id=%s',
                 (scope,'flow4-jt-original')).fetchone()
+        with database.connect(scope)as db:
+            trips_before_rollback=db.execute('SELECT trip_id,version,content FROM cj_trip_record ORDER BY trip_id').fetchall()
+        saved_history={cid:api.get('/v4/lio/timeline',headers=headers,params=dict(conversation_id=cid)).content
+                       for cid in saved_cids}
         with patch.dict(os.environ,{'CJ_LIO_EXPLORATION_ENABLED':'0'}):
+            rollback_probe=True
+            for number,(locale,text)in enumerate((('zh','直接出方案'),('en','Plan now'),
+                    ('zh','节奏改为：轻松。 直接出方案。'),
+                    ('en','Change my travel pace to relaxed. Plan now.'))):
+                _,message=send('flow4-rollback-plan-'+str(number),text)
+                assert message['status']=='completed'and message['answer']and message['trip']is None
+                assert message['question_groups']==[]and message['progress']is None
+            locale='zh'
             _,message=send('flow4-rollback','我想去中国玩几天')
+            assert rollback_factory_calls==[]
+            with database.connect(scope)as db:
+                assert db.execute('SELECT trip_id,version,content FROM cj_trip_record ORDER BY trip_id').fetchall()==trips_before_rollback
             reads_started=len(wire)
             retained=api.get('/v4/lio/timeline',headers=headers,params=dict(conversation_id=jt_cid))
             assert retained.status_code==200 and retained.content==prior.content,retained.text
+            for saved_cid,content in saved_history.items():
+                saved=api.get('/v4/lio/timeline',headers=headers,params=dict(conversation_id=saved_cid))
+                assert saved.status_code==200 and saved.content==content
             recovered=api.get('/v4/lio/messages',headers=headers,params=dict(
                 message_id='flow4-jt-original',input_sha256=original_before[-1]))
             assert recovered.status_code==200,recovered.text
@@ -287,7 +322,9 @@ def exercise(root,conninfo,*,saved_runs=(),generation=False,languages=('zh','en'
                     'demo_dialogue_input_sha256 FROM cj_message_receipt WHERE scope=%s AND message_id=%s',
                     (scope,'flow4-jt-original')).fetchone()
             assert original_after==original_before
+        rollback_probe=False
         assert message['question_groups']==[] and message['exits']==[]
+        print('PASS flag0 actual factory zero new generator calls; ZH/EN literal and prefixed plan-now use legacy unchanged originals; no new Trip/version',flush=True)
         print('PASS same-code flag0 preserves pre-existing actual4 timeline bytes/MID/CID/RUN/core/outer hashes; legacy1–3 and foreign still refuse4; no readback model calls',flush=True)
         memory_input=dict(version='MEMORY-manual.2',operation_id='flow4-memory',item_id='flow4-memory',subject='self',
             slot='travel.pace',kind='preference',text='I prefer a slow travel pace.',extent='long_term',occurred_at='date unknown',context=None)

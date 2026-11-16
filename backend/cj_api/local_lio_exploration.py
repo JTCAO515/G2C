@@ -259,7 +259,7 @@ class ExplorationDispatch:
     def scene_context(self,binding,now):return self.legacy.scene_context(binding,now)
     def answer_context(self,binding,messages):return self.legacy.answer_context(binding,messages)
     def execute(self,worker,binding,state,text,original):
-        selected=self.exploration if original.protocol==LIO_VERSION_V4 else self.legacy
+        selected=self.exploration if original.protocol==LIO_VERSION_V4 and self.exploration.enabled else self.legacy
         return selected.execute(worker,binding,state,text,original)
 
 
@@ -269,5 +269,5 @@ class ExplorationEditDispatch:
     def execute(self,worker,binding,state,stored,text,locale,deadline):
         from cj_message.lio_context import selected_lio_original_for
         original=selected_lio_original_for(self.database,binding)
-        if original.protocol==LIO_VERSION_V4:return self.exploration.execute(worker,binding,state,text,original)
+        if original.protocol==LIO_VERSION_V4 and self.exploration.enabled:return self.exploration.execute(worker,binding,state,text,original)
         return self.legacy.execute(worker,binding,state,stored,text,locale,deadline)

@@ -348,8 +348,9 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
                 lio_edit=LioCalendarEdit(calendar,lio_edit)
                 from cj_api.local_lio_exploration import (ExplorationPlanning,ExplorationDispatch,
                     ExplorationEditDispatch,exploration_enabled)
-                exploration=ExplorationPlanning(database,lio_planning,enabled=exploration_enabled(),
-                    generation=lio_generation_factory())
+                enabled=exploration_enabled()
+                exploration=ExplorationPlanning(database,lio_planning,enabled=enabled,
+                    generation=lio_generation_factory()if enabled else None)
                 lio_planning=ExplorationDispatch(lio_planning,exploration)
                 lio_edit=ExplorationEditDispatch(database,lio_edit,exploration)
     return RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts,

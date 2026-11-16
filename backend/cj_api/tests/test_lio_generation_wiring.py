@@ -21,6 +21,40 @@ class GenerationWiring(unittest.TestCase):
         self.assertEqual(calls[0][4],'en');self.assertEqual(calls[0][-1],1)
         self.assertTrue(any('planning_started'in value for _,value in events))
 
+    def test_rollback_dispatch_never_enters_new_plan_now_generation(self):
+        import json,os
+        from cj_api.local_lio_exploration import ExplorationDispatch,exploration_enabled
+        from cj_api.local_lio_exploration_profile import ProfileView
+        from cj_api.lio_exploration_profile import Original
+        from cj_message.demo_dialogue import LIO_VERSION_V4
+        rows=(('zh','直接出方案'),('en','Plan now'),
+              ('zh','节奏改为：轻松。 直接出方案。'),
+              ('en','Change my travel pace to relaxed. Plan now.'))
+        for flag in ('0','1'):
+            for locale,text in rows:
+                with self.subTest(flag=flag,locale=locale,text=text),patch.dict(os.environ,{'CJ_LIO_EXPLORATION_ENABLED':flag}):
+                    generated=[];legacy_calls=[];events=[]
+                    legacy=SimpleNamespace(execute=lambda *args:legacy_calls.append(args)or'legacy')
+                    class Generation:
+                        def plan(self,*args,**kwargs):generated.append((args,kwargs));return'generated'
+                    planner=ExplorationPlanning(None,legacy,enabled=exploration_enabled(),generation=Generation())
+                    view=ProfileView((Original('current',1,text),),(),{},'0'*64)
+                    planner.profiles=SimpleNamespace(read=lambda *args:view,
+                        accept=lambda worker,binding,state,*args,**kwargs:(state,{}))
+                    planner._phase=lambda _:None
+                    planner._model=lambda *args,**kwargs:json.dumps(dict(version='LIO-exploration-understanding.1',
+                        intent='plan',current_source_index=0,updates=[]))
+                    worker=SimpleNamespace(runs=SimpleNamespace(snapshot=lambda _:object()),
+                        _event=lambda binding,state,kind,value:events.append((kind,value))or state)
+                    original=SimpleNamespace(protocol=LIO_VERSION_V4,locale=locale)
+                    result=ExplorationDispatch(legacy,planner).execute(worker,'binding','state',text,original)
+                    self.assertEqual(result,'generated'if flag=='1'else'legacy')
+                    self.assertEqual(len(generated),int(flag))
+                    self.assertEqual(len(legacy_calls),1-int(flag))
+                    if flag=='0':
+                        self.assertIs(legacy_calls[0][-1],original)
+                        self.assertEqual(events,[])
+
     def test_saved_rich_calendar_phase_uses_the_explicit_reader(self):
         class Generation:
             def current(self,host,binding):
