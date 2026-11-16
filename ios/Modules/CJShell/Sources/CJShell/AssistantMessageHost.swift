@@ -497,6 +497,7 @@ public enum DiscussionConversationState {
             try binding.recovery.validateProjection(captured, scope: binding.scope, lease: binding.lease)
             guard captured.actions.contains(where: { Data($0.messageID.utf8) == Data(reference.messageID.utf8) }),
                   let action = try binding.recovery.action(messageID: reference.messageID, lease: binding.lease) else { return false }
+            guard try LioTimelineWire.Send.recordedFirst(action.originalUTF8, messageID: action.messageID) == nil else { return false }
             retireRunSelection()
             selectedMessageID = reference.messageID
             runSelectionAllowed = true
@@ -680,6 +681,9 @@ public enum DiscussionConversationState {
             for reference in currentProjection.actions.sorted(by: { Data($0.messageID.utf8).lexicographicallyPrecedes(Data($1.messageID.utf8)) })
                 where reference.phase != .accepted && reference.phase != .notAccepted {
                 guard let pending = try binding.recovery.action(messageID: reference.messageID, lease: binding.lease) else { throw RecoveryError.staleOperation }
+                // The shared journal also holds Lio first sends. Their own host
+                // reconciles them; they are not legacy conversation originals.
+                if try LioTimelineWire.Send.recordedFirst(pending.originalUTF8, messageID: pending.messageID) != nil { continue }
                 if Data(try originalConversation(pending).utf8) == Data(conversationID.utf8) {
                     selectedMessageID = pending.messageID; record = pending; break
                 }

@@ -53,7 +53,7 @@ public enum LioTimelineWire {
 
         /// Other actions share the encrypted journal. Only first-chat originals
         /// carry this marker; once recognized, decode and bind the complete bytes.
-        static func recordedFirst(_ bytes: Data, messageID: String) throws -> (original: Send, title: String)? {
+        public static func recordedFirst(_ bytes: Data, messageID: String) throws -> (original: Send, title: String)? {
             let decoder = JSONDecoder()
             guard let marker = try? decoder.decode(FirstMarker.self, from: bytes),
                   ["LIO-message.2", "LIO-message.3", "LIO-message.4"].contains(marker.version), marker.newConversation == true else { return nil }
