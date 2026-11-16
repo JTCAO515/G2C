@@ -75,7 +75,7 @@ class VenueSourceScopeTests(unittest.TestCase):
         for host, city in (
             ('cgj.sz.gov.cn', 'shenzhen'), ('fao.sz.gov.cn', 'shenzhen'),
             ('english.shanghai.gov.cn', 'shanghai'), ('en.xa.gov.cn', 'xian'),
-            ('bmy.com.cn', 'xian'),
+            ('bmy.com.cn', 'xian'), ('www.meet-in-shanghai.net', 'shanghai'),
         ):
             record = {**self.venue, 'cities': [city],
                       'source_urls': ['https://' + host + '/visitor-guide.html']}

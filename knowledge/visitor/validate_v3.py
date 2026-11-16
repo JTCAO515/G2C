@@ -39,6 +39,7 @@ VENUE_SOURCE_CITIES.update({
     "english.shanghai.gov.cn": frozenset({"shanghai"}),
     "en.xa.gov.cn": frozenset({"xian"}),
     "bmy.com.cn": frozenset({"xian"}),
+    "www.meet-in-shanghai.net": frozenset({"shanghai"}),
 })
 VENUE_PAGE_CITIES = {
     "https://cdn3.shenzhenmuseum.com/museum/html/aboutus/visit-service.html": frozenset({"shenzhen"}),

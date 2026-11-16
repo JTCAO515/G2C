@@ -1,0 +1,30 @@
+[
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "topic": "passport_booking",
+    "cities": ["shanghai"],
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-11-23",
+    "source_urls": [
+      "https://www.meet-in-shanghai.net/en/guide/exploring-the-depths-of-huangpu-764091/",
+      "https://www.meet-in-shanghai.net/en/nighttime-culture/bund-sightseeing-area-026252/"
+    ],
+    "id": "visitor.v3.shanghai.the-bund-public-visit",
+    "subject": {
+      "key": "shanghai.the-bund",
+      "name_zh": "外滩",
+      "name_en": "The Bund",
+      "wikidata_qid": "Q125474"
+    },
+    "conditions": {
+      "reservation_required": null,
+      "closed_weekdays": [],
+      "closed_weekdays_public_holiday_exception": false,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    },
+    "text_zh": "上海市文旅推广网将外滩观光区域和建筑外观游览列为全年全天开放，没有常规每周闭馆日。本条仅限公共滨江步行和建筑外观；内部场馆、商户、游船、活动及灯光演出按各自安排。临时交通与人流管理可影响通行，行前查现场公告。普通入区预约是否必需及预约窗口本条尚未核定。",
+    "text_en": "Shanghai’s official culture and tourism promotion site lists the Bund’s sightseeing area and outdoor architecture viewing as open year-round, all day, with no regular weekly closing day. This covers public waterfront walking and building exteriors only. Indoor venues, shops, cruises, events and lighting shows follow separate arrangements. Temporary crowd or traffic controls may limit access. Ordinary admission reservation requirements and booking windows remain unconfirmed here."
+  }
+]
