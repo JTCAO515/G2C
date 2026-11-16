@@ -1059,9 +1059,11 @@ private var developmentHostEnvironment: [String: String] {
                         self.lioChatContinuity = current
                     }
                     #endif
+                    #if !G2C_DEMO_BETA
                     if let conversation = inputs.conversation {
                         _ = self.trip?.messages.messages.selectConversationForSending(conversation)
                     }
+                    #endif
                 }
                 if self.cleanupEnabled, let workflow = self.cleanupWorkflow {
                     Task { await workflow.enrollOnline() }
