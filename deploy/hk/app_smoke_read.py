@@ -74,6 +74,14 @@ def frozen_action(plan,nonce,kind):
     for parent in plan['steps']:
         actions=parent.get('read_actions')
         entries=[parent]
+        # Stop-new is a deny-only control, not a read/checkpoint admission.
+        # A broken SM04 can still stop through its unique parent nonce.
+        if kind=='stop_new'and nonce==parent['nonce']:
+            if sum(step['nonce']==nonce for step in plan['steps'])!=1:
+                raise Unavailable('APP_SMOKE_ACTION_NONCE_NOT_UNIQUE')
+            return parent
+        if parent.get('gate_id')=='SM04'and actions is None:
+            raise Unavailable('APP_SMOKE_INVALID_READ_ACTIONS')
         if actions is not None:
             if(parent['gate_id']!='SM04'or parent['text']is not None or type(actions)is not list
                     or len(actions)!=2 or any(type(a)is not dict or set(a)!={'action','nonce'}

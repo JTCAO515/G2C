@@ -43,3 +43,25 @@ def test_malformed_or_reused_plan_nonces_refuse_all_actions(change):
     elif change=='missing_action':parent['read_actions'].pop()
     else:parent['read_actions'][0]['nonce']='bad'
     with pytest.raises(Unavailable):frozen_action(value,'a'*32,'checkpoint')
+
+
+@pytest.mark.parametrize('change',['absent','null','empty'])
+@pytest.mark.parametrize('kind',['checkpoint','observe_read'])
+def test_sm04_missing_whole_child_definition_never_admits_parent_or_other_steps(change,kind):
+    value=plan();parent=value['steps'][1]
+    if change=='absent':parent.pop('read_actions')
+    else:parent['read_actions']=None if change=='null'else []
+    for nonce in(parent['nonce'],value['steps'][0]['nonce']):
+        with pytest.raises(Unavailable,match='INVALID_READ_ACTIONS'):
+            frozen_action(value,nonce,kind)
+
+
+@pytest.mark.parametrize('change',['absent','null','empty'])
+def test_malformed_sm04_retains_only_deny_control_through_unique_parent(change):
+    value=plan();parent=value['steps'][1]
+    if change=='absent':parent.pop('read_actions')
+    else:parent['read_actions']=None if change=='null'else []
+    assert frozen_action(value,parent['nonce'],'stop_new')is parent
+    value['steps'].append(dict(parent))
+    with pytest.raises(Unavailable,match='NONCE_NOT_UNIQUE'):
+        frozen_action(value,parent['nonce'],'stop_new')
