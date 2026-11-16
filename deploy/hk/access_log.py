@@ -290,9 +290,19 @@ def query(directory, since, until, *, min_status=None, route=None, phase='finish
     if not since < until or until - since > timedelta(days=RETENTION_DAYS):
         raise ValueError('bounded window within retention required')
     rows = []
-    day = since.date()
-    while day <= until.date():
-        path = Path(directory) / ('access-' + day.isoformat() + '.jsonl')
+    first_day = since.astimezone(timezone.utc).date().isoformat()
+    # Buckets follow write time, while finished.ts retains request start time.
+    # A later retained bucket can therefore contain an earlier window's finish;
+    # there is no assumed one-day maximum request duration. Filter original ts
+    # below rather than truncating the scan at until's calendar date.
+    for path in sorted(Path(directory).glob('access-*.jsonl')):
+        match = _FILE.fullmatch(path.name)
+        if match is None or match[1] < first_day:
+            continue
+        try:
+            datetime.strptime(match[1], '%Y-%m-%d')
+        except ValueError:
+            continue  # not a bucket name the writer can produce
         if path.is_file() and not path.is_symlink():
             for line in path.read_text().splitlines():
                 record = json.loads(line)
@@ -309,7 +319,6 @@ def query(directory, since, until, *, min_status=None, route=None, phase='finish
                 if route is not None and record['route'] != route:
                     continue
                 rows.append((stamp, line))
-        day += timedelta(days=1)
     rows.sort(key=lambda row: row[0])
     statuses = {}
     for _, line in rows:
