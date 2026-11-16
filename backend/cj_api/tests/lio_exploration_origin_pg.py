@@ -259,3 +259,8 @@ if __name__=='__main__':
     qualified_pipeline_main(production=True)
     import runpy
     runpy.run_path(str(ROOT/'backend/draft/tests/rich_provider_pg.py'),run_name='__main__')
+    import subprocess
+    subprocess.run([sys.executable,'-B','-m','pytest','-q','-p','no:cacheprovider',
+                    str(ROOT/'backend/memory/tests/test_api_scope_hold.py')],check=True)
+    for script in ('rich_selection_pg.py','rich_selection_undo_pg.py'):
+        subprocess.run([sys.executable,'-B',str(ROOT/'backend/draft/tests'/script)],check=True)

@@ -50,6 +50,18 @@ class ActualAXProjectionTests(unittest.TestCase):
         for state in ['', 'Replying…', '正在回复…']:
             self.assertFalse(project(base + [node('lio.answer', 'Partial', value=state)])['body_complete'])
 
+    def test_read_unavailable_retry_is_a_failure_not_a_loaded_empty_conversation(self):
+        for label in ['Try reading again', '再次查看']:
+            result = project([node('lio.chat.newShortcut'), node('lio.composer'),
+                              node('lio.read.retry', label)])
+            self.assertFalse(result['body_complete'])
+            self.assertIn(label, result['errors'])
+
+    def test_a_loaded_empty_chat_needs_its_actual_first_screen_content(self):
+        base = [node('lio.chat.newShortcut'), node('lio.composer')]
+        self.assertFalse(project(base)['body_complete'])
+        self.assertTrue(project(base + [node('lio.example.0', 'Weather')])['body_complete'])
+
 
 if __name__ == '__main__':
     unittest.main()
