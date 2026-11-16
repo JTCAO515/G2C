@@ -8,6 +8,51 @@ import Testing
 @testable import CJLioUser
 
 @MainActor struct LioChatContinuityTests {
+    @Test func everyDurableAcceptedBindingHasItsFirstReferenceSettledAtomically() async throws {
+        let fixture = try ChatContinuityFixture()
+        let library = try fixture.library()
+        let position = try #require(library.continuity)
+        var saved: [Data] = []
+        position.bindPositionWriter { saved.append($0) }
+        let selected = library.newChat()
+        position.selectedID = selected.id
+        let model = LioConversation(service: selected.service)
+        model.send("A synthetic question", language: .english)
+        let first = try #require(model.pending)
+        position.firstQuestions[selected.id] = first
+        await model.receive(first)
+        var acceptedCheckpoints = 0
+        for bytes in saved {
+            let checkpoint = LioChatContinuity(); try checkpoint.restorePosition(bytes)
+            if checkpoint.localIDs.values.contains(String(decoding: selected.id, as: UTF8.self)) {
+                acceptedCheckpoints += 1
+                #expect(!checkpoint.blankIDs.contains(selected.id))
+                #expect(checkpoint.firstQuestions[selected.id] == nil)
+            }
+        }
+        #expect(acceptedCheckpoints > 0)
+        #expect(await fixture.transport.posts == 1)
+    }
+
+    @Test func noDurableCheckpointDropsAnUnstagedFirstQuestionBeforeRestoringItsDraft() async throws {
+        let fixture = try ChatContinuityFixture()
+        let library = try fixture.library()
+        let selected = library.newChat()
+        let position = try #require(library.continuity)
+        let first = LioQuestion(messageID: "synthetic-unstaged-first", text: "  Keep this unstaged text\n ", language: .english)
+        position.selectedID = selected.id
+        position.firstQuestions[selected.id] = first
+        var saved: [Data] = []
+        position.bindPositionWriter { saved.append($0) }
+        _ = try await library.restore?()
+        #expect(!saved.isEmpty)
+        for bytes in saved {
+            let checkpoint = LioChatContinuity(); try checkpoint.restorePosition(bytes)
+            #expect(checkpoint.draft.utf8.elementsEqual(first.text.utf8))
+        }
+        #expect(await fixture.transport.posts == 0)
+    }
+
     @Test func reauthenticatedClientReturnsToTheSameChatAndDraftWithoutSendingAgain() async throws {
         let fixture = try ChatContinuityFixture()
         let old = try fixture.library()
