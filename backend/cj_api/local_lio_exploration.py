@@ -72,11 +72,21 @@ def _bubbles(text,locale):
 
 
 class ExplorationPlanning:
-    def __init__(self,database,legacy,*,enabled=True):
+    def __init__(self,database,legacy,*,enabled=True,generation=None):
         self.database,self.legacy,self.enabled=database,legacy,enabled
+        self.generation=generation
         self.profiles=ProfileContext(database)
 
-    def scene_context(self,binding,now):return self.legacy.scene_context(binding,now)
+    def scene_context(self,binding,now):
+        if self.generation is None:return self.legacy.scene_context(binding,now)
+        from .lio_scene import scene_prompt
+        current=self.current(binding)
+        return scene_prompt(None if current is None else json.loads(current.proposed),now,
+            document=None if current is None else json.loads(current.trip.content))
+
+    def current(self,binding):
+        if self.generation is not None:return self.generation.current(self,binding)
+        return self.legacy.calendar.current(binding)if self.legacy.calendar is not None else None
 
     def _previous_round(self,binding):
         with self.database.connect(binding.scope) as db:
@@ -93,7 +103,7 @@ class ExplorationPlanning:
         return value['keys']
 
     def _phase(self,binding):
-        current=self.legacy.calendar.current(binding) if self.legacy.calendar is not None else None
+        current=self.current(binding)
         if current is None:
             with self.database.connect(binding.scope) as db:
                 preview=db.execute('SELECT 1 FROM cj_message_receipt m JOIN cj_run_record r USING(scope,run_id) '
@@ -102,7 +112,7 @@ class ExplorationPlanning:
                     (binding.scope,binding.conversation_id,binding.generation,binding.message_sequence,PREVIEW)).fetchone()
             return 'undated' if preview else None
         document=json.loads(current.trip.content)
-        if document.get('content_version')=='structured.3':
+        if document.get('content_version')in ('structured.3','structured.4'):
             calendar=document['calendar']
             if calendar['state']=='undated':return 'undated'
             first=date.fromisoformat(calendar['start_date']);last=first+timedelta(days=len(document['days'])-1)
@@ -163,6 +173,9 @@ class ExplorationPlanning:
         days=effective['duration_days']
         state=worker._event(binding,state,'effect_committed',PROGRESS+json.dumps(dict(kind='planning_started',
             text='开始安排'+str(days)+'天。' if locale=='zh' else 'Planning '+str(days)+' days.',duration_days=days),ensure_ascii=False))
+        if self.generation is not None:
+            return self.generation.plan(self,worker,binding,view,locale=locale,effective=effective,
+                prior_model_calls=prior_model_calls)
         raw=self._model(worker,binding,view,RESPONSE,RESPONSE_SYSTEM,dict(scene='plan_now_preview',locale=locale,
             groups=0,duration_days=days,effective=effective,prior_model_calls=prior_model_calls))
         value=decode(raw.encode())

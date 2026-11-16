@@ -112,7 +112,12 @@ def _require_memory_configuration(cursor, scope, configuration, travel):
         raise RuntimeDenied('existing memory requires explicit runtime configuration')
 
 
-def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None,run_credential=False,assembly_planning=False,demo_planning=False,lio_confirmation=None,lio_memory_enabled=False,national_planning=False,runtime_registrations_for_run=None,runtime_reflection=None,runtime_exit_observer_for_run=None):
+def _lio_generation():
+    from cj_api.local_lio_pipeline_generation import PipelineGeneration
+    return PipelineGeneration()
+
+
+def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configuration=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,formal_memory_configuration=None,account_checker_builder=None,run_credential=False,assembly_planning=False,demo_planning=False,lio_confirmation=None,lio_memory_enabled=False,national_planning=False,runtime_registrations_for_run=None,runtime_reflection=None,runtime_exit_observer_for_run=None,lio_generation_factory=_lio_generation):
     if draft_profile not in (None,'needs-structured.1','needs-current-trip.1'):
         raise CompositionUnavailable('unknown explicit draft profile')
     if place_draft_configuration is not None:
@@ -343,7 +348,8 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
                 lio_edit=LioCalendarEdit(calendar,lio_edit)
                 from cj_api.local_lio_exploration import (ExplorationPlanning,ExplorationDispatch,
                     ExplorationEditDispatch,exploration_enabled)
-                exploration=ExplorationPlanning(database,lio_planning,enabled=exploration_enabled())
+                exploration=ExplorationPlanning(database,lio_planning,enabled=exploration_enabled(),
+                    generation=lio_generation_factory())
                 lio_planning=ExplorationDispatch(lio_planning,exploration)
                 lio_edit=ExplorationEditDispatch(database,lio_edit,exploration)
     return RunWorker(scope=scope, messages=messages, runs=runs, provider=model, drafts=drafts,
@@ -364,7 +370,7 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
                                        registrations_for_run=runtime_registrations_for_run,exit_observer_for_run=runtime_exit_observer_for_run)))
 
 
-def run_once(database, model, auth_dir, *, memory_configuration=None,memory_configuration_for_scope=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None,real_services=None,account_admission=False,hk_beta_b_run_credential=False,hk_assembly_scopes=frozenset(),hk_assembly_run_credential_scopes=frozenset(),hk_demo_scopes=frozenset(),lio_confirmation=None,runtime_registrations_for_run=None,runtime_reflection=None,runtime_exit_observer_for_run=None):
+def run_once(database, model, auth_dir, *, memory_configuration=None,memory_configuration_for_scope=None,tools_configuration=None,draft_profile=None,place_draft_configuration=None,background_jobs=None,formal_memory_configuration=None,real_services=None,account_admission=False,hk_beta_b_run_credential=False,hk_assembly_scopes=frozenset(),hk_assembly_run_credential_scopes=frozenset(),hk_demo_scopes=frozenset(),lio_confirmation=None,runtime_registrations_for_run=None,runtime_reflection=None,runtime_exit_observer_for_run=None,lio_generation_factory=_lio_generation):
     if memory_configuration_for_scope is not None and (memory_configuration is not None or formal_memory_configuration is not None):
         raise ValueError('select one explicit Memory configuration source')
     if runtime_registrations_for_run is not None and (tools_configuration is None or real_services is None):
@@ -433,6 +439,7 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,memory_conf
                                          account_checker_builder=account_checker_builder,run_credential=run_credential,
                                          assembly_planning=assembly_planning,demo_planning=scope in hk_demo_scopes,
                                          lio_confirmation=lio_confirmation,
+                                         lio_generation_factory=lio_generation_factory,
                                          runtime_registrations_for_run=runtime_registrations_for_run,
                                          runtime_reflection=runtime_reflection,
                                          runtime_exit_observer_for_run=runtime_exit_observer_for_run,

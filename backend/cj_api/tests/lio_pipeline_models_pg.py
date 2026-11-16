@@ -1,4 +1,5 @@
 """Native signed models and complete selected saves; supplier HTTP is a fixture."""
+from contextlib import ExitStack
 from pathlib import Path
 from threading import Event
 from datetime import date,timedelta
@@ -230,11 +231,11 @@ def selected_provider_join(host,worker,binding,bundle,skeleton,calls,scenario):
     return len(writers)
 
 
-def main(*,natural_direct=False,early_departure=True):
+def main(*,natural_direct=False,early_departure=True,production=False):
     original_model=ExplorationPlanning._model
     original_http=httpx.MockTransport.handle_request
     original_post=TestClient.post
-    wires=[];completed=[];lookups=[];posted={};saved_runs={}
+    wires=[];completed=[];lookups=[];posted={};saved_runs={};active={};supplier_wires=[]
     def post(api,url,**kwargs):
         if url=='/v4/lio/messages':
             value=json.loads(kwargs['content'])
@@ -298,6 +299,7 @@ def main(*,natural_direct=False,early_departure=True):
         raw=''.join('data: '+json.dumps(chunk)+'\n\n'for chunk in chunks)+'data: [DONE]\n\n'
         return httpx.Response(200,stream=httpx.ByteStream(raw.encode()))
     def model(host,worker,binding,view,profile,system,extra):
+        active.update(worker=worker,binding=binding)
         if profile==RESPONSE and extra.get('scene')=='plan_now_preview':
             from cj_api.local_lio_pipeline import prepare_generation
             assert extra['prior_model_calls']==int(natural_direct)
@@ -349,8 +351,45 @@ def main(*,natural_direct=False,early_departure=True):
             completed.append(binding.run_id)
             print('PASS native4 sourced plan understanding -> original NEEDS/calendar/profile hold + skeleton + two registered wording calls '+binding.message_id+' RUN '+binding.run_id+('; sole writer saved'if binding.message_id in saved_runs else'; no Trip publication'),flush=True)
         return original_model(host,worker,binding,view,profile,system,extra)
-    with patch.object(TestClient,'post',post),patch.object(httpx.MockTransport,'handle_request',response), \
-            patch.object(ExplorationPlanning,'_model',model):native.main(saved_runs=saved_runs)
+    original_receipt=TripRepository.rich_plan_receipt
+    def receipt(repository,binding):
+        value=original_receipt(repository,binding)
+        if value is not None:
+            saved_runs[binding.message_id]=binding.run_id
+            if binding.run_id not in completed:completed.append(binding.run_id)
+        return value
+    def send_check():
+        active['worker'].memory_run.check()
+        assert active['worker'].message_context.active_original(active['binding']).receipt.message_id==active['binding'].message_id
+    class Writer(FixtureWriter):
+        def __init__(self,reader):super().__init__(reader,send_check)
+        def write(self,raw):
+            parsed=urlsplit(raw.split(b'\r\n',1)[0].split(b' ')[1].decode('ascii'))
+            self.path=parsed.path;self.query=parse_qs(parsed.query)
+            self.keyword=self.query.get('keywords',[''])[0]
+            self.provider_id='SYNTH_FACTORY_'+str(len(supplier_wires));supplier_wires.append(self.path)
+            super().write(raw)
+        def response_value(self):
+            if self.path.startswith('/v3/direction/'):
+                a=self.query['origin'][0];b=self.query['destination'][0]
+                return dict(status='1',infocode='10000',count='1',route=dict(origin=a,destination=b,
+                    paths=[dict(distance='120',duration='60',steps=[dict(polyline=a+';'+b)])]))
+            return dict(status='1',infocode='10000',count='1',pois=[dict(id=self.provider_id,
+                name=self.keyword,cityname='北京市',adcode='110101',location='116.4,39.9')])
+    async def dial():
+        reader=asyncio.StreamReader();writer=Writer(reader);return reader,writer
+    with ExitStack()as stack:
+        stack.enter_context(patch.object(TestClient,'post',post))
+        stack.enter_context(patch.object(httpx.MockTransport,'handle_request',response))
+        stack.enter_context(patch.object(ExplorationPlanning,'_model',model))
+        if production:
+            stack.enter_context(patch.object(https_transport,'_connect',dial))
+            stack.enter_context(patch.object(TripRepository,'rich_plan_receipt',receipt))
+        native.main(saved_runs=saved_runs,generation=production)
+    if production:
+        assert len(saved_runs)==len(completed)==6 and len(wires)==30
+        print('PASS default production factory ZH3/EN3 complete skeleton/selected retrieval/order/routes/schedule/final wording/sole writer and actual timeline Card3; '+str(len(supplier_wires))+' fixture supplier calls; real/G6/G9 UNRUN',flush=True)
+        return
     assert len(saved_runs)==2
     assert len(completed)==6 and len(wires)==24 and lookups==([2,13,2,2,13,2]if early_departure else[2,11,2,2,11,2])
     print('PASS source-held selected places and C ordering; '+str(sum(lookups))+' fixture lookups; two sole-writer saves preserve fixed clocks and original edge windows',flush=True)

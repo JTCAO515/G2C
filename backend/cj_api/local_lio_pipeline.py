@@ -68,7 +68,7 @@ def prepare_generation(host,worker,binding,view,*,locale,effective,prior_model_c
     raw,=calls.parallel((packet,))
     prefix='p4-'+binding.run_id[:12]
     skeleton=parse_skeleton(raw.encode(),expected,id_prefix=prefix)
-    current=host.legacy.calendar.current(binding)
+    current=host.current(binding)
     retained=None if current is None else json.loads(current.trip.content)
     size,resolution=admit_city_lookup(skeleton,projected,edges,calls,id_prefix=prefix,locale=locale,retained=retained,
         query=dict(query=effective['city'],normalized_name=None,province=None))
