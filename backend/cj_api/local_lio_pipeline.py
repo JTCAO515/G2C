@@ -110,3 +110,23 @@ def retrieve_skeleton(prepared):
     complete=bundle.seal()
     places,hotels=bundle.places(skeleton,complete)
     return places,hotels,complete
+
+
+def compile_retrieved_plan(prepared,places,hotel_places,capture,*,checks,subjects,locale):
+    """Read the current protected Trip under the same genuine provider frame.
+
+    The returned document is data for C's assembler, not an issued check or
+    publication grant. Routes, final checks, final resealing and the sole
+    Source4 publisher remain required after this frame closes.
+    """
+    from .lio_pipeline_compilation import compile_retrieved
+    bundle=prepared.sources;worker,binding=bundle.worker,bundle.binding
+    def compile():
+        with bundle.source.hold_for_publication(binding):
+            bundle.source.check(binding,capture)
+            current=bundle.source.contexts[binding]
+            retained=None if current is None else json.loads(current.trip.content)
+            return compile_retrieved(prepared,places,hotel_places,checks=checks,subjects=subjects,
+                locale=locale,retained=retained)
+    _,result=worker._step(binding,compile)
+    return result

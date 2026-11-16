@@ -47,7 +47,7 @@ import lio_exploration_flow_pg as native
 
 def full_provider_join(prepared):
     """Both real registered lookup phases, selected under genuine sources."""
-    from cj_api.local_lio_pipeline import retrieve_skeleton
+    from cj_api.local_lio_pipeline import retrieve_skeleton,compile_retrieved_plan
     bundle=prepared.sources;worker,binding=bundle.worker,bundle.binding
     writers=[];phases=[];queries=[];captures=[]
     def send_check():
@@ -91,6 +91,21 @@ def full_provider_join(prepared):
     assert places.keys()=={stop.item_id for stop in prepared.skeleton.stops}
     assert all(place is not None for place in places.values())and all(place is not None for place in hotels)
     assert len(captures)==2 and complete is captures[1]
+    rows=[dict(kind=kind,state='unknown',day_indices=list(range(1,complete.basis.day_count+1)),
+        item_ids=[],reason='date_evidence_not_collected',evidence_refs=[])for kind in ('weather','day_opening')]
+    # Explicit unknown check DATA for the compilation component, not issued
+    # checks or authority to publish. Final genuine checks/publisher are UNRUN.
+    compiled=compile_retrieved_plan(prepared,places,hotels,complete,checks=rows,subjects=('party',),locale='en')
+    assert representation_size(compiled.document)[:2]==prepared.preflight_size[:2]
+    assert len(compiled.order_activities)==len(compiled.schedule_activities)==len(compiled.document['items'])
+    snapshot,_=complete.records()
+    fixed,=snapshot.fields['fixed_items']
+    original=next(item for item in compiled.document['items']if item['id']==fixed['item_id'])
+    assert original['fixed']==fixed['locked'] and original['schedule']['start']['time']==fixed['start']['time']
+    assert compiled.document['calendar']==dict(state='dated',start_date=complete.basis.start_date)
+    try:compile_retrieved_plan(prepared,places,hotels,captures[0],checks=rows,subjects=('party',),locale='en')
+    except LeaseUnavailable:pass
+    else:raise AssertionError('old provider seal compiled after new attempts')
     try:bundle.places(prepared.skeleton,captures[0])
     except LeaseUnavailable:pass
     else:raise AssertionError('pre-meal provider seal remained eligible after new attempts')
