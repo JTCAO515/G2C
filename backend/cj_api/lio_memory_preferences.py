@@ -32,8 +32,8 @@ _FORMS = {
         extra=r'I usually budget [0-9]{1,5} (?:yuan|CNY|RMB|USD) (?:per|a) day',
     ),
     'lodging.style': _forms(
-        r'(?:staying (?:at|in) )?(?:budget|boutique|central|quiet|upscale|family-friendly) hotels?',
-        r'(?:住)?(?:经济型|精品|市中心的|安静的|高档|家庭友好型)(?:酒店|住宿)',
+        r'(?:staying (?:at|in) )?(?:budget|boutique|central|quiet|upscale|luxury|luxurious|family-friendly) hotels?',
+        r'(?:住)?(?:经济型|精品|市中心的|安静的|高档|豪华|奢华|家庭友好型)(?:的)?(?:酒店|住宿)',
     ),
     'travel.interests': _forms(
         _INTEREST_EN + r'(?: and ' + _INTEREST_EN + r')?',

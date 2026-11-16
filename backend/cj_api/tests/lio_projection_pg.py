@@ -23,7 +23,7 @@ import local_history_pg as harness
 import dev_auth,local_run_context,run_worker
 
 
-def exercise(root,conninfo):
+def exercise(root,conninfo,*,preference=None):
     root.mkdir(mode=0o700)
     subjects=frozenset({'projection-owner','projection-foreign'})
     auth=root/'auth';dev_auth.init(auth,subjects)
@@ -37,17 +37,20 @@ def exercise(root,conninfo):
         local_run_context.provision_budget(path,context,subject)
         dev_auth.activate_travel(path,subject,context,ABI)
     database=LocalDatabase(path,run_context=context,travel_context=True,needs_context=True,trip_context=True)
-    profile=dict(subjects=['self'],slots={'travel.pace':dict(kind='preference',collection_allowed=True,semantic_resolved=True)},extents=['long_term'],context_ids=[])
+    slot='travel.pace'if preference is None else'lodging.style'
+    profile=dict(subjects=['self'],slots={slot:dict(kind='preference',collection_allowed=True,semantic_resolved=True)},extents=['long_term'],context_ids=[])
     policy=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
         expires_at='2099-01-01T00:00:00Z',profiles={s:profile for s in subjects}),travel_contexts={s:[] for s in subjects})
     memory=TypedRuntimeConfiguration.from_bytes(encode(dict(version='local-memory-run.2',collection=policy,
-        selections={s:dict(subject='self',slots=['travel.pace'],max_bytes=1000)for s in subjects})))
+        selections={s:dict(subject='self',slots=[slot],max_bytes=1000)for s in subjects})))
     readers=[]
     def memory_host(boundary):
         reader=lio_candidates(database,boundary,subjects,memory.collection);readers.append(reader)
         return LioMemoryCards(reader.collection,reader.current)
+    model_inputs=[]
     class Model(FakeProvider):
         def stream(self,messages,system=None):
+            model_inputs.append((messages,system))
             if system==MEMORY_SYSTEM:
                 self.calls+=1
                 yield json.dumps(dict(version='MEMORY-EXTRACT@2',entries=[]))
@@ -62,7 +65,7 @@ def exercise(root,conninfo):
     def lock(tx):locks.append(tx.scope);return native_lock(tx)
     with TestClient(app)as api:
         assert api.get('/v1/lio/timeline',headers=headers).json()['messages']==[]
-        for mid,text in [('projection-empty','Tell me about a park.'),('projection-tags','I prefer fewer stops in a day.')]:
+        for mid,text in [('projection-empty','Tell me about a park.'),('projection-tags',preference or'I prefer fewer stops in a day.')]:
             assert api.post('/v1/lio/messages',headers=headers,content=encode(dict(version='LIO-message.1',message_id=mid,text=text,locale='en'))).status_code==200
             if mid=='projection-empty':
                 with database.connect(scope)as db:
@@ -122,9 +125,38 @@ def exercise(root,conninfo):
         except Unavailable:pass
         else:raise AssertionError('foreign owner became empty projection')
         assert model.calls==calls
+        if preference is not None:
+            tag,=current.json()['messages'][-1]['memory']['tags']
+            assert tag['text']==preference
+            with database.connect(scope)as db:
+                assert db.execute('SELECT slot,status FROM cj_memory_item WHERE scope=%s',(scope,)).fetchall()==[('lodging.style','candidate')]
+            choice=encode(dict(version='LIO-memory-action.1',action_id='explicit-remember-luxury',operation='remember',target=tag['target']))
+            pending=api.post('/v1/lio/memory/receipt',headers=headers,content=choice)
+            assert pending.status_code==200 and pending.json()['status']=='pending',pending.text
+            confirmed=api.post('/v1/lio/memory/actions',headers=headers,content=choice)
+            assert confirmed.status_code==200 and confirmed.json()['status']=='remembered',confirmed.text
+            readback=api.post('/v1/lio/memory/receipt',headers=headers,content=choice)
+            assert readback.status_code==200 and readback.json()==confirmed.json(),readback.text
+            with database.connect(scope)as db:
+                assert db.execute('SELECT slot,status FROM cj_memory_item WHERE scope=%s',(scope,)).fetchall()==[('lodging.style','active')]
+                assert db.execute('SELECT count(*)FROM cj_trip_record').fetchone()[0]==0
+            assert model.calls==calls
+            print('PASS signed luxury hotel candidate keeps exact original, zero saved Memory before explicit Remember, same-action receipt after confirmation, zero Trip or additional model calls',flush=True)
+            before=len(model_inputs)
+            sent=api.post('/v1/lio/messages',headers=headers,content=encode(dict(version='LIO-message.1',
+                message_id='projection-first-recall',text='What lodging do I prefer?',locale='en')))
+            assert sent.status_code==200,sent.text
+            assert [o.status for o in worker.process()]==['completed']
+            recalled=api.get('/v1/lio/timeline',headers=headers)
+            assert recalled.status_code==200 and recalled.json()['messages'][-1]['status']=='completed',recalled.text
+            assert any(preference in json.dumps(messages,ensure_ascii=False)for messages,_ in model_inputs[before:])
+            print('PASS first signed follow-up after Remember completes with the exact active preference in model input; fixture provider, real-service recall remains UNRUN',flush=True)
     print('PASS native signed PG empty/tag projection: same-body legacy compatibility, one M custody, competing worker blocked, initial contention503, invalid reference/wrong RUN/foreign owner withheld, no model calls during reads')
 
 
 if __name__=='__main__':
     harness.exercise=lambda auth,conninfo:exercise(auth.parent/'lio-projection',conninfo)
     harness.main()
+    for preference in ('I prefer luxury hotels.','我喜欢豪华酒店。'):
+        harness.exercise=lambda auth,conninfo:exercise(auth.parent/'lio-projection',conninfo,preference=preference)
+        harness.main()
