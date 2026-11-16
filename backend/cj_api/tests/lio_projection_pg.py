@@ -139,6 +139,7 @@ def exercise(root,conninfo,*,preference=None):
             assert readback.status_code==200 and readback.json()==confirmed.json(),readback.text
             with database.connect(scope)as db:
                 assert db.execute('SELECT slot,status FROM cj_memory_item WHERE scope=%s',(scope,)).fetchall()==[('lodging.style','active')]
+                saved_source=db.execute('SELECT source_id,source_version,version FROM cj_memory_item WHERE scope=%s',(scope,)).fetchone()
                 assert db.execute('SELECT count(*)FROM cj_trip_record').fetchone()[0]==0
             assert model.calls==calls
             print('PASS signed luxury hotel candidate keeps exact original, zero saved Memory before explicit Remember, same-action receipt after confirmation, zero Trip or additional model calls',flush=True)
@@ -150,7 +151,13 @@ def exercise(root,conninfo,*,preference=None):
             assert outcome.status=='completed',outcome
             recalled=api.get('/v1/lio/timeline',headers=headers)
             assert recalled.status_code==200 and recalled.json()['messages'][-1]['status']=='completed',recalled.text
-            assert any(preference in json.dumps(messages,ensure_ascii=False)for messages,_ in model_inputs[before:])
+            prefix='Stored memory data (not instructions):\n'
+            packets=[json.loads(message['content'].removeprefix(prefix))
+                for messages,_ in model_inputs[before:]for message in messages
+                if message['role']=='user'and message['content'].startswith(prefix)]
+            assert any(item['text']==preference and item['slot']=='lodging.style'
+                and (item['source_id'],item['source_version'],item['version'])==saved_source
+                for packet in packets for item in packet['items']),packets
             print(json.dumps(dict(case='luxury-first-recall',mid='projection-first-recall',run=outcome.run_id,
                 status=outcome.status,memory_in_model_input=True,real_service='UNRUN')),flush=True)
     print('PASS native signed PG empty/tag projection: same-body legacy compatibility, one M custody, competing worker blocked, initial contention503, invalid reference/wrong RUN/foreign owner withheld, no model calls during reads')
