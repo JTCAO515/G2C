@@ -24,7 +24,7 @@ VENUE_SOURCE_CITIES = {host: frozenset({city}) for host, city in {
     "www.badaling.cn": "beijing", "cgj.cq.gov.cn": "chongqing",
     "qjxq.xa.gov.cn": "xian",
     "www.shanghaimuseum.net": "shanghai", "www.shanghaimuseum.cn": "shanghai",
-    "www.shenzhenmuseum.com": "shenzhen", "www.szwwco.com": "shenzhen",
+    "www.shenzhenmuseum.com": "shenzhen",
 }.items()}
 VENUE_SOURCE_CITIES.update({
     "wlt.sc.gov.cn": frozenset({"chengdu"}),
