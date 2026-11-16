@@ -6,6 +6,7 @@ does not grant login, message, release or provider authority.
 import hashlib
 import importlib.util
 import json
+import math
 import os
 from pathlib import Path
 import subprocess
@@ -103,6 +104,9 @@ class NativeUI:
         target = self.commands / (stem + '.request.json')
         if target.exists():
             raise RuntimeError('A UI action already has an execution record; do not overwrite or resend')
+        # From intent publication until a complete valid ACK, no next action is
+        # permitted, including when reading/decoding the response itself fails.
+        self.failed = True
         write(target, request)
         response = self.commands / (stem + '.response.json')
         deadline = time.monotonic() + timeout
@@ -111,11 +115,19 @@ class NativeUI:
                 self.failed = True
                 raise RuntimeError('Native UI result UNKNOWN; preserve the original execution record')
             time.sleep(.1)
-        result = decode(response.read_bytes())
+        try:
+            result = decode(response.read_bytes())
+            if (not isinstance(result, dict) or result['id'] != request['id']
+                    or result['kind'] != kind or result['ok'] is not True):
+                raise ValueError('Invalid native ACK')
+            started, finished = result['started_uptime'], result['finished_uptime']
+            if (type(started) not in (int, float) or type(finished) not in (int, float)
+                    or not math.isfinite(started) or not math.isfinite(finished) or not 0 <= started <= finished):
+                raise ValueError('Invalid native clock')
+        except (KeyError, TypeError, ValueError, OSError):
+            raise RuntimeError('Native UI result UNKNOWN; preserve its original record') from None
         self.sequence += 1
-        if result['id'] != request['id'] or result['ok'] is not True:
-            self.failed = True
-            raise RuntimeError('Native UI action failed; preserve its original record')
+        self.failed = False
         return result
 
     def close(self):

@@ -34,6 +34,8 @@ def semantic_nodes(nodes):
 def project(nodes):
     transcript, errors = [], []
     draft, composer_seen, ready, progress, greetings = '', False, False, False, 0
+    progress = any(node['progress_indicator'] for node in nodes)
+    answers_complete = True
     for node in semantic_nodes(nodes):
         identifier = node['identifier']
         text = node['value'] if node['value'] else node['label']
@@ -44,7 +46,8 @@ def project(nodes):
         elif identifier == 'lio.answer':
             if not transcript or transcript[-1]['answer']:
                 raise EvidenceUnknown('The complete ordered question/answer hierarchy is unavailable')
-            transcript[-1]['answer'] = text
+            transcript[-1]['answer'] = node['label']
+            answers_complete = answers_complete and node['value'] in {'Reply complete', '回复已完成'}
         elif identifier == 'lio.composer':
             if composer_seen:
                 raise EvidenceUnknown('Actual composer is ambiguous')
@@ -59,4 +62,4 @@ def project(nodes):
             errors.append(text)
     return dict(transcript=transcript, draft=draft, errors=errors, greeting_count=greetings,
                 body_complete=composer_seen and ready and not progress and not errors
-                    and all(turn['answer'] for turn in transcript))
+                    and answers_complete and all(turn['answer'] for turn in transcript))
