@@ -85,4 +85,31 @@ import XCTest
         }
     }
 
+    func testCancelledOldTripFailureCannotHideTheNewListInBothLanguages() throws {
+        continueAfterFailure = false
+        for chinese in [false, true] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.warm-session.acceptance")
+            app.launchArguments = ["--lio-preview", "--trip-reader-race", "-cj.ui.language.v1", chinese ? "zh-Hans" : "en", "-lio.ui.appearance.v1", "light"]
+            app.launch()
+            defer { app.terminate() }
+            app.tabBars.buttons[chinese ? "行程" : "Trips"].tap()
+            XCTAssertTrue(app.staticTexts["Trip before renewal"].waitForExistence(timeout: 8))
+            app.buttons["fixture.trip.hold"].tap()
+            app.buttons["fixture.session.read-failure"].tap()
+            let held = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", "held"), object: app.staticTexts["fixture.trip.held"])
+            XCTAssertEqual(XCTWaiter.wait(for: [held], timeout: 5), .completed)
+            app.buttons["fixture.session.read-failure"].tap()
+            let current = app.staticTexts["Current reader list"]
+            XCTAssertTrue(current.waitForExistence(timeout: 8))
+            app.buttons["fixture.trip.fail-old"].tap()
+            let unavailable = app.staticTexts[chinese ? "暂时无法显示行程" : "Trips unavailable"]
+            let noOldFailure = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == true"), object: unavailable)
+            noOldFailure.isInverted = true
+            XCTAssertEqual(XCTWaiter.wait(for: [noOldFailure], timeout: 1), .completed)
+            XCTAssertTrue(current.exists)
+            try app.performAccessibilityAudit(for: .all)
+            app.terminate()
+        }
+    }
+
 }

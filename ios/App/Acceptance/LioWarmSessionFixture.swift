@@ -1,5 +1,7 @@
 // Disposable no-network fixture. It exercises the production Home's rebind path,
 // not the real SDK account root, Hong Kong session or a physical phone call.
+import Observation
+
 @MainActor private struct LioWarmSessionFixture: View {
     let language: LioLanguage
     @State private var revision = UUID()
@@ -8,6 +10,7 @@
     @State private var renewed = false
     @State private var reconnects = 0
     @State private var newChats = 0
+    @State private var tripReads = WarmTripReads()
 
     private func service() -> LioService {
         let renewed = renewed
@@ -32,7 +35,7 @@
                     chatLibrary: LioChatLibrary(currentID: "synthetic-default", history: { [] },
                       newChat: { newChats += 1; return LioChatSession(id: "synthetic-new", title: "", service: service()) }),
                     tripLibrary: LioTripLibrary(entries: {
-                        [.init(tripID: "synthetic-trip", title: renewed ? "Trip after renewal" : "Trip before renewal", calendar: nil, dayCount: nil)]
+                        try await tripReads.read(title: renewed ? "Trip after renewal" : "Trip before renewal")
                     }, record: { _ in nil }),
                     session: .init(revision: revision, available: available, showsRetry: failed),
                     reconnect: { reconnects += 1; renewed = true; failed = false; revision = UUID(); available = true }) { EmptyView() }
@@ -44,10 +47,41 @@
             .frame(minHeight: 44)
             .font(.body).foregroundStyle(LioTheme.ink).tint(LioTheme.vermilion)
             .padding(8).background(LioTheme.surface)
+            if ProcessInfo.processInfo.arguments.contains("--trip-reader-race") {
+                HStack {
+                    Button { tripReads.holdNext = true; tripReads.race = true } label: {
+                        Image(systemName: "pause.circle").font(.body).frame(width: 44, height: 44).contentShape(Rectangle())
+                    }.accessibilityLabel("Hold list").accessibilityIdentifier("fixture.trip.hold")
+                    Button { tripReads.failHeld() } label: {
+                        Image(systemName: "exclamationmark.triangle").font(.body).frame(width: 44, height: 44).contentShape(Rectangle())
+                    }.accessibilityLabel("Fail old read").accessibilityIdentifier("fixture.trip.fail-old")
+                    Text(tripReads.isHeld ? "held" : "idle").accessibilityIdentifier("fixture.trip.held")
+                }.frame(minHeight: 44).font(.caption).foregroundStyle(LioTheme.ink).tint(LioTheme.vermilion)
+            }
             HStack {
                 Text(String(reconnects)).accessibilityIdentifier("fixture.session.reconnects")
                 Text(String(newChats)).accessibilityIdentifier("fixture.session.new-chats")
             }.font(.caption).foregroundStyle(LioTheme.ink)
         }
+    }
+}
+
+
+@MainActor @Observable private final class WarmTripReads {
+    var holdNext = false
+    var race = false
+    private var held: CheckedContinuation<[LioTripLibrary.Entry], any Error>?
+    var isHeld: Bool { held != nil }
+    func read(title: String) async throws -> [LioTripLibrary.Entry] {
+        if holdNext {
+            holdNext = false
+            return try await withCheckedThrowingContinuation { held = $0 }
+        }
+        return [.init(tripID: "synthetic-trip", title: race ? "Current reader list" : title, calendar: nil, dayCount: nil)]
+    }
+    func failHeld() {
+        let original = held
+        held = nil
+        original?.resume(throwing: URLError(.cancelled))
     }
 }

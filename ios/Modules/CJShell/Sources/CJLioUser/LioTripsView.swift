@@ -234,6 +234,7 @@ struct LioTripsView: View {
                 } catch is CancellationError {
                     return
                 } catch {
+                    guard !Task.isCancelled else { return }
                     listUnavailable = true
                 }
             }
