@@ -184,6 +184,7 @@ class OuterControls:
 
     def read_anchor(self,scope,route,selector,*,require_return=True):
         self.guard();p=self.policy
+        if route=='/v1/lio/timeline':return dict(origin='readonly_default',scope=scope)
         with private_directory(p['directory'],Unavailable('APP_SMOKE_CLAIM_DIRECTORY_AUTHORITY'))as directory:
             info=os.fstat(directory)
             if(info.st_dev,info.st_ino)!=(p['directory_device'],p['directory_inode']):
@@ -198,8 +199,32 @@ class OuterControls:
             from cj_message.demo_dialogue import lio_conversation
             cid=selector.get('conversation_id',lio_conversation(scope))
             rows=[x for x in rows if x['binding']['conversation_id']==cid]
+        if not rows:
+            # History is only a declared read target, never a producer claim.
+            rows=[x for x in self.history_targets()if x['binding']['scope']==scope and
+                (x['binding']['message_id']==selector['message_id']if route=='/v2/lio/messages'else
+                 x['binding']['conversation_id']==cid)]
+        if route!='/v2/lio/messages'and 'before'in selector:
+            cursor=next((x for x in rows if x['binding']['message_id']==selector['before']),None)
+            if cursor is None:raise Unavailable('APP_SMOKE_HISTORY_CURSOR_UNDECLARED')
+            rows=[x for x in rows if x['binding']['message_sequence']<cursor['binding']['message_sequence']]
         if not rows:return None
         return max(rows,key=lambda x:x['binding']['message_sequence'])
+
+    def history_targets(self):
+        self.guard()
+        path=Path(self.window['policy_path']).parent/'plan.json'
+        try:raw=read_private(path,262144)
+        except FileNotFoundError:
+            # Legacy current-only capture policies cannot acquire history
+            # permission by omission; new native checkpoint requires the plan.
+            return []
+        plan=decoded(raw)
+        if sha256(canonical(plan)).hexdigest()!=self.policy['plan_sha256']:
+            raise Unavailable('APP_SMOKE_HISTORY_PLAN_CHANGED')
+        from cj_api.app_smoke_history import targets
+        scopes={slot['locale']:scope_for(ISSUER,slot['subject'])for slot in self.policy['slots']}
+        return targets(plan,scopes)
 
 
 class OuterCapture:
@@ -302,7 +327,7 @@ class OuterCapture:
         claim=self.controls.read_anchor(scope,route,selector,require_return=False)
         if claim is None:
             self._read_outcome(scope,exchange,'NOT_READY');return
-        if claim.get('producer_return')is None:
+        if claim.get('producer_return')is None and claim.get('origin')not in('readonly_history','readonly_default'):
             payload=decoded(response)
             # A completed HTTP snapshot may precede the worker-return witness
             # by a few instructions. Retain those actual bytes immediately;
@@ -327,9 +352,15 @@ class OuterCapture:
             if set(selector)!={'message_id','input_sha256'}or re.fullmatch('[0-9a-f]{64}',selector['input_sha256'])is None:
                 raise ValueError('exact original lookup required')
         elif route=='/v2/lio/timeline':
-            if set(selector)!={'conversation_id'}or re.fullmatch('lio-dialogue-[0-9a-f]{32}',selector['conversation_id'])is None:
+            if not {'conversation_id'}<=set(selector)<={'conversation_id','before'}or re.fullmatch('lio-dialogue-[0-9a-f]{32}',selector['conversation_id'])is None:
                 raise ValueError('exact scoped timeline required')
-        elif selector:raise ValueError('default timeline has no selector')
+            if 'before'in selector:
+                from cj_message.demo_dialogue import message_id
+                message_id(selector['before'])
+        elif selector:
+            if set(selector)!={'before'}:raise ValueError('default timeline only has a declared cursor')
+            from cj_message.demo_dialogue import message_id
+            message_id(selector['before'])
         return selector
 
     def _read_outcome(self,scope,exchange,status):
@@ -438,8 +469,41 @@ class OuterCapture:
     def close(self):
         self.stop.set();self.thread.join(timeout=1);self.lifecycle.close()
 
+    def _store_read(self,value):
+        controls=self.controls
+        identity=sha256(canonical(value)).hexdigest()+'.read.json'
+        with controls.directory()as directory:
+            if sum(name.endswith('.read.json')for name in os.listdir(directory))>=MAX_READ_ARTIFACTS:
+                raise Unavailable('APP_SMOKE_READ_ARTIFACT_BOUND_REACHED')
+            try:fd=os.open(identity,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600,dir_fd=directory)
+            except FileExistsError:
+                if read_private(identity,600000,directory_fd=directory)!=canonical(value):
+                    raise Unavailable('APP_SMOKE_HTTP_READ_BYTES_CHANGED')
+            else:
+                with os.fdopen(fd,'wb')as output:
+                    output.write(canonical(value));output.flush();os.fsync(output.fileno())
+                os.fsync(directory)
+        return canonical(dict(file=identity,sha256=sha256(canonical(value)).hexdigest()))
+
     def publish_read(self,item,claim):
         controls=self.controls
+        if claim.get('origin')=='readonly_default':
+            from cj_api.app_smoke_history import with_default_response
+            from cj_message.demo_dialogue import lio_conversation
+            from dataclasses import asdict
+            def store(scope,page,binding):
+                controls.guard()
+                if scope!=item.scope:raise Unavailable('APP_SMOKE_DEFAULT_READ_OWNER_CHANGED')
+                value=dict(version='G2C-App-smoke-read.1',source_commit=controls.policy['source_commit'],
+                    policy_sha256=controls.window['policy_sha256'],scope_sha256=sha256(scope.encode()).hexdigest(),
+                    origin='readonly_default',binding=None if binding is None else asdict(binding),
+                    default_conversation_id=lio_conversation(scope),default_generation=page.generation,
+                    method='GET',route=item.route,selector=item.selector,status=item.status,exchange_id=item.exchange_id,
+                    response_utf8=item.response.decode('utf-8'),response_sha256=sha256(item.response).hexdigest(),
+                    observed_at=datetime.fromtimestamp(self.clock(),timezone.utc).isoformat())
+                return self._store_read(value)
+            result=with_default_response(self.originals,item.token,item.selector,item.response,store)
+            return self._read_receipt(result)
         def project(scope,original,source):
             r=original.receipt
             from dataclasses import asdict
@@ -458,20 +522,13 @@ class OuterCapture:
                 exchange_id=item.exchange_id,
                 response_utf8=item.response.decode('utf-8'),response_sha256=sha256(item.response).hexdigest(),
                 observed_at=datetime.fromtimestamp(self.clock(),timezone.utc).isoformat())
-            identity=sha256(canonical(value)).hexdigest()+'.read.json'
-            with controls.directory()as directory:
-                if sum(name.endswith('.read.json')for name in os.listdir(directory))>=MAX_READ_ARTIFACTS:
-                    raise Unavailable('APP_SMOKE_READ_ARTIFACT_BOUND_REACHED')
-                try:fd=os.open(identity,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600,dir_fd=directory)
-                except FileExistsError:
-                    if read_private(identity,600000,directory_fd=directory)!=canonical(value):
-                        raise Unavailable('APP_SMOKE_HTTP_READ_BYTES_CHANGED')
-                else:
-                    with os.fdopen(fd,'wb')as output:
-                        output.write(canonical(value));output.flush();os.fsync(output.fileno())
-                    os.fsync(directory)
-            return canonical(dict(file=identity,sha256=sha256(canonical(value)).hexdigest()))
+            if claim.get('origin')=='readonly_history':value['origin']='readonly_history'
+            return self._store_read(value)
         result=self.originals._read(item.token,claim['binding']['message_id'],project)
+        return self._read_receipt(result)
+
+    def _read_receipt(self,result):
+        controls=self.controls
         controls.guard();descriptor=decoded(result)
         marker=dict(version='G2C-App-smoke-read-receipt.1',status='CAPTURED',
             source_commit=controls.policy['source_commit'],policy_sha256=controls.window['policy_sha256'],**descriptor)
@@ -479,6 +536,7 @@ class OuterCapture:
             name=descriptor['file']+'.receipt'
             publish_marker(directory,name,marker)
         return result
+
 
 
 class OuterMiddleware:
