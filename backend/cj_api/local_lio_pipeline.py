@@ -10,16 +10,20 @@ import json
 from cj_message.lio_pipeline_schema import SKELETON
 from cj_message.lio_wire import ExplorationOrigin
 from cj_place.models import Coordinate
+from cj_feasibility.rich_assembly import assemble,assemble_unconfirmed
+from cj_feasibility.rich_solver import Limits
+from cj_trip.rich_reasons import ProfileFact
 
 from .lio_city import CityReference
 from .lio_pipeline_document import representation_size
 from .lio_pipeline_model import SKELETON_SYSTEM,skeleton_data
-from .lio_pipeline_preflight import preflight_document
-from .lio_pipeline_skeleton import recipes,parse_skeleton
+from .lio_pipeline_preflight import preflight_document,recipes_for_edges
+from .lio_pipeline_skeleton import parse_skeleton
 from .local_lio_pipeline_calls import PipelineCalls,PipelineCapacity,model_call
 from .local_lio_pipeline_inputs import understand_constraints,planning_edges
 from .local_lio_pipeline_search import sight_and_hotel_calls,meal_calls
 from .local_lio_pipeline_sources import capture_pipeline_sources
+from .local_lio_rich_checks import RichUncollectedChecks
 
 
 class DestinationUnresolved(ValueError):
@@ -54,8 +58,7 @@ def prepare_generation(host,worker,binding,view,*,locale,effective,prior_model_c
     projected=constraints.project()
     day_count=effective['duration_days']
     edges=planning_edges(projected,day_count)
-    expected=recipes(day_count,effective['pace'],light_first=edges.first_unknown_recipe,
-        light_last=edges.last_unknown_morning)
+    expected=recipes_for_edges(day_count,effective['pace'],edges)
     packet=model_call(host,worker,binding,view,SKELETON,SKELETON_SYSTEM,
         skeleton_data(effective,expected,locale=locale))
     raw,=calls.parallel((packet,))
@@ -130,3 +133,30 @@ def compile_retrieved_plan(prepared,places,hotel_places,capture,*,checks,subject
                 locale=locale,retained=retained)
     _,result=worker._step(binding,compile)
     return result
+
+
+def order_retrieved_plan(prepared,compiled,capture,*,locale,stop):
+    """Source-held validation followed by C's pure bounded ordering.
+
+    This does not publish a Trip. After order changes, route collection and
+    final checks must run again; the old check capture cannot be reused.
+    """
+    bundle=prepared.sources;worker,binding=bundle.worker,bundle.binding
+    checks=RichUncollectedChecks(bundle.source)
+    publisher=bundle.publisher(checks)
+    def read():
+        with bundle.source.hold_for_publication(binding):
+            issued=checks.capture(binding,capture,compiled.document)
+            rich=publisher.conditional_source(binding,capture,issued,compiled.document)
+            facts=tuple(ProfileFact(row['factor_key'],row['state'],row['value']if type(row['value'])is str
+                else json.dumps(row['value'],ensure_ascii=False))for row in capture.profile.profile['factors'])
+            unconfirmed=frozenset(item['id']for item in compiled.document['items']
+                if item['kind']in ('sight','meal')and item['place']['state']=='unconfirmed')
+            if not unconfirmed<=bundle.source.unavailable_targets(binding,capture):
+                raise ValueError('unconfirmed stops require actual terminal source outcomes')
+            return rich,facts,unconfirmed
+    _,(rich,facts,unconfirmed)=worker._step(binding,read)
+    arguments=dict(source=rich,facts=facts,activities=compiled.order_activities,edges=prepared.edges,
+        phase='order',locale=locale,limits=Limits(),stop=stop)
+    if unconfirmed:return assemble_unconfirmed(compiled.document,**arguments,unconfirmed_items=unconfirmed)
+    return assemble(compiled.document,**arguments)

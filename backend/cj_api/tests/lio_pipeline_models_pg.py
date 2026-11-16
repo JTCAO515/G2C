@@ -1,5 +1,6 @@
 """Native signed registered skeleton/parallel wording; fixture HTTP, zero Trip."""
 from pathlib import Path
+from threading import Event
 from datetime import date,timedelta
 from dataclasses import replace
 import asyncio
@@ -42,9 +43,9 @@ from lio_provider_sources_pg import FixtureWriter
 import lio_exploration_flow_pg as native
 
 
-def full_provider_join(prepared):
+def full_provider_join(prepared,*,early_departure):
     """Both real registered lookup phases, selected under genuine sources."""
-    from cj_api.local_lio_pipeline import retrieve_skeleton,compile_retrieved_plan
+    from cj_api.local_lio_pipeline import retrieve_skeleton,compile_retrieved_plan,order_retrieved_plan
     bundle=prepared.sources;worker,binding=bundle.worker,bundle.binding
     writers=[];phases=[];queries=[];captures=[]
     def send_check():
@@ -118,6 +119,15 @@ def full_provider_join(prepared):
         except LeaseUnavailable:pass
         else:raise AssertionError('issued date-check frame remained open')
     worker._step(binding,held_checks)
+    ordered=order_retrieved_plan(prepared,compiled,complete,locale='en',stop=Event())
+    assert ordered.status=='CONDITIONAL_SCHEDULE'and ordered.content is not None,ordered
+    assert ordered.date_checks_must_be_recomputed
+    if early_departure:
+        assert not any(stop.day_index==3 and stop.period=='dinner'for stop in prepared.skeleton.stops)
+        value=json.loads(ordered.content)
+        for item in value['items']:
+            event=item['schedule']['end']
+            if event['day_index']==3:assert event['time']['value']<='15:00'
     try:compile_retrieved_plan(prepared,places,hotels,captures[0],checks=rows,subjects=('party',),locale='en')
     except LeaseUnavailable:pass
     else:raise AssertionError('old provider seal compiled after new attempts')
@@ -192,7 +202,7 @@ def selected_provider_join(host,worker,binding,bundle,skeleton,calls,scenario):
     return len(writers)
 
 
-def main(*,natural_direct=False):
+def main(*,natural_direct=False,early_departure=True):
     original_model=ExplorationPlanning._model
     original_http=httpx.MockTransport.handle_request
     original_post=TestClient.post
@@ -207,7 +217,9 @@ def main(*,natural_direct=False):
             if value['text']in ('我想去中国玩几天','I want to explore China'):
                 value['text']+='。明天出发。两个人。第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变'if value['locale']=='zh'else(
                     '. Start my trip tomorrow. Two people. On day 1 I have a hotel meetup from 9:00 to 10:00. Keep this arrangement unchanged.')
-                value['text']+='。我的航班18:00起飞。第一天就排满'if value['locale']=='zh'else'. My flight leaves at 6 pm. Fill the first day.'
+                if early_departure:
+                    value['text']+='。我的航班18:00起飞'if value['locale']=='zh'else'. My flight leaves at 6 pm'
+                value['text']+='。第一天就排满'if value['locale']=='zh'else'. Fill the first day.'
                 kwargs['content']=packed(value)
             posted.update(text=value['text'],locale=value['locale'])
         return original_post(api,url,**kwargs)
@@ -245,6 +257,8 @@ def main(*,natural_direct=False):
                     start_date=None,start_time='09:00',start_timezone=None,start_place=None,
                     end_date=None,end_time='10:00',end_timezone=None,end_place=None,
                     unknown_fields=[],uncertain_fields={})],temporary_conditions=[])
+            if not early_departure:
+                value['observations']=[row for row in value['observations']if row['field']not in ('departure.time','departure.mode')]
         elif version==SKELETON:
             value=proposal(tuple(DayRecipe(row['day_index'],row['sights'],tuple(row['meals']))for row in extra['days']))
         else:value=dict(version=WORDING,items=[dict(item_id=item['item_id'],reason=None,reason_refs=[],tip=None)for item in extra['items']])
@@ -264,10 +278,10 @@ def main(*,natural_direct=False):
             projection=prepared.projection;projected=prepared.projected
             fields=projection.fields;edges=prepared.edges
             calls=prepared.calls;skeleton=prepared.skeleton;bundle=prepared.sources
-            assert prepared.preflight_size[:2]==(19,16) # relaxed profile, fixed item and six hotel anchors
+            assert prepared.preflight_size[:2]==((18,15)if early_departure else(16,13))
             assert calls.gaode==1
-            assert projection.edge_options['departure.mode']==dict(state='known',value='flight')
-            assert edges.windows[-1][0].end==(extra['duration_days']-1)*86400+15*3600
+            assert projection.edge_options['departure.mode']==(dict(state='known',value='flight')if early_departure else dict(state='missing'))
+            assert edges.windows[-1][0].end==(extra['duration_days']-1)*86400+(15 if early_departure else 12)*3600
             assert edges.override_explanations==('first_day_full_requested',)
             assert 'mode'not in fields['departure']and 'first_day_full'not in fields
             assert fields['party_size']==dict(state='known',value=2)
@@ -290,7 +304,7 @@ def main(*,natural_direct=False):
             try:bundle.places(skeleton,sealed)
             except LeaseUnavailable:pass
             else:raise AssertionError('no original provider operations became selection fallback')
-            if len(completed)%3==1:lookups.append(full_provider_join(prepared))
+            if len(completed)%3==1:lookups.append(full_provider_join(prepared,early_departure=early_departure))
             else:lookups.append(selected_provider_join(host,worker,binding,bundle,skeleton,calls,len(completed)%3))
             items=tuple(dict(item_id=stop.item_id,tip=None)for stop in skeleton.stops)
             # Two explicit wording requests share one original RUN. Every one
@@ -309,8 +323,8 @@ def main(*,natural_direct=False):
         return original_model(host,worker,binding,view,profile,system,extra)
     with patch.object(TestClient,'post',post),patch.object(httpx.MockTransport,'handle_request',response), \
             patch.object(ExplorationPlanning,'_model',model):native.main()
-    assert len(completed)==6 and len(wires)==24 and lookups==[2,14,2,2,14,2]
-    print('PASS ZH/EN each no-exact/unique/ambiguous actual registered POI2 -> settled provider capture -> C-issued selection -> L projection; 36 fixture POI2 attempts including whole14-query TextSearch->Nearby on each locale, original nonempty ok outcomes retained, stale seals/closed holders denied; Trip0',flush=True)
+    assert len(completed)==6 and len(wires)==24 and lookups==([2,13,2,2,13,2]if early_departure else[2,11,2,2,11,2])
+    print('PASS source-held selected places and C ordering; '+str(sum(lookups))+' fixture lookups; conditional candidate preserves fixed clocks and original edge windows; no Trip write',flush=True)
     if natural_direct:print('PASS original natural direct with full-sentence prefix -> sourced profile/defaults -> issued PlanNow source; actual extra profile model retained in native6 budget, no rewritten original or renderer',flush=True)
     print('PASS ZH3/EN3 signed native4/four actual pipeline model registrations each plus fixture preview; real caps/schema/Meter, fixture HTTP only; full publisher/G6/G9 UNRUN',flush=True)
 

@@ -60,7 +60,7 @@ class RetrievedCompilation(unittest.TestCase):
         self.assertEqual(actual['schedule']['end']['time'],item['end']['time'])
         for group in (result.order_activities,result.schedule_activities):
             bound=next(a for a in group if a.item_id==item['item_id'])
-            self.assertEqual([(w.start,w.end)for w in bound.windows],[(86400+9*3600,86400+9*3600)])
+            self.assertEqual([(w.start,w.end)for w in bound.windows],[(86400+9*3600,86400+10*3600)])
         self.assertEqual(value.projection.fields,before)
 
     def test_retained_rich_original_title_fields_and_source_rows_are_not_rewritten(self):

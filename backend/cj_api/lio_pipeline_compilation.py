@@ -26,12 +26,17 @@ class CompiledPlanData:
 
 
 def _protected_activity(item):
-    start=item['schedule']['start']
-    if start['time']['state']!='known' or start['timezone']!={'state':'known','value':'Asia/Shanghai'}:
-        return Activity(item['id'],())
-    hours,minutes=map(int,start['time']['value'].split(':'))
-    point=(start['day_index']-1)*DAY+hours*3600+minutes*60
-    return Activity(item['id'],(Window(point,point),))
+    points=[]
+    for edge in ('start','end'):
+        event=item['schedule'][edge]
+        if event['time']['state']!='known'or event['timezone']!={'state':'known','value':'Asia/Shanghai'}:
+            return Activity(item['id'],())
+        hours,minutes=map(int,event['time']['value'].split(':'))
+        points.append((event['day_index']-1)*DAY+hours*3600+minutes*60)
+    # C's windows cover the whole occupied interval, not just allowed starts.
+    # Its protected Visit also fixes the exact original start; neither bound
+    # permits moving a fixed appointment to make the generated plan fit.
+    return Activity(item['id'],(Window(*points),)if points[0]<=points[1]else())
 
 
 def _nearby(place,hotel):

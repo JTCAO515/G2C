@@ -5,9 +5,11 @@ here. The caller must preflight the complete graph, retain original attempts
 and use issued date checks and the sole selected publisher for final commit.
 """
 from dataclasses import dataclass
-from cj_draft.rich_place_selection import RichPlaceSelectionContextSource
+from cj_draft.rich_place_selection import RichPlaceSelectionContextSource,LioSelectedRichPublisher
 from cj_message.lio_plan_needs import original_needs
 from cj_trip.postgres import Repository as TripRepository
+from cj_trip.lio_history import TripHead
+from cj_message.lio_wire import exploration_original_protocol
 from .local_lio_planning import register,PlanningDetails
 from .local_lio_rich_source import RichProfileSource
 from .local_lio_rich_calendar_source import RichCalendarSource
@@ -24,6 +26,7 @@ class PipelineSources:
     source:RichPlaceSelectionContextSource
     repository:TripRepository
     calendar_capture:object
+    original_publisher:object
 
     def seal(self):
         """Outside worker._step, after all original attempts settle."""
@@ -36,6 +39,18 @@ class PipelineSources:
                 return lookup_selected_places(skeleton,self.source,self.binding,capture)
         _,value=self.worker._step(self.binding,read)
         return value
+
+    def publisher(self,checks):
+        """Compose C's sole selected writer; this creates no new permission."""
+        worker,binding=self.worker,self.binding
+        def original(candidate,stored,expected):
+            if candidate!=binding:return False
+            with self.profiles.database.connect(binding.scope)as db:
+                exploration_original_protocol(db.cursor(),binding,stored)
+            current=self.source.contexts[binding]
+            head=None if current is None else TripHead.from_trip(current.trip)
+            return stored==worker.message_context.active_original(binding)and expected==head
+        return LioSelectedRichPublisher(self.original_publisher,self.repository.confirm,self.source,original,checks)
 
 
 def capture_pipeline_sources(host,worker,binding,view,fields,city_reference,*,day_count,start_date):
@@ -57,4 +72,4 @@ def capture_pipeline_sources(host,worker,binding,view,fields,city_reference,*,da
     source=RichPlaceSelectionContextSource(original.source,original_needs,calendar,repository,
         profile_reader=profiles,worker=worker,expected_profile=view.profile,provider_reader=providers)
     _,captured=worker._step(binding,lambda:source.capture(binding))
-    return PipelineSources(worker,binding,profiles,providers,source,repository,captured)
+    return PipelineSources(worker,binding,profiles,providers,source,repository,captured,original)
