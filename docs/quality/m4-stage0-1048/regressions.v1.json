@@ -729,17 +729,17 @@
       ],
       "inputs": {
         "zh": [
-          "规划北京三日豪华游，给出每天完整安排。"
+          "帮我计划北京三天豪华游，给出每天完整安排。"
         ],
         "en": [
-          "Plan a luxury three-day trip to Beijing with complete arrangements for each day."
+          "Help me planning a luxury three-day trip to Beijing with complete arrangements for each day."
         ]
       },
       "expected_behavior": {
         "zh": "完整非空答复及三日行程，不能以半句/本地等待文案当成功；真实失败不得隐藏费用或伪造complete。",
         "en": "Return the complete answer and itinerary, not a fragment. HTTP 200 or a partial provider stream is not completion. Preserve all actual costs on failure."
       },
-      "judgement_method": "核原RUN终态、实际provider完成/usage证据及UI正文一致性；HTTP200部分流不是completed。区分model_identity/length/界面隐藏，未证根因写UNKNOWN。",
+      "judgement_method": "核原RUN终态、实际provider完成/usage证据及UI正文一致性；HTTP200部分流不是completed。区分mixed_stream_turn/model_identity/length/界面隐藏，未证根因写UNKNOWN。",
       "automation": "A_UI_PLUS_C_READONLY",
       "evidence_required": [
         "客户端build/source与IPA身份",
@@ -751,9 +751,13 @@
       "execution_status": "UNRUN",
       "historical_result_unchanged": true,
       "source_refs": [
-        "https://github.com/JTCAO515/G2C/issues/1048"
+        "https://github.com/JTCAO515/G2C/issues/1048",
+        "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6906216124",
+        "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6783491780"
       ],
-      "notes": [],
+      "notes": [
+        "英文保留公开原问已确认的Help me planning片段；完整原句UNKNOWN，余下为合成补全，不将新回放冒充原字节。"
+      ],
       "judgement_applies_independently_to": [
         "zh",
         "en"
@@ -1079,10 +1083,10 @@
         ]
       },
       "expected_behavior": {
-        "zh": "在已核仍可用的合成资格/原账下得到答复，不错误显示no chat allowance；真正耗尽则尊重拒绝、不调额度强过。",
-        "en": "With independently verified available admission and original quota, answer normally rather than falsely report no allowance. Respect a genuine exhausted limit; never raise quota to make the test pass."
+        "zh": "在已核仍可用的合成资格/原账下得到答复，不错误显示no chat allowance；单请求输出/工具预留上限拒绝应如实区分，不冒充全账号耗尽。真正耗尽则尊重拒绝、不调额度强过。",
+        "en": "With independently verified available admission and original quota, answer normally rather than falsely report no allowance. Distinguish a per-request output/tool reservation rejection from exhausted account quota. Respect genuine limits; never raise them to make the test pass."
       },
-      "judgement_method": "B先核该主体当前period/原native Meter/资金账/会话资格；合法额度不足为前置BLOCKED/UNRUN，不能由网页文案推根因。旧失败原动作只读对账，另一次新输入须新资格/ID。",
+      "judgement_method": "B分别核该主体当前period/资金账、原Meter.command及单轮输出/工具预留。build24已核20611+48000=68611>65536而账号103/800未满；该原失败不能错判全局余额耗尽。合法总额不足为BLOCKED/UNRUN；旧动作只读对账，新输入须新资格/ID。",
       "automation": "A_UI_PLUS_C_READONLY",
       "evidence_required": [
         "客户端build/source与IPA身份",
@@ -1094,7 +1098,9 @@
       "execution_status": "UNRUN",
       "historical_result_unchanged": true,
       "source_refs": [
-        "https://github.com/JTCAO515/G2C/issues/1048"
+        "https://github.com/JTCAO515/G2C/issues/1048",
+        "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6906216124",
+        "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6783491780"
       ],
       "notes": [],
       "judgement_applies_independently_to": [

@@ -163,15 +163,17 @@
       "notes": "23条GET/200只能证明完成的访问；JT的3条ref均空。没有Lio完成行不等于绝对未到达；无新MESSAGE不等于已定位根因。"
     },
     "W21_QA_EARLY": {
-      "server_source_sha": null,
+      "server_source_sha": "87eb8f09f16853817c6f743107e0707cee79a363",
       "server_source_prefix": "87eb8f09",
-      "image_sha256": null,
+      "image_sha256": "476293e0637c0a5002fbb58018a698640f2cea53c9b472d96c3cae3f2737e9ec",
       "image_prefix": "476293e0",
-      "status": "CONFIRMED_RUNTIME_PREFIX_FOR_EARLY_QA_ONLY",
+      "status": "CONFIRMED_RUNTIME_FOR_EARLY_QA_ONLY",
       "schema": 51,
       "interval_cst": "2026-11-10 20:23–20:24",
       "evidence": [
         "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905940894",
+        "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6906216124",
+        "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6764003008",
         "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6767295539",
         "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6767494160"
       ],
@@ -184,12 +186,16 @@
       "server_source_prefix": "bfd77e54",
       "image_sha256": null,
       "image_prefix": "2ca31efe",
+      "candidate_server_source_sha": "bfd77e54bb1897c226958b6bff29afa075db7c8d",
+      "candidate_image_sha256": "2ca31efe43e137beb2e45ae570da6c4f8114dc467b4db8b751fdc941d6de63be",
       "status": "CANDIDATE_INTERVAL_NOT_UNIQUE_REQUEST_BINDING",
       "schema": 52,
       "interval_cst": "2026-11-11早间问答；成功规划时点UNKNOWN",
       "evidence": [
         "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905939029",
         "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905940894",
+        "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6906216124",
+        "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6781518823",
         "https://github.com/JTCAO515/G2C/issues/702#issuecomment-6786134187"
       ],
       "request_serving_source_sha": null,
@@ -619,6 +625,10 @@
     {
       "owner": "B",
       "ref": "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6905940894"
+    },
+    {
+      "owner": "L",
+      "ref": "https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6906216124"
     }
   ],
   "unknown_policy": "null表示UNKNOWN，不补零SHA、不把prefix/候选/merge当已装包或实际请求绑定；同build每个观察窗口独立。",
