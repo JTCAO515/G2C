@@ -12,7 +12,7 @@ import json
 import re
 from pydantic import ValidationError
 
-from cj_message.lio_plan_input_schema import PlanUnderstanding
+from cj_message.lio_plan_input_schema import PlanUnderstanding,PlanQuote
 from cj_needs.domain import InvalidInput,decode,validate_fields,money
 from .lio_flat_intake import _observations
 from .lio_national_intake import _current_date_source,_current_date_anchors,_WEEK_SOURCE,ZONE_LITERAL,fields_for,fixed_sources_complete
@@ -71,6 +71,8 @@ _BUDGET_CURRENCY=re.compile(r'(?:(?:(?:my|our|the)\s+)?budget(?: currency)?\s*(?
 _BUDGET_INCLUDES=re.compile(r'(?:(?:(?:my|our|the)\s+)?budget\s+)?includes\s+(.+)|'
     r'(?:预算)?(?:包含|包括|含)\s*(.+)',re.I)
 _CURRENCIES={'人民币':'CNY','元':'CNY','美元':'USD','欧元':'EUR','英镑':'GBP'}
+_PARTY_RESET=re.compile(r'(?:出行)?人数(?:还|仍|尚)?(?:未定|没定|不确定)|'
+    r'(?:(?:my|our)\s+)?(?:party size|number of people)\s+(?:is\s+)?(?:still\s+)?(?:unknown|undecided)',re.I)
 
 
 def _quoted_source(text,start,end):
@@ -122,6 +124,40 @@ def _party_source(value,references,turns):
             positive_trip_support('party_type',clause,match[0])for match in _PARTY_COUNT.finditer(reference.quote)))
         if not positive or not _source_asserted(original,offset,offset+len(reference.quote))or counts!={value}:
             raise InvalidInput('party count differs from its affirmative original source')
+
+
+def _latest_party(value,turns):
+    """Keep the last affirmative count or explicit undecided correction.
+
+    Reuse the original party-value/source validator, so a question, conditional,
+    translated quotation or third person's count cannot replace the traveler.
+    """
+    latest=None
+    for index,turn in enumerate(turns):
+        for start,end,clause in _original_clauses(turn.text):
+            if _PARTY_RESET.fullmatch(clause):
+                context=turn.text[:start]+' '*(end-start)+turn.text[end:]
+                if not _quoted_source(turn.text,start,end)and _source_asserted(context,start,end):
+                    latest=(index,start,end,None)
+                continue
+            for pattern in (_PARTY_COUNT,_SOLO):
+                for match in pattern.finditer(clause):
+                    count=_number(match[1])if pattern is _PARTY_COUNT else 1
+                    reference=PlanQuote(source_index=index,quote=match[0])
+                    try:_party_source(count,(reference,),turns)
+                    except InvalidInput:continue
+                    latest=(index,start,end,count)
+    if latest is None:return
+    index,start,end,count=latest
+    for row in value.observations:
+        if row.field!='party_size':continue
+        if (count is None and row.state not in ('unknown','uncertain'))or(
+                count is not None and (row.state!='known'or row.value!=count)):
+            break
+        if any(reference.source_index==index and any(start<=match.start()and match.end()<=end
+                for match in re.finditer(re.escape(reference.quote),turns[index].text))for reference in row.sources):
+            return
+    raise InvalidInput('latest original party count or undecided correction was omitted or replaced')
 
 
 def _required_start_anchors(turn):
@@ -614,4 +650,5 @@ def parse_plan_understanding(raw,turns):
             raise InvalidInput('temporary-condition companion must be declared')
     _latest_edge_options(value,turns)
     _latest_event_clocks(value,turns)
+    _latest_party(value,turns)
     return value
