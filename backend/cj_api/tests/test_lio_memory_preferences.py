@@ -131,6 +131,30 @@ class LioMemoryPreferenceTest(unittest.TestCase):
                 self.assertTrue(supported_preference(entry(slot, quote), text))
         self.assertIsNone(explicit_pilot_preference('I prefer luxury travel experiences', {'travel.pace'}))
 
+    def test_luxury_hotel_preference_yields_only_an_original_lodging_candidate(self):
+        slots={'travel.budget','lodging.style'}
+        for text in ('I prefer luxury hotels.','I like luxurious hotels.',
+                     'Please remember that I prefer luxury hotels.',
+                     '我喜欢豪华酒店。','我偏好奢华的住宿。','请记住，我喜欢豪华酒店。'):
+            with self.subTest(text=text):
+                found=explicit_pilot_preference(text,slots)
+                self.assertIsNotNone(found)
+                slot,quote=found
+                self.assertEqual(slot,'lodging.style')
+                self.assertIn(quote,text)
+                self.assertTrue(supported_preference(entry(slot,quote),text))
+        self.assertIsNone(explicit_pilot_preference('I prefer luxury hotels.',{'travel.pace'}))
+        for text in ('I do not prefer luxury hotels.','My friend prefers luxury hotels.',
+                     'Do you prefer luxury hotels?','I prefer luxury hotels for this trip only.',
+                     'I prefer luxury hotels because I have asthma.',
+                     'I prefer luxury hotels. I am Catholic.',
+                     'I prefer luxury hotels. I prefer budget hotels.',
+                     '我不喜欢豪华酒店。','我的朋友喜欢豪华酒店。','我这次喜欢豪华酒店。',
+                     '我喜欢豪华酒店，因为我有胃病。','“我喜欢豪华酒店”'):
+            with self.subTest(text=text):
+                self.assertIsNone(explicit_pilot_preference(text,slots))
+                self.assertFalse(supported_preference(entry('lodging.style','luxury hotels'),text))
+
     def test_luxury_context_and_negation_do_not_authorize_a_preference(self):
         for text in (
             'I do not prefer luxury travel experiences.',

@@ -738,6 +738,13 @@ def group_runtime_actor():
 GROUPS.update(runtime_actor=group_runtime_actor)
 
 
+def group_app_smoke_capture():
+    return script('backend/cj_api/tests/app_smoke_capture_pg.py')
+
+
+GROUPS.update(app_smoke_capture=group_app_smoke_capture)
+
+
 def group_release_export():
     return script('backend/cj_api/tests/release_export_pg.py')
 

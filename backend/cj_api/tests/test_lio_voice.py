@@ -8,6 +8,35 @@ from cj_message.lio_timeline import TimelineMessage
 
 
 class LioVoice(unittest.TestCase):
+    def test_structured_identifiers_beside_chinese_are_not_public_words(self):
+        identifier='20be0897-2fe5-4136-bf73-5966edb64a3a'
+        for locale in ('zh','en'):
+            for text in (
+                '运行'+identifier+'已完成。',
+                '会话'+identifier.upper()+'的回答。',
+                'Answer：'+identifier+'已收到。',
+                '状态run_id=synthetic。',
+                '原消息message_id=synthetic已收到。',
+            ):
+                with self.subTest(locale=locale,text=text):
+                    self.assertIsNone(display_answer(text,locale))
+                    state=SimpleNamespace(status='completed',text=text,draft_outcome=None,
+                        effects=(),budget_exhausted_stage='none')
+                    shown=_message(TimelineMessage('boundary-test','source',1,'Question',locale),state)
+                    self.assertEqual((shown['status'],shown['answer']),('failed',''))
+
+    def test_cross_locale_ordinary_chinese_words_do_not_hide_a_complete_answer(self):
+        for locale in ('zh','en'):
+            for text in (
+                '地铁以原运行时刻作参考，出发前再查看站内公告。想去哪个站？',
+                "Here '原运行时刻' means the published operating times. Which line do you need?",
+                '我们仍在同一个会话上下文里，可以继续看第二天。想先看上午还是下午？',
+            ):
+                with self.subTest(locale=locale,text=text):
+                    self.assertEqual(display_answer(text,locale),text)
+            self.assertEqual(display_answer('我可以帮你查询路线并核实时刻。',locale),
+                             '我可以帮你查看路线并确认时刻。')
+
     def test_voice_tiers_and_helpful_uncertainty_are_explicit(self):
         self.assertLessEqual(len(PERSONA.split()), 450)
         for clause in (

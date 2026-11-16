@@ -17,6 +17,7 @@ from cj_strict_json import reject_duplicates
 
 from cj_trip.domain import identifier, packed
 from cj_trip.structured_v3 import validate_document
+from eval.lio_voice import BANDS,check_answer
 
 HERE = Path(__file__).resolve().parent
 CASES = json.loads((HERE/'lio_calendar_cases.v1.json').read_bytes())
@@ -76,7 +77,7 @@ def judge_transitions(case_id, reads, *, histories=None, answers=None,
     answers contains actual MESSAGE answers only; native undo has no prose gate.
     """
     case=next(c for c in CASES['cases'] if c['id']==case_id)
-    checks=[];snapshots=[]
+    checks=[];snapshots=[];lengths=[]
     histories={} if histories is None else histories
     answers={} if answers is None else answers
     question_days={} if question_days is None else question_days
@@ -84,6 +85,19 @@ def judge_transitions(case_id, reads, *, histories=None, answers=None,
         checks.append(dict(name=name,status='UNKNOWN' if condition is None else 'PASS' if condition else 'FAIL'))
     check('trace.no_extra_steps',len(reads)<=len(case['steps']))
     for index,step in enumerate(case['steps']):
+        if step['kind']!='native-undo':
+            answer=answers.get(index)
+            if answer is None:
+                length_status='UNKNOWN';units=None;ending=None
+            elif type(answer)is not str or not answer.strip():
+                length_status='FAIL';units=None;ending=False
+            else:
+                prose=check_answer(dict(locale=case['locale'],length_band='default',scenario='planning'),answer)
+                length_status=prose['checks']['length'];units=prose['units']
+                ending=prose['checks']['closing_question']=='PASS'
+            check(f'step{index}.question_ending',ending)
+            check(f'step{index}.default_length',None if length_status=='UNKNOWN'else length_status=='PASS')
+            lengths.append(dict(step=index,status=length_status,units=units))
         value=reads[index] if index<len(reads) else None
         if value is None:
             snapshots.append(None);check(f'step{index}.canonical_read',None);continue
@@ -94,10 +108,6 @@ def judge_transitions(case_id, reads, *, histories=None, answers=None,
         check(f'step{index}.canonical_read',True)
         check(f'step{index}.append_version',snapshot.version==index+1)
         check(f'step{index}.three_explicit_days',len(snapshot.document['days'])==3)
-        if step['kind']!='native-undo':
-            answer=answers.get(index)
-            check(f'step{index}.question_ending',None if answer is None else
-                  type(answer) is str and bool(answer.strip()) and answer.rstrip().endswith(('?','？')))
         history=histories.get(index)
         if history is None:
             check(f'step{index}.original_history',None)
@@ -188,9 +198,14 @@ def judge_transitions(case_id, reads, *, histories=None, answers=None,
     remaining=['qualified_original_AUTH_owner_and_source','no_silent_memory_write',
                'answer_date_party_booking_source_semantics','undo_zero_model_dispatch',
                'timings_and_original_three_column_fees']
-    return dict(version='LIO-calendar-transition-checks.1',case_id=case_id,independent=True,
+    length_status=('FAIL'if any(row['status']=='FAIL'for row in lengths)else
+                   'UNRUN'if not reads and not answers else
+                   'UNKNOWN'if any(row['status']=='UNKNOWN'for row in lengths)else'PASS')
+    return dict(version='LIO-calendar-transition-checks.2',case_id=case_id,independent=True,
         transition_outcome=transition,task_outcome='FAIL' if failures else 'UNRUN' if not reads else 'UNKNOWN',
-        checks=checks,length_check=dict(status='UNRUN',reference=CASES['length_gate']['reference']),
+        checks=checks,length_check=dict(status=length_status,reference=CASES['length_gate']['reference'],
+            band='default',maximum=BANDS['default'][case['locale']],steps=lengths,
+            spec_sha256=sha256((HERE.parent/'docs/lio-voice.md').read_bytes()).hexdigest()),
         remaining_proofs=remaining,
         note='Content assertions only; passing transitions is not real/native acceptance or a complete #864 PASS.')
 

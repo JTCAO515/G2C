@@ -9,12 +9,16 @@ import CJSession
     var clears = 0
     var loads = 0
     var blocked = false
+    var saveFailure = false
     func load() throws -> SessionMaterial? {
         loads += 1
         if blocked { throw SessionFailure.restorationBlocked }
         return value
     }
-    func save(_ material: SessionMaterial) throws { value = material; blocked = false }
+    func save(_ material: SessionMaterial) throws {
+        if saveFailure { throw SessionFailure.storageUnavailable }
+        value = material; blocked = false
+    }
     func clearAndBlock() throws { value = nil; blocked = true; clears += 1 }
 }
 
@@ -38,6 +42,55 @@ import CJSession
         DevelopmentAccountHost(shell: shell, choices: [.init(id: "A", label: "A"), .init(id: "B", label: "B")],
             persistence: store, material: { try SessionMaterial(trustedSDKBytes: Data($0.utf8)) },
             verify: { await checks.check($0) }, activate: { _, _, _ in activate() }, invalidate: {})
+    }
+
+    @Test func verifiedCredentialSurvivesLocalActivationFailureForAnExplicitRetry() async throws {
+        let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
+        let material = try SessionMaterial(trustedSDKBytes: Data("synthetic-local-activation".utf8))
+        store.value = material
+        var attempts = 0
+        let host = DevelopmentAccountHost(shell: shell, choices: [], persistence: store, demoMode: true,
+            material: { _ in throw SessionFailure.invalidConfiguration }, verify: { await checks.check($0) },
+            activate: { _,_,_ in attempts += 1; throw SessionFailure.storageUnavailable }, invalidate: {})
+        host.restore()
+        await wait { checks.replies.count == 1 }
+        checks.replies[0].resume(returning: .accepted(account: "synthetic-owner"))
+        await wait { host.state == .storageUnavailable }
+        #expect(host.isResuming)
+        #expect(shell.messageBindingBlocked)
+        #expect(store.clears == 0 && store.loads == 1)
+        host.suspend(); host.resume()
+        await wait { checks.replies.count == 2 }
+        if checks.replies.count == 2 {
+            checks.replies[1].resume(returning: .accepted(account: "synthetic-owner"))
+            await wait { attempts == 2 }
+        }
+        #expect(store.clears == 0 && store.loads == 1)
+    }
+
+    @Test func uncertainCredentialSaveDoesNotBecomeARetryableActivationCandidate() async throws {
+        let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
+        let material = try SessionMaterial(trustedSDKBytes: Data("synthetic-before-renewal".utf8))
+        let renewed = try SessionMaterial(trustedSDKBytes: Data("synthetic-after-renewal".utf8))
+        store.value = material
+        var activations = 0
+        let host = DevelopmentAccountHost(shell: shell, choices: [], persistence: store, demoMode: true,
+            material: { _ in throw SessionFailure.invalidConfiguration }, verify: { await checks.check($0) },
+            refresh: { _ in renewed }, activate: { _,_,_ in activations += 1 }, invalidate: {})
+        host.restore()
+        await wait { checks.replies.count == 1 }
+        checks.replies[0].resume(returning: .accepted(account: "synthetic-owner"))
+        await wait { host.state == .signedIn("synthetic-owner") }
+        store.saveFailure = true
+        host.suspend(); host.resume()
+        await wait { checks.replies.count == 2 }
+        checks.replies[1].resume(returning: .accepted(account: "synthetic-owner"))
+        await wait { host.state == .storageUnavailable }
+        #expect(!host.isResuming)
+        #expect(shell.messageBindingBlocked && activations == 1 && store.clears == 0)
+        host.suspend(); host.resume()
+        for _ in 0..<10 { await Task.yield() }
+        #expect(checks.replies.count == 2)
     }
 
     @Test func interruptionRetainsTheVerifiedClientAndBackgroundStillFencesIt() async throws {

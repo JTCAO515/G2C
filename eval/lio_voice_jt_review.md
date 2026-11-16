@@ -1,5 +1,28 @@
 # #844 · JT 人工标注表（20 条）
 
+## 当前状态：JT 人工审阅已交
+
+JT 已于 2026-11-16 全部读完20条并给出逐题定性产品意见，详见
+[原意见与条件记录](lio_voice_jt_feedback.20261116.json)。没有60个A/B/C二元标签，
+所以**二元一致率目前不可计算**；空白格不表示JT没看，也不由C代填。
+不要求JT重新读表、使用App测试或机械补60格。新的
+[分层评审建议](lio_voice_quality_rubric.v2.md)将具体帮助、任务推进与追问价值单独报告，
+事实/能力/执行真实性硬门槛、代码≥90%和红线零失败保持不变。
+
+## 历史准备说明与原题（保留，不再要求重填）
+
+**不用打开 Go2China App，也不用把题目发给 Lio。** 这是阅读标注：下面每条已经有
+「游客问题、背景证据、Lio示例回答」。请只读这些文字，为示例回答的 A/B/C 三项打分。
+这些示例是合成材料，不是当前 App 实测结果；真实 App 测试另由 A/C 执行。
+
+每题回复一行即可，例如 `01: PASS/PASS/FAIL` 表示 A通过、B通过、C不通过。
+看不准可写 `UNKNOWN` 并简单说明；C会保留为未定标签，不把它算成通过或编造人工答案。
+不需要检查代码、操作行程、查真实天气或测试保存。
+
+**No app testing is required.** Read the supplied visitor question, evidence context,
+and example Lio answer. Rate the written example on A/B/C below. These synthetic
+examples calibrate the evaluator; they are not results from the current app.
+
 审阅人：**JT**。这些是 C 编写的合成正反样例，尚无人工标签。预计 **15–20 分钟**。只判断下面三项，不必核查真实地点或票价；背景说明就是本题证据范围。
 
 Reviewer: **JT**. These are 20 synthetic calibration examples with no human

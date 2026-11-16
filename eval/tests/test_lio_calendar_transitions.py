@@ -70,8 +70,38 @@ def test_six_frozen_recipes_can_pass_content_checks_but_not_full_acceptance(kind
     case,reads,kwargs=run(kind,locale)
     result=judge_transitions(case,reads,**kwargs)
     assert result['transition_outcome']=='PASS'
-    assert result['task_outcome']=='UNKNOWN' and result['length_check']['status']=='UNRUN'
+    assert result['task_outcome']=='UNKNOWN' and result['length_check']['status']=='PASS'
     assert 'qualified_original_AUTH_owner_and_source' in result['remaining_proofs']
+
+
+@pytest.mark.parametrize('locale,at_limit,over_limit',[
+    ('zh','行'*79+'？','行'*80+'？'),
+    ('en','go '*49+'Go?','go '*50+'Go?'),
+])
+def test_accepted_default_length_includes_question_and_keeps_boundary(locale,at_limit,over_limit):
+    case,reads,kwargs=run('undated-save',locale)
+    good=judge_transitions(case,reads,**dict(kwargs,answers={0:at_limit}))
+    assert good['length_check']['status']=='PASS'
+    bad=judge_transitions(case,reads,**dict(kwargs,answers={0:over_limit}))
+    assert bad['length_check']['status']=='FAIL'and bad['transition_outcome']=='FAIL'
+    assert bad['length_check']['maximum']==(80 if locale=='zh'else 50)
+
+
+def test_english_chinese_and_verified_pinyin_exemption_is_reused():
+    case,reads,kwargs=run('undated-save','en')
+    answer='go '*48+'Thanks (**谢谢** xièxie)?'
+    result=judge_transitions(case,reads,**dict(kwargs,answers={0:answer}))
+    assert result['length_check']['status']=='PASS'
+    assert result['length_check']['steps'][0]['units']==49
+
+
+def test_exactly_one_question_and_missing_original_answer_is_not_pass():
+    case,reads,kwargs=run('day-edit-undo')
+    missing=judge_transitions(case,reads,**dict(kwargs,answers={}))
+    assert missing['length_check']['status']=='UNKNOWN'
+    multiple=judge_transitions(case,reads,**dict(kwargs,answers={0:'哪天？几点？',1:'换哪天？'}))
+    assert any(row['name']=='step0.question_ending'and row['status']=='FAIL'for row in multiple['checks'])
+    assert len(multiple['length_check']['steps'])==2 # native undo has no prose gate
 
 
 def test_no_observations_or_missing_history_is_never_a_model_self_pass():

@@ -177,7 +177,10 @@ class PlanningFlow(unittest.TestCase):
         text='去成都玩三天';wire=flow(text,questions=(),reply='成都适合安排街区散步。')
         wire.update(planning_request_index=None,needs_tools=False)
         published,events,lookups,result=run(wire,text)
-        self.assertEqual((published,lookups),([],[]));self.assertEqual(answer(events),wire['reply'])
+        self.assertEqual((published,lookups),([],[]))
+        # JT #495/6907095660: a missing execution root still permits useful
+        # read-only itinerary content. Keep every original no-write assertion.
+        for day in (1,2,3):self.assertIn('第'+str(day)+'天',answer(events))
         self.assertEqual(context(events)['authority'],'none');self.assertIsNotNone(result)
 
     def test_question_fields_cannot_turn_nonplanning_input_into_a_plan(self):
