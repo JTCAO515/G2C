@@ -146,11 +146,13 @@ def exercise(root,conninfo,*,preference=None):
             sent=api.post('/v1/lio/messages',headers=headers,content=encode(dict(version='LIO-message.1',
                 message_id='projection-first-recall',text='What lodging do I prefer?',locale='en')))
             assert sent.status_code==200,sent.text
-            assert [o.status for o in worker.process()]==['completed']
+            outcome,=worker.process()
+            assert outcome.status=='completed',outcome
             recalled=api.get('/v1/lio/timeline',headers=headers)
             assert recalled.status_code==200 and recalled.json()['messages'][-1]['status']=='completed',recalled.text
             assert any(preference in json.dumps(messages,ensure_ascii=False)for messages,_ in model_inputs[before:])
-            print('PASS first signed follow-up after Remember completes with the exact active preference in model input; fixture provider, real-service recall remains UNRUN',flush=True)
+            print(json.dumps(dict(case='luxury-first-recall',mid='projection-first-recall',run=outcome.run_id,
+                status=outcome.status,memory_in_model_input=True,real_service='UNRUN')),flush=True)
     print('PASS native signed PG empty/tag projection: same-body legacy compatibility, one M custody, competing worker blocked, initial contention503, invalid reference/wrong RUN/foreign owner withheld, no model calls during reads')
 
 
