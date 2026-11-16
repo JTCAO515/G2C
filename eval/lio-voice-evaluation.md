@@ -60,15 +60,17 @@ default test entry gains this module's controls; no existing check is removed or
 Three separate binary prompts are in `lio_voice_judge_prompts.md` (items1/4/6).
 The 20 synthetic mixed-quality examples are in `lio_voice_calibration.v1.json`;
 the ready-to-fill worksheet is [lio_voice_jt_review.md](lio_voice_jt_review.md).
-JT has agreed to label the written examples, **without using the Go2China app or
-sending any test messages**. The worksheet states the task and response format in
-both languages. Human reviewer/reference and all labels start null;
-neither C nor another model supplies purported human gold labels.
+JT has now read all20 written examples and delivered qualitative product feedback
+on2026-11-16. The original user messages, conditions and per-case summaries are in
+`lio_voice_jt_feedback.20261116.json`; this is completed human review, not pending
+App testing. JT did not provide60 binary A/B/C labels, and C must not infer them.
+The original sample file and blank binary labels remain unchanged.
 
-Current agreement: **UNRUN**, 0/20 paired labels for each of the three criteria;
-agreement value is null, not0% or100%. Actual model outputs and prompt/model hashes
-must be retained separately. Import JT's labels with the original reply reference,
-then run (the argument maps sample IDs to the three model verdicts):
+Current **binary agreement is not computable from this qualitative review**: the
+value is null, not0%,100% or20/20. Actual model review remains UNRUN. Do not ask JT
+to mechanically re-read the examples or fill60 boxes. The retained binary-v1
+calculator applies only if a separately attributed binary gold set exists; it is
+not a converter from qualitative opinions. Its historical entry is:
 
 ```sh
 python -B -m eval.lio_voice calibrate model-judgments.json
@@ -78,9 +80,19 @@ Report exact-match agreement per criterion, known/planned/missing counts and
 disagreements. Partial labels are INCOMPLETE. Model calibration never substitutes
 for JT's formal66 review or grounded severe-error review.
 
-No independent human labels or qualified model-judge results are imported here.
-The historical preparation is retained separately; it does not establish
-calibration or an independent model score. JT's labels remain pending.
+The historical binary preparation remains separate from JT's delivered review and
+from future actual model results. `lio_voice_quality_rubric.v2.md` proposes reasoned
+grades for task progress, practical specificity and follow-up value, preserving
+the original binary prompts and all old records. It is report-only, not a new
+passing threshold or an implemented model comparison. New model/scorer admission
+and original outputs are required before reporting model results.
+
+JT also confirmed that colleague/human help with information gathering is an
+existing service. Offering this help is valid; actual handoff, acceptance,
+in-progress and completed claims require their corresponding evidence. Missing
+API evidence does not establish that the service is nonexistent. Neither this
+confirmation nor JT's general approval of examples08/20 proves a ticket booked,
+a hotel called, payment made or pickup arranged. Emergency action comes first.
 
 ## Old/new comparison (L2, qualified runtime pending)
 
