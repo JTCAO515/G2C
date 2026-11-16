@@ -92,6 +92,41 @@ class PostgresRepository:
         return self._read_ledger(status,guard=guard,max_response_bytes=max_response_bytes,
             project=project,expected_period=expected_period)
 
+    def read_status_many(self, attempt_ids, *, guard, max_response_bytes, expected_period):
+        """Ordered minimal statuses from ONE original protected ledger snapshot.
+
+        No dispatch authority or raw ledger is returned. Each original attempt
+        remains distinct; the caller still checks its run/operation/receipt.
+        Missing attempts, stale authority and cleanup failures withhold ALL bytes.
+        """
+        from .read_status import ReadUnavailable, encode_status, status_of
+        if type(attempt_ids) is not tuple or not 1 <= len(attempt_ids) <= 45:
+            raise ReadUnavailable('status batch requires 1 to 45 attempt IDs')
+        for attempt_id in attempt_ids:
+            label(attempt_id)
+        if len(set(attempt_ids)) != len(attempt_ids):
+            raise ReadUnavailable('duplicate status attempt')
+        integer(max_response_bytes, 1)
+        if max_response_bytes > 45 * 8192 + 46:
+            raise ReadUnavailable('status batch bound exceeds maximum')
+        if expected_period is None:
+            raise ReadUnavailable('original period required')
+
+        def statuses(ledger):
+            rows = []
+            for attempt_id in attempt_ids:
+                attempt = ledger.attempts.get(attempt_id)
+                if attempt is None:
+                    raise RepositoryUnavailable('attempt unavailable')
+                row = encode_status(status_of(attempt, ledger.config))
+                if len(row) > 8192:
+                    raise ReadUnavailable('status exceeds per-attempt bound')
+                rows.append(row)
+            return b'[' + b','.join(rows) + b']'
+
+        return self._read_ledger(statuses, guard=guard, max_response_bytes=max_response_bytes,
+            project=None, expected_period=expected_period)
+
     def read_run_capacity(self,run_id,*,guard,max_response_bytes,expected_period):
         """Original exhaustive ledger snapshot, never dispatch authorization."""
         label(run_id)
