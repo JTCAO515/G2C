@@ -60,3 +60,17 @@ class VenueSourceScopeTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+    def test_hangzhou_delegated_sources_do_not_authorize_city_wide_or_other_city_claims(self):
+        for host in ('www.ehangzhou.gov.cn', 'wgly.hangzhou.gov.cn'):
+            record = deepcopy(self.venue)
+            record['cities'] = ['hangzhou']
+            record['subject'] = {'key': 'hangzhou.west-lake', 'name_zh': '西湖',
+                                 'name_en': 'West Lake', 'wikidata_qid': None}
+            record['source_urls'] = ['https://' + host + '/example.html']
+            with self.subTest(host=host):
+                validate_entry_v3(record, as_of=TODAY)
+                for change in ({'cities': ['chengdu']}, {'cities': ['hangzhou', 'taizhou-zhejiang']},
+                               {'topic': 'payment'}, {'subject': None}):
+                    with self.subTest(change=change), self.assertRaises(ValueError):
+                        validate_entry_v3({**record, **change}, as_of=TODAY)
