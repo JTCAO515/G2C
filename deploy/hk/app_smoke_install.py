@@ -100,6 +100,12 @@ def idle(proof):
         not any(proof['memory_states'].get(k,0)for k in('pending','inflight')))
 
 
+def require_no_pending_reader():
+    pending=ROOT/'probes/qualified-reader.inflight.json'
+    if pending.exists()or pending.is_symlink():
+        raise ValueError('original native reader outcome pending; B reconciliation required')
+
+
 def transition(directory,before,proof,check,stop,start,ready,window,unchanged):
     """Single execution; no inferred recovery or second apply after UNKNOWN."""
     if not idle(before):raise ValueError('actual global idle required')
@@ -138,6 +144,7 @@ def main():
         if not stat.S_ISREG(info.st_mode)or info.st_uid!=0 or stat.S_IMODE(info.st_mode)!=0o600:
             raise ValueError('owned deployment lock required')
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        require_no_pending_reader()
         fresh(directory,plan)
         if sha(ROOT/'probes/836-release-export.py')!=EXPORTER_SHA:raise ValueError('original exporter changed')
         static={name:sha(ROOT/name)for name in STATIC}

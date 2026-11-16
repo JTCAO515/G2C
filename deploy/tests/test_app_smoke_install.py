@@ -121,3 +121,13 @@ def test_changed_packet_or_existing_claims_cannot_be_reissued_as_fresh(tmp_path,
     with pytest.raises(ValueError,match='unconsumed'):install.fresh(tmp_path,plan)
     (tmp_path/'plan.json').write_bytes(b'changed frozen plan')
     with pytest.raises(ValueError,match='packet changed'):install.fresh(tmp_path,plan)
+
+
+def test_uncertain_native_reader_must_be_reconciled_before_install_or_return(tmp_path,monkeypatch):
+    (tmp_path/'probes').mkdir();monkeypatch.setattr(install,'ROOT',tmp_path)
+    install.require_no_pending_reader()
+    marker=tmp_path/'probes/qualified-reader.inflight.json';marker.write_bytes(b'old uncertain read')
+    with pytest.raises(ValueError,match='reconciliation'):install.require_no_pending_reader()
+    assert marker.read_bytes()==b'old uncertain read'
+    marker.unlink();marker.symlink_to(tmp_path/'missing-old-marker')
+    with pytest.raises(ValueError,match='reconciliation'):install.require_no_pending_reader()
