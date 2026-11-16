@@ -81,7 +81,7 @@ class LoginLeaseTests(unittest.TestCase):
             self.assertEqual(read.call_count, 1)
             native.assert_not_called()
 
-    def test_same_lease_locale_cannot_repeat_official_submit_with_a_new_output_directory(self):
+    def test_invitation_needs_manual_input_and_same_lease_cannot_repeat_with_new_output(self):
         packet = dict(version='LIO-A-official-sign-in-packet.1', expected_login=self.expected,
                       artifact=dict(app=self.app), build_directory='/synthetic/build')
         packet_raw, lease_raw = compact(packet, sort_keys=True), compact(self.value, sort_keys=True)
@@ -107,9 +107,48 @@ class LoginLeaseTests(unittest.TestCase):
                         patch.object(login, 'datetime', SimpleNamespace(now=lambda tz: self.now)), \
                         patch.object(login, 'verify_installation'), patch.object(login, 'AdmittedNativeUI', Native), \
                         patch.object(login, 'artifact', return_value=dict(path='/synthetic', sha256='0' * 64)):
-                    with self.assertRaises(EvidenceUnknown): login.main()
-            self.assertEqual(sum(kind == 'private_invite' for kind, _ in calls), 1)
-            self.assertEqual(sum(kind == 'tap' and identifier == 'demo.invite.signin' for kind, identifier in calls), 1)
+                    if number == 1:
+                        with self.assertRaisesRegex(EvidenceUnknown, 'Manual'):
+                            login.main()
+                        import json
+                        result = json.loads((Path(folder) / str(number) / 'result.json').read_text())
+                        self.assertEqual(result['outcome'], 'MANUAL_SIGN_IN_REQUIRED_NO_INPUT_ATTEMPTED')
+                    else:
+                        with self.assertRaises(EvidenceUnknown): login.main()
+            self.assertEqual(sum(kind == 'private_invite' for kind, _ in calls), 0)
+            self.assertEqual(sum(kind == 'type' or kind == 'tap' for kind, _ in calls), 0)
+
+    def test_existing_session_is_preserved_without_input_or_submit(self):
+        import json
+        packet = dict(version='LIO-A-official-sign-in-packet.1', expected_login=self.expected,
+                      artifact=dict(app=self.app), build_directory='/synthetic/build')
+        packet_raw, lease_raw = compact(packet, sort_keys=True), compact(self.value, sort_keys=True)
+        calls = []
+        class Native:
+            def __init__(self, *args, **kwargs):
+                self.sequence = 0; self.commands = Path('/synthetic/commands')
+            def command(self, kind, **fields):
+                self.sequence += 1; calls.append(kind)
+                if kind == 'snapshot': return dict(nodes=[dict(identifier='lio.composer')], screenshot='synthetic.png')
+                return {}
+            def close(self): pass
+        with tempfile.TemporaryDirectory() as folder:
+            argv = ['login', '--packet', '/synthetic/packet', '--packet-sha256', hashlib.sha256(packet_raw).hexdigest(),
+                    '--lease', '/synthetic/lease', '--lease-sha256', hashlib.sha256(lease_raw).hexdigest(),
+                    '--locale', 'zh', '--output', str(Path(folder) / 'result')]
+            def metadata(path):
+                if str(path) == '/synthetic/packet': return packet_raw
+                if str(path) == '/synthetic/lease': return lease_raw
+                raise AssertionError('Must not open invitation material')
+            with patch('sys.argv', argv), patch.object(login, 'ATTEMPT_DIRECTORY', Path(folder) / 'attempts'), \
+                    patch.object(login, 'read_private_bytes', side_effect=metadata), \
+                    patch.object(login, 'datetime', SimpleNamespace(now=lambda tz: self.now)), \
+                    patch.object(login, 'verify_installation'), patch.object(login, 'AdmittedNativeUI', Native), \
+                    patch.object(login, 'artifact', return_value=dict(path='/synthetic', sha256='0' * 64)):
+                login.main()
+            result = json.loads((Path(folder) / 'result/result.json').read_text())
+            self.assertEqual(result['outcome'], 'EXISTING_SESSION_NEEDS_IDENTITY_READBACK')
+            self.assertEqual(calls, ['launch', 'snapshot'])
 
 
 if __name__ == '__main__': unittest.main()

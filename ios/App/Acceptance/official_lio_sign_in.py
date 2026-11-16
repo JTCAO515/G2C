@@ -1,7 +1,8 @@
-"""One B-issued official App sign-in. No business smoke or credential injection.
+"""B-issued official App observation; never automate a credential entry.
 
-The invitation is opened only by the native UITest process and entered through
-the real SecureField. This process reads lease metadata, never invite contents.
+An existing session needs B identity readback. An invitation screen requires
+manual secure sign-in: XCTest's typeText logs even SecureField arguments.
+This process reads lease metadata only, never invite contents.
 """
 import argparse
 from datetime import datetime, timezone
@@ -9,7 +10,6 @@ import hashlib
 import os
 import stat
 from pathlib import Path
-import time
 
 from lio_basic_smoke_capture import artifact, verify_installation
 from lio_basic_ui_driver import compact, decode, write
@@ -70,7 +70,7 @@ def main():
         return validate_login_lease(data, args.lease_sha256, expected, datetime.now(timezone.utc))
 
     raw_lease = read_private_bytes(args.lease)
-    selected = validate_login_lease(raw_lease, args.lease_sha256, expected, datetime.now(timezone.utc))[args.locale]
+    validate_login_lease(raw_lease, args.lease_sha256, expected, datetime.now(timezone.utc))
     lease = decode(raw_lease)
     output = args.output.resolve(); output.mkdir(mode=0o700, parents=True, exist_ok=False)
     simulator = expected['simulator_udids'][args.locale]
@@ -107,36 +107,10 @@ def main():
         else:
             if not any(n['identifier'] == 'demo.invite.code' for n in nodes):
                 raise EvidenceUnknown('Official invitation screen is unavailable')
-            write(output / '00-input-intent.json', dict(lease_id=lease['lease_id'], locale=args.locale,
-                  simulator=simulator, state='INPUT_NOT_ACKNOWLEDGED', at=datetime.now(timezone.utc).isoformat()))
-            native.command('private_invite', privateInputPath=selected['invite_file'])
-            # Check the immutable lease and actual build again immediately before
-            # the normal submit actions; never retype or retry an uncertain tap.
-            grant(); verify_installation(simulator, packet['artifact'])
-            native.command('tap', identifier='demo.invite.continue')
-            deadline = time.monotonic() + 20
-            while True:
-                nodes = snapshot()
-                if any(n['identifier'] == 'demo.invite.signin' and n['enabled'] for n in nodes):
-                    break
-                if time.monotonic() >= deadline:
-                    raise EvidenceUnknown('Official consent action did not become available')
-                time.sleep(.2)
-            grant(); verify_installation(simulator, packet['artifact'])
-            write(output / '01-submit-intent.json', dict(lease_id=lease['lease_id'], locale=args.locale,
-                  simulator=simulator, state='SUBMIT_NOT_ACKNOWLEDGED', at=datetime.now(timezone.utc).isoformat()))
-            native.command('tap', identifier='demo.invite.signin')
-            deadline = time.monotonic() + 45
-            while True:
-                nodes = snapshot()
-                if any(n['identifier'] == 'lio.composer' for n in nodes):
-                    outcome = 'SIGNED_IN_UI_NEEDS_IDENTITY_READBACK'
-                    break
-                if any(n['identifier'] in ('demo.invite.error', 'lio.session.notice') for n in nodes):
-                    raise EvidenceUnknown('Official sign-in has a visible failure; preserve the original attempt')
-                if time.monotonic() >= deadline:
-                    raise EvidenceUnknown('Official sign-in outcome remains unknown; do not retry')
-                time.sleep(.2)
+            outcome = 'MANUAL_SIGN_IN_REQUIRED_NO_INPUT_ATTEMPTED'
+            write(output / '00-input-not-attempted.json', dict(lease_id=lease['lease_id'], locale=args.locale,
+                  simulator=simulator, state='NO_AUTOMATED_CREDENTIAL_INPUT', at=datetime.now(timezone.utc).isoformat()))
+            raise EvidenceUnknown('Manual official sign-in is required; no input or submit was attempted')
     finally:
         write(output / 'result.json', dict(version='LIO-official-App-sign-in-observation.1',
               lease_id=lease['lease_id'], locale=args.locale, simulator=simulator,
