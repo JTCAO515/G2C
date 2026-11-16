@@ -178,5 +178,35 @@
       "advance_booking_days": null,
       "advance_booking_rule": null
     }
+  },
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "id": "visitor.v3.beijing.badaling-daytime",
+    "cities": [
+      "beijing"
+    ],
+    "topic": "passport_booking",
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-11-30",
+    "subject": {
+      "key": "beijing.badaling-daytime",
+      "name_zh": "八达岭长城（日间常规游览）",
+      "name_en": "Badaling Great Wall (ordinary daytime visit)",
+      "wikidata_qid": null
+    },
+    "conditions": {
+      "reservation_required": false,
+      "closed_weekdays": [],
+      "closed_weekdays_public_holiday_exception": false,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    },
+    "text_zh": "八达岭长城日间常规游览提供实名预约购票及现场购票，不强制所有散客提前预订；官网游览须知列明每日开放，没有固定每周闭园日。现场购票不保证有票或即时入园，护照持有者应使用官方购票及核验渠道。恶劣天气可能临时或局部关闭，应查当日公告。夜长城、中国长城博物馆和其他长城景区不套用本条。",
+    "text_en": "Ordinary daytime visits to Badaling Great Wall offer both real-name advance booking and on-site ticket purchase, so advance booking is not mandatory for every individual visitor. The official visitor guide specifies daily opening, without a regular weekly closure. On-site purchase does not guarantee availability or immediate entry; passport holders should use official ticket and identity-check channels. Severe weather can cause temporary or partial closures. Night tours, the China Great Wall Museum and other Great Wall sites have separate rules.",
+    "source_urls": [
+      "https://www.badaling.cn/website/pc/index.html",
+      "https://www.beijing.gov.cn/fuwu/lqfw/ztzl/jrfw/shrl/202407/t20240725_3758812.html"
+    ]
   }
 ]
