@@ -41,6 +41,10 @@ services:
   worker:
     <<: *application
     command: [worker]
+    # Stage0 observed ~34 MB/hour of metadata during idle roster polling.
+    # A worker-only 1 GiB bound retains about 30 hours at that measured rate;
+    # the old shared 15 MiB bound retained less than half an hour.
+    logging: {driver: local, options: {max-size: 50m, max-file: "20"}}
     env_file:
       - /srv/g2c-beta/common.env
     environment:
