@@ -8,6 +8,7 @@ import CJTripClient
 public struct LioHome<MenuContent: View>: View {
     private let language: LioLanguage
     private let isDemo: Bool
+    private let reconnect: (@MainActor () -> Void)?
     private let menu: MenuContent
     private let chatLibrary: LioChatLibrary?
     private let tripLibrary: LioTripLibrary?
@@ -74,9 +75,11 @@ public struct LioHome<MenuContent: View>: View {
                 tripHistory: LioTripHistoryClient? = nil,
                 memoryActions: LioMemoryActionsClient? = nil,
                 savedMemory: AnyView? = nil,
-                recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)? = nil, @ViewBuilder menu: () -> MenuContent) {
+                recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)? = nil,
+                reconnect: (@MainActor () -> Void)? = nil, @ViewBuilder menu: () -> MenuContent) {
         self.language = language
         self.isDemo = isDemo
+        self.reconnect = reconnect
         self.menu = menu()
         self.chatLibrary = chatLibrary
         self.tripLibrary = tripLibrary
@@ -163,27 +166,9 @@ public struct LioHome<MenuContent: View>: View {
                 .background(LioTheme.paper)
                 .tint(LioTheme.vermilion)
                 .accessibilityIdentifier("lio.chat.recovery")
-                .sheet(isPresented: $showsProblemNotes) {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: LioTheme.Spacing.md) {
-                            Button { showsProblemNotes = false } label: {
-                                Text(language.text("Done", "完成"))
-                                    .foregroundStyle(LioTheme.ink)
-                                    .frame(minWidth: 44, minHeight: 44)
-                            }
-                            .buttonStyle(.plain)
-                            .frame(maxWidth: .infinity, alignment: .trailing)
-                            .accessibilityIdentifier("lio.problems.done")
-                            LioProblemNotesSection(language: language, notes: .shared)
-                        }
-                        .frame(maxWidth: 480, alignment: .leading)
-                        .padding(24)
-                        .frame(maxWidth: .infinity)
-                    }
-                    .background(LioTheme.paper)
-                }
             }
         }
+        .sheet(isPresented: $showsProblemNotes) { problemNotesSheet }
         .task(id: restoreChatRequest) {
             guard restoringChat else { return }
             restoreChatFailure = nil
@@ -246,17 +231,21 @@ public struct LioHome<MenuContent: View>: View {
     private func chatMessages(_ scroll: ScrollViewProxy) -> some View {
         let pending = conversation.pending
         let earlierID = conversation.nextBefore.map { Data($0.utf8) }
-        if conversation.turns.isEmpty {
+        if let failure = conversation.timelineFailure {
+            readFailureMessage(failure)
+        }
+        if conversation.turns.isEmpty && conversation.timelineFailure == nil {
             if conversation.hasLoadedTimeline {
                 if opening == .beforeNext { openingMessage }
                 examples
             } else if conversation.timelineUnavailable {
                 Text(language.text("Couldn’t show earlier messages. Try again.", "暂时看不到更早的消息，请再试一次。"))
                 Button { refreshRequest += 1 } label: {
-                    Text(language.text("Try again", "再试一次"))
+                    Text(language.text("Try reading again", "再次查看"))
                         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                         .contentShape(Rectangle())
                 }
+                .accessibilityIdentifier("lio.read.retry")
             } else {
                 ProgressView().accessibilityLabel(language.text("Opening your conversation…", "正在打开你的对话…"))
             }
@@ -960,6 +949,51 @@ public struct LioHome<MenuContent: View>: View {
                               dismiss: { Task { await chooseMemory(.dismiss, tag: tag, turnID: turnID, client: client) } })
     }
 
+    private var problemNotesSheet: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: LioTheme.Spacing.md) {
+                Button { showsProblemNotes = false } label: {
+                    Text(language.text("Done", "完成"))
+                        .foregroundStyle(LioTheme.ink)
+                        .frame(minWidth: 44, minHeight: 44)
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .accessibilityIdentifier("lio.problems.done")
+                LioProblemNotesSection(language: language, notes: .shared)
+            }
+            .frame(maxWidth: 480, alignment: .leading)
+            .padding(24)
+            .frame(maxWidth: .infinity)
+        }
+        .background(LioTheme.paper)
+    }
+
+    private func readFailureMessage(_ failure: LioRequestProblem) -> some View {
+        let canReconnect = failure.needsReconnect && reconnect != nil
+        return VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+            RunReadableText(text: failure.message(language), color: LioTheme.ink)
+                .accessibilityIdentifier("lio.read.failure")
+            RunReadableText(text: failure.nextStep(language), color: LioTheme.inkSecondary)
+            Button {
+                if canReconnect { reconnect?() }
+                else { refreshRequest += 1 }
+            } label: {
+                Text(canReconnect ? language.text("Reconnect", "重新连接") : language.text("Try reading again", "再次查看"))
+                    .foregroundStyle(LioTheme.ink)
+                    .frame(minHeight: 44)
+            }
+            .disabled(scenePhase != .active || (conversation.pending != nil && !canReconnect))
+            .accessibilityIdentifier("lio.read.retry")
+            Button { showsProblemNotes = true } label: {
+                Text(language.text("View problem notes", "查看问题记录"))
+                    .foregroundStyle(LioTheme.inkSecondary)
+                    .frame(minHeight: 44)
+            }
+            .accessibilityIdentifier("lio.read.problems")
+        }
+    }
+
     @ViewBuilder
     private func messageStatus(_ turn: LioTurn) -> some View {
         switch turn.status {
@@ -968,6 +1002,9 @@ public struct LioHome<MenuContent: View>: View {
             LioThinkingIndicator(since: timing.indicatorStart(turn.id), progress: input.progress, planningDays: input.planningDays,
                                  language: language) { timing.mark(.indicator, turn.id) }
         case .failed(let failure):
+            if let readFailure = turn.readFailure {
+                readFailureMessage(readFailure)
+            } else {
             let message = switch failure {
             case .notSent: language.text("Message couldn’t be sent. Check your connection and tap to try again.",
                                          "消息没发出去。检查网络后，点感叹号重发。")
@@ -1002,6 +1039,7 @@ public struct LioHome<MenuContent: View>: View {
                     .controlSize(.large)
                     .disabled(conversation.pending != nil)
                     .accessibilityIdentifier("lio.askAgain")
+            }
             }
         case .answering, .finished:
             EmptyView()

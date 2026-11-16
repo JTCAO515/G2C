@@ -216,7 +216,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
             messages: MessageCapability(endpoint: endpoint, validate: validate, wire: .lio))
     }
 
-    func sendLio(_ original: LioTimelineWire.Send, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+    func sendLio(_ original: LioTimelineWire.Send, bearer: String,
+                 observedResponse: (@MainActor @Sendable (HTTPResponse) -> Void)? = nil) async throws -> (HTTPResponse, HTTPBody?) {
         guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
         let path = original.version == .v1 ? messages.wire.path : "/v\(original.version.rawValue)/lio/messages"
         let operation = original.version == .v1 ? messages.wire.operation : "sendLioMessageV\(original.version.rawValue)"
@@ -226,11 +227,12 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         request.headerFields[.accept] = "application/json"
         return try await sendLocalWrite(request, body: HTTPBody(original.originalUTF8),
             baseURL: messages.endpoint.url, operationID: operation,
-            capability: messages.boundary, messageWire: nil)
+            capability: messages.boundary, messageWire: nil, observedResponse: observedResponse)
     }
 
     func readLio(conversationID: String?, before: String?, bearer: String,
-                 version: LioTimelineWire.Version = .v1) async throws -> (HTTPResponse, HTTPBody?) {
+                 version: LioTimelineWire.Version = .v1,
+                 observedResponse: (@MainActor @Sendable (HTTPResponse) -> Void)? = nil) async throws -> (HTTPResponse, HTTPBody?) {
         var query: [URLQueryItem] = []
         if let conversationID {
             guard LioTimelineWire.validConversationID(conversationID) else { throw MessageHTTPFailure.invalidConfiguration }
@@ -241,16 +243,16 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
             query.append(URLQueryItem(name: "before", value: before))
         }
         return try await lioRead(path: "/v\(version.rawValue)/lio/timeline", query: query,
-                                 operation: "readLioTimelineV\(version.rawValue)", bearer: bearer)
+                                 operation: "readLioTimelineV\(version.rawValue)", bearer: bearer, observedResponse: observedResponse)
     }
 
     func readLioFirstReceipt(_ original: LioTimelineWire.Send, inputSHA256: String,
-                             bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+                             bearer: String, observedResponse: (@MainActor @Sendable (HTTPResponse) -> Void)? = nil) async throws -> (HTTPResponse, HTTPBody?) {
         let version = original.version == .v1 ? 2 : original.version.rawValue
         return try await lioRead(path: "/v\(version)/lio/messages", query: [
             URLQueryItem(name: "message_id", value: original.messageID),
             URLQueryItem(name: "input_sha256", value: inputSHA256)
-        ], operation: "readLioMessageV\(version)", bearer: bearer)
+        ], operation: "readLioMessageV\(version)", bearer: bearer, observedResponse: observedResponse)
     }
 
     func readLioTrip(before: String?, bearer: String, conversationID: String? = nil,
@@ -311,7 +313,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
                                         operationID: operation, capability: messages.boundary, messageWire: nil)
     }
 
-    private func lioRead(path: String, query: [URLQueryItem], operation: String, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+    private func lioRead(path: String, query: [URLQueryItem], operation: String, bearer: String,
+                         observedResponse: (@MainActor @Sendable (HTTPResponse) -> Void)? = nil) async throws -> (HTTPResponse, HTTPBody?) {
         guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
         var components = URLComponents()
         components.path = path
@@ -323,7 +326,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         var request = HTTPRequest(method: .get, scheme: nil, authority: nil, path: route)
         request.headerFields[.authorization] = "Bearer " + bearer
         request.headerFields[.accept] = "application/json"
-        return try await sendLocalRead(request, baseURL: messages.endpoint.url, operationID: operation, capability: messages.boundary)
+        return try await sendLocalRead(request, baseURL: messages.endpoint.url, operationID: operation, capability: messages.boundary, observedResponse: observedResponse)
     }
 
     /// Explicit capability for ONE producer-defined readonly computation, never a caller
@@ -1077,9 +1080,11 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         return (response,HTTPBody(result))
     }
     private func sendLocalRead(_ request: HTTPRequest, baseURL: URL, operationID: String,
-                               capability: EndpointCapability) async throws -> (HTTPResponse, HTTPBody?) {
+                               capability: EndpointCapability,
+                               observedResponse: (@MainActor @Sendable (HTTPResponse) -> Void)? = nil) async throws -> (HTTPResponse, HTTPBody?) {
         try await capability.validate(); try Task.checkCancellation()
         let (response, responseBody) = try await transport.send(request, body: nil, baseURL: baseURL, operationID: operationID)
+        if let observedResponse { await observedResponse(response) }
         try await capability.validate(); try Task.checkCancellation()
         guard !(300..<400).contains(response.status.code), let responseBody else { throw MessageHTTPFailure.invalidResponse }
         let bytes = try await Data(collecting: responseBody, upTo: capability.endpoint.maximumResponseBytes)
@@ -1087,7 +1092,8 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         return (response, HTTPBody(bytes))
     }
     private func sendLocalWrite(_ request: HTTPRequest, body: HTTPBody, baseURL: URL, operationID: String,
-                                capability: EndpointCapability, messageWire: MessageWire?) async throws -> (HTTPResponse, HTTPBody?) {
+                                capability: EndpointCapability, messageWire: MessageWire?,
+                                observedResponse: (@MainActor @Sendable (HTTPResponse) -> Void)? = nil) async throws -> (HTTPResponse, HTTPBody?) {
         let media = request.headerFields.filter { $0.name == .contentType }
         guard media.count == 1, media.first?.value == "application/octet-stream" else { throw MessageHTTPFailure.invalidConfiguration }
         try Task.checkCancellation()
@@ -1103,6 +1109,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         try await capability.validate()
         try Task.checkCancellation()
         let (response, responseBody) = try await transport.send(request, body: HTTPBody(bytes), baseURL: baseURL, operationID: operationID)
+        if let observedResponse { await observedResponse(response) }
         try await capability.validate()
         try Task.checkCancellation()
         guard !(300..<400).contains(response.status.code), let responseBody else { throw MessageHTTPFailure.invalidResponse }

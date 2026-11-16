@@ -222,6 +222,31 @@ import Testing
         try await expectRetained(fixture, position, selected, original, phase: .notObserved)
     }
 
+    @Test func restorationNotesKeepTheOriginalStageAndSafeFailureCause() async throws {
+        let fixture = try ChatContinuityFixture()
+        let (_, position, _, _) = try await selectedUncertainFirstSend(fixture)
+        let transferred = LioChatContinuity()
+        transferred.inherit(position)
+        let signedOut = try fixture.library(continuity: transferred, signedIn: false)
+        await #expect(throws: MessageHTTPFailure.credentialsUnavailable) { _ = try await signedOut.restore?() }
+        let text = fixture.notes.text(.english)
+        #expect(text.contains("origin=firstSendLookup"))
+        #expect(text.contains("cause=unavailableCredentials"))
+        #expect(await fixture.transport.posts == 1)
+        #expect(await fixture.transport.lookups == 0)
+    }
+
+    @Test func historyFailureHasItsOwnSafeProblemNote() async throws {
+        let fixture = try ChatContinuityFixture()
+        let (_, position, _, _) = try await selectedUncertainFirstSend(fixture)
+        let signedOut = try fixture.library(continuity: position, signedIn: false)
+        await #expect(throws: MessageHTTPFailure.credentialsUnavailable) { _ = try await signedOut.history() }
+        let text = fixture.notes.text(.english)
+        #expect(text.contains("origin=history") && text.contains("cause=unavailableCredentials"))
+        #expect(await fixture.transport.posts == 1)
+        #expect(await fixture.transport.lookups == 0)
+    }
+
     @Test func unavailableSignInIsASessionCheckWithoutAnyRequest() async throws {
         let fixture = try ChatContinuityFixture()
         let (_, position, selected, original) = try await selectedUncertainFirstSend(fixture)
