@@ -231,7 +231,7 @@ def selected_provider_join(host,worker,binding,bundle,skeleton,calls,scenario):
     return len(writers)
 
 
-def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1,2),followups=True,duration_days=3,travel_pace='relaxed',provider_available=True,failed_kind=None):
+def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1,2),followups=True,duration_days=3,travel_pace='relaxed',provider_available=True,failed_kind=None,refusal_question=None):
     original_model=ExplorationPlanning._model
     original_http=httpx.MockTransport.handle_request
     original_post=TestClient.post
@@ -424,11 +424,15 @@ def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1
             # ledger merely to run unrelated regression cases in one cohort.
             for language in ('zh','en'):
                 saved_runs.clear()
-                native.main(saved_runs=saved_runs,generation=True,languages=(language,),cases=cases,followups=followups,trip_days=duration_days,pace_labels=(pace_quote,travel_pace.title()),unconfirmed_places=not provider_available)
-                assert len(saved_runs)==len(cases)
+                native.main(saved_runs=saved_runs,generation=True,languages=(language,),cases=cases,followups=followups,trip_days=duration_days,pace_labels=(pace_quote,travel_pace.title()),unconfirmed_places=not provider_available,refusal_question=refusal_question)
+                assert len(saved_runs)==(0 if refusal_question is not None else len(cases))
                 all_saved.update(saved_runs)
         else:native.main(saved_runs=saved_runs)
 
+    if production and refusal_question is not None:
+        assert not all_saved and not completed
+        print('PASS production evidence-limited refusal ZH/EN, no sole-writer receipt/Trip/version; fixture HTTP/0 real',flush=True)
+        return
     if production:
         assert len(all_saved)==len(completed)==2*len(cases) and sum(v in (PLAN_UNDERSTANDING,SKELETON,WORDING)for v,_ in wires)==(8 if natural_direct else 10)*len(cases)
         print('PASS default production factory '+str(len(cases))+'ZH/'+str(len(cases))+'EN complete skeleton/selected retrieval/order/routes/schedule/final wording/sole writer and actual timeline Card3; '+str(len(supplier_wires))+' fixture supplier calls; real/G6/G9 UNRUN',flush=True)

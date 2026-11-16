@@ -51,10 +51,10 @@ class PipelineGeneration:
             compiled=compile_retrieved_plan(prepared,places,hotels,capture,checks=provisional,
                 subjects=subjects,locale=locale)
             ordered=order_retrieved_plan(prepared,compiled,capture,locale=locale,stop=Event())
-            if ordered.content is None:return self._refused(host,worker,binding,locale)
+            if ordered.content is None:return self._refused(host,worker,binding,locale,reason=ordered.reason)
             routed,capture=route_ordered_plan(prepared,json.loads(ordered.content))
             scheduled=schedule_retrieved_plan(prepared,compiled,capture,routed,locale=locale,stop=Event())
-            if scheduled.content is None:return self._refused(host,worker,binding,locale)
+            if scheduled.content is None:return self._refused(host,worker,binding,locale,reason=scheduled.reason)
             worded=word_retrieved_plan(host,prepared,compiled,capture,scheduled,view,locale=locale)
             _,receipt=publish_retrieved_plan(prepared,compiled,capture,worded)
         except(CapacityExceeded,PipelineCapacity):
@@ -71,12 +71,15 @@ class PipelineGeneration:
         return host._finish(worker,binding,state,body,Scene.ADJUSTMENT,locale)
 
     @staticmethod
-    def _refused(host,worker,binding,locale,*,capacity=False):
+    def _refused(host,worker,binding,locale,*,capacity=False,reason=None):
         state=worker.runs.snapshot(binding)
         state=worker._event(binding,state,'effect_committed',UNSAVED_PLAN_ANSWER)
         retained=host.current(binding)is not None
         kept=('，原行程保留'if locale=='zh'else'; the original itinerary is kept')if retained else''
-        if capacity:
+        if reason=='EDGE_DAY_PROXIMITY_UNCONFIRMED':
+            body=('暂时无法核对首末日活动是否在酒店附近，这次未保存'+kept+'。能补充酒店的具体位置吗？'if locale=='zh'else
+                'I could not verify whether the first or last day’s activities are near the hotel, so I have not saved this plan'+kept+'. Can you provide the exact hotel location?')
+        elif capacity:
             body=('这次没能完整生成并保存行程'+kept+'。想换成天数更少的方案吗？'if locale=='zh'else
                 'I could not generate and save the complete itinerary'+kept+'. Would you like a plan with fewer days?')
         else:
