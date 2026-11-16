@@ -103,6 +103,24 @@ def full_provider_join(prepared):
     original=next(item for item in compiled.document['items']if item['id']==fixed['item_id'])
     assert original['fixed']==fixed['locked'] and original['schedule']['start']['time']==fixed['start']['time']
     assert compiled.document['calendar']==dict(state='dated',start_date=complete.basis.start_date)
+    from cj_api.local_lio_rich_checks import RichUncollectedChecks
+    checks_reader=RichUncollectedChecks(bundle.source)
+    def held_checks():
+        with bundle.source.hold_for_publication(binding):
+            issued=checks_reader.capture(binding,complete,compiled.document)
+            assert issued.checks==rows and all(row['state']=='unknown'for row in issued.checks)
+            with bundle.source.message_context.hold_for_effect(binding)as message, \
+                    checks_reader.hold(binding,issued,message)as check:
+                check(compiled.document)
+                altered=json.loads(packed(compiled.document))
+                altered['items'][0]['schedule']['start']['time']=dict(state='known',value='23:59')
+                try:check(altered)
+                except LeaseUnavailable:pass
+                else:raise AssertionError('changed candidate clock retained issued date checks')
+        try:check(compiled.document)
+        except LeaseUnavailable:pass
+        else:raise AssertionError('issued date-check frame remained open')
+    worker._step(binding,held_checks)
     try:compile_retrieved_plan(prepared,places,hotels,captures[0],checks=rows,subjects=('party',),locale='en')
     except LeaseUnavailable:pass
     else:raise AssertionError('old provider seal compiled after new attempts')
