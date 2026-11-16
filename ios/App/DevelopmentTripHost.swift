@@ -1044,39 +1044,49 @@ private var developmentHostEnvironment: [String: String] {
                 return nil
                 #endif
             }, activate: { [weak self] material, session, operation in
-                guard let self, let inputs = try self.sessionInputs(material) else { throw SessionFailure.invalidConfiguration }
-                let configuration = inputs.configuration
-                try self.offline?.bindSynchronizationIdentity(material: material, account: configuration.accountID,
-                    session: session, operation: operation)
-                if self.cleanupEnabled {
-                    try self.attachCleanup(configuration: configuration, material: material, lease: .init(session: session, operation: operation))
-                }
-                if self.cleanupWorkflow?.holdsBusinessFence != true {
-                    self.trip = try DevelopmentTripHost(configuration: configuration, shell: self.shell,
-                        lease: DevelopmentSessionLease(session: session, operation: operation), offline: self.offline,
-                        memoryExtensionsAllowed: self.cleanupWorkflow?.version == .v4, betaComposition: inputs.composition)
+                guard let self else { throw SessionFailure.invalidConfiguration }
+                let generation = self.shell.generation
+                do {
+                    guard let inputs = try self.sessionInputs(material) else { throw SessionFailure.invalidConfiguration }
+                    let configuration = inputs.configuration
+                    try self.offline?.bindSynchronizationIdentity(material: material, account: configuration.accountID,
+                        session: session, operation: operation)
+                    if self.cleanupEnabled {
+                        try self.attachCleanup(configuration: configuration, material: material, lease: .init(session: session, operation: operation))
+                    }
+                    if self.cleanupWorkflow?.holdsBusinessFence != true {
+                        self.trip = try DevelopmentTripHost(configuration: configuration, shell: self.shell,
+                            lease: DevelopmentSessionLease(session: session, operation: operation), offline: self.offline,
+                            memoryExtensionsAllowed: self.cleanupWorkflow?.version == .v4, betaComposition: inputs.composition)
+                        #if G2C_DEMO_BETA
+                        if let current = self.trip?.messages.lioChats.continuity {
+                            if let previous = self.lioChatContinuity { current.inherit(previous) }
+                            self.lioChatContinuity = current
+                        }
+                        #endif
+                        #if !G2C_DEMO_BETA
+                        if let conversation = inputs.conversation {
+                            _ = self.trip?.messages.messages.selectConversationForSending(conversation)
+                        }
+                        #endif
+                    }
+                    if self.cleanupEnabled, let workflow = self.cleanupWorkflow {
+                        Task { await workflow.enrollOnline() }
+                    }
+                    self.shell.selectedTab = .memory
+                    self.shell.memoryPath = [.account]
+                } catch {
                     #if G2C_DEMO_BETA
-                    if let current = self.trip?.messages.lioChats.continuity {
-                        if let previous = self.lioChatContinuity { current.inherit(previous) }
-                        self.lioChatContinuity = current
+                    if self.shell.generation == generation && !Task.isCancelled {
+                        let problem = LioRequestProblem(error, stage: .localRecord)
+                        self.lioSessionProblem = problem
+                        LioDiagnosticLog.shared.record(error: problem, stage: .localRecord)
                     }
                     #endif
-                    #if !G2C_DEMO_BETA
-                    if let conversation = inputs.conversation {
-                        _ = self.trip?.messages.messages.selectConversationForSending(conversation)
-                    }
-                    #endif
+                    throw error
                 }
-                if self.cleanupEnabled, let workflow = self.cleanupWorkflow {
-                    Task { await workflow.enrollOnline() }
-                }
-                self.shell.selectedTab = .memory
-                self.shell.memoryPath = [.account]
             }, invalidate: { [weak self] in
                 self?.verificationRequest = UUID()
-                #if G2C_DEMO_BETA
-                self?.lioSessionProblem = nil
-                #endif
                 self?.trip?.invalidate(); self?.trip = nil
             },
             clearOffline: offline == nil ? nil : { [weak self] in try self?.offline?.clearLocally() },
@@ -1084,6 +1094,7 @@ private var developmentHostEnvironment: [String: String] {
             identityWillChange: { [weak self] in
                 #if G2C_DEMO_BETA
                 self?.lioChatContinuity = nil
+                self?.lioSessionProblem = nil
                 #endif
                 self?.cleanupWorkflow?.invalidate(); self?.cleanupWorkflow = nil; self?.cleanup = nil
             },

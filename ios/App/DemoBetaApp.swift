@@ -32,9 +32,12 @@ struct DemoBetaRootView: View {
                 .id(trip.id)
             } else if root.accounts.isResuming {
                 LioSessionRecoveryView(language: shell.language.lio,
-                                       showsRetry: root.accounts.state == .networkUnknown,
+                                       showsRetry: root.accounts.state == .networkUnknown || root.accounts.state == .storageUnavailable,
                                        problem: root.lioSessionProblem,
-                                       retry: { root.accounts.resume() },
+                                       retry: {
+                                           if root.accounts.state == .storageUnavailable { root.accounts.suspend() }
+                                           root.accounts.resume()
+                                       },
                                        signOut: { root.accounts.signOut() })
             } else {
                 DemoInviteView(shell: shell, accounts: root.accounts)

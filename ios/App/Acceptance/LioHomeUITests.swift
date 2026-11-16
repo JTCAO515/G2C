@@ -3,6 +3,30 @@ import UIKit
 import CryptoKit
 
 @MainActor final class LioHomeUITests: XCTestCase {
+    func testLocalActivationFailureIsRecoverableWithoutClearingSignInInBothLanguages() throws {
+        continueAfterFailure = false
+        for chinese in [false, true] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-root-activation-failure-acceptance", "-lio.ui.appearance.v1", "light", "-cj.ui.language.v1", chinese ? "zh-Hans" : "en"]
+            app.launch()
+            let attempts = app.staticTexts["fixture.activation.attempts"]
+            XCTAssertTrue(attempts.waitForExistence(timeout: 8))
+            let attempted = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == '1'"), object: attempts)
+            XCTAssertEqual(XCTWaiter.wait(for: [attempted], timeout: 5), .completed)
+            let retry = app.buttons["lio.session.retry"]
+            XCTAssertTrue(retry.waitForExistence(timeout: 5))
+            XCTAssertTrue(app.staticTexts["lio.session.notice"].label.contains(chinese ? "重新连接" : "Reconnect"))
+            XCTAssertFalse(app.progressIndicators.firstMatch.exists)
+            XCTAssertFalse(app.staticTexts["fixture.activation.invitation"].exists)
+            try app.performAccessibilityAudit(for: .all)
+            retry.tap()
+            let second = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == '2'"), object: attempts)
+            XCTAssertEqual(XCTWaiter.wait(for: [second], timeout: 5), .completed)
+            XCTAssertEqual(app.staticTexts["fixture.activation.clears"].label, "0")
+            app.terminate()
+        }
+    }
+
     func testReadFailurePreservesLoadedConversationInBothLanguages() throws {
         continueAfterFailure = false
         for chinese in [false, true] {
