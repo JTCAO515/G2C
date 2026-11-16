@@ -1,5 +1,6 @@
 """Host lifecycle/closure controls, not a live simulator qualification."""
 from datetime import datetime, timedelta, timezone
+import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from threading import Event, RLock
@@ -98,6 +99,55 @@ class SimulatorHostTest(TestCase):
         self.assertTrue(h.stopped)
         self.assertEqual((self.root/'cohort.intent.json').read_bytes(), before)
         self.assertFalse((self.root/'cohort.result.json').exists())
+
+    def run_scheduler(self, *, failed_at=None, cost_unknown_at=None):
+        """Control only scheduling; mocked episodes certify no native costs."""
+        from eval.lio_simulated_user.core import load_profiles, plan
+        dataset, digest = load_profiles()
+        h=self.host;h.worker_ready.set()
+        h.data=dict(window_id='scheduler-control',runtime_card={},mode='legacy2')
+        h.actor_spec=SimpleNamespace(key='fixed-actor')
+        h.cohort=plan(dataset,digest)
+        calls=[]
+        def episode(host, profile_id, attempt):
+            label=profile_id+'-'+str(attempt)
+            return SimpleNamespace(specification=SimpleNamespace(raw=b'fixed-pins',
+                message_ids=(label,),stage=label,key='fixed-dut'),
+                session={'scope':'fixture-scope'},dut=SimpleNamespace(owner=SimpleNamespace(key='owner'),stopped=False),
+                actor='fixture-actor',links='fixture-links',original_cost='fixture-cost',closed=False,
+                last_cost_report={'coverage':'UNKNOWN' if len(calls)==cost_unknown_at else 'COMPLETE'})
+        def run(*args,**kwargs):
+            index=len(calls);calls.append(index)
+            return dict(failure_owner='dut' if index==failed_at else None,
+                end_reason='host_original_unavailable_no_retry' if index==failed_at else
+                           'evaluation_bound_before_observed_exploration_end',outcome='unknown')
+        with patch('cj_api.runtime_simulator_host.SimulatorEpisode',episode), \
+             patch('cj_api.runtime_simulator_host.run_native_episode',run):
+            traces=h.run_cohort()
+        return calls,traces,json.loads((self.root/'cohort.result.json').read_bytes())
+
+    def test_measurement_unknown_keeps_fixed_sixty_slots_without_quality_pass(self):
+        calls,traces,result=self.run_scheduler()
+        self.assertEqual(len(calls),60)
+        self.assertTrue(all(t['outcome']=='unknown' for t in traces))
+        self.assertEqual(result['unrun_slot_count'],0)
+        self.assertEqual(result['status'],'COHORT_EXECUTED_NOT_QUALITY_APPROVED')
+        self.assertEqual(len(list(self.root.glob('*.trace.json'))),60)
+
+    def test_operational_unknown_stops_new_slots_without_replacements(self):
+        calls,traces,result=self.run_scheduler(failed_at=2)
+        self.assertEqual(len(calls),3)
+        self.assertEqual(traces[-1]['failure_owner'],'dut')
+        self.assertEqual(result['unrun_slot_count'],57)
+        self.assertEqual(result['status'],'STOP_NEW')
+        self.assertTrue((self.root/'cohort.intent.json').exists())
+
+    def test_unknown_cost_coverage_stops_even_when_measurement_is_only_unknown(self):
+        calls,traces,result=self.run_scheduler(cost_unknown_at=0)
+        self.assertEqual(len(calls),1)
+        self.assertIsNone(traces[0]['failure_owner'])
+        self.assertEqual(result['unrun_slot_count'],59)
+        self.assertEqual(result['status'],'STOP_NEW')
 
 
 class EpisodeCostClosureTest(TestCase):
