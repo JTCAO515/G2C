@@ -63,7 +63,10 @@ def run(path,envelope):
     if (q.get('version')!='G2C-App-smoke-live.1'or q.get('state')not in('ACTIVE','STOP_NEW')or
             hashlib.sha256(raw).hexdigest()!=envelope['qualification_sha256']):
         raise ValueError('fixed active App smoke qualification required')
-    request=envelope['request']
+    instance=q['api_capture_instance']
+    if type(instance)is not str or re.fullmatch('[a-f0-9]{32}',instance)is None:
+        raise ValueError('qualified live API capture instance required')
+    request=dict(envelope['request'],api_capture_instance=instance)
     if(request['expected_source']!=q['source']or request['plan_sha256']!=q['plan_sha256']):
         raise ValueError('original App smoke request pins changed')
     if q['state']!='ACTIVE'and request['kind']=='checkpoint':raise ValueError('no new App action after stop-new')

@@ -18,6 +18,7 @@ def fixture(tmp_path,monkeypatch):
     q=dict(version='G2C-App-smoke-live.1',state='ACTIVE',source='a'*40,image='sha256:'+'b'*64,
         schema=55,plan_sha256='c'*64,reader_sha256='d'*64,window_id='synthetic-window',
         api_manifest='/run/app-smoke/api.json',worker_manifest='/run/app-smoke/policy.json',
+        api_capture_instance='e'*32,
         mounts={'api':{},'worker':{}})
     path=root/'qualification.json';path.write_text(json.dumps(q));path.chmod(0o600)
     envelope=dict(qualification_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),request=dict(
@@ -37,6 +38,7 @@ def fixture(tmp_path,monkeypatch):
     def run(args,**kwargs):
         calls.append(args)
         assert b'synthetic-secret-not-log'in kwargs['input']
+        assert json.loads(kwargs['input'])['api_capture_instance']==q['api_capture_instance']
         assert all('synthetic-secret'not in str(x)for x in args)
         return SimpleNamespace(returncode=0,stdout=json.dumps(dict(version='G2C-App-smoke-read.1',status='READ')).encode(),stderr=b'')
     monkeypatch.setattr(host.subprocess,'run',run)
@@ -121,3 +123,10 @@ def test_API_worker_raw_mount_is_rejected_even_if_packet_whitelists_it(tmp_path,
     monkeypatch.setattr(host.subprocess,'check_output',output)
     with pytest.raises(ValueError,match='worker-only'):host.run(path,envelope)
     assert not(root/'probes/qualified-reader.inflight.json').exists()
+
+
+def test_caller_cannot_replace_operator_pinned_API_lifetime(tmp_path,monkeypatch):
+    root,path,envelope,calls=fixture(tmp_path,monkeypatch)
+    envelope['request']['api_capture_instance']='f'*32
+    result=host.run(path,envelope)
+    assert result['original']['status']=='READ'  # native stub asserts operator's e*32, never caller's f*32
