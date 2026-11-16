@@ -50,7 +50,7 @@ def edit_receipt(repository, binding):
     return _message_receipt(repository, binding, edit_action_id(binding.run_id), EDIT_BASIS)
 
 
-def _message_receipt(repository, binding, action_id, basis):
+def _message_receipt(repository, binding, action_id, basis, *, content_version=None):
     with repository.transaction() as cur:
         found = repository._receipt(cur, action_id)
         if found is None:
@@ -67,6 +67,8 @@ def _message_receipt(repository, binding, action_id, basis):
                 or status != 'accepted' or receipt.kind != 'accept' or receipt.candidate_hash != digest
                 or receipt.trip_id != proposal.trip_id or receipt.committed_version != proposal.expected_version + 1):
             raise Denied('original Lio Trip receipt association unavailable')
+        if content_version is not None and json.loads(proposal.content)['content_version'] != content_version:
+            raise Denied('original Lio Trip receipt content version differs')
         return receipt
 
 
