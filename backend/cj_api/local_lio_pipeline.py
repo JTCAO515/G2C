@@ -24,6 +24,7 @@ from .local_lio_pipeline_inputs import understand_constraints,planning_edges
 from .local_lio_pipeline_search import sight_and_hotel_calls,meal_calls
 from .local_lio_pipeline_sources import capture_pipeline_sources
 from .local_lio_rich_checks import RichUncollectedChecks
+from .local_lio_pipeline_routes import retrieve_routes
 
 
 class DestinationUnresolved(ValueError):
@@ -141,22 +142,42 @@ def order_retrieved_plan(prepared,compiled,capture,*,locale,stop):
     This does not publish a Trip. After order changes, route collection and
     final checks must run again; the old check capture cannot be reused.
     """
+    return _assemble_retrieved(prepared,compiled,capture,compiled.document,phase='order',locale=locale,stop=stop)
+
+
+def route_ordered_plan(prepared,document):
+    """Query frozen adjacency, then seal all original provider operations anew."""
+    bundle=prepared.sources;worker,binding=bundle.worker,bundle.binding
+    origin=ExplorationOrigin(bundle.profiles.database,binding,worker.messages.query(binding.message_id))
+    city=prepared.city.parent_city if prepared.city.parent_city is not None else prepared.city.name
+    routed,_=retrieve_routes(document,calls=prepared.calls,city=city,origin=origin,providers=bundle.providers)
+    representation_size(routed)
+    return routed,bundle.seal()
+
+
+def schedule_retrieved_plan(prepared,compiled,capture,document,*,locale,stop):
+    """Freeze C's chosen order and schedule with the original observed legs."""
+    return _assemble_retrieved(prepared,compiled,capture,document,phase='schedule',locale=locale,stop=stop)
+
+
+def _assemble_retrieved(prepared,compiled,capture,document,*,phase,locale,stop):
     bundle=prepared.sources;worker,binding=bundle.worker,bundle.binding
     checks=RichUncollectedChecks(bundle.source)
     publisher=bundle.publisher(checks)
     def read():
         with bundle.source.hold_for_publication(binding):
-            issued=checks.capture(binding,capture,compiled.document)
-            rich=publisher.conditional_source(binding,capture,issued,compiled.document)
+            issued=checks.capture(binding,capture,document)
+            rich=publisher.conditional_source(binding,capture,issued,document)
             facts=tuple(ProfileFact(row['factor_key'],row['state'],row['value']if type(row['value'])is str
                 else json.dumps(row['value'],ensure_ascii=False))for row in capture.profile.profile['factors'])
-            unconfirmed=frozenset(item['id']for item in compiled.document['items']
-                if item['kind']in ('sight','meal')and item['place']['state']=='unconfirmed')
+            unconfirmed=frozenset(item['id']for item in document['items']
+                if item['id']in compiled.proposed_subjects and item['kind']in ('sight','meal')
+                and item['place']['state']=='unconfirmed')
             if not unconfirmed<=bundle.source.unavailable_targets(binding,capture):
                 raise ValueError('unconfirmed stops require actual terminal source outcomes')
             return rich,facts,unconfirmed
     _,(rich,facts,unconfirmed)=worker._step(binding,read)
-    arguments=dict(source=rich,facts=facts,activities=compiled.order_activities,edges=prepared.edges,
-        phase='order',locale=locale,limits=Limits(),stop=stop)
-    if unconfirmed:return assemble_unconfirmed(compiled.document,**arguments,unconfirmed_items=unconfirmed)
-    return assemble(compiled.document,**arguments)
+    arguments=dict(source=rich,facts=facts,activities=compiled.order_activities if phase=='order'else compiled.schedule_activities,
+        edges=prepared.edges,phase=phase,locale=locale,limits=Limits(),stop=stop)
+    if unconfirmed:return assemble_unconfirmed(document,**arguments,unconfirmed_items=unconfirmed)
+    return assemble(document,**arguments)

@@ -45,7 +45,7 @@ import lio_exploration_flow_pg as native
 
 def full_provider_join(prepared,*,early_departure):
     """Both real registered lookup phases, selected under genuine sources."""
-    from cj_api.local_lio_pipeline import retrieve_skeleton,compile_retrieved_plan,order_retrieved_plan
+    from cj_api.local_lio_pipeline import retrieve_skeleton,compile_retrieved_plan,order_retrieved_plan,schedule_retrieved_plan,route_ordered_plan
     bundle=prepared.sources;worker,binding=bundle.worker,bundle.binding
     writers=[];phases=[];queries=[];captures=[]
     def send_check():
@@ -57,10 +57,15 @@ def full_provider_join(prepared,*,early_departure):
         def write(self,raw):
             target=raw.split(b'\r\n',1)[0].split(b' ')[1].decode('ascii')
             parsed=urlsplit(target);query=parse_qs(parsed.query);queries.append((parsed.path,query))
-            self.keyword=query['keywords'][0]
+            self.path=parsed.path;self.query=query
+            self.keyword=query.get('keywords',[''])[0]
             self.provider_id='SYNTH_FULL_'+str(len(queries))
             super().write(raw)
         def response_value(self):
+            if self.path.startswith('/v3/direction/'):
+                a=self.query['origin'][0];b=self.query['destination'][0]
+                return dict(status='1',infocode='10000',count='1',route=dict(origin=a,destination=b,
+                    paths=[dict(distance='120',duration='60',steps=[dict(polyline=a+';'+b)])]))
             return dict(status='1',infocode='10000',count='1',pois=[dict(
                 id=self.provider_id,name=self.keyword,cityname='北京市',adcode='110101',location='116.4,39.9')])
     async def dial():
@@ -122,6 +127,15 @@ def full_provider_join(prepared,*,early_departure):
     ordered=order_retrieved_plan(prepared,compiled,complete,locale='en',stop=Event())
     assert ordered.status=='CONDITIONAL_SCHEDULE'and ordered.content is not None,ordered
     assert ordered.date_checks_must_be_recomputed
+    route_start=len(writers)
+    with patch.object(https_transport,'_connect',dial),patch.object(https_transport,'_read_response',receive):
+        routed,final_capture=route_ordered_plan(prepared,json.loads(ordered.content))
+    assert any(leg['state']=='estimated'for leg in routed['legs'])
+    assert all(leg['state']=='unconfirmed'or leg['future_guaranteed']is False for leg in routed['legs'])
+    assert len(writers)-route_start==len({leg['source']['reference']for leg in routed['legs']if leg['state']=='estimated'})
+    scheduled=schedule_retrieved_plan(prepared,compiled,final_capture,routed,locale='en',stop=Event())
+    assert scheduled.status=='CONDITIONAL_SCHEDULE'and scheduled.content is not None,scheduled
+    assert [row['id']for row in json.loads(scheduled.content)['items']]==[row['id']for row in json.loads(ordered.content)['items']]
     if early_departure:
         assert not any(stop.day_index==3 and stop.period=='dinner'for stop in prepared.skeleton.stops)
         value=json.loads(ordered.content)
@@ -135,7 +149,7 @@ def full_provider_join(prepared,*,early_departure):
     except LeaseUnavailable:pass
     else:raise AssertionError('pre-meal provider seal remained eligible after new attempts')
     assert prepared.calls.gaode==1+len(writers) # actual city included
-    return len(writers)
+    return sights+meals
 
 
 def selected_provider_join(host,worker,binding,bundle,skeleton,calls,scenario):
