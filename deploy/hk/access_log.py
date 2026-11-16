@@ -1,6 +1,7 @@
 """Content-free structured API access log for the Hong Kong synthetic beta (#1036).
 
-One JSON line per HTTP exchange: UTC time, the matched route *template* (never a
+Arrival and completion lines per non-health HTTP exchange: UTC time, a fresh
+exchange ID, the matched route *template* after routing (never a
 path parameter value), method, status, durations, the server-generated request
 ID, the client build number when the stock iOS User-Agent or the explicit build
 header carries one, a coarse error class and the exchange outcome.
@@ -14,11 +15,17 @@ raw-original/evidence/rejected-intake stores: one ``access-YYYY-MM-DD.jsonl``
 (0600) per UTC day, pruned after ``RETENTION_DAYS`` and capped per day. If the
 directory is absent or unqualified, lines go to stderr (container log) instead
 and an ALERT is printed; logging failures never change an HTTP response.
+Arrival records have no route or response request ID. An arrival proves that
+the ASGI app was entered even if the process dies before a response. Missing
+completion is an unresolved exchange, not proof of a still-running task.
 
 Query (read-only, from the app image with the directory mounted read-only)::
 
     python -B -m deploy.hk.access_log query --since 2026-11-15T21:30:00+08:00 \
         --until 2026-11-15T22:00:00+08:00 [--min-status 400] [--route /v1/...]
+
+Add ``--phase all`` to include arrival lines. Historical v1 completion-only
+records remain readable; the default counts only completions.
 """
 import argparse
 import json
@@ -28,10 +35,11 @@ import stat
 import sys
 import threading
 import time
+from uuid import uuid4
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-VERSION = 'G2C-HK-access-log.1'
+VERSION = 'G2C-HK-access-log.2'
 DIRECTORY = Path('/access-log')
 RETENTION_DAYS = 14
 DAILY_CAP_BYTES = 16 * 1024 * 1024
@@ -197,7 +205,22 @@ class AccessLog:
             return await self.app(scope, receive, send)
         at = self.clock()
         started = self.timer()
+        exchange_id = str(uuid4())
         seen = {'status': None, 'first': None, 'request_id': None, 'done': False}
+
+        # Routing and the response trace ID do not exist yet. Never substitute
+        # a raw path or a client-controlled ID for either of them.
+        if scope.get('path') not in HEALTH_PATHS:
+            try:
+                self.sink.write({
+                    'v': VERSION, 'phase': 'started', 'exchange_id': exchange_id,
+                    'ts': _stamp(at), 'method': scope.get('method') if scope.get('method') in METHODS else 'OTHER',
+                    'route': None, 'status': None, 'duration_ms': None, 'ttfb_ms': None,
+                    'request_id': None, 'app_build': client_build(scope.get('headers', ())),
+                    'error_class': None, 'outcome': 'in_flight',
+                })
+            except Exception:
+                alert('access_log_record_failed')
 
         async def observe(message):
             if message['type'] == 'http.response.start':
@@ -219,11 +242,11 @@ class AccessLog:
             raise
         finally:
             try:
-                self._record(scope, at, started, seen, failed)
+                self._record(scope, at, started, seen, failed, exchange_id)
             except Exception:
                 alert('access_log_record_failed')
 
-    def _record(self, scope, at, started, seen, failed):
+    def _record(self, scope, at, started, seen, failed, exchange_id):
         path = scope.get('path')
         if path in HEALTH_PATHS and seen['status'] == 200 and seen['done']:
             return  # container healthcheck every 15 s; only non-200 health is useful
@@ -240,6 +263,8 @@ class AccessLog:
         method = scope.get('method')
         self.sink.write({
             'v': VERSION,
+            'phase': 'finished',
+            'exchange_id': exchange_id,
             'ts': _stamp(at),
             'method': method if method in METHODS else 'OTHER',
             'route': route_template(scope),
@@ -260,7 +285,7 @@ def _instant(text):
     return value.astimezone(timezone.utc)
 
 
-def query(directory, since, until, *, min_status=None, route=None, out=sys.stdout):
+def query(directory, since, until, *, min_status=None, route=None, phase='finished', out=sys.stdout):
     """Read-only: print matching lines in time order, then one summary line."""
     if not since < until or until - since > timedelta(days=RETENTION_DAYS):
         raise ValueError('bounded window within retention required')
@@ -273,6 +298,10 @@ def query(directory, since, until, *, min_status=None, route=None, out=sys.stdou
                 record = json.loads(line)
                 stamp = datetime.fromisoformat(record['ts'].replace('Z', '+00:00'))
                 if not since <= stamp < until:
+                    continue
+                # v1 is the historical completion-only format. The default
+                # keeps its count/status semantics; --phase all shows arrivals.
+                if phase != 'all' and record.get('phase', 'finished') != phase:
                     continue
                 # A missing status (no response sent) is always a failure worth showing.
                 if min_status is not None and record['status'] is not None and record['status'] < min_status:
@@ -301,8 +330,9 @@ def main(argv=None):
     q.add_argument('--until', type=_instant, required=True)
     q.add_argument('--min-status', type=int)
     q.add_argument('--route')
+    q.add_argument('--phase', choices=('started', 'finished', 'all'), default='finished')
     args = parser.parse_args(argv)
-    query(args.directory, args.since, args.until, min_status=args.min_status, route=args.route)
+    query(args.directory, args.since, args.until, min_status=args.min_status, route=args.route, phase=args.phase)
     return 0
 
 
