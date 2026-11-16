@@ -123,13 +123,17 @@ def test_received_tool_missing_price_is_unknown_and_retains_original_hold():
     ('SM06',"I cannot help with travel planning.",'FAIL'),
     ('SM06','I am unable to provide travel planning services.','FAIL'),
     ('SM06','Sorry, travel planning is unavailable.','FAIL'),
-    ('SM06','旅行行程规划','UNKNOWN'),
     ('SM07','Sure, I will plan Beijing.','FAIL'),
     ('SM07','Beijing: Day 1 Forbidden City. Day 2 Summer Palace. Day 3 Temple of Heaven.','PASS'),
     ('SM07','Beijing: Day 1 sightseeing. Day 2 sightseeing. Day 3 sightseeing.','UNKNOWN'),
 ])
 def test_no_greeting_ack_or_empty_three_days_pass(gate,text,expected):
     assert semantic(gate,text,'en')[0]==expected
+
+
+def test_chinese_capability_requires_positive_statement():
+    assert semantic('SM06','抱歉，我无法规划旅行行程。','zh')[0]=='FAIL'
+    assert semantic('SM06','旅行行程规划','zh')[0]=='UNKNOWN'
 
 
 def test_fixed_bilingual_plan_and_no_mid_wildcard():
@@ -194,7 +198,7 @@ def test_fixture_layer_has_no_live_cli_path():
     with pytest.raises(Invalid):execute(plan,{'version':'LIO-basic-chain-host.1','evidence_layer':'L0'},'unused')
 
 
-@pytest.mark.parametrize('failure_at',[None,'zh-SM02','en-SM07'])
+@pytest.mark.parametrize('failure_at',[None,'zh-SM02','en-SM07','owner-mismatch'])
 def test_control_steps_serial_first_failure_stops_and_costs_not_double_counted(failure_at):
     plan,*_=fixture();calls=[]
     config=dict(version='LIO-basic-chain-host.1',evidence_layer='L2+L3',app=APP,candidate=CANDIDATE,
@@ -242,12 +246,15 @@ def test_control_steps_serial_first_failure_stops_and_costs_not_double_counted(f
                 backend['accounting']['attempts'][0]['attempt_id']=mid
             if locale+'-'+gate==failure_at:ui['error_visible']=True
             if name=='app':return ui
+            if failure_at=='owner-mismatch':obs['binding']['subject']='other-owner'
             obs['ui']=request['ui'];return obs
         result=execute(plan,config,Path(temporary)/'run',clock=lambda:NOW,call=adapter)
-    count=14 if failure_at is None else 2 if failure_at=='zh-SM02'else 14
-    assert result['totals']==dict(PASS=count-(failure_at is not None),FAIL=int(failure_at is not None),UNKNOWN=0,UNRUN=14-count)
+    count=14 if failure_at is None else 2 if failure_at=='zh-SM02'else 1 if failure_at=='owner-mismatch'else 14
+    assert result['totals']==dict(PASS=count-(failure_at is not None),FAIL=int(failure_at in('zh-SM02','en-SM07')),
+                                  UNKNOWN=int(failure_at=='owner-mismatch'),UNRUN=14-count)
     assert calls==[('backend','preflight'),('app','one_gate'),('backend','observe_original')]*count+(
         [('backend','stop_new')]if failure_at else[])
     assert result['release_allowed']==(failure_at is None)
-    assert result['cost']['conservative_cny']==('0.00002'if failure_at=='zh-SM02'else'0.00016')
+    assert result['cost']['conservative_cny']==(None if failure_at=='owner-mismatch'else
+                                               '0.00002'if failure_at=='zh-SM02'else'0.00016')
     assert result['cost']['actual_paid_cny']is None
