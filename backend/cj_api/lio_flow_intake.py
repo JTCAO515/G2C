@@ -86,6 +86,22 @@ class ReadOnlyPlanningQuestion:
     reply:str
 
 
+@dataclass
+class ReadOnlyPlanningData:
+    """Validated dialogue DATA, separate from the execution projection.
+
+    No NEEDS fields, planning root, grant or publisher belongs to this view.
+    Known-nonplanning and failed originals may inform a read-only answer;
+    meta/quoted task data is still withheld after the original source checks.
+    """
+    city:dict|None=None
+    duration_days:int|None=None
+    start_date:dict|None=None
+    arrival_date:dict|None=None
+    departure_date:dict|None=None
+    sources:dict|None=None
+
+
 class _MissingDurationQuestion(DTO):
     # A control-only view. Source/unknown metadata is not accepted as facts;
     # the executable DTO and compiler below retain their original checks.
@@ -188,7 +204,7 @@ def schema_detail(error,schema):
                             if item.get('loc')and item['loc'][0]in names})[:8])
 
 
-def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_offset=0):
+def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_offset=0,read_only=None):
     value=decode(raw.encode() if type(raw)is str else raw)
     rebound=rebind_sources(value,turns,memory_offset=memory_offset)
     if rebound:
@@ -264,6 +280,16 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_off
             turns[intake.city['source_index']].text,intake.city['quote'])
         if request_index is not None and _nonplanning_fact_source(turns[request_index].text,turns[request_index].text):
             intake=replace(intake,planning_request_index=None)
+    if read_only is not None:
+        # Only a complete source/compiler-validated result reaches this point.
+        # The execution-only exclusions below must not erase human dialogue.
+        read_only.city=None if meta_city else intake.city
+        read_only.duration_days=None if 'duration_days'in meta_blocked else intake.duration_days
+        read_only.start_date=None if 'start_date'in meta_blocked else intake.start_date
+        fields=intake.extraction['fields']
+        read_only.arrival_date=None if 'arrival.date'in meta_blocked else fields.get('arrival',{}).get('date')
+        read_only.departure_date=None if 'departure.date'in meta_blocked else fields.get('departure',{}).get('date')
+        read_only.sources={key:refs for key,refs in intake.sources.items()if key not in meta_blocked}
     blocked=meta_blocked|{field for field,sources in intake.sources.items()if any(source_ids[ref['source_index']]in excluded for ref in sources)}
     if intake.city is not None and (meta_city or source_ids[intake.city['source_index']]in excluded):
         intake=replace(intake,city=None);data['city']=None

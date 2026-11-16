@@ -13,7 +13,7 @@ from cj_draft.lio_plan import LioPlanPublisher
 from cj_draft.rich_schema import GENERATION_PROFILES as RICH_GENERATION_PROFILES
 from cj_message.demo_dialogue import LIO_VERSION
 from cj_message.domain import Command, Unavailable
-from cj_message.lio_context import answer_prompt
+from cj_message.lio_context import UNSAVED_PLAN_ANSWER,answer_prompt
 from cj_message.lio_plan_needs import BOUND_EFFECT, attach, original_needs
 from cj_message.needs_binding import needs_scope_for
 from cj_needs.domain import InvalidInput, decode, exact
@@ -105,6 +105,19 @@ class PlanningDetails:
     clarification: str | None
     references: tuple
     pace: PlanPace | None = None
+
+
+def unsaved_plan_answer(worker,binding,state,locale,*,retained):
+    """Explain the absent save confirmation; never retry a draft or its write."""
+    if locale=='zh':
+        body=('这次没有拿到新版本的保存确认，现有行程先保留。'if retained else'这次没有拿到保存确认。')
+        body+='你想先看不保存的按天建议，还是调整安排？'
+    else:
+        body=('I could not confirm a new saved version. Keep the current itinerary for now. '
+              if retained else'I could not confirm a saved plan. ')
+        body+='Would you like an unsaved day-by-day suggestion or to change the plan?'
+    state=worker._event(binding,state,'text_delta',body)
+    return worker._event(binding,state,'effect_committed',UNSAVED_PLAN_ANSWER)
 
 
 def clarify(worker, binding, state, text):
@@ -364,6 +377,8 @@ class LioPlanSave:
                     details.pace,dated=True,retained=head is not None,
                     rich_applied=rich_first and publisher.generation_used in RICH_GENERATION_PROFILES)
             state = worker._event(binding, state, 'text_delta', answer)
+        else:
+            state=unsaved_plan_answer(worker,binding,state,locale,retained=head is not None)
         return worker._event(binding, state, 'completed')
 
 

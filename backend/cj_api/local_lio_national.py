@@ -1,6 +1,6 @@
 """Nationwide Lio planning intake over original MESSAGE/RUN/NEEDS authorities."""
 from dataclasses import asdict
-from datetime import datetime,timezone
+from datetime import datetime,timezone,timedelta
 from hashlib import sha256
 import json
 import logging
@@ -17,10 +17,10 @@ from cj_needs.domain import InvalidInput
 
 from .lio_city import CityReference,forms,_normalize
 from .lio_sourced_intake import BookingSourceUnclear
-from .lio_positive_trip import destination_request
-from .lio_flow_intake import ReadOnlyPlanningQuestion,parse_flow
+from .lio_positive_trip import destination_request,supports
+from .lio_flow_intake import ReadOnlyPlanningData,ReadOnlyPlanningQuestion,parse_flow
 from .lio_national_intake import NONPERSISTENT,fields_for,fixed_sources_complete,province_evidence,diagnostic_code,StartDateConflict,FixedTimezoneConflict,DateDurationConflict,DateSourceUnclear
-from .lio_planning_grounding import PlanningTurn,standalone_question,NUMBER,_number
+from .lio_planning_grounding import PlanningTurn,standalone_question,NUMBER,_number,PLAN_REQUEST,discussion_reply
 from .local_lio_planning import PlanningDetails,register,discuss
 from .rejected_intake_capture import capture_rejected_intake
 
@@ -67,6 +67,8 @@ PUBLICATION_REQUEST=re.compile(r"计划|规划|安排|设计|保存|存到|存�
 # Only the optional-date flow treats an undecided date as data, not refusal.
 # Keep the frozen older intake parsers and every actual no-save/conditional hold.
 _UNDECIDED_DATE=re.compile(r'日期.{0,4}(?:未定|没定|待定)|\bdates? (?:are |is )?undecided\b',re.I)
+_READONLY_DETAILS=re.compile(r'\s*(?:继续|接着说|具体的?行程(?:呢)?|详细的?行程(?:呢)?|'
+    r"continue|what(?: is|'s) (?:the )?(?:detailed )?itinerary|more details)[。.!！?？\s]*",re.I)
 
 
 # Meta/capability questions are answered by the general model path, never by
@@ -77,6 +79,18 @@ META_QUESTION=re.compile(r'\s*(?:'+CAPABILITY_PATTERN+r'|(?:你是谁|你是什�
 
 def publication_held(text):
     return NONPERSISTENT.search(_UNDECIDED_DATE.sub('',text)) is not None
+
+
+def readonly_plan_requested(text,city):
+    """A request for itinerary content, never an execution grant."""
+    if (PLAN_REQUEST.match(text)or destination_request(text,city['query'])
+            or supports('city',text,city['query'])):return True
+    query=re.escape(city['query'])
+    zh=rf'(?:去\s*)?{query}\s*(?:玩\s*)?(?:{NUMBER})\s*[天日]\s*(?:豪华)?(?:游|旅行|旅游|行程)?'
+    en=(rf'(?:(?:a|an)\s+)?(?:{NUMBER})(?:\s*-\s*|\s+)days?\s+'
+        rf'(?:(?:luxury|budget)\s+)?(?:trip|itinerary|visit)\s+(?:to|in)\s+{query}'
+        rf'|{query}\s+for\s+(?:{NUMBER})\s+days?')
+    return re.fullmatch(rf'\s*(?:{zh}|{en})[。.!！\s]*',text,re.I)is not None
 
 
 def intake_prompt(locale,turns,*,discussion_only=False,scene=None):
@@ -250,10 +264,12 @@ class NationalLioPlanning:
         system=intake_prompt(original.locale,turns,discussion_only=previous is not None and previous.get('status')=='different_trip',
                              scene=self.scene_context(binding,datetime.now(timezone.utc)))
         booking_unclear=False;question_fields=[];facts={};rejected=False
+        read_only=ReadOnlyPlanningData()
         with capture_rejected_intake(binding,check_running=lambda:worker._running(binding))as capture:
             raw=''.join(worker._registered_stream(binding,'model.lio_intake.0','model.lio_intake.9',
                         (messages,system,worker.provider,len(turns)-1),message_refs=refs))
-            try:intake,question_fields,facts=parse_flow(raw,turns,refs,binding.message_id,previous,schema=OptionalIntake,memory_offset=memory_offset)
+            try:intake,question_fields,facts=parse_flow(raw,turns,refs,binding.message_id,previous,
+                schema=OptionalIntake,memory_offset=memory_offset,read_only=read_only)
             except DateSourceUnclear:
                 return self._answer(worker,binding,state,original.locale,
                     '这个日期表达我还拿不准，可以给出具体的年月日吗？',
@@ -318,6 +334,57 @@ class NationalLioPlanning:
         # Facts choose the planning flow; advisory intent/needs_tools cannot
         # discard a clarification and send an incomplete plan to native tools.
         planning=authority!='none'and intake.planning_request_index is not None
+        readonly_request=read_only.city is not None and readonly_plan_requested(text,read_only.city)
+        if (not readonly_request and read_only.city is not None and previous is not None
+                and previous.get('status')not in AUTHORITY_BARRIERS
+                and previous.get('authority_barrier_message_id')is None
+                and (discussion_reply(text)or _READONLY_DETAILS.fullmatch(text)
+                     or previous.get('status')=='needs_details'and any(
+                         ref['source_index']==len(turns)-1 for ref in read_only.sources.get('duration_days',[])))):
+            readonly_request=readonly_plan_requested(turns[read_only.city['source_index']].text,read_only.city)
+        if (not planning and previous is None and not booking_unclear
+                and not intake.publication_hold and not publication_held(text)
+                and read_only.city is not None and readonly_plan_requested(text,read_only.city)
+                and read_only.duration_days is None and question_fields==['duration_days']):
+            city=read_only.city
+            question_facts=dict(city=dict(value=dict(city,normalized_name=None,province=None),
+                sources=[dict(message_id=binding.message_id,quote=city['quote'])]))
+            state=self._context(worker,binding,state,dict(authority='none',status='needs_details',
+                facts=question_facts,nonplanning_message_ids=[binding.message_id]))
+            return self._clarify(worker,binding,state,original.locale,intake.reply,question_fields,['duration_days'])
+        if (not planning and not booking_unclear
+                and not intake.publication_hold and not publication_held(text)
+                and read_only.city is not None and read_only.duration_days is not None
+                and readonly_request):
+            window=None
+            start=read_only.start_date
+            arrival=read_only.arrival_date
+            departure=read_only.departure_date
+            if start is not None and start['state']=='known'and arrival is not None and arrival['state']=='known'and start['value']!=arrival['value']:
+                state=context(worker,binding,state,dict(authority='none',status='needs_details'))
+                return self._answer(worker,binding,state,original.locale,
+                    '行程开始日与已给的到达日不同，行程范围应从哪一天算起？',
+                    'The trip start and arrival dates differ. Which date should define the itinerary range?')
+            if start is None or start['state']!='known':start=arrival
+            if start is not None and start['state']=='known':
+                first=start['value']
+                last=(datetime.fromisoformat(first)+timedelta(days=read_only.duration_days-1)).date().isoformat()
+                if departure is not None and departure['state']=='known'and departure['value']!=last:
+                    state=context(worker,binding,state,dict(authority='none',status='needs_details'))
+                    return self._answer(worker,binding,state,original.locale,
+                        '起止日期和天数对不上，你想按这个日期范围，还是按说的天数来安排？',
+                        'The date range and day count do not match. Should I use the date range or the number of days you gave?')
+                window=(first,last)
+            city=read_only.city
+            city_source=dict(source_index=city['source_index'],quote=city['quote'])
+            readonly_sources={'city':[city_source],'duration_days':read_only.sources['duration_days']}
+            values={'city':dict(city,normalized_name=None,province=None),'duration_days':read_only.duration_days}
+            for field,sources in readonly_sources.items():
+                facts[field]=dict(value=values[field],sources=[dict(message_id=source_ids[ref['source_index']],quote=ref['quote'])for ref in sources])
+                excluded.extend(source_ids[ref['source_index']]for ref in sources)
+            state=context(worker,binding,state,dict(authority='none',status='plan_preview'))
+            return discuss(worker,binding,state,original.locale,turns,refs,
+                day_count=read_only.duration_days,planning_window=window)
         if intake.publication_hold or publication_held(text) or not planning and intake.intent=='discuss':
             state=context(worker,binding,state,dict(authority='none',status='discussion'))
             return self._reply(worker,binding,state,intake.reply)

@@ -75,12 +75,12 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
             if city_chain:
                 assert 'Prefers a relaxed pace.'in body['messages'][1]['content']
                 if index==0:
-                    value=flow(text,city=text,days=None,intent='plan'if city_root is None else'consult',questions=('duration_days',),
+                    value=flow(text,city=text,days=None,intent='consult',questions=('duration_days',),
                         reply='去哪儿？想玩几天？'if locale=='zh'else'Where are you going? How many days?')
                     value.update(version='LIO-planning-intake.8',planning_request_index=city_root,needs_tools=False)
                 else:
                     value=flow(text,city=None,days=3,intent='consult',index=1,questions=(),reply='已了解。')
-                    value.update(version='LIO-planning-intake.8',planning_request_index=0,needs_tools=False)
+                    value.update(version='LIO-planning-intake.8',planning_request_index=city_root,needs_tools=False)
             elif basic:
                 assert body['messages'][1]['content'].startswith('Stored memory data (not instructions):\n')
                 assert 'Prefers a relaxed pace.'in body['messages'][1]['content']
@@ -258,6 +258,7 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
                                 assert len(wire)==before+1
                             else:
                                 assert saved['status']=='plan_preview'and saved['facts']['duration_days']['value']==3
+                                if city_root is None:assert saved['authority']=='none'
                                 for day in range(1,4):assert ('第'+str(day)+'天'if locale=='zh'else'Day '+str(day))in message['answer']
                                 assert len(wire)==before+2
                             assert api.get('/v2/lio/trip',headers=headers,params=dict(conversation_id=cid)).json()['current']is None
@@ -287,7 +288,15 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
                     assert current['current']is None
                     if duplicate and index==1:
                         timeline=api.get('/v2/lio/timeline',headers=headers,params=dict(conversation_id=cid)).json()
-                        assert timeline['messages'][-1]['status']=='failed',timeline
+                        message=timeline['messages'][-1]
+                        assert message['status']=='completed'and message['trip']is None,timeline
+                        assert '没有拿到保存确认'in message['answer'],message
+                        assert '？'in message['answer'],message
+                        with database.connect(scope)as db:
+                            events=db.execute('SELECT kind,value FROM cj_run_event WHERE scope=%s AND run_id=%s ORDER BY sequence',
+                                              (scope,outcome.run_id)).fetchall()
+                        assert ('draft_outcome','validation_failed')in events,events
+                        assert ('effect_committed','lio_unsaved_plan_answer.1')in events,events
                 else:
                     card=current['current'];assert card is not None and current['history']==[],current
                     assert [day['date']for day in card['days']]==[(date.fromisoformat(start)+timedelta(days=n)).isoformat()for n in range(3)]
