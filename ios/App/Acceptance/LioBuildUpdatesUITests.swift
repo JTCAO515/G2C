@@ -42,7 +42,7 @@ import XCTest
                     ? min(viewport.height * 0.4, max(30, viewport.minY - target.minY + 12))
                     : -min(viewport.height * 0.4, max(30, target.maxY - viewport.maxY + 12))
                 let start = form.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5))
-                start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: delta)))
+                start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: delta)), withVelocity: .slow, thenHoldForDuration: 0.2)
             } else if towardTop { form.swipeDown() } else { form.swipeUp() }
         }
         XCTAssertTrue(element.isHittable, app.debugDescription)
@@ -236,40 +236,85 @@ import XCTest
             return
         }
         let bounds = scroll.frame
-        let top = max(bounds.minY, navigationBottom)
+        let done = app.buttons["lio.information.done"]
+        let controlsBottom = done.exists ? done.frame.maxY + 8 : navigationBottom
+        let top = max(bounds.minY, navigationBottom, controlsBottom)
         let viewport = CGRect(x: bounds.minX, y: top, width: bounds.width, height: bounds.maxY - top)
         XCTAssertGreaterThan(viewport.height, 0)
+        let step = viewport.height * 0.35
+        let start = app.coordinate(withNormalizedOffset: .zero)
+            .withOffset(CGVector(dx: viewport.minX + 8, dy: viewport.midY))
         var returnedToHeading = false
+        var covered: CGFloat = 0
+        var paragraphSize: CGSize?
+        var previous: CGRect?
+        var unchanged = 0
         for _ in 0..<80 {
-            if !returnedToHeading && (!element.exists || element.frame.isEmpty) {
-                let heading = app.staticTexts["lio.updates.heading"]
-                for _ in 0..<30 {
-                    if heading.exists && viewport.contains(heading.frame) { break }
-                    scroll.swipeDown(velocity: .fast)
+            let exists = element.exists
+            let frame = exists ? element.frame : .zero
+            if !exists || frame.isEmpty {
+                if !returnedToHeading {
+                    let heading = app.staticTexts["lio.updates.heading"]
+                    for _ in 0..<30 {
+                        if heading.exists && viewport.contains(heading.frame) { break }
+                        scroll.swipeDown(velocity: .fast)
+                    }
+                    XCTAssertTrue(heading.exists && viewport.contains(heading.frame), app.debugDescription)
+                    returnedToHeading = true
+                } else {
+                    start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -step)), withVelocity: .slow, thenHoldForDuration: 0.2)
                 }
-                XCTAssertTrue(heading.exists && viewport.contains(heading.frame), app.debugDescription)
-                returnedToHeading = true
+                continue
             }
-            if element.exists && !element.frame.isEmpty && viewport.contains(element.frame) {
-                var lastFrame: CGRect?
-                let stable = NSPredicate { _, _ in
-                    guard element.exists, element.isHittable, viewport.contains(element.frame) else { return false }
-                    let current = element.frame
-                    defer { lastFrame = current }
-                    return lastFrame == current
-                }
-                XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: stable, object: nil)], timeout: 5), .completed)
+            unchanged = previous == frame ? unchanged + 1 : 0
+            previous = frame
+            guard unchanged < 3 else {
+                XCTFail("The actual element did not advance: \(element.identifier), frame \(frame), viewport \(viewport), covered \(covered)")
                 return
             }
-            let frame = viewport
-            let target = element.exists && !element.frame.isEmpty ? element.frame : CGRect(x: frame.midX, y: frame.maxY + frame.height, width: 1, height: 1)
-            let delta = target.minY < frame.minY ? min(frame.height * 0.4, max(80, frame.minY - target.minY + 12))
-                : -min(frame.height * 0.4, max(80, target.maxY - frame.maxY + 12))
-            let start = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5))
-            start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: delta)))
+            let delta: CGFloat
+            if frame.height > viewport.height {
+                if let size = paragraphSize,
+                   abs(size.height - frame.height) > 1 || abs(size.width - frame.width) > 1 {
+                    // Reflow invalidates pixel offsets; re-read the new layout
+                    // from its beginning instead of crediting old coverage.
+                    covered = 0
+                }
+                paragraphSize = frame.size
+                let first = max(0, viewport.minY - frame.minY)
+                let last = min(frame.height, viewport.maxY - frame.minY)
+                // Every readable slice must overlap the already covered text;
+                // a skipped middle cannot be treated as a complete paragraph.
+                if last > first && first <= covered + 1 { covered = max(covered, last) }
+                if covered >= frame.height - 1 {
+                    XCTAssertTrue(element.isHittable)
+                    XCTAssertGreaterThanOrEqual(covered, frame.height - 1)
+                    return
+                }
+                let wantedOffset = max(0, covered - 24)
+                delta = min(step, max(-step, viewport.minY - frame.minY - wantedOffset))
+            } else {
+                if viewport.contains(frame) {
+                    var lastFrame: CGRect?
+                    let stable = NSPredicate { _, _ in
+                        guard element.exists, element.isHittable, viewport.contains(element.frame) else { return false }
+                        let current = element.frame
+                        defer { lastFrame = current }
+                        return lastFrame == current
+                    }
+                    XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: stable, object: nil)], timeout: 5), .completed)
+                    XCTAssertTrue(element.isHittable)
+                    XCTAssertTrue(viewport.contains(element.frame))
+                    return
+                }
+                delta = min(step, max(-step, viewport.midY - frame.midY))
+            }
+            // Tiny drags fall below UIKit’s scroll threshold. Keep the gesture
+            // observable; the next snapshot must still prove full coverage.
+            let gestureDelta = delta >= 0 ? max(35, delta) : min(-35, delta)
+            start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: gestureDelta)), withVelocity: .slow, thenHoldForDuration: 0.2)
         }
-        XCTAssertTrue(element.isHittable, app.debugDescription)
-        XCTAssertTrue(viewport.contains(element.frame), app.debugDescription)
+        XCTFail("The complete paragraph was not read within the bounded scroll sequence")
     }
     private func audit(_ app: XCUIApplication) throws {
         try app.performAccessibilityAudit(for: .all) { issue in
