@@ -3,7 +3,7 @@
 父票 #841；格式与候选来源 #843；首批收集 #846；事实工具接入由 L 在 #847 完成。
 H 线只拥有 `knowledge/visitor/**`。JT 已在 [#843](https://github.com/JTCAO515/G2C/issues/843#issuecomment-6818584957) 确认 H1 来源范围。
 WP12 新格式、条件语义、官方渠道与名称目录见 [WP12-FORMAT.md](WP12-FORMAT.md)；旧八字段消费者继续读取原目录。
-2026-11-16 持续Goal的九城/全国16条/回归缺口与票据见 [ACCEPTANCE-COVERAGE.md](ACCEPTANCE-COVERAGE.md)。新增两城基础内容在 `entries-v3/`，必须用显式v3读取器；旧目录/格式和旧22条保持不变。
+2026-11-16 持续Goal的九城/全国16条/回归缺口与票据见 [ACCEPTANCE-COVERAGE.md](ACCEPTANCE-COVERAGE.md)。新增两城基础内容在 `entries-v3/`，必须用显式v3读取器；旧目录、格式及22条记录保留，内容复核可更新正文、来源和日期，不改变旧字段结构和消费者接受集合。
 首批 **12 条**中英条目初次于 2026-11-12 核对，覆盖七城 × 五主题共 35 个覆盖格；具体范围和限制见 [COVERAGE.md](COVERAGE.md)。
 
 ## 文件与格式

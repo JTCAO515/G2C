@@ -78,7 +78,7 @@ uv run --locked python -B knowledge/visitor/review_due.py --format names knowled
 
 ## visitor-entry.3：九城追加格式（#1056）
 
-旧八字段、visitor-entry.2、visitor-name.1 的字段、城市/主题接受集合和原22条保持不变。新增文件在 `entries-v3/*.json`，只通过 `load_entries_v3` / `validate_v3.py` 显式读取，不递归混入旧目录。它是本地内容版本，不冻结或启用任何 FACT wire。
+旧八字段、visitor-entry.2、visitor-name.1 的字段及城市/主题接受集合不变，原22条保留；后续内容复核可更新正文、来源和日期，不改条目ID或旧字段结构。新增文件在 `entries-v3/*.json`，只通过 `load_entries_v3` / `validate_v3.py` 显式读取，不递归混入旧目录。它是本地内容版本，不冻结或启用任何 FACT wire。
 
 键集合与 v2 相同，`format_version` 固定 `visitor-entry.3`；新增城市键 `taizhou-zhejiang` / `suzhou-anhui`，分别指浙江台州/安徽宿州，拒绝裸 `taizhou` / `suzhou`，不得绑定江苏城市。主题在 v2 基础上允许 `seasonal_holiday`。
 

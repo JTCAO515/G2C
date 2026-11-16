@@ -76,11 +76,12 @@
       "name_en": "Chengdu Museum",
       "wikidata_qid": null
     },
-    "text_zh": "成都博物馆常规周一闭馆，法定节假日除外。馆方以线上预约为主要入馆方式，并为免预约人群、部分境外观众等提供人工窗口换票和咨询协助；不要把这项协助理解为所有外国游客均可免预约。各人群的强制预约条件与提前窗口本条未核定，行前查官方平台或咨询馆方；临展和活动另查。",
-    "text_en": "Chengdu Museum normally closes on Mondays except statutory public holidays. Online reservation is its main entry method; service windows assist exempt visitors and some international visitors with ticket exchange or enquiries. This does not establish an exemption for every foreign visitor. Mandatory booking conditions for each visitor category and the advance window are unconfirmed here; consult the official platform or museum before visiting. Exhibitions and events may differ.",
+    "text_zh": "成都博物馆常规周一闭馆，法定节假日除外。馆方公开个人预约须知列明14天预约周期，这是可预约窗口，不是最少提前天数；证件类型提供“护照及其他”选项。馆方以线上预约为主要入馆方式，并为免预约人群、部分境外观众等提供人工窗口换票和咨询协助；不要把这项协助理解为所有外国游客均可免预约。各人群的强制预约条件本条未核定，证件与手机验证、优待和人工协助应行前咨询馆方；临展和活动另查。",
+    "text_en": "Chengdu Museum normally closes on Mondays except statutory public holidays. Its public individual-reservation notice specifies a 14-day booking window, not a minimum lead time; the form includes a passport-and-other-documents option. Online reservation is its main entry method, with service-window assistance for exempt visitors and some international visitors. This does not establish an exemption for every foreign visitor. Mandatory booking conditions for each category remain unconfirmed here. Check identity and phone verification, concessions and assisted access with the museum; exhibitions and events may differ.",
     "source_urls": [
       "https://www.cdmuseum.com/zhinan/",
-      "https://www.cdmuseum.com/xinwen/202602/4250.html"
+      "https://www.cdmuseum.com/xinwen/202602/4250.html",
+      "https://museum-guanwang.leleu.cn/"
     ],
     "conditions": {
       "reservation_required": null,
@@ -88,8 +89,8 @@
         1
       ],
       "closed_weekdays_public_holiday_exception": true,
-      "advance_booking_days": null,
-      "advance_booking_rule": null
+      "advance_booking_days": 14,
+      "advance_booking_rule": "window_max"
     }
   },
   {
