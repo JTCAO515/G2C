@@ -12,7 +12,7 @@ def main():
     commands=parser.add_subparsers(dest='command',required=True)
     prepare=commands.add_parser('prepare',help='offline new run/slots; grants no capability')
     prepare.add_argument('--app',required=True,help='owner-only App pin JSON')
-    prepare.add_argument('--old-chats',required=True,help='owner-only locale to actual synthetic CID JSON')
+    prepare.add_argument('--old-chats',required=True,help='owner-only B-verified App-local history anchors JSON; {} for first setup')
     prepare.add_argument('--first-setup',action='store_true')
     prepare.add_argument('--output',required=True)
     run=commands.add_parser('run',help='one serial real smoke, requires qualified A/B adapters')
@@ -29,7 +29,7 @@ def main():
     report=execute(decode(private_read(args.plan)),decode(private_read(args.host)),args.output_directory)
     print(f'{report["status"]}: {report["success_rate"]}; conservative/token/paid = '
           f'{report["cost"]["conservative_cny"]}/{report["cost"]["token_estimate_cny"]}/{report["cost"]["actual_paid_cny"]}')
-    return 0 if report['release_allowed']else 1
+    return 0 if report['real_gate_status']=='PASS'else 1
 
 
 if __name__=='__main__':raise SystemExit(main())

@@ -98,6 +98,26 @@ def test_lifecycle_subevidence_retains_one_gate_and_stops_on_incomplete_return(t
     assert row(['PASS','UNKNOWN'])['status']=='UNKNOWN'
 
 
+@pytest.mark.parametrize('status,real_gate,exit_code',[
+    ('PASS','PASS',0),('PASS','UNRUN',1),('FAIL','FAIL',1),('UNKNOWN','UNKNOWN',1),
+])
+def test_CLI_exit_is_technical_gate_result_and_does_not_grant_release(tmp_path,monkeypatch,status,real_gate,exit_code):
+    from eval.basic_chain import __main__ as cli
+    import sys
+    plan,config=inputs(tmp_path)
+    plan_path=tmp_path/'plan.json';host_path=tmp_path/'host.json'
+    save(plan_path,plan);save(host_path,config)
+    report=dict(status=status,success_rate='14/14'if status=='PASS'else'0/14',real_gate_status=real_gate,
+        release_allowed=False,jt_invitation_status='UNRUN',
+        cost=dict(conservative_cny='0',token_estimate_cny='0',actual_paid_cny=None))
+    monkeypatch.setattr(cli,'execute',lambda *args:report)
+    monkeypatch.setattr(sys,'argv',['basic-chain','run','--execute','--plan',str(plan_path),
+        '--host',str(host_path),'--output-directory',str(tmp_path/'NOT-A-REAL-RUN')])
+    assert cli.main()==exit_code
+    assert not report['release_allowed']and report['jt_invitation_status']=='UNRUN'
+    assert not(tmp_path/'NOT-A-REAL-RUN').exists()
+
+
 @pytest.mark.parametrize('fault',[None,'missing_target','wrong_generation','wrong_canonical','publication_pending','capture_unknown','pending_source_changed'])
 def test_standard_driver_bootstraps_old_chat_from_qualified_read_without_seed_or_prefilled_views(tmp_path,fault):
     from eval.tests.test_basic_native_v2 import fixture,add_read

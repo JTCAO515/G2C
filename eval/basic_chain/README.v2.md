@@ -134,6 +134,7 @@ subjects、native_ledger_id、pricing、B实际purpose_receipt的path/SHA、三�
 停新，其余UNRUN，结果写#1048。`real_gate_status`仅表示该候选基础链路；
 `release_allowed=false`、`jt_invitation_status=UNRUN`始终保留，脚本不签发发布或
 JT邀请。只有另行核实目标构建/发行产物及所需App证据、真实全PASS后才能写#702。
+CLI退出0仅表示real_gate_status=PASS；FAIL/UNKNOWN/UNRUN退出1，与发布许可分开。
 
 注入测试callback的执行始终标L0_CONTROL、real_gate_status=UNRUN、release_allowed=false。
 本地fixture的14个逻辑PASS不能生成真实发布证书。23:00–08:00不开始UI准备/新请求；
