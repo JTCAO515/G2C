@@ -7,16 +7,20 @@ public struct LioChatSession: Identifiable, Sendable {
     public let title: String
     let service: LioService
     let trips: LioChatTrips?
+    /// Only the signed restore path supplies this after the SDK proves the
+    /// first question never became an accepted message. Unknown stays read-only.
+    let restoredUnsentFirst: LioQuestion?
 
     public init(id: String, title: String, service: LioService) {
         self.init(id: id, title: title, service: service, trips: nil)
     }
 
-    init(id: String, title: String, service: LioService, trips: LioChatTrips?) {
+    init(id: String, title: String, service: LioService, trips: LioChatTrips?, restoredUnsentFirst: LioQuestion? = nil) {
         self.id = Data(id.utf8)
         self.title = title
         self.service = service
         self.trips = trips
+        self.restoredUnsentFirst = restoredUnsentFirst
     }
 }
 
@@ -221,13 +225,13 @@ private final class LioSignedChatSessions {
         return blank(localID)
     }
 
-    private func blank(_ localID: String) -> LioChatSession {
+    private func blank(_ localID: String, restoredUnsentFirst: LioQuestion? = nil) -> LioChatSession {
         continuity.blankIDs.insert(Data(localID.utf8))
         let trips = LioChatTrips()
         let service = conversationService(.newChat) { [weak self] id in
             await self?.bind(id, localID: localID, trips: trips)
         }
-        return LioChatSession(id: localID, title: "", service: service, trips: trips)
+        return LioChatSession(id: localID, title: "", service: service, trips: trips, restoredUnsentFirst: restoredUnsentFirst)
     }
 
     private func bind(_ id: String, localID: String, trips: LioChatTrips) {
@@ -263,11 +267,12 @@ private final class LioSignedChatSessions {
                     continuity.firstQuestions.removeValue(forKey: selected)
                     if continuity.draft.isEmpty {
                         continuity.updateDraft(first.text, for: selected)
-                    } else {
+                    }
+                    if !continuity.retainedUnsent[selected, default: []].contains(where: { $0.id == first.id }) {
                         continuity.retainedUnsent[selected, default: []].append(first)
                     }
                 }
-                return blank(String(decoding: selected, as: UTF8.self))
+                return blank(String(decoding: selected, as: UTF8.self), restoredUnsentFirst: first)
             }
             attempt.stage = .firstSendLookup
             guard let id = try await client.reconcileFirstChat(messageID: first.messageID) else {
