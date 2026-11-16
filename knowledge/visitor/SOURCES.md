@@ -239,3 +239,10 @@ v3沿用单个上海地点、passport_booking、明确subject的边界，不扩�
 GoChengdu发布的[2025入境旅游指南介绍](https://www.gochengdu.cn/en/article/column_167083285087556/4314)另有精确附件核读范围，见[#702/6922122643](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6922122643)与[6922143376](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6922143376)：仅该页直接指向的[英文分享](https://easylink.cc/hmcwau)、[繁中分享](https://easylink.cc/628npa)，以及前者页面实际预览的单个20250227英文PDF。英语原件已读，繁中尚未读；不扩整个分享站或CDN，不将临时下载参数存入来源字段。
 
 英文预览版92页；熊猫基地入场段与已核当前园方售票说明不一致，草堂/成博章节也未补齐所缺预约和整园开闭条件，因此不从该旧版指南录入新事实。签证/入境章节不作摘要，具体文件和原件均不入库；内容核对结果见[#702/6922194328](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6922194328)。上述范围不授予外链、其他城市、坐标采集、接口、账号、上传、付费或交易权限。
+
+
+## 定位辅助与运营方补充（2026-11-17）
+
+- [#702/6923072320](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6923072320)与[6923118760](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6923118760)仅批准第三方Haoliday的`/zh/sources/`下xian、chengdu、shanghai、hangzhou、chongqing、shenzhen六个精确城市索引作为原始URL定位辅助。它不是政府或运营方；其标签、核实日期、摘要、推断均不作本库证据，不写入source_urls，不取地图资料。仅已批官方原页的实际正文支持条目；新host另核主体与范围。索引把秦陵“每日售票”标为闭馆支持，本库未据此写全院每周无闭馆。
+- [#702/6923199526](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6923199526)批准中旅国际官网[www.ctgii.com](https://www.ctgii.com/)同host的深圳世界之窗公开介绍、参观/预约和开放说明；语言中文/英文，城市仅深圳、具体场馆范围，不扩其他项目或交易。已实读[企业介绍](https://www.ctgii.com/about/company_detail)明确投资运营管理世界之窗，[主题公园栏目](https://www.ctgii.com/scenic/theme_park)直链[世界之窗详情](https://www.ctgii.com/scenic/theme_park/62)，页脚为港中旅（深圳）旅游管理有限公司、粤ICP备2021122029号。此为运营方集团官网，不冒政府网站。详情确认现场售票，但未明确常规每周关闭日；本批未从时刻表或全年营销活动推出新条件，未加入v3正式条目源接受集合。
+- [#702/6923314756](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6923314756)的单个公众号候选仅获身份核读范围。实际读取被浏览器安全策略拒绝，原文及公众号主体均未核清，未通过其他工具、浏览器或代理读取；不能作事实来源，不批准整个微信域名，也不采用第三方转述来补条件。
