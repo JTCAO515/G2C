@@ -14,11 +14,30 @@ import Testing
     func validate() throws { if !active { throw RecoveryError.inactive } }
 }
 private actor FailureBodyGate {
-    var entered = false
+    private var arrival: Bool?
+    private var arrivalWaiter: CheckedContinuation<Bool, Never>?
     private var continuation: CheckedContinuation<Void, Never>?
-    func wait() async { entered = true; await withCheckedContinuation { continuation = $0 } }
+
+    func waitForBody() async -> Bool {
+        if let arrival { return arrival }
+        return await withCheckedContinuation { arrivalWaiter = $0 }
+    }
+
+    func wait() async {
+        arrival = true
+        arrivalWaiter?.resume(returning: true); arrivalWaiter = nil
+        await withCheckedContinuation { continuation = $0 }
+    }
+
+    func requestFinished() {
+        guard arrival == nil else { return }
+        arrival = false
+        arrivalWaiter?.resume(returning: false); arrivalWaiter = nil
+    }
+
     func release() { continuation?.resume(); continuation = nil }
 }
+
 private struct DelayedFailureBody: AsyncSequence, Sendable {
     typealias Element = ArraySlice<UInt8>
     let gate: FailureBodyGate
@@ -58,12 +77,17 @@ private actor ConcurrentFailureTransport: ClientTransport {
         let service = LioService.signedTimeline(client)
         let earlier = try #require(service.earlier)
         let first = Task { () -> LioRequestProblem? in
-            do { _ = try await earlier("first"); Issue.record("Expected local revocation"); return nil }
-            catch { return error as? LioRequestProblem }
+            let problem: LioRequestProblem?
+            do { _ = try await earlier("first"); Issue.record("Expected local revocation"); problem = nil }
+            catch { problem = error as? LioRequestProblem }
+            await gate.requestFinished()
+            return problem
         }
-        let clock = ContinuousClock(), deadline = ContinuousClock.now.advanced(by: .seconds(2))
-        while !(await gate.entered) && clock.now < deadline { await Task.yield() }
-        guard await gate.entered else { first.cancel(); Issue.record("First body never arrived"); return }
+        guard await gate.waitForBody() else {
+            _ = await first.value
+            Issue.record("First request finished before its response body arrived")
+            return
+        }
         do { _ = try await earlier("second"); Issue.record("Expected HTTP 503") }
         catch {
             let problem = try #require(error as? LioRequestProblem)
