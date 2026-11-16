@@ -14,7 +14,7 @@ class PipelineProgressTests(unittest.TestCase):
             self.assertEqual(kind,'effect_committed');effects.append(value);return state
         def stream(binding,key,registration,argument,**kwargs):
             sends.append(key);yield '';yield 'observed'
-        worker=SimpleNamespace(lio_memory=None,runs=SimpleNamespace(snapshot=lambda _:object()),
+        worker=SimpleNamespace(lio_memory=None,runs=SimpleNamespace(snapshot=lambda _:SimpleNamespace(effects=tuple(effects))),
             _event=event,_registered_stream=stream)
         return worker,effects,sends
 
@@ -40,3 +40,11 @@ class PipelineProgressTests(unittest.TestCase):
         calls.gaode=45
         with self.assertRaises(PipelineCapacity):calls.parallel((Call('gaode','tool.lio_route.1',0),))
         self.assertEqual((effects,sends),([],[]))
+
+    def test_repeated_place_batches_emit_one_ui_stage_without_dropping_operations(self):
+        worker,effects,sends=self.worker();calls=PipelineCalls(worker,'binding',locale='en')
+        calls.parallel((Call('gaode','tool.lio_poi2.1',0),))
+        calls.parallel((Call('gaode','tool.lio_poi2.1',1),))
+        self.assertEqual(len(effects),1)
+        self.assertEqual(len(sends),2)
+        self.assertEqual(calls.gaode,2)
