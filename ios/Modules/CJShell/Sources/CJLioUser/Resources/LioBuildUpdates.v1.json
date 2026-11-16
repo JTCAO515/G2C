@@ -1,7 +1,108 @@
 {
   "schema": 1,
-  "currentBuild": 45,
+  "currentBuild": 46,
   "releases": [
+    {
+      "build": 46,
+      "previousBuild": 45,
+      "sections": [
+        {
+          "id": "changes",
+          "title": {
+            "en": "New and improved",
+            "zh": "本版新增和修改"
+          },
+          "items": {
+            "en": [
+              "Recover the same chat and keep each unsent draft on this device after reopening.",
+              "Keep an unstaged question separately when a different draft already exists, with an Unsent message card.",
+              "Recovery and reading failures now preserve their specific cause and next step in problem notes.",
+              "Improve invitation format guidance and avoid automatic input replacements; give screen readers a separate reply-complete state."
+            ],
+            "zh": [
+              "重新打开应用时恢复同一对话，并在本机保留各段对话的未发送草稿。",
+              "问题尚未发出、输入框又有另一段草稿时，两份内容分别保留，先前的问题显示为“未发送的内容”。",
+              "恢复或打开失败时，问题记录保留更具体的情况和下一步。",
+              "改进邀请码格式提示，关闭自动输入替换；为读屏单独提供回复完成状态。"
+            ]
+          }
+        },
+        {
+          "id": "comparison",
+          "title": {
+            "en": "Changes since the previous build",
+            "zh": "与上一版的区别"
+          },
+          "items": {
+            "en": [
+              "Since build 45: fix a local recovery error involving unrelated messages and keep sign-in available after recoverable local failures.",
+              "Ordinary travel wording no longer hides an entire reply by itself. Earlier failed messages keep the results shown at that time."
+            ],
+            "zh": [
+              "与构建 45 相比：修复一种由无关消息影响对话恢复的本机错误；可恢复的本机故障不再直接丢失登录。",
+              "普通旅行用语不再单独导致整段回答消失；过去失败的消息仍保留当时结果。"
+            ]
+          }
+        },
+        {
+          "id": "testing",
+          "title": {
+            "en": "Suggested checks",
+            "zh": "建议怎么测"
+          },
+          "items": {
+            "en": [
+              "Leave a draft in an existing chat, switch away and lock the phone, then check the same chat and draft return.",
+              "Force-quit and reopen; check the same conversation and exact draft return.",
+              "Start a chat and ask “Who are you?” and “What can you do?”, in either language.",
+              "If anything fails, copy View problem notes with the time; preserve the chat rather than repeatedly submitting the same question."
+            ],
+            "zh": [
+              "在已有对话里留一段草稿，切后台并锁屏后回来，检查同一对话和草稿。",
+              "强制关闭应用后重开，核对是否回到同一对话、文字是否完整保留。",
+              "新建对话，用中文或英文问“你是谁”“你能做什么”。",
+              "若有失败，复制“查看问题记录”并附大概时间；保留会话，不要连续重复提交同一句。"
+            ]
+          }
+        },
+        {
+          "id": "known",
+          "title": {
+            "en": "Known issues and checks to avoid",
+            "zh": "已知问题和暂不测试内容"
+          },
+          "items": {
+            "en": [
+              "Trip planning is still being fixed. Please do not test it yet.",
+              "Formal planning saves, edits, undo and Remember preferences still need their own live checks.",
+              "Segmented replies and multiple-choice exploration remain designated tests, not the normal default. Physical-device checks remain to be completed."
+            ],
+            "zh": [
+              "规划功能仍在修复，暂不建议测试规划。",
+              "正式保存行程、修改、撤销和记住偏好仍需各自的真实验证。",
+              "分段、多选探索仍仅供指定测试，尚未向普通聊天默认开启；真机检查仍待完成。"
+            ]
+          }
+        },
+        {
+          "id": "service",
+          "title": {
+            "en": "Online service changes",
+            "zh": "在线服务变化"
+          },
+          "items": {
+            "en": [
+              "The paired Hong Kong service source 064b3c99 changes trip discussions, preference understanding and failure tracking.",
+              "Service fixes apply automatically without reinstalling the App. Account qualification and allowances do not change when you install an update."
+            ],
+            "zh": [
+              "配套香港服务来源 064b3c99，改动涉及行程讨论、偏好理解和失败定位。",
+              "服务端修复自动生效，无需重新安装应用；安装更新不会改变账号资格和额度。"
+            ]
+          }
+        }
+      ]
+    },
     {
       "build": 45,
       "previousBuild": 44,
@@ -102,117 +203,6 @@
               "问题记录里的服务端参考号可与这份记录对应，便于按时间查到失败的情况。",
               "没有用户可感知的服务端变化；这些服务端更新不需要更新应用。",
               "规划和英文城市请求的修复仍在进行，规划复试继续暂缓。"
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "build": 44,
-      "previousBuild": 43,
-      "sections": [
-        {
-          "id": "changes",
-          "title": {
-            "en": "New and improved",
-            "zh": "本版新增和修改"
-          },
-          "items": {
-            "en": [
-              "Fixed one case where reopening a chat got stuck: an unfinished chat no longer blocks a saved one.",
-              "The cause of the build 43 report of a chat that would not open is not yet identified; this fix may not cover it.",
-              "Added offline build updates to Internal demo information, also reachable from the Lio menu.",
-              "Improved greeting and sent-message display and copying, keeping larger text and light or dark."
-            ],
-            "zh": [
-              "修复一种恢复对话时被卡住的情况：另一段未完成的聊天不再挡住已保存对话的打开。",
-              "构建 43 上反馈的对话打不开，具体起因尚未查明，这次修复不一定覆盖它。",
-              "内部演示说明中新增离线的本版更新，也可从 Lio 菜单打开。",
-              "改善开场白和已发消息的显示与复制，保留大字号和浅深色。"
-            ]
-          }
-        },
-        {
-          "id": "comparison",
-          "title": {
-            "en": "Changes since the previous build",
-            "zh": "与上一版的区别"
-          },
-          "items": {
-            "en": [
-              "Since build 43: the chat reopening fix above, offline notes, and clearer text display and copying.",
-              "Trip planning and default chat access remain unchanged."
-            ],
-            "zh": [
-              "与构建 43 相比：修复上面这种对话恢复卡住的情况，新增离线说明，改善文字显示和复制。",
-              "规划功能没有因此修好，日常账号的默认对话方式没有改变。"
-            ]
-          }
-        },
-        {
-          "id": "testing",
-          "title": {
-            "en": "Suggested checks",
-            "zh": "建议怎么测"
-          },
-          "items": {
-            "en": [
-              "Open an existing chat, leave an unsent draft, switch away, then return to the same chat and draft.",
-              "Lock the phone for a minute or two, unlock, and check the same chat and draft.",
-              "Force-quit from the app switcher and reopen; check the same chat and draft come back.",
-              "If a chat still will not open, take a screenshot and note the time; please do not sign out or delete the app."
-            ],
-            "zh": [
-              "打开一段已有对话，留一段未发送的文字，切到后台再返回，检查同一对话和草稿。",
-              "锁屏一两分钟后解锁，检查同一对话和草稿是否还在。",
-              "从多任务界面强制关闭应用后重新打开，检查能否回到同一对话和草稿。",
-              "如果对话仍打不开，请截图并记下大概时间，先不要退出账号或删除应用。"
-            ]
-          }
-        },
-        {
-          "id": "known",
-          "title": {
-            "en": "Known issues and checks to avoid",
-            "zh": "已知问题和暂不测试内容"
-          },
-          "items": {
-            "en": [
-              "Trip planning is still being fixed. Please do not test it yet.",
-              "Planning, saving, edits, undo and preferences await live checks.",
-              "When a chat will not open, the message still always suggests reconnecting, whatever the cause.",
-              "Segmented replies, choices and profile tags are designated tests, not on by default."
-            ],
-            "zh": [
-              "规划功能仍在修复，暂不建议测试规划。",
-              "规划、保存、修改、撤销和记住偏好尚待本轮真实验证。",
-              "对话打不开时，提示目前仍一律显示请联网后重试，不区分具体情况。",
-              "新版分段、多选和画像交互目前仅供指定测试，未向日常账号默认开启。"
-            ]
-          }
-        },
-        {
-          "id": "service",
-          "title": {
-            "en": "Online service changes",
-            "zh": "在线服务变化"
-          },
-          "items": {
-            "en": [
-              "Latest verified Hong Kong service source: 60095d1d.",
-              "Chinese follow-ups keep the stated destination and trip length; an English city request still fails and is being fixed.",
-              "Translated text stays isolated from trip dates and party size; stale translated facts are filtered.",
-              "Designated test accounts have additional conversation safeguards; everyday accounts are unchanged.",
-              "These server updates do not require an app update; later server changes will be noted separately.",
-              "Live basic questions and nationwide planning checks are not complete; planning retest remains on hold."
-            ],
-            "zh": [
-              "最近核对的香港在线服务来源为 60095d1d。",
-              "中文目的地追问后会保留已给出的城市和天数；英文城市请求仍有问题，正在修复。",
-              "翻译文本与行程日期、人数继续隔离，旧缓存中的翻译污染信息会被过滤。",
-              "指定测试账号增加了对话保护，日常账号保留现有的对话方式。",
-              "这些服务端更新不需要更新应用；之后的服务端变化另行说明。",
-              "真实基础问答和全国规划验证尚未完成，规划复试继续暂缓。"
             ]
           }
         }
