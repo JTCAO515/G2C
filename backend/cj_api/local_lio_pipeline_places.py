@@ -10,6 +10,7 @@ from hashlib import sha256
 import json
 
 from pypinyin import lazy_pinyin
+from cj_needs.revision_lease import LeaseUnavailable
 from cj_place.gaode import _binding_json
 from cj_place.models import Coordinate,Endpoint
 from cj_place.rich_routes import CityRoute,initial_mode
@@ -57,8 +58,15 @@ def lookup_selected_places(skeleton,source,binding,capture):
     Data returned here is not a capability; after new route calls the host must
     reseal providers and keep the final C holder through sole publication.
     """
+    # C checks the actual issued capture once for this held batch. Formatting
+    # below is pure; the enclosing source holder checks again on exit. Avoid
+    # re-reading/rechecking every provider and profile for each individual stop.
+    results={row['target']:row for row in source.selection_results(binding,capture)}
     def selected(target,keyword):
-        result=source.place_selection(binding,capture,target,keyword=keyword)
+        result=results.get(target)
+        if result is None:raise LeaseUnavailable('target has no original code-owned POI selection')
+        if result['query_keyword']!=keyword:
+            raise LeaseUnavailable('selection keyword differs from its original target query')
         if result['status']=='unavailable':return None
         if result['status']=='ambiguous':raise PlaceSelectionBlocked('place selection is ambiguous; preserve the current trip')
         record=result['selected_record']

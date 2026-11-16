@@ -189,7 +189,7 @@ def _assemble_retrieved(prepared,compiled,capture,document,*,phase,locale,stop,a
             unconfirmed=frozenset(item['id']for item in document['items']
                 if item['id']in compiled.proposed_subjects and item['kind']in ('sight','meal')
                 and item['place']['state']=='unconfirmed')
-            if not unconfirmed<=bundle.source.unavailable_targets(binding,capture):
+            if unconfirmed and not unconfirmed<=bundle.source.unavailable_targets(binding,capture):
                 raise ValueError('unconfirmed stops require actual terminal source outcomes')
             return rich,facts,unconfirmed
     _,(rich,facts,unconfirmed)=worker._step(binding,read)

@@ -116,31 +116,50 @@ class PipelinePlaces(unittest.TestCase):
 
     def test_issued_selection_is_formatted_without_a_second_matching_rule(self):
         from unittest.mock import patch
+        from cj_draft.rich_place_selection import RichPlaceSelectionContextSource
         payload=reply()['items'][0]['place'];ref=reply()['items'][0]['source']
         selected=dict(status='matched',selected_record=dict(ref,payload=payload))
         calls=[]
         class Source:
-            def place_selection(self,binding,capture,target,*,keyword):
-                calls.append((binding,capture,target,keyword));return selected if target=='stop'else dict(status='unavailable')
+            place_selection=RichPlaceSelectionContextSource.place_selection
+            def selection_results(self,binding,capture):
+                calls.append((binding,capture))
+                return [dict(selected,target='stop',query_keyword='故宫博物院'),
+                        dict(status='unavailable',target='lodging-candidate-0',query_keyword='候选酒店')]
         skeleton=SimpleNamespace(stops=(SimpleNamespace(item_id='stop',name_zh='故宫博物院'),),hotels=(('候选酒店','hotel'),))
         binding=object();capture=object()
         with patch('cj_api.local_lio_pipeline_places.matched_place',side_effect=AssertionError('second match forbidden')):
             places,hotels=lookup_selected_places(skeleton,Source(),binding,capture)
         self.assertEqual(places['stop']['source'],ref);self.assertEqual(places['stop']['coordinate'],payload['coordinate'])
-        self.assertEqual(hotels,(None,));self.assertEqual(calls,[(binding,capture,'stop','故宫博物院'),(binding,capture,'lodging-candidate-0','候选酒店')])
+        self.assertEqual(hotels,(None,));self.assertEqual(calls,[(binding,capture)])
         places['stop']['coordinate']['raw']='changed';self.assertEqual(payload['coordinate']['raw'],'116.4,39.9')
 
     def test_ambiguous_unrepresentable_or_refused_selection_never_becomes_fallback(self):
         from cj_needs.revision_lease import LeaseUnavailable
+        from cj_draft.rich_place_selection import RichPlaceSelectionContextSource
         skeleton=SimpleNamespace(stops=(SimpleNamespace(item_id='stop',name_zh='故宫博物院'),),hotels=())
         class Source:
-            def place_selection(self,*args,**kwargs):return result
+            place_selection=RichPlaceSelectionContextSource.place_selection
+            def selection_results(self,*args):return [dict(result,target='stop',query_keyword='故宫博物院')]
         for result in (dict(status='ambiguous'),dict(status='matched',selected_record=dict(
                 reply()['items'][0]['source'],payload=dict(reply()['items'][0]['place'],address='x'*501)))):
             with self.assertRaises(PlaceSelectionBlocked):lookup_selected_places(skeleton,Source(),object(),object())
         class Closed:
-            def place_selection(self,*args,**kwargs):raise LeaseUnavailable('actual holder closed')
+            place_selection=RichPlaceSelectionContextSource.place_selection
+            def selection_results(self,*args):raise LeaseUnavailable('actual holder closed')
         with self.assertRaises(LeaseUnavailable):lookup_selected_places(skeleton,Closed(),object(),object())
+
+    def test_batch_target_and_original_keyword_binding_are_still_required(self):
+        from cj_needs.revision_lease import LeaseUnavailable
+        from cj_draft.rich_place_selection import RichPlaceSelectionContextSource
+        skeleton=SimpleNamespace(stops=(SimpleNamespace(item_id='stop',name_zh='故宫博物院'),),hotels=())
+        class Source:
+            place_selection=RichPlaceSelectionContextSource.place_selection
+            def selection_results(self,*args):return rows
+        for rows in ([],[dict(target='another',query_keyword='故宫博物院',status='unavailable')],
+                     [dict(target='stop',query_keyword='另一个地点',status='unavailable')]):
+            with self.subTest(rows=rows),self.assertRaises(LeaseUnavailable):
+                lookup_selected_places(skeleton,Source(),object(),object())
 
     def test_only_an_original_observed_route_can_fill_a_leg_and_input_is_preserved(self):
         leg=dict(day_index=1,from_item_id='a',to_item_id='b',state='unconfirmed',mode=None,
