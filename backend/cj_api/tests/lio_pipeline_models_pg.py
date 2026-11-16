@@ -5,7 +5,6 @@ from dataclasses import replace
 import asyncio
 import json
 import sys
-from types import MappingProxyType
 from urllib.parse import urlsplit,parse_qs
 from unittest.mock import patch
 
@@ -19,8 +18,6 @@ from cj_api.local_lio_pipeline_inputs import understand_constraints,planning_edg
 from cj_api.local_lio_pipeline_search import sight_and_hotel_calls
 from cj_api.local_lio_pipeline_places import PlaceSelectionBlocked
 from cj_api.local_lio_provider_sources import POI2_REGISTRATION
-from cj_api.lio_poi2_tool import registration as poi_registration
-from cj_api.real_services import RealTools
 from cj_api.local_lio_planning import register,PlanningDetails
 from cj_api.local_lio_rich_source import RichProfileSource
 from cj_api.local_lio_rich_calendar_source import RichCalendarSource
@@ -199,10 +196,7 @@ def main(*,natural_direct=False):
     original_model=ExplorationPlanning._model
     original_http=httpx.MockTransport.handle_request
     original_post=TestClient.post
-    original_registry=RealTools._registrations
     wires=[];completed=[];lookups=[];posted={}
-    def registry(tools):
-        return MappingProxyType(dict(original_registry(tools),**{POI2_REGISTRATION:poi_registration(tools.services)}))
     def post(api,url,**kwargs):
         if url=='/v4/lio/messages':
             value=json.loads(kwargs['content'])
@@ -314,7 +308,7 @@ def main(*,natural_direct=False):
             print('PASS native4 sourced plan understanding -> original NEEDS/calendar/profile hold + skeleton + two registered wording calls '+binding.message_id+' RUN '+binding.run_id+'; no Trip publication',flush=True)
         return original_model(host,worker,binding,view,profile,system,extra)
     with patch.object(TestClient,'post',post),patch.object(httpx.MockTransport,'handle_request',response), \
-            patch.object(RealTools,'_registrations',registry),patch.object(ExplorationPlanning,'_model',model):native.main()
+            patch.object(ExplorationPlanning,'_model',model):native.main()
     assert len(completed)==6 and len(wires)==24 and lookups==[2,14,2,2,14,2]
     print('PASS ZH/EN each no-exact/unique/ambiguous actual registered POI2 -> settled provider capture -> C-issued selection -> L projection; 36 fixture POI2 attempts including whole14-query TextSearch->Nearby on each locale, original nonempty ok outcomes retained, stale seals/closed holders denied; Trip0',flush=True)
     if natural_direct:print('PASS original natural direct with full-sentence prefix -> sourced profile/defaults -> issued PlanNow source; actual extra profile model retained in native6 budget, no rewritten original or renderer',flush=True)
