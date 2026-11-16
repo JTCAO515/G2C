@@ -46,18 +46,21 @@
     },
     "conditions": {
       "reservation_required": null,
-      "closed_weekdays": null,
-      "closed_weekdays_public_holiday_exception": null,
+      "closed_weekdays": [
+        1
+      ],
+      "closed_weekdays_public_holiday_exception": true,
       "advance_booking_days": null,
       "advance_booking_rule": null
     },
     "checked_on": "2026-11-16",
     "expires_on": "2026-11-23",
-    "text_zh": "安徽宿州市博物馆官网参观指南列通常周一闭馆；节假日安排应另查馆方最新公告。官网提供提前预约渠道，但本条未核定普通散客是否必须预约或提前窗口。团体及研学预约另有要求，不能套给个人游客；本条不指江苏苏州或深圳的博物馆。",
-    "text_en": "The visitor guide for Suzhou Museum in Anhui lists Monday as its normal closing day; check the latest museum notice for holiday arrangements. The website offers advance reservations, but mandatory individual booking and its advance window remain unconfirmed here. Group and study-tour bookings have separate requirements that must not be applied to individual visitors. This is not a museum in Suzhou, Jiangsu, or Shenzhen.",
+    "text_zh": "安徽宿州市博物馆官网列通常周一闭馆，国家法定节假日除外；临时开放安排应查新公告。截至本轮核对，“秦汉雄风”展厅因施工临时关闭，恢复另行通知，不能把它当作全馆关闭或已经复开。官网提供提前预约渠道，但本条未核定普通散客是否必须预约或提前窗口。团体及研学另有要求；本条不指江苏苏州或深圳的博物馆。",
+    "text_en": "Suzhou Museum in Anhui normally closes on Mondays except statutory public holidays, according to its website; check new notices for temporary changes. At this check, the Qin and Han exhibition gallery is temporarily closed for works, with reopening to be announced. This does not mean the whole museum is closed or the gallery has reopened. The website offers advance booking, but mandatory individual reservations and the advance window remain unconfirmed here. Groups and study tours have separate rules. This is not a museum in Jiangsu or Shenzhen.",
     "source_urls": [
       "https://www.sz-museum.com/",
-      "https://www.sz-museum.com/channel/18.html?wd=cgzn"
+      "https://www.sz-museum.com/channel/18.html?wd=cgzn",
+      "https://www.sz-museum.com/channel/20.html?commonshow=1337&wd=tzgg"
     ]
   }
 ]
