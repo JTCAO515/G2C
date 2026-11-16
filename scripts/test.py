@@ -78,6 +78,7 @@ def main():
     results.append(run('eval/lio_calendar_transitions',
                        [*pytest, 'eval/tests/test_lio_calendar_transitions.py']))
     results.append(run('eval/lio_voice', [*pytest, 'eval/tests/test_lio_voice.py']))
+    results.append(run('eval/basic_chain', [*pytest, 'eval/tests/test_basic_chain.py']))
     results.append(run('tooling/datasets',
                        ['-B', '-m', 'unittest', 'discover', '-s', 'tooling/datasets',
                         '-t', '.', '-p', 'test_*.py', '-v']))
