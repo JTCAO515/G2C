@@ -25,7 +25,9 @@ class HistoryProjection:
         if len(counts) > 1 or len(more_values) > 1:
             return self.view(errors, progress=True, earlier=True)
         if not groups:
-            empty = any(node['identifier'].startswith('lio.example.') or node['identifier'] == 'lio.opening' for node in nodes)
+            has_turn = any(node['identifier'] in {'lio.question', 'lio.answer', 'lio.failure'} for node in nodes)
+            empty = (any(node['identifier'].startswith('lio.example.') for node in nodes)
+                     and not has_turn and not progress and not errors)
             if empty:
                 self.count, self.rows = 0, {}
             return self.view(errors, progress=progress, earlier=not empty)

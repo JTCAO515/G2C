@@ -188,7 +188,7 @@ class Coordinator:
                 or not admitted['checkpoint_ref']):
             raise EvidenceUnknown('Admission does not belong to this original phase')
         self.guard()
-        _, unchanged = capture.ready()
+        _, unchanged = capture.immediate()
         if unchanged != before:
             raise EvidenceUnknown('Actual prepared state changed after the server checkpoint')
         lifecycle, history, timing = [], None, None

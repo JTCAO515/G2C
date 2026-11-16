@@ -101,14 +101,14 @@ class CoordinatorFences(unittest.TestCase):
         fake = SimpleNamespace(native=SimpleNamespace(simulator='synthetic'), originals=[],
             select_transcript=lambda *args: None, draft=lambda *args: ({}, dict(before)),
             ready=lambda **kwargs: ({}, dict(before)), action=lambda *args, **kwargs: None,
-            immediate=lambda **kwargs: immediate_calls.append(True) or ({}, dict(after)),
+            immediate=lambda **kwargs: immediate_calls.append(True) or ({}, dict(before if len(immediate_calls) == 1 else after)),
             history=lambda *args: self.fail('Do not repair an immediate cold failure through history navigation'))
         with patch.object(runner, 'guard', return_value={}), patch.object(runner, 'client', return_value=fake), \
                 patch('watch_lio_basic_smoke.verify_installation'):
             runner.phase(instruction)
         from lio_basic_ui_driver import decode
         witness = decode((self.root / '00-A-completed.json').read_bytes())
-        self.assertEqual(immediate_calls, [True])
+        self.assertEqual(immediate_calls, [True, True])
         self.assertFalse(witness['lifecycle'][0]['body_complete'])
         self.assertEqual(witness['lifecycle'][0]['errors'], ['Actual read failure'])
 
@@ -131,7 +131,7 @@ class CoordinatorFences(unittest.TestCase):
             self.assertEqual(count, 3)
             return dict(rows=[], opened=[])
         fake = SimpleNamespace(native=SimpleNamespace(simulator='synthetic'), originals=[],
-                               ready=lambda **kwargs: ({}, dict(before)), history=history)
+                               ready=lambda **kwargs: ({}, dict(before)), immediate=lambda **kwargs: ({}, dict(before)), history=history)
         with patch.object(runner, 'guard', return_value={}), patch.object(runner, 'client', return_value=fake), \
                 patch('watch_lio_basic_smoke.verify_installation'):
             runner.phase(instruction)
@@ -148,6 +148,27 @@ class CoordinatorFences(unittest.TestCase):
         self.assertEqual(sealed['errors'], [])
         self.assertEqual(sealed['transcript'][0]['answer'], 'A')
         self.assertTrue(sealed['body_complete'])
+
+    def test_checkpoint_reobserves_fresh_ui_before_dispatch_instead_of_borrowing_preparation(self):
+        step = dict(gate_id='SM03', locale='zh', text=None, nonce='synthetic-fresh', new_conversation=False)
+        plan = dict(self.plan, steps=[step]); path = self.root / 'fresh-plan.json'; save(path, plan)
+        config = dict(self.config, plan=dict(path=str(path), sha256=hashlib.sha256(path.read_bytes()).hexdigest()),
+                      qualification_sha256='q', admission_wait_seconds=1)
+        runner = Coordinator(config, self.root, self.root / 'fresh-out')
+        instruction = self.root / '00-prepare.json'
+        save(instruction, dict(version='LIO-basic-ui-instruction.2', app=self.app, run_id=plan['run_id'], step=step,
+                               expected_draft=None, accepted_conversations={'cid-a': {}}))
+        save(self.root / '00-admission.json', dict(version='LIO-basic-ui-admission.2', run_id=plan['run_id'],
+             nonce=step['nonce'], qualification_sha256='q', checkpoint_ref='synthetic-checkpoint'))
+        before = dict(errors=[], body_complete=True, transcript=[dict(question='Q', answer='A', visible_failure=False)],
+                      draft='', greeting_count=0)
+        fake = SimpleNamespace(native=SimpleNamespace(simulator='synthetic'), originals=[],
+            ready=lambda **kwargs: ({}, dict(before)),
+            immediate=lambda **kwargs: ({}, dict(before, body_complete=False, transcript=[])),
+            history=lambda *args: self.fail('Current UI was not independently reobserved after checkpoint'))
+        with patch.object(runner, 'guard', return_value={}), patch.object(runner, 'client', return_value=fake), \
+                patch('watch_lio_basic_smoke.verify_installation'):
+            with self.assertRaises(EvidenceUnknown): runner.phase(instruction)
 
 
 if __name__ == '__main__': unittest.main()

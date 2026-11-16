@@ -82,5 +82,14 @@ class CompleteHistoryProjectionTests(unittest.TestCase):
         self.assertFalse(view['body_complete'])
         self.assertEqual(view['observed_indices'], [])
 
+    def test_opening_is_not_positive_proof_of_an_empty_conversation(self):
+        opening = dict(identifier='lio.opening', label='Hello', value='', depth=0, enabled=True, progress_indicator=False)
+        example = dict(opening, identifier='lio.example.0', label='Weather')
+        legacy = [node for node in row(0, 1) if not node['identifier'].startswith('lio.position.')]
+        for nodes in ([opening], [opening] + legacy, [example] + legacy):
+            with self.subTest(identifiers=[node['identifier'] for node in nodes]):
+                self.assertFalse(HistoryProjection().ingest(nodes)['body_complete'])
+        self.assertTrue(HistoryProjection().ingest([example])['body_complete'])
+
 
 if __name__ == '__main__': unittest.main()
