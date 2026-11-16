@@ -103,6 +103,12 @@ def transfer_items(fields,day_count,*,id_prefix,locale):
     return tuple(items)
 
 
+def unconfirmed_legs(document):
+    return [dict(day_index=day,from_item_id=a,to_item_id=b,state='unconfirmed',mode=None,
+        duration_seconds=None,distance_m=None,source=None,time_semantics='provider_estimate_at_query_time',future_guaranteed=False)
+        for day,a,b in adjacent_pairs(document)]
+
+
 def compile_document(skeleton,basis,*,locale,subjects,timezone,code_checks,places,hotel_places,
                      protected_items,protected_activities,legacy_sources,additional_items=(),additional_activities=()):
     """Return (document, activities); input data is never a source grant.
@@ -139,9 +145,7 @@ def compile_document(skeleton,basis,*,locale,subjects,timezone,code_checks,place
         calendar=dict(state='undated')if first is None else dict(state='dated',start_date=basis.start_date),
         days=days,items=items,sources=deepcopy(list(legacy_sources)),date_checks=deepcopy(list(code_checks)),
         legs=[],lodging=dict(area=skeleton.lodging_area,recommendations=hotels))
-    document['legs']=[dict(day_index=day,from_item_id=a,to_item_id=b,state='unconfirmed',mode=None,
-        duration_seconds=None,distance_m=None,source=None,time_semantics='provider_estimate_at_query_time',future_guaranteed=False)
-        for day,a,b in adjacent_pairs(document)]
+    document['legs']=unconfirmed_legs(document)
     representation_size(document)
     validate_document(document)
     # Participants belong to NEEDS/proposal projection, not invented Trip fields.

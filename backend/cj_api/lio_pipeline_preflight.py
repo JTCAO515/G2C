@@ -11,12 +11,33 @@ from datetime import date
 from cj_needs.domain import InvalidInput
 
 from .lio_calendar_ordinals import fixed_ordinals
-from .lio_pipeline_document import compile_document,lodging_anchors,transfer_items,unconfirmed_place,representation_size
+from .lio_pipeline_document import compile_document,lodging_anchors,transfer_items,unconfirmed_place,representation_size,_PROPOSED_WINDOWS
+from .lio_pipeline_skeleton import recipes
 
 
 @dataclass(frozen=True)
 class _CalendarData:
     start_date:str|None
+
+
+def recipes_for_edges(day_count,pace,edges):
+    """Use real first/last-day bounds before asking the model for stops.
+
+    Only infeasible suggested meal periods are excluded. This does not alter
+    protected commitments, lower the requested sights, or trim a large plan.
+    """
+    original=recipes(day_count,pace,light_first=edges.first_unknown_recipe,
+        light_last=edges.last_unknown_morning)
+    result=[]
+    for row in original:
+        if row.day_index not in (1,day_count):result.append(row);continue
+        offset=(row.day_index-1)*86400
+        def fits(period):
+            lower,upper,duration=_PROPOSED_WINDOWS[period]
+            return any(max(window.start,offset+lower)+duration<=min(window.end,offset+upper)
+                for window in edges.windows[row.day_index-1])
+        result.append(replace(row,meals=tuple(period for period in row.meals if fits(period))))
+    return tuple(result)
 
 
 def admit_city_lookup(skeleton,projection,edges,calls,*,query,id_prefix,locale,retained):
