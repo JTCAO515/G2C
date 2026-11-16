@@ -79,6 +79,18 @@ class ProviderStatusBatch(unittest.TestCase):
         with self.assertRaises(RuntimeUnknown):source.capture(binding)
         repo.read_status_many.assert_not_called();self.assertIsNone(source._issued)
 
+    def test_original_input_mismatch_stops_before_status_materialization(self):
+        source,binding,_,_,repo,*_=self.case()
+        source.store.read_original=Mock(return_value=None)
+        with self.assertRaises(RuntimeDenied):source.capture(binding)
+        repo.read_status_many.assert_not_called();self.assertIsNone(source._issued)
+
+    def test_empty_observation_set_preserves_empty_capture_without_an_invalid_batch_call(self):
+        source,binding,_,_,repo,*_=self.case(count=0)
+        capture=source.capture(binding)
+        self.assertEqual(capture.records,[]);self.assertEqual(capture.outcomes,[])
+        repo.read_status_many.assert_not_called();repo.read_status.assert_not_called()
+
     def test_batch_read_failure_or_revoked_memory_never_issues_eligible_data(self):
         source,binding,_,_,repo,_,_,_,_,message=self.case()
         repo.read_status_many.side_effect=ReadUnavailable('withheld')
