@@ -1,0 +1,127 @@
+[
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "topic": "passport_booking",
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-11-23",
+    "id": "visitor.v3.shanghai.yu-garden",
+    "cities": [
+      "shanghai"
+    ],
+    "subject": {
+      "key": "shanghai.yu-garden",
+      "name_zh": "豫园（古典园林）",
+      "name_en": "Yu Garden (classical garden)",
+      "wikidata_qid": null
+    },
+    "text_zh": "豫园古典园林的常规散客可现场购票，也可经官方公众号预购，现场买票不以先预约为前提；通常周一闭园，法定节假日除外。这里只指园林本身，灯会、商城和夜游活动另查。",
+    "text_en": "For ordinary individual visits to Yu Garden itself, tickets are sold on arrival as well as through the official account; prior reservation is not an entry prerequisite. It normally shuts on Mondays, with a statutory-holiday exception. Lantern events, the shopping district and night programmes have separate rules.",
+    "source_urls": [
+      "https://www.shanghai.gov.cn/huangpu/index.html"
+    ],
+    "conditions": {
+      "reservation_required": false,
+      "closed_weekdays": [
+        1
+      ],
+      "closed_weekdays_public_holiday_exception": true,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    }
+  },
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "topic": "passport_booking",
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-11-23",
+    "id": "visitor.v3.shanghai.museum-peoples-square",
+    "cities": [
+      "shanghai"
+    ],
+    "subject": {
+      "key": "shanghai.museum-peoples-square",
+      "name_zh": "上海博物馆人民广场馆",
+      "name_en": "Shanghai Museum, Peoples Square venue",
+      "wikidata_qid": null
+    },
+    "text_zh": "上海博物馆人民广场馆在当前美洲古代文明大展期间须按官网要求预约购票参观；通常周一闭馆，国定节假日除外。此条不把东馆基本陈列的免预约规则套到这里，提前预约窗口尚未核实。",
+    "text_en": "The Peoples Square venue of Shanghai Museum currently asks visitors to reserve and buy admission for its ancient American civilizations exhibition. Mondays are its usual closure day, except national statutory holidays. The East venues basic-gallery walk-in rule does not apply here; the advance booking window is unverified.",
+    "source_urls": [
+      "https://www.shanghaimuseum.cn/mu/frontend/pg/index"
+    ],
+    "conditions": {
+      "reservation_required": true,
+      "closed_weekdays": [
+        1
+      ],
+      "closed_weekdays_public_holiday_exception": true,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    }
+  },
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "topic": "passport_booking",
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-11-23",
+    "id": "visitor.v3.shanghai.museum-east",
+    "cities": [
+      "shanghai"
+    ],
+    "subject": {
+      "key": "shanghai.museum-east",
+      "name_zh": "上海博物馆东馆（基本陈列）",
+      "name_en": "Shanghai Museum East, permanent galleries",
+      "wikidata_qid": null
+    },
+    "text_zh": "上海博物馆东馆基本陈列可免预约参观；通常周二闭馆，国定节假日除外。收费特展、团队、活动及临时调整需另核，不把东馆的开放规则套到人民广场馆。",
+    "text_en": "Individual visits to the permanent galleries at Shanghai Museum East need no advance reservation. Its regular weekly closure is Tuesday, with a statutory-holiday exception. Ticketed exhibitions, groups, events and temporary changes require separate checks; the Peoples Square venue follows different arrangements.",
+    "source_urls": [
+      "https://www.shanghaimuseum.cn/mu/frontend/pg/index"
+    ],
+    "conditions": {
+      "reservation_required": false,
+      "closed_weekdays": [
+        2
+      ],
+      "closed_weekdays_public_holiday_exception": true,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    }
+  },
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "topic": "passport_booking",
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-11-23",
+    "id": "visitor.v3.shenzhen.museum-history-folk",
+    "cities": [
+      "shenzhen"
+    ],
+    "subject": {
+      "key": "shenzhen.museum-history-folk",
+      "name_zh": "深圳博物馆金田路馆（历史民俗）",
+      "name_en": "Shenzhen Museum, Jintian Road history and folk culture venue",
+      "wikidata_qid": null
+    },
+    "text_zh": "深圳博物馆金田路馆常规散客参观无需提前预约，安检后入馆；通常周一闭馆，国家法定节假日期间开放，但假日结束后的第一天闭馆。这项补休不由每周闭馆字段表达，出发日期落在假后须另核；团队讲解和其他馆区另查。",
+    "text_en": "Normal individual admission at the Jintian Road history venue is by security screening without a booking. Monday is the usual weekly shutdown; national holiday opening is followed by closure on the next day after the holiday ends. That additional closure is outside the weekday field: check holiday-adjacent dates separately. Guided groups and other venues differ.",
+    "source_urls": [
+      "https://www.sz.gov.cn/szzt2010/szwtt/wtcg/whcg/content/mpost_11127054.html",
+      "https://cdn3.shenzhenmuseum.com/museum/html/aboutus/visit-service.html"
+    ],
+    "conditions": {
+      "reservation_required": false,
+      "closed_weekdays": [
+        1
+      ],
+      "closed_weekdays_public_holiday_exception": true,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    }
+  }
+]
