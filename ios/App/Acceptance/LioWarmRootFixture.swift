@@ -64,6 +64,7 @@ private nonisolated final class WarmRootHTTP: URLProtocol, @unchecked Sendable {
     @State private var originalDisplay: UUID?
     @State private var originalTrip: UUID?
     @State private var fixtureFailure = false
+    @State private var bootstrap = "starting"
     var body: some Scene {
         WindowGroup {
             VStack(spacing: 0) {
@@ -78,6 +79,7 @@ private nonisolated final class WarmRootHTTP: URLProtocol, @unchecked Sendable {
                     }
                     .font(.caption).tint(LioTheme.vermilion).padding(4).background(LioTheme.surface)
                     HStack {
+                        Text(bootstrap).accessibilityIdentifier("fixture.root.bootstrap")
                         Text(root.fixtureHasRetained ? "retained" : "empty").accessibilityIdentifier("fixture.root.retained")
                         Text(root.trip == nil ? "retired" : "active").accessibilityIdentifier("fixture.root.business")
                         Text(root.fixtureDisplayID == originalDisplay ? "same" : "changed").accessibilityIdentifier("fixture.root.display")
@@ -107,9 +109,15 @@ private nonisolated final class WarmRootHTTP: URLProtocol, @unchecked Sendable {
                     // Without the existing marker/install boundary this transport fails closed.
                     try NoRedirectTransport.installB691LocalFixture(WarmRootHTTP.self)
                     let ready = try DevelopmentAccountRoot(demo: shell)
-                    guard try ready.fixtureHasNoSavedMaterial() else { throw URLError(.cannotCreateFile) }
+                    let hasNoMaterial = try ready.fixtureHasNoSavedMaterial()
                     root = ready
-                    signIn(ready, owner: "a")
+                    if hasNoMaterial {
+                        bootstrap = "sign-in"
+                        signIn(ready, owner: "a")
+                    } else {
+                        bootstrap = "restore"
+                        ready.accounts.restore()
+                    }
                 } catch { fixtureFailure = true }
             }
         }

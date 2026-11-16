@@ -12,6 +12,14 @@ import XCTest
         XCTAssertTrue(existing.waitForExistence(timeout: 20))
         let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
         composer.tap(); composer.typeText("Unsent root draft")
+        if "__WARM_COLD_RESTART__" == "1" {
+            app.terminate()
+            app.launch()
+            XCTAssertTrue(existing.waitForExistence(timeout: 20))
+            XCTAssertEqual(composer.value as? String, "Unsent root draft")
+            XCTAssertEqual(app.staticTexts["fixture.root.bootstrap"].label, "restore")
+            XCTAssertFalse(app.staticTexts["lio.opening"].exists)
+        }
         app.buttons["fixture.root.hold"].tap()
         // Actual iOS lifecycle -> production DemoBetaRootView -> actual account host.
         XCUIDevice.shared.press(.home)
