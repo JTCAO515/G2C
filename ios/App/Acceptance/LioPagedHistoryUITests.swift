@@ -22,6 +22,16 @@ import XCTest
             let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", chinese ? "回复已完成" : "Reply complete"), object: answer)
             XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 8), .completed)
             XCTAssertTrue(app.textViews.matching(identifier: "lio.question").firstMatch.exists)
+            let chat = app.tabBars.buttons[chinese ? "聊天" : "Chat"]
+            let trips = app.tabBars.buttons[chinese ? "行程" : "Trips"]
+            XCTAssertTrue(chat.isSelected)
+            XCTAssertTrue(trips.isEnabled)
+            XCTAssertFalse(trips.isSelected)
+            trips.tap()
+            XCTAssertTrue(trips.isSelected)
+            chat.tap()
+            XCTAssertTrue(chat.isSelected)
+            XCTAssertFalse(trips.isSelected)
             waitForVisibleRepliesToSettle(app, chinese: chinese)
             try app.performAccessibilityAudit(for: .all) { issue in
                 let detail = XCTAttachment(string: issue.detailedDescription + "\n" + (issue.element?.debugDescription ?? "No element") + "\n" + app.debugDescription)
