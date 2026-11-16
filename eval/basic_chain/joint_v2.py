@@ -35,7 +35,7 @@ def draft_marker(plan,step):
 
 def _views(native):
     from .plan import decode
-    result={}
+    pages={};expected={}
     require(native.read_collection_status=='OBSERVED','actual App read collection is not closed')
     for record in native.actual_reads:
         if record['route']not in('/v1/lio/timeline','/v2/lio/timeline'):continue
@@ -46,15 +46,39 @@ def _views(native):
         else:
             cid=record['binding']['conversation_id']
             require(view['conversation_id']==cid,'actual read selected another CID')
-        if view['next_before']is not None:continue
         if not all(m['status']=='completed'and m['failure']is None for m in view['messages']):continue
         rows=sorted((m for m in native.after['native_messages']if m['conversation_id']==cid),key=lambda m:m['sequence'])
-        if [m['message_id']for m in view['messages']]!=[m['message_id']for m in rows]:continue
-        # Several polls may carry one identical final transcript. Distinct
-        # content remains ambiguous; publication timestamp never chooses one.
-        key=tuple((m['message_id'],m['text'],m['answer'])for m in view['messages'])
-        result.setdefault(cid,{})[key]=view
-    return {cid:next(iter(variants.values()))for cid,variants in result.items()if len(variants)==1}
+        expected[cid]=[m['message_id']for m in rows]
+        cursor=record['selector'].get('before')
+        if cursor is not None and cursor not in expected[cid]:continue
+        eligible=expected[cid]if cursor is None else expected[cid][:expected[cid].index(cursor)]
+        mids=[m['message_id']for m in view['messages']]
+        # A pre-accept poll cannot be the final page if its suffix lacks the
+        # newly admitted MESSAGE. Page publication order is never authority.
+        if (not mids and eligible)or mids and mids!=eligible[-len(mids):]:continue
+        if view['next_before']is not None and(not mids or view['next_before']!=mids[0]):continue
+        key=(view['version'],view['next_before'],tuple((m['message_id'],m['text'],m['answer'])for m in view['messages']))
+        pages.setdefault(cid,{}).setdefault(cursor,{})[key]=(view,record['exchange_id'])
+    result={}
+    for cid,by_cursor in pages.items():
+        cursor=None;seen=set();chunks=[];refs=[];root=None
+        while cursor not in seen:
+            seen.add(cursor);variants=by_cursor.get(cursor,{})
+            if len(variants)!=1:break
+            page,ref=next(iter(variants.values()))
+            if root is None:root=page
+            if page['version']!=root['version']:break
+            chunks.append(page['messages']);refs.append(ref)
+            cursor=page['next_before']
+            if cursor is None:
+                merged=[message for chunk in reversed(chunks)for message in chunk]
+                if [m['message_id']for m in merged]==expected[cid]:
+                    # Internal transcript reference, never a rewritten raw
+                    # response. All original page bytes/hashes remain above.
+                    result[cid]=dict(root,messages=merged,next_before=None,
+                        view_origin='actual_GET_cursor_chain',source_exchange_ids=refs)
+                break
+    return result
 
 
 def _ui(ui,plan,step):

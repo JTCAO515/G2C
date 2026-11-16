@@ -78,6 +78,13 @@ origin=readonly_default、binding=null、实际default_conversation_id/default_g
 SM03的history.default_row_key指完整实际AX列表末行；rows/opened同序逐行核，
 由已核同源signed.history固定追加顺序关联默认角色，不能仅按标题猜，也不宣称
 UI独立看见了CID。默认正文与其他行同文时，默认角色来自此实际顺序和点击原件。
+真实timeline按20条分页。必须由同一步checkpoint后实际App GET的无cursor首页开始，
+沿每个next_before匹配实际before请求，直到无下一页；页数/发布时间不能替代cursor链。
+C仅在完整链有唯一内容且有序MID恰等当前原生全量清单时组合正文参考。缺首页/中页、
+错cursor、循环、相同cursor的冲突完整内容仍UNKNOWN；相同完整页的重复poll可去重。
+accepted_conversations中的view_origin=actual_GET_cursor_chain和source_exchange_ids
+标明它是C内部组合参考，version标记输入wire来源，不能将它当作某次原HTTP响应回传。
+全部原页字节/摘要留在受保护读回中，准备期旧GET不能拼入，UI也须实际读全对应正文。
 SM01须在冷启动恢复后、其他导航前立即留一个cold_launch lifecycle快照；如为
 完整候选关联补读其他历史/默认项，后续成功不能修饰这张原快照的错误、草稿或正文。
 历史每行都打开，完整有序问答在合法候选CID集合中必须恰一匹配。重名标题、行号、

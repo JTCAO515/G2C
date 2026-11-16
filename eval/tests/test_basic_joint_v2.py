@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from eval.basic_chain.joint_v2 import Conversations,assess,draft_marker
+from eval.basic_chain.joint_v2 import Conversations,assess,draft_marker,_views
 from eval.basic_chain.native import observation
 from eval.tests.test_basic_native_v2 import fixture,add_read
 
@@ -32,6 +32,61 @@ def write_fixture():
 
 
 def evaluate(args):return assess(*args[:6],lambda text:text,args[6])
+
+
+def paged_history(count,wire):
+    native=write_fixture()[3];cid=native.original['message']['conversation_id']
+    messages=[dict(message_id='historical-'+str(i),text='Synthetic question '+str(i),answer='Synthetic answer '+str(i),
+                   status='completed',failure=None,trip=None)for i in range(count)]
+    state=deepcopy(native.after);template=state['native_messages'][0]
+    state['native_messages']=[dict(template,message_id=m['message_id'],sequence=i+1)for i,m in enumerate(messages)]
+    records=[];end=count;cursor=None
+    while end:
+        start=max(0,end-20);next_before=messages[start]['message_id']if start else None
+        record=deepcopy(native.actual_reads[0]);record.update(route=f'/v{wire}/lio/timeline',
+            exchange_id='historical-page-'+str(len(records)),selector=dict(conversation_id=cid))
+        if cursor is not None:record['selector']['before']=cursor
+        value=dict(version=f'LIO-timeline.{wire}',conversation_id=cid,messages=messages[start:end],next_before=next_before)
+        record['response_utf8']=json.dumps(value);record['response_sha256']=sha256(record['response_utf8'].encode()).hexdigest()
+        records.append(record);cursor=next_before;end=start
+    return replace(native,after=state,actual_reads=tuple(reversed(records))),cid,messages
+
+
+@pytest.mark.parametrize('count,wire',[(32,1),(41,1),(41,2)])
+def test_complete_current_history_joins_actual_cursor_pages_not_publication_order(count,wire):
+    native,cid,messages=paged_history(count,wire)
+    original_bytes=[r['response_utf8']for r in native.actual_reads]
+    assert _views(native)[cid]['messages']==messages
+    assert [r['response_utf8']for r in native.actual_reads]==original_bytes
+    assert _views(native)[cid]['view_origin']=='actual_GET_cursor_chain'
+
+
+def test_old_complete_pre_accept_poll_does_not_replace_the_final_cursor_chain():
+    native,cid,messages=paged_history(32,2)
+    old=deepcopy(native.actual_reads[-1]);old['exchange_id']='pre-accept-poll'
+    value=json.loads(old['response_utf8']);value['messages']=messages[:-1][-20:]
+    value['next_before']=value['messages'][0]['message_id']
+    old['response_utf8']=json.dumps(value);old['response_sha256']=sha256(old['response_utf8'].encode()).hexdigest()
+    repeated=deepcopy(native.actual_reads[-1]);repeated['exchange_id']='same-final-page-polled-again'
+    actual=replace(native,actual_reads=(old,*native.actual_reads,repeated))
+    assert _views(actual)[cid]['messages']==messages
+
+
+@pytest.mark.parametrize('fault',['missing_root','missing_older','wrong_cursor','cycle','changed_page'])
+def test_incomplete_or_ambiguous_cursor_chains_never_become_a_complete_history(fault):
+    native,cid,_=paged_history(41,1);reads=list(native.actual_reads)
+    if fault=='missing_root':reads.pop()
+    if fault=='missing_older':reads.pop(0)
+    if fault=='wrong_cursor':reads[0]['selector']['before']='another-history-cursor'
+    if fault=='cycle':
+        payload=json.loads(reads[0]['response_utf8']);payload['next_before']=payload['messages'][0]['message_id']
+        reads[0]['response_utf8']=json.dumps(payload)
+        reads[0]['response_sha256']=sha256(reads[0]['response_utf8'].encode()).hexdigest()
+    if fault=='changed_page':
+        changed=deepcopy(reads[0]);payload=json.loads(changed['response_utf8']);payload['messages'][0]['answer']='different complete answer'
+        changed['response_utf8']=json.dumps(payload);changed['exchange_id']='conflicting-older-page';reads.append(changed)
+        changed['response_sha256']=sha256(changed['response_utf8'].encode()).hexdigest()
+    assert cid not in _views(replace(native,actual_reads=tuple(reads)))
 
 
 def test_ui_ids_stay_null_native_single_write_and_actual_read_match():
