@@ -120,12 +120,22 @@ private enum CommandJSON: StrictJSONPolicy {
                     try requireActionWindow(); field.tap()
                     try requireActionWindow(); field.typeText(value)
                     // Never return the input or any value derived from it.
+                case "audit_all":
+                    // The installed ordinary Home must already be usable. This
+                    // diagnostic never launches, signs in, or changes its data.
+                    let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+                    let newChat = app.buttons["lio.chat.newShortcut"]
+                    guard app.state == .runningForeground, composer.exists, composer.isHittable,
+                          newChat.exists, newChat.isEnabled, newChat.isHittable else { throw CommandJSON.failure }
+                    try requireActionWindow()
+                    try app.performAccessibilityAudit(for: .all)
+                    result["audit"] = "all"
                 case "swipe_up": try requireActionWindow(); app.swipeUp(velocity: .slow)
                 case "swipe_down": try requireActionWindow(); app.swipeDown(velocity: .slow)
                 case "snapshot", "stop": break
                 default: throw CommandJSON.failure
                 }
-                if command.kind == "snapshot" {
+                if command.kind == "snapshot" || command.kind == "audit_all" {
                     let snapshot = try app.snapshot()
                     var nodes: [[String: Any]] = []
                     func visit(_ node: any XCUIElementSnapshot, depth: Int) {

@@ -19,3 +19,9 @@ The first body and completed-body times come from native monotonic observations,
 ## Evidence limits
 
 Pure Python controls and simulator fixtures are local evidence only. Before any real run, review the precise producer head, qualify the actual App/binary and renderer, verify B's current source and issued lease, and obtain C's current checkpoint-fenced window. The coordinator currently has no real Hong Kong qualification; UI contrast failures and the unfinished full-history App surface remain separate blockers. No command here grants TestFlight or deployment approval.
+
+## Installed-App audit before real admission
+
+The native controller supports `audit_all` for an already-running, usable ordinary Home. It requires the real composer and New chat controls to be hittable, retains the same dispatch-time Beijing and issued-window checks, and calls the complete `.all` audit without a filtering closure. It does not launch, sign in, open a new conversation, send a message, clear data or install a fixture. On success its original response records `audit: all` plus a fresh native snapshot and screenshot. A thrown audit, missing ACK or stopped runner remains failure/UNKNOWN; the existing sticky barrier forbids proceeding or replaying through that controller. Original XCTest results stay as evidence.
+
+This is a diagnostic command, not a qualification certificate. An installed App pin, B's current sign-in-only lease/identity readback, the complete default history and the actual audit outcome still need independent verification. Source/compile/ACK controls do not prove an actual Hong Kong audit PASS or authorize business smoke. Existing synthetic audit failures stay open; no actual audit is performed outside the authorized window.
