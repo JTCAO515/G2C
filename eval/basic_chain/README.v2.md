@@ -66,6 +66,16 @@ messages（每条message_id/run_id/sequence/canonical_sha256）；可附conversa
 history_targets，C再核原生CID/gen/完整有序M并从实际AppGET建立正文参考。
 首次setup由真实seed逐步建立参考，不手填既有正文。App历史是该安装本地列表，
 并非服务器全部CID；其他server-only记录保留在native_state，不冒称已删除或UI漏行。
+固定默认`lio-original`行始终保留。B checkpoint另给`default_history_target`，
+CID为当前身份原生`lio_conversation(scope)`；有正文时保留完整原M/代次，空对话
+可messages=[]、generation=null。只有该实际默认目标允许空锚，普通旧聊仍须原M。
+其实际`GET /v1/lio/timeline`无CID query，空page可conversation_id=null；原件以
+origin=readonly_default、binding=null、实际default_conversation_id/default_generation
+与当前身份/原生零M清单及完整GET exchange核对，不造MID、模型claim或费用。
+非空默认读仍须真实MESSAGE binding，不能借空页规则免除原件。
+SM03的history.default_row_key指完整实际AX列表末行；rows/opened同序逐行核，
+由已核同源signed.history固定追加顺序关联默认角色，不能仅按标题猜，也不宣称
+UI独立看见了CID。默认正文与其他行同文时，默认角色来自此实际顺序和点击原件。
 历史每行都打开，完整有序问答在合法候选CID集合中必须恰一匹配。重名标题、行号、
 通用能力正文或时间接近都不构成身份。需要远程读取的普通App路径须有该次真实
 GET/完整原响应；A缓存正常加C另行读成功不能拼成PASS。当前实际normal Home

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from hashlib import sha256
 
 from .plan import decode,digest,is_sha,packed,require
-from .history_v2 import targets,check_native
+from .history_v2 import targets,check_native,default_target
 
 
 def _state(value,scope):
@@ -69,6 +69,7 @@ class Checkpoint:
     ledger_anchor:dict
     claims:tuple
     history_targets:tuple=()
+    default_history_target:dict|None=None
 
 
 def checkpoint(value,expected,plan,step):
@@ -80,7 +81,11 @@ def checkpoint(value,expected,plan,step):
     history=targets(plan,step['locale']);claims=tuple(original['claims'])
     require(tuple(original.get('history_targets',[]))==history,'actual B validated history targets differ from frozen plan')
     check_native(history,state)
-    return Checkpoint(reference,state,original['ledger_anchor'],claims,history)
+    default=default_target(original['default_history_target'],expected['default_conversation_id'],state)
+    for value in history:
+        if value['conversation_id']==default['conversation_id']:
+            require(value==default,'selected default history metadata differs from actual default')
+    return Checkpoint(reference,state,original['ledger_anchor'],claims,history,default)
 
 
 def _components(value):
@@ -109,6 +114,7 @@ class Observation:
     actual_reads:tuple
     components:tuple
     read_collection_status:str
+    default_history_target:dict|None=None
 
 
 def observation(value,point,expected,plan,step):
@@ -119,6 +125,7 @@ def observation(value,point,expected,plan,step):
     # Client state never creates the checkpoint. This is an extra comparison
     # against the server's authenticated earlier response/reference only.
     require(before==point.native_state,'server original before checkpoint changed')
+    check_native((point.default_history_target,),after)
     new=tuple(sorted(set(after['message_ids'])-set(before['message_ids'])))
     require(set(before['message_ids'])<=set(after['message_ids']),'original MESSAGE disappeared during the step')
     http=original['http']
@@ -148,6 +155,25 @@ def observation(value,point,expected,plan,step):
                 'actual successful ordinary App read required')
         require(sha256(record['response_utf8'].encode()).hexdigest()==record['response_sha256'],
                 'actual App HTTP response bytes differ')
+        if record.get('origin')=='readonly_default':
+            target=point.default_history_target
+            require(record['route']=='/v1/lio/timeline'
+                    and record['default_conversation_id']==target['conversation_id']
+                    and record['default_generation']==target['generation'],
+                    'actual default read owner/head differs from its native checkpoint')
+            if record['binding']is not None:
+                require(record['binding']['conversation_id']==target['conversation_id']
+                        and record['binding']['generation']==target['generation'],
+                        'nonempty default read bound another conversation/head')
+        if record['binding']is None:
+            target=point.default_history_target
+            payload=decode(record['response_utf8'].encode())
+            require(record.get('origin')=='readonly_default'and record['route']=='/v1/lio/timeline'
+                    and record['selector']=={} and not target['messages']
+                    and payload['version']=='LIO-timeline.1'and payload['messages']==[]
+                    and payload['next_before']is None
+                    and payload['conversation_id']in(None,target['conversation_id']),
+                    'only the current-owner actual empty default may have no MESSAGE binding')
         exchange=record['exchange_id']
         require(exchange not in read_ids,'duplicate actual GET response exchange')
         read_ids.add(exchange)
@@ -199,4 +225,5 @@ def observation(value,point,expected,plan,step):
                 and end['message_id']==mid and end['body_fully_observed']is True
                 and end['input_sha256']==claim['input_sha256'],'actual POST result/digest differs')
         require(sha256(message['answer'].encode()).hexdigest()==message['answer_sha256'],'original native answer digest differs')
-    return Observation(original,before,after,new,tuple(reads),tuple(_components(original.get('components',[]))),http['read_coverage'])
+    return Observation(original,before,after,new,tuple(reads),tuple(_components(original.get('components',[]))),
+                       http['read_coverage'],point.default_history_target)

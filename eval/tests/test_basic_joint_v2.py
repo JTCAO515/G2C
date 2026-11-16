@@ -1,5 +1,6 @@
 """Joint logical controls; synthetic data never grants release acceptance."""
 from copy import deepcopy
+from dataclasses import replace
 from hashlib import sha256
 import json
 
@@ -90,9 +91,10 @@ def read_fixture(gate='SM01'):
     cid=native.original['message']['conversation_id'];view=json.loads(native.actual_reads[0]['response_utf8'])
     step=next(s for s in plan['steps']if s['gate_id']==gate and s['locale']=='zh')
     context.views[cid]=view;context.old_cid=context.qa_cid=cid
-    point=type('ControlCheckpoint',(),{'claims':({'binding':{'conversation_id':cid}},),'history_targets':()})()
+    point=type('ControlCheckpoint',(),{'claims':({'binding':{'conversation_id':cid}},),'history_targets':(),
+        'default_history_target':native.default_history_target})()
     before=deepcopy(native.after);after=deepcopy(native.after)
-    n=type(native)(native.original,before,after,(),native.actual_reads,(),native.read_collection_status)
+    n=type(native)(native.original,before,after,(),native.actual_reads,(),native.read_collection_status,native.default_history_target)
     ui.update(gate_id=gate,nonce=step['nonce'],send_taps=0,submitted_text=None,actions=['cold_launch'])
     ui['before']=deepcopy(ui['after']);ui['before']['draft']=ui['after']['draft']=draft_marker(plan,step)
     return plan,step,point,n,ui,context,money
@@ -152,16 +154,34 @@ def test_history_opens_every_unique_native_conversation_not_just_matching_titles
     second=deepcopy(n.actual_reads[0]);second['binding']=dict(second['binding'],conversation_id=second_cid)
     second['exchange_id']='second-history-read';second['response_utf8']=json.dumps(second_view)
     second['response_sha256']=sha256(second['response_utf8'].encode()).hexdigest()
-    native=type(n)(n.original,state,state,(),(*n.actual_reads,second),(),n.read_collection_status)
-    point=type('ControlCheckpoint',(),{'claims':tuple({'binding':{'conversation_id':cid}}for cid in context.views),'history_targets':()})()
+    empty=deepcopy(n.actual_reads[0]);empty.update(exchange_id='actual-empty-default',route='/v1/lio/timeline',
+        binding=None,origin='readonly_default',selector={},default_conversation_id=n.default_history_target['conversation_id'],
+        default_generation=n.default_history_target['generation'])
+    empty['response_utf8']=json.dumps(dict(version='LIO-timeline.1',conversation_id=None,messages=[],next_before=None))
+    empty['response_sha256']=sha256(empty['response_utf8'].encode()).hexdigest()
+    native=type(n)(n.original,state,state,(),(*n.actual_reads,second,empty),(),n.read_collection_status,n.default_history_target)
+    point=type('ControlCheckpoint',(),{'claims':tuple({'binding':{'conversation_id':cid}}for cid in context.views),'history_targets':(),
+        'default_history_target':n.default_history_target})()
     opened=[dict(row_key=str(index),body_complete=True,errors=[],transcript=[{'question':m['text'],'answer':m['answer']}for m in view['messages']])
             for index,view in enumerate(context.views.values())]
+    opened.append(dict(row_key='default',body_complete=True,errors=[],transcript=[]))
     ui.update(gate_id='SM03',nonce=step['nonce'],actions=['open_history'],
-              history=dict(rows=[{'row_key':str(i),'title':'Same truncated title'}for i in range(2)],opened=opened))
+              history=dict(rows=[{'row_key':str(i),'title':'Same truncated title'}for i in range(2)]+[
+                  {'row_key':'default','title':'First conversation'}],default_row_key='default',opened=opened))
     args=(plan,step,point,native,ui,context,money)
     assert evaluate(args)['status']=='PASS'
+    missing=replace(native,actual_reads=native.actual_reads[:-1])
+    assert evaluate((plan,step,point,missing,ui,context,money))['status']=='UNKNOWN'
+    ui['history']['default_row_key']='0'
+    assert evaluate(args)['status']=='UNKNOWN'
+    ui['history']['default_row_key']='default'
+    ui['history']['opened']=[opened[-1],*opened[:-1]]
+    assert evaluate(args)['status']=='UNKNOWN'
+    ui['history']['opened']=opened
     ui['history']['opened'][0].update(errors=['actual row failed to open'],body_complete=False)
     assert evaluate(args)['status']=='FAIL'
+    # A known earlier UI failure survives even if another native read is absent.
+    assert evaluate((plan,step,point,missing,ui,context,money))['status']=='FAIL'
     ui['history']['opened'][0].update(errors=[],body_complete=False)
     assert evaluate(args)['status']=='UNKNOWN'
     ui['history']['opened'][0].update(errors=[],body_complete=True)

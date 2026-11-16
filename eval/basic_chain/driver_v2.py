@@ -11,6 +11,7 @@ from pathlib import Path
 
 from cj_api.local_app import ISSUER,scope_for
 from cj_message import lio_context
+from cj_message.demo_dialogue import lio_conversation
 
 from . import native
 from .cost_v2 import costs
@@ -118,7 +119,9 @@ def execute(plan,config,directory,*,now=lambda:datetime.now(timezone.utc),clock=
                     and prepared['send_taps']==0 and prepared['app']==plan['app'],
                     'actual read-only UI preparation differs')
             _original_files(prepared['artifacts'])
-            expected=dict(config['candidate'],scope_sha256=sha256(scope_for(ISSUER,config['subjects'][step['locale']]).encode()).hexdigest())
+            scope=scope_for(ISSUER,config['subjects'][step['locale']])
+            expected=dict(config['candidate'],scope_sha256=sha256(scope.encode()).hexdigest(),
+                          default_conversation_id=lio_conversation(scope))
             request=_request(plan,step,'checkpoint');request['expected_source']=expected['source']
             host=call('backend',request)
             point=native.checkpoint(host,expected,plan,step);reference=point.reference

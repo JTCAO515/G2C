@@ -13,6 +13,7 @@ from eval.basic_chain.plan import Invalid,decode,make_plan
 from eval.basic_chain.runner import save
 from eval.basic_chain.plan import digest
 from cj_api.local_app import ISSUER,scope_for
+from cj_message.demo_dialogue import lio_conversation
 
 
 def inputs(tmp_path):
@@ -117,6 +118,7 @@ def test_standard_driver_bootstraps_old_chat_from_qualified_read_without_seed_or
         if type(value)is dict:return {key:rebind(v)for key,v in value.items()}
         if type(value)is list:return [rebind(v)for v in value]
         if value==expected['scope_sha256']:return scope_sha
+        if value==expected['default_conversation_id']:return lio_conversation(scope)
         if value=='synthetic-only-owner':return scope
         return value
     host=rebind(host);original=host['original'];state=original['after']
@@ -134,7 +136,8 @@ def test_standard_driver_bootstraps_old_chat_from_qualified_read_without_seed_or
     original.update(base,kind='observe_read',before=state,after=state,components=[],
         accounting=dict(attempts=[],coverage='complete',producer_closure_verified=True,closure_ref='CONTROL_ONLY',missing=[]))
     point=dict(base,kind='checkpoint',checkpoint_ref='1'*64,native_state=state,
-        ledger_anchor={'count':0,'sha256':'a'*64},claims=[],history_targets=[anchor])
+        ledger_anchor={'count':0,'sha256':'a'*64},claims=[],history_targets=[anchor],
+        default_history_target=dict(version='LIO-readonly-history-anchor.1',conversation_id=lio_conversation(scope),generation=None,messages=[]))
     if fault=='missing_target':point['history_targets']=[]
     root=tmp_path/'standard';ticks=[0];events=[]
     artifact=tmp_path/'actual-control-AX.json';save(artifact,{'CONTROL_ONLY':True})
