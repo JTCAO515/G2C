@@ -30,6 +30,7 @@ VENUE_SOURCE_CITIES.update({
     "wlt.sc.gov.cn": frozenset({"chengdu"}),
     "ct.zj.gov.cn": frozenset({"hangzhou", "taizhou-zhejiang"}),
     "whlyw.cq.gov.cn": frozenset({"chongqing"}),
+    "cqjlp.gov.cn": frozenset({"chongqing"}),
     "wlj.xa.gov.cn": frozenset({"xian"}),
 })
 VENUE_PAGE_CITIES = {
