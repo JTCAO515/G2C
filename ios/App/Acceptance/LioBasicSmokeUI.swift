@@ -87,18 +87,20 @@ private enum CommandJSON: StrictJSONPolicy {
                     let field = app.secureTextFields["demo.invite.code"]
                     guard field.exists, field.isHittable else { throw CommandJSON.failure }
                     let path = try XCTUnwrap(command.privateInputPath)
+                    let url = URL(fileURLWithPath: path)
+                    guard url.standardizedFileURL.path == url.resolvingSymlinksInPath().path else { throw CommandJSON.failure }
                     let fd = open(path, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
                     guard fd >= 0 else { throw CommandJSON.failure }
                     defer { close(fd) }
                     var info = stat()
                     guard fstat(fd, &info) == 0, info.st_mode & S_IFMT == S_IFREG,
                           info.st_uid == getuid(), info.st_nlink == 1,
-                          info.st_mode & 0o777 == 0o600, info.st_size > 0, info.st_size <= 256 else {
+                          info.st_mode & 0o777 == 0o600, info.st_size > 0, info.st_size <= 4096 else {
                         throw CommandJSON.failure
                     }
-                    let data = try FileHandle(fileDescriptor: fd, closeOnDealloc: false).readToEnd() ?? Data()
-                    guard let value = String(data: data, encoding: .utf8),
-                          !value.isEmpty, !value.contains("\n"), !value.contains("\r") else { throw CommandJSON.failure }
+                    let data = try FileHandle(fileDescriptor: fd, closeOnDealloc: false).read(upToCount: 4097) ?? Data()
+                    guard !data.isEmpty, data.count <= 4096, data.allSatisfy({ (0x21...0x7e).contains($0) }),
+                          let value = String(data: data, encoding: .utf8) else { throw CommandJSON.failure }
                     field.tap(); field.typeText(value)
                     // Never return the input or any value derived from it.
                 case "swipe_up": app.swipeUp(velocity: .slow)
