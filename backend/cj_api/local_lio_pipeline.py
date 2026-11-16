@@ -11,7 +11,7 @@ from cj_message.lio_pipeline_schema import SKELETON,WORDING
 from cj_message.lio_wire import ExplorationOrigin
 from cj_place.models import Coordinate
 from cj_feasibility.rich_assembly import assemble,assemble_unconfirmed
-from cj_feasibility.rich_solver import Limits
+from cj_feasibility.rich_solver import Limits,Window
 from cj_agent.draft import DraftRejected
 from cj_trip.domain import packed
 from cj_trip.rich_reasons import brief
@@ -143,7 +143,22 @@ def order_retrieved_plan(prepared,compiled,capture,*,locale,stop):
     This does not publish a Trip. After order changes, route collection and
     final checks must run again; the old check capture cannot be reused.
     """
-    return _assemble_retrieved(prepared,compiled,capture,compiled.document,phase='order',locale=locale,stop=stop)
+    original=compiled.order_activities
+    preferred=tuple(replace(activity,windows=tuple(Window(window.start,
+        window.end-min(3600,window.end-window.start))for window in activity.windows))
+        if activity.item_id in compiled.proposed_subjects and activity.meal_period=='lunch'
+        else activity for activity in original)
+    # A soft search preference leaves room before the meal deadline. It is
+    # neither an observed travel duration nor a changed source window: final
+    # scheduling uses the original full windows. A tight but valid original
+    # remains eligible when only this optional preference is infeasible.
+    result=_assemble_retrieved(prepared,compiled,capture,compiled.document,phase='order',locale=locale,
+        stop=stop,activities=preferred)
+    if (preferred!=original and result.status=='CONFLICT'
+            and result.reason=='EXPLICIT_CONSTRAINTS_INFEASIBLE'):
+        return _assemble_retrieved(prepared,compiled,capture,compiled.document,phase='order',locale=locale,
+            stop=stop,activities=original)
+    return result
 
 
 def route_ordered_plan(prepared,document):
@@ -158,10 +173,11 @@ def route_ordered_plan(prepared,document):
 
 def schedule_retrieved_plan(prepared,compiled,capture,document,*,locale,stop):
     """Freeze C's chosen order and schedule with the original observed legs."""
-    return _assemble_retrieved(prepared,compiled,capture,document,phase='schedule',locale=locale,stop=stop)
+    return _assemble_retrieved(prepared,compiled,capture,document,phase='schedule',locale=locale,stop=stop,
+        activities=compiled.schedule_activities)
 
 
-def _assemble_retrieved(prepared,compiled,capture,document,*,phase,locale,stop):
+def _assemble_retrieved(prepared,compiled,capture,document,*,phase,locale,stop,activities):
     bundle=prepared.sources;worker,binding=bundle.worker,bundle.binding
     checks=RichUncollectedChecks(bundle.source)
     publisher=bundle.publisher(checks)
@@ -177,7 +193,7 @@ def _assemble_retrieved(prepared,compiled,capture,document,*,phase,locale,stop):
                 raise ValueError('unconfirmed stops require actual terminal source outcomes')
             return rich,facts,unconfirmed
     _,(rich,facts,unconfirmed)=worker._step(binding,read)
-    arguments=dict(source=rich,facts=facts,activities=compiled.order_activities if phase=='order'else compiled.schedule_activities,
+    arguments=dict(source=rich,facts=facts,activities=activities,
         edges=prepared.edges,phase=phase,locale=locale,limits=Limits(),stop=stop)
     if unconfirmed:return assemble_unconfirmed(document,**arguments,unconfirmed_items=unconfirmed)
     return assemble(document,**arguments)
