@@ -1,0 +1,66 @@
+{
+  "version": "LIO-voice-offline-readiness.2",
+  "issues": [844, 937],
+  "supersedes_status_snapshot": "lio_voice_readiness.v1.json",
+  "preserves_previous_snapshot": true,
+  "synthetic_only": true,
+  "spec": {
+    "path": "docs/lio-voice.md",
+    "sha256": "a2e31fffd35cc83cfb7f03200d8f01116b64833d400a69d7d174071ca364e502",
+    "pr": 894,
+    "pr_head": "45a8451303cb500c525abcbb1f9ee50137ba3061",
+    "merged_at": "2026-11-15T08:15:50Z",
+    "on_main": true
+  },
+  "dataset": {
+    "path": "lio_voice_cases.v1.json",
+    "sha256": "47db1f0483d1c3a3841a9d5e9f15df3226762eb4f0f98f0613add14c30ee8c37",
+    "per_arm": 30,
+    "locale_denominators": {"zh": 15, "en": 15},
+    "meaning": "Frozen legacy prose cohort, not native4 timeline/group/exit/UI scoring"
+  },
+  "calibration": {
+    "path": "lio_voice_calibration.v1.json",
+    "sha256": "62b30e28f76914931e933dfb348331c956068b59e3ff0813d7f9dc612ebe0077",
+    "reviewer": "JT",
+    "worksheet": "lio_voice_jt_review.md",
+    "activity": "JT has completed reading all 20 supplied examples and delivered qualitative feedback; no app test or mechanical re-read requested",
+    "review_status": "DELIVERED_QUALITATIVE",
+    "reviewed_n": 20,
+    "review_record": "lio_voice_jt_feedback.20261116.json",
+    "estimated_minutes": [15, 20],
+    "planned_n": 20,
+    "human_labels": 0,
+    "human_labels_meaning": "Binary A/B/C labels only; zero binary labels does not mean JT has not reviewed",
+    "paired_model_human": 0,
+    "agreement": "NOT_COMPUTABLE_QUALITATIVE_REVIEW",
+    "agreement_value": null,
+    "model_review_status": "UNRUN",
+    "qualitative_rubric_proposal": "lio_voice_quality_rubric.v2.md",
+    "unknown_labels": "Remain unlabelled with JT notes, never converted to PASS or model-generated gold"
+  },
+  "human_assistance": {
+    "service_available": true,
+    "authority": "JT 2026-11-16, original user message in lio_voice_jt_feedback.20261116.json",
+    "scope": "Colleague assistance verifying and collecting information",
+    "handoff_acceptance_progress_completion_interfaces": "UNVERIFIED",
+    "rule": "Do not deny the confirmed service or fabricate an accepted/in-progress/completed handoff, call, booking, payment or pickup"
+  },
+  "actual_comparison": {
+    "status": "UNRUN",
+    "deferred_to": "https://github.com/JTCAO515/G2C/issues/32#issuecomment-6880988716",
+    "blocker": "B confirms no executable named old/new PERSONA arm qualification; no client system override or production rollback",
+    "actual_posts_this_update": 0,
+    "cost_this_offline_update": {"conservative_cny": "0", "token_estimate_cny": "0", "actual_paid_cny": "0"},
+    "old_new_model_result_costs": {"conservative_cny": null, "token_estimate_cny": null, "actual_paid_cny": null},
+    "code_pass_rates": "UNRUN",
+    "length_distribution": "UNRUN",
+    "first_paragraph_timing": "UNRUN"
+  },
+  "unchanged_gates": {"code_rate_minimum": 0.9, "redline_failures_maximum": 0, "product_gate": "UNRUN"},
+  "G6": "UNRUN",
+  "G7": "UNRUN",
+  "G8": "UNRUN",
+  "G9": "UNRUN",
+  "over60": {"target": "explicit refusal and preservation of original Trip", "included_in_G6": false}
+}
