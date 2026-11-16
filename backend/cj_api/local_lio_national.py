@@ -523,7 +523,8 @@ class NationalLioPlanning:
                 or intake.start_date['state']!='known' or fields['arrival']['date']['state']!='known')
         if undated and calendar is None:
             state=context(worker,binding,state,dict(authority=authority,status='plan_preview',city=resolution))
-            return discuss(worker,binding,state,original.locale,turns,refs,day_count=intake.duration_days)
+            return discuss(worker,binding,state,original.locale,turns,refs,day_count=intake.duration_days,
+                           destination=intake.city['query'])
         missing=[]
         if calendar is None and intake.start_date is not None and intake.start_date['state']!='known':missing.append('start_date')
         for edge in ('arrival','departure'):

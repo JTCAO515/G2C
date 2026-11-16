@@ -78,6 +78,17 @@ class ReadOnlyAnswers(unittest.TestCase):
                 self.assertNotIn('2026-',answer(events))
                 self.assertEqual(context(events)['authority'],'none')
 
+    def test_plan05_existing_root_also_labels_an_unsaved_preview(self):
+        for locale,city in (('zh','北京'),('en','Beijing')):
+            with self.subTest(locale=locale):
+                text=CASES['PLAN05']['inputs'][locale][0]
+                wire=flow(text,city=city,days=3,intent='plan',questions=())
+                wire.update(planning_request_index=0,needs_tools=False)
+                published,events,_,_=run(wire,text,locale=locale)
+                self.assertEqual(published,[])
+                self.assertIn(city,answer(events))
+                self.assertIn('未保存建议'if locale=='zh'else'Unsaved suggestion',answer(events))
+
     def test_plan08_readonly_preview_keeps_original_dates_without_a_root_grant(self):
         for locale in ('zh','en'):
             with self.subTest(locale=locale):
