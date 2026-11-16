@@ -57,6 +57,58 @@ class VenueSourceScopeTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_entry_v3({**record, 'cities': ['suzhou-anhui']}, as_of=TODAY)
 
+    def test_hangzhou_delegated_sources_do_not_authorize_city_wide_or_other_city_claims(self):
+        for host in ('www.ehangzhou.gov.cn', 'wgly.hangzhou.gov.cn'):
+            record = deepcopy(self.venue)
+            record['cities'] = ['hangzhou']
+            record['subject'] = {'key': 'hangzhou.west-lake', 'name_zh': '西湖',
+                                 'name_en': 'West Lake', 'wikidata_qid': None}
+            record['source_urls'] = ['https://' + host + '/example.html']
+            with self.subTest(host=host):
+                validate_entry_v3(record, as_of=TODAY)
+                for change in ({'cities': ['chengdu']}, {'cities': ['hangzhou', 'taizhou-zhejiang']},
+                               {'topic': 'payment'}, {'subject': None}):
+                    with self.subTest(change=change), self.assertRaises(ValueError):
+                        validate_entry_v3({**record, **change}, as_of=TODAY)
+
+    def test_later_official_sources_stay_within_approved_city_venue_scope(self):
+        for host, city in (
+            ('cgj.sz.gov.cn', 'shenzhen'), ('fao.sz.gov.cn', 'shenzhen'),
+            ('english.shanghai.gov.cn', 'shanghai'), ('en.xa.gov.cn', 'xian'),
+            ('bmy.com.cn', 'xian'),
+        ):
+            record = {**self.venue, 'cities': [city],
+                      'source_urls': ['https://' + host + '/visitor-guide.html']}
+            with self.subTest(host=host):
+                validate_entry_v3(record, as_of=TODAY)
+                for change in (
+                    {'cities': ['beijing']}, {'cities': [city, 'beijing']},
+                    {'topic': 'payment'}, {'topic': 'visa_entry'}, {'subject': None},
+                    {'source_urls': ['https://ticket.' + host + '/visitor-guide.html']},
+                ):
+                    with self.subTest(change=change), self.assertRaises(ValueError):
+                        validate_entry_v3({**record, **change}, as_of=TODAY)
+
+    def test_search_helper_and_unread_approved_attachment_do_not_become_fact_sources(self):
+        for url in (
+            'https://search.gd.gov.cn/search/all/755001',
+            'https://arabic.shanghai.gov.cn/cmsres/fb/fb4c67ebf9604322a8b3f6f74d7e1760/eec310a1555eb5a02a121cee2922800d.pdf',
+        ):
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                validate_entry_v3({**self.venue, 'cities': ['shanghai'],
+                                   'source_urls': [url]}, as_of=TODAY)
+
+    def test_museum_linked_page_does_not_expand_to_other_urls_or_scopes(self):
+        page = 'https://museum-guanwang.leleu.cn/'
+        record = {**self.venue, 'cities': ['chengdu'], 'source_urls': [page]}
+        validate_entry_v3(record, as_of=TODAY)
+        for url in (page + 'orders', page + '?other=1', 'https://other.leleu.cn/'):
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                validate_entry_v3({**record, 'source_urls': [url]}, as_of=TODAY)
+        for change in ({'cities': ['beijing']}, {'subject': None}, {'topic': 'payment'}):
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                validate_entry_v3({**record, **change}, as_of=TODAY)
+
 
 if __name__ == '__main__':
     unittest.main()
