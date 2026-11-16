@@ -28,6 +28,7 @@ _FACTORY=object()
 POI2_REGISTRATION='tool.lio_poi2.1'
 ROUTE_REGISTRATION='tool.lio_route.1'
 PROVIDER_OUTPUT_LIMIT=8192 # registered/Meter unit is Python characters, not UTF-8 bytes
+STATUS_BATCH_BYTES=45*8192+44+2 # internal minimal-status array, not a provider output limit
 
 
 def _receipt_identity(metadata):
@@ -157,17 +158,24 @@ class RegisteredProviderSources:
             return Receipt(attempt,_receipt_identity(json.loads(observed.metadata)),unit,1,output)
         raise RuntimeUnknown('original provider attempt is unavailable')
 
-    def _status(self,observed,guard):
-        operation=observed.operation
-        if observed.reply is None:raise RuntimeUnknown('original provider outcome is unresolved')
+    def _statuses(self,observed,guard):
+        if not observed:return
+        if any(value.reply is None for value in observed):
+            raise RuntimeUnknown('original provider outcome is unresolved')
+        periods={value.operation.period for value in observed}
+        if len(periods)!=1:raise RuntimeUnknown('original provider periods differ')
         account=ledger_scope_for(self.binding.scope,self.exit.config)
         meter=self.exit.resolve_meter(self.binding,account)
         try:
-            raw=meter.repo.read_status(operation.command.attempt_id,guard=guard,max_response_bytes=8192,
-                                       expected_period=operation.period)
+            raw=meter.repo.read_status_many(tuple(value.operation.command.attempt_id for value in observed),
+                guard=guard,max_response_bytes=STATUS_BATCH_BYTES,expected_period=periods.pop())
         except (ReadUnavailable,CommitUnknown,RepositoryUnavailable,CorruptLedger,DatabaseError)as error:
             raise RuntimeUnknown('original provider receipt read unavailable')from error
-        status=json.loads(raw);metadata=json.loads(observed.metadata)
+        for value,status in zip(observed,json.loads(raw),strict=True):
+            self._check_status(value,status)
+
+    def _check_status(self,observed,status):
+        operation=observed.operation;metadata=json.loads(observed.metadata)
         receipt=_receipt_identity(metadata)
         expected=(operation.command.attempt_id,operation.command.operation_id,self.binding.run_id,
                   'settled','provider_call',1,len(observed.reply.decode()),receipt,False,False)
@@ -183,11 +191,14 @@ class RegisteredProviderSources:
             if self.worker.budget_exit is not self.exit or self.worker.runs.valid(binding)is not True:
                 raise RuntimeDenied('original provider source no longer current')
         current();records=[];outcomes=[]
-        for observed in self._observed.values():
+        observations=tuple(self._observed.values())
+        for observed in observations:
             operation=observed.operation
             actual=self.store.read_original(binding,operation.operation_key)
             if actual!=operation:raise RuntimeDenied('original registered provider input differs')
-            self._status(observed,current)
+        self._statuses(observations,current)
+        for observed in observations:
+            operation=observed.operation
             records.extend(json.loads(observed.records))
             reply=json.loads(observed.reply)
             original=json.loads(operation.original.input_bytes)
@@ -216,7 +227,7 @@ class RegisteredProviderSources:
             self.worker.memory_run.check()
         def check():
             guard()
-            for observed in self._observed.values():self._status(observed,guard)
+            self._statuses(tuple(self._observed.values()),guard)
             guard()
         held=_HeldProvider(check)
         try:
