@@ -20,7 +20,7 @@ def write_fixture():
     record['response_sha256']=sha256(record['response_utf8'].encode()).hexdigest()
     original['http']['read_exchanges'][1]['response_sha256']=record['response_sha256']
     native=observation(host,point,expected,plan,step)
-    pair={'question':step['text'],'answer':message['answer']}
+    pair={'question':step['text'],'answer':message['answer'],'visible_failure':False}
     ui=dict(version='LIO-basic-app-witness.2',source='actual_ordinary_Home_AX',app=plan['app'],
         run_id=plan['run_id'],gate_id=step['gate_id'],locale=step['locale'],nonce=step['nonce'],
         message_id_observed=None,conversation_id_observed=None,send_taps=1,submitted_text=step['text'],
@@ -89,6 +89,26 @@ def test_incomplete_or_ambiguous_cursor_chains_never_become_a_complete_history(f
     assert cid not in _views(replace(native,actual_reads=tuple(reads)))
 
 
+@pytest.mark.parametrize('field,value',[('trip',{'saved':'card'}),('sources',[{'url':'https://example.com'}]),
+                                       ('memory',{'candidate':'different'}),('activity','different')])
+@pytest.mark.parametrize('conflict_last',[False,True])
+def test_same_cursor_different_complete_wire_fields_cannot_be_selected_by_read_order(field,value,conflict_last):
+    args=write_fixture();native=args[3];original=native.actual_reads[0]
+    changed=deepcopy(original);page=json.loads(changed['response_utf8']);page['messages'][0][field]=value
+    changed['response_utf8']=json.dumps(page);changed['response_sha256']=sha256(changed['response_utf8'].encode()).hexdigest()
+    changed['exchange_id']='same-cursor-different-wire'
+    reads=(original,changed)if conflict_last else(changed,original)
+    amended=(*args[:3],replace(native,actual_reads=reads),*args[4:])
+    assert evaluate(amended)['status']=='UNKNOWN'
+
+
+def test_equivalent_wire_JSON_order_is_not_a_conflicting_page():
+    args=write_fixture();native=args[3];other=deepcopy(native.actual_reads[0])
+    other['response_utf8']=json.dumps(json.loads(other['response_utf8']),sort_keys=True)
+    other['response_sha256']=sha256(other['response_utf8'].encode()).hexdigest();other['exchange_id']='same-data-different-json-order'
+    assert evaluate((*args[:3],replace(native,actual_reads=(*native.actual_reads,other)),*args[4:]))['status']=='PASS'
+
+
 def test_ui_ids_stay_null_native_single_write_and_actual_read_match():
     args=write_fixture();result=evaluate(args)
     assert result['status']=='PASS'
@@ -116,7 +136,7 @@ def test_raw_RUN_and_projected_timeline_are_separate_originals():
 @pytest.mark.parametrize('mutate',[
     lambda a:a[4].update(message_id_observed=a[3].original['message']['message_id']),
     lambda a:a[4].update(submitted_text='another question'),
-    lambda a:a[4]['after'].update(transcript=[{'question':a[1]['text'],'answer':'local welcome'}]),
+    lambda a:a[4]['after'].update(transcript=[{'question':a[1]['text'],'answer':'local welcome','visible_failure':False}]),
     lambda a:a[4]['after'].update(body_complete=False),
     lambda a:a[6].update(full_coverage=False),
     lambda a:a[6].update(unresolved_attempt_count=1),
@@ -179,6 +199,43 @@ def test_cold_restore_failure_cannot_be_repaired_by_later_history_navigation():
     assert evaluate(args)['status']=='UNKNOWN'
 
 
+def failed_historical_restore():
+    args=read_fixture();native=args[3];cid=args[5].old_cid
+    page=json.loads(native.actual_reads[0]['response_utf8']);page['messages'][0].update(status='failed',failure='unavailable',answer='')
+    native.actual_reads[0]['response_utf8']=json.dumps(page)
+    native.actual_reads[0]['response_sha256']=sha256(native.actual_reads[0]['response_utf8'].encode()).hexdigest()
+    args[5].views[cid]=deepcopy(page)
+    pair=dict(question=page['messages'][0]['text'],answer=None,visible_failure=True)
+    args[4]['before']['transcript']=[deepcopy(pair)];args[4]['after']['transcript']=[deepcopy(pair)]
+    args[4]['lifecycle'][0]['transcript']=[deepcopy(pair)]
+    return args
+
+
+def test_loading_a_retained_failed_history_preserves_its_failure_instead_of_regrading_it():
+    args=failed_historical_restore()
+    result=evaluate(args)
+    assert result['status']=='PASS'and result['historical_public_failure_count']==1
+    assert args[5].views[args[5].old_cid]['messages'][0]['status']=='failed'
+
+
+def test_historical_failure_cannot_be_hidden_or_substituted_for_a_new_load_error():
+    args=failed_historical_restore();args[4]['after']['transcript'][0]['visible_failure']=False
+    assert evaluate(args)['status']=='UNKNOWN'
+    args=failed_historical_restore();del args[4]['after']['transcript'][0]['visible_failure']
+    assert evaluate(args)['status']=='UNKNOWN'
+    args=failed_historical_restore();args[4]['after']['errors']=['new current page load failed']
+    assert evaluate(args)['status']=='FAIL'
+
+
+def test_a_new_failed_message_does_not_acquire_the_old_history_exception():
+    args=write_fixture();native=args[3];page=json.loads(native.actual_reads[0]['response_utf8'])
+    page['messages'][0].update(status='failed',failure='unavailable',answer='')
+    native.actual_reads[0]['response_utf8']=json.dumps(page)
+    native.original['inventory']['status']='failed'
+    args[4]['after']['transcript'][0].update(answer=None,visible_failure=True)
+    assert evaluate(args)['status']=='FAIL'
+
+
 def test_both_lifecycle_returns_must_be_observed_not_only_final_repair():
     args=read_fixture('SM04');ui=args[4]
     ui['actions']=['background_return','lock_return']
@@ -226,7 +283,7 @@ def test_history_opens_every_unique_native_conversation_not_just_matching_titles
     native=type(n)(n.original,state,state,(),(*n.actual_reads,second,empty),(),n.read_collection_status,n.default_history_target)
     point=type('ControlCheckpoint',(),{'claims':tuple({'binding':{'conversation_id':cid}}for cid in context.views),'history_targets':(),
         'default_history_target':n.default_history_target})()
-    opened=[dict(row_key=str(index),body_complete=True,errors=[],transcript=[{'question':m['text'],'answer':m['answer']}for m in view['messages']])
+    opened=[dict(row_key=str(index),body_complete=True,errors=[],transcript=[{'question':m['text'],'answer':m['answer'],'visible_failure':False}for m in view['messages']])
             for index,view in enumerate(context.views.values())]
     opened.append(dict(row_key='default',body_complete=True,errors=[],transcript=[]))
     ui.update(gate_id='SM03',nonce=step['nonce'],actions=['open_history'],

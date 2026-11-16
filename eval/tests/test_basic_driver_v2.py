@@ -162,7 +162,7 @@ def test_standard_driver_bootstraps_old_chat_from_qualified_read_without_seed_or
     root=tmp_path/'standard';ticks=[0];events=[]
     artifact=tmp_path/'actual-control-AX.json';save(artifact,{'CONTROL_ONLY':True})
     artifacts=[dict(path=str(artifact),sha256=sha256(artifact.read_bytes()).hexdigest())]
-    transcript=[dict(question=native_message['text'],answer=native_message['answer'])]
+    transcript=[dict(question=native_message['text'],answer=native_message['answer'],visible_failure=False)]
     before=dict(body_complete=True,errors=[],transcript=transcript,draft=draft_marker(plan,step),new_greeting_count=0)
     def clock():ticks[0]+=.01;return ticks[0]
     def sleep(_):

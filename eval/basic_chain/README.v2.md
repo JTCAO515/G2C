@@ -58,6 +58,11 @@ ui_before、artifacts。completed格式`LIO-basic-app-witness.2`的当前字段�
 独立观察的MID/CID均null，实际输入/单tap，before/after有序question/answer与草稿、
 错误/完成状态，实际操作及逐次history/lifecycle产物。字段是接口约定，**不是已交
 真实样件**；A尚不能观测的内容不手填或复制B ID凑数，缺证UNKNOWN。
+transcript每行含question、answer（没有正文label时为null）、visible_failure布尔值，
+可另保failure_label原AX文本。该布尔必须来自实际逐行UI，不从B状态复制；缺字段未知。
+页面/会话/ACK/读取错误仍属global errors；checkpoint前已存在的原M若公开timeline
+为failed并有quota/unavailable原失败，只允许如实匹配其正文/失败指示，不重新评成completed。
+组合结果另列historical_public_failure_count。本轮新写入失败仍FAIL/STOP，原RUN和费用不改。
 
 冷启动/后台/锁屏必须保留本步唯一未发送草稿`SYNTH-DRAFT-<run>-<locale>-<gate>`。
 standard的`old_chats[locale]`由实际App本地savedChats清单与B当前owner原M核对后
@@ -80,7 +85,8 @@ SM03的history.default_row_key指完整实际AX列表末行；rows/opened同序�
 UI独立看见了CID。默认正文与其他行同文时，默认角色来自此实际顺序和点击原件。
 真实timeline按20条分页。必须由同一步checkpoint后实际App GET的无cursor首页开始，
 沿每个next_before匹配实际before请求，直到无下一页；页数/发布时间不能替代cursor链。
-C仅在完整链有唯一内容且有序MID恰等当前原生全量清单时组合正文参考。缺首页/中页、
+C仅在完整链有唯一内容且有序MID恰等当前原生全量清单时组合正文参考。页等价比较完整
+wire对象的严格canonical字节（含卡片/来源/失败等字段），不能只比正文。缺首页/中页、
 错cursor、循环、相同cursor的冲突完整内容仍UNKNOWN；相同完整页的重复poll可去重。
 accepted_conversations中的view_origin=actual_GET_cursor_chain和source_exchange_ids
 标明它是C内部组合参考，version标记输入wire来源，不能将它当作某次原HTTP响应回传。

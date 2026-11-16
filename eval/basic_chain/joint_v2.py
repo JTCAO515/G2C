@@ -8,7 +8,7 @@ from dataclasses import dataclass,field
 
 from cj_message.lio_context import display_answer
 
-from .plan import Invalid,require
+from .plan import Invalid,require,packed
 from .semantics_v2 import semantic
 
 
@@ -21,12 +21,16 @@ class Conversations:
 
 
 def _transcript(view,project):
-    return tuple((m['text'],project(m['answer']))for m in view['messages'])
+    return tuple((m['text'],project(m['answer'])if m['answer']else None,m['failure']is not None)
+                 for m in view['messages'])
 
 
 def _ax_transcript(value):
     require(type(value)is list,'complete ordered actual AX transcript required')
-    return tuple((entry['question'],entry['answer'])for entry in value)
+    require(all(type(entry['visible_failure'])is bool and
+                (entry['answer']is None or type(entry['answer'])is str)for entry in value),
+            'each actual AX row must distinguish absent body and visible historical failure')
+    return tuple((entry['question'],entry['answer'],entry['visible_failure'])for entry in value)
 
 
 def draft_marker(plan,step):
@@ -46,7 +50,9 @@ def _views(native):
         else:
             cid=record['binding']['conversation_id']
             require(view['conversation_id']==cid,'actual read selected another CID')
-        if not all(m['status']=='completed'and m['failure']is None for m in view['messages']):continue
+        if not all((m['status']=='completed'and m['failure']is None)or
+                   (m['message_id']in native.before['message_ids']and m['status']=='failed'
+                    and m['failure']in('quota','unavailable'))for m in view['messages']):continue
         rows=sorted((m for m in native.after['native_messages']if m['conversation_id']==cid),key=lambda m:m['sequence'])
         expected[cid]=[m['message_id']for m in rows]
         cursor=record['selector'].get('before')
@@ -57,7 +63,7 @@ def _views(native):
         # newly admitted MESSAGE. Page publication order is never authority.
         if (not mids and eligible)or mids and mids!=eligible[-len(mids):]:continue
         if view['next_before']is not None and(not mids or view['next_before']!=mids[0]):continue
-        key=(view['version'],view['next_before'],tuple((m['message_id'],m['text'],m['answer'])for m in view['messages']))
+        key=packed(view)
         pages.setdefault(cid,{}).setdefault(cursor,{})[key]=(view,record['exchange_id'])
     result={}
     for cid,by_cursor in pages.items():
@@ -235,6 +241,7 @@ def assess(plan,step,point,native,ui,conversations,project,money):
         elif step['gate_id']=='SM02':conversations.qa_cid=cid
     return dict(version='LIO-basic-joint-assessment.2',gate_id=step['gate_id'],locale=step['locale'],
         status=status,reasons=[*fail,*unknown,*reasons],cost=money,timing=timing,
+        historical_public_failure_count=sum(m['status']=='failed'for view in accepted_views.values()for m in view['messages']),
         ui_message_id_observed=None,ui_conversation_id_observed=None,
         native_ids_source='B_actual_protected_HTTP_claim_and_state',
         join_method='bounded_single_writer_exact_input_complete_renderer_AX_and_current_actual_reads',
