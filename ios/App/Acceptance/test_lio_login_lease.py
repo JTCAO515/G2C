@@ -2,6 +2,10 @@ import copy
 from datetime import datetime, timezone
 import hashlib
 import unittest
+import io
+from contextlib import redirect_stderr
+from unittest.mock import patch
+from official_lio_sign_in import main as sign_in
 
 from lio_basic_ui_driver import compact
 from lio_login_lease import validate_login_lease
@@ -58,6 +62,19 @@ class LoginLeaseTests(unittest.TestCase):
         for change in cases:
             with self.subTest(change=change):
                 with self.assertRaises(ValueError): self.check(dict(self.value, **change))
+
+    def test_artifact_pin_mismatch_stops_before_native_or_invitation_access(self):
+        packet = dict(version='LIO-A-official-sign-in-packet.1', expected_login=dict(app=self.app),
+                      artifact=dict(app=dict(self.app, build='45')))
+        raw = compact(packet, sort_keys=True)
+        args = ['sign-in', '--packet', '/synthetic/packet', '--packet-sha256', hashlib.sha256(raw).hexdigest(),
+                '--lease', '/synthetic/lease', '--lease-sha256', 'a' * 64, '--locale', 'en', '--output', '/synthetic/output']
+        with patch('sys.argv', args), patch('official_lio_sign_in.read_private_bytes', return_value=raw) as read, \
+                patch('official_lio_sign_in.AdmittedNativeUI') as native, redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit) as failure: sign_in()
+            self.assertEqual(failure.exception.code, 2)
+            self.assertEqual(read.call_count, 1)
+            native.assert_not_called()
 
 
 if __name__ == '__main__': unittest.main()
