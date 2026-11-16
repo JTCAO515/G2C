@@ -98,6 +98,17 @@ class VenueSourceScopeTests(unittest.TestCase):
                 validate_entry_v3({**self.venue, 'cities': ['shanghai'],
                                    'source_urls': [url]}, as_of=TODAY)
 
+    def test_museum_linked_page_does_not_expand_to_other_urls_or_scopes(self):
+        page = 'https://museum-guanwang.leleu.cn/'
+        record = {**self.venue, 'cities': ['chengdu'], 'source_urls': [page]}
+        validate_entry_v3(record, as_of=TODAY)
+        for url in (page + 'orders', page + '?other=1', 'https://other.leleu.cn/'):
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                validate_entry_v3({**record, 'source_urls': [url]}, as_of=TODAY)
+        for change in ({'cities': ['beijing']}, {'subject': None}, {'topic': 'payment'}):
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                validate_entry_v3({**record, **change}, as_of=TODAY)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -42,6 +42,7 @@ VENUE_SOURCE_CITIES.update({
 })
 VENUE_PAGE_CITIES = {
     "https://cdn3.shenzhenmuseum.com/museum/html/aboutus/visit-service.html": frozenset({"shenzhen"}),
+    "https://museum-guanwang.leleu.cn/": frozenset({"chengdu"}),
 }
 V3_APPROVED_HOSTS = V3_GOVERNMENT_HOSTS | VENUE_SOURCE_CITIES.keys()
 

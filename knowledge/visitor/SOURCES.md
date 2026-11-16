@@ -216,3 +216,5 @@ v3仍限一个目标城市、passport_booking、具体subject。允许某官方h
 补充检索辅助：[search.gd.gov.cn/search/all/755001](https://search.gd.gov.cn/search/all/755001)及同服务的公开互动检索类别，经[#702/6914110245](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6914110245)代批，原深圳政府搜索入口和主办深圳市政府办公厅核同。仅经正常网页检索公开景点名称，结果只定位已批原页；不把摘要、AI答案或该辅助host写入source_urls，不自行调用原始接口。
 
 一项独立批准、尚未采用的具体附件：[#702/6915763102](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6915763102)仅允许读取[上海地标中英PDF](https://arabic.shanghai.gov.cn/cmsres/fb/fb4c67ebf9604322a8b3f6f74d7e1760/eec310a1555eb5a02a121cee2922800d.pdf)核外滩公共滨江范围。阿语政府站主体已核；附件普通请求403后停止，没有换工具/路径绕过，未使用摘要。该附件及整个阿语host本批均不进入正式来源白名单。
+
+另经[#702/6916173518](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6916173518)代批的馆方直链入口：[成都博物馆官方预约系统](https://museum-guanwang.leleu.cn/)，中文/英文，成都。已批馆方[参观指南](https://www.cdmuseum.com/zhinan/)“网上预约”直接指向该入口，抵达标题为成都博物馆官方票务系统；仅此精确根页面的公开参观须知，不将整个服务商host、其他项目、订单路径/查询参数或接口纳入名单。正常网页导航到“个人预约”即可读到预约须知，无需登录、填写游客资料或提交订单。本轮读到14天预约周期及护照选项；它们不自动证明所有游客都必须网上预约，不扩大其他免预约或人工协助人群。条目需与馆方其他说明结合，14天是窗口上限而非最少提前天数。只读公开须知的批准不授予登录、填写、预约、付费、订单或条款接受权限。
