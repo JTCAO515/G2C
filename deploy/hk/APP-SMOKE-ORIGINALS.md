@@ -32,6 +32,11 @@ GET仅观察同资格下实际App的/v1或/v2/lio/timeline及/v2/lio/messages查
 不在argv、日志或输出回传token。原请求G2C-App-smoke-read-request.1绑定expected_source、
 plan_sha256、冻结step nonce。checkpoint在服务端以O_EXCL写owner/plan/nonce绑定原生状态、
 唯一账本行集和HTTP基线；observe只认这份原件的checkpoint_ref，不接受client自带before。
+普通App没有独立MID时，observe的message_id可为null：只按当前已鉴权owner、冻结step nonce
+对应的唯一slot取实际typed claim，且该MID必须不在服务端checkpoint中。缺claim、多义、读步骤、
+其他slot或显式MID不符一律不返回成功；不把null用于历史通配，也不按相邻时间任选。
+同一次observe返回actual claim和原件，不必为了发现MID另装第二个Runtime。当前守卫未通过、
+采集缺失或生产者未闭合均不判PASS；超时/nonzero的sticky marker须B核原进程后处理，不能自动重放。
 
 - 原控制claim必须在当前M历史边界与genuine receipt的scope/MID/CID/generation/RUN/sequence、
   canonical SHA核同。outer SHA来自原worker读取的native outer摘要，HTTP原bytes与其独立比对。

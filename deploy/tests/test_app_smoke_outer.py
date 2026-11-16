@@ -191,3 +191,30 @@ def test_unscoped_or_incomplete_get_cannot_become_a_completed_read(tmp_path):
         asyncio.run(scenario());assert observer.queue.unfinished_tasks==0
         assert not list(directory.glob('*.read.json'))
     finally:observer.close()
+
+
+def test_dynamic_mid_is_only_the_current_frozen_step_claim_after_checkpoint():
+    from deploy.hk.app_smoke_read import step_claim
+    from types import SimpleNamespace
+    import pytest
+    slot=dict(nonce='a'*32,slot_id='zh.SM02')
+    other=dict(nonce='b'*32,slot_id='zh.SM04')
+    capture=SimpleNamespace(slots=[slot,other])
+    step=dict(nonce=slot['nonce'],text='frozen input')
+    claim=dict(slot_id=slot['slot_id'],binding=dict(message_id='actual-app-mid'))
+    prior=dict(slot_id=other['slot_id'],binding=dict(message_id='other-mid'))
+    checkpoint=dict(native_state=dict(message_ids=['old-mid']))
+    assert step_claim(capture,[prior,claim],step,None,checkpoint)is claim
+    assert step_claim(capture,[claim],step,'actual-app-mid',checkpoint)is claim
+    for selected,request_mid,point,reason in [
+        ([],None,checkpoint,'NOT_UNIQUE'),
+        ([claim,claim],None,checkpoint,'NOT_UNIQUE'),
+        ([prior],None,checkpoint,'NOT_UNIQUE'),
+        ([claim],'other-mid',checkpoint,'MESSAGE_CHANGED'),
+        ([claim],None,dict(native_state=dict(message_ids=['actual-app-mid'])),'PRECEDES'),
+    ]:
+        with pytest.raises(Unavailable,match=reason):step_claim(capture,selected,step,request_mid,point)
+    with pytest.raises(Unavailable,match='NO_SEND_SLOT'):
+        step_claim(capture,[claim],dict(nonce=slot['nonce'],text=None),None,checkpoint)
+    with pytest.raises(Unavailable,match='NO_SEND_SLOT'):
+        step_claim(capture,[claim],dict(nonce='c'*32,text='unfrozen'),None,checkpoint)

@@ -50,6 +50,22 @@ def readers(api_manifest):
         finally:runtime.close()
 
 
+def step_claim(capture,selected,step,message_id,checkpoint):
+    """Resolve only this frozen send slot, never a null-MID history wildcard."""
+    slots=[slot for slot in capture.slots if slot['nonce']==step['nonce']]
+    if len(slots)!=1 or step['text']is None:
+        raise Unavailable('APP_SMOKE_STEP_HAS_NO_SEND_SLOT')
+    matches=[claim for claim in selected if claim['slot_id']==slots[0]['slot_id']]
+    if len(matches)!=1:
+        raise Unavailable('APP_SMOKE_STEP_CLAIM_NOT_UNIQUE')
+    claim=matches[0];actual=claim['binding']['message_id']
+    if message_id is not None and message_id!=actual:
+        raise Unavailable('APP_SMOKE_STEP_MESSAGE_CHANGED')
+    if actual in checkpoint['native_state']['message_ids']:
+        raise Unavailable('APP_SMOKE_MESSAGE_PRECEDES_ITS_CHECKPOINT')
+    return claim
+
+
 def perform(request,controls,capture,originals,state):
     required={'version','kind','token','message_id','operation_id','expected_source','plan_sha256','nonce'}
     if(type(request)is not dict or not required<=request.keys()or request['version']!='G2C-App-smoke-read-request.1'
@@ -120,7 +136,10 @@ def perform(request,controls,capture,originals,state):
                 accounting=dict(coverage='complete'if unchanged else'UNKNOWN',producer_closure_verified=unchanged,
                     closure_ref=reference,missing=[]if unchanged else[dict(field='read_only_state_financial_HTTP_or_producer_closure')],
                     attempts=[],actual_paid_status='UNKNOWN_NO_INVOICE'))
-    claim=next((c for c in selected if c['binding']['message_id']==mid),None)
+    if kind=='observe':
+        claim=step_claim(capture,selected,step,mid,before)
+        mid=claim['binding']['message_id']
+    else:claim=next((c for c in selected if c['binding']['message_id']==mid),None)
     if claim is None:raise Unavailable('APP_SMOKE_READ_NO_ORIGINAL_CLAIM')
     if kind=='observe':
         message=decode(originals.message(token,mid));outer=decode(originals.outer(token,mid))
@@ -132,8 +151,6 @@ def perform(request,controls,capture,originals,state):
                 try:entry[name]=decode((originals.originals.meter if name=='meter'else originals.originals.fee)(token,mid,op['operation_id']))
                 except Unavailable as error:entry[name]=dict(status='UNAVAILABLE',reason=str(error))
             components.append(entry)
-        if mid in before['native_state']['message_ids']:
-            raise Unavailable('APP_SMOKE_MESSAGE_PRECEDES_ITS_CHECKPOINT')
         financial=originals.accounting(token,mid,before['financial'],
             background_before=before['native_state']['background_rows'],background_after=after['background_rows'])
         return dict(base,status='READ',claim=claim,message=message,outer_request=outer,
