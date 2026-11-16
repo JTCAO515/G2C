@@ -96,13 +96,13 @@ def worker_pulse():
     finally:stop.set();thread.join()
 
 
-def worker(runtime, *, tool_evidence=None,runtime_manifest=None):
+def worker(runtime, *, tool_evidence=None,runtime_manifest=None,app_smoke_manifest=None):
     from .demo_login import signing_socket
     with signing_socket(runtime):
-        _run_worker(runtime, tool_evidence=tool_evidence,runtime_manifest=runtime_manifest)
+        _run_worker(runtime, tool_evidence=tool_evidence,runtime_manifest=runtime_manifest,app_smoke_manifest=app_smoke_manifest)
 
 
-def _run_worker(runtime, *, tool_evidence=None,runtime_manifest=None):
+def _run_worker(runtime, *, tool_evidence=None,runtime_manifest=None,app_smoke_manifest=None):
     # Missing transferred journal is a configuration failure, never a new quota.
     if not (Path.home()/'.local/share/g2c/m4-real-services/m4-outflows.sqlite').is_file():
         raise ValueError('original_shared_authorization_journal_required')
@@ -126,6 +126,11 @@ def _run_worker(runtime, *, tool_evidence=None,runtime_manifest=None):
     lio_confirmation = None
     if runtime.demo_subjects and 'CJ_BETA_CONFIRMATION_B64' in os.environ:
         lio_confirmation = ConfirmationSigner(decoded('CJ_BETA_CONFIRMATION_B64', length=32))
+    if app_smoke_manifest is not None:
+        from cj_api.app_smoke_capture import AppSmokeCapture
+        smoke=AppSmokeCapture(app_smoke_manifest,runtime.demo_subjects,tools.registrations,database,services.model.authorization)
+        tools.tool_evidence=smoke.evidence
+        return _worker_loop(runtime,services,tools,database,lio_confirmation,smoke,smoke_capture=smoke)
     if runtime_manifest is None:
         return _worker_loop(runtime,services,tools,database,lio_confirmation)
     from cj_api.runtime_worker_bindings import RuntimeWorkerBindings
@@ -141,7 +146,7 @@ def _run_worker(runtime, *, tool_evidence=None,runtime_manifest=None):
         return _worker_loop(runtime,services,tools,database,lio_confirmation,bindings)
 
 
-def _worker_loop(runtime,services,tools,database,lio_confirmation,bindings=None):
+def _worker_loop(runtime,services,tools,database,lio_confirmation,bindings=None,*,smoke_capture=None):
     from cj_api.rejected_intake_capture import RejectedIntakeSink,use_rejected_intake_sink
     rejected=RejectedIntakeSink('/rejected-intakes')
     rejected.prune()
@@ -162,6 +167,13 @@ def _worker_loop(runtime,services,tools,database,lio_confirmation,bindings=None)
                     runtime_registrations_for_run=None if bindings is None else bindings.registrations,
                     runtime_reflection=None if bindings is None else bindings.reflection,
                     runtime_exit_observer_for_run=None if bindings is None else bindings.exit_observer)
+            if smoke_capture is not None:
+                from cj_usage.metered_exit import BudgetUnknown
+                try:smoke_capture.completed(outcomes)
+                except (OSError,ValueError,BudgetUnknown):
+                    # A missing witness blocks the smoke verdict. It must not
+                    # rewrite a terminal RUN or disrupt unrelated App users.
+                    print('ALERT app_smoke_producer_witness_unavailable',file=sys.stderr,flush=True)
             for outcome in outcomes:
                 if outcome.status in ('unknown','failed'):
                     print('ALERT run_'+outcome.status+' run_id='+outcome.run_id,file=sys.stderr,flush=True)
@@ -191,11 +203,15 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('command',choices=['migrate','api','worker'])
     parser.add_argument('--tool-evidence-manifest',type=Path)
     parser.add_argument('--runtime-manifest',type=Path)
+    parser.add_argument('--app-smoke-manifest',type=Path)
     args=parser.parse_args();runtime=None
     if args.tool_evidence_manifest is not None and args.command!='worker':
         parser.error('tool evidence is available only on the existing synthetic worker')
     if args.runtime_manifest is not None and args.command!='worker':
         parser.error('runtime composition is available only on the existing synthetic worker')
+    if args.app_smoke_manifest is not None and (args.command!='worker' or args.runtime_manifest is not None
+                                               or args.tool_evidence_manifest is not None):
+        parser.error('App smoke capture is an exclusive worker composition')
     try:
         load_secret_environment(args.command)
         audit=logging.getLogger('cj_usage.audit');audit.setLevel(logging.INFO)
@@ -205,7 +221,7 @@ def main():
             from cj_api.tool_evidence import ToolEvidence
             evidence=(None if args.tool_evidence_manifest is None else
                       ToolEvidence.load(args.tool_evidence_manifest,runtime.demo_subjects))
-            worker(runtime,tool_evidence=evidence,runtime_manifest=args.runtime_manifest)
+            worker(runtime,tool_evidence=evidence,runtime_manifest=args.runtime_manifest,app_smoke_manifest=args.app_smoke_manifest)
         else:
             dict(migrate=initialize,api=api)[args.command](runtime)
     except (OSError,ValueError,KeyError,CompositionUnavailable,psycopg.Error):
