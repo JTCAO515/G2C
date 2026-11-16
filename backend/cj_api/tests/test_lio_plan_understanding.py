@@ -137,7 +137,9 @@ class PlanUnderstandingBoundary(unittest.TestCase):
 
     def test_party_questions_conditions_translation_and_third_party_do_not_replace_a_real_count(self):
         for followup in ('Three people?', 'If three people come', 'Translate "Three people"',
-                         'My friend travels with three people', '三个人吗？','如果三个人去','请翻译“三个人”'):
+                         'My friend travels with three people', '三个人吗？','如果三个人去','请翻译“三个人”',
+                         'If three people come, do not save','Not two people? Do not save',
+                         'Translate "Three people, do not save"','My friend travels with three people, do not save'):
             turns=(PlanningTurn('Two people',date(2026,11,14)),PlanningTurn(followup,date(2026,11,15)),
                    PlanningTurn('Plan now',date(2026,11,16)))
             value=self.packet();value['current_source_index']=2;value['observations']=[dict(field='party_size',
@@ -179,6 +181,23 @@ class PlanUnderstandingBoundary(unittest.TestCase):
         self.compile(value,turns)
         value['observations'][0].update(value=3,sources=[dict(source_index=1,quote='Three people')])
         with self.assertRaises(InvalidInput):self.compile(value,turns)
+
+    def test_write_refusal_does_not_erase_an_independent_current_party_statement(self):
+        for update,count,state,quote in (
+                ('Three people, do not save',3,'known','Three people'),
+                ('三个人，不要保存',3,'known','三个人'),
+                ('Party size undecided, do not save',None,'unknown','Party size undecided'),
+                ('人数未定，不要保存',None,'unknown','人数未定')):
+            turns=(PlanningTurn('Two people',date(2026,11,14)),PlanningTurn(update,date(2026,11,15)),
+                   PlanningTurn('Plan now',date(2026,11,16)))
+            for number,label,index,reference,accepted in ((2,'known',0,'Two people',False),
+                    (count,state,1,quote,True),(count,state,1,update,True)):
+                value=self.packet();value['current_source_index']=2;value['observations']=[dict(field='party_size',
+                    state=label,value=number,note=None,sources=[dict(source_index=index,quote=reference)])]
+                with self.subTest(update=update,value=number,quote=reference):
+                    if accepted:self.compile(value,turns)
+                    else:
+                        with self.assertRaises(InvalidInput):self.compile(value,turns)
 
     def test_explicitly_undecided_party_is_not_replaced_by_its_old_known_count(self):
         for reset in ('Party size undecided','人数未定'):

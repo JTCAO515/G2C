@@ -75,6 +75,9 @@ _PARTY_RESET=re.compile(r'(?:出行)?人数(?:还|仍|尚)?(?:未定|没定|不�
     r'(?:(?:my|our)\s+)?(?:party size|number of people)\s+(?:is\s+)?(?:still\s+)?(?:unknown|undecided)',re.I)
 _PARTY_DENIED=re.compile(r'(?:(?:(?:we are|I am|our party is)\s+)?(?:not|no longer)\s+|不是|不再是|不再|并非)'
     r'(?P<party>'+_PARTY_COUNT.pattern+r'|'+_SOLO.pattern+r')(?:\s+anymore)?',re.I)
+_WRITE_REFUSAL=re.compile(r"(?:please\s+)?(?:do not|don['’]t|never)\s+(?:save|store|publish)"
+    r'(?:\s+(?:it|this|(?:the|this|my)\s+(?:trip|plan|itinerary)))?(?:\s+(?:yet|now|for now))?'
+    r'|(?:请)?(?:先|暂时)?(?:不要|别|不用|不)(?:保存|存储|存入|发布)(?:这(?:份|个)?(?:行程|计划|方案)|它)?',re.I)
 
 
 def _quoted_source(text,start,end):
@@ -109,15 +112,28 @@ def _source_sentence(text,start,end):
     return text[before[-1].end()if before else 0:after.end()if after else len(text)]
 
 
+def _read_only_assertion_text(text):
+    """Mask only standalone write refusals for DATA assertions, at same offsets.
+
+    Original text/quotes remain unchanged. Authority and writer checks consume
+    the originals; a refusal is never removed from a publication decision.
+    """
+    result=text
+    for start,end,clause in _original_clauses(text):
+        if _WRITE_REFUSAL.fullmatch(clause)and not _quoted_source(text,start,end):
+            result=result[:start]+' '*(end-start)+result[end:]
+    return result
+
+
 def _source_asserted(text,start,end):
-    sentence=_source_sentence(text,start,end)
+    sentence=_source_sentence(_read_only_assertion_text(text),start,end)
     return not (_META_SOURCE.search(text)or _quoted_source(text,start,end)or
         _META_SOURCE.search(sentence)or NEGATED.search(sentence)or _NONFACT.search(sentence))
 
 
 def _party_at(value,original,start,end):
     quote=original[start:end]
-    clause=_source_clause(original,start,end).strip().rstrip('.。!！')
+    clause=_source_clause(_read_only_assertion_text(original),start,end).strip(' \t\n.,，。!！;；')
     counts={_number(match[1])for match in _PARTY_COUNT.finditer(quote)}
     if _SOLO.search(quote):counts.add(1)
     positive=(_PARTY_STATEMENT.fullmatch(clause)is not None or any(
@@ -165,14 +181,21 @@ def _latest_party(value,turns):
                     latest=(index,start,end,count)
     if latest is None:return
     index,start,end,count=latest
+    context=_read_only_assertion_text(turns[index].text)
+    def covers(reference):
+        if reference.source_index!=index:return False
+        for match in re.finditer(re.escape(reference.quote),turns[index].text):
+            if match.start()>=end or match.end()<=start:continue
+            before=context[match.start():start]if match.start()<start else''
+            after=context[end:match.end()]if match.end()>end else''
+            if not (before+after).strip(' \t\n.,，。!！;；'):return True
+        return False
     for row in value.observations:
         if row.field!='party_size':continue
         if (count is None and row.state not in ('unknown','uncertain'))or(
                 count is not None and (row.state!='known'or row.value!=count)):
             break
-        if any(reference.source_index==index and any(start<=match.start()and
-                match.start()+len(reference.quote.rstrip('.。!！ \t'))<=end
-                for match in re.finditer(re.escape(reference.quote),turns[index].text))for reference in row.sources):
+        if any(covers(reference)for reference in row.sources):
             return
     raise InvalidInput('latest original party count or undecided correction was omitted or replaced')
 
