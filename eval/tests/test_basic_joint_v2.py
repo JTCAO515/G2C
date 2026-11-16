@@ -234,6 +234,8 @@ def test_a_new_failed_message_does_not_acquire_the_old_history_exception():
     native.original['inventory']['status']='failed'
     args[4]['after']['transcript'][0].update(answer=None,visible_failure=True)
     assert evaluate(args)['status']=='FAIL'
+    args=write_fixture();args[4]['after']['transcript'][0]['visible_failure']=True
+    assert evaluate(args)['status']=='FAIL'
 
 
 def test_both_lifecycle_returns_must_be_observed_not_only_final_repair():

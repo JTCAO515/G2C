@@ -136,6 +136,7 @@ def assess(plan,step,point,native,ui,conversations,project,money):
         views=_views(native)
         gate=step['gate_id'];actual_ax=_ax_transcript(ui['after']['transcript'])
         if step['text']is not None:
+            if actual_ax and actual_ax[-1][2]:fail.append('actual_current_message_visible_failure')
             require(ui['send_taps']==1 and ui['submitted_text']==step['text'],'one actual UI tap/exact input required')
             original=native.original;message=original['message'];cid=message['conversation_id']
             if original['inventory']['status']=='unknown':unknown.append('original_RUN_UNKNOWN')
