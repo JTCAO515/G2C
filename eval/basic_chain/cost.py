@@ -43,7 +43,8 @@ def costs(accounting,pricing):
             require(row['conservative_units']>=row['priceable_tool_units'],'original tool charge below verified tool price')
             priced_tools+=row['priceable_tool_units']
         else:unknown_tools+=1
-        if row['state']!='RECEIVED' or row['kind']=='model'and not priceable:
+        if (row['state']!='RECEIVED' or row['kind']=='model'and not priceable
+                or row['kind']!='model'and row['priceable_tool_units']is None):
             unresolved+=1
             hold=pricing['limits'][row['kind']]['hold_per_attempt_units']
             require(type(hold)is int and hold>=0 and row['conservative_units']>=hold,'unresolved original hold must remain')

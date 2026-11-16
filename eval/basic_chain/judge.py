@@ -24,8 +24,11 @@ def semantic(gate,text,locale):
     if gate=='SM02':
         if re.fullmatch(r'\s*(yes[.!]?|是的[。！]?|是[。！]?)\s*',text,re.I):return 'PASS','explicit_affirmation'
         if re.search(r'不是|并非|not.{0,35}capital|isn.t.{0,25}capital',text,re.I):return 'FAIL','capital_denied'
-        words=('北京','中国','首都')if locale=='zh'else('Beijing','China','capital')
-        return ('PASS','capital_fact')if all(w.lower()in text.lower()for w in words)else('UNKNOWN','capital_semantics_unresolved')
+        if re.search(r'不确定|不知道|是否|don.t know|not sure|uncertain|whether',text,re.I):
+            return 'UNKNOWN','capital_fact_not_affirmed'
+        affirmative=(r'^\s*(?:是的[，,。！\s]*)?北京(?:市)?是(?:中华人民共和国|中国)的?首都(?:[。！.!]|$)'
+                     if locale=='zh'else r'^\s*(?:Yes[,!.\s]*)?Beijing is (?:the )?capital of China(?:[.!]|$)')
+        return ('PASS','capital_fact')if re.search(affirmative,text,re.I)else('UNKNOWN','capital_semantics_unresolved')
     if gate=='SM05':
         if re.search(r'不是\s*Lio|not\s+Lio',text,re.I):return 'FAIL','identity_denied'
         identity=re.search(r'(?:我是|我叫)\s*Lio|\b(?:I am|I.m|This is)\s+Lio\b',text,re.I)
@@ -33,7 +36,8 @@ def semantic(gate,text,locale):
     if gate=='SM06':
         useful=(re.search(r'规划|行程|旅行|天气|景点|住宿',text)if locale=='zh'else
                 re.search(r'\b(?:plan|itinerar\w*|travel|weather|accommodation|attractions)\b',text,re.I))
-        if re.search(r'不能.*(?:规划|行程)|cannot\s+(?:plan|help.*travel)',text,re.I):return 'UNKNOWN','capability_negation_needs_review'
+        if re.search(r'不能.*(?:规划|行程)|(?:cannot|can.t|do not|don.t|not able to)(?:\s+[A-Za-z]+){0,5}\s+(?:plan\w*|travel|itinerar\w*)',text,re.I):
+            return 'FAIL','travel_capability_denied'
         return ('PASS','travel_capability')if useful else('FAIL','no_travel_capability')
     if gate=='SM07':
         if not re.search(r'北京|Beijing',text,re.I):return 'UNKNOWN','plan_city_not_established'
