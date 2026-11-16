@@ -2283,6 +2283,7 @@ import CryptoKit
             XCTAssertGreaterThanOrEqual(plan.frame.height, 44)
             XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "lio.notice.source.weather-day-1").firstMatch.exists)
             plan.tap()
+            XCTAssertFalse(plan.exists)
             XCTAssertEqual(app.staticTexts["fixture.count"].label, "3")
             XCTAssertEqual(app.staticTexts["fixture.sent"].label, chinese ? "直接给我一个方案。" : "Please make a plan now.")
             try app.performAccessibilityAudit(for: .all)
@@ -2293,11 +2294,29 @@ import CryptoKit
             let readOnly = app.buttons["fixture.read-only"]
             showExplorationReplyControl(readOnly, in: app, down: true)
             readOnly.tap()
-            XCTAssertFalse(plan.isEnabled)
+            XCTAssertFalse(plan.exists)
             XCTAssertFalse(submit.isEnabled)
             showExplorationReplyControl(profile, in: app, down: false)
             XCTAssertTrue(profile.exists)
             XCTAssertFalse(profile.isEnabled)
+            app.terminate()
+        }
+    }
+
+    func testExplorationReadOnlyDisablesUnconsumedExitInBothLanguages() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        for chinese in [false, true] {
+            launchExplorationReply(app, chinese: chinese)
+            let readOnly = app.buttons["fixture.read-only"]
+            showExplorationReplyControl(readOnly, in: app, down: true)
+            readOnly.tap()
+            let plan = app.buttons["lio.exit.plan_now"]
+            XCTAssertTrue(plan.exists)
+            XCTAssertFalse(plan.isEnabled)
+            XCTAssertFalse(app.buttons["lio.questions.continue"].isEnabled)
+            XCTAssertFalse(app.buttons["lio.profile.pace"].isEnabled)
+            XCTAssertEqual(app.staticTexts["fixture.count"].label, "0")
             app.terminate()
         }
     }

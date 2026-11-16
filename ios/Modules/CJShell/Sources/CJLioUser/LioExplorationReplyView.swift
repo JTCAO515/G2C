@@ -10,6 +10,7 @@ struct LioExplorationReplyView: View {
     let canSend: Bool
     var editProfile: ((LioExplorationPresentation.ProfileEntry) -> Void)? = nil
     let onSend: (String) -> Void
+    @State private var exitsConsumed = false
     @State private var editing: LioExplorationPresentation.ProfileEntry?
     @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -61,36 +62,57 @@ struct LioExplorationReplyView: View {
                 .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("lio.notice.\(notice.id)")
             }
-            ForEach(presentation.exits) { exit in
-                Button { onSend(exit.sendText) } label: {
-                    HStack(spacing: LioTheme.Spacing.xs) {
-                        Image(systemName: "arrow.right").font(.body)
-                            .foregroundStyle(canSend ? LioTheme.vermilion : LioTheme.inkSecondary)
-                            .accessibilityHidden(true)
-                        RunReadableText(text: exit.displayText, color: canSend ? LioTheme.vermilion : LioTheme.inkSecondary)
-
+            if !exitsConsumed && !presentation.exits.isEmpty {
+                if typeSize.isAccessibilitySize {
+                    VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) { exitButtons }
+                } else {
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: LioTheme.Spacing.xs) { exitButtons }
+                        VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) { exitButtons }
                     }
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                        .padding(.horizontal, LioTheme.Spacing.sm)
-                        .padding(.vertical, LioTheme.Spacing.xxs)
-                        .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: LioTheme.Radius.small)
-                                .stroke(canSend ? LioTheme.vermilion : LioTheme.hairline, lineWidth: 1)
-                                .allowsHitTesting(false).accessibilityHidden(true)
-                        }
                 }
-                .buttonStyle(.plain)
-                .disabled(!canSend)
-                .accessibilityLabel(exit.displayText)
-                .accessibilityIdentifier("lio.exit.\(exit.id)")
             }
         }
         .accessibilityElement(children: .contain)
         .font(.body)
         .sheet(item: $editing) { entry in
             LioProfileChangeSheet(entry: entry, language: language, canSend: canSend, onSend: onSend)
+        }
+    }
+
+    private var exitShape: AnyShape {
+        if typeSize.isAccessibilitySize {
+            AnyShape(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+        } else {
+            AnyShape(Capsule())
+        }
+    }
+
+    private var exitButtons: some View {
+        ForEach(presentation.exits) { exit in
+            Button {
+                onSend(exit.sendText)
+                exitsConsumed = true
+            } label: {
+                HStack(spacing: LioTheme.Spacing.xs) {
+                    Image(systemName: "arrow.right").font(.body).accessibilityHidden(true)
+                    RunReadableText(text: exit.displayText, color: canSend ? LioTheme.ink : LioTheme.inkSecondary)
+                }
+                .foregroundStyle(canSend ? LioTheme.ink : LioTheme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: typeSize.isAccessibilitySize ? .infinity : nil, minHeight: 44, alignment: .leading)
+                .padding(.horizontal, LioTheme.Spacing.sm)
+                .padding(.vertical, LioTheme.Spacing.xxs)
+                .background(LioTheme.surface, in: exitShape)
+                .overlay {
+                    exitShape.stroke(LioTheme.hairline, lineWidth: 1)
+                        .allowsHitTesting(false).accessibilityHidden(true)
+                }
+            }
+            .buttonStyle(.plain)
+            .disabled(!canSend)
+            .accessibilityLabel(exit.displayText)
+            .accessibilityIdentifier("lio.exit.\(exit.id)")
         }
     }
 
