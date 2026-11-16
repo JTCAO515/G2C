@@ -34,6 +34,11 @@ VENUE_SOURCE_CITIES.update({
     "wlj.xa.gov.cn": frozenset({"xian"}),
     "www.ehangzhou.gov.cn": frozenset({"hangzhou"}),
     "wgly.hangzhou.gov.cn": frozenset({"hangzhou"}),
+    "cgj.sz.gov.cn": frozenset({"shenzhen"}),
+    "fao.sz.gov.cn": frozenset({"shenzhen"}),
+    "english.shanghai.gov.cn": frozenset({"shanghai"}),
+    "en.xa.gov.cn": frozenset({"xian"}),
+    "bmy.com.cn": frozenset({"xian"}),
 })
 VENUE_PAGE_CITIES = {
     "https://cdn3.shenzhenmuseum.com/museum/html/aboutus/visit-service.html": frozenset({"shenzhen"}),

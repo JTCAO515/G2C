@@ -198,3 +198,21 @@ JT 在 H 当前会话授权H代为批准后续正确、正常信息源，范围�
 仅相应杭州单一地点与passport_booking主题，不扩大到其他城市、城域资格规则、法律摘要、子域、外链或接口。2024年A级景区取消预约的原说明区分景区、内部文博、团队及周末/法定假日；其标题不能证明2026每个内部场馆均免约，后续具体规则仍须逐条重新核对。旅游新闻中的游客体验也不自动变成场馆强制性规则。
 
 台州政府取消预约的原说明（已批www.zjtz.gov.cn、2024-07-11、art_1229429851_59093034.html）本轮403；检索索引的apex链接连接失败，均不作正文证据。未通过其他同文路径/镜像绕过。台州媒体候选tzapp.taizhou.com.cn入口403，未纳正式来源；没有据摘要填免预约。
+
+## 后续官方场馆来源代批（2026-11-16）
+
+按JT在本会话的持续授权，H核实下列正常官方来源并记录于#702。只限目标城市的具体场馆/景点参观、预约、开放公开内容，同hostname；不扩大法律政策摘要、其他城市或主题、子域、外链、接口、账号和交易。
+
+| 来源 / 批准依据 | 入口 | 语言 / 适用城市 |
+|---|---|---|
+| 深圳市城市管理和综合执法局；[#702/6915621954](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6915621954)，普通浏览器页脚主办单位及政府网站标识4403000058核同 | https://cgj.sz.gov.cn/ | 中文；深圳公园名录及普通游园开放/预约公告。停车、献花及活动规则不得当作行人入园规则 |
+| 深圳市人民政府外事办公室；[#702/6915119189](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6915119189)，深圳政府APEC服务栏目明确指向，抵达页脚主办核同 | https://fao.sz.gov.cn/ | 中文、英文等；深圳官方外籍访客手册的旅游/具体场馆章节。手册PDF本轮403，未采用内容；不作免签/入境摘要 |
+| 上海市政府国际服务英文站；[#702/6915662454](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6915662454)，英文首页版权Shanghai Municipal People's Government核同 | https://english.shanghai.gov.cn/ | 英文；上海具体景点旅游/预约/开放页及同host官方公开旅游手册 |
+| 西安市政府英文站；[#702/6915662454](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6915662454)，政府栏目、szf@xa.gov.cn及Xi'an China/China Daily呈现核同 | https://en.xa.gov.cn/ | 英文；西安具体景点旅游/预约/开放页及同host官方公开旅游手册 |
+| 秦始皇帝陵博物院主域别名；[#702/6915911351](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6915911351)，已批www入口实际跳转、馆名馆址、备案及英文入口同域核同 | https://bmy.com.cn/ | 中文、英文；西安秦陵博物院公开参观服务。只加主域，不扩digital或外部票务平台 |
+
+v3仍限一个目标城市、passport_booking、具体subject。允许某官方host不表示其所有网页已经核对；每条另查正文、版本与临时公告，空FAQ不作为证据。旧三格式来源接受集合不改，签证/入境仍仅原批准的移民官方渠道。
+
+补充检索辅助：[search.gd.gov.cn/search/all/755001](https://search.gd.gov.cn/search/all/755001)及同服务的公开互动检索类别，经[#702/6914110245](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6914110245)代批，原深圳政府搜索入口和主办深圳市政府办公厅核同。仅经正常网页检索公开景点名称，结果只定位已批原页；不把摘要、AI答案或该辅助host写入source_urls，不自行调用原始接口。
+
+一项独立批准、尚未采用的具体附件：[#702/6915763102](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6915763102)仅允许读取[上海地标中英PDF](https://arabic.shanghai.gov.cn/cmsres/fb/fb4c67ebf9604322a8b3f6f74d7e1760/eec310a1555eb5a02a121cee2922800d.pdf)核外滩公共滨江范围。阿语政府站主体已核；附件普通请求403后停止，没有换工具/路径绕过，未使用摘要。该附件及整个阿语host本批均不进入正式来源白名单。
