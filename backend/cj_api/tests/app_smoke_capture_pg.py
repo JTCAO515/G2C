@@ -106,7 +106,87 @@ def exercise(auth,conninfo):
     else:raise AssertionError('invalid JWT was admitted')
     again=AppSmokeCapture(f.path,subjects,tools.registrations,database,OriginalBudget(f.budget),clock=lambda:NOW)
     assert again.selects(b) and len(json.loads((f.claims/'claims.json').read_bytes())['claims'])==1
+    # An actual ASGI request carries these bytes; an idempotent native accept
+    # verifies the same protected original instead of reconstructing its outer.
+    import asyncio
+    from deploy.hk.app_smoke_outer import OuterControls,OuterCapture,OuterMiddleware,VERSION as OUTER_WINDOW
+    from cj_api.runtime_originals import RuntimeOriginals
+    from cj_api.app_smoke_originals import SmokeOriginals
+    from cj_api.app_smoke_state import SmokeState
+    outer_dir=root/'http-outer';outer_dir.mkdir(mode=0o700)
+    api_policy=root/'http-outer-policy.json'
+    write(api_policy,dict(version=OUTER_WINDOW,policy_path=str(f.path),policy_sha256=sha256(f.path.read_bytes()).hexdigest(),
+        directory=str(outer_dir),directory_device=outer_dir.stat().st_dev,directory_inode=outer_dir.stat().st_ino))
+    controls=OuterControls(api_policy,subjects,clock=lambda:NOW)
+    # Local attribution table for the already existing fixture journal. No HK
+    # policy is activated and the zero-op path creates no paid attempt.
+    with local_budget.connect()as journal:
+        journal.execute('CREATE TABLE attempt_sublimit(attempt_id TEXT PRIMARY KEY,line TEXT NOT NULL)')
+    originals=RuntimeOriginals(boundary,database,local_budget,outer_dir,
+        query_original=lambda context,mid:context.query_lio_message(mid))
+    observer=OuterCapture(controls,checker,originals,clock=lambda:NOW)
+    async def call():
+        consumed=[];responses=[]
+        async def app(scope,receive,send):
+            packet=await receive();consumed.append(packet['body'])
+            current=boundary.receive_lio(token,packet['body'],prepare_scope=database._provision_scope,version='LIO-message.2')
+            assert current.message_id==receipt.message_id and current.input_sha256==sha256(raw).hexdigest()
+            await send(dict(type='http.response.start',status=200,headers=[]))
+            await send(dict(type='http.response.body',body=b'original native ACK',more_body=False))
+        async def receive():return dict(type='http.request',body=raw,more_body=False)
+        async def send(message):responses.append(message)
+        await OuterMiddleware(app,observer)(dict(type='http',method='POST',path='/v2/lio/messages',
+            headers=[(b'authorization',('Bearer '+token).encode())],query_string=b''),receive,send)
+        assert consumed==[raw]and responses[-1]['body']==b'original native ACK'
+    try:
+        asyncio.run(call())
+        end=time.monotonic()+5
+        while observer.queue.unfinished_tasks and time.monotonic()<end:time.sleep(.01)
+        assert observer.queue.unfinished_tasks==0
+        protected=SmokeOriginals(controls,originals)
+        footprint=SmokeState(controls,boundary,database).read(token)
+        assert footprint['runtime_role']=='cj_m1_runtime'and footprint['role_flags']==[False]*7
+        assert b.message_id in footprint['message_ids']and footprint['pending']==footprint['active']==0
+        before=protected.checkpoint()
+        financial=protected.accounting(token,b.message_id,before,background_before=footprint['background_rows'],
+            background_after=SmokeState(controls,boundary,database).read(token)['background_rows'])
+        assert financial['coverage']=='complete'and financial['attempts']==[]and financial['producer_closure_verified']is True
+        changed=protected.accounting(token,b.message_id,before,background_before=[],background_after=[['unexpected-job']])
+        assert changed['coverage']=='UNKNOWN'and changed['producer_closure_verified']is False
+        output=json.loads(protected.outer(token,b.message_id))
+        assert output['outer_utf8'].encode()==raw and output['binding']==asdict(b)
+        visible=json.loads(protected.message(token,b.message_id))
+        assert visible['answer']and visible['input_sha256']==sha256(raw).hexdigest()
+        http_before=protected.http_checkpoint(token)
+        from cj_api.lio_dialogue_routes import _timeline
+        actual_read=_timeline(boundary,lambda scope:database.run_repository(scope),None,None,
+            token,b.conversation_id,None,multiple=True).body
+        async def call_read():
+            sent=[]
+            async def app(scope,receive,send):
+                await send(dict(type='http.response.start',status=200,headers=[]))
+                await send(dict(type='http.response.body',body=actual_read,more_body=False))
+            async def receive():raise AssertionError('no GET body read')
+            async def send(message):sent.append(message)
+            await OuterMiddleware(app,observer)(dict(type='http',method='GET',path='/v2/lio/timeline',
+                query_string=('conversation_id='+b.conversation_id).encode(),
+                headers=[(b'authorization',('Bearer '+token).encode())]),receive,send)
+            assert sent[-1]['body']==actual_read
+        asyncio.run(call_read())
+        end=time.monotonic()+5
+        while observer.queue.unfinished_tasks and time.monotonic()<end:time.sleep(.01)
+        assert observer.queue.unfinished_tasks==0
+        observed=protected.http_observed(token,http_before)
+        assert observed['post_count']==0 and len(observed['actual_reads'])==1
+        assert observed['actual_reads'][0]['response_utf8'].encode()==actual_read
+        try:protected.outer(dev_auth.token(auth,foreign,30),b.message_id)
+        except Exception as error:
+            from runtime_adapter.contract import Unavailable
+            assert type(error)is Unavailable
+        else:raise AssertionError('foreign HTTP outer read escaped')
+    finally:observer.close()
     print('PASS signed ordinary Home MESSAGE, runtime-role RLS, exact outer/canonical hashes, worker zero-op claim, ACK/producer-return, restart, foreign/JWT/RUN rejection; cloud/model/tool0')
+    print('PASS actual ASGI HTTP bytes, idempotent native accept, private guarded outer receipt/readback, original answer and foreign denial; no fabricated legacy wire')
 
 
 if __name__=='__main__':
