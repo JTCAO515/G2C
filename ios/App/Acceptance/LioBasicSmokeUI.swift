@@ -132,7 +132,7 @@ private enum CommandJSON: StrictJSONPolicy {
                         let frame = node.frame.isNull || node.frame.isInfinite ? CGRect.zero : node.frame
                         nodes.append(["depth": depth, "identifier": node.identifier, "label": node.label,
                             "value": node.value as? String ?? "", "type": node.elementType.rawValue,
-                            "progress_indicator": node.elementType == .progressIndicator,
+                            "progress_indicator": node.elementType == .progressIndicator || node.elementType == .activityIndicator,
                             "enabled": node.isEnabled, "selected": node.isSelected,
                             "frame": [frame.minX, frame.minY, frame.width, frame.height]])
                         node.children.forEach { visit($0, depth: depth + 1) }
