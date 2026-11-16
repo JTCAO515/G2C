@@ -184,5 +184,34 @@
     "source_urls": [
       "https://cqjlp.gov.cn/bmjz/qzfbm_97119/qwhlyw_97727/zwgk_97124/gkml/jczwgk/ggwhfwly/ggfw/ggwljgml/202608/t20260807_15904141.html"
     ]
+  },
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "topic": "passport_booking",
+    "id": "visitor.v3.shenzhen.window-of-the-world",
+    "cities": [
+      "shenzhen"
+    ],
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-11-23",
+    "subject": {
+      "key": "shenzhen.window-of-the-world",
+      "name_zh": "世界之窗",
+      "name_en": "Window of the World",
+      "wikidata_qid": "Q2302764"
+    },
+    "conditions": {
+      "reservation_required": false,
+      "closed_weekdays": null,
+      "closed_weekdays_public_holiday_exception": null,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    },
+    "text_zh": "深圳政府公开说明将世界之窗列为购票后无需另外预约入园的景区，线上购票者可凭电子票入园；免预约不等于免门票或保证有票。本条未核定固定每周闭园日和提前购票窗口，行前应查具体票种及最新通知，夜场、特别活动、园内项目不据此保证开放。",
+    "text_en": "Shenzhen government guidance lists Window of the World among attractions where ticket holders do not need an additional entry reservation; online buyers can use their electronic tickets. No separate reservation does not mean free admission or guaranteed availability. Fixed weekly closing days and the advance purchase window remain unconfirmed here. Check the ticket type and latest notices before visiting; this does not guarantee access to night sessions, special events or individual facilities.",
+    "source_urls": [
+      "https://www.sz.gov.cn/cn/xxgk/zfxxgj/bmdt/content/post_11451373.html"
+    ]
   }
 ]
