@@ -20,6 +20,7 @@ from lio_basic_ui_driver import decode
 
 ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).parent
+BASELINE_COMMIT = 'c4db80a3258a0e3170c501eb4fdfa5fc1263ee12'
 TRACE = '69169169-1691-4691-8691-691691691691'
 
 
@@ -44,7 +45,8 @@ def main():
     simulator = subprocess.check_output(['xcrun', 'simctl', 'create', 'G2C-A-Warm-Root-Local-' + output.name,
         'com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro', 'com.apple.CoreSimulator.SimRuntime.iOS-17-5'], text=True).strip()
     report = dict(layer='actual Root/account/clients + synthetic loopback + fresh simulator', simulator=simulator,
-                  language=args.language, baseline_root=args.baseline_root, real_service='UNRUN', requests=[])
+                  language=args.language, baseline_root=args.baseline_root, baseline_commit=BASELINE_COMMIT if args.baseline_root else None,
+                  real_service='UNRUN', requests=[])
     lock = threading.Lock()
     released = threading.Event(); released.set()
     mode = ['ready']; resumed = [False]
@@ -155,7 +157,7 @@ def main():
         text = text.replace('DEBUG G2C_LIO_APP', 'DEBUG G2C_LIO_APP G2C_DEMO_BETA')
         for name in ('DevelopmentTripHost.swift', 'DemoBetaApp.swift'):
             path = ROOT / 'ios/App' / name
-            data = subprocess.check_output(['git', 'show', 'HEAD:ios/App/' + name]).decode() if args.baseline_root else path.read_text()
+            data = subprocess.check_output(['git', 'show', BASELINE_COMMIT + ':ios/App/' + name]).decode() if args.baseline_root else path.read_text()
             if name == 'DevelopmentTripHost.swift':
                 data += '\n#if DEBUG && G2C_DEMO_BETA && targetEnvironment(simulator)\nextension DevelopmentAccountRoot {\n'
                 data += '    func fixtureHasNoSavedMaterial() throws -> Bool { try persistence.load() == nil }\n'
