@@ -231,7 +231,7 @@ def selected_provider_join(host,worker,binding,bundle,skeleton,calls,scenario):
     return len(writers)
 
 
-def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1,2),followups=True,duration_days=3,travel_pace='relaxed'):
+def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1,2),followups=True,duration_days=3,travel_pace='relaxed',provider_available=True):
     original_model=ExplorationPlanning._model
     original_http=httpx.MockTransport.handle_request
     original_post=TestClient.post
@@ -375,6 +375,12 @@ def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1
     def receipt(repository,binding):
         value=original_receipt(repository,binding)
         if value is not None:
+            if not provider_available:
+                saved=repository.detail(value.trip_id)
+                document=json.loads(saved.content)
+                suggestions=[item for item in document['items']if item['kind']in ('sight','meal')]
+                assert suggestions and all(item['place']['state']=='unconfirmed'and item['place']['source']is None for item in suggestions)
+                assert all(leg['state']=='unconfirmed'and leg['source']is None for leg in document['legs'])
             saved_runs[binding.message_id]=binding.run_id
             if binding.run_id not in completed:completed.append(binding.run_id)
         return value
@@ -382,7 +388,7 @@ def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1
         active['worker'].memory_run.check()
         assert active['worker'].message_context.active_original(active['binding']).receipt.message_id==active['binding'].message_id
     class Writer(FixtureWriter):
-        def __init__(self,reader):super().__init__(reader,send_check)
+        def __init__(self,reader):super().__init__(reader,send_check,available=provider_available)
         def write(self,raw):
             parsed=urlsplit(raw.split(b'\r\n',1)[0].split(b' ')[1].decode('ascii'))
             self.path=parsed.path;self.query=parse_qs(parsed.query)
@@ -390,6 +396,7 @@ def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1
             self.provider_id='SYNTH_FACTORY_'+str(len(supplier_wires));supplier_wires.append(self.path)
             super().write(raw)
         def response_value(self):
+            if not provider_available:return super().response_value()
             if self.path.startswith('/v3/direction/'):
                 a=self.query['origin'][0];b=self.query['destination'][0]
                 return dict(status='1',infocode='10000',count='1',route=dict(origin=a,destination=b,
@@ -411,7 +418,7 @@ def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1
             # ledger merely to run unrelated regression cases in one cohort.
             for language in ('zh','en'):
                 saved_runs.clear()
-                native.main(saved_runs=saved_runs,generation=True,languages=(language,),cases=cases,followups=followups,trip_days=duration_days,pace_labels=(pace_quote,travel_pace.title()))
+                native.main(saved_runs=saved_runs,generation=True,languages=(language,),cases=cases,followups=followups,trip_days=duration_days,pace_labels=(pace_quote,travel_pace.title()),unconfirmed_places=not provider_available)
                 assert len(saved_runs)==len(cases)
                 all_saved.update(saved_runs)
         else:native.main(saved_runs=saved_runs)

@@ -67,8 +67,9 @@ def main(*,natural_direct=False,production=False):
             lio_pipeline_models_pg.main(natural_direct=natural_direct,production=True)
             lio_pipeline_models_pg.main(production=True,cases=(0,),duration_days=4,natural_direct=True)
             lio_pipeline_models_pg.main(production=True,cases=(0,),duration_days=5,travel_pace='moderate')
+            lio_pipeline_models_pg.main(production=True,cases=(0,),provider_available=False)
         lio_route_sources_pg.main()
-    assert len(qualified)==(8 if production else 2)and selected and checked
+    assert len(qualified)==(10 if production else 2)and selected and checked
     print('PASS '+str(len(qualified))+' fresh same-account native4 qualifications via accepted B operator; original budget/config unchanged; actual registered plan-model and place/route consumers selected Native4RegisteredExit; every observed RUN <=6 model including Memory and <=45 amap; fixture HTTP/0 real; '+('full generation exercised'if production else'component generation only')+'; real G6 UNRUN',flush=True)
 
 

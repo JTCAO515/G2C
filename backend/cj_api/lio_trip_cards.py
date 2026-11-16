@@ -15,7 +15,7 @@ class LioTripCards:
         self.database,self.calendar,self.rich=database,calendar,rich
         self.boundary = Boundary(checker, resolve, structured=True,calendar=calendar,rich=rich)
 
-    def read(self, token, binding, *, edit=False,protocol=LIO_VERSION,conversion=False):
+    def read(self, token, binding, *, edit=False,protocol=LIO_VERSION,conversion=False,locale=None):
         def original(context):
             if protocol==LIO_VERSION_V3 and not self.calendar:
                 raise Denied('calendar message requires new Lio reader')
@@ -44,7 +44,7 @@ class LioTripCards:
             revisions = context.lio_revisions(trip_id, before=version + 1, limit=1)
             if len(revisions) != 1 or revisions[0].version != version:
                 raise Denied('original saved itinerary unavailable')
-            if protocol==LIO_VERSION_V4:return packed(rich_card(revisions[0]))
+            if protocol==LIO_VERSION_V4:return packed(rich_card(revisions[0],locale=locale))
             return packed(calendar_card(revisions[0]) if self.calendar else _card(revisions[0]))
 
         return json.loads(self.boundary.with_operation(token, original))
@@ -85,7 +85,7 @@ def calendar_card(trip):
                 title=value['title'], calendar=calendar, days=days, date_checks=checks)
 
 
-def rich_card(trip):
+def rich_card(trip,*,locale=None):
     """Receipt-bound historical S4 summary using the frozen Card3 contract.
 
     Full place/leg/lodging facts remain in the native rich Trip detail. The
@@ -98,7 +98,12 @@ def rich_card(trip):
           for day in value['days']]
     for item in value['items']:
         start,end=item['schedule']['start'],item['schedule']['end']
-        days[start['day_index']-1]['items'].append(dict(item_id=item['id'],label=item['text'],
+        label=item['text']
+        if item['place']['state']=='unconfirmed':
+            prefix='地点未确认：'if locale=='zh'else'Unconfirmed place: 'if locale=='en'else'地点未确认 / Unconfirmed place: '
+            label=prefix+label
+            if len(label)>500:label=label[:499]+'…' # Summary only; canonical content stays intact.
+        days[start['day_index']-1]['items'].append(dict(item_id=item['id'],label=label,
             start_time=start['time'].get('value'),end_time=end['time'].get('value'),fixed=item['fixed'].get('value')))
     return dict(version='LIO-trip-card.3',trip_id=trip.trip_id,trip_version=trip.version,
         content_version=value['content_version'],content_sha256=sha256(trip.content).hexdigest(),
