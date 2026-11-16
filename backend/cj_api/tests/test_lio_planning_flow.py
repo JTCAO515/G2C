@@ -96,6 +96,34 @@ class PlanningFlow(unittest.TestCase):
                 for day in range(1,4):self.assertIn('第'+str(day)+'天'if locale=='zh'else'Day '+str(day),answer(events))
                 self.assertNotIn('哪天',answer(events));self.assertNotIn('几个人',answer(events))
 
+    def test_bare_destination_after_fixed_answers_continues_in_the_question_language(self):
+        # #994 r08 item 7 (a new single-turn chat): the English bare
+        # destination was labelled consult/root=None and fell to a generic
+        # answer. The intake instruction names the bare form as a planning
+        # request; the host still requires the model root and original source.
+        # The single-turn form is covered above; this covers earlier fixed turns.
+        from cj_api.local_lio_national import CURRENT_SYSTEM
+        self.assertIn('Go to Chengdu',CURRENT_SYSTEM);self.assertIn('去成都 ',CURRENT_SYSTEM)
+        for first,last,city,locale,fixed,reply in [
+                ('去成都','三天','成都','zh',('你是谁','你能做啥'),'想玩几天？'),
+                ('Go to Chengdu','Three days','Chengdu','en',('Who are you?','What can you do?'),'How many days would you like?')]:
+            with self.subTest(locale=locale):
+                history=tuple(map(original,(*fixed,first)))
+                wire=flow(first,city=city,days=None,intent='plan',index=2,questions=('duration_days',),reply=reply)
+                wire.update(planning_request_index=2,needs_tools=False)
+                _,events,lookups,_=run(wire,first,turns=history,locale=locale)
+                stored=context(events)
+                self.assertEqual((stored['status'],stored['authority'],lookups),('needs_details','plan',[]))
+                self.assertEqual(answer(events),reply)
+                for fact in stored['facts'].values():
+                    for reference in fact['sources']:reference['message_id']='prior-2'
+                continuation=flow(last,city=None,days=3,intent='plan',index=3,questions=(),reply='OK.')
+                continuation.update(planning_request_index=2,needs_tools=False)
+                published,later,lookups,_=run(continuation,last,turns=(*history,original(last)),previous=stored,locale=locale)
+                self.assertEqual((published,len(lookups)),([],1))
+                self.assertEqual(context(later)['status'],'plan_preview')
+                for day in range(1,4):self.assertIn('第'+str(day)+'天'if locale=='zh'else'Day '+str(day),answer(later))
+
     def test_literal_destination_locator_and_multiple_questions_keep_one_missing_fact(self):
         for first,city,reply,locale in [('去成都','去成都','去哪儿？这趟玩几天？','zh'),
                 ('Go to Chengdu','Go to Chengdu','Where do you want to go? How many days?','en')]:

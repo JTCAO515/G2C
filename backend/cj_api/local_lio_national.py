@@ -29,7 +29,12 @@ CITY='lio_city_resolution.1:'
 MAX_TURNS=8
 CURRENT_SYSTEM=FACTS_SYSTEM.replace(
     'A short reply to a pending request continues that original request; never replace its source index.',
-    'A complete new request, even repeated, uses the latest planning_request_index. Only a short parameter answer keeps the earlier request index.')
+    'A complete new request, even repeated, uses the latest planning_request_index. Only a short parameter answer keeps the earlier request index.'
+).replace(
+    # #994 r08: an English bare destination was labelled consult/root=null.
+    # Guidance only; the host still requires the model root and the original source.
+    '去成都玩三天, 规划北京三日游 and',
+    '去成都玩三天 and bare 去成都 / Go to Chengdu (intent plan, root=its index; ask days), and')
 _DURATION_QUESTION=re.compile(
     rf'(?:(?P<zh>(?P<zh_number>{NUMBER})[天日])(?:怎么玩|怎么安排)|'
     rf'(?:how (?:should|can) I spend|what (?:can|should) I do (?:in|for))\s+'
