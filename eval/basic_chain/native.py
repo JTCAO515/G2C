@@ -87,6 +87,7 @@ class Observation:
     new_message_ids:tuple
     actual_reads:tuple
     components:tuple
+    read_collection_status:str
 
 
 def observation(value,point,expected,plan,step):
@@ -102,7 +103,21 @@ def observation(value,point,expected,plan,step):
     http=original['http']
     require(http['http_coverage']=='OBSERVED'and type(http['post_count'])is int,
             'complete HTTP attempt coverage required; observed subtotal is insufficient')
-    reads=[]
+    require(http['read_coverage']in('OBSERVED','PENDING')and not http['unknown_read_exchanges'],
+            'actual App read evidence was lost or refused')
+    exchanges=http['read_exchanges'];started={};finished={};captured={}
+    for item in exchanges:
+        require(item['method']=='GET'and item['scope_sha256']==expected['scope_sha256']
+                and item['policy_sha256']==expected['policy_sha256'],'actual GET attempt owner/policy differs')
+        phase=item['phase'];require(phase in('started','finished','capture_result'),'unknown GET attempt phase')
+        table={'started':started,'finished':finished,'capture_result':captured}[phase]
+        require(item['exchange_id']not in table,'duplicate GET attempt phase')
+        table[item['exchange_id']]=item
+    require(sorted(set(started)-set(captured))==http['pending_read_exchanges'],
+            'pending GET census differs from actual attempt records')
+    if http['read_coverage']=='OBSERVED':
+        require(not http['pending_read_exchanges'],'incomplete read attempts cannot be declared observed')
+    reads=[];read_ids=set()
     for record in http['actual_reads']:
         require(record['scope_sha256']==expected['scope_sha256']
                 and record['policy_sha256']==expected['policy_sha256']
@@ -112,6 +127,16 @@ def observation(value,point,expected,plan,step):
                 'actual successful ordinary App read required')
         require(sha256(record['response_utf8'].encode()).hexdigest()==record['response_sha256'],
                 'actual App HTTP response bytes differ')
+        exchange=record['exchange_id']
+        require(exchange not in read_ids,'duplicate actual GET response exchange')
+        read_ids.add(exchange)
+        require(exchange in started and exchange in finished and exchange in captured,
+                'read publication is not a request after the server checkpoint')
+        start,end,capture=started[exchange],finished[exchange],captured[exchange]
+        require(start['route']==end['route']==record['route']and end['selector']==record['selector']
+                and end['status']==200 and end['body_fully_observed']is True
+                and end['response_sha256']==record['response_sha256']and capture['capture_status']=='CAPTURED',
+                'actual GET full-response/capture receipt differs')
         reads.append(record)
     if step['text']is None:
         require(not new and http['post_count']==0,'read-only App action sent a new MESSAGE')
@@ -153,4 +178,4 @@ def observation(value,point,expected,plan,step):
                 and end['message_id']==mid and end['body_fully_observed']is True
                 and end['input_sha256']==claim['input_sha256'],'actual POST result/digest differs')
         require(sha256(message['answer'].encode()).hexdigest()==message['answer_sha256'],'original native answer digest differs')
-    return Observation(original,before,after,new,tuple(reads),tuple(_components(original.get('components',[]))))
+    return Observation(original,before,after,new,tuple(reads),tuple(_components(original.get('components',[]))),http['read_coverage'])

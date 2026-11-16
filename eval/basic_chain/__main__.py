@@ -3,7 +3,8 @@ import argparse
 from pathlib import Path
 
 from .plan import decode, make_plan
-from .runner import execute, private_read, save
+from .runner import private_read, save
+from .driver_v2 import execute
 
 
 def main():

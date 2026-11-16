@@ -308,7 +308,7 @@ def test_control_steps_serial_first_failure_stops_and_costs_not_double_counted(f
                                   UNKNOWN=int(failure_at=='owner-mismatch'),UNRUN=14-count)
     assert calls==[('backend','preflight'),('app','one_gate'),('backend','observe_original')]*count+(
         [('backend','stop_new')]if failure_at else[])
-    assert result['release_allowed']==(failure_at is None)
+    assert result['release_allowed']is False and result['evidence_layer']=='L0_CONTROL'
     assert result['cost']['conservative_cny']==(None if failure_at=='owner-mismatch'else
                                                '0.00002'if failure_at=='zh-SM02'else'0.00016')
     assert result['cost']['actual_paid_cny']is None

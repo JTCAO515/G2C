@@ -1,7 +1,7 @@
-"""Serial orchestration of qualified A UI and B protected-reader programs.
+"""Legacy observation.1 orchestration controls and shared private I/O.
 
-This module issues no MESSAGE/SQL/provider requests. A/B adapters retain their
-native authorization checks. An operator configuration is not a native permit.
+Actual execution uses driver_v2. This old normalized shape is retained solely
+for compatibility controls; it must not publish a real release certificate.
 """
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -100,6 +100,7 @@ def preflight(value,config,plan,step,now):
 
 
 def execute(plan,config,directory,*,clock=lambda:datetime.now(timezone.utc),call=None):
+    require(call is not None,'legacy normalized execution is control-only; use the native v2 entry')
     check_plan(plan)
     require(plan['version']==VERSION,'legacy plans remain readable; new dispatch requires the revised source/cash profile')
     require(config['version']=='LIO-basic-chain-host.1'and config['evidence_layer']=='L2+L3',
@@ -154,9 +155,9 @@ def execute(plan,config,directory,*,clock=lambda:datetime.now(timezone.utc),call
     cost={key:(str(sum((Decimal(m[key])for m in amounts),Decimal(0)))
                if complete and all(m[key]is not None for m in amounts)else None)
           for key in ('conservative_cny','token_estimate_cny','actual_paid_cny')}
-    report=dict(version='LIO-basic-chain-result.1',run_id=plan['run_id'],evidence_layer='L2+L3',
+    report=dict(version='LIO-basic-chain-control-result.1',run_id=plan['run_id'],evidence_layer='L0_CONTROL',
                 app=plan['app'],candidate=config['candidate'],rows=rows,totals=totals,denominator=14,
-                success_rate=f'{totals["PASS"]}/14',release_allowed=totals['PASS']==14 and not stop,
+                success_rate=f'{totals["PASS"]}/14',release_allowed=False,real_gate_status='UNRUN',
                 status='PASS'if totals['PASS']==14 and not stop else(stop['status']if stop else'UNKNOWN'),
                 cost=cost,fee_status='UNKNOWN_NO_SUPPLIER_INVOICE',stopped=bool(stop),
                 attempt_results=outcomes,

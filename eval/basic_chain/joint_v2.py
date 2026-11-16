@@ -1,0 +1,186 @@
+"""Joint uniqueness checks for ordinary Home, which does not expose native IDs.
+
+This is an assessment, not an authority or release certificate. A supplies actual
+AX facts, B supplies native facts, and the admitted client renderer supplies the
+exact text projection. No approximate whitespace or time-only join is used.
+"""
+from dataclasses import dataclass,field
+
+from .plan import Invalid,require
+from .semantics_v2 import semantic
+
+
+@dataclass
+class Conversations:
+    views:dict=field(default_factory=dict)
+    old_cid:str|None=None
+    qa_cid:str|None=None
+
+
+def _transcript(view,project):
+    return tuple((m['text'],project(m['answer']))for m in view['messages'])
+
+
+def _ax_transcript(value):
+    require(type(value)is list,'complete ordered actual AX transcript required')
+    return tuple((entry['question'],entry['answer'])for entry in value)
+
+
+def draft_marker(plan,step):
+    return 'SYNTH-DRAFT-'+plan['run_id']+'-'+step['locale']+'-'+step['gate_id']
+
+
+def _views(native):
+    from .plan import decode
+    result={}
+    require(native.read_collection_status=='OBSERVED','actual App read collection is not closed')
+    for record in native.actual_reads:
+        if record['route']not in('/v1/lio/timeline','/v2/lio/timeline'):continue
+        view=decode(record['response_utf8'].encode())
+        require(view['version']in('LIO-timeline.1','LIO-timeline.2'),'ordinary actual timeline required')
+        require(view['conversation_id']==record['binding']['conversation_id'],'actual read selected another CID')
+        if view['next_before']is not None:continue
+        if not all(m['status']=='completed'and m['failure']is None for m in view['messages']):continue
+        cid=view['conversation_id']
+        rows=sorted((m for m in native.after['native_messages']if m['conversation_id']==cid),key=lambda m:m['sequence'])
+        if [m['message_id']for m in view['messages']]!=[m['message_id']for m in rows]:continue
+        # Several polls may carry one identical final transcript. Distinct
+        # content remains ambiguous; publication timestamp never chooses one.
+        key=tuple((m['message_id'],m['text'],m['answer'])for m in view['messages'])
+        result.setdefault(cid,{})[key]=view
+    return {cid:next(iter(variants.values()))for cid,variants in result.items()if len(variants)==1}
+
+
+def _ui(ui,plan,step):
+    require(ui['version']=='LIO-basic-app-witness.2'and ui['source']=='actual_ordinary_Home_AX',
+            'actual ordinary Home witness required')
+    require((ui['run_id'],ui['gate_id'],ui['locale'],ui['nonce'])==
+            (plan['run_id'],step['gate_id'],step['locale'],step['nonce']),'A witness belongs to another step')
+    require(ui['app']==plan['app'],'actual tested App differs')
+    require(ui['message_id_observed']is None and ui['conversation_id_observed']is None,
+            'ordinary AX must not pretend B IDs were independently observed')
+    require(type(ui['artifacts'])is list and ui['artifacts'],'actual full AX/screenshot originals required')
+    require(ui['after']['body_complete']is True,'actual final AX has not completed')
+
+
+def _timing(ui,step):
+    if step['text']is None:return ui.get('timing')
+    timing=ui['timing'];require(timing['clock']=='actual_App_monotonic','actual App timing required')
+    for key in ('first_body_ms','complete_ms'):
+        require(type(timing[key])in(int,float)and 0<=timing[key]<=90_000,'actual bounded body/completion required')
+    require(timing['first_body_ms']<=timing['complete_ms'],'body timing follows completion')
+    progress=timing['first_progress_ms']
+    require((progress is None and timing['progress_status']in('NOT_EMITTED','NOT_OBSERVED'))or
+            (type(progress)in(int,float)and 0<=progress<=timing['complete_ms']
+             and timing['progress_status']=='NATIVE_PROGRESS_OBSERVED'and timing['native_progress_ref']),
+            'local greeting/ACK cannot supply a native progress time')
+    return timing
+
+
+def assess(plan,step,point,native,ui,conversations,project,money):
+    """project is the actual admitted same-source renderer, never a model.
+
+    Updates the accepted in-window conversation census only after PASS. The
+    caller verifies producer programs and artifact bytes; these facts do not
+    claim a physical device when the actual surface is a simulator.
+    """
+    fail=[];unknown=[];reasons=[];next_view=None;timing=None
+    try:
+        _ui(ui,plan,step)
+        if ui['after']['errors']or ui['after'].get('spinner_past_deadline')is True:
+            fail.append('actual_App_visible_failure')
+        if not money['full_coverage']or money['unresolved_attempt_count']:
+            unknown.append('original_all_producer_or_accounting_evidence_incomplete')
+        before,after=native.before,native.after
+        if before['memory_sha256']!=after['memory_sha256']:fail.append('unrequested_Saved_Memory_mutation')
+        views=_views(native)
+        gate=step['gate_id'];actual_ax=_ax_transcript(ui['after']['transcript'])
+        if step['text']is not None:
+            require(ui['send_taps']==1 and ui['submitted_text']==step['text'],'one actual UI tap/exact input required')
+            original=native.original;message=original['message'];cid=message['conversation_id']
+            if original['inventory']['status']=='unknown':unknown.append('original_RUN_UNKNOWN')
+            elif original['inventory']['status']!='completed':fail.append('original_RUN_not_completed')
+            require(cid in views,'actual App final timeline/response is missing')
+            view=views[cid]
+            require(view['messages'][-1]['message_id']==message['message_id']
+                    and view['messages'][-1]['answer']==message['answer'],
+                    'actual App response differs from original native answer')
+            if step['new_conversation']:
+                require(len(view['messages'])==1,'new conversation contains other user messages')
+            else:
+                require(cid==conversations.old_cid,'seed continuation changed its original CID')
+            require(actual_ax==_transcript(view,project),'actual complete AX differs from original renderer projection')
+            if step['kind']=='setup':
+                if gate=='SEED2':
+                    marker='SYNTH-OLD-'+plan['run_id']+'-'+step['locale']
+                    if marker not in message['answer']:unknown.append('original_chat_code_not_recalled')
+            else:
+                status,reason=semantic(gate,message['answer'],step['locale']);reasons.append(reason)
+                if status=='FAIL':fail.append(reason)
+                elif status=='UNKNOWN':unknown.append(reason)
+            # This profile is the explicit ordinary-v2 preview cohort. It does
+            # not certify native3/4 autosave or silently inherit their writer.
+            if before['trip_sha256']!=after['trip_sha256']:fail.append('unexpected_formal_Trip_mutation')
+            if gate=='SM07':
+                require(plan['app']['protocol']=='LIO-message.2','separate native3/4 save qualification required')
+                require(ui['after']['three_day_readback']is True,'all three actual itinerary days must be readable')
+                require(view['messages'][-1]['trip']is None,'preview cannot masquerade as a formal saved card')
+            timing=_timing(ui,step);next_view=view
+        else:
+            require(ui['send_taps']==0 and ui['submitted_text']is None and not native.new_message_ids,
+                    'read-only UI action submitted a new message')
+            if before['trip_sha256']!=after['trip_sha256']:fail.append('read_only_Trip_mutation')
+            require(ui['after']['new_greeting_count']==0,'restored conversation inserted a new greeting')
+            claimed={c['binding']['conversation_id']for c in point.claims}
+            require(claimed==set(conversations.views),'admissible current-window candidate census is incomplete')
+            if gate=='SM03':require(claimed<=set(views),'actual App reads do not cover the required candidates')
+            if gate in('SM01','SM04'):
+                expected_cid=conversations.old_cid if gate=='SM01'else conversations.qa_cid
+                require(expected_cid in views,'required actual App restore/resume read is missing')
+                require(ui['before']['draft']==ui['after']['draft']==draft_marker(plan,step),'unique unsent draft changed or was not prepared')
+                matches=[cid for cid,view in conversations.views.items()if _transcript(view,project)==actual_ax]
+                require(matches==[expected_cid],'actual restored transcript has no unique native CID match')
+                require(_ax_transcript(ui['before']['transcript'])==actual_ax,'original conversation differed before lifecycle action')
+                require(actual_ax==_transcript(views[expected_cid],project),'actual App read did not restore the original full transcript')
+                require('cold_launch'in ui['actions']if gate=='SM01'else
+                        {'background_return','lock_return'}<=set(ui['actions']),'required actual lifecycle transitions missing')
+                if gate=='SM04':
+                    checkpoints=ui['lifecycle']
+                    require({p['action']for p in checkpoints}=={'background_return','lock_return'}and len(checkpoints)==2,
+                            'both actual lifecycle result snapshots required')
+                    for entry in checkpoints:
+                        if entry['errors']:fail.append('actual_intermediate_lifecycle_failure')
+                        require(_ax_transcript(entry['transcript'])==actual_ax
+                                and entry['draft']==draft_marker(plan,step)and not entry['errors']and entry['body_complete']is True,
+                                'an intermediate lifecycle return failed')
+                    require(len({r['exchange_id']for r in native.actual_reads if r['binding']['conversation_id']==expected_cid
+                                 and r['route']in('/v1/lio/timeline','/v2/lio/timeline')})>=2,
+                            'both lifecycle returns need distinct actual App reads')
+            elif gate=='SM03':
+                rows=ui['history']['rows'];opened=ui['history']['opened']
+                require(len(rows)==len(opened)==len(claimed),'every listed admissible row must be opened')
+                require(len({r['row_key']for r in rows})==len(rows)
+                        and {r['row_key']for r in rows}=={r['row_key']for r in opened},'history row/open census differs')
+                found=[]
+                for entry in opened:
+                    transcript=_ax_transcript(entry['transcript'])
+                    matches=[cid for cid,view in conversations.views.items()if _transcript(view,project)==transcript]
+                    require(len(matches)==1,'history selected row cannot uniquely identify a native conversation')
+                    cid=matches[0];require(transcript==_transcript(views[cid],project),'actual history read differs')
+                    found.append(cid)
+                require(set(found)==claimed and len(found)==len(set(found)),'history opens duplicated or missed a native CID')
+            else:unknown.append('unsupported_read_gate')
+        status='FAIL'if fail else'UNKNOWN'if unknown else'PASS'
+    except (Invalid,KeyError,TypeError,ValueError)as error:
+        unknown.append('required_joint_evidence_unavailable:'+type(error).__name__)
+        status='FAIL'if fail else'UNKNOWN'
+    if status=='PASS'and next_view is not None:
+        cid=next_view['conversation_id'];conversations.views[cid]=next_view
+        if step['gate_id']in('SEED1','SEED2'):conversations.old_cid=cid
+        elif step['gate_id']=='SM02':conversations.qa_cid=cid
+    return dict(version='LIO-basic-joint-assessment.2',gate_id=step['gate_id'],locale=step['locale'],
+        status=status,reasons=[*fail,*unknown,*reasons],cost=money,timing=timing,
+        ui_message_id_observed=None,ui_conversation_id_observed=None,
+        native_ids_source='B_actual_protected_HTTP_claim_and_state',
+        join_method='bounded_single_writer_exact_input_complete_renderer_AX_and_current_actual_reads',
+        evidence_scope='DATA_ASSESSMENT_ONLY_NOT_A_RELEASE_CERTIFICATE')

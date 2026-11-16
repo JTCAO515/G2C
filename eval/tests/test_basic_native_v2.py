@@ -45,8 +45,9 @@ def fixture():
             answer=answer,answer_sha256=sha256(answer.encode()).hexdigest()),
         outer_request=dict(binding=binding,slot_id='zh.SM02',source_commit=expected['source'],policy_sha256=expected['policy_sha256'],
             outer_utf8=raw,input_sha256=outer_sha,canonical_sha256=canonical,method='POST',route='/v2/lio/messages',protocol=app['protocol']),
-        inventory=dict(message_input_sha256=canonical,run_id=binding['run_id']),components=[],
-        http=dict(http_coverage='OBSERVED',post_count=1,actual_reads=[],post_exchanges=[
+        inventory=dict(message_input_sha256=canonical,run_id=binding['run_id'],status='completed',operations=[]),components=[],
+        http=dict(http_coverage='OBSERVED',read_coverage='OBSERVED',unknown_read_exchanges=[],pending_read_exchanges=[],read_exchanges=[],
+            post_count=1,actual_reads=[],post_exchanges=[
             dict(phase='started',exchange_id='actual-exchange',policy_sha256=expected['policy_sha256'],scope_sha256=scope_sha,method='POST',route='/v2/lio/messages'),
             dict(phase='finished',exchange_id='actual-exchange',policy_sha256=expected['policy_sha256'],scope_sha256=scope_sha,method='POST',route='/v2/lio/messages',
                  status=200,message_id=mid,body_fully_observed=True,input_sha256=outer_sha)]))
@@ -84,4 +85,34 @@ def test_components_cannot_turn_unavailable_bytes_into_a_tool_proof():
     host,point,expected,plan,step=fixture()
     host['original']['components']=[dict(operation={'operation_id':'op'},
         tool_artifact={'status':'UNAVAILABLE','utf8':'{}','sha256':sha256(b'{}').hexdigest()})]
+    with pytest.raises(Invalid):observation(host,point,expected,plan,step)
+
+
+def add_read(host,expected):
+    original=host['original'];binding=original['claim']['binding']
+    raw=json.dumps(dict(version='LIO-timeline.2',conversation_id=binding['conversation_id'],messages=[],next_before=None))
+    record=dict(source_commit=expected['source'],policy_sha256=expected['policy_sha256'],scope_sha256=expected['scope_sha256'],
+        method='GET',status=200,route='/v2/lio/timeline',selector={'conversation_id':binding['conversation_id']},
+        response_utf8=raw,response_sha256=sha256(raw.encode()).hexdigest(),exchange_id='current-get',binding=deepcopy(binding))
+    original['http']['actual_reads']=[record]
+    base={key:record[key]for key in('method','route','policy_sha256','scope_sha256','exchange_id')}
+    original['http']['read_exchanges']=[dict(base,phase='started'),
+        dict(base,phase='finished',status=200,selector=record['selector'],body_fully_observed=True,response_sha256=record['response_sha256']),
+        dict(base,phase='capture_result',capture_status='CAPTURED')]
+
+
+def test_actual_read_requires_current_request_exchange_not_late_publication():
+    host,point,expected,plan,step=fixture();add_read(host,expected)
+    assert len(observation(host,point,expected,plan,step).actual_reads)==1
+    host['original']['http']['read_exchanges']=[] # old request published late
+    with pytest.raises(Invalid):observation(host,point,expected,plan,step)
+
+
+def test_pending_collection_is_explicit_and_never_same_as_fully_observed():
+    host,point,expected,plan,step=fixture()
+    http=host['original']['http'];http.update(read_coverage='PENDING',pending_read_exchanges=['still-running'])
+    http['read_exchanges']=[dict(phase='started',method='GET',exchange_id='still-running',route='/v2/lio/timeline',
+        scope_sha256=expected['scope_sha256'],policy_sha256=expected['policy_sha256'])]
+    assert observation(host,point,expected,plan,step).read_collection_status=='PENDING'
+    http['read_coverage']='OBSERVED'
     with pytest.raises(Invalid):observation(host,point,expected,plan,step)
