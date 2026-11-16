@@ -8,6 +8,23 @@ from cj_message.lio_timeline import TimelineMessage
 
 
 class LioVoice(unittest.TestCase):
+    def test_structured_identifiers_beside_chinese_are_not_public_words(self):
+        identifier='20be0897-2fe5-4136-bf73-5966edb64a3a'
+        for locale in ('zh','en'):
+            for text in (
+                '运行'+identifier+'已完成。',
+                '会话'+identifier.upper()+'的回答。',
+                'Answer：'+identifier+'已收到。',
+                '状态run_id=synthetic。',
+                '原消息message_id=synthetic已收到。',
+            ):
+                with self.subTest(locale=locale,text=text):
+                    self.assertIsNone(display_answer(text,locale))
+                    state=SimpleNamespace(status='completed',text=text,draft_outcome=None,
+                        effects=(),budget_exhausted_stage='none')
+                    shown=_message(TimelineMessage('boundary-test','source',1,'Question',locale),state)
+                    self.assertEqual((shown['status'],shown['answer']),('failed',''))
+
     def test_cross_locale_ordinary_chinese_words_do_not_hide_a_complete_answer(self):
         for locale in ('zh','en'):
             for text in (
