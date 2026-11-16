@@ -39,7 +39,8 @@ def stage(base,packet):
             or len(p['slots'])!=plan['planned_message_count']or len(p['slots'])not in(8,12)):
         raise ValueError('fixed current plan, source and control hashes required')
     subjects={slot['locale']:slot['subject']for slot in p['slots']}
-    if set(subjects)!={'zh','en'}or len(set(subjects.values()))!=2 or set(subjects.values())!=set(e['subjects']):
+    if(len({(slot['locale'],slot['subject'])for slot in p['slots']})!=2
+            or set(subjects)!={'zh','en'}or len(set(subjects.values()))!=2 or set(subjects.values())!=set(e['subjects'])):
         raise ValueError('two original C subjects required')
     root=Path(base)/run
     root.mkdir(mode=0o700,exist_ok=False)

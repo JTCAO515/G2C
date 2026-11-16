@@ -3,6 +3,95 @@ import UIKit
 import CryptoKit
 
 @MainActor final class LioHomeUITests: XCTestCase {
+    func testUnsentOriginalAndDifferentDraftStayVisibleAcrossRelaunchInBothLanguages() throws {
+        continueAfterFailure = false
+        for chinese in [false, true] {
+            for appearance in ["light", "dark"] {
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "--lio-position-persistence-acceptance", "--lio-position-retained-unsent",
+                    "-lio.ui.appearance.v1", appearance, "-cj.ui.language.v1", chinese ? "zh-Hans" : "en",
+                    "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+                for _ in 0..<2 {
+                    app.launch()
+                    let card = app.descendants(matching: .any).matching(identifier: "lio.unsent.message").firstMatch
+                    XCTAssertTrue(card.waitForExistence(timeout: 8))
+                    XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label == %@ OR value == %@", "Original A", "Original A")).firstMatch.exists)
+                    let field = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+                    XCTAssertEqual(field.value as? String, "Different draft B")
+                    XCTAssertFalse(app.staticTexts["lio.question"].exists)
+                    XCTAssertFalse(app.staticTexts["lio.answer"].exists)
+                    XCTAssertFalse(app.staticTexts["lio.opening"].exists)
+                    try app.performAccessibilityAudit(for: .all)
+                    let shot = XCTAttachment(screenshot: app.screenshot())
+                    shot.name = "retained-unsent-\(chinese ? "zh" : "en")-\(appearance)"
+                    shot.lifetime = .keepAlways; add(shot)
+                    app.terminate()
+                }
+            }
+        }
+    }
+
+    func testFailedDraftPersistenceKeepsTextAndOffersARetryControlInBothLanguages() throws {
+        continueAfterFailure = false
+        for chinese in [false, true] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-position-persistence-acceptance", "--lio-position-write-failure",
+                "-lio.ui.appearance.v1", "light", "-cj.ui.language.v1", chinese ? "zh-Hans" : "en",
+                "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+            app.launch()
+            let field = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+            XCTAssertTrue(field.waitForExistence(timeout: 8))
+            field.tap(); field.typeText("x")
+            let retained = field.value as? String
+            XCTAssertTrue(app.staticTexts["lio.position.notice"].waitForExistence(timeout: 5))
+            let retry = app.buttons["lio.position.retry"]
+            retry.tap()
+            XCTAssertEqual(field.value as? String, retained)
+            XCTAssertTrue(app.staticTexts["lio.position.notice"].exists)
+            try app.performAccessibilityAudit(for: .all) { issue in
+                let detail = XCTAttachment(string: issue.compactDescription + "\n" + (issue.element?.debugDescription ?? "No element") + "\n" + app.debugDescription)
+                detail.name = "position-audit"; detail.lifetime = .keepAlways; self.add(detail)
+                return false
+            }
+            app.terminate()
+        }
+    }
+
+    func testColdRelaunchKeepsTheOriginalChatAndExactDraftInBothLanguages() throws {
+        continueAfterFailure = false
+        for chinese in [false, true] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-position-persistence-acceptance", "-lio.ui.appearance.v1", "light",
+                                   "-cj.ui.language.v1", chinese ? "zh-Hans" : "en", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+            app.launch()
+            let answer = app.staticTexts["lio.answer"].firstMatch
+            XCTAssertTrue(answer.waitForExistence(timeout: 8))
+            let originalAnswer = answer.label
+            let field = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+            field.tap()
+            let old = field.value as? String ?? ""
+            if !old.isEmpty && old != (chinese ? "开始聊天" : "Start chatting") {
+                field.press(forDuration: 1.2)
+                let selectAll = app.descendants(matching: .any).matching(NSPredicate(format: "label IN %@", ["Select All", "全选"])).firstMatch
+                XCTAssertTrue(selectAll.waitForExistence(timeout: 3))
+                selectAll.tap()
+            }
+            let value = (chinese ? "未发送草稿 " : "Unsent draft ") + String(Int(ProcessInfo.processInfo.systemUptime * 1000))
+            field.typeText(value)
+            XCTAssertEqual(field.value as? String, value)
+            app.terminate()
+            app.launch()
+            XCTAssertTrue(answer.waitForExistence(timeout: 8))
+            XCTAssertEqual(answer.label, originalAnswer)
+            XCTAssertFalse(app.staticTexts["lio.opening"].exists)
+            XCTAssertEqual(field.value as? String, value)
+            XCTAssertFalse(app.staticTexts["fixture.position.setup-failure"].exists)
+            try app.performAccessibilityAudit(for: .all)
+            let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "cold-position-\(chinese ? "zh" : "en")"; shot.lifetime = .keepAlways; add(shot)
+            app.terminate()
+        }
+    }
+
     func testLocalActivationFailureIsRecoverableWithoutClearingSignInInBothLanguages() throws {
         continueAfterFailure = false
         for chinese in [false, true] {
