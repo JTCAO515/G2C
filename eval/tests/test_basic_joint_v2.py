@@ -211,11 +211,18 @@ def failed_historical_restore():
     return args
 
 
-def test_loading_a_retained_failed_history_preserves_its_failure_instead_of_regrading_it():
+@pytest.mark.parametrize('raw_partial',['','Original retained partial answer'])
+def test_loading_a_retained_failed_history_preserves_its_failure_instead_of_regrading_it(raw_partial):
     args=failed_historical_restore()
+    record=args[3].actual_reads[0];page=json.loads(record['response_utf8'])
+    page['messages'][0]['answer']=raw_partial
+    record['response_utf8']=json.dumps(page);record['response_sha256']=sha256(record['response_utf8'].encode()).hexdigest()
+    args[5].views[args[5].old_cid]=deepcopy(page)
     result=evaluate(args)
     assert result['status']=='PASS'and result['historical_public_failure_count']==1
     assert args[5].views[args[5].old_cid]['messages'][0]['status']=='failed'
+    assert args[5].views[args[5].old_cid]['messages'][0]['answer']==raw_partial
+    assert json.loads(record['response_utf8'])['messages'][0]['answer']==raw_partial
 
 
 def test_historical_failure_cannot_be_hidden_or_substituted_for_a_new_load_error():

@@ -63,6 +63,8 @@ transcript每行含question、answer（没有正文label时为null）、visible_
 页面/会话/ACK/读取错误仍属global errors；checkpoint前已存在的原M若公开timeline
 为failed并有quota/unavailable原失败，只允许如实匹配其正文/失败指示，不重新评成completed。
 组合结果另列historical_public_failure_count。本轮新写入失败仍FAIL/STOP，原RUN和费用不改。
+当前同源LioHome对failed行不显示正文，所以该行AX answer为null，即使原wire保留非空半句；
+C只按实际展示分支投影，原answer与完整wire canonical仍保留，不把半句改写或标成成功。
 
 冷启动/后台/锁屏必须保留本步唯一未发送草稿`SYNTH-DRAFT-<run>-<locale>-<gate>`。
 standard的`old_chats[locale]`由实际App本地savedChats清单与B当前owner原M核对后

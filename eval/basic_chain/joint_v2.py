@@ -21,7 +21,7 @@ class Conversations:
 
 
 def _transcript(view,project):
-    return tuple((m['text'],project(m['answer'])if m['answer']else None,m['failure']is not None)
+    return tuple((m['text'],project(m['answer'])if m['status']!='failed'and m['answer']else None,m['failure']is not None)
                  for m in view['messages'])
 
 
