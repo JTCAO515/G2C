@@ -175,6 +175,16 @@ class SimulatorRequestsTest(unittest.TestCase):
         with self.assertRaises(BudgetUnknown): self.invoke(registry)
         self.assertEqual(self.sends, [])
 
+    def test_genuine_sqlite_programming_errors_propagate(self):
+        registry = self.routing.registrations(self.binding)
+        def programming_error(**kwargs):
+            raise sqlite3.ProgrammingError('fixture bad internal SQL binding')
+        self.dut.authority.require_current_operation = programming_error
+        with self.assertRaises(sqlite3.ProgrammingError):
+            self.routing.registrations(self.binding)
+        with self.assertRaises(sqlite3.ProgrammingError): self.invoke(registry)
+        self.assertEqual(self.sends, [])
+
 
 if __name__ == '__main__':
     unittest.main()

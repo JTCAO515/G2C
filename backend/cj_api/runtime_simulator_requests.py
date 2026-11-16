@@ -77,7 +77,7 @@ class SimulatorRunRequests:
         except BudgetUnknown:
             self.rejected.add(binding)
             raise
-        except (Unavailable, Invalid, OSError, AccessBlocked, IdentityChanged, sqlite3.Error) as error:
+        except (Unavailable, Invalid, OSError, AccessBlocked, IdentityChanged, sqlite3.OperationalError) as error:
             self.rejected.add(binding)
             raise BudgetUnknown('original simulator operation unavailable') from error
 
@@ -112,7 +112,7 @@ class SimulatorRunRequests:
             self._current(binding)
             return {name: self._registration(binding, registration)
                     for name, registration in self.tools.registrations.items()}
-        except (Unavailable, Invalid, OSError, AccessBlocked, IdentityChanged, BudgetUnknown, sqlite3.Error):
+        except (Unavailable, Invalid, OSError, AccessBlocked, IdentityChanged, BudgetUnknown, sqlite3.OperationalError):
             self.rejected.add(binding)
             return {}
 
