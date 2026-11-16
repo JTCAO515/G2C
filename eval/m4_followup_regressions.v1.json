@@ -1,0 +1,81 @@
+{
+  "version": "M4-followup-regressions.1",
+  "issue": 1048,
+  "base": {
+    "path": "docs/quality/m4-stage0-1048/regressions.v1.json",
+    "sha256": "8c7efe48a22fc16bc71bb62b21ab76e48a7c5366f1ba64f9cc7aa4d0be7ec90d",
+    "cases": 25,
+    "locale_variants": 50,
+    "unchanged": true
+  },
+  "additional_cases": 2,
+  "additional_locale_variants": 4,
+  "combined_cases": 27,
+  "combined_locale_variants": 54,
+  "synthetic_only": true,
+  "execution_status": "UNRUN",
+  "product_repairs": "NOT_ASSERTED",
+  "does_not_change_denominators": "Basic smoke remains 7 x 2 = 14; national16, baseline60 and formal66 remain separate fixed cohorts",
+  "cases": [
+    {
+      "case_id": "LOGIN01",
+      "issue": 1051,
+      "title": "短码输入保真、格式错误提示及合成账号登录",
+      "owner": "A_UI_and_B_auth_configuration",
+      "locales": ["zh", "en"],
+      "historical_observation": "JT reported both short-code forms failed; exact original input/build/request and first cause remain UNKNOWN. Do not infer configuration loss or quota exhaustion.",
+      "original_build": null,
+      "original_client_source": null,
+      "original_server_source": null,
+      "known_contract": "Case-sensitive G2C@<two ASCII digits> or CJ_Tester@<two ASCII digits>, 01 through 99; no surrounding whitespace, full-width digits or spelling substitution",
+      "preconditions": [
+        "A provides a verified isolated ordinary Beta installation; do not sign JT out or read/clear the JT journal.",
+        "B supplies an existing approved C synthetic account/private short code and explicit auth-test scope; a Lio MESSAGE capture slot is not an auth-test permit.",
+        "Actual client build/full source/artifact and actual API source/image/configuration are recorded independently. No selected valid short code or token is committed or printed."
+      ],
+      "input_zh": [
+        "在中文普通登录页，从获准私密清单分别选取两个格式族的合成短码，逐个准确输入。",
+        "观察自动大写、智能标点、前后空格和全角数字是否改动输入；用格式不合的合成变体检查本地提示，不泄露有效短码。",
+        "用准确格式完成获准换签并进入普通Home；不要发送Lio消息。"
+      ],
+      "input_en": [
+        "On the ordinary English sign-in screen, enter one approved private synthetic code from each format family exactly.",
+        "Check capitalization, punctuation, surrounding whitespace and full-width digits; inspect the local format message for synthetic invalid variants without exposing a valid code.",
+        "Use the valid exact format for the approved sign-in and reach ordinary Home; do not send a Lio message."
+      ],
+      "expected_zh": "输入不被悄悄改写；格式不合时说明正确格式，而非笼统登录失败。准确有效格式的原生换签、实际合成主体与普通Home一致；格式合规不等于认证成功。",
+      "expected_en": "Preserve the entered bytes and explain invalid format clearly. A valid exact code must have a real native exchange, the intended synthetic subject and ordinary Home; merely passing format validation is insufficient.",
+      "judgement": "A compares actual input/UI with the approved private value; B binds original auth request/status and resulting synthetic identity. UI success without actual exchange/identity is UNKNOWN. Any proven byte change, invalid acceptance, wrong identity or unusable Home is FAIL. Missing original metadata remains UNKNOWN.",
+      "evidence": ["A actual UI/private original hashes", "B original auth request/status/subject binding", "client build/source/artifact and actual server source/image", "no Lio MESSAGE/provider operation; actual fee evidence if any operation unexpectedly occurs"],
+      "automation": "A_UI_or_device_steps_plus_B_protected_auth_metadata; C records combined verdict",
+      "execution_status": "UNRUN",
+      "source_refs": ["https://github.com/JTCAO515/G2C/issues/1051", "https://github.com/JTCAO515/G2C/issues/495#issuecomment-6907095660"]
+    },
+    {
+      "case_id": "INFO01",
+      "issue": 1067,
+      "title": "说明页长滚动后完成按钮可点击并可重开",
+      "owner": "A",
+      "locales": ["zh", "en"],
+      "historical_observation": "A reproduced the existing done.isHittable failure on an unchanged-input baseline and the input-fix candidate. This is a confirmed local UI failure, not proof of the exact JT build45 first failure or a newly deployed fix.",
+      "baseline_build": null,
+      "baseline_client_source": "709aed7fe637d88a3facd92225a5205748c1926d",
+      "baseline_platform": "iOS 17.5 local UI reproduction",
+      "server_dependency_for_local_reproduction": "NOT_USED",
+      "preconditions": [
+        "Use A's authorized isolated installation and the actual candidate build/source/artifact; preserve baseline red logs and xcresult privately.",
+        "Use the currently authorized display settings. A-owned extra display/accessibility checks remain distinct from C's fixed 14-check smoke.",
+        "Do not change consent copy/flow or the JT-only #225 decision to make the test pass."
+      ],
+      "input_zh": ["打开内部说明页，连续滚动本版及上一版说明。", "点击完成关闭，再从原入口打开一次并关闭。"],
+      "input_en": ["Open the internal information page and scroll through the current and previous release notes.", "Tap Done, then reopen through the original entry and close it again."],
+      "expected_zh": "完成按钮始终在屏幕内、可点击、点击区域高度至少44点；能关闭并重开，原说明及同意流程不变，不遮挡主流程。",
+      "expected_en": "Done remains on screen, hittable, and at least 44 points high; it closes the page and works again after reopening. Preserve the original information and consent flow.",
+      "judgement": "A retains LioBuildUpdatesUITests' actual done.isHittable assertion and close/reopen evidence separately per language; do not replace the click with a bypass or remove/skip the assertion. A recorded missing/off-screen/unhittable control or failed dismissal is FAIL; missing device/artifact/capture is UNKNOWN.",
+      "automation": "ios/App/Acceptance/check_lio_build_updates.py and A UI/device steps; no C duplicate business POST",
+      "evidence": ["actual UI assertion/screenshots/private xcresult hashes", "build/full source/artifact/platform/locale", "baseline FAIL and later candidate result kept separately", "no business/model/tool call; unexpected activity keeps original accounting"],
+      "execution_status": "UNRUN",
+      "source_refs": ["https://github.com/JTCAO515/G2C/issues/1067", "https://github.com/JTCAO515/G2C/pull/1054", "https://github.com/JTCAO515/G2C/issues/1048"]
+    }
+  ]
+}
