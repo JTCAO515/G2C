@@ -87,7 +87,7 @@ private enum CommandJSON: StrictJSONPolicy {
                 case "type":
                     let identifier = try XCTUnwrap(command.identifier)
                     let field = app.descendants(matching: .any).matching(identifier: identifier).firstMatch
-                    guard field.exists, field.isHittable else { throw CommandJSON.failure }
+                    guard field.exists, field.isHittable, field.elementType != .secureTextField else { throw CommandJSON.failure }
                     try requireActionWindow(); field.tap()
                     try requireActionWindow(); field.typeText(try XCTUnwrap(command.text))
                 case "select_all":
@@ -99,27 +99,9 @@ private enum CommandJSON: StrictJSONPolicy {
                     guard select.waitForExistence(timeout: 3), select.isHittable else { throw CommandJSON.failure }
                     try requireActionWindow(); select.tap()
                 case "private_invite":
-                    let field = app.secureTextFields["demo.invite.code"]
-                    guard field.exists, field.isHittable else { throw CommandJSON.failure }
-                    let path = try XCTUnwrap(command.privateInputPath)
-                    let url = URL(fileURLWithPath: path)
-                    guard url.standardizedFileURL.path == url.resolvingSymlinksInPath().path else { throw CommandJSON.failure }
-                    try requireActionWindow()
-                    let fd = open(path, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
-                    guard fd >= 0 else { throw CommandJSON.failure }
-                    defer { close(fd) }
-                    var info = stat()
-                    guard fstat(fd, &info) == 0, info.st_mode & S_IFMT == S_IFREG,
-                          info.st_uid == getuid(), info.st_nlink == 1,
-                          info.st_mode & 0o777 == 0o600, info.st_size > 0, info.st_size <= 4096 else {
-                        throw CommandJSON.failure
-                    }
-                    let data = try FileHandle(fileDescriptor: fd, closeOnDealloc: false).read(upToCount: 4097) ?? Data()
-                    guard !data.isEmpty, data.count <= 4096, data.allSatisfy({ (0x21...0x7e).contains($0) }),
-                          let value = String(data: data, encoding: .utf8) else { throw CommandJSON.failure }
-                    try requireActionWindow(); field.tap()
-                    try requireActionWindow(); field.typeText(value)
-                    // Never return the input or any value derived from it.
+                    // XCTest records typeText arguments even for SecureField.
+                    // Never open or type a credential through this logging API.
+                    throw CommandJSON.failure
                 case "audit_all":
                     // The installed ordinary Home must already be usable. This
                     // diagnostic never launches, signs in, or changes its data.
@@ -140,13 +122,14 @@ private enum CommandJSON: StrictJSONPolicy {
                     var nodes: [[String: Any]] = []
                     func visit(_ node: any XCUIElementSnapshot, depth: Int) {
                         let frame = node.frame.isNull || node.frame.isInfinite ? CGRect.zero : node.frame
-                        nodes.append(["depth": depth, "identifier": node.identifier, "label": node.label,
-                            "value": node.value as? String ?? "", "type": node.elementType.rawValue,
+                        let secure = node.elementType == .secureTextField
+                        nodes.append(["depth": depth, "identifier": node.identifier, "label": secure ? "" : node.label,
+                            "value": secure ? "" : (node.value as? String ?? ""), "type": node.elementType.rawValue,
                             "scroll_container": node.elementType == .scrollView,
                             "progress_indicator": node.elementType == .progressIndicator || node.elementType == .activityIndicator,
                             "enabled": node.isEnabled, "selected": node.isSelected,
                             "frame": [frame.minX, frame.minY, frame.width, frame.height]])
-                        node.children.forEach { visit($0, depth: depth + 1) }
+                        if !secure { node.children.forEach { visit($0, depth: depth + 1) } }
                     }
                     visit(snapshot, depth: 0)
                     result["nodes"] = nodes
