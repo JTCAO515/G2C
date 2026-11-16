@@ -1,5 +1,6 @@
 """#1036: content-free HK API access log (route template, status, timing, request ID, build)."""
 from datetime import datetime,timedelta,timezone
+import asyncio
 import io
 import json
 import os
@@ -23,8 +24,9 @@ def private_dir(tmp_path):
     directory=tmp_path/'access-log';directory.mkdir(mode=0o700);directory.chmod(0o700);return directory
 
 
-def lines(directory):
-    return [json.loads(line) for path in sorted(directory.glob('access-*.jsonl')) for line in path.read_text().splitlines()]
+def lines(directory, *, phase='finished'):
+    records = [json.loads(line) for path in sorted(directory.glob('access-*.jsonl')) for line in path.read_text().splitlines()]
+    return records if phase == 'all' else [row for row in records if row.get('phase', 'finished') == phase]
 
 
 def application(sink,*,gate=None):
@@ -69,8 +71,12 @@ def test_records_route_template_status_timing_request_id_and_build_without_conte
     assert response.status_code==200
     client.post('/v1/trips/x-conflict/messages',content=BODY,headers={'X-G2C-App-Build':'44'})
     first,second=lines(directory)
-    assert set(first)=={'v','ts','method','route','status','duration_ms','ttfb_ms','request_id','app_build','error_class','outcome'}
-    assert first['v']=='G2C-HK-access-log.1' and first['route']=='/v1/trips/{trip_id}/messages'
+    assert set(first)=={'v','phase','exchange_id','ts','method','route','status','duration_ms','ttfb_ms','request_id','app_build','error_class','outcome'}
+    assert first['v']=='G2C-HK-access-log.2' and first['route']=='/v1/trips/{trip_id}/messages'
+    starts=lines(directory,phase='started')
+    assert len(starts)==2 and starts[0]['exchange_id']==first['exchange_id']
+    assert starts[1]['exchange_id']==second['exchange_id']!=first['exchange_id']
+    assert all(row['route'] is None and row['request_id'] is None for row in starts)
     assert first['method']=='POST' and first['status']==200 and first['request_id']==UUID
     assert first['app_build']=='43' and first['error_class']is None and first['outcome']=='completed'
     assert first['duration_ms']>=first['ttfb_ms']>=0 and first['ts'].endswith('Z')
@@ -109,6 +115,55 @@ def test_streaming_duration_covers_the_whole_body(tmp_path):
     assert client.get('/v1/stream/run-1').text=='data: one\n\ndata: two\n\n'
     (row,)=lines(directory)
     assert row['route']=='/v1/stream/{run_id}' and row['outcome']=='completed' and row['status']==200
+
+
+def test_arrival_is_durable_before_response_and_cancellation_does_not_hide_it(tmp_path):
+    directory=private_dir(tmp_path)
+
+    async def scenario():
+        entered=asyncio.Event()
+        async def held(scope,receive,send):
+            entered.set()
+            await asyncio.Event().wait()
+        async def never_read():
+            raise AssertionError('logger must not read the request body')
+        async def send(message):
+            raise AssertionError('held application sends no response')
+        scope={'type':'http','method':'POST','path':'/private/'+SECRET_PATH,
+               'query_string':b'invite=INV-SECRET-CODE',
+               'headers':[(b'authorization',TOKEN.encode()),(b'x-request-id',b'client-controlled'),
+                          (b'x-g2c-app-build',b'45')]}
+        task=asyncio.create_task(AccessLog(held,Sink(directory))(scope,never_read,send))
+        await entered.wait()
+        (arrival,)=lines(directory,phase='all')
+        assert arrival['phase']=='started' and arrival['outcome']=='in_flight'
+        assert arrival['status'] is None and arrival['route'] is None and arrival['request_id'] is None
+        assert arrival['app_build']=='45' and access_log._REQUEST_ID.fullmatch(arrival['exchange_id'])
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):await task
+        start,end=lines(directory,phase='all')
+        assert start==arrival and end['phase']=='finished'
+        assert end['exchange_id']==start['exchange_id'] and end['outcome']=='exception'
+        assert end['status'] is None
+        raw=''.join(p.read_text()for p in directory.iterdir())
+        for forbidden in (SECRET_PATH,'INV-SECRET-CODE','sk-synthetic','client-controlled'):
+            assert forbidden not in raw
+    asyncio.run(scenario())
+
+
+def test_query_keeps_v1_completion_counts_and_exposes_v2_arrivals_on_request(tmp_path):
+    directory=private_dir(tmp_path);sink=Sink(directory)
+    now=datetime.now(timezone.utc)
+    for row in ({'v':'G2C-HK-access-log.1','status':200},
+                {'v':access_log.VERSION,'phase':'started','status':None},
+                {'v':access_log.VERSION,'phase':'finished','status':503}):
+        sink.write(dict(row,ts=access_log._stamp(now.timestamp()),route=None))
+    start=now-timedelta(seconds=1);end=now+timedelta(seconds=1)
+    assert access_log.query(directory,start,end,out=io.StringIO())==2
+    assert access_log.query(directory,start,end,phase='started',out=io.StringIO())==1
+    out=io.StringIO()
+    assert access_log.query(directory,start,end,phase='all',out=out)==3
+    assert json.loads(out.getvalue().splitlines()[-1])['by_status']=={'200':1,'503':1,'None':1}
 
 
 def test_build_parsing_accepts_only_bounded_numbers():
