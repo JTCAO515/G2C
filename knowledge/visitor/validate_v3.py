@@ -23,7 +23,11 @@ VENUE_SOURCE_CITIES = {
     "www.sz-museum.com": "suzhou-anhui", "cgj.ahsz.gov.cn": "suzhou-anhui",
     "www.badaling.cn": "beijing", "cgj.cq.gov.cn": "chongqing",
     "qjxq.xa.gov.cn": "xian",
-    "www.shanghaimuseum.net": "shanghai", "www.szwwco.com": "shenzhen",
+    "www.shanghaimuseum.net": "shanghai", "www.shanghaimuseum.cn": "shanghai",
+    "www.shenzhenmuseum.com": "shenzhen", "www.szwwco.com": "shenzhen",
+}
+VENUE_PAGE_CITIES = {
+    "https://cdn3.shenzhenmuseum.com/museum/html/aboutus/visit-service.html": "shenzhen",
 }
 V3_APPROVED_HOSTS = V3_GOVERNMENT_HOSTS | VENUE_SOURCE_CITIES.keys()
 
@@ -34,14 +38,15 @@ def validate_entry_v3(entry: object, *, as_of: date) -> None:
     if entry["format_version"] != VERSION:
         raise ValueError("unsupported visitor format_version")
     validate_entry_fields(entry, as_of=as_of, topics=V3_TOPICS, cities=V3_CITIES)
-    if any(urlsplit(url).hostname not in V3_APPROVED_HOSTS for url in entry["source_urls"]):
+    if any(urlsplit(url).hostname not in V3_APPROVED_HOSTS and url not in VENUE_PAGE_CITIES
+           for url in entry["source_urls"]):
         raise ValueError("v3 facts require confirmed source hosts")
     # The three new hostname approvals are narrower than the existing inventory.
     for url in entry["source_urls"]:
         host = urlsplit(url).hostname
         if host == "www.gov.cn" and entry["topic"] != "seasonal_holiday":
             raise ValueError("new gov.cn approval is limited to holiday guidance")
-        local_city = VENUE_SOURCE_CITIES.get(host)
+        local_city = VENUE_SOURCE_CITIES.get(host, VENUE_PAGE_CITIES.get(url))
         if local_city is not None and (entry["cities"] != [local_city]
                                       or entry["topic"] != "passport_booking" or entry["subject"] is None):
             raise ValueError("new local source approval is limited to that city's venue guidance")

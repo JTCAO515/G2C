@@ -28,6 +28,17 @@ class VenueSourceScopeTests(unittest.TestCase):
             with self.subTest(host=host), self.assertRaises(ValueError):
                 validate_entry_v3(record, as_of=TODAY)
 
+    def test_one_static_guide_approval_does_not_expand_cdn_or_city(self):
+        guide = 'https://cdn3.shenzhenmuseum.com/museum/html/aboutus/visit-service.html'
+        record = {**self.venue, 'cities': ['shenzhen'], 'source_urls': [guide]}
+        validate_entry_v3(record, as_of=TODAY)
+        for url in (guide + '?copy=1', guide.replace('visit-service', 'other'),
+                    'https://cdn3.shenzhenmuseum.com/example.pdf'):
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                validate_entry_v3({**record, 'source_urls': [url]}, as_of=TODAY)
+        with self.assertRaises(ValueError):
+            validate_entry_v3({**record, 'cities': ['suzhou-anhui']}, as_of=TODAY)
+
 
 if __name__ == '__main__':
     unittest.main()
