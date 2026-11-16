@@ -14,9 +14,9 @@
           },
           "items": {
             "en": [
-              "When a chat won’t open, the message now names the situation: offline, sign-in expired or turned off, service problem or maintenance, saved record on this device unreadable, or not yet clear, with a next step.",
-              "The failure page has View problem notes: kept only on this device, up to 20, with time, build, category, step and the service reference. No message text or sign-in details; you can copy them.",
-              "The same problem notes are also at the end of Internal demo information."
+              "Chat-opening errors now distinguish offline, expired or disabled sign-in, service trouble, unreadable local records and unclear failures, with a next step.",
+              "View problem notes on the failure page: up to 20 on-device records with time, build, category, step and service reference. Copyable; no message text or sign-in details.",
+              "The same notes appear at the end of Internal demo information."
             ],
             "zh": [
               "对话打不开时，提示会说明具体情况：网络不通、登录过期或停用、服务出错或维护、本机保存的记录打不开、具体情况还不清楚，并给出下一步。",
@@ -50,10 +50,10 @@
           },
           "items": {
             "en": [
-              "Open an existing chat, leave an unsent draft, switch away and lock the phone, then return to the same chat and draft.",
-              "Force-quit from the app switcher and reopen; check the same chat and draft come back.",
-              "If a chat won’t open, screenshot that page, tap View problem notes, screenshot or copy them and note the time.",
-              "Open Internal demo information from the menu and scroll to Problem notes at the end."
+              "Leave an unsent draft in an existing chat, switch away and lock the phone, then check the same chat and draft return.",
+              "Force-quit and reopen; check the same chat and draft return.",
+              "If opening fails, screenshot the page and View problem notes, or copy the notes; include the time.",
+              "From the menu, open Internal demo information and scroll to Problem notes."
             ],
             "zh": [
               "打开一段已有对话，留一段未发送的文字，切后台并锁屏后返回，检查同一对话和草稿。",
@@ -92,13 +92,13 @@
           },
           "items": {
             "en": [
-              "Hong Kong service source 2e5560cf now keeps a minimal request log: time, endpoint type, status code and app build only, no content.",
-              "The service reference in problem notes matches that log, so a failure can be traced by time.",
-              "No server change you can see; these server updates do not require an app update.",
-              "Planning and English city request fixes are still in progress; planning retest remains on hold."
+              "Hong Kong service source 2e5560cf adds request metadata logs without message content.",
+              "The service reference in problem notes helps match failures to those logs.",
+              "These server changes have no visible effect and need no app update.",
+              "Planning and English city request fixes continue; planning retests remain on hold."
             ],
             "zh": [
-              "香港在线服务来源 2e5560cf 新增最小请求记录：只记时间、接口类型、状态码和应用构建号，不记内容。",
+              "香港在线服务来源 2e5560cf 新增请求元数据记录，不记录消息内容。",
               "问题记录里的服务端参考号可与这份记录对应，便于按时间查到失败的情况。",
               "没有用户可感知的服务端变化；这些服务端更新不需要更新应用。",
               "规划和英文城市请求的修复仍在进行，规划复试继续暂缓。"
