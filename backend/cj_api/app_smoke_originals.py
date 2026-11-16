@@ -17,12 +17,14 @@ from runtime_adapter.contract import Unavailable,decode
 
 
 class SmokeOriginals:
-    def __init__(self,controls,originals):
+    def __init__(self,controls,originals,lifecycle_guard):
         self.controls,self.originals=controls,originals
+        self.lifecycle_guard=lifecycle_guard
         self.native_query=originals.query_original
         originals.query_original=self.query
 
     def query(self,context,mid):
+        self.lifecycle_guard()
         original=self.native_query(context,mid)
         claim=self.controls.claim(context.scope,mid)
         if original is None or claim is None:raise Unavailable('APP_SMOKE_ORIGINAL_UNAVAILABLE')
@@ -100,6 +102,7 @@ class SmokeOriginals:
 
     def _http_view(self,token):
         def project(context):
+            self.lifecycle_guard()
             scope=context.scope
             if scope not in self.controls.scopes:raise Unavailable('APP_SMOKE_HTTP_OWNER_CHANGED')
             with self.controls.directory()as directory:
@@ -121,6 +124,7 @@ class SmokeOriginals:
             if any(x.get('policy_sha256')!=self.controls.window['policy_sha256']for x in lines):
                 raise Unavailable('APP_SMOKE_HTTP_POLICY_CHANGED')
             raw=b''.join(canonical(row)+b'\n'for row in lines if row['scope_sha256']==scope_hash)
+            self.lifecycle_guard()
             return dict(log_utf8=raw.decode(),log_sha256=sha256(raw).hexdigest(),read_files=files,coverage_lost=incomplete)
         return self.originals.boundary.with_history_context(token,project)
 

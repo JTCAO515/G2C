@@ -30,7 +30,7 @@ from .app_smoke_prepare import write_new
 
 
 @contextmanager
-def readers(api_manifest):
+def readers(api_manifest,api_instance):
     load_secret_environment('worker')
     with tempfile.TemporaryDirectory(prefix='qualified-app-smoke-read-')as directory:
         runtime=Runtime.load(directory,worker=True)
@@ -46,7 +46,8 @@ def readers(api_manifest):
                 lambda:str(uuid4()),checker_in_transaction=transaction)
             native=RuntimeOriginals(boundary,database,budget,capture.evidence.directory,
                 query_original=lambda context,mid:context.query_lio_message(mid))
-            yield controls,capture,SmokeOriginals(controls,native),SmokeState(controls,boundary,database)
+            from .app_smoke_lifecycle import require_live
+            yield controls,capture,SmokeOriginals(controls,native,lambda:require_live(controls,api_instance)),SmokeState(controls,boundary,database)
         finally:runtime.close()
 
 
@@ -176,8 +177,13 @@ def main():
     if len(raw)>524288:raise ValueError('bounded App-smoke read request required')
     request=decode(raw)
     try:
-        with readers(Path(sys.argv[1]))as components:
+        with readers(Path(sys.argv[1]),request['api_capture_instance'])as components:
+            from .app_smoke_lifecycle import require_live
+            controls=components[0]
+            instance=request['api_capture_instance']
+            require_live(controls,instance)
             result=perform(request,*components)
+            require_live(controls,instance)
     except Unavailable as error:
         result=dict(version='G2C-App-smoke-read.1',status='UNAVAILABLE',reason=str(error))
     print(canonical(result).decode('utf-8'))

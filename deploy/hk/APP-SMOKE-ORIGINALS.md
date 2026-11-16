@@ -34,6 +34,14 @@ HTTP元数据上界16MiB，完整读原件最多64份；不足、溢出和失败
 丢证时post_count为null，仅保留observed_post_count小计，不把实际两POST误报为完整一次。
 receipt以原子link发布；尚未有receipt的临时/半写读文件不进入检查点。原POST原件尚在发布
 可返回APP_SMOKE_HTTP_OUTER_PENDING等待同一原件，已有UNKNOWN不转PENDING或重新捕获成功。
+
+日志与gap同时不可写也不能恢复为完整：API实例在任何持久化前先latch lost内存状态，
+在原outer目录的0600 Unix socket提供当前实例ID、source/policy和失效/线程存活状态。
+这不是业务权限：原AUTH/M/Memory/费用守卫仍全部执行。B实际资格固定首次合格API实例的
+api_capture_instance，宿主从其root资格注入，调用方不能更换；原件批读前后及HTTP检查点都核
+实时实例。lost、不可达、线程停止或进程重启换ID一律Unavailable，不返回完整计数或原文。
+重启不能复活旧窗口；原FAIL/UNKNOWN与原文件保留，新资格仍须新包/正式审查。
+接口复用既有API-RW/worker-RO挂载，不开放公网、不增加Runtime或更改主体权限。
 未完成body、超限、未知选择器或缺receipt不能拼成恢复PASS。
 纯本地历史列举不虚构远程API。A旧缓存加B另一次GET也不能代替实际App读请求。
 

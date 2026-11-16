@@ -5,6 +5,7 @@ from hashlib import sha256
 import json
 from pathlib import Path
 import time
+import tempfile
 from types import SimpleNamespace
 import uuid
 import pytest
@@ -50,13 +51,19 @@ def setup(tmp_path,*,claim=True):
         smoke.registrations(b)
         f.database.statuses[(scope,b.run_id,mid)]=('completed',3,True)
         smoke.completed([SimpleNamespace(message_id=mid,run_id=b.run_id,status='completed')])
-    directory=tmp_path/'outer';directory.mkdir(mode=0o700)
+    temporary=tempfile.TemporaryDirectory(prefix='g2c-http-',dir='/tmp')
+    directory=Path(temporary.name)/'outer';directory.mkdir(mode=0o700)
     p=tmp_path/'api.json'
     write(p,dict(version=VERSION,policy_path=str(f.path),policy_sha256=sha256(f.path.read_bytes()).hexdigest(),
         directory=str(directory),directory_device=directory.stat().st_dev,directory_inode=directory.stat().st_ino))
     controls=OuterControls(p,SUBJECTS,clock=lambda:f.clock[0])
     originals=Originals(b,canonical({'text':'question-0'}))
     observer=OuterCapture(controls,Checker(),originals,clock=lambda:f.clock[0])
+    close=observer.close
+    def cleanup():
+        try:close()
+        finally:temporary.cleanup()
+    observer.close=cleanup
     return f,b,raw,directory,observer,originals
 
 
@@ -102,8 +109,8 @@ def test_original_http_bytes_require_claim_native_read_and_leave_original_respon
         assert [x['phase']for x in rows]==['started','finished']
         assert rows[0]['exchange_id']==rows[1]['exchange_id']and rows[1]['message_id']==b.message_id
         assert rows[1]['request_id']==RID and rows[1]['status']==201
-        assert TOKEN not in ''.join(x.read_text()for x in directory.iterdir())
-        assert 'must-not-log'not in ''.join(x.read_text()for x in directory.iterdir())
+        assert TOKEN not in ''.join(x.read_text()for x in directory.iterdir()if x.is_file())
+        assert 'must-not-log'not in ''.join(x.read_text()for x in directory.iterdir()if x.is_file())
         assert all(x.stat().st_mode&0o777==0o600 for x in directory.iterdir())
     finally:observer.close()
 
@@ -125,7 +132,7 @@ def test_foreign_token_and_login_route_are_not_captured(tmp_path):
     try:
         exchange(observer,raw,token='foreign-token')
         exchange(observer,raw,path='/v2/demo-invite-sessions')
-        assert not list(directory.iterdir())
+        assert {x.name for x in directory.iterdir()}=={'capture-status.sock'}
     finally:observer.close()
 
 
@@ -250,7 +257,9 @@ def protected_fixture(observer,originals,binding):
         run_id=binding.run_id,sequence=binding.message_sequence,input_sha256=sha256(originals.raw).hexdigest()))
     originals.query_original=lambda context,mid:original
     originals.boundary=SimpleNamespace(with_history_context=history)
-    return SmokeOriginals(observer.controls,originals)
+    from deploy.hk.app_smoke_lifecycle import require_live
+    instance=observer.lifecycle.instance_id
+    return SmokeOriginals(observer.controls,originals,lambda:require_live(observer.controls,instance))
 
 
 def test_previous_step_get_published_late_is_not_a_new_step_read(tmp_path):
@@ -315,10 +324,10 @@ def test_full_read_queue_does_not_consume_post_capacity_and_overflow_stays_unkno
         assert observer.queue.qsize()==1
         release.set();drain(observer)
         assert json.loads(next(directory.glob('*.receipt.json')).read_bytes())['status']=='CAPTURED'
-        result=protected.http_observed(TOKEN,point)
-        assert result['observed_post_count']==1 and result['post_count']is None
-        assert result['http_coverage']=='UNKNOWN'and result['read_coverage']=='UNKNOWN'
-        assert len(result['unknown_read_exchanges'])==1
+        rows=[json.loads(line)for line in(directory/'http-attempts.jsonl').read_text().splitlines()]
+        assert sum(row.get('capture_status')=='UNKNOWN'for row in rows)==1
+        assert sum(row['method']=='POST'and row['phase']=='started'for row in rows)==1
+        with pytest.raises(Unavailable,match='LIFECYCLE_INVALID'):protected.http_observed(TOKEN,point)
     finally:release.set();observer.close()
 
 
@@ -366,9 +375,8 @@ def test_http_metadata_capacity_gap_remains_unknown_after_later_success(tmp_path
         monkeypatch.setattr(app_smoke_outer,'HTTP_LOG_LIMIT',16*1024*1024)
         get_exchange(observer,b.conversation_id,canonical(dict(conversation_id=b.conversation_id,messages=[])))
         drain(observer)
-        result=protected.http_observed(TOKEN,point)
-        assert len(result['actual_reads'])==1
-        assert result['http_coverage_lost']is True and result['read_coverage']=='UNKNOWN'
+        assert len(list(directory.glob('*.read.json')))==1
+        with pytest.raises(Unavailable,match='LIFECYCLE_INVALID'):protected.http_observed(TOKEN,point)
     finally:observer.close()
 
 
@@ -389,10 +397,10 @@ def test_lost_second_post_metadata_never_reports_one_as_exact_post_count(tmp_pat
         if failure=='capacity':monkeypatch.setattr(app_smoke_outer,'HTTP_LOG_LIMIT',(directory/'http-attempts.jsonl').stat().st_size)
         exchange(observer,raw);drain(observer)
         assert len(starts)==2
-        result=protected.http_observed(TOKEN,point)
-        assert result['observed_post_count']==1
-        assert result['post_count']is None and result['http_coverage']=='UNKNOWN'
-        assert result['http_coverage_lost']is True
+        rows=[json.loads(line)for line in(directory/'http-attempts.jsonl').read_text().splitlines()]
+        assert sum(row['method']=='POST'and row['phase']=='started'for row in rows)==1
+        assert(directory/'http-coverage-lost.json').exists()
+        with pytest.raises(Unavailable,match='LIFECYCLE_INVALID'):protected.http_observed(TOKEN,point)
     finally:observer.close()
 
 
@@ -436,4 +444,51 @@ def test_unpublished_partial_read_file_is_not_a_checkpoint_source(tmp_path):
         point=protected.http_checkpoint(TOKEN)
         result=protected.http_observed(TOKEN,point)
         assert result['actual_reads']==[]and result['post_count']==0
+    finally:observer.close()
+
+
+def test_append_and_gap_double_failure_stays_invalid_after_disk_recovery_and_restart(tmp_path,monkeypatch):
+    from deploy.hk import app_smoke_outer
+    from deploy.hk.app_smoke_lifecycle import read_status,require_live
+    f,b,raw,directory,observer,originals=setup(tmp_path)
+    protected=protected_fixture(observer,originals,b);point=protected.http_checkpoint(TOKEN)
+    instance=observer.lifecycle.instance_id;write_http=observer._write_http;marker=app_smoke_outer.publish_marker;starts=[]
+    def fail_second(value):
+        if value['method']=='POST'and value['phase']=='started':
+            starts.append(value['exchange_id'])
+            if len(starts)==2:raise OSError('synthetic append unavailable')
+        return write_http(value)
+    def fail_gap(directory_fd,name,value,**kwargs):
+        if name=='http-coverage-lost.json':raise OSError('synthetic gap persistence unavailable')
+        return marker(directory_fd,name,value,**kwargs)
+    restarted=None
+    try:
+        monkeypatch.setattr(observer,'_write_http',fail_second)
+        monkeypatch.setattr(app_smoke_outer,'publish_marker',fail_gap)
+        exchange(observer,raw);drain(observer);exchange(observer,raw);drain(observer)
+        assert len(starts)==2 and not(directory/'http-coverage-lost.json').exists()
+        rows=[json.loads(line)for line in(directory/'http-attempts.jsonl').read_text().splitlines()]
+        assert sum(row['method']=='POST'and row['phase']=='started'for row in rows)==1
+        monkeypatch.setattr(observer,'_write_http',write_http)
+        monkeypatch.setattr(app_smoke_outer,'publish_marker',marker)
+        assert read_status(observer.controls)['lost']is True
+        with pytest.raises(Unavailable,match='LIFECYCLE_INVALID'):protected.http_observed(TOKEN,point)
+        with pytest.raises(Unavailable,match='LIFECYCLE_INVALID'):protected.http_checkpoint(TOKEN)
+        observer.stop.set();observer.thread.join(timeout=1);observer.lifecycle.close()
+        restarted=OuterCapture(observer.controls,Checker(),originals,clock=lambda:f.clock[0])
+        now=read_status(observer.controls)
+        assert now['lost']is False and now['instance_id']!=instance
+        with pytest.raises(Unavailable,match='LIFECYCLE_INVALID'):require_live(observer.controls,instance)
+        with pytest.raises(Unavailable,match='LIFECYCLE_INVALID'):protected.http_observed(TOKEN,point)
+    finally:
+        if restarted is not None:restarted.close()
+        observer.close()
+
+
+def test_live_lifecycle_socket_loss_never_becomes_an_empty_success(tmp_path):
+    f,b,raw,directory,observer,originals=setup(tmp_path)
+    protected=protected_fixture(observer,originals,b);point=protected.http_checkpoint(TOKEN)
+    try:
+        observer.lifecycle.close()
+        with pytest.raises(Unavailable,match='STATUS_UNAVAILABLE'):protected.http_observed(TOKEN,point)
     finally:observer.close()

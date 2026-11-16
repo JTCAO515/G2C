@@ -10,6 +10,7 @@ from pathlib import Path
 import json
 import sys
 import time
+import tempfile
 import uuid
 
 ROOT=Path(__file__).resolve().parents[3]
@@ -114,7 +115,8 @@ def exercise(auth,conninfo):
     from cj_api.runtime_originals import RuntimeOriginals
     from cj_api.app_smoke_originals import SmokeOriginals
     from cj_api.app_smoke_state import SmokeState
-    outer_dir=root/'http-outer';outer_dir.mkdir(mode=0o700)
+    outer_temporary=tempfile.TemporaryDirectory(prefix='g2c-pg-http-',dir='/tmp')
+    outer_dir=Path(outer_temporary.name)/'outer';outer_dir.mkdir(mode=0o700)
     api_policy=root/'http-outer-policy.json'
     write(api_policy,dict(version=OUTER_WINDOW,policy_path=str(f.path),policy_sha256=sha256(f.path.read_bytes()).hexdigest(),
         directory=str(outer_dir),directory_device=outer_dir.stat().st_dev,directory_inode=outer_dir.stat().st_ino))
@@ -144,7 +146,8 @@ def exercise(auth,conninfo):
         end=time.monotonic()+5
         while (observer.queue.unfinished_tasks or observer.read_queue.unfinished_tasks)and time.monotonic()<end:time.sleep(.01)
         assert observer.queue.unfinished_tasks==observer.read_queue.unfinished_tasks==0
-        protected=SmokeOriginals(controls,originals)
+        from deploy.hk.app_smoke_lifecycle import require_live
+        protected=SmokeOriginals(controls,originals,lambda:require_live(controls,observer.lifecycle.instance_id))
         footprint=SmokeState(controls,boundary,database).read(token)
         assert footprint['runtime_role']=='cj_m1_runtime'and footprint['role_flags']==[False]*7
         assert b.message_id in footprint['message_ids']and footprint['pending']==footprint['active']==0
@@ -232,7 +235,7 @@ def exercise(auth,conninfo):
             from runtime_adapter.contract import Unavailable
             assert type(error)is Unavailable
         else:raise AssertionError('foreign HTTP outer read escaped')
-    finally:observer.close()
+    finally:observer.close();outer_temporary.cleanup()
     print('PASS signed ordinary Home MESSAGE, runtime-role RLS, exact outer/canonical hashes, worker zero-op claim, ACK/producer-return, restart, foreign/JWT/RUN rejection; cloud/model/tool0')
     print('PASS actual ASGI HTTP bytes, idempotent native accept, private guarded outer receipt/readback, original answer and foreign denial; no fabricated legacy wire')
 

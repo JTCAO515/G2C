@@ -206,8 +206,13 @@ class OuterCapture:
     def __init__(self,controls,fast_checker,originals,*,clock=time.time):
         self.controls,self.checker,self.originals,self.clock=controls,fast_checker,originals,clock
         self.queue=Queue(maxsize=12);self.read_queue=Queue(maxsize=12);self.stop=threading.Event()
+        self.lost=threading.Event()
         self.http_lock=threading.Lock()
         self.thread=threading.Thread(target=self._loop,name='app-smoke-outer',daemon=True);self.thread.start()
+        from .app_smoke_lifecycle import CaptureLifecycle
+        try:self.lifecycle=CaptureLifecycle(controls,self.lost,lambda:self.thread.is_alive()and not self.stop.is_set())
+        except BaseException:
+            self.stop.set();self.thread.join(timeout=1);raise
 
     def eligible(self,token):
         decision=self.checker.check(token)
@@ -222,6 +227,7 @@ class OuterCapture:
             raise
 
     def mark_lost(self):
+        self.lost.set()  # survives log + marker failure for this actual API lifetime
         with self.controls.directory()as directory:
             publish_marker(directory,'http-coverage-lost.json',dict(version='G2C-App-smoke-HTTP-gap.1',
                 policy_sha256=self.controls.window['policy_sha256']))
@@ -430,7 +436,7 @@ class OuterCapture:
             publish_marker(directory,path,receipt,keep_existing=status!='CAPTURED')
 
     def close(self):
-        self.stop.set();self.thread.join(timeout=1)
+        self.stop.set();self.thread.join(timeout=1);self.lifecycle.close()
 
     def publish_read(self,item,claim):
         controls=self.controls
