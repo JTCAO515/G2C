@@ -13,7 +13,7 @@ V3_CITIES = CITIES | {"taizhou-zhejiang", "suzhou-anhui"}
 V3_TOPICS = V2_TOPICS | {"seasonal_holiday"}
 # JT approved these exact hostnames in #702/6907792461, without subdomains.
 V3_GOVERNMENT_HOSTS = GOVERNMENT_HOSTS | {"www.zjtz.gov.cn", "www.ahsz.gov.cn", "www.gov.cn"}
-# JT's second batch #702/6908024069 covers only these institutions' venue pages.
+# JT venue approvals: #702/6908024069, 6908348251; candidates failing identity are excluded.
 VENUE_SOURCE_CITIES = {
     "www.zjtz.gov.cn": "taizhou-zhejiang", "www.ahsz.gov.cn": "suzhou-anhui",
     "www.cdmuseum.com": "chengdu", "www.cddfct.cn": "chengdu", "www.panda.org.cn": "chengdu",
@@ -22,7 +22,7 @@ VENUE_SOURCE_CITIES = {
     "wgltj.zjtz.gov.cn": "taizhou-zhejiang", "www.linhai.gov.cn": "taizhou-zhejiang",
     "www.sz-museum.com": "suzhou-anhui", "cgj.ahsz.gov.cn": "suzhou-anhui",
     "www.badaling.cn": "beijing", "cgj.cq.gov.cn": "chongqing",
-    "www.xixishidi.cn": "hangzhou", "qjxq.xa.gov.cn": "xian",
+    "qjxq.xa.gov.cn": "xian",
     "www.shanghaimuseum.net": "shanghai", "www.szwwco.com": "shenzhen",
 }
 V3_APPROVED_HOSTS = V3_GOVERNMENT_HOSTS | VENUE_SOURCE_CITIES.keys()

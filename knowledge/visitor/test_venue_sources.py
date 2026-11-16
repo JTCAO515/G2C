@@ -21,7 +21,7 @@ class VenueSourceScopeTests(unittest.TestCase):
                 validate_entry_v3({**self.venue, **change}, as_of=TODAY)
 
     def test_candidate_identity_and_external_reservation_subdomains_are_not_accepted(self):
-        for host in ('www.szmuseum.com', 'ticket.dpm.org.cn', 'reservation.shanghaimuseum.net',
+        for host in ('www.szmuseum.com', 'www.xixishidi.cn', 'ticket.dpm.org.cn', 'reservation.shanghaimuseum.net',
                      'file.panda.org.cn', 'search.zj.gov.cn'):
             record = deepcopy(self.venue)
             record['source_urls'] = ['https://' + host + '/example']
