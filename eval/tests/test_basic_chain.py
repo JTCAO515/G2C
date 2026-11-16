@@ -12,6 +12,7 @@ from eval.basic_chain.cost import costs
 from eval.basic_chain.judge import judge,semantic
 from eval.basic_chain.plan import make_plan,check_plan,packed,digest,decode,Invalid
 from eval.basic_chain.runner import execute,private_read,save,day_guard,preflight
+from eval.basic_chain.semantics_v2 import semantic as semantic_v2
 
 H='a'*64
 APP=dict(build=46,source_sha='a'*40,artifact_sha256=H,protocol='LIO-message.2')
@@ -148,6 +149,28 @@ def test_chinese_capability_requires_positive_statement():
     assert semantic('SM06','旅行行程规划','zh')[0]=='UNKNOWN'
 
 
+def test_accepted_multiline_codebank_has_independent_complete_positive_vectors():
+    root=Path(__file__).resolve().parents[1]/'basic_chain'
+    corpus=json.loads((root/'accepted_codebank.v1.json').read_bytes())
+    for locale,row in corpus['cases'].items():
+        assert sha256(row['raw_utf8'].encode()).hexdigest()==row['raw_sha256']
+        assert semantic_v2('SM06',row['raw_utf8'],locale)[0]=='PASS'
+        assert semantic_v2('SM06',row['raw_utf8'].splitlines()[0],locale)[0]!='PASS'
+
+
+@pytest.mark.parametrize('text,status',[
+    ("Yes, Beijing (**北京**) is China's capital.",'PASS'),
+    ('Beijing is the capital city of China (**中国**).','PASS'),
+    ("China’s capital is Beijing (北京).",'PASS'),
+    ('Is Beijing (**北京**) the capital of China?','UNKNOWN'),
+    ('Beijing (北京) is not the capital of China.','FAIL'),
+    ("I don't know whether Beijing (北京) is China's capital.",'UNKNOWN'),
+    ('Yes, Beijing (**上海**) is the capital of China.','UNKNOWN'),
+])
+def test_v2_accepts_known_bilingual_fact_without_erasing_denial_or_wrong_name(text,status):
+    assert semantic_v2('SM02',text,'en')[0]==status
+
+
 def test_fixed_bilingual_plan_and_no_mid_wildcard():
     plan,*_=fixture();check_plan(plan)
     assert len(plan['steps'])==14 and plan['planned_message_count']==8
@@ -156,6 +179,22 @@ def test_fixed_bilingual_plan_and_no_mid_wildcard():
     with pytest.raises(Invalid):check_plan(plan)
     initial=make_plan(app=APP,old_chats={},first_setup=True)
     assert initial['planned_message_count']==12 and len(initial['steps'])==18
+    assert initial['execution_profile']['model_call_upper']==80
+    assert initial['execution_profile']['total_tool_call_upper']==64
+    assert initial['execution_profile']['cash_ceiling_cny']==80
+
+
+def test_append_only_plan_quote_preserves_legacy_and_never_claims_prefunding():
+    legacy=make_plan(app=APP,old_chats={},version='LIO-basic-chain-plan.1')
+    assert 'execution_profile'not in legacy
+    check_plan(legacy)
+    plan=make_plan(app=APP,old_chats={})
+    assert plan['execution_profile']['model_call_upper']==40
+    assert plan['execution_profile']['total_tool_call_upper']==32
+    assert plan['execution_profile']['coarse_sum_if_every_call_reserved_one_cny']==72
+    assert plan['budget_ceiling_cny']==60
+    plan['execution_profile']['cash_ceiling_cny']=144
+    with pytest.raises(Invalid):check_plan(plan)
 
 
 def test_json_duplicate_nonfinite_and_private_files():
@@ -208,6 +247,8 @@ def test_first_unknown_stops_before_ui_and_keeps_fourteen_denominator():
 def test_fixture_layer_has_no_live_cli_path():
     plan,*_=fixture()
     with pytest.raises(Invalid):execute(plan,{'version':'LIO-basic-chain-host.1','evidence_layer':'L0'},'unused')
+    legacy=make_plan(app=APP,old_chats={},version='LIO-basic-chain-plan.1')
+    with pytest.raises(Invalid):execute(legacy,{},'unused-legacy')
 
 
 @pytest.mark.parametrize('failure_at',[None,'zh-SM02','en-SM07','owner-mismatch'])

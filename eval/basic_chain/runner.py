@@ -13,7 +13,7 @@ import subprocess
 from zoneinfo import ZoneInfo
 
 from .judge import judge
-from .plan import check_plan, decode, packed, require, Invalid, is_sha, digest
+from .plan import VERSION,check_plan, decode, packed, require, Invalid, is_sha, digest
 
 
 def private_read(path):
@@ -101,6 +101,7 @@ def preflight(value,config,plan,step,now):
 
 def execute(plan,config,directory,*,clock=lambda:datetime.now(timezone.utc),call=None):
     check_plan(plan)
+    require(plan['version']==VERSION,'legacy plans remain readable; new dispatch requires the revised source/cash profile')
     require(config['version']=='LIO-basic-chain-host.1'and config['evidence_layer']=='L2+L3',
             'qualified real host configuration required; fixtures have no execution path')
     require(config['app']==plan['app'],'plan/host App differs')
