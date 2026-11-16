@@ -13,7 +13,7 @@ import XCTest
             print("HISTORY_AUDIT_LANGUAGE_\(chinese ? "ZH" : "EN")")
             let app = XCUIApplication(bundleIdentifier: "space.go2china.paged-history.acceptance")
             app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", chinese ? "zh-Hans" : "en",
-                                   "-lio.ui.appearance.v1", appearance]
+                                   "-lio.ui.appearance.v1", appearance, "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
             app.launch()
             let position = app.staticTexts["lio.position.19.loaded.20.earlier.1"]
             XCTAssertTrue(position.waitForExistence(timeout: 8))
@@ -89,7 +89,7 @@ extension LioPagedHistoryUITests {
         continueAfterFailure = false
             let app = XCUIApplication(bundleIdentifier: "space.go2china.paged-history.acceptance")
             app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", chinese ? "zh-Hans" : "en",
-                                   "-lio.ui.appearance.v1", "light"]
+                                   "-lio.ui.appearance.v1", "light", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
             app.launch()
             defer { app.terminate() }
             XCTAssertTrue(app.staticTexts["lio.position.19.loaded.20.earlier.1"].waitForExistence(timeout: 8))
@@ -174,9 +174,13 @@ extension LioPagedHistoryUITests {
             let jump = app.buttons["lio.jumpToLatest"]
             XCTAssertTrue(jump.isHittable)
             let jumpFrame = jump.frame
+            let visibleChat = scroll.frame
             for body in app.staticTexts.matching(identifier: "lio.answer").allElementsBoundByIndex {
                 let frame = body.frame
-                if !frame.isEmpty { XCTAssertFalse(frame.intersects(jumpFrame), "Jump must not cover a reply body") }
+                let visiblePart = frame.intersection(visibleChat)
+                if !visiblePart.isNull && !visiblePart.isEmpty {
+                    XCTAssertFalse(visiblePart.intersects(jumpFrame), "Jump must not cover visible reply text")
+                }
             }
             waitForVisibleRepliesToSettle(app, chinese: chinese)
             let image = XCTAttachment(screenshot: app.screenshot())

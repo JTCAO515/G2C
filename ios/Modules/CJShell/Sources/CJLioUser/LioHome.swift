@@ -807,6 +807,7 @@ public struct LioHome<MenuContent: View>: View {
                     .transition(.opacity)
             }
         }
+        .padding(.top, showsJump ? 44 + LioTheme.Spacing.sm : 0)
         .animation(LioTheme.Motion.animation(LioTheme.Motion.change, reduceMotion: reduceMotion), value: showsJump)
         .frame(maxWidth: 680)
         .padding(.horizontal, 16)
