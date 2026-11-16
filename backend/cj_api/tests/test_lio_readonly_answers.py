@@ -12,6 +12,15 @@ CASES={case['case_id']:case for case in json.loads((Path(__file__).resolve().par
     'docs/quality/m4-stage0-1048/regressions.v1.json').read_text())['cases']}
 
 
+def previous_turn(events):
+    value=context(events)
+    for fact in value['facts'].values():
+        for ref in fact['sources']:ref['message_id']='prior-0'if ref['message_id']=='national-message'else ref['message_id']
+    for key in ('nonplanning_message_ids','read_only_data_message_ids'):
+        value[key]=['prior-0'if mid=='national-message'else mid for mid in value.get(key,[])]
+    return value
+
+
 class ReadOnlyAnswers(unittest.TestCase):
     def test_plan06_undecided_date_and_party_do_not_block_readonly_days(self):
         for locale in ('zh','en'):
@@ -32,8 +41,7 @@ class ReadOnlyAnswers(unittest.TestCase):
                 wire=flow(first,city=city,days=None,questions=('duration_days',),reply='玩几天？'if locale=='zh'else'How many days?')
                 wire.update(planning_request_index=None,needs_tools=True)
                 _,events,_,_=run(wire,first,locale=locale)
-                previous=context(events)
-                previous['facts']['city']['sources'][0]['message_id']='prior-0'
+                previous=previous_turn(events)
                 wire=flow(last,city=city,days=3,index=1,questions=())
                 wire.update(planning_request_index=None,needs_tools=False)
                 wire['city'].update(source_index=0,quote=city)
@@ -111,6 +119,54 @@ class ReadOnlyAnswers(unittest.TestCase):
         published,events,lookups,_=run(wire,current,turns=(original(first),original(current)))
         self.assertEqual((published,lookups),([],[]))
         self.assertEqual(context(events)['facts']['city']['sources'],[dict(message_id='prior-0',quote='成都')])
+
+    def test_new_explicit_save_reuses_readonly_human_city_and_days(self):
+        first='规划成都三天';current='请保存，2026-12-01出发，两个人'
+        wire=flow(first,city='成都',days=3,questions=())
+        wire.update(planning_request_index=None,needs_tools=False)
+        _,events,_,_=run(wire,first)
+        previous=previous_turn(events)
+        followup=flow(current,city=None,days=None,start='2026-12-01',party=2,intent='save',index=1,questions=())
+        followup.update(planning_request_index=1,needs_tools=False)
+        published,events,_,_=run(followup,current,turns=(original(first),original(current)),previous=previous)
+        self.assertEqual(len(published),1)
+        self.assertNotIn('哪个城市',answer(events))
+        self.assertNotIn('几天',answer(events))
+        # A model-labelled save rooted only at a new "continue" is no grant.
+        current='继续'
+        forged=flow(current,city=None,days=None,intent='save',index=1,questions=())
+        forged.update(planning_request_index=1,needs_tools=False)
+        published,_,_,_=run(forged,current,turns=(original(first),original(current)),previous=previous)
+        self.assertEqual(published,[])
+
+    def test_readonly_known_date_party_are_data_but_an_old_root_stays_denied(self):
+        first='规划成都三天，2026-12-01出发，两个人'
+        wire=flow(first,city='成都',days=3,start='2026-12-01',party=2,questions=())
+        wire.update(planning_request_index=None,needs_tools=False)
+        _,events,_,_=run(wire,first)
+        previous=previous_turn(events)
+        for text,root,expected in (('请保存',1,1),('继续',0,0),('继续',1,0)):
+            with self.subTest(text=text,root=root):
+                followup=flow(text,city=None,days=None,intent='save',index=1,questions=())
+                followup.update(planning_request_index=root,needs_tools=False)
+                published,events,_,_=run(followup,text,turns=(original(first),original(text)),previous=previous)
+                self.assertEqual(len(published),expected)
+
+    def test_readonly_data_marker_never_promotes_translated_dates_or_party(self):
+        first='规划成都三天。请翻译“2026-12-01出发，两个人”';current='请保存'
+        wire=flow(first,city='成都',days=3,questions=())
+        wire.update(planning_request_index=None,needs_tools=False)
+        wire['field_sources'][0]['quote']='三天'
+        _,events,_,_=run(wire,first)
+        previous=previous_turn(events)
+        followup=flow(current,city=None,days=None,start='2026-12-01',party=2,intent='save',index=1,questions=())
+        followup.update(planning_request_index=1,needs_tools=False)
+        followup['field_sources']=[dict(field='start_date',source_index=0,quote='2026-12-01出发'),
+                                   dict(field='party_size',source_index=0,quote='两个人')]
+        published,events,_,_=run(followup,current,turns=(original(first),original(current)),previous=previous)
+        self.assertEqual(published,[])
+        self.assertNotIn('start_date',context(events)['facts'])
+        self.assertNotIn('party_size',context(events)['facts'])
 
     def test_qa06_failed_human_data_can_support_details_without_a_failed_root_grant(self):
         for locale in ('zh','en'):

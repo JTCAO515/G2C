@@ -307,6 +307,7 @@ class NationalLioPlanning:
         boundary_mid=None if previous is None else previous.get('date_boundary_message_id')
         barrier_mid=None if previous is None else previous.get('authority_barrier_message_id')
         excluded=[]if previous is None else [mid for mid in previous.get('nonplanning_message_ids',[])if mid in source_ids]
+        readonly_data=[]if previous is None else [mid for mid in previous.get('read_only_data_message_ids',[])if mid in source_ids]
         if intake.planning_request_index is None:excluded.append(binding.message_id)
         resolved_mid=None if previous is None else previous.get('resolved_city_source_message_id')
         if resolved_mid is None and previous is not None and previous.get('city',{}).get('status')=='resolved':
@@ -319,6 +320,7 @@ class NationalLioPlanning:
             if value['status']in AUTHORITY_BARRIERS:
                 barrier_mid=binding.message_id
             return self._context(worker,binding,state,dict(value,facts=facts,nonplanning_message_ids=list(dict.fromkeys(excluded)),
+                **({'read_only_data_message_ids':list(dict.fromkeys(readonly_data))}if readonly_data else {}),
                 **({'date_boundary_message_id':boundary_mid}if boundary_mid is not None else {}),
                 **({'resolved_city_source_message_id':resolved_mid}if resolved_mid is not None else {}),
                 **({'authority_barrier_message_id':barrier_mid}if barrier_mid is not None else {})))
@@ -349,10 +351,11 @@ class NationalLioPlanning:
             city=read_only.city
             literal=destination_query(turns[city['source_index']].text,city['query'])
             city_mid=source_ids[city['source_index']]
-            question_facts=dict(city=dict(value=dict(city,query=literal if literal is not None else city['query'],normalized_name=None,province=None),
+            question_facts=dict(read_only.facts,city=dict(value=dict(city,query=literal if literal is not None else city['query'],normalized_name=None,province=None),
                 sources=[dict(message_id=city_mid,quote=city['quote'])]))
             state=self._context(worker,binding,state,dict(authority='none',status='needs_details',
-                facts=question_facts,nonplanning_message_ids=list(dict.fromkeys([city_mid,binding.message_id]))))
+                facts=question_facts,nonplanning_message_ids=list(dict.fromkeys([city_mid,binding.message_id])),
+                read_only_data_message_ids=[binding.message_id]))
             return self._clarify(worker,binding,state,original.locale,intake.reply,question_fields,['duration_days'])
         if (not planning and not booking_unclear
                 and not intake.publication_hold and not publication_held(text)
@@ -379,11 +382,12 @@ class NationalLioPlanning:
                 window=(first,last)
             city=read_only.city
             city_source=dict(source_index=city['source_index'],quote=city['quote'])
-            readonly_sources={'city':[city_source],'duration_days':read_only.sources['duration_days']}
+            facts.update(read_only.facts)
+            data_sources={'city':[city_source],**read_only.sources}
             values={'city':dict(city,normalized_name=None,province=None),'duration_days':read_only.duration_days}
-            for field,sources in readonly_sources.items():
-                facts[field]=dict(value=values[field],sources=[dict(message_id=source_ids[ref['source_index']],quote=ref['quote'])for ref in sources])
-                excluded.extend(source_ids[ref['source_index']]for ref in sources)
+            for field,sources in data_sources.items():
+                if field in values:facts[field]=dict(value=values[field],sources=[dict(message_id=source_ids[ref['source_index']],quote=ref['quote'])for ref in sources])
+            readonly_data.append(binding.message_id)
             state=context(worker,binding,state,dict(authority='none',status='plan_preview'))
             return discuss(worker,binding,state,original.locale,turns,refs,
                 day_count=read_only.duration_days,planning_window=window,destination=city['query'])
