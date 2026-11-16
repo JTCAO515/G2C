@@ -46,8 +46,14 @@ def probe(q):
         expected=['api','--app-smoke-api-manifest',q['api_manifest']]if role=='api'else[
             'worker','--app-smoke-manifest',q['worker_manifest']]
         if value['command']!=expected:raise ValueError('actual App smoke composition changed')
-        for destination,mount in q['mounts'][role].items():
-            if value['mounts'].get(destination)!=mount:raise ValueError('qualified private mounts changed')
+        if value['mounts']!=q['mounts'][role]:raise ValueError('complete qualified mount set changed')
+    worker_only=('/app-smoke-evidence','/rejected-intakes','/tool-evidence',
+                 '/run/secrets/worker.env','/home/cj/.local/share/g2c/m4-real-services')
+    api_mounts=result['api']['mounts'];worker_mounts=result['worker']['mounts']
+    private_sources={worker_mounts[target]['source']for target in worker_only if target in worker_mounts}
+    if any(target in api_mounts for target in worker_only)or any(
+            mount['source']in private_sources for mount in api_mounts.values()):
+        raise ValueError('worker-only originals cannot be mounted in API')
     if result['api']['health']!='healthy':raise ValueError('actual API is not ready')
     return result
 
