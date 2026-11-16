@@ -1,6 +1,7 @@
 from dataclasses import replace
 from hashlib import sha256
 from types import SimpleNamespace
+import sqlite3
 import unittest
 
 from cj_run.core import Binding
@@ -153,6 +154,25 @@ class SimulatorRequestsTest(unittest.TestCase):
     def test_native_guard_refusal_is_not_replaced_by_simulator_authority(self):
         self.native_guard = lambda: False
         with self.assertRaises(BudgetUnknown): self.invoke()
+        self.assertEqual(self.sends, [])
+
+    def test_financial_database_read_failure_selects_no_fallback_registry(self):
+        def unavailable(**kwargs):
+            raise sqlite3.OperationalError('fixture original journal unavailable')
+        self.dut.authority.require_current_operation = unavailable
+        self.assertEqual(self.routing.registrations(self.binding), {})
+        with self.assertRaises(BudgetUnknown): self.routing.reflection(self.binding)
+        self.assertEqual(self.sends, [])
+
+    def test_financial_database_read_failure_after_selection_is_sticky_unknown(self):
+        registry = self.routing.registrations(self.binding)
+        original = self.dut.authority.require_current_operation
+        def unavailable(**kwargs):
+            raise sqlite3.OperationalError('fixture original journal unavailable')
+        self.dut.authority.require_current_operation = unavailable
+        with self.assertRaises(BudgetUnknown): self.invoke(registry)
+        self.dut.authority.require_current_operation = original
+        with self.assertRaises(BudgetUnknown): self.invoke(registry)
         self.assertEqual(self.sends, [])
 
 
