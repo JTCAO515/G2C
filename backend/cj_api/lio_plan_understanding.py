@@ -169,6 +169,34 @@ def _clock_source(field,value,references,turns):
         if clocks!={value}:raise InvalidInput('clock differs from its exact original source')
 
 
+def _event_subject(clause,event,literals):
+    declared=_EVENTS[event].search(clause)
+    if declared is None:return None
+    subject=clause[:declared.start()]
+    for literal in literals:subject=subject.replace(literal,'',1)
+    return re.sub(r'\b(?:from|at|to)\b|从|在|到|至','',_PRECISE_CLOCK.sub('',subject),flags=re.I).strip()
+
+
+def _date_event_source(field,references,turns):
+    """A literal date on somebody else's event is not a traveler constraint.
+
+    Existing bare-date and plan-request grammar stays with data8. Only an
+    explicit arrival/departure clause adds this same traveler-role requirement.
+    """
+    for reference in references:
+        turn=turns[reference.source_index];offset=turn.text.index(reference.quote)
+        clause=_source_clause(turn.text,offset,offset+len(reference.quote))
+        if not any(pattern.search(clause)for pattern in _EVENTS.values()):continue
+        event=('arrival'if _EVENTS['arrival'].search(clause)else'departure')if field=='start_date'else(
+            'arrival'if field.startswith('arrival.')else'departure')
+        literals=[match[0]for match,_ in _current_date_anchors(clause,turn.question_day)]
+        literals.extend(match[0]for match in _WEEK_SOURCE.finditer(clause))
+        subject=_event_subject(clause,event,literals)
+        opposite='departure'if event=='arrival'else'arrival'
+        if subject is None or _TRAVELER_SUBJECT.fullmatch(subject)is None or _EVENTS[opposite].search(clause):
+            raise InvalidInput('date belongs to a different original event or traveler')
+
+
 def _place_source(field,value,references,turns):
     """Only an affirmative original endpoint span can seed a provider query."""
     event='arrival'if field.startswith('arrival.')else'departure'
@@ -179,18 +207,14 @@ def _place_source(field,value,references,turns):
             raise InvalidInput('place differs from its literal original source')
         offset=original.index(reference.quote)
         clause=_source_clause(original,offset,offset+len(reference.quote)).strip().rstrip('.。!！')
-        declared=_EVENTS[event].search(clause)
         # Reuse the clock/mode event and traveler grammar. A location before
         # the verb may be removed only as that exact quoted value, never a
         # third-person subject. A literal short answer remains supported.
-        subject=None
-        if declared is not None:
-            subject=clause[:declared.start()].replace(value,'',1)
-            subject=re.sub(r'\b(?:from|at|to)\b|从|在|到|至','',_PRECISE_CLOCK.sub('',subject),flags=re.I).strip()
+        subject=_event_subject(clause,event,(value,))
         if (not _source_asserted(original,offset,offset+len(reference.quote))or _ENDPOINT_DENIAL.search(clause)or
                 _EVENTS[opposite].search(clause)or
-                (declared is None and clause!=value)or
-                (declared is not None and _TRAVELER_SUBJECT.fullmatch(subject)is None)):
+                (subject is None and clause!=value)or
+                (subject is not None and _TRAVELER_SUBJECT.fullmatch(subject)is None)):
             raise InvalidInput('place requires its affirmative original trip endpoint')
 
 
@@ -540,6 +564,7 @@ def parse_plan_understanding(raw,turns):
                 except ValueError as error:raise InvalidInput('explicit ISO date required')from error
                 _current_date_source(observation.value,[ref.model_dump()for ref in observation.sources],turns,
                                      departure=observation.field=='departure.date')
+                _date_event_source(observation.field,observation.sources,turns)
             elif observation.field.endswith('.time'):
                 _clock_source(observation.field,observation.value,observation.sources,turns)
             elif observation.field.endswith('.place'):
