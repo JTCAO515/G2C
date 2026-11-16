@@ -30,7 +30,7 @@ def main():
         if url=='/v4/lio/messages':
             body=json.loads(kwargs['content'])
             if body['text']in ('我想去中国玩几天','I want to explore China'):
-                body['text']+='；两个人；三个人；预算 CNY 500 总计'if body['locale']=='zh'else'; Two people; Three people; Budget USD 500 total'
+                body['text']+='；两个人；三个人，不要保存；预算 CNY 500 总计'if body['locale']=='zh'else'; Two people; Three people, do not save; Budget USD 500 total'
                 kwargs['content']=packed(body)
         return original_post(api,url,**kwargs)
     def response(transport,request):
@@ -39,6 +39,7 @@ def main():
         if version!=PLAN_UNDERSTANDING:return original_http(transport,request)
         assert body['response_format']==response_format(PLAN_UNDERSTANDING)
         extra=json.loads(body['messages'][-1]['content'])
+        assert ('不要保存'if extra['locale']=='zh'else'do not save')in json.dumps(body['messages'],ensure_ascii=False)
         assert len(extra['original_question_days'])==extra['current_source_index']+1
         currency='CNY'if extra['locale']=='zh'else'USD'
         quote='预算 CNY 500 总计'if extra['locale']=='zh'else'Budget USD 500 total'
