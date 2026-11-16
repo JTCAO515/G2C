@@ -3,6 +3,51 @@ import UIKit
 import CryptoKit
 
 @MainActor final class LioHomeUITests: XCTestCase {
+    func testReadFailurePreservesLoadedConversationInBothLanguages() throws {
+        continueAfterFailure = false
+        for chinese in [false, true] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-read-failure-acceptance", "--lio-read-after-loaded", "-cj.ui.language.v1", chinese ? "zh-Hans" : "en"]
+            app.launch()
+            let oldAnswer = app.staticTexts["lio.answer"]
+            XCTAssertTrue(oldAnswer.waitForExistence(timeout: 8))
+            XCTAssertTrue(oldAnswer.label.contains("Your earlier answer is still here."))
+            app.buttons["lio.menu"].tap()
+            app.buttons["fixture.read.fail"].tap()
+            XCUIDevice.shared.press(.home)
+            app.activate()
+            XCTAssertTrue(app.staticTexts["lio.read.failure"].waitForExistence(timeout: 5))
+            XCTAssertTrue(oldAnswer.label.contains("Your earlier answer is still here."))
+            try app.performAccessibilityAudit(for: .all)
+            app.terminate()
+        }
+    }
+
+    func testReadFailureShowsASpecificNextStepInBothLanguages() throws {
+        continueAfterFailure = false
+        for chinese in [false, true] {
+            for (flag, english, chineseText) in [("", "offline", "网络"), ("--lio-read-503", "service", "服务"),
+                                                ("--lio-read-401", "sign-in", "登录"), ("--lio-read-inactive", "Reconnect", "重新连接")] {
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "--lio-read-failure-acceptance", flag, "-cj.ui.language.v1", chinese ? "zh-Hans" : "en"]
+                app.launch()
+                let failure = app.staticTexts["lio.read.failure"]
+                XCTAssertTrue(failure.waitForExistence(timeout: 5))
+                XCTAssertTrue(failure.label.contains(chinese ? chineseText : english))
+                XCTAssertTrue(app.buttons["lio.read.retry"].isEnabled)
+                XCTAssertFalse(app.progressIndicators.firstMatch.exists)
+                try app.performAccessibilityAudit(for: .all)
+                app.buttons["lio.menu"].tap()
+                app.buttons["fixture.read.restore"].tap()
+                XCUIDevice.shared.press(.home)
+                app.activate()
+                XCTAssertTrue(app.staticTexts["lio.answer"].waitForExistence(timeout: 8))
+                XCTAssertFalse(failure.exists)
+                app.terminate()
+            }
+        }
+    }
+
     func testSavedResultWaitsWhileCoveredAndCelebratesOnlyOnce() throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")

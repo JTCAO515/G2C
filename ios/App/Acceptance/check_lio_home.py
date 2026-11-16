@@ -58,7 +58,9 @@ def main():
     if app.count(preview) != 1:
         raise ValueError("Expected a single sample preview")
     fixture_routes = (
-        '        if ProcessInfo.processInfo.arguments.contains("--lio-exploration-home-acceptance") {\n'
+        '        if ProcessInfo.processInfo.arguments.contains("--lio-read-failure-acceptance") {\n'
+        '            LioReadFailureFixture(shell: shell)\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-exploration-home-acceptance") {\n'
         '            LioExplorationHomeFixture(shell: shell)\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-result-visibility-acceptance") {\n'
         '            LioResultVisibilityFixture()\n'
@@ -94,7 +96,7 @@ def main():
         '            LioTimelineFixture(shell: shell, exerciseResend: ProcessInfo.processInfo.arguments.contains("--lio-resend-acceptance"))\n'
         '        } else ' + preview.lstrip()
     )
-    fixtures = ("LioScrollFixture.swift", "LioTimelineFixture.swift", "LioJourneyFixture.swift",
+    fixtures = ("LioReadFailureFixture.swift", "LioScrollFixture.swift", "LioTimelineFixture.swift", "LioJourneyFixture.swift",
                 "LioMemoryJourneyFixture.swift", "LioChatHistoryFixture.swift", "LioSessionRecoveryFixture.swift",
                 "LioScenePrivacyFixture.swift", "LioExplorationQuestionsFixture.swift", "LioExplorationReplyFixture.swift", "LioRichItineraryFixture.swift", "LioExplorationReadFixture.swift", "LioThinkingFixture.swift", "LioExplorationHomeFixture.swift", "LioCalendarWireFixture.swift", "LioStreamingFixture.swift")
     generated_source.write_text(app.replace(preview, fixture_routes)

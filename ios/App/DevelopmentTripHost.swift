@@ -928,7 +928,7 @@ private var developmentHostEnvironment: [String: String] {
                                            validate: { try lifetime.validate() })
         let lioService = LioService.signedTimeline(lioClient, readFailed: { error in
             let observation = lioClient.lastObservation.flatMap { $0.kind == .timeline ? $0 : nil }
-            LioDiagnosticLog.shared.record(.classify(error, stage: .timeline, observation: observation))
+            LioDiagnosticLog.shared.record(error: error, stage: .timeline, observation: observation)
         })
         lio = lioService
         lioChats = .signed(client: lioClient, defaultService: lioService, language: { shell.language.lio },
@@ -1025,7 +1025,9 @@ private var developmentHostEnvironment: [String: String] {
     private let demoMode: Bool
     #if G2C_DEMO_BETA
     @ObservationIgnored private var lioChatContinuity: LioChatContinuity?
+    var lioSessionProblem: LioRequestProblem?
     #endif
+    @ObservationIgnored private var verificationRequest = UUID()
     @ObservationIgnored lazy var accounts: DevelopmentAccountHost = {
         DevelopmentAccountHost(shell: shell,
             choices: tokens.keys.sorted().map { .init(id: $0, label: $0) }, persistence: persistence, demoMode: demoMode,
@@ -1070,7 +1072,13 @@ private var developmentHostEnvironment: [String: String] {
                 }
                 self.shell.selectedTab = .memory
                 self.shell.memoryPath = [.account]
-            }, invalidate: { [weak self] in self?.trip?.invalidate(); self?.trip = nil },
+            }, invalidate: { [weak self] in
+                self?.verificationRequest = UUID()
+                #if G2C_DEMO_BETA
+                self?.lioSessionProblem = nil
+                #endif
+                self?.trip?.invalidate(); self?.trip = nil
+            },
             clearOffline: offline == nil ? nil : { [weak self] in try self?.offline?.clearLocally() },
             serverRejected: offline == nil || cleanupEnabled ? nil : { [weak self] material in try self?.offline?.identityRejected(material: material) },
             identityWillChange: { [weak self] in
@@ -1273,6 +1281,12 @@ private var developmentHostEnvironment: [String: String] {
     }
 
     private func verify(_ material: SessionMaterial) async -> DevelopmentSessionCheck {
+        let request = UUID()
+        verificationRequest = request
+        #if G2C_DEMO_BETA
+        lioSessionProblem = nil
+        #endif
+        let observation = DevelopmentSessionCheckObservation()
         let configuration: DevelopmentSessionConfiguration
         do {
             guard let inputs = try sessionInputs(material) else { return .rejected }
@@ -1286,7 +1300,8 @@ private var developmentHostEnvironment: [String: String] {
         // Untrusted token metadata can deny an expired attempt, never authorize one.
         if let expiry = configuration.expiresAt, expiry <= Date().timeIntervalSince1970 { return .expired }
         do {
-            let transport = try DevelopmentVerificationTransport(endpoint: endpoint, token: configuration.token)
+            let transport = try DevelopmentVerificationTransport(endpoint: endpoint, token: configuration.token,
+                                                                  observedResponse: { observation.capture($0) })
             let client = Client(serverURL: endpoint, transport: transport)
             let result = try await client.queryMessageReceipt(.init(query: .init(message_id: "session-" + UUID().uuidString)))
             try Task.checkCancellation()
@@ -1294,23 +1309,37 @@ private var developmentHostEnvironment: [String: String] {
             case .ok(let response):
                 let body = try response.body.json
                 guard UUID(uuidString: body.request_id) != nil,
-                      body.request_id == response.headers.X_hyphen_Request_hyphen_ID else { return .networkUnknown }
+                      body.request_id == response.headers.X_hyphen_Request_hyphen_ID else {
+                    noteSessionCheck(request: request, observation: observation.value, error: MessageHTTPFailure.invalidResponse)
+                    return .networkUnknown
+                }
                 return .accepted(account: configuration.subject)
             case .default(let status, _):
-                noteSessionCheck(httpStatus: status, error: nil)
+                noteSessionCheck(request: request, observation: observation.value, error: MessageHTTPFailure.invalidResponse)
                 return status == 401 || status == 403 ? .serverRejected : .networkUnknown
             }
         } catch {
-            noteSessionCheck(httpStatus: nil, error: (error as? ClientError)?.underlyingError ?? error)
+            let underlying = (error as? ClientError)?.underlyingError ?? error
+            noteSessionCheck(request: request, observation: observation.value, error: Task.isCancelled ? CancellationError() : underlying)
             return .networkUnknown
         }
     }
 
     /// Adds an on-device note only; the verification outcome above is unchanged.
-    private func noteSessionCheck(httpStatus: Int?, error: (any Error)?) {
+    private func noteSessionCheck(request: UUID, observation: LioTimelineHTTP.Observation?, error: any Error) {
         #if G2C_DEMO_BETA
-        LioDiagnosticLog.shared.record(.sessionCheck(httpStatus: httpStatus, error: error))
+        guard verificationRequest == request else { return }
+        let problem = LioRequestProblem(error, stage: .sessionCheck, observation: observation)
+        LioDiagnosticLog.shared.record(error: problem, stage: .sessionCheck, observation: observation)
+        if !Task.isCancelled { lioSessionProblem = problem }
         #endif
+    }
+}
+
+@MainActor private final class DevelopmentSessionCheckObservation {
+    private(set) var value: LioTimelineHTTP.Observation?
+    func capture(_ response: HTTPResponse) {
+        value = .init(kind: .sessionCheck, response: response, offline: false)
     }
 }
 
@@ -1318,8 +1347,10 @@ private struct DevelopmentVerificationTransport: ClientTransport {
     let endpoint: URL
     private let token: String
     private let transport: NoRedirectTransport
-    init(endpoint: URL, token: String) throws {
+    private let observedResponse: @MainActor @Sendable (HTTPResponse) -> Void
+    init(endpoint: URL, token: String, observedResponse: @escaping @MainActor @Sendable (HTTPResponse) -> Void) throws {
         self.endpoint = endpoint; self.token = token
+        self.observedResponse = observedResponse
         transport = try NoRedirectTransport(requestTimeout: 5, resourceTimeout: 10)
     }
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
@@ -1332,6 +1363,7 @@ private struct DevelopmentVerificationTransport: ClientTransport {
         var request = request; request.headerFields[.authorization] = "Bearer " + token
         try Task.checkCancellation()
         let (response, body) = try await transport.send(request, body: nil, baseURL: baseURL, operationID: operationID)
+        await observedResponse(response)
         guard !(300..<400).contains(response.status.code), let body else { throw MessageHTTPFailure.invalidResponse }
         let bytes = try await Data(collecting: body, upTo: 16384)
         try Task.checkCancellation()

@@ -28,7 +28,7 @@ public final class LioTimelineHTTP {
 
     /// Request kinds named only for on-device problem notes.
     public enum RequestKind: Sendable, Equatable, CaseIterable {
-        case send, firstLookup, timeline, exploration, tripHistory, undo, memoryChoice
+        case send, firstLookup, timeline, exploration, tripHistory, undo, memoryChoice, sessionCheck
     }
 
     /// The latest attempted request of this client. It never decides an outcome:
@@ -42,6 +42,12 @@ public final class LioTimelineHTTP {
         public let offline: Bool
         public let serverReference: String?
 
+        public init(kind: RequestKind, response: HTTPResponse, offline: Bool) {
+            let traces = response.headerFields.filter { $0.name.canonicalName == "x-request-id" }
+            let reference = traces.count == 1 ? traces.first.flatMap { UUID(uuidString: $0.value)?.uuidString } : nil
+            self.init(kind: kind, httpStatus: response.status.code, offline: offline, serverReference: reference)
+        }
+
         public init(kind: RequestKind, httpStatus: Int?, offline: Bool, serverReference: String? = nil) {
             self.kind = kind
             self.httpStatus = httpStatus
@@ -52,10 +58,11 @@ public final class LioTimelineHTTP {
     public private(set) var lastObservation: Observation?
 
     private func observe(_ kind: RequestKind, _ response: HTTPResponse? = nil) {
-        let traces = response?.headerFields.filter { $0.name.canonicalName == "x-request-id" } ?? []
-        let reference = traces.count == 1 ? traces.first.flatMap { UUID(uuidString: $0.value)?.uuidString } : nil
-        lastObservation = Observation(kind: kind, httpStatus: response.map { $0.status.code },
-                                      offline: connectivity?.offline == true, serverReference: reference)
+        if let response {
+            lastObservation = Observation(kind: kind, response: response, offline: connectivity?.offline == true)
+        } else {
+            lastObservation = Observation(kind: kind, httpStatus: nil, offline: connectivity?.offline == true)
+        }
     }
 
     func observedDefaultCalendarConversationID() throws -> String {
@@ -132,6 +139,7 @@ public final class LioTimelineHTTP {
 
     /// Only a signed lookup of the recorded ID and exact digest may resolve a lost first receipt.
     public func reconcileFirstChat(messageID: String? = nil) async throws -> String? {
+        observe(.firstLookup)
         guard let firstChatRecovery else { throw MessageHTTPFailure.productionActivationUnavailable }
         guard !firstChatInFlight else { return nil }
         let records = try recordedFirstActions(in: firstChatRecovery)
@@ -146,7 +154,6 @@ public final class LioTimelineHTTP {
               messageID.map({ entry.record.messageID.utf8.elementsEqual($0.utf8) }) ?? true else { return nil }
         firstChatInFlight = true
         defer { firstChatInFlight = false }
-        observe(.firstLookup)
         let token = try await bearer()
         let operation = try firstChatRecovery.beginQuery(messageID: entry.record.messageID, lease: lease)
         let result: FirstChatLookup
@@ -177,7 +184,8 @@ public final class LioTimelineHTTP {
 
     private func readFirstChat(_ original: LioTimelineWire.Send, inputSHA256: String,
                                bearer: String) async throws -> FirstChatLookup {
-        let (response, body) = try await transport.readLioFirstReceipt(original, inputSHA256: inputSHA256, bearer: bearer)
+        let (response, body) = try await transport.readLioFirstReceipt(original, inputSHA256: inputSHA256, bearer: bearer,
+            observedResponse: { [self] response in if !Task.isCancelled { observe(.firstLookup, response) } })
         observe(.firstLookup, response)
         let bytes = try await json(response, body, limit: 65_536)
         switch response.status.code {
@@ -254,7 +262,9 @@ public final class LioTimelineHTTP {
     }
 
     private func exchange(_ original: LioTimelineWire.Send, bearer token: String) async throws -> SendOutcome {
-        let (response, body) = try await transport.sendLio(original, bearer: token)
+        let (response, body) = try await transport.sendLio(original, bearer: token, observedResponse: { [self] response in
+            if !Task.isCancelled { observe(.send, response) }
+        })
         observe(.send, response)
         let bytes = try await json(response, body, limit: 65_536)
         let status = response.status.code
@@ -284,7 +294,8 @@ public final class LioTimelineHTTP {
                          version: LioTimelineWire.Version = .v1) async throws -> LioTimelineWire.Page {
         observe(.timeline)
         let token = try await bearer()
-        let (response, body) = try await transport.readLio(conversationID: conversationID, before: before, bearer: token, version: version)
+        let (response, body) = try await transport.readLio(conversationID: conversationID, before: before, bearer: token, version: version,
+            observedResponse: { [self] response in if !Task.isCancelled { observe(.timeline, response) } })
         observe(.timeline, response)
         guard response.status.code == 200 else { throw MessageHTTPFailure.invalidResponse }
         let bytes = try await json(response, body, limit: 4_500_000)
@@ -303,7 +314,8 @@ public final class LioTimelineHTTP {
         observe(.exploration)
         let token = try await bearer()
         let (response, body) = try await transport.readLio(conversationID: conversationID, before: before,
-                                                         bearer: token, version: .v4)
+                                                         bearer: token, version: .v4,
+                                                         observedResponse: { [self] response in if !Task.isCancelled { observe(.exploration, response) } })
         observe(.exploration, response)
         guard response.status.code == 200 else { throw MessageHTTPFailure.invalidResponse }
         let bytes = try await json(response, body, limit: 4_500_000)

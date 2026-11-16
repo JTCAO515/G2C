@@ -88,7 +88,7 @@ public struct LioChatLibrary {
                 return try await sessions.restore(selected)
             } catch {
                 // The original error is rethrown unchanged; only a local note is added.
-                if !(error is CancellationError) { notes.record(sessions.diagnose(error)) }
+                if !(error is CancellationError) { notes.record(sessions.problem(error)) }
                 throw error
             }
         }
@@ -116,9 +116,11 @@ private final class LioSignedChatSessions {
         self.tripHistory = tripHistory
     }
 
-    func diagnose(_ error: any Error) -> LioFailureDiagnosis {
+    func diagnose(_ error: any Error) -> LioFailureDiagnosis { problem(error).diagnosis }
+
+    func problem(_ error: any Error) -> LioRequestProblem {
         let observation = stage == .firstSendLookup ? client.lastObservation.flatMap { $0.kind == .firstLookup ? $0 : nil } : nil
-        return .classify(error, stage: stage, observation: observation)
+        return LioRequestProblem(error, stage: stage, observation: observation)
     }
 
     private func conversationService(_ destination: LioTimelineWire.V2Destination,
@@ -126,13 +128,21 @@ private final class LioSignedChatSessions {
         let client = client, notes = notes
         return LioService.signedConversation(client, destination: destination, version: version, readFailed: { error in
             let observation = client.lastObservation.flatMap { $0.kind == .timeline ? $0 : nil }
-            notes.record(.classify(error, stage: .timeline, observation: observation))
+            notes.record(error: error, stage: .timeline, observation: observation)
         }, didCreate: didCreate)
     }
 
     func history() async throws -> [LioChatSession] {
-        _ = try await client.reconcileFirstChat()
-        return try recordedSessions()
+        do {
+            _ = try await client.reconcileFirstChat()
+            return try recordedSessions()
+        } catch {
+            if !(error is CancellationError) {
+                let observation = client.lastObservation.flatMap { $0.kind == .firstLookup ? $0 : nil }
+                notes.record(error: error, stage: .history, observation: observation)
+            }
+            throw error
+        }
     }
 
     private func recordedSessions() throws -> [LioChatSession] {

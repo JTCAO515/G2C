@@ -65,6 +65,11 @@ struct LioTimelineTurn: Sendable {
     }
 }
 
+enum LioTimelineUpdate: Sendable {
+    case snapshot(LioTimelinePage)
+    case failed(LioRequestProblem)
+}
+
 struct LioTimelinePage: Sendable {
     let turns: [LioTimelineTurn]
     let nextBefore: String?
@@ -103,9 +108,11 @@ extension LioService {
     public static func signedTimeline(_ client: LioTimelineHTTP,
                                       readFailed: (@MainActor @Sendable (any Error) -> Void)? = nil) -> LioService {
         timeline(send: { original in
-            try await signedSend(client, original)
+            try await signedSend(client, original, readFailed: readFailed)
         }, read: { id, before in
-            try await noted(readFailed) { try await client.timeline(conversationID: id, before: before) }
+            try await noted(readFailed, observation: { client.lastObservation.flatMap { $0.kind == .timeline ? $0 : nil } }) {
+                try await client.timeline(conversationID: id, before: before)
+            }
         })
     }
 
@@ -114,11 +121,16 @@ extension LioService {
                                           readFailed: (@MainActor @Sendable (any Error) -> Void)? = nil,
                                           didCreate: @escaping @Sendable (String) async -> Void) -> LioService {
         timeline(send: { original in
-            try await signedSend(client, original)
+            try await signedSend(client, original, readFailed: readFailed)
         }, read: { id, before in
-            try await noted(readFailed) { try await client.timeline(conversationID: id, before: before, version: version) }
+            try await noted(readFailed, observation: { client.lastObservation.flatMap { $0.kind == .timeline ? $0 : nil } }) {
+                try await client.timeline(conversationID: id, before: before, version: version)
+            }
         }, destination: destination, scopedVersion: version, recoverFirst: { id in
-            try await client.reconcileFirstChat(messageID: id)
+            try await noted(readFailed, stage: .firstSendLookup,
+                observation: { client.lastObservation.flatMap { $0.kind == .firstLookup ? $0 : nil } }) {
+                try await client.reconcileFirstChat(messageID: id)
+            }
         }, didCreate: didCreate)
     }
 
@@ -126,22 +138,38 @@ extension LioService {
     public static func signedExplorationConversation(_ client: LioTimelineHTTP,
         destination: LioTimelineWire.V2Destination, didCreate: @escaping @Sendable (String) async -> Void) -> LioService {
         exploration(send: { original in try await signedSend(client, original) }, read: { id, before in
-            try await client.exploration(conversationID: id, before: before)
+            try await noted(nil, observation: { client.lastObservation.flatMap { $0.kind == .exploration ? $0 : nil } }) {
+                try await client.exploration(conversationID: id, before: before)
+            }
         }, destination: destination, recoverFirst: { id in
-            try await client.reconcileFirstChat(messageID: id)
+            try await noted(nil, stage: .firstSendLookup,
+                observation: { client.lastObservation.flatMap { $0.kind == .firstLookup ? $0 : nil } }) {
+                try await client.reconcileFirstChat(messageID: id)
+            }
         }, didCreate: didCreate)
     }
 
     private static func noted<Value>(_ readFailed: (@MainActor @Sendable (any Error) -> Void)?,
-                                     _ read: () async throws -> Value) async throws -> Value {
-        do { return try await read() } catch {
-            if let readFailed, !(error is CancellationError) { await readFailed(error) }
-            throw error
+        stage: LioFailureDiagnosis.Stage = .timeline,
+        observation: @escaping @MainActor @Sendable () -> LioTimelineHTTP.Observation? = { nil },
+        _ read: () async throws -> Value) async throws -> Value {
+        do { return try await read() }
+        catch is CancellationError { throw CancellationError() }
+        catch {
+            if Task.isCancelled { throw CancellationError() }
+            let failure = await MainActor.run { LioRequestProblem(error, stage: stage, observation: observation()) }
+            if let readFailed { await readFailed(failure) }
+            throw failure
         }
     }
 
-    private static func signedSend(_ client: LioTimelineHTTP, _ original: LioTimelineWire.Send) async throws -> SendResult {
-        switch try await client.submit(original) {
+    private static func signedSend(_ client: LioTimelineHTTP, _ original: LioTimelineWire.Send,
+        readFailed: (@MainActor @Sendable (any Error) -> Void)? = nil) async throws -> SendResult {
+        let result = try await noted(readFailed, stage: .send,
+            observation: { client.lastObservation.flatMap { $0.kind == .send ? $0 : nil } }) {
+            try await client.submit(original)
+        }
+        return switch result {
         case .accepted(let id): .accepted(conversationID: id)
         case .notSent: .notSent
         case .dailyLimit: .dailyLimit
@@ -208,9 +236,14 @@ extension LioService {
                         case .rejected: continuation.yield(.failed(.invalidInput)); return
                         case .accepted, .uncertain: break
                         }
-                        for await timeline in session.observe(waiting: [question.id], interval: pollInterval,
-                                                                window: observationWindow) {
+                        for await update in session.observe(waiting: [question.id], interval: pollInterval,
+                                                            window: observationWindow) {
                             try Task.checkCancellation()
+                            let timeline: LioTimelinePage
+                            switch update {
+                            case .snapshot(let page): timeline = page
+                            case .failed(let failure): continuation.yield(.readFailed(failure)); continue
+                            }
                             continuation.yield(.snapshot(timeline))
                             if let status = timeline.turns.first(where: { $0.id == question.id })?.status {
                                 switch status {
@@ -224,7 +257,7 @@ extension LioService {
                     } catch is CancellationError {
                         return
                     } catch {
-                        continuation.yield(.failed(.unavailable))
+                        continuation.yield(.sendFailed(LioRequestProblem(error, stage: .send)))
                     }
                 }
                 continuation.onTermination = { _ in task.cancel() }
@@ -305,13 +338,15 @@ private actor LioTimelineSession {
             return outcome
         } catch is CancellationError {
             throw CancellationError()
+        } catch let failure as LioRequestProblem where failure.needsReconnect || failure.diagnosis.category == .localRecord {
+            throw failure
         } catch {
             return .uncertain
         }
     }
 
     nonisolated func observe(waiting: [Data], interval: Duration, window: Duration,
-                             recoveryInterval: Duration? = nil) -> AsyncStream<LioTimelinePage> {
+                             recoveryInterval: Duration? = nil) -> AsyncStream<LioTimelineUpdate> {
         AsyncStream { continuation in
             let task = Task {
                 defer { continuation.finish() }
@@ -349,7 +384,7 @@ private actor LioTimelineSession {
                             }
                         }
                         let timeline = earlier.isEmpty ? latest : LioTimelinePage(latest: latest, earlier: earlier.map(\.page))
-                        continuation.yield(timeline)
+                        continuation.yield(.snapshot(timeline))
                         knownActive = latest.turns.contains(where: \.isActive)
                             || earlier.contains { $0.page.turns.contains { $0.isActive && waitingIDs.contains($0.id) } }
                         if !knownActive && waiting.allSatisfy({ id in timeline.turns.contains { $0.id == id } }) {
@@ -358,7 +393,9 @@ private actor LioTimelineSession {
                     } catch is CancellationError {
                         return
                     } catch {
-                        // A failed observation grants no further send.
+                        // Publish the failure immediately while preserving existing read-only
+                        // recovery. It never grants another submission of the original.
+                        continuation.yield(.failed(LioRequestProblem(error, stage: .timeline)))
                         knownActive = false
                     }
                     let withinWindow = clock.now < deadline
