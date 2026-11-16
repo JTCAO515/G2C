@@ -17,7 +17,7 @@ from cj_needs.domain import InvalidInput
 
 from .lio_city import CityReference,forms,_normalize
 from .lio_sourced_intake import BookingSourceUnclear
-from .lio_positive_trip import destination_request,supports
+from .lio_positive_trip import destination_query,destination_request,supports
 from .lio_flow_intake import ReadOnlyPlanningData,ReadOnlyPlanningQuestion,parse_flow
 from .lio_national_intake import NONPERSISTENT,fields_for,fixed_sources_complete,province_evidence,diagnostic_code,StartDateConflict,FixedTimezoneConflict,DateDurationConflict,DateSourceUnclear
 from .lio_planning_grounding import PlanningTurn,standalone_question,NUMBER,_number,PLAN_REQUEST,discussion_reply
@@ -347,10 +347,12 @@ class NationalLioPlanning:
                 and read_only.city is not None and readonly_plan_requested(text,read_only.city)
                 and read_only.duration_days is None and question_fields==['duration_days']):
             city=read_only.city
-            question_facts=dict(city=dict(value=dict(city,normalized_name=None,province=None),
-                sources=[dict(message_id=binding.message_id,quote=city['quote'])]))
+            literal=destination_query(turns[city['source_index']].text,city['query'])
+            city_mid=source_ids[city['source_index']]
+            question_facts=dict(city=dict(value=dict(city,query=literal if literal is not None else city['query'],normalized_name=None,province=None),
+                sources=[dict(message_id=city_mid,quote=city['quote'])]))
             state=self._context(worker,binding,state,dict(authority='none',status='needs_details',
-                facts=question_facts,nonplanning_message_ids=[binding.message_id]))
+                facts=question_facts,nonplanning_message_ids=list(dict.fromkeys([city_mid,binding.message_id]))))
             return self._clarify(worker,binding,state,original.locale,intake.reply,question_fields,['duration_days'])
         if (not planning and not booking_unclear
                 and not intake.publication_hold and not publication_held(text)

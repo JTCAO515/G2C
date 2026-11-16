@@ -102,6 +102,15 @@ class ReadOnlyAnswers(unittest.TestCase):
                 self.assertEqual(context(events)['status'],'needs_details')
                 self.assertEqual(set(context(events)['facts']),{'city'})
 
+    def test_readonly_city_question_keeps_its_actual_human_source(self):
+        first='成都有哪些值得看的地方？';current='请规划成都旅行'
+        wire=flow(current,city='成都',days=None,index=1,questions=('duration_days',),reply='想玩几天？')
+        wire.update(planning_request_index=None,needs_tools=False)
+        wire['city'].update(source_index=0,quote='成都')
+        published,events,lookups,_=run(wire,current,turns=(original(first),original(current)))
+        self.assertEqual((published,lookups),([],[]))
+        self.assertEqual(context(events)['facts']['city']['sources'],[dict(message_id='prior-0',quote='成都')])
+
     def test_qa06_failed_human_data_can_support_details_without_a_failed_root_grant(self):
         for locale in ('zh','en'):
             with self.subTest(locale=locale):
