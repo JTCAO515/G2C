@@ -111,7 +111,9 @@ def execute(plan,config,directory,*,now=lambda:datetime.now(timezone.utc),clock=
             instruction=dict(version='LIO-basic-ui-instruction.2',run_id=plan['run_id'],step=step,app=plan['app'],
                 expected_draft=draft_marker(plan,step)if step['gate_id']in('SM01','SM04')else None,
                 accepted_conversations=state.views,
-                rule='Prepare only; do not send, terminate, background, lock or open history until admission file exists')
+                rule=('Read-only preparation may open history and read necessary candidates solely to select the target chat. '
+                      'Do not send, terminate, background, lock or perform the official SM03 history inspection until admission. '
+                      'Preparation reads cannot satisfy gate evidence after the server checkpoint.'))
             save(root/f'{stem}-prepare.json',instruction)
             prepared=_wait(root/f'{stem}-A-prepared.json',clock()+config['ui_prepare_seconds'],clock,sleep)
             require(prepared['version']=='LIO-basic-app-prepared.2'

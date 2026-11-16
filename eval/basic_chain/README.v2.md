@@ -40,6 +40,8 @@ simulator可以分别绑定C中英身份；实际UI为L1、香港为L2，不能�
 未发送草稿，保留完整实际AX/截图。A写`NN-A-prepared.json`后，C才取**服务端原生
 checkpoint**，再写`NN-admission.json`。A看到admission才执行该步发送/冷启动/
 后台和锁屏返回/历史逐行打开，并写`NN-A-completed.json`。
+准备期允许仅为选定目标打开历史及只读必要候选，不执行 SM03 正式全量巡检。
+正式巡检和生命周期动作仍在 admission 后；准备期读取不能计作该步通过证据。
 
 SM04在同一门禁下用两个`read_actions`：`background_return`、`lock_return`。
 各有全计划唯一nonce和独立服务端checkpoint，分别使用`NN-1-*`、`NN-2-*`
