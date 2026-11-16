@@ -430,16 +430,20 @@ def _absolute_fixed_days(text,first):
  return re.sub(r'第([一二两三四五六七八九十0-9]{1,3})天|\bday\s+([1-9][0-9]?)\b',replace,text,flags=re.I)
 
 
-def fixed_sources_complete(intake,fields,turns,city_reference,*,ordinal_days=None):
- """Check the model's fixed values against original declarations, before save.
+def _fixed_declaration(rich_phrases):
+ from .lio_planning_grounding import FIXED
+ rich=(r'|\bkeep (?:this|that|the) (?:arrangement|meeting|meetup|appointment|event) unchanged\b'
+       if rich_phrases else '')
+ return re.compile(FIXED.pattern+r'|安排(?:已|已经)确定|保持不变|\bfixed\s+(?:hotel|meetup|meeting|appointment|arrangement)\b|\bkeep (?:it|them|this|that) unchanged\b'+rich,re.I)
 
- The existing city-independent fixed-source reader supplies a conservative
- comparison, never an alternative intent/city/date extractor. Unverifiable
- commitments remain questions rather than silently acquiring model values.
+
+def fixed_declarations_complete(fields,turns,*,rich_phrases=False):
+ """All original fixed declarations must be represented before tool dispatch.
+
+ This checks coverage only, without a city, calendar defaults or write grant.
+ Full fixed values/subjects/windows remain checked by fixed_sources_complete.
  """
- from .lio_planning_grounding import FIXED,RANGE,ISO,_clauses,_fixed_item
- fixed_declaration=re.compile(FIXED.pattern+r'|安排(?:已|已经)确定|保持不变|\bfixed\s+(?:hotel|meetup|meeting|appointment|arrangement)\b|\bkeep (?:it|them|this|that) unchanged\b',re.I)
- declarations=tuple(dict.fromkeys(clause for turn in turns for clause in _clauses(turn.text) if fixed_declaration.search(clause)))
+ fixed_declaration=_fixed_declaration(rich_phrases)
  items=fields.get('fixed_items',[])
  for turn in turns:
   spans=[(found.start(),found.end()) for item in items
@@ -454,6 +458,20 @@ def fixed_sources_complete(intake,fields,turns,city_reference,*,ordinal_days=Non
    if bare_keep and any(end<=marker.start() and re.fullmatch(r'[\s;；.。!！?？]*',turn.text[end:marker.start()]) is not None
                         for start,end in spans):continue
    if not any(start<=marker.start() and marker.end()<=end for start,end in spans):return False
+ return True
+
+
+def fixed_sources_complete(intake,fields,turns,city_reference,*,ordinal_days=None,rich_phrases=False):
+ """Check the model's fixed values against original declarations, before save.
+
+ The existing city-independent fixed-source reader supplies a conservative
+ comparison, never an alternative intent/city/date extractor. Unverifiable
+ commitments remain questions rather than silently acquiring model values.
+ """
+ from .lio_planning_grounding import RANGE,ISO,_fixed_item
+ if not fixed_declarations_complete(fields,turns,rich_phrases=rich_phrases):return False
+ fixed_declaration=_fixed_declaration(rich_phrases)
+ items=fields.get('fixed_items',[])
  first=fields.get('arrival',{}).get('date',{})
  first=date.fromisoformat(first['value']) if first.get('state')=='known' else None
  party=fields.get('party_size',{})
