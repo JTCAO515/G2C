@@ -231,7 +231,7 @@ def selected_provider_join(host,worker,binding,bundle,skeleton,calls,scenario):
     return len(writers)
 
 
-def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1,2),followups=True,duration_days=3,travel_pace='relaxed',provider_available=True):
+def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1,2),followups=True,duration_days=3,travel_pace='relaxed',provider_available=True,failed_kind=None):
     original_model=ExplorationPlanning._model
     original_http=httpx.MockTransport.handle_request
     original_post=TestClient.post
@@ -397,6 +397,12 @@ def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1
             super().write(raw)
         def response_value(self):
             if not provider_available:return super().response_value()
+            # Explicit synthetic per-component failures; never manufacture an
+            # unavailable source in the host after an ambiguous/unknown result.
+            failed=(failed_kind=='hotel'and 'hotel'in self.keyword or
+                failed_kind=='route'and self.path.startswith('/v3/direction/') or
+                failed_kind=='sight'and 's'in self.keyword and 'hotel'not in self.keyword)
+            if failed:return dict(status='0',infocode='10001',info='INVALID_USER_KEY')
             if self.path.startswith('/v3/direction/'):
                 a=self.query['origin'][0];b=self.query['destination'][0]
                 return dict(status='1',infocode='10000',count='1',route=dict(origin=a,destination=b,
