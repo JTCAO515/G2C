@@ -4,6 +4,7 @@ from datetime import datetime,timedelta,timezone
 from hashlib import sha256
 import json
 import os
+import re
 from pathlib import Path
 import sys
 import tempfile
@@ -190,6 +191,8 @@ def exercise(root,conninfo,*,saved_runs=(),generation=False,languages=('zh','en'
                 if generation:
                     assert prefix+'-plan'in saved_runs
                     assert '\\n'not in message['answer']
+                    assert 2<=len(re.findall(r'[。！？?!]|\.(?:\s|$)',message['answer']))<=4
+                    assert '[\"history\"'not in message['answer']
                     assert ('交通'in message['answer'])if locale=='zh'else('routes'in message['answer'])
                     assert '已保存'in message['answer']if locale=='zh'else'itinerary is saved'in message['answer']
                     assert [day['day_index']for day in message['trip']['days']]==list(range(1,trip_days+1))

@@ -237,7 +237,7 @@ def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1
     original_post=TestClient.post
     wires=[];completed=[];lookups=[];posted={};saved_runs={};active={};supplier_wires=[];all_saved={}
     duration_quote=('三','四','五')[duration_days-3]+'天'
-    pace_quote='适中'if travel_pace=='moderate'else'轻松'
+    pace_quote={'relaxed':'轻松','moderate':'适中','packed':'紧凑'}[travel_pace]
     def post(api,url,**kwargs):
         if url=='/v4/lio/messages':
             value=json.loads(kwargs['content'])
@@ -417,7 +417,7 @@ def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1
         else:native.main(saved_runs=saved_runs)
 
     if production:
-        assert len(all_saved)==len(completed)==2*len(cases) and sum(v in (PLAN_UNDERSTANDING,SKELETON,WORDING)for v,_ in wires)==10*len(cases)
+        assert len(all_saved)==len(completed)==2*len(cases) and sum(v in (PLAN_UNDERSTANDING,SKELETON,WORDING)for v,_ in wires)==(8 if natural_direct else 10)*len(cases)
         print('PASS default production factory '+str(len(cases))+'ZH/'+str(len(cases))+'EN complete skeleton/selected retrieval/order/routes/schedule/final wording/sole writer and actual timeline Card3; '+str(len(supplier_wires))+' fixture supplier calls; real/G6/G9 UNRUN',flush=True)
         return
     assert len(saved_runs)==2
