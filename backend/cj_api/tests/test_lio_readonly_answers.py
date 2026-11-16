@@ -64,6 +64,7 @@ class ReadOnlyAnswers(unittest.TestCase):
                 published,events,_,_=run(wire,text,locale=locale)
                 self.assertEqual(published,[])
                 self.assertFalse(any(kind=='registered'for kind,_ in events))
+                self.assertIn('北京'if locale=='zh'else'Beijing',answer(events))
                 for day in (1,2,3):
                     self.assertIn(('第'+str(day)+'天')if locale=='zh'else('Day '+str(day)),answer(events))
                 self.assertNotIn('2026-',answer(events))

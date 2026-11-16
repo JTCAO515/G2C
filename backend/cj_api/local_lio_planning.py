@@ -126,7 +126,7 @@ def clarify(worker, binding, state, text):
     return worker._event(binding, state, 'completed')
 
 
-def discuss(worker, binding, state, locale, turns, references, *, day_count=None, planning_window=None, introduction=None):
+def discuss(worker, binding, state, locale, turns, references, *, day_count=None, planning_window=None, introduction=None, destination=None):
     messages = [{'role': 'user', 'content': turn.text} for turn in turns]
     if worker.memory_run is not None:
         current = worker.memory_run.messages(turns[-1].text)
@@ -171,6 +171,8 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
     except (InvalidInput, UnicodeError) as exc:
         _LOGGER.warning('lio_planning_discussion_invalid run_id=%s', binding.run_id)
         raise ProviderUnknown('Lio discussion reply unavailable') from exc
+    if destination is not None:
+        reply=destination+(' · 未保存建议'if locale=='zh'else' · Unsaved suggestion')+'\n'+reply
     state = worker._event(binding, state, 'text_delta',reply if introduction is None else introduction+'\n\n'+reply)
     state = worker._event(binding, state, 'effect_committed', DISCUSSION)
     return worker._event(binding, state, 'completed')

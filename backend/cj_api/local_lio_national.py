@@ -386,7 +386,7 @@ class NationalLioPlanning:
                 excluded.extend(source_ids[ref['source_index']]for ref in sources)
             state=context(worker,binding,state,dict(authority='none',status='plan_preview'))
             return discuss(worker,binding,state,original.locale,turns,refs,
-                day_count=read_only.duration_days,planning_window=window)
+                day_count=read_only.duration_days,planning_window=window,destination=city['query'])
         if intake.publication_hold or publication_held(text) or not planning and intake.intent=='discuss':
             state=context(worker,binding,state,dict(authority='none',status='discussion'))
             return self._reply(worker,binding,state,intake.reply)
