@@ -114,6 +114,9 @@ public struct LioHome<MenuContent: View>: View {
         let tripPlan = tripPlan
         TabView(selection: $tab) {
             chat
+                #if os(iOS)
+                .background(LioTabBarAppearance().frame(width: 0, height: 0))
+                #endif
                 .tabItem { Label(language.text("Chat", "聊天"), systemImage: "bubble.left") }
                 .tag(Tab.chat)
             LioTripsView(itineraries: conversation.itineraries, language: language, library: tripLibrary,
@@ -266,11 +269,13 @@ public struct LioHome<MenuContent: View>: View {
                 ProgressView().accessibilityLabel(language.text("Opening your conversation…", "正在打开你的对话…"))
             }
         }
-        ForEach(conversation.turns) { turn in
+        let displayedTurns = conversation.turns
+        let positions = Dictionary(uniqueKeysWithValues: displayedTurns.enumerated().map { ($0.element.id, $0.offset) })
+        ForEach(displayedTurns) { turn in
             VStack(alignment: .leading, spacing: 22) {
                 if turn.id == earlierID { earlierMessages(scroll) }
                 if opening == .before(turn.id) { openingMessage }
-                turnView(turn, scroll: scroll)
+                turnView(turn, position: positions[turn.id]!, scroll: scroll)
             }
         }
         if let memoryNotice { Text(memoryNotice).font(.footnote) }
@@ -548,9 +553,9 @@ public struct LioHome<MenuContent: View>: View {
 
     /// A Lio turn: a small avatar and name, then the reply in a `surface` bubble whose corner nearest the
     /// avatar is tucked in. JT 2026-11-11 kept bubbles for Lio's replies instead of plain page text (D2).
-    private func lioReply<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+    private func lioReply<Content: View>(position: Int? = nil, @ViewBuilder _ content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
-            lioByline
+            lioByline(position: position)
             content()
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
@@ -563,14 +568,20 @@ public struct LioHome<MenuContent: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var lioByline: some View {
+    private func lioByline(position: Int? = nil) -> some View {
         HStack(spacing: 6) {
-            LioPortrait(size: 22)
-            Text("Lio")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(LioTheme.ink)
+            LioPortrait(size: 22).accessibilityHidden(true)
+            if let position {
+                RunReadableText(text: "Lio", style: .headline, color: LioTheme.ink)
+                    .accessibilityHint(messagePosition(position))
+                    .accessibilityIdentifier("lio.position.\(position).loaded.\(conversation.turns.count).earlier.\(conversation.hasLoadedTimeline ? (conversation.nextBefore == nil ? 0 : 1) : 2)")
+            } else {
+                Text("Lio")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(LioTheme.ink)
+                    .accessibilityHidden(true)
+            }
         }
-        .accessibilityHidden(true)
     }
 
     private func replyText(_ content: Text) -> some View {
@@ -802,7 +813,7 @@ public struct LioHome<MenuContent: View>: View {
         }
     }
 
-    private func turnView(_ turn: LioTurn, scroll: ScrollViewProxy) -> some View {
+    private func turnView(_ turn: LioTurn, position: Int, scroll: ScrollViewProxy) -> some View {
         let owner = conversation
         return VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 4) {
@@ -841,7 +852,7 @@ public struct LioHome<MenuContent: View>: View {
                 explorationReply(turn, display: display, scroll: scroll)
             } else if !turn.answer.isEmpty {
                 let answerKey = LioEntranceKey(turn: turn.id, part: .answer)
-                lioReply {
+                lioReply(position: position) {
                     LioStreamingText(source: turn.answer, streaming: turn.status == .answering,
                                      animate: entering.contains(answerKey), language: language,
                                      presentationActive: !chatFading && !menuOpen && tab == .chat,
@@ -860,6 +871,7 @@ public struct LioHome<MenuContent: View>: View {
                 }
                 .lioEntrance(.fade, active: entering.contains(answerKey)) { entering.remove(answerKey) }
             }
+            if turn.fromTimeline, case .failed = turn.status { lioByline(position: position) }
             messageStatus(turn)
             if let memoryActions {
                 ForEach(turn.memoryTags.filter { !handledTags.contains($0) }) { tag in
@@ -1046,6 +1058,18 @@ public struct LioHome<MenuContent: View>: View {
             }
             .accessibilityIdentifier("lio.read.problems")
         }
+    }
+
+    private func messagePosition(_ position: Int) -> String {
+        if !conversation.hasLoadedTimeline {
+            return language.text("Message \(position + 1). Conversation still loading.", "第 \(position + 1) 条消息。对话尚未载入。")
+        }
+        if conversation.nextBefore == nil {
+            return language.text("Message \(position + 1) of \(conversation.turns.count) loaded. All messages loaded.",
+                                 "已载入 \(conversation.turns.count) 条消息，这是第 \(position + 1) 条。已全部载入。")
+        }
+        return language.text("Message \(position + 1) of \(conversation.turns.count) loaded. Earlier messages available.",
+                             "已载入 \(conversation.turns.count) 条消息，这是第 \(position + 1) 条。还有更早消息。")
     }
 
     @ViewBuilder
