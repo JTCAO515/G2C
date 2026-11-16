@@ -42,7 +42,17 @@ import XCTest
         var previous: [VisibleReply]?
         let ready = NSPredicate { _, _ in
             guard let root = try? app.snapshot() else { return false }
-            let bounds = app.frame
+            func chatViewport(_ node: any XCUIElementSnapshot) -> CGRect? {
+                if node.elementType == .scrollView { return node.frame }
+                for child in node.children {
+                    if let bounds = chatViewport(child) { return bounds }
+                }
+                return nil
+            }
+            guard let bounds = chatViewport(root), !bounds.isEmpty else {
+                previous = nil
+                return false
+            }
             var replies: [VisibleReply] = []
             func visit(_ node: any XCUIElementSnapshot) {
                 if node.identifier == "lio.answer", !node.frame.isEmpty, bounds.intersects(node.frame) {

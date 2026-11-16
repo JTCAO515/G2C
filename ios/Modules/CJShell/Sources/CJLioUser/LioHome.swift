@@ -653,7 +653,9 @@ public struct LioHome<MenuContent: View>: View {
         HStack(spacing: 6) {
             LioPortrait(size: 22).accessibilityHidden(true)
             if let position {
-                RunReadableText(text: "Lio", style: .headline, color: LioTheme.ink)
+                Text("Lio")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(LioTheme.ink)
                     .accessibilityHint(messagePosition(position))
                     .accessibilityIdentifier("lio.position.\(position).loaded.\(conversation.turns.count).earlier.\(conversation.hasLoadedTimeline ? (conversation.nextBefore == nil ? 0 : 1) : 2)")
             } else {
