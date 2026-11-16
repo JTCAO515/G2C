@@ -13,6 +13,34 @@ from cj_trip.domain import packed
 from .local_lio_calendar_source import LioCalendarSource,Original,HeldCalendar
 
 
+def rich_original_protocol(cursor,binding,stored):
+    row=cursor.execute('SELECT lio_wire_protocol FROM cj_message_receipt WHERE scope=%s AND message_id=%s AND run_id=%s',
+        (binding.scope,binding.message_id,binding.run_id)).fetchone()
+    selected=exploration_original_protocol if row is not None and row[0]==LIO_VERSION_V4 else original_protocol
+    return selected(cursor,binding,stored)
+
+
+def read_rich_original(database,binding,source):
+    """Project a genuine active-frame original plus its persistent own clock.
+
+    The caller obtains source from the actual current MESSAGE lease and checks
+    that lease around this read. No profile text or plan-now clock is substituted.
+    """
+    stored=source.stored;r=stored.receipt
+    actual=Binding(binding.scope,r.conversation_id,r.generation,r.message_id,r.run_id,r.sequence)
+    with database.connect(binding.scope)as db:
+        protocol=rich_original_protocol(db.cursor(),actual,stored)
+        row=db.execute('SELECT demo_question_day FROM cj_message_receipt WHERE scope=%s AND conversation_id=%s '
+            'AND generation=%s AND message_id=%s AND run_id=%s AND sequence=%s',
+            (actual.scope,actual.conversation_id,actual.generation,actual.message_id,actual.run_id,actual.message_sequence)).fetchone()
+    if row is None or row[0]is None:raise LeaseUnavailable('original rich calendar clock unavailable')
+    reference=source.reference.public_value()
+    result={key:reference[key]for key in ('conversation_id','generation','message_id','run_id','sequence',
+                                        'input_sha256','message_version')}
+    result['lio_protocol']=protocol
+    return Original(actual,stored,packed(result),row[0])
+
+
 class RichCalendarSource(LioCalendarSource):
     sidecar_version='LIO-fixed-day-bindings.2'
 
@@ -20,29 +48,15 @@ class RichCalendarSource(LioCalendarSource):
         return RichCalendarBasis(day_count,start_date,sidecar)
 
     def _protocol(self,cursor,binding,stored):
-        row=cursor.execute('SELECT lio_wire_protocol FROM cj_message_receipt WHERE scope=%s AND message_id=%s AND run_id=%s',
-            (binding.scope,binding.message_id,binding.run_id)).fetchone()
         # This tag only selects a strict original-byte validator, not a grant.
-        selected=exploration_original_protocol if row is not None and row[0]==LIO_VERSION_V4 else original_protocol
-        return selected(cursor,binding,stored)
+        return rich_original_protocol(cursor,binding,stored)
 
     def _source(self,binding,mid,message):
         message.check(binding)
         source=message.source_original(mid)
-        stored=source.stored;r=stored.receipt
-        actual=Binding(binding.scope,r.conversation_id,r.generation,r.message_id,r.run_id,r.sequence)
-        with self.database.connect(binding.scope)as db:
-            protocol=self._protocol(db.cursor(),actual,stored)
-            row=db.execute('SELECT demo_question_day FROM cj_message_receipt WHERE scope=%s AND conversation_id=%s '
-                'AND generation=%s AND message_id=%s AND run_id=%s AND sequence=%s',
-                (actual.scope,actual.conversation_id,actual.generation,mid,actual.run_id,actual.message_sequence)).fetchone()
-        if row is None or row[0]is None:raise LeaseUnavailable('original rich calendar clock unavailable')
-        reference=source.reference.public_value()
-        result={key:reference[key]for key in ('conversation_id','generation','message_id','run_id','sequence',
-                                            'input_sha256','message_version')}
-        result['lio_protocol']=protocol
+        result=read_rich_original(self.database,binding,source)
         message.check(binding)
-        return Original(actual,stored,packed(result),row[0])
+        return result
 
     def _read(self,binding,mid):
         return self._source(binding,mid,self._capturing_message)
