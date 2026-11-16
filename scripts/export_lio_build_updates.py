@@ -31,7 +31,10 @@ def main():
     parser.add_argument('--language', choices=('en', 'zh', 'both'), default='both')
     parser.add_argument('--source-commit', help='Public source commit for the issue heading; never a credential or request identifier.')
     parser.add_argument('--output', type=Path)
+    parser.add_argument('--testflight', action='store_true', help='Export body only, enforcing the 4000 UTF-16-unit publication limit.')
     args = parser.parse_args()
+    if args.testflight and args.source_commit:
+        parser.error('TestFlight accepts the body only; use a separate issue export for the source heading')
     book = load_book(RESOURCE)
     if book['schema'] != 1 or len(book['releases']) != 2:
         parser.error('Unsupported release book')
@@ -47,6 +50,8 @@ def main():
         if not re.fullmatch(r'[0-9a-f]{40}', args.source_commit):
             parser.error('Expected an exact public source commit')
         content = f'内部构建 {release["build"]}（源 commit {args.source_commit}，上一个构建 {release["previousBuild"]}）\n\n' + content
+    if args.testflight and len((content + '\n').encode('utf-16-le')) // 2 > 4000:
+        parser.error('TestFlight notes exceed 4000 UTF-16 units; shorten the packaged source')
     if args.output:
         args.output.write_text(content + '\n')
     else:
