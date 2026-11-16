@@ -1038,6 +1038,13 @@ private var developmentHostEnvironment: [String: String] {
     private let demoMode: Bool
     #if G2C_DEMO_BETA
     @ObservationIgnored private var lioChatContinuity: LioChatContinuity?
+    @ObservationIgnored private var lioPresentationOwner: LioPresentationOwner?
+    private struct LioPresentationOwner: Equatable {
+        let environment: UUID
+        let account: UUID
+    }
+    var lioRetainedTrip: DevelopmentTripHost?
+    var lioPresentationID = UUID()
     var lioSessionProblem: LioRequestProblem?
     #endif
     @ObservationIgnored private var verificationRequest = UUID()
@@ -1068,13 +1075,20 @@ private var developmentHostEnvironment: [String: String] {
                         try self.attachCleanup(configuration: configuration, material: material, lease: .init(session: session, operation: operation))
                     }
                     if self.cleanupWorkflow?.holdsBusinessFence != true {
-                        self.trip = try DevelopmentTripHost(configuration: configuration, shell: self.shell,
+                        #if G2C_DEMO_BETA
+                        let owner = LioPresentationOwner(environment: configuration.environmentID, account: configuration.accountID)
+                        if let previous = self.lioPresentationOwner, previous != owner {
+                            self.clearLioPresentation()
+                        }
+                        #endif
+                        let activeTrip = try DevelopmentTripHost(configuration: configuration, shell: self.shell,
                             lease: DevelopmentSessionLease(session: session, operation: operation), offline: self.offline,
                             memoryExtensionsAllowed: self.cleanupWorkflow?.version == .v4, betaComposition: inputs.composition)
+                        self.trip = activeTrip
                         #if G2C_DEMO_BETA
-                        if let messages = self.trip?.messages {
-                            self.lioChatContinuity = try messages.restoreLioPosition(previous: self.lioChatContinuity)
-                        }
+                        self.lioChatContinuity = try activeTrip.messages.restoreLioPosition(previous: self.lioChatContinuity)
+                        self.lioPresentationOwner = owner
+                        self.lioRetainedTrip = activeTrip
                         #endif
                         #if !G2C_DEMO_BETA
                         if let conversation = inputs.conversation {
@@ -1105,8 +1119,7 @@ private var developmentHostEnvironment: [String: String] {
             serverRejected: offline == nil || cleanupEnabled ? nil : { [weak self] material in try self?.offline?.identityRejected(material: material) },
             identityWillChange: { [weak self] in
                 #if G2C_DEMO_BETA
-                self?.lioChatContinuity = nil
-                self?.lioSessionProblem = nil
+                self?.clearLioPresentation()
                 #endif
                 self?.cleanupWorkflow?.invalidate(); self?.cleanupWorkflow = nil; self?.cleanup = nil
             },
@@ -1138,6 +1151,16 @@ private var developmentHostEnvironment: [String: String] {
         try self.init(shell: shell, endpoint: DemoBetaConfiguration.endpoint, tokens: [:],
                       approvedLocalHost: nil, approvedBetaAPI: false, composition: nil, proposalID: nil,
                       offlineProfile: .init(wallOffset: 0, uptimeOffset: 0, trusted: true), cleanup: .v4, demoMode: true)
+    }
+
+    /// Retain no account display across explicit identity change or cleanup.
+    /// Background suspension only invalidates clients and keeps this same-owner RAM view.
+    private func clearLioPresentation() {
+        lioRetainedTrip = nil
+        lioPresentationOwner = nil
+        lioPresentationID = UUID()
+        lioChatContinuity = nil
+        lioSessionProblem = nil
     }
 
     var finishingDemoCleanup: Bool { cleanupWorkflow?.holdsBusinessFence == true }
@@ -1196,7 +1219,7 @@ private var developmentHostEnvironment: [String: String] {
         guard let original = cleanupWorkflow else { throw CleanupFailure.stale }
         try original.requireCurrent()
         #if G2C_DEMO_BETA
-        lioChatContinuity = nil
+        clearLioPresentation()
         #endif
         trip?.invalidate()
         guard cleanupWorkflow === original else { throw CleanupFailure.stale }

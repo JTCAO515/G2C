@@ -108,12 +108,21 @@ struct LioTripsView: View {
     let currentPlan: LioItinerary?
     let canUndo: Bool
     let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
+    let sessionRevision: UUID?
     @Binding var path: [LioTripRoute]
     let openChat: () -> Void
     @State private var saved: [LioTripLibrary.Entry]?
     @State private var listUnavailable = false
     @State private var listAttempt = 0
     @Environment(\.colorScheme) private var colorScheme
+    private struct ListRead: Equatable {
+        let attempt: Int
+        let session: UUID?
+    }
+    private struct DetailRead: Hashable {
+        let route: LioTripRoute
+        let session: UUID?
+    }
 
     private var shownItineraries: [LioItinerary] {
         guard let currentPlan else { return itineraries }
@@ -181,7 +190,7 @@ struct LioTripsView: View {
                 if let library {
                     LioTripDetail(tripID: String(decoding: route.tripID, as: UTF8.self), library: library,
                                   language: language, recordedMap: recordedMap)
-                        .id(route)
+                        .id(DetailRead(route: route, session: sessionRevision))
                 } else if let itinerary = shownItineraries.first(where: { $0.id == String(decoding: route.tripID, as: UTF8.self) }) {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 20) {
@@ -214,7 +223,7 @@ struct LioTripsView: View {
                     }
                 }
             }
-            .task(id: listAttempt) {
+            .task(id: ListRead(attempt: listAttempt, session: sessionRevision)) {
                 guard let library else { return }
                 listUnavailable = false
                 saved = nil
