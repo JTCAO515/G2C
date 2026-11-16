@@ -16,7 +16,7 @@ from cj_usage.metered_exit import BudgetUnknown
 from cj_trip.domain import identifier
 
 from .local_app import ISSUER,scope_for
-from .local_lio_provider_sources import RegisteredProviderSources
+from .local_lio_provider_sources import RegisteredProviderSources,PROVIDER_OUTPUT_LIMIT
 
 
 @dataclass(frozen=True,repr=False)
@@ -77,5 +77,5 @@ def registration(services):
                         yield raw.decode()
                 finally:events.close()
             return invoke
-        return InvocationInput(original,None,bind,argument.sources.receipt)
+        return InvocationInput(original,None,bind,argument.sources.receipt,tool_output_limit=PROVIDER_OUTPUT_LIMIT)
     return Registration('tool',prepare_input)
