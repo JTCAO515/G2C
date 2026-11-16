@@ -8,7 +8,7 @@ import re
 import sys
 import time
 import threading
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 
 import psycopg
 from fastapi.responses import JSONResponse
@@ -103,13 +103,14 @@ def worker_pulse():
     finally:stop.set();thread.join()
 
 
-def worker(runtime, *, tool_evidence=None,runtime_manifest=None,app_smoke_manifest=None):
+def worker(runtime, *, tool_evidence=None,runtime_manifest=None,app_smoke_manifest=None,simulator_manifest=None,start_simulator=False):
     from .demo_login import signing_socket
     with signing_socket(runtime):
-        _run_worker(runtime, tool_evidence=tool_evidence,runtime_manifest=runtime_manifest,app_smoke_manifest=app_smoke_manifest)
+        _run_worker(runtime, tool_evidence=tool_evidence,runtime_manifest=runtime_manifest,app_smoke_manifest=app_smoke_manifest,
+                    simulator_manifest=simulator_manifest,start_simulator=start_simulator)
 
 
-def _run_worker(runtime, *, tool_evidence=None,runtime_manifest=None,app_smoke_manifest=None):
+def _run_worker(runtime, *, tool_evidence=None,runtime_manifest=None,app_smoke_manifest=None,simulator_manifest=None,start_simulator=False):
     # Missing transferred journal is a configuration failure, never a new quota.
     if not (Path.home()/'.local/share/g2c/m4-real-services/m4-outflows.sqlite').is_file():
         raise ValueError('original_shared_authorization_journal_required')
@@ -133,6 +134,11 @@ def _run_worker(runtime, *, tool_evidence=None,runtime_manifest=None,app_smoke_m
     lio_confirmation = None
     if runtime.demo_subjects and 'CJ_BETA_CONFIRMATION_B64' in os.environ:
         lio_confirmation = ConfirmationSigner(decoded('CJ_BETA_CONFIRMATION_B64', length=32))
+    if simulator_manifest is not None:
+        from cj_api.runtime_simulator_host import NativeSimulatorHost
+        simulator=NativeSimulatorHost(simulator_manifest,runtime,services,tools)
+        if start_simulator:simulator.begin()
+        return _worker_loop(runtime,services,tools,database,lio_confirmation,simulator,simulator=simulator)
     if app_smoke_manifest is not None:
         from cj_api.app_smoke_capture import AppSmokeCapture
         smoke=AppSmokeCapture(app_smoke_manifest,runtime.demo_subjects,tools.registrations,database,services.model.authorization)
@@ -153,7 +159,7 @@ def _run_worker(runtime, *, tool_evidence=None,runtime_manifest=None,app_smoke_m
         return _worker_loop(runtime,services,tools,database,lio_confirmation,bindings)
 
 
-def _worker_loop(runtime,services,tools,database,lio_confirmation,bindings=None,*,smoke_capture=None):
+def _worker_loop(runtime,services,tools,database,lio_confirmation,bindings=None,*,smoke_capture=None,simulator=None):
     from cj_api.rejected_intake_capture import RejectedIntakeSink,use_rejected_intake_sink
     rejected=RejectedIntakeSink('/rejected-intakes')
     rejected.prune()
@@ -162,7 +168,8 @@ def _worker_loop(runtime,services,tools,database,lio_confirmation,bindings=None,
         try:
             _runtime_gate(database,runtime)
             rejected.prune()
-            with use_rejected_intake_sink(rejected),worker_pulse():
+            with use_rejected_intake_sink(rejected),worker_pulse(), \
+                    (nullcontext() if simulator is None else simulator.execution_lock):
                 outcomes=run_worker.run_once(database,services.model,runtime.auth,tools_configuration=tools,real_services=services,account_admission=True,
                     hk_beta_b_run_credential=True,
                     hk_assembly_scopes=frozenset(scope_for(ISSUER,subject) for subject in runtime.assembly_subjects),
@@ -174,6 +181,7 @@ def _worker_loop(runtime,services,tools,database,lio_confirmation,bindings=None,
                     runtime_registrations_for_run=None if bindings is None else bindings.registrations,
                     runtime_reflection=None if bindings is None else bindings.reflection,
                     runtime_exit_observer_for_run=None if bindings is None else bindings.exit_observer)
+                if simulator is not None:simulator.completed(outcomes)
             if smoke_capture is not None:
                 from cj_usage.metered_exit import BudgetUnknown
                 try:smoke_capture.completed(outcomes)
@@ -185,8 +193,11 @@ def _worker_loop(runtime,services,tools,database,lio_confirmation,bindings=None,
                 if outcome.status in ('unknown','failed'):
                     print('ALERT run_'+outcome.status+' run_id='+outcome.run_id,file=sys.stderr,flush=True)
             component='worker';status='ready'
-        except psycopg.Error:component='database'
-        except (OSError,ValueError,CompositionUnavailable):pass
+        except psycopg.Error:
+            component='database'
+            if simulator is not None:simulator.worker_unavailable()
+        except (OSError,ValueError,CompositionUnavailable):
+            if simulator is not None:simulator.worker_unavailable()
         if status!='ready':print('ALERT '+component+'_unavailable',file=sys.stderr,flush=True)
         path=heartbeat();temporary=path.with_suffix('.tmp')
         temporary.write_text(json.dumps(dict(at=time.time(),component=component,status=status)));temporary.replace(path)
@@ -212,7 +223,15 @@ def main():
     parser.add_argument('--runtime-manifest',type=Path)
     parser.add_argument('--app-smoke-manifest',type=Path)
     parser.add_argument('--app-smoke-api-manifest',type=Path)
+    parser.add_argument('--simulator-manifest',type=Path)
+    parser.add_argument('--start-simulator',action='store_true')
     args=parser.parse_args();runtime=None
+    if args.simulator_manifest is not None and (args.command!='worker' or args.runtime_manifest is not None
+            or args.app_smoke_manifest is not None or args.tool_evidence_manifest is not None
+            or args.app_smoke_api_manifest is not None):
+        parser.error('native simulator is an exclusive worker composition')
+    if args.start_simulator and args.simulator_manifest is None:
+        parser.error('starting the simulator requires its owned manifest')
     if args.tool_evidence_manifest is not None and args.command!='worker':
         parser.error('tool evidence is available only on the existing synthetic worker')
     if args.runtime_manifest is not None and args.command!='worker':
@@ -231,7 +250,8 @@ def main():
             from cj_api.tool_evidence import ToolEvidence
             evidence=(None if args.tool_evidence_manifest is None else
                       ToolEvidence.load(args.tool_evidence_manifest,runtime.demo_subjects))
-            worker(runtime,tool_evidence=evidence,runtime_manifest=args.runtime_manifest,app_smoke_manifest=args.app_smoke_manifest)
+            worker(runtime,tool_evidence=evidence,runtime_manifest=args.runtime_manifest,app_smoke_manifest=args.app_smoke_manifest,
+                   simulator_manifest=args.simulator_manifest,start_simulator=args.start_simulator)
         elif args.command=='api':api(runtime,app_smoke_api_manifest=args.app_smoke_api_manifest)
         else:initialize(runtime)
     except (OSError,ValueError,KeyError,CompositionUnavailable,psycopg.Error):
