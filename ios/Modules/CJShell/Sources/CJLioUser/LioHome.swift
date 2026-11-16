@@ -180,7 +180,7 @@ public struct LioHome<MenuContent: View>: View {
                     opening = .hidden
                 }
                 try Task.checkCancellation()
-                if let continuity = chatLibrary?.continuity { draft = continuity.draft }
+                if let continuity = chatLibrary?.continuity { setDraft(continuity.draft) }
                 restoringChat = false
             } catch is CancellationError {
                 return
@@ -189,7 +189,10 @@ public struct LioHome<MenuContent: View>: View {
                     ?? .classify(error, stage: .selectedChat, observation: nil)
             }
         }
-        .onChange(of: draft) { _, value in chatLibrary?.continuity?.draft = value }
+        .onChange(of: chatLibrary?.continuity?.positionIssue, initial: true) { _, issue in
+            guard let issue, scenePhase == .active else { return }
+            LioDiagnosticLog.shared.record(error: issue.problem, stage: .localRecord, at: issue.at)
+        }
         .onChange(of: tab) { _, _ in typing = false }
         .onChange(of: scenePhase) { _, phase in
             if phase != .active { typing = false }
@@ -231,6 +234,19 @@ public struct LioHome<MenuContent: View>: View {
     private func chatMessages(_ scroll: ScrollViewProxy) -> some View {
         let pending = conversation.pending
         let earlierID = conversation.nextBefore.map { Data($0.utf8) }
+        if let chatID, let retained = chatLibrary?.continuity?.retainedUnsent[chatID] {
+            ForEach(Array(retained.enumerated()), id: \.offset) { _, question in
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(language.text("Unsent message", "未发送的内容"))
+                        .font(.headline)
+                    RunSelectableText(text: question.text, color: LioTheme.ink)
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                .accessibilityIdentifier("lio.unsent.message")
+            }
+        }
         if let failure = conversation.timelineFailure {
             readFailureMessage(failure)
         }
@@ -316,6 +332,9 @@ public struct LioHome<MenuContent: View>: View {
                             scroll.scrollTo("lio.bottom", anchor: .bottom)
                         }
                     }
+                }
+                if let continuity = chatLibrary?.continuity, continuity.positionIssue != nil {
+                    positionSaveNotice(continuity)
                 }
                 composer
             }
@@ -407,14 +426,19 @@ public struct LioHome<MenuContent: View>: View {
     private func switchChat(_ chat: LioChatSession, opening: Opening = .hidden) {
         guard canSwitchChat else { return }
         if chat.id != chatID {
-            if let chatID { chatDrafts[chatID] = draft }
+            let nextDraft: String
+            if let continuity = chatLibrary?.continuity {
+                nextDraft = continuity.switchChat(to: chat.id, leaving: chatID, currentDraft: draft)
+            } else {
+                if let chatID { chatDrafts[chatID] = draft }
+                nextDraft = chatDrafts.removeValue(forKey: chat.id) ?? ""
+            }
             selectedChat = chat
-            chatLibrary?.continuity?.selectedID = chat.id
             conversation = LioConversation(service: chat.service)
             questionDrafts = [:]
             profileEdit = nil
             self.opening = opening
-            draft = chatDrafts.removeValue(forKey: chat.id) ?? ""
+            draft = nextDraft
             tripPath = []
             memoryNotice = nil
             followsAnswer = true
@@ -562,7 +586,7 @@ public struct LioHome<MenuContent: View>: View {
             HStack(alignment: .top, spacing: LioTheme.Spacing.xs) {
                 ForEach(Array(LioDemo.starters(language).enumerated()), id: \.offset) { index, starter in
                     Button {
-                        draft = starter.prefix
+                        setDraft(starter.prefix)
                         typing = true
                     } label: {
                         VStack(spacing: LioTheme.Spacing.xs) {
@@ -621,20 +645,50 @@ public struct LioHome<MenuContent: View>: View {
         return true
     }
 
+    private func setDraft(_ value: String) {
+        draft = value
+        chatLibrary?.continuity?.updateDraft(value, for: chatID)
+    }
+
+    private func positionSaveNotice(_ position: LioChatContinuity) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            RunReadableText(text: language.text("Draft isn’t saved on this device yet.", "草稿暂未保留在本机。"), color: LioTheme.ink)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityIdentifier("lio.position.notice")
+            Button { position.retryKeepingPosition() } label: {
+                Text(language.text("Retry", "重试"))
+                    .foregroundStyle(LioTheme.ink)
+                    .frame(minWidth: 60, minHeight: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("lio.position.retry")
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(LioTheme.surfaceSunken)
+    }
+
     private var composer: some View {
         let placeholder = language.text("Start chatting", "开始聊天")
         let canSend = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && conversation.pending == nil
             && !chatFading
         let showsJump = !followsAnswer && !conversation.turns.isEmpty
         return HStack(alignment: .center, spacing: 10) {
-            TextField(placeholder, text: $draft, prompt: Text(placeholder).foregroundStyle(LioTheme.inkSecondary), axis: .vertical)
+            TextField(placeholder, text: Binding(get: { draft }, set: { setDraft($0) }), prompt: Text(placeholder).foregroundStyle(LioTheme.inkSecondary), axis: .vertical)
                 .font(.body)
                 .lineLimit(1...5)
                 .frame(minHeight: 44)
+                .contentShape(Rectangle())
                 .focused($typing)
                 .accessibilityIdentifier("lio.composer")
             Button {
-                if sendQuestion(draft) { draft = "" }
+                if let continuity = chatLibrary?.continuity {
+                    continuity.withPositionChange {
+                        if sendQuestion(draft) { setDraft("") }
+                    }
+                } else if sendQuestion(draft) { setDraft("") }
             } label: {
                 Image(systemName: "arrow.up")
                     .font(.body.weight(.semibold))
