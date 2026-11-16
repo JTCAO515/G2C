@@ -259,3 +259,6 @@ if __name__=='__main__':
     pipeline_models_main()
     import runpy
     runpy.run_path(str(ROOT/'backend/draft/tests/rich_provider_pg.py'),run_name='__main__')
+    import subprocess
+    for script in ('rich_selection_pg.py','rich_selection_undo_pg.py'):
+        subprocess.run([sys.executable,'-B',str(ROOT/'backend/draft/tests'/script)],check=True)
