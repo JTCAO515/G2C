@@ -46,9 +46,7 @@
     },
     "conditions": {
       "reservation_required": null,
-      "closed_weekdays": [
-        1
-      ],
+      "closed_weekdays": null,
       "closed_weekdays_public_holiday_exception": null,
       "advance_booking_days": null,
       "advance_booking_rule": null
