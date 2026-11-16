@@ -155,5 +155,34 @@
       "https://whlyw.cq.gov.cn/zwxx_221/bmdt/tzgg/202511/t20251103_15136009.html",
       "https://www.cq.gov.cn/zwgk/zfxxgkml/zdlyxxgk/ggwh/ly/zxdt/202607/t20260722_15842998.html"
     ]
+  },
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "id": "visitor.v3.chongqing.zoo",
+    "cities": [
+      "chongqing"
+    ],
+    "topic": "passport_booking",
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-11-23",
+    "subject": {
+      "key": "chongqing.zoo",
+      "name_zh": "重庆动物园",
+      "name_en": "Chongqing Zoo",
+      "wikidata_qid": null
+    },
+    "conditions": {
+      "reservation_required": null,
+      "closed_weekdays": [],
+      "closed_weekdays_public_holiday_exception": false,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    },
+    "text_zh": "九龙坡区政府公开名录列重庆动物园每日开放，未设常规每周闭园日，并列有“重庆动物园”官方公众号等预约购票渠道。本条未核定是否必须提前预约或提前窗口，不把列出购票渠道当作强制预约证明。票种、临时限流、特别活动和当天开放应另查最新公告；园内单独设施不随整园规则推定开放。",
+    "text_en": "The Jiulongpo district government directory lists Chongqing Zoo as open daily and identifies its official WeChat account among ticket-booking channels. No regular weekly closure is listed in that daily schedule. Mandatory advance reservation and its window are unconfirmed here; a booking channel alone does not establish a requirement. Check current notices for ticket categories, crowd controls, special events and opening on your visit date. Individual facilities may differ.",
+    "source_urls": [
+      "https://cqjlp.gov.cn/bmjz/qzfbm_97119/qwhlyw_97727/zwgk_97124/gkml/jczwgk/ggwhfwly/ggfw/ggwljgml/202608/t20260807_15904141.html"
+    ]
   }
 ]
