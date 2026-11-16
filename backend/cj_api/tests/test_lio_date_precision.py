@@ -19,6 +19,19 @@ def parsed(text,start,*,quote=None,uncertain=False):
 
 
 class DatePrecision(unittest.TestCase):
+    def test_explicit_on_weekday_is_still_bound_to_the_stated_week(self):
+        phrase='next week on Tuesday'
+        self.assertEqual(parsed('计划北京三天，一个人，'+phrase,'2026-11-17',quote=phrase).start_date,
+                         dict(state='known',value='2026-11-17'))
+        for expression,wrong in (
+            (phrase,'2026-11-19'),(phrase,'2026-11-24'),
+            ('not next week on Tuesday','2026-11-17'),
+            ('next week on Tuesday or Friday','2026-11-17'),
+            ('next weekend on Tuesday','2026-11-17'),
+        ):
+            with self.subTest(expression=expression,wrong=wrong),self.assertRaises(InvalidInput):
+                parsed('计划北京三天，一个人，'+expression,wrong,quote=expression)
+
     def test_week_without_day_cannot_authorize_a_specific_date(self):
         for quote in ('下周','计划下周去','next week'):
             text='计划北京三天，一个人，'+quote

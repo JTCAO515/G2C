@@ -18,6 +18,7 @@ from cj_usage.local_provider_exit import BudgetExceeded
 from .local_lio_calendar_source import LioCalendarSource, LioDateEvidence
 from .local_lio_edit import _bind_current
 from .lio_plan_pace import saved_summary
+from .local_lio_planning import unsaved_plan_answer
 from .lio_national_intake import LITERAL_DATE, _MONTH_DAY, _RELATIVE_DAY, _WEEK_SOURCE, _BARE_WEEK
 
 
@@ -88,6 +89,8 @@ class LioCalendar:
             state = worker._event(binding,state,'text_delta',saved_summary(locale,day_count,
                 details.pace,dated=start_date is not None,retained=context is not None,
                 rich_applied=rich_first and publisher.generation_used in RICH_GENERATION_PROFILES))
+        else:
+            state=unsaved_plan_answer(worker,binding,state,locale,retained=context is not None)
         return worker._event(binding, state, 'completed')
 
     def convert(self, worker, binding, state, intake, original, turns, references):
