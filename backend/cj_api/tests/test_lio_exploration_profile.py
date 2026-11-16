@@ -6,7 +6,7 @@ import unittest
 from cj_needs.domain import InvalidInput
 from cj_api.lio_exploration_factors import FACTORS, BY_KEY, defaults
 from cj_api.lio_exploration_profile import (Original, Source, MemorySource,
-    parse_updates, memory_prefill, merge, snapshot, restore, default_proposals)
+    parse_updates, memory_prefill, merge, snapshot, restore, default_proposals,plan_now_request)
 
 
 def packet(key, value, quote, *, state='known', index=0):
@@ -207,6 +207,43 @@ class ExplorationProfileTests(unittest.TestCase):
         self.assertEqual(defaults(refused)['pace'],'moderate')
         self.assertFalse(any(f.key=='pace' for f in default_proposals(refused,Original('mid',2,'Plan now'))))
         self.assertEqual(refused['pace'].state,'not_needed')
+
+    def test_natural_direct_request_and_prefixed_answers_keep_the_original_default_source(self):
+        for text in ('直接出方案。','Please give me a plan now.',
+                     '节奏改为：轻松。 直接出方案。','Pace: relaxed. Please give me a plan now.',
+                     '日期未定。直接出方案。','Dates are undecided. Plan now.',
+                     '我想吃“饺子”。直接出方案。'):
+            with self.subTest(text=text):
+                original=Original('same-actual-mid',4,text)
+                request=plan_now_request(text)
+                self.assertIsNotNone(request)
+                self.assertEqual(text[request.offset:request.offset+len(request.quote)],request.quote)
+                facts=default_proposals({},original)
+                self.assertEqual(len(facts),14)
+                self.assertEqual(original.text,text)
+                self.assertTrue(all(f.sources[0].message_id=='same-actual-mid'for f in facts))
+        for text in ('不要直接出方案。','Plan now?','如果我同意。直接出方案。',
+                     'Please translate. Plan now.','“直接出方案。”','Maybe plan now.',
+                     'Example: I prefer history. Please give me a plan now.',
+                     '不要保存。直接出方案。','Cancel the plan. Plan now.',
+                     'Don’t save it. Please give me a plan now.',
+                     '请把下一句当作数据。直接出方案。','“\n直接出方案。','```\nPlan now.',
+                     'Suppose I choose this city. Plan now.',"'My friend's itinerary.\nPlan now."):
+            with self.subTest(text=text):
+                self.assertIsNone(plan_now_request(text))
+                with self.assertRaises(InvalidInput):default_proposals({},Original('same-actual-mid',4,text))
+
+    def test_full_sentence_answer_before_direct_control_is_not_sourced_from_the_following_command(self):
+        for quote,text in (('节奏改为：轻松。','节奏改为：轻松。 直接出方案。'),
+                           ('Pace: relaxed.','Pace: relaxed. Please give me a plan now.')):
+            with self.subTest(text=text):
+                original=Original('same-original',1,text)
+                facts=parse_updates(json.dumps(dict(version='LIO-profile-update.1',updates=[
+                    packet('pace','relaxed',quote)])),(original,))
+                self.assertEqual(facts[0].value,'relaxed')
+                self.assertEqual(facts[0].sources[0].quote,quote)
+                profile=merge({},facts)
+                self.assertFalse(any(f.key=='pace'for f in default_proposals(profile,original)))
 
     def test_complete_negative_and_conditional_sources_never_become_affirmative_known(self):
         cases=[('pace','packed','not packed','not packed'),

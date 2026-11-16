@@ -1,0 +1,99 @@
+"""Explicit native4 generator injection leaves the old preview dependency optional."""
+from datetime import date
+from types import SimpleNamespace
+import unittest
+from unittest.mock import patch
+
+from cj_api.local_lio_exploration import ExplorationPlanning
+
+
+class GenerationWiring(unittest.TestCase):
+    def test_plan_now_delegates_to_the_explicit_generator_without_preview_model(self):
+        calls=[];events=[];result=object()
+        class Generation:
+            def plan(self,host,worker,binding,view,*,locale,effective,prior_model_calls):
+                calls.append((host,worker,binding,view,locale,effective,prior_model_calls));return result
+        planner=ExplorationPlanning(None,SimpleNamespace(),generation=Generation())
+        def event(binding,state,kind,value):events.append((kind,value));return state
+        worker=SimpleNamespace(_event=event);view=SimpleNamespace(profile={})
+        self.assertIs(planner._plan(worker,'binding','state',view,'en',prior_model_calls=1),result)
+        self.assertEqual(len(calls),1)
+        self.assertEqual(calls[0][4],'en');self.assertEqual(calls[0][-1],1)
+        self.assertTrue(any('planning_started'in value for _,value in events))
+
+    def test_rollback_dispatch_never_enters_new_plan_now_generation(self):
+        import json,os
+        from cj_api.local_lio_exploration import ExplorationDispatch,exploration_enabled
+        from cj_api.local_lio_exploration_profile import ProfileView
+        from cj_api.lio_exploration_profile import Original
+        from cj_message.demo_dialogue import LIO_VERSION_V4
+        rows=(('zh','直接出方案'),('en','Plan now'),
+              ('zh','节奏改为：轻松。 直接出方案。'),
+              ('en','Change my travel pace to relaxed. Plan now.'))
+        for flag in ('0','1'):
+            for locale,text in rows:
+                with self.subTest(flag=flag,locale=locale,text=text),patch.dict(os.environ,{'CJ_LIO_EXPLORATION_ENABLED':flag}):
+                    generated=[];legacy_calls=[];events=[]
+                    legacy=SimpleNamespace(execute=lambda *args:legacy_calls.append(args)or'legacy')
+                    class Generation:
+                        def plan(self,*args,**kwargs):generated.append((args,kwargs));return'generated'
+                    planner=ExplorationPlanning(None,legacy,enabled=exploration_enabled(),generation=Generation())
+                    view=ProfileView((Original('current',1,text),),(),{},'0'*64)
+                    planner.profiles=SimpleNamespace(read=lambda *args:view,
+                        accept=lambda worker,binding,state,*args,**kwargs:(state,{}))
+                    planner._phase=lambda _:None
+                    planner._model=lambda *args,**kwargs:json.dumps(dict(version='LIO-exploration-understanding.1',
+                        intent='plan',current_source_index=0,updates=[]))
+                    worker=SimpleNamespace(runs=SimpleNamespace(snapshot=lambda _:object()),
+                        _event=lambda binding,state,kind,value:events.append((kind,value))or state)
+                    original=SimpleNamespace(protocol=LIO_VERSION_V4,locale=locale)
+                    result=ExplorationDispatch(legacy,planner).execute(worker,'binding','state',text,original)
+                    self.assertEqual(result,'generated'if flag=='1'else'legacy')
+                    self.assertEqual(len(generated),int(flag))
+                    self.assertEqual(len(legacy_calls),1-int(flag))
+                    if flag=='0':
+                        self.assertIs(legacy_calls[0][-1],original)
+                        self.assertEqual(events,[])
+
+    def test_saved_rich_calendar_phase_uses_the_explicit_reader(self):
+        class Generation:
+            def current(self,host,binding):
+                return SimpleNamespace(trip=SimpleNamespace(content=b'{"content_version":"structured.4","calendar":{"state":"undated"},"days":[{"day_index":1}]}'))
+        legacy=SimpleNamespace(calendar=SimpleNamespace(current=lambda _:self.fail('legacy reader used for S4')))
+        planner=ExplorationPlanning(None,legacy,generation=Generation())
+        self.assertEqual(planner._phase('binding'),'undated')
+
+
+    def test_unknown_edge_proximity_asks_for_evidence_without_publication(self):
+        from cj_api.local_lio_pipeline_generation import PipelineGeneration
+        import cj_api.local_lio_pipeline_generation as generation
+        for locale,question in (('zh','能补充酒店的具体位置吗？'),
+                                ('en','Can you provide the exact hotel location?')):
+            for retained in (False,True):
+                with self.subTest(locale=locale,retained=retained):
+                    events=[]
+                    host=SimpleNamespace(current=lambda _:object()if retained else None,
+                        _finish=lambda worker,binding,state,body,scene,lang:body)
+                    worker=SimpleNamespace(runs=SimpleNamespace(snapshot=lambda _:object()),
+                        _event=lambda binding,state,kind,value:events.append((kind,value))or state)
+                    prepared=SimpleNamespace(projection=SimpleNamespace(fields={'party_size':{'state':'known','value':1}}))
+                    capture=SimpleNamespace(basis=SimpleNamespace(day_count=3,start_date=None))
+                    with patch.multiple(generation,prepare_generation=unittest.mock.DEFAULT,
+                            retrieve_skeleton=unittest.mock.DEFAULT,compile_retrieved_plan=unittest.mock.DEFAULT,
+                            order_retrieved_plan=unittest.mock.DEFAULT,route_ordered_plan=unittest.mock.DEFAULT,
+                            publish_retrieved_plan=unittest.mock.DEFAULT)as stages:
+                        stages['prepare_generation'].return_value=prepared
+                        stages['retrieve_skeleton'].return_value=({},(),capture)
+                        stages['order_retrieved_plan'].return_value=SimpleNamespace(content=None,
+                            status='UNKNOWN',reason='EDGE_DAY_PROXIMITY_UNCONFIRMED')
+                        body=PipelineGeneration().plan(host,worker,'binding','view',locale=locale,
+                            effective={},prior_model_calls=1)
+                        self.assertIn(question,body)
+                        self.assertIn('附近'if locale=='zh'else'near the hotel',body)
+                        self.assertEqual(('原行程保留'if locale=='zh'else'original itinerary is kept')in body,retained)
+                        stages['route_ordered_plan'].assert_not_called()
+                        stages['publish_retrieved_plan'].assert_not_called()
+                        self.assertEqual(len(events),1)
+
+
+if __name__=='__main__':unittest.main()

@@ -4,21 +4,23 @@ from hashlib import sha256
 
 from cj_trip.auth_boundary import Boundary
 from cj_trip.domain import Denied, packed
-from cj_message.demo_dialogue import LIO_VERSION, LIO_VERSION_V3
+from cj_message.demo_dialogue import LIO_VERSION, LIO_VERSION_V3,LIO_VERSION_V4
 
 from .local_app import trip_resolver
 
 
 class LioTripCards:
-    def __init__(self, database, checker,*,calendar=False):
+    def __init__(self, database, checker,*,calendar=False,rich=False):
         resolve = trip_resolver(database)
-        self.database,self.calendar=database,calendar
-        self.boundary = Boundary(checker, resolve, structured=True,calendar=calendar)
+        self.database,self.calendar,self.rich=database,calendar,rich
+        self.boundary = Boundary(checker, resolve, structured=True,calendar=calendar,rich=rich)
 
-    def read(self, token, binding, *, edit=False,protocol=LIO_VERSION,conversion=False):
+    def read(self, token, binding, *, edit=False,protocol=LIO_VERSION,conversion=False,locale=None):
         def original(context):
             if protocol==LIO_VERSION_V3 and not self.calendar:
                 raise Denied('calendar message requires new Lio reader')
+            if protocol==LIO_VERSION_V4 and (not self.rich or edit or conversion):
+                raise Denied('explicit rich plan reader required')
             if conversion:
                 from cj_trip.calendar_conversion import DateConvert
                 with self.database.connect(binding.scope) as connection:
@@ -31,7 +33,9 @@ class LioTripCards:
                 if receipt is None or receipt['committed'] is not True:return b'null'
                 trip_id,version=receipt['trip_id'],receipt['trip_version']
             else:
-                if protocol==LIO_VERSION_V3:
+                if protocol==LIO_VERSION_V4:
+                    receipt=context.rich_plan_receipt(binding)
+                elif protocol==LIO_VERSION_V3:
                     receipt=context.calendar_edit_receipt(binding) if edit else context.calendar_plan_receipt(binding)
                 else:
                     receipt=context.lio_edit_receipt(binding) if edit else context.lio_plan_receipt(binding)
@@ -40,6 +44,7 @@ class LioTripCards:
             revisions = context.lio_revisions(trip_id, before=version + 1, limit=1)
             if len(revisions) != 1 or revisions[0].version != version:
                 raise Denied('original saved itinerary unavailable')
+            if protocol==LIO_VERSION_V4:return packed(rich_card(revisions[0],locale=locale))
             return packed(calendar_card(revisions[0]) if self.calendar else _card(revisions[0]))
 
         return json.loads(self.boundary.with_operation(token, original))
@@ -78,3 +83,28 @@ def calendar_card(trip):
     return dict(version='LIO-trip-card.2', trip_id=trip.trip_id, trip_version=trip.version,
                 content_version=value['content_version'], content_sha256=sha256(trip.content).hexdigest(),
                 title=value['title'], calendar=calendar, days=days, date_checks=checks)
+
+
+def rich_card(trip,*,locale=None):
+    """Receipt-bound historical S4 summary using the frozen Card3 contract.
+
+    Full place/leg/lodging facts remain in the native rich Trip detail. The
+    summary does not relabel S4 as an old calendar or expose source metadata.
+    """
+    value=json.loads(trip.content)
+    if value['content_version']!='structured.4':
+        raise Denied('rich plan receipt requires its actual rich revision')
+    days=[dict(day_index=day['day_index'],**({'date':day['date']}if'date'in day else{}),items=[])
+          for day in value['days']]
+    for item in value['items']:
+        start,end=item['schedule']['start'],item['schedule']['end']
+        label=item['text']
+        if item['place']['state']=='unconfirmed':
+            prefix='地点未确认：'if locale=='zh'else'Unconfirmed place: 'if locale=='en'else'地点未确认 / Unconfirmed place: '
+            label=prefix+label
+            if len(label)>500:label=label[:499]+'…' # Summary only; canonical content stays intact.
+        days[start['day_index']-1]['items'].append(dict(item_id=item['id'],label=label,
+            start_time=start['time'].get('value'),end_time=end['time'].get('value'),fixed=item['fixed'].get('value')))
+    return dict(version='LIO-trip-card.3',trip_id=trip.trip_id,trip_version=trip.version,
+        content_version=value['content_version'],content_sha256=sha256(trip.content).hexdigest(),
+        title=value['title'],calendar=value['calendar'],days=days,date_checks=value['date_checks'])

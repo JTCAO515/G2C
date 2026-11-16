@@ -18,7 +18,7 @@ from cj_trip.domain import packed
 
 from . import lio_exploration_factors,lio_exploration_profile
 from .lio_exploration_profile import (CONTEXT,POLICY,decode_context,restore_context,
-    default_proposals,snapshot)
+    default_proposals,snapshot,plan_now_request)
 from .local_lio_exploration_profile import ProfileContext
 
 PLAN_NOW='lio_plan_now.1:'
@@ -87,7 +87,7 @@ class RichProfileSource:
             row=db.execute('SELECT demo_question_day FROM cj_message_receipt WHERE scope=%s AND message_id=%s AND run_id=%s',
                 (binding.scope,binding.message_id,binding.run_id)).fetchone()
         text=json.loads(stored.raw)['text']
-        if row is None or row[0] is None or text.strip().casefold()not in ('直接出方案','plan now'):
+        if row is None or row[0] is None or plan_now_request(text)is None:
             raise RuntimeDenied('actual native4 plan-now original required')
         memory=worker.memory_run
         if memory is None:raise RuntimeDenied('actual current Memory capture required')

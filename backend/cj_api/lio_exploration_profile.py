@@ -9,7 +9,7 @@ from cj_needs.domain import InvalidInput, decode
 from cj_message.lio_exploration_schema import ProfileUpdate
 
 from .lio_exploration_factors import BY_KEY, LABELS, defaults
-from .lio_planning_grounding import NUMBERS
+from .lio_planning_grounding import NUMBERS,planning_withdrawn
 from .lio_positive_trip import supports as positive_trip_support
 
 CONTEXT = 'lio_planning_context.2:'
@@ -19,6 +19,43 @@ _DECLINED = re.compile(r'随便|都行|无所谓|不需要|不想回答|不想�
     r'no preference|anything|whatever|either is fine|prefer not to (?:say|answer)', re.I)
 _CLAUSE = re.compile(r'[，,。；;\n]|\.(?=\s|$)|\b(?:but|however)\b|而是|不过|但是|但', re.I)
 _RETURN_VISIT = re.compile(r'不是第一次(?:来)?|\bnot (?:my |our |the )?first (?:visit|time)\b', re.I)
+_PLAN_NOW=re.compile(r'(?:^|(?<=[。.!！；;\n]))\s*(?P<request>(?:请)?直接出方案|plan now|please give me a plan now)\s*[。.!！]?\s*$',re.I)
+_PLAN_CONTEXT=re.compile(r'如果|假如|假设|要是|倘若|仅当|翻译|复述|引用|示例|原样输出|当作数据|作为数据|'
+    r'(?:不要|别|暂不|先不)(?:直接)?(?:规划|安排|出方案)|'
+    r'\b(?:if|unless|whether|maybe|might|suppose|assuming|hypothetical|translate|translation|rephrase|repeat|quoted?|example)\b|'
+    r'\b(?:do not|don[’\x27]t|never)\s+(?:plan|execute|make|produce)\b',re.I)
+
+
+@dataclass(frozen=True)
+class PlanNowRequest:
+    prefix:str
+    quote:str
+    offset:int
+
+
+def _quoted_control(text,offset):
+    closing=[];pairs={'“':'”','「':'」','『':'』','‘':'’'}
+    for index,char in enumerate(text[:offset]):
+        if char in ("'",'’')and index>0 and index+1<len(text)and text[index-1].isalnum()and text[index+1].isalnum():continue
+        if char in ('"',"'",'“','”','‘','’')and index>0 and text[index-1]=='\\':continue
+        if closing and char==closing[-1]:closing.pop()
+        elif char in pairs:closing.append(pairs[char])
+        elif char=='"':closing.append('"')
+        elif char=="'"and(index==0 or not text[index-1].isalnum()):closing.append("'")
+    return bool(closing)or text[:offset].count('`')%2!=0
+
+
+def plan_now_request(text):
+    """A complete affirmative final command, retaining the exact original text.
+
+    Earlier traveler answers are data, not discarded button text. The controller
+    must source/accept them before defaults. A question, quoted command, meta
+    request or conditional does not become a plan-now source.
+    """
+    match=_PLAN_NOW.search(text)
+    if (match is None or _PLAN_CONTEXT.search(text)or planning_withdrawn(text)
+            or _quoted_control(text,match.start('request'))):return None
+    return PlanNowRequest(text[:match.start('request')].strip(),match['request'],match.start('request'))
 
 
 def _positive_payload(key, text):
@@ -54,6 +91,7 @@ def _positive_payload(key, text):
 
 def _source_clause(original, offset, quote):
     before = _CLAUSE.split(original[:offset])[-1]
+    if _CLAUSE.search(quote):return before+quote
     after = _CLAUSE.split(original[offset+len(quote):])[0]
     return before+quote+after
 
@@ -299,11 +337,11 @@ def merge(previous, updates, memory=()):
 def default_proposals(profile, original):
     """Label planning defaults separately from user quotes and refusals.
 
-    A literal exit supplies provenance for these proposals only. WP4/WP8 must
+    An affirmative original exit supplies provenance for these proposals only. WP4/WP8 must
     still require the actual selected native4 policy before publishing a Trip;
     neither this data nor its policy string grants source/write authority.
     """
-    if original.text.strip().casefold() not in ('直接出方案','plan now'):
+    if plan_now_request(original.text)is None:
         raise InvalidInput('original plan-now message required for default proposals')
     source = DefaultSource(original.message_id,POLICY)
     return tuple(Fact(key,value,'default',(source,)) for key,value in defaults(profile).items()
