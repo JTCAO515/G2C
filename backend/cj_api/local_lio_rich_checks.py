@@ -14,6 +14,7 @@ import threading
 
 from cj_needs.revision_lease import LeaseUnavailable
 from cj_trip.domain import packed
+from .local_lio_calendar_source import LioDateEvidence
 
 _FACTORY=object()
 
@@ -113,6 +114,11 @@ class RichUncollectedChecks:
         self.source.check(binding,source_capture)
         basis=source_capture.basis
         indices=list(range(1,basis.day_count+1))
+        current=self.source.contexts[binding]
+        prior=()if current is None else json.loads(current.trip.content).get('date_checks',())
+        if any(row['state']not in ('unknown','not_checked')or row['evidence_refs']
+                for row in (*document['date_checks'],*prior)):
+            raise LeaseUnavailable('observed date evidence requires its qualified reader')
         if basis.start_date is None:
             calendar=dict(state='undated');days=[dict(day_index=day)for day in indices]
             state,reason='not_checked','date_not_set'
@@ -123,8 +129,9 @@ class RichUncollectedChecks:
             state,reason='unknown','date_evidence_not_collected'
         if _calendar(document)!=packed(dict(calendar=calendar,days=days)):
             raise LeaseUnavailable('code checks require the complete actual source calendar')
-        rows=[dict(kind=kind,state=state,day_indices=indices,item_ids=[],reason=reason,evidence_refs=[])
-            for kind in ('weather','day_opening')]
+        rows=(LioDateEvidence().read(binding,source_capture,document)if basis.start_date is not None else
+            [dict(kind=kind,state=state,day_indices=indices,item_ids=[],reason=reason,evidence_refs=[])
+             for kind in ('weather','day_opening')])
         result=UncollectedChecksCapture(source_capture,_plan_body(document),packed(rows),_factory=_FACTORY)
         self._issued=result
         return result

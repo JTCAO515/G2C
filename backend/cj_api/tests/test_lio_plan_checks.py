@@ -5,11 +5,14 @@ import unittest
 
 from cj_api.local_lio_rich_checks import RichUncollectedChecks
 from cj_needs.revision_lease import LeaseUnavailable
+from cj_trip.domain import packed
 from test_lio_pipeline_document import build
 
 
 class Source:
-    def __init__(self,start):self.capture=SimpleNamespace(basis=SimpleNamespace(day_count=3,start_date=start))
+    def __init__(self,start):
+        self.capture=SimpleNamespace(basis=SimpleNamespace(day_count=3,start_date=start))
+        self.contexts={'current':None}
     def check(self,binding,capture):
         if binding!='current' or capture is not self.capture:raise LeaseUnavailable('current original only')
 
@@ -65,6 +68,14 @@ class UncollectedPlanChecks(unittest.TestCase):
         source.capture=copy(source.capture)
         with reader.hold('current',capture,SimpleNamespace(check=lambda _:None))as check:
             with self.assertRaises(LeaseUnavailable):check(document)
+
+    def test_missing_evidence_reader_cannot_erase_observed_candidate_or_retained_checks(self):
+        for state in ('clear','conflict'):
+            reader,source,document,_=self.case('2026-12-01')
+            altered=deepcopy(document);altered['date_checks'][0]['state']=state
+            with self.assertRaises(LeaseUnavailable):reader.capture('current',source.capture,altered)
+            source.contexts['current']=SimpleNamespace(trip=SimpleNamespace(content=packed(altered)))
+            with self.assertRaises(LeaseUnavailable):reader.capture('current',source.capture,document)
 
 
 if __name__=='__main__':unittest.main()

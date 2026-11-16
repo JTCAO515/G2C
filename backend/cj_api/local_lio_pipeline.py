@@ -12,12 +12,14 @@ from cj_message.lio_wire import ExplorationOrigin
 from cj_place.models import Coordinate
 from cj_feasibility.rich_assembly import assemble,assemble_unconfirmed
 from cj_feasibility.rich_solver import Limits
+from cj_agent.draft import DraftRejected
 from cj_trip.rich_reasons import ProfileFact
+from cj_trip.domain import packed
 
 from .lio_city import CityReference
 from .lio_pipeline_document import representation_size
 from .lio_pipeline_model import SKELETON_SYSTEM,skeleton_data
-from .lio_pipeline_preflight import preflight_document,recipes_for_edges
+from .lio_pipeline_preflight import admit_city_lookup,recipes_for_edges
 from .lio_pipeline_skeleton import parse_skeleton
 from .local_lio_pipeline_calls import PipelineCalls,PipelineCapacity,model_call
 from .local_lio_pipeline_inputs import understand_constraints,planning_edges
@@ -54,7 +56,7 @@ def prepare_generation(host,worker,binding,view,*,locale,effective,prior_model_c
     Trip/fixed item, hotel anchor and explicit transfer endpoint is included
     before even the city lookup; nothing is cut, lightened or split to fit.
     """
-    calls=PipelineCalls(worker,binding,prior_model_calls=prior_model_calls)
+    calls=PipelineCalls(worker,binding,prior_model_calls=prior_model_calls,locale=locale)
     constraints=understand_constraints(host,worker,binding,view,locale=locale)
     projected=constraints.project()
     day_count=effective['duration_days']
@@ -67,10 +69,8 @@ def prepare_generation(host,worker,binding,view,*,locale,effective,prior_model_c
     skeleton=parse_skeleton(raw.encode(),expected,id_prefix=prefix)
     current=host.legacy.calendar.current(binding)
     retained=None if current is None else json.loads(current.trip.content)
-    graph=preflight_document(skeleton,projected,edges,id_prefix=prefix,locale=locale,retained=retained)
-    size=representation_size(graph)
-    # This original one-send tool consumes the same45 allocation as POI/routes.
-    resolution=calls.resolve_city(dict(query=effective['city'],normalized_name=None,province=None))
+    size,resolution=admit_city_lookup(skeleton,projected,edges,calls,id_prefix=prefix,locale=locale,retained=retained,
+        query=dict(query=effective['city'],normalized_name=None,province=None))
     if resolution['status']!='resolved':raise DestinationUnresolved(resolution)
     city=CityReference(**resolution['candidates'][0])
     projection=constraints.compile(day_count=day_count,city_reference=city,
@@ -181,3 +181,37 @@ def _assemble_retrieved(prepared,compiled,capture,document,*,phase,locale,stop):
         edges=prepared.edges,phase=phase,locale=locale,limits=Limits(),stop=stop)
     if unconfirmed:return assemble_unconfirmed(document,**arguments,unconfirmed_items=unconfirmed)
     return assemble(document,**arguments)
+
+
+def publish_retrieved_plan(prepared,compiled,capture,assembly):
+    """Fresh final checks and the original sole selected writer, never a retry.
+
+    The complete final body is captured after scheduling/wording. Uncollected
+    weather/opening evidence stays UNKNOWN, and the issued source/Memory/Trip
+    holders still decide commit. No previously issued check is carried across
+    moved clocks. A refused/uncertain outcome propagates to the host unchanged.
+    """
+    if assembly.content is None:
+        raise DraftRejected('complete scheduled candidate required')
+    document=json.loads(assembly.content)
+    representation_size(document)
+    bundle=prepared.sources;worker,binding=bundle.worker,bundle.binding
+    checks=RichUncollectedChecks(bundle.source)
+    publisher=bundle.publisher(checks)
+    original=worker.messages.query(binding.message_id)
+    def publish():
+        issued=checks.capture(binding,capture,document)
+        document['date_checks']=issued.checks
+        with bundle.source.message_context.hold_for_effect(binding)as message, \
+                checks.hold(binding,issued,message)as check:
+            check(document)
+        final=replace(assembly,content=packed(document),date_checks_must_be_recomputed=False)
+        return publisher.publish_assembly_for_message(binding,original,
+            worker.message_context.active_original(binding),final,capture,checks=issued,
+            proposed_subjects=compiled.proposed_subjects,before_publish=worker._publication_check)
+    previous=worker.drafts
+    worker.drafts=publisher
+    try:
+        return worker._step(binding,publish,lambda receipt:'trip_proposal:'+receipt.proposal_id,draft=True)
+    finally:
+        worker.drafts=previous

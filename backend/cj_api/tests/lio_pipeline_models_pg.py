@@ -1,4 +1,4 @@
-"""Native signed registered skeleton/parallel wording; fixture HTTP, zero Trip."""
+"""Native signed models and complete selected saves; supplier HTTP is a fixture."""
 from pathlib import Path
 from threading import Event
 from datetime import date,timedelta
@@ -43,8 +43,8 @@ from lio_provider_sources_pg import FixtureWriter
 import lio_exploration_flow_pg as native
 
 
-def full_provider_join(prepared,*,early_departure):
-    """Both real registered lookup phases, selected under genuine sources."""
+def full_provider_join(prepared,*,early_departure,saved_runs):
+    """Both lookup phases, ordering, routes, scheduling, sole save and readback."""
     from cj_api.local_lio_pipeline import retrieve_skeleton,compile_retrieved_plan,order_retrieved_plan,schedule_retrieved_plan,route_ordered_plan
     bundle=prepared.sources;worker,binding=bundle.worker,bundle.binding
     writers=[];phases=[];queries=[];captures=[]
@@ -149,6 +149,20 @@ def full_provider_join(prepared,*,early_departure):
     except LeaseUnavailable:pass
     else:raise AssertionError('pre-meal provider seal remained eligible after new attempts')
     assert prepared.calls.gaode==1+len(writers) # actual city included
+    from cj_api.local_lio_pipeline import publish_retrieved_plan
+    previous=worker.drafts
+    _,receipt=publish_retrieved_plan(prepared,compiled,final_capture,scheduled)
+    saved=bundle.repository.detail(receipt.trip_id)
+    assert saved is not None and saved.version==1
+    final=json.loads(saved.content)
+    assert final['content_version']=='structured.4' and final['calendar']==compiled.document['calendar']
+    assert final['items']==json.loads(scheduled.content)['items']
+    actual=next(i for i in final['items']if i['id']==fixed['item_id'])
+    assert actual==next(i for i in compiled.document['items']if i['id']==fixed['item_id'])
+    assert all(row['state']=='unknown'for row in final['date_checks'])
+    assert worker.drafts is previous
+    saved_runs[binding.message_id]=binding.run_id
+    print('PASS actual complete retrieved/scheduled sole writer '+binding.message_id+' RUN '+binding.run_id,flush=True)
     return sights+meals
 
 
@@ -220,7 +234,7 @@ def main(*,natural_direct=False,early_departure=True):
     original_model=ExplorationPlanning._model
     original_http=httpx.MockTransport.handle_request
     original_post=TestClient.post
-    wires=[];completed=[];lookups=[];posted={}
+    wires=[];completed=[];lookups=[];posted={};saved_runs={}
     def post(api,url,**kwargs):
         if url=='/v4/lio/messages':
             value=json.loads(kwargs['content'])
@@ -318,7 +332,7 @@ def main(*,natural_direct=False,early_departure=True):
             try:bundle.places(skeleton,sealed)
             except LeaseUnavailable:pass
             else:raise AssertionError('no original provider operations became selection fallback')
-            if len(completed)%3==1:lookups.append(full_provider_join(prepared,early_departure=early_departure))
+            if len(completed)%3==1:lookups.append(full_provider_join(prepared,early_departure=early_departure,saved_runs=saved_runs))
             else:lookups.append(selected_provider_join(host,worker,binding,bundle,skeleton,calls,len(completed)%3))
             items=tuple(dict(item_id=stop.item_id,tip=None)for stop in skeleton.stops)
             # Two explicit wording requests share one original RUN. Every one
@@ -333,14 +347,15 @@ def main(*,natural_direct=False,early_departure=True):
                 parse_wording(result.encode(),batch,allowed_reason_keys=set())
             assert calls.model==5 # includes prefix extraction when present and reserved final Memory
             completed.append(binding.run_id)
-            print('PASS native4 sourced plan understanding -> original NEEDS/calendar/profile hold + skeleton + two registered wording calls '+binding.message_id+' RUN '+binding.run_id+'; no Trip publication',flush=True)
+            print('PASS native4 sourced plan understanding -> original NEEDS/calendar/profile hold + skeleton + two registered wording calls '+binding.message_id+' RUN '+binding.run_id+('; sole writer saved'if binding.message_id in saved_runs else'; no Trip publication'),flush=True)
         return original_model(host,worker,binding,view,profile,system,extra)
     with patch.object(TestClient,'post',post),patch.object(httpx.MockTransport,'handle_request',response), \
-            patch.object(ExplorationPlanning,'_model',model):native.main()
+            patch.object(ExplorationPlanning,'_model',model):native.main(saved_runs=saved_runs)
+    assert len(saved_runs)==2
     assert len(completed)==6 and len(wires)==24 and lookups==([2,13,2,2,13,2]if early_departure else[2,11,2,2,11,2])
-    print('PASS source-held selected places and C ordering; '+str(sum(lookups))+' fixture lookups; conditional candidate preserves fixed clocks and original edge windows; no Trip write',flush=True)
+    print('PASS source-held selected places and C ordering; '+str(sum(lookups))+' fixture lookups; two sole-writer saves preserve fixed clocks and original edge windows',flush=True)
     if natural_direct:print('PASS original natural direct with full-sentence prefix -> sourced profile/defaults -> issued PlanNow source; actual extra profile model retained in native6 budget, no rewritten original or renderer',flush=True)
-    print('PASS ZH3/EN3 signed native4/four actual pipeline model registrations each plus fixture preview; real caps/schema/Meter, fixture HTTP only; full publisher/G6/G9 UNRUN',flush=True)
+    print('PASS ZH3/EN3 signed native4/four actual pipeline model registrations each plus fixture preview; real caps/schema/Meter, fixture HTTP only; local final publisher exercised; production factory/G6/G9 real UNRUN',flush=True)
 
 
 if __name__=='__main__':main()
