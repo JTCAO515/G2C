@@ -109,7 +109,7 @@
     "backend/cj_api/local_lio_exploration_profile.py": "98ed943cf7f9269b8950426284d7ecbeeb25d6b1552796a6863fdd62933e4e64",
     "backend/cj_api/local_lio_national.py": "dfee5bd3382bfdda672b72ca53d7358cbf5cae1bf184c7557a9686e354db5e79",
     "backend/cj_api/local_lio_planning.py": "4736af581918c5a13e051c509ca6d7146f4458ca5642d64a8cbc8550304b916f",
-    "backend/cj_api/local_lio_provider_sources.py": "7082955da0a992954d60306ccae1fbe5745150b13cafcf0b026bde589d4d0ebf",
+    "backend/cj_api/local_lio_provider_sources.py": "e660b41217d461c7dba4dbf29221829a3f7dfb0b8870d76080d0aeb35296a9b9",
     "backend/cj_api/local_lio_rich_calendar_source.py": "0c2a8d2595eb4368d5ea7002fc92ee40164a699229f38e09f9f8d839d27604e2",
     "backend/cj_api/local_lio_rich_checks.py": "9be1935d74b241f67a5d37dad3d835e0ebff1f318fdf540615ca98707f7f7321",
     "backend/cj_api/local_lio_rich_source.py": "6f624faa070a9e7e0cbd0c7550957d1e63a0ce69e921e5f886780dd7c098f000",
@@ -137,7 +137,7 @@
     "eval/optimization/score_v2.py": "015fa9f21b418fe49a5ac07a5fb3027e0422620a6616029f2ba6438bfa1e9322",
     "tooling/optimization/uv.lock": "c3729fbcd04627cb07bde4f5f21b9c4fbfa4748b3d7468d550c7fc2af62bc343"
   },
-  "system_prompt_sha256": "bc29c468f9da00b0aef80ed818489a42e9938aa4bd17b49b8771e42dbe44eedb",
+  "system_prompt_sha256": "a402be8e73b0c997d22f87ddc382129e6f2d432489b2c5a94fe4004f4ea34efb",
   "task_sha256": "9d4376ba7512d6f3c0741036ae1bd0dda99752bbc9f8b8fb8dd7025c61a530ec",
   "task_version": "G2C-dialogue-cases.2",
   "tool_implementation_sha256": "7b14efa167ca5afb4eaeab5ede3cefe6e60dc44e0788901235e6061d8dfe6256",
