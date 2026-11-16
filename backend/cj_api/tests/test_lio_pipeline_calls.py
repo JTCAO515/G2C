@@ -5,7 +5,7 @@ from cj_api.local_lio_pipeline_calls import Call,PipelineCalls,PipelineCapacity
 
 
 class PipelineCallsTests(unittest.TestCase):
-    def worker(self,*,fail=None):
+    def worker(self,*,fail=None,memory=False):
         trace=[]
         def stream(binding,key,registration,argument,**kw):
             try:
@@ -14,7 +14,7 @@ class PipelineCallsTests(unittest.TestCase):
                 if argument==fail:raise OSError('original outcome unknown')
                 yield str(argument)
             finally:trace.append(('close',argument,key))
-        return SimpleNamespace(_registered_stream=stream),trace
+        return SimpleNamespace(_registered_stream=stream,lio_memory=object()if memory else None),trace
 
     def test_every_send_precedes_response_drain_without_threads_or_extra_attempts(self):
         worker,trace=self.worker();calls=PipelineCalls(worker,'actual-binding')
@@ -44,6 +44,31 @@ class PipelineCallsTests(unittest.TestCase):
         self.assertEqual(sum(row[0]=='close'for row in trace),3)
         self.assertEqual({row[2]for row in trace if row[0]=='send'},
                          {'lio4.pipeline.0','lio4.pipeline.1','lio4.pipeline.2'})
+
+    def test_enabled_memory_extraction_keeps_total_vendor_models_within_six(self):
+        worker,trace=self.worker(memory=True);calls=PipelineCalls(worker,'actual-binding')
+        calls.parallel(tuple(Call('model','registered-test',n)for n in range(4)))
+        before=list(trace)
+        with self.assertRaises(PipelineCapacity):
+            calls.parallel((Call('model','registered-test',99),))
+        self.assertEqual(trace,before)
+        self.assertEqual(sum(row[0]=='send'for row in trace),4)
+
+    def test_city_lookup_shares_45_attempt_ceiling_and_unknown_has_no_retry_or_refund(self):
+        worker,trace=self.worker();lookups=[]
+        query=dict(query='北京',normalized_name=None,province=None)
+        def resolve(actual,binding,value):
+            self.assertIs(actual,worker);self.assertEqual(binding,'actual-binding')
+            self.assertIs(value,query);lookups.append(value)
+            raise OSError('original city outcome unknown')
+        worker.tools=SimpleNamespace(resolve_city=resolve)
+        calls=PipelineCalls(worker,'actual-binding')
+        with self.assertRaisesRegex(OSError,'original city outcome unknown'):calls.resolve_city(query)
+        self.assertEqual(calls.gaode,1)
+        calls.parallel(tuple(Call('gaode','registered-test',n)for n in range(44)))
+        before=list(trace)
+        with self.assertRaises(PipelineCapacity):calls.resolve_city(query)
+        self.assertEqual(len(lookups),1);self.assertEqual(trace,before)
 
 
 if __name__=='__main__':unittest.main()
