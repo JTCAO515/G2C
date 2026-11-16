@@ -29,6 +29,7 @@ from cj_api.runtime_actor import ActorSpecification, REGISTRATION, OPERATION
 from cj_api.runtime_actor_host import NativeActorHost, ActorChoiceInvalid
 from cj_api.runtime_actor_source import ActorDutSource
 from cj_api.runtime_actor_originals import ActorOriginals
+from cj_api.runtime_simulator_cost import original_charges, recheck_charge_metadata
 from cj_api.tool_evidence import ToolEvidence
 from cj_agent.provider import DashScopeConfig, MeteredDashScopeProvider, M4_BASE, M4_MODEL
 from cj_auth.interfaces import AdmissionStatus
@@ -188,6 +189,13 @@ def exercise(auth, conninfo):
     assert json.loads(result['result_utf8']) == choice
     assert json.loads(reader.meter(token, binding.message_id, op))['state'] == 'settled'
     assert json.loads(reader.fee(token, binding.message_id, op))['state'] == 'RECEIVED'
+    charge_proof = original_charges(reader, token, binding.message_id, 'actor')
+    assert len(charge_proof['operations']) == 1
+    charged = charge_proof['operations'][0]
+    assert charged['financial_attempt'] and charged['financial_state'] == 'RECEIVED'
+    assert charged['wire_sha256'] and charged['artifact_sha256']
+    assert charged['estimated_units'] is not None
+    recheck_charge_metadata(reader, token, charge_proof)
     rebuilt = NativeActorHost(database, tools, host.source, spec, Authority(), directory,
         profile_id=profile['id'], attempt=1, dut_message=lambda: 'dut-original', deadline=0)
     recovered = rebuilt.recover(binding.message_id)
@@ -338,6 +346,10 @@ def exercise(auth, conninfo):
     else:raise AssertionError('erased DUT input reconstructed from actor cache')
     assert json.loads(reader.fee(token, binding.message_id, op))['state'] == 'RECEIVED'
     assert json.loads(reader.meter(token, binding.message_id, op))['state'] == 'settled'
+    recheck_charge_metadata(reader, token, charge_proof)
+    try:original_charges(reader, token, binding.message_id, 'actor')
+    except Unavailable as error:assert str(error) == 'ACTOR_DUT_ORIGINAL_PAYLOAD_ERASED'
+    else:raise AssertionError('cost reader revived historical erased raw')
     assert len(sent) == 9
     (auth/'invited.json').write_text(json.dumps(['m4-synthetic-local-actor-foreign']))
     try:original.inspect()
@@ -346,6 +358,9 @@ def exercise(auth, conninfo):
     try:reader.fee(token, binding.message_id, op)
     except Unavailable:pass
     else:raise AssertionError('revoked actor financial original escaped')
+    try:recheck_charge_metadata(reader, token, charge_proof)
+    except Unavailable:pass
+    else:raise AssertionError('cost metadata escaped original AUTH revocation')
     assert len(sent) == 9
     print('PASS actor signed native source/RUN, v2 original800/unique fees, exact wire/output/reader, no actor MESSAGE/Memory, no replay/cross-slot/erased raw; final window revoke and real physical lease loss stop HTTP, spent original1 quota denies actor without new fee; 9 fixture HTTP attempts, 8 RECEIVED/3 INTENT in original journal, live0')
 
