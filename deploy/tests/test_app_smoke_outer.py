@@ -7,6 +7,7 @@ from pathlib import Path
 import time
 from types import SimpleNamespace
 import uuid
+import pytest
 
 from cj_api.local_app import ISSUER,scope_for
 from cj_auth.interfaces import AdmissionStatus
@@ -315,7 +316,8 @@ def test_full_read_queue_does_not_consume_post_capacity_and_overflow_stays_unkno
         release.set();drain(observer)
         assert json.loads(next(directory.glob('*.receipt.json')).read_bytes())['status']=='CAPTURED'
         result=protected.http_observed(TOKEN,point)
-        assert result['post_count']==1 and result['read_coverage']=='UNKNOWN'
+        assert result['observed_post_count']==1 and result['post_count']is None
+        assert result['http_coverage']=='UNKNOWN'and result['read_coverage']=='UNKNOWN'
         assert len(result['unknown_read_exchanges'])==1
     finally:release.set();observer.close()
 
@@ -367,4 +369,71 @@ def test_http_metadata_capacity_gap_remains_unknown_after_later_success(tmp_path
         result=protected.http_observed(TOKEN,point)
         assert len(result['actual_reads'])==1
         assert result['http_coverage_lost']is True and result['read_coverage']=='UNKNOWN'
+    finally:observer.close()
+
+
+@pytest.mark.parametrize('failure',['write','capacity'])
+def test_lost_second_post_metadata_never_reports_one_as_exact_post_count(tmp_path,monkeypatch,failure):
+    from deploy.hk import app_smoke_outer
+    f,b,raw,directory,observer,originals=setup(tmp_path)
+    protected=protected_fixture(observer,originals,b)
+    point=protected.http_checkpoint(TOKEN);write_http=observer._write_http;starts=[]
+    def lose_one(value):
+        if value['method']=='POST'and value['phase']=='started':
+            starts.append(value['exchange_id'])
+            if len(starts)==2 and failure=='write':raise OSError('synthetic metadata write failure')
+        return write_http(value)
+    monkeypatch.setattr(observer,'_write_http',lose_one)
+    try:
+        exchange(observer,raw);drain(observer)
+        if failure=='capacity':monkeypatch.setattr(app_smoke_outer,'HTTP_LOG_LIMIT',(directory/'http-attempts.jsonl').stat().st_size)
+        exchange(observer,raw);drain(observer)
+        assert len(starts)==2
+        result=protected.http_observed(TOKEN,point)
+        assert result['observed_post_count']==1
+        assert result['post_count']is None and result['http_coverage']=='UNKNOWN'
+        assert result['http_coverage_lost']is True
+    finally:observer.close()
+
+
+def test_old_design_plan_cannot_prepare_a_new_dispatch_packet_without_C_dependency(tmp_path):
+    import pytest
+    from deploy.hk.app_smoke_prepare import prepare
+    target=tmp_path/'must-not-be-created'
+    with pytest.raises(ValueError,match='plan.2'):
+        prepare(target,dict(version='LIO-basic-chain-plan.1'),{},source='a'*40,
+            ledger_id='unused',starts_at='unused',ends_at='unused')
+    assert not target.exists()
+
+
+def test_pending_post_does_not_hold_up_more_than_queue_capacity_closed_old_reads(tmp_path):
+    f,b,raw,directory,observer,originals=setup(tmp_path)
+    mid2=str(uuid.uuid4())
+    b2=Binding(b.scope,'lio-dialogue-'+_identity(b.scope,'lio-new:'+mid2),'generation',mid2,'new-native-run',1)
+    f.database.original(b2,'question-1','zh');smoke=f.load();smoke.registrations(b2)
+    raw2=canonical(dict(version='LIO-message.2',message_id=mid2,text='question-1',locale='zh',new_conversation=True))
+    response=canonical(dict(conversation_id=b.conversation_id,messages=[]))
+    try:
+        exchange(observer,raw2)
+        assert observer.queue.unfinished_tasks==1
+        for _ in range(14):
+            get_exchange(observer,b.conversation_id,response)
+            end=time.monotonic()+2
+            while observer.read_queue.unfinished_tasks and time.monotonic()<end:time.sleep(.01)
+            assert observer.read_queue.unfinished_tasks==0
+        assert observer.queue.unfinished_tasks==1
+        assert len(list(directory.glob('*.read.json')))==14
+        rows=[json.loads(line)for line in(directory/'http-attempts.jsonl').read_text().splitlines()]
+        assert not any(row.get('capture_status')=='UNKNOWN'for row in rows)
+    finally:observer.close()
+
+
+def test_unpublished_partial_read_file_is_not_a_checkpoint_source(tmp_path):
+    f,b,raw,directory,observer,originals=setup(tmp_path)
+    protected=protected_fixture(observer,originals,b)
+    try:
+        orphan=directory/('a'*64+'.read.json');orphan.write_bytes(b'{');orphan.chmod(0o600)
+        point=protected.http_checkpoint(TOKEN)
+        result=protected.http_observed(TOKEN,point)
+        assert result['actual_reads']==[]and result['post_count']==0
     finally:observer.close()

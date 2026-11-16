@@ -16,7 +16,7 @@ POST仅观察现有/v1或/v2/lio/messages，原请求仍由正常App/原API处�
 未授权主体、登录路由、query/认证字段不进入原文采集。
 
 一个线程复用原Runtime；POST与GET各有12位有界队列，优先处理POST。
-POST等待真正worker claim和return，
+POST等待真正worker claim和return时按短周期检查，线程继续处理实际GET，
 再用原RuntimeOriginals的当前AUTH/MESSAGE边界核原绑定与两种摘要，发布0600原文及receipt。
 原HTTP响应和异常不改写。缺claim、失败最终检查、过期或队列溢出只会缺证/UNKNOWN，
 不重发、不重建bytes，不因稍后读成功改旧UNKNOWN capture receipt。
@@ -31,6 +31,9 @@ worker-return见证，也可由原M读取守卫保留，但不会生成或替代
 HTTP元数据上界16MiB，完整读原件最多64份；不足、溢出和失败显式UNKNOWN，不删除旧原件。
 元数据丢失另留单向gap标记，后续成功不能覆盖该窗口的丢证。返回read_coverage的PENDING
 仅表示原请求/原件尚未闭合，UNKNOWN不得判PASS；actual_reads仍须有本步真实GET和当前守卫。
+丢证时post_count为null，仅保留observed_post_count小计，不把实际两POST误报为完整一次。
+receipt以原子link发布；尚未有receipt的临时/半写读文件不进入检查点。原POST原件尚在发布
+可返回APP_SMOKE_HTTP_OUTER_PENDING等待同一原件，已有UNKNOWN不转PENDING或重新捕获成功。
 未完成body、超限、未知选择器或缺receipt不能拼成恢复PASS。
 纯本地历史列举不虚构远程API。A旧缓存加B另一次GET也不能代替实际App读请求。
 
@@ -49,6 +52,8 @@ plan_sha256、冻结step nonce。checkpoint在服务端以O_EXCL写owner/plan/no
 - 原控制claim必须在当前M历史边界与genuine receipt的scope/MID/CID/generation/RUN/sequence、
   canonical SHA核同。outer SHA来自原worker读取的native outer摘要，HTTP原bytes与其独立比对。
 - 费用逐原operation读取原Meter和financial row，包含失败/UNKNOWN；local visitor事实须无付费原行。
+  tool组件同时带原logical_input/tool_artifact的UTF8与SHA，沿原读取/擦除守卫；消费方核价格与回执链，
+  不由B填semantic/UI布尔或把价格未知当免费。
   C行账本增量必须精确等于本步原金融attempt集合，旧行必须不变。
 - producer-return仅是一项必需原件；还核ACK、关联Memory history已闭合和前后台状态。
   新/变更后台来源目前保持UNKNOWN，不能用空队列/前台completed推全覆盖或填零。
@@ -57,6 +62,7 @@ plan_sha256、冻结step nonce。checkpoint在服务端以O_EXCL写owner/plan/no
 - actual HTTP读原件与去重前POST计数另列；UI独立MID/CID可为空，不把B原件复制成App独立观测。
   实际A UI产物、单步单writer、完整候选CID集合与正常renderer投影仍由A/C联合核验。
 
-prepare模块仅生成新的本机0700/0600 PREPARED_NOT_ACTIVE包，不联网、不分配MID、不开户/加钱。
+prepare模块只以当前C plan.2生成新的本机0700/0600 PREPARED_NOT_ACTIVE包；旧plan仅只读归档，
+不联网、不分配MID、不开户/加钱。新窗口仍须遵守北京时间23:00–08:00不发新合成请求。
 本机路径和inode不能直接当香港资格；B须在真实主机按现有流程装配、核实源像/角色/原账/全部在途，
 独审固定helper与包后再签实际新lease。候选没有全部十四项真实PASS之前不通知JT重试。

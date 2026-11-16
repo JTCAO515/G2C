@@ -23,6 +23,8 @@ def write_new(path,value,*,directory_fd=None):
 
 def prepare(directory,plan,subjects,*,source,ledger_id,starts_at,ends_at):
     """Generate only from C's frozen complete plan, without choosing any MID."""
+    if plan.get('version')!='LIO-basic-chain-plan.2':
+        raise ValueError('new App smoke requires current execution plan.2; legacy plans are read-only')
     from eval.basic_chain.plan import check_plan,digest
     from .app_smoke_outer import VERSION as OUTER_WINDOW
     check_plan(plan)

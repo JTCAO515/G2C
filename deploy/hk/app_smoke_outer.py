@@ -47,6 +47,22 @@ def decoded(raw):
     return json.loads(raw,object_pairs_hook=reject_duplicates(ValueError,'duplicate smoke outer field'))
 
 
+def publish_marker(directory,name,value,*,keep_existing=False):
+    """Publish a complete one-shot receipt; readers never see partial JSON."""
+    temporary='.'+uuid4().hex+'.pending'
+    fd=os.open(temporary,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600,dir_fd=directory)
+    try:
+        with os.fdopen(fd,'wb')as output:
+            output.write(canonical(value));output.flush();os.fsync(output.fileno())
+        try:os.link(temporary,name,src_dir_fd=directory,dst_dir_fd=directory,follow_symlinks=False)
+        except FileExistsError:
+            prior=decoded(read_private(name,16384,directory_fd=directory))
+            if not keep_existing and prior!=value:
+                raise Unavailable('APP_SMOKE_ORIGINAL_RECEIPT_CHANGED')
+        os.fsync(directory)
+    finally:os.unlink(temporary,dir_fd=directory)
+
+
 @dataclass(frozen=True)
 class Received:
     token:str=field(repr=False)
@@ -202,15 +218,13 @@ class OuterCapture:
         except (OSError,ValueError,Unavailable):
             # Keep a one-way gap marker; later successful observations cannot
             # turn a lost part of this window into complete HTTP coverage.
-            with self.controls.directory()as directory:
-                try:fd=os.open('http-coverage-lost.json',os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600,dir_fd=directory)
-                except FileExistsError:pass
-                else:
-                    with os.fdopen(fd,'wb')as output:
-                        output.write(canonical(dict(version='G2C-App-smoke-HTTP-gap.1',
-                            policy_sha256=self.controls.window['policy_sha256'])));output.flush();os.fsync(output.fileno())
-                    os.fsync(directory)
+            self.mark_lost()
             raise
+
+    def mark_lost(self):
+        with self.controls.directory()as directory:
+            publish_marker(directory,'http-coverage-lost.json',dict(version='G2C-App-smoke-HTTP-gap.1',
+                policy_sha256=self.controls.window['policy_sha256']))
 
     def _write_http(self,value):
         controls=self.controls
@@ -317,34 +331,53 @@ class OuterCapture:
             policy_sha256=self.controls.window['policy_sha256'],scope_sha256=sha256(scope.encode()).hexdigest(),
             ts=datetime.fromtimestamp(self.clock(),timezone.utc).isoformat(),method='GET',capture_status=status))
 
+    def _try_post(self,item):
+        try:
+            if self.stop.is_set()or self.clock()>=item.deadline:
+                raise Unavailable('APP_SMOKE_OUTER_PRODUCER_NOT_OBSERVED')
+            claim=self.controls.claim(item.scope,item.message_id)
+            if claim is None or claim.get('producer_return')is None:return False
+            self.publish(item,claim);return True
+        except (OSError,ValueError,KeyError,Unavailable,BudgetUnknown):
+            from .access_log import alert
+            alert('app_smoke_outer_capture_unavailable')
+            try:self._receipt(item,'UNKNOWN')
+            except (OSError,ValueError,Unavailable):alert('app_smoke_outer_receipt_unavailable')
+            return True
+
+    def _read_once(self,item):
+        try:
+            if self.clock()>=item.deadline:raise Unavailable('APP_SMOKE_READ_CAPTURE_DEADLINE')
+            claim=self.controls.read_anchor(item.scope,item.route,item.selector,require_return=False)
+            if claim is None:raise Unavailable('APP_SMOKE_READ_ANCHOR_NOT_CLOSED')
+            self.publish_read(item,claim)
+            self._read_outcome(item.scope,item.exchange_id,'CAPTURED')
+        except (OSError,ValueError,KeyError,Unavailable,BudgetUnknown):
+            from .access_log import alert
+            alert('app_smoke_read_capture_unavailable')
+            try:self._read_outcome(item.scope,item.exchange_id,'UNKNOWN')
+            except (OSError,ValueError,Unavailable):alert('app_smoke_read_receipt_unavailable')
+
     def _loop(self):
-        while not self.stop.is_set():
-            try:item=self.queue.get_nowait();selected_queue=self.queue
-            except Empty:
-                try:item=self.read_queue.get(timeout=.05);selected_queue=self.read_queue
+        # Checking a pending POST must not hold up any actual HTTP read for
+        # its producer's potentially ninety-second wait. One native Runtime
+        # still performs every protected publication serially.
+        pending=None
+        try:
+            while not self.stop.is_set():
+                if pending is None:
+                    try:pending=self.queue.get_nowait()
+                    except Empty:pass
+                if pending is not None and self._try_post(pending):
+                    self.queue.task_done();pending=None
+                try:item=self.read_queue.get(timeout=.05)
                 except Empty:continue
-            try:
-                if isinstance(item,ReceivedRead):
-                    if self.clock()>=item.deadline:raise Unavailable('APP_SMOKE_READ_CAPTURE_DEADLINE')
-                    claim=self.controls.read_anchor(item.scope,item.route,item.selector,require_return=False)
-                    if claim is None:raise Unavailable('APP_SMOKE_READ_ANCHOR_NOT_CLOSED')
-                    self.publish_read(item,claim)
-                    self._read_outcome(item.scope,item.exchange_id,'CAPTURED')
-                    continue
-                while not self.stop.is_set()and self.clock()<item.deadline:
-                    claim=self.controls.claim(item.scope,item.message_id)
-                    if claim is not None and claim.get('producer_return')is not None:
-                        self.publish(item,claim);break
-                    self.stop.wait(.05)
-                else:raise Unavailable('APP_SMOKE_OUTER_PRODUCER_NOT_OBSERVED')
-            except (OSError,ValueError,KeyError,Unavailable,BudgetUnknown):
-                from .access_log import alert
-                alert('app_smoke_outer_capture_unavailable')
-                try:
-                    if isinstance(item,ReceivedRead):self._read_outcome(item.scope,item.exchange_id,'UNKNOWN')
-                    else:self._receipt(item,'UNKNOWN')
-                except (OSError,ValueError,Unavailable):alert('app_smoke_outer_receipt_unavailable')
-            finally:selected_queue.task_done()
+                try:self._read_once(item)
+                finally:self.read_queue.task_done()
+        finally:
+            if pending is not None:
+                self._try_post(pending)
+                self.queue.task_done()
 
     def publish(self,item,claim):
         controls=self.controls
@@ -394,15 +427,7 @@ class OuterCapture:
             file=name+'.json',sha256=None if descriptor is None else descriptor['sha256'])
         with controls.directory()as directory:
             path=name+'.receipt.json'
-            try:fd=os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600,dir_fd=directory)
-            except FileExistsError:
-                prior=decoded(read_private(path,16384,directory_fd=directory))
-                if status=='CAPTURED'and prior!=receipt:
-                    raise Unavailable('APP_SMOKE_OUTER_CAPTURE_RECEIPT_CHANGED')
-            else:
-                with os.fdopen(fd,'wb')as output:
-                    output.write(canonical(receipt));output.flush();os.fsync(output.fileno())
-                os.fsync(directory)
+            publish_marker(directory,path,receipt,keep_existing=status!='CAPTURED')
 
     def close(self):
         self.stop.set();self.thread.join(timeout=1)
@@ -446,26 +471,26 @@ class OuterCapture:
             source_commit=controls.policy['source_commit'],policy_sha256=controls.window['policy_sha256'],**descriptor)
         with controls.directory()as directory:
             name=descriptor['file']+'.receipt'
-            try:fd=os.open(name,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600,dir_fd=directory)
-            except FileExistsError:
-                if decoded(read_private(name,16384,directory_fd=directory))!=marker:
-                    raise Unavailable('APP_SMOKE_HTTP_READ_RECEIPT_CHANGED')
-            else:
-                with os.fdopen(fd,'wb')as output:
-                    output.write(canonical(marker));output.flush();os.fsync(output.fileno())
-                os.fsync(directory)
+            publish_marker(directory,name,marker)
         return result
 
 
 class OuterMiddleware:
     def __init__(self,app,observer):self.app,self.observer=app,observer
 
+    def capture_failure(self,code):
+        from .access_log import alert
+        alert(code)
+        try:self.observer.mark_lost()
+        except (OSError,ValueError,Unavailable,BudgetUnknown):alert('app_smoke_http_gap_marker_unavailable')
+
     async def __call__(self,scope,receive,send):
         if scope['type']=='http'and scope.get('method')=='GET'and scope.get('path')in READ_ROUTES:
             token=_token(Request(scope))
             if token is None or not self.observer.eligible(token):return await self.app(scope,receive,send)
             try:identity=self.observer.begin(token,scope['path'],method='GET')
-            except (OSError,ValueError,Unavailable):identity=None
+            except (OSError,ValueError,Unavailable):
+                identity=None;self.capture_failure('app_smoke_http_coverage_unavailable')
             response=bytearray();status=None;complete=False
             async def record(message):
                 nonlocal response,status,complete
@@ -481,8 +506,7 @@ class OuterMiddleware:
                 raw=bytes(response)if response is not None and complete else None
                 try:self.observer.submit_read(token,scope['path'],scope.get('query_string',b''),raw,status,identity=identity)
                 except (OSError,ValueError,Unavailable,Full):
-                    from .access_log import alert
-                    alert('app_smoke_read_capture_unavailable')
+                    self.capture_failure('app_smoke_read_capture_unavailable')
             return
         if scope['type']!='http'or scope.get('method')!='POST'or scope.get('path')not in ROUTES:
             return await self.app(scope,receive,send)
@@ -490,8 +514,7 @@ class OuterMiddleware:
         if token is None or not self.observer.eligible(token):return await self.app(scope,receive,send)
         try:identity=self.observer.begin(token,scope['path'])
         except (OSError,ValueError,Unavailable):
-            from .access_log import alert
-            alert('app_smoke_http_coverage_unavailable');identity=None
+            self.capture_failure('app_smoke_http_coverage_unavailable');identity=None
         body=bytearray();done=False
         status=request_id=None
         async def tap():
@@ -519,13 +542,11 @@ class OuterMiddleware:
             if identity is not None:
                 try:self.observer.finish(identity,scope['path'],raw,status=status,request_id=request_id)
                 except (OSError,ValueError,Unavailable):
-                    from .access_log import alert
-                    alert('app_smoke_http_coverage_unavailable')
+                    self.capture_failure('app_smoke_http_coverage_unavailable')
             if done and body is not None:
                 try:self.observer.submit(token,scope['path'],bytes(body))
                 except (OSError,ValueError,InvalidInput,Unavailable,Full):
-                    from .access_log import alert
-                    alert('app_smoke_outer_enqueue_unavailable')
+                    self.capture_failure('app_smoke_outer_enqueue_unavailable')
 
 
 def create_capture(runtime,database,path):

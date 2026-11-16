@@ -150,6 +150,13 @@ def perform(request,controls,capture,originals,state):
             for name in('meter','fee'):
                 try:entry[name]=decode((originals.originals.meter if name=='meter'else originals.originals.fee)(token,mid,op['operation_id']))
                 except Unavailable as error:entry[name]=dict(status='UNAVAILABLE',reason=str(error))
+            if op['kind']=='tool':
+                # Keep genuine tool input/result bytes and their native guards;
+                # the consumer verifies price/endpoint/receipt chains itself.
+                for name,read in(('logical_input',originals.originals.input),('tool_artifact',originals.originals.artifact)):
+                    try:payload=read(token,mid,op['operation_id'])
+                    except FileNotFoundError:entry[name]=dict(status='UNAVAILABLE',reason='ORIGINAL_TOOL_CAPTURE_MISSING')
+                    else:entry[name]=dict(status='READ',utf8=payload.decode('utf-8'),sha256=sha256(payload).hexdigest())
             components.append(entry)
         financial=originals.accounting(token,mid,before['financial'],
             background_before=before['native_state']['background_rows'],background_after=after['background_rows'])

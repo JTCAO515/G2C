@@ -126,19 +126,19 @@ def exercise(auth,conninfo):
     originals=RuntimeOriginals(boundary,database,local_budget,outer_dir,
         query_original=lambda context,mid:context.query_lio_message(mid))
     observer=OuterCapture(controls,checker,originals,clock=lambda:NOW)
-    async def call():
+    async def call(body=raw):
         consumed=[];responses=[]
         async def app(scope,receive,send):
             packet=await receive();consumed.append(packet['body'])
             current=boundary.receive_lio(token,packet['body'],prepare_scope=database._provision_scope,version='LIO-message.2')
-            assert current.message_id==receipt.message_id and current.input_sha256==sha256(raw).hexdigest()
+            assert current.message_id==json.loads(body)['message_id'] and current.input_sha256==sha256(body).hexdigest()
             await send(dict(type='http.response.start',status=200,headers=[]))
             await send(dict(type='http.response.body',body=b'original native ACK',more_body=False))
-        async def receive():return dict(type='http.request',body=raw,more_body=False)
+        async def receive():return dict(type='http.request',body=body,more_body=False)
         async def send(message):responses.append(message)
         await OuterMiddleware(app,observer)(dict(type='http',method='POST',path='/v2/lio/messages',
             headers=[(b'authorization',('Bearer '+token).encode())],query_string=b''),receive,send)
-        assert consumed==[raw]and responses[-1]['body']==b'original native ACK'
+        assert consumed==[body]and responses[-1]['body']==b'original native ACK'
     try:
         asyncio.run(call())
         end=time.monotonic()+5
@@ -212,15 +212,21 @@ def exercise(auth,conninfo):
         actual_read2=_timeline(boundary,lambda scope:database.run_repository(scope),None,None,
             token,b2.conversation_id,None,multiple=True).body
         point2=protected.http_checkpoint(token)
+        asyncio.run(call(raw2))
+        assert observer.queue.unfinished_tasks==1
         asyncio.run(call_read(b2,actual_read2))
         end=time.monotonic()+5
-        while (observer.queue.unfinished_tasks or observer.read_queue.unfinished_tasks)and time.monotonic()<end:time.sleep(.01)
-        assert observer.queue.unfinished_tasks==observer.read_queue.unfinished_tasks==0
+        while observer.read_queue.unfinished_tasks and time.monotonic()<end:time.sleep(.01)
+        assert observer.read_queue.unfinished_tasks==0 and observer.queue.unfinished_tasks==1
         observed2=protected.http_observed(token,point2)
         assert len(observed2['actual_reads'])==1 and observed2['actual_reads'][0]['response_utf8'].encode()==actual_read2
         assert controls.claim(b2.scope,b2.message_id)['producer_return']is None
         smoke.completed(outcomes2)
         assert controls.claim(b2.scope,b2.message_id)['producer_return']['acknowledged']is True
+        end=time.monotonic()+5
+        while observer.queue.unfinished_tasks and time.monotonic()<end:time.sleep(.01)
+        assert observer.queue.unfinished_tasks==0
+        assert json.loads(protected.outer(token,b2.message_id))['outer_utf8'].encode()==raw2
         try:protected.outer(dev_auth.token(auth,foreign,30),b.message_id)
         except Exception as error:
             from runtime_adapter.contract import Unavailable

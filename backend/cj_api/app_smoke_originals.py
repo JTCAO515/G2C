@@ -37,7 +37,9 @@ class SmokeOriginals:
         if claim is None:raise Unavailable('APP_SMOKE_ORIGINAL_CLAIM_MISSING')
         identity=sha256(canonical([scope,original.receipt.message_id,claim['input_sha256']])).hexdigest()
         with self.controls.directory()as directory:
-            receipt=decode(read_private(identity+'.receipt.json',16384,directory_fd=directory))
+            try:receipt=decode(read_private(identity+'.receipt.json',16384,directory_fd=directory))
+            except FileNotFoundError:raise Unavailable('APP_SMOKE_HTTP_OUTER_PENDING')from None
+            if receipt.get('status')!='CAPTURED':raise Unavailable('APP_SMOKE_HTTP_OUTER_CAPTURE_UNKNOWN')
             raw=read_private(identity+'.json',65536,directory_fd=directory)
         data=decode(raw)
         if (receipt.get('version')!='G2C-App-smoke-outer-receipt.1'or receipt.get('status')!='CAPTURED'
@@ -111,7 +113,8 @@ class SmokeOriginals:
                 files=[]
                 scope_hash=sha256(scope.encode()).hexdigest()
                 for name in sorted(os.listdir(directory)):
-                    if not name.endswith('.read.json'):continue
+                    if not name.endswith('.read.json.receipt'):continue
+                    name=name.removesuffix('.receipt')
                     header=decode(read_private(name,600000,directory_fd=directory))
                     if header.get('scope_sha256')==scope_hash:files.append(name)
             lines=[decode(line)for line in raw.splitlines()]
@@ -181,7 +184,9 @@ class SmokeOriginals:
                  and x['exchange_id']in starts and x.get('capture_status')=='UNKNOWN']
         outcomes={x['exchange_id']for x in rows if x['method']=='GET'and x['phase']=='capture_result'}
         pending=sorted(set(starts)-outcomes)
-        return dict(post_count=sum(x['method']=='POST'and x['phase']=='started'for x in rows),
+        observed_posts=sum(x['method']=='POST'and x['phase']=='started'for x in rows)
+        return dict(post_count=None if current['coverage_lost']else observed_posts,
+                    observed_post_count=observed_posts,http_coverage='UNKNOWN'if current['coverage_lost']else'OBSERVED',
                     post_exchanges=[x for x in rows if x['method']=='POST'],
                     read_exchanges=[x for x in rows if x['method']=='GET'],unknown_read_exchanges=unknown,
                     pending_read_exchanges=pending,http_coverage_lost=current['coverage_lost'],
