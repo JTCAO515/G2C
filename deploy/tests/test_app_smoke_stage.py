@@ -52,3 +52,14 @@ def test_invalid_input_is_refused_before_creating_packet(tmp_path,change):
         request['sha256']['api.json']=stage.digest(request['files']['api.json'])
     with pytest.raises(ValueError):stage.stage(tmp_path,request)
     assert not list(tmp_path.iterdir())
+
+
+@pytest.mark.parametrize('index',[0,1,2,4,5,6])
+def test_early_third_subject_cannot_be_hidden_by_later_locale_slot(tmp_path,index):
+    request=packet();values=request['files'];policy=values['policy.json']
+    policy['slots'][index]['subject']='third-subject'
+    values['api.json']['policy_sha256']=stage.digest(policy)
+    request['sha256']={name:stage.digest(value)for name,value in values.items()}
+    with pytest.raises(ValueError,match='two original C subjects'):
+        stage.stage(tmp_path,request)
+    assert not list(tmp_path.iterdir())

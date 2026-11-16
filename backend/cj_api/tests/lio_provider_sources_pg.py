@@ -5,7 +5,6 @@ from hashlib import sha256
 import json
 from pathlib import Path
 import sys
-from types import MappingProxyType
 from unittest.mock import patch
 
 ROOT=Path(__file__).resolve().parents[3]
@@ -14,7 +13,6 @@ from cj_api.local_lio_exploration import ExplorationPlanning
 from cj_api.local_lio_provider_sources import RegisteredProviderSources,POI2_REGISTRATION
 from cj_api.lio_poi2_tool import POI2Input,registration
 from cj_api.local_lio_pipeline_calls import Call,PipelineCalls
-from cj_api.real_services import RealTools
 from cj_memory.runtime import RuntimeDenied
 from cj_message.lio_wire import ExplorationOrigin
 from cj_message.lio_exploration_schema import RESPONSE
@@ -31,11 +29,13 @@ class FixtureWriter:
     def __init__(self,reader,send_check,available=True):
         self.reader,self.send_check,self.available=reader,send_check,available
         self.closed=False;self.transport=self;self.writes=[]
-    def write(self,data):
-        self.send_check();self.writes.append(data)
-        value=(dict(status='1',infocode='10000',count='1',pois=[dict(
+    def response_value(self):
+        return (dict(status='1',infocode='10000',count='1',pois=[dict(
             id='B000SYNTH1',name='合成博物馆',cityname='北京市',adcode='110101',location='116.4,39.9')])
             if self.available else dict(status='0',infocode='10001',info='INVALID_USER_KEY'))
+    def write(self,data):
+        self.send_check();self.writes.append(data)
+        value=self.response_value()
         body=json.dumps(value,ensure_ascii=False).encode()
         self.reader.feed_data(b'HTTP/1.1 200 OK\r\nContent-Length: '+str(len(body)).encode()+b'\r\n\r\n'+body)
         self.reader.feed_eof()
@@ -46,11 +46,8 @@ class FixtureWriter:
 
 
 def main():
-    original_registry=RealTools._registrations
     original_model=ExplorationPlanning._model
     captures=[];writers=[]
-    def registry(tools):
-        return MappingProxyType(dict(original_registry(tools),**{POI2_REGISTRATION:registration(tools.services)}))
     def model(host,worker,binding,view,profile,system,extra):
         if profile==RESPONSE and extra.get('scene')=='plan_now_preview':
             sources=RegisteredProviderSources(worker,binding)
@@ -114,7 +111,7 @@ def main():
         except (BudgetUnknown,RuntimeUnknown,RuntimeDenied)as error:
             print('PROVIDER_SOURCE_REJECTED '+type(error).__name__+': '+str(error)+' cause='+repr(error.__cause__),flush=True)
             raise
-    with patch.object(RealTools,'_registrations',registry),patch.object(ExplorationPlanning,'_model',diagnosed):native.main()
+    with patch.object(ExplorationPlanning,'_model',diagnosed):native.main()
     assert len(captures)==6 and len(writers)==12
     assert all(writer.closed and len(writer.writes)==1 for writer in writers)
     print('PASS ZH3/EN3 native4 parallel tools/12 distinct financial RECEIVED including six known-unavailable outcomes/SELECT-only proof; HTTP fixture only, no real supplier claim',flush=True)

@@ -344,6 +344,17 @@ class RealTools:
 
     def _registrations(self):
         model=Registration('model',self._model_input)
+        # Private code-driven native4 operations retain their typed original
+        # and provider-source guards. They are not added to model tool lists.
+        pipeline={}
+        if 'place_search'in self.names:
+            from .lio_poi2_tool import registration as poi2_registration
+            from .local_lio_provider_sources import POI2_REGISTRATION
+            pipeline[POI2_REGISTRATION]=poi2_registration(self.services)
+        if 'place_route'in self.names:
+            from .lio_route_tool import registration as route_registration
+            from .local_lio_provider_sources import ROUTE_REGISTRATION
+            pipeline[ROUTE_REGISTRATION]=route_registration(self.services)
         return MappingProxyType({'model.answer':Registration('model',self._answer_input),'model.draft':model,'model.tool_turn':model,
             'model.lio_intake.1':Registration('model',self._lio_intake_input),
             'model.lio_intake.2':Registration('model',self._lio_intake_schema_input),
@@ -356,6 +367,7 @@ class RealTools:
             'model.lio_intake.9':Registration('model',self._lio_intake_optional_input),
             'model.lio_exploration.1':Registration('model',self._lio_exploration_input),
             'tool.lio_city.1':Registration('tool',self._city_input),
+            **pipeline,
             'memory.lio_extract.1':Registration('memory',self._lio_memory_input),
             **{'tool.'+name:Registration('tool',lambda argument,name=name:self._tool_input(name,argument)) for name in {NATIVE_REGISTRATION[n] for n in self.names}},
             **({'tool.visitor_fact':Registration('tool',self._visitor_input)}if 'fact'in self.names else {})})

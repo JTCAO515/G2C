@@ -59,7 +59,9 @@ def main():
     if app.count(preview) != 1:
         raise ValueError("Expected a single sample preview")
     fixture_routes = (
-        '        if ProcessInfo.processInfo.arguments.contains("--lio-root-activation-failure-acceptance") {\n'
+        '        if ProcessInfo.processInfo.arguments.contains("--lio-position-persistence-acceptance") {\n'
+        '            LioPositionPersistenceFixture(shell: shell)\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-root-activation-failure-acceptance") {\n'
         '            LioRootActivationFailureFixture(shell: shell)\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-read-failure-acceptance") {\n'
         '            LioReadFailureFixture(shell: shell)\n'
@@ -99,7 +101,7 @@ def main():
         '            LioTimelineFixture(shell: shell, exerciseResend: ProcessInfo.processInfo.arguments.contains("--lio-resend-acceptance"))\n'
         '        } else ' + preview.lstrip()
     )
-    fixtures = ("LioRootActivationFailureFixture.swift", "LioReadFailureFixture.swift", "LioScrollFixture.swift", "LioTimelineFixture.swift", "LioJourneyFixture.swift",
+    fixtures = ("LioPositionPersistenceFixture.swift", "LioRootActivationFailureFixture.swift", "LioReadFailureFixture.swift", "LioScrollFixture.swift", "LioTimelineFixture.swift", "LioJourneyFixture.swift",
                 "LioMemoryJourneyFixture.swift", "LioChatHistoryFixture.swift", "LioSessionRecoveryFixture.swift",
                 "LioScenePrivacyFixture.swift", "LioExplorationQuestionsFixture.swift", "LioExplorationReplyFixture.swift", "LioRichItineraryFixture.swift", "LioExplorationReadFixture.swift", "LioThinkingFixture.swift", "LioExplorationHomeFixture.swift", "LioCalendarWireFixture.swift", "LioStreamingFixture.swift")
     beta_source = (ROOT / "ios/App/DemoBetaApp.swift").read_text()
@@ -143,7 +145,7 @@ private struct LioRootFailureView: View {
         subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=600)
     summary = subprocess.check_output(["xcrun", "xcresulttool", "get", "test-results", "summary", "--path", str(result)])
     (output / "summary.json").write_bytes(summary)
-    expected = 1 if args.voiceover else 79
+    expected = 1 if args.voiceover else 82
     assert json.loads(summary)["passedTests"] == (len(args.case) if args.case else expected), summary
 
 
