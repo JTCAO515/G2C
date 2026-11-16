@@ -132,6 +132,7 @@ private enum CommandJSON: StrictJSONPolicy {
                         let frame = node.frame.isNull || node.frame.isInfinite ? CGRect.zero : node.frame
                         nodes.append(["depth": depth, "identifier": node.identifier, "label": node.label,
                             "value": node.value as? String ?? "", "type": node.elementType.rawValue,
+                            "scroll_container": node.elementType == .scrollView,
                             "progress_indicator": node.elementType == .progressIndicator || node.elementType == .activityIndicator,
                             "enabled": node.isEnabled, "selected": node.isSelected,
                             "frame": [frame.minX, frame.minY, frame.width, frame.height]])
