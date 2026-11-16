@@ -166,3 +166,20 @@ JT 同批允许先核候选 www.szmuseum.com 的机构身份。实际首页为**
 JT 已确认 [请求6908593374](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6908593374) 的范围，确认记录 [6908630551](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6908630551)：www.shenzhenmuseum.com（深圳）、www.shanghaimuseum.cn（上海），仅其公开参观/入馆/开放公告；以及仅 https://cdn3.shenzhenmuseum.com/museum/html/aboutus/visit-service.html 这个候选静态HTML参观服务页，须核其机构名/地址/与主站关系，不扩大至CDN其他文件或接口。
 
 上博旧.net与新.cn公开迁址公告已互相核同，旧.net说明2027-01-01起停用，长期维护改用已批新.cn；旧.net不是当前所有规则的唯一源。深圳主站本轮403，未换身份/路径绕过；特批静态页自列深圳四馆、地点与已批深圳政府目录核同，同一机构域名下HTML内容另计证，不把主站403写成在线200。未证实的字段或机构关系继续记录缺口，不采镜像/票务子域。
+
+## 本Goal后续来源代理批准
+
+JT 在 H 当前会话授权H代为批准后续正确、正常信息源，范围及边界记录 [#702/6908943857](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6908943857)。H仍核主体、对应城市/主题、正文支持与时效并留依据；不把授权当正确性证明或扩为付费/接口/登录/凭据/其他目录。Wikidata人工核对要求不由此替代。
+
+首批代理审查及批准见 [6909420280](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6909420280)：下列站点HTTPS公开首页200，标题/主办/版权单位核同为相应政府机构，限目标城市具体参观/预约/开放说明，条目仍逐原页核。
+
+| 政府机构 | hostname | 限目标城市 |
+|---|---|---|
+| 四川省文化和旅游厅 | wlt.sc.gov.cn | 成都 |
+| 浙江省文化广电和旅游厅 | ct.zj.gov.cn | 杭州、浙江台州 |
+| 重庆市文化和旅游发展委员会 | whlyw.cq.gov.cn | 重庆 |
+| 西安市文化和旅游局 | wlj.xa.gov.cn | 西安 |
+
+检索辅助search.zj.gov.cn已获JT单独确认（6908898074请求、6908943857记录），只经正常网页查公开名称，选择已批原host页面读取；其结果/摘要不是事实来源，不允许写进source_urls。需要新host时按本授权先核主体再代理批准，权限/费用边界保持。
+
+旧西溪官网候选www.xixiwetland.com.cn的301指向xixiwetland.com.cn/index?m_id=1045，canonical仍在核验、不纳正式来源白名单；官方媒体候选www.taizhou.com.cn网络超时，未采事实。未采的候选不记核对/可用规则。
