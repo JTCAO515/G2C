@@ -732,10 +732,20 @@ GROUPS.update(lio_exploration=group_lio_exploration)
 
 
 def group_runtime_actor():
-    return script('backend/cj_api/tests/runtime_actor_pg.py')
+    results = [script('backend/cj_api/tests/' + name) for name in (
+        'runtime_actor_pg.py', 'runtime_simulator_dut_pg.py', 'runtime_simulator_requests_pg.py',
+        'runtime_simulator_host_pg.py')]
+    return 1 if any(results) else 0
 
 
 GROUPS.update(runtime_actor=group_runtime_actor)
+
+
+def group_app_smoke_capture():
+    return script('backend/cj_api/tests/app_smoke_capture_pg.py')
+
+
+GROUPS.update(app_smoke_capture=group_app_smoke_capture)
 
 
 def group_release_export():

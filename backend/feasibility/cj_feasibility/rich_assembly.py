@@ -48,6 +48,7 @@ class Assembly:
     removed_reasons: tuple[tuple[str, tuple[str, ...]], ...] = ()
     summary: str = ''
     date_checks_must_be_recomputed: bool = False
+    unconfirmed_items: tuple[str, ...] = ()
 
 
 def _seconds(event):
@@ -78,6 +79,30 @@ def assemble(document, *, source, facts, activities, edges: EdgeWindows, phase,
     All protected source items must remain present and unchanged. Unknown edge
     proximity or clocks produce UNKNOWN, not an invented feasible schedule.
     """
+    return _assemble(document,source=source,facts=facts,activities=activities,edges=edges,
+        phase=phase,locale=locale,limits=limits,stop=stop,unconfirmed_items=frozenset())
+
+
+def assemble_unconfirmed(document, *, source, facts, activities, edges: EdgeWindows, phase,
+                         locale, limits: Limits, stop, unconfirmed_items):
+    """Conditional data after code-qualified terminal tool unavailability.
+
+    The host derives these IDs from the actual sealed outcomes and rechecks
+    their coverage in the final source frame. This argument and the returned
+    status grant no authority. Only unknown proximity for those IDs may remain
+    unconfirmed; known false proximity, hard conflicts and every other UNKNOWN
+    keep the normal refusal. No coordinates, route durations or facts are made up.
+    """
+    if type(unconfirmed_items) is not frozenset or not unconfirmed_items:
+        raise ValueError('explicit code-qualified unavailable item set required')
+    if not unconfirmed_items <= {item['id']for item in document['items']}:
+        raise ValueError('unavailable item outside this complete candidate')
+    return _assemble(document,source=source,facts=facts,activities=activities,edges=edges,
+        phase=phase,locale=locale,limits=limits,stop=stop,unconfirmed_items=unconfirmed_items)
+
+
+def _assemble(document, *, source, facts, activities, edges, phase, locale, limits, stop,
+              unconfirmed_items):
     if phase not in ('order','schedule') or locale not in ('zh','en'):
         raise ValueError('explicit phase and locale required')
     value = deepcopy(document)
@@ -139,6 +164,8 @@ def assemble(document, *, source, facts, activities, edges: EdgeWindows, phase,
     for item in (first if edges.first_unknown_recipe else []) + (last if edges.last_unknown_morning else []):
         nearby = bounds[item['id']].nearby
         if nearby is None:
+            if item['id'] in unconfirmed_items:
+                continue
             return Assembly('UNKNOWN','EDGE_DAY_PROXIMITY_UNCONFIRMED')
         if not nearby:
             return Assembly('CONFLICT','EDGE_DAY_NEARBY_REQUIRED')
@@ -184,6 +211,8 @@ def assemble(document, *, source, facts, activities, edges: EdgeWindows, phase,
     # checks over the actual final times and capture those new code results.
     validate_candidate(value,source)
     dated = value['calendar']['state']=='dated'
-    return Assembly('CONDITIONAL_SCHEDULE',result.reason,packed(value),result.unknown_transfers,
+    status = 'UNCONFIRMED_SKELETON'if unconfirmed_items else'CONDITIONAL_SCHEDULE'
+    reason = 'TERMINAL_TOOL_UNCONFIRMED'if unconfirmed_items else result.reason
+    return Assembly(status,reason,packed(value),result.unknown_transfers,
                     tuple(removed),brief(facts,locale=locale,first_day_full=bool(edges.override_explanations)),
-                    dated and changed)
+                    dated and changed,tuple(sorted(unconfirmed_items)))

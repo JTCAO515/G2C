@@ -4,6 +4,84 @@ import XCTest
     private let currentBuild = "__UPDATES_CURRENT_BUILD__"
     private let previousBuild = "__UPDATES_PREVIOUS_BUILD__"
     private let olderBuild = "__UPDATES_OLDER_BUILD__"
+    func testInvitationKeyboardTraits() throws {
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.updates.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-onboarding-preview", "--lio-invitation-traits-acceptance"]
+        app.launch()
+        defer { app.terminate() }
+        let traits = app.staticTexts["fixture.invitation.traits"]
+        XCTAssertTrue(traits.waitForExistence(timeout: 8))
+        let literal = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == 'literal-secure'"), object: traits)
+        XCTAssertEqual(XCTWaiter.wait(for: [literal], timeout: 4), .completed)
+    }
+
+    func testInvitationEmptyDarkPageAccessibility() throws {
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.updates.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-onboarding-preview", "-lio.ui.appearance.v1", "dark", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+        app.launch()
+        defer { app.terminate() }
+        XCTAssertTrue(app.secureTextFields["demo.invite.code"].waitForExistence(timeout: 8))
+        try audit(app)
+    }
+
+    func testInvitationFormatEnglish() throws { try exerciseInvitationFormat(chinese: false) }
+    func testInvitationFormatChinese() throws { try exerciseInvitationFormat(chinese: true) }
+    func testInvitationFormatLargestEnglish() throws { try exerciseInvitationFormat(chinese: false, largest: true) }
+    func testInvitationFormatLargestChinese() throws { try exerciseInvitationFormat(chinese: true, largest: true) }
+
+    private func revealInvitation(_ element: XCUIElement, app: XCUIApplication, towardTop: Bool) {
+        let form = app.collectionViews.firstMatch
+        let top = app.navigationBars.allElementsBoundByIndex.map { $0.frame.maxY }.max() ?? form.frame.minY
+        let viewport = CGRect(x: form.frame.minX, y: max(top, form.frame.minY), width: form.frame.width,
+                              height: form.frame.maxY - max(top, form.frame.minY))
+        for _ in 0..<15 {
+            if element.exists && element.isHittable && viewport.contains(element.frame) { return }
+            if element.exists && !element.frame.isEmpty {
+                let target = element.frame
+                let delta = target.minY < viewport.minY
+                    ? min(viewport.height * 0.4, max(30, viewport.minY - target.minY + 12))
+                    : -min(viewport.height * 0.4, max(30, target.maxY - viewport.maxY + 12))
+                let start = form.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5))
+                start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: delta)))
+            } else if towardTop { form.swipeDown() } else { form.swipeUp() }
+        }
+        XCTAssertTrue(element.isHittable, app.debugDescription)
+        XCTAssertTrue(viewport.contains(element.frame), app.debugDescription)
+    }
+
+    private func exerciseInvitationFormat(chinese: Bool, largest: Bool = false) throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.updates.acceptance")
+        for appearance in ["light", "dark"] {
+            app.launchArguments = ["--lio-preview", "--lio-onboarding-preview", "-cj.ui.language.v1", chinese ? "zh-Hans" : "en",
+                "-lio.ui.appearance.v1", appearance, "-UIPreferredContentSizeCategoryName",
+                largest ? "UICTContentSizeCategoryAccessibilityXXXL" : "UICTContentSizeCategoryL"]
+            app.launch()
+            let field = app.secureTextFields["demo.invite.code"]
+            XCTAssertTrue(field.waitForExistence(timeout: 12))
+            let malformed = "g2c@1 "
+            field.tap(); field.typeText(malformed)
+            app.buttons["demo.invite.continue"].tap()
+            let format = app.staticTexts["demo.invite.format"]
+            revealInvitation(format, app: app, towardTop: false)
+            XCTAssertTrue(format.label.contains("G2C@"))
+            XCTAssertTrue(format.label.contains("CJ_Tester@"))
+            XCTAssertFalse(app.staticTexts["demo.invite.consent"].exists)
+            XCTAssertFalse(app.staticTexts[malformed].exists)
+            try audit(app)
+            let shot = XCTAttachment(screenshot: app.screenshot())
+            shot.name = "invitation-format-\(chinese ? "zh" : "en")-\(appearance)-\(largest ? "largest" : "normal")"
+            shot.lifetime = .keepAlways; add(shot)
+            revealInvitation(field, app: app, towardTop: true)
+            field.tap(); field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: malformed.count))
+            field.typeText(chinese ? "CJ_Tester@01" : "G2C@01")
+            app.buttons["demo.invite.continue"].tap()
+            XCTAssertTrue(app.staticTexts["demo.invite.consent"].waitForExistence(timeout: 5))
+            try audit(app)
+            app.terminate()
+        }
+    }
+
     func testEnglish() throws { try exercise(chinese: false, largest: false) }
     func testChinese() throws { try exercise(chinese: true, largest: false) }
     func testEnglishLargest() throws { try exercise(chinese: false, largest: true) }
@@ -89,13 +167,13 @@ import XCTest
         for appearance in appearances {
             app.launchArguments = ["--lio-preview", "--lio-onboarding-preview", "-cj.ui.language.v1", chinese ? "zh-Hans" : "en",
                                    "-lio.ui.appearance.v1", appearance]
-            if largest { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
+            app.launchArguments += ["-UIPreferredContentSizeCategoryName", largest ? "UICTContentSizeCategoryAccessibilityXXXL" : "UICTContentSizeCategoryL"]
             app.launch()
             defer { app.terminate() }
             let code = app.secureTextFields["demo.invite.code"]
             XCTAssertTrue(code.waitForExistence(timeout: 12))
             XCTAssertFalse(app.buttons["demo.invite.continue"].isEnabled)
-            code.tap(); code.typeText("synthetic-only")
+            code.tap(); code.typeText("D1-aaaaaaaaaaaa.bbbbbbbbbbbbbbbbbbbbbb")
             app.buttons["demo.invite.continue"].tap()
             let consent = app.staticTexts["demo.invite.consent"]
             XCTAssertTrue(consent.waitForExistence(timeout: 5))

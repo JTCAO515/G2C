@@ -86,6 +86,23 @@ class ReadOnlyPlanningQuestion:
     reply:str
 
 
+@dataclass
+class ReadOnlyPlanningData:
+    """Validated dialogue DATA, separate from the execution projection.
+
+    No NEEDS fields, planning root, grant or publisher belongs to this view.
+    Known-nonplanning and failed originals may inform a read-only answer;
+    meta/quoted task data is still withheld after the original source checks.
+    """
+    city:dict|None=None
+    duration_days:int|None=None
+    start_date:dict|None=None
+    arrival_date:dict|None=None
+    departure_date:dict|None=None
+    sources:dict|None=None
+    facts:dict|None=None
+
+
 class _MissingDurationQuestion(DTO):
     # A control-only view. Source/unknown metadata is not accepted as facts;
     # the executable DTO and compiler below retain their original checks.
@@ -188,7 +205,18 @@ def schema_detail(error,schema):
                             if item.get('loc')and item['loc'][0]in names})[:8])
 
 
-def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_offset=0):
+def _fact_snapshot(data,source_ids,blocked=()):
+    snapshot={}
+    for field in ('city',*CORE):
+        item=data[field]
+        if item is None or field in blocked:continue
+        sources=([dict(source_index=item['source_index'],quote=item['quote'])]if field=='city'else
+                 [ref for ref in data['field_sources']if ref['field']==field])
+        snapshot[field]=dict(value=item,sources=[dict(message_id=source_ids[ref['source_index']],quote=ref['quote'])for ref in sources])
+    return snapshot
+
+
+def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_offset=0,read_only=None):
     value=decode(raw.encode() if type(raw)is str else raw)
     rebound=rebind_sources(value,turns,memory_offset=memory_offset)
     if rebound:
@@ -264,8 +292,23 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_off
             turns[intake.city['source_index']].text,intake.city['quote'])
         if request_index is not None and _nonplanning_fact_source(turns[request_index].text,turns[request_index].text):
             intake=replace(intake,planning_request_index=None)
-    blocked=meta_blocked|{field for field,sources in intake.sources.items()if any(source_ids[ref['source_index']]in excluded for ref in sources)}
-    if intake.city is not None and (meta_city or source_ids[intake.city['source_index']]in excluded):
+    if read_only is not None:
+        # Only a complete source/compiler-validated result reaches this point.
+        # The execution-only exclusions below must not erase human dialogue.
+        read_only.city=None if meta_city else intake.city
+        read_only.duration_days=None if 'duration_days'in meta_blocked else intake.duration_days
+        read_only.start_date=None if 'start_date'in meta_blocked else intake.start_date
+        fields=intake.extraction['fields']
+        read_only.arrival_date=None if 'arrival.date'in meta_blocked else fields.get('arrival',{}).get('date')
+        read_only.departure_date=None if 'departure.date'in meta_blocked else fields.get('departure',{}).get('date')
+        read_only.sources={key:refs for key,refs in intake.sources.items()if key not in meta_blocked}
+        read_only.facts=_fact_snapshot(data,source_ids,meta_blocked|({'city'}if meta_city else set()))
+    # Only a host-produced read-only trip context can retain human DATA from
+    # a denied root. The authority checker still sees the full exclusion set;
+    # ordinary nonplanning sources and meta/quoted task data stay withheld.
+    data_excluded=excluded-(set()if previous is None else set(previous.get('read_only_data_message_ids',[])))
+    blocked=meta_blocked|{field for field,sources in intake.sources.items()if any(source_ids[ref['source_index']]in data_excluded for ref in sources)}
+    if intake.city is not None and (meta_city or source_ids[intake.city['source_index']]in data_excluded):
         intake=replace(intake,city=None);data['city']=None
     if blocked:
         fields=dict(intake.extraction['fields']);changes={}
@@ -285,11 +328,5 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_off
     if dto.version!='LIO-planning-intake.8'and data['start_date']is not None and not any(ref['field']=='start_date'and DATE_EVIDENCE.search(ref['quote'])
             for ref in data['field_sources']):
         raise InvalidInput('original trip start source required')
-    snapshot={}
-    for field in ('city',*CORE):
-        item=data[field]
-        if item is None:continue
-        sources=([dict(source_index=item['source_index'],quote=item['quote'])]if field=='city'else
-                 [ref for ref in data['field_sources']if ref['field']==field])
-        snapshot[field]=dict(value=item,sources=[dict(message_id=source_ids[ref['source_index']],quote=ref['quote'])for ref in sources])
+    snapshot=_fact_snapshot(data,source_ids)
     return intake,questions,snapshot if request_index is not None else saved

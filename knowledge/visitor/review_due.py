@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 from validate import calendar_date, load_entries
 from validate_names import load_names
 from validate_v2 import load_entries_v2
+from validate_v3 import load_entries_v3
 
 FORMATS = {
     "legacy": (load_entries, ("id", "topic", "cities", "checked_on", "expires_on", "source_urls")),
@@ -16,6 +17,8 @@ FORMATS = {
     "names": (load_names, ("format_version", "id", "place_key", "wikidata_qid", "name_zh", "name_en",
                            "cities", "checked_on", "expires_on", "source_urls", "license")),
 }
+
+FORMATS["v3"] = (load_entries_v3, FORMATS["v2"][1])
 
 
 def expiring_entries(entries: list[dict], *, as_of: date) -> list[dict]:

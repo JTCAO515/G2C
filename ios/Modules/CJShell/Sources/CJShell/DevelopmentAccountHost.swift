@@ -328,7 +328,13 @@ public enum DevelopmentAccountState: Equatable, Sendable {
             }
             if self.request == id {
                 self.task = nil
-                if result != .networkUnknown { self.resuming = nil }
+                let localActivationFailed: Bool
+                if case .accepted = result {
+                    localActivationFailed = self.state == .storageUnavailable && self.session.isCurrent(operation)
+                } else { localActivationFailed = false }
+                // Preserve only a still-current verified candidate for explicit retry.
+                // Business remains fenced, and rejected/expired/uncertain-save sessions stay excluded.
+                if result != .networkUnknown && !localActivationFailed { self.resuming = nil }
             }
         }
     }

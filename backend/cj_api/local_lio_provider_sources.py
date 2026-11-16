@@ -20,11 +20,14 @@ from cj_usage.codec import CorruptLedger
 from cj_usage.core import Receipt
 from psycopg import Error as DatabaseError
 from cj_place.gaode_v2 import parse as parse_poi2,ReceiptMismatch
+from cj_place.rich_routes import parse as parse_route
 from cj_place.models import FieldState
 from cj_trip.domain import packed
 
 _FACTORY=object()
 POI2_REGISTRATION='tool.lio_poi2.1'
+ROUTE_REGISTRATION='tool.lio_route.1'
+PROVIDER_OUTPUT_LIMIT=8192 # registered/Meter unit is Python characters, not UTF-8 bytes
 
 
 def _receipt_identity(metadata):
@@ -61,9 +64,9 @@ class RegisteredProviderSources:
         self._observed={};self._revision=0;self._issued=None
 
     def begin(self,operation):
-        if (operation.binding!=self.binding or operation.registration_id!=POI2_REGISTRATION or
+        if (operation.binding!=self.binding or operation.registration_id not in (POI2_REGISTRATION,ROUTE_REGISTRATION) or
                 operation.command.kind!='tool' or operation.command.operation_id in self._observed):
-            raise RuntimeDenied('new original registered POI2 operation required')
+            raise RuntimeDenied('new original registered place/route operation required')
         self._observed[operation.command.operation_id]=_Observed(operation)
         self._revision+=1
 
@@ -96,11 +99,51 @@ class RegisteredProviderSources:
                 def opening(value):return dict(state=value.state.value,value=value.value)
                 items.append(dict(amap_id=poi.provider_id,name_zh=poi.name_zh,place=projection,source=reference,
                     opening_today=opening(poi.opening_today),opening_week=opening(poi.opening_week)))
-        reply=packed(dict(version='LIO-poi2-result.1',status='unavailable'if result is None else'ok',
+        value=dict(version='LIO-poi2-result.1',status='unavailable'if result is None else'ok',
+            request_ref=request.request_ref,request_binding_sha256=request.binding_digest,
+            raw_response_sha256=sha256(response.body).hexdigest(),observed_at=response.received_at.isoformat(),items=items)
+        reply=packed(value);reason=None
+        if len(reply.decode())>PROVIDER_OUTPUT_LIMIT:
+            # The complete page is unusable for this registered profile. Never
+            # trim optional fields or retain only the first matching records.
+            # The original paid attempt still settles with its real receipt;
+            # its raw hash remains available and no place fact is eligible.
+            records=[];reason='normalized_output_limit'
+            value=dict(value,status='unavailable',items=[]);reply=packed(value)
+        metadata=packed(dict(endpoint=endpoint,response_sha256=sha256(reply).hexdigest(),region='China',
+            result_status=value['status'],actual_cost_cny='UNKNOWN',
+            **({}if reason is None else dict(unavailable_reason=reason))))
+        self._observed[key]=replace(prior,reply=reply,metadata=metadata,records=packed(records))
+        self._revision+=1
+        return reply,json.loads(metadata)
+
+    def observe_route(self,operation,config,request,response):
+        """Project only the original query's observed route estimate."""
+        key=operation.command.operation_id
+        prior=self._observed.get(key)
+        if prior is None or prior.operation!=operation or prior.reply is not None:
+            raise RuntimeDenied('original pending route operation required')
+        records=[];items=[]
+        try:estimate=parse_route(config,request,response,datetime.now(timezone.utc))
+        except ReceiptMismatch as error:
+            raise RuntimeUnknown('route receipt is not bound to the original endpoints')from error
+        except (ValueError,UnicodeError):estimate=None
+        if estimate is not None:
+            query=request.query
+            def coordinate(point):
+                return dict(raw=point.raw,longitude=str(point.longitude),latitude=str(point.latitude),crs='GCJ-02')
+            def number(value):return int(value)if value==value.to_integral_value()else float(value)
+            payload=dict(from_amap_id=query.origin.provider_id,to_amap_id=query.destination.provider_id,
+                from_coordinate=coordinate(query.origin.coordinate),to_coordinate=coordinate(query.destination.coordinate),
+                from_coordinate_role=query.origin.coordinate_role,to_coordinate_role=query.destination.coordinate_role,
+                mode=query.mode,duration_seconds=number(estimate.duration_seconds),distance_m=number(estimate.distance_m))
+            reference=dict(provider='amap',kind='route',reference=key+':route',sha256=sha256(packed(payload)).hexdigest())
+            records.append(dict(reference,payload=payload));items.append(dict(route=payload,source=reference))
+        reply=packed(dict(version='LIO-route-result.1',status='ok'if estimate is not None else'unavailable',
             request_ref=request.request_ref,request_binding_sha256=request.binding_digest,
             raw_response_sha256=sha256(response.body).hexdigest(),observed_at=response.received_at.isoformat(),items=items))
-        metadata=packed(dict(endpoint=endpoint,response_sha256=sha256(reply).hexdigest(),region='China',
-                             result_status='unavailable'if result is None else'ok',actual_cost_cny='UNKNOWN'))
+        metadata=packed(dict(endpoint=request.origin+request.path,response_sha256=sha256(reply).hexdigest(),region='China',
+            result_status='ok'if estimate is not None else'unavailable',actual_cost_cny='UNKNOWN'))
         self._observed[key]=replace(prior,reply=reply,metadata=metadata,records=packed(records))
         self._revision+=1
         return reply,json.loads(metadata)

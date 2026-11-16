@@ -1,0 +1,66 @@
+[
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "id": "visitor.v3.taizhou-zhejiang.museum",
+    "topic": "passport_booking",
+    "cities": [
+      "taizhou-zhejiang"
+    ],
+    "subject": {
+      "key": "taizhou-zhejiang.museum",
+      "name_zh": "台州市博物馆",
+      "name_en": "Taizhou Museum (Zhejiang)",
+      "wikidata_qid": null
+    },
+    "conditions": {
+      "reservation_required": null,
+      "closed_weekdays": [
+        1
+      ],
+      "closed_weekdays_public_holiday_exception": true,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    },
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-11-23",
+    "text_zh": "台州文旅部门公开参观说明列台州市博物馆通常周一闭馆，法定节假日除外。本条适用浙江台州的市博物馆常规参观，不是江苏泰州或其他县区场馆；散客是否必须预约、提前窗口及当前临展安排尚未核定，行前应再查馆方最新通知。",
+    "text_en": "The Taizhou cultural-tourism department lists the municipal museum in Zhejiang as normally closed on Mondays except statutory public holidays. This covers ordinary visits to Taizhou Museum in Zhejiang, not Taizhou in Jiangsu or other district museums. Mandatory individual reservations, the advance window and current exhibition arrangements remain unconfirmed here; check the museum’s latest notices before visiting.",
+    "source_urls": [
+      "https://wgltj.zjtz.gov.cn/art/2019/7/24/art_1229890282_58910790.html"
+    ]
+  },
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "id": "visitor.v3.suzhou-anhui.museum",
+    "topic": "passport_booking",
+    "cities": [
+      "suzhou-anhui"
+    ],
+    "subject": {
+      "key": "suzhou-anhui.museum",
+      "name_zh": "宿州市博物馆",
+      "name_en": "Suzhou Museum (Anhui)",
+      "wikidata_qid": null
+    },
+    "conditions": {
+      "reservation_required": null,
+      "closed_weekdays": [
+        1
+      ],
+      "closed_weekdays_public_holiday_exception": true,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    },
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-11-23",
+    "text_zh": "安徽宿州市博物馆官网列通常周一闭馆，国家法定节假日除外；临时开放安排应查新公告。截至本轮核对，“秦汉雄风”展厅因施工临时关闭，恢复另行通知，不能把它当作全馆关闭或已经复开。官网提供提前预约渠道，但本条未核定普通散客是否必须预约或提前窗口。团体及研学另有要求；本条不指江苏苏州或深圳的博物馆。",
+    "text_en": "Suzhou Museum in Anhui normally closes on Mondays except statutory public holidays, according to its website; check new notices for temporary changes. At this check, the Qin and Han exhibition gallery is temporarily closed for works, with reopening to be announced. This does not mean the whole museum is closed or the gallery has reopened. The website offers advance booking, but mandatory individual reservations and the advance window remain unconfirmed here. Groups and study tours have separate rules. This is not a museum in Jiangsu or Shenzhen.",
+    "source_urls": [
+      "https://www.sz-museum.com/",
+      "https://www.sz-museum.com/channel/18.html?wd=cgzn",
+      "https://www.sz-museum.com/channel/20.html?commonshow=1337&wd=tzgg"
+    ]
+  }
+]

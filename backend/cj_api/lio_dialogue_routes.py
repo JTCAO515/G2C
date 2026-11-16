@@ -8,7 +8,7 @@ from starlette.concurrency import run_in_threadpool
 
 from cj_message.demo_dialogue import LIO_CHAT_PATTERN, LIO_VERSION, LIO_VERSION_V2, LIO_VERSION_V3, message_id
 from cj_message.domain import InvalidInput
-from cj_message.lio_context import SOURCE_EFFECT, TOOL_EFFECT, display_answer, self_description
+from cj_message.lio_context import SOURCE_EFFECT, TOOL_EFFECT, UNSAVED_PLAN_ANSWER, display_answer, self_description
 from cj_message.lio_plan_needs import BOUND_EFFECT, EDIT_BOUND_EFFECT
 from cj_run.core import Binding
 from cj_run.display_snapshot import SnapshotTooLarge
@@ -41,7 +41,8 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
         status = 'sending'
     elif state.status == 'running':
         status = 'answering'
-    elif state.status == 'completed' and state.draft_outcome is None:
+    elif state.status == 'completed' and (state.draft_outcome is None or
+            UNSAVED_PLAN_ANSWER in state.effects and state.text.strip()):
         status = 'completed'
     else:
         status = 'failed'

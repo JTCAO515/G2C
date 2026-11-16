@@ -1,0 +1,67 @@
+import unittest
+
+from lio_basic_ui_projection import EvidenceUnknown, project
+
+
+def node(identifier, text='', *, value='', enabled=True, depth=1, progress=False):
+    return dict(identifier=identifier, label=text, value=value, enabled=enabled, depth=depth,
+                progress_indicator=progress)
+
+
+class ActualAXProjectionTests(unittest.TestCase):
+    def test_exact_unicode_and_repeated_turns_are_not_normalized_or_collapsed(self):
+        nodes = [node('lio.chat.newShortcut'), node('lio.composer', value='  草稿\n ')]
+        for _ in range(2):
+            nodes += [node('lio.question', value='  北京\n '), node('lio.answer', '回答  \n', value='Reply complete')]
+        result = project(nodes)
+        self.assertEqual(result['transcript'], [dict(question='  北京\n ', answer='回答  \n')] * 2)
+        self.assertEqual(result['draft'], '  草稿\n ')
+        self.assertTrue(result['body_complete'])
+
+    def test_parent_and_child_are_one_semantic_element(self):
+        result = project([node('lio.chat.newShortcut'), node('lio.question', value='Q'),
+                          node('lio.question', value='Q', depth=2), node('lio.answer', 'A')])
+        self.assertEqual(result['transcript'], [dict(question='Q', answer='A')])
+
+    def test_visible_failure_and_original_unanswered_question_remain(self):
+        result = project([node('lio.chat.newShortcut'), node('lio.question', value='Q'),
+                          node('lio.failure', 'Request unavailable')])
+        self.assertEqual(result['transcript'], [dict(question='Q', answer='')])
+        self.assertEqual(result['errors'], ['Request unavailable'])
+        self.assertFalse(result['body_complete'])
+
+    def test_partial_hierarchy_is_unknown_instead_of_inventing_a_question(self):
+        with self.assertRaises(EvidenceUnknown):
+            project([node('lio.chat.newShortcut'), node('lio.answer', 'Only a virtualized answer')])
+
+    def test_native_pending_control_and_missing_composer_do_not_claim_completion(self):
+        self.assertFalse(project([node('lio.chat.newShortcut', enabled=False)])['body_complete'])
+        self.assertFalse(project([node('lio.chat.newShortcut')])['body_complete'])
+
+    def test_initial_native_spinner_cannot_be_mistaken_for_a_complete_empty_chat(self):
+        result = project([node('lio.chat.newShortcut'), node('lio.composer'), node('', progress=True)])
+        self.assertFalse(result['body_complete'])
+
+    def test_reply_status_is_separate_from_exact_rendered_body(self):
+        base = [node('lio.chat.newShortcut'), node('lio.composer'), node('lio.question', value='Q')]
+        final = project(base + [node('lio.answer', '  正文\n ', value='回复已完成')])
+        self.assertEqual(final['transcript'], [dict(question='Q', answer='  正文\n ')])
+        self.assertTrue(final['body_complete'])
+        for state in ['', 'Replying…', '正在回复…']:
+            self.assertFalse(project(base + [node('lio.answer', 'Partial', value=state)])['body_complete'])
+
+    def test_read_unavailable_retry_is_a_failure_not_a_loaded_empty_conversation(self):
+        for label in ['Try reading again', '再次查看']:
+            result = project([node('lio.chat.newShortcut'), node('lio.composer'),
+                              node('lio.read.retry', label)])
+            self.assertFalse(result['body_complete'])
+            self.assertIn(label, result['errors'])
+
+    def test_a_loaded_empty_chat_needs_its_actual_first_screen_content(self):
+        base = [node('lio.chat.newShortcut'), node('lio.composer')]
+        self.assertFalse(project(base)['body_complete'])
+        self.assertTrue(project(base + [node('lio.example.0', 'Weather')])['body_complete'])
+
+
+if __name__ == '__main__':
+    unittest.main()
