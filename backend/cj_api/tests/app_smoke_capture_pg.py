@@ -165,15 +165,15 @@ def exercise(auth,conninfo):
         from cj_api.lio_dialogue_routes import _timeline
         actual_read=_timeline(boundary,lambda scope:database.run_repository(scope),None,None,
             token,b.conversation_id,None,multiple=True).body
-        async def call_read(target=b,body=actual_read):
+        async def call_read(target=b,body=actual_read,path='/v2/lio/timeline'):
             sent=[]
             async def app(scope,receive,send):
                 await send(dict(type='http.response.start',status=200,headers=[]))
                 await send(dict(type='http.response.body',body=body,more_body=False))
             async def receive():raise AssertionError('no GET body read')
             async def send(message):sent.append(message)
-            await OuterMiddleware(app,observer)(dict(type='http',method='GET',path='/v2/lio/timeline',
-                query_string=('conversation_id='+target.conversation_id).encode(),
+            await OuterMiddleware(app,observer)(dict(type='http',method='GET',path=path,
+                query_string=b''if path=='/v1/lio/timeline'else('conversation_id='+target.conversation_id).encode(),
                 headers=[(b'authorization',('Bearer '+token).encode())]),receive,send)
             assert sent[-1]['body']==body
         # The actual GET begins before the next checkpoint, but publication
@@ -230,12 +230,102 @@ def exercise(auth,conninfo):
         while observer.queue.unfinished_tasks and time.monotonic()<end:time.sleep(.01)
         assert observer.queue.unfinished_tasks==0
         assert json.loads(protected.outer(token,b2.message_id))['outer_utf8'].encode()==raw2
+        # The signed App always has a default history row, including no-M
+        # empty state. Capture the real v1 GET without manufacturing a claim.
+        empty_default=protected.default_history(token,footprint)
+        assert empty_default['generation']is None and empty_default['messages']==[]
+        body_default=_timeline(boundary,lambda scope:database.run_repository(scope),None,None,
+            token,None,None,multiple=False).body
+        default_point=protected.http_checkpoint(token)
+        asyncio.run(call_read(body=body_default,path='/v1/lio/timeline'))
+        end=time.monotonic()+5
+        while observer.read_queue.unfinished_tasks and time.monotonic()<end:time.sleep(.01)
+        assert observer.read_queue.unfinished_tasks==0
+        default_reads=protected.http_observed(token,default_point)['actual_reads']
+        assert len(default_reads)==1 and default_reads[0]['origin']=='readonly_default'and default_reads[0]['binding']is None
+        assert default_reads[0]['response_utf8'].encode()==body_default
+        before_claims=(f.claims/'claims.json').read_bytes()
+        default_wire=compact(dict(version='LIO-message.1',message_id=str(uuid.uuid4()),text='你是谁',locale='zh'))
+        default_receipt=boundary.receive_lio(token,default_wire,prepare_scope=database._provision_scope,version='LIO-message.1')
+        default_worker=run_worker._worker_for_scope(database,model,auth,b.scope,checker,tools_configuration=tools,
+            draft_profile='needs-structured.1',assembly_planning=True,demo_planning=True,national_planning=True,
+            lio_confirmation=load_confirmation_signer(auth))
+        default_outcomes=default_worker.process();assert len(default_outcomes)==1 and default_outcomes[0].status=='completed'
+        original_default=protected.default_history(token,footprint)
+        assert original_default['messages'][0]['message_id']==default_receipt.message_id
+        body_default=_timeline(boundary,lambda scope:database.run_repository(scope),None,None,
+            token,None,None,multiple=False).body
+        default_point=protected.http_checkpoint(token)
+        asyncio.run(call_read(body=body_default,path='/v1/lio/timeline'))
+        end=time.monotonic()+5
+        while observer.read_queue.unfinished_tasks and time.monotonic()<end:time.sleep(.01)
+        default_reads=protected.http_observed(token,default_point)['actual_reads']
+        assert len(default_reads)==1 and default_reads[0]['binding']['message_id']==default_receipt.message_id
+        assert(f.claims/'claims.json').read_bytes()==before_claims
+        try:originals.input(token,default_receipt.message_id,'any-model-operation')
+        except Exception as error:
+            from runtime_adapter.contract import Unavailable
+            assert type(error)is Unavailable
+        else:raise AssertionError('default read exposed a model input without a writer claim')
         try:protected.outer(dev_auth.token(auth,foreign,30),b.message_id)
         except Exception as error:
             from runtime_adapter.contract import Unavailable
             assert type(error)is Unavailable
         else:raise AssertionError('foreign HTTP outer read escaped')
     finally:observer.close();outer_temporary.cleanup()
+    # A later window may read genuine old conversations without claiming
+    # their model/input artifacts as new-window writes.
+    from cj_api.app_smoke_history import export_anchor
+    en_token=dev_auth.token(auth,SUBJECTS[1],30)
+    en_wire=compact(dict(version='LIO-message.2',message_id=str(uuid.uuid4()),text='Who are you?',locale='en',new_conversation=True))
+    en_receipt=boundary.receive_lio(en_token,en_wire,prepare_scope=database._provision_scope,version='LIO-message.2')
+    en_worker=run_worker._worker_for_scope(database,model,auth,scope_for(ISSUER,SUBJECTS[1]),checker,tools_configuration=tools,
+        draft_profile='needs-structured.1',assembly_planning=True,demo_planning=True,national_planning=True,
+        lio_confirmation=load_confirmation_signer(auth))
+    assert en_worker.process()[0].status=='completed'
+    zh_anchor=export_anchor(boundary,database,token,b.conversation_id)
+    en_anchor=export_anchor(boundary,database,en_token,en_receipt.conversation_id)
+    later_root=auth.parent/'later-window';later_root.mkdir(mode=0o700);later=fixture(later_root)
+    plan=dict(first_setup=False,old_chats=dict(zh=zh_anchor,en=en_anchor))
+    write(later_root/'plan.json',plan)
+    from cj_usage.authorization_budget import canonical
+    later.policy['plan_sha256']=sha256(canonical(plan)).hexdigest();write(later.path,later.policy)
+    write(later.claims/'claims.json',dict(version=CLAIMS,policy_sha256=sha256(later.path.read_bytes()).hexdigest(),state='ACTIVE',claims=[]))
+    later_temporary=tempfile.TemporaryDirectory(prefix='g2c-old-http-',dir='/tmp')
+    later_outer=Path(later_temporary.name)/'outer';later_outer.mkdir(mode=0o700);later_api=later_root/'api.json'
+    write(later_api,dict(version=OUTER_WINDOW,policy_path=str(later.path),policy_sha256=sha256(later.path.read_bytes()).hexdigest(),
+        directory=str(later_outer),directory_device=later_outer.stat().st_dev,directory_inode=later_outer.stat().st_ino))
+    later_controls=OuterControls(later_api,subjects,clock=lambda:NOW)
+    later_native=RuntimeOriginals(boundary,database,local_budget,later_outer,
+        query_original=lambda context,mid:context.query_lio_message(mid))
+    observer=OuterCapture(later_controls,checker,later_native,clock=lambda:NOW)
+    try:
+        # API publication and worker-side protected reader are separate native
+        # Runtime instances in production. Do not let the test mutate the
+        # API's query function when installing the worker's claim-only reader.
+        later_reader=RuntimeOriginals(boundary,database,local_budget,later_outer,
+            query_original=lambda context,mid:context.query_lio_message(mid))
+        protected=SmokeOriginals(later_controls,later_reader,lambda:require_live(later_controls,observer.lifecycle.instance_id))
+        before=later.claims.joinpath('claims.json').read_bytes()
+        state=SmokeState(later_controls,boundary,database).read(token)
+        assert protected.verified_history(token,state)==[zh_anchor]
+        point=protected.http_checkpoint(token)
+        asyncio.run(call_read())
+        end=time.monotonic()+5
+        while observer.read_queue.unfinished_tasks and time.monotonic()<end:time.sleep(.01)
+        reads=protected.http_observed(token,point)['actual_reads']
+        assert len(reads)==1 and reads[0]['origin']=='readonly_history'and reads[0]['binding']==asdict(b)
+        assert reads[0]['response_utf8'].encode()==actual_read
+        assert later.claims.joinpath('claims.json').read_bytes()==before
+        from runtime_adapter.contract import Unavailable
+        def claim_only(context):return protected.query(context,b.message_id)
+        try:boundary.with_history_context(token,claim_only)
+        except Unavailable:pass
+        else:raise AssertionError('old readonly history acquired a current-window writer claim')
+        try:export_anchor(boundary,database,en_token,b.conversation_id)
+        except Unavailable:pass
+        else:raise AssertionError('foreign old conversation was exported')
+    finally:observer.close();later_temporary.cleanup()
     print('PASS signed ordinary Home MESSAGE, runtime-role RLS, exact outer/canonical hashes, worker zero-op claim, ACK/producer-return, restart, foreign/JWT/RUN rejection; cloud/model/tool0')
     print('PASS actual ASGI HTTP bytes, idempotent native accept, private guarded outer receipt/readback, original answer and foreign denial; no fabricated legacy wire')
 
