@@ -74,6 +74,13 @@ def test_actual_display_or_native_evidence_cannot_be_replaced_by_labels(mutate):
 def test_known_ui_failure_and_native_side_effect_remain_fail():
     args=write_fixture();args[4]['after']['errors']=['actual UI failure']
     assert evaluate(args)['status']=='FAIL'
+
+
+def test_a_new_native_CID_cannot_replace_an_actual_UI_new_chat():
+    args=write_fixture();args[4]['actions']=[]
+    assert evaluate(args)['status']=='UNKNOWN'
+    args=write_fixture();args[4]['before']['transcript']=deepcopy(args[4]['after']['transcript'])
+    assert evaluate(args)['status']=='UNKNOWN'
     args=write_fixture();args[3].after['memory_sha256']='0'*64
     assert evaluate(args)['status']=='FAIL'
 
@@ -147,11 +154,16 @@ def test_history_opens_every_unique_native_conversation_not_just_matching_titles
     second['response_sha256']=sha256(second['response_utf8'].encode()).hexdigest()
     native=type(n)(n.original,state,state,(),(*n.actual_reads,second),(),n.read_collection_status)
     point=type('ControlCheckpoint',(),{'claims':tuple({'binding':{'conversation_id':cid}}for cid in context.views),'history_targets':()})()
-    opened=[dict(row_key=str(index),transcript=[{'question':m['text'],'answer':m['answer']}for m in view['messages']])
+    opened=[dict(row_key=str(index),body_complete=True,errors=[],transcript=[{'question':m['text'],'answer':m['answer']}for m in view['messages']])
             for index,view in enumerate(context.views.values())]
     ui.update(gate_id='SM03',nonce=step['nonce'],actions=['open_history'],
               history=dict(rows=[{'row_key':str(i),'title':'Same truncated title'}for i in range(2)],opened=opened))
     args=(plan,step,point,native,ui,context,money)
     assert evaluate(args)['status']=='PASS'
+    ui['history']['opened'][0].update(errors=['actual row failed to open'],body_complete=False)
+    assert evaluate(args)['status']=='FAIL'
+    ui['history']['opened'][0].update(errors=[],body_complete=False)
+    assert evaluate(args)['status']=='UNKNOWN'
+    ui['history']['opened'][0].update(errors=[],body_complete=True)
     ui['history']['opened'][1]['transcript']=deepcopy(ui['history']['opened'][0]['transcript'])
     assert evaluate(args)['status']=='UNKNOWN'

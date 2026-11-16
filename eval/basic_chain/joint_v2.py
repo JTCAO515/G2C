@@ -109,6 +109,8 @@ def assess(plan,step,point,native,ui,conversations,project,money):
                     and view['messages'][-1]['answer']==display_answer(message['answer'],step['locale']),
                     'actual App response differs from same-source server projection of original native answer')
             if step['new_conversation']:
+                require('new_chat'in ui['actions']and _ax_transcript(ui['before']['transcript'])==(),
+                        'actual new-chat transition and empty pre-send transcript required')
                 require(len(view['messages'])==1,'new conversation contains other user messages')
             else:
                 require(cid==conversations.old_cid,'seed continuation changed its original CID')
@@ -174,6 +176,9 @@ def assess(plan,step,point,native,ui,conversations,project,money):
                         and {r['row_key']for r in rows}=={r['row_key']for r in opened},'history row/open census differs')
                 found=[]
                 for entry in opened:
+                    if entry['errors']:fail.append('actual_history_row_open_failure')
+                    require(entry['body_complete']is True and not entry['errors'],
+                            'each opened history row needs its own complete error-free actual result')
                     transcript=_ax_transcript(entry['transcript'])
                     matches=[cid for cid,view in accepted_views.items()if _transcript(view,project)==transcript]
                     require(len(matches)==1,'history selected row cannot uniquely identify a native conversation')

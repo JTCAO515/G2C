@@ -70,6 +70,9 @@ history_targets，C再核原生CID/gen/完整有序M并从实际AppGET建立正�
 通用能力正文或时间接近都不构成身份。需要远程读取的普通App路径须有该次真实
 GET/完整原响应；A缓存正常加C另行读成功不能拼成PASS。当前实际normal Home
 源码在scene active时调用refreshTimeline；如该行为改变须重新审实际路径。
+每个history.opened项各保留errors/body_complete，不能用最后打开成功覆盖前一行
+失败。新聊天写入还须有实际new_chat动作和发送前空transcript，原生新CID不替代
+App真正切换到新聊天的证据。
 
 ## B原件与C判定
 
