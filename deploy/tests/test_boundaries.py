@@ -122,16 +122,26 @@ def test_build_context_uses_committed_allowed_blobs_only(tmp_path):
     (repo/'scripts/approved-name.pem').write_text('synthetic-secret')
     for name in ('eval/optimization/cases.v2.json','eval/optimization/score_v2.py',
                  'tooling/optimization/uv.lock','eval/optimization/private-input.json',
-                 'tooling/optimization/credentials.json'):
+                 'tooling/optimization/credentials.json',
+                 'eval/lio_simulated_user/__init__.py','eval/lio_simulated_user/core.py',
+                 'eval/lio_simulated_user/runner.py','eval/lio_simulated_user/profiles.v1.json',
+                 'eval/lio_simulated_user/local_controls.py',
+                 'eval/lio_simulated_user/tests/test_core.py',
+                 'eval/lio_simulated_user/private-profile-notes.json',
+                 'eval/lio_simulated_user/profiles.backup.json'):
         path=repo/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(name)
     subprocess.run(['git','add','.'],cwd=repo,check=True)
     subprocess.run(['git','-c','user.name=Synthetic','-c','user.email=synthetic@example.invalid','commit','-qm','fixture'],cwd=repo,check=True)
     (repo/'scripts/module.py').write_text('DIRTY=True\n')
+    (repo/'eval/lio_simulated_user/core.py').write_text('DIRTY_UNREVIEWED=True\n')
     (repo/'scripts/operator-key.pem').write_text('synthetic-untracked-secret')
     (repo/'scripts/untracked-note.log').write_text('synthetic-log')
     destination=tmp_path/'context';destination.mkdir();source_context(repo,destination)
     assert (destination/'scripts/module.py').read_text()=='COMMITTED=True\n'
     assert sorted(p.name for p in (destination/'scripts').iterdir())==['module.py']
     assert sorted(str(path.relative_to(destination)) for path in destination.rglob('*') if path.is_file())==[
+        'eval/lio_simulated_user/__init__.py','eval/lio_simulated_user/core.py',
+        'eval/lio_simulated_user/profiles.v1.json','eval/lio_simulated_user/runner.py',
         'eval/optimization/cases.v2.json','eval/optimization/score_v2.py',
         'scripts/module.py','tooling/optimization/uv.lock']
+    assert (destination/'eval/lio_simulated_user/core.py').read_text()=='eval/lio_simulated_user/core.py'
