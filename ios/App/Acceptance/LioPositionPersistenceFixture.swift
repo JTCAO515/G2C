@@ -18,8 +18,10 @@ import Observation
     let fault = PositionAcceptanceFault()
     init(shell: ShellState) throws {
         let environment = UUID(uuidString: "C35744FC-F460-4ED1-B21B-A64D5D34896C")!
-        let account = UUID(uuidString: shell.language == .chinese
-            ? "D35744FC-F460-4ED1-B21B-A64D5D34896C" : "E35744FC-F460-4ED1-B21B-A64D5D34896C")!
+        let retainedCase = ProcessInfo.processInfo.arguments.contains("--lio-position-retained-unsent")
+        let account = UUID(uuidString: retainedCase
+            ? (shell.language == .chinese ? "F35744FC-F460-4ED1-B21B-A64D5D34896C" : "A35744FC-F460-4ED1-B21B-A64D5D34896C")
+            : (shell.language == .chinese ? "D35744FC-F460-4ED1-B21B-A64D5D34896C" : "E35744FC-F460-4ED1-B21B-A64D5D34896C"))!
         let namespace = MessageKeyNamespace(environment: environment, account: account, purpose: .localMessageStorageV1)
         let keys = ScopedMessageKeyProvider(namespace: namespace, persistence: PositionAcceptanceKeys(),
                                             randomBytes: { throw MessageKeyFailure.storageUnavailable })
@@ -29,6 +31,16 @@ import Observation
         let store = try LioChatPositionStore(directory: directory, namespace: namespace, keys: keys, validate: {})
         let continuity = LioChatContinuity()
         try restoreLioChatPosition(continuity, store: store)
+        if retainedCase && continuity.selectedID == nil {
+            let local = Data("synthetic-unsent-local".utf8)
+            continuity.withPositionChange {
+                continuity.selectedID = local
+                continuity.blankIDs.insert(local)
+                continuity.firstQuestions[local] = LioQuestion(messageID: "synthetic-original-A",
+                    text: "Original A", language: shell.language.lio)
+                continuity.updateDraft("Different draft B", for: local)
+            }
+        }
         if ProcessInfo.processInfo.arguments.contains("--lio-position-write-failure") {
             continuity.bindPositionWriter { [fault] in try fault.reject($0) }
         }

@@ -234,6 +234,19 @@ public struct LioHome<MenuContent: View>: View {
     private func chatMessages(_ scroll: ScrollViewProxy) -> some View {
         let pending = conversation.pending
         let earlierID = conversation.nextBefore.map { Data($0.utf8) }
+        if let chatID, let retained = chatLibrary?.continuity?.retainedUnsent[chatID] {
+            ForEach(Array(retained.enumerated()), id: \.offset) { _, question in
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(language.text("Unsent message", "未发送的内容"))
+                        .font(.headline)
+                    RunSelectableText(text: question.text, color: LioTheme.ink)
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                .accessibilityIdentifier("lio.unsent.message")
+            }
+        }
         if let failure = conversation.timelineFailure {
             readFailureMessage(failure)
         }

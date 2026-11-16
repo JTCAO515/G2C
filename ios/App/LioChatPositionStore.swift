@@ -131,7 +131,7 @@ import Foundation
         return fd
     }
     private func read(_ directory: Int32) throws -> Data? {
-        let fd = openat(directory, Self.filename, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+        let fd = openat(directory, Self.filename, O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK)
         guard fd >= 0 else {
             if errno == ENOENT { return nil }
             throw RecoveryError.unsafeDirectory

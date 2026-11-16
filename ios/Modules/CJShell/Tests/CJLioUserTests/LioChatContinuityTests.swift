@@ -8,6 +8,38 @@ import Testing
 @testable import CJLioUser
 
 @MainActor struct LioChatContinuityTests {
+    @Test func coldUnstagedFirstAndDifferentFollowupDraftBothRemainDurable() async throws {
+        let fixture = try ChatContinuityFixture()
+        let library = try fixture.library()
+        let selected = library.newChat()
+        let position = try #require(library.continuity)
+        let first = LioQuestion(messageID: "original-unstaged-A", text: "Original A\n", language: .chinese)
+        position.selectedID = selected.id
+        position.firstQuestions[selected.id] = first
+        position.updateDraft("New followup B", for: selected.id)
+        let cold = LioChatContinuity(); try cold.restorePosition(position.encodedPosition())
+        var saved: [Data] = []
+        cold.bindPositionWriter { saved.append($0) }
+        _ = try await fixture.library(continuity: cold).restore?()
+        #expect(cold.draft == "New followup B")
+        #expect(cold.retainedUnsent[selected.id]?.first == first)
+        #expect(!saved.isEmpty)
+        for bytes in saved {
+            let checkpoint = LioChatContinuity(); try checkpoint.restorePosition(bytes)
+            #expect(checkpoint.retainedUnsent[selected.id]?.first == first)
+        }
+        #expect(await fixture.transport.posts == 0)
+        #expect(await fixture.transport.lookups == 0)
+        let restored = try #require(try await fixture.library(continuity: cold).restore?())
+        let model = LioConversation(service: restored.service)
+        model.send(cold.draft, language: .english)
+        await model.receive(try #require(model.pending))
+        let afterBinding = LioChatContinuity()
+        try afterBinding.restorePosition(cold.encodedPosition())
+        #expect(afterBinding.retainedUnsent[selected.id]?.first == first)
+        #expect(await fixture.transport.posts == 1)
+    }
+
     @Test func everyDurableAcceptedBindingHasItsFirstReferenceSettledAtomically() async throws {
         let fixture = try ChatContinuityFixture()
         let library = try fixture.library()

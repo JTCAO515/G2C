@@ -4,6 +4,16 @@ import Testing
 @testable import CJLioUser
 
 @MainActor struct LioChatPositionTests {
+    @Test func duplicateVersionCannotChooseWhichPositionToRestore() throws {
+        let source = LioChatContinuity(); source.draft = "Saved draft"
+        let valid = try #require(String(data: try source.encodedPosition(), encoding: .utf8))
+        for value in ["{\"format\":99," + valid.dropFirst(), String(valid.dropLast()) + ",\"format\":99}"] {
+            let current = LioChatContinuity(); current.draft = "Visible draft"
+            #expect(throws: RecoveryError.invalidSnapshot) { try current.restorePosition(Data(value.utf8)) }
+            #expect(current.draft == "Visible draft")
+        }
+    }
+
     @Test func changedDraftIsDurableBeforeTheSetterReturnsAndRetryKeepsItsBytes() throws {
         let position = LioChatContinuity()
         var saved: [Data] = []

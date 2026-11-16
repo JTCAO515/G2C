@@ -32,6 +32,7 @@ final class LioChatTrips {
     var selectedID: Data? { didSet { positionChanged() } }
     var draft = "" { didSet { positionChanged() } }
     var drafts: [Data: String] = [:] { didSet { positionChanged() } }
+    var retainedUnsent: [Data: [LioQuestion]] = [:] { didSet { positionChanged() } }
     var firstQuestions: [Data: LioQuestion] = [:] { didSet { positionChanged() } }
     var localIDs: [Data: String] = [:] { didSet { positionChanged() } }
     var blankIDs: Set<Data> = [] { didSet { positionChanged() } }
@@ -95,6 +96,7 @@ final class LioChatTrips {
             selectedID = previous.selectedID
             draft = previous.draft
             drafts = previous.drafts
+            retainedUnsent = previous.retainedUnsent
             firstQuestions = previous.firstQuestions
             localIDs = previous.localIDs
             blankIDs = previous.blankIDs
@@ -259,7 +261,11 @@ private final class LioSignedChatSessions {
             if try client.firstChatCanReturnToDraft(messageID: first.messageID) {
                 continuity.withPositionChange {
                     continuity.firstQuestions.removeValue(forKey: selected)
-                    if continuity.draft.isEmpty { continuity.updateDraft(first.text, for: selected) }
+                    if continuity.draft.isEmpty {
+                        continuity.updateDraft(first.text, for: selected)
+                    } else {
+                        continuity.retainedUnsent[selected, default: []].append(first)
+                    }
                 }
                 return blank(String(decoding: selected, as: UTF8.self))
             }

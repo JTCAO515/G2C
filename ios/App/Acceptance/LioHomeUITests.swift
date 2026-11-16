@@ -3,6 +3,34 @@ import UIKit
 import CryptoKit
 
 @MainActor final class LioHomeUITests: XCTestCase {
+    func testUnsentOriginalAndDifferentDraftStayVisibleAcrossRelaunchInBothLanguages() throws {
+        continueAfterFailure = false
+        for chinese in [false, true] {
+            for appearance in ["light", "dark"] {
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "--lio-position-persistence-acceptance", "--lio-position-retained-unsent",
+                    "-lio.ui.appearance.v1", appearance, "-cj.ui.language.v1", chinese ? "zh-Hans" : "en",
+                    "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+                for _ in 0..<2 {
+                    app.launch()
+                    let card = app.descendants(matching: .any).matching(identifier: "lio.unsent.message").firstMatch
+                    XCTAssertTrue(card.waitForExistence(timeout: 8))
+                    XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label == %@ OR value == %@", "Original A", "Original A")).firstMatch.exists)
+                    let field = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+                    XCTAssertEqual(field.value as? String, "Different draft B")
+                    XCTAssertFalse(app.staticTexts["lio.question"].exists)
+                    XCTAssertFalse(app.staticTexts["lio.answer"].exists)
+                    XCTAssertFalse(app.staticTexts["lio.opening"].exists)
+                    try app.performAccessibilityAudit(for: .all)
+                    let shot = XCTAttachment(screenshot: app.screenshot())
+                    shot.name = "retained-unsent-\(chinese ? "zh" : "en")-\(appearance)"
+                    shot.lifetime = .keepAlways; add(shot)
+                    app.terminate()
+                }
+            }
+        }
+    }
+
     func testFailedDraftPersistenceKeepsTextAndOffersARetryControlInBothLanguages() throws {
         continueAfterFailure = false
         for chinese in [false, true] {

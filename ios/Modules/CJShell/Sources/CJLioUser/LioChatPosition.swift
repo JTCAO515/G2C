@@ -1,4 +1,5 @@
 import CJMessageClient
+import CJStrictJSON
 import Foundation
 
 extension LioChatContinuity {
@@ -11,19 +12,28 @@ extension LioChatContinuity {
     public func restorePosition(_ bytes: Data) throws {
         guard bytes.count <= 1_048_576 else { throw RecoveryError.invalidSnapshot }
         let record: StoredChatPosition
-        do { record = try JSONDecoder().decode(StoredChatPosition.self, from: bytes) }
-        catch is DecodingError { throw RecoveryError.invalidSnapshot }
+        do {
+            var reader = StrictJSONReader<PositionJSONPolicy>(bytes: Array(bytes))
+            try reader.check()
+            record = try JSONDecoder().decode(StoredChatPosition.self, from: bytes)
+        } catch { throw RecoveryError.invalidSnapshot }
         guard record.format == 1, record.hasValidIdentifiers else { throw RecoveryError.invalidSnapshot }
         let questions = record.questions.mapValues { $0.question }
         withPositionChange {
             selectedID = record.selected
             draft = record.draft
             drafts = record.drafts
+            retainedUnsent = (record.retained ?? [:]).mapValues { $0.map(\.question) }
             firstQuestions = questions
             localIDs = record.bindings
             blankIDs = record.blanks
         }
     }
+}
+
+private enum PositionJSONPolicy: StrictJSONPolicy {
+    static let failure = RecoveryError.invalidSnapshot
+    static let requiresObjectRoot = true
 }
 
 private struct StoredChatPosition: Codable {
@@ -32,12 +42,14 @@ private struct StoredChatPosition: Codable {
     let draft: String
     let drafts: [Data: String]
     let questions: [Data: StoredFirstQuestion]
+    let retained: [Data: [StoredFirstQuestion]]?
     let bindings: [Data: String]
     let blanks: Set<Data>
 
     @MainActor init(_ position: LioChatContinuity) {
         format = 1; selected = position.selectedID; draft = position.draft; drafts = position.drafts
         questions = position.firstQuestions.mapValues(StoredFirstQuestion.init)
+        retained = position.retainedUnsent.mapValues { $0.map(StoredFirstQuestion.init) }
         bindings = position.localIDs; blanks = position.blankIDs
     }
 
@@ -47,6 +59,7 @@ private struct StoredChatPosition: Codable {
         }
         return selected.map(valid) != false && blanks.allSatisfy(valid) && drafts.keys.allSatisfy(valid)
             && questions.allSatisfy { valid($0.key) && valid(Data($0.value.messageID.utf8)) }
+            && (retained ?? [:]).allSatisfy { valid($0.key) && $0.value.allSatisfy { valid(Data($0.messageID.utf8)) } }
             && bindings.allSatisfy { valid($0.key) && valid(Data($0.value.utf8)) }
     }
 }

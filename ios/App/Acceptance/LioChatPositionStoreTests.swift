@@ -1,5 +1,6 @@
 import CJMessageClient
 import CryptoKit
+import Darwin
 import Foundation
 import Testing
 @testable import CJLioUser
@@ -37,6 +38,19 @@ import Testing
     }
 }
 @MainActor struct LioChatPositionStoreTests {
+    @Test func nonRegularPositionIsRejectedWithoutWaitingForAWriter() throws {
+        let f = try PositionFixture(); defer { f.cleanup() }
+        let store = try f.store()
+        let path = f.directory.appendingPathComponent(LioChatPositionStore.filename).path
+        #expect(mkfifo(path, 0o600) == 0)
+        DispatchQueue.global().asyncAfter(deadline: .now() + 0.3) {
+            let fd = Darwin.open(path, O_WRONLY | O_NONBLOCK)
+            if fd >= 0 { close(fd) }
+        }
+        let start = DispatchTime.now().uptimeNanoseconds
+        #expect(throws: RecoveryError.unsafeDirectory) { _ = try store.load() }
+        #expect(DispatchTime.now().uptimeNanoseconds - start < 100_000_000)
+    }
     @Test func authenticatedBindingLoadsTheOldPositionAndKeepsLaterDraftChanges() throws {
         let f = try PositionFixture(); defer { f.cleanup() }
         let original = LioChatContinuity()
