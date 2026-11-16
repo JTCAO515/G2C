@@ -13,6 +13,7 @@ import json
 
 from cj_message.lio_exploration_schema import ExplorationInput
 from cj_message.lio_wire import ExplorationOrigin
+from cj_message.lio_pipeline_schema import SKELETON,WORDING
 from cj_trip.domain import packed
 from .lio_exploration_routes import PROGRESS
 
@@ -58,11 +59,16 @@ class PipelineCalls:
         labels={'city':('正在确认目的地。','Checking the destination.'),
                 'places':('正在查找行程地点。','Finding places for your trip.'),
                 'routes':('正在查询相邻站点的路线。','Checking routes between stops.'),
-                'model':('正在整理行程细节。','Working on your itinerary.')}
+                'model':('正在整理行程细节。','Working on your itinerary.'),
+                'skeleton':('正在设计每天的安排。','Drafting the day-by-day plan.'),
+                'wording':('正在补充推荐理由。','Adding reasons for these choices.')}
         text=labels[stage][0 if self.locale=='zh'else 1]
         state=self.worker.runs.snapshot(self.binding)
-        self.worker._event(self.binding,state,'effect_committed',PROGRESS+
-            json.dumps(dict(kind='waiting',text=text),ensure_ascii=False,separators=(',',':')))
+        value=PROGRESS+json.dumps(dict(kind='waiting',text=text),ensure_ascii=False,separators=(',',':'))
+        # The RUN effect ledger rejects duplicate effects. Repeated batches
+        # remain separate registered operations, but need no duplicate UI text.
+        if value in state.effects:return
+        self.worker._event(self.binding,state,'effect_committed',value)
 
     def resolve_city(self,query):
         """The original one-send city registration consumes the same45 ceiling.
@@ -87,8 +93,11 @@ class PipelineCalls:
         if any(call.kind not in ('model','gaode')for call in calls):
             raise ValueError('explicit pipeline call kind required')
         self._reserve(models,gaode)
-        if calls:
+        if calls and self.locale is not None:
             stage=('model'if models else'routes'if all(call.registration=='tool.lio_route.1'for call in calls)else'places')
+            if models:
+                profiles={call.argument.profile for call in calls if call.kind=='model'}
+                stage='skeleton'if profiles=={SKELETON}else'wording'if profiles=={WORDING}else'model'
             self._progress(stage)
         streams=[];first=[]
         with ExitStack()as pending:
