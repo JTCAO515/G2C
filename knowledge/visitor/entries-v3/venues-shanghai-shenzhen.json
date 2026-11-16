@@ -123,5 +123,37 @@
       "advance_booking_days": null,
       "advance_booking_rule": null
     }
+  },
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "id": "visitor.v3.chongqing.three-gorges-museum",
+    "cities": [
+      "chongqing"
+    ],
+    "topic": "passport_booking",
+    "subject": {
+      "key": "chongqing.three-gorges-museum",
+      "name_zh": "重庆中国三峡博物馆",
+      "name_en": "Three Gorges Museum",
+      "wikidata_qid": "Q10872783"
+    },
+    "conditions": {
+      "reservation_required": false,
+      "closed_weekdays": [
+        1
+      ],
+      "closed_weekdays_public_holiday_exception": true,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    },
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-11-23",
+    "text_zh": "重庆中国三峡博物馆人民路主馆已取消入馆预约，持有效身份证件按现场秩序入馆；通常周一闭馆，法定节假日除外。高客流仍可能限流，应查最新通知并听从现场引导。本条仅指主馆常规参观，不代表下属馆收费、活动预约或实时入馆资格。",
+    "text_en": "The main Three Gorges Museum on Renmin Road no longer requires an admission reservation. Bring valid identification and follow entry arrangements. It normally closes on Mondays except statutory public holidays. Crowd controls may still apply; check current notices and staff directions. This covers ordinary visits to the main museum, not branch charges, event bookings or guaranteed immediate entry.",
+    "source_urls": [
+      "https://whlyw.cq.gov.cn/zwxx_221/bmdt/tzgg/202511/t20251103_15136009.html",
+      "https://www.cq.gov.cn/zwgk/zfxxgkml/zdlyxxgk/ggwh/ly/zxdt/202607/t20260722_15842998.html"
+    ]
   }
 ]
