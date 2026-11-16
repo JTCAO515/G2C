@@ -5,6 +5,7 @@ first parser checks data and source spans; full field/fixed-window compilation,
 genuine4/profile/Memory holds and the sole publisher remain mandatory.
 """
 from datetime import date,timedelta
+from decimal import Decimal
 from dataclasses import dataclass
 from hashlib import sha256
 import json
@@ -12,7 +13,7 @@ import re
 from pydantic import ValidationError
 
 from cj_message.lio_plan_input_schema import PlanUnderstanding
-from cj_needs.domain import InvalidInput,decode,validate_fields
+from cj_needs.domain import InvalidInput,decode,validate_fields,money
 from .lio_flat_intake import _observations
 from .lio_national_intake import _current_date_source,_current_date_anchors,_WEEK_SOURCE,ZONE_LITERAL,fields_for,fixed_sources_complete
 from .lio_sourced_intake import _booking_source
@@ -22,6 +23,7 @@ from .lio_positive_trip import supports as positive_trip_support
 from .local_lio_rich_calendar_source import read_rich_original
 from .lio_calendar_ordinals import fixed_ordinals
 from .local_lio_calendar import date_completion
+from .lio_exploration_profile import _canonical,BY_KEY
 
 _PRECISE_CLOCK=re.compile(r'(?<![0-9])'+CLOCK+r'(?![0-9])',re.I)
 _CLOCK_DENIAL=re.compile(r'(?:not(?:\s+at|\s+before|\s+after)?|不是|并非|不早于|不晚于|大约|大概|around|about)\s*$',re.I)
@@ -58,6 +60,17 @@ _META_SOURCE=re.compile(r'^\s*(?:(?:(?:can|could|would) you\s+)?(?:please\s+)?'
     r'(?:translate|rephrase|paraphrase|repeat|quote|explain)\b|'
     r'(?:请帮我|请|帮我)?(?:把|将)?(?:下面|以下|上面|这)[^，,。！？;]{0,40}(?:翻译|复述|引用|改写|解释)|'
     r'(?:请帮我|请|帮我)?(?:翻译|复述|引用|改写))',re.I)
+_CURRENCY=r'(?:[A-Z]{3}(?![A-Za-z])|人民币|美元|欧元|英镑|元)'
+_BUDGET_AMOUNT=re.compile(r'(?P<label>(?:(?:my|our|the)\s+)?budget|paid|I (?:have )?paid|预算|我的预算|我们的预算|已付)'
+    r'\s*(?:is\s*|为\s*|是\s*|[:：]\s*)?(?P<before>'+_CURRENCY+r')?\s*'
+    r'(?P<amount>[0-9]+(?:\.[0-9]+)?)\s*(?P<after>'+_CURRENCY+r')?\s*'
+    r'(?P<basis>per person|in total|total|每人|总计|合计)?',re.I)
+_BUDGET_CURRENCY=re.compile(r'(?:(?:(?:my|our|the)\s+)?budget(?: currency)?\s*(?:is(?: in)?|in|[:：])?\s*|'
+    r'(?:我的|我们的)?预算(?:币种)?\s*(?:是|为|[:：])?\s*|currency\s*[:：]?\s*)?'
+    r'(?P<currency>'+_CURRENCY+r')',re.I)
+_BUDGET_INCLUDES=re.compile(r'(?:(?:(?:my|our|the)\s+)?budget\s+)?includes\s+(.+)|'
+    r'(?:预算)?(?:包含|包括|含)\s*(.+)',re.I)
+_CURRENCIES={'人民币':'CNY','元':'CNY','美元':'USD','欧元':'EUR','英镑':'GBP'}
 
 
 def _quoted_source(text,start,end):
@@ -158,17 +171,91 @@ def _clock_source(field,value,references,turns):
 
 def _place_source(field,value,references,turns):
     """Only an affirmative original endpoint span can seed a provider query."""
-    event='arrival'if field=='arrival.place'else'departure'
+    event='arrival'if field.startswith('arrival.')else'departure'
     opposite='departure'if event=='arrival'else'arrival'
     for reference in references:
         original=turns[reference.source_index].text
         if original.count(reference.quote)!=1 or value not in reference.quote:
             raise InvalidInput('place differs from its literal original source')
         offset=original.index(reference.quote)
-        clause=_source_clause(original,offset,offset+len(reference.quote))
+        clause=_source_clause(original,offset,offset+len(reference.quote)).strip().rstrip('.。!！')
+        declared=_EVENTS[event].search(clause)
+        # Reuse the clock/mode event and traveler grammar. A location before
+        # the verb may be removed only as that exact quoted value, never a
+        # third-person subject. A literal short answer remains supported.
+        subject=None
+        if declared is not None:
+            subject=clause[:declared.start()].replace(value,'',1)
+            subject=re.sub(r'\b(?:from|at|to)\b|从|在|到|至','',_PRECISE_CLOCK.sub('',subject),flags=re.I).strip()
         if (not _source_asserted(original,offset,offset+len(reference.quote))or _ENDPOINT_DENIAL.search(clause)or
-                _EVENTS[opposite].search(clause)and not _EVENTS[event].search(clause)):
+                _EVENTS[opposite].search(clause)or
+                (declared is None and clause!=value)or
+                (declared is not None and _TRAVELER_SUBJECT.fullmatch(subject)is None)):
             raise InvalidInput('place requires its affirmative original trip endpoint')
+
+
+def _constraint_source(observation,turns):
+    """Concrete known values require affirmative source semantics, not a quote alone."""
+    field,value=observation.field,observation.value
+    numeric=field in ('budget_total','budget_per_person','budget_paid')
+    if numeric:money(value)
+    for reference in observation.sources:
+        original=turns[reference.source_index].text
+        if original.count(reference.quote)!=1:raise InvalidInput('unique original constraint clause required')
+        offset=original.index(reference.quote)
+        clause=_source_clause(original,offset,offset+len(reference.quote)).strip().rstrip('.。!！')
+        if not _source_asserted(original,offset,offset+len(reference.quote)):
+            raise InvalidInput('affirmative traveler constraint required')
+        if field=='pace':
+            # Reuse the existing profile canonicalizer, including its positive
+            # wrappers. Only the noun variant changes; original bytes stay put.
+            def pace(text):return _canonical('pace',re.sub(r'\s+itinerary$',' trip',text.strip(),flags=re.I))
+            if (value not in {option.key for option in BY_KEY['pace'].options}or
+                    pace(clause)!=value or pace(reference.quote)!=value):
+                raise InvalidInput('pace differs from its original preference')
+        elif field=='budget_includes':
+            matched=_BUDGET_INCLUDES.fullmatch(clause)
+            if matched is None:raise InvalidInput('explicit original budget inclusions required')
+            parts=re.split(r'\s+and\s+|、|和|与',matched[1]or matched[2],flags=re.I)
+            expected=[part.strip()for part in parts]
+            if (len(set(value))!=len(value)or set(value)!=set(expected)or
+                    any(part not in reference.quote for part in value)):
+                raise InvalidInput('budget inclusions differ from their original list')
+        elif field.startswith('budget_'):
+            matched=_BUDGET_AMOUNT.fullmatch(clause)
+            expected=None
+            if field=='budget_currency':
+                currency=_BUDGET_CURRENCY.fullmatch(clause)
+                tokens=([currency['currency']]if currency is not None else
+                    [token for token in (matched['before'],matched['after'])if token]if matched is not None else [])
+                currencies={_CURRENCIES.get(token,token.upper())for token in tokens}
+                quoted={_CURRENCIES.get(match[0],match[0].upper())for match in
+                    re.finditer(r'(?<![A-Za-z])'+_CURRENCY,reference.quote,re.I)}
+                if currencies=={value}and value in quoted:expected=value
+            elif matched is not None:
+                paid='paid'in matched['label'].casefold()or matched['label']=='已付'
+                basis=None if matched['basis']is None else matched['basis'].casefold()
+                basis='per_person'if basis in ('per person','每人')else'total'if basis is not None else None
+                if field=='budget_basis'and not paid:
+                    quoted={('per_person'if word.casefold()in ('per person','每人')else'total')for word in
+                        re.findall(r'\bper person\b|\bin total\b|\btotal\b|每人|总计|合计',reference.quote,re.I)}
+                    if quoted=={basis}:expected=basis
+                elif field=='budget_paid'and paid:expected=matched['amount']
+                elif field=='budget_total'and not paid and basis=='total':expected=matched['amount']
+                elif field=='budget_per_person'and not paid and basis=='per_person':expected=matched['amount']
+            if numeric:
+                quoted={Decimal(match[0])for match in re.finditer(
+                    r'(?<![0-9.])[0-9]+(?:\.[0-9]+)?(?![0-9]|\.[0-9])',reference.quote)}
+                if Decimal(value)not in quoted:expected=None
+            if expected is None or (Decimal(expected)!=Decimal(value)if numeric else expected!=value):
+                raise InvalidInput('budget value differs from its original amount, role or currency')
+        elif field.endswith('.timezone'):
+            _place_source(field,value,(reference,),turns)
+            if ZONE_LITERAL.fullmatch(value)is None:raise InvalidInput('literal original timezone required')
+        elif field=='overseas_timezone':
+            if clause!=value or value not in reference.quote or ZONE_LITERAL.fullmatch(value)is None:
+                raise InvalidInput('literal original overseas timezone required')
+        else:raise InvalidInput('source semantics are not available for this known constraint')
 
 
 def _edge_option_at(field,value,original,start,end):
@@ -457,6 +544,8 @@ def parse_plan_understanding(raw,turns):
                 _clock_source(observation.field,observation.value,observation.sources,turns)
             elif observation.field.endswith('.place'):
                 _place_source(observation.field,observation.value,observation.sources,turns)
+            elif observation.field not in ('party_size','departure.mode','first_day_full'):
+                _constraint_source(observation,turns)
         else:
             if observation.value is not None:raise InvalidInput('unknown planning value cannot also be known')
             if observation.state=='uncertain':

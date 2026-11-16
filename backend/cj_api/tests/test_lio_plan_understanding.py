@@ -25,6 +25,87 @@ class PlanUnderstandingBoundary(unittest.TestCase):
     def turns(self):
         return (PlanningTurn('明天出发',date(2026,11,14)),PlanningTurn('直接出方案',date(2026,11,16)))
 
+    def test_known_constraints_need_their_specific_original_value_not_just_an_existing_quote(self):
+        cases=[('Hello','pace','relaxed',False),
+            ('I want a packed itinerary','pace','relaxed',False),
+            ('I want a packed itinerary','pace','packed',True),
+            ('我喜欢轻松行程','pace','relaxed',True),
+            ('My friend prefers relaxed travel','pace','relaxed',False),
+            ('Hello','budget_currency','CNY',False),
+            ('My budget is in USD','budget_currency','CNY',False),
+            ('My budget is in USD','budget_currency','USD',True),
+            ('My budget is 500','budget_total','1000',False),
+            ('Budget USD 500 total','budget_total','500',True),
+            ('预算 CNY 500 总计','budget_total','500',True),
+            ('Budget USD 500 per person','budget_total','500',False),
+            ('Budget USD 500 per person','budget_per_person','500',True),
+            ('Paid CNY 200','budget_paid','100',False),
+            ('Paid CNY 200','budget_paid','200',True),
+            ('Budget USD 500 per person','budget_basis','total',False),
+            ('Budget USD 500 per person','budget_basis','per_person',True),
+            ('Budget USD 500 PER PERSON','budget_basis','total',False),
+            ('Budget USD 500 PER PERSON','budget_basis','per_person',True),
+            ('Budget USD 500 total','budget_total','not-an-amount',False),
+            ('Hello','budget_includes',['hotels'],False),
+            ('Budget includes hotels and trains','budget_includes',['flights'],False),
+            ('Budget includes hotels and trains','budget_includes',['hotels','trains'],True),
+            ('My friend has a budget of USD 500 total','budget_total','500',False),
+            ('Hello','overseas_timezone','Asia/Tokyo',False),
+            ('Asia/Tokyo','overseas_timezone','Asia/Shanghai',False),
+            ('Asia/Tokyo','overseas_timezone','Asia/Tokyo',True)]
+        for text,field,amount,accepted in cases:
+            value=self.packet();value['observations']=[dict(field=field,state='known',value=amount,note=None,
+                sources=[dict(source_index=0,quote=text)])]
+            turns=(PlanningTurn(text,date(2026,11,14)),self.turns()[1])
+            with self.subTest(text=text,field=field,value=amount):
+                if accepted:
+                    actual=self.compile(value,turns)
+                    self.assertEqual(actual.fields[field],dict(state='known',value=amount))
+                else:
+                    with self.assertRaises(InvalidInput):self.compile(value,turns)
+
+    def test_budget_quote_itself_covers_the_observed_value_within_its_own_clause(self):
+        for text,field,amount,quote,accepted in (
+                ('Budget USD 500 total','budget_total','500','USD',False),
+                ('Budget USD 500 total','budget_total','500','500',True),
+                ('Budget USD 500 total','budget_currency','USD','500',False),
+                ('Budget USD 500 total','budget_currency','USD','USD',True),
+                ('Budget USD 500 total','budget_basis','total','Budget',False),
+                ('Budget USD 500 total','budget_basis','total','total',True),
+                ('Budget includes hotels and trains','budget_includes',['hotels','trains'],'Budget',False),
+                ('Budget includes hotels and trains','budget_includes',['hotels','trains'],'hotels and trains',True),
+                ('Budget includes hotels','budget_includes',['hotels'],'Budget',False),
+                ('Budget includes hotels','budget_includes',['hotels'],'hotels',True)):
+            value=self.packet()
+            value['observations']=[dict(field=field,state='known',value=amount,note=None,
+                sources=[dict(source_index=0,quote=quote)])]
+            turns=(PlanningTurn(text,date(2026,11,14)),self.turns()[1])
+            with self.subTest(field=field,quote=quote):
+                if accepted:self.compile(value,turns)
+                else:
+                    with self.assertRaises(InvalidInput):self.compile(value,turns)
+
+    def test_friend_endpoint_does_not_replace_the_travelers_own_endpoint_in_the_same_message(self):
+        cases=[('My friend Alice leaves from Beijing Capital Airport; I leave from Shanghai Hongqiao Airport.',
+            'departure.place','Beijing Capital Airport',False),
+            ('My friend Alice leaves from Beijing Capital Airport; I leave from Shanghai Hongqiao Airport.',
+            'departure.place','Shanghai Hongqiao Airport',True),
+            ('My friend Alice arrives at Beijing Capital Airport; I arrive at Beijing Daxing Airport.',
+            'arrival.place','Beijing Capital Airport',False),
+            ('My friend Alice arrives at Beijing Capital Airport; I arrive at Beijing Daxing Airport.',
+            'arrival.place','Beijing Daxing Airport',True),
+            ('朋友小王从北京首都机场出发；我从北京大兴机场出发。','departure.place','北京首都机场',False),
+            ('朋友小王从北京首都机场出发；我从北京大兴机场出发。','departure.place','北京大兴机场',True),
+            ('Beijing Capital Airport','arrival.place','Beijing Capital Airport',True)]
+        for text,field,place,accepted in cases:
+            value=self.packet();value['observations']=[dict(field=field,state='known',value=place,note=None,
+                sources=[dict(source_index=0,quote=place)])]
+            turns=(PlanningTurn(text,date(2026,11,14)),self.turns()[1])
+            with self.subTest(text=text,field=field,place=place):
+                if accepted:self.compile(value,turns)
+                else:
+                    with self.assertRaises(InvalidInput):self.compile(value,turns)
+
     def test_date_uses_its_source_mid_day_not_plan_trigger_day(self):
         result=parse_plan_understanding(packed(self.packet()),self.turns())
         self.assertEqual(result.observations[0].value,'2026-11-15')
