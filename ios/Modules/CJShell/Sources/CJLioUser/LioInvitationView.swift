@@ -31,7 +31,10 @@ public struct LioInvitationView<Settings: View>: View {
     private let settings: Settings
     @State private var code = ""
     @State private var consent: Consent?
+    @Environment(\.colorScheme) private var colorScheme
     @FocusState private var enteringCode: Bool
+    @State private var invalidFormat = false
+    @ScaledMetric(relativeTo: .body) private var codeHeight = 44
 
     public init(language: LioLanguage, isBusy: Bool, notice: String?,
                 onInvite: @escaping (String) -> Void, onRestore: @escaping () -> Void,
@@ -55,34 +58,53 @@ public struct LioInvitationView<Settings: View>: View {
                                 Text(language.text("Meet Lio", "和 Lio 聊聊"))
                                 .font(LioTheme.display(.headline))
                                 .fixedSize(horizontal: false, vertical: true)
-                                RunReadableText(text: language.text("Use your invitation to start chatting.", "输入邀请码，开始聊你的旅行。"))
+                                RunReadableText(text: language.text("Use your invitation to start chatting.", "输入邀请码，开始聊你的旅行。"), color: LioTheme.ink)
                             }
                         }
                         .padding(.vertical, 8)
                     }
                     Section {
-                        SecureField(language.text("Invitation code", "邀请码"), text: $code)
+                        SecureField(language.text("Invitation code", "邀请码"), text: $code,
+                                    prompt: Text(language.text("Code", "邀请码")).foregroundColor(LioTheme.inkSecondary))
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
+                            .keyboardType(.asciiCapable)
+                            .foregroundColor(LioTheme.ink)
                             .focused($enteringCode)
-                            .frame(minHeight: 44)
+                            .frame(minHeight: codeHeight)
                             .accessibilityIdentifier("demo.invite.code")
-                        Button(language.text("Continue", "继续")) {
+                            .background(LioInvitationInputTraits().accessibilityHidden(true))
+                        Button {
                             enteringCode = false
+                            guard LioInvitationInput.accepts(code) else { invalidFormat = true; return }
+                            invalidFormat = false
                             consent = .invite
+                        } label: {
+                            Text(language.text("Continue", "继续"))
                         }
+                        .buttonStyle(LioInvitationActionStyle())
                         .disabled(code.isEmpty || isBusy)
                         .accessibilityIdentifier("demo.invite.continue")
-                        Button(language.text("Continue with your account", "继续使用账号")) {
+                        Button {
                             enteringCode = false
                             consent = .continueAccount
+                        } label: {
+                            Text(language.text("Continue with your account", "继续使用账号"))
+                                .fixedSize(horizontal: false, vertical: true)
                         }
+                        .buttonStyle(LioInvitationActionStyle())
                         .disabled(isBusy)
                         .accessibilityIdentifier("demo.invite.restore")
                     }
+                    if invalidFormat {
+                        Section {
+                            RunReadableText(text: LioInvitationInput.formatMessage(language), color: LioTheme.ink)
+                                .accessibilityIdentifier("demo.invite.format")
+                        }
+                    }
                     if let notice {
                         Section {
-                            RunReadableText(text: notice)
+                            RunReadableText(text: notice, color: LioTheme.ink)
                                 .accessibilityIdentifier("demo.invite.status")
                         }
                     }
@@ -92,8 +114,22 @@ public struct LioInvitationView<Settings: View>: View {
             }
             .lioPage()
             .navigationTitle(language.text("Internal demo", "内部演示"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(LioTheme.paper, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(colorScheme, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    RunReadableText(text: language.text("Internal demo", "内部演示"), style: .headline, color: LioTheme.ink)
+                        .fixedSize()
+                        .accessibilityAddTraits(.isHeader)
+                        .accessibilityIdentifier("lio.invite.heading")
+                }
+            }
+
         }
         .tint(LioTheme.vermilion)
+        .onChange(of: code) { _, _ in invalidFormat = false }
         .sheet(item: $consent) { action in
             NavigationStack {
                 consentPage(action)
@@ -130,13 +166,24 @@ public struct LioInvitationView<Settings: View>: View {
         switch action {
         case .invite:
             let invitation = code
-            guard !invitation.isEmpty else { return }
+            guard LioInvitationInput.accepts(invitation) else { invalidFormat = true; return }
             code = ""
             onInvite(invitation)
         case .continueAccount:
             code = ""
             onRestore()
         }
+    }
+}
+#endif
+
+#if os(iOS)
+private struct LioInvitationActionStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(isEnabled ? LioTheme.vermilion : LioTheme.inkSecondary)
+            .opacity(configuration.isPressed && isEnabled ? 0.85 : 1)
     }
 }
 #endif
