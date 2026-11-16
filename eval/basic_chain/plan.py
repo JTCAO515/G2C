@@ -51,6 +51,8 @@ def make_plan(*,app,old_chats,first_setup=False,run_id=None,version=VERSION):
     require(type(run_id)is str and re.fullmatch('[A-Za-z0-9_-]{1,96}',run_id)is not None,'safe new run ID required')
     require(type(first_setup)is bool,'explicit setup choice required')
     require(version in(LEGACY_VERSION,VERSION),'known append-only plan version required')
+    if version==VERSION and first_setup:
+        require(old_chats=={},'first setup must not contain unqualified old-chat targets')
     steps=[]
     if first_setup:
         for locale in ('zh','en'):

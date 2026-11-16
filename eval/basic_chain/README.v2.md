@@ -34,6 +34,7 @@ uv run --locked python -B -m eval.basic_chain run --execute \
 
 `prepare`不联网。目录须不存在，产物0700/0600，不覆盖旧阶段。两个A自有隔离
 simulator可以分别绑定C中英身份；实际UI为L1、香港为L2，不能写成真机L3或同一发行IPA。
+`--first-setup`的old-chats文件必须为`{}`，不能带尚未经核定的旧目标。
 
 每步C生成`NN-prepare.json`。A先完成只读UI准备：打开目标聊天/新聊天，按指示准备
 未发送草稿，保留完整实际AX/截图。A写`NN-A-prepared.json`后，C才取**服务端原生

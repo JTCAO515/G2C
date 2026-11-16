@@ -26,7 +26,7 @@ def test_only_explicit_HTTP_publication_pending_with_qualified_live_roles_can_wa
 def fixture():
     scope='synthetic-only-owner';scope_sha=sha256(scope.encode()).hexdigest()
     app=dict(build=46,source_sha='b'*40,artifact_sha256=H,protocol='LIO-message.2')
-    plan=make_plan(app=app,old_chats={'zh':'old','en':'old-en'},first_setup=True,run_id='OFFLINE-NATIVE-CONTROL')
+    plan=make_plan(app=app,old_chats={},first_setup=True,run_id='OFFLINE-NATIVE-CONTROL')
     step=next(s for s in plan['steps']if s['locale']=='zh'and s['gate_id']=='SM02')
     expected=dict(source='c'*40,image='sha256:'+H,qualification_sha256=H,
                   policy_sha256='d'*64,scope_sha256=scope_sha)

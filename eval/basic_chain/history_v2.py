@@ -23,14 +23,16 @@ def targets(plan,locale):
         cids.add(cid)
         messages=value['messages']
         require(type(messages)is list and messages,'original old-chat MESSAGE census required')
-        for number,message in enumerate(messages,1):
+        previous=0
+        for message in messages:
             require(type(message)is dict and set(message)=={'message_id','run_id','sequence','canonical_sha256'},
                     'exact original MESSAGE target metadata required')
             require(type(message['message_id'])is str and message['message_id']and message['message_id']not in mids
                     and type(message['run_id'])is str and message['run_id']
-                    and type(message['sequence'])is int and message['sequence']==number
+                    and type(message['sequence'])is int and message['sequence']>previous
                     and is_sha(message['canonical_sha256']),'complete distinct ordered MESSAGE targets required')
             mids.add(message['message_id'])
+            previous=message['sequence']
     require(selected_anchor in values,'selected original conversation is missing from history census')
     return tuple(values)
 

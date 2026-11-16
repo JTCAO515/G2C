@@ -34,6 +34,7 @@ def test_v2_lifecycle_nonces_are_unique_and_legacy_plan_shape_is_retained():
     old=make_plan(app=APP,old_chats={'zh':'old','en':'old-en'},version='LIO-basic-chain-plan.1')
     assert all('read_actions'not in s for s in old['steps'])
     check_plan(old)
+    with pytest.raises(Invalid):make_plan(app=APP,old_chats={'zh':'old'},first_setup=True)
 
 
 def fixture():
