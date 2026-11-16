@@ -31,7 +31,7 @@ class VisitorFacts(unittest.TestCase):
 
     def test_first_batch_matches_topic_and_explicit_city_without_translation(self):
         for city in ('成都','510100','Chengdu'):
-            raw=lookup(ROOT/'knowledge/visitor/entries',Query('payment',city),evaluated_at=NOW,request_ref='original-ref')
+            raw=lookup(ROOT/'knowledge/visitor/entries',Query('payment',city),evaluated_at=datetime(2026,11,16,4,tzinfo=timezone.utc),request_ref='original-ref')
             result=json.loads(raw)
             self.assertEqual(result['version'],'FACT-result.2')
             self.assertEqual(result['status'],'matched')
