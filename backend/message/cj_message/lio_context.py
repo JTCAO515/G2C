@@ -130,9 +130,9 @@ def answer_prompt(locale, question=None):
 
 _INTERNAL_ANSWER = re.compile(
     r'(?<![A-Za-z0-9_])(?:RUN|NEEDS|INTENT|RLS)(?![A-Za-z0-9_])|'
-    r'(?i:\b(?:run_id|message_id|conversation_id|scope_id|trip_id|job_id|attempt_id|operation_id|'
-    r'candidate_id|source_id|input_sha256|tripproposal|message-send|commit_unknown)\b)|'
-    r'(?i:\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b)|'
+    r'(?i:(?<![A-Za-z0-9_])(?:run_id|message_id|conversation_id|scope_id|trip_id|job_id|attempt_id|operation_id|'
+    r'candidate_id|source_id|input_sha256|tripproposal|message-send|commit_unknown)(?![A-Za-z0-9_]))|'
+    r'(?i:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})|'
     r'规划候选|消息投递|原回执'
 )
 _COORDINATE_PAIR = re.compile(

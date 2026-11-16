@@ -15,7 +15,7 @@ struct LioTimelineServiceTests {
     }
 
     @Test func aKnownEmptyConversationCanShowItsFirstWelcome() async {
-        let service = LioService(updates: { _ in AsyncStream { $0.yield(.empty); $0.finish() } }) { _ in
+        let service = LioService(updates: { _ in AsyncStream { $0.yield(.snapshot(.empty)); $0.finish() } }) { _ in
             Issue.record("Welcome checks cannot send a question")
             return AsyncStream { $0.finish() }
         }
@@ -337,7 +337,7 @@ struct LioTimelineServiceTests {
         let actual = LioService.timeline(
             send: { try await fixture.submit($0) }, read: { try await fixture.read($0, before: $1) },
             pollInterval: .milliseconds(10), observationWindow: .milliseconds(2))
-        let (latest, continuation) = AsyncStream<LioTimelinePage>.makeStream()
+        let (latest, continuation) = AsyncStream<LioTimelineUpdate>.makeStream()
         let model = LioConversation(service: LioService(
             updates: { _ in latest }, earlier: actual.earlier, events: actual.events
         ))
@@ -351,7 +351,7 @@ struct LioTimelineServiceTests {
         }
         await fixture.reconnectAfterReads(0)
         let page = try await fixture.read(nil, before: nil)
-        continuation.yield(LioTimelinePage(page))
+        continuation.yield(.snapshot(LioTimelinePage(page)))
         continuation.finish()
         await model.refreshTimeline()
         #expect(model.nextBefore == "other-6")

@@ -8,6 +8,83 @@ import Testing
 @testable import CJLioUser
 
 @MainActor struct LioChatContinuityTests {
+    @Test func coldUnstagedFirstAndDifferentFollowupDraftBothRemainDurable() async throws {
+        let fixture = try ChatContinuityFixture()
+        let library = try fixture.library()
+        let selected = library.newChat()
+        let position = try #require(library.continuity)
+        let first = LioQuestion(messageID: "original-unstaged-A", text: "Original A\n", language: .chinese)
+        position.selectedID = selected.id
+        position.firstQuestions[selected.id] = first
+        position.updateDraft("New followup B", for: selected.id)
+        let cold = LioChatContinuity(); try cold.restorePosition(position.encodedPosition())
+        var saved: [Data] = []
+        cold.bindPositionWriter { saved.append($0) }
+        _ = try await fixture.library(continuity: cold).restore?()
+        #expect(cold.draft == "New followup B")
+        #expect(cold.retainedUnsent[selected.id]?.first == first)
+        #expect(!saved.isEmpty)
+        for bytes in saved {
+            let checkpoint = LioChatContinuity(); try checkpoint.restorePosition(bytes)
+            #expect(checkpoint.retainedUnsent[selected.id]?.first == first)
+        }
+        #expect(await fixture.transport.posts == 0)
+        #expect(await fixture.transport.lookups == 0)
+        let restored = try #require(try await fixture.library(continuity: cold).restore?())
+        let model = LioConversation(service: restored.service)
+        model.send(cold.draft, language: .english)
+        await model.receive(try #require(model.pending))
+        let afterBinding = LioChatContinuity()
+        try afterBinding.restorePosition(cold.encodedPosition())
+        #expect(afterBinding.retainedUnsent[selected.id]?.first == first)
+        #expect(await fixture.transport.posts == 1)
+    }
+
+    @Test func everyDurableAcceptedBindingHasItsFirstReferenceSettledAtomically() async throws {
+        let fixture = try ChatContinuityFixture()
+        let library = try fixture.library()
+        let position = try #require(library.continuity)
+        var saved: [Data] = []
+        position.bindPositionWriter { saved.append($0) }
+        let selected = library.newChat()
+        position.selectedID = selected.id
+        let model = LioConversation(service: selected.service)
+        model.send("A synthetic question", language: .english)
+        let first = try #require(model.pending)
+        position.firstQuestions[selected.id] = first
+        await model.receive(first)
+        var acceptedCheckpoints = 0
+        for bytes in saved {
+            let checkpoint = LioChatContinuity(); try checkpoint.restorePosition(bytes)
+            if checkpoint.localIDs.values.contains(String(decoding: selected.id, as: UTF8.self)) {
+                acceptedCheckpoints += 1
+                #expect(!checkpoint.blankIDs.contains(selected.id))
+                #expect(checkpoint.firstQuestions[selected.id] == nil)
+            }
+        }
+        #expect(acceptedCheckpoints > 0)
+        #expect(await fixture.transport.posts == 1)
+    }
+
+    @Test func noDurableCheckpointDropsAnUnstagedFirstQuestionBeforeRestoringItsDraft() async throws {
+        let fixture = try ChatContinuityFixture()
+        let library = try fixture.library()
+        let selected = library.newChat()
+        let position = try #require(library.continuity)
+        let first = LioQuestion(messageID: "synthetic-unstaged-first", text: "  Keep this unstaged text\n ", language: .english)
+        position.selectedID = selected.id
+        position.firstQuestions[selected.id] = first
+        var saved: [Data] = []
+        position.bindPositionWriter { saved.append($0) }
+        _ = try await library.restore?()
+        #expect(!saved.isEmpty)
+        for bytes in saved {
+            let checkpoint = LioChatContinuity(); try checkpoint.restorePosition(bytes)
+            #expect(checkpoint.draft.utf8.elementsEqual(first.text.utf8))
+        }
+        #expect(await fixture.transport.posts == 0)
+    }
+
     @Test func reauthenticatedClientReturnsToTheSameChatAndDraftWithoutSendingAgain() async throws {
         let fixture = try ChatContinuityFixture()
         let old = try fixture.library()
@@ -220,6 +297,31 @@ import Testing
                                                  serverReference: ChatContinuityTransport.trace))
         // The lookup proved nothing either way; the original action stays for its own later lookup.
         try await expectRetained(fixture, position, selected, original, phase: .notObserved)
+    }
+
+    @Test func restorationNotesKeepTheOriginalStageAndSafeFailureCause() async throws {
+        let fixture = try ChatContinuityFixture()
+        let (_, position, _, _) = try await selectedUncertainFirstSend(fixture)
+        let transferred = LioChatContinuity()
+        transferred.inherit(position)
+        let signedOut = try fixture.library(continuity: transferred, signedIn: false)
+        await #expect(throws: MessageHTTPFailure.credentialsUnavailable) { _ = try await signedOut.restore?() }
+        let text = fixture.notes.text(.english)
+        #expect(text.contains("origin=firstSendLookup"))
+        #expect(text.contains("cause=unavailableCredentials"))
+        #expect(await fixture.transport.posts == 1)
+        #expect(await fixture.transport.lookups == 0)
+    }
+
+    @Test func historyFailureHasItsOwnSafeProblemNote() async throws {
+        let fixture = try ChatContinuityFixture()
+        let (_, position, _, _) = try await selectedUncertainFirstSend(fixture)
+        let signedOut = try fixture.library(continuity: position, signedIn: false)
+        await #expect(throws: MessageHTTPFailure.credentialsUnavailable) { _ = try await signedOut.history() }
+        let text = fixture.notes.text(.english)
+        #expect(text.contains("origin=history") && text.contains("cause=unavailableCredentials"))
+        #expect(await fixture.transport.posts == 1)
+        #expect(await fixture.transport.lookups == 0)
     }
 
     @Test func unavailableSignInIsASessionCheckWithoutAnyRequest() async throws {

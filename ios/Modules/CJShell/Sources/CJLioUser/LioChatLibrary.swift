@@ -27,24 +27,86 @@ final class LioChatTrips {
     init(plan: LioTripPlan? = nil) { self.plan = plan }
 }
 
-/// In-memory position only. The account root discards it on an identity change;
-/// a new authenticated client must read the conversation again before use.
-@MainActor public final class LioChatContinuity {
-    var selectedID: Data?
-    var draft = ""
-    var firstQuestions: [Data: LioQuestion] = [:]
-    var localIDs: [Data: String] = [:]
-    var blankIDs: Set<Data> = []
+/// Position and draft only; restoring it grants no sending or account authority.
+@MainActor @Observable public final class LioChatContinuity {
+    var selectedID: Data? { didSet { positionChanged() } }
+    var draft = "" { didSet { positionChanged() } }
+    var drafts: [Data: String] = [:] { didSet { positionChanged() } }
+    var retainedUnsent: [Data: [LioQuestion]] = [:] { didSet { positionChanged() } }
+    var firstQuestions: [Data: LioQuestion] = [:] { didSet { positionChanged() } }
+    var localIDs: [Data: String] = [:] { didSet { positionChanged() } }
+    var blankIDs: Set<Data> = [] { didSet { positionChanged() } }
+    private(set) var positionIssue: LioPositionSaveIssue?
+    @ObservationIgnored private var positionWriter: (@MainActor (Data) throws -> Void)?
+    @ObservationIgnored private var replacingPosition = false
 
     public init() {}
 
-    public func inherit(_ previous: LioChatContinuity) {
-        selectedID = previous.selectedID
-        draft = previous.draft
-        firstQuestions = previous.firstQuestions
-        localIDs = previous.localIDs
-        blankIDs = previous.blankIDs
+    /// The authenticated App root supplies the existing owner-bound encrypted store.
+    public func bindPositionWriter(_ writer: @escaping @MainActor (Data) throws -> Void) { positionWriter = writer }
+
+    public func retryKeepingPosition() {
+        guard let positionWriter else { return }
+        do {
+            try positionWriter(encodedPosition())
+            positionIssue = nil
+        } catch {
+            positionIssue = .init(problem: LioRequestProblem(error, stage: .localRecord), at: Date())
+        }
     }
+
+    func withPositionChange(_ change: () -> Void) {
+        let previous = replacingPosition
+        replacingPosition = true
+        change()
+        replacingPosition = previous
+        if !previous { retryKeepingPosition() }
+    }
+
+    private func positionChanged() {
+        if !replacingPosition { retryKeepingPosition() }
+    }
+
+    func updateDraft(_ value: String, for id: Data?) {
+        let known = id.flatMap { drafts[$0] } ?? ""
+        guard !draft.utf8.elementsEqual(value.utf8) || (id != nil && !known.utf8.elementsEqual(value.utf8)) else { return }
+        withPositionChange {
+            draft = value
+            if let id {
+                if value.isEmpty { drafts.removeValue(forKey: id) }
+                else { drafts[id] = value }
+            }
+        }
+    }
+
+    func switchChat(to id: Data, leaving previous: Data?, currentDraft: String) -> String {
+        withPositionChange {
+            if let previous {
+                if currentDraft.isEmpty { drafts.removeValue(forKey: previous) }
+                else { drafts[previous] = currentDraft }
+            }
+            selectedID = id
+            draft = drafts[id] ?? ""
+        }
+        return draft
+    }
+
+    public func inherit(_ previous: LioChatContinuity) {
+        withPositionChange {
+            selectedID = previous.selectedID
+            draft = previous.draft
+            drafts = previous.drafts
+            retainedUnsent = previous.retainedUnsent
+            firstQuestions = previous.firstQuestions
+            localIDs = previous.localIDs
+            blankIDs = previous.blankIDs
+        }
+    }
+}
+
+struct LioPositionSaveIssue: Equatable {
+    let problem: LioRequestProblem
+    let at: Date
 }
 
 /// Supplies conversation-scoped services for the current account. Starting a
@@ -88,7 +150,7 @@ public struct LioChatLibrary {
                 return try await sessions.restore(selected)
             } catch {
                 // The original error is rethrown unchanged; only a local note is added.
-                if !(error is CancellationError) { notes.record(sessions.diagnose(error)) }
+                if !(error is CancellationError) && !Task.isCancelled { notes.record(sessions.problem(error)) }
                 throw error
             }
         }
@@ -104,8 +166,7 @@ private final class LioSignedChatSessions {
     private let continuity: LioChatContinuity
     private let version: LioTimelineWire.Version
     private let notes: LioDiagnosticLog
-    /// The restore step in progress, kept so a failure names where it happened.
-    private var stage = LioFailureDiagnosis.Stage.selectedChat
+    private var lastRestoreProblem: LioRequestProblem?
 
     init(client: LioTimelineHTTP, continuity: LioChatContinuity, version: LioTimelineWire.Version,
          notes: LioDiagnosticLog, tripHistory: @escaping @MainActor (String) -> LioTripHistoryClient) {
@@ -116,9 +177,10 @@ private final class LioSignedChatSessions {
         self.tripHistory = tripHistory
     }
 
-    func diagnose(_ error: any Error) -> LioFailureDiagnosis {
-        let observation = stage == .firstSendLookup ? client.lastObservation.flatMap { $0.kind == .firstLookup ? $0 : nil } : nil
-        return .classify(error, stage: stage, observation: observation)
+    func diagnose(_ error: any Error) -> LioFailureDiagnosis { problem(error).diagnosis }
+
+    func problem(_ error: any Error) -> LioRequestProblem {
+        lastRestoreProblem ?? LioRequestProblem(error, stage: .selectedChat)
     }
 
     private func conversationService(_ destination: LioTimelineWire.V2Destination,
@@ -126,13 +188,23 @@ private final class LioSignedChatSessions {
         let client = client, notes = notes
         return LioService.signedConversation(client, destination: destination, version: version, readFailed: { error in
             let observation = client.lastObservation.flatMap { $0.kind == .timeline ? $0 : nil }
-            notes.record(.classify(error, stage: .timeline, observation: observation))
+            notes.record(error: error, stage: .timeline, observation: observation)
         }, didCreate: didCreate)
     }
 
     func history() async throws -> [LioChatSession] {
-        _ = try await client.reconcileFirstChat()
-        return try recordedSessions()
+        let attempt = LioRestoreAttempt(stage: .history)
+        do {
+            return try await LioTimelineHTTP.observing({ attempt.observation = $0 }) { @MainActor [self] in
+                _ = try await client.reconcileFirstChat()
+                return try recordedSessions()
+            }
+        } catch {
+            if !(error is CancellationError) && !Task.isCancelled {
+                notes.record(LioRequestProblem(error, stage: .history, observation: attempt.observation))
+            }
+            throw error
+        }
     }
 
     private func recordedSessions() throws -> [LioChatSession] {
@@ -159,36 +231,68 @@ private final class LioSignedChatSessions {
     }
 
     private func bind(_ id: String, localID: String, trips: LioChatTrips) {
-        continuity.localIDs[Data(id.utf8)] = localID
-        continuity.firstQuestions.removeValue(forKey: Data(localID.utf8))
-        continuity.blankIDs.remove(Data(localID.utf8))
+        continuity.withPositionChange {
+            continuity.localIDs[Data(id.utf8)] = localID
+            continuity.firstQuestions.removeValue(forKey: Data(localID.utf8))
+            continuity.blankIDs.remove(Data(localID.utf8))
+        }
         trips.plan = LioTripPlan(client: tripHistory(id))
     }
 
     func restore(_ selected: Data) async throws -> LioChatSession {
+        let attempt = LioRestoreAttempt(stage: .selectedChat)
+        lastRestoreProblem = nil
+        do {
+            return try await LioTimelineHTTP.observing({ attempt.observation = $0 }) { @MainActor [self] in
+                try await restore(selected, attempt: attempt)
+            }
+        } catch {
+            if Task.isCancelled { throw CancellationError() }
+            if !(error is CancellationError) {
+                lastRestoreProblem = LioRequestProblem(error, stage: attempt.stage, observation: attempt.observation)
+            }
+            throw error
+        }
+    }
+
+    private func restore(_ selected: Data, attempt: LioRestoreAttempt) async throws -> LioChatSession {
         if let first = continuity.firstQuestions[selected] {
-            stage = .localRecord
+            attempt.stage = .localRecord
             if try client.firstChatCanReturnToDraft(messageID: first.messageID) {
-                continuity.firstQuestions.removeValue(forKey: selected)
-                if continuity.draft.isEmpty { continuity.draft = first.text }
+                continuity.withPositionChange {
+                    continuity.firstQuestions.removeValue(forKey: selected)
+                    if continuity.draft.isEmpty {
+                        continuity.updateDraft(first.text, for: selected)
+                    } else {
+                        continuity.retainedUnsent[selected, default: []].append(first)
+                    }
+                }
                 return blank(String(decoding: selected, as: UTF8.self))
             }
-            stage = .firstSendLookup
+            attempt.stage = .firstSendLookup
             guard let id = try await client.reconcileFirstChat(messageID: first.messageID) else {
                 throw MessageHTTPFailure.exchangeUnknown
             }
-            continuity.localIDs[Data(id.utf8)] = String(decoding: selected, as: UTF8.self)
-            continuity.firstQuestions.removeValue(forKey: selected)
-            continuity.blankIDs.remove(selected)
+            continuity.withPositionChange {
+                continuity.localIDs[Data(id.utf8)] = String(decoding: selected, as: UTF8.self)
+                continuity.firstQuestions.removeValue(forKey: selected)
+                continuity.blankIDs.remove(selected)
+            }
         }
         // A verified saved conversation is readable without reconciling a different first send.
         // The selected first send above and HTTP submission fences retain their original checks.
-        stage = .localRecord
+        attempt.stage = .localRecord
         let chats = try recordedSessions()
         if let chat = chats.first(where: { $0.id == selected }) { return chat }
         // A blank conversation has no server identity until its first send.
-        stage = .selectedChat
+        attempt.stage = .selectedChat
         guard continuity.blankIDs.contains(selected) else { throw MessageHTTPFailure.exchangeUnknown }
         return blank(String(decoding: selected, as: UTF8.self))
     }
+}
+
+@MainActor private final class LioRestoreAttempt {
+    var stage: LioFailureDiagnosis.Stage
+    var observation: LioTimelineHTTP.Observation?
+    init(stage: LioFailureDiagnosis.Stage) { self.stage = stage }
 }

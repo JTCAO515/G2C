@@ -5,6 +5,7 @@ first parser checks data and source spans; full field/fixed-window compilation,
 genuine4/profile/Memory holds and the sole publisher remain mandatory.
 """
 from datetime import date,timedelta
+from decimal import Decimal
 from dataclasses import dataclass
 from hashlib import sha256
 import json
@@ -12,7 +13,7 @@ import re
 from pydantic import ValidationError
 
 from cj_message.lio_plan_input_schema import PlanUnderstanding
-from cj_needs.domain import InvalidInput,decode,validate_fields
+from cj_needs.domain import InvalidInput,decode,validate_fields,money
 from .lio_flat_intake import _observations
 from .lio_national_intake import _current_date_source,_current_date_anchors,_WEEK_SOURCE,ZONE_LITERAL,fields_for,fixed_sources_complete
 from .lio_sourced_intake import _booking_source
@@ -22,6 +23,7 @@ from .lio_positive_trip import supports as positive_trip_support
 from .local_lio_rich_calendar_source import read_rich_original
 from .lio_calendar_ordinals import fixed_ordinals
 from .local_lio_calendar import date_completion
+from .lio_exploration_profile import _canonical,BY_KEY
 
 _PRECISE_CLOCK=re.compile(r'(?<![0-9])'+CLOCK+r'(?![0-9])',re.I)
 _CLOCK_DENIAL=re.compile(r'(?:not(?:\s+at|\s+before|\s+after)?|不是|并非|不早于|不晚于|大约|大概|around|about)\s*$',re.I)
@@ -58,6 +60,24 @@ _META_SOURCE=re.compile(r'^\s*(?:(?:(?:can|could|would) you\s+)?(?:please\s+)?'
     r'(?:translate|rephrase|paraphrase|repeat|quote|explain)\b|'
     r'(?:请帮我|请|帮我)?(?:把|将)?(?:下面|以下|上面|这)[^，,。！？;]{0,40}(?:翻译|复述|引用|改写|解释)|'
     r'(?:请帮我|请|帮我)?(?:翻译|复述|引用|改写))',re.I)
+_CURRENCY=r'(?:[A-Z]{3}(?![A-Za-z])|人民币|美元|欧元|英镑|元)'
+_BUDGET_AMOUNT=re.compile(r'(?P<label>(?:(?:my|our|the)\s+)?budget|paid|I (?:have )?paid|预算|我的预算|我们的预算|已付)'
+    r'\s*(?:is\s*|为\s*|是\s*|[:：]\s*)?(?P<before>'+_CURRENCY+r')?\s*'
+    r'(?P<amount>[0-9]+(?:\.[0-9]+)?)\s*(?P<after>'+_CURRENCY+r')?\s*'
+    r'(?P<basis>per person|in total|total|每人|总计|合计)?',re.I)
+_BUDGET_CURRENCY=re.compile(r'(?:(?:(?:my|our|the)\s+)?budget(?: currency)?\s*(?:is(?: in)?|in|[:：])?\s*|'
+    r'(?:我的|我们的)?预算(?:币种)?\s*(?:是|为|[:：])?\s*|currency\s*[:：]?\s*)?'
+    r'(?P<currency>'+_CURRENCY+r')',re.I)
+_BUDGET_INCLUDES=re.compile(r'(?:(?:(?:my|our|the)\s+)?budget\s+)?includes\s+(.+)|'
+    r'(?:预算)?(?:包含|包括|含)\s*(.+)',re.I)
+_CURRENCIES={'人民币':'CNY','元':'CNY','美元':'USD','欧元':'EUR','英镑':'GBP'}
+_PARTY_RESET=re.compile(r'(?:出行)?人数(?:还|仍|尚)?(?:未定|没定|不确定)|'
+    r'(?:(?:my|our)\s+)?(?:party size|number of people)\s+(?:is\s+)?(?:still\s+)?(?:unknown|undecided)',re.I)
+_PARTY_DENIED=re.compile(r'(?:(?:(?:we are|I am|our party is)\s+)?(?:not|no longer)\s+|不是|不再是|不再|并非)'
+    r'(?P<party>'+_PARTY_COUNT.pattern+r'|'+_SOLO.pattern+r')(?:\s+anymore)?',re.I)
+_WRITE_REFUSAL=re.compile(r"(?:please\s+)?(?:do not|don['’]t|never)\s+(?:save|store|publish)"
+    r'(?:\s+(?:it|this|(?:the|this|my)\s+(?:trip|plan|itinerary)))?(?:\s+(?:yet|now|for now))?'
+    r'|(?:请)?(?:先|暂时)?(?:不要|别|不用|不)(?:保存|存储|存入|发布)(?:这(?:份|个)?(?:行程|计划|方案)|它)?',re.I)
 
 
 def _quoted_source(text,start,end):
@@ -92,9 +112,34 @@ def _source_sentence(text,start,end):
     return text[before[-1].end()if before else 0:after.end()if after else len(text)]
 
 
+def _read_only_assertion_text(text):
+    """Mask only standalone write refusals for DATA assertions, at same offsets.
+
+    Original text/quotes remain unchanged. Authority and writer checks consume
+    the originals; a refusal is never removed from a publication decision.
+    """
+    result=text
+    for start,end,clause in _original_clauses(text):
+        if _WRITE_REFUSAL.fullmatch(clause)and not _quoted_source(text,start,end):
+            result=result[:start]+' '*(end-start)+result[end:]
+    return result
+
+
 def _source_asserted(text,start,end):
-    sentence=_source_sentence(text,start,end)
-    return not (_quoted_source(text,start,end)or _META_SOURCE.search(sentence)or NEGATED.search(sentence)or _NONFACT.search(sentence))
+    sentence=_source_sentence(_read_only_assertion_text(text),start,end)
+    return not (_META_SOURCE.search(text)or _quoted_source(text,start,end)or
+        _META_SOURCE.search(sentence)or NEGATED.search(sentence)or _NONFACT.search(sentence))
+
+
+def _party_at(value,original,start,end):
+    quote=original[start:end]
+    clause=_source_clause(_read_only_assertion_text(original),start,end).strip(' \t\n.,，。!！;；')
+    counts={_number(match[1])for match in _PARTY_COUNT.finditer(quote)}
+    if _SOLO.search(quote):counts.add(1)
+    positive=(_PARTY_STATEMENT.fullmatch(clause)is not None or any(
+        positive_trip_support('party_type',clause,match[0])for match in _PARTY_COUNT.finditer(quote)))
+    if not positive or not _source_asserted(original,start,end)or counts!={value}:
+        raise InvalidInput('party count differs from its affirmative original source')
 
 
 def _party_source(value,references,turns):
@@ -102,17 +147,62 @@ def _party_source(value,references,turns):
         original=turns[reference.source_index].text
         if original.count(reference.quote)!=1:raise InvalidInput('unique original party clause required')
         offset=original.index(reference.quote)
-        clause=_source_clause(original,offset,offset+len(reference.quote)).strip().rstrip('.。!！')
-        counts={_number(match[1])for match in _PARTY_COUNT.finditer(reference.quote)}
-        if _SOLO.search(reference.quote):counts.add(1)
-        positive=(_PARTY_STATEMENT.fullmatch(clause)is not None or any(
-            positive_trip_support('party_type',clause,match[0])for match in _PARTY_COUNT.finditer(reference.quote)))
-        if not positive or not _source_asserted(original,offset,offset+len(reference.quote))or counts!={value}:
-            raise InvalidInput('party count differs from its affirmative original source')
+        _party_at(value,original,offset,offset+len(reference.quote))
+
+
+def _latest_party(value,turns):
+    """Keep the last affirmative count or explicit undecided correction.
+
+    Reuse the original party-value/source validator, so a question, conditional,
+    translated quotation or third person's count cannot replace the traveler.
+    """
+    latest=None
+    for index,turn in enumerate(turns):
+        for start,end,clause in _original_clauses(turn.text):
+            denied=_PARTY_DENIED.fullmatch(clause)
+            reset=_PARTY_RESET.fullmatch(clause)is not None
+            if denied is not None:
+                count=_PARTY_COUNT.fullmatch(denied['party'])
+                denied_count=_number(count[1])if count is not None else 1
+                reset=latest is None or latest[3]in (None,denied_count)
+            if reset:
+                context=turn.text[:start]+' '*(end-start)+turn.text[end:]
+                if not _quoted_source(turn.text,start,end)and _source_asserted(context,start,end):
+                    latest=(index,start,end,None)
+                continue
+            for pattern in (_PARTY_COUNT,_SOLO):
+                for match in pattern.finditer(clause):
+                    count=_number(match[1])if pattern is _PARTY_COUNT else 1
+                    # These are actual positions from the original, not an
+                    # ambiguous model quote. A-B-A must see the last A even if
+                    # that literal occurs twice; model citations stay unique.
+                    try:_party_at(count,turn.text,start+match.start(),start+match.end())
+                    except InvalidInput:continue
+                    latest=(index,start,end,count)
+    if latest is None:return
+    index,start,end,count=latest
+    context=_read_only_assertion_text(turns[index].text)
+    def covers(reference):
+        if reference.source_index!=index:return False
+        for match in re.finditer(re.escape(reference.quote),turns[index].text):
+            if match.start()>=end or match.end()<=start:continue
+            before=context[match.start():start]if match.start()<start else''
+            after=context[end:match.end()]if match.end()>end else''
+            if not (before+after).strip(' \t\n.,，。!！;；'):return True
+        return False
+    for row in value.observations:
+        if row.field!='party_size':continue
+        if (count is None and row.state not in ('unknown','uncertain'))or(
+                count is not None and (row.state!='known'or row.value!=count)):
+            break
+        if any(covers(reference)for reference in row.sources):
+            return
+    raise InvalidInput('latest original party count or undecided correction was omitted or replaced')
 
 
 def _required_start_anchors(turn):
     text=turn.text
+    if _META_SOURCE.search(text):return ()
     selection=re.sub(r'^(please\s+)?start my trip\b','start the trip',text.strip(),flags=re.I)
     matches=[match for match,_ in _current_date_anchors(text,turn.question_day)]
     matches.extend(_WEEK_SOURCE.finditer(text))
@@ -121,6 +211,7 @@ def _required_start_anchors(turn):
 
 
 def _date_resets(text):
+    if _META_SOURCE.search(text):return ()
     result=[]
     for start,end,clause in _original_clauses(text):
         if (DATE_REFUSAL.fullmatch(clause)or DATES_UNDECIDED.fullmatch(clause))and not _quoted_source(text,start,end):
@@ -156,19 +247,117 @@ def _clock_source(field,value,references,turns):
         if clocks!={value}:raise InvalidInput('clock differs from its exact original source')
 
 
+def _event_subject(clause,event,literals):
+    declared=_EVENTS[event].search(clause)
+    if declared is None:return None
+    subject=clause[:declared.start()]
+    for literal in literals:subject=subject.replace(literal,'',1)
+    return re.sub(r'\b(?:from|at|to)\b|从|在|到|至','',_PRECISE_CLOCK.sub('',subject),flags=re.I).strip()
+
+
+def _date_event_source(field,references,turns):
+    """A literal date on somebody else's event is not a traveler constraint.
+
+    Existing bare-date and plan-request grammar stays with data8. Only an
+    explicit arrival/departure clause adds this same traveler-role requirement.
+    """
+    for reference in references:
+        turn=turns[reference.source_index];offset=turn.text.index(reference.quote)
+        clause=_source_clause(turn.text,offset,offset+len(reference.quote))
+        if not any(pattern.search(clause)for pattern in _EVENTS.values()):continue
+        event=('arrival'if _EVENTS['arrival'].search(clause)else'departure')if field=='start_date'else(
+            'arrival'if field.startswith('arrival.')else'departure')
+        literals=[match[0]for match,_ in _current_date_anchors(clause,turn.question_day)]
+        literals.extend(match[0]for match in _WEEK_SOURCE.finditer(clause))
+        subject=_event_subject(clause,event,literals)
+        opposite='departure'if event=='arrival'else'arrival'
+        if subject is None or _TRAVELER_SUBJECT.fullmatch(subject)is None or _EVENTS[opposite].search(clause):
+            raise InvalidInput('date belongs to a different original event or traveler')
+
+
 def _place_source(field,value,references,turns):
     """Only an affirmative original endpoint span can seed a provider query."""
-    event='arrival'if field=='arrival.place'else'departure'
+    event='arrival'if field.startswith('arrival.')else'departure'
     opposite='departure'if event=='arrival'else'arrival'
     for reference in references:
         original=turns[reference.source_index].text
         if original.count(reference.quote)!=1 or value not in reference.quote:
             raise InvalidInput('place differs from its literal original source')
         offset=original.index(reference.quote)
-        clause=_source_clause(original,offset,offset+len(reference.quote))
+        clause=_source_clause(original,offset,offset+len(reference.quote)).strip().rstrip('.。!！')
+        # Reuse the clock/mode event and traveler grammar. A location before
+        # the verb may be removed only as that exact quoted value, never a
+        # third-person subject. A literal short answer remains supported.
+        subject=_event_subject(clause,event,(value,))
         if (not _source_asserted(original,offset,offset+len(reference.quote))or _ENDPOINT_DENIAL.search(clause)or
-                _EVENTS[opposite].search(clause)and not _EVENTS[event].search(clause)):
+                _EVENTS[opposite].search(clause)or
+                (subject is None and clause!=value)or
+                (subject is not None and _TRAVELER_SUBJECT.fullmatch(subject)is None)):
             raise InvalidInput('place requires its affirmative original trip endpoint')
+
+
+def _constraint_source(observation,turns):
+    """Concrete known values require affirmative source semantics, not a quote alone."""
+    field,value=observation.field,observation.value
+    numeric=field in ('budget_total','budget_per_person','budget_paid')
+    if numeric:money(value)
+    for reference in observation.sources:
+        original=turns[reference.source_index].text
+        if original.count(reference.quote)!=1:raise InvalidInput('unique original constraint clause required')
+        offset=original.index(reference.quote)
+        clause=_source_clause(original,offset,offset+len(reference.quote)).strip().rstrip('.。!！')
+        if not _source_asserted(original,offset,offset+len(reference.quote)):
+            raise InvalidInput('affirmative traveler constraint required')
+        if field=='pace':
+            # Reuse the existing profile canonicalizer, including its positive
+            # wrappers. Only the noun variant changes; original bytes stay put.
+            def pace(text):return _canonical('pace',re.sub(r'\s+itinerary$',' trip',text.strip(),flags=re.I))
+            if (value not in {option.key for option in BY_KEY['pace'].options}or
+                    pace(clause)!=value or pace(reference.quote)!=value):
+                raise InvalidInput('pace differs from its original preference')
+        elif field=='budget_includes':
+            matched=_BUDGET_INCLUDES.fullmatch(clause)
+            if matched is None:raise InvalidInput('explicit original budget inclusions required')
+            parts=re.split(r'\s+and\s+|、|和|与',matched[1]or matched[2],flags=re.I)
+            expected=[part.strip()for part in parts]
+            if (len(set(value))!=len(value)or set(value)!=set(expected)or
+                    any(part not in reference.quote for part in value)):
+                raise InvalidInput('budget inclusions differ from their original list')
+        elif field.startswith('budget_'):
+            matched=_BUDGET_AMOUNT.fullmatch(clause)
+            expected=None
+            if field=='budget_currency':
+                currency=_BUDGET_CURRENCY.fullmatch(clause)
+                tokens=([currency['currency']]if currency is not None else
+                    [token for token in (matched['before'],matched['after'])if token]if matched is not None else [])
+                currencies={_CURRENCIES.get(token,token.upper())for token in tokens}
+                quoted={_CURRENCIES.get(match[0],match[0].upper())for match in
+                    re.finditer(r'(?<![A-Za-z])'+_CURRENCY,reference.quote,re.I)}
+                if currencies=={value}and value in quoted:expected=value
+            elif matched is not None:
+                paid='paid'in matched['label'].casefold()or matched['label']=='已付'
+                basis=None if matched['basis']is None else matched['basis'].casefold()
+                basis='per_person'if basis in ('per person','每人')else'total'if basis is not None else None
+                if field=='budget_basis'and not paid:
+                    quoted={('per_person'if word.casefold()in ('per person','每人')else'total')for word in
+                        re.findall(r'\bper person\b|\bin total\b|\btotal\b|每人|总计|合计',reference.quote,re.I)}
+                    if quoted=={basis}:expected=basis
+                elif field=='budget_paid'and paid:expected=matched['amount']
+                elif field=='budget_total'and not paid and basis=='total':expected=matched['amount']
+                elif field=='budget_per_person'and not paid and basis=='per_person':expected=matched['amount']
+            if numeric:
+                quoted={Decimal(match[0])for match in re.finditer(
+                    r'(?<![0-9.])[0-9]+(?:\.[0-9]+)?(?![0-9]|\.[0-9])',reference.quote)}
+                if Decimal(value)not in quoted:expected=None
+            if expected is None or (Decimal(expected)!=Decimal(value)if numeric else expected!=value):
+                raise InvalidInput('budget value differs from its original amount, role or currency')
+        elif field.endswith('.timezone'):
+            _place_source(field,value,(reference,),turns)
+            if ZONE_LITERAL.fullmatch(value)is None:raise InvalidInput('literal original timezone required')
+        elif field=='overseas_timezone':
+            if clause!=value or value not in reference.quote or ZONE_LITERAL.fullmatch(value)is None:
+                raise InvalidInput('literal original overseas timezone required')
+        else:raise InvalidInput('source semantics are not available for this known constraint')
 
 
 def _edge_option_at(field,value,original,start,end):
@@ -426,6 +615,8 @@ def parse_plan_understanding(raw,turns):
     def check(reference):
         if reference.source_index>=len(turns)or reference.quote not in turns[reference.source_index].text:
             raise InvalidInput('planning quote is not in its original traveler message')
+        if _META_SOURCE.search(turns[reference.source_index].text):
+            raise InvalidInput('translation or explanation data is not an original traveler constraint')
 
     seen=set()
     for observation in value.observations:
@@ -453,10 +644,13 @@ def parse_plan_understanding(raw,turns):
                 except ValueError as error:raise InvalidInput('explicit ISO date required')from error
                 _current_date_source(observation.value,[ref.model_dump()for ref in observation.sources],turns,
                                      departure=observation.field=='departure.date')
+                _date_event_source(observation.field,observation.sources,turns)
             elif observation.field.endswith('.time'):
                 _clock_source(observation.field,observation.value,observation.sources,turns)
             elif observation.field.endswith('.place'):
                 _place_source(observation.field,observation.value,observation.sources,turns)
+            elif observation.field not in ('party_size','departure.mode','first_day_full'):
+                _constraint_source(observation,turns)
         else:
             if observation.value is not None:raise InvalidInput('unknown planning value cannot also be known')
             if observation.state=='uncertain':
@@ -500,4 +694,5 @@ def parse_plan_understanding(raw,turns):
             raise InvalidInput('temporary-condition companion must be declared')
     _latest_edge_options(value,turns)
     _latest_event_clocks(value,turns)
+    _latest_party(value,turns)
     return value

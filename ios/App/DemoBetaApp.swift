@@ -19,6 +19,9 @@ struct DemoBetaRootView: View {
                         savedMemory: trip.typedMemory.map { AnyView(LioSavedMemoryView(host: $0.host, language: shell.language)) },
                         recordedMap: { document in
                     AnyView(LioRecordedTripMap(document: document, language: shell.language))
+                }, reconnect: {
+                    root.accounts.suspend()
+                    root.accounts.resume()
                 }) {
                     LioMenuSettings(shell: shell)
                     NavigationLink(shell.language.text("Delete account", "注销账号")) {
@@ -29,8 +32,12 @@ struct DemoBetaRootView: View {
                 .id(trip.id)
             } else if root.accounts.isResuming {
                 LioSessionRecoveryView(language: shell.language.lio,
-                                       showsRetry: root.accounts.state == .networkUnknown,
-                                       retry: { root.accounts.resume() },
+                                       showsRetry: root.accounts.state == .networkUnknown || root.accounts.state == .storageUnavailable,
+                                       problem: root.lioSessionProblem,
+                                       retry: {
+                                           if root.accounts.state == .storageUnavailable { root.accounts.suspend() }
+                                           root.accounts.resume()
+                                       },
                                        signOut: { root.accounts.signOut() })
             } else {
                 DemoInviteView(shell: shell, accounts: root.accounts)

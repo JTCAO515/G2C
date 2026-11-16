@@ -65,7 +65,7 @@ def ready(database, runtime=None):
     except (OSError,ValueError,KeyError,TypeError,CompositionUnavailable):return 'deployment_gate_unavailable'
 
 
-def api(runtime):
+def api(runtime,*,app_smoke_api_manifest=None):
     app=runtime.app();database=runtime.database()
     @app.middleware('http')
     async def deployment_gate(request,call_next):
@@ -78,9 +78,16 @@ def api(runtime):
         return await call_next(request)
     # Outermost: sees gate 503s too. Content-free; see deploy/hk/access_log.py (#1036).
     from .access_log import AccessLog,Sink
+    outer=None
+    if app_smoke_api_manifest is not None:
+        from .app_smoke_outer import create_capture,OuterMiddleware
+        outer=create_capture(runtime,database,app_smoke_api_manifest)
+        app.add_middleware(OuterMiddleware,observer=outer)
     app.add_middleware(AccessLog,sink=Sink())
     import uvicorn
-    uvicorn.run(app,host='0.0.0.0',port=8765,access_log=False)
+    try:uvicorn.run(app,host='0.0.0.0',port=8765,access_log=False)
+    finally:
+        if outer is not None:outer.close()
 
 
 @contextmanager
@@ -204,6 +211,7 @@ def main():
     parser.add_argument('--tool-evidence-manifest',type=Path)
     parser.add_argument('--runtime-manifest',type=Path)
     parser.add_argument('--app-smoke-manifest',type=Path)
+    parser.add_argument('--app-smoke-api-manifest',type=Path)
     args=parser.parse_args();runtime=None
     if args.tool_evidence_manifest is not None and args.command!='worker':
         parser.error('tool evidence is available only on the existing synthetic worker')
@@ -212,6 +220,8 @@ def main():
     if args.app_smoke_manifest is not None and (args.command!='worker' or args.runtime_manifest is not None
                                                or args.tool_evidence_manifest is not None):
         parser.error('App smoke capture is an exclusive worker composition')
+    if args.app_smoke_api_manifest is not None and args.command!='api':
+        parser.error('App HTTP capture is available only on the API')
     try:
         load_secret_environment(args.command)
         audit=logging.getLogger('cj_usage.audit');audit.setLevel(logging.INFO)
@@ -222,8 +232,8 @@ def main():
             evidence=(None if args.tool_evidence_manifest is None else
                       ToolEvidence.load(args.tool_evidence_manifest,runtime.demo_subjects))
             worker(runtime,tool_evidence=evidence,runtime_manifest=args.runtime_manifest,app_smoke_manifest=args.app_smoke_manifest)
-        else:
-            dict(migrate=initialize,api=api)[args.command](runtime)
+        elif args.command=='api':api(runtime,app_smoke_api_manifest=args.app_smoke_api_manifest)
+        else:initialize(runtime)
     except (OSError,ValueError,KeyError,CompositionUnavailable,psycopg.Error):
         print('ALERT beta_startup_configuration_or_database_unavailable',file=sys.stderr)
         raise SystemExit(1) from None
