@@ -15,7 +15,7 @@ from cj_message.lio_wire import ExplorationOrigin
 from cj_needs.domain import decode,InvalidInput
 
 from .lio_exploration_factors import BY_KEY,FACTORS,defaults
-from .lio_exploration_profile import snapshot
+from .lio_exploration_profile import snapshot,plan_now_request
 from .lio_exploration_policy import Scene,choose_scene,next_question_count,candidates,questions,exits,emergency_opening
 from .lio_exploration_routes import PRESENTATION,PROGRESS,merged_presentation
 from .local_lio_exploration_profile import ProfileContext
@@ -157,47 +157,51 @@ class ExplorationPlanning:
         state=worker.runs.snapshot(binding)
         return self._finish(worker,binding,state,''.join(body),scene,original.locale)
 
+    def _plan(self,worker,binding,state,view,locale,*,prior_model_calls=0):
+        effective=defaults(view.profile)
+        effective.update({key:fact.value for key,fact in view.profile.items() if fact.state!='not_needed'})
+        days=effective['duration_days']
+        state=worker._event(binding,state,'effect_committed',PROGRESS+json.dumps(dict(kind='planning_started',
+            text='开始安排'+str(days)+'天。' if locale=='zh' else 'Planning '+str(days)+' days.',duration_days=days),ensure_ascii=False))
+        raw=self._model(worker,binding,view,RESPONSE,RESPONSE_SYSTEM,dict(scene='plan_now_preview',locale=locale,
+            groups=0,duration_days=days,effective=effective,prior_model_calls=prior_model_calls))
+        value=decode(raw.encode())
+        if not isinstance(value,dict) or value.keys()!={'version','body','groups'} or value['version']!=RESPONSE or value['groups']!=[] or not isinstance(value['body'],str):
+            raise ProviderUnknown('complete plan preview unavailable')
+        if any(not re.search(('第\\s*'+str(day)+'\\s*天') if locale=='zh' else r'\bDay\s+'+str(day)+r'\b',value['body'],re.I) for day in range(1,days+1)):
+            raise ProviderUnknown('plan preview omitted requested days')
+        disclosures=[]
+        for key in effective:
+            if key in view.profile and view.profile[key].state not in ('default','not_needed'):continue
+            factor=BY_KEY[key]
+            description=(factor.default_zh if locale=='zh' else factor.default_en)
+            if effective[key]!=factor.default:description=str(effective[key])
+            disclosures.append(description)
+        prefix=('这是尚未保存的方案草稿。默认采用：' if locale=='zh' else 'This is an unsaved outline. Defaults used: ')+('、' if locale=='zh' else ', ').join(disclosures)+('\n\n')
+        state=worker.runs.snapshot(binding)
+        state=worker._event(binding,state,'effect_committed',PREVIEW)
+        return self._finish(worker,binding,state,prefix+value['body'],Scene.ADJUSTMENT,locale)
+
+
     def execute(self,worker,binding,state,text,original):
         if original.protocol!=LIO_VERSION_V4:return self.legacy.execute(worker,binding,state,text,original)
         view=self.profiles.read(worker,binding);locale=original.locale
         identity=self_description(text,locale)
         if identity is not None:
             return self._finish(worker,binding,state,identity,Scene.PRACTICAL,locale)
-        direct=text.strip().casefold() in ('直接出方案','plan now')
-        if direct:
+        request=plan_now_request(text)
+        if request is not None and not request.prefix:
             state,profile=self.profiles.accept(worker,binding,state,json.dumps(dict(version='LIO-profile-update.1',updates=[])),expected=view,plan_now=True)
-            effective=defaults(view.profile)
-            effective.update({key:fact.value for key,fact in profile.items() if fact.state!='not_needed'})
-            days=effective['duration_days']
-            state=worker._event(binding,state,'effect_committed',PROGRESS+json.dumps(dict(kind='planning_started',
-                text='开始安排'+str(days)+'天。' if locale=='zh' else 'Planning '+str(days)+' days.',duration_days=days),ensure_ascii=False))
-            view=replace(view,profile=profile)
-            raw=self._model(worker,binding,view,RESPONSE,RESPONSE_SYSTEM,dict(scene='plan_now_preview',locale=locale,
-                groups=0,duration_days=days,effective=effective))
-            value=decode(raw.encode())
-            if not isinstance(value,dict) or value.keys()!={'version','body','groups'} or value['version']!=RESPONSE or value['groups']!=[] or not isinstance(value['body'],str):
-                raise ProviderUnknown('complete plan preview unavailable')
-            if any(not re.search(('第\\s*'+str(day)+'\\s*天') if locale=='zh' else r'\bDay\s+'+str(day)+r'\b',value['body'],re.I) for day in range(1,days+1)):
-                raise ProviderUnknown('plan preview omitted requested days')
-            disclosures=[]
-            for key in effective:
-                if key in view.profile and view.profile[key].state not in ('default','not_needed'):continue
-                factor=BY_KEY[key]
-                description=(factor.default_zh if locale=='zh' else factor.default_en)
-                if effective[key]!=factor.default:description=str(effective[key])
-                disclosures.append(description)
-            prefix=('这是尚未保存的方案草稿。默认采用：' if locale=='zh' else 'This is an unsaved outline. Defaults used: ')+('、' if locale=='zh' else ', ').join(disclosures)+('\n\n')
-            state=worker.runs.snapshot(binding)
-            state=worker._event(binding,state,'effect_committed',PREVIEW)
-            return self._finish(worker,binding,state,prefix+value['body'],Scene.ADJUSTMENT,locale)
+            return self._plan(worker,binding,state,replace(view,profile=profile),locale)
         raw=self._model(worker,binding,view,UNDERSTANDING,UNDERSTANDING_SYSTEM,dict(locale=locale,
             current_source_index=len(view.originals)-1,factors=[dict(key=f.key,inferable=f.inferable,multiple=f.multiple) for f in FACTORS]))
         try:understood=Understanding.model_validate(decode(raw.encode()))
         except (ValidationError,InvalidInput) as error:raise ProviderUnknown('sourced understanding unavailable') from error
         if understood.current_source_index!=len(view.originals)-1:raise ProviderUnknown('understanding original index differs')
+        direct=request is not None and understood.intent!='emergency'
         # Broader administrative spellings are learned from the existing
         # registered provider resolver, never promoted from a model token.
-        for update in understood.updates:
+        for update in (()if direct else understood.updates):
             if update.factor_key!='city' or update.state!='known' or not isinstance(update.value,str):continue
             for reference in update.sources:
                 if reference.source_index>=len(view.originals) or reference.quote not in view.originals[reference.source_index].text:
@@ -209,11 +213,12 @@ class ExplorationPlanning:
                 state=worker._event(binding,state,'effect_committed','lio_city_resolution.1:'+json.dumps(resolution,ensure_ascii=False,separators=(',',':')))
         state=worker.runs.snapshot(binding)
         state,profile=self.profiles.accept(worker,binding,state,json.dumps(dict(version='LIO-profile-update.1',
-            updates=[update.model_dump() for update in understood.updates])),expected=view)
+            updates=[update.model_dump() for update in understood.updates])),expected=view,plan_now=direct)
         scene=choose_scene(understood.intent,self._phase(binding))
         view=replace(view,profile=profile)
         if scene==Scene.EMERGENCY:
             return self._finish(worker,binding,state,emergency_opening(text,locale),scene,locale)
+        if direct:return self._plan(worker,binding,state,view,locale,prior_model_calls=1)
         if scene in (Scene.PRACTICAL,Scene.TODAY) or not self.enabled:
             return self._answer(worker,binding,state,text,original,view,scene if self.enabled else Scene.PRACTICAL)
         previous=self._previous_round(binding)

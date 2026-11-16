@@ -1,35 +1,225 @@
 """Native signed registered skeleton/parallel wording; fixture HTTP, zero Trip."""
 from pathlib import Path
+from datetime import date,timedelta
+from dataclasses import replace
+import asyncio
 import json
 import sys
+from types import MappingProxyType
+from urllib.parse import urlsplit,parse_qs
 from unittest.mock import patch
 
 ROOT=Path(__file__).resolve().parents[3]
 sys.path[:0]=[str(ROOT),str(ROOT/'scripts'),str(ROOT/'backend/cj_api/tests')]
 import httpx
+from fastapi.testclient import TestClient
 from cj_api.local_lio_exploration import ExplorationPlanning
 from cj_api.local_lio_pipeline_calls import PipelineCalls,model_call
+from cj_api.local_lio_pipeline_inputs import understand_constraints,planning_edges
+from cj_api.local_lio_pipeline_search import sight_and_hotel_calls
+from cj_api.local_lio_pipeline_places import PlaceSelectionBlocked
+from cj_api.local_lio_provider_sources import POI2_REGISTRATION
+from cj_api.lio_poi2_tool import registration as poi_registration
+from cj_api.real_services import RealTools
+from cj_api.local_lio_planning import register,PlanningDetails
+from cj_api.local_lio_rich_source import RichProfileSource
+from cj_api.local_lio_rich_calendar_source import RichCalendarSource
+from cj_api.lio_city import CityReference
 from cj_api.lio_pipeline_model import SKELETON_SYSTEM,WORDING_SYSTEM,skeleton_data,parse_wording
-from cj_api.lio_pipeline_skeleton import recipes,parse_skeleton
-from cj_message.lio_exploration_schema import RESPONSE,response_format
+from cj_api.lio_pipeline_skeleton import recipes,parse_skeleton,DayRecipe
+from cj_api.lio_pipeline_preflight import preflight_document
+from cj_api.lio_pipeline_document import representation_size
+from cj_message.lio_exploration_schema import UNDERSTANDING,RESPONSE,response_format
+from cj_message.lio_plan_input_schema import PLAN_UNDERSTANDING
+from cj_message.lio_wire import ExplorationOrigin
 from cj_message.lio_pipeline_schema import SKELETON,WORDING
+from cj_needs.revision_lease import LeaseUnavailable
+from cj_memory.runtime import RuntimeDenied
+from cj_place import https_transport
 from cj_trip.domain import packed
+from cj_trip.postgres import Repository as TripRepository
+from cj_draft.rich_calendar_source import RichCalendarContextSource
+from cj_message.lio_plan_needs import original_needs
 from test_lio_pipeline_skeleton import proposal
+from lio_provider_sources_pg import FixtureWriter
 import lio_exploration_flow_pg as native
 
 
-def main():
+def full_provider_join(prepared):
+    """Both real registered lookup phases, selected under genuine sources."""
+    from cj_api.local_lio_pipeline import retrieve_skeleton
+    bundle=prepared.sources;worker,binding=bundle.worker,bundle.binding
+    writers=[];phases=[];queries=[];captures=[]
+    def send_check():
+        worker.memory_run.check()
+        assert worker.message_context.active_original(binding).receipt.message_id==binding.message_id
+        phases.append('send-held')
+    class Writer(FixtureWriter):
+        def __init__(self,reader):super().__init__(reader,send_check)
+        def write(self,raw):
+            target=raw.split(b'\r\n',1)[0].split(b' ')[1].decode('ascii')
+            parsed=urlsplit(target);query=parse_qs(parsed.query);queries.append((parsed.path,query))
+            self.keyword=query['keywords'][0]
+            self.provider_id='SYNTH_FULL_'+str(len(queries))
+            super().write(raw)
+        def response_value(self):
+            return dict(status='1',infocode='10000',count='1',pois=[dict(
+                id=self.provider_id,name=self.keyword,cityname='北京市',adcode='110101',location='116.4,39.9')])
+    async def dial():
+        reader=asyncio.StreamReader();writer=Writer(reader);writers.append(writer);return reader,writer
+    actual_read=https_transport._read_response
+    async def receive(*args):
+        try:worker.memory_run.check()
+        except RuntimeDenied:pass
+        else:raise AssertionError('whole lookup retained Memory over response IO')
+        try:worker.message_context.active_original(binding)
+        except LeaseUnavailable:pass
+        else:raise AssertionError('whole lookup retained MESSAGE over response IO')
+        phases.append('receive-unheld');return await actual_read(*args)
+    seal=bundle.seal
+    def captured():
+        value=seal();captures.append(value);return value
+    with patch.object(https_transport,'_connect',dial),patch.object(https_transport,'_read_response',receive), \
+            patch.object(bundle,'seal',side_effect=captured):
+        places,hotels,complete=retrieve_skeleton(prepared)
+    sights=sum(stop.kind=='sight'for stop in prepared.skeleton.stops)+len(prepared.skeleton.hotels)
+    meals=sum(stop.kind=='meal'for stop in prepared.skeleton.stops)
+    assert len(writers)==sights+meals and all(w.closed and len(w.writes)==1 for w in writers)
+    assert phases==['send-held']*sights+['receive-unheld']*sights+['send-held']*meals+['receive-unheld']*meals
+    assert [path for path,_ in queries]==['/v5/place/text']*sights+['/v5/place/around']*meals
+    assert all(query['location']==['116.4,39.9']and query['radius']==['1500']for _,query in queries[sights:])
+    assert places.keys()=={stop.item_id for stop in prepared.skeleton.stops}
+    assert all(place is not None for place in places.values())and all(place is not None for place in hotels)
+    assert len(captures)==2 and complete is captures[1]
+    try:bundle.places(prepared.skeleton,captures[0])
+    except LeaseUnavailable:pass
+    else:raise AssertionError('pre-meal provider seal remained eligible after new attempts')
+    assert prepared.calls.gaode==1+len(writers) # actual city included
+    return len(writers)
+
+
+def selected_provider_join(host,worker,binding,bundle,skeleton,calls,scenario):
+    """Original registered POI2 -> C-issued selection -> L display, not save."""
+    # Two exact code targets exercise the join without claiming that this test
+    # has generated, looked up, scheduled or published the complete itinerary.
+    selected=replace(skeleton,stops=skeleton.stops[:1],hotels=skeleton.hotels[:1])
+    origin=ExplorationOrigin(host.database,binding,worker.messages.query(binding.message_id))
+    planned=sight_and_hotel_calls(selected.stops,selected.hotels,city='北京',origin=origin,sources=bundle.providers)
+    bodies=[];writers=[];phases=[]
+    for index,call in enumerate(planned):
+        name=call.argument.query.keyword
+        names=([name+'旁边']if scenario==0 else[name]if scenario==1 else[name,name])if index==0 else[name]
+        rows=[dict(id='SYNTH_SELECTION_'+str(index)+'_'+str(n),name=value,cityname='北京市',
+            adcode='110101',location='116.4,39.9')for n,value in enumerate(names)]
+        bodies.append(dict(status='1',infocode='10000',count=str(len(rows)),pois=rows))
+    def send_check():
+        worker.memory_run.check()
+        assert worker.message_context.active_original(binding).receipt.message_id==binding.message_id
+        phases.append('send-held')
+    class Writer(FixtureWriter):
+        def __init__(self,reader,value):
+            super().__init__(reader,send_check);self.value=value
+        def response_value(self):return self.value
+    async def dial():
+        reader=asyncio.StreamReader();writer=Writer(reader,bodies.pop(0));writers.append(writer)
+        return reader,writer
+    actual_read=https_transport._read_response
+    async def receive(*args):
+        try:worker.memory_run.check()
+        except RuntimeDenied:pass
+        else:raise AssertionError('selection response retained Memory frame')
+        try:worker.message_context.active_original(binding)
+        except LeaseUnavailable:pass
+        else:raise AssertionError('selection response retained MESSAGE frame')
+        phases.append('receive-unheld');return await actual_read(*args)
+    with patch.object(https_transport,'_connect',dial),patch.object(https_transport,'_read_response',receive):
+        replies=tuple(json.loads(raw)for raw in calls.parallel(planned))
+    assert not bodies and len(writers)==2 and all(writer.closed and len(writer.writes)==1 for writer in writers)
+    assert phases==['send-held','send-held','receive-unheld','receive-unheld']
+    assert all(reply['status']=='ok'and reply['items']for reply in replies)
+    captured=bundle.seal()
+    def prove():
+        with bundle.source.hold_for_publication(binding):
+            result=bundle.source.place_selection(binding,captured,selected.stops[0].item_id,
+                keyword=selected.stops[0].name_zh)
+            assert result['status']==('unavailable','matched','ambiguous')[scenario]
+            outcomes=bundle.source.provider_outcomes(binding,captured)
+            assert all(row['status']=='ok'and row['item_count']>0 for row in outcomes)
+    worker._step(binding,prove)
+    if scenario==2:
+        try:bundle.places(selected,captured)
+        except PlaceSelectionBlocked:pass
+        else:raise AssertionError('ambiguous observed POIs became a selected or unavailable place')
+    else:
+        places,hotels=bundle.places(selected,captured)
+        if scenario==0:assert places[selected.stops[0].item_id]is None
+        else:assert places[selected.stops[0].item_id]['amap_id']=='SYNTH_SELECTION_0_0'
+        assert hotels[0]['amap_id']=='SYNTH_SELECTION_1_0'
+    # Publication data/selection cannot be read after the real holder closes.
+    try:bundle.source.place_selection(binding,captured,selected.stops[0].item_id,keyword=selected.stops[0].name_zh)
+    except LeaseUnavailable:pass
+    else:raise AssertionError('issued selection outlived its MESSAGE/Memory frame')
+    return len(writers)
+
+
+def main(*,natural_direct=False):
     original_model=ExplorationPlanning._model
     original_http=httpx.MockTransport.handle_request
-    wires=[];completed=[]
+    original_post=TestClient.post
+    original_registry=RealTools._registrations
+    wires=[];completed=[];lookups=[];posted={}
+    def registry(tools):
+        return MappingProxyType(dict(original_registry(tools),**{POI2_REGISTRATION:poi_registration(tools.services)}))
+    def post(api,url,**kwargs):
+        if url=='/v4/lio/messages':
+            value=json.loads(kwargs['content'])
+            if natural_direct and value['text']in ('直接出方案','Plan now'):
+                value['text']=('节奏改为：轻松。 直接出方案。'if value['locale']=='zh'else
+                    'Pace: relaxed. Please give me a plan now.')
+                kwargs['content']=packed(value)
+            if value['text']in ('我想去中国玩几天','I want to explore China'):
+                value['text']+='。明天出发。两个人。第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变'if value['locale']=='zh'else(
+                    '. Start my trip tomorrow. Two people. On day 1 I have a hotel meetup from 9:00 to 10:00. Keep this arrangement unchanged.')
+                value['text']+='。我的航班18:00起飞。第一天就排满'if value['locale']=='zh'else'. My flight leaves at 6 pm. Fill the first day.'
+                kwargs['content']=packed(value)
+            posted.update(text=value['text'],locale=value['locale'])
+        return original_post(api,url,**kwargs)
     def response(transport,request):
         body=json.loads(request.content)
         version=body.get('response_format',{}).get('json_schema',{}).get('schema',{}).get('properties',{}).get('version',{}).get('const')
-        if version not in (SKELETON,WORDING):return original_http(transport,request)
+        natural=(natural_direct and version==UNDERSTANDING and
+            posted['text'].endswith(('直接出方案。','Please give me a plan now.')))
+        if version not in (PLAN_UNDERSTANDING,SKELETON,WORDING)and not natural:return original_http(transport,request)
         extra=json.loads(body['messages'][-1]['content'])
         assert body['response_format']==response_format(version)
         assert 1<=body['max_tokens']<=1536
-        if version==SKELETON:value=proposal(recipes(extra['effective']['duration_days'],'moderate',light_first=True,light_last=True))
+        if natural:
+            value=dict(version=UNDERSTANDING,intent='plan',current_source_index=extra['current_source_index'],
+                updates=[dict(factor_key='pace',state='known',value='relaxed',sources=[dict(
+                    source_index=extra['current_source_index'],quote='节奏改为：轻松。'if posted['locale']=='zh'else'Pace: relaxed.')])])
+        elif version==PLAN_UNDERSTANDING:
+            zh=extra['locale']=='zh'
+            quote='第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变'if zh else(
+                'On day 1 I have a hotel meetup from 9:00 to 10:00. Keep this arrangement unchanged.')
+            beginning=(date.fromisoformat(extra['original_question_days'][0])+timedelta(days=1)).isoformat()
+            value=dict(version=version,current_source_index=extra['current_source_index'],observations=[
+                dict(field='start_date',state='known',value=beginning,note=None,
+                     sources=[dict(source_index=0,quote='明天出发'if zh else'Start my trip tomorrow')]),
+                dict(field='party_size',state='known',value=2,note=None,
+                     sources=[dict(source_index=0,quote='两个人'if zh else'Two people')]),
+                dict(field='departure.time',state='known',value='18:00',note=None,
+                     sources=[dict(source_index=0,quote='18:00'if zh else'6 pm')]),
+                dict(field='departure.mode',state='known',value='flight',note=None,
+                     sources=[dict(source_index=0,quote='航班'if zh else'flight')]),
+                dict(field='first_day_full',state='known',value=True,note=None,
+                     sources=[dict(source_index=0,quote='第一天就排满'if zh else'Fill the first day')])],
+                companions=[],fixed_items=[dict(label='酒店集合'if zh else'hotel meetup',source_index=0,quote=quote,
+                    detail_refs=[],kind='appointment',applies_to=['self'],locked=True,booking_evidence=None,
+                    start_date=None,start_time='09:00',start_timezone=None,start_place=None,
+                    end_date=None,end_time='10:00',end_timezone=None,end_place=None,
+                    unknown_fields=[],uncertain_fields={})],temporary_conditions=[])
+        elif version==SKELETON:
+            value=proposal(tuple(DayRecipe(row['day_index'],row['sights'],tuple(row['meals']))for row in extra['days']))
         else:value=dict(version=WORDING,items=[dict(item_id=item['item_id'],reason=None,reason_refs=[],tip=None)for item in extra['items']])
         wires.append((version,body['max_tokens']))
         identity=dict(id='pipeline-model-fixture-'+str(len(wires)),model=body['model'])
@@ -40,27 +230,62 @@ def main():
         return httpx.Response(200,stream=httpx.ByteStream(raw.encode()))
     def model(host,worker,binding,view,profile,system,extra):
         if profile==RESPONSE and extra.get('scene')=='plan_now_preview':
-            calls=PipelineCalls(worker,binding)
-            expected=recipes(extra['duration_days'],'moderate',light_first=True,light_last=True)
-            packet=model_call(host,worker,binding,view,SKELETON,SKELETON_SYSTEM,
-                              skeleton_data(extra['effective'],expected,locale=extra['locale']))
-            raw,=calls.parallel((packet,))
-            skeleton=parse_skeleton(raw.encode(),expected,id_prefix='registered-p4')
+            from cj_api.local_lio_pipeline import prepare_generation
+            assert extra['prior_model_calls']==int(natural_direct)
+            prepared=prepare_generation(host,worker,binding,view,locale=extra['locale'],effective=extra['effective'],
+                prior_model_calls=extra['prior_model_calls'])
+            projection=prepared.projection;projected=prepared.projected
+            fields=projection.fields;edges=prepared.edges
+            calls=prepared.calls;skeleton=prepared.skeleton;bundle=prepared.sources
+            assert prepared.preflight_size[:2]==(19,16) # relaxed profile, fixed item and six hotel anchors
+            assert calls.gaode==1
+            assert projection.edge_options['departure.mode']==dict(state='known',value='flight')
+            assert edges.windows[-1][0].end==(extra['duration_days']-1)*86400+15*3600
+            assert edges.override_explanations==('first_day_full_requested',)
+            assert 'mode'not in fields['departure']and 'first_day_full'not in fields
+            assert fields['party_size']==dict(state='known',value=2)
+            fixed,=fields['fixed_items']
+            assert projected.fields['fixed_items'][0]['item_id']==fixed['item_id']
+            assert projected.fields['fixed_items'][0]['start']['timezone']==dict(state='missing')
+            assert fixed['applies_to']==['self'] and fixed['locked']==dict(state='known',value=True)
+            assert fixed['start']['date']==fields['arrival']['date']
+            assert fixed['start']['time']==dict(state='known',value='09:00')
+            assert fixed['end']['time']==dict(state='known',value='10:00')
+            assert fixed['booking_status']==dict(state='missing')
+            sealed=bundle.seal() # genuinely empty provider set; not failed lookup evidence
+            def capture():
+                snapshot,_=bundle.calendar_capture.records()
+                assert snapshot.fields['fixed_items']==fields['fixed_items']
+                assert snapshot.fields['party_size']==dict(state='known',value=2)
+                assert bundle.calendar_capture.basis.day_indices()=={fixed['item_id']:(1,1)}
+                with bundle.source.hold_for_publication(binding)as check:check()
+            worker._step(binding,capture)
+            try:bundle.places(skeleton,sealed)
+            except LeaseUnavailable:pass
+            else:raise AssertionError('no original provider operations became selection fallback')
+            if len(completed)%3==1:lookups.append(full_provider_join(prepared))
+            else:lookups.append(selected_provider_join(host,worker,binding,bundle,skeleton,calls,len(completed)%3))
             items=tuple(dict(item_id=stop.item_id,tip=None)for stop in skeleton.stops)
             # Two explicit wording requests share one original RUN. Every one
             # traverses the registered exit, financial journal and true4 origin.
-            batches=(items[::2],items[1::2])
+            # The component harness still invokes the old preview afterwards.
+            # Keep that extra fixture model inside the actual native6 ceiling;
+            # production generation does not append a preview model after save.
+            batches=(items,)if natural_direct else(items[::2],items[1::2])
             results=calls.parallel(tuple(model_call(host,worker,binding,view,WORDING,WORDING_SYSTEM,
                 dict(locale=extra['locale'],items=batch))for batch in batches))
             for result,batch in zip(results,batches,strict=True):
                 parse_wording(result.encode(),batch,allowed_reason_keys=set())
-            assert calls.model==4 # one reserved understanding slot, three actual dispatches
+            assert calls.model==5 # includes prefix extraction when present and reserved final Memory
             completed.append(binding.run_id)
-            print('PASS native4 skeleton + two separately registered wording calls '+binding.message_id+' RUN '+binding.run_id+'; no Trip publication',flush=True)
+            print('PASS native4 sourced plan understanding -> original NEEDS/calendar/profile hold + skeleton + two registered wording calls '+binding.message_id+' RUN '+binding.run_id+'; no Trip publication',flush=True)
         return original_model(host,worker,binding,view,profile,system,extra)
-    with patch.object(httpx.MockTransport,'handle_request',response),patch.object(ExplorationPlanning,'_model',model):native.main()
-    assert len(completed)==6 and len(wires)==18
-    print('PASS ZH3/EN3 signed native4/three pipeline model registrations each; actual caps/schema/Meter, fixture HTTP only; full publisher/G6/G9 UNRUN',flush=True)
+    with patch.object(TestClient,'post',post),patch.object(httpx.MockTransport,'handle_request',response), \
+            patch.object(RealTools,'_registrations',registry),patch.object(ExplorationPlanning,'_model',model):native.main()
+    assert len(completed)==6 and len(wires)==24 and lookups==[2,14,2,2,14,2]
+    print('PASS ZH/EN each no-exact/unique/ambiguous actual registered POI2 -> settled provider capture -> C-issued selection -> L projection; 36 fixture POI2 attempts including whole14-query TextSearch->Nearby on each locale, original nonempty ok outcomes retained, stale seals/closed holders denied; Trip0',flush=True)
+    if natural_direct:print('PASS original natural direct with full-sentence prefix -> sourced profile/defaults -> issued PlanNow source; actual extra profile model retained in native6 budget, no rewritten original or renderer',flush=True)
+    print('PASS ZH3/EN3 signed native4/four actual pipeline model registrations each plus fixture preview; real caps/schema/Meter, fixture HTTP only; full publisher/G6/G9 UNRUN',flush=True)
 
 
 if __name__=='__main__':main()
