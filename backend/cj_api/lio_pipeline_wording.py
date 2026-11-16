@@ -19,6 +19,7 @@ def profile_facts(capture,locale):
     for row in capture.profile.profile['factors']:
         key,state,value=row['factor_key'],row['state'],row['value']
         display=value_text(key,value,state,locale)
+        if display=='':display='未指定'if locale=='zh'else'None specified'
         if key=='city'and locale=='en'and han(str(value)):
             english=display.replace(value,'').strip(' ()（）')
             display=(english or' '.join(lazy_pinyin(value)))+' ('+value+')'

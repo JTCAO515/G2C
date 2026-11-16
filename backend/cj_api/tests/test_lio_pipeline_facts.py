@@ -10,6 +10,14 @@ def capture(rows):return SimpleNamespace(profile=SimpleNamespace(profile={'facto
 
 
 class PipelineFactPresentation(unittest.TestCase):
+    def test_empty_proposal_arrays_have_an_explicit_nonempty_display_without_becoming_a_fact(self):
+        rows=[dict(factor_key='must_see',state='default',value=[]),
+              dict(factor_key='avoid',state='default',value=[])]
+        for locale,expected in [('zh','未指定'),('en','None specified')]:
+            facts=profile_facts(capture(rows),locale)
+            self.assertTrue(all(fact.display_value==expected and fact.state=='default'for fact in facts))
+        self.assertEqual([row['value']for row in rows],[[],[]])
+
     def test_values_are_localized_without_changing_accepted_states_or_source_values(self):
         rows=[dict(factor_key='city',state='default',value='北京'),
               dict(factor_key='interests',state='known',value=['history','food']),
