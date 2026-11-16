@@ -5,7 +5,7 @@ import json
 import unittest
 
 from cj_api.lio_plan_understanding import PlanFieldProjection
-from cj_api.lio_pipeline_preflight import preflight_document,fixed_day_map
+from cj_api.lio_pipeline_preflight import preflight_document,fixed_day_map,admit_city_lookup
 from cj_api.lio_pipeline_document import representation_size
 from cj_api.lio_pipeline_skeleton import recipes,parse_skeleton,CapacityExceeded
 from cj_feasibility.rich_edges import activity_windows
@@ -32,6 +32,26 @@ def fixed():
 
 
 class CompleteGraphPreflight(unittest.TestCase):
+    def test_capacity_failure_happens_before_city_dispatch(self):
+        calls=[]
+        class Resolver:
+            def resolve_city(self,query):calls.append(query);return {'status':'resolved'}
+        for days,accepted in ((3,True),(12,False)):
+            edges=activity_windows(days)
+            expected=recipes(days,'moderate',light_first=True,light_last=True)
+            skeleton=parse_skeleton(packed(proposal(expected)),expected,id_prefix='admission')
+            calls.clear()
+            if accepted:
+                size,result=admit_city_lookup(skeleton,projection(),edges,Resolver(),
+                    query={'query':'Beijing'},id_prefix='admission',locale='en',retained=None)
+                self.assertEqual(len(calls),1)
+                self.assertEqual(size[:2],(14,11))
+            else:
+                with self.assertRaises(CapacityExceeded):
+                    admit_city_lookup(skeleton,projection(),edges,Resolver(),query={'query':'Beijing'},
+                        id_prefix='admission',locale='en',retained=None)
+                self.assertEqual(calls,[])
+
     def build(self,days=3,fields=None,*,start=None,retained=None):
         edges=activity_windows(days)
         expected=recipes(days,'moderate',light_first=edges.first_unknown_recipe,light_last=edges.last_unknown_morning)

@@ -9,10 +9,12 @@ Account/RUN/financial limits may refuse earlier; these ceilings never raise them
 """
 from contextlib import ExitStack
 from dataclasses import dataclass
+import json
 
 from cj_message.lio_exploration_schema import ExplorationInput
 from cj_message.lio_wire import ExplorationOrigin
 from cj_trip.domain import packed
+from .lio_exploration_routes import PROGRESS
 
 
 class PipelineCapacity(ValueError):pass
@@ -34,8 +36,9 @@ def model_call(host,worker,binding,view,profile,system,extra):
 
 
 class PipelineCalls:
-    def __init__(self,worker,binding,*,prior_model_calls=0):
+    def __init__(self,worker,binding,*,prior_model_calls=0,locale=None):
         self.worker,self.binding=worker,binding
+        self.locale=locale
         self.model=prior_model_calls+1+int(worker.lio_memory is not None)
         self.gaode=0
         self._sequence=0
@@ -50,6 +53,17 @@ class PipelineCalls:
             raise PipelineCapacity('complete fan-out exceeds the per-plan allowance')
         self.model+=models;self.gaode+=gaode
 
+    def _progress(self,stage):
+        if self.locale is None:return
+        labels={'city':('正在确认目的地。','Checking the destination.'),
+                'places':('正在查找行程地点。','Finding places for your trip.'),
+                'routes':('正在查询相邻站点的路线。','Checking routes between stops.'),
+                'model':('正在整理行程细节。','Working on your itinerary.')}
+        text=labels[stage][0 if self.locale=='zh'else 1]
+        state=self.worker.runs.snapshot(self.binding)
+        self.worker._event(self.binding,state,'effect_committed',PROGRESS+
+            json.dumps(dict(kind='waiting',text=text),ensure_ascii=False,separators=(',',':')))
+
     def resolve_city(self,query):
         """The original one-send city registration consumes the same45 ceiling.
 
@@ -57,6 +71,7 @@ class PipelineCalls:
         or UNKNOWN attempt does not refund this code allocation or retry it.
         """
         self._reserve(0,1)
+        self._progress('city')
         return self.worker.tools.resolve_city(self.worker,self.binding,query)
 
     def parallel(self,calls):
@@ -72,6 +87,9 @@ class PipelineCalls:
         if any(call.kind not in ('model','gaode')for call in calls):
             raise ValueError('explicit pipeline call kind required')
         self._reserve(models,gaode)
+        if calls:
+            stage=('model'if models else'routes'if all(call.registration=='tool.lio_route.1'for call in calls)else'places')
+            self._progress(stage)
         streams=[];first=[]
         with ExitStack()as pending:
             for call in calls:

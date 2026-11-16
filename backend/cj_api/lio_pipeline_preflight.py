@@ -11,7 +11,7 @@ from datetime import date
 from cj_needs.domain import InvalidInput
 
 from .lio_calendar_ordinals import fixed_ordinals
-from .lio_pipeline_document import compile_document,lodging_anchors,transfer_items,unconfirmed_place,_PROPOSED_WINDOWS
+from .lio_pipeline_document import compile_document,lodging_anchors,transfer_items,unconfirmed_place,representation_size,_PROPOSED_WINDOWS
 from .lio_pipeline_skeleton import recipes
 
 
@@ -38,6 +38,18 @@ def recipes_for_edges(day_count,pace,edges):
                 for window in edges.windows[row.day_index-1])
         result.append(replace(row,meals=tuple(period for period in row.meals if fits(period))))
     return tuple(result)
+
+
+def admit_city_lookup(skeleton,projection,edges,calls,*,query,id_prefix,locale,retained):
+    """The full candidate is checked before even the first city request.
+
+    Returning from this gate grants no NEEDS/Trip/source authority. The host
+    still compiles and checks the final observed candidate at publication.
+    """
+    document=preflight_document(skeleton,projection,edges,id_prefix=id_prefix,
+        locale=locale,retained=retained)
+    size=representation_size(document)
+    return size,calls.resolve_city(query)
 
 
 def fixed_day_map(fields,day_count,start_date):

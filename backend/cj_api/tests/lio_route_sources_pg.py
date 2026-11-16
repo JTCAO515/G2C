@@ -5,7 +5,6 @@ from hashlib import sha256
 import json
 from pathlib import Path
 import sys
-from types import MappingProxyType
 from unittest.mock import patch
 
 ROOT=Path(__file__).resolve().parents[3]
@@ -21,7 +20,6 @@ from cj_api.lio_pipeline_skeleton import Stop
 from cj_api.lio_plan_understanding import original_plan_turns
 from cj_api.lio_poi2_tool import POI2Input,registration as poi_registration
 from cj_api.lio_route_tool import registration as route_registration
-from cj_api.real_services import RealTools
 from cj_memory.runtime import RuntimeDenied
 from cj_message.lio_wire import ExplorationOrigin
 from cj_message.lio_exploration_schema import RESPONSE
@@ -46,11 +44,8 @@ class ReplyWriter(Writer):
 
 
 def main():
-    actual_model=ExplorationPlanning._model;actual_registry=RealTools._registrations
+    actual_model=ExplorationPlanning._model
     completed=[];writers=[]
-    def registrations(tools):
-        return MappingProxyType(dict(actual_registry(tools),**{
-            POI2_REGISTRATION:poi_registration(tools.services),ROUTE_REGISTRATION:route_registration(tools.services)}))
     def model(host,worker,binding,view,profile,system,extra):
         if profile==RESPONSE and extra.get('scene')=='plan_now_preview':
             originals=original_plan_turns(host.database,worker,binding,view)
@@ -147,7 +142,7 @@ def main():
             completed.append(binding.run_id)
             print('PASS native4 registered POI2→transit source/Meter/original financial proof '+binding.message_id+' RUN '+binding.run_id+'; Trip0',flush=True)
         return actual_model(host,worker,binding,view,profile,system,extra)
-    with patch.object(RealTools,'_registrations',registrations),patch.object(ExplorationPlanning,'_model',model):native.main()
+    with patch.object(ExplorationPlanning,'_model',model):native.main()
     assert len(completed)==6 and len(writers)==18 and all(w.closed and len(w.writes)==1 for w in writers)
     print('PASS ZH3/EN3 concurrent bounded POI2 -> registered route observations; 18 fixture attempts, original65536 ceiling unchanged, 0 real supplier/Trip; full pipeline and G6 UNRUN',flush=True)
 
