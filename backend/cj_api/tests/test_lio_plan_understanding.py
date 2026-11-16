@@ -144,6 +144,42 @@ class PlanUnderstandingBoundary(unittest.TestCase):
                 state='known',value=2,note=None,sources=[dict(source_index=0,quote='Two people')])]
             with self.subTest(followup=followup):self.compile(value,turns)
 
+    def test_same_message_party_a_b_a_uses_the_last_count_not_the_unique_middle_clause(self):
+        text='Two people; Three people; Two people.'
+        turns=(PlanningTurn(text,date(2026,11,14)),self.turns()[1])
+        for count,quote,accepted in ((3,'Three people',False),(2,'Two people.',True)):
+            value=self.packet();value['observations']=[dict(field='party_size',state='known',value=count,note=None,
+                sources=[dict(source_index=0,quote=quote)])]
+            with self.subTest(count=count):
+                if accepted:self.compile(value,turns)
+                else:
+                    with self.assertRaises(InvalidInput):self.compile(value,turns)
+
+    def test_denied_current_party_stays_unknown_instead_of_restoring_the_old_count(self):
+        for denial in ('Not two people anymore','We are no longer two people','不是两个人','不再是两个人'):
+            turns=(PlanningTurn('Two people',date(2026,11,14)),PlanningTurn(denial,date(2026,11,15)),
+                   PlanningTurn('Plan now',date(2026,11,16)))
+            for state,number,index,quote,accepted in (('known',2,0,'Two people',False),
+                                                     ('unknown',None,1,denial,True)):
+                value=self.packet();value['current_source_index']=2;value['observations']=[dict(field='party_size',
+                    state=state,value=number,note=None,sources=[dict(source_index=index,quote=quote)])]
+                with self.subTest(denial=denial,state=state):
+                    if accepted:self.compile(value,turns)
+                    else:
+                        with self.assertRaises(InvalidInput):self.compile(value,turns)
+
+    def test_unquoted_multiline_translation_never_replaces_real_date_and_party_context(self):
+        turns=(PlanningTurn('Two people; Start my trip tomorrow',date(2026,11,14)),
+               PlanningTurn('Translate the following:\nThree people; Start my trip on 2026-12-01',date(2026,11,15)),
+               PlanningTurn('Plan now',date(2026,11,16)))
+        value=self.packet();value['current_source_index']=2
+        value['observations']=[dict(field='party_size',state='known',value=2,note=None,
+            sources=[dict(source_index=0,quote='Two people')]),dict(field='start_date',state='known',
+            value='2026-11-15',note=None,sources=[dict(source_index=0,quote='Start my trip tomorrow')])]
+        self.compile(value,turns)
+        value['observations'][0].update(value=3,sources=[dict(source_index=1,quote='Three people')])
+        with self.assertRaises(InvalidInput):self.compile(value,turns)
+
     def test_explicitly_undecided_party_is_not_replaced_by_its_old_known_count(self):
         for reset in ('Party size undecided','人数未定'):
             turns=(PlanningTurn('Two people',date(2026,11,14)),PlanningTurn(reset,date(2026,11,15)),
