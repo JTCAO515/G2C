@@ -31,14 +31,25 @@ def semantic(gate,text,locale):
             # positive through the legacy wildcard. Contrastive clauses remain
             # separate, e.g. no booking services, but I can plan travel.
             clauses=re.split(r'[.!?;\n]|\bbut\b',plain,flags=re.I)
+            unresolved=False
             for clause in clauses:
-                assertion=re.search(r'\bI\s+((?:(?!(?:I|you|we|they|he|she|it)\b)[A-Za-z]+\s+)*'
-                                    r'(?:offer|provide)\b.*)',clause,re.I)
-                denial=(r'\b(?:no\b(?![-\s]+(?:extra\s+)?(?:cost|charge|fee)\b)|'
-                        r'neither\b|not\b(?!\s+only\b)|none\b)'
-                        r'[^.!?;\n]*\b(?:travel|plan\w*|itinerar\w*)\b')
-                if assertion and re.search(denial,assertion[1],re.I):
-                    return 'FAIL','travel_capability_denied'
+                # Audit each self assertion before the legacy whole-answer
+                # positive. Unknown later claims cannot be hidden by "I can".
+                for statement in re.split(r'(?=\bI\b)',clause,flags=re.I):
+                    if not re.match(r'I\b',statement,re.I):continue
+                    words=' '.join(re.findall(r"[A-Za-z]+(?:['’][A-Za-z]+)?",statement))
+                    if not re.search(r'\b(?:travel|plan\w*|itinerar\w*)\b',words,re.I):continue
+                    assertion=re.search(r'\bI\s+((?:(?!(?:I|you|we|they|he|she|it)\b)[A-Za-z]+\s+)*'
+                                        r'(?:offer|provide)\b.*)',words,re.I)
+                    denial=(r'\b(?:no\b(?![-\s]+(?:extra\s+)?(?:cost|charge|fee)\b)|'
+                            r'neither\b|never\b|not\b(?!\s+only\b)|none\b)'
+                            r'[^.!?;\n]*\b(?:travel|plan\w*|itinerar\w*)\b')
+                    if assertion and re.search(denial,assertion[1],re.I):
+                        return 'FAIL','travel_capability_denied'
+                    status,reason=legacy_semantic(gate,words,locale)
+                    if status=='FAIL':return status,reason
+                    if status=='UNKNOWN':unresolved=True
+            if unresolved:return 'UNKNOWN','capability_assertion_unresolved'
             return legacy_semantic(gate,plain,locale)
     if gate=='SM02'and type(text)is str:
         # Remove styling, never substantive words. Only the two correct known

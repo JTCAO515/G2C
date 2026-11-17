@@ -80,3 +80,22 @@ def test_modified_self_denials_and_named_self_quotations_cannot_pass(answer):
 def test_denial_of_an_unrelated_service_does_not_deny_travel_planning(answer):
     assert semantic('SM06',answer,'en')[0]=='PASS'
     assert evaluate(capability_joint(answer))['status']=='PASS'
+
+
+@pytest.mark.parametrize('answer',[
+    'I can plan travel. I never provide travel planning services.',
+    'I can plan travel. I, however, offer no travel assistance.',
+])
+def test_negation_and_punctuation_in_self_assertions_cannot_be_skipped(answer):
+    assert semantic('SM06',answer,'en')[0]=='FAIL'
+    assert evaluate(capability_joint(answer))['status']=='FAIL'
+
+
+@pytest.mark.parametrize('answer',[
+    'I can plan travel. I decline to provide travel planning services.',
+    'I can plan travel. I refuse to offer travel assistance.',
+    'I can plan travel. I would rather not get involved with travel.',
+])
+def test_a_positive_sentence_does_not_resolve_an_unparsed_self_assertion(answer):
+    assert semantic('SM06',answer,'en')[0]=='UNKNOWN'
+    assert evaluate(capability_joint(answer))['status']=='UNKNOWN'
