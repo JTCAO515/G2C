@@ -11,6 +11,8 @@ private enum CommandJSON: StrictJSONPolicy {
     static let requiresObjectRoot = true
 }
 
+private enum ReadWindowFailure: Error { case unavailable }
+
 @MainActor final class LioBasicSmokeUI: XCTestCase {
     private struct Command: Decodable {
         let id: String
@@ -48,14 +50,16 @@ private enum CommandJSON: StrictJSONPolicy {
             }
             try Data().write(to: intent, options: .withoutOverwriting)
             let app = XCUIApplication(bundleIdentifier: command.bundle)
+            let scopedRead = command.kind == "snapshot_in_window" || command.kind == "audit_all_in_window"
+            var failed = false
             var result: [String: Any] = ["id": command.id, "kind": command.kind,
                 "started_uptime": ProcessInfo.processInfo.systemUptime]
-            func requireActionWindow() throws {
+            func requireActionWindow(_ requiresInterval: Bool = false) throws {
                 var calendar = Calendar(identifier: .gregorian)
                 calendar.timeZone = TimeZone(identifier: "Asia/Shanghai")!
                 let now = Date()
                 guard (8..<23).contains(calendar.component(.hour, from: now)) else { throw CommandJSON.failure }
-                if command.bundle == "space.go2china.app" {
+                if command.bundle == "space.go2china.app" || requiresInterval {
                     func boundary(_ raw: String?) -> Date? {
                         guard let raw else { return nil }
                         let formatter = ISO8601DateFormatter()
@@ -63,12 +67,18 @@ private enum CommandJSON: StrictJSONPolicy {
                         return formatter.date(from: raw)
                     }
                     guard let start = boundary(command.startsAt), let end = boundary(command.endsAt),
-                          start <= now, now < end else { throw CommandJSON.failure }
+                          start <= now, now < end,
+                          !requiresInterval || end.timeIntervalSince(start) <= 600 else { throw CommandJSON.failure }
                 }
+            }
+            func requireReadWindow() throws {
+                do { try requireActionWindow(true) }
+                catch { throw ReadWindowFailure.unavailable }
             }
             do {
                 if command.kind != "snapshot" && command.kind != "stop" {
-                    try requireActionWindow()
+                    if scopedRead { try requireReadWindow() }
+                    else { try requireActionWindow() }
                 }
                 switch command.kind {
                 case "launch":
@@ -102,22 +112,24 @@ private enum CommandJSON: StrictJSONPolicy {
                     // XCTest records typeText arguments even for SecureField.
                     // Never open or type a credential through this logging API.
                     throw CommandJSON.failure
-                case "audit_all":
+                case "audit_all", "audit_all_in_window":
                     // The installed ordinary Home must already be usable. This
                     // diagnostic never launches, signs in, or changes its data.
                     let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
                     let newChat = app.buttons["lio.chat.newShortcut"]
                     guard app.state == .runningForeground, composer.exists, composer.isHittable,
                           newChat.exists, newChat.isEnabled, newChat.isHittable else { throw CommandJSON.failure }
-                    try requireActionWindow()
+                    if scopedRead { try requireReadWindow() }
+                    else { try requireActionWindow() }
                     try app.performAccessibilityAudit(for: .all)
                     result["audit"] = "all"
                 case "swipe_up": try requireActionWindow(); app.swipeUp(velocity: .slow)
                 case "swipe_down": try requireActionWindow(); app.swipeDown(velocity: .slow)
-                case "snapshot", "stop": break
+                case "snapshot", "snapshot_in_window", "stop": break
                 default: throw CommandJSON.failure
                 }
-                if command.kind == "snapshot" || command.kind == "audit_all" {
+                if command.kind == "snapshot" || command.kind == "audit_all" || scopedRead {
+                    if scopedRead { try requireReadWindow() }
                     let snapshot = try app.snapshot()
                     var nodes: [[String: Any]] = []
                     func visit(_ node: any XCUIElementSnapshot, depth: Int) {
@@ -132,14 +144,23 @@ private enum CommandJSON: StrictJSONPolicy {
                         if !secure { node.children.forEach { visit($0, depth: depth + 1) } }
                     }
                     visit(snapshot, depth: 0)
-                    result["nodes"] = nodes
+                    if !scopedRead { result["nodes"] = nodes }
                     let image = directory.appendingPathComponent(stem + ".png")
-                    try app.screenshot().pngRepresentation.write(to: image, options: .atomic)
+                    if scopedRead { try requireReadWindow() }
+                    let picture = app.screenshot().pngRepresentation
+                    if scopedRead { try requireReadWindow() }
+                    try picture.write(to: image, options: .atomic)
                     try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: image.path)
+                    if scopedRead { result["nodes"] = nodes }
                     result["screenshot"] = image.lastPathComponent
                 }
                 result["ok"] = true
+            } catch ReadWindowFailure.unavailable {
+                failed = true
+                result["ok"] = false
+                result["error"] = "native_UI_read_window_unavailable"
             } catch {
+                failed = true
                 // A missing result for a tap is UNKNOWN, never permission to repeat it.
                 result["ok"] = false
                 result["error"] = "native_UI_action_unavailable"
@@ -149,7 +170,7 @@ private enum CommandJSON: StrictJSONPolicy {
             try JSONSerialization.data(withJSONObject: result, options: .sortedKeys).write(to: output, options: .atomic)
             try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: output.path)
             sequence += 1
-            if command.kind == "stop" { return }
+            if command.kind == "stop" || (scopedRead && failed) { return }
         }
     }
 }

@@ -13,7 +13,7 @@ class Running:
 
 class NativeAckTests(unittest.TestCase):
     def test_malformed_ack_locks_controller_without_advancing_or_another_tap(self):
-        for kind in ['tap', 'audit_all']:
+        for kind in ['tap', 'audit_all', 'snapshot_in_window', 'audit_all_in_window']:
             for malformed in ['missing_ok', 'invalid_json', 'wrong_kind', 'missing_clock']:
                 with self.subTest(kind=kind, malformed=malformed), tempfile.TemporaryDirectory() as path:
                     native = object.__new__(driver.NativeUI)
@@ -40,7 +40,31 @@ class NativeAckTests(unittest.TestCase):
                     self.assertFalse((native.commands / '00001.request.json').exists())
 
     def test_audit_missing_proof_cannot_advance_or_permit_a_following_action(self):
-        for damaged in ['missing_audit', 'missing_nodes', 'wrong_screenshot']:
+        for kind, damaged in [(kind, damaged) for kind in ('audit_all', 'audit_all_in_window')
+                              for damaged in ('missing_audit', 'missing_nodes', 'wrong_screenshot')]:
+            with self.subTest(kind=kind, damaged=damaged), tempfile.TemporaryDirectory() as folder:
+                native = object.__new__(driver.NativeUI)
+                native.failed, native.sequence = False, 0
+                native.process, native.bundle = Running(), 'synthetic-controller-only'
+                native.commands = Path(folder)
+                original_write = driver.write
+                def reply(target, request):
+                    original_write(target, request)
+                    value = dict(id=request['id'], kind=kind, ok=True, started_uptime=1, finished_uptime=2,
+                                 audit='all', nodes=[], screenshot='00000.png')
+                    if damaged == 'missing_audit': del value['audit']
+                    elif damaged == 'missing_nodes': del value['nodes']
+                    else: value['screenshot'] = '../other.png'
+                    (native.commands / '00000.response.json').write_text(json.dumps(value))
+                with patch.object(driver, 'write', side_effect=reply):
+                    with self.assertRaises(RuntimeError): native.command(kind)
+                    self.assertTrue(native.failed)
+                    self.assertEqual(native.sequence, 0)
+                    with self.assertRaises(RuntimeError): native.command('tap', identifier='synthetic')
+                self.assertFalse((native.commands / '00001.request.json').exists())
+
+    def test_windowed_snapshot_requires_nodes_and_its_original_screenshot(self):
+        for damaged in ['missing_nodes', 'invalid_nodes', 'missing_screenshot', 'wrong_screenshot']:
             with self.subTest(damaged=damaged), tempfile.TemporaryDirectory() as folder:
                 native = object.__new__(driver.NativeUI)
                 native.failed, native.sequence = False, 0
@@ -49,17 +73,18 @@ class NativeAckTests(unittest.TestCase):
                 original_write = driver.write
                 def reply(target, request):
                     original_write(target, request)
-                    value = dict(id=request['id'], kind='audit_all', ok=True, started_uptime=1, finished_uptime=2,
-                                 audit='all', nodes=[], screenshot='00000.png')
-                    if damaged == 'missing_audit': del value['audit']
-                    elif damaged == 'missing_nodes': del value['nodes']
+                    value = dict(id=request['id'], kind='snapshot_in_window', ok=True,
+                                 started_uptime=1, finished_uptime=2, nodes=[], screenshot='00000.png')
+                    if damaged == 'missing_nodes': del value['nodes']
+                    elif damaged == 'invalid_nodes': value['nodes'] = {}
+                    elif damaged == 'missing_screenshot': del value['screenshot']
                     else: value['screenshot'] = '../other.png'
                     (native.commands / '00000.response.json').write_text(json.dumps(value))
                 with patch.object(driver, 'write', side_effect=reply):
-                    with self.assertRaises(RuntimeError): native.command('audit_all')
+                    with self.assertRaises(RuntimeError): native.command('snapshot_in_window')
                     self.assertTrue(native.failed)
                     self.assertEqual(native.sequence, 0)
-                    with self.assertRaises(RuntimeError): native.command('tap', identifier='synthetic')
+                    with self.assertRaises(RuntimeError): native.command('snapshot_in_window')
                 self.assertFalse((native.commands / '00001.request.json').exists())
 
 
