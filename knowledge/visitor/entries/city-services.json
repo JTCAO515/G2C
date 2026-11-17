@@ -89,10 +89,10 @@
     "cities": [
       "chongqing"
     ],
-    "text_zh": "重庆中国三峡博物馆的预约系统提供护照证件选项；按馆方当日预约说明办理，不将其套用到重庆所有场馆。",
-    "text_en": "The Chongqing China Three Gorges Museum (重庆中国三峡博物馆) reservation system accepts passports. Follow the museum’s current booking instructions; this does not establish the rules for other Chongqing venues.",
+    "text_zh": "重庆中国三峡博物馆人民路主馆的常规入馆已无需提前预约；外籍游客应在出发前向馆方确认当日证件核验方式。不将本条套用到重庆其他场馆，也不把免预约当作免安检或保证即时入馆。",
+    "text_en": "Ordinary admission to the main Three Gorges Museum on Renmin Road no longer requires advance reservation. Foreign visitors should confirm the museum’s current identity-check arrangements before going. This does not establish the rules for other Chongqing venues or mean there is no security screening or guaranteed immediate entry.",
     "source_urls": [
-      "https://www.cq.gov.cn/ywdt/jrcq/202504/t20250407_14493623.html"
+      "https://www.cq.gov.cn/ywdt/jrcq/202605/t20260517_15681262_app.html"
     ],
     "checked_on": "2026-11-16",
     "expires_on": "2026-11-30"

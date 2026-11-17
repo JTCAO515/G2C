@@ -38,6 +38,7 @@ class Repository:
         self.needs_edits = None
         self.scoped_actions = None
         self.source_initializations = None
+        self.rich_undo_sources = None
 
     @contextmanager
     def transaction(self, before_commit=None):
@@ -131,6 +132,18 @@ class Repository:
         if not self.calendar: raise Denied('explicit calendar consumer required')
         from .lio_history import _message_receipt, edit_action_id
         return _message_receipt(self, binding, edit_action_id(binding.run_id), 'lio-calendar-edit.1')
+
+    def rich_plan_receipt(self, binding):
+        from .rich_history import plan_receipt
+        return plan_receipt(self, binding)
+
+    def rich_undo_receipt(self, request):
+        from .rich_history import undo_receipt
+        return undo_receipt(self, request)
+
+    def undo_rich(self, request):
+        from .rich_history import undo
+        return undo(self, request)
 
     def undo_calendar(self, request):
         from .calendar_history import undo

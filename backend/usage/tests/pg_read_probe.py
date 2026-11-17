@@ -1,6 +1,6 @@
 """Opt-in new Unix-only cluster; no external DSN, no existing server restart."""
 from pathlib import Path
-from dataclasses import asdict
+from dataclasses import asdict, replace
 import json
 import os
 import subprocess
@@ -68,6 +68,10 @@ class Conn:
 def read(scope='cj008_read_a',mode='normal',attempt='a',project=None):
     return PostgresRepository(lambda:Conn(mode),scope).read_status(attempt,
         guard=guard,max_response_bytes=4096,project=project)
+
+def read_many(scope='cj008_read_a', mode='normal', ids=('b', 'a'), limit=16386):
+    return PostgresRepository(lambda:Conn(mode), scope).read_status_many(ids,
+        guard=guard, max_response_bytes=limit, expected_period=(0, 1000))
 started=False
 try:
     p=subprocess.run([str(BIN/'initdb'),'-D',str(DATA),'-U','cj008_read_admin',
@@ -81,6 +85,9 @@ try:
     cfg=Config('synthetic-unit',10,0,1000,20,3,20,50)
     cmd=Command('a','operation','run','model','a'*64,6,2)
     ledger=Ledger(cfg,{'a':Attempt(cmd,'unknown')},{'run':Run(100,1)},100)
+    second=replace(cmd,attempt_id='b',operation_id='operation-b')
+    ledger.attempts['b']=Attempt(second,'settled',Receipt('b','original-b','synthetic-unit',0,0))
+    ledger.runs['run'].steps=2
     settled=Ledger(cfg,{'a':Attempt(cmd,'settled',Receipt('a','receipt','synthetic-unit',0,0))}, {'run':Run(100,1)},100)
     with connect('cj008_read_admin') as c:
         identity=c.execute("SELECT current_user,current_database(),current_setting('data_directory'),current_setting('listen_addresses'),current_setting('unix_socket_directories'),current_setting('port'),version()").fetchone()
@@ -104,6 +111,29 @@ try:
     record('same original run and operation',value['run_id']=='run' and value['operation_id']=='operation')
     record('cross-scope RLS denial',rejects(RepositoryUnavailable,lambda:read(scope='cj008_read_b')))
     record('missing attempt denial',rejects(RepositoryUnavailable,lambda:read(attempt='missing')))
+    select_before=sum(s.startswith('SELECT ') for s in statements)
+    batch=json.loads(read_many())
+    record('batch original ordered zero receipt and unknown remain distinct',
+        [row['attempt_id'] for row in batch]==['b','a'] and
+        batch[0]['status']=='settled' and batch[0]['receipt_id']=='original-b' and
+        batch[0]['confirmed_units']==0 and batch[1]['status']=='unknown' and
+        batch[1]['confirmed_units'] is None and
+        all('input_digest' not in row and 'ledger' not in row for row in batch))
+    record('batch performs one original ledger SELECT',
+        sum(s.startswith('SELECT ') for s in statements)==select_before+1)
+    record('batch cross-scope RLS denial',rejects(RepositoryUnavailable,
+        lambda:read_many(scope='cj008_read_b')))
+    record('batch missing member withholds all',rejects(RepositoryUnavailable,
+        lambda:read_many(ids=('a','absent'))))
+    record('batch response byte bound withholds all',rejects(ReadUnavailable,
+        lambda:read_many(limit=1)))
+    record('batch close revocation withholds all',rejects(ReadUnavailable,
+        lambda:read_many(mode='revoke')))
+    authority[0]=True
+    record('batch close failure withholds all',rejects(ReadUnavailable,
+        lambda:read_many(mode='close')))
+    record('batch uncertain completion ACK withholds all',rejects(CommitUnknown,
+        lambda:read_many(mode='ack')))
     record('connection close revocation withholds bytes',rejects(ReadUnavailable,lambda:read(mode='revoke')))
     authority[0]=True
     record('connection close failure withholds bytes',rejects(ReadUnavailable,lambda:read(mode='close')))

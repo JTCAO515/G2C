@@ -47,6 +47,8 @@ class RichProviderCapture:
 
 
 class RichProviderContextSource(RichCalendarContextSource):
+    plan_source_version = 'TRIP-RICH-PLAN-SOURCE.1'
+
     def __init__(self, *args, provider_reader, **kwargs):
         super().__init__(*args, **kwargs)
         if provider_reader is None:
@@ -69,14 +71,18 @@ class RichProviderContextSource(RichCalendarContextSource):
             raise LeaseUnavailable('issued original calendar/profile capture required')
         reader = self.provider_reader
         providers = reader.capture(binding)
-        value = json.loads(calendar.raw)
-        value.update(version=SOURCE, provider_records=providers.records)
+        value = self._provider_value(calendar, providers)
         raw = packed(value)
         if len(raw) > self.max_bytes:
             raise LeaseUnavailable('combined provider source exceeds original byte bound')
         capture = RichProviderCapture(calendar, providers, reader, raw, _factory=_FACTORY)
         self.provider_captures[binding] = capture
         return capture
+
+    def _provider_value(self, calendar, providers):
+        value = json.loads(calendar.raw)
+        value.update(version=SOURCE, provider_records=providers.records)
+        return value
 
     @contextmanager
     def hold_additional_sources(self, binding, needs, message):
@@ -113,3 +119,16 @@ class RichProviderContextSource(RichCalendarContextSource):
         super().check(binding, capture.calendar)
         state[1].check()
         return True
+
+    def provider_outcomes(self, binding, capture):
+        """Read original code-targeted outcomes only in their current holder."""
+        self.check(binding, capture)
+        return capture.providers.outcomes
+
+    def unavailable_targets(self, binding, capture):
+        """Known terminal no-result targets, never an empty-record inference."""
+        outcomes = self.provider_outcomes(binding, capture)
+        return frozenset(target for outcome in outcomes
+            if outcome['status'] == 'unavailable'
+                or outcome['status'] == 'ok' and outcome['item_count'] == 0
+            for target in outcome['targets'])

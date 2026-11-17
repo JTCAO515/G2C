@@ -3,12 +3,12 @@
 父票 #841；格式与候选来源 #843；首批收集 #846；事实工具接入由 L 在 #847 完成。
 H 线只拥有 `knowledge/visitor/**`。JT 已在 [#843](https://github.com/JTCAO515/G2C/issues/843#issuecomment-6818584957) 确认 H1 来源范围。
 WP12 新格式、条件语义、官方渠道与名称目录见 [WP12-FORMAT.md](WP12-FORMAT.md)；旧八字段消费者继续读取原目录。
-2026-11-16 持续Goal的九城/全国16条/回归缺口与票据见 [ACCEPTANCE-COVERAGE.md](ACCEPTANCE-COVERAGE.md)。新增两城基础内容在 `entries-v3/`，必须用显式v3读取器；旧目录/格式和旧22条保持不变。
+2026-11-16 持续Goal的九城/全国16条/回归缺口与票据见 [ACCEPTANCE-COVERAGE.md](ACCEPTANCE-COVERAGE.md)。新增两城基础内容在 `entries-v3/`，必须用显式v3读取器；旧目录、格式及22条记录保留，内容复核可更新正文、来源和日期，不改变旧字段结构和消费者接受集合。
 首批 **12 条**中英条目初次于 2026-11-12 核对，覆盖七城 × 五主题共 35 个覆盖格；具体范围和限制见 [COVERAGE.md](COVERAGE.md)。
 
 ## 文件与格式
 
-- `SOURCES.md`：JT 已确认的来源范围；不据首页地址推断具体事实。
+- `SOURCES.md`：首批 JT 确认范围及 H 依授权代批的后续记录；不据首页地址推断具体事实。
 - `examples/format.json`：3 条**合成格式样例**，正文和日期均为测试数据，不是已核对的游客须知，禁止接入检索。
 - `entries/*.json`：正式内容文件，每个文件为非空 JSON 数组；`mainland-basics.json` 为 5 条全国适用基础指引，`city-services.json` 为 7 条城市专有事项。目录中的“正式”区分合成样例，不代表已上线。
 - `validate.py` / `test_validate.py`：只读本地格式检查与测试；不联网、不抓取、不写条目。
@@ -65,4 +65,4 @@ uv run --locked python -B knowledge/visitor/review_due.py knowledge/visitor/entr
 `review_due.py` 输出 id、主题、城市、核对日、失效日和来源，按失效日/id 排序；截至 2026-11-16，旧格式未来 30 天内应复核 10 条。
 该脚本沿用原严格校验：发现已失效条目或格式错误时退出 1，不输出部分清单。先根据报错定位并复核对应条目，再重新运行；不能把失败当作“没有待复核条目”。
 失效条目停止返回，不因旧回答或缓存继续使用。`review_due.py` 不修改文件，也不授予过期条目的展示权。
-来源新增或跨 hostname 先请 JT 确认：旧授权见 #843，本持续Goal按JT要求在 #702 汇总确认。正文只保存必要概括与网址，抓取原件和日志不入库。
+来源新增或跨 hostname 先核实主体和范围：旧授权见 #843；本持续Goal中，JT已授权H代批后续正确、正常来源，逐项在 #702 记录依据并更新 SOURCES.md。该授权不扩为付费接口、账号凭据、交易或其他目录，也不代替每条正文和时效核对。正文只保存必要概括与网址，抓取原件和日志不入库。

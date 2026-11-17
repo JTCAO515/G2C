@@ -11,15 +11,17 @@ struct DemoBetaRootView: View {
         Group {
             if root.finishingDemoCleanup {
                 NavigationStack { LioAccountDeletion(shell: shell, root: root) }
-            } else if case .signedIn = root.accounts.state, let trip = root.trip {
+            } else if let trip = root.lioRetainedTrip {
                 LioHome(language: shell.language.lio, service: trip.messages.lio, isDemo: false,
                         chatLibrary: trip.messages.lioChats, tripLibrary: trip.lioTripLibrary,
                         tripHistory: trip.messages.lioTripHistory,
                         memoryActions: trip.messages.lioMemoryActions,
-                        savedMemory: trip.typedMemory.map { AnyView(LioSavedMemoryView(host: $0.host, language: shell.language)) },
+                        savedMemory: trip.typedMemory.map { AnyView(LioSavedMemoryView(host: $0.host, language: shell.language).id(trip.id)) },
                         recordedMap: { document in
                     AnyView(LioRecordedTripMap(document: document, language: shell.language))
-                }, reconnect: {
+                }, session: .init(revision: trip.id, available: sessionReady,
+                                  showsRetry: root.accounts.state == .networkUnknown || root.accounts.state == .storageUnavailable,
+                                  problem: root.lioSessionProblem), reconnect: {
                     root.accounts.suspend()
                     root.accounts.resume()
                 }) {
@@ -29,7 +31,7 @@ struct DemoBetaRootView: View {
                     }
                     Button(shell.language.text("Sign out", "退出登录")) { root.accounts.signOut() }
                 }
-                .id(trip.id)
+                .id(root.lioPresentationID)
             } else if root.accounts.isResuming {
                 LioSessionRecoveryView(language: shell.language.lio,
                                        showsRetry: root.accounts.state == .networkUnknown || root.accounts.state == .storageUnavailable,
@@ -55,6 +57,11 @@ struct DemoBetaRootView: View {
                 do { try await Task.sleep(for: .seconds(20)) } catch { return }
             }
         }
+    }
+
+    private var sessionReady: Bool {
+        guard case .signedIn = root.accounts.state else { return false }
+        return root.trip === root.lioRetainedTrip
     }
 
 }
