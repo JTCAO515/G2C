@@ -8,7 +8,7 @@ from deploy.hk import readiness_monitor as monitor
 
 def test_checks_only_two_public_routes_in_order():
     fetch = Mock(side_effect=lambda route, expected: dict(route=route, status=200))
-    value, code = monitor.run(datetime(2026, 11, 17, 9, tzinfo=timezone.utc), fetch)
+    value, code = monitor.run(lambda: datetime(2026, 11, 17, 9, tzinfo=timezone.utc), fetch)
     assert code == 0 and value['state'] == 'PUBLIC_HEALTH_OBSERVED'
     assert fetch.call_args_list == [
         (('/health/live', 'alive'),), (('/health/ready', 'ready'),)]
@@ -20,16 +20,16 @@ def test_checks_only_two_public_routes_in_order():
     (0, 'PUBLIC_HEALTH_OBSERVED')])
 def test_actual_start_time_checks_beijing_quiet_hours(hour, state):
     fetch = Mock(return_value={})
-    value, code = monitor.run(datetime(2026, 11, 17, hour, tzinfo=timezone.utc), fetch)
+    value, code = monitor.run(lambda: datetime(2026, 11, 17, hour, tzinfo=timezone.utc), fetch)
     assert value['state'] == state and code == 0
     assert fetch.call_count == (2 if state == 'PUBLIC_HEALTH_OBSERVED' else 0)
 
 
 def test_expired_authorization_and_drill_never_contact_server():
     fetch = Mock()
-    value, code = monitor.run(datetime(2027, 1, 1, 1, tzinfo=timezone.utc), fetch)
+    value, code = monitor.run(lambda: datetime(2027, 1, 1, 1, tzinfo=timezone.utc), fetch)
     assert code == 0 and value['state'] == 'SKIPPED_EXPIRED'
-    value, code = monitor.run(datetime(2026, 11, 17, 9, tzinfo=timezone.utc),
+    value, code = monitor.run(lambda: datetime(2026, 11, 17, 9, tzinfo=timezone.utc),
                               fetch, notification_drill=True)
     assert code == 1 and value['state'] == 'ALERT_TRANSPORT_DRILL_NO_SERVER_REQUEST'
     fetch.assert_not_called()
@@ -51,9 +51,24 @@ def test_response_boundary_rejects_failure_without_exposing_body(status, kind, b
 
 def test_first_failure_stops_new_requests():
     fetch = Mock(side_effect=monitor.ProbeFailure('transport'))
-    value, code = monitor.run(datetime(2026, 11, 17, 9, tzinfo=timezone.utc), fetch)
+    value, code = monitor.run(lambda: datetime(2026, 11, 17, 9, tzinfo=timezone.utc), fetch)
     assert code == 1 and value['category'] == 'transport'
     assert fetch.call_count == 1
+
+
+@pytest.mark.parametrize('later,state', [
+    (datetime(2026, 11, 17, 15, tzinfo=timezone.utc), 'SKIPPED_QUIET_HOURS'),
+    (datetime(2027, 1, 1, tzinfo=timezone.utc), 'SKIPPED_EXPIRED'),
+])
+def test_time_boundary_between_gets_stops_second_request(later, state):
+    before = datetime(2026, 11, 17, 14, 59, 59, tzinfo=timezone.utc)
+    clock = Mock(side_effect=[before, before, later])
+    fetch = Mock(return_value=dict(route='/health/live', status=200))
+    value, code = monitor.run(clock, fetch)
+    assert code == 0 and value['state'] == state
+    assert value['stopped_at'] == later.isoformat()
+    assert value['observations'] == [dict(route='/health/live', status=200)]
+    fetch.assert_called_once_with('/health/live', 'alive')
 
 
 def test_real_http_adapter_verifies_tls_and_bounds_read_without_auth_or_redirect():

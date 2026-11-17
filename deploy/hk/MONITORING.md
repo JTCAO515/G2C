@@ -23,7 +23,9 @@ There are no retries, signed requests, model/tool calls, account changes or
 budget operations. The first failure stops the remaining requests.
 
 The intended interval is ten minutes during Beijing 08:00–23:00. A delayed job
-also checks its actual start time and skips quiet hours; the hard expiry is
+checks its actual start time and rechecks immediately before each GET. Crossing
+quiet hours or expiry preserves completed metadata and skips the remaining GET;
+it does not report a complete successful observation. The hard expiry is
 2027-01-01 00:00 Beijing. If M4 ends sooner, B disables the variable immediately.
 GitHub may delay/drop scheduled jobs, so this is not a ten-minute availability
 SLA or overnight coverage.

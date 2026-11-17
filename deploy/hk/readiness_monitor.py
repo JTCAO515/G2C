@@ -49,19 +49,35 @@ def get(route, expected):
                 duration_ms=round((time.monotonic() - started) * 1000, 3))
 
 
-def run(now, fetch=get, *, notification_drill=False):
-    """A delayed scheduled job still respects Beijing quiet hours and expiry."""
+def utcnow():
+    return datetime.now(timezone.utc)
+
+
+def inactive_state(now):
     local = now.astimezone(timezone(timedelta(hours=8)))
+    if local >= ENDS_AT:
+        return 'SKIPPED_EXPIRED'
+    if not 8 <= local.hour < 23:
+        return 'SKIPPED_QUIET_HOURS'
+    return None
+
+
+def run(clock=utcnow, fetch=get, *, notification_drill=False):
+    """Recheck the allowed time immediately before every new GET."""
+    now = clock()
     result = dict(version='G2C-public-readiness-observation.1',
                   observed_at=now.isoformat(), observations=[],
                   provider_calls=0, business_requests=0)
-    if local >= ENDS_AT:
-        return dict(result, state='SKIPPED_EXPIRED'), 0
-    if not 8 <= local.hour < 23:
-        return dict(result, state='SKIPPED_QUIET_HOURS'), 0
+    inactive = inactive_state(now)
+    if inactive:
+        return dict(result, state=inactive), 0
     if notification_drill:
         return dict(result, state='ALERT_TRANSPORT_DRILL_NO_SERVER_REQUEST'), 1
     for route, expected in ROUTES:
+        current = clock()
+        inactive = inactive_state(current)
+        if inactive:
+            return dict(result, state=inactive, stopped_at=current.isoformat()), 0
         try:
             result['observations'].append(fetch(route, expected))
         except ProbeFailure as error:
@@ -73,8 +89,7 @@ def run(now, fetch=get, *, notification_drill=False):
 def main():
     if sys.argv[1:] not in ([], ['--notification-drill']):
         raise SystemExit('only --notification-drill is supported')
-    result, code = run(datetime.now(timezone.utc),
-                       notification_drill='--notification-drill' in sys.argv)
+    result, code = run(notification_drill='--notification-drill' in sys.argv)
     print(json.dumps(result, sort_keys=True))
     return code
 
