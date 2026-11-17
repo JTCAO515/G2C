@@ -1,0 +1,249 @@
+{
+  "version": "LIO-profile-value-map.1",
+  "issue": 936,
+  "sources": [
+    {
+      "path": "backend/cj_api/lio_exploration_factors.py",
+      "sha256": "76129b54f089de4da21dfcac08185ea73e50202a9bb4f608b88665dfe151b466",
+      "source_commit": "78c0f978c85de560eea6fe655e24bd1ba8816f04"
+    },
+    {
+      "path": "backend/cj_api/lio_exploration_profile.py",
+      "sha256": "18054d5f3c74de82608b3e3da89a4b565b7ae3ba90fae9214f0a7e5968e6cee6",
+      "source_commit": "78c0f978c85de560eea6fe655e24bd1ba8816f04"
+    },
+    {
+      "path": "docs/quality/m4-936-observation-normalization.v1.md",
+      "sha256": "40ad16fb0a4f15b9a18404591226e740cdc76a54778753e2f1cc1d11684b796d",
+      "source_commit": "78c0f978c85de560eea6fe655e24bd1ba8816f04"
+    },
+    {
+      "path": "backend/cj_api/lio_city.py",
+      "sha256": "59927c111093f12643c095420236d7dbef7594e58c59c3d1b87abd0f9a3cf60e",
+      "source_commit": "78c0f978c85de560eea6fe655e24bd1ba8816f04"
+    }
+  ],
+  "factors": [
+    "city",
+    "duration_days",
+    "season",
+    "first_visit",
+    "party_type",
+    "interests",
+    "pace",
+    "lodging_tier",
+    "dietary",
+    "must_see",
+    "avoid",
+    "mobility",
+    "arrival",
+    "departure"
+  ],
+  "array_factors": [
+    "interests",
+    "dietary",
+    "must_see",
+    "avoid"
+  ],
+  "aliases": {
+    "city": {
+      "beijing": [
+        "北京",
+        "北京市",
+        "Beijing (北京)"
+      ],
+      "chengdu": [
+        "成都",
+        "成都市",
+        "Chengdu (成都)"
+      ],
+      "shanghai": [
+        "上海",
+        "上海市",
+        "Shanghai (上海)"
+      ],
+      "hangzhou": [
+        "杭州",
+        "杭州市",
+        "Hangzhou (杭州)"
+      ]
+    },
+    "season": {
+      "spring": [
+        "春季",
+        "春天"
+      ],
+      "summer": [
+        "夏季",
+        "夏天"
+      ],
+      "autumn": [
+        "秋季",
+        "秋天",
+        "fall"
+      ],
+      "winter": [
+        "冬季",
+        "冬天"
+      ]
+    },
+    "party_type": {
+      "solo": [
+        "一个人",
+        "一人",
+        "alone",
+        "1 person",
+        "one person"
+      ],
+      "two_adults": [
+        "两个成人",
+        "two adults"
+      ],
+      "family_with_child": [
+        "family",
+        "带孩子",
+        "with children"
+      ],
+      "friends": [
+        "和朋友",
+        "with friends"
+      ]
+    },
+    "interests": {
+      "history": [
+        "历史",
+        "历史文化",
+        "history and culture",
+        "historic"
+      ],
+      "food": [
+        "美食",
+        "当地美食",
+        "local food"
+      ],
+      "nature": [
+        "山水",
+        "自然",
+        "自然山水",
+        "nature and scenery",
+        "scenery",
+        "熊猫与自然",
+        "pandas and nature"
+      ],
+      "modern": [
+        "现代城市",
+        "modern city",
+        "modern city life"
+      ]
+    },
+    "pace": {
+      "relaxed": [
+        "轻松",
+        "悠闲",
+        "慢节奏",
+        "leisurely",
+        "slow"
+      ],
+      "moderate": [
+        "适中",
+        "中等",
+        "balanced"
+      ],
+      "packed": [
+        "紧凑",
+        "密集",
+        "fast"
+      ]
+    },
+    "lodging_tier": {
+      "budget": [
+        "simple",
+        "简洁实用",
+        "经济型",
+        "simple and practical",
+        "budget-friendly"
+      ],
+      "comfortable": [
+        "舒适型"
+      ],
+      "luxury": [
+        "高端型",
+        "豪华",
+        "奢华",
+        "luxurious"
+      ]
+    },
+    "dietary": {
+      "none": [
+        "无饮食限制",
+        "no dietary restrictions"
+      ],
+      "mild": [
+        "不吃辣",
+        "no spicy food",
+        "do not eat spicy",
+        "avoid spicy"
+      ],
+      "vegetarian": [
+        "素食"
+      ],
+      "halal": [
+        "清真",
+        "清真饮食"
+      ]
+    },
+    "must_see": {
+      "museum": [
+        "博物馆",
+        "museums"
+      ],
+      "old_town": [
+        "历史街区",
+        "historic neighbourhoods"
+      ],
+      "market": [
+        "当地市场",
+        "local markets"
+      ]
+    },
+    "avoid": {
+      "crowds": [
+        "拥挤地点",
+        "crowded places"
+      ],
+      "shopping": [
+        "购物安排",
+        "shopping stops"
+      ],
+      "late": [
+        "深夜活动",
+        "late-night activities"
+      ]
+    },
+    "mobility": {
+      "none": [
+        "无行动限制",
+        "no mobility restrictions"
+      ],
+      "less": [
+        "少走路",
+        "less walking"
+      ],
+      "stairs": [
+        "避开台阶",
+        "avoid stairs"
+      ],
+      "wheelchair": [
+        "需要无障碍路线",
+        "wheelchair-accessible routes"
+      ]
+    }
+  },
+  "limits": [
+    "Only the four explicitly sourced product city names are covered; this is not a product city allow-list.",
+    "No conversion of coarse arrival/departure to invented day, clock or transport.",
+    "Explicit null is unavailable, not an explicit no-restriction value.",
+    "All array items and duplicates are preserved; no sorting or scalar coercion.",
+    "No hidden persona or expected answer is a mapping source."
+  ]
+}
