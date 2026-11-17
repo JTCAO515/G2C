@@ -42,6 +42,7 @@ def main():
     parser.add_argument('--denial-status', type=int, choices=(401, 403), default=401)
     parser.add_argument('--deny-after-cold', action='store_true')
     parser.add_argument('--initial-cold-fault', action='store_true')
+    parser.add_argument('--scenario', choices=('session', 'timeline-timeout'), default='session')
     args = parser.parse_args()
     if args.initial_cold_fault and not args.cold_restart:
         parser.error('Initial cold fault requires the cold-restart sequence')
@@ -53,9 +54,10 @@ def main():
         'com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro', 'com.apple.CoreSimulator.SimRuntime.iOS-17-5'], text=True).strip()
     report = dict(layer='actual Root/account/clients + synthetic loopback + fresh simulator', simulator=simulator,
                   language=args.language, cold_restart=args.cold_restart, read_fault=args.read_fault, initial_cold_fault=args.initial_cold_fault, denial_status=args.denial_status, deny_after_cold=args.deny_after_cold, baseline_root=args.baseline_root, baseline_commit=BASELINE_COMMIT if args.baseline_root else None,
-                  real_service='UNRUN', requests=[])
+                  scenario=args.scenario, real_service='UNRUN', requests=[])
     lock = threading.Lock()
     released = threading.Event(); released.set()
+    finished = threading.Event()
     mode = ['ready']; resumed = [False]
 
     def save():
@@ -101,6 +103,13 @@ def main():
                     category='access' if status in (401, 403) else 'dependency', message_en='Synthetic connection failure',
                     message_zh='本地合成连接失败', outcome='failed', recovery='do_not_retry')))
             elif path in ('/v1/lio/timeline', '/v2/lio/timeline'):
+                with lock: current = mode[0]
+                if current == 'timeline-timeout':
+                    self.record(None)
+                    # The real URLSession's five-second request timeout must fire
+                    # before any response. No synthetic timeout is thrown in Swift.
+                    finished.wait(timeout=12)
+                    return
                 other = claims['sub'].endswith('bbbbbbbbbbbb')
                 rows = [dict(message_id='synthetic-root-b' if other else 'synthetic-root-a', text='Owner B question' if other else 'Existing owner A question',
                              answer='Independent owner B answer' if other else 'Existing owner A answer', status='completed', sources=[])]
@@ -138,7 +147,7 @@ def main():
             path = urlsplit(self.path).path
             try: value = self.body()
             except (ValueError, UnicodeError): self.send_error(400); return
-            if path == '/fixture-mode' and set(value) == {'mode'} and value['mode'] in ('ready', 'hold', 'offline', 'denied'):
+            if path == '/fixture-mode' and set(value) == {'mode'} and value['mode'] in ('ready', 'hold', 'offline', 'denied', 'timeline-timeout'):
                 with lock:
                     mode[0] = value['mode']
                     if mode[0] == 'hold': resumed[0] = True; released.clear()
@@ -187,7 +196,9 @@ def main():
         save()
         command = ['xcodebuild', '-project', str(project), '-scheme', 'G2CControl', '-destination', 'platform=iOS Simulator,id='+simulator,
                    '-derivedDataPath', str(args.build_dir), '-resultBundlePath', str(output/'warm-root.xcresult'), '-onlyUsePackageVersionsFromResolvedFile',
-                   '-parallel-testing-enabled', 'NO', 'ARCHS=arm64', 'ONLY_ACTIVE_ARCH=YES', 'CODE_SIGNING_ALLOWED=YES', 'CODE_SIGN_IDENTITY=-', 'test']
+                   '-parallel-testing-enabled', 'NO', 'ARCHS=arm64', 'ONLY_ACTIVE_ARCH=YES', 'CODE_SIGNING_ALLOWED=YES', 'CODE_SIGN_IDENTITY=-',
+                   '-only-testing:G2CControl/LioWarmRootUITests/' + ('testColdTimelineTimeoutKeepsTheSessionAndDraftAndNamesTheReadStage'
+                       if args.scenario == 'timeline-timeout' else 'testActualRootRetainsOnlyTheSameOwnerAndRetiresItsOriginalClients'), 'test']
         env = {k: v for k, v in os.environ.items() if not k.startswith(('G2C_DEV_', 'SIMCTL_CHILD_'))}
         with (output/'xcodebuild.log').open('w') as log:
             subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=900)
@@ -195,9 +206,13 @@ def main():
         (output/'summary.json').write_bytes(summary)
         values = json.loads(summary)
         assert values['passedTests'] == 1 and values['failedTests'] == 0 and values['skippedTests'] == 0
+        if args.scenario == 'timeline-timeout':
+            reads = [row for row in report['requests'] if row['path'] in ('/v1/lio/timeline', '/v2/lio/timeline')]
+            assert sum(row['status'] is None for row in reads) >= 2
+            assert reads[-1]['status'] == 200
         assert not any(row['method']=='POST' and row['path']!='/v4/cleanup-devices' for row in report['requests'])
     finally:
-        released.set(); server.shutdown(); server.server_close()
+        released.set(); finished.set(); server.shutdown(); server.server_close()
         stopped = subprocess.run(['xcrun', 'simctl', 'shutdown', simulator], capture_output=True, text=True)
         report['owned_simulator_shutdown_exit'] = stopped.returncode
         save()
