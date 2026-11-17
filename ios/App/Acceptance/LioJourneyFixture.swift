@@ -116,7 +116,7 @@ private actor JourneyScenario {
                 row["memory"] = ["tags": [
                     ["id": "quiet-hotel", "kind": "preference", "target": target, "text": preference],
                     ["id": "technical-tag", "kind": "preference", "target": "technical_tag",
-                     "text": language.text("Review the request ID", "核实这次操作")]
+                     "text": language.text("Review the request ID", "核实 operation_id")]
                 ]]
             }
         } else {
