@@ -99,3 +99,35 @@ def test_negation_and_punctuation_in_self_assertions_cannot_be_skipped(answer):
 def test_a_positive_sentence_does_not_resolve_an_unparsed_self_assertion(answer):
     assert semantic('SM06',answer,'en')[0]=='UNKNOWN'
     assert evaluate(capability_joint(answer))['status']=='UNKNOWN'
+
+
+@pytest.mark.parametrize('prefix',['', 'I can plan travel. '])
+@pytest.mark.parametrize('statement',[
+    'I offer services unrelated to travel planning.',
+    'I provide services other than travel planning.',
+])
+def test_a_travel_keyword_is_not_a_positive_service_object(prefix,statement):
+    answer=prefix+statement
+    assert semantic('SM06',answer,'en')[0]=='UNKNOWN'
+    assert evaluate(capability_joint(answer))['status']=='UNKNOWN'
+
+
+@pytest.mark.parametrize('answer',[
+    'I can help with services unrelated to travel planning.',
+    'I help you with things other than travel planning.',
+    'I can plan travel. My role excludes travel planning.',
+    'I can plan travel. This assistant does not provide travel planning.',
+])
+def test_unparsed_travel_claims_cannot_inherit_a_keyword_pass(answer):
+    assert semantic('SM06',answer,'en')[0]!='PASS'
+    assert evaluate(capability_joint(answer))['status']!='PASS'
+
+
+@pytest.mark.parametrize('answer',[
+    'I offer 0 travel planning services.',
+    'I offer ⛔ travel planning services.',
+    'I can plan travel. I do not assist with trips.',
+])
+def test_unparsed_numbers_symbols_and_other_trip_wording_are_preserved(answer):
+    assert semantic('SM06',answer,'en')[0]!='PASS'
+    assert evaluate(capability_joint(answer))['status']!='PASS'
