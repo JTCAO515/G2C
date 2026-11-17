@@ -42,7 +42,6 @@ VENUE_SOURCE_CITIES.update({
     "www.meet-in-shanghai.net": frozenset({"shanghai"}),
 })
 VENUE_PAGE_CITIES = {
-    "https://sight.qunar.com/833": frozenset({"hangzhou"}),
     "https://you.ctrip.com/sight/shenzhen26/50541.html": frozenset({"shenzhen"}),
     "https://ruqintravel.com/china-destination-guides/big-wild-goose-pagoda/": frozenset({"xian"}),
     "https://sichuan.scol.com.cn/ggxw/202502/82903345.html": frozenset({"chengdu"}),
