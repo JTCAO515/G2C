@@ -44,12 +44,19 @@ def main():
     parser.add_argument('--deny-after-cold', action='store_true')
     parser.add_argument('--initial-cold-fault', action='store_true')
     parser.add_argument('--scenario', choices=('session', 'timeline-timeout', 'lock-screen'), default='session')
+    parser.add_argument('--lock-fault', choices=('read', 'denied', 'timeline-timeout'), default='read')
     parser.add_argument('--simulator-control', type=Path, help='AXe executable for the explicit native lock-screen case only')
     args = parser.parse_args()
     if args.initial_cold_fault and not args.cold_restart:
         parser.error('Initial cold fault requires the cold-restart sequence')
     if args.scenario == 'lock-screen' and (args.simulator_control is None or not args.simulator_control.is_file()):
         parser.error('Native lock-screen scenario requires an existing --simulator-control executable')
+    if args.scenario == 'lock-screen' and (args.baseline_root or args.cold_restart or args.deny_after_cold or args.initial_cold_fault):
+        parser.error('Native lock-screen controls cannot claim baseline or cold-start coverage')
+    if args.scenario != 'lock-screen' and args.lock_fault != 'read':
+        parser.error('Lock fault selection requires the native lock-screen scenario')
+    if args.scenario == 'lock-screen' and args.lock_fault != 'read' and args.read_fault != 'service':
+        parser.error('Choose one native fault class')
     output = args.output.resolve()
     if output.is_relative_to(ROOT) or args.build_dir.resolve().is_relative_to(ROOT):
         parser.error('Keep evidence and products outside the repository')
@@ -58,7 +65,7 @@ def main():
         'com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro', 'com.apple.CoreSimulator.SimRuntime.iOS-17-5'], text=True).strip()
     report = dict(layer='actual Root/account/clients + synthetic loopback + fresh simulator', simulator=simulator,
                   language=args.language, cold_restart=args.cold_restart, read_fault=args.read_fault, initial_cold_fault=args.initial_cold_fault, denial_status=args.denial_status, deny_after_cold=args.deny_after_cold, baseline_root=args.baseline_root, baseline_commit=BASELINE_COMMIT if args.baseline_root else None,
-                  scenario=args.scenario, real_service='UNRUN', requests=[])
+                  scenario=args.scenario, lock_fault=args.lock_fault, real_service='UNRUN', requests=[])
     lock = threading.Lock()
     released = threading.Event(); released.set()
     finished = threading.Event()
@@ -104,7 +111,7 @@ def main():
             initial, initial_hash = native_lock_state('lock', 0)
             if initial != '0': raise ValueError('The fresh simulator must start unlocked')
             observation['initial_lock_state_sha256'] = initial_hash
-            subprocess.run([control, 'button', 'lock', '--udid', simulator], check=True, capture_output=True, timeout=5)
+            subprocess.run([control, 'button', 'lock', '--duration', '0.2', '--udid', simulator], check=True, capture_output=True, timeout=5)
             # A successful HID command is not a completed lock transition.
             deadline = time.monotonic() + 5
             index = 0
@@ -228,15 +235,6 @@ def main():
             path = urlsplit(self.path).path
             try: value = self.body()
             except (ValueError, UnicodeError): self.send_error(400); return
-            if path == '/fixture-lock-screen' and args.scenario == 'lock-screen' and value == {'action': 'observe-lock'}:
-                deadline = time.monotonic() + 10
-                control_result = None
-                while time.monotonic() < deadline:
-                    with lock: control_result = report.get('lock_control')
-                    if control_result is not None: break
-                    time.sleep(0.05)
-                observed = control_result is not None and control_result['observed'] is True
-                self.send_json(200 if observed else 503, dict(observed=observed)); return
             if path == '/fixture-lock-screen' and args.scenario == 'lock-screen' and value == {'action': 'observe-unlock'}:
                 observed = observe_unlock()
                 self.send_json(200 if observed else 503, dict(observed=observed)); return
@@ -264,6 +262,7 @@ def main():
         module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
         builder = object.__new__(module.XCTestDriver); builder.directory = output; builder.write_project(0)
         tests = (HERE / 'LioWarmRootUITests.swift').read_text().replace('__WARM_ENDPOINT__', endpoint).replace('__WARM_LANGUAGE__', args.language).replace('__WARM_COLD_RESTART__', '1' if args.cold_restart else '0').replace('__WARM_DENY_COLD__', '1' if args.deny_after_cold else '0').replace('__WARM_COLD_FAULT__', '1' if args.initial_cold_fault else '0').replace('__WARM_EXPECTED_PROBLEM__', ('0|sessionCheck|-' if args.read_fault == 'connection-lost' else '503|sessionCheck|' + TRACE)).replace('__WARM_EXPECTED_CATEGORY__', 'network' if args.read_fault == 'connection-lost' else 'service')
+        tests = tests.replace('__WARM_DENIAL_STATUS__', str(args.denial_status)).replace('__WARM_TRACE__', TRACE)
         (output / 'G2CControl.swift').write_text(tests)
         entry = ROOT / 'ios/App/CJProbeApp.swift'
         source = entry.read_text().replace('@main\nstruct CJProbeApp: App', 'struct CJProbeApp: App')
@@ -296,7 +295,11 @@ def main():
                    '-only-testing:G2CControl/LioWarmRootUITests/' + {
                        'session': 'testActualRootRetainsOnlyTheSameOwnerAndRetiresItsOriginalClients',
                        'timeline-timeout': 'testColdTimelineTimeoutKeepsTheSessionAndDraftAndNamesTheReadStage',
-                       'lock-screen': 'testNativeLockScreenReturnsToTheSameChatAndDraftAfterAReadFailure'
+                       'lock-screen': {
+                           'read': 'testNativeLockScreenReturnsToTheSameChatAndDraftAfterAReadFailure',
+                           'denied': 'testNativeLockScreenWithAuthoritativeDenialReturnsToSignIn',
+                           'timeline-timeout': 'testNativeLockScreenTimelineTimeoutRetainsConversationAndDraft'
+                       }[args.lock_fault]
                    }[args.scenario], 'test']
         env = {k: v for k, v in os.environ.items() if not k.startswith(('G2C_DEV_', 'SIMCTL_CHILD_'))}
         with (output/'xcodebuild.log').open('w') as log:
@@ -312,6 +315,10 @@ def main():
         if args.scenario == 'lock-screen':
             assert report['lock_control']['observed'] is True
             assert report['unlock_control']['observed'] is True
+            if args.lock_fault == 'timeline-timeout':
+                reads = [row for row in report['requests'] if row['path'] in ('/v1/lio/timeline', '/v2/lio/timeline')]
+                assert any(row['status'] is None for row in reads)
+                assert reads[-1]['status'] == 200
         assert not any(row['method']=='POST' and row['path']!='/v4/cleanup-devices' for row in report['requests'])
     finally:
         released.set(); finished.set(); server.shutdown(); server.server_close()

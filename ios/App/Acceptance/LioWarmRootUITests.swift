@@ -16,27 +16,8 @@ import XCTest
         composer.tap(); composer.typeText("Draft before native lock")
         app.buttons["fixture.root.offline"].tap()
         waitForMode("offline", app: app)
-        app.buttons["fixture.root.lock"].tap()
-        XCUIDevice.shared.press(.home)
-        try waitForNativeControl("observe-lock")
-        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-        let sheet = springboard.descendants(matching: .any).matching(identifier: "SBCoverSheetWindow").firstMatch
-        XCTAssertTrue(sheet.waitForExistence(timeout: 10), "Must observe the actual native lock-screen window")
-        let locked = XCTAttachment(screenshot: springboard.screenshot())
-        locked.name = "native-lock-screen"; locked.lifetime = .keepAlways; add(locked)
-        let bottom = springboard.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.99))
-        let upper = springboard.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.35))
-        bottom.press(forDuration: 0.05, thenDragTo: upper, withVelocity: .fast, thenHoldForDuration: 0)
-        // Verify native unlock before App activation; retained AX nodes are not readiness.
-        try waitForNativeControl("observe-unlock")
-        let home = XCTAttachment(screenshot: springboard.screenshot())
-        home.name = "native-lock-home-after-unlock"; home.lifetime = .keepAlways; add(home)
-        app.activate()
+        try nativeLockAndReturn(app)
         XCTAssertTrue(app.buttons["lio.session.retry"].waitForExistence(timeout: 20))
-        let completedControl = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", "observed"),
-            object: app.staticTexts["fixture.root.lock-control"])
-        XCTAssertEqual(XCTWaiter.wait(for: [completedControl], timeout: 5), .completed)
-        XCTAssertEqual(app.staticTexts["fixture.root.lock-control"].label, "observed")
         XCTAssertEqual(app.staticTexts["fixture.root.bootstrap"].label, "sign-in")
         XCTAssertEqual(app.staticTexts["fixture.root.sdk-presence"].label, "present")
         XCTAssertEqual(app.staticTexts["fixture.root.problem"].label, "__WARM_EXPECTED_PROBLEM__")
@@ -53,6 +34,65 @@ import XCTest
         XCTAssertFalse(app.staticTexts["lio.opening"].exists)
         let recovered = XCTAttachment(screenshot: app.screenshot())
         recovered.name = "native-lock-recovered"; recovered.lifetime = .keepAlways; add(recovered)
+    }
+
+    func testNativeLockScreenWithAuthoritativeDenialReturnsToSignIn() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.app")
+        app.launchEnvironment = ["B691_LOCAL_ENDPOINT": "__WARM_ENDPOINT__", "B691_LOCK_SCREEN": "1", "B691_TIMELINE_TIMEOUT": "1"]
+        app.launchArguments = ["-cj.ui.language.v1", "__WARM_LANGUAGE__", "-lio.ui.appearance.v1", "light"]
+        app.launch()
+        defer { app.terminate() }
+        let answer = app.staticTexts.matching(identifier: "lio.answer")
+            .matching(NSPredicate(format: "label == %@", "Existing owner A answer")).firstMatch
+        XCTAssertTrue(answer.waitForExistence(timeout: 20))
+        let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+        composer.tap(); composer.typeText("Draft before authoritative denial")
+        app.buttons["fixture.root.deny"].tap()
+        waitForMode("denied", app: app)
+        try nativeLockAndReturn(app)
+        XCTAssertTrue(app.secureTextFields["demo.invite.code"].waitForExistence(timeout: 20))
+        XCTAssertFalse(answer.exists)
+        XCTAssertFalse(composer.exists)
+        XCTAssertEqual(app.staticTexts["fixture.root.retained"].label, "empty")
+        app.buttons["fixture.root.inspect-problem"].tap()
+        XCTAssertEqual(app.staticTexts["fixture.root.inspected-problem"].label,
+                       "signIn|sessionCheck|http|0|__WARM_DENIAL_STATUS__|__WARM_TRACE__")
+        let evidence = XCTAttachment(screenshot: app.screenshot())
+        evidence.name = "native-lock-authoritative-denial"; evidence.lifetime = .keepAlways; add(evidence)
+    }
+
+    func testNativeLockScreenTimelineTimeoutRetainsConversationAndDraft() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.app")
+        app.launchEnvironment = ["B691_LOCAL_ENDPOINT": "__WARM_ENDPOINT__", "B691_LOCK_SCREEN": "1", "B691_TIMELINE_TIMEOUT": "1"]
+        app.launchArguments = ["-cj.ui.language.v1", "__WARM_LANGUAGE__", "-lio.ui.appearance.v1", "light"]
+        app.launch()
+        defer { app.terminate() }
+        let answer = app.staticTexts.matching(identifier: "lio.answer")
+            .matching(NSPredicate(format: "label == %@", "Existing owner A answer")).firstMatch
+        XCTAssertTrue(answer.waitForExistence(timeout: 20))
+        let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+        composer.tap(); composer.typeText("Draft before native timeline timeout")
+        app.buttons["fixture.root.timeline-timeout"].tap()
+        waitForMode("timeline-timeout", app: app)
+        try nativeLockAndReturn(app)
+        XCTAssertTrue(app.buttons["lio.read.retry"].waitForExistence(timeout: 20))
+        XCTAssertFalse(app.secureTextFields["demo.invite.code"].exists)
+        XCTAssertTrue(answer.exists)
+        XCTAssertEqual(composer.value as? String, "Draft before native timeline timeout")
+        XCTAssertFalse(app.staticTexts["lio.opening"].exists)
+        app.buttons["fixture.root.inspect-problem"].tap()
+        XCTAssertEqual(app.staticTexts["fixture.root.inspected-problem"].label, "network|timeline|network|-1001|0|-")
+        app.buttons["fixture.root.allow"].tap()
+        waitForMode("ready", app: app)
+        XCTAssertTrue(answer.waitForExistence(timeout: 20))
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.buttons["lio.read.retry"])
+        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 20), .completed)
+        XCTAssertEqual(composer.value as? String, "Draft before native timeline timeout")
+        XCTAssertFalse(app.staticTexts["lio.opening"].exists)
+        let evidence = XCTAttachment(screenshot: app.screenshot())
+        evidence.name = "native-lock-timeline-timeout-recovered"; evidence.lifetime = .keepAlways; add(evidence)
     }
 
     func testColdTimelineTimeoutKeepsTheSessionAndDraftAndNamesTheReadStage() throws {
@@ -181,6 +221,27 @@ import XCTest
         XCTAssertEqual(app.staticTexts["fixture.root.retained"].label, "empty")
         XCTAssertFalse(other.exists)
     }
+    private func nativeLockAndReturn(_ app: XCUIApplication) throws {
+        XCUIDevice.shared.press(.home)
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        XCTAssertTrue(springboard.wait(for: .runningForeground, timeout: 10))
+        // Start the single hardware action only after XCTest has finished Home.
+        // The reply acknowledges the actual native lock state and cover sheet.
+        try waitForNativeControl("lock")
+        let sheet = springboard.descendants(matching: .any).matching(identifier: "SBCoverSheetWindow").firstMatch
+        XCTAssertTrue(sheet.waitForExistence(timeout: 10), "Must observe the actual native lock-screen window")
+        let locked = XCTAttachment(screenshot: springboard.screenshot())
+        locked.name = "native-lock-screen"; locked.lifetime = .keepAlways; add(locked)
+        let bottom = springboard.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.99))
+        let upper = springboard.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.35))
+        bottom.press(forDuration: 0.05, thenDragTo: upper, withVelocity: .fast, thenHoldForDuration: 0)
+        // Verify native unlock before App activation; retained AX nodes are not readiness.
+        try waitForNativeControl("observe-unlock")
+        let home = XCTAttachment(screenshot: springboard.screenshot())
+        home.name = "native-lock-home-after-unlock"; home.lifetime = .keepAlways; add(home)
+        app.activate()
+    }
+
     private func waitForNativeControl(_ action: String) throws {
         let unlocked = expectation(description: "Native simulator control acknowledged: \(action)")
         var request = URLRequest(url: try XCTUnwrap(URL(string: "__WARM_ENDPOINT__/fixture-lock-screen")))
