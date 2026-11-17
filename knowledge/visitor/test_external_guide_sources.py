@@ -8,6 +8,14 @@ from validate_v3 import validate_entry_v3
 
 
 class ExternalGuideSourceScopeTests(unittest.TestCase):
+    def test_panda_official_attachment_keeps_exact_url_and_chengdu_venue_boundary(self):
+        page = 'https://m.panda.org.cn/cn/education/trends/2025-01-17/8632.html'
+        self._check_venue_source_scope(
+            page=page, city='chengdu', wrong_city='xian',
+            invalid_urls=(page + '?extra=1', page.replace('8632', '8633'),
+                          'https://m.panda.org.cn/',
+                          page.replace('m.panda.org.cn', 'other.panda.org.cn')))
+
     def _check_venue_source_scope(self, *, page, city, wrong_city, invalid_urls):
         root = Path(__file__).resolve().parent
         # Explicit source fixtures, independent of the implementation's allowlist.
