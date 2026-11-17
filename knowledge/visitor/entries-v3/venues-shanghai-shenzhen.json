@@ -194,7 +194,7 @@
     "cities": [
       "shenzhen"
     ],
-    "checked_on": "2026-11-16",
+    "checked_on": "2026-11-17",
     "expires_on": "2026-11-23",
     "subject": {
       "key": "shenzhen.window-of-the-world",
@@ -204,15 +204,16 @@
     },
     "conditions": {
       "reservation_required": false,
-      "closed_weekdays": null,
-      "closed_weekdays_public_holiday_exception": null,
+      "closed_weekdays": [],
+      "closed_weekdays_public_holiday_exception": false,
       "advance_booking_days": null,
       "advance_booking_rule": null
     },
-    "text_zh": "深圳政府公开说明将世界之窗列为购票后无需另外预约入园的景区，线上购票者可凭电子票入园；免预约不等于免门票或保证有票。本条未核定固定每周闭园日和提前购票窗口，行前应查具体票种及最新通知，夜场、特别活动、园内项目不据此保证开放。",
-    "text_en": "Shenzhen government guidance lists Window of the World among attractions where ticket holders do not need an additional entry reservation; online buyers can use their electronic tickets. No separate reservation does not mean free admission or guaranteed availability. Fixed weekly closing days and the advance purchase window remain unconfirmed here. Check the ticket type and latest notices before visiting; this does not guarantee access to night sessions, special events or individual facilities.",
+    "text_zh": "深圳政府公开说明将世界之窗列为购票后无需另外预约入园的景区，线上购票者可凭电子票入园；免预约不等于免门票或保证有票。Headout品牌商业指南列出年内周一至周日的营业表，并说明公园通常每日营业；本条据此记录整园普通每周无固定闭园日。这不是园方新公告，页面未标资料更新时间，仍须行前核对临时安排。表演及个别项目可能因季节、节假日、维修、天气或活动调整，不将整园周规则当每日都有表演或所有项目开放的保证。提前购票窗口仍未核定，日场和夜场票的入园范围分别核对。",
+    "text_en": "Shenzhen government guidance lists Window of the World among attractions where ticket holders do not need an additional entry reservation; online buyers can use their electronic tickets. No separate reservation does not mean free admission or guaranteed availability. A Headout-branded commercial guide lists Monday-to-Sunday hours throughout the year and says the park generally operates daily. This entry uses that guide for no fixed ordinary weekly closure of the whole park. It is not a new park-authority notice and has no content update date; check temporary arrangements before travelling. Performances and individual attractions may change with seasons, public holidays, maintenance, weather or events. The whole-park weekly rule does not guarantee shows every day or access to all facilities. The advance purchase window remains unconfirmed; check the admission scope of day and night tickets separately.",
     "source_urls": [
-      "https://www.sz.gov.cn/cn/xxgk/zfxxgj/bmdt/content/post_11451373.html"
+      "https://www.sz.gov.cn/cn/xxgk/zfxxgj/bmdt/content/post_11451373.html",
+      "https://www.shenzhen-tickets.com/window-of-the-world/timings-opening-hours/"
     ]
   }
 ]
