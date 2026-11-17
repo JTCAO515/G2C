@@ -65,7 +65,7 @@ private nonisolated final class WarmRootHTTP: URLProtocol, @unchecked Sendable {
     @State private var originalTrip: UUID?
     @State private var fixtureFailure = false
     @State private var bootstrap = "starting"
-    @State private var acknowledgedMode = "ready"
+    @State private var acknowledgedMode = "unknown"
     @State private var materialState = "unknown"
     var body: some Scene {
         WindowGroup {

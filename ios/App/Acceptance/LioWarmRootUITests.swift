@@ -26,6 +26,7 @@ import XCTest
                 XCTAssertEqual(app.staticTexts["fixture.root.sdk-presence"].label, "present")
                 XCTAssertEqual(app.staticTexts["fixture.root.problem"].label, "__WARM_EXPECTED_PROBLEM__")
                 XCTAssertEqual(app.staticTexts["fixture.root.category"].label, "__WARM_EXPECTED_CATEGORY__")
+                XCTAssertNotEqual(app.staticTexts["fixture.root.mode"].label, "ready", "No Allow ACK has arrived in this process")
                 app.buttons["fixture.root.allow"].tap()
                 waitForMode("ready", app: app)
                 app.buttons["lio.session.retry"].tap()
