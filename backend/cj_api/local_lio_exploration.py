@@ -256,7 +256,12 @@ class ExplorationPlanning:
 
 class ExplorationDispatch:
     def __init__(self,legacy,exploration):self.legacy,self.exploration=legacy,exploration
-    def scene_context(self,binding,now):return self.legacy.scene_context(binding,now)
+    def scene_context(self,binding,now):
+        from cj_message.lio_context import selected_lio_original_for
+        original=selected_lio_original_for(self.exploration.database,binding)
+        selected=(self.exploration if original is not None and original.protocol==LIO_VERSION_V4
+                  and self.exploration.enabled else self.legacy)
+        return selected.scene_context(binding,now)
     def answer_context(self,binding,messages):return self.legacy.answer_context(binding,messages)
     def execute(self,worker,binding,state,text,original):
         selected=self.exploration if original.protocol==LIO_VERSION_V4 and self.exploration.enabled else self.legacy
