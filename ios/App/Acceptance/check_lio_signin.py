@@ -40,6 +40,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--build-dir', type=Path, required=True)
     parser.add_argument('--language', choices=('en', 'zh-Hans'), required=True)
+    parser.add_argument('--appearance', choices=('light', 'dark'), default='light')
     parser.add_argument('--scenario', choices=('valid', 'malformed'), default='valid')
     parser.add_argument('--baseline-client', action='store_true')
     args = parser.parse_args()
@@ -51,7 +52,7 @@ def main():
     simulator = subprocess.check_output(['xcrun', 'simctl', 'create', 'G2C-A-SignIn-Local-' + output.name,
         'com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro', 'com.apple.CoreSimulator.SimRuntime.iOS-17-5'], text=True).strip()
     report = dict(layer='local actual invite client/Root + synthetic HTTP only', simulator=simulator,
-                  language=args.language, scenario=args.scenario, baseline_client=args.baseline_client,
+                  language=args.language, appearance=args.appearance, scenario=args.scenario, baseline_client=args.baseline_client,
                   source=before, real_service='UNRUN', requests=[])
     lock = threading.Lock()
 
@@ -147,6 +148,7 @@ def main():
         builder = object.__new__(module.XCTestDriver); builder.directory = output; builder.write_project(0)
         tests = (HERE / 'LioSignInUITests.swift').read_text().replace('__SIGNIN_ENDPOINT__', endpoint)
         tests = tests.replace('__SIGNIN_LANGUAGE__', args.language).replace('__SIGNIN_SCENARIO__', args.scenario)
+        tests = tests.replace('__SIGNIN_APPEARANCE__', args.appearance)
         tests = tests.replace('__SIGNIN_ERROR_TEXT__', '登录暂未完成' if args.language == 'zh-Hans' else 'Sign-in could not be completed')
         (output / 'G2CControl.swift').write_text(tests)
         # Reuse the existing fail-closed B691 HTTP transport, extending only this

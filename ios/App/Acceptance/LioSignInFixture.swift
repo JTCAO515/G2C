@@ -6,6 +6,7 @@ import CJMessageHTTP
 import CJLioUser
 
 @main struct LioSignInFixture: App {
+    @AppStorage(LioAppearance.preferenceKey) private var appearance = LioAppearance.system
     @State private var shell = ShellState()
     @State private var root: DevelopmentAccountRoot?
     @State private var setupFailed = false
@@ -24,6 +25,7 @@ import CJLioUser
                     Text(setupFailed ? "Fixture setup failed" : "Fixture starting")
                 }
             }
+            .preferredColorScheme(appearance.colorScheme)
             .task {
                 guard root == nil && !setupFailed else { return }
                 do {
