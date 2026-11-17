@@ -143,5 +143,21 @@ class VenueSourceScopeTests(unittest.TestCase):
                 validate_entry_v3({**record, **change}, as_of=TODAY)
 
 
+    def test_one_platform_lakeside_page_does_not_authorize_the_whole_platform(self):
+        page = 'https://www.trip.com/travel-guide/attraction/hangzhou/west-lake-82922'
+        record = {**self.venue, 'cities': ['hangzhou'], 'source_urls': [page],
+                  'subject': {'key': 'hangzhou.west-lake', 'name_zh': '西湖',
+                              'name_en': 'West Lake', 'wikidata_qid': None}}
+        validate_entry_v3(record, as_of=TODAY)
+        for url in (page + '?extra=1', page.replace('82922', '1'),
+                    'https://www.trip.com/', page.replace('www.trip.com', 'sg.trip.com')):
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                validate_entry_v3({**record, 'source_urls': [url]}, as_of=TODAY)
+        for change in ({'cities': ['shenzhen']}, {'cities': ['hangzhou', 'chengdu']},
+                       {'subject': None}, {'topic': 'payment'}, {'topic': 'visa_entry'}):
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                validate_entry_v3({**record, **change}, as_of=TODAY)
+
+
 if __name__ == '__main__':
     unittest.main()
