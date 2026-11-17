@@ -258,3 +258,17 @@ GoChengdu发布的[2025入境旅游指南介绍](https://www.gochengdu.cn/en/art
 [#702/6928230606](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6928230606)依JT持续代批权另批准[台州免预约文博清单这一精确页](https://tidenews.com.cn/news.html?id=2858557)，中文，仅浙江台州市博物馆常规参观预约。2026-11-17实读页面署名台州发布、原发布日期2024-07-27，并引用“游浙里”受权发布的《浙江省免预约国有文博场馆清单》，明确列出台州市博物馆。该页是独立公开平台上的发布，不是博物馆官网；核对日不当政策新发布日期，也未重试原受阻政府URL或其同文路径。只在上述场馆/主题/非空subject范围接受这第二个精确URL，其余ID、附加参数、子域、整站或其他城市/主题不获许可。常规免预约不下传2026古埃及特展，不推任何提前窗口或实时入馆保证。
 
 宿州文旅局[ct.ahsz.gov.cn](https://ct.ahsz.gov.cn/)另经[#702/6924119353](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6924119353)代批，中文，仅安徽宿州具体公共文旅场馆的参观、预约和开放独立指南。主办单位、网站标识3413000037及银河一路561号地址已实际核同；本轮读到的独立机构介绍仅有工作人员办公时间，未把它当游客开放或免约依据，未加入正式条目源接受集合。
+
+## 熊猫基地授权售票平台的公开营业资料（2026-11-17）
+
+已批园方[中文票务说明](https://www.panda.org.cn/cn/service/ticket/)明确携程旅行APP是官方授权平台；[英文说明](https://www.panda.org.cn/en/service/ticket/)明确Trip.com并直链POI76342公开页面。两原页本日实读。平台是授权售票服务商，不是场馆政策发布机关；该关系不表示所有攻略、译文、评论或日期状态获场馆逐项背书。
+
+按JT持续代批权，读取范围分别记录于[#702/6930564906](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6930564906)、[6930757629](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6930757629)、[6931018837](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6931018837)及[6931573113](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6931573113)。仅成都该基地的以下公开资料与正常页面内营业详情，不扩整站、其他POI、用户评论、优惠资格、坐标、账号、订单、交易或原始接口：
+
+- 英文官网直接所链页：`https://www.trip.com/travel-guide/attraction/chengdu/chengdu-research-base-of-giant-panda-breeding-76342?poiType=3&locale=en-US`。
+- 经该页正常繁体语言菜单抵达的同POI：`https://sg.trip.com/travel-guide/attraction/chengdu/chengdu-research-base-of-giant-panda-breeding-76342?poiType=3&locale=zh_sg`。
+- 国内公开入口：`https://gs.ctrip.com/html5/you/sight/chengdu104/4229.html`；普通浏览器自动抵达的[同一景点移动页](https://m.ctrip.com/webapp/you/sight/chengdu104/4229.html?ext-shelfPage=ctrip_shelf_seo)。
+
+正式来源格式只接受最后一个精确移动入口，限成都、passport_booking及非空subject；其他路径、POI、参数、子域与主题不自动许可。正常导航“开放时间”→“日历”可读2026年11月；本次图例及17—30日状态实际核读，只将平台列出的该日期窗口作为正文参考。没有选票务日期、下单、登录、采库存/价格或调用接口。日历的日期状态不转成长期每周规则，closed_weekdays及其假日例外仍null，原预约与14天窗口按园方来源保留。
+
+平台通用季节表与其园区公告/园方票务说明的冬季结束边界不同，本批不采用平台季节边界或时刻，也不宣称平台参考等于当日实际开放。原7天组复核截止不顺延；后续若保留日期型正文，须核对新的公布窗口，不能只续日期让旧计划跨月生效。原件和运行记录不入库。
