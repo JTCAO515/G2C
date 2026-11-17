@@ -1,0 +1,27 @@
+[
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "id": "visitor.v3.suzhou-anhui.delta-park",
+    "topic": "passport_booking",
+    "cities": ["suzhou-anhui"],
+    "subject": {
+      "key": "suzhou-anhui.delta-park",
+      "name_zh": "宿州三角洲生态公园",
+      "name_en": "Suzhou Delta Ecological Park (Anhui)",
+      "wikidata_qid": null
+    },
+    "conditions": {
+      "reservation_required": null,
+      "closed_weekdays": [],
+      "closed_weekdays_public_holiday_exception": false,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    },
+    "text_zh": "携程公开景点页将三角洲生态公园明确定位于安徽省宿州市，并在主记录中列为全年全天开放；本条据这一平台资料记录普通公园每周无固定闭园日。这不是公园管理方新公告，页面未标营业资料更新时间，行前仍查临时管控及具体区域通知。本条只指公共游园，不保证园内博物馆、游乐场、喷泉、活动或服务驿站按同样时间开放；普通预约是否必需及提前窗口尚未核定，不能把免费、全年开放或没有售票按钮当作免预约。平台周边推荐及用户游记不作本条规则依据，中文地点与安徽省份按主记录正文核对，不绑定江苏苏州。",
+    "text_en": "Ctrip’s public attraction page explicitly locates Delta Ecological Park in Suzhou, Anhui, and lists its main entry as open year-round, 24/7. This entry uses that platform information for no fixed ordinary weekly closure of the public park. It is not a new park-authority notice and has no business-data update date; check temporary controls and notices for the area you choose before travelling. This covers public park visits, without promising the same hours for museums, amusement rides, fountains, events or service stations inside. Mandatory reservations and advance windows remain unconfirmed: free admission, year-round opening or the absence of a ticket button does not establish a reservation exemption. Nearby recommendations and user travel posts are not used as rules. The main description identifies Anhui, rather than Suzhou in Jiangsu.",
+    "source_urls": ["https://gs.ctrip.com/html5/you/sight/suzhou672/5577341.html"],
+    "checked_on": "2026-11-17",
+    "expires_on": "2026-11-23"
+  }
+]
