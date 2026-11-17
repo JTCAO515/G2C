@@ -8,6 +8,14 @@ from validate_v3 import validate_entry_v3
 
 
 class ExternalGuideSourceScopeTests(unittest.TestCase):
+    def test_ctrip_lianhua_page_keeps_exact_url_and_shenzhen_venue_boundary(self):
+        page = 'https://you.ctrip.com/sight/shenzhen26/50541.html'
+        self._check_venue_source_scope(
+            page=page, city='shenzhen', wrong_city='chengdu',
+            invalid_urls=(page + '?extra=1', page.replace('50541', '50542'),
+                          'https://you.ctrip.com/',
+                          page.replace('you.ctrip.com', 'm.ctrip.com')))
+
     def test_ruqin_guide_keeps_exact_url_and_xian_venue_boundary(self):
         page = 'https://ruqintravel.com/china-destination-guides/big-wild-goose-pagoda/'
         self._check_venue_source_scope(

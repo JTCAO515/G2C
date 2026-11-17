@@ -1,6 +1,6 @@
 # 大雁塔塔体普通周闭补证
 
-关联#1057。2026-11-17实际核读，仅改既有大雁塔条目的普通周闭[]及假日例外false；预约false、提前窗口null、subject及QID=null不变。新增0、修改1；checked11-17、expires11-23，不延长既有失效日。尚未开PR或合并，不提前计已交付；#1057仍缺草堂普通预约要求。
+关联#1057。2026-11-17实际核读，仅改既有大雁塔条目的普通周闭[]及假日例外false；预约false、提前窗口null、原subject及QID=null不变。新增0、修改1；checked11-17、expires11-23，不延长既有失效日。尚未开PR或合并，不提前计已交付；#1057仍缺草堂普通预约要求。
 
 依JT持续代批权，来源范围及补核记录为[#702/6948216827](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6948216827)。实际读取[Ruqin精确指南](https://ruqintravel.com/china-destination-guides/big-wild-goose-pagoda/)及[作者介绍](https://ruqintravel.com/about-ruqin/)。指南署名Ruqin、更新2026-03-05；作者页是北京个人旅游指南定位，旅游从业与亲研更新为作者自述，不冒独立旅行社资质或园方认证。作者介绍只用于识别发布方，不进入事实来源URL许可。
 
