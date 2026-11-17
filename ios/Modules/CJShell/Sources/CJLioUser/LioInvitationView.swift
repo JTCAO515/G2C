@@ -80,7 +80,8 @@ public struct LioInvitationView<Settings: View>: View {
                             invalidFormat = false
                             consent = .invite
                         } label: {
-                            Text(language.text("Continue", "继续"))
+                            RunReadableText(text: language.text("Continue", "继续"),
+                                color: code.isEmpty || isBusy ? LioTheme.inkSecondary : LioTheme.vermilion)
                         }
                         .buttonStyle(LioInvitationActionStyle())
                         .disabled(code.isEmpty || isBusy)
@@ -89,8 +90,8 @@ public struct LioInvitationView<Settings: View>: View {
                             enteringCode = false
                             consent = .continueAccount
                         } label: {
-                            Text(language.text("Continue with your account", "继续使用账号"))
-                                .fixedSize(horizontal: false, vertical: true)
+                            RunReadableText(text: language.text("Continue with your account", "继续使用账号"),
+                                color: isBusy ? LioTheme.inkSecondary : LioTheme.vermilion)
                         }
                         .buttonStyle(LioInvitationActionStyle())
                         .disabled(isBusy)
@@ -182,7 +183,8 @@ private struct LioInvitationActionStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .foregroundStyle(isEnabled ? LioTheme.vermilion : LioTheme.inkSecondary)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
             .opacity(configuration.isPressed && isEnabled ? 0.85 : 1)
     }
 }
