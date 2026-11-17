@@ -42,6 +42,7 @@ VENUE_SOURCE_CITIES.update({
     "www.meet-in-shanghai.net": frozenset({"shanghai"}),
 })
 VENUE_PAGE_CITIES = {
+    "https://ruqintravel.com/china-destination-guides/big-wild-goose-pagoda/": frozenset({"xian"}),
     "https://sichuan.scol.com.cn/ggxw/202502/82903345.html": frozenset({"chengdu"}),
 
     "https://www.shenzhen-tickets.com/window-of-the-world/timings-opening-hours/": frozenset({"shenzhen"}),

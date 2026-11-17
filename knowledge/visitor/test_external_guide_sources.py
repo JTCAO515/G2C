@@ -8,6 +8,14 @@ from validate_v3 import validate_entry_v3
 
 
 class ExternalGuideSourceScopeTests(unittest.TestCase):
+    def test_ruqin_guide_keeps_exact_url_and_xian_venue_boundary(self):
+        page = 'https://ruqintravel.com/china-destination-guides/big-wild-goose-pagoda/'
+        self._check_venue_source_scope(
+            page=page, city='xian', wrong_city='chengdu',
+            invalid_urls=(page + '?extra=1', page.replace('big-wild', 'small-wild'),
+                          'https://ruqintravel.com/', 'https://ruqintravel.com/about-ruqin/',
+                          page.replace('ruqintravel.com', 'www.ruqintravel.com')))
+
     def test_dufu_report_keeps_exact_url_and_chengdu_venue_boundary(self):
         page = 'https://sichuan.scol.com.cn/ggxw/202502/82903345.html'
         self._check_venue_source_scope(

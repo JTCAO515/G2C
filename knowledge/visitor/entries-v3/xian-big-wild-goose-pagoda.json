@@ -15,15 +15,16 @@
     },
     "conditions": {
       "reservation_required": false,
-      "closed_weekdays": null,
-      "closed_weekdays_public_holiday_exception": null,
+      "closed_weekdays": [],
+      "closed_weekdays_public_holiday_exception": false,
       "advance_booking_days": null,
       "advance_booking_rule": null
     },
-    "text_zh": "China Highlights的当地导游参观指南称，大慈恩寺内大雁塔的常规散客门票可现场购买，无需提前预约；寺院入场与登塔分别出票。此处依据是旅行服务方资讯，不是寺院或文物管理机关的公告，也不保证当日有票或可以登塔；团体、活动及临时管控应另查最新安排。本条未核定固定每周闭馆日及可选预约的提前窗口，不将未知写成无闭馆日或提前0天。本条不指大小雁塔中的小雁塔，也不指北广场音乐喷泉、唐大慈恩寺遗址公园或邻近主题体验项目。",
-    "text_en": "China Highlights’ local-guide visitor information says ordinary individual tickets for the Giant Wild Goose Pagoda within Da Ci’en Temple can be purchased on site without advance reservation. Temple admission and climbing the pagoda have separate tickets. This is travel-operator information, not a notice from the temple or heritage authority, and does not guarantee tickets or access to the tower on the day. Check current arrangements for groups, events and temporary controls. Regular weekly closures and an optional advance-booking window remain unconfirmed; unknown does not mean no closing day or zero lead time. This entry excludes the Small Wild Goose Pagoda, North Square musical fountain, Tang Da Ci’en Temple Ruins Park and nearby themed experiences.",
+    "text_zh": "China Highlights的当地导游指南称，大慈恩寺内大雁塔常规散客可现场购票，无需提前预约，寺院入场与登塔分别出票。署名个人旅行指南Ruqin China Travel在2026年3月5日更新的说明将塔和寺院均列为每日开放，并区分塔内登塔另票；据此记录塔体普通每周无固定闭馆日。两者都是商业旅行资讯，不是园方公告，也不保证当日有票或可以登塔。来源之间的钟点差异未解决，不采用钟点；临时闭塔、分层维护、团体、活动及假日调整行前另核。提前购票窗口仍未核定，不写成提前0天。本条不含小雁塔、北广场喷泉、唐大慈恩寺遗址公园或邻近主题体验项目。",
+    "text_en": "China Highlights’ local-guide information says ordinary individual visitors can buy tickets on site without advance reservation; temple admission and tower climbing have separate tickets. Ruqin China Travel’s signed personal guide, updated March 5, 2026, describes daily access to both the pagoda and Da Ci’en Temple and distinguishes the tower-climbing ticket. This supports no fixed ordinary weekly tower closure here. Both are commercial travel information, not operator notices or guarantees of tickets or climbing access that day. Differences in opening clocks remain unresolved and are not adopted. Check temporary tower closures, floor maintenance, groups, events and holiday changes before visiting. An advance purchase window remains unconfirmed, rather than zero. This excludes the Small Wild Goose Pagoda, North Square fountain, Tang Da Ci’en Temple Ruins Park and nearby themed experiences.",
     "source_urls": [
-      "https://www.chinahighlights.com/xian/attraction/big-wild-goose-pagoda.htm"
+      "https://www.chinahighlights.com/xian/attraction/big-wild-goose-pagoda.htm",
+      "https://ruqintravel.com/china-destination-guides/big-wild-goose-pagoda/"
     ],
     "checked_on": "2026-11-17",
     "expires_on": "2026-11-23"
