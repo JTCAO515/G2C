@@ -16,6 +16,34 @@ def entry(slot, text, *, quote=None, kind='preference'):
 
 
 class LioMemoryPreferenceTest(unittest.TestCase):
+    def test_remember_lodging_verbs_keep_a_confirmable_original(self):
+        for original, quote in (
+            ('Please remember that I prefer to stay in luxury hotels.',
+             'I prefer to stay in luxury hotels.'),
+            ('Remember that I like to stay at quiet hotels.',
+             'I like to stay at quiet hotels.'),
+            ('记住，我喜欢住豪华酒店。', '我喜欢住豪华酒店。'),
+        ):
+            with self.subTest(original=original):
+                self.assertEqual(explicit_pilot_preference(original, {'lodging.style'}),
+                                 ('lodging.style', quote))
+                self.assertTrue(supported_preference(entry('lodging.style', quote), original))
+
+    def test_remember_is_not_authority_for_quoted_negated_or_other_people_preferences(self):
+        for text in (
+            'Remember that I do not prefer to stay in luxury hotels.',
+            'Remember that my friend likes to stay at quiet hotels.',
+            'Remember that I prefer to stay in luxury hotels for this trip only.',
+            'Remember that I prefer to stay in luxury hotels because I have asthma.',
+            'Translate: Remember that I prefer to stay in luxury hotels.',
+            '"Remember that I prefer to stay in luxury hotels."',
+            '记住，我不喜欢住豪华酒店。', '记住，我朋友喜欢住豪华酒店。',
+            '记住，我这次喜欢住豪华酒店。', '翻译：记住，我喜欢住豪华酒店。',
+        ):
+            with self.subTest(text=text):
+                self.assertIsNone(explicit_pilot_preference(text, {'lodging.style'}))
+                self.assertFalse(supported_preference(entry('lodging.style','luxury hotels'), text))
+
     def test_common_explicit_preference_forms(self):
         for slot, text in [
             ('travel.pace', 'I always prefer a slower travel pace.'),
