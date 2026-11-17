@@ -1,6 +1,8 @@
-"""B-only return of C100 after a zero-business manual startup failure.
+"""B-only return of original C100 after an acknowledged manual close.
 
-This accepts the actual manual close, never an invented automatic close. An
+Version1 retains the zero-business startup-failure path. Version2 additionally
+checks full before/after inventories for a bounded ordinary business window.
+Both accept the actual manual close, never an invented automatic close. An
 explicit reviewed tool image supplies the native restore module when the
 compatible serving rollback image predates it. No application is deployed.
 """
@@ -19,11 +21,79 @@ from deploy.hk.app_smoke_install import ROOT,private,save,sha,require_no_pending
 from deploy.hk.app_smoke_restore import roles
 
 VERSION='G2C-App-manual-smoke-standing-return-plan.1'
+BUSINESS_VERSION='G2C-App-manual-smoke-standing-return-plan.2'
 NATIVE='G2C-App-manual-smoke-closed-standing-restore.1'
 STATIC=('compose.env','common.env','worker.env','deploy/hk/compose.yaml','deploy/hk/compose.local-pg.yaml')
 
 
-def perform(directory,plan,closed,stopped,restriction,inspect,proof,native,*,apply):
+def business_closed_ledger(plan,closed,stopped,restriction,before_metadata,after_metadata):
+    """Verify the real manual close; never impersonate automatic capture return."""
+    for key in('ledger_before','ledger_after'):
+        anchor=closed.get(key)
+        if(type(anchor)is not dict or set(anchor)!={'count','sha256'}
+                or type(anchor['count'])is not int or anchor['count']<0
+                or type(anchor['sha256'])is not str or re.fullmatch('[a-f0-9]{64}',anchor['sha256'])is None):
+            raise ValueError('complete original manual-close ledger anchors required')
+    if(plan.get('version')!=BUSINESS_VERSION or closed.get('version')!='B-manual14-close.2'
+            or closed.get('lease_id')!=plan['window_id']
+            or closed.get('standing_budget_restored')is not False
+            or stopped.get('state')!='STOP_NEW'or stopped.get('verdict')!=closed.get('verdict')
+            or closed.get('ledger_before')!=restriction['original_ledger']
+            or(closed.get('tested_source'),closed.get('tested_image'))!=(plan['tested_source'],plan['tested_image'])):
+        raise ValueError('actual stopped manual business close required')
+    if(type(plan['tested_source'])is not str or re.fullmatch('[a-f0-9]{40}',plan['tested_source'])is None
+            or type(plan['tested_image'])is not str or re.fullmatch('sha256:[a-f0-9]{64}',plan['tested_image'])is None
+            or(restriction.get('model_call_bound'),restriction.get('tool_call_bound'),
+               restriction.get('cash_ceiling_cny'))!=(40,32,60)):
+        raise ValueError('original ordinary manual purpose and tested source required')
+    inventories=[]
+    for value in(before_metadata,after_metadata):
+        if(type(value)is not dict or value.get('subject')!=plan['subject']
+                or type(value.get('messages'))is not list or len(value['messages'])>512):
+            raise ValueError('complete same-owner manual inventories required')
+        records={}
+        for row in value['messages']:
+            if(type(row)is not dict or type(row.get('message_id'))is not str
+                    or not 0<len(row['message_id'])<=256 or row['message_id']in records):
+                raise ValueError('unique original message inventory required')
+            records[row['message_id']]=row
+        inventories.append(records)
+    before,after=inventories
+    if any(after.get(mid)!=row for mid,row in before.items()):
+        raise ValueError('original manual history changed')
+    new=set(after)-set(before);selected=closed.get('message_ids');count=closed.get('message_delta')
+    if(type(selected)is not list or any(type(mid)is not str for mid in selected)
+            or len(set(selected))!=len(selected)or set(selected)!=new
+            or type(count)is not int or count!=len(new)or not 0<=count<=8):
+        raise ValueError('complete bounded actual new-message set required')
+    if closed.get('state')=='CLOSED_PASS':
+        if(closed.get('verdict')!='PASS'or count!=8 or closed.get('rollback')is not None
+                or(plan['source'],plan['image'])!=(plan['tested_source'],plan['tested_image'])
+                or any(sum(after[mid].get('locale')==locale for mid in new)!=4 for locale in('zh','en'))):
+            raise ValueError('actual bilingual manual pass close required')
+    elif closed.get('state')=='CLOSED_FAIL_ROLLED_BACK':
+        if closed.get('verdict')not in('FAIL','UNKNOWN'):
+            raise ValueError('actual manual failure verdict required')
+        rollback=closed['rollback'];cutover=rollback['cutover']
+        if(rollback.get('state')!='ROLLBACK_VERIFIED'or cutover.get('stage')!='CUTOVER_PASS'
+                or(cutover.get('source'),cutover.get('image'))!=(plan['source'],plan['image'])
+                or cutover.get('ledger_unchanged')is not True
+                or cutover.get('ledger_before')!=cutover.get('ledger_after')
+                or cutover.get('ledger_after')!=closed['ledger_after']
+                or type(cutover.get('pending'))is not int or type(cutover.get('active'))is not int
+                or cutover['pending']!=0 or cutover['active']!=0
+                or not idle(dict(global_pending=cutover['pending'],global_active=cutover['active'],
+                    background_states=cutover['background_states'],memory_states=cutover['memory_states']))):
+            raise ValueError('actual manual failure rollback required')
+    else:raise ValueError('actual ended manual window required')
+    return closed['ledger_after']
+
+
+def perform(directory,plan,closed,stopped,restriction,inspect,proof,native,*,apply,
+            before_metadata=None,after_metadata=None):
+    if plan.get('version')==BUSINESS_VERSION:
+        anchor=business_closed_ledger(plan,closed,stopped,restriction,before_metadata,after_metadata)
+        return return_standing(directory,plan,anchor,inspect,proof,native,restriction,apply=apply)
     if(closed.get('version')!='B-manual14-close.1'or closed.get('state')!='CLOSED_FAIL_ROLLED_BACK'
             or closed.get('lease_id')!=plan['window_id']or type(closed.get('message_delta'))is not int
             or closed['message_delta']!=0 or closed.get('verdict')!='FAIL_LOGIN_UI'
@@ -40,9 +110,13 @@ def perform(directory,plan,closed,stopped,restriction,inspect,proof,native,*,app
             or not idle(dict(global_pending=cutover['pending'],global_active=cutover['active'],
                 background_states=cutover['background_states'],memory_states=cutover['memory_states']))):
         raise ValueError('verified original rollback and unchanged ledger required')
+    return return_standing(directory,plan,cutover['ledger_after'],inspect,proof,native,restriction,apply=apply)
+
+
+def return_standing(directory,plan,anchor,inspect,proof,native,restriction,*,apply):
     before=roles(plan,inspect)
     current=proof()
-    if not idle(current)or current['ledger']!=cutover['ledger_after']:
+    if not idle(current)or current['ledger']!=anchor:
         raise ValueError('fresh original ledger and empty in-flight work required')
     request=dict(version=NATIVE,expected_policy_sha256=plan['restricted_policy_sha256'],
         restriction=restriction,closed_manual_sha256=plan['close_sha256'],
@@ -79,7 +153,7 @@ def main():
     if os.geteuid()!=0 or len(sys.argv)not in(2,3)or len(sys.argv)==3 and sys.argv[2]!='--apply':
         raise ValueError('B root explicit manual return preflight or one-shot apply required')
     path=Path(sys.argv[1]);raw=private(path);plan=json.loads(raw);directory=path.parent
-    if(plan['version']!=VERSION or plan['independent_review_approved']is not True
+    if(plan['version']not in(VERSION,BUSINESS_VERSION)or plan['independent_review_approved']is not True
             or sha(__file__)!=plan['reviewed_script_sha256']
             or re.fullmatch('sha256:[a-f0-9]{64}',plan['tool_image'])is None
             or re.fullmatch('[a-f0-9]{40}',plan['tool_source'])is None):
@@ -98,6 +172,9 @@ def main():
         def inspect(role):return json.loads(command(['docker','inspect','g2c-beta-'+role+'-1']))[0]
         fixed={'close.result.json':plan['close_sha256'],'stop.result.json':plan['stop_sha256'],
                'restriction.result.json':plan['restriction_sha256']}
+        if plan['version']==BUSINESS_VERSION:
+            fixed.update({'before.metadata.json':plan['before_metadata_sha256'],
+                          'after.metadata.json':plan['after_metadata_sha256']})
         values={name:private(directory/name)for name in fixed}
         if any(hashlib.sha256(values[name]).hexdigest()!=digest for name,digest in fixed.items()):
             raise ValueError('reviewed original manual return evidence changed')
@@ -136,9 +213,12 @@ def main():
             unchanged()
             result=json.loads(command(tool_command(plan),input=json.dumps(request).encode()))
             unchanged();return result
+        inventories={}if plan['version']==VERSION else dict(
+            before_metadata=json.loads(values['before.metadata.json']),
+            after_metadata=json.loads(values['after.metadata.json']))
         print(json.dumps(perform(directory,plan,json.loads(values['close.result.json']),
             json.loads(values['stop.result.json']),json.loads(values['restriction.result.json']),
-            inspect,proof,native,apply='--apply'in sys.argv)),flush=True)
+            inspect,proof,native,apply='--apply'in sys.argv,**inventories)),flush=True)
     finally:os.close(lock)
 
 
