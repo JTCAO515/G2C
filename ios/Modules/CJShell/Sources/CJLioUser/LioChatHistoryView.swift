@@ -1,5 +1,6 @@
 #if os(iOS)
 import CJMessageHTTP
+import CJRunClient
 import SwiftUI
 
 struct LioChatHistoryView: View {
@@ -9,6 +10,7 @@ struct LioChatHistoryView: View {
     let canSwitch: Bool
     let select: (LioChatSession) -> Void
 
+    @Environment(\.self) private var environment
     @State private var state = LoadState.loading
     @State private var attempt = 0
 
@@ -47,7 +49,15 @@ struct LioChatHistoryView: View {
             .lioRow()
         }
         .lioPage()
-        .navigationTitle(language.text("Chat history", "历史对话"))
+        .navigationTitle(historyTitle)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                RunReadableText(text: historyTitle, style: .headline,
+                                color: Color(LioTheme.ink.resolve(in: environment)))
+                    .fixedSize()
+                    .accessibilityAddTraits(.isHeader)
+            }
+        }
         .task(id: attempt) {
             state = .loading
             do {
@@ -61,6 +71,8 @@ struct LioChatHistoryView: View {
             }
         }
     }
+
+    private var historyTitle: String { language.text("Chat history", "历史对话") }
 
     private func title(for chat: LioChatSession) -> String {
         let text = chat.title.trimmingCharacters(in: .whitespacesAndNewlines)
