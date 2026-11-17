@@ -1159,9 +1159,11 @@ public struct LioHome<MenuContent: View>: View {
                 .foregroundStyle(LioTheme.inkSecondary)
                 .accessibilityIdentifier("lio.failure")
             if failure == .serviceLimit || (failure == .unavailable && turn.fromTimeline) {
-                RunReadableText(text: language.text(
+                Text(language.text(
                     "If this keeps happening, view problem notes and contact the demo organiser.",
-                    "如果持续失败，请查看问题记录并联系内测负责人。"), style: .caption, color: LioTheme.inkSecondary)
+                    "如果持续失败，请查看问题记录并联系内测负责人。"))
+                    .font(.caption)
+                    .foregroundStyle(LioTheme.inkSecondary)
                     .accessibilityIdentifier("lio.failure.next-step")
                 Button { showsProblemNotes = true } label: {
                     RunReadableText(text: language.text("View problem notes", "查看问题记录"), color: LioTheme.ink)
