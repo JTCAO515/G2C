@@ -5,6 +5,10 @@ two dispatch/decision comments. This package measures G2 = zero repeated questio
 about known, refused or inferable factors, and G3 = at least 80% correct factors at
 the observed end of exploration. It does not change those thresholds.
 
+[Public value conversion, part 1](VALUE_MAP.v1.md) is a separate versioned
+representation tool. It preserves raw facts and gaps and does not yet supply
+the authenticated, complete observation needed for a real G3 score.
+
 ## Frozen inputs and denominators
 
 `profiles.v1.json` contains 20 synthetic single-city personas: ten Chinese and ten
