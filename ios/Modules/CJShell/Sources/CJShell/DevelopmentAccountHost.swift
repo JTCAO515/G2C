@@ -15,11 +15,11 @@ public enum DevelopmentSessionCheck: Equatable, Sendable {
 }
 
 public enum DemoAccountExchangeFailure: Error {
-    case rejected, expired, unavailable
+    case rejected, expired, unavailable, responseUnavailable
 }
 
 public enum DevelopmentAccountState: Equatable, Sendable {
-    case signedOut, checking, signedIn(String), paused, rejected, expired, networkUnknown, storageUnavailable
+    case signedOut, checking, signedIn(String), paused, rejected, expired, networkUnknown, responseUnavailable, storageUnavailable
 }
 
 /// Local development identities only. This does not replace the production SDK host.
@@ -145,6 +145,7 @@ public enum DevelopmentAccountState: Equatable, Sendable {
                 switch error as? DemoAccountExchangeFailure {
                 case .rejected: self.state = .rejected
                 case .expired: self.state = .expired
+                case .responseUnavailable: self.state = .responseUnavailable
                 default: self.state = .networkUnknown
                 }
                 self.task = nil

@@ -2,6 +2,7 @@
 import Foundation
 import CJShell
 import CJSession
+import CJLioUser
 
 private final class DemoInviteRedirectBlocker: NSObject, URLSessionTaskDelegate, Sendable {
     nonisolated func urlSession(_ session: URLSession, task: URLSessionTask,
@@ -53,42 +54,64 @@ enum DemoInviteClient {
         let session = URLSession(configuration: configuration, delegate: DemoInviteRedirectBlocker(), delegateQueue: nil)
         defer { session.invalidateAndCancel() }
 
+        var status: Int?
+        var reference: String?
+        let observed: (HTTPURLResponse) -> Void = { response in
+            status = response.statusCode
+            reference = response.value(forHTTPHeaderField: "X-Request-ID").flatMap {
+                UUID(uuidString: $0) == nil ? nil : $0
+            }
+        }
         do {
-            let (body, http) = try await read(request, session: session)
+            let (body, http) = try await read(request, session: session, observed: observed)
             let grant = try DemoBetaConfiguration.verifyInviteResponse(body, status: http.statusCode,
                 contentType: http.value(forHTTPHeaderField: "Content-Type"), now: Date())
+            #if G2C_LIO_APP
+            try Task.checkCancellation()
+            return try SessionMaterial(trustedSDKBytes: JSONEncoder().encode(DemoInviteSession.lio(grant: grant)))
+            #else
             let conversations: DemoStarterReads.Conversations = try await starter("/v1/conversations",
-                query: .init(name: "limit", value: "20"), grant: grant, session: session, trace: \.request_id)
+                query: .init(name: "limit", value: "20"), grant: grant, session: session, trace: \.request_id, observed: observed)
             let needs: DemoStarterReads.Needs = try await starter("/v1/needs",
-                query: .init(name: "needs_id", value: language.needsID), grant: grant, session: session, trace: \.request_id)
+                query: .init(name: "needs_id", value: language.needsID), grant: grant, session: session, trace: \.request_id, observed: observed)
             let travel: DemoStarterReads.Travel = try await starter("/v1/travel-context-actions/" + language.travelActionID,
-                grant: grant, session: session, trace: \.request_id)
+                grant: grant, session: session, trace: \.request_id, observed: observed)
             let profile = try DemoStarterReads.profile(language: language, conversations: conversations, needs: needs, travel: travel)
             try Task.checkCancellation()
             try grant.validate(now: Date())
             return try SessionMaterial(trustedSDKBytes: JSONEncoder().encode(DemoInviteSession(grant: grant, composition: profile)))
+            #endif
         } catch DemoBetaConfiguration.Failure.inviteDenied {
             throw DemoAccountExchangeFailure.rejected
         } catch DemoBetaConfiguration.Failure.invalidInput {
             throw DemoAccountExchangeFailure.rejected
         } catch DemoBetaConfiguration.Failure.expired {
             throw DemoAccountExchangeFailure.expired
-        } catch let failure as DemoAccountExchangeFailure {
-            throw failure
+        } catch DemoAccountExchangeFailure.rejected {
+            throw DemoAccountExchangeFailure.rejected
+        } catch DemoAccountExchangeFailure.expired {
+            throw DemoAccountExchangeFailure.expired
+        } catch is CancellationError {
+            throw CancellationError()
         } catch {
-            throw DemoAccountExchangeFailure.unavailable
+            try Task.checkCancellation()
+            let base = LioFailureDiagnosis.sessionCheck(httpStatus: status, error: error)
+            LioDiagnosticLog.shared.record(.init(category: base.category, stage: .signIn, request: nil,
+                httpStatus: status, serverReference: reference))
+            throw base.category == .network ? DemoAccountExchangeFailure.unavailable : .responseUnavailable
         }
     }
 
     private static func starter<Value: Decodable>(_ path: String, query: URLQueryItem? = nil,
-        grant: DemoInviteGrant, session: URLSession, trace: KeyPath<Value, String>) async throws -> Value {
+        grant: DemoInviteGrant, session: URLSession, trace: KeyPath<Value, String>,
+        observed: @escaping (HTTPURLResponse) -> Void) async throws -> Value {
         var url = URLComponents(url: DemoBetaConfiguration.endpoint, resolvingAgainstBaseURL: false)!
         url.path = path
         url.queryItems = query.map { [$0] }
         var request = URLRequest(url: url.url!)
         request.setValue("Bearer " + grant.access_token, forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        let (body, response) = try await read(request, session: session)
+        let (body, response) = try await read(request, session: session, observed: observed)
         if response.statusCode == 401 || response.statusCode == 403 { throw DemoAccountExchangeFailure.rejected }
         guard response.statusCode == 200,
               response.value(forHTTPHeaderField: "Content-Type")?.split(separator: ";").first?.lowercased() == "application/json" else {
@@ -102,12 +125,14 @@ enum DemoInviteClient {
         return value
     }
 
-    private static func read(_ request: URLRequest, session: URLSession) async throws -> (Data, HTTPURLResponse) {
+    private static func read(_ request: URLRequest, session: URLSession,
+                             observed: ((HTTPURLResponse) -> Void)? = nil) async throws -> (Data, HTTPURLResponse) {
         let (stream, response) = try await session.bytes(for: request)
-        guard let http = response as? HTTPURLResponse, http.url == request.url else { throw DemoAccountExchangeFailure.unavailable }
+        guard let http = response as? HTTPURLResponse, http.url == request.url else { throw DemoAccountExchangeFailure.responseUnavailable }
+        observed?(http)
         var body = Data()
         for try await byte in stream {
-            guard body.count < 65536 else { throw DemoAccountExchangeFailure.unavailable }
+            guard body.count < 65536 else { throw DemoAccountExchangeFailure.responseUnavailable }
             body.append(byte)
         }
         return (body, http)

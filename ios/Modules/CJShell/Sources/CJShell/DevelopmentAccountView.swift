@@ -38,6 +38,7 @@ struct DevelopmentAccountView: View {
         case .rejected: language.text("Sign-in was rejected. Check the account and try again.", "登录被拒绝，请核对账号后重试。")
         case .expired: language.text("This session has expired. Sign in again.", "会话已过期，请重新登录。")
         case .networkUnknown: language.text("Cannot verify the session right now. Saved credentials have been kept.", "暂时无法验证会话，已保留保存的凭据。")
+        case .responseUnavailable: language.text("Sign-in could not be completed. Check the problem notes.", "登录暂未完成，请查看问题记录。")
         case .storageUnavailable: language.text("Secure session storage is unavailable.", "安全会话存储暂不可用。")
         }
     }
