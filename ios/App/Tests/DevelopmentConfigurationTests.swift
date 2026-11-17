@@ -28,7 +28,8 @@ struct DevelopmentBetaCompositionTests {
         #expect(composition.endpoint.absoluteString == Self.endpoint)
         #expect(composition.typedMemory.memoryEndpoint == composition.endpoint)
         #expect(composition.typedMemory.travel.travel_ids == ["0123456789abcdef0123456789abcdef"])
-        #expect(composition.needs.needsID == "needs-fixture")
+        let needs = try #require(composition.needs)
+        #expect(needs.needsID == "needs-fixture")
         #expect(composition.offline.trusted)
         for key in Self.profile.keys where key != DevelopmentBetaComposition.setting {
             var incomplete = Self.profile

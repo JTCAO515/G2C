@@ -1312,7 +1312,14 @@ private var developmentHostEnvironment: [String: String] {
         try material.withBytes { bytes in
             #if G2C_DEMO_BETA
             let invite = try DemoInviteSession.decode(bytes, now: Date())
-            return (.demo(invite), .demo(invite.composition), invite.composition.conversation_id)
+            if let composition = invite.composition {
+                return (.demo(invite), .demo(composition), composition.conversation_id)
+            }
+            #if G2C_LIO_APP
+            return (.demo(invite), .lio(), nil)
+            #else
+            throw SessionFailure.invalidConfiguration
+            #endif
             #else
             guard let token = String(data: bytes, encoding: .utf8),
                   let configuration = DevelopmentSessionConfiguration.restoring(endpoint: endpoint, token: token,

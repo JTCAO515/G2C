@@ -1,4 +1,10 @@
 import Foundation
+import CJStrictJSON
+
+private enum DemoCredentialJSONPolicy: StrictJSONPolicy {
+    static let failure = DemoBetaConfiguration.Failure.invalidResponse
+    static let requiresObjectRoot = true
+}
 
 /// The signed Beta has one origin. Invite responses never choose an endpoint.
 enum DemoBetaConfiguration {
@@ -66,7 +72,7 @@ enum DemoBetaConfiguration {
         if status == 200 {
             let grant = try DemoInviteGrant.decode(bytes, now: now)
             guard grant.version == inviteVersion, grant.subject == previous.grant.subject else { throw Failure.invalidResponse }
-            return DemoInviteSession(grant: grant, composition: previous.composition)
+            return previous.renewed(grant: grant)
         }
         struct Envelope: Decodable {
             struct Detail: Decodable { let code: String }
@@ -186,6 +192,8 @@ struct DemoInviteGrant: Codable, CustomStringConvertible, CustomDebugStringConve
     var customMirror: Mirror { Mirror(self, children: [:]) }
 
     static func decode(_ bytes: Data, now: Date) throws -> Self {
+        guard (1...65536).contains(bytes.count) else { throw DemoBetaConfiguration.Failure.invalidResponse }
+        var strict = StrictJSONReader<DemoCredentialJSONPolicy>(bytes: Array(bytes)); try strict.check()
         let value: Self
         do { value = try JSONDecoder().decode(Self.self, from: bytes) }
         catch { throw DemoBetaConfiguration.Failure.invalidResponse }
@@ -227,10 +235,29 @@ struct DemoInviteGrant: Codable, CustomStringConvertible, CustomDebugStringConve
     }
 }
 
-/// Keychain-only envelope of the grant and the protected starter selection.
+/// Keychain-only credentials. Legacy envelopes retain their protected starter
+/// selection; an explicit Lio envelope carries no invented business selections.
 struct DemoInviteSession: Codable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
+    static let lioVersion = "LIO-demo-session.1"
+    let version: String?
     let grant: DemoInviteGrant
-    let composition: DemoCompositionProfile
+    let composition: DemoCompositionProfile?
+
+    init(grant: DemoInviteGrant, composition: DemoCompositionProfile) {
+        self.init(version: nil, grant: grant, composition: composition)
+    }
+
+    private init(version: String?, grant: DemoInviteGrant, composition: DemoCompositionProfile?) {
+        self.version = version; self.grant = grant; self.composition = composition
+    }
+
+    static func lio(grant: DemoInviteGrant) -> Self {
+        Self(version: lioVersion, grant: grant, composition: nil)
+    }
+
+    func renewed(grant: DemoInviteGrant) -> Self {
+        Self(version: version, grant: grant, composition: composition)
+    }
 
     var description: String { "<redacted demo invite session>" }
     var debugDescription: String { description }
@@ -238,15 +265,37 @@ struct DemoInviteSession: Codable, CustomStringConvertible, CustomDebugStringCon
 
     static func decode(_ bytes: Data, now: Date? = nil) throws -> Self {
         guard (1...65536).contains(bytes.count) else { throw DemoBetaConfiguration.Failure.invalidResponse }
-        let value = try JSONDecoder().decode(Self.self, from: bytes)
+        var strict = StrictJSONReader<DemoCredentialJSONPolicy>(bytes: Array(bytes)); try strict.check()
+        let value: Self
+        do { value = try JSONDecoder().decode(Self.self, from: bytes) }
+        catch { throw DemoBetaConfiguration.Failure.invalidResponse }
         try value.grant.validate(now: now)
-        try value.composition.validate()
+        switch value.version {
+        case nil:
+            guard let composition = value.composition else { throw DemoBetaConfiguration.Failure.invalidResponse }
+            try composition.validate()
+        case lioVersion:
+            let fields = try JSONSerialization.jsonObject(with: bytes) as? [String: Any]
+            guard value.composition == nil, fields.map({ Set($0.keys) }) == ["version", "grant"] else {
+                throw DemoBetaConfiguration.Failure.invalidResponse
+            }
+        default:
+            throw DemoBetaConfiguration.Failure.invalidResponse
+        }
         return value
     }
 }
 
 #if G2C_DEMO_BETA
 extension DevelopmentBetaComposition {
+    static func lio() -> Self {
+        let endpoint = DemoBetaConfiguration.endpoint
+        return Self(endpoint: endpoint, needs: nil,
+            typedMemory: .init(travel: .init(version: "app-travel.1", travel_ids: []),
+                               memory: DemoCompositionProfile.memory, memoryEndpoint: endpoint),
+            manualEditing: .init(), feedback: .init(), offline: .init(wallOffset: 0, uptimeOffset: 0, trusted: true))
+    }
+
     static func demo(_ profile: DemoCompositionProfile) -> Self {
         let endpoint = DemoBetaConfiguration.endpoint
         return Self(endpoint: endpoint, needs: .init(needsID: profile.needs_id),
