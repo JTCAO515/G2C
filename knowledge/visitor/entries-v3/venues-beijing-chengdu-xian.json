@@ -98,7 +98,7 @@
     "format_version": "visitor-entry.3",
     "entry_kind": "fact",
     "topic": "passport_booking",
-    "checked_on": "2026-11-16",
+    "checked_on": "2026-11-17",
     "expires_on": "2026-11-23",
     "id": "visitor.v3.chengdu.du-fu-thatched-cottage",
     "cities": [
@@ -110,13 +110,14 @@
       "name_en": "Chengdu Du Fu Thatched Cottage Museum",
       "wikidata_qid": null
     },
-    "text_zh": "杜甫草堂博物馆官方参观页提供实名预约购票，最多提前14天。14天是可购票窗口，不是必须提前14天；本条未核定普通散客是否必须提前预约或有无固定每周闭馆日，应另查馆方最新说明。学生集体免费参观的提前5个工作日规则不适用于普通散客。",
-    "text_en": "The Du Fu Thatched Cottage Museum visitor page offers real-name ticket booking up to 14 days ahead. This is a maximum booking window, not a 14-day minimum. This entry does not confirm mandatory advance booking or fixed weekly closing days for ordinary individual visitors; check current museum guidance. The separate five-working-day rule for free student-group visits does not apply to ordinary individuals.",
+    "text_zh": "杜甫草堂博物馆官方参观页提供实名预约购票，最多提前14天，是可购票窗口，不是必须提前14天。馆方2026年10月10日票务服务总结介绍可自主选择线上预约、人工购票、自助购票的模式；本条据此将普通散客预先线上预约列为可选，仍须按实名核验、分时入馆及临时容量管控办理。该总结涉及中秋国庆服务建设，不保证今天有票或窗口、自助设备可用，特殊安排应查最新公告。固定每周闭馆日仍未核定；学生集体免费参观的提前5个工作日规则不适用于普通散客。",
+    "text_en": "The Du Fu Thatched Cottage Museum visitor page offers real-name ticket booking up to 14 days ahead, a maximum window rather than a 14-day minimum. Its October 10, 2026 ticket-service report describes visitor choice among online reservations, staffed-counter purchases and self-service purchases. Based on that model, this entry treats advance online reservation as optional for ordinary individuals; real-name checks, time-slot entry and temporary capacity controls still apply. The report concerns Mid-Autumn and National Day service improvements, not a guarantee of tickets or counter/machine availability today. Check new notices for special arrangements. Regular weekly closing days remain unconfirmed. The separate five-working-day rule for free student-group visits does not apply to ordinary individuals.",
     "source_urls": [
-      "https://www.cddfct.cn/go-c19.htm"
+      "https://www.cddfct.cn/go-c19.htm",
+      "https://www.cddfct.cn/go-a2567.htm"
     ],
     "conditions": {
-      "reservation_required": null,
+      "reservation_required": false,
       "closed_weekdays": null,
       "closed_weekdays_public_holiday_exception": null,
       "advance_booking_days": 14,

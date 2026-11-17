@@ -284,3 +284,5 @@ GoChengdu发布的[2025入境旅游指南介绍](https://www.gochengdu.cn/en/art
 同一发布方的[秦陵参观指南精确页](https://www.chinahighlights.com/xian/terracotta-army/how-to-visit.htm)另经[#702/6934887822](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6934887822)核读及[6934985881](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6934985881)限定采用。其整体site明确分为兵马俑馆和秦陵区、说明共票及两区游览，并在普通游览时段段落写每日开放；仅据此补普通每周无闭馆的商业资讯，不承诺所有内部展厅/临时项目可用。馆方[ticketing.html](https://www.bmy.com.cn/jingtai/bmyweb/ticketing.html)本日重新实读，单独支持两区对象及全部观众实名线上预约要求；商业指南的淡季现场购票、7/10天窗口、钟点/票价均不采用，不覆盖馆方要求或补提前天数。
 
 正式格式再增加这一精确URL，仍只限西安具体场馆/预约主题/非空subject，不扩整站。两份指南的许可与字段依据各自记录，不因同品牌推其他文章正确；原文未显独立发布日期，核对日不冒原发布日。深圳世界之窗同品牌9/11指南只列9/10平台钟点，未明确常规星期，未纳正式源。
+
+杜甫草堂仍在已批准www.cddfct.cn同hostname内核读[2026-10-10票务服务总结](https://www.cddfct.cn/go-a2567.htm)。候选只概括普通购票多渠道模式，不采设备数量、增长、钟点/价格或优惠条件，且保留其假期服务背景、实名/分时/容量及实际办理不保证。是否足以支持普通提前预约可选须独立R核原文时间/范围，不能从有人工窗口或原14天窗口本身推出；具体分析见coverage/dufu-purchase-mode-2026-11-17.md。没有增加源host或放宽旧格式。
