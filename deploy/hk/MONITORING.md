@@ -6,7 +6,9 @@ deploys the application. A failed observation requires the existing B incident
 procedure; it cannot erase an original product FAIL or UNKNOWN.
 
 The workflow is **inactive until JT authorizes activation** and B sets the
-existing repository variable `HK_READINESS_MONITOR_ENABLED=true`. No repository
+existing repository variable `HK_READINESS_MONITOR_ENABLED=true`. It runs only
+while this repository is public, preserving the approved free-runner scope.
+No repository
 setting, cloud role, agent, billing product, credential, contact, or notification
 preference is created by this PR. Permissions are read-only and checkout does
 not retain credentials. Approval and actual notification receipt remain separate

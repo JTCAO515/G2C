@@ -21,6 +21,7 @@ jobs:
   observe:
     if: >-
       github.repository == 'JTCAO515/G2C' &&
+      github.event.repository.private == false &&
       github.ref == 'refs/heads/main' &&
       vars.HK_READINESS_MONITOR_ENABLED == 'true'
     runs-on: ubuntu-latest
