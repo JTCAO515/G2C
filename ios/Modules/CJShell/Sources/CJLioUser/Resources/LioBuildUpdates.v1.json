@@ -39,7 +39,7 @@
             "zh": [
               "与构建 46 相比，对话里的逐日展开改为单日预览，查看入口继续显示完整行程。",
               "修复行程卡深色模式下站点文字的配色绑定。",
-              "修正构建 46 登录页按钮的字号适配和点击范围，邀请码格式和同意步骤保持原样。"
+              "修正构建 46 登录页按钮的字号适配和点击范围，邀请码格式和同意步骤不变。"
             ],
             "en": [
               "Since build 46: conversation cards use a single-day preview instead of expanding every day; View keeps the complete schedule.",
