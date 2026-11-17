@@ -21,6 +21,11 @@
   profile_complete=False、exploration_complete=False。现有 observe 拒绝 draft_outcome，
   只接 completed consultation。没有真实结束边界时，不能凭固定轮数或正文“好了”完成轨迹。
 
+当前还没有可供宿主使用的公开 raw snapshot reader。B/L 只读核对建议未来在同一
+MESSAGE 与 Memory 锁内提供实际接受值 encode，并复用来源验证；具体接口等 L 的
+#994 优先项之后另排。不得绕过私有 _rows，或用 restore 混合视图冒原接受快照。
+此依赖不阻断今天 App #1124 与基础8条的修复准备。
+
 B 先保留同原 MESSAGE 接受的 lio_planning_context.2、来源和实际选中动作原件。
 在 C 的公开、版本化归一化实现完成前，缺证字段继续不可用，不开不可评分的60条实呼。
 
