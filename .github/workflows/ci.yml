@@ -10,7 +10,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # Keep every post-merge main verification; later pushes must not cancel it.
+  # Heads of the same PR still share their ref and replace obsolete PR runs.
+  group: ci-${{ github.event_name == 'push' && github.sha || github.ref }}
   cancel-in-progress: true
 
 env:
