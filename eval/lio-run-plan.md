@@ -1,6 +1,35 @@
 # Lio 分阶段冒烟与 #32 运行方案
 
-按 [JT 11-10 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6755127810) 执行。当前状态为待 B 发阶段①就绪通知。本方案不认领批次。
+保留 [JT 11-10 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6755127810)
+的原分阶段定义。当前排程见下节，本方案尚未认领批次。
+
+## 当前排程与候选硬项预检（2026-11-17）
+
+按 [JT 最新决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6942689446)，
+本次构建46由JT本人真机走中英七项，C按其时间与截图只读核原件。仅该真机矩阵通过后，
+B另签L基础8新窗口；L通过后C另签全国16新窗口。全国16全过后才申请下述六格，
+再另排正式66、JT双语人工审阅与#6。模拟器旧14的UNRUN、历史FAIL/UNKNOWN、
+原费用和关闭窗口均保留；不把安装、健康或旧样本当新矩阵成绩。
+
+`lio_formal_candidate_metrics.candidate_metrics()` 提供新增
+`LIO-formal-candidate-metrics.1` 内容测量：原候选字节与原生canonical内容SHA必须一致，
+复用原structured.1–4校验器；不认证owner、读取权限、来源、RUN或正式保存状态。
+结果只将下表中可测值交给**未修改**的`eval/judge.py`，不产生任务PASS。
+原候选缺失则四项均不可用，不解析正文、卡片标题或模型自评来补证。
+
+| 原硬项 | 当前可测范围 | 仍需的实际证据 |
+|---|---|---|
+| `short-trip/max_days` | structured.3/4 的显式连续天序列长度；legacy1/2在全部起止日期和同一时区明确时按完整日历跨度计数，空隙日不漏算 | 同原动作的实际候选及其原生内容SHA；legacy日期或共同日历时区缺失时保持UNKNOWN |
+| `slow-pace/max_daily_items` | structured.4 每天`kind=sight`的拟定景点数，排除餐饮/酒店；跨日景点计数定义不明时UNKNOWN | 同原动作候选；kind是拟定分类，错误标签、空洞行程或正文不一致仍须独立语义审阅，不由计数证明 |
+| `daily-budget/budget_limit` | **不可用**，不把未知价格当0，也不把局部门票、住宿推荐或模型预算自报当全日核实费用 | 完整费用范围及逐项实际来源/未知项，绑定原候选与原动作 |
+| `transport-gap/verified_transfer_feasibility` | **不可用**，不从提议的leg、模型“可行”或仅CP求解状态推导 | 原保护约束输入、实际FEAS结论与来源的同动作绑定；原合成60分钟/15分钟条件不得被提议路线替换 |
+
+这份测量不写入旧报告，不把旧`items[].text`的未知改成PASS，不改33对/11对留出/66分母。
+它也不填restricted role、foreign read/write、formal write、Memory或语义等其它原必查项。
+现有默认检查已发现同文件新增测试，无需修改共享`scripts/test.py`。
+六格/66真正开跑前，B仍须交同版本recipe→动作映射和受保护投影前原件；不支持的
+草稿/拒绝/接受或记忆路径如实UNRUN/UNKNOWN，不能通过换输入、改judge或少算案例放行。
+本预检准备不阻本轮JT真机七项、L8或全国16，不授予真实调用或新窗口。
 
 ## #702 分阶段冒烟
 
