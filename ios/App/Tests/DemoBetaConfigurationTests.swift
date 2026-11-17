@@ -5,6 +5,81 @@ import Testing
 struct DemoBetaConfigurationTests {
     private let now = Date(timeIntervalSince1970: 1_795_000_000)
 
+    @Test func lioSessionPreservesVerifiedGrantWithoutInventingLegacyStarterData() throws {
+        let grant = try JSONSerialization.jsonObject(with: reply())
+        let bytes = try JSONSerialization.data(withJSONObject: ["version": "LIO-demo-session.1", "grant": grant])
+        let session = try DemoInviteSession.decode(bytes, now: now)
+        #expect(session.grant.subject == "m4-synthetic-demo-0123456789ab")
+        let encoded = try JSONEncoder().encode(session)
+        let fields = try #require(try JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        #expect(Set(fields.keys) == ["version", "grant"])
+        #expect(fields["version"] as? String == "LIO-demo-session.1")
+        #expect(!String(reflecting: session).contains("stub."))
+    }
+
+    @Test func lioSessionRejectsUnknownOrMixedEnvelopeInsteadOfFallingBack() throws {
+        let grant = try JSONSerialization.jsonObject(with: reply())
+        let cases: [[String: Any]] = [
+            ["version": "LIO-demo-session.99", "grant": grant],
+            ["version": "LIO-demo-session.1", "grant": grant, "composition": NSNull()],
+            ["version": "LIO-demo-session.1", "grant": grant, "endpoint": "https://untrusted.invalid"],
+            ["grant": grant],
+        ]
+        for fields in cases {
+            let bytes = try JSONSerialization.data(withJSONObject: fields)
+            #expect(throws: DemoBetaConfiguration.Failure.invalidResponse) {
+                try DemoInviteSession.decode(bytes, now: now)
+            }
+        }
+    }
+
+    @Test func lioRenewalPreservesCredentialModeAndStillBindsTheOriginalOwner() throws {
+        let grant = try DemoInviteGrant.decode(reply(), now: now)
+        let previous = DemoInviteSession.lio(grant: grant)
+        let renewed = try DemoBetaConfiguration.verifyRenewalResponse(reply(lifetime: 604800), status: 200,
+            contentType: "application/json", previous: previous, now: now)
+        #expect(renewed.version == "LIO-demo-session.1" && renewed.composition == nil)
+        let stored = try DemoInviteSession.decode(JSONEncoder().encode(renewed), now: now)
+        #expect(stored.grant.subject == previous.grant.subject && stored.composition == nil)
+        #expect(throws: DemoBetaConfiguration.Failure.invalidResponse) {
+            try DemoBetaConfiguration.verifyRenewalResponse(reply(subject: "m4-synthetic-demo-abcdef012345"),
+                status: 200, contentType: "application/json", previous: previous, now: now)
+        }
+    }
+
+    @Test func lioEnvelopeDoesNotRelaxGrantOwnerOrExpiryValidation() throws {
+        let invalid = [try reply(tokenOwner: "other-owner"), try reply(subject: "other-owner"),
+                       try reply(lifetime: 604801)]
+        for raw in invalid {
+            let grant = try JSONSerialization.jsonObject(with: raw)
+            let envelope = try JSONSerialization.data(withJSONObject: ["version": "LIO-demo-session.1", "grant": grant])
+            #expect(throws: DemoBetaConfiguration.Failure.invalidResponse) {
+                try DemoInviteSession.decode(envelope, now: now)
+            }
+        }
+        let grant = try JSONSerialization.jsonObject(with: reply(lifetime: -1))
+        let expired = try JSONSerialization.data(withJSONObject: ["version": "LIO-demo-session.1", "grant": grant])
+        #expect(throws: DemoBetaConfiguration.Failure.expired) { try DemoInviteSession.decode(expired, now: now) }
+    }
+
+    @Test func lioEnvelopeRejectsDuplicateTagsAndNestedGrantFieldsBeforeDecoding() throws {
+        let grant = String(decoding: try reply(), as: UTF8.self)
+        let duplicateGrant = "{\"version\":\"DEMO-invite-session.2\"," + grant.dropFirst()
+        let cases = [
+            "{\"version\":\"LIO-demo-session.1\",\"version\":\"LIO-demo-session.1\",\"grant\":\(grant)}",
+            "{\"version\":\"LIO-demo-session.1\",\"version\":\"LIO-demo-session.99\",\"grant\":\(grant)}",
+            "{\"version\":\"LIO-demo-session.1\",\"grant\":\(duplicateGrant)}",
+        ]
+        for value in cases {
+            #expect(throws: DemoBetaConfiguration.Failure.invalidResponse) {
+                try DemoInviteSession.decode(Data(value.utf8), now: now)
+            }
+        }
+        #expect(throws: DemoBetaConfiguration.Failure.invalidResponse) {
+            try DemoInviteGrant.decode(Data(duplicateGrant.utf8), now: now)
+        }
+    }
+
     private func reply(subject: String = "m4-synthetic-demo-0123456789ab", tokenOwner: String? = nil,
                        lifetime: TimeInterval = 3600, version: String = "DEMO-invite-session.2") throws -> Data {
         let expiry = now.addingTimeInterval(lifetime)
@@ -47,7 +122,8 @@ struct DemoBetaConfigurationTests {
         let profile = try DemoCompositionProfile(language: .zh, travelID: "0123456789abcdef0123456789abcdef", travelVersion: 1)
         let encoded = try JSONEncoder().encode(DemoInviteSession(grant: grant, composition: profile))
         let session = try DemoInviteSession.decode(encoded, now: now)
-        #expect(session.composition.needs_id == "demo-starter-zh-needs")
+        let restoredComposition = try #require(session.composition)
+        #expect(restoredComposition.needs_id == "demo-starter-zh-needs")
         #expect(DemoCompositionProfile.memory.slots["quiet.entrance"]?.collection_allowed == true)
         #expect(!String(reflecting: grant).contains("stub."))
         #expect(Mirror(reflecting: session).children.isEmpty)
@@ -102,8 +178,9 @@ struct DemoBetaConfigurationTests {
         let renewed = try DemoBetaConfiguration.verifyRenewalResponse(reply(lifetime: 1800), status: 200,
             contentType: "application/json", previous: previous, now: now)
         #expect(renewed.grant.subject == grant.subject && renewed.grant.expiry == now.addingTimeInterval(1800))
-        #expect(renewed.composition.conversation_id == composition.conversation_id && renewed.composition.needs_id == composition.needs_id)
-        #expect(renewed.composition.travel_id == composition.travel_id && renewed.composition.travel_version == composition.travel_version)
+        let renewedComposition = try #require(renewed.composition)
+        #expect(renewedComposition.conversation_id == composition.conversation_id && renewedComposition.needs_id == composition.needs_id)
+        #expect(renewedComposition.travel_id == composition.travel_id && renewedComposition.travel_version == composition.travel_version)
         for bytes in [try reply(subject: "m4-synthetic-demo-abcdef012345"), try reply(version: "DEMO-invite-session.1")] {
             #expect(throws: DemoBetaConfiguration.Failure.invalidResponse) {
                 try DemoBetaConfiguration.verifyRenewalResponse(bytes, status: 200, contentType: "application/json", previous: previous, now: now)
