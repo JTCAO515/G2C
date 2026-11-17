@@ -1158,6 +1158,19 @@ public struct LioHome<MenuContent: View>: View {
                 .font(.footnote)
                 .foregroundStyle(LioTheme.inkSecondary)
                 .accessibilityIdentifier("lio.failure")
+            if failure == .serviceLimit || (failure == .unavailable && turn.fromTimeline) {
+                RunReadableText(text: language.text(
+                    "If this keeps happening, view problem notes and contact the demo organiser.",
+                    "如果持续失败，请查看问题记录并联系内测负责人。"), style: .caption, color: LioTheme.inkSecondary)
+                    .accessibilityIdentifier("lio.failure.next-step")
+                Button { showsProblemNotes = true } label: {
+                    RunReadableText(text: language.text("View problem notes", "查看问题记录"), color: LioTheme.ink)
+                        .frame(minHeight: 44, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.bordered)
+                .accessibilityIdentifier("lio.failure.problems")
+            }
             if failure == .unfinished {
                 Button(language.text("Ask again", "重新问")) {
                     followsAnswer = true
