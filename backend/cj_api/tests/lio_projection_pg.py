@@ -212,3 +212,5 @@ if __name__=='__main__':
         harness.exercise=lambda auth,conninfo:exercise(auth.parent/'lio-projection',conninfo,
             preference=text,locale=locale,stored_text=lodging,extra_preference=interest)
         harness.main()
+    from lio_cross_language_pg import main as native_main
+    for locale in ('en','zh'):native_main(preference_locale=locale)
