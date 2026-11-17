@@ -68,6 +68,7 @@ private nonisolated final class WarmRootHTTP: URLProtocol, @unchecked Sendable {
     @State private var acknowledgedMode = "unknown"
     @State private var materialState = "unknown"
     @State private var inspectedProblem = "not inspected"
+    @State private var lockControl = "not requested"
     var body: some Scene {
         WindowGroup {
             VStack(spacing: 0) {
@@ -81,6 +82,12 @@ private nonisolated final class WarmRootHTTP: URLProtocol, @unchecked Sendable {
                         Button("Deny") { setMode("denied") }.accessibilityIdentifier("fixture.root.deny")
                     }
                     .font(.caption).tint(LioTheme.vermilion).padding(4).background(LioTheme.surface)
+                    if ProcessInfo.processInfo.environment["B691_LOCK_SCREEN"] == "1" {
+                        HStack {
+                            Button("Lock simulator") { requestLock() }.accessibilityIdentifier("fixture.root.lock")
+                            Text(lockControl).accessibilityIdentifier("fixture.root.lock-control")
+                        }.font(.caption2)
+                    }
                     if ProcessInfo.processInfo.environment["B691_TIMELINE_TIMEOUT"] == "1" {
                         HStack {
                             Button("Time out timeline") { setMode("timeline-timeout") }
@@ -152,7 +159,8 @@ private nonisolated final class WarmRootHTTP: URLProtocol, @unchecked Sendable {
                 access_token: "b691fixture." + payload + ".synthetic", subject: subject,
                 expires_at: ISO8601DateFormatter().string(from: expiry))
             let invite: DemoInviteSession
-            if ProcessInfo.processInfo.environment["B691_TIMELINE_TIMEOUT"] == "1" {
+            if ProcessInfo.processInfo.environment["B691_TIMELINE_TIMEOUT"] == "1"
+                || ProcessInfo.processInfo.environment["B691_LOCK_SCREEN"] == "1" {
                 invite = .lio(grant: grant)
             } else {
                 let selection = try DemoCompositionProfile(language: shell.language == .chinese ? .zh : .en,
@@ -170,6 +178,22 @@ private nonisolated final class WarmRootHTTP: URLProtocol, @unchecked Sendable {
         }
         inspectedProblem = [entry.category.rawValue, entry.origin?.rawValue ?? "-", entry.cause?.rawValue ?? "-",
                             String(entry.errorCode ?? 0), String(entry.httpStatus ?? 0), entry.reference ?? "-"].joined(separator: "|")
+    }
+    private func requestLock() {
+        Task {
+            do {
+                guard let raw = ProcessInfo.processInfo.environment["B691_LOCAL_ENDPOINT"], let endpoint = URL(string: raw),
+                      endpoint.host == "127.0.0.1" else { throw URLError(.badURL) }
+                var request = URLRequest(url: endpoint.appendingPathComponent("fixture-lock-screen"))
+                request.httpMethod = "POST"; request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                request.httpBody = try JSONEncoder().encode(["action": "lock"])
+                let (bytes, response) = try await URLSession.shared.data(for: request)
+                struct Result: Decodable { let observed: Bool }
+                guard (response as? HTTPURLResponse)?.statusCode == 200,
+                      try JSONDecoder().decode(Result.self, from: bytes).observed else { throw URLError(.badServerResponse) }
+                lockControl = "observed"
+            } catch { lockControl = "failed" }
+        }
     }
     private func setMode(_ mode: String) {
         Task {
