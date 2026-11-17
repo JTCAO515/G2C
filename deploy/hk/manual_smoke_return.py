@@ -2,6 +2,8 @@
 
 Version1 retains the zero-business startup-failure path. Version2 additionally
 checks full before/after inventories for a bounded ordinary business window.
+Version3 handles only JT's explicit stopped, zero-message window that keeps its
+source. It restores accounting policy, never grants smoke or release approval.
 Both accept the actual manual close, never an invented automatic close. An
 explicit reviewed tool image supplies the native restore module when the
 compatible serving rollback image predates it. No application is deployed.
@@ -22,6 +24,8 @@ from deploy.hk.app_smoke_restore import roles
 
 VERSION='G2C-App-manual-smoke-standing-return-plan.1'
 BUSINESS_VERSION='G2C-App-manual-smoke-standing-return-plan.2'
+UNRUN_VERSION='G2C-App-manual-smoke-standing-return-plan.3'
+UNRUN_DECISION='JT #495/6942689446'
 NATIVE='G2C-App-manual-smoke-closed-standing-restore.1'
 STATIC=('compose.env','common.env','worker.env','deploy/hk/compose.yaml','deploy/hk/compose.local-pg.yaml')
 
@@ -34,7 +38,9 @@ def business_closed_ledger(plan,closed,stopped,restriction,before_metadata,after
                 or type(anchor['count'])is not int or anchor['count']<0
                 or type(anchor['sha256'])is not str or re.fullmatch('[a-f0-9]{64}',anchor['sha256'])is None):
             raise ValueError('complete original manual-close ledger anchors required')
-    if(plan.get('version')!=BUSINESS_VERSION or closed.get('version')!='B-manual14-close.2'
+    unrun=plan.get('version')==UNRUN_VERSION
+    expected_close='B-manual14-close.3'if unrun else'B-manual14-close.2'
+    if(plan.get('version')not in(BUSINESS_VERSION,UNRUN_VERSION)or closed.get('version')!=expected_close
             or closed.get('lease_id')!=plan['window_id']
             or closed.get('standing_budget_restored')is not False
             or stopped.get('state')!='STOP_NEW'or stopped.get('verdict')!=closed.get('verdict')
@@ -66,7 +72,14 @@ def business_closed_ledger(plan,closed,stopped,restriction,before_metadata,after
             or len(set(selected))!=len(selected)or set(selected)!=new
             or type(count)is not int or count!=len(new)or not 0<=count<=8):
         raise ValueError('complete bounded actual new-message set required')
-    if closed.get('state')=='CLOSED_PASS':
+    if unrun:
+        if(closed.get('state')!='CLOSED_UNRUN_KEPT_SOURCE'or closed.get('verdict')!='UNRUN'
+                or count!=0 or closed.get('rollback')is not None
+                or(plan['source'],plan['image'])!=(plan['tested_source'],plan['tested_image'])
+                or plan.get('unrun_decision')!=UNRUN_DECISION
+                or closed.get('unrun_decision')!=UNRUN_DECISION):
+            raise ValueError('explicit JT unrun close with no new messages and unchanged source required')
+    elif closed.get('state')=='CLOSED_PASS':
         if(closed.get('verdict')!='PASS'or count!=8 or closed.get('rollback')is not None
                 or(plan['source'],plan['image'])!=(plan['tested_source'],plan['tested_image'])
                 or any(sum(after[mid].get('locale')==locale for mid in new)!=4 for locale in('zh','en'))):
@@ -91,7 +104,7 @@ def business_closed_ledger(plan,closed,stopped,restriction,before_metadata,after
 
 def perform(directory,plan,closed,stopped,restriction,inspect,proof,native,*,apply,
             before_metadata=None,after_metadata=None):
-    if plan.get('version')==BUSINESS_VERSION:
+    if plan.get('version')in(BUSINESS_VERSION,UNRUN_VERSION):
         anchor=business_closed_ledger(plan,closed,stopped,restriction,before_metadata,after_metadata)
         return return_standing(directory,plan,anchor,inspect,proof,native,restriction,apply=apply)
     if(closed.get('version')!='B-manual14-close.1'or closed.get('state')!='CLOSED_FAIL_ROLLED_BACK'
@@ -153,7 +166,7 @@ def main():
     if os.geteuid()!=0 or len(sys.argv)not in(2,3)or len(sys.argv)==3 and sys.argv[2]!='--apply':
         raise ValueError('B root explicit manual return preflight or one-shot apply required')
     path=Path(sys.argv[1]);raw=private(path);plan=json.loads(raw);directory=path.parent
-    if(plan['version']not in(VERSION,BUSINESS_VERSION)or plan['independent_review_approved']is not True
+    if(plan['version']not in(VERSION,BUSINESS_VERSION,UNRUN_VERSION)or plan['independent_review_approved']is not True
             or sha(__file__)!=plan['reviewed_script_sha256']
             or re.fullmatch('sha256:[a-f0-9]{64}',plan['tool_image'])is None
             or re.fullmatch('[a-f0-9]{40}',plan['tool_source'])is None):
@@ -172,7 +185,7 @@ def main():
         def inspect(role):return json.loads(command(['docker','inspect','g2c-beta-'+role+'-1']))[0]
         fixed={'close.result.json':plan['close_sha256'],'stop.result.json':plan['stop_sha256'],
                'restriction.result.json':plan['restriction_sha256']}
-        if plan['version']==BUSINESS_VERSION:
+        if plan['version']in(BUSINESS_VERSION,UNRUN_VERSION):
             fixed.update({'before.metadata.json':plan['before_metadata_sha256'],
                           'after.metadata.json':plan['after_metadata_sha256']})
         values={name:private(directory/name)for name in fixed}
