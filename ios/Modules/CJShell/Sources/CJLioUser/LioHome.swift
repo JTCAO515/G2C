@@ -130,16 +130,19 @@ public struct LioHome<MenuContent: View>: View {
         let tripPlan = tripPlan
         TabView(selection: $tab) {
             chat
+                .background(LioTabBarAppearance().frame(width: 0, height: 0))
                 .tabItem { Label(language.text("Chat", "聊天"), systemImage: "bubble.left") }
                 .tag(Tab.chat)
             LioTripsView(itineraries: conversation.itineraries, language: language, library: tripLibrary,
                          tripPlan: tripPlan, currentPlan: tripPlan?.current(for: tripCard),
                          canUndo: canObserve && tripPlan?.requestedCard == tripCard,
                          recordedMap: recordedMap, sessionRevision: session?.revision, path: $tripPath) { tab = .chat }
+                .background(LioTabBarAppearance().frame(width: 0, height: 0))
                 .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
                 .tag(Tab.trips)
             if let savedMemory {
                 savedMemory
+                    .background(LioTabBarAppearance().frame(width: 0, height: 0))
                     .tabItem { Label(language.text("Memory", "记忆"), systemImage: "bookmark") }
                     .tag(Tab.memory)
             }
