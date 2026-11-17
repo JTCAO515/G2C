@@ -65,6 +65,8 @@ private nonisolated final class WarmRootHTTP: URLProtocol, @unchecked Sendable {
     @State private var originalTrip: UUID?
     @State private var fixtureFailure = false
     @State private var bootstrap = "starting"
+    @State private var acknowledgedMode = "ready"
+    @State private var materialState = "unknown"
     var body: some Scene {
         WindowGroup {
             VStack(spacing: 0) {
@@ -80,6 +82,8 @@ private nonisolated final class WarmRootHTTP: URLProtocol, @unchecked Sendable {
                     .font(.caption).tint(LioTheme.vermilion).padding(4).background(LioTheme.surface)
                     HStack {
                         Text(bootstrap).accessibilityIdentifier("fixture.root.bootstrap")
+                        Text(acknowledgedMode).accessibilityIdentifier("fixture.root.mode")
+                        Text(materialState).accessibilityIdentifier("fixture.root.sdk-presence")
                         Text(root.fixtureHasRetained ? "retained" : "empty").accessibilityIdentifier("fixture.root.retained")
                         Text(root.trip == nil ? "retired" : "active").accessibilityIdentifier("fixture.root.business")
                         Text(root.fixtureDisplayID == originalDisplay ? "same" : "changed").accessibilityIdentifier("fixture.root.display")
@@ -92,9 +96,13 @@ private nonisolated final class WarmRootHTTP: URLProtocol, @unchecked Sendable {
                             Text(String(problem.diagnosis.httpStatus ?? 0) + "|" + problem.origin.rawValue + "|" + (problem.diagnosis.serverReference ?? "-"))
                                 .font(.caption2).foregroundStyle(LioTheme.ink)
                                 .accessibilityIdentifier("fixture.root.problem")
+                            Text(problem.diagnosis.category.rawValue)
+                                .accessibilityIdentifier("fixture.root.category")
                         }
                     }
                     .onChange(of: root.accounts.state, initial: true) { _, state in
+                        do { materialState = try root.fixtureHasNoSavedMaterial() ? "empty" : "present" }
+                        catch { materialState = "unknown" }
                         if case .signedIn = state, originalDisplay == nil {
                             originalDisplay = root.fixtureDisplayID; originalTrip = root.trip?.id
                         }
@@ -148,6 +156,7 @@ private nonisolated final class WarmRootHTTP: URLProtocol, @unchecked Sendable {
                 request.httpBody = try JSONEncoder().encode(["mode": mode])
                 let (_, response) = try await URLSession.shared.data(for: request)
                 guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
+                acknowledgedMode = mode
             } catch { fixtureFailure = true }
         }
     }
