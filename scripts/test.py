@@ -79,7 +79,8 @@ def main():
                        [*pytest, 'eval/tests/test_lio_calendar_transitions.py']))
     results.append(run('eval/lio_voice', [*pytest, 'eval/tests/test_lio_voice.py']))
     results.append(run('eval/basic_chain', [*pytest, 'eval/tests/test_basic_chain.py','eval/tests/test_basic_cost_v2.py',
-                       'eval/tests/test_basic_native_v2.py','eval/tests/test_basic_joint_v2.py','eval/tests/test_basic_driver_v2.py']))
+                       'eval/tests/test_basic_native_v2.py','eval/tests/test_basic_joint_v2.py','eval/tests/test_basic_driver_v2.py',
+                       'eval/tests/test_basic_chain_sm06_prefixes.py']))
     results.append(run('tooling/datasets',
                        ['-B', '-m', 'unittest', 'discover', '-s', 'tooling/datasets',
                         '-t', '.', '-p', 'test_*.py', '-v']))
