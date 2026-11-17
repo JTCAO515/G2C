@@ -1,5 +1,16 @@
 # 外国游客须知已确认来源清单（H1）
 
+## 两公园平台周开放资料（2026-11-17）
+
+依JT持续来源代批权，在[#702/6943458130](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6943458130)批准两个精确公开URL：
+
+| 来源 | 语言 / 城市 | 本次实际支持与限制 |
+|---|---|---|
+| [Traveloka西溪入园产品](https://www.traveloka.com/en-sg/activities/china/product/xixi-wetland-park-admission-ticket-peaceful-oasis-near-west-lake-7621127360134) | 英文 / 杭州 | 正文整园冬夏每日安排及Monday至Sunday常规表支持普通每周无固定闭园日；不是园方新公告，换票时段不当园区开闭钟点，产品预订截止不下传园方必须预约 |
+| [携程安徽宿州三角洲生态公园详情](https://gs.ctrip.com/html5/you/sight/suzhou672/5577341.html) | 中文 / 安徽宿州 | 主记录全年全天开放，正文明确安徽省宿州市；普通公共游园周闭，不含博物馆、游乐场、喷泉、活动及驿站，预约要求仍未知 |
+
+Traveloka正常About及页脚实读，自述旅行平台，页脚TRAVELOKA SERVICES PTE. LTD.；未将自报牌照当外部监管核验。携程页品牌、主记录和安徽地点正文正常实读，周边推荐有与本地不符的内容，未据其推荐距离或用户游记核定主记录规则。两页均未标合作商/营业资料独立更新时间，不把抓取日、价格变化、版权年或评论时间当规则更新。仅接受各精确URL，限对应单城、passport_booking及非空subject；不扩整站、参数、相邻ID、子域或法律渠道。详细范围见[两园补证](coverage/park-weekly-2026-11-17.md)。11-17核对、11-23失效，未顺延既有到期截止；原件、日志、坐标、接口或交易不入库。
+
 状态：**JT 2026-11-12 已确认**：[确认记录 #843/6818584957](https://github.com/JTCAO515/G2C/issues/843#issuecomment-6818584957)，对应 `SOURCES.md @ 6c26cd95`。
 H2 从本次确认范围开始收集；清单合并与来源批准仍是不同动作。
 以下首批确认范围是 H1/H2 的历史记录；后续扩展按文末各项授权执行，当前持续 Goal 已获 JT 授权由 H 代批正常来源。旧格式的来源接受集合不因文档追加而扩大。

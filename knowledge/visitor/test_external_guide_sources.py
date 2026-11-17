@@ -8,6 +8,20 @@ from validate_v3 import validate_entry_v3
 
 
 class ExternalGuideSourceScopeTests(unittest.TestCase):
+    def test_park_platform_pages_keep_exact_local_venue_boundaries(self):
+        cases = (
+            ('https://www.traveloka.com/en-sg/activities/china/product/xixi-wetland-park-admission-ticket-peaceful-oasis-near-west-lake-7621127360134',
+             'hangzhou', 'chengdu', '7621127360134', '7621127360135'),
+            ('https://gs.ctrip.com/html5/you/sight/suzhou672/5577341.html',
+             'suzhou-anhui', 'taizhou-zhejiang', '5577341', '5577342'),
+        )
+        for page, city, wrong_city, old_id, other_id in cases:
+            self._check_venue_source_scope(
+                page=page, city=city, wrong_city=wrong_city,
+                invalid_urls=(page + '?extra=1', page.replace(old_id, other_id),
+                              page.split('/')[0] + '//' + page.split('/')[2] + '/',
+                              page.replace('https://', 'https://other.')))
+
     def test_panda_official_attachment_keeps_exact_url_and_chengdu_venue_boundary(self):
         page = 'https://m.panda.org.cn/cn/education/trends/2025-01-17/8632.html'
         self._check_venue_source_scope(
