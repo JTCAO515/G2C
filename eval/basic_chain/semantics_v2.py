@@ -16,12 +16,23 @@ def semantic(gate,text,locale):
             return 'PASS','complete_frozen_accepted_capabilities'
         if locale=='en':
             styled=re.sub(r'[*_`]', '', text)
-            # Reported first-person clauses are not the assistant's assertion.
-            # Quoted topic names remain words; contractions are not quote starts.
-            plain=QUOTED.sub(lambda m:' 'if re.search(r'\bI\b',m[0][1:-1],re.I)else m[0][1:-1],styled)
-            denial=r'\bI\s+(?:offer|provide)\s+no\s+travel\s+(?:assistance|planning\s+services?)\b'
-            if re.search(denial,plain,re.I):return 'FAIL','travel_capability_denied'
-            if not plain.strip()and styled.strip():return 'UNKNOWN','capability_only_in_quoted_text'
+            # Only explicitly reported examples lose their quoted assertion.
+            # The assistant's own quoted policy remains an assertion.
+            def unquote(match):
+                prefix=styled[:match.start()]
+                reported=re.search(r'\b(?:the sentence|the phrase)\s*$',prefix,re.I)
+                return ' 'if reported and re.search(r'\bI\b',match[0][1:-1],re.I)else match[0][1:-1]
+            if QUOTED.fullmatch(styled.strip()):
+                return 'UNKNOWN','capability_only_in_quoted_text'
+            plain=QUOTED.sub(unquote,styled)
+            # A negated offer/provision in the same clause must never become
+            # positive through the legacy wildcard. Contrastive clauses remain
+            # separate, e.g. no booking services, but I can plan travel.
+            clauses=re.split(r'[.!?;\n]|\bbut\b',plain,flags=re.I)
+            for clause in clauses:
+                assertion=re.search(r'\bI\s+(?:offer|provide)\b(.*)',clause,re.I)
+                if assertion and re.search(r'\b(?:no|neither|not|none)\b',assertion[1],re.I)and re.search(r'\b(?:travel|plan\w*|itinerar\w*)\b',assertion[1],re.I):
+                    return 'FAIL','travel_capability_denied'
             return legacy_semantic(gate,plain,locale)
     if gate=='SM02'and type(text)is str:
         # Remove styling, never substantive words. Only the two correct known
