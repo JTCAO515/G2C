@@ -86,6 +86,29 @@ def explicit_pilot_preference(text, slots):
     return (matches[0], statement) if len(matches) == 1 else None
 
 
+def _statements(text):
+    return [part.strip() for part in re.split(r'(?<=[.!。！])\s+|[。！]', text) if part.strip()]
+
+
+def explicit_pilot_preferences(text, slots, *, max_entries):
+    """Resolve a whole allowed statement or independent, fully supported statements."""
+    single = explicit_pilot_preference(text, slots)
+    if single is not None:
+        return (single,)
+    statements = _statements(text)
+    if not statements or len(statements) > max_entries:
+        return None
+    found = []
+    seen = set()
+    for statement in statements:
+        preference = explicit_pilot_preference(statement, slots)
+        if preference is None or preference[0] in seen:
+            return None
+        seen.add(preference[0])
+        found.append(preference)
+    return tuple(found)
+
+
 def supported_preference(entry, original):
     """Accept only a supported value stated in the complete original turn."""
     form = _FORMS.get(entry.slot)
@@ -94,7 +117,7 @@ def supported_preference(entry, original):
     value = _value(form, entry.text)
     if value is None or any(_value(form, evidence.quote) != value for evidence in entry.evidence):
         return False
-    statements = [part.strip() for part in re.split(r'(?<=[.!。！])\s+|[。！]', original) if part.strip()]
+    statements = _statements(original)
     values = {_value(form, statement) for statement in statements} - {None}
     return (values == {value}
             and all(any(_value(allowed, statement) is not None for allowed in _FORMS.values())

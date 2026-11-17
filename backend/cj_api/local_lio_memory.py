@@ -24,7 +24,7 @@ from cj_message.source import SourceQuery
 from cj_usage.background_exit import ModelInput
 from cj_usage.metered_exit import BudgetExceeded, BudgetUnknown
 from .lio_memory_preferences import (PREFERENCE_SLOTS, allows_pilot_preference_write,
-                                     explicit_pilot_preference, supported_preference)
+                                     explicit_pilot_preferences, supported_preference)
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -77,15 +77,14 @@ def _local_preference_result(payload):
     (_, content), = payload.messages
     data = json.loads(content)
     source, = data['messages']
-    preference = explicit_pilot_preference(source['text'], data['slots'])
-    if preference is None:
+    preferences = explicit_pilot_preferences(source['text'], data['slots'], max_entries=data['max_entries'])
+    if preferences is None:
         return None
-    slot, statement = preference
-    if len(statement.encode('utf-8')) > data['max_text_bytes']:
+    if any(len(statement.encode('utf-8')) > data['max_text_bytes'] for _, statement in preferences):
         return None
     return encode(dict(version=OUTPUT_VERSION, entries=[dict(subject='self', slot=slot,
         kind='preference', text=statement, extent='long_term', occurred_at='date unknown',
-        evidence=[dict(ref=source['ref'], quote=statement)])]))
+        evidence=[dict(ref=source['ref'], quote=statement)]) for slot, statement in preferences]))
 
 
 class LioMemoryExtraction:
