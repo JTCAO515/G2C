@@ -47,6 +47,7 @@ VENUE_PAGE_CITIES = {
     "https://tidenews.com.cn/news.html?id=3612168": frozenset({"taizhou-zhejiang"}),
     "https://tidenews.com.cn/news.html?id=2858557": frozenset({"taizhou-zhejiang"}),
     "https://m.ctrip.com/webapp/you/sight/chengdu104/4229.html?ext-shelfPage=ctrip_shelf_seo": frozenset({"chengdu"}),
+    "https://www.trip.com/travel-guide/attraction/hangzhou/west-lake-82922": frozenset({"hangzhou"}),
 }
 V3_APPROVED_HOSTS = V3_GOVERNMENT_HOSTS | VENUE_SOURCE_CITIES.keys()
 
