@@ -1,0 +1,50 @@
+{
+  "version": "LIO-basic-execution-profiles.2",
+  "authority": "https://github.com/JTCAO515/G2C/issues/495#issuecomment-6907095660",
+  "source_audit_commit": "949ea36943e0832e925ba015cca573475b790b4c",
+  "base_design": "docs/quality/m4-stage0-1048/basic-chain-smoke.v1.json",
+  "preserve_base_design": true,
+  "admission": "Independent original native cash and call ceilings; not full-cohort prepayment or a guarantee of completion",
+  "scope": [
+    "Actual ordinary Home protocol1/2, National planning and original RealTools",
+    "SM05/SM06 fixed replies are zero external calls",
+    "Other messages allow intake1 + general answer up to8 + Memory up to1; total tools up to8 including city resolution",
+    "No additional actor/reflection/background model path; actual configuration and full producer coverage must be qualified"
+  ],
+  "profiles": {
+    "standard": {
+      "message_posts": 8,
+      "non_fixed_messages": 4,
+      "model_call_upper": 40,
+      "total_tool_call_upper": 32,
+      "cash_ceiling_cny": 60,
+      "window_minutes_max": 60,
+      "coarse_sum_if_every_call_reserved_one_cny": 72,
+      "guaranteed_full_cohort_completion": false
+    },
+    "first_setup": {
+      "message_posts": 12,
+      "non_fixed_messages": 8,
+      "model_call_upper": 80,
+      "total_tool_call_upper": 64,
+      "cash_ceiling_cny": 80,
+      "window_minutes_max": 90,
+      "coarse_sum_if_every_call_reserved_one_cny": 144,
+      "guaranteed_full_cohort_completion": false
+    }
+  },
+  "money_rules": [
+    "Original C100, original usage/holds, native800/400 and other lanes remain unchanged",
+    "B may only tighten to min(original stricter cap, actual original usage plus this cash ceiling); independently bound calls",
+    "Every original native begin still requires its full original hold; do not change the product loop, env or old allowance",
+    "72/144 are coarse call/hold envelopes, not actual cost, simultaneous occupation or invoice maximum",
+    "If the purpose budget refuses, stop new dispatch and report resource-limited UNKNOWN with remaining UNRUN; do not call it a product regression or raise limits to hide it",
+    "Any additional funding requires JT approval before new spending",
+    "FACT fixed NIA public fetch and local visitor lookup need positive registered zero-cost evidence; unknown paid tools retain full original holds"
+  ],
+  "actual_fees": {
+    "conservative_cny": "UNRUN",
+    "token_estimate_cny": "UNRUN",
+    "actual_paid_cny": "UNRUN"
+  }
+}
