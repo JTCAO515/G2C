@@ -43,7 +43,7 @@ def main():
     parser.add_argument('--denial-status', type=int, choices=(401, 403), default=401)
     parser.add_argument('--deny-after-cold', action='store_true')
     parser.add_argument('--initial-cold-fault', action='store_true')
-    parser.add_argument('--scenario', choices=('session', 'timeline-timeout', 'lock-screen'), default='session')
+    parser.add_argument('--scenario', choices=('session', 'timeline-timeout', 'lock-screen', 'cold-denial-notes'), default='session')
     parser.add_argument('--lock-fault', choices=('read', 'denied', 'timeline-timeout'), default='read')
     parser.add_argument('--simulator-control', type=Path, help='AXe executable for the explicit native lock-screen case only')
     args = parser.parse_args()
@@ -57,6 +57,9 @@ def main():
         parser.error('Lock fault selection requires the native lock-screen scenario')
     if args.scenario == 'lock-screen' and args.lock_fault != 'read' and args.read_fault != 'service':
         parser.error('Choose one native fault class')
+    if args.scenario == 'cold-denial-notes' and (args.baseline_root or args.cold_restart or args.deny_after_cold
+            or args.initial_cold_fault or args.read_fault != 'service' or args.simulator_control is not None):
+        parser.error('Cold-denial notes requires its own explicit scope without baseline, alternate faults or native control')
     output = args.output.resolve()
     if output.is_relative_to(ROOT) or args.build_dir.resolve().is_relative_to(ROOT):
         parser.error('Keep evidence and products outside the repository')
@@ -66,6 +69,9 @@ def main():
     report = dict(layer='actual Root/account/clients + synthetic loopback + fresh simulator', simulator=simulator,
                   language=args.language, cold_restart=args.cold_restart, read_fault=args.read_fault, initial_cold_fault=args.initial_cold_fault, denial_status=args.denial_status, deny_after_cold=args.deny_after_cold, baseline_root=args.baseline_root, baseline_commit=BASELINE_COMMIT if args.baseline_root else None,
                   scenario=args.scenario, lock_fault=args.lock_fault, real_service='UNRUN', requests=[])
+    if args.scenario == 'cold-denial-notes':
+        report.update(proof_transition='cold-restart', fixture_grant='legacy-default',
+                      expected_note=f'signIn|sessionCheck|http|0|{args.denial_status}|{TRACE}')
     lock = threading.Lock()
     released = threading.Event(); released.set()
     finished = threading.Event()
@@ -295,6 +301,7 @@ def main():
                    '-only-testing:G2CControl/LioWarmRootUITests/' + {
                        'session': 'testActualRootRetainsOnlyTheSameOwnerAndRetiresItsOriginalClients',
                        'timeline-timeout': 'testColdTimelineTimeoutKeepsTheSessionAndDraftAndNamesTheReadStage',
+                       'cold-denial-notes': 'testColdAuthoritativeDenialKeepsItsOwnSafeProblemRecord',
                        'lock-screen': {
                            'read': 'testNativeLockScreenReturnsToTheSameChatAndDraftAfterAReadFailure',
                            'denied': 'testNativeLockScreenWithAuthoritativeDenialReturnsToSignIn',
@@ -308,6 +315,9 @@ def main():
         (output/'summary.json').write_bytes(summary)
         values = json.loads(summary)
         assert values['passedTests'] == 1 and values['failedTests'] == 0 and values['skippedTests'] == 0
+        if args.scenario == 'cold-denial-notes':
+            assert any(row['method'] == 'GET' and row['path'] == '/v1/message-receipts'
+                       and row['status'] == args.denial_status for row in report['requests'])
         if args.scenario == 'timeline-timeout':
             reads = [row for row in report['requests'] if row['path'] in ('/v1/lio/timeline', '/v2/lio/timeline')]
             assert sum(row['status'] is None for row in reads) >= 2

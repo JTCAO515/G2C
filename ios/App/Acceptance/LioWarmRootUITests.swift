@@ -1,6 +1,33 @@
 import XCTest
 
 @MainActor final class LioWarmRootUITests: XCTestCase {
+    func testColdAuthoritativeDenialKeepsItsOwnSafeProblemRecord() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.app")
+        app.launchEnvironment = ["B691_LOCAL_ENDPOINT": "__WARM_ENDPOINT__", "B691_COLD_DENIAL_NOTES": "1"]
+        app.launchArguments = ["-cj.ui.language.v1", "__WARM_LANGUAGE__", "-lio.ui.appearance.v1", "light"]
+        app.launch()
+        defer { app.terminate() }
+        let answer = app.staticTexts.matching(identifier: "lio.answer")
+            .matching(NSPredicate(format: "label == %@", "Existing owner A answer")).firstMatch
+        XCTAssertTrue(answer.waitForExistence(timeout: 20))
+        let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+        composer.tap(); composer.typeText("Draft before cold denial")
+        app.buttons["fixture.root.deny"].tap()
+        waitForMode("denied", app: app)
+        app.terminate(); app.launch()
+        XCTAssertTrue(app.secureTextFields["demo.invite.code"].waitForExistence(timeout: 20))
+        XCTAssertEqual(app.staticTexts["fixture.root.bootstrap"].label, "restore")
+        XCTAssertEqual(app.staticTexts["fixture.root.retained"].label, "empty")
+        XCTAssertFalse(answer.exists)
+        XCTAssertFalse(composer.exists)
+        app.buttons["fixture.root.inspect-problem"].tap()
+        XCTAssertEqual(app.staticTexts["fixture.root.inspected-problem"].label,
+                       "signIn|sessionCheck|http|0|__WARM_DENIAL_STATUS__|__WARM_TRACE__")
+        let evidence = XCTAttachment(screenshot: app.screenshot())
+        evidence.name = "cold-authoritative-denial-note"; evidence.lifetime = .keepAlways; add(evidence)
+    }
+
     func testNativeLockScreenReturnsToTheSameChatAndDraftAfterAReadFailure() throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.app")

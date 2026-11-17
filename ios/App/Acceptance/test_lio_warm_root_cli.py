@@ -15,6 +15,8 @@ class WarmRootScopeTests(unittest.TestCase):
             (['--scenario', 'lock-screen', '--deny-after-cold'], 'cannot claim'),
             (['--scenario', 'session', '--lock-fault', 'denied'], 'requires the native'),
             (['--scenario', 'lock-screen', '--lock-fault', 'denied', '--read-fault', 'connection-lost'], 'one native fault'),
+            (['--scenario', 'cold-denial-notes', '--baseline-root'], 'own explicit scope'),
+            (['--scenario', 'cold-denial-notes', '--read-fault', 'connection-lost'], 'own explicit scope'),
         ]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
