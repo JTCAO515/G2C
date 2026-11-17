@@ -1,8 +1,9 @@
 from copy import deepcopy
-from datetime import date
+from datetime import date, datetime
 from hashlib import sha256
 import json
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import pytest
 from jsonschema import Draft202012Validator, FormatChecker
@@ -38,7 +39,8 @@ def venue(entry=VENUE, *, visit_date=date(2026, 11, 16), locale='zh', **kwargs):
                    subject_key=entry['subject']['key'], item_ids=['item-1'], amap_ids=['poi-1'])
     # Test the actual dated source eligibility, not a direct RichSource bypass.
     case = deepcopy(EXAMPLES['cases']['unconfirmed'])
-    case['source']['original']['question_day'] = '2026-11-16'
+    # Maintained H content is observed today in China; visit/fixture dates stay fixed.
+    case['source']['original']['question_day'] = datetime.now(ZoneInfo('Asia/Shanghai')).date().isoformat()
     case['host_expected']['expected_original'] = deepcopy(case['source']['original'])
     r = record('visitor', 'tip', payload)
     case['source']['records'] = [r]
@@ -112,7 +114,7 @@ def test_changed_h_bytes_are_not_accepted_under_the_original_reference():
                    checked_on=VENUE['checked_on'], expires_on=VENUE['expires_on'],
                    subject_key=VENUE['subject']['key'], item_ids=['item-1'], amap_ids=['poi-1'])
     case = deepcopy(EXAMPLES['cases']['unconfirmed'])
-    case['source']['original']['question_day'] = '2026-11-16'
+    case['source']['original']['question_day'] = datetime.now(ZoneInfo('Asia/Shanghai')).date().isoformat()
     case['host_expected']['expected_original'] = deepcopy(case['source']['original'])
     r = record('visitor', 'tip', payload)
     case['source']['records'] = case['host_expected']['eligible_records'] = [r]

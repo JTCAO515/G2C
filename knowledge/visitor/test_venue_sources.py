@@ -126,6 +126,38 @@ class VenueSourceScopeTests(unittest.TestCase):
                     with self.subTest(change=change), self.assertRaises(ValueError):
                         validate_entry_v3({**record, **change}, as_of=TODAY)
 
+    def test_one_authorised_booking_channel_page_does_not_expand_its_platform(self):
+        page = 'https://m.ctrip.com/webapp/you/sight/chengdu104/4229.html?ext-shelfPage=ctrip_shelf_seo'
+        record = {**self.venue, 'cities': ['chengdu'], 'source_urls': [page],
+                  'subject': {'key': 'chengdu.panda-base', 'name_zh': '成都大熊猫繁育研究基地',
+                              'name_en': 'Chengdu Research Base of Giant Panda Breeding',
+                              'wikidata_qid': None}}
+        validate_entry_v3(record, as_of=TODAY)
+        for url in (page + '&other=1', page.replace('4229', '1'),
+                    'https://m.ctrip.com/', 'https://other.ctrip.com/webapp/you/sight/chengdu104/4229.html'):
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                validate_entry_v3({**record, 'source_urls': [url]}, as_of=TODAY)
+        for change in ({'cities': ['beijing']}, {'cities': ['chengdu', 'xian']},
+                       {'subject': None}, {'topic': 'payment'}, {'topic': 'visa_entry'}):
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                validate_entry_v3({**record, **change}, as_of=TODAY)
+
+
+    def test_one_platform_lakeside_page_does_not_authorize_the_whole_platform(self):
+        page = 'https://www.trip.com/travel-guide/attraction/hangzhou/west-lake-82922'
+        record = {**self.venue, 'cities': ['hangzhou'], 'source_urls': [page],
+                  'subject': {'key': 'hangzhou.west-lake', 'name_zh': '西湖',
+                              'name_en': 'West Lake', 'wikidata_qid': None}}
+        validate_entry_v3(record, as_of=TODAY)
+        for url in (page + '?extra=1', page.replace('82922', '1'),
+                    'https://www.trip.com/', page.replace('www.trip.com', 'sg.trip.com')):
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                validate_entry_v3({**record, 'source_urls': [url]}, as_of=TODAY)
+        for change in ({'cities': ['shenzhen']}, {'cities': ['hangzhou', 'chengdu']},
+                       {'subject': None}, {'topic': 'payment'}, {'topic': 'visa_entry'}):
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                validate_entry_v3({**record, **change}, as_of=TODAY)
+
 
 if __name__ == '__main__':
     unittest.main()

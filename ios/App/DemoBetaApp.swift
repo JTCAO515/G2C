@@ -191,6 +191,7 @@ private struct DemoInviteView: View {
         case .expired: language.text("Your sign-in expired. Use an invitation code to sign in again.", "登录已过期，请使用邀请码重新登录。")
         case .rejected: language.text("We couldn’t sign you in. Ask your demo organizer for access.", "暂时无法登录，请联系演示组织者。")
         case .networkUnknown: language.text("We couldn’t sign you in. Check your connection and try again.", "暂时无法登录，请检查网络后重试。")
+        case .responseUnavailable: language.text("Sign-in could not be completed. Share the problem notes from the information page with your demo organizer.", "登录暂未完成。请把说明页中的问题记录提供给演示组织者。")
         case .storageUnavailable: language.text("Sign-in is temporarily unavailable.", "暂时无法登录。")
         case .signedOut where triedRestore:
             language.text("Enter an invitation code to sign in.", "请输入邀请码登录。")

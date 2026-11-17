@@ -14,16 +14,18 @@
           },
           "items": {
             "en": [
-              "Recover the same chat and keep each unsent draft on this device after reopening.",
-              "Keep an unstaged question separately when a different draft already exists, with an Unsent message card.",
-              "Recovery and reading failures now preserve their specific cause and next step in problem notes.",
-              "Improve invitation format guidance and avoid automatic input replacements; give screen readers a separate reply-complete state."
+              "Keep the same chat and each unsent draft when returning to the App.",
+              "During a recoverable connection check, keep the current chat visible instead of starting over.",
+              "Invitation entry avoids automatic capitalization and smart punctuation, and explains the required format.",
+              "Fix sign-in for valid test accounts that have no earlier demo content.",
+              "The information page keeps Done reachable after reading a long update."
             ],
             "zh": [
-              "重新打开应用时恢复同一对话，并在本机保留各段对话的未发送草稿。",
-              "问题尚未发出、输入框又有另一段草稿时，两份内容分别保留，先前的问题显示为“未发送的内容”。",
-              "恢复或打开失败时，问题记录保留更具体的情况和下一步。",
-              "改进邀请码格式提示，关闭自动输入替换；为读屏单独提供回复完成状态。"
+              "回到应用时保留同一对话，以及各段对话里尚未发送的草稿。",
+              "遇到可恢复的连接检查时保留当前对话，不再重新开始。",
+              "邀请码输入关闭自动大写和智能标点，格式有误时直接说明正确格式。",
+              "修复有效测试账号缺少旧演示内容时无法完成登录的问题。",
+              "长篇说明翻到底后，仍能方便地点“完成”返回。"
             ]
           }
         },
@@ -35,12 +37,12 @@
           },
           "items": {
             "en": [
-              "Since build 45: fix a local recovery error involving unrelated messages and keep sign-in available after recoverable local failures.",
-              "Ordinary travel wording no longer hides an entire reply by itself. Earlier failed messages keep the results shown at that time."
+              "Since build 45: fix a local recovery problem that could be triggered by an unrelated pending message.",
+              "Ordinary travel wording no longer hides an otherwise complete reply. Original failed messages retain their original outcome."
             ],
             "zh": [
-              "与构建 45 相比：修复一种由无关消息影响对话恢复的本机错误；可恢复的本机故障不再直接丢失登录。",
-              "普通旅行用语不再单独导致整段回答消失；过去失败的消息仍保留当时结果。"
+              "与构建 45 相比：修复一种由无关待发消息触发的本机恢复问题。",
+              "普通旅行用语不再单独导致完整回答被隐藏；过去失败的消息仍保留当时结果。"
             ]
           }
         },
@@ -52,16 +54,16 @@
           },
           "items": {
             "en": [
-              "Leave a draft in an existing chat, switch away and lock the phone, then check the same chat and draft return.",
-              "Force-quit and reopen; check the same conversation and exact draft return.",
-              "Start a chat and ask “Who are you?” and “What can you do?”, in either language.",
-              "If anything fails, copy View problem notes with the time; preserve the chat rather than repeatedly submitting the same question."
+              "Leave a draft in an existing chat, switch to another app, then return and check the same chat and text.",
+              "Force-quit and reopen, then check the same conversation and draft.",
+              "In new chats, ask “Who are you?” and “What can you do?” in Chinese or English.",
+              "Ask for a three-day trip to Beijing and check that all three days contain a concrete plan."
             ],
             "zh": [
-              "在已有对话里留一段草稿，切后台并锁屏后回来，检查同一对话和草稿。",
-              "强制关闭应用后重开，核对是否回到同一对话、文字是否完整保留。",
-              "新建对话，用中文或英文问“你是谁”“你能做什么”。",
-              "若有失败，复制“查看问题记录”并附大概时间；保留会话，不要连续重复提交同一句。"
+              "在已有对话中留一段草稿，切到其他应用后返回，核对同一对话和文字。",
+              "强制关闭应用后重开，检查同一对话和草稿。",
+              "新建对话，用中文或英文分别问“你是谁”“你能做啥”。",
+              "询问“北京三日游”，查看是否有完整三天的具体安排。"
             ]
           }
         },
@@ -73,14 +75,14 @@
           },
           "items": {
             "en": [
-              "Trip planning is still being fixed. Please do not test it yet.",
-              "Formal planning saves, edits, undo and Remember preferences still need their own live checks.",
-              "Segmented replies and multiple-choice exploration remain designated tests, not the normal default. Physical-device checks remain to be completed."
+              "Formal itinerary saving, edits and undo, and planning across China are still being validated.",
+              "Remember preferences still requires a separate live check.",
+              "Segmented, multiple-choice exploration is not the default. Complete physical-device and weak-network acceptance remains pending."
             ],
             "zh": [
-              "规划功能仍在修复，暂不建议测试规划。",
-              "正式保存行程、修改、撤销和记住偏好仍需各自的真实验证。",
-              "分段、多选探索仍仅供指定测试，尚未向普通聊天默认开启；真机检查仍待完成。"
+              "行程正式保存、修改与撤销，以及全国规划仍在验证。",
+              "“记住”偏好仍需单独完成真实验收。",
+              "分段、多选探索尚未默认开启；真机与弱网完整验收仍待完成。"
             ]
           }
         },
@@ -92,12 +94,12 @@
           },
           "items": {
             "en": [
-              "The paired Hong Kong service source 064b3c99 changes trip discussions, preference understanding and failure tracking.",
-              "Service fixes apply automatically without reinstalling the App. Account qualification and allowances do not change when you install an update."
+              "The paired Hong Kong service source 1ff3941e includes improvements to chat history, English city requests and lodging preferences.",
+              "These service changes apply automatically without a separate app update. Account qualification and allowances keep their existing rules."
             ],
             "zh": [
-              "配套香港服务来源 064b3c99，改动涉及行程讨论、偏好理解和失败定位。",
-              "服务端修复自动生效，无需重新安装应用；安装更新不会改变账号资格和额度。"
+              "配套香港服务来源为 1ff3941e，包含历史查看、英文城市理解及住宿偏好识别的改进。",
+              "这些服务端更新自动生效，无需单独更新应用；账号资格和额度维持既有规则。"
             ]
           }
         }

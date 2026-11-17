@@ -1,5 +1,6 @@
 """Idle deployment bounds and original API recovery; no cloud action."""
 from datetime import datetime,timedelta,timezone
+from hashlib import sha256
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -29,7 +30,8 @@ def test_expired_naive_reversed_or_unbounded_lease_is_refused():
     with pytest.raises(ValueError):require_release_window(stamp(start),stamp(start+timedelta(hours=1)),start.replace(tzinfo=None))
 
 
-def test_arrival_after_ingress_close_recovers_only_api_without_old_dependencies(tmp_path,monkeypatch):
+@pytest.mark.parametrize('returning_to_previous_source',[False,True])
+def test_arrival_after_ingress_close_recovers_only_api_without_old_dependencies(tmp_path,monkeypatch,returning_to_previous_source):
     source='a'*40;previous='b'*40;now=datetime.now(timezone.utc)
     (tmp_path/'probes').mkdir();(tmp_path/'control/budget').mkdir(parents=True)
     (tmp_path/'quota-self-service-20261112').mkdir()
@@ -39,6 +41,8 @@ def test_arrival_after_ingress_close_recovers_only_api_without_old_dependencies(
     (tmp_path/'quota-self-service-20261112/app-release-policy.json').write_text(json.dumps(policy))
     environment=tmp_path/'compose.env';environment.write_text('CJ_BETA_IMAGE=g2c-beta:'+previous+'\n')
     original_environment=environment.read_bytes();original_control=control.read_bytes()
+    legacy_backup=tmp_path/'probes'/('compose.before-app-'+source+'.env')
+    if returning_to_previous_source:legacy_backup.write_bytes(b'original prior deployment backup\n')
     gate=tmp_path/'gate.json';gate.write_text(json.dumps(dict(source=source,previous_source=previous,
         image_id='new-image',previous_image_id='old-image',pr_number=1,ci_all_green=True,
         review_approved_head=source,source_bytes_equal=True,imported_source_bytes_equal=True,
@@ -82,3 +86,12 @@ def test_arrival_after_ingress_close_recovers_only_api_without_old_dependencies(
     assert commands[-1][-4:]==['up','-d','--no-deps','api']
     assert all('migrate'not in command or '/export.py'in command for command in commands)
     assert environment.read_bytes()==original_environment and control.read_bytes()==original_control
+    backup=tmp_path/'probes'/('compose.before-app-'+source+'-'+sha256(gate.read_bytes()).hexdigest()+'.env')
+    assert backup.read_bytes()==original_environment
+    if returning_to_previous_source:assert legacy_backup.read_bytes()==b'original prior deployment backup\n'
+    # A new lease can return to an old source, but the identical lease cannot
+    # replay its cutover after an uncertain or failed first execution.
+    proofs=0
+    stops=sum(command[-4:]==['stop','-t','20','api']for command in commands)
+    with pytest.raises(FileExistsError):application_release.main([str(gate),'--apply'])
+    assert sum(command[-4:]==['stop','-t','20','api']for command in commands)==stops
