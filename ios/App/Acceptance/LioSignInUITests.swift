@@ -5,11 +5,24 @@ import XCTest
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchEnvironment = ["B691_LOCAL_ENDPOINT": "__SIGNIN_ENDPOINT__"]
-        app.launchArguments = ["-cj.ui.language.v1", "__SIGNIN_LANGUAGE__"]
+        app.launchArguments = ["-cj.ui.language.v1", "__SIGNIN_LANGUAGE__",
+                               "-lio.ui.appearance.v1", "__SIGNIN_APPEARANCE__"]
         app.launch()
         let code = app.secureTextFields["demo.invite.code"]
         XCTAssertTrue(code.waitForExistence(timeout: 10))
+        let next = app.buttons["demo.invite.continue"]
+        let restore = app.buttons["demo.invite.restore"]
+        XCTAssertFalse(next.isEnabled)
+        XCTAssertTrue(restore.isEnabled)
+        XCTAssertGreaterThanOrEqual(next.frame.height, 44)
+        XCTAssertGreaterThanOrEqual(restore.frame.height, 44)
+        try app.performAccessibilityAudit(for: .all)
+        let empty = XCTAttachment(screenshot: app.screenshot())
+        empty.name = "invitation-empty-__SIGNIN_LANGUAGE__-__SIGNIN_APPEARANCE__"
+        empty.lifetime = .keepAlways; add(empty)
         code.tap(); code.typeText("D1-aaaaaaaaaaaa.bbbbbbbbbbbbbbbbbbbbbb")
+        XCTAssertTrue(next.isEnabled)
+        XCTAssertGreaterThanOrEqual(next.frame.height, 44)
         app.buttons["demo.invite.continue"].tap()
         let agree = app.buttons["demo.invite.signin"]
         XCTAssertTrue(agree.waitForExistence(timeout: 10))

@@ -46,7 +46,7 @@ public struct LioRequestProblem: Error, Sendable, Equatable {
         diagnosis = .classify(error, stage: stage, observation: observation)
         origin = stage
         errorCode = (error as? URLError)?.code.rawValue
-        if error is CancellationError { cause = .cancelled }
+        if error is CancellationError || (error as? URLError)?.code == .cancelled { cause = .cancelled }
         else if case RecoveryError.inactive = error { cause = .inactiveSession }
         else if case MessageHTTPFailure.credentialsUnavailable = error { cause = .unavailableCredentials }
         else if error is URLError { cause = .network }

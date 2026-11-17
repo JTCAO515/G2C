@@ -813,7 +813,7 @@ import CryptoKit
         XCTAssertFalse(app.buttons["lio.menu"].exists)
 
         field.tap()
-        field.typeText("LIO-DEMO")
+        field.typeText("D1-aaaaaaaaaaaa.bbbbbbbbbbbbbbbbbbbbbb")
         proceed.tap()
         XCTAssertTrue(consent.waitForExistence(timeout: 8))
         try app.performAccessibilityAudit(for: .all)
