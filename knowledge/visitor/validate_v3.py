@@ -42,6 +42,7 @@ VENUE_SOURCE_CITIES.update({
     "www.meet-in-shanghai.net": frozenset({"shanghai"}),
 })
 VENUE_PAGE_CITIES = {
+    "https://www.hzzx.gov.cn/cshz/content/2023-08/07/content_8595938.htm": frozenset({"hangzhou"}),
     "https://sz.bendibao.com/xiuxian/20261012/1014588.shtm": frozenset({"shenzhen"}),
     "https://www.chinahighlights.com/xian/attraction/big-wild-goose-pagoda.htm": frozenset({"xian"}),
     "https://www.chinahighlights.com/xian/terracotta-army/how-to-visit.htm": frozenset({"xian"}),

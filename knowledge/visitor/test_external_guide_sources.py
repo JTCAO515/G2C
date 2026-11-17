@@ -8,6 +8,24 @@ from validate_v3 import validate_entry_v3
 
 
 class ExternalGuideSourceScopeTests(unittest.TestCase):
+    def test_yuewang_report_keeps_exact_url_and_hangzhou_venue_boundary(self):
+        root = Path(__file__).resolve().parent
+        record = json.loads((root / 'entries-v3/venues-beijing-chengdu-xian.json').read_text())[0]
+        page = 'https://www.hzzx.gov.cn/cshz/content/2023-08/07/content_8595938.htm'
+        record = {**record, 'cities': ['hangzhou'], 'source_urls': [page],
+                  'subject': {'key': 'hangzhou.example-venue', 'name_zh': '合成场馆',
+                              'name_en': 'Synthetic venue', 'wikidata_qid': None}}
+        validate_entry_v3(record, as_of=date(2026, 11, 16))
+        for url in (page + '?extra=1', page.replace('8595938', '8595939'),
+                    'https://www.hzzx.gov.cn/',
+                    page.replace('www.hzzx.gov.cn', 'other.hzzx.gov.cn')):
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                validate_entry_v3({**record, 'source_urls': [url]}, as_of=date(2026, 11, 16))
+        for change in ({'cities': ['chengdu']}, {'cities': ['hangzhou', 'beijing']},
+                       {'subject': None}, {'topic': 'payment'}, {'topic': 'visa_entry'}):
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                validate_entry_v3({**record, **change}, as_of=date(2026, 11, 16))
+
     def test_lianhua_guide_keeps_exact_url_and_shenzhen_venue_boundary(self):
         root = Path(__file__).resolve().parent
         record = json.loads((root / 'entries-v3/venues-beijing-chengdu-xian.json').read_text())[0]
