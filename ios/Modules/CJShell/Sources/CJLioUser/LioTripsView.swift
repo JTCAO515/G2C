@@ -433,7 +433,7 @@ private struct LioDayStops: View {
                         }
                         .font(.footnote)
                         .foregroundStyle(LioTheme.inkSecondary)
-                        RunReadableText(text: stop.name)
+                        RunReadableText(text: stop.name, color: LioTheme.ink)
                         if stop.fixed == true {
                             Text(language.text("Fixed plan", "固定安排")).font(.footnote)
                         }
