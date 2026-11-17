@@ -60,3 +60,23 @@ def test_a_quoted_clause_alone_is_not_a_positive_capability_assertion():
 def test_unqualified_denials_and_self_quoted_policies_cannot_pass(answer):
     assert semantic('SM06',answer,'en')[0]=='FAIL'
     assert evaluate(capability_joint(answer))['status']=='FAIL'
+
+
+@pytest.mark.parametrize('answer',[
+    'I can plan travel. I currently offer no travel assistance.',
+    'I can plan travel. I currently provide no travel planning services.',
+    'My policy is the phrase "I offer no travel assistance." I can plan travel.',
+    'I can plan travel. My answer is the sentence "I provide no travel planning services."',
+])
+def test_modified_self_denials_and_named_self_quotations_cannot_pass(answer):
+    assert semantic('SM06',answer,'en')[0]=='FAIL'
+    assert evaluate(capability_joint(answer))['status']=='FAIL'
+
+
+@pytest.mark.parametrize('answer',[
+    'I offer travel planning, not bookings.',
+    'I provide travel planning services with no booking or payment service.',
+])
+def test_denial_of_an_unrelated_service_does_not_deny_travel_planning(answer):
+    assert semantic('SM06',answer,'en')[0]=='PASS'
+    assert evaluate(capability_joint(answer))['status']=='PASS'

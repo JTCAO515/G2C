@@ -20,7 +20,9 @@ def semantic(gate,text,locale):
             # The assistant's own quoted policy remains an assertion.
             def unquote(match):
                 prefix=styled[:match.start()]
-                reported=re.search(r'\b(?:the sentence|the phrase)\s*$',prefix,re.I)
+                suffix=styled[match.end():]
+                reported=(re.search(r'(?:^|[.!?\n])\s*(?:the sentence|the phrase)\s*$',prefix,re.I)
+                          and re.match(r'\s+is\s+(?:only\s+)?(?:an?\s+)?(?:example|quotation)\b',suffix,re.I))
                 return ' 'if reported and re.search(r'\bI\b',match[0][1:-1],re.I)else match[0][1:-1]
             if QUOTED.fullmatch(styled.strip()):
                 return 'UNKNOWN','capability_only_in_quoted_text'
@@ -30,7 +32,8 @@ def semantic(gate,text,locale):
             # separate, e.g. no booking services, but I can plan travel.
             clauses=re.split(r'[.!?;\n]|\bbut\b',plain,flags=re.I)
             for clause in clauses:
-                assertion=re.search(r'\bI\s+(?:offer|provide)\b(.*)',clause,re.I)
+                assertion=re.search(r'\bI\s+((?:(?!(?:I|you|we|they|he|she|it)\b)[A-Za-z]+\s+)*'
+                                    r'(?:offer|provide)\b.*)',clause,re.I)
                 denial=(r'\b(?:no\b(?![-\s]+(?:extra\s+)?(?:cost|charge|fee)\b)|'
                         r'neither\b|not\b(?!\s+only\b)|none\b)'
                         r'[^.!?;\n]*\b(?:travel|plan\w*|itinerar\w*)\b')
