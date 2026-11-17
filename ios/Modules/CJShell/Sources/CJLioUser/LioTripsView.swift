@@ -266,6 +266,7 @@ struct LioTripsView: View {
                 .foregroundStyle(LioTheme.inkSecondary)
             Button(language.text("Chat with Lio", "和 Lio 聊聊"), action: openChat)
                 .buttonStyle(.borderedProminent)
+                .foregroundStyle(LioTheme.onVermilion)
                 .frame(minHeight: 44)
         }
         .multilineTextAlignment(.center)
