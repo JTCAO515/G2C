@@ -18,14 +18,18 @@
               "每天先预览最多四项安排，并标出其余数量；点“查看”可打开完整行程。",
               "安排说明放在卡片上方，卡内显示标题、已知天数和安排数。",
               "行程站点文字使用统一的浅色和深色主题配色。",
-              "登录页的“继续”和“继续使用账号”按钮使用可缩放文字，并保留完整点击范围。"
+              "登录页的“继续”和“继续使用账号”按钮使用可缩放文字，并保留完整点击范围。",
+              "行程为空时，深色模式下“和 Lio 聊聊”按钮的文字更清楚。",
+              "问题记录能区分系统取消与网络故障，并保留旧版记录。"
             ],
             "en": [
               "Conversation itinerary cards now have day buttons, starting with day one and showing one day at a time.",
               "Preview up to four stops per day with a remaining count. View still opens the complete itinerary.",
               "The planning explanation sits above the card, followed by its title and known day and stop counts.",
               "Itinerary stop text uses the shared light and dark theme colours.",
-              "The sign-in page uses scalable text and full touch areas for Continue and Continue with your account."
+              "The sign-in page uses scalable text and full touch areas for Continue and Continue with your account.",
+              "Improve dark-mode text contrast on the Chat with Lio button when Trips is empty.",
+              "Problem notes distinguish cancellation from network errors and preserve older records."
             ]
           }
         },
@@ -39,12 +43,14 @@
             "zh": [
               "与构建 46 相比，对话里的逐日展开改为单日预览，查看入口继续显示完整行程。",
               "修复行程卡深色模式下站点文字的配色绑定。",
-              "修正构建 46 登录页按钮的字号适配和点击范围，邀请码格式和同意步骤不变。"
+              "修正构建 46 登录页按钮的字号适配和点击范围，邀请码格式和同意步骤不变。",
+              "补充构建 46 之后的空行程按钮配色和问题记录分类修正。"
             ],
             "en": [
               "Since build 46: conversation cards use a single-day preview instead of expanding every day; View keeps the complete schedule.",
               "Fix the stop-text colour binding on dark itinerary cards.",
-              "Improve sign-in button text scaling and touch areas compared with build 46; the code format and consent steps stay the same."
+              "Improve sign-in button text scaling and touch areas compared with build 46; the code format and consent steps stay the same.",
+              "Also correct the empty-Trips button colour and problem-note classification after build 46."
             ]
           }
         },
@@ -59,13 +65,13 @@
               "打开已有行程的对话，确认卡片默认显示第一天，再切换到其他日期。",
               "选择安排超过四项的一天，核对其余数量，再点“查看”检查完整安排。",
               "若当前就在登录页，检查中英文按钮文字和点击；无需为此退出已有账号。",
-              "在菜单切换浅色、深色模式；在同一对话留一段草稿，切后台再回来，核对对话和文字。"
+              "在菜单切换浅深色；行程本来为空时看看按钮。留一段草稿，切后台返回，核对对话和文字；无需清空数据。"
             ],
             "en": [
               "Open a chat with an existing itinerary, check that day one is selected, then choose another day.",
               "Choose a day with more than four stops, check the remaining count, then use View to inspect the full schedule.",
               "If you are already on the sign-in page, check its English and Chinese button text and taps. Keep an existing signed-in session.",
-              "Switch light and dark appearance in the menu. Leave a draft in a chat, switch apps and return, then check the chat and text."
+              "Switch appearance in the menu and inspect the button if Trips is already empty. Leave a draft, switch apps and return to check the chat and text. Keep existing data."
             ]
           }
         },
@@ -81,14 +87,16 @@
               "行程正式保存、修改与撤销，以及全国规划仍在验证。",
               "“记住”偏好仍需单独完成真实验收。",
               "部分大字号下的卡片显示或切日仍有问题，本轮先用系统默认字号。",
-              "分段、多选探索尚未默认开启；真机弱网和长时间锁屏恢复仍待完整验证。"
+              "分段、多选探索尚未默认开启；真机弱网和长时间锁屏恢复仍待完整验证。",
+              "行程详情的完整无障碍检查仍未通过，尚未认定已修复。"
             ],
             "en": [
               "Planning is still being repaired. Please avoid testing planning for now; existing itineraries can be viewed separately.",
               "Formal itinerary saving, edits and undo, and planning across China are still being validated.",
               "Remember preferences still requires a separate live check.",
               "Some larger text sizes still have card display or day-selection issues. Please use the system default size for this check.",
-              "Segmented, multiple-choice exploration is not the default. Physical-device weak-network and longer lock-screen recovery checks remain pending."
+              "Segmented, multiple-choice exploration is not the default. Physical-device weak-network and longer lock-screen recovery checks remain pending.",
+              "Trip details have not yet passed their complete accessibility checks; this remains unresolved."
             ]
           }
         },
@@ -101,11 +109,13 @@
           "items": {
             "zh": [
               "本版准备时，香港配套在线服务来源为 1ff3941e。",
-              "新的卡片界面需要更新应用；在线服务的调整会自动生效。账号资格和额度沿用既有规则。"
+              "新的卡片界面需要更新应用；在线服务的调整会自动生效。账号资格和额度沿用既有规则。",
+              "本轮尚无新的服务端部署；这些界面修正需要更新应用。"
             ],
             "en": [
               "At preparation, the paired Hong Kong service source is 1ff3941e.",
-              "The new card interface is included in this app update; online service changes apply automatically. Account qualification and allowances keep their existing rules."
+              "The new card interface is included in this app update; online service changes apply automatically. Account qualification and allowances keep their existing rules.",
+              "No new service deployment is included here; these interface corrections require the app update."
             ]
           }
         }
