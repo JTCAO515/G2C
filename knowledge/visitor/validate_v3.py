@@ -46,6 +46,7 @@ VENUE_PAGE_CITIES = {
     "https://museum-guanwang.leleu.cn/": frozenset({"chengdu"}),
     "https://tidenews.com.cn/news.html?id=3612168": frozenset({"taizhou-zhejiang"}),
     "https://tidenews.com.cn/news.html?id=2858557": frozenset({"taizhou-zhejiang"}),
+    "https://m.ctrip.com/webapp/you/sight/chengdu104/4229.html?ext-shelfPage=ctrip_shelf_seo": frozenset({"chengdu"}),
 }
 V3_APPROVED_HOSTS = V3_GOVERNMENT_HOSTS | VENUE_SOURCE_CITIES.keys()
 
