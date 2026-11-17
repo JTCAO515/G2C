@@ -67,6 +67,7 @@ private nonisolated final class WarmRootHTTP: URLProtocol, @unchecked Sendable {
     @State private var bootstrap = "starting"
     @State private var acknowledgedMode = "unknown"
     @State private var materialState = "unknown"
+    @State private var inspectedProblem = "not inspected"
     var body: some Scene {
         WindowGroup {
             VStack(spacing: 0) {
@@ -80,6 +81,16 @@ private nonisolated final class WarmRootHTTP: URLProtocol, @unchecked Sendable {
                         Button("Deny") { setMode("denied") }.accessibilityIdentifier("fixture.root.deny")
                     }
                     .font(.caption).tint(LioTheme.vermilion).padding(4).background(LioTheme.surface)
+                    if ProcessInfo.processInfo.environment["B691_TIMELINE_TIMEOUT"] == "1" {
+                        HStack {
+                            Button("Time out timeline") { setMode("timeline-timeout") }
+                                .accessibilityIdentifier("fixture.root.timeline-timeout")
+                            Button("Inspect problem") { inspectProblem() }
+                                .accessibilityIdentifier("fixture.root.inspect-problem")
+                            Text(inspectedProblem).accessibilityIdentifier("fixture.root.inspected-problem")
+                        }
+                        .font(.caption2)
+                    }
                     HStack {
                         Text(bootstrap).accessibilityIdentifier("fixture.root.bootstrap")
                         Text(acknowledgedMode).accessibilityIdentifier("fixture.root.mode")
@@ -140,11 +151,25 @@ private nonisolated final class WarmRootHTTP: URLProtocol, @unchecked Sendable {
             let grant = DemoInviteGrant(version: DemoBetaConfiguration.inviteVersion,
                 access_token: "b691fixture." + payload + ".synthetic", subject: subject,
                 expires_at: ISO8601DateFormatter().string(from: expiry))
-            let selection = try DemoCompositionProfile(language: shell.language == .chinese ? .zh : .en,
-                travelID: String(repeating: "a", count: 32), travelVersion: 1)
-            let material = try SessionMaterial(trustedSDKBytes: JSONEncoder().encode(DemoInviteSession(grant: grant, composition: selection)))
+            let invite: DemoInviteSession
+            if ProcessInfo.processInfo.environment["B691_TIMELINE_TIMEOUT"] == "1" {
+                invite = .lio(grant: grant)
+            } else {
+                let selection = try DemoCompositionProfile(language: shell.language == .chinese ? .zh : .en,
+                    travelID: String(repeating: "a", count: 32), travelVersion: 1)
+                invite = DemoInviteSession(grant: grant, composition: selection)
+            }
+            let material = try SessionMaterial(trustedSDKBytes: JSONEncoder().encode(invite))
             root.accounts.signIn(exchanging: { material })
         } catch { fixtureFailure = true }
+    }
+    private func inspectProblem() {
+        guard let entry = LioDiagnosticLog.shared.entries.first else {
+            inspectedProblem = "no problem"
+            return
+        }
+        inspectedProblem = [entry.category.rawValue, entry.origin?.rawValue ?? "-", entry.cause?.rawValue ?? "-",
+                            String(entry.errorCode ?? 0), String(entry.httpStatus ?? 0), entry.reference ?? "-"].joined(separator: "|")
     }
     private func setMode(_ mode: String) {
         Task {
