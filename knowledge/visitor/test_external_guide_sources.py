@@ -8,6 +8,14 @@ from validate_v3 import validate_entry_v3
 
 
 class ExternalGuideSourceScopeTests(unittest.TestCase):
+    def test_dufu_report_keeps_exact_url_and_chengdu_venue_boundary(self):
+        page = 'https://sichuan.scol.com.cn/ggxw/202502/82903345.html'
+        self._check_venue_source_scope(
+            page=page, city='chengdu', wrong_city='xian',
+            invalid_urls=(page + '?extra=1', page.replace('82903345', '82903346'),
+                          'https://sichuan.scol.com.cn/',
+                          page.replace('sichuan.scol.com.cn', 'other.scol.com.cn')))
+
     def test_panda_official_attachment_keeps_exact_url_and_chengdu_venue_boundary(self):
         page = 'https://m.panda.org.cn/cn/education/trends/2025-01-17/8632.html'
         self._check_venue_source_scope(
