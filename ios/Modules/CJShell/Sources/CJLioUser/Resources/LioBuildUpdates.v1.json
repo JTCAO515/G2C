@@ -21,7 +21,7 @@
               "登录页的“继续”和“继续使用账号”按钮使用可缩放文字，并保留完整点击范围。",
               "行程为空时，深色模式下“和 Lio 聊聊”按钮的文字更清楚。",
               "问题记录能区分系统取消与网络故障，并保留旧版记录。",
-              "历史页标题使用主题文字配色和原有的可缩放标题样式。"
+              "历史页标题的颜色随浅深色切换，文字可随系统字号调整。"
             ],
             "en": [
               "Conversation itinerary cards now have day buttons, starting with day one and showing one day at a time.",
