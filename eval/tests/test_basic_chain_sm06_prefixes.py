@@ -24,6 +24,9 @@ def test_normal_prefixes_cannot_turn_the_same_denial_into_capability(prefix,deni
 @pytest.mark.parametrize('answer',[
     "I can help plan travel. The sentence 'I offer no travel assistance' is an example.",
     'I provide travel planning services. The phrase “I offer no travel assistance” is only a quotation.',
+    'I provide travel planning services at no cost.',
+    'I provide no-cost travel planning services.',
+    'I offer not only travel planning but also itinerary editing.',
     "I offer 'travel assistance'.", 'I provide no booking services, but I can plan travel itineraries.',
 ])
 def test_positive_assertions_and_quoted_examples_are_kept(answer):

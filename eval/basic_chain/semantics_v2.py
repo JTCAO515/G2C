@@ -31,7 +31,10 @@ def semantic(gate,text,locale):
             clauses=re.split(r'[.!?;\n]|\bbut\b',plain,flags=re.I)
             for clause in clauses:
                 assertion=re.search(r'\bI\s+(?:offer|provide)\b(.*)',clause,re.I)
-                if assertion and re.search(r'\b(?:no|neither|not|none)\b',assertion[1],re.I)and re.search(r'\b(?:travel|plan\w*|itinerar\w*)\b',assertion[1],re.I):
+                denial=(r'\b(?:no\b(?![-\s]+(?:extra\s+)?(?:cost|charge|fee)\b)|'
+                        r'neither\b|not\b(?!\s+only\b)|none\b)'
+                        r'[^.!?;\n]*\b(?:travel|plan\w*|itinerar\w*)\b')
+                if assertion and re.search(denial,assertion[1],re.I):
                     return 'FAIL','travel_capability_denied'
             return legacy_semantic(gate,plain,locale)
     if gate=='SM02'and type(text)is str:
