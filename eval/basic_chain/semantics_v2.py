@@ -10,6 +10,11 @@ CODEBANK=json.loads(Path(__file__).with_name('accepted_codebank.v1.json').read_b
 
 
 def semantic(gate,text,locale):
+    if gate=='SM06'and locale=='en'and type(text)is str:
+        plain=re.sub(r'[*_`]', '', text)
+        denial=(r'(?:^|[.!?\n])\s*(?:(?:Sorry|Unfortunately|Apologies)[,!.]?\s*)?'
+                r'I\s+(?:offer|provide)\s+no\s+travel\s+(?:assistance|planning\s+services?)\b')
+        if re.search(denial,plain,re.I):return 'FAIL','travel_capability_denied'
     if gate=='SM06'and type(text)is str and locale in CODEBANK['cases']:
         if sha256(text.encode()).hexdigest()==CODEBANK['cases'][locale]['raw_sha256']:
             return 'PASS','complete_frozen_accepted_capabilities'
