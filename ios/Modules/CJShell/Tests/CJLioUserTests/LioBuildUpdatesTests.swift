@@ -10,8 +10,8 @@ struct LioBuildUpdatesTests {
         let current = try book.release(for: 46)
         #expect(current.previousBuild == 45)
         #expect(current.sections.map(\.id) == [.changes, .comparison, .testing, .known, .service])
-        #expect(current.whatToTest(.chinese).contains("规划功能仍在修复，暂不建议测试规划。"))
-        #expect(current.whatToTest(.english).contains("Trip planning is still being fixed"))
+        #expect(current.whatToTest(.chinese).contains("行程正式保存、修改与撤销，以及全国规划仍在验证。"))
+        #expect(current.whatToTest(.english).contains("Formal itinerary saving, edits and undo, and planning across China are still being validated."))
         #expect(current.whatToTest(.chinese).contains("构建 45"))
         #expect(throws: LioBuildUpdates.Failure.unlistedBuild) { try book.release(for: 47) }
     }
