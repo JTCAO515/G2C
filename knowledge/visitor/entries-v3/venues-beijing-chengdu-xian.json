@@ -159,7 +159,7 @@
     "format_version": "visitor-entry.3",
     "entry_kind": "fact",
     "topic": "passport_booking",
-    "checked_on": "2026-11-16",
+    "checked_on": "2026-11-17",
     "expires_on": "2026-11-23",
     "id": "visitor.v3.xian.qin-mausoleum-museum",
     "cities": [
@@ -171,15 +171,16 @@
       "name_en": "Emperor Qinshihuang's Mausoleum Site Museum",
       "wikidata_qid": "Q122931722"
     },
-    "text_zh": "秦始皇帝陵博物院对所有观众实行实名线上预约购票，外籍观众和政策性免票人员也须通过官方渠道预约；到场须用与票务信息一致的有效证件原件核验，支持护照。本条未核定提前预约窗口和固定每周闭馆日，重大节假日安排应查新公告。适用兵马俑馆及丽山园的常规参观，不代表实时余票或已完成预约。",
-    "text_en": "Emperor Qinshihuang's Mausoleum Site Museum requires real-name online ticket reservations for all visitors, including international visitors and people entitled to free admission. Use official channels and bring the matching original valid identity document; passports are accepted. The advance window and fixed weekly closing days are unconfirmed here; check new notices for major-holiday arrangements. This covers ordinary visits to the Terracotta Warriors Museum and Lishan Garden, not live availability or a completed reservation.",
+    "text_zh": "秦始皇帝陵博物院馆方购票须知要求所有观众实名线上预约购票，外籍观众和政策性免票人员也须通过官方渠道预约；到场须用与票务信息一致的有效证件原件核验，支持护照。China Highlights的当地导游指南将整体游览分为兵马俑馆和秦陵区，并称景点每日开放；据这一商业旅行资讯，本条记录常规参观无固定每周闭馆日，不将其当作主管机关的临时公告或各展厅、设施始终开放的保证。票务仍以馆方实名预约要求为准，不据商业指南的淡季现场购票描述改成免约；提前窗口本条未核定。适用兵马俑馆及丽山园普通参观，重大节假日、临时或局部关闭查新公告，不代表实时余票或已完成预约。",
+    "text_en": "The museum’s ticketing instructions require real-name online reservations for all visitors, including international visitors and people entitled to free admission. Use official channels and bring the matching original valid identity document; passports are accepted. China Highlights’ local-guide article describes a combined visit to the Terracotta Warriors Museum and the mausoleum area and says the site opens daily. Based on that commercial travel information, this entry records no regular weekly closure for ordinary visits, not an authority’s temporary notice or a guarantee that every gallery and facility always opens. The museum’s reservation requirement remains authoritative; the guide’s off-season on-site ticket description does not establish reservation-free entry. The advance window remains unconfirmed. This covers ordinary visits to the Terracotta Warriors Museum and Lishan Garden. Check new notices for major holidays and temporary or local closures; it does not establish live ticket availability or a completed reservation.",
     "source_urls": [
-      "https://www.bmy.com.cn/jingtai/bmyweb/ticketing.html"
+      "https://www.bmy.com.cn/jingtai/bmyweb/ticketing.html",
+      "https://www.chinahighlights.com/xian/terracotta-army/how-to-visit.htm"
     ],
     "conditions": {
       "reservation_required": true,
-      "closed_weekdays": null,
-      "closed_weekdays_public_holiday_exception": null,
+      "closed_weekdays": [],
+      "closed_weekdays_public_holiday_exception": false,
       "advance_booking_days": null,
       "advance_booking_rule": null
     }

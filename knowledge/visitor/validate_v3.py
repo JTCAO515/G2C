@@ -43,6 +43,7 @@ VENUE_SOURCE_CITIES.update({
 })
 VENUE_PAGE_CITIES = {
     "https://www.chinahighlights.com/xian/attraction/big-wild-goose-pagoda.htm": frozenset({"xian"}),
+    "https://www.chinahighlights.com/xian/terracotta-army/how-to-visit.htm": frozenset({"xian"}),
     "https://cdn3.shenzhenmuseum.com/museum/html/aboutus/visit-service.html": frozenset({"shenzhen"}),
     "https://museum-guanwang.leleu.cn/": frozenset({"chengdu"}),
     "https://tidenews.com.cn/news.html?id=3612168": frozenset({"taizhou-zhejiang"}),
