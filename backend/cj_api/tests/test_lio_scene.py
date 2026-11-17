@@ -13,6 +13,64 @@ def fields(first='2026-11-13',last='2026-11-15'):
 
 
 class SavedItineraryScene(unittest.TestCase):
+    def test_dispatch_reads_rich_scene_only_for_selected_enabled_actual4(self):
+        from cj_api.local_lio_exploration import ExplorationDispatch,ExplorationPlanning
+        from cj_message.demo_dialogue import LIO_VERSION,LIO_VERSION_V3,LIO_VERSION_V4
+        database=object();binding=object();now=datetime(2026,11,12,tzinfo=timezone.utc)
+        current=SimpleNamespace(proposed=json.dumps(fields()).encode(),trip=SimpleNamespace(
+            content=json.dumps(dict(content_version='structured.4',
+                calendar=dict(state='dated',start_date='2026-11-13'),
+                days=[dict(day_index=day)for day in range(1,4)])).encode()))
+        for protocol in (LIO_VERSION,LIO_VERSION_V3,LIO_VERSION_V4):
+            for enabled in (False,True):
+                with self.subTest(protocol=protocol,enabled=enabled):
+                    old=[];rich=[]
+                    legacy=SimpleNamespace(scene_context=lambda *args:old.append(args)or'legacy scene')
+                    class Generation:
+                        def current(self,host,selected):
+                            rich.append((host,selected));return current
+                    planner=ExplorationPlanning(database,legacy,enabled=enabled,generation=Generation())
+                    with patch('cj_message.lio_context.selected_lio_original_for',
+                            return_value=SimpleNamespace(protocol=protocol))as selected:
+                        result=ExplorationDispatch(legacy,planner).scene_context(binding,now)
+                    if protocol==LIO_VERSION_V4 and enabled:
+                        self.assertIn('starts in 1 day',result)
+                        selected.assert_called_once_with(database,binding)
+                        self.assertEqual(rich,[(planner,binding)]);self.assertEqual(old,[])
+                    else:
+                        self.assertEqual(result,'legacy scene')
+                        self.assertEqual(old,[(binding,now)]);self.assertEqual(rich,[])
+
+    def test_dispatch_preserves_origin_and_rich_source_read_failures(self):
+        from cj_api.local_lio_exploration import ExplorationDispatch,ExplorationPlanning
+        from cj_message.demo_dialogue import LIO_VERSION_V4
+        from cj_message.domain import Unavailable
+        from cj_trip.domain import Denied
+        legacy=SimpleNamespace(scene_context=lambda *args:self.fail('read failure fell back to legacy'))
+        source_error=Denied('original accepted head or NEEDS lineage unavailable')
+        class Generation:
+            def current(self,*args):raise source_error
+        planner=ExplorationPlanning(object(),legacy,generation=Generation())
+        dispatch=ExplorationDispatch(legacy,planner)
+        origin_error=Unavailable('selected original unavailable')
+        with patch('cj_message.lio_context.selected_lio_original_for',side_effect=origin_error):
+            with self.assertRaises(Unavailable)as raised:
+                dispatch.scene_context(object(),datetime(2026,11,12,tzinfo=timezone.utc))
+            self.assertIs(raised.exception,origin_error)
+        with patch('cj_message.lio_context.selected_lio_original_for',
+                return_value=SimpleNamespace(protocol=LIO_VERSION_V4)):
+            with self.assertRaises(Denied)as raised:
+                dispatch.scene_context(object(),datetime(2026,11,12,tzinfo=timezone.utc))
+            self.assertIs(raised.exception,source_error)
+
+    def test_non_lio_scene_does_not_acquire_the_rich_reader(self):
+        from cj_api.local_lio_exploration import ExplorationDispatch,ExplorationPlanning
+        legacy=SimpleNamespace(scene_context=lambda *args:'legacy scene')
+        planner=ExplorationPlanning(object(),legacy)
+        with patch('cj_message.lio_context.selected_lio_original_for',return_value=None):
+            self.assertEqual(ExplorationDispatch(legacy,planner).scene_context(
+                object(),datetime(2026,11,12,tzinfo=timezone.utc)),'legacy scene')
+
     def test_reads_only_original_selected_trip_and_propagates_read_failure(self):
         from cj_api.local_lio_planning import LioPlanSave
         from cj_message.lio_plan_needs import lio_needs_id
