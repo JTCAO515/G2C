@@ -10,22 +10,27 @@ import unittest
 class WarmRootScopeTests(unittest.TestCase):
     def test_unsupported_native_proof_scopes_never_create_evidence(self):
         cases = [
-            (['--scenario', 'lock-screen', '--cold-restart'], 'cannot claim'),
-            (['--scenario', 'lock-screen', '--baseline-root'], 'cannot claim'),
-            (['--scenario', 'lock-screen', '--deny-after-cold'], 'cannot claim'),
-            (['--scenario', 'session', '--lock-fault', 'denied'], 'requires the native'),
-            (['--scenario', 'lock-screen', '--lock-fault', 'denied', '--read-fault', 'connection-lost'], 'one native fault'),
+            (['--scenario', 'lock-screen', '--cold-restart'], 'cannot claim', True),
+            (['--scenario', 'lock-screen', '--baseline-root'], 'cannot claim', True),
+            (['--scenario', 'lock-screen', '--deny-after-cold'], 'cannot claim', True),
+            (['--scenario', 'session', '--lock-fault', 'denied'], 'requires the native', True),
+            (['--scenario', 'lock-screen', '--lock-fault', 'denied', '--read-fault', 'connection-lost'], 'one native fault', True),
+            (['--scenario', 'cold-denial-notes', '--baseline-root'], 'own explicit scope', False),
+            (['--scenario', 'cold-denial-notes', '--read-fault', 'connection-lost'], 'own explicit scope', False),
+            (['--scenario', 'cold-denial-notes'], 'own explicit scope', True),
         ]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             actuator = root / 'unused-actuator'
             actuator.write_text('This file must never be executed.')
-            for index, (options, reason) in enumerate(cases):
+            for index, (options, reason, native_control) in enumerate(cases):
                 with self.subTest(options=options):
                     evidence = root / str(index)
                     command = [sys.executable, '-B', str(Path(__file__).with_name('check_lio_warm_root.py')),
-                        '--output', str(evidence), '--build-dir', str(root / 'build'),
-                        '--simulator-control', str(actuator), *options]
+                        '--output', str(evidence), '--build-dir', str(root / 'build')]
+                    if native_control:
+                        command.extend(['--simulator-control', str(actuator)])
+                    command.extend(options)
                     # If validation regresses, no xcrun/actuator can be dispatched.
                     result = subprocess.run(command, env={**os.environ, 'PATH': ''},
                         capture_output=True, text=True, timeout=10)
