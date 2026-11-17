@@ -152,7 +152,8 @@ private nonisolated final class WarmRootHTTP: URLProtocol, @unchecked Sendable {
                 access_token: "b691fixture." + payload + ".synthetic", subject: subject,
                 expires_at: ISO8601DateFormatter().string(from: expiry))
             let invite: DemoInviteSession
-            if ProcessInfo.processInfo.environment["B691_TIMELINE_TIMEOUT"] == "1" {
+            if ProcessInfo.processInfo.environment["B691_TIMELINE_TIMEOUT"] == "1"
+                || ProcessInfo.processInfo.environment["B691_LOCK_SCREEN"] == "1" {
                 invite = .lio(grant: grant)
             } else {
                 let selection = try DemoCompositionProfile(language: shell.language == .chinese ? .zh : .en,
