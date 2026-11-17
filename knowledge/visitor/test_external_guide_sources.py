@@ -8,6 +8,14 @@ from validate_v3 import validate_entry_v3
 
 
 class ExternalGuideSourceScopeTests(unittest.TestCase):
+    def test_qunar_yuewang_page_keeps_exact_url_and_hangzhou_venue_boundary(self):
+        page = 'https://sight.qunar.com/833'
+        self._check_venue_source_scope(
+            page=page, city='hangzhou', wrong_city='xian',
+            invalid_urls=(page + '?extra=1', 'https://sight.qunar.com/8243',
+                          'https://sight.qunar.com/',
+                          page.replace('sight.qunar.com', 'piao.qunar.com')))
+
     def test_ctrip_lianhua_page_keeps_exact_url_and_shenzhen_venue_boundary(self):
         page = 'https://you.ctrip.com/sight/shenzhen26/50541.html'
         self._check_venue_source_scope(
