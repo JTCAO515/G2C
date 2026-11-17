@@ -23,7 +23,7 @@ import local_history_pg as harness
 import dev_auth,local_run_context,run_worker
 
 
-def exercise(root,conninfo,*,preference=None):
+def exercise(root,conninfo,*,preference=None,locale='en',stored_text=None):
     root.mkdir(mode=0o700)
     subjects=frozenset({'projection-owner','projection-foreign'})
     auth=root/'auth';dev_auth.init(auth,subjects)
@@ -66,7 +66,7 @@ def exercise(root,conninfo,*,preference=None):
     with TestClient(app)as api:
         assert api.get('/v1/lio/timeline',headers=headers).json()['messages']==[]
         for mid,text in [('projection-empty','Tell me about a park.'),('projection-tags',preference or'I prefer fewer stops in a day.')]:
-            assert api.post('/v1/lio/messages',headers=headers,content=encode(dict(version='LIO-message.1',message_id=mid,text=text,locale='en'))).status_code==200
+            assert api.post('/v1/lio/messages',headers=headers,content=encode(dict(version='LIO-message.1',message_id=mid,text=text,locale=locale))).status_code==200
             if mid=='projection-empty':
                 with database.connect(scope)as db:
                     db.execute('SELECT scope FROM cj_message_scope WHERE scope=%s FOR UPDATE',(scope,))
@@ -127,7 +127,8 @@ def exercise(root,conninfo,*,preference=None):
         assert model.calls==calls
         if preference is not None:
             tag,=current.json()['messages'][-1]['memory']['tags']
-            assert tag['text']==preference
+            if stored_text is None:stored_text=preference
+            assert tag['text']==stored_text
             with database.connect(scope)as db:
                 assert db.execute('SELECT slot,status FROM cj_memory_item WHERE scope=%s',(scope,)).fetchall()==[('lodging.style','candidate')]
             choice=encode(dict(version='LIO-memory-action.1',action_id='explicit-remember-luxury',operation='remember',target=tag['target']))
@@ -145,7 +146,7 @@ def exercise(root,conninfo,*,preference=None):
             print('PASS signed luxury hotel candidate keeps exact original, zero saved Memory before explicit Remember, same-action receipt after confirmation, zero Trip or additional model calls',flush=True)
             before=len(model_inputs)
             sent=api.post('/v1/lio/messages',headers=headers,content=encode(dict(version='LIO-message.1',
-                message_id='projection-first-recall',text='What lodging do I prefer?',locale='en')))
+                message_id='projection-first-recall',text='我喜欢什么住宿？'if locale=='zh'else'What lodging do I prefer?',locale=locale)))
             assert sent.status_code==200,sent.text
             outcome,=worker.process()
             assert outcome.status=='completed',outcome
@@ -155,7 +156,7 @@ def exercise(root,conninfo,*,preference=None):
             packets=[json.loads(message['content'].removeprefix(prefix))
                 for messages,_ in model_inputs[before:]for message in messages
                 if message['role']=='user'and message['content'].startswith(prefix)]
-            assert any(item['text']==preference and item['slot']=='lodging.style'
+            assert any(item['text']==stored_text and item['slot']=='lodging.style'
                 and (item['source_id'],item['source_version'],item['version'])==saved_source
                 for packet in packets for item in packet['items']),packets
             print(json.dumps(dict(case='luxury-first-recall',mid='projection-first-recall',run=outcome.run_id,
@@ -166,6 +167,11 @@ def exercise(root,conninfo,*,preference=None):
 if __name__=='__main__':
     harness.exercise=lambda auth,conninfo:exercise(auth.parent/'lio-projection',conninfo)
     harness.main()
-    for preference in ('I prefer luxury hotels.','我喜欢豪华酒店。'):
-        harness.exercise=lambda auth,conninfo:exercise(auth.parent/'lio-projection',conninfo,preference=preference)
+    for locale,preference,stored_text in (
+            ('en','I prefer luxury hotels.','I prefer luxury hotels.'),
+            ('zh','我喜欢豪华酒店。','我喜欢豪华酒店。'),
+            ('en','Please remember that I prefer to stay in luxury hotels.','I prefer to stay in luxury hotels.'),
+            ('zh','记住，我喜欢住豪华酒店。','我喜欢住豪华酒店。')):
+        harness.exercise=lambda auth,conninfo:exercise(auth.parent/'lio-projection',conninfo,
+            preference=preference,locale=locale,stored_text=stored_text)
         harness.main()
