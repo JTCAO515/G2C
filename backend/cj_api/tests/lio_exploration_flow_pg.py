@@ -83,8 +83,15 @@ def exercise(root,conninfo,*,saved_runs=(),generation=False,languages=('zh','en'
     def response(request):
         body=json.loads(request.content);wire.append(body)
         if 'response_format' not in body:
+            if current_text in ('今天从哪里开始？','Where should I start today?'):
+                system=' '.join(row['content']for row in body['messages']if row['role']=='system')
+                assert 'Saved-itinerary scene (orientation data):'in system
+                assert 'No saved itinerary is bound to this conversation.'not in system
             identity=dict(id='native4-practical-'+str(len(wire)),model=M4_MODEL)
-            chunks=[dict(**identity,choices=[dict(index=0,delta=dict(content='先看站内线路图，确认目的地站名和方向。'),finish_reason=None)]),
+            answer='先看站内线路图，确认目的地站名和方向。'
+            if current_text in ('今天从哪里开始？','Where should I start today?'):
+                answer='从已保存行程的第一站开始。'if locale=='zh'else'Start with the first stop in your saved itinerary.'
+            chunks=[dict(**identity,choices=[dict(index=0,delta=dict(content=answer),finish_reason=None)]),
                 dict(**identity,choices=[dict(index=0,delta={},finish_reason='stop')]),
                 dict(**identity,choices=[],usage=dict(prompt_tokens=50,completion_tokens=20,total_tokens=70))]
             raw=''.join('data: '+json.dumps(chunk)+'\n\n'for chunk in chunks)+'data: [DONE]\n\n'
@@ -114,7 +121,8 @@ def exercise(root,conninfo,*,saved_runs=(),generation=False,languages=('zh','en'
             elif current_text in ('规划不要三天','Plan not 3 days'):
                 name='不要'if locale=='zh'else'not';days='三天'if locale=='zh'else'3 days'
                 updates=[packet('city',name,name,index=index),packet('duration_days',3,days,index=index)]
-            intent='emergency' if current_text=='有人受伤需要急救' else 'practical' if current_text=='在北京怎么坐地铁' else 'explore'
+            intent='emergency' if current_text=='有人受伤需要急救' else 'practical' if current_text in (
+                '在北京怎么坐地铁','今天从哪里开始？','Where should I start today?')else'explore'
             value=dict(version=version,intent=intent,current_source_index=index,updates=updates)
         elif version==RESPONSE:
             if extra['scene']=='plan_now_preview':
@@ -233,6 +241,9 @@ def exercise(root,conninfo,*,saved_runs=(),generation=False,languages=('zh','en'
                         before_trip=db.execute('SELECT trip_id,version,content FROM cj_trip_record ORDER BY trip_id').fetchall()
                     _,follow=send(prefix+'-followup','具体的行程呢'if locale=='zh'else'What is the detailed itinerary?',cid)
                     assert follow['status']=='completed' and follow['answer'] and not follow['question_groups']
+                    _,practical=send(prefix+'-practical-followup',
+                        '今天从哪里开始？'if locale=='zh'else'Where should I start today?',cid)
+                    assert practical['status']=='completed' and practical['answer'] and not practical['question_groups']
                     with database.connect(scope)as db:
                         after_trip=db.execute('SELECT trip_id,version,content FROM cj_trip_record ORDER BY trip_id').fetchall()
                     assert after_trip==before_trip
