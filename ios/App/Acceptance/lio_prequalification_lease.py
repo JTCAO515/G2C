@@ -98,6 +98,8 @@ class ReadOnlyApp:
                 steps = [('tap', dict(identifier='lio.menu')), ('tap', dict(identifier='lio.chat.history'))]
             elif action == 'earlier':
                 steps = [('tap', dict(identifier='lio.earlier'))]
+            elif action in ('snapshot', 'audit_all'):
+                steps = [(action + '_in_window', {})]
             elif action == 'select_existing_default':
                 # The old App has no CID in AX. Never guess a row from its title
                 # or treat a UI ordinal as B's original conversation identity.

@@ -121,7 +121,7 @@ class ReadOnlyLeaseTests(unittest.TestCase):
         session.command('audit_all')
         self.assertEqual([(kind, fields.get('identifier')) for kind, fields in calls],
                          [('tap', 'lio.menu'), ('tap', 'lio.chat.history'), ('tap', 'lio.earlier'),
-                          ('swipe_up', None), ('audit_all', None)])
+                          ('swipe_up', None), ('audit_all_in_window', None)])
         for action in ['type', 'tap', 'private_invite', 'send', 'new_chat']:
             before = len(calls)
             with self.assertRaises(ValueError): self.session(Native()).command(action)
@@ -167,6 +167,45 @@ class ReadOnlyLeaseTests(unittest.TestCase):
         with self.assertRaises(ValueError): self.session(Native(), verify=changed_artifact).command('audit_all')
         with self.assertRaises(ValueError): self.session(Native()).command('select_existing_default')
         self.assertEqual(calls, [])
+
+    def test_snapshot_uses_the_native_window_after_artifact_verification_expires(self):
+        calls = []
+        owner = self
+        class Native(NativeBoundary):
+            def command(self, kind, **fields):
+                calls.append(kind)
+                # The legacy diagnostic snapshot does not enforce an interval.
+                if kind == 'snapshot_in_window':
+                    self_denied_at = datetime.fromisoformat(fields['endsAt'].replace('Z', '+00:00'))
+                    if owner.now >= self_denied_at:
+                        raise PermissionError('Synthetic native execution window denied')
+                return {'kind': kind}
+        self.now = datetime(2026, 11, 17, 1, 9, 59, tzinfo=timezone.utc)
+        def slow_verification():
+            self.now = datetime(2026, 11, 17, 1, 10, 1, tzinfo=timezone.utc)
+        session = self.session(Native(), verify=slow_verification)
+        with self.assertRaises(PermissionError): session.command('snapshot')
+        self.assertEqual(calls, ['snapshot_in_window'])
+        self.assertTrue(session.failed)
+        with self.assertRaises(ValueError): session.command('snapshot')
+        self.assertEqual(len(calls), 1)
+
+    def test_native_queue_expiry_is_fenced_for_snapshot_and_audit(self):
+        for action in ('snapshot', 'audit_all'):
+            with self.subTest(action=action):
+                calls = []
+                class Native(NativeBoundary):
+                    def command(self, kind, **fields):
+                        calls.append(kind)
+                        # A separately implemented native boundary rejects the
+                        # queued read; the adapter must not choose legacy APIs.
+                        if kind in ('snapshot_in_window', 'audit_all_in_window'):
+                            raise PermissionError('Synthetic queued read expired')
+                        return {'kind': kind}
+                session = self.session(Native())
+                with self.assertRaises(PermissionError): session.command(action)
+                self.assertEqual(calls, [action + '_in_window'])
+                self.assertTrue(session.failed)
 
 
 if __name__ == '__main__':

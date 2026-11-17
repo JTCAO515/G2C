@@ -124,8 +124,10 @@ class NativeUI:
             if (type(started) not in (int, float) or type(finished) not in (int, float)
                     or not math.isfinite(started) or not math.isfinite(finished) or not 0 <= started <= finished):
                 raise ValueError('Invalid native clock')
-            if kind == 'audit_all' and (result['audit'] != 'all' or type(result['nodes']) is not list
+            if kind in ('snapshot_in_window', 'audit_all', 'audit_all_in_window') and (type(result['nodes']) is not list
                                         or result['screenshot'] != stem + '.png'):
+                raise ValueError('Incomplete native read proof')
+            if kind in ('audit_all', 'audit_all_in_window') and result['audit'] != 'all':
                 raise ValueError('Incomplete native audit proof')
         except (KeyError, TypeError, ValueError, OSError):
             raise RuntimeError('Native UI result UNKNOWN; preserve its original record') from None
