@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from types import SimpleNamespace
 import unittest
 
-from cj_api.lio_memory_preferences import explicit_pilot_preference, supported_preference
+from cj_api.lio_memory_preferences import explicit_pilot_preference, explicit_pilot_preferences, supported_preference
 from cj_api.local_lio_memory import pilot_write_configuration
 from cj_memory.domain import Unavailable
 from cj_memory.local import LocalMemoryConfiguration, LocalMemoryProfile, SlotPolicy
@@ -16,6 +16,50 @@ def entry(slot, text, *, quote=None, kind='preference'):
 
 
 class LioMemoryPreferenceTest(unittest.TestCase):
+    def test_explicit_batch_respects_the_existing_four_entry_limit_without_truncation(self):
+        text=('I prefer a slow pace. I prefer luxury travel. '
+              'I prefer luxury hotels. I enjoy museums.')
+        slots={'travel.pace','travel.budget','lodging.style','travel.interests','diet.taste'}
+        self.assertEqual(explicit_pilot_preferences(text,slots,max_entries=4),(
+            ('travel.pace','I prefer a slow pace.'),
+            ('travel.budget','I prefer luxury travel.'),
+            ('lodging.style','I prefer luxury hotels.'),
+            ('travel.interests','I enjoy museums.')))
+        self.assertIsNone(explicit_pilot_preferences(text+' I prefer Cantonese cuisine.',slots,max_entries=4))
+
+    def test_independent_explicit_preferences_keep_individual_original_quotes(self):
+        slots={'lodging.style','travel.interests'}
+        for original,expected in (
+            ('I prefer luxury hotels. I enjoy museums.',
+             (('lodging.style','I prefer luxury hotels.'),('travel.interests','I enjoy museums.'))),
+            ('我喜欢豪华酒店。我喜欢博物馆。',
+             (('lodging.style','我喜欢豪华酒店'),('travel.interests','我喜欢博物馆'))),
+        ):
+            with self.subTest(original=original):
+                self.assertEqual(explicit_pilot_preferences(original,slots,max_entries=4),expected)
+                for slot,quote in expected:
+                    self.assertIn(quote,original)
+                    self.assertTrue(supported_preference(entry(slot,quote),original))
+                self.assertIsNone(explicit_pilot_preferences(original,slots,max_entries=1))
+                self.assertIsNone(explicit_pilot_preferences(original,{'lodging.style'},max_entries=4))
+
+    def test_explicit_batch_never_skips_unsupported_sensitive_or_conflicting_statements(self):
+        for original in (
+            'I prefer luxury hotels. I have asthma.',
+            'I prefer luxury hotels. My friend enjoys museums.',
+            'I prefer luxury hotels. Translate: I enjoy museums.',
+            'I prefer luxury hotels. I prefer budget hotels.',
+            'I prefer luxury hotels. I prefer luxury hotels.',
+            'I prefer luxury hotels. I enjoy museums for this trip only.',
+            'I prefer luxury hotels. Plan three days in Beijing.',
+            '我喜欢豪华酒店。我有胃病。',
+            '我喜欢豪华酒店。我的朋友喜欢博物馆。',
+            '我喜欢豪华酒店。翻译：我喜欢博物馆。',
+            '我喜欢豪华酒店。我喜欢经济型酒店。',
+        ):
+            with self.subTest(original=original):
+                self.assertIsNone(explicit_pilot_preferences(original,{'lodging.style','travel.interests'},max_entries=4))
+
     def test_remember_lodging_verbs_keep_a_confirmable_original(self):
         for original, quote in (
             ('Please remember that I prefer to stay in luxury hotels.',
