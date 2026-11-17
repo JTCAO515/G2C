@@ -7,14 +7,15 @@ from threading import Event
 
 import pytest
 
-from cj_feasibility.rich_assembly import Activity, assemble
+from cj_feasibility.rich_assembly import Activity, assemble, assemble_unconfirmed
 from cj_feasibility.rich_edges import activity_windows
 from cj_feasibility.rich_solver import DAY, Limits, Window
 from cj_trip.domain import packed
 from cj_trip.rich_reasons import ProfileFact
 from cj_trip.rich_source import capture
-from cj_trip.structured import SourceRejected
-from cj_trip.structured_v4 import ITEM_EXTRA, adjacent_pairs, validate_candidate
+from cj_trip.structured import FieldRejected, SourceRejected
+from cj_trip.structured_v4 import adjacent_pairs, validate_candidate
+from cj_trip.structured_v4 import ITEM_EXTRA
 
 ROOT = Path(__file__).resolve().parents[3]
 CASES = json.loads((ROOT/'contracts/trip/structured-examples.4.json').read_bytes())['cases']
@@ -50,6 +51,42 @@ def light_case():
     case['content']['items'] = [i for i in case['content']['items'] if i['id'] in ('item-1','item-4','item-5')]
     reset_legs(case['content'])
     return case
+
+
+def test_explicit_unconfirmed_entry_preserves_complete_light_recipe_without_inventing_proximity():
+    case=light_case();args=arguments(case,edges=activity_windows(2))
+    args['activities']=tuple(replace(a,nearby=None)for a in args['activities'])
+    ids=frozenset(a.item_id for a in args['activities'])
+    normal=assemble(case['content'],**args)
+    assert normal.status=='UNKNOWN'and normal.content is None
+    result=assemble_unconfirmed(case['content'],**args,unconfirmed_items=ids)
+    assert result.status=='UNCONFIRMED_SKELETON'and result.unconfirmed_items==tuple(sorted(ids))
+    value=json.loads(result.content);validate_candidate(value,args['source'])
+    assert {i['id']for i in value['items']}==ids
+    assert all(i['place']==next(x for x in case['content']['items']if x['id']==i['id'])['place']for i in value['items'])
+    assert all(leg['state']=='unconfirmed'and leg['duration_seconds']is None for leg in value['legs'])
+    assert all(a.nearby is None for a in args['activities'])
+
+
+def test_unconfirmed_entry_does_not_cover_unexplained_unknown_or_known_false_proximity():
+    case=light_case();args=arguments(case,edges=activity_windows(2))
+    args['activities']=tuple(replace(a,nearby=None)for a in args['activities'])
+    result=assemble_unconfirmed(case['content'],**args,unconfirmed_items=frozenset({'item-1'}))
+    assert result.status=='UNKNOWN'and result.content is None
+    args['activities']=tuple(replace(a,nearby=False)for a in args['activities'])
+    result=assemble_unconfirmed(case['content'],**args,unconfirmed_items=frozenset(a.item_id for a in args['activities']))
+    assert result.status=='CONFLICT'and result.content is None
+
+
+def test_unconfirmed_entry_cannot_bypass_source_edge_conflicts_or_stop():
+    case=light_case();ids=frozenset(i['id']for i in case['content']['items']);args=arguments(case)
+    args['stop'].set()
+    result=assemble_unconfirmed(case['content'],**args,unconfirmed_items=ids)
+    assert result.content is None
+    with pytest.raises(ValueError):assemble_unconfirmed(case['content'],**args,unconfirmed_items=frozenset())
+    with pytest.raises(ValueError):assemble_unconfirmed(case['content'],**args,unconfirmed_items=frozenset({'invented-item'}))
+    bad=deepcopy(case);bad['content']['items'][0]['reason_refs']=['invented-factor']
+    with pytest.raises(FieldRejected):assemble_unconfirmed(bad['content'],**arguments(bad),unconfirmed_items=ids)
 
 
 def test_order_assembly_is_pure_and_independently_valid_structured4_without_fake_dates():

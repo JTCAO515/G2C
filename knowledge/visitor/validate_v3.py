@@ -32,9 +32,22 @@ VENUE_SOURCE_CITIES.update({
     "whlyw.cq.gov.cn": frozenset({"chongqing"}),
     "cqjlp.gov.cn": frozenset({"chongqing"}),
     "wlj.xa.gov.cn": frozenset({"xian"}),
+    "www.ehangzhou.gov.cn": frozenset({"hangzhou"}),
+    "wgly.hangzhou.gov.cn": frozenset({"hangzhou"}),
+    "cgj.sz.gov.cn": frozenset({"shenzhen"}),
+    "fao.sz.gov.cn": frozenset({"shenzhen"}),
+    "english.shanghai.gov.cn": frozenset({"shanghai"}),
+    "en.xa.gov.cn": frozenset({"xian"}),
+    "bmy.com.cn": frozenset({"xian"}),
+    "www.meet-in-shanghai.net": frozenset({"shanghai"}),
 })
 VENUE_PAGE_CITIES = {
     "https://cdn3.shenzhenmuseum.com/museum/html/aboutus/visit-service.html": frozenset({"shenzhen"}),
+    "https://museum-guanwang.leleu.cn/": frozenset({"chengdu"}),
+    "https://tidenews.com.cn/news.html?id=3612168": frozenset({"taizhou-zhejiang"}),
+    "https://tidenews.com.cn/news.html?id=2858557": frozenset({"taizhou-zhejiang"}),
+    "https://m.ctrip.com/webapp/you/sight/chengdu104/4229.html?ext-shelfPage=ctrip_shelf_seo": frozenset({"chengdu"}),
+    "https://www.trip.com/travel-guide/attraction/hangzhou/west-lake-82922": frozenset({"hangzhou"}),
 }
 V3_APPROVED_HOSTS = V3_GOVERNMENT_HOSTS | VENUE_SOURCE_CITIES.keys()
 

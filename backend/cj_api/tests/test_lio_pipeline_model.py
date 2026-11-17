@@ -18,6 +18,23 @@ class PipelineModel(unittest.TestCase):
         result=parse_wording(packed(value),[dict(item_id='p-1',tip=None)],allowed_reason_keys={'interests'})
         self.assertEqual(result,{'p-1':dict(note='Fits your interests.',reason_refs=['interests'],tip=None)})
 
+    def test_live_code_allocation_keeps_complete_coverage_with_memory_reserved(self):
+        from types import SimpleNamespace
+        from cj_api.local_lio_pipeline_calls import Call,PipelineCalls
+        def stream(*args,**kwargs):yield 'complete skeleton fixture'
+        worker=SimpleNamespace(_registered_stream=stream,lio_memory=object())
+        calls=PipelineCalls(worker,'current-binding')
+        calls.parallel((Call('model','registered-skeleton',object()),))
+        self.assertEqual(calls.model_slots_left,3)
+        items=[dict(item_id='p-'+str(n),tip=None)for n in range(60)]
+        batches=wording_batches(items,available_models=calls.model_slots_left)
+        self.assertEqual(len(batches),3)
+        self.assertEqual([item for batch in batches for item in batch],items)
+        calls.parallel(tuple(Call('model','registered-wording',batch)for batch in batches))
+        self.assertEqual(calls.model_slots_left,0)
+        with self.assertRaises(WordingUnavailable):wording_batches(items,available_models=0)
+        self.assertEqual(wording_batches([],available_models=0),())
+
     def test_forged_items_missing_items_unknown_reasons_and_truncation_refuse(self):
         items=[dict(item_id='p-1',tip=None)]
         for rows in ([],[dict(item_id='foreign',reason=None,reason_refs=[],tip=None)],

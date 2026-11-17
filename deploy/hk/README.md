@@ -159,35 +159,55 @@ E/F 登记预算或 source-only C0 不是可执行子额／实呼资格，也不
 结束时先停止新派发、核原动作／费用／在途，由 B 关闭租约并处理采集配置。
 发生 FAIL/UNKNOWN 立即 STOP_NEW，只读核原 attempt；不能把旧结果带入新分母或用新 ID 补跑。
 
-## API 访问日志（#1036）
+## API 访问日志（#1036、#1048）
 
-API 最外层的纯 ASGI 中间件 `deploy/hk/access_log.py` 对每个 HTTP 交换写一行 JSON（`G2C-HK-access-log.1`）：
-UTC 时间、匹配到的**路由模板**（不含路径参数值，未匹配为 `null`）、方法、状态码、总耗时与首字节耗时、
-服务端生成的 `X-Request-ID`、客户端构建号（只从原生 iOS `User-Agent` 的 `名称/构建号 CFNetwork/… Darwin/…`
-或显式 `X-G2C-App-Build` 中取经校验的数字）、错误类别（由状态码映射；部署门禁拒绝记 `deployment_<原因>`）
-及结果（completed / incomplete / exception / no_response）。
+API 最外层的纯 ASGI 中间件 `deploy/hk/access_log.py` 使用 `G2C-HK-access-log.2`。
+非健康请求进入应用时先写 `phase=started`，交换结束时写 `phase=finished`；两行以服务端新生成的
+`exchange_id` 关联。开始行的路由、状态、耗时和 `request_id` 都为 `null`，结果为 `in_flight`；
+此时路由和响应参考号尚未产生，不用原始路径或客户端自带 ID 替代。
+结束行记录请求开始 UTC 时间、匹配到的**路由模板**（不含路径参数值，未匹配为 `null`）、方法、
+状态码、总耗时与首字节耗时、服务端生成的 `X-Request-ID`、经校验的客户端构建号、
+错误类别（由状态码映射；部署门禁拒绝记 `deployment_<原因>`）及结果
+（completed / incomplete / exception / no_response）。构建号只从原生 iOS `User-Agent` 的
+`名称/构建号 CFNetwork/… Darwin/…` 或显式 `X-G2C-App-Build` 取数字。
 
 - 不读取、不记录：查询串、其他请求头值（Authorization、Cookie、邀请码）、请求/响应正文（消息、Memory）、
-  客户端地址、账号或主体标识、异常文本。健康检查 200 不记录（容器每 15 秒自检），非 200 照记。
+  客户端地址、账号或主体标识、异常文本。健康检查不写开始行；成功完成的 200 也不写结束行，非 200 照记。
 - 存放于宿主 `/srv/g2c-beta/access-log`（仅挂给 API 的 `/access-log`；目录 10001:10001 `0700`），
   与原件、证据和 rejected-intakes 存储分离。每 UTC 日一个 `access-YYYY-MM-DD.jsonl`（`0600`），
   保留 14 天（切日时删除更早的同名格式文件），每日上限 16 MiB，超限丢弃并 ALERT。
 - 目录缺失或属主/权限不符时，改写到容器 stderr（`ACCESS {...}`）并 ALERT；日志失败不改变任何 HTTP 响应。
   容器重建会丢失 stderr，所以宿主目录须由 B 预先建好。
-- 回退：旧镜像忽略该挂载；移除挂载行并重建 API 即停止写入，已写文件按保留期自然清除或由 B 删除。
+- 历史 `.1` 文件只有结束行，查询仍可读。新版本不能补出部署前或已丢失的开始记录。
+- 回退：旧镜像忽略该挂载；移除挂载行并重建 API 即停止写入，已写文件沿用保留期，不在发布时清空。
 
-按时间窗只读查询（时间必须带时区；窗口不超过保留期）：
+按时间窗只读查询（时间必须带时区；窗口不超过保留期）。以下 `--phase` 参数需查询镜像已含 `.2`；
+旧 `.1` 镜像不传该参数，仍只能查询结束行。先核实际镜像版本，不用仓库文档替代部署事实。
 
 ```sh
 docker run --rm --network=none --read-only --user 10001:10001 \
   -v /srv/g2c-beta/access-log:/access-log:ro --entrypoint python "g2c-beta:$CURRENT_SOURCE" \
   -B -m deploy.hk.access_log query --since 2026-11-15T21:30:00+08:00 --until 2026-11-15T22:00:00+08:00 \
-  [--min-status 400] [--route '/v1/...']
+  --phase all
 ```
 
-输出按时间排序的原始行，最后一行是 `{"summary":true,...,"by_status":{...}}`。JT 报故障时，
-按其报告时间前后取窗口，用状态码、路由模板、构建号和 `request_id` 对应失败请求；
-请求 ID 与 App 显示或日志中的 `X-Request-ID` 一致时可唯一定位。
+默认 `--phase finished`，保持旧版结束行和状态码计数口径；`--phase started` 只看开始，`all` 看两者。
+排查“请求有没有到达”时不加 `--route`：开始行尚无路由，按路由筛选会将其排除。
+只查结束行时可加 `--min-status 400`、`--route '/v1/...'`；状态为 `null` 的行不被最小状态码筛选排除。
+输出按请求开始时间排序的原始行，最后一行是 `{"summary":true,...,"by_status":{...}}`；
+`all` 的 count 是记录行数，不能当作独立请求数。用 `exchange_id` 对开始和结束，
+再以路由模板、构建号和与 App 相同的 `request_id` 唯一绑定故障请求。
+开始行证明请求进入 ASGI 应用；只有开始而无结束表示交换结果未核清，不证明任务仍在运行。
+缺行可能来自旧版本、日志丢失或写入失败，不能单凭缺行断言请求根本没有到达。
+
+### worker 日志保留
+
+`deploy/hk/compose.yaml` 为 worker 显式配置 Docker `local` 日志 `max-size=50m`、`max-file=20`；
+API、PG 等其他角色沿用各自原配置。该上限按容量轮转，不保证固定小时数。
+宿主 Compose 文件须由 B 在部署窗口按原 hash 核对、备份并同步；镜像内文件更新不会自动更新宿主文件。
+重建 worker 后核实际 `docker inspect` 的 `HostConfig.LogConfig`，不能把源文件或候选镜像当作已生效。
+回退不清理独立原件和已采集证据；容器轮转日志不能替代独立证据，按已批范围保留故障元数据。
+需要恢复原日志配置时用本次部署保存的原文件，不清账本或业务数据来通过验证。
 
 ## 配置与构建
 

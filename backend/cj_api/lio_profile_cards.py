@@ -15,6 +15,14 @@ def _value(key,value,locale):
     return str(value)
 
 
+def value_text(key,value,state,locale):
+    if state=='not_needed':return '不需要'if locale=='zh'else'No preference'
+    if value is None:return '未定'if locale=='zh'else'Not settled'
+    if isinstance(value,list):return ('、'if locale=='zh'else', ').join(_value(key,item,locale)for item in value)
+    if isinstance(value,bool):return ('是'if value else'否')if locale=='zh'else('Yes'if value else'No')
+    return _value(key,value,locale)
+
+
 class LioProfileCards:
     def __init__(self,epoch_reader):
         self.epoch_reader=epoch_reader
@@ -50,12 +58,7 @@ class LioProfileCards:
                             text[source.offset:source.offset+len(source.quote)]!=source.quote):
                         raise Unavailable('profile original source differs')
             label=LABELS[factor.factor_key][0 if locale=='zh' else 1]
-            value=factor.value
-            if factor.state=='not_needed':display='不需要' if locale=='zh' else 'No preference'
-            elif value is None:display='未定' if locale=='zh' else 'Not settled'
-            elif isinstance(value,list):display=('、' if locale=='zh' else ', ').join(_value(factor.factor_key,item,locale) for item in value)
-            elif isinstance(value,bool):display=('是' if value else '否') if locale=='zh' else ('Yes' if value else 'No')
-            else:display=_value(factor.factor_key,value,locale)
+            display=value_text(factor.factor_key,factor.value,factor.state,locale)
             safe=display_answer(label+': '+display,locale)
             if safe is not None:
                 # Presentation only; retain the complete value and provenance

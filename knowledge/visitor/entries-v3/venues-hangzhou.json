@@ -1,0 +1,89 @@
+[
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "topic": "passport_booking",
+    "cities": [
+      "hangzhou"
+    ],
+    "checked_on": "2026-11-17",
+    "expires_on": "2026-11-23",
+    "source_urls": [
+      "https://wgly.hangzhou.gov.cn/art/2024/7/12/art_1229505585_58956471.html",
+      "https://www.trip.com/travel-guide/attraction/hangzhou/west-lake-82922"
+    ],
+    "id": "visitor.v3.hangzhou.west-lake-public-visit",
+    "subject": {
+      "key": "hangzhou.west-lake",
+      "name_zh": "西湖",
+      "name_en": "West Lake",
+      "wikidata_qid": "Q502371"
+    },
+    "conditions": {
+      "reservation_required": false,
+      "closed_weekdays": [],
+      "closed_weekdays_public_holiday_exception": false,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    },
+    "text_zh": "杭州市文旅局公开的A级景区入园通知取消普通景区预约要求，并将西湖风景名胜区列为对象。本条仅指公共湖滨步行游览，不含灵隐飞来峰等独立景区、内设文博场馆、收费点、游船和活动。Trip.com当前公开营业栏将西湖列为全年全天开放；本条据这一平台资料记录公共湖滨没有常规每周闭园日，不将其当作主管机关的临时开放公告或所有内部场所的全天开放保证。临时安全管控、天气和局部封闭仍须查行前公告；免预约不表示所有内部场所免票，提前购票窗口本条未核定。",
+    "text_en": "Hangzhou’s culture and tourism bureau lists West Lake Scenic Area under its published policy removing ordinary scenic-area admission reservations. This entry covers public lakeside walking only, excluding independent attractions such as Lingyin Feilai Peak, museums, ticketed sites, boats and events. Trip.com’s current public business-hours section lists West Lake as open year-round, 24/7. Based on that platform information, this entry records no regular weekly closure for public lakeside walking; it is not a temporary-opening notice from the authority or a promise that every internal site stays open all day. Check notices for temporary safety controls, weather and local closures. Reservation-free access does not establish free entry to every internal site, and an advance ticket-purchase window remains unconfirmed."
+  },
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "topic": "passport_booking",
+    "cities": [
+      "hangzhou"
+    ],
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-11-23",
+    "source_urls": [
+      "https://wgly.hangzhou.gov.cn/art/2024/7/12/art_1229505585_58956471.html"
+    ],
+    "id": "visitor.v3.hangzhou.xixi-wetland-admission",
+    "subject": {
+      "key": "hangzhou.xixi-national-wetland-park",
+      "name_zh": "西溪国家湿地公园",
+      "name_en": "Xixi National Wetland Park",
+      "wikidata_qid": null
+    },
+    "conditions": {
+      "reservation_required": false,
+      "closed_weekdays": null,
+      "closed_weekdays_public_holiday_exception": null,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    },
+    "text_zh": "杭州市文旅局入园通知将西溪湿地旅游区列为取消预约的景区，普通园区入园不需另行预约。免预约不等于免门票、保证当天有票或所有项目都免约；内设文博场馆、游船及具体活动另查。固定每周闭园日和提前购票窗口本条未核定，行前应查所选区域与项目的最新开放和票务公告。",
+    "text_en": "Hangzhou’s culture and tourism bureau names Xixi Wetland among scenic areas whose ordinary park admission no longer needs a separate reservation. This does not mean free tickets, guaranteed availability or reservation-free access to every facility. Museums, boats and specific events have separate arrangements. Regular weekly closures and advance ticket-purchase windows are unconfirmed here; check current opening and ticket notices for the area and activity you choose."
+  },
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "topic": "passport_booking",
+    "cities": ["hangzhou"],
+    "checked_on": "2026-11-16",
+    "expires_on": "2026-11-23",
+    "source_urls": [
+      "https://wgly.hangzhou.gov.cn/art/2023/8/16/art_1229505585_58948381.html",
+      "https://wgly.hangzhou.gov.cn/art/2022/5/11/art_1229505585_58940550.html"
+    ],
+    "id": "visitor.v3.hangzhou.yue-fei-memorial-museum",
+    "subject": {
+      "key": "hangzhou.yue-fei-memorial-museum",
+      "name_zh": "岳飞纪念馆（岳王庙内）",
+      "name_en": "Yue Fei Memorial Museum (inside Yue Fei Temple)",
+      "wikidata_qid": null
+    },
+    "conditions": {
+      "reservation_required": null,
+      "closed_weekdays": [],
+      "closed_weekdays_public_holiday_exception": false,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    },
+    "text_zh": "杭州市文旅局公布的错时开放名单将岳飞纪念馆列为每天开放，本条没有常规每周闭馆日。纪念馆位于岳王庙内，这项说明仅限纪念馆，不据此保证整个岳庙、墓园或临时展厅同样开放。预约是否必需及购票窗口尚未核定，行前核对岳庙最新参观公告；较早公布的试行安排不保证当日无临时调整。",
+    "text_en": "Hangzhou’s culture and tourism bureau lists Yue Fei Memorial Museum in its daily-opening category, with no regular weekly closing day. The museum is inside Yue Fei Temple; this record does not establish opening arrangements for the entire temple, cemetery or temporary galleries. Mandatory booking and the ticket-purchase window are unconfirmed here. Check the temple’s latest visitor notice: the earlier published trial arrangement does not guarantee access on a particular day."
+  }
+]

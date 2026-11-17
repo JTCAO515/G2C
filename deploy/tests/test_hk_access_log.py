@@ -166,6 +166,52 @@ def test_query_keeps_v1_completion_counts_and_exposes_v2_arrivals_on_request(tmp
     assert json.loads(out.getvalue().splitlines()[-1])['by_status']=={'200':1,'503':1,'None':1}
 
 
+@pytest.mark.parametrize('later_days', [0, 1, 3])
+@pytest.mark.parametrize('offset', [timezone.utc, timezone(timedelta(hours=8))])
+def test_query_finds_original_start_window_in_later_write_buckets(tmp_path, later_days, offset):
+    directory = private_dir(tmp_path)
+    started = datetime(2026, 11, 15, 23, 59, 59, tzinfo=timezone.utc)
+    clock = [started.timestamp()]
+    sink = Sink(directory, clock=lambda: clock[0])
+    common = dict(v=access_log.VERSION, ts=access_log._stamp(started.timestamp()),
+                  exchange_id='original-exchange')
+    sink.write(dict(common, phase='started', status=None, route=None))
+    clock[0] = (started + timedelta(days=later_days, seconds=2)).timestamp()
+    sink.write(dict(common, phase='finished', status=503, route='/v2/demo-invite-sessions'))
+    before = {p.name: p.read_bytes() for p in directory.iterdir()}
+    since = (started - timedelta(seconds=1)).astimezone(offset)
+    until = (started + timedelta(microseconds=500000)).astimezone(offset)
+    out = io.StringIO()
+    assert access_log.query(directory, since, until, phase='all', out=out) == 2
+    rows = [json.loads(line) for line in out.getvalue().splitlines()]
+    assert [row['phase'] for row in rows[:-1]] == ['started', 'finished']
+    assert {row['exchange_id'] for row in rows[:-1]} == {'original-exchange'}
+    assert rows[-1]['by_status'] == {'503': 1, 'None': 1}
+    assert access_log.query(directory, since, until, out=io.StringIO()) == 1
+    assert access_log.query(directory, since, until, phase='started', out=io.StringIO()) == 1
+    assert {p.name: p.read_bytes() for p in directory.iterdir()} == before
+
+
+def test_query_later_buckets_keep_filename_symlink_and_timestamp_boundaries(tmp_path):
+    directory = private_dir(tmp_path)
+    (directory / 'access-2026-11-14.jsonl').write_text('outside old bucket, not read')
+    (directory / 'access-not-a-date.jsonl').write_text('not an access bucket')
+    (directory / 'access-2026-99-99.jsonl').write_text('not a calendar date')
+    outside = tmp_path / 'outside.jsonl'
+    outside.write_text('symlink target must not be read')
+    (directory / 'access-2026-11-18.jsonl').symlink_to(outside)
+    stamp = datetime(2026, 11, 15, 23, 59, 59, tzinfo=timezone.utc)
+    sink = Sink(directory, clock=lambda: (stamp + timedelta(days=2)).timestamp())
+    for at, status in ((stamp - timedelta(seconds=2), 401), (stamp, 503),
+                       (stamp + timedelta(seconds=2), 200)):
+        sink.write(dict(ts=access_log._stamp(at.timestamp()), status=status, route='/v1/x'))
+    out = io.StringIO()
+    assert access_log.query(directory, stamp - timedelta(seconds=1), stamp + timedelta(seconds=1),
+                            min_status=400, route='/v1/x', out=out) == 1
+    assert json.loads(out.getvalue().splitlines()[0])['status'] == 503
+    assert outside.read_text() == 'symlink target must not be read'
+
+
 def test_build_parsing_accepts_only_bounded_numbers():
     assert access_log.client_build([(b'user-agent',b'Lio%20Beta/44.1 CFNetwork/3826.400.120 Darwin/25.0.0')])=='44.1'
     assert access_log.client_build([(b'user-agent',b'Mozilla/5.0 (iPhone) Safari')])is None

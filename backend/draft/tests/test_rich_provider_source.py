@@ -21,6 +21,7 @@ RECORD = json.loads((ROOT/'contracts/trip/structured-examples.4.json').read_byte
 class FixtureProviderCapture:
     records: list
     revision: int
+    outcomes: list
 
 
 class FixtureProviders:
@@ -31,12 +32,13 @@ class FixtureProviders:
         self.available = True
         self.pending = False
         self.events = []
+        self.outcomes = []
 
     def capture(self, binding):
         self.capture_calls += 1
         if self.pending:
             raise RuntimeUnknown('fixture unresolved original attempt')
-        self.issued = FixtureProviderCapture([deepcopy(RECORD)], self.revision)
+        self.issued = FixtureProviderCapture([deepcopy(RECORD)], self.revision, deepcopy(self.outcomes))
         self.events.append('provider-seal')
         return self.issued
 
@@ -155,3 +157,28 @@ def test_reader_change_inside_final_frame_withholds_publication(harness):
     h.source.seal_providers(h.binding, h.capture)
     with pytest.raises(LeaseUnavailable), h.source.hold_for_publication(h.binding):
         h.source.provider_reader = object()
+
+
+def test_fallback_targets_require_current_original_terminal_outcomes(harness):
+    h = harness
+    h.providers.outcomes = [
+        dict(status='ok', item_count=1, targets=['matched']),
+        dict(status='ok', item_count=0, targets=['no-result']),
+        dict(status='unavailable', item_count=0, targets=['unavailable']),
+        dict(status='unavailable', item_count=0, targets=[]),
+    ]
+    captured = h.source.seal_providers(h.binding, h.capture)
+    with pytest.raises(LeaseUnavailable): h.source.unavailable_targets(h.binding, captured)
+    with h.source.hold_for_publication(h.binding):
+        assert h.source.unavailable_targets(h.binding, captured) == frozenset({'no-result', 'unavailable'})
+        with pytest.raises(LeaseUnavailable): h.source.unavailable_targets(h.binding, copy(captured))
+        value = h.source.provider_outcomes(h.binding, captured)
+        assert value == h.providers.outcomes
+    with pytest.raises(LeaseUnavailable): h.source.provider_outcomes(h.binding, captured)
+
+
+def test_empty_records_do_not_establish_a_failed_lookup(harness):
+    h = harness
+    captured = h.source.seal_providers(h.binding, h.capture)
+    with h.source.hold_for_publication(h.binding):
+        assert h.source.unavailable_targets(h.binding, captured) == frozenset()
