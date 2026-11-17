@@ -8,7 +8,7 @@ import HTTPTypes
 import OpenAPIRuntime
 
 @MainActor
-private func journeyMemoryHost(shell: ShellState, backend: JourneyMemoryBackend, recovery: MessageRecovery,
+private func journeyMemoryHost(shell: ShellState, backend: any ClientTransport, recovery: MessageRecovery,
                                scope: StorageScope, lease: Lease, environment: UUID, account: UUID,
                                lioChoices: LioMemoryActionsClient) throws -> TypedMemoryContainerHost {
     let binding = MemoryBinding(environment: environment, account: account, generation: UUID(), selection: UUID())
