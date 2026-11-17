@@ -20,7 +20,8 @@
               "行程站点文字使用统一的浅色和深色主题配色。",
               "登录页的“继续”和“继续使用账号”按钮使用可缩放文字，并保留完整点击范围。",
               "行程为空时，深色模式下“和 Lio 聊聊”按钮的文字更清楚。",
-              "问题记录能区分系统取消与网络故障，并保留旧版记录。"
+              "问题记录能区分系统取消与网络故障，并保留旧版记录。",
+              "历史页标题使用主题文字配色和原有的可缩放标题样式。"
             ],
             "en": [
               "Conversation itinerary cards now have day buttons, starting with day one and showing one day at a time.",
@@ -29,7 +30,8 @@
               "Itinerary stop text uses the shared light and dark theme colours.",
               "The sign-in page uses scalable text and full touch areas for Continue and Continue with your account.",
               "Improve dark-mode text contrast on the Chat with Lio button when Trips is empty.",
-              "Problem notes distinguish cancellation from network errors and preserve older records."
+              "Problem notes distinguish cancellation from network errors and preserve older records.",
+              "Use theme text colours and the existing scalable heading style for chat history titles."
             ]
           }
         },
@@ -44,13 +46,15 @@
               "与构建 46 相比，对话里的逐日展开改为单日预览，查看入口继续显示完整行程。",
               "修复行程卡深色模式下站点文字的配色绑定。",
               "修正构建 46 登录页按钮的字号适配和点击范围，邀请码格式和同意步骤不变。",
-              "补充构建 46 之后的空行程按钮配色和问题记录分类修正。"
+              "补充构建 46 之后的空行程按钮配色和问题记录分类修正。",
+              "修正历史页深色标题的显示方式。"
             ],
             "en": [
               "Since build 46: conversation cards use a single-day preview instead of expanding every day; View keeps the complete schedule.",
               "Fix the stop-text colour binding on dark itinerary cards.",
               "Improve sign-in button text scaling and touch areas compared with build 46; the code format and consent steps stay the same.",
-              "Also correct the empty-Trips button colour and problem-note classification after build 46."
+              "Also correct the empty-Trips button colour and problem-note classification after build 46.",
+              "Correct the dark-appearance chat history title presentation."
             ]
           }
         },
@@ -62,16 +66,16 @@
           },
           "items": {
             "zh": [
-              "打开已有行程的对话，确认卡片默认显示第一天，再切换到其他日期。",
-              "选择安排超过四项的一天，核对其余数量，再点“查看”检查完整安排。",
+              "打开已有行程的对话，切换日期，核对四项预览与其余数量；“查看”仍显示完整安排。",
+              "切换浅深色，打开历史并返回；行程本来为空时检查按钮，无需清空数据。",
               "若当前就在登录页，检查中英文按钮文字和点击；无需为此退出已有账号。",
-              "在菜单切换浅深色；行程本来为空时看看按钮。留一段草稿，切后台返回，核对对话和文字；无需清空数据。"
+              "在同一对话留一段草稿，切后台再回来，核对对话和文字。"
             ],
             "en": [
-              "Open a chat with an existing itinerary, check that day one is selected, then choose another day.",
-              "Choose a day with more than four stops, check the remaining count, then use View to inspect the full schedule.",
-              "If you are already on the sign-in page, check its English and Chinese button text and taps. Keep an existing signed-in session.",
-              "Switch appearance in the menu and inspect the button if Trips is already empty. Leave a draft, switch apps and return to check the chat and text. Keep existing data."
+              "In a chat with an existing itinerary, switch days and check its four-stop preview and remaining count; View keeps the complete schedule.",
+              "Switch appearance, open History and return. If Trips is already empty, inspect its button. Keep existing data.",
+              "If you are already on the sign-in page, check its English and Chinese buttons. Keep an existing signed-in session.",
+              "Leave a draft in a chat, switch apps and return, then check the chat and text."
             ]
           }
         },
