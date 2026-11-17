@@ -1,0 +1,41 @@
+name: Hong Kong public readiness
+
+on:
+  schedule:
+    - cron: '7,17,27,37,47,57 0-14 * * *'
+  workflow_dispatch:
+    inputs:
+      notification_drill:
+        description: 'Deliberate notification-path failure; sends no server request'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hk-public-readiness
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    if: >-
+      github.repository == 'JTCAO515/G2C' &&
+      github.event.repository.private == false &&
+      github.ref == 'refs/heads/main' &&
+      vars.HK_READINESS_MONITOR_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Observe only public health metadata
+        env:
+          NOTIFICATION_DRILL: ${{ inputs.notification_drill == true && 'true' || 'false' }}
+        run: |
+          if [ "$NOTIFICATION_DRILL" = true ]; then
+            python3 -B -m deploy.hk.readiness_monitor --notification-drill
+          else
+            python3 -B -m deploy.hk.readiness_monitor
+          fi
