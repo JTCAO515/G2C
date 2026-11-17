@@ -1,4 +1,4 @@
-"""Exact guide permissions do not grant a travel operator's entire website."""
+"""Exact public-source permissions do not grant an entire website."""
 from datetime import date
 import json
 from pathlib import Path
