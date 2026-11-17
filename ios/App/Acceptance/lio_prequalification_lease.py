@@ -44,10 +44,14 @@ def validate_prequalification_lease(raw, external_sha256, expected, now):
             and value['simulator_udids'] == expected['simulator_udids']
             and value['identities'] == expected['identities'] and value['allowed_actions'] == ACTIONS)
     simulators = value['simulator_udids']
-    require(type(simulators) is dict and set(simulators) == {'zh', 'en'}
-            and simulators['zh'] != simulators['en'])
-    for identifier in simulators.values():
-        require(type(identifier) is str and str(UUID(identifier)).lower() == identifier.lower())
+    require(type(simulators) is dict and set(simulators) == {'zh', 'en'})
+    devices = {}
+    for locale, identifier in simulators.items():
+        require(type(identifier) is str)
+        device = UUID(identifier)
+        require(str(device).lower() == identifier.lower())
+        devices[locale] = device
+    require(devices['zh'] != devices['en'])
     dates = []
     for key in ('starts_at', 'ends_at'):
         require(type(value[key]) is str and re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z', value[key]))
