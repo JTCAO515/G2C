@@ -73,6 +73,28 @@ import Testing
         return (LioDiagnosticLog(defaults: defaults, build: build), defaults)
     }
 
+    @Test(arguments: [false, true])
+    func aCancelledRequestIsRecordedAsCancellationInsteadOfANetworkFailure(urlCancellation: Bool) throws {
+        let error: any Error = urlCancellation ? URLError(.cancelled) : CancellationError()
+        let problem = LioRequestProblem(error, stage: .firstSendLookup)
+        #expect(problem.cause == .cancelled)
+        #expect(problem.origin == .firstSendLookup)
+        #expect(problem.diagnosis.category == .unclear)
+        #expect(problem.errorCode == (urlCancellation ? -999 : nil))
+
+        let (notes, defaults) = log()
+        notes.record(problem)
+        let stored = try #require(defaults.data(forKey: "g2c.lio.problem-notes.v1"))
+        let entries = try #require(JSONSerialization.jsonObject(with: stored) as? [[String: Any]])
+        #expect(entries.count == 1)
+        #expect(entries.first?["cause"] as? String == "cancelled")
+        #expect(entries.first?["origin"] as? String == "firstSendLookup")
+        for language in [LioLanguage.english, .chinese] {
+            #expect(notes.text(language).contains("cause=cancelled"))
+            #expect(notes.text(language).contains("origin=firstSendLookup"))
+        }
+    }
+
     @Test func notesAreBoundedNewestFirstAndSurviveRelaunch() {
         let suite = UUID().uuidString
         let (notes, _) = log(suite)
@@ -85,6 +107,31 @@ import Testing
         #expect(notes.entries.first?.time == start.addingTimeInterval(Double(LioDiagnosticLog.limit + 4) * 120))
         let (relaunched, _) = log(suite)
         #expect(relaunched.entries == notes.entries)
+    }
+
+    @Test func oldProblemNotesSurviveReadingAndAppendingAnExtendedRecord() throws {
+        let defaults = try #require(UserDefaults(suiteName: "synthetic-old-notes-" + UUID().uuidString))
+        let old = Data(#"[{"category":"service","stage":"timeline","request":"timeline","httpStatus":503,"reference":"C95744FC-F460-4ED1-B21B-A64D5D34896C","time":815620800,"build":"45"}]"#.utf8)
+        defaults.set(old, forKey: "g2c.lio.problem-notes.v1")
+        let notes = LioDiagnosticLog(defaults: defaults, build: "47")
+        let retained = try #require(notes.entries.first)
+        #expect(notes.entries.count == 1)
+        #expect(retained.category == .service && retained.stage == .timeline && retained.httpStatus == 503)
+        #expect(retained.origin == nil && retained.cause == nil && retained.errorCode == nil)
+        #expect(defaults.data(forKey: "g2c.lio.problem-notes.v1") == old)
+
+        notes.record(error: URLError(.timedOut), stage: .history,
+                     at: Date(timeIntervalSinceReferenceDate: 815620920))
+        #expect(notes.entries.count == 2 && notes.entries.last == retained)
+        #expect(notes.entries.first?.origin == .history && notes.entries.first?.cause == .network)
+        #expect(notes.entries.first?.errorCode == -1001 && notes.entries.first?.build == "47")
+        #expect(LioDiagnosticLog(defaults: defaults, build: "47").entries == notes.entries)
+        for language in [LioLanguage.english, .chinese] {
+            let copied = notes.text(language)
+            #expect(copied.contains("HTTP 503 · ref C95744FC-F460-4ED1-B21B-A64D5D34896C"))
+            #expect(copied.contains("origin=history · cause=network · error=-1001"))
+            #expect(copied.contains(language == .english ? "build 45" : "构建 45"))
+        }
     }
 
     @Test func distinctServerReferencesAreNotDeduplicated() {
