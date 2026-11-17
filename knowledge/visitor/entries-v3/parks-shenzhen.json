@@ -4,10 +4,11 @@
     "entry_kind": "fact",
     "topic": "passport_booking",
     "cities": ["shenzhen"],
-    "checked_on": "2026-11-16",
+    "checked_on": "2026-11-17",
     "expires_on": "2026-11-23",
     "source_urls": [
-      "https://cgj.sz.gov.cn/xsmh/gysz/twf/zpq/content/post_10840227.html"
+      "https://cgj.sz.gov.cn/xsmh/gysz/twf/zpq/content/post_10840227.html",
+      "https://sz.bendibao.com/xiuxian/20261012/1014588.shtm"
     ],
     "id": "visitor.v3.shenzhen.lianhua-hill-park",
     "subject": {
@@ -17,13 +18,13 @@
       "wikidata_qid": null
     },
     "conditions": {
-      "reservation_required": null,
+      "reservation_required": false,
       "closed_weekdays": null,
       "closed_weekdays_public_holiday_exception": null,
       "advance_booking_days": null,
       "advance_booking_rule": null
     },
-    "text_zh": "深圳市城管局的莲花山公园资料列示开放时段为6:00至23:00，22:30停止入园；出行前仍需查看最新开放公告。本条仅指普通步行游园，不含停车、献花报备、活动报名或园内专项设施。是否需要普通入园预约、固定每周闭园日及预约窗口尚未核定，不能用停车或活动的预约要求代替判断，也不保证当天或全园每个区域开放。",
-    "text_en": "Shenzhen’s urban management bureau lists Lianhua Hill Park’s opening hours as 6 am to 11 pm, with last entry at 10:30 pm. Check the latest opening notice before travelling. This record concerns ordinary walking visits, excluding parking, flower-laying arrangements, events and individual facilities. Ordinary admission reservations, regular weekly closures and booking windows remain unconfirmed here. Parking or event reservations do not establish the park’s admission rule, and access on a particular day or to every area is not guaranteed."
+    "text_zh": "深圳市城管局的莲花山公园资料列示开放时段为6:00至23:00，22:30停止入园。本地宝2026年10月12日的秋季游园资讯另明确普通游园免费、无需预约；这是商业便民资讯，不是公园主管部门的新公告，行前仍需核对最新开放安排。本条仅指普通步行游园，不含停车、献花报备、活动报名或园内专项设施；不保证当天或全园每个区域开放。固定每周闭园日和预约窗口仍未核定，不能用停车或活动的预约要求代替普通入园规则。",
+    "text_en": "Shenzhen’s urban management bureau lists Lianhua Hill Park’s hours as 6 am to 11 pm, with last entry at 10:30 pm. Bendibao’s autumn visitor guide dated 12 October 2026 separately states that ordinary park visits are free and need no reservation. This is commercial local-information coverage, rather than a new park-authority notice; check the latest arrangements before travelling. This record covers ordinary walking visits, excluding parking, flower-laying arrangements, events and individual facilities, and does not guarantee access on a particular day or to every area. Regular weekly closures and booking windows remain unconfirmed. Parking or event requirements do not establish the ordinary admission rule."
   }
 ]
