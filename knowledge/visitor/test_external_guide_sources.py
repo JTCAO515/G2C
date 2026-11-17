@@ -8,6 +8,14 @@ from validate_v3 import validate_entry_v3
 
 
 class ExternalGuideSourceScopeTests(unittest.TestCase):
+    def test_world_window_guide_keeps_exact_url_and_shenzhen_venue_boundary(self):
+        page = 'https://www.shenzhen-tickets.com/window-of-the-world/timings-opening-hours/'
+        self._check_venue_source_scope(
+            page=page, city='shenzhen', wrong_city='hangzhou',
+            invalid_urls=(page + '?extra=1', page.replace('timings-opening-hours/', 'other/'),
+                          'https://www.shenzhen-tickets.com/',
+                          page.replace('www.shenzhen-tickets.com', 'book.shenzhen-tickets.com')))
+
     def test_park_platform_pages_keep_exact_local_venue_boundaries(self):
         cases = (
             ('https://www.traveloka.com/en-sg/activities/china/product/xixi-wetland-park-admission-ticket-peaceful-oasis-near-west-lake-7621127360134',

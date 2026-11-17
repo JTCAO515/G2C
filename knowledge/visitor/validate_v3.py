@@ -42,6 +42,7 @@ VENUE_SOURCE_CITIES.update({
     "www.meet-in-shanghai.net": frozenset({"shanghai"}),
 })
 VENUE_PAGE_CITIES = {
+    "https://www.shenzhen-tickets.com/window-of-the-world/timings-opening-hours/": frozenset({"shenzhen"}),
     "https://www.traveloka.com/en-sg/activities/china/product/xixi-wetland-park-admission-ticket-peaceful-oasis-near-west-lake-7621127360134": frozenset({"hangzhou"}),
     "https://gs.ctrip.com/html5/you/sight/suzhou672/5577341.html": frozenset({"suzhou-anhui"}),
     "https://m.panda.org.cn/cn/education/trends/2025-01-17/8632.html": frozenset({"chengdu"}),

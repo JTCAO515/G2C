@@ -1,5 +1,9 @@
 # 外国游客须知已确认来源清单（H1）
 
+## 世界之窗商业指南周开放（2026-11-17）
+
+依JT持续代批权，经[#702/6943602082](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6943602082)批准[这一精确英文指南](https://www.shenzhen-tickets.com/window-of-the-world/timings-opening-hours/)，限深圳passport_booking及非空subject。实读页脚Headout Inc及品牌/支持标识；只是商业平台资料，未核园方授权或外部公司注册，不称官网。主文明确深圳微缩景观整园，常规年内七日表及FAQ通常每日营业支持普通周闭[]；季节/法假/天气/维护等具体安排另核，不把表演表或每日演出推全园开放。无独立内容更新时间，不以版权或页面Today标记冒本年更新。只采周规则，不采钟点/价格/余票/演出承诺；政府既有免另预约及Q2302764保留，窗口仍null。只此URL，不扩根站/相邻页/参数/子域/外部购票网站；checked11-17、expiry11-23，详见[两园补证](coverage/park-weekly-2026-11-17.md)。
+
 ## 两公园平台周开放资料（2026-11-17）
 
 依JT持续来源代批权，在[#702/6943458130](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6943458130)批准两个精确公开URL：
