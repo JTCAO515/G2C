@@ -13,14 +13,31 @@ import XCTest
         let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
         composer.tap(); composer.typeText("Unsent root draft")
         if "__WARM_COLD_RESTART__" == "1" {
+            if "__WARM_COLD_FAULT__" == "1" {
+                app.buttons["fixture.root.offline"].tap()
+                waitForMode("offline", app: app)
+            }
             app.terminate()
             app.launch()
+            if "__WARM_COLD_FAULT__" == "1" {
+                XCTAssertTrue(app.buttons["lio.session.retry"].waitForExistence(timeout: 20))
+                XCTAssertFalse(app.secureTextFields["demo.invite.code"].exists)
+                XCTAssertFalse(existing.exists)
+                XCTAssertEqual(app.staticTexts["fixture.root.sdk-presence"].label, "present")
+                XCTAssertEqual(app.staticTexts["fixture.root.problem"].label, "__WARM_EXPECTED_PROBLEM__")
+                XCTAssertEqual(app.staticTexts["fixture.root.category"].label, "__WARM_EXPECTED_CATEGORY__")
+                XCTAssertNotEqual(app.staticTexts["fixture.root.mode"].label, "ready", "No Allow ACK has arrived in this process")
+                app.buttons["fixture.root.allow"].tap()
+                waitForMode("ready", app: app)
+                app.buttons["lio.session.retry"].tap()
+            }
             XCTAssertTrue(existing.waitForExistence(timeout: 20))
             XCTAssertEqual(composer.value as? String, "Unsent root draft")
             XCTAssertEqual(app.staticTexts["fixture.root.bootstrap"].label, "restore")
             XCTAssertFalse(app.staticTexts["lio.opening"].exists)
         }
         app.buttons["fixture.root.hold"].tap()
+        waitForMode("hold", app: app)
         // Actual iOS lifecycle -> production DemoBetaRootView -> actual account host.
         XCUIDevice.shared.press(.home)
         app.activate()
@@ -32,11 +49,14 @@ import XCTest
         XCTAssertEqual(app.staticTexts["fixture.root.display"].label, "same")
         XCTAssertFalse(app.buttons["lio.send"].isEnabled)
         app.buttons["fixture.root.offline"].tap()
+        waitForMode("offline", app: app)
         XCTAssertTrue(app.buttons["lio.session.retry"].waitForExistence(timeout: 12))
-        XCTAssertEqual(app.staticTexts["fixture.root.problem"].label, "503|sessionCheck|69169169-1691-4691-8691-691691691691")
+        XCTAssertEqual(app.staticTexts["fixture.root.problem"].label, "__WARM_EXPECTED_PROBLEM__")
+        XCTAssertEqual(app.staticTexts["fixture.root.category"].label, "__WARM_EXPECTED_CATEGORY__")
         XCTAssertTrue(existing.exists)
         XCTAssertEqual(composer.value as? String, "Unsent root draft")
         app.buttons["fixture.root.allow"].tap()
+        waitForMode("ready", app: app)
         app.buttons["lio.session.retry"].tap()
         let resumed = app.staticTexts.matching(identifier: "lio.answer").matching(NSPredicate(format: "label == %@", "Same owner after renewal")).firstMatch
         XCTAssertTrue(resumed.waitForExistence(timeout: 20))
@@ -54,9 +74,20 @@ import XCTest
         XCTAssertEqual(composer.value as? String, "")
         XCTAssertEqual(app.staticTexts["fixture.root.display"].label, "changed")
         app.buttons["fixture.root.deny"].tap()
-        XCUIDevice.shared.press(.home); app.activate()
+        waitForMode("denied", app: app)
+        if "__WARM_DENY_COLD__" == "1" {
+            app.terminate(); app.launch()
+        } else {
+            XCUIDevice.shared.press(.home); app.activate()
+        }
         XCTAssertTrue(app.secureTextFields["demo.invite.code"].waitForExistence(timeout: 20))
         XCTAssertEqual(app.staticTexts["fixture.root.retained"].label, "empty")
         XCTAssertFalse(other.exists)
     }
+    private func waitForMode(_ mode: String, app: XCUIApplication) {
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", mode),
+            object: app.staticTexts["fixture.root.mode"])
+        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 5), .completed)
+    }
+
 }

@@ -38,7 +38,13 @@ def main():
     parser.add_argument('--language', choices=('en', 'zh-Hans'), default='en')
     parser.add_argument('--baseline-root', action='store_true')
     parser.add_argument('--cold-restart', action='store_true')
+    parser.add_argument('--read-fault', choices=('service', 'connection-lost'), default='service')
+    parser.add_argument('--denial-status', type=int, choices=(401, 403), default=401)
+    parser.add_argument('--deny-after-cold', action='store_true')
+    parser.add_argument('--initial-cold-fault', action='store_true')
     args = parser.parse_args()
+    if args.initial_cold_fault and not args.cold_restart:
+        parser.error('Initial cold fault requires the cold-restart sequence')
     output = args.output.resolve()
     if output.is_relative_to(ROOT) or args.build_dir.resolve().is_relative_to(ROOT):
         parser.error('Keep evidence and products outside the repository')
@@ -46,7 +52,7 @@ def main():
     simulator = subprocess.check_output(['xcrun', 'simctl', 'create', 'G2C-A-Warm-Root-Local-' + output.name,
         'com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro', 'com.apple.CoreSimulator.SimRuntime.iOS-17-5'], text=True).strip()
     report = dict(layer='actual Root/account/clients + synthetic loopback + fresh simulator', simulator=simulator,
-                  language=args.language, cold_restart=args.cold_restart, baseline_root=args.baseline_root, baseline_commit=BASELINE_COMMIT if args.baseline_root else None,
+                  language=args.language, cold_restart=args.cold_restart, read_fault=args.read_fault, initial_cold_fault=args.initial_cold_fault, denial_status=args.denial_status, deny_after_cold=args.deny_after_cold, baseline_root=args.baseline_root, baseline_commit=BASELINE_COMMIT if args.baseline_root else None,
                   real_service='UNRUN', requests=[])
     lock = threading.Lock()
     released = threading.Event(); released.set()
@@ -84,11 +90,15 @@ def main():
             if path == '/v1/message-receipts':
                 if not released.wait(timeout=15): self.record(503); self.send_json(503, {}); return
                 with lock: current = mode[0]
-                status = 401 if current == 'denied' else 503 if current == 'offline' else 200
+                if current == 'offline' and args.read_fault == 'connection-lost':
+                    self.record(None)
+                    self.connection.shutdown(2); self.connection.close()
+                    return
+                status = args.denial_status if current == 'denied' else 503 if current == 'offline' else 200
                 self.record(status)
                 if status == 200: self.send_json(200, dict(receipt=None))
-                else: self.send_json(status, dict(error=dict(code='ACCESS_DENIED' if status == 401 else 'UNAVAILABLE',
-                    category='access' if status == 401 else 'dependency', message_en='Synthetic connection failure',
+                else: self.send_json(status, dict(error=dict(code='ACCESS_DENIED' if status in (401, 403) else 'UNAVAILABLE',
+                    category='access' if status in (401, 403) else 'dependency', message_en='Synthetic connection failure',
                     message_zh='本地合成连接失败', outcome='failed', recovery='do_not_retry')))
             elif path in ('/v1/lio/timeline', '/v2/lio/timeline'):
                 other = claims['sub'].endswith('bbbbbbbbbbbb')
@@ -148,7 +158,7 @@ def main():
         spec = importlib.util.spec_from_file_location('original_builder', ROOT / 'scripts/check_ios_trip_confirm.py')
         module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
         builder = object.__new__(module.XCTestDriver); builder.directory = output; builder.write_project(0)
-        tests = (HERE / 'LioWarmRootUITests.swift').read_text().replace('__WARM_ENDPOINT__', endpoint).replace('__WARM_LANGUAGE__', args.language).replace('__WARM_COLD_RESTART__', '1' if args.cold_restart else '0')
+        tests = (HERE / 'LioWarmRootUITests.swift').read_text().replace('__WARM_ENDPOINT__', endpoint).replace('__WARM_LANGUAGE__', args.language).replace('__WARM_COLD_RESTART__', '1' if args.cold_restart else '0').replace('__WARM_DENY_COLD__', '1' if args.deny_after_cold else '0').replace('__WARM_COLD_FAULT__', '1' if args.initial_cold_fault else '0').replace('__WARM_EXPECTED_PROBLEM__', ('0|sessionCheck|-' if args.read_fault == 'connection-lost' else '503|sessionCheck|' + TRACE)).replace('__WARM_EXPECTED_CATEGORY__', 'network' if args.read_fault == 'connection-lost' else 'service')
         (output / 'G2CControl.swift').write_text(tests)
         entry = ROOT / 'ios/App/CJProbeApp.swift'
         source = entry.read_text().replace('@main\nstruct CJProbeApp: App', 'struct CJProbeApp: App')
@@ -187,7 +197,10 @@ def main():
         assert values['passedTests'] == 1 and values['failedTests'] == 0 and values['skippedTests'] == 0
         assert not any(row['method']=='POST' and row['path']!='/v4/cleanup-devices' for row in report['requests'])
     finally:
-        released.set(); server.shutdown(); server.server_close(); save()
+        released.set(); server.shutdown(); server.server_close()
+        stopped = subprocess.run(['xcrun', 'simctl', 'shutdown', simulator], capture_output=True, text=True)
+        report['owned_simulator_shutdown_exit'] = stopped.returncode
+        save()
 
 
 if __name__ == '__main__': main()
