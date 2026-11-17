@@ -30,6 +30,18 @@ import CJSession
 }
 
 @Suite @MainActor struct DevelopmentAccountHostTests {
+    @Test func unreadableExchangeResponseIsNotReportedAsANetworkFailure() async throws {
+        let shell = try makeShell(), store = DevelopmentStore(), checks = DevelopmentChecks()
+        var activations = 0
+        let host = DevelopmentAccountHost(shell: shell, choices: [], persistence: store, demoMode: true,
+            material: { _ in throw SessionFailure.invalidConfiguration }, verify: { await checks.check($0) },
+            activate: { _, _, _ in activations += 1 }, invalidate: {})
+        host.signIn(exchanging: { throw DemoAccountExchangeFailure.responseUnavailable })
+        await wait { host.state != .checking }
+        #expect(host.state == .responseUnavailable)
+        #expect(store.value == nil && checks.replies.isEmpty && activations == 0)
+    }
+
     private func makeShell() throws -> ShellState {
         ShellState(preferences: try #require(UserDefaults(suiteName: "cj161.\(UUID().uuidString)")))
     }

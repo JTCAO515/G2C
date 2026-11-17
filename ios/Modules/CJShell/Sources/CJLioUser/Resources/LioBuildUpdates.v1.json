@@ -1,7 +1,110 @@
 {
   "schema": 1,
-  "currentBuild": 46,
+  "currentBuild": 47,
   "releases": [
+    {
+      "build": 47,
+      "previousBuild": 46,
+      "sections": [
+        {
+          "id": "changes",
+          "title": {
+            "en": "New and improved",
+            "zh": "本版新增和修改"
+          },
+          "items": {
+            "zh": [
+              "对话行程卡新增日期按钮，默认显示第一天，每次查看一天的安排。",
+              "每天先预览最多四项安排，并标出其余数量；点“查看”可打开完整行程。",
+              "安排说明放在卡片上方，卡内显示标题、已知天数和安排数。",
+              "行程站点文字使用统一的浅色和深色主题配色。"
+            ],
+            "en": [
+              "Conversation itinerary cards now have day buttons, starting with day one and showing one day at a time.",
+              "Preview up to four stops per day with a remaining count. View still opens the complete itinerary.",
+              "The planning explanation sits above the card, followed by its title and known day and stop counts.",
+              "Itinerary stop text uses the shared light and dark theme colours."
+            ]
+          }
+        },
+        {
+          "id": "comparison",
+          "title": {
+            "en": "Changes since the previous build",
+            "zh": "与上一版的区别"
+          },
+          "items": {
+            "zh": [
+              "与构建 46 相比，对话里的逐日展开改为单日预览，查看入口继续显示完整行程。",
+              "修复行程卡深色模式下站点文字的配色绑定。"
+            ],
+            "en": [
+              "Since build 46: conversation cards use a single-day preview instead of expanding every day; View keeps the complete schedule.",
+              "Fix the stop-text colour binding on dark itinerary cards."
+            ]
+          }
+        },
+        {
+          "id": "testing",
+          "title": {
+            "en": "Suggested checks",
+            "zh": "建议怎么测"
+          },
+          "items": {
+            "zh": [
+              "打开已有行程的对话，确认卡片默认显示第一天，再切换到其他日期。",
+              "选择安排超过四项的一天，核对其余数量，再点“查看”检查完整安排。",
+              "在菜单切换浅色、深色模式，检查卡片文字和日期按钮。",
+              "在同一对话留一段草稿，切后台再回来，核对仍是同一对话和文字。"
+            ],
+            "en": [
+              "Open a chat with an existing itinerary, check that day one is selected, then choose another day.",
+              "Choose a day with more than four stops, check the remaining count, then use View to inspect the full schedule.",
+              "Switch between light and dark appearance in the menu and check the card text and day buttons.",
+              "Leave a draft in the same chat, switch apps and return, then check the chat and text are preserved."
+            ]
+          }
+        },
+        {
+          "id": "known",
+          "title": {
+            "en": "Known issues and checks to avoid",
+            "zh": "已知问题和暂不测试内容"
+          },
+          "items": {
+            "zh": [
+              "行程正式保存、修改与撤销，以及全国规划仍在验证。",
+              "“记住”偏好仍需单独完成真实验收。",
+              "部分大字号下的卡片显示或切日仍有问题，本轮先用系统默认字号。",
+              "分段、多选探索尚未默认开启；真机弱网和长时间锁屏恢复仍待完整验证。"
+            ],
+            "en": [
+              "Formal itinerary saving, edits and undo, and planning across China are still being validated.",
+              "Remember preferences still requires a separate live check.",
+              "Some larger text sizes still have card display or day-selection issues. Please use the system default size for this check.",
+              "Segmented, multiple-choice exploration is not the default. Physical-device weak-network and longer lock-screen recovery checks remain pending."
+            ]
+          }
+        },
+        {
+          "id": "service",
+          "title": {
+            "en": "Online service changes",
+            "zh": "在线服务变化"
+          },
+          "items": {
+            "zh": [
+              "本版准备时，香港配套在线服务来源为 1ff3941e。",
+              "新的卡片界面需要更新应用；在线服务的调整会自动生效。账号资格和额度沿用既有规则。"
+            ],
+            "en": [
+              "At preparation, the paired Hong Kong service source is 1ff3941e.",
+              "The new card interface is included in this app update; online service changes apply automatically. Account qualification and allowances keep their existing rules."
+            ]
+          }
+        }
+      ]
+    },
     {
       "build": 46,
       "previousBuild": 45,
@@ -14,16 +117,18 @@
           },
           "items": {
             "en": [
-              "Recover the same chat and keep each unsent draft on this device after reopening.",
-              "Keep an unstaged question separately when a different draft already exists, with an Unsent message card.",
-              "Recovery and reading failures now preserve their specific cause and next step in problem notes.",
-              "Improve invitation format guidance and avoid automatic input replacements; give screen readers a separate reply-complete state."
+              "Keep the same chat and each unsent draft when returning to the App.",
+              "During a recoverable connection check, keep the current chat visible instead of starting over.",
+              "Invitation entry avoids automatic capitalization and smart punctuation, and explains the required format.",
+              "Fix sign-in for valid test accounts that have no earlier demo content.",
+              "The information page keeps Done reachable after reading a long update."
             ],
             "zh": [
-              "重新打开应用时恢复同一对话，并在本机保留各段对话的未发送草稿。",
-              "问题尚未发出、输入框又有另一段草稿时，两份内容分别保留，先前的问题显示为“未发送的内容”。",
-              "恢复或打开失败时，问题记录保留更具体的情况和下一步。",
-              "改进邀请码格式提示，关闭自动输入替换；为读屏单独提供回复完成状态。"
+              "回到应用时保留同一对话，以及各段对话里尚未发送的草稿。",
+              "遇到可恢复的连接检查时保留当前对话，不再重新开始。",
+              "邀请码输入关闭自动大写和智能标点，格式有误时直接说明正确格式。",
+              "修复有效测试账号缺少旧演示内容时无法完成登录的问题。",
+              "长篇说明翻到底后，仍能方便地点“完成”返回。"
             ]
           }
         },
@@ -35,12 +140,12 @@
           },
           "items": {
             "en": [
-              "Since build 45: fix a local recovery error involving unrelated messages and keep sign-in available after recoverable local failures.",
-              "Ordinary travel wording no longer hides an entire reply by itself. Earlier failed messages keep the results shown at that time."
+              "Since build 45: fix a local recovery problem that could be triggered by an unrelated pending message.",
+              "Ordinary travel wording no longer hides an otherwise complete reply. Original failed messages retain their original outcome."
             ],
             "zh": [
-              "与构建 45 相比：修复一种由无关消息影响对话恢复的本机错误；可恢复的本机故障不再直接丢失登录。",
-              "普通旅行用语不再单独导致整段回答消失；过去失败的消息仍保留当时结果。"
+              "与构建 45 相比：修复一种由无关待发消息触发的本机恢复问题。",
+              "普通旅行用语不再单独导致完整回答被隐藏；过去失败的消息仍保留当时结果。"
             ]
           }
         },
@@ -52,16 +157,16 @@
           },
           "items": {
             "en": [
-              "Leave a draft in an existing chat, switch away and lock the phone, then check the same chat and draft return.",
-              "Force-quit and reopen; check the same conversation and exact draft return.",
-              "Start a chat and ask “Who are you?” and “What can you do?”, in either language.",
-              "If anything fails, copy View problem notes with the time; preserve the chat rather than repeatedly submitting the same question."
+              "Leave a draft in an existing chat, switch to another app, then return and check the same chat and text.",
+              "Force-quit and reopen, then check the same conversation and draft.",
+              "In new chats, ask “Who are you?” and “What can you do?” in Chinese or English.",
+              "Ask for a three-day trip to Beijing and check that all three days contain a concrete plan."
             ],
             "zh": [
-              "在已有对话里留一段草稿，切后台并锁屏后回来，检查同一对话和草稿。",
-              "强制关闭应用后重开，核对是否回到同一对话、文字是否完整保留。",
-              "新建对话，用中文或英文问“你是谁”“你能做什么”。",
-              "若有失败，复制“查看问题记录”并附大概时间；保留会话，不要连续重复提交同一句。"
+              "在已有对话中留一段草稿，切到其他应用后返回，核对同一对话和文字。",
+              "强制关闭应用后重开，检查同一对话和草稿。",
+              "新建对话，用中文或英文分别问“你是谁”“你能做啥”。",
+              "询问“北京三日游”，查看是否有完整三天的具体安排。"
             ]
           }
         },
@@ -73,14 +178,14 @@
           },
           "items": {
             "en": [
-              "Trip planning is still being fixed. Please do not test it yet.",
-              "Formal planning saves, edits, undo and Remember preferences still need their own live checks.",
-              "Segmented replies and multiple-choice exploration remain designated tests, not the normal default. Physical-device checks remain to be completed."
+              "Formal itinerary saving, edits and undo, and planning across China are still being validated.",
+              "Remember preferences still requires a separate live check.",
+              "Segmented, multiple-choice exploration is not the default. Complete physical-device and weak-network acceptance remains pending."
             ],
             "zh": [
-              "规划功能仍在修复，暂不建议测试规划。",
-              "正式保存行程、修改、撤销和记住偏好仍需各自的真实验证。",
-              "分段、多选探索仍仅供指定测试，尚未向普通聊天默认开启；真机检查仍待完成。"
+              "行程正式保存、修改与撤销，以及全国规划仍在验证。",
+              "“记住”偏好仍需单独完成真实验收。",
+              "分段、多选探索尚未默认开启；真机与弱网完整验收仍待完成。"
             ]
           }
         },
@@ -92,117 +197,12 @@
           },
           "items": {
             "en": [
-              "The paired Hong Kong service source 064b3c99 changes trip discussions, preference understanding and failure tracking.",
-              "Service fixes apply automatically without reinstalling the App. Account qualification and allowances do not change when you install an update."
+              "The paired Hong Kong service source 1ff3941e includes improvements to chat history, English city requests and lodging preferences.",
+              "These service changes apply automatically without a separate app update. Account qualification and allowances keep their existing rules."
             ],
             "zh": [
-              "配套香港服务来源 064b3c99，改动涉及行程讨论、偏好理解和失败定位。",
-              "服务端修复自动生效，无需重新安装应用；安装更新不会改变账号资格和额度。"
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "build": 45,
-      "previousBuild": 44,
-      "sections": [
-        {
-          "id": "changes",
-          "title": {
-            "en": "New and improved",
-            "zh": "本版新增和修改"
-          },
-          "items": {
-            "en": [
-              "Chat-opening errors now distinguish offline, expired or disabled sign-in, service trouble, unreadable local records and unclear failures, with a next step.",
-              "View problem notes on the failure page: up to 20 on-device records with time, build, category, step and service reference. Copyable; no message text or sign-in details.",
-              "The same notes appear at the end of Internal demo information."
-            ],
-            "zh": [
-              "对话打不开时，提示会说明具体情况：网络不通、登录过期或停用、服务出错或维护、本机保存的记录打不开、具体情况还不清楚，并给出下一步。",
-              "失败页新增“查看问题记录”：只存在本机，最多 20 条，含时间、构建号、类别、环节和服务端参考号，不含消息内容或登录信息，可以复制。",
-              "内部演示说明末尾也能查看同一份问题记录。"
-            ]
-          }
-        },
-        {
-          "id": "comparison",
-          "title": {
-            "en": "Changes since the previous build",
-            "zh": "与上一版的区别"
-          },
-          "items": {
-            "en": [
-              "Since build 44: situation-specific messages and on-device problem notes; how chats reopen and send is unchanged.",
-              "Trip planning and default chat access remain unchanged."
-            ],
-            "zh": [
-              "与构建 44 相比：新增按情况区分的提示和本机问题记录；对话恢复和发送方式没有改变。",
-              "规划功能没有因此修好，日常账号的默认对话方式没有改变。"
-            ]
-          }
-        },
-        {
-          "id": "testing",
-          "title": {
-            "en": "Suggested checks",
-            "zh": "建议怎么测"
-          },
-          "items": {
-            "en": [
-              "Leave an unsent draft in an existing chat, switch away and lock the phone, then check the same chat and draft return.",
-              "Force-quit and reopen; check the same chat and draft return.",
-              "If opening fails, screenshot the page and View problem notes, or copy the notes; include the time.",
-              "From the menu, open Internal demo information and scroll to Problem notes."
-            ],
-            "zh": [
-              "打开一段已有对话，留一段未发送的文字，切后台并锁屏后返回，检查同一对话和草稿。",
-              "从多任务界面强制关闭应用后重新打开，检查能否回到同一对话和草稿。",
-              "如果对话打不开，请截图该页，再点“查看问题记录”截图或复制，并记下大概时间。",
-              "从菜单打开内部演示说明，翻到最后查看问题记录。"
-            ]
-          }
-        },
-        {
-          "id": "known",
-          "title": {
-            "en": "Known issues and checks to avoid",
-            "zh": "已知问题和暂不测试内容"
-          },
-          "items": {
-            "en": [
-              "Trip planning is still being fixed. Please do not test it yet.",
-              "Planning, saving, edits, undo and preferences await live checks.",
-              "Why chats would not open on build 43 is still not identified; the new messages help show the next failure clearly.",
-              "Segmented replies, choices and profile tags are designated tests, not on by default."
-            ],
-            "zh": [
-              "规划功能仍在修复，暂不建议测试规划。",
-              "规划、保存、修改、撤销和记住偏好尚待本轮真实验证。",
-              "构建 43 上对话打不开的具体起因仍未查明；新提示用于看清下一次失败的情况。",
-              "新版分段、多选和画像交互目前仅供指定测试，未向日常账号默认开启。"
-            ]
-          }
-        },
-        {
-          "id": "service",
-          "title": {
-            "en": "Online service changes",
-            "zh": "在线服务变化"
-          },
-          "items": {
-            "en": [
-              "Hong Kong service source 2e5560cf adds request metadata logs without message content.",
-              "The service reference in problem notes helps match failures to those logs.",
-              "These server changes have no visible effect and need no app update.",
-              "Planning and English city request fixes continue; planning retests remain on hold."
-            ],
-            "zh": [
-              "香港在线服务来源 2e5560cf 新增请求元数据记录，不记录消息内容。",
-              "问题记录里的服务端参考号可与这份记录对应，便于按时间查到失败的情况。",
-              "没有用户可感知的服务端变化；这些服务端更新不需要更新应用。",
-              "规划和英文城市请求的修复仍在进行，规划复试继续暂缓。"
+              "配套香港服务来源为 1ff3941e，包含历史查看、英文城市理解及住宿偏好识别的改进。",
+              "这些服务端更新自动生效，无需单独更新应用；账号资格和额度维持既有规则。"
             ]
           }
         }

@@ -6,7 +6,7 @@ _EN = r"(?:I (?:(?:usually|always|generally) )?(?:prefer|like|enjoy) |prefers? )
 _ZH = r'(?:我(?:旅行时|旅游时)?(?:平时|通常|一般|一直)?(?:更)?(?:喜欢|偏爱|偏好|习惯|更爱))?'
 _INTEREST_EN = r'(?:art|museums?|architecture|history|nature|scenic walks|food markets|local food)'
 _INTEREST_ZH = r'(?:博物馆|美术馆|艺术|建筑|历史|自然风景|城市漫步|美食|菜市场)'
-_REMEMBER = re.compile(r'^(?:请(?:帮我)?记住[，、：:\s]*|(?:please )?remember(?: that)?[,:\s]+)', re.I)
+_REMEMBER = re.compile(r'^(?:(?:请(?:帮我)?)?记住[，、：:\s]*|(?:please )?remember(?: that)?[,:\s]+)', re.I)
 _TRAVEL_QUALIFIER = re.compile(r' (?:when I travel|when travelling|when traveling)$', re.I)
 
 
@@ -32,7 +32,7 @@ _FORMS = {
         extra=r'I usually budget [0-9]{1,5} (?:yuan|CNY|RMB|USD) (?:per|a) day',
     ),
     'lodging.style': _forms(
-        r'(?:staying (?:at|in) )?(?:budget|boutique|central|quiet|upscale|luxury|luxurious|family-friendly) hotels?',
+        r'(?:(?:staying|to stay) (?:at|in) )?(?:budget|boutique|central|quiet|upscale|luxury|luxurious|family-friendly) hotels?',
         r'(?:住)?(?:经济型|精品|市中心的|安静的|高档|豪华|奢华|家庭友好型)(?:的)?(?:酒店|住宿)',
     ),
     'travel.interests': _forms(
@@ -86,6 +86,29 @@ def explicit_pilot_preference(text, slots):
     return (matches[0], statement) if len(matches) == 1 else None
 
 
+def _statements(text):
+    return [part.strip() for part in re.split(r'(?<=[.!。！])\s+|[。！]', text) if part.strip()]
+
+
+def explicit_pilot_preferences(text, slots, *, max_entries):
+    """Resolve a whole allowed statement or independent, fully supported statements."""
+    single = explicit_pilot_preference(text, slots)
+    if single is not None:
+        return (single,)
+    statements = _statements(text)
+    if not statements or len(statements) > max_entries:
+        return None
+    found = []
+    seen = set()
+    for statement in statements:
+        preference = explicit_pilot_preference(statement, slots)
+        if preference is None or preference[0] in seen:
+            return None
+        seen.add(preference[0])
+        found.append(preference)
+    return tuple(found)
+
+
 def supported_preference(entry, original):
     """Accept only a supported value stated in the complete original turn."""
     form = _FORMS.get(entry.slot)
@@ -94,7 +117,7 @@ def supported_preference(entry, original):
     value = _value(form, entry.text)
     if value is None or any(_value(form, evidence.quote) != value for evidence in entry.evidence):
         return False
-    statements = [part.strip() for part in re.split(r'(?<=[.!。！])\s+|[。！]', original) if part.strip()]
+    statements = _statements(original)
     values = {_value(form, statement) for statement in statements} - {None}
     return (values == {value}
             and all(any(_value(allowed, statement) is not None for allowed in _FORMS.values())

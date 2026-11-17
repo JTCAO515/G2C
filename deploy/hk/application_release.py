@@ -20,7 +20,8 @@ def require_release_window(starts_at,ends_at,now):
 def main(argv=None):
     args=sys.argv[1:] if argv is None else argv
     ROOT=Path('/srv/g2c-beta')
-    gate=json.loads(Path(args[0]).read_bytes());SOURCE=gate['source'];OLD=gate['previous_source']
+    gate_raw=Path(args[0]).read_bytes()
+    gate=json.loads(gate_raw);SOURCE=gate['source'];OLD=gate['previous_source']
     assert re.fullmatch('[a-f0-9]{40}',SOURCE) and re.fullmatch('[a-f0-9]{40}',OLD)
     BASE=['docker','compose','--env-file',str(ROOT/'compose.env'),'-f',str(ROOT/'deploy/hk/compose.yaml'),'-f',str(ROOT/'deploy/hk/compose.local-pg.yaml')]
     def command(args):return subprocess.run(args,check=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
@@ -64,7 +65,7 @@ def main(argv=None):
     if '--apply'not in args:return 0
     p=ROOT/'compose.env';raw=p.read_text();metadata=p.stat();pattern=r'(?m)^CJ_BETA_IMAGE=g2c-beta:'+OLD+r'$'
     assert len(re.findall(pattern,raw))==1
-    backup=ROOT/'probes'/('compose.before-app-'+SOURCE+'.env')
+    backup=ROOT/'probes'/('compose.before-app-'+SOURCE+'-'+hashlib.sha256(gate_raw).hexdigest()+'.env')
     with backup.open('x')as f:f.write(raw)
     backup.chmod(0o600)
     updated=re.sub(pattern,'CJ_BETA_IMAGE=g2c-beta:'+SOURCE,raw)

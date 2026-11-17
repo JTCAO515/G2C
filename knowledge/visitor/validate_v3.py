@@ -42,11 +42,18 @@ VENUE_SOURCE_CITIES.update({
     "www.meet-in-shanghai.net": frozenset({"shanghai"}),
 })
 VENUE_PAGE_CITIES = {
+    "https://m.panda.org.cn/cn/education/trends/2025-01-17/8632.html": frozenset({"chengdu"}),
+    "https://map.baidu.com/mobile/webapp/search/search/qt%3Ds%26wd%3D%E5%8F%B0%E5%B7%9E%E5%BA%9C%E5%9F%8E%E5%A2%99/": frozenset({"taizhou-zhejiang"}),
+    "https://www.hzzx.gov.cn/cshz/content/2023-08/07/content_8595938.htm": frozenset({"hangzhou"}),
+    "https://sz.bendibao.com/xiuxian/20261012/1014588.shtm": frozenset({"shenzhen"}),
+    "https://www.chinahighlights.com/xian/attraction/big-wild-goose-pagoda.htm": frozenset({"xian"}),
+    "https://www.chinahighlights.com/xian/terracotta-army/how-to-visit.htm": frozenset({"xian"}),
     "https://cdn3.shenzhenmuseum.com/museum/html/aboutus/visit-service.html": frozenset({"shenzhen"}),
     "https://museum-guanwang.leleu.cn/": frozenset({"chengdu"}),
     "https://tidenews.com.cn/news.html?id=3612168": frozenset({"taizhou-zhejiang"}),
     "https://tidenews.com.cn/news.html?id=2858557": frozenset({"taizhou-zhejiang"}),
     "https://m.ctrip.com/webapp/you/sight/chengdu104/4229.html?ext-shelfPage=ctrip_shelf_seo": frozenset({"chengdu"}),
+    "https://www.trip.com/travel-guide/attraction/hangzhou/west-lake-82922": frozenset({"hangzhou"}),
 }
 V3_APPROVED_HOSTS = V3_GOVERNMENT_HOSTS | VENUE_SOURCE_CITIES.keys()
 

@@ -1334,13 +1334,14 @@ import CryptoKit
         app.buttons["lio.send"].tap()
         let show = app.buttons["lio.trip.show"]
         XCTAssertTrue(show.waitForExistence(timeout: 12))
-        XCTAssertFalse(app.staticTexts[fixed].exists)
-
-        let disclosure = app.descendants(matching: .any).matching(identifier: "lio.trip.day.1").firstMatch
-        XCTAssertTrue(disclosure.waitForExistence(timeout: 6), app.debugDescription)
-        disclosure.tap()
+        let firstDay = app.buttons["lio.trip.day.1"]
+        XCTAssertTrue(firstDay.waitForExistence(timeout: 6), app.debugDescription)
+        XCTAssertTrue(firstDay.isSelected)
         XCTAssertTrue(app.staticTexts[fixed].waitForExistence(timeout: 6))
-        disclosure.tap()
+        app.buttons["lio.trip.day.2"].tap()
+        XCTAssertFalse(app.staticTexts[fixed].exists)
+        firstDay.tap()
+        XCTAssertTrue(app.staticTexts[fixed].waitForExistence(timeout: 6))
         show.tap()
 
         XCTAssertTrue(app.navigationBars[trips].waitForExistence(timeout: 8))
@@ -1801,11 +1802,14 @@ import CryptoKit
             app.buttons["lio.send"].tap()
             let remember = app.buttons["lio.memory.remember"]
             XCTAssertTrue(remember.waitForExistence(timeout: 10))
+            XCTAssertFalse(app.staticTexts[english ? "Review the request ID" : "核实 operation_id"].exists)
             try auditMemoryConfirmation(in: app)
             let followUp = english ? "Any other hotel advice?" : "还有其他酒店建议吗？"
             composer.tap(); composer.typeText(followUp); app.buttons["lio.send"].tap()
-            let question = app.staticTexts[followUp]
+            let question = app.textViews.matching(identifier: "lio.question")
+                .matching(NSPredicate(format: "value == %@", followUp)).firstMatch
             XCTAssertTrue(question.waitForExistence(timeout: 8))
+            XCTAssertEqual(question.value as? String, followUp)
             remember.tap()
             let status = app.staticTexts[changed
                 ? (english ? "That suggestion changed." : "这条建议已有变化。")

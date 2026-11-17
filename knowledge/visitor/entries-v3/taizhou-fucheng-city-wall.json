@@ -1,0 +1,29 @@
+[
+  {
+    "format_version": "visitor-entry.3",
+    "entry_kind": "fact",
+    "id": "visitor.v3.taizhou-zhejiang.fucheng-city-wall",
+    "topic": "passport_booking",
+    "cities": ["taizhou-zhejiang"],
+    "subject": {
+      "key": "taizhou-zhejiang.fucheng-city-wall",
+      "name_zh": "台州府城墙",
+      "name_en": "Taizhou Prefecture City Wall",
+      "wikidata_qid": null
+    },
+    "conditions": {
+      "reservation_required": null,
+      "closed_weekdays": [],
+      "closed_weekdays_public_holiday_exception": false,
+      "advance_booking_days": null,
+      "advance_booking_rule": null
+    },
+    "text_zh": "百度地图公开场馆列表中，浙江临海市的台州府城墙主记录将全年开放星期列为周一至周日；本条据该平台资料记录普通每周无固定闭园日。这是商业地图资料，不是景区新公告，未标商户资料更新时间；临时管控、维修和具体路段是否通行仍应行前核对景区通知，不保证每段城墙或当天均可进入。本条不含同名城墙博物馆、梅园、单个城门及整个府城文化旅游区的其他设施。普通入园预约是否必需及提前窗口尚未核定，不能把有售票渠道或免费当作免预约。",
+    "text_en": "Baidu Maps’ public venue listing identifies the main Taizhou Prefecture City Wall entry in Linhai, Zhejiang, with Monday-to-Sunday opening throughout the year. This entry uses that platform listing for no fixed ordinary weekly closure. It is commercial map information, rather than a new attraction notice, and has no venue-data update date. Check attraction notices for temporary controls, maintenance and which sections are accessible; entry on a particular day or to every section is not guaranteed. This record excludes the similarly named wall museum, Mei Garden, individual city gates and other facilities in the wider cultural tourism area. Mandatory reservations and advance booking windows remain unconfirmed; ticketing channels or free admission do not establish a reservation exemption.",
+    "source_urls": [
+      "https://map.baidu.com/mobile/webapp/search/search/qt%3Ds%26wd%3D%E5%8F%B0%E5%B7%9E%E5%BA%9C%E5%9F%8E%E5%A2%99/"
+    ],
+    "checked_on": "2026-11-17",
+    "expires_on": "2026-11-23"
+  }
+]

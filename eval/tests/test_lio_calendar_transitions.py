@@ -13,10 +13,136 @@ import pytest
 from cj_api.lio_trip_cards import calendar_card
 from cj_trip.calendar_conversion import converted_content
 from cj_trip.domain import Trip, packed
+from cj_trip.structured_v3 import legacy_validation_view
 from eval.lio_calendar_transitions import assess_observation_bytes, judge_transitions
+from eval.lio_formal_candidate_metrics import candidate_metrics
+from eval.judge import judge
 
 ROOT=Path(__file__).resolve().parents[2]
 FROZEN=json.loads((ROOT/'contracts/trip/structured-examples.3.json').read_bytes())['base']
+
+
+def candidate_measurements(value):
+    return candidate_metrics(json.dumps(value,ensure_ascii=False,indent=2).encode(),
+                             expected_content_sha256=sha256(packed(value)).hexdigest())
+
+
+def rich_candidate():
+    return json.loads((ROOT/'contracts/trip/structured-examples.4.json').read_bytes())['cases']['unconfirmed']['content']
+
+
+def test_formal_typed_days_are_measured_without_creating_calendar_dates():
+    for value in (deepcopy(FROZEN), rich_candidate()):
+        before=deepcopy(value)
+        result=candidate_measurements(value)
+        assert result['observations']['candidate_day_count']==len(value['days'])
+        assert value==before and value['calendar']=={'state':'undated'}
+        assert result['task_outcome']=='UNKNOWN'
+        assert result['raw_sha256']!=result['canonical_content_sha256']
+
+
+def test_formal_slow_pace_counts_proposed_sights_instead_of_meals_or_all_cards():
+    value=rich_candidate();result=candidate_measurements(value)
+    assert len(value['items'])==8
+    assert result['observations']['max_candidate_daily_items']==2
+    assert candidate_measurements(deepcopy(FROZEN))['observations']['max_candidate_daily_items'] is None
+    # The old structured.3 shape has no kind, so it cannot certify two sights.
+
+
+def test_formal_more_sights_are_not_hidden_by_daily_grouping_or_a_model_verdict():
+    value=rich_candidate();value['items'][1]['kind']='sight'
+    assert candidate_measurements(value)['observations']['max_candidate_daily_items']==3
+
+
+def test_formal_cross_day_sight_is_unavailable_instead_of_counted_on_one_day():
+    value=rich_candidate();value['items'][0]['schedule']['end']['day_index']=2
+    result=candidate_measurements(value)
+    assert result['observations']['candidate_day_count']==2
+    assert result['observations']['max_candidate_daily_items'] is None
+    assert result['unavailable_reasons']['max_candidate_daily_items']=='cross_day_sight_count_unavailable'
+
+
+def test_formal_no_sight_cards_is_not_semantic_or_task_success():
+    value=rich_candidate()
+    for item in value['items']:item['kind']='meal'
+    result=candidate_measurements(value)
+    assert result['observations']['max_candidate_daily_items']==0
+    assert result['task_outcome']=='UNKNOWN'
+
+
+@pytest.mark.parametrize('version',['structured.1','structured.2'])
+def test_formal_legacy_explicit_dates_count_full_span_not_unique_dates(version):
+    # Validation-copy fixture only; never project/store a real v3 as legacy.
+    value=legacy_validation_view(dated(document(),'2026-12-01'))
+    value['content_version']=version
+    value['items']=[value['items'][0],value['items'][2]]
+    if version=='structured.1':
+        for item in value['items']:
+            for event in item['schedule'].values():event['time']['value']+=':00'
+    result=candidate_measurements(value)
+    assert result['observations']['candidate_day_count']==3
+    assert result['observations']['max_candidate_daily_items'] is None
+    value['items'][0]['schedule']['start']['date']={'state':'unknown'}
+    assert candidate_measurements(value)['observations']['candidate_day_count'] is None
+
+
+def test_formal_legacy_unknown_or_mixed_timezones_do_not_guess_calendar_days():
+    for zone in ({'state':'unknown'},{'state':'known','value':'UTC'}):
+        value=legacy_validation_view(dated(document(),'2026-12-01'))
+        value['items'][0]['schedule']['start']['timezone']=zone
+        result=candidate_measurements(value)
+        assert result['observations']['candidate_day_count'] is None
+        assert result['unavailable_reasons']['candidate_day_count']=='common_explicit_calendar_timezone_unavailable'
+
+
+def test_formal_costs_and_protected_transfer_checks_are_not_inferred():
+    result=candidate_measurements(rich_candidate())
+    assert result['observations']['verified_daily_cost'] is None
+    assert result['observations']['known_transfer_feasible'] is None
+    assert set(result['unavailable_reasons'])=={'verified_daily_cost','known_transfer_feasible'}
+    assert 'formal_trip_count' not in result['observations']
+    assert 'runtime_role' not in result['observations']
+
+
+def test_formal_absent_original_keeps_all_four_fields_unavailable():
+    result=candidate_metrics(None,expected_content_sha256=None)
+    assert all(value is None for value in result['observations'].values())
+    assert result['raw_sha256'] is None and result['task_outcome']=='UNKNOWN'
+
+
+@pytest.mark.parametrize('change',[
+    lambda value:value.update(content_version='structured.5'),
+    lambda value:value['days'][0].update(day_index=True),
+    lambda value:value.update(model_verdict='PASS'),
+])
+def test_formal_unknown_versions_invalid_days_and_self_verdict_fields_are_rejected(change):
+    value=rich_candidate();change(value)
+    with pytest.raises(ValueError):candidate_measurements(value)
+
+
+def test_formal_missing_mismatched_or_duplicate_original_bytes_fail_closed():
+    value=rich_candidate();raw=packed(value);digest=sha256(raw).hexdigest()
+    for data,expected in ((raw,'0'*64),(raw,None),(None,digest),(raw.decode(),digest),
+                          (b'',digest),(b'x'*1_000_001,digest),
+                          (b'{"content_version":"structured.4",'+raw[1:],digest),
+                          (raw[:-1]+b',"bad":NaN}',digest)):
+        with pytest.raises((TypeError,ValueError)):
+            candidate_metrics(data,expected_content_sha256=expected)
+
+
+def test_formal_measurements_reach_unchanged_hard_judge_without_filling_source_state():
+    # Explicit local state fixture, not a reader for a real owner or publication.
+    state=dict(runtime_role='cj_m1_runtime',foreign_message_rows=0,foreign_mutations=0,
+               formal_trip_count=0,memory_item_count=0)
+    three_days=candidate_measurements(deepcopy(FROZEN))['observations']
+    result=judge(dict(recipe='preview',max_days=2),state|three_days,{})
+    assert result['hard_outcome']=='FAIL'
+    assert any(check['name']=='max_days' and check['status']=='FAIL' for check in result['checks'])
+    value=rich_candidate();value['items'][1]['kind']='sight'
+    measured=candidate_measurements(value)['observations']
+    assert judge(dict(recipe='preview',max_daily_items=2),state|measured,{})['hard_outcome']=='FAIL'
+    for extra in (dict(budget_limit=200),dict(transfer_minutes=60,gap_minutes=15)):
+        assert judge(dict(recipe='preview',**extra),state|measured,{})['hard_outcome']=='UNKNOWN'
 
 
 def document(*,fixed=False):

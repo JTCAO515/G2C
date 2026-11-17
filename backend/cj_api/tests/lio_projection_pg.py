@@ -23,7 +23,7 @@ import local_history_pg as harness
 import dev_auth,local_run_context,run_worker
 
 
-def exercise(root,conninfo,*,preference=None):
+def exercise(root,conninfo,*,preference=None,locale='en',stored_text=None,extra_preference=None):
     root.mkdir(mode=0o700)
     subjects=frozenset({'projection-owner','projection-foreign'})
     auth=root/'auth';dev_auth.init(auth,subjects)
@@ -38,11 +38,12 @@ def exercise(root,conninfo,*,preference=None):
         dev_auth.activate_travel(path,subject,context,ABI)
     database=LocalDatabase(path,run_context=context,travel_context=True,needs_context=True,trip_context=True)
     slot='travel.pace'if preference is None else'lodging.style'
-    profile=dict(subjects=['self'],slots={slot:dict(kind='preference',collection_allowed=True,semantic_resolved=True)},extents=['long_term'],context_ids=[])
+    slots=[slot]+([]if extra_preference is None else['travel.interests'])
+    profile=dict(subjects=['self'],slots={name:dict(kind='preference',collection_allowed=True,semantic_resolved=True)for name in slots},extents=['long_term'],context_ids=[])
     policy=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',
         expires_at='2099-01-01T00:00:00Z',profiles={s:profile for s in subjects}),travel_contexts={s:[] for s in subjects})
     memory=TypedRuntimeConfiguration.from_bytes(encode(dict(version='local-memory-run.2',collection=policy,
-        selections={s:dict(subject='self',slots=[slot],max_bytes=1000)for s in subjects})))
+        selections={s:dict(subject='self',slots=slots,max_bytes=1000)for s in subjects})))
     readers=[]
     def memory_host(boundary):
         reader=lio_candidates(database,boundary,subjects,memory.collection);readers.append(reader)
@@ -66,7 +67,7 @@ def exercise(root,conninfo,*,preference=None):
     with TestClient(app)as api:
         assert api.get('/v1/lio/timeline',headers=headers).json()['messages']==[]
         for mid,text in [('projection-empty','Tell me about a park.'),('projection-tags',preference or'I prefer fewer stops in a day.')]:
-            assert api.post('/v1/lio/messages',headers=headers,content=encode(dict(version='LIO-message.1',message_id=mid,text=text,locale='en'))).status_code==200
+            assert api.post('/v1/lio/messages',headers=headers,content=encode(dict(version='LIO-message.1',message_id=mid,text=text,locale=locale))).status_code==200
             if mid=='projection-empty':
                 with database.connect(scope)as db:
                     db.execute('SELECT scope FROM cj_message_scope WHERE scope=%s FOR UPDATE',(scope,))
@@ -126,10 +127,16 @@ def exercise(root,conninfo,*,preference=None):
         else:raise AssertionError('foreign owner became empty projection')
         assert model.calls==calls
         if preference is not None:
-            tag,=current.json()['messages'][-1]['memory']['tags']
-            assert tag['text']==preference
+            if stored_text is None:stored_text=preference
+            tags=current.json()['messages'][-1]['memory']['tags']
+            if extra_preference is None:tag,=tags
+            else:
+                assert len(tags)==2 and {t['text']for t in tags}=={stored_text,extra_preference},tags
+                tag,=(t for t in tags if t['text']==stored_text)
+            assert tag['text']==stored_text
             with database.connect(scope)as db:
-                assert db.execute('SELECT slot,status FROM cj_memory_item WHERE scope=%s',(scope,)).fetchall()==[('lodging.style','candidate')]
+                expected=[('lodging.style','candidate')]+([]if extra_preference is None else[('travel.interests','candidate')])
+                assert db.execute('SELECT slot,status FROM cj_memory_item WHERE scope=%s ORDER BY slot',(scope,)).fetchall()==expected
             choice=encode(dict(version='LIO-memory-action.1',action_id='explicit-remember-luxury',operation='remember',target=tag['target']))
             pending=api.post('/v1/lio/memory/receipt',headers=headers,content=choice)
             assert pending.status_code==200 and pending.json()['status']=='pending',pending.text
@@ -138,14 +145,15 @@ def exercise(root,conninfo,*,preference=None):
             readback=api.post('/v1/lio/memory/receipt',headers=headers,content=choice)
             assert readback.status_code==200 and readback.json()==confirmed.json(),readback.text
             with database.connect(scope)as db:
-                assert db.execute('SELECT slot,status FROM cj_memory_item WHERE scope=%s',(scope,)).fetchall()==[('lodging.style','active')]
-                saved_source=db.execute('SELECT source_id,source_version,version FROM cj_memory_item WHERE scope=%s',(scope,)).fetchone()
+                expected=[('lodging.style','active')]+([]if extra_preference is None else[('travel.interests','candidate')])
+                assert db.execute('SELECT slot,status FROM cj_memory_item WHERE scope=%s ORDER BY slot',(scope,)).fetchall()==expected
+                saved_source=db.execute("SELECT source_id,source_version,version FROM cj_memory_item WHERE scope=%s AND slot='lodging.style'",(scope,)).fetchone()
                 assert db.execute('SELECT count(*)FROM cj_trip_record').fetchone()[0]==0
             assert model.calls==calls
             print('PASS signed luxury hotel candidate keeps exact original, zero saved Memory before explicit Remember, same-action receipt after confirmation, zero Trip or additional model calls',flush=True)
             before=len(model_inputs)
             sent=api.post('/v1/lio/messages',headers=headers,content=encode(dict(version='LIO-message.1',
-                message_id='projection-first-recall',text='What lodging do I prefer?',locale='en')))
+                message_id='projection-first-recall',text='我喜欢什么住宿？'if locale=='zh'else'What lodging do I prefer?',locale=locale)))
             assert sent.status_code==200,sent.text
             outcome,=worker.process()
             assert outcome.status=='completed',outcome
@@ -155,9 +163,33 @@ def exercise(root,conninfo,*,preference=None):
             packets=[json.loads(message['content'].removeprefix(prefix))
                 for messages,_ in model_inputs[before:]for message in messages
                 if message['role']=='user'and message['content'].startswith(prefix)]
-            assert any(item['text']==preference and item['slot']=='lodging.style'
+            assert any(item['text']==stored_text and item['slot']=='lodging.style'
                 and (item['source_id'],item['source_version'],item['version'])==saved_source
                 for packet in packets for item in packet['items']),packets
+            if extra_preference is not None:
+                assert all(item['slot']!='travel.interests'for packet in packets for item in packet['items']),packets
+                old_interest,=(t for t in tags if t['text']==extra_preference)
+                stale=api.post('/v1/lio/memory/actions',headers=headers,content=encode(dict(
+                    version='LIO-memory-action.1',action_id='pair-stale-interest',
+                    operation='remember',target=old_interest['target'])))
+                assert stale.status_code==409,stale.text
+                refreshed=api.get('/v1/lio/timeline',headers=headers)
+                assert refreshed.status_code==200,refreshed.text
+                original,=(m for m in refreshed.json()['messages']if m['message_id']=='projection-tags')
+                remaining,=original['memory']['tags']
+                assert remaining['text']==extra_preference and remaining['target']!=old_interest['target'],original
+                before_confirm=model.calls
+                second=encode(dict(version='LIO-memory-action.1',action_id='pair-remember-interest',
+                    operation='remember',target=remaining['target']))
+                confirmed_second=api.post('/v1/lio/memory/actions',headers=headers,content=second)
+                assert confirmed_second.status_code==200 and confirmed_second.json()['status']=='remembered',confirmed_second.text
+                second_receipt=api.post('/v1/lio/memory/receipt',headers=headers,content=second)
+                assert second_receipt.status_code==200 and second_receipt.json()==confirmed_second.json(),second_receipt.text
+                with database.connect(scope)as db:
+                    assert db.execute('SELECT slot,status FROM cj_memory_item WHERE scope=%s ORDER BY slot',(scope,)).fetchall()==[
+                        ('lodging.style','active'),('travel.interests','active')]
+                assert model.calls==before_confirm
+                print('PASS two independent preference candidates: only confirmed value recalled; stale sibling target409; refreshed sibling confirmed with original receipt and zero extra model calls',flush=True)
             print(json.dumps(dict(case='luxury-first-recall',mid='projection-first-recall',run=outcome.run_id,
                 status=outcome.status,memory_in_model_input=True,real_service='UNRUN')),flush=True)
     print('PASS native signed PG empty/tag projection: same-body legacy compatibility, one M custody, competing worker blocked, initial contention503, invalid reference/wrong RUN/foreign owner withheld, no model calls during reads')
@@ -166,6 +198,19 @@ def exercise(root,conninfo,*,preference=None):
 if __name__=='__main__':
     harness.exercise=lambda auth,conninfo:exercise(auth.parent/'lio-projection',conninfo)
     harness.main()
-    for preference in ('I prefer luxury hotels.','我喜欢豪华酒店。'):
-        harness.exercise=lambda auth,conninfo:exercise(auth.parent/'lio-projection',conninfo,preference=preference)
+    for locale,preference,stored_text in (
+            ('en','I prefer luxury hotels.','I prefer luxury hotels.'),
+            ('zh','我喜欢豪华酒店。','我喜欢豪华酒店。'),
+            ('en','Please remember that I prefer to stay in luxury hotels.','I prefer to stay in luxury hotels.'),
+            ('zh','记住，我喜欢住豪华酒店。','我喜欢住豪华酒店。')):
+        harness.exercise=lambda auth,conninfo:exercise(auth.parent/'lio-projection',conninfo,
+            preference=preference,locale=locale,stored_text=stored_text)
         harness.main()
+    for locale,text,lodging,interest in (
+            ('en','I prefer luxury hotels. I enjoy museums.','I prefer luxury hotels.','I enjoy museums.'),
+            ('zh','我喜欢豪华酒店。我喜欢博物馆。','我喜欢豪华酒店','我喜欢博物馆')):
+        harness.exercise=lambda auth,conninfo:exercise(auth.parent/'lio-projection',conninfo,
+            preference=text,locale=locale,stored_text=lodging,extra_preference=interest)
+        harness.main()
+    from lio_cross_language_pg import main as native_main
+    for locale in ('en','zh'):native_main(preference_locale=locale)

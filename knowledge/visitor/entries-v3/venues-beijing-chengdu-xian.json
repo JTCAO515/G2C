@@ -139,18 +139,19 @@
       "name_en": "Chengdu Research Base of Giant Panda Breeding",
       "wikidata_qid": "Q1067861"
     },
-    "text_zh": "成都熊猫基地不享受免票、免预约或特殊办理优待的普通散客须线上实名预约购票，可选最多提前14天的票；到场使用与订单一致的有效证件核验，护照在支持证件范围内。优待人群及无法线上支付等情况另查园方说明。截至本次核对，园方列为授权售票平台的携程，其公开营业日历将2026年11月17日至30日标为开放日。这只是该日期窗口内的平台营业参考，不是园方发布的长期每周规则，不保证实时可入园或有余票；本条每周闭园条件仍未核定。6号大熊猫别墅区域试行周一轮休、熊猫美术馆周一维护，均有国家法定节假日例外；这是子设施规则，不能当作整园周一闭园。熊猫谷及其他园内场馆另查具体安排。",
-    "text_en": "Ordinary individual visitors to Chengdu Panda Base who do not qualify for free entry, reservation exemptions or special handling must book real-name tickets online, up to 14 days ahead. Present the matching valid identity document; passports are supported. Consult Base rules for concessions and difficulties paying online. At this check, Ctrip, which the Base lists as an authorised ticketing platform, marks November 17–30, 2026 open in its public opening calendar. This is platform guidance for that date window, not a long-term weekly rule issued by the Base, and does not guarantee immediate entry or ticket availability. Weekly closing conditions remain unconfirmed here. Separate Base rules close No.6 Giant Panda Villa for a Monday trial rest and the Panda Art Museum for Monday maintenance, except statutory public holidays. These facility rules do not mean the whole Base closes on Mondays. Panda Valley and other individual facilities have separate arrangements.",
+    "text_zh": "成都熊猫基地不享受免票、免预约或特殊办理优待的普通散客须线上实名预约购票，可选最多提前14天的票；到场使用与订单一致的有效证件核验，护照在支持证件范围内。优待人群及无法线上支付等情况另查园方说明。截至本次核对，园方列为授权售票平台的携程，其公开营业日历将2026年11月17日至30日标为开放日。这只是该日期窗口内的平台营业参考，不是园方发布的长期每周规则，不保证实时可入园或有余票；园方公开自评所附的常规简介另说明整园全年每日接待公众，特殊情况可能闭园；本条据此记录普通每周无固定闭园日，不由日期日历或过去年度的开放天数推定。较早的园方说明不代表本年再次确认，行前仍应核对最新临时安排。6号大熊猫别墅区域试行周一轮休、熊猫美术馆周一维护，均有国家法定节假日例外；这是子设施规则，不能当作整园周一闭园。熊猫谷及其他园内场馆另查具体安排。",
+    "text_en": "Ordinary individual visitors to Chengdu Panda Base who do not qualify for free entry, reservation exemptions or special handling must book real-name tickets online, up to 14 days ahead. Present the matching valid identity document; passports are supported. Consult Base rules for concessions and difficulties paying online. At this check, Ctrip, which the Base lists as an authorised ticketing platform, marks November 17–30, 2026 open in its public opening calendar. This is platform guidance for that date window, not a long-term weekly rule issued by the Base, and does not guarantee immediate entry or ticket availability. The ordinary visitor introduction attached to the Base’s public self-assessment separately states that the whole Base welcomes the public every day throughout the year, except special closures. This entry uses that introduction for no fixed ordinary weekly closure, rather than inferring a lasting rule from the date calendar or a previous year’s opening-day count. The older Base statement is not a new confirmation this year; check current temporary notices before travelling. Separate Base rules close No.6 Giant Panda Villa for a Monday trial rest and the Panda Art Museum for Monday maintenance, except statutory public holidays. These facility rules do not mean the whole Base closes on Mondays. Panda Valley and other individual facilities have separate arrangements.",
     "source_urls": [
       "https://www.panda.org.cn/cn/service/ticket/",
       "https://www.panda.org.cn/cn/service/notice/",
       "https://www.panda.org.cn/en/service/notice/",
-      "https://m.ctrip.com/webapp/you/sight/chengdu104/4229.html?ext-shelfPage=ctrip_shelf_seo"
+      "https://m.ctrip.com/webapp/you/sight/chengdu104/4229.html?ext-shelfPage=ctrip_shelf_seo",
+      "https://m.panda.org.cn/cn/education/trends/2025-01-17/8632.html"
     ],
     "conditions": {
       "reservation_required": true,
-      "closed_weekdays": null,
-      "closed_weekdays_public_holiday_exception": null,
+      "closed_weekdays": [],
+      "closed_weekdays_public_holiday_exception": false,
       "advance_booking_days": 14,
       "advance_booking_rule": "window_max"
     }
@@ -159,7 +160,7 @@
     "format_version": "visitor-entry.3",
     "entry_kind": "fact",
     "topic": "passport_booking",
-    "checked_on": "2026-11-16",
+    "checked_on": "2026-11-17",
     "expires_on": "2026-11-23",
     "id": "visitor.v3.xian.qin-mausoleum-museum",
     "cities": [
@@ -171,15 +172,16 @@
       "name_en": "Emperor Qinshihuang's Mausoleum Site Museum",
       "wikidata_qid": "Q122931722"
     },
-    "text_zh": "秦始皇帝陵博物院对所有观众实行实名线上预约购票，外籍观众和政策性免票人员也须通过官方渠道预约；到场须用与票务信息一致的有效证件原件核验，支持护照。本条未核定提前预约窗口和固定每周闭馆日，重大节假日安排应查新公告。适用兵马俑馆及丽山园的常规参观，不代表实时余票或已完成预约。",
-    "text_en": "Emperor Qinshihuang's Mausoleum Site Museum requires real-name online ticket reservations for all visitors, including international visitors and people entitled to free admission. Use official channels and bring the matching original valid identity document; passports are accepted. The advance window and fixed weekly closing days are unconfirmed here; check new notices for major-holiday arrangements. This covers ordinary visits to the Terracotta Warriors Museum and Lishan Garden, not live availability or a completed reservation.",
+    "text_zh": "秦始皇帝陵博物院馆方购票须知要求所有观众实名线上预约购票，外籍观众和政策性免票人员也须通过官方渠道预约；到场须用与票务信息一致的有效证件原件核验，支持护照。China Highlights的当地导游指南将整体游览分为兵马俑馆和秦陵区，并称景点每日开放；据这一商业旅行资讯，本条记录常规参观无固定每周闭馆日，不将其当作主管机关的临时公告或各展厅、设施始终开放的保证。票务仍以馆方实名预约要求为准，不据商业指南的淡季现场购票描述改成免约；提前窗口本条未核定。适用兵马俑馆及丽山园普通参观，重大节假日、临时或局部关闭查新公告，不代表实时余票或已完成预约。",
+    "text_en": "The museum’s ticketing instructions require real-name online reservations for all visitors, including international visitors and people entitled to free admission. Use official channels and bring the matching original valid identity document; passports are accepted. China Highlights’ local-guide article describes a combined visit to the Terracotta Warriors Museum and the mausoleum area and says the site opens daily. Based on that commercial travel information, this entry records no regular weekly closure for ordinary visits, not an authority’s temporary notice or a guarantee that every gallery and facility always opens. The museum’s reservation requirement remains authoritative; the guide’s off-season on-site ticket description does not establish reservation-free entry. The advance window remains unconfirmed. This covers ordinary visits to the Terracotta Warriors Museum and Lishan Garden. Check new notices for major holidays and temporary or local closures; it does not establish live ticket availability or a completed reservation.",
     "source_urls": [
-      "https://www.bmy.com.cn/jingtai/bmyweb/ticketing.html"
+      "https://www.bmy.com.cn/jingtai/bmyweb/ticketing.html",
+      "https://www.chinahighlights.com/xian/terracotta-army/how-to-visit.htm"
     ],
     "conditions": {
       "reservation_required": true,
-      "closed_weekdays": null,
-      "closed_weekdays_public_holiday_exception": null,
+      "closed_weekdays": [],
+      "closed_weekdays_public_holiday_exception": false,
       "advance_booking_days": null,
       "advance_booking_rule": null
     }

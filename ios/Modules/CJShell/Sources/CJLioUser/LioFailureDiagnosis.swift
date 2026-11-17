@@ -12,7 +12,7 @@ public struct LioFailureDiagnosis: Sendable, Equatable {
 
     /// Where in opening a conversation the failure happened.
     public enum Stage: String, Sendable, Equatable, CaseIterable, Codable {
-        case sessionCheck, selectedChat, localRecord, firstSendLookup, timeline, history, send
+        case signIn, sessionCheck, selectedChat, localRecord, firstSendLookup, timeline, history, send
     }
 
     public let category: Category

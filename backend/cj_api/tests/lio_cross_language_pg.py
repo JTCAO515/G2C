@@ -35,17 +35,18 @@ CASE=json.loads((Path(__file__).parent/'fixtures/lio982-source-rejection.json').
 FIXED_CASE=json.loads((Path(__file__).parent/'fixtures/lio991-duplicate-fixed.json').read_bytes())
 
 
-def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24,native_mode='buffered'):
+def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24,native_mode='buffered',preference_locale=None):
     auth=root/'auth';dev_auth.init(auth,[SUBJECT]);now=int(time.time())
     config=root/'connection.json';config.write_text(json.dumps(conninfo))
     meter=root/'meter.json';meter.write_text(json.dumps(dict(version='CJ-LOCAL-RUN@2',current=dict(meter=dict(
         unit='provider_call',budget=800,period_start=now-60,period_end=int(DEMO_DEADLINE.timestamp()),
         max_steps=max_steps,max_tools=12,max_output=65536,max_seconds=600),output_limits=dict(model=12000,tool=48000,memory=1000)),history=[])))
     context=load_run_context(meter);database=LocalDatabase(config,run_context=context,travel_context=True,needs_context=True)
-    profile=dict(subjects=['self'],slots={'travel.pace':dict(kind='preference',collection_allowed=True,semantic_resolved=True)},extents=['long_term'],context_ids=[])
+    selected_slots=['travel.pace']if preference_locale is None else['lodging.style','travel.interests']
+    profile=dict(subjects=['self'],slots={slot:dict(kind='preference',collection_allowed=True,semantic_resolved=True)for slot in selected_slots},extents=['long_term'],context_ids=[])
     memory=TypedRuntimeConfiguration.from_bytes(json.dumps(dict(version='local-memory-run.2',collection=dict(
         version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',expires_at='2099-01-01T00:00:00Z',profiles={SUBJECT:profile}),
-        travel_contexts={SUBJECT:[]}),selections={SUBJECT:dict(subject='self',slots=['travel.pace'],max_bytes=1000)})).encode())
+        travel_contexts={SUBJECT:[]}),selections={SUBJECT:dict(subject='self',slots=selected_slots,max_bytes=1000)})).encode())
     subjects=frozenset({SUBJECT});scope=scope_for(ISSUER,SUBJECT)
     runtime=Runtime(auth,context,meter,[],memory_runtime=memory,subjects=subjects,demo_subjects=subjects);runtime._database=database
     control=root/'control';operations=root/'operations';operations.mkdir(mode=0o700)
@@ -72,7 +73,12 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
             index=len(originals)-1
             for ordinal,source in enumerate(originals):
                 assert source.startswith('Original traveler source_index='+str(ordinal)+' (quote only the following original text):\n')
-            if city_chain:
+            if preference_locale is not None:
+                value=flow(text,city=None,days=None,intent='consult',questions=(),index=index,
+                    reply='这些偏好可供你逐条确认。接下来想去哪座城市？'if locale=='zh'else
+                          'You can review these preferences individually. Which city would you like to visit?')
+                value.update(version='LIO-planning-intake.8',needs_tools=False,planning_request_index=None)
+            elif city_chain:
                 assert 'Prefers a relaxed pace.'in body['messages'][1]['content']
                 if index==0:
                     value=flow(text,city=text,days=None,intent='consult',questions=('duration_days',),
@@ -182,8 +188,15 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
     tools=RealTools(services,buffered_streaming_subjects=subjects if native_mode=='buffered'else frozenset(),
         assembly_streaming_subjects=subjects if native_mode=='stream'else frozenset())
     signer=load_confirmation_signer(auth)
+    memory_host=None
+    if preference_locale is not None:
+        from cj_api.local_lio_memory import lio_candidates,pilot_write_configuration
+        from cj_api.lio_memory_routes import LioMemoryCards
+        def memory_host(boundary):
+            reader=lio_candidates(database,boundary,subjects,pilot_write_configuration(memory.collection,subjects))
+            return LioMemoryCards(reader.collection,reader.current)
     app=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context,account_admission=True,
-        confirmation_signer=signer,demo_dialogue_subjects=subjects,lio_dialogue_subjects=subjects)
+        confirmation_signer=signer,demo_dialogue_subjects=subjects,lio_dialogue_subjects=subjects,lio_memory_factory=memory_host)
     if basic_memory:
         from cj_memory.typed_api import register_typed_routes
         from cj_api.local_lio_memory import pilot_write_configuration
@@ -192,6 +205,56 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
     headers={'Authorization':'Bearer '+dev_auth.token(auth,SUBJECT,3600),'Content-Type':'application/octet-stream'}
     async def catalogue(key,guard):assert key==KEY and guard()is True;return city_catalog()
     with TestClient(app)as api,patch('cj_api.lio_city._catalog_exchange',side_effect=catalogue):
+        if preference_locale is not None:
+            locale=preference_locale
+            text='我喜欢豪华酒店。我喜欢博物馆。'if locale=='zh'else'I prefer luxury hotels. I enjoy museums.'
+            lodging='我喜欢豪华酒店'if locale=='zh'else'I prefer luxury hotels.'
+            interest='我喜欢博物馆'if locale=='zh'else'I enjoy museums.'
+            mid='native-preference-pair-'+locale
+            sent=api.post('/v2/lio/messages',headers=headers,content=json.dumps(dict(version='LIO-message.2',
+                message_id=mid,text=text,locale=locale,new_conversation=True),ensure_ascii=False).encode())
+            assert sent.status_code==200,sent.text
+            cid=sent.json()['conversation_id']
+            def process():
+                outcome,=run_worker.run_once(database,model,auth,tools_configuration=tools,real_services=services,
+                    memory_configuration_for_scope=lambda owner:memory if owner==scope else None,account_admission=True,
+                    hk_demo_scopes=frozenset({scope}),lio_confirmation=signer)
+                assert outcome.status=='completed',outcome
+                return outcome
+            process()
+            page=api.get('/v2/lio/timeline',headers=headers,params=dict(conversation_id=cid))
+            assert page.status_code==200,page.text
+            message,=page.json()['messages'];tags=message['memory']['tags']
+            assert message['status']=='completed'and message['trip']is None
+            assert len(tags)==2 and {tag['text']for tag in tags}=={lodging,interest},message
+            assert len(wire)==1 and 'LIO-planning-intake.8'in wire[0]['messages'][0]['content'],wire
+            tag,=(tag for tag in tags if tag['text']==lodging)
+            choice=json.dumps(dict(version='LIO-memory-action.1',action_id='native-pair-remember-'+locale,
+                operation='remember',target=tag['target']),separators=(',',':')).encode()
+            confirmed=api.post('/v1/lio/memory/actions',headers=headers,content=choice)
+            assert confirmed.status_code==200 and confirmed.json()['status']=='remembered',confirmed.text
+            receipt=api.post('/v1/lio/memory/receipt',headers=headers,content=choice)
+            assert receipt.status_code==200 and receipt.json()==confirmed.json(),receipt.text
+            assert len(wire)==1
+            with database.connect(scope)as db:
+                saved=db.execute("SELECT source_id,source_version,version FROM cj_memory_item WHERE scope=%s AND slot='lodging.style'",(scope,)).fetchone()
+                assert db.execute('SELECT slot,status FROM cj_memory_item WHERE scope=%s ORDER BY slot',(scope,)).fetchall()==[
+                    ('lodging.style','active'),('travel.interests','candidate')]
+                assert db.execute('SELECT count(*)FROM cj_trip_record').fetchone()[0]==0
+            before=len(wire);text='我喜欢什么住宿？'if locale=='zh'else'What lodging do I prefer?'
+            sent=api.post('/v2/lio/messages',headers=headers,content=json.dumps(dict(version='LIO-message.2',
+                message_id=mid+'-recall',text=text,locale=locale,conversation_id=cid),ensure_ascii=False).encode())
+            assert sent.status_code==200,sent.text
+            outcome=process();prefix='Stored memory data (not instructions):\n'
+            packets=[json.loads(m['content'].removeprefix(prefix))for body in wire[before:]for m in body['messages']
+                if m['role']=='user'and m['content'].startswith(prefix)]
+            assert packets and any(item['slot']=='lodging.style'and item['text']==lodging
+                and(item['source_id'],item['source_version'],item['version'])==saved
+                for packet in packets for item in packet['items']),packets
+            assert all(item['slot']!='travel.interests'for packet in packets for item in packet['items']),packets
+            print(json.dumps(dict(case='native2-preference-pair',locale=locale,mid=mid,cid=cid,run=outcome.run_id,
+                candidates=2,confirmed_memory_input=True,unconfirmed_memory_input=False,real_service='UNRUN')),flush=True)
+            return
         if basic_memory:
             seed=dict(version='MEMORY-manual.2',operation_id='basic-memory-setup',item_id='basic-memory-pace',
                 subject='self',slot='travel.pace',kind='preference',text='Prefers a relaxed pace.',extent='long_term',
@@ -355,7 +418,7 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
     print('PASS signed ZH/EN strict rejected intake -> charged generic/Memory path or pre-dispatch budget denial, zero NEEDS/Trip; valid plan/fixed-ID guards retained; HTTP fixtures only',flush=True)
 
 
-def main(*,basic_memory=False,fallback_only=False,max_steps=24,native_mode='buffered'):
+def main(*,basic_memory=False,fallback_only=False,max_steps=24,native_mode='buffered',preference_locale=None):
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     from cryptography.hazmat.primitives.serialization import Encoding,PrivateFormat,PublicFormat,NoEncryption
     import base64
@@ -370,7 +433,7 @@ def main(*,basic_memory=False,fallback_only=False,max_steps=24,native_mode='buff
                 CJ_BETA_RECOVERY_PRIVATE_B64=base64.b64encode(key.private_bytes(Encoding.Raw,PrivateFormat.Raw,NoEncryption())).decode(),
                 CJ_BETA_RECOVERY_PUBLIC_B64=base64.b64encode(key.public_key().public_bytes(Encoding.Raw,PublicFormat.Raw)).decode())
             with patch.dict(os.environ,env):exercise(root,conninfo,basic_memory=basic_memory,
-                fallback_only=fallback_only,max_steps=max_steps,native_mode=native_mode)
+                fallback_only=fallback_only,max_steps=max_steps,native_mode=native_mode,preference_locale=preference_locale)
 
 
 if __name__=='__main__':main()

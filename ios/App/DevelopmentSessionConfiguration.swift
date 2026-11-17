@@ -474,7 +474,7 @@ struct DevelopmentBetaComposition {
     enum Failure: Error { case invalidConfiguration }
 
     let endpoint: URL
-    let needs: DevelopmentNeedsProfile
+    let needs: DevelopmentNeedsProfile?
     let typedMemory: DevelopmentTypedMode
     let manualEditing: DevelopmentTripEditingProfile
     let feedback: DevelopmentFeedbackProfile
