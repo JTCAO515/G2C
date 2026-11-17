@@ -37,6 +37,6 @@ Rollback: set the variable to `false` to stop new observations. This changes no
 application source/image, config, account, budget or ledger. Existing workflow
 records and earlier incident results remain intact.
 
-References: [standard public runners](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choosing-the-runner-for-a-job),
+References: [standard public runners](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job),
 [schedule limitations](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule),
 [workflow notifications](https://docs.github.com/en/actions/concepts/workflows-and-actions/notifications-for-workflow-runs).
