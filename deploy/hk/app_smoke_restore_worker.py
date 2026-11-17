@@ -14,15 +14,26 @@ from .app_smoke_ceiling import BASELINE,PROFILES
 from .configuration import load_secret_environment,authorization
 
 VERSION='G2C-App-smoke-closed-standing-restore.1'
+MANUAL_VERSION='G2C-App-manual-smoke-closed-standing-restore.1'
 
 
 def restore(budget,request):
+    if type(request)is not dict:raise ValueError('exact reviewed closed C purpose request required')
+    manual=request.get('version')==MANUAL_VERSION
+    close_key='closed_manual_sha256'if manual else'closed_capture_sha256'
     keys={'version','expected_policy_sha256','restriction','closed_capture_sha256','ledger_id','producer_id','apply'}
-    if(type(request)is not dict or set(request)!=keys or request['version']!=VERSION
+    if manual:keys=(keys-{'closed_capture_sha256'})|{'closed_manual_sha256','expected_ledger'}
+    if(set(request)!=keys or request['version']not in(VERSION,MANUAL_VERSION)
             or type(request['apply'])is not bool or type(request['restriction'])is not dict
             or any(type(request[k])is not str or re.fullmatch('[a-f0-9]{64}',request[k])is None
-                   for k in('expected_policy_sha256','closed_capture_sha256'))):
+                   for k in('expected_policy_sha256',close_key))):
         raise ValueError('exact reviewed closed C purpose request required')
+    if manual:
+        anchor=request['expected_ledger']
+        if(type(anchor)is not dict or set(anchor)!={'count','sha256'}
+                or type(anchor['count'])is not int or anchor['count']<0
+                or type(anchor['sha256'])is not str or re.fullmatch('[a-f0-9]{64}',anchor['sha256'])is None):
+            raise ValueError('exact manual-close original ledger required')
     if(budget.ledger_id,budget.producer)!=(request['ledger_id'],request['producer_id']):
         raise ValueError('original producer and ledger required')
     original=request['restriction']
@@ -43,6 +54,8 @@ def restore(budget,request):
         raise ValueError('exact original temporary C restriction required')
     with budget.connect()as db:
         db.execute('BEGIN');budget.require_producer(db);anchor=journal_state(db)
+        if manual and dict(count=anchor[0],sha256=anchor[1])!=request['expected_ledger']:
+            raise ValueError('original manual-close ledger changed; inspect only')
         if db.execute("SELECT policy FROM sublimit WHERE line='C'").fetchone()!=(restricted,):
             raise ValueError('current temporary policy changed; inspect only')
         used=usage(db,'C')
@@ -51,8 +64,9 @@ def restore(budget,request):
         assignments=db.execute('SELECT * FROM attempt_sublimit ORDER BY attempt_id').fetchall()
     result=dict(version='G2C-App-smoke-closed-standing-result.1',state='READONLY_NOT_RESTORED',
         original_usage=used,ledger=dict(count=anchor[0],sha256=anchor[1]),standing_policy=BASELINE,
-        closed_capture_sha256=request['closed_capture_sha256'],new_money_cny=0,native_quota_changed=False,
+        **{close_key:request[close_key]},new_money_cny=0,native_quota_changed=False,
         attempts_refunded_or_deleted=0,provider_calls=0,ended_window='REMAINS_CLOSED')
+    if manual:result['version']='G2C-App-manual-smoke-closed-standing-result.1'
     if not request['apply']:return result
     with budget.mutation()as db:
         if(journal_state(db)!=anchor or db.execute("SELECT policy FROM sublimit WHERE line='C'").fetchone()!=(restricted,)
