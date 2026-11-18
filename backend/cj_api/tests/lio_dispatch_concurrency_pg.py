@@ -22,10 +22,12 @@ from test_lio_planning_flow import flow
 def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
     subjects = frozenset({subject})
     signer = load_confirmation_signer(auth)
-    for paused, missing_done in (
-        ('intake', False), ('discussion', False), ('discussion', True), ('memory', False), ('draft', False),
+    for paused, missing_done, missing_model in (
+        ('intake', False, False), ('discussion', False, False), ('discussion', True, False),
+        ('discussion', False, True), ('memory', False, False), ('draft', False, False),
     ):
-        case = paused + ('-missing-done' if missing_done else '')
+        case = paused + ('-missing-done' if missing_done else '-missing-model' if missing_model else '')
+        complete_unsettled_reply = ('北京有丰富的历史遗迹和街巷。' * 200)[:2436]
         sent = []
         request_waiting, release = Event(), Event()
         budget = AuthorizationBudget(root / ('dispatch-' + case),
@@ -88,7 +90,8 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
             else:
                 stage = 'discussion'
                 assert 'The traveler requested a complete ' in system
-                value = dict(answer='第1天逛街区，第2天看博物馆，第3天试当地美食。想先细化哪一天？')
+                value = dict(answer=complete_unsettled_reply if missing_model else
+                             '第1天逛街区，第2天看博物馆，第3天试当地美食。想先细化哪一天？')
             sent.append(stage)
             yield _M4_REQUEST_SENT
             if stage == paused:
@@ -102,6 +105,8 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
             event = dict(id='dispatch-fixture-' + case + '-' + stage, model=M4_MODEL, choices=[
                 dict(index=0, delta=dict(content=content), finish_reason=None if truncated else 'stop'),
             ])
+            if missing_model and stage == paused:
+                del event['model']
             if not truncated:
                 event['usage'] = dict(prompt_tokens=100, completion_tokens=100, total_tokens=200)
             done = '' if truncated else 'data: [DONE]\n\n'
@@ -136,6 +141,9 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
         assert completed['trip'] is None
         if missing_done:
             assert (completed['status'], completed['answer']) == ('failed', '')
+        elif missing_model:
+            assert completed['status'] == 'completed' and completed['answer'] == complete_unsettled_reply
+            assert len(completed['answer']) == 2436 and completed['memory'] is None
         elif paused == 'draft':
             assert completed['status'] == 'completed' and '保存确认' in completed['answer']
         elif paused == 'memory':
@@ -143,7 +151,7 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
         else:
             assert '第2天看博物馆' in completed['answer']
         settled = ['RECEIVED'] * (2 if paused == 'memory' else 3)
-        if missing_done:
+        if missing_done or missing_model:
             settled[-1] = 'INTENT'
         assert [row['state'] for row in budget.inspect()] == settled
         print('PASS three signed Lio timeline reads while the original ' + case + ' response waits', flush=True)
