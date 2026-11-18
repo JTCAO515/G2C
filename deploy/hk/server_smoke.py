@@ -100,7 +100,7 @@ def request(token, route, *, document=None):
     headers = {'Authorization': 'Bearer ' + token, 'Accept': 'application/json'}
     data = None
     if document is not None:
-        headers['Content-Type'] = 'application/json'
+        headers['Content-Type'] = 'application/octet-stream'
         data = json.dumps(document, ensure_ascii=False).encode()
     try:
         with opener.open(Request(ORIGIN + route, data=data, headers=headers), timeout=HTTP_SECONDS) as response:

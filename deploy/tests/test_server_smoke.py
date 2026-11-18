@@ -161,3 +161,47 @@ def test_smoke_keeps_the_original_short_prompts():
         'en.capability': 'What can you do?',
         'en.plan': 'A three-day trip to Beijing',
     }
+
+
+def test_smoke_post_is_accepted_by_the_original_lio_wire(monkeypatch):
+    from io import BytesIO
+    from types import SimpleNamespace
+    from urllib.error import HTTPError
+    from urllib.parse import urlsplit
+
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from cj_api.lio_dialogue_routes import register_lio_dialogue_routes
+    from cj_message.demo_dialogue import DialogueMessage
+
+    class OriginalBoundary:
+        def receive_lio(self, token, raw, *, prepare_scope, version):
+            assert token == 'synthetic'
+            original = DialogueMessage.parse(raw, version=version)
+            return SimpleNamespace(message_id=original.id, conversation_id='lio-chat')
+
+    app = FastAPI()
+    register_lio_dialogue_routes(app, OriginalBoundary(), None, None, prepare_scope=None)
+    with TestClient(app) as client:
+        class LocalTransport:
+            def open(self, request, *, timeout):
+                url = urlsplit(request.full_url)
+                response = client.request(request.get_method(), url.path,
+                                          content=request.data, headers=dict(request.header_items()))
+                if response.status_code >= 400:
+                    raise HTTPError(request.full_url, response.status_code, '',
+                                    response.headers, BytesIO(response.content))
+                result = BytesIO(response.content)
+                result.status = response.status_code
+                result.headers = response.headers
+                return result
+
+        monkeypatch.setattr(smoke, 'build_opener', lambda *handlers: LocalTransport())
+        document = dict(version='LIO-message.1', message_id='smoke-original',
+                        locale='zh', text='你是谁')
+        assert client.post('/v1/lio/messages', json=document,
+                           headers={'Authorization': 'Bearer synthetic'}).status_code == 415
+        value, _ = smoke.request('synthetic', '/v1/lio/messages', document=document)
+        assert value == dict(version='LIO-message-receipt.1', message_id='smoke-original',
+                             conversation_id='lio-chat')
