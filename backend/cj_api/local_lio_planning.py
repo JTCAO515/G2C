@@ -126,6 +126,10 @@ def clarify(worker, binding, state, text):
     return worker._event(binding, state, 'completed')
 
 
+class InvalidDiscussionAnswer(ProviderUnknown):
+    """A settled model response failed the discussion envelope validation."""
+
+
 def discuss(worker, binding, state, locale, turns, references, *, day_count=None, planning_window=None, introduction=None, destination=None):
     messages = [{'role': 'user', 'content': turn.text} for turn in turns]
     if worker.memory_run is not None:
@@ -170,7 +174,7 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
         reply.encode('utf-8')
     except (InvalidInput, UnicodeError) as exc:
         _LOGGER.warning('lio_planning_discussion_invalid run_id=%s', binding.run_id)
-        raise ProviderUnknown('Lio discussion reply unavailable') from exc
+        raise InvalidDiscussionAnswer('Lio discussion reply unavailable') from exc
     if destination is not None:
         reply=destination+(' · 未保存建议'if locale=='zh'else' · Unsaved suggestion')+'\n'+reply
     state = worker._event(binding, state, 'text_delta',reply if introduction is None else introduction+'\n\n'+reply)
