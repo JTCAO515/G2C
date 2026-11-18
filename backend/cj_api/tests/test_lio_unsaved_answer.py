@@ -14,6 +14,28 @@ MARKER='lio_unsaved_plan_answer.1'
 
 
 class UnsavedAnswer(unittest.TestCase):
+    def test_complete_unsettled_body_is_visible_without_changing_the_unknown_run(self):
+        for locale,question,text in (
+            ('zh','请规划北京三天。','第一天逛街区，第二天参观博物馆，第三天去公园。'),
+            ('en','Plan three days in Beijing.','Explore a neighborhood, visit a museum, and spend the final day in a park.'),
+        ):
+            with self.subTest(locale=locale):
+                item=TimelineMessage('discussion-message','discussion-run',1,question,locale)
+                original=SimpleNamespace(status='unknown',text=text,draft_outcome=None,
+                    effects=('lio_complete_unsettled_answer.1',),budget_exhausted_stage='none')
+                result=_message(item,original)
+                self.assertEqual((result['status'],result['failure'],result['answer']),('completed',None,text))
+                self.assertIsNone(result['trip'])
+                self.assertIsNone(result['memory'])
+                self.assertEqual(original.status,'unknown')
+                self.assertEqual(_message(item,original,expired=True)['status'],'failed')
+                for unsafe in ('', 'The RUN contains run_id.'):
+                    original.text=unsafe
+                    self.assertEqual(_message(item,original)['status'],'failed')
+                original.text=text
+                original.effects=()
+                self.assertEqual(_message(item,original)['status'],'failed')
+
     def test_explicit_unsaved_answer_is_readable_but_native_draft_failure_is_preserved(self):
         text='I could not confirm a saved plan. Would you like an unsaved day-by-day suggestion?'
         original=SimpleNamespace(status='completed',text=text,draft_outcome='validation_failed',

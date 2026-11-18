@@ -21,6 +21,7 @@ from .message_routes import BodyError, _read_body, _token, message_failure
 TIMELINE_VERSION = 'LIO-timeline.1'
 RECEIPT_VERSION = 'LIO-message-receipt.1'
 BEIJING_PUBLIC_FORECAST = 'https://www.weather.com.cn/weather/101010100.shtml'
+COMPLETE_UNSETTLED_ANSWER_EFFECT = 'lio_complete_unsettled_answer.1'
 
 
 def _json(value, status=200):
@@ -33,6 +34,8 @@ def _failure(status):
 
 def _message(item, state, *, expired=False, trip=None, memory=None, identity=True):
     failure = None
+    visible_unsettled = (state is not None and state.status == 'unknown'
+                         and COMPLETE_UNSETTLED_ANSWER_EFFECT in state.effects and bool(state.text.strip()))
     if trip is not None:
         status = 'completed'
     elif expired:
@@ -41,6 +44,8 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
         status = 'sending'
     elif state.status == 'running':
         status = 'answering'
+    elif visible_unsettled:
+        status = 'completed'
     elif state.status == 'completed' and (state.draft_outcome is None or
             UNSAVED_PLAN_ANSWER in state.effects and state.text.strip()):
         status = 'completed'
@@ -73,7 +78,7 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
                      else 'Weather China · Current '+name+' forecast (reference)')
             sources.append(dict(title=title,url=url,observed_at=None))
     answer = display_answer(state.text, item.locale) if state is not None else ''
-    if identity and status == 'completed' and answer is not None:
+    if identity and status == 'completed' and answer is not None and not visible_unsettled:
         introduction = self_description(item.text, item.locale)
         if introduction is not None:
             answer = introduction
