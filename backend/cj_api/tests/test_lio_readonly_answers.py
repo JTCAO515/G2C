@@ -22,6 +22,57 @@ def previous_turn(events):
 
 
 class ReadOnlyAnswers(unittest.TestCase):
+    def test_small_talk_and_plain_questions_go_to_the_ordinary_answer(self):
+        for locale,text in (
+            ('zh','你好！'),('en','Hi there!'),
+            ('zh','北京是中国的首都吗？'),('en','Is Beijing the capital of China?'),
+            ('zh','你能提供什么旅行帮助？'),('en','What travel help can you offer?'),
+        ):
+            with self.subTest(locale=locale,text=text):
+                wire=flow(text,city=None,days=None,intent='consult',questions=(),reply='Intake reply')
+                wire.update(planning_request_index=None,needs_tools=False)
+                published,events,lookups,result=run(wire,text,locale=locale)
+                self.assertEqual((published,events,lookups,result),([],[],[],None))
+
+    def test_followup_rejected_at_destination_projection_uses_general_answer_without_save(self):
+        for locale,first,current,city in (
+            ('zh','规划上海三天','三个人，明天开始，抵达时间按 UTC。','上海'),
+            ('en','Plan three days in Shanghai','Three people, starting tomorrow, with arrival in UTC.','Shanghai'),
+        ):
+            with self.subTest(locale=locale):
+                wire=flow(current,city=city,days=3,start='2026-11-12',party=3,intent='plan',index=1,questions=())
+                wire['planning_request_index']=0
+                wire['city'].update(source_index=0,quote=city)
+                wire['field_sources'][0].update(source_index=0,quote=first)
+                wire['extra_fields']={'arrival':{'date':None,'time':None,'timezone':'UTC','place':None}}
+                wire['field_sources'].append(dict(field='arrival.timezone',source_index=1,quote='UTC'))
+                published,events,lookups,result=run(wire,current,turns=(original(first),original(current)),locale=locale)
+                self.assertEqual(published,[])
+                self.assertEqual(len(lookups),1)
+                self.assertIsNone(result)  # Continue through Worker's ordinary metered answer.
+                self.assertFalse(any(kind=='registered' for kind,_ in events))
+                value=context(events)
+                self.assertEqual((value['authority'],value['facts']),('none',{}))
+                self.assertEqual(value['authority_barrier_message_id'],'national-message')
+
+    def test_rejected_discussion_envelope_keeps_the_ordinary_answer_available(self):
+        for locale,city,raw in (
+            ('zh','北京','可以第一天先逛故宫，第二天看长城。'),
+            ('en','Beijing','Start with the Forbidden City, then visit the Great Wall.'),
+        ):
+            with self.subTest(locale=locale):
+                text=CASES['PLAN05']['inputs'][locale][0]
+                wire=flow(text,city=city,days=3,intent='plan',questions=())
+                wire.update(planning_request_index=0,needs_tools=False)
+                published,events,_,result=run(wire,text,locale=locale,discussion_output=raw)
+                self.assertEqual(published,[])
+                self.assertIsNone(result)
+                self.assertEqual(answer(events),'')
+                self.assertFalse(any(kind=='registered' for kind,_ in events))
+                contexts=[json.loads(v.split(':',1)[1]) for _,v in events if v.startswith('lio_planning_context.1:')]
+                self.assertEqual(contexts[-1]['authority'],'none')
+                self.assertEqual(contexts[-1]['authority_barrier_message_id'],'national-message')
+
     def test_plan06_undecided_date_and_party_do_not_block_readonly_days(self):
         for locale in ('zh','en'):
             with self.subTest(locale=locale):
