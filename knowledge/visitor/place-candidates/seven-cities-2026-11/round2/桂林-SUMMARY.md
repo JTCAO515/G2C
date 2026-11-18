@@ -108,6 +108,6 @@
 
 ## 七、文件
 
-- `/tmp/poi2/guilin/new.json`：253 条 × 26 字段
-- `/tmp/poi2/guilin/enrich.json`：115 条 × 8 字段
-- `/tmp/poi2/guilin/summary.md`：本说明
+- `桂林-new.csv`：253 条（第一轮 34 列表头）
+- `桂林-enrich.csv`：115 项补细
+- 本说明
