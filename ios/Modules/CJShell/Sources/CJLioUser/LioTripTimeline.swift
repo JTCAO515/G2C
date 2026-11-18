@@ -1,5 +1,6 @@
 #if os(iOS)
 import SwiftUI
+import CJRunClient
 
 struct LioTripListCard: View {
     let title: String
@@ -52,6 +53,8 @@ struct LioTripTimeline: View {
     @State private var focusedStop: String?
     @State private var mapUnavailable = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.self) private var environment
+    private var ink: Color { Color(LioTheme.ink.resolve(in: environment)) }
 
     private var day: LioItinerary.Day? {
         itinerary.days.first { $0.number == selectedDay } ?? itinerary.days.first
@@ -81,8 +84,8 @@ struct LioTripTimeline: View {
                             .font(.footnote)
                             .foregroundStyle(LioTheme.inkSecondary)
                         Link(destination: URL(string: "https://www.apple.com/legal/internet-services/maps/")!) {
-                            Text(language.text("Apple Maps legal information", "Apple 地图法律信息"))
-                                .font(.footnote)
+                            RunReadableText(text: language.text("Apple Maps legal information", "Apple 地图法律信息"),
+                                            style: .footnote, color: ink)
                                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                                 .contentShape(Rectangle())
                         }
@@ -156,8 +159,7 @@ struct LioTripTimeline: View {
                 }
                 if stop.point != nil {
                     Button { focusedStop = stop.id } label: {
-                        Text(stop.name)
-                            .font(.body.weight(.medium))
+                        RunReadableText(text: stop.name, style: .bodyMedium, color: ink)
                             .multilineTextAlignment(.leading)
                             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                             .contentShape(Rectangle())
@@ -165,7 +167,7 @@ struct LioTripTimeline: View {
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("lio.trip.focus.\(stop.id)")
                 } else {
-                    Text(stop.name).font(.body.weight(.medium))
+                    RunReadableText(text: stop.name, style: .bodyMedium, color: ink)
                 }
                 if stop.fixed == true {
                     Label(language.text("Fixed plan", "固定安排"), systemImage: "lock.fill")

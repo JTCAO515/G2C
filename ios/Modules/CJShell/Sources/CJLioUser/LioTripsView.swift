@@ -280,6 +280,7 @@ private struct LioTripDetail: View {
     let library: LioTripLibrary
     let language: LioLanguage
     let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
+    @Environment(\.self) private var environment
     @State private var record: LioTripLibrary.Record?
     @State private var unavailable = false
     @State private var attempt = 0
@@ -289,9 +290,8 @@ private struct LioTripDetail: View {
             if let record {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
-                        Text(record.title)
-                            .font(LioTheme.display(.title).weight(.semibold))
-                            .foregroundColor(LioTheme.ink)
+                        RunReadableText(text: record.title, style: .displayTitle,
+                                        color: Color(LioTheme.ink.resolve(in: environment)))
                             .background(LioTheme.paper)
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityAddTraits(.isHeader)
