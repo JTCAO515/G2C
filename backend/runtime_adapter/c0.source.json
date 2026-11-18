@@ -107,7 +107,7 @@
     "backend/cj_api/local_lio_calendar_source.py": "2a23c23a88e719458bff00285a12986522a8c6c48b8fcdffea4c535712b56c0d",
     "backend/cj_api/local_lio_exploration.py": "c16178c09c1062f995b04f482c9eeb2b7956f29e1817ecc24ff21be0f02e01a9",
     "backend/cj_api/local_lio_exploration_profile.py": "98ed943cf7f9269b8950426284d7ecbeeb25d6b1552796a6863fdd62933e4e64",
-    "backend/cj_api/local_lio_national.py": "2b5d4f140ab2a6f0c596d2baad5f7e67e2d946a8e8d42b69823c6b95b81a94d2",
+    "backend/cj_api/local_lio_national.py": "b6de6cb6abb5fd1f1ca19b2b5a40d0a2263e8961db7d37eaa212e5cb78976c8b",
     "backend/cj_api/local_lio_planning.py": "70b46da9a83c8caf7e9987049eb60cb93abd4ffebe1c4c648cb2e5e4e2b96bf7",
     "backend/cj_api/local_lio_provider_sources.py": "e660b41217d461c7dba4dbf29221829a3f7dfb0b8870d76080d0aeb35296a9b9",
     "backend/cj_api/local_lio_rich_calendar_source.py": "0c2a8d2595eb4368d5ea7002fc92ee40164a699229f38e09f9f8d839d27604e2",
@@ -137,7 +137,7 @@
     "eval/optimization/score_v2.py": "015fa9f21b418fe49a5ac07a5fb3027e0422620a6616029f2ba6438bfa1e9322",
     "tooling/optimization/uv.lock": "c3729fbcd04627cb07bde4f5f21b9c4fbfa4748b3d7468d550c7fc2af62bc343"
   },
-  "system_prompt_sha256": "5b55660e71f4a040a63a6856556f9a1462df2e8fb95e5f29386a008f281141bc",
+  "system_prompt_sha256": "6625441c04e428f512177d93b8439cb3f5409a8b1590a09d96de3b0914a0e113",
   "task_sha256": "9d4376ba7512d6f3c0741036ae1bd0dda99752bbc9f8b8fb8dd7025c61a530ec",
   "task_version": "G2C-dialogue-cases.2",
   "tool_implementation_sha256": "808d147990e8483f1042d7d57427a693106af56037d4e9c3960e3e850b4371e1",

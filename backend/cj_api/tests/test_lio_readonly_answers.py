@@ -28,6 +28,8 @@ class ReadOnlyAnswers(unittest.TestCase):
             ('zh','北京是中国的首都吗？'),('en','Is Beijing the capital of China?'),
             ('en','What is the capital of China?'),
             ('zh','你能提供什么旅行帮助？'),('en','What travel help can you offer?'),
+            ('zh',CASES['QA05']['inputs']['zh'][0]),('en',CASES['QA05']['inputs']['en'][0]),
+            ('zh','这是我第一次来中国。有什么建议？'),
         ):
             with self.subTest(locale=locale,text=text):
                 wire=flow(text,city=None,days=None,intent='consult',questions=(),reply='Intake reply')
@@ -39,6 +41,7 @@ class ReadOnlyAnswers(unittest.TestCase):
         for locale,city,text in (
             ('en','Beijing','What is the capital of China. Plan three days in Beijing.'),
             ('en','Beijing','What is the capital of China and plan three days in Beijing'),
+            ('en','Beijing','It is my first visit to China. Please plan three days in Beijing.'),
             ('zh','北京','北京是中国的首都吗？请规划北京三日游。'),
             ('zh','北京','请规划北京三日游;北京是中国的首都吗'),
         ):

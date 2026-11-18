@@ -82,6 +82,9 @@ DIRECT_ANSWER=re.compile(
     # The country name must end the question before the punctuation suffix.
     r"|(?:is [\w '-]{1,60} the capital|what is the capital) of China"
     r'|第一次来中国(?:旅行)?(?:建议|应该|可以)?怎么玩|first time in china[,，]?\s*(?:any tips|any advice)'
+    r'|(?:这是我)?第一次来中国[。.!！,，]\s*有什么建议'
+    r"|(?:it is|it['’]s) my first (?:visit to|time in) China[.!?,]\s*"
+    r'(?:what would you (?:recommend|suggest)|any (?:tips|advice))'
     r')[?？。.!！\s]*',re.I)
 
 
