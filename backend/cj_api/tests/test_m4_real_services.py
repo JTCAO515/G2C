@@ -2114,6 +2114,48 @@ class Boundaries(unittest.TestCase):
         with patch('asyncio.BaseEventLoop.getaddrinfo',AsyncMock(side_effect=asyncio.CancelledError())),self.assertNoLogs('cj_provider.audit',level='WARNING'),self.assertRaises(asyncio.CancelledError):
             asyncio.run(public_page(guard=lambda:True))
 
+    def test_registered_fact_pauses_after_send_before_response_and_drops_on_close(self):
+        from contextlib import closing
+
+        from cj_api.real_services import _response_stream
+        from cj_fact.live_source import PinnedHTTPSTransport
+
+        for close_before_read in (False, True):
+            with self.subTest(close_before_read=close_before_read):
+                observed=[]
+                excerpt='A synthetic source excerpt ready for the original public page parser.'
+
+                async def transport(client, target):
+                    self.assertTrue(client.before_send())
+                    observed.append('sent')
+                    await client.after_send()
+
+                    async def body():
+                        observed.append('body')
+                        yield ('<p>'+excerpt+'</p>').encode()
+
+                    async def close():
+                        observed.append('closed')
+
+                    return SimpleNamespace(status=200,content_encoding='identity',body=body(),close=close)
+
+                dns=AsyncMock(return_value=[(2,1,6,'',('93.184.216.34',443))])
+                with (patch('asyncio.BaseEventLoop.getaddrinfo',dns),
+                      patch.object(PinnedHTTPSTransport,'__call__',transport),
+                      closing(_response_stream(lambda sent:public_page(guard=lambda:True,after_send=sent))) as exchange):
+                    self.assertIsNone(next(exchange))
+                    self.assertEqual(observed,['sent'])
+                    if not close_before_read:
+                        self.assertEqual(next(exchange)['excerpts'],
+                                         [dict(text=excerpt,start=3,end=3+len(excerpt))])
+                self.assertEqual(observed,['sent'] if close_before_read else ['sent','body','closed'])
+
+    def test_registered_fact_cancellation_before_send_propagates(self):
+        from cj_api.real_services import _response_stream
+        dns=AsyncMock(side_effect=asyncio.CancelledError())
+        with patch('asyncio.BaseEventLoop.getaddrinfo',dns),self.assertRaises(asyncio.CancelledError):
+            next(_response_stream(lambda sent:public_page(guard=lambda:True,after_send=sent)))
+
     def test_fact_gzip_original_response_shape(self):
         raw=b'<p>Independent synthetic original fact excerpt, eligibility UNKNOWN.</p>'
         compressed=gzip.compress(raw)
@@ -2169,7 +2211,10 @@ class Boundaries(unittest.TestCase):
         raw=json.dumps(dict(version='FACT-query.1',fact_key='entry_notice',region='China',dates=dict(start='2026-11-04',end='2026-11-04'),conditions={})).encode()
         prepared=RealTools(services)._tool_input('fact',(raw,'synthetic-ref'))
         operation=SimpleNamespace(binding=SimpleNamespace(scope='local:https://local.g2c.invalid:m4-synthetic-one'),command=SimpleNamespace(attempt_id='fact-unknown-audit'))
-        with patch('cj_api.real_services.public_page',AsyncMock(side_effect=FactFailure('unsupported_content_type'))) as send:
+        dns=AsyncMock(return_value=[(2,1,6,'',('93.184.216.34',443))])
+        with (patch('asyncio.BaseEventLoop.getaddrinfo',dns),
+              patch('cj_fact.live_source.PinnedHTTPSTransport.__call__',
+                  AsyncMock(side_effect=FactFailure('unsupported_content_type'))) as send):
             for _ in range(2):
                 with self.assertRaises(BudgetUnknown):list(prepared.bind_operation(operation,lambda:True)())
             send.assert_awaited_once()

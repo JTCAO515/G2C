@@ -178,9 +178,9 @@ async def _read_response(reader, body_limit):
 
 
 async def fetch_candidate(config: Config, request: PreparedRequest,
-                          credentials: ProviderCredentials,*,before_send=None,basic=False,coordinate_only=False) -> TransportResult:
+                          credentials: ProviderCredentials,*,before_send=None,basic=False,coordinate_only=False,after_send=None) -> TransportResult:
     """Existing v3 candidate; original bindings and endpoint gate are retained."""
-    return await _fetch_bound(config,request,credentials,before_send=before_send,paths=_PATHS,
+    return await _fetch_bound(config,request,credentials,before_send=before_send,paths=_PATHS,after_send=after_send,
         reprepare=lambda:prepare(config,request.query,request.request_ref,request.started_at,
                                  basic=basic,coordinate_only=coordinate_only))
 
@@ -221,7 +221,7 @@ def _candidate_target(config,request,credentials,reprepare,paths):
     return target,expires,remaining
 
 
-async def _fetch_bound(config,request,credentials,*,before_send,paths,reprepare):
+async def _fetch_bound(config,request,credentials,*,before_send,paths,reprepare,after_send=None):
     """One-shot transport shared only after the selected fixed preparation gate.
 
     Every result after possible I/O failure is unknown; retain the same attempt.
@@ -253,6 +253,8 @@ async def _fetch_bound(config,request,credentials,*,before_send,paths,reprepare)
             if loop.time()>=deadline:raise _WireFailure('connect_deadline_exceeded')
             writer.write(payload)
             await writer.drain()
+            if after_send is not None:
+                await after_send()
             status, body = await _read_response(reader, config.max_response_bytes)
             if status == 200 and _secret_in(body, credentials.api_key):
                 raise _WireFailure("credential_echo_rejected")
