@@ -29,7 +29,7 @@ class NationalExecution(unittest.TestCase):
             extraction=dict(version='NEEDS-extraction.1',fields=fields,unresolved=[],long_term_requests=[]),
             field_sources=sources,current_request=text)
 
-    def run_intake(self,value,*,turns=None,previous=None,resolution=None,same_destination=True,model_output=None,flow_output=None,locale='zh',source_conflict=False):
+    def run_intake(self,value,*,turns=None,previous=None,resolution=None,same_destination=True,model_output=None,flow_output=None,locale='zh',source_conflict=False,discussion_output=None):
         text=value['current_request'];turns=turns or (PlanningTurn(text,date(2026,11,11)),)
         city=CityReference('310000','上海市','上海市',None,'province','Asia/Shanghai')
         resolution=resolution or dict(status='resolved',candidates=[city.__dict__],requested_name='上海',source={})
@@ -58,6 +58,9 @@ class NationalExecution(unittest.TestCase):
             def _registered_stream(self,binding,key,registration,argument,**kwargs):
                 if registration=='model.answer':
                     events.append(('discussion_input',json.dumps(argument[:2],ensure_ascii=False)))
+                    if discussion_output is not None:
+                        yield discussion_output
+                        return
                     days=wire['duration_days'] or previous['facts']['duration_days']['value']
                     reply=('；'.join('第'+str(n)+'天：博物馆与街区散步' for n in range(1,days+1))+'。想先调整哪一天？'
                            if locale=='zh' else '\n'.join('Day '+str(n)+': a museum and neighborhood walk.' for n in range(1,days+1))+' Which day would you like to adjust?')
