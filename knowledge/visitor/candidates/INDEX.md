@@ -91,16 +91,16 @@
 | `tool.2026-11-18.china-unicom` | 中国联通（China Unicom） | 通信上网 | 全国 | 中文；英文服务待核实 | [中国联通官网](https://www.10010.com/) | [中国政府网（China Daily 呈现）《How can foreigners apply for a SIM card...》](https://govt.chinadaily.com.cn/s/202508/15/WS689ed552498edec913ce0dc8/how-can-foreigners-apply-for-a-sim-card-and-choose-a-suitable-mobile-communication-service-plan-in-china.html) |
 | `tool.2026-11-18.china-mobile` | 中国移动（China Mobile） | 通信上网 | 全国 | 中文；英文服务待核实 | [中国移动官网](https://www.10086.cn/) | [中国政府网（China Daily 呈现）《How can foreigners apply for a SIM card...》](https://govt.chinadaily.com.cn/s/202508/15/WS689ed552498edec913ce0dc8/how-can-foreigners-apply-for-a-sim-card-and-choose-a-suitable-mobile-communication-service-plan-in-china.html) |
 | `tool.2026-11-18.airalo` | Airalo 中国 eSIM（Airalo China eSIM） | 通信上网 | 全国 | 英文；其他语言见网站语言选择（未逐项核实） | [Airalo 中国 eSIM](https://www.airalo.com/china-esim) | [Airalo 中国 eSIM 页面](https://www.airalo.com/china-esim) |
-| `tool.2026-11-18.beijing-yitongxing` | 亿通行（未知） | 城市公共交通 | 北京 | 简体中文、英文 | [App Store 亿通行](https://apps.apple.com/cn/app/id1247890676) | [App Store《亿通行》页面](https://apps.apple.com/cn/app/id1247890676) |
+| `tool.2026-11-18.beijing-yitongxing` | 亿通行（英文名未知） | 城市公共交通 | 北京 | 简体中文、英文 | [App Store 亿通行](https://apps.apple.com/cn/app/id1247890676) | [App Store《亿通行》页面](https://apps.apple.com/cn/app/id1247890676) |
 | `tool.2026-11-18.shanghai-metro-daduhui` | Metro 大都会（Metro Daduhui） | 城市公共交通 | 上海 | 简体中文、英文 | [App Store Metro 大都会](https://apps.apple.com/cn/app/id1202750238) | [上海市人民政府英文网站《CIIE service guide: Easy metro access》](https://english.shanghai.gov.cn/en-CIIE2025/20251017/c6c5ca124ee74e92a37244280c0983b9.html) |
 | `tool.2026-11-18.guangzhou-metro` | 广州地铁官方 APP（Guangzhou Metro） | 城市公共交通 | 广州 | 简体中文、英文 | [App Store 广州地铁官方 APP](https://apps.apple.com/cn/app/id580097761) | [App Store《广州地铁官方APP》页面](https://apps.apple.com/cn/app/id580097761) |
 | `tool.2026-11-18.shenzhen-metro` | 深圳地铁-官方 APP（Shenzhen Metro） | 城市公共交通 | 深圳 | 简体中文、英文 | [App Store 深圳地铁-官方 APP](https://apps.apple.com/cn/app/id848926994) | [深圳地铁官网《运营服务·常见问题》](https://www.szmc.net/shentieyunying/yunyingfuwu/changjianwenti/) |
 | `tool.2026-11-18.chengdu-metro` | 成都地铁-官方 APP（Chengdu Metro） | 城市公共交通 | 成都 | 简体中文、英文 | [App Store 成都地铁-官方 APP](https://apps.apple.com/cn/app/id1303414976) | [App Store《成都地铁-官方APP》页面](https://apps.apple.com/cn/app/id1303414976) |
 | `tool.2026-11-18.xian-metro` | 西安地铁-官方 App（Xi'an Metro） | 城市公共交通 | 西安 | 简体中文、英文 | [App Store 西安地铁-官方 App](https://apps.apple.com/cn/app/id1325483350) | [App Store《西安地铁-官方App》页面](https://apps.apple.com/cn/app/id1325483350) |
 | `tool.2026-11-18.hangzhou-metro` | 杭州地铁-官方 APP（Hangzhou Metro） | 城市公共交通 | 杭州 | 简体中文、英文 | [App Store 杭州地铁-官方 APP](https://apps.apple.com/cn/app/id1131121104) | [App Store《杭州地铁-官方APP》页面](https://apps.apple.com/cn/app/id1131121104) |
-| `tool.2026-11-18.chongqing-yuchangxing` | 渝畅行（未知） | 城市公共交通 | 重庆 | 简体中文 | [App Store 渝畅行](https://apps.apple.com/cn/app/id1491110313) | [App Store《渝畅行》页面](https://apps.apple.com/cn/app/id1491110313) |
-| `tool.2026-11-18.nanjing-yuning-tongxing` | 与宁同行（未知） | 城市公共交通 | 南京 | 简体中文 | [App Store 与宁同行](https://apps.apple.com/cn/app/id1600886078) | [App Store《与宁同行》页面](https://apps.apple.com/cn/app/id1600886078) |
-| `tool.2026-11-18.wuhan-metro-new-era` | Metro 新时代（未知） | 城市公共交通 | 武汉 | 简体中文 | [App Store Metro 新时代](https://apps.apple.com/cn/app/id1121139634) | [App Store《Metro新时代》页面](https://apps.apple.com/cn/app/id1121139634) |
+| `tool.2026-11-18.chongqing-yuchangxing` | 渝畅行（英文名未知） | 城市公共交通 | 重庆 | 简体中文 | [App Store 渝畅行](https://apps.apple.com/cn/app/id1491110313) | [App Store《渝畅行》页面](https://apps.apple.com/cn/app/id1491110313) |
+| `tool.2026-11-18.nanjing-yuning-tongxing` | 与宁同行（英文名未知） | 城市公共交通 | 南京 | 简体中文 | [App Store 与宁同行](https://apps.apple.com/cn/app/id1600886078) | [App Store《与宁同行》页面](https://apps.apple.com/cn/app/id1600886078) |
+| `tool.2026-11-18.wuhan-metro-new-era` | Metro 新时代（英文名未知） | 城市公共交通 | 武汉 | 简体中文 | [App Store Metro 新时代](https://apps.apple.com/cn/app/id1121139634) | [App Store《Metro新时代》页面](https://apps.apple.com/cn/app/id1121139634) |
 
 ## 中西部城市景点（武汉、长沙、成都、西安、重庆）
 
