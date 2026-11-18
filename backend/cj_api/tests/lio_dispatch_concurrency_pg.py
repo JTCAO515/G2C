@@ -31,6 +31,8 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root, *
     signer = load_confirmation_signer(auth)
     cases = [('intake', False, False), ('discussion', False, False),
              ('memory', False, False), ('draft', False, False)]
+    if before_send:
+        cases.insert(1, ('ordinary', False, False))
     if cancel_before_send:
         assert before_send
         cases = cases[:1]
@@ -79,7 +81,8 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root, *
         seed_mid = 'dispatch-' + case + '-previous'
         mid = 'dispatch-' + case + '-pending'
         text = {'draft': '规划成都三天，2026-12-01出发',
-                'memory': '第一次来中国应该怎么玩？'}.get(paused, '去成都玩三天')
+                'memory': '第一次来中国应该怎么玩？',
+                'ordinary': '第一次来中国应该怎么玩？'}.get(paused, '去成都玩三天')
         ordinary = '可以先从老街和公园开始。你更想逛哪一类？'
         conversation = send(seed_mid, '你是谁')
         assert [outcome.status for outcome in worker.process()] == ['completed']
@@ -97,6 +100,8 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root, *
             if paused == 'memory':
                 stage = 'memory' if 'MEMORY-EXTRACT@2' in system else 'answer'
                 value = dict(version='MEMORY-EXTRACT@2', entries=[]) if stage == 'memory' else ordinary
+            elif paused == 'ordinary':
+                stage, value = 'ordinary', ordinary
             elif index is not None:
                 stage = 'intake'
                 assert index == 1
@@ -143,7 +148,7 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root, *
             observation['http_status'] = 200
             yield payload
 
-        expected_before_connection = 0 if paused == 'intake' else 1
+        expected_before_connection = 0 if paused in ('intake', 'ordinary') else 1
 
         async def connect(host, port, *, server_hostname, **options):
             assert (host, port, server_hostname) == ('dashscope.aliyuncs.com', 443, 'dashscope.aliyuncs.com')
@@ -206,7 +211,7 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root, *
             print('PASS signed owner stop while connecting blocks the original POST and leaves the original hold', flush=True)
             return
         assert outcome.status == ('unknown' if missing_done or missing_model else 'completed')
-        path = {'memory': ['answer', 'memory'], 'draft': ['intake', 'draft']}.get(paused, ['intake', 'discussion'])
+        path = {'ordinary': ['ordinary'], 'memory': ['answer', 'memory'], 'draft': ['intake', 'draft']}.get(paused, ['intake', 'discussion'])
         assert sent == path, sent
         page = timeline()
         assert page.status_code == 200
@@ -236,11 +241,11 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root, *
             assert prior is None or prior['status'] != 'plan_preview', prior
         elif paused == 'draft':
             assert completed['status'] == 'completed' and '保存确认' in completed['answer']
-        elif paused == 'memory':
+        elif paused in ('memory', 'ordinary'):
             assert completed['status'] == 'completed' and completed['answer'] == ordinary
         else:
             assert '第2天看博物馆' in completed['answer']
-        settled = ['RECEIVED'] * (2 if paused == 'memory' else 3)
+        settled = ['RECEIVED'] * (1 if paused == 'ordinary' else 2 if paused == 'memory' else 3)
         if missing_done or missing_model:
             settled[-1] = 'INTENT'
         assert [row['state'] for row in budget.inspect()] == settled
