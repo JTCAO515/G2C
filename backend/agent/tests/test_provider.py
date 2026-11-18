@@ -166,6 +166,7 @@ def test_registered_optional_intake_returns_after_send_before_reading_sse(tmp_pa
     ('wrong_model', 'stop', False, False),
     ('provider_error', 'stop', False, False),
     ('non_utf8', 'stop', False, False),
+    ('escaped_secret_echo', 'stop', False, False),
     ('original_output_limit', 'stop', False, False),
 ])
 def test_only_complete_discussion_surfaces_with_missing_receipt(
@@ -184,6 +185,10 @@ def test_only_complete_discussion_surfaces_with_missing_receipt(
     elif missing=='non_utf8':
         del value['model']
         value['choices'][0]['delta']['content'] = r'{"answer":"\ud800"}'
+    elif missing=='escaped_secret_echo':
+        del value['model']
+        encoded_key=r'\u%04x' % ord(KEY[0])+KEY[1:]
+        value['choices'][0]['delta']['content']='{"answer":"'+encoded_key+'"}'
     elif missing=='original_output_limit':
         del value['model']
     lines = 'data: ' + json.dumps(value, ensure_ascii=False) + '\n\n'

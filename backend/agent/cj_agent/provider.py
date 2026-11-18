@@ -742,6 +742,8 @@ class MeteredDashScopeProvider:
                                 object_pairs_hook=reject_duplicates(ValueError,'duplicate_answer_field'))
                             if (type(candidate) is dict and candidate.keys()=={'answer'}
                                     and type(candidate['answer']) is str and candidate['answer'].strip()):
+                                if self.config.api_key in candidate['answer']:
+                                    raise ProviderUnknown('M4 structured model secret echo rejected')
                                 candidate['answer'].encode('utf-8')
                                 failure_reason='receipt_metadata_incomplete'
                                 raise CompleteUnsettledAnswer(candidate['answer'])
