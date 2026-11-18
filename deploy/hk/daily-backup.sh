@@ -11,21 +11,12 @@ compose() {
 }
 
 backup_image=
-if [ -e backup.image ] || [ -L backup.image ]; then
-    # Only a fixed reviewed source tag and its loaded operator image ID.
-    if [ ! -f backup.image ] || [ -L backup.image ]; then
-        printf '%s\n' 'ALERT beta_backup_image_selection_invalid' >&2
-        exit 1
-    fi
-    selection=$(cat backup.image)
-    if [ "$(printf '%s\n' "$selection" | wc -l)" -ne 1 ] ||
-        ! printf '%s\n' "$selection" | grep -qxE 'g2c-beta-operator:[0-9a-f]{40} sha256:[0-9a-f]{64}'; then
-        printf '%s\n' 'ALERT beta_backup_image_selection_invalid' >&2
-        exit 1
-    fi
-    backup_image=${selection% *}
-    expected="${selection#* } amd64 ${backup_image#*:}"
-    if ! actual=$(docker image inspect --format '{{.Id}} {{.Architecture}} {{index .Config.Labels "org.opencontainers.image.revision"}}' "$backup_image") ||
+selection=$(python3 deploy/hk/daily_backup_image.py)
+if [ -n "$selection" ]; then
+    backup_tag=${selection% *}
+    backup_image=${selection#* }
+    expected="$backup_image amd64 ${backup_tag#*:}"
+    if ! actual=$(docker image inspect --format '{{.Id}} {{.Architecture}} {{index .Config.Labels "org.opencontainers.image.revision"}}' "$backup_tag") ||
         [ "$actual" != "$expected" ]; then
         printf '%s\n' 'ALERT beta_backup_image_selection_mismatch' >&2
         exit 1
