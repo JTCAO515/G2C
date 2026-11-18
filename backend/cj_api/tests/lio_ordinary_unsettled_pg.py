@@ -16,8 +16,11 @@ from cj_message.lio_context import UNSETTLED_VISIBLE_ANSWER
 from cj_usage.authorization_budget import AuthorizationBudget
 from runtime_adapter.contract import encode
 import run_worker
+from test_lio_planning_flow import flow
 
 
+TRANSIT_QUESTION = 'What are the rules for 240-hour visa-free transit in China?'
+UNSUPPORTED_POLICY = 'Admission is guaranteed at any port regardless of passport. ' * 8
 PROMPTS = {'zh': '第一次来中国建议怎么玩？', 'en': 'First time in China, any tips?'}
 REPLIES = {
     'zh': '可以从一个城市开始，多留时间走街串巷、逛博物馆和看公园。' * 8,
@@ -52,7 +55,8 @@ def check_ordinary(api, headers, database, auth, subject, scope, memory, root):
         initial_trips = db.execute('SELECT count(*) FROM cj_trip_record').fetchone()[0]
         initial_bindings = db.execute('SELECT count(*) FROM cj_message_needs_binding').fetchone()[0]
     for profile in ('buffered', 'streaming', 'compact'):
-        for locale, case, omitted in cases:
+        profile_cases = cases + ((('en','transit','done'),) if profile == 'streaming' else ())
+        for locale, case, omitted in profile_cases:
             tag = '-'.join((profile, locale, case, omitted))
             budget = AuthorizationBudget(root / tag, clock=lambda: datetime(2026, 11, 18, tzinfo=timezone.utc))
             model = MeteredDashScopeProvider(
@@ -68,8 +72,9 @@ def check_ordinary(api, headers, database, auth, subject, scope, memory, root):
                 assembly_planning=True,demo_planning=True,national_planning=True,
                 lio_confirmation=signer,lio_memory_enabled=True)
             mid = 'ordinary-' + tag
+            question = TRANSIT_QUESTION if case == 'transit' else PROMPTS[locale]
             received = api.post('/v2/lio/messages', headers=headers, content=encode(dict(
-                version='LIO-message.2',message_id=mid,text=PROMPTS[locale],locale=locale,new_conversation=True)))
+                version='LIO-message.2',message_id=mid,text=question,locale=locale,new_conversation=True)))
             assert received.status_code == 200
             cid = received.json()['conversation_id']
             attempts = []
@@ -78,14 +83,29 @@ def check_ordinary(api, headers, database, auth, subject, scope, memory, root):
             async def wire(config,raw,guard,observation):
                 assert guard() is True
                 packet = json.loads(raw)
-                assert 'LIO-planning-intake' not in packet['messages'][0]['content']
+                system = packet['messages'][0]['content']
+                if 'LIO-planning-intake' in system:
+                    assert case == 'transit'
+                    index = packet['response_format']['json_schema']['schema']['properties']['current_source_index']['const']
+                    intake = flow(question,city=None,days=None,intent='consult',questions=(),index=index)
+                    intake.update(version='LIO-planning-intake.8',planning_request_index=None,needs_tools=True)
+                    attempts.append('intake')
+                    yield _M4_REQUEST_SENT
+                    observation['http_status'] = 200
+                    envelope = dict(id=tag+'-intake',model=M4_MODEL,choices=[dict(index=0,
+                        delta=dict(content=json.dumps(intake)),finish_reason='stop')],
+                        usage=dict(prompt_tokens=100,completion_tokens=100,total_tokens=200))
+                    yield ('data: '+json.dumps(envelope)+'\n\ndata: [DONE]\n\n').encode()
+                    return
+                if case == 'transit':
+                    assert 'use the official entry notice' in system
                 expected_tool = M4_TURN_FUNCTION_V2 if profile=='compact'else'fact'
                 assert [tool['function']['name'] for tool in packet['tools']]==[expected_tool]
-                attempts.append(True)
+                attempts.append('answer')
                 yield _M4_REQUEST_SENT
                 observation['http_status'] = 200
                 finish = 'length' if case=='truncated' else 'tool_calls' if case=='tool' or profile=='compact' else 'stop'
-                delta = wire_delta(profile, locale, case)
+                delta = {'content': UNSUPPORTED_POLICY} if case == 'transit' else wire_delta(profile, locale, case)
                 if streamed_truncation:
                     first = dict(id=tag, model=M4_MODEL,
                         choices=[dict(index=0, delta=delta, finish_reason=None)])
@@ -100,9 +120,10 @@ def check_ordinary(api, headers, database, auth, subject, scope, memory, root):
 
             with patch('cj_agent.provider._m4_wire',wire):
                 outcome, = worker.process()
-            assert len(attempts)==1 and outcome.status=='unknown' and outcome.proposal_id is None
-            fee, = budget.inspect()
-            assert fee['state']=='INTENT'
+            expected_attempts = ['intake','answer'] if case == 'transit' else ['answer']
+            expected_states = ['RECEIVED','INTENT'] if case == 'transit' else ['INTENT']
+            assert attempts == expected_attempts and outcome.status == 'unknown' and outcome.proposal_id is None
+            assert [fee['state'] for fee in budget.inspect()] == expected_states
             signed = api.get('/v2/lio/timeline',headers=headers,params={'conversation_id':cid})
             assert signed.status_code==200
             message, = signed.json()['messages']
@@ -111,6 +132,11 @@ def check_ordinary(api, headers, database, auth, subject, scope, memory, root):
             native=worker.runs.snapshot(binding)
             assert native.status=='unknown'
             retained=UNSETTLED_VISIBLE_ANSWER in native.effects
+            if case=='transit':
+                unsupported = 'Admission is guaranteed at any port'
+                assert unsupported not in message['answer'] and unsupported not in native.text
+                assert message['sources'] == []
+                continue
             if case=='complete':
                 if not (retained and message['status']=='completed' and message['answer']==REPLIES[locale]):
                     missing.append(tag)
