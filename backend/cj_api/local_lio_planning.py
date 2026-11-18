@@ -208,6 +208,8 @@ class LioPlanning:
     def answer_context(self,binding,messages):
         return messages,()
 
+    readonly_answer_context = answer_context
+
     def scene_context(self,binding,now):
         return self.plan_and_save.scene_context(binding,now)
 
