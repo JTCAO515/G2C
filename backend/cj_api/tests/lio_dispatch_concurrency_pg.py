@@ -147,8 +147,10 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
         if missing_done:
             assert (completed['status'], completed['answer']) == ('failed', '')
         elif missing_model:
-            assert completed['status'] == 'completed' and completed['answer'] == complete_unsettled_reply
-            assert len(completed['answer']) == 2436 and completed['memory'] is None
+            assert completed['status'] == 'completed' and completed['memory'] is None
+            title, _, reply = completed['answer'].partition('\n')
+            assert title == '成都 · 未保存建议'
+            assert reply == complete_unsettled_reply and len(reply) == 2436
             from cj_api.local_lio_national import CONTEXT
             from cj_api.local_lio_planning import PlanningTurn
             prior_binding = worker._binding(worker.messages.query(mid).receipt)
