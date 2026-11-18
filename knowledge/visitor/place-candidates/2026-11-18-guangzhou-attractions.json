@@ -1,0 +1,7165 @@
+[
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a001",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "5A级景区",
+    "name_zh": "长隆旅游度假区",
+    "name_en": null,
+    "district": "番禺",
+    "address": "广州市番禺区迎宾路",
+    "description_zh": "市级A级景区名录登记条目：5A级，番禺区，登记地址为迎宾路；大类属现代游乐类、亚类为主题游乐。门票、开放与预约安排以官方最新公告为准。",
+    "tags": [
+      "5A级景区",
+      "A级景区名录",
+      "主题游乐"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "5A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核；等级与地址以官方名录为准。",
+    "conflicts": [
+      "番禺区2026-05名录地址作“番禺区番禺大道北长隆旅游度假区”，与市级名录“广州市番禺区迎宾路”不一致"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a002",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "5A级景区",
+    "name_zh": "白云山风景名胜区",
+    "name_en": null,
+    "district": "白云",
+    "address": "广州市广园中路",
+    "description_zh": "市级A级景区名录登记条目：5A级，白云区，登记地址广园中路；大类属自然生态类、亚类地质地貌。详细开放、门票与预约信息待核实。",
+    "tags": [
+      "5A级景区",
+      "A级景区名录",
+      "自然生态"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "5A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核；白云区级名录另列该景区多处门岗地址，需复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a003",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "中山纪念堂",
+    "name_en": null,
+    "district": "越秀",
+    "address": "广州市东风中路259号",
+    "description_zh": "市级A级景区名录登记条目：4A级，越秀区，东风中路259号；名录景区亚类标注为红色旅游。开放、门票与预约信息待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "红色旅游",
+      "公园",
+      "纪念性公园",
+      "中山纪念堂"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": "名录标注园内免费、堂内收费（票价信息按要求不记录，以官方最新公告为准）",
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      },
+      {
+        "name": "《广州市公园名录（截至2020年底）》（广州市林业和园林局）",
+        "url": "https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2021-05-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实",
+      "英文名",
+      "官网",
+      "开放时间",
+      "票价"
+    ],
+    "notes": "名录条目，待人工查重复核。；名录数据截至2020年底，公园信息可能已调整。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a004",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "莲花山旅游区",
+    "name_en": null,
+    "district": "番禺",
+    "address": "广州市番禺区石楼镇西门路18号",
+    "description_zh": "市级A级景区名录登记条目：4A级，番禺区石楼镇，登记地址西门路18号；大类属自然生态类、亚类森林草原。详细开放与门票待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "自然生态"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": [
+      "番禺区2026-05名录门牌作“西门路123号”，与市级名录“西门路18号”不一致"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a005",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "宝墨园",
+    "name_en": null,
+    "district": "番禺",
+    "address": "广州市番禺区沙湾镇紫坭村",
+    "description_zh": "市级A级景区名录登记条目：4A级，番禺区沙湾镇紫坭村；大类属历史文化类、亚类文化遗迹。开放时间、门票与预约信息待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "历史文化"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": [
+      "番禺区2026-05名录作“番禺区沙湾街紫坭村”，街镇表述与市级名录（沙湾镇）不同"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a006",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "南越王博物院（王墓展区）景区",
+    "name_en": null,
+    "district": "越秀",
+    "address": "广州市解放北路867号",
+    "description_zh": "市级A级景区名录登记条目：4A级，越秀区，解放北路867号；大类属历史文化类、亚类文博院馆。参观预约与开放详情待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "文博院馆",
+      "博物馆",
+      "国家一级博物馆",
+      "遗址博物馆",
+      "南越国"
+    ],
+    "official_url": "https://www.nywmuseum.org.cn/",
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": "页面标注王宫展区免费、王墓展区需购票，部分群体按页面细则免票（票价信息按要求不记录）",
+      "booking_note": "页面标注王宫展区凭预约二维码入场，逢周一闭馆，法定节假日照常开放（以官方最新公告为准）"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      },
+      {
+        "name": "广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-09-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实",
+      "英文名"
+    ],
+    "notes": "名录条目，待人工查重复核；2024-09版名录名称作“南越王博物院”，此处按2026-06版名称。；两展区地址分别录入。；已合并名录中的另一名称：南越王博物院",
+    "conflicts": [
+      "王宫展区地址：备案表载北京路374号，2020年市文广旅局免费开放名单载中山四路316号，两址或为不同出入口/表述，建议以场馆官网为准"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a007",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "黄花岗公园",
+    "name_en": null,
+    "district": "越秀",
+    "address": "广州市先烈中路79号",
+    "description_zh": "市级A级景区名录登记条目：4A级，越秀区先烈中路；亚类标注为红色旅游。开放、门票与预约安排以官方最新公告为准。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "红色旅游",
+      "公园",
+      "纪念性公园",
+      "免费开放",
+      "辛亥革命"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": "名录标注免费向市民游客开放（以官方最新公告为准）",
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      },
+      {
+        "name": "《广州市公园名录（截至2020年底）》（广州市林业和园林局）",
+        "url": "https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2021-05-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实",
+      "英文名",
+      "官网",
+      "开放时间",
+      "预约制度"
+    ],
+    "notes": "名录条目，待人工查重复核。；名录数据截至2020年底，公园信息可能已调整。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a008",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "越秀公园",
+    "name_en": null,
+    "district": "越秀",
+    "address": "广州市解放北路988号",
+    "description_zh": "市级A级景区名录登记条目：4A级，越秀区解放北路988号；大类属现代游乐类、亚类城市公园。门票与开放详情待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "城市公园",
+      "公园",
+      "综合公园",
+      "免费开放",
+      "越秀山"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": "名录标注免费向市民游客开放（以官方最新公告为准）",
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      },
+      {
+        "name": "《广州市公园名录（截至2020年底）》（广州市林业和园林局）",
+        "url": "https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2021-05-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实",
+      "英文名",
+      "官网",
+      "开放时间",
+      "预约制度"
+    ],
+    "notes": "名录条目，待人工查重复核。；名录数据截至2020年底，公园信息可能已调整。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a009",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "碧水湾温泉度假村",
+    "name_en": null,
+    "district": "从化",
+    "address": "广州市从化流溪温泉旅游度假区（良口）",
+    "description_zh": "市级A级景区名录登记条目：4A级，从化区良口，登记位置在流溪温泉旅游度假区；大类属现代游乐类、亚类休闲度假。住宿与门票待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "休闲度假"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实",
+      "门牌号待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a010",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "广州动物园",
+    "name_en": null,
+    "district": "越秀",
+    "address": "广州市先烈中路120号",
+    "description_zh": "市级A级景区名录登记条目：4A级，越秀区先烈中路120号；大类属现代游乐类、亚类主题游乐。门票、开放与预约信息待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "主题游乐",
+      "公园",
+      "动物园",
+      "亲子"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": "名录标注需购票（票价信息按要求不记录，以官方最新公告为准）",
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      },
+      {
+        "name": "《广州市公园名录（截至2020年底）》（广州市林业和园林局）",
+        "url": "https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2021-05-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实",
+      "英文名",
+      "官网",
+      "开放时间",
+      "票价"
+    ],
+    "notes": "名录条目，待人工查重复核。；名录数据截至2020年底，公园信息可能已调整。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a011",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "华南植物园",
+    "name_en": null,
+    "district": "天河",
+    "address": "广州市天河区天源路1190号",
+    "description_zh": "市级A级景区名录登记条目：4A级，天河区天源路1190号；大类属现代游乐类、亚类城市公园。开放与门票详情待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "城市公园"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a012",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "广州烈士陵园",
+    "name_en": null,
+    "district": "越秀",
+    "address": "广州市中山二路92号",
+    "description_zh": "市级A级景区名录登记条目：4A级，越秀区中山二路92号；亚类标注为红色旅游。参观开放与预约安排待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "红色旅游"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a013",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "陈家祠",
+    "name_en": "Guangdong Folk Arts Museum",
+    "district": "荔湾",
+    "address": "广州市中山七路恩龙里34号",
+    "description_zh": "市级A级景区名录登记条目：4A级，荔湾区中山七路恩龙里34号；大类属历史文化类、亚类文博院馆。门票与预约制度待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "文博院馆",
+      "博物馆",
+      "国家一级博物馆",
+      "陈家祠",
+      "民间工艺"
+    ],
+    "official_url": "https://www.gzchenjiaci.com",
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": "页面标注需预约购票，部分人群可凭相应证件免预约购票（票价信息按要求不记录）",
+      "booking_note": "页面标注逢周二闭馆（法定节假日除外），可通过微信公众号预约7天内门票（以官方最新公告为准）"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      },
+      {
+        "name": "广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-09-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实",
+      "常设展览信息"
+    ],
+    "notes": "名录条目，待人工查重复核。；英文名取自场馆官网页面（Guangdong Folk Arts Museum）。；已合并名录中的另一名称：广东民间工艺博物馆（陈家祠）",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a014",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "广东科学中心",
+    "name_en": null,
+    "district": "番禺",
+    "address": "广州市大学城西六路168号",
+    "description_zh": "市级A级景区名录登记条目：4A级，番禺区大学城，登记地址西六路168号；大类属产业融合类、亚类科技教育。票务与预约待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "科技教育"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": [
+      "番禺区2026-05名录地址作“番禺区大学城科普路168号”，与市级名录“大学城西六路168号”不一致"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a015",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "九龙湖旅游度假区",
+    "name_en": null,
+    "district": "花都",
+    "address": "广州市花都区花东镇九龙湖社区",
+    "description_zh": "市级A级景区名录登记条目：4A级，花都区花东镇九龙湖社区；大类属现代游乐类、亚类休闲度假。度假产品与门票信息待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "休闲度假"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a016",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "南海神庙",
+    "name_en": null,
+    "district": "黄埔",
+    "address": "广州市黄埔区庙头旭日街22号",
+    "description_zh": "市级A级景区名录登记条目：4A级，黄埔区庙头，旭日街22号；大类属历史文化类、亚类文化遗迹。开放与门票制度待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "文化遗迹"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a017",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "石头记矿物园",
+    "name_en": null,
+    "district": "花都",
+    "address": "广州市花都区珠宝城大观路1号",
+    "description_zh": "市级A级景区名录登记条目：4A级，花都区珠宝城大观路1号；大类属产业融合类、亚类工业旅游。门票与开放详情待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "工业旅游"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a018",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "正佳广场商贸旅游区",
+    "name_en": null,
+    "district": "天河",
+    "address": "广州市天河路228号",
+    "description_zh": "市级A级景区名录登记条目：4A级，天河区天河路228号；大类属现代游乐类、亚类主题游乐。营业与票务信息待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "主题游乐"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a019",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "广州白水寨旅游区",
+    "name_en": null,
+    "district": "增城",
+    "address": "广州市增城区派潭镇",
+    "description_zh": "市级A级景区名录登记条目：4A级，增城区派潭镇；大类属自然生态类、亚类地质地貌。门票、开放与预约安排待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "自然生态"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实",
+      "门牌号待核实"
+    ],
+    "notes": "名录条目，待人工查重复核；名称在2025-10版名录中作“白水寨旅游度假区”。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a020",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "岭南印象园",
+    "name_en": null,
+    "district": "番禺",
+    "address": "广州市大学城外环西路",
+    "description_zh": "市级A级景区名录登记条目：4A级，番禺区大学城，登记地址外环西路；大类属历史文化类、亚类文化遗迹。票务与开放待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "文化遗迹"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实",
+      "门牌号待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": [
+      "番禺区2026-05名录作“番禺区大学城外环西路1号”，市级名录未标门牌号"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a021",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "南沙滨海湿地景区",
+    "name_en": null,
+    "district": "南沙",
+    "address": "广州市南沙区万顷沙镇新垦十八涌",
+    "description_zh": "市级A级景区名录登记条目：4A级，南沙区万顷沙镇新垦十八涌；大类属自然生态类、亚类水域景观。门票与预约制度待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "自然生态"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a022",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "广州塔",
+    "name_en": null,
+    "district": "海珠",
+    "address": "广州市海珠区阅江西路222号",
+    "description_zh": "市级A级景区名录登记条目：4A级，海珠区阅江西路；大类属现代游乐类、亚类主题游乐。登塔票务与预约以官方最新公告为准。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "主题游乐"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核；海珠区页面另标注9:30—22:30，属易变信息未采录。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a023",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "北京路文化旅游区（含南越王宫博物馆）",
+    "name_en": null,
+    "district": "越秀",
+    "address": "广州市北京路",
+    "description_zh": "市级A级景区名录登记条目：4A级，越秀区北京路；大类属现代游乐类、亚类特色街区，名录标注为开放式景区。详情待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "特色街区",
+      "开放式景区"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10899669.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-07-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实",
+      "门牌号待核实"
+    ],
+    "notes": "名录条目，待人工查重复核；该条在2026-06版名录中标注“开放式景区”。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a024",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "南沙天后宫",
+    "name_en": null,
+    "district": "南沙",
+    "address": "广州市南沙区天后路88号",
+    "description_zh": "市级A级景区名录登记条目：4A级，南沙区天后路88号；名录整理为历史文化类景区条目。门票与开放安排待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "历史文化"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-10-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a025",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "沙湾古镇",
+    "name_en": null,
+    "district": "番禺",
+    "address": "广州市番禺区沙湾大巷涌路10号沙湾古镇",
+    "description_zh": "市级A级景区名录登记条目：4A级，番禺区沙湾大巷涌路；属历史文化类景区条目。门票、开放与预约信息待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "历史文化"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-10-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": [
+      "番禺区2026-05名录地址作“番禺区沙湾街大巷涌路64号”，门牌号与市级名录不一致"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a026",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "广州神农草堂中医药博物馆",
+    "name_en": null,
+    "district": "白云",
+    "address": "广州市沙太北路389号白云山和记黄埔中药有限公司",
+    "description_zh": "市级A级景区名录登记条目：4A级，白云区沙太北路；中医药主题的文博类景区登记条目。参观预约与开放时间待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "文博院馆"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-10-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a027",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "广州市西关永庆坊旅游区",
+    "name_en": null,
+    "district": "荔湾",
+    "address": "广州市荔湾区恩宁路99号",
+    "description_zh": "市级A级景区名录登记条目：4A级，荔湾区恩宁路99号；西关历史街区类景区条目。街区为开放式运营，具体安排以官方公告为准。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "特色街区",
+      "待核实",
+      "历史文化街区",
+      "非遗",
+      "夜间经济",
+      "A级名录已含（4A）"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-10-17",
+        "valid_until": null
+      },
+      {
+        "name": "广州市人民政府门户网站·花城文旅专题·羊城八景“荔湾胜境”（来源标注：广州日报）",
+        "url": "https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017723.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-09-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实",
+      "英文名",
+      "街区具体地址与入口",
+      "游览线路建议"
+    ],
+    "notes": "名录条目，待人工查重复核。；页面提到景区将通过整合上下九、沙面等周边资源打造“大西关景区”，后续口径可能调整，需复读最新公告。；已合并名录中的另一名称：永庆坊",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a028",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "博物馆/综合馆",
+    "name_zh": "广东省博物馆",
+    "name_en": null,
+    "district": "天河",
+    "address": "天河区珠江东路2号",
+    "description_zh": "首批国家一级博物馆，设珠江新城与文明路两个馆区；外观取意传统漆盒，空间借鉴象牙球，藏品32万余件（套），古代书画与陶瓷收藏居全国前列。",
+    "tags": [
+      "待核实",
+      "博物馆",
+      "国家一级博物馆",
+      "室内场馆",
+      "新中轴线",
+      "免费开放",
+      "预约参观"
+    ],
+    "official_url": "http://www.gdmuseum.com/",
+    "attraction_info": {
+      "level": "页面标注首批国家一级博物馆（非A级景区等级）",
+      "ticket_note": "页面标注免费开放（票价信息按要求不记录）",
+      "booking_note": "页面标注实行全员分时段实名制预约参观，可在官方微信公众号预约（以官方最新公告为准）"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站·花城文旅专题（来源标注：广东省博物馆）",
+        "url": "https://www.gz.gov.cn/zt/hcwl/ycdy/rwjd/content/post_11020989.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-09-24",
+        "valid_until": null
+      },
+      {
+        "name": "广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-09-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "具体街道地址",
+      "所在区",
+      "开放时间",
+      "预约/购票规则",
+      "官网可访问性（www.gdmuseum.com 本次抓取失败）",
+      "常设展览信息"
+    ],
+    "notes": "页面为政府专题的介绍性稿件，未给街道地址与所在区，故地址、区均为空；官网域名本次 fetch 失败，未能读到官方页。内容待官方核实。；页面另载周二至周日开放、周一闭馆，本记录不收录具体开放时间。",
+    "conflicts": [
+      "网络搜索摘要显示地址为“天河区珠江新城珠江东路2号”，但本次实际读到的政府页未标注地址，未采用该地址"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a029",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "纪念馆",
+    "name_zh": "广州鲁迅纪念馆",
+    "name_en": null,
+    "district": "越秀",
+    "address": "越秀区文明路215号",
+    "description_zh": "广东省博物馆文明路馆区的重要组成部分，与国民党一大旧址、广东贡院明远楼同处一址，共同构成文明路馆区的史迹建筑群。",
+    "tags": [
+      "待核实",
+      "纪念馆",
+      "红色史迹",
+      "室内场馆",
+      "国家二级博物馆",
+      "鲁迅",
+      "免费开放"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "国家二级博物馆",
+      "ticket_note": "页面标注实行免费不免票办法",
+      "booking_note": "页面标注周一闭馆（以官方最新公告为准）"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站·花城文旅专题（来源标注：广东省博物馆）",
+        "url": "https://www.gz.gov.cn/zt/hcwl/ycdy/rwjd/content/post_11020989.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-09-24",
+        "valid_until": null
+      },
+      {
+        "name": "广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-09-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "具体地址",
+      "所在区",
+      "开放时间",
+      "预约规则",
+      "独立官网/官方介绍页",
+      "官网"
+    ],
+    "notes": "该页把“广州鲁迅纪念馆”作为广东省博物馆（广州鲁迅纪念馆）两个馆区之一介绍，未展开展陈内容；需另找官方页面核实其独立开放信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a030",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "城市广场/公共空间",
+    "name_zh": "花城广场",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "广州新中轴线珠江新城核心的城市广场，以大草地、花带、浮岛湖、木栈道和灯光广场构成，地下连通周边39幢建筑，被称为“城市客厅”。",
+    "tags": [
+      "待核实",
+      "城市地标",
+      "夜景",
+      "灯光节",
+      "亲子",
+      "开放式空间"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站·花城文旅专题（来源标注：广州日报）",
+        "url": "https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017726.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-09-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "门牌地址",
+      "所在区（页面只给四至：东起冼村路、西至华夏路、北靠黄埔大道、南临海心沙）"
+    ],
+    "notes": "页面给出四至范围而非门牌地址，故 address 留空；广场为开放式城市空间，页面未述及预约或票务制度。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a031",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "江心岛/城市地标",
+    "name_zh": "海心沙",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "花城广场南临的江心区域，位于广州新中轴线上，与广州塔隔江相对；塔映花城景观以海心沙的夜间灯光与江景为看点。",
+    "tags": [
+      "待核实",
+      "夜景",
+      "城市地标",
+      "开放式空间"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站·花城文旅专题（来源标注：广州日报）",
+        "url": "https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017726.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-09-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "地址",
+      "所在区",
+      "现状用途与入场方式",
+      "独立官方介绍页"
+    ],
+    "notes": "该页仅在记述花城广场、珠江夜景时提及海心沙，信息量有限，建议后续补充场馆方或区政府页面。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a032",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "城市桥梁/地标",
+    "name_zh": "海心桥",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "横卧珠江的步行桥，桥身流线造型，夜间灯饰如星点缀，与东塔、西塔及广州塔共同构成“三塔锁江”的地标天际线。",
+    "tags": [
+      "待核实",
+      "城市地标",
+      "夜景",
+      "步行",
+      "拍照"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站·花城文旅专题（来源标注：广州日报）",
+        "url": "https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017726.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-09-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "地址",
+      "所在区",
+      "通行/预约方式",
+      "独立官方页面"
+    ],
+    "notes": "城市地标栏目另有独立条目页（本次未抓取），建议复读其专页核实通行与限流规则。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a033",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "夜游/游船观光",
+    "name_zh": "珠江夜游",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "珠江夜间游船观光项目，沿江可赏两岸楼宇灯光秀与广州塔夜景，游船与江面灯光共同构成广州夜间面貌的代表场景。",
+    "tags": [
+      "待核实",
+      "夜游",
+      "游船",
+      "夜景",
+      "亲子"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站·花城文旅专题（来源标注：广州日报）",
+        "url": "https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017726.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-09-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "码头地址（天字码头/大沙头等）",
+      "所在区",
+      "航班与购票规则"
+    ],
+    "notes": "页面提到广州塔正推进“江塔联游”、新建码头并投入纯电动游船，说明码头与航线处于变化中；具体码头信息需另查官方公告。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a034",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "美术馆",
+    "name_zh": "广州艺术博物院（广州美术馆）",
+    "name_en": null,
+    "district": "海珠",
+    "address": "海珠区艺苑路198号",
+    "description_zh": "广州美术馆新馆以“水中盛放的英雄花”为设计主题，建筑造型与广州塔相呼应，馆藏数万件艺术珍品，兼办常设与专题艺术展。",
+    "tags": [
+      "待核实",
+      "美术馆",
+      "艺术",
+      "室内场馆",
+      "新中轴线",
+      "A级名录已含（3A）",
+      "博物馆",
+      "免费开放"
+    ],
+    "official_url": "http://www.gzam.com.cn/",
+    "attraction_info": {
+      "level": "广州市A级景区名录中为“广州艺术博物院（广州美术馆）景区”3A",
+      "ticket_note": null,
+      "booking_note": "页面标注逢周一闭馆（法定节假日除外，以官方最新公告为准）"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站·花城文旅专题（来源标注：广州日报）",
+        "url": "https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017726.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-09-24",
+        "valid_until": null
+      },
+      {
+        "name": "广州艺术博物院（广州美术馆）官网",
+        "url": "http://www.gzam.com.cn/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "地址",
+      "所在区",
+      "开放时间与预约规则",
+      "博物馆级别",
+      "门票信息",
+      "常设展览信息"
+    ],
+    "notes": "即 A级名录中的“广州艺术博物院（广州美术馆）景区”，本条目作为长尾补充，tags 已标注其 A 级身份。；官网地址为海珠区艺苑路198号（新馆）。",
+    "conflicts": [
+      "A级名录条目标注的所在区与景区名称口径需与该院官方页再次核对",
+      "地址：2020年市文广旅局免费开放名单载越秀区麓湖路13号，场馆官网现载海珠区艺苑路198号，应以新馆官网为准"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a035",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "文化馆/非遗",
+    "name_zh": "广州市文化馆",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "新馆把传统建筑元素作现代演绎，常设广州非遗展，集中呈现粤剧、广绣、广彩等非遗项目，与周边场馆组成新中轴线文化板块。",
+    "tags": [
+      "待核实",
+      "非遗",
+      "文化馆",
+      "室内场馆",
+      "A级名录已含（3A）"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "广州市A级景区名录中为“广州市文化馆旅游区”3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站·花城文旅专题（来源标注：广州日报）",
+        "url": "https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017726.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-09-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "地址",
+      "所在区",
+      "开放时间与预约规则"
+    ],
+    "notes": "A级名录另有“广州市文化馆旅游区”3A 条目，本条目偏重非遗展陈，可与之互补。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a036",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "公共图书馆",
+    "name_zh": "广州图书馆",
+    "name_en": null,
+    "district": null,
+    "address": "广州市珠江东路4号",
+    "description_zh": "位于花城广场片区的市级公共图书馆，新馆以“美丽书籍”为设计理念，之字体量配合层叠肌理，融入骑楼等岭南元素，并提供多语种界面。",
+    "tags": [
+      "待核实",
+      "图书馆",
+      "室内场馆",
+      "亲子",
+      "免费自习"
+    ],
+    "official_url": "https://www.gzlib.org.cn/",
+    "attraction_info": {
+      "level": null,
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州图书馆官网（首页/关于我们）",
+        "url": "https://www.gzlib.org.cn/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "所在区（首页只给珠江东路4号，未标区）",
+      "开放时间与入馆规则细节"
+    ],
+    "notes": "首页“关于我们”文案称新馆坐落于珠江边、城市新中轴线与珠江景观轴线交汇处的花城广场；开放时间另有专页（/opentime/）未抓取。",
+    "conflicts": [
+      "首页未标所在区，故 district 留空未作推断"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a037",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "演出场馆/剧院",
+    "name_zh": "广州大剧院",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "广州主要演出场馆之一，官网以演出排期和购票须知为主，规定按票面楼层入场、对号入座，儿童入场另有身高限制。",
+    "tags": [
+      "待核实",
+      "演出",
+      "剧院",
+      "室内场馆",
+      "夜生活"
+    ],
+    "official_url": "https://www.gzdjy.org/",
+    "attraction_info": {
+      "level": null,
+      "ticket_note": null,
+      "booking_note": "页面标注凭票入场、按票面楼层对号入座、1.2米以下儿童谢绝入场等观演规则，具体以场馆最新公告为准"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州大剧院官网（首页购票须知）",
+        "url": "https://www.gzdjy.org/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "街道地址",
+      "所在区",
+      "场馆建筑与服务设施介绍",
+      "参观/开放规则"
+    ],
+    "notes": "官网首页与票务子页（3w.gzdjy.org/service.html）均未呈现场馆地址与介绍，只读到购票须知；建议复读官网“关于/联系我们”页补全。",
+    "conflicts": [
+      "搜索摘要出现地址“珠江新城珠江西路1号”，但本次读到的官网页面未出现该地址，未采用"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a038",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "历史街区/建筑群",
+    "name_zh": "沙面岛",
+    "name_en": null,
+    "district": "荔湾",
+    "address": null,
+    "description_zh": "广州近代中西文化交流的代表街区，岛上保存150多座欧洲风格建筑，其中53处属国家重点文物保护建筑，异国情调浓厚，属沙面·西堤旅游区。",
+    "tags": [
+      "待核实",
+      "历史街区",
+      "近代建筑",
+      "拍照",
+      "A级名录已含（沙面·西堤3A）"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "所属“广州市沙面·西堤旅游区”在A级名录中为3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站·花城文旅专题·羊城八景“荔湾胜境”（来源标注：广州日报）",
+        "url": "https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017723.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-09-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "岛上具体入口/地址",
+      "开放与限流规则"
+    ],
+    "notes": "页面把沙面岛与西堤片区并述；沙面岛本身无独立A级编号，A级名录对应的是“广州市沙面·西堤旅游区”，tags 已注明。",
+    "conflicts": [
+      "“沙面岛”与“沙面·西堤旅游区”为包含关系，条目归属口径需统一"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a039",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "水系/历史街区",
+    "name_zh": "荔枝湾涌",
+    "name_en": null,
+    "district": "荔湾",
+    "address": null,
+    "description_zh": "西关荔枝湾水系，旧有“一湾溪水绿，两岸荔枝红”之景，现为永庆坊旅游区两大核心片区之一，与永庆坊街区相连。",
+    "tags": [
+      "待核实",
+      "水系",
+      "老城风貌",
+      "A级名录已含（永庆坊旅游区4A）"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "属“广州市西关永庆坊旅游区”4A范围",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站·花城文旅专题·羊城八景“荔湾胜境”（来源标注：广州日报）",
+        "url": "https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017723.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-09-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "具体河段与周边地址",
+      "游船/活动信息"
+    ],
+    "notes": "页面以“永庆坊及荔枝湾两大核心区域”表述其范围；“一湾溪水绿，两岸荔枝红”为页面引用的荔枝湾旧景描写，未逐字大段引用。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a040",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "商业步行街",
+    "name_zh": "上下九步行街",
+    "name_en": null,
+    "district": "荔湾",
+    "address": null,
+    "description_zh": "西关传统商业街区，与沙面等共同构成荔湾老城游线；荔湾胜境页面提出未来整合串联上下九、沙面等资源，打造“大西关景区”。",
+    "tags": [
+      "待核实",
+      "步行街",
+      "美食",
+      "购物",
+      "老城"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站·花城文旅专题·羊城八景“荔湾胜境”（来源标注：广州日报）",
+        "url": "https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017723.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-09-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "街区范围/地址",
+      "独立官方介绍页"
+    ],
+    "notes": "该页仅作为“周边资源整合”提及上下九，信息偏少，建议另找荔湾区页面或步行街管理方介绍补全。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a041",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "文化艺术综合体",
+    "name_zh": "白鹅潭大湾区艺术中心",
+    "name_en": null,
+    "district": "荔湾",
+    "address": null,
+    "description_zh": "白鹅潭畔建筑面积逾14万平方米的艺术综合体，由广东美术馆、广东非物质文化遗产馆、广东文学馆组成，何镜堂院士主持设计，2024年5月起对公众开放。",
+    "tags": [
+      "待核实",
+      "艺术",
+      "建筑",
+      "室内场馆",
+      "白鹅潭",
+      "亲子"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站·花城文旅专题·羊城八景“荔湾胜境”（来源标注：广州日报）",
+        "url": "https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017723.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-09-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "门牌地址",
+      "三馆各自的预约与开放规则",
+      "统一官方页面"
+    ],
+    "notes": "地址可据广东美术馆官网补为荔湾区白鹅潭南路19号（新馆在该中心内），但需以中心官方公告核实整体入口。",
+    "conflicts": [
+      "“白鹅潭大湾区艺术中心”为建筑综合体，广东美术馆为其中一馆，两者条目易混"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a042",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "美术馆",
+    "name_zh": "广东美术馆",
+    "name_en": null,
+    "district": "荔湾",
+    "address": "广州市荔湾区白鹅潭南路19号（白鹅潭大湾区艺术中心内）；本馆：广州市越秀区二沙岛烟雨路38号",
+    "description_zh": "省属美术馆，在白鹅潭新馆与二沙岛本馆两处馆区办展；新馆位于白鹅潭大湾区艺术中心内，实行免预约参观，携有效证件安检后入馆。",
+    "tags": [
+      "待核实",
+      "美术馆",
+      "免预约",
+      "室内场馆",
+      "展览"
+    ],
+    "official_url": "https://www.gdmoa.org/",
+    "attraction_info": {
+      "level": null,
+      "ticket_note": null,
+      "booking_note": "页面标注实行免预约参观，携带有效证件经安检后入馆；如遇特殊情况调整开放时间会提前公告（以官方最新公告为准）"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广东美术馆官网（首页·开放时间/参观指南）",
+        "url": "https://www.gdmoa.org/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "白鹅潭大湾区艺术中心整体入口与安检规则",
+      "展览是否需另行预约"
+    ],
+    "notes": "官网标注开放时间9:00—17:00、周二至周日，周一闭馆（法定节假日与特殊情况除外），16:30停止入场；开放时间属可能调整信息，仅记录于此并以官方最新公告为准。",
+    "conflicts": [
+      "同一馆名对应两处馆区（白鹅潭新馆/二沙岛本馆），游客动线需区分"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a043",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "商业步行街/历史文化街区",
+    "name_zh": "北京路步行街",
+    "name_en": null,
+    "district": "越秀",
+    "address": null,
+    "description_zh": "广州传统商业中心与步行街，脚下叠压唐、南汉、宋元、明清、民国历代路面遗址，可在古道遗址“一眼千年”看到千年路面层叠。",
+    "tags": [
+      "待核实",
+      "步行街",
+      "千年古道",
+      "购物",
+      "美食",
+      "A级名录已含（4A）"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "广州市A级景区名录中为“北京路文化旅游区（含南越王宫博物馆）”4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站·花城文旅专题·羊城八景“越秀风华”（来源标注：广州日报）",
+        "url": "https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017724.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-09-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "街区门牌地址",
+      "古道遗址展示点位置与开放规则"
+    ],
+    "notes": "A级名录对应“北京路文化旅游区（含南越王宫博物馆）”，tags 已注明；步行街与旅游区范围不等同，需核实边界。",
+    "conflicts": [
+      "步行街与“北京路文化旅游区”范围口径不同，勿混用"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a044",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "宗教场所/佛寺",
+    "name_zh": "六榕寺",
+    "name_en": null,
+    "district": "越秀",
+    "address": "广州市越秀区六榕路87号",
+    "description_zh": "广州佛教四大丛林之一，因苏轼题“六榕”与寺内花塔闻名，与光孝寺齐名，素有“光孝以树传，净慧以塔显”之说，净慧即其别称。",
+    "tags": [
+      "待核实",
+      "寺院",
+      "历史建筑",
+      "越秀",
+      "免费场所",
+      "宗教活动场所",
+      "佛教",
+      "花塔"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": "页面标注免费（票价信息按要求不记录）",
+      "booking_note": "页面标注开放时间8:00-16:30（开放时间以官方最新公告为准）"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市越秀区人民政府门户网站·走进越秀·宗教文化",
+        "url": "http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665056.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-01-29",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "入寺礼仪与团队参观规则",
+      "文物保护级别",
+      "预约制度"
+    ],
+    "notes": "区政府页面给出地址、开放时间与交通（地铁一、二号线公园前站）；页面另标注门票免费，按收集规则不写入票价字段。；页面参观指引另载开放时间8:00-16:30，本记录不收录具体开放时间。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a045",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "宗教场所/佛寺",
+    "name_zh": "光孝寺",
+    "name_en": null,
+    "district": "越秀",
+    "address": "越秀区光孝路109号",
+    "description_zh": "广州年代最古、规模最大的佛教名刹之一，与六榕、海幢、华林并称四大丛林；六祖慧能曾在寺内菩提树下受戒，鉴真东渡时也曾在此停留。",
+    "tags": [
+      "待核实",
+      "寺院",
+      "全国重点文物保护单位",
+      "越秀",
+      "免费场所",
+      "宗教活动场所",
+      "佛教"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "全国重点文物保护单位",
+      "ticket_note": "页面标注免费（票价信息按要求不记录）",
+      "booking_note": "页面标注开放时间8:00-16:30（开放时间以官方最新公告为准）"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市越秀区人民政府门户网站·走进越秀·宗教文化",
+        "url": "http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665058.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2022-11-12",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "入寺礼仪与团队参观规则",
+      "页面更新时效（2022年发布）",
+      "预约制度"
+    ],
+    "notes": "区页面明确其1961年列为全国重点文物保护单位，并给出交通（地铁一号线西门口站）；页面发布于2022年，需核实最新开放安排。；页面参观指引另载开放时间8:00-16:30，本记录不收录具体开放时间。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a046",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "宗教场所/天主教堂",
+    "name_zh": "圣心大教堂（石室）",
+    "name_en": null,
+    "district": "越秀",
+    "address": "广州市越秀区一德路旧部前56号",
+    "description_zh": "俗称“石室”的天主教哥特式大教堂，双尖石塔高耸，为全球四座全石结构哥特式教堂之一，属全国重点文物保护单位，常被与巴黎圣母院相比。",
+    "tags": [
+      "待核实",
+      "教堂",
+      "历史建筑",
+      "拍照",
+      "越秀",
+      "宗教活动场所",
+      "天主教",
+      "全国重点文物保护单位",
+      "哥特式建筑"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "全国重点文物保护单位",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市越秀区人民政府门户网站·走进越秀·宗教文化",
+        "url": "http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665100.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2022-11-12",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "弥撒/参观时段（宗教活动时间易变，未记录）",
+      "着装与拍照规定",
+      "门票信息",
+      "预约制度"
+    ],
+    "notes": "区页面给出地址与交通（地铁六号线一德路站）；宗教场所的开放随弥撒活动变化，参观前应查教堂最新公告。；已合并名录中的另一名称：石室圣心大教堂（石室天主堂）",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a047",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "宗教场所/佛寺",
+    "name_zh": "大佛寺",
+    "name_en": null,
+    "district": "越秀",
+    "address": "广州市越秀区惠福东路惠新中街21号",
+    "description_zh": "始建于南汉的广府五大丛林之一，背靠北京路步行街，1993年列为广州市重点文物保护单位，闹市中自成清静一隅。",
+    "tags": [
+      "待核实",
+      "寺院",
+      "北京路",
+      "越秀",
+      "免费场所",
+      "宗教活动场所",
+      "佛教",
+      "广州市重点文物保护单位"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "广州市重点文物保护单位",
+      "ticket_note": "页面标注免费（票价信息按要求不记录）",
+      "booking_note": "页面标注开放时间8:00—19:30（开放时间以官方最新公告为准）"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市越秀区人民政府门户网站·走进越秀·宗教文化（来源标注：大佛寺官网）",
+        "url": "http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665070.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2022-11-12",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "入寺礼仪与团队参观规则",
+      "预约制度"
+    ],
+    "notes": "页面来源标注为大佛寺官网，属政府站转载；交通标注地铁一号线公园前站、六号线北京路站。；页面参观指引另载开放时间8:00-19:30，本记录不收录具体开放时间。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a048",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "宗教场所/清真寺",
+    "name_zh": "怀圣寺（光塔寺）",
+    "name_en": null,
+    "district": "越秀",
+    "address": "越秀区光塔路56号",
+    "description_zh": "又称狮子寺、光塔寺，为中国四大古代清真寺之一、现存最古老清真寺建筑；寺内光塔是国内现存最早的伊斯兰教建筑之一，兼作导航与瞭望。",
+    "tags": [
+      "待核实",
+      "清真寺",
+      "海上丝绸之路",
+      "越秀",
+      "历史建筑"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市越秀区人民政府门户网站·走进越秀·宗教文化",
+        "url": "http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665060.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2022-11-12",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "对非穆斯林游客的开放时段与礼仪要求"
+    ],
+    "notes": "区页面给出地址与交通（地铁一号线西门口站）；作为宗教活动场所，非穆斯林参观安排需核实。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a049",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "博物馆/戏曲专题",
+    "name_zh": "粤剧艺术博物馆",
+    "name_en": null,
+    "district": "荔湾",
+    "address": "广州市荔湾区恩宁路127号",
+    "description_zh": "沿荔枝湾涌分南北两岸，南岸为陈列展厅、剧场与仿古园林，北岸为传承保护配套；园林汇集三雕二塑，广福台每周定期上演粤剧粤曲。",
+    "tags": [
+      "待核实",
+      "粤剧",
+      "非遗",
+      "园林",
+      "室内外结合",
+      "戏曲演出",
+      "博物馆",
+      "岭南园林"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市荔湾区人民政府门户网站·多宝街（粤剧艺术博物馆介绍）",
+        "url": "http://www.lw.gov.cn/zwgkk/gzjg/qjdbsc/dbj/hldb/content/post_9730490.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-07-09",
+        "valid_until": null
+      },
+      {
+        "name": "粤剧艺术博物馆（广州市人民政府门户网站，来源羊城晚报）",
+        "url": "https://www.gz.gov.cn/zlgz/gzly/wzgz/wbcg/content/mpost_9589231.html",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2024-04-25",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "开放时间",
+      "预约/票务规则",
+      "广福台演出排期",
+      "门票信息",
+      "预约制度"
+    ],
+    "notes": "页面标注2016年6月8日对外开放、总用地1.72万平方米、建筑面积2.17万平方米；演出排期以馆方公告为准。；页面来源标注为羊城晚报。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a050",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "博物馆/历史专题",
+    "name_zh": "广州十三行博物馆",
+    "name_en": null,
+    "district": "荔湾",
+    "address": "广州市荔湾区西堤二马路37号（广州文化公园内）",
+    "description_zh": "建于清代十三行商馆区遗址之上，常设“清代广州十三行历史展”与捐赠文物专室陈列，馆藏超4800件（套），多由中外人士无偿捐赠。",
+    "tags": [
+      "待核实",
+      "博物馆",
+      "十三行",
+      "外销艺术品",
+      "室内场馆",
+      "海上丝绸之路"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市社会科学院网站·文化设施·博物馆（来源标注：广州十三行博物馆官网）",
+        "url": "https://www.gzass.gd.cn/whzc/wenhuasheshi/bowuguan/286.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2024-07-23",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "开放时间",
+      "预约规则",
+      "可访问的场馆官方页（本条为研究机构网站转载）"
+    ],
+    "notes": "该页为广州市社会科学院网站转载博物馆官网图文，非场馆官方站，已按规则标注来源类型为 other_public；如需官方口径需另查博物馆官方渠道。",
+    "conflicts": [
+      "主来源为转载页而非场馆官网，官方口径待核实"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a051",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "纪念馆",
+    "name_zh": "邓世昌纪念馆",
+    "name_en": null,
+    "district": "海珠",
+    "address": "广州市海珠区宝岗大道中龙涎里2号",
+    "description_zh": "海珠区政府A级景区信息表列明其为国家3A级旅游景区，位于广州市海珠区，为纪念民族英雄邓世昌的专题纪念馆，开放时间见备注，信息待核实。",
+    "tags": [
+      "3A级景区",
+      "海珠区",
+      "纪念馆",
+      "红色旅游",
+      "A级景区名录",
+      "文博院馆"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": "区级页面列开放时间：09:00-17:00（16:30停止进场，逢周一闭馆）。"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市海珠区人民政府门户网站《海珠区A级景区信息》",
+        "url": "https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-12-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "区级页面另列开放时间；未列票价及预约方式。；区级公开信息条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a052",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "纪念馆",
+    "name_zh": "十香园纪念馆",
+    "name_en": null,
+    "district": "海珠",
+    "address": "广州市海珠区江南大道中怀德大街3号",
+    "description_zh": "海珠区政府A级景区信息表列明其为国家3A级旅游景区，位于广州市海珠区，为纪念岭南画派先贤的专题纪念馆，开放时间见备注，信息待核实。",
+    "tags": [
+      "3A级景区",
+      "海珠区",
+      "纪念馆",
+      "岭南文化",
+      "A级景区名录",
+      "文博院馆"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": "区级页面列开放时间：09:00-17:00（16:30停止进场，逢周一闭馆）。"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市海珠区人民政府门户网站《海珠区A级景区信息》",
+        "url": "https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-12-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "区级页面另列开放时间；未列票价及预约方式。；区级公开信息条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a053",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "纪念馆",
+    "name_zh": "孙中山大元帅府纪念馆",
+    "name_en": null,
+    "district": "海珠",
+    "address": "广州市海珠区纺织路东沙街18号",
+    "description_zh": "海珠区政府A级景区信息表列明其为国家3A级旅游景区，位于广州市海珠区，依托大元帅府旧址设立的纪念馆，属红色旅游，开放时间见备注，信息待核实。",
+    "tags": [
+      "3A级景区",
+      "海珠区",
+      "纪念馆",
+      "红色旅游",
+      "全国重点文物保护单位",
+      "孙中山",
+      "近代史",
+      "A级景区名录",
+      "文博院馆"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": "区级页面列开放时间：8:30-17:30，17:00后停止入馆（周一闭馆，法定节假日除外）。"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市海珠区人民政府门户网站《海珠区A级景区信息》",
+        "url": "https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-12-24",
+        "valid_until": null
+      },
+      {
+        "name": "孙中山大元帅府纪念馆（广州市人民政府门户网站）",
+        "url": "https://www.gz.gov.cn/zlgz/gzly/wzgz/agjyjd/content/mpost_2855156.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2017-02-20",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "英文名",
+      "门票信息",
+      "预约制度",
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "区级页面另列开放时间；未列票价及预约方式。；页面另述旧址1983年列市级、1989年列省级、1996年列全国重点文物保护单位。；区级公开信息条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a054",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "文创街区",
+    "name_zh": "太古仓码头",
+    "name_en": null,
+    "district": "海珠",
+    "address": "广州市海珠区革新路124号",
+    "description_zh": "海珠区政府A级景区信息表列明其为国家3A级旅游景区，位于广州市海珠区，由近代码头仓库改造的滨江文创街区，开放信息见备注，待核实。",
+    "tags": [
+      "3A级景区",
+      "海珠区",
+      "工业遗产",
+      "文创街区",
+      "A级景区名录",
+      "文创园区"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": "页面开放时间栏标注“/”，街区为开放式运营；以官方最新公告为准"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市海珠区人民政府门户网站《海珠区A级景区信息》",
+        "url": "https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-12-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "区级页面开放时间栏为“/”，未注明具体时间；未列票价及预约方式。；区级公开信息条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a055",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "中医药文化园",
+    "name_zh": "陈李济中药文化园",
+    "name_en": null,
+    "district": "海珠",
+    "address": "广州市海珠区广州大道南1688号",
+    "description_zh": "海珠区政府A级景区信息表列明其为国家3A级旅游景区，位于广州市海珠区，为展示传统中药文化的主题园区，开放时间见备注，信息待核实。",
+    "tags": [
+      "3A级景区",
+      "海珠区",
+      "中医药文化",
+      "工业旅游",
+      "A级景区名录"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": "区级页面列开放时间：周一闭馆；周二至周日9:00-12:00、14:00-16:30。"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市海珠区人民政府门户网站《海珠区A级景区信息》",
+        "url": "https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-12-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "区级页面另列开放时间；未列票价及预约方式。；区级公开信息条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a056",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "艺术园",
+    "name_zh": "潘鹤雕塑艺术园",
+    "name_en": null,
+    "district": "海珠",
+    "address": "广州市海珠区广州大道南后滘西大街57号",
+    "description_zh": "海珠区政府A级景区信息表列明其为国家3A级旅游景区，位于广州市海珠区，为以雕塑艺术为主题的艺术园区，开放时间见备注，信息待核实。",
+    "tags": [
+      "3A级景区",
+      "海珠区",
+      "雕塑艺术",
+      "艺术园区",
+      "A级景区名录"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": "区级页面列开放时间：09:00-17:00（16:30停止进场，逢周一闭馆）。"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市海珠区人民政府门户网站《海珠区A级景区信息》",
+        "url": "https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-12-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "区级页面另列开放时间；未列票价及预约方式。；区级公开信息条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a057",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "古港遗址",
+    "name_zh": "黄埔古港景区",
+    "name_en": null,
+    "district": "海珠",
+    "address": "广州市海珠区琶洲街道石基村",
+    "description_zh": "海珠区政府A级景区信息表列明其为国家3A级旅游景区，位于广州市海珠区琶洲街道，是古代海上丝绸之路重要港口遗址，开放时间见备注，待核实。",
+    "tags": [
+      "3A级景区",
+      "海珠区",
+      "海上丝绸之路",
+      "古村",
+      "A级景区名录",
+      "历史文化"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": "区级页面列开放时间：09:00—22:00。"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市海珠区人民政府门户网站《海珠区A级景区信息》",
+        "url": "https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-12-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "官方英文名待核实",
+      "官方网站待核实",
+      "门牌号待核实"
+    ],
+    "notes": "区级页面另列开放时间；未列票价及预约方式。；区级公开信息条目，待人工查重复核。",
+    "conflicts": [
+      "地址不一致：市A级景区名录转载版记为“广州市海珠区琶洲街道石基路512号”，区级页面记为“琶洲街道石基村”。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a058",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "文创街区",
+    "name_zh": "珠江琶醍啤酒文化创意艺术区",
+    "name_en": null,
+    "district": "海珠",
+    "address": "广州市海珠区阅江西路磨碟沙大街118号",
+    "description_zh": "海珠区政府A级景区信息表列明其为国家3A级旅游景区，位于广州市海珠区，为以啤酒文化为主题的滨江创意街区，开放信息见备注，待核实。",
+    "tags": [
+      "3A级景区",
+      "海珠区",
+      "啤酒文化",
+      "文创街区",
+      "A级景区名录",
+      "文创园区"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": "页面开放时间栏标注“/”，为开放式街区；以官方最新公告为准"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市海珠区人民政府门户网站《海珠区A级景区信息》",
+        "url": "https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-12-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "区级页面开放时间栏为“/”，未注明具体时间；未列票价及预约方式。；区级公开信息条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a059",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "博物馆",
+    "name_zh": "广州地铁博物馆",
+    "name_en": null,
+    "district": "海珠",
+    "address": "广州市海珠区新港东路1228号万胜广场C塔裙楼",
+    "description_zh": "海珠区政府A级景区信息表列明其为国家3A级旅游景区，位于广州市海珠区，为展示城市轨道交通知识的专题博物馆，开放时间见备注，待核实。",
+    "tags": [
+      "3A级景区",
+      "海珠区",
+      "博物馆",
+      "科普",
+      "A级景区名录",
+      "科普场馆"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": "区级页面列开放时间：10:00-16:00（周二至周五）、09:00-17:00（周六、周日），逢周一闭馆。"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市海珠区人民政府门户网站《海珠区A级景区信息》",
+        "url": "https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-12-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "区级页面另列开放时间；未列票价及预约方式。；区级公开信息条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a060",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "科普馆",
+    "name_zh": "咏声动画科技馆",
+    "name_en": null,
+    "district": "海珠",
+    "address": "广州市海珠区南华东路草芳围2号",
+    "description_zh": "海珠区政府A级景区信息表列明其为国家3A级旅游景区，位于广州市海珠区，为面向亲子的动画科普场馆，开放时间见备注，信息待核实。",
+    "tags": [
+      "3A级景区",
+      "海珠区",
+      "科普",
+      "亲子",
+      "A级景区名录",
+      "科普场馆"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": "区级页面列开放时间：09:00-18:00。"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市海珠区人民政府门户网站《海珠区A级景区信息》",
+        "url": "https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-12-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "区级页面另列开放时间；未列票价及预约方式。；区级公开信息条目；市级名录中名称作“广州市咏声动画科技馆旅游区”，待复核统一。",
+    "conflicts": [
+      "地址不一致：市A级景区名录转载版记为“南华东路草芳围2-1号”，区级页面记为“草芳围2号”。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a061",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "森林公园",
+    "name_zh": "广州市南沙十八罗汉山森林公园景区",
+    "name_en": null,
+    "district": "南沙",
+    "address": "广州市南沙区大岗镇繁荣路134号",
+    "description_zh": "南沙区政府A级景区名录列明其为国家3A级旅游景区，位于广州市南沙区大岗镇，为以森林景观为主的森林公园，页面列有开放时间与电话，待核实。",
+    "tags": [
+      "3A级景区",
+      "南沙区",
+      "森林公园",
+      "自然生态"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": "区级页面列开放时间06:00-18:00，联系电话020-84935372。"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市南沙区人民政府门户网站《南沙区A级景区名录》",
+        "url": "http://www.gzns.gov.cn/zwgk/zdlyxxgk/lyscjgzfxx/cyzl/content/post_10886089.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-07-03",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "区级页面列开放时间与联系电话；未列票价及预约方式。",
+    "conflicts": [
+      "地址表述不一致：市A级景区名录转载版记为“大岗镇繁荣路十八罗汉山森林公园”，区级页面记为“大岗镇繁荣路134号”。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a062",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "非遗文化园",
+    "name_zh": "云纱星韵非遗文化园景区",
+    "name_en": null,
+    "district": "南沙",
+    "address": "广州市南沙区榄核镇星海路40号之二",
+    "description_zh": "南沙区政府A级景区名录列明其为国家3A级旅游景区，位于广州市南沙区榄核镇，为展示香云纱非遗文化的园区，页面列有开放时间与电话，待核实。",
+    "tags": [
+      "3A级景区",
+      "南沙区",
+      "非物质文化遗产",
+      "香云纱"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": "区级页面列开放时间9:00-18:00，联系电话020-84999893。"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市南沙区人民政府门户网站《南沙区A级景区名录》",
+        "url": "http://www.gzns.gov.cn/zwgk/zdlyxxgk/lyscjgzfxx/cyzl/content/post_10886089.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-07-03",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "区级页面列开放时间与联系电话；未列票价及预约方式。",
+    "conflicts": [
+      "名称不一致：市A级景区名录转载版记为“广州市云纱星韵非遗文化园景区”，区级页面记为“云纱星韵非遗文化园景区”。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a063",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "农业公园",
+    "name_zh": "湾区都市农业公园",
+    "name_en": null,
+    "district": "南沙",
+    "address": "广东省广州市南沙区南江二路5-3号",
+    "description_zh": "南沙区政府A级景区名录列明其为国家3A级旅游景区，位于广州市南沙区，为都市农业主题公园，页面列有开放时间与电话，信息待核实。",
+    "tags": [
+      "3A级景区",
+      "南沙区",
+      "都市农业",
+      "亲子"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": "区级页面列开放时间9:00-17:00，联系电话020-84963101。"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市南沙区人民政府门户网站《南沙区A级景区名录》",
+        "url": "http://www.gzns.gov.cn/zwgk/zdlyxxgk/lyscjgzfxx/cyzl/content/post_10886089.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-07-03",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "区级页面列开放时间与联系电话；未列票价及预约方式。",
+    "conflicts": [
+      "名称与旧名录不同：市2024年12月版名录记为“南沙都市农业实验园（南沙明珠农业公园）景区”，区级2026年页面记为“湾区都市农业公园”，地址一致，疑为改名。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a064",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "农业观光园",
+    "name_zh": "广东利泰智农生态农业观光园景区",
+    "name_en": null,
+    "district": "南沙",
+    "address": "广州市南沙区榄核镇甘岗村国富街1号-8",
+    "description_zh": "南沙区政府A级景区名录列明其为国家3A级旅游景区，位于广州市南沙区榄核镇，为生态农业观光园，页面列有开放时间与电话，待核实。",
+    "tags": [
+      "3A级景区",
+      "南沙区",
+      "农业观光",
+      "乡村田园"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": "区级页面列开放时间8:30-17:00，联系电话020-84921166。"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市南沙区人民政府门户网站《南沙区A级景区名录》",
+        "url": "http://www.gzns.gov.cn/zwgk/zdlyxxgk/lyscjgzfxx/cyzl/content/post_10886089.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-07-03",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "区级页面列开放时间与联系电话；未列票价及预约方式。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a065",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "工业旅游点",
+    "name_zh": "广州市大岗循环经济产业园景区",
+    "name_en": null,
+    "district": "南沙",
+    "address": "南沙区大岗镇新联二村东新高速新联东出口旁",
+    "description_zh": "南沙区政府A级景区名录列明其为国家3A级旅游景区，位于广州市南沙区大岗镇，为以环保能源为主题的工业旅游点，页面列开放时间与电话，待核实。",
+    "tags": [
+      "3A级景区",
+      "南沙区",
+      "循环经济",
+      "工业旅游"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": "区级页面列开放时间8:30-12:00、13:30-16:30，联系电话020-39355040。"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市南沙区人民政府门户网站《南沙区A级景区名录》",
+        "url": "http://www.gzns.gov.cn/zwgk/zdlyxxgk/lyscjgzfxx/cyzl/content/post_10886089.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-07-03",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "区级页面列开放时间与联系电话；未列票价及预约方式。",
+    "conflicts": [
+      "地址差异较大：市A级景区名录转载版记为“广州市南沙区环盛街2号1605房”，区级页面记为“大岗镇新联二村东新高速新联东出口旁”。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a066",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "历史文化景区",
+    "name_zh": "增城何仙姑景区",
+    "name_en": null,
+    "district": "增城",
+    "address": "广州市增城区小楼镇泰安路16号",
+    "description_zh": "增城区2024年国家A级景区名录列明其为国家3A级旅游景区，位于增城区小楼镇，区级名录未列详细地址，信息待核实。",
+    "tags": [
+      "3A级景区",
+      "增城区",
+      "历史文化",
+      "民间传说",
+      "A级景区名录",
+      "民俗文化"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》",
+        "url": "http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-11-05",
+        "valid_until": null
+      },
+      {
+        "name": "广州市海珠区人民政府转载广州市文化广电旅游局：广州市A级景区名录（2024年9月更新）",
+        "url": "https://www.haizhu.gov.cn/zwgk/zdlyxxgk/lysc/cyzl/content/post_10012359.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-12-06",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "address",
+      "官方英文名待核实",
+      "官方网站待核实",
+      "2026年名录行未读取，等级待复核"
+    ],
+    "notes": "区级名录仅列所在镇街：小楼镇；未列详细地址与开放信息。；取自2024-09版名录第42行；增城区2024-11名录亦收录为3A级。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a067",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "美丽乡村",
+    "name_zh": "大埔围美丽乡村景区",
+    "name_en": null,
+    "district": "增城",
+    "address": null,
+    "description_zh": "增城区2024年国家A级景区名录列明其为国家3A级旅游景区，位于增城区增江街，区级名录未列详细地址，信息待核实。",
+    "tags": [
+      "3A级景区",
+      "增城区",
+      "美丽乡村",
+      "乡村田园"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》",
+        "url": "http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-11-05",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "address"
+    ],
+    "notes": "区级名录仅列所在镇街：增江街；未列详细地址与开放信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a068",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "森林生态景区",
+    "name_zh": "星罗纪大森林景区",
+    "name_en": null,
+    "district": "增城",
+    "address": null,
+    "description_zh": "增城区2024年国家A级景区名录列明其为国家3A级旅游景区，位于增城区小楼镇，区级名录未列详细地址，信息待核实。",
+    "tags": [
+      "3A级景区",
+      "增城区",
+      "森林生态",
+      "自然景观"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》",
+        "url": "http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-11-05",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "address"
+    ],
+    "notes": "区级名录仅列所在镇街：小楼镇；未列详细地址与开放信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a069",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "电影文化小镇",
+    "name_zh": "1978电影小镇",
+    "name_en": null,
+    "district": "增城",
+    "address": null,
+    "description_zh": "增城区2024年国家A级景区名录列明其为国家3A级旅游景区，位于增城区增江街，区级名录未列详细地址，信息待核实。",
+    "tags": [
+      "3A级景区",
+      "增城区",
+      "电影文化",
+      "文创街区"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》",
+        "url": "http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-11-05",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "address"
+    ],
+    "notes": "区级名录同时列其为省级旅游休闲街区与3A级景区；仅列所在镇街：增江街。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a070",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "历史文化街区",
+    "name_zh": "广州市正果老街旅游区",
+    "name_en": null,
+    "district": "增城",
+    "address": null,
+    "description_zh": "增城区2024年国家A级景区名录列明其为国家3A级旅游景区，位于增城区正果镇，区级名录未列详细地址，信息待核实。",
+    "tags": [
+      "3A级景区",
+      "增城区",
+      "老街",
+      "历史文化"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》",
+        "url": "http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-11-05",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "address"
+    ],
+    "notes": "区级名录仅列所在镇街：正果镇；未列详细地址与开放信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a071",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "工业旅游点",
+    "name_zh": "广州市仙村循环经济园旅游区",
+    "name_en": null,
+    "district": "增城",
+    "address": null,
+    "description_zh": "增城区2024年国家A级景区名录列明其为国家3A级旅游景区，位于增城区仙村镇，区级名录未列详细地址，信息待核实。",
+    "tags": [
+      "3A级景区",
+      "增城区",
+      "循环经济",
+      "工业旅游"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》",
+        "url": "http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-11-05",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "address"
+    ],
+    "notes": "区级名录仅列所在镇街：仙村镇；未列详细地址与开放信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a072",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "森林公园",
+    "name_zh": "广州市白江湖森林公园",
+    "name_en": null,
+    "district": "增城",
+    "address": null,
+    "description_zh": "增城区2024年国家A级景区名录列明其为国家3A级旅游景区，位于增城区正果镇，区级名录未列详细地址，信息待核实。",
+    "tags": [
+      "3A级景区",
+      "增城区",
+      "森林公园",
+      "自然生态"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》",
+        "url": "http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-11-05",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "address"
+    ],
+    "notes": "区级名录仅列所在镇街：正果镇；市名录另称“广州市白江湖森林公园景区”。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a073",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "古村文化旅游区",
+    "name_zh": "瓜岭村——岭南古韵水乡文化旅游景区",
+    "name_en": null,
+    "district": "增城",
+    "address": null,
+    "description_zh": "增城区2024年国家A级景区名录列明其为国家3A级旅游景区，位于增城区新塘镇，区级名录未列详细地址，信息待核实。",
+    "tags": [
+      "3A级景区",
+      "增城区",
+      "古村落",
+      "水乡"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》",
+        "url": "http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-11-05",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "address"
+    ],
+    "notes": "区级名录仅列所在镇街：新塘镇；市名录全称为“广州市增城区瓜岭村——岭南古韵水乡文化旅游景区”。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a074",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "主题乐园",
+    "name_zh": "广州钧明欢乐世界",
+    "name_en": null,
+    "district": "增城",
+    "address": null,
+    "description_zh": "增城区2024年国家A级景区名录列明其为国家3A级旅游景区，位于增城区永宁街，区级名录未列详细地址，信息待核实。",
+    "tags": [
+      "3A级景区",
+      "增城区",
+      "主题乐园",
+      "亲子"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》",
+        "url": "http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-11-05",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "address"
+    ],
+    "notes": "区级名录仅列所在镇街：永宁街；市名录另称“广州钧明欢乐世界景区”。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a075",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "乡村旅游区",
+    "name_zh": "蒙花布乡村旅游区",
+    "name_en": null,
+    "district": "增城",
+    "address": null,
+    "description_zh": "增城区2024年国家A级景区名录列明其为国家3A级旅游景区，位于增城区正果镇，区级名录未列详细地址，信息待核实。",
+    "tags": [
+      "3A级景区",
+      "增城区",
+      "乡村旅游",
+      "乡村田园"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》",
+        "url": "http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-11-05",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "address"
+    ],
+    "notes": "区级名录仅列所在镇街：正果镇；市名录另称“增城蒙花布乡村旅游区”。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a076",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "艺术展馆",
+    "name_zh": "永华艺术馆",
+    "name_en": null,
+    "district": "番禺",
+    "address": "番禺区石碁镇市莲路南浦村段3号",
+    "description_zh": "番禺区政府2026年8月公开信息列明其为番禺区3A级旅游景区之一，页面未列详细地址与开放信息，信息待核实。",
+    "tags": [
+      "3A级景区",
+      "番禺区",
+      "艺术馆",
+      "A级景区名录",
+      "文博院馆"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市番禺区人民政府门户网站《番禺6大4A景区对台胞免门票》",
+        "url": "http://www.panyu.gov.cn/gkmlpt/content/10/10970/post_10970050.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-19",
+        "valid_until": null
+      },
+      {
+        "name": "广州市番禺区文化广电旅游体育局：番禺区A级景区名录（2026年5月更新）",
+        "url": "http://www.panyu.gov.cn/zwgk/zdlyxxgkml/lyscjgzf/cyzl/content/post_10806763.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-05-11",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "address",
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "页面仅列3A景区名称与全区概况；未列地址、开放时间与预约方式。；区级名录条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a077",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "文化创意园",
+    "name_zh": "紫泥堂文化创意园",
+    "name_en": null,
+    "district": "番禺",
+    "address": null,
+    "description_zh": "番禺区政府2026年8月公开信息列明其为番禺区3A级旅游景区之一，页面未列详细地址与开放信息，信息待核实。",
+    "tags": [
+      "3A级景区",
+      "番禺区",
+      "文化创意",
+      "工业遗产"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市番禺区人民政府门户网站《番禺6大4A景区对台胞免门票》",
+        "url": "http://www.panyu.gov.cn/gkmlpt/content/10/10970/post_10970050.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-19",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "address"
+    ],
+    "notes": "页面仅列3A景区名称；2022年1月市3A级景区公告亦列明“广州市紫泥堂文化创意园景区”。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a078",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "文化旅游区",
+    "name_zh": "西坊大院文化旅游区",
+    "name_en": null,
+    "district": "番禺",
+    "address": null,
+    "description_zh": "番禺区政府2026年8月公开信息列明其为番禺区3A级旅游景区之一，页面未列详细地址与开放信息，信息待核实。",
+    "tags": [
+      "3A级景区",
+      "番禺区",
+      "工业遗产",
+      "文化创意"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市番禺区人民政府门户网站《番禺6大4A景区对台胞免门票》",
+        "url": "http://www.panyu.gov.cn/gkmlpt/content/10/10970/post_10970050.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-19",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "address"
+    ],
+    "notes": "页面仅列3A景区名称；市名录转载版作“广州西坊大院文化旅游景区”。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a079",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "研学旅游区",
+    "name_zh": "广东修学体验旅游区",
+    "name_en": null,
+    "district": "白云",
+    "address": "广州市白云区同泰路1111号",
+    "description_zh": "白云区2023年6月A级景区名录列明其为国家3A级旅游景区，位于广州市白云区，地址如列，等级信息需以最新名录复核。",
+    "tags": [
+      "3A级景区",
+      "白云区",
+      "研学",
+      "旅游区"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市白云区人民政府门户网站《白云区A级景区名录（2023年6月更新）》",
+        "url": "https://www.by.gov.cn/zwgk/zdlyxxgkzl/lyscjgzfxxgkzl/lyscjgzfxx/content/post_9067399.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2023-06-26",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "区级名录为2023年6月版；未列开放信息。",
+    "conflicts": [
+      "名称不一致：市2026年6月版名录记为“广东修学旅游体验园”，区2023年名录记为“广东修学体验旅游区”。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a080",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "博物馆",
+    "name_zh": "广州市迪士普音响博物馆",
+    "name_en": null,
+    "district": "白云",
+    "address": "广州市白云区江高镇夏荷路1号",
+    "description_zh": "白云区2023年6月A级景区名录列明其为国家3A级旅游景区，位于广州市白云区江高镇，为音响主题博物馆，地址如列，等级待复核。",
+    "tags": [
+      "3A级景区",
+      "白云区",
+      "博物馆",
+      "工业旅游"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市白云区人民政府门户网站《白云区A级景区名录（2023年6月更新）》",
+        "url": "https://www.by.gov.cn/zwgk/zdlyxxgkzl/lyscjgzfxxgkzl/lyscjgzfxx/content/post_9067399.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2023-06-26",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "区级名录为2023年6月版；未列开放信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a081",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "名人故居",
+    "name_zh": "洪秀全故居",
+    "name_en": null,
+    "district": "花都",
+    "address": "广州市花都区新华街新华路52号",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于花都区，地址如列，属红色旅游，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "花都区",
+      "名人故居",
+      "红色旅游",
+      "A级景区名录",
+      "历史文化"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      },
+      {
+        "name": "广州市海珠区人民政府转载广州市文化广电旅游局：广州市A级景区名录（2024年9月更新）",
+        "url": "https://www.haizhu.gov.cn/zwgk/zdlyxxgk/lysc/cyzl/content/post_10012359.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-12-06",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "官方英文名待核实",
+      "官方网站待核实",
+      "2026年名录行未读取，等级待复核"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。；取自2024-09版名录第40行，待按最新名录复核等级。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a082",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "乡村旅游区",
+    "name_zh": "梯面红山村",
+    "name_en": null,
+    "district": "花都",
+    "address": "广州市花都区梯面镇红山村",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于花都区梯面镇，地址如列，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "花都区",
+      "乡村旅游",
+      "油菜花"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a083",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "古村落",
+    "name_zh": "塱头古村",
+    "name_en": null,
+    "district": "花都",
+    "address": "广州市花都区炭步镇朗头村",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于花都区炭步镇，地址如列，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "花都区",
+      "古村落",
+      "历史文化"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a084",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "工业旅游点",
+    "name_zh": "中国皮具产业文化创意园",
+    "name_en": null,
+    "district": "花都",
+    "address": "广州市花都区狮岭镇阳光路六号",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于花都区狮岭镇，地址如列，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "花都区",
+      "工业旅游",
+      "皮具产业"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "2024年12月版名录列有该景区，2026年6月版是否保留未能核对。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a085",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "生态旅游景区",
+    "name_zh": "广州市世间香境七溪地景区",
+    "name_en": null,
+    "district": "花都",
+    "address": "广州市花都区花东镇狮前村七溪路一号",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于花都区花东镇，地址如列，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "花都区",
+      "生态旅游",
+      "芳香植物"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a086",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "农业生态园",
+    "name_zh": "广州市花都宝桑园景区",
+    "name_en": null,
+    "district": "花都",
+    "address": "广东省广州市花都区缠岗村山前大道宝桑园",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于花都区，地址如列，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "花都区",
+      "农业生态",
+      "桑蚕文化"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "2022年1月市3A级景区公告亦列明“广州市花都宝桑园景区”。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a087",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "工业旅游点",
+    "name_zh": "广州市赤坭循环经济园旅游区",
+    "name_en": null,
+    "district": "花都",
+    "address": "广州市花都区赤坭镇鲤塘村广州环投花城环保能源有限公司",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于花都区赤坭镇，为环保主题工业旅游点，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "花都区",
+      "循环经济",
+      "工业旅游"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "2022年1月市3A级景区公告亦列明“广州市赤坭循环经济园旅游区”。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a088",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "古建筑群",
+    "name_zh": "广州市资政大夫祠景区",
+    "name_en": null,
+    "district": "花都",
+    "address": "广州市花都区新华街三华村三华路40号资政大夫祠",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于花都区新华街，为清代祠堂古建筑群，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "花都区",
+      "古建筑",
+      "祠堂"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a089",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "科普基地",
+    "name_zh": "美华航空航天科普基地景区",
+    "name_en": null,
+    "district": "花都",
+    "address": "广州市花都区花山镇绞燎庄西街1号201房",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于花都区花山镇，为航空航天科普基地，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "花都区",
+      "科普",
+      "航空航天"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a090",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "花卉主题园",
+    "name_zh": "从化宝趣玫瑰世界",
+    "name_en": null,
+    "district": "从化",
+    "address": "广州市从化区城郊街西和村",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于从化区城郊街，为玫瑰主题花卉园，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "从化区",
+      "花卉",
+      "主题公园",
+      "A级景区名录",
+      "农业观光"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      },
+      {
+        "name": "广州市海珠区人民政府转载广州市文化广电旅游局：广州市A级景区名录（2024年9月更新）",
+        "url": "https://www.haizhu.gov.cn/zwgk/zdlyxxgk/lysc/cyzl/content/post_10012359.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-12-06",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "官方英文名待核实",
+      "官方网站待核实",
+      "2026年名录行未读取，等级待复核"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。；取自2024-09版名录第43行；南方+从化专题亦列为3A级。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a091",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "乡村旅游区",
+    "name_zh": "从化溪头旅游村",
+    "name_en": null,
+    "district": "从化",
+    "address": "广州市从化区良口镇溪头村",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于从化区良口镇，为山村型乡村旅游点，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "从化区",
+      "乡村旅游",
+      "古村",
+      "A级景区名录"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      },
+      {
+        "name": "广州市海珠区人民政府转载广州市文化广电旅游局：广州市A级景区名录（2024年9月更新）",
+        "url": "https://www.haizhu.gov.cn/zwgk/zdlyxxgk/lysc/cyzl/content/post_10012359.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-12-06",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "官方英文名待核实",
+      "官方网站待核实",
+      "2026年名录行未读取，等级待复核"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。；取自2024-09版名录第44行；南方+从化专题作“溪头村”。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a092",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "山地度假区",
+    "name_zh": "广州山谷国际旅游区",
+    "name_en": null,
+    "district": "从化",
+    "address": "广州市从化区江埔街锦三村大金峰径666号",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于从化区江埔街，为山地度假型景区，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "从化区",
+      "山地度假",
+      "自然生态"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a093",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "森林公园",
+    "name_zh": "广州市流溪河森林公园景区",
+    "name_en": null,
+    "district": "从化",
+    "address": "广州市从化区良口镇流溪河林场香雪大街48号",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于从化区良口镇，为流溪河畔森林公园，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "从化区",
+      "森林公园",
+      "自然生态"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a094",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "乡村旅游区",
+    "name_zh": "广州市南平静修小镇旅游区",
+    "name_en": null,
+    "district": "从化",
+    "address": "广州市从化区温泉镇南平村",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于从化区温泉镇，为乡村静修型旅游区，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "从化区",
+      "乡村旅游",
+      "静修"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a095",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "生态旅游区",
+    "name_zh": "广州市香蜜山生态旅游区",
+    "name_en": null,
+    "district": "从化",
+    "address": "广州市从化区吕田镇安山村大塘社23号",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于从化区吕田镇，为生态果庄型旅游区，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "从化区",
+      "生态旅游",
+      "乡村田园"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a096",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "田园综合体",
+    "name_zh": "广州市麦田生态园旅游区",
+    "name_en": null,
+    "district": "从化",
+    "address": "广州市从化区鳌头镇横坑村新三社55号",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于从化区鳌头镇，为田园生态园，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "从化区",
+      "田园",
+      "生态园"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a097",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "中医药文化园",
+    "name_zh": "广州市从化国医园景区",
+    "name_en": null,
+    "district": "从化",
+    "address": "广州市从化区太平镇格塘村8号",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于从化区太平镇，为中医药文化主题园区，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "从化区",
+      "中医药文化",
+      "健康旅游"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。",
+    "conflicts": [
+      "名称疑不一致：2022年1月市3A级景区公告记为“广州市国医小镇旅游区”，市2024年12月版名录记为“广州市从化国医园景区”，疑为同一项目不同名称。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a098",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "瀑布自然景区",
+    "name_zh": "千泷沟大瀑布旅游区",
+    "name_en": null,
+    "district": "从化",
+    "address": "广州市从化区良口镇锦村毛坪队19号",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于从化区良口镇，以瀑布溪谷景观为主，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "从化区",
+      "瀑布",
+      "自然景观",
+      "自然生态"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      },
+      {
+        "name": "南方+：从化15个A级景区，你最爱“打卡”哪一个？",
+        "url": "https://www.nfnews.com/content/G3Ogr8Ed3r.html",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2025-02-27",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "官方英文名待核实",
+      "官方网站待核实",
+      "门牌号待核实",
+      "市级名录对应行未读取，等级待复核"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。；2024年12月新评定3A级景区之一（据公开报道），报道素材由从化区文广旅体局提供。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a099",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "行业博物馆",
+    "name_zh": "广东环亚美容化妆品博物馆",
+    "name_en": null,
+    "district": "黄埔",
+    "address": "广州市黄埔区科学城南云一路18号",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于黄埔区科学城，为美容化妆品行业博物馆，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "黄埔区",
+      "博物馆",
+      "工业旅游"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a100",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "行业博物馆",
+    "name_zh": "广东省凉茶博物馆",
+    "name_en": null,
+    "district": "黄埔",
+    "address": "广州市黄埔区广州开发区科学城金峰园路2号",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于黄埔区科学城，为凉茶文化博物馆，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "黄埔区",
+      "博物馆",
+      "中医药文化"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a101",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "纪念馆",
+    "name_zh": "辛亥革命纪念馆",
+    "name_en": null,
+    "district": "黄埔",
+    "address": "广州市黄埔区长洲岛金洲北路563号",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于黄埔区长洲岛，为辛亥革命主题纪念馆，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "黄埔区",
+      "纪念馆",
+      "红色旅游",
+      "辛亥革命",
+      "免费开放",
+      "长洲岛"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": "名单备注标注免费开放（以官方最新公告为准）",
+      "booking_note": "名单备注标注周一闭馆（以官方最新公告为准）"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      },
+      {
+        "name": "2020年广州市实行每月一天免费开放以及全年免费开放的博物馆、纪念馆名单（广州市文化广电旅游局）",
+        "url": "https://www.gz.gov.cn/zlgz/wlzx/wthd/content/post_5886456.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2020-06-03",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "英文名",
+      "博物馆级别",
+      "常设展览信息"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。；数据出自2020年名单，场馆信息可能已更新。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a102",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "乡村旅游区",
+    "name_zh": "广州迳下乡村旅游景区",
+    "name_en": null,
+    "district": "黄埔",
+    "address": "广州市黄埔区龙湖街迳下村高和场上街102号",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于黄埔区龙湖街，为乡村田园旅游点，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "黄埔区",
+      "乡村旅游",
+      "乡村田园"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a103",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "博物馆",
+    "name_zh": "广州博物馆",
+    "name_en": null,
+    "district": "越秀",
+    "address": "广州市越秀区越秀公园内镇海楼",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于越秀区越秀公园镇海楼，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "越秀区",
+      "博物馆",
+      "历史建筑",
+      "国家一级博物馆",
+      "镇海楼",
+      "历史"
+    ],
+    "official_url": "https://www.guangzhoumuseum.cn/",
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": "页面标注镇海楼展区需购票、仲元楼展区凭有效证件换票免费参观（票价信息按要求不记录）",
+      "booking_note": "页面标注逢周一闭馆，特殊情况另行公告（以官方最新公告为准）"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      },
+      {
+        "name": "广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-09-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "英文名",
+      "票价"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a104",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "博物馆",
+    "name_zh": "广州近代史博物馆",
+    "name_en": null,
+    "district": "越秀",
+    "address": "广州市越秀区陵园西路2号大院",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于越秀区，属红色旅游，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "越秀区",
+      "博物馆",
+      "红色旅游"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a105",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "文化古迹",
+    "name_zh": "广州市南粤先贤馆-五仙古观文化旅游区",
+    "name_en": null,
+    "district": "越秀",
+    "address": "广州市越秀区惠福西路233号",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于越秀区惠福西路，含南粤先贤馆与五仙古观，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "越秀区",
+      "文化古迹",
+      "历史建筑"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a106",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "纪念陵园",
+    "name_zh": "十九路军淞沪抗日阵亡将士陵园",
+    "name_en": null,
+    "district": "天河",
+    "address": "广州市水荫路113号",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于天河区，属红色旅游，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "天河区",
+      "红色旅游",
+      "纪念陵园",
+      "A级景区名录",
+      "纪念地"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      },
+      {
+        "name": "广州市海珠区人民政府转载广州市文化广电旅游局：广州市A级景区名录（2024年9月更新）",
+        "url": "https://www.haizhu.gov.cn/zwgk/zdlyxxgk/lysc/cyzl/content/post_10012359.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-12-06",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url",
+      "官方英文名待核实",
+      "官方网站待核实",
+      "2026年名录行未读取，等级待复核"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。；取自2024-09版名录第41行，待按最新名录复核等级。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a107",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "文化场馆",
+    "name_zh": "广东省方志馆旅游区",
+    "name_en": null,
+    "district": "天河",
+    "address": "广州市天河区天河北路618号A座",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于天河区天河北路，为地方志文化场馆，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "天河区",
+      "文化场馆",
+      "方志文化"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a108",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "都市旅游区",
+    "name_zh": "猎德现代化都市旅游区",
+    "name_en": null,
+    "district": "天河",
+    "address": "广州市天河区天府路1号天河区人民政府",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于天河区猎德片区，属都市更新型旅游区，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "天河区",
+      "都市旅游",
+      "城市更新"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a109",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "历史文化街区",
+    "name_zh": "广州市沙面·西堤旅游区",
+    "name_en": null,
+    "district": "荔湾",
+    "address": "广州市荔湾区黄沙大道192号",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于荔湾区，为沙面—西堤历史街区型景区，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "荔湾区",
+      "历史文化街区",
+      "欧陆建筑"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "2022年1月市3A级景区公告亦列明“广州市沙面·西堤旅游区”；未列开放与预约信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a110",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "城市公园",
+    "name_zh": "广州白云湖景区",
+    "name_en": null,
+    "district": "白云",
+    "address": "广州市白云区云湖东环路1号",
+    "description_zh": "商业平台转载的广州市文化广电旅游局A级景区名录列明其为国家3A级旅游景区，位于白云区，为人工湖泊型城市公园，需以官方名录复核。",
+    "tags": [
+      "3A级景区",
+      "白云区",
+      "城市公园",
+      "湖泊"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）",
+        "url": "https://m.gz.bendibao.com/tour/362965.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2025-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "商业平台转载市文旅局2024年12月更新名录；页面发布于2025-10-16；未列开放与预约信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a111",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "博物馆/纪念馆",
+    "name_zh": "广东革命历史博物馆",
+    "name_en": null,
+    "district": null,
+    "address": "陵园西路2号大院之二",
+    "description_zh": "市文广旅局备案表所列国家一级博物馆，馆址位于陵园西路2号大院之二，页面标注免费参观、逢周一闭馆，下辖广州起义纪念馆等革命旧址场馆。",
+    "tags": [
+      "博物馆",
+      "国家一级博物馆",
+      "革命历史",
+      "免费开放"
+    ],
+    "official_url": "http://www.gemg1959.cn",
+    "attraction_info": {
+      "level": "国家一级博物馆",
+      "ticket_note": "页面标注免费参观",
+      "booking_note": "页面标注逢周一闭馆（国家法定节假日和特殊情况除外，以官方最新公告为准）"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-09-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "所在区",
+      "常设展览信息"
+    ],
+    "notes": "备案表地址未标注所在区。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a112",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "纪念馆",
+    "name_zh": "中国共产党第三次全国代表大会会址纪念馆",
+    "name_en": null,
+    "district": "越秀",
+    "address": "越秀区恤孤院路3号",
+    "description_zh": "市文广旅局备案表所列纪念馆，馆址位于越秀区恤孤院路3号，页面标注免费参观、逢周一闭馆，为中共三大会址所在地。",
+    "tags": [
+      "纪念馆",
+      "红色旅游",
+      "免费开放",
+      "党史",
+      "4A级景区",
+      "A级景区名录"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "备案表标注无级别",
+      "ticket_note": "页面标注免费",
+      "booking_note": "页面标注逢周一闭馆（国家法定节假日和特殊情况除外，以官方最新公告为准）"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-09-14",
+        "valid_until": null
+      },
+      {
+        "name": "广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-10-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "官网",
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。；已合并名录中的另一名称：广州市中国共产党第三次全国代表大会会址纪念馆旅游区",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a113",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "纪念馆",
+    "name_zh": "毛泽东同志主办农民运动讲习所旧址纪念馆",
+    "name_en": null,
+    "district": "越秀",
+    "address": "越秀区中山四路42号",
+    "description_zh": "市文广旅局备案表所列国家二级博物馆，馆址位于越秀区中山四路42号番禺学宫旧址，页面标注免费参观但需提前预约，逢周一闭馆。",
+    "tags": [
+      "纪念馆",
+      "国家二级博物馆",
+      "红色旅游",
+      "番禺学宫",
+      "4A级景区",
+      "A级景区名录"
+    ],
+    "official_url": "http://www.gznjs.cn",
+    "attraction_info": {
+      "level": "国家二级博物馆",
+      "ticket_note": "页面标注免费参观",
+      "booking_note": "页面标注需提前在微信公众号预约，逢周一闭馆（以官方最新公告为准）"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-09-14",
+        "valid_until": null
+      },
+      {
+        "name": "广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-10-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。；已合并名录中的另一名称：广州市毛泽东同志主办农民运动讲习所旧址纪念馆旅游区",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a114",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "纪念馆",
+    "name_zh": "黄埔军校旧址纪念馆",
+    "name_en": null,
+    "district": "黄埔",
+    "address": "黄埔区长洲岛军校路170号大院",
+    "description_zh": "市文广旅局备案表所列纪念馆，位于黄埔区长洲岛军校路170号大院，页面标注免费开放并实行实名制分时段预约，逢周一闭馆，2020年12月起委托黄埔区管理。",
+    "tags": [
+      "纪念馆",
+      "黄埔军校",
+      "红色旅游",
+      "长洲岛",
+      "4A级景区",
+      "A级景区名录"
+    ],
+    "official_url": "http://www.hpma.cn/",
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": "页面标注免费开放，凭预约信息及有效证件参观",
+      "booking_note": "页面标注实名制分时段预约，逢周一闭馆（国家法定节假日和特殊情况除外，以官方最新公告为准）"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-09-14",
+        "valid_until": null
+      },
+      {
+        "name": "广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-10-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "博物馆级别",
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "备案表备注：2020年12月21日起正式委托黄埔区管理。；名录条目，待人工查重复核。；已合并名录中的另一名称：广州市黄埔军校旧址纪念馆旅游区",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a115",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "博物馆",
+    "name_zh": "南汉二陵博物馆",
+    "name_en": null,
+    "district": "番禺",
+    "address": "番禺区小谷围大学城华师一路8号",
+    "description_zh": "市文化广电旅游局答复函介绍，该馆位于番禺区大学城华师一路8号，依托全国重点文物保护单位南汉二陵建设，2019年5月17日开馆，设两个基本陈列并含公众考古活动中心。",
+    "tags": [
+      "博物馆",
+      "考古遗址",
+      "全国重点文物保护单位",
+      "大学城"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "全国重点文物保护单位（南汉二陵）",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局关于政协第4101号提案答复的函",
+        "url": "http://wglj.gz.gov.cn/xxgk/qt/rdjyzxta/zxta/content/post_9829830.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-08-26",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "门票信息",
+      "开放制度"
+    ],
+    "notes": "答复函另述康陵遗址2023年6月向公众开放。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a116",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "博物馆",
+    "name_zh": "广东华侨博物馆",
+    "name_en": null,
+    "district": "越秀",
+    "address": "越秀区二沙岛烟雨路32号",
+    "description_zh": "市文广旅局备案表所列博物馆，馆址位于越秀区二沙岛烟雨路32号，页面标注免费参观、周二至周日开放，周一闭馆。",
+    "tags": [
+      "博物馆",
+      "华侨",
+      "免费开放",
+      "二沙岛"
+    ],
+    "official_url": "http://www.gdhqbwg.org.cn",
+    "attraction_info": {
+      "level": "备案表标注无级别",
+      "ticket_note": "页面标注免费参观",
+      "booking_note": "页面标注周一闭馆，特殊情况另行公告（以官方最新公告为准）"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-09-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a117",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "纪念馆",
+    "name_zh": "广州起义纪念馆",
+    "name_en": null,
+    "district": "越秀",
+    "address": "广州起义路200号之一",
+    "description_zh": "市文广旅局备案表所列纪念馆，为广东革命历史博物馆下辖分馆，馆址位于广州起义路200号之一，页面标注免费参观、逢周一闭馆。",
+    "tags": [
+      "纪念馆",
+      "红色旅游",
+      "免费开放",
+      "4A级景区",
+      "A级景区名录"
+    ],
+    "official_url": "http://www.gemg1959.cn",
+    "attraction_info": {
+      "level": "广东革命历史博物馆下辖分馆",
+      "ticket_note": "页面标注免费",
+      "booking_note": "页面标注逢周一闭馆（国家法定节假日和特殊情况除外，以官方最新公告为准）"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-09-14",
+        "valid_until": null
+      },
+      {
+        "name": "广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-10-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "所在区",
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。；已合并名录中的另一名称：广州市广州起义纪念馆旅游区",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a118",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "纪念馆",
+    "name_zh": "三元里人民抗英斗争纪念馆",
+    "name_en": null,
+    "district": "白云",
+    "address": "白云区广园中路34号",
+    "description_zh": "市文广旅局备案表所列纪念馆，为广州博物馆下辖分馆，馆址位于白云区广园中路34号三元古庙，页面标注免费参观、逢周一闭馆。",
+    "tags": [
+      "纪念馆",
+      "免费开放",
+      "爱国主义教育"
+    ],
+    "official_url": "https://www.guangzhoumuseum.cn/",
+    "attraction_info": {
+      "level": "广州博物馆下辖分馆",
+      "ticket_note": "页面标注免费参观",
+      "booking_note": "页面标注逢周一闭馆（以官方最新公告为准）"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-09-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a119",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "纪念馆",
+    "name_zh": "“三·二九”起义指挥部旧址纪念馆",
+    "name_en": null,
+    "district": "越秀",
+    "address": "越秀区越华路小东营5号",
+    "description_zh": "市文广旅局备案表所列纪念馆，为广州博物馆下辖分馆，馆址位于越秀区越华路小东营5号，页面标注免费参观、逢周一闭馆。",
+    "tags": [
+      "纪念馆",
+      "免费开放",
+      "近代史"
+    ],
+    "official_url": "https://www.guangzhoumuseum.cn/",
+    "attraction_info": {
+      "level": "广州博物馆下辖分馆",
+      "ticket_note": "页面标注免费参观",
+      "booking_note": "页面标注逢周一闭馆（以官方最新公告为准）"
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-09-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a120",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "公园",
+    "name_zh": "流花湖公园",
+    "name_en": null,
+    "district": "越秀",
+    "address": "越秀区流花路100号",
+    "description_zh": "市林业和园林局《广州市公园名录》收录的越秀区综合公园，地址流花路100号，面积54.43公顷，管理机构为广州市流花湖公园管理处，名录标注免费开放。",
+    "tags": [
+      "公园",
+      "综合公园",
+      "免费开放",
+      "湖泊"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": "名录标注免费向市民游客开放（以官方最新公告为准）",
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "《广州市公园名录（截至2020年底）》（广州市林业和园林局）",
+        "url": "https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2021-05-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "官网",
+      "开放时间",
+      "预约制度"
+    ],
+    "notes": "名录数据截至2020年底，公园信息可能已调整。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a121",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "公园",
+    "name_zh": "东山湖公园",
+    "name_en": null,
+    "district": "越秀",
+    "address": "越秀区东湖路123号",
+    "description_zh": "市林业和园林局《广州市公园名录》收录的越秀区综合公园，地址东湖路123号，面积31.71公顷，管理机构为广州市东山湖公园，名录标注免费开放。",
+    "tags": [
+      "公园",
+      "综合公园",
+      "免费开放",
+      "湖泊"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": "名录标注免费向市民游客开放（以官方最新公告为准）",
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "《广州市公园名录（截至2020年底）》（广州市林业和园林局）",
+        "url": "https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2021-05-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "官网",
+      "开放时间",
+      "预约制度"
+    ],
+    "notes": "名录数据截至2020年底，公园信息可能已调整。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a122",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "公园",
+    "name_zh": "麓湖公园",
+    "name_en": null,
+    "district": "越秀",
+    "address": "越秀区麓湖路11号",
+    "description_zh": "市林业和园林局《广州市公园名录》收录的越秀区综合公园，地址麓湖路11号，面积206.3公顷，管理机构为白云山麓湖景区管理中心，名录标注免费开放。",
+    "tags": [
+      "公园",
+      "综合公园",
+      "免费开放",
+      "山水园林"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": "名录标注免费向市民游客开放（以官方最新公告为准）",
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "《广州市公园名录（截至2020年底）》（广州市林业和园林局）",
+        "url": "https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2021-05-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "官网",
+      "开放时间",
+      "预约制度"
+    ],
+    "notes": "名录数据截至2020年底，公园信息可能已调整。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a123",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "公园",
+    "name_zh": "东风公园",
+    "name_en": null,
+    "district": "越秀",
+    "address": "越秀区广州大道北199号",
+    "description_zh": "市林业和园林局《广州市公园名录》收录的越秀区综合公园，地址广州大道北199号，面积4.5公顷，管理机构为广州市东风公园，名录标注免费开放。",
+    "tags": [
+      "公园",
+      "综合公园",
+      "免费开放"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": "名录标注免费向市民游客开放（以官方最新公告为准）",
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "《广州市公园名录（截至2020年底）》（广州市林业和园林局）",
+        "url": "https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2021-05-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "官网",
+      "开放时间",
+      "预约制度"
+    ],
+    "notes": "名录数据截至2020年底，公园信息可能已调整。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a124",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "公园",
+    "name_zh": "人民公园",
+    "name_en": null,
+    "district": "越秀",
+    "address": "越秀区连新路8号",
+    "description_zh": "市林业和园林局《广州市公园名录》收录的越秀区专类公园（纪念性公园），地址连新路8号，面积6.1公顷，由越秀区绿化养护第一工区管理，名录标注免费开放。",
+    "tags": [
+      "公园",
+      "纪念性公园",
+      "免费开放"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": "名录标注免费向市民游客开放（以官方最新公告为准）",
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "《广州市公园名录（截至2020年底）》（广州市林业和园林局）",
+        "url": "https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2021-05-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "官网",
+      "开放时间",
+      "预约制度"
+    ],
+    "notes": "名录数据截至2020年底，公园信息可能已调整。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a125",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "公园",
+    "name_zh": "广州兰圃",
+    "name_en": null,
+    "district": "越秀",
+    "address": "越秀区解放北路901号",
+    "description_zh": "市林业和园林局《广州市公园名录》收录的越秀区专类公园（植物园），地址解放北路901号，面积3.96公顷，由广州市兰圃和草暖公园管理室管理，名录标注需购票。",
+    "tags": [
+      "公园",
+      "植物园",
+      "兰花"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": "名录标注需购票（票价信息按要求不记录，以官方最新公告为准）",
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "《广州市公园名录（截至2020年底）》（广州市林业和园林局）",
+        "url": "https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2021-05-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "官网",
+      "开放时间",
+      "票价"
+    ],
+    "notes": "名录数据截至2020年底，公园信息可能已调整。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a126",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "公园",
+    "name_zh": "广州起义烈士陵园",
+    "name_en": null,
+    "district": "越秀",
+    "address": "越秀区中山二路92号",
+    "description_zh": "市林业和园林局《广州市公园名录》收录的越秀区专类公园（纪念性公园），地址中山二路92号，面积18.1公顷，管理机构为广州起义烈士陵园管理处，名录标注免费开放。",
+    "tags": [
+      "公园",
+      "纪念性公园",
+      "免费开放",
+      "红色旅游"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": "名录标注免费向市民游客开放（以官方最新公告为准）",
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "《广州市公园名录（截至2020年底）》（广州市林业和园林局）",
+        "url": "https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2021-05-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "官网",
+      "开放时间",
+      "预约制度"
+    ],
+    "notes": "名录数据截至2020年底，公园信息可能已调整。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a127",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "公园",
+    "name_zh": "珠江公园",
+    "name_en": null,
+    "district": "天河",
+    "address": "天河区金穗路900号",
+    "description_zh": "市林业和园林局《广州市公园名录》收录的天河区综合公园，地址金穗路900号，面积28公顷，管理机构为广州珠江公园，名录标注免费开放。",
+    "tags": [
+      "公园",
+      "综合公园",
+      "免费开放"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": "名录标注免费向市民游客开放（以官方最新公告为准）",
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "《广州市公园名录（截至2020年底）》（广州市林业和园林局）",
+        "url": "https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2021-05-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "官网",
+      "开放时间",
+      "预约制度"
+    ],
+    "notes": "名录数据截至2020年底，公园信息可能已调整。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a128",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "公园",
+    "name_zh": "天河公园",
+    "name_en": null,
+    "district": "天河",
+    "address": "天河区中山大道西",
+    "description_zh": "市林业和园林局《广州市公园名录》收录的天河区综合公园，地址中山大道西，面积70公顷，管理机构为天河区公园管理中心，名录标注免费开放。",
+    "tags": [
+      "公园",
+      "综合公园",
+      "免费开放"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": "名录标注免费向市民游客开放（以官方最新公告为准）",
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "《广州市公园名录（截至2020年底）》（广州市林业和园林局）",
+        "url": "https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2021-05-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "官网",
+      "开放时间",
+      "预约制度"
+    ],
+    "notes": "名录数据截至2020年底，公园信息可能已调整。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a129",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "公园",
+    "name_zh": "白云湖公园",
+    "name_en": null,
+    "district": "白云",
+    "address": "白云区白云湖大道",
+    "description_zh": "市林业和园林局《广州市公园名录》收录的白云区综合公园，地址白云湖大道，面积200公顷，管理机构为白云湖水利工程管理处，名录标注免费开放。",
+    "tags": [
+      "公园",
+      "综合公园",
+      "免费开放",
+      "水利风景区"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": "名录标注免费向市民游客开放（以官方最新公告为准）",
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "《广州市公园名录（截至2020年底）》（广州市林业和园林局）",
+        "url": "https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2021-05-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "官网",
+      "开放时间",
+      "预约制度"
+    ],
+    "notes": "名录数据截至2020年底，公园信息可能已调整。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a130",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "公园",
+    "name_zh": "广州市儿童公园",
+    "name_en": null,
+    "district": "白云",
+    "address": "白云区齐心路61号",
+    "description_zh": "市林业和园林局《广州市公园名录》收录的白云区专类公园（儿童公园），地址齐心路61号，面积25.9公顷，管理机构为广州市儿童公园管理处，名录标注免费开放。",
+    "tags": [
+      "公园",
+      "儿童公园",
+      "免费开放",
+      "亲子"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": "名录标注免费向市民游客开放（以官方最新公告为准）",
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "《广州市公园名录（截至2020年底）》（广州市林业和园林局）",
+        "url": "https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2021-05-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "官网",
+      "开放时间",
+      "预约制度"
+    ],
+    "notes": "名录数据截至2020年底，公园信息可能已调整。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a131",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "宗教活动场所",
+    "name_zh": "华林禅寺",
+    "name_en": null,
+    "district": null,
+    "address": "下九路华林寺前31号",
+    "description_zh": "广州市政府页介绍，华林禅寺位于西来初地历史文化景区，寺内有五眼古井、汉白玉舍利塔、五百罗汉堂等，为菩提达摩来穗所建传法道场，始称西来庵，1655年扩建后赐名华林禅寺。",
+    "tags": [
+      "宗教活动场所",
+      "佛教",
+      "禅宗祖庭"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "华林禅寺（广州市人民政府门户网站，来源市民宗局）",
+        "url": "https://www.gz.gov.cn/zlgz/gzly/wzgz/zjcs/fj/content/mpost_7760647.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2021-09-06",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "所在区",
+      "门票信息"
+    ],
+    "notes": "页面地址未标注所在区。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a132",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "宗教活动场所",
+    "name_zh": "海幢寺",
+    "name_en": null,
+    "district": "海珠",
+    "address": "海珠区同福中路337号",
+    "description_zh": "广州市政府页介绍，海幢寺位于海珠区同福中路337号，始建于南汉，原名千秋寺，清代建大雄宝殿等，成为广州五大丛林之一。",
+    "tags": [
+      "宗教活动场所",
+      "佛教"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": null,
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "海幢寺（广州市人民政府门户网站，来源市民宗局）",
+        "url": "https://www.gz.gov.cn/zlgz/gzly/wzgz/zjcs/fj/content/post_7760652.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2021-09-06",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "文物保护级别",
+      "门票信息"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a133",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "宗教活动场所",
+    "name_zh": "三元宫",
+    "name_en": null,
+    "district": "越秀",
+    "address": "越秀区应元路11号",
+    "description_zh": "越秀区政府页面介绍，三元宫是广州现存历史最久、规模最大的道教宫观，始建于东晋，初名越岗院，明代改名三元宫，1989年列为广州市文物保护单位。",
+    "tags": [
+      "宗教活动场所",
+      "道教",
+      "广州市文物保护单位"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "广州市文物保护单位",
+      "ticket_note": "页面标注免费（票价信息按要求不记录）",
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "三元宫（广州市越秀区人民政府门户网站，来源广州三元宫公众号）",
+        "url": "http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665063.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2022-11-12",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "预约制度"
+    ],
+    "notes": "页面参观指引另载开放时间8:00-17:00，本记录不收录具体开放时间。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a134",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "宗教活动场所",
+    "name_zh": "纯阳观",
+    "name_en": null,
+    "district": "海珠",
+    "address": "海珠区瑞康路268号",
+    "description_zh": "海珠区政府页面介绍，纯阳观是广州市最大的道教宫观，始建于清道光四年，素有“北至三元宫，南去纯阳观”之说，观内朝斗台为广州市文物保护单位。",
+    "tags": [
+      "宗教活动场所",
+      "道教",
+      "广州市文物保护单位"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "广州市文物保护单位（朝斗台）",
+      "ticket_note": "页面标注免费（票价信息按要求不记录）",
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "纯阳观（广州市海珠区人民政府门户网站）",
+        "url": "https://www.haizhu.gov.cn/hzdt/ztlm/tzhz/rjhj/lyjd/hsgy/content/post_9177298.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2023-08-25",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "预约制度"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a135",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "宗教活动场所",
+    "name_zh": "怀圣光塔寺",
+    "name_en": null,
+    "district": "越秀",
+    "address": "越秀区光塔路56号",
+    "description_zh": "广州市政府页介绍，怀圣光塔寺位于越秀区光塔路56号，为中国首座清真寺，寺内光塔高36.3米，是海上丝绸之路重要史迹，列为全国重点文物保护单位。",
+    "tags": [
+      "宗教活动场所",
+      "伊斯兰教",
+      "全国重点文物保护单位",
+      "光塔"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "全国重点文物保护单位",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "怀圣光塔寺（广州市人民政府门户网站，来源广州伊斯兰教协会）",
+        "url": "https://www.gz.gov.cn/zlgz/gzly/wzgz/zjcs/yslj/content/mpost_7760217.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2021-09-06",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "门票信息"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a136",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "宗教活动场所",
+    "name_zh": "清真先贤古墓",
+    "name_en": null,
+    "district": "越秀",
+    "address": "越秀区解放北路901号之一",
+    "description_zh": "广州市政府页介绍，先贤古墓位于越秀区解放北路901号之一、兰圃西侧，因唐代来华传教的艾比·宛葛素墓而得名，为全国重点文物保护单位，也是广东省较大的清真寺之一。",
+    "tags": [
+      "宗教活动场所",
+      "伊斯兰教",
+      "全国重点文物保护单位"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "全国重点文物保护单位",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "先贤古墓（广州市人民政府门户网站，来源市民宗局）",
+        "url": "https://www.gz.gov.cn/zlgz/gzly/wzgz/zjcs/yslj/content/mpost_7760215.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2021-09-06",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "门票信息"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a137",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "宗教活动场所",
+    "name_zh": "基督教东山堂",
+    "name_en": null,
+    "district": "越秀",
+    "address": "越秀区寺贝通津9号",
+    "description_zh": "越秀区政府页面介绍，基督教东山堂位于越秀区寺贝通津9号，原名东山浸信会堂，建于1909年，1999年列为广州市文物保护单位，为两层花岗石哥特式教堂。",
+    "tags": [
+      "宗教活动场所",
+      "基督教",
+      "广州市文物保护单位"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "广州市文物保护单位",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "基督教东山堂（广州市越秀区人民政府门户网站）",
+        "url": "http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665091.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2022-11-12",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "门票信息"
+    ],
+    "notes": null,
+    "conflicts": [
+      "地址：同一页面正文载寺贝通津9号，页面参观指引栏载寺贝通津路7号，两处表述不一致，建议以现场及官方最新公告为准"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a138",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "宗教活动场所",
+    "name_zh": "广东都城隍庙（广州城隍庙）",
+    "name_en": null,
+    "district": "越秀",
+    "address": "越秀区中山四路忠佑大街48号",
+    "description_zh": "越秀区政府页面介绍，广州城隍庙始建于明洪武三年，明清时为岭南最大城隍庙，清雍正年间升格为广东都城隍庙，现为广州市级文物保护单位。",
+    "tags": [
+      "宗教活动场所",
+      "道教",
+      "广州市文物保护单位",
+      "城隍庙"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "广州市级文物保护单位",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广东都城隍庙（广州市越秀区人民政府门户网站）",
+        "url": "http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665031.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2022-11-12",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "门票信息",
+      "预约制度"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a139",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "广州市石门国家森林公园景区",
+    "name_en": null,
+    "district": "从化",
+    "address": "广州市从化区温泉镇石门国家森林公园",
+    "description_zh": "市级A级景区名录登记条目：4A级，从化区温泉镇；森林生态类景区条目。入园门票、开放与预约制度待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "自然生态"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-10-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a140",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "广州市融创文旅城旅游区",
+    "name_en": null,
+    "district": "花都",
+    "address": "广州市花都区凤凰北路78号",
+    "description_zh": "市级A级景区名录登记条目：4A级，花都区凤凰北路78号；大型文商旅综合体类景区条目。票务、营业时间与预约待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "主题游乐"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-10-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a141",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "广州市城市规划展览中心旅游区",
+    "name_en": null,
+    "district": "白云",
+    "address": "广州市白云区展览路1号",
+    "description_zh": "市级A级景区名录登记条目：4A级，白云区展览路1号；城市规划展示类场馆景区条目。参观预约与开放时间待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "文博院馆"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-10-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": [
+      "白云区2023-06名录作“广州市城市规划展览中心”，名称不含“旅游区”"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a142",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "广州市余荫山房景区",
+    "name_en": null,
+    "district": "番禺",
+    "address": "广州番禺区南村镇北大街",
+    "description_zh": "市级A级景区名录登记条目：4A级，番禺区南村镇北大街；古典园林类历史文化景区条目。门票与开放安排待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "历史文化"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-10-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a143",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "广州市海珠湿地公园景区",
+    "name_en": null,
+    "district": "海珠",
+    "address": "广州市海珠区新滘中路168号",
+    "description_zh": "市级A级景区名录登记条目：4A级，海珠区新滘中路；城市湿地类生态景区条目。开放时段与闭园日以官方最新公告为准。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "自然生态"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-10-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": [
+      "海珠区2025-12信息页名称作“广州海珠国家湿地公园景区”，地址表述为“新滘中路海珠湿地”，与市级名录略有差异"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a144",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "广州市七彩澳游世界旅游区",
+    "name_en": null,
+    "district": "增城",
+    "address": "广州市增城区珠村街联兴村金兴路北旁",
+    "description_zh": "市级A级景区名录登记条目：4A级，增城区珠村街联兴村；主题游乐与乡村旅游结合类景区条目。票务与开放待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "主题游乐"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-10-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": [
+      "增城区2024-11名录所在镇街作“朱村街”，市级名录作“珠村街”，需复核"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a145",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "广州市天人山水旅游区",
+    "name_en": null,
+    "district": "从化",
+    "address": "广州市从化区太平镇上清幽街1号",
+    "description_zh": "市级A级景区名录登记条目：4A级，从化区太平镇上清幽街1号；度假型自然景区条目。住宿、门票与预约待核实。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "休闲度假"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-10-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "名录条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a146",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "4A级景区",
+    "name_zh": "广州市帽峰山森林公园景区",
+    "name_en": null,
+    "district": "白云",
+    "address": "广州市白云区头陂路168号",
+    "description_zh": "市A级景区名录登记条目：4A级，白云区头陂路168号；森林生态类景区条目。入园与开放安排以官方最新公告为准。",
+    "tags": [
+      "4A级景区",
+      "A级景区名录",
+      "自然生态"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "4A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市海珠区人民政府转载广州市文化广电旅游局：广州市A级景区名录（2024年9月更新）",
+        "url": "https://www.haizhu.gov.cn/zwgk/zdlyxxgk/lysc/cyzl/content/post_10012359.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-12-06",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实",
+      "2026年名录行未读取，等级待复核"
+    ],
+    "notes": "该条取自2024-09版名录第39行（4A），2026-06版长表第39行未能读取，等级需按最新名录复核。",
+    "conflicts": [
+      "白云区2023-06区级名录将其列为3A级，与2024-09市级名录的4A级不一致，疑为期间升级"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a147",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "3A级景区",
+    "name_zh": "紫泥堂创意园",
+    "name_en": null,
+    "district": "番禺",
+    "address": "番禺区沙湾街紫坭村西安村7号",
+    "description_zh": "番禺区A级景区名录登记条目：3A级，沙湾街紫坭村西安村7号；旧糖厂改造的工业文创园区。门票与营业安排待核实。",
+    "tags": [
+      "3A级景区",
+      "A级景区名录",
+      "文创园区"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市番禺区文化广电旅游体育局：番禺区A级景区名录（2026年5月更新）",
+        "url": "http://www.panyu.gov.cn/zwgk/zdlyxxgkml/lyscjgzf/cyzl/content/post_10806763.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-05-11",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "区级名录条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a148",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "3A级景区",
+    "name_zh": "广州西坊大院文化旅游区",
+    "name_en": null,
+    "district": "番禺",
+    "address": "番禺区市桥街环城西路264号",
+    "description_zh": "番禺区A级景区名录登记条目：3A级，市桥街环城西路264号；旧厂房改造的文化创意街区。门票与开放安排待核实。",
+    "tags": [
+      "3A级景区",
+      "A级景区名录",
+      "文创园区"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市番禺区文化广电旅游体育局：番禺区A级景区名录（2026年5月更新）",
+        "url": "http://www.panyu.gov.cn/zwgk/zdlyxxgkml/lyscjgzf/cyzl/content/post_10806763.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-05-11",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实"
+    ],
+    "notes": "区级名录条目，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a149",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "3A级景区",
+    "name_zh": "莲塘春色休闲旅游区",
+    "name_en": null,
+    "district": "增城",
+    "address": "增城区荔城街莲塘村",
+    "description_zh": "增城区文广旅体局新增国家3A级景区公告条目：位于荔城街莲塘村，临增江，乡村休闲类景区。详细开放、门票与预约信息待核实。",
+    "tags": [
+      "3A级景区",
+      "乡村旅游"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市增城区文化广电旅游体育局：增城区新增2家国家3A级景区",
+        "url": "http://www.zc.gov.cn/gzzcwglt/gkmlpt/content/10/10078/post_10078182.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-01-15",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实",
+      "门牌号待核实"
+    ],
+    "notes": "2024年12月新评定为国家3A级旅游景区，待人工查重复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a150",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "3A级景区",
+    "name_zh": "濠迳亲子地质公园景区",
+    "name_en": null,
+    "district": "增城",
+    "address": "增城区中新镇濠迳村",
+    "description_zh": "增城区文广旅体局新增国家3A级景区公告条目：位于中新镇濠迳村，含地质博物馆与研学类项目。详细开放与门票信息待核实。",
+    "tags": [
+      "3A级景区",
+      "科普场馆",
+      "乡村旅游"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "广州市增城区文化广电旅游体育局：增城区新增2家国家3A级景区",
+        "url": "http://www.zc.gov.cn/gzzcwglt/gkmlpt/content/10/10078/post_10078182.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-01-15",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实",
+      "门牌号待核实"
+    ],
+    "notes": "2024年12月新评定为国家3A级旅游景区；市级名录中名称或作“滨江亲子地质公园景区”一类写法，需复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a151",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "3A级景区",
+    "name_zh": "流溪河国家森林公园",
+    "name_en": null,
+    "district": "从化",
+    "address": null,
+    "description_zh": "南方+从化A级景区专题中列为3A级的景区条目：以流溪河水库与亚热带森林景观为主，具体门址与开放、门票信息待核实。",
+    "tags": [
+      "3A级景区",
+      "自然生态"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "南方+：从化15个A级景区，你最爱“打卡”哪一个？",
+        "url": "https://www.nfnews.com/content/G3Ogr8Ed3r.html",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2025-02-27",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实",
+      "详细地址待核实",
+      "市级名录对应行未读取，等级待复核"
+    ],
+    "notes": "报道由从化区文广旅体局提供素材，等级与门址需按市区级正式名录复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a152",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "3A级景区",
+    "name_zh": "南平静修小镇",
+    "name_en": null,
+    "district": "从化",
+    "address": "从化区温泉镇南平村",
+    "description_zh": "南方+从化A级景区专题中列为3A级的条目：位于温泉镇南平村，以静修康养与乡村旅居为特色。门票、住宿与预约待核实。",
+    "tags": [
+      "3A级景区",
+      "乡村旅游",
+      "康养"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "南方+：从化15个A级景区，你最爱“打卡”哪一个？",
+        "url": "https://www.nfnews.com/content/G3Ogr8Ed3r.html",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2025-02-27",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实",
+      "门牌号待核实",
+      "市级名录对应行未读取，等级待复核"
+    ],
+    "notes": "报道素材由从化区文广旅体局提供，待复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a153",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "3A级景区",
+    "name_zh": "香蜜山生态果庄",
+    "name_en": null,
+    "district": "从化",
+    "address": "从化区吕田镇安山村",
+    "description_zh": "南方+从化A级景区专题中列为3A级的条目：位于吕田镇安山村，以水果种植与生态观光为特色。门票与采摘安排待核实。",
+    "tags": [
+      "3A级景区",
+      "农业观光"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "南方+：从化15个A级景区，你最爱“打卡”哪一个？",
+        "url": "https://www.nfnews.com/content/G3Ogr8Ed3r.html",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2025-02-27",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实",
+      "门牌号待核实",
+      "市级名录对应行未读取，等级待复核"
+    ],
+    "notes": "报道素材由从化区文广旅体局提供；市级名录中名称或作“广州市香蜜山生态旅游区”，需复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a154",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "3A级景区",
+    "name_zh": "生态设计小镇",
+    "name_en": null,
+    "district": "从化",
+    "address": "从化区流溪温泉度假区",
+    "description_zh": "南方+从化A级景区专题中列为3A级的条目：位于流溪温泉度假区，含生态设计大会会址等节点。参观与门票安排待核实。",
+    "tags": [
+      "3A级景区",
+      "文创园区"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "南方+：从化15个A级景区，你最爱“打卡”哪一个？",
+        "url": "https://www.nfnews.com/content/G3Ogr8Ed3r.html",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2025-02-27",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实",
+      "门牌号待核实",
+      "市级名录对应行未读取，等级待复核"
+    ],
+    "notes": "报道素材由从化区文广旅体局提供，待复核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.guangzhou.attraction.a155",
+    "city": "guangzhou",
+    "category": "attraction",
+    "subcategory": "3A级景区",
+    "name_zh": "北纬23°8′森林营地",
+    "name_en": null,
+    "district": "从化",
+    "address": "广州市从化区城郊街西和村草塘101号",
+    "description_zh": "南方+从化A级景区专题中列为3A级的条目：城郊街西和村草塘101号，研学与亲子营地为特色。住宿、门票与预约待核实。",
+    "tags": [
+      "3A级景区",
+      "研学营地"
+    ],
+    "official_url": null,
+    "attraction_info": {
+      "level": "3A",
+      "ticket_note": null,
+      "booking_note": null
+    },
+    "restaurant_info": null,
+    "sources": [
+      {
+        "name": "南方+：从化15个A级景区，你最爱“打卡”哪一个？",
+        "url": "https://www.nfnews.com/content/G3Ogr8Ed3r.html",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2025-02-27",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名待核实",
+      "官方网站待核实",
+      "市级名录对应行未读取，等级待复核"
+    ],
+    "notes": "报道素材由从化区文广旅体局提供；名称含特殊符号，入库前需统一写法。",
+    "conflicts": []
+  }
+]
