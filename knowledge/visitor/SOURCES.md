@@ -361,3 +361,5 @@ Traveloka正常About及页脚实读，自述旅行平台，页脚TRAVELOKA SERVI
 ## 府城墙局部施工平台提醒（2026-11-18）
 
 依JT持续代批权，经[#702/6955340779](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6955340779)批准[去哪儿这一精确页](https://sight.qunar.com/11714)，中文，仅浙江台州府城墙的短期施工正文提醒。平台归属、提示有效期与限制见[核对记录](coverage/fucheng-maintenance-2026-11-18.md)；不作官方原公告或机器周闭/预约依据。格式仅接受该URL、对应单城、passport_booking及非空subject，不扩整站、参数、相邻ID、子域或法律渠道。核对11-18、失效仍11-23，原百度周闭来源核对日仍11-17。
+
+2026-11-18 JT 会话确认扩展上述[去哪儿精确页面的预约提示核对范围](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6974646211)，仍限台州府城墙，不扩其他页面或城市。该页面涵盖整个文化旅游区，票务提示所指是否覆盖城墙所有普通入园方式不明；保留 `reservation_required: null`，不把来源授权当作条件已核实。
