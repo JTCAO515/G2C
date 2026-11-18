@@ -1,11 +1,12 @@
 import copy
-from datetime import date
+from datetime import date, datetime
 import json
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from zoneinfo import ZoneInfo
 
 from validate import load_entries, validate_entry
 from validate import CITIES
@@ -73,7 +74,8 @@ class ConditionsTests(unittest.TestCase):
             validate_entry_v2(legacy[0], as_of=date(2026, 11, 16))
 
     def test_real_optional_booking_window_is_not_a_minimum_lead_requirement(self):
-        entries = load_entries_v2(sorted((ROOT / "entries-v2").glob("*.json")), as_of=date(2026, 11, 16))
+        observed_on = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+        entries = load_entries_v2(sorted((ROOT / "entries-v2").glob("*.json")), as_of=observed_on)
         self.assertEqual(len(entries), 3)
         venue = next(entry for entry in entries if entry["entry_kind"] == "fact")
         self.assertIs(venue["conditions"]["reservation_required"], False)
