@@ -36,6 +36,7 @@ public struct LioHome<MenuContent: View>: View {
     @State private var opening = Opening.beforeNext
     @State private var tab = Tab.chat
     @State private var tripPath: [LioTripRoute] = []
+    @Namespace private var tripZoomNamespace
     @State private var memoryBusy = false
     @State private var memoryPending = false
     @State private var memoryNotice: String?
@@ -136,7 +137,8 @@ public struct LioHome<MenuContent: View>: View {
             LioTripsView(itineraries: conversation.itineraries, language: language, library: tripLibrary,
                          tripPlan: tripPlan, currentPlan: tripPlan?.current(for: tripCard),
                          canUndo: canObserve && tripPlan?.requestedCard == tripCard,
-                         recordedMap: recordedMap, sessionRevision: session?.revision, path: $tripPath) { tab = .chat }
+                         recordedMap: recordedMap, sessionRevision: session?.revision,
+                         zoomNamespace: tripZoomNamespace, path: $tripPath) { tab = .chat }
                 .background(LioTabBarAppearance().frame(width: 0, height: 0))
                 .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
                 .tag(Tab.trips)
@@ -978,7 +980,9 @@ public struct LioHome<MenuContent: View>: View {
                         }
                     }) { celebrate in
                         LioItineraryCard(itinerary: current ?? itinerary, language: language, celebrate: celebrate) {
-                            if tripLibrary != nil { tripPath = [LioTripRoute(id: itinerary.id, visit: UUID())] }
+                            if tripLibrary != nil {
+                                tripPath = [LioTripRoute(id: itinerary.id, visit: UUID(), chatTurn: turn.id)]
+                            }
                             tab = .trips
                         } actions: {
                             if isLatest, let tripPlan {
@@ -1002,6 +1006,7 @@ public struct LioHome<MenuContent: View>: View {
                                 }
                             }
                         }
+                        .lioTripZoomSource(.chatCard(turn.id), in: tripZoomNamespace, reduceMotion: reduceMotion)
                     }
                 }
             }
