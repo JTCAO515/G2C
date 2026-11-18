@@ -24,13 +24,15 @@ async def reject_unmocked_connection(*args, **kwargs):
 
 
 @patch('asyncio.open_connection', new=reject_unmocked_connection)
-def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
+def check_dispatch(api, headers, database, auth, subject, scope, memory, root, *, before_send=False):
     subjects = frozenset({subject})
     signer = load_confirmation_signer(auth)
-    for paused, missing_done, missing_model in (
-        ('intake', False, False), ('discussion', False, False), ('discussion', True, False),
-        ('discussion', False, True), ('memory', False, False), ('draft', False, False),
-    ):
+    cases = [('intake', False, False), ('discussion', False, False),
+             ('memory', False, False), ('draft', False, False)]
+    if not before_send:
+        cases[2:2] = [('discussion', True, False), ('discussion', False, True)]
+    timeline_statuses = {}
+    for paused, missing_done, missing_model in cases:
         case = paused + ('-missing-done' if missing_done else '-missing-model' if missing_model else '')
         complete_unsettled_reply = ('北京有丰富的历史遗迹和街巷。' * 200)[:2436]
         sent = []
@@ -97,11 +99,16 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
                 assert 'The traveler requested a complete ' in system
                 value = dict(answer=complete_unsettled_reply if missing_model else
                              '第1天逛街区，第2天看博物馆，第3天试当地美食。想先细化哪一天？')
-            sent.append(stage)
-            yield _M4_REQUEST_SENT
-            if stage == paused:
+            async def wait_for_timeline():
                 request_waiting.set()
-                assert await asyncio.to_thread(release.wait, 15), 'timeline test never released the response'
+                assert await asyncio.to_thread(release.wait, 15), 'timeline test never released the wire'
+
+            sent.append(stage)
+            if stage == paused and before_send:
+                await wait_for_timeline()
+            yield _M4_REQUEST_SENT
+            if stage == paused and not before_send:
+                await wait_for_timeline()
             observation['http_status'] = 200
             truncated = missing_done and stage == paused
             content = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
@@ -127,8 +134,10 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
                 assert request_waiting.wait(10), ('provider request did not reach ' + paused, future.result(timeout=2))
                 with ThreadPoolExecutor(max_workers=3) as readers:
                     pages = tuple(readers.map(lambda _: timeline(), range(3)))
+                timeline_statuses[case] = tuple(page.status_code for page in pages)
                 for page in pages:
-                    assert page.status_code == 200, (case, page.status_code)
+                    if page.status_code != 200:
+                        continue
                     original, pending = page.json()['messages']
                     assert (original['message_id'], original['status']) == (seed_mid, 'completed')
                     assert (pending['message_id'], pending['status'], pending['answer'], pending['trip']) == (
@@ -185,4 +194,6 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
                 followup_outcome, = worker.process()
             assert followup_outcome.message_id == 'dispatch-unsettled-followup'
             assert followup_outcome.proposal_id is None
-        print('PASS three signed Lio timeline reads while the original ' + case + ' response waits', flush=True)
+        phase = 'before send' if before_send else 'while waiting for a response'
+        print('Signed Lio timeline ' + case + ' ' + phase + ': ' + str(timeline_statuses[case]), flush=True)
+    assert all(codes == (200, 200, 200) for codes in timeline_statuses.values()), timeline_statuses
