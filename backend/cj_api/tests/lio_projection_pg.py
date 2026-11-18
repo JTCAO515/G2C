@@ -34,9 +34,9 @@ def exercise(root,conninfo,*,preference=None,locale='en',stored_text=None,extra_
         period_start=now-60,period_end=now+3600,max_steps=12,max_tools=4,max_output=60000,max_seconds=600),
         output_limits=dict(model=12000,tool=4000,memory=12000)),history=[])))
     context=load_run_context(meter)
-    for subject in subjects:
-        local_run_context.provision_budget(path,context,subject)
-        dev_auth.activate_travel(path,subject,context,ABI)
+    for admitted in subjects:
+        local_run_context.provision_budget(path,context,admitted)
+        dev_auth.activate_travel(path,admitted,context,ABI)
     database=LocalDatabase(path,run_context=context,travel_context=True,needs_context=True,trip_context=True)
     slot='travel.pace'if preference is None else'lodging.style'
     slots=[slot]+([]if extra_preference is None else['travel.interests'])
