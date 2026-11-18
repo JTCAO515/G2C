@@ -1033,6 +1033,50 @@ class Boundaries(unittest.TestCase):
             self.assertEqual(original.receipt(attempt,'provider_call',len(result)).attempt_id,attempt)
             with self.assertRaises(BudgetUnknown):
                 list(invoke())
+
+    def test_only_original_lio_discussion_hands_off_the_dispatch_fence_after_send(self):
+        from contextlib import closing
+
+        from cj_agent.provider import _M4_REQUEST_SENT
+        from cj_api.local_app import ISSUER, scope_for
+        from cj_api.local_lio_planning import DISCUSSION_PROMPT
+
+        subject = 'm4-synthetic-discussion-wire'
+        provider = MeteredDashScopeProvider(DashScopeConfig(M4_BASE, M4_MODEL, KEY), self.budget)
+        tools = RealTools(RealServices(provider, KEY, frozenset({subject})))
+        registration = tools.registrations['model.answer']
+
+        for operation_key, done in (('model.lio_discussion.0', True),
+                                    ('model.lio_discussion.0', False), ('model.answer', True)):
+            with self.subTest(operation_key=operation_key, done=done):
+                requests = []
+                attempt = f'synthetic-{operation_key}-{done}'
+                original = registration.prepare_input((
+                    [dict(role='user', content='Synthetic planning discussion')], DISCUSSION_PROMPT, provider))
+                self.assertNotIn('response_mode', json.loads(original.original_bytes))
+                operation = SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER, subject)),
+                                            operation_key=operation_key, registration_id='model.answer',
+                                            command=SimpleNamespace(attempt_id=attempt))
+
+                async def wire(config, raw, guard, observation):
+                    self.assertTrue(guard())
+                    requests.append(raw)
+                    yield _M4_REQUEST_SENT
+                    yield sse(done=done).replace('chatcmpl-synthetic', attempt.replace('.', '-')).encode()
+
+                with patch('cj_agent.provider._m4_wire', wire), closing(
+                        original.bind_operation(operation, lambda: True)()) as reply:
+                    if operation_key == 'model.lio_discussion.0':
+                        self.assertEqual(next(reply), '')
+                        self.assertEqual({r['attempt_id']: r['state'] for r in self.budget.inspect()}[attempt], 'INTENT')
+                    if done:
+                        self.assertEqual(list(reply), ['{"zh":"待核实。","en":"Needs verification."}'])
+                        self.assertEqual({r['attempt_id']: r['state'] for r in self.budget.inspect()}[attempt], 'RECEIVED')
+                    else:
+                        with self.assertRaises(ProviderUnknown):
+                            next(reply)
+                        self.assertEqual({r['attempt_id']: r['state'] for r in self.budget.inspect()}[attempt], 'INTENT')
+                self.assertEqual(len(requests), 1)
         self.assertEqual(len(requests),1)
 
     def test_lio_timeline_keeps_uncertainty_plain_and_withholds_internal_answers(self):
