@@ -1,0 +1,1414 @@
+[
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.alipay",
+    "name_zh": "支付宝",
+    "name_en": "Alipay",
+    "category": "payment",
+    "purpose_zh": "面向外国游客的移动支付工具。上海政府英文指南称，境外游客可把境外发行的 Visa、Mastercard、Diners Club、Discover 等银行卡绑定到支付宝，在支持支付宝的商户扫码付款；该指南称注册流程已简化，无需先开预付账户或取得中国手机号，部分亚洲电子钱包用户还可通过 Alipay+ 在华直接扫码。具体卡种、限额和手续费以支付页面为准。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "中文",
+      "英文界面待核实",
+      "其他语言未知"
+    ],
+    "preparation": [
+      "可接收短信的手机号（境外号码可用）",
+      "本人护照等身份证件（实名/绑卡时按页面要求）",
+      "支持的境外银行卡"
+    ],
+    "official_links": [
+      {
+        "name": "支付宝官网",
+        "url": "https://www.alipay.com/",
+        "type": "official_site"
+      }
+    ],
+    "sources": [
+      {
+        "name": "上海市人民政府英文网站《A guide to linking international bank cards to Alipay》",
+        "url": "https://english.shanghai.gov.cn/en-FAQs-StudyinShanghai/20231211/a58d4c15179f468fb2c5d72b393f1fd4.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2023-12-11",
+        "valid_until": null
+      },
+      {
+        "name": "济南市投资促进局转载《开通移动支付（外国商务人士在华工作生活指引 2025 年版）》",
+        "url": "http://zwfw.jinan.gov.cn/col127495/art/2025/art_127495_4798604.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-11-06",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "支付宝 App 的英文界面与支持语种未逐项核实",
+      "手续费、单笔限额和可绑定卡种可能随页面调整，未实测",
+      "部分小程序或服务可能额外要求中国手机号或实名信息"
+    ],
+    "notes": "上海指南（2023-12-11）列 Visa、Mastercard、Diners Club、Discover；济南转载的 2025 年版政府指引另列 American Express、JCB、银联等。两份材料都不是支付宝服务协议，实际以 App 页面为准。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.mainland.payment-options",
+      "visitor.v3.taizhou-suzhou.payment-options"
+    ]
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.wechat",
+    "name_zh": "微信",
+    "name_en": "WeChat",
+    "category": "payment",
+    "purpose_zh": "兼具通讯与支付的超级应用。外国游客可用境外手机号注册，按微信支付帮助中心说明，用护照等六类证件之一开通微信支付并绑定境外银行卡，在中国大陆日常消费场景扫码付款；外卡暂不支持红包、转账等。游客也常用微信与酒店、司机和商家沟通。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "中文",
+      "英文（官方英文站；App 界面语种待核实）"
+    ],
+    "preparation": [
+      "可接收短信的手机号（境外号码可用）",
+      "护照等六类证件之一",
+      "支持的境外银行卡"
+    ],
+    "official_links": [
+      {
+        "name": "WeChat 英文官网",
+        "url": "https://www.wechat.com/en",
+        "type": "official_site"
+      }
+    ],
+    "sources": [
+      {
+        "name": "微信支付帮助中心《微信支付外卡绑定和使用指南》",
+        "url": "https://cs.help.wechat.com/hc/zh-cn/articles/11975770896271-%E5%BE%AE%E4%BF%A1%E6%94%AF%E4%BB%98%E5%A4%96%E5%8D%A1%E7%BB%91%E5%AE%9A%E5%92%8C%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97",
+        "type": "official_tool",
+        "language": "zh",
+        "published_on": "2025-02-17",
+        "valid_until": null
+      },
+      {
+        "name": "WeChat 英文官网",
+        "url": "https://www.wechat.com/en",
+        "type": "official_tool",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "App 界面支持语言未逐项核实",
+      "外卡手续费与限额可能调整，未实测",
+      "未实际完成护照实名和绑卡全流程"
+    ],
+    "notes": "帮助页称外卡单笔不超过 200 元免手续费，超过 200 元收 3%，退款按比例退回；这是页面当时口径，使用前以支付页提示为准。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.mainland.payment-options",
+      "visitor.v3.taizhou-suzhou.payment-options"
+    ]
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.cloud-quickpass",
+    "name_zh": "云闪付",
+    "name_en": "Cloud QuickPass",
+    "category": "payment",
+    "purpose_zh": "中国银联推出的银行卡管理与移动支付 App。政府来华指引称，外国游客可在云闪付绑定带 Visa、Mastercard、银联、American Express、JCB、Diners Club、Discover 等标识的银行卡，也可在 App 内申请“旅行通卡”并充值后用于日常消费；可作为支付宝、微信之外的银联渠道备选。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "英文",
+      "简体中文",
+      "繁体中文",
+      "韩文",
+      "日文",
+      "维吾尔文",
+      "藏文"
+    ],
+    "preparation": [
+      "手机号（境外或中国）",
+      "支持的银行卡",
+      "申请旅行通卡时按页面要求充值"
+    ],
+    "official_links": [
+      {
+        "name": "云闪付官网（中国银联）",
+        "url": "https://www.95516.com/",
+        "type": "official_site"
+      },
+      {
+        "name": "App Store 云闪付",
+        "url": "https://apps.apple.com/cn/app/id600273928",
+        "type": "official_store"
+      }
+    ],
+    "sources": [
+      {
+        "name": "济南市投资促进局转载《开通移动支付（外国商务人士在华工作生活指引 2025 年版）》",
+        "url": "http://zwfw.jinan.gov.cn/col127495/art/2025/art_127495_4798604.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-11-06",
+        "valid_until": null
+      },
+      {
+        "name": "中国银联帮助中心《云闪付 App 概述》",
+        "url": "https://static.95516.com/static/help/detail_242.html",
+        "type": "official_tool",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      },
+      {
+        "name": "App Store 云闪付页面（语种标注）",
+        "url": "https://apps.apple.com/cn/app/id600273928",
+        "type": "official_store",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "外籍用户注册、旅行通卡申请资格与流程未实测",
+      "境外卡绑定范围、限额和手续费未核实",
+      "官方帮助页主要面向银联持卡人，未单列外国游客说明"
+    ],
+    "notes": "云闪付官网 95516.com 本次直接抓取未成功；官方帮助页和 App Store 页面可读。旅行通卡是政府指引提到的选项，尚未验证申请条件。语种列表取自 App Store 标注。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.mainland.payment-options",
+      "visitor.v3.taizhou-suzhou.payment-options"
+    ]
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.amap",
+    "name_zh": "高德地图",
+    "name_en": "Amap",
+    "category": "map",
+    "purpose_zh": "阿里巴巴集团旗下的地图与本地生活平台。上海政府英文站介绍，高德于 2025 年 7 月推出多语言版，除中文、英文外支持西班牙语、葡萄牙语、法语、德语、泰语、日语、韩语、土耳其语、意大利语、俄语、阿拉伯语、马来语、印尼语和越南语；提供景点、餐厅、酒店等英文译名，以及驾车、步行、骑行、公交导航和英文打车入口。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "中文",
+      "英文",
+      "西班牙语",
+      "葡萄牙语",
+      "法语",
+      "德语",
+      "泰语",
+      "日语",
+      "韩语",
+      "土耳其语",
+      "意大利语",
+      "俄语",
+      "阿拉伯语",
+      "马来语",
+      "印尼语",
+      "越南语"
+    ],
+    "preparation": [
+      "从海外 App Store 或 Google Play 下载多语言版（据上海政府稿转引高德信息）",
+      "手机号/账号要求待核实"
+    ],
+    "official_links": [
+      {
+        "name": "高德地图官网",
+        "url": "https://www.amap.com/",
+        "type": "official_site"
+      }
+    ],
+    "sources": [
+      {
+        "name": "上海市人民政府英文网站《China's first multilingual map adds 14 new languages》",
+        "url": "https://english.shanghai.gov.cn/en-Latest-WhatsNew/20250711/8f2fcf3c6b624a56a6b2c0d8152ea2f2.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2025-07-11",
+        "valid_until": null
+      },
+      {
+        "name": "高德地图官网",
+        "url": "https://www.amap.com/",
+        "type": "official_tool",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文版在境内应用商店的下载入口未核实",
+      "登录、手机号与实名要求未知",
+      "打车支付是否支持境外银行卡未知"
+    ],
+    "notes": "上海政府稿转引高德信息，称多语言版可在 Apple App Store 和 Google Play 下载；高德中文官网未提供同等英文功能说明。英文版具体可用城市和功能边界未逐项核实。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.baidu-maps",
+    "name_zh": "百度地图",
+    "name_en": "Baidu Maps",
+    "category": "map",
+    "purpose_zh": "百度公司的地图与出行服务，覆盖全国，提供驾车、公交、步行、骑行导航、地点搜索和打车入口；主站与主 App 以中文为主，可作为外国游客在中文环境下备用的地图工具，英文支持以 App 实际版本为准。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "中文（主站/主 App）",
+      "英文界面待核实",
+      "其他语言未知"
+    ],
+    "preparation": [
+      "下载百度地图 App 或访问 map.baidu.com",
+      "手机号/账号要求待核实",
+      "部分功能可能需要中国手机号或实名"
+    ],
+    "official_links": [
+      {
+        "name": "百度地图",
+        "url": "https://map.baidu.com/",
+        "type": "official_site"
+      }
+    ],
+    "sources": [
+      {
+        "name": "百度地图",
+        "url": "https://map.baidu.com/",
+        "type": "official_tool",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      },
+      {
+        "name": "上海市人民政府英文网站《China's first multilingual map adds 14 new languages》",
+        "url": "https://english.shanghai.gov.cn/en-Latest-WhatsNew/20250711/8f2fcf3c6b624a56a6b2c0d8152ea2f2.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2025-07-11",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官网为前端渲染，只读到站点名称，未取得功能/语言说明",
+      "英文支持、境外手机号注册与境外卡支付未知",
+      "打车入口是否支持外国游客未核实"
+    ],
+    "notes": "百度地图官网本次只读取到站点名称，未据其写发布时间或功能清单；百度地图与北京市政府英文站的 Beijing Map 是两个不同产品，已拆分为独立候选。上海政府稿介绍的多语言地图是高德，不是百度地图，不能把语言能力套用到本条。",
+    "conflicts": [
+      "检索摘要称百度地图官方公众号文章把 Android 版描述为灰度测试；该原文触发环境验证未读取，口径待复核。"
+    ],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.beijing-map",
+    "name_zh": "北京英文地图",
+    "name_en": "Beijing Map",
+    "category": "map",
+    "purpose_zh": "北京市政府英文服务“Beijing Service”提供的英文地图入口，指向 web.beijingmap.cn，供英文用户在浏览器中查看北京地图与地点信息；适合作为中文地图之外的英文备用入口，尤其在需要英文地名、地址和周边搜索时。",
+    "cities": [
+      "beijing"
+    ],
+    "languages": [
+      "英文（据北京市政府英文页定位）",
+      "中文支持未知"
+    ],
+    "preparation": [
+      "浏览器访问 web.beijingmap.cn（据北京市政府英文页）",
+      "手机 App 下载入口与账号要求待核实"
+    ],
+    "official_links": [
+      {
+        "name": "Beijing Map 英文地图",
+        "url": "https://web.beijingmap.cn/",
+        "type": "official_site"
+      }
+    ],
+    "sources": [
+      {
+        "name": "北京市人民政府英文网站 Beijing Service《Beijing Map》",
+        "url": "https://english.beijing.gov.cn/specials/beijingservice/pek/baidumap/",
+        "type": "official_government",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "来源页正文为前端渲染，本次只读到栏目标题，未取得覆盖范围与功能说明",
+      "手机 App 下载入口与境外访问稳定性未核实",
+      "是否提供公交、步行导航与账号登录未核实"
+    ],
+    "notes": "北京市政府英文页只作为入口线索；本条目只覆盖 Beijing Map 本身，不把百度地图或其他地图服务的能力混入。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.didi-china",
+    "name_zh": "滴滴出行",
+    "name_en": "DiDi China",
+    "category": "taxi",
+    "purpose_zh": "面向中国境内出行的网约车 App。Google Play 的“DiDi China”页面称提供英文界面，支持全球手机号注册、国际银行卡支付、中英双语司乘消息和 24/7 英文客服；适合外国游客在没有中文、没有中国手机号的情况下叫车。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "英文",
+      "中文（界面）；其他语言待核实"
+    ],
+    "preparation": [
+      "可接收短信的境外手机号",
+      "国际信用卡/借记卡（据应用商店说明）",
+      "下载 DiDi China App"
+    ],
+    "official_links": [
+      {
+        "name": "DiDi 国际官网",
+        "url": "https://web.didiglobal.com/",
+        "type": "official_site"
+      },
+      {
+        "name": "Google Play DiDi China",
+        "url": "https://play.google.com/store/apps/details?id=com.sdu.didi.psnger",
+        "type": "official_store"
+      }
+    ],
+    "sources": [
+      {
+        "name": "Google Play《DiDi China: Ride Hailing》应用页",
+        "url": "https://play.google.com/store/apps/details?id=com.sdu.didi.psnger",
+        "type": "official_store",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      },
+      {
+        "name": "DiDi 国际官网",
+        "url": "https://web.didiglobal.com/",
+        "type": "official_tool",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "中国大陆应用商店版本与 Google Play 版是否一致未核实",
+      "支付币种、手续费、护照要求未知",
+      "部分城市/车型可用性未知"
+    ],
+    "notes": "DiDi 国际官网的国家列表不含中国大陆；面向中国境内游客的是单独的“DiDi China”应用（包名 com.sdu.didi.psnger）。应用商店说明由开发者自行提供，本次未实测叫车。",
+    "conflicts": [
+      "DiDi 国际官网未把中国大陆列入服务国家，但 Google Play 另有面向中国境内游客的 DiDi China 应用；两者关系、账号是否互通未核实。"
+    ],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.rail-12306",
+    "name_zh": "中国铁路 12306",
+    "name_en": "China Railway 12306",
+    "category": "rail",
+    "purpose_zh": "中国铁路官方购票渠道。12306 英文站说明，外国旅客可用按规定有效的护照购买实名车票，网站提供购票、改签、退票和变更到站；湖南省政府英文问答补充：可在 12306 英文网站或 App 填写姓名、国籍、证件号自动核验，或上传护照资料页人工核验，也可到车站窗口核验；购票可用中国或外国银行卡及移动支付。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "中文",
+      "英文（英文网站）；App 界面语种待核实"
+    ],
+    "preparation": [
+      "有效护照",
+      "12306 账号",
+      "完成身份核验（线上或车站窗口）",
+      "支持的银行卡/移动支付"
+    ],
+    "official_links": [
+      {
+        "name": "中国铁路 12306 英文站",
+        "url": "https://www.12306.cn/en/index.html",
+        "type": "official_site"
+      }
+    ],
+    "sources": [
+      {
+        "name": "中国铁路 12306 英文版常见问题（Ticketing）",
+        "url": "https://www.12306.cn/en/faq.html",
+        "type": "official_operator",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      },
+      {
+        "name": "湖南省人民政府英文网站《[Transportation] How to Purchase a Train Ticket》",
+        "url": "http://enghunan.gov.cn/hneng/Services/QuickLinks/QA/202606/t20260608_33679940.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "12306 App 的英文界面未核实",
+      "境外手机号注册与境外卡支付未实测",
+      "护照人工核验的处理时长未知"
+    ],
+    "notes": "12306 英文 FAQ 说明英文站仅接受有效外国护照；湖南省政府页转引《外国商务人士在华工作生活指引（2026 年版）》，补充身份核验与支付方式。两页均未给出实时余票或票价。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.mainland.rail-passport",
+      "visitor.mainland.transport-tickets"
+    ]
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.shanghai-metro-daduhui",
+    "name_zh": "Metro 大都会（上海地铁）",
+    "name_en": "Metro Daduhui (Shanghai Metro)",
+    "category": "city_transport",
+    "purpose_zh": "上海地铁官方乘车 App。上海政府英文指南称 Metro 大都会支持微信支付、支付宝和国际银行卡支付，可扫码过闸；上海地铁另公告，自 2025 年 6 月 28 日起全网闸机支持银联、Visa、Mastercard、American Express、JCB 等接触式银行卡及数字人民币硬钱包“拍卡过闸”。游客可把它作为买票、扫码之外的直接过闸方式。",
+    "cities": [
+      "shanghai"
+    ],
+    "languages": [
+      "中文；英文界面待核实"
+    ],
+    "preparation": [
+      "手机号注册（境外号码支持待核实）",
+      "App 内支付方式：微信/支付宝/国际银行卡",
+      "或使用支持闪付的接触式银行卡直接过闸"
+    ],
+    "official_links": [
+      {
+        "name": "上海地铁官网",
+        "url": "https://www.shmetro.com/",
+        "type": "official_site"
+      },
+      {
+        "name": "App Store Metro 大都会",
+        "url": "https://apps.apple.com/cn/app/id1202750238",
+        "type": "official_store"
+      }
+    ],
+    "sources": [
+      {
+        "name": "上海市人民政府英文网站《CIIE service guide: Easy metro access》",
+        "url": "https://english.shanghai.gov.cn/en-CIIE2025/20251017/c6c5ca124ee74e92a37244280c0983b9.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2025-10-17",
+        "valid_until": null
+      },
+      {
+        "name": "上海地铁官网《SH Metro Expands Tap to Ride Pilot Program Across Entire Network》",
+        "url": "https://service.shmetro.com/en/yygg/1574.htm",
+        "type": "official_operator",
+        "language": "en",
+        "published_on": "2025-06-27",
+        "valid_until": null
+      },
+      {
+        "name": "App Store Metro 大都会页面",
+        "url": "https://apps.apple.com/cn/app/id1202750238",
+        "type": "official_store",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "Metro 大都会对境外手机号注册/短信验证的支持未核实",
+      "App 英文界面未知",
+      "App 内国际卡支付的具体卡种与限额未核实"
+    ],
+    "notes": "应用商店用户评论有“境外手机号收不到验证码”的反馈，属用户评论、未经官方确认；官方渠道称 App 支持国际卡支付。直接拍卡过闸与 App 扫码是两条不同路径。",
+    "conflicts": [
+      "政府稿称 App 支持国际银行卡；App Store 用户评论反映境外手机号验证码问题（用户评论，非官方，待实测）。"
+    ],
+    "related_entries": [
+      "visitor.shanghai.metro-service-center"
+    ]
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.beijing-yitongxing",
+    "name_zh": "亿通行（北京轨道交通）",
+    "name_en": "Yitongxing (Beijing Rail Transit)",
+    "category": "city_transport",
+    "purpose_zh": "北京轨道交通官方扫码乘车 App，由北京如易行科技有限公司运营。用户协议说明提供二维码乘车、NFC 过闸、人脸过闸、在线购票、线路查询与路径规划，并接入微信、支付宝、京东金融等支付渠道；适合在北京地铁扫码进站。",
+    "cities": [
+      "beijing"
+    ],
+    "languages": [
+      "中文；英文界面待核实"
+    ],
+    "preparation": [
+      "手机号",
+      "实名认证（协议要求姓名、电话、身份证号码或其他有效证件号码）",
+      "微信/支付宝/京东等支付渠道"
+    ],
+    "official_links": [
+      {
+        "name": "亿通行官网",
+        "url": "https://www.ruubypay.com/",
+        "type": "official_site"
+      },
+      {
+        "name": "亿通行用户协议（官方）",
+        "url": "https://terms.ruubypay.com/user-agreement",
+        "type": "official_help"
+      },
+      {
+        "name": "小米应用商店 亿通行",
+        "url": "https://app.mi.com/details?id=enfc.metro",
+        "type": "official_store"
+      }
+    ],
+    "sources": [
+      {
+        "name": "亿通行 APP 用户使用协议",
+        "url": "https://terms.ruubypay.com/user-agreement",
+        "type": "official_operator",
+        "language": "zh",
+        "published_on": "2026-11-13",
+        "valid_until": null
+      },
+      {
+        "name": "小米应用商店《亿通行-96123北京轨道交通官方》",
+        "url": "https://app.mi.com/details?id=enfc.metro",
+        "type": "official_store",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      },
+      {
+        "name": "北京如易行科技有限公司官网",
+        "url": "https://www.ruubypay.com/",
+        "type": "official_tool",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "外籍护照注册与实名的官方流程未找到",
+      "境外手机号、境外银行卡支持未知",
+      "英文界面未知"
+    ],
+    "notes": "第三方指南称亿通行可用护照实名注册，但官方用户协议只写“身份证号码、其他有效证件号码”，未明确护照；该说法未获官方页面确认。",
+    "conflicts": [
+      "第三方指南称可用护照实名注册；官方协议未明确护照，仅写“其他有效证件号码”。"
+    ],
+    "related_entries": [
+      "visitor.beijing.metro-bank-card",
+      "visitor.mainland.transport-tickets"
+    ]
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.guangzhou-metro",
+    "name_zh": "广州地铁官方 APP",
+    "name_en": "Guangzhou Metro",
+    "category": "city_transport",
+    "purpose_zh": "广州地铁官方 App。应用商店说明提供地铁出行路线、首末班车时间、车站服务设施、车站周边信息、站外实景导航和运营公告；适合查询线路与车站信息。官方说明未提到扫码乘车，游客乘车仍需另备交通卡、乘车码、现金或现场购票。",
+    "cities": [
+      "guangzhou"
+    ],
+    "languages": [
+      "中文；英文界面待核实"
+    ],
+    "preparation": [
+      "手机/应用商店下载；是否需注册待核实",
+      "乘车另备支付方式（待核实）"
+    ],
+    "official_links": [
+      {
+        "name": "广州地铁官网",
+        "url": "https://www.gzmtr.com/",
+        "type": "official_site"
+      },
+      {
+        "name": "App Store 广州地铁官方 APP",
+        "url": "https://apps.apple.com/cn/app/id580097761",
+        "type": "official_store"
+      }
+    ],
+    "sources": [
+      {
+        "name": "App Store《广州地铁官方APP》页面",
+        "url": "https://apps.apple.com/cn/app/id580097761",
+        "type": "official_store",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      },
+      {
+        "name": "广州地铁官网",
+        "url": "https://www.gzmtr.com/",
+        "type": "official_operator",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "App 是否支持扫码乘车未在官方说明中确认",
+      "外籍注册、境外手机号与支付方式未知",
+      "英文界面未知"
+    ],
+    "notes": "应用商店页面由广州地铁集团有限公司发布；功能描述只列信息查询与导航，未列乘车码。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.shenzhen-metro-bank-card",
+    "name_zh": "深圳地铁（国际银行卡拍卡过闸）",
+    "name_en": "Shenzhen Metro (international bank card tap-to-ride)",
+    "category": "city_transport",
+    "purpose_zh": "深圳地铁的过闸支付方式。深圳地铁 2026-09-22 公告称，自 2026-09-10 起全线网所有闸机通道支持国际银行卡拍卡过闸：持具备非接触支付、已开通小额免密的银联、Visa、Mastercard、American Express、JCB 银行卡，或绑定该卡的移动设备，可直接拍卡过闸，后台自动完成汇率转换和扣费；闸机为双语服务界面，30 个重点枢纽站设有双语操作指南。适合不想兑换现金、不想装本地 App 的境外旅客。",
+    "cities": [
+      "shenzhen"
+    ],
+    "languages": [
+      "中文",
+      "英文（闸机双语服务界面）"
+    ],
+    "preparation": [
+      "可非接触支付并已开通小额免密的国际银行卡（银联/Visa/Mastercard/American Express/JCB），或绑定该卡的手机/手表",
+      "无需兑换现金或购买本地交通卡（据公告）",
+      "商务车厢乘客可在核准机拍卡；儿童票等业务可在车站客服中心或自助票务处理机办理"
+    ],
+    "official_links": [
+      {
+        "name": "深圳地铁官网《深圳地铁实现国际银行卡拍卡过闸全面覆盖》",
+        "url": "https://www.szmc.net/home/xinwenzhongxin/gongsixinwen/202609/106228.html",
+        "type": "official_help"
+      }
+    ],
+    "sources": [
+      {
+        "name": "深圳地铁官网《深圳地铁实现国际银行卡拍卡过闸全面覆盖》",
+        "url": "https://www.szmc.net/home/xinwenzhongxin/gongsixinwen/202609/106228.html",
+        "type": "official_operator",
+        "language": "zh",
+        "published_on": "2026-09-22",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "单卡限额、汇率与是否收取货币转换费未知",
+      "是否所有境外发行的卡种与所有闸机都适用未逐项核实",
+      "其他城市地铁的外卡拍卡支持未核实"
+    ],
+    "notes": "公告称覆盖 17 条线路、432 座车站全部闸机通道，并说明受理 200 多个国家和地区发行的银行卡；数据为公告口径，本次未实际乘车验证。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.shenzhen.metro-pos-ticket",
+      "visitor.mainland.transport-tickets"
+    ]
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.pleco",
+    "name_zh": "Pleco 汉语词典",
+    "name_en": "Pleco Chinese Dictionary",
+    "category": "translation",
+    "purpose_zh": "面向英语使用者的中文词典与学习工具，提供拍照识字、手写查词、多部授权词典、真人发音、粤语支持、单词卡和文档取词；适合游客在没有网络或需要离线查词时理解菜单、路牌和中文文本。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "英文（界面与释义）",
+      "中文（词典内容）",
+      "粤语发音"
+    ],
+    "preparation": [
+      "下载 iOS/Android 版",
+      "部分词典或功能需在官网商店付费购买（具体价格待核实）"
+    ],
+    "official_links": [
+      {
+        "name": "Pleco 官网",
+        "url": "https://www.pleco.com/",
+        "type": "official_site"
+      }
+    ],
+    "sources": [
+      {
+        "name": "Pleco 官网",
+        "url": "https://www.pleco.com/",
+        "type": "official_tool",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "免费与付费词典/功能的边界未核实",
+      "离线语音、OCR 的可用范围未核实",
+      "Android 版下载渠道与系统要求未核实"
+    ],
+    "notes": "官网列出 OCR、手写、词典、发音、单词卡、文档阅读、笔顺等功能；未给出具体价格，购买入口指向官网商店。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.baidu-translate",
+    "name_zh": "百度翻译",
+    "name_en": "Baidu Translate",
+    "category": "translation",
+    "purpose_zh": "百度推出的多语种翻译工具。官网称支持 200 多种语言互译，提供文本、语音、拍照（17 种语言）、AR 拍照、文档和同传等能力；适合游客在问路、点餐、看菜单和读标识时做中英互译。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "中文（界面）",
+      "支持 200 多种语言互译（具体语种以官网为准）",
+      "英文界面待核实"
+    ],
+    "preparation": [
+      "网络连接",
+      "拍照/语音/麦克风权限（按功能）"
+    ],
+    "official_links": [
+      {
+        "name": "百度翻译官网",
+        "url": "https://fanyi.baidu.com/",
+        "type": "official_site"
+      }
+    ],
+    "sources": [
+      {
+        "name": "百度翻译官网",
+        "url": "https://fanyi.baidu.com/",
+        "type": "official_tool",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文界面与境外可用性未核实",
+      "离线翻译能力未知",
+      "拍照/语音翻译的语种范围未逐项核实"
+    ],
+    "notes": "官网为中文产品页，功能与语种数量以页面为准；本次未实测翻译质量。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.microsoft-translator",
+    "name_zh": "微软翻译",
+    "name_en": "Microsoft Translator",
+    "category": "translation",
+    "purpose_zh": "微软的免费个人翻译应用。微软官网称可翻译文本、语音、会话、照片和截屏，支持离线语言包和多设备会话；Google Play 页面称支持 60 多种语言。适合游客在无网络时使用离线包，或与对方进行双人对话翻译。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "60 多种语言（应用商店说明）",
+      "界面支持多语言（具体语种待核实）"
+    ],
+    "preparation": [
+      "网络连接；离线使用需提前下载语言包",
+      "手机系统权限（麦克风/相机/照片）"
+    ],
+    "official_links": [
+      {
+        "name": "Microsoft Translator 官网",
+        "url": "https://www.microsoft.com/en-us/translator/",
+        "type": "official_site"
+      },
+      {
+        "name": "Google Play 微软翻译",
+        "url": "https://play.google.com/store/apps/details?id=com.microsoft.translator",
+        "type": "official_store"
+      }
+    ],
+    "sources": [
+      {
+        "name": "Microsoft Translator 官网",
+        "url": "https://www.microsoft.com/en-us/translator/",
+        "type": "official_tool",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      },
+      {
+        "name": "Google Play《微软翻译》页面",
+        "url": "https://play.google.com/store/apps/details?id=com.microsoft.translator",
+        "type": "official_store",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "中国大陆网络环境下的可用性未实测",
+      "中文语音/对话翻译质量未评估",
+      "离线包大小与可用语种未核实"
+    ],
+    "notes": "微软官网与 Google Play 页面分别提供功能与语种说明；本次未实测在华使用。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.china-unicom",
+    "name_zh": "中国联通",
+    "name_en": "China Unicom",
+    "category": "communication",
+    "purpose_zh": "中国三大电信运营商之一。政府英文问答称，外国旅客可持有效入境章护照或外国人永久居留身份证，到中国电信、中国移动、中国联通、中国广电的自有营业厅办理 SIM 卡并开通移动通信服务；套餐通常含通话时长和数据。适合需要中国手机号注册本地服务、接收验证码的游客。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "中文；英文服务待核实"
+    ],
+    "preparation": [
+      "护照（有效入境章）或外国人永久居留身份证",
+      "前往自有营业厅",
+      "选择含通话/数据的套餐"
+    ],
+    "official_links": [
+      {
+        "name": "中国联通官网",
+        "url": "https://www.10010.com/",
+        "type": "official_site"
+      }
+    ],
+    "sources": [
+      {
+        "name": "中国政府网（China Daily 呈现）《How can foreigners apply for a SIM card...》",
+        "url": "https://govt.chinadaily.com.cn/s/202508/15/WS689ed552498edec913ce0dc8/how-can-foreigners-apply-for-a-sim-card-and-choose-a-suitable-mobile-communication-service-plan-in-china.html",
+        "type": "official_media",
+        "language": "en",
+        "published_on": "2025-08-15",
+        "valid_until": null
+      },
+      {
+        "name": "中国联通官网",
+        "url": "https://www.10010.com/",
+        "type": "official_operator",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "面向游客的套餐、价格与机场网点未核实",
+      "英文服务与线上办理未核实",
+      "eSIM、境外手机号漫游政策未知"
+    ],
+    "notes": "政府问答为全国性办理指引，不保证每家营业厅、每个套餐都接待外籍旅客；具体以营业厅为准。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.mainland.passport-sim"
+    ]
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.china-mobile",
+    "name_zh": "中国移动",
+    "name_en": "China Mobile",
+    "category": "communication",
+    "purpose_zh": "中国三大电信运营商之一。政府英文问答称，外国旅客可持有效入境章护照或外国人永久居留身份证，到中国电信、中国移动、中国联通、中国广电的自有营业厅办理 SIM 卡并开通移动通信服务；套餐通常含通话时长和数据。适合需要中国手机号注册本地服务、接收验证码的游客。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "中文；英文服务待核实"
+    ],
+    "preparation": [
+      "护照（有效入境章）或外国人永久居留身份证",
+      "前往自有营业厅",
+      "选择含通话/数据的套餐"
+    ],
+    "official_links": [
+      {
+        "name": "中国移动官网",
+        "url": "https://www.10086.cn/",
+        "type": "official_site"
+      }
+    ],
+    "sources": [
+      {
+        "name": "中国政府网（China Daily 呈现）《How can foreigners apply for a SIM card...》",
+        "url": "https://govt.chinadaily.com.cn/s/202508/15/WS689ed552498edec913ce0dc8/how-can-foreigners-apply-for-a-sim-card-and-choose-a-suitable-mobile-communication-service-plan-in-china.html",
+        "type": "official_media",
+        "language": "en",
+        "published_on": "2025-08-15",
+        "valid_until": null
+      },
+      {
+        "name": "中国移动官网",
+        "url": "https://www.10086.cn/",
+        "type": "official_operator",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "面向游客的套餐、价格与机场网点未核实",
+      "英文服务与线上办理未核实",
+      "eSIM、境外手机号漫游政策未知"
+    ],
+    "notes": "政府问答为全国性办理指引，不保证每家营业厅、每个套餐都接待外籍旅客；具体以营业厅为准。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.mainland.passport-sim"
+    ]
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.china-telecom",
+    "name_zh": "中国电信",
+    "name_en": "China Telecom",
+    "category": "communication",
+    "purpose_zh": "中国三大电信运营商之一。政府英文问答称，外国旅客可持有效入境章护照或外国人永久居留身份证，到中国电信、中国移动、中国联通、中国广电的自有营业厅办理 SIM 卡并开通移动通信服务；套餐通常含通话时长和数据。适合需要中国手机号注册本地服务、接收验证码的游客。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "中文；英文服务待核实"
+    ],
+    "preparation": [
+      "护照（有效入境章）或外国人永久居留身份证",
+      "前往自有营业厅",
+      "选择含通话/数据的套餐"
+    ],
+    "official_links": [
+      {
+        "name": "中国电信官网",
+        "url": "https://www.189.cn/",
+        "type": "official_site"
+      }
+    ],
+    "sources": [
+      {
+        "name": "中国政府网（China Daily 呈现）《How can foreigners apply for a SIM card...》",
+        "url": "https://govt.chinadaily.com.cn/s/202508/15/WS689ed552498edec913ce0dc8/how-can-foreigners-apply-for-a-sim-card-and-choose-a-suitable-mobile-communication-service-plan-in-china.html",
+        "type": "official_media",
+        "language": "en",
+        "published_on": "2025-08-15",
+        "valid_until": null
+      },
+      {
+        "name": "中国电信官网",
+        "url": "https://www.189.cn/",
+        "type": "official_operator",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "面向游客的套餐、价格与机场网点未核实",
+      "英文服务与线上办理未核实",
+      "eSIM、境外手机号漫游政策未知"
+    ],
+    "notes": "政府问答为全国性办理指引，不保证每家营业厅、每个套餐都接待外籍旅客；具体以营业厅为准。本次中国电信官网直接访问返回 412（反爬），未读取正文。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.mainland.passport-sim"
+    ]
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.airalo",
+    "name_zh": "Airalo 中国 eSIM",
+    "name_en": "Airalo China eSIM",
+    "category": "communication",
+    "purpose_zh": "国际 eSIM 平台。中国页面显示提供 3—30 天不等的中国 eSIM 套餐，主要网络为中国联通，适合出发前购买、落地后使用数据，无需实体 SIM 卡。页面价格随币种和套餐变动，本记录不抄录具体价格。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "英文；其他语言见网站语言选择（未逐项核实）"
+    ],
+    "preparation": [
+      "支持 eSIM 且未锁网的手机",
+      "出发前购买并安装 eSIM",
+      "按页面说明激活"
+    ],
+    "official_links": [
+      {
+        "name": "Airalo 中国 eSIM",
+        "url": "https://www.airalo.com/china-esim",
+        "type": "official_site"
+      }
+    ],
+    "sources": [
+      {
+        "name": "Airalo 中国 eSIM 页面",
+        "url": "https://www.airalo.com/china-esim",
+        "type": "commercial_platform",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      },
+      {
+        "name": "Airalo 关于我们",
+        "url": "https://www.airalo.com/about-us/about-airalo",
+        "type": "commercial_platform",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "中国境内激活、实名与网络限制未核实",
+      "是否支持热点、语音/SMS 未知",
+      "价格与套餐随页面变动，未记录"
+    ],
+    "notes": "Airalo 是商业 eSIM 平台，不是中国运营商官网；中国套餐页面标注主要网络为中国联通。数据套餐是否满足中国实名要求、能否长期使用未核实。",
+    "conflicts": [
+      "平台称中国 eSIM 使用中国联通网络；与实体 SIM 的实名登记要求是否相同未核实。"
+    ],
+    "related_entries": [
+      "visitor.mainland.passport-sim"
+    ]
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.trip-com",
+    "name_zh": "携程国际版",
+    "name_en": "Trip.com",
+    "category": "booking",
+    "purpose_zh": "携程旗下国际旅行预订平台。官网提供酒店、航班、火车票、景点门票、租车等预订；App Store 页面称支持 24 种语言、31 种货币和多种支付方式，适合外国游客用英文预订中国行程。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "24 种语言（App Store 说明）"
+    ],
+    "preparation": [
+      "账号/邮箱",
+      "国际支付方式（具体卡种待核实）",
+      "部分产品需护照信息"
+    ],
+    "official_links": [
+      {
+        "name": "Trip.com 官网",
+        "url": "https://www.trip.com/",
+        "type": "official_site"
+      },
+      {
+        "name": "App Store Trip.com",
+        "url": "https://apps.apple.com/app/id681752345",
+        "type": "official_store"
+      }
+    ],
+    "sources": [
+      {
+        "name": "Trip.com 官网",
+        "url": "https://www.trip.com/",
+        "type": "commercial_platform",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      },
+      {
+        "name": "App Store《Trip.com: Flight, Hotel, Train》页面",
+        "url": "https://apps.apple.com/app/id681752345",
+        "type": "official_store",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "中国大陆火车票是否需额外身份核验未核实",
+      "境外卡支付与手续费未核实",
+      "客服语种与响应未验证"
+    ],
+    "notes": "Trip.com 与携程中文版、12306 的票源、价格和退改规则可能不同；本记录只说明平台用途，不构成票务规则。",
+    "conflicts": [
+      "Trip.com 与携程中文版、12306 的票源、价格和退改规则可能不同，未逐项比对。"
+    ],
+    "related_entries": [
+      "visitor.mainland.rail-passport",
+      "visitor.mainland.transport-tickets"
+    ]
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.booking-com",
+    "name_zh": "缤客",
+    "name_en": "Booking.com",
+    "category": "booking",
+    "purpose_zh": "国际酒店预订平台。App Store 页面称支持英语及另外 40 种语言，含简体/繁体中文；适合外国游客用熟悉的语言查找和预订中国住宿。具体房源是否接待外籍旅客、支付方式和取消政策需逐店核对。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "英语及另外 40 种语言（App Store 说明，含简体/繁体中文）"
+    ],
+    "preparation": [
+      "账号/邮箱",
+      "银行卡（具体支付方式待核实）",
+      "逐店核对入住政策"
+    ],
+    "official_links": [
+      {
+        "name": "Booking.com 官网",
+        "url": "https://www.booking.com/",
+        "type": "official_site"
+      },
+      {
+        "name": "App Store Booking.com",
+        "url": "https://apps.apple.com/app/id367003839",
+        "type": "official_store"
+      }
+    ],
+    "sources": [
+      {
+        "name": "Booking.com 官网",
+        "url": "https://www.booking.com/",
+        "type": "commercial_platform",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      },
+      {
+        "name": "App Store《Booking.com Travel Deals》页面",
+        "url": "https://apps.apple.com/app/id367003839",
+        "type": "official_store",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "中国大陆酒店覆盖与接待外籍政策需逐店核实",
+      "支付方式与客服语种未核实",
+      "官网正文受访问限制，未读取"
+    ],
+    "notes": "Booking.com 官网对自动访问返回 202，未取得可读正文；语言信息取自 App Store 页面。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.dianping",
+    "name_zh": "大众点评",
+    "name_en": "Dianping",
+    "category": "other",
+    "purpose_zh": "本地生活与餐饮点评平台。中国文化和旅游部官方旅游网“Travel China”介绍，大众点评提供餐厅信息、订座和优惠，支持用国际手机号注册，并可在设置中切换界面语言；适合游客找餐厅、看评价和订座。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "中文",
+      "英文（据 Travel China 称可在设置切换）；其他语言待核实"
+    ],
+    "preparation": [
+      "国际手机号注册",
+      "下载 App",
+      "部分团购/订座可能需中国手机号或支付方式（待核实）"
+    ],
+    "official_links": [
+      {
+        "name": "大众点评官网",
+        "url": "https://www.dianping.com/",
+        "type": "official_site"
+      }
+    ],
+    "sources": [
+      {
+        "name": "中国文化和旅游部官方旅游网 Travel China《Travel Services - App Download》",
+        "url": "https://www.travelchina.org.cn/en/article/2exYBosHq26o",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2025-12-15",
+        "valid_until": null
+      },
+      {
+        "name": "大众点评官网",
+        "url": "https://www.dianping.com/",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文信息覆盖与翻译质量未核实",
+      "团购/订座/支付是否需中国手机号未知",
+      "境外银行卡支付未知"
+    ],
+    "notes": "Travel China 是文化和旅游部官方旅游网站；其 App 下载栏目对大众点评的描述属官方推荐性说明，不是大众点评服务协议。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.meituan",
+    "name_zh": "美团",
+    "name_en": "Meituan",
+    "category": "other",
+    "purpose_zh": "一站式生活服务平台。中国文化和旅游部官方旅游网介绍，美团提供英文界面，可用国际手机号注册并绑定国际借记卡/信用卡，用于点外卖、订酒店、打车和购买景点门票；适合游客在酒店点餐、买门票或叫车。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "中文",
+      "英文（据 Travel China 说明）",
+      "其他语言待核实"
+    ],
+    "preparation": [
+      "国际手机号",
+      "绑定国际借记卡/信用卡",
+      "配送地址/酒店地址（英文支持待核实）"
+    ],
+    "official_links": [
+      {
+        "name": "美团官网",
+        "url": "https://www.meituan.com/",
+        "type": "official_site"
+      }
+    ],
+    "sources": [
+      {
+        "name": "中国文化和旅游部官方旅游网 Travel China《Travel Services - App Download》",
+        "url": "https://www.travelchina.org.cn/en/article/2exYBosHq26o",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2025-12-15",
+        "valid_until": null
+      },
+      {
+        "name": "美团官网",
+        "url": "https://www.meituan.com/",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文界面实际覆盖与配送地址支持未核实",
+      "境外卡支付与手续费未知",
+      "客服与退款流程未核实"
+    ],
+    "notes": "Travel China 的说明为官方旅游网推荐，未提供美团服务协议或逐项功能验证；外卖配送范围、酒店/门票可用性按城市和商家而异。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-18.nia-12367",
+    "name_zh": "国家移民管理局 12367",
+    "name_en": "NIA 12367",
+    "category": "other",
+    "purpose_zh": "国家移民管理局的政务服务平台。官方英文页列出 NIA 12367 App、微信小程序、支付宝小程序和官方网站等渠道，并把 App/小程序列为外国人在酒店以外住所办理住宿登记的线上入口；也可用于出入境业务咨询。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "中文",
+      "英文（官方英文站/双语热线）；App 界面语种待核实"
+    ],
+    "preparation": [
+      "下载 NIA 12367 App 或使用微信/支付宝小程序",
+      "护照信息、住址等（办理住宿登记时按页面要求）",
+      "境外手机号/账号要求待核实"
+    ],
+    "official_links": [
+      {
+        "name": "NIA 12367 应用渠道（官方英文页）",
+        "url": "https://en.nia.gov.cn/n147423/n196714/n196731/c196956/content.html",
+        "type": "official_help"
+      }
+    ],
+    "sources": [
+      {
+        "name": "国家移民管理局英文网站《Online channels for the Accommodation Registration...》",
+        "url": "https://en.nia.gov.cn/n147423/n196714/n196731/c196956/content.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2026-03-20",
+        "valid_until": null
+      },
+      {
+        "name": "国家移民管理局英文网站首页",
+        "url": "https://en.nia.gov.cn/",
+        "type": "official_government",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "App 英文界面与境外手机号注册未知",
+      "非住宿登记功能的可用性未核实",
+      "小程序/网站在境外的访问稳定性未知"
+    ],
+    "notes": "应用渠道页只说明下载与入口，不列办理材料或办理时限；本记录不概括住宿登记政策，具体要求和适用范围需另核官方公告。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.v2.entry.official-channel"
+    ]
+  }
+]

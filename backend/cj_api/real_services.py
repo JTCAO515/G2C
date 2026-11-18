@@ -26,7 +26,7 @@ from cj_agent.provider import (
     M4_NATIVE_TURN_PROFILE_V2,M4_NATIVE_TURN_STREAM,M4_NATIVE_TURN_BUFFERED,ProviderUnknown,ProviderFailed,
 )
 from cj_fact.contract_v1 import decode_query as fact_query
-from cj_fact.live_source import NOTICE_URL,WEATHER_URL,public_page,weather
+from cj_fact.live_source import NOTICE_URL,WEATHER_URL,public_page,weather_response
 from cj_fact.policy import FactFailure
 from cj_place.contract_v1 import decode_query,encode_result
 from cj_place.gaode import Config,prepare,parse_response
@@ -69,6 +69,44 @@ def _external_timing(kind, operation, admit):
         attempt_sha=hashlib.sha256(operation.command.attempt_id.encode()).hexdigest()
         _timing_log.info('M4_EXTERNAL_TIMING attempt_sha256=%s kind=%s elapsed_ms=%.3f admission_ms=%.3f admission_checks=%d',
                          attempt_sha,kind,(monotonic()-start)*1000,admission_time*1000,checks)
+
+
+def _response_stream(exchange):
+    """Pause a single registered GET after transmission and before response reads."""
+    loop=asyncio.new_event_loop()
+    queue=asyncio.Queue(maxsize=1)
+    resume=asyncio.Event()
+
+    async def sent():
+        await queue.put(('sent',None))
+        await resume.wait()
+
+    async def run():
+        try:
+            result=await exchange(sent)
+        except (Exception,asyncio.CancelledError) as error:
+            await queue.put(('error',error))
+        else:
+            await queue.put(('result',result))
+
+    task=loop.create_task(run())
+    try:
+        while True:
+            kind,value=loop.run_until_complete(queue.get())
+            if kind=='error':
+                raise value
+            if kind=='result':
+                yield value
+                return
+            # Return to the existing Worker before driving any response waits.
+            yield None
+            resume.set()
+    finally:
+        task.cancel()
+        try:
+            loop.run_until_complete(asyncio.gather(task,return_exceptions=True))
+        finally:
+            loop.close()
 
 
 def _function(name,description,properties):
@@ -719,22 +757,33 @@ class RealTools:
                         if name=='place':
                             config=Config(ORIGIN,8192,65536,20,60)
                             request=prepare(config,query,request_ref,datetime.now(timezone.utc),basic=True,coordinate_only=coordinate_route)
+                            credentials=ProviderCredentials(self.services.amap_key,budget.deadline)
                             if checked() is not True:raise BudgetUnknown('original live tool authority invalid')
-                            result=asyncio.run(fetch_candidate(config,request,ProviderCredentials(self.services.amap_key,budget.deadline),before_send=checked,basic=True,**({'coordinate_only':True} if coordinate_route else {})))
+                            def receive(after_send):
+                                return fetch_candidate(config,request,credentials,before_send=checked,basic=True,
+                                    after_send=after_send,**({'coordinate_only':True} if coordinate_route else {}))
+                        elif name=='weather':
+                            def receive(after_send):
+                                return weather_response(query,self.services.amap_key,guard=checked,
+                                                        national=national,after_send=after_send)
+                        else:
+                            def receive(after_send):
+                                return public_page(guard=checked,after_send=after_send)
+                        with closing(_response_stream(receive)) as exchange:
+                            result=next(exchange)
+                            if result is None:
+                                yield ''
+                                result=next(exchange)
+                        if name=='place':
                             if result.state!='received':raise BudgetUnknown('original live PLACE outcome unknown')
                             parsed=parse_response(config,request,result.response,now=datetime.now(timezone.utc),basic=True,coordinate_only=coordinate_route)
                             raw=encode_result(parsed,evidence_kind='live_provider')
                             endpoint=ORIGIN+request.path;status=parsed.outcome.value
                             metadata['provider_code']=parsed.provider_code
-                        elif name=='weather':
-                            if national:
-                                from cj_fact.live_source import weather_for_adcode
-                                outcome=weather_for_adcode(query,self.services.amap_key,guard=checked)
-                            else:outcome=weather(query,self.services.amap_key,guard=checked)
-                            raw=canonical(outcome);endpoint=WEATHER_URL;status=outcome['status']
                         else:
-                            outcome=asyncio.run(public_page(guard=checked))
-                            raw=canonical(outcome);endpoint=NOTICE_URL;status=outcome['status']
+                            raw=canonical(result)
+                            endpoint=WEATHER_URL if name=='weather' else NOTICE_URL
+                            status=result['status']
                     metadata.update(endpoint=endpoint,region='China',response_sha256=hashlib.sha256(raw).hexdigest(),
                                     result_status=status,actual_cost_cny='UNKNOWN' if name!='fact' else '0')
                     budget.finish(operation.command.attempt_id,metadata)

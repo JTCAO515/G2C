@@ -430,6 +430,7 @@ def main():
 
     from cj_api.local_app import scope_for
     from cj_api.local_worker_context import checker_for
+    from cj_auth.interfaces import AdmissionStatus
     from cj_usage.authorization_budget import AuthorizationBudget, HK_JOURNAL_ROOT
     from cj_usage.sublimits import scope_hash
     from deploy.hk.configuration import Runtime, authorization, load_secret_environment
@@ -437,8 +438,8 @@ def main():
 
     load_secret_environment('worker')
     authorization()
-    budget = AuthorizationBudget(HK_JOURNAL_ROOT, authorization_guard=authorization, demo=True)
     if args.action == 'restore':
+        budget = AuthorizationBudget(HK_JOURNAL_ROOT, authorization_guard=authorization, demo=True)
         restore(budget, envelope['before'], envelope['restricted'], envelope['drained_ledger'])
         print_json(dict(kind='budget_restore', status='PASS'))
         return 0
@@ -452,10 +453,17 @@ def main():
         runtime = Runtime.load(directory, worker=True)
         try:
             decision = checker_for(runtime.auth, selected_subjects=runtime.demo_subjects).check(token)
+            if decision.status is AdmissionStatus.DENIED:
+                print_json(dict(kind='batch', status='UNRUN', reason='synthetic_session_denied'))
+                return 3
             if decision.principal is None:
                 raise ValueError('invited synthetic session required')
+            if decision.principal.expires_at < end.timestamp():
+                print_json(dict(kind='batch', status='UNRUN', reason='synthetic_session_window_too_short'))
+                return 3
             scope = scope_for(decision.principal.issuer, decision.principal.subject)
             owner = scope_hash(scope)
+            budget = AuthorizationBudget(HK_JOURNAL_ROOT, authorization_guard=authorization, demo=True)
             if args.action == 'preflight':
                 state = budget_state(budget, owner)
                 from deploy.hk.app_smoke_ceiling import BASELINE
