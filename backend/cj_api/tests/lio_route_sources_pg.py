@@ -60,16 +60,19 @@ def main():
                 worker.memory_run.check();worker.message_context.active_original(binding)
                 phases.append('send-held')
             async def dial():
+                assert_unlocked('connection')
                 reader=asyncio.StreamReader();writer=ReplyWriter(reader,bodies.pop(0),send_check)
                 writers.append(writer);return reader,writer
             actual_read=https_transport._read_response
-            async def receive(*args):
+            def assert_unlocked(phase):
                 try:worker.memory_run.check()
                 except RuntimeDenied:pass
-                else:raise AssertionError('route IO retained Memory frame')
+                else:raise AssertionError(f'route {phase} retained Memory frame')
                 try:worker.message_context.active_original(binding)
                 except LeaseUnavailable:pass
-                else:raise AssertionError('route IO retained MESSAGE frame')
+                else:raise AssertionError(f'route {phase} retained MESSAGE frame')
+            async def receive(*args):
+                assert_unlocked('response')
                 phases.append('receive-unheld');return await actual_read(*args)
             calls=PipelineCalls(worker,binding);places=[]
             with patch.object(https_transport,'_connect',dial),patch.object(https_transport,'_read_response',receive):

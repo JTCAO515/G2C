@@ -14,7 +14,7 @@ from cj_place.rich_routes import CityRoute,prepare
 from cj_place.https_transport import ProviderCredentials,route_candidate_stream,ROUTE_REQUEST_SENT
 from cj_trip.domain import identifier
 from cj_usage.registered_exit import Registration,InvocationInput
-from cj_usage.metered_exit import BudgetUnknown
+from cj_usage.metered_exit import BudgetUnknown, GuardedWireWrite, UNLOCKED_WIRE_START
 
 from .local_app import ISSUER,scope_for
 from .local_lio_provider_sources import RegisteredProviderSources,PROVIDER_OUTPUT_LIMIT
@@ -59,9 +59,14 @@ def registration(services):
                 budget.begin(operation.command.attempt_id,'route',original);budget.check_date()
                 config=Config('https://restapi.amap.com',8192,65536,20,60)
                 request=prepare(config,argument.query,argument.request_ref,datetime.now(timezone.utc))
-                events=route_candidate_stream(config,request,ProviderCredentials(services.amap_key,budget.deadline),before_send=checked)
+                events=route_candidate_stream(config,request,ProviderCredentials(services.amap_key,budget.deadline),
+                                              before_send=checked,defer_write=GuardedWireWrite)
+                yield UNLOCKED_WIRE_START
                 try:
                     for event in events:
+                        if isinstance(event,GuardedWireWrite):
+                            yield event
+                            continue
                         if event is ROUTE_REQUEST_SENT:
                             yield ''
                             continue

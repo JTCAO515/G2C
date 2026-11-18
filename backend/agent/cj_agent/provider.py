@@ -20,6 +20,7 @@ import certifi
 import httpx
 import h11
 from cj_strict_json import reject_duplicates
+from cj_usage.metered_exit import GuardedWireWrite, UNLOCKED_WIRE_START
 
 
 class ProviderFailed(Exception):
@@ -313,7 +314,7 @@ def _m4_native_contract_rejection(error,value,allowed):
     }.get(code,'native_contract_invalid')
 
 
-async def _m4_wire(config,raw,guard,observation=None):
+async def _m4_wire(config,raw,guard,observation=None,*,send_under_fence=None):
     """Single fixed POST with one total deadline across DNS/TLS/write/read."""
     loop=asyncio.get_running_loop();deadline=loop.time()+config.timeout_seconds
     writer=None
@@ -322,14 +323,17 @@ async def _m4_wire(config,raw,guard,observation=None):
         async with asyncio.timeout_at(deadline):
             reader,writer=await asyncio.open_connection('dashscope.aliyuncs.com',443,ssl=tls_context(),
                 server_hostname='dashscope.aliyuncs.com',limit=16384)
-            if guard() is not True:raise _M4Rejection('wire_authority','original M4 authority no longer valid')
-            if loop.time()>=deadline:raise _M4Rejection('wire_deadline','M4 total deadline exceeded')
             connection=h11.Connection(h11.CLIENT,max_incomplete_event_size=16384)
             request=h11.Request(method=b'POST',target=b'/compatible-mode/v1/chat/completions',headers=[
                 (b'Host',b'dashscope.aliyuncs.com'),(b'Authorization',('Bearer '+config.api_key).encode('ascii')),
                 (b'Content-Type',b'application/json'),(b'Accept',b'text/event-stream'),
                 (b'Accept-Encoding',b'identity'),(b'Content-Length',str(len(raw)).encode()),(b'Connection',b'close')])
-            writer.write(connection.send(request)+connection.send(h11.Data(data=raw))+connection.send(h11.EndOfMessage()))
+            def write():
+                if guard() is not True:raise _M4Rejection('wire_authority','original M4 authority no longer valid')
+                if loop.time()>=deadline:raise _M4Rejection('wire_deadline','M4 total deadline exceeded')
+                writer.write(connection.send(request)+connection.send(h11.Data(data=raw))+connection.send(h11.EndOfMessage()))
+            if send_under_fence is None:write()
+            else:await send_under_fence(write)
             await writer.drain()
             if observation is not None:
                 observation['sent_at']=time.monotonic()
@@ -415,7 +419,7 @@ class MeteredDashScopeProvider:
         raise ProviderFailed('original registered Meter operation required')
 
     @contextmanager
-    def _chunks(self,raw,guard,observation):
+    def _chunks(self,raw,guard,observation,*,guarded_connect=False):
         if self.transport is not None:
             # Explicit offline HTTP fixture only; installed environment profiles
             # cannot select a transport. iter_raw never decompresses before bounds.
@@ -428,11 +432,21 @@ class MeteredDashScopeProvider:
                     yield response.iter_raw()
         else:
             loop=asyncio.new_event_loop();queue=asyncio.Queue(maxsize=1)
+            async def send_under_fence(write):
+                completed=loop.create_future()
+                def perform():
+                    try:write()
+                    except Exception as error:completed.set_exception(error)
+                    else:completed.set_result(None)
+                await queue.put(('data',GuardedWireWrite(perform)))
+                await completed
+
             async def pump():
                 # Keep a single task alive across every yielded chunk. An async
                 # generator entered by separate __anext__ tasks would leave its
                 # timeout bound to the already completed first task.
-                source=_m4_wire(self.config,raw,guard,observation)
+                source=_m4_wire(self.config,raw,guard,observation,
+                                **({'send_under_fence':send_under_fence} if guarded_connect else {}))
                 try:
                     try:
                         async for chunk in source:await queue.put(('data',chunk))
@@ -455,7 +469,7 @@ class MeteredDashScopeProvider:
     def invoke(self,messages,system,attempt,*,tools=None,receipt,guard,native_reply=None,tool_choice=None,
                native_turn_profile=None,final_answer=False,release_after_send=False,lio_answer=False,structured_profile=None,intake_source_index=None,wire_observer=None,
                draft_profile=None,draft_schema_sha256=None,exploration_schema_sha256=None,
-               unsettled_answer_limit=None):
+               unsettled_answer_limit=None,guarded_connect=False):
         from cj_usage.authorization_budget import canonical
         native_tools=tools or []
         buffered=native_turn_profile==M4_NATIVE_TURN_BUFFERED
@@ -584,9 +598,16 @@ class MeteredDashScopeProvider:
         envelope_shape=None;identity_rejection=None;identity_fields=None;identity_missing=False
         choices_after_stop=False
         try:
-            with self._chunks(raw,guard,observation) as chunks:
+            wire_options={'guarded_connect':True} if guarded_connect and self.transport is None else {}
+            if wire_options:
+                yield UNLOCKED_WIRE_START
+            with self._chunks(raw,guard,observation,**wire_options) as chunks:
                 if self.transport is None:
-                    if next(chunks,None) is not _M4_REQUEST_SENT:
+                    first=next(chunks,None)
+                    if guarded_connect and isinstance(first,GuardedWireWrite):
+                        yield first
+                        first=next(chunks,None)
+                    if first is not _M4_REQUEST_SENT:
                         raise ProviderUnknown('M4 original request send unavailable')
                     if (compact or incremental or release_after_send or exploration or grouped_format is not None
                             or structured_profile == 'LIO-planning-intake.9'):
@@ -721,6 +742,8 @@ class MeteredDashScopeProvider:
                                 object_pairs_hook=reject_duplicates(ValueError,'duplicate_answer_field'))
                             if (type(candidate) is dict and candidate.keys()=={'answer'}
                                     and type(candidate['answer']) is str and candidate['answer'].strip()):
+                                if self.config.api_key in candidate['answer']:
+                                    raise ProviderUnknown('M4 structured model secret echo rejected')
                                 candidate['answer'].encode('utf-8')
                                 failure_reason='receipt_metadata_incomplete'
                                 raise CompleteUnsettledAnswer(candidate['answer'])

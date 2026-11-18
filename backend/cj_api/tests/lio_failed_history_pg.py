@@ -136,8 +136,8 @@ def exercise(root,config,*,locale,scenario='publish'):
         draft_profile='needs-structured.1',assembly_planning=True,demo_planning=True,national_planning=True,
         lio_confirmation=load_confirmation_signer(auth),lio_memory_enabled=True)
     first=boundary.receive_lio(token,json.dumps(dict(version='LIO-message.2',message_id='old-unknown',text=first_text,locale=locale,new_conversation=True)).encode(),prepare_scope=database._provision_scope,version='LIO-message.2')
-    async def catalogue(key,guard):assert guard()is True;return city_catalog()
-    with patch('cj_api.lio_city._catalog_exchange',side_effect=catalogue):
+    async def catalogue(key,guard,*,send_under_fence):assert guard()is True;return city_catalog()
+    with patch('cj_api.lio_city.catalog_response',side_effect=catalogue):
         one=worker();outcome,=one.process();assert outcome.status=='unknown',outcome
     old_receipt=one.messages.query('old-unknown').receipt
     with database.connect(owner)as db:
@@ -150,7 +150,7 @@ def exercise(root,config,*,locale,scenario='publish'):
             phase[0]=stage
             boundary.receive_lio(token,json.dumps(dict(version='LIO-message.2',message_id=mid,text=text,locale=locale,
                 conversation_id=first.conversation_id)).encode(),prepare_scope=database._provision_scope,version='LIO-message.2')
-            with patch('cj_api.lio_city._catalog_exchange',side_effect=catalogue):
+            with patch('cj_api.lio_city.catalog_response',side_effect=catalogue):
                 current=worker();outcome,=current.process();assert outcome.status=='completed',outcome
             with database.connect(owner)as db:
                 values=db.execute("SELECT e.value FROM cj_message_receipt m JOIN cj_run_event e USING(scope,run_id) "
@@ -181,7 +181,7 @@ def exercise(root,config,*,locale,scenario='publish'):
     def record_history(self,binding,original,messages,system,*,message_refs=()):
         references_seen.extend(r['message_id']for r in message_refs)
         return history(self,binding,original,messages,system,message_refs=message_refs)
-    with patch('cj_api.lio_city._catalog_exchange',side_effect=catalogue),patch.object(HistoryMemory,'before_model',record_history):
+    with patch('cj_api.lio_city.catalog_response',side_effect=catalogue),patch.object(HistoryMemory,'before_model',record_history):
         two=worker();outcome,=two.process();assert outcome.status=='completed',outcome
     assert 'old-unknown'in references_seen
     repository=two.drafts.repository
@@ -202,7 +202,7 @@ def exercise(root,config,*,locale,scenario='publish'):
     boundary.receive_lio(token,json.dumps(dict(version='LIO-message.2',message_id='after-translation',
         text=after_text,locale=locale,conversation_id=first.conversation_id)).encode(),
         prepare_scope=database._provision_scope,version='LIO-message.2')
-    with patch('cj_api.lio_city._catalog_exchange',side_effect=catalogue):
+    with patch('cj_api.lio_city.catalog_response',side_effect=catalogue):
         fourth=worker();outcome,=fourth.process();assert outcome.status=='completed',outcome
     with repository.connect()as db:
         after=db.execute('SELECT trip_id,version,content FROM cj_trip_record WHERE scope=%s',(repository.scope,)).fetchall()
