@@ -574,7 +574,7 @@ class MeteredDashScopeProvider:
                 if self.transport is None:
                     if next(chunks,None) is not _M4_REQUEST_SENT:
                         raise ProviderUnknown('M4 original request send unavailable')
-                    if (compact or incremental or release_after_send or exploration
+                    if (compact or incremental or release_after_send or exploration or grouped_format is not None
                             or structured_profile == 'LIO-planning-intake.9'):
                         # The first advance runs under the RUN dispatch fence.
                         # Release it after the one send and before reading the
