@@ -1,0 +1,2632 @@
+[
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h001",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "历史地标豪华酒店",
+    "name_zh": "花园酒店",
+    "name_en": "The Garden Hotel Guangzhou",
+    "name_en_source": "official",
+    "district": "越秀",
+    "address": "广州市越秀区环市东路368号",
+    "description_zh": "中国首批白金五星级饭店之一，位于环市东路，拥有城央岭南园林、双瀑布和多间特色餐厅，是广州老牌商务地标。",
+    "tags": [
+      "待核实",
+      "白金五星",
+      "老牌宾馆",
+      "环市东路"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "白金五星",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·花园酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071537.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h002",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "历史地标豪华酒店",
+    "name_zh": "白天鹅宾馆",
+    "name_en": "White Swan Hotel",
+    "name_en_source": "official",
+    "district": "荔湾",
+    "address": "广州市荔湾区沙面南街1号",
+    "description_zh": "中国首家由粤港合作兴建的大型五星级酒店，1983年开业，坐落沙面岛、临白鹅潭，以岭南庭院式设计和中餐厅闻名。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "老牌宾馆",
+      "沙面"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·白天鹅宾馆》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071530.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h003",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "历史地标豪华酒店",
+    "name_zh": "中国大酒店",
+    "name_en": "China Hotel Guangzhou",
+    "name_en_source": "official",
+    "district": "越秀",
+    "address": "广州市越秀区流花路122号",
+    "description_zh": "广州历史建筑，位于流花商圈、越秀公园地铁站上盖，拥有数百间客房与大型宴会空间，是老牌五星级商务酒店。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "老牌宾馆",
+      "流花商圈"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·中国大酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071491.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h004",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "历史地标豪华酒店",
+    "name_zh": "东方宾馆",
+    "name_en": "Dongfang Hotel",
+    "name_en_source": "official",
+    "district": "越秀",
+    "address": "广州市越秀区流花路120号",
+    "description_zh": "始建于1961年的老牌五星级宾馆，岭南东方品牌旗舰，坐落流花商圈，以大型园林中庭和会展设施著称。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "老牌宾馆",
+      "流花商圈"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "岭南东方（岭南控股）",
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·广州东方宾馆》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071473.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h005",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "商务酒店",
+    "name_zh": "广东亚洲国际大酒店",
+    "name_en": "Asia International Hotel",
+    "name_en_source": "official",
+    "district": "越秀",
+    "address": "广州市越秀区环市东路326号之一",
+    "description_zh": "环市东路高层五星级酒店，楼高180米，客房位于25层以上，可远眺白云山，地铁小北站直达。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "商务",
+      "环市东路"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "广东省旅游控股集团",
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·广东亚洲国际大酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071410.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h006",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "度假会议酒店",
+    "name_zh": "广州碧桂园凤凰城酒店",
+    "name_en": "Country Garden Phoenix City Hotel",
+    "name_en_source": "official",
+    "district": "增城",
+    "address": "广州市增城区广园东路新塘路段广州碧桂园内",
+    "description_zh": "增城新塘的欧陆式园林度假酒店，2003年开业，拥有大型宴会厅与山水园林景观，适合会议与度假。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "增城",
+      "度假"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "碧桂园",
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·广州碧桂园凤凰城酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071404.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h007",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "商务酒店",
+    "name_zh": "广州建国饭店",
+    "name_en": "Jianguo Hotel Guangzhou",
+    "name_en_source": "official",
+    "district": "天河",
+    "address": "广州市天河区林和中路172号",
+    "description_zh": "首旅集团旗下高星级商务酒店，位于天河区广州东站旁，毗邻地铁与商圈，设数百间客房及多间会议室。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "天河",
+      "广州东站"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "首旅建国",
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·广州建国酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071400.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h008",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "商务酒店",
+    "name_zh": "嘉逸国际酒店",
+    "name_en": "Jiayi International Hotel",
+    "name_en_source": "machine",
+    "district": "天河",
+    "address": "广州市天河区天河北路468号",
+    "description_zh": "天河北商务区的高层商务酒店，拥有258间客房及行政楼层、女士楼层，设多功能会议室与中西餐厅。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "天河北",
+      "商务"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "嘉逸酒店管理集团",
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·嘉逸国际酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071369.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名未确认，暂用音译"
+    ],
+    "notes": "英文名为音译",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h009",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "历史地标商务酒店",
+    "name_zh": "白云宾馆",
+    "name_en": "Baiyun Hotel",
+    "name_en_source": "official",
+    "district": "越秀",
+    "address": "广州市越秀区环市东路367号",
+    "description_zh": "1976年建成开业的广州老牌五星级宾馆，由岭南建筑大师设计，曾为全国第一高楼，现为大型商务酒店。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "老牌宾馆",
+      "环市东路"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "广东省旅游控股集团",
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·白云宾馆》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071358.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h010",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "国际品牌豪华酒店",
+    "name_zh": "广州香格里拉大酒店",
+    "name_en": "Shangri-La Guangzhou",
+    "name_en_source": "official",
+    "district": "海珠",
+    "address": "广州市海珠区会展东路1号",
+    "description_zh": "珠江畔的五星级酒店，毗邻广交会展馆，拥有大型户外花园与泳池，设多间餐厅，步行可达琶洲口岸。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "琶洲",
+      "香格里拉"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "香格里拉",
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·广州香格里拉大酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071281.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h011",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "度假会议酒店",
+    "name_zh": "南沙大酒店",
+    "name_en": "Nansha Grand Hotel",
+    "name_en_source": "official",
+    "district": "南沙",
+    "address": "广州市南沙区海滨新城商贸大道南二路1号",
+    "description_zh": "南沙海滨的五星级度假会议酒店，2005年开业，背靠蒲洲山、面向珠江口，绿化率高，设300余间客房。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "南沙",
+      "度假"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·南沙大酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071254.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h012",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "度假会议酒店",
+    "name_zh": "广州星河湾酒店",
+    "name_en": "Chateau Star River Guangzhou",
+    "name_en_source": "official",
+    "district": "番禺",
+    "address": "广州市番禺区番禺大道北1号",
+    "description_zh": "番禺珠江畔的五星级酒店，靠近番禺大道与华南快速，设室内外泳池、网球场及大型会议场地。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "番禺",
+      "度假"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "星河湾",
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·广州星河湾酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071164.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h013",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "国际品牌豪华酒店",
+    "name_zh": "广州富力丽思卡尔顿酒店",
+    "name_en": "The Ritz-Carlton, Guangzhou",
+    "name_en_source": "official",
+    "district": "天河",
+    "address": "广州市天河区珠江新城兴安路3号",
+    "description_zh": "珠江新城核心区五星级酒店，客房位于建筑高层，可览珠江与城市景观，设多间餐厅及行政酒廊。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "珠江新城",
+      "丽思卡尔顿"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "万豪（丽思卡尔顿）",
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·广州富力丽思卡尔顿酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071141.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-26",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h014",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "商务酒店",
+    "name_zh": "科尔海悦酒店",
+    "name_en": "Ke'er Haiyue Hotel",
+    "name_en_source": "machine",
+    "district": "番禺",
+    "address": "广州市番禺区清河东路288号",
+    "description_zh": "番禺中心地带的五星级商务酒店，毗邻番禺广场地铁站，以地中海风格设计，设餐饮、会议与康体设施。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "番禺",
+      "商务"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·广州科尔海悦酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071143.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-26",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名未确认，暂用音译"
+    ],
+    "notes": "英文名为音译",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h015",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "国际品牌豪华酒店",
+    "name_zh": "广州富力君悦大酒店",
+    "name_en": "Grand Hyatt Guangzhou",
+    "name_en_source": "official",
+    "district": "天河",
+    "address": "广州市天河区珠江新城珠江西路12号",
+    "description_zh": "珠江新城花城广场旁的五星级酒店，双塔建筑，设300余间客房、无柱宴会厅及顶层水疗与泳池。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "珠江新城",
+      "君悦"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "凯悦（君悦）",
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·广州富力君悦大酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071140.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-26",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h016",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "商务会议酒店",
+    "name_zh": "广州增城保利郡雅酒店（原：广州增城保利皇冠假日酒店）",
+    "name_en": "Poly Junya Hotel Zengcheng",
+    "name_en_source": "machine",
+    "district": "增城",
+    "address": "广州市增城区新塘镇沿江大道18号",
+    "description_zh": "增城新塘东江畔的五星级酒店，原名保利皇冠假日，2026年名录已更新为保利郡雅，设300余间客房。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "增城",
+      "新塘"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "保利",
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·广州增城保利皇冠假日酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071138.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-26",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名未确认，暂用音译"
+    ],
+    "notes": "2026年名录已更名为保利郡雅",
+    "conflicts": [
+      "名录名称为“广州增城保利郡雅酒店（原：广州增城保利皇冠假日酒店）”，市政府详情页仍用旧名“广州增城保利皇冠假日酒店”"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h017",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "度假酒店",
+    "name_zh": "九龙湖公主酒店",
+    "name_en": "Dragon Lake Princess Hotel",
+    "name_en_source": "official",
+    "district": "花都",
+    "address": "广州市花都区花东镇山前旅游大道3号",
+    "description_zh": "花都九龙湖度假区内的五星级酒店，隶属中国旅游集团，设200余间客房、9个会议室及大型水疗馆。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "花都",
+      "度假"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "中国旅游集团",
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·九龙湖公主酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071142.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-26",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h018",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "度假酒店",
+    "name_zh": "星河湾半岛酒店（海怡星河湾）",
+    "name_en": "Star River Peninsula Hotel",
+    "name_en_source": "machine",
+    "district": "番禺",
+    "address": "广州市番禺区沙溪大道沙滘岛星河湾半岛",
+    "description_zh": "番禺沙滘岛上的五星级酒店，2013年获评五星，设101间客房、江景餐厅与会议、网球场等设施。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "番禺",
+      "度假"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "星河湾",
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·星河湾半岛酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071139.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-26",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名未确认，暂用机翻"
+    ],
+    "notes": "英文名为机翻",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h019",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "国际品牌豪华酒店",
+    "name_zh": "广州市圣丰索菲特大酒店",
+    "name_en": "Sofitel Guangzhou Sunrich",
+    "name_en_source": "official",
+    "district": "天河",
+    "address": "广州市天河区广州大道中988号",
+    "description_zh": "雅高集团管理的五星级酒店，位于天河广州大道中，为索菲特华南旗舰店，设近500间法式风格客房。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "天河",
+      "索菲特"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "雅高（索菲特）",
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·广州圣丰索菲特大酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071144.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-26",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h020",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "温泉度假酒店",
+    "name_zh": "广州金叶子酒店",
+    "name_en": "Guangzhou Jinyezi Hotel",
+    "name_en_source": "machine",
+    "district": "增城",
+    "address": "广州市增城区白水寨风景区白水寨大道38号",
+    "description_zh": "白水寨景区半山温泉度假酒店，以温泉养生为主题，设露天温泉泡池、客房及会议、餐饮设施。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "增城",
+      "温泉"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "碧桂园",
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·广州金叶子酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071137.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-26",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名未确认，暂用音译"
+    ],
+    "notes": "英文名为音译",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h021",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "国际品牌豪华酒店",
+    "name_zh": "广州朗豪酒店",
+    "name_en": "Langham Place Guangzhou",
+    "name_en_source": "official",
+    "district": "海珠",
+    "address": "广州市海珠区新港东路638号",
+    "description_zh": "琶洲会展区五星级酒店，紧邻广交会展馆，建筑外观如凤凰双翼，公共区域陈设当代艺术品。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "琶洲",
+      "朗廷"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "朗廷",
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·南丰朗豪酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071136.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-26",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": [
+      "2026年名录名称为“广州朗豪酒店”，市政府详情页仍题“南丰朗豪酒店”"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h022",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "国际品牌豪华酒店",
+    "name_zh": "广州W酒店",
+    "name_en": "W Guangzhou",
+    "name_en_source": "official",
+    "district": "天河",
+    "address": "广州市天河区珠江新城冼村路26号",
+    "description_zh": "2013年开业的中国内地首家W酒店，位于珠江新城，设300余间客房、室内泳池及多个餐饮空间。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "珠江新城",
+      "W酒店"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "万豪（W）",
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·广州W酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071135.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-26",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h023",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "国际品牌豪华酒店",
+    "name_zh": "广州卓美亚酒店",
+    "name_en": "Jumeirah Guangzhou",
+    "name_en_source": "official",
+    "district": "天河",
+    "address": "广州市天河区珠江东路12号",
+    "description_zh": "珠江新城高德置地广场南塔内的五星级酒店，2019年开业，客房均位于50层以上，可俯瞰城市。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "珠江新城",
+      "卓美亚"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "卓美亚",
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·广州卓美亚酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071134.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": [
+      "名录地址为“珠江东路12及14号”，详情页写作“珠江东路12号”"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h024",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "会议度假酒店",
+    "name_zh": "广州黄埔君澜酒店",
+    "name_en": "Narada Hotel Guangzhou Huangpu",
+    "name_en_source": "official",
+    "district": "黄埔",
+    "address": "广州市黄埔区温涧路129号",
+    "description_zh": "黄埔长岭街的五星级酒店，2023年获评五星，背靠水声水库，设300余间山水观景客房与大型会议中心。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "黄埔",
+      "会议"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "君澜",
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·广州黄埔君澜酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071126.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h025",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "温泉度假酒店",
+    "name_zh": "广州白水寨嘉华温泉酒店",
+    "name_en": "Baishuizhai Jiahua Hot Spring Hotel",
+    "name_en_source": "machine",
+    "district": "增城",
+    "address": "广州市增城区派潭镇高滩村松柏朗合作社",
+    "description_zh": "白水寨风景名胜区内的五星级温泉酒店，依山而建，拥有各类温泉客房及可容纳千人的会议场地。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "增城",
+      "温泉"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·广州白水寨嘉华温泉酒店》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071133.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-26",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名未确认，暂用机翻"
+    ],
+    "notes": "英文名为机翻",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h026",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "历史园林宾馆",
+    "name_zh": "广东迎宾馆",
+    "name_en": "Guangdong Yingbin Hotel",
+    "name_en_source": "official",
+    "district": "越秀",
+    "address": "广州市越秀区解放北路603号",
+    "description_zh": "始建于1952年的园林式宾馆，2026年获评五星级，馆内多幢历史建筑与古树，长期承担政务接待。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "老牌宾馆",
+      "园林"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "五星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《星级酒店·广东迎宾馆》",
+        "url": "https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071127.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h027",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "老牌宾馆",
+    "name_zh": "番禺宾馆",
+    "name_en": "Panyu Hotel",
+    "name_en_source": "official",
+    "district": "番禺",
+    "address": "广州市番禺区市桥大北路130号",
+    "description_zh": "番禺市桥的老牌四星级宾馆，位于大北路，设500余间客房，是番禺传统接待与宴会场所。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "番禺",
+      "老牌宾馆"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "四星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h028",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "商务酒店",
+    "name_zh": "广州大厦希尔顿启缤精选酒店",
+    "name_en": "Hilton Tapestry Collection Guangzhou Dasha",
+    "name_en_source": "machine",
+    "district": "越秀",
+    "address": "广州市越秀区北京路374号",
+    "description_zh": "北京路商圈的酒店，现由希尔顿启缤精选品牌运营，前身为广州大厦，设400余间客房。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "北京路",
+      "希尔顿启缤"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "希尔顿（启缤精选）",
+      "stars": "四星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名"
+    ],
+    "notes": "2024年名录名为“广州大厦”，2026年更新为现名",
+    "conflicts": [
+      "2024年名录名称为“广州大厦”，2026年名录更新为“广州大厦希尔顿启缤精选酒店”"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h029",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "商务酒店",
+    "name_zh": "广州珀丽酒店",
+    "name_en": "Rosedale Hotel Guangzhou",
+    "name_en_source": "official",
+    "district": "海珠",
+    "address": "广州市海珠区江南大道中348号",
+    "description_zh": "海珠区江南大道中的四星级酒店，设400余间客房，邻近江南西商圈与地铁，适合商务出行。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "海珠",
+      "江南西"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "珀丽",
+      "stars": "四星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h030",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "老牌宾馆",
+    "name_zh": "华厦大酒店",
+    "name_en": "Hotel Landmark Canton",
+    "name_en_source": "official",
+    "district": "越秀",
+    "address": "广州市越秀区侨光路8号",
+    "description_zh": "海珠广场旁的老牌四星级酒店，坐落侨光路，邻近珠江与北京路，设400余间客房及会议设施。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "海珠广场",
+      "老牌宾馆"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "四星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h031",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "商务酒店",
+    "name_zh": "凯旋华美达大酒店",
+    "name_en": "Kaixuan Huameida Hotel",
+    "name_en_source": "machine",
+    "district": "越秀",
+    "address": "广州市越秀区东山明月一路9号",
+    "description_zh": "东山明月一路的四星级酒店，邻近东山口与珠江新城，设300余间客房与会议、餐饮设施。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "越秀",
+      "东山"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "温德姆（华美达）",
+      "stars": "四星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名未确认，暂用音译"
+    ],
+    "notes": "英文名为音译",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h032",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "商务酒店",
+    "name_zh": "远洋宾馆",
+    "name_en": "Ocean Hotel Guangzhou",
+    "name_en_source": "official",
+    "district": "越秀",
+    "address": "广州市越秀区环市东路412号",
+    "description_zh": "环市东路的四星级商务酒店，设近400间客房与会议设施，邻近地铁区庄站与商务区。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "环市东路",
+      "商务"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "四星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h033",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "老牌宾馆",
+    "name_zh": "广东胜利宾馆（主楼）",
+    "name_en": "Guangdong Victory Hotel",
+    "name_en_source": "official",
+    "district": "荔湾",
+    "address": "广州市荔湾区沙面北街53号",
+    "description_zh": "沙面岛上的四星级宾馆，主楼为历史建筑，邻近白鹅潭与沙面建筑群，设200余间客房。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "沙面",
+      "老牌宾馆"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "四星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h034",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "会议商务酒店",
+    "name_zh": "广东大厦",
+    "name_en": "Guangdong Hotel",
+    "name_en_source": "official",
+    "district": "越秀",
+    "address": "广州市越秀区东风中路309号",
+    "description_zh": "东风中路的四星级酒店，设近500间客房与大型会议、宴会设施，毗邻广东省政府与中山纪念堂。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "越秀",
+      "东风中路"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "四星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h035",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "商务度假酒店",
+    "name_zh": "祈福酒店",
+    "name_en": "Clifford Hotel Guangzhou",
+    "name_en_source": "official",
+    "district": "番禺",
+    "address": "广州市番禺区市广路8号",
+    "description_zh": "番禺市广路的四星级酒店，位于祈福新邨社区，设300余间客房，适合商务与家庭出行。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "番禺",
+      "祈福"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "祈福",
+      "stars": "四星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h036",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "老牌宾馆",
+    "name_zh": "流花宾馆",
+    "name_en": "Liuhua Hotel",
+    "name_en_source": "official",
+    "district": "越秀",
+    "address": "广州市越秀区环市西路194号",
+    "description_zh": "流花商圈的老牌四星级宾馆，位于环市西路，邻近广州火车站与流花湖公园，设200余间客房。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "流花",
+      "老牌宾馆"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "四星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h037",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "机场商务酒店",
+    "name_zh": "南航明珠大酒店",
+    "name_en": "Southern Airlines Pearl Hotel",
+    "name_en_source": "official",
+    "district": "白云",
+    "address": "广州市花都区新白云国际机场内南工作区空港五路",
+    "description_zh": "白云机场南工作区的四星级酒店，由中国南方航空运营，设300余间客房，服务机组与商旅客人。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "白云机场",
+      "南航"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "中国南方航空",
+      "stars": "四星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": [
+      "2026年名录“区属”列白云，地址写作“花都区新白云国际机场内”，两者不一致"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h038",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "老牌宾馆",
+    "name_zh": "广州宾馆",
+    "name_en": "Guangzhou Hotel",
+    "name_en_source": "official",
+    "district": "越秀",
+    "address": "广州市越秀区起义路2号",
+    "description_zh": "起义路上的老牌四星级宾馆，邻近海珠广场与北京路，设200余间客房，是广州早期高层宾馆之一。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "海珠广场",
+      "老牌宾馆"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "四星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h039",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "商务酒店",
+    "name_zh": "三寓宾馆",
+    "name_en": "Sanyu Hotel",
+    "name_en_source": "official",
+    "district": "越秀",
+    "address": "广州市越秀区东山三育路23号",
+    "description_zh": "东山三育路的四星级宾馆，设500余间客房与会议、餐饮设施，邻近东山口与地铁站。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "越秀",
+      "东山"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "四星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h040",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "商务酒店",
+    "name_zh": "火车站希尔顿欢朋酒店",
+    "name_en": "Hampton by Hilton Guangzhou Railway Station",
+    "name_en_source": "official",
+    "district": "白云",
+    "address": "广州市白云区解放北路1389号",
+    "description_zh": "广州火车站附近的四星级酒店，由希尔顿欢朋品牌运营，设100余间客房，适合中转旅客。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "广州火车站",
+      "希尔顿欢朋"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "希尔顿（欢朋）",
+      "stars": "四星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h041",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "园林度假旅舍",
+    "name_zh": "山庄旅社",
+    "name_en": "Shanzhuang Guest House",
+    "name_en_source": "machine",
+    "district": "白云",
+    "address": "广州市白云区白云山风景名胜区云山中路13号",
+    "description_zh": "白云山风景名胜区内的四星级园林旅舍，坐落云山中路，环境清幽，适合短住与登山休闲。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "白云山",
+      "园林"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "四星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名未确认，暂用机翻"
+    ],
+    "notes": "英文名为机翻",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h042",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "温泉度假村",
+    "name_zh": "碧水湾温泉度假村",
+    "name_en": "Bishuiwan Hot Spring Resort",
+    "name_en_source": "machine",
+    "district": "从化",
+    "address": "广州市从化区良口镇良明村御泉大道353号",
+    "description_zh": "从化良口的四星级温泉度假村，位于御泉大道，设温泉、泳池与200余间客房，适合家庭度假。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "从化",
+      "温泉"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "四星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名未确认，暂用机翻"
+    ],
+    "notes": "英文名为机翻",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h043",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "温泉度假酒店",
+    "name_zh": "广东温泉宾馆",
+    "name_en": "Guangdong Hot Spring Hotel",
+    "name_en_source": "official",
+    "district": "从化",
+    "address": "广州市从化区温泉镇温泉西路38号",
+    "description_zh": "从化温泉镇的老牌四星级温泉宾馆，设200余间客房与温泉设施，邻近流溪河与温泉风景区。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "从化",
+      "温泉"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "四星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h044",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "商务酒店",
+    "name_zh": "广州科学城保利郡雅酒店",
+    "name_en": "Poly Junya Hotel Guangzhou Science City",
+    "name_en_source": "machine",
+    "district": "黄埔",
+    "address": "广州市黄埔区科学城揽月路99号",
+    "description_zh": "黄埔科学城的四星级酒店，原名保利假日酒店，现为保利郡雅品牌，设250余间客房及会议设施。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "黄埔",
+      "科学城"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "保利",
+      "stars": "四星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名未确认，暂用机翻"
+    ],
+    "notes": "2026年名录更名为保利郡雅（原保利假日）",
+    "conflicts": [
+      "2026年名录名称为“广州科学城保利郡雅酒店（原：广州保利假日酒店）”"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h045",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "历史地标宾馆",
+    "name_zh": "爱群大酒店",
+    "name_en": "Aiqun Hotel",
+    "name_en_source": "official",
+    "district": "越秀",
+    "address": "广州市越秀区沿江西路113号",
+    "description_zh": "1937年建成的老牌三星级酒店，位于沿江西路，曾长期为广州最高建筑，是珠江畔的历史地标。",
+    "tags": [
+      "待核实",
+      "三星级",
+      "老牌宾馆",
+      "沿江路"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "三星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h046",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "历史老字号宾馆",
+    "name_zh": "新亚大酒店",
+    "name_en": "New Asia Hotel",
+    "name_en_source": "official",
+    "district": "越秀",
+    "address": "广州市越秀区人民南路10-12号",
+    "description_zh": "人民南路的老字号二星级酒店，1920年代开业，邻近上下九与长堤，适合预算有限的旅客。",
+    "tags": [
+      "待核实",
+      "二星级",
+      "老牌宾馆",
+      "人民南路"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "二星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h047",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "经济型老牌酒店",
+    "name_zh": "广东大酒店",
+    "name_en": "Guangdong Grand Hotel",
+    "name_en_source": "machine",
+    "district": "越秀",
+    "address": "广州市越秀区长堤大马路294号",
+    "description_zh": "长堤大马路的老牌二星级酒店，邻近珠江与上下九商圈，设100余间客房，价格亲民。",
+    "tags": [
+      "待核实",
+      "二星级",
+      "长堤",
+      "经济型"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "二星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名未确认，暂用机翻"
+    ],
+    "notes": "英文名为机翻",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h048",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "经济型酒店",
+    "name_zh": "白宫酒店",
+    "name_en": "White Palace Hotel",
+    "name_en_source": "machine",
+    "district": "荔湾",
+    "address": "广州市荔湾区人民南路13-17号",
+    "description_zh": "人民南路的二星级酒店，邻近上下九步行街与十三行商圈，设百余间客房，适合预算出行。",
+    "tags": [
+      "待核实",
+      "二星级",
+      "人民南路",
+      "经济型"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "二星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名未确认，暂用机翻"
+    ],
+    "notes": "英文名为机翻",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h049",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "经济型酒店",
+    "name_zh": "北京大酒店",
+    "name_en": "Beijing Hotel",
+    "name_en_source": "machine",
+    "district": "越秀",
+    "address": "广州市越秀区西濠二马路10号",
+    "description_zh": "西濠二马路的二星级酒店，靠近上下九与人民南商圈，设近百间客房，交通便利。",
+    "tags": [
+      "待核实",
+      "二星级",
+      "越秀",
+      "经济型"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "二星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名未确认，暂用机翻"
+    ],
+    "notes": "英文名为机翻",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h050",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "经济型酒店",
+    "name_zh": "新华大酒店",
+    "name_en": "Xinhua Hotel",
+    "name_en_source": "machine",
+    "district": "越秀",
+    "address": "广州市越秀区人民南路2-6号",
+    "description_zh": "人民南路的三星级酒店，邻近长堤与上下九，设百余间客房，适合预算型旅客。",
+    "tags": [
+      "待核实",
+      "三星级",
+      "人民南路",
+      "经济型"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "三星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名未确认，暂用机翻"
+    ],
+    "notes": "英文名为机翻",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h051",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "经济型酒店",
+    "name_zh": "江悦酒店（原广州国际海员俱乐部）",
+    "name_en": "Jiangyue Hotel",
+    "name_en_source": "machine",
+    "district": "海珠",
+    "address": "广州市海珠区滨江西路20号",
+    "description_zh": "滨江西路的三星级酒店，原广州国际海员俱乐部，临珠江，设百余间客房，适合观光与商务。",
+    "tags": [
+      "待核实",
+      "三星级",
+      "海珠",
+      "滨江"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "三星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名未确认，暂用机翻"
+    ],
+    "notes": "英文名为机翻",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h052",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "会展经济型酒店",
+    "name_zh": "琶洲酒店",
+    "name_en": "Pazhou Hotel",
+    "name_en_source": "machine",
+    "district": "海珠",
+    "address": "广州市海珠区新港东路37号",
+    "description_zh": "新港东路的三星级酒店，邻近琶洲会展区与地铁，设百余间客房，广交会期间较为便利。",
+    "tags": [
+      "待核实",
+      "三星级",
+      "琶洲",
+      "会展"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "三星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名未确认，暂用机翻"
+    ],
+    "notes": "英文名为机翻",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h053",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "经济型酒店",
+    "name_zh": "石牌酒店",
+    "name_en": "Shipai Hotel",
+    "name_en_source": "machine",
+    "district": "天河",
+    "address": "广州市天河区天河东路168号",
+    "description_zh": "天河东路的三星级酒店，邻近石牌桥与天河商圈，设百余间客房，适合商务与购物出行。",
+    "tags": [
+      "待核实",
+      "三星级",
+      "天河",
+      "石牌"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "三星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名未确认，暂用机翻"
+    ],
+    "notes": "英文名为机翻",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h054",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "经济型酒店",
+    "name_zh": "白云城市酒店",
+    "name_en": "Baiyun City Hotel",
+    "name_en_source": "machine",
+    "district": "越秀",
+    "address": "广州市越秀区环市西路179号",
+    "description_zh": "环市西路的三星级酒店，邻近广州火车站与流花商圈，设百余间客房，适合中转旅客。",
+    "tags": [
+      "待核实",
+      "三星级",
+      "广州火车站",
+      "经济型"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "三星级",
+      "note": "2026年广州市星级饭店名录在册"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名未确认，暂用机翻"
+    ],
+    "notes": "英文名为机翻",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h055",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "国际品牌豪华酒店",
+    "name_zh": "广州文华东方酒店",
+    "name_en": "Mandarin Oriental, Guangzhou",
+    "name_en_source": "official",
+    "district": "天河",
+    "address": "广州市天河区天河路389号",
+    "description_zh": "天河路太古汇内的高端酒店，设200余间客房与套房，连通购物中心与地铁，并有多间餐厅与水疗设施。",
+    "tags": [
+      "待核实",
+      "奢华",
+      "天河",
+      "文华东方"
+    ],
+    "official_url": "https://www.mandarinoriental.com/zh-cn/guangzhou/tianhe",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "文华东方",
+      "stars": null,
+      "note": "信息取自酒店集团官网"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州文华东方酒店官网（Mandarin Oriental）",
+        "url": "https://www.mandarinoriental.com/zh-cn/guangzhou/tianhe",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h056",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "国际品牌豪华酒店",
+    "name_zh": "广州四季酒店",
+    "name_en": "Four Seasons Hotel Guangzhou",
+    "name_en_source": "official",
+    "district": "天河",
+    "address": "广州市天河区珠江新城珠江西路5号（广州国际金融中心69-100层）",
+    "description_zh": "位于广州国际金融中心顶部30层的奢华酒店，可俯瞰珠江与广州塔，设多间餐厅、酒廊与云端泳池。",
+    "tags": [
+      "待核实",
+      "奢华",
+      "珠江新城",
+      "四季"
+    ],
+    "official_url": "https://www.fourseasons.com/zh/guangzhou/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "四季",
+      "stars": null,
+      "note": "信息取自酒店集团官网"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州四季酒店官网（Four Seasons）",
+        "url": "https://www.fourseasons.com/zh/guangzhou/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h057",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "国际品牌豪华酒店",
+    "name_zh": "广州瑰丽酒店",
+    "name_en": "Rosewood Guangzhou",
+    "name_en_source": "official",
+    "district": "天河",
+    "address": "广州市天河区珠江东路6号",
+    "description_zh": "珠江东路周大福金融中心内的高端酒店，位于超高层，可览珠江与广州塔，设多间餐厅酒吧与水疗中心。",
+    "tags": [
+      "待核实",
+      "奢华",
+      "珠江新城",
+      "瑰丽"
+    ],
+    "official_url": "https://www.rosewoodhotels.com/sc/guangzhou",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "瑰丽",
+      "stars": null,
+      "note": "信息取自酒店集团官网"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州瑰丽酒店官网（Rosewood）",
+        "url": "https://www.rosewoodhotels.com/sc/guangzhou",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h058",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "国际品牌豪华酒店",
+    "name_zh": "广州保利洲际酒店",
+    "name_en": "InterContinental Guangzhou Exhibition Center",
+    "name_en_source": "official",
+    "district": "海珠",
+    "address": "广州市海珠区阅江中路828号",
+    "description_zh": "琶洲会展区的高端酒店，毗邻广交会展馆，设计融入海上丝绸之路元素，设300余间江景或城景客房。",
+    "tags": [
+      "待核实",
+      "奢华",
+      "琶洲",
+      "洲际"
+    ],
+    "official_url": "https://www.ihg.com/intercontinental/hotels/cn/zh/guangzhou/canec/hoteldetail",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "洲际",
+      "stars": null,
+      "note": "信息取自酒店集团官网"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州保利洲际酒店官网（IHG）",
+        "url": "https://www.ihg.com/intercontinental/hotels/cn/zh/guangzhou/canec/hoteldetail",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h059",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "国际品牌豪华酒店",
+    "name_zh": "广州康莱德酒店",
+    "name_en": "Conrad Guangzhou",
+    "name_en_source": "official",
+    "district": "天河",
+    "address": "广州市天河区珠江新城兴民路222号",
+    "description_zh": "珠江新城的高端酒店，邻近广州塔与花城广场，设江景客房、行政酒廊、室内泳池与健身中心。",
+    "tags": [
+      "待核实",
+      "奢华",
+      "珠江新城",
+      "康莱德"
+    ],
+    "official_url": "https://conrad.hilton.com.cn/zh-CN/hotel/Guangzhou/conrad-guangzhou-CANXWCI/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "希尔顿（康莱德）",
+      "stars": null,
+      "note": "信息取自酒店集团官网"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广州康莱德酒店官网（Conrad / Hilton）",
+        "url": "https://conrad.hilton.com.cn/zh-CN/hotel/Guangzhou/conrad-guangzhou-CANXWCI/room3445.html",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.hotel.h060",
+    "city": "guangzhou",
+    "category": "hotel",
+    "subcategory": "国际品牌豪华酒店",
+    "name_zh": "广交会威斯汀酒店",
+    "name_en": "The Westin Guangzhou",
+    "name_en_source": "official",
+    "district": "海珠",
+    "address": "广州市海珠区凤浦中路681号广交会展馆C区",
+    "description_zh": "广交会展馆C区内的品牌酒店，面向参展与商旅客人，设江景客房、餐饮及健身设施，邻近琶洲会展区。",
+    "tags": [
+      "待核实",
+      "奢华",
+      "琶洲",
+      "威斯汀"
+    ],
+    "official_url": "https://www.marriott.com.cn/hotels/canwi-the-westin-guangzhou/overview/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "万豪（威斯汀）",
+      "stars": null,
+      "note": "信息取自酒店集团官网"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "广交会威斯汀酒店官网（Marriott / Westin）",
+        "url": "https://www.marriott.com.cn/hotels/canwi-the-westin-guangzhou/overview/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": null,
+    "conflicts": []
+  }
+]

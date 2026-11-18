@@ -1,0 +1,2732 @@
+[
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h001",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "五星级饭店",
+    "name_zh": "阳光酒店",
+    "name_en": "Sunshine Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "罗湖",
+    "address": "嘉宾路1号",
+    "description_zh": "罗湖口岸商圈的五星级老牌酒店，位于嘉宾路，紧邻东门步行街，往来火车站与香港较方便。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "罗湖区",
+      "口岸商圈"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "五星级",
+      "note": "星级与地址据深圳市文化广电旅游体育局星级酒店一览表（2026-06-09）"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目，未找到可读的酒店官网页面。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h002",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "五星级饭店",
+    "name_zh": "深圳香格里拉大酒店",
+    "name_en": "Shangri-La Hotel, Shenzhen",
+    "name_en_source": "official",
+    "district": "罗湖",
+    "address": "建设路火车站东侧",
+    "description_zh": "位于罗湖火车站东侧的五星级酒店，毗邻罗湖口岸，适合过境与商务旅客。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "罗湖区",
+      "国际品牌"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "香格里拉酒店集团",
+      "stars": "五星级",
+      "note": "品牌据酒店名称判断；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "英文名为集团通行名称，未逐条读取官网。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h003",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "五星级饭店",
+    "name_zh": "富苑皇冠假日套房酒店",
+    "name_en": "Crowne Plaza Suites Shenzhen Fuyuan",
+    "name_en_source": "machine",
+    "district": "罗湖",
+    "address": "南湖路3018号",
+    "description_zh": "罗湖南湖路上的五星级套房酒店，靠近罗湖口岸与东门商圈，适合家庭和长住旅客。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "罗湖区",
+      "国际品牌"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "洲际酒店集团（IHG）",
+      "stars": "五星级",
+      "note": "品牌据酒店名称判断；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h004",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "度假酒店",
+    "name_zh": "观澜湖度假酒店",
+    "name_en": "Mission Hills Resort Shenzhen",
+    "name_en_source": "official",
+    "district": "龙华",
+    "address": "观澜镇高尔夫大道侧",
+    "description_zh": "龙华观澜的高尔夫度假酒店，五星级，适合度假与球场爱好者，距市区较远。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "龙华区",
+      "度假"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "观澜湖集团",
+      "stars": "五星级",
+      "note": "品牌据酒店名称判断；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h005",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "五星级饭店",
+    "name_zh": "彭年酒店",
+    "name_en": "Pengnian Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "罗湖",
+    "address": "嘉宾路2002号",
+    "description_zh": "罗湖嘉宾路的五星级酒店，近东门老街与罗湖口岸，商务及购物便利。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "罗湖区",
+      "商务"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "五星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "名录地址写作“嘉宾路2002#”，此处规范为2002号。",
+    "conflicts": [
+      "名录记为“彭年酒店”，公开资料常见“彭年万丽酒店”，是否已换牌待核实"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h006",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "度假酒店",
+    "name_zh": "威尼斯酒店",
+    "name_en": "The Venice Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "南山",
+    "address": "深南大道9026号华侨城",
+    "description_zh": "华侨城片区的五星级主题酒店，位于深南大道，近世界之窗与欢乐谷，适合家庭游。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "南山区",
+      "华侨城"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "五星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h007",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "度假酒店",
+    "name_zh": "华侨城洲际大酒店",
+    "name_en": "InterContinental Shenzhen",
+    "name_en_source": "official",
+    "district": "南山",
+    "address": "华侨城深南大道9009号",
+    "description_zh": "华侨城深南大道旁的五星级度假酒店，邻近世界之窗、欢乐谷与创意园，亲子设施较全。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "南山区",
+      "国际品牌"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "洲际酒店集团（IHG）",
+      "stars": "五星级",
+      "note": "品牌据酒店名称判断；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "名录未记载前身信息。",
+    "conflicts": [
+      "任务提示其前身为深圳湾大酒店、2006年重建后更名，政府名录只记现名，改造与更名状态待核实"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h008",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "度假酒店",
+    "name_zh": "大梅沙京基洲际度假酒店",
+    "name_en": "InterContinental Shenzhen Dameisha Resort",
+    "name_en_source": "official",
+    "district": "盐田",
+    "address": "大梅沙盐葵路9号",
+    "description_zh": "盐田大梅沙海滨的五星级度假酒店，临沙滩与海滨栈道，适合海滨度假。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "盐田区",
+      "海滨度假"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "洲际酒店集团（IHG）",
+      "stars": "五星级",
+      "note": "品牌据酒店名称判断；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h009",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "五星级饭店",
+    "name_zh": "深航国际酒店",
+    "name_en": "Shenzhen Airlines International Hotel",
+    "name_en_source": "machine",
+    "district": "福田",
+    "address": "深南大道6035号深航大厦",
+    "description_zh": "福田深南大道旁的五星级商务酒店，近会展中心与购物公园，适合商务出行。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "福田区",
+      "商务"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "深圳航空",
+      "stars": "五星级",
+      "note": "星级与地址据政府名录；品牌按名称推断"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h010",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "五星级饭店",
+    "name_zh": "好日子皇冠假日酒店",
+    "name_en": "Crowne Plaza Shenzhen Haorizi",
+    "name_en_source": "machine",
+    "district": "福田",
+    "address": "民田路168号特美思大厦",
+    "description_zh": "福田中心区民田路的五星级商务酒店，靠近会展中心与地铁，适合差旅。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "福田区",
+      "国际品牌"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "洲际酒店集团（IHG）",
+      "stars": "五星级",
+      "note": "品牌据酒店名称判断；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h011",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "机场酒店",
+    "name_zh": "宝利来国际大酒店",
+    "name_en": "Baolilai International Hotel",
+    "name_en_source": "machine",
+    "district": "宝安",
+    "address": "福永街道福永大道",
+    "description_zh": "宝安福永的五星级酒店，邻近深圳机场与福永码头，适合转机与商务停留。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "宝安区",
+      "机场周边"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "五星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h012",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "五星级饭店",
+    "name_zh": "东方银座酒店",
+    "name_en": "Oriental Ginza Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "福田",
+    "address": "深南大道竹子林",
+    "description_zh": "福田竹子林的五星级酒店，位于深南大道沿线，交通便利，适合商务。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "福田区",
+      "商务"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "五星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": [
+      "部分公开资料称该酒店为“东方银座美爵酒店”（雅高美爵品牌），与名录名称不一致，品牌待核实"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h013",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "会展酒店",
+    "name_zh": "大中华喜来登酒店",
+    "name_en": "Sheraton Shenzhen Futian Hotel",
+    "name_en_source": "machine",
+    "district": "福田",
+    "address": "福华路大中华国际交易广场",
+    "description_zh": "福田会展中心片区的五星级酒店，位于大中华国际交易广场，逛展与购物方便。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "福田区",
+      "会展",
+      "国际品牌"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "万豪国际（喜来登）",
+      "stars": "五星级",
+      "note": "品牌据酒店名称判断；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h014",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "奢华酒店",
+    "name_zh": "星河丽思卡尔顿酒店",
+    "name_en": "The Ritz-Carlton, Shenzhen",
+    "name_en_source": "official",
+    "district": "福田",
+    "address": "福华三路116号",
+    "description_zh": "福田福华三路的五星级奢华酒店，靠近会展中心与购物公园，服务与餐饮突出。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "福田区",
+      "奢华",
+      "国际品牌"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "万豪国际（丽思卡尔顿）",
+      "stars": "五星级",
+      "note": "品牌据酒店名称判断；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "英文名为集团通行名称。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h015",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "五星级饭店",
+    "name_zh": "中海凯骊酒店",
+    "name_en": "Zhonghai Kaili Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "龙岗",
+    "address": "大运路体育新城168号",
+    "description_zh": "龙岗大运体育新城附近的五星级酒店，服务大运中心与龙岗中心城。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "龙岗区",
+      "商务"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "五星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h016",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "五星级饭店",
+    "name_zh": "宝亨达国际大酒店",
+    "name_en": "Baohengda International Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "龙岗",
+    "address": "布澜路35号",
+    "description_zh": "龙岗布澜路的五星级酒店，近李朗与龙岗中心城，适合自驾商务。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "龙岗区",
+      "商务"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "五星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h017",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "五星级饭店",
+    "name_zh": "珠江皇冠假日酒店",
+    "name_en": "Crowne Plaza Shenzhen Longgang",
+    "name_en_source": "machine",
+    "district": "龙岗",
+    "address": "龙翔大道9009号",
+    "description_zh": "龙岗中心城龙翔大道的五星级酒店，周边有文化场馆与商圈，适合商务。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "龙岗区",
+      "国际品牌"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "洲际酒店集团（IHG）",
+      "stars": "五星级",
+      "note": "品牌据酒店名称判断；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h018",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "五星级饭店",
+    "name_zh": "观澜格兰云天酒店",
+    "name_en": "Grand Skylight Hotel Guanlan",
+    "name_en_source": "machine",
+    "district": null,
+    "address": "观澜街道新城社区观澜大道",
+    "description_zh": "龙华观澜的五星级酒店，近观澜湖与观澜版画村，适合度假与商务。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "观澜",
+      "度假"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "格兰云天",
+      "stars": "五星级",
+      "note": "品牌据酒店名称判断；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "所在区（名录未标）",
+      "英文名为机器转写，待核实"
+    ],
+    "notes": "名录只写到观澜街道，未标所在区。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h019",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "五星级饭店",
+    "name_zh": "前海JW万豪酒店",
+    "name_en": "JW Marriott Hotel Shenzhen Bao'an",
+    "name_en_source": "official",
+    "district": "宝安",
+    "address": "宝新路8号",
+    "description_zh": "宝安宝新路的五星级酒店，服务前海与宝安商务区，近地铁与前海片区。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "宝安区",
+      "国际品牌",
+      "商务"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "万豪国际（JW万豪）",
+      "stars": "五星级",
+      "note": "品牌据酒店名称判断；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "英文名为集团通行名称。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h020",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "五星级饭店",
+    "name_zh": "深铁皇冠假日酒店",
+    "name_en": "Crowne Plaza Shenzhen Nanshan",
+    "name_en_source": "machine",
+    "district": "南山",
+    "address": "深南大道9819号",
+    "description_zh": "南山深南大道旁的五星级酒店，地铁上盖，通达科技园与市区。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "南山区",
+      "国际品牌"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "洲际酒店集团（IHG）",
+      "stars": "五星级",
+      "note": "品牌据酒店名称判断；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_2.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h021",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "奢华酒店",
+    "name_zh": "深圳康莱德酒店",
+    "name_en": "Conrad Shenzhen",
+    "name_en_source": "official",
+    "district": "南山",
+    "address": "前海深港合作区南山街道听海大道5001号",
+    "description_zh": "前海听海大道的五星级奢华酒店，面向商务与休闲客群，近前海石公园。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "南山区",
+      "前海",
+      "国际品牌"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "希尔顿集团（康莱德）",
+      "stars": "五星级",
+      "note": "品牌据酒店名称判断；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_2.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "英文名为集团通行名称。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h022",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "五星级饭店",
+    "name_zh": "深圳光明美爵酒店",
+    "name_en": "Grand Mercure Shenzhen Guangming",
+    "name_en_source": "official",
+    "district": "光明",
+    "address": "光明大道481号特区建发乐府广场",
+    "description_zh": "光明区光明大道的五星级酒店，服务光明科学城，适合商务与亲子出行。",
+    "tags": [
+      "待核实",
+      "五星级",
+      "光明区",
+      "国际品牌"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "雅高集团（美爵）",
+      "stars": "五星级",
+      "note": "品牌据酒店名称判断；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_2.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "英文名为集团通行名称。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h023",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "四星级饭店",
+    "name_zh": "晶都酒店",
+    "name_en": "Jingdu Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "罗湖",
+    "address": "红岭南路金融中心大厦南座",
+    "description_zh": "罗湖红岭南路的四星级酒店，位于金融中心片区，近地王大厦与老街。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "罗湖区"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "四星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_2.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h024",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "四星级饭店",
+    "name_zh": "东华假日酒店",
+    "name_en": "Holiday Inn Shenzhen Donghua",
+    "name_en_source": "official",
+    "district": "南山",
+    "address": "南油大道东华园2307",
+    "description_zh": "南山南油片区的四星级酒店，近南山书城与海岸城商圈，适合商务与家庭。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "南山区",
+      "国际品牌"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "洲际酒店集团（IHG）",
+      "stars": "四星级",
+      "note": "品牌据酒店名称判断；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_2.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "英文名为集团通行名称。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h025",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "四星级饭店",
+    "name_zh": "格兰云天大酒店",
+    "name_en": "Grand Skylight Hotel Shenzhen",
+    "name_en_source": "official",
+    "district": "福田",
+    "address": "深南中路3024号",
+    "description_zh": "福田深南中路的四星级酒店，靠近华强北与中心区，购物和交通便利。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "福田区",
+      "商务"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "格兰云天",
+      "stars": "四星级",
+      "note": "品牌据酒店名称判断；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_2.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "英文名为品牌通行名称。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h026",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "四星级饭店",
+    "name_zh": "明华国际会议中心（现南山伊敦酒店）",
+    "name_en": "Minghua International Conference Center",
+    "name_en_source": "machine",
+    "district": "南山",
+    "address": "蛇口龟山路八号",
+    "description_zh": "蛇口龟山路的四星级会议酒店，近海上世界与蛇口邮轮母港，适合会展与休闲。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "南山区",
+      "蛇口",
+      "会议"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "四星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_2.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "名录名称后附注“现南山伊敦酒店”。",
+    "conflicts": [
+      "名录附注现名“南山伊敦酒店”，与“明华国际会议中心”名称并存，现名与运营状态待核实"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h027",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "四星级饭店",
+    "name_zh": "金碧酒店",
+    "name_en": "Jinbi Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "罗湖",
+    "address": "春风路3002号",
+    "description_zh": "罗湖春风路的四星级酒店，近罗湖口岸与东门，适合过境旅客。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "罗湖区",
+      "口岸商圈"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "四星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_2.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h028",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "四星级饭店",
+    "name_zh": "雅兰酒店",
+    "name_en": "Yalan Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "盐田",
+    "address": "大梅沙盐梅路92号",
+    "description_zh": "盐田大梅沙的四星级酒店，靠近海滨浴场，适合周末海滨度假。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "盐田区",
+      "海滨"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "四星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_2.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h029",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "四星级饭店",
+    "name_zh": "海景嘉途酒店",
+    "name_en": "Seaview Jiatu Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "南山",
+    "address": "华侨城光侨街3号、5号",
+    "description_zh": "南山华侨城光侨街的四星级酒店，邻近世界之窗与欢乐谷，适合亲子游。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "南山区",
+      "华侨城"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "华侨城（嘉途）",
+      "stars": "四星级",
+      "note": "品牌按名称推断；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_2.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h030",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "四星级饭店",
+    "name_zh": "君逸酒店",
+    "name_en": "Junyi Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "龙岗",
+    "address": "横岗为民路8号",
+    "description_zh": "龙岗横岗为民路的四星级酒店，适合前往东部景区的中途住宿。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "龙岗区"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "四星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_2.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h031",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "四星级饭店",
+    "name_zh": "中油阳光大酒店",
+    "name_en": "CNPC Sunshine Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "南山",
+    "address": "南山大道1110号",
+    "description_zh": "南山南山大道的四星级酒店，近海岸城与科技园，适合商务出行。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "南山区",
+      "商务"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "四星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_2.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h032",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "四星级饭店",
+    "name_zh": "乐安居国际酒店",
+    "name_en": "Le'anju International Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "坪山",
+    "address": "中山大道3002号",
+    "description_zh": "坪山中山大道的四星级酒店，服务坪山中心区商务与家庭客。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "坪山区"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "四星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_2.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h033",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "四星级饭店",
+    "name_zh": "新都酒店",
+    "name_en": "Xindu Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "罗湖",
+    "address": "春风路1号",
+    "description_zh": "罗湖春风路的四星级酒店，紧邻罗湖口岸，过境住宿便利。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "罗湖区",
+      "口岸商圈"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "四星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_2.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h034",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "四星级饭店",
+    "name_zh": "宝立方国际酒店",
+    "name_en": "Baolifang International Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "宝安",
+    "address": "西乡街道新安四路198号宝立方D座",
+    "description_zh": "宝安西乡的四星级酒店，邻近宝立方商圈与地铁，性价比较好。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "宝安区",
+      "高性价比"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "四星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_2.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h035",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "四星级饭店",
+    "name_zh": "深圳市坤宜美居酒店",
+    "name_en": "Mercure Shenzhen Pinghu Kunyi",
+    "name_en_source": "machine",
+    "district": "龙岗",
+    "address": "平湖街道凤凰大道33号坤宜福苑11号楼",
+    "description_zh": "龙岗平湖凤凰大道的四星级酒店，近平湖火车站，商务出行方便。",
+    "tags": [
+      "待核实",
+      "四星级",
+      "龙岗区",
+      "国际品牌"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "雅高集团（美居）",
+      "stars": "四星级",
+      "note": "品牌按名称推断；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_2.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h036",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "三星级饭店",
+    "name_zh": "竹园宾馆",
+    "name_en": "Zhuyuan Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "罗湖",
+    "address": "东门北路2079号",
+    "description_zh": "罗湖东门北路的园林式三星级宾馆，近东门老街，环境安静。",
+    "tags": [
+      "待核实",
+      "三星级",
+      "罗湖区",
+      "老牌宾馆"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "三星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_2.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h037",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "三星级饭店",
+    "name_zh": "京鹏宾馆",
+    "name_en": "Jingpeng Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "罗湖",
+    "address": "深南东路2008号",
+    "description_zh": "罗湖深南东路的三星级宾馆，近东门与火车站，价格友好。",
+    "tags": [
+      "待核实",
+      "三星级",
+      "罗湖区",
+      "高性价比"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "三星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_2.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h038",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "三星级饭店",
+    "name_zh": "长城大酒店",
+    "name_en": "Great Wall Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "罗湖",
+    "address": "红桂路2086号",
+    "description_zh": "罗湖红桂路的三星级酒店，近地王与东门商圈，适合预算有限的旅客。",
+    "tags": [
+      "待核实",
+      "三星级",
+      "罗湖区",
+      "高性价比"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "三星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_2.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h039",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "三星级饭店",
+    "name_zh": "银湖旅游中心",
+    "name_en": "Yinhu Tourist Center Shenzhen",
+    "name_en_source": "machine",
+    "district": "罗湖",
+    "address": "银湖路38号",
+    "description_zh": "罗湖银湖路的三星级酒店，处在银湖山谷，环境清幽，适合会议与度假。",
+    "tags": [
+      "待核实",
+      "三星级",
+      "罗湖区",
+      "会议"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "三星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_2.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": [
+      "该址另有“深圳银湖会议中心（酒店）”名称，两者是否同一物业、名录名称是否滞后待核实"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h040",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "三星级饭店",
+    "name_zh": "友谊酒店",
+    "name_en": "Youyi Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "罗湖",
+    "address": "嘉宾路3011号",
+    "description_zh": "罗湖嘉宾路的三星级酒店，近东门步行街与罗湖口岸，购物方便。",
+    "tags": [
+      "待核实",
+      "三星级",
+      "罗湖区",
+      "高性价比"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "三星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_3.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h041",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "三星级饭店",
+    "name_zh": "长安大酒店",
+    "name_en": "Chang'an Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "罗湖",
+    "address": "深南东路1133号长安大厦",
+    "description_zh": "罗湖深南东路的三星级酒店，近东门与火车站，交通方便。",
+    "tags": [
+      "待核实",
+      "三星级",
+      "罗湖区"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "三星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_3.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h042",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "三星级饭店",
+    "name_zh": "丽都酒店",
+    "name_en": "Lido Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "罗湖",
+    "address": "东门南路2007号",
+    "description_zh": "罗湖东门南路的三星级酒店，靠近罗湖口岸，适合过境短住。",
+    "tags": [
+      "待核实",
+      "三星级",
+      "罗湖区",
+      "口岸商圈"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "三星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_3.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h043",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "三星级饭店",
+    "name_zh": "芙蓉宾馆",
+    "name_en": "Furong Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "罗湖",
+    "address": "东门南路2019号",
+    "description_zh": "罗湖东门南路的三星级宾馆，近口岸与地铁，价格实惠。",
+    "tags": [
+      "待核实",
+      "三星级",
+      "罗湖区",
+      "高性价比"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "三星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_3.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h044",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "三星级饭店",
+    "name_zh": "凯利宾馆",
+    "name_en": "Kaili Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "罗湖",
+    "address": "嘉宾东路2027号",
+    "description_zh": "罗湖嘉宾东路的三星级宾馆，近东门，适合预算型旅客。",
+    "tags": [
+      "待核实",
+      "三星级",
+      "罗湖区",
+      "高性价比"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "三星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_3.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h045",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "三星级饭店",
+    "name_zh": "南方联合大酒店",
+    "name_en": "Nanfang Union Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "罗湖",
+    "address": "深南东路2002号中物大厦",
+    "description_zh": "罗湖深南东路的三星级酒店，近东门商圈与火车站，出行便利。",
+    "tags": [
+      "待核实",
+      "三星级",
+      "罗湖区"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "三星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_3.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h046",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "三星级饭店",
+    "name_zh": "四川宾馆",
+    "name_en": "Sichuan Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "福田",
+    "address": "红荔路2001号四川大厦",
+    "description_zh": "福田红荔路的三星级宾馆，近华强北与中心区，适合商务与购物。",
+    "tags": [
+      "待核实",
+      "三星级",
+      "福田区",
+      "高性价比"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "三星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_3.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h047",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "三星级饭店",
+    "name_zh": "投资大厦宾馆",
+    "name_en": "Investment Building Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "福田",
+    "address": "深南大道4009号",
+    "description_zh": "福田深南大道旁的三星级宾馆，近会展中心，商务住宿经济实惠。",
+    "tags": [
+      "待核实",
+      "三星级",
+      "福田区",
+      "会展",
+      "高性价比"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "三星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_3.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h048",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "三星级饭店",
+    "name_zh": "蔡屋围大酒店",
+    "name_en": "Caiwuwei Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "罗湖",
+    "address": "解放西路4058号",
+    "description_zh": "罗湖解放西路的三星级酒店，邻近地王大厦与东门，位置核心。",
+    "tags": [
+      "待核实",
+      "三星级",
+      "罗湖区"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "三星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_3.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h049",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "二星级饭店",
+    "name_zh": "华侨酒店",
+    "name_en": "Huaqiao Hotel Shenzhen",
+    "name_en_source": "machine",
+    "district": "罗湖",
+    "address": "和平路1009号",
+    "description_zh": "罗湖和平路的二星级经济型酒店，紧邻罗湖口岸，适合背包与过境旅客。",
+    "tags": [
+      "待核实",
+      "二星级",
+      "罗湖区",
+      "口岸商圈",
+      "高性价比"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": "二星级",
+      "note": "品牌待核实；星级与地址据政府名录"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局《星级酒店一览表》",
+        "url": "http://wtl.sz.gov.cn/ggfw/lyl/xjbgjdylb/index_3.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "品牌待核实"
+    ],
+    "notes": "政府名录条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h050",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "奢华酒店",
+    "name_zh": "深圳瑞吉酒店",
+    "name_en": "The St. Regis Shenzhen",
+    "name_en_source": "official",
+    "district": "罗湖",
+    "address": "京基一百大厦75至100层",
+    "description_zh": "罗湖京基一百大厦高层的奢华酒店，可俯瞰城景与香港山景，管家服务为特色。",
+    "tags": [
+      "待核实",
+      "奢华",
+      "罗湖区",
+      "国际品牌",
+      "地标"
+    ],
+    "official_url": "https://www.marriott.com.cn/hotels/szxxr-the-st-regis-shenzhen/overview/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "万豪国际（瑞吉）",
+      "stars": null,
+      "note": "星级未核实；地址据万豪国际中国官网酒店页"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "万豪国际集团中国官网·深圳瑞吉酒店",
+        "url": "https://www.marriott.com.cn/hotels/szxxr-the-st-regis-shenzhen/overview/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门牌号（页面未列）",
+      "星级待核实"
+    ],
+    "notes": "页面写明位于京基一百大厦75至100层，未给出门牌号。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h051",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "奢华酒店",
+    "name_zh": "深圳鹏瑞莱佛士酒店",
+    "name_en": "Raffles Shenzhen",
+    "name_en_source": "official",
+    "district": "南山",
+    "address": "中心路3008号深圳湾1号T7",
+    "description_zh": "南山深圳湾1号T7的奢华酒店，面向深圳湾海景，配套餐饮与管家服务。",
+    "tags": [
+      "待核实",
+      "奢华",
+      "南山区",
+      "深圳湾",
+      "国际品牌"
+    ],
+    "official_url": "https://www.raffles.com/zh/shenzhen",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "雅高集团（莱佛士）",
+      "stars": null,
+      "note": "星级未核实；地址据莱佛士官网"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "莱佛士酒店及度假村官网·深圳鹏瑞莱佛士酒店",
+        "url": "https://www.raffles.com/zh/shenzhen",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "星级待核实"
+    ],
+    "notes": "官网中文名称“深圳鹏瑞莱佛士酒店”，页面标题作“深圳莱佛士酒店”。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h052",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "奢华酒店",
+    "name_zh": "深圳四季酒店",
+    "name_en": "Four Seasons Hotel Shenzhen",
+    "name_en_source": "official",
+    "district": "福田",
+    "address": "福华三路138号",
+    "description_zh": "福田福华三路的奢华酒店，紧邻会展中心与购物公园，适合商务与购物。",
+    "tags": [
+      "待核实",
+      "奢华",
+      "福田区",
+      "会展",
+      "国际品牌"
+    ],
+    "official_url": "https://www.fourseasons.com/shenzhen/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "四季酒店集团",
+      "stars": null,
+      "note": "星级未核实；中英文地址据四季官网位置页"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "四季酒店官网·深圳四季酒店位置页",
+        "url": "https://www.fourseasons.com/shenzhen/getting-here/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "星级待核实"
+    ],
+    "notes": "官网中文地址：中国深圳市福田区福华三路138号。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h053",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "奢华酒店",
+    "name_zh": "深圳朗廷酒店",
+    "name_en": "The Langham, Shenzhen",
+    "name_en_source": "official",
+    "district": "福田",
+    "address": "深南大道7888号",
+    "description_zh": "福田深南大道车公庙段的奢华酒店，近地铁与购物中心，欧式风格。",
+    "tags": [
+      "待核实",
+      "奢华",
+      "福田区",
+      "国际品牌"
+    ],
+    "official_url": "https://www.langhamhotels.com/en/the-langham/shenzhen/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "朗廷酒店集团",
+      "stars": null,
+      "note": "星级未核实；地址据朗廷官网位置页"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "朗廷酒店集团官网·深圳朗廷酒店位置页",
+        "url": "https://www.langhamhotels.com/en/the-langham/shenzhen/discover/our-location/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "星级待核实"
+    ],
+    "notes": "官网英文地址：7888 Shennan Boulevard, Futian District。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h054",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "会展酒店",
+    "name_zh": "深圳国际会展中心希尔顿酒店",
+    "name_en": "Hilton Shenzhen International Exhibition Center",
+    "name_en_source": "official",
+    "district": "宝安",
+    "address": "展丰路80号",
+    "description_zh": "宝安展丰路的国际品牌酒店，可步行连接深圳国际会展中心，适合参展与转机。",
+    "tags": [
+      "待核实",
+      "宝安区",
+      "会展",
+      "国际品牌"
+    ],
+    "official_url": "https://www.hilton.com.cn/zh-CN/hotel/shenzhen/hilton-shenzhen-international-exhibition-center-SZXECHI/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "希尔顿集团",
+      "stars": null,
+      "note": "星级未核实；地址据希尔顿中国官网酒店页"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "希尔顿酒店集团中国官网·深圳国际会展中心希尔顿酒店",
+        "url": "https://www.hilton.com.cn/zh-CN/hotel/shenzhen/hilton-shenzhen-international-exhibition-center-SZXECHI/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "星级待核实"
+    ],
+    "notes": "官网标明空中连廊可步行至深圳国际会展中心。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h055",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "机场酒店",
+    "name_zh": "深圳机场希尔顿逸林酒店",
+    "name_en": "DoubleTree by Hilton Shenzhen Airport",
+    "name_en_source": "official",
+    "district": "宝安",
+    "address": "航城大道66号",
+    "description_zh": "宝安航城大道的国际品牌酒店，提供机场接送，适合早晚航班旅客。",
+    "tags": [
+      "待核实",
+      "宝安区",
+      "机场周边",
+      "国际品牌"
+    ],
+    "official_url": "https://www.hilton.com.cn/zh-CN/hotel/shenzhen/doubletree-by-hilton-shenzhen-airport-SZXAPDI/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "希尔顿集团（逸林）",
+      "stars": null,
+      "note": "星级未核实；地址据希尔顿中国官网酒店页"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "希尔顿酒店集团中国官网·深圳机场希尔顿逸林酒店",
+        "url": "https://www.hilton.com.cn/zh-CN/hotel/shenzhen/doubletree-by-hilton-shenzhen-airport-SZXAPDI/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "星级待核实"
+    ],
+    "notes": "官网称距机场约10分钟车程，提供免费送机服务（以页面为准）。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h056",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "度假酒店",
+    "name_zh": "深圳东部华侨城茵特拉根酒店",
+    "name_en": "Interlaken OCT Hotel",
+    "name_en_source": "official",
+    "district": "盐田",
+    "address": "大梅沙东部华侨城茶溪谷",
+    "description_zh": "盐田东部华侨城茶溪谷的瑞士主题度假酒店，适合亲子与山地度假。",
+    "tags": [
+      "待核实",
+      "盐田区",
+      "度假",
+      "华侨城"
+    ],
+    "official_url": "https://www.octshenzhen.cn",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "华侨城集团",
+      "stars": null,
+      "note": "星级未核实；地址据酒店专题预订站；非华侨城集团官网"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳东部华侨城茵特拉根酒店专题网站（联系我们页）",
+        "url": "https://www.octshenzhen.cn/contact.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "星级待核实"
+    ],
+    "notes": "该站为酒店预订专题站，中英文名同时标注，非华侨城集团官网；同址酒店群另有瀑布、黑森林等门店未收录（见gaps）。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h057",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "中档连锁",
+    "name_zh": "全季深圳福田沙尾地铁站酒店",
+    "name_en": "Ji Hotel Shenzhen Futian Shawei Metro Station",
+    "name_en_source": "machine",
+    "district": "福田",
+    "address": "沙头街道金地社区金地一路金地工业区145栋",
+    "description_zh": "福田金地一路的中档连锁酒店，近地铁与中心区，性价比较高。",
+    "tags": [
+      "待核实",
+      "福田区",
+      "中档连锁",
+      "高性价比"
+    ],
+    "official_url": "https://m.huazhu.com/Hotel/Detail/9008961",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "华住集团（全季）",
+      "stars": null,
+      "note": "星级未核实；地址据华住集团官网酒店详情页"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "华住酒店集团官网·全季深圳福田沙尾地铁站酒店",
+        "url": "https://m.huazhu.com/Hotel/Detail/9008961",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名为机器转写，待核实",
+      "星级待核实"
+    ],
+    "notes": "官网未提供英文名。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h058",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "中档连锁",
+    "name_zh": "深圳水贝IBC亚朵酒店",
+    "name_en": "Atour Hotel (Shenzhen Shuibei IBC)",
+    "name_en_source": "official",
+    "district": "罗湖",
+    "address": "东晓街道布心路3008号水贝珠宝总部大厦A座26-31层",
+    "description_zh": "罗湖水贝IBC高层的中档连锁酒店，楼下即商场与地铁，适合购物与商务。",
+    "tags": [
+      "待核实",
+      "罗湖区",
+      "中档连锁",
+      "高性价比"
+    ],
+    "official_url": "https://atourshenzhenshuibeiibc.hotelatour.cn/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": "亚朵集团",
+      "stars": null,
+      "note": "星级未核实；地址据酒店品牌预订站"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "亚朵酒店品牌预订站·深圳水贝IBC亚朵酒店",
+        "url": "https://atourshenzhenshuibeiibc.hotelatour.cn/",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "星级待核实"
+    ],
+    "notes": "该站为品牌酒店预订专题站，非亚朵集团官网；英文名同时标注于页面。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h059",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "青年旅舍",
+    "name_zh": "深圳侨城旅友国际青年旅舍",
+    "name_en": "OCT International Youth Hostel Shenzhen",
+    "name_en_source": "machine",
+    "district": "南山",
+    "address": "香山东街7号",
+    "description_zh": "南山华侨城香山东街的国际青年旅舍，床位与家庭房兼备，适合背包客。",
+    "tags": [
+      "待核实",
+      "南山区",
+      "青年旅舍",
+      "高性价比"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": null,
+      "note": "星级未核实；为国际青年旅舍联盟（YHA）成员；地址据深圳报业集团报道"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳报业集团“深圳发布”报道《深圳这间青旅被外国客人住成了“家”》",
+        "url": "https://pub.timedg.com/s/2026-09/24/AP6ab48f86e4b0fee7144bb4c3.html",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-09-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名",
+      "星级待核实",
+      "品牌待核实"
+    ],
+    "notes": "报道未给出旅舍英文名与官网。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.hotel.h060",
+    "city": "shenzhen",
+    "category": "hotel",
+    "subcategory": "政务接待宾馆",
+    "name_zh": "深圳市迎宾馆",
+    "name_en": "Shenzhen Guest House",
+    "name_en_source": "official",
+    "district": "罗湖",
+    "address": "新园路15号",
+    "description_zh": "罗湖新园路15号的老牌园林式政府接待宾馆，近东门老街，交通方便。",
+    "tags": [
+      "待核实",
+      "罗湖区",
+      "老牌宾馆",
+      "政务接待"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": {
+      "brand": null,
+      "stars": null,
+      "note": "星级未核实；地址据深圳市政府门户网站通知（2008年）"
+    },
+    "shop_info": null,
+    "sources": [
+      {
+        "name": "深圳市人民政府门户网站·通知公告（深圳市卫生局2008年培训通知）",
+        "url": "https://www.sz.gov.cn/cn/xxgk/zfxxgj/tzgg/content/post_1596422.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2008-08-25",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "星级待核实",
+      "现行地址与营业状态需以更近来源核实"
+    ],
+    "notes": "该官网页面仅用于确认名称、地址、区与总台电话；酒店官网 szguesthouse.com.cn 读取为空内容，现行信息待核实。",
+    "conflicts": []
+  }
+]

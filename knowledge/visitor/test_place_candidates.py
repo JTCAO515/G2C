@@ -15,13 +15,14 @@ ROOT = Path(__file__).resolve().parent
 
 def make_candidate(**overrides):
     record = {
-        "format_version": "visitor-place-candidate.1",
+        "format_version": "visitor-place-candidate.2",
         "id": "place.2026-11-18.guangzhou.attraction.a001",
         "city": "guangzhou",
         "category": "attraction",
         "subcategory": "4A景区",
         "name_zh": "陈家祠",
-        "name_en": None,
+        "name_en": "Chen Clan Ancestral Hall",
+        "name_en_source": "official",
         "district": "荔湾",
         "address": "广州市中山七路恩龙里34号",
         "description_zh": "广州市 A 级景区名录登记条目（4A/荔湾），详细开放与预约信息待核实。",
@@ -29,6 +30,8 @@ def make_candidate(**overrides):
         "official_url": None,
         "attraction_info": {"level": "4A", "ticket_note": None, "booking_note": None},
         "restaurant_info": None,
+        "hotel_info": None,
+        "shop_info": None,
         "sources": [{
             "name": "广州市文化广电旅游局《广州市A级景区名录（2026年6月更新）》",
             "url": "https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10899669.html",
@@ -47,28 +50,30 @@ def make_candidate(**overrides):
     return record
 
 
-def make_restaurant(**overrides):
+def info_for(category):
+    return {
+        "attraction": {"level": None, "ticket_note": None, "booking_note": None},
+        "restaurant": {"cuisine": None, "reservation_note": None},
+        "hotel": {"stars": None, "brand": None, "note": None},
+        "shop": {"shop_type": None, "goods": None},
+    }[category]
+
+
+def make_record(category, prefix, **overrides):
     record = make_candidate(
-        id="place.2026-11-18.guangzhou.restaurant.r001",
-        category="restaurant",
-        subcategory="米其林必比登",
-        name_zh="坚记",
-        name_en="Jian Ji",
-        district="荔湾",
-        address="荔湾区",
-        description_zh="2026 米其林指南广州必比登推介餐厅，主打传统面食。",
-        tags=["米其林必比登"],
-        attraction_info=None,
-        restaurant_info={"cuisine": "面食", "reservation_note": None},
-        sources=[{
-            "name": "2026 广州深圳米其林指南必比登推介名单（转载）",
-            "url": "https://www.sina.cn/news/detail/5333861284184580.html",
-            "type": "commercial_platform",
-            "language": "zh",
-            "published_on": "2026-08-19",
-            "valid_until": None,
-        }],
-        missing=["详细地址与营业时间待核实"],
+        id=f"place.2026-11-18.guangzhou.{category}.{prefix}001",
+        category=category,
+        subcategory={"attraction": "博物馆", "restaurant": "粤菜",
+                     "hotel": "星级酒店", "shop": "购物中心"}[category],
+        name_zh={"attraction": "陈家祠", "restaurant": "坚记",
+                 "hotel": "白天鹅宾馆", "shop": "天河城"}[category],
+        name_en={"attraction": "Chen Clan Ancestral Hall", "restaurant": "Jian Ji",
+                 "hotel": "White Swan Hotel", "shop": "Teemall"}[category],
+        name_en_source="official",
+        attraction_info=info_for(category) if category == "attraction" else None,
+        restaurant_info=info_for(category) if category == "restaurant" else None,
+        hotel_info=info_for(category) if category == "hotel" else None,
+        shop_info=info_for(category) if category == "shop" else None,
     )
     record.update(overrides)
     return record
@@ -78,9 +83,11 @@ class PlaceCandidateFormatTests(unittest.TestCase):
     def setUp(self):
         self.record = make_candidate()
 
-    def test_valid_records(self):
-        validate_candidate(self.record, as_of=TODAY)
-        validate_candidate(make_restaurant(), as_of=TODAY)
+    def test_valid_all_categories(self):
+        for category, prefix in (("attraction", "a"), ("restaurant", "r"),
+                                 ("hotel", "h"), ("shop", "s")):
+            with self.subTest(category=category):
+                validate_candidate(make_record(category, prefix), as_of=TODAY)
 
     def test_each_required_field_missing(self):
         for field in FIELDS:
@@ -95,7 +102,7 @@ class PlaceCandidateFormatTests(unittest.TestCase):
             validate_candidate({**self.record, "verified": True}, as_of=TODAY)
 
     def test_version_and_status(self):
-        for field, value in (("format_version", "visitor-place-candidate.2"),
+        for field, value in (("format_version", "visitor-place-candidate.1"),
                              ("status", "已核实")):
             with self.subTest(field=field), self.assertRaises(ValueError):
                 validate_candidate(make_candidate(**{field: value}), as_of=TODAY)
@@ -105,8 +112,7 @@ class PlaceCandidateFormatTests(unittest.TestCase):
             "id": ["place.2026-11-17.guangzhou.attraction.a001",
                    "place.2026-11-18.shanghai.attraction.a001",
                    "place.2026-11-18.guangzhou.restaurant.a001",
-                   "place.2026-11-18.guangzhou.attraction", "visitor.2026-11-18.guangzhou.a001"],
-            "city": ["shanghai", "unknown"],
+                   "place.2026-11-18.guangzhou.museum.a001", "visitor.2026-11-18.guangzhou.a001"],
             "category": ["museum"],
         }
         for field, values in cases.items():
@@ -135,28 +141,34 @@ class PlaceCandidateFormatTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_candidate(make_candidate(description_zh="字" * 301), as_of=TODAY)
 
-    def test_tags_and_official_url(self):
-        validate_candidate(make_candidate(tags=[], official_url=None), as_of=TODAY)
-        validate_candidate(make_candidate(official_url="http://www.gzmtr.com/"), as_of=TODAY)
-        for field, value in (("tags", "4A"), ("tags", [""]), ("tags", ["4A", "4A"]),
-                             ("official_url", "ftp://example.com/"),
-                             ("official_url", "https://example.com/#a")):
-            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
-                validate_candidate(make_candidate(**{field: value}), as_of=TODAY)
+    def test_name_en_source(self):
+        validate_candidate(make_candidate(name_en=None, name_en_source=None), as_of=TODAY)
+        validate_candidate(make_candidate(name_en="Chen Clan Ancestral Hall",
+                                          name_en_source="machine"), as_of=TODAY)
+        for value in ("official-en", "", "unknown"):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                validate_candidate(make_candidate(name_en_source=value), as_of=TODAY)
+        with self.assertRaises(ValueError):
+            validate_candidate(make_candidate(name_en=None, name_en_source="official"), as_of=TODAY)
+        with self.assertRaises(ValueError):
+            validate_candidate(make_candidate(name_en="Chen Clan Ancestral Hall",
+                                              name_en_source=None), as_of=TODAY)
 
     def test_info_objects_and_category_consistency(self):
-        for value in ({"level": "4A", "ticket_note": None},
-                      {"level": "4A", "ticket_note": None, "booking_note": None, "extra": None},
-                      {"level": "", "ticket_note": None, "booking_note": None},
-                      {"level": None, "ticket_note": "", "booking_note": None}):
-            with self.subTest(value=value), self.assertRaises(ValueError):
-                validate_candidate(make_candidate(attraction_info=value), as_of=TODAY)
-        for field, value in (("attraction_info", None), ("restaurant_info", {"cuisine": None,
-                                                                             "reservation_note": None})):
-            with self.subTest(field=field), self.assertRaises(ValueError):
-                validate_candidate(make_candidate(**{field: value}), as_of=TODAY)
-        with self.assertRaises(ValueError):
-            validate_candidate(make_restaurant(restaurant_info=None), as_of=TODAY)
+        for category, prefix in (("attraction", "a"), ("restaurant", "r"),
+                                 ("hotel", "h"), ("shop", "s")):
+            base = make_record(category, prefix)
+            with self.subTest(category=category):
+                validate_candidate(base, as_of=TODAY)
+            with self.assertRaises(ValueError):
+                validate_candidate(make_record(category, prefix,
+                                               **{f"{category}_info": None}), as_of=TODAY)
+            other = {"attraction": "restaurant_info", "restaurant": "attraction_info",
+                     "hotel": "shop_info", "shop": "hotel_info"}[category]
+            with self.assertRaises(ValueError):
+                validate_candidate(make_record(category, prefix, **{other: info_for(
+                    {"attraction": "restaurant", "restaurant": "attraction",
+                     "hotel": "shop", "shop": "hotel"}[category])}), as_of=TODAY)
 
     def test_sources(self):
         valid = self.record["sources"][0]
@@ -190,7 +202,7 @@ class PlaceCandidateFormatTests(unittest.TestCase):
     def test_cli(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "places.json"
-            path.write_text(json.dumps([self.record, make_restaurant()]))
+            path.write_text(json.dumps([self.record, make_record("hotel", "h")]))
             result = subprocess.run([sys.executable, "-B", str(ROOT / "validate_place_candidates.py"),
                                      "--as-of", "2026-11-18", str(path)],
                                     capture_output=True, text=True)

@@ -1,12 +1,13 @@
 [
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a001",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "历史街区",
     "name_zh": "南头古城（新安古城）",
-    "name_en": null,
+    "name_en": "Nantou Ancient City (Xin'an Ancient City)",
+    "name_en_source": "machine",
     "district": "南山",
     "address": null,
     "description_zh": "有近1700年郡县史，被称为“粤东首郡、港澳源头”。城内保存南城门、新安县衙、信国公文氏祠等古迹与清代民国广府民居，2020年焕新后引入展览、文创、餐饮、民宿等业态，2023年入选国家级旅游休闲街区。",
@@ -23,6 +24,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局（来源：深圳特区报）",
@@ -43,13 +46,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a002",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "城市综合体/滨海街区",
     "name_zh": "蛇口海上世界",
     "name_en": "Sea World",
+    "name_en_source": "official",
     "district": "南山",
     "address": null,
     "description_zh": "以退役邮轮明华轮为核心的蛇口滨海综合体，1984年邓小平题写“海上世界”。现含广场商业、酒店、文化艺术中心与滨海公园，地铁海上世界站可达，是深圳早期滨海旅游地标。",
@@ -66,6 +70,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "维基百科（非官方）",
@@ -86,13 +92,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a003",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "创意园区/街区",
     "name_zh": "华侨城创意文化园",
     "name_en": "OCT-LOFT",
+    "name_en_source": "official",
     "district": "南山",
     "address": null,
     "description_zh": "由1980年代华侨城东部工业区旧厂房改造，2004年启动、2006年挂牌、2011年南北区整体开园；集聚设计艺术机构与T街创意市集等活动，2021年获授“深圳特色文化街区”，被称“最先锋文化街区”。",
@@ -109,6 +116,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳新闻网（见圳客户端）",
@@ -130,13 +139,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a004",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "艺术村落",
     "name_zh": "大芬村",
-    "name_en": null,
+    "name_en": "Dafen Village",
+    "name_en_source": "machine",
     "district": "龙岗",
     "address": null,
     "description_zh": "位于龙岗布吉，以油画复制与原创加工聚集闻名，被称为“中国油画第一村”；2004年获国家文化产业示范基地，2020年入选首批深圳市十大特色文化街区，并举办大芬国际油画双年展。",
@@ -153,6 +163,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳史志网（深圳市人民政府地方志办公室）",
@@ -173,13 +185,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a005",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "艺术村落/客家古村",
     "name_zh": "观澜版画基地",
-    "name_en": null,
+    "name_en": "Guanlan Printmaking Base",
+    "name_en_source": "machine",
     "district": "龙华",
     "address": null,
     "description_zh": "中国观澜版画原创产业基地俗称版画村，前身为近300年历史的大水田客家古村，改造中修旧如旧，2008年开放运营；设版画工坊、艺术部落、国际艺术家村，并有中国版画博物馆。",
@@ -196,6 +209,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "龙华政府在线（深圳市龙华区人民政府）",
@@ -218,13 +233,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a006",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "历史墟市",
     "name_zh": "观澜古墟",
-    "name_en": null,
+    "name_en": "Guanlan Ancient Market",
+    "name_en_source": "machine",
     "district": "龙华",
     "address": null,
     "description_zh": "龙华观澜的清代墟市遗存，两百多年前因水而兴，曾是外贸与内地商品中转地；经保护性修缮后引入文创、餐饮、民宿与灯光秀，形成“一核二街六巷八景”夜游场景，2023年重新开放。",
@@ -241,6 +257,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市龙华区人民政府（政府信息公开）",
@@ -261,13 +279,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a007",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "历史墟市",
     "name_zh": "清平古墟",
-    "name_en": null,
+    "name_en": "Qingping Ancient Market",
+    "name_en_source": "machine",
     "district": "宝安",
     "address": "深圳市宝安区新桥街道桥头村",
     "description_zh": "深圳四大古墟之一，承载广府墟市记忆，位于新桥街道桥头村；现正实施历史文化保护与风貌提升工程，含戏台、清平学堂等节点，由金鼠影视公司负责日常管理。",
@@ -284,6 +303,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市宝安区人民政府（新桥街道办答复函）",
@@ -305,13 +326,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a008",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "商业街区",
     "name_zh": "东门老街",
-    "name_en": null,
+    "name_en": "Dongmen Old Street",
+    "name_en_source": "machine",
     "district": "罗湖",
     "address": null,
     "description_zh": "深圳最早的商业街区，2024年3月起以“不封街、不歇业”方式改造约27万平方米，整修岭南骑楼，形成“两主街、四聚场、八支巷”格局，并引入二次元、潮玩等新业态与夜间灯光。",
@@ -328,6 +350,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳政府在线（罗湖区在线访谈）",
@@ -350,13 +374,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a009",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "历史街区/边境街区",
     "name_zh": "中英街",
-    "name_en": null,
+    "name_en": "Chung Ying Street",
+    "name_en_source": "machine",
     "district": "盐田",
     "address": "深圳市盐田区沙头角边境特别管理区",
     "description_zh": "沙头角边境特别管理区内约250米长、3至4米宽的老街，以中英街界碑等文保单位与历史建筑为核心，保留深港早期商贸生活交融格局，是国内少见的“一街两制”活态历史街区。",
@@ -373,6 +398,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局（政府信息公开）",
@@ -394,13 +421,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a010",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "观景台/城市地标",
     "name_zh": "平安金融中心云际观光层",
     "name_en": "Free Sky",
+    "name_en_source": "official",
     "district": "福田",
     "address": "深圳市福田区益田路5033号",
     "description_zh": "设于平安金融中心116层的观光层，海拔约541米，含透明观景区、悬空玻璃观景台与VR互动区，可环视深港城市景观；运营主体页面署名深圳平安观光云层有限公司。",
@@ -417,6 +445,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "Free Sky云际观光层官网（版权署名：深圳平安观光云层有限公司）",
@@ -436,13 +466,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a011",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "文化场馆",
     "name_zh": "深圳市当代艺术与城市规划馆",
-    "name_en": null,
+    "name_en": "Shenzhen Museum of Contemporary Art and Urban Planning",
+    "name_en_source": "official",
     "district": "福田",
     "address": "福田区福中一路184号",
     "description_zh": "位于福田文化中心区市民广场，由当代艺术馆与城市规划馆组成：前者展示国内外当代艺术，后者呈现深圳城市规划历程与建设成就，为公益性、学术性文化艺术机构。",
@@ -461,6 +492,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化创意与设计联合会（SCCDA）会员页",
@@ -493,13 +526,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a012",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "体育场馆/地标",
     "name_zh": "深圳湾体育中心",
-    "name_en": null,
+    "name_en": "Shenzhen Bay Sports Center",
+    "name_en_source": "official",
     "district": "南山",
     "address": "深圳市南山区滨海大道3001号",
     "description_zh": "第26届世界大学生夏季运动会场馆，外形酷似“春茧”，含主体育场、主体育馆、游泳馆及体育主题公园；赛后向市民开放，承办大型赛事与演唱会，是后海片区地标。",
@@ -518,6 +552,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳政府在线（文体通·体育场馆）",
@@ -546,13 +582,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a013",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "城市公园",
     "name_zh": "人才公园",
-    "name_en": null,
+    "name_en": "Talent Park",
+    "name_en_source": "machine",
     "district": "南山",
     "address": "深圳市南山区粤海街道蔚蓝海岸社区科苑南路3329号",
     "description_zh": "全国首个以“人才”为主题的市政公园，2017年11月建成开放，占地约77万平方米、水体约30万平方米；以院士林、百杰山等20余处景观承载人才主题，设人才书吧并与深圳湾滨海休闲带相连。",
@@ -571,6 +608,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳政府在线（公园深圳·城市公园）",
@@ -599,13 +638,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a014",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "滨海公园",
     "name_zh": "深圳湾滨海休闲带",
-    "name_en": null,
+    "name_en": "Shenzhen Bay Coastal Leisure Belt",
+    "name_en_source": "machine",
     "district": "南山",
     "address": "深圳市西南部深圳湾沿岸",
     "description_zh": "由红树林海滨生态园与滨海休闲带组成的滨海生态公园，岸线约13公里、14个主题园，是候鸟停歇地；设有自然教育中心、骑行驿站与观鸟点，2026年获世界城市公园协会“大型城市公园奖”。",
@@ -624,6 +664,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市南山区人民政府（魅力南山）",
@@ -655,13 +697,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a015",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "城市公园",
     "name_zh": "莲花山公园",
-    "name_en": null,
+    "name_en": "Lianhuashan Park",
+    "name_en_source": "machine",
     "district": "福田",
     "address": "深圳市福田区红荔路6030号",
     "description_zh": "福田中心区北侧的生态型市政公园，1997年开放，面积181公顷，因七山相拥如莲花得名；主峰有邓小平铜像广场，“莲山春早”为深圳八景之一，每年举办簕杜鹃花展。",
@@ -681,6 +724,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳政府在线（公园深圳·城市公园）",
@@ -709,13 +754,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a016",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "纪念性公园",
     "name_zh": "前海石",
-    "name_en": null,
+    "name_en": "Qianhai Stone",
+    "name_en_source": "machine",
     "district": "南山",
     "address": "广东省深圳市南山区前海自贸合作区前湾二路",
     "description_zh": "前海片区纪念性滨海公园，用地约8.46万平方米，以前海石为核心标识，是改革开放再出发的重要见证地；园区结合雨水花园、湿生植物与草坪，供市民观海休闲。",
@@ -734,6 +780,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳政府在线（公园深圳·城市公园）",
@@ -762,13 +810,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a017",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "滨水绿廊",
     "name_zh": "大沙河生态长廊",
-    "name_en": null,
+    "name_en": "Dasha River Ecological Corridor",
+    "name_en_source": "machine",
     "district": "南山",
     "address": "大沙河两岸（长岭陂地铁站-深圳湾入海口）",
     "description_zh": "自长岭陂水库至深圳湾入海口的滨水慢行系统，长约13.7公里、总面积约97万平方米；分“学院之道”“城市森林”“活力水岸”三段，串联大学城、高新区与深圳湾，曾获ULI亚太及全球卓越奖。",
@@ -788,6 +837,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市南山区人民政府（魅力南山·南山年鉴）",
@@ -817,13 +868,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a018",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "城市公园",
     "name_zh": "光明虹桥公园",
-    "name_en": null,
+    "name_en": "Guangming Hongqiao Park",
+    "name_en_source": "machine",
     "district": "光明",
     "address": "深圳市光明区光明科林路与茶林路交口",
     "description_zh": "光明区东部城市公园，占地约410公顷，以约4公里红色空中栈桥串联入口区、碧湖区与森林区，栈桥被称为“光明红丝带”；沿线设观光塔、森林步道与多处垂直交通出入口。",
@@ -842,6 +894,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳政府在线（公园深圳·城市公园）",
@@ -870,13 +924,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a019",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "自然风景区",
     "name_zh": "梧桐山风景区",
-    "name_en": null,
+    "name_en": "Wutong Mountain Scenic Area",
+    "name_en_source": "machine",
     "district": "罗湖",
     "address": "广东省深圳市罗湖区罗沙路2076号",
     "description_zh": "国家级风景名胜区，总面积约42平方公里，以滨海山地与自然植被为景观主体；大梧桐海拔943.7米为深圳最高峰，森林覆盖率约88.6%，以毛棉杜鹃花海、泰山涧与“梧桐烟云”知名。",
@@ -893,6 +948,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市城市管理和综合执法局（山海连城·绿美深圳）",
@@ -914,13 +971,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a020",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "郊野公园",
     "name_zh": "塘朗山公园",
-    "name_en": null,
+    "name_en": "Tanglang Mountain Park",
+    "name_en_source": "machine",
     "district": "南山",
     "address": "深圳市南山区龙珠大道龙珠六路51号",
     "description_zh": "南山区丘陵山地公园，建于2002年，面积约10平方公里，主峰塘朗顶海拔430米，可俯瞰深圳、远眺香港；森林覆盖率约87%，已建八条登山道并与梅林山公园衔接。",
@@ -939,6 +997,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市城市管理和综合执法局（山海连城·绿美深圳）",
@@ -959,13 +1019,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a021",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "森林公园",
     "name_zh": "羊台山森林公园",
-    "name_en": null,
+    "name_en": "Yangtai Mountain Forest Park",
+    "name_en_source": "machine",
     "district": "龙华",
     "address": "位于南山区、宝安区和龙华区交会处",
     "description_zh": "深圳西北部森林公园，总面积28.57平方公里；大阳台海拔587.1米，有“深圳西部第一峰”之称；抗战时期为东江纵队根据地，别称“英雄山”，2020年由“羊台山”恢复为“阳台山”。",
@@ -984,6 +1045,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市城市管理和综合执法局（山海连城·绿美深圳）",
@@ -1007,13 +1070,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a022",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "森林公园",
     "name_zh": "凤凰山",
-    "name_en": null,
+    "name_en": "Fenghuang Mountain",
+    "name_en_source": "machine",
     "district": "宝安",
     "address": "深圳市宝安区福永街道凤凰社区凤凰山大道与福凤路交会处东",
     "description_zh": "宝安西部免费开放的郊野森林公园，规划面积约27.65平方公里，主峰海拔376米；有元代始建的凤岩古庙、望烟楼等景点，融入文天祥相关人文元素，素有“凤山福水福盈地”之称。",
@@ -1030,6 +1094,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市城市管理和综合执法局（山海连城·绿美深圳）",
@@ -1049,13 +1115,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a023",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "郊野公园",
     "name_zh": "梅林山郊野公园",
-    "name_en": null,
+    "name_en": "Meilin Mountain Country Park",
+    "name_en_source": "machine",
     "district": "福田",
     "address": "彩色梅林区：福田区下梅林二街梅林山公园彩梅入口；侨香门区：福田区北环大道梅林山公园侨香入口",
     "description_zh": "福田北部郊野公园，总面积约6.9平方公里，中部被梅林水库及水源保护区一分为二；以生态景观与水库风光为主，建有手作步道与郊野径，可与塘朗山、银湖山郊野公园衔接。",
@@ -1075,6 +1142,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市城市管理和综合执法局（山海连城·绿美深圳）",
@@ -1095,13 +1164,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a024",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "郊野公园",
     "name_zh": "马峦山郊野公园",
-    "name_en": null,
+    "name_en": "Maluan Mountain Country Park",
+    "name_en_source": "machine",
     "district": "坪山",
     "address": "深圳市坪山区坪马线公路马峦山郊野公园",
     "description_zh": "深圳首个经政府批准建设、以远足登山和观山听瀑为特色的郊野公园，面积21.73平方千米；有龙潭、榄核桥两大瀑布群，龙潭瀑布群落差约50米，园内多手作步道。",
@@ -1118,6 +1188,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市城市管理和综合执法局（山海连城·绿美深圳）",
@@ -1137,13 +1209,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a025",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "自然保护区",
     "name_zh": "福田红树林国家级自然保护区",
-    "name_en": null,
+    "name_en": "Futian Mangrove National Nature Reserve",
+    "name_en_source": "machine",
     "district": "福田",
     "address": null,
     "description_zh": "位于深圳湾畔、处于高密度城市腹地的国家级自然保护区，为候鸟迁徙重要停歇地与“加油站”，每年有近十万只候鸟过境；其湿地保护修复经验入选深圳相关白皮书并向亚太分享。",
@@ -1160,6 +1233,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "国家林业和草原局政府网（来源：央视新闻客户端）",
@@ -1181,13 +1256,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a026",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "生态公园",
     "name_zh": "福田红树林生态公园",
-    "name_en": null,
+    "name_en": "Futian Mangrove Ecological Park",
+    "name_en_source": "machine",
     "district": "福田",
     "address": "福田区新洲南路与福荣路交界处",
     "description_zh": "位于新洲河与深圳河交汇入海口，西邻福田红树林国家级自然保护区，占地约38万平方米，2015年开放；设红树林科普展馆、观鸟点、自然力乐园与自然课堂，以生态修复和公众教育为主。",
@@ -1204,6 +1280,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市城市管理和综合执法局（山海连城·绿美深圳）",
@@ -1225,13 +1303,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a027",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "国家湿地公园",
     "name_zh": "华侨城湿地",
-    "name_en": null,
+    "name_en": "OCT Wetland",
+    "name_en_source": "machine",
     "district": "南山",
     "address": "深圳市南山区沙河街道滨海大道2008号",
     "description_zh": "位于欢乐海岸北区的滨海湿地，占地68.5公顷、湿地面积50.13公顷，2020年成为深圳目前唯一的国家湿地公园；是候鸟中转栖息地，设自然学校、观鸟屋与生态展厅。",
@@ -1248,6 +1327,8 @@
       "booking_note": "页面标注入园需预约，以官方最新公告为准"
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市城市管理和综合执法局（山海连城·绿美深圳）",
@@ -1269,13 +1350,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a028",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "海滨公园",
     "name_zh": "大梅沙海滨公园",
-    "name_en": null,
+    "name_en": "Dameisha Beach Park",
+    "name_en_source": "official",
     "district": "盐田",
     "address": "深圳市盐田区梅沙街道梅沙社区盐梅路东大梅沙海滨公园",
     "description_zh": "盐田大鹏湾畔的海滨公园，1999年建成，2019年启动重建，总面积约20.07公顷，沙滩长约1.4公里；“梅沙踏浪”为深圳八景之一，园内有愿望塔、天长地久石与飞人雕塑等打卡点。",
@@ -1292,6 +1374,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市城市管理和综合执法局（山海连城·绿美深圳）",
@@ -1311,13 +1395,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a029",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "海滨度假区",
     "name_zh": "小梅沙海滨公园",
-    "name_en": null,
+    "name_en": "Xiaomeisha Beach Park",
+    "name_en_source": "machine",
     "district": "盐田",
     "address": null,
     "description_zh": "盐田大鹏湾畔的海滨度假区，由海滨区、小梅沙海洋世界、小梅沙大酒店等组成；1971年建成度假村，近年启动整体改造，配套地铁8号线小梅沙站。",
@@ -1334,6 +1419,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "维基百科（非官方）",
@@ -1357,13 +1444,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a030",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "古城/文保单位",
     "name_zh": "大鹏所城文化旅游区",
-    "name_en": null,
+    "name_en": "Dapeng Fortress Cultural Tourism Area",
+    "name_en_source": "machine",
     "district": "大鹏新区",
     "address": "深圳市大鹏新区鹏城村",
     "description_zh": "明代大鹏守御千户所城，始建于洪武二十七年（1394年），为全国重点文物保护单位、“深圳八景”之首；保存东、南、西三门及振威将军第等清代府第，深圳别称“鹏城”源于此。",
@@ -1380,6 +1468,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市大鹏新区政府在线（文化广电旅游体育局）",
@@ -1401,13 +1491,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a031",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "海滨古村",
     "name_zh": "较场尾",
-    "name_en": null,
+    "name_en": "Jiaochangwei",
+    "name_en_source": "machine",
     "district": "大鹏新区",
     "address": null,
     "description_zh": "大鹏所城旁约300年历史的海滨村落，总面积约33万平方米、海岸线约3000米，民宿高度聚集，被称为深圳的“鼓浪屿”；与所城、东山寺同属大鹏所城旅游区。",
@@ -1424,6 +1515,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市大鹏新区政府在线（鹏游新视界）",
@@ -1444,13 +1537,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a032",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "海滨沙滩",
     "name_zh": "西冲",
-    "name_en": null,
+    "name_en": "Xichong",
+    "name_en_source": "machine",
     "district": "大鹏新区",
     "address": "深圳市大鹏新区西涌湾",
     "description_zh": "大鹏半岛代表性海滨风景区，沙滩长约3.3公里，有沙坝、泻湖与防风林，是深圳海滨旅游点中海滩最大、腹地最广者；湾内有情人岛，周边为暗夜社区，可观星、观萤火虫。",
@@ -1467,6 +1561,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市大鹏新区政府在线（鹏游新视界）",
@@ -1487,13 +1583,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a033",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "海滨社区",
     "name_zh": "东涌",
-    "name_en": null,
+    "name_en": "Dongchong",
+    "name_en_source": "machine",
     "district": "大鹏新区",
     "address": "深圳市大鹏新区南澳办事处东涌社区",
     "description_zh": "南澳办事处东涌社区，三面环山一面临海，面积约23.6平方公里、海岸线约11公里；有东涌沙滩、红树林、冲街天后宫、穿鼻岩、黄氏宗祠等文旅资源，2023年获评深圳市二星级绿色社区。",
@@ -1510,6 +1607,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市大鹏新区政府在线（鹏游新视界）",
@@ -1529,13 +1628,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a034",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "渔港/港湾",
     "name_zh": "南澳月亮湾",
-    "name_en": null,
+    "name_en": "Nan'ao Moon Bay",
+    "name_en_source": "machine",
     "district": "大鹏新区",
     "address": null,
     "description_zh": "南澳的天然避风塘与国家级渔港，因港湾呈月牙形得名；港内停泊渔船、快艇与鱼排，黄昏景观知名，节庆期间有渔灯会、水上娶新娘等民俗可看。",
@@ -1552,6 +1652,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市大鹏新区政府在线（鹏游新视界）",
@@ -1572,13 +1674,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a035",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "海滨村落",
     "name_zh": "官湖",
-    "name_en": null,
+    "name_en": "Guanhu",
+    "name_en_source": "machine",
     "district": "大鹏新区",
     "address": null,
     "description_zh": "葵涌南部的海滨小村，也称“官湖角”，三面环山、南临大海，约4.5公里海岸线被礁石分成五个海滩；村内散布风格各异的民宿，是深圳婚纱摄影与看海休闲地。",
@@ -1595,6 +1698,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市大鹏新区政府在线（鹏游新视界）",
@@ -1615,13 +1720,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a036",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "海滨村落",
     "name_zh": "沙鱼涌",
-    "name_en": null,
+    "name_en": "Shayuchong",
+    "name_en_source": "machine",
     "district": "大鹏新区",
     "address": null,
     "description_zh": "大鹏湾畔的小村，沙鱼涌河穿村流入海，村落两面临山、一面临海，环境安静；以低调悠闲的村落氛围和亲海景观吸引游客。",
@@ -1637,6 +1743,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市大鹏新区政府在线（鹏游新视界）",
@@ -1657,13 +1765,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a037",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "海滨沙滩",
     "name_zh": "金沙湾",
-    "name_en": null,
+    "name_en": "Jinsha Bay",
+    "name_en_source": "machine",
     "district": "大鹏新区",
     "address": null,
     "description_zh": "大鹏半岛西侧的海滨公园，沙滩绵延约2公里，海面开阔，与香港东平洲隔海相望；三面青山环抱，是深圳东部知名沙滩之一，毗邻度假酒店与水乐园。",
@@ -1679,6 +1788,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市大鹏新区政府在线（鹏游新视界）",
@@ -1699,13 +1810,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a038",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "海岸带/村落群",
     "name_zh": "杨梅坑（东山片区）",
-    "name_en": null,
+    "name_en": "Yangmeikeng (Dongshan Area)",
+    "name_en_source": "machine",
     "district": "大鹏新区",
     "address": "深圳市大鹏新区南澳办事处杨梅坑",
     "description_zh": "又称南澳北部海岸景区，位于大亚湾与七娘山之间的海岸带，海岸线16.5公里；含桔钓沙、长沙头、鹿嘴等沙滩与东山村落群，可骑行、徒步、潜水、乘船观光。",
@@ -1722,6 +1834,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市大鹏新区政府在线（主景点）",
@@ -1743,13 +1857,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a039",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "地质公园",
     "name_zh": "大鹏半岛国家地质公园",
-    "name_en": null,
+    "name_en": "Dapeng Peninsula National Geopark",
+    "name_en_source": "machine",
     "district": "大鹏新区",
     "address": "深圳市大鹏新区南澳街道新大社区地质公园路1号",
     "description_zh": "深圳唯一国家级地质类自然公园，园区面积46.07平方公里，以约1.45亿年前古火山遗迹和海岸地貌为主体；设地质公园博物馆与两条登山科考线，森林覆盖率约98%，动植物资源丰富。",
@@ -1766,6 +1881,8 @@
       "booking_note": "页面标注主峰与鹿雁科考线存在封闭管理、博物馆景区正常开放，登山线路与场馆开放制度以官方最新公告为准"
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳政府在线（公园深圳·自然公园）",
@@ -1785,13 +1902,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a040",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "山峰",
     "name_zh": "七娘山",
-    "name_en": null,
+    "name_en": "Qiniang Mountain",
+    "name_en_source": "machine",
     "district": "大鹏新区",
     "address": null,
     "description_zh": "又名大鹏山，大鹏半岛主要山脉，主峰海拔867.4米，为深圳第二高峰；山体多被原生林覆盖，是徒步热门地，可从盐田及香港沙田、大埔远眺。地名曾拟恢复“大鹏山”并保留现名。",
@@ -1808,6 +1926,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "维基百科（非官方）",
@@ -1831,13 +1951,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a041",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "湿地公园",
     "name_zh": "东涌红树林湿地园",
-    "name_en": null,
+    "name_en": "Dongchong Mangrove Wetland Park",
+    "name_en_source": "machine",
     "district": "大鹏新区",
     "address": "大鹏新区南澳街道东涌桥与东涌路交叉口西140米",
     "description_zh": "位于南澳东涌社区的红树林湿地园区，总占地49.4万平方米，分核心保护区、缓冲区、体验区、管理服务区及山林体验区；以人工湿地滩涂红树林为主题，兼具科普展示与生态旅游。",
@@ -1854,6 +1975,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市城市管理和综合执法局（山海连城·绿美深圳）",
@@ -1875,13 +1998,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a042",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "湿地公园",
     "name_zh": "坝光银叶树湿地园",
-    "name_en": null,
+    "name_en": "Baguang Silverleaf Tree Wetland Park",
+    "name_en_source": "machine",
     "district": "大鹏新区",
     "address": null,
     "description_zh": "以大鹏半岛古银叶树群落和盐灶古村客家文化为主题，面积约96公顷，分南北两区；北区含古银叶树林、传统村落与基围鱼塘，南区含盐灶水库及周边林地，兼具科普与生态旅游。",
@@ -1898,6 +2022,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市大鹏新区政府在线（鹏游新视界）",
@@ -1921,13 +2047,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a043",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "旅游度假区",
     "name_zh": "华侨城旅游度假区",
-    "name_en": null,
+    "name_en": "OCT Tourist Resort",
+    "name_en_source": "machine",
     "district": "南山",
     "address": "深圳市南山区深南大道9037号",
     "description_zh": "深圳市A级旅游景区名录序号1的5A级景区，2007年评定，名录备注为社会投资建设；表内合并列示世界之窗、锦绣中华民俗文化村、欢乐谷、欢乐海岸4个景点，位于南山区。",
@@ -1945,6 +2072,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《A级旅游景区一览表》",
@@ -1968,13 +2097,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a044",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "主题公园",
     "name_zh": "深圳世界之窗",
-    "name_en": null,
+    "name_en": "Window of the World",
+    "name_en_source": "official",
     "district": "南山",
     "address": "深圳市南山区深南大道9037号",
     "description_zh": "名录将本景点列于5A级华侨城旅游度假区项下，位于南山区深南大道9037号；名录未单列其自身等级与评定年份，等级信息待核实。",
@@ -1992,6 +2122,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《A级旅游景区一览表》",
@@ -2013,13 +2145,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a045",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "民俗文化村（主题公园）",
     "name_zh": "锦绣中华民俗文化村",
-    "name_en": null,
+    "name_en": "Splendid China Folk Village",
+    "name_en_source": "official",
     "district": "南山",
     "address": "深圳市南山区深南大道9012号",
     "description_zh": "名录将本景点列于5A级华侨城旅游度假区项下，位于南山区深南大道9012号；名录未单列其自身等级与评定年份，等级信息待核实。",
@@ -2037,6 +2170,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《A级旅游景区一览表》",
@@ -2058,13 +2193,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a046",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "主题公园",
     "name_zh": "深圳欢乐谷",
-    "name_en": null,
+    "name_en": "Shenzhen Happy Valley",
+    "name_en_source": "official",
     "district": "南山",
     "address": "深圳市南山区侨城西街18号",
     "description_zh": "名录将本景点列于5A级华侨城旅游度假区项下，位于南山区侨城西街18号；名录未单列其自身等级与评定年份，等级信息待核实。",
@@ -2082,6 +2218,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《A级旅游景区一览表》",
@@ -2103,13 +2241,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a047",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "滨海文旅综合体",
     "name_zh": "欢乐海岸",
-    "name_en": null,
+    "name_en": "OCT Harbor",
+    "name_en_source": "official",
     "district": "南山",
     "address": "深圳市南山区沙河街道滨海大道2008号",
     "description_zh": "名录将本景点列于5A级华侨城旅游度假区项下，位于南山区沙河街道滨海大道2008号；名录未单列其自身等级与评定年份，等级信息待核实。",
@@ -2127,6 +2266,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《A级旅游景区一览表》",
@@ -2148,13 +2289,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a048",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "旅游度假区",
     "name_zh": "观澜湖旅游休闲度假区",
-    "name_en": null,
+    "name_en": "Mission Hills Resort",
+    "name_en_source": "official",
     "district": "龙华",
     "address": "深圳市龙华区观澜高尔夫大道1号",
     "description_zh": "深圳市A级旅游景区名录所列5A级景区，位于龙华区，地址为观澜高尔夫大道1号；2011年评定，名录备注社会投资建设，待核实。",
@@ -2172,6 +2314,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《A级旅游景区一览表》",
@@ -2192,13 +2336,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a049",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "旅游度假区",
     "name_zh": "东部华侨城旅游度假区",
-    "name_en": null,
+    "name_en": "OCT East Resort",
+    "name_en_source": "machine",
     "district": "盐田",
     "address": "深圳市盐田区大梅沙东部华侨城旅游度假区",
     "description_zh": "深圳市A级旅游景区名录所列4A级景区，位于盐田区大梅沙，地址按名录为大梅沙东部华侨城旅游度假区；2014年评定，社会投资建设，待核实。",
@@ -2216,6 +2361,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《A级旅游景区一览表》",
@@ -2239,13 +2386,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a050",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "观光农场",
     "name_zh": "青青世界",
-    "name_en": null,
+    "name_en": "Qingqing World",
+    "name_en_source": "machine",
     "district": "南山",
     "address": "深圳市南山区月亮湾青青路1号",
     "description_zh": "深圳市A级旅游景区名录所列4A级景区，位于南山区，地址为月亮湾青青路1号；2011年评定，名录备注社会投资建设，待核实。",
@@ -2263,6 +2411,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《A级旅游景区一览表》",
@@ -2283,13 +2433,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a051",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "动物园",
     "name_zh": "深圳市野生动物园",
-    "name_en": null,
+    "name_en": "Shenzhen Safari Park",
+    "name_en_source": "official",
     "district": "南山",
     "address": "深圳市南山区西丽湖路东侧",
     "description_zh": "深圳市A级旅游景区名录所列4A级景区，位于南山区西丽湖路东侧；2011年评定，名录备注社会投资建设，待核实。",
@@ -2307,6 +2458,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《A级旅游景区一览表》",
@@ -2328,13 +2481,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a052",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "植物园",
     "name_zh": "深圳市仙湖植物园",
-    "name_en": null,
+    "name_en": "Shenzhen Fairy Lake Botanical Garden",
+    "name_en_source": "official",
     "district": "罗湖",
     "address": "深圳市罗湖区莲塘仙湖路160号",
     "description_zh": "深圳市A级旅游景区名录所列4A级景区，位于罗湖区，地址为莲塘仙湖路160号；2007年评定，名录备注政府投资建设，待核实。",
@@ -2353,6 +2507,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《A级旅游景区一览表》",
@@ -2373,13 +2529,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a053",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "生态农业旅游区",
     "name_zh": "海上田园",
-    "name_en": null,
+    "name_en": "Waterlands Resort",
+    "name_en_source": "machine",
     "district": "宝安",
     "address": "深圳市宝安区沙井街道民主大道",
     "description_zh": "深圳市A级旅游景区名录所列4A级景区，位于宝安区沙井街道，地址为民主大道；2009年评定，名录备注社会投资建设，待核实。",
@@ -2397,6 +2554,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《A级旅游景区一览表》",
@@ -2418,13 +2577,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a054",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "农业观光园",
     "name_zh": "光明农场大观园",
-    "name_en": null,
+    "name_en": "Guangming Farm Grand View Garden",
+    "name_en_source": "machine",
     "district": "光明",
     "address": "深圳市光明区光明体育公园路",
     "description_zh": "深圳市A级旅游景区名录所列4A级景区，位于光明区，地址为光明体育公园路；2017年评定，名录备注社会投资建设，待核实。",
@@ -2442,6 +2602,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《A级旅游景区一览表》",
@@ -2463,13 +2625,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a055",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "生态农业旅游区",
     "name_zh": "观澜山水田园旅游文化园",
-    "name_en": null,
+    "name_en": "Guanlan Shanshui Tianyuan Tourist and Cultural Park",
+    "name_en_source": "machine",
     "district": "龙华",
     "address": "深圳市龙华区观澜街道君子布环观南路",
     "description_zh": "深圳市A级旅游景区名录所列4A级景区，位于龙华区观澜街道，地址为君子布环观南路；2009年评定，名录备注社会投资建设，待核实。",
@@ -2487,6 +2650,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《A级旅游景区一览表》",
@@ -2508,13 +2673,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a056",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "旅游度假区",
     "name_zh": "水底山旅游度假区",
-    "name_en": null,
+    "name_en": "Shuidishan Tourist Resort",
+    "name_en_source": "machine",
     "district": "深汕特别合作区",
     "address": "深圳市深汕特别合作区赤石镇明热村",
     "description_zh": "深圳市A级旅游景区名录所列4A级景区，位于深汕特别合作区赤石镇明热村；2018年评定，名录备注社会投资建设。深汕特别合作区不在深圳10个行政区范围内，待核实。",
@@ -2532,6 +2698,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《A级旅游景区一览表》",
@@ -2552,13 +2720,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a057",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "滨海文旅综合体",
     "name_zh": "深圳市欢乐港湾旅游景区",
-    "name_en": null,
+    "name_en": "Shenzhen Happy Harbor Scenic Area",
+    "name_en_source": "machine",
     "district": "宝安",
     "address": "深圳市宝安区新安街道海天路与宝华路交汇处",
     "description_zh": "深圳市A级旅游景区名录所列4A级景区，位于宝安区新安街道，地址为海天路与宝华路交汇处；2024年评定，名录备注社会投资建设，待核实。",
@@ -2576,6 +2745,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《A级旅游景区一览表》",
@@ -2599,13 +2770,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a058",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "城市观景",
     "name_zh": "地王观光·深港之窗",
-    "name_en": null,
+    "name_en": "Diwang Observation Deck · Window of Shenzhen and Hong Kong",
+    "name_en_source": "machine",
     "district": "罗湖",
     "address": "深圳市罗湖区深南东路5002号地王大厦",
     "description_zh": "深圳市A级旅游景区名录所列3A级景区，位于罗湖区深南东路地王大厦，地址为深南东路5002号；2011年评定，名录备注社会投资建设，待核实。",
@@ -2623,6 +2795,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《A级旅游景区一览表》",
@@ -2643,13 +2817,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a059",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "步行街（开放型景区）",
     "name_zh": "华强北步行街景区",
-    "name_en": null,
+    "name_en": "Huaqiangbei Pedestrian Street Scenic Area",
+    "name_en_source": "machine",
     "district": "福田",
     "address": "深圳市福田区华强北步行街",
     "description_zh": "深圳市A级旅游景区名录所列3A级景区，位于福田区华强北步行街；2019年评定，名录备注为开放型景区，待核实。",
@@ -2668,6 +2843,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《A级旅游景区一览表》",
@@ -2689,13 +2866,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a060",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "文化产业园区",
     "name_zh": "光明红木文化小镇",
-    "name_en": null,
+    "name_en": "Guangming Rosewood Cultural Town",
+    "name_en_source": "machine",
     "district": "光明",
     "address": "深圳市光明区公明街道上村社区民生大道2号",
     "description_zh": "深圳市A级旅游景区名录所列3A级景区，位于光明区公明街道，地址为民生大道2号；2020年评定，名录备注社会投资建设，待核实。",
@@ -2713,6 +2891,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《A级旅游景区一览表》",
@@ -2735,13 +2915,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a061",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "滨海度假区",
     "name_zh": "玫瑰海岸文化旅游度假区",
-    "name_en": null,
+    "name_en": "Rose Coast Cultural Tourism Resort",
+    "name_en_source": "machine",
     "district": "大鹏新区",
     "address": "深圳市大鹏新区玫瑰海岸文化旅游度假区",
     "description_zh": "深圳市A级旅游景区名录所列3A级景区，位于大鹏新区，地址按名录为玫瑰海岸文化旅游度假区；2019年评定，社会投资建设，待核实。",
@@ -2759,6 +2940,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《A级旅游景区一览表》",
@@ -2780,13 +2963,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a062",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "古镇（文化旅游区）",
     "name_zh": "甘坑古镇文化旅游区",
-    "name_en": null,
+    "name_en": "Gankeng Ancient Town Cultural Tourism Area",
+    "name_en_source": "machine",
     "district": "龙岗",
     "address": "深圳市龙岗区吉华街道甘坑社区甘李路18号",
     "description_zh": "深圳市A级旅游景区名录所列3A级景区，位于龙岗区吉华街道甘坑社区，地址为甘李路18号；2022年评定，名录备注社会投资建设，待核实。",
@@ -2805,6 +2989,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《A级旅游景区一览表》",
@@ -2827,13 +3013,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a063",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "滨海生态旅游区",
     "name_zh": "东山鹿嘴旅游区",
-    "name_en": null,
+    "name_en": "Dongshan Luzui Tourist Area",
+    "name_en_source": "machine",
     "district": "大鹏新区",
     "address": "深圳市大鹏新区南澳街道东山社区新东路",
     "description_zh": "深圳市A级旅游景区名录所列3A级景区，位于大鹏新区南澳街道东山社区，地址为新东路；2024年评定，名录备注社会投资建设，待核实。",
@@ -2851,6 +3038,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《A级旅游景区一览表》",
@@ -2872,13 +3061,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a064",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "博物馆",
     "name_zh": "深圳博物馆（金田路馆·历史民俗）",
-    "name_en": null,
+    "name_en": "Shenzhen Museum (Jintian Road Branch · History and Folk Culture)",
+    "name_en_source": "machine",
     "district": null,
     "address": "深圳市民中心A区",
     "description_zh": "深圳博物馆分馆之一，2008年12月开馆，展览面积约1万平方米，以深圳古代、近代、民俗文化与特区改革开放历程为展示主线，并常年举办历史、文化、艺术、自然类临时展览。",
@@ -2894,6 +3084,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《深圳博物馆简介》",
@@ -2916,13 +3108,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a065",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "博物馆",
     "name_zh": "深圳博物馆（同心路馆·古代艺术）",
-    "name_en": null,
+    "name_en": "Shenzhen Museum (Tongxin Road Branch · Ancient Art)",
+    "name_en_source": "machine",
     "district": "福田",
     "address": "福田区同心路6号",
     "description_zh": "深圳博物馆分馆之一，1988年开馆，2020年底改造后重新开放，展厅约3900平方米，以古代青铜器、陶瓷等馆藏文物为展示重点，并定期推出文物艺术类临展。",
@@ -2938,6 +3131,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《深圳博物馆简介》",
@@ -2959,13 +3154,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a066",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "博物馆",
     "name_zh": "深圳改革开放展览馆",
-    "name_en": null,
+    "name_en": "Shenzhen Reform and Opening-up Exhibition Hall",
+    "name_en_source": "machine",
     "district": "福田",
     "address": "福田区福中路184号",
     "description_zh": "为庆祝改革开放40周年而建，2018年11月对外开放，展览面积约6300平方米，系统展示广东改革开放40年的历程与成果，是国内首个改革开放主题展览馆。",
@@ -2981,6 +3177,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《深圳博物馆简介》",
@@ -3002,13 +3200,14 @@
     ]
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a067",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "博物馆",
     "name_zh": "深圳博物馆·东江游击队指挥部旧址",
-    "name_en": null,
+    "name_en": "Shenzhen Museum · Former Site of the Dongjiang Guerrilla Headquarters",
+    "name_en_source": "machine",
     "district": "罗湖",
     "address": "罗湖区南庆街13号",
     "description_zh": "深圳市级文物保护单位，2017年底对外开放，展陈面积约250平方米；建筑前身为民国时期鸿安酒家，叶挺曾在此设指挥部组织抗日，是华南抗战史的重要遗址。",
@@ -3024,6 +3223,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《深圳博物馆简介》",
@@ -3043,13 +3244,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a068",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "博物馆",
     "name_zh": "深圳市南山博物馆",
-    "name_en": null,
+    "name_en": "Shenzhen Nanshan Museum",
+    "name_en_source": "machine",
     "district": "南山",
     "address": "南山区南山大道2093号",
     "description_zh": "深圳市文化广电旅游体育局《博物馆一览表》收录的博物馆，页面列明馆名、地址与开馆时间，未附展陈简介。",
@@ -3064,6 +3266,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《博物馆一览表》",
@@ -3083,13 +3287,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a069",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "博物馆",
     "name_zh": "深圳市南山区南头古城博物馆（南山博物馆分馆）",
-    "name_en": null,
+    "name_en": "Nantou Ancient City Museum, Nanshan District (Nanshan Museum Branch)",
+    "name_en_source": "machine",
     "district": "南山",
     "address": "南山区南头街道较场路2号",
     "description_zh": "深圳市文化广电旅游体育局《博物馆一览表》收录的博物馆，页面列明馆名、地址与开馆时间，未附展陈简介。",
@@ -3104,6 +3309,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《博物馆一览表》",
@@ -3123,13 +3330,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a070",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "博物馆",
     "name_zh": "深圳市福田区华强北博物馆",
-    "name_en": null,
+    "name_en": "Huaqiangbei Museum, Futian District, Shenzhen",
+    "name_en_source": "machine",
     "district": "福田",
     "address": "深圳市福田区华强北路1058号广博现代之窗大厦5楼",
     "description_zh": "深圳市文化广电旅游体育局《博物馆一览表》收录的博物馆，页面列明馆名、地址与开馆时间，未附展陈简介。",
@@ -3144,6 +3352,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《博物馆一览表》",
@@ -3163,13 +3373,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a071",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "博物馆",
     "name_zh": "深圳市中英街历史博物馆",
-    "name_en": null,
+    "name_en": "Chung Ying Street History Museum",
+    "name_en_source": "machine",
     "district": "盐田",
     "address": "盐田区沙头角镇内环城路9号",
     "description_zh": "深圳市文化广电旅游体育局《博物馆一览表》收录的博物馆，页面列明馆名、地址与开馆时间，未附展陈简介。",
@@ -3184,6 +3395,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《博物馆一览表》",
@@ -3203,13 +3416,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a072",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "博物馆",
     "name_zh": "深圳市坪山区东江纵队纪念馆",
-    "name_en": null,
+    "name_en": "Dongjiang Column Memorial Hall, Pingshan District, Shenzhen",
+    "name_en_source": "machine",
     "district": "坪山",
     "address": "深圳市坪山区坪山街道东纵路230-1号",
     "description_zh": "深圳市文化广电旅游体育局《博物馆一览表》收录的博物馆，页面列明馆名、地址与开馆时间，未附展陈简介。",
@@ -3224,6 +3438,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《博物馆一览表》",
@@ -3243,13 +3459,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a073",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "博物馆",
     "name_zh": "深圳市大鹏新区大鹏古城博物馆",
-    "name_en": null,
+    "name_en": "Dapeng Ancient City Museum, Dapeng New District",
+    "name_en_source": "machine",
     "district": "大鹏新区",
     "address": "大鹏新区大鹏街道鹏城社区赖府巷10号",
     "description_zh": "深圳市文化广电旅游体育局《博物馆一览表》收录的博物馆，页面列明馆名、地址与开馆时间，未附展陈简介。",
@@ -3265,6 +3482,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《博物馆一览表》",
@@ -3284,13 +3503,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a074",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "博物馆",
     "name_zh": "深圳大鹏半岛国家地质公园博物馆",
-    "name_en": null,
+    "name_en": "Dapeng Peninsula National Geopark Museum",
+    "name_en_source": "machine",
     "district": "大鹏新区",
     "address": "大鹏新区南澳街道地质公园路",
     "description_zh": "深圳市文化广电旅游体育局《博物馆一览表》收录的博物馆，页面列明馆名、地址与开馆时间，未附展陈简介。",
@@ -3305,6 +3525,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《博物馆一览表》",
@@ -3324,13 +3546,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a075",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "博物馆",
     "name_zh": "深圳市龙岗区客家民俗博物馆",
-    "name_en": null,
+    "name_en": "Hakka Folk Museum, Longgang District, Shenzhen",
+    "name_en_source": "machine",
     "district": "龙岗",
     "address": "龙岗区龙岗街道南联社区罗瑞合北街一号",
     "description_zh": "深圳市文化广电旅游体育局《博物馆一览表》收录的博物馆，页面列明馆名、地址与开馆时间，未附展陈简介。",
@@ -3345,6 +3568,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《博物馆一览表》",
@@ -3364,13 +3589,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a076",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "博物馆",
     "name_zh": "深圳市中医药博物馆",
-    "name_en": null,
+    "name_en": "Shenzhen Traditional Chinese Medicine Museum",
+    "name_en_source": "machine",
     "district": "龙岗",
     "address": "龙岗区体育新城大运路1号",
     "description_zh": "深圳市文化广电旅游体育局《博物馆一览表》收录的博物馆，页面列明馆名、地址与开馆时间，未附展陈简介。",
@@ -3385,6 +3611,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《博物馆一览表》",
@@ -3404,13 +3632,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a077",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "博物馆",
     "name_zh": "深圳市龙华区白石龙文化名人大营救纪念馆",
-    "name_en": null,
+    "name_en": "Baishilong Cultural Celebrities Rescue Memorial Hall, Longhua District",
+    "name_en_source": "machine",
     "district": "龙华",
     "address": "龙华区民治街道白石龙老村1号",
     "description_zh": "深圳市文化广电旅游体育局《博物馆一览表》收录的博物馆，页面列明馆名、地址与开馆时间，未附展陈简介。",
@@ -3425,6 +3654,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《博物馆一览表》",
@@ -3444,13 +3675,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a078",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "博物馆",
     "name_zh": "深圳古生物博物馆",
-    "name_en": null,
+    "name_en": "Shenzhen Paleontological Museum",
+    "name_en_source": "machine",
     "district": "罗湖",
     "address": "罗湖区莲塘仙湖路160号仙湖植物园内",
     "description_zh": "深圳市文化广电旅游体育局《博物馆一览表》收录的博物馆，页面列明馆名、地址与开馆时间，未附展陈简介。",
@@ -3465,6 +3697,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《博物馆一览表》",
@@ -3484,13 +3718,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a079",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "美术馆",
     "name_zh": "深圳美术馆（新馆）",
-    "name_en": null,
+    "name_en": "Shenzhen Art Museum (New Hall)",
+    "name_en_source": "machine",
     "district": "龙华",
     "address": "深圳市龙华区民治街道大岭社区腾龙路30号1栋",
     "description_zh": "深圳美术馆新馆，2023年9月28日开放试运行，位于深圳北站商务中心区，建筑面积6.6万平方米、设18个展厅；馆藏以现当代艺术名家及粤港澳大湾区艺术家作品为主。",
@@ -3506,6 +3741,8 @@
       "booking_note": "主题活动需提前在官方小程序预约；相关制度以官方最新公告为准。"
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳政府在线“文化场馆”栏目《深圳美术馆》",
@@ -3525,13 +3762,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a080",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "美术馆",
     "name_zh": "深圳美术馆（东湖馆）",
-    "name_en": null,
+    "name_en": "Shenzhen Art Museum (Donghu Hall)",
+    "name_en_source": "machine",
     "district": "罗湖",
     "address": "深圳市罗湖区爱国路东湖公园东湖一街32号",
     "description_zh": "深圳美术馆的另一处馆舍，设于东湖公园内，延续该馆自1976年深圳展览馆时期以来的展览传统。",
@@ -3546,6 +3784,8 @@
       "booking_note": "页面说明参观无需预约；相关制度以官方最新公告为准。"
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳政府在线“文化场馆”栏目《深圳美术馆》",
@@ -3565,13 +3805,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a081",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "美术馆",
     "name_zh": "深圳市关山月美术馆",
-    "name_en": null,
+    "name_en": "Guan Shanyue Art Museum",
+    "name_en_source": "official",
     "district": "福田",
     "address": "深圳市红荔路6026号",
     "description_zh": "以国画家关山月命名的公益性美术馆，1997年6月开馆，以关山月及20世纪中后期中国美术、当代设计艺术的研究展示为学术定位，2011年获评首批国家重点美术馆之一。",
@@ -3587,6 +3828,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳政府在线“文化场馆”栏目《关山月美术馆》",
@@ -3606,13 +3849,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a082",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "美术馆",
     "name_zh": "何香凝美术馆",
-    "name_en": null,
+    "name_en": "He Xiangning Art Museum",
+    "name_en_source": "official",
     "district": "南山",
     "address": "南山区深南大道9013号",
     "description_zh": "深圳市文化广电旅游体育局《美术馆一览表》收录的美术馆（艺术机构），页面列明名称与地址。",
@@ -3627,6 +3871,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《美术馆一览表》",
@@ -3646,13 +3892,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a083",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "美术馆",
     "name_zh": "观澜版画艺术博物馆",
-    "name_en": null,
+    "name_en": "Guanlan Printmaking Art Museum",
+    "name_en_source": "machine",
     "district": "龙华",
     "address": "龙华区观澜街道裕新路",
     "description_zh": "深圳市文化广电旅游体育局《美术馆一览表》收录的美术馆（艺术机构），页面列明名称与地址。",
@@ -3667,6 +3914,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《美术馆一览表》",
@@ -3686,13 +3935,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a084",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "美术馆",
     "name_zh": "坪山美术馆",
-    "name_en": null,
+    "name_en": "Pingshan Art Museum",
+    "name_en_source": "machine",
     "district": "坪山",
     "address": "坪山区坪山街道汇德路",
     "description_zh": "深圳市文化广电旅游体育局《美术馆一览表》收录的美术馆（艺术机构），页面列明名称与地址。",
@@ -3707,6 +3957,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《美术馆一览表》",
@@ -3726,13 +3978,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a085",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "美术馆",
     "name_zh": "大芬美术馆",
-    "name_en": null,
+    "name_en": "Dafen Art Museum",
+    "name_en_source": "machine",
     "district": "龙岗",
     "address": "龙岗区布吉街道大芬油画村",
     "description_zh": "深圳市文化广电旅游体育局《美术馆一览表》收录的美术馆（艺术机构），页面列明名称与地址。",
@@ -3747,6 +4000,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《美术馆一览表》",
@@ -3766,13 +4021,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a086",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "美术馆",
     "name_zh": "罗湖美术馆",
-    "name_en": null,
+    "name_en": "Luohu Art Museum",
+    "name_en_source": "machine",
     "district": "罗湖",
     "address": "罗湖区南极路6号罗湖美术馆",
     "description_zh": "深圳市文化广电旅游体育局《美术馆一览表》收录的美术馆（艺术机构），页面列明名称与地址。",
@@ -3787,6 +4043,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《美术馆一览表》",
@@ -3806,13 +4064,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a087",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "美术馆",
     "name_zh": "海上世界文化艺术中心",
-    "name_en": null,
+    "name_en": "Sea World Culture and Arts Center",
+    "name_en_source": "official",
     "district": "南山",
     "address": "南山区招商街道望海路1187号海上世界文化艺术中心2楼",
     "description_zh": "深圳市文化广电旅游体育局《美术馆一览表》收录的美术馆（艺术机构），页面列明名称与地址。",
@@ -3827,6 +4086,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《美术馆一览表》",
@@ -3846,13 +4107,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a088",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "图书馆",
     "name_zh": "深圳图书馆",
-    "name_en": null,
+    "name_en": "Shenzhen Library",
+    "name_en_source": "official",
     "district": "福田",
     "address": "福田区福中一路2001号；深圳市龙华区腾龙路30号深圳图书馆北馆",
     "description_zh": "深圳市文化广电旅游体育局《图书馆一览表》收录的市级公共图书馆，页面列明福中一路中心馆与龙华区北馆两处馆舍地址。",
@@ -3867,6 +4129,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《图书馆一览表》",
@@ -3886,13 +4150,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a089",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "演出场馆",
     "name_zh": "深圳音乐厅",
-    "name_en": null,
+    "name_en": "Shenzhen Concert Hall",
+    "name_en_source": "official",
     "district": "福田",
     "address": "福田区福中一路2016号",
     "description_zh": "深圳市文化广电旅游体育局《营业性演出场所一览表》收录的演出场馆，页面列明所在区为福田区及具体地址。",
@@ -3908,6 +4173,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《营业性演出场所一览表》",
@@ -3927,13 +4194,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a090",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "演出场馆",
     "name_zh": "深圳大剧院",
-    "name_en": null,
+    "name_en": "Shenzhen Grand Theater",
+    "name_en_source": "official",
     "district": "罗湖",
     "address": "罗湖区深南东路5018号",
     "description_zh": "深圳市文化广电旅游体育局《营业性演出场所一览表》收录的演出场馆，页面列明所在区为罗湖区及具体地址。",
@@ -3949,6 +4217,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《营业性演出场所一览表》",
@@ -3968,13 +4238,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a091",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "演出场馆",
     "name_zh": "深圳保利剧院",
-    "name_en": null,
+    "name_en": "Shenzhen Poly Theatre",
+    "name_en_source": "machine",
     "district": "南山",
     "address": "南山区后海滨路3013号",
     "description_zh": "深圳市文化广电旅游体育局《营业性演出场所一览表》收录的演出场馆，页面列明所在区为南山区及具体地址。",
@@ -3990,6 +4261,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《营业性演出场所一览表》",
@@ -4009,13 +4282,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a092",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "演出场馆",
     "name_zh": "深圳滨海艺术中心",
-    "name_en": null,
+    "name_en": "Shenzhen Binhai Performing Arts Center",
+    "name_en_source": "machine",
     "district": "宝安",
     "address": "宝安区新安街道海滨社区宝兴路欢乐港湾16号滨海艺术中心（湾区之声）负一层至七层",
     "description_zh": "深圳市文化广电旅游体育局《营业性演出场所一览表》收录的演出场馆，页面列明所在区为宝安区，地址位于欢乐港湾滨海艺术中心（湾区之声）。",
@@ -4031,6 +4305,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《营业性演出场所一览表》",
@@ -4050,13 +4326,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a093",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "科普场馆",
     "name_zh": "深圳市科学馆",
-    "name_en": null,
+    "name_en": "Shenzhen Science Hall",
+    "name_en_source": "machine",
     "district": "福田",
     "address": "深圳市福田区上步中路和深南中路交汇处",
     "description_zh": "1987年建成的市级科普场馆，建筑面积1.2万平方米，常设科普展厅及活动面积约5000平方米，设创造、数学、思维、引领、科学家精神、水等主题展区，并开展科普影片与科学表演等活动。",
@@ -4072,6 +4349,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市科学技术协会《深圳市科学馆简介》",
@@ -4091,13 +4370,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a094",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "公园",
     "name_zh": "笔架山公园",
-    "name_en": null,
+    "name_en": "Bijiashan Park",
+    "name_en_source": "machine",
     "district": "福田",
     "address": "深圳市福田区华富街道梅岗路26号",
     "description_zh": "地处市中心北侧，面积149公顷，因三座山峰并列如笔架而得名；主峰海拔178米，可眺望地王大厦等标志性建筑，园内分布山塘湖泊、草地滚球场和登山道。",
@@ -4113,6 +4393,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市城市管理和综合执法局“公园深圳”栏目公园介绍页",
@@ -4132,13 +4414,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a095",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "公园",
     "name_zh": "深圳中心公园",
-    "name_en": null,
+    "name_en": "Shenzhen Central Park",
+    "name_en_source": "machine",
     "district": "福田",
     "address": "深圳市福田区福田街道振华西路1号",
     "description_zh": "由原“800米绿化隔离带”改建的市政公园，占地116.8万平方米，南北长约2.5公里；以植物造景为主，设有人工湖、全民健身园区及多座城市雕塑。",
@@ -4154,6 +4437,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市城市管理和综合执法局“公园深圳”栏目公园介绍页",
@@ -4173,13 +4458,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a096",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "公园",
     "name_zh": "洪湖公园",
-    "name_en": null,
+    "name_en": "Honghu Park",
+    "name_en_source": "machine",
     "district": "罗湖",
     "address": "深圳市罗湖区文锦北路2023号",
     "description_zh": "以荷花和水上杉林景观见长、水域占比较大的城市综合公园，面积约59公顷，1985年起陆续开放；园内辟有荷花专类园，并多年举办荷花主题展览。",
@@ -4195,6 +4481,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市城市管理和综合执法局“公园深圳”栏目公园介绍页",
@@ -4214,13 +4502,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a097",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "公园",
     "name_zh": "东湖公园",
-    "name_en": null,
+    "name_en": "Donghu Park",
+    "name_en_source": "machine",
     "district": "罗湖",
     "address": "深圳市罗湖区爱国路4006号",
     "description_zh": "深圳最早建成的综合性市政公园之一，前身为1966年开放的深圳水库公园，占地193.21公顷；园内有匙羹山、杜鹃园、盆景世界等景区，2015年加挂深圳市东湖湿地公园牌子。",
@@ -4236,6 +4525,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市城市管理和综合执法局“公园深圳”栏目公园介绍页",
@@ -4255,13 +4546,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a098",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "公园",
     "name_zh": "人民公园",
-    "name_en": null,
+    "name_en": "People's Park",
+    "name_en_source": "machine",
     "district": "罗湖",
     "address": "深圳市罗湖区人民北路3071号",
     "description_zh": "建于1983年、深圳较早开放的公园之一，占地11.41公顷，以月季花为主题花卉，设有月季园等二十余处园林景点，春节期间常举办月季花展。",
@@ -4277,6 +4569,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市城市管理和综合执法局“公园深圳”栏目公园介绍页",
@@ -4296,13 +4590,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a099",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "公园",
     "name_zh": "荔枝公园",
-    "name_en": null,
+    "name_en": "Lizhi Park",
+    "name_en_source": "machine",
     "district": "福田",
     "address": "深圳市福田区华强北街道红岭中路1001号",
     "description_zh": "1982年在原有老荔枝树与低洼稻田基础上建成，占地30万平方米（水体约10万平方米），以岭南园林风格和荔枝景观为特色，地处闹市而有“闹市绿洲”之称。",
@@ -4318,6 +4613,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市城市管理和综合执法局“公园深圳”栏目公园介绍页",
@@ -4337,13 +4634,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a100",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "公园",
     "name_zh": "香蜜公园",
-    "name_en": null,
+    "name_en": "Xiangmi Park",
+    "name_en_source": "machine",
     "district": "福田",
     "address": "广东省深圳市福田区农园路38号",
     "description_zh": "前身为农科集团的农业科研用地，2017年7月开园，以玫瑰园等花景与婚庆登记主题设施受到欢迎，官方页面称其为兼具景观、主题与功能的市政公园。",
@@ -4359,6 +4657,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市城市管理和综合执法局“公园深圳”栏目公园介绍页",
@@ -4378,13 +4678,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a101",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "公园",
     "name_zh": "深圳市仙湖植物园",
-    "name_en": null,
+    "name_en": "Shenzhen Fairy Lake Botanical Garden",
+    "name_en_source": "official",
     "district": "罗湖",
     "address": "深圳市罗湖区仙湖路160号",
     "description_zh": "占地668公顷的植物园，由中国工程院院士孟兆祯主持总体规划，以仙湖为中心，把多个植物专类园与亭台楼阁融入山水，兼具科研、科普与游览功能。",
@@ -4400,6 +4701,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市城市管理和综合执法局“公园深圳”栏目公园介绍页",
@@ -4419,13 +4722,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a102",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "公园",
     "name_zh": "深圳国际园林花卉博览园（园博园）",
-    "name_en": null,
+    "name_en": "Shenzhen International Garden and Flower Expo Park (Garden Expo Park)",
+    "name_en_source": "machine",
     "district": "福田",
     "address": "深圳市福田区深南大道竹子林四路（深南大道与侨城东路交会处）",
     "description_zh": "第五届中国国际园林花卉博览会的举办地，2004年9月开放，面积约66万平方米；园内近百处展园承载历史掌故、诗词楹联等文化内容，2008年获评国家重点公园。",
@@ -4441,6 +4745,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市城市管理和综合执法局“公园深圳”栏目公园介绍页",
@@ -4460,13 +4766,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a103",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "公园",
     "name_zh": "儿童公园",
-    "name_en": null,
+    "name_en": "Children's Park",
+    "name_en_source": "machine",
     "district": "罗湖",
     "address": "深圳市罗湖区童乐路12号",
     "description_zh": "1987年6月开放的儿童主题公园，面积6.06公顷，设有游乐设施、人工湖、十二生肖雕塑和免费滑梯区等，是深圳历史最久的儿童游乐主题公园。",
@@ -4482,6 +4789,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市城市管理和综合执法局“公园深圳”栏目公园介绍页",
@@ -4501,13 +4810,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a104",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "公园",
     "name_zh": "深圳市梧桐山风景名胜区",
-    "name_en": null,
+    "name_en": "Wutong Mountain Scenic Area",
+    "name_en_source": "machine",
     "district": "罗湖",
     "address": "广东省深圳市罗湖区罗沙路2076号",
     "description_zh": "国家级风景名胜区，总面积42.04平方公里，地跨罗湖、盐田、龙岗三区；主峰大梧桐海拔943.7米、为深圳最高峰，以滨海山地、毛棉杜鹃花海和梧桐烟云景观著称。",
@@ -4523,6 +4833,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市城市管理和综合执法局“公园深圳”栏目公园介绍页",
@@ -4542,13 +4854,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a105",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "宗教活动场所",
     "name_zh": "弘法寺",
-    "name_en": null,
+    "name_en": "Hongfa Temple",
+    "name_en_source": "machine",
     "district": "罗湖",
     "address": "广东省深圳市罗湖区莲塘仙湖路160号仙湖植物园内",
     "description_zh": "位于罗湖区仙湖植物园内的佛教寺院。弘法寺官方网站“联系方式”页列明寺院地址、客堂电话与邮箱，并注明网站由深圳市佛教协会、罗湖区佛教协会与深圳弘法寺共同主办。",
@@ -4564,6 +4877,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳弘法寺官方网站“联系方式”页",
@@ -4583,13 +4898,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a106",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "宗教活动场所",
     "name_zh": "天主教深圳圣安多尼堂",
     "name_en": "St. Anthony’s Catholic Church of Shenzhen",
+    "name_en_source": "official",
     "district": "福田",
     "address": "深圳市福田区农林路65号",
     "description_zh": "位于福田区农林路的天主教堂区，占地约3944.8平方米，1998年奠基、2001年竣工；堂区为在深居住、旅游、工作、学习的外籍教友提供英语弥撒，特殊节日另设法语、意大利语、德语读经。",
@@ -4605,6 +4921,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "天主教深圳圣安多尼堂《堂区简介》（万有真原平台刊载）",
@@ -4622,13 +4940,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a107",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "宗教活动场所",
     "name_zh": "基督教深圳堂",
-    "name_en": null,
+    "name_en": "Shenzhen Christian Church",
+    "name_en_source": "machine",
     "district": "福田",
     "address": "福田区梅林路126号",
     "description_zh": "深圳市基督教深圳堂官方网站“联系我们”页列明堂址与电话，并公布主日五堂崇拜及周间查经、团契等聚会时间安排。",
@@ -4644,6 +4963,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市基督教深圳堂官方网站“联系我们”页",
@@ -4663,13 +4984,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a108",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "宗教活动场所",
     "name_zh": "东山寺",
-    "name_en": null,
+    "name_en": "Dongshan Temple",
+    "name_en_source": "machine",
     "district": "大鹏新区",
     "address": "深圳市大鹏新区大鹏办事处鹏城社区",
     "description_zh": "始建于明代的佛寺，清咸丰年间重建，坐落于大鹏所城东门外的龙头山，现存三进殿宇格局，为深圳市重点文物保护单位，寺前立有“鹫峰胜境”石牌坊。",
@@ -4685,6 +5007,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "大鹏新区政府在线《东山寺》",
@@ -4704,13 +5028,14 @@
     "conflicts": []
   },
   {
-    "format_version": "visitor-place-candidate.1",
+    "format_version": "visitor-place-candidate.2",
     "id": "place.2026-11-18.shenzhen.attraction.a109",
     "city": "shenzhen",
     "category": "attraction",
     "subcategory": "宗教活动场所",
     "name_zh": "天后博物馆（赤湾天后宫）",
-    "name_en": null,
+    "name_en": "Tin Hau Museum (Chiwan Tin Hau Temple)",
+    "name_en_source": "machine",
     "district": "南山",
     "address": "南山区赤湾6号",
     "description_zh": "深圳市南山区天后博物馆（南山博物馆分馆），《博物馆一览表》列于南山区赤湾6号，属天后宫及民俗信仰类场所，名录仅给出名称与地址。",
@@ -4726,6 +5051,8 @@
       "booking_note": null
     },
     "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": null,
     "sources": [
       {
         "name": "深圳市文化广电旅游体育局《博物馆一览表》",
