@@ -1,12 +1,14 @@
 """A rejected draft has a usable answer, without inventing a saved Trip."""
 from copy import deepcopy
+from datetime import date
 import json
 from types import SimpleNamespace
 import unittest
 
+from cj_agent.provider import CompleteUnsettledAnswer
 from cj_api.lio_dialogue_routes import _message
 from cj_api.local_lio_calendar import LioCalendar
-from cj_api.local_lio_planning import PlanningDetails
+from cj_api.local_lio_planning import PlanningDetails, PlanningTurn, discuss
 from cj_message.lio_timeline import TimelineMessage
 
 
@@ -14,6 +16,29 @@ MARKER='lio_unsaved_plan_answer.1'
 
 
 class UnsavedAnswer(unittest.TestCase):
+    def test_unsettled_discussion_preserves_the_same_user_visible_context(self):
+        class Worker:
+            provider = None
+            memory_run = None
+            message_context = None
+
+            def _registered_stream(self, *_args, **_kwargs):
+                raise CompleteUnsettledAnswer('Day 1: walk through the old town.')
+
+        body = 'Day 1: walk through the old town.'
+        for locale, destination, label, introduction in (
+            ('zh', '成都', '成都 · 未保存建议', '新日期与已有行程冲突。原行程和锁定安排保留。'),
+            ('en', 'Chengdu', 'Chengdu · Unsaved suggestion', 'These dates conflict. The saved trip and locked arrangements are kept.'),
+        ):
+            for options, expected in (
+                ({'destination': destination}, label+'\n'+body),
+                ({'introduction': introduction}, introduction+'\n\n'+body),
+            ):
+                with self.subTest(locale=locale, options=options):
+                    with self.assertRaises(CompleteUnsettledAnswer) as caught:
+                        discuss(Worker(),None,None,locale,(PlanningTurn('Plan a trip',date(2026,11,18)),),(),**options)
+                    self.assertEqual(caught.exception.complete_answer,expected)
+
     def test_explicit_unsaved_answer_is_readable_but_native_draft_failure_is_preserved(self):
         text='I could not confirm a saved plan. Would you like an unsaved day-by-day suggestion?'
         original=SimpleNamespace(status='completed',text=text,draft_outcome='validation_failed',
