@@ -1,6 +1,6 @@
 import SwiftUI
 
-public enum RunReadableTextStyle: Sendable { case body, bodyMedium, caption, footnote, headline, displayTitle, displayTitle2, displayHeadline }
+public enum RunReadableTextStyle: Sendable { case body, bodyMedium, caption, footnote, subheadlineSemibold, headline, displayTitle, displayTitle2, displayHeadline }
 
 #if os(iOS)
 import UIKit
@@ -41,6 +41,7 @@ public struct RunReadableText: UIViewRepresentable {
         case .body, .bodyMedium: textStyle = .body
         case .caption: textStyle = .caption1
         case .footnote: textStyle = .footnote
+        case .subheadlineSemibold: textStyle = .subheadline
         case .headline, .displayHeadline: textStyle = .headline
         case .displayTitle: textStyle = .title1
         case .displayTitle2: textStyle = .title2
@@ -49,7 +50,7 @@ public struct RunReadableText: UIViewRepresentable {
             compatibleWith: UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(size)))
         let descriptor: UIFontDescriptor
         switch style {
-        case .displayTitle:
+        case .displayTitle, .subheadlineSemibold:
             descriptor = preferred.fontDescriptor.addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: UIFont.Weight.semibold]])
         case .bodyMedium:
             descriptor = preferred.fontDescriptor.addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: UIFont.Weight.medium]])
@@ -58,7 +59,7 @@ public struct RunReadableText: UIViewRepresentable {
         }
         if (style == .displayTitle || style == .displayTitle2 || style == .displayHeadline), let serif = descriptor.withDesign(.serif) {
             label.font = UIFont(descriptor: serif, size: preferred.pointSize)
-        } else if style == .displayTitle || style == .bodyMedium {
+        } else if style == .displayTitle || style == .subheadlineSemibold || style == .bodyMedium {
             label.font = UIFont(descriptor: descriptor, size: preferred.pointSize)
         } else {
             // UIKit retains its preferred font when the requested family has no serif design.
@@ -127,6 +128,7 @@ public struct RunReadableText: View {
         case .bodyMedium: .body.weight(.medium)
         case .caption: .caption
         case .footnote: .footnote
+        case .subheadlineSemibold: .subheadline.weight(.semibold)
         case .headline: .headline
         case .displayTitle: .system(.title, design: .serif).weight(.semibold)
         case .displayTitle2: .system(.title2, design: .serif)
