@@ -30,6 +30,14 @@ class ProviderUnknown(Exception):
     """The request may have been processed; result and cost are unknown."""
 
 
+class CompleteUnsettledAnswer(ProviderUnknown):
+    """A complete read-only answer with incomplete supplier receipt metadata."""
+
+    def __init__(self, complete_answer):
+        super().__init__('complete M4 answer with unknown settlement')
+        self.complete_answer = complete_answer
+
+
 class ModelProvider(Protocol):
     def stream(self, messages: list[dict], system: str | None = None) -> Generator[str, None, None]: ...
 
@@ -446,7 +454,8 @@ class MeteredDashScopeProvider:
 
     def invoke(self,messages,system,attempt,*,tools=None,receipt,guard,native_reply=None,tool_choice=None,
                native_turn_profile=None,final_answer=False,release_after_send=False,lio_answer=False,structured_profile=None,intake_source_index=None,wire_observer=None,
-               draft_profile=None,draft_schema_sha256=None,exploration_schema_sha256=None):
+               draft_profile=None,draft_schema_sha256=None,exploration_schema_sha256=None,
+               unsettled_answer_limit=None):
         from cj_usage.authorization_budget import canonical
         native_tools=tools or []
         buffered=native_turn_profile==M4_NATIVE_TURN_BUFFERED
@@ -478,6 +487,10 @@ class MeteredDashScopeProvider:
             grouped_format=response_format(draft_profile)
             from cj_draft.rich_schema import GENERATION_PROFILES as rich_profiles
             rich_draft=draft_profile in rich_profiles
+        allow_unsettled_answer=unsettled_answer_limit is not None
+        if allow_unsettled_answer and (not release_after_send or native_tools or system is None
+                                       or grouped_format is not None or structured_profile is not None):
+            raise ProviderFailed('unsettled output requires the original read-only discussion mode')
         if release_after_send and (native_tools or system is None):
             raise ProviderFailed('explicit structured model input required')
         if tool_choice is not None and (tool_choice!='none' or not native_tools):
@@ -568,7 +581,8 @@ class MeteredDashScopeProvider:
         finished=False;done=False;response_ids=set();usage=None;calls={};texts=[];pending='';first_output=None
         observation=dict(http_status=None)
         phase='transport';committed=False;failure_reason='none';observed_finish='unseen';choice_rejection='none'
-        envelope_shape=None;identity_rejection=None
+        envelope_shape=None;identity_rejection=None;identity_fields=None;identity_missing=False
+        choices_after_stop=False
         try:
             with self._chunks(raw,guard,observation) as chunks:
                 if self.transport is None:
@@ -596,15 +610,25 @@ class MeteredDashScopeProvider:
                     phase='model_identity'
                     if value.get('model')!=M4_MODEL:
                         identity_rejection='model_mismatch'
-                        raise ProviderUnknown('M4 model identity mismatch')
+                        identity_fields={k:value[k] for k in ('model','id','error') if k in value}
+                        if not allow_unsettled_answer or value.get('model') is not None or 'error' in value:
+                            raise ProviderUnknown('M4 model identity mismatch')
+                        identity_missing=True
                     rid=value.get('id')
                     if type(rid) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{1,128}',rid):
                         identity_rejection='receipt_identity_unavailable'
-                        raise ProviderUnknown('M4 model receipt identity unavailable')
-                    response_ids.add(rid)
-                    if len(response_ids)!=1:
-                        identity_rejection='response_identity_changed'
-                        raise ProviderUnknown('M4 model response identity changed')
+                        identity_fields={k:value[k] for k in ('model','id','error') if k in value}
+                        if not allow_unsettled_answer or rid is not None or 'error' in value:
+                            raise ProviderUnknown('M4 model receipt identity unavailable')
+                        identity_missing=True
+                    else:
+                        response_ids.add(rid)
+                        if len(response_ids)!=1:
+                            identity_rejection='response_identity_changed'
+                            identity_fields={k:value[k] for k in ('model','id','error') if k in value}
+                            raise ProviderUnknown('M4 model response identity changed')
+                    if 'error' in value:
+                        raise ProviderUnknown('M4 supplier reported a stream error')
                     phase='usage'
                     supplied=value.get('usage')
                     if supplied is not None:
@@ -623,6 +647,8 @@ class MeteredDashScopeProvider:
                             not choices or type(choices[0]) is not dict
                             or choices[0].get('finish_reason') not in ('stop','tool_calls')):
                         raise ProviderUnknown('M4 usage before terminal choice')
+                    if finished and choices:
+                        choices_after_stop=True
                     for choice in choices:
                         if type(choice) is not dict:
                             choice_rejection='choice_shape';raise _M4Rejection('choice_rejected','M4 stream choice invalid')
@@ -684,7 +710,20 @@ class MeteredDashScopeProvider:
                                 entry[key]+=part
                                 if len(entry[key])>32768:raise ProviderUnknown('M4 tool input bound exceeded')
                 phase='complete_receipt'
-                if not done or not finished or len(response_ids)!=1 or usage is None:
+                if not done or not finished or identity_missing or len(response_ids)!=1 or usage is None:
+                    # A clean HTTP end, normal finish and complete original
+                    # discussion envelope are sufficient for read-only display.
+                    if (allow_unsettled_answer and observed_finish=='stop'
+                            and not calls and not choices_after_stop):
+                        original=''.join(texts)
+                        if len(original)<=unsettled_answer_limit:
+                            candidate=json.loads(original,
+                                object_pairs_hook=reject_duplicates(ValueError,'duplicate_answer_field'))
+                            if (type(candidate) is dict and candidate.keys()=={'answer'}
+                                    and type(candidate['answer']) is str and candidate['answer'].strip()):
+                                candidate['answer'].encode('utf-8')
+                                failure_reason='receipt_metadata_incomplete'
+                                raise CompleteUnsettledAnswer(candidate['answer'])
                     raise ProviderUnknown('M4 complete usage receipt unavailable')
                 if incremental and (observed_finish!=('tool_calls' if calls else 'stop')
                         or calls and set(calls)!=set(range(len(calls))) or not calls and not ''.join(texts).strip()):
@@ -771,6 +810,8 @@ class MeteredDashScopeProvider:
                 phase='complete'
         except _M4Rejection as error:
             failure_reason=error.reason;raise
+        except CompleteUnsettledAnswer:
+            raise
         except (ProviderFailed,ProviderUnknown):
             failure_reason='provider_rejected';raise
         except (httpx.HTTPError,httpx.StreamError):
@@ -800,6 +841,7 @@ class MeteredDashScopeProvider:
                 if identity_rejection is not None:
                     # Fingerprints distinguish missing/changed stream metadata
                     # without publishing provider IDs, error bodies or deltas.
+                    value=identity_fields
                     observed_model=value.get('model')
                     model_state=('missing' if 'model' not in value else
                         'string' if type(observed_model) is str else

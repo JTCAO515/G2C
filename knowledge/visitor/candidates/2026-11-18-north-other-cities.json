@@ -1,0 +1,559 @@
+[
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.beijing.temple-of-heaven",
+    "title_zh": "天坛公园开放时间、古建闭馆日与外语导览服务（官网）",
+    "summary_zh": "天坛公园官网导览服务页给出常规开放安排：公园旺季（4月1日—10月31日）6:00开园、淡季（11月1日—3月31日）6:30开园，均为21:00停止入园、22:00闭园；祈年殿、回音壁、圜丘、斋宫、北神厨、北宰牲亭等景点旺季8:00开门、17:30停止进入、18:00关门，淡季8:00开门、16:30停止进入、17:00关门，并注明景点逢周一关闭（法定节假日期间正常开放）。页面另介绍电子导游（设于各出入口，8:15—18:00，含英语、日语、韩语、俄语、法语、德语、西班牙语等语种）与团队导游（南门，中英文，需提前两天预定）服务，以及东门可乘地铁5号线、西门可乘地铁8号线的到达方式。",
+    "cities": [
+      "beijing"
+    ],
+    "place": {
+      "name_zh": "天坛公园",
+      "name_en": "Temple of Heaven",
+      "address": "北京市东城区天坛内东里7号"
+    },
+    "audience": [
+      "普通散客",
+      "首次来华游客",
+      "需要外语讲解的游客"
+    ],
+    "themes": [
+      "attraction",
+      "trip_planning"
+    ],
+    "sources": [
+      {
+        "name": "天坛公园官网（北京市天坛公园管理处）",
+        "url": "https://tiantanpark.cn/guide_service.html",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "线上购票/预约的具体规则（页面按钮为交互组件，未取到文本）",
+      "门票价格与优惠细则",
+      "外籍游客持护照购票或预约的说明"
+    ],
+    "notes": "页面为天坛公园官方网站（页脚署北京市天坛公园管理处，京ICP备08100203号-6）。所列时间为常规公示，遇大型活动、临时管控或极端天气可能调整，出行前需复核。同站另有英文简表页，对公园大门时段的表述与本中文页不一致，以中文页为准。",
+    "conflicts": [
+      "官网英文页把公园大门时间写为全年6:00—21:00，而中文页为旺季6:00、淡季6:30开园，21:00停止入园、22:00闭园；疑为英文页简化表述。"
+    ],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.beijing.summer-palace",
+    "title_zh": "颐和园开放时间、园中园周一闭园与游船季节性运营（官网导览页）",
+    "summary_zh": "颐和园官网导览页列出分季开放时间：旺季（4月1日—10月31日）公园6:00—20:00、19:00停止入园；淡季（11月1日—3月31日）6:30—19:00、18:00停止入园。园中园（佛香阁、德和园、颐和园博物馆、苏州街）以及养云轩、霁清轩、益寿堂、耕织图水操学堂、南湖岛内院落逢周一关闭（重点节假日除外），旺季8:00—18:00、17:30停止进入，淡季8:30—17:00、16:30停止进入。游船运营期为3月中旬至11月中旬，遇四级以上大风、大雨等气象预警或恶劣天气停航。交通栏给出东宫门（地铁4/16号线西苑站）、北宫门（地铁4号线北宫门站）、西门（西郊线）及多路公交和停车场信息。参观须知页另列全园禁烟、禁带宠物、禁飞无人机和孔明灯、轮椅与婴儿推车可入园等规则。",
+    "cities": [
+      "beijing"
+    ],
+    "place": {
+      "name_zh": "颐和园",
+      "name_en": "Summer Palace",
+      "address": null
+    },
+    "audience": [
+      "普通散客",
+      "首次来华游客",
+      "亲子家庭"
+    ],
+    "themes": [
+      "attraction",
+      "transport",
+      "trip_planning",
+      "seasonal_holiday"
+    ],
+    "sources": [
+      {
+        "name": "颐和园官网（导览页）",
+        "url": "https://www.summerpalace.net.cn/visit.html",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "园区详细地址",
+      "在线订票的具体规则与证件要求",
+      "外籍游客购票是否可用护照的说明"
+    ],
+    "notes": "页面为颐和园官方网站（页脚署颐和园，京ICP备05050248号-6）。游船属季节性运营，冬季停航，具体开停时间以官网最新资讯为准；票价与半价减免规定另见官网专页（本次未读取），记录中未录入价格。旺季/淡季时间由导览页与参观须知页（https://www.summerpalace.net.cn/visit/detail/182.html，已读）互相印证。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.v3.holiday.official-channel"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.beijing.national-museum-of-china",
+    "title_zh": "中国国家博物馆参观预约制度与开放时间（官网预约须知）",
+    "summary_zh": "国家博物馆官网参观预约页说明：每日9:00—17:00开放（16:00停止入馆），周一闭馆（法定节假日除外），6月1日至10月31日客流高峰延长至17:30（16:30停止入馆）。实行免费实名预约：需用有效身份证件完成账号实名认证，可提前7日在官网、官方预约小程序及微信公众号预约，每日分三个入馆时段，放票时间为每日17:00，退票截止为参观当日15:00；账号与证件均有预约次数限制，未履约累积会影响后续预约。入馆需凭预约证件原件和预约成功信息，从北门观众入口按预约时段核验；60周岁以上老人及残障人士、现役/退役军人、军烈属、消防救援人员可走北门绿色通道。",
+    "cities": [
+      "beijing"
+    ],
+    "place": {
+      "name_zh": "中国国家博物馆",
+      "name_en": "National Museum of China",
+      "address": null
+    },
+    "audience": [
+      "普通散客",
+      "首次来华游客",
+      "博物馆爱好者"
+    ],
+    "themes": [
+      "attraction",
+      "trip_planning",
+      "passport_booking"
+    ],
+    "sources": [
+      {
+        "name": "中国国家博物馆官网（参观预约）",
+        "url": "https://www.chnmuseum.cn/cg/cgyy/202511/t20251109_277547.shtml",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "外籍观众使用护照等证件的预约与核验细则",
+      "团队预约规则",
+      "英文版预约入口说明"
+    ],
+    "notes": "页面为中国国家博物馆官方网站“服务—参观预约”栏目（页脚署中国国家博物馆，京ICP备05008885号）。页面写明该预约须知自2025年8月1日起实施，后续可能调整，属规则类信息需人工复核。页面未涉及票价（该馆免费），也未说明未满14周岁以外的外籍证件适用方式。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.beijing.mutianyu-great-wall",
+    "title_zh": "慕田峪长城开放时间、实名预约与限购规则（景区官网）",
+    "summary_zh": "慕田峪长城官网首页列明：景区实行实名制预约购票，可提前30天预约，每个证件（身份证、外国人永久居留身份证、护照）每日限购一张门票，散客与团队均为一人一票，购票后无需换票、凭本人身份证原件验证入园。开放时间分淡旺季：旺季（3月16日—11月15日）周一至周五7:30—18:00、周六周日7:30—18:30；淡季（11月16日—3月15日）8:00—17:30，并提前一小时停止售票、提前半小时停止检票。页面另给出票务咨询电话与团队咨询电话，并有中文/英文站点切换入口。",
+    "cities": [
+      "beijing"
+    ],
+    "place": {
+      "name_zh": "慕田峪长城",
+      "name_en": "Mutianyu Great Wall",
+      "address": null
+    },
+    "audience": [
+      "普通散客",
+      "首次来华游客",
+      "自由行游客"
+    ],
+    "themes": [
+      "attraction",
+      "trip_planning",
+      "seasonal_holiday"
+    ],
+    "sources": [
+      {
+        "name": "慕田峪长城旅游网（北京市慕田峪长城旅游服务有限公司）",
+        "url": "https://www.mutianyugreatwall.com/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "景区详细地址",
+      "外籍游客现场核验与取票细节（是否需换票）",
+      "夜游等特殊时段的运营规则",
+      "交通专线信息（有独立页面但未读取）"
+    ],
+    "notes": "页面为慕田峪长城官方旅游网（页脚署北京市慕田峪长城旅游服务有限公司，京ICP备12009346号）。购票证件栏明确包含护照，对外籍游客较友好；开放时间分淡旺季且页面标注了停止售票/检票的提前量，但遇天气或客流管控会临时闭园（官网有多次临时闭园公告），出行前需查最新公告。仅记录时间与规则，未录入票价。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.v3.holiday.official-channel"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.luoyang.longmen-grottoes",
+    "title_zh": "龙门石窟门票与开放时间（英文官网购票页）",
+    "summary_zh": "龙门石窟英文官网“Book Tickets”页给出季节性开放时间：3月1日—10月31日 08:00—18:00；11月1日—次年2月28/29日 08:00—17:00；并区分全价票与半价票两种票类。同站“Opening Hours”页进一步列出夏令时（8:00开始入园、17:30停止售票、18:00停止检票、19:00清场）与冬令时（8:00开始入园、16:30停止售票、17:00停止检票、18:00清场），开放区域为西山石窟、东山石窟、香山寺、白园。页面设有个人预约与实名售票须知入口，另有“龙门夜游”独立项目入口及英文游客提示链接。",
+    "cities": [
+      "luoyang"
+    ],
+    "place": {
+      "name_zh": "龙门石窟",
+      "name_en": "Longmen Grottoes",
+      "address": null
+    },
+    "audience": [
+      "普通散客",
+      "首次来华游客",
+      "石窟与文博爱好者"
+    ],
+    "themes": [
+      "attraction",
+      "trip_planning",
+      "seasonal_holiday"
+    ],
+    "sources": [
+      {
+        "name": "龙门石窟官方网站（英文站）",
+        "url": "https://en.lmsk.cn/Pwxx_id_2.html",
+        "type": "official_venue",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "分时实名网络预约的具体规则（每日放票时间、可预约天数）",
+      "外籍游客购票与入园核验方式",
+      "夜游项目的时间与购票方式",
+      "景区地址"
+    ],
+    "notes": "记录来自龙门石窟英文官网（页脚署龙门石窟，豫ICP备16018131号）；中文站为 www.lmsk.cn。开放时间分夏令/冬令两套表述，月份区间以购票页与开放时间页综合，具体切换日期页面未逐条列出，需复核。仅记录时间与票类，未录入票价。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.v3.holiday.official-channel"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.luoyang.longmen-grottoes-2",
+    "title_zh": "龙门石窟到达方式与景区内交通（英文官网交通页）",
+    "summary_zh": "龙门石窟英文官网“Getting Here”页给出到达方式：距龙门高铁站约4公里，驾车约10分钟，可乘71路公交直达龙门石窟站（约42分钟）；距洛阳火车站约19公里，驾车约30分钟，可乘81路公交直达（约1小时5分）；距北郊机场约19公里，驾车约30分钟，可乘1路换乘81路，全程约1小时45分。景区内从东北服务区步行到石窟检票口约25分钟，设电瓶车；游船售票点位于西北服务区/东北服务区票务中心，码头包括大石门、奉先寺、观景台、白园等，游船受天气与现场情况影响。另有东北服务区5000个、西北服务区2000个停车位及园内摆渡车停靠点信息。",
+    "cities": [
+      "luoyang"
+    ],
+    "place": {
+      "name_zh": "龙门石窟",
+      "name_en": "Longmen Grottoes",
+      "address": null
+    },
+    "audience": [
+      "自由行游客",
+      "首次来华游客"
+    ],
+    "themes": [
+      "transport",
+      "attraction",
+      "trip_planning"
+    ],
+    "sources": [
+      {
+        "name": "龙门石窟官方网站（英文站·交通页）",
+        "url": "https://en.lmsk.cn/Pwxx_id_3.html",
+        "type": "official_venue",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "公交线路的运营时间与票价",
+      "夜游/夜间交通安排",
+      "外语购票与导览服务说明"
+    ],
+    "notes": "页面为龙门石窟英文官网交通栏目（豫ICP备16018131号）。车程、步行时间为页面给出的参考值，实际受交通状况影响；电瓶车与游船属可选付费项目，记录中未录入价格（页面标注，易变，需复核）。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.qingdao.tsingtao-beer-museum",
+    "title_zh": "青岛啤酒博物馆分季开放时间与入馆核验规则（官网参观须知）",
+    "summary_zh": "青岛啤酒博物馆官网“参观须知”页按日期段列出开放时间：1月1日—4月30日 08:30—17:30（16:30停止入场）；5月1日—6月30日、9月1日—10月31日 08:00—18:30（17:30停止入场）；7月1日—8月31日 07:30—19:30（18:30停止入场）；11月1日—12月31日 08:30—17:30（16:30停止入场）。要求提前通过博物馆微信公众号购票，凭购票证件原件（本人二代身份证、购票二维码等）核验入馆；页面还列明免费人群（如70周岁以上、1.4米以下儿童需成人陪同、残疾人、现役与退休军人等）和优惠人群（60—69周岁、全日制本科及以下23岁以下学生、退役军人等），并给出客服电话与微信公众号、OTA 两种预约渠道。",
+    "cities": [
+      "qingdao"
+    ],
+    "place": {
+      "name_zh": "青岛啤酒博物馆",
+      "name_en": "Tsingtao Beer Museum",
+      "address": null
+    },
+    "audience": [
+      "普通散客",
+      "首次来华游客",
+      "亲子家庭"
+    ],
+    "themes": [
+      "attraction",
+      "family",
+      "seasonal_holiday"
+    ],
+    "sources": [
+      {
+        "name": "青岛啤酒博物馆官网（参观须知）",
+        "url": "https://www.tsingtaomuseum.com/articleTitleCus/1790371205849559041?viewName=newCanguanDetail",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "博物馆详细地址",
+      "外籍游客用护照购票/换票是否可行",
+      "免票人群的预约限量规则",
+      "英文导览或外语服务信息"
+    ],
+    "notes": "页面为青岛啤酒博物馆官方网站（页脚署青岛啤酒博物馆，鲁ICP备12011120号-1）。开放时间随季节分四段，属常规安排但节假日与临时活动可能调整；票价与票种细则以其微信公众号公示为准（页面标注，易变，需复核），记录中未录入价格。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.v3.holiday.official-channel"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.qingdao.zhanqiao-pier-huilan-pavilion",
+    "title_zh": "青岛栈桥与回澜阁当前开放状态（修缮期间，2026年10月公告）",
+    "summary_zh": "青岛海滨景区管理服务中心2026年10月18日公告称，栈桥桥体和东侧沙滩、小青岛景区已恢复开放，并提示游客留意海边风浪、注意人身安全。此前景区管理服务中心2026年10月13日发布公告并通过观海新闻报道：自10月13日22时起对回澜阁及末端栈桥区域实施封闭管控，开展文物保护修缮，施工期间暂停参观游览，栈桥前段仍可正常漫步，工程预计12月中旬竣工。据此，2026年11月中旬前往栈桥时，桥体与沙滩可通行，回澜阁内部参观应仍处于暂停状态，具体恢复时间需以景区最新公告为准。",
+    "cities": [
+      "qingdao"
+    ],
+    "place": {
+      "name_zh": "栈桥—回澜阁",
+      "name_en": "Zhanqiao Pier & Huilan Pavilion",
+      "address": null
+    },
+    "audience": [
+      "普通散客",
+      "首次来华游客"
+    ],
+    "themes": [
+      "attraction",
+      "trip_planning"
+    ],
+    "sources": [
+      {
+        "name": "观海新闻（青岛日报社）转引青岛海滨景区管理服务中心公告",
+        "url": "https://www.guanhai.com.cn/p/478661.html",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-10-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "栈桥区域固定开放时间（属开放式海滨公共空间，页面未给）",
+      "回澜阁修缮完工与恢复开放的确切日期",
+      "门票/预约信息"
+    ],
+    "notes": "本条依据两则已读取的公告：恢复开放公告（观海新闻 2026-10-18，https://www.guanhai.com.cn/p/478661.html）与封闭修缮报道（观海新闻 2026-10-13，https://www.guanhai.com.cn/p/477918.html）。来源为青岛日报社旗下观海新闻转引景区管理服务中心公告，非景区自有官网，故标记为官方媒体；适用范围为栈桥—回澜阁—小青岛一带，回澜阁恢复时间属未确定信息。",
+    "conflicts": [
+      "2026-10-13公告称回澜阁及末端栈桥区域封闭，2026-10-18公告称栈桥桥体与东侧沙滩恢复开放；两则针对不同范围与时间点，需按最新公告理解，不可混用。"
+    ],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.harbin.harbin-ice-and-snow-world",
+    "title_zh": "哈尔滨冰雪大世界季节性运营、票务政策与交通指引（运营方官网）",
+    "summary_zh": "哈尔滨冰雪大世界官网（运营方哈尔滨冰雪大世界股份有限公司）为冰雪主题园区，仅在冬季冰雪季运营。站点“票务政策”栏当前展示的是第二十七届（2025—2026冰雪季）政策：分标准成人票、优惠票与免费观光人群，其中免费观光人群需在景区微信商城提前预约领取免费观光门票且每日限量，部分人群凭相关证件原件现场核验；园区地址为哈尔滨市松北区太阳岛西侧。交通栏给出出租车/自驾里程与车程参考（至哈尔滨站约12公里、哈尔滨西站约13公里、太平国际机场约39公里），地铁2号线可直达冰雪大世界站（哈尔滨站、中央大街、世茂大道等均可乘），公交首末班约06:00—21:30（页面注明仅供参考），客服热线接听时间为9:30—21:30，并提示经营期间将视需求开通公交专线。页面未见第二十八届（2026—2027冰雪季）的具体开园日期与运营起止。",
+    "cities": [
+      "harbin"
+    ],
+    "place": {
+      "name_zh": "哈尔滨冰雪大世界",
+      "name_en": "Harbin Ice and Snow World",
+      "address": "哈尔滨市松北区太阳岛西侧哈尔滨冰雪大世界景区"
+    },
+    "audience": [
+      "冬季来华游客",
+      "普通散客",
+      "亲子家庭"
+    ],
+    "themes": [
+      "attraction",
+      "transport",
+      "seasonal_holiday",
+      "trip_planning",
+      "family"
+    ],
+    "sources": [
+      {
+        "name": "哈尔滨冰雪大世界官网（哈尔滨冰雪大世界股份有限公司）",
+        "url": "https://ice.hrbicesnow.com/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "第二十八届的具体开园日期与运营起止时间",
+      "每日开闭园时间（随届次/日期调整，未在首页明确）",
+      "外籍游客购票与入园（护照核验）规则",
+      "免费观光门票预约的每日限量仍在执行与否"
+    ],
+    "notes": "页面为冰雪大世界运营方官网（页脚署哈尔滨冰雪大世界股份有限公司，黑ICP备16007346号-1）。该景区属季节性运营：每年入冬后开园、次年春季闭园，具体日期每年不同，必须以官方公众号公告为准。首页票务与免费政策目前仍是上一届口径，与2026年11月时点存在滞后；地铁/公交首末班时间为页面标注的参考值，易变，需复核。记录中未录入票价。",
+    "conflicts": [
+      "官网首页仍展示第二十七届票务与免费政策，而2026年11月中旬已进入第二十八届筹备期，页面信息滞后，届次口径需复核。"
+    ],
+    "related_entries": [
+      "visitor.v3.holiday.official-channel"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.kunming.stone-forest-shilin",
+    "title_zh": "昆明石林风景区实名制票务与入园方式（昆明市政府门户转载报道）",
+    "summary_zh": "昆明市人民政府门户网站“县区、部门”栏目转载昆明日报报道（2025-02-12）：石林风景区已上线实名制票务系统，游客提前通过手机等设备预订门票和电瓶车票后，可在景区直接刷身份证检票入园，不必再到窗口排队购票取票；新系统把门票与电瓶车票务整合，实现一站式购票、验票。大小石林、长湖景区大门安装了具备人脸识别、身份证识别、IC卡与二维码识别功能的闸机，用于快速核销。报道主要介绍系统上线情况，未涉及开放时间、预约提前期、优惠规则或外籍游客购票细节。",
+    "cities": [
+      "kunming"
+    ],
+    "place": {
+      "name_zh": "石林风景区",
+      "name_en": "Stone Forest (Shilin)",
+      "address": null
+    },
+    "audience": [
+      "普通散客",
+      "自由行游客",
+      "首次来华游客"
+    ],
+    "themes": [
+      "attraction",
+      "trip_planning"
+    ],
+    "sources": [
+      {
+        "name": "昆明市人民政府门户网站（转载昆明日报）",
+        "url": "https://www.km.gov.cn/c/2025-02-12/4943494.shtml",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-02-12",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "景区开放时间与季节性调整",
+      "网络购票的可预约提前期与放票时间",
+      "外籍游客（护照）购票与入园方式",
+      "免票/半票政策的具体适用与办理地点",
+      "景区地址与交通方式"
+    ],
+    "notes": "页面为昆明市人民政府门户网站转载昆明日报报道，属政府网站发布的官方媒体内容，非景区自身发布。石林景区官网（shilin.com.cn 系列站点）与“石林旅游”小程序/公众号为主要信息渠道，本次多次尝试 https 读取失败，未能取得开放时间等原文；本条只能证明实名制票务与刷证入园的做法，适用范围限于大小石林、长湖景区，时间与优惠细节缺失。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.mainland.passport-sim"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.zhangjiajie.zhangjiajie-national-forest-park-wulingyuan",
+    "title_zh": "张家界武陵源（国家森林公园）分时预约、门票有效期与南门交通（商业票务平台）",
+    "summary_zh": "该平台（自称张家界国家森林公园门票预约预订系统）页面说明：武陵源核心景区即张家界国家森林公园，实行分时分站实名预约，凡进必约；除首次入园需付费预约外，二次入园也需在首次入园后免费扫码预约入园时段。大门票含森林公园、天子山、杨家界、金鞭溪、十里画廊等核心区域，4天内有效、可多次入园；园内交通（百龙天梯、天子山索道、环保车）需另购。南门即森林公园门票站，金鞭溪起点在门口，金鞭溪约7.5公里、平缓步行约2—3小时；高铁张家界西站有城景直达大巴到南门约30—50分钟，私家车须停门票站外换乘环保车；页面标注营业时间周一至周日7:30—17:00。",
+    "cities": [
+      "zhangjiajie"
+    ],
+    "place": {
+      "name_zh": "张家界国家森林公园（武陵源核心景区）",
+      "name_en": "Zhangjiajie National Forest Park (Wulingyuan)",
+      "address": "湖南省张家界市武陵源区"
+    },
+    "audience": [
+      "自由行游客",
+      "首次来华游客",
+      "徒步与摄影爱好者"
+    ],
+    "themes": [
+      "attraction",
+      "transport",
+      "trip_planning"
+    ],
+    "sources": [
+      {
+        "name": "张家界国家森林公园门票预约预订系统（第三方票务平台）",
+        "url": "https://www.zhangjiajieforestpark.com/ticket/forest-gate-copy-copy?lang=zh-CN",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方发布的分时预约规则原文（放票时间、每日限量）",
+      "各门票站官方开闭园时间",
+      "外籍游客预约与入园证件要求",
+      "索道、电梯等园内交通的运营时间"
+    ],
+    "notes": "商业平台，非官方政策：页面自我标注为“张家界国家森林公园·门票预约预订系统”，页脚注明由第三方票务SaaS提供，机构身份未独立核实，票种、票价与入园时段应以景区官方公众号/小程序为准。记录中未录入票价（页面标注，易变，需复核）。官方站 www.hnzjj.com（张家界市武陵源区文化旅游和商务局署名）本次无法以 https 读取，故官方口径未核实。",
+    "conflicts": [
+      "本条信息来自商业票务平台，与官方渠道（未能读取）可能存在票种、价格与预约规则口径差异，需人工复核。"
+    ],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.kunming.dianchi-lake-greenway",
+    "title_zh": "滇池绿道观光车、接驳车、租赁车与观鸥季交通攻略（度假区管委会）",
+    "summary_zh": "昆明滇池国家旅游度假区管委会2026年11月13日发布滇池绿道出行配套攻略：昆明公共交通公司开通观2路环湖观光专线，起终站为海埂大坝车场至皇冠假日酒店，运营时间9:00—16:00（按客流确定发车间隔）。108公里绿道分2个大循环（草海段、外海段）与4个小循环运营接驳观光车，全线接驳站点54个，一类站点候车亭装有电子屏，可实时显示车辆到站信息。全线投入扫码租赁车，含氢能源自行车、四轮扫码电动车、脚踏车、自行车、山地车等类型。另可预约环滇观光巴士（30人成团、市区三环内免费上门接送，服务热线96188）。观鸥季期间开通多条观鸥主题特惠专线，串联海埂大坝、大观公园、庾园、高峣、斗南湿地等节点；页面同时提示环湖专线随客流调整、节假日宜错峰，以及绿道骑行限速与部分栈桥需下车推行的规定。",
+    "cities": [
+      "kunming"
+    ],
+    "place": {
+      "name_zh": "滇池绿道（海埂大坝一带）",
+      "name_en": "Dianchi Lake Greenway",
+      "address": null
+    },
+    "audience": [
+      "自由行游客",
+      "观鸟与摄影爱好者",
+      "亲子家庭"
+    ],
+    "themes": [
+      "transport",
+      "attraction",
+      "seasonal_holiday",
+      "trip_planning"
+    ],
+    "sources": [
+      {
+        "name": "昆明滇池国家旅游度假区管委会（政务要闻）",
+        "url": "https://dianchi.km.gov.cn/c/2026-11-13/7198124.shtml",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-11-13",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "各线路的完整站点时刻表",
+      "扫码租赁车的租还规则与押金要求",
+      "西山龙门景区本身的开放时间与预约规则",
+      "外语服务与外籍游客支付方式说明"
+    ],
+    "notes": "页面为昆明滇池国家旅游度假区管委会官网政务要闻（页脚署管委会主办，滇ICP备07000700号-1）。适用范围是滇池绿道及海埂大坝、草海段、外海段一带，不含西山龙门景区本体。观2路、接驳车与观鸥专线会随客流与季节调整，票价、班次属易变信息（页面标注，需复核），记录中未录入具体票价。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.v3.holiday.official-channel"
+    ]
+  }
+]

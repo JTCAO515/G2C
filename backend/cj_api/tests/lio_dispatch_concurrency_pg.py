@@ -7,7 +7,7 @@ from threading import Event
 from unittest.mock import patch
 
 from cj_agent.provider import (
-    _M4_REQUEST_SENT, DashScopeConfig, MeteredDashScopeProvider, M4_BASE, M4_MODEL,
+    _M4_REQUEST_SENT, DashScopeConfig, MeteredDashScopeProvider, M4_BASE, M4_MODEL, ProviderUnknown,
 )
 from cj_api.local_app import load_confirmation_signer
 from cj_api.local_worker_context import checker_for
@@ -19,13 +19,20 @@ from test_lio_city import data as city_catalog
 from test_lio_planning_flow import flow
 
 
+async def reject_unmocked_connection(*args, **kwargs):
+    raise AssertionError('signed PG fixture attempted a real external connection')
+
+
+@patch('asyncio.open_connection', new=reject_unmocked_connection)
 def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
     subjects = frozenset({subject})
     signer = load_confirmation_signer(auth)
-    for paused, missing_done in (
-        ('intake', False), ('discussion', False), ('discussion', True), ('memory', False), ('draft', False),
+    for paused, missing_done, missing_model in (
+        ('intake', False, False), ('discussion', False, False), ('discussion', True, False),
+        ('discussion', False, True), ('memory', False, False), ('draft', False, False),
     ):
-        case = paused + ('-missing-done' if missing_done else '')
+        case = paused + ('-missing-done' if missing_done else '-missing-model' if missing_model else '')
+        complete_unsettled_reply = ('北京有丰富的历史遗迹和街巷。' * 200)[:2436]
         sent = []
         request_waiting, release = Event(), Event()
         budget = AuthorizationBudget(root / ('dispatch-' + case),
@@ -88,7 +95,8 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
             else:
                 stage = 'discussion'
                 assert 'The traveler requested a complete ' in system
-                value = dict(answer='第1天逛街区，第2天看博物馆，第3天试当地美食。想先细化哪一天？')
+                value = dict(answer=complete_unsettled_reply if missing_model else
+                             '第1天逛街区，第2天看博物馆，第3天试当地美食。想先细化哪一天？')
             sent.append(stage)
             yield _M4_REQUEST_SENT
             if stage == paused:
@@ -102,6 +110,8 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
             event = dict(id='dispatch-fixture-' + case + '-' + stage, model=M4_MODEL, choices=[
                 dict(index=0, delta=dict(content=content), finish_reason=None if truncated else 'stop'),
             ])
+            if missing_model and stage == paused:
+                del event['model']
             if not truncated:
                 event['usage'] = dict(prompt_tokens=100, completion_tokens=100, total_tokens=200)
             done = '' if truncated else 'data: [DONE]\n\n'
@@ -127,7 +137,7 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
             finally:
                 release.set()
             outcome, = future.result(timeout=10)
-        assert outcome.status == ('unknown' if missing_done else 'completed')
+        assert outcome.status == ('unknown' if missing_done or missing_model else 'completed')
         path = {'memory': ['answer', 'memory'], 'draft': ['intake', 'draft']}.get(paused, ['intake', 'discussion'])
         assert sent == path, sent
         page = timeline()
@@ -136,6 +146,26 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
         assert completed['trip'] is None
         if missing_done:
             assert (completed['status'], completed['answer']) == ('failed', '')
+        elif missing_model:
+            assert completed['status'] == 'completed' and completed['answer'] == complete_unsettled_reply
+            assert len(completed['answer']) == 2436 and completed['memory'] is None
+            from cj_api.local_lio_national import CONTEXT
+            from cj_api.local_lio_planning import PlanningTurn
+            prior_binding = worker._binding(worker.messages.query(mid).receipt)
+            original_effects = worker.runs.snapshot(prior_binding).effects
+            previews = [json.loads(effect.removeprefix(CONTEXT)) for effect in original_effects
+                        if effect.startswith(CONTEXT)]
+            assert any(row['status'] == 'plan_preview' and row['authority'] != 'none' for row in previews)
+            followup = '保存这个行程'
+            send('dispatch-unsettled-followup', followup, conversation)
+            original = worker.messages.query('dispatch-unsettled-followup')
+            followup_binding = worker._binding(original.receipt)
+            followup_original = worker.lio_original(followup_binding)
+            _, _, prior = worker.lio_planning.legacy.context(
+                followup_binding, PlanningTurn(followup, followup_original.question_day)
+            )
+            assert prior is None or prior['authority'] == 'none', prior
+            assert prior is None or prior['status'] != 'plan_preview', prior
         elif paused == 'draft':
             assert completed['status'] == 'completed' and '保存确认' in completed['answer']
         elif paused == 'memory':
@@ -143,7 +173,16 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
         else:
             assert '第2天看博物馆' in completed['answer']
         settled = ['RECEIVED'] * (2 if paused == 'memory' else 3)
-        if missing_done:
+        if missing_done or missing_model:
             settled[-1] = 'INTENT'
         assert [row['state'] for row in budget.inspect()] == settled
+        if missing_model:
+            async def no_followup_response(config, raw, guard, observation):
+                assert guard() is True
+                yield _M4_REQUEST_SENT
+                raise ProviderUnknown('synthetic follow-up provider receipt unavailable')
+            with patch('cj_agent.provider._m4_wire', no_followup_response):
+                followup_outcome, = worker.process()
+            assert followup_outcome.message_id == 'dispatch-unsettled-followup'
+            assert followup_outcome.proposal_id is None
         print('PASS three signed Lio timeline reads while the original ' + case + ' response waits', flush=True)

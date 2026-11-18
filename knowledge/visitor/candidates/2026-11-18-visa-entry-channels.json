@@ -1,0 +1,80 @@
+[
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.nationwide.nia-online-accommodation-registration",
+    "title_zh": "国家移民管理局：外国人非酒店住宿登记自2026-09-21起可全国线上办理（候选）",
+    "summary_zh": "国家移民管理局2026年第7号公告：自2026年9月21日起，外国人在酒店以外住所的住宿登记可在全国范围线上办理；外国人本人或留宿人可通过移民局官方网站、12367 App、12367 微信小程序或支付宝小程序办理，线下派出所登记渠道继续保留，线上登记与现场登记具有同等法律效力。公告同时重申：入住酒店由酒店办理登记，住酒店以外场所应在抵达后24小时内办理住宿登记。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "住民宿、朋友家或长租公寓的外国游客",
+      "首次来华自由行旅客"
+    ],
+    "themes": [
+      "arrival"
+    ],
+    "sources": [
+      {
+        "name": "国家移民管理局公告（2026年第7号，英文版）",
+        "url": "https://en.nia.gov.cn/n147418/n147468/c237295/content.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2026-09-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "中文版公告原文未核对",
+      "各地执行细则与登记所需材料",
+      "线上入口的具体页面路径与操作步骤",
+      "逾期未登记的后果（不属本轮概括范围）"
+    ],
+    "notes": "官方公告英文版的概括，未复制原文；不解释适用资格、处罚或法律后果。线上入口名称按公告译写，实际以国家移民管理局页面为准。与既有条目 visitor.mainland.* 无直接对应；可与本批“入境后住宿登记（政府指引）”候选交叉复核。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.nationwide.nia-english-policy-interpretation",
+    "title_zh": "国家移民管理局英文站：入境与免签政策官方解读栏目（查询渠道）",
+    "summary_zh": "国家移民管理局英文门户设有 Policy Interpretation 栏目，汇集免签、过境免签及区域性入境政策的官方解读与公告入口，可核对最新政策的发布日期与适用范围；具体适用条件以主管机关的解释与答复为准。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "来华前需核对入境/免签政策的旅客",
+      "协助旅客查询政策的服务人员"
+    ],
+    "themes": [
+      "visa_entry"
+    ],
+    "sources": [
+      {
+        "name": "国家移民管理局英文门户 Policy Interpretation",
+        "url": "https://en.nia.gov.cn/n147418/n147463/index.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "各政策公告的生效与失效日期",
+      "具体适用条件（按要求不在候选层面概括）",
+      "中文版对应栏目链接"
+    ],
+    "notes": "仅提供官方查询渠道，不判断任何旅客的资格或停留期限；与既有 visitor.v2.visa-free.official-channel 指向不同语言的官方栏目，需查重后决定是否合并。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.v2.visa-free.official-channel",
+      "visitor.v2.entry.official-channel"
+    ]
+  }
+]
