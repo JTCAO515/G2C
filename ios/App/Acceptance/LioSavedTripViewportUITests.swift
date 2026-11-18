@@ -64,17 +64,18 @@ import XCTest
             XCTAssertTrue(app.staticTexts["Draft"].exists)
             capture(app, "detail-\(visit)")
             try audit(app)
-            XCTAssertFalse(app.tabBars.firstMatch.exists, "Detail uses the full screen; tab navigation returns with the list")
+            XCTAssertTrue(app.tabBars.firstMatch.exists, "Existing direct tab navigation remains available in detail")
             if visit == 1 {
                 // The actual recorded structured.2 fixture contains all five entries.
                 // Reaching each one rules out clipping or omitting data as an audit fix.
                 // Keep each original entry clear of the bottom system gesture area.
                 // 44pt is a deliberate reading margin, not an inferred device safe inset.
-                let readableBottom = app.windows.firstMatch.frame.maxY - 44
+                let readableBottom = min(app.tabBars.firstMatch.frame.minY, app.windows.firstMatch.frame.maxY - 44)
                 for label in ["我还没有决定出行日期 / Dates not decided", "合成公园", "123.50 m", "60 s", "Check opening hours"] {
                     let item = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", label)).firstMatch
                     for _ in 0..<8 {
-                        if item.exists && item.isHittable && item.frame.maxY <= readableBottom { break }
+                        if item.exists && item.isHittable && item.frame.minY >= app.navigationBars.firstMatch.frame.maxY
+                            && item.frame.maxY <= readableBottom { break }
                         if item.exists && item.frame.minY < app.navigationBars.firstMatch.frame.maxY {
                             app.swipeDown()
                         } else { app.swipeUp() }
