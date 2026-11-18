@@ -37,6 +37,9 @@ class GuardedWireWrite:
     write: Callable[[], None]
 
 
+UNLOCKED_WIRE_START = object()
+
+
 @dataclass(repr=False)
 class _PreparedCall:
     step: object
@@ -123,7 +126,7 @@ class MeteredExitCore:
             stream=invoke()
             output=0
             for chunk in stream:
-                if isinstance(chunk,GuardedWireWrite):
+                if chunk is UNLOCKED_WIRE_START or isinstance(chunk,GuardedWireWrite):
                     yield chunk
                     continue
                 if type(chunk) is not str: raise BudgetUnknown('invalid local provider chunk')

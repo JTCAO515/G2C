@@ -22,7 +22,7 @@ from cj_message.domain import Unavailable as MessageUnavailable
 from cj_needs.domain import Denied as NeedsDenied
 from cj_needs.revision_lease import LeaseUnavailable
 from cj_usage.local_provider_exit import BudgetExceeded, BudgetUnknown
-from cj_usage.metered_exit import ExitAdmissionDenied, GuardedWireWrite
+from cj_usage.metered_exit import ExitAdmissionDenied, GuardedWireWrite, UNLOCKED_WIRE_START
 from cj_memory.runtime import RuntimeDenied, RuntimeUnknown
 from cj_place.draft_source import PlaceSourceUnavailable
 
@@ -322,7 +322,7 @@ class RunWorker:
             while chunk is not _END:
                 if isinstance(chunk,GuardedWireWrite):
                     self._step(binding,chunk.write,draft=draft)
-                else:
+                elif chunk is not UNLOCKED_WIRE_START:
                     self._running(binding)
                     yield chunk
                 self._running(binding)

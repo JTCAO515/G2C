@@ -299,14 +299,14 @@ _POI2_PATHS=frozenset(('/v5/place/text','/v5/place/around','/v5/place/detail'))
 ROUTE_REQUEST_SENT=POI2_REQUEST_SENT
 
 
-def _poi2_events(config,request,credentials,before_send):
+def _poi2_events(config,request,credentials,before_send,defer_write=None):
     from .gaode_v2 import prepare as prepare_poi2
     return _registered_candidate_events(config,request,credentials,before_send,
-        lambda:prepare_poi2(config,request.query,request.request_ref,request.started_at),_POI2_PATHS)
+        lambda:prepare_poi2(config,request.query,request.request_ref,request.started_at),_POI2_PATHS,defer_write)
 
 
-async def _registered_candidate_events(config,request,credentials,before_send,prepare_request,paths):
-    """Two advances on one loop: send under dispatch fence, receive outside it."""
+async def _registered_candidate_events(config,request,credentials,before_send,prepare_request,paths,defer_write=None):
+    """Keep the original send and response separate on one loop."""
     if before_send is None:
         yield TransportResult('rejected','original_source_guard_required');return
     try:
@@ -324,11 +324,24 @@ async def _registered_candidate_events(config,request,credentials,before_send,pr
             if datetime.now(timezone.utc)>=expires:raise _WireFailure('credentials_expired_unknown')
             payload=('GET '+target+' HTTP/1.1\r\nHost: '+_HOST+
                 '\r\nAccept: application/json\r\nAccept-Encoding: identity\r\nConnection: close\r\n\r\n').encode('ascii')
+        def write():
+            if datetime.now(timezone.utc)>=expires:raise _WireFailure('credentials_expired_unknown')
             if before_send()is not True:raise _WireFailure('original_place_authority_invalid')
             if loop.time()>=deadline:raise _WireFailure('connect_deadline_exceeded')
-            writer.write(payload);await writer.drain()
-        # End the first task's timeout context before yielding. The next
-        # advance uses a new task on the same loop and the same absolute clock.
+            writer.write(payload)
+        if defer_write is None:
+            write()
+        else:
+            error_at_write=None
+            def guarded_write():
+                nonlocal error_at_write
+                try:write()
+                except Exception as error:error_at_write=error
+            yield defer_write(guarded_write)
+            if error_at_write is not None:raise error_at_write
+        # Each advance has a fresh task on the same loop and deadline.
+        async with asyncio.timeout_at(deadline):
+            await writer.drain()
         yield POI2_REQUEST_SENT
         async with asyncio.timeout_at(deadline):
             if before_send()is not True:raise _WireFailure('original_place_authority_changed')
@@ -356,21 +369,21 @@ async def _registered_candidate_events(config,request,credentials,before_send,pr
     yield outcome
 
 
-def poi2_candidate_stream(config,request,credentials,*,before_send):
+def poi2_candidate_stream(config,request,credentials,*,before_send,defer_write=None):
     """Synchronous registered-adapter bridge; no network retry or new attempt.
 
-    Consume the first POI2_REQUEST_SENT under the original dispatch fence, then
-    release it before the next advance. Closing the iterator closes that socket.
+    The registered caller can defer the guarded write until after connecting.
+    Closing the iterator closes the original socket.
     """
-    yield from _registered_candidate_stream(_poi2_events(config,request,credentials,before_send))
+    yield from _registered_candidate_stream(_poi2_events(config,request,credentials,before_send,defer_write))
 
 
-def route_candidate_stream(config,request,credentials,*,before_send):
+def route_candidate_stream(config,request,credentials,*,before_send,defer_write=None):
     """Explicit rich route entry; old v3/POI2 entry-point gates are unchanged."""
     from .rich_routes import prepare as prepare_route
     events=_registered_candidate_events(config,request,credentials,before_send,
         lambda:prepare_route(config,request.query,request.request_ref,request.started_at),
-        frozenset(('/v3/direction/walking','/v3/direction/driving','/v3/direction/transit/integrated')))
+        frozenset(('/v3/direction/walking','/v3/direction/driving','/v3/direction/transit/integrated')),defer_write)
     yield from _registered_candidate_stream(events)
 
 
