@@ -56,7 +56,7 @@ class ReadOnlyAnswers(unittest.TestCase):
                 self.assertEqual(value['authority_barrier_message_id'],'national-message')
 
     def test_rejected_discussion_envelope_keeps_the_ordinary_answer_available(self):
-        for locale,city,raw in (
+        for locale,city,reply in (
             ('zh','北京','可以第一天先逛故宫，第二天看长城。'),
             ('en','Beijing','Start with the Forbidden City, then visit the Great Wall.'),
         ):
@@ -64,6 +64,8 @@ class ReadOnlyAnswers(unittest.TestCase):
                 text=CASES['PLAN05']['inputs'][locale][0]
                 wire=flow(text,city=city,days=3,intent='plan',questions=())
                 wire.update(planning_request_index=0,needs_tools=False)
+                # Valid JSON crosses the provider boundary before the Lio answer key is checked.
+                raw=json.dumps({'reply':reply},ensure_ascii=False)
                 published,events,_,result=run(wire,text,locale=locale,discussion_output=raw)
                 self.assertEqual(published,[])
                 self.assertIsNone(result)
