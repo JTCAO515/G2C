@@ -68,11 +68,23 @@ def verify_release_review(github, source, gate):
     if (not pr['merged'] or pr['head']['sha'] != head
             or (source != head and pr['merge_commit_sha'] != source)):
         raise ValueError('release source does not match the reviewed PR')
-    review = github(f'issues/comments/{comment_id}')
-    if (review['issue_url'] != f'https://api.github.com/repos/{REPOSITORY}/issues/{number}'
-            or review['author_association'] not in {'OWNER', 'MEMBER', 'COLLABORATOR'}
-            or review['body'].partition('\n')[0] != f'Review: APPROVE {head}'):
-        raise ValueError('exact-head R approval on the release PR required')
+    decision = re.compile(r'Review: (APPROVE|REQUEST CHANGES) ' + head)
+    latest = None
+    for page in range(1, 11):
+        comments = github(f'issues/{number}/comments?per_page=100&page={page}')
+        for comment in comments:
+            first_line = comment['body'].partition('\n')[0]
+            if (comment['author_association'] in {'OWNER', 'MEMBER', 'COLLABORATOR'}
+                    and decision.fullmatch(first_line)
+                    and (latest is None or comment['id'] > latest['id'])):
+                latest = comment
+        if len(comments) < 100:
+            break
+    else:
+        raise ValueError('complete PR review inventory required')
+    if (latest is None or latest['id'] != comment_id
+            or latest['body'].partition('\n')[0] != f'Review: APPROVE {head}'):
+        raise ValueError('current exact-head R approval on the release PR required')
 
 
 def require_release_window(starts_at,ends_at,now):

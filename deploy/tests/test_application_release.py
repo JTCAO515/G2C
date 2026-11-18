@@ -153,17 +153,17 @@ def test_release_ci_rejects_missing_evidence_and_explicit_failures(workflow_evid
         application_release.verify_release_ci(github_fixture(evidence), SOURCE)
 
 
-@pytest.mark.parametrize('approval', [REVIEWED, SOURCE])
-def test_release_review_requires_approval_on_reviewed_head(approval):
+@pytest.mark.parametrize('approval, withdrawn', [(REVIEWED, False), (SOURCE, False), (REVIEWED, True)])
+def test_release_review_requires_current_approval_on_reviewed_head(approval, withdrawn):
     gate = dict(pr_number=1174, review_comment=42, review_approved_head=REVIEWED)
+    comments = [dict(id=42, author_association='OWNER', body=f'Review: APPROVE {approval}\nDetails')]
+    if withdrawn:
+        comments.append(dict(id=43, author_association='OWNER', body=f'Review: REQUEST CHANGES {REVIEWED}'))
     evidence = {
         'pulls/1174': dict(merged=True, head={'sha': REVIEWED}, merge_commit_sha=SOURCE),
-        'issues/comments/42': dict(
-            issue_url='https://api.github.com/repos/JTCAO515/G2C/issues/1174',
-            author_association='OWNER', body=f'Review: APPROVE {approval}\nDetails',
-        ),
+        'issues/1174/comments?per_page=100&page=1': comments,
     }
-    if approval == REVIEWED:
+    if approval == REVIEWED and not withdrawn:
         application_release.verify_release_review(evidence.__getitem__, SOURCE, gate)
     else:
         with pytest.raises(ValueError, match='R approval'):
