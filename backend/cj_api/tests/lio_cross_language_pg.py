@@ -63,6 +63,10 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
     fixed={'en':'On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged',
            'zh':'第一天我9:00到10:00要在酒店集合，保持不变'}
     original_fixed='第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变；酒店名称和位置尚未确定。'
+    capital_questions={
+        'zh':('北京是中国的首都吗？','北京是中国的首都。你想了解北京的哪些地方？'),
+        'en':('Is Beijing the capital of China?','Yes, Beijing is the capital of China. What would you like to see there?'),
+    }
     def response(request):
         nonlocal start
         body=json.loads(request.content);wire.append(body);system=body['messages'][0]['content']
@@ -121,8 +125,10 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
         elif 'MEMORY-EXTRACT@2'in system:
             value=dict(version='MEMORY-EXTRACT@2',entries=[])
         elif body.get('tools'):
-            value=('我可以先帮你梳理这三天的方向。你想去哪个城市？'if locale=='zh'else
-                   'I can help shape those three days. Which city would you like to visit?')
+            question,reply=capital_questions[locale]
+            value=reply if text==question else (
+                '我可以先帮你梳理这三天的方向。你想去哪个城市？'if locale=='zh'else
+                'I can help shape those three days. Which city would you like to visit?')
         elif 'The traveler requested a complete 'in system:
             value=dict(answer=('Day 1: a neighborhood. Day 2: a museum. Day 3: a park. Which day should we adjust?'
                 if locale=='en'else'第1天逛街区，第2天看博物馆，第3天去公园。你想先调整哪一天？'))
@@ -267,6 +273,8 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
             cases=(
                     ('zh-capability','zh','你能做啥',False),('en-capability','en','What can you do?',False),
                     ('zh-days','zh','三天怎么玩',False),('en-days','en','How should I spend three days?',False),
+                    ('zh-capital','zh',capital_questions['zh'][0],False),
+                    ('en-capital','en',capital_questions['en'][0],False),
                     ('zh-model','zh','帮我规划三天的旅行',False),('en-model','en','Please help me plan for three days',False),
                     ('bad-offset','zh','帮我规划三天的旅行',True))
             if fallback_only:
@@ -303,10 +311,16 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
                     if denied:assert ('budget_denied','answer')in rows
                 else:
                     assert message['status']=='completed'and message['answer']
-                    if 'capability'in label or label.endswith('-days'):assert len(wire)==before # code clarification, never model-health evidence
+                    if label.endswith('-capital'):
+                        assert message['answer']==capital_questions[locale][1],message
+                        assert all('LIO-planning-intake.8'not in request['messages'][0]['content'] for request in wire[before:])
+                        answer_attempt,memory_attempt=wire[before:]
+                        assert answer_attempt.get('tools') and 'MEMORY-EXTRACT@2'in memory_attempt['messages'][0]['content']
+                    elif 'capability'in label or label.endswith('-days'):
+                        assert len(wire)==before # code clarification, never model-health evidence
                     else:
                         assert len(wire)==before+1
-                    if 'capability'not in label:
+                    if 'capability'not in label and not label.endswith('-capital'):
                         with database.connect(scope)as db:
                             row=db.execute("SELECT value FROM cj_run_event WHERE scope=%s AND run_id=%s AND value LIKE 'lio_planning_context.1:%%'",
                                            (scope,outcome.run_id)).fetchone()
