@@ -1,0 +1,6564 @@
+[
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r001",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "米其林二星",
+    "name_zh": "东湾",
+    "name_en": "The Bay by Chef Fei",
+    "district": "福田",
+    "address": "深圳市福田区皇岗路5001号文华东方酒店1楼",
+    "description_zh": "深圳文华东方酒店内的潮粤菜餐厅，由黄景辉担任顾问；菜式兼取粤菜与潮汕做法，烧鹅卷与花胶菜式被页面点名推荐。",
+    "tags": [
+      "米其林",
+      "二星",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "粤菜（含潮汕菜）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "米其林中国官网新闻《2026广州深圳米其林指南餐厅榜单首次合并发布，深圳首秀表现亮眼》",
+        "url": "https://www.michelin.com.cn/news/2026/0818.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "地址与所在区取自另一可读整理页（网易号·深圳梦转载深圳商务/米其林指南内容），待官方复核"
+    ],
+    "notes": "星级、菜系、厨师信息见米其林中国发布稿；英文名为星岛环球网报道中的写法（东湾·The Bay by Chef Fei）。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r002",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "米其林二星",
+    "name_zh": "云璟",
+    "name_en": null,
+    "district": "南山",
+    "address": "深圳市南山区中心路3008号深圳湾1号T7鹏瑞莱佛士酒店70楼",
+    "description_zh": "位于深圳湾莱佛士酒店70层的新派粤菜餐厅，主厨郭元峰；可俯瞰深圳湾，葵花鸡与金不换炒富贵虾为页面点名菜式。",
+    "tags": [
+      "米其林",
+      "二星",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "粤菜（新派）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "米其林中国官网新闻《2026广州深圳米其林指南餐厅榜单首次合并发布，深圳首秀表现亮眼》",
+        "url": "https://www.michelin.com.cn/news/2026/0818.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "地址与所在区取自另一可读整理页，待官方复核"
+    ],
+    "notes": "南方+ 南山频道亦报道该店位于莱佛士酒店70层，与地址一致。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r003",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "米其林一星",
+    "name_zh": "潮上潮",
+    "name_en": null,
+    "district": "罗湖",
+    "address": "深圳市罗湖区宝安南路1881号万象城二期B栋3楼S368",
+    "description_zh": "北京同名品牌在深圳的门店，做精致潮州菜，可另商客制化菜单；老菜脯扣花胶与炭烧大响螺被页面点名。",
+    "tags": [
+      "米其林",
+      "一星",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "潮州菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "米其林中国官网新闻《2026广州深圳米其林指南餐厅榜单首次合并发布，深圳首秀表现亮眼》",
+        "url": "https://www.michelin.com.cn/news/2026/0818.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "地址与所在区取自另一可读整理页，待官方复核"
+    ],
+    "notes": "发布稿仅写‘落户深圳’；门牌地址来自网易号整理页。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r004",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "米其林一星",
+    "name_zh": "Ensue",
+    "name_en": "Ensue",
+    "district": "福田",
+    "address": "深圳市福田区益田路4088号福田香格里拉大酒店40楼",
+    "description_zh": "福田香格里拉酒店顶层餐厅，仅供应套餐；团队以广东食材结合现代手法做创意菜，服务中会讲述菜式与菜品由来。",
+    "tags": [
+      "米其林",
+      "一星",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "创新菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "米其林中国官网新闻《2026广州深圳米其林指南餐厅榜单首次合并发布，深圳首秀表现亮眼》",
+        "url": "https://www.michelin.com.cn/news/2026/0818.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "地址与所在区取自另一可读整理页，待官方复核"
+    ],
+    "notes": "发布稿写作‘Ensue’，同时提到主厨吴稚阳；地址见网易号整理页。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r005",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "米其林一星",
+    "name_zh": "拂鸣",
+    "name_en": "Fumée",
+    "district": "南山",
+    "address": "深圳市南山区深南大道9968号汉京中心3楼L303",
+    "description_zh": "汉京中心内的中法融合餐厅，板前座位面对开放式厨房；主厨陈婕团队只供应一套菜单，并按季搭配鸡尾酒。",
+    "tags": [
+      "米其林",
+      "一星",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "创新菜（中法融合）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "米其林中国官网新闻《2026广州深圳米其林指南餐厅榜单首次合并发布，深圳首秀表现亮眼》",
+        "url": "https://www.michelin.com.cn/news/2026/0818.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "地址与所在区取自另一可读整理页，待官方复核"
+    ],
+    "notes": "发布稿以‘Fumée拂鸣’列出；南方+ 南山频道称其在‘汉京金融大厦’，与‘汉京中心’表述不同。",
+    "conflicts": [
+      "所在楼宇名称不一致：整理页写‘汉京中心3楼L303’，南方+ 写‘汉京金融大厦’。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r006",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "米其林一星",
+    "name_zh": "OPUS 388",
+    "name_en": "OPUS 388",
+    "district": "福田",
+    "address": "深圳市福田区皇岗路5001号深业上城A座文华东方酒店77楼",
+    "description_zh": "文华东方酒店77层，名称取自388米高度；意大利主厨Alessio Durante以法式技法与时令食材重做经典菜。",
+    "tags": [
+      "米其林",
+      "一星",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "时尚法国菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "米其林中国官网新闻《2026广州深圳米其林指南餐厅榜单首次合并发布，深圳首秀表现亮眼》",
+        "url": "https://www.michelin.com.cn/news/2026/0818.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "地址与所在区取自另一可读整理页，待官方复核"
+    ],
+    "notes": "发布稿写作‘OPUS 388’（亦作 Opus 388）；地址见网易号整理页。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r007",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "米其林一星",
+    "name_zh": "新荣记",
+    "name_en": null,
+    "district": "福田",
+    "address": null,
+    "description_zh": "新荣记在广东的首店，主打台州菜与应季菜式；蟹粉狮子头配盐卤豆腐煲是页面提到的招牌，发布稿建议提前订座。",
+    "tags": [
+      "米其林",
+      "一星",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "台州菜",
+      "reservation_note": "米其林中国发布稿建议提前订座并安排菜品。"
+    },
+    "sources": [
+      {
+        "name": "米其林中国官网新闻《2026广州深圳米其林指南餐厅榜单首次合并发布，深圳首秀表现亮眼》",
+        "url": "https://www.michelin.com.cn/news/2026/0818.html",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "所在区仅在整理页的地址中出现，两版门牌不一致，未采用"
+    ],
+    "notes": "两处可读整理页给出的地址互相冲突，暂不写入地址字段。",
+    "conflicts": [
+      "地址不一致：网易号整理页作‘福田区益田路5033号 PA Mall 6楼N605’，读特作‘福田区益田路5003号平安金融中心裙楼6楼’。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r008",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必比登推介",
+    "name_zh": "翠湖",
+    "name_en": null,
+    "district": "南山",
+    "address": null,
+    "description_zh": "南山区的广东乡下菜馆，入选首版深圳必比登推介；以家常粤式做法为主，招牌菜与营业信息待核实。",
+    "tags": [
+      "米其林必比登",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "粤菜（广东乡下菜）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "对应门店与门牌未在可读页面出现"
+    ],
+    "notes": "原文店名标注为‘翠湖（南山）’；另见整理页写作‘翠湖广东乡下菜’。",
+    "conflicts": [
+      "店名写法不一：翠湖 / 翠湖广东乡下菜。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r009",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必比登推介",
+    "name_zh": "大唐靓汤",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "以私房汤品与粤式家常菜见长的老店，入选首版深圳必比登推介；具体门店与营业信息待核实。",
+    "tags": [
+      "米其林必比登",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "粤式私房菜（汤品）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "什么值得买《米其林首版广深合册发布：73家必比登全在人均300元内，哪几家值得你排队》",
+        "url": "https://post.smzdm.com/p/a03d5ozz/",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2026-08-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address"
+    ],
+    "notes": "文章称该店经营多年、属私房菜路数；地址众说纷纭，未采用。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r010",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必比登推介",
+    "name_zh": "回潮粥",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "以潮汕砂锅粥为主打的宵夜小店，入选首版深圳必比登推介；门店位置与菜式细节待核实。",
+    "tags": [
+      "米其林必比登",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "潮汕菜（砂锅粥）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "什么值得买《米其林首版广深合册发布：73家必比登全在人均300元内，哪几家值得你排队》",
+        "url": "https://post.smzdm.com/p/a03d5ozz/",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2026-08-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address"
+    ],
+    "notes": "文章把其归入潮汕风味 3 家之一。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r011",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必比登推介",
+    "name_zh": "发记烧鹅美食",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "主打烧鹅的粤式小馆，入选首版深圳必比登推介；具体门店与营业安排待核实。",
+    "tags": [
+      "米其林必比登",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "粤菜（烧鹅）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "什么值得买《米其林首版广深合册发布：73家必比登全在人均300元内，哪几家值得你排队》",
+        "url": "https://post.smzdm.com/p/a03d5ozz/",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2026-08-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address"
+    ],
+    "notes": "文章将其归入广府/粤西风味一类。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r012",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必比登推介",
+    "name_zh": "高三姐豆花店",
+    "name_en": null,
+    "district": "福田",
+    "address": "深圳市福田区梅村路上梅林新村56栋102号铺",
+    "description_zh": "上梅林新村内的川式家常菜馆，手工豆花是招牌，家常炒菜为主，辣度可调，属首版必比登推介。",
+    "tags": [
+      "米其林必比登",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "川菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "网易号·深圳美食部落《“0环境，却是米其林推荐，凭什么？”》",
+        "url": "https://www.163.com/dy/article/L5TRGTSN05229T4Q.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-09-03",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "地址为探店页写法，营业状态未核实"
+    ],
+    "notes": "探店页称其 2008 年开业、位于上梅林新村；文章提醒另有整理版误写为龙岗坂田。",
+    "conflicts": [
+      "门店位置说法不一：福田上梅林 vs 龙岗坂田（整理版误传）。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r013",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必比登推介",
+    "name_zh": "戈记美极鲜",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "入选首版深圳必比登推介的粤式小馆；不同整理版本对其店名写法不一，全名与位置待官方核实。",
+    "tags": [
+      "米其林必比登",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "什么值得买《米其林首版广深合册发布：73家必比登全在人均300元内，哪几家值得你排队》",
+        "url": "https://post.smzdm.com/p/a03d5ozz/",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2026-08-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address",
+      "确定的店名与菜系"
+    ],
+    "notes": "文章称同一家店在流传名单中被写成‘美极鲜食坊’‘戈记美极鲜’‘戈记美极馥鲜’，建议以官方渠道核实。",
+    "conflicts": [
+      "店名写法冲突：戈记美极鲜 / 美极鲜食坊 / 戈记美极馥鲜。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r014",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必比登推介",
+    "name_zh": "化州B记饭店",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "做化州风味粤西菜的街坊饭店，入选首版深圳必比登推介；现有整理版本对所在区说法不一，需核实。",
+    "tags": [
+      "米其林必比登",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "粤西菜（化州）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "什么值得买《米其林首版广深合册发布：73家必比登全在人均300元内，哪几家值得你排队》",
+        "url": "https://post.smzdm.com/p/a03d5ozz/",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2026-08-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address"
+    ],
+    "notes": "文章明确提醒该店在网友整理版中一处写龙华、一处写宝安。",
+    "conflicts": [
+      "所在区说法不一：龙华 / 宝安。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r015",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必比登推介",
+    "name_zh": "揭阳老二粿条汤",
+    "name_en": null,
+    "district": "福田",
+    "address": "深圳市福田区东园大厦1层102A室",
+    "description_zh": "东园路一带的潮汕粿条汤店，手工粿条配鸭杂汤、炒粿条是常被提到的吃法，属首版必比登推介。",
+    "tags": [
+      "米其林必比登",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "潮汕菜（粿条）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "网易号·深圳美食部落《“0环境，却是米其林推荐，凭什么？”》",
+        "url": "https://www.163.com/dy/article/L5TRGTSN05229T4Q.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-09-03",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "营业状态与订座方式未核实"
+    ],
+    "notes": "文章提到该店由红岭南路一带迁至东园路，属经营多年的潮汕粿条店。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r016",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必比登推介",
+    "name_zh": "九九面馆",
+    "name_en": null,
+    "district": "福田",
+    "address": "深圳市福田区上沙二路下沙村七坊公司楼4栋101",
+    "description_zh": "下沙村内的江浙风味面馆，浇头现点现做，虾爆鳝面等被页面提到，属首版必比登推介。",
+    "tags": [
+      "米其林必比登",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "江浙面食",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "网易号·深圳美食部落《“0环境”，却是米其林推荐，凭什么？”》",
+        "url": "https://www.163.com/dy/article/L5TRGTSN05229T4Q.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-09-03",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "营业状态未核实"
+    ],
+    "notes": "地址以探店页为准；读特（深圳特区报）另写‘椰树路下沙村七坊公司楼4栋101’，门牌路名略有差异。",
+    "conflicts": [
+      "门牌路名表述略有差异：上沙二路 / 椰树路。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r017",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必比登推介",
+    "name_zh": "小桌宴",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "做印尼娘惹菜的私房小馆，入选首版深圳必比登推介；地址与菜单信息待核实。",
+    "tags": [
+      "米其林必比登",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "印尼菜（娘惹）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "什么值得买《米其林首版广深合册发布：73家必比登全在人均300元内，哪几家值得你排队》",
+        "url": "https://post.smzdm.com/p/a03d5ozz/",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2026-08-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address"
+    ],
+    "notes": "文章全名写作‘小桌宴印尼娘惹私房菜’；南方+ 南山频道将其列入南山区必比登推介。",
+    "conflicts": [
+      "店名简写与全称不一致：小桌宴 / 小桌宴印尼娘惹私房菜。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r018",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必比登推介",
+    "name_zh": "卖鱼佬砂锅粥",
+    "name_en": null,
+    "district": "福田",
+    "address": "深圳市福田区梅村路上梅林新村28栋",
+    "description_zh": "上梅林新村的潮汕砂锅粥店，海鲜现点现煮，另有潮汕小炒，晚间营业，属首版必比登推介。",
+    "tags": [
+      "米其林必比登",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "潮汕菜（砂锅粥）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "网易号·深圳美食部落《“0环境，却是米其林推荐，凭什么？”》",
+        "url": "https://www.163.com/dy/article/L5TRGTSN05229T4Q.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-09-03",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "营业状态未核实"
+    ],
+    "notes": "文章称店家每天傍晚开档、以鲜虾鲍鱼粥等出名。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r019",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必比登推介",
+    "name_zh": "3号码头海鲜饭店",
+    "name_en": null,
+    "district": "盐田",
+    "address": null,
+    "description_zh": "盐田区的海鲜饭店，入选首版深圳必比登推介；主打海鲜菜式，详细地址与营业信息待核实。",
+    "tags": [
+      "米其林必比登",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "海鲜（粤式）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "什么值得买《米其林首版广深合册发布：73家必比登全在人均300元内，哪几家值得你排队》",
+        "url": "https://post.smzdm.com/p/a03d5ozz/",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2026-08-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address"
+    ],
+    "notes": "文章称其与 Rex 山水肠粉同在盐田区，盐田区官微曾公布这两家门店地址。",
+    "conflicts": [
+      "店名简写与全称不一致：3号码头 / 3号码头海鲜饭店。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r020",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必比登推介",
+    "name_zh": "Rex山水肠粉",
+    "name_en": null,
+    "district": "盐田",
+    "address": "深圳市盐田区海景二路沙头角保税区31栋1楼商铺",
+    "description_zh": "盐田海景二路一带的肠粉店，米浆现拉、皮薄，配辣酱是常见吃法，入选首版必比登推介。",
+    "tags": [
+      "米其林必比登",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "粤式肠粉",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "网易号·深圳美食部落《“0环境，却是米其林推荐，凭什么？”》",
+        "url": "https://www.163.com/dy/article/L5TRGTSN05229T4Q.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-09-03",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "营业状态未核实"
+    ],
+    "notes": "探店页写作‘山水肠粉’；名单整理页写作‘Rex山水肠粉’，本批以前者地址、后者店名合并标注。",
+    "conflicts": [
+      "店名写法不一：Rex山水肠粉 / 山水肠粉。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r021",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必比登推介",
+    "name_zh": "露两手",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "做顺德菜的粤式馆子，入选首版深圳必比登推介；具体门店位置与招牌菜待核实。",
+    "tags": [
+      "米其林必比登",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "顺德菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "什么值得买《米其林首版广深合册发布：73家必比登全在人均300元内，哪几家值得你排队》",
+        "url": "https://post.smzdm.com/p/a03d5ozz/",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2026-08-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address"
+    ],
+    "notes": "文章将其列入广府/粤西风味 7 家并点名‘露两手顺德菜’。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r022",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必比登推介",
+    "name_zh": "台山佬黄鳝饭",
+    "name_en": null,
+    "district": "福田",
+    "address": "深圳市福田区水围六街117栋1楼",
+    "description_zh": "水围街边的台山风味小店，黄鳝饭煲底带锅巴是特色，入选首版深圳必比登推介。",
+    "tags": [
+      "米其林必比登",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "粤菜（台山黄鳝饭）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "网易号·深圳美食部落《“0环境”，却是米其林推荐，凭什么？”》",
+        "url": "https://www.163.com/dy/article/L5TRGTSN05229T4Q.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-09-03",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "营业状态未核实"
+    ],
+    "notes": "文章称该店此前已在本地美食榜单上出现多年。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r023",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必比登推介",
+    "name_zh": "小芙蓉餐厅",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "广府家常菜小馆，入选首版深圳必比登推介；门店位置与招牌菜信息待核实。",
+    "tags": [
+      "米其林必比登",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "粤菜（广府家常菜）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "什么值得买《米其林首版广深合册发布：73家必比登全在人均300元内，哪几家值得你排队》",
+        "url": "https://post.smzdm.com/p/a03d5ozz/",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2026-08-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address"
+    ],
+    "notes": "文章提到流传版本曾把店名误写成‘小芳春’。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r024",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必比登推介",
+    "name_zh": "小龙牛肉面",
+    "name_en": null,
+    "district": "福田",
+    "address": "深圳市福田区梅华路百兴苑一栋48-8底商",
+    "description_zh": "梅华路百兴苑楼下的重庆风味面馆，红烧牛腱面等为主，属首版必比登推介。",
+    "tags": [
+      "米其林必比登",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "川渝面食（重庆小面）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "网易号·深圳美食部落《“0环境，却是米其林推荐，凭什么？”》",
+        "url": "https://www.163.com/dy/article/L5TRGTSN05229T4Q.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-09-03",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "营业状态未核实"
+    ],
+    "notes": "名单页写作‘小龙牛肉面（福田）’，与地址中的福田区一致。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r025",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必比登推介",
+    "name_zh": "新湖村促肉",
+    "name_en": null,
+    "district": "龙华",
+    "address": "深圳市龙华区中环路福景花园三栋G10",
+    "description_zh": "龙华福景花园附近的潮汕促肉粉店，配料可自选、汤底为鸡汤，属首版必比登推介。",
+    "tags": [
+      "米其林必比登",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "潮汕菜（促肉粉面）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "网易号·深圳美食部落《“0环境”，却是米其林推荐，凭什么？”》",
+        "url": "https://www.163.com/dy/article/L5TRGTSN05229T4Q.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-09-03",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "门店是否与官方标注为同一家待核实"
+    ],
+    "notes": "发布稿写作‘新湖村促肉（龙华建设路）’，与探店页地址（中环路福景花园）不同，可能为不同门店。",
+    "conflicts": [
+      "地址表述不一致：龙华建设路（发布稿）/ 龙华区中环路福景花园三栋G10（探店页）。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r026",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必比登推介",
+    "name_zh": "新记客家味道",
+    "name_en": null,
+    "district": "南山",
+    "address": null,
+    "description_zh": "南山区的客家菜馆，以腌面、汤面等客家做法为主，入选首版深圳必比登推介。",
+    "tags": [
+      "米其林必比登",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "客家菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "南方+ 南山频道《深圳首张米其林榜单！南山上榜25家》",
+        "url": "https://www.nfnews.com/content/r6d5EVaxoE.html",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-08-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address"
+    ],
+    "notes": "南山发布口径将其列入南山区必比登推介；菜系（客家腌面）见其他整理页与发布稿。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r027",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必比登推介",
+    "name_zh": "兴宁客家菜馆",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "梅村路一带的客家菜老店，入选首版深圳必比登推介；地址与菜式细节待核实。",
+    "tags": [
+      "米其林必比登",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "客家菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "什么值得买《米其林首版广深合册发布：73家必比登全在人均300元内，哪几家值得你排队》",
+        "url": "https://post.smzdm.com/p/a03d5ozz/",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2026-08-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address"
+    ],
+    "notes": "名单页写作‘兴宁客家菜馆（梅村路）’，文章提醒需以官方渠道核对店名。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r028",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必比登推介",
+    "name_zh": "缘生态",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "做云南菜的餐馆，入选首版深圳必比登推介；门店位置与菜单信息待核实。",
+    "tags": [
+      "米其林必比登",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "云南菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "什么值得买《米其林首版广深合册发布：73家必比登全在人均300元内，哪几家值得你排队》",
+        "url": "https://post.smzdm.com/p/a03d5ozz/",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2026-08-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address"
+    ],
+    "notes": "文章称其为 21 家中做云南菜的一家。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r029",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "Avant",
+    "name_en": "Avant",
+    "district": null,
+    "address": null,
+    "description_zh": "2026年指南新收录的深圳入选餐厅之一，以创新菜为主；详细门店与菜品待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "创新菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "district",
+      "address"
+    ],
+    "notes": "菜系见米其林中国发布稿；英文拼写在发布稿为 Avant、在名单整理页为 Avanti。",
+    "conflicts": [
+      "拼写不一致：Avant（米其林发布稿）/ Avanti（整理名单）。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r030",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "Blackitch",
+    "name_en": "Blackitch",
+    "district": null,
+    "address": null,
+    "description_zh": "2026年指南新收录的深圳入选餐厅，做时尚泰国菜；门店位置与菜单待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "泰国菜（时尚）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "district",
+      "address"
+    ],
+    "notes": "菜系见米其林中国发布稿。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r031",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "胤呈",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年米其林指南新收录的深圳指南入选餐厅；地址、菜系与营业信息待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address",
+      "菜系"
+    ],
+    "notes": "仅见于名单，细节未在可读页面出现。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r032",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "陈皮陈饭庄",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年米其林指南新收录的深圳指南入选餐厅；地址、菜系与营业信息待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address",
+      "菜系"
+    ],
+    "notes": "仅见于名单，细节未在可读页面出现。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r033",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "主席楼",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年米其林指南新收录的深圳指南入选餐厅；地址、菜系与营业信息待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address",
+      "菜系"
+    ],
+    "notes": "仅见于名单，细节未在可读页面出现。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r034",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "大林苑",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年米其林指南新收录的深圳指南入选餐厅；地址、菜系与营业信息待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address",
+      "菜系"
+    ],
+    "notes": "仅见于名单，细节未在可读页面出现。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r035",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "蜑家菜",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年米其林指南新收录的深圳指南入选餐厅；地址、菜系与营业信息待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address",
+      "确定的店名与菜系"
+    ],
+    "notes": "网络其他版本写作‘家菜’等，需核实疍家/蜑家写法。",
+    "conflicts": [
+      "店名异写：蜑家菜 / 家菜（未读取到官方写法）。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r036",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "东山茶寮",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年米其林指南新收录的深圳指南入选餐厅；地址、菜系与营业信息待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address",
+      "菜系"
+    ],
+    "notes": "仅见于名单，细节未在可读页面出现。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r037",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "珍庭",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年米其林指南新收录的深圳指南入选餐厅；地址、菜系与营业信息待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address",
+      "菜系"
+    ],
+    "notes": "名单另列‘珍庭观时’，与本条是否同一品牌不同门店待核实。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r038",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "Gogo饭店",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年米其林指南新收录的深圳指南入选餐厅；地址、菜系与营业信息待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address",
+      "菜系"
+    ],
+    "notes": "仅见于名单，细节未在可读页面出现。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r039",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "水岸十里",
+    "name_en": null,
+    "district": "南山",
+    "address": null,
+    "description_zh": "2026年指南新收录的深圳入选餐厅，主打江浙菜；具体门店与招牌菜待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "江浙菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address"
+    ],
+    "notes": "发布稿写作‘水岸十里（南山）’，菜系为江浙菜。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r040",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "望月",
+    "name_en": "La Lune",
+    "district": null,
+    "address": null,
+    "description_zh": "2026年指南新收录的深圳入选餐厅，做创新菜；主厨侯钟涵获本届年轻厨师奖，门店地址待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "创新菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "district",
+      "address"
+    ],
+    "notes": "英文名与主厨信息见米其林中国发布稿（写作‘望月(La Lune)’）；发布稿称其为全女性运营餐厅。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r041",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "La Tablée",
+    "name_en": "La Tablée",
+    "district": null,
+    "address": null,
+    "description_zh": "2026年指南新收录的深圳入选餐厅，做创新菜；门店位置与菜品待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "创新菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "district",
+      "address"
+    ],
+    "notes": "米其林中国发布稿写作‘La Tablée’并归为创新餐厅。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r042",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "马旺子",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年指南新收录的深圳入选餐厅，主打川菜；详细门店与菜品待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "川菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address"
+    ],
+    "notes": "菜系见米其林中国发布稿。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r043",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "宁波酒家",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年指南新收录的深圳入选餐厅，主打宁波菜；详细门店与菜品待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "宁波菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address"
+    ],
+    "notes": "菜系见米其林中国发布稿。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r044",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "Notti",
+    "name_en": "Notti",
+    "district": null,
+    "address": null,
+    "description_zh": "2026年米其林指南新收录的深圳指南入选餐厅；地址、菜系与营业信息待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "district",
+      "address",
+      "菜系"
+    ],
+    "notes": "仅见于名单，拉丁字母店名按页面照录。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r045",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "配德",
+    "name_en": "Pairedd",
+    "district": null,
+    "address": null,
+    "description_zh": "2026年指南新收录的深圳入选餐厅，做创新菜；门店位置与菜品待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "创新菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "district",
+      "address"
+    ],
+    "notes": "米其林中国发布稿写作‘配德(Pairedd)’，归为创新餐厅。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r046",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "荣川菜",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年指南新收录的深圳入选餐厅，主打川菜；页面标注位于深南大道一带，详细门店待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "川菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address"
+    ],
+    "notes": "发布稿写作‘荣川菜（深南大道）’，菜系为川菜。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r047",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "山海作",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年指南新收录的深圳入选餐厅，做时尚中国菜；详细门店与菜品待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "时尚中国菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address"
+    ],
+    "notes": "菜系见米其林中国发布稿。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r048",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "香乐园",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年指南新收录的深圳入选餐厅，主打淮扬菜；详细门店与菜品待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "淮扬菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address"
+    ],
+    "notes": "菜系见米其林中国发布稿。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r049",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "植庭",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年米其林指南新收录的深圳指南入选餐厅；地址、菜系与营业信息待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address",
+      "菜系"
+    ],
+    "notes": "仅见于名单，细节未在可读页面出现。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r050",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "夏宫",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年米其林指南新收录的深圳指南入选餐厅；地址、菜系与营业信息待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address",
+      "菜系"
+    ],
+    "notes": "仅见于名单，细节未在可读页面出现。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r051",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "珍庭观时",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年米其林指南新收录的深圳指南入选餐厅；地址、菜系与营业信息待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address",
+      "菜系"
+    ],
+    "notes": "名单同时列有‘珍庭’，两店关系待核实。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r052",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "嘉悦里",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年米其林指南新收录的深圳指南入选餐厅；地址、菜系与营业信息待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address",
+      "菜系"
+    ],
+    "notes": "仅见于名单，细节未在可读页面出现。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r053",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "天屿水",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年指南新收录的深圳入选餐厅，属素食餐厅；详细门店与菜品待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "素食",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address"
+    ],
+    "notes": "菜系见米其林中国发布稿（两家素食餐厅之一）。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r054",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "瓦乌",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年指南新收录的深圳入选餐厅，属素食餐厅；详细门店与菜品待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "素食",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address"
+    ],
+    "notes": "菜系见米其林中国发布稿（两家素食餐厅之一）。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r055",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "吴",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年米其林指南新收录的深圳指南入选餐厅；地址、菜系与营业信息待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address",
+      "菜系",
+      "单字店名可能为简称待核实"
+    ],
+    "notes": "仅见于名单，单字名称是否为全名待核实。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r056",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "宴庭",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年米其林指南新收录的深圳指南入选餐厅；地址、菜系与营业信息待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address",
+      "菜系"
+    ],
+    "notes": "仅见于名单，细节未在可读页面出现。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r057",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "颐亭",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年米其林指南新收录的深圳指南入选餐厅；地址、菜系与营业信息待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address",
+      "确定的店名与菜系"
+    ],
+    "notes": "其他流传版本写作‘颐庭’，本批按所读名单页的‘颐亭’照录。",
+    "conflicts": [
+      "店名异写：颐亭 / 颐庭。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r058",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "粤海荟",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年米其林指南新收录的深圳指南入选餐厅；地址、菜系与营业信息待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address",
+      "菜系"
+    ],
+    "notes": "仅见于名单，细节未在可读页面出现。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r059",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "指南入选",
+    "name_zh": "卓粤轩",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026年米其林指南新收录的深圳指南入选餐厅；地址、菜系与营业信息待核实。",
+    "tags": [
+      "米其林指南入选",
+      "2026",
+      "深圳",
+      "待核实"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "新浪新闻转载微博@涓子VJ《2026 深圳米其林餐厅名单》",
+        "url": "https://www.sina.cn/news/detail/5333271686671415.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "district",
+      "address",
+      "确定的店名与菜系"
+    ],
+    "notes": "其他流传版本写作‘卓悦轩’，需以官方渠道核对。",
+    "conflicts": [
+      "店名异写：卓粤轩 / 卓悦轩。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r060",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "黑珍珠餐厅（二钻）",
+    "name_zh": "AVANT（创意园深南电路大厦店）",
+    "name_en": "AVANT",
+    "district": null,
+    "address": null,
+    "description_zh": "2026黑珍珠指南深圳唯一二钻餐厅，店址标注为创意园深南电路大厦店，榜单归类西式料理；菜单与订座信息待核实。",
+    "tags": [
+      "黑珍珠",
+      "二钻",
+      "西餐",
+      "精致餐饮"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "西式料理",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "Shenzhen Daily / EyeShenzhen（深圳官方英文媒体）",
+        "url": "https://www.amazingshenzhen.com.cn/content/2026-02/02/content_31931787.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-02-02",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": "来源页列出2026黑珍珠深圳完整榜单，钻级与英文名均为页面明示。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r061",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "黑珍珠餐厅（一钻）",
+    "name_zh": "Ensue（深圳福田香格里拉大酒店）",
+    "name_en": "Ensue",
+    "district": "福田",
+    "address": "深圳福田香格里拉大酒店",
+    "description_zh": "2026黑珍珠一钻，位于深圳福田香格里拉大酒店内，榜单归类为西式料理；菜品与订座信息待核实。",
+    "tags": [
+      "黑珍珠",
+      "一钻",
+      "西餐",
+      "酒店餐厅"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "西式料理",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "Shenzhen Daily / EyeShenzhen（深圳官方英文媒体）",
+        "url": "https://www.amazingshenzhen.com.cn/content/2026-02/02/content_31931787.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-02-02",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "详细地址",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r062",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "黑珍珠餐厅（一钻）",
+    "name_zh": "嘉苑饭店",
+    "name_en": "Rose Palace",
+    "district": null,
+    "address": null,
+    "description_zh": "2026黑珍珠一钻，榜单归类潮州菜，英文名Rose Palace；页面未给出门店地址与所在区，待核实。",
+    "tags": [
+      "黑珍珠",
+      "一钻",
+      "潮州菜"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "潮州菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "Shenzhen Daily / EyeShenzhen（深圳官方英文媒体）",
+        "url": "https://www.amazingshenzhen.com.cn/content/2026-02/02/content_31931787.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-02-02",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r063",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "黑珍珠餐厅（一钻）",
+    "name_zh": "新荣记（平安金融中心店）",
+    "name_en": "Xinrongji",
+    "district": null,
+    "address": null,
+    "description_zh": "2026黑珍珠一钻，店址标注为平安金融中心店，榜单归类台州菜；门店地址与营业信息待核实。",
+    "tags": [
+      "黑珍珠",
+      "一钻",
+      "台州菜"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "台州菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "Shenzhen Daily / EyeShenzhen（深圳官方英文媒体）",
+        "url": "https://www.amazingshenzhen.com.cn/content/2026-02/02/content_31931787.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-02-02",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r064",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "黑珍珠餐厅（一钻）",
+    "name_zh": "天屿水·茶蔬（卓悦中心店）",
+    "name_en": "Tian yo Shui",
+    "district": null,
+    "address": null,
+    "description_zh": "2026黑珍珠一钻，店址标注卓悦中心店，榜单归类素食；菜式特点与订座方式待核实。",
+    "tags": [
+      "黑珍珠",
+      "一钻",
+      "素食"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "素食",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "Shenzhen Daily / EyeShenzhen（深圳官方英文媒体）",
+        "url": "https://www.amazingshenzhen.com.cn/content/2026-02/02/content_31931787.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-02-02",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r065",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "黑珍珠餐厅（一钻）",
+    "name_zh": "深圳文华东方酒店·东湾·The Bay by Chef Fei",
+    "name_en": "The Bay by Chef Fei",
+    "district": null,
+    "address": "深圳文华东方酒店",
+    "description_zh": "2026黑珍珠一钻，位于深圳文华东方酒店内，榜单归类粤菜，为当年深圳四家新上榜餐厅之一。",
+    "tags": [
+      "黑珍珠",
+      "一钻",
+      "粤菜",
+      "酒店餐厅",
+      "新上榜"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "粤菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "Shenzhen Daily / EyeShenzhen（深圳官方英文媒体）",
+        "url": "https://www.amazingshenzhen.com.cn/content/2026-02/02/content_31931787.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-02-02",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": "新上榜信息另见读特报道，与本条来源一致。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r066",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "黑珍珠餐厅（一钻）",
+    "name_zh": "La Tablée 融合料理",
+    "name_en": "La Tablée",
+    "district": null,
+    "address": null,
+    "description_zh": "2026黑珍珠一钻融合料理，主厨林琦获该年度黑珍珠年轻主厨奖；门店地址与菜品信息待核实。",
+    "tags": [
+      "黑珍珠",
+      "一钻",
+      "融合菜",
+      "主厨奖"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "融合料理",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "Shenzhen Daily / EyeShenzhen（深圳官方英文媒体）",
+        "url": "https://www.amazingshenzhen.com.cn/content/2026-02/02/content_31931787.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-02-02",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r067",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "黑珍珠餐厅（一钻）",
+    "name_zh": "山海作·中国菜（华侨城店）",
+    "name_en": "Shan Hai Zuo·Chinese Cuisine",
+    "district": null,
+    "address": null,
+    "description_zh": "2026黑珍珠一钻，门店为华侨城店，榜单归类创意菜（特色菜），为深圳当年新上榜餐厅之一。",
+    "tags": [
+      "黑珍珠",
+      "一钻",
+      "创意菜",
+      "新上榜"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "创意菜（特色菜）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "Shenzhen Daily / EyeShenzhen（深圳官方英文媒体）",
+        "url": "https://www.amazingshenzhen.com.cn/content/2026-02/02/content_31931787.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-02-02",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r068",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "黑珍珠餐厅（一钻）",
+    "name_zh": "至正潮菜（华侨城店）",
+    "name_en": "CHI CHING CHIU CHOI",
+    "district": null,
+    "address": null,
+    "description_zh": "2026黑珍珠一钻，华侨城店，榜单归类潮州菜，是深圳上榜餐厅中的潮汕风味代表之一。",
+    "tags": [
+      "黑珍珠",
+      "一钻",
+      "潮州菜",
+      "潮汕菜"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "潮州菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "Shenzhen Daily / EyeShenzhen（深圳官方英文媒体）",
+        "url": "https://www.amazingshenzhen.com.cn/content/2026-02/02/content_31931787.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-02-02",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r069",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "黑珍珠餐厅（一钻）",
+    "name_zh": "君悦酒店·主席楼·粤府·点心粤菜",
+    "name_en": "China Lodge",
+    "district": null,
+    "address": "君悦酒店",
+    "description_zh": "2026黑珍珠一钻，位于君悦酒店内，榜单归类粤菜点心；门店地址与营业信息待核实。",
+    "tags": [
+      "黑珍珠",
+      "一钻",
+      "粤菜",
+      "点心",
+      "酒店餐厅"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "粤菜（点心）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "Shenzhen Daily / EyeShenzhen（深圳官方英文媒体）",
+        "url": "https://www.amazingshenzhen.com.cn/content/2026-02/02/content_31931787.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-02-02",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r070",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "黑珍珠餐厅（一钻）",
+    "name_zh": "上海笑鱼 静寿司 SHIZUKA（深圳店）",
+    "name_en": "SUSHI SHIZUKA (SHENZHEN)",
+    "district": null,
+    "address": null,
+    "description_zh": "2026黑珍珠一钻，上海笑鱼旗下静寿司的深圳门店，榜单归类日本料理，为当年深圳新上榜餐厅之一。",
+    "tags": [
+      "黑珍珠",
+      "一钻",
+      "日本料理",
+      "新上榜"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "日本料理",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "Shenzhen Daily / EyeShenzhen（深圳官方英文媒体）",
+        "url": "https://www.amazingshenzhen.com.cn/content/2026-02/02/content_31931787.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-02-02",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r071",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "黑珍珠餐厅（一钻）",
+    "name_zh": "Stone Sal 言盐西餐厅（金地威新中心店）",
+    "name_en": "Stone Sal Restaurant and Bar",
+    "district": null,
+    "address": null,
+    "description_zh": "2026黑珍珠一钻，门店为金地威新中心店，榜单归类牛排馆（西餐）；菜单与营业信息待核实。",
+    "tags": [
+      "黑珍珠",
+      "一钻",
+      "牛排",
+      "西餐"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "牛排馆",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "Shenzhen Daily / EyeShenzhen（深圳官方英文媒体）",
+        "url": "https://www.amazingshenzhen.com.cn/content/2026-02/02/content_31931787.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-02-02",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r072",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "黑珍珠餐厅（一钻）",
+    "name_zh": "晴空·日本料理（万象城店）",
+    "name_en": "Sei ku",
+    "district": null,
+    "address": null,
+    "description_zh": "2026黑珍珠一钻，门店为万象城店，榜单归类日本料理；页面未给地址，门店信息待核实。",
+    "tags": [
+      "黑珍珠",
+      "一钻",
+      "日本料理"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "日本料理",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "Shenzhen Daily / EyeShenzhen（深圳官方英文媒体）",
+        "url": "https://www.amazingshenzhen.com.cn/content/2026-02/02/content_31931787.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-02-02",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r073",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "黑珍珠餐厅（一钻）",
+    "name_zh": "齐武",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2026黑珍珠一钻，榜单归类日本料理；来源页英文名位置以NULL占位，门店与地址均未披露，待核实。",
+    "tags": [
+      "黑珍珠",
+      "一钻",
+      "日本料理"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "日本料理",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "Shenzhen Daily / EyeShenzhen（深圳官方英文媒体）",
+        "url": "https://www.amazingshenzhen.com.cn/content/2026-02/02/content_31931787.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-02-02",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": "榜单英文名一栏写作NULL，按缺失处理。",
+    "conflicts": [
+      "来源页英文名以NULL占位，而非实际英文名"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r074",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "黑珍珠餐厅（一钻）",
+    "name_zh": "鹏瑞莱佛士酒店·云璟 Yun Jing",
+    "name_en": "Yun Jing Chinese Restaurant",
+    "district": null,
+    "address": "鹏瑞莱佛士酒店",
+    "description_zh": "2026黑珍珠一钻，位于鹏瑞莱佛士酒店内的中餐厅，榜单归类粤菜；地址与营业信息待核实。",
+    "tags": [
+      "黑珍珠",
+      "一钻",
+      "粤菜",
+      "酒店餐厅"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "粤菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "Shenzhen Daily / EyeShenzhen（深圳官方英文媒体）",
+        "url": "https://www.amazingshenzhen.com.cn/content/2026-02/02/content_31931787.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-02-02",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r075",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "黑珍珠餐厅（一钻）",
+    "name_zh": "水岸十里·江海时鲜（万象前海店）",
+    "name_en": "GreenSide",
+    "district": null,
+    "address": null,
+    "description_zh": "2026黑珍珠一钻，门店为万象前海店，榜单归类浙江菜；菜品与订座信息待核实。",
+    "tags": [
+      "黑珍珠",
+      "一钻",
+      "浙江菜"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "浙江菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "Shenzhen Daily / EyeShenzhen（深圳官方英文媒体）",
+        "url": "https://www.amazingshenzhen.com.cn/content/2026-02/02/content_31931787.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-02-02",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r076",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "黑珍珠餐厅（一钻）",
+    "name_zh": "三生AFFINITÉ（海上世界文化艺术中心店）",
+    "name_en": "Sansheng AFFINITÉ",
+    "district": null,
+    "address": null,
+    "description_zh": "2026黑珍珠一钻法国菜，门店位于海上世界文化艺术中心，为深圳当年四家新上榜餐厅之一。",
+    "tags": [
+      "黑珍珠",
+      "一钻",
+      "法国菜",
+      "西餐",
+      "新上榜"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "法国菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "Shenzhen Daily / EyeShenzhen（深圳官方英文媒体）",
+        "url": "https://www.amazingshenzhen.com.cn/content/2026-02/02/content_31931787.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-02-02",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r077",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必吃榜（大众点评2026）",
+    "name_zh": "电白鸭粥店",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "深圳晚报报道的2026大众点评必吃榜上榜店，做粤西风味，属街坊老店，自2020年首次上榜后累计五年登榜。",
+    "tags": [
+      "必吃榜",
+      "2026",
+      "粤西菜",
+      "老店"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "粤西菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳晚报（深圳新闻网龙华网转载）",
+        "url": "http://ilonghua.sznews.com/content/2026-07/02/content_32109333.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-07-02",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r078",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必吃榜（大众点评2026）",
+    "name_zh": "潮香四海·家传潮汕菜",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "经济日报报道的2026必吃榜上榜餐厅，主打家传潮汕菜，已连续八年上榜。",
+    "tags": [
+      "必吃榜",
+      "2026",
+      "潮汕菜",
+      "老店"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "潮汕菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "经济日报",
+        "url": "http://www.jingjiribao.cn/static/detail.jsp?id=666672",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-07-01",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r079",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必吃榜（大众点评2026）",
+    "name_zh": "森顺碳烤肉·活烤鳗鱼",
+    "name_en": null,
+    "district": null,
+    "address": "华强北",
+    "description_zh": "2026必吃榜上榜店，报道称其扎根华强北，主营碳烤肉与活烤鳗鱼；详细地址待核实。",
+    "tags": [
+      "必吃榜",
+      "2026",
+      "烤肉",
+      "鳗鱼"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "炭火烤肉",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "经济日报",
+        "url": "http://www.jingjiribao.cn/static/detail.jsp?id=666672",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-07-01",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": "页面仅提到位于华强北，未写所在区。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r080",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "必吃榜（大众点评2026）",
+    "name_zh": "Bunco By Abidin",
+    "name_en": "Bunco By Abidin",
+    "district": null,
+    "address": "海上世界",
+    "description_zh": "2026必吃榜新上榜的土耳其餐厅，位于海上世界，报道称主厨与厨师长均为土耳其人，核心香料来自土耳其。",
+    "tags": [
+      "必吃榜",
+      "2026",
+      "土耳其菜",
+      "异国料理",
+      "新上榜"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "土耳其菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "经济日报",
+        "url": "http://www.jingjiribao.cn/static/detail.jsp?id=666672",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-07-01",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": "页面仅提到海上世界，未写所在区。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r081",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "深圳老字号（光明乳鸽）",
+    "name_zh": "光明招待所",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "1983年对外营业的深圳老字号，源于光明农场内部食堂，以先卤后炸的红烧乳鸽闻名，被报道称为深圳标志性美食。",
+    "tags": [
+      "老字号",
+      "光明乳鸽",
+      "本地特色",
+      "光明"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "粤菜（光明乳鸽）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳新闻网（深圳光明网转载）",
+        "url": "https://iguangming.sznews.com/content/2026-06/18/content_32094496.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-06-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": "页面只以“光明”指代所在地，未明写“光明区”，故所在区留空。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r082",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "深圳老字号（乳鸽）",
+    "name_zh": "五谷芳乳鸽王",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "第七届深圳老字号名单品牌，申报主体为五谷芳乳鸽王饮食策划管理公司；门店位置、菜系与招牌菜待核实。",
+    "tags": [
+      "老字号",
+      "乳鸽",
+      "光明乳鸽"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳老字号协会官网（深圳市商业联合会）",
+        "url": "http://www.szlao.com/history?year=10",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "菜系",
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": "名单页只列品牌与申报企业，无门店与菜品信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r083",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "深圳老字号（乳鸽/餐饮）",
+    "name_zh": "光明鸽",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "第六届深圳老字号名单品牌，申报主体为光明集团光明鸽饮食发展公司，品牌与光明乳鸽一脉相承；门店信息待核实。",
+    "tags": [
+      "老字号",
+      "光明乳鸽",
+      "乳鸽"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳老字号协会官网（深圳市商业联合会）",
+        "url": "http://www.szlao.com/history?year=9",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "菜系",
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": "名单页只列品牌与申报企业。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r084",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "老字号/本地特色（烧鹅）",
+    "name_zh": "先记烧鹅王·本地粤菜（福永总店）",
+    "name_en": null,
+    "district": "宝安",
+    "address": null,
+    "description_zh": "宝安区美食地图重点推荐，福永总店，页面称其为经营31年的烧鹅老字号、非遗美味；详细地址待核实。",
+    "tags": [
+      "老字号",
+      "烧鹅",
+      "粤菜",
+      "宝安",
+      "非遗"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "粤菜（烧鹅）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "读特（深圳报业集团）",
+        "url": "https://m.dutenews.com/n/article/15788099",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "详细地址",
+      "官网"
+    ],
+    "notes": "页面仅标注05-23发布未标年份；品牌另见于第十四届深圳老字号名单。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r085",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "深圳老字号（粤式茶楼）",
+    "name_zh": "凤凰楼",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "第十一届深圳老字号名单品牌，申报企业为凤凰楼饮食服务公司；具体菜系、门店地址与营业信息待核实。",
+    "tags": [
+      "老字号",
+      "粤菜",
+      "茶楼"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳老字号协会官网（深圳市商业联合会）",
+        "url": "http://www.szlao.com/history?year=12",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "菜系",
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": "名单页只列品牌与申报企业。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r086",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "深圳老字号（砂锅粥）",
+    "name_zh": "金稻园乐记",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "第十一届深圳老字号名单品牌，申报企业为金稻园乐记餐饮公司；门店位置与招牌菜待核实。",
+    "tags": [
+      "老字号",
+      "砂锅粥",
+      "粤菜"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳老字号协会官网（深圳市商业联合会）",
+        "url": "http://www.szlao.com/history?year=12",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "菜系",
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": "名单页只列品牌与申报企业。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r087",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "深圳老字号（潮汕菜）",
+    "name_zh": "新梅园",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "第六届深圳老字号名单品牌，申报企业为新梅园饮食策划管理公司；菜系与门店地址待核实。",
+    "tags": [
+      "老字号",
+      "潮汕菜",
+      "餐饮"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳老字号协会官网（深圳市商业联合会）",
+        "url": "http://www.szlao.com/history?year=9",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "菜系",
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": "名单页只列品牌与申报企业。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r088",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "深圳老字号（粤菜酒楼）",
+    "name_zh": "春满园",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "第五届深圳老字号名单品牌，申报企业为春满园饮食管理服务（深圳）集团；门店与经营菜系待核实。",
+    "tags": [
+      "老字号",
+      "粤菜",
+      "酒楼"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳老字号协会官网（深圳市商业联合会）",
+        "url": "http://www.szlao.com/history?year=8",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "菜系",
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": "名单页只列品牌与申报企业。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r089",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "深圳老字号（潮州粥）",
+    "name_zh": "深运潮州粥",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "第五届深圳老字号名单品牌，申报企业为深运工贸企业公司，品牌名指向潮州粥；门店与地址待核实。",
+    "tags": [
+      "老字号",
+      "潮州粥",
+      "潮汕菜"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳老字号协会官网（深圳市商业联合会）",
+        "url": "http://www.szlao.com/history?year=8",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "菜系",
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": "名单页只列品牌与申报企业。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r090",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "深圳老字号（肠粉/快餐）",
+    "name_zh": "红荔村",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "第十四届深圳老字号名单品牌，申报企业为红荔村餐饮管理公司；门店分布与主营品种待核实。",
+    "tags": [
+      "老字号",
+      "肠粉",
+      "快餐"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳老字号协会官网（深圳市商业联合会）",
+        "url": "http://www.szlao.com/history?year=15",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "菜系",
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": "名单页只列品牌与申报企业。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r091",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "深圳老字号（面食连锁）",
+    "name_zh": "面点王",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "第三届深圳老字号名单品牌，申报企业为面点王饮食连锁公司，属深圳本土面食连锁；门店与地址待核实。",
+    "tags": [
+      "老字号",
+      "面食",
+      "连锁"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳老字号协会官网（深圳市商业联合会）",
+        "url": "http://www.szlao.com/history?year=6",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "菜系",
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": "名单页只列品牌与申报企业。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r092",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "深圳老字号（酒楼）",
+    "name_zh": "老大昌酒楼",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "第十五届深圳老字号名单品牌，申报企业为老大昌酒楼公司；菜系、门店地址与营业信息待核实。",
+    "tags": [
+      "老字号",
+      "酒楼"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳老字号协会官网（深圳市商业联合会）",
+        "url": "http://www.szlao.com/history?year=16",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "菜系",
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": "名单页只列品牌与申报企业。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r093",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "罗湖餐饮地标名店",
+    "name_zh": "圣丰城酒家（喜荟城店）",
+    "name_en": null,
+    "district": "罗湖",
+    "address": null,
+    "description_zh": "2023年罗湖餐饮城市地标名店之一，门店为喜荟城店，属罗湖老牌餐饮企业；详细地址待核实。",
+    "tags": [
+      "罗湖",
+      "地标名店",
+      "粤菜",
+      "酒楼"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": null,
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "南方都市报（搜狐转载）",
+        "url": "https://www.sohu.com/a/728737985_161795",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2023-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "菜系",
+      "详细地址",
+      "官网"
+    ],
+    "notes": "榜单由深圳市商务局指导、罗湖区商务局支持、深圳市餐饮商会主办。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r094",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "罗湖餐饮地标名店",
+    "name_zh": "粤菜王府（京基金融中心店）",
+    "name_en": null,
+    "district": "罗湖",
+    "address": null,
+    "description_zh": "2023年罗湖餐饮城市地标名店之一，门店位于京基金融中心，做粤菜；详细地址待核实。",
+    "tags": [
+      "罗湖",
+      "地标名店",
+      "粤菜"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "粤菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "南方都市报（搜狐转载）",
+        "url": "https://www.sohu.com/a/728737985_161795",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2023-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "详细地址",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r095",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "罗湖餐饮地标名店",
+    "name_zh": "顺意·顺德家乡菜（万象食家店）",
+    "name_en": null,
+    "district": "罗湖",
+    "address": null,
+    "description_zh": "2023年罗湖餐饮城市地标名店之一，门店位于万象食家，主营顺德家乡菜；详细地址待核实。",
+    "tags": [
+      "罗湖",
+      "地标名店",
+      "顺德菜"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "顺德菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "南方都市报（搜狐转载）",
+        "url": "https://www.sohu.com/a/728737985_161795",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2023-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "详细地址",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r096",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "罗湖餐饮地标名店（潮汕牛肉火锅）",
+    "name_zh": "八合里牛肉火锅（南湖店）",
+    "name_en": null,
+    "district": "罗湖",
+    "address": null,
+    "description_zh": "2023年罗湖餐饮城市地标名店之一，门店为南湖店，属潮汕牛肉火锅连锁；详细地址待核实。",
+    "tags": [
+      "罗湖",
+      "地标名店",
+      "潮汕菜",
+      "牛肉火锅"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "潮汕牛肉火锅",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "南方都市报（搜狐转载）",
+        "url": "https://www.sohu.com/a/728737985_161795",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2023-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "详细地址",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r097",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "罗湖餐饮地标名店（粤式酒楼）",
+    "name_zh": "唐宫（东门店）",
+    "name_en": null,
+    "district": "罗湖",
+    "address": null,
+    "description_zh": "2023年罗湖餐饮城市地标名店之一，门店为东门店，属粤式酒楼；品牌另见于深圳老字号名单。",
+    "tags": [
+      "罗湖",
+      "地标名店",
+      "粤菜",
+      "早茶",
+      "老字号"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "粤菜（早茶）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "南方都市报（搜狐转载）",
+        "url": "https://www.sohu.com/a/728737985_161795",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2023-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "详细地址",
+      "官网"
+    ],
+    "notes": "唐宫亦为第六届深圳老字号名单品牌，申报企业为深圳维华盛世唐宫饮食公司。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r098",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "罗湖餐饮地标名店（潮州菜）",
+    "name_zh": "佳宁娜潮州菜（罗湖店）",
+    "name_en": null,
+    "district": "罗湖",
+    "address": null,
+    "description_zh": "2023年罗湖餐饮城市地标名店之一，门店为罗湖店，主营潮州菜；品牌另见于深圳老字号名单。",
+    "tags": [
+      "罗湖",
+      "地标名店",
+      "潮州菜",
+      "潮汕菜",
+      "老字号"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "潮州菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "南方都市报（搜狐转载）",
+        "url": "https://www.sohu.com/a/728737985_161795",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2023-10-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "详细地址",
+      "官网"
+    ],
+    "notes": "佳宁娜亦为第六届深圳老字号名单品牌，申报企业为佳宁娜（深圳）投资公司。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r099",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "本地特色（沙井蚝）",
+    "name_zh": "蠔门饭店（沙井大街店）",
+    "name_en": null,
+    "district": "宝安",
+    "address": null,
+    "description_zh": "宝安区美食地图重点推荐的沙井蚝餐厅，页面称可尝到多种生蚝做法，门店为沙井大街店；详细地址待核实。",
+    "tags": [
+      "沙井蚝",
+      "宝安",
+      "海鲜",
+      "本地特色"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "海鲜（沙井蚝）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "读特（深圳报业集团）",
+        "url": "https://m.dutenews.com/n/article/15788099",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "详细地址",
+      "官网"
+    ],
+    "notes": "页面仅标注05-23发布未标年份；地址以“沙井大街店”门店名体现。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r100",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "广式早茶/粤菜",
+    "name_zh": "利宝阁喜宴（宝安壹方城店）",
+    "name_en": null,
+    "district": "宝安",
+    "address": null,
+    "description_zh": "宝安区美食地图推荐门店，位于壹方城，做广式早茶、粤菜与鲜活海鲜；详细地址待核实。",
+    "tags": [
+      "早茶",
+      "粤菜",
+      "海鲜",
+      "宝安"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "粤菜（早茶）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "读特（深圳报业集团）",
+        "url": "https://m.dutenews.com/n/article/15788099",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "详细地址",
+      "官网"
+    ],
+    "notes": "页面仅标注05-23发布未标年份。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r101",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "圳品餐厅（海鲜）",
+    "name_zh": "79号渔船",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "深圳海鲜连锁，2025年获颁“圳品”餐厅牌匾，报道称其推出罗氏虾、生蚝、鲍鱼等圳品菜肴。",
+    "tags": [
+      "圳品餐厅",
+      "海鲜",
+      "粤菜"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "海鲜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "读特（晶报）",
+        "url": "https://www.dutenews.com/n/article/10191652",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2025-10-25",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r102",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "圳品餐厅（椰子鸡火锅）",
+    "name_zh": "润园四季",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "2025年获颁“圳品”餐厅牌匾的椰子鸡火锅品牌，属深圳本土餐饮企业；门店分布与地址待核实。",
+    "tags": [
+      "圳品餐厅",
+      "椰子鸡",
+      "火锅",
+      "本地特色"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "椰子鸡火锅",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "读特（晶报）",
+        "url": "https://www.dutenews.com/n/article/10191652",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2025-10-25",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": "福田“安心餐厅”报道亦提到其卓悦汇门店。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r103",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "大鹏海鲜（海胆）",
+    "name_zh": "辉记海边餐厅",
+    "name_en": null,
+    "district": "大鹏新区",
+    "address": "深圳市大鹏新区南澳街道斜吓村5号",
+    "description_zh": "南方+南澳海胆季攻略推荐店，位于斜吓村，与海胆养殖场同址，招牌为海胆炒饭等海胆菜式。",
+    "tags": [
+      "大鹏",
+      "南澳",
+      "海鲜",
+      "海胆",
+      "本地特色"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "海鲜（海胆）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "南方+（南方日报）",
+        "url": "https://static.nfnews.com/content/202604/23/c12363843.html",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-04-23",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "官网"
+    ],
+    "notes": "页面信息来源标注为南宣、大鹏文旅通。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r104",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "大鹏海鲜（海胆）",
+    "name_zh": "金浪海鲜全海景餐厅",
+    "name_en": null,
+    "district": "大鹏新区",
+    "address": "深圳市大鹏新区南澳街道海滨南路39号（海贝湾店）；南澳街道斜吓村93号（斜吓店）",
+    "description_zh": "南澳海胆季攻略推荐的海景海鲜餐厅，有海贝湾店与斜吓店两处门店，推荐菜含海胆炒饭、海胆竹米盏等。",
+    "tags": [
+      "大鹏",
+      "南澳",
+      "海鲜",
+      "海胆",
+      "海景餐厅"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "海鲜（海胆）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "南方+（南方日报）",
+        "url": "https://static.nfnews.com/content/202604/23/c12363843.html",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-04-23",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r105",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "大鹏海鲜（海胆）",
+    "name_zh": "天下溪海景餐厅",
+    "name_en": null,
+    "district": "大鹏新区",
+    "address": "深圳市大鹏新区南澳街道南隆社区海滨南路25号（天下溪海景酒店内）",
+    "description_zh": "南澳海胆季攻略推荐，位于南隆社区海景酒店内，推荐菜有海胆炒饭、芙蓉海胆滑蛋白。",
+    "tags": [
+      "大鹏",
+      "南澳",
+      "海鲜",
+      "海胆",
+      "海景餐厅"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "海鲜（海胆）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "南方+（南方日报）",
+        "url": "https://static.nfnews.com/content/202604/23/c12363843.html",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-04-23",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "官网"
+    ],
+    "notes": "深圳新闻网大鹏年夜饭攻略亦提到天下溪海景酒店的海鲜年夜饭。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r106",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "大鹏海鲜（海胆）",
+    "name_zh": "美人鱼悬崖海景餐厅（鹿嘴山庄店）",
+    "name_en": null,
+    "district": "大鹏新区",
+    "address": "深圳市大鹏新区南澳街道杨梅坑鹿嘴山庄",
+    "description_zh": "南澳海胆季攻略推荐，位于杨梅坑鹿嘴山庄，主打海胆创意菜，如青龙海胆和鸣饭、琥珀海胆酿等。",
+    "tags": [
+      "大鹏",
+      "南澳",
+      "海鲜",
+      "海胆",
+      "海景餐厅"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "海鲜（海胆）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "南方+（南方日报）",
+        "url": "https://static.nfnews.com/content/202604/23/c12363843.html",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-04-23",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r107",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "大鹏海鲜（海胆）",
+    "name_zh": "回望轩海鲜酒楼（丹枫凯丽度假村）",
+    "name_en": null,
+    "district": "大鹏新区",
+    "address": "深圳市大鹏新区南澳街道新大地质公园路2号丹枫凯丽度假村内",
+    "description_zh": "南澳海胆季攻略提到的海鲜酒楼，位于丹枫凯丽度假村内，推荐菜为海胆酱焗黑虎虾。",
+    "tags": [
+      "大鹏",
+      "南澳",
+      "海鲜",
+      "海胆"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "海鲜（海胆）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "南方+（南方日报）",
+        "url": "https://static.nfnews.com/content/202604/23/c12363843.html",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-04-23",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "官网"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r108",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "大鹏本地菜（客家风味）",
+    "name_zh": "鹏城印象餐厅",
+    "name_en": null,
+    "district": "大鹏新区",
+    "address": null,
+    "description_zh": "深圳新闻网大鹏年夜饭攻略推荐，经营客家风味与粤式海鲜融合菜，并结合大鹏非遗元素；详细地址待核实。",
+    "tags": [
+      "大鹏",
+      "客家菜",
+      "粤菜",
+      "海鲜"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "客家风味融合粤式海鲜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳新闻网",
+        "url": "https://www.sznews.com/news/content/2026-02/03/content_31932996.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-02-03",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "详细地址",
+      "官网"
+    ],
+    "notes": "页面提供门店预订电话，按规则不收录。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r109",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "大鹏本地菜（老牌菜馆）",
+    "name_zh": "渔村·鹏城饭馆",
+    "name_en": null,
+    "district": "大鹏新区",
+    "address": null,
+    "description_zh": "大鹏年夜饭攻略推荐的老牌本土菜馆，开在大鹏所城古建筑内，坚持本地传统做法；详细地址待核实。",
+    "tags": [
+      "大鹏",
+      "本地菜",
+      "大鹏所城",
+      "老店"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "本地菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳新闻网",
+        "url": "https://www.sznews.com/news/content/2026-02/03/content_31932996.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-02-03",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "详细地址",
+      "官网"
+    ],
+    "notes": "页面称其扎根大鹏所城，未给门牌地址。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r110",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "潮汕菜（牛肉火锅）",
+    "name_zh": "潮汕大目牛肉火锅",
+    "name_en": null,
+    "district": "福田",
+    "address": null,
+    "description_zh": "读特春节美食指南提到位于福田岗厦的潮汕牛肉火锅店，被列为居民区里值得一去的人气店；详细地址待核实。",
+    "tags": [
+      "潮汕菜",
+      "牛肉火锅",
+      "福田"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "潮汕牛肉火锅",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "读特（晶报）",
+        "url": "https://m.dutenews.com/n/article/10480457",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "详细地址",
+      "官网"
+    ],
+    "notes": "页面仅标注02-13发布未标年份。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r111",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "客家菜",
+    "name_zh": "叶客客家菜",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "读特春节美食指南提到位于景田的客家菜馆，被列为居民区里实惠好味的去处；所在区与地址待核实。",
+    "tags": [
+      "客家菜",
+      "本地特色",
+      "居民区小馆"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "客家菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "读特（晶报）",
+        "url": "https://m.dutenews.com/n/article/10480457",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": "页面只写“景田”，未明写所在区，故不填。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r112",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "广式早茶/茶楼",
+    "name_zh": "陶陶居",
+    "name_en": null,
+    "district": null,
+    "address": null,
+    "description_zh": "读特春节美食指南推荐的广式茶楼连锁，适合点虾饺、红米肠、凤爪等点心；深圳门店地址待核实。",
+    "tags": [
+      "早茶",
+      "粤菜",
+      "茶楼",
+      "连锁"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "粤菜（早茶点心）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "读特（晶报）",
+        "url": "https://m.dutenews.com/n/article/10480457",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "详细地址",
+      "所在区",
+      "官网"
+    ],
+    "notes": "页面仅标注02-13发布未标年份。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r113",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "客家菜（安心餐厅）",
+    "name_zh": "客语客家菜（卓悦汇店）",
+    "name_en": null,
+    "district": "福田",
+    "address": null,
+    "description_zh": "福田“安心餐厅”开放日走访的客家菜品牌门店，位于卓悦汇，现场介绍食材与后厨管理；详细地址待核实。",
+    "tags": [
+      "客家菜",
+      "福田",
+      "安心餐厅",
+      "连锁"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "客家菜",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "南方+（南方日报）",
+        "url": "https://static.nfnews.com/content/202512/11/c11985488.html",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "详细地址",
+      "官网"
+    ],
+    "notes": "正文未标注发布日期；活动由福田区消委会举办。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r114",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "猪肚鸡火锅",
+    "name_zh": "顺德公·广东猪肚鸡（皇庭广场店）",
+    "name_en": null,
+    "district": "福田",
+    "address": "福田区福田街道福华三路118号皇庭广场G-50（西广场）",
+    "description_zh": "香港仔报道的深圳猪肚鸡老字号，皇庭广场店，以胡椒猪肚鸡与腊味煲仔饭为招牌；人均等消费信息不采。",
+    "tags": [
+      "猪肚鸡",
+      "粤式火锅",
+      "老字号",
+      "福田"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "粤式火锅（猪肚鸡）",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "香港仔（香港大公文汇传媒集团）",
+        "url": "https://www.tkww.hk/epaper/view/newsDetail/2084681805520310272.html",
+        "type": "other_public",
+        "language": "zh",
+        "published_on": "2026-08-05",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "英文名",
+      "官网"
+    ],
+    "notes": "报道另提到领展中心城店等门店，本条只按页面给出的皇庭广场店录入。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r115",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "福田CBD商圈",
+    "name_en": null,
+    "district": "福田",
+    "address": null,
+    "description_zh": "深圳市商务局2023年公布的首批市级示范特色商圈之一，与宝安中心商圈、后海商圈并列，属福田中心区核心商业集群。",
+    "tags": [
+      "商圈",
+      "市级示范特色商圈",
+      "官方认定"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市商务局",
+        "url": "https://commerce.sz.gov.cn/gkmlpt/content/10/10734/post_10734864.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2023-07-25",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "通告正文只列名称，未给出范围、门牌与餐饮细节，需补工商/地图信息核实。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r116",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "宝安中心商圈",
+    "name_en": null,
+    "district": "宝安",
+    "address": null,
+    "description_zh": "首批三家市级示范特色商圈之一，位于宝安区，是宝安中心区核心商业集群。",
+    "tags": [
+      "商圈",
+      "市级示范特色商圈",
+      "宝安中心"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市商务局",
+        "url": "https://commerce.sz.gov.cn/gkmlpt/content/10/10734/post_10734864.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2023-07-25",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "通告未列商圈范围与具体商业体，需补细节。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r117",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "后海商圈",
+    "name_en": null,
+    "district": "南山",
+    "address": null,
+    "description_zh": "首批三家市级示范特色商圈之一，位于南山区后海片区，2023年7月获市级认定。",
+    "tags": [
+      "商圈",
+      "市级示范特色商圈",
+      "后海"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市商务局",
+        "url": "https://commerce.sz.gov.cn/gkmlpt/content/10/10734/post_10734864.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2023-07-25",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "通告未列片区内具体商业体，餐饮信息待补。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r118",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "欢乐海岸街区",
+    "name_en": null,
+    "district": "南山",
+    "address": null,
+    "description_zh": "首批两家市级夜间经济示范街区之一，由深圳市商务局公布，是南山片区的商业街区。",
+    "tags": [
+      "夜间经济示范街区",
+      "商圈",
+      "官方认定"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市商务局",
+        "url": "https://commerce.sz.gov.cn/gkmlpt/content/10/10734/post_10734864.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2023-07-25",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "通告只列街区名称，未提供地址和业态明细。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r119",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "深业上城街区",
+    "name_en": null,
+    "district": "福田",
+    "address": null,
+    "description_zh": "首批两家市级夜间经济示范街区之一，由深圳市商务局公布，位于福田区。",
+    "tags": [
+      "夜间经济示范街区",
+      "商圈",
+      "官方认定"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市商务局",
+        "url": "https://commerce.sz.gov.cn/gkmlpt/content/10/10734/post_10734864.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2023-07-25",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "通告只列街区名称，餐饮与地址需另找官方资料核实。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r120",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "东门步行街",
+    "name_en": null,
+    "district": "罗湖",
+    "address": null,
+    "description_zh": "罗湖区承载“深圳墟”记忆的商业步行街，2024年起作为商务部改造升级试点实施更新，保留东门町、时光巷等点位，特色餐饮与潮玩业态增多。",
+    "tags": [
+      "步行街",
+      "商务部试点",
+      "夜经济",
+      "东门"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市城市更新局（深圳市住房和建设局网站）",
+        "url": "https://zjj.sz.gov.cn/xxgk/csyjgx/content/post_12905956.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-07-23",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "官方稿强调改造与运营，未给门牌地址；与“东门老街”“东门町美食街”属同一片区不同称谓。",
+    "conflicts": [
+      "东门片区同时存在“东门步行街”“东门老街”“东门町美食街”等名称，词条范围与称谓口径需统一。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r121",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "东门町美食街",
+    "name_en": null,
+    "district": "罗湖",
+    "address": null,
+    "description_zh": "读特视频介绍的东门老街美食街，肠粉、猪脚饭、糖水、烤生蚝、鸡蛋仔等小吃沿街售卖，食客可随到随吃。",
+    "tags": [
+      "美食街",
+      "小吃",
+      "东门",
+      "夜经济"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "读特（深圳特区报）",
+        "url": "https://www.dutenews.com/n/video/60132377",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-11-15",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "来源为读特视频报道，文字为页面摘要与字幕内容，具体店铺清单待补。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r122",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "向西村",
+    "name_en": null,
+    "district": "罗湖",
+    "address": null,
+    "description_zh": "罗湖区毗邻罗湖口岸的城中村美食街，以“鸡煲一条街”闻名，30多年老字号砂锅鸡煲吸引不少香港客人专程前来。",
+    "tags": [
+      "美食街",
+      "鸡煲",
+      "城中村",
+      "深港"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "读特（深圳特区报）",
+        "url": "https://www.dutenews.com/n/video/60132377",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-11-15",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "来源为读特视频报道，未列出具体店名与门牌。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r123",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "沙井风味美食街",
+    "name_en": null,
+    "district": "宝安",
+    "address": null,
+    "description_zh": "宝安区沙井街道的蚝乡美食街，沙井金蚝节期间全天开放，汇聚炸蚝饼、香煎蚝等蚝乡特色美味。",
+    "tags": [
+      "美食街",
+      "蚝乡",
+      "金蚝节",
+      "非遗"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市宝安区人民政府",
+        "url": "https://www.baoan.gov.cn/gkmlpt/content/12/12560/mpost_12560176.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-12-22",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "页面为金蚝节报道，仅提街名与“全天开放”，未给地址与门店。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r124",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "九巷美食街",
+    "name_en": null,
+    "district": "宝安",
+    "address": null,
+    "description_zh": "沙井金蚝节分会场之一，全天开放，与沙井风味美食街共同展示蚝乡小吃与非遗民俗。",
+    "tags": [
+      "美食街",
+      "蚝乡",
+      "金蚝节",
+      "分会场"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市宝安区人民政府",
+        "url": "https://www.baoan.gov.cn/gkmlpt/content/12/12560/mpost_12560176.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-12-22",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "页面未给九巷具体门牌与商户信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r125",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "蛇口老街",
+    "name_en": null,
+    "district": "南山",
+    "address": null,
+    "description_zh": "南山区蛇口传统美食聚集地，含蛇口市场及嘉华小吃、百草堂凉茶铺等老店，以粤式小吃、粽子与糖水见长。",
+    "tags": [
+      "美食街",
+      "老字号",
+      "蛇口",
+      "粤式小吃"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市南山区人民政府（南山区融媒体中心）",
+        "url": "https://www.szns.gov.cn/mlns/fxns/lyns/content/post_12595046.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-01-12",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "页面提供三家老店门牌，但街区整体地址未单列；信息随时间可能变化，需核实。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r126",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "海上世界",
+    "name_en": null,
+    "district": "南山",
+    "address": null,
+    "description_zh": "南山区蛇口滨海地标，明华轮所在，各国美食云集，可赏音乐喷泉，并连接女娲公园与滨海步道。",
+    "tags": [
+      "商圈",
+      "滨海",
+      "国际美食",
+      "蛇口"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市南山区人民政府（南山区融媒体中心）",
+        "url": "https://www.szns.gov.cn/mlns/fxns/lyns/content/post_12595046.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-01-12",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "页面为南山旅游线路介绍，非美食专文，具体餐饮待补。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r127",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "南头古城",
+    "name_en": null,
+    "district": "南山",
+    "address": null,
+    "description_zh": "南山区近1700年历史的深圳十大特色文化街区之一，老字号餐饮、非遗工坊与咖啡厅共生，街道发布过《南头必吃榜》。",
+    "tags": [
+      "文化街区",
+      "美食+",
+      "南头必吃榜",
+      "老字号"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市南山区南头街道（蛇口消息报）",
+        "url": "https://www.szns.gov.cn/xxgk/qzfxxgkml/jqdt/content/post_12180923.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-05-19",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "官方提到《南头必吃榜》但页面未附完整榜单，需另找原始榜单核实。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r128",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "1956数字文化创意园",
+    "name_en": null,
+    "district": "南山",
+    "address": null,
+    "description_zh": "南头街道“四地一线”消费线路中的创意园区，定位创意夜市，园区内聚集地摊火锅、烤串等餐饮。",
+    "tags": [
+      "夜市",
+      "创意园",
+      "四地一线",
+      "南头"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市南山区南头街道（蛇口消息报）",
+        "url": "https://www.szns.gov.cn/xxgk/qzfxxgkml/jqdt/content/post_12180923.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-05-19",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "页面以“创意夜市”定位描述，未列具体商户与地址。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r129",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "龙华超级商圈",
+    "name_en": null,
+    "district": "龙华",
+    "address": null,
+    "description_zh": "龙华区全国引领级商圈之一，商业总建筑面积超365万平方米，以壹方天地为核心，含山姆、星河ICO等商业体。",
+    "tags": [
+      "商圈",
+      "全国引领级商圈",
+      "龙华",
+      "首店经济"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市龙华区重点区域建设推进中心",
+        "url": "https://www.szlhq.gov.cn/bmxxgk/zdqyjstjzx/dtxx_124551/gzdt_124552/content/post_11451765.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-07-22",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "页面侧重商业规划，餐饮细节需补。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r130",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "壹方天地",
+    "name_en": null,
+    "district": "龙华",
+    "address": null,
+    "description_zh": "龙华超级商圈核心，60万平方米体验式商业集群，有上千米商业步行街与超千家品牌，夜间经济、首店经济突出。",
+    "tags": [
+      "商圈",
+      "商业综合体",
+      "首店经济",
+      "夜经济"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市龙华区重点区域建设推进中心",
+        "url": "https://www.szlhq.gov.cn/bmxxgk/zdqyjstjzx/dtxx_124551/gzdt_124552/content/post_11451765.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-07-22",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "分A—E五大主题区，餐饮品牌数量未在页面列出。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r131",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "华强北美食街",
+    "name_en": "Huaqiangbei Street",
+    "district": "福田",
+    "address": "福田区振兴路、华发路、燕南路、中航路一带",
+    "description_zh": "福田区华强北商业中心一带的餐饮集中区，涵盖振兴路、华发路、燕南路、中航路，川皖粤菜与多国餐饮汇集。",
+    "tags": [
+      "美食街",
+      "餐饮集中区",
+      "华强北",
+      "国际餐饮"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "福田政府在线（英文版）",
+        "url": "http://www.szft.gov.cn/en/life/restaurants/content/post_8513615.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-01-08",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "official_url"
+    ],
+    "notes": "页面更新于2026-01-08，但部分描述可能沿用较早版本，具体商户需再核。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r132",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "盐田海鲜街",
+    "name_en": null,
+    "district": "盐田",
+    "address": null,
+    "description_zh": "盐田区海滨海鲜食街，海鲜酒楼沿街排列，现买现做，清蒸红烧烧烤皆可；临海滨栈道，地铁盐田墟站可达。",
+    "tags": [
+      "美食街",
+      "海鲜",
+      "滨海",
+      "墙绘"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市盐田区人民政府（盐田区委宣传部）",
+        "url": "https://www.yantian.gov.cn/cn/zjyt/jjyt/bmxx/content/post_12942438.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-08-19",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "页面为宣传推文，未给门牌与店名清单。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r133",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "烟火石洲（白石洲博耐里）",
+    "name_en": null,
+    "district": "南山",
+    "address": "南山区沙河街道石洲中路白石洲博耐里",
+    "description_zh": "南山区沙河街道白石洲片区的美食市集，由早餐车、主理人美食盒子与特色摊位组成，汇集南北小吃与非遗美食。",
+    "tags": [
+      "美食街",
+      "市集",
+      "白石洲",
+      "南山八景"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市南山区人民政府（蛇口消息报）",
+        "url": "https://www.szns.gov.cn/xxgk/qzfxxgkml/jqdt/content/post_12863959.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-26",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "市集于2026-06-25启幕，属长效商业场景；摊位与商户可能调整。",
+    "conflicts": [
+      "任务提示白石洲处于改造中，而所读2026年报道显示“烟火石洲”市集已开业运营；片区改造范围与现状需核实。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r134",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "翔鸽夜市",
+    "name_en": null,
+    "district": "龙岗",
+    "address": null,
+    "description_zh": "龙岗区布吉街道统一规划的流动摊贩疏导点，入夜成为潮流市集，汇集特色小吃摊并常办主题夜市活动。",
+    "tags": [
+      "夜市",
+      "流动摊贩疏导点",
+      "布吉",
+      "夜经济"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市龙岗区人民政府（深圳侨报）",
+        "url": "https://www.lg.gov.cn/xxgk/xwzx/zwdt/content/post_12856418.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "页面提及“翔鸽路夜市片区”，但未给完整门牌；摊贩经营时段以现场为准。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r135",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "公明夜色烟火步行街",
+    "name_en": null,
+    "district": "光明",
+    "address": "光明区公明街道风景中路一带",
+    "description_zh": "光明区公明街道以风景中路打造的夜色步行街，集美食、消费、步行、观光于一体，设夜宵档外摆试点，曾获年度夜间经济活力区街。",
+    "tags": [
+      "夜市",
+      "步行街",
+      "夜经济",
+      "公明"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市光明区人民政府",
+        "url": "https://www.szgm.gov.cn/zxbs/mssspt/gmq2023nmssspt/hjpzts/content/post_10560576.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "来源为光明区2023年民生实事项目页，无发布日期；页面提到2023年获“年度夜间经济活力区街（深圳）”。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r136",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "光明休闲一条街（河心路休闲街区）",
+    "name_en": null,
+    "district": "光明",
+    "address": "光明区光明街道河心路",
+    "description_zh": "光明区光明街道以木墩河为纽带的河心路休闲街区，串联碧眼、翠湖、光明社区及周边商圈，引导商铺转向餐饮文创。",
+    "tags": [
+      "美食街",
+      "休闲街区",
+      "夜经济",
+      "光明"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市光明区人民政府",
+        "url": "https://www.szgm.gov.cn/zxbs/mssspt/gmq2023nmssspt/hjpzts/content/post_10560576.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "来源为民生实事项目页，无发布日期；页面称已推动20余家商铺业态置换。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r137",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "八卦一路美食街",
+    "name_en": null,
+    "district": "福田",
+    "address": "福田区园岭街道八卦一路",
+    "description_zh": "福田区园岭街道建于上世纪80年代的老牌美食街，长约500米，2026年完成路面整治，获广东省十佳餐饮消费新场景等称号。",
+    "tags": [
+      "美食街",
+      "烟火街区",
+      "深圳第一条美食街",
+      "国际友好街区"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市福田区园岭街道办事处",
+        "url": "https://www.szft.gov.cn/ftqyljdbsc/gkmlpt/content/13/13046/post_13046545.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "official_url"
+    ],
+    "notes": "页面提及街区商户更新多语菜单，适合境外游客；具体店铺未列。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r138",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "梅林美食街",
+    "name_en": "Meilin Food Street",
+    "district": "福田",
+    "address": null,
+    "description_zh": "福田区上梅林一带的代表性美食街，福田官方英文页称其被外籍人士誉为街头美食天堂，地铁上梅林站可达。",
+    "tags": [
+      "美食街",
+      "上梅林",
+      "国际游客"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "福田政府在线（英文版）",
+        "url": "http://www.szft.gov.cn/en/life/restaurants/content/post_8513615.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-01-08",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "address",
+      "official_url"
+    ],
+    "notes": "页面只给地铁与公交信息，未给门牌；原文为英文，中文名按常用译名。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r139",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "COCO Park酒吧街",
+    "name_en": "Coco Park Bar Street",
+    "district": "福田",
+    "address": "福田区福华三路",
+    "description_zh": "福田区福华三路购物公园一带的酒吧街，沿购物中心一角延展，深夜仍热闹，是福田主要酒吧街之一。",
+    "tags": [
+      "酒吧街",
+      "夜经济",
+      "CBD",
+      "购物公园"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "福田政府在线（英文版）",
+        "url": "http://www.szft.gov.cn/en/life/restaurants/content/post_8513615.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-01-08",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "official_url"
+    ],
+    "notes": "页面更新于2026-01-08，描述可能沿用较早版本；本条为酒吧街而非购物中心本身。",
+    "conflicts": [
+      "福田购物公园与龙岗龙城各有一处“星河COCO Park”，本条指福田福华三路购物公园一带的酒吧街。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r140",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "新城市广场酒吧街",
+    "name_en": "New City Plaza Bar Street",
+    "district": "福田",
+    "address": "福田区红荔路1009号",
+    "description_zh": "福田区红荔路新城市广场旁的酒吧街，以玻璃房室内外座位和轻音乐氛围为特色。",
+    "tags": [
+      "酒吧街",
+      "夜经济",
+      "福田中心区"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "福田政府在线（英文版）",
+        "url": "http://www.szft.gov.cn/en/life/restaurants/content/post_8513615.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-01-08",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "official_url"
+    ],
+    "notes": "页面为英文介绍，具体营业状态需核实。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r141",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "龙岗万科广场",
+    "name_en": null,
+    "district": "龙岗",
+    "address": null,
+    "description_zh": "龙岗区商圈联盟首批成员，与星河COCO Park等共同组成覆盖约300万平方米的15大核心商圈矩阵。",
+    "tags": [
+      "商圈",
+      "商业综合体",
+      "龙岗"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市龙岗区龙城街道办事处（南方+）",
+        "url": "https://www.lg.gov.cn/bmzz/lcjdb/xxgk/qt/gzdt/content/post_12084237.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-03-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "页面为商圈联盟成立报道，餐饮信息待补。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r142",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "星河COCO Park（龙岗）",
+    "name_en": null,
+    "district": "龙岗",
+    "address": null,
+    "description_zh": "龙岗区龙城街道的商业地标，龙岗区商圈联盟首批成员，与万科广场等共同组成东部商圈矩阵。",
+    "tags": [
+      "商圈",
+      "商业综合体",
+      "龙岗",
+      "龙城"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市龙岗区龙城街道办事处（南方+）",
+        "url": "https://www.lg.gov.cn/bmzz/lcjdb/xxgk/qt/gzdt/content/post_12084237.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-03-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "需与福田COCO Park酒吧街区分；本条为龙岗龙城的商场。",
+    "conflicts": [
+      "深圳有两处“星河COCO Park”（福田购物公园、龙岗龙城），名称易混，词条需带区名。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r143",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "海岸城",
+    "name_en": null,
+    "district": "南山",
+    "address": null,
+    "description_zh": "南山区中心区商业综合体，2007年开业，超300家品牌店铺，获评省级示范特色步行街（商圈）。",
+    "tags": [
+      "商圈",
+      "省级示范特色步行街",
+      "南山"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市南山区人民政府（南山区融媒体中心）",
+        "url": "https://www.szns.gov.cn/mlns/fxns/lyns/content/post_12595045.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-01-12",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "页面未展开餐饮信息，需补餐饮品牌清单。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r144",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "深圳湾万象城",
+    "name_en": null,
+    "district": "南山",
+    "address": null,
+    "description_zh": "南山区后海片区高端商业综合体，2025年二期启幕后共500余品牌、近25万平方米体量，形成商业与文化双核格局。",
+    "tags": [
+      "商圈",
+      "后海",
+      "商业+文化"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市南山区人民政府（南山区融媒体中心）",
+        "url": "https://www.szns.gov.cn/mlns/fxns/lyns/content/post_12595045.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-01-12",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "页面偏商业介绍，餐饮细节待补。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r145",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "深圳万象天地",
+    "name_en": null,
+    "district": "南山",
+    "address": null,
+    "description_zh": "南山区2017年开幕的“街区+mall”开放式商业街区，有11座独栋旗舰店及人文剧场等业态，是深圳街区型商业代表。",
+    "tags": [
+      "商圈",
+      "街区+mall",
+      "打卡",
+      "南山"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市南山区人民政府（南山区融媒体中心）",
+        "url": "https://www.szns.gov.cn/mlns/fxns/lyns/content/post_12595045.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-01-12",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "页面未突出餐饮内容，作为餐饮聚集候选收录，需补美食信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r146",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "益田假日广场",
+    "name_en": null,
+    "district": "南山",
+    "address": null,
+    "description_zh": "南山区华侨城核心地段的中高端城市级商业综合体，东临酒店、南接世界之窗、北倚欢乐谷。",
+    "tags": [
+      "商圈",
+      "华侨城",
+      "商业综合体"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市南山区人民政府（南山区融媒体中心）",
+        "url": "https://www.szns.gov.cn/mlns/fxns/lyns/content/post_12595045.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-01-12",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "页面未提餐饮业态，收入范围仅作华侨城片区商业体线索，美食信息待核实。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r147",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "南澳海味街",
+    "name_en": null,
+    "district": "大鹏新区",
+    "address": null,
+    "description_zh": "大鹏新区南澳约500米长、约40年历史的海味街，一楼均为海产品门店，是当地旅游购物集散地。",
+    "tags": [
+      "海味街",
+      "干货海产",
+      "旅游购物",
+      "南澳"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市大鹏新区南澳办事处",
+        "url": "https://www.dpxq.gov.cn/xxgk/bmxxgk/bsc/na/bmdt/content/post_11114061.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-01-22",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "页面为2024年海味年货节报道，海味街以海产干货零售为主，非即食餐饮街。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r148",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "水头海鲜街",
+    "name_en": "Shui Tau Seafood Street",
+    "district": "大鹏新区",
+    "address": null,
+    "description_zh": "大鹏新区南澳两处吃海鲜地点之一，位于南澳酒店对面；另一处为双拥码头海滨长廊，均以大鹏海鲜为特色。",
+    "tags": [
+      "海鲜街",
+      "南澳",
+      "大鹏"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市大鹏新区政府在线（英文版）",
+        "url": "https://www.dpxq.gov.cn/english/travel/specialties/",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-07-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "address",
+      "official_url"
+    ],
+    "notes": "页面为专题列表页，本条条目日期2025-07-21；仅给相对位置，无门牌。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r149",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "坪山老街",
+    "name_en": "Pingshan Old Street",
+    "district": "坪山",
+    "address": null,
+    "description_zh": "坪山区18世纪形成的老街、原坪山旧墟所在，保留翻新岭南骑楼，沿街有传统小吃、饮品与甜品店。",
+    "tags": [
+      "老街",
+      "传统小吃",
+      "骑楼",
+      "客家"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市坪山区人民政府（英文版）",
+        "url": "https://www.szpsq.gov.cn/english/Travel/Historical%20Sites/content/post_12310123.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-08-04",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "address",
+      "official_url"
+    ],
+    "notes": "页面给地铁指引（坪山围站B口），未给门牌；原文为英文。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r150",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "车公庙商圈",
+    "name_en": null,
+    "district": "福田",
+    "address": null,
+    "description_zh": "福田区沙头街道车公庙片区的餐饮商圈，街道推动成立“潮享食尚专委会”整合商户，首批成员含江西大排档、云南民族菜等。",
+    "tags": [
+      "商圈",
+      "餐饮聚集区",
+      "车公庙",
+      "特色商圈"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳市福田区沙头街道办事处",
+        "url": "https://www.szft.gov.cn/xxgk/ztbd/zzzq/gzdt/content/post_12422696.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-09-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "页面为专委会成立报道，首批成员店名可作线索，完整餐饮清单待补。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r151",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "水围1368文化街区",
+    "name_en": null,
+    "district": "福田",
+    "address": null,
+    "description_zh": "福田区水围村内由35栋统建楼组成、占地约8000平方米的岭南骑楼风格街区，主街聚集餐饮、饮品、小吃店与酒吧。",
+    "tags": [
+      "文化街区",
+      "城中村",
+      "骑楼",
+      "美食"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "福田政府在线（西班牙语版）",
+        "url": "http://www.szft.gov.cn/es/explore/shopping/content/post_9894166.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-04-12",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "仅读到福田政府在线西班牙语版页面，中文页面与英文名未获取，需补。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.1",
+    "id": "place.2026-11-18.shenzhen.restaurant.r152",
+    "city": "shenzhen",
+    "category": "restaurant",
+    "subcategory": "美食街",
+    "name_zh": "皇岗村美食街",
+    "name_en": null,
+    "district": "福田",
+    "address": null,
+    "description_zh": "福田区皇岗村的老牌美食集中地，深圳新闻网视频报道称其汇集本土传统小吃与各地风味餐饮。",
+    "tags": [
+      "美食街",
+      "城中村",
+      "老牌美食",
+      "福田CBD"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": {
+      "cuisine": "美食街",
+      "reservation_note": null
+    },
+    "sources": [
+      {
+        "name": "深圳新闻网",
+        "url": "https://www.sznews.com/news/content/2026-02/25/content_31956443.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-02-25",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "name_en",
+      "address",
+      "official_url"
+    ],
+    "notes": "页面主体为视频，正文文字极少，仅据标题与页面说明概括，细节需补。",
+    "conflicts": []
+  }
+]
