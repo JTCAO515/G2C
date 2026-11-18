@@ -1057,7 +1057,7 @@ class Boundaries(unittest.TestCase):
                 self.assertNotIn('response_mode', json.loads(original.original_bytes))
                 operation = SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER, subject)),
                                             operation_key=operation_key, registration_id='model.answer',
-                                            command=SimpleNamespace(attempt_id=attempt))
+                                            command=SimpleNamespace(attempt_id=attempt, output_limit=12000))
 
                 async def wire(config, raw, guard, observation):
                     self.assertTrue(guard())

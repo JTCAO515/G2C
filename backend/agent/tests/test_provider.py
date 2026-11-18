@@ -9,7 +9,7 @@ import pytest
 
 from cj_agent.lio_intake_optional_schema import PROFILE, response_format
 from cj_agent.provider import (M4_BASE, M4_MODEL, _M4_REQUEST_SENT, DashScopeConfig, DashScopeProvider,
-                               FakeProvider, MeteredDashScopeProvider, ProviderFailed, ProviderUnknown)
+                               CompleteUnsettledAnswer, FakeProvider, MeteredDashScopeProvider, ProviderFailed, ProviderUnknown)
 from cj_usage.authorization_budget import AuthorizationBudget
 
 BASE = 'https://synthetic.invalid/compatible-mode/v1'
@@ -154,3 +154,59 @@ def test_registered_optional_intake_returns_after_send_before_reading_sse(tmp_pa
             assert receipt == {}
             assert budget.inspect()[0]['state'] == 'INTENT'
     assert len(requests) == 1
+
+
+@pytest.mark.parametrize(('missing','finish','stream_error','answer_visible'), [
+    ('model', 'stop', False, True),
+    ('id', 'stop', False, True),
+    ('usage', 'stop', False, True),
+    ('done', 'stop', False, True),
+    ('model', 'length', False, False),
+    ('model', 'stop', True, False),
+    ('wrong_model', 'stop', False, False),
+])
+def test_only_complete_discussion_surfaces_with_missing_receipt(
+        tmp_path, missing, finish, stream_error, answer_visible):
+    budget = AuthorizationBudget(tmp_path, clock=lambda: datetime(2026, 11, 4, tzinfo=timezone.utc))
+    answer = ('北京有丰富的历史遗迹和街巷。' * 200)[:2436]
+    assert len(answer) == 2436
+    value = {'id': 'synthetic-original', 'model': M4_MODEL, 'choices': [
+        {'index': 0, 'delta': {'content': json.dumps({'answer': answer}, ensure_ascii=False)},
+         'finish_reason': finish}],
+        'usage': {'prompt_tokens': 20, 'completion_tokens': 500, 'total_tokens': 520}}
+    if missing in value:
+        del value[missing]
+    elif missing=='wrong_model':
+        value['model'] = 'unexpected-model'
+    lines = 'data: ' + json.dumps(value, ensure_ascii=False) + '\n\n'
+    if missing!='done':
+        lines += 'data: [DONE]\n\n'
+    wire_body = lines.encode()
+
+    class Wire(httpx.SyncByteStream):
+        def __iter__(self):
+            yield wire_body
+            if stream_error:
+                raise httpx.ReadError('synthetic transport ended mid-stream')
+
+    calls = []
+
+    def respond(request):
+        calls.append(request)
+        return httpx.Response(200, stream=Wire())
+
+    provider = MeteredDashScopeProvider(
+        DashScopeConfig(M4_BASE, M4_MODEL, KEY), budget, transport=httpx.MockTransport(respond))
+    receipt = {}
+    with pytest.raises(ProviderUnknown) as indeterminate:
+        list(provider.invoke([{'role': 'user', 'content': '北京有什么可看的？'}],
+                             'Return JSON with the requested answer.', 'original-answer',
+                             receipt=receipt, guard=lambda: True, release_after_send=True,
+                             unsettled_answer_limit=4000))
+    assert len(calls) == 1
+    assert receipt == {}
+    assert budget.inspect()[0]['state'] == 'INTENT'
+    if answer_visible:
+        assert indeterminate.value.complete_answer == answer
+    else:
+        assert not isinstance(indeterminate.value, CompleteUnsettledAnswer)

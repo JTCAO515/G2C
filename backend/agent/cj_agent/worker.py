@@ -27,7 +27,7 @@ from cj_memory.runtime import RuntimeDenied, RuntimeUnknown
 from cj_place.draft_source import PlaceSourceUnavailable
 
 from .draft import DRAFT_SYSTEM, DraftRejected
-from .provider import FakeProvider, MeteredDashScopeProvider, ProviderFailed, ProviderUnknown
+from .provider import CompleteUnsettledAnswer, FakeProvider, MeteredDashScopeProvider, ProviderFailed, ProviderUnknown
 
 FLUSH_CHARS = 24
 _END = object()
@@ -573,6 +573,16 @@ class RunWorker:
             state = self._budget_rejection(binding,'answer')
         except ProviderFailed:
             state = self._event(binding, self.runs.snapshot(binding), 'failed')
+        except CompleteUnsettledAnswer as answer:
+            # The original discussion stream ended with a complete visible
+            # answer and its meter claim remains unsettled. Publish only text,
+            # through the existing owner and Memory fences.
+            from cj_message.lio_context import UNSAVED_PLAN_ANSWER
+            current = self.runs.snapshot(binding)
+            state = self._event(binding, current, 'text_delta', answer.complete_answer)
+            if state.draft_outcome is not None and UNSAVED_PLAN_ANSWER not in state.effects:
+                state = self._event(binding, state, 'effect_committed', UNSAVED_PLAN_ANSWER)
+            state = self._event(binding, state, 'completed')
         except ProviderUnknown as error:
             if locale is not None:
                 logging.getLogger('cj_usage.audit').warning(
