@@ -98,36 +98,30 @@ struct LioItineraryCard<Actions: View>: View {
 }
 
 struct LioTripRoute: Hashable {
-    enum Source: Hashable {
-        case savedTrip(Data)
-        case chatCard(Data)
-    }
-
     let tripID: Data
     let visit: UUID?
-    let source: Source
 
-    init(id: String, visit: UUID? = nil, chatTurn: Data? = nil) {
+    init(id: String, visit: UUID? = nil) {
         tripID = Data(id.utf8)
         self.visit = visit
-        source = chatTurn.map(Source.chatCard) ?? .savedTrip(tripID)
     }
 }
 
-extension View {
+private extension View {
     @ViewBuilder
-    func lioTripZoomSource(_ source: LioTripRoute.Source, in namespace: Namespace.ID, reduceMotion: Bool) -> some View {
+    func lioTripZoomSource(_ id: Data, in namespace: Namespace.ID, reduceMotion: Bool) -> some View {
         if #available(iOS 18, *), !reduceMotion {
-            matchedTransitionSource(id: source, in: namespace)
+            matchedTransitionSource(id: id, in: namespace)
         } else {
             self
         }
     }
 
     @ViewBuilder
-    func lioTripZoomDestination(_ source: LioTripRoute.Source, in namespace: Namespace.ID, reduceMotion: Bool) -> some View {
-        if #available(iOS 18, *), !reduceMotion {
-            navigationTransition(.zoom(sourceID: source, in: namespace))
+    func lioTripZoomDestination(_ route: LioTripRoute, in namespace: Namespace.ID, reduceMotion: Bool) -> some View {
+        // A visit from Chat switches tabs, so its card is outside this navigation stack.
+        if #available(iOS 18, *), !reduceMotion, route.visit == nil {
+            navigationTransition(.zoom(sourceID: route.tripID, in: namespace))
         } else {
             self
         }
@@ -194,7 +188,7 @@ struct LioTripsView: View {
                                     NavigationLink(value: route) {
                                         LioTripListCard(title: trip.title, itinerary: nil, language: language,
                                                        calendar: trip.calendar, dayCount: trip.dayCount)
-                                            .lioTripZoomSource(route.source, in: zoomNamespace, reduceMotion: reduceMotion)
+                                            .lioTripZoomSource(route.tripID, in: zoomNamespace, reduceMotion: reduceMotion)
                                     }
                                     .buttonStyle(.plain)
                                 }
@@ -211,7 +205,7 @@ struct LioTripsView: View {
                             let route = LioTripRoute(id: itinerary.id)
                             NavigationLink(value: route) {
                                 LioTripListCard(title: itinerary.title, itinerary: itinerary, language: language)
-                                    .lioTripZoomSource(route.source, in: zoomNamespace, reduceMotion: reduceMotion)
+                                    .lioTripZoomSource(route.tripID, in: zoomNamespace, reduceMotion: reduceMotion)
                             }
                             .buttonStyle(.plain)
                         }
@@ -231,7 +225,7 @@ struct LioTripsView: View {
                     LioTripDetail(tripID: String(decoding: route.tripID, as: UTF8.self), library: library,
                                   language: language, recordedMap: recordedMap)
                         .id(DetailRead(route: route, session: sessionRevision))
-                        .lioTripZoomDestination(route.source, in: zoomNamespace, reduceMotion: reduceMotion)
+                        .lioTripZoomDestination(route, in: zoomNamespace, reduceMotion: reduceMotion)
                 } else if let itinerary = shownItineraries.first(where: { $0.id == String(decoding: route.tripID, as: UTF8.self) }) {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 20) {
@@ -248,7 +242,7 @@ struct LioTripsView: View {
                         .lioPage()
                         .navigationTitle("")
                         .navigationBarTitleDisplayMode(.inline)
-                        .lioTripZoomDestination(route.source, in: zoomNamespace, reduceMotion: reduceMotion)
+                        .lioTripZoomDestination(route, in: zoomNamespace, reduceMotion: reduceMotion)
                         .toolbarBackground(LioTheme.paper, for: .navigationBar)
                         .toolbarBackground(.visible, for: .navigationBar)
                 }

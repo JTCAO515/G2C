@@ -980,9 +980,7 @@ public struct LioHome<MenuContent: View>: View {
                         }
                     }) { celebrate in
                         LioItineraryCard(itinerary: current ?? itinerary, language: language, celebrate: celebrate) {
-                            if tripLibrary != nil {
-                                tripPath = [LioTripRoute(id: itinerary.id, visit: UUID(), chatTurn: turn.id)]
-                            }
+                            if tripLibrary != nil { tripPath = [LioTripRoute(id: itinerary.id, visit: UUID())] }
                             tab = .trips
                         } actions: {
                             if isLatest, let tripPlan {
@@ -1006,7 +1004,6 @@ public struct LioHome<MenuContent: View>: View {
                                 }
                             }
                         }
-                        .lioTripZoomSource(.chatCard(turn.id), in: tripZoomNamespace, reduceMotion: reduceMotion)
                     }
                 }
             }
