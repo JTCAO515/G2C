@@ -16,12 +16,14 @@
             "zh": [
               "已保存行程的详情在系统导航和底栏之间滚动，底部站点可继续向上翻看。详情页可以直接从底栏切回聊天。",
               "记忆页可以查看当前对话尚未确认的建议。选择要记住的内容时，可切回聊天确认。",
-              "提高了 iOS 26.5 已保存行程的日期按钮对比度。分段、多选探索中，提醒来源可长按查看。"
+              "提高了 iOS 26.5 已保存行程的日期按钮对比度。分段、多选探索中，提醒来源可长按查看。",
+              "修正了部分正常旅行回答被误拦的情况。"
             ],
             "en": [
               "Saved itinerary details scroll between the system navigation and tab bars. Scroll to read the last stop, or use the bottom tab to return to Chat.",
               "The Memory tab shows suggestions from the current chat while they await confirmation. Return to Chat to choose what to remember.",
-              "Saved itinerary date buttons have improved contrast on iOS 26.5. In multiple-choice exploration, touch and hold a reminder to see its sources."
+              "Saved itinerary date buttons have improved contrast on iOS 26.5. In multiple-choice exploration, touch and hold a reminder to see its sources.",
+              "Fixed an issue where some ordinary travel replies could be hidden."
             ]
           }
         },
