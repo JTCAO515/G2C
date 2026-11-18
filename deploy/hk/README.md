@@ -110,7 +110,9 @@ pending/inflight Memory 任务；历史 UNKNOWN 原件和占用保留，不能�
 
 ### 3. L 执行 B 的固定应用切换
 
-发布前核 #759/#702 无其他 ACTIVE 批次，公告本次开始/结束；活动轨迹未归还时不穿插。B 的版本化入口 `deploy.hk.application_release` 去掉固定小时限制，仍要求最长两小时的明确 gate 时段，保留部署互斥锁和全部在途检查。
+应用发布核目标 SHA 的 main `ci.yml` 十项任务及相关 PR 的精确 head R APPROVE。独立运维工作流跳过或未执行不阻挡应用发布，目标 SHA 上明确的失败或取消仍阻挡。依据 [JT 2026-11-18 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6972695033)。
+
+发布前核 #759/#702 无其他 ACTIVE 批次，公告本次开始/结束；活动轨迹未归还时不穿插。当前双兼容签名策略用 `application_release_host.py`，将同一已审提交的 `application_release.py` 放在同一个私有发布包中。二者一并固定摘要。旧单 ABI 入口保留给原固定包。当前入口要求最长两小时的明确 gate 时段，保留部署互斥锁和全部在途检查。
 B 的发布脚本负责：互斥锁、窗口和精确源／镜像／门禁检查；关闭 API 入口后再次检查排空；
 停止旧 worker；应用 B 已批准的唯一镜像选择；只重建 API/worker；核同实际镜像和源码、
 API readiness 与 worker 存活。L 不手改 `compose.env`、任何秘密文件、Compose 或采集清单。
@@ -132,6 +134,9 @@ ssh -i "$G2C_HK_SSH_KEY_FILE" -o BatchMode=yes -o StrictHostKeyChecking=yes \
 PASS / FAIL / UNKNOWN / UNRUN，不能从健康或本地 fixture 推导真实端到端 PASS。
 
 切换后由 B 只读核原账前后锚、运行角色、拥有的 Trip/Memory 行集和全局在途，交回可复核结果。
+每次切换使用[服务端冒烟流程](SERVER-SMOKE.md)。切换前校验既有 C 会话覆盖本轮窗口；
+切换和独立读回成功后立即执行冒烟。PASS 后放行复测，真实 FAIL／UNKNOWN 走原回退流程，
+UNRUN 保持现役并登记原因。
 L 在对应票和 #702 记录 source/image、检查层级、未跑项及 B 的账锚引用。
 同源 source 未经通知变化，旧评测包和剩余 ID 不得直接续用。
 
@@ -319,6 +324,8 @@ OSS固定香港内部HTTPS端点、私有/AES256、backups/前缀，SDK自动重
 每个文件先持久INTENT，回执丢失后只HEAD核原对象。缺失/不一致保持UNKNOWN，不重发PUT。
 每日阶段持久化，未完成的原检查点先查原制品和数据库identity，不再导出第二份冒充恢复成功。
 桶30天生命周期需按已授权能力核实，实际到期删除需经过30天，不以配置截图冒充实际删除。
+
+B 单独更新日备实现时，使用通过同一精确 CI 和 R 审查的 amd64 operator 镜像。暂停 timer，等原 backup service 退出，再安装已审 `daily_backup_image.py` 和 `daily-backup.sh`，最后原子安装 `/srv/g2c-beta/backup.image`（root:0600）。文件一行，依次为 `g2c-beta-operator:<40位source>`、空格和 `sha256:<64位image ID>`。脚本在停 writer 前核文件归属、写权限、image ID、架构和 source。原日备与签名 release 回读均直接按该 image ID 启动。保留原 `compose.env`、PostgreSQL 容器和账本。恢复原 timer 后按下一次原日备核签名状态。需要回退时，同样等当前任务结束后恢复原文件。无该文件时沿用默认 operator 选择器。
 
 首次OSS调用前，宿主root仅在JT明确答复后一次性安装非秘密授权文件 `/srv/g2c-beta/authorizations/oss.json`（root:0644、目录root:0755），只读绑定到 `/run/authorizations`。
 运行时只读验证该root授权，恢复签名私钥不能签发/覆盖它；不随数据库恢复的 `/control/oss-quota` 另存签名零使用记录及空intents目录。

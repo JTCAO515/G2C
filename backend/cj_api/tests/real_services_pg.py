@@ -46,7 +46,7 @@ def exercise(auth,conninfo):
         profiles[subject]=(path,load_run_context(path));operator.provision_budget(conninfo,profiles[subject][1],subject)
     headers={s:dict(Authorization='Bearer '+harness.dev_auth.token(auth,s,30)) for s in subjects}
     tool_calls=[];model_calls=[]
-    async def place(config,request,credentials,*,before_send=None,basic=False):
+    async def place(config,request,credentials,*,before_send=None,basic=False,after_send=None,send_under_fence=None):
         tool_calls.append(request.request_ref)
         if subject.endswith('batchfail') and request.query.keyword=='synthetic-B':raise OSError('synthetic second source failed after admission')
         raw=json.dumps(dict(status='1',info='OK',infocode='10000',count='1',pois=[dict(id='SYNTH_ONLY',name='合成资料',location='116.1,39.1')])).encode()

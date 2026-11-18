@@ -2285,7 +2285,8 @@ import CryptoKit
             let plan = app.buttons["lio.exit.plan_now"]
             showExplorationReplyControl(plan, in: app, down: true)
             XCTAssertGreaterThanOrEqual(plan.frame.height, 44)
-            XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "lio.notice.source.weather-day-1").firstMatch.exists)
+            let sourceAction = app.descendants(matching: .any).matching(identifier: "lio.notice.source.weather-day-1").firstMatch
+            XCTAssertFalse(sourceAction.exists, "A source row should not take up space in the reply")
             plan.tap()
             XCTAssertFalse(plan.exists)
             XCTAssertEqual(app.staticTexts["fixture.count"].label, "3")
@@ -2295,6 +2296,13 @@ import CryptoKit
             image.name = "exploration-\(chinese ? "zh" : "en")-\(dark ? "dark" : "light")"
             image.lifetime = .keepAlways
             add(image)
+            // Verify the context menu after the original reply audit and screenshot.
+            let notice = app.descendants(matching: .any).matching(identifier: "lio.notice.weather-day-1").firstMatch
+            showExplorationReplyControl(notice, in: app, down: false)
+            XCTAssertTrue(notice.isHittable)
+            notice.press(forDuration: 1)
+            XCTAssertTrue(sourceAction.waitForExistence(timeout: 5), "The original source remains available from the reminder")
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08)).tap()
             let readOnly = app.buttons["fixture.read-only"]
             showExplorationReplyControl(readOnly, in: app, down: true)
             readOnly.tap()

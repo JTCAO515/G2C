@@ -8,7 +8,7 @@ from starlette.concurrency import run_in_threadpool
 
 from cj_message.demo_dialogue import LIO_CHAT_PATTERN, LIO_VERSION, LIO_VERSION_V2, LIO_VERSION_V3, message_id
 from cj_message.domain import InvalidInput
-from cj_message.lio_context import SOURCE_EFFECT, TOOL_EFFECT, UNSAVED_PLAN_ANSWER, display_answer, self_description
+from cj_message.lio_context import SOURCE_EFFECT, TOOL_EFFECT, UNSETTLED_VISIBLE_ANSWER, UNSAVED_PLAN_ANSWER, display_answer, self_description
 from cj_message.lio_plan_needs import BOUND_EFFECT, EDIT_BOUND_EFFECT
 from cj_run.core import Binding
 from cj_run.display_snapshot import SnapshotTooLarge
@@ -41,6 +41,8 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
         status = 'sending'
     elif state.status == 'running':
         status = 'answering'
+    elif state.status == 'unknown' and UNSETTLED_VISIBLE_ANSWER in state.effects and state.text.strip():
+        status = 'completed'
     elif state.status == 'completed' and (state.draft_outcome is None or
             UNSAVED_PLAN_ANSWER in state.effects and state.text.strip()):
         status = 'completed'
@@ -72,7 +74,9 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
             title = ('中国天气网 · '+name+'当前预报（参考）' if item.locale == 'zh'
                      else 'Weather China · Current '+name+' forecast (reference)')
             sources.append(dict(title=title,url=url,observed_at=None))
-    answer = display_answer(state.text, item.locale) if state is not None else ''
+    # Failed streams can leave provisional text in the original RUN. Keep
+    # those bytes for diagnosis without returning them as a terminal answer.
+    answer = display_answer(state.text, item.locale) if state is not None and status != 'failed' else ''
     if identity and status == 'completed' and answer is not None:
         introduction = self_description(item.text, item.locale)
         if introduction is not None:

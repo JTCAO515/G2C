@@ -8,7 +8,7 @@ from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 
 from cj_agent.provider import DashScopeConfig, MeteredDashScopeProvider, M4_BASE, M4_MODEL
 from cj_api.local_app import ISSUER, scope_for
@@ -163,7 +163,7 @@ class ToolEvidenceTest(unittest.TestCase):
         result = dict(status='observed', forecasts=[], source_url='https://restapi.amap.com/v3/weather/weatherInfo',
                       retrieved_at=NOW.isoformat(), provider_reporttime='UNKNOWN',
                       opaque_original='synthetic field removed by Lio projection')
-        with patch('cj_api.real_services.weather', return_value=result) as external:
+        with patch('cj_api.real_services.weather_response', AsyncMock(return_value=result)) as external:
             raw = ''.join(prepared.bind_operation(operation, lambda: True)())
         external.assert_called_once()
         self.assertEqual(json.loads(raw), result)

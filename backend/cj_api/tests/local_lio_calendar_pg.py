@@ -175,10 +175,10 @@ def exercise(root,conninfo):
     app=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context,account_admission=True,
         confirmation_signer=signer,demo_dialogue_subjects=subjects,lio_dialogue_subjects=subjects,lio_calendar_subjects=subjects)
     outside_headers={'Authorization':'Bearer '+dev_auth.token(auth,OUTSIDE,3600),'Content-Type':'application/octet-stream'}
-    async def exchange(key,guard):
+    async def exchange(key,guard,*,send_under_fence):
         assert key==KEY and guard() is True
         return city_catalog()
-    with TestClient(app) as api,patch('cj_api.lio_city._catalog_exchange',side_effect=exchange):
+    with TestClient(app) as api,patch('cj_api.lio_city.catalog_response',side_effect=exchange):
         denied=json.dumps(dict(version='LIO-message.3',message_id='calendar-unselected',text='Plan three days in Chengdu',locale='en',new_conversation=True)).encode()
         assert api.post('/v3/lio/messages',content=denied,headers=outside_headers).status_code==403
         assert api.get('/v3/lio/timeline',headers=outside_headers).status_code==403
@@ -278,6 +278,34 @@ def exercise(root,conninfo):
                 answer=timeline['messages'][-1]['answer']
                 assert fixture_pace in answer and answer.endswith('？'if locale=='zh'else'?')
                 print('PASS native WP1 '+locale+' '+pace.value+' '+str(fixture_days)+' days, actual factory/wire/signed save/summary',flush=True)
+            from cj_agent.draft import DraftRejected
+            from cj_draft.lio_plan import LioSourceWindowPublisher
+            fixture_days=3
+            fixture_pace='轻松'if locale=='zh'else'relaxed'
+            fixture_start='2026-12-01'
+            legacy_text=('规划成都三天，节奏轻松，2026-12-01出发'if locale=='zh'else
+                         'Plan three days in Chengdu at a relaxed pace, starting 2026-12-01.')
+            legacy_cid,_=send('legacy-'+locale+'-rejected-base',legacy_text,calendar=False)
+            original_trip=read(legacy_cid,calendar=False)
+            assert original_trip['current'] is not None
+            edit_text=('把第二天下午「人民公园」（14:00-15:00）换成「成都博物馆」'if locale=='zh'else
+                'Replace "People Park（人民公园）" on the afternoon of day 2 (14:00-15:00) with "Chengdu Museum".')
+            edit_mid='legacy-'+locale+'-edit-rejected'
+            with patch.object(LioSourceWindowPublisher,'publish_edit_for_message',
+                              side_effect=DraftRejected('fixture rejects original proposal'))as publisher:
+                send(edit_mid,edit_text,legacy_cid,calendar=False)
+            assert publisher.call_count==1
+            response=api.get('/v2/lio/timeline',params={'conversation_id':legacy_cid},headers=headers)
+            assert response.status_code==200,response.status_code
+            rejected=response.json()['messages'][-1]
+            assert rejected['message_id']==edit_mid and rejected['status']=='completed',(edit_mid,rejected['status'])
+            assert rejected['trip'] is None and rejected['answer'].endswith('？'if locale=='zh'else'?')
+            assert ('保留'if locale=='zh'else'kept') in rejected['answer']
+            with psycopg.connect(**conninfo)as connection:
+                assert connection.execute("SELECT e.value FROM cj_run_event e JOIN cj_message_receipt m USING(scope,run_id) "
+                    "WHERE m.scope=%s AND m.message_id=%s AND e.kind='draft_outcome'",(scope,edit_mid)).fetchall()==[('validation_failed',)]
+            assert read(legacy_cid,calendar=False)==original_trip
+            print('PASS native2 '+locale+' rejected edit keeps the original Trip and displays its next step',flush=True)
             fixture_days=3;fixture_pace=None;fixture_start=None
         # The native v3 host must keep C's original confirmation verifier;
         # having reached an authenticated model draft cannot grant a save.

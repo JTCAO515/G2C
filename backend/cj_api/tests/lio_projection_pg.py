@@ -23,9 +23,10 @@ import local_history_pg as harness
 import dev_auth,local_run_context,run_worker
 
 
-def exercise(root,conninfo,*,preference=None,locale='en',stored_text=None,extra_preference=None):
+def exercise(root,conninfo,*,preference=None,locale='en',stored_text=None,extra_preference=None,dispatch_check=False):
     root.mkdir(mode=0o700)
-    subjects=frozenset({'projection-owner','projection-foreign'})
+    subject='m4-synthetic-projection-owner' if dispatch_check else 'projection-owner'
+    subjects=frozenset({subject,'projection-foreign'})
     auth=root/'auth';dev_auth.init(auth,subjects)
     path=root/'connection.json';path.write_text(json.dumps(json.loads(conninfo.read_bytes())))
     meter=root/'meter.json';now=int(time.time())
@@ -33,9 +34,9 @@ def exercise(root,conninfo,*,preference=None,locale='en',stored_text=None,extra_
         period_start=now-60,period_end=now+3600,max_steps=12,max_tools=4,max_output=60000,max_seconds=600),
         output_limits=dict(model=12000,tool=4000,memory=12000)),history=[])))
     context=load_run_context(meter)
-    for subject in subjects:
-        local_run_context.provision_budget(path,context,subject)
-        dev_auth.activate_travel(path,subject,context,ABI)
+    for admitted in subjects:
+        local_run_context.provision_budget(path,context,admitted)
+        dev_auth.activate_travel(path,admitted,context,ABI)
     database=LocalDatabase(path,run_context=context,travel_context=True,needs_context=True,trip_context=True)
     slot='travel.pace'if preference is None else'lodging.style'
     slots=[slot]+([]if extra_preference is None else['travel.interests'])
@@ -56,8 +57,8 @@ def exercise(root,conninfo,*,preference=None,locale='en',stored_text=None,extra_
                 self.calls+=1
                 yield json.dumps(dict(version='MEMORY-EXTRACT@2',entries=[]))
             else:yield from super().stream(messages,system)
-    model=Model();owner=dev_auth.token(auth,'projection-owner',300);foreign=dev_auth.token(auth,'projection-foreign',300)
-    scope=scope_for(ISSUER,'projection-owner');headers={'Authorization':'Bearer '+owner,'Content-Type':'application/octet-stream'}
+    model=Model();owner=dev_auth.token(auth,subject,300);foreign=dev_auth.token(auth,'projection-foreign',300)
+    scope=scope_for(ISSUER,subject);headers={'Authorization':'Bearer '+owner,'Content-Type':'application/octet-stream'}
     app=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context,account_admission=True,
         demo_dialogue_subjects=subjects,lio_dialogue_subjects=subjects,lio_memory_factory=memory_host)
     worker=run_worker._worker_for_scope(database,model,auth,scope,checker_for(auth),memory_configuration=memory,
@@ -192,11 +193,14 @@ def exercise(root,conninfo,*,preference=None,locale='en',stored_text=None,extra_
                 print('PASS two independent preference candidates: only confirmed value recalled; stale sibling target409; refreshed sibling confirmed with original receipt and zero extra model calls',flush=True)
             print(json.dumps(dict(case='luxury-first-recall',mid='projection-first-recall',run=outcome.run_id,
                 status=outcome.status,memory_in_model_input=True,real_service='UNRUN')),flush=True)
+        if dispatch_check:
+            from lio_dispatch_concurrency_pg import check_dispatch
+            check_dispatch(api,headers,database,auth,subject,scope,memory,root)
     print('PASS native signed PG empty/tag projection: same-body legacy compatibility, one M custody, competing worker blocked, initial contention503, invalid reference/wrong RUN/foreign owner withheld, no model calls during reads')
 
 
 if __name__=='__main__':
-    harness.exercise=lambda auth,conninfo:exercise(auth.parent/'lio-projection',conninfo)
+    harness.exercise=lambda auth,conninfo:exercise(auth.parent/'lio-projection',conninfo,dispatch_check=True)
     harness.main()
     for locale,preference,stored_text in (
             ('en','I prefer luxury hotels.','I prefer luxury hotels.'),

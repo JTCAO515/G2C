@@ -21,11 +21,12 @@ from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
 from cj_agent.provider import (
+    CompleteUnsettledAnswer,
     DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_REAL_OUTPUT_TOKENS,
     M4_NATIVE_TURN_PROFILE_V2,M4_NATIVE_TURN_STREAM,M4_NATIVE_TURN_BUFFERED,ProviderUnknown,ProviderFailed,
 )
 from cj_fact.contract_v1 import decode_query as fact_query
-from cj_fact.live_source import NOTICE_URL,WEATHER_URL,public_page,weather
+from cj_fact.live_source import NOTICE_URL,WEATHER_URL,public_page,weather_response
 from cj_fact.policy import FactFailure
 from cj_place.contract_v1 import decode_query,encode_result
 from cj_place.gaode import Config,prepare,parse_response
@@ -34,7 +35,7 @@ from cj_place.models import ORIGIN,Search,Detail,RouteQuery
 from cj_run.tool_turn import parse_turn
 from cj_usage.authorization_budget import AuthorizationBudget,canonical,DEADLINE
 from cj_usage.core import Receipt
-from cj_usage.metered_exit import BudgetUnknown
+from cj_usage.metered_exit import BudgetUnknown, GuardedWireWrite
 from cj_usage.registered_exit import InvocationInput,Registration
 
 
@@ -68,6 +69,49 @@ def _external_timing(kind, operation, admit):
         attempt_sha=hashlib.sha256(operation.command.attempt_id.encode()).hexdigest()
         _timing_log.info('M4_EXTERNAL_TIMING attempt_sha256=%s kind=%s elapsed_ms=%.3f admission_ms=%.3f admission_checks=%d',
                          attempt_sha,kind,(monotonic()-start)*1000,admission_time*1000,checks)
+
+
+def _response_stream(exchange):
+    """Handoff the original synchronous write before driving response IO."""
+    loop=asyncio.new_event_loop()
+    queue=asyncio.Queue(maxsize=1)
+
+    async def send_under_fence(write):
+        completed=loop.create_future()
+        def perform():
+            try:
+                write()
+            except Exception as error:
+                completed.set_exception(error)
+            else:
+                completed.set_result(None)
+        await queue.put(('write',GuardedWireWrite(perform)))
+        await completed
+
+    async def run():
+        try:
+            result=await exchange(send_under_fence)
+        except (Exception,asyncio.CancelledError) as error:
+            await queue.put(('error',error))
+        else:
+            await queue.put(('result',result))
+
+    task=loop.create_task(run())
+    try:
+        while True:
+            kind,value=loop.run_until_complete(queue.get())
+            if kind=='error':
+                raise value
+            if kind=='result':
+                yield value
+                return
+            yield value
+    finally:
+        task.cancel()
+        try:
+            loop.run_until_complete(asyncio.gather(task,return_exceptions=True))
+        finally:
+            loop.close()
 
 
 def _function(name,description,properties):
@@ -398,7 +442,7 @@ class RealTools:
         return json.loads(raw)
 
     def _city_input(self,query):
-        from .lio_city import ENDPOINT,PARAMETERS,fetch_catalog,resolve
+        from .lio_city import ENDPOINT,PARAMETERS,catalog_response,resolve
         if type(query) is not dict or not {'query','normalized_name','province'}<=query.keys():
             raise ProviderUnknown('bound administrative query required')
         raw=canonical(dict(version='LIO-city-query.1',name=query['query'],
@@ -417,7 +461,15 @@ class RealTools:
                 self.services.require_scope(operation.binding.scope)
                 budget.begin(operation.command.attempt_id,'place',raw)
                 try:
-                    source=fetch_catalog(self.services.amap_key,admitted)
+                    if admitted() is not True:raise BudgetUnknown('original city lookup authority unavailable')
+                    def receive(send_under_fence):
+                        return catalog_response(self.services.amap_key,admitted,send_under_fence=send_under_fence)
+                    yield ''
+                    with closing(_response_stream(receive)) as exchange:
+                        source=next(exchange)
+                        if isinstance(source,GuardedWireWrite):
+                            yield source
+                            source=next(exchange)
                     if self.services.amap_key in json.dumps(json.loads(source),ensure_ascii=False):
                         raise BudgetUnknown('administrative source secret echo rejected')
                     result=resolve(source,frozen['name'],frozen['province'],frozen['normalized_name'])
@@ -565,6 +617,11 @@ class RealTools:
                 self._require_national(operation.binding.scope)
             if turn_profile==M4_NATIVE_TURN_STREAM and operation.binding.scope not in self.streaming_scopes:
                 raise BudgetUnknown('original model streaming subject not admitted')
+            # Choose the handoff from the bound original operation, not from
+            # the discussion prompt or user text. The prepared input stays fixed.
+            discussion_handoff = (answer_preparation and not native_turn
+                                  and operation.operation_key == 'model.lio_discussion.0'
+                                  and operation.registration_id == 'model.answer')
             def admitted(*,memory_check=None):
                 if wrapped:
                     if memory_check is None:provider._check()
@@ -581,13 +638,26 @@ class RealTools:
                     stream=self.services.model.invoke(inputs['messages'],inputs['system'],operation.command.attempt_id,
                         tools=inputs['native_tools'],receipt=metadata,guard=checked,native_reply=native_reply,
                         native_turn_profile=inputs.get('native_turn_profile'),final_answer=inputs.get('external_tools_disabled',False),
-                        release_after_send=inputs.get('response_mode')=='lio-memory-json.1',
+                        release_after_send=discussion_handoff or inputs.get('response_mode')=='lio-memory-json.1',
+                        **({'guarded_connect':True} if release_after_send else {}),
+                        **({'unsettled_answer_limit':operation.command.output_limit} if discussion_handoff else {}),
                         lio_answer=inputs.get('answer_format_profile')=='lio-user.1',
                         **({'structured_profile':inputs['structured_profile']} if 'structured_profile' in inputs else {}),
                         **({'exploration_schema_sha256':inputs['response_format_sha256']} if exploration else {}),
                         **({'intake_source_index':inputs['current_source_index']} if 'current_source_index' in inputs else {}),
                         **({'draft_profile':inputs['draft_profile'],'draft_schema_sha256':inputs['response_format_sha256']}if 'draft_profile' in inputs else {}),
                         **capture)
+                    if discussion_handoff:
+                        def qualify_reply(original_stream):
+                            try:
+                                yield from original_stream
+                            except CompleteUnsettledAnswer:
+                                lease=provider.memory.hold(operation.binding) if wrapped else nullcontext(None)
+                                with lease as memory_check:
+                                    if checked(memory_check=memory_check) is not True:
+                                        raise BudgetUnknown('original discussion reply authority changed') from None
+                                raise
+                        stream=qualify_reply(stream)
                     if national_intake and intake_profile=='LIO-planning-intake.9':
                         from .rejected_intake_capture import observe_stream
                         @contextmanager
@@ -607,7 +677,7 @@ class RealTools:
                         # partial/failed streams retain their original UNKNOWN.
                         chunks=[]
                         for part in stream:
-                            chunks.append(part)
+                            if type(part) is str:chunks.append(part)
                             yield part
                         # The worker releases its first-advance Memory lease
                         # before draining the rest of this original stream.
@@ -701,22 +771,36 @@ class RealTools:
                         if name=='place':
                             config=Config(ORIGIN,8192,65536,20,60)
                             request=prepare(config,query,request_ref,datetime.now(timezone.utc),basic=True,coordinate_only=coordinate_route)
+                            credentials=ProviderCredentials(self.services.amap_key,budget.deadline)
                             if checked() is not True:raise BudgetUnknown('original live tool authority invalid')
-                            result=asyncio.run(fetch_candidate(config,request,ProviderCredentials(self.services.amap_key,budget.deadline),before_send=checked,basic=True,**({'coordinate_only':True} if coordinate_route else {})))
+                            def receive(send_under_fence):
+                                return fetch_candidate(config,request,credentials,before_send=checked,basic=True,
+                                    send_under_fence=send_under_fence,**({'coordinate_only':True} if coordinate_route else {}))
+                        elif name=='weather':
+                            def receive(send_under_fence):
+                                return weather_response(query,self.services.amap_key,guard=checked,
+                                                        national=national,send_under_fence=send_under_fence)
+                        else:
+                            def receive(send_under_fence):
+                                return public_page(guard=checked,send_under_fence=send_under_fence)
+                        # Original accounting admission has committed. Resolve
+                        # and connect outside the first RUN/MESSAGE fence.
+                        yield ''
+                        with closing(_response_stream(receive)) as exchange:
+                            result=next(exchange)
+                            if isinstance(result,GuardedWireWrite):
+                                yield result
+                                result=next(exchange)
+                        if name=='place':
                             if result.state!='received':raise BudgetUnknown('original live PLACE outcome unknown')
                             parsed=parse_response(config,request,result.response,now=datetime.now(timezone.utc),basic=True,coordinate_only=coordinate_route)
                             raw=encode_result(parsed,evidence_kind='live_provider')
                             endpoint=ORIGIN+request.path;status=parsed.outcome.value
                             metadata['provider_code']=parsed.provider_code
-                        elif name=='weather':
-                            if national:
-                                from cj_fact.live_source import weather_for_adcode
-                                outcome=weather_for_adcode(query,self.services.amap_key,guard=checked)
-                            else:outcome=weather(query,self.services.amap_key,guard=checked)
-                            raw=canonical(outcome);endpoint=WEATHER_URL;status=outcome['status']
                         else:
-                            outcome=asyncio.run(public_page(guard=checked))
-                            raw=canonical(outcome);endpoint=NOTICE_URL;status=outcome['status']
+                            raw=canonical(result)
+                            endpoint=WEATHER_URL if name=='weather' else NOTICE_URL
+                            status=result['status']
                     metadata.update(endpoint=endpoint,region='China',response_sha256=hashlib.sha256(raw).hexdigest(),
                                     result_status=status,actual_cost_cny='UNKNOWN' if name!='fact' else '0')
                     budget.finish(operation.command.attempt_id,metadata)

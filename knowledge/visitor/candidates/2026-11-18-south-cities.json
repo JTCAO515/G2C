@@ -1,0 +1,526 @@
+[
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.guangzhou.canton-tower",
+    "title_zh": "广州塔：营业时间与到达方式（海珠区政府门户网站）",
+    "summary_zh": "广州市海珠区政府门户网站的“城市名片·广州塔”页写明，广州塔位于海珠区阅江西路222号，每日营业时间为9:30—22:30，可乘地铁到广州塔站；该页把购票指引链接到广州塔官网票务页。页面属于景点简介，没有写闭馆安排、预约步骤，也没有说明持护照游客如何购票或换票。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州塔",
+      "name_en": "Canton Tower",
+      "address": "广州市海珠区阅江西路222号"
+    },
+    "audience": [
+      "首次来华的普通散客",
+      "城市观光与夜景游客"
+    ],
+    "themes": [
+      "attraction",
+      "transport"
+    ],
+    "sources": [
+      {
+        "name": "广州市海珠区人民政府门户网站",
+        "url": "https://www.haizhu.gov.cn/hzdt/ztlm/tzhz/rjhj/lyjd/csmp/content/post_9190964.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2023-09-01",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方票务页连续返回412，未能读取预约与实名购票细则",
+      "闭馆日/临时闭塔公告机制未说明",
+      "寄存、无障碍、讲解等游客服务未说明",
+      "门票金额未记录（易变）"
+    ],
+    "notes": "仅依据海珠区政府2023-09-01发布的景点介绍页；该页为政府转述的简介，非票务政策原文。营业时间与购票方式易变，须以广州塔官方渠道复核。适用：到达方式与大致营业时段的初步参考。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.guangzhou.baiyun-mountain-scenic-area",
+    "title_zh": "白云山风景名胜区：购票优惠、门岗到达与园内交通",
+    "summary_zh": "白云山风景区门户网站（广州市白云山风景名胜区管理局主办）的景区指南页列明：进山票与摩星岭、云台花园等园中园分别收费；儿童按年龄或身高、65岁以上长者、现役及退役军人、残疾人等凭有效证件可免票，学生与60—64岁人群可半票；页面给出南门、西门、濂泉、柯子岭等门岗的地铁与公交线路，并说明园内索道与观光电瓶车分线运行。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "白云山风景名胜区",
+      "name_en": "Baiyun Mountain Scenic Area",
+      "address": null
+    },
+    "audience": [
+      "自助游散客",
+      "亲子家庭",
+      "登山与城市公园爱好者"
+    ],
+    "themes": [
+      "attraction",
+      "transport",
+      "family"
+    ],
+    "sources": [
+      {
+        "name": "白云山风景区门户网站（广州市白云山风景名胜区管理局）",
+        "url": "https://www.baiyunshan.com.cn/bys/jqzn/jqzn.shtml",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "可读页面未集中列出各门岗开放时间",
+      "境外游客（护照）购票与优惠核验流程未说明",
+      "无障碍设施与讲解服务未说明",
+      "票价金额未记录（官网票务页为2020年发布，易变）"
+    ],
+    "notes": "引用景区管理局官网“景区指南”页，该页未标注发布日期，其中票务内容可追溯到2020年前后；节假日（如重阳）常执行临时票价与临时门岗时间，需另行复核。适用：到达线路、优惠对象与购票渠道参考。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.guangzhou.chen-clan-ancestral-hall-guangdong-folk-art-museum",
+    "title_zh": "陈家祠（广东民间工艺博物馆）：开放时间与预约渠道",
+    "summary_zh": "广州市政府门户网站《广州市备案博物馆参观信息表（2024年6月）》记载：广东民间工艺博物馆馆址为荔湾区中山七路恩龙里34号陈家祠，入场检票时段9:00—17:00、17:30闭馆；4月15日至10月15日延时开放，闭馆顺延至18时；逢周二闭馆（法定节假日除外）。散客通过馆方微信公众号预约7天内的门票，部分优待人群可凭有效证件免预约入馆；表中另列咨询电话与馆方官网。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "陈家祠（广东民间工艺博物馆）",
+      "name_en": "Chen Clan Ancestral Hall (Guangdong Folk Art Museum)",
+      "address": "广州市荔湾区中山七路恩龙里34号"
+    },
+    "audience": [
+      "对岭南建筑与民间工艺感兴趣的游客",
+      "文化场馆参观者"
+    ],
+    "themes": [
+      "attraction"
+    ],
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站（广州市文化广电旅游局信息）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-09-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "持外国护照者的预约入口与现场核验方式未在政府表格中说明",
+      "讲解、寄存、无障碍服务未核实",
+      "馆方官网页面为脚本渲染，本次未能读取原文",
+      "票价金额未记录（易变）"
+    ],
+    "notes": "信息来自市文化广电旅游局汇总表，属政府汇总口径，非馆方逐条公告；汇总表发布于2024-09，免费开放日、延时开放等规则可能更新。适用：开放时间、闭馆日与预约渠道的初步参考。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.guangzhou.guangdong-museum",
+    "title_zh": "广东省博物馆：开放时间、实名预约与入馆核验",
+    "summary_zh": "同一份《广州市备案博物馆参观信息表（2024年6月）》记载：广东省博物馆位于天河区珠江东路2号，周二至周日9:00—17:00开放、16:00停止入场，周一闭馆（特殊情况另行公告）；展览免费，实行全员分时段实名制预约，预约在官方微信公众号进行；表中列出咨询电话与官网地址。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广东省博物馆",
+      "name_en": "Guangdong Museum",
+      "address": "广州市天河区珠江东路2号"
+    },
+    "audience": [
+      "博物馆参观者",
+      "亲子家庭",
+      "首次来华游客"
+    ],
+    "themes": [
+      "attraction"
+    ],
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站（广州市文化广电旅游局信息）",
+        "url": "https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-09-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "馆方官网（gdmuseum.org.cn）多次读取失败，未能核对预约细则",
+      "持护照观众线上预约与西门核验的具体流程未核实",
+      "寄存、无障碍、讲解服务未核实"
+    ],
+    "notes": "与陈家祠条目同出广州市政府一份博物馆汇总表，两条共用同一URL；汇总表为2024年6月口径，暑期延时开放、放票时间等规则常调整。适用：开放时间与预约大渠道参考，细节须查馆方公众号。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.shenzhen.shenzhen-museum",
+    "title_zh": "深圳博物馆：免预约入馆与场馆开放时间",
+    "summary_zh": "深圳市文化广电旅游体育局网站报道：深圳博物馆金田路馆（历史民俗）、同心路馆（古代艺术）、东江游击队指挥部旧址与深圳改革开放展览馆在清明假期正常开放，观众免预约、经安检即可入馆；开放时间10:00—18:00，17:30停止入场，周一闭馆维护。同站2024年7月的报道还提到，四馆自2024年7月起全部取消预约制，并为老人、儿童等安排绿色通道、AED与急救药箱。",
+    "cities": [
+      "shenzhen"
+    ],
+    "place": {
+      "name_zh": "深圳博物馆",
+      "name_en": "Shenzhen Museum",
+      "address": null
+    },
+    "audience": [
+      "持外国护照的自由行游客",
+      "亲子家庭",
+      "博物馆爱好者"
+    ],
+    "themes": [
+      "attraction",
+      "family",
+      "accessibility"
+    ],
+    "sources": [
+      {
+        "name": "深圳市文化广电旅游体育局网站",
+        "url": "https://wtl.sz.gov.cn/xxgk/qt/gzdt/content/post_12102133.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-04-02",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "馆方官网返回403、移动端与CDN页为脚本渲染，未能读取原文",
+      "护照游客走绿色通道的现场核验细节未核实",
+      "寄存、无障碍洗手间、轮椅等服务的具体位置未核实",
+      "各馆址详细地址未在所选来源中列出"
+    ],
+    "notes": "所引报道以清明假期为背景，但开放时间与免预约措施与同站2024-07-26《“深博”多措并举提升游客体验》一致；节假日与展期安排会调整。适用：入馆政策与常态开放时间参考，需以馆方公告复核。",
+    "conflicts": [
+      "同站2024-07-26报道提及“每天9:00~10:00、18:00~20:00”为较佳观展时段，与2025-04-02报道的10:00—18:00开放口径存在出入，本条以后者为准，仍需复核"
+    ],
+    "related_entries": [
+      "visitor.v3.shenzhen.museum-history-folk"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.shenzhen.dapeng-fortress-dapeng-ancient-city",
+    "title_zh": "大鹏所城：政府答复中的开放时间与联系方式",
+    "summary_zh": "深圳市大鹏新区政府在线“互动交流”栏目答复市民来信时写明：大鹏所城位于大鹏新区大鹏街道鹏城社区赖府巷10号，作为市级廉政教育基地，开放时间为周二至周日9:00—17:00、周一闭馆，节假日等特殊情况另行通知，并给出联系电话。答复没有涉及古城街区整体开放时间、门票政策、预约方式或到达交通。",
+    "cities": [
+      "shenzhen"
+    ],
+    "place": {
+      "name_zh": "大鹏所城",
+      "name_en": "Dapeng Fortress (Dapeng Ancient City)",
+      "address": "深圳市大鹏新区大鹏街道鹏城社区赖府巷10号"
+    },
+    "audience": [
+      "历史文化与古建爱好者",
+      "深圳东部一日游游客"
+    ],
+    "themes": [
+      "attraction"
+    ],
+    "sources": [
+      {
+        "name": "深圳市大鹏新区政府在线",
+        "url": "https://www.dpxq.gov.cn/hdjlpt/detail?pid=2759505",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2023-10-26",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "古城街区（非展馆）的开放时间与门票政策无官方可读页面",
+      "到达交通、车辆预约通行规则未核实",
+      "讲解预约、游客中心服务、寄存与无障碍设施未核实"
+    ],
+    "notes": "来源为大鹏新区纪工委对市民来信的答复，其中开放时间针对设于所城内的廉政教育基地/展馆，不等同于古城街区；商业平台常概括为“全天开放、免费”，两者适用范围不同。适用：展馆开放时间与联系方式参考。",
+    "conflicts": [
+      "政府答复给出的“周二至周日9:00—17:00、周一闭馆”针对所城内廉政教育基地/展馆，与“大鹏所城古城街区全天开放”的常见表述并非同一对象，需区分范围后复核"
+    ],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.guilin.elephant-trunk-hill-xiangshan-scenic-area",
+    "title_zh": "象鼻山（象山景区）：开放时间、游客中心与公共交通到达",
+    "summary_zh": "桂林两江四湖·象山景区官方网站（主办：桂林两江四湖旅游有限责任公司）首页写明象山游览区开放时间7:00—21:00，并列出咨询与救援电话；同站游客中心页给出游客中心位置（象山公园1号门旁）、营业时间7:00—18:00，以及从两江国际机场、桂林站（火车南站）、桂林北站、桂林西站乘公交或驾车前往游客中心的走法。",
+    "cities": [
+      "guilin"
+    ],
+    "place": {
+      "name_zh": "象鼻山（象山景区）",
+      "name_en": "Elephant Trunk Hill (Xiangshan Scenic Area)",
+      "address": null
+    },
+    "audience": [
+      "首次到桂林的游客",
+      "城市地标打卡游客"
+    ],
+    "themes": [
+      "attraction",
+      "transport"
+    ],
+    "sources": [
+      {
+        "name": "桂林两江四湖·象山景区官方网站",
+        "url": "https://www.glljsh.com/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门票是否免费、是否需要实名预约未在官网文字中明确",
+      "持护照游客的预约入口与核验方式未说明",
+      "寄存、无障碍、讲解服务未核实",
+      "入口/出口开放差异未核实"
+    ],
+    "notes": "官网首页与游客中心页均未标注发布日期（版权年份2026），开放时间与到达线路属常规信息；页面提示以现场与官方公告为准。适用：开放时段、咨询电话与公交到达参考。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.guilin.li-river-cruise-li-river-scenic-area",
+    "title_zh": "漓江游船：实名线上预约与售票渠道",
+    "summary_zh": "桂林漓江景区旅游官网（桂林漓江风景名胜区市场拓展处）发布的票务预警提示说明：漓江游船实行实名线上预约购票，码头现场基本不卖当日船票，只有少量退票候补；官方购票渠道为微信服务号“漓江售票处”，并会在固定时点更新余票；已购票者须持本人有效身份证件、按预约班次提前到码头候船，逾期不能登船；页面同时提醒不要相信非官方“内部票”。",
+    "cities": [
+      "guilin"
+    ],
+    "place": {
+      "name_zh": "漓江游船（漓江景区）",
+      "name_en": "Li River Cruise (Li River Scenic Area)",
+      "address": null
+    },
+    "audience": [
+      "计划游览漓江精华段的游客",
+      "团队与自由行游客"
+    ],
+    "themes": [
+      "attraction",
+      "passport_booking"
+    ],
+    "sources": [
+      {
+        "name": "桂林漓江景区旅游官网（桂林漓江风景名胜区市场拓展处）",
+        "url": "https://www.liriver.com.cn/page/article/zxlj.tzgg/269",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-01",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "船班时刻、码头位置与票价未记录（页面标注且易变）",
+      "境外手机号注册微信服务号、用护照购票的可用性未核实",
+      "儿童与优待票规则未核实",
+      "行李寄存与无障碍服务未说明"
+    ],
+    "notes": "该文是国庆假期前后发布的票务提示，其中“现场基本不售当日票”等表述带有假期背景；日常放票节奏以“漓江售票处”最新公告为准。适用：外国游客了解“先线上实名预约、再到码头候船”的整体流程。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.xiamen.xiamen-ferry-xiamen-gulangyu-routes",
+    "title_zh": "厦门轮渡（厦鼓航线）：游客乘船、证件与返程规则",
+    "summary_zh": "厦门轮渡有限公司官网“我是游客—现场购票篇”说明：外地游客白天可从东渡客运码头乘船至鼓浪屿三丘田或内厝澳码头，也可经第一码头转嵩屿客运码头，夜间改到厦门轮渡码头2号厅乘船；购票需有效证件原件，除二代身份证外还可用按规定可使用的有效护照等证件；船票去程按购票日期与航次检票，返程可在20天内免费乘一次；页面还列出各码头人工窗口与自助机的售票时段，并提示以码头公布为准。",
+    "cities": [
+      "xiamen"
+    ],
+    "place": {
+      "name_zh": "厦门轮渡（厦鼓航线）",
+      "name_en": "Xiamen Ferry (Xiamen–Gulangyu routes)",
+      "address": null
+    },
+    "audience": [
+      "首次前往鼓浪屿的外国游客",
+      "自由行游客"
+    ],
+    "themes": [
+      "transport",
+      "passport_booking",
+      "arrival"
+    ],
+    "sources": [
+      {
+        "name": "厦门轮渡有限公司官网",
+        "url": "https://m.xmferry.com/xwdt/wshlk/xchgpp/",
+        "type": "official_transport",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "票价与实时班次未记录（易变）",
+      "提前线上购票的官方小程序名称与境外手机号可用性未核实",
+      "特殊旅客（轮椅、导盲犬等）服务与无障碍设施细节未核实",
+      "页面未标注更新日期"
+    ],
+    "notes": "来源为轮渡公司官网FAQ页，属交通运营方口径；票价、班次、码头售票时段会调整。适用：外国游客了解上岛航线选择、可用证件与返程规则；购票实操仍需查官方小程序。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.guilin.two-rivers-and-four-lakes",
+    "title_zh": "两江四湖：游览区构成与游船售票时段",
+    "summary_zh": "桂林两江四湖·象山景区官方网站的“两江四湖游览区”页介绍：该游览区由漓江、桃花江与榕湖、杉湖、桂湖、木龙湖构成，以乘船夜游为主要玩法，页面列出咨询、服务、投诉与救援电话；同站首页给出两江四湖游船售票时段，分旺季（4—10月）与淡季（11—3月）两套时间，并标注木龙湖游客中心地址与营业时间。",
+    "cities": [
+      "guilin"
+    ],
+    "place": {
+      "name_zh": "两江四湖",
+      "name_en": "Two Rivers and Four Lakes",
+      "address": null
+    },
+    "audience": [
+      "夜游与城市水上游览游客"
+    ],
+    "themes": [
+      "attraction"
+    ],
+    "sources": [
+      {
+        "name": "桂林两江四湖·象山景区官方网站",
+        "url": "https://www.glljsh.com/scenic/ljsh.html",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "景区整体开放时间与游船班次未在页面明确",
+      "夜游/日游票价与预约流程未记录",
+      "无障碍、寄存、讲解服务未说明",
+      "登船码头与换票地点未核实"
+    ],
+    "notes": "页面未标注发布日期；售票时段分淡旺季，属易变信息。适用：了解两江四湖“环城水系、乘船夜游”的定位与咨询电话；具体班次与票价须查官方购票入口。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.xiamen.gulangyu-island",
+    "title_zh": "鼓浪屿：官方小程序、讲解服务与码头便民设施",
+    "summary_zh": "厦门市人民政府门户网站转发的一篇官方攻略报道介绍：鼓浪屿管委会推出“鼓浪屿Kulangsu”小程序，可购买船票、核心景点门票，预约共享钢琴，并提供电子地图与多条经典路线；另设官方导游服务平台，提供无购物平价讲解团。报道还提到三丘田、内厝澳码头设行李揽收点与全岛多个配送点，三个码头设旅游咨询投诉服务点（每天9:00—18:00），并在多处设纳凉点。",
+    "cities": [
+      "xiamen"
+    ],
+    "place": {
+      "name_zh": "鼓浪屿",
+      "name_en": "Gulangyu Island",
+      "address": null
+    },
+    "audience": [
+      "首次登岛的自由行游客",
+      "亲子家庭",
+      "需要讲解服务的游客"
+    ],
+    "themes": [
+      "attraction",
+      "trip_planning",
+      "family"
+    ],
+    "sources": [
+      {
+        "name": "厦门市人民政府门户网站",
+        "url": "https://www.xm.gov.cn/jdhy/rdhy/202407/t20240722_2879674.htm",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-07-20",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "核心景点门票价格与开放时间未在本页说明",
+      "小程序对境外手机号注册、护照购票的可用性未核实",
+      "行李配送价格与无障碍服务细节未核实",
+      "岛上讲解团的最新线路与预约入口未核实"
+    ],
+    "notes": "该报道发布于2024-07，所述小程序功能、官方平价团与服务点安排可能已调整；但“以官方小程序为船票+景点票渠道”的方向仍有参考价值。适用：规划登岛后的服务获取与避免非官方渠道。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.xiamen.sunlight-rock-riguangyan-gulangyu",
+    "title_zh": "日光岩（鼓浪屿）：分季开放时间、地址与讲解场次",
+    "summary_zh": "厦门市鼓浪屿文化旅游发展中心官网“日光岩”景点页写明：日光岩与琴园在10月1日至次年5月31日期间8:30—17:30开放并清场，6月1日至9月30日延长至18:00清场；景点地址为鼓浪屿晃岩路62号；琴园英雄园每日安排数场讲解。页面未说明门票价格、购票与实名预约办法。",
+    "cities": [
+      "xiamen"
+    ],
+    "place": {
+      "name_zh": "日光岩（鼓浪屿）",
+      "name_en": "Sunlight Rock (Riguangyan), Gulangyu",
+      "address": "鼓浪屿晃岩路62号"
+    },
+    "audience": [
+      "登岛后参观核心景点的游客",
+      "摄影与观景游客"
+    ],
+    "themes": [
+      "attraction"
+    ],
+    "sources": [
+      {
+        "name": "厦门市鼓浪屿文化旅游发展中心官网",
+        "url": "https://www.glyylq.cn/article.php?id=158",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": "2025-10-08",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门票价格、购票与实名预约方式未在本页说明",
+      "无障碍、寄存、轮椅服务未说明",
+      "是否分时段限流及停止入园时点未说明",
+      "讲解场次的具体时刻未记录（易变）"
+    ],
+    "notes": "来源为核心国有景点运营单位（事业单位）官网景点页，发布于2025-10-08；开放时间按冬夏两季区分，节假日或临时调整须现场复核。适用：登岛后安排日光岩游览时段的参考。",
+    "conflicts": [
+      "部分非官方攻略页面常见“8:00开园”或“7:30开园”的说法，与本官方页面的8:30不一致；本条采信官方页，仍需现场公告复核"
+    ],
+    "related_entries": []
+  }
+]

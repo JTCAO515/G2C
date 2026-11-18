@@ -1,11 +1,16 @@
-"""Offline provider checks: httpx.MockTransport only, synthetic key, no network."""
+"""Offline provider checks with synthetic HTTP responses and no network."""
+import asyncio
+from contextlib import closing
+from datetime import datetime, timezone
 import json
 
 import httpx
 import pytest
 
-from cj_agent.provider import (DashScopeConfig, DashScopeProvider, FakeProvider, ProviderFailed,
-                               ProviderUnknown)
+from cj_agent.lio_intake_optional_schema import PROFILE, response_format
+from cj_agent.provider import (M4_BASE, M4_MODEL, _M4_REQUEST_SENT, DashScopeConfig, DashScopeProvider,
+                               CompleteUnsettledAnswer, FakeProvider, MeteredDashScopeProvider, ProviderFailed, ProviderUnknown)
+from cj_usage.authorization_budget import AuthorizationBudget
 
 BASE = 'https://synthetic.invalid/compatible-mode/v1'
 KEY = 'sk-synthetic-not-a-real-key'
@@ -104,3 +109,119 @@ def test_fake_provider_answers_in_the_user_language():
     assert '收到' in ''.join(fake.stream([{'role': 'user', 'content': '你好'}]))
     assert 'Received' in ''.join(fake.stream([{'role': 'user', 'content': 'hello'}]))
     assert fake.calls == 2
+
+
+@pytest.mark.parametrize('terminated', [True, False])
+def test_registered_optional_intake_returns_after_send_before_reading_sse(tmp_path, monkeypatch, terminated):
+    budget = AuthorizationBudget(tmp_path, clock=lambda: datetime(2026, 11, 4, tzinfo=timezone.utc))
+    provider = MeteredDashScopeProvider(DashScopeConfig(M4_BASE, M4_MODEL, KEY), budget)
+    response_ready = asyncio.Event()
+    requests = []
+    output = '{"mode":"clarify"}'
+    chunk = {'id': 'synthetic-receipt', 'model': M4_MODEL,
+             'choices': [{'index': 0, 'delta': {'content': output}, 'finish_reason': 'stop'}],
+             'usage': {'prompt_tokens': 3, 'completion_tokens': 2, 'total_tokens': 5}}
+
+    async def wire(config, raw, guard, observation):
+        assert guard() is True
+        assert budget.inspect()[0]['state'] == 'INTENT'
+        requests.append(json.loads(raw))
+        yield _M4_REQUEST_SENT
+        await asyncio.wait_for(response_ready.wait(), timeout=1)
+        sse = f'data: {json.dumps(chunk)}\n\n'
+        if terminated:
+            sse += 'data: [DONE]\n\n'
+        yield sse.encode()
+
+    monkeypatch.setattr('cj_agent.provider._m4_wire', wire)
+    receipt = {}
+    with closing(provider.invoke([{'role': 'user', 'content': 'Synthetic intake'}], 'Extract the trip',
+                                 'original-intake', receipt=receipt, guard=lambda: True,
+                                 structured_profile=PROFILE, intake_source_index=0)) as reply:
+        assert next(reply) == ''
+        assert receipt == {}
+        assert budget.inspect()[0]['state'] == 'INTENT'
+        assert len(requests) == 1
+        assert requests[0]['response_format'] == response_format(0)
+        response_ready.set()
+        if terminated:
+            assert list(reply) == [output]
+            assert receipt['usage']['total_tokens'] == 5
+            assert budget.inspect()[0]['state'] == 'RECEIVED'
+        else:
+            with pytest.raises(ProviderUnknown):
+                next(reply)
+            assert receipt == {}
+            assert budget.inspect()[0]['state'] == 'INTENT'
+    assert len(requests) == 1
+
+
+@pytest.mark.parametrize(('missing','finish','stream_error','answer_visible'), [
+    ('model', 'stop', False, True),
+    ('id', 'stop', False, True),
+    ('usage', 'stop', False, True),
+    ('done', 'stop', False, True),
+    ('model', 'length', False, False),
+    ('model', 'stop', True, False),
+    ('wrong_model', 'stop', False, False),
+    ('provider_error', 'stop', False, False),
+    ('non_utf8', 'stop', False, False),
+    ('escaped_secret_echo', 'stop', False, False),
+    ('original_output_limit', 'stop', False, False),
+])
+def test_only_complete_discussion_surfaces_with_missing_receipt(
+        tmp_path, missing, finish, stream_error, answer_visible):
+    budget = AuthorizationBudget(tmp_path, clock=lambda: datetime(2026, 11, 4, tzinfo=timezone.utc))
+    answer = ('北京有丰富的历史遗迹和街巷。' * 200)[:2436]
+    assert len(answer) == 2436
+    value = {'id': 'synthetic-original', 'model': M4_MODEL, 'choices': [
+        {'index': 0, 'delta': {'content': json.dumps({'answer': answer}, ensure_ascii=False)},
+         'finish_reason': finish}],
+        'usage': {'prompt_tokens': 20, 'completion_tokens': 500, 'total_tokens': 520}}
+    if missing in value:
+        del value[missing]
+    elif missing=='wrong_model':
+        value['model'] = 'unexpected-model'
+    elif missing=='non_utf8':
+        del value['model']
+        value['choices'][0]['delta']['content'] = r'{"answer":"\ud800"}'
+    elif missing=='escaped_secret_echo':
+        del value['model']
+        encoded_key=r'\u%04x' % ord(KEY[0])+KEY[1:]
+        value['choices'][0]['delta']['content']='{"answer":"'+encoded_key+'"}'
+    elif missing=='original_output_limit':
+        del value['model']
+    lines = 'data: ' + json.dumps(value, ensure_ascii=False) + '\n\n'
+    if missing=='provider_error':
+        lines += 'data: ' + json.dumps(dict(model=M4_MODEL,id='synthetic-original',error={'message':'fixture error'})) + '\n\n'
+    if missing not in ('done','provider_error'):
+        lines += 'data: [DONE]\n\n'
+    wire_body = lines.encode()
+
+    class Wire(httpx.SyncByteStream):
+        def __iter__(self):
+            yield wire_body
+            if stream_error:
+                raise httpx.ReadError('synthetic transport ended mid-stream')
+
+    calls = []
+
+    def respond(request):
+        calls.append(request)
+        return httpx.Response(200, stream=Wire())
+
+    provider = MeteredDashScopeProvider(
+        DashScopeConfig(M4_BASE, M4_MODEL, KEY), budget, transport=httpx.MockTransport(respond))
+    receipt = {}
+    with pytest.raises(ProviderUnknown) as indeterminate:
+        list(provider.invoke([{'role': 'user', 'content': '北京有什么可看的？'}],
+                             'Return JSON with the requested answer.', 'original-answer',
+                             receipt=receipt, guard=lambda: True, release_after_send=True,
+                             unsettled_answer_limit=len(answer) if missing=='original_output_limit' else 4000))
+    assert len(calls) == 1
+    assert receipt == {}
+    assert budget.inspect()[0]['state'] == 'INTENT'
+    if answer_visible:
+        assert indeterminate.value.complete_answer == answer
+    else:
+        assert not isinstance(indeterminate.value, CompleteUnsettledAnswer)
