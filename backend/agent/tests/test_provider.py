@@ -1,11 +1,16 @@
-"""Offline provider checks: httpx.MockTransport only, synthetic key, no network."""
+"""Offline provider checks with synthetic HTTP responses and no network."""
+import asyncio
+from contextlib import closing
+from datetime import datetime, timezone
 import json
 
 import httpx
 import pytest
 
-from cj_agent.provider import (DashScopeConfig, DashScopeProvider, FakeProvider, ProviderFailed,
-                               ProviderUnknown)
+from cj_agent.lio_intake_optional_schema import PROFILE, response_format
+from cj_agent.provider import (M4_BASE, M4_MODEL, _M4_REQUEST_SENT, DashScopeConfig, DashScopeProvider,
+                               FakeProvider, MeteredDashScopeProvider, ProviderFailed, ProviderUnknown)
+from cj_usage.authorization_budget import AuthorizationBudget
 
 BASE = 'https://synthetic.invalid/compatible-mode/v1'
 KEY = 'sk-synthetic-not-a-real-key'
@@ -104,3 +109,48 @@ def test_fake_provider_answers_in_the_user_language():
     assert '收到' in ''.join(fake.stream([{'role': 'user', 'content': '你好'}]))
     assert 'Received' in ''.join(fake.stream([{'role': 'user', 'content': 'hello'}]))
     assert fake.calls == 2
+
+
+@pytest.mark.parametrize('terminated', [True, False])
+def test_registered_optional_intake_returns_after_send_before_reading_sse(tmp_path, monkeypatch, terminated):
+    budget = AuthorizationBudget(tmp_path, clock=lambda: datetime(2026, 11, 4, tzinfo=timezone.utc))
+    provider = MeteredDashScopeProvider(DashScopeConfig(M4_BASE, M4_MODEL, KEY), budget)
+    response_ready = asyncio.Event()
+    requests = []
+    output = '{"mode":"clarify"}'
+    chunk = {'id': 'synthetic-receipt', 'model': M4_MODEL,
+             'choices': [{'index': 0, 'delta': {'content': output}, 'finish_reason': 'stop'}],
+             'usage': {'prompt_tokens': 3, 'completion_tokens': 2, 'total_tokens': 5}}
+
+    async def wire(config, raw, guard, observation):
+        assert guard() is True
+        assert budget.inspect()[0]['state'] == 'INTENT'
+        requests.append(json.loads(raw))
+        yield _M4_REQUEST_SENT
+        await asyncio.wait_for(response_ready.wait(), timeout=1)
+        sse = f'data: {json.dumps(chunk)}\n\n'
+        if terminated:
+            sse += 'data: [DONE]\n\n'
+        yield sse.encode()
+
+    monkeypatch.setattr('cj_agent.provider._m4_wire', wire)
+    receipt = {}
+    with closing(provider.invoke([{'role': 'user', 'content': 'Synthetic intake'}], 'Extract the trip',
+                                 'original-intake', receipt=receipt, guard=lambda: True,
+                                 structured_profile=PROFILE, intake_source_index=0)) as reply:
+        assert next(reply) == ''
+        assert receipt == {}
+        assert budget.inspect()[0]['state'] == 'INTENT'
+        assert len(requests) == 1
+        assert requests[0]['response_format'] == response_format(0)
+        response_ready.set()
+        if terminated:
+            assert list(reply) == [output]
+            assert receipt['usage']['total_tokens'] == 5
+            assert budget.inspect()[0]['state'] == 'RECEIVED'
+        else:
+            with pytest.raises(ProviderUnknown):
+                next(reply)
+            assert receipt == {}
+            assert budget.inspect()[0]['state'] == 'INTENT'
+    assert len(requests) == 1
