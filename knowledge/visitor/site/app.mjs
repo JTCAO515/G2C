@@ -1,4 +1,4 @@
-import { compareFreshness } from './freshness.mjs';
+import { compareFreshness, latestPagesDeployment, publicationTime } from './freshness.mjs';
 
 const $ = id => document.getElementById(id);
 const node = (tag, cls, text) => {
@@ -26,7 +26,7 @@ const words = {
     ruleUnknown: n => `提前天数 ${n}（规则待核）`, nameText: (zh, en, qid) => `英文名称：${en}。Wikidata 编号：${qid}。`,
     loading: '正在加载发布的数据…', loadFailed: '数据载入失败；当前没有可用内容，请稍后重试。',
     version: (sha, dataSha, when) => `发布版本 ${sha} · 数据版本 ${dataSha} · 生成于 ${when}；非实时，请核对发布状态。`, previewVersion: (sha, dataSha, when) => `预览基于 ${sha} · 数据版本 ${dataSha} · 生成于 ${when}。`,
-    badgeFailed: '发布状态不可用，请查看发布记录。', checking: '正在核对 main 版本…', fresh: '核对时事实库版本与 main 一致。', stale: '核对时发现 main 已更新，页面可能滞后；请查看发布状态。', freshnessUnknown: '无法核对 main，同步状态未知。', preview: '本地预览，未发布；同步状态未知。',
+    badgeFailed: '发布状态不可用，请查看发布记录。', checking: '正在核对 main 版本…', fresh: '核对时事实库版本与 main 一致。', stale: '核对时发现 main 已更新，页面可能滞后；请查看发布状态。', freshnessUnknown: '无法核对 main，同步状态未知。', preview: '本地预览，未发布；同步状态未知。', publishedUnknown: '该提交最近创建的部署成功时间：无法核验。', publishedAt: when => `该提交最近创建的部署成功时间：${when}；不保证对应当前缓存快照。`,
   },
   en: {
     sourceLink: 'View the GitHub knowledge base ↗', heroTitle: 'Better journeys start with reliable facts.',
@@ -46,7 +46,7 @@ const words = {
     ruleUnknown: n => `${n} days ahead (rule unconfirmed)`, nameText: (zh, en, qid) => `Chinese name: ${zh}. Wikidata ID: ${qid}.`,
     loading: 'Loading published data…', loadFailed: 'Could not load the data. No content is available; please try again later.',
     version: (sha, dataSha, when) => `Published ${sha} · data ${dataSha} · built ${when}; not live. Check publication status.`, previewVersion: (sha, dataSha, when) => `Preview based on ${sha} · data ${dataSha} · built ${when}.`,
-    badgeFailed: 'Publication status is unavailable; check the publication history.', checking: 'Checking the main branch…', fresh: 'Knowledge base version matched main when checked.', stale: 'Main had changed when checked; this page may be out of date. Check publication status.', freshnessUnknown: 'Unable to check main; sync state is unknown.', preview: 'Local preview, not published; sync state is unknown.',
+    badgeFailed: 'Publication status is unavailable; check the publication history.', checking: 'Checking the main branch…', fresh: 'Knowledge base version matched main when checked.', stale: 'Main had changed when checked; this page may be out of date. Check publication status.', freshnessUnknown: 'Unable to check main; sync state is unknown.', preview: 'Local preview, not published; sync state is unknown.', publishedUnknown: 'Success time of the most recently created deployment for this commit: unavailable.', publishedAt: when => `Success time of the most recently created deployment for this commit: ${when}; this may differ from the cached snapshot.`,
   },
 };
 const cities = {
@@ -61,7 +61,7 @@ const topics = {
   internet: ['上网', 'Internet'], emergency: ['紧急电话', 'Emergency'], visa_entry: ['签证与入境', 'Visa & entry'],
   seasonal_holiday: ['节假日', 'Holidays'], names: ['地点名称', 'Place names'],
 };
-let language = 'zh', city = 'all', topic = 'all', rows = [], data = null, badgeFailed = false, freshness = 'freshnessUnknown', freshnessRun = 0;
+let language = 'zh', city = 'all', topic = 'all', rows = [], data = null, badgeFailed = false, freshness = 'freshnessUnknown', freshnessRun = 0, publicationRun = 0, publishedAt = null;
 const label = pair => pair ? pair[language === 'zh' ? 0 : 1] : '';
 const cityName = key => key === 'all' ? words[language].allCities : (label(cities[key]) || key);
 const topicName = key => key === 'all' ? words[language].allTopics : (label(topics[key]) || key);
@@ -94,6 +94,7 @@ function setLanguage() {
   $('topics').setAttribute('aria-label', words[language].topicsLabel);
   if (badgeFailed) $('badge-note').textContent = words[language].badgeFailed;
   $('freshness').textContent = words[language][freshness];
+  updatePublished();
   updateVersion();
 }
 async function checkFreshness() {
@@ -109,6 +110,29 @@ async function checkFreshness() {
   } catch { result = 'freshnessUnknown'; }
   if (run !== freshnessRun || current !== data) return;
   freshness = result; $('freshness').textContent = words[language][freshness];
+}
+function updatePublished() {
+  if (!publishedAt) { $('published').textContent = words[language].publishedUnknown; return; }
+  const when = new Intl.DateTimeFormat(language === 'zh' ? 'zh-CN' : 'en-GB', {dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Shanghai'}).format(new Date(publishedAt));
+  $('published').textContent = words[language].publishedAt(`${when} (UTC+8)`);
+}
+async function checkPublication() {
+  const run = ++publicationRun, current = data;
+  publishedAt = null; updatePublished();
+  if (current.preview) return;
+  try {
+    const base = 'https://api.github.com/repos/JTCAO515/G2C';
+    const options = {cache: 'no-store', signal: AbortSignal.timeout(8000)};
+    const response = await fetch(`${base}/deployments?environment=github-pages&sha=${current.revision}&per_page=100`, options);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const deployments = await response.json();
+    const deployment = latestPagesDeployment(current.revision, deployments);
+    if (!deployment) throw new Error('invalid or ambiguous deployment');
+    const statusResponse = await fetch(`${base}/deployments/${deployment.id}/statuses?per_page=100`, {cache: 'no-store', signal: AbortSignal.timeout(8000)});
+    if (!statusResponse.ok) throw new Error(`HTTP ${statusResponse.status}`);
+    const result = publicationTime(current.revision, deployment, await statusResponse.json());
+    if (run === publicationRun && current === data) { publishedAt = result; updatePublished(); }
+  } catch { if (run === publicationRun && current === data) { publishedAt = null; updatePublished(); } }
 }
 function updateVersion() {
   if (!data) return;
@@ -187,13 +211,13 @@ function render() {
   else for (const row of list) $('cards').append(card(row));
 }
 async function load() {
-  ++freshnessRun; $('refresh').disabled = true; $('sync').textContent = words[language].loading;
+  ++freshnessRun; ++publicationRun; publishedAt = null; updatePublished(); $('refresh').disabled = true; $('sync').textContent = words[language].loading;
   try {
     const response = await fetch('data.json', {cache: 'no-store'});
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const result = await response.json();
     if (!Array.isArray(result.records) || !result.records.length || !/^[a-f0-9]{40}$/.test(result.revision) || !/^[a-f0-9]{40}$/.test(result.data_revision) || !/^[a-f0-9]{40}$/.test(result.source_revision) || Number.isNaN(Date.parse(result.built_at))) throw new Error('invalid published data');
-    data = result; rows = result.records; $('dot').className = 'dot'; render(); void checkFreshness();
+    data = result; rows = result.records; $('dot').className = 'dot'; render(); void checkFreshness(); void checkPublication();
   } catch {
     data = null; rows = []; freshness = 'freshnessUnknown'; $('freshness').textContent = words[language][freshness]; $('dot').className = 'dot error'; $('sync').textContent = words[language].loadFailed;
     $('hero-count').textContent = '—'; $('result-count').textContent = '';
