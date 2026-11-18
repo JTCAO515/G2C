@@ -28,15 +28,15 @@ CASE_LIMIT_SECONDS = 90
 POLL_SECONDS = 1
 HTTP_SECONDS = 5
 CASES = (
-    ('zh.identity', '你是谁？'),
-    ('zh.capability', '你能做啥？请简短说明你能怎样帮助第一次来中国的游客。'),
-    ('zh.plan', '请给我一份北京三日游的行程建议。请用第一天、第二天、第三天分别列出当天要去的具体地点和安排。不需要保存。'),
+    ('zh.identity', '你是谁'),
+    ('zh.capability', '你能做啥'),
+    ('zh.plan', '北京三日游'),
     ('en.identity', 'Who are you?'),
-    ('en.capability', 'What can you do? Briefly explain how you can help a first-time visitor to China.'),
-    ('en.plan', 'Suggest a three-day Beijing itinerary. List specific places and activities under Day 1, Day 2 and Day 3. This is a suggestion only.'),
+    ('en.capability', 'What can you do?'),
+    ('en.plan', 'A three-day trip to Beijing'),
 )
 DAY_HEADER = re.compile(
-    r'(?im)^\s*(?:[#>*_\-]+\s*)*(?:Day\s*([123])\b|第\s*([一二三123])\s*[天日])'
+    r'(?im)^\s*(?:[#>*_\-]+\s*)*(?:(?:Day|D)\s*([123])\b|第\s*([一二三123])\s*[天日])'
 )
 DAY_NUMBER = {'一': 1, '二': 2, '三': 3, '1': 1, '2': 2, '3': 3}
 BEIJING_PLACE = re.compile(
@@ -47,13 +47,14 @@ BEIJING_PLACE = re.compile(
     r'Beihai|National Museum|Old Summer Palace|Imperial College|Prince Gong|'
     r'Qianmen|Wangfujing|Sanlitun|Olympic|798 Art', re.I
 )
+NEGATED_IDENTITY = re.compile(r'不是\s*Lio|\bnot\s+Lio\b', re.I)
 CAPABILITY_TOPIC = re.compile(
     r'行程|规划|路线|交通|景点|支付|地铁|翻译|计划|推荐|'
     r'itinerar|trip plan|transport|attractions?|payment|subway|translat|route|sightseeing|recommend', re.I
 )
 NEGATED_CAPABILITIES = re.compile(
     r"不能帮|无法提供|不提供|(?:cannot|can't|do not|don't) (?:help|plan|provide|offer)|"
-    r'(?:offer|provide) no (?:travel |trip )?(?:assistance|planning|help)', re.I
+    r'(?:offer|provide) no (?:travel |trip )?(?:assistance|planning|help)|\bno ability to\b|没有能力', re.I
 )
 DAY_ACTIVITY = re.compile(
     r'参观|游览|游玩|游逛|乘车|坐车|坐地铁|步行|登上|爬山|漫步|散步|逛|前往|抵达|体验|品尝|欣赏|走访|'
@@ -133,7 +134,8 @@ def valid_answer(case, answer):
         return False
     if kind == 'identity':
         return bool(re.search(r'\bLio\b|旅行助手|旅游助手', answer, re.I)
-                    and re.search(r'我是|旅行|旅游|助手|\bI(?:\s+am|[’\']m)\b|travel|assistant', answer, re.I))
+                    and re.search(r'我是|旅行|旅游|助手|\bI(?:\s+am|[’\']m)\b|travel|assistant', answer, re.I)
+                    and not NEGATED_IDENTITY.search(answer))
     if kind == 'capability':
         return bool(CAPABILITY_TOPIC.search(answer) and not NEGATED_CAPABILITIES.search(answer))
     headings = list(DAY_HEADER.finditer(answer))

@@ -16,8 +16,11 @@ from deploy.hk import server_smoke_budget as ceiling
     ('zh.identity', '我是 Lio，你在中国旅行时的智能助手。', True),
     ('en.identity', 'I am Lio, your travel assistant for China.', True),
     ('en.identity', 'Welcome to China. How can I help you?', False),
+    ('en.identity', 'I am not Lio. I am a different travel assistant.', False),
+    ('zh.identity', '我不是 Lio，我是另一个旅行助手。', False),
     ('en.capability', 'I can plan your itinerary and explain local transport.', True),
     ('en.capability', 'I offer no travel assistance. Please ask someone to plan your itinerary.', False),
+    ('en.capability', 'I have no ability to plan travel itineraries or explain local transport.', False),
     ('zh.capability', '我可以规划行程，解释当地交通和支付。', True),
     ('zh.plan', '第一天\n上午游览故宫和天安门广场，下午去景山公园。\n第二天\n乘车去慕田峪长城，在景区步行并参观烽火台。\n第三天\n上午参观颐和园并沿昆明湖步行，下午去前门。', True),
     ('en.plan', '**Day 1: City centre**\nWalk through the Forbidden City and climb Jingshan.\n**Day 2: Great Wall**\nTake the morning shuttle to Mutianyu and walk between towers.\n**Day 3: Gardens**\nTour the Summer Palace and walk along the lake.', True),
@@ -144,3 +147,14 @@ def test_an_unrecognized_history_result_cannot_pass():
     cases = [dict(kind='case', case=name, status='PASS') for name, _ in smoke.CASES]
     result = smoke.decide([*cases, dict(kind='history', status='INVALID'), dict(kind='cost')], [])
     assert result['status'] == 'UNKNOWN'
+
+
+def test_smoke_keeps_the_original_short_prompts():
+    assert dict(smoke.CASES) == {
+        'zh.identity': '你是谁',
+        'zh.capability': '你能做啥',
+        'zh.plan': '北京三日游',
+        'en.identity': 'Who are you?',
+        'en.capability': 'What can you do?',
+        'en.plan': 'A three-day trip to Beijing',
+    }
