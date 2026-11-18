@@ -1,0 +1,515 @@
+[
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.nanjing.sun-yat-sen-mausoleum-zhongshan-scenic-area",
+    "title_zh": "南京中山陵陵寝：实行实名预约参观，陵门以上区域8:30-17:00、墓室不开放",
+    "summary_zh": "中山陵陵寝需预约参观，散客可通过“南京钟山风景区”微信公众号、“中山陵园票务中心”微信服务号、美团App，或到景区现场自助预约机预约，按预约时段进入陵寝；团队经久柏易游平台预约。中山陵陵寝“天下为公”陵门以上区域开放时间为8:30-17:00，墓室关闭。钟山风景区对景点实行实名预约购票，优惠群体须持有效证件核验，有预约要求的景点需提前约。页面未写明中山陵陵寝是否另收门票，也未写外籍护照的预约路径。",
+    "cities": [
+      "nanjing"
+    ],
+    "place": {
+      "name_zh": "中山陵（钟山风景名胜区）",
+      "name_en": "Sun Yat-sen Mausoleum (Zhongshan Scenic Area)",
+      "address": null
+    },
+    "audience": [
+      "普通散客",
+      "首次来华游客",
+      "团队游客"
+    ],
+    "themes": [
+      "attraction",
+      "passport_booking",
+      "trip_planning"
+    ],
+    "sources": [
+      {
+        "name": "南京市中山陵园管理局网站《让我看看是谁还没放假~》",
+        "url": "https://zschina.nanjing.gov.cn/lyzx/202606/t20260618_5862979.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "中山陵陵寝平日是否同样为8:30-17:00（该页为2026年端午假期服务指南）",
+      "预约名额、放票时间与提前预约天数",
+      "中山陵陵寝是否需另购门票",
+      "外籍护照/港澳台证件的预约与核验方式",
+      "地址与到达交通"
+    ],
+    "notes": "仅适用于页面所覆盖的2026年端午假期前后的服务安排；春节、清明、五一等同类指南中中山陵8:30-17:00、明孝陵售票6:30-18:30的表述一致，疑似常态时间，但仍应以景区当日公告为准。另据南京市政府网2024-09-29假日报道，中山陵为实名预约、免费参观，假期单日预约名额曾增至8万，本次未复核平日政策。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.nanjing.ming-xiaoling-mausoleum",
+    "title_zh": "南京明孝陵景区：售票时间6:30-18:30，纳入钟山风景区实名预约购票",
+    "summary_zh": "明孝陵景区为钟山风景名胜区内收费景点，页面标注售票时间为6:30-18:30；钟山风景区对景点实行实名预约购票，儿童、学生、60岁以上老人、现役及退役军人、残疾人等优惠群体须持本人有效证件核验，有预约要求的景点需提前预约。页面未单独说明明孝陵的预约渠道、闭园时间和停止入园时间。",
+    "cities": [
+      "nanjing"
+    ],
+    "place": {
+      "name_zh": "明孝陵景区",
+      "name_en": "Ming Xiaoling Mausoleum",
+      "address": null
+    },
+    "audience": [
+      "普通散客",
+      "首次来华游客",
+      "亲子家庭"
+    ],
+    "themes": [
+      "attraction",
+      "passport_booking",
+      "family"
+    ],
+    "sources": [
+      {
+        "name": "南京市中山陵园管理局网站《让我看看是谁还没放假~》",
+        "url": "https://zschina.nanjing.gov.cn/lyzx/202606/t20260618_5862979.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "明孝陵是否需单独实名预约及预约入口",
+      "闭园时间与停止入园时间",
+      "门票价格、免票与半价的具体适用人群",
+      "外籍游客购票证件要求"
+    ],
+    "notes": "页面为2026年端午假期景区服务指南，给出的是“售票时间”而非完整开放时间；明孝陵与中山陵、灵谷、音乐台等共用钟山风景区票务与优惠政策，具体票价和预约细则不在该页。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.nanjing.nanjing-museum",
+    "title_zh": "南京博物院：秋假延时至11月18日20:00，11月19日起恢复9:00-17:00并需全员实名分时段预约",
+    "summary_zh": "据江南时报社2026-11-16报道（内容引自南京博物院官方微信公众号）：2026年秋假期间11月16日至18日南博延时开放至20:00（19:00停止入馆），其中11月16日为周一仍正常开馆；11月19日起恢复常规开放时间9:00-17:00（16:00停止入馆）。延时期间继续实行全员实名分时段预约，原有预约与放票规则不变。报道未展开预约渠道、放票时点以及常规周一是否闭馆。",
+    "cities": [
+      "nanjing"
+    ],
+    "place": {
+      "name_zh": "南京博物院",
+      "name_en": "Nanjing Museum",
+      "address": null
+    },
+    "audience": [
+      "普通散客",
+      "首次来华游客",
+      "亲子家庭"
+    ],
+    "themes": [
+      "attraction",
+      "passport_booking",
+      "seasonal_holiday"
+    ],
+    "sources": [
+      {
+        "name": "搜狐号“江南时报社”《秋假期间，南京博物院延时开放》",
+        "url": "https://www.sohu.com/a/1102256752_120596020",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": "2026-11-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "预约入口（小程序/官网）、每日放票时间、可提前几天预约",
+      "常规周一是否闭馆（报道仅说明秋假期间11月16日周一不闭馆）",
+      "外籍护照/港澳台证件的预约与入馆核验方式",
+      "门票是否免费、是否有特展另行购票",
+      "地址与交通"
+    ],
+    "notes": "商业平台（搜狐号）转载稿，非南京博物院官网原文；本次南博官网（www.njmuseum.com）为前端渲染仅能取到标题，官方微信公众号《参观指南》正文触发人机验证，均未能直接读取官方原文，故仅作候选。该条时效性强（秋假安排到11月18日截止），11月19日起的时间需以官方公告复核。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.v3.holiday.official-channel"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.suzhou-jiangsu.suzhou-museum-main-branch",
+    "title_zh": "苏州博物馆本馆：周二至周日9:00-17:00、周一闭馆，实名分时段预约",
+    "summary_zh": "苏州博物馆本馆开放时间为周二至周日9:00-17:00（16:00停止入馆），周一闭馆（国家法定节假日除外），夜间延长开放另行公告。实行实名制分时段预约：个人可提前七天（含预约当天）通过官网、官方微信公众号、“苏州博物馆全预约”小程序、“君到苏州”微信公众号预约；当日若有余额可当天约，当日预约截止到15:40。60岁以上老人、残障人士、现役及退役军人、烈属、荣誉献血个人、苏博会员、文博单位工作人员、离休干部等可凭证免预约，其中老人、残障人士、离休干部的陪同人员仍需预约。馆内提供中英文人工讲解和语音导览，观众服务中心可寄存、免费借轮椅，地铁4号线北寺塔站4号口步行约800米。",
+    "cities": [
+      "suzhou-jiangsu"
+    ],
+    "place": {
+      "name_zh": "苏州博物馆（本馆）",
+      "name_en": "Suzhou Museum (Main Branch)",
+      "address": "江苏省苏州市姑苏区东北街204号"
+    },
+    "audience": [
+      "普通散客",
+      "首次来华游客",
+      "亲子家庭",
+      "残障游客"
+    ],
+    "themes": [
+      "attraction",
+      "passport_booking",
+      "accessibility",
+      "family"
+    ],
+    "sources": [
+      {
+        "name": "苏州博物馆官网《开放指南》",
+        "url": "https://dx.szmuseum.com/views/NewsDetails.aspx?guid=8303b714-0945-4600-86df-65bef4391835",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "页面未标注发布或更新日期",
+      "外籍护照、港澳台证件在正门预约与入馆核验中的具体处理（页面仅古籍图书馆读者证登记明确列出护照）",
+      "特展、夜场是否需另行预约或购票",
+      "行李寄存的具体时段与收费",
+      "苏州博物馆西馆的规则（本页仅本馆）"
+    ],
+    "notes": "信息指向苏州博物馆本馆（东北街204号），西馆另有地址与可能不同的预约规则，不可套用。官网主站 www.szmuseum.com 本次抓取失败，所用为同一馆方 dx.szmuseum.com 域下的《开放指南》页。讲解、寄存等服务项目的费用与时段属易变信息，需复核。",
+    "conflicts": [
+      "页面同时写明“电动轮椅建议更换为馆内免费轮椅，无法更换须查验并签承诺书”，与一般无障碍入园表述并列，实际操作需现场确认"
+    ],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.suzhou-jiangsu.humble-administrators-garden-zhuozheng-garden",
+    "title_zh": "苏州拙政园：3-10月7:30-17:30、11月至次年2月7:30-17:00，闭园前停止售票/入园",
+    "summary_zh": "苏州市旅游咨询中心景区介绍页给出：拙政园3月1日至10月31日开放7:30-17:30，闭园前1小时停止售票；11月1日至次年2月底开放7:30-17:00，闭园前30分钟停止售票与入园。咨询电话0512-962015，地址为苏州市姑苏区东北街178号。页面只写开放与售票时间，没有写是否必须提前实名预约，也没有写预约渠道。",
+    "cities": [
+      "suzhou-jiangsu"
+    ],
+    "place": {
+      "name_zh": "拙政园",
+      "name_en": "Humble Administrator's Garden (Zhuozheng Garden)",
+      "address": "江苏省苏州市姑苏区东北街178号"
+    },
+    "audience": [
+      "普通散客",
+      "首次来华游客"
+    ],
+    "themes": [
+      "attraction",
+      "trip_planning"
+    ],
+    "sources": [
+      {
+        "name": "苏州市旅游咨询中心（苏州市文化广电和旅游局主管）景区介绍页《拙政园》",
+        "url": "https://visitsz.wglj.suzhou.com.cn/scenic-spot-detail.aspx?id=58",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "是否必须实名分时预约、预约提前几天、预约入口",
+      "外籍游客购票与入园证件要求",
+      "免票/半价人群范围",
+      "法定节假日延时安排",
+      "页面更新日期"
+    ],
+    "notes": "网站主管单位为苏州市文化广电和旅游局、主办单位为苏州市旅游咨询中心，属政府系统旅游咨询平台，但该页内容为景点简介且未标注更新日期。拙政园预约规则本次未能从官方页面读取：苏州市园林和绿化管理局“开放时间查询”页重定向循环、苏州市政府相关新闻页返回403，需在实际发布时以“苏州园林旅游”官方渠道复核。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.suzhou-jiangsu.tiger-hill-scenic-area-huqiu",
+    "title_zh": "苏州虎丘山风景名胜区：7:30开园，11-4月至17:30、5-10月至18:00，17:00停止售票",
+    "summary_zh": "苏州市旅游咨询中心页面给出：虎丘山风景名胜区开放时间7:30-17:30（11月1日至4月30日），7:30-18:00（5月1日至10月31日），17:00停止售票、17:30停止检票。咨询电话0512-65323488，地址苏州市姑苏区虎丘山门内8号。页面另提及2025年8月23日至10月8日期间曾延时开放至21:00（已结束）。页面未写实名预约要求。",
+    "cities": [
+      "suzhou-jiangsu"
+    ],
+    "place": {
+      "name_zh": "虎丘山风景名胜区",
+      "name_en": "Tiger Hill Scenic Area (Huqiu)",
+      "address": "江苏省苏州市姑苏区虎丘山门内8号"
+    },
+    "audience": [
+      "普通散客",
+      "首次来华游客"
+    ],
+    "themes": [
+      "attraction",
+      "trip_planning"
+    ],
+    "sources": [
+      {
+        "name": "苏州市旅游咨询中心（苏州市文化广电和旅游局主管）景区介绍页《虎丘山风景名胜区》",
+        "url": "https://visitsz.wglj.suzhou.com.cn/scenic-spot-detail.aspx?id=55",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "是否需实名预约购票（另据苏州市政府2024年6月公告，虎丘属保留实名预约购票的7家景区之一，但本次未能读取该公告正文）",
+      "外籍游客购票与入园证件要求",
+      "节假日与暑期延时开放安排",
+      "页面更新日期"
+    ],
+    "notes": "该页为政府系统旅游咨询平台的景点介绍，未标注更新日期；页面自身时间表述不完全自洽（5-10月写18:00闭园，但停止检票为17:30），实际以现场与当日公告为准。2025年暑期延时属已过期安排，不应作为现行信息。",
+    "conflicts": [
+      "页面内部：5月1日至10月31日“7:30-18:00”与“17:30停止检票”并存，闭园与停止检票时间不一致"
+    ],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.shanghai.yu-garden-yuyuan",
+    "title_zh": "上海豫园（日间游览）：9:00-16:30开放、16:00停止入园",
+    "summary_zh": "上海市文化和旅游局、上海市旅游行业协会公布的景区名单中，上海豫园（日间游览）开放时间为9:00-16:30（16:00停止入园），咨询电话021-63260830。该页是中国旅游日免票活动名单，只给出开放时间与电话，没有写每周闭园安排、是否需实名预约、外籍游客购票方式，也没有写地址。",
+    "cities": [
+      "shanghai"
+    ],
+    "place": {
+      "name_zh": "上海豫园",
+      "name_en": "Yu Garden (Yuyuan)",
+      "address": null
+    },
+    "audience": [
+      "普通散客",
+      "首次来华游客"
+    ],
+    "themes": [
+      "attraction",
+      "trip_planning"
+    ],
+    "sources": [
+      {
+        "name": "上海市政府网站《31家景区（点）生日免票福利来了！》（来源：黄浦区人民政府）",
+        "url": "https://www.shanghai.gov.cn/nw17239/20260519/b4cc7db33efe486b83f02e1b9dc4b712.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-05-13",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "是否每周一闭园（官方页面之间表述不一致）",
+      "是否需实名预约购票及购票渠道",
+      "外籍护照购票与入园方式",
+      "门址与地铁到达方式",
+      "夜游与灯会期间的另行安排"
+    ],
+    "notes": "该页为2026年中国旅游日免票活动名单，仅把豫园日间开放时间作为活动备注列出，属于“顺带披露”的开放时间，并非豫园管理处的完整参观公告；票务与闭园日需另查官方渠道。",
+    "conflicts": [
+      "上海市文旅推广网（meet-in-shanghai.net，页面标注2025-04-17）写豫园开放8:45-16:45、16:20停止入园、16:45清场，并注明每周一闭园（法定节假日除外）；上海市政府网2026-05-13名单写9:00-16:30、16:00停止入园，两处时间不一致，闭园日亦有表述差异，需复核现行规定"
+    ],
+    "related_entries": [
+      "visitor.v3.shanghai.yu-garden"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.shanghai.yu-garden-night-tour-yu-xiang-shan-lin",
+    "title_zh": "上海豫园夜游《豫享山林》：按季节分时段开放，需按预约时段从南门入园",
+    "summary_zh": "上海市政府英文站2025-07-29报道：豫园夜游项目《豫享山林》（Yu Xiang Shan Lin）于2025年8月8日推出，以灯光与投影在园内营造五组场景并配互动体验。夜场开放分季节：5月至10月为周二、周三、周五、周六、周日18:30-21:50（21:00停止入园），周一与周四夜场闭（法定节假日除外）；11月至次年4月为周五至周日18:00-21:20（20:30停止入园），周一至周四夜场闭。需按预约时段从南门（豫园老街279号）入场，凭预约二维码检票。",
+    "cities": [
+      "shanghai"
+    ],
+    "place": {
+      "name_zh": "上海豫园（夜游项目《豫享山林》）",
+      "name_en": "Yu Garden Night Tour \"Yu Xiang Shan Lin\"",
+      "address": "上海市黄浦区豫园老街279号（南门售票处）"
+    },
+    "audience": [
+      "普通散客",
+      "首次来华游客",
+      "夜游与摄影爱好者"
+    ],
+    "themes": [
+      "attraction",
+      "seasonal_holiday"
+    ],
+    "sources": [
+      {
+        "name": "上海市政府英文网站《Yuyuan Garden unveils new tour experience》",
+        "url": "https://english.shanghai.gov.cn/en-UniqueExperience-travelinshanghai/20250729/25cfb8bce97d4e798f99ac62986255ff.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2025-07-29",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "2026年11月当前夜场是否照常开放（此后另有冬春季公告，需复核）",
+      "票种、优惠人群与免票条件",
+      "外籍游客购票与入园证件要求",
+      "夜场是否与日间门票互不通用",
+      "遇灯会等大型活动时的临时停开安排"
+    ],
+    "notes": "英文页由上海市政府英文站发布，注明信息来源为豫园及上海市文化和旅游局微信公众号；属官方渠道的二手编译，中文原文未直接读取。页面票价属易变信息，本记录不转录价格；夜场时段在2026年1月另有公告称冬春季为周五至周日18:00-21:20、20:30停止入园，与本页一致。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.v3.holiday.official-channel",
+      "visitor.v3.shanghai.yu-garden"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.shanghai.zhujiajiao-ancient-town",
+    "title_zh": "上海朱家角古镇：景点联票含课植园等3处，景点每天8:30-17:00，需先到游客中心换纸质票",
+    "summary_zh": "运营方官网票务页显示：朱家角古镇旅游区景点联票包含课植园、和心园、上海市鹤龙美术馆三处；各景点开放时间为每天8:30-17:00。线上预订后需填写预订人姓名与手机，凭预订信息到朱家角古镇游客中心（课植园路555号）换取纸质票，再凭纸质票到各景点检票入园；最晚须在游玩当天8:00前下单，取票时间为8:30-15:00，页面建议15:00前换票再去分散的景点。门票当天有效、仅限单次入园。免票对象包括1.3米及以下或6周岁及以下儿童、烈士遗属、现役军人、消防救援人员及持导游证、残疾证、记者证等人员；6-18岁未成年人、全日制本科及以下学生、60岁以上老人等可购五折优惠票，均需持证到游客服务中心窗口办理。",
+    "cities": [
+      "shanghai"
+    ],
+    "place": {
+      "name_zh": "朱家角古镇旅游区",
+      "name_en": "Zhujiajiao Ancient Town",
+      "address": "上海市青浦区朱家角镇课植园路555号（游客中心）"
+    },
+    "audience": [
+      "普通散客",
+      "亲子家庭"
+    ],
+    "themes": [
+      "attraction",
+      "payment",
+      "family"
+    ],
+    "sources": [
+      {
+        "name": "朱家角古镇旅游区官网《门票预订》（上海朱家角古镇旅游发展有限公司）",
+        "url": "https://zhujiajiao.com/cn/ticket/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "古镇街区本身是否免费开放、是否需要预约",
+      "外籍护照能否用于线上预订与换票",
+      "三处景点各自的单独开放时间与闭馆日",
+      "联票有效期与退改规则细节",
+      "页面更新日期"
+    ],
+    "notes": "该页为企业运营方（上海朱家角古镇旅游发展有限公司）官网，属景区运营方而非政府页面。票价、联票包含景点与取票时间属易变信息，本记录不转录价格，只保留开放与换票流程。古镇街区与收费景点的边界、外籍游客换票证件要求是该页未覆盖的关键点。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.mainland.payment-options"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.shanghai.zhujiajiao-ancient-town-getting-there",
+    "title_zh": "上海朱家角交通：地铁17号线朱家角站换乘公交或步行进镇，另有沪朱高速快线",
+    "summary_zh": "运营方官网交通指南给出：可乘上海地铁17号线（虹桥火车站—朱家角方向）到朱家角站，1号口出站后换乘1510路旅游专线等公交到珠湖路课植园路站（游客中心附近），或步行约1.1-1.3公里进入古镇旅游区；17号线约6:00-23:00运行，朱家角站首班约5:43、末班约22:33，间隔约10分钟；也可在人民广场（普安路金陵路附近）乘沪朱高速快线至朱家角汽车站；自驾可导航“课植园路555号”到古镇停车场。",
+    "cities": [
+      "shanghai"
+    ],
+    "place": {
+      "name_zh": "朱家角古镇旅游区（交通到达）",
+      "name_en": "Zhujiajiao Ancient Town (Getting There)",
+      "address": null
+    },
+    "audience": [
+      "自助游散客",
+      "首次来华游客"
+    ],
+    "themes": [
+      "transport",
+      "arrival"
+    ],
+    "sources": [
+      {
+        "name": "朱家角古镇旅游区官网《交通指南》（上海朱家角古镇旅游发展有限公司）",
+        "url": "https://zhujiajiao.com/cn/traffic/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "地铁与公交首末班车、班次间隔的最新版本（原页面未标更新日期）",
+      "无障碍换乘与行李寄存信息",
+      "夜间返程末班车与原定游览时段的衔接建议",
+      "从虹桥枢纽出发的最优路径说明"
+    ],
+    "notes": "页面未标注更新日期，首末班车、间隔与线路编号均属易变信息，仅作候选；票价按规则不转录。自驾与停车部分需结合现场交通管制公告使用。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.shanghai.shanghai-science-and-technology-museum",
+    "title_zh": "上海科技馆：2026年2月17日起试开放，周二至周日9:00-17:00、周一闭馆，全员线上实名预约",
+    "summary_zh": "上海市文化和旅游局转浦东发布报道：上海科技馆自2026年2月17日起试开放，2月17日至22日（初一至初六）开放9:00-18:00，2月23日（初七）后为周二至周日9:00-17:00。场馆实行线上限量、实名制分时段购票，官方渠道为“上海科技馆自然博物馆天文馆门票”小程序和“上海科技馆”微信公众号；70岁及以上老人、6岁及以下儿童等免费人群同样需要线上预约。馆内四维影院、明日之城、风洞体验场位于馆内，仅限已购参观票的观众另行购票，电影/剧场票一人一票且不设免费人群。试开放期间另有票务限购等措施。",
+    "cities": [
+      "shanghai"
+    ],
+    "place": {
+      "name_zh": "上海科技馆",
+      "name_en": "Shanghai Science and Technology Museum",
+      "address": null
+    },
+    "audience": [
+      "普通散客",
+      "亲子家庭",
+      "首次来华游客",
+      "学生团体"
+    ],
+    "themes": [
+      "attraction",
+      "passport_booking",
+      "family"
+    ],
+    "sources": [
+      {
+        "name": "上海市文化和旅游局网站《马年首展！上海科技馆大年初一试开放》（来源：乐游上海）",
+        "url": "https://whlyj.sh.gov.cn/wbzx/20260211/96b8e43e2d7c478895adfd26fcc27fbc.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-02-11",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "2026年11月是否仍属试运行、当前是否需提前几天预约",
+      "外籍护照线上购票与入馆核验方式（报道只提示内地居民用身份证）",
+      "取消/迟到规则与停止入馆时间的最新表述",
+      "地址、地铁线路与停车信息",
+      "周末与节假日是否另有延时开放"
+    ],
+    "notes": "该报道针对2026年春节试开放安排，属“试开放期”信息而非长期公告；常规票务与开放时间应以官方小程序或官网当日公告为准。官网中文站（www.sstm.org.cn）为前端渲染无法读取正文，英文站（en.sstm.org.cn）可读但与中文报道在时间上不一致，见conflicts。",
+    "conflicts": [
+      "官网英文站开馆时间页写9:00-17:15、现场售票8:55-16:30，另一英文票务页写售票至16:00；中文官方报道称试开放后为9:00-17:00，三处时间不一致，需复核。"
+    ],
+    "related_entries": []
+  }
+]

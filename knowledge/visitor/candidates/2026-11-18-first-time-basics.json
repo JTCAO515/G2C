@@ -1,0 +1,594 @@
+[
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.nationwide.rail-12306-ticketing",
+    "title_zh": "12306英文官网：境外旅客实名购票、可用证件与身份核验",
+    "summary_zh": "中国铁路客服中心英文站的常见问题说明，购票执行实名制，外国旅客可用按规定有效的护照购买实名车票；该英文站目前只接受有效外国护照；为他人购票需先把对方加入“我的乘客”并完成身份核验；进站、乘车须持购票时使用的证件原件。实名制适用范围、身份核验与检票细节以车站公告为准。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": {
+      "name_zh": "中国铁路12306英文网站（全国适用）",
+      "name_en": "China Railway 12306 English website",
+      "address": null
+    },
+    "audience": [
+      "首次来华的外国散客",
+      "需在中国境内乘火车跨城的境外旅客"
+    ],
+    "themes": [
+      "rail",
+      "transport"
+    ],
+    "sources": [
+      {
+        "name": "中国铁路12306英文版 常见问题（Ticketing）",
+        "url": "https://www.12306.cn/en/faq.html",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "页面未标注发布日期",
+      "未逐一列出外籍旅客可用的全部证件类型（仅提到有效外国护照）",
+      "未给出线下身份核验所需材料清单"
+    ],
+    "notes": "全国性规则，12306英文站发布；身份核验的补充说明见中国政府网《外国商务人士在华工作生活指引（2025年版）》（https://english.www.gov.cn/2025special/bizexpatsinchina2025），其中提到可在英文站或APP填写信息自动核验、上传护照资料页人工核验，也可持护照到车站窗口核验。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.mainland.rail-passport",
+      "visitor.mainland.transport-tickets"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.nationwide.rail-12306-change-refund",
+    "title_zh": "12306英文官网：改签、退票与儿童票常见规则",
+    "summary_zh": "同一英文站常见问题还说明：改签以有余票为前提，只能改乘车日期、车次或席别，发站与到站（同城车站除外）不能改，每张票限改一次，费用按距发车时间分档；退票须在发车前办理，退票费按提前时间分档，改签或变更到站后再退票另有计费规则；儿童优惠票自2023年起按年龄区分，6至14岁购儿童优惠票、14岁以上购全价票，每名持票成人可免费携带一名6岁以下且不单独占座的儿童。页面同时保留按身高1.2米/1.5米判断的旧表述。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": {
+      "name_zh": "中国铁路12306英文网站（全国适用）",
+      "name_en": "China Railway 12306 English website",
+      "address": null
+    },
+    "audience": [
+      "需改签或退票的外国旅客",
+      "带儿童乘高铁的家庭游客"
+    ],
+    "themes": [
+      "rail",
+      "transport",
+      "family"
+    ],
+    "sources": [
+      {
+        "name": "中国铁路12306英文版 常见问题（Endorsement and refund / Miscellaneous）",
+        "url": "https://www.12306.cn/en/faq.html",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "页面未标注发布日期",
+      "线上退票款项到账时限未说明",
+      "儿童票按身高与按年龄两套口径并存，需人工核实"
+    ],
+    "notes": "全国性规则；页面列有具体费率与金额，属易变信息，未在本记录中抄录；以车站公告与12306最新提示为准。",
+    "conflicts": [
+      "同一FAQ页既写按身高1.2米/1.5米购儿童票，又写2023年1月1日起按6至14岁年龄口径，两者不一致"
+    ],
+    "related_entries": [
+      "visitor.mainland.rail-passport",
+      "visitor.mainland.transport-tickets"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.beijing.beijing-capital-international-airport-terminals-2-3",
+    "title_zh": "北京首都国际机场：机场巴士、出租车、网约车与市区接驳",
+    "summary_zh": "首都机场官网“往来机场”页列出机场巴士、出租车、网约车及首都机场线等选项。机场巴士分市内线与城际线：T2的售票候车区在一层11号门外，T3在一层1号门内；市内线覆盖北京西站（24小时运营）、北京南站、丰台站、朝阳站、清河站、通州和大兴机场方向，城际线通廊坊城市航站楼、天津。页面强调班次、站点与票价以现场及官方服务号实时信息为准。",
+    "cities": [
+      "beijing"
+    ],
+    "place": {
+      "name_zh": "北京首都国际机场（2号、3号航站楼）",
+      "name_en": "Beijing Capital International Airport (Terminals 2 & 3)",
+      "address": null
+    },
+    "audience": [
+      "首次抵达北京的外国旅客",
+      "需要机场巴士或出租车进城者"
+    ],
+    "themes": [
+      "transport",
+      "arrival"
+    ],
+    "sources": [
+      {
+        "name": "北京首都国际机场官网 交通信息-往来机场",
+        "url": "https://www.bcia.com.cn/wljc.html",
+        "type": "official_transport",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "页面未标注发布日期或最后更新时间",
+      "机场巴士、出租车与网约车等候区仅有部分文字与图示，说明不完整",
+      "未取得英文版页面的交通说明"
+    ],
+    "notes": "适用首都机场T2/T3；页面列有票价与发车时刻等易变信息，未记录具体数字；机场服务热线010-96158。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.beijing.beijing-daxing-international-airport",
+    "title_zh": "北京大兴国际机场：地铁大兴机场线与城际铁路接驳市区",
+    "summary_zh": "北京市政府门户（首都之窗）转载的报道介绍，大兴机场是地下设高铁与地铁的综合交通枢纽；乘地铁大兴机场线从机场到草桥约19分钟，草桥城市航站楼可提前办理值机与行李托运；京雄城际、津兴城际、怀兴城际接入大兴机场站，可直达北京西站、雄安新区、天津及廊坊等方向。",
+    "cities": [
+      "beijing"
+    ],
+    "place": {
+      "name_zh": "北京大兴国际机场",
+      "name_en": "Beijing Daxing International Airport",
+      "address": null
+    },
+    "audience": [
+      "抵达大兴机场的外国旅客",
+      "需往返北京城区与大兴机场者"
+    ],
+    "themes": [
+      "transport",
+      "arrival",
+      "rail"
+    ],
+    "sources": [
+      {
+        "name": "首都之窗（北京市人民政府门户）交通一体化专题报道",
+        "url": "https://www.beijing.gov.cn/ywdt/zwzt/jjjyth/jtxx/202501/t20250109_3984893.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-01-05",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "大兴机场官网交通页（含wechat.bdia.com.cn）未能读取到正文，缺少机场巴士、出租车的一手说明",
+      "未给出地铁大兴机场线与各城际线路的首末班时间"
+    ],
+    "notes": "该报道来源为北京日报、经北京市政府门户转载，属官方媒体报道而非机场官网一手信息；轨道运营细节建议以北京轨道运营公司及其官网发布为准。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.mainland.rail-passport",
+      "visitor.mainland.transport-tickets"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.shanghai.shanghai-pudong-international-airport-shanghai-hongqiao-international-airport",
+    "title_zh": "上海浦东、虹桥机场：轨道交通与机场巴士接驳",
+    "summary_zh": "上海机场集团官网“机场交通”栏目按航站楼列出轨道线路：浦东T1、T2有地铁2号线，可连通虹桥T2；虹桥T1有地铁10号线；虹桥T2有地铁10号线和2号线，2号线可直达国家会展中心与浦东机场。同站“地面交通”页另列浦东机场多条机场巴士（如前往上海火车站北广场、上海南站、虹桥枢纽的守航夜宵线等）以及虹桥机场公交线路，并标注信息更新日期。",
+    "cities": [
+      "shanghai"
+    ],
+    "place": {
+      "name_zh": "上海浦东国际机场、上海虹桥国际机场",
+      "name_en": "Shanghai Pudong International Airport & Shanghai Hongqiao International Airport",
+      "address": null
+    },
+    "audience": [
+      "抵达上海两场的外国旅客",
+      "需在浦东与虹桥之间换乘的旅客"
+    ],
+    "themes": [
+      "transport",
+      "arrival",
+      "rail"
+    ],
+    "sources": [
+      {
+        "name": "上海机场（集团）有限公司官网 机场交通-轨道交通",
+        "url": "https://www.shanghaiairport.com/gdjt/index.html",
+        "type": "official_transport",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "轨道交通页未说明磁悬浮列车的换乘（官网另有磁悬浮专页）",
+      "页面未标注发布日期，仅有“当前信息最后更新于”提示"
+    ],
+    "notes": "官网同一栏目另有地面交通页（https://www.shanghaiairport.com/dmjt/index.html），列出机场巴士线路、咨询电话与更新日期；轨道交通页标注最后更新2025-02-25，地面交通页标注2026-05-31/06-01；票价与时序属易变信息，未记录。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.mainland.rail-passport",
+      "visitor.mainland.transport-tickets"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.guangzhou.guangzhou-baiyun-international-airport-terminal-3",
+    "title_zh": "广州白云机场T3航站楼：城际、地铁与接驳公交进城方式",
+    "summary_zh": "广东省政府门户发布的便民提示称，2026年5月7日起白云机场T1的11家国内航司转至T3，T1进入改造、不再接待旅客，地铁机场南站与城际白云机场南站（T1）暂停使用。前往T3可乘广州东环城际至白云机场东站后步行直达；或乘地铁3号线、9号线到高增站B口换乘空港2线支线到T3交通中心（约15分钟）；去T2可乘地铁至机场北站或乘城际至白云机场北站。机场另提供T1至T3免费穿梭巴士和跨区取车专线。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州白云国际机场（T3航站楼）",
+      "name_en": "Guangzhou Baiyun International Airport (Terminal 3)",
+      "address": null
+    },
+    "audience": [
+      "抵达广州白云机场的外国旅客",
+      "需前往T3乘机或接机者"
+    ],
+    "themes": [
+      "transport",
+      "arrival",
+      "rail"
+    ],
+    "sources": [
+      {
+        "name": "广东省人民政府门户网站 便民提示",
+        "url": "https://www.gd.gov.cn/zwfw/bmts/content/mpost_4893706.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-05-08",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "白云机场官网（gbiac.net）首页与交通页正文为空，未取得机场一手说明",
+      "接驳公交、城际的班次与票价未逐条记录（属易变信息）"
+    ],
+    "notes": "政府门户转载南方日报稿件；T1停用属2026年5月新变化，出行前需复核机场最新公告；接驳公交票价与班次页面标注，易变，需复核。",
+    "conflicts": [
+      "广州市政府2026-02-13页面仍把“机场南站（T1）”列为换乘方式，与2026-05-08省政府页面所称“T1航站楼关闭改造、地铁机场南站暂停使用”不一致"
+    ],
+    "related_entries": [
+      "visitor.mainland.rail-passport",
+      "visitor.mainland.transport-tickets"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.chengdu.chengdu-tianfu-international-airport",
+    "title_zh": "成都天府国际机场：地铁18/19号线、机场专线与其他接驳",
+    "summary_zh": "成都天府机场官网“综合交通”页说明：地铁18号线自火车南站至天府机场北站，途经天府机场1号2号航站楼；19号线与18号线贯通运营到天府机场北站；地铁乘车点在交通中心GTC一层换乘大厅，票务与首末班以成都地铁官网或APP为准。页面另介绍6条机场专线（24小时空地联运、空铁联运）、长途汽车、出租车与网约车上车点，并提示线路、站点、时刻会动态调整。",
+    "cities": [
+      "chengdu"
+    ],
+    "place": {
+      "name_zh": "成都天府国际机场",
+      "name_en": "Chengdu Tianfu International Airport",
+      "address": null
+    },
+    "audience": [
+      "抵达成都天府机场的外国旅客",
+      "需从天府机场进城的自由行游客"
+    ],
+    "themes": [
+      "transport",
+      "arrival",
+      "rail"
+    ],
+    "sources": [
+      {
+        "name": "成都天府国际机场官网 交通-综合交通",
+        "url": "https://www.sctfia.com/traffic/tramode/metro/metro.html?id=608",
+        "type": "official_transport",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "页面未标注发布日期",
+      "机场专线线路图以图片形式呈现，未取得文字版站点清单"
+    ],
+    "notes": "机场官网交通栏目；页面列有票价（如地铁全程票价），属易变信息未记录；机场客服028-86906666。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.mainland.rail-passport",
+      "visitor.mainland.transport-tickets"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.nationwide.payment-guide",
+    "title_zh": "外国人在华移动支付与银行卡：政府指引要点",
+    "summary_zh": "中国政府网英文版《外国商务人士在华工作生活指引（2025年版）》的“日常生活服务”部分介绍：外籍人士可下载微信、支付宝或云闪付，按页面提示用境外或中国手机号注册并绑定银行卡；可绑定带Visa、Mastercard、银联、American Express、JCB、Diners Club、Discover标识的卡；绑卡需发卡行验证，支持卡种、限额和收费因产品而异，以支付页提示与相关服务协议为准；部分境外电子钱包可直接扫码支付；同一部分还列出人民币现金与外币兑换渠道。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "首次来华外国游客",
+      "担心支付方式不通的外国商务与自由行旅客"
+    ],
+    "themes": [
+      "payment"
+    ],
+    "sources": [
+      {
+        "name": "中国政府网英文版 Guide to Working and Living in China（2025年版，商务部供稿）",
+        "url": "https://english.www.gov.cn/2025special/bizexpatsinchina2025",
+        "type": "official_government",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "页面未标注发布日期（仅标题注明2025年版）",
+      "未列各支付产品的具体限额与费率",
+      "未说明外卡取现所覆盖的银行网点范围"
+    ],
+    "notes": "由商务部供稿、中国政府网英文版发布，属政府层面指引，全国适用；页面同时包含签证与居留内容，本组按任务要求未概括签证政策；限额与费率易变，需复核。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.mainland.payment-options"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.nationwide.wechat-pay-foreign-card",
+    "title_zh": "微信支付：境外银行卡绑定与使用说明（官方帮助中心）",
+    "summary_zh": "微信帮助中心的《微信支付外卡绑定和使用指南》给出三步流程：用手机号注册或登录最新版微信/WeChat；进入“我-支付与服务-钱包”；在“信用卡/扣账卡-新增卡”处填写身份信息并绑卡。页面称境外人士可用护照等六类证件开通；绑卡验证手机号不要求中国大陆号码，能接收短信即可；外卡仅用于境内日常消费，暂不支持红包、转账等；退款时手续费按比例退回。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "准备使用微信支付的外国游客",
+      "持境外银行卡来华的首次访客"
+    ],
+    "themes": [
+      "payment"
+    ],
+    "sources": [
+      {
+        "name": "WeChat 帮助中心《微信支付外卡绑定和使用指南》",
+        "url": "https://cs.help.wechat.com/hc/zh-cn/articles/11975770896271-%E5%BE%AE%E4%BF%A1%E6%94%AF%E4%BB%98%E5%A4%96%E5%8D%A1%E7%BB%91%E5%AE%9A%E5%92%8C%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97",
+        "type": "commercial_platform",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "页面未标注发布日期",
+      "未列出支持的具体卡组织清单",
+      "未说明单笔与年度限额"
+    ],
+    "notes": "商业平台（支付机构自有官方帮助中心），非政府政策；页面含手续费比例等易变信息，未记录具体数字；建议与中国政府网政府指引交叉复核。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.mainland.payment-options"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.nationwide.sim-card-guide",
+    "title_zh": "境外手机号与在华SIM卡：政府指引中的办理方式",
+    "summary_zh": "中国政府网英文版的外国商务人士指引在“日常生活服务-SIM卡”部分说明：外国人可持护照或外国人永久居留身份证，到中国电信、中国移动、中国联通等运营商的服务网点申请SIM卡并开通移动通信服务；套餐一般含通话时长与流量，各运营商按客户需要提供不同方案；提醒流量通常有限，可按需向运营商咨询更合适的套餐。指引未说明境外号码漫游或eSIM的办理方式。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "首次来华需解决上网的外国游客",
+      "短期停留的外国商务旅客"
+    ],
+    "themes": [
+      "internet"
+    ],
+    "sources": [
+      {
+        "name": "中国政府网英文版 Guide to Working and Living in China（2025年版，商务部供稿）",
+        "url": "https://english.www.gov.cn/2025special/bizexpatsinchina2025",
+        "type": "official_government",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "运营商官网面向外籍用户的公开说明页未能读取到正文",
+      "eSIM、境外号漫游、上网卡的官方办理渠道未取得",
+      "未列资费与套餐细节"
+    ],
+    "notes": "全国适用，属政府指引层面的通用说明；运营商具体政策需向营业厅或客服核实；中国移动官网存在省级分公司“可为外籍来华人员办理电话卡营业网点公示”的标题页，但正文为空，未采用。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.mainland.passport-sim"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.nationwide.accommodation-registration",
+    "title_zh": "入境后住宿登记：酒店代办与24小时内派出所登记",
+    "summary_zh": "中国政府网英文版外国商务人士指引的“入境后注意事项”部分说明：入住酒店的外国人由酒店凭有效护照或其他国际旅行证件在接待处办理住宿登记；住酒店以外场所的，须在抵达后24小时内到当地派出所，持有效护照或国际旅行证件以及租房合同或房产证明办理登记。指引还提示出入境事务可拨12367咨询。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "首次来华自由行游客",
+      "住民宿或朋友家的外国访客"
+    ],
+    "themes": [
+      "arrival"
+    ],
+    "sources": [
+      {
+        "name": "中国政府网英文版 Guide to Working and Living in China（2025年版，商务部供稿）",
+        "url": "https://english.www.gov.cn/2025special/bizexpatsinchina2025",
+        "type": "official_government",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "页面未说明各地派出所办理时间与所需表单的差异",
+      "未说明逾期未办理的后果（不属本组概括范围）"
+    ],
+    "notes": "商务部供稿的政府指引，全国适用；具体执行以当地公安机关要求为准；12367官方说明另条记录。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.nationwide.departure-tax-refund",
+    "title_zh": "离境退税：税务总局2026年优化服务通知要点",
+    "summary_zh": "国家税务总局税总货劳发〔2026〕37号通知要求推进离境退税无纸化：退税商店可向境外旅客开具电子申请单与电子发票，需验核的由海关凭有效身份证件、退税物品及电子资料线上验核；自2026年9月1日起优化“即买即退”流程，支持代理机构线上审核与异地互认；推广全国离境退税服务码，旅客扫码可录入信息并查看申请单、办理进度与退付情况；同时要求加强套代购等风险防控。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "计划在华购物并办理离境退税的外国游客",
+      "商务与高端自由行旅客"
+    ],
+    "themes": [
+      "payment"
+    ],
+    "sources": [
+      {
+        "name": "中国政府网 国务院部门文件《国家税务总局关于优化离境退税服务推动政策规范落实的通知》",
+        "url": "https://www.gov.cn/zhengce/zhengceku/202607/content_7075798.htm",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-07-13",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "通知面向税务机关，未给旅客端操作指引",
+      "未给退税比例、起退金额等规则",
+      "未列可退税商店或口岸范围"
+    ],
+    "notes": "政策文件，非旅客操作指引；退税率、起退点等易变信息未记录；旅客实际办理以退税商店、海关和代理机构现场指引为准。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.mainland.payment-options"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.nationwide.12367-hotline",
+    "title_zh": "国家移民管理机构12367服务平台：多语种出入境咨询渠道",
+    "summary_zh": "中国政府网发布的答问解读介绍：12367平台整合全国边检机关和各地公安出入境管理部门的咨询资源，与12345热线互联互通，提供全时段中英双语服务；境内拨打按语言与业务（口岸通关、出入境证件、意见建议）分流，英文来电由国家移民管理局移民事务服务中心接听；境外拨打统一转接，提供普通话、粤语、英语选项；平台还包括APP、微信和支付宝小程序、网站端等渠道。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "需咨询出入境与停居留事务的外国旅客",
+      "首次来华想核实政策的游客"
+    ],
+    "themes": [
+      "visa_entry"
+    ],
+    "sources": [
+      {
+        "name": "中国政府网《国家移民管理机构12367服务平台和英文版门户网站答问解读》",
+        "url": "https://www.gov.cn/xinwen/2021-04/08/content_5598376.htm",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2021-04-08",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "页面为2021年发布，后续新增语种与服务渠道未在页内体现",
+      "未给出各业务办理时限"
+    ],
+    "notes": "仅说明咨询渠道，不含签证或免签实体政策；页面发布2021-04-08，此后平台有扩展（如新增语种服务），需以国家移民管理局最新公告为准。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.v2.entry.official-channel",
+      "visitor.v2.visa-free.official-channel"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.nationwide.mfa-global-consular-protection-and-service-emergency-hotline-12308",
+    "title_zh": "12308领事保护热线的适用边界（候选，需判断是否适用于外国游客）",
+    "summary_zh": "中国领事服务网页面说明：外交部12308热线全天候、零时差向海外中国公民提供领事保护与咨询服务，为紧急求助提供应急指导，必要时协调有关驻外使领馆跟进，并介绍一般性领保案件的处置流程；可拨+86-10-12308或+86-10-65612308，也可通过“中国领事”APP、“领事直通车”微信公众号的网络电话拨打。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": {
+      "name_zh": "外交部全球领事保护与服务应急热线（12308）",
+      "name_en": "MFA Global Consular Protection and Service Emergency Hotline (12308)",
+      "address": null
+    },
+    "audience": [
+      "在海外遇到困难的中国公民",
+      "需了解领保渠道的出行者"
+    ],
+    "themes": [
+      "emergency"
+    ],
+    "sources": [
+      {
+        "name": "中国领事服务网 12308领保热线",
+        "url": "https://cs.mfa.gov.cn/zggmcgx/lsbhyxz/12308lbrx/202607/t20260713_11981004.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "页面未标注发布日期",
+      "未说明是否受理非中国公民或入境外国游客的求助"
+    ],
+    "notes": "官方页面明确其服务对象为海外中国公民；本条保留用于后续判断，不应直接当作入境外国游客在华紧急求助渠道。外国游客在华紧急情况见110/119/120。 原采集备注：该热线定位为服务海外中国公民，并非入境外国游客的通用紧急电话；外国游客在华紧急情况应拨110、119、120（见政府指引）。本条按任务要求收录为候选，适用范围需人工判断。",
+    "conflicts": [
+      "任务清单将12308列为“紧急求助”渠道，但官方页面明确其服务对象为海外中国公民，对入境外国游客的适用性存疑"
+    ],
+    "related_entries": [
+      "visitor.mainland.emergency-numbers"
+    ]
+  }
+]

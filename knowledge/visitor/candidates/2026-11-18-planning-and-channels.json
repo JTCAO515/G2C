@@ -1,0 +1,505 @@
+[
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.nationwide.holiday-2026",
+    "title_zh": "国务院办公厅关于2026年部分节假日安排的通知（中国政府网发布页）",
+    "summary_zh": "中国政府网“信息公开—国务院文件”栏目刊载的国务院办公厅通知（国办发明电〔2025〕7号），成文日期与发布日期均为2025年11月4日，内容是2026年元旦、春节、清明节、劳动节、端午节、中秋节、国庆节放假调休安排，并提出鼓励结合带薪年休假错峰出行。本条只记录该官方发布位置、文号与发布日期，不逐项概括调休日期，具体以通知原文为准。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "规划来华行程的外国游客",
+      "需避开中国法定假期的自由行游客",
+      "旅行内容编辑"
+    ],
+    "themes": [
+      "trip_planning",
+      "seasonal_holiday"
+    ],
+    "sources": [
+      {
+        "name": "中国政府网（国务院办公厅）",
+        "url": "https://www.gov.cn/zhengce/content/202511/content_7047090.htm",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-11-04",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "中国政府网英文版对应该通知的页面未读取核验",
+      "按任务要求未概括各节假日具体调休日期"
+    ],
+    "notes": "页面主办单位为国务院办公厅，页脚备案号京ICP备05070218号。属政策发布渠道记录，不含价格、客流等易变信息。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.v3.holiday.official-channel"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.nationwide.holiday-2027",
+    "title_zh": "国务院办公厅关于2027年部分节假日安排的通知（中国政府网发布页）",
+    "summary_zh": "中国政府网国务院文件栏目刊载的国务院办公厅通知（国办发明电〔2026〕10号），成文日期与发布日期均为2026年11月5日，内容为2027年元旦、春节、清明节、劳动节、端午节、中秋节、国庆节放假调休安排，并提出鼓励带薪年休假错峰出行。本条只记录官方发布位置、文号与日期；该安排发布时间距本次收集日较近，具体以通知原文与后续官方发布为准。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "规划来华行程的外国游客",
+      "需避开中国法定假期的自由行游客",
+      "旅行内容编辑"
+    ],
+    "themes": [
+      "trip_planning",
+      "seasonal_holiday"
+    ],
+    "sources": [
+      {
+        "name": "中国政府网（国务院办公厅）",
+        "url": "https://www.gov.cn/zhengce/content/202611/content_7085101.htm",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-11-05",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "中国政府网英文版对应页面未读取核验",
+      "按任务要求未概括调休细节"
+    ],
+    "notes": "页面主办单位为国务院办公厅，备案号京ICP备05070218号。2027年安排刚发布，后续如有调整未覆盖。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.v3.holiday.official-channel"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.beijing.beijing-subway-network",
+    "title_zh": "北京地铁全路网无障碍出行服务与预约方式（首都之窗转载北京日报报道）",
+    "summary_zh": "北京市政府门户网站“便民服务—信息提示”栏目转载北京日报报道（2026年5月18日）：北京地铁全路网车站均配备无障碍渡板与轮椅，残障乘客可通过各运营企业热线或小程序预约“爱心服务”；部分车站试点爱心服务手环，国展、望京、三元桥站配置手语翻译平板电脑和沟通手卡；京港地铁在扶手设盲文标识、换乘站设轮椅候车标识；大兴机场线与大兴国际机场提供“爱心联动”，可拨96123或通过“北京轨道运营”官方小程序预约；地铁运营公司累计改造无障碍卫生间逾百套。",
+    "cities": [
+      "beijing"
+    ],
+    "place": {
+      "name_zh": "北京地铁全路网（北京市）",
+      "name_en": "Beijing Subway network",
+      "address": null
+    },
+    "audience": [
+      "轮椅使用者",
+      "视障或听障游客",
+      "行动不便的老年游客",
+      "携带婴儿车的家庭"
+    ],
+    "themes": [
+      "accessibility",
+      "transport"
+    ],
+    "sources": [
+      {
+        "name": "北京市人民政府门户网站（首都之窗）",
+        "url": "https://www.beijing.gov.cn/fuwu/bmfw/sy/jrts/202605/t20260518_4654955.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-05-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "北京地铁官网 bjsubway.com 的“无障碍设施”站点明细页未能读取（fetch 失败）",
+      "各运营企业预约热线的完整号码未在页内逐一列出",
+      "报道未给出无障碍电梯与无障碍卫生间逐站清单"
+    ],
+    "notes": "政府门户转载的媒体报道，非地铁运营方原始服务条款；预约渠道与设施配置以运营方最新公告为准，属易变信息。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.guangzhou.guangzhou-metro-network",
+    "title_zh": "广州地铁无障碍设施与“爱心直通车”预约（广州市政府门户转载广州日报报道）",
+    "summary_zh": "广州市政府门户网站转载广州日报报道（2025年11月26日）：广州地铁线网已实现无障碍设施100%覆盖，含轮椅坡道、无障碍电梯、无障碍渡板、楼梯升降机、盲道、无障碍卫生间、列车轮椅席位，以及无障碍导向标识、盲文铭牌、求助按钮等；体育西路、林和西、体育中心南等站新增残疾人牵引梯、无障碍坡道和低位服务台。为出行困难乘客提供“爱心直通车”接力式一对一服务，可提前拨96891热线或通过广州地铁官方App“爱心预约”联系在线客服预约。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州地铁线网",
+      "name_en": "Guangzhou Metro network",
+      "address": null
+    },
+    "audience": [
+      "轮椅使用者",
+      "行动不便的老年游客",
+      "需要预约协助的残障游客"
+    ],
+    "themes": [
+      "accessibility",
+      "transport"
+    ],
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站",
+        "url": "https://www.gz.gov.cn/zwfw/zxfw/jtfw/content/post_10566207.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-11-26",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "广州地铁官网 gzmtr.com 因字符集异常未能读取正文",
+      "各车站无障碍设施清单未在页内展开",
+      "96891热线与服务口径来自报道，需向运营方复核"
+    ],
+    "notes": "政府门户转载媒体稿；“100%覆盖”为报道口径，设施类型与站点范围未细列，具体以广州地铁官方渠道为准。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.shenzhen.shenzhen-metro",
+    "title_zh": "深圳地铁无障碍设施介绍（官网“无障碍乘车指南”栏目）",
+    "summary_zh": "深圳地铁官网“运营资讯—无障碍乘车指南—无障碍设施介绍”页：车站出入口通道、站厅层、站台层均设盲道；车站基本均设置从地面通往站厅、站厅通往站台的无障碍电梯；各设有卫生间的车站另设无障碍卫生间或第三卫生间；站台候车区设无障碍候车位置，对应屏蔽门贴有无障碍候车标识。指南另按线路分页给出逐站设施表，例如16号线页面逐站列出无障碍卫生间、第三卫生间、盲道及无障碍电梯位置与数量。",
+    "cities": [
+      "shenzhen"
+    ],
+    "place": {
+      "name_zh": "深圳地铁",
+      "name_en": "Shenzhen Metro",
+      "address": null
+    },
+    "audience": [
+      "轮椅使用者",
+      "视障游客",
+      "行动不便的老年游客"
+    ],
+    "themes": [
+      "accessibility",
+      "transport"
+    ],
+    "sources": [
+      {
+        "name": "深圳地铁（深圳市地铁集团有限公司）",
+        "url": "https://www.szmc.net/shentieyunying/yunyingzixun/wuzhangaichengchezhinan/wuzhangaisheshi/",
+        "type": "official_transport",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "页面未标注发布或更新日期",
+      "该页未说明爱心预约方式与热线",
+      "分线路站点表数量多，未逐条核验"
+    ],
+    "notes": "运营方官网栏目页；具体站点设施以分线路表为准，设施可能随改造调整。",
+    "conflicts": [
+      "通用介绍页称“各设有卫生间的车站均另设有无障碍卫生间或第三卫生间”，但16号线分站表中多站“无障碍卫生间”标为“无”、仅列第三卫生间位置，表述口径不一致，需按站点复核。"
+    ],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.shanghai.shanghai-museum",
+    "title_zh": "上海博物馆无障碍与婴儿车、轮椅服务（官网英文服务页）",
+    "summary_zh": "上海博物馆官网英文“Visit—Services”页列出无障碍服务（Barrier-Free Services）、婴儿车与轮椅（Strollers and Wheelchairs）、语音导览（中、英、法、日、德、韩、西、意语种）、寄存与咨询服务，馆内设施图标注无障碍通行（Disabled Access）。对应中文“服务项目”页补充：无障碍服务提供残疾人专用车道与升降电梯；轮椅、婴儿车仅限馆内免费使用，需在南门寄物处办理租借并缴纳押金；馆内另有专职讲解员与志愿者讲解服务。",
+    "cities": [
+      "shanghai"
+    ],
+    "place": {
+      "name_zh": "上海博物馆（人民广场馆）",
+      "name_en": "Shanghai Museum",
+      "address": "上海市黄浦区人民大道201号（近武胜路）"
+    },
+    "audience": [
+      "轮椅使用者",
+      "带婴幼儿的家庭游客",
+      "外国游客"
+    ],
+    "themes": [
+      "accessibility",
+      "family"
+    ],
+    "sources": [
+      {
+        "name": "上海博物馆",
+        "url": "https://www.shanghaimuseum.net/mu/frontend/pg/en/service/",
+        "type": "official_venue",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "页面未标注更新日期",
+      "未列出无障碍卫生间与无障碍电梯的楼层和点位",
+      "押金具体金额属易变信息，未写入摘要"
+    ],
+    "notes": "以英文服务页为主要来源；中文服务项目页（/mu/frontend/pg/service/services）已读取并用于补充细节。馆方未见独立“无障碍服务”专页，信息分散在服务与设施栏目。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.v3.shanghai.museum-east"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.beijing.national-museum-of-china-2",
+    "title_zh": "中国国家博物馆无障碍电梯与暑期服务升级（官网“国博要闻”）",
+    "summary_zh": "中国国家博物馆官网“国博要闻”文章（2026年8月13日）介绍暑期场馆设施服务升级：规范设置6部无障碍电梯，可通往所有参观区域，司梯人员会协助轮椅使用者、拄拐观众及高龄老人完成电梯启停、轮椅固定与通行引导；同期在北门入馆通道搭建遮阳棚、按固定间隔循环开启景观喷泉、在公共区域设7台常温与温水双档饮水机，并设38组智能存储柜共1318格。文章主题为暑期保障，并非无障碍服务专页。",
+    "cities": [
+      "beijing"
+    ],
+    "place": {
+      "name_zh": "中国国家博物馆",
+      "name_en": "National Museum of China",
+      "address": null
+    },
+    "audience": [
+      "轮椅使用者",
+      "行动不便的老年游客",
+      "暑期参观的普通游客"
+    ],
+    "themes": [
+      "accessibility",
+      "seasonal_holiday"
+    ],
+    "sources": [
+      {
+        "name": "中国国家博物馆",
+        "url": "https://www.chnmuseum.cn/zx/gbxw/202608/t20260813_281865.shtml",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": "2026-08-13",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "馆方独立的“无障碍服务”专页未找到",
+      "无障碍入馆核验与预约规则、馆内具体点位未在此页说明",
+      "馆址地址未在该页出现"
+    ],
+    "notes": "无障碍内容为文中一节，设施数量与位置可能随改造调整；遮阳棚、喷泉、饮水等属暑期季节性安排，需复核。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.v3.holiday.official-channel"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.nationwide.rail-12306-child-tickets",
+    "title_zh": "中国铁路12306儿童购票常见问题（官网“出行指南”）",
+    "summary_zh": "中国铁路12306官网“出行指南—常见问题—儿童”页说明：未满14周岁儿童应随同成年人旅客旅行；随同成人乘车的儿童年满6周岁且未满14周岁应购买儿童优惠票，年满14周岁购全价票；每名持票成年人可免费携带一名未满6周岁且不单独占用席位的儿童，需在购票时提前申明；免费乘车儿童单独使用席位时应购儿童优惠票；儿童优惠票实行实名制，须使用儿童本人有效身份证件购买；页面还列出普速与动车组儿童票的票价优惠计算方式。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "带儿童出行的家庭游客",
+      "亲子游行程规划者"
+    ],
+    "themes": [
+      "family",
+      "rail"
+    ],
+    "sources": [
+      {
+        "name": "中国铁路12306（中国国家铁路集团有限公司）",
+        "url": "https://kyfw.12306.cn/otn/gonggao/children.html",
+        "type": "official_transport",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "页面未标注发布或更新时间",
+      "未说明外籍儿童可用哪些具体证件购票（仅称“有效身份证件”）",
+      "未涉及车站母婴室等线下设施"
+    ],
+    "notes": "官网现行常见问题文本；票价优惠比例等细节以12306最新公告和车站执行为准；未记录票价、余票等易变数字。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.mainland.rail-passport",
+      "visitor.mainland.transport-tickets"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.nationwide.nia-foreigners-guide-en",
+    "title_zh": "国家移民管理局英文官网“外国人指南”栏目（官方出入境查询渠道）",
+    "summary_zh": "国家移民管理局英文官网 Services 下的 Guidelines for Foreigners 栏目，按“Entry-Exit and Stay (Residence) of Foreigners”（含签证延期、换发、补发、居留许可、旅行许可等办事指南）、“Nationality Application”、“Exit-Entry Border Inspection”（含过境政策解释与边防检查规定）、“Download”（签证与居留许可申请表）、“Fee Schedule”、“Document Samples”分类发布官方指南，并设 Office Enquiries 与 Accommodation Registration 入口。本条只记录官方查询渠道，不对免签、申请资格或停留期限作任何判断。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "计划来华的外国游客",
+      "在华外国人",
+      "需办理签证证件者"
+    ],
+    "themes": [
+      "visa_entry"
+    ],
+    "sources": [
+      {
+        "name": "国家移民管理局（National Immigration Administration）",
+        "url": "https://en.nia.gov.cn/n147423/n147478/index.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "栏目内各指南正文未逐条读取",
+      "指南条目日期多为2021—2023年，现行有效性需复核",
+      "12367热线信息未在该页读取到"
+    ],
+    "notes": "英文频道；中文主站 www.nia.gov.cn 同源。作为外国人查询出入境政策的官方入口，具体规定以官网与口岸最新发布为准。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.v2.entry.official-channel",
+      "visitor.v2.visa-free.official-channel"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.nationwide.mfa-visiting-china",
+    "title_zh": "中国领事服务网“外国公民来华”官方信息入口（外交部）",
+    "summary_zh": "中国领事服务网（外交部）首页设“Visiting China 外国公民来华”板块，包含“Chinese Visa 来华签证”和“领事认证（附加证明书）”入口，并提供来华签证在线服务（consular.mfa.gov.cn/VISA/）与认证核验链接；“重要消息”栏目发布领事类通知（如关于延长APEC商务旅行卡停留期的通知）。页面覆盖中国公民出国与外国公民来华两类事项，本条只记录渠道与入口，不概括签证类别、申请资格或停留期。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "计划来华的外国游客",
+      "需办理来华签证或认证者"
+    ],
+    "themes": [
+      "visa_entry"
+    ],
+    "sources": [
+      {
+        "name": "中国领事服务网（中华人民共和国外交部）",
+        "url": "https://cs.mfa.gov.cn/",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "“来华签证”栏目内具体页面未逐项读取",
+      "页面未标注更新日期"
+    ],
+    "notes": "外交部版权所有（京ICP备06038269号）；具体签证要求与受理以使领馆及官网最新发布为准。首页另设签证等关键词检索入口。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.v2.entry.official-channel",
+      "visitor.v2.visa-free.official-channel"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.nationwide.visaforchina-entry",
+    "title_zh": "中国签证申请服务中心（CVASC）官网入口",
+    "summary_zh": "中国签证申请服务中心官网首页按“申请所在国家/城市”选择对应中心站点，覆盖澳大利亚、加拿大、英国、日本、韩国、法国、德国、印度、印度尼西亚等数十个国家和地区城市，并提供“FOR VISA（办签证）”与“FOR AUTHENTICATION（办认证）”两类入口。本条只记录该签证申请受理渠道的官方入口及按国别、城市分流的页面结构，不概括申请资格、材料、费用或停留期。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "需办理来华签证的外国游客",
+      "需办理领事认证者"
+    ],
+    "themes": [
+      "visa_entry"
+    ],
+    "sources": [
+      {
+        "name": "中国签证申请服务中心（CVASC）",
+        "url": "https://www.visaforchina.cn/",
+        "type": "other_public",
+        "language": "zh-CN, en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "各中心具体材料、预约与费用规则未读取",
+      "页面未标注更新日期",
+      "各中心是否统一由同一运营方提供服务未核实"
+    ],
+    "notes": "页脚版权为北京千代福信息技术有限公司，非政府域名；系中国驻外使领馆指定的签证申请服务中心运营方网站（官方受理渠道、公司运营），机构身份按页脚判定，具体以使领馆与各中心公告为准。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.v2.entry.official-channel",
+      "visitor.v2.visa-free.official-channel"
+    ]
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-18.nationwide.mct-seasonal-safety-tip",
+    "title_zh": "文化和旅游部：端午节假期和汛期、暑期出游提示（2026-06-05）",
+    "summary_zh": "文化和旅游部政府门户网站“焦点新闻”栏目2026年6月5日发布出游提示：当前进入汛期，极端天气与地质灾害风险升高，提醒游客关注目的地及沿途天气、气象与地质灾害预警，提前了解景区开放情况并合理调整行程，不前往未开发未开放区域；暑期出游做好防暑、防雷、防雨准备，户外活动尽量避开正午高温时段；同时提示增强风险意识、遵守场所安全管理规定、健康文明出游。属面向公众的安全提示，非强制规定。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "夏秋季来华游客",
+      "自由行游客",
+      "亲子游家庭"
+    ],
+    "themes": [
+      "seasonal_holiday",
+      "trip_planning"
+    ],
+    "sources": [
+      {
+        "name": "中华人民共和国文化和旅游部",
+        "url": "https://www.mct.gov.cn/whzx/whyw/202606/t20260605_966153.htm",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-06-05",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "未针对具体城市或景区给出季节提示",
+      "冬季冰雪季等其他季节的官方提示未涉及"
+    ],
+    "notes": "发布单位为文化和旅游部政府门户网站；季节性安全提示时效性强，出行前应查看最新发布。",
+    "conflicts": [],
+    "related_entries": [
+      "visitor.v3.holiday.official-channel"
+    ]
+  }
+]
