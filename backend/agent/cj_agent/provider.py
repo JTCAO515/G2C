@@ -627,6 +627,8 @@ class MeteredDashScopeProvider:
                             identity_rejection='response_identity_changed'
                             identity_fields={k:value[k] for k in ('model','id','error') if k in value}
                             raise ProviderUnknown('M4 model response identity changed')
+                    if 'error' in value:
+                        raise ProviderUnknown('M4 supplier reported a stream error')
                     phase='usage'
                     supplied=value.get('usage')
                     if supplied is not None:
@@ -713,13 +715,15 @@ class MeteredDashScopeProvider:
                     # discussion envelope are sufficient for read-only display.
                     if (allow_unsettled_answer and observed_finish=='stop'
                             and not calls and not choices_after_stop):
-                        candidate=json.loads(''.join(texts),
-                            object_pairs_hook=reject_duplicates(ValueError,'duplicate_answer_field'))
-                        if (type(candidate) is dict and candidate.keys()=={'answer'}
-                                and type(candidate['answer']) is str and candidate['answer'].strip()
-                                and len(candidate['answer'])<=unsettled_answer_limit):
-                            failure_reason='receipt_metadata_incomplete'
-                            raise CompleteUnsettledAnswer(candidate['answer'])
+                        original=''.join(texts)
+                        if len(original)<=unsettled_answer_limit:
+                            candidate=json.loads(original,
+                                object_pairs_hook=reject_duplicates(ValueError,'duplicate_answer_field'))
+                            if (type(candidate) is dict and candidate.keys()=={'answer'}
+                                    and type(candidate['answer']) is str and candidate['answer'].strip()):
+                                candidate['answer'].encode('utf-8')
+                                failure_reason='receipt_metadata_incomplete'
+                                raise CompleteUnsettledAnswer(candidate['answer'])
                     raise ProviderUnknown('M4 complete usage receipt unavailable')
                 if incremental and (observed_finish!=('tool_calls' if calls else 'stop')
                         or calls and set(calls)!=set(range(len(calls))) or not calls and not ''.join(texts).strip()):

@@ -7,7 +7,7 @@ from threading import Event
 from unittest.mock import patch
 
 from cj_agent.provider import (
-    _M4_REQUEST_SENT, DashScopeConfig, MeteredDashScopeProvider, M4_BASE, M4_MODEL,
+    _M4_REQUEST_SENT, DashScopeConfig, MeteredDashScopeProvider, M4_BASE, M4_MODEL, ProviderUnknown,
 )
 from cj_api.local_app import load_confirmation_signer
 from cj_api.local_worker_context import checker_for
@@ -19,6 +19,11 @@ from test_lio_city import data as city_catalog
 from test_lio_planning_flow import flow
 
 
+async def reject_unmocked_connection(*args, **kwargs):
+    raise AssertionError('signed PG fixture attempted a real external connection')
+
+
+@patch('asyncio.open_connection', new=reject_unmocked_connection)
 def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
     subjects = frozenset({subject})
     signer = load_confirmation_signer(auth)
@@ -132,7 +137,7 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
             finally:
                 release.set()
             outcome, = future.result(timeout=10)
-        assert outcome.status == ('unknown' if missing_done else 'completed')
+        assert outcome.status == ('unknown' if missing_done or missing_model else 'completed')
         path = {'memory': ['answer', 'memory'], 'draft': ['intake', 'draft']}.get(paused, ['intake', 'discussion'])
         assert sent == path, sent
         page = timeline()
@@ -144,6 +149,23 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
         elif missing_model:
             assert completed['status'] == 'completed' and completed['answer'] == complete_unsettled_reply
             assert len(completed['answer']) == 2436 and completed['memory'] is None
+            from cj_api.local_lio_national import CONTEXT
+            from cj_api.local_lio_planning import PlanningTurn
+            prior_binding = worker._binding(worker.messages.query(mid).receipt)
+            original_effects = worker.runs.snapshot(prior_binding).effects
+            previews = [json.loads(effect.removeprefix(CONTEXT)) for effect in original_effects
+                        if effect.startswith(CONTEXT)]
+            assert any(row['status'] == 'plan_preview' and row['authority'] != 'none' for row in previews)
+            followup = '保存这个行程'
+            send('dispatch-unsettled-followup', followup, conversation)
+            original = worker.messages.query('dispatch-unsettled-followup')
+            followup_binding = worker._binding(original.receipt)
+            followup_original = worker.lio_original(followup_binding)
+            _, _, prior = worker.lio_planning.legacy.context(
+                followup_binding, PlanningTurn(followup, followup_original.question_day)
+            )
+            assert prior is None or prior['authority'] == 'none', prior
+            assert prior is None or prior['status'] != 'plan_preview', prior
         elif paused == 'draft':
             assert completed['status'] == 'completed' and '保存确认' in completed['answer']
         elif paused == 'memory':
@@ -154,4 +176,13 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
         if missing_done or missing_model:
             settled[-1] = 'INTENT'
         assert [row['state'] for row in budget.inspect()] == settled
+        if missing_model:
+            async def no_followup_response(config, raw, guard, observation):
+                assert guard() is True
+                yield _M4_REQUEST_SENT
+                raise ProviderUnknown('synthetic follow-up provider receipt unavailable')
+            with patch('cj_agent.provider._m4_wire', no_followup_response):
+                followup_outcome, = worker.process()
+            assert followup_outcome.message_id == 'dispatch-unsettled-followup'
+            assert followup_outcome.proposal_id is None
         print('PASS three signed Lio timeline reads while the original ' + case + ' response waits', flush=True)

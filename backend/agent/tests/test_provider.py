@@ -164,6 +164,9 @@ def test_registered_optional_intake_returns_after_send_before_reading_sse(tmp_pa
     ('model', 'length', False, False),
     ('model', 'stop', True, False),
     ('wrong_model', 'stop', False, False),
+    ('provider_error', 'stop', False, False),
+    ('non_utf8', 'stop', False, False),
+    ('original_output_limit', 'stop', False, False),
 ])
 def test_only_complete_discussion_surfaces_with_missing_receipt(
         tmp_path, missing, finish, stream_error, answer_visible):
@@ -178,8 +181,15 @@ def test_only_complete_discussion_surfaces_with_missing_receipt(
         del value[missing]
     elif missing=='wrong_model':
         value['model'] = 'unexpected-model'
+    elif missing=='non_utf8':
+        del value['model']
+        value['choices'][0]['delta']['content'] = r'{"answer":"\ud800"}'
+    elif missing=='original_output_limit':
+        del value['model']
     lines = 'data: ' + json.dumps(value, ensure_ascii=False) + '\n\n'
-    if missing!='done':
+    if missing=='provider_error':
+        lines += 'data: ' + json.dumps(dict(model=M4_MODEL,id='synthetic-original',error={'message':'fixture error'})) + '\n\n'
+    if missing not in ('done','provider_error'):
         lines += 'data: [DONE]\n\n'
     wire_body = lines.encode()
 
@@ -202,7 +212,7 @@ def test_only_complete_discussion_surfaces_with_missing_receipt(
         list(provider.invoke([{'role': 'user', 'content': '北京有什么可看的？'}],
                              'Return JSON with the requested answer.', 'original-answer',
                              receipt=receipt, guard=lambda: True, release_after_send=True,
-                             unsettled_answer_limit=4000))
+                             unsettled_answer_limit=len(answer) if missing=='original_output_limit' else 4000))
     assert len(calls) == 1
     assert receipt == {}
     assert budget.inspect()[0]['state'] == 'INTENT'

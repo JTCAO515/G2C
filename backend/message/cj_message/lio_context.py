@@ -98,6 +98,7 @@ _TRAVELER_IDENTITY_PROMPT = (
 SOURCE_EFFECT = 'lio_source:'
 TOOL_EFFECT = 'lio_tool:'
 UNSAVED_PLAN_ANSWER = 'lio_unsaved_plan_answer.1'
+UNSETTLED_VISIBLE_ANSWER = 'lio_unsettled_visible_answer.1'
 
 
 @dataclass(frozen=True)
