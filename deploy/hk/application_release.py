@@ -120,14 +120,13 @@ def main(argv=None):
      return (p['global_pending']==p['global_active']==0 and
       not any(p['background_states'].get(k,0)for k in ('queued','running','publishing'))and
       not any(p['memory_states'].get(k,0)for k in ('pending','inflight')))
-    lock=(ROOT/'probes/application-deploy.lock').open('a');os.chmod(lock.name,0o600);fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-    now=datetime.now(timezone.utc)
     assert gate['source_bytes_equal'] and gate['imported_source_bytes_equal']
     def github(path):
      with urlopen(Request(f'https://api.github.com/repos/{REPOSITORY}/'+path,headers={'Accept':'application/vnd.github+json'}),timeout=20) as r:return json.load(r)
     verify_release_ci(github,SOURCE)
     verify_release_review(github,SOURCE,gate)
-    require_release_window(gate['starts_at'],gate['ends_at'],now)
+    lock=(ROOT/'probes/application-deploy.lock').open('a');os.chmod(lock.name,0o600);fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+    require_release_window(gate['starts_at'],gate['ends_at'],datetime.now(timezone.utc))
     new=inspect('g2c-beta:'+SOURCE);assert new['Id']==gate['image_id']and new['Architecture']=='amd64'
     assert new['Config']['Labels']['org.opencontainers.image.revision']==SOURCE
     policy=json.loads((ROOT/'quota-self-service-20261112/app-release-policy.json').read_bytes())
