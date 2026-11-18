@@ -23,7 +23,7 @@ def _positive(value):
 
 class PinnedHTTPSTransport:
     def __init__(self, policy: SourcePolicy, *, tls_context: ssl.SSLContext,
-                 max_header_bytes: int, max_wire_bytes: int, max_reads: int, allow_html=False,before_send=None,allow_gzip=False):
+                 max_header_bytes: int, max_wire_bytes: int, max_reads: int, allow_html=False,before_send=None,allow_gzip=False,after_send=None):
         if not isinstance(policy, SourcePolicy) or not all(_positive(v) for v in
                 (max_header_bytes, max_wire_bytes, max_reads)):
             raise FactFailure('invalid_https_configuration')
@@ -37,6 +37,7 @@ class PinnedHTTPSTransport:
         self.allow_html=allow_html
         self.allow_gzip=allow_gzip
         self.before_send=before_send
+        self.after_send=after_send
         self._check_tls()
 
     def _check_tls(self):
@@ -108,6 +109,8 @@ class PinnedHTTPSTransport:
                 if loop.time()>=deadline:raise FactFailure('timeout')
                 writer.write(connection.send(request) + connection.send(h11.EndOfMessage()))
                 await writer.drain()
+                if self.after_send is not None:
+                    await self.after_send()
                 session = _Body(self, target, deadline, reader, writer, connection)
                 response = await session.headers()
                 # No implicit follow, including redirects. Caller owns response.close().
