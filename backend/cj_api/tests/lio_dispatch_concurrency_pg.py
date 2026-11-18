@@ -199,12 +199,15 @@ def check_tool_dispatch(api, headers, database, auth, subject, scope, memory, ro
 
     dates = dict(start_date='2026-11-18', end_date='2026-11-18')
     place_args = dict(keyword='synthetic park', city='北京', page=1, page_size=1)
-    for kind, tool_name, arguments in (
-        ('place', 'place_search', place_args),
-        ('weather', 'weather', dates),
-        ('fact', 'fact', dates),
+    for kind, tool_name, arguments, phase in (
+        ('place', 'place_search', place_args, 'connection'),
+        ('place', 'place_search', place_args, 'response'),
+        ('place', 'place_search', place_args, 'cancel-before-send'),
+        ('weather', 'weather', dates, 'response'),
+        ('fact', 'fact', dates, 'response'),
     ):
-        budget = AuthorizationBudget(root / ('tool-dispatch-' + kind),
+        case = kind + '-' + phase
+        budget = AuthorizationBudget(root / ('tool-dispatch-' + case),
                                      clock=lambda: datetime(2026, 11, 18, tzinfo=timezone.utc))
         provider = MeteredDashScopeProvider(
             DashScopeConfig(M4_BASE, M4_MODEL, 'local-fixture-not-live'), budget,
@@ -219,31 +222,37 @@ def check_tool_dispatch(api, headers, database, auth, subject, scope, memory, ro
         model_turns = []
         seeding = True
 
-        async def wait_for_release(tool_kind, after_send):
-            assert kind == tool_kind
-            sent.append(tool_kind)
-            await after_send()
+        async def pause():
             started.set()
-            assert await asyncio.to_thread(release.wait, 20), 'tool response fixture was not released'
+            assert await asyncio.to_thread(release.wait, 20), 'tool fixture was not released'
 
-        async def place(config, request, credentials, *, before_send, basic, after_send):
-            assert before_send() is True
-            await wait_for_release('place', after_send)
+        async def exchange(tool_kind, guard, send_under_fence):
+            assert kind == tool_kind
+            if phase != 'response':
+                await pause()
+            def write():
+                assert guard() is True
+                sent.append(tool_kind)
+            await send_under_fence(write)
+            if phase == 'response':
+                await pause()
+
+        async def place(config, request, credentials, *, before_send, basic, send_under_fence):
+            await exchange('place', before_send, send_under_fence)
             raw = json.dumps(dict(status='1', info='OK', infocode='10000', count='1',
                                   pois=[dict(id='SYNTH_ONLY', name='合成公园', location='116.1,39.1')])).encode()
             response = Response(request.binding_digest, request.origin, request.path, 200, raw,
                                 datetime.now(timezone.utc))
             return TransportResult('received', 'fixture', response)
 
-        async def weather(key, guard, *, adcode, after_send):
-            assert guard() is True and adcode == '110000'
-            await wait_for_release('weather', after_send)
+        async def weather(key, guard, *, adcode, send_under_fence):
+            assert adcode == '110000'
+            await exchange('weather', guard, send_under_fence)
             return json.dumps(dict(status='1', infocode='10000', count='1',
                                    forecasts=[dict(adcode=adcode, casts=[dict(date=dates['start_date'])])])).encode()
 
         async def fact(transport, target):
-            assert transport.before_send() is True
-            await wait_for_release('fact', transport.after_send)
+            await exchange('fact', transport.before_send, transport.send_under_fence)
 
             async def body():
                 yield (b'<h2>240-Hour Visa-Free Transit Policy</h2>'
@@ -270,7 +279,7 @@ def check_tool_dispatch(api, headers, database, auth, subject, scope, memory, ro
             yield _M4_REQUEST_SENT
             observation['http_status'] = 200
             response = turn_sse(turn=turn, compact=True)
-            yield response.replace('chatcmpl-synthetic', f'fixture-{kind}-{len(model_turns)}').encode()
+            yield response.replace('chatcmpl-synthetic', f'fixture-{case}-{len(model_turns)}').encode()
 
         def send(mid, text, conversation=None):
             target = dict(new_conversation=True) if conversation is None else dict(conversation_id=conversation)
@@ -279,8 +288,8 @@ def check_tool_dispatch(api, headers, database, auth, subject, scope, memory, ro
             assert response.status_code == 200, response.status_code
             return response.json()['conversation_id']
 
-        earlier = 'tool-' + kind + '-previous'
-        current = 'tool-' + kind + '-current'
+        earlier = 'tool-' + case + '-previous'
+        current = 'tool-' + case + '-current'
         conversation = send(earlier, '你是谁')
         with patch('cj_agent.provider._m4_wire', model_wire):
             assert [row.status for row in worker.process()] == ['completed']
@@ -310,10 +319,23 @@ def check_tool_dispatch(api, headers, database, auth, subject, scope, memory, ro
                 assert (prior['message_id'], prior['status']) == (earlier, 'completed')
                 assert (pending['message_id'], pending['status']) == (current, 'answering')
                 assert budget.inspect() == [*seed_ledger, *before]
+                assert sent == ([kind] if phase == 'response' else [])
+                if phase == 'cancel-before-send':
+                    cancelled = api.post('/v2/run-cancellations',
+                        json=dict(version='RUN-cancel.2', message_id=current),
+                        headers={**headers,'Content-Type':'application/json'})
+                    assert cancelled.status_code == 200 and cancelled.json()['status'] == 'cancelled', (
+                        cancelled.status_code, cancelled.json().get('error', {}).get('code'))
             finally:
                 release.set()
             outcome, = future.result(timeout=10)
 
+        if phase == 'cancel-before-send':
+            assert (outcome.message_id, outcome.status, outcome.proposal_id) == (current, 'cancelled', None)
+            assert not sent and model_turns == [False]
+            assert budget.inspect() == [*seed_ledger, *before]
+            print('PASS signed cancellation during connection withheld the original tool write and retained INTENT', flush=True)
+            continue
         assert (outcome.message_id, outcome.status, outcome.proposal_id) == (current, 'completed', None)
         entries = budget.inspect()
         assert entries[:len(seed_ledger)] == seed_ledger
@@ -331,4 +353,4 @@ def check_tool_dispatch(api, headers, database, auth, subject, scope, memory, ro
         final = result_page.json()['messages'][-1]
         assert (final['message_id'], final['status'], final['trip']) == (current, 'completed', None)
         assert final['answer'].strip()
-        print(f'PASS signed timeline 200 during original {kind} response wait, one original settled tool', flush=True)
+        print(f'PASS signed timeline 200 during original {kind} {phase} wait, one original settled tool', flush=True)

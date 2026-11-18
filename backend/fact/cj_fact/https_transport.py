@@ -23,7 +23,8 @@ def _positive(value):
 
 class PinnedHTTPSTransport:
     def __init__(self, policy: SourcePolicy, *, tls_context: ssl.SSLContext,
-                 max_header_bytes: int, max_wire_bytes: int, max_reads: int, allow_html=False,before_send=None,allow_gzip=False,after_send=None):
+                 max_header_bytes: int, max_wire_bytes: int, max_reads: int, allow_html=False,before_send=None,allow_gzip=False,
+                 after_send=None,send_under_fence=None):
         if not isinstance(policy, SourcePolicy) or not all(_positive(v) for v in
                 (max_header_bytes, max_wire_bytes, max_reads)):
             raise FactFailure('invalid_https_configuration')
@@ -38,6 +39,7 @@ class PinnedHTTPSTransport:
         self.allow_gzip=allow_gzip
         self.before_send=before_send
         self.after_send=after_send
+        self.send_under_fence=send_under_fence
         self._check_tls()
 
     def _check_tls(self):
@@ -104,10 +106,13 @@ class PinnedHTTPSTransport:
                     (b'Host', target.hostname.encode('ascii')),
                     (b'Accept', b'text/html' if self.allow_html else b'application/json, text/plain'),
                     (b'Accept-Encoding', b'gzip, identity' if self.allow_gzip else b'identity'), (b'Connection', b'close')])
-                if self.before_send is not None and self.before_send() is not True:
-                    raise FactFailure('original_source_authority_invalid')
-                if loop.time()>=deadline:raise FactFailure('timeout')
-                writer.write(connection.send(request) + connection.send(h11.EndOfMessage()))
+                def write():
+                    if self.before_send is not None and self.before_send() is not True:
+                        raise FactFailure('original_source_authority_invalid')
+                    if loop.time()>=deadline:raise FactFailure('timeout')
+                    writer.write(connection.send(request) + connection.send(h11.EndOfMessage()))
+                if self.send_under_fence is None:write()
+                else:await self.send_under_fence(write)
                 await writer.drain()
                 if self.after_send is not None:
                     await self.after_send()

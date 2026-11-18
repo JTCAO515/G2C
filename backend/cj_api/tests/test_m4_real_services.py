@@ -2114,7 +2114,7 @@ class Boundaries(unittest.TestCase):
         with patch('asyncio.BaseEventLoop.getaddrinfo',AsyncMock(side_effect=asyncio.CancelledError())),self.assertNoLogs('cj_provider.audit',level='WARNING'),self.assertRaises(asyncio.CancelledError):
             asyncio.run(public_page(guard=lambda:True))
 
-    def test_registered_fact_pauses_after_send_before_response_and_drops_on_close(self):
+    def test_registered_fact_hands_off_write_and_drops_unsent_request_on_close(self):
         from contextlib import closing
 
         from cj_api.real_services import _response_stream
@@ -2126,9 +2126,11 @@ class Boundaries(unittest.TestCase):
                 excerpt='A synthetic source excerpt ready for the original public page parser.'
 
                 async def transport(client, target):
-                    self.assertTrue(client.before_send())
-                    observed.append('sent')
-                    await client.after_send()
+                    observed.append('connected')
+                    def write():
+                        self.assertTrue(client.before_send())
+                        observed.append('sent')
+                    await client.send_under_fence(write)
 
                     async def body():
                         observed.append('body')
@@ -2142,19 +2144,20 @@ class Boundaries(unittest.TestCase):
                 dns=AsyncMock(return_value=[(2,1,6,'',('93.184.216.34',443))])
                 with (patch('asyncio.BaseEventLoop.getaddrinfo',dns),
                       patch.object(PinnedHTTPSTransport,'__call__',transport),
-                      closing(_response_stream(lambda sent:public_page(guard=lambda:True,after_send=sent))) as exchange):
-                    self.assertIsNone(next(exchange))
-                    self.assertEqual(observed,['sent'])
+                      closing(_response_stream(lambda send:public_page(guard=lambda:True,send_under_fence=send))) as exchange):
+                    pending=next(exchange)
+                    self.assertEqual(observed,['connected'])
                     if not close_before_read:
+                        pending.write()
                         self.assertEqual(next(exchange)['excerpts'],
                                          [dict(text=excerpt,start=3,end=3+len(excerpt))])
-                self.assertEqual(observed,['sent'] if close_before_read else ['sent','body','closed'])
+                self.assertEqual(observed,['connected'] if close_before_read else ['connected','sent','body','closed'])
 
     def test_registered_fact_cancellation_before_send_propagates(self):
         from cj_api.real_services import _response_stream
         dns=AsyncMock(side_effect=asyncio.CancelledError())
         with patch('asyncio.BaseEventLoop.getaddrinfo',dns),self.assertRaises(asyncio.CancelledError):
-            next(_response_stream(lambda sent:public_page(guard=lambda:True,after_send=sent)))
+            next(_response_stream(lambda send:public_page(guard=lambda:True,send_under_fence=send)))
 
     def test_fact_gzip_original_response_shape(self):
         raw=b'<p>Independent synthetic original fact excerpt, eligibility UNKNOWN.</p>'

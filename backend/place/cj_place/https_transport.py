@@ -178,9 +178,11 @@ async def _read_response(reader, body_limit):
 
 
 async def fetch_candidate(config: Config, request: PreparedRequest,
-                          credentials: ProviderCredentials,*,before_send=None,basic=False,coordinate_only=False,after_send=None) -> TransportResult:
+                          credentials: ProviderCredentials,*,before_send=None,basic=False,coordinate_only=False,
+                          after_send=None,send_under_fence=None) -> TransportResult:
     """Existing v3 candidate; original bindings and endpoint gate are retained."""
     return await _fetch_bound(config,request,credentials,before_send=before_send,paths=_PATHS,after_send=after_send,
+        send_under_fence=send_under_fence,
         reprepare=lambda:prepare(config,request.query,request.request_ref,request.started_at,
                                  basic=basic,coordinate_only=coordinate_only))
 
@@ -221,7 +223,7 @@ def _candidate_target(config,request,credentials,reprepare,paths):
     return target,expires,remaining
 
 
-async def _fetch_bound(config,request,credentials,*,before_send,paths,reprepare,after_send=None):
+async def _fetch_bound(config,request,credentials,*,before_send,paths,reprepare,after_send=None,send_under_fence=None):
     """One-shot transport shared only after the selected fixed preparation gate.
 
     Every result after possible I/O failure is unknown; retain the same attempt.
@@ -248,10 +250,14 @@ async def _fetch_bound(config,request,credentials,*,before_send,paths,reprepare,
                 raise _WireFailure("credentials_expired_unknown")
             payload = ("GET " + target + " HTTP/1.1\r\nHost: " + _HOST +
                        "\r\nAccept: application/json\r\nAccept-Encoding: identity\r\nConnection: close\r\n\r\n").encode("ascii")
-            if before_send is not None and before_send() is not True:
-                raise _WireFailure('original_place_authority_invalid')
-            if loop.time()>=deadline:raise _WireFailure('connect_deadline_exceeded')
-            writer.write(payload)
+            def write():
+                if before_send is not None and before_send() is not True:
+                    raise _WireFailure('original_place_authority_invalid')
+                if loop.time()>=deadline:raise _WireFailure('connect_deadline_exceeded')
+                if datetime.now(timezone.utc)>=expires:raise _WireFailure('credentials_expired_unknown')
+                writer.write(payload)
+            if send_under_fence is None:write()
+            else:await send_under_fence(write)
             await writer.drain()
             if after_send is not None:
                 await after_send()

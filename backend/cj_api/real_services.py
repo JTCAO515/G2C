@@ -35,7 +35,7 @@ from cj_place.models import ORIGIN,Search,Detail,RouteQuery
 from cj_run.tool_turn import parse_turn
 from cj_usage.authorization_budget import AuthorizationBudget,canonical,DEADLINE
 from cj_usage.core import Receipt
-from cj_usage.metered_exit import BudgetUnknown
+from cj_usage.metered_exit import BudgetUnknown, GuardedWireWrite
 from cj_usage.registered_exit import InvocationInput,Registration
 
 
@@ -72,18 +72,25 @@ def _external_timing(kind, operation, admit):
 
 
 def _response_stream(exchange):
-    """Pause a single registered GET after transmission and before response reads."""
+    """Handoff the original synchronous write before driving response IO."""
     loop=asyncio.new_event_loop()
     queue=asyncio.Queue(maxsize=1)
-    resume=asyncio.Event()
 
-    async def sent():
-        await queue.put(('sent',None))
-        await resume.wait()
+    async def send_under_fence(write):
+        completed=loop.create_future()
+        def perform():
+            try:
+                write()
+            except Exception as error:
+                completed.set_exception(error)
+            else:
+                completed.set_result(None)
+        await queue.put(('write',GuardedWireWrite(perform)))
+        await completed
 
     async def run():
         try:
-            result=await exchange(sent)
+            result=await exchange(send_under_fence)
         except (Exception,asyncio.CancelledError) as error:
             await queue.put(('error',error))
         else:
@@ -98,9 +105,7 @@ def _response_stream(exchange):
             if kind=='result':
                 yield value
                 return
-            # Return to the existing Worker before driving any response waits.
-            yield None
-            resume.set()
+            yield value
     finally:
         task.cancel()
         try:
@@ -759,20 +764,23 @@ class RealTools:
                             request=prepare(config,query,request_ref,datetime.now(timezone.utc),basic=True,coordinate_only=coordinate_route)
                             credentials=ProviderCredentials(self.services.amap_key,budget.deadline)
                             if checked() is not True:raise BudgetUnknown('original live tool authority invalid')
-                            def receive(after_send):
+                            def receive(send_under_fence):
                                 return fetch_candidate(config,request,credentials,before_send=checked,basic=True,
-                                    after_send=after_send,**({'coordinate_only':True} if coordinate_route else {}))
+                                    send_under_fence=send_under_fence,**({'coordinate_only':True} if coordinate_route else {}))
                         elif name=='weather':
-                            def receive(after_send):
+                            def receive(send_under_fence):
                                 return weather_response(query,self.services.amap_key,guard=checked,
-                                                        national=national,after_send=after_send)
+                                                        national=national,send_under_fence=send_under_fence)
                         else:
-                            def receive(after_send):
-                                return public_page(guard=checked,after_send=after_send)
+                            def receive(send_under_fence):
+                                return public_page(guard=checked,send_under_fence=send_under_fence)
+                        # Original accounting admission has committed. Resolve
+                        # and connect outside the first RUN/MESSAGE fence.
+                        yield ''
                         with closing(_response_stream(receive)) as exchange:
                             result=next(exchange)
-                            if result is None:
-                                yield ''
+                            if isinstance(result,GuardedWireWrite):
+                                yield result
                                 result=next(exchange)
                         if name=='place':
                             if result.state!='received':raise BudgetUnknown('original live PLACE outcome unknown')
