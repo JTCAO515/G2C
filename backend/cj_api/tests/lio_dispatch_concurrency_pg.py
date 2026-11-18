@@ -4,7 +4,8 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 import json
 from threading import Event
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
 
 from cj_agent.provider import (
     _M4_REQUEST_SENT, DashScopeConfig, MeteredDashScopeProvider, M4_BASE, M4_MODEL, ProviderUnknown,
@@ -72,8 +73,7 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root, *
             assert guard() is True
             return city_catalog()
 
-        async def wire(config, raw, guard, observation):
-            assert guard() is True
+        def fixture_response(raw):
             body = json.loads(raw)
             system = body['messages'][0]['content']
             index = body.get('response_format', {}).get('json_schema', {}).get(
@@ -99,17 +99,6 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root, *
                 assert 'The traveler requested a complete ' in system
                 value = dict(answer=complete_unsettled_reply if missing_model else
                              '第1天逛街区，第2天看博物馆，第3天试当地美食。想先细化哪一天？')
-            async def wait_for_timeline():
-                request_waiting.set()
-                assert await asyncio.to_thread(release.wait, 15), 'timeline test never released the wire'
-
-            sent.append(stage)
-            if stage == paused and before_send:
-                await wait_for_timeline()
-            yield _M4_REQUEST_SENT
-            if stage == paused and not before_send:
-                await wait_for_timeline()
-            observation['http_status'] = 200
             truncated = missing_done and stage == paused
             content = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
             if truncated:
@@ -122,16 +111,54 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root, *
             if not truncated:
                 event['usage'] = dict(prompt_tokens=100, completion_tokens=100, total_tokens=200)
             done = '' if truncated else 'data: [DONE]\n\n'
-            yield ('data: ' + json.dumps(event) + '\n\n' + done).encode()
+            return stage, ('data: ' + json.dumps(event) + '\n\n' + done).encode()
+
+        async def wait_for_timeline():
+            request_waiting.set()
+            assert await asyncio.to_thread(release.wait, 15), 'timeline test never released the wire'
+
+        async def wire(config, raw, guard, observation):
+            assert guard() is True
+            stage, payload = fixture_response(raw)
+            sent.append(stage)
+            yield _M4_REQUEST_SENT
+            if stage == paused:
+                await wait_for_timeline()
+            observation['http_status'] = 200
+            yield payload
+
+        expected_before_connection = 0 if paused == 'intake' else 1
+
+        async def connect(host, port, *, server_hostname, **options):
+            assert (host, port, server_hostname) == ('dashscope.aliyuncs.com', 443, 'dashscope.aliyuncs.com')
+            if len(sent) == expected_before_connection:
+                await wait_for_timeline()
+            reader = asyncio.StreamReader()
+
+            def post(raw):
+                headers, _, body = raw.partition(b'\r\n\r\n')
+                assert headers.startswith(b'POST /compatible-mode/v1/chat/completions ')
+                stage, payload = fixture_response(body)
+                sent.append(stage)
+                response = (f'HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\n'
+                            f'Content-Length: {len(payload)}\r\nConnection: close\r\n\r\n').encode()
+                reader.feed_data(response + payload)
+                reader.feed_eof()
+
+            return reader, SimpleNamespace(write=post, drain=AsyncMock(), transport=SimpleNamespace(abort=lambda: None))
 
         def timeline():
             return api.get('/v2/lio/timeline', headers=headers, params=dict(conversation_id=conversation))
 
+        model_transport = (patch('asyncio.open_connection', new=connect) if before_send else
+                           patch('cj_agent.provider._m4_wire', new=wire))
         with patch('cj_api.lio_city._catalog_exchange', side_effect=catalogue), \
-             patch('cj_agent.provider._m4_wire', wire), ThreadPoolExecutor(max_workers=1) as executor:
+             model_transport, ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(worker.process)
             try:
                 assert request_waiting.wait(10), ('provider request did not reach ' + paused, future.result(timeout=2))
+                if before_send:
+                    assert len(sent) == expected_before_connection, 'POST occurred during the connection pause'
                 with ThreadPoolExecutor(max_workers=3) as readers:
                     pages = tuple(readers.map(lambda _: timeline(), range(3)))
                 timeline_statuses[case] = tuple(page.status_code for page in pages)
@@ -194,6 +221,6 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root, *
                 followup_outcome, = worker.process()
             assert followup_outcome.message_id == 'dispatch-unsettled-followup'
             assert followup_outcome.proposal_id is None
-        phase = 'before send' if before_send else 'while waiting for a response'
+        phase = 'during connection' if before_send else 'while waiting for a response'
         print('Signed Lio timeline ' + case + ' ' + phase + ': ' + str(timeline_statuses[case]), flush=True)
     assert all(codes == (200, 200, 200) for codes in timeline_statuses.values()), timeline_statuses
