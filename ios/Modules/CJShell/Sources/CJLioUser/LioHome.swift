@@ -130,16 +130,19 @@ public struct LioHome<MenuContent: View>: View {
         let tripPlan = tripPlan
         TabView(selection: $tab) {
             chat
+                .background(LioTabBarAppearance().frame(width: 0, height: 0))
                 .tabItem { Label(language.text("Chat", "聊天"), systemImage: "bubble.left") }
                 .tag(Tab.chat)
             LioTripsView(itineraries: conversation.itineraries, language: language, library: tripLibrary,
                          tripPlan: tripPlan, currentPlan: tripPlan?.current(for: tripCard),
                          canUndo: canObserve && tripPlan?.requestedCard == tripCard,
                          recordedMap: recordedMap, sessionRevision: session?.revision, path: $tripPath) { tab = .chat }
+                .background(LioTabBarAppearance().frame(width: 0, height: 0))
                 .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
                 .tag(Tab.trips)
             if let savedMemory {
                 savedMemory
+                    .background(LioTabBarAppearance().frame(width: 0, height: 0))
                     .tabItem { Label(language.text("Memory", "记忆"), systemImage: "bookmark") }
                     .tag(Tab.memory)
             }
@@ -1158,6 +1161,21 @@ public struct LioHome<MenuContent: View>: View {
                 .font(.footnote)
                 .foregroundStyle(LioTheme.inkSecondary)
                 .accessibilityIdentifier("lio.failure")
+            if failure == .serviceLimit || (failure == .unavailable && turn.fromTimeline) {
+                Text(language.text(
+                    "If this keeps happening, view problem notes and contact the demo organiser.",
+                    "如果持续失败，请查看问题记录并联系内测负责人。"))
+                    .font(.caption)
+                    .foregroundStyle(LioTheme.inkSecondary)
+                    .accessibilityIdentifier("lio.failure.next-step")
+                Button { showsProblemNotes = true } label: {
+                    RunReadableText(text: language.text("View problem notes", "查看问题记录"), color: LioTheme.ink)
+                        .frame(minHeight: 44, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.bordered)
+                .accessibilityIdentifier("lio.failure.problems")
+            }
             if failure == .unfinished {
                 Button(language.text("Ask again", "重新问")) {
                     followsAnswer = true

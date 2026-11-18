@@ -52,6 +52,7 @@ private struct LioTimelineFixture: View {
                 Text(String(server.sends)).accessibilityIdentifier("lio.fixture.send-count")
             }
             .padding(12)
+            .tint(LioTheme.vermilion)
         }
     }
 }
