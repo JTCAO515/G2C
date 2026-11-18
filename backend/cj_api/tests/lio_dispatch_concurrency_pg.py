@@ -1,14 +1,17 @@
 """Signed timeline reads while the original provider response is deliberately held."""
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import ExitStack
 from datetime import datetime, timezone
 import json
 from threading import Event
-from unittest.mock import patch
+from unittest.mock import AsyncMock, Mock, patch
 
+from cj_agent import provider as agent_provider
 from cj_agent.provider import (
     _M4_REQUEST_SENT, DashScopeConfig, MeteredDashScopeProvider, M4_BASE, M4_MODEL, ProviderUnknown,
 )
+from cj_api import lio_city
 from cj_api.local_app import load_confirmation_signer
 from cj_api.local_worker_context import checker_for
 from cj_api.real_services import RealServices, RealTools
@@ -31,8 +34,12 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
     for paused, missing_done, missing_model in (
         ('intake', False, False), ('discussion', False, False), ('discussion', True, False),
         ('discussion', False, True), ('memory', False, False), ('draft', False, False),
+        ('city-connect', False, False), ('city-response', False, False), ('city-deadline', False, False),
+        ('memory-connect', False, False),
     ):
         case = paused + ('-missing-done' if missing_done else '-missing-model' if missing_model else '')
+        memory_case = paused in ('memory', 'memory-connect')
+        city_case = paused in ('city-connect', 'city-response', 'city-deadline')
         complete_unsettled_reply = ('北京有丰富的历史遗迹和街巷。' * 200)[:2436]
         sent = []
         request_waiting, release = Event(), Event()
@@ -48,7 +55,7 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
             database, provider, auth, scope, checker_for(auth),
             memory_configuration=memory, tools_configuration=tools, draft_profile='needs-structured.1',
             assembly_planning=True, demo_planning=True, national_planning=True, lio_confirmation=signer,
-            lio_memory_enabled=paused == 'memory',
+            lio_memory_enabled=memory_case,
         )
 
         def send(mid, text, conversation=None):
@@ -61,23 +68,75 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
         seed_mid = 'dispatch-' + case + '-previous'
         mid = 'dispatch-' + case + '-pending'
         text = {'draft': '规划成都三天，2026-12-01出发',
-                'memory': '第一次来中国应该怎么玩？'}.get(paused, '去成都玩三天')
+                'memory': '第一次来中国应该怎么玩？',
+                'memory-connect': '第一次来中国应该怎么玩？'}.get(paused, '去成都玩三天')
         ordinary = '可以先从老街和公园开始。你更想逛哪一类？'
         conversation = send(seed_mid, '你是谁')
         assert [outcome.status for outcome in worker.process()] == ['completed']
         send(mid, text, conversation)
 
-        async def catalogue(key, guard):
+        async def catalogue(key, guard, *, send_under_fence):
             assert guard() is True
             return city_catalog()
 
-        async def wire(config, raw, guard, observation):
-            assert guard() is True
+        writer = Mock(drain=AsyncMock())
+
+        async def pause_city(*phases):
+            if paused in phases:
+                request_waiting.set()
+                assert await asyncio.to_thread(release.wait, 15), 'timeline test never released the city call'
+
+        async def city_connect(host, port, **kwargs):
+            assert (host, port, kwargs['server_hostname']) == ('restapi.amap.com', 443, 'restapi.amap.com')
+            await pause_city('city-connect', 'city-deadline')
+            return object(), writer
+
+        async def city_response(reader, max_bytes):
+            writer.write.assert_called_once()
+            await pause_city('city-response')
+            return 200, city_catalog()
+
+        real_catalog = lio_city.catalog_response
+
+        async def city_crosses_deadline(key, guard, *, send_under_fence):
+            loop = asyncio.get_running_loop()
+            real_time = loop.time
+            time_offset = 0
+
+            async def delayed_write(write):
+                def expire_before_write():
+                    nonlocal time_offset
+                    time_offset = 21
+                    try:write()
+                    finally:time_offset = 0
+                await send_under_fence(expire_before_write)
+
+            with patch.object(loop, 'time', side_effect=lambda: real_time() + time_offset):
+                return await real_catalog(key, guard, send_under_fence=delayed_write)
+
+        real_wire = agent_provider._m4_wire
+        memory_writer = Mock(drain=AsyncMock())
+
+        async def memory_connect(host, port, **kwargs):
+            assert (host, port, kwargs['server_hostname']) == ('dashscope.aliyuncs.com', 443, 'dashscope.aliyuncs.com')
+            request_waiting.set()
+            assert await asyncio.to_thread(release.wait, 15), 'timeline test never released the memory connection'
+            event = dict(id='fixture-memory-original', model=M4_MODEL, choices=[dict(index=0,
+                delta=dict(content='{"version":"MEMORY-EXTRACT@2","entries":[]}'), finish_reason='stop')],
+                usage=dict(prompt_tokens=100, completion_tokens=100, total_tokens=200))
+            body = ('data: ' + json.dumps(event) + '\n\ndata: [DONE]\n\n').encode()
+            reader = asyncio.StreamReader()
+            reader.feed_data(b'HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Length: '+
+                             str(len(body)).encode()+b'\r\n\r\n'+body)
+            reader.feed_eof()
+            return reader, memory_writer
+
+        async def wire(config, raw, guard, observation, **kwargs):
             body = json.loads(raw)
             system = body['messages'][0]['content']
             index = body.get('response_format', {}).get('json_schema', {}).get(
                 'schema', {}).get('properties', {}).get('current_source_index', {}).get('const')
-            if paused == 'memory':
+            if memory_case:
                 stage = 'memory' if 'MEMORY-EXTRACT@2' in system else 'answer'
                 value = dict(version='MEMORY-EXTRACT@2', entries=[]) if stage == 'memory' else ordinary
             elif index is not None:
@@ -99,6 +158,16 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
                 value = dict(answer=complete_unsettled_reply if missing_model else
                              '第1天逛街区，第2天看博物馆，第3天试当地美食。想先细化哪一天？')
             sent.append(stage)
+            if stage == 'memory' and paused == 'memory-connect':
+                async for chunk in real_wire(config, raw, guard, observation, **kwargs):
+                    yield chunk
+                return
+            def check_guard():
+                assert guard() is True
+            if 'send_under_fence' in kwargs:
+                await kwargs['send_under_fence'](check_guard)
+            else:
+                check_guard()
             yield _M4_REQUEST_SENT
             if stage == paused:
                 request_waiting.set()
@@ -121,11 +190,28 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
         def timeline():
             return api.get('/v2/lio/timeline', headers=headers, params=dict(conversation_id=conversation))
 
-        with patch('cj_api.lio_city._catalog_exchange', side_effect=catalogue), \
-             patch('cj_agent.provider._m4_wire', wire), ThreadPoolExecutor(max_workers=1) as executor:
+        with ExitStack() as mocks, ThreadPoolExecutor(max_workers=1) as executor:
+            if city_case:
+                mocks.enter_context(patch('cj_api.lio_city.asyncio.open_connection', side_effect=city_connect))
+                mocks.enter_context(patch('cj_api.lio_city._read_response', side_effect=city_response))
+            else:
+                mocks.enter_context(patch('cj_api.lio_city.catalog_response', side_effect=catalogue))
+            if paused == 'memory-connect':
+                mocks.enter_context(patch('cj_agent.provider.asyncio.open_connection', side_effect=memory_connect))
+            if paused == 'city-deadline':
+                mocks.enter_context(patch('cj_api.lio_city.catalog_response', side_effect=city_crosses_deadline))
+            mocks.enter_context(patch('cj_agent.provider._m4_wire', wire))
             future = executor.submit(worker.process)
             try:
                 assert request_waiting.wait(10), ('provider request did not reach ' + paused, future.result(timeout=2))
+                if city_case:
+                    original_city_ledger = budget.inspect()[-1]
+                    assert (original_city_ledger['kind'], original_city_ledger['state']) == ('place', 'INTENT')
+                    assert writer.write.call_count == (1 if paused == 'city-response' else 0)
+                if paused == 'memory-connect':
+                    original_memory_ledger = budget.inspect()[-1]
+                    assert (original_memory_ledger['kind'], original_memory_ledger['state']) == ('model', 'INTENT')
+                    memory_writer.write.assert_not_called()
                 with ThreadPoolExecutor(max_workers=3) as readers:
                     pages = tuple(readers.map(lambda _: timeline(), range(3)))
                 for page in pages:
@@ -133,13 +219,23 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
                     original, pending = page.json()['messages']
                     assert (original['message_id'], original['status']) == (seed_mid, 'completed')
                     assert (pending['message_id'], pending['status'], pending['answer'], pending['trip']) == (
-                        mid, 'answering', ordinary if paused == 'memory' else '', None,
+                        mid, 'answering', ordinary if memory_case else '', None,
                     )
             finally:
                 release.set()
             outcome, = future.result(timeout=10)
+        if paused == 'city-deadline':
+            assert (outcome.status, outcome.proposal_id) == ('unknown', None)
+            writer.write.assert_not_called()
+            writer.transport.abort.assert_called_once()
+            assert sent == ['intake']
+            model_entry, city_entry = budget.inspect()
+            assert (model_entry['state'], city_entry['state']) == ('RECEIVED', 'INTENT')
+            assert city_entry == original_city_ledger and city_entry['receipt'] is None
+            print('PASS late original city write blocked with original INTENT retained', flush=True)
+            continue
         assert outcome.status == ('unknown' if missing_done or missing_model else 'completed')
-        path = {'memory': ['answer', 'memory'], 'draft': ['intake', 'draft']}.get(paused, ['intake', 'discussion'])
+        path = ['answer', 'memory'] if memory_case else ['intake', 'draft' if paused == 'draft' else 'discussion']
         assert sent == path, sent
         page = timeline()
         assert page.status_code == 200
@@ -169,14 +265,26 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
             assert prior is None or prior['status'] != 'plan_preview', prior
         elif paused == 'draft':
             assert completed['status'] == 'completed' and '保存确认' in completed['answer']
-        elif paused == 'memory':
+        elif memory_case:
             assert completed['status'] == 'completed' and completed['answer'] == ordinary
         else:
             assert '第2天看博物馆' in completed['answer']
-        settled = ['RECEIVED'] * (2 if paused == 'memory' else 3)
+        settled = ['RECEIVED'] * (2 if memory_case else 3)
         if missing_done or missing_model:
             settled[-1] = 'INTENT'
         assert [row['state'] for row in budget.inspect()] == settled
+        if paused in ('city-connect', 'city-response'):
+            writer.write.assert_called_once()
+            writer.transport.abort.assert_called_once()
+            city_entry, = (row for row in budget.inspect() if row['kind'] == 'place')
+            assert city_entry['attempt_id'] == original_city_ledger['attempt_id']
+            assert city_entry['input_sha'] == original_city_ledger['input_sha']
+        if paused == 'memory-connect':
+            memory_writer.write.assert_called_once()
+            memory_writer.transport.abort.assert_called_once()
+            memory_entry = budget.inspect()[-1]
+            assert memory_entry['attempt_id'] == original_memory_ledger['attempt_id']
+            assert memory_entry['input_sha'] == original_memory_ledger['input_sha']
         if missing_model:
             async def no_followup_response(config, raw, guard, observation):
                 assert guard() is True
@@ -199,12 +307,15 @@ def check_tool_dispatch(api, headers, database, auth, subject, scope, memory, ro
 
     dates = dict(start_date='2026-11-18', end_date='2026-11-18')
     place_args = dict(keyword='synthetic park', city='北京', page=1, page_size=1)
-    for kind, tool_name, arguments in (
-        ('place', 'place_search', place_args),
-        ('weather', 'weather', dates),
-        ('fact', 'fact', dates),
+    for kind, tool_name, arguments, phase in (
+        ('place', 'place_search', place_args, 'connection'),
+        ('place', 'place_search', place_args, 'response'),
+        ('place', 'place_search', place_args, 'cancel-before-send'),
+        ('weather', 'weather', dates, 'response'),
+        ('fact', 'fact', dates, 'response'),
     ):
-        budget = AuthorizationBudget(root / ('tool-dispatch-' + kind),
+        case = kind + '-' + phase
+        budget = AuthorizationBudget(root / ('tool-dispatch-' + case),
                                      clock=lambda: datetime(2026, 11, 18, tzinfo=timezone.utc))
         provider = MeteredDashScopeProvider(
             DashScopeConfig(M4_BASE, M4_MODEL, 'local-fixture-not-live'), budget,
@@ -219,31 +330,37 @@ def check_tool_dispatch(api, headers, database, auth, subject, scope, memory, ro
         model_turns = []
         seeding = True
 
-        async def wait_for_release(tool_kind, after_send):
-            assert kind == tool_kind
-            sent.append(tool_kind)
-            await after_send()
+        async def pause():
             started.set()
-            assert await asyncio.to_thread(release.wait, 20), 'tool response fixture was not released'
+            assert await asyncio.to_thread(release.wait, 20), 'tool fixture was not released'
 
-        async def place(config, request, credentials, *, before_send, basic, after_send):
-            assert before_send() is True
-            await wait_for_release('place', after_send)
+        async def exchange(tool_kind, guard, send_under_fence):
+            assert kind == tool_kind
+            if phase != 'response':
+                await pause()
+            def write():
+                assert guard() is True
+                sent.append(tool_kind)
+            await send_under_fence(write)
+            if phase == 'response':
+                await pause()
+
+        async def place(config, request, credentials, *, before_send, basic, send_under_fence):
+            await exchange('place', before_send, send_under_fence)
             raw = json.dumps(dict(status='1', info='OK', infocode='10000', count='1',
                                   pois=[dict(id='SYNTH_ONLY', name='合成公园', location='116.1,39.1')])).encode()
             response = Response(request.binding_digest, request.origin, request.path, 200, raw,
                                 datetime.now(timezone.utc))
             return TransportResult('received', 'fixture', response)
 
-        async def weather(key, guard, *, adcode, after_send):
-            assert guard() is True and adcode == '110000'
-            await wait_for_release('weather', after_send)
+        async def weather(key, guard, *, adcode, send_under_fence):
+            assert adcode == '110000'
+            await exchange('weather', guard, send_under_fence)
             return json.dumps(dict(status='1', infocode='10000', count='1',
                                    forecasts=[dict(adcode=adcode, casts=[dict(date=dates['start_date'])])])).encode()
 
         async def fact(transport, target):
-            assert transport.before_send() is True
-            await wait_for_release('fact', transport.after_send)
+            await exchange('fact', transport.before_send, transport.send_under_fence)
 
             async def body():
                 yield (b'<h2>240-Hour Visa-Free Transit Policy</h2>'
@@ -270,7 +387,7 @@ def check_tool_dispatch(api, headers, database, auth, subject, scope, memory, ro
             yield _M4_REQUEST_SENT
             observation['http_status'] = 200
             response = turn_sse(turn=turn, compact=True)
-            yield response.replace('chatcmpl-synthetic', f'fixture-{kind}-{len(model_turns)}').encode()
+            yield response.replace('chatcmpl-synthetic', f'fixture-{case}-{len(model_turns)}').encode()
 
         def send(mid, text, conversation=None):
             target = dict(new_conversation=True) if conversation is None else dict(conversation_id=conversation)
@@ -279,8 +396,8 @@ def check_tool_dispatch(api, headers, database, auth, subject, scope, memory, ro
             assert response.status_code == 200, response.status_code
             return response.json()['conversation_id']
 
-        earlier = 'tool-' + kind + '-previous'
-        current = 'tool-' + kind + '-current'
+        earlier = 'tool-' + case + '-previous'
+        current = 'tool-' + case + '-current'
         conversation = send(earlier, '你是谁')
         with patch('cj_agent.provider._m4_wire', model_wire):
             assert [row.status for row in worker.process()] == ['completed']
@@ -310,10 +427,23 @@ def check_tool_dispatch(api, headers, database, auth, subject, scope, memory, ro
                 assert (prior['message_id'], prior['status']) == (earlier, 'completed')
                 assert (pending['message_id'], pending['status']) == (current, 'answering')
                 assert budget.inspect() == [*seed_ledger, *before]
+                assert sent == ([kind] if phase == 'response' else [])
+                if phase == 'cancel-before-send':
+                    cancelled = api.post('/v2/run-cancellations',
+                        json=dict(version='RUN-cancel.2', message_id=current),
+                        headers={**headers,'Content-Type':'application/json'})
+                    assert cancelled.status_code == 200 and cancelled.json()['status'] == 'cancelled', (
+                        cancelled.status_code, cancelled.json().get('error', {}).get('code'))
             finally:
                 release.set()
             outcome, = future.result(timeout=10)
 
+        if phase == 'cancel-before-send':
+            assert (outcome.message_id, outcome.status, outcome.proposal_id) == (current, 'cancelled', None)
+            assert not sent and model_turns == [False]
+            assert budget.inspect() == [*seed_ledger, *before]
+            print('PASS signed cancellation during connection withheld the original tool write and retained INTENT', flush=True)
+            continue
         assert (outcome.message_id, outcome.status, outcome.proposal_id) == (current, 'completed', None)
         entries = budget.inspect()
         assert entries[:len(seed_ledger)] == seed_ledger
@@ -331,4 +461,4 @@ def check_tool_dispatch(api, headers, database, auth, subject, scope, memory, ro
         final = result_page.json()['messages'][-1]
         assert (final['message_id'], final['status'], final['trip']) == (current, 'completed', None)
         assert final['answer'].strip()
-        print(f'PASS signed timeline 200 during original {kind} response wait, one original settled tool', flush=True)
+        print(f'PASS signed timeline 200 during original {kind} {phase} wait, one original settled tool', flush=True)

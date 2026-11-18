@@ -12,7 +12,7 @@ from cj_place.gaode import Config,_binding_json
 from cj_place.gaode_v2 import TextSearch,Nearby,POIDetail,prepare
 from cj_place.https_transport import ProviderCredentials,poi2_candidate_stream,POI2_REQUEST_SENT
 from cj_usage.registered_exit import Registration,InvocationInput
-from cj_usage.metered_exit import BudgetUnknown
+from cj_usage.metered_exit import BudgetUnknown, GuardedWireWrite, UNLOCKED_WIRE_START
 from cj_trip.domain import identifier
 
 from .local_app import ISSUER,scope_for
@@ -62,12 +62,16 @@ def registration(services):
                 budget.begin(operation.command.attempt_id,'place',original);budget.check_date()
                 config=Config('https://restapi.amap.com',8192,65536,20,60)
                 request=prepare(config,argument.query,argument.request_ref,datetime.now(timezone.utc))
-                events=poi2_candidate_stream(config,request,ProviderCredentials(services.amap_key,budget.deadline),before_send=checked)
+                events=poi2_candidate_stream(config,request,ProviderCredentials(services.amap_key,budget.deadline),
+                                             before_send=checked,defer_write=GuardedWireWrite)
+                yield UNLOCKED_WIRE_START
                 try:
                     for event in events:
+                        if isinstance(event,GuardedWireWrite):
+                            yield event
+                            continue
                         if event is POI2_REQUEST_SENT:
-                            # First advance is the original one send; return to
-                            # Worker before draining the response off its locks.
+                            # Keep fan-out ordering. Start the next request before draining this response.
                             yield ''
                             continue
                         if event.state!='received':raise BudgetUnknown('original POI2 transport outcome unknown')

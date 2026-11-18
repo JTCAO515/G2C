@@ -1,6 +1,7 @@
 """Single local registered-exit accounting algorithm; no executor registry here."""
 from dataclasses import dataclass
 import sys
+from typing import Callable
 from psycopg import Error as DatabaseError
 from cj_run.core import Denied
 from .core import Blocked, Receipt, checked_clock_value
@@ -28,6 +29,15 @@ class BudgetExceeded(Exception):
     def __init__(self, step_key):
         super().__init__('local run budget exhausted')
         self.step_key=step_key
+
+
+@dataclass(frozen=True)
+class GuardedWireWrite:
+    """Code-owned synchronous write for the original authenticated transport."""
+    write: Callable[[], None]
+
+
+UNLOCKED_WIRE_START = object()
 
 
 @dataclass(repr=False)
@@ -116,6 +126,9 @@ class MeteredExitCore:
             stream=invoke()
             output=0
             for chunk in stream:
+                if chunk is UNLOCKED_WIRE_START or isinstance(chunk,GuardedWireWrite):
+                    yield chunk
+                    continue
                 if type(chunk) is not str: raise BudgetUnknown('invalid local provider chunk')
                 chunk.encode('utf-8')
                 output+=len(chunk)

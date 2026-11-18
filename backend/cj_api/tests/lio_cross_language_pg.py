@@ -209,8 +209,8 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
         register_typed_routes(app,database=database,auth_dir=auth,
                               configuration=pilot_write_configuration(memory.collection,subjects))
     headers={'Authorization':'Bearer '+dev_auth.token(auth,SUBJECT,3600),'Content-Type':'application/octet-stream'}
-    async def catalogue(key,guard):assert key==KEY and guard()is True;return city_catalog()
-    with TestClient(app)as api,patch('cj_api.lio_city._catalog_exchange',side_effect=catalogue):
+    async def catalogue(key,guard,*,send_under_fence):assert key==KEY and guard()is True;return city_catalog()
+    with TestClient(app)as api,patch('cj_api.lio_city.catalog_response',side_effect=catalogue):
         if preference_locale is not None:
             locale=preference_locale
             text='我喜欢豪华酒店。我喜欢博物馆。'if locale=='zh'else'I prefer luxury hotels. I enjoy museums.'

@@ -74,6 +74,31 @@ class NationalLioCity(unittest.TestCase):
         finally:
             for logger,level in zip(loggers,levels):logger.removeHandler(handler);logger.setLevel(level)
 
+    def test_delayed_guarded_city_write_cannot_send_after_wire_deadline(self):
+        import asyncio
+        from unittest.mock import AsyncMock, Mock, patch
+        from cj_api.lio_city import catalog_response
+        from cj_usage.metered_exit import BudgetUnknown
+
+        async def exchange():
+            loop=asyncio.get_running_loop()
+            after_fence=0
+            writer=Mock(drain=AsyncMock())
+            async def delayed_write(write):
+                nonlocal after_fence
+                after_fence=21
+                write()
+            started=loop.time()
+            with (patch.object(loop,'time',side_effect=lambda:started+after_fence),
+                  patch('cj_api.lio_city.asyncio.open_connection',new=AsyncMock(return_value=(object(),writer))),
+                  patch('cj_api.lio_city._read_response',new=AsyncMock(return_value=(200,data())))):
+                with self.assertRaises(BudgetUnknown):
+                    await catalog_response('fixture-not-a-real-key',lambda:True,send_under_fence=delayed_write)
+            writer.write.assert_not_called()
+            writer.transport.abort.assert_called_once()
+
+        asyncio.run(exchange())
+
     def test_short_header_and_body_keep_unknown_and_abort_without_retry(self):
         import asyncio
         from unittest.mock import patch
