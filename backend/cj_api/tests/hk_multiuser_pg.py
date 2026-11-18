@@ -13,8 +13,8 @@ from cj_api.local_worker_context import checker_for
 from cj_message.travel import ABI
 from runtime_adapter.contract import encode
 
-import dev_auth
 import local_history_pg as harness
+import dev_auth
 import local_run_context
 import run_worker
 
