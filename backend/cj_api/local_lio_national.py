@@ -7,7 +7,6 @@ import logging
 import re
 from zoneinfo import ZoneInfo
 
-from cj_agent.provider import ProviderUnknown
 from cj_agent.lio_intake_optional_schema import SYSTEM as FACTS_SYSTEM,OptionalIntake
 from cj_message.demo_dialogue import LIO_VERSION, LIO_VERSION_V3
 from cj_message.domain import Command,Unavailable
@@ -21,7 +20,7 @@ from .lio_positive_trip import destination_query,destination_request,supports
 from .lio_flow_intake import ReadOnlyPlanningData,ReadOnlyPlanningQuestion,parse_flow
 from .lio_national_intake import NONPERSISTENT,fields_for,fixed_sources_complete,province_evidence,diagnostic_code,StartDateConflict,FixedTimezoneConflict,DateDurationConflict,DateSourceUnclear
 from .lio_planning_grounding import PlanningTurn,standalone_question,NUMBER,_number,PLAN_REQUEST,discussion_reply
-from .local_lio_planning import PlanningDetails,register,discuss
+from .local_lio_planning import InvalidDiscussionAnswer,PlanningDetails,register,discuss
 from .rejected_intake_capture import capture_rejected_intake
 
 CONTEXT='lio_planning_context.1:'
@@ -75,6 +74,14 @@ _READONLY_DETAILS=re.compile(r'\s*(?:继续|接着说|具体的?行程(?:呢)?|�
 # the planning intake. Colloquial forms such as 你能做啥 belong here (#994).
 META_QUESTION=re.compile(r'\s*(?:'+CAPABILITY_PATTERN+r'|(?:你是谁|你是什么|我是谁|你了解我什么|你知道我什么|'
     r'who are you|what are you|who am i|what do you know about me))[?？。.!！\s]*',re.I)
+DIRECT_ANSWER=re.compile(
+    r'\s*(?:你好|您好|嗨|哈喽|谢谢(?:你)?|多谢|再见|拜拜'
+    r'|hello|hi(?: there)?|hey(?: there)?|thanks|thank you|(?:good)?bye'
+    r'|你能提供什么(?:旅行|旅游)帮助|what travel help can you offer'
+    r'|[^，。！？\s]{1,16}是[^，。！？\s]{1,16}的首都吗|[^，。！？\s]{1,16}的首都(?:是哪里|是哪座城市)'
+    r"|(?:is [\w .'-]{1,60} the capital|what is the capital) of [\w .'-]{1,60}"
+    r'|第一次来中国(?:旅行)?(?:建议|应该|可以)?怎么玩|first time in china[,，]?\s*(?:any tips|any advice)'
+    r')[?？。.!！\s]*',re.I)
 
 
 def publication_held(text):
@@ -232,8 +239,7 @@ class NationalLioPlanning:
     def execute(self,worker,binding,state,text,original):
         fixed=self_description(text,original.locale)
         if fixed is not None:return self._reply(worker,binding,state,fixed)
-        if re.fullmatch(r'\s*(?:第一次来中国(?:旅行)?(?:建议|应该|可以)?怎么玩|first time in china[,，]?\s*(?:any tips|any advice))[?？。.!！\s]*',text,re.I):return None
-        if META_QUESTION.fullmatch(text):return None
+        if META_QUESTION.fullmatch(text) or DIRECT_ANSWER.fullmatch(text):return None
         today=original.question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
         turns,refs,previous=self.context(binding,PlanningTurn(text,today))
         literal=literal_duration_question(text)
@@ -283,15 +289,7 @@ class NationalLioPlanning:
                 capture.reject(diagnostic_code(error),raw.encode('utf-8'))
                 rejected=True
         if rejected:
-            # The rejected projection grants no planning authority. Keep the
-            # original traveler messages for ordinary conversation, but do not
-            # carry an older save grant across this unparsed request (which
-            # may contain a cancellation or a changed destination).
-            self._context(worker,binding,state,dict(authority='none',status='discussion',facts={},
-                nonplanning_message_ids=[],authority_barrier_message_id=binding.message_id))
-            # The existing Worker continuation performs the real general answer
-            # through its original registered exits and fee/Memory guards.
-            return None
+            return self._answer_after_rejection(worker,binding,state)
         if isinstance(intake,ReadOnlyPlanningQuestion):
             held=publication_held(text)
             # A control-only question grants no publication authority. A later
@@ -390,7 +388,7 @@ class NationalLioPlanning:
                 if field in values:facts[field]=dict(value=values[field],sources=[dict(message_id=source_ids[ref['source_index']],quote=ref['quote'])for ref in sources])
             readonly_data.append(binding.message_id)
             state=context(worker,binding,state,dict(authority='none',status='plan_preview'))
-            return discuss(worker,binding,state,original.locale,turns,refs,
+            return self._discuss(worker,binding,state,original.locale,turns,refs,
                 day_count=read_only.duration_days,planning_window=window,destination=city['query'])
         if intake.publication_hold or publication_held(text) or not planning and intake.intent=='discuss':
             state=context(worker,binding,state,dict(authority='none',status='discussion'))
@@ -488,8 +486,11 @@ class NationalLioPlanning:
             return self._answer(worker,binding,state,original.locale,
                 '起止日期和天数对不上，你想按这个日期范围，还是按说的天数来安排？',
                 'The date range and day count do not match. Should I use the date range or the number of days you gave?')
-        except (InvalidInput,ValueError) as error:
-            raise ProviderUnknown('original nationwide planning fields unavailable') from error
+        except (InvalidInput,ValueError):
+            logging.getLogger('cj_usage.audit').warning(
+                'LIO_PLANNING_PROJECTION_REJECTED run_id=%s code=invalid_planning_fields',binding.run_id)
+            worker.lio_city_context=None
+            return self._answer_after_rejection(worker,binding,state)
         if not self.plan_and_save.supports_destination(binding,city):
             state=context(worker,binding,state,dict(authority='none',status='different_destination',city=resolution))
             return self._answer(worker,binding,state,original.locale,
@@ -523,7 +524,7 @@ class NationalLioPlanning:
                 or intake.start_date['state']!='known' or fields['arrival']['date']['state']!='known')
         if undated and calendar is None:
             state=context(worker,binding,state,dict(authority=authority,status='plan_preview',city=resolution))
-            return discuss(worker,binding,state,original.locale,turns,refs,day_count=intake.duration_days,
+            return self._discuss(worker,binding,state,original.locale,turns,refs,day_count=intake.duration_days,
                            destination=intake.city['query'])
         missing=[]
         if calendar is None and intake.start_date is not None and intake.start_date['state']!='known':missing.append('start_date')
@@ -536,7 +537,7 @@ class NationalLioPlanning:
             days=(date.fromisoformat(window[1])-date.fromisoformat(window[0])).days+1
             introduction=('新日期与已有行程的安排冲突，原行程和锁定安排先保留。这个对话目前只能对应一份正式行程；下面先讨论另一趟方案，不保存或替换原行程。'
                 if original.locale=='zh'else 'These dates conflict with the saved itinerary, so I will keep it and its locked arrangements unchanged. This conversation currently supports one saved itinerary; the following is another proposal for discussion, without saving or replacing the original.')
-            return discuss(worker,binding,state,original.locale,turns,refs,day_count=days,
+            return self._discuss(worker,binding,state,original.locale,turns,refs,day_count=days,
                            planning_window=window,introduction=introduction)
         questions=[q for q in checked.get('questions',[]) if q['field']=='fixed_items']
         complete_fixed=fixed_sources_complete(intake,fields,turns,city,
@@ -562,6 +563,20 @@ class NationalLioPlanning:
                 count=(date.fromisoformat(fields['departure']['date']['value'])-date.fromisoformat(start)).days+1
             return calendar.plan(worker,binding,state,details,original.locale,day_count=count,start_date=start)
         return self.plan_and_save(worker,binding,state,details,original.locale)
+
+    def _discuss(self,worker,binding,state,locale,turns,refs,**options):
+        try:
+            return discuss(worker,binding,state,locale,turns,refs,**options)
+        except InvalidDiscussionAnswer:
+            worker.lio_city_context=None
+            return self._answer_after_rejection(worker,binding,state)
+
+    def _answer_after_rejection(self,worker,binding,state):
+        # The ordinary Worker answer can use original traveler text. This
+        # turn's rejected fields and any earlier publication grant stay out.
+        self._context(worker,binding,state,dict(authority='none',status='discussion',facts={},
+            nonplanning_message_ids=[],authority_barrier_message_id=binding.message_id))
+        return None
 
     @staticmethod
     def _previous_city(intake,previous,text):
