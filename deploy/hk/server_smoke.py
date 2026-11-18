@@ -27,6 +27,8 @@ SHANGHAI = ZoneInfo('Asia/Shanghai')
 CASE_LIMIT_SECONDS = 90
 POLL_SECONDS = 1
 HTTP_SECONDS = 5
+HISTORY_PAGE_SIZE = 20
+MAX_HISTORY_PAGES = 40
 CASES = (
     ('zh.identity', '你是谁'),
     ('zh.capability', '你能做啥'),
@@ -293,18 +295,31 @@ def history(token, cases, allowed):
         for case in cases:
             by_conversation.setdefault(case['conversation_id'], set()).add(case['message_id'])
         for conversation, expected in by_conversation.items():
-            if not allowed():
-                raise SmokeResult('UNRUN', 'window_closed')
-            query = urlencode({'conversation_id': conversation, 'limit': 30})
-            value, _ = request(token, '/v1/message-history?' + query)
-            rows = value.get('messages')
-            if type(rows) is not list or any(type(row) is not dict or
-                    type(row.get('receipt')) is not dict for row in rows):
-                raise SmokeResult('FAIL', 'invalid_history')
-            found = {row['receipt'].get('message_id') for row in rows
-                     if row['receipt'].get('conversation_id') == conversation}
-            if not expected <= found:
-                raise SmokeResult('FAIL', 'original_message_missing_from_history')
+            found = set()
+            cursors = set()
+            query = {'conversation_id': conversation, 'limit': HISTORY_PAGE_SIZE}
+            for _ in range(MAX_HISTORY_PAGES):
+                if not allowed():
+                    raise SmokeResult('UNRUN', 'window_closed')
+                value, _ = request(token, '/v5/message-history?' + urlencode(query))
+                rows = value.get('messages')
+                if (value.get('version') != 'MESSAGE-history.5' or type(rows) is not list
+                        or any(type(row) is not dict or type(row.get('receipt')) is not dict for row in rows)):
+                    raise SmokeResult('FAIL', 'invalid_history')
+                if any(row['receipt'].get('conversation_id') != conversation for row in rows):
+                    raise SmokeResult('FAIL', 'history_conversation_binding')
+                found.update(row['receipt'].get('message_id') for row in rows)
+                if expected <= found:
+                    break
+                cursor = value.get('next_cursor')
+                if cursor is None:
+                    raise SmokeResult('FAIL', 'original_message_missing_from_history')
+                if type(cursor) is not str or not cursor or cursor in cursors:
+                    raise SmokeResult('FAIL', 'history_cursor_invalid')
+                cursors.add(cursor)
+                query['cursor'] = cursor
+            else:
+                raise SmokeResult('UNKNOWN', 'history_page_bound')
         return dict(status='PASS', elapsed_ms=round((time.monotonic()-started)*1000, 3))
     except SmokeResult as error:
         return dict(status=error.status, reason=error.reason,

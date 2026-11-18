@@ -205,3 +205,26 @@ def test_smoke_post_is_accepted_by_the_original_lio_wire(monkeypatch):
         value, _ = smoke.request('synthetic', '/v1/lio/messages', document=document)
         assert value == dict(version='LIO-message-receipt.1', message_id='smoke-original',
                              conversation_id='lio-chat')
+
+
+def test_smoke_reads_preserved_history_through_the_original_cursor(monkeypatch):
+    from urllib.parse import parse_qs, urlsplit
+
+    visited = []
+    def read(token, route):
+        url = urlsplit(route)
+        assert url.path == '/v5/message-history'
+        query = parse_qs(url.query)
+        assert query['limit'] == ['20']
+        assert query['conversation_id'] == ['lio-chat']
+        visited.append(query.get('cursor'))
+        first_page = 'cursor' not in query
+        message = 'old' if first_page else 'current'
+        return dict(version='MESSAGE-history.5', next_cursor='opaque-token' if first_page else None,
+                    messages=[dict(receipt=dict(conversation_id='lio-chat', message_id=message))]), None
+
+    monkeypatch.setattr(smoke, 'request', read)
+    result = smoke.history('synthetic', [dict(conversation_id='lio-chat', message_id='current')],
+                           lambda: True)
+    assert result['status'] == 'PASS'
+    assert visited == [None, ['opaque-token']]
