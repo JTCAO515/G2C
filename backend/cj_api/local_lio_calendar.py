@@ -16,7 +16,7 @@ from cj_trip.postgres import Repository
 from cj_usage.local_provider_exit import BudgetExceeded
 
 from .local_lio_calendar_source import LioCalendarSource, LioDateEvidence
-from .local_lio_edit import _bind_current
+from .local_lio_edit import _bind_current, _rejected_change
 from .lio_plan_pace import saved_summary
 from .local_lio_planning import unsaved_plan_answer
 from .lio_national_intake import LITERAL_DATE, _MONTH_DAY, _RELATIVE_DAY, _WEEK_SOURCE, _BARE_WEEK
@@ -135,8 +135,7 @@ class LioCalendar:
             if receipt['committed'] is None:
                 raise ProviderUnknown('original date conversion outcome unknown; query only')
         except DraftRejected:
-            state = worker._event(binding, worker.runs.snapshot(binding), 'draft_outcome', 'validation_failed')
-            return self._answer(worker, binding, state, original.locale,
+            return _rejected_change(worker, binding, original.locale,
                 '这次没能补上日期，原行程保留。你想从哪一天开始？',
                 'I could not add the dates; the original itinerary is kept. What start date would you like?')
         except BudgetExceeded:
