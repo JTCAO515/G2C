@@ -1033,6 +1033,7 @@ class Boundaries(unittest.TestCase):
             self.assertEqual(original.receipt(attempt,'provider_call',len(result)).attempt_id,attempt)
             with self.assertRaises(BudgetUnknown):
                 list(invoke())
+        self.assertEqual(len(requests),1)
 
     def test_only_original_lio_discussion_hands_off_the_dispatch_fence_after_send(self):
         from contextlib import closing
@@ -1077,7 +1078,6 @@ class Boundaries(unittest.TestCase):
                             next(reply)
                         self.assertEqual({r['attempt_id']: r['state'] for r in self.budget.inspect()}[attempt], 'INTENT')
                 self.assertEqual(len(requests), 1)
-        self.assertEqual(len(requests),1)
 
     def test_lio_timeline_keeps_uncertainty_plain_and_withholds_internal_answers(self):
         from cj_api.lio_dialogue_routes import _message
