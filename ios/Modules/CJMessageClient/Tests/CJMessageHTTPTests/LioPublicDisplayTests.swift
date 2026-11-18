@@ -63,6 +63,21 @@ struct LioPublicDisplayTests {
         #expect(LioPublicDisplay.permitsText(text))
     }
 
+    @Test func preservesTravelScopeWithoutExposingAServiceScopeField() {
+        #expect(LioPublicDisplay.permitsText("Double-check the scope of the visa-free transit policy with your airline."))
+        #expect(!LioPublicDisplay.permitsText(#"{"scope":"internal-travel-owner"}"#))
+        #expect(!LioPublicDisplay.permitsText("scope: internal-travel-owner"))
+    }
+
+    @Test(arguments: [
+        "**scope**: synthetic-owner",
+        "__scope__ = synthetic-owner",
+        "Reference local:https://login.example.test:synthetic-owner before continuing."
+    ])
+    func hidesFormattedScopeFieldsAndQualifiedOwnerValues(_ text: String) {
+        #expect(!LioPublicDisplay.permitsText(text))
+    }
+
     @Test func preservesTravelLanguageAndPublicAttribution() throws {
         #expect(LioPublicDisplay.permitsText("草原夜间偏凉。"))
         #expect(LioPublicDisplay.permitsText("Trains run frequently. Your itinerary needs a little more time."))
