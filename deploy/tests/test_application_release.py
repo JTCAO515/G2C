@@ -45,20 +45,12 @@ def test_arrival_after_ingress_close_recovers_only_api_without_old_dependencies(
     if returning_to_previous_source:legacy_backup.write_bytes(b'original prior deployment backup\n')
     gate=tmp_path/'gate.json';gate.write_text(json.dumps(dict(source=source,previous_source=previous,
         image_id='new-image',previous_image_id='old-image',pr_number=1,ci_all_green=True,
-        review_approved_head=source,source_bytes_equal=True,imported_source_bytes_equal=True,
+        review_approved_head=source,review_comment=1,source_bytes_equal=True,imported_source_bytes_equal=True,
         checks=[dict(name=str(i),state='SUCCESS')for i in range(13)],
         starts_at=stamp(now-timedelta(minutes=1)),ends_at=stamp(now+timedelta(minutes=30)))))
     monkeypatch.setattr(application_release,'Path',lambda value:tmp_path if value=='/srv/g2c-beta'else Path(value))
-    class Reply:
-        def __init__(self,value):self.value=value
-        def __enter__(self):return self
-        def __exit__(self,*unused):pass
-        def read(self):return json.dumps(self.value).encode()
-    def github(request,timeout):
-        if '/pulls/'in request.full_url:return Reply({'merged':True,'head':{'sha':source}})
-        if request.full_url.endswith('/check-runs'):return Reply({'check_runs':[{'status':'completed','conclusion':'success'}]})
-        return Reply({'state':'success'})
-    monkeypatch.setattr(application_release,'urlopen',github)
+    monkeypatch.setattr(application_release, 'verify_release_ci', lambda github, sha: None)
+    monkeypatch.setattr(application_release, 'verify_release_review', lambda github, sha, supplied: None)
     commands=[];proofs=0;api_running=True
     def run(args,**unused):
         nonlocal proofs,api_running
@@ -95,3 +87,84 @@ def test_arrival_after_ingress_close_recovers_only_api_without_old_dependencies(
     stops=sum(command[-4:]==['stop','-t','20','api']for command in commands)
     with pytest.raises(FileExistsError):application_release.main([str(gate),'--apply'])
     assert sum(command[-4:]==['stop','-t','20','api']for command in commands)==stops
+
+SOURCE = 'a' * 40
+REVIEWED = 'b' * 40
+
+
+@pytest.fixture
+def workflow_evidence():
+    repo = {'full_name': application_release.REPOSITORY}
+    ci = dict(id=1, path=application_release.CI_PATH, event='push', head_branch='main',
+              head_sha=SOURCE, status='completed', conclusion='success',
+              repository=repo, head_repository=repo)
+    monitor = dict(ci, id=2, path='.github/workflows/hk-readiness.yml', event='schedule',
+                   conclusion='skipped')
+    jobs = [dict(id=i + 10, name=name, run_id=1, head_sha=SOURCE, status='completed',
+                 conclusion='success', steps=[{'conclusion': 'success'}])
+            for i, name in enumerate(sorted(application_release.CI_JOBS))]
+    return dict(workflow_runs=[ci, monitor],
+                check_runs=[*jobs, dict(id=3, name='observe', head_sha=SOURCE, conclusion='skipped')],
+                jobs=jobs, state='success')
+
+
+def github_fixture(evidence):
+    def fetch(path):
+        if path.endswith('/status'):
+            return {'state': evidence['state']}
+        key = 'workflow_runs' if path.startswith('actions/runs?') else (
+            'check_runs' if '/check-runs?' in path else 'jobs')
+        rows = evidence[key]
+        return {'total_count': len(rows), key: rows}
+    return fetch
+
+
+def test_release_ci_accepts_skipped_monitor_with_all_required_jobs(workflow_evidence):
+    application_release.verify_release_ci(github_fixture(workflow_evidence), SOURCE)
+
+
+@pytest.mark.parametrize('mutation', [
+    'missing_ci', 'wrong_ci_path', 'ci_wrong_event', 'missing_job', 'skipped_job',
+    'empty_required_job', 'unrelated_failed_job', 'unrelated_cancelled_run', 'commit_status_failure',
+])
+def test_release_ci_rejects_missing_evidence_and_explicit_failures(workflow_evidence, mutation):
+    evidence = workflow_evidence
+    ci, monitor = evidence['workflow_runs']
+    jobs = evidence['jobs']
+    if mutation == 'missing_ci':
+        evidence['workflow_runs'].remove(ci)
+    elif mutation == 'wrong_ci_path':
+        ci['path'] = monitor['path']
+    elif mutation == 'ci_wrong_event':
+        ci['event'] = 'pull_request'
+    elif mutation == 'missing_job':
+        jobs.pop()
+    elif mutation == 'skipped_job':
+        jobs[0]['conclusion'] = 'skipped'
+    elif mutation == 'empty_required_job':
+        jobs[0]['steps'] = []
+    elif mutation == 'unrelated_failed_job':
+        evidence['check_runs'][-1]['conclusion'] = 'failure'
+    elif mutation == 'unrelated_cancelled_run':
+        monitor['conclusion'] = 'cancelled'
+    elif mutation == 'commit_status_failure':
+        evidence['state'] = 'failure'
+    with pytest.raises(ValueError):
+        application_release.verify_release_ci(github_fixture(evidence), SOURCE)
+
+
+@pytest.mark.parametrize('approval', [REVIEWED, SOURCE])
+def test_release_review_requires_approval_on_reviewed_head(approval):
+    gate = dict(pr_number=1174, review_comment=42, review_approved_head=REVIEWED)
+    evidence = {
+        'pulls/1174': dict(merged=True, head={'sha': REVIEWED}, merge_commit_sha=SOURCE),
+        'issues/comments/42': dict(
+            issue_url='https://api.github.com/repos/JTCAO515/G2C/issues/1174',
+            author_association='OWNER', body=f'Review: APPROVE {approval}\nDetails',
+        ),
+    }
+    if approval == REVIEWED:
+        application_release.verify_release_review(evidence.__getitem__, SOURCE, gate)
+    else:
+        with pytest.raises(ValueError, match='R approval'):
+            application_release.verify_release_review(evidence.__getitem__, SOURCE, gate)

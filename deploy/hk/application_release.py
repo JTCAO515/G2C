@@ -4,6 +4,77 @@ from urllib.request import urlopen,Request
 from datetime import datetime,timezone
 from pathlib import Path
 
+REPOSITORY = 'JTCAO515/G2C'
+CI_PATH = '.github/workflows/ci.yml'
+CI_JOBS = frozenset({
+    'changes', 'python', 'postgres', 'swift-packages', 'ios-app', 'swift',
+    *(f'postgres-shard ({shard})' for shard in range(4)),
+})
+BLOCKING_CONCLUSIONS = frozenset({
+    'failure', 'cancelled', 'timed_out', 'startup_failure', 'action_required', 'stale',
+})
+
+
+def _inventory(github, path, key):
+    rows = []
+    seen = set()
+    separator = '&' if '?' in path else '?'
+    for page in range(1, 11):
+        response = github(f'{path}{separator}per_page=100&page={page}')
+        batch = response[key]
+        for row in batch:
+            if row['id'] in seen:
+                raise ValueError('duplicate GitHub inventory item')
+            seen.add(row['id'])
+        rows.extend(batch)
+        if len(rows) == response['total_count']:
+            return rows
+        if len(batch) != 100:
+            break
+    raise ValueError('complete GitHub inventory required')
+
+
+def verify_release_ci(github, source):
+    workflows = _inventory(github, f'actions/runs?head_sha={source}', 'workflow_runs')
+    checks = _inventory(github, f'commits/{source}/check-runs?filter=all', 'check_runs')
+    if any(row['head_sha'] != source or row['conclusion'] in BLOCKING_CONCLUSIONS
+           for row in [*workflows, *checks]):
+        raise ValueError('GitHub recorded a failed or cancelled check on the release source')
+    if github(f'commits/{source}/status')['state'] in {'failure', 'error'}:
+        raise ValueError('GitHub recorded a failed commit status on the release source')
+    runs = [run for run in workflows if run['path'] == CI_PATH
+            and run['event'] == 'push' and run['head_branch'] == 'main'
+            and run['repository']['full_name'] == REPOSITORY
+            and run['head_repository']['full_name'] == REPOSITORY]
+    if len(runs) != 1 or runs[0]['status'] != 'completed' or runs[0]['conclusion'] != 'success':
+        raise ValueError('successful exact-source main ci.yml run required')
+    run_id = runs[0]['id']
+    jobs = _inventory(github, f'actions/runs/{run_id}/jobs', 'jobs')
+    if (len(jobs) != len(CI_JOBS) or {job['name'] for job in jobs} != CI_JOBS
+            or any(job['head_sha'] != source or job['run_id'] != run_id
+                   or job['status'] != 'completed' or job['conclusion'] != 'success' or not job['steps']
+                   for job in jobs)):
+        raise ValueError('ten successful ci.yml jobs on the exact release source required')
+
+
+def verify_release_review(github, source, gate):
+    number = gate['pr_number']
+    comment_id = gate['review_comment']
+    head = gate['review_approved_head']
+    if (type(number) is not int or number < 1 or type(comment_id) is not int or comment_id < 1
+            or re.fullmatch('[a-f0-9]{40}', head) is None):
+        raise ValueError('exact reviewed PR and approval comment required')
+    pr = github(f'pulls/{number}')
+    if (not pr['merged'] or pr['head']['sha'] != head
+            or (source != head and pr['merge_commit_sha'] != source)):
+        raise ValueError('release source does not match the reviewed PR')
+    review = github(f'issues/comments/{comment_id}')
+    if (review['issue_url'] != f'https://api.github.com/repos/{REPOSITORY}/issues/{number}'
+            or review['author_association'] not in {'OWNER', 'MEMBER', 'COLLABORATOR'}
+            or review['body'].partition('\n')[0] != f'Review: APPROVE {head}'):
+        raise ValueError('exact-head R approval on the release PR required')
+
+
 def require_release_window(starts_at,ends_at,now):
     """A bounded idle-deployment lease, without a time-of-day restriction.
 
@@ -39,14 +110,11 @@ def main(argv=None):
       not any(p['memory_states'].get(k,0)for k in ('pending','inflight')))
     lock=(ROOT/'probes/application-deploy.lock').open('a');os.chmod(lock.name,0o600);fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     now=datetime.now(timezone.utc)
-    assert gate['source']==SOURCE and gate['ci_all_green']is True and gate['review_approved_head']==SOURCE
     assert gate['source_bytes_equal'] and gate['imported_source_bytes_equal']
     def github(path):
-     with urlopen(Request('https://api.github.com/repos/JTCAO515/G2C/'+path,headers={'Accept':'application/vnd.github+json'}),timeout=20) as r:return json.load(r)
-    pr=github('pulls/'+str(gate['pr_number']));assert pr['merged'] and pr['head']['sha']==SOURCE
-    checks=github('commits/'+SOURCE+'/check-runs')['check_runs'];assert checks and all(x['status']=='completed' and x['conclusion']=='success' for x in checks)
-    assert github('commits/'+SOURCE+'/status')['state']=='success'
-    assert len({x['name'] for x in gate['checks']})>=13 and all(x['state']=='SUCCESS' for x in gate['checks'])
+     with urlopen(Request(f'https://api.github.com/repos/{REPOSITORY}/'+path,headers={'Accept':'application/vnd.github+json'}),timeout=20) as r:return json.load(r)
+    verify_release_ci(github,SOURCE)
+    verify_release_review(github,SOURCE,gate)
     require_release_window(gate['starts_at'],gate['ends_at'],now)
     new=inspect('g2c-beta:'+SOURCE);assert new['Id']==gate['image_id']and new['Architecture']=='amd64'
     assert new['Config']['Labels']['org.opencontainers.image.revision']==SOURCE
