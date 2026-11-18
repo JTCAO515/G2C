@@ -21,6 +21,7 @@ from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
 from cj_agent.provider import (
+    CompleteUnsettledAnswer,
     DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_REAL_OUTPUT_TOKENS,
     M4_NATIVE_TURN_PROFILE_V2,M4_NATIVE_TURN_STREAM,M4_NATIVE_TURN_BUFFERED,ProviderUnknown,ProviderFailed,
 )
@@ -587,12 +588,24 @@ class RealTools:
                         tools=inputs['native_tools'],receipt=metadata,guard=checked,native_reply=native_reply,
                         native_turn_profile=inputs.get('native_turn_profile'),final_answer=inputs.get('external_tools_disabled',False),
                         release_after_send=discussion_handoff or inputs.get('response_mode')=='lio-memory-json.1',
+                        **({'unsettled_answer_limit':operation.command.output_limit} if discussion_handoff else {}),
                         lio_answer=inputs.get('answer_format_profile')=='lio-user.1',
                         **({'structured_profile':inputs['structured_profile']} if 'structured_profile' in inputs else {}),
                         **({'exploration_schema_sha256':inputs['response_format_sha256']} if exploration else {}),
                         **({'intake_source_index':inputs['current_source_index']} if 'current_source_index' in inputs else {}),
                         **({'draft_profile':inputs['draft_profile'],'draft_schema_sha256':inputs['response_format_sha256']}if 'draft_profile' in inputs else {}),
                         **capture)
+                    if discussion_handoff:
+                        def qualify_reply(original_stream):
+                            try:
+                                yield from original_stream
+                            except CompleteUnsettledAnswer:
+                                lease=provider.memory.hold(operation.binding) if wrapped else nullcontext(None)
+                                with lease as memory_check:
+                                    if checked(memory_check=memory_check) is not True:
+                                        raise BudgetUnknown('original discussion reply authority changed') from None
+                                raise
+                        stream=qualify_reply(stream)
                     if national_intake and intake_profile=='LIO-planning-intake.9':
                         from .rejected_intake_capture import observe_stream
                         @contextmanager
