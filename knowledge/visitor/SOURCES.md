@@ -363,3 +363,5 @@ Traveloka正常About及页脚实读，自述旅行平台，页脚TRAVELOKA SERVI
 依JT持续代批权，经[#702/6955340779](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6955340779)批准[去哪儿这一精确页](https://sight.qunar.com/11714)，中文，仅浙江台州府城墙的短期施工正文提醒。平台归属、提示有效期与限制见[核对记录](coverage/fucheng-maintenance-2026-11-18.md)；不作官方原公告或机器周闭/预约依据。格式仅接受该URL、对应单城、passport_booking及非空subject，不扩整站、参数、相邻ID、子域或法律渠道。核对11-18、失效仍11-23，原百度周闭来源核对日仍11-17。
 
 2026-11-18 JT 会话确认扩展上述[去哪儿精确页面的预约提示核对范围](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6974646211)，仍限台州府城墙，不扩其他页面或城市。该页面涵盖整个文化旅游区，票务提示所指是否覆盖城墙所有普通入园方式不明；保留 `reservation_required: null`，不把来源授权当作条件已核实。
+
+2026-11-18 JT 会话确认[携程安徽宿州三角洲原页的精确跳转目标](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6974672296)，仅限 [https://m.ctrip.com/webapp/you/sight/suzhou672/5577341.html?ext-shelfPage=ctrip_shelf_seo](https://m.ctrip.com/webapp/you/sight/suzhou672/5577341.html?ext-shelfPage=ctrip_shelf_seo)，中文、安徽宿州、具体场馆参观主题。原已批页面返回 301 指向此 URL；目标公开主记录列全年全天开放，页面内目的地字段为安徽、宿州，未使用用户点评或周边推荐。此平台资料不等于园方公告，预约与提前窗口仍未知；不扩其他参数、ID、子域、交易或接口。
