@@ -13,7 +13,8 @@
 | `<city>-new.csv` | 本轮新增 POI，表头与第一轮一致；`row_id` 从第一轮同城最大号顺延 |
 | `<city>-enrich.csv` | 原条目补细，按第一轮 `row_id` 关联，长表格式 |
 | `all-cities-new.csv` / `all-cities-enrich.csv` | 七城新增与补细合并表 |
-| `ROUND2-SUMMARY.md` | 基线 / 新增 / 补细 / 剩余缺口汇总 |
+| `ROUND2-SUMMARY.md` | 七城基线 / 新增 / 补细 / 剩余缺口汇总 |
+| `<city>-SUMMARY.md` | 每城短汇总：新增分布、补细、目录、缺口 |
 
 ## 新增 POI 表
 
