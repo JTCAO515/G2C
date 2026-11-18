@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>来华旅行知识库 · Lio</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.mjs"></script>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <nav class="nav"><div class="brand">LIO <span>✳</span> VISITOR KNOWLEDGE</div>
+    <div class="nav-actions"><button id="language" class="language" type="button" aria-label="Switch to English">EN</button>
+      <a href="https://github.com/JTCAO515/G2C/tree/main/knowledge/visitor" target="_blank" rel="noopener noreferrer" data-i18n="sourceLink">查看 GitHub 事实库 ↗</a></div></nav>
+  <div class="hero"><div><div class="eyebrow">A practical guide to China · 中国旅行事实库</div>
+    <h1 data-i18n="heroTitle">把旅途的疑问，<br>交给可靠的事实。</h1>
+    <p data-i18n="heroText">为来中国的旅行者准备。从城市交通、支付到景点预约，查阅有来源、有核对日期的实用信息。</p></div>
+    <div class="hero-note"><strong id="hero-count">—</strong><span data-i18n="recordCount">条知识记录</span><br><span data-i18n="recordNote">按城市和主题浏览 · 来源可追溯</span></div>
+  </div></div></header>
+<div class="wrap"><div class="dashboard">
+  <div class="sync" role="status" aria-live="polite"><i class="dot" id="dot"></i><div><div id="sync">正在加载发布的数据…</div><div id="freshness">同步状态待核实</div></div></div>
+  <div class="publish"><a id="workflow-link" href="https://github.com/JTCAO515/G2C/actions/workflows/visitor-pages.yml" target="_blank" rel="noopener noreferrer"><span data-i18n="publishStatus">最近自动发布状态</span> <img id="publish-badge" src="https://github.com/JTCAO515/G2C/actions/workflows/visitor-pages.yml/badge.svg?branch=main" alt="发布状态不可用时请查看发布记录"></a><small id="badge-note" data-i18n="badgeNote">若标识失败或不可用，请勿假定数据已同步。</small></div>
+  <button id="refresh" class="refresh" type="button" data-i18n="retry">重新载入</button>
+</div>
+<div class="main"><aside class="sidebar"><div class="section-label" data-i18n="explore">Explore · 城市</div><div id="cities"></div><div class="filterspace section-label" data-i18n="about">About · 说明</div><p class="about-text" data-i18n="aboutText">数据来自公开事实库。具体安排可能临时变化，出发前请查看原始来源。</p></aside>
+<main><select id="city-mobile" class="mobile-city" aria-label="选择城市"></select><div class="contenthead"><div><div class="section-label">THE KNOWLEDGE LIBRARY</div><h2 data-i18n="library">旅行知识</h2><p id="result-count">正在整理条目…</p></div><label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="搜索城市、地点或问题…" aria-label="搜索知识"></label></div>
+  <div class="toolbar" id="topics" aria-label="按主题筛选"></div><div id="cards" class="cards"></div>
+</main></div><footer class="footer"><strong>Lio · Visitor Knowledge</strong>　/　<span data-i18n="footer">每条记录附来源、适用范围和日期。失效条目停止展示正文，请重新核对来源。</span></footer></div>
+</body></html>
