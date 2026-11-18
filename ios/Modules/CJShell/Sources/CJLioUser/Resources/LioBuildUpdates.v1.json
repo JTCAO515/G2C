@@ -15,11 +15,15 @@
           "items": {
             "zh": [
               "已保存行程的详情在系统导航和底栏之间滚动，底部站点可继续向上翻看。详情页可以直接从底栏切回聊天。",
-              "记忆页可以查看当前对话尚未确认的建议。选择要记住的内容时，可切回聊天确认。"
+              "记忆页可以查看当前对话尚未确认的建议。选择要记住的内容时，可切回聊天确认。",
+              "提高了 iOS 26.5 已保存行程的日期按钮对比度。分段、多选探索中，提醒来源可长按查看。",
+              "修正了部分正常旅行回答被误拦的情况。"
             ],
             "en": [
               "Saved itinerary details scroll between the system navigation and tab bars. Scroll to read the last stop, or use the bottom tab to return to Chat.",
-              "The Memory tab shows suggestions from the current chat while they await confirmation. Return to Chat to choose what to remember."
+              "The Memory tab shows suggestions from the current chat while they await confirmation. Return to Chat to choose what to remember.",
+              "Saved itinerary date buttons have improved contrast on iOS 26.5. In multiple-choice exploration, touch and hold a reminder to see its sources.",
+              "Fixed an issue where some ordinary travel replies could be hidden."
             ]
           }
         },
@@ -31,10 +35,10 @@
           },
           "items": {
             "zh": [
-              "与构建 47 相比，本版改善了行程详情的阅读区域，并在记忆方格上方展示待确认的建议。"
+              "与构建 47 相比，行程详情更好读，记忆方格上方显示待确认建议，聊天中的探索提醒只显示结果。"
             ],
             "en": [
-              "Compared with build 47, saved itineraries have a clearer reading area, and suggestions appear above the saved memory tiles."
+              "Compared with build 47, saved itineraries are easier to read, suggestions appear above the memory tiles, and exploration reminders show only the result in chat."
             ]
           }
         },
@@ -72,7 +76,7 @@
               "“记住”偏好仍需单独完成真实验收。",
               "本轮使用系统默认字号。较大字号下仍有卡片显示或切日问题。",
               "分段、多选探索尚未默认开启；真机弱网和锁屏至少 5 分钟的恢复仍待单独验证。",
-              "已保存行程详情的阅读区域已完成模拟器检查。iOS 26.5 的日期按钮对比度仍在完善。"
+              "行程详情和日期按钮已完成模拟器检查，仍待真机确认。"
             ],
             "en": [
               "For planning, this check covers one simple Beijing request and a complete three-day itinerary.",
@@ -80,7 +84,7 @@
               "Remember preferences still requires a separate live check.",
               "Use the system default text size. Card display or day selection can still have issues at larger sizes.",
               "Segmented, multiple-choice exploration is not the default. Weak-network and lock-screen recovery after at least five minutes still need separate device checks.",
-              "The saved itinerary reading area passed simulator checks. Date button contrast on iOS 26.5 is still being refined."
+              "Saved itinerary details and date buttons passed simulator checks and still need confirmation on a device."
             ]
           }
         },
@@ -92,10 +96,10 @@
           },
           "items": {
             "zh": [
-              "配套香港服务改善了规划等待时查看对话的体验。服务端调整部署后自动生效，更新 App 可获得行程详情和记忆页改进。"
+              "配套香港服务改善了规划等待时查看对话的体验。服务端调整部署后自动生效，构建 47 也可使用这项服务改进。"
             ],
             "en": [
-              "The accompanying Hong Kong service changes improve chat loading while a plan is in progress. Service changes take effect after deployment. Update the app for the trip detail and Memory improvements."
+              "The accompanying Hong Kong service changes improve chat loading while a plan is in progress. Service changes take effect after deployment. Build 47 can also use this service improvement."
             ]
           }
         }
