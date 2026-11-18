@@ -11,8 +11,12 @@ compose() {
 }
 
 backup_image=
-selection=$(python3 deploy/hk/daily_backup_image.py)
-if [ -n "$selection" ]; then
+if [ -e backup.image ] || [ -L backup.image ]; then
+    selection=$(python3 deploy/hk/daily_backup_image.py)
+    if [ -z "$selection" ]; then
+        printf '%s\n' 'ALERT beta_backup_image_selection_invalid' >&2
+        exit 1
+    fi
     backup_tag=${selection% *}
     backup_image=${selection#* }
     expected="$backup_image amd64 ${backup_tag#*:}"

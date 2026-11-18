@@ -128,7 +128,8 @@ def test_pin_rejects_a_dangling_symlink_and_recognizes_absence(tmp_path):
         read_selection(selector)
 
 
-def test_untrusted_pin_fails_before_docker(tmp_path):
+@pytest.mark.parametrize('pin_state', ['untrusted', 'removed_before_open'])
+def test_invalid_pin_fails_before_docker(tmp_path, pin_state):
     unit = tmp_path / 'daily-backup.sh'
     unit.write_text(SCRIPT.read_text().replace('/srv/g2c-beta', str(tmp_path)))
     helper = tmp_path / 'deploy/hk/daily_backup_image.py'
@@ -137,7 +138,12 @@ def test_untrusted_pin_fails_before_docker(tmp_path):
     selector = tmp_path / 'backup.image'
     selector.write_text(f'{TAG} {IMAGE}\n')
     selector.chmod(0o622)
-    (tmp_path / 'python3').symlink_to(sys.executable)
+    reader = tmp_path / 'python3'
+    if pin_state == 'untrusted':
+        reader.symlink_to(sys.executable)
+    else:
+        reader.write_text('#!/bin/sh\nexit 0\n')
+        reader.chmod(0o700)
     docker = tmp_path / 'docker'
     docker.write_text('#!/bin/sh\nprintf docker-called\n')
     docker.chmod(0o700)
