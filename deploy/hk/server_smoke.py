@@ -55,9 +55,18 @@ NEGATED_CAPABILITIES = re.compile(
     r"不能帮|无法提供|不提供|(?:cannot|can't|do not|don't) (?:help|plan|provide|offer)|"
     r'(?:offer|provide) no (?:travel |trip )?(?:assistance|planning|help)', re.I
 )
+DAY_ACTIVITY = re.compile(
+    r'参观|游览|游玩|游逛|游览|乘车|坐车|坐地铁|步行|登上|爬山|漫步|散步|逛|前往|抵达|体验|品尝|欣赏|走访|'
+    r'\b(?:visit|walk|tour|take|climb|ride|explore|stroll|see|browse|stop|spend|start|head|admire)\b', re.I
+)
+NO_DAY_ACTIVITY = re.compile(
+    r'没有(?:任何)?安排|并未安排|不安排|未安排|取消|暂无|'
+    r'\b(?:no (?:activity|activities|plans?)|nothing (?:is )?planned|not (?:planned|scheduled)|'
+    r'do not (?:visit|go)|skip)\b', re.I
+)
 WIRE_TIMING = re.compile(
     r'\bM4_MODEL_WIRE_TIMING attempt_sha256=([a-f0-9]{64}) '
-    r'first_provider_body_ms=(?:UNKNOWN|[0-9.]+) socket_read_ms=([0-9]+(?:\.[0-9]+)?)\b'
+    r'first_provider_body_ms=([0-9]+(?:\.[0-9]+)?) socket_read_ms=[0-9]+(?:\.[0-9]+)?\b'
 )
 
 
@@ -128,7 +137,9 @@ def valid_answer(case, answer):
         return False
     for index, match in enumerate(headings):
         day = answer[match.end():headings[index+1].start() if index < 2 else len(answer)]
-        if len(re.findall(r'[\w\u3400-\u9fff]', day)) < 16 or not BEIJING_PLACE.search(day):
+        activities = re.split(r'[\n。！？.!?]+', day)
+        if not any(BEIJING_PLACE.search(clause) and DAY_ACTIVITY.search(clause)
+                   and not NO_DAY_ACTIVITY.search(clause) for clause in activities):
             return False
     return True
 
@@ -229,8 +240,10 @@ def overlap_witness(result, attempt_hashes, wire_log_lines):
     """Prove at least one full 200 read happened inside original model I/O.
 
     Read samples cover POST through first visible answer. Before publication,
-    one bound model's socket wait alone must exceed the longest interval with
-    no complete qualifying read. Unbounded or missing evidence stays UNKNOWN.
+    The bound answer's send-to-first-body duration must exceed the longest
+    interval that can avoid containing a complete 200 read. The original
+    answer is sent after POST and its first byte precedes its terminal answer,
+    so its contiguous pre-body interval is fully inside the observed timeline.
     """
     if result['status'] != 'PASS':
         return False
@@ -288,7 +301,10 @@ def original_model_attempts(database, scope, message_id):
         attempts = db.execute(
             "SELECT o.attempt_id FROM cj_message_delivery d "
             "JOIN cj_run_metered_operation o ON (o.scope,o.run_id)=(d.scope,d.run_id) "
-            "WHERE d.scope=%s AND d.message_id=%s AND o.kind='model'",
+            "WHERE d.scope=%s AND d.message_id=%s AND o.kind='model' "
+            "AND ((o.registration_id='model.answer' AND o.operation_key='model.lio_discussion.0') "
+            "OR (o.registration_id='model.tool_turn' AND o.operation_key ~ '^model[.]tool_turn[.][0-9]+$') "
+            "OR (o.registration_id='model.draft' AND o.operation_key='model.draft'))",
             (scope, message_id),
         ).fetchall()
     return {hashlib.sha256(row[0].encode()).hexdigest() for row in attempts}
@@ -357,6 +373,8 @@ def decide(events, wire_logs):
         return dict(status='UNRUN', concurrency='UNRUN')
     if [row['case'] for row in cases] != [name for name, _ in CASES] or len(history_rows)!=1 or len(costs)!=1:
         return dict(status='UNKNOWN', concurrency='UNKNOWN')
+    if any(row['status'] not in {'PASS','UNRUN'} for row in outcomes):
+        return dict(status='UNKNOWN', concurrency='UNKNOWN', reason='invalid_smoke_status')
     if any(row['status']=='UNRUN' for row in outcomes):
         return dict(status='UNRUN', concurrency='UNRUN')
     if (costs[0]['conservative_cny_1e7'] > 5*CNY_SCALE

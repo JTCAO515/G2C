@@ -22,6 +22,8 @@ from deploy.hk import server_smoke_budget as ceiling
     ('zh.plan', '第一天\n上午游览故宫和天安门广场，下午去景山公园。\n第二天\n乘车去慕田峪长城，在景区步行并参观烽火台。\n第三天\n上午参观颐和园并沿昆明湖步行，下午去前门。', True),
     ('en.plan', '**Day 1: City centre**\nWalk through the Forbidden City and climb Jingshan.\n**Day 2: Great Wall**\nTake the morning shuttle to Mutianyu and walk between towers.\n**Day 3: Gardens**\nTour the Summer Palace and walk along the lake.', True),
     ('en.plan', 'Day 1: Forbidden City.\nDay 2: TBD.\nDay 3: Summer Palace.', False),
+    ('zh.plan', '第一天：故宫没有安排。\n第二天：长城没有安排。\n第三天：天坛没有安排。', False),
+    ('en.plan', 'Day 1: No activity is planned at the Forbidden City.\nDay 2: No activity is planned at the Great Wall.\nDay 3: No activity is planned at the Temple of Heaven.', False),
     ('en.plan', 'Could you give me your hotel details first? Then I can plan all three days.', False),
 ])
 def test_real_body_is_required(case, body, valid):
@@ -58,11 +60,12 @@ def test_concurrency_requires_real_bound_provider_wait():
         dict(start_ms=3010, end_ms=3040, http=200, answering=False),
     ])
     attempt = 'a' * 64
-    line = f'M4_MODEL_WIRE_TIMING attempt_sha256={attempt} first_provider_body_ms=1370.0 socket_read_ms=2590.0'
+    line = f'M4_MODEL_WIRE_TIMING attempt_sha256={attempt} first_provider_body_ms=2590.0 socket_read_ms=2740.0'
     assert smoke.overlap_witness(result, {attempt}, [line])
     assert not smoke.overlap_witness(result, {'b'*64}, [line])
     assert not smoke.overlap_witness(result, {attempt}, [line.replace('2590', '400')])
     assert not smoke.overlap_witness(result, {attempt}, [line, line])
+    assert not smoke.overlap_witness(result, {attempt}, [line.replace('2590.0', 'UNKNOWN')])
     result['polls'][2].update(http=503)
     assert not smoke.overlap_witness(result, {attempt}, [line])
 
@@ -131,3 +134,9 @@ def test_c_cash_cap_and_restore_preserve_original_unknown_hold():
     assert restored['policy'] == policy(BASELINE)
     with pytest.raises(ValueError, match='drained journal'):
         ceiling.restore(budget, before, restricted, current)
+
+
+def test_an_unrecognized_history_result_cannot_pass():
+    cases = [dict(kind='case', case=name, status='PASS') for name, _ in smoke.CASES]
+    result = smoke.decide([*cases, dict(kind='history', status='INVALID'), dict(kind='cost')], [])
+    assert result['status'] == 'UNKNOWN'
