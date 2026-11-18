@@ -114,6 +114,8 @@ def test_invalid_runtime_options_produce_unavailable_before_driver(tmp_path,monk
 
 
 def test_build_context_uses_committed_allowed_blobs_only(tmp_path):
+    import os
+    import stat
     import subprocess
     from deploy.build import source_context
     repo=tmp_path/'repo';repo.mkdir();(repo/'scripts').mkdir()
@@ -136,7 +138,16 @@ def test_build_context_uses_committed_allowed_blobs_only(tmp_path):
     (repo/'eval/lio_simulated_user/core.py').write_text('DIRTY_UNREVIEWED=True\n')
     (repo/'scripts/operator-key.pem').write_text('synthetic-untracked-secret')
     (repo/'scripts/untracked-note.log').write_text('synthetic-log')
-    destination=tmp_path/'context';destination.mkdir();source_context(repo,destination)
+    destination=tmp_path/'context'
+    previous_umask=os.umask(0o077)
+    try:
+        destination.mkdir()
+        source_context(repo,destination)
+    finally:
+        os.umask(previous_umask)
+    assert stat.S_IMODE(destination.stat().st_mode)==0o700
+    for path in destination.rglob('*'):
+        assert stat.S_IMODE(path.stat().st_mode)==(0o755 if path.is_dir() else 0o644), path
     assert (destination/'scripts/module.py').read_text()=='COMMITTED=True\n'
     assert sorted(p.name for p in (destination/'scripts').iterdir())==['module.py']
     assert sorted(str(path.relative_to(destination)) for path in destination.rglob('*') if path.is_file())==[

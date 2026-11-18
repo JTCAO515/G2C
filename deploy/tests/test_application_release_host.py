@@ -65,3 +65,23 @@ def test_incident_candidate_cannot_omit_either_original_fix_approval():
             verify_cutover_evidence(
                 unexpected_lookup, DOUBLE_FIX_SOURCE, {"pr_number": primary}
             )
+
+
+
+def test_release_checks_remote_evidence_before_claiming_local_cutover(tmp_path,monkeypatch):
+    import json
+    from deploy.hk import application_release_host as host
+
+    stage = tmp_path/'gate.json'
+    source='a'*40
+    stage.write_text(json.dumps(dict(source=source,previous_source='b'*40)))
+    monkeypatch.setattr(host,'ROOT',tmp_path)
+
+    def failed_remote_evidence(github, selected_source, gate):
+        assert selected_source == source
+        assert not (tmp_path/'probes/application-deploy.lock').exists()
+        raise ValueError('original remote evidence rejected')
+
+    monkeypatch.setattr(host,'verify_cutover_evidence',failed_remote_evidence)
+    with pytest.raises(ValueError,match='original remote evidence rejected'):
+        host.main([str(stage),'--apply'])

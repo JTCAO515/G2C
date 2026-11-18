@@ -204,6 +204,19 @@ def main(argv=None):
             )
         )
 
+    # GitHub evidence does not need ownership of the local cutover lock.
+    def github(path):
+        with urlopen(
+            Request(
+                "https://api.github.com/repos/" + REPOSITORY + "/" + path,
+                headers={"Accept": "application/vnd.github+json"},
+            ),
+            timeout=20,
+        ) as r:
+            return json.load(r)
+
+    verify_cutover_evidence(github, source, gate)
+
     lock = (ROOT / "probes/application-deploy.lock").open("a")
     os.chmod(lock.name, 0o600)
     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -221,17 +234,6 @@ def main(argv=None):
     assert re.fullmatch("[a-f0-9]{40}", gate["review_approved_head"])
     assert gate["source_bytes_equal"] and gate["imported_source_bytes_equal"]
 
-    def github(path):
-        with urlopen(
-            Request(
-                "https://api.github.com/repos/" + REPOSITORY + "/" + path,
-                headers={"Accept": "application/vnd.github+json"},
-            ),
-            timeout=20,
-        ) as r:
-            return json.load(r)
-
-    verify_cutover_evidence(github, source, gate)
     require_release_window(gate["starts_at"], gate["ends_at"], now)
     new = inspect("g2c-beta:" + source)
     assert new["Id"] == gate["image_id"] and new["Architecture"] == "amd64"

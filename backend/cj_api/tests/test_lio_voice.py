@@ -3,7 +3,7 @@ from types import SimpleNamespace
 import unittest
 
 from cj_api.lio_dialogue_routes import _message
-from cj_message.lio_context import PERSONA, answer_prompt, display_answer
+from cj_message.lio_context import PERSONA, UNSETTLED_VISIBLE_ANSWER, answer_prompt, display_answer
 from cj_message.lio_timeline import TimelineMessage
 
 
@@ -82,6 +82,24 @@ class LioVoice(unittest.TestCase):
         ):
             with self.subTest(text=text):
                 self.assertIsNone(display_answer(text, 'en'))
+
+    def test_terminal_failure_withholds_already_streamed_prefix(self):
+        for locale, prefix in (('zh', '可以先逛一个街区。'), ('en', 'Start by visiting one neighborhood.')):
+            item = TimelineMessage('streamed', 'original', 1, 'Travel tips?', locale)
+            cases = (
+                ('unknown', (), False, 'failed', ''),
+                ('failed', (), False, 'failed', ''),
+                ('running', (), True, 'failed', ''),
+                ('running', (), False, 'answering', prefix),
+                ('unknown', (UNSETTLED_VISIBLE_ANSWER,), False, 'completed', prefix),
+            )
+            for status, effects, expired, projected, answer in cases:
+                with self.subTest(locale=locale, status=status, expired=expired, projected=projected):
+                    state = SimpleNamespace(status=status, text=prefix, draft_outcome=None,
+                                            effects=effects, budget_exhausted_stage='none')
+                    row = _message(item, state, expired=expired)
+                    self.assertEqual((row['status'], row['answer']), (projected, answer))
+                    self.assertEqual(state.text, prefix)
 
     def test_supplier_interfaces_include_ports_and_query_only_urls(self):
         for address in (
