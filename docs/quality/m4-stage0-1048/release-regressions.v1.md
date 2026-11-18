@@ -22,7 +22,8 @@
 - 进件、讨论的原组合执行回执分别为
   [503→200](https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6968967148)和
   [正常响应及缺 DONE](https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6969237889)。
-  后续改动以候选本身的并发用例为准。
+  [PR #1181](https://github.com/JTCAO515/G2C/pull/1181) 已把签名 PG 并发用例接入下方
+  `lio_projection`，含原进件、讨论、截断、Memory 与日期草稿。后续改动以候选自己的运行结果为准。
 
 ```sh
 CJ_ENV=local uv run --locked python -B -m pytest -q \
@@ -71,6 +72,23 @@ uv run --locked python -B scripts/pg_suites.py lio_failed_history
 目录运行已授权的本机模拟器夹具。有效签发后应进同一账号 Home，冷启动保留原对话与草稿，
 不要求旧 starter，也无新业务消息。使用 `--scenario malformed` 核无效响应应安全拒绝，
 保留诊断而不创建会话。实际香港短码登录与真机七项另记其原件。
+
+## 冒烟 API 请求媒体类型 / Smoke request media type
+
+[首轮冒烟](https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6974512936) 的身份请求用
+`application/json` 提交原 `/v1/lio/messages`，被原路由以 415 拒绝。C 判工具失败，产品问答、
+并发和真机均 UNRUN。回归须经原路由验证同一请求文档的两种媒体类型：错误类型 415 且未派
+业务消息，`application/octet-stream` 收到绑定原 ID 的 ACK。ACK 在此只证明请求进入原接口。
+
+B 的 [PR #1184](https://github.com/JTCAO515/G2C/pull/1184) 在候选中加入了
+`deploy/tests/test_server_smoke.py::test_smoke_post_is_accepted_by_the_original_lio_wire`。
+[R 已独立跑过原路由对照](https://github.com/JTCAO515/G2C/pull/1184#issuecomment-6974549319)。
+在含该测试的候选本地运行：
+
+```sh
+uv run --locked python -B -m pytest -q \
+  deploy/tests/test_server_smoke.py::test_smoke_post_is_accepted_by_the_original_lio_wire
+```
 
 ## 复核记录
 
