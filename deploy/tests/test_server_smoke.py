@@ -228,3 +228,48 @@ def test_smoke_reads_preserved_history_through_the_original_cursor(monkeypatch):
                            lambda: True)
     assert result['status'] == 'PASS'
     assert visited == [None, ['opaque-token']]
+
+
+@pytest.mark.parametrize(('action', 'admitted', 'seconds_short', 'reason'), [
+    ('preflight', False, 0, 'synthetic_session_denied'),
+    ('run', False, 0, 'synthetic_session_denied'),
+    ('preflight', True, 1, 'synthetic_session_window_too_short'),
+    ('run', True, 1, 'synthetic_session_window_too_short'),
+])
+def test_ineligible_session_stops_before_opening_the_smoke_budget(
+        monkeypatch, capsys, action, admitted, seconds_short, reason):
+    import io
+    import sys
+    from types import SimpleNamespace
+
+    from cj_api import local_worker_context
+    from cj_auth.interfaces import AdmissionDecision, AdmissionReason, AdmissionStatus, TrustedPrincipal
+    from cj_usage import authorization_budget
+    from deploy.hk import configuration
+
+    end = datetime(2026, 11, 18, 12, 25, tzinfo=timezone.utc)
+    principal = TrustedPrincipal('issuer', 'synthetic', 'audience', 0, 0,
+                                 int(end.timestamp()) - seconds_short)
+    decision = (AdmissionDecision(AdmissionStatus.ALLOWED, AdmissionReason.ACCEPTED, principal)
+                if admitted else AdmissionDecision(AdmissionStatus.DENIED, AdmissionReason.IDENTITY_INVALID))
+    runtime = SimpleNamespace(auth=None, demo_subjects=(), close=lambda: None)
+    monkeypatch.setattr(configuration, 'authorization', lambda: None)
+    monkeypatch.setattr(configuration, 'load_secret_environment', lambda role: None)
+    monkeypatch.setattr(configuration.Runtime, 'load', lambda *args, **kwargs: runtime)
+    monkeypatch.setattr(authorization_budget, 'AuthorizationBudget',
+                        lambda *args, **kwargs: pytest.fail('smoke budget opened'))
+    monkeypatch.setattr(local_worker_context, 'checker_for',
+                        lambda *args, **kwargs: SimpleNamespace(check=lambda token: decision))
+    monkeypatch.setattr(ceiling, 'budget_state', lambda *args: pytest.fail('smoke budget accessed'))
+    monkeypatch.setattr(smoke, 'run', lambda *args: pytest.fail('smoke started'))
+    monkeypatch.setattr(sys, 'argv', ['server_smoke', action])
+    monkeypatch.setattr(sys, 'stdin', io.TextIOWrapper(io.BytesIO(json.dumps({
+        'access_token': 'synthetic-fixture',
+        'starts_at': '2026-11-18T12:00:00+00:00',
+        'ends_at': end.isoformat(),
+    }).encode())))
+
+    assert smoke.main() == 3
+    record = json.loads(capsys.readouterr().out)
+    assert record == dict(kind='batch', status='UNRUN', reason=reason)
+    assert smoke.decide([record], []) == dict(status='UNRUN', concurrency='UNRUN')
