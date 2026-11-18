@@ -26,6 +26,7 @@ class ReadOnlyAnswers(unittest.TestCase):
         for locale,text in (
             ('zh','你好！'),('en','Hi there!'),
             ('zh','北京是中国的首都吗？'),('en','Is Beijing the capital of China?'),
+            ('en','What is the capital of China?'),
             ('zh','你能提供什么旅行帮助？'),('en','What travel help can you offer?'),
         ):
             with self.subTest(locale=locale,text=text):
@@ -33,6 +34,21 @@ class ReadOnlyAnswers(unittest.TestCase):
                 wire.update(planning_request_index=None,needs_tools=False)
                 published,events,lookups,result=run(wire,text,locale=locale)
                 self.assertEqual((published,events,lookups,result),([],[],[],None))
+
+    def test_capital_question_with_explicit_itinerary_reaches_planning(self):
+        for locale,city,text in (
+            ('en','Beijing','What is the capital of China. Plan three days in Beijing.'),
+            ('en','Beijing','What is the capital of China and plan three days in Beijing'),
+            ('zh','北京','北京是中国的首都吗？请规划北京三日游。'),
+        ):
+            with self.subTest(locale=locale,text=text):
+                wire=flow(text,city=city,days=3,intent='plan',questions=())
+                wire.update(planning_request_index=0,needs_tools=False)
+                published,events,_,result=run(wire,text,locale=locale)
+                self.assertEqual(published,[])
+                self.assertIsNotNone(result)
+                for day in (1,2,3):
+                    self.assertIn('第'+str(day)+'天'if locale=='zh'else'Day '+str(day),answer(events))
 
     def test_followup_rejected_at_destination_projection_uses_general_answer_without_save(self):
         for locale,first,current,city in (

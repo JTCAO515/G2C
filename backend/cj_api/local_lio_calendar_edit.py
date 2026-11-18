@@ -13,7 +13,7 @@ from cj_usage.local_provider_exit import BudgetExceeded
 from .lio_calendar_edit import select_calendar_edit
 from .lio_planning_grounding import planning_withdrawn
 from .local_lio_calendar_source import LioCalendarSource
-from .local_lio_edit import LioEdit,_bind_current
+from .local_lio_edit import LioEdit,_bind_current,_rejected_change
 
 
 class LioCalendarEdit:
@@ -66,9 +66,8 @@ class LioCalendarEdit:
             state,_=worker._step(binding,publish,lambda receipt:'trip_proposal:'+receipt.proposal_id,
                                  draft=True,publication_deadline=deadline)
         except DraftRejected:
-            state=worker._event(binding,worker.runs.snapshot(binding),'draft_outcome','validation_failed')
-            return answer(worker,binding,state,locale,'这次没能更新行程，原安排保留。想调整哪一项？',
-                          'I could not update the itinerary; the original is kept. Which stop would you like to adjust?')
+            return _rejected_change(worker,binding,locale,'这次没能更新行程，原安排保留。想调整哪一项？',
+                                    'I could not update the itinerary; the original is kept. Which stop would you like to adjust?')
         except BudgetExceeded:
             return worker._event(binding,worker._budget_rejection(binding,'draft'),'completed')
         finally:worker.drafts=previous

@@ -216,9 +216,36 @@ def exercise(root,conninfo):
             assert lookup.status_code==200 and lookup.json()['receipt']['version']=='LIO-message-receipt.3'
             _,_=send('calendar-'+locale+'-edit','把第二天下午换成「成都博物馆」' if locale=='zh' else 'Replace the afternoon of day 2 with "Chengdu Museum".',cid)
             assert read(cid)==planned
-            _,_=send('calendar-'+locale+'-edit-exact',
-                '把第二天下午「人民公园」（14:00-15:00）换成「成都博物馆」'if locale=='zh'else
-                'Replace "People Park（人民公园）" on the afternoon of day 2 (14:00-15:00) with "Chengdu Museum".',cid)
+            edit_text=('把第二天下午「人民公园」（14:00-15:00）换成「成都博物馆」'if locale=='zh'else
+                'Replace "People Park（人民公园）" on the afternoon of day 2 (14:00-15:00) with "Chengdu Museum".')
+            date_text='明天开始'if locale=='zh'else'Start tomorrow'
+
+            from cj_agent.draft import DraftRejected
+            from cj_draft.grouped_plan import LioGroupedCalendarPublisher
+
+            def rejected_change(cid,plan,text,publisher_type,method,mid,*,calendar=True):
+                with patch.object(publisher_type,method,side_effect=DraftRejected('fixture rejects original proposal'))as publisher:
+                    send(mid,text,cid,calendar=calendar)
+                assert publisher.call_count==1
+                route='/v3/lio/timeline'if calendar else'/v2/lio/timeline'
+                response=api.get(route,params={'conversation_id':cid},headers=headers)
+                assert response.status_code==200,response.text
+                message=response.json()['messages'][-1]
+                assert message['message_id']==mid and message['status']=='completed', (mid,message['status'])
+                assert message['trip'] is None and message['answer'].endswith('？'if locale=='zh'else'?')
+                assert ('保留'if locale=='zh'else'kept') in message['answer']
+                with psycopg.connect(**conninfo)as connection:
+                    assert connection.execute("SELECT e.value FROM cj_run_event e JOIN cj_message_receipt m USING(scope,run_id) "
+                        "WHERE m.scope=%s AND m.message_id=%s AND e.kind='draft_outcome'",(scope,mid)).fetchall()==[('validation_failed',)]
+                assert read(cid,calendar=calendar)==plan
+
+            rejected_change(cid,planned,edit_text,LioGroupedCalendarPublisher,'publish_edit_for_message',
+                            'calendar-'+locale+'-edit-rejected')
+            rejected_change(cid,planned,date_text,LioGroupedCalendarPublisher,'convert_for_message',
+                            'calendar-'+locale+'-date-rejected')
+            print('PASS native3 '+locale+' rejected changes disclose a next step and retain the original Trip',flush=True)
+
+            _,_=send('calendar-'+locale+'-edit-exact',edit_text,cid)
             edited=read(cid);assert edited['current']['trip_version']==2,edited
             before=[item for day in card['days'] for item in day['items']]
             after=[item for day in edited['current']['days'] for item in day['items']]
@@ -278,6 +305,16 @@ def exercise(root,conninfo):
                 answer=timeline['messages'][-1]['answer']
                 assert fixture_pace in answer and answer.endswith('？'if locale=='zh'else'?')
                 print('PASS native WP1 '+locale+' '+pace.value+' '+str(fixture_days)+' days, actual factory/wire/signed save/summary',flush=True)
+            from cj_draft.lio_plan import LioSourceWindowPublisher
+            fixture_days=3
+            fixture_pace='轻松'if locale=='zh'else'relaxed'
+            fixture_start='2026-12-01'
+            legacy_text=('规划成都三天，节奏轻松，2026-12-01出发'if locale=='zh'else
+                         'Plan three days in Chengdu at a relaxed pace, starting 2026-12-01.')
+            legacy_cid,_=send('legacy-'+locale+'-rejected-base',legacy_text,calendar=False)
+            rejected_change(legacy_cid,read(legacy_cid,calendar=False),edit_text,LioSourceWindowPublisher,
+                            'publish_edit_for_message','legacy-'+locale+'-edit-rejected',calendar=False)
+            print('PASS native2 '+locale+' rejected edit keeps the original Trip and displays its next step',flush=True)
             fixture_days=3;fixture_pace=None;fixture_start=None
         # The native v3 host must keep C's original confirmation verifier;
         # having reached an authenticated model draft cannot grant a save.
