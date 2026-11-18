@@ -25,11 +25,15 @@ async def reject_unmocked_connection(*args, **kwargs):
 
 
 @patch('asyncio.open_connection', new=reject_unmocked_connection)
-def check_dispatch(api, headers, database, auth, subject, scope, memory, root, *, before_send=False):
+def check_dispatch(api, headers, database, auth, subject, scope, memory, root, *,
+                   before_send=False, cancel_before_send=False):
     subjects = frozenset({subject})
     signer = load_confirmation_signer(auth)
     cases = [('intake', False, False), ('discussion', False, False),
              ('memory', False, False), ('draft', False, False)]
+    if cancel_before_send:
+        assert before_send
+        cases = cases[:1]
     if not before_send:
         cases[2:2] = [('discussion', True, False), ('discussion', False, True)]
     timeline_statuses = {}
@@ -59,6 +63,18 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root, *
             received = api.post('/v2/lio/messages', headers=headers, content=body)
             assert received.status_code == 200, received.text
             return received.json()['conversation_id']
+
+        def cancel(mid):
+            return api.post('/v2/run-cancellations', headers={**headers, 'Content-Type': 'application/json'},
+                json={'version':'RUN-cancel.2','message_id':mid})
+
+        if cancel_before_send:
+            control = 'dispatch-cancel-pending-control'
+            send(control, '去成都玩三天')
+            response = cancel(control)
+            assert response.status_code == 200 and response.json()['status'] == 'cancelled'
+            assert [outcome.status for outcome in worker.process()] == ['cancelled']
+            assert budget.inspect() == []
 
         seed_mid = 'dispatch-' + case + '-previous'
         mid = 'dispatch-' + case + '-pending'
@@ -159,20 +175,36 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root, *
                 assert request_waiting.wait(10), ('provider request did not reach ' + paused, future.result(timeout=2))
                 if before_send:
                     assert len(sent) == expected_before_connection, 'POST occurred during the connection pause'
-                with ThreadPoolExecutor(max_workers=3) as readers:
-                    pages = tuple(readers.map(lambda _: timeline(), range(3)))
-                timeline_statuses[case] = tuple(page.status_code for page in pages)
-                for page in pages:
-                    if page.status_code != 200:
-                        continue
-                    original, pending = page.json()['messages']
-                    assert (original['message_id'], original['status']) == (seed_mid, 'completed')
-                    assert (pending['message_id'], pending['status'], pending['answer'], pending['trip']) == (
-                        mid, 'answering', ordinary if paused == 'memory' else '', None,
-                    )
+                if cancel_before_send:
+                    prior_fees = budget.inspect()
+                    stopped = cancel(mid)
+                    assert sent == [], 'connection wait wrote a POST before the cancellation completed'
+                else:
+                    with ThreadPoolExecutor(max_workers=3) as readers:
+                        pages = tuple(readers.map(lambda _: timeline(), range(3)))
+                    timeline_statuses[case] = tuple(page.status_code for page in pages)
+                    for page in pages:
+                        if page.status_code != 200:
+                            continue
+                        original, pending = page.json()['messages']
+                        assert (original['message_id'], original['status']) == (seed_mid, 'completed')
+                        assert (pending['message_id'], pending['status'], pending['answer'], pending['trip']) == (
+                            mid, 'answering', ordinary if paused == 'memory' else '', None,
+                        )
             finally:
                 release.set()
             outcome, = future.result(timeout=10)
+        if cancel_before_send:
+            assert stopped.status_code == 200, ('owner stop during model connection', stopped.status_code)
+            assert stopped.json()['status'] == 'cancelled'
+            assert (outcome.status, outcome.proposal_id, sent) == ('cancelled', None, [])
+            assert budget.inspect() == prior_fees
+            page = timeline()
+            assert page.status_code == 200
+            row = page.json()['messages'][-1]
+            assert (row['message_id'], row['answer'], row['trip'], row['memory']) == (mid, '', None, None)
+            print('PASS signed owner stop while connecting blocks the original POST and leaves the original hold', flush=True)
+            return
         assert outcome.status == ('unknown' if missing_done or missing_model else 'completed')
         path = {'memory': ['answer', 'memory'], 'draft': ['intake', 'draft']}.get(paused, ['intake', 'discussion'])
         assert sent == path, sent
