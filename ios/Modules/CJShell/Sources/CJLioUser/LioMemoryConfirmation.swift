@@ -4,6 +4,17 @@ import CJRunClient
 import Foundation
 import SwiftUI
 
+private struct LioMemorySuggestionsKey: EnvironmentKey {
+    static let defaultValue: [String] = []
+}
+
+public extension EnvironmentValues {
+    var lioMemorySuggestions: [String] {
+        get { self[LioMemorySuggestionsKey.self] }
+        set { self[LioMemorySuggestionsKey.self] = newValue }
+    }
+}
+
 enum LioMemoryFeedbackKind: Equatable {
     case remembered, changed, saveUnavailable, readUnavailable
 
