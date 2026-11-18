@@ -24,6 +24,10 @@ from deploy.hk import server_smoke_budget as ceiling
     ('en.plan', 'Day 1: Forbidden City.\nDay 2: TBD.\nDay 3: Summer Palace.', False),
     ('zh.plan', '第一天：故宫没有安排。\n第二天：长城没有安排。\n第三天：天坛没有安排。', False),
     ('en.plan', 'Day 1: No activity is planned at the Forbidden City.\nDay 2: No activity is planned at the Great Wall.\nDay 3: No activity is planned at the Temple of Heaven.', False),
+    ('zh.plan', '第一天：不建议参观故宫。\n第二天：不建议游览长城。\n第三天：不建议参观天坛。', False),
+    ('en.plan', 'Day 1: You should not visit the Forbidden City.\nDay 2: Do not visit the Great Wall.\nDay 3: Avoid visiting the Temple of Heaven.', False),
+    ('zh.plan', '第一天：你想参观故宫吗？\n第二天：你想游览长城吗？\n第三天：你想参观天坛吗？', False),
+    ('en.plan', 'Day 1: Would you like to visit the Forbidden City?\nDay 2: Would you like to tour the Great Wall?\nDay 3: Would you like to visit the Temple of Heaven?', False),
     ('en.plan', 'Could you give me your hotel details first? Then I can plan all three days.', False),
 ])
 def test_real_body_is_required(case, body, valid):

@@ -56,13 +56,17 @@ NEGATED_CAPABILITIES = re.compile(
     r'(?:offer|provide) no (?:travel |trip )?(?:assistance|planning|help)', re.I
 )
 DAY_ACTIVITY = re.compile(
-    r'参观|游览|游玩|游逛|游览|乘车|坐车|坐地铁|步行|登上|爬山|漫步|散步|逛|前往|抵达|体验|品尝|欣赏|走访|'
+    r'参观|游览|游玩|游逛|乘车|坐车|坐地铁|步行|登上|爬山|漫步|散步|逛|前往|抵达|体验|品尝|欣赏|走访|'
     r'\b(?:visit|walk|tour|take|climb|ride|explore|stroll|see|browse|stop|spend|start|head|admire)\b', re.I
 )
 NO_DAY_ACTIVITY = re.compile(
-    r'没有(?:任何)?安排|并未安排|不安排|未安排|取消|暂无|'
+    r'没有(?:任何)?安排|并未安排|不安排|未安排|取消|暂无|不建议|不要|不去|不参观|不游览|'
     r'\b(?:no (?:activity|activities|plans?)|nothing (?:is )?planned|not (?:planned|scheduled)|'
-    r'do not (?:visit|go)|skip)\b', re.I
+    r"(?:do|should|can|will) not|(?:don|shouldn|won|can)[’']t|avoid|skip)\b", re.I
+)
+DAY_QUESTION = re.compile(
+    r'[?？]|(?:吗|么|呢)\s*[。.]?\s*$|你(?:想|要不要)|是否|'
+    r'\b(?:would you like|do you want|want to know|are you planning)\b', re.I
 )
 WIRE_TIMING = re.compile(
     r'\bM4_MODEL_WIRE_TIMING attempt_sha256=([a-f0-9]{64}) '
@@ -137,9 +141,10 @@ def valid_answer(case, answer):
         return False
     for index, match in enumerate(headings):
         day = answer[match.end():headings[index+1].start() if index < 2 else len(answer)]
-        activities = re.split(r'[\n。！？.!?]+', day)
+        activities = re.split(r'(?<=[。！？.!?])|\n', day)
         if not any(BEIJING_PLACE.search(clause) and DAY_ACTIVITY.search(clause)
-                   and not NO_DAY_ACTIVITY.search(clause) for clause in activities):
+                   and not NO_DAY_ACTIVITY.search(clause) and not DAY_QUESTION.search(clause)
+                   for clause in activities):
             return False
     return True
 
