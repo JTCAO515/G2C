@@ -565,6 +565,11 @@ class RealTools:
                 self._require_national(operation.binding.scope)
             if turn_profile==M4_NATIVE_TURN_STREAM and operation.binding.scope not in self.streaming_scopes:
                 raise BudgetUnknown('original model streaming subject not admitted')
+            # Choose the handoff from the bound original operation, not from
+            # the discussion prompt or user text. The prepared input stays fixed.
+            discussion_handoff = (answer_preparation and not native_turn
+                                  and operation.operation_key == 'model.lio_discussion.0'
+                                  and operation.registration_id == 'model.answer')
             def admitted(*,memory_check=None):
                 if wrapped:
                     if memory_check is None:provider._check()
@@ -581,7 +586,7 @@ class RealTools:
                     stream=self.services.model.invoke(inputs['messages'],inputs['system'],operation.command.attempt_id,
                         tools=inputs['native_tools'],receipt=metadata,guard=checked,native_reply=native_reply,
                         native_turn_profile=inputs.get('native_turn_profile'),final_answer=inputs.get('external_tools_disabled',False),
-                        release_after_send=inputs.get('response_mode')=='lio-memory-json.1',
+                        release_after_send=discussion_handoff or inputs.get('response_mode')=='lio-memory-json.1',
                         lio_answer=inputs.get('answer_format_profile')=='lio-user.1',
                         **({'structured_profile':inputs['structured_profile']} if 'structured_profile' in inputs else {}),
                         **({'exploration_schema_sha256':inputs['response_format_sha256']} if exploration else {}),
