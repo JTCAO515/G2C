@@ -45,11 +45,20 @@ def run():
             else:
                 checkpoint.export(package,control,base=daily_base(control,root,state['previous']))
             state['state']='EXPORTED';checkpoint.atomic(path,state)
-        if state['state']=='EXPORTED':
-            result=oss_backup.upload_package(package,root/'upload-journal')
-            state['state']='COMPLETE';checkpoint.atomic(path,state)
-            print(json.dumps(dict(status='COMPLETE',day=state['day'],objects=result,actual_cost='UNKNOWN')))
-        else:print(json.dumps(dict(status='READ_ONLY_COMPLETE',day=state['day'],actual_cost='UNKNOWN')))
+        if state['state']!='EXPORTED':
+            print(json.dumps(dict(status='READ_ONLY_COMPLETE',day=state['day'],actual_cost='UNKNOWN')))
+            return
+    # Object-local journal claims prevent a second PUT while OSS is in flight.
+    result=oss_backup.upload_package(package,root/'upload-journal')
+    complete={**state,'state':'COMPLETE'}
+    with checkpoint.lock(root):
+        current=checkpoint.verified(path)
+        if current==complete:
+            print(json.dumps(dict(status='READ_ONLY_COMPLETE',day=state['day'],actual_cost='UNKNOWN')))
+            return
+        if current!=state:raise ValueError('original_daily_backup_state_changed')
+        checkpoint.atomic(path,complete)
+    print(json.dumps(dict(status='COMPLETE',day=state['day'],objects=result,actual_cost='UNKNOWN')))
 
 
 if __name__=='__main__':
