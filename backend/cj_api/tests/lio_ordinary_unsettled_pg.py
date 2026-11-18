@@ -41,11 +41,11 @@ def wire_delta(profile, locale, case):
 def check_ordinary(api, headers, database, auth, subject, scope, memory, root):
     subjects = frozenset({subject})
     signer = load_confirmation_signer(auth)
-    missing = []
+    missing, leaked = [], []
     cases = (
         ('zh','complete','done'), ('en','complete','done'),
         ('en','complete','usage'), ('en','complete','model'),
-        ('en','truncated','done'), ('en','tool','done'),
+        ('zh','truncated','done'), ('en','truncated','done'), ('en','tool','done'),
     )
     with database.connect(scope) as db:
         initial_memory = db.execute('SELECT count(*) FROM cj_memory_item').fetchone()[0]
@@ -73,6 +73,7 @@ def check_ordinary(api, headers, database, auth, subject, scope, memory, root):
             assert received.status_code == 200
             cid = received.json()['conversation_id']
             attempts = []
+            streamed_truncation = profile == 'streaming' and case == 'truncated'
 
             async def wire(config,raw,guard,observation):
                 assert guard() is True
@@ -84,8 +85,14 @@ def check_ordinary(api, headers, database, auth, subject, scope, memory, root):
                 yield _M4_REQUEST_SENT
                 observation['http_status'] = 200
                 finish = 'length' if case=='truncated' else 'tool_calls' if case=='tool' or profile=='compact' else 'stop'
+                delta = wire_delta(profile, locale, case)
+                if streamed_truncation:
+                    first = dict(id=tag, model=M4_MODEL,
+                        choices=[dict(index=0, delta=delta, finish_reason=None)])
+                    yield ('data: '+json.dumps(first,ensure_ascii=False)+'\n\n').encode('utf-8')
+                    delta = {}
                 value = dict(id=tag,model=M4_MODEL,
-                    choices=[dict(index=0,delta=wire_delta(profile,locale,case),finish_reason=finish)],
+                    choices=[dict(index=0,delta=delta,finish_reason=finish)],
                     usage=dict(prompt_tokens=100,completion_tokens=100,total_tokens=200))
                 if omitted!='done':del value[omitted]
                 yield ('data: '+json.dumps(value,ensure_ascii=False)+'\n\n').encode('utf-8')
@@ -114,11 +121,15 @@ def check_ordinary(api, headers, database, auth, subject, scope, memory, root):
                     assert count>=2, 'the streamed prefix was not exercised'
             else:
                 assert message['status']=='failed' and not retained
+                if streamed_truncation:
+                    assert native.text and REPLIES[locale].startswith(native.text)
+                if message['answer']:
+                    leaked.append(tag)
     with database.connect(scope) as db:
         assert db.execute('SELECT count(*) FROM cj_memory_item').fetchone()[0]==initial_memory
         assert db.execute('SELECT count(*) FROM cj_trip_record').fetchone()[0]==initial_trips
         assert db.execute('SELECT count(*) FROM cj_message_needs_binding').fetchone()[0]==initial_bindings
-    assert not missing, 'complete ordinary replies hidden: '+', '.join(missing)
+    assert not (missing or leaked), dict(complete_replies_hidden=missing, rejected_replies_exposed=leaked)
     print('PASS ordinary missing DONE/usage/model in 3 modes; original UNKNOWN/INTENT and no writes',flush=True)
 
 
