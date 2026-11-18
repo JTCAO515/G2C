@@ -91,6 +91,14 @@ private nonisolated final class WarmRootHTTP: URLProtocol, @unchecked Sendable {
                         }
                         .font(.caption2)
                     }
+                    if ProcessInfo.processInfo.environment["B691_COLD_DENIAL_NOTES"] == "1" {
+                        HStack {
+                            Button("Inspect problem") { inspectProblem() }
+                                .accessibilityIdentifier("fixture.root.inspect-problem")
+                            Text(inspectedProblem).accessibilityIdentifier("fixture.root.inspected-problem")
+                        }
+                        .font(.caption2)
+                    }
                     HStack {
                         Text(bootstrap).accessibilityIdentifier("fixture.root.bootstrap")
                         Text(acknowledgedMode).accessibilityIdentifier("fixture.root.mode")
