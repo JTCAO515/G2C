@@ -49,8 +49,15 @@ def test_arrival_after_ingress_close_recovers_only_api_without_old_dependencies(
         checks=[dict(name=str(i),state='SUCCESS')for i in range(13)],
         starts_at=stamp(now-timedelta(minutes=1)),ends_at=stamp(now+timedelta(minutes=30)))))
     monkeypatch.setattr(application_release,'Path',lambda value:tmp_path if value=='/srv/g2c-beta'else Path(value))
-    monkeypatch.setattr(application_release, 'verify_release_ci', lambda github, sha: None)
-    monkeypatch.setattr(application_release, 'verify_release_review', lambda github, sha, supplied: None)
+    evidence_order=[]
+    flock=application_release.fcntl.flock
+    def record_flock(fd, operation):
+        evidence_order.append('lock')
+        return flock(fd, operation)
+    monkeypatch.setattr(application_release.fcntl, 'flock', record_flock)
+    monkeypatch.setattr(application_release, 'verify_release_ci', lambda github, sha: evidence_order.append('ci'))
+    monkeypatch.setattr(application_release, 'verify_release_review',
+                        lambda github, sha, supplied: evidence_order.append('review'))
     commands=[];proofs=0;api_running=True
     def run(args,**unused):
         nonlocal proofs,api_running
@@ -74,6 +81,7 @@ def test_arrival_after_ingress_close_recovers_only_api_without_old_dependencies(
     monkeypatch.setattr(application_release.subprocess,'run',run)
     with pytest.raises(AssertionError,match='original arrived during ingress close'):
         application_release.main([str(gate),'--apply'])
+    assert evidence_order==['ci', 'review', 'lock']
     assert api_running and proofs==2
     assert commands[-1][-4:]==['up','-d','--no-deps','api']
     assert all('migrate'not in command or '/export.py'in command for command in commands)
