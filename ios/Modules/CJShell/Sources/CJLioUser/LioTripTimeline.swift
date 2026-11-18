@@ -94,13 +94,14 @@ struct LioTripTimeline: View {
                 ScrollView(.horizontal) {
                     HStack(spacing: 8) {
                         ForEach(itinerary.days) { choice in
+                            let title = dayTitle(choice, language, calendar: itinerary.calendar)
                             Button {
                                 selectedDay = choice.number
                                 focusedStop = nil
                                 mapUnavailable = false
                             } label: {
-                                Text(dayTitle(choice, language, calendar: itinerary.calendar))
-                                    .font(.subheadline.weight(.semibold))
+                                RunReadableText(text: title, style: .subheadlineSemibold, color: ink)
+                                    .fixedSize()
                                     .padding(.horizontal, 16)
                                     .frame(minHeight: 44)
                                     .background(day.number == choice.number ? LioTheme.surfaceSunken : LioTheme.surface,
@@ -108,7 +109,7 @@ struct LioTripTimeline: View {
                                     .overlay { Capsule().stroke(LioTheme.hairline, lineWidth: 1) }
                             }
                             .buttonStyle(.plain)
-                            .foregroundStyle(LioTheme.ink)
+                            .accessibilityLabel(title)
                             .accessibilityAddTraits(day.number == choice.number ? [.isSelected] : [])
                             .accessibilityIdentifier("lio.trip.select-day.\(choice.number)")
                         }
