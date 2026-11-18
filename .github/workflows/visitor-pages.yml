@@ -1,0 +1,74 @@
+name: visitor-pages
+on:
+  pull_request:
+    paths:
+      - 'knowledge/visitor/**'
+      - '.github/workflows/visitor-pages.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'knowledge/visitor/**'
+      - '.github/workflows/visitor-pages.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: visitor-pages-${{ github.event_name == 'pull_request' && github.ref || 'main' }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - run: uv run --locked python -B -m unittest discover -s knowledge/visitor/site -p 'test_*.py'
+      - run: node --test knowledge/visitor/site/test_freshness.mjs
+      - run: uv run --locked python -B knowledge/visitor/site/build.py "$RUNNER_TEMP/visitor-pages"
+      - uses: actions/upload-pages-artifact@v4
+        if: github.event_name != 'pull_request'
+        with:
+          path: ${{ runner.temp }}/visitor-pages
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.publish.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Wait for exact main CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_id=''
+          for attempt in {1..12}; do
+            run_id=$(gh run list --workflow ci.yml --branch main --event push --commit "$GITHUB_SHA" --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+            if [[ -n "$run_id" ]]; then break; fi
+            sleep 10
+          done
+          test -n "$run_id"
+          gh run watch "$run_id" --exit-status --interval 60
+      - name: Refuse obsolete content
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          built=$(git log -1 --format=%H HEAD -- knowledge/visitor)
+          latest=$(git log -1 --format=%H origin/main -- knowledge/visitor)
+          test -n "$built" && test "$built" = "$latest"
+      - uses: actions/configure-pages@v5
+      - id: publish
+        uses: actions/deploy-pages@v4
