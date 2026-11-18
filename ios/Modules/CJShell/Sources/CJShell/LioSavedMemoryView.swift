@@ -15,6 +15,7 @@ public struct LioSavedMemoryView: View {
     @ScaledMetric(relativeTo: .headline) private var previewHeight = previewLineHeight * 3
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.lioMemorySuggestions) private var suggestions
 
     public init(host: TypedMemoryContainerHost, language: ShellLanguage) {
         self.host = host
@@ -36,6 +37,7 @@ public struct LioSavedMemoryView: View {
                         .padding(.bottom, 8)
                     ScrollView {
                         VStack(alignment: .leading, spacing: 20) {
+                            if !suggestions.isEmpty { memorySuggestions }
                             switch host.items {
                             case .unconfigured, .loading:
                                 ProgressView()
@@ -145,6 +147,30 @@ public struct LioSavedMemoryView: View {
                 }
             }
         }
+    }
+
+    private var memorySuggestions: some View {
+        let shape = RoundedRectangle(cornerRadius: LioTheme.Radius.card)
+        return VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+            Text(language.text("Suggestions from this chat", "当前对话的记忆建议"))
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("lio.memory.suggestions")
+            ForEach(suggestions.indices, id: \.self) { index in
+                Text(verbatim: suggestions[index])
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("lio.memory.suggestion.\(index)")
+            }
+            Text(language.text("Choose what to remember in Chat.", "在聊天里选择要记住的内容。"))
+                .font(.subheadline)
+                .foregroundStyle(LioTheme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .foregroundStyle(LioTheme.ink)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(LioTheme.Spacing.md)
+        .background(LioTheme.surface, in: shape)
+        .overlay { shape.stroke(LioTheme.hairline, lineWidth: 1).allowsHitTesting(false) }
     }
 
     private func memoryCards(_ saved: [TypedMemoryRead], pageHeight: CGFloat) -> some View {
