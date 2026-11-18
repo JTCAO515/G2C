@@ -62,13 +62,6 @@ class ExternalGuideSourceScopeTests(unittest.TestCase):
                               page.split('/')[0] + '//' + page.split('/')[2] + '/',
                               page.replace('https://', 'https://other.')))
 
-    def test_suzhou_delta_redirect_target_keeps_exact_url_and_venue_scope(self):
-        page = 'https://m.ctrip.com/webapp/you/sight/suzhou672/5577341.html?ext-shelfPage=ctrip_shelf_seo'
-        self._check_venue_source_scope(
-            page=page, city='suzhou-anhui', wrong_city='taizhou-zhejiang',
-            invalid_urls=(page + '&extra=1', page.replace('5577341', '5577342'),
-                          page.split('?')[0], page.replace('m.ctrip.com', 'other.ctrip.com')))
-
     def test_panda_official_attachment_keeps_exact_url_and_chengdu_venue_boundary(self):
         page = 'https://m.panda.org.cn/cn/education/trends/2025-01-17/8632.html'
         self._check_venue_source_scope(

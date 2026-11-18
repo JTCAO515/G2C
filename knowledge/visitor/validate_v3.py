@@ -50,7 +50,6 @@ VENUE_PAGE_CITIES = {
     "https://www.shenzhen-tickets.com/window-of-the-world/timings-opening-hours/": frozenset({"shenzhen"}),
     "https://www.traveloka.com/en-sg/activities/china/product/xixi-wetland-park-admission-ticket-peaceful-oasis-near-west-lake-7621127360134": frozenset({"hangzhou"}),
     "https://gs.ctrip.com/html5/you/sight/suzhou672/5577341.html": frozenset({"suzhou-anhui"}),
-    "https://m.ctrip.com/webapp/you/sight/suzhou672/5577341.html?ext-shelfPage=ctrip_shelf_seo": frozenset({"suzhou-anhui"}),
     "https://m.panda.org.cn/cn/education/trends/2025-01-17/8632.html": frozenset({"chengdu"}),
     "https://map.baidu.com/mobile/webapp/search/search/qt%3Ds%26wd%3D%E5%8F%B0%E5%B7%9E%E5%BA%9C%E5%9F%8E%E5%A2%99/": frozenset({"taizhou-zhejiang"}),
     "https://www.hzzx.gov.cn/cshz/content/2023-08/07/content_8595938.htm": frozenset({"hangzhou"}),
