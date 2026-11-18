@@ -36,13 +36,19 @@ def save(path,value):
     temporary.replace(path);sync_directory(path.parent)
 
 
+def _original_upload(journal,expected):
+    previous=json.loads(journal.read_bytes()) if journal.exists() else None
+    if previous is not None and previous.get('object')!=expected:raise ValueError('original_upload_binding_changed')
+    return previous
+
+
 def upload_file(client,path,key,journal):
+    from .checkpoint import lock
     authorization();path=Path(path);journal=Path(journal)
     limit=object_limit(key)
     if path.stat().st_size>limit:raise ValueError('recoverable_backup_size_limit_required')
     expected=dict(bucket=BUCKET,key=key,size=path.stat().st_size,sha256=checksum(path))
-    previous=json.loads(journal.read_bytes()) if journal.exists() else None
-    if previous is not None and previous.get('object')!=expected:raise ValueError('original_upload_binding_changed')
+    with lock(journal.parent):previous=_original_upload(journal,expected)
     try:head=client.head_object(oss.HeadObjectRequest(bucket=BUCKET,key=key))
     except oss.exceptions.OperationError as error:
         detail=error.unwrap()
@@ -55,10 +61,14 @@ def upload_file(client,path,key,journal):
         authorization()
         if client.get_object_acl(oss.GetObjectAclRequest(bucket=BUCKET,key=key)).acl!='private':
             raise ValueError('original_backup_object_not_private')
-        save(journal,dict(object=expected,state='RECEIVED'));return 'HEAD_CONFIRMED'
-    if previous is not None:
-        raise ValueError('original_upload_unknown_no_resend')
-    save(journal,dict(object=expected,state='INTENT'))
+        with lock(journal.parent):
+            if _original_upload(journal,expected) is None:raise ValueError('original_upload_journal_missing')
+            save(journal,dict(object=expected,state='RECEIVED'))
+        return 'HEAD_CONFIRMED'
+    with lock(journal.parent):
+        if previous is not None or _original_upload(journal,expected) is not None:
+            raise ValueError('original_upload_unknown_no_resend')
+        save(journal,dict(object=expected,state='INTENT'))
     authorization()
     with path.open('rb') as body:
         client.put_object(oss.PutObjectRequest(bucket=BUCKET,key=key,body=body,content_length=expected['size'],
