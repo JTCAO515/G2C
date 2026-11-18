@@ -177,10 +177,10 @@ def exercise(root,conninfo,*,saved_runs=(),generation=False,languages=('zh','en'
                     rows=db.execute("SELECT kind,value FROM cj_run_event WHERE scope=%s AND run_id=%s AND kind IN ('budget_denied','draft_outcome') ORDER BY sequence",(scope,outcome.run_id)).fetchall()
                     print(json.dumps(dict(fixture_failure_run=outcome.run_id,status=outcome.status,outcomes=rows)),flush=True)
         assert [outcome.status for outcome in outcomes]==[expected],outcomes
-    async def administrative_catalog(key,guard):
+    async def administrative_catalog(key,guard,*,send_under_fence):
         assert key==KEY and guard() is True
         return city_catalog()
-    with TestClient(app) as api,patch('cj_api.lio_city._catalog_exchange',side_effect=administrative_catalog):
+    with TestClient(app) as api,patch('cj_api.lio_city.catalog_response',side_effect=administrative_catalog):
         def send(mid,text,cid=None,*,expected='completed'):
             nonlocal current_text
             current_text=text

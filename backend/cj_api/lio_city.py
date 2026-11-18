@@ -139,18 +139,21 @@ def resolve(raw,name,province=None,normalized_name=None):
                             parameters=PARAMETERS,raw_response_sha256=sha256(raw).hexdigest()))
 
 
-async def _catalog_exchange(key,guard):
+async def catalog_response(key,guard,*,send_under_fence=None):
     writer=None
     try:
         async with asyncio.timeout(20):
             reader,writer=await asyncio.open_connection('restapi.amap.com',443,ssl=tls(),
                 server_hostname='restapi.amap.com',limit=16384)
-            if guard() is not True:raise BudgetUnknown('original city lookup authority unavailable')
             target='/v3/config/district?'+urlencode({**PARAMETERS,'key':key})
             # Reuse the established narrow Amap reader. No URL logger, proxy,
             # cookie, redirect, TLS key log, retry or ambient HTTP hook.
-            writer.write(('GET '+target+' HTTP/1.1\r\nHost: restapi.amap.com\r\nAccept: application/json\r\n'
-                          'Accept-Encoding: identity\r\nConnection: close\r\n\r\n').encode('ascii'))
+            def write():
+                if guard() is not True:raise BudgetUnknown('original city lookup authority unavailable')
+                writer.write(('GET '+target+' HTTP/1.1\r\nHost: restapi.amap.com\r\nAccept: application/json\r\n'
+                              'Accept-Encoding: identity\r\nConnection: close\r\n\r\n').encode('ascii'))
+            if send_under_fence is None:write()
+            else:await send_under_fence(write)
             await writer.drain()
             status,raw=await _read_response(reader,MAX_CATALOG_BYTES)
             if status!=200:raise BudgetUnknown('original city lookup HTTP outcome unavailable')
@@ -164,4 +167,4 @@ async def _catalog_exchange(key,guard):
 def fetch_catalog(key,guard):
     # Exactly one HTTP exchange after the original registered INTENT.
     if guard() is not True:raise BudgetUnknown('original city lookup authority unavailable')
-    return asyncio.run(_catalog_exchange(key,guard))
+    return asyncio.run(catalog_response(key,guard))

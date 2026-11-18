@@ -175,10 +175,10 @@ def exercise(root,conninfo):
     app=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context,account_admission=True,
         confirmation_signer=signer,demo_dialogue_subjects=subjects,lio_dialogue_subjects=subjects,lio_calendar_subjects=subjects)
     outside_headers={'Authorization':'Bearer '+dev_auth.token(auth,OUTSIDE,3600),'Content-Type':'application/octet-stream'}
-    async def exchange(key,guard):
+    async def exchange(key,guard,*,send_under_fence):
         assert key==KEY and guard() is True
         return city_catalog()
-    with TestClient(app) as api,patch('cj_api.lio_city._catalog_exchange',side_effect=exchange):
+    with TestClient(app) as api,patch('cj_api.lio_city.catalog_response',side_effect=exchange):
         denied=json.dumps(dict(version='LIO-message.3',message_id='calendar-unselected',text='Plan three days in Chengdu',locale='en',new_conversation=True)).encode()
         assert api.post('/v3/lio/messages',content=denied,headers=outside_headers).status_code==403
         assert api.get('/v3/lio/timeline',headers=outside_headers).status_code==403

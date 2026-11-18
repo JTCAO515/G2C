@@ -1,10 +1,11 @@
 """Signed timeline reads while the original provider response is deliberately held."""
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import ExitStack
 from datetime import datetime, timezone
 import json
 from threading import Event
-from unittest.mock import patch
+from unittest.mock import AsyncMock, Mock, patch
 
 from cj_agent.provider import (
     _M4_REQUEST_SENT, DashScopeConfig, MeteredDashScopeProvider, M4_BASE, M4_MODEL, ProviderUnknown,
@@ -31,6 +32,7 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
     for paused, missing_done, missing_model in (
         ('intake', False, False), ('discussion', False, False), ('discussion', True, False),
         ('discussion', False, True), ('memory', False, False), ('draft', False, False),
+        ('city-connect', False, False), ('city-response', False, False),
     ):
         case = paused + ('-missing-done' if missing_done else '-missing-model' if missing_model else '')
         complete_unsettled_reply = ('北京有丰富的历史遗迹和街巷。' * 200)[:2436]
@@ -67,9 +69,26 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
         assert [outcome.status for outcome in worker.process()] == ['completed']
         send(mid, text, conversation)
 
-        async def catalogue(key, guard):
+        async def catalogue(key, guard, *, send_under_fence):
             assert guard() is True
             return city_catalog()
+
+        writer = Mock(drain=AsyncMock())
+
+        async def pause_city(phase):
+            if paused == phase:
+                request_waiting.set()
+                assert await asyncio.to_thread(release.wait, 15), 'timeline test never released the city call'
+
+        async def city_connect(host, port, **kwargs):
+            assert (host, port, kwargs['server_hostname']) == ('restapi.amap.com', 443, 'restapi.amap.com')
+            await pause_city('city-connect')
+            return object(), writer
+
+        async def city_response(reader, max_bytes):
+            writer.write.assert_called_once()
+            await pause_city('city-response')
+            return 200, city_catalog()
 
         async def wire(config, raw, guard, observation):
             assert guard() is True
@@ -121,11 +140,20 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
         def timeline():
             return api.get('/v2/lio/timeline', headers=headers, params=dict(conversation_id=conversation))
 
-        with patch('cj_api.lio_city._catalog_exchange', side_effect=catalogue), \
-             patch('cj_agent.provider._m4_wire', wire), ThreadPoolExecutor(max_workers=1) as executor:
+        with ExitStack() as mocks, ThreadPoolExecutor(max_workers=1) as executor:
+            if paused in ('city-connect', 'city-response'):
+                mocks.enter_context(patch('cj_api.lio_city.asyncio.open_connection', side_effect=city_connect))
+                mocks.enter_context(patch('cj_api.lio_city._read_response', side_effect=city_response))
+            else:
+                mocks.enter_context(patch('cj_api.lio_city.catalog_response', side_effect=catalogue))
+            mocks.enter_context(patch('cj_agent.provider._m4_wire', wire))
             future = executor.submit(worker.process)
             try:
                 assert request_waiting.wait(10), ('provider request did not reach ' + paused, future.result(timeout=2))
+                if paused in ('city-connect', 'city-response'):
+                    original_city_ledger = budget.inspect()[-1]
+                    assert (original_city_ledger['kind'], original_city_ledger['state']) == ('place', 'INTENT')
+                    assert writer.write.call_count == (1 if paused == 'city-response' else 0)
                 with ThreadPoolExecutor(max_workers=3) as readers:
                     pages = tuple(readers.map(lambda _: timeline(), range(3)))
                 for page in pages:
@@ -177,6 +205,12 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
         if missing_done or missing_model:
             settled[-1] = 'INTENT'
         assert [row['state'] for row in budget.inspect()] == settled
+        if paused in ('city-connect', 'city-response'):
+            writer.write.assert_called_once()
+            writer.transport.abort.assert_called_once()
+            city_entry, = (row for row in budget.inspect() if row['kind'] == 'place')
+            assert city_entry['attempt_id'] == original_city_ledger['attempt_id']
+            assert city_entry['input_sha'] == original_city_ledger['input_sha']
         if missing_model:
             async def no_followup_response(config, raw, guard, observation):
                 assert guard() is True

@@ -442,7 +442,7 @@ class RealTools:
         return json.loads(raw)
 
     def _city_input(self,query):
-        from .lio_city import ENDPOINT,PARAMETERS,fetch_catalog,resolve
+        from .lio_city import ENDPOINT,PARAMETERS,catalog_response,resolve
         if type(query) is not dict or not {'query','normalized_name','province'}<=query.keys():
             raise ProviderUnknown('bound administrative query required')
         raw=canonical(dict(version='LIO-city-query.1',name=query['query'],
@@ -461,7 +461,15 @@ class RealTools:
                 self.services.require_scope(operation.binding.scope)
                 budget.begin(operation.command.attempt_id,'place',raw)
                 try:
-                    source=fetch_catalog(self.services.amap_key,admitted)
+                    if admitted() is not True:raise BudgetUnknown('original city lookup authority unavailable')
+                    def receive(send_under_fence):
+                        return catalog_response(self.services.amap_key,admitted,send_under_fence=send_under_fence)
+                    yield ''
+                    with closing(_response_stream(receive)) as exchange:
+                        source=next(exchange)
+                        if isinstance(source,GuardedWireWrite):
+                            yield source
+                            source=next(exchange)
                     if self.services.amap_key in json.dumps(json.loads(source),ensure_ascii=False):
                         raise BudgetUnknown('administrative source secret echo rejected')
                     result=resolve(source,frozen['name'],frozen['province'],frozen['normalized_name'])
