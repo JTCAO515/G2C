@@ -26,7 +26,7 @@ const words = {
     ruleUnknown: n => `提前天数 ${n}（规则待核）`, nameText: (zh, en, qid) => `英文名称：${en}。Wikidata 编号：${qid}。`,
     loading: '正在加载发布的数据…', loadFailed: '数据载入失败；当前没有可用内容，请稍后重试。',
     version: (sha, dataSha, when) => `发布版本 ${sha} · 数据版本 ${dataSha} · 生成于 ${when}；非实时，请核对发布状态。`, previewVersion: (sha, dataSha, when) => `预览基于 ${sha} · 数据版本 ${dataSha} · 生成于 ${when}。`,
-    badgeFailed: '发布状态不可用，请查看发布记录。', checking: '正在核对 main 版本…', fresh: '事实库版本与 main 一致。', stale: 'main 已更新，页面可能滞后；请查看发布状态。', freshnessUnknown: '无法核对 main，同步状态未知。', preview: '本地预览，未发布；同步状态未知。',
+    badgeFailed: '发布状态不可用，请查看发布记录。', checking: '正在核对 main 版本…', fresh: '核对时事实库版本与 main 一致。', stale: '核对时发现 main 已更新，页面可能滞后；请查看发布状态。', freshnessUnknown: '无法核对 main，同步状态未知。', preview: '本地预览，未发布；同步状态未知。',
   },
   en: {
     sourceLink: 'View the GitHub knowledge base ↗', heroTitle: 'Better journeys start with reliable facts.',
@@ -46,7 +46,7 @@ const words = {
     ruleUnknown: n => `${n} days ahead (rule unconfirmed)`, nameText: (zh, en, qid) => `Chinese name: ${zh}. Wikidata ID: ${qid}.`,
     loading: 'Loading published data…', loadFailed: 'Could not load the data. No content is available; please try again later.',
     version: (sha, dataSha, when) => `Published ${sha} · data ${dataSha} · built ${when}; not live. Check publication status.`, previewVersion: (sha, dataSha, when) => `Preview based on ${sha} · data ${dataSha} · built ${when}.`,
-    badgeFailed: 'Publication status is unavailable; check the publication history.', checking: 'Checking the main branch…', fresh: 'Knowledge base version matches main.', stale: 'Main has changed; this page may be out of date. Check publication status.', freshnessUnknown: 'Unable to check main; sync state is unknown.', preview: 'Local preview, not published; sync state is unknown.',
+    badgeFailed: 'Publication status is unavailable; check the publication history.', checking: 'Checking the main branch…', fresh: 'Knowledge base version matched main when checked.', stale: 'Main had changed when checked; this page may be out of date. Check publication status.', freshnessUnknown: 'Unable to check main; sync state is unknown.', preview: 'Local preview, not published; sync state is unknown.',
   },
 };
 const cities = {
