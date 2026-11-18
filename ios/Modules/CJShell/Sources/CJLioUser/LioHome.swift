@@ -122,6 +122,14 @@ public struct LioHome<MenuContent: View>: View {
         return LioTripCard(turnID: turn.id, itinerary: itinerary)
     }
 
+    private var memorySuggestions: [String] {
+        guard memoryActions != nil, session?.available != false, !restoringChat,
+              conversation.timelineFailure == nil else { return [] }
+        return conversation.turns.reversed().flatMap { turn in
+            turn.memoryTags.filter { !handledTags.contains($0) }.map(\.text)
+        }
+    }
+
     public var body: some View {
         let currentConversation = conversation
         let pending = conversation.pending
@@ -142,6 +150,7 @@ public struct LioHome<MenuContent: View>: View {
                 .tag(Tab.trips)
             if let savedMemory {
                 savedMemory
+                    .environment(\.lioMemorySuggestions, memorySuggestions)
                     .background(LioTabBarAppearance().frame(width: 0, height: 0))
                     .tabItem { Label(language.text("Memory", "记忆"), systemImage: "bookmark") }
                     .tag(Tab.memory)
