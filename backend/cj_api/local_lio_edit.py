@@ -11,6 +11,7 @@ from cj_agent.provider import ProviderUnknown
 from cj_draft.lio_plan import LioPlanPublisher
 from cj_feasibility.solver import Limits
 from cj_message.domain import Unavailable
+from cj_message.lio_context import UNSAVED_PLAN_ANSWER
 from cj_message.lio_plan_needs import EDIT_BOUND_EFFECT, attach_existing, lio_needs_id, original_needs
 from cj_message.needs_binding import needs_scope_for
 from cj_needs.contract_v1 import decode_snapshot
@@ -91,8 +92,9 @@ class LioEdit:
             state, _ = worker._step(binding, publish, lambda receipt: 'trip_proposal:' + receipt.proposal_id,
                                     draft=True, publication_deadline=deadline)
         except DraftRejected:
-            state = worker._event(binding, worker.runs.snapshot(binding), 'draft_outcome', 'validation_failed')
-            return _answer(worker, binding, state, locale, '这次没能更新行程。', "I couldn't update the itinerary.")
+            return _rejected_change(worker, binding, locale,
+                '这次没能更新行程，原安排保留。想调整哪一项？',
+                'I could not update the itinerary, so I kept your original plan. Which stop would you like to adjust?')
         except BudgetExceeded:
             state = worker._budget_rejection(binding, 'draft')
             return worker._event(binding, state, 'completed')
@@ -121,6 +123,12 @@ def _limits(capture):
     arrival = date.fromisoformat(snapshot.fields['arrival']['date']['value'])
     epoch = datetime.combine(arrival, time.min, tzinfo=ZoneInfo('Asia/Shanghai'))
     return Limits(epoch, 7 * 86400, 1, 10_000_000, 60, 120, 128, .05, .05, 100)
+
+
+def _rejected_change(worker, binding, locale, zh, en):
+    state = worker._event(binding, worker.runs.snapshot(binding), 'draft_outcome', 'validation_failed')
+    state = worker._event(binding, state, 'effect_committed', UNSAVED_PLAN_ANSWER)
+    return _answer(worker, binding, state, locale, zh, en)
 
 
 def _answer(worker, binding, state, locale, zh, en):
