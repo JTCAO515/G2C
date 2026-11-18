@@ -11,6 +11,7 @@ from cj_agent import provider as agent_provider
 from cj_agent.provider import (
     _M4_REQUEST_SENT, DashScopeConfig, MeteredDashScopeProvider, M4_BASE, M4_MODEL, ProviderUnknown,
 )
+from cj_api import lio_city
 from cj_api.local_app import load_confirmation_signer
 from cj_api.local_worker_context import checker_for
 from cj_api.real_services import RealServices, RealTools
@@ -33,10 +34,12 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
     for paused, missing_done, missing_model in (
         ('intake', False, False), ('discussion', False, False), ('discussion', True, False),
         ('discussion', False, True), ('memory', False, False), ('draft', False, False),
-        ('city-connect', False, False), ('city-response', False, False), ('memory-connect', False, False),
+        ('city-connect', False, False), ('city-response', False, False), ('city-deadline', False, False),
+        ('memory-connect', False, False),
     ):
         case = paused + ('-missing-done' if missing_done else '-missing-model' if missing_model else '')
         memory_case = paused in ('memory', 'memory-connect')
+        city_case = paused in ('city-connect', 'city-response', 'city-deadline')
         complete_unsettled_reply = ('北京有丰富的历史遗迹和街巷。' * 200)[:2436]
         sent = []
         request_waiting, release = Event(), Event()
@@ -78,20 +81,38 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
 
         writer = Mock(drain=AsyncMock())
 
-        async def pause_city(phase):
-            if paused == phase:
+        async def pause_city(*phases):
+            if paused in phases:
                 request_waiting.set()
                 assert await asyncio.to_thread(release.wait, 15), 'timeline test never released the city call'
 
         async def city_connect(host, port, **kwargs):
             assert (host, port, kwargs['server_hostname']) == ('restapi.amap.com', 443, 'restapi.amap.com')
-            await pause_city('city-connect')
+            await pause_city('city-connect', 'city-deadline')
             return object(), writer
 
         async def city_response(reader, max_bytes):
             writer.write.assert_called_once()
             await pause_city('city-response')
             return 200, city_catalog()
+
+        real_catalog = lio_city.catalog_response
+
+        async def city_crosses_deadline(key, guard, *, send_under_fence):
+            loop = asyncio.get_running_loop()
+            real_time = loop.time
+            time_offset = 0
+
+            async def delayed_write(write):
+                def expire_before_write():
+                    nonlocal time_offset
+                    time_offset = 21
+                    try:write()
+                    finally:time_offset = 0
+                await send_under_fence(expire_before_write)
+
+            with patch.object(loop, 'time', side_effect=lambda: real_time() + time_offset):
+                return await real_catalog(key, guard, send_under_fence=delayed_write)
 
         real_wire = agent_provider._m4_wire
         memory_writer = Mock(drain=AsyncMock())
@@ -170,18 +191,20 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
             return api.get('/v2/lio/timeline', headers=headers, params=dict(conversation_id=conversation))
 
         with ExitStack() as mocks, ThreadPoolExecutor(max_workers=1) as executor:
-            if paused in ('city-connect', 'city-response'):
+            if city_case:
                 mocks.enter_context(patch('cj_api.lio_city.asyncio.open_connection', side_effect=city_connect))
                 mocks.enter_context(patch('cj_api.lio_city._read_response', side_effect=city_response))
             else:
                 mocks.enter_context(patch('cj_api.lio_city.catalog_response', side_effect=catalogue))
             if paused == 'memory-connect':
                 mocks.enter_context(patch('cj_agent.provider.asyncio.open_connection', side_effect=memory_connect))
+            if paused == 'city-deadline':
+                mocks.enter_context(patch('cj_api.lio_city.catalog_response', side_effect=city_crosses_deadline))
             mocks.enter_context(patch('cj_agent.provider._m4_wire', wire))
             future = executor.submit(worker.process)
             try:
                 assert request_waiting.wait(10), ('provider request did not reach ' + paused, future.result(timeout=2))
-                if paused in ('city-connect', 'city-response'):
+                if city_case:
                     original_city_ledger = budget.inspect()[-1]
                     assert (original_city_ledger['kind'], original_city_ledger['state']) == ('place', 'INTENT')
                     assert writer.write.call_count == (1 if paused == 'city-response' else 0)
@@ -201,6 +224,16 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
             finally:
                 release.set()
             outcome, = future.result(timeout=10)
+        if paused == 'city-deadline':
+            assert (outcome.status, outcome.proposal_id) == ('unknown', None)
+            writer.write.assert_not_called()
+            writer.transport.abort.assert_called_once()
+            assert sent == ['intake']
+            model_entry, city_entry = budget.inspect()
+            assert (model_entry['state'], city_entry['state']) == ('RECEIVED', 'INTENT')
+            assert city_entry == original_city_ledger and city_entry['receipt'] is None
+            print('PASS late original city write blocked with original INTENT retained', flush=True)
+            continue
         assert outcome.status == ('unknown' if missing_done or missing_model else 'completed')
         path = ['answer', 'memory'] if memory_case else ['intake', 'draft' if paused == 'draft' else 'discussion']
         assert sent == path, sent

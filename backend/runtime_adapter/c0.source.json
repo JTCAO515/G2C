@@ -83,7 +83,7 @@
     "backend/agent/cj_agent/worker.py": "d23345e6f550ec7247ddedfa5a4fc09ec96622b275dfd3599958593dc439ae4e",
     "backend/cj_api/lio_calendar_edit.py": "a692bf79cda0c5928fccbd4904f0291302bd805d965a23c8c9061099d5d3b4b4",
     "backend/cj_api/lio_calendar_ordinals.py": "f7f34103c4db79c5cb85e61f723f2869c91196fb71f181dd2609cc767dab09c3",
-    "backend/cj_api/lio_city.py": "6bb8c0f312d8ddb37e153ebb09f29f397b1c1433778afb10a285150925ebc59c",
+    "backend/cj_api/lio_city.py": "e098b3ac961249ee30082b1be7f2098b3219a6b976fa32ae1441d089fce053af",
     "backend/cj_api/lio_exploration_factors.py": "76129b54f089de4da21dfcac08185ea73e50202a9bb4f608b88665dfe151b466",
     "backend/cj_api/lio_exploration_policy.py": "158ebc5b995db82d17c9c2baebc00bd893aa7b497c506dba86a39257c9be324a",
     "backend/cj_api/lio_exploration_profile.py": "18054d5f3c74de82608b3e3da89a4b565b7ae3ba90fae9214f0a7e5968e6cee6",
@@ -137,7 +137,7 @@
     "eval/optimization/score_v2.py": "015fa9f21b418fe49a5ac07a5fb3027e0422620a6616029f2ba6438bfa1e9322",
     "tooling/optimization/uv.lock": "c3729fbcd04627cb07bde4f5f21b9c4fbfa4748b3d7468d550c7fc2af62bc343"
   },
-  "system_prompt_sha256": "318fab6d8c5aa010357afb8944e4b036c2fc3f5157b35ea98806e5314871e86d",
+  "system_prompt_sha256": "aa00453e2fc0939ba3b7fc1cba9ddba40ef43596efa01c7d77f03feb5c8a8fcf",
   "task_sha256": "9d4376ba7512d6f3c0741036ae1bd0dda99752bbc9f8b8fb8dd7025c61a530ec",
   "task_version": "G2C-dialogue-cases.2",
   "tool_implementation_sha256": "1d7acfe2427703f8294769c0c8b8cf1882c2badd534c6b60e564b7bb5a5b0bfc",
