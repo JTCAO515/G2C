@@ -22,7 +22,9 @@ from test_lio_planning_flow import flow
 def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
     subjects = frozenset({subject})
     signer = load_confirmation_signer(auth)
-    for paused, missing_done in (('intake', False), ('discussion', False), ('discussion', True)):
+    for paused, missing_done in (
+        ('intake', False), ('discussion', False), ('discussion', True), ('memory', False), ('draft', False),
+    ):
         case = paused + ('-missing-done' if missing_done else '')
         sent = []
         request_waiting, release = Event(), Event()
@@ -38,6 +40,7 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
             database, provider, auth, scope, checker_for(auth),
             memory_configuration=memory, tools_configuration=tools, draft_profile='needs-structured.1',
             assembly_planning=True, demo_planning=True, national_planning=True, lio_confirmation=signer,
+            lio_memory_enabled=paused == 'memory',
         )
 
         def send(mid, text, conversation=None):
@@ -49,7 +52,9 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
 
         seed_mid = 'dispatch-' + case + '-previous'
         mid = 'dispatch-' + case + '-pending'
-        text = '去成都玩三天'
+        text = {'draft': '规划成都三天，2026-12-01出发',
+                'memory': '第一次来中国应该怎么玩？'}.get(paused, '去成都玩三天')
+        ordinary = '可以先从老街和公园开始。你更想逛哪一类？'
         conversation = send(seed_mid, '你是谁')
         assert [outcome.status for outcome in worker.process()] == ['completed']
         send(mid, text, conversation)
@@ -64,12 +69,22 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
             system = body['messages'][0]['content']
             index = body.get('response_format', {}).get('json_schema', {}).get(
                 'schema', {}).get('properties', {}).get('current_source_index', {}).get('const')
-            if index is not None:
+            if paused == 'memory':
+                stage = 'memory' if 'MEMORY-EXTRACT@2' in system else 'answer'
+                value = dict(version='MEMORY-EXTRACT@2', entries=[]) if stage == 'memory' else ordinary
+            elif index is not None:
                 stage = 'intake'
                 assert index == 1
                 value = flow(text, city='成都', days=3, intent='plan', questions=(), index=index)
                 value.update(version='LIO-planning-intake.8', needs_tools=False,
                              field_sources=[dict(field='duration_days', source_index=index, quote='三天')])
+                if paused == 'draft':
+                    value.update(start_date='2026-12-01')
+                    value['field_sources'].append(dict(field='start_date', source_index=index, quote='2026-12-01出发'))
+            elif paused == 'draft':
+                stage = 'draft'
+                assert json.loads(body['messages'][-1]['content'])['version'] == 'TRIP-source-input.2'
+                value = {}  # The provider receives a complete object; the draft publisher must reject it.
             else:
                 stage = 'discussion'
                 assert 'The traveler requested a complete ' in system
@@ -81,7 +96,9 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
                 assert await asyncio.to_thread(release.wait, 15), 'timeline test never released the response'
             observation['http_status'] = 200
             truncated = missing_done and stage == paused
-            content = '{"answer":"第1天' if truncated else json.dumps(value, ensure_ascii=False)
+            content = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+            if truncated:
+                content = '{"answer":"第1天'
             event = dict(id='dispatch-fixture-' + case + '-' + stage, model=M4_MODEL, choices=[
                 dict(index=0, delta=dict(content=content), finish_reason=None if truncated else 'stop'),
             ])
@@ -105,22 +122,28 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
                     original, pending = page.json()['messages']
                     assert (original['message_id'], original['status']) == (seed_mid, 'completed')
                     assert (pending['message_id'], pending['status'], pending['answer'], pending['trip']) == (
-                        mid, 'answering', '', None,
+                        mid, 'answering', ordinary if paused == 'memory' else '', None,
                     )
             finally:
                 release.set()
             outcome, = future.result(timeout=10)
         assert outcome.status == ('unknown' if missing_done else 'completed')
-        assert sent == ['intake', 'discussion'], sent
+        path = {'memory': ['answer', 'memory'], 'draft': ['intake', 'draft']}.get(paused, ['intake', 'discussion'])
+        assert sent == path, sent
         page = timeline()
         assert page.status_code == 200
         completed = page.json()['messages'][-1]
         assert completed['trip'] is None
         if missing_done:
             assert (completed['status'], completed['answer']) == ('failed', '')
+        elif paused == 'draft':
+            assert completed['status'] == 'completed' and '保存确认' in completed['answer']
+        elif paused == 'memory':
+            assert completed['status'] == 'completed' and completed['answer'] == ordinary
         else:
             assert '第2天看博物馆' in completed['answer']
-        assert [row['state'] for row in budget.inspect()] == [
-            'RECEIVED', 'RECEIVED', 'INTENT' if missing_done else 'RECEIVED',
-        ]
+        settled = ['RECEIVED'] * (2 if paused == 'memory' else 3)
+        if missing_done:
+            settled[-1] = 'INTENT'
+        assert [row['state'] for row in budget.inspect()] == settled
         print('PASS three signed Lio timeline reads while the original ' + case + ' response waits', flush=True)
