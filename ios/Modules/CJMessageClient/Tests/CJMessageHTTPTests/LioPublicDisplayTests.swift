@@ -63,6 +63,12 @@ struct LioPublicDisplayTests {
         #expect(LioPublicDisplay.permitsText(text))
     }
 
+    @Test func preservesTravelScopeWithoutExposingAServiceScopeField() {
+        #expect(LioPublicDisplay.permitsText("Double-check the scope of the visa-free transit policy with your airline."))
+        #expect(!LioPublicDisplay.permitsText(#"{"scope":"internal-travel-owner"}"#))
+        #expect(!LioPublicDisplay.permitsText("scope: internal-travel-owner"))
+    }
+
     @Test func preservesTravelLanguageAndPublicAttribution() throws {
         #expect(LioPublicDisplay.permitsText("草原夜间偏凉。"))
         #expect(LioPublicDisplay.permitsText("Trains run frequently. Your itinerary needs a little more time."))
