@@ -7,6 +7,7 @@ import json
 from threading import Event
 from unittest.mock import AsyncMock, Mock, patch
 
+from cj_agent import provider as agent_provider
 from cj_agent.provider import (
     _M4_REQUEST_SENT, DashScopeConfig, MeteredDashScopeProvider, M4_BASE, M4_MODEL, ProviderUnknown,
 )
@@ -32,9 +33,10 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
     for paused, missing_done, missing_model in (
         ('intake', False, False), ('discussion', False, False), ('discussion', True, False),
         ('discussion', False, True), ('memory', False, False), ('draft', False, False),
-        ('city-connect', False, False), ('city-response', False, False),
+        ('city-connect', False, False), ('city-response', False, False), ('memory-connect', False, False),
     ):
         case = paused + ('-missing-done' if missing_done else '-missing-model' if missing_model else '')
+        memory_case = paused in ('memory', 'memory-connect')
         complete_unsettled_reply = ('北京有丰富的历史遗迹和街巷。' * 200)[:2436]
         sent = []
         request_waiting, release = Event(), Event()
@@ -50,7 +52,7 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
             database, provider, auth, scope, checker_for(auth),
             memory_configuration=memory, tools_configuration=tools, draft_profile='needs-structured.1',
             assembly_planning=True, demo_planning=True, national_planning=True, lio_confirmation=signer,
-            lio_memory_enabled=paused == 'memory',
+            lio_memory_enabled=memory_case,
         )
 
         def send(mid, text, conversation=None):
@@ -63,7 +65,8 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
         seed_mid = 'dispatch-' + case + '-previous'
         mid = 'dispatch-' + case + '-pending'
         text = {'draft': '规划成都三天，2026-12-01出发',
-                'memory': '第一次来中国应该怎么玩？'}.get(paused, '去成都玩三天')
+                'memory': '第一次来中国应该怎么玩？',
+                'memory-connect': '第一次来中国应该怎么玩？'}.get(paused, '去成都玩三天')
         ordinary = '可以先从老街和公园开始。你更想逛哪一类？'
         conversation = send(seed_mid, '你是谁')
         assert [outcome.status for outcome in worker.process()] == ['completed']
@@ -90,13 +93,29 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
             await pause_city('city-response')
             return 200, city_catalog()
 
-        async def wire(config, raw, guard, observation):
-            assert guard() is True
+        real_wire = agent_provider._m4_wire
+        memory_writer = Mock(drain=AsyncMock())
+
+        async def memory_connect(host, port, **kwargs):
+            assert (host, port, kwargs['server_hostname']) == ('dashscope.aliyuncs.com', 443, 'dashscope.aliyuncs.com')
+            request_waiting.set()
+            assert await asyncio.to_thread(release.wait, 15), 'timeline test never released the memory connection'
+            event = dict(id='fixture-memory-original', model=M4_MODEL, choices=[dict(index=0,
+                delta=dict(content='{"version":"MEMORY-EXTRACT@2","entries":[]}'), finish_reason='stop')],
+                usage=dict(prompt_tokens=100, completion_tokens=100, total_tokens=200))
+            body = ('data: ' + json.dumps(event) + '\n\ndata: [DONE]\n\n').encode()
+            reader = asyncio.StreamReader()
+            reader.feed_data(b'HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Length: '+
+                             str(len(body)).encode()+b'\r\n\r\n'+body)
+            reader.feed_eof()
+            return reader, memory_writer
+
+        async def wire(config, raw, guard, observation, **kwargs):
             body = json.loads(raw)
             system = body['messages'][0]['content']
             index = body.get('response_format', {}).get('json_schema', {}).get(
                 'schema', {}).get('properties', {}).get('current_source_index', {}).get('const')
-            if paused == 'memory':
+            if memory_case:
                 stage = 'memory' if 'MEMORY-EXTRACT@2' in system else 'answer'
                 value = dict(version='MEMORY-EXTRACT@2', entries=[]) if stage == 'memory' else ordinary
             elif index is not None:
@@ -118,6 +137,16 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
                 value = dict(answer=complete_unsettled_reply if missing_model else
                              '第1天逛街区，第2天看博物馆，第3天试当地美食。想先细化哪一天？')
             sent.append(stage)
+            if stage == 'memory' and paused == 'memory-connect':
+                async for chunk in real_wire(config, raw, guard, observation, **kwargs):
+                    yield chunk
+                return
+            def check_guard():
+                assert guard() is True
+            if 'send_under_fence' in kwargs:
+                await kwargs['send_under_fence'](check_guard)
+            else:
+                check_guard()
             yield _M4_REQUEST_SENT
             if stage == paused:
                 request_waiting.set()
@@ -146,6 +175,8 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
                 mocks.enter_context(patch('cj_api.lio_city._read_response', side_effect=city_response))
             else:
                 mocks.enter_context(patch('cj_api.lio_city.catalog_response', side_effect=catalogue))
+            if paused == 'memory-connect':
+                mocks.enter_context(patch('cj_agent.provider.asyncio.open_connection', side_effect=memory_connect))
             mocks.enter_context(patch('cj_agent.provider._m4_wire', wire))
             future = executor.submit(worker.process)
             try:
@@ -154,6 +185,10 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
                     original_city_ledger = budget.inspect()[-1]
                     assert (original_city_ledger['kind'], original_city_ledger['state']) == ('place', 'INTENT')
                     assert writer.write.call_count == (1 if paused == 'city-response' else 0)
+                if paused == 'memory-connect':
+                    original_memory_ledger = budget.inspect()[-1]
+                    assert (original_memory_ledger['kind'], original_memory_ledger['state']) == ('model', 'INTENT')
+                    memory_writer.write.assert_not_called()
                 with ThreadPoolExecutor(max_workers=3) as readers:
                     pages = tuple(readers.map(lambda _: timeline(), range(3)))
                 for page in pages:
@@ -161,13 +196,13 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
                     original, pending = page.json()['messages']
                     assert (original['message_id'], original['status']) == (seed_mid, 'completed')
                     assert (pending['message_id'], pending['status'], pending['answer'], pending['trip']) == (
-                        mid, 'answering', ordinary if paused == 'memory' else '', None,
+                        mid, 'answering', ordinary if memory_case else '', None,
                     )
             finally:
                 release.set()
             outcome, = future.result(timeout=10)
         assert outcome.status == ('unknown' if missing_done or missing_model else 'completed')
-        path = {'memory': ['answer', 'memory'], 'draft': ['intake', 'draft']}.get(paused, ['intake', 'discussion'])
+        path = ['answer', 'memory'] if memory_case else ['intake', 'draft' if paused == 'draft' else 'discussion']
         assert sent == path, sent
         page = timeline()
         assert page.status_code == 200
@@ -197,11 +232,11 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
             assert prior is None or prior['status'] != 'plan_preview', prior
         elif paused == 'draft':
             assert completed['status'] == 'completed' and '保存确认' in completed['answer']
-        elif paused == 'memory':
+        elif memory_case:
             assert completed['status'] == 'completed' and completed['answer'] == ordinary
         else:
             assert '第2天看博物馆' in completed['answer']
-        settled = ['RECEIVED'] * (2 if paused == 'memory' else 3)
+        settled = ['RECEIVED'] * (2 if memory_case else 3)
         if missing_done or missing_model:
             settled[-1] = 'INTENT'
         assert [row['state'] for row in budget.inspect()] == settled
@@ -211,6 +246,12 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
             city_entry, = (row for row in budget.inspect() if row['kind'] == 'place')
             assert city_entry['attempt_id'] == original_city_ledger['attempt_id']
             assert city_entry['input_sha'] == original_city_ledger['input_sha']
+        if paused == 'memory-connect':
+            memory_writer.write.assert_called_once()
+            memory_writer.transport.abort.assert_called_once()
+            memory_entry = budget.inspect()[-1]
+            assert memory_entry['attempt_id'] == original_memory_ledger['attempt_id']
+            assert memory_entry['input_sha'] == original_memory_ledger['input_sha']
         if missing_model:
             async def no_followup_response(config, raw, guard, observation):
                 assert guard() is True

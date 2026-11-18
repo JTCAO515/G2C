@@ -1002,9 +1002,11 @@ class Boundaries(unittest.TestCase):
         read_ready = asyncio.Event()
         requests = []
 
-        async def wire(config, raw, guard, observation):
-            self.assertTrue(guard())
-            requests.append(json.loads(raw))
+        async def wire(config, raw, guard, observation, *, send_under_fence):
+            def write():
+                self.assertTrue(guard())
+                requests.append(json.loads(raw))
+            await send_under_fence(write)
             yield _M4_REQUEST_SENT
             await read_ready.wait()
             yield stream
@@ -1020,8 +1022,15 @@ class Boundaries(unittest.TestCase):
         operation = SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,subject)),
                                     command=SimpleNamespace(attempt_id=attempt))
         with patch('cj_agent.provider._m4_wire',wire):
+            from cj_usage.metered_exit import GuardedWireWrite, UNLOCKED_WIRE_START
             invoke = original.bind_operation(operation,lambda:True)
             with closing(invoke()) as reply:
+                self.assertIs(next(reply),UNLOCKED_WIRE_START)
+                self.assertEqual(self.budget.inspect()[0]['state'],'INTENT')
+                self.assertEqual(requests,[])
+                pending=next(reply)
+                self.assertIsInstance(pending,GuardedWireWrite)
+                pending.write()
                 self.assertEqual(next(reply),'')
                 self.assertEqual(self.budget.inspect()[0]['state'],'INTENT')
                 self.assertEqual(len(requests),1)

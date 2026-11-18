@@ -639,6 +639,7 @@ class RealTools:
                         tools=inputs['native_tools'],receipt=metadata,guard=checked,native_reply=native_reply,
                         native_turn_profile=inputs.get('native_turn_profile'),final_answer=inputs.get('external_tools_disabled',False),
                         release_after_send=discussion_handoff or inputs.get('response_mode')=='lio-memory-json.1',
+                        **({'guarded_connect':True} if release_after_send else {}),
                         **({'unsettled_answer_limit':operation.command.output_limit} if discussion_handoff else {}),
                         lio_answer=inputs.get('answer_format_profile')=='lio-user.1',
                         **({'structured_profile':inputs['structured_profile']} if 'structured_profile' in inputs else {}),
@@ -676,7 +677,7 @@ class RealTools:
                         # partial/failed streams retain their original UNKNOWN.
                         chunks=[]
                         for part in stream:
-                            chunks.append(part)
+                            if type(part) is str:chunks.append(part)
                             yield part
                         # The worker releases its first-advance Memory lease
                         # before draining the rest of this original stream.
