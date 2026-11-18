@@ -3,8 +3,8 @@
     "format_version": "visitor-entry.3",
     "entry_kind": "fact",
     "topic": "passport_booking",
-    "checked_on": "2026-11-16",
-    "expires_on": "2026-11-23",
+    "checked_on": "2026-11-18",
+    "expires_on": "2026-11-25",
     "id": "visitor.v3.beijing.palace-museum",
     "cities": [
       "beijing"
@@ -98,8 +98,8 @@
     "format_version": "visitor-entry.3",
     "entry_kind": "fact",
     "topic": "passport_booking",
-    "checked_on": "2026-11-17",
-    "expires_on": "2026-11-23",
+    "checked_on": "2026-11-18",
+    "expires_on": "2026-11-25",
     "id": "visitor.v3.chengdu.du-fu-thatched-cottage",
     "cities": [
       "chengdu"
