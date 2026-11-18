@@ -14,24 +14,16 @@
           },
           "items": {
             "zh": [
-              "对话行程卡新增日期按钮，默认显示第一天，每次查看一天的安排。",
-              "每天先预览最多四项安排，并标出其余数量；点“查看”可打开完整行程。",
-              "安排说明放在卡片上方，卡内显示标题、已知天数和安排数。",
-              "行程站点文字使用统一的浅色和深色主题配色。",
-              "登录页的“继续”和“继续使用账号”按钮使用可缩放文字，并保留完整点击范围。",
-              "行程为空时，深色模式下“和 Lio 聊聊”按钮的文字更清楚。",
-              "问题记录能区分系统取消与网络故障，并保留旧版记录。",
-              "历史页标题的颜色随浅深色切换，文字可随系统字号调整。"
+              "对话行程卡默认显示第一天，每次预览一天，最多显示四项并标出其余数量。点“查看”可打开完整行程。",
+              "登录页按钮的文字可随系统字号调整，按钮全宽可点。",
+              "改善历史页标题、底栏未选中标签和图标，以及深色空行程页面按钮的可读性。",
+              "问题记录现在区分系统取消和网络故障。已受理的回答遇到服务不可用或限额时，可打开已有问题记录。"
             ],
             "en": [
-              "Conversation itinerary cards now have day buttons, starting with day one and showing one day at a time.",
-              "Preview up to four stops per day with a remaining count. View still opens the complete itinerary.",
-              "The planning explanation sits above the card, followed by its title and known day and stop counts.",
-              "Itinerary stop text uses the shared light and dark theme colours.",
-              "The sign-in page uses scalable text and full touch areas for Continue and Continue with your account.",
-              "Improve dark-mode text contrast on the Chat with Lio button when Trips is empty.",
-              "Problem notes distinguish cancellation from network errors and preserve older records.",
-              "Use theme text colours and the existing scalable heading style for chat history titles."
+              "Chat itinerary cards start on day one. Preview one day at a time with up to four stops and a remaining count. Tap View for the full itinerary.",
+              "Sign-in buttons use scalable text and can be tapped across their full width.",
+              "Improve readability of chat history titles, inactive tab labels and icons, and the button on the empty Trips page in dark mode.",
+              "Problem notes now distinguish cancellation from network errors. If an accepted reply fails due to service availability or a limit, you can open existing problem notes."
             ]
           }
         },
@@ -43,18 +35,12 @@
           },
           "items": {
             "zh": [
-              "与构建 46 相比，对话里的逐日展开改为单日预览，查看入口继续显示完整行程。",
-              "修复行程卡深色模式下站点文字的配色绑定。",
-              "修正构建 46 登录页按钮的字号适配和点击范围，邀请码格式和同意步骤不变。",
-              "补充构建 46 之后的空行程按钮配色和问题记录分类修正。",
-              "修正历史页深色标题的显示方式。"
+              "与构建 46 相比，逐日展开改为单日预览，深色模式下卡片站点文字更清楚。",
+              "构建 47 也改善了登录、历史和底栏的显示，以及回答失败后的提示。"
             ],
             "en": [
-              "Since build 46: conversation cards use a single-day preview instead of expanding every day; View keeps the complete schedule.",
-              "Fix the stop-text colour binding on dark itinerary cards.",
-              "Improve sign-in button text scaling and touch areas compared with build 46; the code format and consent steps stay the same.",
-              "Also correct the empty-Trips button colour and problem-note classification after build 46.",
-              "Correct the dark-appearance chat history title presentation."
+              "Compared with build 46, cards preview a single day instead of expanding every day. Stop text is easier to read in dark mode.",
+              "Build 47 also improves sign-in, history and tab presentation and guides you to problem notes after an accepted reply fails."
             ]
           }
         },
@@ -66,16 +52,16 @@
           },
           "items": {
             "zh": [
-              "打开已有行程的对话，切换日期，核对四项预览与其余数量；“查看”仍显示完整安排。",
-              "切换浅深色，打开历史并返回；行程本来为空时检查按钮，无需清空数据。",
-              "若当前就在登录页，检查中英文按钮文字和点击；无需为此退出已有账号。",
-              "在同一对话留一段草稿，切后台再回来，核对对话和文字。"
+              "① 打开 App，确认回到之前的对话并能看到消息。② 新建对话，问“北京是中国的首都吗？”，等到完整回答。",
+              "③ 打开历史对话列表，确认能找到并打开对话。④ 留一段未发送的草稿，锁屏或切后台 10 秒，再回来确认是同一对话，草稿仍在。",
+              "⑤ 问“你是谁”，查看首条回答。⑥ 问“你能做啥”，查看能力说明。⑦ 问“北京三日游”，核对第 1 至第 3 天都有具体安排。第 ⑤ 至 ⑦ 项分别从新对话开始。",
+              "每项记下大概时间。遇到失败请截图，在“问题记录”里点“复制”，提供已有记录。保留当前账号、消息和草稿。"
             ],
             "en": [
-              "In a chat with an existing itinerary, switch days and check its four-stop preview and remaining count; View keeps the complete schedule.",
-              "Switch appearance, open History and return. If Trips is already empty, inspect its button. Keep existing data.",
-              "If you are already on the sign-in page, check its English and Chinese buttons. Keep an existing signed-in session.",
-              "Leave a draft in a chat, switch apps and return, then check the chat and text."
+              "① Open the app and verify that your previous chat and messages return. ② Start a new chat, ask “Is Beijing the capital of China?” and wait for a complete reply.",
+              "③ Open chat history and verify that you can find and open a conversation. ④ Leave an unsent draft, lock your phone or background the app for 10 seconds, then check that the same chat and draft return.",
+              "⑤ Ask “Who are you?” and check the first reply. ⑥ Ask “What can you do?” and check the capabilities. ⑦ Ask “A three-day trip to Beijing” and check for concrete plans for days 1–3. Use a fresh chat for each of steps ⑤–⑦.",
+              "Note the approximate time for each step. If something fails, take a screenshot and tap Copy in Problem notes to share any existing record. Keep your current account, messages and drafts."
             ]
           }
         },
@@ -87,18 +73,18 @@
           },
           "items": {
             "zh": [
-              "规划功能仍在修复，暂不建议测试规划；已有行程的浏览可以单独检查。",
+              "本轮只检查一次简单北京规划，确认有完整三天安排。",
               "行程正式保存、修改与撤销，以及全国规划仍在验证。",
               "“记住”偏好仍需单独完成真实验收。",
-              "部分大字号下的卡片显示或切日仍有问题，本轮先用系统默认字号。",
+              "本轮使用系统默认字号。较大字号下仍有卡片显示或切日问题。",
               "分段、多选探索尚未默认开启；真机弱网和长时间锁屏恢复仍待完整验证。",
               "行程详情的完整无障碍检查仍未通过，尚未认定已修复。"
             ],
             "en": [
-              "Planning is still being repaired. Please avoid testing planning for now; existing itineraries can be viewed separately.",
+              "For planning, this check covers one simple Beijing request and a complete three-day itinerary.",
               "Formal itinerary saving, edits and undo, and planning across China are still being validated.",
               "Remember preferences still requires a separate live check.",
-              "Some larger text sizes still have card display or day-selection issues. Please use the system default size for this check.",
+              "Use the system default text size. Card display or day selection can still have issues at larger sizes.",
               "Segmented, multiple-choice exploration is not the default. Physical-device weak-network and longer lock-screen recovery checks remain pending.",
               "Trip details have not yet passed their complete accessibility checks; this remains unresolved."
             ]
@@ -112,14 +98,12 @@
           },
           "items": {
             "zh": [
-              "本版准备时，香港配套在线服务来源为 1ff3941e。",
-              "新的卡片界面需要更新应用；在线服务的调整会自动生效。账号资格和额度沿用既有规则。",
-              "本轮尚无新的服务端部署；这些界面修正需要更新应用。"
+              "本版准备时，香港在线服务来源为 1ff3941e，并沿用已有账号资格和额度规则。",
+              "以上界面修正需要更新 App。这个构建不附带服务端部署。"
             ],
             "en": [
-              "At preparation, the paired Hong Kong service source is 1ff3941e.",
-              "The new card interface is included in this app update; online service changes apply automatically. Account qualification and allowances keep their existing rules.",
-              "No new service deployment is included here; these interface corrections require the app update."
+              "At preparation, the Hong Kong service is on source 1ff3941e with the current account eligibility and allowance rules.",
+              "Install the app update to get these interface changes. This build ships without a server deployment."
             ]
           }
         }
