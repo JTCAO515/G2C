@@ -80,6 +80,52 @@ def require_source_abi(actual, policy):
         raise ValueError("image outside reviewed source ABI compatibility sets")
 
 
+# Both fixes belong to the already-staged 7f8dbe96 incident recovery.
+# Retire this fixed requirement with that candidate and its rollback window.
+DOUBLE_FIX_SOURCE = "7f8dbe9617833a4af4900f21499a6db5616d5eb6"
+DOUBLE_FIX_REVIEW_PRS = frozenset({1170, 1174})
+
+
+def verify_cutover_evidence(github, source, gate):
+    related_reviews = gate.get("related_reviews", [])
+    if type(related_reviews) is not list:
+        raise ValueError("explicit related review records required")
+    pr_numbers = [gate["pr_number"], *(row["pr_number"] for row in related_reviews)]
+    if len(set(pr_numbers)) != len(pr_numbers):
+        raise ValueError("duplicate release PR approval")
+    if source == DOUBLE_FIX_SOURCE and not DOUBLE_FIX_REVIEW_PRS <= set(pr_numbers):
+        raise ValueError("both incident-fix PR approvals are required")
+    verify_release_ci(github, source)
+    verify_release_review(github, source, gate)
+    for related in related_reviews:
+        landed = related["source"]
+        if re.fullmatch("[a-f0-9]{40}", landed) is None:
+            raise ValueError("exact supporting PR merge source required")
+        verify_release_review(github, landed, related)
+        if github("compare/" + landed + "..." + source)["status"] not in (
+            "identical",
+            "ahead",
+        ):
+            raise ValueError("supporting R-reviewed change is absent from candidate")
+
+
+def recover_original_ingress(
+    command, inspect, compose, previous_image, previous_source
+):
+    worker = inspect("g2c-beta-worker-1")
+    if not worker["State"]["Running"]:
+        return False
+    if (
+        worker["Image"] != previous_image
+        or worker["Config"]["Labels"]["org.opencontainers.image.revision"]
+        != previous_source
+        or worker["Config"]["Cmd"] != ["worker"]
+    ):
+        raise ValueError("original running worker changed during cutover")
+    command([*compose, "up", "-d", "--no-deps", "api"])
+    return True
+
+
 def main(argv=None):
     if not __debug__:
         raise RuntimeError("optimized release entrypoint forbidden")
@@ -185,18 +231,7 @@ def main(argv=None):
         ) as r:
             return json.load(r)
 
-    verify_release_ci(github, source)
-    verify_release_review(github, source, gate)
-    for related in gate.get("related_reviews", ()):
-        landed = related["source"]
-        if re.fullmatch("[a-f0-9]{40}", landed) is None:
-            raise ValueError("exact supporting PR merge source required")
-        verify_release_review(github, landed, related)
-        if github("compare/" + landed + "..." + source)["status"] not in (
-            "identical",
-            "ahead",
-        ):
-            raise ValueError("supporting R-reviewed change is absent from candidate")
+    verify_cutover_evidence(github, source, gate)
     require_release_window(gate["starts_at"], gate["ends_at"], now)
     new = inspect("g2c-beta:" + source)
     assert new["Id"] == gate["image_id"] and new["Architecture"] == "amd64"
@@ -521,6 +556,18 @@ def main(argv=None):
             flush=True,
         )
     except BaseException:
+        if (
+            not changed
+            and not worker_stopped
+            and recover_original_ingress(
+                command, inspect, compose, gate["previous_image_id"], previous_source
+            )
+        ):
+            # The original worker may already be processing the newly arrived
+            # request. Keep its execution in flight and retain this unused
+            # selector beside the immutable per-gate backup.
+            temporary.rename(backup.with_suffix(".pending.env"))
+            raise
         command([*compose, "stop", "-t", "20", "api", "worker"])
         if (
             post_started

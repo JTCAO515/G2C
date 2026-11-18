@@ -28,3 +28,40 @@ def test_host_selectors_keep_operator_image_distinct_and_immutable():
     }
     with pytest.raises(ValueError, match="single canonical selector"):
         selectors(raw + b"CJ_BETA_IMAGE=g2c-beta:other\n")
+
+
+def test_ingress_recovery_keeps_the_current_original_worker_running():
+    from deploy.hk.application_release_host import recover_original_ingress
+
+    commands = []
+    worker = dict(
+        Image="old-image",
+        State={"Running": True},
+        Config={
+            "Cmd": ["worker"],
+            "Labels": {
+                "org.opencontainers.image.revision": "old-source",
+            },
+        },
+    )
+    compose = ["docker", "compose"]
+    assert recover_original_ingress(
+        commands.append, lambda name: worker, compose, "old-image", "old-source"
+    )
+    assert commands == [["docker", "compose", "up", "-d", "--no-deps", "api"]]
+
+
+def test_incident_candidate_cannot_omit_either_original_fix_approval():
+    from deploy.hk.application_release_host import (
+        DOUBLE_FIX_SOURCE,
+        verify_cutover_evidence,
+    )
+
+    def unexpected_lookup(path):
+        pytest.fail(f"incomplete required PR set should fail before a lookup: {path}")
+
+    for primary in (1170, 1174):
+        with pytest.raises(ValueError, match="both incident-fix PR approvals"):
+            verify_cutover_evidence(
+                unexpected_lookup, DOUBLE_FIX_SOURCE, {"pr_number": primary}
+            )
