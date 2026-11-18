@@ -317,6 +317,7 @@ private struct LioTripDetail: View {
             }
         }
         .lioPage()
+        .toolbar(.hidden, for: .tabBar)
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(LioTheme.paper, for: .navigationBar)
