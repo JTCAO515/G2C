@@ -195,7 +195,9 @@ def exercise(root,conninfo,*,preference=None,locale='en',stored_text=None,extra_
                 status=outcome.status,memory_in_model_input=True,real_service='UNRUN')),flush=True)
         if dispatch_check:
             from lio_dispatch_concurrency_pg import check_dispatch
+            from lio_tool_response_concurrency_pg import check_tool_response
             check_dispatch(api,headers,database,auth,subject,scope,memory,root)
+            check_tool_response(api,headers,database,auth,subject,scope,memory,root)
     print('PASS native signed PG empty/tag projection: same-body legacy compatibility, one M custody, competing worker blocked, initial contention503, invalid reference/wrong RUN/foreign owner withheld, no model calls during reads')
 
 
