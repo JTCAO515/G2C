@@ -40,6 +40,7 @@ class ReadOnlyAnswers(unittest.TestCase):
             ('en','Beijing','What is the capital of China. Plan three days in Beijing.'),
             ('en','Beijing','What is the capital of China and plan three days in Beijing'),
             ('zh','北京','北京是中国的首都吗？请规划北京三日游。'),
+            ('zh','北京','请规划北京三日游;北京是中国的首都吗'),
         ):
             with self.subTest(locale=locale,text=text):
                 wire=flow(text,city=city,days=3,intent='plan',questions=())

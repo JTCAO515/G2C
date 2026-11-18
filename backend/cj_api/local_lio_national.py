@@ -78,7 +78,7 @@ DIRECT_ANSWER=re.compile(
     r'\s*(?:你好|您好|嗨|哈喽|谢谢(?:你)?|多谢|再见|拜拜'
     r'|hello|hi(?: there)?|hey(?: there)?|thanks|thank you|(?:good)?bye'
     r'|你能提供什么(?:旅行|旅游)帮助|what travel help can you offer'
-    r'|[^，。！？\s]{1,16}是[^，。！？\s]{1,16}的首都吗|[^，。！？\s]{1,16}的首都(?:是哪里|是哪座城市)'
+    r'|[^,.;?!，。；！？\s]{1,16}是[^,.;?!，。；！？\s]{1,16}的首都吗|[^,.;?!，。；！？\s]{1,16}的首都(?:是哪里|是哪座城市)'
     # The country name must end the question before the punctuation suffix.
     r"|(?:is [\w '-]{1,60} the capital|what is the capital) of China"
     r'|第一次来中国(?:旅行)?(?:建议|应该|可以)?怎么玩|first time in china[,，]?\s*(?:any tips|any advice)'
