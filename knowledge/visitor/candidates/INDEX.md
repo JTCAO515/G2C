@@ -3,13 +3,13 @@
 本文件是本批**候选**资料的维护索引。所有条目状态均为 `待核实`，不是已确认事实，不得直接进入 Lio 回答、FACT wire 或页面事实库；格式、边界与晋级流程见 [README.md](README.md)。
 
 - 批次日期：2026-11-18
-- 候选总数：**75** 条
-- 文件数：7 个 JSON + 本索引 + [缺口与冲突记录](2026-11-18-gaps-and-conflicts.md)
-- 城市键：19 个（含 `nationwide`）；主题：13 个
-- 来源类型：政府 35 条、场馆/景区官方 26 条、交通运营方 8 条、商业平台 3 条、其他公开来源 2 条、官方媒体/政府新闻 1 条
-- 有来源发布日期的条目：33 条；来源标注有效期/截止日的条目：3 条
-- 与其他候选共用同一来源 URL 的条目：9 条（可能重复，待查重）
-- 记录到明显冲突的条目：17 条；`missing` 为空的条目：0 条
+- 候选总数：**99** 条（城市/场馆 75 + 工具 24）
+- 文件数：8 个 JSON + 本索引 + [缺口与冲突记录](2026-11-18-gaps-and-conflicts.md)
+- 城市键：19 个（含 `nationwide`）；主题（城市/场馆）13 个；工具类别 8 个
+- 来源类型（城市/场馆批次）：政府 35 条、场馆/景区官方 26 条、交通运营方 8 条、商业平台 3 条、其他公开来源 2 条、官方媒体/政府新闻 1 条；工具批次另计（官方应用商店 9、政府 5、工具官方 3、商业平台 3、运营方 2、官方媒体 2）
+- 有来源发布日期的条目：城市/场馆 33 条、工具 8 条；来源标注有效期/截止日的条目：3 条
+- 与其他候选共用同一来源 URL 的条目：9 条（城市/场馆批次，可能重复，待查重）
+- 记录到明显冲突的条目：城市/场馆 17 条、工具 6 条；`missing` 为空的条目：0 条
 
 ## 文件与分组
 
@@ -22,6 +22,7 @@
 | [2026-11-18-north-other-cities.json](2026-11-18-north-other-cities.json) | 北方及其他热门城市景点（北京、青岛、哈尔滨、昆明、张家界、洛阳） | 12 |
 | [2026-11-18-planning-and-channels.json](2026-11-18-planning-and-channels.json) | 行程规划与官方渠道（节假日、无障碍、亲子、季节、签证入境渠道） | 12 |
 | [2026-11-18-visa-entry-channels.json](2026-11-18-visa-entry-channels.json) | 人工补充的官方渠道与住宿登记（国家移民管理局） | 2 |
+| [2026-11-18-tools.json](tools/2026-11-18-tools.json) | 常用 App 与工具（`visitor-tool.1`；支付、地图、城市交通、打车、铁路、翻译、预订、通信） | 24 |
 
 ## 城市覆盖
 
@@ -64,6 +65,42 @@
 | `payment` | 支付 | 4 | 全国、上海 |
 | `internet` | 上网/手机卡 | 1 | 全国 |
 | `emergency` | 紧急求助 | 1 | 全国 |
+
+## 工具与 App 批次（`visitor-tool.1`）
+
+文件：[2026-11-18-tools.json](tools/2026-11-18-tools.json)，24 条；逐条说明见 [2026-11-18-tools.md](tools/2026-11-18-tools.md)。类别：城市公共交通 10、支付 3、通信 3、地图 2、翻译 2、预订 2、打车 1、铁路 1。范围：全国 14 条；城市特定 10 条（北京、上海、广州、深圳、成都、西安、杭州、重庆、南京、武汉）。
+
+- 地方工具中 7 条 App Store 标注简体中文和英文，3 条仅简体中文（渝畅行、与宁同行、Metro 新时代）；全国工具的界面语言按来源页标注，部分英文界面待核实。
+- 4 条官方英文名未找到，按 `name_en=未知` 记录：亿通行、渝畅行、与宁同行、Metro 新时代。
+- 6 条记录到冲突或口径差异：百度地图、滴滴、Trip.com、Airalo、亿通行、Metro 大都会。
+- 全部 24 条 `missing` 非空，均未做安装、注册、绑卡、购票或乘车实测。
+
+| id | 名称（中/英） | 类别 | 范围 | 界面语言 | 官方入口 | 主要来源 |
+|---|---|---|---|---|---|---|
+| `tool.2026-11-18.alipay` | 支付宝（Alipay） | 支付 | 全国 | 中文、英文界面待核实、其他语言未知 | [支付宝官网](https://www.alipay.com/) | [上海市人民政府英文网站《A guide to linking international bank cards to Alipay》](https://english.shanghai.gov.cn/en-FAQs-StudyinShanghai/20231211/a58d4c15179f468fb2c5d72b393f1fd4.html) |
+| `tool.2026-11-18.wechat` | 微信（WeChat） | 支付 | 全国 | 中文、英文（官方英文站；App 界面语种待核实） | [WeChat 英文官网](https://www.wechat.com/en) | [微信支付帮助中心《微信支付外卡绑定和使用指南》](https://cs.help.wechat.com/hc/zh-cn/articles/11975770896271-%E5%BE%AE%E4%BF%A1%E6%94%AF%E4%BB%98%E5%A4%96%E5%8D%A1%E7%BB%91%E5%AE%9A%E5%92%8C%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97) |
+| `tool.2026-11-18.cloud-quickpass` | 云闪付（Cloud QuickPass） | 支付 | 全国 | 英文、简体中文、繁体中文、韩文、日文、维吾尔文、藏文 | [云闪付官网（中国银联）](https://www.95516.com/) | [济南市投资促进局转载《开通移动支付（外国商务人士在华工作生活指引 2025 年版）》](http://zwfw.jinan.gov.cn/col127495/art/2025/art_127495_4798604.html) |
+| `tool.2026-11-18.amap` | 高德地图（Amap） | 地图与导航 | 全国 | 中文、英文、西班牙语、葡萄牙语、法语、德语、泰语、日语、韩语、土耳其语、意大利语、俄语、阿拉伯语、马来语、印尼语、越南语 | [高德地图官网](https://www.amap.com/) | [上海市人民政府英文网站《China's first multilingual map adds 14 new languages》](https://english.shanghai.gov.cn/en-Latest-WhatsNew/20250711/8f2fcf3c6b624a56a6b2c0d8152ea2f2.html) |
+| `tool.2026-11-18.baidu-maps` | 百度地图 / Beijing Map 英文版（Baidu Maps / Beijing Map） | 地图与导航 | 全国 | 英文（Beijing Map）、中文（百度地图主站/主 App）、其他语言未知 | [Beijing Map 英文地图](https://web.beijingmap.cn/) | [北京市人民政府英文网站 Beijing Service《Beijing Map》](https://english.beijing.gov.cn/specials/beijingservice/pek/baidumap/) |
+| `tool.2026-11-18.didi-china` | 滴滴出行（DiDi China） | 打车 | 全国 | 英文、中文（界面）；其他语言待核实 | [DiDi 国际官网](https://web.didiglobal.com/) | [Google Play《DiDi China: Ride Hailing》应用页](https://play.google.com/store/apps/details?id=com.sdu.didi.psnger) |
+| `tool.2026-11-18.rail-12306` | 中国铁路 12306（China Railway 12306） | 铁路/高铁 | 全国 | 中文、英文（英文网站）；App 界面语种待核实 | [中国铁路 12306 英文站](https://www.12306.cn/en/index.html) | [中国铁路 12306 英文版常见问题（Ticketing）](https://www.12306.cn/en/faq.html) |
+| `tool.2026-11-18.pleco` | Pleco 汉语词典（Pleco Chinese Dictionary） | 翻译 | 全国 | 英文（界面与释义）、中文（词典内容）、粤语发音 | [Pleco 官网](https://www.pleco.com/) | [Pleco 官网](https://www.pleco.com/) |
+| `tool.2026-11-18.microsoft-translator` | 微软翻译（Microsoft Translator） | 翻译 | 全国 | 60 多种语言（应用商店说明）、界面支持多语言（具体语种待核实） | [Microsoft Translator 官网](https://www.microsoft.com/en-us/translator/) | [Microsoft Translator 官网](https://www.microsoft.com/en-us/translator/) |
+| `tool.2026-11-18.trip-com` | 携程国际版（Trip.com） | 预订 | 全国 | 24 种语言（App Store 说明） | [Trip.com 官网](https://www.trip.com/) | [Trip.com 官网](https://www.trip.com/) |
+| `tool.2026-11-18.booking-com` | 缤客（Booking.com） | 预订 | 全国 | 英语及另外 40 种语言（App Store 说明，含简体/繁体中文） | [Booking.com 官网](https://www.booking.com/) | [Booking.com 官网](https://www.booking.com/) |
+| `tool.2026-11-18.china-unicom` | 中国联通（China Unicom） | 通信上网 | 全国 | 中文；英文服务待核实 | [中国联通官网](https://www.10010.com/) | [中国政府网（China Daily 呈现）《How can foreigners apply for a SIM card...》](https://govt.chinadaily.com.cn/s/202508/15/WS689ed552498edec913ce0dc8/how-can-foreigners-apply-for-a-sim-card-and-choose-a-suitable-mobile-communication-service-plan-in-china.html) |
+| `tool.2026-11-18.china-mobile` | 中国移动（China Mobile） | 通信上网 | 全国 | 中文；英文服务待核实 | [中国移动官网](https://www.10086.cn/) | [中国政府网（China Daily 呈现）《How can foreigners apply for a SIM card...》](https://govt.chinadaily.com.cn/s/202508/15/WS689ed552498edec913ce0dc8/how-can-foreigners-apply-for-a-sim-card-and-choose-a-suitable-mobile-communication-service-plan-in-china.html) |
+| `tool.2026-11-18.airalo` | Airalo 中国 eSIM（Airalo China eSIM） | 通信上网 | 全国 | 英文；其他语言见网站语言选择（未逐项核实） | [Airalo 中国 eSIM](https://www.airalo.com/china-esim) | [Airalo 中国 eSIM 页面](https://www.airalo.com/china-esim) |
+| `tool.2026-11-18.beijing-yitongxing` | 亿通行（未知） | 城市公共交通 | 北京 | 简体中文、英文 | [App Store 亿通行](https://apps.apple.com/cn/app/id1247890676) | [App Store《亿通行》页面](https://apps.apple.com/cn/app/id1247890676) |
+| `tool.2026-11-18.shanghai-metro-daduhui` | Metro 大都会（Metro Daduhui） | 城市公共交通 | 上海 | 简体中文、英文 | [App Store Metro 大都会](https://apps.apple.com/cn/app/id1202750238) | [上海市人民政府英文网站《CIIE service guide: Easy metro access》](https://english.shanghai.gov.cn/en-CIIE2025/20251017/c6c5ca124ee74e92a37244280c0983b9.html) |
+| `tool.2026-11-18.guangzhou-metro` | 广州地铁官方 APP（Guangzhou Metro） | 城市公共交通 | 广州 | 简体中文、英文 | [App Store 广州地铁官方 APP](https://apps.apple.com/cn/app/id580097761) | [App Store《广州地铁官方APP》页面](https://apps.apple.com/cn/app/id580097761) |
+| `tool.2026-11-18.shenzhen-metro` | 深圳地铁-官方 APP（Shenzhen Metro） | 城市公共交通 | 深圳 | 简体中文、英文 | [App Store 深圳地铁-官方 APP](https://apps.apple.com/cn/app/id848926994) | [深圳地铁官网《运营服务·常见问题》](https://www.szmc.net/shentieyunying/yunyingfuwu/changjianwenti/) |
+| `tool.2026-11-18.chengdu-metro` | 成都地铁-官方 APP（Chengdu Metro） | 城市公共交通 | 成都 | 简体中文、英文 | [App Store 成都地铁-官方 APP](https://apps.apple.com/cn/app/id1303414976) | [App Store《成都地铁-官方APP》页面](https://apps.apple.com/cn/app/id1303414976) |
+| `tool.2026-11-18.xian-metro` | 西安地铁-官方 App（Xi'an Metro） | 城市公共交通 | 西安 | 简体中文、英文 | [App Store 西安地铁-官方 App](https://apps.apple.com/cn/app/id1325483350) | [App Store《西安地铁-官方App》页面](https://apps.apple.com/cn/app/id1325483350) |
+| `tool.2026-11-18.hangzhou-metro` | 杭州地铁-官方 APP（Hangzhou Metro） | 城市公共交通 | 杭州 | 简体中文、英文 | [App Store 杭州地铁-官方 APP](https://apps.apple.com/cn/app/id1131121104) | [App Store《杭州地铁-官方APP》页面](https://apps.apple.com/cn/app/id1131121104) |
+| `tool.2026-11-18.chongqing-yuchangxing` | 渝畅行（未知） | 城市公共交通 | 重庆 | 简体中文 | [App Store 渝畅行](https://apps.apple.com/cn/app/id1491110313) | [App Store《渝畅行》页面](https://apps.apple.com/cn/app/id1491110313) |
+| `tool.2026-11-18.nanjing-yuning-tongxing` | 与宁同行（未知） | 城市公共交通 | 南京 | 简体中文 | [App Store 与宁同行](https://apps.apple.com/cn/app/id1600886078) | [App Store《与宁同行》页面](https://apps.apple.com/cn/app/id1600886078) |
+| `tool.2026-11-18.wuhan-metro-new-era` | Metro 新时代（未知） | 城市公共交通 | 武汉 | 简体中文 | [App Store Metro 新时代](https://apps.apple.com/cn/app/id1121139634) | [App Store《Metro新时代》页面](https://apps.apple.com/cn/app/id1121139634) |
 
 ## 中西部城市景点（武汉、长沙、成都、西安、重庆）
 
