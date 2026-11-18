@@ -74,7 +74,9 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
             title = ('中国天气网 · '+name+'当前预报（参考）' if item.locale == 'zh'
                      else 'Weather China · Current '+name+' forecast (reference)')
             sources.append(dict(title=title,url=url,observed_at=None))
-    answer = display_answer(state.text, item.locale) if state is not None else ''
+    # Failed streams can leave provisional text in the original RUN. Keep
+    # those bytes for diagnosis without returning them as a terminal answer.
+    answer = display_answer(state.text, item.locale) if state is not None and status != 'failed' else ''
     if identity and status == 'completed' and answer is not None:
         introduction = self_description(item.text, item.locale)
         if introduction is not None:

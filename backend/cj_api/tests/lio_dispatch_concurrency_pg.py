@@ -25,6 +25,7 @@ async def reject_unmocked_connection(*args, **kwargs):
 
 @patch('asyncio.open_connection', new=reject_unmocked_connection)
 def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
+    check_tool_dispatch(api, headers, database, auth, subject, scope, memory, root)
     subjects = frozenset({subject})
     signer = load_confirmation_signer(auth)
     for paused, missing_done, missing_model in (
@@ -186,3 +187,148 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root):
             assert followup_outcome.message_id == 'dispatch-unsettled-followup'
             assert followup_outcome.proposal_id is None
         print('PASS three signed Lio timeline reads while the original ' + case + ' response waits', flush=True)
+
+
+@patch('asyncio.open_connection', new=reject_unmocked_connection)
+def check_tool_dispatch(api, headers, database, auth, subject, scope, memory, root):
+    """Pause at the registered tool's send boundary, before its first response."""
+    from types import SimpleNamespace
+    from cj_place.gaode import Response
+    from cj_place.https_transport import TransportResult
+    from test_m4_real_services import turn_sse
+
+    dates = dict(start_date='2026-11-18', end_date='2026-11-18')
+    place_args = dict(keyword='synthetic park', city='北京', page=1, page_size=1)
+    for kind, tool_name, arguments in (
+        ('place', 'place_search', place_args),
+        ('weather', 'weather', dates),
+        ('fact', 'fact', dates),
+    ):
+        budget = AuthorizationBudget(root / ('tool-dispatch-' + kind),
+                                     clock=lambda: datetime(2026, 11, 18, tzinfo=timezone.utc))
+        provider = MeteredDashScopeProvider(
+            DashScopeConfig(M4_BASE, M4_MODEL, 'local-fixture-not-live'), budget,
+        )
+        tools = RealTools(RealServices(provider, 'local-fixture-not-live', frozenset({subject})))
+        worker = run_worker._worker_for_scope(
+            database, provider, auth, scope, checker_for(auth), memory_configuration=memory,
+            tools_configuration=tools, demo_planning=True,
+        )
+        started, release = Event(), Event()
+        sent = []
+        model_turns = []
+        seeding = True
+
+        async def wait_for_release(tool_kind, after_send):
+            assert kind == tool_kind
+            sent.append(tool_kind)
+            await after_send()
+            started.set()
+            assert await asyncio.to_thread(release.wait, 20), 'tool response fixture was not released'
+
+        async def place(config, request, credentials, *, before_send, basic, after_send):
+            assert before_send() is True
+            await wait_for_release('place', after_send)
+            raw = json.dumps(dict(status='1', info='OK', infocode='10000', count='1',
+                                  pois=[dict(id='SYNTH_ONLY', name='合成公园', location='116.1,39.1')])).encode()
+            response = Response(request.binding_digest, request.origin, request.path, 200, raw,
+                                datetime.now(timezone.utc))
+            return TransportResult('received', 'fixture', response)
+
+        async def weather(key, guard, *, adcode, after_send):
+            assert guard() is True and adcode == '110000'
+            await wait_for_release('weather', after_send)
+            return json.dumps(dict(status='1', infocode='10000', count='1',
+                                   forecasts=[dict(adcode=adcode, casts=[dict(date=dates['start_date'])])])).encode()
+
+        async def fact(transport, target):
+            assert transport.before_send() is True
+            await wait_for_release('fact', transport.after_send)
+
+            async def body():
+                yield (b'<h2>240-Hour Visa-Free Transit Policy</h2>'
+                       b'<p>This synthetic fixture contains the 240 hours source wording.</p>')
+
+            async def close():
+                return None
+
+            return SimpleNamespace(status=200, content_encoding='identity', body=body(), close=close)
+
+        async def dns(*args, **kwargs):
+            return [(2, 1, 6, '', ('93.184.216.34', 443))]
+
+        async def model_wire(config, raw, guard, observation):
+            assert guard() is True
+            body = json.loads(raw)
+            has_result = seeding or body['messages'][-1]['role'] == 'tool'
+            if not seeding:
+                model_turns.append(has_result)
+            turn = (dict(version='MODEL-tool-turn.1', kind='tool', answer=None,
+                         calls=[dict(name=tool_name, arguments=arguments)]) if not has_result else
+                    dict(version='MODEL-tool-turn.1', kind='answer',
+                         answer=dict(zh='这是合成资料的答复。', en='The synthetic result is ready.'), calls=[]))
+            yield _M4_REQUEST_SENT
+            observation['http_status'] = 200
+            response = turn_sse(turn=turn, compact=True)
+            yield response.replace('chatcmpl-synthetic', f'fixture-{kind}-{len(model_turns)}').encode()
+
+        def send(mid, text, conversation=None):
+            target = dict(new_conversation=True) if conversation is None else dict(conversation_id=conversation)
+            body = encode(dict(version='LIO-message.2', message_id=mid, text=text, locale='zh', **target))
+            response = api.post('/v2/lio/messages', headers=headers, content=body)
+            assert response.status_code == 200, response.status_code
+            return response.json()['conversation_id']
+
+        earlier = 'tool-' + kind + '-previous'
+        current = 'tool-' + kind + '-current'
+        conversation = send(earlier, '你是谁')
+        with patch('cj_agent.provider._m4_wire', model_wire):
+            assert [row.status for row in worker.process()] == ['completed']
+        seed_ledger = budget.inspect()
+        seeding = False
+        send(current, '请查一下这条资料', conversation)
+
+        with (patch('cj_agent.provider._m4_wire', model_wire),
+              patch('cj_api.real_services.fetch_candidate', place),
+              patch('cj_fact.live_source._weather_exchange', weather),
+              patch('cj_fact.live_source.PinnedHTTPSTransport.__call__', fact),
+              patch('asyncio.BaseEventLoop.getaddrinfo', dns),
+              ThreadPoolExecutor(max_workers=1) as executor):
+            future = executor.submit(worker.process)
+            try:
+                assert started.wait(10), (kind, future.result(timeout=2))
+                entries = budget.inspect()
+                assert entries[:len(seed_ledger)] == seed_ledger
+                before = entries[len(seed_ledger):]
+                assert [(row['kind'], row['state']) for row in before] == [
+                    ('model', 'RECEIVED'), (kind, 'INTENT'),
+                ]
+                assert before[1]['receipt'] is None
+                timeline = api.get('/v2/lio/timeline', headers=headers, params=dict(conversation_id=conversation))
+                assert timeline.status_code == 200, (kind, timeline.status_code)
+                prior, pending = timeline.json()['messages']
+                assert (prior['message_id'], prior['status']) == (earlier, 'completed')
+                assert (pending['message_id'], pending['status']) == (current, 'answering')
+                assert budget.inspect() == [*seed_ledger, *before]
+            finally:
+                release.set()
+            outcome, = future.result(timeout=10)
+
+        assert (outcome.message_id, outcome.status, outcome.proposal_id) == (current, 'completed', None)
+        entries = budget.inspect()
+        assert entries[:len(seed_ledger)] == seed_ledger
+        after = entries[len(seed_ledger):]
+        assert [(row['kind'], row['state']) for row in after] == [
+            ('model', 'RECEIVED'), (kind, 'RECEIVED'), ('model', 'RECEIVED'),
+        ]
+        assert after[0] == before[0]
+        for field in ('attempt_id', 'input_sha'):
+            assert after[1][field] == before[1][field]
+        assert after[1]['receipt'] is not None
+        assert sent == [kind] and model_turns == [False, True]
+        result_page = api.get('/v2/lio/timeline', headers=headers, params=dict(conversation_id=conversation))
+        assert result_page.status_code == 200
+        final = result_page.json()['messages'][-1]
+        assert (final['message_id'], final['status'], final['trip']) == (current, 'completed', None)
+        assert final['answer'].strip()
+        print(f'PASS signed timeline 200 during original {kind} response wait, one original settled tool', flush=True)
