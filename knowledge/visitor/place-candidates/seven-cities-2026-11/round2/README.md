@@ -7,9 +7,9 @@
 | 文件 | 内容 |
 |---|---|
 | `AUDIT.md` | 第一轮基线盘点：城市 × 区县 × 品类、城市 × 二级品类、缺口与已知来源限制 |
-| `audit_district_category.csv` | 区县 × 一级品类逐格计数（715 行） |
-| `audit_subcategory.csv` | 城市 × 二级品类逐格计数（336 行） |
-| `audit_district_subcategory.csv` | 区县 × 二级品类全交叉（6864 行，含空档格） |
+| `audit_district_category.csv` | 区县 × 一级品类逐格计数（715 行，含第一轮/第二轮新增/状态） |
+| `audit_subcategory.csv` | 城市 × 二级品类逐格计数（336 行，含第一轮/第二轮新增/状态） |
+| `audit_district_subcategory.csv` | 区县 × 二级品类全交叉（6864 行，含空档格与「仍空档/本轮已补」状态） |
 | `<city>-new.csv` | 本轮新增 POI，表头与第一轮一致；`row_id` 从第一轮同城最大号顺延 |
 | `<city>-enrich.csv` | 原条目补细，按第一轮 `row_id` 关联，长表格式 |
 | `all-cities-new.csv` / `all-cities-enrich.csv` | 七城新增与补细合并表 |
