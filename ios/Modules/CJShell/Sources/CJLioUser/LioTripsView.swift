@@ -1,6 +1,7 @@
 #if os(iOS)
 import MapKit
 import SwiftUI
+import UIKit
 import CJMessageHTTP
 import CJRunClient
 import CJTripClient
@@ -288,23 +289,25 @@ private struct LioTripDetail: View {
     var body: some View {
         Group {
             if let record {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        RunReadableText(text: record.title, style: .displayTitle,
-                                        color: Color(LioTheme.ink.resolve(in: environment)))
-                            .background(LioTheme.paper)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .accessibilityAddTraits(.isHeader)
-                        switch record {
-                        case .legacy(let value):
-                            LioSavedTripTimeline(record: value, language: language)
-                            if let recordedMap { recordedMap(value.document) }
-                        case .calendar(let value):
-                            LioCalendarSavedTripTimeline(record: value, language: language)
-                            if case .legacy(let document) = value.content, let recordedMap { recordedMap(document) }
+                SavedTripViewport {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 24) {
+                            RunReadableText(text: record.title, style: .displayTitle,
+                                            color: Color(LioTheme.ink.resolve(in: environment)))
+                                .background(LioTheme.paper)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityAddTraits(.isHeader)
+                            switch record {
+                            case .legacy(let value):
+                                LioSavedTripTimeline(record: value, language: language)
+                                if let recordedMap { recordedMap(value.document) }
+                            case .calendar(let value):
+                                LioCalendarSavedTripTimeline(record: value, language: language)
+                                if case .legacy(let document) = value.content, let recordedMap { recordedMap(document) }
+                            }
                         }
+                        .padding(16)
                     }
-                    .padding(16)
                 }
             } else if unavailable {
                 ContentUnavailableView {
@@ -337,6 +340,44 @@ private struct LioTripDetail: View {
             }
         }
     }
+}
+
+@MainActor private struct SavedTripViewport<Content: View>: UIViewControllerRepresentable {
+    let content: Content
+    init(@ViewBuilder content: () -> Content) { self.content = content() }
+    func makeUIViewController(context: Context) -> SavedTripViewportController<Content> {
+        SavedTripViewportController(content: content)
+    }
+    func updateUIViewController(_ controller: SavedTripViewportController<Content>, context: Context) {
+        controller.updateContent(content)
+    }
+}
+
+@MainActor private final class SavedTripViewportController<Content: View>: UIViewController {
+    private let hosting: UIHostingController<Content>
+    init(content: Content) {
+        hosting = UIHostingController(rootView: content)
+        super.init(nibName: nil, bundle: nil)
+        hosting.safeAreaRegions = []
+    }
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError() }
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .clear
+        addChild(hosting)
+        hosting.view.backgroundColor = .clear
+        hosting.view.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(hosting.view)
+        NSLayoutConstraint.activate([
+            hosting.view.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            hosting.view.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            hosting.view.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            hosting.view.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
+        ])
+        hosting.didMove(toParent: self)
+    }
+    func updateContent(_ content: Content) { hosting.rootView = content }
 }
 
 private struct LioCalendarSavedTripTimeline: View {

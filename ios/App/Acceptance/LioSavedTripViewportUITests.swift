@@ -64,6 +64,15 @@ import XCTest
             XCTAssertTrue(app.staticTexts["Draft"].exists)
             capture(app, "detail-\(visit)")
             try audit(app)
+            let viewports = app.scrollViews.containing(.staticText, identifier: "Draft")
+            XCTAssertEqual(viewports.count, 1)
+            let viewport = viewports.firstMatch
+            XCTAssertTrue(viewport.exists)
+            let geometry = XCTAttachment(string: viewport.debugDescription + "\n" + app.debugDescription)
+            geometry.name = "actual-detail-viewport"; geometry.lifetime = .keepAlways; add(geometry)
+            XCTAssertGreaterThan(viewport.frame.height, 0)
+            XCTAssertGreaterThanOrEqual(viewport.frame.minY, app.navigationBars.firstMatch.frame.maxY)
+            XCTAssertLessThanOrEqual(viewport.frame.maxY, app.tabBars.firstMatch.frame.minY)
             XCTAssertTrue(app.tabBars.firstMatch.exists, "Existing direct tab navigation remains available in detail")
             if visit == 1 {
                 // The actual recorded structured.2 fixture contains all five entries.
