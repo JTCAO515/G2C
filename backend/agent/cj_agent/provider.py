@@ -598,9 +598,10 @@ class MeteredDashScopeProvider:
         envelope_shape=None;identity_rejection=None;identity_fields=None;identity_missing=False
         choices_after_stop=False
         try:
-            if guarded_connect and self.transport is None:
+            wire_options={'guarded_connect':True} if guarded_connect and self.transport is None else {}
+            if wire_options:
                 yield UNLOCKED_WIRE_START
-            with self._chunks(raw,guard,observation,guarded_connect=guarded_connect) as chunks:
+            with self._chunks(raw,guard,observation,**wire_options) as chunks:
                 if self.transport is None:
                     first=next(chunks,None)
                     if guarded_connect and isinstance(first,GuardedWireWrite):
