@@ -12,12 +12,17 @@
 | `beijing.csv` … `guilin.csv` | 每城一个 UTF-8 CSV，每行一个具体 POI；七城列名一致 |
 | `COVERAGE.md` | 城市 × 品类数量、区县覆盖、来源处理范围、缺口与原因 |
 | `all-cities.csv` | 七城完成后从七城 CSV 合成，保留原 row_id 和来源 |
+| `round2/` | 第二轮增量：`AUDIT.md` 基线盘点、`<city>-new.csv` 新增、`<city>-enrich.csv` 补细、`ROUND2-SUMMARY.md` |
 | `../../validate_seven_city_poi.py` | 只读格式校验器，不联网、不抓取、不写记录 |
 | `../../test_seven_city_poi.py` | 校验器单元测试 |
 
 ## 本轮交付（2026-11-18）
 
 七城合计 **4043 条**：北京 550、上海 869、广州 455、深圳 371、成都 364、重庆 1102、桂林 332。五个一级品类均已覆盖（餐饮 1051、酒店住宿 656、景点与文博 1784、街道与街区 252、商场与市场 300）。所有行 `review_status=待复核`，未做全库查重与冲突裁决；分城目录处理范围、区县覆盖、缺口与冲突见 [COVERAGE.md](COVERAGE.md)。
+
+## 第二轮（2026-11-18）
+
+第二轮在第一轮 4043 条上新增 1370 条、补细 331 项，仍全部 `待复核`；增量放在 `round2/`，不覆盖本目录第一轮 CSV。口径、长表字段与合并方向见 [round2/README.md](round2/README.md)。
 
 ## 列定义
 

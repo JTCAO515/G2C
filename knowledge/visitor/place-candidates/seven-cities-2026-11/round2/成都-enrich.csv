@@ -1,0 +1,30 @@
+row_id,city,field,old_value,new_value,source_name,source_type,source_url,collected_on,notes
+CD-0325,成都,address_zh,未知,成都市成华区双庆路8号,成华区人民政府“购物”导航页·成都万象城,政府网站,https://www.chenghua.gov.cn/chqrmzf/c172004/2024-01/25/content_aab80107cdaa46a393df18aea49cb319.shtml,2026-11-18,成华区政府“购物”导航页原文给出“地址：成华区双庆路8号”，补齐第一轮缺失的购物中心地址。
+CD-0325,成都,district,未知,成华区,成华区人民政府“购物”导航页·成都万象城,政府网站,https://www.chenghua.gov.cn/chqrmzf/c172004/2024-01/25/content_aab80107cdaa46a393df18aea49cb319.shtml,2026-11-18,按成华区政府页所列地址归属补区县，原为“未知”。
+CD-0326,成都,address_zh,未知,成都市锦江区红星路三段1号,成都国际金融中心（成都IFS）官网·如何到达,品牌官网,https://www.cdifs.cn/zh/how-to-get-here-sharp,2026-11-18,成都IFS官网“如何到达”页原文地址，补齐第一轮缺失地址。
+CD-0326,成都,district,未知,锦江区,成都国际金融中心（成都IFS）官网·如何到达,品牌官网,https://www.cdifs.cn/zh/how-to-get-here-sharp,2026-11-18,同上，官网地址明确为锦江区，原为“未知”。
+CD-0326,成都,name_en,IFS,Chengdu IFS,成都国际金融中心（成都IFS）官网英文版,品牌官网,https://www.cdifs.cn/en/how-to-get-here-en,2026-11-18,官网英文版使用“Chengdu IFS”，替原拼音写法“IFS”。
+CD-0326,成都,name_en_type,拼音转写,官方英文,成都国际金融中心（成都IFS）官网英文版,品牌官网,https://www.cdifs.cn/en/how-to-get-here-en,2026-11-18,同上，英文名有官网直接出处。
+CD-0326,成都,name_en_source_url,,https://www.cdifs.cn/en/how-to-get-here-en,成都国际金融中心（成都IFS）官网英文版,品牌官网,https://www.cdifs.cn/en/how-to-get-here-en,2026-11-18,补英文名出处链接。
+CD-0327,成都,address_zh,未知,成都市高新区天府大道北段1700号（新世纪环球中心内）,成都商报《成都这11家住宿，才叫有情趣！》·成都环球中心,官方媒体,https://m.sohu.com/a/41295639_188535/,2026-11-18,住宿报道原文“成都市高新区天府大道北段1700号，新世纪环球中心内”，补齐地址。
+CD-0327,成都,district,未知,高新区,成都商报《成都这11家住宿，才叫有情趣！》·成都环球中心,官方媒体,https://m.sohu.com/a/41295639_188535/,2026-11-18,同上地址明确为高新区，原为“未知”。
+CD-0329,成都,address_zh,未知,成都市金牛区一环路北三段1号,百度百科“万达广场（四川省成都市万达广场）”·成都金牛万达广场,其他公开来源,https://baike.baidu.com/item/%E4%B8%87%E8%BE%BE%E5%B9%BF%E5%9C%BA/8145567?fromtitle=%E6%88%90%E9%83%BD%E4%B8%87%E8%BE%BE%E5%B9%BF%E5%9C%BA&fromid=8973661,2026-11-18,万达广场官网项目页给出“Address: 金牛区一环路北三段1号”（extra_source_urls 已附官网链接）。
+CD-0333,成都,address_zh,未知,成都市锦江区二环路东五段（与新成仁路交叉口）,百度百科“万达广场（四川省成都市万达广场）”·成都锦华万达广场,其他公开来源,https://baike.baidu.com/item/%E4%B8%87%E8%BE%BE%E5%B9%BF%E5%9C%BA/8145567?fromtitle=%E6%88%90%E9%83%BD%E4%B8%87%E8%BE%BE%E5%B9%BF%E5%9C%BA&fromid=8973661,2026-11-18,百科条目载锦华路万达广场位于锦江区二环路东五段与新成仁路交叉口，属二手来源，门牌待核。
+CD-0333,成都,district,未知,锦江区,百度百科“万达广场（四川省成都市万达广场）”·成都锦华万达广场,其他公开来源,https://baike.baidu.com/item/%E4%B8%87%E8%BE%BE%E5%B9%BF%E5%9C%BA/8145567?fromtitle=%E6%88%90%E9%83%BD%E4%B8%87%E8%BE%BE%E5%B9%BF%E5%9C%BA&fromid=8973661,2026-11-18,同上，补区县，原为“未知”。
+CD-0335,成都,address_zh,未知,成都市高新区锦城大道666号,百度百科“万达广场（四川省成都市万达广场）”·成都锦城万达广场,其他公开来源,https://baike.baidu.com/item/%E4%B8%87%E8%BE%BE%E5%B9%BF%E5%9C%BA/8145567?fromtitle=%E6%88%90%E9%83%BD%E4%B8%87%E8%BE%BE%E5%B9%BF%E5%9C%BA&fromid=8973661,2026-11-18,百科条目载成都锦城万达广场位于锦城大道666号（原奥克斯广场），属二手来源。
+CD-0335,成都,district,未知,高新区,百度百科“万达广场（四川省成都市万达广场）”·成都锦城万达广场,其他公开来源,https://baike.baidu.com/item/%E4%B8%87%E8%BE%BE%E5%B9%BF%E5%9C%BA/8145567?fromtitle=%E6%88%90%E9%83%BD%E4%B8%87%E8%BE%BE%E5%B9%BF%E5%9C%BA&fromid=8973661,2026-11-18,同上，补区县，原为“未知”。
+CD-0340,成都,address_zh,未知,成都市锦江区中纱帽街8号,远洋集团官网·成都远洋太古里项目页,品牌官网,https://www.sinooceangroup.com/zh-cn/business/detail.html?commonCode=5df76d34-6f57-40d9-8391-0b38e244a7cf,2026-11-18,远洋集团官网项目页列出“四川省成都市锦江区中纱帽街8号”，补齐太古里地址。
+CD-0340,成都,district,未知,锦江区,远洋集团官网·成都远洋太古里项目页,品牌官网,https://www.sinooceangroup.com/zh-cn/business/detail.html?commonCode=5df76d34-6f57-40d9-8391-0b38e244a7cf,2026-11-18,同上，补区县，原为“未知”。
+CD-0346,成都,address_zh,未知,成都市郫都区望丛中路（绿地缤纷城北侧约140米）,郫都区人民政府门户网站“服务地图”·龙湖成都蜀新天街,政府网站,https://www.pidu.gov.cn/pidu/c140454/fwdt.shtml?id=1761283949679,2026-11-18,郫都区政府“服务地图”页原文列出龙湖蜀新天街位置，补齐地址。
+CD-0346,成都,district,未知,郫都区,郫都区人民政府门户网站“服务地图”·龙湖成都蜀新天街,政府网站,https://www.pidu.gov.cn/pidu/c140454/fwdt.shtml?id=1761283949679,2026-11-18,同上，补区县，原为“未知”。
+CD-0347,成都,address_zh,未知,成都市锦江区春熙路南段8号,POI86 成都市锦江区POI名录·成都群光广场,其他公开来源,https://www.poi86.com/poi/amap/district/510104/17.html,2026-11-18,锦江区POI名录载群光广场地址为春熙路南段8号，属公开POI二手来源，门牌待核。
+CD-0347,成都,district,未知,锦江区,POI86 成都市锦江区POI名录·成都群光广场,其他公开来源,https://www.poi86.com/poi/amap/district/510104/17.html,2026-11-18,同上，补区县，原为“未知”。
+CD-0221,成都,district,未知,双流区,成都商报《成都这11家住宿，才叫有情趣！》·成都家园国际酒店,官方媒体,https://m.sohu.com/a/41295639_188535/,2026-11-18,酒店地址为“机场路181号”，机场路属双流区，据此补区县；原为“未知”，属按道路归属推定，待核。
+CD-0323,成都,venue_type,,历史文化街区,2024成都“烟火指数”榜单（成都特色商业街协会发布，红星新闻/微成都报道）·宽窄巷子,官方媒体,https://static.cdsb.com/micropub/Articles/202503/8204e0a25c599878c77727a1b2e77ea2.html,2026-11-18,宽窄巷子为成都历史文化街区与步行街区，补场所类型（第一轮该字段为空）。
+CD-0324,成都,venue_type,,步行街,2024成都“烟火指数”榜单（成都特色商业街协会发布，红星新闻/微成都报道）·春熙路,官方媒体,https://static.cdsb.com/micropub/Articles/202503/8204e0a25c599878c77727a1b2e77ea2.html,2026-11-18,春熙路为成都核心步行街，补场所类型（第一轮该字段为空）。
+CD-0289,成都,cuisine,,川味小吃,四川省商务厅省级“天府名店”拟认定名单·四川省成都市饮食公司钟水饺总店,政府目录,https://swt.sc.gov.cn/sccom/c202504185/2025/4/29/2d56ce15970b4422936aee0b47d2342e.shtml,2026-11-18,按店名所指的招牌品种归类菜系；天府名店名单只给店名与地址，未单列菜系，归类待复核。
+CD-0289,成都,signature_dishes,,红油水饺,四川省商务厅省级“天府名店”拟认定名单·四川省成都市饮食公司钟水饺总店,政府目录,https://swt.sc.gov.cn/sccom/c202504185/2025/4/29/2d56ce15970b4422936aee0b47d2342e.shtml,2026-11-18,招牌菜品即店名所指品种，属名称直读，未另找菜单页，待复核。
+CD-0290,成都,cuisine,,川菜,四川省商务厅省级“天府名店”拟认定名单·四川省成都市饮食公司陈麻婆豆腐总店,政府目录,https://swt.sc.gov.cn/sccom/c202504185/2025/4/29/2d56ce15970b4422936aee0b47d2342e.shtml,2026-11-18,按店名所指的招牌品种归类菜系；天府名店名单只给店名与地址，未单列菜系，归类待复核。
+CD-0290,成都,signature_dishes,,麻婆豆腐,四川省商务厅省级“天府名店”拟认定名单·四川省成都市饮食公司陈麻婆豆腐总店,政府目录,https://swt.sc.gov.cn/sccom/c202504185/2025/4/29/2d56ce15970b4422936aee0b47d2342e.shtml,2026-11-18,招牌菜品即店名所指品种，属名称直读，未另找菜单页，待复核。
+CD-0292,成都,cuisine,,川味小吃,四川省商务厅省级“天府名店”拟认定名单·四川省成都市饮食公司龙抄手食府,政府目录,https://swt.sc.gov.cn/sccom/c202504185/2025/4/29/2d56ce15970b4422936aee0b47d2342e.shtml,2026-11-18,按店名所指的招牌品种归类菜系；天府名店名单只给店名与地址，未单列菜系，归类待复核。
+CD-0292,成都,signature_dishes,,红油抄手,四川省商务厅省级“天府名店”拟认定名单·四川省成都市饮食公司龙抄手食府,政府目录,https://swt.sc.gov.cn/sccom/c202504185/2025/4/29/2d56ce15970b4422936aee0b47d2342e.shtml,2026-11-18,招牌菜品即店名所指品种，属名称直读，未另找菜单页，待复核。
