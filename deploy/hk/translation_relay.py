@@ -10,6 +10,7 @@ import socket
 from socketserver import StreamRequestHandler, ThreadingUnixStreamServer
 import sqlite3
 import stat
+import struct
 import sys
 from threading import BoundedSemaphore, Thread
 
@@ -34,6 +35,7 @@ from .configuration import TRANSLATION_INTERNAL_SUBJECTS
 
 
 SOCKET = Path('/run/g2c-demo/translation.sock')
+STATE_VERSION = 'TRANSLATION-state.1'
 TOKEN_LIMIT = 4096
 MAX_RESPONSE = 256 * 1024
 REQUEST_TIMEOUT = 50
@@ -65,9 +67,27 @@ def socket_request(token, raw, *, path=SOCKET):
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
         connection.settimeout(REQUEST_TIMEOUT)
         connection.connect(str(path))
-        connection.sendall(token.encode('ascii') + b'\n' + len(raw).to_bytes(4, 'big') + raw)
+        connection.sendall(b'\x01' + token.encode('ascii') + b'\n' + len(raw).to_bytes(4, 'big') + raw)
         with connection.makefile('rb') as incoming:
             return _response(incoming)
+
+
+def translation_state(path=SOCKET, *, worker_pid=1):
+    """Read enablement from PID 1 of the exact running worker container."""
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
+        connection.settimeout(3)
+        connection.connect(str(path))
+        pid, uid, _ = struct.unpack('3i', connection.getsockopt(
+            socket.SOL_SOCKET, socket.SO_PEERCRED, struct.calcsize('3i')))
+        if pid != worker_pid or uid != os.getuid():
+            raise ValueError('translation state is not from the active worker')
+        connection.sendall(b'\x00')
+        with connection.makefile('rb') as incoming:
+            status, body = _response(incoming)
+    if (status != 200 or set(body) != {'version', 'enabled'} or body['version'] != STATE_VERSION
+            or type(body['enabled']) is not bool):
+        raise ValueError('translation worker enablement unavailable')
+    return body['enabled']
 
 
 def register_translation_route(app, *, send=socket_request):
@@ -131,7 +151,15 @@ def translation_socket(relay, *, path=SOCKET):
                 status, body = 503, _error('unavailable')
             else:
                 try:
-                    status, body = 200, _dispatch(relay, self.rfile)
+                    operation = self.rfile.read(1)
+                    if operation == b'\x00':
+                        status, body = 200, dict(version=STATE_VERSION, enabled=relay is not None)
+                    elif operation != b'\x01':
+                        raise TranslationError(400, 'invalid_request')
+                    elif relay is None:
+                        raise TranslationError(503, 'unavailable')
+                    else:
+                        status, body = 200, _dispatch(relay, self.rfile)
                 except TranslationError as error:
                     status, body = error.status, _error(error.code)
                 except TranslationLimit:
@@ -176,10 +204,8 @@ def translation_socket(relay, *, path=SOCKET):
 @contextmanager
 def active_translation(runtime, authorization_guard):
     raw = os.environ.get(TRANSLATION_INTERNAL_SUBJECTS)
-    if raw is None:
-        yield
-        return
-    with ExitStack() as stack:
+    relay = None
+    if raw is not None:
         try:
             subjects = json.loads(raw)
             if (type(subjects) is not list or not 0 < len(subjects) <= 100
@@ -191,9 +217,13 @@ def active_translation(runtime, authorization_guard):
             checker = account_checker_for(runtime.auth, runtime.database(), selected_subjects=frozenset(subjects))
             provider = DashScopeTranslation(os.environ['CJ_MODEL_API_KEY'])
             relay = TranslationRelay(checker, TranslationBudget(budget), provider, scope_for)
-            stack.enter_context(translation_socket(relay))
         except (BudgetUnknown, CompositionUnavailable, psycopg.Error, sqlite3.Error,
                 KeyError, OSError, TypeError, ValueError):
-            stack.close()
             print('ALERT translation_relay_unavailable', file=sys.stderr, flush=True)
+    with ExitStack() as stack:
+        try:
+            stack.enter_context(translation_socket(relay))
+        except (OSError, ValueError):
+            if raw is not None and relay is not None:
+                print('ALERT translation_relay_unavailable', file=sys.stderr, flush=True)
         yield

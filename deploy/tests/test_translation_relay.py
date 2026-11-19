@@ -92,8 +92,12 @@ def interface(budget):
             self.reply = fake(httpx.Request(method, 'https://' + self.host + path, content=body, headers=headers))
 
         def getresponse(self):
-            stream = BytesIO(self.reply.content)
-            return SimpleNamespace(status=self.reply.status_code, read1=stream.read1, close=stream.close)
+            status = self.reply.status_code
+            frame = (f'HTTP/1.1 {status} Fixture\r\nContent-Length: {len(self.reply.content)}\r\n\r\n'.encode()
+                     + self.reply.content)
+            response = self.response_class(SimpleNamespace(makefile=lambda _: BytesIO(frame)))
+            response.begin()
+            return response
 
         def close(self):
             pass
@@ -299,3 +303,124 @@ def test_completed_smoke_rejects_missing_translation_requirement_or_evidence(mon
     translations = [dict(kind='translation', language=language, status='PASS') for language in ('zh', 'en')]
     assert server_smoke.decide(common + [required, *translations], [])['status'] == 'PASS'
     assert server_smoke.decide(common + [disabled, *translations], []) == unavailable
+
+
+@pytest.mark.parametrize('headers,encode', [
+    (b'Content-Length: 2000\r\n', lambda body: body),
+    (b'Transfer-Encoding: chunked\r\n',
+     lambda body: f'{len(body):x}\r\n'.encode() + body + b'\r\n0\r\n'),
+])
+def test_parseable_but_truncated_provider_response_keeps_hold(budget, headers, encode):
+    import json
+    from types import SimpleNamespace
+    from cj_api.translation import TranslationError, TranslationInput
+
+    body = json.dumps(dict(model=TEXT_MODEL, id=str(uuid4()),
+        choices=[dict(message={'content': 'Hello'}, finish_reason='stop')],
+        usage={'prompt_tokens': 10, 'completion_tokens': 2})).encode()
+
+    class Connection:
+        def __init__(self, host, timeout):
+            pass
+
+        def connect(self):
+            pass
+
+        def request(self, *args, **kwargs):
+            pass
+
+        def getresponse(self):
+            wire = b'HTTP/1.1 200 OK\r\n' + headers + b'\r\n' + encode(body)
+            response = self.response_class(SimpleNamespace(makefile=lambda _: BytesIO(wire)))
+            response.begin()
+            return response
+
+        def close(self):
+            pass
+
+    relay = TranslationRelay(SimpleNamespace(check=_check), budget,
+                             DashScopeTranslation('fixture-key', connection=Connection),
+                             lambda issuer, subject: subject)
+    item = TranslationInput.read(json.dumps(_body(text='你好')))
+    with pytest.raises(TranslationError, match='provider_unavailable'):
+        relay.translate('internal-fixture', item, 'internal')
+    assert budget.authorization.inspect()[0]['state'] == 'INTENT'
+
+
+def test_paid_authorization_expiring_during_tls_blocks_the_post(budget):
+    import json
+    from types import SimpleNamespace
+    from cj_api.translation import TranslationInput
+    from cj_usage.metered_exit import BudgetUnknown
+
+    expired = False
+
+    def authorization():
+        if expired:
+            raise BudgetUnknown('fixture authorization expired')
+
+    class Connection:
+        def __init__(self, host, timeout):
+            pass
+
+        def connect(self):
+            nonlocal expired
+            expired = True
+
+        def request(self, *args, **kwargs):
+            pytest.fail('expired paid authorization reached HTTP POST')
+
+        def close(self):
+            pass
+
+    budget.authorization.authorization_guard = authorization
+    relay = TranslationRelay(SimpleNamespace(check=_check), budget,
+                             DashScopeTranslation('fixture-key', connection=Connection),
+                             lambda issuer, subject: subject)
+    item = TranslationInput.read(json.dumps(_body(text='你好')))
+    with pytest.raises(BudgetUnknown, match='fixture authorization expired'):
+        relay.translate('internal-fixture', item, 'internal')
+    assert budget.authorization.inspect()[0]['state'] == 'INTENT'
+
+
+def test_smoke_uses_only_worker_state_agreeing_with_configuration(monkeypatch):
+    from datetime import timedelta, timezone
+    from deploy.hk import server_smoke, translation_relay
+    from deploy.hk.configuration import TRANSLATION_INTERNAL_SUBJECTS
+
+    start = datetime(2026, 11, 19, 11, tzinfo=timezone.utc)
+    class Clock:
+        @staticmethod
+        def now(tz):
+            return start
+    monkeypatch.setattr(server_smoke, 'datetime', Clock)
+    monkeypatch.setattr(translation_relay, 'translation_state', lambda: False)
+    monkeypatch.setenv(TRANSLATION_INTERNAL_SUBJECTS, '["internal"]')
+    events = []
+    monkeypatch.setattr(server_smoke, 'print_json', events.append)
+    assert server_smoke.run(None, None, None, None, None, start, start + timedelta(minutes=5)) == 2
+    assert events == [dict(kind='batch', status='UNKNOWN', reason='translation_worker_state_unavailable')]
+
+
+def test_state_reply_is_private_to_the_worker_and_rejects_other_pid(monkeypatch):
+    import os
+    import socket
+    import struct
+    from deploy.hk.translation_relay import translation_state
+
+    real = socket.socket.getsockopt
+    option = getattr(socket, 'SO_PEERCRED', 20031)
+    monkeypatch.setattr(socket, 'SO_PEERCRED', option, raising=False)
+    def peer(connection, level, code, *args):
+        if level == socket.SOL_SOCKET and code == option:
+            return struct.pack('3i', os.getpid(), os.getuid(), os.getgid())
+        return real(connection, level, code, *args)
+    monkeypatch.setattr(socket.socket, 'getsockopt', peer)
+    with TemporaryDirectory(prefix='g2c-tr-state-', dir='/tmp') as directory:
+        path = Path(directory) / 'relay.sock'
+        with translation_socket(None, path=path):
+            assert translation_state(path, worker_pid=os.getpid()) is False
+            with pytest.raises(ValueError, match='active worker'):
+                translation_state(path, worker_pid=os.getpid() + 1)
+            status, body = socket_request('internal-fixture', b'{}', path=path)
+            assert status == 503 and body == dict(version=VERSION, error='unavailable')

@@ -366,7 +366,14 @@ def run(budget, database, scope, token, owner, start, end):
         print_json(dict(kind='batch', status='UNRUN', reason='approved_window_closed'))
         return 3
     from deploy.hk.configuration import TRANSLATION_INTERNAL_SUBJECTS
-    translation_required = TRANSLATION_INTERNAL_SUBJECTS in os.environ
+    from deploy.hk.translation_relay import translation_state
+    try:
+        translation_required = translation_state()
+        if translation_required != (TRANSLATION_INTERNAL_SUBJECTS in os.environ):
+            raise ValueError('translation worker differs from expected configuration')
+    except (OSError, ValueError):
+        print_json(dict(kind='batch', status='UNKNOWN', reason='translation_worker_state_unavailable'))
+        return 2
     print_json(dict(kind='translation_requirement', required=translation_required))
     before = budget_state(budget, owner)
     print_json(dict(kind='restriction_intent', before=before))

@@ -3,7 +3,7 @@
 from base64 import b64decode, b64encode
 from contextlib import closing
 from dataclasses import dataclass
-from http.client import HTTPSConnection, HTTPException
+from http.client import HTTPSConnection, HTTPException, HTTPResponse, IncompleteRead
 from io import BytesIO
 import json
 import re
@@ -122,6 +122,19 @@ class TranslationInput:
             raise invalid() from None
 
 
+class _CompleteHTTPResponse(HTTPResponse):
+    def _read_and_discard_trailer(self):
+        remaining = 64 * 1024
+        while remaining > 0:
+            line = self.fp.readline(remaining + 1)
+            if line == b'\r\n':
+                return
+            if not line.endswith(b'\r\n'):
+                break
+            remaining -= len(line)
+        raise IncompleteRead(b'')
+
+
 class DashScopeTranslation:
     def __init__(self, api_key, *, connection=HTTPSConnection):
         self._api_key = api_key
@@ -137,6 +150,7 @@ class DashScopeTranslation:
             with closing(self._connection(DASHSCOPE, timeout=min(remaining, 12))) as connection:
                 connection.connect()
                 connection.auto_open = False
+                connection.response_class = _CompleteHTTPResponse
                 # DNS and TLS can block. Check the App session after both and
                 # immediately before the only write carrying the paid request.
                 authorize()
@@ -146,10 +160,19 @@ class DashScopeTranslation:
                 with closing(connection.getresponse()) as response:
                     if response.status != 200:
                         raise supplier_unavailable()
+                    length = response.getheader('Content-Length')
+                    if response.chunked:
+                        if length is not None:
+                            raise supplier_unavailable()
+                    elif (length is None or re.fullmatch(r'[0-9]{1,7}', length) is None
+                          or not 0 < int(length) <= MAX_PROVIDER_RESPONSE):
+                        raise supplier_unavailable()
                     while chunk := response.read1(32 * 1024):
                         if len(body) + len(chunk) > MAX_PROVIDER_RESPONSE or time.monotonic() >= deadline:
                             raise supplier_unavailable()
                         body.extend(chunk)
+                    if length is not None and len(body) != int(length):
+                        raise supplier_unavailable()
             value = json.loads(body, object_pairs_hook=reject_duplicates(ValueError, 'duplicate provider field'))
             if type(value) is not dict or 'error' in value or 'code' in value:
                 raise supplier_unavailable()
@@ -238,6 +261,7 @@ class TranslationRelay:
             def authorize_send():
                 if time.monotonic() >= deadline or self.authorize(token) != owner:
                     raise TranslationError(503, 'unavailable')
+                self.budget.authorization.check_date()
 
             supplier_id, usage, text = self.provider.request(
                 model, value, request.source_lang, request.target_lang, deadline, authorize_send)
