@@ -21,7 +21,7 @@ from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
 from cj_agent.provider import (
-    CompleteUnsettledAnswer,
+    CompleteUnsettledAnswer, CompleteUnsettledTurn,
     DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_REAL_OUTPUT_TOKENS,
     M4_NATIVE_TURN_PROFILE_V2,M4_NATIVE_TURN_STREAM,M4_NATIVE_TURN_BUFFERED,ProviderUnknown,ProviderFailed,
 )
@@ -160,6 +160,7 @@ class ModelInput:
     lio_answer:bool=False
     national:bool=False
     confirmed_destination:bool=True
+    retain_unsettled_answer:bool=False
 
 
 def canonical_tool(name,raw,*,city=None):
@@ -622,6 +623,9 @@ class RealTools:
             discussion_handoff = (answer_preparation and not native_turn
                                   and operation.operation_key == 'model.lio_discussion.0'
                                   and operation.registration_id == 'model.answer')
+            retain_unsettled=(discussion_handoff or (native_turn and argument.retain_unsettled_answer
+                                                     and operation.registration_id=='model.tool_turn'))
+
             def admitted(*,memory_check=None):
                 if wrapped:
                     if memory_check is None:provider._check()
@@ -640,22 +644,22 @@ class RealTools:
                         native_turn_profile=inputs.get('native_turn_profile'),final_answer=inputs.get('external_tools_disabled',False),
                         release_after_send=discussion_handoff or inputs.get('response_mode')=='lio-memory-json.1',
                         **({'guarded_connect':True} if release_after_send else {}),
-                        **({'unsettled_answer_limit':operation.command.output_limit} if discussion_handoff else {}),
+                        **({'unsettled_answer_limit':operation.command.output_limit} if retain_unsettled else {}),
                         lio_answer=inputs.get('answer_format_profile')=='lio-user.1',
                         **({'structured_profile':inputs['structured_profile']} if 'structured_profile' in inputs else {}),
                         **({'exploration_schema_sha256':inputs['response_format_sha256']} if exploration else {}),
                         **({'intake_source_index':inputs['current_source_index']} if 'current_source_index' in inputs else {}),
                         **({'draft_profile':inputs['draft_profile'],'draft_schema_sha256':inputs['response_format_sha256']}if 'draft_profile' in inputs else {}),
                         **capture)
-                    if discussion_handoff:
+                    if retain_unsettled:
                         def qualify_reply(original_stream):
                             try:
                                 yield from original_stream
-                            except CompleteUnsettledAnswer:
+                            except (CompleteUnsettledAnswer, CompleteUnsettledTurn):
                                 lease=provider.memory.hold(operation.binding) if wrapped else nullcontext(None)
                                 with lease as memory_check:
                                     if checked(memory_check=memory_check) is not True:
-                                        raise BudgetUnknown('original discussion reply authority changed') from None
+                                        raise BudgetUnknown('original read-only reply authority changed') from None
                                 raise
                         stream=qualify_reply(stream)
                     if national_intake and intake_profile=='LIO-planning-intake.9':
@@ -856,7 +860,8 @@ class RealTools:
             chunks=worker._registered_stream(binding,'model.tool_turn.'+str(round_index),'model.tool_turn',
                 ModelInput(messages,system,worker.provider,native_reply,
                     final_answer=round_index==turns-1 or len(seen)==tool_limit,turn_profile=profile,
-                    lio_answer=lio_locale is not None,national=national,confirmed_destination=city is not None))
+                    lio_answer=lio_locale is not None,national=national,confirmed_destination=city is not None,
+                    retain_unsettled_answer=lio_locale is not None and not (transit_request or transit_evidence)))
             if incremental:
                 raw=None
                 saw_answer = False
@@ -874,7 +879,11 @@ class RealTools:
                     if saw_answer:
                         yield _lio_transit_answer(chinese, transit_evidence)
                     return
-            else:raw=''.join(chunks)
+            else:
+                try:
+                    raw=''.join(chunks)
+                except CompleteUnsettledTurn as answer:
+                    raise CompleteUnsettledAnswer(answer.turn.answer_zh if chinese else answer.turn.answer_en) from answer
             names=self.names|{'visitor_fact'}if national and 'fact'in self.names else self.names
             try:turn=parse_turn(raw.encode(),names)
             except ValueError as error:
