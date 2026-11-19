@@ -474,18 +474,18 @@ private struct LioTextTranslationView: View {
     private nonisolated static func translateLocally(_ request: LioTranslationRequest,
                                                        using session: TranslationSession) async throws -> [String] {
         let availability = await LanguageAvailability().status(from: request.source.locale, to: request.target.locale)
+        let languagePack: LioTranslator.LanguagePack
         switch availability {
         case .unsupported: throw LioTranslationFailure.unsupported
-        case .supported: try await session.prepareTranslation()
-        case .installed: break
+        case .supported: languagePack = .downloadable
+        case .installed: languagePack = .installed
         @unknown default: throw LioTranslationFailure.unavailableLocally
         }
-        var translated: [String] = []
-        for text in request.text {
-            try Task.checkCancellation()
-            translated.append(try await session.translate(text).targetText)
-        }
-        return translated
+        return try await LioTranslator.translateLocally(request, languagePack: languagePack, prepare: {
+            try await session.prepareTranslation()
+        }, translate: { text in
+            try await session.translate(text).targetText
+        })
     }
 
     private func finish(_ id: UUID, result outcome: Result<LioTranslationResult, LioTranslationFailure>?,
