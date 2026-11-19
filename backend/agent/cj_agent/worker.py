@@ -543,7 +543,7 @@ class RunWorker:
                 inputs=self.message_context.answer_messages(binding,inputs)
             message_refs=()
             if locale is not None and self.lio_planning is not None:
-                inputs,message_refs=self.lio_planning.answer_context(binding,inputs)
+                inputs,message_refs=self.lio_planning.readonly_answer_context(binding,inputs)
             if locale is None:
                 chunks = self._stream(binding, inputs) if self.tools is None else self.tools.answer(self, binding, inputs)
             elif self.tools is None:
