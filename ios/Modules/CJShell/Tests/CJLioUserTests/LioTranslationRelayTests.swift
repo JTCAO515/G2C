@@ -41,6 +41,14 @@ struct LioTranslationRelayTests {
         #expect(result.items.map(\.translatedText) == ["Tea", "Coffee"])
     }
 
+    @Test(arguments: [500, 502, 503, 504])
+    func gatewayFailureWithoutTheServiceEnvelopeStillAllowsOfflineTranslation(_ status: Int) {
+        #expect(throws: LioTranslationFailure.service) {
+            try LioRelayTranslationResponse.decode(status: status, body: Data("gateway unavailable".utf8),
+                                                   expecting: .text)
+        }
+    }
+
     @Test func rejectsAccessAndDistinguishesQuotaFromAvailability() {
         #expect(throws: LioRelayTranslationFailure.accessDenied) {
             try LioRelayTranslationResponse.decode(status: 403, body: Data(), expecting: .text)

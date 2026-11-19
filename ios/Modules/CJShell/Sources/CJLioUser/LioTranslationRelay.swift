@@ -149,7 +149,8 @@ struct LioRelayTranslationResponse: Decodable {
         switch status {
         case 401, 403: throw LioRelayTranslationFailure.accessDenied
         case 409: throw LioRelayTranslationFailure.alreadyAccepted
-        case 200, 429, 502, 503: break
+        case 500...599: throw LioTranslationFailure.service
+        case 200, 429: break
         default: throw LioRelayTranslationFailure.rejected(status)
         }
 
@@ -173,11 +174,8 @@ struct LioRelayTranslationResponse: Decodable {
               error.version == LioRelayTranslationRequest.version else {
             throw LioRelayTranslationFailure.rejected(status)
         }
-        switch (status, error.error) {
-        case (429, "quota_exceeded"): throw LioTranslationFailure.quota
-        case (502, "provider_unavailable"), (503, "unavailable"): throw LioTranslationFailure.service
-        default: throw LioRelayTranslationFailure.rejected(status)
-        }
+        guard error.error == "quota_exceeded" else { throw LioRelayTranslationFailure.rejected(status) }
+        throw LioTranslationFailure.quota
     }
 
     private var validItemCount: Bool {
