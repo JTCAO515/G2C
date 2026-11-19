@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import hashlib
 from http.client import IncompleteRead
 import json
+import os
 import re
 import socket
 from sqlite3 import Error as SQLiteError
@@ -396,6 +397,11 @@ def run(budget, database, scope, token, owner, start, end):
     history_result = (history(token, results, allowed) if all(row['status']=='PASS' for row in results)
                       else dict(status='UNRUN', reason='earlier_case_stopped'))
     print_json(dict(kind='history', **history_result))
+    from deploy.hk.configuration import TRANSLATION_INTERNAL_SUBJECTS
+    if os.environ.get(TRANSLATION_INTERNAL_SUBJECTS) is not None:
+        from deploy.hk.translation_smoke import checks
+        checks(budget, scope, token, allowed, request, print_json, SmokeResult,
+               ready=history_result['status']=='PASS')
     _, price, used = settlement(budget, owner, restricted, before['tail'])
     print_json(dict(kind='cost', **price, line_usage_delta_cny_1e7=used-before['used']))
     return 0
@@ -406,6 +412,9 @@ def decide(events, wire_logs):
     history_rows = [entry for entry in events if entry['kind']=='history']
     costs = [entry for entry in events if entry['kind']=='cost']
     outcomes = cases + history_rows
+    from deploy.hk.translation_smoke import complete
+    if not complete(events, outcomes):
+        return dict(status='UNKNOWN', concurrency='UNRUN', reason='translation_smoke_incomplete')
     if any(row['status']=='FAIL' for row in outcomes):
         failed_read = any(row['status']=='FAIL' and 'dispatch_ms' in row
                           and any('outcome' in poll for poll in row.get('polls', ())) for row in cases)
