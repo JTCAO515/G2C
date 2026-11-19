@@ -1,34 +1,31 @@
 #if os(iOS)
+import AVFoundation
 import Foundation
 @preconcurrency import Speech
 
 @MainActor
 enum LioRecordedTranslationSpeech {
-    static func text(from audio: Data, language: LioTranslationLanguage) async throws -> String {
+    static func text(from audio: LioTranslationRecording, language: LioTranslationLanguage,
+                     isCurrent: @escaping @MainActor () -> Bool) async throws -> String {
         guard let recognizer = SFSpeechRecognizer(locale: Locale(identifier: language.rawValue)),
               recognizer.supportsOnDeviceRecognition, recognizer.isAvailable else {
             throw LioTranslationMediaFailure.speechUnavailable
         }
-        let allowed = await withCheckedContinuation { continuation in
-            SFSpeechRecognizer.requestAuthorization { continuation.resume(returning: $0 == .authorized) }
-        }
-        guard allowed else { throw LioTranslationMediaFailure.speechDenied }
-        try Task.checkCancellation()
-
-        let temporary = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".wav")
-        try audio.write(to: temporary, options: [.atomic, .completeFileProtection])
-        let job = RecordedSpeechJob()
-        let result: Result<String, any Error>
-        do {
-            let text = try await withTaskCancellationHandler {
-                try await job.text(using: recognizer, file: temporary)
-            } onCancel: {
-                Task { @MainActor in job.complete(.failure(CancellationError())) }
+        let gate = LioMediaPermissionGate(isCurrent: isCurrent)
+        let allowed = try await gate.request {
+            await withCheckedContinuation { continuation in
+                SFSpeechRecognizer.requestAuthorization { continuation.resume(returning: $0 == .authorized) }
             }
-            result = .success(text)
-        } catch { result = .failure(error) }
-        try FileManager.default.removeItem(at: temporary)
-        return try result.get()
+        }
+        guard isCurrent() else { throw CancellationError() }
+        guard allowed else { throw LioTranslationMediaFailure.speechDenied }
+        let buffer = try audio.recognitionBuffer()
+        let job = RecordedSpeechJob()
+        return try await withTaskCancellationHandler {
+            try await job.text(using: recognizer, buffer: buffer)
+        } onCancel: {
+            Task { @MainActor in job.complete(.failure(CancellationError())) }
+        }
     }
 }
 
@@ -38,9 +35,9 @@ private final class RecordedSpeechJob {
     private var recognition: SFSpeechRecognitionTask?
     private var timeout: Task<Void, Never>?
 
-    func text(using recognizer: SFSpeechRecognizer, file: URL) async throws -> String {
+    func text(using recognizer: SFSpeechRecognizer, buffer: AVAudioPCMBuffer) async throws -> String {
         try Task.checkCancellation()
-        let request = SFSpeechURLRecognitionRequest(url: file)
+        let request = SFSpeechAudioBufferRecognitionRequest()
         request.requiresOnDeviceRecognition = true
         request.shouldReportPartialResults = false
         return try await withCheckedThrowingContinuation { continuation in
@@ -56,6 +53,8 @@ private final class RecordedSpeechJob {
                     }
                 }
             }
+            request.append(buffer)
+            request.endAudio()
             timeout = Task { @MainActor [weak self] in
                 do { try await Task.sleep(for: .seconds(20)) }
                 catch { return }

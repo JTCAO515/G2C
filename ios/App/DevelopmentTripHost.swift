@@ -1563,6 +1563,7 @@ private struct DevelopmentVerificationTransport: ClientTransport {
             #if G2C_DEMO_BETA
             let translation = try captured[0].child(LioTranslationHistory.directoryName)
             try translation.removeOwnedFile(named: LioTranslationHistory.fileName)
+            try translation.removeOwnedFile(named: LioTranslationHistory.relayOriginalsFileName)
             try translation.removeEmptyChild()
             #endif
         case .tripPending:

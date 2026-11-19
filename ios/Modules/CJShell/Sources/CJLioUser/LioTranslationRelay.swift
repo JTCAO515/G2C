@@ -3,15 +3,17 @@ import CryptoKit
 import Foundation
 
 enum LioRelayTranslationFailure: Error, Equatable {
+    case signInRequired
     case accessDenied
     case alreadyAccepted
     case rejected(Int)
     case invalidInput
     case invalidAudio
+    case originalUnavailable
 }
 
 struct LioRelayTranslationRequest: Encodable {
-    enum Kind: String, Decodable { case text, speech, image }
+    enum Kind: String, Codable { case text, speech, image }
 
     enum Payload {
         case text(String)
@@ -26,6 +28,14 @@ struct LioRelayTranslationRequest: Encodable {
     let source: LioTranslationLanguage
     let target: LioTranslationLanguage
     let payload: Payload
+
+    func wireBody() throws -> Data {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        let body = try encoder.encode(self)
+        guard body.count <= 4 * 1024 * 1024 else { throw LioRelayTranslationFailure.invalidInput }
+        return body
+    }
 
     var kind: Kind {
         switch payload {
@@ -82,40 +92,80 @@ struct LioRelayTranslationRequest: Encodable {
     }
 }
 
-struct LioRelayOriginalRequests {
-    private struct Identity: Hashable {
+@MainActor struct LioRelayOriginalRequests {
+    private struct Identity: Codable, Hashable {
         let source: LioTranslationLanguage
         let target: LioTranslationLanguage
         let kind: LioRelayTranslationRequest.Kind
-        let fingerprint: SHA256.Digest
+        let fingerprint: Data
 
         init(_ request: LioRelayTranslationRequest) {
             source = request.source
             target = request.target
             kind = request.kind
             switch request.payload {
-            case .text(let text): fingerprint = SHA256.hash(data: Data(text.utf8))
-            case .wav(let bytes), .jpeg(let bytes), .png(let bytes): fingerprint = SHA256.hash(data: bytes)
+            case .text(let text): fingerprint = Data(SHA256.hash(data: Data(text.utf8)))
+            case .wav(let bytes), .jpeg(let bytes), .png(let bytes): fingerprint = Data(SHA256.hash(data: bytes))
             }
         }
     }
 
-    private var pending: [Identity: UUID] = [:]
+    private struct Original: Codable {
+        let id: UUID
+        let wireFingerprint: Data
+        var accepted: Bool
+    }
+
+    private var memory: [Identity: Original] = [:]
 
     mutating func request(source: LioTranslationLanguage, target: LioTranslationLanguage,
-                          payload: LioRelayTranslationRequest.Payload) -> LioRelayTranslationRequest {
+                          payload: LioRelayTranslationRequest.Payload,
+                          storage: LioTranslationHistory? = nil) throws -> LioRelayTranslationRequest {
         let proposed = LioRelayTranslationRequest(id: UUID(), source: source, target: target, payload: payload)
         let identity = Identity(proposed)
+        var pending = try load(storage)
         if let original = pending[identity] {
-            return LioRelayTranslationRequest(id: original, source: source, target: target, payload: payload)
+            guard !original.accepted else { throw LioRelayTranslationFailure.alreadyAccepted }
+            let request = LioRelayTranslationRequest(id: original.id, source: source, target: target, payload: payload)
+            guard try wireFingerprint(request) == original.wireFingerprint else {
+                throw LioRelayTranslationFailure.originalUnavailable
+            }
+            return request
         }
-        pending[identity] = proposed.id
+        pending[identity] = try Original(id: proposed.id, wireFingerprint: wireFingerprint(proposed), accepted: false)
+        try save(pending, storage: storage)
         return proposed
     }
 
-    mutating func confirm(_ original: LioRelayTranslationRequest) {
-        let identity = Identity(original)
-        if pending[identity] == original.id { pending.removeValue(forKey: identity) }
+    mutating func accept(_ request: LioRelayTranslationRequest, storage: LioTranslationHistory? = nil) throws {
+        let identity = Identity(request)
+        var pending = try load(storage)
+        guard pending[identity]?.id == request.id else { throw LioRelayTranslationFailure.originalUnavailable }
+        pending[identity]?.accepted = true
+        try save(pending, storage: storage)
+    }
+
+    mutating func confirm(_ request: LioRelayTranslationRequest, storage: LioTranslationHistory? = nil) throws {
+        let identity = Identity(request)
+        var pending = try load(storage)
+        guard pending[identity]?.id == request.id else { throw LioRelayTranslationFailure.originalUnavailable }
+        pending.removeValue(forKey: identity)
+        try save(pending, storage: storage)
+    }
+
+    private func load(_ storage: LioTranslationHistory?) throws -> [Identity: Original] {
+        guard let storage else { return memory }
+        guard let bytes = try storage.loadRelayOriginals() else { return [:] }
+        return try JSONDecoder().decode([Identity: Original].self, from: bytes)
+    }
+
+    private mutating func save(_ pending: [Identity: Original], storage: LioTranslationHistory?) throws {
+        if let storage { try storage.saveRelayOriginals(JSONEncoder().encode(pending)) }
+        else { memory = pending }
+    }
+
+    private func wireFingerprint(_ request: LioRelayTranslationRequest) throws -> Data {
+        Data(SHA256.hash(data: try request.wireBody()))
     }
 }
 
@@ -147,7 +197,8 @@ struct LioRelayTranslationResponse: Decodable {
 
     static func decode(status: Int, body: Data, expecting kind: LioRelayTranslationRequest.Kind) throws -> Self {
         switch status {
-        case 401, 403: throw LioRelayTranslationFailure.accessDenied
+        case 401: throw LioRelayTranslationFailure.signInRequired
+        case 403: throw LioRelayTranslationFailure.accessDenied
         case 409: throw LioRelayTranslationFailure.alreadyAccepted
         case 500...599: throw LioTranslationFailure.service
         case 200, 429: break
@@ -188,13 +239,14 @@ struct LioRelayTranslationResponse: Decodable {
 }
 
 enum LioTranslationWAV {
+    static let sampleRate: UInt32 = 16_000
+    static let maximumPCMBytes = Int(sampleRate) * MemoryLayout<Int16>.size * 60
+
     static func encode(pcm: Data) throws -> Data {
-        let sampleRate: UInt32 = 16_000
         let channels: UInt16 = 1
         let sampleBytes: UInt16 = 2
         let bytesPerSecond = sampleRate * UInt32(channels * sampleBytes)
-        guard !pcm.isEmpty, pcm.count.isMultiple(of: Int(sampleBytes)),
-              pcm.count <= Int(bytesPerSecond * 60) else {
+        guard !pcm.isEmpty, pcm.count.isMultiple(of: Int(sampleBytes)), pcm.count <= maximumPCMBytes else {
             throw LioRelayTranslationFailure.invalidAudio
         }
         var output = Data("RIFF".utf8)
@@ -223,15 +275,20 @@ enum LioTranslationWAV {
 public struct LioRelayTranslationClient {
     public typealias Transport = @MainActor (String, Data) async throws -> (Int, Data)
     private let send: Transport
+    let requiresOriginalStore: Bool
 
-    public init(send: @escaping Transport) { self.send = send }
+    public init(send: @escaping Transport) {
+        self.init(requiresOriginalStore: false, send: send)
+    }
+
+    init(requiresOriginalStore: Bool, send: @escaping Transport) {
+        self.requiresOriginalStore = requiresOriginalStore
+        self.send = send
+    }
 
     func translate(_ request: LioRelayTranslationRequest) async throws -> LioRelayTranslationResponse {
         try Task.checkCancellation()
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .sortedKeys
-        let body = try encoder.encode(request)
-        guard body.count <= 4 * 1024 * 1024 else { throw LioRelayTranslationFailure.invalidInput }
+        let body = try request.wireBody()
         do {
             let (status, data) = try await send("/v1/tools/translate", body)
             try Task.checkCancellation()

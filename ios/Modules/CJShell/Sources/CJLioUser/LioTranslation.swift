@@ -15,7 +15,7 @@ struct LioTranslationRequest: Sendable {
 
 enum LioTranslationFailure: Error, Equatable, Sendable {
     case network, quota, service, unsupported, unavailableLocally
-    case accessDenied, alreadyAccepted, tooLong, noRecognizedText, unreadableImage
+    case signInRequired, accessDenied, alreadyAccepted, tooLong, noRecognizedText, unreadableImage
     case speechDenied, speechUnavailable
 }
 
@@ -61,6 +61,7 @@ struct LioRecentTranslation: Codable, Equatable, Identifiable {
 @MainActor public struct LioTranslationHistory {
     public static let directoryName = "translation-history"
     public static let fileName = "recent.json"
+    public static let relayOriginalsFileName = "relay-originals.json"
     private let directory: URL
     private let isCurrent: @MainActor () -> Bool
     private var file: URL { directory.appendingPathComponent(Self.fileName) }
@@ -94,6 +95,22 @@ struct LioRecentTranslation: Codable, Equatable, Identifiable {
     }
 
     func save(_ entries: [LioRecentTranslation]) throws {
+        let data = try JSONEncoder().encode(Array(entries.prefix(20)))
+        try protectedWrite(data, to: file)
+    }
+
+    func loadRelayOriginals() throws -> Data? {
+        try requireCurrent()
+        let path = directory.appendingPathComponent(Self.relayOriginalsFileName)
+        do { return try Data(contentsOf: path) }
+        catch let error as CocoaError where error.code == .fileReadNoSuchFile { return nil }
+    }
+
+    func saveRelayOriginals(_ data: Data) throws {
+        try protectedWrite(data, to: directory.appendingPathComponent(Self.relayOriginalsFileName))
+    }
+
+    private func protectedWrite(_ data: Data, to destination: URL) throws {
         try requireCurrent()
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
                                                 attributes: [.posixPermissions: 0o700])
@@ -101,9 +118,8 @@ struct LioRecentTranslation: Codable, Equatable, Identifiable {
         var backup = URLResourceValues()
         backup.isExcludedFromBackup = true
         try localDirectory.setResourceValues(backup)
-        let data = try JSONEncoder().encode(Array(entries.prefix(20)))
-        try data.write(to: file, options: [.atomic, .completeFileProtection])
-        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
+        try data.write(to: destination, options: [.atomic, .completeFileProtection])
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: destination.path)
     }
 
     func clear() throws {

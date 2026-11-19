@@ -1,9 +1,33 @@
+import AVFoundation
 import Foundation
 import Testing
 @testable import CJLioUser
 
 struct LioTranslationRelayTests {
     let id = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
+
+    @Test func microphonePCMConvertsToWireWAVAndBackToARecognitionBufferInMemory() throws {
+        let inputFormat = try #require(AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 1))
+        let input = try #require(AVAudioPCMBuffer(pcmFormat: inputFormat, frameCapacity: 4800))
+        input.frameLength = 4800
+        let samples = try #require(input.floatChannelData?.pointee)
+        for frame in 0..<Int(input.frameLength) {
+            samples[frame] = Float(sin(Double(frame) * 0.07) * 0.5)
+        }
+
+        let collector = try LioTranslationPCMCollector(inputFormat: inputFormat)
+        collector.append(input)
+        let recording = try collector.finish()
+        let wav = try recording.wireWAV()
+        let native = try recording.recognitionBuffer()
+        #expect(wav.prefix(4) == Data("RIFF".utf8))
+        #expect(native.format.sampleRate == 16_000 && native.format.channelCount == 1)
+        #expect(native.format.commonFormat == .pcmFormatInt16)
+        #expect(native.frameLength > 0)
+        #expect(wav.count == 44 + Int(native.frameLength) * 2)
+        let pcm = try #require(native.int16ChannelData?.pointee)
+        #expect((0..<Int(native.frameLength)).contains { pcm[$0] != 0 })
+    }
 
     @Test func textUsesTheRelaySchemaAndSendsNoMedia() throws {
         let request = LioRelayTranslationRequest(id: id, source: .chinese, target: .english, payload: .text("茶"))
@@ -12,21 +36,64 @@ struct LioTranslationRelayTests {
                          "kind": "text", "source_lang": "zh", "target_lang": "en", "text": "茶"])
     }
 
-    @Test func unknownRelayOutcomeKeepsTheIDForTheSameBytesAndLanguages() throws {
+    @Test @MainActor func unknownRelayOutcomeKeepsTheIDForTheSameBytesAndLanguages() throws {
         var originals = LioRelayOriginalRequests()
-        let original = originals.request(source: .english, target: .chinese, payload: .text("Cafe\u{301}"))
-        let differentBytes = originals.request(source: .english, target: .chinese, payload: .text("Café"))
+        let original = try originals.request(source: .english, target: .chinese, payload: .text("Cafe\u{301}"))
+        let differentBytes = try originals.request(source: .english, target: .chinese, payload: .text("Café"))
         #expect(differentBytes.id != original.id)
-        let retry = originals.request(source: .english, target: .chinese, payload: .text("Cafe\u{301}"))
+        let retry = try originals.request(source: .english, target: .chinese, payload: .text("Cafe\u{301}"))
         #expect(retry.id == original.id)
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
         #expect(try encoder.encode(retry) == encoder.encode(original))
-        let reversed = originals.request(source: .chinese, target: .english, payload: .text("Cafe\u{301}"))
+        let reversed = try originals.request(source: .chinese, target: .english, payload: .text("Cafe\u{301}"))
         #expect(reversed.id != original.id)
-        originals.confirm(original)
-        let next = originals.request(source: .english, target: .chinese, payload: .text("Cafe\u{301}"))
+        try originals.confirm(original)
+        let next = try originals.request(source: .english, target: .chinese, payload: .text("Cafe\u{301}"))
         #expect(next.id != original.id)
+    }
+
+    @Test @MainActor func paidOriginalSurvivesReopeningAndAcceptedStateStopsAnotherDispatch() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let history = LioTranslationHistory(directory: root.appendingPathComponent("first-account"), isCurrent: { true })
+        let otherHistory = LioTranslationHistory(directory: root.appendingPathComponent("second-account"), isCurrent: { true })
+        var first = LioRelayOriginalRequests()
+        let original = try first.request(source: .english, target: .chinese, payload: .text("Same private sentence"), storage: history)
+        var reopened = LioRelayOriginalRequests()
+        let retry = try reopened.request(source: .english, target: .chinese, payload: .text("Same private sentence"), storage: history)
+        #expect(retry.id == original.id)
+        try reopened.accept(retry, storage: history)
+        var afterReopening = LioRelayOriginalRequests()
+        #expect(throws: LioRelayTranslationFailure.alreadyAccepted) {
+            try afterReopening.request(source: .english, target: .chinese, payload: .text("Same private sentence"), storage: history)
+        }
+        var other = LioRelayOriginalRequests()
+        let otherRequest = try other.request(source: .english, target: .chinese, payload: .text("Same private sentence"), storage: otherHistory)
+        #expect(otherRequest.id != original.id)
+        let persisted = try Data(contentsOf: root.appendingPathComponent("first-account").appendingPathComponent(LioTranslationHistory.relayOriginalsFileName))
+        #expect(!String(decoding: persisted, as: UTF8.self).contains("Same private sentence"))
+    }
+
+    @Test @MainActor func recreatedRequestNeverSendsAnOldIDWithDifferentWireBytes() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let history = LioTranslationHistory(directory: directory, isCurrent: { true })
+        var originals = LioRelayOriginalRequests()
+        _ = try originals.request(source: .english, target: .chinese, payload: .text("Hello"), storage: history)
+        let stored = try history.loadRelayOriginals()
+        let bytes = try #require(stored)
+        let decoded = try JSONSerialization.jsonObject(with: bytes)
+        var entries = try #require(decoded as? [[String: Any]])
+        #expect(entries.count == 2)
+        entries[1]["wireFingerprint"] = Data(repeating: 0, count: 32).base64EncodedString()
+        let unsupportedWireVersion = try JSONSerialization.data(withJSONObject: entries)
+        try history.saveRelayOriginals(unsupportedWireVersion)
+        var reopened = LioRelayOriginalRequests()
+        #expect(throws: LioRelayTranslationFailure.originalUnavailable) {
+            try reopened.request(source: .english, target: .chinese, payload: .text("Hello"), storage: history)
+        }
+        #expect(try history.loadRelayOriginals() == unsupportedWireVersion)
     }
 
     @Test func imageUsesBase64AndKeepsEveryReturnedLine() throws {
@@ -50,6 +117,9 @@ struct LioTranslationRelayTests {
     }
 
     @Test func rejectsAccessAndDistinguishesQuotaFromAvailability() {
+        #expect(throws: LioRelayTranslationFailure.signInRequired) {
+            try LioRelayTranslationResponse.decode(status: 401, body: Data(), expecting: .text)
+        }
         #expect(throws: LioRelayTranslationFailure.accessDenied) {
             try LioRelayTranslationResponse.decode(status: 403, body: Data(), expecting: .text)
         }

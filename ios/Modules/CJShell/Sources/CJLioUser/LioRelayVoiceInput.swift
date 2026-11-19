@@ -6,9 +6,10 @@ import UIKit
 
 struct LioRelayVoiceInput: View {
     let language: LioLanguage
+    let source: LioTranslationLanguage
     let enabled: Bool
     let isCurrent: @MainActor () -> Bool
-    let onRecording: (Data) -> Void
+    let onRecording: (LioTranslationRecording) -> Void
     @State private var recorder = LioRelayVoiceRecorder()
     @Environment(\.openURL) private var openURL
 
@@ -42,22 +43,25 @@ struct LioRelayVoiceInput: View {
         .onChange(of: enabled) { _, available in
             if !available { recorder.cancel() }
         }
+        .onChange(of: source) { recorder.cancel() }
         .onDisappear { recorder.cancel() }
     }
 }
 
 @MainActor @Observable
-private final class LioRelayVoiceRecorder: NSObject, AVAudioRecorderDelegate {
-    private var recorder: AVAudioRecorder?
+private final class LioRelayVoiceRecorder {
+    private let engine = AVAudioEngine()
+    private var collector: LioTranslationPCMCollector?
+    private var timeout: Task<Void, Never>?
     private var operation: UUID?
-    private var completion: ((Data) -> Void)?
+    private var completion: ((LioTranslationRecording) -> Void)?
     private var sessionIsCurrent: (@MainActor () -> Bool)?
     private var settings: (AVAudioSession.Category, AVAudioSession.Mode, AVAudioSession.CategoryOptions)?
     private var ownsAudioSession = false
     private(set) var failure: LioTranslationMediaFailure?
     var isBusy: Bool { operation != nil }
 
-    func start(isCurrent: @escaping @MainActor () -> Bool, onRecording: @escaping (Data) -> Void) {
+    func start(isCurrent: @escaping @MainActor () -> Bool, onRecording: @escaping (LioTranslationRecording) -> Void) {
         guard operation == nil, isCurrent() else { return }
         let id = UUID()
         operation = id
@@ -67,7 +71,7 @@ private final class LioRelayVoiceRecorder: NSObject, AVAudioRecorderDelegate {
     }
 
     private func authorize(_ id: UUID, isCurrent: @escaping @MainActor () -> Bool,
-                           onRecording: @escaping (Data) -> Void) async {
+                           onRecording: @escaping (LioTranslationRecording) -> Void) async {
         do {
             let gate = LioMediaPermissionGate(isCurrent: { [weak self] in self?.operation == id && isCurrent() })
             let allowed = try await gate.request { await AVAudioApplication.requestRecordPermission() }
@@ -82,76 +86,52 @@ private final class LioRelayVoiceRecorder: NSObject, AVAudioRecorderDelegate {
         }
     }
 
-    private func beginRecording(_ id: UUID, onRecording: @escaping (Data) -> Void) throws {
+    private func beginRecording(_ id: UUID, onRecording: @escaping (LioTranslationRecording) -> Void) throws {
         let session = AVAudioSession.sharedInstance()
         settings = (session.category, session.mode, session.categoryOptions)
         try session.setCategory(.record, mode: .measurement)
         try session.setActive(true)
         ownsAudioSession = true
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(id.uuidString + ".wav")
-        let recording = try AVAudioRecorder(url: url, settings: [
-            AVFormatIDKey: kAudioFormatLinearPCM,
-            AVSampleRateKey: 16_000,
-            AVNumberOfChannelsKey: 1,
-            AVLinearPCMBitDepthKey: 16,
-            AVLinearPCMIsBigEndianKey: false,
-            AVLinearPCMIsFloatKey: false,
-        ])
-        recorder = recording
-        completion = onRecording
-        recording.delegate = self
-        guard recording.prepareToRecord() else { throw LioTranslationMediaFailure.speechUnavailable }
-        try FileManager.default.setAttributes([.protectionKey: FileProtectionType.complete], ofItemAtPath: url.path)
-        guard recording.record(forDuration: 60) else { throw LioTranslationMediaFailure.speechUnavailable }
+        let microphone = engine.inputNode
+        let format = microphone.outputFormat(forBus: 0)
+        let collector = try LioTranslationPCMCollector(inputFormat: format)
+        microphone.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
+            collector.append(buffer)
+        }
+        self.collector = collector
+        self.completion = onRecording
+        engine.prepare()
+        try engine.start()
+        timeout = Task { @MainActor [weak self] in
+            do { try await Task.sleep(for: .seconds(60)) }
+            catch { return }
+            if self?.operation == id { self?.stop() }
+        }
     }
 
     func stop() {
-        if let recorder { recorder.stop() }
-        else { cancel() }
+        guard let collector, sessionIsCurrent?() == true else { cancel(); return }
+        let deliver = completion
+        cancel()
+        do {
+            try deliver?(collector.finish())
+        } catch {
+            failure = .speechUnavailable
+        }
     }
 
     func cancel() {
         operation = nil
         completion = nil
         sessionIsCurrent = nil
-        if let recording = recorder {
-            recorder = nil
-            recording.delegate = nil
-            recording.stop()
-            removeRecording(at: recording.url)
+        timeout?.cancel()
+        timeout = nil
+        if collector != nil {
+            engine.stop()
+            engine.inputNode.removeTap(onBus: 0)
+            collector = nil
         }
         restoreAudioSettings()
-    }
-
-    nonisolated func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
-        let url = recorder.url
-        Task { @MainActor in finish(url, success: flag) }
-    }
-
-    private func finish(_ url: URL, success: Bool) {
-        guard recorder?.url == url else { return }
-        guard sessionIsCurrent?() == true else { cancel(); return }
-        let deliver = completion
-        recorder = nil
-        completion = nil
-        operation = nil
-        sessionIsCurrent = nil
-        restoreAudioSettings()
-        do {
-            guard success else { throw LioTranslationMediaFailure.speechUnavailable }
-            let data = try Data(contentsOf: url)
-            try FileManager.default.removeItem(at: url)
-            deliver?(data)
-        } catch {
-            removeRecording(at: url)
-            failure = .speechUnavailable
-        }
-    }
-
-    private func removeRecording(at url: URL) {
-        do { try FileManager.default.removeItem(at: url) }
-        catch let error as CocoaError where error.code == .fileNoSuchFile {}
-        catch { failure = .speechUnavailable }
     }
 
     private func restoreAudioSettings() {

@@ -79,7 +79,7 @@ private struct LioTextTranslationView: View {
 
     private struct Attempt: Identifiable {
         enum Route { case relay, prepareInput, apple }
-        enum Input { case text, photo(Data), recording(Data) }
+        enum Input { case text, photo(Data), recording(LioTranslationRecording) }
         let id = UUID()
         var request: LioTranslationRequest
         let input: Input
@@ -145,7 +145,8 @@ private struct LioTextTranslationView: View {
                         spokenText = text
                     }
                 } else {
-                    LioRelayVoiceInput(language: language, enabled: enabled, isCurrent: isCurrent, onRecording: startRecording)
+                    LioRelayVoiceInput(language: language, source: source, enabled: enabled,
+                                       isCurrent: isCurrent, onRecording: startRecording)
                 }
                 if let spokenText {
                     Text(spokenText)
@@ -369,7 +370,7 @@ private struct LioTextTranslationView: View {
         attempt = Attempt(request: request, input: .photo(data), route: relay == nil ? .prepareInput : .relay)
     }
 
-    private func startRecording(_ data: Data) {
+    private func startRecording(_ data: LioTranslationRecording) {
         guard enabled, isCurrent() else { return }
         resetResult()
         let request = LioTranslationRequest(source: source, target: target, text: [])
@@ -383,7 +384,7 @@ private struct LioTextTranslationView: View {
             case .text: lines = attempt.request.text
             case .photo(let data): lines = try await LioVisionTextReader.lines(from: data, language: attempt.request.source)
             case .recording(let data):
-                lines = [try await LioRecordedTranslationSpeech.text(from: data, language: attempt.request.source)]
+                lines = [try await LioRecordedTranslationSpeech.text(from: data, language: attempt.request.source, isCurrent: isCurrent)]
             }
             try Task.checkCancellation()
             guard self.attempt?.id == attempt.id, isCurrent() else { return }
@@ -413,20 +414,28 @@ private struct LioTextTranslationView: View {
             switch attempt.input {
             case .text: payload = .text(attempt.request.text.joined(separator: "\n"))
             case .photo(let data): payload = .jpeg(try await LioVisionTextReader.relayJPEG(from: data))
-            case .recording(let data): payload = .wav(data)
+            case .recording(let data): payload = .wav(try data.wireWAV())
             }
             try Task.checkCancellation()
             guard self.attempt?.id == attempt.id, isCurrent() else { return }
-            let original = relayOriginals.request(source: attempt.request.source,
-                                                   target: attempt.request.target, payload: payload)
-            let reply = try await relay.translate(original)
+            guard !relay.requiresOriginalStore || history != nil else { throw LioRelayTranslationFailure.originalUnavailable }
+            let original = try relayOriginals.request(source: attempt.request.source, target: attempt.request.target,
+                                                       payload: payload, storage: history)
+            let reply: LioRelayTranslationResponse
+            do {
+                reply = try await relay.translate(original)
+            } catch LioRelayTranslationFailure.alreadyAccepted {
+                guard self.attempt?.id == attempt.id, isCurrent() else { return }
+                try relayOriginals.accept(original, storage: history)
+                throw LioRelayTranslationFailure.alreadyAccepted
+            }
             if case .text(let source) = payload {
                 guard let echoed = reply.items.first?.sourceText, echoed.utf8.elementsEqual(source.utf8) else {
                     throw LioTranslationFailure.service
                 }
             }
             guard self.attempt?.id == attempt.id, isCurrent() else { return }
-            relayOriginals.confirm(original)
+            try relayOriginals.confirm(original, storage: history)
             guard !reply.items.isEmpty else { finish(attempt.id, result: .failure(.noRecognizedText)); return }
             if case .recording = attempt.input { spokenText = reply.items.first?.sourceText }
             self.attempt?.request = .init(source: attempt.request.source, target: attempt.request.target,
@@ -434,6 +443,8 @@ private struct LioTextTranslationView: View {
             finish(attempt.id, result: .success(.init(text: reply.items.map(\.translatedText), offline: false)))
         } catch is CancellationError {
             finish(attempt.id, result: nil)
+        } catch LioRelayTranslationFailure.signInRequired {
+            finish(attempt.id, result: .failure(.signInRequired))
         } catch LioRelayTranslationFailure.accessDenied {
             finish(attempt.id, result: .failure(.accessDenied))
         } catch LioRelayTranslationFailure.alreadyAccepted {
@@ -499,8 +510,10 @@ private struct LioTextTranslationView: View {
 
     private func message(for failure: LioTranslationFailure) -> String {
         switch failure {
+        case .signInRequired:
+            language.text("Sign in again to use online translation.", "请重新登录后使用在线翻译。")
         case .accessDenied:
-            language.text("Sign in with an account that can use translation.", "请登录可使用翻译的账号。")
+            language.text("Online translation isn’t available for this account.", "此账号暂未开通在线翻译。")
         case .alreadyAccepted:
             language.text("This translation was already sent.", "这次翻译已发送。")
         case .noRecognizedText:

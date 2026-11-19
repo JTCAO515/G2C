@@ -7,11 +7,11 @@ extension LioRelayTranslationClient {
                                     isCurrent: @escaping @MainActor () -> Bool,
                                     bearer: @escaping @MainActor () -> String?) -> LioRelayTranslationClient? {
         guard endpoint.allowsDemoBetaActivation else { return nil }
-        return LioRelayTranslationClient { path, body in
+        return LioRelayTranslationClient(requiresOriginalStore: true) { path, body in
             guard path == "/v1/tools/translate",
                   let url = URL(string: path, relativeTo: endpoint.url)?.absoluteURL,
                   isCurrent(), let token = bearer() else {
-                throw LioRelayTranslationFailure.accessDenied
+                throw LioRelayTranslationFailure.signInRequired
             }
             var request = URLRequest(url: url, timeoutInterval: 60)
             request.httpMethod = "POST"
@@ -28,7 +28,7 @@ extension LioRelayTranslationClient {
             defer { session.invalidateAndCancel() }
             let (stream, response) = try await session.bytes(for: request)
 
-            guard isCurrent() else { throw LioRelayTranslationFailure.accessDenied }
+            guard isCurrent() else { throw CancellationError() }
             guard let response = response as? HTTPURLResponse, response.url == url,
                   !(300..<400).contains(response.statusCode) else {
                 throw LioTranslationFailure.service
@@ -39,7 +39,7 @@ extension LioRelayTranslationClient {
                 guard result.count < 256 * 1024 else { throw LioTranslationFailure.service }
                 result.append(byte)
             }
-            guard isCurrent() else { throw LioRelayTranslationFailure.accessDenied }
+            guard isCurrent() else { throw CancellationError() }
             try Task.checkCancellation()
             return (response.statusCode, result)
         }
