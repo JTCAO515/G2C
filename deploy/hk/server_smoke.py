@@ -52,10 +52,10 @@ BEIJING_PLACE = re.compile(
 NEGATED_IDENTITY = re.compile(r'不是\s*Lio|\bnot\s+Lio\b', re.I)
 CAPABILITY_TOPIC = re.compile(
     r'行程|规划|路线|交通|景点|支付|地铁|翻译|计划|推荐|'
-    r'itinerar|trip plan|transport|attractions?|payment|subway|translat|route|sightseeing|recommend', re.I
+    r'itinerar|trip plan|\bplan your days\b|transport|attractions?|payment|subway|translat|route|sightseeing|recommend', re.I
 )
 NEGATED_CAPABILITIES = re.compile(
-    r"不能帮|无法提供|不提供|(?:cannot|can't|do not|don't) (?:help|plan|provide|offer)|"
+    r"不能帮|无法提供|不提供|(?:cannot|can[’']t|do not|don't) (?:help|plan|provide|offer)|"
     r'(?:offer|provide) no (?:travel |trip )?(?:assistance|planning|help)|\bno ability to\b|没有能力', re.I
 )
 DAY_ACTIVITY = re.compile(
@@ -82,7 +82,7 @@ DAY_QUESTION = re.compile(
 )
 WIRE_TIMING = re.compile(
     r'\bM4_MODEL_WIRE_TIMING attempt_sha256=([a-f0-9]{64}) '
-    r'first_provider_body_ms=([0-9]+(?:\.[0-9]+)?) socket_read_ms=[0-9]+(?:\.[0-9]+)?\b'
+    r'first_provider_body_ms=([0-9]+(?:\.[0-9]+)?) socket_read_ms=([0-9]+(?:\.[0-9]+)?)\b'
 )
 
 
@@ -261,11 +261,11 @@ def run_case(case, prompt, token, allowed, send=request):
 def overlap_witness(result, attempt_hashes, wire_log_lines):
     """Prove at least one full 200 read happened inside original model I/O.
 
-    Read samples cover POST through first visible answer. Before publication,
-    The bound answer's send-to-first-body duration must exceed the longest
-    interval that can avoid containing a complete 200 read. The original
-    answer is sent after POST and its first byte precedes its terminal answer,
-    so its contiguous pre-body interval is fully inside the observed timeline.
+    A bound planning or answer call starts after the POST and finishes before
+    the original terminal answer. Time to first body and the sum of the
+    exchange's non-overlapping socket reads both lower-bound that call's
+    duration. A lower bound above the largest gap without a complete 200 read
+    proves that a read overlapped the call.
     """
     if result['status'] != 'PASS':
         return False
@@ -285,7 +285,7 @@ def overlap_witness(result, attempt_hashes, wire_log_lines):
     matching = [m for line in wire_log_lines if (m := WIRE_TIMING.search(line))
                 and m[1] in attempt_hashes]
     return (len({m[1] for m in matching}) == len(matching)
-            and any(minimum < float(m[2]) <= end-start for m in matching))
+            and any(minimum < max(float(m[2]), float(m[3])) <= end-start for m in matching))
 
 
 def print_json(value):
@@ -338,6 +338,7 @@ def original_model_attempts(database, scope, message_id):
             "JOIN cj_run_metered_operation o ON (o.scope,o.run_id)=(d.scope,d.run_id) "
             "WHERE d.scope=%s AND d.message_id=%s AND o.kind='model' "
             "AND ((o.registration_id='model.answer' AND o.operation_key='model.lio_discussion.0') "
+            "OR (o.registration_id='model.lio_intake.9' AND o.operation_key='model.lio_intake.0') "
             "OR (o.registration_id='model.tool_turn' AND o.operation_key ~ '^model[.]tool_turn[.][0-9]+$') "
             "OR (o.registration_id='model.draft' AND o.operation_key='model.draft'))",
             (scope, message_id),

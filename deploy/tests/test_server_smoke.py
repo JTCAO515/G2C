@@ -5,6 +5,7 @@ import sqlite3
 
 import pytest
 
+from cj_message.lio_context import display_answer, self_description
 from cj_usage.authorization_budget import CNY_SCALE, journal_state
 from cj_usage.sublimits import policy
 from deploy.hk.app_smoke_ceiling import BASELINE
@@ -21,6 +22,8 @@ from deploy.hk import server_smoke_budget as ceiling
     ('en.capability', 'I can plan your itinerary and explain local transport.', True),
     ('en.capability', 'I offer no travel assistance. Please ask someone to plan your itinerary.', False),
     ('en.capability', 'I have no ability to plan travel itineraries or explain local transport.', False),
+    ('en.capability', 'I can’t plan your days. Someone else can help.', False),
+    ('en.capability', 'How can I help you? Where would you like to start?', False),
     ('zh.capability', '我可以规划行程，解释当地交通和支付。', True),
     ('zh.plan', '第一天\n上午游览故宫和天安门广场，下午去景山公园。\n第二天\n乘车去慕田峪长城，在景区步行并参观烽火台。\n第三天\n上午参观颐和园并沿昆明湖步行，下午去前门。', True),
     ('en.plan', '**Day 1: City centre**\nWalk through the Forbidden City and climb Jingshan.\n**Day 2: Great Wall**\nTake the morning shuttle to Mutianyu and walk between towers.\n**Day 3: Gardens**\nTour the Summer Palace and walk along the lake.', True),
@@ -38,6 +41,13 @@ from deploy.hk import server_smoke_budget as ceiling
 ])
 def test_real_body_is_required(case, body, valid):
     assert smoke.valid_answer(case, body) is valid
+
+
+@pytest.mark.parametrize('case,prompt', [(case,prompt) for case,prompt in smoke.CASES if case.endswith('.capability')])
+def test_smoke_accepts_the_public_capability_reply(case, prompt):
+    locale = case.split('.')[0]
+    visible = display_answer(self_description(prompt, locale), locale)
+    assert smoke.valid_answer(case, visible)
 
 
 def test_active_original_timeline_503_fails_without_reposting(monkeypatch):
@@ -97,7 +107,10 @@ def test_concurrency_requires_real_bound_provider_wait():
     line = f'M4_MODEL_WIRE_TIMING attempt_sha256={attempt} first_provider_body_ms=2590.0 socket_read_ms=2740.0'
     assert smoke.overlap_witness(result, {attempt}, [line])
     assert not smoke.overlap_witness(result, {'b'*64}, [line])
-    assert not smoke.overlap_witness(result, {attempt}, [line.replace('2590', '400')])
+    fast_first_packet = line.replace('2590', '400')
+    assert smoke.overlap_witness(result, {attempt}, [fast_first_packet])
+    assert not smoke.overlap_witness(result, {attempt}, [fast_first_packet.replace('2740', '410')])
+    assert not smoke.overlap_witness(result, {attempt}, [fast_first_packet.replace('2740', '3500')])
     assert not smoke.overlap_witness(result, {attempt}, [line, line])
     assert not smoke.overlap_witness(result, {attempt}, [line.replace('2590.0', 'UNKNOWN')])
     result['polls'][2].update(http=503)
