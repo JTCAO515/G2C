@@ -16,12 +16,12 @@
             "zh": [
               "从行程列表打开已保存的行程时，iOS 18 或更新版本从所点卡片缩放到详情。",
               "内测新增「插件」页。翻译支持中英文字、语音和图片，可复制或朗读译文，在本机查看最近记录。",
-              "修复删除一条记忆后列表可能加载失败的问题。"
+              "修复删除一条记忆后列表可能加载失败的问题，并提高「更多记忆」按钮的可读性。"
             ],
             "en": [
               "On iOS 18 or later, opening a saved itinerary from Trips zooms from the selected card into its details.",
               "The internal build adds the Tools tab. Translate Chinese and English text, speech, and photos, copy or listen to translations, and view recent translations on this device.",
-              "Fixed an issue where the memory list could fail to reload after deleting an entry."
+              "Fixed an issue where the memory list could fail to reload after deleting an entry and made the More memories button easier to read."
             ]
           }
         },
