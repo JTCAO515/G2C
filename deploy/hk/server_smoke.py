@@ -365,6 +365,9 @@ def run(budget, database, scope, token, owner, start, end):
     if not permitted(datetime.now(timezone.utc), start, end, minimum_seconds=CASE_LIMIT_SECONDS):
         print_json(dict(kind='batch', status='UNRUN', reason='approved_window_closed'))
         return 3
+    from deploy.hk.configuration import TRANSLATION_INTERNAL_SUBJECTS
+    translation_required = TRANSLATION_INTERNAL_SUBJECTS in os.environ
+    print_json(dict(kind='translation_requirement', required=translation_required))
     before = budget_state(budget, owner)
     print_json(dict(kind='restriction_intent', before=before))
     restricted = restrict(budget, before)
@@ -397,8 +400,7 @@ def run(budget, database, scope, token, owner, start, end):
     history_result = (history(token, results, allowed) if all(row['status']=='PASS' for row in results)
                       else dict(status='UNRUN', reason='earlier_case_stopped'))
     print_json(dict(kind='history', **history_result))
-    from deploy.hk.configuration import TRANSLATION_INTERNAL_SUBJECTS
-    if os.environ.get(TRANSLATION_INTERNAL_SUBJECTS) is not None:
+    if translation_required:
         from deploy.hk.translation_smoke import checks
         checks(budget, scope, token, allowed, request, print_json, SmokeResult,
                ready=history_result['status']=='PASS')
@@ -411,10 +413,7 @@ def decide(events, wire_logs):
     cases = [entry for entry in events if entry['kind']=='case']
     history_rows = [entry for entry in events if entry['kind']=='history']
     costs = [entry for entry in events if entry['kind']=='cost']
-    outcomes = cases + history_rows
-    from deploy.hk.translation_smoke import complete
-    if not complete(events, outcomes):
-        return dict(status='UNKNOWN', concurrency='UNRUN', reason='translation_smoke_incomplete')
+    outcomes = cases + history_rows + [row for row in events if row['kind']=='translation']
     if any(row['status']=='FAIL' for row in outcomes):
         failed_read = any(row['status']=='FAIL' and 'dispatch_ms' in row
                           and any('outcome' in poll for poll in row.get('polls', ())) for row in cases)
@@ -431,6 +430,9 @@ def decide(events, wire_logs):
         return dict(status='UNKNOWN', concurrency='UNKNOWN', reason='invalid_smoke_status')
     if any(row['status']=='UNRUN' for row in outcomes):
         return dict(status='UNRUN', concurrency='UNRUN')
+    from deploy.hk.translation_smoke import complete
+    if not complete(events):
+        return dict(status='UNKNOWN', concurrency='UNRUN', reason='translation_smoke_incomplete')
     if (costs[0]['conservative_cny_1e7'] > 5*CNY_SCALE
             or costs[0]['line_usage_delta_cny_1e7'] > 5*CNY_SCALE):
         return dict(status='UNKNOWN', concurrency='UNRUN', reason='smoke_cost_boundary_unconfirmed')

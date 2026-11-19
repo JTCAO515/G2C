@@ -1,7 +1,9 @@
 """Bounded, stateless translation relay over fixed Beijing DashScope endpoints."""
 
 from base64 import b64decode, b64encode
+from contextlib import closing
 from dataclasses import dataclass
+from http.client import HTTPSConnection, HTTPException
 from io import BytesIO
 import json
 import re
@@ -9,7 +11,6 @@ import time
 from uuid import UUID
 import wave
 
-import httpx
 
 from cj_auth.interfaces import AdmissionReason, AdmissionStatus
 from cj_strict_json import reject_duplicates
@@ -25,7 +26,7 @@ MAX_LINES = 24
 MAX_SPEECH = 60
 SAMPLE_RATE = 16_000
 LANGUAGES = {'zh': 'Chinese', 'en': 'English'}
-DASHSCOPE = 'https://dashscope.aliyuncs.com'
+DASHSCOPE = 'dashscope.aliyuncs.com'
 CHAT = '/compatible-mode/v1/chat/completions'
 MULTIMODAL = '/api/v1/services/aigc/multimodal-generation/generation'
 MAX_PROVIDER_RESPONSE = 256 * 1024
@@ -122,35 +123,41 @@ class TranslationInput:
 
 
 class DashScopeTranslation:
-    def __init__(self, api_key, client):
+    def __init__(self, api_key, *, connection=HTTPSConnection):
         self._api_key = api_key
-        self._client = client
+        self._connection = connection
 
-    def _post(self, path, payload, deadline):
+    def _post(self, path, payload, deadline, authorize):
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             raise supplier_unavailable()
         body = bytearray()
+        raw = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode()
         try:
-            with self._client.stream(
-                'POST', DASHSCOPE + path, json=payload,
-                headers={'Authorization': 'Bearer ' + self._api_key, 'Accept': 'application/json'},
-                follow_redirects=False, timeout=min(remaining, 12),
-            ) as response:
-                if response.status_code != 200:
-                    raise supplier_unavailable()
-                for chunk in response.iter_bytes():
-                    if len(body) + len(chunk) > MAX_PROVIDER_RESPONSE or time.monotonic() >= deadline:
+            with closing(self._connection(DASHSCOPE, timeout=min(remaining, 12))) as connection:
+                connection.connect()
+                connection.auto_open = False
+                # DNS and TLS can block. Check the App session after both and
+                # immediately before the only write carrying the paid request.
+                authorize()
+                connection.request('POST', path, body=raw, headers={
+                    'Authorization': 'Bearer ' + self._api_key, 'Content-Type': 'application/json',
+                })
+                with closing(connection.getresponse()) as response:
+                    if response.status != 200:
                         raise supplier_unavailable()
-                    body.extend(chunk)
+                    while chunk := response.read1(32 * 1024):
+                        if len(body) + len(chunk) > MAX_PROVIDER_RESPONSE or time.monotonic() >= deadline:
+                            raise supplier_unavailable()
+                        body.extend(chunk)
             value = json.loads(body, object_pairs_hook=reject_duplicates(ValueError, 'duplicate provider field'))
             if type(value) is not dict or 'error' in value or 'code' in value:
                 raise supplier_unavailable()
             return value
-        except (httpx.HTTPError, RecursionError, ValueError):
+        except (HTTPException, OSError, RecursionError, ValueError):
             raise supplier_unavailable() from None
 
-    def request(self, model, item, source, target, deadline):
+    def request(self, model, item, source, target, deadline, authorize):
         if model == IMAGE_MODEL:
             response = self._post(MULTIMODAL, {
                 'model': model,
@@ -158,7 +165,7 @@ class DashScopeTranslation:
                     {'image': item, 'max_pixels': 4 * 1024 * 1024},
                 ]}]},
                 'parameters': {'ocr_options': {'task': 'text_recognition'}, 'max_tokens': 4096},
-            }, deadline)
+            }, deadline, authorize)
         else:
             options = ({'asr_options': {'language': source}}
                        if model == SPEECH_MODEL else {
@@ -168,7 +175,7 @@ class DashScopeTranslation:
             content = ([{'type': 'input_audio', 'input_audio': {'data': item, 'format': 'wav'}}]
                        if model == SPEECH_MODEL else item)
             response = self._post(CHAT, dict(model=model, stream=False,
-                messages=[dict(role='user', content=content)], **options), deadline)
+                messages=[dict(role='user', content=content)], **options), deadline, authorize)
         try:
             if model == IMAGE_MODEL:
                 supplier_id = response['request_id']
@@ -228,10 +235,12 @@ class TranslationRelay:
             if time.monotonic() >= deadline:
                 raise TranslationError(503, 'unavailable')
             self.budget.begin(operation, stage, model)
-            if self.authorize(token) != owner:
-                raise TranslationError(503, 'unavailable')
+            def authorize_send():
+                if time.monotonic() >= deadline or self.authorize(token) != owner:
+                    raise TranslationError(503, 'unavailable')
+
             supplier_id, usage, text = self.provider.request(
-                model, value, request.source_lang, request.target_lang, deadline)
+                model, value, request.source_lang, request.target_lang, deadline, authorize_send)
             if model == SPEECH_MODEL and (
                     type(usage['seconds']) is not int or not 1 <= usage['seconds'] <= request.units):
                 raise supplier_unavailable()

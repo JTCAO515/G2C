@@ -43,7 +43,6 @@ def receipt(budget, scope, request_id):
 
 
 def checks(budget, scope, token, allowed, send, emit, error_type, *, ready):
-    emit(dict(kind='translation_requirement', required=True))
     for source, target, prompt in TRANSLATION_CASES:
         row = dict(kind='translation', language=source, status='UNRUN', reason='earlier_case_stopped')
         if ready and allowed():
@@ -68,13 +67,10 @@ def checks(budget, scope, token, allowed, send, emit, error_type, *, ready):
         emit(row)
 
 
-def complete(events, outcomes):
+def complete(events):
     required = [event for event in events if event['kind'] == 'translation_requirement']
     translations = [event for event in events if event['kind'] == 'translation']
-    if not required and not translations:
-        return True
-    if (len(required) != 1 or required[0].get('required') is not True
-            or tuple(r.get('language') for r in translations) != LANGUAGES):
+    if len(required) != 1 or type(required[0].get('required')) is not bool:
         return False
-    outcomes.extend(translations)
-    return True
+    expected = LANGUAGES if required[0]['required'] else ()
+    return tuple(row.get('language') for row in translations) == expected

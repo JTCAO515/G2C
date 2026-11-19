@@ -80,11 +80,29 @@ def interface(budget):
         return httpx.Response(200, json=dict(model=model, id=str(uuid4()),
             choices=[{'message': {'content': content}, 'finish_reason': 'stop'}], usage=usage))
 
-    with TemporaryDirectory(prefix='g2c-tr-', dir='/tmp') as directory, httpx.Client(
-            transport=httpx.MockTransport(fake)) as http:
+    class Connection:
+        def __init__(self, host, timeout):
+            self.host = host
+
+        def connect(self):
+            assert self.host == 'dashscope.aliyuncs.com'
+
+        def request(self, method, path, *, body, headers):
+            assert self.auto_open is False
+            self.reply = fake(httpx.Request(method, 'https://' + self.host + path, content=body, headers=headers))
+
+        def getresponse(self):
+            stream = BytesIO(self.reply.content)
+            return SimpleNamespace(status=self.reply.status_code, read1=stream.read1, close=stream.close)
+
+        def close(self):
+            pass
+
+    with TemporaryDirectory(prefix='g2c-tr-', dir='/tmp') as directory:
         path = Path(directory) / 'relay.sock'
         relay = TranslationRelay(SimpleNamespace(check=_check), budget,
-                                 DashScopeTranslation('fixture-key', http), lambda issuer, subject: subject)
+                                 DashScopeTranslation('fixture-key', connection=Connection),
+                                 lambda issuer, subject: subject)
         with translation_socket(relay, path=path):
             app = FastAPI()
             register_translation_route(app, send=lambda token, raw: socket_request(token, raw, path=path))
@@ -184,7 +202,7 @@ def test_smoke_requires_both_directions_and_original_receipts(budget):
     from uuid import UUID
     from deploy.hk import server_smoke, translation_smoke
 
-    events = []
+    events = [{'kind': 'translation_requirement', 'required': True}]
     sent = []
     scope = 'internal'
 
@@ -203,9 +221,8 @@ def test_smoke_requires_both_directions_and_original_receipts(budget):
                              lambda: True, send, events.append, server_smoke.SmokeResult, ready=True)
     assert sent == ['zh', 'en']
     assert [row['status'] for row in events[1:]] == ['PASS', 'PASS']
-    outcomes = []
-    assert translation_smoke.complete(events, outcomes)
-    assert not translation_smoke.complete(events[:-1], [])
+    assert translation_smoke.complete(events)
+    assert not translation_smoke.complete(events[:-1])
 
 
 def test_smoke_stops_after_a_rejected_translation(budget):
@@ -220,21 +237,38 @@ def test_smoke_stops_after_a_rejected_translation(budget):
     translation_smoke.checks(budget.authorization, 'internal', 'synthetic-fixture',
                              lambda: True, send, events.append, server_smoke.SmokeResult, ready=True)
     assert calls == ['zh']
-    assert [row['status'] for row in events[1:]] == ['FAIL', 'UNRUN']
+    assert [row['status'] for row in events] == ['FAIL', 'UNRUN']
 
 
-def test_revocation_after_reservation_blocks_supplier_dispatch(budget):
+def test_revocation_during_tls_connect_blocks_the_supplier_post(budget):
     import json
     from types import SimpleNamespace
     from cj_api.translation import TranslationError, TranslationInput
 
-    checker = SimpleNamespace(check=lambda _: _check('external-fixture'))
-    def blocked(*args):
-        pytest.fail('revoked member reached the supplier')
-    relay = TranslationRelay(checker, budget, SimpleNamespace(request=blocked), lambda issuer, subject: subject)
+    current = 'internal-fixture'
+
+    class Connection:
+        def __init__(self, host, timeout):
+            assert host == 'dashscope.aliyuncs.com'
+
+        def connect(self):
+            nonlocal current
+            current = 'external-fixture'
+            assert budget.authorization.inspect()[0]['state'] == 'INTENT'
+
+        def request(self, *args, **kwargs):
+            pytest.fail('revoked member reached the supplier HTTP POST')
+
+        def close(self):
+            pass
+
+    relay = TranslationRelay(SimpleNamespace(check=lambda _: _check(current)), budget,
+                             DashScopeTranslation('fixture-key', connection=Connection),
+                             lambda issuer, subject: subject)
     item = TranslationInput.read(json.dumps(_body(text='你好')))
+    owner = relay.authorize('formerly-valid')
     with pytest.raises(TranslationError, match='not_enabled'):
-        relay.translate('formerly-valid', item, 'internal')
+        relay.translate('formerly-valid', item, owner)
     assert budget.authorization.inspect()[0]['state'] == 'INTENT'
 
 
@@ -246,3 +280,22 @@ def test_bad_optional_roster_leaves_the_existing_worker_loop_available(monkeypat
     with active_translation(None, None):
         pass
     assert capsys.readouterr().err.strip() == 'ALERT translation_relay_unavailable'
+
+
+def test_completed_smoke_rejects_missing_translation_requirement_or_evidence(monkeypatch):
+    from deploy.hk import server_smoke
+
+    monkeypatch.setattr(server_smoke, 'overlap_witness', lambda *args: True)
+    common = [dict(kind='case', case=case, status='PASS', bound_model_attempts=[])
+              for case, _ in server_smoke.CASES]
+    common += [dict(kind='history', status='PASS'),
+               dict(kind='cost', conservative_cny_1e7=0, line_usage_delta_cny_1e7=0)]
+    required = dict(kind='translation_requirement', required=True)
+    disabled = dict(kind='translation_requirement', required=False)
+    unavailable = dict(status='UNKNOWN', concurrency='UNRUN', reason='translation_smoke_incomplete')
+    assert server_smoke.decide(common, []) == unavailable
+    assert server_smoke.decide(common + [required], []) == unavailable
+    assert server_smoke.decide(common + [disabled], [])['status'] == 'PASS'
+    translations = [dict(kind='translation', language=language, status='PASS') for language in ('zh', 'en')]
+    assert server_smoke.decide(common + [required, *translations], [])['status'] == 'PASS'
+    assert server_smoke.decide(common + [disabled, *translations], []) == unavailable

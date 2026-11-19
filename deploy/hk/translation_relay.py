@@ -15,7 +15,6 @@ from threading import BoundedSemaphore, Thread
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
-import httpx
 import psycopg
 from starlette.concurrency import run_in_threadpool
 from starlette.requests import ClientDisconnect
@@ -190,8 +189,7 @@ def active_translation(runtime, authorization_guard):
                 raise ValueError('explicit_internal_translation_roster_required')
             budget = AuthorizationBudget(HK_JOURNAL_ROOT, authorization_guard=authorization_guard, demo=True)
             checker = account_checker_for(runtime.auth, runtime.database(), selected_subjects=frozenset(subjects))
-            client = stack.enter_context(httpx.Client(trust_env=False, follow_redirects=False))
-            provider = DashScopeTranslation(os.environ['CJ_MODEL_API_KEY'], client)
+            provider = DashScopeTranslation(os.environ['CJ_MODEL_API_KEY'])
             relay = TranslationRelay(checker, TranslationBudget(budget), provider, scope_for)
             stack.enter_context(translation_socket(relay))
         except (BudgetUnknown, CompositionUnavailable, psycopg.Error, sqlite3.Error,
