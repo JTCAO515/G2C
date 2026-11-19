@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 enum LioTranslationLanguage: String, CaseIterable, Codable, Sendable {
@@ -120,6 +121,16 @@ struct LioRecentTranslation: Codable, Equatable, Identifiable {
         try localDirectory.setResourceValues(backup)
         try data.write(to: destination, options: [.atomic, .completeFileProtection])
         try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: destination.path)
+        try sync(destination, access: O_RDWR)
+        try sync(directory, access: O_RDONLY | O_DIRECTORY)
+        try sync(directory.deletingLastPathComponent(), access: O_RDONLY | O_DIRECTORY)
+    }
+
+    private func sync(_ path: URL, access: Int32) throws {
+        let descriptor = open(path.path, access | O_NOFOLLOW | O_CLOEXEC)
+        guard descriptor >= 0 else { throw CocoaError(.fileWriteUnknown) }
+        defer { close(descriptor) }
+        guard fsync(descriptor) == 0 else { throw CocoaError(.fileWriteUnknown) }
     }
 
     func clear() throws {

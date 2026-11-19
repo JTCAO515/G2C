@@ -48,7 +48,9 @@ struct LioTranslationRelayTests {
         #expect(try encoder.encode(retry) == encoder.encode(original))
         let reversed = try originals.request(source: .chinese, target: .english, payload: .text("Cafe\u{301}"))
         #expect(reversed.id != original.id)
-        try originals.confirm(original)
+        let result = LioRecentTranslation(source: .english, target: .chinese, input: "Cafe\u{301}",
+                                         output: "咖啡", offline: false)
+        _ = try originals.deliver(original, entry: result)
         let next = try originals.request(source: .english, target: .chinese, payload: .text("Cafe\u{301}"))
         #expect(next.id != original.id)
     }
@@ -73,6 +75,42 @@ struct LioTranslationRelayTests {
         #expect(otherRequest.id != original.id)
         let persisted = try Data(contentsOf: root.appendingPathComponent("first-account").appendingPathComponent(LioTranslationHistory.relayOriginalsFileName))
         #expect(!String(decoding: persisted, as: UTF8.self).contains("Same private sentence"))
+    }
+
+    @Test @MainActor func completedRelayResultCanBeRecoveredBeforeTheOriginalIDIsReleased() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let history = LioTranslationHistory(directory: directory, isCurrent: { true })
+        var originals = LioRelayOriginalRequests()
+        let response = LioRecentTranslation(source: .english, target: .chinese, input: "Hello",
+                                            output: "你好", offline: false)
+        let original = try originals.request(source: .english, target: .chinese, payload: .text("Hello"), storage: history)
+        #expect(try originals.deliver(original, entry: response, storage: history) == [response])
+        #expect(try history.load() == [response])
+        var reopened = LioRelayOriginalRequests()
+        let later = try reopened.request(source: .english, target: .chinese, payload: .text("Hello"), storage: history)
+        #expect(later.id != original.id)
+    }
+
+    @Test @MainActor func failedHistoryWriteLeavesTheAcceptedOriginalProtectedAfterReopening() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let history = LioTranslationHistory(directory: directory, isCurrent: { true })
+        var originals = LioRelayOriginalRequests()
+        let original = try originals.request(source: .english, target: .chinese, payload: .text("Hello"), storage: history)
+        let recent = directory.appendingPathComponent(LioTranslationHistory.fileName)
+        let corrupt = Data("existing unreadable history".utf8)
+        try corrupt.write(to: recent)
+        let response = LioRecentTranslation(source: .english, target: .chinese, input: "Hello",
+                                            output: "你好", offline: false)
+        #expect(throws: DecodingError.self) {
+            try originals.deliver(original, entry: response, storage: history)
+        }
+        var reopened = LioRelayOriginalRequests()
+        #expect(throws: LioRelayTranslationFailure.alreadyAccepted) {
+            try reopened.request(source: .english, target: .chinese, payload: .text("Hello"), storage: history)
+        }
+        #expect(try Data(contentsOf: recent) == corrupt)
     }
 
     @Test @MainActor func recreatedRequestNeverSendsAnOldIDWithDifferentWireBytes() throws {

@@ -435,12 +435,16 @@ private struct LioTextTranslationView: View {
                 }
             }
             guard self.attempt?.id == attempt.id, isCurrent() else { return }
-            try relayOriginals.confirm(original, storage: history)
-            guard !reply.items.isEmpty else { finish(attempt.id, result: .failure(.noRecognizedText)); return }
+            guard !reply.items.isEmpty else {
+                try relayOriginals.accept(original, storage: history)
+                finish(attempt.id, result: .failure(.noRecognizedText))
+                return
+            }
             if case .recording = attempt.input { spokenText = reply.items.first?.sourceText }
             self.attempt?.request = .init(source: attempt.request.source, target: attempt.request.target,
                                           text: reply.items.map(\.sourceText))
-            finish(attempt.id, result: .success(.init(text: reply.items.map(\.translatedText), offline: false)))
+            finish(attempt.id, result: .success(.init(text: reply.items.map(\.translatedText), offline: false)),
+                   relayOriginal: original)
         } catch is CancellationError {
             finish(attempt.id, result: nil)
         } catch LioRelayTranslationFailure.signInRequired {
@@ -484,7 +488,8 @@ private struct LioTextTranslationView: View {
         return translated
     }
 
-    private func finish(_ id: UUID, result outcome: Result<LioTranslationResult, LioTranslationFailure>?) {
+    private func finish(_ id: UUID, result outcome: Result<LioTranslationResult, LioTranslationFailure>?,
+                        relayOriginal: LioRelayTranslationRequest? = nil) {
         guard let attempt, attempt.id == id, isCurrent() else { return }
         self.attempt = nil
         switch outcome {
@@ -493,16 +498,20 @@ private struct LioTextTranslationView: View {
                 do { imageLines = try LioImageTranslationLine.pair(attempt.request.text, with: value.text) }
                 catch { problem = .unavailableLocally; return }
             }
+            let entry = LioRecentTranslation(source: attempt.request.source, target: attempt.request.target,
+                                             input: attempt.request.text.joined(separator: "\n"),
+                                             output: value.text.joined(separator: "\n"), offline: value.offline)
+            do {
+                let saved: [LioRecentTranslation]?
+                if let relayOriginal {
+                    saved = try relayOriginals.deliver(relayOriginal, entry: entry, storage: history)
+                } else {
+                    saved = try history?.record(entry)
+                }
+                if let saved { recent = saved }
+                historyError = false
+            } catch { historyError = true }
             result = value
-            if let history {
-                let entry = LioRecentTranslation(source: attempt.request.source, target: attempt.request.target,
-                                                 input: attempt.request.text.joined(separator: "\n"),
-                                                 output: value.text.joined(separator: "\n"), offline: value.offline)
-                do {
-                    recent = try history.record(entry)
-                    historyError = false
-                } catch { historyError = true }
-            }
         case .failure(let error): problem = error
         case nil: break
         }

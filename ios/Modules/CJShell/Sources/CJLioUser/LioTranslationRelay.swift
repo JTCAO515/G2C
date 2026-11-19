@@ -145,12 +145,14 @@ struct LioRelayTranslationRequest: Encodable {
         try save(pending, storage: storage)
     }
 
-    mutating func confirm(_ request: LioRelayTranslationRequest, storage: LioTranslationHistory? = nil) throws {
-        let identity = Identity(request)
+    mutating func deliver(_ request: LioRelayTranslationRequest, entry: LioRecentTranslation,
+                          storage: LioTranslationHistory? = nil) throws -> [LioRecentTranslation]? {
+        try accept(request, storage: storage)
+        let recent = try storage?.record(entry)
         var pending = try load(storage)
-        guard pending[identity]?.id == request.id else { throw LioRelayTranslationFailure.originalUnavailable }
-        pending.removeValue(forKey: identity)
+        pending.removeValue(forKey: Identity(request))
         try save(pending, storage: storage)
+        return recent
     }
 
     private func load(_ storage: LioTranslationHistory?) throws -> [Identity: Original] {
