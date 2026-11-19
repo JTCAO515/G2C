@@ -259,6 +259,10 @@ class NationalLioPlanning:
         if META_QUESTION.fullmatch(text) or DIRECT_ANSWER.fullmatch(text):return None
         today=original.question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
         turns,refs,previous=self.context(binding,PlanningTurn(text,today))
+        if not refs and previous is None and _READONLY_DETAILS.fullmatch(text):
+            # Planning has no eligible history here. The ordinary model can
+            # still read the traveler's words from the failed turn.
+            return None
         literal=literal_duration_question(text)
         if (literal is not None and previous is None and binding.message_sequence==len(turns)
                 and all(self_description(turn.text,original.locale)is not None for turn in turns[:-1])

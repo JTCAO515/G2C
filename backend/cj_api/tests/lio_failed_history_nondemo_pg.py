@@ -27,7 +27,7 @@ from runtime_adapter.contract import encode
 from test_lio_planning_flow import flow
 
 
-def exercise(root,conninfo,*,failure,answer_locale=None):
+def exercise(root,conninfo,*,failure,answer_locale=None,followup_text=None):
     root.mkdir(mode=0o700);auth=root/'auth';subject='m4-synthetic-nondemo-'+failure
     dev_auth.init(auth,[subject]);owner=scope_for(ISSUER,subject)
     meter=root/'meter.json';now=int(time.time())
@@ -50,6 +50,9 @@ def exercise(root,conninfo,*,failure,answer_locale=None):
         'en':('Plan a three-day trip in Chengdu with quiet parks.','First time in China, any tips?',
               'Start with a quiet park in Chengdu. Which neighborhood interests you?'),
     }
+    if followup_text is not None:
+        first,_,reply=ordinary[answer_locale]
+        ordinary[answer_locale]=first,followup_text,reply
     def response(request):
         body=json.loads(request.content);sent.append(body)
         if len(sent)==1:
@@ -148,7 +151,8 @@ def exercise(root,conninfo,*,failure,answer_locale=None):
             trips=db.execute('SELECT count(*) FROM cj_trip_record').fetchone()[0]
             memories=db.execute('SELECT count(*) FROM cj_memory_item').fetchone()[0]
         assert needs==0 and trips==0 and memories==0
-        print('PASS visible ordinary follow-up retains '+failure+' text, excludes draft evidence and leaves NEEDS/Trip/Memory unchanged, '+answer_locale,flush=True)
+        shape='standalone question'if followup_text is None else 'plain continuation'
+        print('PASS visible ordinary follow-up retains '+failure+' text, excludes draft evidence and leaves NEEDS/Trip/Memory unchanged, '+answer_locale+' '+shape,flush=True)
         return
     # The provider records a definite HTTP 500 as unknown too; either way the
     # first RUN is a non-completed terminal original.
@@ -160,9 +164,10 @@ def main():
     for failure in ('unknown','failed'):
         def run(auth,conninfo):exercise(auth.parent/('nondemo-'+failure),conninfo,failure=failure)
         with patch.object(harness,'exercise',run):harness.main()
-        for locale in ('zh','en'):
+        for locale,followup_text in (('zh',None),('en',None),('zh','继续'),('en','Continue.')):
             def run_answer(auth,conninfo):
-                exercise(auth.parent/('answer-'+failure),conninfo,failure=failure,answer_locale=locale)
+                exercise(auth.parent/('answer-'+failure),conninfo,failure=failure,answer_locale=locale,
+                    followup_text=followup_text)
             with patch.object(harness,'exercise',run_answer):harness.main()
 
 
