@@ -12,11 +12,11 @@ def test_chain_is_contiguous_hashed_and_reversible():
     migrations = migrate.load()  # raises on gaps or sha256 mismatch
     assert [m['version'] for m in migrations][0] == 1
     for m in migrations:
-        assert (ROOT / m['down']).read_text().strip(), m['down']
+        assert (ROOT / m['down']).read_text(encoding='utf-8').strip(), m['down']
 
 
 def test_every_domain_schema_file_is_registered():
     registered = {m['file'] for m in migrate.load()}
-    on_disk = {str(p.relative_to(ROOT)) for p in (ROOT / 'backend').glob('*/sql/*.sql')}
-    on_disk |= {str(p.relative_to(ROOT)) for p in (ROOT / 'backend').glob('*/schema.sql')}
+    on_disk = {p.relative_to(ROOT).as_posix() for p in (ROOT / 'backend').glob('*/sql/*.sql')}
+    on_disk |= {p.relative_to(ROOT).as_posix() for p in (ROOT / 'backend').glob('*/schema.sql')}
     assert on_disk <= registered, sorted(on_disk - registered)

@@ -18,6 +18,8 @@ python3 -m http.server 8080 --directory web
 
 静态预览下 `/api/early-access` 不可用，提交会显示失败提示和备用表单链接；完整流程以 Vercel Preview 为准。
 
+报名接口离线回归检查：`node --test scripts/test_web_early_access.cjs`（在仓库根目录运行）。
+
 ## Vercel
 
 Root Directory 设为 `web`，Framework Preset 选 Other，Build Command 与 Output Directory 留空。`api/` 下的文件自动成为 Vercel Function（Node.js）。`vercel.json` 只设置缓存与安全响应头。
@@ -28,7 +30,7 @@ Root Directory 设为 `web`，Framework Preset 选 Other，Build Command 与 Out
 |---|---|---|
 | `JOTFORM_API_KEY` | 是 | Jotform → My Account → API → Create New Key，权限选 Full Access。只放在 Vercel，不入库 |
 | `JOTFORM_FORM_ID` | 否 | 默认 `263094082842055`（当前报名表） |
-| `JOTFORM_API_BASE` | 否 | 默认 `https://api.jotform.com`；欧盟账号用 `https://eu-api.jotform.com` |
+| `JOTFORM_API_BASE` | 否 | 允许 `https://api.jotform.com`（默认）、`https://eu-api.jotform.com`、`https://hipaa-api.jotform.com` |
 
 未配置 `JOTFORM_API_KEY` 时接口返回 503，页面提示失败并给出备用 Jotform 链接与邮箱。
 
