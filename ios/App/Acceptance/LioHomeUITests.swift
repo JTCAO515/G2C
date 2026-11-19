@@ -2,7 +2,7 @@ import XCTest
 import UIKit
 import CryptoKit
 
-@MainActor final class LioHomeUITests: XCTestCase {
+@MainActor final class LioToolsUITests: XCTestCase {
     func testToolsTextReportsOfflineUnavailableOnIOS17() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
@@ -50,7 +50,9 @@ import CryptoKit
             }
         }
     }
+}
 
+@MainActor final class LioHomeUITests: XCTestCase {
     func testUnsentOriginalAndDifferentDraftStayVisibleAcrossRelaunchInBothLanguages() throws {
         continueAfterFailure = false
         for chinese in [false, true] {
