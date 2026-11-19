@@ -108,7 +108,7 @@
     "backend/cj_api/local_lio_exploration.py": "c16178c09c1062f995b04f482c9eeb2b7956f29e1817ecc24ff21be0f02e01a9",
     "backend/cj_api/local_lio_exploration_profile.py": "98ed943cf7f9269b8950426284d7ecbeeb25d6b1552796a6863fdd62933e4e64",
     "backend/cj_api/local_lio_national.py": "f9fcc97e38fed1749c66fd37739136c873bbd1805eb879991acdd9aa00a6b06c",
-    "backend/cj_api/local_lio_planning.py": "70b46da9a83c8caf7e9987049eb60cb93abd4ffebe1c4c648cb2e5e4e2b96bf7",
+    "backend/cj_api/local_lio_planning.py": "89b7503ca68cd9d140a4d3c78c56a3d619e1757e2cd47e4e215a59ce848e38b2",
     "backend/cj_api/local_lio_provider_sources.py": "e660b41217d461c7dba4dbf29221829a3f7dfb0b8870d76080d0aeb35296a9b9",
     "backend/cj_api/local_lio_rich_calendar_source.py": "0c2a8d2595eb4368d5ea7002fc92ee40164a699229f38e09f9f8d839d27604e2",
     "backend/cj_api/local_lio_rich_checks.py": "9be1935d74b241f67a5d37dad3d835e0ebff1f318fdf540615ca98707f7f7321",
@@ -137,7 +137,7 @@
     "eval/optimization/score_v2.py": "015fa9f21b418fe49a5ac07a5fb3027e0422620a6616029f2ba6438bfa1e9322",
     "tooling/optimization/uv.lock": "c3729fbcd04627cb07bde4f5f21b9c4fbfa4748b3d7468d550c7fc2af62bc343"
   },
-  "system_prompt_sha256": "03c8869a69f4fe5db1d14c24a247d17c7a89e4eb50895b1f2e12c465851d4a48",
+  "system_prompt_sha256": "cae3cb64fbd7e2d14df8c781e6074520e9e77520ca6bd6281f28e283328cc2a5",
   "task_sha256": "9d4376ba7512d6f3c0741036ae1bd0dda99752bbc9f8b8fb8dd7025c61a530ec",
   "task_version": "G2C-dialogue-cases.2",
   "tool_implementation_sha256": "f40c6658135f63f11b9bb526a91d5e624854db3b2b28f77875817f6e59e8c04d",
