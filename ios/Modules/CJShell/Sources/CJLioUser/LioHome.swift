@@ -10,6 +10,7 @@ public struct LioHome<MenuContent: View>: View {
     private let isDemo: Bool
     private let showsTools: Bool
     private let toolsHistory: LioTranslationHistory?
+    private let toolsSessionIsCurrent: @MainActor () -> Bool
     private let reconnect: (@MainActor () -> Void)?
     private let session: LioSessionAvailability?
     private let runtimeService: LioService
@@ -92,11 +93,14 @@ public struct LioHome<MenuContent: View>: View {
                 recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)? = nil,
                 session: LioSessionAvailability? = nil,
                 reconnect: (@MainActor () -> Void)? = nil, showsTools: Bool = false,
-                toolsHistory: LioTranslationHistory? = nil, @ViewBuilder menu: () -> MenuContent) {
+                toolsHistory: LioTranslationHistory? = nil,
+                toolsSessionIsCurrent: @escaping @MainActor () -> Bool = { true },
+                @ViewBuilder menu: () -> MenuContent) {
         self.language = language
         self.isDemo = isDemo
         self.showsTools = showsTools
         self.toolsHistory = toolsHistory
+        self.toolsSessionIsCurrent = toolsSessionIsCurrent
         self.reconnect = reconnect
         self.session = session
         self.runtimeService = service
@@ -163,7 +167,9 @@ public struct LioHome<MenuContent: View>: View {
                     .tag(Tab.memory)
             }
             if showsTools {
-                LioToolsView(language: language, history: toolsHistory)
+                LioToolsView(language: language, history: toolsHistory,
+                             enabled: !restoringChat && session?.available != false && scenePhase != .background,
+                             sessionIsCurrent: toolsSessionIsCurrent)
                     .background(LioTabBarAppearance().frame(width: 0, height: 0))
                     .tabItem { Label(language.text("Tools", "插件"), systemImage: "puzzlepiece.extension") }
                     .tag(Tab.tools)

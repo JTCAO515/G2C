@@ -7,13 +7,17 @@ import UIKit
 struct LioToolsView: View {
     let language: LioLanguage
     let history: LioTranslationHistory?
+    let enabled: Bool
+    let sessionIsCurrent: @MainActor () -> Bool
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
                     NavigationLink {
-                        LioTextTranslationView(language: language, history: history)
+                        LioTextTranslationView(language: language, history: history, enabled: enabled, isCurrent: {
+                            UIApplication.shared.applicationState != .background && sessionIsCurrent()
+                        })
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "character.bubble")
@@ -53,6 +57,8 @@ struct LioTranslationActionStyle: ButtonStyle {
 private struct LioTextTranslationView: View {
     let language: LioLanguage
     let history: LioTranslationHistory?
+    let enabled: Bool
+    let isCurrent: @MainActor () -> Bool
     @State private var source: LioTranslationLanguage = .english
     @State private var target: LioTranslationLanguage = .chinese
     @State private var input = ""
@@ -119,7 +125,8 @@ private struct LioTextTranslationView: View {
                     .accessibilityIdentifier("lio.translation.submit")
                     .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || attempt != nil)
                 }
-                LioTranslationVoiceInput(language: language, source: source) { text in
+                LioTranslationVoiceInput(language: language, source: source, enabled: enabled, isCurrent: isCurrent) { text in
+                    guard isCurrent() else { return }
                     start([text], fromImage: false)
                     spokenText = text
                 }
@@ -129,7 +136,8 @@ private struct LioTextTranslationView: View {
                         .textSelection(.enabled)
                         .accessibilityIdentifier("lio.translation.transcript")
                 }
-                LioTranslationImageInput(language: language) { lines in
+                LioTranslationImageInput(language: language, source: source, enabled: enabled, isCurrent: isCurrent) { lines in
+                    guard isCurrent() else { return }
                     start(lines, fromImage: true)
                     imageText = lines
                 }
@@ -179,7 +187,10 @@ private struct LioTextTranslationView: View {
         .onChange(of: input) { resetResult() }
         .onChange(of: source) { resetResult() }
         .onChange(of: target) { resetResult() }
-        .onDisappear { attempt = nil; speaker.stopSpeaking(at: .immediate) }
+        .onChange(of: enabled) { _, available in
+            if !available { resetResult() }
+        }
+        .onDisappear { resetResult() }
         .task { reloadHistory() }
         .confirmationDialog(language.text("Clear recent translations?", "清除最近翻译？"),
                             isPresented: $confirmsClearHistory, titleVisibility: .visible) {
@@ -310,6 +321,7 @@ private struct LioTextTranslationView: View {
     private func start() { start([input], fromImage: false) }
 
     private func start(_ lines: [String], fromImage: Bool) {
+        guard enabled, isCurrent() else { return }
         resetResult()
         if #available(iOS 18.0, *) {
             attempt = Attempt(request: .init(source: source, target: target, text: lines), fromImage: fromImage)
@@ -337,7 +349,7 @@ private struct LioTextTranslationView: View {
     }
 
     private func finish(_ id: UUID, result outcome: Result<LioTranslationResult, LioTranslationFailure>?) {
-        guard let attempt, attempt.id == id else { return }
+        guard let attempt, attempt.id == id, isCurrent() else { return }
         self.attempt = nil
         switch outcome {
         case .success(let value):
