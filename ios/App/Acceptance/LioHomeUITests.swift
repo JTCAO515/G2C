@@ -2,7 +2,7 @@ import XCTest
 import UIKit
 import CryptoKit
 
-@MainActor final class LioHomeUITests: XCTestCase {
+@MainActor final class LioToolsUITests: XCTestCase {
     func testToolsUnavailableSimulatorCameraKeepsPhotoPickerAvailable() {
         continueAfterFailure = false
         for language in ["en", "zh-Hans"] {
@@ -18,6 +18,31 @@ import CryptoKit
             XCTAssertTrue(app.buttons["lio.translation.photo"].isEnabled)
             app.terminate()
         }
+    }
+
+    // Run on the dedicated simulator seeded with the two-line synthetic menu as its newest photo.
+    func testToolsPhotoPickerPairsRelayFixtureLinesOnIOS17() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-translation-relay-preview",
+                               "-cj.ui.language.v1", "en", "-AppleLanguages", "(en)"]
+        app.launch()
+        defer { app.terminate() }
+        let tools = app.tabBars.buttons["Tools"]
+        XCTAssertTrue(tools.waitForExistence(timeout: 8))
+        tools.tap()
+        app.buttons["lio.tools.translation"].tap()
+        let photo = app.buttons["lio.translation.photo"]
+        XCTAssertTrue(photo.waitForExistence(timeout: 6))
+        photo.tap()
+        let fixture = app.images.matching(NSPredicate(format: "label BEGINSWITH %@", "Photo,")).firstMatch
+        XCTAssertTrue(fixture.waitForExistence(timeout: 8), app.debugDescription)
+        fixture.tap()
+        let first = app.descendants(matching: .any).matching(identifier: "lio.translation.line.0").firstMatch
+        let second = app.descendants(matching: .any).matching(identifier: "lio.translation.line.1").firstMatch
+        XCTAssertTrue(first.waitForExistence(timeout: 10), app.debugDescription)
+        XCTAssertTrue(first.label.contains("Tea") && first.label.contains("茶"), first.debugDescription)
+        XCTAssertTrue(second.label.contains("Coffee") && second.label.contains("咖啡"), second.debugDescription)
     }
 
     func testToolsRelayFixtureReturnsTextOnIOS17() throws {
@@ -89,7 +114,9 @@ import CryptoKit
             }
         }
     }
+}
 
+@MainActor final class LioHomeUITests: XCTestCase {
     func testUnsentOriginalAndDifferentDraftStayVisibleAcrossRelaunchInBothLanguages() throws {
         continueAfterFailure = false
         for chinese in [false, true] {
