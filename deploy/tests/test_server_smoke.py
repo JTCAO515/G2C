@@ -5,6 +5,7 @@ import sqlite3
 
 import pytest
 
+from cj_message.lio_context import CAPABILITIES_EN, display_answer
 from cj_usage.authorization_budget import CNY_SCALE, journal_state
 from cj_usage.sublimits import policy
 from deploy.hk.app_smoke_ceiling import BASELINE
@@ -18,9 +19,17 @@ from deploy.hk import server_smoke_budget as ceiling
     ('en.identity', 'Welcome to China. How can I help you?', False),
     ('en.identity', 'I am not Lio. I am a different travel assistant.', False),
     ('zh.identity', '我不是 Lio，我是另一个旅行助手。', False),
-    ('en.capability', 'I can plan your itinerary and explain local transport.', True),
+    ('en.capability', 'I can plan your itinerary and explain local transport.', False),
     ('en.capability', 'I offer no travel assistance. Please ask someone to plan your itinerary.', False),
     ('en.capability', 'I have no ability to plan travel itineraries or explain local transport.', False),
+    ('en.capability', 'I can’t plan your days. Someone else can help.', False),
+    ('en.capability', 'I don’t plan your days. Someone else can help.', False),
+    ('en.capability', 'I won’t plan your days. Someone else can help.', False),
+    ('en.capability', 'Please plan your days before leaving home.', False),
+    ('en.capability', 'It is not true that I can plan your days. Someone else can help.', False),
+    ('en.capability', "Here's how I can help:\n\n- **Plan your days:** No service is available.", False),
+    ('en.capability', "Here's how I can help:\n\n- **Plan your days:**\nAsk someone else for assistance.", False),
+    ('en.capability', 'How can I help you? Where would you like to start?', False),
     ('zh.capability', '我可以规划行程，解释当地交通和支付。', True),
     ('zh.plan', '第一天\n上午游览故宫和天安门广场，下午去景山公园。\n第二天\n乘车去慕田峪长城，在景区步行并参观烽火台。\n第三天\n上午参观颐和园并沿昆明湖步行，下午去前门。', True),
     ('en.plan', '**Day 1: City centre**\nWalk through the Forbidden City and climb Jingshan.\n**Day 2: Great Wall**\nTake the morning shuttle to Mutianyu and walk between towers.\n**Day 3: Gardens**\nTour the Summer Palace and walk along the lake.', True),
@@ -38,6 +47,17 @@ from deploy.hk import server_smoke_budget as ceiling
 ])
 def test_real_body_is_required(case, body, valid):
     assert smoke.valid_answer(case, body) is valid
+
+
+def test_smoke_requires_the_complete_approved_english_capability_copy():
+    visible = display_answer(CAPABILITIES_EN, 'en')
+    assert smoke.valid_answer('en.capability', visible)
+    lines = visible.splitlines()
+    plain = '  '.join(line.removeprefix('- ').replace('**', '') for line in lines)
+    normalized_variant = plain.upper().replace("'", '’').replace('HOW I CAN HELP:', 'HOW I CAN HELP:\n\t')
+    assert smoke.valid_answer('en.capability', 'Travel support: ' + normalized_variant + ' Have a good trip.')
+    omitted = next(line for line in lines if line.startswith('- **Practical info:'))
+    assert not smoke.valid_answer('en.capability', visible.replace(omitted + '\n', '', 1))
 
 
 def test_active_original_timeline_503_fails_without_reposting(monkeypatch):
