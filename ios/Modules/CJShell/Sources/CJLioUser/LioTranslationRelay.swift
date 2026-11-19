@@ -1,12 +1,17 @@
+import CJStrictJSON
 import Foundation
 
 enum LioRelayTranslationFailure: Error, Equatable {
     case accessDenied
+    case alreadyAccepted
     case rejected(Int)
+    case invalidInput
     case invalidAudio
 }
 
 struct LioRelayTranslationRequest: Encodable {
+    enum Kind: String, Decodable { case text, speech, image }
+
     enum Payload {
         case text(String)
         case wav(Data)
@@ -14,32 +19,49 @@ struct LioRelayTranslationRequest: Encodable {
         case png(Data)
     }
 
+    static let version = "TRANSLATION.1"
+    private static let maximumMedia = 3 * 1024 * 1024 - 4096
     let id: UUID
     let source: LioTranslationLanguage
     let target: LioTranslationLanguage
     let payload: Payload
+
+    var kind: Kind {
+        switch payload {
+        case .text: .text
+        case .wav: .speech
+        case .jpeg, .png: .image
+        }
+    }
 
     private enum CodingKeys: String, CodingKey {
         case version, kind, text, media
         case id = "request_id"
         case source = "source_lang"
         case target = "target_lang"
-        case mediaType = "media_type"
     }
 
     func encode(to encoder: any Encoder) throws {
+        guard source != target else { throw LioRelayTranslationFailure.invalidInput }
         var body = encoder.container(keyedBy: CodingKeys.self)
-        try body.encode("TRANSLATION.1", forKey: .version)
+        try body.encode(Self.version, forKey: .version)
         try body.encode(id.uuidString.lowercased(), forKey: .id)
+        try body.encode(kind.rawValue, forKey: .kind)
         try body.encode(wireLanguage(source), forKey: .source)
         try body.encode(wireLanguage(target), forKey: .target)
         switch payload {
         case .text(let text):
-            try body.encode("text", forKey: .kind)
+            guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                  text.unicodeScalars.count <= 4000, !text.utf8.contains(0) else {
+                throw LioRelayTranslationFailure.invalidInput
+            }
             try body.encode(text, forKey: .text)
-        case .wav(let data): try encodeMedia(data, kind: "speech", type: "audio/wav", to: &body)
-        case .jpeg(let data): try encodeMedia(data, kind: "image", type: "image/jpeg", to: &body)
-        case .png(let data): try encodeMedia(data, kind: "image", type: "image/png", to: &body)
+        case .wav(let data):
+            try encodeMedia(data, prefix: Array("RIFF".utf8), to: &body)
+        case .jpeg(let data):
+            try encodeMedia(data, prefix: [0xff, 0xd8, 0xff], to: &body)
+        case .png(let data):
+            try encodeMedia(data, prefix: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], to: &body)
         }
     }
 
@@ -50,10 +72,11 @@ struct LioRelayTranslationRequest: Encodable {
         }
     }
 
-    private func encodeMedia(_ data: Data, kind: String, type: String,
+    private func encodeMedia(_ data: Data, prefix: [UInt8],
                              to body: inout KeyedEncodingContainer<CodingKeys>) throws {
-        try body.encode(kind, forKey: .kind)
-        try body.encode(type, forKey: .mediaType)
+        guard data.count > prefix.count, data.count <= Self.maximumMedia, data.starts(with: prefix) else {
+            throw LioRelayTranslationFailure.invalidInput
+        }
         try body.encode(data.base64EncodedString(), forKey: .media)
     }
 }
@@ -70,31 +93,60 @@ struct LioRelayTranslationResponse: Decodable {
     }
 
     private struct ServiceError: Decodable {
+        let version: String
         let error: String
     }
 
+    private enum JSONPolicy: StrictJSONPolicy {
+        static let failure = LioTranslationFailure.service
+        static let maximumDepth = 8
+        static let requiresObjectRoot = true
+    }
+
+    let version: String
+    let kind: LioRelayTranslationRequest.Kind
     let items: [Line]
 
-    static func decode(status: Int, body: Data) throws -> Self {
-        let decoder = JSONDecoder()
+    static func decode(status: Int, body: Data, expecting kind: LioRelayTranslationRequest.Kind) throws -> Self {
         switch status {
-        case 200:
-            guard let decoded = try? decoder.decode(Self.self, from: body), !decoded.items.isEmpty,
-                  decoded.items.allSatisfy({
+        case 401, 403: throw LioRelayTranslationFailure.accessDenied
+        case 409: throw LioRelayTranslationFailure.alreadyAccepted
+        case 200, 429, 502, 503: break
+        default: throw LioRelayTranslationFailure.rejected(status)
+        }
+
+        guard body.count <= 256 * 1024 else { throw LioTranslationFailure.service }
+        var reader = StrictJSONReader<JSONPolicy>(bytes: Array(body))
+        do { try reader.check() } catch { throw LioTranslationFailure.service }
+        let decoder = JSONDecoder()
+        if status == 200 {
+            guard let decoded = try? decoder.decode(Self.self, from: body),
+                  decoded.version == LioRelayTranslationRequest.version, decoded.kind == kind,
+                  decoded.validItemCount, decoded.items.allSatisfy({
                       !$0.sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                       && !$0.translatedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                   }) else {
                 throw LioTranslationFailure.service
             }
             return decoded
-        case 401, 403: throw LioRelayTranslationFailure.accessDenied
-        case 429:
-            if (try? decoder.decode(ServiceError.self, from: body))?.error == "quota_exceeded" {
-                throw LioTranslationFailure.quota
-            }
-            throw LioTranslationFailure.service
-        case 500...599: throw LioTranslationFailure.service
+        }
+
+        guard let error = try? decoder.decode(ServiceError.self, from: body),
+              error.version == LioRelayTranslationRequest.version else {
+            throw LioRelayTranslationFailure.rejected(status)
+        }
+        switch (status, error.error) {
+        case (429, "quota_exceeded"): throw LioTranslationFailure.quota
+        case (502, "provider_unavailable"), (503, "unavailable"): throw LioTranslationFailure.service
         default: throw LioRelayTranslationFailure.rejected(status)
+        }
+    }
+
+    private var validItemCount: Bool {
+        switch kind {
+        case .text: items.count == 1
+        case .speech: items.count <= 1
+        case .image: items.count <= 24
         }
     }
 }
@@ -132,16 +184,19 @@ enum LioTranslationWAV {
 }
 
 @MainActor
-struct LioRelayTranslationClient {
-    typealias Transport = @MainActor (String, Data) async throws -> (Int, Data)
-    let send: Transport
+public struct LioRelayTranslationClient {
+    public typealias Transport = @MainActor (String, Data) async throws -> (Int, Data)
+    private let send: Transport
+
+    public init(send: @escaping Transport) { self.send = send }
 
     func translate(_ request: LioRelayTranslationRequest) async throws -> LioRelayTranslationResponse {
         let body = try JSONEncoder().encode(request)
+        guard body.count <= 4 * 1024 * 1024 else { throw LioRelayTranslationFailure.invalidInput }
         do {
             let (status, data) = try await send("/v1/tools/translate", body)
             try Task.checkCancellation()
-            return try LioRelayTranslationResponse.decode(status: status, body: data)
+            return try LioRelayTranslationResponse.decode(status: status, body: data, expecting: request.kind)
         } catch let error as URLError {
             switch error.code {
             case .cancelled: throw CancellationError()

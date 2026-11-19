@@ -111,9 +111,23 @@ struct CJProbeApp: App {
             }
         } else {
             LioHome(language: shell.language.lio, service: .demo, isDemo: true,
-                    showsTools: ProcessInfo.processInfo.arguments.contains("--lio-tools-preview")) {
+                    showsTools: ProcessInfo.processInfo.arguments.contains("--lio-tools-preview"),
+                    toolsRelay: translationRelayPreview) {
                 LioMenuSettings(shell: shell)
             }
+        }
+    }
+
+    private var translationRelayPreview: LioRelayTranslationClient? {
+        guard ProcessInfo.processInfo.arguments.contains("--lio-translation-relay-preview") else { return nil }
+        return LioRelayTranslationClient { route, data in
+            guard route == "/v1/tools/translate",
+                  let fields = try JSONSerialization.jsonObject(with: data) as? [String: String],
+                  fields["version"] == "TRANSLATION.1", fields["kind"] == "text",
+                  fields["source_lang"] == "en", fields["target_lang"] == "zh", fields["text"] == "Hello" else {
+                return (400, Data())
+            }
+            return (200, Data(#"{"version":"TRANSLATION.1","kind":"text","items":[{"source_text":"Hello","translated_text":"你好"}]}"#.utf8))
         }
     }
     #endif

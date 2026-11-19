@@ -15,6 +15,7 @@ struct LioTranslationRequest: Sendable {
 
 enum LioTranslationFailure: Error, Equatable, Sendable {
     case network, quota, service, unsupported, unavailableLocally
+    case accessDenied, alreadyAccepted, tooLong
 }
 
 struct LioTranslationResult: Equatable, Sendable {

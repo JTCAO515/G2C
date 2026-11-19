@@ -7,13 +7,16 @@ import UIKit
 struct LioToolsView: View {
     let language: LioLanguage
     let historyDirectory: URL?
+    let relay: LioRelayTranslationClient?
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
                     NavigationLink {
-                        LioTextTranslationView(language: language, history: historyDirectory.map(LioTranslationHistory.init(directory:)))
+                        LioTextTranslationView(language: language,
+                                               history: historyDirectory.map(LioTranslationHistory.init(directory:)),
+                                               relay: relay)
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "character.bubble")
@@ -53,6 +56,7 @@ struct LioTranslationActionStyle: ButtonStyle {
 private struct LioTextTranslationView: View {
     let language: LioLanguage
     let history: LioTranslationHistory?
+    let relay: LioRelayTranslationClient?
     @State private var source: LioTranslationLanguage = .english
     @State private var target: LioTranslationLanguage = .chinese
     @State private var input = ""
@@ -71,6 +75,7 @@ private struct LioTextTranslationView: View {
         let id = UUID()
         let request: LioTranslationRequest
         let fromImage: Bool
+        var requiresApple: Bool
     }
 
     var body: some View {
@@ -155,7 +160,7 @@ private struct LioTextTranslationView: View {
                             .frame(minHeight: 44)
                     }
                 }
-                if #available(iOS 18.0, *), let attempt {
+                if #available(iOS 18.0, *), let attempt, attempt.requiresApple {
                     Color.clear.frame(height: 0).accessibilityHidden(true)
                         .translationTask(source: attempt.request.source.locale, target: attempt.request.target.locale) { @Sendable session in
                             do {
@@ -181,6 +186,10 @@ private struct LioTextTranslationView: View {
         .onChange(of: target) { resetResult() }
         .onDisappear { attempt = nil; speaker.stopSpeaking(at: .immediate) }
         .task { reloadHistory() }
+        .task(id: attempt?.requiresApple == false ? attempt?.id : nil) {
+            guard let relay, let attempt, !attempt.requiresApple else { return }
+            await translateText(attempt, using: relay)
+        }
         .confirmationDialog(language.text("Clear recent translations?", "清除最近翻译？"),
                             isPresented: $confirmsClearHistory, titleVisibility: .visible) {
             Button(language.text("Clear history", "清除记录"), role: .destructive, action: clearHistory)
@@ -307,14 +316,45 @@ private struct LioTextTranslationView: View {
         speaker.stopSpeaking(at: .immediate)
     }
 
-    private func start() { start([input], fromImage: false) }
+    private func start() { start([input], fromImage: false, useRelay: true) }
 
-    private func start(_ lines: [String], fromImage: Bool) {
+    private func start(_ lines: [String], fromImage: Bool, useRelay: Bool = false) {
         resetResult()
-        if #available(iOS 18.0, *) {
-            attempt = Attempt(request: .init(source: source, target: target, text: lines), fromImage: fromImage)
+        let request = LioTranslationRequest(source: source, target: target, text: lines)
+        if relay != nil, useRelay {
+            attempt = Attempt(request: request, fromImage: false, requiresApple: false)
+        } else if #available(iOS 18.0, *) {
+            attempt = Attempt(request: request, fromImage: fromImage, requiresApple: true)
         } else {
             problem = .unsupported
+        }
+    }
+
+    private func translateText(_ attempt: Attempt, using relay: LioRelayTranslationClient) async {
+        do {
+            let source = attempt.request.text.joined(separator: "\n")
+            let reply = try await relay.translate(.init(id: attempt.id, source: attempt.request.source,
+                                                        target: attempt.request.target, payload: .text(source)))
+            guard reply.items.first?.sourceText == source else { throw LioTranslationFailure.service }
+            finish(attempt.id, result: .success(.init(text: reply.items.map(\.translatedText), offline: false)))
+        } catch is CancellationError {
+            finish(attempt.id, result: nil)
+        } catch LioRelayTranslationFailure.accessDenied {
+            finish(attempt.id, result: .failure(.accessDenied))
+        } catch LioRelayTranslationFailure.alreadyAccepted {
+            finish(attempt.id, result: .failure(.alreadyAccepted))
+        } catch LioRelayTranslationFailure.invalidInput {
+            finish(attempt.id, result: .failure(.tooLong))
+        } catch let error as LioTranslationFailure {
+            guard self.attempt?.id == attempt.id, !Task.isCancelled else { return }
+            switch error {
+            case .network, .quota, .service:
+                if #available(iOS 18.0, *) { self.attempt?.requiresApple = true }
+                else { finish(attempt.id, result: .failure(.unsupported)) }
+            default: finish(attempt.id, result: .failure(error))
+            }
+        } catch {
+            finish(attempt.id, result: .failure(.service))
         }
     }
 
@@ -362,6 +402,14 @@ private struct LioTextTranslationView: View {
 
     private func message(for failure: LioTranslationFailure) -> String {
         switch failure {
+        case .accessDenied:
+            language.text("Sign in with an account that can use translation.", "请登录可使用翻译的账号。")
+        case .alreadyAccepted:
+            language.text("This translation was already sent.", "这次翻译已发送。")
+        case .tooLong:
+            language.text("Use up to 4,000 characters at a time.", "每次最多翻译 4000 字。")
+        case .service:
+            language.text("Couldn’t translate this text. Try again later.", "暂时无法翻译这段文字，请稍后重试。")
         case .unsupported:
             language.text("Offline translation for these languages is unavailable on this device. It requires iOS 18 or later.",
                           "此设备暂不支持这两种语言的离线翻译。需使用 iOS 18 或更新版本。")
