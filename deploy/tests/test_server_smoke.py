@@ -53,11 +53,12 @@ def test_active_original_timeline_503_fails_without_reposting(monkeypatch):
             sent.append(document)
             return dict(version='LIO-message-receipt.2', message_id=document['message_id'],
                         conversation_id='lio-fresh'), None
+        assert route.split('?')[0] == '/v2/lio/timeline'
         reads.append(route)
         if len(reads) == 2:
             assert len(sent) == 1
             raise smoke.SmokeResult('FAIL', 'http_503')
-        return dict(version='LIO-timeline.1', conversation_id='lio-default', messages=[]), None
+        return dict(version='LIO-timeline.2', conversation_id='lio-default', messages=[]), None
 
     result = smoke.run_case('en.plan', 'Test request', 'synthetic', lambda: True, api)
     assert result['status'] == 'FAIL'
@@ -77,7 +78,7 @@ def test_smoke_rejects_an_ack_reusing_the_default_conversation(monkeypatch):
                         conversation_id='lio-default'), None
         messages = [dict(message_id=sent[0]['message_id'], status='completed',
                          answer='I am Lio, your travel assistant for China.')] if sent else []
-        return dict(version='LIO-timeline.1', conversation_id='lio-default', messages=messages), None
+        return dict(version='LIO-timeline.2', conversation_id='lio-default', messages=messages), None
 
     result = smoke.run_case('en.identity', 'Who are you?', 'synthetic', lambda: True, api)
     assert result['status'] == 'UNKNOWN'
@@ -197,22 +198,45 @@ def test_smoke_post_is_accepted_by_the_original_lio_wire(monkeypatch, wire_versi
     from fastapi.testclient import TestClient
 
     from cj_api.lio_dialogue_routes import register_lio_dialogue_routes
+    from cj_message import lio_timeline
     from cj_message.demo_dialogue import DialogueMessage
+
+    conversation = 'lio-dialogue-' + 'a' * 32
+    head = SimpleNamespace(generation='fixture-generation')
+    cursor = SimpleNamespace(execute=lambda *_: SimpleNamespace(fetchall=lambda: []))
+    transaction = SimpleNamespace(scope='fixture-scope', cur=cursor,
+                                  active_head=lambda cid: head if cid == conversation else None)
+    monkeypatch.setattr(lio_timeline, 'admitted_dialogue',
+                        lambda tx, cid, *_args, **_kwargs: cid == conversation)
+    monkeypatch.setattr(lio_timeline, 'has_new_lio_wire', lambda *_: False)
+    monkeypatch.setattr(lio_timeline, 'has_exploration_wire', lambda *_: False)
 
     class OriginalBoundary:
         def receive_lio(self, token, raw, *, prepare_scope, version):
             assert token == 'synthetic'
             original = DialogueMessage.parse(raw, version=version)
             assert original.new_conversation is (wire_version == 2)
-            return SimpleNamespace(message_id=original.id, conversation_id='lio-chat')
+            return SimpleNamespace(message_id=original.id, conversation_id=conversation)
+
+        def with_history_context(self, token, read):
+            assert token == 'synthetic'
+            context = SimpleNamespace(lio_timeline=lambda cid, before, *, multiple:
+                lio_timeline.read_in_transaction(transaction, cid, before, multiple=multiple))
+            return read(context)
 
     app = FastAPI()
+    @app.middleware('http')
+    async def fixture_request_id(request, call_next):
+        request.state.request_id = '00000000-0000-4000-8000-000000000001'
+        return await call_next(request)
+
     register_lio_dialogue_routes(app, OriginalBoundary(), None, None, prepare_scope=None)
     with TestClient(app) as client:
         class LocalTransport:
             def open(self, request, *, timeout):
                 url = urlsplit(request.full_url)
-                response = client.request(request.get_method(), url.path,
+                query = '?' + url.query if url.query else ''
+                response = client.request(request.get_method(), url.path + query,
                                           content=request.data, headers=dict(request.header_items()))
                 if response.status_code >= 400:
                     raise HTTPError(request.full_url, response.status_code, '',
@@ -232,7 +256,14 @@ def test_smoke_post_is_accepted_by_the_original_lio_wire(monkeypatch, wire_versi
                            headers={'Authorization': 'Bearer synthetic'}).status_code == 415
         value, _ = smoke.request('synthetic', route, document=document)
         assert value == dict(version=f'LIO-message-receipt.{wire_version}', message_id='smoke-original',
-                             conversation_id='lio-chat')
+                             conversation_id=conversation)
+        if wire_version == 2:
+            suffix = '?conversation_id=' + value['conversation_id']
+            with pytest.raises(smoke.SmokeResult, match='http_400'):
+                smoke.request('synthetic', '/v1/lio/timeline' + suffix)
+            timeline, _ = smoke.request('synthetic', '/v2/lio/timeline' + suffix)
+            assert timeline['version'] == 'LIO-timeline.2'
+            assert timeline['conversation_id'] == value['conversation_id']
 
 
 def test_smoke_reads_preserved_history_through_the_original_cursor(monkeypatch):

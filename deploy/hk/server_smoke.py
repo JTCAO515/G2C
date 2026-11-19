@@ -163,7 +163,7 @@ def valid_answer(case, answer):
 
 
 def find_message(value, message_id, expected_conversation):
-    if (value.get('version') != 'LIO-timeline.1' or not isinstance(value.get('messages'), list)
+    if (value.get('version') != 'LIO-timeline.2' or not isinstance(value.get('messages'), list)
             or expected_conversation is not None and value.get('conversation_id') != expected_conversation):
         raise SmokeResult('FAIL', 'timeline_binding')
     if any(not isinstance(item, dict) for item in value['messages']):
@@ -200,7 +200,7 @@ def run_case(case, prompt, token, allowed, send=request):
             result['status'] = 'UNKNOWN'
             # The first read is strictly before the first write. An unreadable old
             # timeline cannot become a successful concurrency baseline.
-            parsed, _ = send(token, '/v1/lio/timeline')
+            parsed, _ = send(token, '/v2/lio/timeline')
             find_message(parsed, message_id, None)
             default_conversation = parsed.get('conversation_id')
             if not allowed():
@@ -225,7 +225,7 @@ def run_case(case, prompt, token, allowed, send=request):
                     result.update(conversation_id=conversation, message_ref=ref)
                     if conversation == default_conversation:
                         raise SmokeResult('UNKNOWN', 'reused_default_conversation')
-                route = '/v1/lio/timeline'
+                route = '/v2/lio/timeline'
                 if conversation is not None:
                     route += '?' + urlencode({'conversation_id': conversation})
                 began = clock_ms()
