@@ -45,6 +45,32 @@ import CryptoKit
         XCTAssertTrue(second.label.contains("Coffee") && second.label.contains("咖啡"), second.debugDescription)
     }
 
+    func testToolsAlreadyAcceptedTextDoesNotOfferAnotherSubmission() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-translation-relay-preview",
+                               "-cj.ui.language.v1", "en"]
+        app.launch()
+        defer { app.terminate() }
+        let tools = app.tabBars.buttons["Tools"]
+        XCTAssertTrue(tools.waitForExistence(timeout: 8))
+        tools.tap()
+        app.buttons["lio.tools.translation"].tap()
+        let editor = app.textViews["lio.translation.input"]
+        XCTAssertTrue(editor.waitForExistence(timeout: 6))
+        editor.tap()
+        editor.typeText("Already sent")
+        let translate = app.buttons["lio.translation.submit"]
+        translate.tap()
+        let notice = app.staticTexts["lio.translation.problem"]
+        XCTAssertTrue(notice.waitForExistence(timeout: 6))
+        XCTAssertEqual(notice.label, "This translation was already sent.")
+        XCTAssertFalse(translate.isEnabled)
+        editor.tap()
+        editor.typeText(" again")
+        XCTAssertTrue(translate.isEnabled)
+    }
+
     func testToolsRelayFixtureReturnsTextOnIOS17() throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")

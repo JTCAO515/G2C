@@ -130,7 +130,8 @@ private struct LioTextTranslationView: View {
                     }
                     .buttonStyle(LioTranslationActionStyle())
                     .accessibilityIdentifier("lio.translation.submit")
-                    .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || attempt != nil)
+                    .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                              || attempt != nil || problem == .alreadyAccepted)
                 }
                 if relay == nil {
                     LioTranslationVoiceInput(language: language, source: source) { text in

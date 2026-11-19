@@ -127,6 +127,9 @@ struct CJProbeApp: App {
                   fields["source_lang"] == "en", fields["target_lang"] == "zh" else {
                 return (400, Data())
             }
+            if fields["kind"] == "text", fields["text"] == "Already sent" {
+                return (409, Data(#"{"version":"TRANSLATION.1","error":"request_already_used"}"#.utf8))
+            }
             if fields["kind"] == "text", fields["text"] == "Hello" {
                 return (200, Data(#"{"version":"TRANSLATION.1","kind":"text","items":[{"source_text":"Hello","translated_text":"你好"}]}"#.utf8))
             }
