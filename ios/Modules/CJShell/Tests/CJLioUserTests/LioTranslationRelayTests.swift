@@ -12,6 +12,23 @@ struct LioTranslationRelayTests {
                          "kind": "text", "source_lang": "zh", "target_lang": "en", "text": "茶"])
     }
 
+    @Test func unknownRelayOutcomeKeepsTheIDForTheSameBytesAndLanguages() throws {
+        var originals = LioRelayOriginalRequests()
+        let original = originals.request(source: .english, target: .chinese, payload: .text("Cafe\u{301}"))
+        let differentBytes = originals.request(source: .english, target: .chinese, payload: .text("Café"))
+        #expect(differentBytes.id != original.id)
+        let retry = originals.request(source: .english, target: .chinese, payload: .text("Cafe\u{301}"))
+        #expect(retry.id == original.id)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        #expect(try encoder.encode(retry) == encoder.encode(original))
+        let reversed = originals.request(source: .chinese, target: .english, payload: .text("Cafe\u{301}"))
+        #expect(reversed.id != original.id)
+        originals.confirm(original)
+        let next = originals.request(source: .english, target: .chinese, payload: .text("Cafe\u{301}"))
+        #expect(next.id != original.id)
+    }
+
     @Test func imageUsesBase64AndKeepsEveryReturnedLine() throws {
         let request = LioRelayTranslationRequest(id: id, source: .chinese, target: .english, payload: .png(Data([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3])))
         let json = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(request)) as? [String: String])

@@ -79,6 +79,33 @@ import XCTest
         XCTAssertTrue(translate.isEnabled)
     }
 
+    @objc func testToolsRetryAfterTimeoutUsesTheSameRelayRequestOnIOS17() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-translation-relay-preview",
+                               "-cj.ui.language.v1", "en"]
+        app.launch()
+        defer { app.terminate() }
+        let tools = app.tabBars.buttons["Tools"]
+        XCTAssertTrue(tools.waitForExistence(timeout: 8))
+        tools.tap()
+        app.buttons["lio.tools.translation"].tap()
+        let editor = app.textViews["lio.translation.input"]
+        XCTAssertTrue(editor.waitForExistence(timeout: 6))
+        editor.tap()
+        editor.typeText("Timed out")
+        let translate = app.buttons["lio.translation.submit"]
+        translate.tap()
+        let notice = app.staticTexts["lio.translation.problem"]
+        XCTAssertTrue(notice.waitForExistence(timeout: 6))
+        XCTAssertTrue(notice.label.contains("iOS 18"))
+        translate.tap()
+        let accepted = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", "This translation was already sent."),
+                                                   object: notice)
+        XCTAssertEqual(XCTWaiter.wait(for: [accepted], timeout: 6), .completed)
+        XCTAssertFalse(translate.isEnabled)
+    }
+
     @objc func testToolsRelayFixtureReturnsTextOnIOS17() throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")

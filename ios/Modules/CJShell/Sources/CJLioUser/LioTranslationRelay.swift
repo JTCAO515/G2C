@@ -1,4 +1,5 @@
 import CJStrictJSON
+import CryptoKit
 import Foundation
 
 enum LioRelayTranslationFailure: Error, Equatable {
@@ -78,6 +79,43 @@ struct LioRelayTranslationRequest: Encodable {
             throw LioRelayTranslationFailure.invalidInput
         }
         try body.encode(data.base64EncodedString(), forKey: .media)
+    }
+}
+
+struct LioRelayOriginalRequests {
+    private struct Identity: Hashable {
+        let source: LioTranslationLanguage
+        let target: LioTranslationLanguage
+        let kind: LioRelayTranslationRequest.Kind
+        let fingerprint: SHA256.Digest
+
+        init(_ request: LioRelayTranslationRequest) {
+            source = request.source
+            target = request.target
+            kind = request.kind
+            switch request.payload {
+            case .text(let text): fingerprint = SHA256.hash(data: Data(text.utf8))
+            case .wav(let bytes), .jpeg(let bytes), .png(let bytes): fingerprint = SHA256.hash(data: bytes)
+            }
+        }
+    }
+
+    private var pending: [Identity: UUID] = [:]
+
+    mutating func request(source: LioTranslationLanguage, target: LioTranslationLanguage,
+                          payload: LioRelayTranslationRequest.Payload) -> LioRelayTranslationRequest {
+        let proposed = LioRelayTranslationRequest(id: UUID(), source: source, target: target, payload: payload)
+        let identity = Identity(proposed)
+        if let original = pending[identity] {
+            return LioRelayTranslationRequest(id: original, source: source, target: target, payload: payload)
+        }
+        pending[identity] = proposed.id
+        return proposed
+    }
+
+    mutating func confirm(_ original: LioRelayTranslationRequest) {
+        let identity = Identity(original)
+        if pending[identity] == original.id { pending.removeValue(forKey: identity) }
     }
 }
 
@@ -192,7 +230,9 @@ public struct LioRelayTranslationClient {
 
     func translate(_ request: LioRelayTranslationRequest) async throws -> LioRelayTranslationResponse {
         try Task.checkCancellation()
-        let body = try JSONEncoder().encode(request)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        let body = try encoder.encode(request)
         guard body.count <= 4 * 1024 * 1024 else { throw LioRelayTranslationFailure.invalidInput }
         do {
             let (status, data) = try await send("/v1/tools/translate", body)

@@ -75,6 +75,7 @@ private struct LioTextTranslationView: View {
     @State private var recent: [LioRecentTranslation] = []
     @State private var confirmsClearHistory = false
     @State private var historyError = false
+    @State private var relayOriginals = LioRelayOriginalRequests()
 
     private struct Attempt: Identifiable {
         enum Route { case relay, prepareInput, apple }
@@ -416,13 +417,17 @@ private struct LioTextTranslationView: View {
             }
             try Task.checkCancellation()
             guard self.attempt?.id == attempt.id, isCurrent() else { return }
-            let reply = try await relay.translate(.init(id: attempt.id, source: attempt.request.source,
-                                                        target: attempt.request.target, payload: payload))
-            guard !reply.items.isEmpty else { finish(attempt.id, result: .failure(.noRecognizedText)); return }
+            let original = relayOriginals.request(source: attempt.request.source,
+                                                   target: attempt.request.target, payload: payload)
+            let reply = try await relay.translate(original)
             if case .text(let source) = payload {
-                guard reply.items.first?.sourceText == source else { throw LioTranslationFailure.service }
+                guard let echoed = reply.items.first?.sourceText, echoed.utf8.elementsEqual(source.utf8) else {
+                    throw LioTranslationFailure.service
+                }
             }
             guard self.attempt?.id == attempt.id, isCurrent() else { return }
+            relayOriginals.confirm(original)
+            guard !reply.items.isEmpty else { finish(attempt.id, result: .failure(.noRecognizedText)); return }
             if case .recording = attempt.input { spokenText = reply.items.first?.sourceText }
             self.attempt?.request = .init(source: attempt.request.source, target: attempt.request.target,
                                           text: reply.items.map(\.sourceText))

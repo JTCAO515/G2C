@@ -121,12 +121,20 @@ struct CJProbeApp: App {
     private var translationRelayPreview: LioRelayTranslationClient? {
         guard ProcessInfo.processInfo.arguments.contains("--lio-translation-relay-preview") else { return nil }
         let photoQuotaFixture = ProcessInfo.processInfo.arguments.contains("--lio-translation-photo-quota-preview")
+        var timedOutOriginal: Data?
         return LioRelayTranslationClient { route, data in
             guard route == "/v1/tools/translate",
                   let fields = try JSONSerialization.jsonObject(with: data) as? [String: String],
                   fields["version"] == "TRANSLATION.1",
                   fields["source_lang"] == "en", fields["target_lang"] == "zh" else {
                 return (400, Data())
+            }
+            if fields["kind"] == "text", fields["text"] == "Timed out" {
+                if let timedOutOriginal {
+                    return timedOutOriginal == data ? (409, Data()) : (422, Data())
+                }
+                timedOutOriginal = data
+                throw URLError(.timedOut)
             }
             if fields["kind"] == "text", fields["text"] == "Already sent" {
                 return (409, Data(#"{"version":"TRANSLATION.1","error":"request_already_used"}"#.utf8))
