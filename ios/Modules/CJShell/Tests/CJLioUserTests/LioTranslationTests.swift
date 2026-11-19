@@ -74,6 +74,26 @@ struct LioTranslationTests {
         }
     }
 
+    @Test nonisolated func missingLanguagePackWithNoConnectionNeverStartsTranslation() async {
+        let request = LioTranslationRequest(source: .english, target: .chinese, text: ["Hello"])
+        await #expect(throws: LioTranslationFailure.unavailableLocally) {
+            try await LioTranslator.translateLocally(request, languagePack: .downloadable, prepare: {
+                throw URLError(.notConnectedToInternet)
+            }, translate: { _ in
+                Issue.record("Translation must wait for both language packs")
+                return ""
+            })
+        }
+    }
+
+    @Test nonisolated func alreadyInstalledLanguagesTranslateWithoutADownload() async throws {
+        let request = LioTranslationRequest(source: .english, target: .chinese, text: ["Hello", "Tea"])
+        let lines = try await LioTranslator.translateLocally(request, languagePack: .installed, prepare: {
+            Issue.record("Installed language packs do not need to download")
+        }, translate: { $0 == "Hello" ? "你好" : "茶" })
+        #expect(lines == ["你好", "茶"])
+    }
+
     @Test func cancellationDoesNotStartLocalTranslation() async {
         let translator = LioTranslator(remote: { _ in throw CancellationError() }, local: { _ in
             Issue.record("Cancellation should stop the request")

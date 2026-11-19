@@ -31,6 +31,34 @@ struct LioTranslator {
     let remote: Operation?
     let local: Operation
 
+    enum LanguagePack: Sendable { case installed, downloadable }
+
+    nonisolated static func translateLocally(
+        _ request: LioTranslationRequest,
+        languagePack: LanguagePack,
+        prepare: () async throws -> Void,
+        translate: (String) async throws -> String
+    ) async throws -> [String] {
+        try Task.checkCancellation()
+        if languagePack == .downloadable {
+            do {
+                try await prepare()
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                try Task.checkCancellation()
+                throw LioTranslationFailure.unavailableLocally
+            }
+        }
+        var result: [String] = []
+        for text in request.text {
+            try Task.checkCancellation()
+            result.append(try await translate(text))
+        }
+        try Task.checkCancellation()
+        return result
+    }
+
     func translate(_ request: LioTranslationRequest) async throws -> LioTranslationResult {
         if let remote {
             do {
