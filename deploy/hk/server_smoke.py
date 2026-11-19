@@ -17,6 +17,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 import uuid
 from zoneinfo import ZoneInfo
 
+from cj_message.lio_context import CAPABILITIES_EN
 from cj_strict_json import reject_duplicates
 from cj_usage.authorization_budget import CNY_SCALE
 from cj_usage.metered_exit import BudgetUnknown
@@ -135,6 +136,13 @@ def request(token, route, *, document=None):
     return value, ref if ref and re.fullmatch(r'[a-fA-F0-9-]{36}', ref) else None
 
 
+def _normalize_capability_copy(value):
+    value = re.sub(r'(?m)^[ \t]*(?:>[ \t]*|#{1,6}[ \t]+|[-+*][ \t]+|\d+[.)][ \t]+)+', '', value)
+    value = value.translate(str.maketrans({'‘': "'", '’': "'", '“': '"', '”': '"'}))
+    value = value.translate(str.maketrans('', '', '*_`~'))
+    return ' '.join(value.casefold().split())
+
+
 def valid_answer(case, answer):
     if not isinstance(answer, str) or not answer.strip():
         return False
@@ -148,6 +156,8 @@ def valid_answer(case, answer):
                     and re.search(r'我是|旅行|旅游|助手|\bI(?:\s+am|[’\']m)\b|travel|assistant', answer, re.I)
                     and not NEGATED_IDENTITY.search(answer))
     if kind == 'capability':
+        if locale == 'en':
+            return _normalize_capability_copy(CAPABILITIES_EN) in _normalize_capability_copy(answer)
         return bool(CAPABILITY_TOPIC.search(answer) and not NEGATED_CAPABILITIES.search(answer))
     headings = list(DAY_HEADER.finditer(answer))
     if [DAY_NUMBER[match.group(1) or match.group(2)] for match in headings] != [1, 2, 3]:

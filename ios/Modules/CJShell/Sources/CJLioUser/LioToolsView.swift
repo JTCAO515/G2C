@@ -26,7 +26,7 @@ struct LioToolsView: View {
                         .foregroundStyle(LioTheme.ink)
                         .padding(16)
                         .frame(minHeight: 56)
-                        .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: 16))
+                        .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("lio.tools.translation")
@@ -95,7 +95,7 @@ private struct LioTextTranslationView: View {
                     .scrollContentBackground(.hidden)
                     .frame(minHeight: 116)
                     .padding(8)
-                    .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: 16))
+                    .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
                     .accessibilityLabel(language.text("Text to translate", "要翻译的文本"))
                     .accessibilityIdentifier("lio.translation.input")
                 HStack {
@@ -252,7 +252,7 @@ private struct LioTextTranslationView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: 16))
+        .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
     }
 
     private var recentTranslations: some View {
@@ -274,7 +274,7 @@ private struct LioTextTranslationView: View {
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(12)
-                .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: 12))
+                .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
             }
         }
         .foregroundStyle(LioTheme.ink)
