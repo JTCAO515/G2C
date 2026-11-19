@@ -126,6 +126,7 @@ private var developmentHostEnvironment: [String: String] {
     let trips: TripContainerHost
     #if G2C_DEMO_BETA
     let lioTripLibrary: LioTripLibrary?
+    let lioTranslationHistoryDirectory: URL
     #endif
     let messages: DevelopmentMessageHost
     #if DEBUG
@@ -229,6 +230,9 @@ private var developmentHostEnvironment: [String: String] {
             #endif
         }
         #if G2C_DEMO_BETA
+        lioTranslationHistoryDirectory = support.appendingPathComponent("G2CLioTranslation", isDirectory: true)
+            .appendingPathComponent(namespace.environment.uuidString, isDirectory: true)
+            .appendingPathComponent(namespace.account.uuidString, isDirectory: true)
         if tripEditingProfile != nil {
             lioTripLibrary = LioTripLibrary(list: {
                 var rows: [StructuredTripSummary] = []

@@ -24,7 +24,7 @@ struct DemoBetaRootView: View {
                                   problem: root.lioSessionProblem), reconnect: {
                     root.accounts.suspend()
                     root.accounts.resume()
-                }) {
+                }, showsTools: true, toolsHistoryDirectory: trip.lioTranslationHistoryDirectory) {
                     LioMenuSettings(shell: shell)
                     NavigationLink(shell.language.text("Delete account", "注销账号")) {
                         LioAccountDeletion(shell: shell, root: root)
