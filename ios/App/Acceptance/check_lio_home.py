@@ -69,7 +69,10 @@ def main():
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):
         parser.error("Keep build and evidence outside the repository")
     output.mkdir(parents=True, exist_ok=False)
-    if args.tools and "testToolsPhotoPickerShowsOriginalLinesOnIOS17" in args.case:
+    if args.tools and any(case in args.case for case in (
+        "testToolsPhotoPickerShowsOriginalLinesOnIOS17",
+        "testToolsPhotoPickerPairsRelayFixtureLinesOnIOS17", "testToolsPhotoQuotaKeepsLocallyRecognizedLinesOnIOS17",
+    )):
         seed_translation_photo(args.simulator, output)
 
     spec = importlib.util.spec_from_file_location("trip_acceptance", ROOT / "scripts/check_ios_trip_confirm.py")
@@ -81,6 +84,7 @@ def main():
     tests = (HERE / ("LioVoiceOverUITests.swift" if args.voiceover else "LioHomeUITests.swift")).read_text()
     if args.tools:
         tests += "\n" + (HERE / "LioToolsMediaUITests.swift").read_text()
+        tests += "\n" + (HERE / "LioToolsRelayUITests.swift").read_text()
     (output / "G2CControl.swift").write_text(tests.replace("__LIO_RECORDED_TRIP_FIXTURE__", recorded_trip_fixture()))
     project = output / "G2CAcceptance.xcodeproj"
     settings = project / "project.pbxproj"

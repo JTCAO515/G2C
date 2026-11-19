@@ -126,6 +126,7 @@ private var developmentHostEnvironment: [String: String] {
     let trips: TripContainerHost
     #if G2C_DEMO_BETA
     let lioTripLibrary: LioTripLibrary?
+    let lioTranslationRelay: LioRelayTranslationClient?
     #endif
     let messages: DevelopmentMessageHost
     #if DEBUG
@@ -229,6 +230,12 @@ private var developmentHostEnvironment: [String: String] {
             #endif
         }
         #if G2C_DEMO_BETA
+        lioTranslationRelay = LioRelayTranslationClient.internalBeta(endpoint: endpoint, isCurrent: {
+            lifetime.current == lifetime.trip
+        }, bearer: {
+            guard lifetime.current == lifetime.trip else { return nil }
+            return configuration.token
+        })
         if tripEditingProfile != nil {
             lioTripLibrary = LioTripLibrary(list: {
                 var rows: [StructuredTripSummary] = []
@@ -1556,6 +1563,7 @@ private struct DevelopmentVerificationTransport: ClientTransport {
             #if G2C_DEMO_BETA
             let translation = try captured[0].child(LioTranslationHistory.directoryName)
             try translation.removeOwnedFile(named: LioTranslationHistory.fileName)
+            try translation.removeOwnedFile(named: LioTranslationHistory.relayOriginalsFileName)
             try translation.removeEmptyChild()
             #endif
         case .tripPending:

@@ -35,6 +35,10 @@ struct LioVisionTextReaderTests {
 
         let recognized = try await LioVisionTextReader.lines(from: bytes as Data, language: language)
         #expect(recognized == expected)
+        let encoded = try await LioVisionTextReader.relayJPEG(from: bytes as Data)
+        #expect(encoded.starts(with: [0xff, 0xd8, 0xff]))
+        let relayRecognized = try await LioVisionTextReader.lines(from: encoded, language: language)
+        #expect(relayRecognized == expected)
     }
 
     @Test func rejectsDataThatIsNotAnImage() async {
