@@ -83,10 +83,15 @@ public struct LioSavedMemoryView: View {
                             Task { await host.loadItems(surface: current, more: true) }
                         } label: {
                             Text(language.text("More memories", "更多记忆"))
+                                .font(.headline)
                                 .foregroundStyle(LioTheme.ink)
-                                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                .padding(.horizontal, LioTheme.Spacing.sm)
+                                .frame(minHeight: 44)
+                                .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
                                 .contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
                     }
