@@ -120,6 +120,7 @@ struct CJProbeApp: App {
 
     private var translationRelayPreview: LioRelayTranslationClient? {
         guard ProcessInfo.processInfo.arguments.contains("--lio-translation-relay-preview") else { return nil }
+        let photoQuotaFixture = ProcessInfo.processInfo.arguments.contains("--lio-translation-photo-quota-preview")
         return LioRelayTranslationClient { route, data in
             guard route == "/v1/tools/translate",
                   let fields = try JSONSerialization.jsonObject(with: data) as? [String: String],
@@ -135,6 +136,9 @@ struct CJProbeApp: App {
             }
             if fields["kind"] == "image", let media = fields["media"], let image = Data(base64Encoded: media),
                image.starts(with: [0xff, 0xd8, 0xff]), fields["media_type"] == nil {
+                if photoQuotaFixture {
+                    return (429, Data(#"{"version":"TRANSLATION.1","error":"quota_exceeded"}"#.utf8))
+                }
                 return (200, Data(#"{"version":"TRANSLATION.1","kind":"image","items":[{"source_text":"Tea","translated_text":"茶"},{"source_text":"Coffee","translated_text":"咖啡"}]}"#.utf8))
             }
             return (400, Data())

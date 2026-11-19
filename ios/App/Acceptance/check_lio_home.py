@@ -69,7 +69,9 @@ def main():
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):
         parser.error("Keep build and evidence outside the repository")
     output.mkdir(parents=True, exist_ok=False)
-    if args.tools and "testToolsPhotoPickerPairsRelayFixtureLinesOnIOS17" in args.case:
+    if args.tools and any(case in args.case for case in (
+        "testToolsPhotoPickerPairsRelayFixtureLinesOnIOS17", "testToolsPhotoQuotaKeepsLocallyRecognizedLinesOnIOS17",
+    )):
         seed_translation_photo(args.simulator, output)
 
     spec = importlib.util.spec_from_file_location("trip_acceptance", ROOT / "scripts/check_ios_trip_confirm.py")
