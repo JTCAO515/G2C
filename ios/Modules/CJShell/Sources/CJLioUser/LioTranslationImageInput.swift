@@ -6,7 +6,7 @@ import UIKit
 
 struct LioTranslationImageInput: View {
     let language: LioLanguage
-    let onLines: ([String]) -> Void
+    let onImage: (Data) -> Void
     @Environment(\.openURL) private var openURL
     @State private var selection: PhotosPickerItem?
     @State private var cameraPresented = false
@@ -76,10 +76,9 @@ struct LioTranslationImageInput: View {
                     data = selected
                 case .camera(let captured): data = captured
                 }
-                let lines = try await LioVisionTextReader.lines(from: data)
                 try Task.checkCancellation()
                 guard self.input?.id == input.id else { return }
-                onLines(lines)
+                onImage(data)
             } catch is CancellationError {
                 return
             } catch {

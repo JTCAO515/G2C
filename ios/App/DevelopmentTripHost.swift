@@ -127,6 +127,7 @@ private var developmentHostEnvironment: [String: String] {
     #if G2C_DEMO_BETA
     let lioTripLibrary: LioTripLibrary?
     let lioTranslationHistoryDirectory: URL
+    let lioTranslationRelay: LioRelayTranslationClient?
     #endif
     let messages: DevelopmentMessageHost
     #if DEBUG
@@ -230,6 +231,12 @@ private var developmentHostEnvironment: [String: String] {
             #endif
         }
         #if G2C_DEMO_BETA
+        lioTranslationRelay = LioRelayTranslationClient.internalBeta(endpoint: endpoint, isCurrent: {
+            lifetime.current == lifetime.trip
+        }, bearer: {
+            guard lifetime.current == lifetime.trip else { return nil }
+            return configuration.token
+        })
         lioTranslationHistoryDirectory = support.appendingPathComponent("G2CLioTranslation", isDirectory: true)
             .appendingPathComponent(namespace.environment.uuidString, isDirectory: true)
             .appendingPathComponent(namespace.account.uuidString, isDirectory: true)

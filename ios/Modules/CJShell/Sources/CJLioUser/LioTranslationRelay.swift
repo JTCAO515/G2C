@@ -191,6 +191,7 @@ public struct LioRelayTranslationClient {
     public init(send: @escaping Transport) { self.send = send }
 
     func translate(_ request: LioRelayTranslationRequest) async throws -> LioRelayTranslationResponse {
+        try Task.checkCancellation()
         let body = try JSONEncoder().encode(request)
         guard body.count <= 4 * 1024 * 1024 else { throw LioRelayTranslationFailure.invalidInput }
         do {
