@@ -111,9 +111,45 @@ struct CJProbeApp: App {
             }
         } else {
             LioHome(language: shell.language.lio, service: .demo, isDemo: true,
-                    showsTools: ProcessInfo.processInfo.arguments.contains("--lio-tools-preview")) {
+                    showsTools: ProcessInfo.processInfo.arguments.contains("--lio-tools-preview"),
+                    toolsRelay: translationRelayPreview) {
                 LioMenuSettings(shell: shell)
             }
+        }
+    }
+
+    private var translationRelayPreview: LioRelayTranslationClient? {
+        guard ProcessInfo.processInfo.arguments.contains("--lio-translation-relay-preview") else { return nil }
+        let photoQuotaFixture = ProcessInfo.processInfo.arguments.contains("--lio-translation-photo-quota-preview")
+        var timedOutOriginal: Data?
+        return LioRelayTranslationClient { route, data in
+            guard route == "/v1/tools/translate",
+                  let fields = try JSONSerialization.jsonObject(with: data) as? [String: String],
+                  fields["version"] == "TRANSLATION.1",
+                  fields["source_lang"] == "en", fields["target_lang"] == "zh" else {
+                return (400, Data())
+            }
+            if fields["kind"] == "text", fields["text"] == "Timed out" {
+                if let timedOutOriginal {
+                    return timedOutOriginal == data ? (409, Data()) : (422, Data())
+                }
+                timedOutOriginal = data
+                throw URLError(.timedOut)
+            }
+            if fields["kind"] == "text", fields["text"] == "Already sent" {
+                return (409, Data(#"{"version":"TRANSLATION.1","error":"request_already_used"}"#.utf8))
+            }
+            if fields["kind"] == "text", fields["text"] == "Hello" {
+                return (200, Data(#"{"version":"TRANSLATION.1","kind":"text","items":[{"source_text":"Hello","translated_text":"你好"}]}"#.utf8))
+            }
+            if fields["kind"] == "image", let media = fields["media"], let image = Data(base64Encoded: media),
+               image.starts(with: [0xff, 0xd8, 0xff]), fields["media_type"] == nil {
+                if photoQuotaFixture {
+                    return (429, Data(#"{"version":"TRANSLATION.1","error":"quota_exceeded"}"#.utf8))
+                }
+                return (200, Data(#"{"version":"TRANSLATION.1","kind":"image","items":[{"source_text":"Tea","translated_text":"茶"},{"source_text":"Coffee","translated_text":"咖啡"}]}"#.utf8))
+            }
+            return (400, Data())
         }
     }
     #endif

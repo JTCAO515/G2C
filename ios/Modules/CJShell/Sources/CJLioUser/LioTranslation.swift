@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 enum LioTranslationLanguage: String, CaseIterable, Codable, Sendable {
@@ -15,6 +16,8 @@ struct LioTranslationRequest: Sendable {
 
 enum LioTranslationFailure: Error, Equatable, Sendable {
     case network, quota, service, unsupported, unavailableLocally
+    case signInRequired, accessDenied, alreadyAccepted, tooLong, noRecognizedText, unreadableImage
+    case speechDenied, speechUnavailable
 }
 
 struct LioTranslationResult: Equatable, Sendable {
@@ -59,6 +62,7 @@ struct LioRecentTranslation: Codable, Equatable, Identifiable {
 @MainActor public struct LioTranslationHistory {
     public static let directoryName = "translation-history"
     public static let fileName = "recent.json"
+    public static let relayOriginalsFileName = "relay-originals.json"
     private let directory: URL
     private let isCurrent: @MainActor () -> Bool
     private var file: URL { directory.appendingPathComponent(Self.fileName) }
@@ -92,6 +96,22 @@ struct LioRecentTranslation: Codable, Equatable, Identifiable {
     }
 
     func save(_ entries: [LioRecentTranslation]) throws {
+        let data = try JSONEncoder().encode(Array(entries.prefix(20)))
+        try protectedWrite(data, to: file)
+    }
+
+    func loadRelayOriginals() throws -> Data? {
+        try requireCurrent()
+        let path = directory.appendingPathComponent(Self.relayOriginalsFileName)
+        do { return try Data(contentsOf: path) }
+        catch let error as CocoaError where error.code == .fileReadNoSuchFile { return nil }
+    }
+
+    func saveRelayOriginals(_ data: Data) throws {
+        try protectedWrite(data, to: directory.appendingPathComponent(Self.relayOriginalsFileName))
+    }
+
+    private func protectedWrite(_ data: Data, to destination: URL) throws {
         try requireCurrent()
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
                                                 attributes: [.posixPermissions: 0o700])
@@ -99,9 +119,18 @@ struct LioRecentTranslation: Codable, Equatable, Identifiable {
         var backup = URLResourceValues()
         backup.isExcludedFromBackup = true
         try localDirectory.setResourceValues(backup)
-        let data = try JSONEncoder().encode(Array(entries.prefix(20)))
-        try data.write(to: file, options: [.atomic, .completeFileProtection])
-        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
+        try data.write(to: destination, options: [.atomic, .completeFileProtection])
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: destination.path)
+        try sync(destination, access: O_RDWR)
+        try sync(directory, access: O_RDONLY | O_DIRECTORY)
+        try sync(directory.deletingLastPathComponent(), access: O_RDONLY | O_DIRECTORY)
+    }
+
+    private func sync(_ path: URL, access: Int32) throws {
+        let descriptor = open(path.path, access | O_NOFOLLOW | O_CLOEXEC)
+        guard descriptor >= 0 else { throw CocoaError(.fileWriteUnknown) }
+        defer { close(descriptor) }
+        guard fsync(descriptor) == 0 else { throw CocoaError(.fileWriteUnknown) }
     }
 
     func clear() throws {

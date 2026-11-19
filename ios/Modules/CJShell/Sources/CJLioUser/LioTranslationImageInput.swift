@@ -9,7 +9,7 @@ struct LioTranslationImageInput: View {
     let source: LioTranslationLanguage
     let enabled: Bool
     let isCurrent: @MainActor () -> Bool
-    let onLines: ([String]) -> Void
+    let onImage: (Data) -> Void
     @Environment(\.openURL) private var openURL
     @State private var photoPickerPresented = false
     @State private var photoRequest: UUID?
@@ -90,10 +90,7 @@ struct LioTranslationImageInput: View {
                 }
                 try Task.checkCancellation()
                 guard self.input?.id == input.id, isCurrent() else { return }
-                let lines = try await LioVisionTextReader.lines(from: data, language: source)
-                try Task.checkCancellation()
-                guard self.input?.id == input.id, isCurrent() else { return }
-                onLines(lines)
+                onImage(data)
             } catch is CancellationError {
                 return
             } catch {
