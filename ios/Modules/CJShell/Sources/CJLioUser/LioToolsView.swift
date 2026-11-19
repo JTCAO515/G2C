@@ -6,7 +6,7 @@ import UIKit
 
 struct LioToolsView: View {
     let language: LioLanguage
-    let historyDirectory: URL?
+    let history: LioTranslationHistory?
     let relay: LioRelayTranslationClient?
 
     var body: some View {
@@ -14,9 +14,7 @@ struct LioToolsView: View {
             ScrollView {
                 VStack(spacing: 12) {
                     NavigationLink {
-                        LioTextTranslationView(language: language,
-                                               history: historyDirectory.map(LioTranslationHistory.init(directory:)),
-                                               relay: relay)
+                        LioTextTranslationView(language: language, history: history, relay: relay)
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "character.bubble")

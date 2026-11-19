@@ -58,11 +58,27 @@ struct LioRecentTranslation: Codable, Equatable, Identifiable {
     let offline: Bool
 }
 
-struct LioTranslationHistory {
-    let directory: URL
-    private var file: URL { directory.appendingPathComponent("recent.json") }
+@MainActor public struct LioTranslationHistory {
+    public static let fileName = "translation-recent.json"
+    private let directory: URL
+    private let isCurrent: @MainActor () -> Bool
+    private var file: URL { directory.appendingPathComponent(Self.fileName) }
+
+    public init(directory: URL, isCurrent: @escaping @MainActor () -> Bool) {
+        self.directory = directory
+        self.isCurrent = isCurrent
+    }
+
+    init(directory: URL) {
+        self.init(directory: directory, isCurrent: { true })
+    }
+
+    private func requireCurrent() throws {
+        guard isCurrent() else { throw CancellationError() }
+    }
 
     func load() throws -> [LioRecentTranslation] {
+        try requireCurrent()
         do {
             return try JSONDecoder().decode([LioRecentTranslation].self, from: Data(contentsOf: file))
         } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
@@ -77,16 +93,20 @@ struct LioTranslationHistory {
     }
 
     func save(_ entries: [LioRecentTranslation]) throws {
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        var localDirectory = directory
-        var protection = URLResourceValues()
-        protection.isExcludedFromBackup = true
-        try localDirectory.setResourceValues(protection)
+        try requireCurrent()
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
+                                                attributes: [.posixPermissions: 0o700])
         let data = try JSONEncoder().encode(Array(entries.prefix(20)))
-        try data.write(to: file, options: [.atomic, .completeFileProtection])
+        var savedFile = file
+        try data.write(to: savedFile, options: [.atomic, .completeFileProtection])
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: savedFile.path)
+        var backup = URLResourceValues()
+        backup.isExcludedFromBackup = true
+        try savedFile.setResourceValues(backup)
     }
 
     func clear() throws {
+        try requireCurrent()
         do {
             try FileManager.default.removeItem(at: file)
         } catch let error as CocoaError where error.code == .fileNoSuchFile {

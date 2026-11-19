@@ -55,6 +55,33 @@ private func ownedNativeRoot() throws -> URL {
         try FileManager.default.removeItem(at:file);try capture.requireEmpty()
         #expect(try capture.identityReference()==before)
     }
+    @Test func clearingOneAccountFilePreservesOtherAccountsAndRejectsUnsafeEntries() throws {
+        let parent = try ownedNativeRoot()
+        defer { try? FileManager.default.removeItem(at: parent) }
+        let scope = try DeviceCleanupDirectory(existingPrivateDirectory: parent)
+        for name in ["selected-account", "other-account"] {
+            try FileManager.default.createDirectory(at: parent.appendingPathComponent(name),
+                withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        }
+        let fileName = "translation-recent.json"
+        let selectedFile = parent.appendingPathComponent("selected-account").appendingPathComponent(fileName)
+        let otherFile = parent.appendingPathComponent("other-account").appendingPathComponent(fileName)
+        try Data([1]).write(to: selectedFile)
+        try Data([2]).write(to: otherFile)
+        let selected = try scope.child("selected-account")
+        let original = try selected.identityReference()
+        try selected.removeOwnedFile(named: fileName)
+        try selected.removeOwnedFile(named: fileName)
+        try selected.requireEmpty()
+        #expect(try Data(contentsOf: otherFile) == Data([2]))
+        #expect(try selected.identityReference() == original)
+
+        try FileManager.default.createSymbolicLink(at: selectedFile, withDestinationURL: otherFile)
+        #expect(throws: CleanupFailure.unavailable) { try selected.removeOwnedFile(named: fileName) }
+        #expect(throws: CleanupFailure.unavailable) { try selected.requireEmpty() }
+        #expect(try Data(contentsOf: otherFile) == Data([2]))
+    }
+
     @Test func heldDirectoryDoesNotAdoptReplacementOrSymlink() throws {
         let root=try ownedNativeRoot(),retired=root.appendingPathExtension("retired")
         defer{try? FileManager.default.removeItem(at:root);try? FileManager.default.removeItem(at:retired)}
