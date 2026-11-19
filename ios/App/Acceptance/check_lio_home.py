@@ -81,6 +81,9 @@ def main():
     builder.directory = output
     builder.write_project(0)
     tests = (HERE / ("LioVoiceOverUITests.swift" if args.voiceover else "LioHomeUITests.swift")).read_text()
+    if args.tools:
+        tests += "\n" + (HERE / "LioToolsMediaUITests.swift").read_text()
+        tests += "\n" + (HERE / "LioToolsRelayUITests.swift").read_text()
     (output / "G2CControl.swift").write_text(tests.replace("__LIO_RECORDED_TRIP_FIXTURE__", recorded_trip_fixture()))
     project = output / "G2CAcceptance.xcodeproj"
     settings = project / "project.pbxproj"
