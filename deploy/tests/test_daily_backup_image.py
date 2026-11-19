@@ -16,16 +16,21 @@ IMAGE = 'sha256:' + 'b' * 64
 SCRIPT = Path(__file__).resolve().parents[1] / 'hk' / 'daily-backup.sh'
 
 
-@pytest.mark.parametrize('selected,expected,config_issue,upload_exit,status', [
-    (False, True, None, 0, 0),
-    (True, True, None, 0, 0),
-    (True, False, None, 0, 1),
-    (True, True, None, 37, 37),
-    (True, True, 'unavailable', 0, 38),
-    (True, True, 'always', 0, 1),
-    (True, True, 'other_image', 0, 1),
+@pytest.mark.parametrize('selected,expected,config_issue,upload_exit,status,running', [
+    (False, True, None, 0, 0, 'api worker'),
+    (True, True, None, 0, 0, 'api worker'),
+    (True, False, None, 0, 1, 'api worker'),
+    (True, True, None, 37, 37, 'api worker'),
+    (True, True, 'unavailable', 0, 38, 'api worker'),
+    (True, True, 'always', 0, 1, 'api worker'),
+    (True, True, 'other_image', 0, 1, 'api worker'),
+    (False, True, None, 0, 0, 'api'),
+    (False, True, None, 0, 0, 'worker'),
+    (False, True, None, 0, 0, ''),
 ])
-def test_backup_image_selection_scopes_changes_to_backup(tmp_path, selected, expected, config_issue, upload_exit, status):
+def test_backup_image_selection_scopes_changes_to_backup(
+    tmp_path, selected, expected, config_issue, upload_exit, status, running,
+):
     unit = tmp_path / 'daily-backup.sh'
     unit.write_text(SCRIPT.read_text().replace('/srv/g2c-beta', str(tmp_path)))
     (tmp_path / 'common.env').write_text('CJ_BETA_DB_TARGET=hk-local\n')
@@ -42,8 +47,10 @@ if [ -f backup.image ]; then cat backup.image; fi
 printf '%s|%s\n' "${CJ_BETA_OPERATOR_IMAGE-unset}" "$*" >> "$BACKUP_TEST_CALLS"
 case "$*" in
     'image inspect '*) printf '%s\n' "$BACKUP_TEST_IMAGE" ;;
-    *'ps -q --status running api') printf 'api\n' ;;
-    *'ps -q --status running worker') printf 'worker\n' ;;
+    *'ps -q --status running api')
+        case " $BACKUP_TEST_RUNNING " in *' api '*) printf 'api\n' ;; esac ;;
+    *'ps -q --status running worker')
+        case " $BACKUP_TEST_RUNNING " in *' worker '*) printf 'worker\n' ;; esac ;;
     *'stop api worker') touch "$BACKUP_TEST_TAG_CHANGED" ;;
 esac
 case "$*" in
@@ -74,6 +81,7 @@ esac
         'BACKUP_TEST_CONFIG_IMAGE': TAG if config_issue == 'other_image' else IMAGE,
         'BACKUP_TEST_PULL_POLICY': 'always' if config_issue == 'always' else 'never',
         'BACKUP_TEST_UPLOAD_EXIT': str(upload_exit),
+        'BACKUP_TEST_RUNNING': running,
         'BACKUP_TEST_TAG_CHANGED': str(tmp_path / 'tag-changed'),
         'BACKUP_TEST_MUTABLE_TAG': TAG,
     })
@@ -108,7 +116,9 @@ esac
         if row != backup and row not in config + recovery:
             assert row[0] == 'unset' and overlay not in row[1]
     assert any(row[1].endswith('stop api worker') for row in invocations)
-    assert any(row[1].endswith('up -d --no-deps api worker') for row in invocations)
+    restarts = [command.split('up -d --no-deps ', 1)[1]
+                for _, command in invocations if 'up -d --no-deps ' in command]
+    assert restarts == ([running] if running else [])
 
 
 @pytest.mark.parametrize('uid,mode', [(10001, 0o600), (0, 0o620), (0, 0o602)])

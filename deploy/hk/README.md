@@ -314,7 +314,7 @@ Caddy仅发布80/443、自动HTTPS并保留流式响应；应用端口不对主�
 
 安装本目录service/timer到systemd；每天19:00 UTC（北京时间03:00）停止并排空本测试环境writer，
 调用operator在同一条已验身份、reset及TLS的源连接内锁定并COPY同快照业务行到全新Unix暂存库；
-核逐表UTC完整行集hash及identity sequence的last_value/is_called相同后，仅对暂存库执行native pg_dump，云凭据不交给pg_dump子连接。确认OSS原对象HEAD后重开服务。失败保持停止并告警。
+核逐表UTC完整行集hash及identity sequence的last_value/is_called相同后，仅对暂存库执行native pg_dump，云凭据不交给pg_dump子连接。确认OSS原对象HEAD后，仅重开日备开始时运行的 API 和 worker。失败时仅在两者原本均运行、备份容器已停止且原 release 验证通过时尝试恢复。
 包只含CJ业务数据，迁移ledger和可轮转identity由镜像规范schema在恢复时创建。
 `g2c-beta-data-checkpoint.1`是独立的云应用数据包；旧本机归档格式及恢复入口不变。
 

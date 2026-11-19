@@ -62,7 +62,11 @@ worker_before=$(compose ps -q --status running worker)
 
 if compose stop api worker &&
     backup_compose run --rm --no-deps backup; then
-    compose up -d --no-deps api worker
+    set --
+    if [ -n "$api_before" ]; then set -- "$@" api; fi
+    if [ -n "$worker_before" ]; then set -- "$@" worker; fi
+    # An operator may have intentionally stopped either service before the backup.
+    if [ "$#" -gt 0 ]; then compose up -d --no-deps "$@"; fi
 else
     backup_status=$?
     # Restore only the pair that the timer interrupted, and only when the
