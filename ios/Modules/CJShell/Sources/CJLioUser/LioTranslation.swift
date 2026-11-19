@@ -57,7 +57,8 @@ struct LioRecentTranslation: Codable, Equatable, Identifiable {
 }
 
 @MainActor public struct LioTranslationHistory {
-    public static let fileName = "translation-recent.json"
+    public static let directoryName = "translation-history"
+    public static let fileName = "recent.json"
     private let directory: URL
     private let isCurrent: @MainActor () -> Bool
     private var file: URL { directory.appendingPathComponent(Self.fileName) }
@@ -94,13 +95,13 @@ struct LioRecentTranslation: Codable, Equatable, Identifiable {
         try requireCurrent()
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
                                                 attributes: [.posixPermissions: 0o700])
-        let data = try JSONEncoder().encode(Array(entries.prefix(20)))
-        var savedFile = file
-        try data.write(to: savedFile, options: [.atomic, .completeFileProtection])
-        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: savedFile.path)
+        var localDirectory = directory
         var backup = URLResourceValues()
         backup.isExcludedFromBackup = true
-        try savedFile.setResourceValues(backup)
+        try localDirectory.setResourceValues(backup)
+        let data = try JSONEncoder().encode(Array(entries.prefix(20)))
+        try data.write(to: file, options: [.atomic, .completeFileProtection])
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
     }
 
     func clear() throws {

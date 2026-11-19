@@ -82,6 +82,25 @@ private func ownedNativeRoot() throws -> URL {
         #expect(try Data(contentsOf: otherFile) == Data([2]))
     }
 
+    @Test func retiringAnEmptyHistoryDirectoryNeverRemovesUnknownContents() throws {
+        let root = try ownedNativeRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let parent = try DeviceCleanupDirectory(existingPrivateDirectory: root)
+        let directory = root.appendingPathComponent("translation-history", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false,
+                                                attributes: [.posixPermissions: 0o700])
+        let capture = try parent.child("translation-history")
+        let unrecognized = directory.appendingPathComponent("unexpected")
+        try Data([4]).write(to: unrecognized)
+        #expect(throws: CleanupFailure.unavailable) { try capture.removeEmptyChild() }
+        #expect(try Data(contentsOf: unrecognized) == Data([4]))
+        try FileManager.default.removeItem(at: unrecognized)
+        try capture.removeEmptyChild()
+        try parent.requireEmpty()
+        try parent.child("translation-history").removeEmptyChild()
+        try parent.requireEmpty()
+    }
+
     @Test func heldDirectoryDoesNotAdoptReplacementOrSymlink() throws {
         let root=try ownedNativeRoot(),retired=root.appendingPathExtension("retired")
         defer{try? FileManager.default.removeItem(at:root);try? FileManager.default.removeItem(at:retired)}
