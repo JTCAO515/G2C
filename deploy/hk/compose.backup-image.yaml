@@ -1,0 +1,3 @@
+services:
+  backup:
+    pull_policy: never
