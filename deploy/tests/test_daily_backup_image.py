@@ -16,13 +16,14 @@ IMAGE = 'sha256:' + 'b' * 64
 SCRIPT = Path(__file__).resolve().parents[1] / 'hk' / 'daily-backup.sh'
 
 
-@pytest.mark.parametrize('selected,expected,upload_exit,status', [
-    (False, True, 0, 0),
-    (True, True, 0, 0),
-    (True, False, 0, 1),
-    (True, True, 37, 37),
+@pytest.mark.parametrize('selected,expected,config_exit,upload_exit,status', [
+    (False, True, 0, 0, 0),
+    (True, True, 0, 0, 0),
+    (True, False, 0, 0, 1),
+    (True, True, 0, 37, 37),
+    (True, True, 38, 0, 38),
 ])
-def test_backup_image_selection_scopes_changes_to_backup(tmp_path, selected, expected, upload_exit, status):
+def test_backup_image_selection_scopes_changes_to_backup(tmp_path, selected, expected, config_exit, upload_exit, status):
     unit = tmp_path / 'daily-backup.sh'
     unit.write_text(SCRIPT.read_text().replace('/srv/g2c-beta', str(tmp_path)))
     (tmp_path / 'common.env').write_text('CJ_BETA_DB_TARGET=hk-local\n')
@@ -43,6 +44,8 @@ case "$*" in
     *'stop api worker') touch "$BACKUP_TEST_TAG_CHANGED" ;;
 esac
 case "$*" in
+    *'run --pull '*) printf 'unknown flag: --pull\n' >&2; exit 125 ;;
+    *'config --quiet') exit "$BACKUP_TEST_CONFIG_EXIT" ;;
     *'run '* )
         if [ -f "$BACKUP_TEST_TAG_CHANGED" ] && [ "${CJ_BETA_OPERATOR_IMAGE-unset}" = "$BACKUP_TEST_MUTABLE_TAG" ]; then
             exit 42
@@ -60,6 +63,7 @@ esac
         'PATH': str(tmp_path) + os.pathsep + os.defpath,
         'BACKUP_TEST_CALLS': str(calls),
         'BACKUP_TEST_IMAGE': f'{runtime_image} amd64 {SOURCE}',
+        'BACKUP_TEST_CONFIG_EXIT': str(config_exit),
         'BACKUP_TEST_UPLOAD_EXIT': str(upload_exit),
         'BACKUP_TEST_TAG_CHANGED': str(tmp_path / 'tag-changed'),
         'BACKUP_TEST_MUTABLE_TAG': TAG,
@@ -70,16 +74,28 @@ esac
         (environment, command), = invocations
         assert environment == 'unset' and command.startswith('image inspect ')
         return
+    overlay = '-f deploy/hk/compose.backup-image.yaml --profile operator'
+    config = [row for row in invocations if row[1].endswith('config --quiet')]
+    if selected:
+        (environment, command), = config
+        assert environment == IMAGE and overlay in command
+    else:
+        assert not config
+    if config_exit:
+        assert len(invocations) == 2
+        return
     backup, = [row for row in invocations if row[1].endswith('--rm --no-deps backup')]
     assert backup[0] == (IMAGE if selected else 'unset')
-    assert ('--pull never' in backup[1]) is selected
+    assert (overlay in backup[1]) is selected
     recovery = [row for row in invocations if row[1].endswith('--check-release')]
     if upload_exit:
         (environment, command), = recovery
-        assert environment == IMAGE and 'run --pull never' in command
+        assert environment == IMAGE and overlay in command
     else:
         assert not recovery
-    assert all(row[0] == 'unset' for row in invocations if row != backup and row not in recovery)
+    for row in invocations:
+        if row != backup and row not in config + recovery:
+            assert row[0] == 'unset' and overlay not in row[1]
     assert any(row[1].endswith('stop api worker') for row in invocations)
     assert any(row[1].endswith('up -d --no-deps api worker') for row in invocations)
 
