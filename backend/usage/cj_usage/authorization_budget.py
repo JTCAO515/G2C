@@ -73,6 +73,9 @@ def _price_receipt(kind, raw):
     if type(digest) is not str or re.fullmatch('[0-9a-f]{64}',digest) is None:
         return None
     if kind=='model':
+        if receipt.get('service') == 'translation.1':
+            from .translation_budget import translation_price
+            return translation_price(receipt)
         if (receipt.get('model_id')!='qwen3.8-flash' or receipt.get('region')!='cn-beijing'
                 or receipt.get('endpoint')!='https://dashscope.aliyuncs.com/compatible-mode/v1'):
             return None
