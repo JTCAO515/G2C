@@ -68,6 +68,12 @@ struct LioTranslationHistory {
         }
     }
 
+    func record(_ entry: LioRecentTranslation) throws -> [LioRecentTranslation] {
+        let entries = try Array(([entry] + load()).prefix(20))
+        try save(entries)
+        return entries
+    }
+
     func save(_ entries: [LioRecentTranslation]) throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         var localDirectory = directory

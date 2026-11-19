@@ -16,6 +16,20 @@ struct LioTranslationTests {
         #expect(try LioTranslationHistory(directory: directory).load().isEmpty)
     }
 
+    @Test func recordingDoesNotOverwriteUnreadableHistory() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appendingPathComponent("recent.json")
+        let original = Data("invalid saved data".utf8)
+        try original.write(to: file)
+        let history = LioTranslationHistory(directory: directory)
+        let item = LioRecentTranslation(source: .english, target: .chinese,
+                                        input: "Hello", output: "你好", offline: true)
+        #expect(throws: DecodingError.self) { try history.record(item) }
+        #expect(try Data(contentsOf: file) == original)
+    }
+
     @Test func textUsesTheRemoteAnswerWhenAvailable() async throws {
         let translator = LioTranslator(remote: { _ in ["你好"] }, local: { _ in
             Issue.record("The local translator must not run after a remote success")
