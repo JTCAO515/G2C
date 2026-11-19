@@ -39,7 +39,22 @@ backup_compose() {
 }
 
 if [ -n "$backup_image" ]; then
-    backup_compose config --quiet
+    backup_config=$(backup_compose config --format json)
+    if ! printf '%s' "$backup_config" | python3 -c '
+import json
+import sys
+
+try:
+    backup = json.load(sys.stdin)["services"]["backup"]
+    valid = backup["image"] == sys.argv[1] and backup["pull_policy"] == "never"
+except (KeyError, TypeError, ValueError):
+    valid = False
+raise SystemExit(0 if valid else 1)
+' "$backup_image"; then
+        printf '%s\n' 'ALERT beta_backup_image_policy_invalid' >&2
+        exit 1
+    fi
+    unset backup_config
 fi
 
 api_before=$(compose ps -q --status running api)
