@@ -8,13 +8,17 @@ struct LioToolsView: View {
     let language: LioLanguage
     let history: LioTranslationHistory?
     let relay: LioRelayTranslationClient?
+    let enabled: Bool
+    let sessionIsCurrent: @MainActor () -> Bool
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
                     NavigationLink {
-                        LioTextTranslationView(language: language, history: history, relay: relay)
+                        LioTextTranslationView(language: language, history: history, enabled: enabled, isCurrent: {
+                            UIApplication.shared.applicationState != .background && sessionIsCurrent()
+                        }, relay: relay)
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "character.bubble")
@@ -54,6 +58,8 @@ struct LioTranslationActionStyle: ButtonStyle {
 private struct LioTextTranslationView: View {
     let language: LioLanguage
     let history: LioTranslationHistory?
+    let enabled: Bool
+    let isCurrent: @MainActor () -> Bool
     let relay: LioRelayTranslationClient?
     @Environment(\.openURL) private var openURL
     @State private var source: LioTranslationLanguage = .english
@@ -132,12 +138,13 @@ private struct LioTextTranslationView: View {
                               || attempt != nil || problem == .alreadyAccepted)
                 }
                 if relay == nil {
-                    LioTranslationVoiceInput(language: language, source: source) { text in
+                    LioTranslationVoiceInput(language: language, source: source, enabled: enabled, isCurrent: isCurrent) { text in
+                        guard enabled, isCurrent() else { return }
                         startText(text, useRelay: false)
                         spokenText = text
                     }
                 } else {
-                    LioRelayVoiceInput(language: language, onRecording: startRecording)
+                    LioRelayVoiceInput(language: language, enabled: enabled, isCurrent: isCurrent, onRecording: startRecording)
                 }
                 if let spokenText {
                     Text(spokenText)
@@ -145,7 +152,8 @@ private struct LioTextTranslationView: View {
                         .textSelection(.enabled)
                         .accessibilityIdentifier("lio.translation.transcript")
                 }
-                LioTranslationImageInput(language: language, onImage: startPhoto)
+                LioTranslationImageInput(language: language, source: source, enabled: enabled,
+                                         isCurrent: isCurrent, onImage: startPhoto)
                 if result == nil, !imageText.isEmpty {
                     Text(imageText.joined(separator: "\n"))
                         .foregroundStyle(LioTheme.ink)
@@ -198,10 +206,13 @@ private struct LioTextTranslationView: View {
         .onChange(of: input) { resetResult() }
         .onChange(of: source) { resetResult() }
         .onChange(of: target) { resetResult() }
-        .onDisappear { attempt = nil; speaker.stopSpeaking(at: .immediate) }
+        .onChange(of: enabled) { _, available in
+            if !available { resetResult() }
+        }
+        .onDisappear { resetResult() }
         .task { reloadHistory() }
         .task(id: attempt?.route == .apple ? nil : attempt?.id) {
-            guard let attempt else { return }
+            guard let attempt, isCurrent() else { return }
             switch attempt.route {
             case .prepareInput: await prepareLocalInput(attempt)
             case .relay:
@@ -338,6 +349,7 @@ private struct LioTextTranslationView: View {
     private func start() { startText(input, useRelay: true) }
 
     private func startText(_ text: String, useRelay: Bool) {
+        guard enabled, isCurrent() else { return }
         resetResult()
         let request = LioTranslationRequest(source: source, target: target, text: [text])
         if relay != nil, useRelay {
@@ -350,12 +362,14 @@ private struct LioTextTranslationView: View {
     }
 
     private func startPhoto(_ data: Data) {
+        guard enabled, isCurrent() else { return }
         resetResult()
         let request = LioTranslationRequest(source: source, target: target, text: [])
         attempt = Attempt(request: request, input: .photo(data), route: relay == nil ? .prepareInput : .relay)
     }
 
     private func startRecording(_ data: Data) {
+        guard enabled, isCurrent() else { return }
         resetResult()
         let request = LioTranslationRequest(source: source, target: target, text: [])
         attempt = Attempt(request: request, input: .recording(data), route: .relay)
@@ -366,12 +380,12 @@ private struct LioTextTranslationView: View {
             let lines: [String]
             switch attempt.input {
             case .text: lines = attempt.request.text
-            case .photo(let data): lines = try await LioVisionTextReader.lines(from: data)
+            case .photo(let data): lines = try await LioVisionTextReader.lines(from: data, language: attempt.request.source)
             case .recording(let data):
                 lines = [try await LioRecordedTranslationSpeech.text(from: data, language: attempt.request.source)]
             }
             try Task.checkCancellation()
-            guard self.attempt?.id == attempt.id else { return }
+            guard self.attempt?.id == attempt.id, isCurrent() else { return }
             if attempt.fromImage { imageText = lines }
             if case .recording = attempt.input { spokenText = lines.first }
             self.attempt?.request = .init(source: attempt.request.source, target: attempt.request.target, text: lines)
@@ -401,14 +415,14 @@ private struct LioTextTranslationView: View {
             case .recording(let data): payload = .wav(data)
             }
             try Task.checkCancellation()
-            guard self.attempt?.id == attempt.id else { return }
+            guard self.attempt?.id == attempt.id, isCurrent() else { return }
             let reply = try await relay.translate(.init(id: attempt.id, source: attempt.request.source,
                                                         target: attempt.request.target, payload: payload))
             guard !reply.items.isEmpty else { finish(attempt.id, result: .failure(.noRecognizedText)); return }
             if case .text(let source) = payload {
                 guard reply.items.first?.sourceText == source else { throw LioTranslationFailure.service }
             }
-            guard self.attempt?.id == attempt.id else { return }
+            guard self.attempt?.id == attempt.id, isCurrent() else { return }
             if case .recording = attempt.input { spokenText = reply.items.first?.sourceText }
             self.attempt?.request = .init(source: attempt.request.source, target: attempt.request.target,
                                           text: reply.items.map(\.sourceText))
@@ -423,7 +437,7 @@ private struct LioTextTranslationView: View {
             if case .text = attempt.input { finish(attempt.id, result: .failure(.tooLong)) }
             else { await prepareLocalInput(attempt) }
         } catch let error as LioTranslationFailure {
-            guard self.attempt?.id == attempt.id, !Task.isCancelled else { return }
+            guard self.attempt?.id == attempt.id, isCurrent(), !Task.isCancelled else { return }
             switch error {
             case .network, .quota, .service:
                 await prepareLocalInput(attempt)
@@ -455,7 +469,7 @@ private struct LioTextTranslationView: View {
     }
 
     private func finish(_ id: UUID, result outcome: Result<LioTranslationResult, LioTranslationFailure>?) {
-        guard let attempt, attempt.id == id else { return }
+        guard let attempt, attempt.id == id, isCurrent() else { return }
         self.attempt = nil
         switch outcome {
         case .success(let value):

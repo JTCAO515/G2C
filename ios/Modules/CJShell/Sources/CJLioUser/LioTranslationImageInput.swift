@@ -6,12 +6,18 @@ import UIKit
 
 struct LioTranslationImageInput: View {
     let language: LioLanguage
+    let source: LioTranslationLanguage
+    let enabled: Bool
+    let isCurrent: @MainActor () -> Bool
     let onImage: (Data) -> Void
     @Environment(\.openURL) private var openURL
-    @State private var selection: PhotosPickerItem?
-    @State private var cameraPresented = false
+    @State private var photoPickerPresented = false
+    @State private var photoRequest: UUID?
+    @State private var cameraRequest: UUID?
+    @State private var camera: Camera?
     @State private var input: Input?
-    @State private var requestingCamera = false
+
+    private struct Camera: Identifiable { let id: UUID }
 
     private struct Input: Identifiable {
         enum Source {
@@ -26,16 +32,20 @@ struct LioTranslationImageInput: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                PhotosPicker(selection: $selection, matching: .images) {
+                Button {
+                    guard enabled, isCurrent() else { return }
+                    photoRequest = UUID()
+                    photoPickerPresented = true
+                } label: {
                     Label(language.text("Choose photo", "从相册选择"), systemImage: "photo")
                 }
                 .accessibilityIdentifier("lio.translation.photo")
                 Button {
-                    Task { await requestCamera() }
+                    requestCamera()
                 } label: {
                     Label(language.text("Take photo", "拍照"), systemImage: "camera")
                 }
-                .disabled(requestingCamera)
+                .disabled(cameraRequest != nil)
                 .accessibilityIdentifier("lio.translation.camera")
             }
             .controlSize(.large)
@@ -51,20 +61,22 @@ struct LioTranslationImageInput: View {
                 }
             }
         }
-        .sheet(isPresented: $cameraPresented) {
-            LioTranslationCamera { data in
-                cameraPresented = false
+        .photosPicker(isPresented: $photoPickerPresented, selection: selection(for: photoRequest), matching: .images)
+        .sheet(item: $camera) { presented in
+            LioTranslationCamera(isCurrent: { camera?.id == presented.id && isCurrent() }) { data in
+                guard camera?.id == presented.id, isCurrent() else { return }
+                camera = nil
                 if let data { input = Input(source: .camera(data)) }
             }
             .ignoresSafeArea()
         }
-        .onChange(of: selection) {
-            guard let selection else { return }
-            input = Input(source: .library(selection))
-            self.selection = nil
+        .onChange(of: enabled) { _, available in
+            if !available { retireInput() }
         }
+        .onChange(of: source) { retireInput() }
+        .onDisappear { retireInput() }
         .task(id: input?.id) {
-            guard let input else { return }
+            guard let input, isCurrent() else { return }
             do {
                 failure = nil
                 let data: Data
@@ -77,33 +89,67 @@ struct LioTranslationImageInput: View {
                 case .camera(let captured): data = captured
                 }
                 try Task.checkCancellation()
-                guard self.input?.id == input.id else { return }
+                guard self.input?.id == input.id, isCurrent() else { return }
                 onImage(data)
             } catch is CancellationError {
                 return
             } catch {
-                guard self.input?.id == input.id, !Task.isCancelled else { return }
+                guard self.input?.id == input.id, isCurrent(), !Task.isCancelled else { return }
                 failure = error as? LioTranslationMediaFailure ?? .unreadableImage
             }
             if self.input?.id == input.id { self.input = nil }
         }
     }
 
-    private func requestCamera() async {
-        guard !requestingCamera else { return }
-        requestingCamera = true
-        defer { requestingCamera = false }
+    private func selection(for request: UUID?) -> Binding<PhotosPickerItem?> {
+        Binding(get: { nil }, set: { item in
+            guard let request, request == photoRequest, let item, isCurrent() else { return }
+            photoRequest = nil
+            input = Input(source: .library(item))
+        })
+    }
+
+    private func retireInput() {
+        cameraRequest = nil
+        camera = nil
+        photoRequest = nil
+        photoPickerPresented = false
+        input = nil
+        failure = nil
+    }
+
+    private func requestCamera() {
+        guard cameraRequest == nil, enabled, isCurrent() else { return }
+        let request = UUID()
+        cameraRequest = request
+        Task { await authorizeCamera(request) }
+    }
+
+    private func authorizeCamera(_ request: UUID) async {
+        guard cameraRequest == request else { return }
+        defer { if cameraRequest == request { cameraRequest = nil } }
+        guard isCurrent() else { return }
         guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
             failure = .cameraUnavailable
             return
         }
         failure = nil
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
-        case .authorized: cameraPresented = true
-        case .notDetermined:
-            if await AVCaptureDevice.requestAccess(for: .video) { cameraPresented = true }
+        let gate = LioMediaPermissionGate(isCurrent: { cameraRequest == request && isCurrent() })
+        do {
+            let granted = try await gate.request {
+                switch AVCaptureDevice.authorizationStatus(for: .video) {
+                case .authorized: return true
+                case .notDetermined: return await AVCaptureDevice.requestAccess(for: .video)
+                default: return false
+                }
+            }
+            guard cameraRequest == request, isCurrent() else { return }
+            if granted { camera = Camera(id: request) }
             else { failure = .cameraDenied }
-        default: failure = .cameraDenied
+        } catch is CancellationError {
+            return
+        } catch {
+            failure = .cameraUnavailable
         }
     }
 
@@ -118,9 +164,10 @@ struct LioTranslationImageInput: View {
 }
 
 private struct LioTranslationCamera: UIViewControllerRepresentable {
+    let isCurrent: @MainActor () -> Bool
     let onCapture: (Data?) -> Void
 
-    func makeCoordinator() -> Coordinator { Coordinator(onCapture: onCapture) }
+    func makeCoordinator() -> Coordinator { Coordinator(isCurrent: isCurrent, onCapture: onCapture) }
 
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
@@ -132,14 +179,22 @@ private struct LioTranslationCamera: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
 
     @MainActor final class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
+        let isCurrent: @MainActor () -> Bool
         let onCapture: (Data?) -> Void
-        init(onCapture: @escaping (Data?) -> Void) { self.onCapture = onCapture }
+
+        init(isCurrent: @escaping @MainActor () -> Bool, onCapture: @escaping (Data?) -> Void) {
+            self.isCurrent = isCurrent
+            self.onCapture = onCapture
+        }
 
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            guard isCurrent() else { return }
             onCapture((info[.originalImage] as? UIImage)?.jpegData(compressionQuality: 0.95))
         }
 
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) { onCapture(nil) }
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            if isCurrent() { onCapture(nil) }
+        }
     }
 }
 #endif

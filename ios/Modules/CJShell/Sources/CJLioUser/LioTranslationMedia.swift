@@ -20,16 +20,33 @@ struct LioImageTranslationLine: Identifiable, Equatable {
 }
 
 @MainActor
+struct LioMediaPermissionGate {
+    let isCurrent: () -> Bool
+
+    func request(_ permission: () async -> Bool) async throws -> Bool {
+        try requireCurrent()
+        let granted = await permission()
+        try requireCurrent()
+        return granted
+    }
+
+    private func requireCurrent() throws {
+        try Task.checkCancellation()
+        guard isCurrent() else { throw CancellationError() }
+    }
+}
+
+@MainActor
 struct LioVoiceAuthorization {
     let onDeviceAvailable: Bool
     let microphone: () async -> Bool
     let speech: () async -> Bool
+    var isCurrent: () -> Bool = { true }
 
     func check() async throws {
         guard onDeviceAvailable else { throw LioTranslationMediaFailure.speechUnavailable }
-        guard await microphone() else { throw LioTranslationMediaFailure.microphoneDenied }
-        try Task.checkCancellation()
-        guard await speech() else { throw LioTranslationMediaFailure.speechDenied }
-        try Task.checkCancellation()
+        let gate = LioMediaPermissionGate(isCurrent: isCurrent)
+        guard try await gate.request(microphone) else { throw LioTranslationMediaFailure.microphoneDenied }
+        guard try await gate.request(speech) else { throw LioTranslationMediaFailure.speechDenied }
     }
 }

@@ -21,6 +21,30 @@ struct LioTranslationMediaTests {
         await #expect(throws: LioTranslationMediaFailure.speechUnavailable) { try await offlineUnavailable.check() }
     }
 
+    @Test func retiringDuringMicrophonePermissionStopsBeforeTheSpeechPrompt() async {
+        var current = true
+        let authorization = LioVoiceAuthorization(onDeviceAvailable: true, microphone: {
+            current = false
+            return true
+        }, speech: {
+            Issue.record("A retired session must not open the speech permission prompt")
+            return true
+        }, isCurrent: { current })
+
+        await #expect(throws: CancellationError.self) { try await authorization.check() }
+    }
+
+    @Test func retiringDuringCameraPermissionRejectsTheLateGrant() async {
+        var current = true
+        let gate = LioMediaPermissionGate(isCurrent: { current })
+        await #expect(throws: CancellationError.self) {
+            try await gate.request {
+                current = false
+                return true
+            }
+        }
+    }
+
     @Test func preservesDuplicateImageLinesAndTheirOrder() throws {
         let rows = try LioImageTranslationLine.pair(["茶", "茶", "咖啡"], with: ["Tea", "Tea", "Coffee"])
         #expect(rows.map(\.id) == [0, 1, 2])

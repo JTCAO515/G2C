@@ -8,6 +8,8 @@ import UIKit
 struct LioTranslationVoiceInput: View {
     let language: LioLanguage
     let source: LioTranslationLanguage
+    let enabled: Bool
+    let isCurrent: @MainActor () -> Bool
     let onText: (String) -> Void
     @Environment(\.openURL) private var openURL
     @State private var capture = LioVoiceCapture()
@@ -15,8 +17,9 @@ struct LioTranslationVoiceInput: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Button {
+                guard enabled, isCurrent() else { return }
                 if capture.isBusy { capture.stop() }
-                else { Task { await capture.start(source, onText: onText) } }
+                else { capture.start(source, isCurrent: isCurrent, onText: onText) }
             } label: {
                 Label(capture.isBusy
                       ? language.text("Stop recording", "停止录音")
@@ -35,6 +38,9 @@ struct LioTranslationVoiceInput: View {
                     .frame(minHeight: 44)
                 }
             }
+        }
+        .onChange(of: enabled) { _, available in
+            if !available { capture.cancel() }
         }
         .onDisappear { capture.cancel() }
         .onChange(of: source) { capture.cancel() }
@@ -64,11 +70,20 @@ private final class LioVoiceCapture {
     private(set) var failure: LioTranslationMediaFailure?
     var isBusy: Bool { generation != nil }
 
-    func start(_ language: LioTranslationLanguage, onText: @escaping (String) -> Void) async {
-        guard generation == nil else { return }
+    func start(_ language: LioTranslationLanguage, isCurrent: @escaping @MainActor () -> Bool,
+               onText: @escaping (String) -> Void) {
+        guard generation == nil, isCurrent() else { return }
         let id = UUID()
         generation = id
         failure = nil
+        Task { await authorize(language, id: id, isCurrent: isCurrent, onText: onText) }
+    }
+
+    private func authorize(_ language: LioTranslationLanguage, id: UUID,
+                           isCurrent: @escaping @MainActor () -> Bool,
+                           onText: @escaping (String) -> Void) async {
+        guard generation == id else { return }
+        guard isCurrent() else { cancel(); return }
         do {
             guard let recognizer = SFSpeechRecognizer(locale: Locale(identifier: language.rawValue)) else {
                 throw LioTranslationMediaFailure.speechUnavailable
@@ -86,11 +101,16 @@ private final class LioVoiceCapture {
                             continuation.resume(returning: $0 == .authorized)
                         }
                     }
-                }
+                },
+                isCurrent: { [weak self] in self?.generation == id && isCurrent() }
             )
             try await authorization.check()
             guard generation == id else { return }
-            try beginAudio(recognizer, id: id, onText: onText)
+            guard isCurrent() else { cancel(); return }
+            try beginAudio(recognizer, id: id) { text in
+                guard isCurrent() else { return }
+                onText(text)
+            }
         } catch {
             guard generation == id else { return }
             cancel()

@@ -6,6 +6,8 @@ import UIKit
 
 struct LioRelayVoiceInput: View {
     let language: LioLanguage
+    let enabled: Bool
+    let isCurrent: @MainActor () -> Bool
     let onRecording: (Data) -> Void
     @State private var recorder = LioRelayVoiceRecorder()
     @Environment(\.openURL) private var openURL
@@ -13,8 +15,9 @@ struct LioRelayVoiceInput: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Button {
+                guard enabled, isCurrent() else { return }
                 if recorder.isBusy { recorder.stop() }
-                else { Task { await recorder.start(onRecording) } }
+                else { recorder.start(isCurrent: isCurrent, onRecording: onRecording) }
             } label: {
                 Label(recorder.isBusy
                       ? language.text("Stop recording", "停止录音")
@@ -36,6 +39,9 @@ struct LioRelayVoiceInput: View {
             }
         }
         .foregroundStyle(LioTheme.ink)
+        .onChange(of: enabled) { _, available in
+            if !available { recorder.cancel() }
+        }
         .onDisappear { recorder.cancel() }
     }
 }
@@ -45,49 +51,58 @@ private final class LioRelayVoiceRecorder: NSObject, AVAudioRecorderDelegate {
     private var recorder: AVAudioRecorder?
     private var operation: UUID?
     private var completion: ((Data) -> Void)?
+    private var sessionIsCurrent: (@MainActor () -> Bool)?
     private var settings: (AVAudioSession.Category, AVAudioSession.Mode, AVAudioSession.CategoryOptions)?
     private var ownsAudioSession = false
     private(set) var failure: LioTranslationMediaFailure?
     var isBusy: Bool { operation != nil }
 
-    func start(_ onRecording: @escaping (Data) -> Void) async {
-        guard operation == nil else { return }
+    func start(isCurrent: @escaping @MainActor () -> Bool, onRecording: @escaping (Data) -> Void) {
+        guard operation == nil, isCurrent() else { return }
         let id = UUID()
         operation = id
         failure = nil
-        let allowed = await AVAudioApplication.requestRecordPermission()
-        guard operation == id else { return }
-        guard allowed else {
-            operation = nil
-            failure = .microphoneDenied
-            return
-        }
+        sessionIsCurrent = isCurrent
+        Task { await authorize(id, isCurrent: isCurrent, onRecording: onRecording) }
+    }
 
+    private func authorize(_ id: UUID, isCurrent: @escaping @MainActor () -> Bool,
+                           onRecording: @escaping (Data) -> Void) async {
+        do {
+            let gate = LioMediaPermissionGate(isCurrent: { [weak self] in self?.operation == id && isCurrent() })
+            let allowed = try await gate.request { await AVAudioApplication.requestRecordPermission() }
+            guard operation == id else { return }
+            guard isCurrent() else { cancel(); return }
+            guard allowed else { throw LioTranslationMediaFailure.microphoneDenied }
+            try beginRecording(id, onRecording: onRecording)
+        } catch {
+            guard operation == id else { return }
+            cancel()
+            if !(error is CancellationError) { failure = error as? LioTranslationMediaFailure ?? .speechUnavailable }
+        }
+    }
+
+    private func beginRecording(_ id: UUID, onRecording: @escaping (Data) -> Void) throws {
         let session = AVAudioSession.sharedInstance()
         settings = (session.category, session.mode, session.categoryOptions)
-        do {
-            try session.setCategory(.record, mode: .measurement)
-            try session.setActive(true)
-            ownsAudioSession = true
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent(id.uuidString + ".wav")
-            let recording = try AVAudioRecorder(url: url, settings: [
-                AVFormatIDKey: kAudioFormatLinearPCM,
-                AVSampleRateKey: 16_000,
-                AVNumberOfChannelsKey: 1,
-                AVLinearPCMBitDepthKey: 16,
-                AVLinearPCMIsBigEndianKey: false,
-                AVLinearPCMIsFloatKey: false,
-            ])
-            recorder = recording
-            completion = onRecording
-            recording.delegate = self
-            guard recording.prepareToRecord() else { throw LioTranslationMediaFailure.speechUnavailable }
-            try FileManager.default.setAttributes([.protectionKey: FileProtectionType.complete], ofItemAtPath: url.path)
-            guard recording.record(forDuration: 60) else { throw LioTranslationMediaFailure.speechUnavailable }
-        } catch {
-            cancel()
-            failure = .speechUnavailable
-        }
+        try session.setCategory(.record, mode: .measurement)
+        try session.setActive(true)
+        ownsAudioSession = true
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(id.uuidString + ".wav")
+        let recording = try AVAudioRecorder(url: url, settings: [
+            AVFormatIDKey: kAudioFormatLinearPCM,
+            AVSampleRateKey: 16_000,
+            AVNumberOfChannelsKey: 1,
+            AVLinearPCMBitDepthKey: 16,
+            AVLinearPCMIsBigEndianKey: false,
+            AVLinearPCMIsFloatKey: false,
+        ])
+        recorder = recording
+        completion = onRecording
+        recording.delegate = self
+        guard recording.prepareToRecord() else { throw LioTranslationMediaFailure.speechUnavailable }
+        try FileManager.default.setAttributes([.protectionKey: FileProtectionType.complete], ofItemAtPath: url.path)
+        guard recording.record(forDuration: 60) else { throw LioTranslationMediaFailure.speechUnavailable }
     }
 
     func stop() {
@@ -98,6 +113,7 @@ private final class LioRelayVoiceRecorder: NSObject, AVAudioRecorderDelegate {
     func cancel() {
         operation = nil
         completion = nil
+        sessionIsCurrent = nil
         if let recording = recorder {
             recorder = nil
             recording.delegate = nil
@@ -114,10 +130,12 @@ private final class LioRelayVoiceRecorder: NSObject, AVAudioRecorderDelegate {
 
     private func finish(_ url: URL, success: Bool) {
         guard recorder?.url == url else { return }
+        guard sessionIsCurrent?() == true else { cancel(); return }
         let deliver = completion
         recorder = nil
         completion = nil
         operation = nil
+        sessionIsCurrent = nil
         restoreAudioSettings()
         do {
             guard success else { throw LioTranslationMediaFailure.speechUnavailable }

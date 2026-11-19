@@ -4,12 +4,15 @@ import ImageIO
 import Vision
 
 enum LioVisionTextReader {
-    static func lines(from data: Data) async throws -> [String] {
+    static func lines(from data: Data, language: LioTranslationLanguage) async throws -> [String] {
         let photo = try thumbnail(from: data)
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = .accurate
-        let supported = try request.supportedRecognitionLanguages()
-        request.recognitionLanguages = ["zh-Hans", "en-US"].filter { supported.contains($0) }
+        let recognitionLanguage = language == .chinese ? "zh-Hans" : "en-US"
+        guard try request.supportedRecognitionLanguages().contains(recognitionLanguage) else {
+            throw LioTranslationMediaFailure.unreadableImage
+        }
+        request.recognitionLanguages = [recognitionLanguage]
         try VNImageRequestHandler(cgImage: photo).perform([request])
         let observations = (request.results ?? []).sorted {
             if $0.boundingBox.midY == $1.boundingBox.midY { return $0.boundingBox.minX < $1.boundingBox.minX }
@@ -28,7 +31,7 @@ enum LioVisionTextReader {
             throw LioTranslationMediaFailure.unreadableImage
         }
         CGImageDestinationAddImage(destination, photo, [
-            kCGImageDestinationLossyCompressionQuality: 0.82,
+            kCGImageDestinationLossyCompressionQuality: 0.94,
         ] as CFDictionary)
         guard CGImageDestinationFinalize(destination) else { throw LioTranslationMediaFailure.unreadableImage }
         return bytes as Data

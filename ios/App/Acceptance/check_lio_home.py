@@ -70,6 +70,7 @@ def main():
         parser.error("Keep build and evidence outside the repository")
     output.mkdir(parents=True, exist_ok=False)
     if args.tools and any(case in args.case for case in (
+        "testToolsPhotoPickerShowsOriginalLinesOnIOS17",
         "testToolsPhotoPickerPairsRelayFixtureLinesOnIOS17", "testToolsPhotoQuotaKeepsLocallyRecognizedLinesOnIOS17",
     )):
         seed_translation_photo(args.simulator, output)
