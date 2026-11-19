@@ -2,7 +2,7 @@
 import argparse
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import subprocess
 import time
 
@@ -10,11 +10,12 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def package_inventory():
-    packages = json.loads((ROOT / ".github/swift-packages.json").read_text())
+    packages = json.loads((ROOT / ".github/swift-packages.json").read_text(encoding="utf-8"))
     tracked = subprocess.check_output(
         ["git", "ls-files", "-z", "--", "ios"], cwd=ROOT
     ).decode().split("\0")
-    actual = {str(Path(name).parent) for name in tracked if Path(name).name == "Package.swift"}
+    paths = (PurePosixPath(name) for name in tracked)
+    actual = {path.parent.as_posix() for path in paths if path.name == "Package.swift"}
     if not isinstance(packages, list) or any(not isinstance(p, str) for p in packages):
         raise SystemExit("Swift inventory must be a list of package paths")
     if len(packages) != len(set(packages)) or set(packages) != actual:

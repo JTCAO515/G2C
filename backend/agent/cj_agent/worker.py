@@ -577,13 +577,14 @@ class RunWorker:
         except ProviderFailed:
             state = self._event(binding, self.runs.snapshot(binding), 'failed')
         except CompleteUnsettledAnswer as answer:
-            # The original discussion stream ended with a complete visible
-            # answer and its meter claim remains unsettled. Publish only text,
-            # through the existing owner and Memory fences.
             from cj_message.lio_context import UNSETTLED_VISIBLE_ANSWER
-            current = self.runs.snapshot(binding)
-            state = self._event(binding, current, 'text_delta', answer.complete_answer)
-            state = self._event(binding, state, 'effect_committed', UNSETTLED_VISIBLE_ANSWER)
+            state = self.runs.snapshot(binding)
+            # Streaming may already have published a prefix of the original.
+            if answer.complete_answer.startswith(state.text):
+                suffix = answer.complete_answer[len(state.text):]
+                if suffix:
+                    state = self._event(binding, state, 'text_delta', suffix)
+                state = self._event(binding, state, 'effect_committed', UNSETTLED_VISIBLE_ANSWER)
             # The visible reply grants no prior-plan authority to future RUNs.
             state = self._event(binding, state, 'unknown')
         except ProviderUnknown as error:

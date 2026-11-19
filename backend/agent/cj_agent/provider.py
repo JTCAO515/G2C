@@ -39,6 +39,14 @@ class CompleteUnsettledAnswer(ProviderUnknown):
         self.complete_answer = complete_answer
 
 
+class CompleteUnsettledTurn(ProviderUnknown):
+    """A validated compact answer, before selection of the traveler's language."""
+
+    def __init__(self, turn):
+        super().__init__('complete M4 turn with unknown settlement')
+        self.turn = turn
+
+
 class ModelProvider(Protocol):
     def stream(self, messages: list[dict], system: str | None = None) -> Generator[str, None, None]: ...
 
@@ -502,9 +510,10 @@ class MeteredDashScopeProvider:
             from cj_draft.rich_schema import GENERATION_PROFILES as rich_profiles
             rich_draft=draft_profile in rich_profiles
         allow_unsettled_answer=unsettled_answer_limit is not None
-        if allow_unsettled_answer and (not release_after_send or native_tools or system is None
-                                       or grouped_format is not None or structured_profile is not None):
-            raise ProviderFailed('unsettled output requires the original read-only discussion mode')
+        ordinary_answer=allow_unsettled_answer and lio_answer and (incremental or compact)
+        if allow_unsettled_answer and (system is None or grouped_format is not None or structured_profile is not None
+                                       or not (ordinary_answer or release_after_send and not native_tools)):
+            raise ProviderFailed('unsettled output requires the original read-only Lio reply mode')
         if release_after_send and (native_tools or system is None):
             raise ProviderFailed('explicit structured model input required')
         if tool_choice is not None and (tool_choice!='none' or not native_tools):
@@ -731,22 +740,27 @@ class MeteredDashScopeProvider:
                                 entry[key]+=part
                                 if len(entry[key])>32768:raise ProviderUnknown('M4 tool input bound exceeded')
                 phase='complete_receipt'
-                if not done or not finished or identity_missing or len(response_ids)!=1 or usage is None:
-                    # A clean HTTP end, normal finish and complete original
-                    # discussion envelope are sufficient for read-only display.
-                    if (allow_unsettled_answer and observed_finish=='stop'
+                incomplete_receipt=not done or not finished or identity_missing or len(response_ids)!=1 or usage is None
+                compact_answer_candidate=(ordinary_answer and compact and observed_finish in ('stop','tool_calls')
+                                          and not texts and not choices_after_stop)
+                if incomplete_receipt and not compact_answer_candidate:
+                    # Only a clean HTTP end with a normal finish can keep text.
+                    if (allow_unsettled_answer and not compact and observed_finish=='stop'
                             and not calls and not choices_after_stop):
                         original=''.join(texts)
                         if len(original)<=unsettled_answer_limit:
-                            candidate=json.loads(original,
-                                object_pairs_hook=reject_duplicates(ValueError,'duplicate_answer_field'))
-                            if (type(candidate) is dict and candidate.keys()=={'answer'}
-                                    and type(candidate['answer']) is str and candidate['answer'].strip()):
-                                if self.config.api_key in candidate['answer']:
+                            if ordinary_answer:
+                                candidate=original
+                            else:
+                                envelope=json.loads(original,
+                                    object_pairs_hook=reject_duplicates(ValueError,'duplicate_answer_field'))
+                                candidate=envelope['answer'] if type(envelope) is dict and envelope.keys()=={'answer'} else None
+                            if type(candidate) is str and candidate.strip():
+                                if self.config.api_key in candidate:
                                     raise ProviderUnknown('M4 structured model secret echo rejected')
-                                candidate['answer'].encode('utf-8')
+                                candidate.encode('utf-8')
                                 failure_reason='receipt_metadata_incomplete'
-                                raise CompleteUnsettledAnswer(candidate['answer'])
+                                raise CompleteUnsettledAnswer(candidate)
                     raise ProviderUnknown('M4 complete usage receipt unavailable')
                 if incremental and (observed_finish!=('tool_calls' if calls else 'stop')
                         or calls and set(calls)!=set(range(len(calls))) or not calls and not ''.join(texts).strip()):
@@ -764,8 +778,11 @@ class MeteredDashScopeProvider:
                         phase='native_function_turn'
                         if len(calls)!=1 or next(iter(calls.values()))['name']!=expected_function_name:
                             raise ProviderUnknown('single named model turn required')
+                        arguments=next(iter(calls.values()))['arguments']
+                        if incomplete_receipt and len(arguments)>unsettled_answer_limit:
+                            raise ProviderUnknown('M4 complete usage receipt unavailable')
                         try:
-                            result=json.loads(next(iter(calls.values()))['arguments'],object_pairs_hook=reject_duplicates(ValueError,'duplicate_native_turn_field'))
+                            result=json.loads(arguments,object_pairs_hook=reject_duplicates(ValueError,'duplicate_native_turn_field'))
                         except (ValueError,TypeError,RecursionError) as error:
                             reason=('native_json_duplicate' if error.args==('duplicate_native_turn_field',) else 'native_json_invalid')
                             raise _M4Rejection(reason,'native turn JSON unavailable') from None
@@ -807,6 +824,11 @@ class MeteredDashScopeProvider:
                     if len({c['id'] for c in native_calls})!=len(native_calls):raise ProviderUnknown('native tool identity duplicated')
                     assistant=dict(role='assistant',content=None if buffered else ''.join(texts) or None,tool_calls=native_calls)
                     if self.config.api_key in json.dumps(assistant,ensure_ascii=False):raise ProviderUnknown('native tool identity secret echo rejected')
+                    if incomplete_receipt:
+                        if parsed.calls or len(encoded)>unsettled_answer_limit:
+                            raise ProviderUnknown('M4 complete usage receipt unavailable')
+                        failure_reason='receipt_metadata_incomplete'
+                        raise CompleteUnsettledTurn(parsed)
                 metadata=dict(model_id=M4_MODEL,endpoint=M4_BASE,region='cn-beijing',usage=usage,
                               receipt_sha256=hashlib.sha256(next(iter(response_ids)).encode()).hexdigest(),actual_cost_cny='UNKNOWN')
                 if wire_observer is not None:
@@ -833,7 +855,7 @@ class MeteredDashScopeProvider:
                 phase='complete'
         except _M4Rejection as error:
             failure_reason=error.reason;raise
-        except CompleteUnsettledAnswer:
+        except (CompleteUnsettledAnswer, CompleteUnsettledTurn):
             raise
         except (ProviderFailed,ProviderUnknown):
             failure_reason='provider_rejected';raise

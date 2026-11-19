@@ -314,7 +314,7 @@ Caddy仅发布80/443、自动HTTPS并保留流式响应；应用端口不对主�
 
 安装本目录service/timer到systemd；每天19:00 UTC（北京时间03:00）停止并排空本测试环境writer，
 调用operator在同一条已验身份、reset及TLS的源连接内锁定并COPY同快照业务行到全新Unix暂存库；
-核逐表UTC完整行集hash及identity sequence的last_value/is_called相同后，仅对暂存库执行native pg_dump，云凭据不交给pg_dump子连接。确认OSS原对象HEAD后重开服务。失败保持停止并告警。
+核逐表UTC完整行集hash及identity sequence的last_value/is_called相同后，仅对暂存库执行native pg_dump，云凭据不交给pg_dump子连接。确认OSS原对象HEAD后，仅重开日备开始时运行的 API 和 worker。失败时仅在两者原本均运行、备份容器已停止且原 release 验证通过时尝试恢复。
 包只含CJ业务数据，迁移ledger和可轮转identity由镜像规范schema在恢复时创建。
 `g2c-beta-data-checkpoint.1`是独立的云应用数据包；旧本机归档格式及恢复入口不变。
 
@@ -325,7 +325,7 @@ OSS固定香港内部HTTPS端点、私有/AES256、backups/前缀，SDK自动重
 每日阶段持久化，未完成的原检查点先查原制品和数据库identity，不再导出第二份冒充恢复成功。
 桶30天生命周期需按已授权能力核实，实际到期删除需经过30天，不以配置截图冒充实际删除。
 
-B 单独更新日备实现时，使用通过同一精确 CI 和 R 审查的 amd64 operator 镜像。暂停 timer，等原 backup service 退出，再安装已审 `daily_backup_image.py` 和 `daily-backup.sh`，最后原子安装 `/srv/g2c-beta/backup.image`（root:0600）。文件一行，依次为 `g2c-beta-operator:<40位source>`、空格和 `sha256:<64位image ID>`。脚本在停 writer 前核文件归属、写权限、image ID、架构和 source。原日备与签名 release 回读均直接按该 image ID 启动。保留原 `compose.env`、PostgreSQL 容器和账本。恢复原 timer 后按下一次原日备核签名状态。需要回退时，同样等当前任务结束后恢复原文件。无该文件时沿用默认 operator 选择器。
+B 单独更新日备实现时，使用通过同一精确 CI 和 R 审查的 amd64 operator 镜像。暂停 timer，等原 backup service 退出，再安装已审 `daily_backup_image.py`、`daily-backup.sh` 和 `compose.backup-image.yaml`，最后原子安装 `/srv/g2c-beta/backup.image`（root:0600）。文件一行，依次为 `g2c-beta-operator:<40位source>`、空格和 `sha256:<64位image ID>`。脚本在停 writer 前核文件归属、写权限、image ID、架构和 source。选中独立镜像时，停止 writer 前先读回备份专用 Compose 的实际镜像 ID 和禁止拉取策略。原日备与签名 release 回读均以该 image ID 和 `pull_policy: never` 启动。保留原 `compose.env`、PostgreSQL 容器和账本。恢复原 timer 后按下一次原日备核签名状态。需要回退时，同样等当前任务结束后恢复原文件。无该文件时沿用默认 operator 选择器。
 
 首次OSS调用前，宿主root仅在JT明确答复后一次性安装非秘密授权文件 `/srv/g2c-beta/authorizations/oss.json`（root:0644、目录root:0755），只读绑定到 `/run/authorizations`。
 运行时只读验证该root授权，恢复签名私钥不能签发/覆盖它；不随数据库恢复的 `/control/oss-quota` 另存签名零使用记录及空intents目录。

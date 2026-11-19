@@ -21,7 +21,7 @@ from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
 from cj_agent.provider import (
-    CompleteUnsettledAnswer,
+    CompleteUnsettledAnswer, CompleteUnsettledTurn,
     DashScopeConfig,MeteredDashScopeProvider,M4_BASE,M4_MODEL,M4_REAL_OUTPUT_TOKENS,
     M4_NATIVE_TURN_PROFILE_V2,M4_NATIVE_TURN_STREAM,M4_NATIVE_TURN_BUFFERED,ProviderUnknown,ProviderFailed,
 )
@@ -160,6 +160,7 @@ class ModelInput:
     lio_answer:bool=False
     national:bool=False
     confirmed_destination:bool=True
+    retain_unsettled_answer:bool=False
 
 
 def canonical_tool(name,raw,*,city=None):
@@ -622,6 +623,11 @@ class RealTools:
             discussion_handoff = (answer_preparation and not native_turn
                                   and operation.operation_key == 'model.lio_discussion.0'
                                   and operation.registration_id == 'model.answer')
+            retain_unsettled=(discussion_handoff or (native_turn and argument.retain_unsettled_answer
+                                                     and operation.registration_id=='model.tool_turn'))
+            guarded_connect = (release_after_send or discussion_handoff or grouped or national_intake
+                               or (native_turn and argument.lio_answer))
+
             def admitted(*,memory_check=None):
                 if wrapped:
                     if memory_check is None:provider._check()
@@ -633,29 +639,30 @@ class RealTools:
                 self.services.require_scope(operation.binding.scope)
                 with _external_timing('model',operation,admitted) as checked:
                     capture_model=self.tool_evidence is not None and self.tool_evidence.captures_model(operation.binding)
+                    capture_intake=national_intake and self.tool_evidence is not None and self.tool_evidence.intake_enabled
                     capture=({'wire_observer':lambda raw:self.tool_evidence.record_model_input(operation,raw)}
                              if capture_model else {})
                     stream=self.services.model.invoke(inputs['messages'],inputs['system'],operation.command.attempt_id,
                         tools=inputs['native_tools'],receipt=metadata,guard=checked,native_reply=native_reply,
                         native_turn_profile=inputs.get('native_turn_profile'),final_answer=inputs.get('external_tools_disabled',False),
                         release_after_send=discussion_handoff or inputs.get('response_mode')=='lio-memory-json.1',
-                        **({'guarded_connect':True} if release_after_send else {}),
-                        **({'unsettled_answer_limit':operation.command.output_limit} if discussion_handoff else {}),
+                        **({'guarded_connect':True} if guarded_connect else {}),
+                        **({'unsettled_answer_limit':operation.command.output_limit} if retain_unsettled else {}),
                         lio_answer=inputs.get('answer_format_profile')=='lio-user.1',
                         **({'structured_profile':inputs['structured_profile']} if 'structured_profile' in inputs else {}),
                         **({'exploration_schema_sha256':inputs['response_format_sha256']} if exploration else {}),
                         **({'intake_source_index':inputs['current_source_index']} if 'current_source_index' in inputs else {}),
                         **({'draft_profile':inputs['draft_profile'],'draft_schema_sha256':inputs['response_format_sha256']}if 'draft_profile' in inputs else {}),
                         **capture)
-                    if discussion_handoff:
+                    if retain_unsettled:
                         def qualify_reply(original_stream):
                             try:
                                 yield from original_stream
-                            except CompleteUnsettledAnswer:
+                            except (CompleteUnsettledAnswer, CompleteUnsettledTurn):
                                 lease=provider.memory.hold(operation.binding) if wrapped else nullcontext(None)
                                 with lease as memory_check:
                                     if checked(memory_check=memory_check) is not True:
-                                        raise BudgetUnknown('original discussion reply authority changed') from None
+                                        raise BudgetUnknown('original read-only reply authority changed') from None
                                 raise
                         stream=qualify_reply(stream)
                     if national_intake and intake_profile=='LIO-planning-intake.9':
@@ -671,28 +678,30 @@ class RealTools:
                         memory_descriptor=(dict(epoch=rejection_memory.snapshot.epoch,
                             payload_sha256=hashlib.sha256(rejection_memory.payload).hexdigest())if rejection_memory is not None else None)
                         stream=observe_stream(operation,stream,metadata,rejection_lifetime,memory_descriptor)
-                    if capture_model:
+                    if capture_model or capture_intake:
                         # Preserve streaming latency. A complete artifact is
                         # written only after the original provider completes;
                         # partial/failed streams retain their original UNKNOWN.
                         chunks=[]
                         for part in stream:
-                            if type(part) is str:chunks.append(part)
+                            if type(part) is str:
+                                chunks.append(part)
+                                if not capture_model:continue
                             yield part
                         # The worker releases its first-advance Memory lease
                         # before draining the rest of this original stream.
                         # Reacquire that same snapshot and source fence for the
                         # complete artifact, retaining it through the write.
                         lease=provider.memory.hold(operation.binding) if wrapped else nullcontext(None)
+                        result=''.join(chunks)
                         with lease as memory_check:
                             if checked(memory_check=memory_check) is not True:
                                 raise BudgetUnknown('original model evidence authority changed')
-                            self.tool_evidence.record_model(operation,''.join(chunks).encode('utf-8'),metadata)
-                    elif national_intake and self.tool_evidence is not None and self.tool_evidence.intake_enabled:
-                        result=''.join(stream)
-                        if checked() is not True:raise BudgetUnknown('original intake evidence authority changed')
-                        self.tool_evidence.record_intake(operation,result.encode('utf-8'),metadata)
-                        yield result
+                            if capture_model:
+                                self.tool_evidence.record_model(operation,result.encode('utf-8'),metadata)
+                            else:
+                                self.tool_evidence.record_intake(operation,result.encode('utf-8'),metadata)
+                        if not capture_model:yield result
                     else:yield from stream
             return invoke
         from .rejected_intake_capture import acknowledge_settlement
@@ -856,7 +865,8 @@ class RealTools:
             chunks=worker._registered_stream(binding,'model.tool_turn.'+str(round_index),'model.tool_turn',
                 ModelInput(messages,system,worker.provider,native_reply,
                     final_answer=round_index==turns-1 or len(seen)==tool_limit,turn_profile=profile,
-                    lio_answer=lio_locale is not None,national=national,confirmed_destination=city is not None))
+                    lio_answer=lio_locale is not None,national=national,confirmed_destination=city is not None,
+                    retain_unsettled_answer=lio_locale is not None and not (transit_request or transit_evidence)))
             if incremental:
                 raw=None
                 saw_answer = False
@@ -874,7 +884,11 @@ class RealTools:
                     if saw_answer:
                         yield _lio_transit_answer(chinese, transit_evidence)
                     return
-            else:raw=''.join(chunks)
+            else:
+                try:
+                    raw=''.join(chunks)
+                except CompleteUnsettledTurn as answer:
+                    raise CompleteUnsettledAnswer(answer.turn.answer_zh if chinese else answer.turn.answer_en) from answer
             names=self.names|{'visitor_fact'}if national and 'fact'in self.names else self.names
             try:turn=parse_turn(raw.encode(),names)
             except ValueError as error:

@@ -1,6 +1,6 @@
 """Offline provider checks with synthetic HTTP responses and no network."""
 import asyncio
-from contextlib import closing
+from contextlib import closing, contextmanager
 from datetime import datetime, timezone
 import json
 
@@ -8,7 +8,8 @@ import httpx
 import pytest
 
 from cj_agent.lio_intake_optional_schema import PROFILE, response_format
-from cj_agent.provider import (M4_BASE, M4_MODEL, _M4_REQUEST_SENT, DashScopeConfig, DashScopeProvider,
+from cj_agent.provider import (M4_BASE, M4_MODEL, M4_NATIVE_TURN_BUFFERED, M4_NATIVE_TURN_PROFILE_V2,
+                               M4_NATIVE_TURN_STREAM, M4_TURN_FUNCTION_V2, _M4_REQUEST_SENT, DashScopeConfig, DashScopeProvider,
                                CompleteUnsettledAnswer, FakeProvider, MeteredDashScopeProvider, ProviderFailed, ProviderUnknown)
 from cj_usage.authorization_budget import AuthorizationBudget
 
@@ -225,3 +226,58 @@ def test_only_complete_discussion_surfaces_with_missing_receipt(
         assert indeterminate.value.complete_answer == answer
     else:
         assert not isinstance(indeterminate.value, CompleteUnsettledAnswer)
+
+
+@pytest.mark.parametrize('profile', [M4_NATIVE_TURN_BUFFERED, M4_NATIVE_TURN_STREAM, M4_NATIVE_TURN_PROFILE_V2])
+@pytest.mark.parametrize('variant', ['complete', 'decoded_echo', 'tool'])
+def test_ordinary_unsettled_reply_only_retains_valid_answer(tmp_path, monkeypatch, profile, variant):
+    from cj_agent import provider as provider_module
+
+    budget = AuthorizationBudget(tmp_path, clock=lambda: datetime(2026, 11, 4, tzinfo=timezone.utc))
+    model = MeteredDashScopeProvider(DashScopeConfig(M4_BASE, M4_MODEL, KEY), budget)
+    compact = profile == M4_NATIVE_TURN_PROFILE_V2
+    answer = {'zh': '可以先逛一个街区，再去博物馆。' * 8,
+              'en': 'Walk through one neighborhood before visiting a museum. ' * 8}
+    if variant == 'decoded_echo':
+        answer['en'] = KEY
+    if compact:
+        arguments = json.dumps({'calls': [{'name': 'fact', 'arguments': {}}]}
+                               if variant == 'tool' else {'answer': answer})
+        if variant == 'decoded_echo':
+            arguments = arguments.replace(KEY, r'\u%04x' % ord(KEY[0]) + KEY[1:])
+        delta = {'tool_calls': [{'index': 0, 'id': 'native-ordinary', 'function': {
+            'name': M4_TURN_FUNCTION_V2, 'arguments': arguments}}]}
+    elif variant == 'tool':
+        delta = {'tool_calls': [{'index': 0, 'id': 'native-ordinary', 'function': {
+            'name': 'fact', 'arguments': '{}'}}]}
+    else:
+        delta = {'content': answer['en']}
+    event = dict(id='ordinary-offline', model=M4_MODEL, choices=[
+        dict(index=0, delta=delta, finish_reason='tool_calls' if compact or variant == 'tool' else 'stop')],
+        usage=dict(prompt_tokens=4, completion_tokens=8, total_tokens=12))
+
+    @contextmanager
+    def chunks(raw, guard, observation):
+        assert guard() is True
+        yield iter((_M4_REQUEST_SENT, ('data: ' + json.dumps(event) + '\n\n').encode()))
+
+    monkeypatch.setattr(model, '_chunks', chunks)
+    receipt = {}
+    tools = [{'type': 'function', 'function': {'name': 'fact', 'description': 'Test-only source',
+              'parameters': {'type': 'object', 'properties': {}}}}]
+    with pytest.raises(ProviderUnknown) as result:
+        list(model.invoke([{'role': 'user', 'content': 'Travel tips?'}], 'Answer the traveler', 'original-ordinary',
+                          tools=tools, receipt=receipt, guard=lambda: True, lio_answer=True,
+                          native_turn_profile=profile, unsettled_answer_limit=4000))
+    assert receipt == {} and [attempt['state'] for attempt in budget.inspect()] == ['INTENT']
+    if variant == 'complete':
+        if compact:
+            assert isinstance(result.value, provider_module.CompleteUnsettledTurn)
+            assert result.value.turn.answer_zh == answer['zh'] and result.value.turn.answer_en == answer['en']
+        else:
+            assert isinstance(result.value, CompleteUnsettledAnswer)
+            assert result.value.complete_answer == answer['en']
+    elif variant == 'decoded_echo':
+        assert type(result.value) is ProviderUnknown and 'secret echo rejected' in str(result.value)
+    else:
+        assert type(result.value) is ProviderUnknown

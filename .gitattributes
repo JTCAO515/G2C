@@ -1,0 +1,7 @@
+# Preserve canonical bytes for migrations, runtime fingerprints and test fixtures.
+*.py text eol=lf
+*.sh text eol=lf
+*.sql text eol=lf
+*.json text eol=lf
+*.jsonl text eol=lf
+*.lock text eol=lf

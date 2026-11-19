@@ -52,7 +52,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=('render', 'check'))
     args = parser.parse_args()
-    data = json.loads((ROOT / 'docs/handoff.json').read_text())
+    data = json.loads((ROOT / 'docs/handoff.json').read_text(encoding='utf-8'))
     if data['readingOrder'] != data['mandatoryReadingOrder']:
         raise SystemExit('handoff reading orders differ')
     for path in data['mandatoryReadingOrder']:
@@ -61,9 +61,9 @@ def main():
     content = render(data)
     target = ROOT / 'HANDOFF.md'
     if args.command == 'render':
-        target.write_text(content)
+        target.write_text(content, encoding='utf-8', newline='\n')
         print('HANDOFF.md rendered')
-    elif target.read_text() != content:
+    elif target.read_text(encoding='utf-8') != content:
         raise SystemExit('HANDOFF.md is stale; run python3 -B scripts/handoff.py render')
     else:
         print('HANDOFF.md matches docs/handoff.json; mandatory reading exists')
