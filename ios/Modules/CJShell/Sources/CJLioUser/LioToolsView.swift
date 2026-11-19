@@ -7,13 +7,17 @@ import UIKit
 struct LioToolsView: View {
     let language: LioLanguage
     let history: LioTranslationHistory?
+    let enabled: Bool
+    let sessionIsCurrent: @MainActor () -> Bool
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
                     NavigationLink {
-                        LioTextTranslationView(language: language, history: history)
+                        LioTextTranslationView(language: language, history: history, enabled: enabled, isCurrent: {
+                            UIApplication.shared.applicationState != .background && sessionIsCurrent()
+                        })
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "character.bubble")
@@ -40,21 +44,29 @@ struct LioToolsView: View {
     }
 }
 
-private struct LioTranslationSubmitStyle: ButtonStyle {
+struct LioTranslationActionStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .background(configuration.isPressed ? LioTheme.surfaceSunken : Color.clear, in: Capsule())
+            .foregroundStyle(LioTheme.ink)
+            .padding(.horizontal, 10)
+            .frame(minHeight: 44)
+            .background(configuration.isPressed ? LioTheme.surfaceSunken : LioTheme.surface, in: Capsule())
     }
 }
 
 private struct LioTextTranslationView: View {
     let language: LioLanguage
     let history: LioTranslationHistory?
+    let enabled: Bool
+    let isCurrent: @MainActor () -> Bool
     @State private var source: LioTranslationLanguage = .english
     @State private var target: LioTranslationLanguage = .chinese
     @State private var input = ""
     @State private var attempt: Attempt?
     @State private var result: LioTranslationResult?
+    @State private var imageLines: [LioImageTranslationLine] = []
+    @State private var imageText: [String] = []
+    @State private var spokenText: String?
     @State private var problem: LioTranslationFailure?
     @State private var speaker = AVSpeechSynthesizer()
     @State private var recent: [LioRecentTranslation] = []
@@ -64,6 +76,7 @@ private struct LioTextTranslationView: View {
     private struct Attempt: Identifiable {
         let id = UUID()
         let request: LioTranslationRequest
+        let fromImage: Bool
     }
 
     var body: some View {
@@ -108,9 +121,31 @@ private struct LioTextTranslationView: View {
                             .background(LioTheme.surface, in: Capsule())
                             .overlay { Capsule().strokeBorder(LioTheme.hairline) }
                     }
-                    .buttonStyle(LioTranslationSubmitStyle())
+                    .buttonStyle(LioTranslationActionStyle())
                     .accessibilityIdentifier("lio.translation.submit")
                     .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || attempt != nil)
+                }
+                LioTranslationVoiceInput(language: language, source: source, enabled: enabled, isCurrent: isCurrent) { text in
+                    guard isCurrent() else { return }
+                    start([text], fromImage: false)
+                    spokenText = text
+                }
+                if let spokenText {
+                    Text(spokenText)
+                        .foregroundStyle(LioTheme.ink)
+                        .textSelection(.enabled)
+                        .accessibilityIdentifier("lio.translation.transcript")
+                }
+                LioTranslationImageInput(language: language, source: source, enabled: enabled, isCurrent: isCurrent) { lines in
+                    guard isCurrent() else { return }
+                    start(lines, fromImage: true)
+                    imageText = lines
+                }
+                if result == nil, !imageText.isEmpty {
+                    Text(imageText.joined(separator: "\n"))
+                        .foregroundStyle(LioTheme.ink)
+                        .textSelection(.enabled)
+                        .accessibilityIdentifier("lio.translation.image-text")
                 }
                 if attempt != nil { ProgressView(language.text("Translating…", "正在翻译…")) }
                 if let result { resultCard(result) }
@@ -152,7 +187,10 @@ private struct LioTextTranslationView: View {
         .onChange(of: input) { resetResult() }
         .onChange(of: source) { resetResult() }
         .onChange(of: target) { resetResult() }
-        .onDisappear { attempt = nil; speaker.stopSpeaking(at: .immediate) }
+        .onChange(of: enabled) { _, available in
+            if !available { resetResult() }
+        }
+        .onDisappear { resetResult() }
         .task { reloadHistory() }
         .confirmationDialog(language.text("Clear recent translations?", "清除最近翻译？"),
                             isPresented: $confirmsClearHistory, titleVisibility: .visible) {
@@ -193,10 +231,24 @@ private struct LioTextTranslationView: View {
                     .font(.footnote)
                     .foregroundStyle(LioTheme.ink)
             }
-            Text(translated)
-                .foregroundStyle(LioTheme.ink)
-                .textSelection(.enabled)
-                .accessibilityIdentifier("lio.translation.result")
+            if imageLines.isEmpty {
+                Text(translated)
+                    .foregroundStyle(LioTheme.ink)
+                    .textSelection(.enabled)
+                    .accessibilityIdentifier("lio.translation.result")
+            } else {
+                ForEach(imageLines) { line in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(line.original)
+                            .font(.subheadline)
+                        Text(line.translated).font(.body.weight(.medium))
+                    }
+                    .foregroundStyle(LioTheme.ink)
+                    .textSelection(.enabled)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("lio.translation.line.\(line.id)")
+                }
+            }
             HStack {
                 Button(language.text("Copy", "复制")) { UIPasteboard.general.string = translated }
                 Button(language.text("Listen", "朗读")) {
@@ -259,14 +311,20 @@ private struct LioTextTranslationView: View {
     private func resetResult() {
         attempt = nil
         result = nil
+        imageLines = []
+        imageText = []
+        spokenText = nil
         problem = nil
         speaker.stopSpeaking(at: .immediate)
     }
 
-    private func start() {
+    private func start() { start([input], fromImage: false) }
+
+    private func start(_ lines: [String], fromImage: Bool) {
+        guard enabled, isCurrent() else { return }
         resetResult()
         if #available(iOS 18.0, *) {
-            attempt = Attempt(request: .init(source: source, target: target, text: [input]))
+            attempt = Attempt(request: .init(source: source, target: target, text: lines), fromImage: fromImage)
         } else {
             problem = .unsupported
         }
@@ -291,10 +349,14 @@ private struct LioTextTranslationView: View {
     }
 
     private func finish(_ id: UUID, result outcome: Result<LioTranslationResult, LioTranslationFailure>?) {
-        guard let attempt, attempt.id == id else { return }
+        guard let attempt, attempt.id == id, isCurrent() else { return }
         self.attempt = nil
         switch outcome {
         case .success(let value):
+            if attempt.fromImage {
+                do { imageLines = try LioImageTranslationLine.pair(attempt.request.text, with: value.text) }
+                catch { problem = .unavailableLocally; return }
+            }
             result = value
             if let history {
                 let entry = LioRecentTranslation(source: attempt.request.source, target: attempt.request.target,
