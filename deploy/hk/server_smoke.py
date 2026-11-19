@@ -52,10 +52,11 @@ BEIJING_PLACE = re.compile(
 NEGATED_IDENTITY = re.compile(r'不是\s*Lio|\bnot\s+Lio\b', re.I)
 CAPABILITY_TOPIC = re.compile(
     r'行程|规划|路线|交通|景点|支付|地铁|翻译|计划|推荐|'
-    r'itinerar|trip plan|\bplan your days\b|transport|attractions?|payment|subway|translat|route|sightseeing|recommend', re.I
+    r'itinerar|trip plan|transport|attractions?|payment|subway|translat|route|sightseeing|recommend|'
+    r'\bI can plan your days\b|^[ \t]*-[ \t]+\*\*Plan your days:', re.I | re.M
 )
 NEGATED_CAPABILITIES = re.compile(
-    r"不能帮|无法提供|不提供|(?:cannot|can[’']t|do not|don't) (?:help|plan|provide|offer)|"
+    r"不能帮|无法提供|不提供|(?:cannot|can[’']t|do not|don[’']t|will not|won[’']t) (?:help|plan|provide|offer)|"
     r'(?:offer|provide) no (?:travel |trip )?(?:assistance|planning|help)|\bno ability to\b|没有能力', re.I
 )
 DAY_ACTIVITY = re.compile(
