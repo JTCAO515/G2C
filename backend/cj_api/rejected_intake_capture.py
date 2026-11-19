@@ -263,7 +263,7 @@ def observe_stream(operation,stream,metadata,lifetime,memory=None):
     chunks=[]
     try:
         for part in stream:
-            chunks.append(part)
+            if type(part) is str:chunks.append(part)
             yield part
         with lifetime()as check:
             check();capture.observe(operation,''.join(chunks).encode('utf-8'),metadata,lifetime,memory);check()

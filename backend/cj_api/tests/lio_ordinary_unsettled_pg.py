@@ -80,8 +80,8 @@ def check_ordinary(api, headers, database, auth, subject, scope, memory, root):
             attempts = []
             streamed_truncation = profile == 'streaming' and case == 'truncated'
 
-            async def wire(config,raw,guard,observation):
-                assert guard() is True
+            async def wire(config,raw,guard,observation,*,send_under_fence=None):
+                await lio_dispatch_concurrency_pg.confirm_model_write(guard,send_under_fence)
                 packet = json.loads(raw)
                 system = packet['messages'][0]['content']
                 if 'LIO-planning-intake' in system:
