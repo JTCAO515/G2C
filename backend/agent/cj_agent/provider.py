@@ -20,6 +20,7 @@ import certifi
 import httpx
 import h11
 from cj_strict_json import reject_duplicates
+from cj_usage.metered_exit import GuardedWireWrite, UNLOCKED_WIRE_START
 
 
 class ProviderFailed(Exception):
@@ -36,6 +37,14 @@ class CompleteUnsettledAnswer(ProviderUnknown):
     def __init__(self, complete_answer):
         super().__init__('complete M4 answer with unknown settlement')
         self.complete_answer = complete_answer
+
+
+class CompleteUnsettledTurn(ProviderUnknown):
+    """A validated compact answer, before selection of the traveler's language."""
+
+    def __init__(self, turn):
+        super().__init__('complete M4 turn with unknown settlement')
+        self.turn = turn
 
 
 class ModelProvider(Protocol):
@@ -313,7 +322,7 @@ def _m4_native_contract_rejection(error,value,allowed):
     }.get(code,'native_contract_invalid')
 
 
-async def _m4_wire(config,raw,guard,observation=None):
+async def _m4_wire(config,raw,guard,observation=None,*,send_under_fence=None):
     """Single fixed POST with one total deadline across DNS/TLS/write/read."""
     loop=asyncio.get_running_loop();deadline=loop.time()+config.timeout_seconds
     writer=None
@@ -322,14 +331,17 @@ async def _m4_wire(config,raw,guard,observation=None):
         async with asyncio.timeout_at(deadline):
             reader,writer=await asyncio.open_connection('dashscope.aliyuncs.com',443,ssl=tls_context(),
                 server_hostname='dashscope.aliyuncs.com',limit=16384)
-            if guard() is not True:raise _M4Rejection('wire_authority','original M4 authority no longer valid')
-            if loop.time()>=deadline:raise _M4Rejection('wire_deadline','M4 total deadline exceeded')
             connection=h11.Connection(h11.CLIENT,max_incomplete_event_size=16384)
             request=h11.Request(method=b'POST',target=b'/compatible-mode/v1/chat/completions',headers=[
                 (b'Host',b'dashscope.aliyuncs.com'),(b'Authorization',('Bearer '+config.api_key).encode('ascii')),
                 (b'Content-Type',b'application/json'),(b'Accept',b'text/event-stream'),
                 (b'Accept-Encoding',b'identity'),(b'Content-Length',str(len(raw)).encode()),(b'Connection',b'close')])
-            writer.write(connection.send(request)+connection.send(h11.Data(data=raw))+connection.send(h11.EndOfMessage()))
+            def write():
+                if guard() is not True:raise _M4Rejection('wire_authority','original M4 authority no longer valid')
+                if loop.time()>=deadline:raise _M4Rejection('wire_deadline','M4 total deadline exceeded')
+                writer.write(connection.send(request)+connection.send(h11.Data(data=raw))+connection.send(h11.EndOfMessage()))
+            if send_under_fence is None:write()
+            else:await send_under_fence(write)
             await writer.drain()
             if observation is not None:
                 observation['sent_at']=time.monotonic()
@@ -415,7 +427,7 @@ class MeteredDashScopeProvider:
         raise ProviderFailed('original registered Meter operation required')
 
     @contextmanager
-    def _chunks(self,raw,guard,observation):
+    def _chunks(self,raw,guard,observation,*,guarded_connect=False):
         if self.transport is not None:
             # Explicit offline HTTP fixture only; installed environment profiles
             # cannot select a transport. iter_raw never decompresses before bounds.
@@ -428,11 +440,21 @@ class MeteredDashScopeProvider:
                     yield response.iter_raw()
         else:
             loop=asyncio.new_event_loop();queue=asyncio.Queue(maxsize=1)
+            async def send_under_fence(write):
+                completed=loop.create_future()
+                def perform():
+                    try:write()
+                    except Exception as error:completed.set_exception(error)
+                    else:completed.set_result(None)
+                await queue.put(('data',GuardedWireWrite(perform)))
+                await completed
+
             async def pump():
                 # Keep a single task alive across every yielded chunk. An async
                 # generator entered by separate __anext__ tasks would leave its
                 # timeout bound to the already completed first task.
-                source=_m4_wire(self.config,raw,guard,observation)
+                source=_m4_wire(self.config,raw,guard,observation,
+                                **({'send_under_fence':send_under_fence} if guarded_connect else {}))
                 try:
                     try:
                         async for chunk in source:await queue.put(('data',chunk))
@@ -455,7 +477,7 @@ class MeteredDashScopeProvider:
     def invoke(self,messages,system,attempt,*,tools=None,receipt,guard,native_reply=None,tool_choice=None,
                native_turn_profile=None,final_answer=False,release_after_send=False,lio_answer=False,structured_profile=None,intake_source_index=None,wire_observer=None,
                draft_profile=None,draft_schema_sha256=None,exploration_schema_sha256=None,
-               unsettled_answer_limit=None):
+               unsettled_answer_limit=None,guarded_connect=False):
         from cj_usage.authorization_budget import canonical
         native_tools=tools or []
         buffered=native_turn_profile==M4_NATIVE_TURN_BUFFERED
@@ -488,9 +510,10 @@ class MeteredDashScopeProvider:
             from cj_draft.rich_schema import GENERATION_PROFILES as rich_profiles
             rich_draft=draft_profile in rich_profiles
         allow_unsettled_answer=unsettled_answer_limit is not None
-        if allow_unsettled_answer and (not release_after_send or native_tools or system is None
-                                       or grouped_format is not None or structured_profile is not None):
-            raise ProviderFailed('unsettled output requires the original read-only discussion mode')
+        ordinary_answer=allow_unsettled_answer and lio_answer and (incremental or compact)
+        if allow_unsettled_answer and (system is None or grouped_format is not None or structured_profile is not None
+                                       or not (ordinary_answer or release_after_send and not native_tools)):
+            raise ProviderFailed('unsettled output requires the original read-only Lio reply mode')
         if release_after_send and (native_tools or system is None):
             raise ProviderFailed('explicit structured model input required')
         if tool_choice is not None and (tool_choice!='none' or not native_tools):
@@ -584,9 +607,16 @@ class MeteredDashScopeProvider:
         envelope_shape=None;identity_rejection=None;identity_fields=None;identity_missing=False
         choices_after_stop=False
         try:
-            with self._chunks(raw,guard,observation) as chunks:
+            wire_options={'guarded_connect':True} if guarded_connect and self.transport is None else {}
+            if wire_options:
+                yield UNLOCKED_WIRE_START
+            with self._chunks(raw,guard,observation,**wire_options) as chunks:
                 if self.transport is None:
-                    if next(chunks,None) is not _M4_REQUEST_SENT:
+                    first=next(chunks,None)
+                    if guarded_connect and isinstance(first,GuardedWireWrite):
+                        yield first
+                        first=next(chunks,None)
+                    if first is not _M4_REQUEST_SENT:
                         raise ProviderUnknown('M4 original request send unavailable')
                     if (compact or incremental or release_after_send or exploration or grouped_format is not None
                             or structured_profile == 'LIO-planning-intake.9'):
@@ -710,20 +740,27 @@ class MeteredDashScopeProvider:
                                 entry[key]+=part
                                 if len(entry[key])>32768:raise ProviderUnknown('M4 tool input bound exceeded')
                 phase='complete_receipt'
-                if not done or not finished or identity_missing or len(response_ids)!=1 or usage is None:
-                    # A clean HTTP end, normal finish and complete original
-                    # discussion envelope are sufficient for read-only display.
-                    if (allow_unsettled_answer and observed_finish=='stop'
+                incomplete_receipt=not done or not finished or identity_missing or len(response_ids)!=1 or usage is None
+                compact_answer_candidate=(ordinary_answer and compact and observed_finish in ('stop','tool_calls')
+                                          and not texts and not choices_after_stop)
+                if incomplete_receipt and not compact_answer_candidate:
+                    # Only a clean HTTP end with a normal finish can keep text.
+                    if (allow_unsettled_answer and not compact and observed_finish=='stop'
                             and not calls and not choices_after_stop):
                         original=''.join(texts)
                         if len(original)<=unsettled_answer_limit:
-                            candidate=json.loads(original,
-                                object_pairs_hook=reject_duplicates(ValueError,'duplicate_answer_field'))
-                            if (type(candidate) is dict and candidate.keys()=={'answer'}
-                                    and type(candidate['answer']) is str and candidate['answer'].strip()):
-                                candidate['answer'].encode('utf-8')
+                            if ordinary_answer:
+                                candidate=original
+                            else:
+                                envelope=json.loads(original,
+                                    object_pairs_hook=reject_duplicates(ValueError,'duplicate_answer_field'))
+                                candidate=envelope['answer'] if type(envelope) is dict and envelope.keys()=={'answer'} else None
+                            if type(candidate) is str and candidate.strip():
+                                if self.config.api_key in candidate:
+                                    raise ProviderUnknown('M4 structured model secret echo rejected')
+                                candidate.encode('utf-8')
                                 failure_reason='receipt_metadata_incomplete'
-                                raise CompleteUnsettledAnswer(candidate['answer'])
+                                raise CompleteUnsettledAnswer(candidate)
                     raise ProviderUnknown('M4 complete usage receipt unavailable')
                 if incremental and (observed_finish!=('tool_calls' if calls else 'stop')
                         or calls and set(calls)!=set(range(len(calls))) or not calls and not ''.join(texts).strip()):
@@ -741,8 +778,11 @@ class MeteredDashScopeProvider:
                         phase='native_function_turn'
                         if len(calls)!=1 or next(iter(calls.values()))['name']!=expected_function_name:
                             raise ProviderUnknown('single named model turn required')
+                        arguments=next(iter(calls.values()))['arguments']
+                        if incomplete_receipt and len(arguments)>unsettled_answer_limit:
+                            raise ProviderUnknown('M4 complete usage receipt unavailable')
                         try:
-                            result=json.loads(next(iter(calls.values()))['arguments'],object_pairs_hook=reject_duplicates(ValueError,'duplicate_native_turn_field'))
+                            result=json.loads(arguments,object_pairs_hook=reject_duplicates(ValueError,'duplicate_native_turn_field'))
                         except (ValueError,TypeError,RecursionError) as error:
                             reason=('native_json_duplicate' if error.args==('duplicate_native_turn_field',) else 'native_json_invalid')
                             raise _M4Rejection(reason,'native turn JSON unavailable') from None
@@ -784,6 +824,11 @@ class MeteredDashScopeProvider:
                     if len({c['id'] for c in native_calls})!=len(native_calls):raise ProviderUnknown('native tool identity duplicated')
                     assistant=dict(role='assistant',content=None if buffered else ''.join(texts) or None,tool_calls=native_calls)
                     if self.config.api_key in json.dumps(assistant,ensure_ascii=False):raise ProviderUnknown('native tool identity secret echo rejected')
+                    if incomplete_receipt:
+                        if parsed.calls or len(encoded)>unsettled_answer_limit:
+                            raise ProviderUnknown('M4 complete usage receipt unavailable')
+                        failure_reason='receipt_metadata_incomplete'
+                        raise CompleteUnsettledTurn(parsed)
                 metadata=dict(model_id=M4_MODEL,endpoint=M4_BASE,region='cn-beijing',usage=usage,
                               receipt_sha256=hashlib.sha256(next(iter(response_ids)).encode()).hexdigest(),actual_cost_cny='UNKNOWN')
                 if wire_observer is not None:
@@ -810,7 +855,7 @@ class MeteredDashScopeProvider:
                 phase='complete'
         except _M4Rejection as error:
             failure_reason=error.reason;raise
-        except CompleteUnsettledAnswer:
+        except (CompleteUnsettledAnswer, CompleteUnsettledTurn):
             raise
         except (ProviderFailed,ProviderUnknown):
             failure_reason='provider_rejected';raise

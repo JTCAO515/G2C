@@ -333,6 +333,89 @@ def test_unknown_put_checks_original_head_and_never_reissues(tmp_path,monkeypatc
     assert objects.puts==1
 
 
+def test_competing_backup_attempts_claim_only_one_original_put(tmp_path,monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier,Event,current_thread
+
+    activate(monkeypatch)
+    path=tmp_path/'database.dump';path.write_bytes(b'synthetic checkpoint')
+    key='backups/20261104T000000Z-'+'a'*64+'/database.dump'
+    journal=tmp_path/'intent.json'
+    missing=Barrier(2);put_started=Event();release=Event();first_head=set()
+
+    class DelayedObjects(Objects):
+        def head_object(self,request):
+            worker=current_thread().name
+            if worker not in first_head:
+                first_head.add(worker)
+                try:return super().head_object(request)
+                except oss_backup.oss.exceptions.OperationError:
+                    missing.wait(5)
+                    if worker.startswith('contender'):assert put_started.wait(5)
+                    raise
+            return super().head_object(request)
+
+        def put_object(self,request):
+            if current_thread().name.startswith('original'):
+                put_started.set()
+                assert release.wait(5)
+            return super().put_object(request)
+
+    objects=DelayedObjects()
+    with (ThreadPoolExecutor(max_workers=1,thread_name_prefix='original') as owner,
+          ThreadPoolExecutor(max_workers=1,thread_name_prefix='contender') as other):
+        first=owner.submit(oss_backup.upload_file,objects,path,key,journal)
+        second=other.submit(oss_backup.upload_file,objects,path,key,journal)
+        try:
+            with pytest.raises(ValueError,match='original_upload_unknown_no_resend'):
+                second.result(5)
+            assert json.loads(journal.read_bytes())['state']=='INTENT'
+        finally:release.set()
+        assert first.result(5)=='HEAD_CONFIRMED'
+    assert objects.puts==1 and json.loads(journal.read_bytes())['state']=='RECEIVED'
+
+
+def test_daily_backup_releases_local_fence_for_original_upload(tmp_path,monkeypatch,capsys):
+    from contextlib import contextmanager
+    from deploy.hk import backup
+
+    control=tmp_path/'control';control.mkdir();root=tmp_path/'backups';root.mkdir()
+    monkeypatch.setenv('CJ_DEPLOY_CONTROL',str(control))
+    monkeypatch.setenv('CJ_BETA_BACKUP_ROOT',str(root))
+    monkeypatch.setattr(backup,'authorization',lambda:None)
+    state=dict(version='g2c-beta-daily.1',day=datetime.now(timezone.utc).strftime('%Y%m%d'),
+               previous=None,state='EXPORTED')
+    saved=dict(state)
+    held=False
+
+    @contextmanager
+    def lock(path):
+        nonlocal held
+        assert path==root and not held
+        held=True
+        try:yield
+        finally:held=False
+
+    def store(path,value):
+        assert path==control/'daily.json' and held
+        saved.update(value)
+
+    def upload(package,journal):
+        assert not held
+        assert package==root/state['day'] and journal==root/'upload-journal'
+        assert saved==state
+        return {'database.dump':'HEAD_CONFIRMED','manifest.json':'HEAD_CONFIRMED'}
+
+    (control/'daily.json').touch()
+    monkeypatch.setattr(checkpoint,'lock',lock)
+    monkeypatch.setattr(checkpoint,'verified',lambda _:dict(saved))
+    monkeypatch.setattr(checkpoint,'atomic',store)
+    monkeypatch.setattr(oss_backup,'upload_package',upload)
+    backup.run()
+    assert saved['state']=='COMPLETE'
+    assert json.loads(capsys.readouterr().out)['status']=='COMPLETE'
+
+
 def test_backup_existing_object_mismatch_or_prefix_is_rejected(tmp_path,monkeypatch):
     activate(monkeypatch);path=tmp_path/'manifest.json';path.write_bytes(b'synthetic')
     objects=Objects();key='backups/20261104T000000Z-'+'a'*64+'/manifest.json'

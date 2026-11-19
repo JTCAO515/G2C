@@ -662,7 +662,9 @@ GROUPS.update(hk_typed_worker=group_hk_typed_worker)
 
 def group_lio_projection():
     return (script('backend/cj_api/tests/lio_projection_pg.py')
-            or script('backend/cj_api/tests/hk_multiuser_pg.py'))
+            or script('backend/cj_api/tests/hk_multiuser_pg.py')
+            or script('backend/cj_api/tests/lio_ordinary_unsettled_pg.py')
+            or script('backend/cj_api/tests/lio_readonly_daily_activity_pg.py'))
 
 
 GROUPS.update(lio_projection=group_lio_projection)

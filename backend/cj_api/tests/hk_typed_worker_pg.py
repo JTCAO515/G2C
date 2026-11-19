@@ -462,7 +462,7 @@ def exercise(auth,conninfo):
             follow=any(m['role']=='tool' for m in body['messages'])
             return httpx.Response(200,stream=httpx.ByteStream(turn_sse(tool=not follow,compact=True).replace(
                 'chatcmpl-synthetic','chatcmpl-worker-'+str(len(calls))).encode()))
-        async def place(config,request,credentials,*,before_send=None,basic=False,after_send=None):
+        async def place(config,request,credentials,*,before_send=None,basic=False,after_send=None,send_under_fence=None):
             nonlocal offset
             tools.append(request.request_ref)
             raw=json.dumps(dict(status='1',info='OK',infocode='10000',count='1',pois=[dict(

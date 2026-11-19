@@ -60,7 +60,7 @@ class _Excerpts(HTMLParser):
             if start>=0:self.parts.append(dict(text=text[:512],start=start,end=start+len(text[:512])))
 
 
-async def public_page(*,guard,after_send=None):
+async def public_page(*,guard,after_send=None,send_under_fence=None):
     loop=asyncio.get_running_loop();deadline=loop.time()+PAGE_POLICY.timeout_seconds
     host=urlsplit(NOTICE_URL).hostname
     phase='dns';status='UNKNOWN';body=bytearray()
@@ -71,7 +71,8 @@ async def public_page(*,guard,after_send=None):
             phase='https_exchange'
             transport=PinnedHTTPSTransport(PAGE_POLICY,tls_context=tls(),max_header_bytes=16384,
                 max_wire_bytes=524288,max_reads=512,allow_html=True,before_send=guard,allow_gzip=True,
-                **({"after_send":after_send} if after_send is not None else {}))
+                **({"after_send":after_send} if after_send is not None else {}),
+                **({"send_under_fence":send_under_fence} if send_under_fence is not None else {}))
             if guard() is not True:raise FactFailure('original_page_authority_invalid')
             response=await transport(PinnedTarget(NOTICE_URL,host,addresses,PAGE_POLICY.max_bytes,deadline))
             try:
@@ -108,16 +109,23 @@ async def public_page(*,guard,after_send=None):
         status='unknown',reason='source_excerpts_only_dates_region_and_eligibility_not_verified')
 
 
-async def _weather_exchange(key,guard,*,adcode='110000',after_send=None):
+async def _weather_exchange(key,guard,*,adcode='110000',after_send=None,send_under_fence=None):
+    loop=asyncio.get_running_loop()
+    deadline=loop.time()+20
     writer=None
     try:
-        async with asyncio.timeout(20):
+        async with asyncio.timeout_at(deadline):
             reader,writer=await asyncio.open_connection('restapi.amap.com',443,ssl=tls(),server_hostname='restapi.amap.com',limit=16384)
-            if guard() is not True:raise FactFailure('original_weather_authority_invalid')
             target='/v3/weather/weatherInfo?'+urlencode(dict(key=key,city=adcode,extensions='all',output='JSON'))
             # Use the existing narrow wire reader, without HTTPX's URL logging.
             # This request has no cookie, proxy, redirect, retry or ambient hook.
-            writer.write(('GET '+target+' HTTP/1.1\r\nHost: restapi.amap.com\r\nAccept: application/json\r\nAccept-Encoding: identity\r\nConnection: close\r\n\r\n').encode('ascii'))
+            payload=('GET '+target+' HTTP/1.1\r\nHost: restapi.amap.com\r\nAccept: application/json\r\nAccept-Encoding: identity\r\nConnection: close\r\n\r\n').encode('ascii')
+            def write():
+                if guard() is not True:raise FactFailure('original_weather_authority_invalid')
+                if loop.time()>=deadline:raise FactFailure('weather_transport_unknown')
+                writer.write(payload)
+            if send_under_fence is None:write()
+            else:await send_under_fence(write)
             await writer.drain()
             if after_send is not None:
                 await after_send()
@@ -173,10 +181,10 @@ def weather_for_adcode(query,key,*,guard):
     return _weather_result(query,key,raw,city.adcode,city)
 
 
-async def weather_response(query,key,*,guard,national,after_send):
+async def weather_response(query,key,*,guard,national,send_under_fence):
     city=query.city if national else None
     if city is None:
         _beijing_weather_query(query)
     adcode='110000' if city is None else city.adcode
-    body=await _weather_exchange(key,guard,adcode=adcode,after_send=after_send)
+    body=await _weather_exchange(key,guard,adcode=adcode,send_under_fence=send_under_fence)
     return _weather_result(query,key,body,adcode,city)

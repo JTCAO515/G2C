@@ -1002,9 +1002,11 @@ class Boundaries(unittest.TestCase):
         read_ready = asyncio.Event()
         requests = []
 
-        async def wire(config, raw, guard, observation):
-            self.assertTrue(guard())
-            requests.append(json.loads(raw))
+        async def wire(config, raw, guard, observation, *, send_under_fence):
+            def write():
+                self.assertTrue(guard())
+                requests.append(json.loads(raw))
+            await send_under_fence(write)
             yield _M4_REQUEST_SENT
             await read_ready.wait()
             yield stream
@@ -1020,8 +1022,15 @@ class Boundaries(unittest.TestCase):
         operation = SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,subject)),
                                     command=SimpleNamespace(attempt_id=attempt))
         with patch('cj_agent.provider._m4_wire',wire):
+            from cj_usage.metered_exit import GuardedWireWrite, UNLOCKED_WIRE_START
             invoke = original.bind_operation(operation,lambda:True)
             with closing(invoke()) as reply:
+                self.assertIs(next(reply),UNLOCKED_WIRE_START)
+                self.assertEqual(self.budget.inspect()[0]['state'],'INTENT')
+                self.assertEqual(requests,[])
+                pending=next(reply)
+                self.assertIsInstance(pending,GuardedWireWrite)
+                pending.write()
                 self.assertEqual(next(reply),'')
                 self.assertEqual(self.budget.inspect()[0]['state'],'INTENT')
                 self.assertEqual(len(requests),1)
@@ -1035,12 +1044,13 @@ class Boundaries(unittest.TestCase):
                 list(invoke())
         self.assertEqual(len(requests),1)
 
-    def test_only_original_lio_discussion_hands_off_the_dispatch_fence_after_send(self):
+    def test_only_original_lio_discussion_hands_off_connection_and_response(self):
         from contextlib import closing
 
         from cj_agent.provider import _M4_REQUEST_SENT
         from cj_api.local_app import ISSUER, scope_for
         from cj_api.local_lio_planning import DISCUSSION_PROMPT
+        from cj_usage.metered_exit import GuardedWireWrite, UNLOCKED_WIRE_START
 
         subject = 'm4-synthetic-discussion-wire'
         provider = MeteredDashScopeProvider(DashScopeConfig(M4_BASE, M4_MODEL, KEY), self.budget)
@@ -1059,15 +1069,25 @@ class Boundaries(unittest.TestCase):
                                             operation_key=operation_key, registration_id='model.answer',
                                             command=SimpleNamespace(attempt_id=attempt, output_limit=12000))
 
-                async def wire(config, raw, guard, observation):
-                    self.assertTrue(guard())
-                    requests.append(raw)
+                async def wire(config, raw, guard, observation, *, send_under_fence=None):
+                    def write():
+                        self.assertTrue(guard())
+                        requests.append(raw)
+                    if send_under_fence is None:
+                        write()
+                    else:
+                        await send_under_fence(write)
                     yield _M4_REQUEST_SENT
                     yield sse(done=done).replace('chatcmpl-synthetic', attempt.replace('.', '-')).encode()
 
                 with patch('cj_agent.provider._m4_wire', wire), closing(
                         original.bind_operation(operation, lambda: True)()) as reply:
                     if operation_key == 'model.lio_discussion.0':
+                        self.assertIs(next(reply), UNLOCKED_WIRE_START)
+                        self.assertEqual(requests, [])
+                        write = next(reply)
+                        self.assertIsInstance(write, GuardedWireWrite)
+                        write.write()
                         self.assertEqual(next(reply), '')
                         self.assertEqual({r['attempt_id']: r['state'] for r in self.budget.inspect()}[attempt], 'INTENT')
                     if done:
@@ -2020,6 +2040,33 @@ class Boundaries(unittest.TestCase):
         with patch('cj_agent.provider.asyncio.open_connection',AsyncMock(return_value=(None,writer))),self.assertRaises(ProviderUnknown):
             asyncio.run(run())
 
+    def test_model_deadline_is_rechecked_at_the_guarded_write(self):
+        from unittest.mock import Mock
+
+        writer = SimpleNamespace(write=Mock(), drain=AsyncMock(), transport=SimpleNamespace(abort=Mock()))
+
+        async def run():
+            loop = asyncio.get_running_loop()
+            started = loop.time()
+            clock = started
+
+            async def send_under_fence(write):
+                nonlocal clock
+                clock = started + 21
+                write()
+
+            with patch.object(loop, 'time', side_effect=lambda: clock), self.assertRaisesRegex(
+                    ProviderUnknown, 'total deadline exceeded'):
+                async for _ in _m4_wire(DashScopeConfig(M4_BASE, M4_MODEL, KEY, timeout_seconds=20),
+                        b'{}', lambda: True, send_under_fence=send_under_fence):
+                    self.fail('expired request reached the send handoff')
+
+        with patch('cj_agent.provider.asyncio.open_connection', AsyncMock(return_value=(None, writer))):
+            asyncio.run(run())
+        writer.write.assert_not_called()
+        writer.drain.assert_not_awaited()
+        writer.transport.abort.assert_called_once()
+
     def test_live_wire_stream_framing_and_total_deadline_survive_multiple_reads(self):
         class Writer:
             def __init__(self):self.transport=self;self.closed=False
@@ -2114,7 +2161,7 @@ class Boundaries(unittest.TestCase):
         with patch('asyncio.BaseEventLoop.getaddrinfo',AsyncMock(side_effect=asyncio.CancelledError())),self.assertNoLogs('cj_provider.audit',level='WARNING'),self.assertRaises(asyncio.CancelledError):
             asyncio.run(public_page(guard=lambda:True))
 
-    def test_registered_fact_pauses_after_send_before_response_and_drops_on_close(self):
+    def test_registered_fact_hands_off_write_and_drops_unsent_request_on_close(self):
         from contextlib import closing
 
         from cj_api.real_services import _response_stream
@@ -2126,9 +2173,11 @@ class Boundaries(unittest.TestCase):
                 excerpt='A synthetic source excerpt ready for the original public page parser.'
 
                 async def transport(client, target):
-                    self.assertTrue(client.before_send())
-                    observed.append('sent')
-                    await client.after_send()
+                    observed.append('connected')
+                    def write():
+                        self.assertTrue(client.before_send())
+                        observed.append('sent')
+                    await client.send_under_fence(write)
 
                     async def body():
                         observed.append('body')
@@ -2142,19 +2191,20 @@ class Boundaries(unittest.TestCase):
                 dns=AsyncMock(return_value=[(2,1,6,'',('93.184.216.34',443))])
                 with (patch('asyncio.BaseEventLoop.getaddrinfo',dns),
                       patch.object(PinnedHTTPSTransport,'__call__',transport),
-                      closing(_response_stream(lambda sent:public_page(guard=lambda:True,after_send=sent))) as exchange):
-                    self.assertIsNone(next(exchange))
-                    self.assertEqual(observed,['sent'])
+                      closing(_response_stream(lambda send:public_page(guard=lambda:True,send_under_fence=send))) as exchange):
+                    pending=next(exchange)
+                    self.assertEqual(observed,['connected'])
                     if not close_before_read:
+                        pending.write()
                         self.assertEqual(next(exchange)['excerpts'],
                                          [dict(text=excerpt,start=3,end=3+len(excerpt))])
-                self.assertEqual(observed,['sent'] if close_before_read else ['sent','body','closed'])
+                self.assertEqual(observed,['connected'] if close_before_read else ['connected','sent','body','closed'])
 
     def test_registered_fact_cancellation_before_send_propagates(self):
         from cj_api.real_services import _response_stream
         dns=AsyncMock(side_effect=asyncio.CancelledError())
         with patch('asyncio.BaseEventLoop.getaddrinfo',dns),self.assertRaises(asyncio.CancelledError):
-            next(_response_stream(lambda sent:public_page(guard=lambda:True,after_send=sent)))
+            next(_response_stream(lambda send:public_page(guard=lambda:True,send_under_fence=send)))
 
     def test_fact_gzip_original_response_shape(self):
         raw=b'<p>Independent synthetic original fact excerpt, eligibility UNKNOWN.</p>'

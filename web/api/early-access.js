@@ -10,6 +10,10 @@
 "use strict";
 
 const DEFAULT_FORM_ID = "263094082842055";
+const JOTFORM_API_BASES = new Set([
+  "https://api.jotform.com", "https://eu-api.jotform.com", "https://hipaa-api.jotform.com"
+]);
+const MAX_BODY_BYTES = 16 * 1024;
 
 // Jotform question ids (qid) of the early access form, and the option values the form accepts.
 const QID = { name: 11, email: 3, source: 4, country: 5, when: 6, dest: 7, needs: 8, note: 9 };
@@ -73,15 +77,36 @@ function send(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
+class BodyTooLarge extends Error {}
+
+function checkBodySize(bytes) {
+  if (bytes > MAX_BODY_BYTES) throw new BodyTooLarge();
+}
+
 async function readJson(req) {
-  if (req.body && typeof req.body === "object") return req.body;
-  if (typeof req.body === "string") return JSON.parse(req.body);
+  checkBodySize(Number(req.headers["content-length"]));
+  const body = req.body;
+  if (Buffer.isBuffer(body)) {
+    checkBodySize(body.length);
+    return JSON.parse(body.toString("utf8"));
+  }
+  if (typeof body === "string") {
+    checkBodySize(Buffer.byteLength(body));
+    return JSON.parse(body);
+  }
+  if (body !== undefined) {
+    // Vercel can provide parsed JSON before the handler receives the request.
+    checkBodySize(Buffer.byteLength(JSON.stringify(body)));
+    return body;
+  }
   const chunks = [];
   let size = 0;
-  for await (const c of req) {
-    size += c.length;
-    if (size > 16 * 1024) throw new Error("too large");
-    chunks.push(c);
+  // An early exit must leave the request open long enough to send the 413.
+  for await (const chunk of req.iterator({ destroyOnReturn: false })) {
+    const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    size += bytes.length;
+    checkBodySize(size);
+    chunks.push(bytes);
   }
   return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
 }
@@ -91,11 +116,15 @@ async function handler(req, res) {
     res.setHeader("Allow", "POST");
     return send(res, 405, { ok: false, error: "method_not_allowed" });
   }
-  if (!String(req.headers["content-type"] || "").toLowerCase().startsWith("application/json")) {
+  const mediaType = String(req.headers["content-type"] || "").split(";", 1)[0].trim().toLowerCase();
+  if (mediaType !== "application/json") {
     return send(res, 415, { ok: false, error: "json_required" });
   }
   let body;
-  try { body = await readJson(req); } catch (_) { return send(res, 400, { ok: false, error: "bad_json" }); }
+  try { body = await readJson(req); } catch (error) {
+    if (error instanceof BodyTooLarge) return send(res, 413, { ok: false, error: "body_too_large" });
+    return send(res, 400, { ok: false, error: "bad_json" });
+  }
 
   // Spam traps: answer as if accepted so bots learn nothing, but forward nothing.
   if (body && typeof body === "object" && looksLikeBot(body)) return send(res, 200, { ok: true });
@@ -109,6 +138,10 @@ async function handler(req, res) {
     return send(res, 503, { ok: false, error: "not_configured" });
   }
   const base = (process.env.JOTFORM_API_BASE || "https://api.jotform.com").replace(/\/+$/, "");
+  if (!JOTFORM_API_BASES.has(base)) {
+    console.error("early-access: JOTFORM_API_BASE is invalid");
+    return send(res, 503, { ok: false, error: "not_configured" });
+  }
   const formId = process.env.JOTFORM_FORM_ID || DEFAULT_FORM_ID;
 
   try {
@@ -116,16 +149,17 @@ async function handler(req, res) {
       method: "POST",
       headers: { APIKEY: key, "Content-Type": "application/x-www-form-urlencoded" },
       body: buildSubmission(checked.data),
+      redirect: "error",
       signal: AbortSignal.timeout(10000)
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok || Number(j.responseCode) !== 200) {
-      console.error("early-access: Jotform rejected the submission", r.status, j.responseCode, j.message);
+      console.error("early-access: Jotform rejected the submission", r.status);
       return send(res, 502, { ok: false, error: "upstream" });
     }
     return send(res, 200, { ok: true });
-  } catch (e) {
-    console.error("early-access: Jotform request failed", e && e.name);
+  } catch (_) {
+    console.error("early-access: Jotform request failed");
     return send(res, 502, { ok: false, error: "upstream" });
   }
 }

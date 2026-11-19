@@ -139,6 +139,7 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
         messages = worker.message_context.answer_messages(binding, messages)
     system = answer_prompt(locale, turns[-1].text) + DISCUSSION_PROMPT
     if day_count is not None:
+        day_example = '第1天：参观〈地点〉。' if locale == 'zh' else 'Day 1: Visit <place>.'
         system += (
             ' The traveler requested a complete '+str(day_count)+'-day itinerary. '
             'Cover every day from day 1 through day '+str(day_count)+', using day numbers, '
@@ -147,10 +148,11 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
             'Dates and party size are optional: do not ask for them, even when unknown or undecided. '
             'This is a conversational plan, not a saved trip. Do not claim it has been saved. '
             'Do not introduce yourself or discuss knowing the traveler. '
-            'Use one compact line per day, naming one concrete stop and a short activity; '
-            'use at most 20 Chinese characters or 12 English words per day when no periods were requested. '
+            'Use one concise line per day. Start every day line with the day label and an explicit activity verb '
+            'before the full name of a real place. Say what the traveler would do there. A place list or a theme '
+            f'alone is not a day plan. Use this format with a real place: {day_example} '
             'When morning/afternoon/evening periods were requested, cover every requested period with '
-            'one complete place name and a short activity, without explanations or shortened place names. '
+            'an activity and a full place name, keeping the period on that day line. '
             'Keep the JSON compact, omit introductions and repeated summaries; the day lines override only the usual three-item limit. '
             'End with exactly one specific question about a useful adjustment, not date or party size.'
         )

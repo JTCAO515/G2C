@@ -60,17 +60,20 @@ def main():
                 assert worker.message_context.active_original(binding).receipt.message_id==binding.message_id
                 phases.append('sent-under-original-frame')
             async def dial():
+                assert_unlocked('connection')
                 reader=asyncio.StreamReader()
                 writer=FixtureWriter(reader,send_check,len(writers)%2==0);writers.append(writer)
                 return reader,writer
             read=https_transport._read_response
-            async def receive(*args):
+            def assert_unlocked(phase):
                 try:worker.memory_run.check()
                 except RuntimeDenied:pass
-                else:raise AssertionError('Memory lock retained over network response')
+                else:raise AssertionError(f'Memory lock retained over POI2 {phase}')
                 try:worker.message_context.active_original(binding)
                 except LeaseUnavailable:pass
-                else:raise AssertionError('MESSAGE lock retained over network response')
+                else:raise AssertionError(f'MESSAGE lock retained over POI2 {phase}')
+            async def receive(*args):
+                assert_unlocked('response')
                 phases.append('received-outside-original-frame')
                 return await read(*args)
             with patch.object(https_transport,'_connect',dial),patch.object(https_transport,'_read_response',receive):
@@ -104,7 +107,7 @@ def main():
             except RuntimeDenied:pass
             else:raise AssertionError('provider source outlived its actual frame')
             captures.append(capture)
-            print('PASS registered POI2 original/Meter/live receipt/source '+binding.message_id+'; one send then unlocked receive; no Trip write',flush=True)
+            print('PASS registered POI2 original/Meter/live receipt/source '+binding.message_id+'; unlocked connect/receive, one guarded send; no Trip write',flush=True)
         return original_model(host,worker,binding,view,profile,system,extra)
     def diagnosed(*args,**kwargs):
         try:return model(*args,**kwargs)

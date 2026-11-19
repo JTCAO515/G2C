@@ -65,7 +65,9 @@ def main(*,natural_direct=False,production=False):
         lio_pipeline_models_pg.main(natural_direct=natural_direct)
         if production:
             lio_pipeline_models_pg.main(natural_direct=natural_direct,production=True)
-            lio_pipeline_models_pg.main(production=True,cases=(0,),duration_days=4,natural_direct=True)
+            from lio_wording_connection_pg import check_wording_connections
+            check_wording_connections(lio_pipeline_models_pg.main, production=True, cases=(0,),
+                duration_days=4, natural_direct=True)
             lio_pipeline_models_pg.main(production=True,cases=(0,),duration_days=5,travel_pace='moderate')
             lio_pipeline_models_pg.main(production=True,cases=(0,),provider_available=False)
         lio_route_sources_pg.main()
