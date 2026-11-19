@@ -29,6 +29,31 @@ def recorded_trip_fixture():
 
     return encoded({"trace": trace, "list": encoded(listing), "detail": encoded(detail)})
 
+def seed_translation_photo(simulator, output):
+    source = output / "TranslationPhotoFixture.swift"
+    image = output / "translation-synthetic-menu.png"
+    source.write_text("""
+import AppKit
+
+let image = NSImage(size: NSSize(width: 800, height: 420), flipped: false) { bounds in
+    NSColor.white.setFill()
+    bounds.fill()
+    let style: [NSAttributedString.Key: Any] = [
+        .font: NSFont.systemFont(ofSize: 96),
+        .foregroundColor: NSColor.black,
+    ]
+    ("Tea" as NSString).draw(at: NSPoint(x: 64, y: 250), withAttributes: style)
+    ("Coffee" as NSString).draw(at: NSPoint(x: 64, y: 90), withAttributes: style)
+    return true
+}
+let bitmap = NSBitmapImageRep(data: image.tiffRepresentation!)!
+try bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: CommandLine.arguments[1]))
+""")
+    subprocess.run(["xcrun", "swift", str(source), str(image)], check=True)
+    subprocess.run(["xcrun", "simctl", "bootstatus", simulator, "-b"], check=True)
+    subprocess.run(["xcrun", "simctl", "addmedia", simulator, str(image)], check=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--simulator", required=True)
@@ -44,6 +69,8 @@ def main():
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):
         parser.error("Keep build and evidence outside the repository")
     output.mkdir(parents=True, exist_ok=False)
+    if args.tools and "testToolsPhotoPickerShowsOriginalLinesOnIOS17" in args.case:
+        seed_translation_photo(args.simulator, output)
 
     spec = importlib.util.spec_from_file_location("trip_acceptance", ROOT / "scripts/check_ios_trip_confirm.py")
     module = importlib.util.module_from_spec(spec)
@@ -52,6 +79,8 @@ def main():
     builder.directory = output
     builder.write_project(0)
     tests = (HERE / ("LioVoiceOverUITests.swift" if args.voiceover else "LioHomeUITests.swift")).read_text()
+    if args.tools:
+        tests += "\n" + (HERE / "LioToolsMediaUITests.swift").read_text()
     (output / "G2CControl.swift").write_text(tests.replace("__LIO_RECORDED_TRIP_FIXTURE__", recorded_trip_fixture()))
     project = output / "G2CAcceptance.xcodeproj"
     settings = project / "project.pbxproj"
