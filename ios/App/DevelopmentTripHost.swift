@@ -924,7 +924,9 @@ private var developmentHostEnvironment: [String: String] {
         }
         let credentials = DevelopmentMessageCredentials(token: configuration.token, scope: scope, lease: lease, lifetime: lifetime)
         #if G2C_DEMO_BETA
-        lioTranslationHistory = LioTranslationHistory(directory: root, isCurrent: isCurrent)
+        lioTranslationHistory = LioTranslationHistory(
+            directory: root.appendingPathComponent(LioTranslationHistory.directoryName, isDirectory: true),
+            isCurrent: isCurrent)
         let lioEndpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: LioMemoryWire.maximumRequestBytes,
                                               maximumResponseBytes: 4_500_000)
         let lioClient = try LioTimelineHTTP(endpoint: lioEndpoint, scope: scope, lease: lease,
@@ -1552,7 +1554,9 @@ private struct DevelopmentVerificationTransport: ClientTransport {
                                                     validate: { throw RecoveryError.inactive })
             try position.clearRetiredPosition()
             #if G2C_DEMO_BETA
-            try captured[0].removeOwnedFile(named: LioTranslationHistory.fileName)
+            let translation = try captured[0].child(LioTranslationHistory.directoryName)
+            try translation.removeOwnedFile(named: LioTranslationHistory.fileName)
+            try translation.removeEmptyChild()
             #endif
         case .tripPending:
             guard let url else { throw CleanupFailure.unavailable }
