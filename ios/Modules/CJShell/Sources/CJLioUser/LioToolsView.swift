@@ -150,6 +150,10 @@ private struct LioTextTranslationView: View {
                 if historyError {
                     Text(language.text("Translation history is temporarily unavailable.", "暂时无法访问翻译记录。"))
                         .foregroundStyle(LioTheme.ink)
+                    if recent.isEmpty {
+                        Button(language.text("Clear history", "清除记录")) { confirmsClearHistory = true }
+                            .frame(minHeight: 44)
+                    }
                 }
                 if #available(iOS 18.0, *), let attempt {
                     Color.clear.frame(height: 0).accessibilityHidden(true)
@@ -346,10 +350,8 @@ private struct LioTextTranslationView: View {
                 let entry = LioRecentTranslation(source: attempt.request.source, target: attempt.request.target,
                                                  input: attempt.request.text.joined(separator: "\n"),
                                                  output: value.text.joined(separator: "\n"), offline: value.offline)
-                let entries = Array(([entry] + recent).prefix(20))
                 do {
-                    try history.save(entries)
-                    recent = entries
+                    recent = try history.record(entry)
                     historyError = false
                 } catch { historyError = true }
             }
