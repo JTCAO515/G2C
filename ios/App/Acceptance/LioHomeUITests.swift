@@ -1235,7 +1235,12 @@ import CryptoKit
                 for _ in 0..<3 where !edit.isHittable { app.swipeUp() }
                 XCTAssertTrue(edit.isHittable)
                 edit.tap()
-                XCTAssertEqual(app.textViews["lio.memory.editor"].value as? String, body)
+                let editors = app.descendants(matching: .any).matching(identifier: "lio.memory.editor")
+                let editor = editors.firstMatch
+                XCTAssertTrue(editor.waitForExistence(timeout: 8), app.debugDescription)
+                XCTAssertEqual(editors.count, 1)
+                XCTAssertTrue(editor.isEnabled)
+                XCTAssertEqual(editor.value as? String, body)
 
                 app.terminate()
             }
