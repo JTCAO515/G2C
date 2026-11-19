@@ -47,18 +47,41 @@ def test_active_original_timeline_503_fails_without_reposting(monkeypatch):
 
     def api(token, route, *, document=None):
         if document is not None:
+            assert route == '/v2/lio/messages'
+            assert document['version'] == 'LIO-message.2'
+            assert document['new_conversation'] is True
             sent.append(document)
-            return dict(version='LIO-message-receipt.1', message_id=document['message_id'],
-                        conversation_id='lio-chat'), None
+            return dict(version='LIO-message-receipt.2', message_id=document['message_id'],
+                        conversation_id='lio-fresh'), None
         reads.append(route)
         if len(reads) == 2:
             assert len(sent) == 1
             raise smoke.SmokeResult('FAIL', 'http_503')
-        return dict(version='LIO-timeline.1', conversation_id='lio-chat', messages=[]), None
+        return dict(version='LIO-timeline.1', conversation_id='lio-default', messages=[]), None
 
     result = smoke.run_case('en.plan', 'Test request', 'synthetic', lambda: True, api)
     assert result['status'] == 'FAIL'
     assert result['polls'][-1]['outcome'] == 'http_503'
+    assert len(sent) == 1
+
+
+def test_smoke_rejects_an_ack_reusing_the_default_conversation(monkeypatch):
+    monkeypatch.setattr(smoke, 'POLL_SECONDS', 0)
+    sent = []
+
+    def api(token, route, *, document=None):
+        if document is not None:
+            sent.append(document)
+            version = document['version'].rsplit('.', 1)[1]
+            return dict(version=f'LIO-message-receipt.{version}', message_id=document['message_id'],
+                        conversation_id='lio-default'), None
+        messages = [dict(message_id=sent[0]['message_id'], status='completed',
+                         answer='I am Lio, your travel assistant for China.')] if sent else []
+        return dict(version='LIO-timeline.1', conversation_id='lio-default', messages=messages), None
+
+    result = smoke.run_case('en.identity', 'Who are you?', 'synthetic', lambda: True, api)
+    assert result['status'] == 'UNKNOWN'
+    assert result['reason'] == 'reused_default_conversation'
     assert len(sent) == 1
 
 
@@ -163,7 +186,8 @@ def test_smoke_keeps_the_original_short_prompts():
     }
 
 
-def test_smoke_post_is_accepted_by_the_original_lio_wire(monkeypatch):
+@pytest.mark.parametrize('wire_version', (1, 2))
+def test_smoke_post_is_accepted_by_the_original_lio_wire(monkeypatch, wire_version):
     from io import BytesIO
     from types import SimpleNamespace
     from urllib.error import HTTPError
@@ -179,6 +203,7 @@ def test_smoke_post_is_accepted_by_the_original_lio_wire(monkeypatch):
         def receive_lio(self, token, raw, *, prepare_scope, version):
             assert token == 'synthetic'
             original = DialogueMessage.parse(raw, version=version)
+            assert original.new_conversation is (wire_version == 2)
             return SimpleNamespace(message_id=original.id, conversation_id='lio-chat')
 
     app = FastAPI()
@@ -198,12 +223,15 @@ def test_smoke_post_is_accepted_by_the_original_lio_wire(monkeypatch):
                 return result
 
         monkeypatch.setattr(smoke, 'build_opener', lambda *handlers: LocalTransport())
-        document = dict(version='LIO-message.1', message_id='smoke-original',
+        route = f'/v{wire_version}/lio/messages'
+        document = dict(version=f'LIO-message.{wire_version}', message_id='smoke-original',
                         locale='zh', text='你是谁')
-        assert client.post('/v1/lio/messages', json=document,
+        if wire_version == 2:
+            document['new_conversation'] = True
+        assert client.post(route, json=document,
                            headers={'Authorization': 'Bearer synthetic'}).status_code == 415
-        value, _ = smoke.request('synthetic', '/v1/lio/messages', document=document)
-        assert value == dict(version='LIO-message-receipt.1', message_id='smoke-original',
+        value, _ = smoke.request('synthetic', route, document=document)
+        assert value == dict(version=f'LIO-message-receipt.{wire_version}', message_id='smoke-original',
                              conversation_id='lio-chat')
 
 

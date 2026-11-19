@@ -182,7 +182,8 @@ def permitted(now, start, end, *, minimum_seconds=0):
 
 def run_case(case, prompt, token, allowed, send=request):
     message_id = str(uuid.uuid4())
-    payload = dict(version='LIO-message.1', message_id=message_id, text=prompt, locale=case[:2])
+    payload = dict(version='LIO-message.2', message_id=message_id, text=prompt,
+                   locale=case[:2], new_conversation=True)
     started = time.monotonic()
     result = dict(case=case, status='UNRUN', polls=[], message_id=message_id)
     clock_ms = lambda: round((time.monotonic()-started)*1000, 3)
@@ -190,7 +191,7 @@ def run_case(case, prompt, token, allowed, send=request):
     def submit():
         # Record this lower boundary immediately before the single POST.
         result['dispatch_ms'] = clock_ms()
-        return send(token, '/v1/lio/messages', document=payload)
+        return send(token, '/v2/lio/messages', document=payload)
 
     with ThreadPoolExecutor(max_workers=1) as queue:
         try:
@@ -201,6 +202,7 @@ def run_case(case, prompt, token, allowed, send=request):
             # timeline cannot become a successful concurrency baseline.
             parsed, _ = send(token, '/v1/lio/timeline')
             find_message(parsed, message_id, None)
+            default_conversation = parsed.get('conversation_id')
             if not allowed():
                 raise SmokeResult('UNRUN', 'window_or_budget_closed')
             pending = queue.submit(submit)
@@ -217,10 +219,12 @@ def run_case(case, prompt, token, allowed, send=request):
                             raise SmokeResult('UNKNOWN', 'message_write_outcome') from None
                         raise
                     conversation = ack.get('conversation_id')
-                    if (ack.get('version') != 'LIO-message-receipt.1' or ack.get('message_id') != message_id
+                    if (ack.get('version') != 'LIO-message-receipt.2' or ack.get('message_id') != message_id
                             or not isinstance(conversation, str) or not conversation):
                         raise SmokeResult('UNKNOWN', 'unbound_message_ack')
                     result.update(conversation_id=conversation, message_ref=ref)
+                    if conversation == default_conversation:
+                        raise SmokeResult('UNKNOWN', 'reused_default_conversation')
                 route = '/v1/lio/timeline'
                 if conversation is not None:
                     route += '?' + urlencode({'conversation_id': conversation})
