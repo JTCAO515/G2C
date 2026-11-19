@@ -14,10 +14,14 @@
           },
           "items": {
             "zh": [
-              "从行程列表打开已保存的行程时，iOS 18 或更新版本从所点卡片缩放到详情。"
+              "从行程列表打开已保存的行程时，iOS 18 或更新版本从所点卡片缩放到详情。",
+              "内测新增「插件」页。翻译支持中英文字、语音和图片，可复制或朗读译文，在本机查看最近记录。",
+              "修复删除一条记忆后列表可能加载失败的问题。"
             ],
             "en": [
-              "On iOS 18 or later, opening a saved itinerary from Trips zooms from the selected card into its details."
+              "On iOS 18 or later, opening a saved itinerary from Trips zooms from the selected card into its details.",
+              "The internal build adds the Tools tab. Translate Chinese and English text, speech, and photos, copy or listen to translations, and view recent translations on this device.",
+              "Fixed an issue where the memory list could fail to reload after deleting an entry."
             ]
           }
         },
@@ -29,10 +33,12 @@
           },
           "items": {
             "zh": [
-              "与构建 48 相比，行程列表新增缩放转场。从聊天打开行程详情时，沿用系统默认转场。"
+              "与构建 48 相比，行程列表新增缩放转场。从聊天打开行程详情时，沿用系统默认转场。",
+              "与构建 48 相比，本版新增中英翻译，删掉一条记忆后可以继续查看其余记忆。"
             ],
             "en": [
-              "Compared with build 48, opening details from the Trips list uses a zoom transition. Opening details from Chat still uses the standard navigation animation."
+              "Compared with build 48, opening details from the Trips list uses a zoom transition. Opening details from Chat still uses the standard navigation animation.",
+              "Compared with build 48, this build adds Chinese and English translation and keeps the remaining memories visible after you delete an entry."
             ]
           }
         },
@@ -45,11 +51,15 @@
           "items": {
             "zh": [
               "从行程列表打开一条已保存行程。返回后，确认同一张卡片可见并能再次打开。",
-              "从聊天内已保存的行程卡点“查看”，确认打开同一条行程。再检查深色和减弱动态效果。"
+              "从聊天内已保存的行程卡点“查看”，确认打开同一条行程。再检查深色和减弱动态效果。",
+              "打开「插件」→「翻译」，输入或粘贴一句话，互换中英后再试。核对复制、朗读、最近记录与清除记录。",
+              "用中英各试一小段语音和一张有两行文字的图片。分别试拍照和相册，核对原文与译文。若拒绝权限，查看设置提示。"
             ],
             "en": [
               "Open a saved itinerary from Trips. Go back and check that the same card is visible and opens again.",
-              "Tap View on a saved itinerary card in Chat and check that it opens the same itinerary. Repeat in Dark Mode and with Reduce Motion enabled."
+              "Tap View on a saved itinerary card in Chat and check that it opens the same itinerary. Repeat in Dark Mode and with Reduce Motion enabled.",
+              "Open Tools → Translation. Type or paste a sentence, swap Chinese and English, and try again. Check copying, playback, recent translations, and clearing translation history.",
+              "Try a short recording and a two-line image in each language. Try the camera and Photos and check the originals and translations. If you deny permission, check the Settings guidance."
             ]
           }
         },
@@ -62,11 +72,13 @@
           "items": {
             "zh": [
               "iOS 17 或开启减弱动态效果时使用系统默认转场。真机转场体验仍待确认。",
-              "行程正式保存、修改与撤销，以及全国规划仍在验证。"
+              "行程正式保存、修改与撤销，以及全国规划仍在验证。",
+              "苹果离线翻译需 iOS 18 或更新版本及已下载的语言包。iOS 17 仍可打开插件页。语音和拍照效果待 iPhone 真机验证。"
             ],
             "en": [
               "iOS 17 and Reduce Motion use the standard navigation animation. The animation is awaiting verification on an iPhone.",
-              "Formal itinerary saving, edits and undo, and planning across China are still being validated."
+              "Formal itinerary saving, edits and undo, and planning across China are still being validated.",
+              "Apple offline translation requires iOS 18 or later and downloaded languages. The Tools tab remains available on iOS 17. Speech and camera quality still need to be verified on an iPhone."
             ]
           }
         },
@@ -78,10 +90,10 @@
           },
           "items": {
             "zh": [
-              "服务复测时段见 #1048。构建 47 的七项复测沿用其独立通知。"
+              "构建 48 的服务复测仍按 #702 的独立清单执行，服务窗口见 #1048。"
             ],
             "en": [
-              "See #1048 for the live service testing window. The seven build 47 checks follow their separate announcement."
+              "Use the separate checklist in #702 for the build 48 service retest. See #1048 for the live testing window."
             ]
           }
         }
