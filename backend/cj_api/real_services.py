@@ -625,6 +625,8 @@ class RealTools:
                                   and operation.registration_id == 'model.answer')
             retain_unsettled=(discussion_handoff or (native_turn and argument.retain_unsettled_answer
                                                      and operation.registration_id=='model.tool_turn'))
+            guarded_connect = (release_after_send or discussion_handoff or grouped or national_intake
+                               or (native_turn and argument.lio_answer))
 
             def admitted(*,memory_check=None):
                 if wrapped:
@@ -643,7 +645,7 @@ class RealTools:
                         tools=inputs['native_tools'],receipt=metadata,guard=checked,native_reply=native_reply,
                         native_turn_profile=inputs.get('native_turn_profile'),final_answer=inputs.get('external_tools_disabled',False),
                         release_after_send=discussion_handoff or inputs.get('response_mode')=='lio-memory-json.1',
-                        **({'guarded_connect':True} if release_after_send else {}),
+                        **({'guarded_connect':True} if guarded_connect else {}),
                         **({'unsettled_answer_limit':operation.command.output_limit} if retain_unsettled else {}),
                         lio_answer=inputs.get('answer_format_profile')=='lio-user.1',
                         **({'structured_profile':inputs['structured_profile']} if 'structured_profile' in inputs else {}),
