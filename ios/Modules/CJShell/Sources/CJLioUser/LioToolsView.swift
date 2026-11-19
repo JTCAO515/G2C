@@ -6,14 +6,14 @@ import UIKit
 
 struct LioToolsView: View {
     let language: LioLanguage
-    let historyDirectory: URL?
+    let history: LioTranslationHistory?
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
                     NavigationLink {
-                        LioTextTranslationView(language: language, history: historyDirectory.map(LioTranslationHistory.init(directory:)))
+                        LioTextTranslationView(language: language, history: history)
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "character.bubble")
