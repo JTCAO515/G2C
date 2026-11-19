@@ -2,7 +2,7 @@ import XCTest
 import UIKit
 import CryptoKit
 
-@MainActor final class LioHomeUITests: XCTestCase {
+@MainActor final class LioToolsUITests: XCTestCase {
     func testToolsUnavailableSimulatorCameraKeepsPhotoPickerAvailable() {
         continueAfterFailure = false
         for language in ["en", "zh-Hans"] {
@@ -67,7 +67,9 @@ import CryptoKit
             }
         }
     }
+}
 
+@MainActor final class LioHomeUITests: XCTestCase {
     func testUnsentOriginalAndDifferentDraftStayVisibleAcrossRelaunchInBothLanguages() throws {
         continueAfterFailure = false
         for chinese in [false, true] {
