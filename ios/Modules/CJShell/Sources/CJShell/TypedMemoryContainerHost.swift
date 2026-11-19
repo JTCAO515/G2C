@@ -16,7 +16,7 @@ public struct TypedMemoryManualOption: Identifiable {
         self.label = label;self.subject = subject;self.slot = slot;self.kind = kind;self.scope = scope
     }
 }
-public struct TypedMemorySurface: Sendable {
+public struct TypedMemorySurface: Equatable, Sendable {
     fileprivate let owner: UUID
     fileprivate let epoch: UUID
 }
