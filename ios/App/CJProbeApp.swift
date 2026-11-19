@@ -110,7 +110,10 @@ struct CJProbeApp: App {
                 Text(shell.language.text("Sample trip unavailable.", "示例行程暂不可用。"))
             }
         } else {
-            LioHome(language: shell.language.lio, service: .demo, isDemo: true) { LioMenuSettings(shell: shell) }
+            LioHome(language: shell.language.lio, service: .demo, isDemo: true,
+                    showsTools: ProcessInfo.processInfo.arguments.contains("--lio-tools-preview")) {
+                LioMenuSettings(shell: shell)
+            }
         }
     }
     #endif

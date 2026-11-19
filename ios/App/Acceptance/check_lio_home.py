@@ -36,7 +36,10 @@ def main():
     parser.add_argument("--build-dir", required=True, type=Path)
     parser.add_argument("--case", action="append", help="Run just this XCTest method. May be repeated.")
     parser.add_argument("--voiceover", action="store_true", help="Run the separate real VoiceOver engine walk; requires Xcode/iOS 27. The normal audit suite is unchanged.")
+    parser.add_argument("--tools", action="store_true", help="Select one or more OS-specific Tools cases.")
     args = parser.parse_args()
+    if args.tools and (args.voiceover or not args.case):
+        parser.error("--tools requires explicit --case selections and cannot be combined with --voiceover")
     output, build = args.output.resolve(), args.build_dir.resolve()
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):
         parser.error("Keep build and evidence outside the repository")
@@ -132,6 +135,8 @@ private struct LioRootFailureView: View {
     result = output / "lio-home.xcresult"
     env = {key: value for key, value in os.environ.items() if not key.startswith(("G2C_DEV_", "SIMCTL_CHILD_"))}
     suite = "G2CControl/LioVoiceOverUITests" if args.voiceover else "G2CControl/LioHomeUITests"
+    if args.tools:
+        suite = "G2CControl/LioToolsUITests"
     selectors = [f"-only-testing:{suite}/{case}" for case in args.case] if args.case else [f"-only-testing:{suite}"]
     command = [
         "xcodebuild", "-project", str(project), "-scheme", "G2CControl",

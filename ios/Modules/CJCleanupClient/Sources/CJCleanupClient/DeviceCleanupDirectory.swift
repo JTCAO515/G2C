@@ -106,6 +106,38 @@ import Darwin
             }
         }
     }
+    /// Remove one fixed App-owned file after its writer has been retired.
+    public func removeOwnedFile(named name: String) throws {
+        guard !name.isEmpty, ![".", ".."].contains(name), !name.contains("/"), !name.contains("\0") else {
+            throw CleanupFailure.unavailable
+        }
+        try validateIdentity()
+        guard let descriptor else { return }
+        var entry = stat()
+        if fstatat(descriptor, name, &entry, AT_SYMLINK_NOFOLLOW) == 0 {
+            guard entry.st_mode & S_IFMT == S_IFREG, entry.st_uid == getuid(), entry.st_nlink == 1 else {
+                throw CleanupFailure.unavailable
+            }
+            guard unlinkat(descriptor, name, 0) == 0 else { throw CleanupFailure.unavailable }
+        } else if errno != ENOENT {
+            throw CleanupFailure.unavailable
+        }
+        guard fsync(descriptor) == 0, fstatat(descriptor, name, &entry, AT_SYMLINK_NOFOLLOW) != 0,
+              errno == ENOENT else { throw CleanupFailure.unavailable }
+        try validateIdentity()
+    }
+    /// Retire a captured child after its known file is removed.
+    public func removeEmptyChild() throws {
+        guard let parent else { throw CleanupFailure.unavailable }
+        try requireEmpty()
+        guard descriptor != nil else { return }
+        guard let parentDescriptor = parent.descriptor else { throw CleanupFailure.unavailable }
+        let name = path.lastPathComponent
+        guard unlinkat(parentDescriptor, name, AT_REMOVEDIR) == 0, fsync(parentDescriptor) == 0 else {
+            throw CleanupFailure.unavailable
+        }
+        _ = try DeviceCleanupDirectory(absentChild: name, of: parent)
+    }
     /// Callback-free emptiness evidence for shared-key erasure. An unknown entry,
     /// late-created child or replaced root never counts as confirmed empty.
     public func requireEmpty() throws {
