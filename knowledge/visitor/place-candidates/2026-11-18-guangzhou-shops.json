@@ -1,0 +1,1681 @@
+[
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s001",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "天河城购物中心",
+    "name_en": "Teemall",
+    "name_en_source": "official",
+    "district": null,
+    "address": null,
+    "description_zh": "天河商圈核心的大型购物中心，位于地铁1号线与3号线交汇处，毗邻天河体育中心与广州火车东站，60多条公交线路在此设站。",
+    "tags": [
+      "购物中心",
+      "天河路商圈",
+      "地铁上盖",
+      "综合零售"
+    ],
+    "official_url": "https://www.teemall.com.cn/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "服饰、运动、金饰、超市等综合零售",
+      "shop_type": "购物中心"
+    },
+    "sources": [
+      {
+        "name": "广州天河城购物中心官网",
+        "url": "https://www.teemall.com.cn/gzthcgwzx/txfw/jtzn/index.html",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "地址门牌",
+      "所属行政区",
+      "地址待核实"
+    ],
+    "notes": "待核实：官网交通指南页仅描述区位，未标注门牌与行政区；英文名取自官网页脚 TEEMMALL。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s002",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "百货公司",
+    "name_zh": "天河城百货",
+    "name_en": "TEEM DEPARTMENT",
+    "name_en_source": "official",
+    "district": null,
+    "address": null,
+    "description_zh": "广东粤海天河城商业旗下百货业态，1996年创建，经营服饰、皮具、金饰、家电、食品等，设天河城店、万博店、奥体店等门店。",
+    "tags": [
+      "百货",
+      "连锁",
+      "自有品牌"
+    ],
+    "official_url": "https://www.teemall.com.cn/gzthcgwzx/yhthc/yhthcsy/yhthcsyjj/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "服饰、皮具、金饰、家用电器、食品",
+      "shop_type": "百货公司"
+    },
+    "sources": [
+      {
+        "name": "粤海天河城商业简介（官网）",
+        "url": "https://www.teemall.com.cn/gzthcgwzx/yhthc/yhthcsy/yhthcsyjj/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门店地址",
+      "所属行政区",
+      "地址待核实"
+    ],
+    "notes": "待核实：简介页未列具体门店地址，仅说明开设有天河城店等门店；英文名取自页面图片说明 TEEM DEPARTMENT。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s003",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "广州太古汇",
+    "name_en": "Taikoo Hui",
+    "name_en_source": "official",
+    "district": null,
+    "address": "广州市天河路383号",
+    "description_zh": "融合购物、餐饮与文化艺术功能的综合商业体，由 Arquitectonica 设计、太古地产管理；商场M层连通石牌桥地铁站，毗邻体育中心站。",
+    "tags": [
+      "购物中心",
+      "高端零售",
+      "地铁上盖"
+    ],
+    "official_url": "https://www.taikoohui.com/zh-cn/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "国际品牌服饰、腕表珠宝、美妆、餐饮",
+      "shop_type": "购物中心"
+    },
+    "sources": [
+      {
+        "name": "广州太古汇官网",
+        "url": "https://www.taikoohui.com/zh-cn/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "所属行政区"
+    ],
+    "notes": "待核实：官网地址栏写“广州市天河路383号”，未直接标注行政区。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s004",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "天环广场",
+    "name_en": "Parc Central",
+    "name_en_source": "official",
+    "district": "天河",
+    "address": "广州市天河区天河路218号",
+    "description_zh": "新鸿基地产开发的大型购物中心，2016年开业，以开放式花园为设计理念，总楼面面积约11万平方米，进驻200多个品牌。",
+    "tags": [
+      "购物中心",
+      "首店",
+      "天河路商圈"
+    ],
+    "official_url": "https://www.parccentral.com.cn/zh-CN/aboutUs",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "国际潮奢服饰、美妆香氛、户外运动、潮玩、餐饮",
+      "shop_type": "购物中心"
+    },
+    "sources": [
+      {
+        "name": "天环 Parc Central 官网",
+        "url": "https://www.parccentral.com.cn/zh-CN/aboutUs",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "待核实：页面地址明确标注天河区天河路218号。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s005",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "购物中心/文商旅综合体",
+    "name_zh": "正佳广场",
+    "name_en": "Grandview Mall",
+    "name_en_source": "official",
+    "district": "天河",
+    "address": null,
+    "description_zh": "2005年开业，总建筑面积约42万平方米，由购物中心转型为文商旅体教综合体，为国家4A级旅游景区，年均客流超5000万。",
+    "tags": [
+      "购物中心",
+      "4A景区",
+      "亲子",
+      "文商旅"
+    ],
+    "official_url": "http://www.zhengjia.com.cn/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "零售、餐饮、海洋馆等文旅项目",
+      "shop_type": "购物中心/文商旅综合体"
+    },
+    "sources": [
+      {
+        "name": "南方+（广州天河发布）",
+        "url": "https://static.nfnews.com/content/202508/18/c11634785.html",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2025-08-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "地址门牌",
+      "地址待核实"
+    ],
+    "notes": "待核实：正佳广场官网各栏目页无正文，英文名取自官网页脚 Grandview Mall；简介采用天河区融媒体中心报道，未给门牌地址。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s006",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "百货公司",
+    "name_zh": "摩登百货（岗顶店）",
+    "name_en": "Modern Department Store",
+    "name_en_source": "machine",
+    "district": "天河",
+    "address": "广州市天河区天河路611号",
+    "description_zh": "2002年开业的民营百货门店，营业面积约2.9万平方米，引进500多个品牌，曾获国家商务部“金鼎百货店”称号。",
+    "tags": [
+      "百货",
+      "岗顶商圈",
+      "连锁"
+    ],
+    "official_url": "https://www.mopark.com.cn/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "服装、鞋包、家居、化妆品等",
+      "shop_type": "百货公司"
+    },
+    "sources": [
+      {
+        "name": "广州摩登百货股份有限公司官网",
+        "url": "https://www.mopark.com.cn/cn/contact.html",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名"
+    ],
+    "notes": "待核实：官网未提供英文名，name_en 为机翻。",
+    "conflicts": [
+      "官网“摩登简介”页称营业面积2.9万平方米，“联系我们”页称3万平方米，数据待核实。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s007",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "东方宝泰购物广场",
+    "name_en": "PO PARK",
+    "name_en_source": "official",
+    "district": "天河",
+    "address": "广州市天河区林和中路63号",
+    "description_zh": "位于天河北、地铁广州火车东站G出口，商业面积约13万平方米，以“蒲公园”为定位，集合生活品牌与主题美食。",
+    "tags": [
+      "购物中心",
+      "天河北",
+      "地铁上盖"
+    ],
+    "official_url": "http://www.popark.cn/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "生活品牌、特色美食",
+      "shop_type": "购物中心"
+    },
+    "sources": [
+      {
+        "name": "PO PARK 东方宝泰官网",
+        "url": "http://www.popark.cn/contact.aspx",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "待核实：英文标识 PO PARK 见官网页面正文。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s008",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "书店/文化空间",
+    "name_zh": "广州购书中心（天河店）",
+    "name_en": "Guangzhou Book Center",
+    "name_en_source": "machine",
+    "district": null,
+    "address": "广州市天河路123号",
+    "description_zh": "1994年开业的大型书城，经营面积约2.5万平方米，藏书二十多万册，2024年12月获评国家3A级旅游景区。",
+    "tags": [
+      "书店",
+      "3A景区",
+      "天河路商圈",
+      "文创"
+    ],
+    "official_url": "http://www.gzbookcenter.com/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "图书、文创、餐饮、潮玩",
+      "shop_type": "大型书城"
+    },
+    "sources": [
+      {
+        "name": "广州新华出版发行集团（官网）",
+        "url": "https://www.gzxhcbfx.com/tendering_detail/517.html",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": "2025-06-03",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "所属行政区",
+      "官方英文名"
+    ],
+    "notes": "待核实：门牌“天河路123号”来自广州新华发行官网页脚；集团页面未标注行政区，英文名为机翻。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s009",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "书店/文化空间",
+    "name_zh": "方所（广州太古汇店）",
+    "name_en": "Fangsuo Commune",
+    "name_en_source": "machine",
+    "district": null,
+    "address": "广州市天河路383号太古汇MU35",
+    "description_zh": "太古汇MU35店铺，是涵盖书店、美学生活、植物、服饰、展览空间与咖啡的公共文化空间。",
+    "tags": [
+      "书店",
+      "文创",
+      "咖啡",
+      "美学生活"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "图书、文创、服饰、植物、咖啡",
+      "shop_type": "书店/文化空间"
+    },
+    "sources": [
+      {
+        "name": "广州太古汇官网（商户页）",
+        "url": "https://www.taikoohui.com/zh-cn/shopping/mu35/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名",
+      "官方网址"
+    ],
+    "notes": "待核实：太古汇商户页未给方所英文名与网址，name_en 为机翻。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s010",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "博物馆文创商店",
+    "name_zh": "广东省博物馆文创商店",
+    "name_en": "Guangdong Museum Cultural & Creative Store",
+    "name_en_source": "machine",
+    "district": "天河",
+    "address": "广州市天河区珠江新城珠江东路2号",
+    "description_zh": "馆内设有粤博文创商店与博物馆智慧文创商店，以馆徽、建筑外形、藏品与广东文化元素开发文创产品。",
+    "tags": [
+      "博物馆文创",
+      "纪念品",
+      "手信"
+    ],
+    "official_url": "https://www.gdmuseum.org.cn/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "文创产品、纪念品、文具",
+      "shop_type": "博物馆文创商店"
+    },
+    "sources": [
+      {
+        "name": "广东省博物馆官网",
+        "url": "https://www.gdmuseum.org.cn/col679/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门店具体位置",
+      "营业信息",
+      "官方英文名"
+    ],
+    "notes": "待核实：页面未列商店铺位与营业时间，英文名为机翻。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s011",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "文创商店",
+    "name_zh": "荔湾礼物文创旗舰店（永庆坊）",
+    "name_en": "Liwan Gifts",
+    "name_en_source": "machine",
+    "district": null,
+    "address": "永庆坊广州粤剧艺术博物馆普天乐馆内",
+    "description_zh": "2025年1月开业的文创旗舰店，位于粤剧艺术博物馆内，设非遗、西关风情、创意文博等门类，兼售非遗大师作品。",
+    "tags": [
+      "文创",
+      "非遗",
+      "永庆坊"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "文创产品、非遗手作、手信",
+      "shop_type": "文创旗舰店"
+    },
+    "sources": [
+      {
+        "name": "广州市荔湾区人民政府（区财政局）",
+        "url": "http://www.lw.gov.cn/zzzs/bmdt/content/post_10103400.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-02-05",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门牌地址",
+      "所属行政区",
+      "官方英文名",
+      "官网"
+    ],
+    "notes": "待核实：店址按页面表述记录，行政区未在页面明示，英文名为机翻。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s012",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "文创商店",
+    "name_zh": "荔湾礼物（陈家祠店）",
+    "name_en": "Liwan Gifts (Chen Clan Ancestral Hall Store)",
+    "name_en_source": "machine",
+    "district": null,
+    "address": "陈家祠东广场",
+    "description_zh": "2026年5月开业，位于陈家祠东广场，围绕匠心非遗、西关风物、文博文创、老字号手信等六大系列经营文创。",
+    "tags": [
+      "文创",
+      "非遗",
+      "陈家祠"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "文创产品、非遗手作、老字号手信",
+      "shop_type": "文创商店"
+    },
+    "sources": [
+      {
+        "name": "广州日报大洋网",
+        "url": "https://news.dayoo.com/gzrbrmt/202605/02/170615_54955285.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2026-05-02",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门牌地址",
+      "所属行政区",
+      "官方英文名"
+    ],
+    "notes": "待核实：报道只写“陈家祠东广场”，英文名为机翻。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s013",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "市内免税店",
+    "name_zh": "广州市内免税店（广州友谊国金店）",
+    "name_en": "Guangzhou Downtown Duty Free Store",
+    "name_en_source": "machine",
+    "district": "天河",
+    "address": "广州市天河区珠江西路5号广州友谊国金商店首层",
+    "description_zh": "2025年8月开业，由中免集团、广百股份、岭南控股与白云机场联合打造，主营美妆、腕表首饰、箱包服饰与酒水。",
+    "tags": [
+      "免税店",
+      "离境退税",
+      "天河CBD"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "美妆护肤、腕表首饰、箱包服饰、高端酒水、国潮精品",
+      "shop_type": "市内免税店"
+    },
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站（来源：市商务局）",
+        "url": "https://www.gz.gov.cn/xw/zwlb/bmdt/content/post_10422444.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-08-28",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名",
+      "官网"
+    ],
+    "notes": "待核实：英文名为机翻。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s014",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "口岸免税店",
+    "name_zh": "广州白云国际机场T3航站楼出境免税店",
+    "name_en": "Guangzhou Baiyun Airport T3 Departure Duty Free Shop",
+    "name_en_source": "machine",
+    "district": null,
+    "address": "广州白云国际机场T3航站楼",
+    "description_zh": "2026年1月开业，由中旅免税与白云机场合作运营，首期8间商铺，计划2026年末开业面积超1600平方米。",
+    "tags": [
+      "机场免税",
+      "出境",
+      "美妆酒水"
+    ],
+    "official_url": "https://www.ctg.cn/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "奢侈品、美妆、酒水、旅行用品",
+      "shop_type": "口岸免税店"
+    },
+    "sources": [
+      {
+        "name": "中国旅游集团（中旅免税）",
+        "url": "https://www.ctg.cn/article/19590",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": "2026-01-31",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "具体铺位",
+      "所属行政区"
+    ],
+    "notes": "待核实：英文名为机翻。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s015",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "老字号直营店",
+    "name_zh": "致美斋老铺",
+    "name_en": "Zhi Mei Zhai Old Shop",
+    "name_en_source": "machine",
+    "district": "越秀",
+    "address": "广州市越秀区中山四路331-335号101铺",
+    "description_zh": "致美斋酱园直营门店，品牌隶属岭南集团，以广式酱油与调味品著称，官网另列起义路店、海珠广场店等直营点。",
+    "tags": [
+      "老字号",
+      "调味品",
+      "手信"
+    ],
+    "official_url": "https://www.jammychai.cn/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "酱油、调味酱等广式调味品",
+      "shop_type": "老字号直营店"
+    },
+    "sources": [
+      {
+        "name": "广州市致美斋酱园有限公司官网",
+        "url": "https://www.jammychai.cn/index.php/page/76.html",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名",
+      "营业信息"
+    ],
+    "notes": "待核实：页面按门店列出联系信息，未标注统一发布日期；name_en 为音译。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s016",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "老字号直营店",
+    "name_zh": "致美斋起义路店",
+    "name_en": "Zhi Mei Zhai Qiyi Road Store",
+    "name_en_source": "machine",
+    "district": "越秀",
+    "address": "广州市越秀区起义路2号",
+    "description_zh": "致美斋在越秀区起义路的直营门店，销售广式调味品及礼盒。",
+    "tags": [
+      "老字号",
+      "调味品"
+    ],
+    "official_url": "https://www.jammychai.cn/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "酱油、调味酱等广式调味品",
+      "shop_type": "老字号直营店"
+    },
+    "sources": [
+      {
+        "name": "广州市致美斋酱园有限公司官网",
+        "url": "https://www.jammychai.cn/index.php/page/76.html",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名",
+      "营业信息"
+    ],
+    "notes": "待核实：name_en 为音译。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s017",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "老字号腊味店",
+    "name_zh": "皇上皇腊味店（下九路店）",
+    "name_en": "Huangshanghuang",
+    "name_en_source": "machine",
+    "district": "荔湾",
+    "address": "广州市荔湾区下九路3号",
+    "description_zh": "皇上皇品牌1933年创立，以广式腊味闻名，为越秀集团旗下首批中华老字号，腊味制作技艺列入广东省非遗。",
+    "tags": [
+      "老字号",
+      "腊味",
+      "手信"
+    ],
+    "official_url": "https://www.gzhsh.com/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "腊肠、腊肉、礼盒、休闲零食",
+      "shop_type": "老字号腊味店"
+    },
+    "sources": [
+      {
+        "name": "广州皇上皇集团股份有限公司官网",
+        "url": "https://www.gzhsh.com/InnovationAccolades/index.aspx",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名",
+      "营业信息"
+    ],
+    "notes": "待核实：英文名为音译。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s018",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "老字号腊味店",
+    "name_zh": "皇上皇北京路地标店",
+    "name_en": "Huangshanghuang Beijing Road Landmark Store",
+    "name_en_source": "machine",
+    "district": "越秀",
+    "address": "广州市越秀区北京路244号",
+    "description_zh": "皇上皇在越秀区北京路的门店，经营腊肠、腊肉及腊味礼盒等产品。",
+    "tags": [
+      "老字号",
+      "腊味",
+      "北京路"
+    ],
+    "official_url": "https://www.gzhsh.com/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "腊肠、腊肉、礼盒、休闲零食",
+      "shop_type": "老字号腊味店"
+    },
+    "sources": [
+      {
+        "name": "广州皇上皇集团股份有限公司官网",
+        "url": "https://www.gzhsh.com/InnovationAccolades/index.aspx",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名",
+      "营业信息"
+    ],
+    "notes": "待核实：门店分区依据官网“门店地址（广州市）”列表，英文名为音译。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s019",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "老字号药企/药店",
+    "name_zh": "采芝林",
+    "name_en": "Guangzhou Caizhilin Pharmaceutical Co., Ltd.",
+    "name_en_source": "official",
+    "district": "荔湾",
+    "address": "广州市荔湾区塞坝路12号自编4号、5号房",
+    "description_zh": "中药老字号，字号始创于1791年，国家级中华老字号，业务覆盖中药材种植、饮片生产、检测与终端医药服务。",
+    "tags": [
+      "老字号",
+      "中药",
+      "药材"
+    ],
+    "official_url": "http://www.czlyy.com.cn/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "中药材、中药饮片、养生中药产品",
+      "shop_type": "老字号药企/连锁药店"
+    },
+    "sources": [
+      {
+        "name": "广州采芝林药业有限公司官网",
+        "url": "http://www.czlyy.com.cn/contact",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "零售门店地址",
+      "门店营业信息"
+    ],
+    "notes": "待核实：官网仅公布企业地址，未列零售门店清单；英文名为官网标注名称。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s020",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "钟表店",
+    "name_zh": "李占记钟表店",
+    "name_en": "Li Zhanji Watch Shop",
+    "name_en_source": "machine",
+    "district": null,
+    "address": null,
+    "description_zh": "广州百年钟表老字号，以钟表维修与工艺传承见长，店内陈列多种古老钟表。",
+    "tags": [
+      "老字号",
+      "钟表",
+      "维修"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "钟表、钟表维修服务",
+      "shop_type": "钟表店"
+    },
+    "sources": [
+      {
+        "name": "央视网",
+        "url": "https://local.cctv.com/2024/12/16/VIDEzMbVaTTMlTCj7qBp1yGj241216.shtml",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2024-12-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "地址",
+      "所属行政区",
+      "官方英文名",
+      "营业信息",
+      "地址待核实"
+    ],
+    "notes": "待核实：报道未给出门店地址，英文名为音译。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s021",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "服装批发市场",
+    "name_zh": "汇美国际·磐信服装城",
+    "name_en": "Hui Mei International Panxin Fashion City",
+    "name_en_source": "official",
+    "district": "荔湾",
+    "address": "广州市荔湾区环市西路139号",
+    "description_zh": "以女装、童装批发为主的专业市场，汇集多地设计师品牌，风格从简约潮流到复古优雅。",
+    "tags": [
+      "服装批发",
+      "女装",
+      "童装"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "女装、童装",
+      "shop_type": "服装批发市场"
+    },
+    "sources": [
+      {
+        "name": "广州市荔湾区人民政府门户网站（英文版）",
+        "url": "http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-11-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "待核实：英文名取自政府英文版市场指南。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s022",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "服装批发市场",
+    "name_zh": "apM时代国际服装城",
+    "name_en": "apM Times International Fashion City",
+    "name_en_source": "official",
+    "district": "荔湾",
+    "address": "广州市荔湾区站前路站前一街26-28号",
+    "description_zh": "华南大型鞋服配饰专业批发市场之一，有韩国时尚企业设店，适合关注韩系潮流者。",
+    "tags": [
+      "服装批发",
+      "鞋类",
+      "配饰"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "鞋类、服装、配饰",
+      "shop_type": "服装批发市场"
+    },
+    "sources": [
+      {
+        "name": "广州市荔湾区人民政府门户网站（英文版）",
+        "url": "http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-11-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "待核实：英文名取自政府英文版市场指南。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s023",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "服装批发市场",
+    "name_zh": "新中国大厦",
+    "name_en": "New China Plaza",
+    "name_en_source": "official",
+    "district": "荔湾",
+    "address": "广州市荔湾区十三行路1号",
+    "description_zh": "十三行商圈的服装批发大楼，按楼层划分箱包配饰、日韩欧美女装与成熟休闲女装等品类。",
+    "tags": [
+      "服装批发",
+      "十三行",
+      "女装"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "箱包、配饰、女装",
+      "shop_type": "服装批发市场"
+    },
+    "sources": [
+      {
+        "name": "广州市荔湾区人民政府门户网站（英文版）",
+        "url": "http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-11-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "待核实：英文名取自政府英文版市场指南。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s024",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "服装批发市场",
+    "name_zh": "红遍天批发市场",
+    "name_en": "Hongbiantian Wholesale Market",
+    "name_en_source": "official",
+    "district": "荔湾",
+    "address": "广州市荔湾区十三行路13之2-9城启·十三行广场",
+    "description_zh": "位于十三行广场内的服装批发市场，楼层涵盖牛仔、大码女装、韩系时装与厂商直销休闲女装。",
+    "tags": [
+      "服装批发",
+      "十三行",
+      "牛仔"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "牛仔、女装",
+      "shop_type": "服装批发市场"
+    },
+    "sources": [
+      {
+        "name": "广州市荔湾区人民政府门户网站（英文版）",
+        "url": "http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-11-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "待核实：英文名取自政府英文版市场指南。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s025",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "童装批发市场",
+    "name_zh": "荔湖大厦",
+    "name_en": "Lihu Building",
+    "name_en_source": "official",
+    "district": "荔湾",
+    "address": "广州市荔湾区中山8路97-101号",
+    "description_zh": "中山八路一带的童装批发大厦，主营中高端日韩风童装、童鞋与配饰，兼营外贸童装及玩具。",
+    "tags": [
+      "童装批发",
+      "中山八路"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "童装、童鞋、玩具",
+      "shop_type": "童装批发市场"
+    },
+    "sources": [
+      {
+        "name": "广州市荔湾区人民政府门户网站（英文版）",
+        "url": "http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-11-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "待核实：英文名取自政府英文版市场指南。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s026",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "童装批发市场",
+    "name_zh": "荔尚精品童装商贸城",
+    "name_en": "Lishang High-end Trade City for Children Clothes Paradise",
+    "name_en_source": "official",
+    "district": "荔湾",
+    "address": "广州市荔湾区中山八路93号",
+    "description_zh": "邻近中山八地铁站，主营欧美与日韩风精品童装、婴幼儿服饰及配饰。",
+    "tags": [
+      "童装批发",
+      "中山八路"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "童装、婴幼儿服饰",
+      "shop_type": "童装批发市场"
+    },
+    "sources": [
+      {
+        "name": "广州市荔湾区人民政府门户网站（英文版）",
+        "url": "http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-11-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "待核实：英文名取自政府英文版市场指南。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s027",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "童装批发市场",
+    "name_zh": "荔塘大厦",
+    "name_en": "Litang Building",
+    "name_en_source": "official",
+    "district": "荔湾",
+    "address": "广州市荔湾区中山八路50号",
+    "description_zh": "以欧美休闲外贸童装为主，一层兼营童装配饰与玩具。",
+    "tags": [
+      "童装批发",
+      "中山八路"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "童装、玩具、配饰",
+      "shop_type": "童装批发市场"
+    },
+    "sources": [
+      {
+        "name": "广州市荔湾区人民政府门户网站（英文版）",
+        "url": "http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-11-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "待核实：英文名取自政府英文版市场指南。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s028",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "儿童用品批发市场",
+    "name_zh": "富力儿童世界",
+    "name_en": "Kids City · Super Children's Wear Wholesale Market",
+    "name_en_source": "official",
+    "district": "荔湾",
+    "address": "广州市荔湾区中山八路61号",
+    "description_zh": "儿童鞋帽与用品批发市场，一至三层经营童装、配饰等。",
+    "tags": [
+      "童装批发",
+      "儿童用品",
+      "中山八路"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "童装、童鞋、儿童用品",
+      "shop_type": "儿童用品批发市场"
+    },
+    "sources": [
+      {
+        "name": "广州市荔湾区人民政府门户网站（英文版）",
+        "url": "http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-11-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "待核实：英文名取自政府英文版市场指南。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s029",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "水产批发市场",
+    "name_zh": "黄沙水产交易市场",
+    "name_en": "Huangsha Aquatic Products Market",
+    "name_en_source": "official",
+    "district": "荔湾",
+    "address": "广州市荔湾区丛桂路隧兴广场南侧",
+    "description_zh": "以鲜活海鲜闻名的水产市场，供应扇贝、鲍鱼、石斑、龙虾等，可购买后即时加工。",
+    "tags": [
+      "水产批发",
+      "海鲜",
+      "黄沙"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "鲜活水产、海鲜",
+      "shop_type": "水产批发市场"
+    },
+    "sources": [
+      {
+        "name": "广州市荔湾区人民政府门户网站（英文版）",
+        "url": "http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-11-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "待核实：地址与营业地点存在新旧市场并存情况。",
+    "conflicts": [
+      "广东省农业农村厅报道称黄沙水产中心（黄沙水产新市场）已于2025年9月在荔湾区东洛围码头启用；本条目地址来自2025年11月政府市场指南，需核实实际营业地点。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s030",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "文具玩具批发市场",
+    "name_zh": "谊园文具批发市场",
+    "name_en": "Yiyuan Office Stationery & Art Supplies Trade Center",
+    "name_en_source": "official",
+    "district": "荔湾",
+    "address": "广州市荔湾区黄沙后道（地铁黄沙站C出口）",
+    "description_zh": "国内较早且规模较大的玩具文具专业批发市场，品类丰富，适合书画与日常文具采购。",
+    "tags": [
+      "文具批发",
+      "玩具",
+      "黄沙"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "文具、玩具、美术用品",
+      "shop_type": "文具玩具批发市场"
+    },
+    "sources": [
+      {
+        "name": "广州市荔湾区人民政府门户网站（英文版）",
+        "url": "http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-11-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "待核实：英文名取自政府英文版市场指南。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s031",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "茶叶批发市场",
+    "name_zh": "芳村茶叶城",
+    "name_en": "Fangcun Tea Market",
+    "name_en_source": "official",
+    "district": "荔湾",
+    "address": "广州市荔湾区芳村大道中508号",
+    "description_zh": "芳村茶叶市场群内市场之一，经营凤凰单丛、英德红茶、西岩乌龙等多类茶叶。",
+    "tags": [
+      "茶叶批发",
+      "芳村",
+      "茶文化"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "茶叶、茶具",
+      "shop_type": "茶叶批发市场"
+    },
+    "sources": [
+      {
+        "name": "广州市荔湾区人民政府门户网站（英文版）",
+        "url": "http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-11-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "待核实：与“芳村茶叶市场群”为不同范围。",
+    "conflicts": [
+      "荔湾区政府页面称“芳村茶叶市场群”由南方茶叶市场、广东芳村茶业城等20多家市场组成；本条目仅指芳村大道中508号的芳村茶叶城。"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s032",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "花卉批发市场",
+    "name_zh": "岭南花卉市场",
+    "name_en": "Lingnan Flower Market",
+    "name_en_source": "official",
+    "district": "荔湾",
+    "address": "广州市荔湾区芳信路57号",
+    "description_zh": "全国约三成鲜切花的交易集散地，也是华南大型花卉零售与批发市场之一。",
+    "tags": [
+      "花卉批发",
+      "芳村"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "鲜切花、盆花、园艺用品",
+      "shop_type": "花卉批发市场"
+    },
+    "sources": [
+      {
+        "name": "广州市荔湾区人民政府门户网站（英文版）",
+        "url": "http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-11-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "待核实：英文名取自政府英文版市场指南。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s033",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "花鸟鱼虫市场",
+    "name_zh": "芳村花鸟鱼虫新世界",
+    "name_en": "Fangcun New World—Flowers, Birds, Fishes and Insects",
+    "name_en_source": "official",
+    "district": "荔湾",
+    "address": "广州市荔湾区花博大道101号",
+    "description_zh": "拥有上千家店铺的花鸟鱼虫市场，经营观赏鱼、猫狗兔等小动物及相关用品。",
+    "tags": [
+      "花鸟鱼虫",
+      "宠物",
+      "芳村"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "观赏鱼、宠物、花鸟鱼虫用品",
+      "shop_type": "花鸟鱼虫市场"
+    },
+    "sources": [
+      {
+        "name": "广州市荔湾区人民政府门户网站（英文版）",
+        "url": "http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-11-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "待核实：英文名取自政府英文版市场指南。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s034",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "中药材专业市场",
+    "name_zh": "清平中药材市场",
+    "name_en": "Qingping Traditional Chinese Medicine Market",
+    "name_en_source": "official",
+    "district": "荔湾",
+    "address": "广州市荔湾区六二三路336号",
+    "description_zh": "国内大型滋补药材集散地，经营虫草、燕窝、灵芝及茯苓、黄精等煲汤药材，商户可代切片研磨。",
+    "tags": [
+      "中药材",
+      "滋补品",
+      "清平"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "中药材、滋补品、煲汤料",
+      "shop_type": "中药材专业市场"
+    },
+    "sources": [
+      {
+        "name": "广州市荔湾区人民政府门户网站（英文版）",
+        "url": "http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-11-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "待核实：另有荔湾区政府页面称其为国内开办最早的专业市场之一。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s035",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "电子数码批发市场",
+    "name_zh": "西堤二马路电子批发市场",
+    "name_en": "Xidi Second Road Electronics Wholesale Market",
+    "name_en_source": "official",
+    "district": "荔湾",
+    "address": "广州市荔湾区西堤二马路16号",
+    "description_zh": "中国三大电子批发市场之一，聚集新亚洲国际电子科技城、南方大厦国际电子数码城等。",
+    "tags": [
+      "电子批发",
+      "数码",
+      "西堤"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "电子数码产品、配件",
+      "shop_type": "电子数码批发市场"
+    },
+    "sources": [
+      {
+        "name": "广州市荔湾区人民政府门户网站（英文版）",
+        "url": "http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-11-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "待核实：英文名取自政府英文版市场指南。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s036",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "服装批发商圈",
+    "name_zh": "十三行服装批发商圈",
+    "name_en": "Shisanhang Clothing Wholesale Market",
+    "name_en_source": "official",
+    "district": "荔湾",
+    "address": "广州市荔湾区十三行路",
+    "description_zh": "十三行路一带的服装批发商圈，延续清代十三行商脉，聚集大量服装批发商户与专业市场。",
+    "tags": [
+      "服装批发",
+      "商圈",
+      "十三行"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "服装、配饰",
+      "shop_type": "服装批发商圈"
+    },
+    "sources": [
+      {
+        "name": "广州市荔湾区人民政府门户网站（英文版）",
+        "url": "http://www.lw.gov.cn/ywb/yshj/zysc/content/post_9122059.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2023-07-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [],
+    "notes": "待核实：商圈内具体市场可另见新中国大厦、红遍天等条目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s037",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "纺织面辅料批发商圈",
+    "name_zh": "中大纺织商圈",
+    "name_en": "Zhongda Textile Business Circle",
+    "name_en_source": "machine",
+    "district": "海珠",
+    "address": null,
+    "description_zh": "全国乃至全球大型纺织面辅料交易基地之一，业态从面辅料交易扩展至设计发布、直播电商与面料研发。",
+    "tags": [
+      "纺织面辅料",
+      "批发商圈",
+      "海珠"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "面料、辅料、家纺",
+      "shop_type": "纺织面辅料批发商圈"
+    },
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站（来源：海珠区）",
+        "url": "https://www.gz.gov.cn/ysgz/xwdt/ysdt/content/mpost_8921349.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2023-04-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "地址门牌",
+      "官方英文名",
+      "地址待核实"
+    ],
+    "notes": "待核实：页面未给商圈门牌地址，英文名为机翻。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s038",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "商业街区/专业市场集群",
+    "name_zh": "一德路商圈（海味干果玩具精品街）",
+    "name_en": "Yide Road Commercial Area",
+    "name_en_source": "machine",
+    "district": "越秀",
+    "address": null,
+    "description_zh": "以圣心大教堂与骑楼街为核心的商圈，区政府推进业态品质提升与专业市场规范整治，发展商旅文融合。",
+    "tags": [
+      "批发商圈",
+      "海味干果",
+      "骑楼街",
+      "越秀"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "海味干果、玩具精品、文具礼品",
+      "shop_type": "商业街区/专业市场集群"
+    },
+    "sources": [
+      {
+        "name": "广州市越秀区人民政府",
+        "url": "http://www.yuexiu.gov.cn/gkmlpt/content/3/3525/mpost_3525331.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2019-09-02",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "地址门牌",
+      "官方英文名",
+      "最新业态信息",
+      "地址待核实"
+    ],
+    "notes": "待核实：文件为2019年提案答复，行政区依据文件主体为越秀区政府；英文名为机翻。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.guangzhou.shop.s039",
+    "city": "guangzhou",
+    "category": "shop",
+    "subcategory": "景区纪念品店",
+    "name_zh": "广州塔旅游区纪念品商店（含广州礼物旗舰店）",
+    "name_en": "Canton Tower Souvenir Shops",
+    "name_en_source": "machine",
+    "district": null,
+    "address": "广州塔旅游区",
+    "description_zh": "广州塔旅游区内设“广州礼物旗舰店”等五家纪念品商店，售卖醒狮非遗美工、粤剧钥匙扣、广州塔冰箱贴与盲盒等。",
+    "tags": [
+      "纪念品",
+      "文创",
+      "广州塔"
+    ],
+    "official_url": "https://www.cantontower.com/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "冰箱贴、钥匙扣、毛绒玩具、非遗美工产品、盲盒",
+      "shop_type": "景区纪念品店"
+    },
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站（来源：广州日报）",
+        "url": "https://www.gz.gov.cn/zt/jjd137jzgjckspjyh/content/mpost_10222756.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-04-18",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "具体铺位",
+      "所属行政区",
+      "官方英文名"
+    ],
+    "notes": "待核实：广州塔官网 cantontower.com 返回人机校验未能读取，店址仅按“广州塔旅游区”记录；英文名为机翻。",
+    "conflicts": []
+  }
+]

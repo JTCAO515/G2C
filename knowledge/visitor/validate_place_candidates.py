@@ -1,4 +1,4 @@
-"""Validate the unverified Guangzhou place (attraction/restaurant) candidates; no network IO."""
+"""Validate the unverified Guangzhou/Shenzhen place candidates; no network IO."""
 from datetime import date
 from pathlib import Path
 import re
@@ -6,29 +6,32 @@ from urllib.parse import urlsplit
 
 from validate import calendar_date, load_records, nonblank, validation_cli
 
-VERSION = "visitor-place-candidate.1"
+VERSION = "visitor-place-candidate.2"
 STATUS = "待核实"
-CATEGORIES = frozenset({"attraction", "restaurant"})
-CITIES = frozenset({
-    "beijing", "shanghai", "guangzhou", "shenzhen", "chengdu", "xian",
-    "hangzhou", "chongqing", "suzhou-jiangsu", "nanjing", "wuhan", "changsha",
-    "guilin", "xiamen", "qingdao", "harbin", "kunming", "zhangjiajie",
-    "luoyang", "sanya", "taizhou-zhejiang", "suzhou-anhui", "nationwide",
-})
+CATEGORIES = frozenset({"attraction", "restaurant", "hotel", "shop"})
 SOURCE_TYPES = frozenset({
     "official_government", "official_venue", "official_transport", "official_media",
     "commercial_platform", "map_platform", "other_public",
 })
 FIELDS = frozenset({
     "format_version", "id", "city", "category", "subcategory", "name_zh", "name_en",
-    "district", "address", "description_zh", "tags", "official_url",
-    "attraction_info", "restaurant_info", "sources", "collected_on", "status",
-    "missing", "notes", "conflicts",
+    "name_en_source", "district", "address", "description_zh", "tags", "official_url",
+    "attraction_info", "restaurant_info", "hotel_info", "shop_info", "sources",
+    "collected_on", "status", "missing", "notes", "conflicts",
 })
-ATTRACTION_FIELDS = frozenset({"level", "ticket_note", "booking_note"})
-RESTAURANT_FIELDS = frozenset({"cuisine", "reservation_note"})
+INFO_FIELDS = {
+    "attraction_info": frozenset({"level", "ticket_note", "booking_note"}),
+    "restaurant_info": frozenset({"cuisine", "reservation_note"}),
+    "hotel_info": frozenset({"stars", "brand", "note"}),
+    "shop_info": frozenset({"shop_type", "goods"}),
+}
+CATEGORY_INFO = {"attraction": "attraction_info", "restaurant": "restaurant_info",
+                 "hotel": "hotel_info", "shop": "shop_info"}
+NAME_EN_SOURCES = frozenset({"official", "machine"})
 SOURCE_FIELDS = frozenset({"name", "url", "type", "language", "published_on", "valid_until"})
-PLACE_ID = re.compile(r"place\.([0-9]{4}-[0-9]{2}-[0-9]{2})\.([a-z0-9-]+)\.(attraction|restaurant)\.[a-z0-9][a-z0-9.-]*")
+PLACE_ID = re.compile(
+    r"place\.([0-9]{4}-[0-9]{2}-[0-9]{2})\.([a-z0-9-]+)\."
+    r"(attraction|restaurant|hotel|shop)\.[a-z0-9][a-z0-9.-]*")
 MAX_DESCRIPTION = 300
 
 
@@ -62,13 +65,13 @@ def nullable_text(value: object, *, field: str) -> None:
         raise ValueError(f"{field} must be null or nonblank")
 
 
-def validate_note_object(value: object, *, fields: frozenset, label: str) -> None:
+def validate_info_object(value: object, *, field: str) -> None:
     if value is None:
         return
-    if not isinstance(value, dict) or value.keys() != fields:
-        raise ValueError(f"{label} must have exactly the documented fields")
-    for key in fields:
-        nullable_text(value[key], field=f"{label}.{key}")
+    if not isinstance(value, dict) or value.keys() != INFO_FIELDS[field]:
+        raise ValueError(f"{field} must have exactly the documented fields")
+    for key in INFO_FIELDS[field]:
+        nullable_text(value[key], field=f"{field}.{key}")
 
 
 def validate_source(value: object, *, collected: date) -> None:
@@ -102,17 +105,25 @@ def validate_candidate(entry: object, *, as_of: date) -> None:
         raise ValueError("invalid place candidate id")
     if match.group(1) != entry["collected_on"]:
         raise ValueError("place candidate id date must equal collected_on")
-    if match.group(2) != entry["city"] or entry["city"] not in CITIES:
+    if match.group(2) != entry["city"]:
         raise ValueError("place candidate id city must equal city")
     if match.group(3) != entry["category"]:
         raise ValueError("place candidate id category must equal category")
     if entry["category"] not in CATEGORIES:
         raise ValueError("invalid category")
+    if not nonblank(entry["city"]):
+        raise ValueError("city must be nonblank")
     if not nonblank(entry["subcategory"]):
         raise ValueError("subcategory must be nonblank")
     if not nonblank(entry["name_zh"]):
         raise ValueError("name_zh must be nonblank")
     nullable_text(entry["name_en"], field="name_en")
+    name_en = entry["name_en"]
+    if name_en is None:
+        if entry["name_en_source"] is not None:
+            raise ValueError("name_en_source must be null when name_en is null")
+    elif entry["name_en_source"] not in NAME_EN_SOURCES:
+        raise ValueError("name_en_source must be official or machine when name_en is set")
     nullable_text(entry["district"], field="district")
     nullable_text(entry["address"], field="address")
     description = entry["description_zh"]
@@ -123,14 +134,13 @@ def validate_candidate(entry: object, *, as_of: date) -> None:
     text_array(entry["tags"], field="tags", allow_empty=True)
     if entry["official_url"] is not None and not source_url(entry["official_url"]):
         raise ValueError("invalid official_url")
-    validate_note_object(entry["attraction_info"], fields=ATTRACTION_FIELDS, label="attraction_info")
-    validate_note_object(entry["restaurant_info"], fields=RESTAURANT_FIELDS, label="restaurant_info")
-    if entry["category"] == "attraction":
-        if entry["attraction_info"] is None or entry["restaurant_info"] is not None:
-            raise ValueError("attractions require attraction_info and null restaurant_info")
-    else:
-        if entry["restaurant_info"] is None or entry["attraction_info"] is not None:
-            raise ValueError("restaurants require restaurant_info and null attraction_info")
+    for field in INFO_FIELDS:
+        validate_info_object(entry[field], field=field)
+    required_info = CATEGORY_INFO[entry["category"]]
+    for field in INFO_FIELDS:
+        if (field == required_info and entry[field] is None) or \
+                (field != required_info and entry[field] is not None):
+            raise ValueError(f"{entry['category']} requires {required_info} and null other info objects")
     sources = entry["sources"]
     if not isinstance(sources, list) or not sources:
         raise ValueError("sources must be a nonempty array")

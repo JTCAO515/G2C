@@ -1,694 +1,880 @@
-# 广州景点与餐厅候选清单（2026-11-18 批次）
+# 广州景点、餐厅、酒店与商店候选清单（2026-11-18 批次）
 
-> **全部 359 条均为 `待核实` 候选，不是已确认事实。** 本文件不得直接用于 Lio 回答、FACT wire 或公开页面的“已核实”内容；边界与晋级流程见 [README.md](README.md)。JSON 数据源：[2026-11-18-guangzhou-attractions.json](2026-11-18-guangzhou-attractions.json)、[2026-11-18-guangzhou-restaurants.json](2026-11-18-guangzhou-restaurants.json)。
+> **全部 458 条均为 `待核实` 候选，不是已确认事实。** 本文件不得直接用于 Lio 回答、FACT wire 或公开页面的“已核实”内容；边界与晋级流程见 [README.md](README.md)。JSON 数据源：[2026-11-18-guangzhou-attractions.json](2026-11-18-guangzhou-attractions.json)、[2026-11-18-guangzhou-restaurants.json](2026-11-18-guangzhou-restaurants.json)、[2026-11-18-guangzhou-hotels.json](2026-11-18-guangzhou-hotels.json)、[2026-11-18-guangzhou-shops.json](2026-11-18-guangzhou-shops.json)。
 
 ## 总览
 
-- 收集日期：2026-11-18；候选数：**359** 条（景点 155、餐厅 204）；状态：全部 `待核实`。
+- 收集日期：2026-11-18；候选数：**458** 条：景点 155、餐厅 204、酒店 60、商店 39；状态：全部 `待核实`。
+- 英文名来源：官方英文名 203 条、机器翻译 255 条、暂无英文名 0 条。
 - 景点等级/类别：3A 69、4A 34、5A 2、其他景点 50
-- 餐厅来源/子类（前 10）：必比登推介 52、米其林指南入选餐厅 41、美食街 18、米其林一星 17、粤菜 7、黑珍珠（一钻） 6、茶楼 4、米其林二星 3、米其林指南入选 3、黑珍珠（二钻） 3
-- 所在区覆盖：未标区 117、越秀 57、荔湾 53、天河 25、海珠 24、从化 17、番禺 15、增城 14、白云 12、花都 12、南沙 7、黄埔 6
-- 来源类型（按来源条目统计）：政府 166、商业平台 121、官方媒体 62、其他公开来源 45、场馆/景区官方 4
-- 有英文名 68 条；有地址 191 条；来源页有明确发布日期的 302 条；354 条至少列出一项缺口；50 条记录到冲突。
+- 餐厅子类（前 10）：必比登推介 52、米其林指南入选餐厅 41、美食街 18、米其林一星 17、粤菜 7、黑珍珠（一钻） 6、茶楼 4、米其林二星 3、米其林指南入选 3、黑珍珠（二钻） 3
+- 酒店子类：国际品牌豪华酒店 13、商务酒店 11、经济型酒店 6、老牌宾馆 5、历史地标豪华酒店 4、度假会议酒店 3、温泉度假酒店 3、度假酒店 2、历史地标商务酒店 1、商务会议酒店 1
+- 商店子类：购物中心 4、服装批发市场 4、童装批发市场 3、百货公司 2、书店/文化空间 2、文创商店 2、老字号直营店 2、老字号腊味店 2、购物中心/文商旅综合体 1、博物馆文创商店 1
+- 所在区覆盖：未标 127、越秀 81、荔湾 74、天河 43、海珠 32、番禺 20、从化 19、增城 18、白云 15、花都 13、黄埔 8、南沙 8
+- 来源类型（按来源条目统计）：政府 241、商业平台 121、官方媒体 65、其他公开来源 45、场馆/景区/酒店官方 25
+- 字段完整度：有地址 284 条；来源页有明确发布日期的 382 条；394 条至少列出一项缺口；59 条记录到冲突。
 - 本批以官方名录/榜单批量提取为主，**未做全面查重、未统一纠错、未逐条事实复核**；近似重复和缺失原样保留。
 
 ## 景点候选（按所在区分组）
 
 ### 越秀（34 条）
 
-| # | 名称 | 等级/类别 | 地址 | 标签 | 来源 |
-|---|---|---|---|---|---|
-| 1 | “三·二九”起义指挥部旧址纪念馆 | 纪念馆 | 越秀区越华路小东营5号 | 纪念馆、免费开放、近代史 | [广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）](https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html) |
-| 2 | 三元宫 | 宗教活动场所 | 越秀区应元路11号 | 宗教活动场所、道教、广州市文物保护单位 | [三元宫（广州市越秀区人民政府门户网站，来源广州三元宫公众号）](http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665063.html) |
-| 3 | 东山湖公园 | 公园 | 越秀区东湖路123号 | 公园、综合公园、免费开放、湖泊 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
-| 4 | 东风公园 | 公园 | 越秀区广州大道北199号 | 公园、综合公园、免费开放 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
-| 5 | 中国共产党第三次全国代表大会会址纪念馆 | 纪念馆 | 越秀区恤孤院路3号 | 纪念馆、红色旅游、免费开放、党史、4A级景区、A级景区名录 | [广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）](https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html) |
-| 6 | 中山纪念堂 | 4A级景区 | 广州市东风中路259号 | 4A级景区、A级景区名录、红色旅游、公园、纪念性公园、中山纪念堂 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
-| 7 | 人民公园 | 公园 | 越秀区连新路8号 | 公园、纪念性公园、免费开放 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
-| 8 | 光孝寺 | 宗教场所/佛寺 | 越秀区光孝路109号 | 待核实、寺院、全国重点文物保护单位、越秀、免费场所、宗教活动场所、佛教 | [广州市越秀区人民政府门户网站·走进越秀·宗教文化](http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665058.html) |
-| 9 | 六榕寺 | 宗教场所/佛寺 | 广州市越秀区六榕路87号 | 待核实、寺院、历史建筑、越秀、免费场所、宗教活动场所、佛教、花塔 | [广州市越秀区人民政府门户网站·走进越秀·宗教文化](http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665056.html) |
-| 10 | 北京路文化旅游区（含南越王宫博物馆） | 4A级景区 | 广州市北京路 | 4A级景区、A级景区名录、特色街区、开放式景区 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10899669.html) |
-| 11 | 北京路步行街 | 商业步行街/历史文化街区 | 未知 | 待核实、步行街、千年古道、购物、美食、A级名录已含（4A） | [广州市人民政府门户网站·花城文旅专题·羊城八景“越秀风华”（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017724.html) |
-| 12 | 南越王博物院（王墓展区）景区 | 4A级景区 | 广州市解放北路867号 | 4A级景区、A级景区名录、文博院馆、博物馆、国家一级博物馆、遗址博物馆、南越国 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
-| 13 | 圣心大教堂（石室） | 宗教场所/天主教堂 | 广州市越秀区一德路旧部前56号 | 待核实、教堂、历史建筑、拍照、越秀、宗教活动场所、天主教、全国重点文物保护单位、哥特式建筑 | [广州市越秀区人民政府门户网站·走进越秀·宗教文化](http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665100.html) |
-| 14 | 基督教东山堂 | 宗教活动场所 | 越秀区寺贝通津9号 | 宗教活动场所、基督教、广州市文物保护单位 | [基督教东山堂（广州市越秀区人民政府门户网站）](http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665091.html) |
-| 15 | 大佛寺 | 宗教场所/佛寺 | 广州市越秀区惠福东路惠新中街21号 | 待核实、寺院、北京路、越秀、免费场所、宗教活动场所、佛教、广州市重点文物保护单位 | [广州市越秀区人民政府门户网站·走进越秀·宗教文化（来源标注：大佛寺官网）](http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665070.html) |
-| 16 | 广东华侨博物馆 | 博物馆 | 越秀区二沙岛烟雨路32号 | 博物馆、华侨、免费开放、二沙岛 | [广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）](https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html) |
-| 17 | 广东都城隍庙（广州城隍庙） | 宗教活动场所 | 越秀区中山四路忠佑大街48号 | 宗教活动场所、道教、广州市文物保护单位、城隍庙 | [广东都城隍庙（广州市越秀区人民政府门户网站）](http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665031.html) |
-| 18 | 广州兰圃 | 公园 | 越秀区解放北路901号 | 公园、植物园、兰花 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
-| 19 | 广州动物园 | 4A级景区 | 广州市先烈中路120号 | 4A级景区、A级景区名录、主题游乐、公园、动物园、亲子 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
-| 20 | 广州博物馆 | 博物馆 | 广州市越秀区越秀公园内镇海楼 | 3A级景区、越秀区、博物馆、历史建筑、国家一级博物馆、镇海楼、历史 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 21 | 广州市南粤先贤馆-五仙古观文化旅游区 | 文化古迹 | 广州市越秀区惠福西路233号 | 3A级景区、越秀区、文化古迹、历史建筑 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 22 | 广州烈士陵园 | 4A级景区 | 广州市中山二路92号 | 4A级景区、A级景区名录、红色旅游 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
-| 23 | 广州起义烈士陵园 | 公园 | 越秀区中山二路92号 | 公园、纪念性公园、免费开放、红色旅游 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
-| 24 | 广州起义纪念馆 | 纪念馆 | 广州起义路200号之一 | 纪念馆、红色旅游、免费开放、4A级景区、A级景区名录 | [广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）](https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html) |
-| 25 | 广州近代史博物馆 | 博物馆 | 广州市越秀区陵园西路2号大院 | 3A级景区、越秀区、博物馆、红色旅游 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 26 | 广州鲁迅纪念馆 | 纪念馆 | 越秀区文明路215号 | 待核实、纪念馆、红色史迹、室内场馆、国家二级博物馆、鲁迅、免费开放 | [广州市人民政府门户网站·花城文旅专题（来源标注：广东省博物馆）](https://www.gz.gov.cn/zt/hcwl/ycdy/rwjd/content/post_11020989.html) |
-| 27 | 怀圣光塔寺 | 宗教活动场所 | 越秀区光塔路56号 | 宗教活动场所、伊斯兰教、全国重点文物保护单位、光塔 | [怀圣光塔寺（广州市人民政府门户网站，来源广州伊斯兰教协会）](https://www.gz.gov.cn/zlgz/gzly/wzgz/zjcs/yslj/content/mpost_7760217.html) |
-| 28 | 怀圣寺（光塔寺） | 宗教场所/清真寺 | 越秀区光塔路56号 | 待核实、清真寺、海上丝绸之路、越秀、历史建筑 | [广州市越秀区人民政府门户网站·走进越秀·宗教文化](http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665060.html) |
-| 29 | 毛泽东同志主办农民运动讲习所旧址纪念馆 | 纪念馆 | 越秀区中山四路42号 | 纪念馆、国家二级博物馆、红色旅游、番禺学宫、4A级景区、A级景区名录 | [广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）](https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html) |
-| 30 | 流花湖公园 | 公园 | 越秀区流花路100号 | 公园、综合公园、免费开放、湖泊 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
-| 31 | 清真先贤古墓 | 宗教活动场所 | 越秀区解放北路901号之一 | 宗教活动场所、伊斯兰教、全国重点文物保护单位 | [先贤古墓（广州市人民政府门户网站，来源市民宗局）](https://www.gz.gov.cn/zlgz/gzly/wzgz/zjcs/yslj/content/mpost_7760215.html) |
-| 32 | 越秀公园 | 4A级景区 | 广州市解放北路988号 | 4A级景区、A级景区名录、城市公园、公园、综合公园、免费开放、越秀山 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
-| 33 | 麓湖公园 | 公园 | 越秀区麓湖路11号 | 公园、综合公园、免费开放、山水园林 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
-| 34 | 黄花岗公园 | 4A级景区 | 广州市先烈中路79号 | 4A级景区、A级景区名录、红色旅游、公园、纪念性公园、免费开放、辛亥革命 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| # | 中文名 | 英文名 | 等级/类别 | 地址 | 标签 | 来源 |
+|---|---|---|---|---|---|---|
+| 1 | “三·二九”起义指挥部旧址纪念馆 | Memorial Hall of the March 29 Uprising Command Post | 纪念馆 | 越秀区越华路小东营5号 | 纪念馆、免费开放、近代史 | [广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）](https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html) |
+| 2 | 三元宫 | Sanyuan Palace | 宗教活动场所 | 越秀区应元路11号 | 宗教活动场所、道教、广州市文物保护单位 | [三元宫（广州市越秀区人民政府门户网站，来源广州三元宫公众号）](http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665063.html) |
+| 3 | 东山湖公园 | Dongshanhu Park | 公园 | 越秀区东湖路123号 | 公园、综合公园、免费开放、湖泊 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
+| 4 | 东风公园 | Dongfeng Park | 公园 | 越秀区广州大道北199号 | 公园、综合公园、免费开放 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
+| 5 | 中国共产党第三次全国代表大会会址纪念馆 | Site of the Third National Congress of the CPC Memorial Hall | 纪念馆 | 越秀区恤孤院路3号 | 纪念馆、红色旅游、免费开放、党史、4A级景区、A级景区名录 | [广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）](https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html) |
+| 6 | 中山纪念堂 | Sun Yat-sen Memorial Hall | 4A级景区 | 广州市东风中路259号 | 4A级景区、A级景区名录、红色旅游、公园、纪念性公园、中山纪念堂 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| 7 | 人民公园 | People's Park | 公园 | 越秀区连新路8号 | 公园、纪念性公园、免费开放 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
+| 8 | 光孝寺 | Guangxiao Temple | 宗教场所/佛寺 | 越秀区光孝路109号 | 待核实、寺院、全国重点文物保护单位、越秀、免费场所、宗教活动场所、佛教 | [广州市越秀区人民政府门户网站·走进越秀·宗教文化](http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665058.html) |
+| 9 | 六榕寺 | Temple of the Six Banyan Trees | 宗教场所/佛寺 | 广州市越秀区六榕路87号 | 待核实、寺院、历史建筑、越秀、免费场所、宗教活动场所、佛教、花塔 | [广州市越秀区人民政府门户网站·走进越秀·宗教文化](http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665056.html) |
+| 10 | 北京路文化旅游区（含南越王宫博物馆） | Beijing Road Cultural Tourism Area (incl. Nanyue King Palace Museum) | 4A级景区 | 广州市北京路 | 4A级景区、A级景区名录、特色街区、开放式景区 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10899669.html) |
+| 11 | 北京路步行街 | Beijing Road Pedestrian Street | 商业步行街/历史文化街区 | 未知 | 待核实、步行街、千年古道、购物、美食、A级名录已含（4A） | [广州市人民政府门户网站·花城文旅专题·羊城八景“越秀风华”（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017724.html) |
+| 12 | 南越王博物院（王墓展区）景区 | Nanyue King Museum (Tomb Exhibition Area) | 4A级景区 | 广州市解放北路867号 | 4A级景区、A级景区名录、文博院馆、博物馆、国家一级博物馆、遗址博物馆、南越国 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| 13 | 圣心大教堂（石室） | Sacred Heart Cathedral (Shishi) | 宗教场所/天主教堂 | 广州市越秀区一德路旧部前56号 | 待核实、教堂、历史建筑、拍照、越秀、宗教活动场所、天主教、全国重点文物保护单位、哥特式建筑 | [广州市越秀区人民政府门户网站·走进越秀·宗教文化](http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665100.html) |
+| 14 | 基督教东山堂 | Dongshan Church | 宗教活动场所 | 越秀区寺贝通津9号 | 宗教活动场所、基督教、广州市文物保护单位 | [基督教东山堂（广州市越秀区人民政府门户网站）](http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665091.html) |
+| 15 | 大佛寺 | Dafo Temple | 宗教场所/佛寺 | 广州市越秀区惠福东路惠新中街21号 | 待核实、寺院、北京路、越秀、免费场所、宗教活动场所、佛教、广州市重点文物保护单位 | [广州市越秀区人民政府门户网站·走进越秀·宗教文化（来源标注：大佛寺官网）](http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665070.html) |
+| 16 | 广东华侨博物馆 | Guangdong Overseas Chinese Museum | 博物馆 | 越秀区二沙岛烟雨路32号 | 博物馆、华侨、免费开放、二沙岛 | [广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）](https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html) |
+| 17 | 广东都城隍庙（广州城隍庙） | Guangdong City God Temple (Guangzhou City God Temple) | 宗教活动场所 | 越秀区中山四路忠佑大街48号 | 宗教活动场所、道教、广州市文物保护单位、城隍庙 | [广东都城隍庙（广州市越秀区人民政府门户网站）](http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665031.html) |
+| 18 | 广州兰圃 | Guangzhou Orchid Garden | 公园 | 越秀区解放北路901号 | 公园、植物园、兰花 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
+| 19 | 广州动物园 | Guangzhou Zoo | 4A级景区 | 广州市先烈中路120号 | 4A级景区、A级景区名录、主题游乐、公园、动物园、亲子 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| 20 | 广州博物馆 | Guangzhou Museum | 博物馆 | 广州市越秀区越秀公园内镇海楼 | 3A级景区、越秀区、博物馆、历史建筑、国家一级博物馆、镇海楼、历史 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 21 | 广州市南粤先贤馆-五仙古观文化旅游区 | Nanyue Sages Hall - Wuxian Ancient Temple Cultural Tourism Area | 文化古迹 | 广州市越秀区惠福西路233号 | 3A级景区、越秀区、文化古迹、历史建筑 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 22 | 广州烈士陵园 | Guangzhou Martyrs' Cemetery | 4A级景区 | 广州市中山二路92号 | 4A级景区、A级景区名录、红色旅游 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| 23 | 广州起义烈士陵园 | Guangzhou Uprising Martyrs' Cemetery | 公园 | 越秀区中山二路92号 | 公园、纪念性公园、免费开放、红色旅游 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
+| 24 | 广州起义纪念馆 | Guangzhou Uprising Memorial Hall | 纪念馆 | 广州起义路200号之一 | 纪念馆、红色旅游、免费开放、4A级景区、A级景区名录 | [广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）](https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html) |
+| 25 | 广州近代史博物馆 | Guangzhou Modern History Museum | 博物馆 | 广州市越秀区陵园西路2号大院 | 3A级景区、越秀区、博物馆、红色旅游 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 26 | 广州鲁迅纪念馆 | Guangzhou Lu Xun Memorial Hall | 纪念馆 | 越秀区文明路215号 | 待核实、纪念馆、红色史迹、室内场馆、国家二级博物馆、鲁迅、免费开放 | [广州市人民政府门户网站·花城文旅专题（来源标注：广东省博物馆）](https://www.gz.gov.cn/zt/hcwl/ycdy/rwjd/content/post_11020989.html) |
+| 27 | 怀圣光塔寺 | Huaisheng Guangta Mosque | 宗教活动场所 | 越秀区光塔路56号 | 宗教活动场所、伊斯兰教、全国重点文物保护单位、光塔 | [怀圣光塔寺（广州市人民政府门户网站，来源广州伊斯兰教协会）](https://www.gz.gov.cn/zlgz/gzly/wzgz/zjcs/yslj/content/mpost_7760217.html) |
+| 28 | 怀圣寺（光塔寺） | Huaisheng Mosque (Guangta Temple) | 宗教场所/清真寺 | 越秀区光塔路56号 | 待核实、清真寺、海上丝绸之路、越秀、历史建筑 | [广州市越秀区人民政府门户网站·走进越秀·宗教文化](http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665060.html) |
+| 29 | 毛泽东同志主办农民运动讲习所旧址纪念馆 | Memorial Hall of the Peasant Movement Training Institute | 纪念馆 | 越秀区中山四路42号 | 纪念馆、国家二级博物馆、红色旅游、番禺学宫、4A级景区、A级景区名录 | [广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）](https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html) |
+| 30 | 流花湖公园 | Liuhuahu Park | 公园 | 越秀区流花路100号 | 公园、综合公园、免费开放、湖泊 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
+| 31 | 清真先贤古墓 | Tomb of the Islamic Sages | 宗教活动场所 | 越秀区解放北路901号之一 | 宗教活动场所、伊斯兰教、全国重点文物保护单位 | [先贤古墓（广州市人民政府门户网站，来源市民宗局）](https://www.gz.gov.cn/zlgz/gzly/wzgz/zjcs/yslj/content/mpost_7760215.html) |
+| 32 | 越秀公园 | Yuexiu Park | 4A级景区 | 广州市解放北路988号 | 4A级景区、A级景区名录、城市公园、公园、综合公园、免费开放、越秀山 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| 33 | 麓湖公园 | Luhu Park | 公园 | 越秀区麓湖路11号 | 公园、综合公园、免费开放、山水园林 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
+| 34 | 黄花岗公园 | Huanghuagang Park | 4A级景区 | 广州市先烈中路79号 | 4A级景区、A级景区名录、红色旅游、公园、纪念性公园、免费开放、辛亥革命 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
 
 ### 荔湾（10 条）
 
-| # | 名称 | 等级/类别 | 地址 | 标签 | 来源 |
-|---|---|---|---|---|---|
-| 1 | 上下九步行街 | 商业步行街 | 未知 | 待核实、步行街、美食、购物、老城 | [广州市人民政府门户网站·花城文旅专题·羊城八景“荔湾胜境”（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017723.html) |
-| 2 | 广东美术馆 | 美术馆 | 广州市荔湾区白鹅潭南路19号（白鹅潭大湾区艺术中心内）；本馆：广州市越秀区二沙岛烟雨路38号 | 待核实、美术馆、免预约、室内场馆、展览 | [广东美术馆官网（首页·开放时间/参观指南）](https://www.gdmoa.org/) |
-| 3 | 广州十三行博物馆 | 博物馆/历史专题 | 广州市荔湾区西堤二马路37号（广州文化公园内） | 待核实、博物馆、十三行、外销艺术品、室内场馆、海上丝绸之路 | [广州市社会科学院网站·文化设施·博物馆（来源标注：广州十三行博物馆官网）](https://www.gzass.gd.cn/whzc/wenhuasheshi/bowuguan/286.html) |
-| 4 | 广州市沙面·西堤旅游区 | 历史文化街区 | 广州市荔湾区黄沙大道192号 | 3A级景区、荔湾区、历史文化街区、欧陆建筑 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 5 | 广州市西关永庆坊旅游区 | 4A级景区 | 广州市荔湾区恩宁路99号 | 4A级景区、A级景区名录、特色街区、待核实、历史文化街区、非遗、夜间经济、A级名录已含（4A） | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
-| 6 | 沙面岛 | 历史街区/建筑群 | 未知 | 待核实、历史街区、近代建筑、拍照、A级名录已含（沙面·西堤3A） | [广州市人民政府门户网站·花城文旅专题·羊城八景“荔湾胜境”（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017723.html) |
-| 7 | 白鹅潭大湾区艺术中心 | 文化艺术综合体 | 未知 | 待核实、艺术、建筑、室内场馆、白鹅潭、亲子 | [广州市人民政府门户网站·花城文旅专题·羊城八景“荔湾胜境”（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017723.html) |
-| 8 | 粤剧艺术博物馆 | 博物馆/戏曲专题 | 广州市荔湾区恩宁路127号 | 待核实、粤剧、非遗、园林、室内外结合、戏曲演出、博物馆、岭南园林 | [广州市荔湾区人民政府门户网站·多宝街（粤剧艺术博物馆介绍）](http://www.lw.gov.cn/zwgkk/gzjg/qjdbsc/dbj/hldb/content/post_9730490.html) |
-| 9 | 荔枝湾涌 | 水系/历史街区 | 未知 | 待核实、水系、老城风貌、A级名录已含（永庆坊旅游区4A） | [广州市人民政府门户网站·花城文旅专题·羊城八景“荔湾胜境”（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017723.html) |
-| 10 | 陈家祠 | 4A级景区 | 广州市中山七路恩龙里34号 | 4A级景区、A级景区名录、文博院馆、博物馆、国家一级博物馆、陈家祠、民间工艺 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| # | 中文名 | 英文名 | 等级/类别 | 地址 | 标签 | 来源 |
+|---|---|---|---|---|---|---|
+| 1 | 上下九步行街 | Shangxiajiu Pedestrian Street | 商业步行街 | 未知 | 待核实、步行街、美食、购物、老城 | [广州市人民政府门户网站·花城文旅专题·羊城八景“荔湾胜境”（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017723.html) |
+| 2 | 广东美术馆 | Guangdong Museum of Art | 美术馆 | 广州市荔湾区白鹅潭南路19号（白鹅潭大湾区艺术中心内）；本馆：广州市越秀区二沙岛烟雨路38号 | 待核实、美术馆、免预约、室内场馆、展览 | [广东美术馆官网（首页·开放时间/参观指南）](https://www.gdmoa.org/) |
+| 3 | 广州十三行博物馆 | Guangzhou Thirteen Hongs Museum | 博物馆/历史专题 | 广州市荔湾区西堤二马路37号（广州文化公园内） | 待核实、博物馆、十三行、外销艺术品、室内场馆、海上丝绸之路 | [广州市社会科学院网站·文化设施·博物馆（来源标注：广州十三行博物馆官网）](https://www.gzass.gd.cn/whzc/wenhuasheshi/bowuguan/286.html) |
+| 4 | 广州市沙面·西堤旅游区 | Shamian-Xidi Tourist Area | 历史文化街区 | 广州市荔湾区黄沙大道192号 | 3A级景区、荔湾区、历史文化街区、欧陆建筑 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 5 | 广州市西关永庆坊旅游区 | Xiguan Yongqingfang Tourist Area | 4A级景区 | 广州市荔湾区恩宁路99号 | 4A级景区、A级景区名录、特色街区、待核实、历史文化街区、非遗、夜间经济、A级名录已含（4A） | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
+| 6 | 沙面岛 | Shamian Island | 历史街区/建筑群 | 未知 | 待核实、历史街区、近代建筑、拍照、A级名录已含（沙面·西堤3A） | [广州市人民政府门户网站·花城文旅专题·羊城八景“荔湾胜境”（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017723.html) |
+| 7 | 白鹅潭大湾区艺术中心 | Bai'etan Greater Bay Area Art Center | 文化艺术综合体 | 未知 | 待核实、艺术、建筑、室内场馆、白鹅潭、亲子 | [广州市人民政府门户网站·花城文旅专题·羊城八景“荔湾胜境”（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017723.html) |
+| 8 | 粤剧艺术博物馆 | Cantonese Opera Art Museum | 博物馆/戏曲专题 | 广州市荔湾区恩宁路127号 | 待核实、粤剧、非遗、园林、室内外结合、戏曲演出、博物馆、岭南园林 | [广州市荔湾区人民政府门户网站·多宝街（粤剧艺术博物馆介绍）](http://www.lw.gov.cn/zwgkk/gzjg/qjdbsc/dbj/hldb/content/post_9730490.html) |
+| 9 | 荔枝湾涌 | Lizhiwan Creek | 水系/历史街区 | 未知 | 待核实、水系、老城风貌、A级名录已含（永庆坊旅游区4A） | [广州市人民政府门户网站·花城文旅专题·羊城八景“荔湾胜境”（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017723.html) |
+| 10 | 陈家祠 | Guangdong Folk Arts Museum | 4A级景区 | 广州市中山七路恩龙里34号 | 4A级景区、A级景区名录、文博院馆、博物馆、国家一级博物馆、陈家祠、民间工艺 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
 
 ### 海珠（15 条）
 
-| # | 名称 | 等级/类别 | 地址 | 标签 | 来源 |
-|---|---|---|---|---|---|
-| 1 | 十香园纪念馆 | 纪念馆 | 广州市海珠区江南大道中怀德大街3号 | 3A级景区、海珠区、纪念馆、岭南文化、A级景区名录、文博院馆 | [广州市海珠区人民政府门户网站《海珠区A级景区信息》](https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html) |
-| 2 | 咏声动画科技馆 | 科普馆 | 广州市海珠区南华东路草芳围2号 | 3A级景区、海珠区、科普、亲子、A级景区名录、科普场馆 | [广州市海珠区人民政府门户网站《海珠区A级景区信息》](https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html) |
-| 3 | 太古仓码头 | 文创街区 | 广州市海珠区革新路124号 | 3A级景区、海珠区、工业遗产、文创街区、A级景区名录、文创园区 | [广州市海珠区人民政府门户网站《海珠区A级景区信息》](https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html) |
-| 4 | 孙中山大元帅府纪念馆 | 纪念馆 | 广州市海珠区纺织路东沙街18号 | 3A级景区、海珠区、纪念馆、红色旅游、全国重点文物保护单位、孙中山、近代史、A级景区名录、文博院馆 | [广州市海珠区人民政府门户网站《海珠区A级景区信息》](https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html) |
-| 5 | 广州地铁博物馆 | 博物馆 | 广州市海珠区新港东路1228号万胜广场C塔裙楼 | 3A级景区、海珠区、博物馆、科普、A级景区名录、科普场馆 | [广州市海珠区人民政府门户网站《海珠区A级景区信息》](https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html) |
-| 6 | 广州塔 | 4A级景区 | 广州市海珠区阅江西路222号 | 4A级景区、A级景区名录、主题游乐 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
-| 7 | 广州市海珠湿地公园景区 | 4A级景区 | 广州市海珠区新滘中路168号 | 4A级景区、A级景区名录、自然生态 | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
-| 8 | 广州艺术博物院（广州美术馆） | 美术馆 | 海珠区艺苑路198号 | 待核实、美术馆、艺术、室内场馆、新中轴线、A级名录已含（3A）、博物馆、免费开放 | [广州市人民政府门户网站·花城文旅专题（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017726.html) |
-| 9 | 海幢寺 | 宗教活动场所 | 海珠区同福中路337号 | 宗教活动场所、佛教 | [海幢寺（广州市人民政府门户网站，来源市民宗局）](https://www.gz.gov.cn/zlgz/gzly/wzgz/zjcs/fj/content/post_7760652.html) |
-| 10 | 潘鹤雕塑艺术园 | 艺术园 | 广州市海珠区广州大道南后滘西大街57号 | 3A级景区、海珠区、雕塑艺术、艺术园区、A级景区名录 | [广州市海珠区人民政府门户网站《海珠区A级景区信息》](https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html) |
-| 11 | 珠江琶醍啤酒文化创意艺术区 | 文创街区 | 广州市海珠区阅江西路磨碟沙大街118号 | 3A级景区、海珠区、啤酒文化、文创街区、A级景区名录、文创园区 | [广州市海珠区人民政府门户网站《海珠区A级景区信息》](https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html) |
-| 12 | 纯阳观 | 宗教活动场所 | 海珠区瑞康路268号 | 宗教活动场所、道教、广州市文物保护单位 | [纯阳观（广州市海珠区人民政府门户网站）](https://www.haizhu.gov.cn/hzdt/ztlm/tzhz/rjhj/lyjd/hsgy/content/post_9177298.html) |
-| 13 | 邓世昌纪念馆 | 纪念馆 | 广州市海珠区宝岗大道中龙涎里2号 | 3A级景区、海珠区、纪念馆、红色旅游、A级景区名录、文博院馆 | [广州市海珠区人民政府门户网站《海珠区A级景区信息》](https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html) |
-| 14 | 陈李济中药文化园 | 中医药文化园 | 广州市海珠区广州大道南1688号 | 3A级景区、海珠区、中医药文化、工业旅游、A级景区名录 | [广州市海珠区人民政府门户网站《海珠区A级景区信息》](https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html) |
-| 15 | 黄埔古港景区 | 古港遗址 | 广州市海珠区琶洲街道石基村 | 3A级景区、海珠区、海上丝绸之路、古村、A级景区名录、历史文化 | [广州市海珠区人民政府门户网站《海珠区A级景区信息》](https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html) |
+| # | 中文名 | 英文名 | 等级/类别 | 地址 | 标签 | 来源 |
+|---|---|---|---|---|---|---|
+| 1 | 十香园纪念馆 | Shixiang Garden Memorial Hall | 纪念馆 | 广州市海珠区江南大道中怀德大街3号 | 3A级景区、海珠区、纪念馆、岭南文化、A级景区名录、文博院馆 | [广州市海珠区人民政府门户网站《海珠区A级景区信息》](https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html) |
+| 2 | 咏声动画科技馆 | Yongsheng Animation Technology Museum | 科普馆 | 广州市海珠区南华东路草芳围2号 | 3A级景区、海珠区、科普、亲子、A级景区名录、科普场馆 | [广州市海珠区人民政府门户网站《海珠区A级景区信息》](https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html) |
+| 3 | 太古仓码头 | Taigucang Wharf | 文创街区 | 广州市海珠区革新路124号 | 3A级景区、海珠区、工业遗产、文创街区、A级景区名录、文创园区 | [广州市海珠区人民政府门户网站《海珠区A级景区信息》](https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html) |
+| 4 | 孙中山大元帅府纪念馆 | Memorial Hall of Sun Yat-sen's Grand Marshal Mansion | 纪念馆 | 广州市海珠区纺织路东沙街18号 | 3A级景区、海珠区、纪念馆、红色旅游、全国重点文物保护单位、孙中山、近代史、A级景区名录、文博院馆 | [广州市海珠区人民政府门户网站《海珠区A级景区信息》](https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html) |
+| 5 | 广州地铁博物馆 | Guangzhou Metro Museum | 博物馆 | 广州市海珠区新港东路1228号万胜广场C塔裙楼 | 3A级景区、海珠区、博物馆、科普、A级景区名录、科普场馆 | [广州市海珠区人民政府门户网站《海珠区A级景区信息》](https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html) |
+| 6 | 广州塔 | Canton Tower | 4A级景区 | 广州市海珠区阅江西路222号 | 4A级景区、A级景区名录、主题游乐 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| 7 | 广州市海珠湿地公园景区 | Haizhu Wetland Park Scenic Area | 4A级景区 | 广州市海珠区新滘中路168号 | 4A级景区、A级景区名录、自然生态 | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
+| 8 | 广州艺术博物院（广州美术馆） | Guangzhou Art Museum | 美术馆 | 海珠区艺苑路198号 | 待核实、美术馆、艺术、室内场馆、新中轴线、A级名录已含（3A）、博物馆、免费开放 | [广州市人民政府门户网站·花城文旅专题（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017726.html) |
+| 9 | 海幢寺 | Haichuang Temple | 宗教活动场所 | 海珠区同福中路337号 | 宗教活动场所、佛教 | [海幢寺（广州市人民政府门户网站，来源市民宗局）](https://www.gz.gov.cn/zlgz/gzly/wzgz/zjcs/fj/content/post_7760652.html) |
+| 10 | 潘鹤雕塑艺术园 | Pan He Sculpture Art Park | 艺术园 | 广州市海珠区广州大道南后滘西大街57号 | 3A级景区、海珠区、雕塑艺术、艺术园区、A级景区名录 | [广州市海珠区人民政府门户网站《海珠区A级景区信息》](https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html) |
+| 11 | 珠江琶醍啤酒文化创意艺术区 | Zhujiang Party Pier Beer Culture and Art Zone | 文创街区 | 广州市海珠区阅江西路磨碟沙大街118号 | 3A级景区、海珠区、啤酒文化、文创街区、A级景区名录、文创园区 | [广州市海珠区人民政府门户网站《海珠区A级景区信息》](https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html) |
+| 12 | 纯阳观 | Chunyang Temple | 宗教活动场所 | 海珠区瑞康路268号 | 宗教活动场所、道教、广州市文物保护单位 | [纯阳观（广州市海珠区人民政府门户网站）](https://www.haizhu.gov.cn/hzdt/ztlm/tzhz/rjhj/lyjd/hsgy/content/post_9177298.html) |
+| 13 | 邓世昌纪念馆 | Deng Shichang Memorial Hall | 纪念馆 | 广州市海珠区宝岗大道中龙涎里2号 | 3A级景区、海珠区、纪念馆、红色旅游、A级景区名录、文博院馆 | [广州市海珠区人民政府门户网站《海珠区A级景区信息》](https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html) |
+| 14 | 陈李济中药文化园 | Chenliji Traditional Chinese Medicine Cultural Park | 中医药文化园 | 广州市海珠区广州大道南1688号 | 3A级景区、海珠区、中医药文化、工业旅游、A级景区名录 | [广州市海珠区人民政府门户网站《海珠区A级景区信息》](https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html) |
+| 15 | 黄埔古港景区 | Huangpu Ancient Port Scenic Area | 古港遗址 | 广州市海珠区琶洲街道石基村 | 3A级景区、海珠区、海上丝绸之路、古村、A级景区名录、历史文化 | [广州市海珠区人民政府门户网站《海珠区A级景区信息》](https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html) |
 
 ### 天河（8 条）
 
-| # | 名称 | 等级/类别 | 地址 | 标签 | 来源 |
-|---|---|---|---|---|---|
-| 1 | 十九路军淞沪抗日阵亡将士陵园 | 纪念陵园 | 广州市水荫路113号 | 3A级景区、天河区、红色旅游、纪念陵园、A级景区名录、纪念地 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 2 | 华南植物园 | 4A级景区 | 广州市天河区天源路1190号 | 4A级景区、A级景区名录、城市公园 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
-| 3 | 天河公园 | 公园 | 天河区中山大道西 | 公园、综合公园、免费开放 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
-| 4 | 广东省博物馆 | 博物馆/综合馆 | 天河区珠江东路2号 | 待核实、博物馆、国家一级博物馆、室内场馆、新中轴线、免费开放、预约参观 | [广州市人民政府门户网站·花城文旅专题（来源标注：广东省博物馆）](https://www.gz.gov.cn/zt/hcwl/ycdy/rwjd/content/post_11020989.html) |
-| 5 | 广东省方志馆旅游区 | 文化场馆 | 广州市天河区天河北路618号A座 | 3A级景区、天河区、文化场馆、方志文化 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 6 | 正佳广场商贸旅游区 | 4A级景区 | 广州市天河路228号 | 4A级景区、A级景区名录、主题游乐 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
-| 7 | 猎德现代化都市旅游区 | 都市旅游区 | 广州市天河区天府路1号天河区人民政府 | 3A级景区、天河区、都市旅游、城市更新 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 8 | 珠江公园 | 公园 | 天河区金穗路900号 | 公园、综合公园、免费开放 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
+| # | 中文名 | 英文名 | 等级/类别 | 地址 | 标签 | 来源 |
+|---|---|---|---|---|---|---|
+| 1 | 十九路军淞沪抗日阵亡将士陵园 | Cemetery of the 19th Route Army Martyrs in the Shanghai Battle | 纪念陵园 | 广州市水荫路113号 | 3A级景区、天河区、红色旅游、纪念陵园、A级景区名录、纪念地 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 2 | 华南植物园 | South China Botanical Garden | 4A级景区 | 广州市天河区天源路1190号 | 4A级景区、A级景区名录、城市公园 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| 3 | 天河公园 | Tianhe Park | 公园 | 天河区中山大道西 | 公园、综合公园、免费开放 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
+| 4 | 广东省博物馆 | Guangdong Museum | 博物馆/综合馆 | 天河区珠江东路2号 | 待核实、博物馆、国家一级博物馆、室内场馆、新中轴线、免费开放、预约参观 | [广州市人民政府门户网站·花城文旅专题（来源标注：广东省博物馆）](https://www.gz.gov.cn/zt/hcwl/ycdy/rwjd/content/post_11020989.html) |
+| 5 | 广东省方志馆旅游区 | Guangdong Local Chronicles Museum Tourist Area | 文化场馆 | 广州市天河区天河北路618号A座 | 3A级景区、天河区、文化场馆、方志文化 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 6 | 正佳广场商贸旅游区 | Grandview Mall Commercial Tourist Area | 4A级景区 | 广州市天河路228号 | 4A级景区、A级景区名录、主题游乐 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| 7 | 猎德现代化都市旅游区 | Liede Modern Urban Tourist Area | 都市旅游区 | 广州市天河区天府路1号天河区人民政府 | 3A级景区、天河区、都市旅游、城市更新 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 8 | 珠江公园 | Zhujiang Park | 公园 | 天河区金穗路900号 | 公园、综合公园、免费开放 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
 
 ### 白云（10 条）
 
-| # | 名称 | 等级/类别 | 地址 | 标签 | 来源 |
-|---|---|---|---|---|---|
-| 1 | 三元里人民抗英斗争纪念馆 | 纪念馆 | 白云区广园中路34号 | 纪念馆、免费开放、爱国主义教育 | [广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）](https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html) |
-| 2 | 广东修学体验旅游区 | 研学旅游区 | 广州市白云区同泰路1111号 | 3A级景区、白云区、研学、旅游区 | [广州市白云区人民政府门户网站《白云区A级景区名录（2023年6月更新）》](https://www.by.gov.cn/zwgk/zdlyxxgkzl/lyscjgzfxxgkzl/lyscjgzfxx/content/post_9067399.html) |
-| 3 | 广州市儿童公园 | 公园 | 白云区齐心路61号 | 公园、儿童公园、免费开放、亲子 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
-| 4 | 广州市城市规划展览中心旅游区 | 4A级景区 | 广州市白云区展览路1号 | 4A级景区、A级景区名录、文博院馆 | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
-| 5 | 广州市帽峰山森林公园景区 | 4A级景区 | 广州市白云区头陂路168号 | 4A级景区、A级景区名录、自然生态 | [广州市海珠区人民政府转载广州市文化广电旅游局：广州市A级景区名录（2024年9月更新）](https://www.haizhu.gov.cn/zwgk/zdlyxxgk/lysc/cyzl/content/post_10012359.html) |
-| 6 | 广州市迪士普音响博物馆 | 博物馆 | 广州市白云区江高镇夏荷路1号 | 3A级景区、白云区、博物馆、工业旅游 | [广州市白云区人民政府门户网站《白云区A级景区名录（2023年6月更新）》](https://www.by.gov.cn/zwgk/zdlyxxgkzl/lyscjgzfxxgkzl/lyscjgzfxx/content/post_9067399.html) |
-| 7 | 广州白云湖景区 | 城市公园 | 广州市白云区云湖东环路1号 | 3A级景区、白云区、城市公园、湖泊 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 8 | 广州神农草堂中医药博物馆 | 4A级景区 | 广州市沙太北路389号白云山和记黄埔中药有限公司 | 4A级景区、A级景区名录、文博院馆 | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
-| 9 | 白云山风景名胜区 | 5A级景区 | 广州市广园中路 | 5A级景区、A级景区名录、自然生态 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
-| 10 | 白云湖公园 | 公园 | 白云区白云湖大道 | 公园、综合公园、免费开放、水利风景区 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
+| # | 中文名 | 英文名 | 等级/类别 | 地址 | 标签 | 来源 |
+|---|---|---|---|---|---|---|
+| 1 | 三元里人民抗英斗争纪念馆 | Sanyuanli People's Anti-British Struggle Memorial Hall | 纪念馆 | 白云区广园中路34号 | 纪念馆、免费开放、爱国主义教育 | [广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）](https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html) |
+| 2 | 广东修学体验旅游区 | Guangdong Study Experience Tourist Area | 研学旅游区 | 广州市白云区同泰路1111号 | 3A级景区、白云区、研学、旅游区 | [广州市白云区人民政府门户网站《白云区A级景区名录（2023年6月更新）》](https://www.by.gov.cn/zwgk/zdlyxxgkzl/lyscjgzfxxgkzl/lyscjgzfxx/content/post_9067399.html) |
+| 3 | 广州市儿童公园 | Guangzhou Children's Park | 公园 | 白云区齐心路61号 | 公园、儿童公园、免费开放、亲子 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
+| 4 | 广州市城市规划展览中心旅游区 | Guangzhou Urban Planning Exhibition Center Tourist Area | 4A级景区 | 广州市白云区展览路1号 | 4A级景区、A级景区名录、文博院馆 | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
+| 5 | 广州市帽峰山森林公园景区 | Maofengshan Forest Park Scenic Area | 4A级景区 | 广州市白云区头陂路168号 | 4A级景区、A级景区名录、自然生态 | [广州市海珠区人民政府转载广州市文化广电旅游局：广州市A级景区名录（2024年9月更新）](https://www.haizhu.gov.cn/zwgk/zdlyxxgk/lysc/cyzl/content/post_10012359.html) |
+| 6 | 广州市迪士普音响博物馆 | Guangzhou DSPPA Audio Museum | 博物馆 | 广州市白云区江高镇夏荷路1号 | 3A级景区、白云区、博物馆、工业旅游 | [广州市白云区人民政府门户网站《白云区A级景区名录（2023年6月更新）》](https://www.by.gov.cn/zwgk/zdlyxxgkzl/lyscjgzfxxgkzl/lyscjgzfxx/content/post_9067399.html) |
+| 7 | 广州白云湖景区 | Baiyun Lake Scenic Area | 城市公园 | 广州市白云区云湖东环路1号 | 3A级景区、白云区、城市公园、湖泊 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 8 | 广州神农草堂中医药博物馆 | Shennong Caotang Museum of Traditional Chinese Medicine | 4A级景区 | 广州市沙太北路389号白云山和记黄埔中药有限公司 | 4A级景区、A级景区名录、文博院馆 | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
+| 9 | 白云山风景名胜区 | Baiyun Mountain Scenic Area | 5A级景区 | 广州市广园中路 | 5A级景区、A级景区名录、自然生态 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| 10 | 白云湖公园 | Baiyun Lake Park | 公园 | 白云区白云湖大道 | 公园、综合公园、免费开放、水利风景区 | [《广州市公园名录（截至2020年底）》（广州市林业和园林局）](https://lyylj.gz.gov.cn/zwgk/sjfb/content/post_7295518.html) |
 
 ### 黄埔（6 条）
 
-| # | 名称 | 等级/类别 | 地址 | 标签 | 来源 |
-|---|---|---|---|---|---|
-| 1 | 南海神庙 | 4A级景区 | 广州市黄埔区庙头旭日街22号 | 4A级景区、A级景区名录、文化遗迹 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
-| 2 | 广东环亚美容化妆品博物馆 | 行业博物馆 | 广州市黄埔区科学城南云一路18号 | 3A级景区、黄埔区、博物馆、工业旅游 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 3 | 广东省凉茶博物馆 | 行业博物馆 | 广州市黄埔区广州开发区科学城金峰园路2号 | 3A级景区、黄埔区、博物馆、中医药文化 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 4 | 广州迳下乡村旅游景区 | 乡村旅游区 | 广州市黄埔区龙湖街迳下村高和场上街102号 | 3A级景区、黄埔区、乡村旅游、乡村田园 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 5 | 辛亥革命纪念馆 | 纪念馆 | 广州市黄埔区长洲岛金洲北路563号 | 3A级景区、黄埔区、纪念馆、红色旅游、辛亥革命、免费开放、长洲岛 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 6 | 黄埔军校旧址纪念馆 | 纪念馆 | 黄埔区长洲岛军校路170号大院 | 纪念馆、黄埔军校、红色旅游、长洲岛、4A级景区、A级景区名录 | [广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）](https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html) |
+| # | 中文名 | 英文名 | 等级/类别 | 地址 | 标签 | 来源 |
+|---|---|---|---|---|---|---|
+| 1 | 南海神庙 | Nanhai God Temple | 4A级景区 | 广州市黄埔区庙头旭日街22号 | 4A级景区、A级景区名录、文化遗迹 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| 2 | 广东环亚美容化妆品博物馆 | Guangdong Huanya Cosmetics Museum | 行业博物馆 | 广州市黄埔区科学城南云一路18号 | 3A级景区、黄埔区、博物馆、工业旅游 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 3 | 广东省凉茶博物馆 | Guangdong Herbal Tea Museum | 行业博物馆 | 广州市黄埔区广州开发区科学城金峰园路2号 | 3A级景区、黄埔区、博物馆、中医药文化 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 4 | 广州迳下乡村旅游景区 | Jingxia Rural Tourism Scenic Area | 乡村旅游区 | 广州市黄埔区龙湖街迳下村高和场上街102号 | 3A级景区、黄埔区、乡村旅游、乡村田园 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 5 | 辛亥革命纪念馆 | Memorial Museum of the 1911 Revolution | 纪念馆 | 广州市黄埔区长洲岛金洲北路563号 | 3A级景区、黄埔区、纪念馆、红色旅游、辛亥革命、免费开放、长洲岛 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 6 | 黄埔军校旧址纪念馆 | Memorial Hall of the Whampoa Military Academy Site | 纪念馆 | 黄埔区长洲岛军校路170号大院 | 纪念馆、黄埔军校、红色旅游、长洲岛、4A级景区、A级景区名录 | [广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）](https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html) |
 
 ### 番禺（13 条）
 
-| # | 名称 | 等级/类别 | 地址 | 标签 | 来源 |
-|---|---|---|---|---|---|
-| 1 | 南汉二陵博物馆 | 博物馆 | 番禺区小谷围大学城华师一路8号 | 博物馆、考古遗址、全国重点文物保护单位、大学城 | [广州市文化广电旅游局关于政协第4101号提案答复的函](http://wglj.gz.gov.cn/xxgk/qt/rdjyzxta/zxta/content/post_9829830.html) |
-| 2 | 宝墨园 | 4A级景区 | 广州市番禺区沙湾镇紫坭村 | 4A级景区、A级景区名录、历史文化 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
-| 3 | 岭南印象园 | 4A级景区 | 广州市大学城外环西路 | 4A级景区、A级景区名录、文化遗迹 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
-| 4 | 广东科学中心 | 4A级景区 | 广州市大学城西六路168号 | 4A级景区、A级景区名录、科技教育 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
-| 5 | 广州市余荫山房景区 | 4A级景区 | 广州番禺区南村镇北大街 | 4A级景区、A级景区名录、历史文化 | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
-| 6 | 广州西坊大院文化旅游区 | 3A级景区 | 番禺区市桥街环城西路264号 | 3A级景区、A级景区名录、文创园区 | [广州市番禺区文化广电旅游体育局：番禺区A级景区名录（2026年5月更新）](http://www.panyu.gov.cn/zwgk/zdlyxxgkml/lyscjgzf/cyzl/content/post_10806763.html) |
-| 7 | 永华艺术馆 | 艺术展馆 | 番禺区石碁镇市莲路南浦村段3号 | 3A级景区、番禺区、艺术馆、A级景区名录、文博院馆 | [广州市番禺区人民政府门户网站《番禺6大4A景区对台胞免门票》](http://www.panyu.gov.cn/gkmlpt/content/10/10970/post_10970050.html) |
-| 8 | 沙湾古镇 | 4A级景区 | 广州市番禺区沙湾大巷涌路10号沙湾古镇 | 4A级景区、A级景区名录、历史文化 | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
-| 9 | 紫泥堂创意园 | 3A级景区 | 番禺区沙湾街紫坭村西安村7号 | 3A级景区、A级景区名录、文创园区 | [广州市番禺区文化广电旅游体育局：番禺区A级景区名录（2026年5月更新）](http://www.panyu.gov.cn/zwgk/zdlyxxgkml/lyscjgzf/cyzl/content/post_10806763.html) |
-| 10 | 紫泥堂文化创意园 | 文化创意园 | 未知 | 3A级景区、番禺区、文化创意、工业遗产 | [广州市番禺区人民政府门户网站《番禺6大4A景区对台胞免门票》](http://www.panyu.gov.cn/gkmlpt/content/10/10970/post_10970050.html) |
-| 11 | 莲花山旅游区 | 4A级景区 | 广州市番禺区石楼镇西门路18号 | 4A级景区、A级景区名录、自然生态 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
-| 12 | 西坊大院文化旅游区 | 文化旅游区 | 未知 | 3A级景区、番禺区、工业遗产、文化创意 | [广州市番禺区人民政府门户网站《番禺6大4A景区对台胞免门票》](http://www.panyu.gov.cn/gkmlpt/content/10/10970/post_10970050.html) |
-| 13 | 长隆旅游度假区 | 5A级景区 | 广州市番禺区迎宾路 | 5A级景区、A级景区名录、主题游乐 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| # | 中文名 | 英文名 | 等级/类别 | 地址 | 标签 | 来源 |
+|---|---|---|---|---|---|---|
+| 1 | 南汉二陵博物馆 | Museum of the Two Southern Han Mausoleums | 博物馆 | 番禺区小谷围大学城华师一路8号 | 博物馆、考古遗址、全国重点文物保护单位、大学城 | [广州市文化广电旅游局关于政协第4101号提案答复的函](http://wglj.gz.gov.cn/xxgk/qt/rdjyzxta/zxta/content/post_9829830.html) |
+| 2 | 宝墨园 | Baomo Garden | 4A级景区 | 广州市番禺区沙湾镇紫坭村 | 4A级景区、A级景区名录、历史文化 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| 3 | 岭南印象园 | Lingnan Impression Park | 4A级景区 | 广州市大学城外环西路 | 4A级景区、A级景区名录、文化遗迹 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| 4 | 广东科学中心 | Guangdong Science Center | 4A级景区 | 广州市大学城西六路168号 | 4A级景区、A级景区名录、科技教育 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| 5 | 广州市余荫山房景区 | Yuyin Shanfang Garden Scenic Area | 4A级景区 | 广州番禺区南村镇北大街 | 4A级景区、A级景区名录、历史文化 | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
+| 6 | 广州西坊大院文化旅游区 | Guangzhou Xifang Courtyard Cultural Tourism Area | 3A级景区 | 番禺区市桥街环城西路264号 | 3A级景区、A级景区名录、文创园区 | [广州市番禺区文化广电旅游体育局：番禺区A级景区名录（2026年5月更新）](http://www.panyu.gov.cn/zwgk/zdlyxxgkml/lyscjgzf/cyzl/content/post_10806763.html) |
+| 7 | 永华艺术馆 | Yonghua Art Museum | 艺术展馆 | 番禺区石碁镇市莲路南浦村段3号 | 3A级景区、番禺区、艺术馆、A级景区名录、文博院馆 | [广州市番禺区人民政府门户网站《番禺6大4A景区对台胞免门票》](http://www.panyu.gov.cn/gkmlpt/content/10/10970/post_10970050.html) |
+| 8 | 沙湾古镇 | Shawan Ancient Town | 4A级景区 | 广州市番禺区沙湾大巷涌路10号沙湾古镇 | 4A级景区、A级景区名录、历史文化 | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
+| 9 | 紫泥堂创意园 | Zinitang Creative Park | 3A级景区 | 番禺区沙湾街紫坭村西安村7号 | 3A级景区、A级景区名录、文创园区 | [广州市番禺区文化广电旅游体育局：番禺区A级景区名录（2026年5月更新）](http://www.panyu.gov.cn/zwgk/zdlyxxgkml/lyscjgzf/cyzl/content/post_10806763.html) |
+| 10 | 紫泥堂文化创意园 | Zinitang Cultural and Creative Park | 文化创意园 | 未知 | 3A级景区、番禺区、文化创意、工业遗产 | [广州市番禺区人民政府门户网站《番禺6大4A景区对台胞免门票》](http://www.panyu.gov.cn/gkmlpt/content/10/10970/post_10970050.html) |
+| 11 | 莲花山旅游区 | Lianhuashan Tourist Area | 4A级景区 | 广州市番禺区石楼镇西门路18号 | 4A级景区、A级景区名录、自然生态 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| 12 | 西坊大院文化旅游区 | Xifang Courtyard Cultural Tourism Area | 文化旅游区 | 未知 | 3A级景区、番禺区、工业遗产、文化创意 | [广州市番禺区人民政府门户网站《番禺6大4A景区对台胞免门票》](http://www.panyu.gov.cn/gkmlpt/content/10/10970/post_10970050.html) |
+| 13 | 长隆旅游度假区 | Chimelong Tourist Resort | 5A级景区 | 广州市番禺区迎宾路 | 5A级景区、A级景区名录、主题游乐 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
 
 ### 花都（12 条）
 
-| # | 名称 | 等级/类别 | 地址 | 标签 | 来源 |
-|---|---|---|---|---|---|
-| 1 | 中国皮具产业文化创意园 | 工业旅游点 | 广州市花都区狮岭镇阳光路六号 | 3A级景区、花都区、工业旅游、皮具产业 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 2 | 九龙湖旅游度假区 | 4A级景区 | 广州市花都区花东镇九龙湖社区 | 4A级景区、A级景区名录、休闲度假 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
-| 3 | 塱头古村 | 古村落 | 广州市花都区炭步镇朗头村 | 3A级景区、花都区、古村落、历史文化 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 4 | 广州市世间香境七溪地景区 | 生态旅游景区 | 广州市花都区花东镇狮前村七溪路一号 | 3A级景区、花都区、生态旅游、芳香植物 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 5 | 广州市花都宝桑园景区 | 农业生态园 | 广东省广州市花都区缠岗村山前大道宝桑园 | 3A级景区、花都区、农业生态、桑蚕文化 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 6 | 广州市融创文旅城旅游区 | 4A级景区 | 广州市花都区凤凰北路78号 | 4A级景区、A级景区名录、主题游乐 | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
-| 7 | 广州市资政大夫祠景区 | 古建筑群 | 广州市花都区新华街三华村三华路40号资政大夫祠 | 3A级景区、花都区、古建筑、祠堂 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 8 | 广州市赤坭循环经济园旅游区 | 工业旅游点 | 广州市花都区赤坭镇鲤塘村广州环投花城环保能源有限公司 | 3A级景区、花都区、循环经济、工业旅游 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 9 | 梯面红山村 | 乡村旅游区 | 广州市花都区梯面镇红山村 | 3A级景区、花都区、乡村旅游、油菜花 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 10 | 洪秀全故居 | 名人故居 | 广州市花都区新华街新华路52号 | 3A级景区、花都区、名人故居、红色旅游、A级景区名录、历史文化 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 11 | 石头记矿物园 | 4A级景区 | 广州市花都区珠宝城大观路1号 | 4A级景区、A级景区名录、工业旅游 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
-| 12 | 美华航空航天科普基地景区 | 科普基地 | 广州市花都区花山镇绞燎庄西街1号201房 | 3A级景区、花都区、科普、航空航天 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| # | 中文名 | 英文名 | 等级/类别 | 地址 | 标签 | 来源 |
+|---|---|---|---|---|---|---|
+| 1 | 中国皮具产业文化创意园 | China Leather Goods Industry Cultural and Creative Park | 工业旅游点 | 广州市花都区狮岭镇阳光路六号 | 3A级景区、花都区、工业旅游、皮具产业 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 2 | 九龙湖旅游度假区 | Jiulong Lake Tourist Resort | 4A级景区 | 广州市花都区花东镇九龙湖社区 | 4A级景区、A级景区名录、休闲度假 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| 3 | 塱头古村 | Langtou Ancient Village | 古村落 | 广州市花都区炭步镇朗头村 | 3A级景区、花都区、古村落、历史文化 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 4 | 广州市世间香境七溪地景区 | Shijian Xiangjing Qixidi Scenic Area | 生态旅游景区 | 广州市花都区花东镇狮前村七溪路一号 | 3A级景区、花都区、生态旅游、芳香植物 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 5 | 广州市花都宝桑园景区 | Huadu Baosangyuan Scenic Area | 农业生态园 | 广东省广州市花都区缠岗村山前大道宝桑园 | 3A级景区、花都区、农业生态、桑蚕文化 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 6 | 广州市融创文旅城旅游区 | Sunac Cultural Tourism City Tourist Area | 4A级景区 | 广州市花都区凤凰北路78号 | 4A级景区、A级景区名录、主题游乐 | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
+| 7 | 广州市资政大夫祠景区 | Zizheng Dafu Ancestral Hall Scenic Area | 古建筑群 | 广州市花都区新华街三华村三华路40号资政大夫祠 | 3A级景区、花都区、古建筑、祠堂 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 8 | 广州市赤坭循环经济园旅游区 | Chini Circular Economy Park Tourist Area | 工业旅游点 | 广州市花都区赤坭镇鲤塘村广州环投花城环保能源有限公司 | 3A级景区、花都区、循环经济、工业旅游 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 9 | 梯面红山村 | Timian Hongshan Village | 乡村旅游区 | 广州市花都区梯面镇红山村 | 3A级景区、花都区、乡村旅游、油菜花 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 10 | 洪秀全故居 | Former Residence of Hong Xiuquan | 名人故居 | 广州市花都区新华街新华路52号 | 3A级景区、花都区、名人故居、红色旅游、A级景区名录、历史文化 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 11 | 石头记矿物园 | Stone Fairy Tale Mineral Park | 4A级景区 | 广州市花都区珠宝城大观路1号 | 4A级景区、A级景区名录、工业旅游 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| 12 | 美华航空航天科普基地景区 | Meihua Aerospace Science Popularization Base | 科普基地 | 广州市花都区花山镇绞燎庄西街1号201房 | 3A级景区、花都区、科普、航空航天 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
 
 ### 南沙（7 条）
 
-| # | 名称 | 等级/类别 | 地址 | 标签 | 来源 |
-|---|---|---|---|---|---|
-| 1 | 云纱星韵非遗文化园景区 | 非遗文化园 | 广州市南沙区榄核镇星海路40号之二 | 3A级景区、南沙区、非物质文化遗产、香云纱 | [广州市南沙区人民政府门户网站《南沙区A级景区名录》](http://www.gzns.gov.cn/zwgk/zdlyxxgk/lyscjgzfxx/cyzl/content/post_10886089.html) |
-| 2 | 南沙天后宫 | 4A级景区 | 广州市南沙区天后路88号 | 4A级景区、A级景区名录、历史文化 | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
-| 3 | 南沙滨海湿地景区 | 4A级景区 | 广州市南沙区万顷沙镇新垦十八涌 | 4A级景区、A级景区名录、自然生态 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
-| 4 | 广东利泰智农生态农业观光园景区 | 农业观光园 | 广州市南沙区榄核镇甘岗村国富街1号-8 | 3A级景区、南沙区、农业观光、乡村田园 | [广州市南沙区人民政府门户网站《南沙区A级景区名录》](http://www.gzns.gov.cn/zwgk/zdlyxxgk/lyscjgzfxx/cyzl/content/post_10886089.html) |
-| 5 | 广州市南沙十八罗汉山森林公园景区 | 森林公园 | 广州市南沙区大岗镇繁荣路134号 | 3A级景区、南沙区、森林公园、自然生态 | [广州市南沙区人民政府门户网站《南沙区A级景区名录》](http://www.gzns.gov.cn/zwgk/zdlyxxgk/lyscjgzfxx/cyzl/content/post_10886089.html) |
-| 6 | 广州市大岗循环经济产业园景区 | 工业旅游点 | 南沙区大岗镇新联二村东新高速新联东出口旁 | 3A级景区、南沙区、循环经济、工业旅游 | [广州市南沙区人民政府门户网站《南沙区A级景区名录》](http://www.gzns.gov.cn/zwgk/zdlyxxgk/lyscjgzfxx/cyzl/content/post_10886089.html) |
-| 7 | 湾区都市农业公园 | 农业公园 | 广东省广州市南沙区南江二路5-3号 | 3A级景区、南沙区、都市农业、亲子 | [广州市南沙区人民政府门户网站《南沙区A级景区名录》](http://www.gzns.gov.cn/zwgk/zdlyxxgk/lyscjgzfxx/cyzl/content/post_10886089.html) |
+| # | 中文名 | 英文名 | 等级/类别 | 地址 | 标签 | 来源 |
+|---|---|---|---|---|---|---|
+| 1 | 云纱星韵非遗文化园景区 | Yunsha Xingyun Intangible Cultural Heritage Park | 非遗文化园 | 广州市南沙区榄核镇星海路40号之二 | 3A级景区、南沙区、非物质文化遗产、香云纱 | [广州市南沙区人民政府门户网站《南沙区A级景区名录》](http://www.gzns.gov.cn/zwgk/zdlyxxgk/lyscjgzfxx/cyzl/content/post_10886089.html) |
+| 2 | 南沙天后宫 | Nansha Tin Hau Palace | 4A级景区 | 广州市南沙区天后路88号 | 4A级景区、A级景区名录、历史文化 | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
+| 3 | 南沙滨海湿地景区 | Nansha Binhai Wetland Scenic Area | 4A级景区 | 广州市南沙区万顷沙镇新垦十八涌 | 4A级景区、A级景区名录、自然生态 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| 4 | 广东利泰智农生态农业观光园景区 | Guangdong Litai Zhinong Eco-Agriculture Sightseeing Park | 农业观光园 | 广州市南沙区榄核镇甘岗村国富街1号-8 | 3A级景区、南沙区、农业观光、乡村田园 | [广州市南沙区人民政府门户网站《南沙区A级景区名录》](http://www.gzns.gov.cn/zwgk/zdlyxxgk/lyscjgzfxx/cyzl/content/post_10886089.html) |
+| 5 | 广州市南沙十八罗汉山森林公园景区 | Nansha Shibaluohan Mountain Forest Park Scenic Area | 森林公园 | 广州市南沙区大岗镇繁荣路134号 | 3A级景区、南沙区、森林公园、自然生态 | [广州市南沙区人民政府门户网站《南沙区A级景区名录》](http://www.gzns.gov.cn/zwgk/zdlyxxgk/lyscjgzfxx/cyzl/content/post_10886089.html) |
+| 6 | 广州市大岗循环经济产业园景区 | Dagang Circular Economy Industrial Park Scenic Area | 工业旅游点 | 南沙区大岗镇新联二村东新高速新联东出口旁 | 3A级景区、南沙区、循环经济、工业旅游 | [广州市南沙区人民政府门户网站《南沙区A级景区名录》](http://www.gzns.gov.cn/zwgk/zdlyxxgk/lyscjgzfxx/cyzl/content/post_10886089.html) |
+| 7 | 湾区都市农业公园 | Greater Bay Area Urban Agriculture Park | 农业公园 | 广东省广州市南沙区南江二路5-3号 | 3A级景区、南沙区、都市农业、亲子 | [广州市南沙区人民政府门户网站《南沙区A级景区名录》](http://www.gzns.gov.cn/zwgk/zdlyxxgk/lyscjgzfxx/cyzl/content/post_10886089.html) |
 
 ### 从化（17 条）
 
-| # | 名称 | 等级/类别 | 地址 | 标签 | 来源 |
-|---|---|---|---|---|---|
-| 1 | 从化宝趣玫瑰世界 | 花卉主题园 | 广州市从化区城郊街西和村 | 3A级景区、从化区、花卉、主题公园、A级景区名录、农业观光 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 2 | 从化溪头旅游村 | 乡村旅游区 | 广州市从化区良口镇溪头村 | 3A级景区、从化区、乡村旅游、古村、A级景区名录 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 3 | 北纬23°8′森林营地 | 3A级景区 | 广州市从化区城郊街西和村草塘101号 | 3A级景区、研学营地 | [南方+：从化15个A级景区，你最爱“打卡”哪一个？](https://www.nfnews.com/content/G3Ogr8Ed3r.html) |
-| 4 | 千泷沟大瀑布旅游区 | 瀑布自然景区 | 广州市从化区良口镇锦村毛坪队19号 | 3A级景区、从化区、瀑布、自然景观、自然生态 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 5 | 南平静修小镇 | 3A级景区 | 从化区温泉镇南平村 | 3A级景区、乡村旅游、康养 | [南方+：从化15个A级景区，你最爱“打卡”哪一个？](https://www.nfnews.com/content/G3Ogr8Ed3r.html) |
-| 6 | 广州山谷国际旅游区 | 山地度假区 | 广州市从化区江埔街锦三村大金峰径666号 | 3A级景区、从化区、山地度假、自然生态 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 7 | 广州市从化国医园景区 | 中医药文化园 | 广州市从化区太平镇格塘村8号 | 3A级景区、从化区、中医药文化、健康旅游 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 8 | 广州市南平静修小镇旅游区 | 乡村旅游区 | 广州市从化区温泉镇南平村 | 3A级景区、从化区、乡村旅游、静修 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 9 | 广州市天人山水旅游区 | 4A级景区 | 广州市从化区太平镇上清幽街1号 | 4A级景区、A级景区名录、休闲度假 | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
-| 10 | 广州市流溪河森林公园景区 | 森林公园 | 广州市从化区良口镇流溪河林场香雪大街48号 | 3A级景区、从化区、森林公园、自然生态 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 11 | 广州市石门国家森林公园景区 | 4A级景区 | 广州市从化区温泉镇石门国家森林公园 | 4A级景区、A级景区名录、自然生态 | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
-| 12 | 广州市香蜜山生态旅游区 | 生态旅游区 | 广州市从化区吕田镇安山村大塘社23号 | 3A级景区、从化区、生态旅游、乡村田园 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 13 | 广州市麦田生态园旅游区 | 田园综合体 | 广州市从化区鳌头镇横坑村新三社55号 | 3A级景区、从化区、田园、生态园 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
-| 14 | 流溪河国家森林公园 | 3A级景区 | 未知 | 3A级景区、自然生态 | [南方+：从化15个A级景区，你最爱“打卡”哪一个？](https://www.nfnews.com/content/G3Ogr8Ed3r.html) |
-| 15 | 生态设计小镇 | 3A级景区 | 从化区流溪温泉度假区 | 3A级景区、文创园区 | [南方+：从化15个A级景区，你最爱“打卡”哪一个？](https://www.nfnews.com/content/G3Ogr8Ed3r.html) |
-| 16 | 碧水湾温泉度假村 | 4A级景区 | 广州市从化流溪温泉旅游度假区（良口） | 4A级景区、A级景区名录、休闲度假 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
-| 17 | 香蜜山生态果庄 | 3A级景区 | 从化区吕田镇安山村 | 3A级景区、农业观光 | [南方+：从化15个A级景区，你最爱“打卡”哪一个？](https://www.nfnews.com/content/G3Ogr8Ed3r.html) |
+| # | 中文名 | 英文名 | 等级/类别 | 地址 | 标签 | 来源 |
+|---|---|---|---|---|---|---|
+| 1 | 从化宝趣玫瑰世界 | Conghua Baoqu Rose World | 花卉主题园 | 广州市从化区城郊街西和村 | 3A级景区、从化区、花卉、主题公园、A级景区名录、农业观光 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 2 | 从化溪头旅游村 | Conghua Xitou Tourist Village | 乡村旅游区 | 广州市从化区良口镇溪头村 | 3A级景区、从化区、乡村旅游、古村、A级景区名录 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 3 | 北纬23°8′森林营地 | 23°8'N Forest Camp | 3A级景区 | 广州市从化区城郊街西和村草塘101号 | 3A级景区、研学营地 | [南方+：从化15个A级景区，你最爱“打卡”哪一个？](https://www.nfnews.com/content/G3Ogr8Ed3r.html) |
+| 4 | 千泷沟大瀑布旅游区 | Qianlonggou Grand Waterfall Tourist Area | 瀑布自然景区 | 广州市从化区良口镇锦村毛坪队19号 | 3A级景区、从化区、瀑布、自然景观、自然生态 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 5 | 南平静修小镇 | Nanping Meditation Town | 3A级景区 | 从化区温泉镇南平村 | 3A级景区、乡村旅游、康养 | [南方+：从化15个A级景区，你最爱“打卡”哪一个？](https://www.nfnews.com/content/G3Ogr8Ed3r.html) |
+| 6 | 广州山谷国际旅游区 | Guangzhou Valley International Tourist Area | 山地度假区 | 广州市从化区江埔街锦三村大金峰径666号 | 3A级景区、从化区、山地度假、自然生态 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 7 | 广州市从化国医园景区 | Conghua Guoyi Garden Scenic Area | 中医药文化园 | 广州市从化区太平镇格塘村8号 | 3A级景区、从化区、中医药文化、健康旅游 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 8 | 广州市南平静修小镇旅游区 | Nanping Meditation Town Tourist Area | 乡村旅游区 | 广州市从化区温泉镇南平村 | 3A级景区、从化区、乡村旅游、静修 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 9 | 广州市天人山水旅游区 | Tianren Shanshui Tourist Area | 4A级景区 | 广州市从化区太平镇上清幽街1号 | 4A级景区、A级景区名录、休闲度假 | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
+| 10 | 广州市流溪河森林公园景区 | Liuxihe Forest Park Scenic Area | 森林公园 | 广州市从化区良口镇流溪河林场香雪大街48号 | 3A级景区、从化区、森林公园、自然生态 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 11 | 广州市石门国家森林公园景区 | Shimen National Forest Park Scenic Area | 4A级景区 | 广州市从化区温泉镇石门国家森林公园 | 4A级景区、A级景区名录、自然生态 | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
+| 12 | 广州市香蜜山生态旅游区 | Xiangmishan Eco-Tourism Area | 生态旅游区 | 广州市从化区吕田镇安山村大塘社23号 | 3A级景区、从化区、生态旅游、乡村田园 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 13 | 广州市麦田生态园旅游区 | Maitian Ecological Park Tourist Area | 田园综合体 | 广州市从化区鳌头镇横坑村新三社55号 | 3A级景区、从化区、田园、生态园 | [广州本地宝《广州市A级景区名单一览表》（转载市文化广电旅游局2024年12月更新名录）](https://m.gz.bendibao.com/tour/362965.html) |
+| 14 | 流溪河国家森林公园 | Liuxihe National Forest Park | 3A级景区 | 未知 | 3A级景区、自然生态 | [南方+：从化15个A级景区，你最爱“打卡”哪一个？](https://www.nfnews.com/content/G3Ogr8Ed3r.html) |
+| 15 | 生态设计小镇 | Eco-Design Town | 3A级景区 | 从化区流溪温泉度假区 | 3A级景区、文创园区 | [南方+：从化15个A级景区，你最爱“打卡”哪一个？](https://www.nfnews.com/content/G3Ogr8Ed3r.html) |
+| 16 | 碧水湾温泉度假村 | Bishuiwan Hot Spring Resort | 4A级景区 | 广州市从化流溪温泉旅游度假区（良口） | 4A级景区、A级景区名录、休闲度假 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| 17 | 香蜜山生态果庄 | Xiangmishan Ecological Fruit Farm | 3A级景区 | 从化区吕田镇安山村 | 3A级景区、农业观光 | [南方+：从化15个A级景区，你最爱“打卡”哪一个？](https://www.nfnews.com/content/G3Ogr8Ed3r.html) |
 
 ### 增城（14 条）
 
-| # | 名称 | 等级/类别 | 地址 | 标签 | 来源 |
-|---|---|---|---|---|---|
-| 1 | 1978电影小镇 | 电影文化小镇 | 未知 | 3A级景区、增城区、电影文化、文创街区 | [广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》](http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html) |
-| 2 | 增城何仙姑景区 | 历史文化景区 | 广州市增城区小楼镇泰安路16号 | 3A级景区、增城区、历史文化、民间传说、A级景区名录、民俗文化 | [广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》](http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html) |
-| 3 | 大埔围美丽乡村景区 | 美丽乡村 | 未知 | 3A级景区、增城区、美丽乡村、乡村田园 | [广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》](http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html) |
-| 4 | 广州市七彩澳游世界旅游区 | 4A级景区 | 广州市增城区珠村街联兴村金兴路北旁 | 4A级景区、A级景区名录、主题游乐 | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
-| 5 | 广州市仙村循环经济园旅游区 | 工业旅游点 | 未知 | 3A级景区、增城区、循环经济、工业旅游 | [广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》](http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html) |
-| 6 | 广州市正果老街旅游区 | 历史文化街区 | 未知 | 3A级景区、增城区、老街、历史文化 | [广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》](http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html) |
-| 7 | 广州市白江湖森林公园 | 森林公园 | 未知 | 3A级景区、增城区、森林公园、自然生态 | [广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》](http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html) |
-| 8 | 广州白水寨旅游区 | 4A级景区 | 广州市增城区派潭镇 | 4A级景区、A级景区名录、自然生态 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
-| 9 | 广州钧明欢乐世界 | 主题乐园 | 未知 | 3A级景区、增城区、主题乐园、亲子 | [广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》](http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html) |
-| 10 | 星罗纪大森林景区 | 森林生态景区 | 未知 | 3A级景区、增城区、森林生态、自然景观 | [广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》](http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html) |
-| 11 | 濠迳亲子地质公园景区 | 3A级景区 | 增城区中新镇濠迳村 | 3A级景区、科普场馆、乡村旅游 | [广州市增城区文化广电旅游体育局：增城区新增2家国家3A级景区](http://www.zc.gov.cn/gzzcwglt/gkmlpt/content/10/10078/post_10078182.html) |
-| 12 | 瓜岭村——岭南古韵水乡文化旅游景区 | 古村文化旅游区 | 未知 | 3A级景区、增城区、古村落、水乡 | [广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》](http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html) |
-| 13 | 莲塘春色休闲旅游区 | 3A级景区 | 增城区荔城街莲塘村 | 3A级景区、乡村旅游 | [广州市增城区文化广电旅游体育局：增城区新增2家国家3A级景区](http://www.zc.gov.cn/gzzcwglt/gkmlpt/content/10/10078/post_10078182.html) |
-| 14 | 蒙花布乡村旅游区 | 乡村旅游区 | 未知 | 3A级景区、增城区、乡村旅游、乡村田园 | [广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》](http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html) |
+| # | 中文名 | 英文名 | 等级/类别 | 地址 | 标签 | 来源 |
+|---|---|---|---|---|---|---|
+| 1 | 1978电影小镇 | 1978 Film Town | 电影文化小镇 | 未知 | 3A级景区、增城区、电影文化、文创街区 | [广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》](http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html) |
+| 2 | 增城何仙姑景区 | Zengcheng He Xiangu Scenic Area | 历史文化景区 | 广州市增城区小楼镇泰安路16号 | 3A级景区、增城区、历史文化、民间传说、A级景区名录、民俗文化 | [广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》](http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html) |
+| 3 | 大埔围美丽乡村景区 | Dabuwei Beautiful Village Scenic Area | 美丽乡村 | 未知 | 3A级景区、增城区、美丽乡村、乡村田园 | [广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》](http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html) |
+| 4 | 广州市七彩澳游世界旅游区 | Qicai Aoyou World Tourist Area | 4A级景区 | 广州市增城区珠村街联兴村金兴路北旁 | 4A级景区、A级景区名录、主题游乐 | [广州市人民政府门户网站转载广州市文化广电旅游局：广州市A级景区名录（2025年10月更新）](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/mpost_10495827.html) |
+| 5 | 广州市仙村循环经济园旅游区 | Xiancun Circular Economy Park Tourist Area | 工业旅游点 | 未知 | 3A级景区、增城区、循环经济、工业旅游 | [广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》](http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html) |
+| 6 | 广州市正果老街旅游区 | Zhengguo Old Street Tourist Area | 历史文化街区 | 未知 | 3A级景区、增城区、老街、历史文化 | [广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》](http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html) |
+| 7 | 广州市白江湖森林公园 | Baijianghu Forest Park | 森林公园 | 未知 | 3A级景区、增城区、森林公园、自然生态 | [广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》](http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html) |
+| 8 | 广州白水寨旅游区 | Guangzhou Baishuizhai Tourist Area | 4A级景区 | 广州市增城区派潭镇 | 4A级景区、A级景区名录、自然生态 | [广州市文化广电旅游局：广州市A级景区名录（2026年6月更新）](http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html) |
+| 9 | 广州钧明欢乐世界 | Junming Happy World | 主题乐园 | 未知 | 3A级景区、增城区、主题乐园、亲子 | [广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》](http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html) |
+| 10 | 星罗纪大森林景区 | Xingluoji Great Forest Scenic Area | 森林生态景区 | 未知 | 3A级景区、增城区、森林生态、自然景观 | [广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》](http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html) |
+| 11 | 濠迳亲子地质公园景区 | Haojing Family Geological Park Scenic Area | 3A级景区 | 增城区中新镇濠迳村 | 3A级景区、科普场馆、乡村旅游 | [广州市增城区文化广电旅游体育局：增城区新增2家国家3A级景区](http://www.zc.gov.cn/gzzcwglt/gkmlpt/content/10/10078/post_10078182.html) |
+| 12 | 瓜岭村——岭南古韵水乡文化旅游景区 | Gualing Village Lingnan Water Town Cultural Tourism Area | 古村文化旅游区 | 未知 | 3A级景区、增城区、古村落、水乡 | [广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》](http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html) |
+| 13 | 莲塘春色休闲旅游区 | Liantang Spring Leisure Tourist Area | 3A级景区 | 增城区荔城街莲塘村 | 3A级景区、乡村旅游 | [广州市增城区文化广电旅游体育局：增城区新增2家国家3A级景区](http://www.zc.gov.cn/gzzcwglt/gkmlpt/content/10/10078/post_10078182.html) |
+| 14 | 蒙花布乡村旅游区 | Menghuabu Rural Tourism Area | 乡村旅游区 | 未知 | 3A级景区、增城区、乡村旅游、乡村田园 | [广州市增城区人民政府门户网站《增城区国家A级旅游景区及省级旅游度假区（休闲街区）名录一览表（2024）》](http://www.zc.gov.cn/gk/zdly/lyscjgzfxxgk/cyzl/content/post_9958188.html) |
 
-### 未标区（9 条）
+### 未标（9 条）
 
-| # | 名称 | 等级/类别 | 地址 | 标签 | 来源 |
+| # | 中文名 | 英文名 | 等级/类别 | 地址 | 标签 | 来源 |
+|---|---|---|---|---|---|---|
+| 1 | 华林禅寺 | Hualin Temple | 宗教活动场所 | 下九路华林寺前31号 | 宗教活动场所、佛教、禅宗祖庭 | [华林禅寺（广州市人民政府门户网站，来源市民宗局）](https://www.gz.gov.cn/zlgz/gzly/wzgz/zjcs/fj/content/mpost_7760647.html) |
+| 2 | 广东革命历史博物馆 | Guangdong Museum of Revolutionary History | 博物馆/纪念馆 | 陵园西路2号大院之二 | 博物馆、国家一级博物馆、革命历史、免费开放 | [广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）](https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html) |
+| 3 | 广州图书馆 | Guangzhou Library | 公共图书馆 | 广州市珠江东路4号 | 待核实、图书馆、室内场馆、亲子、免费自习 | [广州图书馆官网（首页/关于我们）](https://www.gzlib.org.cn/) |
+| 4 | 广州大剧院 | Guangzhou Opera House | 演出场馆/剧院 | 未知 | 待核实、演出、剧院、室内场馆、夜生活 | [广州大剧院官网（首页购票须知）](https://www.gzdjy.org/) |
+| 5 | 广州市文化馆 | Guangzhou Cultural Center | 文化馆/非遗 | 未知 | 待核实、非遗、文化馆、室内场馆、A级名录已含（3A） | [广州市人民政府门户网站·花城文旅专题（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017726.html) |
+| 6 | 海心桥 | Haixin Bridge | 城市桥梁/地标 | 未知 | 待核实、城市地标、夜景、步行、拍照 | [广州市人民政府门户网站·花城文旅专题（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017726.html) |
+| 7 | 海心沙 | Haixinsha Island | 江心岛/城市地标 | 未知 | 待核实、夜景、城市地标、开放式空间 | [广州市人民政府门户网站·花城文旅专题（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017726.html) |
+| 8 | 珠江夜游 | Pearl River Night Cruise | 夜游/游船观光 | 未知 | 待核实、夜游、游船、夜景、亲子 | [广州市人民政府门户网站·花城文旅专题（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017726.html) |
+| 9 | 花城广场 | Huacheng Square | 城市广场/公共空间 | 未知 | 待核实、城市地标、夜景、灯光节、亲子、开放式空间 | [广州市人民政府门户网站·花城文旅专题（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017726.html) |
+
+## 酒店候选（按所在区分组）
+
+### 越秀（20 条）
+
+| # | 中文名 | 英文名 | 星级/品牌 | 地址 | 来源 |
 |---|---|---|---|---|---|
-| 1 | 华林禅寺 | 宗教活动场所 | 下九路华林寺前31号 | 宗教活动场所、佛教、禅宗祖庭 | [华林禅寺（广州市人民政府门户网站，来源市民宗局）](https://www.gz.gov.cn/zlgz/gzly/wzgz/zjcs/fj/content/mpost_7760647.html) |
-| 2 | 广东革命历史博物馆 | 博物馆/纪念馆 | 陵园西路2号大院之二 | 博物馆、国家一级博物馆、革命历史、免费开放 | [广州市备案博物馆参观信息表（2024年6月）（广州市文化广电旅游局）](https://www.gz.gov.cn/zwgk/zdly/shgysyjs/ggwhty/ggwh/content/post_9864493.html) |
-| 3 | 广州图书馆 | 公共图书馆 | 广州市珠江东路4号 | 待核实、图书馆、室内场馆、亲子、免费自习 | [广州图书馆官网（首页/关于我们）](https://www.gzlib.org.cn/) |
-| 4 | 广州大剧院 | 演出场馆/剧院 | 未知 | 待核实、演出、剧院、室内场馆、夜生活 | [广州大剧院官网（首页购票须知）](https://www.gzdjy.org/) |
-| 5 | 广州市文化馆 | 文化馆/非遗 | 未知 | 待核实、非遗、文化馆、室内场馆、A级名录已含（3A） | [广州市人民政府门户网站·花城文旅专题（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017726.html) |
-| 6 | 海心桥 | 城市桥梁/地标 | 未知 | 待核实、城市地标、夜景、步行、拍照 | [广州市人民政府门户网站·花城文旅专题（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017726.html) |
-| 7 | 海心沙 | 江心岛/城市地标 | 未知 | 待核实、夜景、城市地标、开放式空间 | [广州市人民政府门户网站·花城文旅专题（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017726.html) |
-| 8 | 珠江夜游 | 夜游/游船观光 | 未知 | 待核实、夜游、游船、夜景、亲子 | [广州市人民政府门户网站·花城文旅专题（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017726.html) |
-| 9 | 花城广场 | 城市广场/公共空间 | 未知 | 待核实、城市地标、夜景、灯光节、亲子、开放式空间 | [广州市人民政府门户网站·花城文旅专题（来源标注：广州日报）](https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017726.html) |
+| 1 | 三寓宾馆 | Sanyu Hotel | 四星级 | 广州市越秀区东山三育路23号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 2 | 东方宾馆 | Dongfang Hotel | 五星级/岭南东方（岭南控股） | 广州市越秀区流花路120号 | [广州市文化广电旅游局《星级酒店·广州东方宾馆》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071473.html) |
+| 3 | 中国大酒店 | China Hotel Guangzhou | 五星级 | 广州市越秀区流花路122号 | [广州市文化广电旅游局《星级酒店·中国大酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071491.html) |
+| 4 | 凯旋华美达大酒店 | Kaixuan Huameida Hotel | 四星级/温德姆（华美达） | 广州市越秀区东山明月一路9号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 5 | 北京大酒店 | Beijing Hotel | 二星级 | 广州市越秀区西濠二马路10号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 6 | 华厦大酒店 | Hotel Landmark Canton | 四星级 | 广州市越秀区侨光路8号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 7 | 广东亚洲国际大酒店 | Asia International Hotel | 五星级/广东省旅游控股集团 | 广州市越秀区环市东路326号之一 | [广州市文化广电旅游局《星级酒店·广东亚洲国际大酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071410.html) |
+| 8 | 广东大厦 | Guangdong Hotel | 四星级 | 广州市越秀区东风中路309号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 9 | 广东大酒店 | Guangdong Grand Hotel | 二星级 | 广州市越秀区长堤大马路294号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 10 | 广东迎宾馆 | Guangdong Yingbin Hotel | 五星级 | 广州市越秀区解放北路603号 | [广州市文化广电旅游局《星级酒店·广东迎宾馆》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071127.html) |
+| 11 | 广州大厦希尔顿启缤精选酒店 | Hilton Tapestry Collection Guangzhou Dasha | 四星级/希尔顿（启缤精选） | 广州市越秀区北京路374号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 12 | 广州宾馆 | Guangzhou Hotel | 四星级 | 广州市越秀区起义路2号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 13 | 新亚大酒店 | New Asia Hotel | 二星级 | 广州市越秀区人民南路10-12号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 14 | 新华大酒店 | Xinhua Hotel | 三星级 | 广州市越秀区人民南路2-6号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 15 | 流花宾馆 | Liuhua Hotel | 四星级 | 广州市越秀区环市西路194号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 16 | 爱群大酒店 | Aiqun Hotel | 三星级 | 广州市越秀区沿江西路113号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 17 | 白云城市酒店 | Baiyun City Hotel | 三星级 | 广州市越秀区环市西路179号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 18 | 白云宾馆 | Baiyun Hotel | 五星级/广东省旅游控股集团 | 广州市越秀区环市东路367号 | [广州市文化广电旅游局《星级酒店·白云宾馆》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071358.html) |
+| 19 | 花园酒店 | The Garden Hotel Guangzhou | 白金五星 | 广州市越秀区环市东路368号 | [广州市文化广电旅游局《星级酒店·花园酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071537.html) |
+| 20 | 远洋宾馆 | Ocean Hotel Guangzhou | 四星级 | 广州市越秀区环市东路412号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+
+### 荔湾（3 条）
+
+| # | 中文名 | 英文名 | 星级/品牌 | 地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 广东胜利宾馆（主楼） | Guangdong Victory Hotel | 四星级 | 广州市荔湾区沙面北街53号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 2 | 白天鹅宾馆 | White Swan Hotel | 五星级 | 广州市荔湾区沙面南街1号 | [广州市文化广电旅游局《星级酒店·白天鹅宾馆》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071530.html) |
+| 3 | 白宫酒店 | White Palace Hotel | 二星级 | 广州市荔湾区人民南路13-17号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+
+### 海珠（7 条）
+
+| # | 中文名 | 英文名 | 星级/品牌 | 地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 广交会威斯汀酒店 | The Westin Guangzhou | 万豪（威斯汀） | 广州市海珠区凤浦中路681号广交会展馆C区 | [广交会威斯汀酒店官网（Marriott / Westin）](https://www.marriott.com.cn/hotels/canwi-the-westin-guangzhou/overview/) |
+| 2 | 广州保利洲际酒店 | InterContinental Guangzhou Exhibition Center | 洲际 | 广州市海珠区阅江中路828号 | [广州保利洲际酒店官网（IHG）](https://www.ihg.com/intercontinental/hotels/cn/zh/guangzhou/canec/hoteldetail) |
+| 3 | 广州朗豪酒店 | Langham Place Guangzhou | 五星级/朗廷 | 广州市海珠区新港东路638号 | [广州市文化广电旅游局《星级酒店·南丰朗豪酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071136.html) |
+| 4 | 广州珀丽酒店 | Rosedale Hotel Guangzhou | 四星级/珀丽 | 广州市海珠区江南大道中348号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 5 | 广州香格里拉大酒店 | Shangri-La Guangzhou | 五星级/香格里拉 | 广州市海珠区会展东路1号 | [广州市文化广电旅游局《星级酒店·广州香格里拉大酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071281.html) |
+| 6 | 江悦酒店（原广州国际海员俱乐部） | Jiangyue Hotel | 三星级 | 广州市海珠区滨江西路20号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 7 | 琶洲酒店 | Pazhou Hotel | 三星级 | 广州市海珠区新港东路37号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+
+### 天河（12 条）
+
+| # | 中文名 | 英文名 | 星级/品牌 | 地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 嘉逸国际酒店 | Jiayi International Hotel | 五星级/嘉逸酒店管理集团 | 广州市天河区天河北路468号 | [广州市文化广电旅游局《星级酒店·嘉逸国际酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071369.html) |
+| 2 | 广州W酒店 | W Guangzhou | 五星级/万豪（W） | 广州市天河区珠江新城冼村路26号 | [广州市文化广电旅游局《星级酒店·广州W酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071135.html) |
+| 3 | 广州卓美亚酒店 | Jumeirah Guangzhou | 五星级/卓美亚 | 广州市天河区珠江东路12号 | [广州市文化广电旅游局《星级酒店·广州卓美亚酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071134.html) |
+| 4 | 广州四季酒店 | Four Seasons Hotel Guangzhou | 四季 | 广州市天河区珠江新城珠江西路5号（广州国际金融中心69-100层） | [广州四季酒店官网（Four Seasons）](https://www.fourseasons.com/zh/guangzhou/) |
+| 5 | 广州富力丽思卡尔顿酒店 | The Ritz-Carlton, Guangzhou | 五星级/万豪（丽思卡尔顿） | 广州市天河区珠江新城兴安路3号 | [广州市文化广电旅游局《星级酒店·广州富力丽思卡尔顿酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071141.html) |
+| 6 | 广州富力君悦大酒店 | Grand Hyatt Guangzhou | 五星级/凯悦（君悦） | 广州市天河区珠江新城珠江西路12号 | [广州市文化广电旅游局《星级酒店·广州富力君悦大酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071140.html) |
+| 7 | 广州市圣丰索菲特大酒店 | Sofitel Guangzhou Sunrich | 五星级/雅高（索菲特） | 广州市天河区广州大道中988号 | [广州市文化广电旅游局《星级酒店·广州圣丰索菲特大酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071144.html) |
+| 8 | 广州康莱德酒店 | Conrad Guangzhou | 希尔顿（康莱德） | 广州市天河区珠江新城兴民路222号 | [广州康莱德酒店官网（Conrad / Hilton）](https://conrad.hilton.com.cn/zh-CN/hotel/Guangzhou/conrad-guangzhou-CANXWCI/room3445.html) |
+| 9 | 广州建国饭店 | Jianguo Hotel Guangzhou | 五星级/首旅建国 | 广州市天河区林和中路172号 | [广州市文化广电旅游局《星级酒店·广州建国酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071400.html) |
+| 10 | 广州文华东方酒店 | Mandarin Oriental, Guangzhou | 文华东方 | 广州市天河区天河路389号 | [广州文华东方酒店官网（Mandarin Oriental）](https://www.mandarinoriental.com/zh-cn/guangzhou/tianhe) |
+| 11 | 广州瑰丽酒店 | Rosewood Guangzhou | 瑰丽 | 广州市天河区珠江东路6号 | [广州瑰丽酒店官网（Rosewood）](https://www.rosewoodhotels.com/sc/guangzhou) |
+| 12 | 石牌酒店 | Shipai Hotel | 三星级 | 广州市天河区天河东路168号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+
+### 白云（3 条）
+
+| # | 中文名 | 英文名 | 星级/品牌 | 地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 南航明珠大酒店 | Southern Airlines Pearl Hotel | 四星级/中国南方航空 | 广州市花都区新白云国际机场内南工作区空港五路 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 2 | 山庄旅社 | Shanzhuang Guest House | 四星级 | 广州市白云区白云山风景名胜区云山中路13号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 3 | 火车站希尔顿欢朋酒店 | Hampton by Hilton Guangzhou Railway Station | 四星级/希尔顿（欢朋） | 广州市白云区解放北路1389号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+
+### 黄埔（2 条）
+
+| # | 中文名 | 英文名 | 星级/品牌 | 地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 广州科学城保利郡雅酒店 | Poly Junya Hotel Guangzhou Science City | 四星级/保利 | 广州市黄埔区科学城揽月路99号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 2 | 广州黄埔君澜酒店 | Narada Hotel Guangzhou Huangpu | 五星级/君澜 | 广州市黄埔区温涧路129号 | [广州市文化广电旅游局《星级酒店·广州黄埔君澜酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071126.html) |
+
+### 番禺（5 条）
+
+| # | 中文名 | 英文名 | 星级/品牌 | 地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 广州星河湾酒店 | Chateau Star River Guangzhou | 五星级/星河湾 | 广州市番禺区番禺大道北1号 | [广州市文化广电旅游局《星级酒店·广州星河湾酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071164.html) |
+| 2 | 星河湾半岛酒店（海怡星河湾） | Star River Peninsula Hotel | 五星级/星河湾 | 广州市番禺区沙溪大道沙滘岛星河湾半岛 | [广州市文化广电旅游局《星级酒店·星河湾半岛酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071139.html) |
+| 3 | 番禺宾馆 | Panyu Hotel | 四星级 | 广州市番禺区市桥大北路130号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 4 | 祈福酒店 | Clifford Hotel Guangzhou | 四星级/祈福 | 广州市番禺区市广路8号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 5 | 科尔海悦酒店 | Ke'er Haiyue Hotel | 五星级 | 广州市番禺区清河东路288号 | [广州市文化广电旅游局《星级酒店·广州科尔海悦酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071143.html) |
+
+### 花都（1 条）
+
+| # | 中文名 | 英文名 | 星级/品牌 | 地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 九龙湖公主酒店 | Dragon Lake Princess Hotel | 五星级/中国旅游集团 | 广州市花都区花东镇山前旅游大道3号 | [广州市文化广电旅游局《星级酒店·九龙湖公主酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071142.html) |
+
+### 南沙（1 条）
+
+| # | 中文名 | 英文名 | 星级/品牌 | 地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 南沙大酒店 | Nansha Grand Hotel | 五星级 | 广州市南沙区海滨新城商贸大道南二路1号 | [广州市文化广电旅游局《星级酒店·南沙大酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071254.html) |
+
+### 从化（2 条）
+
+| # | 中文名 | 英文名 | 星级/品牌 | 地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 广东温泉宾馆 | Guangdong Hot Spring Hotel | 四星级 | 广州市从化区温泉镇温泉西路38号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+| 2 | 碧水湾温泉度假村 | Bishuiwan Hot Spring Resort | 四星级 | 广州市从化区良口镇良明村御泉大道353号 | [广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家，2026年8月更新）》](https://www.gz.gov.cn/zwgk/zdly/lysc/cyzl/content/post_10965238.html) |
+
+### 增城（4 条）
+
+| # | 中文名 | 英文名 | 星级/品牌 | 地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 广州增城保利郡雅酒店（原：广州增城保利皇冠假日酒店） | Poly Junya Hotel Zengcheng | 五星级/保利 | 广州市增城区新塘镇沿江大道18号 | [广州市文化广电旅游局《星级酒店·广州增城保利皇冠假日酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071138.html) |
+| 2 | 广州白水寨嘉华温泉酒店 | Baishuizhai Jiahua Hot Spring Hotel | 五星级 | 广州市增城区派潭镇高滩村松柏朗合作社 | [广州市文化广电旅游局《星级酒店·广州白水寨嘉华温泉酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071133.html) |
+| 3 | 广州碧桂园凤凰城酒店 | Country Garden Phoenix City Hotel | 五星级/碧桂园 | 广州市增城区广园东路新塘路段广州碧桂园内 | [广州市文化广电旅游局《星级酒店·广州碧桂园凤凰城酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071404.html) |
+| 4 | 广州金叶子酒店 | Guangzhou Jinyezi Hotel | 五星级/碧桂园 | 广州市增城区白水寨风景区白水寨大道38号 | [广州市文化广电旅游局《星级酒店·广州金叶子酒店》](https://www.gz.gov.cn/zt/hcwl/lyxl/xjjd/content/post_11071137.html) |
+
+## 商店候选（按所在区分组）
+
+### 越秀（4 条）
+
+| # | 中文名 | 英文名 | 类型/主营 | 地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 一德路商圈（海味干果玩具精品街） | Yide Road Commercial Area | 商业街区/专业市场集群/海味干果、玩具精品、文具礼品 | 未知 | [广州市越秀区人民政府](http://www.yuexiu.gov.cn/gkmlpt/content/3/3525/mpost_3525331.html) |
+| 2 | 皇上皇北京路地标店 | Huangshanghuang Beijing Road Landmark Store | 老字号腊味店/腊肠、腊肉、礼盒、休闲零食 | 广州市越秀区北京路244号 | [广州皇上皇集团股份有限公司官网](https://www.gzhsh.com/InnovationAccolades/index.aspx) |
+| 3 | 致美斋老铺 | Zhi Mei Zhai Old Shop | 老字号直营店/酱油、调味酱等广式调味品 | 广州市越秀区中山四路331-335号101铺 | [广州市致美斋酱园有限公司官网](https://www.jammychai.cn/index.php/page/76.html) |
+| 4 | 致美斋起义路店 | Zhi Mei Zhai Qiyi Road Store | 老字号直营店/酱油、调味酱等广式调味品 | 广州市越秀区起义路2号 | [广州市致美斋酱园有限公司官网](https://www.jammychai.cn/index.php/page/76.html) |
+
+### 荔湾（18 条）
+
+| # | 中文名 | 英文名 | 类型/主营 | 地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | apM时代国际服装城 | apM Times International Fashion City | 服装批发市场/鞋类、服装、配饰 | 广州市荔湾区站前路站前一街26-28号 | [广州市荔湾区人民政府门户网站（英文版）](http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html) |
+| 2 | 十三行服装批发商圈 | Shisanhang Clothing Wholesale Market | 服装批发商圈/服装、配饰 | 广州市荔湾区十三行路 | [广州市荔湾区人民政府门户网站（英文版）](http://www.lw.gov.cn/ywb/yshj/zysc/content/post_9122059.html) |
+| 3 | 富力儿童世界 | Kids City · Super Children's Wear Wholesale Market | 儿童用品批发市场/童装、童鞋、儿童用品 | 广州市荔湾区中山八路61号 | [广州市荔湾区人民政府门户网站（英文版）](http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html) |
+| 4 | 岭南花卉市场 | Lingnan Flower Market | 花卉批发市场/鲜切花、盆花、园艺用品 | 广州市荔湾区芳信路57号 | [广州市荔湾区人民政府门户网站（英文版）](http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html) |
+| 5 | 新中国大厦 | New China Plaza | 服装批发市场/箱包、配饰、女装 | 广州市荔湾区十三行路1号 | [广州市荔湾区人民政府门户网站（英文版）](http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html) |
+| 6 | 汇美国际·磐信服装城 | Hui Mei International Panxin Fashion City | 服装批发市场/女装、童装 | 广州市荔湾区环市西路139号 | [广州市荔湾区人民政府门户网站（英文版）](http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html) |
+| 7 | 清平中药材市场 | Qingping Traditional Chinese Medicine Market | 中药材专业市场/中药材、滋补品、煲汤料 | 广州市荔湾区六二三路336号 | [广州市荔湾区人民政府门户网站（英文版）](http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html) |
+| 8 | 皇上皇腊味店（下九路店） | Huangshanghuang | 老字号腊味店/腊肠、腊肉、礼盒、休闲零食 | 广州市荔湾区下九路3号 | [广州皇上皇集团股份有限公司官网](https://www.gzhsh.com/InnovationAccolades/index.aspx) |
+| 9 | 红遍天批发市场 | Hongbiantian Wholesale Market | 服装批发市场/牛仔、女装 | 广州市荔湾区十三行路13之2-9城启·十三行广场 | [广州市荔湾区人民政府门户网站（英文版）](http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html) |
+| 10 | 芳村花鸟鱼虫新世界 | Fangcun New World—Flowers, Birds, Fishes and Insects | 花鸟鱼虫市场/观赏鱼、宠物、花鸟鱼虫用品 | 广州市荔湾区花博大道101号 | [广州市荔湾区人民政府门户网站（英文版）](http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html) |
+| 11 | 芳村茶叶城 | Fangcun Tea Market | 茶叶批发市场/茶叶、茶具 | 广州市荔湾区芳村大道中508号 | [广州市荔湾区人民政府门户网站（英文版）](http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html) |
+| 12 | 荔塘大厦 | Litang Building | 童装批发市场/童装、玩具、配饰 | 广州市荔湾区中山八路50号 | [广州市荔湾区人民政府门户网站（英文版）](http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html) |
+| 13 | 荔尚精品童装商贸城 | Lishang High-end Trade City for Children Clothes Paradise | 童装批发市场/童装、婴幼儿服饰 | 广州市荔湾区中山八路93号 | [广州市荔湾区人民政府门户网站（英文版）](http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html) |
+| 14 | 荔湖大厦 | Lihu Building | 童装批发市场/童装、童鞋、玩具 | 广州市荔湾区中山8路97-101号 | [广州市荔湾区人民政府门户网站（英文版）](http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html) |
+| 15 | 西堤二马路电子批发市场 | Xidi Second Road Electronics Wholesale Market | 电子数码批发市场/电子数码产品、配件 | 广州市荔湾区西堤二马路16号 | [广州市荔湾区人民政府门户网站（英文版）](http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html) |
+| 16 | 谊园文具批发市场 | Yiyuan Office Stationery & Art Supplies Trade Center | 文具玩具批发市场/文具、玩具、美术用品 | 广州市荔湾区黄沙后道（地铁黄沙站C出口） | [广州市荔湾区人民政府门户网站（英文版）](http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html) |
+| 17 | 采芝林 | Guangzhou Caizhilin Pharmaceutical Co., Ltd. | 老字号药企/连锁药店/中药材、中药饮片、养生中药产品 | 广州市荔湾区塞坝路12号自编4号、5号房 | [广州采芝林药业有限公司官网](http://www.czlyy.com.cn/contact) |
+| 18 | 黄沙水产交易市场 | Huangsha Aquatic Products Market | 水产批发市场/鲜活水产、海鲜 | 广州市荔湾区丛桂路隧兴广场南侧 | [广州市荔湾区人民政府门户网站（英文版）](http://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html) |
+
+### 海珠（1 条）
+
+| # | 中文名 | 英文名 | 类型/主营 | 地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 中大纺织商圈 | Zhongda Textile Business Circle | 纺织面辅料批发商圈/面料、辅料、家纺 | 未知 | [广州市人民政府门户网站（来源：海珠区）](https://www.gz.gov.cn/ysgz/xwdt/ysdt/content/mpost_8921349.html) |
+
+### 天河（6 条）
+
+| # | 中文名 | 英文名 | 类型/主营 | 地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 东方宝泰购物广场 | PO PARK | 购物中心/生活品牌、特色美食 | 广州市天河区林和中路63号 | [PO PARK 东方宝泰官网](http://www.popark.cn/contact.aspx) |
+| 2 | 天环广场 | Parc Central | 购物中心/国际潮奢服饰、美妆香氛、户外运动、潮玩、餐饮 | 广州市天河区天河路218号 | [天环 Parc Central 官网](https://www.parccentral.com.cn/zh-CN/aboutUs) |
+| 3 | 广东省博物馆文创商店 | Guangdong Museum Cultural & Creative Store | 博物馆文创商店/文创产品、纪念品、文具 | 广州市天河区珠江新城珠江东路2号 | [广东省博物馆官网](https://www.gdmuseum.org.cn/col679/) |
+| 4 | 广州市内免税店（广州友谊国金店） | Guangzhou Downtown Duty Free Store | 市内免税店/美妆护肤、腕表首饰、箱包服饰、高端酒水、国潮精品 | 广州市天河区珠江西路5号广州友谊国金商店首层 | [广州市人民政府门户网站（来源：市商务局）](https://www.gz.gov.cn/xw/zwlb/bmdt/content/post_10422444.html) |
+| 5 | 摩登百货（岗顶店） | Modern Department Store | 百货公司/服装、鞋包、家居、化妆品等 | 广州市天河区天河路611号 | [广州摩登百货股份有限公司官网](https://www.mopark.com.cn/cn/contact.html) |
+| 6 | 正佳广场 | Grandview Mall | 购物中心/文商旅综合体/零售、餐饮、海洋馆等文旅项目 | 未知 | [南方+（广州天河发布）](https://static.nfnews.com/content/202508/18/c11634785.html) |
+
+### 未标（10 条）
+
+| # | 中文名 | 英文名 | 类型/主营 | 地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 天河城百货 | TEEM DEPARTMENT | 百货公司/服饰、皮具、金饰、家用电器、食品 | 未知 | [粤海天河城商业简介（官网）](https://www.teemall.com.cn/gzthcgwzx/yhthc/yhthcsy/yhthcsyjj/) |
+| 2 | 天河城购物中心 | Teemall | 购物中心/服饰、运动、金饰、超市等综合零售 | 未知 | [广州天河城购物中心官网](https://www.teemall.com.cn/gzthcgwzx/txfw/jtzn/index.html) |
+| 3 | 广州塔旅游区纪念品商店（含广州礼物旗舰店） | Canton Tower Souvenir Shops | 景区纪念品店/冰箱贴、钥匙扣、毛绒玩具、非遗美工产品、盲盒 | 广州塔旅游区 | [广州市人民政府门户网站（来源：广州日报）](https://www.gz.gov.cn/zt/jjd137jzgjckspjyh/content/mpost_10222756.html) |
+| 4 | 广州太古汇 | Taikoo Hui | 购物中心/国际品牌服饰、腕表珠宝、美妆、餐饮 | 广州市天河路383号 | [广州太古汇官网](https://www.taikoohui.com/zh-cn/) |
+| 5 | 广州白云国际机场T3航站楼出境免税店 | Guangzhou Baiyun Airport T3 Departure Duty Free Shop | 口岸免税店/奢侈品、美妆、酒水、旅行用品 | 广州白云国际机场T3航站楼 | [中国旅游集团（中旅免税）](https://www.ctg.cn/article/19590) |
+| 6 | 广州购书中心（天河店） | Guangzhou Book Center | 大型书城/图书、文创、餐饮、潮玩 | 广州市天河路123号 | [广州新华出版发行集团（官网）](https://www.gzxhcbfx.com/tendering_detail/517.html) |
+| 7 | 方所（广州太古汇店） | Fangsuo Commune | 书店/文化空间/图书、文创、服饰、植物、咖啡 | 广州市天河路383号太古汇MU35 | [广州太古汇官网（商户页）](https://www.taikoohui.com/zh-cn/shopping/mu35/) |
+| 8 | 李占记钟表店 | Li Zhanji Watch Shop | 钟表店/钟表、钟表维修服务 | 未知 | [央视网](https://local.cctv.com/2024/12/16/VIDEzMbVaTTMlTCj7qBp1yGj241216.shtml) |
+| 9 | 荔湾礼物文创旗舰店（永庆坊） | Liwan Gifts | 文创旗舰店/文创产品、非遗手作、手信 | 永庆坊广州粤剧艺术博物馆普天乐馆内 | [广州市荔湾区人民政府（区财政局）](http://www.lw.gov.cn/zzzs/bmdt/content/post_10103400.html) |
+| 10 | 荔湾礼物（陈家祠店） | Liwan Gifts (Chen Clan Ancestral Hall Store) | 文创商店/文创产品、非遗手作、老字号手信 | 陈家祠东广场 | [广州日报大洋网](https://news.dayoo.com/gzrbrmt/202605/02/170615_54955285.htm) |
 
 ## 餐厅候选（按子类分组）
 
 ### 米其林二星（3 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 御宝轩 | 粤菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 2 | 江 | 粤菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 3 | 泰安门 | 创新菜（欧洲料理技法） | 越秀区环市东路368号广州花园酒店二层 | [南方+（广州越秀发布）](https://www.nfnews.com/content/0oXLZAvLo9.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 御宝轩 | Imperial Treasure Fine Chinese Cuisine | 粤菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 2 | 江 | Jiang by Chef Fei | 粤菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 3 | 泰安门 | Taian Table | 创新菜（欧洲料理技法） | 越秀区环市东路368号广州花园酒店二层 | [南方+（广州越秀发布）](https://www.nfnews.com/content/0oXLZAvLo9.html) |
 
 ### 米其林一星（17 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | Chōwa | 创新菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 2 | 丽轩 | 粤菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 3 | 信记海鲜饭店 | 粤菜（海鲜） | 越秀区长堤大马路270号 | [南方+（广州越秀发布）](https://www.nfnews.com/content/0oXLZAvLo9.html) |
-| 4 | 兰亭永 | 川菜 | 越秀区恤孤院路18号 | [南方+（广州越秀发布）](https://www.nfnews.com/content/0oXLZAvLo9.html) |
-| 5 | 利苑(越秀) | 粤菜（含海鲜） | 越秀区建设六马路33号宜安广场4楼 | [南方+（广州越秀发布）](https://www.nfnews.com/content/0oXLZAvLo9.html) |
-| 6 | 宋 | 川菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 7 | 宏图府 | 粤菜（点心） | 沙面南街1号白天鹅宾馆二楼 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
-| 8 | 屿 | 闽菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 9 | 岁集院子·拾月 | 潮州菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 10 | 广御轩 | 粤菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 11 | 御宝阁 | 潮州菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 12 | 惠食佳(海珠) | 粤菜 | 海珠 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 13 | 愉粤轩 | 粤菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 14 | 斯蒂勒 | 现代欧洲菜 | 越秀区环市东路花园酒店二楼 | [南方+（广州越秀发布）](https://www.nfnews.com/content/0oXLZAvLo9.html) |
-| 15 | 炳胜公馆(冼村路) | 粤菜（含点心） | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 16 | 炳胜私厨(天河东路) | 粤菜（含点心） | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 17 | 玉堂春暖 | 粤菜 | 沙面南街1号白天鹅宾馆三楼 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | Chōwa | Chōwa | 创新菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 2 | 丽轩 | Lai Heen | 粤菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 3 | 信记海鲜饭店 | Xin Ji | 粤菜（海鲜） | 越秀区长堤大马路270号 | [南方+（广州越秀发布）](https://www.nfnews.com/content/0oXLZAvLo9.html) |
+| 4 | 兰亭永 | Yong | 川菜 | 越秀区恤孤院路18号 | [南方+（广州越秀发布）](https://www.nfnews.com/content/0oXLZAvLo9.html) |
+| 5 | 利苑(越秀) | Lei Garden (Yuexiu) | 粤菜（含海鲜） | 越秀区建设六马路33号宜安广场4楼 | [南方+（广州越秀发布）](https://www.nfnews.com/content/0oXLZAvLo9.html) |
+| 6 | 宋 | Song | 川菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 7 | 宏图府 | Hongtu Hall | 粤菜（点心） | 沙面南街1号白天鹅宾馆二楼 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
+| 8 | 屿 | Yu Garden | 闽菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 9 | 岁集院子·拾月 | Suyab Courtyard・Pickmoon Gourmet | 潮州菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 10 | 广御轩 | Lingnan House | 粤菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 11 | 御宝阁 | Imperial Treasure Fine Teochew Cuisine | 潮州菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 12 | 惠食佳(海珠) | Wisca (Haizhu) | 粤菜 | 海珠 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 13 | 愉粤轩 | Yu Yue Heen | 粤菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 14 | 斯蒂勒 | Stiller | 现代欧洲菜 | 越秀区环市东路花园酒店二楼 | [南方+（广州越秀发布）](https://www.nfnews.com/content/0oXLZAvLo9.html) |
+| 15 | 炳胜公馆(冼村路) | BingSheng Mansion | 粤菜（含点心） | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 16 | 炳胜私厨(天河东路) | BingSheng Private Kitchen | 粤菜（含点心） | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 17 | 玉堂春暖 | Jade River | 粤菜 | 沙面南街1号白天鹅宾馆三楼 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
 
 ### 必比登推介（52 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 七寸大头辉 | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 2 | 创发 | 粤菜 | 光复北路512-2铺 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
-| 3 | 勉记炖品皇(越秀) | 必比登推介 | 越秀 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 4 | 华哥私厨 | 粤菜（私房菜） | 光复北路443号 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
-| 5 | 南园酒家 | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 6 | 台山老表咸汤圆(西华路) | 台山菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 7 | 同记鸡粥粉面 | 粤式粥粉面 | 长寿东路福广里3号 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
-| 8 | 向群(龙津东路) | 粤菜 | 龙津东路857号 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
-| 9 | 吴川好味来 | 粤式点心 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 10 | 吴记鹅前鸭后 | 粤菜（白切鹅、白切鸭） | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 11 | 周门 | 粤式粥粉面 | 周门街172号 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
-| 12 | 味食家 | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 13 | 咏作 | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 14 | 啫八(海珠) | 必比登推介 | 海珠 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 15 | 嘛嘛档 | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 16 | 坚记(荔湾) | 粤式面食（伊面） | 长寿东路303号 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
-| 17 | 大洋家 | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 18 | 大鸽饭(棠下涌西路) | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 19 | 家源素食 | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 20 | 容意发牛杂店(越秀) | 必比登推介 | 越秀 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 21 | 岭南海晏楼(滨江东路) | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 22 | 幸福驿站(育蕾三街) | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 23 | 开小灶 | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 24 | 思茅菜馆 | 云南菜（普洱风味） | 葵蓬路40号104号 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
-| 25 | 恩宁刘福记(东华东路) | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 26 | 愉园饭店 | 粤式点心 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 27 | 抱德(敦和路) | 粤式猪脚饭 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 28 | 撒尔塔东乡手抓 | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 29 | 文记壹心鸡 | 粤菜（白切鸡） | 宝华路旋源桥10号 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
-| 30 | 新文记饭庄(盘福路) | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 31 | 新泰乐(越秀) | 必比登推介 | 越秀 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 32 | 朱仔记食府(江南大道) | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 33 | 松苑 | 粤菜（浓汤、烧鹅） | 鹤洞路12号鹤洞新天地 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
-| 34 | 梅麓小厨 | 粤式点心 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 35 | 榕意(越秀) | 必比登推介 | 越秀 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 36 | 汇兴源 | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 37 | 海门鱼仔店(燕岭路) | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 38 | 海鲜街菜馆 | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 39 | 田间湘食 | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 40 | 紫金食坊 | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 41 | 老西关濑粉(文明路) | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 42 | 肥豚肉骨茶(越秀) | 必比登推介 | 越秀 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 43 | 腰记 | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 44 | 花城苑(金穗路) | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 45 | 茹意传统竹升面 | 粤式面食（竹升面） | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 46 | 蔬稻 | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 47 | 西关竹园(十八甫) | 粤式面食（竹升面） | 十八甫南路107号 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
-| 48 | 西关竹园(荔枝湾) | 粤式面食（竹升面） | 龙津西路155-6号 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
-| 49 | 达扬原味炖品(文明路) | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 50 | 雅苑 | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 51 | 靓姐南宁蒲庙生榨米粉 | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
-| 52 | 香港庙街煲仔饭 | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 七寸大头辉 | Qi Cun Da Tou Hui | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 2 | 创发 | Chuang Fa | 粤菜 | 光复北路512-2铺 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
+| 3 | 勉记炖品皇(越秀) | Mian Ji Stewed Soup King (Yuexiu) | 必比登推介 | 越秀 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 4 | 华哥私厨 | Hua Ge Private Kitchen | 粤菜（私房菜） | 光复北路443号 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
+| 5 | 南园酒家 | Nan Yuan Restaurant | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 6 | 台山老表咸汤圆(西华路) | Taishan Lao Biao Salted Tangyuan (Xihua Road) | 台山菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 7 | 同记鸡粥粉面 | Tong Ji Chicken Congee & Noodles | 粤式粥粉面 | 长寿东路福广里3号 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
+| 8 | 向群(龙津东路) | Xiang Qun (Longjin East Road) | 粤菜 | 龙津东路857号 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
+| 9 | 吴川好味来 | Wuchuan Hao Wei Lai | 粤式点心 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 10 | 吴记鹅前鸭后 | Wu Ji Goose and Duck | 粤菜（白切鹅、白切鸭） | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 11 | 周门 | Zhou Men | 粤式粥粉面 | 周门街172号 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
+| 12 | 味食家 | Wei Shi Jia | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 13 | 咏作 | Yong Zuo | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 14 | 啫八(海珠) | Zhe Ba (Haizhu) | 必比登推介 | 海珠 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 15 | 嘛嘛档 | Mamak Stall | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 16 | 坚记(荔湾) | Jian Ji (Liwan) | 粤式面食（伊面） | 长寿东路303号 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
+| 17 | 大洋家 | Da Yang Jia | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 18 | 大鸽饭(棠下涌西路) | Da Ge Fan (Tangxiachong West Road) | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 19 | 家源素食 | Jia Yuan Vegetarian | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 20 | 容意发牛杂店(越秀) | Rong Yi Fa Beef Offal Shop (Yuexiu) | 必比登推介 | 越秀 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 21 | 岭南海晏楼(滨江东路) | Lingnan Hai Yan Lou (Binjiang East Road) | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 22 | 幸福驿站(育蕾三街) | Xingfu Station (Yulei 3rd Street) | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 23 | 开小灶 | Kai Xiao Zao | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 24 | 思茅菜馆 | Simao Restaurant | 云南菜（普洱风味） | 葵蓬路40号104号 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
+| 25 | 恩宁刘福记(东华东路) | Enning Liu Fu Ji (Donghua East Road) | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 26 | 愉园饭店 | Yu Yuan Restaurant | 粤式点心 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 27 | 抱德(敦和路) | Bao De (Dunhe Road) | 粤式猪脚饭 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 28 | 撒尔塔东乡手抓 | Saerta Dongxiang Hand-Pulled Mutton | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 29 | 文记壹心鸡 | Wen Ji Yi Xin Chicken | 粤菜（白切鸡） | 宝华路旋源桥10号 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
+| 30 | 新文记饭庄(盘福路) | Xin Wen Ji Restaurant (Panfu Road) | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 31 | 新泰乐(越秀) | Xin Tai Le (Yuexiu) | 必比登推介 | 越秀 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 32 | 朱仔记食府(江南大道) | Zhu Zai Ji Restaurant (Jiangnan Avenue) | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 33 | 松苑 | Song Yuan | 粤菜（浓汤、烧鹅） | 鹤洞路12号鹤洞新天地 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
+| 34 | 梅麓小厨 | Mei Lu Kitchen | 粤式点心 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 35 | 榕意(越秀) | Rong Yi (Yuexiu) | 必比登推介 | 越秀 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 36 | 汇兴源 | Hui Xing Yuan | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 37 | 海门鱼仔店(燕岭路) | Hai Men Fish Shop (Yanling Road) | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 38 | 海鲜街菜馆 | Seafood Street Restaurant | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 39 | 田间湘食 | Tianjian Hunan Cuisine | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 40 | 紫金食坊 | Zi Jin Restaurant | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 41 | 老西关濑粉(文明路) | Old Xiguan Lai Fen (Wenming Road) | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 42 | 肥豚肉骨茶(越秀) | Fei Tun Bak Kut Teh (Yuexiu) | 必比登推介 | 越秀 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 43 | 腰记 | Yao Ji | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 44 | 花城苑(金穗路) | Hua Cheng Yuan (Jinsui Road) | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 45 | 茹意传统竹升面 | Ru Yi Traditional Bamboo Noodles | 粤式面食（竹升面） | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 46 | 蔬稻 | Shu Dao | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 47 | 西关竹园(十八甫) | Xiguan Zhu Yuan (Shibapu) | 粤式面食（竹升面） | 十八甫南路107号 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
+| 48 | 西关竹园(荔枝湾) | Xiguan Zhu Yuan (Lizhiwan) | 粤式面食（竹升面） | 龙津西路155-6号 | [南方+（广州荔湾发布）](https://www.nfnews.com/content/mobWEnNnyk.html) |
+| 49 | 达扬原味炖品(文明路) | Da Yang Original Stewed Soup (Wenming Road) | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 50 | 雅苑 | Ya Yuan | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 51 | 靓姐南宁蒲庙生榨米粉 | Liang Jie Nanning Pumiao Fresh Rice Noodles | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
+| 52 | 香港庙街煲仔饭 | Hong Kong Temple Street Claypot Rice | 必比登推介 | 未知 | [新浪新闻（转载微博）](https://www.sina.cn/news/detail/5333861284184580.html) |
 
 ### 米其林指南入选餐厅（41 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | Emmelyn | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 2 | 二沙壹号 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 3 | 佰鲜汇 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 4 | 凤岄轩 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 5 | 半岛名轩（天河北路） | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 6 | 同福·尚品轩 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 7 | 和苑（天河） | 米其林指南入选餐厅 | 天河 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 8 | 国藩家宴 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 9 | 夏宫 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 10 | 天水 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 11 | 头家夜粥 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 12 | 川法小院 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 13 | 彤堂序 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 14 | 徐博馆（天河） | 米其林指南入选餐厅 | 天河 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 15 | 御膳汤品（猎德西浦大街） | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 16 | 德利私厨·德叔鲍鱼 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 17 | 悦景轩 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 18 | 昇运来云吞面（越秀） | 米其林指南入选餐厅 | 越秀 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 19 | 星河湾·星景 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 20 | 桃园馆（越秀） | 米其林指南入选餐厅 | 越秀 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 21 | 梁家菜馆 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 22 | 永利饭店（越秀） | 米其林指南入选餐厅 | 越秀 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 23 | 汤氏美食 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 24 | 泰爱里（越秀） | 泰国菜（据英文名） | 越秀 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 25 | 海塘晓味 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 26 | 潮跃 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 27 | 炳胜品味（东晓路） | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 28 | 玫瑰园餐厅 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 29 | 知竹植物厨房 | 植物性料理（据英文名） | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 30 | 禅意茶素 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 31 | 空中花园 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 32 | 笑意轩 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 33 | 荔雅图 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 34 | 谷缘 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 35 | 酒说·今宴 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 36 | 闻见 | 海南菜（据英文名） | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 37 | 陶陶居·雅园 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 38 | 韵轩 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 39 | 风味 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 40 | 馥 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
-| 41 | 鲜厨令（海珠） | 米其林指南入选餐厅 | 海珠 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | Emmelyn | Emmelyn | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 2 | 二沙壹号 | Ersha No.1 | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 3 | 佰鲜汇 | Catch | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 4 | 凤岄轩 | Feng Yue Xuan | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 5 | 半岛名轩（天河北路） | Famous Cuisine (Tianhe North Road) | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 6 | 同福·尚品轩 | Tung Fook Superior Cuisine | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 7 | 和苑（天河） | He Yuan (Tianhe) | 米其林指南入选餐厅 | 天河 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 8 | 国藩家宴 | Guo Fan Jia Yan | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 9 | 夏宫 | Summer Palace | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 10 | 天水 | Tian Shui | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 11 | 头家夜粥 | Tao Gie Mie Zhou | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 12 | 川法小院 | Chaleur | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 13 | 彤堂序 | Tongtown | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 14 | 徐博馆（天河） | Dr. Xu's Wellbeing Branch (Tianhe) | 米其林指南入选餐厅 | 天河 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 15 | 御膳汤品（猎德西浦大街） | Yushan Soup (Liede Xipu Street) | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 16 | 德利私厨·德叔鲍鱼 | Deli Boutique · Uncle De Abalone | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 17 | 悦景轩 | Yue Jing Xuan | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 18 | 昇运来云吞面（越秀） | Sing Wan Loi Noodle (Yuexiu) | 米其林指南入选餐厅 | 越秀 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 19 | 星河湾·星景 | The Legend | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 20 | 桃园馆（越秀） | The Peach Blossom (Yuexiu) | 米其林指南入选餐厅 | 越秀 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 21 | 梁家菜馆 | Liang Jia Cai Guan | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 22 | 永利饭店（越秀） | Wing Lee Restaurant (Yuexiu) | 米其林指南入选餐厅 | 越秀 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 23 | 汤氏美食 | Tang Shi Meishi | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 24 | 泰爱里（越秀） | Thai Alley (Yuexiu) | 泰国菜（据英文名） | 越秀 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 25 | 海塘晓味 | Hitom Xiao Wei | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 26 | 潮跃 | Chao Yue | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 27 | 炳胜品味（东晓路） | BingSheng Pin Wei (Dongxiao Road) | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 28 | 玫瑰园餐厅 | Rose Garden | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 29 | 知竹植物厨房 | Plant-Based Kitchen | 植物性料理（据英文名） | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 30 | 禅意茶素 | Zen Tea | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 31 | 空中花园 | The Penthouse | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 32 | 笑意轩 | Delightful House | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 33 | 荔雅图 | Li Château | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 34 | 谷缘 | Gu Yuan | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 35 | 酒说·今宴 | The Eminent | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 36 | 闻见 | Wenjian Hainan Cuisine | 海南菜（据英文名） | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 37 | 陶陶居·雅园 | Tao Tao Ju · Ya Yuan | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 38 | 韵轩 | Yun Pavilion | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 39 | 风味 | Flavors of China | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 40 | 馥 | Aroma | 米其林指南入选餐厅 | 未知 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
+| 41 | 鲜厨令（海珠） | Xian Chu Ling (Haizhu) | 米其林指南入选餐厅 | 海珠 | [界面新闻：2026广深米其林完整榜单](https://m.jiemian.com/article/14940362.html) |
 
 ### 米其林指南入选（3 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | Chaleur | 米其林指南入选 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 2 | 德点 | 中式点心 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
-| 3 | 樾宴 | 粤菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | Chaleur | Chaleur | 米其林指南入选 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 2 | 德点 | De Dian | 中式点心 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
+| 3 | 樾宴 | Yue Yan | 粤菜 | 未知 | [米其林中国官网新闻稿](https://www.michelin.com.cn/news/2026/0818.html) |
 
 ### 黑珍珠（二钻）（3 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 好酒好蔡 | 粤菜（创新） | 天河 | [广州天河发布：2025黑珍珠天河区](https://m.thepaper.cn/baijiahao_30069526) |
-| 2 | 广州瑰丽酒店·广御轩 | 粤菜 | 天河 | [广州天河发布：2025黑珍珠天河区](https://m.thepaper.cn/baijiahao_30069526) |
-| 3 | 炳胜私厨（中达旗舰店） | 粤菜 | 天河 | [广州天河发布：2025黑珍珠天河区](https://m.thepaper.cn/baijiahao_30069526) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 好酒好蔡 | Hao Jiu Hao Cai | 粤菜（创新） | 天河 | [广州天河发布：2025黑珍珠天河区](https://m.thepaper.cn/baijiahao_30069526) |
+| 2 | 广州瑰丽酒店·广御轩 | Rosewood Guangzhou · Lingnan House | 粤菜 | 天河 | [广州天河发布：2025黑珍珠天河区](https://m.thepaper.cn/baijiahao_30069526) |
+| 3 | 炳胜私厨（中达旗舰店） | BingSheng Private Kitchen (Zhongda Flagship) | 粤菜 | 天河 | [广州天河发布：2025黑珍珠天河区](https://m.thepaper.cn/baijiahao_30069526) |
 
 ### 黑珍珠（一钻）（6 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | CICADA 宋·湘 | 湘菜 | 天河 | [广州天河发布：2025黑珍珠天河区](https://m.thepaper.cn/baijiahao_30069526) |
-| 2 | 丽轩中餐厅（广州丽思卡尔顿酒店） | 粤菜 | 天河 | [广州天河发布：2025黑珍珠天河区](https://m.thepaper.cn/baijiahao_30069526) |
-| 3 | 客·AKEN'S KITCHEN私房菜 | 客家菜（融合西式） | 天河 | [广州天河发布：2025黑珍珠天河区](https://m.thepaper.cn/baijiahao_30069526) |
-| 4 | 广州文华东方酒店·江-由辉师傅主理 | 粤菜（创意） | 天河 | [广州天河发布：2025黑珍珠天河区](https://m.thepaper.cn/baijiahao_30069526) |
-| 5 | 炳胜公馆（珠江新城店） | 粤菜 | 天河 | [广州天河发布：2025黑珍珠天河区](https://m.thepaper.cn/baijiahao_30069526) |
-| 6 | 花城苑广府菜（侨鑫店） | 广府菜 | 天河 | [广州天河发布：2025黑珍珠天河区](https://m.thepaper.cn/baijiahao_30069526) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | CICADA 宋·湘 | CICADA Song · Hunan | 湘菜 | 天河 | [广州天河发布：2025黑珍珠天河区](https://m.thepaper.cn/baijiahao_30069526) |
+| 2 | 丽轩中餐厅（广州丽思卡尔顿酒店） | Lai Heen Chinese Restaurant (The Ritz-Carlton, Guangzhou) | 粤菜 | 天河 | [广州天河发布：2025黑珍珠天河区](https://m.thepaper.cn/baijiahao_30069526) |
+| 3 | 客·AKEN'S KITCHEN私房菜 | AKEN'S KITCHEN | 客家菜（融合西式） | 天河 | [广州天河发布：2025黑珍珠天河区](https://m.thepaper.cn/baijiahao_30069526) |
+| 4 | 广州文华东方酒店·江-由辉师傅主理 | Mandarin Oriental Guangzhou · Jiang by Chef Fei | 粤菜（创意） | 天河 | [广州天河发布：2025黑珍珠天河区](https://m.thepaper.cn/baijiahao_30069526) |
+| 5 | 炳胜公馆（珠江新城店） | BingSheng Mansion (Zhujiang New Town Branch) | 粤菜 | 天河 | [广州天河发布：2025黑珍珠天河区](https://m.thepaper.cn/baijiahao_30069526) |
+| 6 | 花城苑广府菜（侨鑫店） | Hua Cheng Yuan Cantonese Cuisine (Qiaoxin Branch) | 广府菜 | 天河 | [广州天河发布：2025黑珍珠天河区](https://m.thepaper.cn/baijiahao_30069526) |
 
 ### 黑珍珠（2026新上榜）（2 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 拾贰·懷石Omakase | 日本料理（怀石） | 未知 | [南方+：2026黑珍珠广东40家](https://m.sohu.com/a/981088642_100116740/) |
-| 2 | 赏鲜悦木牛肉火锅 | 潮汕牛肉火锅 | 未知 | [南方+：2026黑珍珠广东40家](https://m.sohu.com/a/981088642_100116740/) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 拾贰·懷石Omakase | Shi Er · Kaiseki Omakase | 日本料理（怀石） | 未知 | [南方+：2026黑珍珠广东40家](https://m.sohu.com/a/981088642_100116740/) |
+| 2 | 赏鲜悦木牛肉火锅 | Shang Xian Yue Mu Beef Hot Pot | 潮汕牛肉火锅 | 未知 | [南方+：2026黑珍珠广东40家](https://m.sohu.com/a/981088642_100116740/) |
 
 ### 携程美食林（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 陶陶居酒家（第十甫路总店） | 粤菜 | 未知 | [携程美食林：广东榜单页](https://gs.ctrip.com/html5/you/foods/100051/list-c4981.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 陶陶居酒家（第十甫路总店） | Tao Tao Ju Restaurant (Shifupu Road Main Branch) | 粤菜 | 未知 | [携程美食林：广东榜单页](https://gs.ctrip.com/html5/you/foods/100051/list-c4981.html) |
 
 ### 美食街（18 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 上下九-永庆坊（传承经典美食区） | 粤菜与西关传统小吃 | 荔湾区上下九至恩宁路永庆坊一带 | [羊城派（羊城晚报，百度百家号转载）](https://baijiahao.baidu.com/s?id=1799577641630376419) |
-| 2 | 上下九步行街 | 西关小吃与老字号粤菜 | 荔湾 | [广州市荔湾区人民政府（提案答复函）](http://www.lw.gov.cn/ztzl/rdjyhzxtabl/content/post_10423367.html) |
-| 3 | 北京路步行街 | 购物街区内多品类餐饮与小吃 | 越秀 | [新华社（中国网政务转载）](http://zw.china.com.cn/2020-09/27/content_76756936.html) |
-| 4 | 同福路 | 广式粥粉面与糖水 | 海珠区同福东路至同福西路 | [南方+（广州日报转载）](https://static.nfapp.southcn.com/content/201808/27/c1434702.html) |
-| 5 | 天河路商圈 | 多品类餐饮与连锁品牌 | 天河区天河路一带 | [羊城派（羊城晚报）](https://ycpai.ycwb.com/ycppad/content/2020-11/02/content_1258819.html) |
-| 6 | 广州塔-琶醍美食集聚区 | 夜宵、酒吧与地方特色餐饮 | 东至珠啤博物馆，西至海心桥，南至广州科学馆，北至珠江 | [广州市海珠区人民政府门户网站](https://www.haizhu.gov.cn/hzdt/ztlm/tzhz/yshj/yshl/content/mpost_9584707.html) |
-| 7 | 建设六马路 | 东南亚、日韩等异国餐饮与酒吧 | 越秀区建设六马路 | [乐居网广州（搜狐号）](https://www.sohu.com/a/915953931_120047375) |
-| 8 | 惠福美食花街 | 粤菜、小吃与东南亚菜 | 东起禺山路，西至惠福东路470号 | [广州市人民政府门户网站（来源：广州日报）](https://www.gz.gov.cn/zlgz/wlzx/content/post_8098385.html) |
-| 9 | 文明路糖水街 | 广式糖水与炖品 | 越秀区文明路 | [买购网（广州十大美食街）](https://m.maigoo.com/top/410685.html) |
-| 10 | 江南文商旅融合圈（江南西） | 酒吧、西餐与多元餐饮 | 东至江南东路，西至太古仓码头沿线500米范围 | [广州市海珠区人民政府门户网站](https://www.haizhu.gov.cn/hzdt/ztlm/tzhz/yshj/yshl/content/mpost_9584707.html) |
-| 11 | 沙面岛（欧陆风情美食区） | 西餐与多元餐饮 | 荔湾区沙面岛 | [羊城派（羊城晚报，百度百家号转载）](https://baijiahao.baidu.com/s?id=1799577641630376419) |
-| 12 | 泮塘路美食街 | 西关小吃与粤菜 | 荔湾区泮塘路—泮塘五约一带 | [广州市荔湾区人民政府（提案答复函）](http://www.lw.gov.cn/ztzl/rdjyhzxtabl/content/post_7401820.html) |
-| 13 | 洛溪食街 | 海鲜、烧烤与多菜系 | 番禺区洛溪 | [买购网（广州十大美食街）](https://m.maigoo.com/top/410685.html) |
-| 14 | 猎德街区 | 夜间餐饮与酒吧 | 天河 | [广州市海珠区人民政府门户网站（首批羊城夜市先行区名单）](https://www.haizhu.gov.cn/hzdt/ztlm/tzhz/yshj/yshl/content/mpost_9584707.html) |
-| 15 | 西华路美食街 | 广式小食与粉面 | 荔湾区西华路 | [买购网（广州十大美食街）](https://m.maigoo.com/top/410685.html) |
-| 16 | 贝岗夜市小吃街 | 各地小吃与糖水 | 番禺区大学城贝岗 | [买购网（广州十大美食街）](https://m.maigoo.com/top/410685.html) |
-| 17 | 远景路韩国风情街 | 韩式烤肉与韩国料理 | 白云区棠景街远景路 | [中国报道（中国外文局亚太传播中心）](http://new.chinareports.org.cn/index/news/72814.html) |
-| 18 | 龙洞美食街 | 各地小吃与烧烤 | 天河区龙洞步行街 | [买购网（广州十大美食街）](https://m.maigoo.com/top/410685.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 上下九-永庆坊（传承经典美食区） | Shangxiajiu-Yongqingfang (Classic Food Heritage Area) | 粤菜与西关传统小吃 | 荔湾区上下九至恩宁路永庆坊一带 | [羊城派（羊城晚报，百度百家号转载）](https://baijiahao.baidu.com/s?id=1799577641630376419) |
+| 2 | 上下九步行街 | Shangxiajiu Pedestrian Street | 西关小吃与老字号粤菜 | 荔湾 | [广州市荔湾区人民政府（提案答复函）](http://www.lw.gov.cn/ztzl/rdjyhzxtabl/content/post_10423367.html) |
+| 3 | 北京路步行街 | Beijing Road Pedestrian Street | 购物街区内多品类餐饮与小吃 | 越秀 | [新华社（中国网政务转载）](http://zw.china.com.cn/2020-09/27/content_76756936.html) |
+| 4 | 同福路 | Tongfu Road | 广式粥粉面与糖水 | 海珠区同福东路至同福西路 | [南方+（广州日报转载）](https://static.nfapp.southcn.com/content/201808/27/c1434702.html) |
+| 5 | 天河路商圈 | Tianhe Road Business District | 多品类餐饮与连锁品牌 | 天河区天河路一带 | [羊城派（羊城晚报）](https://ycpai.ycwb.com/ycppad/content/2020-11/02/content_1258819.html) |
+| 6 | 广州塔-琶醍美食集聚区 | Canton Tower-Party Pier Food Cluster | 夜宵、酒吧与地方特色餐饮 | 东至珠啤博物馆，西至海心桥，南至广州科学馆，北至珠江 | [广州市海珠区人民政府门户网站](https://www.haizhu.gov.cn/hzdt/ztlm/tzhz/yshj/yshl/content/mpost_9584707.html) |
+| 7 | 建设六马路 | Jianshe 6th Road | 东南亚、日韩等异国餐饮与酒吧 | 越秀区建设六马路 | [乐居网广州（搜狐号）](https://www.sohu.com/a/915953931_120047375) |
+| 8 | 惠福美食花街 | Huifu Food Flower Street | 粤菜、小吃与东南亚菜 | 东起禺山路，西至惠福东路470号 | [广州市人民政府门户网站（来源：广州日报）](https://www.gz.gov.cn/zlgz/wlzx/content/post_8098385.html) |
+| 9 | 文明路糖水街 | Wenming Road Dessert Street | 广式糖水与炖品 | 越秀区文明路 | [买购网（广州十大美食街）](https://m.maigoo.com/top/410685.html) |
+| 10 | 江南文商旅融合圈（江南西） | Jiangnan Culture-Business-Tourism Circle (Jiangnanxi) | 酒吧、西餐与多元餐饮 | 东至江南东路，西至太古仓码头沿线500米范围 | [广州市海珠区人民政府门户网站](https://www.haizhu.gov.cn/hzdt/ztlm/tzhz/yshj/yshl/content/mpost_9584707.html) |
+| 11 | 沙面岛（欧陆风情美食区） | Shamian Island (European-Style Food Area) | 西餐与多元餐饮 | 荔湾区沙面岛 | [羊城派（羊城晚报，百度百家号转载）](https://baijiahao.baidu.com/s?id=1799577641630376419) |
+| 12 | 泮塘路美食街 | Pantang Road Food Street | 西关小吃与粤菜 | 荔湾区泮塘路—泮塘五约一带 | [广州市荔湾区人民政府（提案答复函）](http://www.lw.gov.cn/ztzl/rdjyhzxtabl/content/post_7401820.html) |
+| 13 | 洛溪食街 | Luoxi Food Street | 海鲜、烧烤与多菜系 | 番禺区洛溪 | [买购网（广州十大美食街）](https://m.maigoo.com/top/410685.html) |
+| 14 | 猎德街区 | Liede Food District | 夜间餐饮与酒吧 | 天河 | [广州市海珠区人民政府门户网站（首批羊城夜市先行区名单）](https://www.haizhu.gov.cn/hzdt/ztlm/tzhz/yshj/yshl/content/mpost_9584707.html) |
+| 15 | 西华路美食街 | Xihua Road Food Street | 广式小食与粉面 | 荔湾区西华路 | [买购网（广州十大美食街）](https://m.maigoo.com/top/410685.html) |
+| 16 | 贝岗夜市小吃街 | Beigang Night Market Snack Street | 各地小吃与糖水 | 番禺区大学城贝岗 | [买购网（广州十大美食街）](https://m.maigoo.com/top/410685.html) |
+| 17 | 远景路韩国风情街 | Yuanjing Road Korean Style Street | 韩式烤肉与韩国料理 | 白云区棠景街远景路 | [中国报道（中国外文局亚太传播中心）](http://new.chinareports.org.cn/index/news/72814.html) |
+| 18 | 龙洞美食街 | Longdong Food Street | 各地小吃与烧烤 | 天河区龙洞步行街 | [买购网（广州十大美食街）](https://m.maigoo.com/top/410685.html) |
 
 ### 粤菜（7 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 侨美食家 | 粤菜 | 广州市天河区VT101维多利广场6层602室 | [广州本地宝《广州十大必吃老字号餐厅，你喜欢去哪家？》（百家号）](https://baijiahao.baidu.com/s?id=1880540677891879660) |
-| 2 | 向群饭店 | 粤菜 | 荔湾区龙津东路 | [南方+（广州荔湾发布）](https://static.nfnews.com/content/202507/28/c11557547.html) |
-| 3 | 新兴家喻 | 粤菜 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
-| 4 | 津津名菜馆 | 粤菜/西关风味 | 广州市荔湾区龙津西路188号 | [广州本地宝《广州十大必吃老字号餐厅，你喜欢去哪家？》（百家号）](https://baijiahao.baidu.com/s?id=1880540677891879660) |
-| 5 | 津津菜馆 | 粤菜与白切鸡 | 荔湾 | [南方+（广州荔湾发布）](https://static.nfnews.com/content/202507/28/c11557547.html) |
-| 6 | 炳胜品味（珠江新城旗舰店） | 粤菜 | 天河 | [羊城派（羊城晚报）](https://ycpai.ycwb.com/ycppad/content/2020-11/02/content_1258819.html) |
-| 7 | 粤·向群饭店 | 粤菜 | 广州市荔湾区龙津东路853-857号 | [广州本地宝《广州十大必吃老字号餐厅，你喜欢去哪家？》（百家号）](https://baijiahao.baidu.com/s?id=1880540677891879660) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 侨美食家 | Qiao Gourmet | 粤菜 | 广州市天河区VT101维多利广场6层602室 | [广州本地宝《广州十大必吃老字号餐厅，你喜欢去哪家？》（百家号）](https://baijiahao.baidu.com/s?id=1880540677891879660) |
+| 2 | 向群饭店 | Xiang Qun Restaurant | 粤菜 | 荔湾区龙津东路 | [南方+（广州荔湾发布）](https://static.nfnews.com/content/202507/28/c11557547.html) |
+| 3 | 新兴家喻 | Xin Xing Jia Yu | 粤菜 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
+| 4 | 津津名菜馆 | Jin Jin Famous Restaurant | 粤菜/西关风味 | 广州市荔湾区龙津西路188号 | [广州本地宝《广州十大必吃老字号餐厅，你喜欢去哪家？》（百家号）](https://baijiahao.baidu.com/s?id=1880540677891879660) |
+| 5 | 津津菜馆 | Jin Jin Restaurant | 粤菜与白切鸡 | 荔湾 | [南方+（广州荔湾发布）](https://static.nfnews.com/content/202507/28/c11557547.html) |
+| 6 | 炳胜品味（珠江新城旗舰店） | BingSheng Pin Wei (Zhujiang New Town Flagship) | 粤菜 | 天河 | [羊城派（羊城晚报）](https://ycpai.ycwb.com/ycppad/content/2020-11/02/content_1258819.html) |
+| 7 | 粤·向群饭店 | Yue · Xiang Qun Restaurant | 粤菜 | 广州市荔湾区龙津东路853-857号 | [广州本地宝《广州十大必吃老字号餐厅，你喜欢去哪家？》（百家号）](https://baijiahao.baidu.com/s?id=1880540677891879660) |
 
 ### 茶楼（4 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 惠如楼 | 粤式茶楼 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
-| 2 | 荣华楼 | 粤式茶楼 | 广州市荔湾区龙津东路714号 | [广州本地宝《广州十大必吃老字号餐厅，你喜欢去哪家？》（百家号）](https://baijiahao.baidu.com/s?id=1880540677891879660) |
-| 3 | 陶陶居 | 粤式茶楼 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
-| 4 | 雲香楼 | 粤式茶楼 | 广州市越秀区东华东路342号四楼 | [广州本地宝《广州十大必吃老字号餐厅，你喜欢去哪家？》（百家号）](https://baijiahao.baidu.com/s?id=1880540677891879660) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 惠如楼 | Hui Ru Lou | 粤式茶楼 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
+| 2 | 荣华楼 | Rong Hua Lou | 粤式茶楼 | 广州市荔湾区龙津东路714号 | [广州本地宝《广州十大必吃老字号餐厅，你喜欢去哪家？》（百家号）](https://baijiahao.baidu.com/s?id=1880540677891879660) |
+| 3 | 陶陶居 | Tao Tao Ju | 粤式茶楼 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
+| 4 | 雲香楼 | Yun Xiang Lou | 粤式茶楼 | 广州市越秀区东华东路342号四楼 | [广州本地宝《广州十大必吃老字号餐厅，你喜欢去哪家？》（百家号）](https://baijiahao.baidu.com/s?id=1880540677891879660) |
 
 ### 早茶/点心（2 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 点都德（花城楼店） | 粤式早茶与点心 | 天河 | [羊城派（羊城晚报）](https://ycpai.ycwb.com/ycppad/content/2020-11/02/content_1258819.html) |
-| 2 | 陶陶居（第十甫总店） | 粤式早茶与点心 | 荔湾 | [羊城派（羊城晚报，百度百家号转载）](https://baijiahao.baidu.com/s?id=1799577641630376419) |
-
-### 早茶/粤菜（2 条）
-
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 广州酒家 | 粤式早茶与粤菜 | 未知 | [广州市人民政府门户网站（来源：广州日报新花城）](https://www.gz.gov.cn/xw/zwlb/bmdt/content/post_11101880.html) |
-| 2 | 泮溪酒家 | 粤式早茶与粤菜 | 荔湾 | [羊城派（羊城晚报，百度百家号转载）](https://baijiahao.baidu.com/s?id=1799577641630376419) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 点都德（花城楼店） | Dian Dou De (Huacheng Lou Branch) | 粤式早茶与点心 | 天河 | [羊城派（羊城晚报）](https://ycpai.ycwb.com/ycppad/content/2020-11/02/content_1258819.html) |
+| 2 | 陶陶居（第十甫总店） | Tao Tao Ju (Shifupu Main Branch) | 粤式早茶与点心 | 荔湾 | [羊城派（羊城晚报，百度百家号转载）](https://baijiahao.baidu.com/s?id=1799577641630376419) |
 
 ### 烧腊（2 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 永兴烧腊 | 烧腊（烧鹅、叉烧） | 荔湾区梯云东路21~4号 | [广州日报新花城（信息时报）](https://huacheng.gz-cmc.com/pages/2021/08/23/99e63ab0c0674f6ca1d67797ea924ea2.html) |
-| 2 | 陈仔烧腊 | 烧腊（烧鹅、叉烧、烧排骨） | 荔湾区长寿东路291号 | [广州日报新花城（信息时报）](https://huacheng.gz-cmc.com/pages/2021/08/23/99e63ab0c0674f6ca1d67797ea924ea2.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 永兴烧腊 | Yong Xing Roast Meats | 烧腊（烧鹅、叉烧） | 荔湾区梯云东路21~4号 | [广州日报新花城（信息时报）](https://huacheng.gz-cmc.com/pages/2021/08/23/99e63ab0c0674f6ca1d67797ea924ea2.html) |
+| 2 | 陈仔烧腊 | Chen Zai Roast Meats | 烧腊（烧鹅、叉烧、烧排骨） | 荔湾区长寿东路291号 | [广州日报新花城（信息时报）](https://huacheng.gz-cmc.com/pages/2021/08/23/99e63ab0c0674f6ca1d67797ea924ea2.html) |
 
 ### 肠粉（2 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 西关明记肠粉（荔枝湾店） | 肠粉/粥 | 广州市荔湾区龙津西路72号 | [南方+《2026年米其林指南、黑珍珠荔湾上榜餐厅出炉》](https://static.nfnews.com/content/202609/29/c12866274.html) |
-| 2 | 银记肠粉 | 广式肠粉 | 越秀 | [广州本地宝（广州24条著名美食街）](http://gz.bendibao.com/meishi/2016121/209616.shtml) |
-
-### 凉茶（2 条）
-
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 清心堂 | 凉茶 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
-| 2 | 黄振龙 | 凉茶 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
-
-### 小吃（2 条）
-
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 八珍 | 小吃 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
-| 2 | 陈添记（十五甫三巷店） | 小吃/鱼皮 | 广州市荔湾区宝华路十五甫三巷2号之二 | [广州本地宝《广州十大必吃老字号餐厅，你喜欢去哪家？》（百家号）](https://baijiahao.baidu.com/s?id=1880540677891879660) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 西关明记肠粉（荔枝湾店） | Xiguan Ming Ji Rice Noodle Rolls (Lizhiwan Branch) | 肠粉/粥 | 广州市荔湾区龙津西路72号 | [南方+《2026年米其林指南、黑珍珠荔湾上榜餐厅出炉》](https://static.nfnews.com/content/202609/29/c12866274.html) |
+| 2 | 银记肠粉 | Yin Ji Rice Noodle Rolls | 广式肠粉 | 越秀 | [广州本地宝（广州24条著名美食街）](http://gz.bendibao.com/meishi/2016121/209616.shtml) |
 
 ### 糖水（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 芬芳甜品 | 广式糖水与甜品 | 海珠区同福东路619号 | [南方+（广州日报转载）](https://static.nfapp.southcn.com/content/201808/27/c1434702.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 芬芳甜品 | Fen Fang Desserts | 广式糖水与甜品 | 海珠区同福东路619号 | [南方+（广州日报转载）](https://static.nfapp.southcn.com/content/201808/27/c1434702.html) |
 
 ### 云吞面（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 食丰收·手作云吞面（金花店） | 云吞面 | 广州市荔湾区金花直街34号首层A16档 | [南方+《2026年米其林指南、黑珍珠荔湾上榜餐厅出炉》](https://static.nfnews.com/content/202609/29/c12866274.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 食丰收·手作云吞面（金花店） | Shi Feng Shou · Handmade Wonton Noodles (Jinhua Branch) | 云吞面 | 广州市荔湾区金花直街34号首层A16档 | [南方+《2026年米其林指南、黑珍珠荔湾上榜餐厅出炉》](https://static.nfnews.com/content/202609/29/c12866274.html) |
 
 ### 云吞面/竹升面（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 吴财记面家 | 云吞面与竹升面 | 荔湾区大同路和隆里20号 | [南方+（广州荔湾发布）](https://static.nfnews.com/content/202305/04/c7640810.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 吴财记面家 | Wu Cai Ji Noodle House | 云吞面与竹升面 | 荔湾区大同路和隆里20号 | [南方+（广州荔湾发布）](https://static.nfnews.com/content/202305/04/c7640810.html) |
+
+### 凉茶（2 条）
+
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 清心堂 | Qing Xin Tang | 凉茶 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
+| 2 | 黄振龙 | Huang Zhen Long | 凉茶 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
 
 ### 园林酒家/粤菜（2 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 北园 | 粤菜 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
-| 2 | 泮溪 | 粤菜 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 北园 | Beiyuan Cuisine | 粤菜 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
+| 2 | 泮溪 | Pan Xi | 粤菜 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
+
+### 小吃（2 条）
+
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 八珍 | Ba Zhen | 小吃 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
+| 2 | 陈添记（十五甫三巷店） | Chen Tian Ji (Shiwupu 3rd Lane Branch) | 小吃/鱼皮 | 广州市荔湾区宝华路十五甫三巷2号之二 | [广州本地宝《广州十大必吃老字号餐厅，你喜欢去哪家？》（百家号）](https://baijiahao.baidu.com/s?id=1880540677891879660) |
 
 ### 小吃/牛腩粉（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 珍珍小食店 | 牛腩粉等广式小吃 | 荔湾区西华路 | [广州日报新花城](https://huacheng.gz-cmc.com/pages/2025/10/07/SF145071544d1863e12a6e47379036bc.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 珍珍小食店 | Zhen Zhen Snack Shop | 牛腩粉等广式小吃 | 荔湾区西华路 | [广州日报新花城](https://huacheng.gz-cmc.com/pages/2025/10/07/SF145071544d1863e12a6e47379036bc.html) |
 
 ### 日本料理/天妇罗（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 博多天妇罗泰（正佳广场店） | 日本料理/天妇罗 | 未知 | [信息时报《2026大众点评必吃榜发布 广州85家餐厅上榜》](https://xxsb.gz-cmc.com/pages/2026/06/30/940719d8c0d845489ac7732f19e05eae.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 博多天妇罗泰（正佳广场店） | Hakata Tempura Tai (Grandview Mall Branch) | 日本料理/天妇罗 | 未知 | [信息时报《2026大众点评必吃榜发布 广州85家餐厅上榜》](https://xxsb.gz-cmc.com/pages/2026/06/30/940719d8c0d845489ac7732f19e05eae.html) |
+
+### 早茶/粤菜（2 条）
+
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 广州酒家 | Guangzhou Restaurant | 粤式早茶与粤菜 | 未知 | [广州市人民政府门户网站（来源：广州日报新花城）](https://www.gz.gov.cn/xw/zwlb/bmdt/content/post_11101880.html) |
+| 2 | 泮溪酒家 | Pan Xi Restaurant | 粤式早茶与粤菜 | 荔湾 | [羊城派（羊城晚报，百度百家号转载）](https://baijiahao.baidu.com/s?id=1799577641630376419) |
 
 ### 河粉（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 文记河粉（西华路店） | 河粉 | 广州市荔湾区西华路418号金平大厦1153铺 | [南方+《2026年米其林指南、黑珍珠荔湾上榜餐厅出炉》](https://static.nfnews.com/content/202609/29/c12866274.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 文记河粉（西华路店） | Wen Ji Rice Noodles (Xihua Road Branch) | 河粉 | 广州市荔湾区西华路418号金平大厦1153铺 | [南方+《2026年米其林指南、黑珍珠荔湾上榜餐厅出炉》](https://static.nfnews.com/content/202609/29/c12866274.html) |
 
 ### 海鲜酒家（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 海南城 | 海鲜/酒家菜 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 海南城 | Hainan City Seafood Restaurant | 海鲜/酒家菜 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
 
 ### 濑粉（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 老西关濑粉店 | 濑粉等西关小吃 | 荔湾 | [南方+（广州荔湾发布）](https://static.nfnews.com/content/202507/28/c11557547.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 老西关濑粉店 | Old Xiguan Lai Fen Shop | 濑粉等西关小吃 | 荔湾 | [南方+（广州荔湾发布）](https://static.nfnews.com/content/202507/28/c11557547.html) |
 
 ### 烧腊/肉食制品（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 沧洲栈 | 烧腊/肉食制品 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 沧洲栈 | Cang Zhou Zhan | 烧腊/肉食制品 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
 
 ### 烧腊/腊味（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 皇上皇 | 烧腊/腊味 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 皇上皇 | Huang Shang Huang | 烧腊/腊味 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
 
 ### 烧腊/食品（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 孔旺记 | 烧腊/食品 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 孔旺记 | Kong Wang Ji | 烧腊/食品 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
 
 ### 煲仔饭（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 超记煲仔饭（荔湾） | 煲仔饭 | 广州市荔湾区龙津东路723号 | [南方+《2026年米其林指南、黑珍珠荔湾上榜餐厅出炉》](https://static.nfnews.com/content/202609/29/c12866274.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 超记煲仔饭（荔湾） | Chao Ji Claypot Rice (Liwan) | 煲仔饭 | 广州市荔湾区龙津东路723号 | [南方+《2026年米其林指南、黑珍珠荔湾上榜餐厅出炉》](https://static.nfnews.com/content/202609/29/c12866274.html) |
 
 ### 煲仔饭/肠粉（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 森记小食店 | 煲仔饭与肠粉 | 海珠区同福东路宝玉直街2号 | [南方+（广州日报转载）](https://static.nfapp.southcn.com/content/201808/27/c1434702.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 森记小食店 | Sen Ji Snack Shop | 煲仔饭与肠粉 | 海珠区同福东路宝玉直街2号 | [南方+（广州日报转载）](https://static.nfapp.southcn.com/content/201808/27/c1434702.html) |
 
 ### 牛杂（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 阿婆牛杂 | 广式牛杂 | 白云 | [南方+（广州荔湾发布）](https://static.nfnews.com/content/202305/04/c7640810.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 阿婆牛杂 | A Po Beef Offal | 广式牛杂 | 白云 | [南方+（广州荔湾发布）](https://static.nfnews.com/content/202305/04/c7640810.html) |
 
 ### 甜品（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 南信 | 甜品 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 南信 | Nan Xin | 甜品 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
 
 ### 白切鸡（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 清心鸡沙田乳鸽店（五羊旗舰店） | 粤菜与白切鸡 | 越秀区寺右新马路170号首层 | [南方+（广州荔湾发布）](https://static.nfnews.com/content/202305/04/c7640810.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 清心鸡沙田乳鸽店（五羊旗舰店） | Qing Xin Chicken & Shatian Pigeon (Wuyang Flagship) | 粤菜与白切鸡 | 越秀区寺右新马路170号首层 | [南方+（广州荔湾发布）](https://static.nfnews.com/content/202305/04/c7640810.html) |
 
 ### 粤菜/啫啫煲（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 惠食佳 | 粤菜/啫啫煲 | 广州市海珠区滨江西路172号 | [广州本地宝《广州十大必吃老字号餐厅，你喜欢去哪家？》（百家号）](https://baijiahao.baidu.com/s?id=1880540677891879660) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 惠食佳 | Hui Shi Jia | 粤菜/啫啫煲 | 广州市海珠区滨江西路172号 | [广州本地宝《广州十大必吃老字号餐厅，你喜欢去哪家？》（百家号）](https://baijiahao.baidu.com/s?id=1880540677891879660) |
 
 ### 粥品/及第粥（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 伍湛记 | 广式粥品与小吃 | 荔湾 | [买购网（广州十大美食街）](https://m.maigoo.com/top/410685.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 伍湛记 | Wu Zhan Ji | 广式粥品与小吃 | 荔湾 | [买购网（广州十大美食街）](https://m.maigoo.com/top/410685.html) |
 
 ### 粥品/艇仔粥（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 荔枝湾艇仔粥 | 艇仔粥等广式粥品 | 荔湾 | [广州市荔湾区人民政府（提案答复函）](http://www.lw.gov.cn/ztzl/rdjyhzxtabl/content/post_10423367.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 荔枝湾艇仔粥 | Lizhiwan Sampan Congee | 艇仔粥等广式粥品 | 荔湾 | [广州市荔湾区人民政府（提案答复函）](http://www.lw.gov.cn/ztzl/rdjyhzxtabl/content/post_10423367.html) |
 
 ### 糖水/冰室（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 顺记冰室 | 冰室甜品与雪糕 | 广州市荔湾区宝华路83号 | [南方+（广州荔湾发布）](https://static.nfnews.com/content/202507/28/c11557547.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 顺记冰室 | Shun Ji Bing Sutt | 冰室甜品与雪糕 | 广州市荔湾区宝华路83号 | [南方+（广州荔湾发布）](https://static.nfnews.com/content/202507/28/c11557547.html) |
 
 ### 糖水/双皮奶（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 南信牛奶甜品专家 | 广式甜品与双皮奶 | 荔湾区第十甫路47号（近宝华路） | [广州本地宝（上下九美食攻略）](http://gz.bendibao.com/meishi/2013513/124501.shtml) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 南信牛奶甜品专家 | Nan Xin Milk Dessert Specialist | 广式甜品与双皮奶 | 荔湾区第十甫路47号（近宝华路） | [广州本地宝（上下九美食攻略）](http://gz.bendibao.com/meishi/2013513/124501.shtml) |
 
 ### 糖水/甜品（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 百花甜品店 | 糖水/甜品 | 广州市越秀区文明路208号 | [广州本地宝《广州十大必吃老字号餐厅，你喜欢去哪家？》（百家号）](https://baijiahao.baidu.com/s?id=1880540677891879660) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 百花甜品店 | Bai Hua Dessert Shop | 糖水/甜品 | 广州市越秀区文明路208号 | [广州本地宝《广州十大必吃老字号餐厅，你喜欢去哪家？》（百家号）](https://baijiahao.baidu.com/s?id=1880540677891879660) |
 
 ### 肠粉店（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 银记 | 肠粉 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 银记 | Yin Ji | 肠粉 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
 
 ### 腊味/肉食制品（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 八百载 | 腊味/肉食制品 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 八百载 | Ba Bai Zai | 腊味/肉食制品 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
 
 ### 茶楼/手工点心（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 禄运茶居·手工点心（体育西店） | 粤式茶楼/点心 | 未知 | [信息时报《2026大众点评必吃榜发布 广州85家餐厅上榜》](https://xxsb.gz-cmc.com/pages/2026/06/30/940719d8c0d845489ac7732f19e05eae.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 禄运茶居·手工点心（体育西店） | Lu Yun Tea House · Handmade Dim Sum (Tiyu Xi Branch) | 粤式茶楼/点心 | 未知 | [信息时报《2026大众点评必吃榜发布 广州85家餐厅上榜》](https://xxsb.gz-cmc.com/pages/2026/06/30/940719d8c0d845489ac7732f19e05eae.html) |
 
 ### 茶楼/粤式点心（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 点都德 | 粤式茶楼/点心 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 点都德 | Dian Dou De | 粤式茶楼/点心 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
 
 ### 茶楼/粤菜（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 银灯食府（文化公园店） | 粤式茶楼 | 广州市荔湾区西堤二马路37号广州十三行文化科技中心3楼 | [南方+《2026年米其林指南、黑珍珠荔湾上榜餐厅出炉》](https://static.nfnews.com/content/202609/29/c12866274.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 银灯食府（文化公园店） | Yin Deng Restaurant (Cultural Park Branch) | 粤式茶楼 | 广州市荔湾区西堤二马路37号广州十三行文化科技中心3楼 | [南方+《2026年米其林指南、黑珍珠荔湾上榜餐厅出炉》](https://static.nfnews.com/content/202609/29/c12866274.html) |
 
 ### 西餐（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 太平馆 | 西餐 | 广州市越秀区北京路342号 | [广州本地宝《广州十大必吃老字号餐厅，你喜欢去哪家？》（百家号）](https://baijiahao.baidu.com/s?id=1880540677891879660) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 太平馆 | Tai Ping Guan | 西餐 | 广州市越秀区北京路342号 | [广州本地宝《广州十大必吃老字号餐厅，你喜欢去哪家？》（百家号）](https://baijiahao.baidu.com/s?id=1880540677891879660) |
 
 ### 面店/竹升面（2 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 周门传统竹升面 | 面食/竹升面 | 广州市荔湾区周门街172号103铺 | [南方+《2026年米其林指南、黑珍珠荔湾上榜餐厅出炉》](https://static.nfnews.com/content/202609/29/c12866274.html) |
-| 2 | 竹园竹升面（西关总店） | 面食/竹升面 | 广州市荔湾区十八甫南路107号 | [南方+《2026年米其林指南、黑珍珠荔湾上榜餐厅出炉》](https://static.nfnews.com/content/202609/29/c12866274.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 周门传统竹升面 | Zhou Men Traditional Bamboo Noodles | 面食/竹升面 | 广州市荔湾区周门街172号103铺 | [南方+《2026年米其林指南、黑珍珠荔湾上榜餐厅出炉》](https://static.nfnews.com/content/202609/29/c12866274.html) |
+| 2 | 竹园竹升面（西关总店） | Zhu Yuan Bamboo Noodles (Xiguan Main Branch) | 面食/竹升面 | 广州市荔湾区十八甫南路107号 | [南方+《2026年米其林指南、黑珍珠荔湾上榜餐厅出炉》](https://static.nfnews.com/content/202609/29/c12866274.html) |
 
 ### 食品店/饼食（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 利口福 | 食品/饼食 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 利口福 | Li Kou Fu | 食品/饼食 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
 
 ### 饼店/中点（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 趣香 | 饼食/中式点心 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 趣香 | Qu Xiang | 饼食/中式点心 | 未知 | [广州市商务局《关于公布广州老字号名单的通知》](http://sw.gz.gov.cn/xxgk/tzgg/tz/content/post_10677014.html) |
 
 ### 饼店/茶楼（1 条）
 
-| # | 名称 | 菜系/类型 | 区/地址 | 来源 |
-|---|---|---|---|---|
-| 1 | 莲香楼 | 广式饼食与茶楼点心 | 荔湾 | [买购网（广州十大美食街）](https://m.maigoo.com/top/410685.html) |
+| # | 中文名 | 英文名 | 菜系/类型 | 区/地址 | 来源 |
+|---|---|---|---|---|---|
+| 1 | 莲香楼 | Lian Xiang Lou | 广式饼食与茶楼点心 | 荔湾 | [买购网（广州十大美食街）](https://m.maigoo.com/top/410685.html) |
 
 ## 来源缺口（采集时未能读取的页面/名单）
 
@@ -716,126 +902,6 @@
 - 北京首都机场：英文站 en.bcia.com.cn 正文为空，未取得英文版交通说明（仅有中文页）。
 - 12306英文FAQ、首都机场、浦东/虹桥、天府等页面普遍未标注发布日期，仅有部分“最后更新”提示，规则时效性需人工复核。
 - 12308、12367页面发布于2021年或未标日期，后续服务范围与语种变化未在页内体现。
-- 新快报《广州夜间消费地图2.0》（2021-03-09 A11版 PDF）无法解析（不支持 application/pdf），其中列举的建设六马路、文明路、惠福西路、西华路、宝华路、泮塘路、上下九美食广场等夜间美食集聚地表述未能核实。
-- 越秀区政府“北京路新装亮相开街”页面返回404；北京路文化旅游区官网未取得可读的街区介绍页，北京路步行街的门牌范围与餐饮明细仅有新华社稿。
-- 天河区本级关于猎德街区餐饮的官方介绍页未读到，仅有市级“首批都会级羊城夜市先行区”名单中的转述。
-- 荔湾区“十大美食旅游推荐商圈”“最受游客欢迎美食名店30家”“十大/二十大名店”的具体名单未在已读页面列出，无法据此补充店铺。
-- 凉茶（如黄振龙、王老吉等）、盆菜、以及广州本地煲仔饭代表店（仅同福路一家小食店提及煲仔饭）未找到可读的官方或媒体页面。
-- 米其林指南、大众点评必吃榜、高德扫街榜等商业榜单原始页面未读取，仅通过官方媒体转述间接使用，未纳入具体餐厅。
-- 广州酒家、点都德、炳胜品味、陶陶居、泮溪酒家、莲香楼等在已读页面中仅以榜单或活动名单形式出现，门店地址与所在区缺失。
-- 上下九步行街、北京路步行街的长度、门牌范围等基础信息在已读官方页面中不完整，需以街区官方页面核实。
-- 湖北省博物馆官网主站（hbww.org.cn）本次因 http 与 https 交叉重定向无法读取，仅取到其预约子站；馆址、交通、团队预约、是否免费等信息未核。
-- 成都武侯祠博物馆“票务细则”与常规开放时间页为前端渲染，web_fetch 只取到公告列表与登录页；仅取得2026年延时开放通告（已过期），常规开放时间与票价规则列为缺口。
-- 岳麓山·橘子洲旅游区未找到可读的官方独立网站（hnyls.com 连接失败），只有岳麓区政府2023年转载稿；2024年以后预约规则与开放时间变化未核。
-- 东湖风景区管委会门户（whdonghu.gov.cn）未见面向游客的预约/开放说明页，东湖官网域名（whdonghu.com）无法连接；仅用武汉市政府门户2023年报道，各片区当前预约要求未核。
-- 西安城墙仅取到景区网站简略页（页脚版权2016—2017年），各城门时间、票务预约政策、演出安排未核；官方微信小程序内容无法抓取。
-- 华清宫是否须提前实名预约、停止售票与停止入园的具体时点、淡旺季票价政策在攻略页未找到。
-- 金沙遗址博物馆闭馆期间是否有替代开放空间、线上展览或恢复开放预告，未在可读公告中确认。
-- 大足石刻景区2026年（尤其非节假日）常规开放时间与票务政策未找到可读的明文公告，仅有官网首页时段展示与2025年五一专项提示。
-- 支付宝：global.alipay.com 等官方页面多次抓取返回空正文或重定向循环，未获得支付宝境外卡绑定的官方说明正文；仅检索到开发者社区与第三方内容，未采用。
-- 运营商：中国移动（10086.cn）、中国联通、中国电信官网未找到可读取的、面向外籍来华用户的全国性公开说明；中国移动省级“可为外籍来华人员办理电话卡营业网点公示/办卡指南”页正文为空；境外手机号漫游、eSIM、上网卡的官方办理渠道与资费均缺失。
-- 深圳宝安国际机场：官网“来往深圳市区”的中文与英文页正文均为空（前端渲染），未取得官方地面交通说明，本轮未产出深圳机场候选记录。
-- 北京大兴国际机场：官网 bdia.com.cn 及 wechat.bdia.com.cn 交通页正文为空，只能改用北京市政府门户报道；机场巴士、出租车、网约车的一手信息缺失。
-- 广州白云机场：官网 gbiac.net 首页与交通栏目正文为空，只能改用广东省、广州市政府门户报道；机场官网一手交通说明缺失。
-- 北京首都机场：英文站 en.bcia.com.cn 正文为空，未取得英文版交通说明（仅有中文页）。
-- 12306英文FAQ、首都机场、浦东/虹桥、天府等页面普遍未标注发布日期，仅有部分“最后更新”提示，规则时效性需人工复核。
-- 12308、12367页面发布于2021年或未标日期，后续服务范围与语种变化未在页内体现。
-- 新快报《广州夜间消费地图2.0》（2021-03-09 A11版 PDF）无法解析（不支持 application/pdf），其中列举的建设六马路、文明路、惠福西路、西华路、宝华路、泮塘路、上下九美食广场等夜间美食集聚地表述未能核实。
-- 越秀区政府“北京路新装亮相开街”页面返回404；北京路文化旅游区官网未取得可读的街区介绍页，北京路步行街的门牌范围与餐饮明细仅有新华社稿。
-- 天河区本级关于猎德街区餐饮的官方介绍页未读到，仅有市级“首批都会级羊城夜市先行区”名单中的转述。
-- 荔湾区“十大美食旅游推荐商圈”“最受游客欢迎美食名店30家”“十大/二十大名店”的具体名单未在已读页面列出，无法据此补充店铺。
-- 凉茶（如黄振龙、王老吉等）、盆菜、以及广州本地煲仔饭代表店（仅同福路一家小食店提及煲仔饭）未找到可读的官方或媒体页面。
-- 米其林指南、大众点评必吃榜、高德扫街榜等商业榜单原始页面未读取，仅通过官方媒体转述间接使用，未纳入具体餐厅。
-- 广州酒家、点都德、炳胜品味、陶陶居、泮溪酒家、莲香楼等在已读页面中仅以榜单或活动名单形式出现，门店地址与所在区缺失。
-- 上下九步行街、北京路步行街的长度、门牌范围等基础信息在已读官方页面中不完整，需以街区官方页面核实。
-- 湖北省博物馆官网主站（hbww.org.cn）本次因 http 与 https 交叉重定向无法读取，仅取到其预约子站；馆址、交通、团队预约、是否免费等信息未核。
-- 成都武侯祠博物馆“票务细则”与常规开放时间页为前端渲染，web_fetch 只取到公告列表与登录页；仅取得2026年延时开放通告（已过期），常规开放时间与票价规则列为缺口。
-- 岳麓山·橘子洲旅游区未找到可读的官方独立网站（hnyls.com 连接失败），只有岳麓区政府2023年转载稿；2024年以后预约规则与开放时间变化未核。
-- 东湖风景区管委会门户（whdonghu.gov.cn）未见面向游客的预约/开放说明页，东湖官网域名（whdonghu.com）无法连接；仅用武汉市政府门户2023年报道，各片区当前预约要求未核。
-- 西安城墙仅取到景区网站简略页（页脚版权2016—2017年），各城门时间、票务预约政策、演出安排未核；官方微信小程序内容无法抓取。
-- 华清宫是否须提前实名预约、停止售票与停止入园的具体时点、淡旺季票价政策在攻略页未找到。
-- 金沙遗址博物馆闭馆期间是否有替代开放空间、线上展览或恢复开放预告，未在可读公告中确认。
-- 大足石刻景区2026年（尤其非节假日）常规开放时间与票务政策未找到可读的明文公告，仅有官网首页时段展示与2025年五一专项提示。
-- 支付宝：global.alipay.com 等官方页面多次抓取返回空正文或重定向循环，未获得支付宝境外卡绑定的官方说明正文；仅检索到开发者社区与第三方内容，未采用。
-- 运营商：中国移动（10086.cn）、中国联通、中国电信官网未找到可读取的、面向外籍来华用户的全国性公开说明；中国移动省级“可为外籍来华人员办理电话卡营业网点公示/办卡指南”页正文为空；境外手机号漫游、eSIM、上网卡的官方办理渠道与资费均缺失。
-- 深圳宝安国际机场：官网“来往深圳市区”的中文与英文页正文均为空（前端渲染），未取得官方地面交通说明，本轮未产出深圳机场候选记录。
-- 北京大兴国际机场：官网 bdia.com.cn 及 wechat.bdia.com.cn 交通页正文为空，只能改用北京市政府门户报道；机场巴士、出租车、网约车的一手信息缺失。
-- 广州白云机场：官网 gbiac.net 首页与交通栏目正文为空，只能改用广东省、广州市政府门户报道；机场官网一手交通说明缺失。
-- 北京首都机场：英文站 en.bcia.com.cn 正文为空，未取得英文版交通说明（仅有中文页）。
-- 12306英文FAQ、首都机场、浦东/虹桥、天府等页面普遍未标注发布日期，仅有部分“最后更新”提示，规则时效性需人工复核。
-- 12308、12367页面发布于2021年或未标日期，后续服务范围与语种变化未在页内体现。
-- 新快报《广州夜间消费地图2.0》（2021-03-09 A11版 PDF）无法解析（不支持 application/pdf），其中列举的建设六马路、文明路、惠福西路、西华路、宝华路、泮塘路、上下九美食广场等夜间美食集聚地表述未能核实。
-- 越秀区政府“北京路新装亮相开街”页面返回404；北京路文化旅游区官网未取得可读的街区介绍页，北京路步行街的门牌范围与餐饮明细仅有新华社稿。
-- 天河区本级关于猎德街区餐饮的官方介绍页未读到，仅有市级“首批都会级羊城夜市先行区”名单中的转述。
-- 荔湾区“十大美食旅游推荐商圈”“最受游客欢迎美食名店30家”“十大/二十大名店”的具体名单未在已读页面列出，无法据此补充店铺。
-- 凉茶（如黄振龙、王老吉等）、盆菜、以及广州本地煲仔饭代表店（仅同福路一家小食店提及煲仔饭）未找到可读的官方或媒体页面。
-- 米其林指南、大众点评必吃榜、高德扫街榜等商业榜单原始页面未读取，仅通过官方媒体转述间接使用，未纳入具体餐厅。
-- 广州酒家、点都德、炳胜品味、陶陶居、泮溪酒家、莲香楼等在已读页面中仅以榜单或活动名单形式出现，门店地址与所在区缺失。
-- 上下九步行街、北京路步行街的长度、门牌范围等基础信息在已读官方页面中不完整，需以街区官方页面核实。
-- 湖北省博物馆官网主站（hbww.org.cn）本次因 http 与 https 交叉重定向无法读取，仅取到其预约子站；馆址、交通、团队预约、是否免费等信息未核。
-- 成都武侯祠博物馆“票务细则”与常规开放时间页为前端渲染，web_fetch 只取到公告列表与登录页；仅取得2026年延时开放通告（已过期），常规开放时间与票价规则列为缺口。
-- 岳麓山·橘子洲旅游区未找到可读的官方独立网站（hnyls.com 连接失败），只有岳麓区政府2023年转载稿；2024年以后预约规则与开放时间变化未核。
-- 东湖风景区管委会门户（whdonghu.gov.cn）未见面向游客的预约/开放说明页，东湖官网域名（whdonghu.com）无法连接；仅用武汉市政府门户2023年报道，各片区当前预约要求未核。
-- 西安城墙仅取到景区网站简略页（页脚版权2016—2017年），各城门时间、票务预约政策、演出安排未核；官方微信小程序内容无法抓取。
-- 华清宫是否须提前实名预约、停止售票与停止入园的具体时点、淡旺季票价政策在攻略页未找到。
-- 金沙遗址博物馆闭馆期间是否有替代开放空间、线上展览或恢复开放预告，未在可读公告中确认。
-- 大足石刻景区2026年（尤其非节假日）常规开放时间与票务政策未找到可读的明文公告，仅有官网首页时段展示与2025年五一专项提示。
-- 支付宝：global.alipay.com 等官方页面多次抓取返回空正文或重定向循环，未获得支付宝境外卡绑定的官方说明正文；仅检索到开发者社区与第三方内容，未采用。
-- 运营商：中国移动（10086.cn）、中国联通、中国电信官网未找到可读取的、面向外籍来华用户的全国性公开说明；中国移动省级“可为外籍来华人员办理电话卡营业网点公示/办卡指南”页正文为空；境外手机号漫游、eSIM、上网卡的官方办理渠道与资费均缺失。
-- 深圳宝安国际机场：官网“来往深圳市区”的中文与英文页正文均为空（前端渲染），未取得官方地面交通说明，本轮未产出深圳机场候选记录。
-- 北京大兴国际机场：官网 bdia.com.cn 及 wechat.bdia.com.cn 交通页正文为空，只能改用北京市政府门户报道；机场巴士、出租车、网约车的一手信息缺失。
-- 广州白云机场：官网 gbiac.net 首页与交通栏目正文为空，只能改用广东省、广州市政府门户报道；机场官网一手交通说明缺失。
-- 北京首都机场：英文站 en.bcia.com.cn 正文为空，未取得英文版交通说明（仅有中文页）。
-- 12306英文FAQ、首都机场、浦东/虹桥、天府等页面普遍未标注发布日期，仅有部分“最后更新”提示，规则时效性需人工复核。
-- 12308、12367页面发布于2021年或未标日期，后续服务范围与语种变化未在页内体现。
-- 新快报《广州夜间消费地图2.0》（2021-03-09 A11版 PDF）无法解析（不支持 application/pdf），其中列举的建设六马路、文明路、惠福西路、西华路、宝华路、泮塘路、上下九美食广场等夜间美食集聚地表述未能核实。
-- 越秀区政府“北京路新装亮相开街”页面返回404；北京路文化旅游区官网未取得可读的街区介绍页，北京路步行街的门牌范围与餐饮明细仅有新华社稿。
-- 天河区本级关于猎德街区餐饮的官方介绍页未读到，仅有市级“首批都会级羊城夜市先行区”名单中的转述。
-- 荔湾区“十大美食旅游推荐商圈”“最受游客欢迎美食名店30家”“十大/二十大名店”的具体名单未在已读页面列出，无法据此补充店铺。
-- 凉茶（如黄振龙、王老吉等）、盆菜、以及广州本地煲仔饭代表店（仅同福路一家小食店提及煲仔饭）未找到可读的官方或媒体页面。
-- 米其林指南、大众点评必吃榜、高德扫街榜等商业榜单原始页面未读取，仅通过官方媒体转述间接使用，未纳入具体餐厅。
-- 广州酒家、点都德、炳胜品味、陶陶居、泮溪酒家、莲香楼等在已读页面中仅以榜单或活动名单形式出现，门店地址与所在区缺失。
-- 上下九步行街、北京路步行街的长度、门牌范围等基础信息在已读官方页面中不完整，需以街区官方页面核实。
-- 湖北省博物馆官网主站（hbww.org.cn）本次因 http 与 https 交叉重定向无法读取，仅取到其预约子站；馆址、交通、团队预约、是否免费等信息未核。
-- 成都武侯祠博物馆“票务细则”与常规开放时间页为前端渲染，web_fetch 只取到公告列表与登录页；仅取得2026年延时开放通告（已过期），常规开放时间与票价规则列为缺口。
-- 岳麓山·橘子洲旅游区未找到可读的官方独立网站（hnyls.com 连接失败），只有岳麓区政府2023年转载稿；2024年以后预约规则与开放时间变化未核。
-- 东湖风景区管委会门户（whdonghu.gov.cn）未见面向游客的预约/开放说明页，东湖官网域名（whdonghu.com）无法连接；仅用武汉市政府门户2023年报道，各片区当前预约要求未核。
-- 西安城墙仅取到景区网站简略页（页脚版权2016—2017年），各城门时间、票务预约政策、演出安排未核；官方微信小程序内容无法抓取。
-- 华清宫是否须提前实名预约、停止售票与停止入园的具体时点、淡旺季票价政策在攻略页未找到。
-- 金沙遗址博物馆闭馆期间是否有替代开放空间、线上展览或恢复开放预告，未在可读公告中确认。
-- 大足石刻景区2026年（尤其非节假日）常规开放时间与票务政策未找到可读的明文公告，仅有官网首页时段展示与2025年五一专项提示。
-- 支付宝：global.alipay.com 等官方页面多次抓取返回空正文或重定向循环，未获得支付宝境外卡绑定的官方说明正文；仅检索到开发者社区与第三方内容，未采用。
-- 运营商：中国移动（10086.cn）、中国联通、中国电信官网未找到可读取的、面向外籍来华用户的全国性公开说明；中国移动省级“可为外籍来华人员办理电话卡营业网点公示/办卡指南”页正文为空；境外手机号漫游、eSIM、上网卡的官方办理渠道与资费均缺失。
-- 深圳宝安国际机场：官网“来往深圳市区”的中文与英文页正文均为空（前端渲染），未取得官方地面交通说明，本轮未产出深圳机场候选记录。
-- 北京大兴国际机场：官网 bdia.com.cn 及 wechat.bdia.com.cn 交通页正文为空，只能改用北京市政府门户报道；机场巴士、出租车、网约车的一手信息缺失。
-- 广州白云机场：官网 gbiac.net 首页与交通栏目正文为空，只能改用广东省、广州市政府门户报道；机场官网一手交通说明缺失。
-- 北京首都机场：英文站 en.bcia.com.cn 正文为空，未取得英文版交通说明（仅有中文页）。
-- 12306英文FAQ、首都机场、浦东/虹桥、天府等页面普遍未标注发布日期，仅有部分“最后更新”提示，规则时效性需人工复核。
-- 12308、12367页面发布于2021年或未标日期，后续服务范围与语种变化未在页内体现。
-- 新快报《广州夜间消费地图2.0》（2021-03-09 A11版 PDF）无法解析（不支持 application/pdf），其中列举的建设六马路、文明路、惠福西路、西华路、宝华路、泮塘路、上下九美食广场等夜间美食集聚地表述未能核实。
-- 越秀区政府“北京路新装亮相开街”页面返回404；北京路文化旅游区官网未取得可读的街区介绍页，北京路步行街的门牌范围与餐饮明细仅有新华社稿。
-- 天河区本级关于猎德街区餐饮的官方介绍页未读到，仅有市级“首批都会级羊城夜市先行区”名单中的转述。
-- 荔湾区“十大美食旅游推荐商圈”“最受游客欢迎美食名店30家”“十大/二十大名店”的具体名单未在已读页面列出，无法据此补充店铺。
-- 凉茶（如黄振龙、王老吉等）、盆菜、以及广州本地煲仔饭代表店（仅同福路一家小食店提及煲仔饭）未找到可读的官方或媒体页面。
-- 米其林指南、大众点评必吃榜、高德扫街榜等商业榜单原始页面未读取，仅通过官方媒体转述间接使用，未纳入具体餐厅。
-- 广州酒家、点都德、炳胜品味、陶陶居、泮溪酒家、莲香楼等在已读页面中仅以榜单或活动名单形式出现，门店地址与所在区缺失。
-- 上下九步行街、北京路步行街的长度、门牌范围等基础信息在已读官方页面中不完整，需以街区官方页面核实。
-- 湖北省博物馆官网主站（hbww.org.cn）本次因 http 与 https 交叉重定向无法读取，仅取到其预约子站；馆址、交通、团队预约、是否免费等信息未核。
-- 成都武侯祠博物馆“票务细则”与常规开放时间页为前端渲染，web_fetch 只取到公告列表与登录页；仅取得2026年延时开放通告（已过期），常规开放时间与票价规则列为缺口。
-- 岳麓山·橘子洲旅游区未找到可读的官方独立网站（hnyls.com 连接失败），只有岳麓区政府2023年转载稿；2024年以后预约规则与开放时间变化未核。
-- 东湖风景区管委会门户（whdonghu.gov.cn）未见面向游客的预约/开放说明页，东湖官网域名（whdonghu.com）无法连接；仅用武汉市政府门户2023年报道，各片区当前预约要求未核。
-- 西安城墙仅取到景区网站简略页（页脚版权2016—2017年），各城门时间、票务预约政策、演出安排未核；官方微信小程序内容无法抓取。
-- 华清宫是否须提前实名预约、停止售票与停止入园的具体时点、淡旺季票价政策在攻略页未找到。
-- 金沙遗址博物馆闭馆期间是否有替代开放空间、线上展览或恢复开放预告，未在可读公告中确认。
-- 大足石刻景区2026年（尤其非节假日）常规开放时间与票务政策未找到可读的明文公告，仅有官网首页时段展示与2025年五一专项提示。
-- 支付宝：global.alipay.com 等官方页面多次抓取返回空正文或重定向循环，未获得支付宝境外卡绑定的官方说明正文；仅检索到开发者社区与第三方内容，未采用。
-- 运营商：中国移动（10086.cn）、中国联通、中国电信官网未找到可读取的、面向外籍来华用户的全国性公开说明；中国移动省级“可为外籍来华人员办理电话卡营业网点公示/办卡指南”页正文为空；境外手机号漫游、eSIM、上网卡的官方办理渠道与资费均缺失。
-- 深圳宝安国际机场：官网“来往深圳市区”的中文与英文页正文均为空（前端渲染），未取得官方地面交通说明，本轮未产出深圳机场候选记录。
-- 北京大兴国际机场：官网 bdia.com.cn 及 wechat.bdia.com.cn 交通页正文为空，只能改用北京市政府门户报道；机场巴士、出租车、网约车的一手信息缺失。
-- 广州白云机场：官网 gbiac.net 首页与交通栏目正文为空，只能改用广东省、广州市政府门户报道；机场官网一手交通说明缺失。
-- 北京首都机场：英文站 en.bcia.com.cn 正文为空，未取得英文版交通说明（仅有中文页）。
-- 12306英文FAQ、首都机场、浦东/虹桥、天府等页面普遍未标注发布日期，仅有部分“最后更新”提示，规则时效性需人工复核。
-- 12308、12367页面发布于2021年或未标日期，后续服务范围与语种变化未在页内体现。
 - 广东省博物馆官网 www.gdmuseum.com 本次 web_fetch 连续失败（fetch failed），只能以广州市政府专题页替代，场馆官方页（地址、预约规则）尚未核实
 - 广州大剧院场馆地址与介绍页未读到：官网首页与票务子页（3w.gzdjy.org/service.html）仅返回购票须知/空内容，未见地址与“关于我们”信息
 - 广州海事博物馆：未找到可访问的官方页面（推测域名不可达），未收集
@@ -870,22 +936,6 @@
 - 名单中的宾馆/酒店类品牌（东方宾馆、广东迎宾馆、广州宾馆、爱群大酒店、新亚大酒店、新华大酒店、流花宾馆、华厦大酒店、白宫酒店、广东大酒店、南方大厦酒店）未作为餐厅收录，其馆内餐厅待单独核实。
 - 名单中与食品相关但无法从页面判断是否为堂食门店的品牌（大家乐、美心、广茂香、港三元、上水丰、白云制面、泮塘、宝生园、生茂泰、致美斋、鹰金钱/积士佳、五羊牌、风行、燕塘、华农、亚洲、廣氏、红棉、双喜、双桥牌、澳海豉油、温泉牌从化三花酒等）本次未收录，价格/评分类信息亦未采集。
 - 老字号中如点都德、南信、陶陶居等在同一批其他页面可见具体门店地址与必吃榜标签，但按“一条记录一个主来源”的规则，本次仅以名单页为来源、地址留空，门店级信息待后续单独核实。
-- 新快报《广州夜间消费地图2.0》（2021-03-09 A11版 PDF）无法解析（不支持 application/pdf），其中列举的建设六马路、文明路、惠福西路、西华路、宝华路、泮塘路、上下九美食广场等夜间美食集聚地表述未能核实。
-- 越秀区政府“北京路新装亮相开街”页面返回404；北京路文化旅游区官网未取得可读的街区介绍页，北京路步行街的门牌范围与餐饮明细仅有新华社稿。
-- 天河区本级关于猎德街区餐饮的官方介绍页未读到，仅有市级“首批都会级羊城夜市先行区”名单中的转述。
-- 荔湾区“十大美食旅游推荐商圈”“最受游客欢迎美食名店30家”“十大/二十大名店”的具体名单未在已读页面列出，无法据此补充店铺。
-- 凉茶（如黄振龙、王老吉等）、盆菜、以及广州本地煲仔饭代表店（仅同福路一家小食店提及煲仔饭）未找到可读的官方或媒体页面。
-- 米其林指南、大众点评必吃榜、高德扫街榜等商业榜单原始页面未读取，仅通过官方媒体转述间接使用，未纳入具体餐厅。
-- 广州酒家、点都德、炳胜品味、陶陶居、泮溪酒家、莲香楼等在已读页面中仅以榜单或活动名单形式出现，门店地址与所在区缺失。
-- 上下九步行街、北京路步行街的长度、门牌范围等基础信息在已读官方页面中不完整，需以街区官方页面核实。
-- 湖北省博物馆官网主站（hbww.org.cn）本次因 http 与 https 交叉重定向无法读取，仅取到其预约子站；馆址、交通、团队预约、是否免费等信息未核。
-- 成都武侯祠博物馆“票务细则”与常规开放时间页为前端渲染，web_fetch 只取到公告列表与登录页；仅取得2026年延时开放通告（已过期），常规开放时间与票价规则列为缺口。
-- 岳麓山·橘子洲旅游区未找到可读的官方独立网站（hnyls.com 连接失败），只有岳麓区政府2023年转载稿；2024年以后预约规则与开放时间变化未核。
-- 东湖风景区管委会门户（whdonghu.gov.cn）未见面向游客的预约/开放说明页，东湖官网域名（whdonghu.com）无法连接；仅用武汉市政府门户2023年报道，各片区当前预约要求未核。
-- 西安城墙仅取到景区网站简略页（页脚版权2016—2017年），各城门时间、票务预约政策、演出安排未核；官方微信小程序内容无法抓取。
-- 华清宫是否须提前实名预约、停止售票与停止入园的具体时点、淡旺季票价政策在攻略页未找到。
-- 金沙遗址博物馆闭馆期间是否有替代开放空间、线上展览或恢复开放预告，未在可读公告中确认。
-- 大足石刻景区2026年（尤其非节假日）常规开放时间与票务政策未找到可读的明文公告，仅有官网首页时段展示与2025年五一专项提示。
 - 南京博物院：官网 www.njmuseum.com 为前端渲染，web_fetch 仅返回站点标题；官方微信公众号《参观指南》与《秋假延时开放公告》正文触发人机验证，均未能读取官方原文，故该条只能采用江南时报社在搜狐号的转载稿作为候选，预约渠道与外籍证件要求仍缺。
 - 苏州市园林和绿化管理局“开放时间查询”页（ylj.suzhou.gov.cn）出现重定向循环，苏州市政府相关新闻页（www.suzhou.gov.cn）返回403，拙政园、虎丘的实名预约规则、提前预约天数与节假日延时安排未能从官方页面取得正文。
 - 上海豫园官网（www.yugarden.com.cn / www.上海豫园.com）持续返回504（云防御源站超时），“上海豫园”官方小程序的票务与预约规则未能读取；豫园日间开放时间在不同官方页面之间存在8:45-16:45 与 9:00-16:30 的差异。
@@ -900,14 +950,6 @@
 - 北京三处场馆（天坛、颐和园、国家博物馆）已读官方页面均未说明外籍游客持护照的购票/预约渠道与证件要求，是面向外国游客场景的关键缺口，建议后续补充各馆英文版页面或官方预约平台的境外游客规则。
 - 第二十八届哈尔滨冰雪大世界的开园日期、本季运营起止期与票务政策目前均未公布（官方媒体明确写"暂未公布"），属当前信息空窗；官网仍挂第二十七届内容，需在开季公告发布后重新采集。
 - 哈尔滨中央大街与圣索菲亚教堂：中央大街仅有地方性法规可读，缺游客服务类页面（亮灯时间、游客中心、临时管控）；圣索菲亚仅有上一冰雪季重启报道，缺当前时段的官方开放信息。
-- 支付宝：global.alipay.com 等官方页面多次抓取返回空正文或重定向循环，未获得支付宝境外卡绑定的官方说明正文；仅检索到开发者社区与第三方内容，未采用。
-- 运营商：中国移动（10086.cn）、中国联通、中国电信官网未找到可读取的、面向外籍来华用户的全国性公开说明；中国移动省级“可为外籍来华人员办理电话卡营业网点公示/办卡指南”页正文为空；境外手机号漫游、eSIM、上网卡的官方办理渠道与资费均缺失。
-- 深圳宝安国际机场：官网“来往深圳市区”的中文与英文页正文均为空（前端渲染），未取得官方地面交通说明，本轮未产出深圳机场候选记录。
-- 北京大兴国际机场：官网 bdia.com.cn 及 wechat.bdia.com.cn 交通页正文为空，只能改用北京市政府门户报道；机场巴士、出租车、网约车的一手信息缺失。
-- 广州白云机场：官网 gbiac.net 首页与交通栏目正文为空，只能改用广东省、广州市政府门户报道；机场官网一手交通说明缺失。
-- 北京首都机场：英文站 en.bcia.com.cn 正文为空，未取得英文版交通说明（仅有中文页）。
-- 12306英文FAQ、首都机场、浦东/虹桥、天府等页面普遍未标注发布日期，仅有部分“最后更新”提示，规则时效性需人工复核。
-- 12308、12367页面发布于2021年或未标日期，后续服务范围与语种变化未在页内体现。
 - 上海地铁：官网“无障碍设施”页（service.shmetro.com/wzai/index.htm）为交互式线网图，须在图上点选车站才显示设施信息，正文无成文说明；“爱心预约”页（/aixinyue/index.htm）为表单，均未获取可概括内容，故未单列上海地铁条目，建议人工复核其站点无障碍电梯查询功能。
 - 北京地铁官网 bjsubway.com 的“无障碍设施”汇总页与车站明细页多次 web_fetch 失败（fetch failed），无法读取，北京地铁条目改以北京市政府门户转载报道为来源。
 - 故宫博物院：官网手语导览页（www.dpm.org.cn/gesture.html）与英文参观页（intl.dpm.org.cn/visit.html?l=en，服务地图含 Accessibility、Nursery、Stroller Rental 等图标）已读取，但以视频与地图为主，缺少成文的无障碍服务说明，未单列条目，建议人工补充。
@@ -952,128 +994,12 @@
 - 成都武侯祠：存在 wuhouci.net.cn 与 cdwuhouci.cn 两个自称官方的域名，未确认唯一官方入口，需人工查重核实。
 - 湖北省博物馆：官网主域 www.hbww.org.cn 在当前环境出现 http/https 重定向循环，只能读取其官方镜像 hbsbwg.cjyun.org，镜像页未标更新日期。
 - 大足石刻：官网“预约购票”“游览须知”栏目为动态渲染，未读到票价与预约渠道正文，相关字段留待人工补全。
-- 广东省博物馆官网 www.gdmuseum.com 本次 web_fetch 连续失败（fetch failed），只能以广州市政府专题页替代，场馆官方页（地址、预约规则）尚未核实
-- 广州大剧院场馆地址与介绍页未读到：官网首页与票务子页（3w.gzdjy.org/service.html）仅返回购票须知/空内容，未见地址与“关于我们”信息
-- 广州海事博物馆：未找到可访问的官方页面（推测域名不可达），未收集
-- 南汉二陵博物馆：未找到可访问的官方页面，未收集
-- 孙中山大元帅府纪念馆：A级名录已含（3A），未读取其页面，未收集
-- 黄埔古港：A级名录已含“广州市黄埔古港景区”3A，未读取页面，未收集；八景“黄埔云帆”页本次未抓取
-- 三元宫：越秀区政府宗教文化栏目有独立条目页（post_8665063），本次因预算未抓取
-- 华林寺、仁威庙：未找到本次可读的官方/政府页面，未收集
-- 广州白云湖：A级名录已含“广州白云湖景区”3A，未读取页面，未收集
-- 海珠湖（与4A海珠湿地公园范围不同）、小洲村、TIT创意园、天河公园：未找到可读的官方页面，未收集
-- 天字码头/大沙头珠江游码头：页面仅泛述珠江夜游，未见码头官方页；码头信息未核实
-- 正佳自然科学博物馆：仅确认正佳广场4A范围，未读到该馆官方页，未收集
-- 广州地铁博物馆、广州铁路博物馆、广州市城市规划展览中心：均未读取页面（前两者A级3A、规划展览中心4A），未收集
-- 广州艺术博物院（广州美术馆）、广州市文化馆、北京路、永庆坊、沙面·西堤、太古仓码头等均已在A级名录内，本轮仅对其中部分做了tags标注，未重复展开
-- 多条候选（花城广场、海心沙、北京路、上下九、珠江夜游）所读页面未标所在区/门牌地址，地址与区留空待核实
-- 英文名普遍缺失：仅读了 gz.gov.cn 中文专题页与英文站首页，未读广州国际英文版对应景点篇（如 Top Eight Sights 英文稿），name_en 全部为 null
-- 白云山、越秀公园、中山纪念堂、南越王博物院等属A级名录，且越秀风华页有介绍，按要求未作为长尾候选纳入
-- 崂山风景区官网（qdlaoshan.cn）：旺季旅游接待通告、假期游览攻略等多个页面多次 web_fetch 失败（fetch failed），未取得正文；崂山开放时间、实名预约、日客流限量与索道/观光车运营信息均未记录。
-- 哈尔滨圣·索菲亚教堂：哈尔滨市人民政府网站相关介绍页返回 403 Forbidden，未能读取；开放时间与内部“哈尔滨市建筑艺术博物馆”参观信息未记录。
-- 哈尔滨中央大街：未找到可读的官方管委会页面（检索到的为2024年倡议书等旧闻且非游客服务信息），步行街管理规定与游客服务中心信息未记录。
-- 昆明西山龙门景区：昆明滇池国家级风景名胜区西山景区服务中心的微信文章触发“环境异常需验证”页面，未读取；开放时间与分时预约规则未记录，且未采用任何绕过验证的方式。
-- 石林风景区自有官网：natural.shilin.com.cn、cms.shilin.com.cn、shilinheritage.com 等站点以 https 读取失败（含“游览须知”中的分季开关园时间页），本次仅有昆明市政府门户转载的票务系统报道可用。
-- 张家界武陵源官方网站 www.hnzjj.com（署名张家界市武陵源区文化旅游和商务局）：https 读取失败，仅能使用第三方商业票务平台内容，官方门票与预约口径未核实。
-- 哈尔滨冰雪大世界第二十八届开园公告：官网新闻详情会重定向至 mp.weixin.qq.com 微信文章，无法直接读取；开园日期、每日运营时间与本届票务政策未记录（页面仅见筹备期新闻）。
-- 北京天坛：门票与线上预约细则（购票为交互按钮）未取得文本；颐和园“票价优惠减免规定”专页未读取，票价与优惠细则均未记录。
-- 中国国家博物馆：外籍观众使用护照预约与核验的具体规则页未找到可读页面，该信息缺口需由官方英文站或客服渠道补充。
-- 广州市商务局名单正文称认定“150个品牌”，但页面表格实际渲染至序号144（部分单位一条含多个品牌，如“枫澜、昭亮、罗家灯”“五羊、Y、广钢GISE”），页面未提供可下载的PDF/Word附件，无法逐项核对全部150个品牌。
-- 大众点评“必吃榜2026广州”官方榜单页未能直接读取，仅读到信息时报的报道（广州85家上榜、点名2家连续八年上榜门店），完整85家名单与地址未获取。
-- 携程美食林广州页面（gs.ctrip.com）可访问，但为跨省聚合页并含人均价格、评分等信息，未作为本批记录来源；广州专属美食林榜单未逐条采集。
-- 美团2026黑珍珠指南广州完整名单未读取，仅有媒体概述（广东40家、广州18家），故黑珍珠信息仅来自南方+荔湾合列页，且除玉堂春暖外未标明具体榜单等级。
-- 老字号名单只公布单位名称与品牌名称，无地址、所在区、菜系，相关条目字段留空待核实。
-- 名单中的宾馆/酒店类品牌（东方宾馆、广东迎宾馆、广州宾馆、爱群大酒店、新亚大酒店、新华大酒店、流花宾馆、华厦大酒店、白宫酒店、广东大酒店、南方大厦酒店）未作为餐厅收录，其馆内餐厅待单独核实。
-- 名单中与食品相关但无法从页面判断是否为堂食门店的品牌（大家乐、美心、广茂香、港三元、上水丰、白云制面、泮塘、宝生园、生茂泰、致美斋、鹰金钱/积士佳、五羊牌、风行、燕塘、华农、亚洲、廣氏、红棉、双喜、双桥牌、澳海豉油、温泉牌从化三花酒等）本次未收录，价格/评分类信息亦未采集。
-- 老字号中如点都德、南信、陶陶居等在同一批其他页面可见具体门店地址与必吃榜标签，但按“一条记录一个主来源”的规则，本次仅以名单页为来源、地址留空，门店级信息待后续单独核实。
-- 新快报《广州夜间消费地图2.0》（2021-03-09 A11版 PDF）无法解析（不支持 application/pdf），其中列举的建设六马路、文明路、惠福西路、西华路、宝华路、泮塘路、上下九美食广场等夜间美食集聚地表述未能核实。
-- 越秀区政府“北京路新装亮相开街”页面返回404；北京路文化旅游区官网未取得可读的街区介绍页，北京路步行街的门牌范围与餐饮明细仅有新华社稿。
-- 天河区本级关于猎德街区餐饮的官方介绍页未读到，仅有市级“首批都会级羊城夜市先行区”名单中的转述。
-- 荔湾区“十大美食旅游推荐商圈”“最受游客欢迎美食名店30家”“十大/二十大名店”的具体名单未在已读页面列出，无法据此补充店铺。
-- 凉茶（如黄振龙、王老吉等）、盆菜、以及广州本地煲仔饭代表店（仅同福路一家小食店提及煲仔饭）未找到可读的官方或媒体页面。
-- 米其林指南、大众点评必吃榜、高德扫街榜等商业榜单原始页面未读取，仅通过官方媒体转述间接使用，未纳入具体餐厅。
-- 广州酒家、点都德、炳胜品味、陶陶居、泮溪酒家、莲香楼等在已读页面中仅以榜单或活动名单形式出现，门店地址与所在区缺失。
-- 上下九步行街、北京路步行街的长度、门牌范围等基础信息在已读官方页面中不完整，需以街区官方页面核实。
-- 湖北省博物馆官网主站（hbww.org.cn）本次因 http 与 https 交叉重定向无法读取，仅取到其预约子站；馆址、交通、团队预约、是否免费等信息未核。
-- 成都武侯祠博物馆“票务细则”与常规开放时间页为前端渲染，web_fetch 只取到公告列表与登录页；仅取得2026年延时开放通告（已过期），常规开放时间与票价规则列为缺口。
-- 岳麓山·橘子洲旅游区未找到可读的官方独立网站（hnyls.com 连接失败），只有岳麓区政府2023年转载稿；2024年以后预约规则与开放时间变化未核。
-- 东湖风景区管委会门户（whdonghu.gov.cn）未见面向游客的预约/开放说明页，东湖官网域名（whdonghu.com）无法连接；仅用武汉市政府门户2023年报道，各片区当前预约要求未核。
-- 西安城墙仅取到景区网站简略页（页脚版权2016—2017年），各城门时间、票务预约政策、演出安排未核；官方微信小程序内容无法抓取。
-- 华清宫是否须提前实名预约、停止售票与停止入园的具体时点、淡旺季票价政策在攻略页未找到。
-- 金沙遗址博物馆闭馆期间是否有替代开放空间、线上展览或恢复开放预告，未在可读公告中确认。
-- 大足石刻景区2026年（尤其非节假日）常规开放时间与票务政策未找到可读的明文公告，仅有官网首页时段展示与2025年五一专项提示。
-- 南京博物院：官网 www.njmuseum.com 为前端渲染，web_fetch 仅返回站点标题；官方微信公众号《参观指南》与《秋假延时开放公告》正文触发人机验证，均未能读取官方原文，故该条只能采用江南时报社在搜狐号的转载稿作为候选，预约渠道与外籍证件要求仍缺。
-- 苏州市园林和绿化管理局“开放时间查询”页（ylj.suzhou.gov.cn）出现重定向循环，苏州市政府相关新闻页（www.suzhou.gov.cn）返回403，拙政园、虎丘的实名预约规则、提前预约天数与节假日延时安排未能从官方页面取得正文。
-- 上海豫园官网（www.yugarden.com.cn / www.上海豫园.com）持续返回504（云防御源站超时），“上海豫园”官方小程序的票务与预约规则未能读取；豫园日间开放时间在不同官方页面之间存在8:45-16:45 与 9:00-16:30 的差异。
-- 上海科技馆中文官网为前端渲染，只有英文站与政府新闻报道可读；当前（2026年11月）是否仍按试运行规则售票、是否需提前7天预约未能确认。
-- 无锡不在 cities 枚举内，未纳入 records：鼋头渚官方页（http://www.ytz.com.cn/ 与 /wxts.html）已读取到营业时间周一至周日8:30-17:00、江南兰苑实行现场预约制、瞬时最大承载量81000人、入园须知要求提前实名网络预约，另有2026-10-25 因铁人三项赛临时闭园至14:00的公告（已过期）；建议补充城市枚举后回收。
-- 各景区“外籍游客用护照能否线上预约/购票、如何在闸机或人工窗口核验”普遍未在已读官方页面写明，仅苏州博物馆古籍图书馆读者登记明确列护照；这一项需在人工复核阶段重点补齐。
-- 钟山风景区页面均为假期服务指南（春节、清明、五一、端午），平日开放时间、每日预约名额与放票时点未在已读页面明确。
-- 朱家角古镇街区（北大街、放生桥、九曲桥等）是否免费开放、是否需要预约，官方票务页只写“景点联票”，未说明街区与收费景点边界。
-- 崂山风景区（青岛）：官方网站 qdlaoshan.cn 及其子域多个页面（旺季接待通告、预约指南等）经多次 web_fetch 均返回 fetch failed（疑似 TLS/网络不可达），未能读取正文，故未记录；搜索摘要中可见旺季运营时间与"实名预约、提前7天"等表述，但按任务规则不采信搜索摘要。
-- 青岛栈桥：未找到可直接读取正文的官方页面（栈桥为开放式海滨栈桥，官方说明多散见于市级/区级平台或公众号），未记录；商业平台（携程、Trip.com 等）有条目但按要求不作为本条来源。
-- 昆明石林风景区：官方站点 shilingeopark.com、www.shilin.com.cn、cms.shilin.com.cn 的 https 抓取均失败（其中 shilingeopark.com 仅 http 可读），不满足 source_url 必须为 https 的要求，未记录正文；搜索摘要显示石林已启用实名制电子票务、外宾需到线下票务点办理，但未在已读页面核实，故写入 gaps 而非 records。
-- 北京三处场馆（天坛、颐和园、国家博物馆）已读官方页面均未说明外籍游客持护照的购票/预约渠道与证件要求，是面向外国游客场景的关键缺口，建议后续补充各馆英文版页面或官方预约平台的境外游客规则。
-- 第二十八届哈尔滨冰雪大世界的开园日期、本季运营起止期与票务政策目前均未公布（官方媒体明确写"暂未公布"），属当前信息空窗；官网仍挂第二十七届内容，需在开季公告发布后重新采集。
-- 哈尔滨中央大街与圣索菲亚教堂：中央大街仅有地方性法规可读，缺游客服务类页面（亮灯时间、游客中心、临时管控）；圣索菲亚仅有上一冰雪季重启报道，缺当前时段的官方开放信息。
-- 支付宝：global.alipay.com 等官方页面多次抓取返回空正文或重定向循环，未获得支付宝境外卡绑定的官方说明正文；仅检索到开发者社区与第三方内容，未采用。
-- 运营商：中国移动（10086.cn）、中国联通、中国电信官网未找到可读取的、面向外籍来华用户的全国性公开说明；中国移动省级“可为外籍来华人员办理电话卡营业网点公示/办卡指南”页正文为空；境外手机号漫游、eSIM、上网卡的官方办理渠道与资费均缺失。
-- 深圳宝安国际机场：官网“来往深圳市区”的中文与英文页正文均为空（前端渲染），未取得官方地面交通说明，本轮未产出深圳机场候选记录。
-- 北京大兴国际机场：官网 bdia.com.cn 及 wechat.bdia.com.cn 交通页正文为空，只能改用北京市政府门户报道；机场巴士、出租车、网约车的一手信息缺失。
-- 广州白云机场：官网 gbiac.net 首页与交通栏目正文为空，只能改用广东省、广州市政府门户报道；机场官网一手交通说明缺失。
-- 北京首都机场：英文站 en.bcia.com.cn 正文为空，未取得英文版交通说明（仅有中文页）。
-- 12306英文FAQ、首都机场、浦东/虹桥、天府等页面普遍未标注发布日期，仅有部分“最后更新”提示，规则时效性需人工复核。
-- 12308、12367页面发布于2021年或未标日期，后续服务范围与语种变化未在页内体现。
-- 上海地铁：官网“无障碍设施”页（service.shmetro.com/wzai/index.htm）为交互式线网图，须在图上点选车站才显示设施信息，正文无成文说明；“爱心预约”页（/aixinyue/index.htm）为表单，均未获取可概括内容，故未单列上海地铁条目，建议人工复核其站点无障碍电梯查询功能。
-- 北京地铁官网 bjsubway.com 的“无障碍设施”汇总页与车站明细页多次 web_fetch 失败（fetch failed），无法读取，北京地铁条目改以北京市政府门户转载报道为来源。
-- 故宫博物院：官网手语导览页（www.dpm.org.cn/gesture.html）与英文参观页（intl.dpm.org.cn/visit.html?l=en，服务地图含 Accessibility、Nursery、Stroller Rental 等图标）已读取，但以视频与地图为主，缺少成文的无障碍服务说明，未单列条目，建议人工补充。
-- 哈尔滨冰雪季：harbin.gov.cn 两篇 2025—2026 冰雪季新闻发布会稿（c01_1089041、c01_1090773）均返回 403，无法读取正文；官方冰雪季季节提示未纳入本次候选。
-- 中国政府网英文版（english.www.gov.cn）2026/2027 年节假日安排页面未单独读取核验，仅有中文版页面作为条目来源。
-- 广州地铁官网 gzmtr.com 页面返回字符集错误（unsupported charset），未能读取正文；已改用广州市政府门户同题报道替代。
-- 中国签证申请服务中心各驻外中心的具体页面（材料清单、预约流程）未逐国读取，仅记录官网总入口。
 - 英文名普遍缺失：市、区级官方介绍页几乎只给中文名，45 条中仅广东民间工艺博物馆（陈家祠）在官网看到英文名 Guangdong Folk Arts Museum，其余 name_en 均为 null。
 - 公园方向：广州市林业和园林局《广州市公园名录（截至2020年底）》以 PDF 附件发布（web_fetch 不支持直接解析 PDF，本批经下载附件并提取文本后录入），名录数据截至2020年底，公园地址、免费/收费状态可能已调整，需以最新公告核实；未检索到更新版名录。
 - 宗教活动场所方向：未找到市民族宗教事务局统一发布、含地址的宗教活动场所名录页（其“数据发布”页仅有各区数量统计与概述）；本批地址来自市政府门户“宗教场所”栏目及越秀区、海珠区政府介绍页，华林禅寺页面未标注所在区。能仁寺（白云山）因官方页面未载地址，本轮未收录。
 - 博物馆方向：广东美术馆（白鹅潭新馆）、广州十三行博物馆、广州海事博物馆、越秀区博物馆（五仙观）、荔湾区博物馆等未找到可完整读取的官方介绍页，本轮未收录；其中广东美术馆仅见场馆活动页提到新馆地址，信息不完整。
 - 价格与实时状态按要求未记录；各页面的闭馆日、预约制度仅作制度说明，均需以官方最新公告核实。
 - 孙中山大元帅府纪念馆、南汉二陵博物馆、辛亥革命纪念馆的官方页未提供门票或预约制度，对应字段为空。
-- 广州塔官方票务页（www.cantontower.com）反复返回412（机器人校验），未能读取预约、实名购票与护照换票细则；仅能引用海珠区政府2023年的简介页。
-- 广东省博物馆官网（www.gdmuseum.org.cn）多次读取失败（跨域重定向与连接错误），预约入口、护照核验与寄存/无障碍信息未能核对。
-- 深圳博物馆官网 www.shenzhenmuseum.com 返回403；移动端与CDN“参观须知”页为脚本渲染，web_fetch 无正文，故未能直接引用馆方原文。
-- 陈家祠馆方站点（www.gzcjc.com.cn 及政府表中登记的 gzchenjiaci.com）为动态加载或连接失败，未能读取馆方《开放时间及购票》全文。
-- 鼓浪屿文旅中心微信公众号“鼓浪屿旅游小贴士”等文章触发环境验证，未能读取；官方小程序“鼓浪屿Kulangsu”为线上渠道，未按规则实操验证。
-- 大鹏所城古城街区（非馆内展馆）的官方开放时间、门票与车辆预约通行页面未找到可读原文，仅有大鹏新区纪工委对“廉政教育基地”的信箱答复。
-- 白云山官网未在可读页面集中公布各门岗开放时间与临时调整机制；票务页为2020年发布，票价与优惠口径需复核。
-- 桂林象山景区“免费/实名预约”政策与护照预约入口未在官网文字中明确，仅有票务预订入口链接。
-- 厦门轮渡线上购票（官方小程序/公众号）对境外手机号与护照注册的可用性未验证；票价与班次按要求未记录。
-- 本组未记录任何票价、余票、实时班次与当日开闭状态；所有条目均为“待核实”候选，需人工查重与官方复核。
-- 北京地铁官网 bjsubway.com 多次抓取失败（fetch failed），未取得运营方原始无障碍页面；已用北京市政府英文网指南替代，仍缺逐站无障碍设施清单。
-- 广州地铁官网 gzmtr.com 抓取返回字符集错误（unsupported charset "iso-88509-1"），未能读取运营方原始页面；已用广州市政府门户网站转载报道替代。
-- 深圳地铁官网 szmc.net 未取得可读的无障碍服务页；仅找到深圳市政府网政务动态转载报道（https://www.sz.gov.cn/cn/xxgk/zfxxgj/zwdt/content/mpost_12716451.html，2026-04-02），因非运营方页面本次未单独建条，建议人工复核后补录。
-- 中国国家博物馆：仅见2025-07-25《观众预约须知》提到残障人士可走绿色通道（https://www.chnmuseum.cn/gbgg/202507/t20250725_272247.shtml），未找到独立的无障碍服务专页，未建条。
-- 2026年节假日安排通知正文已读取（https://www.gov.cn/zhengce/content/202511/content_7047090.htm，2025-11-04），因主题相同已合并在节假日条目的 notes 中，未单独建条。
-- 夏季高温官方提示（中国气象局《科普看台｜安全不“放假” 暑期出游避险指南》，https://www.cma.gov.cn/2011xwzx/2011xqxxw/2011xqxyw/202408/t20240806_6474100.html，2024-08-06）已读取正文，因条数限制未建条，可作为补录候选。
-- 上海博物馆中文“服务/参观”页与故宫博物院官网中文页未逐条核对，无障碍与亲子细则可能有更完整表述。
-- visaforchina.cn 仅读取首页导航，未进入具体受理中心页面；其运营主体与授权关系未独立核实。
-- 12308领保热线官方页已读取，但其服务对象为海外中国公民，已并入中国领事服务网条目 notes，未单独建条。
-- 市级主名录长表被页面输出截断：2026年6月版仅完整读到第22行、2025年10月版读到第38行、2024年9月版读到第47行；第48行以后（3A级主体部分，共约75家）未能整表读取，本次3A条目均靠分区/分年官方名录与公告补齐，未覆盖全部3A景区。
-- 越秀区其余3A级景区（名录第48行之后部分）未读取，需补：广州博物馆、广州近代史博物馆、广州市南粤先贤馆-五仙古观文化旅游区、中国（广州）超高清视频创新产业示范园旅游区等（名称来自检索线索，未在网页正文中读到，未作为记录）。
-- 荔湾区3A级景区名录页未找到并读取，已知应有沙面·西堤旅游区等条目，需通过荔湾区文广旅体局页面补齐。
-- 黄埔区3A级景区（如辛亥革命纪念馆、广东环亚美容化妆品博物馆、广东省凉茶博物馆、幸福里历史文化街区、融德里历史文化街区等）未读取到官方名录正文，未收录。
-- 花都区除洪秀全故居外的3A级景区（如资政大夫祠、蝴蝶谷、御盛国际马术庄园、红山村、塱头村、美华航空航天科普基地等）未读取官方名录正文，未收录。
-- 白云区3A级景区中，广东修学体验旅游区、广州市迪士普音响博物馆仅在白云区2023-06名录中读到，未纳入本批65条上限，且等级需按2026年名录复核。
-- 南沙区A级景区名录页（gzns.gov.cn 对应链接）读取返回404，未获得正文；南沙3A级景区（十八罗汉山、南沙都市农业实验园、广东利泰智农、大岗循环经济产业园等）未收录，需补读。
-- 增城区2024-11名录中其余3A条目因65条上限未纳入：大埔围美丽乡村景区、星罗纪大森林景区、1978电影小镇、广州市正果老街旅游区、广州市仙村循环经济园旅游区、广州市白江湖森林公园、瓜岭村——岭南古韵水乡文化旅游景区、广州钧明欢乐世界、蒙花布乡村旅游区。
-- 从化区其余3A级景区因上限未纳入：广州山谷国际旅游景区、从化国医园景区、广州市麦田生态园旅游区、广州越秀风行生态田园旅游区；其门址与等级需按市级名录复核。
-- 全部65条均缺官方英文名与官方网站URL，缺失项已逐条标注；官方英文名、官网、门票价格与预约渠道需人工补齐。
-- 广州市A级景区名录2024年12月版曾为115家（3A 76家），2026年6月版为114家（3A 75家），减少/调整了哪一家未核实，需比对两版全表。
-- 武汉东湖（听涛、磨山、落雁等）：未找到可直接读取正文的官方开放/预约/索道与园区收费页面，东湖风景区管委会官网首页无游客服务条目，故本组未记录。
-- 长沙岳麓山—橘子洲旅游区：预约唯一渠道为微信公众号，公众号页面触发“环境异常”验证无法读取；未找到可直读的官网或政府页，故未记录。
-- 都江堰景区：都江堰旅游门户网（djy517.com）列表页为动态加载、都江堰市政府站返回 HTTP 412，未读到含开放时间与预约规则的正文，故未记录。
-- 西安城墙：官方网站仅提供 http 访问（https 不可用），不满足 source_url 必须为 https 的要求，且页面主体信息陈旧、未列实名预约规则与票价，故未作为候选记录；如需收录，建议人工核验“西安城墙景区”微信小程序官方公告。
-- 成都武侯祠：存在 wuhouci.net.cn 与 cdwuhouci.cn 两个自称官方的域名，未确认唯一官方入口，需人工查重核实。
-- 湖北省博物馆：官网主域 www.hbww.org.cn 在当前环境出现 http/https 重定向循环，只能读取其官方镜像 hbsbwg.cjyun.org，镜像页未标更新日期。
-- 大足石刻：官网“预约购票”“游览须知”栏目为动态渲染，未读到票价与预约渠道正文，相关字段留待人工补全。
 - 广州本届无三星餐厅，星级最高为二星（3家）：御宝轩、江、泰安门。
 - 米其林指南列表页（guide.michelin.com）在本环境读取失败（HTTP 202 空内容或连接失败），无法逐条核对官方线上餐厅页；等级名单以米其林中国官网发布稿（2026-08-18）和新浪转载榜单（2026-08-20）为准。
 - 45家米其林指南入选餐厅未完整收集：本次仅收录3家（樾宴、Chaleur、德点）；米其林中国发布稿只点名8家入选餐厅（川法小院、德点、凤岄轩、樾宴、海塘晓味、鲜厨令、玫瑰园餐厅、Chaleur），完整45家名单未能在官方页面读到（微信转载页遇验证无法读取）。
@@ -1082,316 +1008,6 @@
 - 英文名仅对20家星级餐厅与Chaleur填写，依据Gourmet Report转载的米其林英文榜单；必比登餐厅的英文名未采用（该英文榜为罗马化译名，且家源素食被误译为Jiayuan Sushi），统一留空待核实。
 - 各餐厅官网/官方订座页未读取，official_url 全部留空；订座信息仅兰亭永有来源页面标注的「全预约制」。
 - 全部75条为待核实候选：未核验实时营业状态、价格与评分，按要求不记录这些内容；部分转述来源为地方发布/媒体转载，需二次核实。
-- 广东省博物馆官网 www.gdmuseum.com 本次 web_fetch 连续失败（fetch failed），只能以广州市政府专题页替代，场馆官方页（地址、预约规则）尚未核实
-- 广州大剧院场馆地址与介绍页未读到：官网首页与票务子页（3w.gzdjy.org/service.html）仅返回购票须知/空内容，未见地址与“关于我们”信息
-- 广州海事博物馆：未找到可访问的官方页面（推测域名不可达），未收集
-- 南汉二陵博物馆：未找到可访问的官方页面，未收集
-- 孙中山大元帅府纪念馆：A级名录已含（3A），未读取其页面，未收集
-- 黄埔古港：A级名录已含“广州市黄埔古港景区”3A，未读取页面，未收集；八景“黄埔云帆”页本次未抓取
-- 三元宫：越秀区政府宗教文化栏目有独立条目页（post_8665063），本次因预算未抓取
-- 华林寺、仁威庙：未找到本次可读的官方/政府页面，未收集
-- 广州白云湖：A级名录已含“广州白云湖景区”3A，未读取页面，未收集
-- 海珠湖（与4A海珠湿地公园范围不同）、小洲村、TIT创意园、天河公园：未找到可读的官方页面，未收集
-- 天字码头/大沙头珠江游码头：页面仅泛述珠江夜游，未见码头官方页；码头信息未核实
-- 正佳自然科学博物馆：仅确认正佳广场4A范围，未读到该馆官方页，未收集
-- 广州地铁博物馆、广州铁路博物馆、广州市城市规划展览中心：均未读取页面（前两者A级3A、规划展览中心4A），未收集
-- 广州艺术博物院（广州美术馆）、广州市文化馆、北京路、永庆坊、沙面·西堤、太古仓码头等均已在A级名录内，本轮仅对其中部分做了tags标注，未重复展开
-- 多条候选（花城广场、海心沙、北京路、上下九、珠江夜游）所读页面未标所在区/门牌地址，地址与区留空待核实
-- 英文名普遍缺失：仅读了 gz.gov.cn 中文专题页与英文站首页，未读广州国际英文版对应景点篇（如 Top Eight Sights 英文稿），name_en 全部为 null
-- 白云山、越秀公园、中山纪念堂、南越王博物院等属A级名录，且越秀风华页有介绍，按要求未作为长尾候选纳入
-- 崂山风景区官网（qdlaoshan.cn）：旺季旅游接待通告、假期游览攻略等多个页面多次 web_fetch 失败（fetch failed），未取得正文；崂山开放时间、实名预约、日客流限量与索道/观光车运营信息均未记录。
-- 哈尔滨圣·索菲亚教堂：哈尔滨市人民政府网站相关介绍页返回 403 Forbidden，未能读取；开放时间与内部“哈尔滨市建筑艺术博物馆”参观信息未记录。
-- 哈尔滨中央大街：未找到可读的官方管委会页面（检索到的为2024年倡议书等旧闻且非游客服务信息），步行街管理规定与游客服务中心信息未记录。
-- 昆明西山龙门景区：昆明滇池国家级风景名胜区西山景区服务中心的微信文章触发“环境异常需验证”页面，未读取；开放时间与分时预约规则未记录，且未采用任何绕过验证的方式。
-- 石林风景区自有官网：natural.shilin.com.cn、cms.shilin.com.cn、shilinheritage.com 等站点以 https 读取失败（含“游览须知”中的分季开关园时间页），本次仅有昆明市政府门户转载的票务系统报道可用。
-- 张家界武陵源官方网站 www.hnzjj.com（署名张家界市武陵源区文化旅游和商务局）：https 读取失败，仅能使用第三方商业票务平台内容，官方门票与预约口径未核实。
-- 哈尔滨冰雪大世界第二十八届开园公告：官网新闻详情会重定向至 mp.weixin.qq.com 微信文章，无法直接读取；开园日期、每日运营时间与本届票务政策未记录（页面仅见筹备期新闻）。
-- 北京天坛：门票与线上预约细则（购票为交互按钮）未取得文本；颐和园“票价优惠减免规定”专页未读取，票价与优惠细则均未记录。
-- 中国国家博物馆：外籍观众使用护照预约与核验的具体规则页未找到可读页面，该信息缺口需由官方英文站或客服渠道补充。
-- 广州市商务局名单正文称认定“150个品牌”，但页面表格实际渲染至序号144（部分单位一条含多个品牌，如“枫澜、昭亮、罗家灯”“五羊、Y、广钢GISE”），页面未提供可下载的PDF/Word附件，无法逐项核对全部150个品牌。
-- 大众点评“必吃榜2026广州”官方榜单页未能直接读取，仅读到信息时报的报道（广州85家上榜、点名2家连续八年上榜门店），完整85家名单与地址未获取。
-- 携程美食林广州页面（gs.ctrip.com）可访问，但为跨省聚合页并含人均价格、评分等信息，未作为本批记录来源；广州专属美食林榜单未逐条采集。
-- 美团2026黑珍珠指南广州完整名单未读取，仅有媒体概述（广东40家、广州18家），故黑珍珠信息仅来自南方+荔湾合列页，且除玉堂春暖外未标明具体榜单等级。
-- 老字号名单只公布单位名称与品牌名称，无地址、所在区、菜系，相关条目字段留空待核实。
-- 名单中的宾馆/酒店类品牌（东方宾馆、广东迎宾馆、广州宾馆、爱群大酒店、新亚大酒店、新华大酒店、流花宾馆、华厦大酒店、白宫酒店、广东大酒店、南方大厦酒店）未作为餐厅收录，其馆内餐厅待单独核实。
-- 名单中与食品相关但无法从页面判断是否为堂食门店的品牌（大家乐、美心、广茂香、港三元、上水丰、白云制面、泮塘、宝生园、生茂泰、致美斋、鹰金钱/积士佳、五羊牌、风行、燕塘、华农、亚洲、廣氏、红棉、双喜、双桥牌、澳海豉油、温泉牌从化三花酒等）本次未收录，价格/评分类信息亦未采集。
-- 老字号中如点都德、南信、陶陶居等在同一批其他页面可见具体门店地址与必吃榜标签，但按“一条记录一个主来源”的规则，本次仅以名单页为来源、地址留空，门店级信息待后续单独核实。
-- 新快报《广州夜间消费地图2.0》（2021-03-09 A11版 PDF）无法解析（不支持 application/pdf），其中列举的建设六马路、文明路、惠福西路、西华路、宝华路、泮塘路、上下九美食广场等夜间美食集聚地表述未能核实。
-- 越秀区政府“北京路新装亮相开街”页面返回404；北京路文化旅游区官网未取得可读的街区介绍页，北京路步行街的门牌范围与餐饮明细仅有新华社稿。
-- 天河区本级关于猎德街区餐饮的官方介绍页未读到，仅有市级“首批都会级羊城夜市先行区”名单中的转述。
-- 荔湾区“十大美食旅游推荐商圈”“最受游客欢迎美食名店30家”“十大/二十大名店”的具体名单未在已读页面列出，无法据此补充店铺。
-- 凉茶（如黄振龙、王老吉等）、盆菜、以及广州本地煲仔饭代表店（仅同福路一家小食店提及煲仔饭）未找到可读的官方或媒体页面。
-- 米其林指南、大众点评必吃榜、高德扫街榜等商业榜单原始页面未读取，仅通过官方媒体转述间接使用，未纳入具体餐厅。
-- 广州酒家、点都德、炳胜品味、陶陶居、泮溪酒家、莲香楼等在已读页面中仅以榜单或活动名单形式出现，门店地址与所在区缺失。
-- 上下九步行街、北京路步行街的长度、门牌范围等基础信息在已读官方页面中不完整，需以街区官方页面核实。
-- 湖北省博物馆官网主站（hbww.org.cn）本次因 http 与 https 交叉重定向无法读取，仅取到其预约子站；馆址、交通、团队预约、是否免费等信息未核。
-- 成都武侯祠博物馆“票务细则”与常规开放时间页为前端渲染，web_fetch 只取到公告列表与登录页；仅取得2026年延时开放通告（已过期），常规开放时间与票价规则列为缺口。
-- 岳麓山·橘子洲旅游区未找到可读的官方独立网站（hnyls.com 连接失败），只有岳麓区政府2023年转载稿；2024年以后预约规则与开放时间变化未核。
-- 东湖风景区管委会门户（whdonghu.gov.cn）未见面向游客的预约/开放说明页，东湖官网域名（whdonghu.com）无法连接；仅用武汉市政府门户2023年报道，各片区当前预约要求未核。
-- 西安城墙仅取到景区网站简略页（页脚版权2016—2017年），各城门时间、票务预约政策、演出安排未核；官方微信小程序内容无法抓取。
-- 华清宫是否须提前实名预约、停止售票与停止入园的具体时点、淡旺季票价政策在攻略页未找到。
-- 金沙遗址博物馆闭馆期间是否有替代开放空间、线上展览或恢复开放预告，未在可读公告中确认。
-- 大足石刻景区2026年（尤其非节假日）常规开放时间与票务政策未找到可读的明文公告，仅有官网首页时段展示与2025年五一专项提示。
-- 南京博物院：官网 www.njmuseum.com 为前端渲染，web_fetch 仅返回站点标题；官方微信公众号《参观指南》与《秋假延时开放公告》正文触发人机验证，均未能读取官方原文，故该条只能采用江南时报社在搜狐号的转载稿作为候选，预约渠道与外籍证件要求仍缺。
-- 苏州市园林和绿化管理局“开放时间查询”页（ylj.suzhou.gov.cn）出现重定向循环，苏州市政府相关新闻页（www.suzhou.gov.cn）返回403，拙政园、虎丘的实名预约规则、提前预约天数与节假日延时安排未能从官方页面取得正文。
-- 上海豫园官网（www.yugarden.com.cn / www.上海豫园.com）持续返回504（云防御源站超时），“上海豫园”官方小程序的票务与预约规则未能读取；豫园日间开放时间在不同官方页面之间存在8:45-16:45 与 9:00-16:30 的差异。
-- 上海科技馆中文官网为前端渲染，只有英文站与政府新闻报道可读；当前（2026年11月）是否仍按试运行规则售票、是否需提前7天预约未能确认。
-- 无锡不在 cities 枚举内，未纳入 records：鼋头渚官方页（http://www.ytz.com.cn/ 与 /wxts.html）已读取到营业时间周一至周日8:30-17:00、江南兰苑实行现场预约制、瞬时最大承载量81000人、入园须知要求提前实名网络预约，另有2026-10-25 因铁人三项赛临时闭园至14:00的公告（已过期）；建议补充城市枚举后回收。
-- 各景区“外籍游客用护照能否线上预约/购票、如何在闸机或人工窗口核验”普遍未在已读官方页面写明，仅苏州博物馆古籍图书馆读者登记明确列护照；这一项需在人工复核阶段重点补齐。
-- 钟山风景区页面均为假期服务指南（春节、清明、五一、端午），平日开放时间、每日预约名额与放票时点未在已读页面明确。
-- 朱家角古镇街区（北大街、放生桥、九曲桥等）是否免费开放、是否需要预约，官方票务页只写“景点联票”，未说明街区与收费景点边界。
-- 崂山风景区（青岛）：官方网站 qdlaoshan.cn 及其子域多个页面（旺季接待通告、预约指南等）经多次 web_fetch 均返回 fetch failed（疑似 TLS/网络不可达），未能读取正文，故未记录；搜索摘要中可见旺季运营时间与"实名预约、提前7天"等表述，但按任务规则不采信搜索摘要。
-- 青岛栈桥：未找到可直接读取正文的官方页面（栈桥为开放式海滨栈桥，官方说明多散见于市级/区级平台或公众号），未记录；商业平台（携程、Trip.com 等）有条目但按要求不作为本条来源。
-- 昆明石林风景区：官方站点 shilingeopark.com、www.shilin.com.cn、cms.shilin.com.cn 的 https 抓取均失败（其中 shilingeopark.com 仅 http 可读），不满足 source_url 必须为 https 的要求，未记录正文；搜索摘要显示石林已启用实名制电子票务、外宾需到线下票务点办理，但未在已读页面核实，故写入 gaps 而非 records。
-- 北京三处场馆（天坛、颐和园、国家博物馆）已读官方页面均未说明外籍游客持护照的购票/预约渠道与证件要求，是面向外国游客场景的关键缺口，建议后续补充各馆英文版页面或官方预约平台的境外游客规则。
-- 第二十八届哈尔滨冰雪大世界的开园日期、本季运营起止期与票务政策目前均未公布（官方媒体明确写"暂未公布"），属当前信息空窗；官网仍挂第二十七届内容，需在开季公告发布后重新采集。
-- 哈尔滨中央大街与圣索菲亚教堂：中央大街仅有地方性法规可读，缺游客服务类页面（亮灯时间、游客中心、临时管控）；圣索菲亚仅有上一冰雪季重启报道，缺当前时段的官方开放信息。
-- 支付宝：global.alipay.com 等官方页面多次抓取返回空正文或重定向循环，未获得支付宝境外卡绑定的官方说明正文；仅检索到开发者社区与第三方内容，未采用。
-- 运营商：中国移动（10086.cn）、中国联通、中国电信官网未找到可读取的、面向外籍来华用户的全国性公开说明；中国移动省级“可为外籍来华人员办理电话卡营业网点公示/办卡指南”页正文为空；境外手机号漫游、eSIM、上网卡的官方办理渠道与资费均缺失。
-- 深圳宝安国际机场：官网“来往深圳市区”的中文与英文页正文均为空（前端渲染），未取得官方地面交通说明，本轮未产出深圳机场候选记录。
-- 北京大兴国际机场：官网 bdia.com.cn 及 wechat.bdia.com.cn 交通页正文为空，只能改用北京市政府门户报道；机场巴士、出租车、网约车的一手信息缺失。
-- 广州白云机场：官网 gbiac.net 首页与交通栏目正文为空，只能改用广东省、广州市政府门户报道；机场官网一手交通说明缺失。
-- 北京首都机场：英文站 en.bcia.com.cn 正文为空，未取得英文版交通说明（仅有中文页）。
-- 12306英文FAQ、首都机场、浦东/虹桥、天府等页面普遍未标注发布日期，仅有部分“最后更新”提示，规则时效性需人工复核。
-- 12308、12367页面发布于2021年或未标日期，后续服务范围与语种变化未在页内体现。
-- 上海地铁：官网“无障碍设施”页（service.shmetro.com/wzai/index.htm）为交互式线网图，须在图上点选车站才显示设施信息，正文无成文说明；“爱心预约”页（/aixinyue/index.htm）为表单，均未获取可概括内容，故未单列上海地铁条目，建议人工复核其站点无障碍电梯查询功能。
-- 北京地铁官网 bjsubway.com 的“无障碍设施”汇总页与车站明细页多次 web_fetch 失败（fetch failed），无法读取，北京地铁条目改以北京市政府门户转载报道为来源。
-- 故宫博物院：官网手语导览页（www.dpm.org.cn/gesture.html）与英文参观页（intl.dpm.org.cn/visit.html?l=en，服务地图含 Accessibility、Nursery、Stroller Rental 等图标）已读取，但以视频与地图为主，缺少成文的无障碍服务说明，未单列条目，建议人工补充。
-- 哈尔滨冰雪季：harbin.gov.cn 两篇 2025—2026 冰雪季新闻发布会稿（c01_1089041、c01_1090773）均返回 403，无法读取正文；官方冰雪季季节提示未纳入本次候选。
-- 中国政府网英文版（english.www.gov.cn）2026/2027 年节假日安排页面未单独读取核验，仅有中文版页面作为条目来源。
-- 广州地铁官网 gzmtr.com 页面返回字符集错误（unsupported charset），未能读取正文；已改用广州市政府门户同题报道替代。
-- 中国签证申请服务中心各驻外中心的具体页面（材料清单、预约流程）未逐国读取，仅记录官网总入口。
-- 英文名普遍缺失：市、区级官方介绍页几乎只给中文名，45 条中仅广东民间工艺博物馆（陈家祠）在官网看到英文名 Guangdong Folk Arts Museum，其余 name_en 均为 null。
-- 公园方向：广州市林业和园林局《广州市公园名录（截至2020年底）》以 PDF 附件发布（web_fetch 不支持直接解析 PDF，本批经下载附件并提取文本后录入），名录数据截至2020年底，公园地址、免费/收费状态可能已调整，需以最新公告核实；未检索到更新版名录。
-- 宗教活动场所方向：未找到市民族宗教事务局统一发布、含地址的宗教活动场所名录页（其“数据发布”页仅有各区数量统计与概述）；本批地址来自市政府门户“宗教场所”栏目及越秀区、海珠区政府介绍页，华林禅寺页面未标注所在区。能仁寺（白云山）因官方页面未载地址，本轮未收录。
-- 博物馆方向：广东美术馆（白鹅潭新馆）、广州十三行博物馆、广州海事博物馆、越秀区博物馆（五仙观）、荔湾区博物馆等未找到可完整读取的官方介绍页，本轮未收录；其中广东美术馆仅见场馆活动页提到新馆地址，信息不完整。
-- 价格与实时状态按要求未记录；各页面的闭馆日、预约制度仅作制度说明，均需以官方最新公告核实。
-- 孙中山大元帅府纪念馆、南汉二陵博物馆、辛亥革命纪念馆的官方页未提供门票或预约制度，对应字段为空。
-- 广州塔官方票务页（www.cantontower.com）反复返回412（机器人校验），未能读取预约、实名购票与护照换票细则；仅能引用海珠区政府2023年的简介页。
-- 广东省博物馆官网（www.gdmuseum.org.cn）多次读取失败（跨域重定向与连接错误），预约入口、护照核验与寄存/无障碍信息未能核对。
-- 深圳博物馆官网 www.shenzhenmuseum.com 返回403；移动端与CDN“参观须知”页为脚本渲染，web_fetch 无正文，故未能直接引用馆方原文。
-- 陈家祠馆方站点（www.gzcjc.com.cn 及政府表中登记的 gzchenjiaci.com）为动态加载或连接失败，未能读取馆方《开放时间及购票》全文。
-- 鼓浪屿文旅中心微信公众号“鼓浪屿旅游小贴士”等文章触发环境验证，未能读取；官方小程序“鼓浪屿Kulangsu”为线上渠道，未按规则实操验证。
-- 大鹏所城古城街区（非馆内展馆）的官方开放时间、门票与车辆预约通行页面未找到可读原文，仅有大鹏新区纪工委对“廉政教育基地”的信箱答复。
-- 白云山官网未在可读页面集中公布各门岗开放时间与临时调整机制；票务页为2020年发布，票价与优惠口径需复核。
-- 桂林象山景区“免费/实名预约”政策与护照预约入口未在官网文字中明确，仅有票务预订入口链接。
-- 厦门轮渡线上购票（官方小程序/公众号）对境外手机号与护照注册的可用性未验证；票价与班次按要求未记录。
-- 本组未记录任何票价、余票、实时班次与当日开闭状态；所有条目均为“待核实”候选，需人工查重与官方复核。
-- 北京地铁官网 bjsubway.com 多次抓取失败（fetch failed），未取得运营方原始无障碍页面；已用北京市政府英文网指南替代，仍缺逐站无障碍设施清单。
-- 广州地铁官网 gzmtr.com 抓取返回字符集错误（unsupported charset "iso-88509-1"），未能读取运营方原始页面；已用广州市政府门户网站转载报道替代。
-- 深圳地铁官网 szmc.net 未取得可读的无障碍服务页；仅找到深圳市政府网政务动态转载报道（https://www.sz.gov.cn/cn/xxgk/zfxxgj/zwdt/content/mpost_12716451.html，2026-04-02），因非运营方页面本次未单独建条，建议人工复核后补录。
-- 中国国家博物馆：仅见2025-07-25《观众预约须知》提到残障人士可走绿色通道（https://www.chnmuseum.cn/gbgg/202507/t20250725_272247.shtml），未找到独立的无障碍服务专页，未建条。
-- 2026年节假日安排通知正文已读取（https://www.gov.cn/zhengce/content/202511/content_7047090.htm，2025-11-04），因主题相同已合并在节假日条目的 notes 中，未单独建条。
-- 夏季高温官方提示（中国气象局《科普看台｜安全不“放假” 暑期出游避险指南》，https://www.cma.gov.cn/2011xwzx/2011xqxxw/2011xqxyw/202408/t20240806_6474100.html，2024-08-06）已读取正文，因条数限制未建条，可作为补录候选。
-- 上海博物馆中文“服务/参观”页与故宫博物院官网中文页未逐条核对，无障碍与亲子细则可能有更完整表述。
-- visaforchina.cn 仅读取首页导航，未进入具体受理中心页面；其运营主体与授权关系未独立核实。
-- 12308领保热线官方页已读取，但其服务对象为海外中国公民，已并入中国领事服务网条目 notes，未单独建条。
-- 市级主名录长表被页面输出截断：2026年6月版仅完整读到第22行、2025年10月版读到第38行、2024年9月版读到第47行；第48行以后（3A级主体部分，共约75家）未能整表读取，本次3A条目均靠分区/分年官方名录与公告补齐，未覆盖全部3A景区。
-- 越秀区其余3A级景区（名录第48行之后部分）未读取，需补：广州博物馆、广州近代史博物馆、广州市南粤先贤馆-五仙古观文化旅游区、中国（广州）超高清视频创新产业示范园旅游区等（名称来自检索线索，未在网页正文中读到，未作为记录）。
-- 荔湾区3A级景区名录页未找到并读取，已知应有沙面·西堤旅游区等条目，需通过荔湾区文广旅体局页面补齐。
-- 黄埔区3A级景区（如辛亥革命纪念馆、广东环亚美容化妆品博物馆、广东省凉茶博物馆、幸福里历史文化街区、融德里历史文化街区等）未读取到官方名录正文，未收录。
-- 花都区除洪秀全故居外的3A级景区（如资政大夫祠、蝴蝶谷、御盛国际马术庄园、红山村、塱头村、美华航空航天科普基地等）未读取官方名录正文，未收录。
-- 白云区3A级景区中，广东修学体验旅游区、广州市迪士普音响博物馆仅在白云区2023-06名录中读到，未纳入本批65条上限，且等级需按2026年名录复核。
-- 南沙区A级景区名录页（gzns.gov.cn 对应链接）读取返回404，未获得正文；南沙3A级景区（十八罗汉山、南沙都市农业实验园、广东利泰智农、大岗循环经济产业园等）未收录，需补读。
-- 增城区2024-11名录中其余3A条目因65条上限未纳入：大埔围美丽乡村景区、星罗纪大森林景区、1978电影小镇、广州市正果老街旅游区、广州市仙村循环经济园旅游区、广州市白江湖森林公园、瓜岭村——岭南古韵水乡文化旅游景区、广州钧明欢乐世界、蒙花布乡村旅游区。
-- 从化区其余3A级景区因上限未纳入：广州山谷国际旅游景区、从化国医园景区、广州市麦田生态园旅游区、广州越秀风行生态田园旅游区；其门址与等级需按市级名录复核。
-- 全部65条均缺官方英文名与官方网站URL，缺失项已逐条标注；官方英文名、官网、门票价格与预约渠道需人工补齐。
-- 广州市A级景区名录2024年12月版曾为115家（3A 76家），2026年6月版为114家（3A 75家），减少/调整了哪一家未核实，需比对两版全表。
-- 武汉东湖（听涛、磨山、落雁等）：未找到可直接读取正文的官方开放/预约/索道与园区收费页面，东湖风景区管委会官网首页无游客服务条目，故本组未记录。
-- 长沙岳麓山—橘子洲旅游区：预约唯一渠道为微信公众号，公众号页面触发“环境异常”验证无法读取；未找到可直读的官网或政府页，故未记录。
-- 都江堰景区：都江堰旅游门户网（djy517.com）列表页为动态加载、都江堰市政府站返回 HTTP 412，未读到含开放时间与预约规则的正文，故未记录。
-- 西安城墙：官方网站仅提供 http 访问（https 不可用），不满足 source_url 必须为 https 的要求，且页面主体信息陈旧、未列实名预约规则与票价，故未作为候选记录；如需收录，建议人工核验“西安城墙景区”微信小程序官方公告。
-- 成都武侯祠：存在 wuhouci.net.cn 与 cdwuhouci.cn 两个自称官方的域名，未确认唯一官方入口，需人工查重核实。
-- 湖北省博物馆：官网主域 www.hbww.org.cn 在当前环境出现 http/https 重定向循环，只能读取其官方镜像 hbsbwg.cjyun.org，镜像页未标更新日期。
-- 大足石刻：官网“预约购票”“游览须知”栏目为动态渲染，未读到票价与预约渠道正文，相关字段留待人工补全。
-- 广州本届无三星餐厅，星级最高为二星（3家）：御宝轩、江、泰安门。
-- 米其林指南列表页（guide.michelin.com）在本环境读取失败（HTTP 202 空内容或连接失败），无法逐条核对官方线上餐厅页；等级名单以米其林中国官网发布稿（2026-08-18）和新浪转载榜单（2026-08-20）为准。
-- 45家米其林指南入选餐厅未完整收集：本次仅收录3家（樾宴、Chaleur、德点）；米其林中国发布稿只点名8家入选餐厅（川法小院、德点、凤岄轩、樾宴、海塘晓味、鲜厨令、玫瑰园餐厅、Chaleur），完整45家名单未能在官方页面读到（微信转载页遇验证无法读取）。
-- 必比登52家中34家仅有新浪转载榜单的店名与部分分店路名，来源未给菜系、地址、区，相应字段留空；另有7家（抱德、吴记鹅前鸭后、梅麓小厨、茹意传统竹升面、台山老表咸汤圆、吴川好味来、愉园饭店）来自官方发布稿，仅知菜系/招牌而无地址。
-- 星级餐厅的区与完整地址多数缺失：仅泰安门、兰亭永、利苑、信记、斯蒂勒（越秀区发布）与宏图府、玉堂春暖（荔湾区发布）共7家取得地址；惠食佳、利苑另有区名。其余13家星级餐厅地址需另行核实。
-- 英文名仅对20家星级餐厅与Chaleur填写，依据Gourmet Report转载的米其林英文榜单；必比登餐厅的英文名未采用（该英文榜为罗马化译名，且家源素食被误译为Jiayuan Sushi），统一留空待核实。
-- 各餐厅官网/官方订座页未读取，official_url 全部留空；订座信息仅兰亭永有来源页面标注的「全预约制」。
-- 全部75条为待核实候选：未核验实时营业状态、价格与评分，按要求不记录这些内容；部分转述来源为地方发布/媒体转载，需二次核实。
-- 广东省博物馆官网 www.gdmuseum.com 本次 web_fetch 连续失败（fetch failed），只能以广州市政府专题页替代，场馆官方页（地址、预约规则）尚未核实
-- 广州大剧院场馆地址与介绍页未读到：官网首页与票务子页（3w.gzdjy.org/service.html）仅返回购票须知/空内容，未见地址与“关于我们”信息
-- 广州海事博物馆：未找到可访问的官方页面（推测域名不可达），未收集
-- 南汉二陵博物馆：未找到可访问的官方页面，未收集
-- 孙中山大元帅府纪念馆：A级名录已含（3A），未读取其页面，未收集
-- 黄埔古港：A级名录已含“广州市黄埔古港景区”3A，未读取页面，未收集；八景“黄埔云帆”页本次未抓取
-- 三元宫：越秀区政府宗教文化栏目有独立条目页（post_8665063），本次因预算未抓取
-- 华林寺、仁威庙：未找到本次可读的官方/政府页面，未收集
-- 广州白云湖：A级名录已含“广州白云湖景区”3A，未读取页面，未收集
-- 海珠湖（与4A海珠湿地公园范围不同）、小洲村、TIT创意园、天河公园：未找到可读的官方页面，未收集
-- 天字码头/大沙头珠江游码头：页面仅泛述珠江夜游，未见码头官方页；码头信息未核实
-- 正佳自然科学博物馆：仅确认正佳广场4A范围，未读到该馆官方页，未收集
-- 广州地铁博物馆、广州铁路博物馆、广州市城市规划展览中心：均未读取页面（前两者A级3A、规划展览中心4A），未收集
-- 广州艺术博物院（广州美术馆）、广州市文化馆、北京路、永庆坊、沙面·西堤、太古仓码头等均已在A级名录内，本轮仅对其中部分做了tags标注，未重复展开
-- 多条候选（花城广场、海心沙、北京路、上下九、珠江夜游）所读页面未标所在区/门牌地址，地址与区留空待核实
-- 英文名普遍缺失：仅读了 gz.gov.cn 中文专题页与英文站首页，未读广州国际英文版对应景点篇（如 Top Eight Sights 英文稿），name_en 全部为 null
-- 白云山、越秀公园、中山纪念堂、南越王博物院等属A级名录，且越秀风华页有介绍，按要求未作为长尾候选纳入
-- 崂山风景区官网（qdlaoshan.cn）：旺季旅游接待通告、假期游览攻略等多个页面多次 web_fetch 失败（fetch failed），未取得正文；崂山开放时间、实名预约、日客流限量与索道/观光车运营信息均未记录。
-- 哈尔滨圣·索菲亚教堂：哈尔滨市人民政府网站相关介绍页返回 403 Forbidden，未能读取；开放时间与内部“哈尔滨市建筑艺术博物馆”参观信息未记录。
-- 哈尔滨中央大街：未找到可读的官方管委会页面（检索到的为2024年倡议书等旧闻且非游客服务信息），步行街管理规定与游客服务中心信息未记录。
-- 昆明西山龙门景区：昆明滇池国家级风景名胜区西山景区服务中心的微信文章触发“环境异常需验证”页面，未读取；开放时间与分时预约规则未记录，且未采用任何绕过验证的方式。
-- 石林风景区自有官网：natural.shilin.com.cn、cms.shilin.com.cn、shilinheritage.com 等站点以 https 读取失败（含“游览须知”中的分季开关园时间页），本次仅有昆明市政府门户转载的票务系统报道可用。
-- 张家界武陵源官方网站 www.hnzjj.com（署名张家界市武陵源区文化旅游和商务局）：https 读取失败，仅能使用第三方商业票务平台内容，官方门票与预约口径未核实。
-- 哈尔滨冰雪大世界第二十八届开园公告：官网新闻详情会重定向至 mp.weixin.qq.com 微信文章，无法直接读取；开园日期、每日运营时间与本届票务政策未记录（页面仅见筹备期新闻）。
-- 北京天坛：门票与线上预约细则（购票为交互按钮）未取得文本；颐和园“票价优惠减免规定”专页未读取，票价与优惠细则均未记录。
-- 中国国家博物馆：外籍观众使用护照预约与核验的具体规则页未找到可读页面，该信息缺口需由官方英文站或客服渠道补充。
-- 广州市商务局名单正文称认定“150个品牌”，但页面表格实际渲染至序号144（部分单位一条含多个品牌，如“枫澜、昭亮、罗家灯”“五羊、Y、广钢GISE”），页面未提供可下载的PDF/Word附件，无法逐项核对全部150个品牌。
-- 大众点评“必吃榜2026广州”官方榜单页未能直接读取，仅读到信息时报的报道（广州85家上榜、点名2家连续八年上榜门店），完整85家名单与地址未获取。
-- 携程美食林广州页面（gs.ctrip.com）可访问，但为跨省聚合页并含人均价格、评分等信息，未作为本批记录来源；广州专属美食林榜单未逐条采集。
-- 美团2026黑珍珠指南广州完整名单未读取，仅有媒体概述（广东40家、广州18家），故黑珍珠信息仅来自南方+荔湾合列页，且除玉堂春暖外未标明具体榜单等级。
-- 老字号名单只公布单位名称与品牌名称，无地址、所在区、菜系，相关条目字段留空待核实。
-- 名单中的宾馆/酒店类品牌（东方宾馆、广东迎宾馆、广州宾馆、爱群大酒店、新亚大酒店、新华大酒店、流花宾馆、华厦大酒店、白宫酒店、广东大酒店、南方大厦酒店）未作为餐厅收录，其馆内餐厅待单独核实。
-- 名单中与食品相关但无法从页面判断是否为堂食门店的品牌（大家乐、美心、广茂香、港三元、上水丰、白云制面、泮塘、宝生园、生茂泰、致美斋、鹰金钱/积士佳、五羊牌、风行、燕塘、华农、亚洲、廣氏、红棉、双喜、双桥牌、澳海豉油、温泉牌从化三花酒等）本次未收录，价格/评分类信息亦未采集。
-- 老字号中如点都德、南信、陶陶居等在同一批其他页面可见具体门店地址与必吃榜标签，但按“一条记录一个主来源”的规则，本次仅以名单页为来源、地址留空，门店级信息待后续单独核实。
-- 新快报《广州夜间消费地图2.0》（2021-03-09 A11版 PDF）无法解析（不支持 application/pdf），其中列举的建设六马路、文明路、惠福西路、西华路、宝华路、泮塘路、上下九美食广场等夜间美食集聚地表述未能核实。
-- 越秀区政府“北京路新装亮相开街”页面返回404；北京路文化旅游区官网未取得可读的街区介绍页，北京路步行街的门牌范围与餐饮明细仅有新华社稿。
-- 天河区本级关于猎德街区餐饮的官方介绍页未读到，仅有市级“首批都会级羊城夜市先行区”名单中的转述。
-- 荔湾区“十大美食旅游推荐商圈”“最受游客欢迎美食名店30家”“十大/二十大名店”的具体名单未在已读页面列出，无法据此补充店铺。
-- 凉茶（如黄振龙、王老吉等）、盆菜、以及广州本地煲仔饭代表店（仅同福路一家小食店提及煲仔饭）未找到可读的官方或媒体页面。
-- 米其林指南、大众点评必吃榜、高德扫街榜等商业榜单原始页面未读取，仅通过官方媒体转述间接使用，未纳入具体餐厅。
-- 广州酒家、点都德、炳胜品味、陶陶居、泮溪酒家、莲香楼等在已读页面中仅以榜单或活动名单形式出现，门店地址与所在区缺失。
-- 上下九步行街、北京路步行街的长度、门牌范围等基础信息在已读官方页面中不完整，需以街区官方页面核实。
-- 湖北省博物馆官网主站（hbww.org.cn）本次因 http 与 https 交叉重定向无法读取，仅取到其预约子站；馆址、交通、团队预约、是否免费等信息未核。
-- 成都武侯祠博物馆“票务细则”与常规开放时间页为前端渲染，web_fetch 只取到公告列表与登录页；仅取得2026年延时开放通告（已过期），常规开放时间与票价规则列为缺口。
-- 岳麓山·橘子洲旅游区未找到可读的官方独立网站（hnyls.com 连接失败），只有岳麓区政府2023年转载稿；2024年以后预约规则与开放时间变化未核。
-- 东湖风景区管委会门户（whdonghu.gov.cn）未见面向游客的预约/开放说明页，东湖官网域名（whdonghu.com）无法连接；仅用武汉市政府门户2023年报道，各片区当前预约要求未核。
-- 西安城墙仅取到景区网站简略页（页脚版权2016—2017年），各城门时间、票务预约政策、演出安排未核；官方微信小程序内容无法抓取。
-- 华清宫是否须提前实名预约、停止售票与停止入园的具体时点、淡旺季票价政策在攻略页未找到。
-- 金沙遗址博物馆闭馆期间是否有替代开放空间、线上展览或恢复开放预告，未在可读公告中确认。
-- 大足石刻景区2026年（尤其非节假日）常规开放时间与票务政策未找到可读的明文公告，仅有官网首页时段展示与2025年五一专项提示。
-- 南京博物院：官网 www.njmuseum.com 为前端渲染，web_fetch 仅返回站点标题；官方微信公众号《参观指南》与《秋假延时开放公告》正文触发人机验证，均未能读取官方原文，故该条只能采用江南时报社在搜狐号的转载稿作为候选，预约渠道与外籍证件要求仍缺。
-- 苏州市园林和绿化管理局“开放时间查询”页（ylj.suzhou.gov.cn）出现重定向循环，苏州市政府相关新闻页（www.suzhou.gov.cn）返回403，拙政园、虎丘的实名预约规则、提前预约天数与节假日延时安排未能从官方页面取得正文。
-- 上海豫园官网（www.yugarden.com.cn / www.上海豫园.com）持续返回504（云防御源站超时），“上海豫园”官方小程序的票务与预约规则未能读取；豫园日间开放时间在不同官方页面之间存在8:45-16:45 与 9:00-16:30 的差异。
-- 上海科技馆中文官网为前端渲染，只有英文站与政府新闻报道可读；当前（2026年11月）是否仍按试运行规则售票、是否需提前7天预约未能确认。
-- 无锡不在 cities 枚举内，未纳入 records：鼋头渚官方页（http://www.ytz.com.cn/ 与 /wxts.html）已读取到营业时间周一至周日8:30-17:00、江南兰苑实行现场预约制、瞬时最大承载量81000人、入园须知要求提前实名网络预约，另有2026-10-25 因铁人三项赛临时闭园至14:00的公告（已过期）；建议补充城市枚举后回收。
-- 各景区“外籍游客用护照能否线上预约/购票、如何在闸机或人工窗口核验”普遍未在已读官方页面写明，仅苏州博物馆古籍图书馆读者登记明确列护照；这一项需在人工复核阶段重点补齐。
-- 钟山风景区页面均为假期服务指南（春节、清明、五一、端午），平日开放时间、每日预约名额与放票时点未在已读页面明确。
-- 朱家角古镇街区（北大街、放生桥、九曲桥等）是否免费开放、是否需要预约，官方票务页只写“景点联票”，未说明街区与收费景点边界。
-- 崂山风景区（青岛）：官方网站 qdlaoshan.cn 及其子域多个页面（旺季接待通告、预约指南等）经多次 web_fetch 均返回 fetch failed（疑似 TLS/网络不可达），未能读取正文，故未记录；搜索摘要中可见旺季运营时间与"实名预约、提前7天"等表述，但按任务规则不采信搜索摘要。
-- 青岛栈桥：未找到可直接读取正文的官方页面（栈桥为开放式海滨栈桥，官方说明多散见于市级/区级平台或公众号），未记录；商业平台（携程、Trip.com 等）有条目但按要求不作为本条来源。
-- 昆明石林风景区：官方站点 shilingeopark.com、www.shilin.com.cn、cms.shilin.com.cn 的 https 抓取均失败（其中 shilingeopark.com 仅 http 可读），不满足 source_url 必须为 https 的要求，未记录正文；搜索摘要显示石林已启用实名制电子票务、外宾需到线下票务点办理，但未在已读页面核实，故写入 gaps 而非 records。
-- 北京三处场馆（天坛、颐和园、国家博物馆）已读官方页面均未说明外籍游客持护照的购票/预约渠道与证件要求，是面向外国游客场景的关键缺口，建议后续补充各馆英文版页面或官方预约平台的境外游客规则。
-- 第二十八届哈尔滨冰雪大世界的开园日期、本季运营起止期与票务政策目前均未公布（官方媒体明确写"暂未公布"），属当前信息空窗；官网仍挂第二十七届内容，需在开季公告发布后重新采集。
-- 哈尔滨中央大街与圣索菲亚教堂：中央大街仅有地方性法规可读，缺游客服务类页面（亮灯时间、游客中心、临时管控）；圣索菲亚仅有上一冰雪季重启报道，缺当前时段的官方开放信息。
-- 支付宝：global.alipay.com 等官方页面多次抓取返回空正文或重定向循环，未获得支付宝境外卡绑定的官方说明正文；仅检索到开发者社区与第三方内容，未采用。
-- 运营商：中国移动（10086.cn）、中国联通、中国电信官网未找到可读取的、面向外籍来华用户的全国性公开说明；中国移动省级“可为外籍来华人员办理电话卡营业网点公示/办卡指南”页正文为空；境外手机号漫游、eSIM、上网卡的官方办理渠道与资费均缺失。
-- 深圳宝安国际机场：官网“来往深圳市区”的中文与英文页正文均为空（前端渲染），未取得官方地面交通说明，本轮未产出深圳机场候选记录。
-- 北京大兴国际机场：官网 bdia.com.cn 及 wechat.bdia.com.cn 交通页正文为空，只能改用北京市政府门户报道；机场巴士、出租车、网约车的一手信息缺失。
-- 广州白云机场：官网 gbiac.net 首页与交通栏目正文为空，只能改用广东省、广州市政府门户报道；机场官网一手交通说明缺失。
-- 北京首都机场：英文站 en.bcia.com.cn 正文为空，未取得英文版交通说明（仅有中文页）。
-- 12306英文FAQ、首都机场、浦东/虹桥、天府等页面普遍未标注发布日期，仅有部分“最后更新”提示，规则时效性需人工复核。
-- 12308、12367页面发布于2021年或未标日期，后续服务范围与语种变化未在页内体现。
-- 上海地铁：官网“无障碍设施”页（service.shmetro.com/wzai/index.htm）为交互式线网图，须在图上点选车站才显示设施信息，正文无成文说明；“爱心预约”页（/aixinyue/index.htm）为表单，均未获取可概括内容，故未单列上海地铁条目，建议人工复核其站点无障碍电梯查询功能。
-- 北京地铁官网 bjsubway.com 的“无障碍设施”汇总页与车站明细页多次 web_fetch 失败（fetch failed），无法读取，北京地铁条目改以北京市政府门户转载报道为来源。
-- 故宫博物院：官网手语导览页（www.dpm.org.cn/gesture.html）与英文参观页（intl.dpm.org.cn/visit.html?l=en，服务地图含 Accessibility、Nursery、Stroller Rental 等图标）已读取，但以视频与地图为主，缺少成文的无障碍服务说明，未单列条目，建议人工补充。
-- 哈尔滨冰雪季：harbin.gov.cn 两篇 2025—2026 冰雪季新闻发布会稿（c01_1089041、c01_1090773）均返回 403，无法读取正文；官方冰雪季季节提示未纳入本次候选。
-- 中国政府网英文版（english.www.gov.cn）2026/2027 年节假日安排页面未单独读取核验，仅有中文版页面作为条目来源。
-- 广州地铁官网 gzmtr.com 页面返回字符集错误（unsupported charset），未能读取正文；已改用广州市政府门户同题报道替代。
-- 中国签证申请服务中心各驻外中心的具体页面（材料清单、预约流程）未逐国读取，仅记录官网总入口。
-- 英文名普遍缺失：市、区级官方介绍页几乎只给中文名，45 条中仅广东民间工艺博物馆（陈家祠）在官网看到英文名 Guangdong Folk Arts Museum，其余 name_en 均为 null。
-- 公园方向：广州市林业和园林局《广州市公园名录（截至2020年底）》以 PDF 附件发布（web_fetch 不支持直接解析 PDF，本批经下载附件并提取文本后录入），名录数据截至2020年底，公园地址、免费/收费状态可能已调整，需以最新公告核实；未检索到更新版名录。
-- 宗教活动场所方向：未找到市民族宗教事务局统一发布、含地址的宗教活动场所名录页（其“数据发布”页仅有各区数量统计与概述）；本批地址来自市政府门户“宗教场所”栏目及越秀区、海珠区政府介绍页，华林禅寺页面未标注所在区。能仁寺（白云山）因官方页面未载地址，本轮未收录。
-- 博物馆方向：广东美术馆（白鹅潭新馆）、广州十三行博物馆、广州海事博物馆、越秀区博物馆（五仙观）、荔湾区博物馆等未找到可完整读取的官方介绍页，本轮未收录；其中广东美术馆仅见场馆活动页提到新馆地址，信息不完整。
-- 价格与实时状态按要求未记录；各页面的闭馆日、预约制度仅作制度说明，均需以官方最新公告核实。
-- 孙中山大元帅府纪念馆、南汉二陵博物馆、辛亥革命纪念馆的官方页未提供门票或预约制度，对应字段为空。
-- 广州塔官方票务页（www.cantontower.com）反复返回412（机器人校验），未能读取预约、实名购票与护照换票细则；仅能引用海珠区政府2023年的简介页。
-- 广东省博物馆官网（www.gdmuseum.org.cn）多次读取失败（跨域重定向与连接错误），预约入口、护照核验与寄存/无障碍信息未能核对。
-- 深圳博物馆官网 www.shenzhenmuseum.com 返回403；移动端与CDN“参观须知”页为脚本渲染，web_fetch 无正文，故未能直接引用馆方原文。
-- 陈家祠馆方站点（www.gzcjc.com.cn 及政府表中登记的 gzchenjiaci.com）为动态加载或连接失败，未能读取馆方《开放时间及购票》全文。
-- 鼓浪屿文旅中心微信公众号“鼓浪屿旅游小贴士”等文章触发环境验证，未能读取；官方小程序“鼓浪屿Kulangsu”为线上渠道，未按规则实操验证。
-- 大鹏所城古城街区（非馆内展馆）的官方开放时间、门票与车辆预约通行页面未找到可读原文，仅有大鹏新区纪工委对“廉政教育基地”的信箱答复。
-- 白云山官网未在可读页面集中公布各门岗开放时间与临时调整机制；票务页为2020年发布，票价与优惠口径需复核。
-- 桂林象山景区“免费/实名预约”政策与护照预约入口未在官网文字中明确，仅有票务预订入口链接。
-- 厦门轮渡线上购票（官方小程序/公众号）对境外手机号与护照注册的可用性未验证；票价与班次按要求未记录。
-- 本组未记录任何票价、余票、实时班次与当日开闭状态；所有条目均为“待核实”候选，需人工查重与官方复核。
-- 北京地铁官网 bjsubway.com 多次抓取失败（fetch failed），未取得运营方原始无障碍页面；已用北京市政府英文网指南替代，仍缺逐站无障碍设施清单。
-- 广州地铁官网 gzmtr.com 抓取返回字符集错误（unsupported charset "iso-88509-1"），未能读取运营方原始页面；已用广州市政府门户网站转载报道替代。
-- 深圳地铁官网 szmc.net 未取得可读的无障碍服务页；仅找到深圳市政府网政务动态转载报道（https://www.sz.gov.cn/cn/xxgk/zfxxgj/zwdt/content/mpost_12716451.html，2026-04-02），因非运营方页面本次未单独建条，建议人工复核后补录。
-- 中国国家博物馆：仅见2025-07-25《观众预约须知》提到残障人士可走绿色通道（https://www.chnmuseum.cn/gbgg/202507/t20250725_272247.shtml），未找到独立的无障碍服务专页，未建条。
-- 2026年节假日安排通知正文已读取（https://www.gov.cn/zhengce/content/202511/content_7047090.htm，2025-11-04），因主题相同已合并在节假日条目的 notes 中，未单独建条。
-- 夏季高温官方提示（中国气象局《科普看台｜安全不“放假” 暑期出游避险指南》，https://www.cma.gov.cn/2011xwzx/2011xqxxw/2011xqxyw/202408/t20240806_6474100.html，2024-08-06）已读取正文，因条数限制未建条，可作为补录候选。
-- 上海博物馆中文“服务/参观”页与故宫博物院官网中文页未逐条核对，无障碍与亲子细则可能有更完整表述。
-- visaforchina.cn 仅读取首页导航，未进入具体受理中心页面；其运营主体与授权关系未独立核实。
-- 12308领保热线官方页已读取，但其服务对象为海外中国公民，已并入中国领事服务网条目 notes，未单独建条。
-- 市级主名录长表被页面输出截断：2026年6月版仅完整读到第22行、2025年10月版读到第38行、2024年9月版读到第47行；第48行以后（3A级主体部分，共约75家）未能整表读取，本次3A条目均靠分区/分年官方名录与公告补齐，未覆盖全部3A景区。
-- 越秀区其余3A级景区（名录第48行之后部分）未读取，需补：广州博物馆、广州近代史博物馆、广州市南粤先贤馆-五仙古观文化旅游区、中国（广州）超高清视频创新产业示范园旅游区等（名称来自检索线索，未在网页正文中读到，未作为记录）。
-- 荔湾区3A级景区名录页未找到并读取，已知应有沙面·西堤旅游区等条目，需通过荔湾区文广旅体局页面补齐。
-- 黄埔区3A级景区（如辛亥革命纪念馆、广东环亚美容化妆品博物馆、广东省凉茶博物馆、幸福里历史文化街区、融德里历史文化街区等）未读取到官方名录正文，未收录。
-- 花都区除洪秀全故居外的3A级景区（如资政大夫祠、蝴蝶谷、御盛国际马术庄园、红山村、塱头村、美华航空航天科普基地等）未读取官方名录正文，未收录。
-- 白云区3A级景区中，广东修学体验旅游区、广州市迪士普音响博物馆仅在白云区2023-06名录中读到，未纳入本批65条上限，且等级需按2026年名录复核。
-- 南沙区A级景区名录页（gzns.gov.cn 对应链接）读取返回404，未获得正文；南沙3A级景区（十八罗汉山、南沙都市农业实验园、广东利泰智农、大岗循环经济产业园等）未收录，需补读。
-- 增城区2024-11名录中其余3A条目因65条上限未纳入：大埔围美丽乡村景区、星罗纪大森林景区、1978电影小镇、广州市正果老街旅游区、广州市仙村循环经济园旅游区、广州市白江湖森林公园、瓜岭村——岭南古韵水乡文化旅游景区、广州钧明欢乐世界、蒙花布乡村旅游区。
-- 从化区其余3A级景区因上限未纳入：广州山谷国际旅游景区、从化国医园景区、广州市麦田生态园旅游区、广州越秀风行生态田园旅游区；其门址与等级需按市级名录复核。
-- 全部65条均缺官方英文名与官方网站URL，缺失项已逐条标注；官方英文名、官网、门票价格与预约渠道需人工补齐。
-- 广州市A级景区名录2024年12月版曾为115家（3A 76家），2026年6月版为114家（3A 75家），减少/调整了哪一家未核实，需比对两版全表。
-- 武汉东湖（听涛、磨山、落雁等）：未找到可直接读取正文的官方开放/预约/索道与园区收费页面，东湖风景区管委会官网首页无游客服务条目，故本组未记录。
-- 长沙岳麓山—橘子洲旅游区：预约唯一渠道为微信公众号，公众号页面触发“环境异常”验证无法读取；未找到可直读的官网或政府页，故未记录。
-- 都江堰景区：都江堰旅游门户网（djy517.com）列表页为动态加载、都江堰市政府站返回 HTTP 412，未读到含开放时间与预约规则的正文，故未记录。
-- 西安城墙：官方网站仅提供 http 访问（https 不可用），不满足 source_url 必须为 https 的要求，且页面主体信息陈旧、未列实名预约规则与票价，故未作为候选记录；如需收录，建议人工核验“西安城墙景区”微信小程序官方公告。
-- 成都武侯祠：存在 wuhouci.net.cn 与 cdwuhouci.cn 两个自称官方的域名，未确认唯一官方入口，需人工查重核实。
-- 湖北省博物馆：官网主域 www.hbww.org.cn 在当前环境出现 http/https 重定向循环，只能读取其官方镜像 hbsbwg.cjyun.org，镜像页未标更新日期。
-- 大足石刻：官网“预约购票”“游览须知”栏目为动态渲染，未读到票价与预约渠道正文，相关字段留待人工补全。
-- 广州本届无三星餐厅，星级最高为二星（3家）：御宝轩、江、泰安门。
-- 米其林指南列表页（guide.michelin.com）在本环境读取失败（HTTP 202 空内容或连接失败），无法逐条核对官方线上餐厅页；等级名单以米其林中国官网发布稿（2026-08-18）和新浪转载榜单（2026-08-20）为准。
-- 45家米其林指南入选餐厅未完整收集：本次仅收录3家（樾宴、Chaleur、德点）；米其林中国发布稿只点名8家入选餐厅（川法小院、德点、凤岄轩、樾宴、海塘晓味、鲜厨令、玫瑰园餐厅、Chaleur），完整45家名单未能在官方页面读到（微信转载页遇验证无法读取）。
-- 必比登52家中34家仅有新浪转载榜单的店名与部分分店路名，来源未给菜系、地址、区，相应字段留空；另有7家（抱德、吴记鹅前鸭后、梅麓小厨、茹意传统竹升面、台山老表咸汤圆、吴川好味来、愉园饭店）来自官方发布稿，仅知菜系/招牌而无地址。
-- 星级餐厅的区与完整地址多数缺失：仅泰安门、兰亭永、利苑、信记、斯蒂勒（越秀区发布）与宏图府、玉堂春暖（荔湾区发布）共7家取得地址；惠食佳、利苑另有区名。其余13家星级餐厅地址需另行核实。
-- 英文名仅对20家星级餐厅与Chaleur填写，依据Gourmet Report转载的米其林英文榜单；必比登餐厅的英文名未采用（该英文榜为罗马化译名，且家源素食被误译为Jiayuan Sushi），统一留空待核实。
-- 各餐厅官网/官方订座页未读取，official_url 全部留空；订座信息仅兰亭永有来源页面标注的「全预约制」。
-- 全部75条为待核实候选：未核验实时营业状态、价格与评分，按要求不记录这些内容；部分转述来源为地方发布/媒体转载，需二次核实。
-- 广东省博物馆官网 www.gdmuseum.com 本次 web_fetch 连续失败（fetch failed），只能以广州市政府专题页替代，场馆官方页（地址、预约规则）尚未核实
-- 广州大剧院场馆地址与介绍页未读到：官网首页与票务子页（3w.gzdjy.org/service.html）仅返回购票须知/空内容，未见地址与“关于我们”信息
-- 广州海事博物馆：未找到可访问的官方页面（推测域名不可达），未收集
-- 南汉二陵博物馆：未找到可访问的官方页面，未收集
-- 孙中山大元帅府纪念馆：A级名录已含（3A），未读取其页面，未收集
-- 黄埔古港：A级名录已含“广州市黄埔古港景区”3A，未读取页面，未收集；八景“黄埔云帆”页本次未抓取
-- 三元宫：越秀区政府宗教文化栏目有独立条目页（post_8665063），本次因预算未抓取
-- 华林寺、仁威庙：未找到本次可读的官方/政府页面，未收集
-- 广州白云湖：A级名录已含“广州白云湖景区”3A，未读取页面，未收集
-- 海珠湖（与4A海珠湿地公园范围不同）、小洲村、TIT创意园、天河公园：未找到可读的官方页面，未收集
-- 天字码头/大沙头珠江游码头：页面仅泛述珠江夜游，未见码头官方页；码头信息未核实
-- 正佳自然科学博物馆：仅确认正佳广场4A范围，未读到该馆官方页，未收集
-- 广州地铁博物馆、广州铁路博物馆、广州市城市规划展览中心：均未读取页面（前两者A级3A、规划展览中心4A），未收集
-- 广州艺术博物院（广州美术馆）、广州市文化馆、北京路、永庆坊、沙面·西堤、太古仓码头等均已在A级名录内，本轮仅对其中部分做了tags标注，未重复展开
-- 多条候选（花城广场、海心沙、北京路、上下九、珠江夜游）所读页面未标所在区/门牌地址，地址与区留空待核实
-- 英文名普遍缺失：仅读了 gz.gov.cn 中文专题页与英文站首页，未读广州国际英文版对应景点篇（如 Top Eight Sights 英文稿），name_en 全部为 null
-- 白云山、越秀公园、中山纪念堂、南越王博物院等属A级名录，且越秀风华页有介绍，按要求未作为长尾候选纳入
-- 崂山风景区官网（qdlaoshan.cn）：旺季旅游接待通告、假期游览攻略等多个页面多次 web_fetch 失败（fetch failed），未取得正文；崂山开放时间、实名预约、日客流限量与索道/观光车运营信息均未记录。
-- 哈尔滨圣·索菲亚教堂：哈尔滨市人民政府网站相关介绍页返回 403 Forbidden，未能读取；开放时间与内部“哈尔滨市建筑艺术博物馆”参观信息未记录。
-- 哈尔滨中央大街：未找到可读的官方管委会页面（检索到的为2024年倡议书等旧闻且非游客服务信息），步行街管理规定与游客服务中心信息未记录。
-- 昆明西山龙门景区：昆明滇池国家级风景名胜区西山景区服务中心的微信文章触发“环境异常需验证”页面，未读取；开放时间与分时预约规则未记录，且未采用任何绕过验证的方式。
-- 石林风景区自有官网：natural.shilin.com.cn、cms.shilin.com.cn、shilinheritage.com 等站点以 https 读取失败（含“游览须知”中的分季开关园时间页），本次仅有昆明市政府门户转载的票务系统报道可用。
-- 张家界武陵源官方网站 www.hnzjj.com（署名张家界市武陵源区文化旅游和商务局）：https 读取失败，仅能使用第三方商业票务平台内容，官方门票与预约口径未核实。
-- 哈尔滨冰雪大世界第二十八届开园公告：官网新闻详情会重定向至 mp.weixin.qq.com 微信文章，无法直接读取；开园日期、每日运营时间与本届票务政策未记录（页面仅见筹备期新闻）。
-- 北京天坛：门票与线上预约细则（购票为交互按钮）未取得文本；颐和园“票价优惠减免规定”专页未读取，票价与优惠细则均未记录。
-- 中国国家博物馆：外籍观众使用护照预约与核验的具体规则页未找到可读页面，该信息缺口需由官方英文站或客服渠道补充。
-- 广州市商务局名单正文称认定“150个品牌”，但页面表格实际渲染至序号144（部分单位一条含多个品牌，如“枫澜、昭亮、罗家灯”“五羊、Y、广钢GISE”），页面未提供可下载的PDF/Word附件，无法逐项核对全部150个品牌。
-- 大众点评“必吃榜2026广州”官方榜单页未能直接读取，仅读到信息时报的报道（广州85家上榜、点名2家连续八年上榜门店），完整85家名单与地址未获取。
-- 携程美食林广州页面（gs.ctrip.com）可访问，但为跨省聚合页并含人均价格、评分等信息，未作为本批记录来源；广州专属美食林榜单未逐条采集。
-- 美团2026黑珍珠指南广州完整名单未读取，仅有媒体概述（广东40家、广州18家），故黑珍珠信息仅来自南方+荔湾合列页，且除玉堂春暖外未标明具体榜单等级。
-- 老字号名单只公布单位名称与品牌名称，无地址、所在区、菜系，相关条目字段留空待核实。
-- 名单中的宾馆/酒店类品牌（东方宾馆、广东迎宾馆、广州宾馆、爱群大酒店、新亚大酒店、新华大酒店、流花宾馆、华厦大酒店、白宫酒店、广东大酒店、南方大厦酒店）未作为餐厅收录，其馆内餐厅待单独核实。
-- 名单中与食品相关但无法从页面判断是否为堂食门店的品牌（大家乐、美心、广茂香、港三元、上水丰、白云制面、泮塘、宝生园、生茂泰、致美斋、鹰金钱/积士佳、五羊牌、风行、燕塘、华农、亚洲、廣氏、红棉、双喜、双桥牌、澳海豉油、温泉牌从化三花酒等）本次未收录，价格/评分类信息亦未采集。
-- 老字号中如点都德、南信、陶陶居等在同一批其他页面可见具体门店地址与必吃榜标签，但按“一条记录一个主来源”的规则，本次仅以名单页为来源、地址留空，门店级信息待后续单独核实。
-- 新快报《广州夜间消费地图2.0》（2021-03-09 A11版 PDF）无法解析（不支持 application/pdf），其中列举的建设六马路、文明路、惠福西路、西华路、宝华路、泮塘路、上下九美食广场等夜间美食集聚地表述未能核实。
-- 越秀区政府“北京路新装亮相开街”页面返回404；北京路文化旅游区官网未取得可读的街区介绍页，北京路步行街的门牌范围与餐饮明细仅有新华社稿。
-- 天河区本级关于猎德街区餐饮的官方介绍页未读到，仅有市级“首批都会级羊城夜市先行区”名单中的转述。
-- 荔湾区“十大美食旅游推荐商圈”“最受游客欢迎美食名店30家”“十大/二十大名店”的具体名单未在已读页面列出，无法据此补充店铺。
-- 凉茶（如黄振龙、王老吉等）、盆菜、以及广州本地煲仔饭代表店（仅同福路一家小食店提及煲仔饭）未找到可读的官方或媒体页面。
-- 米其林指南、大众点评必吃榜、高德扫街榜等商业榜单原始页面未读取，仅通过官方媒体转述间接使用，未纳入具体餐厅。
-- 广州酒家、点都德、炳胜品味、陶陶居、泮溪酒家、莲香楼等在已读页面中仅以榜单或活动名单形式出现，门店地址与所在区缺失。
-- 上下九步行街、北京路步行街的长度、门牌范围等基础信息在已读官方页面中不完整，需以街区官方页面核实。
-- 湖北省博物馆官网主站（hbww.org.cn）本次因 http 与 https 交叉重定向无法读取，仅取到其预约子站；馆址、交通、团队预约、是否免费等信息未核。
-- 成都武侯祠博物馆“票务细则”与常规开放时间页为前端渲染，web_fetch 只取到公告列表与登录页；仅取得2026年延时开放通告（已过期），常规开放时间与票价规则列为缺口。
-- 岳麓山·橘子洲旅游区未找到可读的官方独立网站（hnyls.com 连接失败），只有岳麓区政府2023年转载稿；2024年以后预约规则与开放时间变化未核。
-- 东湖风景区管委会门户（whdonghu.gov.cn）未见面向游客的预约/开放说明页，东湖官网域名（whdonghu.com）无法连接；仅用武汉市政府门户2023年报道，各片区当前预约要求未核。
-- 西安城墙仅取到景区网站简略页（页脚版权2016—2017年），各城门时间、票务预约政策、演出安排未核；官方微信小程序内容无法抓取。
-- 华清宫是否须提前实名预约、停止售票与停止入园的具体时点、淡旺季票价政策在攻略页未找到。
-- 金沙遗址博物馆闭馆期间是否有替代开放空间、线上展览或恢复开放预告，未在可读公告中确认。
-- 大足石刻景区2026年（尤其非节假日）常规开放时间与票务政策未找到可读的明文公告，仅有官网首页时段展示与2025年五一专项提示。
 - 市文旅局《广州市A级景区名录（2026年6月更新）》正文经多次抓取仅返回前20–40行（页面截断），3A段（约第40–114条）无法完整读取，2026年最新75家3A名单未能逐条核对。
 - 花都、从化、黄埔、荔湾、越秀、天河等区未检索到可直接读取的区级A级景区名录正文；天河区名录仅为xls附件（web_fetch不支持application/vnd.ms-excel），黄埔、花都、从化区级常用资料目录页均为404。上述区条目的等级与地址取自商业平台转载的市文旅局2024年12月版名录，需以官方2026年版复核。
 - 增城区2024年11月区级名录仅列所在镇街、未给详细地址，10条记录address为空；番禺区2026年8月政府信息仅列3A景区名称，3条记录缺地址与开放信息。
@@ -1400,189 +1016,6 @@
 - 全部已读页面均未提供英文名称，60条记录name_en统一为null；也均未读到景区官网入口，official_url为null。
 - 未读到任何景区的购票、预约或实时开放状态页面；booking_note仅转录页面所列开放时间与联系电话，按要求未记录票价与价格信息。
 - 采集日期2026-11-18；所有条目均标记为待核实，未做二次官方复核。
-- 南京博物院：官网 www.njmuseum.com 为前端渲染，web_fetch 仅返回站点标题；官方微信公众号《参观指南》与《秋假延时开放公告》正文触发人机验证，均未能读取官方原文，故该条只能采用江南时报社在搜狐号的转载稿作为候选，预约渠道与外籍证件要求仍缺。
-- 苏州市园林和绿化管理局“开放时间查询”页（ylj.suzhou.gov.cn）出现重定向循环，苏州市政府相关新闻页（www.suzhou.gov.cn）返回403，拙政园、虎丘的实名预约规则、提前预约天数与节假日延时安排未能从官方页面取得正文。
-- 上海豫园官网（www.yugarden.com.cn / www.上海豫园.com）持续返回504（云防御源站超时），“上海豫园”官方小程序的票务与预约规则未能读取；豫园日间开放时间在不同官方页面之间存在8:45-16:45 与 9:00-16:30 的差异。
-- 上海科技馆中文官网为前端渲染，只有英文站与政府新闻报道可读；当前（2026年11月）是否仍按试运行规则售票、是否需提前7天预约未能确认。
-- 无锡不在 cities 枚举内，未纳入 records：鼋头渚官方页（http://www.ytz.com.cn/ 与 /wxts.html）已读取到营业时间周一至周日8:30-17:00、江南兰苑实行现场预约制、瞬时最大承载量81000人、入园须知要求提前实名网络预约，另有2026-10-25 因铁人三项赛临时闭园至14:00的公告（已过期）；建议补充城市枚举后回收。
-- 各景区“外籍游客用护照能否线上预约/购票、如何在闸机或人工窗口核验”普遍未在已读官方页面写明，仅苏州博物馆古籍图书馆读者登记明确列护照；这一项需在人工复核阶段重点补齐。
-- 钟山风景区页面均为假期服务指南（春节、清明、五一、端午），平日开放时间、每日预约名额与放票时点未在已读页面明确。
-- 朱家角古镇街区（北大街、放生桥、九曲桥等）是否免费开放、是否需要预约，官方票务页只写“景点联票”，未说明街区与收费景点边界。
-- 崂山风景区（青岛）：官方网站 qdlaoshan.cn 及其子域多个页面（旺季接待通告、预约指南等）经多次 web_fetch 均返回 fetch failed（疑似 TLS/网络不可达），未能读取正文，故未记录；搜索摘要中可见旺季运营时间与"实名预约、提前7天"等表述，但按任务规则不采信搜索摘要。
-- 青岛栈桥：未找到可直接读取正文的官方页面（栈桥为开放式海滨栈桥，官方说明多散见于市级/区级平台或公众号），未记录；商业平台（携程、Trip.com 等）有条目但按要求不作为本条来源。
-- 昆明石林风景区：官方站点 shilingeopark.com、www.shilin.com.cn、cms.shilin.com.cn 的 https 抓取均失败（其中 shilingeopark.com 仅 http 可读），不满足 source_url 必须为 https 的要求，未记录正文；搜索摘要显示石林已启用实名制电子票务、外宾需到线下票务点办理，但未在已读页面核实，故写入 gaps 而非 records。
-- 北京三处场馆（天坛、颐和园、国家博物馆）已读官方页面均未说明外籍游客持护照的购票/预约渠道与证件要求，是面向外国游客场景的关键缺口，建议后续补充各馆英文版页面或官方预约平台的境外游客规则。
-- 第二十八届哈尔滨冰雪大世界的开园日期、本季运营起止期与票务政策目前均未公布（官方媒体明确写"暂未公布"），属当前信息空窗；官网仍挂第二十七届内容，需在开季公告发布后重新采集。
-- 哈尔滨中央大街与圣索菲亚教堂：中央大街仅有地方性法规可读，缺游客服务类页面（亮灯时间、游客中心、临时管控）；圣索菲亚仅有上一冰雪季重启报道，缺当前时段的官方开放信息。
-- 支付宝：global.alipay.com 等官方页面多次抓取返回空正文或重定向循环，未获得支付宝境外卡绑定的官方说明正文；仅检索到开发者社区与第三方内容，未采用。
-- 运营商：中国移动（10086.cn）、中国联通、中国电信官网未找到可读取的、面向外籍来华用户的全国性公开说明；中国移动省级“可为外籍来华人员办理电话卡营业网点公示/办卡指南”页正文为空；境外手机号漫游、eSIM、上网卡的官方办理渠道与资费均缺失。
-- 深圳宝安国际机场：官网“来往深圳市区”的中文与英文页正文均为空（前端渲染），未取得官方地面交通说明，本轮未产出深圳机场候选记录。
-- 北京大兴国际机场：官网 bdia.com.cn 及 wechat.bdia.com.cn 交通页正文为空，只能改用北京市政府门户报道；机场巴士、出租车、网约车的一手信息缺失。
-- 广州白云机场：官网 gbiac.net 首页与交通栏目正文为空，只能改用广东省、广州市政府门户报道；机场官网一手交通说明缺失。
-- 北京首都机场：英文站 en.bcia.com.cn 正文为空，未取得英文版交通说明（仅有中文页）。
-- 12306英文FAQ、首都机场、浦东/虹桥、天府等页面普遍未标注发布日期，仅有部分“最后更新”提示，规则时效性需人工复核。
-- 12308、12367页面发布于2021年或未标日期，后续服务范围与语种变化未在页内体现。
-- 上海地铁：官网“无障碍设施”页（service.shmetro.com/wzai/index.htm）为交互式线网图，须在图上点选车站才显示设施信息，正文无成文说明；“爱心预约”页（/aixinyue/index.htm）为表单，均未获取可概括内容，故未单列上海地铁条目，建议人工复核其站点无障碍电梯查询功能。
-- 北京地铁官网 bjsubway.com 的“无障碍设施”汇总页与车站明细页多次 web_fetch 失败（fetch failed），无法读取，北京地铁条目改以北京市政府门户转载报道为来源。
-- 故宫博物院：官网手语导览页（www.dpm.org.cn/gesture.html）与英文参观页（intl.dpm.org.cn/visit.html?l=en，服务地图含 Accessibility、Nursery、Stroller Rental 等图标）已读取，但以视频与地图为主，缺少成文的无障碍服务说明，未单列条目，建议人工补充。
-- 哈尔滨冰雪季：harbin.gov.cn 两篇 2025—2026 冰雪季新闻发布会稿（c01_1089041、c01_1090773）均返回 403，无法读取正文；官方冰雪季季节提示未纳入本次候选。
-- 中国政府网英文版（english.www.gov.cn）2026/2027 年节假日安排页面未单独读取核验，仅有中文版页面作为条目来源。
-- 广州地铁官网 gzmtr.com 页面返回字符集错误（unsupported charset），未能读取正文；已改用广州市政府门户同题报道替代。
-- 中国签证申请服务中心各驻外中心的具体页面（材料清单、预约流程）未逐国读取，仅记录官网总入口。
-- 英文名普遍缺失：市、区级官方介绍页几乎只给中文名，45 条中仅广东民间工艺博物馆（陈家祠）在官网看到英文名 Guangdong Folk Arts Museum，其余 name_en 均为 null。
-- 公园方向：广州市林业和园林局《广州市公园名录（截至2020年底）》以 PDF 附件发布（web_fetch 不支持直接解析 PDF，本批经下载附件并提取文本后录入），名录数据截至2020年底，公园地址、免费/收费状态可能已调整，需以最新公告核实；未检索到更新版名录。
-- 宗教活动场所方向：未找到市民族宗教事务局统一发布、含地址的宗教活动场所名录页（其“数据发布”页仅有各区数量统计与概述）；本批地址来自市政府门户“宗教场所”栏目及越秀区、海珠区政府介绍页，华林禅寺页面未标注所在区。能仁寺（白云山）因官方页面未载地址，本轮未收录。
-- 博物馆方向：广东美术馆（白鹅潭新馆）、广州十三行博物馆、广州海事博物馆、越秀区博物馆（五仙观）、荔湾区博物馆等未找到可完整读取的官方介绍页，本轮未收录；其中广东美术馆仅见场馆活动页提到新馆地址，信息不完整。
-- 价格与实时状态按要求未记录；各页面的闭馆日、预约制度仅作制度说明，均需以官方最新公告核实。
-- 孙中山大元帅府纪念馆、南汉二陵博物馆、辛亥革命纪念馆的官方页未提供门票或预约制度，对应字段为空。
-- 广州塔官方票务页（www.cantontower.com）反复返回412（机器人校验），未能读取预约、实名购票与护照换票细则；仅能引用海珠区政府2023年的简介页。
-- 广东省博物馆官网（www.gdmuseum.org.cn）多次读取失败（跨域重定向与连接错误），预约入口、护照核验与寄存/无障碍信息未能核对。
-- 深圳博物馆官网 www.shenzhenmuseum.com 返回403；移动端与CDN“参观须知”页为脚本渲染，web_fetch 无正文，故未能直接引用馆方原文。
-- 陈家祠馆方站点（www.gzcjc.com.cn 及政府表中登记的 gzchenjiaci.com）为动态加载或连接失败，未能读取馆方《开放时间及购票》全文。
-- 鼓浪屿文旅中心微信公众号“鼓浪屿旅游小贴士”等文章触发环境验证，未能读取；官方小程序“鼓浪屿Kulangsu”为线上渠道，未按规则实操验证。
-- 大鹏所城古城街区（非馆内展馆）的官方开放时间、门票与车辆预约通行页面未找到可读原文，仅有大鹏新区纪工委对“廉政教育基地”的信箱答复。
-- 白云山官网未在可读页面集中公布各门岗开放时间与临时调整机制；票务页为2020年发布，票价与优惠口径需复核。
-- 桂林象山景区“免费/实名预约”政策与护照预约入口未在官网文字中明确，仅有票务预订入口链接。
-- 厦门轮渡线上购票（官方小程序/公众号）对境外手机号与护照注册的可用性未验证；票价与班次按要求未记录。
-- 本组未记录任何票价、余票、实时班次与当日开闭状态；所有条目均为“待核实”候选，需人工查重与官方复核。
-- 北京地铁官网 bjsubway.com 多次抓取失败（fetch failed），未取得运营方原始无障碍页面；已用北京市政府英文网指南替代，仍缺逐站无障碍设施清单。
-- 广州地铁官网 gzmtr.com 抓取返回字符集错误（unsupported charset "iso-88509-1"），未能读取运营方原始页面；已用广州市政府门户网站转载报道替代。
-- 深圳地铁官网 szmc.net 未取得可读的无障碍服务页；仅找到深圳市政府网政务动态转载报道（https://www.sz.gov.cn/cn/xxgk/zfxxgj/zwdt/content/mpost_12716451.html，2026-04-02），因非运营方页面本次未单独建条，建议人工复核后补录。
-- 中国国家博物馆：仅见2025-07-25《观众预约须知》提到残障人士可走绿色通道（https://www.chnmuseum.cn/gbgg/202507/t20250725_272247.shtml），未找到独立的无障碍服务专页，未建条。
-- 2026年节假日安排通知正文已读取（https://www.gov.cn/zhengce/content/202511/content_7047090.htm，2025-11-04），因主题相同已合并在节假日条目的 notes 中，未单独建条。
-- 夏季高温官方提示（中国气象局《科普看台｜安全不“放假” 暑期出游避险指南》，https://www.cma.gov.cn/2011xwzx/2011xqxxw/2011xqxyw/202408/t20240806_6474100.html，2024-08-06）已读取正文，因条数限制未建条，可作为补录候选。
-- 上海博物馆中文“服务/参观”页与故宫博物院官网中文页未逐条核对，无障碍与亲子细则可能有更完整表述。
-- visaforchina.cn 仅读取首页导航，未进入具体受理中心页面；其运营主体与授权关系未独立核实。
-- 12308领保热线官方页已读取，但其服务对象为海外中国公民，已并入中国领事服务网条目 notes，未单独建条。
-- 市级主名录长表被页面输出截断：2026年6月版仅完整读到第22行、2025年10月版读到第38行、2024年9月版读到第47行；第48行以后（3A级主体部分，共约75家）未能整表读取，本次3A条目均靠分区/分年官方名录与公告补齐，未覆盖全部3A景区。
-- 越秀区其余3A级景区（名录第48行之后部分）未读取，需补：广州博物馆、广州近代史博物馆、广州市南粤先贤馆-五仙古观文化旅游区、中国（广州）超高清视频创新产业示范园旅游区等（名称来自检索线索，未在网页正文中读到，未作为记录）。
-- 荔湾区3A级景区名录页未找到并读取，已知应有沙面·西堤旅游区等条目，需通过荔湾区文广旅体局页面补齐。
-- 黄埔区3A级景区（如辛亥革命纪念馆、广东环亚美容化妆品博物馆、广东省凉茶博物馆、幸福里历史文化街区、融德里历史文化街区等）未读取到官方名录正文，未收录。
-- 花都区除洪秀全故居外的3A级景区（如资政大夫祠、蝴蝶谷、御盛国际马术庄园、红山村、塱头村、美华航空航天科普基地等）未读取官方名录正文，未收录。
-- 白云区3A级景区中，广东修学体验旅游区、广州市迪士普音响博物馆仅在白云区2023-06名录中读到，未纳入本批65条上限，且等级需按2026年名录复核。
-- 南沙区A级景区名录页（gzns.gov.cn 对应链接）读取返回404，未获得正文；南沙3A级景区（十八罗汉山、南沙都市农业实验园、广东利泰智农、大岗循环经济产业园等）未收录，需补读。
-- 增城区2024-11名录中其余3A条目因65条上限未纳入：大埔围美丽乡村景区、星罗纪大森林景区、1978电影小镇、广州市正果老街旅游区、广州市仙村循环经济园旅游区、广州市白江湖森林公园、瓜岭村——岭南古韵水乡文化旅游景区、广州钧明欢乐世界、蒙花布乡村旅游区。
-- 从化区其余3A级景区因上限未纳入：广州山谷国际旅游景区、从化国医园景区、广州市麦田生态园旅游区、广州越秀风行生态田园旅游区；其门址与等级需按市级名录复核。
-- 全部65条均缺官方英文名与官方网站URL，缺失项已逐条标注；官方英文名、官网、门票价格与预约渠道需人工补齐。
-- 广州市A级景区名录2024年12月版曾为115家（3A 76家），2026年6月版为114家（3A 75家），减少/调整了哪一家未核实，需比对两版全表。
-- 武汉东湖（听涛、磨山、落雁等）：未找到可直接读取正文的官方开放/预约/索道与园区收费页面，东湖风景区管委会官网首页无游客服务条目，故本组未记录。
-- 长沙岳麓山—橘子洲旅游区：预约唯一渠道为微信公众号，公众号页面触发“环境异常”验证无法读取；未找到可直读的官网或政府页，故未记录。
-- 都江堰景区：都江堰旅游门户网（djy517.com）列表页为动态加载、都江堰市政府站返回 HTTP 412，未读到含开放时间与预约规则的正文，故未记录。
-- 西安城墙：官方网站仅提供 http 访问（https 不可用），不满足 source_url 必须为 https 的要求，且页面主体信息陈旧、未列实名预约规则与票价，故未作为候选记录；如需收录，建议人工核验“西安城墙景区”微信小程序官方公告。
-- 成都武侯祠：存在 wuhouci.net.cn 与 cdwuhouci.cn 两个自称官方的域名，未确认唯一官方入口，需人工查重核实。
-- 湖北省博物馆：官网主域 www.hbww.org.cn 在当前环境出现 http/https 重定向循环，只能读取其官方镜像 hbsbwg.cjyun.org，镜像页未标更新日期。
-- 大足石刻：官网“预约购票”“游览须知”栏目为动态渲染，未读到票价与预约渠道正文，相关字段留待人工补全。
-- 广州本届无三星餐厅，星级最高为二星（3家）：御宝轩、江、泰安门。
-- 米其林指南列表页（guide.michelin.com）在本环境读取失败（HTTP 202 空内容或连接失败），无法逐条核对官方线上餐厅页；等级名单以米其林中国官网发布稿（2026-08-18）和新浪转载榜单（2026-08-20）为准。
-- 45家米其林指南入选餐厅未完整收集：本次仅收录3家（樾宴、Chaleur、德点）；米其林中国发布稿只点名8家入选餐厅（川法小院、德点、凤岄轩、樾宴、海塘晓味、鲜厨令、玫瑰园餐厅、Chaleur），完整45家名单未能在官方页面读到（微信转载页遇验证无法读取）。
-- 必比登52家中34家仅有新浪转载榜单的店名与部分分店路名，来源未给菜系、地址、区，相应字段留空；另有7家（抱德、吴记鹅前鸭后、梅麓小厨、茹意传统竹升面、台山老表咸汤圆、吴川好味来、愉园饭店）来自官方发布稿，仅知菜系/招牌而无地址。
-- 星级餐厅的区与完整地址多数缺失：仅泰安门、兰亭永、利苑、信记、斯蒂勒（越秀区发布）与宏图府、玉堂春暖（荔湾区发布）共7家取得地址；惠食佳、利苑另有区名。其余13家星级餐厅地址需另行核实。
-- 英文名仅对20家星级餐厅与Chaleur填写，依据Gourmet Report转载的米其林英文榜单；必比登餐厅的英文名未采用（该英文榜为罗马化译名，且家源素食被误译为Jiayuan Sushi），统一留空待核实。
-- 各餐厅官网/官方订座页未读取，official_url 全部留空；订座信息仅兰亭永有来源页面标注的「全预约制」。
-- 全部75条为待核实候选：未核验实时营业状态、价格与评分，按要求不记录这些内容；部分转述来源为地方发布/媒体转载，需二次核实。
-- 广东省博物馆官网 www.gdmuseum.com 本次 web_fetch 连续失败（fetch failed），只能以广州市政府专题页替代，场馆官方页（地址、预约规则）尚未核实
-- 广州大剧院场馆地址与介绍页未读到：官网首页与票务子页（3w.gzdjy.org/service.html）仅返回购票须知/空内容，未见地址与“关于我们”信息
-- 广州海事博物馆：未找到可访问的官方页面（推测域名不可达），未收集
-- 南汉二陵博物馆：未找到可访问的官方页面，未收集
-- 孙中山大元帅府纪念馆：A级名录已含（3A），未读取其页面，未收集
-- 黄埔古港：A级名录已含“广州市黄埔古港景区”3A，未读取页面，未收集；八景“黄埔云帆”页本次未抓取
-- 三元宫：越秀区政府宗教文化栏目有独立条目页（post_8665063），本次因预算未抓取
-- 华林寺、仁威庙：未找到本次可读的官方/政府页面，未收集
-- 广州白云湖：A级名录已含“广州白云湖景区”3A，未读取页面，未收集
-- 海珠湖（与4A海珠湿地公园范围不同）、小洲村、TIT创意园、天河公园：未找到可读的官方页面，未收集
-- 天字码头/大沙头珠江游码头：页面仅泛述珠江夜游，未见码头官方页；码头信息未核实
-- 正佳自然科学博物馆：仅确认正佳广场4A范围，未读到该馆官方页，未收集
-- 广州地铁博物馆、广州铁路博物馆、广州市城市规划展览中心：均未读取页面（前两者A级3A、规划展览中心4A），未收集
-- 广州艺术博物院（广州美术馆）、广州市文化馆、北京路、永庆坊、沙面·西堤、太古仓码头等均已在A级名录内，本轮仅对其中部分做了tags标注，未重复展开
-- 多条候选（花城广场、海心沙、北京路、上下九、珠江夜游）所读页面未标所在区/门牌地址，地址与区留空待核实
-- 英文名普遍缺失：仅读了 gz.gov.cn 中文专题页与英文站首页，未读广州国际英文版对应景点篇（如 Top Eight Sights 英文稿），name_en 全部为 null
-- 白云山、越秀公园、中山纪念堂、南越王博物院等属A级名录，且越秀风华页有介绍，按要求未作为长尾候选纳入
-- 崂山风景区官网（qdlaoshan.cn）：旺季旅游接待通告、假期游览攻略等多个页面多次 web_fetch 失败（fetch failed），未取得正文；崂山开放时间、实名预约、日客流限量与索道/观光车运营信息均未记录。
-- 哈尔滨圣·索菲亚教堂：哈尔滨市人民政府网站相关介绍页返回 403 Forbidden，未能读取；开放时间与内部“哈尔滨市建筑艺术博物馆”参观信息未记录。
-- 哈尔滨中央大街：未找到可读的官方管委会页面（检索到的为2024年倡议书等旧闻且非游客服务信息），步行街管理规定与游客服务中心信息未记录。
-- 昆明西山龙门景区：昆明滇池国家级风景名胜区西山景区服务中心的微信文章触发“环境异常需验证”页面，未读取；开放时间与分时预约规则未记录，且未采用任何绕过验证的方式。
-- 石林风景区自有官网：natural.shilin.com.cn、cms.shilin.com.cn、shilinheritage.com 等站点以 https 读取失败（含“游览须知”中的分季开关园时间页），本次仅有昆明市政府门户转载的票务系统报道可用。
-- 张家界武陵源官方网站 www.hnzjj.com（署名张家界市武陵源区文化旅游和商务局）：https 读取失败，仅能使用第三方商业票务平台内容，官方门票与预约口径未核实。
-- 哈尔滨冰雪大世界第二十八届开园公告：官网新闻详情会重定向至 mp.weixin.qq.com 微信文章，无法直接读取；开园日期、每日运营时间与本届票务政策未记录（页面仅见筹备期新闻）。
-- 北京天坛：门票与线上预约细则（购票为交互按钮）未取得文本；颐和园“票价优惠减免规定”专页未读取，票价与优惠细则均未记录。
-- 中国国家博物馆：外籍观众使用护照预约与核验的具体规则页未找到可读页面，该信息缺口需由官方英文站或客服渠道补充。
-- 广州市商务局名单正文称认定“150个品牌”，但页面表格实际渲染至序号144（部分单位一条含多个品牌，如“枫澜、昭亮、罗家灯”“五羊、Y、广钢GISE”），页面未提供可下载的PDF/Word附件，无法逐项核对全部150个品牌。
-- 大众点评“必吃榜2026广州”官方榜单页未能直接读取，仅读到信息时报的报道（广州85家上榜、点名2家连续八年上榜门店），完整85家名单与地址未获取。
-- 携程美食林广州页面（gs.ctrip.com）可访问，但为跨省聚合页并含人均价格、评分等信息，未作为本批记录来源；广州专属美食林榜单未逐条采集。
-- 美团2026黑珍珠指南广州完整名单未读取，仅有媒体概述（广东40家、广州18家），故黑珍珠信息仅来自南方+荔湾合列页，且除玉堂春暖外未标明具体榜单等级。
-- 老字号名单只公布单位名称与品牌名称，无地址、所在区、菜系，相关条目字段留空待核实。
-- 名单中的宾馆/酒店类品牌（东方宾馆、广东迎宾馆、广州宾馆、爱群大酒店、新亚大酒店、新华大酒店、流花宾馆、华厦大酒店、白宫酒店、广东大酒店、南方大厦酒店）未作为餐厅收录，其馆内餐厅待单独核实。
-- 名单中与食品相关但无法从页面判断是否为堂食门店的品牌（大家乐、美心、广茂香、港三元、上水丰、白云制面、泮塘、宝生园、生茂泰、致美斋、鹰金钱/积士佳、五羊牌、风行、燕塘、华农、亚洲、廣氏、红棉、双喜、双桥牌、澳海豉油、温泉牌从化三花酒等）本次未收录，价格/评分类信息亦未采集。
-- 老字号中如点都德、南信、陶陶居等在同一批其他页面可见具体门店地址与必吃榜标签，但按“一条记录一个主来源”的规则，本次仅以名单页为来源、地址留空，门店级信息待后续单独核实。
-- 新快报《广州夜间消费地图2.0》（2021-03-09 A11版 PDF）无法解析（不支持 application/pdf），其中列举的建设六马路、文明路、惠福西路、西华路、宝华路、泮塘路、上下九美食广场等夜间美食集聚地表述未能核实。
-- 越秀区政府“北京路新装亮相开街”页面返回404；北京路文化旅游区官网未取得可读的街区介绍页，北京路步行街的门牌范围与餐饮明细仅有新华社稿。
-- 天河区本级关于猎德街区餐饮的官方介绍页未读到，仅有市级“首批都会级羊城夜市先行区”名单中的转述。
-- 荔湾区“十大美食旅游推荐商圈”“最受游客欢迎美食名店30家”“十大/二十大名店”的具体名单未在已读页面列出，无法据此补充店铺。
-- 凉茶（如黄振龙、王老吉等）、盆菜、以及广州本地煲仔饭代表店（仅同福路一家小食店提及煲仔饭）未找到可读的官方或媒体页面。
-- 米其林指南、大众点评必吃榜、高德扫街榜等商业榜单原始页面未读取，仅通过官方媒体转述间接使用，未纳入具体餐厅。
-- 广州酒家、点都德、炳胜品味、陶陶居、泮溪酒家、莲香楼等在已读页面中仅以榜单或活动名单形式出现，门店地址与所在区缺失。
-- 上下九步行街、北京路步行街的长度、门牌范围等基础信息在已读官方页面中不完整，需以街区官方页面核实。
-- 湖北省博物馆官网主站（hbww.org.cn）本次因 http 与 https 交叉重定向无法读取，仅取到其预约子站；馆址、交通、团队预约、是否免费等信息未核。
-- 成都武侯祠博物馆“票务细则”与常规开放时间页为前端渲染，web_fetch 只取到公告列表与登录页；仅取得2026年延时开放通告（已过期），常规开放时间与票价规则列为缺口。
-- 岳麓山·橘子洲旅游区未找到可读的官方独立网站（hnyls.com 连接失败），只有岳麓区政府2023年转载稿；2024年以后预约规则与开放时间变化未核。
-- 东湖风景区管委会门户（whdonghu.gov.cn）未见面向游客的预约/开放说明页，东湖官网域名（whdonghu.com）无法连接；仅用武汉市政府门户2023年报道，各片区当前预约要求未核。
-- 西安城墙仅取到景区网站简略页（页脚版权2016—2017年），各城门时间、票务预约政策、演出安排未核；官方微信小程序内容无法抓取。
-- 华清宫是否须提前实名预约、停止售票与停止入园的具体时点、淡旺季票价政策在攻略页未找到。
-- 金沙遗址博物馆闭馆期间是否有替代开放空间、线上展览或恢复开放预告，未在可读公告中确认。
-- 大足石刻景区2026年（尤其非节假日）常规开放时间与票务政策未找到可读的明文公告，仅有官网首页时段展示与2025年五一专项提示。
-- 市文旅局《广州市A级景区名录（2026年6月更新）》正文经多次抓取仅返回前20–40行（页面截断），3A段（约第40–114条）无法完整读取，2026年最新75家3A名单未能逐条核对。
-- 花都、从化、黄埔、荔湾、越秀、天河等区未检索到可直接读取的区级A级景区名录正文；天河区名录仅为xls附件（web_fetch不支持application/vnd.ms-excel），黄埔、花都、从化区级常用资料目录页均为404。上述区条目的等级与地址取自商业平台转载的市文旅局2024年12月版名录，需以官方2026年版复核。
-- 增城区2024年11月区级名录仅列所在镇街、未给详细地址，10条记录address为空；番禺区2026年8月政府信息仅列3A景区名称，3条记录缺地址与开放信息。
-- 可读取的完整名录为2024年12月版（115家/3A 76家），与2026年6月版（114家/3A 75家）相差1家3A，差异条目未能确认；对比行序推断差异出现在3A前段，个别条目（如中国皮具产业文化创意园）是否仍在2026年版名录内存疑。
-- 2026年6月版与2025年10月版市名录可能新增/更名条目（如南沙“湾区都市农业公园”）未逐条核实评定时间与批文。
-- 全部已读页面均未提供英文名称，60条记录name_en统一为null；也均未读到景区官网入口，official_url为null。
-- 未读到任何景区的购票、预约或实时开放状态页面；booking_note仅转录页面所列开放时间与联系电话，按要求未记录票价与价格信息。
-- 采集日期2026-11-18；所有条目均标记为待核实，未做二次官方复核。
-- 南京博物院：官网 www.njmuseum.com 为前端渲染，web_fetch 仅返回站点标题；官方微信公众号《参观指南》与《秋假延时开放公告》正文触发人机验证，均未能读取官方原文，故该条只能采用江南时报社在搜狐号的转载稿作为候选，预约渠道与外籍证件要求仍缺。
-- 苏州市园林和绿化管理局“开放时间查询”页（ylj.suzhou.gov.cn）出现重定向循环，苏州市政府相关新闻页（www.suzhou.gov.cn）返回403，拙政园、虎丘的实名预约规则、提前预约天数与节假日延时安排未能从官方页面取得正文。
-- 上海豫园官网（www.yugarden.com.cn / www.上海豫园.com）持续返回504（云防御源站超时），“上海豫园”官方小程序的票务与预约规则未能读取；豫园日间开放时间在不同官方页面之间存在8:45-16:45 与 9:00-16:30 的差异。
-- 上海科技馆中文官网为前端渲染，只有英文站与政府新闻报道可读；当前（2026年11月）是否仍按试运行规则售票、是否需提前7天预约未能确认。
-- 无锡不在 cities 枚举内，未纳入 records：鼋头渚官方页（http://www.ytz.com.cn/ 与 /wxts.html）已读取到营业时间周一至周日8:30-17:00、江南兰苑实行现场预约制、瞬时最大承载量81000人、入园须知要求提前实名网络预约，另有2026-10-25 因铁人三项赛临时闭园至14:00的公告（已过期）；建议补充城市枚举后回收。
-- 各景区“外籍游客用护照能否线上预约/购票、如何在闸机或人工窗口核验”普遍未在已读官方页面写明，仅苏州博物馆古籍图书馆读者登记明确列护照；这一项需在人工复核阶段重点补齐。
-- 钟山风景区页面均为假期服务指南（春节、清明、五一、端午），平日开放时间、每日预约名额与放票时点未在已读页面明确。
-- 朱家角古镇街区（北大街、放生桥、九曲桥等）是否免费开放、是否需要预约，官方票务页只写“景点联票”，未说明街区与收费景点边界。
-- 崂山风景区（青岛）：官方网站 qdlaoshan.cn 及其子域多个页面（旺季接待通告、预约指南等）经多次 web_fetch 均返回 fetch failed（疑似 TLS/网络不可达），未能读取正文，故未记录；搜索摘要中可见旺季运营时间与"实名预约、提前7天"等表述，但按任务规则不采信搜索摘要。
-- 青岛栈桥：未找到可直接读取正文的官方页面（栈桥为开放式海滨栈桥，官方说明多散见于市级/区级平台或公众号），未记录；商业平台（携程、Trip.com 等）有条目但按要求不作为本条来源。
-- 昆明石林风景区：官方站点 shilingeopark.com、www.shilin.com.cn、cms.shilin.com.cn 的 https 抓取均失败（其中 shilingeopark.com 仅 http 可读），不满足 source_url 必须为 https 的要求，未记录正文；搜索摘要显示石林已启用实名制电子票务、外宾需到线下票务点办理，但未在已读页面核实，故写入 gaps 而非 records。
-- 北京三处场馆（天坛、颐和园、国家博物馆）已读官方页面均未说明外籍游客持护照的购票/预约渠道与证件要求，是面向外国游客场景的关键缺口，建议后续补充各馆英文版页面或官方预约平台的境外游客规则。
-- 第二十八届哈尔滨冰雪大世界的开园日期、本季运营起止期与票务政策目前均未公布（官方媒体明确写"暂未公布"），属当前信息空窗；官网仍挂第二十七届内容，需在开季公告发布后重新采集。
-- 哈尔滨中央大街与圣索菲亚教堂：中央大街仅有地方性法规可读，缺游客服务类页面（亮灯时间、游客中心、临时管控）；圣索菲亚仅有上一冰雪季重启报道，缺当前时段的官方开放信息。
-- 支付宝：global.alipay.com 等官方页面多次抓取返回空正文或重定向循环，未获得支付宝境外卡绑定的官方说明正文；仅检索到开发者社区与第三方内容，未采用。
-- 运营商：中国移动（10086.cn）、中国联通、中国电信官网未找到可读取的、面向外籍来华用户的全国性公开说明；中国移动省级“可为外籍来华人员办理电话卡营业网点公示/办卡指南”页正文为空；境外手机号漫游、eSIM、上网卡的官方办理渠道与资费均缺失。
-- 深圳宝安国际机场：官网“来往深圳市区”的中文与英文页正文均为空（前端渲染），未取得官方地面交通说明，本轮未产出深圳机场候选记录。
-- 北京大兴国际机场：官网 bdia.com.cn 及 wechat.bdia.com.cn 交通页正文为空，只能改用北京市政府门户报道；机场巴士、出租车、网约车的一手信息缺失。
-- 广州白云机场：官网 gbiac.net 首页与交通栏目正文为空，只能改用广东省、广州市政府门户报道；机场官网一手交通说明缺失。
-- 北京首都机场：英文站 en.bcia.com.cn 正文为空，未取得英文版交通说明（仅有中文页）。
-- 12306英文FAQ、首都机场、浦东/虹桥、天府等页面普遍未标注发布日期，仅有部分“最后更新”提示，规则时效性需人工复核。
-- 12308、12367页面发布于2021年或未标日期，后续服务范围与语种变化未在页内体现。
-- 上海地铁：官网“无障碍设施”页（service.shmetro.com/wzai/index.htm）为交互式线网图，须在图上点选车站才显示设施信息，正文无成文说明；“爱心预约”页（/aixinyue/index.htm）为表单，均未获取可概括内容，故未单列上海地铁条目，建议人工复核其站点无障碍电梯查询功能。
-- 北京地铁官网 bjsubway.com 的“无障碍设施”汇总页与车站明细页多次 web_fetch 失败（fetch failed），无法读取，北京地铁条目改以北京市政府门户转载报道为来源。
-- 故宫博物院：官网手语导览页（www.dpm.org.cn/gesture.html）与英文参观页（intl.dpm.org.cn/visit.html?l=en，服务地图含 Accessibility、Nursery、Stroller Rental 等图标）已读取，但以视频与地图为主，缺少成文的无障碍服务说明，未单列条目，建议人工补充。
-- 哈尔滨冰雪季：harbin.gov.cn 两篇 2025—2026 冰雪季新闻发布会稿（c01_1089041、c01_1090773）均返回 403，无法读取正文；官方冰雪季季节提示未纳入本次候选。
-- 中国政府网英文版（english.www.gov.cn）2026/2027 年节假日安排页面未单独读取核验，仅有中文版页面作为条目来源。
-- 广州地铁官网 gzmtr.com 页面返回字符集错误（unsupported charset），未能读取正文；已改用广州市政府门户同题报道替代。
-- 中国签证申请服务中心各驻外中心的具体页面（材料清单、预约流程）未逐国读取，仅记录官网总入口。
-- 英文名普遍缺失：市、区级官方介绍页几乎只给中文名，45 条中仅广东民间工艺博物馆（陈家祠）在官网看到英文名 Guangdong Folk Arts Museum，其余 name_en 均为 null。
-- 公园方向：广州市林业和园林局《广州市公园名录（截至2020年底）》以 PDF 附件发布（web_fetch 不支持直接解析 PDF，本批经下载附件并提取文本后录入），名录数据截至2020年底，公园地址、免费/收费状态可能已调整，需以最新公告核实；未检索到更新版名录。
-- 宗教活动场所方向：未找到市民族宗教事务局统一发布、含地址的宗教活动场所名录页（其“数据发布”页仅有各区数量统计与概述）；本批地址来自市政府门户“宗教场所”栏目及越秀区、海珠区政府介绍页，华林禅寺页面未标注所在区。能仁寺（白云山）因官方页面未载地址，本轮未收录。
-- 博物馆方向：广东美术馆（白鹅潭新馆）、广州十三行博物馆、广州海事博物馆、越秀区博物馆（五仙观）、荔湾区博物馆等未找到可完整读取的官方介绍页，本轮未收录；其中广东美术馆仅见场馆活动页提到新馆地址，信息不完整。
-- 价格与实时状态按要求未记录；各页面的闭馆日、预约制度仅作制度说明，均需以官方最新公告核实。
-- 孙中山大元帅府纪念馆、南汉二陵博物馆、辛亥革命纪念馆的官方页未提供门票或预约制度，对应字段为空。
-- 广州塔官方票务页（www.cantontower.com）反复返回412（机器人校验），未能读取预约、实名购票与护照换票细则；仅能引用海珠区政府2023年的简介页。
-- 广东省博物馆官网（www.gdmuseum.org.cn）多次读取失败（跨域重定向与连接错误），预约入口、护照核验与寄存/无障碍信息未能核对。
-- 深圳博物馆官网 www.shenzhenmuseum.com 返回403；移动端与CDN“参观须知”页为脚本渲染，web_fetch 无正文，故未能直接引用馆方原文。
-- 陈家祠馆方站点（www.gzcjc.com.cn 及政府表中登记的 gzchenjiaci.com）为动态加载或连接失败，未能读取馆方《开放时间及购票》全文。
-- 鼓浪屿文旅中心微信公众号“鼓浪屿旅游小贴士”等文章触发环境验证，未能读取；官方小程序“鼓浪屿Kulangsu”为线上渠道，未按规则实操验证。
-- 大鹏所城古城街区（非馆内展馆）的官方开放时间、门票与车辆预约通行页面未找到可读原文，仅有大鹏新区纪工委对“廉政教育基地”的信箱答复。
-- 白云山官网未在可读页面集中公布各门岗开放时间与临时调整机制；票务页为2020年发布，票价与优惠口径需复核。
-- 桂林象山景区“免费/实名预约”政策与护照预约入口未在官网文字中明确，仅有票务预订入口链接。
-- 厦门轮渡线上购票（官方小程序/公众号）对境外手机号与护照注册的可用性未验证；票价与班次按要求未记录。
-- 本组未记录任何票价、余票、实时班次与当日开闭状态；所有条目均为“待核实”候选，需人工查重与官方复核。
 - 米其林指南官网 guide.michelin.com 广州列表页与文章页均返回HTTP 202反爬挑战，未能直接读取；45家“米其林指南入选餐厅”名单取自界面新闻刊发的米其林官方完整榜单图。
 - 2026黑珍珠广州完整名单不可读：blackpearl.meituan.com为前端空页，百度百科403，黑珍珠官方微信文章被人机验证拦截；仅获2026新上榜2家及荔湾二钻1家。
 - 黑珍珠2025广州20家，本次仅读到天河区12家页面，其中9家未与本批米其林条目的名称重叠。
@@ -1591,33 +1024,24 @@
 - “食在广州”星级餐厅第三批（广州日报）仅给数量与个别店名，天河发布给出天河区12家；因60条上限未录入。
 - 米其林入选餐厅页只列中英文店名，未标菜系与地址，45条对应字段为空，需二次核实。
 - 黑珍珠、必吃榜、美食林页面均未给英文名，相关记录name_en置空。
-- 北京地铁官网 bjsubway.com 多次抓取失败（fetch failed），未取得运营方原始无障碍页面；已用北京市政府英文网指南替代，仍缺逐站无障碍设施清单。
-- 广州地铁官网 gzmtr.com 抓取返回字符集错误（unsupported charset "iso-88509-1"），未能读取运营方原始页面；已用广州市政府门户网站转载报道替代。
-- 深圳地铁官网 szmc.net 未取得可读的无障碍服务页；仅找到深圳市政府网政务动态转载报道（https://www.sz.gov.cn/cn/xxgk/zfxxgj/zwdt/content/mpost_12716451.html，2026-04-02），因非运营方页面本次未单独建条，建议人工复核后补录。
-- 中国国家博物馆：仅见2025-07-25《观众预约须知》提到残障人士可走绿色通道（https://www.chnmuseum.cn/gbgg/202507/t20250725_272247.shtml），未找到独立的无障碍服务专页，未建条。
-- 2026年节假日安排通知正文已读取（https://www.gov.cn/zhengce/content/202511/content_7047090.htm，2025-11-04），因主题相同已合并在节假日条目的 notes 中，未单独建条。
-- 夏季高温官方提示（中国气象局《科普看台｜安全不“放假” 暑期出游避险指南》，https://www.cma.gov.cn/2011xwzx/2011xqxxw/2011xqxyw/202408/t20240806_6474100.html，2024-08-06）已读取正文，因条数限制未建条，可作为补录候选。
-- 上海博物馆中文“服务/参观”页与故宫博物院官网中文页未逐条核对，无障碍与亲子细则可能有更完整表述。
-- visaforchina.cn 仅读取首页导航，未进入具体受理中心页面；其运营主体与授权关系未独立核实。
-- 12308领保热线官方页已读取，但其服务对象为海外中国公民，已并入中国领事服务网条目 notes，未单独建条。
-- 市级主名录长表被页面输出截断：2026年6月版仅完整读到第22行、2025年10月版读到第38行、2024年9月版读到第47行；第48行以后（3A级主体部分，共约75家）未能整表读取，本次3A条目均靠分区/分年官方名录与公告补齐，未覆盖全部3A景区。
-- 越秀区其余3A级景区（名录第48行之后部分）未读取，需补：广州博物馆、广州近代史博物馆、广州市南粤先贤馆-五仙古观文化旅游区、中国（广州）超高清视频创新产业示范园旅游区等（名称来自检索线索，未在网页正文中读到，未作为记录）。
-- 荔湾区3A级景区名录页未找到并读取，已知应有沙面·西堤旅游区等条目，需通过荔湾区文广旅体局页面补齐。
-- 黄埔区3A级景区（如辛亥革命纪念馆、广东环亚美容化妆品博物馆、广东省凉茶博物馆、幸福里历史文化街区、融德里历史文化街区等）未读取到官方名录正文，未收录。
-- 花都区除洪秀全故居外的3A级景区（如资政大夫祠、蝴蝶谷、御盛国际马术庄园、红山村、塱头村、美华航空航天科普基地等）未读取官方名录正文，未收录。
-- 白云区3A级景区中，广东修学体验旅游区、广州市迪士普音响博物馆仅在白云区2023-06名录中读到，未纳入本批65条上限，且等级需按2026年名录复核。
-- 南沙区A级景区名录页（gzns.gov.cn 对应链接）读取返回404，未获得正文；南沙3A级景区（十八罗汉山、南沙都市农业实验园、广东利泰智农、大岗循环经济产业园等）未收录，需补读。
-- 增城区2024-11名录中其余3A条目因65条上限未纳入：大埔围美丽乡村景区、星罗纪大森林景区、1978电影小镇、广州市正果老街旅游区、广州市仙村循环经济园旅游区、广州市白江湖森林公园、瓜岭村——岭南古韵水乡文化旅游景区、广州钧明欢乐世界、蒙花布乡村旅游区。
-- 从化区其余3A级景区因上限未纳入：广州山谷国际旅游景区、从化国医园景区、广州市麦田生态园旅游区、广州越秀风行生态田园旅游区；其门址与等级需按市级名录复核。
-- 全部65条均缺官方英文名与官方网站URL，缺失项已逐条标注；官方英文名、官网、门票价格与预约渠道需人工补齐。
-- 广州市A级景区名录2024年12月版曾为115家（3A 76家），2026年6月版为114家（3A 75家），减少/调整了哪一家未核实，需比对两版全表。
-- 武汉东湖（听涛、磨山、落雁等）：未找到可直接读取正文的官方开放/预约/索道与园区收费页面，东湖风景区管委会官网首页无游客服务条目，故本组未记录。
-- 长沙岳麓山—橘子洲旅游区：预约唯一渠道为微信公众号，公众号页面触发“环境异常”验证无法读取；未找到可直读的官网或政府页，故未记录。
-- 都江堰景区：都江堰旅游门户网（djy517.com）列表页为动态加载、都江堰市政府站返回 HTTP 412，未读到含开放时间与预约规则的正文，故未记录。
-- 西安城墙：官方网站仅提供 http 访问（https 不可用），不满足 source_url 必须为 https 的要求，且页面主体信息陈旧、未列实名预约规则与票价，故未作为候选记录；如需收录，建议人工核验“西安城墙景区”微信小程序官方公告。
-- 成都武侯祠：存在 wuhouci.net.cn 与 cdwuhouci.cn 两个自称官方的域名，未确认唯一官方入口，需人工查重核实。
-- 湖北省博物馆：官网主域 www.hbww.org.cn 在当前环境出现 http/https 重定向循环，只能读取其官方镜像 hbsbwg.cjyun.org，镜像页未标更新日期。
-- 大足石刻：官网“预约购票”“游览须知”栏目为动态渲染，未读到票价与预约渠道正文，相关字段留待人工补全。
+- 广州市文化广电旅游局《2026年广州市各区星级饭店名录（107家）》仅以xlsx附件发布（https://www.gz.gov.cn/attachment/8/8061/8061608/10965238.xlsx），网页正文仅提供下载链接；本批已下载并解析该官方附件，建议正式入库前再次复核。
+- 柏悦、喜来登、万豪、希尔顿、凯宾斯基、雅乐轩等品牌的广州门店：集团官网返回403/429或依赖JS渲染，未能取得可引用页面，故未收录。
+- 经济型连锁（7天、如家等）与青年旅舍未找到可引用的官方/政府页面，本批未收录。
+- 原广州海航威斯汀酒店（天河林和中路6号）未出现在2026年市星级饭店名录中，未单独收录；琶洲“广交会威斯汀酒店”为另一门店。
+- 2024年名录中的南方大厦酒店未出现在2026年名录，未收录；部分名录酒店标注停业/装修（如海珠酒店、金川宾馆、圣玛登酒店），亦未收录。
+- 2026年名录中含从化、增城等远郊度假酒店，本批仅选取部分代表，未覆盖全部107家。
+- 酒店房价、房态、网络评分等易变信息按要求未记录。
+- 广州市商务局《广州老字号名单》（2026-02-04）检索页正文在抓取时被截断，未能逐条读取150个品牌，老字号条目改用各品牌官网为主来源。
+- 广州友谊商店官网 cgzfs.com 为JS加载壳页，未取得可引用正文，环市东店未收录。
+- 广百百货官网 grandbuy.com.cn 首页无可读正文，未取得简介或门店页，未收录。
+- 广州K11官网根路径重定向至微博，未能读取，未收录。
+- 正佳广场官网各栏目页无正文，仅取得页脚英文名，简介改用天河区融媒体中心报道。
+- 广州塔官网 cantontower.com 返回412人机校验，未能读取，改用广州市政府门户网站报道。
+- 白马服装市场官网 baima.com 与 baima-gz.com 均返回502，未能读取，未收录。
+- 趣香饼家、健民医药连锁、亨得利钟表、广州眼镜城、宝生园等未找到可读的官方页面，未收录。
+- 采芝林官网仅公布企业地址，李占记报道未给门店地址，两家的零售门店地址待核实。
+- 王府井百货广州店经营状态未核实，按任务标注的问号项未收录。
+- 广东省博物馆文创、陈李济中药文化园按任务说明作为已收景点/可跳过项，未重复收录。
 
 ## 明显冲突/口径差异
 
@@ -1659,14 +1083,6 @@
 - 周门：南方+必比登部分写作“周门”，必吃榜部分写作“周门传统竹升面”，地址一致。
 - 名单口径：正文称150个品牌，页面表格仅渲染到序号144，两者数目不一致。
 - 本轮所读榜单页普遍标注人均价格、评分与营业时间，按任务规则全部未录入，因此记录中的价格/评分/营业状态字段为空并不代表页面缺失。
-- 建设六马路：商业房产媒体报道称该路段自2022年地铁施工起围蔽、部分老店撤离，原誉海食街项目拟拆除重建，与“异国风情美食街”的常规介绍存在差异，营业现状待核实。
-- 上下九步行街与“上下九-永庆坊（传承经典美食区）”范围重叠、层级不同（前者为步行街，后者为荔湾六大美食集聚区之一），需去重并统一口径。
-- 同一街区存在多种称法：惠福美食花街/惠福东风味食街；西关风情美食街（泮塘路、龙津西路一带）与泮塘路美食街，范围和名称需核实统一。
-- 部分老字号（广州酒家、陶陶居、点都德、炳胜品味）仅出现在榜单或活动名单中，未给出门店地址与所在区，不同来源指向的门店可能不同，需核实。
-- 泮塘路“必吃街”认定：2021年荔湾区政府答复称其为2020年度广州首条“大众点评必吃街”，与商业榜单表述一致但缺少官方授牌原文页面。
-- 大足石刻：2025年“五一”通告的假期开闭园时间（8:00开园、17:30停止检票）与官网首页所列常规时段（如宝顶山16:30停止入园、博物馆17:00闭馆）不一致，属节假日延长安排，须按具体日期区分。
-- 陕西历史博物馆：官网导览页版式同时出现“9:00—17:30”与“3月15日—11月14日08:30—19:00”等时段文字，容易被误读为全年开放时间；2026-11-09的冬季公告明确当前为9:00—17:30、16:30停止检票（至2027-03-14）。
-- 湖北省博物馆预约页同时写日常9:00—17:00与暑期（8月31日前）8:30—17:30，属季节性调整，引用时须标明适用时段。
 - 市文旅局2026年6月版名录（114家/3A 75家）正文抓取被截断，3A段无法读取；可读的完整转载版为2024年12月版（115家/3A 76家），两者相差1家3A，差异条目未能确认。
 - 白云区2023年6月区级名录将帽峰山森林公园列为3A，市2024年9月及2026年6月名录将其列为4A；本批按4A处理，未收录为3A候选。
 - 海珠区黄埔古港景区地址：区级页面为“琶洲街道石基村”，市名录转载版为“琶洲街道石基路512号”。
@@ -1683,10 +1099,6 @@
 - 龙门石窟官网内部时间口径不一致："在线订票"页列开放时间3月1日—10月31日8:00—18:00、11月1日—次年2月28日8:00—17:00，而同一官网"参观须知"页写售票8:00—19:30、停止检票17:00、清场18:00，疑与"夜游龙门"时段有关，需向景区复核。
 - 慕田峪长城购票公告内部表述不一致：公告把"护照"列入可实名预约购票的证件，但入园环节写"凭本人身份证原件验证入园"，外籍游客持护照购票后的核验方式不明确。
 - 哈尔滨冰雪大世界官网与官方媒体信息不同步：官网 ice.hrbicesnow.com 首页仍以"第二十七届"为标题并展示上届票务政策/交通指引，而2026-11-17 哈尔滨广播电视台报道称第28届仍在筹备、开园与票务均未公布，引用官网内容有滞后风险。
-- 广州白云机场T1状态：2026-05-08广东省政府页面称T1自5月7日起关闭改造、地铁机场南站与城际白云机场南站停用；2026-02-13广州市政府页面仍把“机场南站（T1）”列为换乘方式，两则官方信息不一致，需以机场最新公告为准。
-- 12306英文站儿童票：同一FAQ页同时给出按身高1.2米/1.5米和按年龄（2023年起6至14岁）两套口径，彼此不一致。
-- 12308热线定位：任务清单将其列为首次来华“紧急求助”渠道，但官方页面明确其服务对象为海外中国公民，对入境外国游客的适用性存疑。
-- 机场官网可读性：北京首都、大兴、广州白云、深圳宝安等机场官网关键交通页多为前端渲染或空正文，导致部分候选记录只能依据政府门户/官方媒体转述，与机场官网一手信息可能不同步。
 - 深圳地铁：通用介绍页称“各设有卫生间的车站均另设有无障碍卫生间或第三卫生间”，但16号线分站表中多站“无障碍卫生间”标为“无”、只列第三卫生间位置，两处表述口径不一致，需按站点复核。
 - 广州地铁：官网2024-05-20公司新闻与广州市政府门户2025-11-26报道均称无障碍设施覆盖率100%，方向一致；但两处都未列站点清单，且官网正文因字符集问题未能读取，“100%”的设施类型与站点范围未独立核实。
 - 节假日：2026、2027年安排均为国务院办公厅通知，中国政府网页面发布日期与成文日期一致，未发现相互矛盾的官方版本；2027年安排发布距收集日仅13天，后续调整风险需留意。
@@ -1714,11 +1126,20 @@
 - 湖南博物院官网首页标题仍显示“湖南省博物馆”，正文与页脚则用“湖南博物院”，名称混用（疑似更名后旧称遗留）。
 - 成都金沙遗址博物馆官网页同时展示“2025-12-05至2027-04-30闭馆”提示与“网上购票”入口，两者并存易让游客误判可购票参观。
 - 湖北省博物馆官网主域在抓取环境出现 http 与 https 互相重定向，导致无法直读原始页面，只能以其官方镜像页为依据（属技术性可读性冲突，非内容冲突）。
+- 广州增城保利郡雅酒店：2026年名录已用新名（原广州增城保利皇冠假日酒店），市政府详情页仍用旧名“广州增城保利皇冠假日酒店”。
+- 广州朗豪酒店：2026年名录用“广州朗豪酒店”，市政府详情页题为“南丰朗豪酒店”。
+- 广州卓美亚酒店：2026年名录地址为“珠江东路12及14号”，市政府详情页写作“珠江东路12号”。
+- 广州大厦希尔顿启缤精选酒店：2024年名录为“广州大厦”，2026年名录更新为现名。
+- 南航明珠大酒店：2026年名录“区属”列白云，地址写作“花都区新白云国际机场内”，两者不一致。
+- 黄沙水产交易市场：荔湾区政府英文版市场指南（2025-11-17）地址为丛桂路隧兴广场南侧；广东省农业农村厅报道称黄沙水产中心（新市场）已于2025年9月在荔湾区东洛围码头启用，新旧址并存，需核实。
+- 摩登百货营业面积：官网“摩登简介”页称2.9万平方米，“联系我们”页称3万平方米，数据待核实。
+- 芳村茶叶范围：荔湾区政府中文页把“芳村茶叶市场群”描述为由20多家市场组成，英文版指南中的“Fangcun Tea Market”指芳村大道中508号单个市场，两者范围不同。
+- 天河城购物中心、广州太古汇官网未直接标注所属行政区与门牌，仅描述区位，district 暂留空。
 
 ## 本批共同限制
 
-- 名录/榜单只证明“被列入该名单”，不等于场馆当前营业、餐厅当前营业、价格或预约规则成立；出行前须查官方最新公告。
-- 英文名只在来源给出时填写；未给出的一律 `null`，不自行翻译。地址为来源原文，未做地图核验。
-- 米其林榜单来自商业机构（米其林指南），不是政府排名；媒体转载的名单可能有缺漏，已在缺口记录中标注。
-- 未记录价格、评分、实时营业状态、排队时间；未登录、未订餐、未购票、未调用接口/小程序。
+- 名录/榜单只证明“被列入该名单”，不等于当前营业、房价/价格或预约规则成立；出行前须查官方最新公告。
+- 英文名分两类：`official` 为来源页/官方英文名，`machine` 为机器翻译或音译（仅作检索辅助，可能不准确，不得当作官方译名）。
+- 地址为来源原文，未做地图核验；酒店星级为来源标注，可能已变化。
+- 未记录价格、评分、实时房态/营业状态；未登录、未订房、未购物、未调用接口/小程序。
 - 来源页未标发布日期的，`published_on` 留空；不以收集日期冒充来源发布日期。

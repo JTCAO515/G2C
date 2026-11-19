@@ -1,0 +1,2596 @@
+[
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s001",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "深圳万象城",
+    "name_en": "The MixC",
+    "name_en_source": "official",
+    "district": "罗湖",
+    "address": "罗湖区宝安南路1881号",
+    "description_zh": "华润置地2004年开业的旗舰商场，深圳较早与地铁直接连通的购物中心，国际一线品牌集中，设奥林匹克标准室内冰场，周边形成宝安南商圈。",
+    "tags": [
+      "购物中心",
+      "奢侈品牌",
+      "地铁连通",
+      "离境退税"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "国际一线服饰、美妆、腕表珠宝、餐饮、影院与冰场",
+      "shop_type": "购物中心"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（深圳英文门户 Amazing Shenzhen）",
+        "url": "http://eyeshenzhen.com/content/2023-05/15/content_30224901.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门店级品牌与楼层信息未核实"
+    ],
+    "notes": "罗湖区商务局页面另载该商场设有境外旅客离境退税“即买即退”集中退付点，属另一来源，未合并采信。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s002",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "万象天地",
+    "name_en": "The MixC World",
+    "name_en_source": "official",
+    "district": "南山",
+    "address": "南山区深南大道与沙河西路交汇处",
+    "description_zh": "南山大冲片区的街区加商场组合项目，以多座独栋旗舰店、公共艺术装置与开放街区为特色，与地铁高新园站衔接，是年轻客群逛街热点。",
+    "tags": [
+      "购物中心",
+      "街区商业",
+      "公共艺术",
+      "首店"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "服饰、潮流零售、美妆、餐饮与书店",
+      "shop_type": "购物中心/街区商业"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门牌号精确到号的地址未在页面标注"
+    ],
+    "notes": "同一官方英文门户的另一篇文章称其为 The MixC World，本页标题写作 The MixC City。",
+    "conflicts": [
+      "英文名并存：The MixC City（购物指南页）与 The MixC World（2024年报道）"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s003",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "深圳湾万象城",
+    "name_en": "Shenzhen Bay MixC",
+    "name_en_source": "official",
+    "district": "南山",
+    "address": "南山区科苑南路2888号",
+    "description_zh": "后海片区的高端商场，二期于2025年9月启用，两期合计逾500个品牌，新增艺术展演与滨海街区，邻近深圳湾体育中心与文化广场。",
+    "tags": [
+      "购物中心",
+      "高端零售",
+      "艺术",
+      "滨海"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "国际奢侈品牌、户外运动、美妆、餐饮与生活方式电子",
+      "shop_type": "购物中心"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（深圳英文门户）",
+        "url": "https://www.eyeshenzhen.com/content/2025-09/30/content_31706373.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2025-09-30",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "一期与二期各自的品牌清单未逐一核实"
+    ],
+    "notes": "二期新增品牌与艺术季信息以开业当日报道为准。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s004",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "海岸城购物中心",
+    "name_en": "Coastal City",
+    "name_en_source": "official",
+    "district": "南山",
+    "address": "南山区文心五路33号",
+    "description_zh": "南山商业文化中心区的大型购物中心，2007年开业，涵盖零售、餐饮、影城与冰场等业态，由海岸集团运营，是后海商圈主要商业体之一。",
+    "tags": [
+      "购物中心",
+      "后海商圈",
+      "零售",
+      "餐饮"
+    ],
+    "official_url": "http://coastalgroup.cn/Business/otherIn.aspx?p=1&id=10000135",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "轻奢服饰、高级零售、百货、餐饮、影院与冰场",
+      "shop_type": "购物中心"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "楼层与品牌明细未核实"
+    ],
+    "notes": "海岸集团官网项目页同样载有该商场简介，但未列门牌地址。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s005",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "福田星河COCO Park",
+    "name_en": "Coco Park",
+    "name_en_source": "official",
+    "district": "福田",
+    "address": "福田区购物公园",
+    "description_zh": "星河旗下COCO Park品牌的首个项目，位于福田中心区，开放式布局含酒吧街与户外广场，餐饮与夜生活氛围突出，近购物公园地铁站。",
+    "tags": [
+      "购物中心",
+      "酒吧街",
+      "夜生活",
+      "地铁直达"
+    ],
+    "official_url": "http://www.cocopark.cn/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "时尚服饰、餐饮酒吧、影院与生活配套",
+      "shop_type": "购物中心"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门牌号地址未在页面标注"
+    ],
+    "notes": "星盛商业官网项目页亦介绍该商场为首个公园情景式购物中心，未列地址。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s006",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "龙岗星河COCO Park",
+    "name_en": "Coco Park",
+    "name_en_source": "official",
+    "district": "龙岗",
+    "address": "龙岗区爱南路666号",
+    "description_zh": "龙岗区规模较大的购物中心之一，2012年开业，含会员制超市、影院与快时尚等业态，共八层，服务大运片区消费。",
+    "tags": [
+      "购物中心",
+      "龙岗",
+      "超市",
+      "影院"
+    ],
+    "official_url": "https://www.g-cre.com/project/Index?bn=0",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "超市、快时尚、影院、餐饮与家庭娱乐",
+      "shop_type": "购物中心"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "品牌与楼层明细未核实"
+    ],
+    "notes": "运营商星盛商业官网列其为COCO Park品牌复制项目。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s007",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "星河WORLD·COCO Park",
+    "name_en": "Galaxy World – COCO Park",
+    "name_en_source": "official",
+    "district": "龙岗",
+    "address": "龙岗区五和大道与雅宝路交汇处星河WORLD",
+    "description_zh": "星河WORLD园区内的商场，地下两层、地上四层并设屋顶花园，含星空广场等特色空间，周边有双子塔等地标与公园。",
+    "tags": [
+      "购物中心",
+      "园区商业",
+      "屋顶花园"
+    ],
+    "official_url": "http://szworld.cocopark.cn/about/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "零售、餐饮、休闲娱乐与家庭消费业态",
+      "shop_type": "购物中心"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "具体楼层品牌未核实"
+    ],
+    "notes": "项目官网仅有简介与招商联系，未见完整品牌清单。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s008",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "龙华星河COCO City",
+    "name_en": "Longhua COCO City",
+    "name_en_source": "official",
+    "district": "龙华",
+    "address": "龙华区梅龙路2号",
+    "description_zh": "龙华梅龙路旁的社区型购物中心，2014年开业，设室外休闲广场，餐饮与亲子业态较集中，毗邻白石龙地铁站。",
+    "tags": [
+      "购物中心",
+      "社区商业",
+      "亲子",
+      "餐饮"
+    ],
+    "official_url": "https://www.g-cre.com/project/Index?bn=0",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "餐饮、影院、精品超市、潮流品牌与亲子娱乐",
+      "shop_type": "区域性购物中心"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "品牌明细未核实"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s009",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "卓悦中心",
+    "name_en": "One Avenue",
+    "name_en_source": "official",
+    "district": "福田",
+    "address": "福田区深南大道与金田路交汇处东南",
+    "description_zh": "福田CBD大型商业综合体，由多个主题商场与一条中央大街组成，含艺术装置与文天祥纪念馆，近岗厦与岗厦北地铁站。",
+    "tags": [
+      "购物中心",
+      "CBD",
+      "中央大街",
+      "艺术"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "时尚零售、美妆、餐饮、艺术体验与生活配套",
+      "shop_type": "商业综合体"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "楼栋与商户清单未核实"
+    ],
+    "notes": "EYESHENZHEN 2023年另一页面标注地址为“福田区福华一路348号卓悦中心”，两处表述不一致。",
+    "conflicts": [
+      "地址表述不一致：深南大道与金田路交汇处东南 / 福华一路348号"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s010",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "深圳大悦城",
+    "name_en": "Shenzhen Joy City",
+    "name_en_source": "machine",
+    "district": "宝安",
+    "address": "宝安区新安街道创业二路与前进一路交汇处",
+    "description_zh": "2025年7月开业的宝安新安片区购物中心，体量约25万平方米，地上六层地下四层，引入影院、会员制超市、书店与多家主力店。",
+    "tags": [
+      "购物中心",
+      "新开业",
+      "宝安",
+      "首店"
+    ],
+    "official_url": "https://www.grandjoy.com/detail/350.html",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "服饰、美妆、餐饮、影院、书店与家庭娱乐",
+      "shop_type": "购物中心"
+    },
+    "sources": [
+      {
+        "name": "大悦城控股官网（深圳大悦城项目页）",
+        "url": "https://www.grandjoy.com/detail/350.html",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "官方英文名未在页面标注，英文名为机翻"
+    ],
+    "notes": "项目页列出主力店名单，未给营业时间以外的服务细节。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s011",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "南山京基百纳广场",
+    "name_en": "Kingkey Banner Plaza",
+    "name_en_source": "official",
+    "district": "南山",
+    "address": "南山区白石路与沙河东路交界处",
+    "description_zh": "南山的社区型购物中心，总面积约12万平方米，含影院、百货与餐饮等业态，近红树湾与白石洲地铁站。",
+    "tags": [
+      "购物中心",
+      "社区商业",
+      "影院",
+      "地铁周边"
+    ],
+    "official_url": "http://www.kingkeybanner.com/products/centerPalace.aspx?id=10000033",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "百货、餐饮、影院、教育与生活配套",
+      "shop_type": "区域性购物中心"
+    },
+    "sources": [
+      {
+        "name": "京基百纳商业公司官网",
+        "url": "http://www.kingkeybanner.com/products/centerPalace.aspx?id=10000033",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门牌号未标注",
+      "官方英文全称未在页面明确"
+    ],
+    "notes": "页面版权信息使用 KINGKEY BANNER 英文标识。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s012",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "金光华广场",
+    "name_en": "King Glory Plaza",
+    "name_en_source": "official",
+    "district": "罗湖",
+    "address": "罗湖区人民南路（嘉宾路、南湖路交汇处）",
+    "description_zh": "罗湖人民南商圈的单体购物中心，与地铁无缝连通，含零售、餐饮、影院与健身娱乐等业态，北邻东门、南接火车站方向。",
+    "tags": [
+      "购物中心",
+      "人民南商圈",
+      "地铁连通",
+      "罗湖"
+    ],
+    "official_url": "https://kingglory.cn/mobile/industry_15.html",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "国际品牌服饰、美妆、超市、餐饮、影院与健身娱乐",
+      "shop_type": "购物中心"
+    },
+    "sources": [
+      {
+        "name": "金光华实业集团官网",
+        "url": "https://kingglory.cn/mobile/industry_15.html",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门牌号未在官方页标注"
+    ],
+    "notes": "官方页使用 King Glory Plaza；深圳官方英文购物指南写作 Kingglory Plaza。",
+    "conflicts": [
+      "英文名写法不一致：King Glory Plaza / Kingglory Plaza"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s013",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "海雅缤纷城",
+    "name_en": "HaiYa Mega Mall",
+    "name_en_source": "official",
+    "district": "宝安",
+    "address": "宝安区建安一路99号",
+    "description_zh": "宝安建安一路的大型商业综合体，商业面积近30万平方米，涵盖零售、餐饮、影院与冰场等，是深圳西部代表性商场之一。",
+    "tags": [
+      "购物中心",
+      "宝安",
+      "影院",
+      "冰场"
+    ],
+    "official_url": "https://www.hygroup.cc/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "品牌服饰、美妆、餐饮、超市、影院与冰场",
+      "shop_type": "购物中心"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "商场独立官网页面未取到（集团站曾出现跳转）"
+    ],
+    "notes": "海雅集团官网为该商业体运营方官网。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s014",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "深业上城",
+    "name_en": "UpperHills",
+    "name_en_source": "official",
+    "district": "福田",
+    "address": "福田区皇岗路5001号",
+    "description_zh": "福田皇岗路旁的城市综合体商场，含LOFT街区，空中连廊连接莲花山与笔架山公园，内有老佛爷百货与市内免税店。",
+    "tags": [
+      "购物中心",
+      "公园连通",
+      "免税店",
+      "LOFT街区"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "时尚零售、美妆、百货、餐饮与免税商品",
+      "shop_type": "城市综合体商场"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "商场官方站点未取到（搜索到的域名指向其他公司）"
+    ],
+    "notes": "维基百科条目亦载同一地址与 Shum Yip Upperhills 英文名，来源类型为其他公开资料。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s015",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "壹方城",
+    "name_en": "Uniwalk",
+    "name_en_source": "official",
+    "district": "宝安",
+    "address": "宝安区新湖路99号",
+    "description_zh": "宝安中心区体量较大的多元主题商场，共七个商业楼层，设多条商业街、文化广场与采光中庭，业态覆盖零售、餐饮与亲子娱乐。",
+    "tags": [
+      "购物中心",
+      "宝安中心",
+      "主题商业",
+      "亲子"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "时尚零售、餐饮、儿童亲子、影院与生活方式业态",
+      "shop_type": "购物中心"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "运营商壹方商置官网未取到"
+    ],
+    "notes": "宝安区政府页面另述壹方中心地址为新湖路与兴华一路交汇处，表述不完全一致。",
+    "conflicts": [
+      "地址表述不一致：新湖路99号 / 新湖路与兴华一路交汇处"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s016",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "壹方天地",
+    "name_en": "Uniworld",
+    "name_en_source": "official",
+    "district": "龙华",
+    "address": "龙华区人民路4022号",
+    "description_zh": "龙华的开放式街区商业项目，分多个主题区域并设约一公里长购物街，以街区动线与主题分区为特色。",
+    "tags": [
+      "购物中心",
+      "街区商业",
+      "龙华"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "主力店、超市、餐饮、亲子娱乐与运动零售",
+      "shop_type": "街区式购物中心"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "品牌与分区明细未核实"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s017",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "百货",
+    "name_zh": "天虹（新沙天虹购物中心）",
+    "name_en": "Xinsha Rainbow Shopping Center",
+    "name_en_source": "official",
+    "district": "宝安",
+    "address": "宝安区沙井街道西环路2105号",
+    "description_zh": "天虹在宝安沙井的门店，属其购物中心与百货业态，含超市与餐饮等，服务周边社区与往来沙井的客商。",
+    "tags": [
+      "百货",
+      "购物中心",
+      "沙井",
+      "超市"
+    ],
+    "official_url": "https://www.rainbow.cn/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "服饰、美妆、黄金珠宝、超市与餐饮",
+      "shop_type": "百货/购物中心门店"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门店楼层与品牌清单未核实"
+    ],
+    "notes": "天虹数科官网仅提供企业级购百业务介绍，未列单店地址。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s018",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "百货",
+    "name_zh": "茂业百货（东门店）",
+    "name_en": "MOI Department Store",
+    "name_en_source": "official",
+    "district": "罗湖",
+    "address": "罗湖区东门中路2047号",
+    "description_zh": "茂业百货位于罗湖东门中路的门店，经营美妆、服饰、鞋包等，处东门步行街商圈内，近晒布地铁站。",
+    "tags": [
+      "百货",
+      "东门商圈",
+      "美妆",
+      "服饰"
+    ],
+    "official_url": "http://www.maoye.cn/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "美妆护肤、服饰、鞋履箱包与配饰",
+      "shop_type": "百货门店"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门店品牌清单未核实"
+    ],
+    "notes": "茂业集团官网仅介绍零售业务概况，未列门店地址。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s019",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "百货",
+    "name_zh": "茂业百货（华强北店）",
+    "name_en": "Moi Department Store",
+    "name_en_source": "official",
+    "district": "福田",
+    "address": "福田区华强北路2005-2006号",
+    "description_zh": "茂业百货在福田华强北路的门店，以美妆护肤、香港及国际品牌与本地服饰箱包为主，处华强北商圈核心。",
+    "tags": [
+      "百货",
+      "华强北",
+      "美妆",
+      "服饰"
+    ],
+    "official_url": "http://www.maoye.cn/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "美妆护肤、设计师品牌服饰、鞋履与箱包",
+      "shop_type": "百货门店"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门店品牌清单未核实"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s020",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "口岸商场",
+    "name_zh": "罗湖商业城",
+    "name_en": "Luohu Commercial City",
+    "name_en_source": "official",
+    "district": "罗湖",
+    "address": "罗湖区火车站广场路25号",
+    "description_zh": "紧邻罗湖口岸的老牌商场，数千间小铺经营钟表、箱包、服饰、工艺品与茶叶等，也提供美甲、按摩等服务，是港人常逛的一站。",
+    "tags": [
+      "口岸商业",
+      "小商品",
+      "钟表箱包",
+      "罗湖口岸"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "钟表、箱包皮具、成衣、工艺品、茶叶茶具与美甲服务",
+      "shop_type": "口岸综合商场"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "楼层与商户明细未核实"
+    ],
+    "notes": "官方页面对铺位数量表述模糊，未采信自媒体给出的具体铺位数。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s021",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "皇庭广场",
+    "name_en": "Wongtee Plaza",
+    "name_en_source": "official",
+    "district": "福田",
+    "address": "福田区福华三路118号",
+    "description_zh": "福田CBD的购物中心，北邻市民中心、南接会展中心，以时尚品牌与餐饮为主，近会展中心地铁站。",
+    "tags": [
+      "购物中心",
+      "CBD",
+      "餐饮",
+      "会展中心"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "时尚服饰、餐饮与生活配套",
+      "shop_type": "购物中心"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "品牌明细未核实"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s022",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "益田假日广场",
+    "name_en": "Yitian Holiday Plaza",
+    "name_en_source": "official",
+    "district": "南山",
+    "address": "南山区深南大道9028号",
+    "description_zh": "南山华侨城片区的商场，位于世界之窗地铁站一带，含滑冰场与影院，周边聚集多个主题公园，适合家庭游客。",
+    "tags": [
+      "购物中心",
+      "华侨城",
+      "主题公园周边",
+      "滑冰场"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "服饰、美妆、餐饮、影院与滑冰场",
+      "shop_type": "购物中心"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "苹果直营店等具体门店现况未核实"
+    ],
+    "notes": "指南页提到的部分门店信息可能已变化，需现场核实。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s023",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "欢乐海岸购物中心",
+    "name_en": "O'Plaza",
+    "name_en_source": "official",
+    "district": "南山",
+    "address": "南山区白石路东8号",
+    "description_zh": "南山白石路东的生态型购物中心，含零售餐饮、水族馆与屋顶花园，毗邻深圳湾滨海休闲带与欢乐海岸街区。",
+    "tags": [
+      "购物中心",
+      "滨海",
+      "水族馆",
+      "屋顶花园"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "时尚与餐饮品牌、水族馆、亲子业态与屋顶花园",
+      "shop_type": "购物中心"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "品牌明细未核实"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s024",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "万象前海",
+    "name_en": "The MixC Qianhai",
+    "name_en_source": "official",
+    "district": "南山",
+    "address": "南山区桂湾四路169号",
+    "description_zh": "前海桂湾片区商场，以艺术展览与设计感空间为特色，引入国际轻奢品牌与餐饮，常举办生活美学类活动。",
+    "tags": [
+      "购物中心",
+      "前海",
+      "艺术展览",
+      "轻奢"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "国际轻奢服饰、美妆、餐饮与艺术设计类零售",
+      "shop_type": "购物中心"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "品牌清单未核实"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s025",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "文旅商业",
+    "name_zh": "欢乐港湾",
+    "name_en": "OH Bay",
+    "name_en_source": "official",
+    "district": "宝安",
+    "address": "宝安区新安街道宝兴路",
+    "description_zh": "宝安滨海的文化旅游商业综合体，含摩天轮、滨海公园、演艺中心与商业街区，是深圳西部热门休闲与拍照地。",
+    "tags": [
+      "文旅商业",
+      "摩天轮",
+      "滨海",
+      "宝安"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "餐饮、零售、演艺与滨海休闲体验",
+      "shop_type": "文旅商业综合体"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "商户明细未核实"
+    ],
+    "notes": "该点位兼具景区属性，购物属性需现场核实。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s026",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "汇港购物中心",
+    "name_en": "Gateway One",
+    "name_en_source": "official",
+    "district": "南山",
+    "address": "南山区蛇口工业三路1号",
+    "description_zh": "招商蛇口运营的购物中心，位于海上世界商圈，结合街区动线做精品购物、主题餐饮与休闲娱乐。",
+    "tags": [
+      "购物中心",
+      "海上世界",
+      "蛇口",
+      "街区商业"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "精品零售、主题餐饮、休闲娱乐与生活方式",
+      "shop_type": "购物中心"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "品牌明细未核实"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s027",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "奥特莱斯",
+    "name_zh": "大梅沙奥特莱斯",
+    "name_en": "Dameisha Outlets",
+    "name_en_source": "official",
+    "district": "盐田",
+    "address": "盐田区大梅沙环梅路1号",
+    "description_zh": "盐田大梅沙的欧式街区式奥特莱斯，由数十栋欧式建筑组成，聚集多个国际与运动品牌门店，近大梅沙海滨公园。",
+    "tags": [
+      "奥特莱斯",
+      "大梅沙",
+      "运动品牌",
+      "海滨"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "国际与运动品牌服饰、箱包与鞋履",
+      "shop_type": "奥特莱斯"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "当前入驻品牌清单未核实"
+    ],
+    "notes": "页面另标注客服电话与营业时间，按收集规则未记录。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s028",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "购物中心",
+    "name_zh": "观澜湖新城 MH Mall",
+    "name_en": "MH Mall",
+    "name_en_source": "official",
+    "district": "龙华",
+    "address": "龙华区观澜高尔夫大道1号",
+    "description_zh": "观澜湖度假区旁的商业综合体，2015年开业，含影院、冰场、运动娱乐与多家餐饮零售品牌，适合家庭与度假客群。",
+    "tags": [
+      "购物中心",
+      "观澜湖",
+      "度假区",
+      "运动娱乐"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "运动娱乐、影院、服饰、餐饮与亲子业态",
+      "shop_type": "零售娱乐综合体"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门牌号在不同条目写作1号与18号，需现场核实"
+    ],
+    "notes": "指南页同一商场出现两处门牌号。",
+    "conflicts": [
+      "门牌号不一致：观澜高尔夫大道1号 / 18号"
+    ]
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s029",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "电子专业市场",
+    "name_zh": "华强北电子商圈（华强电子世界等）",
+    "name_en": "Huaqiangbei Electronics Market",
+    "name_en_source": "machine",
+    "district": "福田",
+    "address": null,
+    "description_zh": "福田华强北街道的电子产业商圈，聚集数十家专业市场与上百万种电子元器件，被称为中国电子第一街，外国采购客商占比可观。",
+    "tags": [
+      "电子市场",
+      "元器件",
+      "数码",
+      "外国客商"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "电子元器件、手机及配件、无人机、耳机与AI硬件",
+      "shop_type": "电子专业市场集群"
+    },
+    "sources": [
+      {
+        "name": "深圳市福田区华强北街道办事处（政府信息公开）",
+        "url": "https://www.szft.gov.cn/fthqb/gkmlpt/content/12/12538/mpost_12538702.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-12-08",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "具体市场与门牌地址未在页面列出",
+      "赛格电子市场等单体官网未取到（seg.com.cn 显示维护中）",
+      "地址待核实"
+    ],
+    "notes": "页面以华强电子世界为例说明该商圈规模，未给各市场单独地址。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s030",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "珠宝交易中心",
+    "name_zh": "水贝国际珠宝交易中心",
+    "name_en": "Shuibei International Jewelry Trade Center",
+    "name_en_source": "official",
+    "district": "罗湖",
+    "address": "罗湖区贝丽北路69号",
+    "description_zh": "水贝2004年启用的珠宝专业采购平台，营业面积逾一万平方米，涵盖金银、钻石、翡翠玉石与珍珠等品类，设有国家级检测机构。",
+    "tags": [
+      "珠宝",
+      "批发采购",
+      "水贝",
+      "鉴定"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "黄金、白银、钻石、翡翠玉石、珍珠首饰与首饰器材",
+      "shop_type": "珠宝专业交易市场"
+    },
+    "sources": [
+      {
+        "name": "广东国际参访服务数字平台·乐购广东（南方网）",
+        "url": "https://goguangdong.southcn.com/m/node_d614603771/8bc6be768e.shtml",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "楼层分布与商户清单未核实"
+    ],
+    "notes": "页面为中英双语点位介绍，含英文地址。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s031",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "珠宝交易中心",
+    "name_zh": "IBC水贝黄金交易中心",
+    "name_en": "IBC Shuibei Gold Trading Center",
+    "name_en_source": "official",
+    "district": "罗湖",
+    "address": "罗湖区布心路3008号",
+    "description_zh": "水贝珠宝集团旗下交易中心，两百余家品牌商户入驻，涵盖黄金交易与高端定制，与水贝国际珠宝交易中心共同建设消费街区。",
+    "tags": [
+      "珠宝",
+      "黄金交易",
+      "高端定制",
+      "水贝"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "黄金、高端珠宝定制与品牌首饰",
+      "shop_type": "黄金珠宝交易中心"
+    },
+    "sources": [
+      {
+        "name": "广东国际参访服务数字平台·乐购广东（南方网）",
+        "url": "https://goguangdong.southcn.com/m/node_d614603771/8bc6be768e.shtml",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "商户清单未核实"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s032",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "珠宝产业园",
+    "name_zh": "特力吉盟黄金产业园",
+    "name_en": "Tellus GMond Gold Industrial Park",
+    "name_en_source": "official",
+    "district": "罗湖",
+    "address": "罗湖区水贝金座大厦",
+    "description_zh": "位于水贝黄金珠宝集聚基地核心地段，由七家交易中心联动形成的大型地下黄金交易集群，经营黄金、K金与钻石等。",
+    "tags": [
+      "珠宝",
+      "黄金交易",
+      "产业园",
+      "水贝"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "黄金、K金、钻石及珠宝首饰",
+      "shop_type": "黄金珠宝产业园/交易集群"
+    },
+    "sources": [
+      {
+        "name": "广东国际参访服务数字平台·乐购广东（南方网）",
+        "url": "https://goguangdong.southcn.com/m/node_d614603771/8bc6be768e.shtml",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "具体楼层与入口未核实"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s033",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "珠宝商场",
+    "name_zh": "水贝万山",
+    "name_en": "Shuibei Wanshan",
+    "name_en_source": "official",
+    "district": "罗湖",
+    "address": "罗湖区田贝西路42号",
+    "description_zh": "水贝片区三座互相连通的珠宝商场，提供黄金、钻石、彩宝、玉石与翡翠等全品类选购，兼有加工展示与旅游功能。",
+    "tags": [
+      "珠宝",
+      "一站式选购",
+      "水贝",
+      "彩宝"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "黄金、钻石、彩宝、玉石与翡翠首饰",
+      "shop_type": "珠宝商场"
+    },
+    "sources": [
+      {
+        "name": "广东国际参访服务数字平台·乐购广东（南方网）",
+        "url": "https://goguangdong.southcn.com/m/node_d614603771/8bc6be768e.shtml",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "商户与分区明细未核实"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s034",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "艺术街区",
+    "name_zh": "大芬油画村",
+    "name_en": "Dafen Oil Painting Village",
+    "name_en_source": "machine",
+    "district": "龙岗",
+    "address": null,
+    "description_zh": "龙岗布吉大芬社区的油画产业聚集地，聚集千余家画廊与艺术机构，除油画外兼有国画、版画与艺术衍生品，可看画与选购。",
+    "tags": [
+      "油画",
+      "艺术街区",
+      "文创",
+      "龙岗"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "油画、国画、版画、艺术衍生品与画材",
+      "shop_type": "艺术街区/画廊集群"
+    },
+    "sources": [
+      {
+        "name": "深圳政府在线（各区动态·龙岗区）",
+        "url": "https://www.sz.gov.cn/cn/xxgk/zfxxgj/gqdt/content/post_12568632.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-12-25",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门牌地址未在页面列出",
+      "大芬油画村官网未能读取（cndafen.com 返回 403）",
+      "园区内代表性画廊名单未核实",
+      "地址待核实"
+    ],
+    "notes": "页面报道龙岗区知联会调研，提及大芬美术馆及七彩画廊、当代艺术空间等点位。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s035",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "家居艺术卖场",
+    "name_zh": "满京华艺展中心",
+    "name_en": "Manjinghua Art Exhibition Center",
+    "name_en_source": "machine",
+    "district": "罗湖",
+    "address": null,
+    "description_zh": "罗湖笋岗的家居艺术品卖场，属市级文化产业示范园区，以家居装饰、工艺美术品与设计选品为主，是家居艺术采购集散地。",
+    "tags": [
+      "家居艺术",
+      "工艺美术",
+      "笋岗",
+      "设计选品"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "家居装饰、工艺美术品、艺术陈设与设计选品",
+      "shop_type": "家居艺术品卖场"
+    },
+    "sources": [
+      {
+        "name": "深圳政府在线（行业优势·现代时尚，罗湖区商务局）",
+        "url": "https://www.sz.gov.cn/szzt2010/sarczdnl/hyys/content/mpost_12780606.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-05-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门牌地址未在页面列出",
+      "卖场营业主体与楼层未核实",
+      "地址待核实"
+    ],
+    "notes": "该页同时介绍笋岗家居商圈整体情况。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s036",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "商业步行街",
+    "name_zh": "东门步行街",
+    "name_en": "Dongmen Pedestrian Street",
+    "name_en_source": "machine",
+    "district": "罗湖",
+    "address": null,
+    "description_zh": "罗湖老牌商业步行街，改造后保留岭南骑楼与老巷，业态转向潮玩、动漫与特色餐饮，并引入多家品牌首店，夜间客流旺盛。",
+    "tags": [
+      "步行街",
+      "潮玩",
+      "美食",
+      "罗湖"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "潮玩动漫、服饰小商品、特色餐饮与老字号手信",
+      "shop_type": "商业步行街"
+    },
+    "sources": [
+      {
+        "name": "深圳市住房和建设局·城市有机更新（深圳政府在线）",
+        "url": "https://zjj.sz.gov.cn/xxgk/csyjgx/content/post_12905956.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-07-23",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "街区门牌范围未在页面给出",
+      "店铺名录未核实",
+      "地址待核实"
+    ],
+    "notes": "页面载有街区改造与业态调整情况，图文来源为人民网、南方都市报。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s037",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "古玩市场",
+    "name_zh": "深圳古玩城",
+    "name_en": "Shenzhen Antique City",
+    "name_en_source": "official",
+    "district": "罗湖",
+    "address": "罗湖区新秀路168号",
+    "description_zh": "罗湖新秀路的古玩艺术品市场，经营陶瓷、玉器、书画与杂项收藏品，适合想了解传统文化的游客逛店。",
+    "tags": [
+      "古玩",
+      "艺术品",
+      "收藏",
+      "罗湖"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "陶瓷、玉器、书画、杂项与文房用品",
+      "shop_type": "古玩艺术品市场"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "商户与营业情况未核实"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s038",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "古玩艺术交易中心",
+    "name_zh": "深圳文博宫",
+    "name_en": "Wenbo Palace",
+    "name_en_source": "official",
+    "district": "龙岗",
+    "address": "龙岗区布吉西环路88号",
+    "description_zh": "龙岗布吉的仿古建筑群，为华南规模较大的古玩珠宝艺术品交易中心，建筑融合多个朝代风格，兼具文化与交易功能。",
+    "tags": [
+      "古玩",
+      "珠宝艺术品",
+      "仿古建筑",
+      "龙岗"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "古玩、珠宝、工艺品与艺术收藏品",
+      "shop_type": "古玩珠宝艺术品交易中心"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（Shopping Malls 指南）",
+        "url": "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "商户与楼层明细未核实"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s039",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "市内免税店",
+    "name_zh": "深圳市内免税店",
+    "name_en": "Shenzhen Downtown Duty-Free Store",
+    "name_en_source": "machine",
+    "district": "福田",
+    "address": "福田区深业上城",
+    "description_zh": "中免集团、深圳免税集团与深业集团合作开设的市内免税店，设在深业上城，经营香化美妆、腕表首饰、酒水与本土科技产品。",
+    "tags": [
+      "免税店",
+      "离境退税",
+      "深业上城",
+      "科技产品"
+    ],
+    "official_url": "https://www.ctg.cn/article/19815",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "香化美妆、腕表首饰、酒水、旅行电子与国潮商品",
+      "shop_type": "市内免税店"
+    },
+    "sources": [
+      {
+        "name": "深圳政府在线（政务动态，信息来源：深圳特区报）",
+        "url": "https://www.sz.gov.cn/cn/xxgk/zfxxgj/zwdt/content/post_12348849.html",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2025-08-27",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "具体楼层与店铺编号未在页面标注",
+      "官方英文名未标注，英文名为机翻"
+    ],
+    "notes": "中旅免税官网另有一篇开业报道，可按需作为补充来源。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s040",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "口岸免税店",
+    "name_zh": "罗湖口岸免税店",
+    "name_en": "Luohu Port Duty-Free Shop",
+    "name_en_source": "machine",
+    "district": null,
+    "address": "罗湖口岸",
+    "description_zh": "深圳免税集团在罗湖口岸设点的免税店，面向经该口岸出入境的旅客经营免税商品，属其九大本地口岸网络之一。",
+    "tags": [
+      "免税店",
+      "口岸",
+      "罗湖口岸"
+    ],
+    "official_url": "https://www.szdutyfree.com.cn/col43/index.html",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "免税香化、烟酒、精品与旅行商品",
+      "shop_type": "口岸免税店"
+    },
+    "sources": [
+      {
+        "name": "深圳免税集团官网（集团简介）",
+        "url": "https://www.szdutyfree.com.cn/col43/index.html",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "具体店铺位置、面积与商品清单未在页面列出",
+      "行政区域未标注",
+      "官方英文名未标注，英文名为机翻"
+    ],
+    "notes": "官网仅说明免税店覆盖罗湖、皇岗、文锦渡、沙头角、宝安机场、福田、深圳湾、蛇口、莲塘九个本地口岸。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s041",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "口岸免税店",
+    "name_zh": "福田口岸免税店",
+    "name_en": "Futian Port Duty-Free Shop",
+    "name_en_source": "machine",
+    "district": null,
+    "address": "福田口岸",
+    "description_zh": "深圳免税集团在福田口岸设点的免税店，服务经该口岸出入境的旅客，是该集团口岸免税网络的一部分。",
+    "tags": [
+      "免税店",
+      "口岸",
+      "福田口岸"
+    ],
+    "official_url": "https://www.szdutyfree.com.cn/col43/index.html",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "免税香化、烟酒、精品与旅行商品",
+      "shop_type": "口岸免税店"
+    },
+    "sources": [
+      {
+        "name": "深圳免税集团官网（集团简介）",
+        "url": "https://www.szdutyfree.com.cn/col43/index.html",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "具体店铺位置与商品清单未在页面列出",
+      "行政区域未标注",
+      "官方英文名未标注，英文名为机翻"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s042",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "口岸免税店",
+    "name_zh": "深圳湾口岸免税店",
+    "name_en": "Shenzhen Bay Port Duty-Free Shop",
+    "name_en_source": "machine",
+    "district": null,
+    "address": "深圳湾口岸",
+    "description_zh": "深圳免税集团在深圳湾口岸设点的免税店，服务经该口岸出入境的旅客，属其本地口岸免税店之一。",
+    "tags": [
+      "免税店",
+      "口岸",
+      "深圳湾口岸"
+    ],
+    "official_url": "https://www.szdutyfree.com.cn/col43/index.html",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "免税香化、烟酒、精品与旅行商品",
+      "shop_type": "口岸免税店"
+    },
+    "sources": [
+      {
+        "name": "深圳免税集团官网（集团简介）",
+        "url": "https://www.szdutyfree.com.cn/col43/index.html",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "具体店铺位置与商品清单未在页面列出",
+      "行政区域未标注",
+      "官方英文名未标注，英文名为机翻"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s043",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "书店",
+    "name_zh": "深圳书城中心城",
+    "name_en": "Central Shenzhen Book Mall",
+    "name_en_source": "official",
+    "district": "福田",
+    "address": "福田区福中一路（市民中心北侧、莲花山南侧）",
+    "description_zh": "深圳出版集团旗下旗舰书城，位于福田中心区中轴线上，经营中外图书，设24小时书吧等文化空间，常办阅读活动。",
+    "tags": [
+      "书店",
+      "书城",
+      "城市地标",
+      "文创"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "中外图书、音像制品、文创产品与咖啡简餐",
+      "shop_type": "大型书城"
+    },
+    "sources": [
+      {
+        "name": "深圳政府在线英文版（Life Guide·Book Stores）",
+        "url": "https://www.sz.gov.cn/en_szgov/life/cultural/book/content/post_7061570.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2022-02-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门牌号未在页面标注",
+      "楼层与店铺现况未核实"
+    ],
+    "notes": "同一页面亦列出罗湖城、南山城、宝安城、龙岗城、龙华城等分店。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s044",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "书店",
+    "name_zh": "深圳书城罗湖城",
+    "name_en": "Shenzhen Book Mall Luohu Branch",
+    "name_en_source": "official",
+    "district": "罗湖",
+    "address": "罗湖区深南东路5033号（金山大厦）",
+    "description_zh": "深圳书城在罗湖深南东路的门店，经营图书、音像与古旧书，是深圳读书月相关活动的发源地之一，近大剧院地铁站。",
+    "tags": [
+      "书店",
+      "书城",
+      "罗湖",
+      "阅读活动"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "图书、期刊、音像制品与古旧书收藏",
+      "shop_type": "书城门店"
+    },
+    "sources": [
+      {
+        "name": "深圳政府在线英文版（Life Guide·Book Stores）",
+        "url": "https://www.sz.gov.cn/en_szgov/life/cultural/book/content/post_7061570.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2022-02-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "楼层与商户现况未核实"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s045",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "书店",
+    "name_zh": "深圳书城南山城",
+    "name_en": "Shenzhen Book Mall Nanshan Branch",
+    "name_en_source": "official",
+    "district": "南山",
+    "address": "南山区南海大道2748号（南海大道与海德二道交汇处）",
+    "description_zh": "深圳书城在南山核心区的门店，藏书品类丰富，设人文社科、文学、科普与少儿等分区，配套书吧与文创产品。",
+    "tags": [
+      "书店",
+      "书城",
+      "南山",
+      "少儿阅读"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "图书、文创产品、书吧饮品与培训活动",
+      "shop_type": "书城门店"
+    },
+    "sources": [
+      {
+        "name": "深圳政府在线英文版（Life Guide·Book Stores）",
+        "url": "https://www.sz.gov.cn/en_szgov/life/cultural/book/content/post_7061570.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2022-02-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "楼层与商户现况未核实"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s046",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "书店",
+    "name_zh": "深圳书城龙华城",
+    "name_en": "Shenzhen Book Mall Longhua Branch",
+    "name_en_source": "official",
+    "district": "龙华",
+    "address": "龙华区梅龙大道1389号",
+    "description_zh": "深圳书城在龙华梅龙大道的门店，体量较大，除图书经营外还有文创、餐饮与公共活动空间，是龙华的文化地标之一。",
+    "tags": [
+      "书店",
+      "书城",
+      "龙华",
+      "文化地标"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "图书、文创产品、餐饮与文化活动空间",
+      "shop_type": "书城门店"
+    },
+    "sources": [
+      {
+        "name": "深圳政府在线英文版（Life Guide·Book Stores）",
+        "url": "https://www.sz.gov.cn/en_szgov/life/cultural/book/content/post_7061570.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2022-02-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "楼层与商户现况未核实"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s047",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "书店",
+    "name_zh": "深圳书城宝安城",
+    "name_en": "Shenzhen Book Mall Bao'an Branch",
+    "name_en_source": "official",
+    "district": "宝安",
+    "address": "宝安区新桥街道中心路金悦大厦",
+    "description_zh": "深圳书城在宝安新桥的门店，经营图书与文创，并设创客空间与文学创作孵化空间，服务宝安北部片区读者。",
+    "tags": [
+      "书店",
+      "书城",
+      "宝安",
+      "创客空间"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "图书、文创产品与创客体验空间",
+      "shop_type": "书城门店"
+    },
+    "sources": [
+      {
+        "name": "深圳政府在线英文版（Life Guide·Book Stores）",
+        "url": "https://www.sz.gov.cn/en_szgov/life/cultural/book/content/post_7061570.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2022-02-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "楼层与商户现况未核实"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s048",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "书店",
+    "name_zh": "深圳书城龙岗城",
+    "name_en": "Shenzhen Book Mall Longgang Branch",
+    "name_en_source": "official",
+    "district": "龙岗",
+    "address": "龙岗区龙翔大道8028-4号",
+    "description_zh": "深圳书城在龙岗龙翔大道的门店，2018年启用，融合图书、特色餐饮与智能体验等业态，是深圳东部综合阅读文化空间。",
+    "tags": [
+      "书店",
+      "书城",
+      "龙岗",
+      "智能体验"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "图书、文创产品、餐饮与科技体验业态",
+      "shop_type": "书城门店"
+    },
+    "sources": [
+      {
+        "name": "深圳政府在线英文版（Life Guide·Book Stores）",
+        "url": "https://www.sz.gov.cn/en_szgov/life/cultural/book/content/post_7061570.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2022-02-14",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "楼层与商户现况未核实"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s049",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "文创园区",
+    "name_zh": "华侨城创意文化园",
+    "name_en": "OCT-LOFT",
+    "name_en_source": "official",
+    "district": "南山",
+    "address": null,
+    "description_zh": "南山华侨城的开放式文创园区，由旧工业厂房改造，聚集设计工作室、画廊、书店与餐饮，常办创意市集、爵士音乐节与公共艺术展。",
+    "tags": [
+      "文创园区",
+      "设计",
+      "创意市集",
+      "艺术展览"
+    ],
+    "official_url": "https://www.octloft.cn/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "设计品、艺术书籍、手作文创、咖啡与展览体验",
+      "shop_type": "文创园区/创意街区"
+    },
+    "sources": [
+      {
+        "name": "华侨城创意文化园官网",
+        "url": "https://www.octloft.cn/prod-api/gateway/article/queryArticleById?articleId=38",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门牌地址未在页面列出",
+      "园区内具体文创店铺名录未核实",
+      "地址待核实"
+    ],
+    "notes": "官网首页可访问但内容较简，园区简介取自其文章接口页面。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s050",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "文创街区",
+    "name_zh": "南头古城",
+    "name_en": "Nantou Ancient Town",
+    "name_en_source": "machine",
+    "district": "南山",
+    "address": null,
+    "description_zh": "南山的历史街区，经活化后汇集文创零售、小型展览与餐饮，保留城门、街巷与老建筑，是城市漫游与选购文创的热门地。",
+    "tags": [
+      "文创街区",
+      "历史街区",
+      "展览",
+      "城市漫游"
+    ],
+    "official_url": "https://www.nantoucity.com/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "文创产品、手作、设计选品、咖啡与地方风物",
+      "shop_type": "文创街区/历史街区"
+    },
+    "sources": [
+      {
+        "name": "南头古城官网",
+        "url": "https://www.nantoucity.com/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门牌地址未在首页列出（联系页未取到）",
+      "官方英文名未在首页明确，英文名为机翻",
+      "地址待核实"
+    ],
+    "notes": "官网提供漫步指南与展览活动信息，具体店铺需现场核实。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s051",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "文创商店",
+    "name_zh": "探艺Letmego风物商店",
+    "name_en": "Letmego",
+    "name_en_source": "official",
+    "district": "南山",
+    "address": null,
+    "description_zh": "南头古城内的文创风物商店，经营手作与地方风物类商品，店内常设小型艺术展览，是古城内可逛可买的文创点位。",
+    "tags": [
+      "文创商店",
+      "手作",
+      "地方风物",
+      "南头古城"
+    ],
+    "official_url": "https://www.nantoucity.com/",
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "手作文创、地方风物、艺术衍生品",
+      "shop_type": "文创/风物商店"
+    },
+    "sources": [
+      {
+        "name": "南头古城官网（近期活动页）",
+        "url": "https://www.nantoucity.com/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "店铺具体门牌与营业情况未核实",
+      "商品清单未核实",
+      "地址待核实"
+    ],
+    "notes": "官网活动条目仅标注地点为该店，未给门牌号。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s052",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "概念零售",
+    "name_zh": "HAUS NOWHERE（深圳万象天地店）",
+    "name_en": "HAUS NOWHERE",
+    "name_en_source": "official",
+    "district": "南山",
+    "address": null,
+    "description_zh": "位于万象天地的多层概念零售空间，融合艺术装置、时装与香氛等品牌，是打卡与选购潮流单品的热点店铺。",
+    "tags": [
+      "概念零售",
+      "潮流",
+      "艺术装置",
+      "万象天地"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "眼镜、香氛、时装与设计生活方式商品",
+      "shop_type": "概念零售店"
+    },
+    "sources": [
+      {
+        "name": "EYESHENZHEN（深圳英文门户）",
+        "url": "https://www.eyeshenzhen.com/content/2024-09/06/content_31195948.htm",
+        "type": "official_media",
+        "language": "zh",
+        "published_on": "2024-09-06",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "店铺楼层与门牌未在页面标注",
+      "当前品牌组合未核实",
+      "地址待核实"
+    ],
+    "notes": "报道称其为该品牌全球三处门店中面积最大的一处。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s053",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "IP主题零售",
+    "name_zh": "MINISO LAND（东门步行街店）",
+    "name_en": "MINISO LAND",
+    "name_en_source": "official",
+    "district": "罗湖",
+    "address": null,
+    "description_zh": "名创优品在东门步行街的IP主题店，以动漫游戏与虚拟偶像联名商品为主，设沉浸式主题场景，是东门改造后引入的首店之一。",
+    "tags": [
+      "潮玩",
+      "IP联名",
+      "东门",
+      "首店"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "IP联名潮玩、生活杂货与文创周边",
+      "shop_type": "IP主题零售店"
+    },
+    "sources": [
+      {
+        "name": "深圳市住房和建设局·城市有机更新（深圳政府在线）",
+        "url": "https://zjj.sz.gov.cn/xxgk/csyjgx/content/post_12905956.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-07-23",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门店门牌与楼层未标注",
+      "商品分区未核实",
+      "地址待核实"
+    ],
+    "notes": "页面提及其为品牌深圳首店，试营业阶段客流较多。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s054",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "老字号食品",
+    "name_zh": "合成号",
+    "name_en": "Hecheng Hao",
+    "name_en_source": "machine",
+    "district": null,
+    "address": null,
+    "description_zh": "始创于清末深圳墟的传统小食品牌，以云片糕等糕点闻名，制作技艺列入广东省级非遗，属深圳首批中华老字号之一。",
+    "tags": [
+      "老字号",
+      "传统糕点",
+      "非遗",
+      "手信"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "云片糕等传统中式糕点与深圳特色手信",
+      "shop_type": "老字号食品店/手信"
+    },
+    "sources": [
+      {
+        "name": "深圳市商务局（工作动态，来源：深圳商报）",
+        "url": "http://commerce.sz.gov.cn/xxgk/qt/gzdt_1/content/post_11138429.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-02-06",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "现有门店地址与门店数量未在页面列出",
+      "官方英文名未标注，英文名为机翻",
+      "地址待核实"
+    ],
+    "notes": "页面为老字号认定报道，未列销售门店信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s055",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "老字号茶叶",
+    "name_zh": "信记号",
+    "name_en": "Xinjihao",
+    "name_en_source": "machine",
+    "district": null,
+    "address": null,
+    "description_zh": "八马茶业旗下专注年份普洱的品牌，据深圳市老字号协会资料始于1919年，经营普洱茶并传播中国茶文化。",
+    "tags": [
+      "老字号",
+      "普洱茶",
+      "茶叶",
+      "手信"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "普洱茶、茶叶礼盒与茶具",
+      "shop_type": "茶叶店/老字号"
+    },
+    "sources": [
+      {
+        "name": "深圳市商务局（工作动态，来源：深圳商报）",
+        "url": "http://commerce.sz.gov.cn/xxgk/qt/gzdt_1/content/post_11138429.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-02-06",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "门店地址未在页面列出",
+      "官方英文名未标注，英文名为机翻",
+      "地址待核实"
+    ],
+    "notes": null,
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s056",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "老字号陶瓷",
+    "name_zh": "永丰源",
+    "name_en": "Yongfengyuan",
+    "name_en_source": "machine",
+    "district": null,
+    "address": null,
+    "description_zh": "深圳高端陶瓷品牌，结合非遗技艺与现代设计，在原材料研发与国宴瓷设计生产方面有积累，产品多次作为国礼亮相。",
+    "tags": [
+      "老字号",
+      "陶瓷",
+      "国礼",
+      "工艺"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "国宴瓷、艺术陶瓷、茶具与礼品瓷",
+      "shop_type": "陶瓷礼品店/老字号"
+    },
+    "sources": [
+      {
+        "name": "深圳市商务局（工作动态，来源：深圳商报）",
+        "url": "http://commerce.sz.gov.cn/xxgk/qt/gzdt_1/content/post_11138429.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2024-02-06",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "深圳展厅或门店地址未在页面列出",
+      "官方英文名未标注，英文名为机翻",
+      "地址待核实"
+    ],
+    "notes": "市级商务局页面同时提及其入选广东老字号守正创新案例，属另一来源信息。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s057",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "地方特产",
+    "name_zh": "沙井蚝（蚝豉、蚝油等特产）",
+    "name_en": "Shajing Oysters",
+    "name_en_source": "official",
+    "district": "宝安",
+    "address": null,
+    "description_zh": "宝安沙井的知名特产，以个体肥壮、色泽乳白著称，加工制成的蚝豉与蚝油远销各地，养蚝习俗列入非遗，沙井有蚝产品门店可选购。",
+    "tags": [
+      "特产",
+      "沙井蚝",
+      "手信",
+      "非遗"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "生蚝、蚝豉、蚝油与蚝壳工艺品",
+      "shop_type": "地方特产店/海鲜干货"
+    },
+    "sources": [
+      {
+        "name": "深圳政府在线（深圳故事·探寻沙井蚝的历史）",
+        "url": "https://www.sz.gov.cn/szstory/202301/content/post_10394649.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2023-01-27",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "具体特产门店名称与地址未在页面列出",
+      "地址待核实"
+    ],
+    "notes": "页面为中英双语介绍沙井蚝历史与非遗情况，未列销售点。",
+    "conflicts": []
+  },
+  {
+    "format_version": "visitor-place-candidate.2",
+    "id": "place.2026-11-18.shenzhen.shop.s058",
+    "city": "shenzhen",
+    "category": "shop",
+    "subcategory": "地方特产",
+    "name_zh": "光明三宝（光明乳鸽、牛初乳、甜玉米）",
+    "name_en": "Guangming Three Treasures",
+    "name_en_source": "machine",
+    "district": "光明",
+    "address": null,
+    "description_zh": "光明区具代表性的本地物产组合：红烧乳鸽、牛初乳与甜玉米，是到光明常尝的风味，也是可带走的地方手信主题。",
+    "tags": [
+      "特产",
+      "光明",
+      "手信",
+      "美食"
+    ],
+    "official_url": null,
+    "attraction_info": null,
+    "restaurant_info": null,
+    "hotel_info": null,
+    "shop_info": {
+      "goods": "乳鸽制品、牛初乳与甜玉米等光明本地物产",
+      "shop_type": "地方特产/手信"
+    },
+    "sources": [
+      {
+        "name": "深圳市光明区政府在线（走进光明·传统物产）",
+        "url": "https://www.szgm.gov.cn/zjgm/lsgm_118488/cygm_118492/ctwc/content/post_8760432.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-04-09",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-18",
+    "status": "待核实",
+    "missing": [
+      "具体特产门店名称与地址未在页面列出",
+      "官方英文名未标注，英文名为机翻",
+      "地址待核实"
+    ],
+    "notes": "页面介绍物产本身，未提供购买门店信息。",
+    "conflicts": []
+  }
+]
