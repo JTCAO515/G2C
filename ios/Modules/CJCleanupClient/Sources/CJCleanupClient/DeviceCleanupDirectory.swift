@@ -126,6 +126,18 @@ import Darwin
               errno == ENOENT else { throw CleanupFailure.unavailable }
         try validateIdentity()
     }
+    /// Retire a captured child after its known file is removed.
+    public func removeEmptyChild() throws {
+        guard let parent else { throw CleanupFailure.unavailable }
+        try requireEmpty()
+        guard descriptor != nil else { return }
+        guard let parentDescriptor = parent.descriptor else { throw CleanupFailure.unavailable }
+        let name = path.lastPathComponent
+        guard unlinkat(parentDescriptor, name, AT_REMOVEDIR) == 0, fsync(parentDescriptor) == 0 else {
+            throw CleanupFailure.unavailable
+        }
+        _ = try DeviceCleanupDirectory(absentChild: name, of: parent)
+    }
     /// Callback-free emptiness evidence for shared-key erasure. An unknown entry,
     /// late-created child or replaced root never counts as confirmed empty.
     public func requireEmpty() throws {
