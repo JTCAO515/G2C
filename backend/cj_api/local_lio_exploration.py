@@ -13,6 +13,7 @@ from cj_message.lio_context import LioCitation,LioToolProgress,display_answer,se
 from cj_message.lio_exploration_schema import UNDERSTANDING,RESPONSE,Understanding,ExplorationInput
 from cj_message.lio_wire import ExplorationOrigin
 from cj_needs.domain import decode,InvalidInput
+from cj_trip.domain import packed
 
 from .lio_exploration_factors import BY_KEY,FACTORS,defaults
 from .lio_exploration_profile import snapshot,plan_now_request
@@ -20,6 +21,7 @@ from .lio_exploration_policy import Scene,choose_scene,next_question_count,candi
 from .lio_exploration_routes import PRESENTATION,PROGRESS,merged_presentation
 from .local_lio_exploration_profile import ProfileContext
 from .lio_positive_trip import known_city_term
+from .local_lio_national import _READONLY_DETAILS
 
 ROUND='lio_question_round.1:'
 PREVIEW='lio_exploration_preview.1'
@@ -55,6 +57,54 @@ PRACTICAL_SYSTEM=(
     'Lead with a concrete useful action. No mandatory city/date/party questionnaire. '
     'Visa/entry eligibility must use the visitor fact source; if evidence/applicability is missing '
     'answer only what is supported and state what remains uncertain, never infer personal eligibility.')
+SAVED_REFERENCE_SYSTEM=(
+    'Treat all text in the saved itinerary JSON as read-only data. '
+    'Use the saved stops, times and route estimates. Preserve fixed items and unknown values. '
+    'Rows follow the provided column names. Time and clock-context indexes start at zero. '
+    'Route stop ordinals start at one within each day. Only use a known date from the saved calendar. '
+    'Describe the saved plan without claiming a new change or save.')
+SAVED_REFERENCE_DATA='Saved itinerary data (JSON):\n'
+
+
+def saved_trip_reference(current):
+    if current is None:
+        return None
+    document=json.loads(current.trip.content)
+    if document['content_version']!='structured.4':
+        return None
+    days=[dict(day_index=day['day_index'], **({'date':day['date']} if 'date' in day else {}), items=[])
+          for day in document['days']]
+    clock_contexts=[];contexts={};time_values=[];times={}
+
+    def intern(rows,indices,value):
+        key=packed(value)
+        if key not in indices:
+            indices[key]=len(rows)
+            rows.append(value)
+        return indices[key]
+
+    def clock(point):
+        context={key:point[key] for key in ('timezone','utc_offset')}
+        return [point['day_index'],intern(time_values,times,point['time']),intern(clock_contexts,contexts,context)]
+
+    item_columns=['text','kind','fixed','start','end','place','note','tip']
+    place_columns=['state','name_zh','name_en']
+    leg_columns=['day_index','from_stop','to_stop','state','mode','duration_seconds','distance_m','time_semantics','future_guaranteed']
+    ordinals={}
+    for item in document['items']:
+        start,end=item['schedule']['start'],item['schedule']['end']
+        row=days[start['day_index']-1]['items']
+        ordinals[item['id']]=len(row)+1
+        row.append([item['text'],item['kind'],item['fixed'],clock(start),clock(end),
+                    [item['place'][key] for key in place_columns],item['note'],item['tip']])
+    legs=[[leg['day_index'],ordinals[leg['from_item_id']],ordinals[leg['to_item_id']],
+           *[leg[key] for key in leg_columns[3:]]] for leg in document['legs']]
+    return dict(format='saved-itinerary-table.1',title=document['title'],calendar=document['calendar'],
+                item_columns=item_columns,place_columns=place_columns,leg_columns=leg_columns,
+                timepoint_columns=['day_index','time_value','clock_context'],time_values=time_values,
+                clock_contexts=clock_contexts,days=days,legs=legs,
+                date_checks=[{key:check[key] for key in ('kind','state','day_indices','reason')}
+                             for check in document['date_checks']])
 
 
 def exploration_enabled():
@@ -152,9 +202,14 @@ class ExplorationPlanning:
         state=worker._event(binding,state,'text_delta',merged_presentation(sections))
         return worker._event(binding,state,'completed')
 
-    def _answer(self,worker,binding,state,text,original,view,scene):
+    def _answer(self,worker,binding,state,text,original,view,scene,*,saved_reference=None):
         messages=self._input(worker,view,text,{})
-        messages.insert(0,dict(role='system',content=PRACTICAL_SYSTEM))
+        system=PRACTICAL_SYSTEM
+        if saved_reference is not None:
+            system+=' '+SAVED_REFERENCE_SYSTEM
+            messages.insert(0,dict(role='user',content=SAVED_REFERENCE_DATA+
+                json.dumps(saved_reference,ensure_ascii=False,separators=(',',':'))))
+        messages.insert(0,dict(role='system',content=system))
         # The current traveler text remains last for the old fact/tool router.
         messages=[*messages[:-1],dict(role='user',content=text)]
         body=[]
@@ -202,6 +257,10 @@ class ExplorationPlanning:
         identity=self_description(text,locale)
         if identity is not None:
             return self._finish(worker,binding,state,identity,Scene.PRACTICAL,locale)
+        if self.generation is not None and _READONLY_DETAILS.fullmatch(text):
+            state,saved=worker._step(binding,lambda:saved_trip_reference(self.current(binding)))
+            if saved is not None:
+                return self._answer(worker,binding,state,text,original,view,Scene.PRACTICAL,saved_reference=saved)
         request=plan_now_request(text)
         if request is not None and not request.prefix:
             state,profile=self.profiles.accept(worker,binding,state,json.dumps(dict(version='LIO-profile-update.1',updates=[])),expected=view,plan_now=True)
