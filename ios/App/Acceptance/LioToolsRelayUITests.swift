@@ -82,6 +82,35 @@ import XCTest
         XCTAssertTrue(translate.isEnabled)
     }
 
+    @objc func testToolsPhotoRemainsAvailableAfterSignInErrorOnIOS17() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-translation-relay-preview",
+                               "--lio-translation-photo-login-preview", "-cj.ui.language.v1", "en",
+                               "-AppleLanguages", "(en)"]
+        app.launch()
+        defer { app.terminate() }
+        let tools = app.tabBars.buttons["Tools"]
+        XCTAssertTrue(tools.waitForExistence(timeout: 8))
+        tools.tap()
+        app.buttons["lio.tools.translation"].tap()
+        let photo = app.buttons["lio.translation.photo"]
+        XCTAssertTrue(photo.waitForExistence(timeout: 6))
+        photo.tap()
+        let fixture = app.images.matching(NSPredicate(format: "label BEGINSWITH %@", "Photo,")).firstMatch
+        XCTAssertTrue(fixture.waitForExistence(timeout: 8), app.debugDescription)
+        fixture.tap()
+        let notice = app.staticTexts["lio.translation.problem"]
+        XCTAssertTrue(notice.waitForExistence(timeout: 10))
+        XCTAssertEqual(notice.label, "Sign in again to use online translation.")
+        let retry = app.buttons["lio.translation.retry"]
+        XCTAssertTrue(retry.isEnabled)
+        retry.tap()
+        let first = app.descendants(matching: .any).matching(identifier: "lio.translation.line.0").firstMatch
+        XCTAssertTrue(first.waitForExistence(timeout: 10), app.debugDescription)
+        XCTAssertTrue(first.label.contains("Tea") && first.label.contains("茶"))
+    }
+
     @objc func testToolsRetryAfterTimeoutUsesTheSameRelayRequestOnIOS17() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
@@ -139,7 +168,7 @@ import XCTest
                                "-cj.ui.language.v1", "en"]
         let cases = [
             ("Offline input", "You're offline. Connect to the internet to translate.", true),
-            ("Expired input", "Sign in again to use online translation.", false),
+            ("Expired input", "Sign in again to use online translation.", true),
             ("Unavailable input", "Translation is temporarily unavailable. Try again.", true),
         ]
         for (input, message, canRetry) in cases {
