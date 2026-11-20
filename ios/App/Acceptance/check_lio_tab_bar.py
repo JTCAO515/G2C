@@ -58,6 +58,10 @@ import CJLioUser
     var body: some View {
         if ProcessInfo.processInfo.arguments.contains("--lio-tab-history-acceptance") {
             LioChatHistoryFixture(shell: shell)
+        } else if ProcessInfo.processInfo.arguments.contains("--lio-tab-order-acceptance") {
+            LioHome(language: shell.language.lio, service: .demo, isDemo: true,
+                    savedMemory: AnyView(Text(shell.language.text("Sample memory", "示例记忆"))),
+                    showsTools: true) { LioMenuSettings(shell: shell) }
         } else {
             LioHome(language: shell.language.lio, service: .demo, isDemo: true) { LioMenuSettings(shell: shell) }
         }
@@ -98,7 +102,7 @@ import CJLioUser
         result = subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, timeout=900)
     summary = json.loads(subprocess.check_output(['xcrun', 'xcresulttool', 'get', 'test-results', 'summary', '--path', str(output / 'tabs.xcresult')]))
     (output / 'summary.json').write_text(json.dumps(summary, ensure_ascii=False, indent=2))
-    expected = len(args.case) if args.case else (2 if args.unit else 4)
+    expected = len(args.case) if args.case else (3 if args.unit else 5)
     if summary['passedTests'] + summary['failedTests'] != expected or summary['skippedTests'] != 0:
         raise RuntimeError('Actual method count does not match the requested native suite; do not treat as PASS')
     print(json.dumps({'native_exit': result.returncode, 'passed': summary['passedTests'], 'failed': summary['failedTests'], 'skipped': summary['skippedTests']}))
