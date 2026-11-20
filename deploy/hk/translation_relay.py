@@ -120,23 +120,29 @@ def register_translation_route(app, *, send=socket_request):
             slots.release()
 
 
-def _dispatch(relay, incoming):
+def _dispatch(relay, incoming, *, disabled):
     token = incoming.readline(TOKEN_LIMIT + 2)
     if not token.endswith(b'\n') or not _token_valid(token[:-1]):
         raise TranslationError(401, 'sign_in_required')
     token = token[:-1].decode('ascii')
-    owner = relay.authorize(token)
+    owner = relay.authorize(token) if relay is not None else None
     size = int.from_bytes(incoming.read(4), 'big')
     if not 0 < size <= MAX_BODY:
         raise TranslationError(413, 'request_too_large')
     raw = incoming.read(size)
     if len(raw) != size:
         raise TranslationError(400, 'invalid_request')
+    if relay is None:
+        # Receive the bounded packet before replying so a media upload cannot
+        # turn the intentional denial into a broken-pipe error at the API.
+        if disabled:
+            raise TranslationError(403, 'not_enabled')
+        raise TranslationError(503, 'unavailable')
     return relay.translate(token, TranslationInput.read(raw), owner)
 
 
 @contextmanager
-def translation_socket(relay, *, path=SOCKET):
+def translation_socket(relay, *, path=SOCKET, disabled=False):
     """Copy neither the supplier key nor the shared budget writer into the API."""
     root = path.parent
     info = root.lstat()
@@ -156,10 +162,8 @@ def translation_socket(relay, *, path=SOCKET):
                         status, body = 200, dict(version=STATE_VERSION, enabled=relay is not None)
                     elif operation != b'\x01':
                         raise TranslationError(400, 'invalid_request')
-                    elif relay is None:
-                        raise TranslationError(503, 'unavailable')
                     else:
-                        status, body = 200, _dispatch(relay, self.rfile)
+                        status, body = 200, _dispatch(relay, self.rfile, disabled=disabled)
                 except TranslationError as error:
                     status, body = error.status, _error(error.code)
                 except TranslationLimit:
@@ -222,7 +226,7 @@ def active_translation(runtime, authorization_guard):
             print('ALERT translation_relay_unavailable', file=sys.stderr, flush=True)
     with ExitStack() as stack:
         try:
-            stack.enter_context(translation_socket(relay))
+            stack.enter_context(translation_socket(relay, disabled=raw is None))
         except (OSError, ValueError):
             if raw is not None and relay is not None:
                 print('ALERT translation_relay_unavailable', file=sys.stderr, flush=True)

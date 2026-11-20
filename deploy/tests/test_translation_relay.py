@@ -424,3 +424,24 @@ def test_state_reply_is_private_to_the_worker_and_rejects_other_pid(monkeypatch)
                 translation_state(path, worker_pid=os.getpid() + 1)
             status, body = socket_request('internal-fixture', b'{}', path=path)
             assert status == 503 and body == dict(version=VERSION, error='unavailable')
+
+
+def test_intentionally_disabled_translation_returns_403_through_public_api(monkeypatch):
+    from deploy.hk import translation_relay
+    from deploy.hk.configuration import TRANSLATION_INTERNAL_SUBJECTS
+
+    monkeypatch.delenv(TRANSLATION_INTERNAL_SUBJECTS, raising=False)
+    with TemporaryDirectory(prefix='g2c-tr-off-', dir='/tmp') as directory:
+        path = Path(directory) / 'relay.sock'
+        monkeypatch.setattr(translation_relay, 'translation_socket',
+                            lambda relay, **options: translation_socket(relay, path=path, **options))
+        with translation_relay.active_translation(None, None):
+            app = FastAPI()
+            register_translation_route(app, send=lambda token, raw: socket_request(token, raw, path=path))
+            with TestClient(app) as client:
+                # A bounded media body must not turn early socket closure into an API 503.
+                data = b64encode(b'\x89PNG\r\n\x1a\n' + b'x' * 1024 * 1024).decode()
+                for payload in (_body(text='你好'), _body('image', media=data)):
+                    response = _post(client, payload)
+                    assert response.status_code == 403
+                    assert response.json() == dict(version=VERSION, error='not_enabled')
