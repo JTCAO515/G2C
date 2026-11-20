@@ -298,8 +298,9 @@ public struct LioRelayTranslationClient {
         } catch let error as URLError {
             switch error.code {
             case .cancelled: throw CancellationError()
+            case .timedOut: throw LioTranslationFailure.timedOut
             case .notConnectedToInternet, .networkConnectionLost, .cannotFindHost, .dnsLookupFailed,
-                 .cannotConnectToHost, .timedOut, .dataNotAllowed:
+                 .cannotConnectToHost, .dataNotAllowed:
                 throw LioTranslationFailure.network
             default: throw error
             }

@@ -24,7 +24,8 @@ struct DemoBetaRootView: View {
                                   problem: root.lioSessionProblem), reconnect: {
                     root.accounts.suspend()
                     root.accounts.resume()
-                }, showsTools: true, toolsHistory: trip.messages.lioTranslationHistory, toolsSessionIsCurrent: {
+                }, showsTools: true, toolsHistory: trip.messages.lioTranslationHistory,
+                   toolsRelay: trip.lioTranslationRelay, toolsSessionIsCurrent: {
                     guard case .signedIn = root.accounts.state else { return false }
                     return root.trip === trip
                 }) {

@@ -2,7 +2,7 @@ import Foundation
 
 enum LioTranslationMediaFailure: Error, Equatable {
     case noText, unreadableImage, mismatchedLines, cameraDenied, cameraUnavailable
-    case microphoneDenied, speechDenied, speechUnavailable, unrecognizedSpeech
+    case microphoneDenied, recordingUnavailable, emptyRecording
 }
 
 struct LioImageTranslationLine: Identifiable, Equatable {
@@ -33,20 +33,5 @@ struct LioMediaPermissionGate {
     private func requireCurrent() throws {
         try Task.checkCancellation()
         guard isCurrent() else { throw CancellationError() }
-    }
-}
-
-@MainActor
-struct LioVoiceAuthorization {
-    let onDeviceAvailable: Bool
-    let microphone: () async -> Bool
-    let speech: () async -> Bool
-    var isCurrent: () -> Bool = { true }
-
-    func check() async throws {
-        guard onDeviceAvailable else { throw LioTranslationMediaFailure.speechUnavailable }
-        let gate = LioMediaPermissionGate(isCurrent: isCurrent)
-        guard try await gate.request(microphone) else { throw LioTranslationMediaFailure.microphoneDenied }
-        guard try await gate.request(speech) else { throw LioTranslationMediaFailure.speechDenied }
     }
 }

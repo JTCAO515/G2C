@@ -82,7 +82,7 @@ private final class LioRelayVoiceRecorder {
         } catch {
             guard operation == id else { return }
             cancel()
-            if !(error is CancellationError) { failure = error as? LioTranslationMediaFailure ?? .speechUnavailable }
+            if !(error is CancellationError) { failure = error as? LioTranslationMediaFailure ?? .recordingUnavailable }
         }
     }
 
@@ -116,7 +116,7 @@ private final class LioRelayVoiceRecorder {
         do {
             try deliver?(collector.finish())
         } catch {
-            failure = .speechUnavailable
+            failure = .recordingUnavailable
         }
     }
 
@@ -139,12 +139,12 @@ private final class LioRelayVoiceRecorder {
         if ownsAudioSession {
             ownsAudioSession = false
             do { try session.setActive(false, options: .notifyOthersOnDeactivation) }
-            catch { failure = .speechUnavailable }
+            catch { failure = .recordingUnavailable }
         }
         if let (category, mode, options) = settings {
             settings = nil
             do { try session.setCategory(category, mode: mode, options: options) }
-            catch { failure = .speechUnavailable }
+            catch { failure = .recordingUnavailable }
         }
     }
 }

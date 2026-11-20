@@ -8,18 +8,6 @@ struct LioTranslationRecording: Sendable {
         try LioTranslationWAV.encode(pcm: pcm)
     }
 
-    func recognitionBuffer() throws -> AVAudioPCMBuffer {
-        let frames = AVAudioFrameCount(pcm.count / MemoryLayout<Int16>.size)
-        guard let format = Self.format(),
-              let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames),
-              let destination = buffer.int16ChannelData?.pointee else {
-            throw LioTranslationMediaFailure.speechUnavailable
-        }
-        buffer.frameLength = frames
-        pcm.copyBytes(to: UnsafeMutableRawBufferPointer(start: destination, count: pcm.count))
-        return buffer
-    }
-
     fileprivate static func format() -> AVAudioFormat? {
         AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: Double(LioTranslationWAV.sampleRate),
                       channels: 1, interleaved: true)
@@ -38,7 +26,7 @@ final class LioTranslationPCMCollector: @unchecked Sendable {
         guard inputFormat.sampleRate > 0, inputFormat.channelCount > 0,
               let output = LioTranslationRecording.format(),
               let converter = AVAudioConverter(from: inputFormat, to: output) else {
-            throw LioTranslationMediaFailure.speechUnavailable
+            throw LioTranslationMediaFailure.recordingUnavailable
         }
         self.converter = converter
     }
@@ -76,7 +64,7 @@ final class LioTranslationPCMCollector: @unchecked Sendable {
 
     func finish() throws -> LioTranslationRecording {
         try lock.withLock {
-            guard !failed, !pcm.isEmpty else { throw LioTranslationMediaFailure.unrecognizedSpeech }
+            guard !failed, !pcm.isEmpty else { throw LioTranslationMediaFailure.emptyRecording }
             return LioTranslationRecording(pcm: pcm)
         }
     }

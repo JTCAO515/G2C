@@ -139,6 +139,14 @@ struct CJProbeApp: App {
             if fields["kind"] == "text", fields["text"] == "Already sent" {
                 return (409, Data(#"{"version":"TRANSLATION.1","error":"request_already_used"}"#.utf8))
             }
+            if fields["kind"] == "text" {
+                switch fields["text"] {
+                case "Offline input": throw URLError(.notConnectedToInternet)
+                case "Expired input": return (401, Data())
+                case "Unavailable input": return (503, Data())
+                default: break
+                }
+            }
             if fields["kind"] == "text", fields["text"] == "Hello" {
                 return (200, Data(#"{"version":"TRANSLATION.1","kind":"text","items":[{"source_text":"Hello","translated_text":"你好"}]}"#.utf8))
             }
