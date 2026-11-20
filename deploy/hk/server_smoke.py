@@ -65,7 +65,8 @@ DAY_ACTIVITY = re.compile(
     r'^(?:可以?|建议)?(?:去|参观|游览|游玩|游逛|乘车|坐车|坐地铁|步行|登上|爬山|漫步|'
     r'散步|逛|前往|抵达|体验|品尝|欣赏|走访)|'
     r'^(?:(?:you can|you will|you could|you should)\s+)?'
-    r'(?:visit|walk|hike|tour|take|climb|ride|explore|stroll|see|browse|stop|spend|start|head|admire)\b', re.I
+    r'(?:visit|walk|hike|tour|take|climb|ride|explore|stroll|see|browse|stop|spend|start|head|admire|'
+    r'wander\s+(?:through|around|along|in))\b', re.I
 )
 SCHEDULE_PREFIX = re.compile(
     r'^\s*(?:[#>*_·•:\-–—：]+\s*)*'
