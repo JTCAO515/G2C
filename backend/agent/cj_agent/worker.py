@@ -8,7 +8,7 @@ owner or scope from request data. Recovery rules (ADR-0003):
   is `failed`; neither is retried automatically;
 - a delivery is acknowledged only after RUN holds a terminal status.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from contextlib import contextmanager, ExitStack, nullcontext
 import json
 import logging
@@ -500,6 +500,10 @@ class RunWorker:
         stored = lio_original if lio_original is not None else self.messages.query(receipt.message_id)
         command = json.loads(stored.raw)
         text = command['text']
+        if original is not None:
+            from cj_message.lio_context import answer_locale
+            locale = answer_locale(text, locale)
+            original = replace(original, locale=locale)
         if self.runtime_reflection is not None:
             reflection=self.runtime_reflection(binding)
             if reflection is not None:
