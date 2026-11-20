@@ -26,13 +26,43 @@ class ReadOnlyAnswers(unittest.TestCase):
         for locale,text in (
             ('zh','你好！'),('en','Hi there!'),
             ('zh','北京是中国的首都吗？'),('en','Is Beijing the capital of China?'),
+            ('en','What is the capital of China?'),
+            ('en','What is the capital of France?'),
+            ('en','Is Bangkok the capital of Thailand?'),
+            ('en','What is the capital of Trinidad and Tobago?'),
+            ('en','What is the capital of the U.K.?'),
             ('zh','你能提供什么旅行帮助？'),('en','What travel help can you offer?'),
+            ('zh',CASES['QA05']['inputs']['zh'][0]),('en',CASES['QA05']['inputs']['en'][0]),
+            ('zh','这是我第一次来中国。有什么建议？'),
         ):
             with self.subTest(locale=locale,text=text):
                 wire=flow(text,city=None,days=None,intent='consult',questions=(),reply='Intake reply')
                 wire.update(planning_request_index=None,needs_tools=False)
                 published,events,lookups,result=run(wire,text,locale=locale)
                 self.assertEqual((published,events,lookups,result),([],[],[],None))
+
+    def test_capital_question_with_explicit_itinerary_reaches_planning(self):
+        for locale,city,text in (
+            ('en','Beijing','What is the capital of China. Plan three days in Beijing.'),
+            ('en','Beijing','What is the capital of China and plan three days in Beijing'),
+            ('en','Beijing','What is the capital of France. plan three days in Beijing.'),
+            ('en','Beijing','What is the capital of France and can you please plan three days in Beijing'),
+            ('en','Beijing','What is the capital of France and give me a three-day itinerary in Beijing'),
+            ('en','Beijing',"What is the capital of France and I'd like to spend three days in Beijing"),
+            ('en','Beijing','Is Bangkok the capital of Thailand and then plan three days in Beijing'),
+            ('en','Beijing','What is the capital of Trinidad and Tobago and plan three days in Beijing'),
+            ('en','Beijing','It is my first visit to China. Please plan three days in Beijing.'),
+            ('zh','北京','北京是中国的首都吗？请规划北京三日游。'),
+            ('zh','北京','请规划北京三日游;北京是中国的首都吗'),
+        ):
+            with self.subTest(locale=locale,text=text):
+                wire=flow(text,city=city,days=3,intent='plan',questions=())
+                wire.update(planning_request_index=0,needs_tools=False)
+                published,events,_,result=run(wire,text,locale=locale)
+                self.assertEqual(published,[])
+                self.assertIsNotNone(result)
+                for day in (1,2,3):
+                    self.assertIn('第'+str(day)+'天'if locale=='zh'else'Day '+str(day),answer(events))
 
     def test_followup_rejected_at_destination_projection_uses_general_answer_without_save(self):
         for locale,first,current,city in (

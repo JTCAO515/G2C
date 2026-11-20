@@ -78,10 +78,17 @@ DIRECT_ANSWER=re.compile(
     r'\s*(?:你好|您好|嗨|哈喽|谢谢(?:你)?|多谢|再见|拜拜'
     r'|hello|hi(?: there)?|hey(?: there)?|thanks|thank you|(?:good)?bye'
     r'|你能提供什么(?:旅行|旅游)帮助|what travel help can you offer'
-    r'|[^，。！？\s]{1,16}是[^，。！？\s]{1,16}的首都吗|[^，。！？\s]{1,16}的首都(?:是哪里|是哪座城市)'
-    r"|(?:is [\w .'-]{1,60} the capital|what is the capital) of [\w .'-]{1,60}"
+    r'|[^,.;?!，。；！？\s]{1,16}是[^,.;?!，。；！？\s]{1,16}的首都吗|[^,.;?!，。；！？\s]{1,16}的首都(?:是哪里|是哪座城市)'
     r'|第一次来中国(?:旅行)?(?:建议|应该|可以)?怎么玩|first time in china[,，]?\s*(?:any tips|any advice)'
+    r'|(?:这是我)?第一次来中国[。.!！,，]\s*有什么建议'
+    r"|(?:it is|it['’]s) my first (?:visit to|time in) China[.!?,]\s*"
+    r'(?:what would you (?:recommend|suggest)|any (?:tips|advice))'
     r')[?？。.!！\s]*',re.I)
+ENGLISH_CAPITAL_QUESTION=re.compile(
+    r"\s*(?:is [\w .'-]{1,60} the capital|what is the capital) of (?P<country>[\w .'-]{1,60})[?？。.!！\s]*",re.I)
+# Country names can contain "and" or periods. Itinerary wording in a following clause goes to planning.
+CAPITAL_PLANNING_TAIL=re.compile(
+    rf'(?:\.|\s+(?:and|then)\s+).*\b(?:plan(?:ning)?|itinerar(?:y|ies)|trips?|visit|(?:{NUMBER})[- ]+days?)\b',re.I)
 
 
 def publication_held(text):
@@ -132,14 +139,15 @@ class NationalLioPlanning:
     def scene_context(self,binding,now):
         return self.plan_and_save.scene_context(binding,now)
 
-    def context(self,binding,current):
-        if self.message_context is None:return self._read_context(binding,current,sourced=False)
+    def context(self,binding,current,*,answer_only=False):
+        if self.message_context is None:return self._read_context(binding,current,sourced=False,answer_only=answer_only)
         # Hold the current MESSAGE's genuine authority while reading its own
         # segment. This never acquires an old RUN/Memory holder or replays it.
         with self.message_context.hold_for_effect(binding)as holder:
-            return self._read_context(binding,current,sourced=holder.reference.message_version=='MESSAGE-send.2')
+            return self._read_context(binding,current,sourced=holder.reference.message_version=='MESSAGE-send.2',
+                                      answer_only=answer_only)
 
-    def _read_context(self,binding,current,*,sourced):
+    def _read_context(self,binding,current,*,sourced,answer_only=False):
         # Older MESSAGE paths retain their existing completed-only behavior.
         with self.database.connect(binding.scope) as db:
             rows=db.execute('SELECT m.message_id,m.sequence,m.raw_input,m.input_sha256,m.demo_question_day,r.status '
@@ -176,10 +184,11 @@ class NationalLioPlanning:
                 continuous=[]
                 for row in rows:
                     if row[-1]not in TERMINAL:break
-                    # A failed original without its own question day (every
-                    # receipt outside Demo scopes) is unusable DATA: it ends
-                    # the window as on main and grants nothing (#1025 P1-C).
-                    if row[-1]!='completed'and row[4]is None:break
+                    # An undated failed original is only safe as plain
+                    # conversation text. It cannot enter date or draft evidence.
+                    if (row[4]is None and row[-1]!='completed'
+                            and not (answer_only and row[-1]in ('failed','unknown'))):
+                        break
                     continuous.append(row)
             anchors=set()if previous is None else {ref['message_id']for fact in previous.get('facts',{}).values()for ref in fact['sources']}
             for key in ('date_boundary_message_id','resolved_city_source_message_id','authority_barrier_message_id'):
@@ -198,7 +207,7 @@ class NationalLioPlanning:
                 if {row[0]for row in saved}!=older or not sourced and any(row[-1]!='completed'for row in saved):
                     raise Unavailable('original nationwide fact source unavailable')
                 continuous=sorted([*continuous,*saved],key=lambda row:row[1],reverse=True)
-        turns=[];refs=[]
+        originals=[];refs=[]
         for mid,sequence,raw,digest,day,status in continuous:
             if sourced:
                 original=self.message_context.active_source_original(binding,mid)
@@ -206,14 +215,19 @@ class NationalLioPlanning:
                 digest=original.reference.input_sha256
                 # Newly admitted failed/unknown originals need their own day.
                 # Completed history keeps the accepted completed-only fallback.
-                if day is None and status!='completed':raise Unavailable('original nationwide source day unavailable')
+                if (day is None and status!='completed'
+                        and not (answer_only and status in ('failed','unknown'))):
+                    raise Unavailable('original nationwide source day unavailable')
             if raw is None:raise Unavailable('original nationwide context was erased')
             command=Command.parse_original(bytes(raw))
             if command.conversation_id!=binding.conversation_id or command.message_id!=mid or sha256(command.raw).hexdigest()!=digest:
                 raise Unavailable('original nationwide context differs')
-            turns.append(PlanningTurn(json.loads(command.raw)['text'],day or current.question_day))
+            originals.append((json.loads(command.raw)['text'],day))
             refs.append(dict(conversation_id=binding.conversation_id,generation=binding.generation,message_id=mid,sequence=sequence,input_sha256=digest))
-        turns=tuple(reversed(turns));refs=tuple(reversed(refs))
+        refs=tuple(reversed(refs))
+        if answer_only:
+            return (*[text for text,_ in reversed(originals)],current.text),refs,None
+        turns=tuple(PlanningTurn(text,day or current.question_day) for text,day in reversed(originals))
         if sourced:
             uncompleted=[mid for mid,_,_,_,_,status in continuous if status!='completed']
             if uncompleted:
@@ -236,12 +250,24 @@ class NationalLioPlanning:
         turns,refs,_=self.context(binding,current)
         return [*messages[:-1],*(dict(role='user',content=t.text) for t in turns)],refs
 
+    def readonly_answer_context(self,binding,messages):
+        current=PlanningTurn(messages[-1]['content'],datetime.now(ZoneInfo('Asia/Shanghai')).date())
+        if standalone_question(current.text):return messages,()
+        texts,refs,_=self.context(binding,current,answer_only=True)
+        return [*messages[:-1],*(dict(role='user',content=text) for text in texts)],refs
+
     def execute(self,worker,binding,state,text,original):
         fixed=self_description(text,original.locale)
         if fixed is not None:return self._reply(worker,binding,state,fixed)
         if META_QUESTION.fullmatch(text) or DIRECT_ANSWER.fullmatch(text):return None
+        capital=ENGLISH_CAPITAL_QUESTION.fullmatch(text)
+        if capital is not None and not CAPITAL_PLANNING_TAIL.search(capital['country']):return None
         today=original.question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
         turns,refs,previous=self.context(binding,PlanningTurn(text,today))
+        if not refs and previous is None and _READONLY_DETAILS.fullmatch(text):
+            # Planning has no eligible history here. The ordinary model can
+            # still read the traveler's words from the failed turn.
+            return None
         literal=literal_duration_question(text)
         if (literal is not None and previous is None and binding.message_sequence==len(turns)
                 and all(self_description(turn.text,original.locale)is not None for turn in turns[:-1])

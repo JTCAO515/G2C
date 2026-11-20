@@ -263,6 +263,7 @@ class ExplorationDispatch:
                   and self.exploration.enabled else self.legacy)
         return selected.scene_context(binding,now)
     def answer_context(self,binding,messages):return self.legacy.answer_context(binding,messages)
+    def readonly_answer_context(self,binding,messages):return self.legacy.readonly_answer_context(binding,messages)
     def execute(self,worker,binding,state,text,original):
         selected=self.exploration if original.protocol==LIO_VERSION_V4 and self.exploration.enabled else self.legacy
         return selected.execute(worker,binding,state,text,original)
