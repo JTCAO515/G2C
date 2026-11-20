@@ -621,6 +621,11 @@ _FIXED_TIME_ONLY=re.compile(
     rf'(?:的?\s*(?:时间|时段)\s*(?:仍为|还为|还是|改为|改到|为|是|在)?\s*|'
     rf'(?:(?:time|schedule|timing)\s+)?(?:(?:is|remains|starts|ends)\s+)?(?:still\s+)?(?:at\s+)?)'
     rf'{_FIXED_CLOCK}',re.I)
+_SEPARATE_FIXED_OWNER=re.compile(
+    r'(?:我(?:的)?|我们(?:的)?)?(?:朋友|同伴|同事)(?:也有|另有)(?:一)?(?:个|场|次)?'
+    r'|(?:my|our)\s+(?:friend|companion|colleague)(?:[’\x27]s\s+(?:separate|other)'
+    r'|\s+(?:also\s+)?(?:has|have)\s+(?:another|a\s+separate))\s+',re.I)
+_FIXED_OWNER_SHIFT=re.compile(r'但|不过|而|\b(?:while|although|yet)\b',re.I)
 
 
 def _direct_fixed_place(label,before,after):
@@ -645,10 +650,15 @@ def _fixed_followup_keeps_place(label,clause):
 
 def _fixed_place_superseded(label,source_index,after_clause,turns):
     """A later original may withhold a stale place even when the model omits it."""
+    mention=re.compile(re.escape(label),re.I)
     remaining=(turns[source_index].text[after_clause:],*(turn.text for turn in turns[source_index+1:]))
     for text in remaining:
         for _,_,clause in _original_clauses(text):
-            if label.casefold() in clause.casefold()and not _fixed_followup_keeps_place(label,clause):
+            parts=mention.split(clause,maxsplit=2)
+            if (len(parts)==2 and _SEPARATE_FIXED_OWNER.fullmatch(parts[0])
+                    and not _FIXED_OWNER_SHIFT.search(parts[1])):
+                continue
+            if len(parts)>1 and not _fixed_followup_keeps_place(label,clause):
                 return True
             if _FIXED_SITE_REVISION.match(clause):
                 return True
