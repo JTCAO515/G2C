@@ -76,7 +76,7 @@ import XCTest
         fixture.tap()
         let notice = app.staticTexts["lio.translation.problem"]
         XCTAssertTrue(notice.waitForExistence(timeout: 10))
-        XCTAssertEqual(notice.label, "No text found. Try taking the photo from another angle.")
+        XCTAssertEqual(notice.label, "No text found. Try another angle.")
         XCTAssertTrue(photo.isEnabled)
         XCTAssertFalse(app.buttons["lio.translation.retry"].exists)
     }

@@ -266,8 +266,12 @@ struct LioTranslationRelayTests {
         let speechResult = try LioRelayTranslationResponse.decode(status: 200, body: speech, expecting: .speech)
         let photoResult = try LioRelayTranslationResponse.decode(status: 200, body: photo, expecting: .image)
         #expect(speechResult.items.isEmpty && photoResult.items.isEmpty)
-        #expect(LioTranslationFailure.emptyResult(for: speechResult.kind) == .noRecognizedText)
-        #expect(LioTranslationFailure.emptyResult(for: photoResult.kind) == .noRecognizedTextInPhoto)
+        let speechGuidance = LioEmptyTranslationMedia(kind: speechResult.kind)
+        let photoGuidance = LioEmptyTranslationMedia(kind: photoResult.kind)
+        #expect(speechGuidance.recoveryText(.chinese) == "没有听清，请再说一遍")
+        #expect(speechGuidance.recoveryText(.english) == "Didn't catch that. Please try again.")
+        #expect(photoGuidance.recoveryText(.chinese) == "没有识别到文字，请换个角度重拍")
+        #expect(photoGuidance.recoveryText(.english) == "No text found. Try another angle.")
     }
 
     @Test func rejectsTextOutsideTheAgreedRequestBounds() {
