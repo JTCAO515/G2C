@@ -63,19 +63,20 @@ struct LioTranslationRelayTests {
         }
     }
 
-    @Test @MainActor func forwardsUploadCompletionBeforeThePhotoResult() async throws {
+    @Test @MainActor func forwardsUploadCompletionBeforeTheVoiceResult() async throws {
         var bodySent = false
         let relay = LioRelayTranslationClient(requiresOriginalStore: false) { path, _, uploadFinished in
             #expect(path == "/v1/tools/translate")
             #expect(!bodySent)
             uploadFinished?()
             #expect(bodySent)
-            return (200, Data(#"{"version":"TRANSLATION.1","kind":"image","items":[]}"#.utf8))
+            return (200, Data(#"{"version":"TRANSLATION.1","kind":"speech","items":[{"source_text":"Tea","translated_text":"茶"}]}"#.utf8))
         }
-        let photo = LioRelayTranslationRequest(id: id, source: .english, target: .chinese,
-                                               payload: .jpeg(Data([0xff, 0xd8, 0xff, 0xd9])))
-        let result = try await relay.translate(photo, uploadFinished: { bodySent = true })
-        #expect(result.items.isEmpty && bodySent)
+        let wav = try LioTranslationWAV.encode(pcm: Data([1, 0, 2, 0]))
+        let speech = LioRelayTranslationRequest(id: id, source: .english, target: .chinese, payload: .wav(wav))
+        let result = try await relay.translate(speech, uploadFinished: { bodySent = true })
+        #expect(result.items.first?.translatedText == "茶")
+        #expect(bodySent)
     }
 
     @Test func microphonePCMConvertsToWireWAVInMemory() throws {

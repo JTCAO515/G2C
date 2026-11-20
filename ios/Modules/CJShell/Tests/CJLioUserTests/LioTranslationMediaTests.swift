@@ -3,6 +3,16 @@ import Testing
 
 @MainActor
 struct LioTranslationMediaTests {
+    @Test func mediaProgressOnlySwitchesAfterUploadCompletes() {
+        #expect(LioMediaTranslationProgress(payloadPrepared: false, bodySent: false).label(.chinese)
+                == "正在准备…")
+        #expect(LioMediaTranslationProgress(payloadPrepared: true, bodySent: false).label(.chinese)
+                == "正在上传…")
+        let processing = LioMediaTranslationProgress(payloadPrepared: true, bodySent: true)
+        #expect(processing.label(.chinese) == "正在识别并翻译…")
+        #expect(processing.label(.english) == "Recognizing and translating…")
+    }
+
     @Test func retiringDuringCameraPermissionRejectsTheLateGrant() async {
         var current = true
         let gate = LioMediaPermissionGate(isCurrent: { current })
