@@ -348,6 +348,18 @@ class PlanningFlow(unittest.TestCase):
                     rejected_wire = dict(wire, fixed_items=[dict(wire['fixed_items'][0], **invalid_fixed)])
                     rejected, _, _, _ = run(rejected_wire, text, turns=turns, previous=previous, locale=locale)
                     self.assertEqual(rejected, [])
+                local_quote = meetup.rstrip('。.')
+                same_sentence = '，所有人参加。' if locale == 'zh' else ' for everyone.'
+                next_sentence = '所有人都会参加。' if locale == 'zh' else ' This meetup is for the whole group.'
+                for narrowed_quote, full_statement in (
+                    (local_quote, local_quote + same_sentence),
+                    (meetup, meetup + next_sentence),
+                ):
+                    full_text = text.replace(meetup, full_statement, 1)
+                    clipped_wire = dict(wire, fixed_items=[dict(wire['fixed_items'][0], quote=narrowed_quote)])
+                    rejected, _, _, _ = run(clipped_wire, full_text, turns=(original(first), original(full_text)),
+                                             previous=previous, locale=locale)
+                    self.assertEqual(rejected, [])
 
     def test_date_answer_finishes_plan_without_party_question(self):
         first='去成都玩三天';second='从2026-11-20开始'

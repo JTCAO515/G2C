@@ -461,6 +461,34 @@ def fixed_declarations_complete(fields,turns,*,rich_phrases=False):
  return True
 
 
+_FIXED_GROUP_SCOPE=re.compile(
+ r'全体|全员|全团|大家|我们|所有人|每个人|同行|一起|我和|同伴|家人|朋友|'
+ r'\b(?:we|everyone|everybody|together|both of us|all of us|'
+ r'(?:our|the whole|the entire) (?:party|group|family)|'
+ r'all (?:the )?(?:travelers|travellers|participants|guests)|'
+ r'my (?:friends?|companions?|partner|children|family)|'
+ r'(?:with|alongside) (?:me|my|us|our))\b',re.I)
+_FIXED_SENTENCE_END=frozenset('.。!?！？\n')
+
+
+def _unclipped_fixed_source(description,primary,turns):
+ """Require the whole fixed statement and check participant qualifiers in the originals."""
+ from .lio_planning_grounding import PARTY
+ index=primary['source_index']
+ original=turns[index].text
+ if original.count(description)!=1:return False
+ start=original.index(description)
+ end=start+len(description)
+ # A clock abbreviation cannot turn the middle of a statement into an edge.
+ boundaries=re.sub(r'\b[ap]\.m\.',lambda match:' '*len(match[0]),original,flags=re.I)
+ before=boundaries[:start].rstrip(' \t\r')
+ after=boundaries[end:].lstrip(' \t\r')
+ if before and before[-1] not in _FIXED_SENTENCE_END:return False
+ if after and boundaries[start:end].rstrip()[-1] not in _FIXED_SENTENCE_END and after[0] not in _FIXED_SENTENCE_END:
+  return False
+ return not any(_FIXED_GROUP_SCOPE.search(turn.text) or PARTY.search(turn.text) for turn in turns)
+
+
 def fixed_sources_complete(intake,fields,turns,city_reference,*,ordinal_days=None,rich_phrases=False,
                            bind_unbooked_self=False):
  """Check the model's fixed values against original declarations, before save.
@@ -507,7 +535,8 @@ def fixed_sources_complete(intake,fields,turns,city_reference,*,ordinal_days=Non
    return False
   if item['applies_to']!=expected['applies_to']:
    if not (bind_unbooked_self and first is not None and party is None and personal and not collective
-       and item['applies_to']==['party'] and expected['applies_to']==['self'] and booking['state']!='known'):
+       and item['applies_to']==['party'] and expected['applies_to']==['self'] and booking['state']!='known'
+       and _unclipped_fixed_source(description,evidence[0],turns)):
     return False
    confirmed_self.append(item)
  for item in confirmed_self:
