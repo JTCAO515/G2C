@@ -151,4 +151,24 @@ import XCTest
             XCTAssertTrue(app.buttons["lio.support.police"].label.contains("110"))
         }
     }
+
+    @objc func testDebugDialUsesTheConfiguredNumberWithoutCalling() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-support-dial-preview",
+                               "-cj.ui.language.v1", "en"]
+        app.launchEnvironment["G2C_LOCAL_SUPPORT_TEST_PHONE"] = "__LOCAL_SUPPORT_TEST_PHONE__"
+        app.launch()
+        defer { app.terminate() }
+
+        let ready = app.staticTexts["fixture.support.dial-intercept-ready"]
+        XCTAssertTrue(ready.waitForExistence(timeout: 8))
+        app.tabBars.buttons["Tools"].tap()
+        app.buttons["lio.tools.local-support"].tap()
+        let dial = app.buttons["lio.support.test-dial"]
+        for _ in 0..<5 where !dial.isHittable { app.swipeUp() }
+        XCTAssertTrue(dial.isHittable)
+        dial.tap()
+        XCTAssertTrue(app.staticTexts["fixture.support.dial-matched"].waitForExistence(timeout: 6))
+    }
 }
