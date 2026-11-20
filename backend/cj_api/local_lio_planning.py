@@ -8,7 +8,7 @@ import re
 from zoneinfo import ZoneInfo
 
 from psycopg import Error as DatabaseError
-from cj_agent.provider import ProviderUnknown
+from cj_agent.provider import CompleteUnsettledAnswer, ProviderUnknown
 from cj_draft.lio_plan import LioPlanPublisher
 from cj_draft.rich_schema import GENERATION_PROFILES as RICH_GENERATION_PROFILES
 from cj_message.demo_dialogue import LIO_VERSION
@@ -164,9 +164,17 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
         system+=(' This is a separate read-only trip proposal. Keep the saved itinerary and its locked arrangements unchanged. '
                  'Do not copy old bookings into the new dates or claim a second itinerary has been saved. '
                  'End with one question offering to keep discussing another proposal here or adjust the existing trip.')
-    raw = ''.join(worker._registered_stream(
-        binding, 'model.lio_discussion.0', 'model.answer', (messages, system, worker.provider),
-        message_refs=references))
+    def present(reply):
+        if destination is not None:
+            reply=destination+(' · 未保存建议'if locale=='zh'else' · Unsaved suggestion')+'\n'+reply
+        return reply if introduction is None else introduction+'\n\n'+reply
+
+    try:
+        raw = ''.join(worker._registered_stream(
+            binding, 'model.lio_discussion.0', 'model.answer', (messages, system, worker.provider),
+            message_refs=references))
+    except CompleteUnsettledAnswer as error:
+        raise CompleteUnsettledAnswer(present(error.complete_answer)) from error
     try:
         envelope = decode(raw.encode('utf-8'))
         exact(envelope, ('answer',))
@@ -177,9 +185,7 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
     except (InvalidInput, UnicodeError) as exc:
         _LOGGER.warning('lio_planning_discussion_invalid run_id=%s', binding.run_id)
         raise InvalidDiscussionAnswer('Lio discussion reply unavailable') from exc
-    if destination is not None:
-        reply=destination+(' · 未保存建议'if locale=='zh'else' · Unsaved suggestion')+'\n'+reply
-    state = worker._event(binding, state, 'text_delta',reply if introduction is None else introduction+'\n\n'+reply)
+    state = worker._event(binding, state, 'text_delta',present(reply))
     state = worker._event(binding, state, 'effect_committed', DISCUSSION)
     return worker._event(binding, state, 'completed')
 

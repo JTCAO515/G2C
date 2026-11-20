@@ -78,10 +78,17 @@ DIRECT_ANSWER=re.compile(
     r'\s*(?:你好|您好|嗨|哈喽|谢谢(?:你)?|多谢|再见|拜拜'
     r'|hello|hi(?: there)?|hey(?: there)?|thanks|thank you|(?:good)?bye'
     r'|你能提供什么(?:旅行|旅游)帮助|what travel help can you offer'
-    r'|[^，。！？\s]{1,16}是[^，。！？\s]{1,16}的首都吗|[^，。！？\s]{1,16}的首都(?:是哪里|是哪座城市)'
-    r"|(?:is [\w .'-]{1,60} the capital|what is the capital) of [\w .'-]{1,60}"
+    r'|[^,.;?!，。；！？\s]{1,16}是[^,.;?!，。；！？\s]{1,16}的首都吗|[^,.;?!，。；！？\s]{1,16}的首都(?:是哪里|是哪座城市)'
     r'|第一次来中国(?:旅行)?(?:建议|应该|可以)?怎么玩|first time in china[,，]?\s*(?:any tips|any advice)'
+    r'|(?:这是我)?第一次来中国[。.!！,，]\s*有什么建议'
+    r"|(?:it is|it['’]s) my first (?:visit to|time in) China[.!?,]\s*"
+    r'(?:what would you (?:recommend|suggest)|any (?:tips|advice))'
     r')[?？。.!！\s]*',re.I)
+ENGLISH_CAPITAL_QUESTION=re.compile(
+    r"\s*(?:is [\w .'-]{1,60} the capital|what is the capital) of (?P<country>[\w .'-]{1,60})[?？。.!！\s]*",re.I)
+# Country names can contain "and" or periods. Itinerary wording in a following clause goes to planning.
+CAPITAL_PLANNING_TAIL=re.compile(
+    rf'(?:\.|\s+(?:and|then)\s+).*\b(?:plan(?:ning)?|itinerar(?:y|ies)|trips?|visit|(?:{NUMBER})[- ]+days?)\b',re.I)
 
 
 def publication_held(text):
@@ -253,6 +260,8 @@ class NationalLioPlanning:
         fixed=self_description(text,original.locale)
         if fixed is not None:return self._reply(worker,binding,state,fixed)
         if META_QUESTION.fullmatch(text) or DIRECT_ANSWER.fullmatch(text):return None
+        capital=ENGLISH_CAPITAL_QUESTION.fullmatch(text)
+        if capital is not None and not CAPITAL_PLANNING_TAIL.search(capital['country']):return None
         today=original.question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
         turns,refs,previous=self.context(binding,PlanningTurn(text,today))
         if not refs and previous is None and _READONLY_DETAILS.fullmatch(text):
