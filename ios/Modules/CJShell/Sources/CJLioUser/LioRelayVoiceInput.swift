@@ -12,6 +12,7 @@ struct LioRelayVoiceInput: View {
     let onRecording: (LioTranslationRecording) -> Void
     @State private var recorder = LioRelayVoiceRecorder()
     @Environment(\.openURL) private var openURL
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -27,6 +28,14 @@ struct LioRelayVoiceInput: View {
             }
             .buttonStyle(LioTranslationActionStyle())
             .accessibilityIdentifier("lio.translation.voice")
+            if let startedAt = recorder.startedAt {
+                HStack {
+                    Text(language.text("Recording", "录音中"))
+                    Text(timerInterval: startedAt...startedAt.addingTimeInterval(60), countsDown: false)
+                        .monospacedDigit()
+                }
+                .accessibilityElement(children: .combine)
+            }
             if let failure = recorder.failure {
                 if failure == .microphoneDenied {
                     Text(language.text("Allow microphone access in Settings to use voice input.", "请在设置中允许使用麦克风。"))
@@ -44,6 +53,9 @@ struct LioRelayVoiceInput: View {
             if !available { recorder.cancel() }
         }
         .onChange(of: source) { recorder.cancel() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .background { recorder.cancel() }
+        }
         .onDisappear { recorder.cancel() }
     }
 }
@@ -59,6 +71,7 @@ private final class LioRelayVoiceRecorder {
     private var settings: (AVAudioSession.Category, AVAudioSession.Mode, AVAudioSession.CategoryOptions)?
     private var ownsAudioSession = false
     private(set) var failure: LioTranslationMediaFailure?
+    private(set) var startedAt: Date?
     var isBusy: Bool { operation != nil }
 
     func start(isCurrent: @escaping @MainActor () -> Bool, onRecording: @escaping (LioTranslationRecording) -> Void) {
@@ -95,13 +108,13 @@ private final class LioRelayVoiceRecorder {
         let microphone = engine.inputNode
         let format = microphone.outputFormat(forBus: 0)
         let collector = try LioTranslationPCMCollector(inputFormat: format)
-        microphone.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
-            collector.append(buffer)
-        }
+        microphone.installTap(onBus: 0, bufferSize: 1024, format: format,
+                              block: LioTranslationPCMCollector.tap(for: collector))
         self.collector = collector
         self.completion = onRecording
         engine.prepare()
         try engine.start()
+        startedAt = Date()
         timeout = Task { @MainActor [weak self] in
             do { try await Task.sleep(for: .seconds(60)) }
             catch { return }
@@ -122,6 +135,7 @@ private final class LioRelayVoiceRecorder {
 
     func cancel() {
         operation = nil
+        startedAt = nil
         completion = nil
         sessionIsCurrent = nil
         timeout?.cancel()

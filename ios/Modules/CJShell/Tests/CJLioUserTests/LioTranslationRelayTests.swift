@@ -6,6 +6,28 @@ import Testing
 struct LioTranslationRelayTests {
     let id = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
 
+    @Test @MainActor func microphoneTapCollectsAudioWhenInvokedOffMainThread() async throws {
+        let tap = try #require(AVAudioFormat(standardFormatWithSampleRate: 16_000, channels: 1))
+        let collector = try LioTranslationPCMCollector(inputFormat: tap)
+        let callback = LioTranslationPCMCollector.tap(for: collector)
+        try await withCheckedThrowingContinuation { (done: CheckedContinuation<Void, any Error>) in
+            DispatchQueue.global().async {
+                done.resume(with: Result {
+                    #expect(!Thread.isMainThread)
+                    let format = try #require(AVAudioFormat(standardFormatWithSampleRate: 16_000, channels: 1))
+                    let buffer = try #require(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 128))
+                    buffer.frameLength = 128
+                    let samples = try #require(buffer.floatChannelData?.pointee)
+                    for index in 0..<128 { samples[index] = 0.25 }
+                    callback(buffer, AVAudioTime(sampleTime: 0, atRate: format.sampleRate))
+                })
+            }
+        }
+        let wav = try collector.finish().wireWAV()
+        #expect(wav.prefix(4) == Data("RIFF".utf8))
+        #expect(wav.dropFirst(44).contains { $0 != 0 })
+    }
+
     @Test @MainActor func sendsAllThreeKindsToTheSameEndpoint() async throws {
         let wav = try LioTranslationWAV.encode(pcm: Data([1, 0, 2, 0]))
         let jpeg = Data([0xff, 0xd8, 0xff, 0xd9])

@@ -138,10 +138,13 @@ private struct LioTextTranslationView: View {
                 LioRelayVoiceInput(language: language, source: source, enabled: enabled,
                                    isCurrent: isCurrent, onRecording: startRecording)
                 if let spokenText {
-                    Text(spokenText)
-                        .foregroundStyle(LioTheme.ink)
-                        .textSelection(.enabled)
-                        .accessibilityIdentifier("lio.translation.transcript")
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(language.text("Recognized speech", "识别出的文字")).font(.headline)
+                        Text(spokenText)
+                            .textSelection(.enabled)
+                            .accessibilityIdentifier("lio.translation.transcript")
+                    }
+                    .foregroundStyle(LioTheme.ink)
                 }
                 LioTranslationImageInput(language: language, source: source, enabled: enabled,
                                          isCurrent: isCurrent, onImage: startPhoto)
@@ -222,6 +225,9 @@ private struct LioTextTranslationView: View {
     private func resultCard(_ value: LioTranslationResult) -> some View {
         let translated = value.text.joined(separator: "\n")
         return VStack(alignment: .leading, spacing: 8) {
+            if spokenText != nil {
+                Text(language.text("Translation", "译文")).font(.headline)
+            }
             if imageLines.isEmpty {
                 Text(translated)
                     .foregroundStyle(LioTheme.ink)
