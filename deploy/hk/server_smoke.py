@@ -47,9 +47,8 @@ INLINE_DAY_BREAK = re.compile(
 )
 DAY_MENTION = re.compile(DAY_LABEL, re.I)
 ITINERARY_QUOTES = re.compile(
-    r"(?m)^[ \t]*>[^\n]*|[\x60]{3}[\s\S]*?[\x60]{3}|~~~[\s\S]*?~~~|"
     r'“[^”]*”|‘[^’]*’|「[^」]*」|『[^』]*』|«[^»]*»|"[^"]*"|'
-    r"(?<!\w)'[^']*'(?!\w)|\x60[^\x60\n]*\x60"
+    r"(?<!\w)'[^']*'(?!\w)"
 )
 DAY_NUMBER = {'一': 1, '二': 2, '三': 3, '1': 1, '2': 2, '3': 3}
 BEIJING_PLACE = re.compile(
