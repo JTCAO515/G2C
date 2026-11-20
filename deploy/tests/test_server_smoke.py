@@ -54,6 +54,23 @@ def test_real_body_is_required(case, body, valid):
     assert smoke.valid_answer(case, body) is valid
 
 
+@pytest.mark.parametrize(('case', 'body', 'valid'), [
+    ('en.plan', '**Day 1:** Visit the Forbidden City.\n**Day 2:** Walk through Jingshan.\n'
+     '**Day 3:** Hike along the Great Wall at Mutianyu.', True),
+    ('en.plan', 'Day 1\n- **Morning:** Visit the Forbidden City.\n'
+     'Day 2\n- **Afternoon:** Tour the Summer Palace.\nDay 3\n- **Morning:** Walk through Jingshan.', True),
+    ('zh.plan', '第一天\n- **上午：**参观故宫。\n第二天\n- **下午：**游览颐和园。\n'
+     '第三天\n- **上午：**参观天坛。', True),
+    ('en.plan', '**Day 1:** Visit the Forbidden City.\n**Day 2:** Walk through Jingshan.\n'
+     '**Day 3:** Do not hike along the Great Wall.', False),
+    ('en.plan', 'Day 1: Visit the Forbidden City.\nDay 2: Walk through Jingshan.\n'
+     'Day 3\n- **Morning:** Great Wall.', False),
+    ('zh.plan', '第一天：参观故宫。\n第二天：游览颐和园。\n第三天\n- **上午：**不要参观天坛。', False),
+])
+def test_plan_accepts_activities_with_formatted_schedule_labels(case, body, valid):
+    assert smoke.valid_answer(case, body) is valid
+
+
 @pytest.mark.parametrize(('locale', 'copy'), [('en', CAPABILITIES_EN), ('zh', CAPABILITIES_ZH)])
 def test_smoke_requires_the_exact_complete_approved_capability_copy(locale, copy):
     case = f'{locale}.capability'
