@@ -390,7 +390,7 @@ private struct LioTextTranslationView: View {
             guard self.attempt?.id == attempt.id, isCurrent() else { return }
             guard !reply.items.isEmpty else {
                 try relayOriginals.accept(original, storage: history)
-                finish(attempt.id, result: .failure(.noRecognizedText))
+                finish(attempt.id, result: .failure(.emptyResult(for: reply.kind)))
                 return
             }
             if case .recording = attempt.input { spokenText = reply.items.first?.sourceText }
@@ -465,6 +465,8 @@ private struct LioTextTranslationView: View {
         case .alreadyAccepted:
             language.text("This translation was already sent.", "这次翻译已发送。")
         case .noRecognizedText:
+            language.text("No speech was found. Try recording again.", "没有识别到语音，请重新录制。")
+        case .noRecognizedTextInPhoto:
             language.text("No text found. Try taking the photo from another angle.",
                           "没有识别到文字，请换个角度重拍。")
         case .invalidRecording:

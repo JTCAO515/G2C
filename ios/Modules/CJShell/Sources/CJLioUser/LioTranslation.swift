@@ -14,8 +14,12 @@ struct LioTranslationRequest: Sendable {
 
 enum LioTranslationFailure: Error, Equatable, Sendable {
     case network, quota, service, timedOut
-    case signInRequired, accessDenied, alreadyAccepted, tooLong, noRecognizedText, unreadableImage
+    case signInRequired, accessDenied, alreadyAccepted, tooLong, noRecognizedText, noRecognizedTextInPhoto, unreadableImage
     case invalidRecording
+
+    static func emptyResult(for kind: LioRelayTranslationRequest.Kind) -> Self {
+        kind == .image ? .noRecognizedTextInPhoto : .noRecognizedText
+    }
 }
 
 struct LioTranslationResult: Equatable, Sendable {

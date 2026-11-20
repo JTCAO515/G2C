@@ -260,6 +260,16 @@ struct LioTranslationRelayTests {
         }
     }
 
+    @Test func emptySpeechAndPhotoResultsHaveDifferentRecoveryActions() throws {
+        let speech = Data(#"{"version":"TRANSLATION.1","kind":"speech","items":[]}"#.utf8)
+        let photo = Data(#"{"version":"TRANSLATION.1","kind":"image","items":[]}"#.utf8)
+        let speechResult = try LioRelayTranslationResponse.decode(status: 200, body: speech, expecting: .speech)
+        let photoResult = try LioRelayTranslationResponse.decode(status: 200, body: photo, expecting: .image)
+        #expect(speechResult.items.isEmpty && photoResult.items.isEmpty)
+        #expect(LioTranslationFailure.emptyResult(for: speechResult.kind) == .noRecognizedText)
+        #expect(LioTranslationFailure.emptyResult(for: photoResult.kind) == .noRecognizedTextInPhoto)
+    }
+
     @Test func rejectsTextOutsideTheAgreedRequestBounds() {
         let request = LioRelayTranslationRequest(id: id, source: .english, target: .chinese,
                                                   payload: .text(String(repeating: "a", count: 4001)))
