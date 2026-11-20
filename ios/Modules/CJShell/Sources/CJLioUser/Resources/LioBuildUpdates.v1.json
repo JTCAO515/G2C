@@ -1,7 +1,94 @@
 {
   "schema": 1,
-  "currentBuild": 49,
+  "currentBuild": 50,
   "releases": [
+    {
+      "build": 50,
+      "previousBuild": 49,
+      "sections": [
+        {
+          "id": "changes",
+          "title": {
+            "en": "New and improved",
+            "zh": "本版新增和修改"
+          },
+          "items": {
+            "zh": [
+              "更新语音录音入口，修复打开语音输入时的闪退。翻译页可用右上角「完成」、点空白或上滑收起键盘。",
+              "顺序为聊天、行程、插件、记忆。邀请码与记忆编辑也可用「完成」收起键盘。"
+            ],
+            "en": [
+              "Updated the recording entry to address the crash when opening voice input. In Translation, tap Done at the top right, tap an empty spot, or swipe up to dismiss the keyboard.",
+              "The tabs are Chat, Trips, Tools, and Memory. Done also dismisses the keyboard on the invitation and memory editing screens."
+            ]
+          }
+        },
+        {
+          "id": "comparison",
+          "title": {
+            "en": "Changes since the previous build",
+            "zh": "与上一版的区别"
+          },
+          "items": {
+            "zh": [
+              "与构建 49 相比，翻译使用千问和香港翻译服务，需要联网。语音和照片上传后显示「正在识别并翻译…」。"
+            ],
+            "en": [
+              "Compared with build 49, translation uses Qwen through the Hong Kong translation service and requires an internet connection. After sending audio or a photo, the app shows “Recognizing and translating…”."
+            ]
+          }
+        },
+        {
+          "id": "testing",
+          "title": {
+            "en": "Suggested checks",
+            "zh": "建议怎么测"
+          },
+          "items": {
+            "zh": [
+              "打开「插件 → 翻译」，点语音入口，核对不闪退。打开录音后可切后台结束这次录音。",
+              "翻译页输入几字，分别用「完成」、点空白和上滑收起键盘，确认输入保留、按钮位置正常。核对四个底部入口的顺序。",
+              "抽测构建 49 的第 1、3、4 项：强退重开恢复旧对话和草稿，历史分别打开旧和新对话，切后台 10 秒及锁屏 60 秒后恢复。"
+            ],
+            "en": [
+              "Open Tools → Translation and tap voice input. Check that the app stays open. You can leave the app in the background to end the recording.",
+              "Enter a few words in Translation. Dismiss the keyboard with Done, an empty-area tap, and an upward swipe. Check that the draft and buttons stay in place. Check the four tabs in order.",
+              "Repeat build 49 checks 1, 3, and 4: force-quit and restore an older chat and its draft, open both chats from history, then return after 10 seconds in the background and 60 seconds locked."
+            ]
+          }
+        },
+        {
+          "id": "known",
+          "title": {
+            "en": "Known issues and checks to avoid",
+            "zh": "已知问题和暂不测试内容"
+          },
+          "items": {
+            "zh": [
+              "真实翻译等账号开通通知后再测。收到通知后，文字中英各三条、语音中英各三次（含无声录音），并用菜单、路牌、小票和药品说明各三张照片核对结果。"
+            ],
+            "en": [
+              "Wait until your account is enabled before checking live translation. When notified, translate three texts and three recordings in each direction, including a silent recording, and test three photos each of menus, signs, receipts, and medicine instructions."
+            ]
+          }
+        },
+        {
+          "id": "service",
+          "title": {
+            "en": "Online service changes",
+            "zh": "在线服务变化"
+          },
+          "items": {
+            "zh": [
+              "本次先核对 App 操作。服务可用后会在 #1274 补发真实翻译复测通知。"
+            ],
+            "en": [
+              "This round focuses on app interactions. See #1274 for the live translation retest notice once the service is enabled."
+            ]
+          }
+        }
+      ]
+    },
     {
       "build": 49,
       "previousBuild": 48,
@@ -94,109 +181,6 @@
             ],
             "en": [
               "For the seven build 49 iPhone checks, follow the build 49 announcement in #702. Keep the build 48 checklist for reference. See #1048 for the live testing window."
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "build": 48,
-      "previousBuild": 47,
-      "sections": [
-        {
-          "id": "changes",
-          "title": {
-            "en": "New and improved",
-            "zh": "本版新增和修改"
-          },
-          "items": {
-            "zh": [
-              "已保存行程的详情在系统导航和底栏之间滚动，底部站点可继续向上翻看。详情页可以直接从底栏切回聊天。",
-              "记忆页可以查看当前对话尚未确认的建议。选择要记住的内容时，可切回聊天确认。",
-              "提高了 iOS 26.5 已保存行程的日期按钮对比度。分段、多选探索中，提醒来源可长按查看。",
-              "修正了部分正常旅行回答被误拦的情况。"
-            ],
-            "en": [
-              "Saved itinerary details scroll between the system navigation and tab bars. Scroll to read the last stop, or use the bottom tab to return to Chat.",
-              "The Memory tab shows suggestions from the current chat while they await confirmation. Return to Chat to choose what to remember.",
-              "Saved itinerary date buttons have improved contrast on iOS 26.5. In multiple-choice exploration, touch and hold a reminder to see its sources.",
-              "Fixed an issue where some ordinary travel replies could be hidden."
-            ]
-          }
-        },
-        {
-          "id": "comparison",
-          "title": {
-            "en": "Changes since the previous build",
-            "zh": "与上一版的区别"
-          },
-          "items": {
-            "zh": [
-              "与构建 47 相比，行程详情更好读，记忆方格上方显示待确认建议，聊天中的探索提醒只显示结果。"
-            ],
-            "en": [
-              "Compared with build 47, saved itineraries are easier to read, suggestions appear above the memory tiles, and exploration reminders show only the result in chat."
-            ]
-          }
-        },
-        {
-          "id": "testing",
-          "title": {
-            "en": "Suggested checks",
-            "zh": "建议怎么测"
-          },
-          "items": {
-            "zh": [
-              "① 在已有对话留一段未发送的草稿，强制关闭再打开 App，确认同一对话、消息与草稿都恢复。② 新建对话，问“北京是中国的首都吗？”，等到完整回答。",
-              "③ 从历史列表分别打开之前的对话和第 ② 项新对话。④ 在第 ② 项对话留草稿，切后台 10 秒后返回，再锁屏 60 秒后返回。两次都核对同一对话和草稿。",
-              "⑤ 问“你是谁”，查看首条回答。⑥ 问“你能做啥”，查看能力说明。⑦ 问“北京三日游”，核对第 1 至第 3 天都有具体安排。第 ⑤ 至 ⑦ 项分别从新对话开始。",
-              "每项记下大概时间。遇到失败请截图，在“问题记录”里点“复制”，提供已有记录并暂停本轮。保留当前账号、消息和草稿。"
-            ],
-            "en": [
-              "① Leave an unsent draft in an existing chat. Force-quit and reopen the app, then check that the same chat, messages and draft return. ② Start a new chat, ask “Is Beijing the capital of China?” and wait for a complete reply.",
-              "③ Open both the original chat and the new chat from step ② in History. ④ Leave an unsent draft in the chat from step ②. Return after backgrounding for 10 seconds, then again after locking for 60 seconds. Verify the same chat and draft both times.",
-              "⑤ Ask “Who are you?” and check the first reply. ⑥ Ask “What can you do?” and check the capabilities. ⑦ Ask “A three-day trip to Beijing” and check for concrete plans for days 1–3. Use a fresh chat for each of steps ⑤–⑦.",
-              "Note the approximate time for each step. If something fails, take a screenshot and tap Copy in Problem notes to share any existing record, then pause the test. Keep your current account, messages and drafts."
-            ]
-          }
-        },
-        {
-          "id": "known",
-          "title": {
-            "en": "Known issues and checks to avoid",
-            "zh": "已知问题和暂不测试内容"
-          },
-          "items": {
-            "zh": [
-              "本轮只检查一次简单北京规划，确认有完整三天安排。",
-              "行程正式保存、修改与撤销，以及全国规划仍在验证。",
-              "“记住”偏好仍需单独完成真实验收。",
-              "本轮使用系统默认字号。较大字号下仍有卡片显示或切日问题。",
-              "分段、多选探索尚未默认开启；真机弱网和锁屏至少 5 分钟的恢复仍待单独验证。",
-              "行程详情和日期按钮已完成模拟器检查，仍待真机确认。"
-            ],
-            "en": [
-              "For planning, this check covers one simple Beijing request and a complete three-day itinerary.",
-              "Formal itinerary saving, edits and undo, and planning across China are still being validated.",
-              "Remember preferences still requires a separate live check.",
-              "Use the system default text size. Card display or day selection can still have issues at larger sizes.",
-              "Segmented, multiple-choice exploration is not the default. Weak-network and lock-screen recovery after at least five minutes still need separate device checks.",
-              "Saved itinerary details and date buttons passed simulator checks and still need confirmation on a device."
-            ]
-          }
-        },
-        {
-          "id": "service",
-          "title": {
-            "en": "Online service changes",
-            "zh": "在线服务变化"
-          },
-          "items": {
-            "zh": [
-              "配套香港服务改善了规划等待时查看对话的体验。服务端调整部署后自动生效，构建 47 也可使用这项服务改进。"
-            ],
-            "en": [
-              "The accompanying Hong Kong service changes improve chat loading while a plan is in progress. Service changes take effect after deployment. Build 47 can also use this service improvement."
             ]
           }
         }
