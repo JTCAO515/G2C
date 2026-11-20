@@ -15,14 +15,12 @@ def test_checks_only_two_public_routes_in_order():
     assert value['business_requests'] == value['provider_calls'] == 0
 
 
-@pytest.mark.parametrize('hour,state', [(14, 'PUBLIC_HEALTH_OBSERVED'),
-    (15, 'SKIPPED_QUIET_HOURS'), (23, 'SKIPPED_QUIET_HOURS'),
-    (0, 'PUBLIC_HEALTH_OBSERVED')])
-def test_actual_start_time_checks_beijing_quiet_hours(hour, state):
+@pytest.mark.parametrize('hour', range(24))
+def test_any_start_hour_before_authorization_expiry(hour):
     fetch = Mock(return_value={})
     value, code = monitor.run(lambda: datetime(2026, 11, 17, hour, tzinfo=timezone.utc), fetch)
-    assert value['state'] == state and code == 0
-    assert fetch.call_count == (2 if state == 'PUBLIC_HEALTH_OBSERVED' else 0)
+    assert value['state'] == 'PUBLIC_HEALTH_OBSERVED' and code == 0
+    assert fetch.call_count == 2
 
 
 def test_expired_authorization_and_drill_never_contact_server():
@@ -56,16 +54,24 @@ def test_first_failure_stops_new_requests():
     assert fetch.call_count == 1
 
 
-@pytest.mark.parametrize('later,state', [
-    (datetime(2026, 11, 17, 15, tzinfo=timezone.utc), 'SKIPPED_QUIET_HOURS'),
-    (datetime(2027, 1, 1, tzinfo=timezone.utc), 'SKIPPED_EXPIRED'),
-])
-def test_time_boundary_between_gets_stops_second_request(later, state):
+def test_hour_change_between_gets_allows_second_request():
     before = datetime(2026, 11, 17, 14, 59, 59, tzinfo=timezone.utc)
+    later = datetime(2026, 11, 17, 15, tzinfo=timezone.utc)
+    clock = Mock(side_effect=[before, before, later])
+    fetch = Mock(side_effect=lambda route, expected: dict(route=route, status=200))
+    value, code = monitor.run(clock, fetch)
+    assert code == 0 and value['state'] == 'PUBLIC_HEALTH_OBSERVED'
+    assert value['observations'] == [
+        dict(route='/health/live', status=200), dict(route='/health/ready', status=200)]
+
+
+def test_authorization_expiry_between_gets_stops_second_request():
+    before = datetime(2026, 12, 31, 15, 59, 59, tzinfo=timezone.utc)
+    later = monitor.ENDS_AT
     clock = Mock(side_effect=[before, before, later])
     fetch = Mock(return_value=dict(route='/health/live', status=200))
     value, code = monitor.run(clock, fetch)
-    assert code == 0 and value['state'] == state
+    assert code == 0 and value['state'] == 'SKIPPED_EXPIRED'
     assert value['stopped_at'] == later.isoformat()
     assert value['observations'] == [dict(route='/health/live', status=200)]
     fetch.assert_called_once_with('/health/live', 'alive')
