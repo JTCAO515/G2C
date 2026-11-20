@@ -17,6 +17,12 @@ _DESTINATION_REQUEST=re.compile(r'\s*(?:去\s*|(?:go\s+to|visit)\s+)'
     r'(?P<city>[^?？。.!！,，;；\n“”"「」『』]+?)\s*[。.!！]?\s*',re.I)
 
 
+def _destination_mention(text):
+    match=_DESTINATION_REQUEST.fullmatch(text)
+    if match is None or NEGATED.search(text)is not None:return None
+    return match['city'].strip()
+
+
 def destination_query(text,query):
     """Read a literal destination span, without an identity or save grant.
 
@@ -24,9 +30,8 @@ def destination_query(text,query):
     request. The extracted name remains an exact original substring; source
     quote/index validation and administrative resolution are still required.
     """
-    match=_DESTINATION_REQUEST.fullmatch(text)
-    if match is None or NEGATED.search(text)is not None:return None
-    mention=match['city'].strip()
+    mention=_destination_mention(text)
+    if mention is None:return None
     complete=text.strip().rstrip('。.!！').strip()
     return mention if query.strip().casefold()in (mention.casefold(),complete.casefold())else None
 
@@ -37,6 +42,11 @@ def destination_request(text,query):
 
 
 def known_city_term(query):return query.casefold() in _KNOWN_CITIES
+
+
+def known_destination(text):
+    mention=_destination_mention(text)
+    return mention if mention is not None and known_city_term(mention)else None
 
 
 def supports(key,clause,quote,*,registered_city_terms=()):
