@@ -6,7 +6,8 @@ import unittest
 from unittest.mock import Mock
 
 from cj_api.lio_exploration_profile import Original
-from cj_api.local_lio_exploration import ExplorationPlanning, SAVED_REFERENCE_DATA
+from cj_api.local_lio_exploration import ExplorationPlanning, SAVED_REFERENCE_DATA, UNDERSTANDING
+from cj_api.local_lio_exploration_profile import ProfileView
 from cj_message.demo_dialogue import LIO_VERSION_V4
 from cj_message.lio_context import LioOriginal
 from cj_trip.domain import Denied, packed
@@ -69,6 +70,26 @@ class SavedAnswers(unittest.TestCase):
             planner.execute(worker, 'binding', 'state', text, LioOriginal('en', date(2026,11,20), LIO_VERSION_V4))
         self.assertIs(caught.exception, error)
         answer.assert_not_called()
+
+    def test_unrelated_continuation_does_not_load_saved_details(self):
+        document = build(prepared()).document
+        current = SimpleNamespace(trip=SimpleNamespace(content=packed(document)))
+        for locale, previous, text in (('zh','地铁怎么付费？','继续'),('en','How do I pay for the subway?','Continue')):
+            with self.subTest(locale=locale):
+                planner, worker, answer = self.setup_details(current, text)
+                view = ProfileView(originals=(Original('previous',1,previous), Original('current',2,text)),
+                                   references=('current-original',), profile={}, signature='fixture')
+                planner.profiles.read.return_value = view
+                planner.profiles.accept = Mock(return_value=('state',view.profile))
+                planner._phase = Mock(return_value='before_trip')
+                planner._model = Mock(return_value=json.dumps(dict(version=UNDERSTANDING,intent='practical',
+                                                                  current_source_index=1,updates=[])))
+                result = planner.execute(worker,'binding','state',text,LioOriginal(locale,date(2026,11,20),LIO_VERSION_V4))
+                self.assertEqual(result,'A read-only answer.')
+                planner._model.assert_called_once()
+                planner.current.assert_not_called()
+                messages = answer.call_args.args[2]
+                self.assertFalse(any(m['content'].startswith(SAVED_REFERENCE_DATA) for m in messages))
 
     def test_compact_reference_preserves_saved_clocks_and_all_legs(self):
         from cj_api.local_lio_exploration import saved_trip_reference

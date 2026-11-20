@@ -64,6 +64,7 @@ SAVED_REFERENCE_SYSTEM=(
     'Route stop ordinals start at one within each day. Only use a known date from the saved calendar. '
     'Describe the saved plan without claiming a new change or save.')
 SAVED_REFERENCE_DATA='Saved itinerary data (JSON):\n'
+_SAVED_ITINERARY_TOPIC=re.compile(r'行程|\bitinerary\b',re.I)
 
 
 def saved_trip_reference(current):
@@ -257,7 +258,8 @@ class ExplorationPlanning:
         identity=self_description(text,locale)
         if identity is not None:
             return self._finish(worker,binding,state,identity,Scene.PRACTICAL,locale)
-        if self.generation is not None and _READONLY_DETAILS.fullmatch(text):
+        if (self.generation is not None and _READONLY_DETAILS.fullmatch(text)
+                and _SAVED_ITINERARY_TOPIC.search(text)):
             state,saved=worker._step(binding,lambda:saved_trip_reference(self.current(binding)))
             if saved is not None:
                 return self._answer(worker,binding,state,text,original,view,Scene.PRACTICAL,saved_reference=saved)
