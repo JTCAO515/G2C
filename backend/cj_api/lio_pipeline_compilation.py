@@ -69,7 +69,8 @@ def compile_retrieved(prepared,places,hotel_places,*,checks,subjects,locale,reta
         if 'kind'in item:continue
         original=fixed.get(item['id'])
         kind=original['kind']if original is not None and original['kind']in ('hotel','transport')else'free_time'
-        item.update(kind=kind,place=unconfirmed_place(('待确认地点','Unconfirmed place')),
+        place=places.get(item['id'])
+        item.update(kind=kind,place=deepcopy(place)if place is not None else unconfirmed_place(('待确认地点','Unconfirmed place')),
             note=None,tip=None,reason_refs=[])
     if retained is not None:skeleton=replace(skeleton,title=retained['title'])
     # These are already uniquely selected recommendation candidates, not raw
@@ -82,6 +83,9 @@ def compile_retrieved(prepared,places,hotel_places,*,checks,subjects,locale,reta
     # fields_for binds destination-city metadata to both NEEDS edges. That is
     # not a traveler-supplied airport/station or a request for pickup service.
     transfers=transfer_items(prepared.projected.fields,day_count,id_prefix=prepared.id_prefix,locale=locale)
+    for item in transfers:
+        place=places.get(item['id'])
+        if place is not None:item['place']=deepcopy(place)
     transfer_bounds=tuple(Activity(item['id'],())for item in transfers)
     document,activities,proposed=compile_document(skeleton,_CalendarData(base['calendar'].get('start_date')),
         locale=locale,subjects=subjects,timezone=prepared.city.timezone,code_checks=checks,

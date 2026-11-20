@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import unittest
 
 from cj_api.lio_pipeline_compilation import compile_retrieved
-from cj_api.lio_pipeline_document import representation_size
+from cj_api.lio_pipeline_document import declared_endpoint_names,representation_size
 from cj_api.lio_pipeline_preflight import preflight_document
 from cj_api.lio_pipeline_skeleton import recipes,parse_skeleton,CapacityExceeded
 from cj_feasibility.rich_edges import activity_windows
@@ -81,6 +81,47 @@ class RetrievedCompilation(unittest.TestCase):
             bound=next(a for a in group if a.item_id==item['item_id'])
             self.assertEqual([(w.start,w.end)for w in bound.windows],[(86400+9*3600,86400+10*3600)])
         self.assertEqual(value.projection.fields,before)
+
+    def test_verified_original_fixed_endpoint_keeps_the_locked_clock_and_enables_routes(self):
+        place=deepcopy(next(i['place']for i in CASES['matched']['content']['items']if i['place']['state']=='matched'))
+        item=fixed()
+        for edge,time in (('start','09:00'),('end','10:00')):
+            item[edge]['time']={'state':'known','value':time}
+            item[edge]['timezone']={'state':'known','value':'Asia/Shanghai'}
+            item[edge]['place']={'state':'known','value':place['name_zh']}
+        value=prepared({'fixed_items':[item]})
+        lookups={s.item_id:None for s in value.skeleton.stops}
+        lookups[item['item_id']]=place
+        result=compile_retrieved(value,lookups,(None,None),checks=checks(3),subjects=('party',),locale='en',retained=None)
+        actual=next(i for i in result.document['items']if i['id']==item['item_id'])
+        self.assertEqual(actual['place'],place)
+        self.assertEqual(actual['fixed'],{'state':'known','value':True})
+        self.assertEqual(actual['schedule']['start']['time'],item['start']['time'])
+        self.assertEqual(actual['schedule']['end']['time'],item['end']['time'])
+
+    def test_endpoint_lookup_uses_only_explicit_names_and_keeps_transfer_time_unknown(self):
+        place=deepcopy(next(i['place']for i in CASES['matched']['content']['items']if i['place']['state']=='matched'))
+        generic=fixed(); known=fixed(); known['item_id']='named-fixed'; moved=fixed();moved['item_id']='moving-fixed'
+        for edge in ('start','end'):
+            generic[edge]['place']={'state':'known','value':'酒店'}
+            known[edge]['place']={'state':'known','value':place['name_zh']}
+        moved['start']['place']={'state':'known','value':'北京首都国际机场'}
+        moved['end']['place']={'state':'known','value':'北京站'}
+        fields=dict(fixed_items=[generic,known,moved],arrival=dict(place=dict(state='known',value=place['name_zh'])),
+                    departure=dict(place=dict(state='known',value='机场')))
+        expected=(('named-fixed',place['name_zh']),('compile-data-arrival-transfer',place['name_zh']))
+        self.assertEqual(declared_endpoint_names(fields,id_prefix='compile-data',retained=None),expected)
+        self.assertEqual(declared_endpoint_names(fields,id_prefix='compile-data',retained={'items':[{'id':'named-fixed'}]}),expected[1:])
+        value=prepared(fields)
+        lookups={s.item_id:None for s in value.skeleton.stops}
+        lookups['compile-data-arrival-transfer']=place
+        result=compile_retrieved(value,lookups,(None,None),checks=checks(3),subjects=('party',),locale='en',retained=None)
+        actual={i['id']:i for i in result.document['items']}
+        arrival=actual['compile-data-arrival-transfer']
+        self.assertEqual(arrival['place'],place)
+        self.assertEqual(arrival['schedule']['start']['time'],{'state':'unknown'})
+        self.assertIn('booking are unconfirmed',arrival['note'])
+        self.assertEqual(actual['compile-data-departure-transfer']['place']['state'],'unconfirmed')
 
     def test_retained_rich_original_title_fields_and_source_rows_are_not_rewritten(self):
         original=deepcopy(CASES['protected_fixed']['content']);before=deepcopy(original)

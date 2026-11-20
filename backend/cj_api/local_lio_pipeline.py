@@ -21,6 +21,7 @@ from .lio_pipeline_document import representation_size
 from .lio_pipeline_model import SKELETON_SYSTEM,WORDING_SYSTEM,skeleton_data,wording_batches
 from .lio_pipeline_wording import wording_items,apply_wording,profile_facts
 from .lio_pipeline_preflight import admit_city_lookup,recipes_for_edges
+from .lio_pipeline_document import declared_endpoint_names
 from .lio_pipeline_skeleton import parse_skeleton
 from .local_lio_pipeline_calls import PipelineCalls,PipelineCapacity,model_call
 from .local_lio_pipeline_inputs import understand_constraints,planning_edges
@@ -47,6 +48,7 @@ class PreparedPlan:
     city:CityReference
     preflight_size:tuple[int,int,int]
     id_prefix:str
+    endpoint_names:tuple
 
 
 def prepare_generation(host,worker,binding,view,*,locale,effective,prior_model_calls=0):
@@ -70,6 +72,7 @@ def prepare_generation(host,worker,binding,view,*,locale,effective,prior_model_c
     skeleton=parse_skeleton(raw.encode(),expected,id_prefix=prefix)
     current=host.current(binding)
     retained=None if current is None else json.loads(current.trip.content)
+    endpoints=declared_endpoint_names(projected.fields,id_prefix=prefix,retained=retained)
     size,resolution=admit_city_lookup(skeleton,projected,edges,calls,id_prefix=prefix,locale=locale,retained=retained,
         query=dict(query=effective['city'],normalized_name=None,province=None))
     if resolution['status']!='resolved':raise DestinationUnresolved(resolution)
@@ -81,7 +84,7 @@ def prepare_generation(host,worker,binding,view,*,locale,effective,prior_model_c
     source=capture_pipeline_sources(host,worker,binding,view,fields,city,day_count=day_count,
         start_date=start['value']if start['state']=='known'else None)
     return PreparedPlan(skeleton,projected,projection,planning_edges(projection,day_count),
-        calls,source,city,size,prefix)
+        calls,source,city,size,prefix,endpoints)
 
 
 def retrieve_skeleton(prepared):
@@ -96,12 +99,16 @@ def retrieve_skeleton(prepared):
     skeleton=prepared.skeleton;bundle=prepared.sources
     sights=tuple(stop for stop in skeleton.stops if stop.kind=='sight')
     meals=tuple(stop for stop in skeleton.stops if stop.kind=='meal')
-    if len(sights)+len(meals)+len(skeleton.hotels)>45-prepared.calls.gaode:
+    required=len(sights)+len(meals)+len(skeleton.hotels)
+    if required>prepared.calls.gaode_slots_left:
         raise PipelineCapacity('complete original place lookup set exceeds the remaining allowance')
+    route_slots=prepared.preflight_size[1]
+    optional_slots=max(0,prepared.calls.gaode_slots_left-required-route_slots)
+    endpoints=prepared.endpoint_names[:optional_slots]
     worker,binding=bundle.worker,bundle.binding
     origin=ExplorationOrigin(bundle.profiles.database,binding,worker.messages.query(binding.message_id))
     prepared.calls.parallel(sight_and_hotel_calls(sights,skeleton.hotels,city=prepared.city.adcode,
-        origin=origin,sources=bundle.providers))
+        origin=origin,sources=bundle.providers,endpoint_names=endpoints))
     first=bundle.seal()
     observed,_=bundle.places(replace(skeleton,stops=sights),first)
     anchors={}
@@ -113,7 +120,7 @@ def retrieve_skeleton(prepared):
     prepared.calls.parallel(meal_calls(meals,city=prepared.city.adcode,centers=centers,
         origin=origin,sources=bundle.providers))
     complete=bundle.seal()
-    places,hotels=bundle.places(skeleton,complete)
+    places,hotels=bundle.places(skeleton,complete,endpoint_names=endpoints)
     return places,hotels,complete
 
 

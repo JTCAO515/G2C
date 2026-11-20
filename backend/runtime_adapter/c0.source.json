@@ -91,7 +91,7 @@
     "backend/cj_api/lio_flat_intake.py": "0198af5aff37ef346c24cade652c5e9d222fe0de547e8de5523c427cb2d94c2a",
     "backend/cj_api/lio_flow_intake.py": "df2158806903826b9829d00e038ffe2cd92d000bab6081e6a5719059893700dd",
     "backend/cj_api/lio_national_intake.py": "ee1969ff435c9789906a37dec5150e88ee50b4805293a5d8771900f2d06ee470",
-    "backend/cj_api/lio_pipeline_document.py": "3ecdaf44077a4b552d4ebe2a8a587d539ae4c123cc74dc790d5602afe2bdb4ce",
+    "backend/cj_api/lio_pipeline_document.py": "76c676c6bac70818c4633620234f39b4058324183532da85c8aed04ba519d107",
     "backend/cj_api/lio_pipeline_model.py": "82b59ae5d0b95bb696be02b62856171c2487406f801a6ef18cb8e2fa929dedc7",
     "backend/cj_api/lio_pipeline_skeleton.py": "ffb1a2b3881548176415ee088e59e880d3f2c535baf6119f4e6598ced62d2ee0",
     "backend/cj_api/lio_plan_pace.py": "23ba03c5034fa17ae844809b96d67093b58037ef7240d454c07b061d6b294e1c",
@@ -137,7 +137,7 @@
     "eval/optimization/score_v2.py": "015fa9f21b418fe49a5ac07a5fb3027e0422620a6616029f2ba6438bfa1e9322",
     "tooling/optimization/uv.lock": "c3729fbcd04627cb07bde4f5f21b9c4fbfa4748b3d7468d550c7fc2af62bc343"
   },
-  "system_prompt_sha256": "74a3736caa128ca821ebff1783eb483eeab9ba6e781ea0f4d95cee280231b199",
+  "system_prompt_sha256": "16cc70c757e77acce59ba31fcb00fcddb7cfe6c88b50dc502ebc6933d7dac8c2",
   "task_sha256": "9d4376ba7512d6f3c0741036ae1bd0dda99752bbc9f8b8fb8dd7025c61a530ec",
   "task_version": "G2C-dialogue-cases.2",
   "tool_implementation_sha256": "fbf83f4448095d4f9c6d0ec2e1bd5b9a532fdde57424d79b88417cc9f2028410",
