@@ -103,3 +103,13 @@ uv run --locked python -B -m pytest -q \
 - **CAP-EN**　[现场原件](https://github.com/JTCAO515/G2C/issues/1048#issuecomment-7003963155) 中，旧脚本错拒了完整英文能力文案。按 [JT 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-7004999143)，当轮人工兜底逐字核原 RUN 正文，别把这一放行当作脚本已修。后续自动门禁的正例为同源 [CAPABILITIES_EN](https://github.com/JTCAO515/G2C/blob/59cc874b5e87bd2e0451b81b144ee0bc2b15b6c9/backend/message/cj_message/lio_context.py#L22) 原文。订票、付款限制是正例的一部分。明确否认规划能力、单独标题、引用文案或在完整文案前后附加与其矛盾的否认均不得通过。例如 “I don’t plan your days.”、“It is not true that I can plan your days.” 及「完整文案 + “I cannot plan any itinerary.”」。在 [B 的 #1233](https://github.com/JTCAO515/G2C/pull/1233) 调原门禁判定；真机同时核正文是否真正可见，欢迎语和 ACK 不计。
 
 两条均保留原现场结果。[补跑回执](https://github.com/JTCAO515/G2C/issues/1048#issuecomment-7004930477)是服务端冒烟证据。
+
+## 2026-11-20 · 三日游短答缺整份行程
+
+**PLAN-NONE**　[现场回执](https://github.com/JTCAO515/G2C/issues/1048#issuecomment-7030713424)：
+`cc73ce4b` 中文首轮「北京三日游」的 RUN 已 ACK 并完成，47 字正文可见，但没有分天安排，判 **FAIL**。
+原版已回退 `59cc874b`，L8 与全国 16 条 UNRUN。保守占用 ¥0.0060779，已知估算 ¥0.0060779，实付 UNKNOWN。
+
+- 复跑原短问法，在独立新对话核对实际正文、原 MID/RUN 与规划分流。负例使用无日程的合成短答，例如「北京有很多地方可以去，故宫和长城都很值得看。你想先了解哪个景点？」。即使 ACK、RUN completed 和 timeline 200 齐全，缺任一日实际安排仍 FAIL。
+- 正例给出第 1–3 天各自可执行的活动和先后或时段。另用相同正文仅改变 Markdown 时段样式作对照，实际安排一致时结论一致。[cc73ce4b 加粗标签离线误拒](https://github.com/JTCAO515/G2C/issues/1048#issuecomment-7030645021)单独登记。
+- L 正核对是否从规划进件转入普通回答及触发原因，待同一原 RUN 的分流记录证实。复跑新候选按实际回复和原件判，保留未结算费用与原写入守卫。[L 排查](https://github.com/JTCAO515/G2C/issues/1048#issuecomment-7030689560)
