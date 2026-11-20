@@ -265,6 +265,102 @@ class PlanningFlow(unittest.TestCase):
             self.assertNotIn('哪天',answer(events));self.assertNotIn('start date',answer(events))
             self.assertEqual(context(events)['facts']['start_date']['sources'],[dict(message_id='national-message',quote=reply)])
 
+    def test_undated_preview_can_save_when_unsupplied_party_has_both_absence_markers(self):
+        for first, second, city, locale, note in (
+                ('去成都玩三天', '从明天开始。', '成都', 'zh', '未说明具体人数'),
+                ('Chengdu for three days', 'Start tomorrow.', 'Chengdu', 'en', 'No party size was specified')):
+            with self.subTest(locale=locale):
+                preview = flow(first, city=city, intent='plan', questions=())
+                previous = context(run(preview, first, locale=locale)[1])
+                for fact in previous['facts'].values():
+                    for ref in fact['sources']:
+                        ref['message_id'] = 'prior-0'
+                wire = flow(second, city=None, days=None, start='2026-11-12', index=1, intent='plan', questions=())
+                wire.update(unknown_fields=['party_size'], uncertain_fields={'party_size': note})
+                published, _, _, _ = run(wire, second, turns=(original(first), original(second)),
+                                         previous=previous, locale=locale)
+                self.assertEqual(len(published), 1)
+                fields = published[0][3].fields
+                self.assertEqual(fields['party_size'], {'state': 'unknown'})
+                self.assertEqual(fields['arrival']['date']['value'], '2026-11-12')
+                self.assertEqual(fields['departure']['date']['value'], '2026-11-14')
+                for conflict in (
+                    dict(party_size=3),
+                    dict(field_sources=[*wire['field_sources'], dict(field='party_size', source_index=0, quote=first)]),
+                    dict(unknown_fields=['party_size', 'party_size']),
+                    dict(unknown_fields=['party_size', 'start_date'],
+                         uncertain_fields={'party_size': note, 'start_date': 'Uncertain date'}),
+                ):
+                    rejected, _, _, _ = run(dict(wire, **conflict), second, turns=(original(first), original(second)),
+                                              previous=previous, locale=locale)
+                    self.assertEqual(rejected, [])
+
+    def test_dated_followup_preserves_only_the_travelers_own_hotel_meetup(self):
+        for first, date_reply, meetup, place_unknown, request, city, duration, locale in (
+                ('去成都玩三天', '从明天开始。',
+                 '第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变；酒店名称和位置尚未确定。',
+                 '酒店名称和位置尚未确定', '请给每天的上午、下午安排写出计划时间段，不要声称已有预约。',
+                 '成都', '三天', 'zh'),
+                ('Chengdu for three days', 'Start tomorrow.',
+                 'On day 1 I have a fixed hotel meetup from 9:00 to 10:00 a.m., keep it unchanged.',
+                 'The hotel name and location are unknown', 'Give morning and afternoon planned times each day; do not claim bookings.',
+                 'Chengdu', 'three days', 'en')):
+            with self.subTest(locale=locale):
+                text = (f'{date_reply} {meetup}{request}' if locale == 'zh' else
+                        f'{date_reply} {meetup} {place_unknown}. {request}')
+                preview = flow(first, city=city, intent='plan', questions=())
+                previous = context(run(preview, first, locale=locale)[1])
+                for fact in previous['facts'].values():
+                    for ref in fact['sources']:
+                        ref['message_id'] = 'prior-0'
+                wire = flow(text, city=city, start='2026-11-12', index=1, intent='plan', questions=())
+                wire.update(planning_request_index=0, needs_tools=False, unknown_fields=['party_size'],
+                            uncertain_fields={'party_size': 'No party size was specified'})
+                wire['city']['source_index'] = 0
+                wire['field_sources'] = [
+                    dict(field='start_date', source_index=1, quote=date_reply),
+                    dict(field='duration_days', source_index=0, quote=duration),
+                ]
+                wire['fixed_items'] = [dict(
+                    label='酒店集合' if locale == 'zh' else 'hotel meetup', kind='hotel', quote=meetup,
+                    source_index=1, detail_refs=[], applies_to=['party'], locked=True, booking_evidence=None,
+                    start_date='2026-11-12', start_time='09:00', start_timezone=None, start_place=None,
+                    end_date='2026-11-12', end_time='10:00', end_timezone=None, end_place=None,
+                    unknown_fields=[], uncertain_fields={'start_place': place_unknown, 'end_place': place_unknown},
+                )]
+                turns = (original(first), original(text))
+                published, _, _, _ = run(wire, text, turns=turns, previous=previous, locale=locale)
+                self.assertEqual(len(published), 1)
+                fields = published[0][3].fields
+                self.assertEqual(fields['arrival']['date']['value'], '2026-11-12')
+                self.assertEqual(fields['departure']['date']['value'], '2026-11-14')
+                self.assertEqual(fields['party_size'], {'state': 'unknown'})
+                fixed, = fields['fixed_items']
+                self.assertEqual(fixed['applies_to'], ['self'])
+                self.assertEqual(fixed['locked'], {'state': 'known', 'value': True})
+                for edge, clock in (('start', '09:00'), ('end', '10:00')):
+                    self.assertEqual(fixed[edge]['date']['value'], '2026-11-12')
+                    self.assertEqual(fixed[edge]['time']['value'], clock)
+                    self.assertNotEqual(fixed[edge]['place']['state'], 'known')
+                self.assertNotEqual(fixed['booking_status']['state'], 'known')
+                for invalid_fixed in (dict(start_time='08:30'), dict(locked=False),
+                                      dict(booking_evidence=dict(status='booked', source_index=1, quote=meetup))):
+                    rejected_wire = dict(wire, fixed_items=[dict(wire['fixed_items'][0], **invalid_fixed)])
+                    rejected, _, _, _ = run(rejected_wire, text, turns=turns, previous=previous, locale=locale)
+                    self.assertEqual(rejected, [])
+                local_quote = meetup.rstrip('。.')
+                same_sentence = '，所有人参加。' if locale == 'zh' else ' for everyone.'
+                next_sentence = '所有人都会参加。' if locale == 'zh' else ' This meetup is for the whole group.'
+                for narrowed_quote, full_statement in (
+                    (local_quote, local_quote + same_sentence),
+                    (meetup, meetup + next_sentence),
+                ):
+                    full_text = text.replace(meetup, full_statement, 1)
+                    clipped_wire = dict(wire, fixed_items=[dict(wire['fixed_items'][0], quote=narrowed_quote)])
+                    rejected, _, _, _ = run(clipped_wire, full_text, turns=(original(first), original(full_text)),
+                                             previous=previous, locale=locale)
+                    self.assertEqual(rejected, [])
+
     def test_date_answer_finishes_plan_without_party_question(self):
         first='去成都玩三天';second='从2026-11-20开始'
         previous=context(run(flow(first),first)[1])

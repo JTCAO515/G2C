@@ -60,6 +60,7 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
         demo_accounts.manage(runtime,'insert',SUBJECT,control,operations)
     journal=AuthorizationBudget(root/'fixture-journal',clock=lambda:datetime(2026,11,9,tzinfo=timezone.utc))
     locale='en';text='';bad=False;wire=[];start=None;basic=False;regression=False;duplicate=False;city_chain=False;city_root=0
+    duplicate_absence=False
     fixed={'en':'On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged',
            'zh':'第一天我9:00到10:00要在酒店集合，保持不变'}
     original_fixed='第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变；酒店名称和位置尚未确定。'
@@ -121,6 +122,12 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
                     item.update(kind='hotel',quote=original_fixed if locale=='zh'else fixed['en'],
                                 start_timezone='Asia/Shanghai',end_timezone='Asia/Shanghai')
                     if locale=='zh':item['unknown_fields']=[] # original r09 intake: absent place, not a claimed name
+                if duplicate_absence:
+                    note='酒店名称和位置尚未确定'if locale=='zh'else'The hotel name and location are unknown'
+                    value.update(unknown_fields=['party_size'],
+                                 uncertain_fields={'party_size':'未说明具体人数'if locale=='zh'else'No party size was specified'})
+                    item.update(applies_to=['party'],start_timezone=None,end_timezone=None,unknown_fields=[],
+                                uncertain_fields={'start_place':note,'end_place':note})
                 if bad:value['city'].update(query='成都',quote='成都')
         elif 'MEMORY-EXTRACT@2'in system:
             value=dict(version='MEMORY-EXTRACT@2',entries=[])
@@ -375,12 +382,18 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
                                 memory='actual native active source')),flush=True)
                 city_chain=False
         plan_cases=()if fallback_only else(('en','en',False),('zh','zh',False),('translated','en',True),
-                ('r09-zh','zh',False),('r09-en','en',False),('r09-duplicate','zh',False))
+                ('r09-zh','zh',False),('r09-en','en',False),('r09-duplicate','zh',False),
+                ('r10-zh','zh',False),('r10-en','en',False))
         for label,language,invalid in plan_cases:
-            locale=language;bad=invalid;cid=None;regression=label.startswith('r09');duplicate=label=='r09-duplicate'
+            locale=language;bad=invalid;cid=None;duplicate=label=='r09-duplicate'
+            duplicate_absence=label.startswith('r10')
+            regression=label.startswith('r09') or duplicate_absence
             texts=(CASE['turns']if locale=='en'else('我想去成都玩三天。','明天开始。'+fixed['zh']+'。酒店名称和位置尚未确定。不要声称已经预订。'))
             if regression and locale=='zh':
                 texts=('去成都玩三天','从明天开始。 '+original_fixed+'请给每天的上午、下午安排写出计划时间段，不要声称已有预约。')
+            if duplicate_absence and locale=='en':
+                texts=('Chengdu for three days','Start tomorrow. '+fixed['en']+'. The hotel name and location are unknown. '
+                        'Give morning and afternoon planned times each day. Do not claim bookings.')
             for index,text in enumerate(texts):
                 mid='cross-'+label+'-'+str(index)
                 sent=api.post('/v2/lio/messages',headers=headers,content=json.dumps(dict(version='LIO-message.2',message_id=mid,
@@ -419,6 +432,13 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
                     meeting,=fields['fixed_items'];assert meeting['applies_to']==['self']
                     assert meeting['booking_status']['state']!='known'
                     expected_place='missing'if regression and locale=='zh'else'unknown'
+                    if duplicate_absence:
+                        expected_place='uncertain'
+                        assert fields['party_size']=={'state':'unknown'}
+                        for day in card['days']:
+                            planned=[item for item in day['items']if not item['fixed']]
+                            assert any(item['start_time']<'12:00'and item['end_time'] for item in planned)
+                            assert any('12:00'<=item['start_time']<'17:00'and item['end_time'] for item in planned)
                     assert meeting['start']['place']['state']==expected_place and meeting['end']['place']['state']==expected_place
                 print(json.dumps(dict(mid=mid,cid=cid,run=outcome.run_id,status=outcome.status)),flush=True)
             if bad:
