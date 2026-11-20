@@ -275,5 +275,6 @@ class ExplorationEditDispatch:
     def execute(self,worker,binding,state,stored,text,locale,deadline):
         from cj_message.lio_context import selected_lio_original_for
         original=selected_lio_original_for(self.database,binding)
-        if original.protocol==LIO_VERSION_V4 and self.exploration.enabled:return self.exploration.execute(worker,binding,state,text,original)
+        if original.protocol==LIO_VERSION_V4 and self.exploration.enabled:
+            return self.exploration.execute(worker,binding,state,text,replace(original,locale=locale))
         return self.legacy.execute(worker,binding,state,stored,text,locale,deadline)
