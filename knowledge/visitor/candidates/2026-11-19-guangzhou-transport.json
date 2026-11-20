@@ -1,0 +1,147 @@
+[
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-transport.baiyun-t3-metro-shuttle",
+    "title_zh": "白云机场T3到市区：空港2线支线接驳高增站换乘地铁3/9号线（2026年5月航站楼调整后）",
+    "summary_zh": "广州市政府门户网站2026-05-04转广州日报新花城稿件说明：2026-05-07凌晨2时起，T1航站楼11家国内航司全部转场T3，T1关闭改造，地铁机场南站与城际白云机场南站（T1）暂停通行。从T3到市区，可在T3交通中心一层旅游巴士集散中心（东客运站）乘“空港2线支线”，约12分钟到高增地铁站，再换乘地铁3号线或9号线进城；票价2元，发车间隔5—10分钟。T3另有8条机场巴士直达天河、越秀、海珠、番禺、增城新塘、南沙、黄埔、荔湾8区，19.9元起。前往T2仍可乘地铁3号线机场北站。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州白云国际机场T3航站楼",
+      "name_en": "Baiyun Airport Terminal 3",
+      "address": null
+    },
+    "audience": [
+      "抵达白云机场T3的入境游客",
+      "需前往广州市区各区的自助游客"
+    ],
+    "themes": [
+      "transport",
+      "arrival"
+    ],
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站（来源：广州日报新花城）",
+        "url": "https://www.gz.gov.cn/zwfw/zxfw/jtfw/content/post_10798042.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-05-04",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "机场巴士8条市区线路的具体站点、发车时刻与末班时间未在本页列出",
+      "地铁3号线与9号线的运营时间未在本页给出，页面提示以广州地铁官方为准",
+      "T1恢复开放及机场南站恢复通行的时间未说明",
+      "空港2线支线是否接受现金或境外银行卡未说明（页面只写支持羊城通）"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:5月7日起白云机场T1航站楼航司转场T3，交通接驳攻略→／广州市政府门户网站“交通服务”T1转场T3接驳攻略正文] [来源级:S2] [英文:来源已有] 来源为广州市政府门户网站“政务服务—最新服务—交通服务”栏目转广州日报新花城稿件，发布于2026-05-04，属T1转场T3过渡期的交通指引；机场巴士班次与票价易变。航站楼适用性按原文：T1已关闭、T2方式不变、T3为本次新增接驳。该页未标注有效期。SOURCES.md 尚未登记广州市政府门户网站host，正式采用前需按来源批准流程确认。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-transport.metro-single-journey-ticket",
+    "title_zh": "广州地铁单程票：进站车站购买、当日当站有效（2024年票务规则）",
+    "summary_zh": "广州地铁官网“广州地铁票务规则”（2024-06-27）第四条写明：乘客可在进站车站购买单程票，车票当天在购票站进站乘车有效；已购单程票没有进闸记录且票内信息可读取的，购票当天运营时间内可在购票站退票，非当天购买一律不退。广州市政府门户网站2025-04-10稿称，广交会前广州地铁升级琶洲、新港东两站的TVM自动售票机，新增拼音首字母、英文全称及当前站热门购票车站查询等购票模式；同期在14个站点设20台外卡POS机，并在广州东站地铁站、机场北站设外币兑换网点。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州地铁车站",
+      "name_en": "Guangzhou Metro station",
+      "address": null
+    },
+    "audience": [
+      "普通散客",
+      "首次来华的入境游客"
+    ],
+    "themes": [
+      "transport"
+    ],
+    "sources": [
+      {
+        "name": "广州地铁官网·广州地铁票务规则",
+        "url": "http://appmsg.gzmtr.cn/DNSFile/newshtml/8deab1f8-7fdc-43d5-b65f-f2861c3e4ba0.html",
+        "type": "official_transport",
+        "language": "zh",
+        "published_on": "2024-06-27",
+        "valid_until": null
+      },
+      {
+        "name": "广州市人民政府门户网站（来源：广州日报）",
+        "url": "https://www.gz.gov.cn/zwfw/zxfw/jtfw/content/post_10207075.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2025-04-10",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "自动售票机可接受的支付方式与现金面额未在已读正文中说明",
+      "14个站点外卡POS机的具体用途（购票或充值）及可受理卡组织未说明",
+      "境外银行卡能否直接刷闸乘车未说明；票务规则第七条只写银联信用卡（含手机闪付）的地铁使用规则",
+      "单程票按里程计价，具体票价金额未记录（易变）"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:广州地铁票务规则／广州地铁《票务规则》2024-06-27；14个地铁站设外卡POS机 广交会期间购票、支付更便利／广州市政府门户网站2025-04交通服务稿正文] [来源级:S1] [英文:来源已有] [护照:见正文说明] 票务规则页为广州地铁官方HTTP页面，正文含发布日期2024-06-27，未标有效期。2025-04-10政府稿只说明琶洲、新港东两站售票机升级，不代表全网售票机均有英文界面；外卡POS机为第137届广交会期间措施，是否延续未核实。不要把“银行卡购票”推成“境外银行卡可以直接刷闸”。SOURCES.md 尚未登记 gzmtr.cn 与广州市政府门户网站host，正式采用前需按来源批准流程确认。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-transport.bus-qr-hkd-wallet",
+    "title_zh": "广州公交扫码支付：广州公共交通乘车码（含微信香港钱包港币支付）",
+    "summary_zh": "广州市政府门户网站2023-12-08稿（来源：广州市交通运输局）称，乘客在羊城通微信小程序和APP开通“广州公共交通乘车码”时选择绑定微信香港钱包，可通过钱包内港币余额直接支付乘车费用，无需把港币兑换成人民币；广州和佛山市内公共交通均已支持“广州公共交通乘车码”付费，可搭乘地铁、公交、水巴等公共交通工具。广州羊城通有限公司产品页称，“广州公共交通乘车码”实现市内公交和地铁“一城一码”通行，除公交外也可刷码搭乘地铁、BRT、轮渡、水巴。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州市内公交线路",
+      "name_en": "Guangzhou city buses",
+      "address": null
+    },
+    "audience": [
+      "使用手机扫码乘车的游客",
+      "持微信香港钱包的港澳游客"
+    ],
+    "themes": [
+      "payment",
+      "transport"
+    ],
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站（来源：广州市交通运输局）",
+        "url": "https://www.gz.gov.cn/zwfw/zxfw/jtfw/content/post_9370229.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2023-12-08",
+        "valid_until": null
+      },
+      {
+        "name": "广州羊城通有限公司·产品中心（广州公共交通多码合一服务）",
+        "url": "https://www.gzyct.com/product/detail/ID_100000027694747.html",
+        "type": "official_transport",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "境外银行卡（Visa/Mastercard等）能否绑定乘车码或直接在公交车上刷卡，两份来源均未说明",
+      "没有微信香港钱包的游客可用哪些方式支付公交票价，未在已读正文说明",
+      "开通乘车码是否需要内地手机号或实名认证，未说明",
+      "公交票价、换乘优惠及免费范围未记录",
+      "是否需要内地手机号或实名认证未说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:广州公共交通拓展实现港币直接支付乘车费用功能／广州市政府门户网站“政务服务—最新服务—交通服务”2023-12-08稿正文；首页-广州羊城通有限公司／羊城通官网产品详情页正文] [来源级:S1] [英文:来源已有] 只按来源写“广州公共交通乘车码”及微信香港钱包港币支付，不外推境外银行卡可直接刷公交或刷闸。2023-12-08政府稿所述支持现状是否延续需复核；羊城通产品页未标发布日期，为公司自述。适用范围按原文限广州、佛山市内公共交通。SOURCES.md 尚未登记 gzyct.com 与广州市政府门户网站host，正式采用前需按来源批准流程确认。",
+    "conflicts": [],
+    "related_entries": []
+  }
+]

@@ -1,0 +1,261 @@
+[
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-stay.chimelong-hotel-checkin-luggage",
+    "title_zh": "住长隆旗下酒店：几点能入住、早到能不能先存行李",
+    "summary_zh": "长隆官网“酒店寄存服务与入住时间”页列明三家广州度假区酒店的统一安排：长隆酒店、长隆熊猫酒店、长隆香江酒店的入住时间均为15:00，退房时间均为11:00；三家对住客提供免费寄存服务（贮存服务：住客免费）；停车对住客免费，但需提前在前台或礼宾部办理授权（长隆香江酒店注明在礼宾部办理）。页面未写提前入住、延迟退房是否收费，也未写非住客能否寄存。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "长隆酒店",
+      "name_en": "Chimelong Hotel",
+      "address": "广州市番禺区迎宾路"
+    },
+    "audience": [
+      "上午航班或高铁到达、下午才能入住的家庭",
+      "带儿童需要先寄存行李再进园的父母"
+    ],
+    "themes": [
+      "arrival",
+      "family"
+    ],
+    "sources": [
+      {
+        "name": "长隆旅游度假区官网·酒店寄存服务与入住时间",
+        "url": "https://www.chimelong.com/gz/deposit/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "提前入住与延迟退房是否收费未说明",
+      "非住客（只玩园区）能否寄存行李未说明",
+      "寄存是否限件数、尺寸与时长未说明",
+      "页面未标更新日期"
+    ],
+    "notes": "[阶段:B] [时效:高] [复核:2026-12-04] [依据:酒店寄存服务与入住时间|长隆旅游度假区／长隆官网“酒店寄存服务与入住时间”页正文] [来源级:S1] [英文:来源已有] 15:00入住、11:00退房是三家酒店的统一口径；带幼儿的家庭若上午到达，可先按“住客免费寄存”安排，但能否提前拿到房卡、能否在园区寄存推车需现场确认。地址取自A级景区名录登记的度假区地址，非酒店门牌。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-stay.airport-to-chimelong-metro",
+    "title_zh": "从白云机场坐地铁到长隆：换几次、大概多久",
+    "summary_zh": "长隆官网交通指南“从机场出发”页写明：在机场北地铁站乘地铁3号线北延段（体育西路方向）约37分钟到体育西路站，站内换乘3号线（番禺方向）约20分钟到汉溪长隆站，E出口出站步行约5分钟到“长隆地铁广场穿梭巴士站”，再乘长隆免费穿梭巴前往各乐园园区和酒店。同页另列出租车/自驾路线：经机场高速、华南干线至番禺大道，全程约1小时。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "长隆旅游度假区（广州）",
+      "name_en": "Chimelong Tourist Resort (Guangzhou)",
+      "address": "广州市番禺区迎宾路"
+    },
+    "audience": [
+      "落地后直接去长隆住店的家庭",
+      "带行李与推车、需要估算换乘次数与时间的游客"
+    ],
+    "themes": [
+      "transport",
+      "arrival",
+      "family"
+    ],
+    "sources": [
+      {
+        "name": "长隆旅游度假区官网·交通指南·从机场出发",
+        "url": "https://www.chimelong.com/gz/traffic/type_1.html",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "机场北站是否仍在运营（T1关闭、机场南站暂停后）需按机场最新信息核对",
+      "体育西路站换乘的步行距离与无障碍电梯情况未说明",
+      "免费穿梭巴的班次间隔与末班时间未在本页给出",
+      "票价与行李尺寸限制未说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:交通指南|长隆旅游度假区／长隆官网“交通指南”页正文] [来源级:S1] [英文:来源已有] 机场北站对应T2（见同批T2到达条目）；从T3到达的旅客需先按T3接驳方式到高增或T2，再走本条路线，本页未覆盖T3出发情形。时间“约37分钟”“约20分钟”为页面给出的参考值。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-stay.chenjiaci-guide-desk",
+    "title_zh": "陈家祠想请讲解：去哪里办、什么时候办",
+    "summary_zh": "广东民间工艺博物馆“散客参观须知”写明：若需讲解服务，请从古建正门进入首进正厅，在大厅右侧讲解咨询服务台预约讲解。同页另列免费开放日安排（2025年每月一日，含5月18日国际博物馆日、5月19日中国旅游日等），并写明免费之日需在馆微信服务号预约后排队分批入馆。页面未列讲解收费、时长、语种与可预约时段。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广东民间工艺博物馆（陈家祠）",
+      "name_en": "Guangdong Folk Craft Museum (Chen Clan Ancestral Hall)",
+      "address": "广州市荔湾区中山七路恩龙里34号"
+    },
+    "audience": [
+      "希望孩子听懂建筑与展品的家庭",
+      "不懂中文、需要确认是否有外语讲解的游客"
+    ],
+    "themes": [
+      "attraction",
+      "family",
+      "accessibility"
+    ],
+    "sources": [
+      {
+        "name": "广东民间工艺博物馆官网·开放时间及购票（散客参观须知·温馨提示）",
+        "url": "https://www.gzcjc.com.cn/MYwebsite/rc/my_mpyy_xq.htm?token=e84fe1c22fcf404088c89c11252df775&leixing=mpyy",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "讲解是否收费、收费标准未说明",
+      "是否有英语或其他外语讲解未说明",
+      "讲解时长、场次与是否需提前预约未说明",
+      "免费开放日列表为2025年日期，2026年安排未公布"
+    ],
+    "notes": "[阶段:D] [时效:高] [复核:2026-12-04] [依据:广东民间工艺博物馆官网·开放时间及购票（散客参观须知·温馨提示）／正文] [来源级:S1] [英文:来源已有] [护照:见正文说明] 位置是“首进正厅大厅右侧”，需先从古建正门进入，与售票窗口不在同一处。免费开放日列表年份为2025，不能当作2026安排；本条不作为免票依据。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-stay.chenjiaci-group-and-drone-rules",
+    "title_zh": "带旅行团或想飞无人机进陈家祠，有什么限制",
+    "summary_zh": "广东民间工艺博物馆页面写明：旅行团须提前通过微信公众号“广东民间工艺博物馆”上传旅行社营业执照扫描件或照片（JPG格式）做线上团体预约；团体进馆时中国大陆居民刷身份证入闸，外国友人及港澳台游客出示相关身份证件并刷门票订单二维码入闸；带团导游凭有效期内《导游证》及所属旅行社开具的当日当团《出团通知书》可免预约入馆。页面另写明：该馆上方空域属限制空域，依《无人驾驶航空飞行器管理暂行条例》（2024年1月1日起实施）第十九条第七款，未经空中交通管理机构批准，任何单位和个人不得进行无人驾驶航空器飞行活动。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广东民间工艺博物馆（陈家祠）",
+      "name_en": "Guangdong Folk Craft Museum (Chen Clan Ancestral Hall)",
+      "address": "广州市荔湾区中山七路恩龙里34号"
+    },
+    "audience": [
+      "自带无人机的游客",
+      "随团或请了持证导游的家庭"
+    ],
+    "themes": [
+      "attraction",
+      "passport_booking"
+    ],
+    "sources": [
+      {
+        "name": "广东民间工艺博物馆官网·开放时间及购票（旅行团参观须知、温馨提示）",
+        "url": "https://www.gzcjc.com.cn/MYwebsite/rc/my_mpyy_xq.htm?token=e84fe1c22fcf404088c89c11252df775&leixing=mpyy",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "散客能否携带无人机进入航站区外区域未说明（仅写不得飞行）",
+      "团体预约的审核时长与人数下限未说明",
+      "导游免预约是否需同时带团、能否带家属未说明",
+      "页面未标更新日期"
+    ],
+    "notes": "[阶段:D] [时效:高] [复核:2026-12-04] [依据:广东民间工艺博物馆官网·开放时间及购票（旅行团参观须知、温馨提示）／正文] [来源级:S1] [英文:来源已有] [护照:见正文说明] 无人机条款只写“不得进行飞行活动”，未写能否携带入园或寄存；不要把“不能飞”理解为“可以带进去”。导游免预约条件是三件套：有效导游证、当日当团出团通知书、所属旅行社开具。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-stay.t2-temporary-flight-id",
+    "title_zh": "在白云机场丢了身份证件、需要临时乘机证明怎么办",
+    "summary_zh": "南航官网T2问答第16条写明：如身份证遗失或过期，旅客可到白云机场航站楼警务室办证窗口核实身份后，申请办理《乘坐中国民航飞机临时身份证明》，需提供两张本人近期1寸证件照片，机场亦设有便民摄影服务点；T2警务室位于航站楼三层出发厅值机区J区后。该条以中国居民身份证为对象，未说明外国护照遗失时是否可办同类证明。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州白云国际机场T2航站楼",
+      "name_en": "Baiyun Airport Terminal 2",
+      "address": null
+    },
+    "audience": [
+      "证件遗失或过期、需要赶飞机的旅客",
+      "随行儿童证件问题的家庭"
+    ],
+    "themes": [
+      "emergency",
+      "transport"
+    ],
+    "sources": [
+      {
+        "name": "中国南方航空官网·常见问题·广州白云国际机场T2航站楼（第16问）",
+        "url": "https://www.csair.com/cn/tourguide/faq/airport/free-zhongzhuan.shtml",
+        "type": "official_transport",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "外国护照遗失时能否办理、需什么材料未说明",
+      "办证费用与办理时长未说明",
+      "儿童是否需要本人到场、能否由家长代办未说明",
+      "T3是否设同类窗口未说明"
+    ],
+    "notes": "[阶段:F] [时效:低] [复核:2027-02-18] [依据:广州白云国际机场T2航站楼_机场服务_南航常见问题／南航官网常见问题“广州白云国际机场T2航站楼”] [来源级:S1] [英文:来源已有] [护照:见正文说明] 本条只适用于中国居民身份证场景；外国旅客护照遗失应先联系本国驻华使领馆并报警，本页未给该流程，记为缺口。警务室位置在J区后（三层出发厅）。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-stay.t2-medical-stations",
+    "title_zh": "白云机场T2有没有医疗点、孩子突然不舒服去哪",
+    "summary_zh": "南航官网T2问答第21条写明：T2共有6个急救站点，可提供日常医疗和急救服务。该条未列出6个站点的具体楼层与位置、值守时间、是否配备儿科或常用儿童药品，也未说明是否收费或能否出具英文证明。带儿童出行时，可先按此条向航站楼工作人员询问最近的急救站点。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州白云国际机场T2航站楼",
+      "name_en": "Baiyun Airport Terminal 2",
+      "address": null
+    },
+    "audience": [
+      "带儿童、需要在机场临时就医的旅客"
+    ],
+    "themes": [
+      "emergency",
+      "family"
+    ],
+    "sources": [
+      {
+        "name": "中国南方航空官网·常见问题·广州白云国际机场T2航站楼（第21问）",
+        "url": "https://www.csair.com/cn/tourguide/faq/airport/free-zhongzhuan.shtml",
+        "type": "official_transport",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "6个急救站点的具体位置未逐点列出",
+      "值守时间与是否24小时未说明",
+      "是否配备儿科医生、儿童用药未说明",
+      "是否收费、能否开英文诊断证明未说明"
+    ],
+    "notes": "[阶段:F] [时效:低] [复核:2027-02-18] [依据:广州白云国际机场T2航站楼_机场服务_南航常见问题／南航官网常见问题“广州白云国际机场T2航站楼”] [来源级:S1] [英文:来源已有] 只记“有6个急救站点、提供日常医疗和急救”，不推断服务能力。紧急情况仍应先拨120（见多语种热线与紧急号码条），机场医疗点作现场第一站。",
+    "conflicts": [],
+    "related_entries": []
+  }
+]

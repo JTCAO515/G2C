@@ -1,0 +1,216 @@
+[
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-departure.airport-tax-refund-qr",
+    "title_zh": "从白云机场离境退税：现在还要开箱给海关看吗",
+    "summary_zh": "广州市政府英文站2026-07-29稿写明：全国离境退税政策升级自7月1日起实施；在白云国际机场及广东其他口岸，符合条件的旅客办理退税时无需拆开行李，海关人员通过扫描二维码核验所购商品。按新规，价值低于1万元的商品实行抽检，价值1万元及以上的仍需全部检查。同一政策还引入无纸化办理、扩大退税服务范围并增加参与商店数量。稿件另称7月1日广州在天河区Buynow Guangzhou开设第四家退税中心，提供一站式店内即时退税。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州白云国际机场",
+      "name_en": "Baiyun Airport",
+      "address": null
+    },
+    "audience": [
+      "在 Guangzhou 购物后从机场离境的旅客",
+      "带孩子、不想在口岸开箱翻行李的家庭"
+    ],
+    "themes": [
+      "trip_planning",
+      "payment"
+    ],
+    "sources": [
+      {
+        "name": "Guangzhou International（广州市政府英文站）·Tax refund upgrade makes shopping easier in Guangdong",
+        "url": "https://www.gz.gov.cn/guangzhouinternational/visitors/travellinginGZ/content/post_10943047.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2026-07-29",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "退税资格（居住地、停留期、最低消费额）未说明，本库不作判断",
+      "白云机场退税柜台在T2/T3的具体位置与营业时间未在该稿给出",
+      "退税率、退款方式（现金/退卡）与到账时间未说明",
+      "“二维码”由商店出具还是退税单生成未说明"
+    ],
+    "notes": "[阶段:A] [时效:低] [复核:2027-02-18] [依据:Guangzhou International／广州国际门户网站“Travelling in GZ”栏目正文] [来源级:S1] [英文:来源已有] 该稿是政策升级的新闻式说明，不是海关公告；资格与限额以海关总署、国家税务总局等主管部门规定为准。1万元分界是原文给出的抽检/全检界线，不要理解为退税门槛。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-departure.parc-central-refund-counter",
+    "title_zh": "在天环广场办市内即时退税：柜台在哪、退多少、多久内要离境",
+    "summary_zh": "广州市政府英文站2026-10-21稿写明：天环广场（Parc Central）设有广州首个集中离境退税柜台，提供店内即时退税服务；在广州市内指定退税商店购物的境外旅客，可在商场B3层退税柜台办理退税，退税率最高可达9%，退得现金可当场在商场消费。办理退税后，旅客须在28天内从任一口岸离境。到达方式：地铁1号线、3号线体育西路站B出口，或APM线天河南站。稿件同时提到该商场B2层服务台可凭广交会证件领取会员金卡等优惠。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "天环广场（Parc Central）",
+      "name_en": "Parc Central",
+      "address": null
+    },
+    "audience": [
+      "在天河商圈购物后想当场拿退税的旅客",
+      "离境前一日仍在市区、来不及到机场办理的家庭"
+    ],
+    "themes": [
+      "payment",
+      "trip_planning"
+    ],
+    "sources": [
+      {
+        "name": "Guangzhou International（广州市政府英文站）·140th Canton Fair: Shopping deals and tax refunds",
+        "url": "https://www.gz.gov.cn/guangzhouinternational/home/bulletin/content/post_11061833.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2026-10-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "柜台营业时间未说明",
+      "“最高9%”对应的商品类别与计算方式未说明",
+      "办理时需出示的证件、退税单与信用卡担保要求未说明",
+      "28天内离境的口岸范围是否含港澳码头未说明",
+      "商场门牌地址未在来源页给出，place.address 留空"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:Guangzhou International／广州国际门户网站“Bulletin”栏目2026年公告正文] [来源级:S1] [英文:来源已有] 来源只给地铁出口，未给门牌地址，place.address 留空；稿件只给地铁出口。9%为“can reach”上限，不等于所有商品都退9%。该稿以第140届广交会为背景，柜台服务是否对非参展旅客同样开放未说明。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-departure.buynow-refund-center",
+    "title_zh": "广州第四家离境退税中心（天河 Buynow Guangzhou）",
+    "summary_zh": "广州市政府英文站2026-07-29稿写明：7月1日广州在天河区Buynow Guangzhou开设第四家退税中心，旅客可在此获得一站式店内即时退税（one-stop instant in-store tax refund services）。同一政策升级还包括无纸化办理、扩大退税服务范围和增加参与商店数量。稿件未给出门店地址、营业时间、可办理的商品范围与所需材料。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "Buynow Guangzhou（天河区离境退税中心）",
+      "name_en": "Buynow Guangzhou",
+      "address": null
+    },
+    "audience": [
+      "在天河区购物、希望离境前办退税的旅客"
+    ],
+    "themes": [
+      "payment"
+    ],
+    "sources": [
+      {
+        "name": "Guangzhou International（广州市政府英文站）·Tax refund upgrade makes shopping easier in Guangdong",
+        "url": "https://www.gz.gov.cn/guangzhouinternational/visitors/travellinginGZ/content/post_10943047.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2026-07-29",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "门店具体地址与营业时间未说明",
+      "是否只服务在该店购物的旅客未说明",
+      "可退税商品范围、最低消费额与所需证件未说明",
+      "与天环广场柜台的分工未说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:Guangzhou International／广州国际门户网站“Travelling in GZ”栏目正文] [来源级:S1] [英文:来源已有] 本条只确认“存在第四家退税中心、可店内即时退税”这一事实；名称 Buynow Guangzhou 为原文拼写，中文名未见来源，未译。地址与营业信息缺失，出行前需另查。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-departure.pazhou-ferry-refund",
+    "title_zh": "从琶洲码头坐船离境：退税要走哪两步",
+    "summary_zh": "广州市政府英文站2026-03-03稿写明：琶洲码头（Pazhou Ferry Terminal）离境旅客退税点自3月1日起正式运作；从该码头离境的外国旅客可享一站式退税核验。办理分两步：一是在办理出境手续时向海关出示可退税商品接受核验；二是在登船前到指定退税柜台办理退税登记。广州海关在该码头配置了翻译设备并安排多语种人员现场协助。稿件提到2月15日至28日试运行期间，外国旅客核验的退税申请金额合计约2.5万元。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州琶洲码头（琶洲港澳客运口岸）",
+      "name_en": "Pazhou Ferry Terminal",
+      "address": null
+    },
+    "audience": [
+      "从琶洲坐船去香港机场或港澳的旅客",
+      "携带大件购物、想避开机场排队的人"
+    ],
+    "themes": [
+      "payment",
+      "transport"
+    ],
+    "sources": [
+      {
+        "name": "Guangzhou International（广州市政府英文站）·Departure tax refund point opens at Pazhou Ferry Terminal, Guangzhou",
+        "url": "https://www.gz.gov.cn/guangzhouinternational/visitors/travellinginGZ/content/post_10708755.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2026-03-03",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "退税柜台的具体位置与营业时段未说明",
+      "码头航班时刻、购票与值船截止时间未说明",
+      "可退税商品与金额门槛未说明（本库不作资格判断）",
+      "翻译设备与多语种人员是否常态配置未说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:Guangzhou International／广州国际门户网站“Travelling in GZ”栏目正文] [来源级:S1] [英文:来源已有] “两步”顺序是先海关核验、后柜台登记，不能颠倒；码头退税点3月1日启用、试运行数据为2月中旬，属较新安排，出行前建议确认当日是否开放。航线目的地未在该稿说明。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-departure.t2-tax-refund-point-location",
+    "title_zh": "白云机场T2的离境退税点在哪一层",
+    "summary_zh": "南航官网T2问答第23条写明：T2离境退税点位于三层国际出发联检大厅后商业集中区。同页第24条另列邮政快递点：主题邮局在航站楼三层出发厅N值机区尾，EMS在航站楼三层出发厅国内安检区，顺丰在三层出发厅国际安检区，提供信件包裹收寄与特快专递服务。该页未给退税点营业时间、可办理的退税方式与所需材料。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州白云国际机场T2航站楼",
+      "name_en": "Baiyun Airport Terminal 2",
+      "address": null
+    },
+    "audience": [
+      "从T2国际出发、需要办退税的旅客",
+      "想把手信寄回家、减少行李的家庭"
+    ],
+    "themes": [
+      "payment",
+      "transport"
+    ],
+    "sources": [
+      {
+        "name": "中国南方航空官网·常见问题·广州白云国际机场T2航站楼（第23、24问）",
+        "url": "https://www.csair.com/cn/tourguide/faq/airport/free-zhongzhuan.shtml",
+        "type": "official_transport",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "退税点营业时间与是否需先办登机牌未说明",
+      "T3国际出发的退税点位置未在本页给出",
+      "邮寄点是否收寄国际包裹、资费与时效未说明",
+      "页面未标更新日期"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:广州白云国际机场T2航站楼_机场服务_南航常见问题／南航官网常见问题“广州白云国际机场T2航站楼”] [来源级:S1] [英文:来源已有] T1停用后，本页T2信息仍可用于T2；T3的同类设施位置需另查机场指引（本批未取得，记为缺口）。退税点在国际出发联检后区域，需先过联检。",
+    "conflicts": [],
+    "related_entries": []
+  }
+]
