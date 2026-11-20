@@ -51,7 +51,7 @@ def lookup_places(skeleton,replies):
     return places,hotels
 
 
-def lookup_selected_places(skeleton,source,binding,capture):
+def lookup_selected_places(skeleton,source,binding,capture,*,endpoint_names=()):
     """Format C's issued selection under its actual current publication holder.
 
     Do not repeat name matching or reinterpret a nonempty page as unavailable.
@@ -62,19 +62,23 @@ def lookup_selected_places(skeleton,source,binding,capture):
     # below is pure; the enclosing source holder checks again on exit. Avoid
     # re-reading/rechecking every provider and profile for each individual stop.
     results={row['target']:row for row in source.selection_results(binding,capture)}
-    def selected(target,keyword):
+    def selected(target,keyword,*,optional=False):
         result=results.get(target)
         if result is None:raise LeaseUnavailable('target has no original code-owned POI selection')
         if result['query_keyword']!=keyword:
             raise LeaseUnavailable('selection keyword differs from its original target query')
         if result['status']=='unavailable':return None
-        if result['status']=='ambiguous':raise PlaceSelectionBlocked('place selection is ambiguous; preserve the current trip')
+        if result['status']=='ambiguous':
+            if optional:return None
+            raise PlaceSelectionBlocked('place selection is ambiguous; preserve the current trip')
         record=result['selected_record']
         ref={key:record[key]for key in ('provider','kind','reference','sha256')}
         value=_display_place(record['payload'],ref)
-        if value is None:raise PlaceSelectionBlocked('selected place cannot be represented without changing its original fields')
+        if value is None and not optional:
+            raise PlaceSelectionBlocked('selected place cannot be represented without changing its original fields')
         return value
     places={stop.item_id:selected(stop.item_id,stop.name_zh)for stop in skeleton.stops}
+    places.update((target,selected(target,name,optional=True))for target,name in endpoint_names)
     hotels=tuple(selected('lodging-candidate-'+str(index),names[0])for index,names in enumerate(skeleton.hotels))
     return places,hotels
 

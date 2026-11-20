@@ -149,6 +149,21 @@ class PipelinePlaces(unittest.TestCase):
             def selection_results(self,*args):raise LeaseUnavailable('actual holder closed')
         with self.assertRaises(LeaseUnavailable):lookup_selected_places(skeleton,Closed(),object(),object())
 
+    def test_optional_fixed_route_endpoint_does_not_block_usable_sight_selection(self):
+        source_row = reply()['items'][0]
+        class Source:
+            def selection_results(self, *args):
+                ordinary = dict(source_row['source'], payload=source_row['place'])
+                long_address = dict(source_row['source'],
+                                    payload=dict(source_row['place'], name_zh='北京饭店', address='x'*501))
+                return [dict(target='sight', query_keyword='故宫博物院', status='matched', selected_record=ordinary),
+                        dict(target='fixed', query_keyword='北京饭店', status='matched', selected_record=long_address)]
+        skeleton = SimpleNamespace(stops=(SimpleNamespace(item_id='sight', name_zh='故宫博物院'),), hotels=())
+        places, _ = lookup_selected_places(skeleton, Source(), object(), object(),
+                                          endpoint_names=(('fixed', '北京饭店'),))
+        self.assertIsNone(places['fixed'])
+        self.assertEqual(places['sight']['source'], source_row['source'])
+
     def test_batch_target_and_original_keyword_binding_are_still_required(self):
         from cj_needs.revision_lease import LeaseUnavailable
         from cj_draft.rich_place_selection import RichPlaceSelectionContextSource

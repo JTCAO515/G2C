@@ -2,6 +2,7 @@
 from types import SimpleNamespace
 import unittest
 
+from cj_api.local_lio_pipeline import retrieve_skeleton
 from cj_api.local_lio_pipeline_search import sight_and_hotel_calls,meal_calls
 from cj_api.lio_pipeline_skeleton import recipes,parse_skeleton
 from cj_place.gaode_v2 import TextSearch,Nearby
@@ -58,6 +59,51 @@ class PipelineSearch(unittest.TestCase):
         self.assertTrue(all(a.argument.request_ref!=b.argument.request_ref for a,b in zip(first,other,strict=True)))
         self.assertEqual(len({c.argument.request_ref for c in first}),len(first))
         self.assertTrue(all('|'not in c.argument.query.keyword for c in first))
+
+    def test_named_endpoints_preserve_the_budget_for_transit_and_taxi(self):
+        skeleton=self.skeleton(3)
+        required=len(skeleton.stops)+len(skeleton.hotels)
+        leg_count=15
+        binding=SimpleNamespace(run_id='original-run',message_id='original-message')
+        worker=SimpleNamespace(messages=SimpleNamespace(query=lambda _:None))
+        source=SimpleNamespace(providers=object(),profiles=SimpleNamespace(database=object()),binding=binding,worker=worker,
+            seal=lambda:None,places=lambda plan,_,**kwargs:({stop.item_id:None for stop in plan.stops},()))
+        endpoint=('fixed-meetup','北京饭店')
+
+        for spare,requested in ((0,False),(1,True)):
+            with self.subTest(spare=spare):
+                seen=[]
+                calls=SimpleNamespace(gaode_slots_left=required+2*leg_count+spare,
+                    parallel=lambda batch:seen.extend(call.argument.targets[0]for call in batch))
+                prepared=SimpleNamespace(skeleton=skeleton,sources=source,city=SimpleNamespace(adcode='110000'),
+                    calls=calls,preflight_size=(18,leg_count,10000),endpoint_names=(endpoint,))
+                retrieve_skeleton(prepared)
+                self.assertEqual(endpoint[0] in seen,requested)
+                self.assertEqual(len(seen),required+spare)
+
+    def test_invalid_optional_keywords_do_not_interrupt_the_required_place_batch(self):
+        skeleton=self.skeleton(3)
+        required=len(skeleton.stops)+len(skeleton.hotels)
+        leg_count=15
+        binding=SimpleNamespace(run_id='original-run',message_id='original-message')
+        worker=SimpleNamespace(messages=SimpleNamespace(query=lambda _:None))
+        seen=[];selected=[]
+        def places(plan,_,*,endpoint_names=()):
+            selected.extend(endpoint_names)
+            return {stop.item_id:None for stop in plan.stops},()
+        source=SimpleNamespace(providers=object(),profiles=SimpleNamespace(database=object()),binding=binding,worker=worker,
+            seal=lambda:None,places=places)
+        calls=SimpleNamespace(gaode_slots_left=required+2*leg_count+1,
+            parallel=lambda batch:seen.extend(call.argument.targets[0]for call in batch))
+        valid=('physical-station','北京南站')
+        prepared=SimpleNamespace(skeleton=skeleton,sources=source,city=SimpleNamespace(adcode='110000'),calls=calls,
+            preflight_size=(18,leg_count,10000),endpoint_names=(('too-long','A'*88),('separator','北京站|北京南站'),valid))
+        retrieve_skeleton(prepared)
+        self.assertEqual(selected,[valid])
+        self.assertEqual(len(seen),required+1)
+        self.assertIn(valid[0],seen)
+        self.assertNotIn('too-long',seen)
+        self.assertNotIn('separator',seen)
 
 
 if __name__=='__main__':unittest.main()

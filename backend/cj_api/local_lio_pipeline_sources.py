@@ -32,11 +32,11 @@ class PipelineSources:
         """Outside worker._step, after all original attempts settle."""
         return self.source.seal_providers(self.binding,self.calendar_capture)
 
-    def places(self,skeleton,capture):
+    def places(self,skeleton,capture,*,endpoint_names=()):
         """Format under actual publication holders; no external IO here."""
         def read():
             with self.source.hold_for_publication(self.binding):
-                return lookup_selected_places(skeleton,self.source,self.binding,capture)
+                return lookup_selected_places(skeleton,self.source,self.binding,capture,endpoint_names=endpoint_names)
         _,value=self.worker._step(self.binding,read)
         return value
 
