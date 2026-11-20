@@ -328,11 +328,10 @@ def parse(raw,turns,*,version=VERSION,current_dates=False):
    bindings.append((label,ref,details))
    item['description']=ref['quote'];primary.append(ref)
    item_sources['fixed_items.'+str(n)]=[ref,*details]
+  binding_labels=tuple((label,ref['quote'])for label,ref,_ in bindings)
   for n,(_,_,details) in enumerate(bindings):
    for detail in details:
-    matches={index for index,(label,_,_) in enumerate(bindings) if label in detail['quote']
-        and sum(label in primary_ref['quote'] for _,primary_ref,_ in bindings)==1}
-    if matches!={n}:ambiguous=True
+    if fixed_detail_indexes(detail['quote'],binding_labels)!={n}:ambiguous=True
   sources={**sources,**({'fixed_items':primary} if primary else {}),**item_sources}
   extraction={**extraction,'version':'NEEDS-extraction.1','fields':fields}
  fields=extraction['fields']
@@ -487,6 +486,12 @@ def _unclipped_fixed_source(description,primary,turns):
  if after and boundaries[start:end].rstrip()[-1] not in _FIXED_SENTENCE_END and after[0] not in _FIXED_SENTENCE_END:
   return False
  return not any(_FIXED_GROUP_SCOPE.search(turn.text) or PARTY.search(turn.text) for turn in turns)
+
+
+def fixed_detail_indexes(quote,bindings):
+ """Identify fixed items whose original label uniquely binds a detail quote."""
+ return {index for index,(label,_)in enumerate(bindings)if label in quote
+         and sum(label in primary for _,primary in bindings)==1}
 
 
 def fixed_sources_complete(intake,fields,turns,city_reference,*,ordinal_days=None,rich_phrases=False,

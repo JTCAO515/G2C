@@ -28,14 +28,26 @@ def _call(query,target,origin,sources):
     return Call('gaode',POI2_REGISTRATION,POI2Input(query,reference,origin,sources,(target,)))
 
 
-def sight_and_hotel_calls(stops,hotels,*,city,origin,sources,endpoint_names=()):
-    """One bounded query per proposed place or specified route endpoint."""
+def sight_and_hotel_calls(stops,hotels,*,city,origin,sources):
+    """One bounded query per proposed sight or hotel."""
     result=[_call(TextSearch(stop.name_zh,city,PAGE_SIZE),stop.item_id,origin,sources)
             for stop in stops if stop.kind=='sight']
     result.extend(_call(TextSearch(names[0],city,PAGE_SIZE),'lodging-candidate-'+str(index),origin,sources)
                   for index,names in enumerate(hotels))
-    result.extend(_call(TextSearch(name,city,PAGE_SIZE),target,origin,sources)for target,name in endpoint_names)
     return tuple(result)
+
+
+def optional_endpoint_calls(endpoint_names,*,city,origin,sources,limit):
+    """Only dispatch optional names admitted by the original POI keyword boundary."""
+    admitted=[]
+    for target,name in endpoint_names:
+        if len(admitted)==limit:break
+        try:query=TextSearch(name,city,PAGE_SIZE)
+        except ValueError as error:
+            if str(error) not in ('text','one_bounded_keyword_required'):raise
+            continue
+        admitted.append(_call(query,target,origin,sources))
+    return tuple(admitted)
 
 
 def meal_calls(stops,*,city,centers,origin,sources):

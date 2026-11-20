@@ -16,6 +16,7 @@ from cj_message.lio_plan_input_schema import PlanUnderstanding
 from cj_needs.domain import InvalidInput,decode,validate_fields,money
 from .lio_flat_intake import _observations
 from .lio_national_intake import _current_date_source,_current_date_anchors,_WEEK_SOURCE,ZONE_LITERAL,fields_for,fixed_sources_complete
+from .lio_national_intake import fixed_detail_indexes
 from .lio_sourced_intake import _booking_source
 from .lio_planning_grounding import PlanningTurn
 from .lio_planning_grounding import CLOCK,NUMBER,NEGATED,DATE_REFUSAL,DATES_UNDECIDED,_clock,_number
@@ -606,6 +607,36 @@ def original_plan_turns(database,worker,binding,view):
     return turns
 
 
+def _fixed_place_grounded(place,label,references,turns):
+    for ref in references:
+        original=turns[ref.source_index].text
+        if place not in ref.quote or original.count(ref.quote)!=1:continue
+        offset=original.index(ref.quote)
+        for occurrence in re.finditer(re.escape(place),ref.quote):
+            start,end=offset+occurrence.start(),offset+occurrence.end()
+            clause=_source_clause(original,start,end)
+            if label in clause and not _ENDPOINT_DENIAL.search(clause)and _source_asserted(original,start,end):
+                return True
+    return False
+
+
+def _ground_fixed_places(value,turns):
+    bindings=tuple((item.label,item.quote)for item in value.fixed_items)
+    fixed=[]
+    for index,item in enumerate(value.fixed_items):
+        references=(item,*(ref for ref in item.detail_refs
+                           if fixed_detail_indexes(ref.quote,bindings)=={index}))
+        unsourced={}
+        for field,place in (('start_place',item.start_place),('end_place',item.end_place)):
+            if (place is not None and place.strip()and field not in item.unknown_fields and field not in item.uncertain_fields
+                    and not _fixed_place_grounded(place,item.label,references,turns)):
+                unsourced[field]=None
+        if unsourced:
+            item=item.model_copy(update=dict(unsourced,unknown_fields=[*item.unknown_fields,*unsourced]))
+        fixed.append(item)
+    return value.model_copy(update=dict(fixed_items=fixed))
+
+
 def parse_plan_understanding(raw,turns):
     try:value=PlanUnderstanding.model_validate(decode(raw.encode()if type(raw)is str else raw))
     except ValidationError as error:raise InvalidInput('complete typed plan understanding required')from error
@@ -695,4 +726,4 @@ def parse_plan_understanding(raw,turns):
     _latest_edge_options(value,turns)
     _latest_event_clocks(value,turns)
     _latest_party(value,turns)
-    return value
+    return _ground_fixed_places(value,turns)

@@ -24,7 +24,7 @@ from .lio_pipeline_preflight import admit_city_lookup,recipes_for_edges
 from .lio_pipeline_skeleton import parse_skeleton
 from .local_lio_pipeline_calls import PipelineCalls,PipelineCapacity,model_call
 from .local_lio_pipeline_inputs import understand_constraints,planning_edges
-from .local_lio_pipeline_search import sight_and_hotel_calls,meal_calls
+from .local_lio_pipeline_search import sight_and_hotel_calls,meal_calls,optional_endpoint_calls
 from .local_lio_pipeline_sources import capture_pipeline_sources
 from .local_lio_rich_checks import RichUncollectedChecks
 from .local_lio_pipeline_routes import retrieve_routes
@@ -105,11 +105,14 @@ def retrieve_skeleton(prepared):
     # A transit leg may use a second attempt when its taxi fallback is needed.
     route_slots=2*prepared.preflight_size[1]
     optional_slots=max(0,prepared.calls.gaode_slots_left-required-route_slots)
-    endpoints=prepared.endpoint_names[:optional_slots]
     worker,binding=bundle.worker,bundle.binding
     origin=ExplorationOrigin(bundle.profiles.database,binding,worker.messages.query(binding.message_id))
-    prepared.calls.parallel(sight_and_hotel_calls(sights,skeleton.hotels,city=prepared.city.adcode,
-        origin=origin,sources=bundle.providers,endpoint_names=endpoints))
+    mandatory=sight_and_hotel_calls(sights,skeleton.hotels,city=prepared.city.adcode,
+        origin=origin,sources=bundle.providers)
+    extra=optional_endpoint_calls(prepared.endpoint_names,city=prepared.city.adcode,origin=origin,
+        sources=bundle.providers,limit=optional_slots)
+    endpoints=tuple((call.argument.targets[0],call.argument.query.keyword)for call in extra)
+    prepared.calls.parallel(mandatory+extra)
     first=bundle.seal()
     observed,_=bundle.places(replace(skeleton,stops=sights),first)
     anchors={}
