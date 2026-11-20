@@ -14,11 +14,12 @@ import pytest
 
 from cj_api.translation import DashScopeTranslation, ROUTE, TranslationRelay, VERSION
 from cj_auth.interfaces import AdmissionDecision, AdmissionReason, AdmissionStatus, TrustedPrincipal
-from cj_usage.authorization_budget import AuthorizationBudget, CNY_SCALE, authorization_usage
+from cj_usage.authorization_budget import AuthorizationBudget, CNY_SCALE, HK_PRODUCER, M1_UNRESOLVED_CNY, authorization_usage, journal_state
 from cj_usage.translation_budget import (
     BEIJING, IMAGE_MODEL, SPEECH_MODEL, TEXT_MODEL, TranslationBudget, TranslationLimit,
 )
 from deploy.hk.translation_relay import register_translation_route, socket_request, translation_socket
+from scripts.m4_budget_transfer import attempts
 
 
 def _body(kind='text', **content):
@@ -188,6 +189,50 @@ def test_translation_ceiling_reserves_unknown_without_using_other_sublimits(budg
     with budget.authorization.connect() as db:
         _, estimates, holds = authorization_usage(db)
     assert holds['model'] >= CNY_SCALE
+
+
+def _translation_journal(budget):
+    budget.authorization.begin('original-hold', 'model', b'existing non-translation intent')
+    text = budget.operation('scope-fixture', uuid4(), 'text', 1)
+    budget.begin(text, 0, TEXT_MODEL)
+    budget.finish(text, 0, TEXT_MODEL, str(uuid4()), {'input_tokens': 12, 'output_tokens': 5})
+    speech = budget.operation('scope-fixture', uuid4(), 'speech', 2)
+    budget.begin(speech, 0, SPEECH_MODEL)
+    return text.identifier(0), speech.identifier(0)
+
+
+def test_hk_proof_keeps_translation_intent_and_receipt_in_signed_digest(budget):
+    _translation_journal(budget)
+    with budget.authorization.connect() as db:
+        db.execute('UPDATE producer SET identity=?', (HK_PRODUCER,))
+        original = db.execute('SELECT * FROM attempt ORDER BY id').fetchall()
+        assert attempts(db) == journal_state(db)
+        assert db.execute('SELECT * FROM attempt ORDER BY id').fetchall() == original
+        _, estimates, holds = authorization_usage(db)
+        assert estimates['model'] > 0 and holds['model'] == (M1_UNRESOLVED_CNY + 2) * CNY_SCALE
+
+
+def test_mac_transfer_keeps_rejecting_runtime_translation_attempts(budget):
+    _translation_journal(budget)
+    with budget.authorization.connect() as db:
+        with pytest.raises(ValueError, match='original_attempt_history_invalid'):
+            attempts(db)
+
+
+@pytest.mark.parametrize('source,field,value', [
+    ('pending', 'input_sha', '0' * 64),
+    ('pending', 'receipt', None),
+    ('received', 'receipt', '{"unexpected":"metadata"}'),
+    ('pending', 'kind', 'place'),
+])
+def test_hk_proof_rejects_tampered_translation_rows(budget, source, field, value):
+    text, speech = _translation_journal(budget)
+    with budget.authorization.connect() as db:
+        db.execute('UPDATE producer SET identity=?', (HK_PRODUCER,))
+        db.execute('UPDATE attempt SET ' + field + '=? WHERE id=?',
+                   (value, speech if source == 'pending' else text))
+        with pytest.raises(ValueError, match='original_attempt_history_invalid'):
+            attempts(db)
 
 
 @pytest.mark.parametrize('kind,model,limit', [('text', TEXT_MODEL, 300), ('image', IMAGE_MODEL, 50)])
