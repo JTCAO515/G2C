@@ -35,11 +35,10 @@ def save(path,value,*,new=False):
     finally:os.close(descriptor)
 
 
-def valid_translation_attempt(identity, kind, digest, state, receipt):
+def valid_translation_attempt(identity, kind, digest, state, receipt, value):
     match = TRANSLATION_ATTEMPT.fullmatch(identity)
     if not match or kind != 'model' or receipt is None:
         return False
-    value = json.loads(receipt)
     if type(value) is not dict or receipt != budget.canonical(value).decode():
         return False
     owner, request, stage_text = match.groups()
@@ -74,23 +73,26 @@ def attempts(connection):
     rows=connection.execute('SELECT id,kind,input_sha,state,receipt FROM attempt ORDER BY id').fetchall()
     if not rows:raise ValueError('existing_nonempty_M4_shared_history_required')
     translation_prefix = SERVICE + ':'
-    if any(type(row[0]) is str and row[0].startswith(translation_prefix) for row in rows):
-        has_producer = connection.execute(
-            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='producer'").fetchone()
-        if (not has_producer or connection.execute(
-                'SELECT identity FROM producer WHERE singleton=1').fetchone() != (budget.HK_PRODUCER,)):
-            raise ValueError('original_attempt_history_invalid')
+    contains_translation = False
     for identity,kind,digest,state,receipt in rows:
         if (type(identity) is not str or not 1<=len(identity)<=128 or kind not in budget.LIMITS
                 or type(digest) is not str or re.fullmatch('[0-9a-f]{64}',digest) is None
                 or state not in ('INTENT','RECEIVED')):
             raise ValueError('original_attempt_history_invalid')
-        if identity.startswith(translation_prefix):
-            valid = valid_translation_attempt(identity, kind, digest, state, receipt)
+        value = json.loads(receipt) if receipt is not None else None
+        if identity.startswith(translation_prefix) or (type(value) is dict and value.get('service') == SERVICE):
+            contains_translation = True
+            valid = valid_translation_attempt(identity, kind, digest, state, receipt, value)
         else:
             valid = ((state == 'INTENT') == (receipt is None)
-                     and (receipt is None or type(json.loads(receipt)) is dict))
+                     and (receipt is None or type(value) is dict))
         if not valid:
+            raise ValueError('original_attempt_history_invalid')
+    if contains_translation:
+        has_producer = connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='producer'").fetchone()
+        if (not has_producer or connection.execute(
+                'SELECT identity FROM producer WHERE singleton=1').fetchone() != (budget.HK_PRODUCER,)):
             raise ValueError('original_attempt_history_invalid')
     return len(rows),hashlib.sha256(budget.canonical(rows)).hexdigest()
 

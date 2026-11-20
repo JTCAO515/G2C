@@ -14,7 +14,7 @@ import pytest
 
 from cj_api.translation import DashScopeTranslation, ROUTE, TranslationRelay, VERSION
 from cj_auth.interfaces import AdmissionDecision, AdmissionReason, AdmissionStatus, TrustedPrincipal
-from cj_usage.authorization_budget import AuthorizationBudget, CNY_SCALE, HK_PRODUCER, M1_UNRESOLVED_CNY, authorization_usage, journal_state
+from cj_usage.authorization_budget import AuthorizationBudget, CNY_SCALE, HK_PRODUCER, M1_UNRESOLVED_CNY, MAC_PRODUCER, authorization_usage, journal_state
 from cj_usage.translation_budget import (
     BEIJING, IMAGE_MODEL, SPEECH_MODEL, TEXT_MODEL, TranslationBudget, TranslationLimit,
 )
@@ -215,6 +215,19 @@ def test_hk_proof_keeps_translation_intent_and_receipt_in_signed_digest(budget):
 def test_mac_transfer_keeps_rejecting_runtime_translation_attempts(budget):
     _translation_journal(budget)
     with budget.authorization.connect() as db:
+        with pytest.raises(ValueError, match='original_attempt_history_invalid'):
+            attempts(db)
+
+
+@pytest.mark.parametrize('producer', [MAC_PRODUCER, HK_PRODUCER, 'sealed-for-' + HK_PRODUCER])
+def test_translation_receipt_cannot_escape_validation_by_renaming_identity(budget, producer):
+    text = budget.operation('scope-fixture', uuid4(), 'text', 1)
+    budget.begin(text, 0, TEXT_MODEL)
+    budget.finish(text, 0, TEXT_MODEL, str(uuid4()), {'input_tokens': 12, 'output_tokens': 5})
+    with budget.authorization.connect() as db:
+        db.execute('UPDATE producer SET identity=?', (producer,))
+        db.execute('UPDATE attempt SET id=? WHERE id=?',
+                   (text.identifier(0).replace('translation.1:', 'translation.0:'), text.identifier(0)))
         with pytest.raises(ValueError, match='original_attempt_history_invalid'):
             attempts(db)
 
