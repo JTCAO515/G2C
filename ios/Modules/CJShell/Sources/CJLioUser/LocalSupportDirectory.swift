@@ -14,6 +14,10 @@ struct LocalSupportPhone: Decodable, Equatable, Sendable {
         self.number = number
     }
 
+    fileprivate init(mainlandShortNumber: Int) {
+        number = String(mainlandShortNumber)
+    }
+
     init(from decoder: any Decoder) throws {
         try self.init(decoder.singleValueContainer().decode(String.self))
     }
@@ -44,11 +48,11 @@ struct LocalSupportDirectory: Sendable {
         let phone: LocalSupportPhone
         let detail: Text?
 
-        fileprivate init(_ id: String, _ zh: String, _ en: String, _ number: String,
-                         detail: Text? = nil) throws {
+        fileprivate init(_ id: String, _ zh: String, _ en: String, _ number: Int,
+                         detail: Text? = nil) {
             self.id = id
             title = Text(zh: zh, en: en)
-            phone = try LocalSupportPhone(number)
+            phone = LocalSupportPhone(mainlandShortNumber: number)
             self.detail = detail
         }
     }
@@ -82,10 +86,7 @@ struct LocalSupportDirectory: Sendable {
 
     let dataVersion: Int
     let verifiedAt: String
-    let emergency: [Contact]
-    let hotlines: [Contact]
     let embassies: [Embassy]
-    let consumer: [Contact]
 
     static func bundled() throws -> Self {
         guard let file = Bundle.module.url(forResource: "LocalSupportDirectory.v1", withExtension: "json") else {
@@ -106,28 +107,27 @@ struct LocalSupportDirectory: Sendable {
         guard Set(file.embassies.map(\.countryCode)).count == file.embassies.count else {
             throw Failure.duplicateCountry
         }
-        return try Self(
-            dataVersion: file.dataVersion,
-            verifiedAt: file.verifiedAt,
-            emergency: [
-                Contact("police", "报警", "Police", "110"),
-                Contact("ambulance", "急救", "Ambulance", "120"),
-                Contact("fire", "火警", "Fire", "119"),
-                Contact("traffic", "交通事故", "Traffic accidents", "122"),
-            ],
-            hotlines: [
-                Contact("city", "政务服务便民热线", "City Service Hotline", "12345",
-                        detail: Text(zh: "接通后可询问是否提供英语服务。", en: "Ask whether English is available when you connect.")),
-                Contact("immigration", "国家移民管理局服务热线", "National Immigration Administration Hotline", "12367",
-                        detail: Text(zh: "咨询签证、出入境和居留。", en: "For visas, entry, exit and residence.")),
-            ],
-            embassies: file.embassies,
-            consumer: [
-                Contact("consumer", "全国市场监管投诉举报热线", "Consumer Complaints Hotline", "12315",
-                        detail: Text(zh: "反映购物、餐饮和价格问题。", en: "For shopping, dining and pricing complaints.")),
-                Contact("tourism", "旅游投诉", "Tourism complaints", "12345",
-                        detail: Text(zh: "通过当地政务服务热线反映旅游问题。", en: "Contact the local public service hotline about tourism complaints.")),
-            ]
-        )
+        return Self(dataVersion: file.dataVersion, verifiedAt: file.verifiedAt, embassies: file.embassies)
     }
+
+    static let emergencyContacts = [
+        Contact("police", "报警", "Police", 110),
+        Contact("ambulance", "急救", "Ambulance", 120),
+        Contact("fire", "火警", "Fire", 119),
+        Contact("traffic", "交通事故", "Traffic accidents", 122),
+    ]
+
+    static let helpContacts = [
+        Contact("city", "政务服务便民热线", "City Service Hotline", 12345,
+                detail: Text(zh: "接通后可询问是否提供英语服务。", en: "Ask whether English is available when you connect.")),
+        Contact("immigration", "国家移民管理局服务热线", "National Immigration Administration Hotline", 12367,
+                detail: Text(zh: "咨询签证、出入境和居留。", en: "For visas, entry, exit and residence.")),
+    ]
+
+    static let consumerContacts = [
+        Contact("consumer", "全国市场监管投诉举报热线", "Consumer Complaints Hotline", 12315,
+                detail: Text(zh: "反映购物、餐饮和价格问题。", en: "For shopping, dining and pricing complaints.")),
+        Contact("tourism", "旅游投诉", "Tourism complaints", 12345,
+                detail: Text(zh: "通过当地政务服务热线反映旅游问题。", en: "Contact the local public service hotline about tourism complaints.")),
+    ]
 }
