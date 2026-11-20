@@ -78,7 +78,7 @@ class NationalExecution(unittest.TestCase):
             def planning_window_conflict(self,binding,fields):return source_conflict
         planning=NationalLioPlanning(None,Save())
         planning.context=lambda *a:(turns,tuple(dict(message_id='prior-'+str(n))for n in range(len(turns)-1)),previous)
-        binding=SimpleNamespace(message_id='national-message',run_id='national-run')
+        binding=SimpleNamespace(message_id='national-message',run_id='national-run',message_sequence=len(turns))
         with patch('cj_api.local_lio_national.register',side_effect=lambda w,b,s,d:events.append(('registered',BOUND_EFFECT)) or s):
             result=planning.execute(worker,binding,SimpleNamespace(sequence=0),text,SimpleNamespace(question_day=date(2026,11,11),locale=locale))
         return published,events,lookups,result

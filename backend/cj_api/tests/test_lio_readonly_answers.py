@@ -105,6 +105,39 @@ class ReadOnlyAnswers(unittest.TestCase):
                 self.assertEqual(contexts[-1]['authority'],'none')
                 self.assertEqual(contexts[-1]['authority_barrier_message_id'],'national-message')
 
+    def test_first_literal_itinerary_keeps_its_day_count_when_intake_is_rejected(self):
+        for locale,text,city,invalid_quote,labels in (
+            ('zh','北京三日游','北京','四天',('第1天','第2天','第3天')),
+            ('en','A three-day trip to Beijing','Beijing','four days',('Day 1','Day 2','Day 3')),
+        ):
+            with self.subTest(locale=locale):
+                wire=flow(text,city=city,days=3,intent='plan',questions=())
+                wire['field_sources'][0]['quote']=invalid_quote
+                published,events,lookups,result=run(wire,text,locale=locale)
+                self.assertIsNotNone(result)
+                self.assertEqual((published,lookups),([],[]))
+                self.assertIn(city,answer(events))
+                for label in labels:
+                    self.assertIn(label,answer(events))
+                self.assertTrue(any('requested a complete 3-day itinerary' in value
+                    for kind,value in events if kind=='discussion_input'))
+                value=context(events)
+                self.assertEqual((value['authority'],value['facts'],value['authority_barrier_message_id']),
+                    ('none',{},'national-message'))
+
+    def test_rejected_intake_keeps_nonliteral_requests_on_the_ordinary_path(self):
+        for locale,text,city in (
+            ('zh','请翻译“北京三日游”','北京'),
+            ('en','Cancel a three-day trip to Beijing','Beijing'),
+            ('en','A three-day trip to Atlantis','Atlantis'),
+        ):
+            with self.subTest(locale=locale,text=text):
+                wire=flow(text,city=city,days=3,intent='plan',questions=())
+                wire['field_sources'][0]['quote']='unbound duration'
+                published,events,lookups,result=run(wire,text,locale=locale)
+                self.assertEqual((published,lookups,result),([],[],None))
+                self.assertFalse(any(kind=='discussion_input' for kind,_ in events))
+
     def test_plan06_undecided_date_and_party_do_not_block_readonly_days(self):
         for locale in ('zh','en'):
             with self.subTest(locale=locale):

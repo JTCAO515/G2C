@@ -8,6 +8,8 @@ import json
 from threading import Event
 from unittest.mock import AsyncMock, Mock, patch
 
+import httpx
+
 from cj_agent import provider as agent_provider
 from cj_agent.provider import (
     _M4_REQUEST_SENT, DashScopeConfig, MeteredDashScopeProvider, M4_BASE, M4_MODEL, ProviderUnknown,
@@ -43,6 +45,8 @@ async def confirm_model_write(guard, send_under_fence):
 def check_dispatch(api, headers, database, auth, subject, scope, memory, root, *, only=()):
     if not only:
         check_tool_dispatch(api, headers, database, auth, subject, scope, memory, root)
+    if not only or 'literal-itinerary' in only:
+        check_literal_itinerary(api, headers, database, auth, subject, scope, memory, root)
     subjects = frozenset({subject})
     signer = load_confirmation_signer(auth)
     for paused, missing_done, missing_model in (
@@ -379,6 +383,78 @@ def check_dispatch(api, headers, database, auth, subject, scope, memory, root, *
 
 
 @patch('asyncio.open_connection', new=reject_unmocked_connection)
+def check_literal_itinerary(api, headers, database, auth, subject, scope, memory, root):
+    from cj_api.local_lio_national import CONTEXT
+
+    subjects = frozenset({subject})
+    write_counts = ('SELECT (SELECT count(*) FROM cj_message_needs_binding),'
+                    ' (SELECT count(*) FROM cj_trip_record), (SELECT count(*) FROM cj_memory_item)')
+    for locale, text, city, wrong_quote, reply, day_label in (
+        ('zh', '北京三日游', '北京', '四天',
+         '第1天：参观故宫。\n第2天：游览颐和园。\n第3天：漫步天坛公园。想先细化哪一天？', '第{}天'),
+        ('en', 'A three-day trip to Beijing', 'Beijing', 'four days',
+         'Day 1: Visit the Forbidden City.\nDay 2: Explore the Summer Palace.\nDay 3: Walk through the Temple of Heaven. Which day should I expand?', 'Day {}'),
+    ):
+        operations = []
+
+        def response(request):
+            body = json.loads(request.content)
+            properties = body.get('response_format', {}).get('json_schema', {}).get('schema', {}).get('properties', {})
+            if 'current_source_index' in properties:
+                operations.append('intake')
+                value = flow(text, city=city, days=3, intent='plan', questions=())
+                value.update(version='LIO-planning-intake.8', needs_tools=False,
+                             field_sources=[dict(field='duration_days', source_index=0, quote=wrong_quote)])
+            elif 'The traveler requested a complete 3-day itinerary.' in body['messages'][0]['content']:
+                operations.append('discussion')
+                value = dict(answer=reply)
+            else:
+                operations.append('ordinary')
+                value = 'Check official visitor information first.'
+            content = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+            event = dict(id=f'literal-{locale}-{len(operations)}', model=M4_MODEL,
+                         choices=[dict(index=0, delta=dict(content=content), finish_reason='stop')],
+                         usage=dict(prompt_tokens=100, completion_tokens=100, total_tokens=200))
+            return httpx.Response(200, stream=httpx.ByteStream(('data: '+json.dumps(event)+'\n\ndata: [DONE]\n\n').encode()))
+
+        budget = AuthorizationBudget(root / ('literal-itinerary-' + locale),
+                                     clock=lambda: datetime(2026, 11, 20, tzinfo=timezone.utc))
+        provider = MeteredDashScopeProvider(
+            DashScopeConfig(M4_BASE, M4_MODEL, 'local-fixture-not-live', max_output_tokens=1536),
+            budget, transport=httpx.MockTransport(response),
+        )
+        services = RealServices(provider, 'local-fixture-not-live', subjects,
+                                demo_subjects=subjects, national_subjects=subjects)
+        worker = run_worker._worker_for_scope(
+            database, provider, auth, scope, checker_for(auth), memory_configuration=memory,
+            tools_configuration=RealTools(services, buffered_streaming_subjects=subjects),
+            draft_profile='needs-structured.1', assembly_planning=True, demo_planning=True,
+            national_planning=True, lio_confirmation=load_confirmation_signer(auth), lio_memory_enabled=True,
+        )
+        with database.connect(scope) as db:
+            before_writes = db.execute(write_counts).fetchone()
+        mid = 'literal-itinerary-' + locale
+        sent = api.post('/v2/lio/messages', headers=headers, content=encode(dict(
+            version='LIO-message.2', message_id=mid, text=text, locale=locale, new_conversation=True)))
+        assert sent.status_code == 200
+        outcome, = worker.process()
+        assert operations == ['intake', 'discussion'], (locale, operations)
+        assert (outcome.status, outcome.proposal_id) == ('completed', None)
+        page = api.get('/v2/lio/timeline', headers=headers, params=dict(conversation_id=sent.json()['conversation_id']))
+        assert page.status_code == 200
+        message, = page.json()['messages']
+        assert (message['message_id'], message['text'], message['trip'], message['memory']) == (mid, text, None, None)
+        assert all(day_label.format(day) in message['answer'] for day in (1, 2, 3))
+        binding = worker._binding(worker.messages.query(mid).receipt)
+        context, = (json.loads(effect.removeprefix(CONTEXT)) for effect in worker.runs.snapshot(binding).effects
+                    if effect.startswith(CONTEXT))
+        assert (context['authority'], context['facts'], context['authority_barrier_message_id']) == ('none', {}, mid)
+        assert [entry['state'] for entry in budget.inspect()] == ['RECEIVED', 'RECEIVED']
+        with database.connect(scope) as db:
+            assert db.execute(write_counts).fetchone() == before_writes
+        print('PASS signed first literal itinerary after rejected intake, without writes:', locale, flush=True)
+
+
 def check_tool_dispatch(api, headers, database, auth, subject, scope, memory, root):
     """Pause at the registered tool's send boundary, before its first response."""
     from types import SimpleNamespace
