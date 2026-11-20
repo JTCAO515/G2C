@@ -14,8 +14,27 @@ struct LioTranslationRequest: Sendable {
 
 enum LioTranslationFailure: Error, Equatable, Sendable {
     case network, quota, service, timedOut
-    case signInRequired, accessDenied, alreadyAccepted, tooLong, noRecognizedText, unreadableImage
+    case signInRequired, accessDenied, alreadyAccepted, tooLong, unreadableImage
+    case noRecognizedText(LioEmptyTranslationMedia)
     case invalidRecording
+
+}
+
+enum LioEmptyTranslationMedia: Equatable, Sendable {
+    case speech, photo
+
+    init(kind: LioRelayTranslationRequest.Kind) {
+        self = kind == .image ? .photo : .speech
+    }
+
+    func recoveryText(_ language: LioLanguage) -> String {
+        switch self {
+        case .speech:
+            language.text("Didn't catch that. Please try again.", "没有听清，请再说一遍")
+        case .photo:
+            language.text("No text found. Try another angle.", "没有识别到文字，请换个角度重拍")
+        }
+    }
 }
 
 struct LioTranslationResult: Equatable, Sendable {

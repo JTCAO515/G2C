@@ -121,8 +121,11 @@ struct CJProbeApp: App {
     private var translationRelayPreview: LioRelayTranslationClient? {
         guard ProcessInfo.processInfo.arguments.contains("--lio-translation-relay-preview") else { return nil }
         let photoQuotaFixture = ProcessInfo.processInfo.arguments.contains("--lio-translation-photo-quota-preview")
+        let photoEmptyFixture = ProcessInfo.processInfo.arguments.contains("--lio-translation-photo-empty-preview")
+        let photoTimeoutFixture = ProcessInfo.processInfo.arguments.contains("--lio-translation-photo-timeout-preview")
         let photoLoginFixture = ProcessInfo.processInfo.arguments.contains("--lio-translation-photo-login-preview")
         var timedOutOriginal: Data?
+        var timedOutPhoto: Data?
         var reauthPhoto: Data?
         return LioRelayTranslationClient { route, data in
             guard route == "/v1/tools/translate",
@@ -164,6 +167,17 @@ struct CJProbeApp: App {
                 }
                 if photoQuotaFixture {
                     return (429, Data(#"{"version":"TRANSLATION.1","error":"quota_exceeded"}"#.utf8))
+                }
+                if photoEmptyFixture {
+                    return (200, Data(#"{"version":"TRANSLATION.1","kind":"image","items":[]}"#.utf8))
+                }
+                if photoTimeoutFixture {
+                    if let timedOutPhoto {
+                        guard timedOutPhoto == data else { return (422, Data()) }
+                    } else {
+                        timedOutPhoto = data
+                        throw URLError(.timedOut)
+                    }
                 }
                 return (200, Data(#"{"version":"TRANSLATION.1","kind":"image","items":[{"source_text":"Tea","translated_text":"茶"},{"source_text":"Coffee","translated_text":"咖啡"}]}"#.utf8))
             }

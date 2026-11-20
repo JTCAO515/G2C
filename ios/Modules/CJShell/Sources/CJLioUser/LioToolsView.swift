@@ -81,10 +81,16 @@ private struct LioTextTranslationView: View {
         var request: LioTranslationRequest
         let input: Input
         var preparedPayload: LioRelayTranslationRequest.Payload?
+        var uploadSent = false
 
         var fromImage: Bool {
             if case .photo = input { return true }
             return false
+        }
+
+        var hasMedia: Bool {
+            if case .text = input { return false }
+            return true
         }
     }
 
@@ -138,14 +144,17 @@ private struct LioTextTranslationView: View {
                 LioRelayVoiceInput(language: language, source: source, enabled: enabled,
                                    isCurrent: isCurrent, onRecording: startRecording)
                 if let spokenText {
-                    Text(spokenText)
-                        .foregroundStyle(LioTheme.ink)
-                        .textSelection(.enabled)
-                        .accessibilityIdentifier("lio.translation.transcript")
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(language.text("Recognized speech", "识别出的文字")).font(.headline)
+                        Text(spokenText)
+                            .textSelection(.enabled)
+                            .accessibilityIdentifier("lio.translation.transcript")
+                    }
+                    .foregroundStyle(LioTheme.ink)
                 }
                 LioTranslationImageInput(language: language, source: source, enabled: enabled,
                                          isCurrent: isCurrent, onImage: startPhoto)
-                if attempt != nil { ProgressView(language.text("Translating…", "正在翻译…")) }
+                if let attempt { ProgressView(progress(for: attempt)) }
                 if let result { resultCard(result) }
                 if let problem {
                     Text(message(for: problem))
@@ -232,6 +241,9 @@ private struct LioTextTranslationView: View {
     private func resultCard(_ value: LioTranslationResult) -> some View {
         let translated = value.text.joined(separator: "\n")
         return VStack(alignment: .leading, spacing: 8) {
+            if spokenText != nil {
+                Text(language.text("Translation", "译文")).font(.headline)
+            }
             if imageLines.isEmpty {
                 Text(translated)
                     .foregroundStyle(LioTheme.ink)
@@ -322,6 +334,12 @@ private struct LioTextTranslationView: View {
 
     private func startRecording(_ data: LioTranslationRecording) { begin(.recording(data)) }
 
+    private func progress(for attempt: Attempt) -> String {
+        guard attempt.hasMedia else { return language.text("Translating…", "正在翻译…") }
+        return LioMediaTranslationProgress(payloadPrepared: attempt.preparedPayload != nil,
+                                           bodySent: attempt.uploadSent).label(language)
+    }
+
     private func begin(_ input: Attempt.Input, text: [String] = [],
                        preparedPayload: LioRelayTranslationRequest.Payload? = nil) {
         guard enabled, isCurrent() else { return }
@@ -354,7 +372,11 @@ private struct LioTextTranslationView: View {
                                                        payload: payload, storage: history)
             let reply: LioRelayTranslationResponse
             do {
-                reply = try await relay.translate(original)
+                let uploadFinished: LioRelayTranslationClient.UploadFinished = { [id = attempt.id] in
+                    guard self.attempt?.id == id, isCurrent() else { return }
+                    self.attempt?.uploadSent = true
+                }
+                reply = try await relay.translate(original, uploadFinished: attempt.hasMedia ? uploadFinished : nil)
             } catch LioRelayTranslationFailure.alreadyAccepted {
                 guard self.attempt?.id == attempt.id, isCurrent() else { return }
                 try relayOriginals.accept(original, storage: history)
@@ -368,7 +390,7 @@ private struct LioTextTranslationView: View {
             guard self.attempt?.id == attempt.id, isCurrent() else { return }
             guard !reply.items.isEmpty else {
                 try relayOriginals.accept(original, storage: history)
-                finish(attempt.id, result: .failure(.noRecognizedText))
+                finish(attempt.id, result: .failure(.noRecognizedText(.init(kind: reply.kind))))
                 return
             }
             if case .recording = attempt.input { spokenText = reply.items.first?.sourceText }
@@ -442,8 +464,8 @@ private struct LioTextTranslationView: View {
             language.text("Online translation isn’t available for this account.", "此账号暂未开通在线翻译。")
         case .alreadyAccepted:
             language.text("This translation was already sent.", "这次翻译已发送。")
-        case .noRecognizedText:
-            language.text("No text was found to translate.", "没有识别到可翻译的文字。")
+        case .noRecognizedText(let media):
+            media.recoveryText(language)
         case .invalidRecording:
             language.text("Couldn’t use this recording. Try recording again.", "无法使用这段录音，请重新录制。")
         case .unreadableImage:

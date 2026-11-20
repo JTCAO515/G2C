@@ -6,6 +6,38 @@ import Testing
 struct LioTranslationRelayTests {
     let id = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
 
+    @Test @MainActor func microphoneTapCollectsAudioWhenInvokedOffMainThread() async throws {
+        let tap = try #require(AVAudioFormat(standardFormatWithSampleRate: 16_000, channels: 1))
+        let collector = try LioTranslationPCMCollector(inputFormat: tap)
+        let callback = LioTranslationPCMCollector.tap(for: collector)
+        try await withCheckedThrowingContinuation { (done: CheckedContinuation<Void, any Error>) in
+            DispatchQueue.global().async {
+                done.resume(with: Result {
+                    #expect(!Thread.isMainThread)
+                    let format = try #require(AVAudioFormat(standardFormatWithSampleRate: 16_000, channels: 1))
+                    let buffer = try #require(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 128))
+                    buffer.frameLength = 128
+                    let samples = try #require(buffer.floatChannelData?.pointee)
+                    for index in 0..<128 { samples[index] = 0.25 }
+                    callback(buffer, AVAudioTime(sampleTime: 0, atRate: format.sampleRate))
+                })
+            }
+        }
+        let wav = try collector.finish().wireWAV()
+        #expect(wav.prefix(4) == Data("RIFF".utf8))
+        #expect(wav.dropFirst(44).contains { $0 != 0 })
+        let relay = LioRelayTranslationClient { path, body in
+            #expect(path == "/v1/tools/translate")
+            let fields = try #require(JSONSerialization.jsonObject(with: body) as? [String: String])
+            #expect(fields["kind"] == "speech")
+            #expect(fields["media"].flatMap { Data(base64Encoded: $0) } == wav)
+            return (200, Data(#"{"version":"TRANSLATION.1","kind":"speech","items":[{"source_text":"Tea, please.","translated_text":"请给我一杯茶。"}]}"#.utf8))
+        }
+        let response = try await relay.translate(.init(id: id, source: .english, target: .chinese, payload: .wav(wav)))
+        #expect(response.items.map(\.sourceText) == ["Tea, please."])
+        #expect(response.items.map(\.translatedText) == ["请给我一杯茶。"])
+    }
+
     @Test @MainActor func sendsAllThreeKindsToTheSameEndpoint() async throws {
         let wav = try LioTranslationWAV.encode(pcm: Data([1, 0, 2, 0]))
         let jpeg = Data([0xff, 0xd8, 0xff, 0xd9])
@@ -29,6 +61,22 @@ struct LioTranslationRelayTests {
             #expect(reply.items.map(\.sourceText) == ["Tea"])
             #expect(reply.items.map(\.translatedText) == ["茶"])
         }
+    }
+
+    @Test @MainActor func forwardsUploadCompletionBeforeTheVoiceResult() async throws {
+        var bodySent = false
+        let relay = LioRelayTranslationClient(requiresOriginalStore: false) { path, _, uploadFinished in
+            #expect(path == "/v1/tools/translate")
+            #expect(!bodySent)
+            uploadFinished?()
+            #expect(bodySent)
+            return (200, Data(#"{"version":"TRANSLATION.1","kind":"speech","items":[{"source_text":"Tea","translated_text":"茶"}]}"#.utf8))
+        }
+        let wav = try LioTranslationWAV.encode(pcm: Data([1, 0, 2, 0]))
+        let speech = LioRelayTranslationRequest(id: id, source: .english, target: .chinese, payload: .wav(wav))
+        let result = try await relay.translate(speech, uploadFinished: { bodySent = true })
+        #expect(result.items.first?.translatedText == "茶")
+        #expect(bodySent)
     }
 
     @Test func microphonePCMConvertsToWireWAVInMemory() throws {
@@ -210,6 +258,20 @@ struct LioTranslationRelayTests {
         #expect(throws: LioRelayTranslationFailure.alreadyAccepted) {
             try LioRelayTranslationResponse.decode(status: 409, body: Data(), expecting: .image)
         }
+    }
+
+    @Test func emptySpeechAndPhotoResultsHaveDifferentRecoveryActions() throws {
+        let speech = Data(#"{"version":"TRANSLATION.1","kind":"speech","items":[]}"#.utf8)
+        let photo = Data(#"{"version":"TRANSLATION.1","kind":"image","items":[]}"#.utf8)
+        let speechResult = try LioRelayTranslationResponse.decode(status: 200, body: speech, expecting: .speech)
+        let photoResult = try LioRelayTranslationResponse.decode(status: 200, body: photo, expecting: .image)
+        #expect(speechResult.items.isEmpty && photoResult.items.isEmpty)
+        let speechGuidance = LioEmptyTranslationMedia(kind: speechResult.kind)
+        let photoGuidance = LioEmptyTranslationMedia(kind: photoResult.kind)
+        #expect(speechGuidance.recoveryText(.chinese) == "没有听清，请再说一遍")
+        #expect(speechGuidance.recoveryText(.english) == "Didn't catch that. Please try again.")
+        #expect(photoGuidance.recoveryText(.chinese) == "没有识别到文字，请换个角度重拍")
+        #expect(photoGuidance.recoveryText(.english) == "No text found. Try another angle.")
     }
 
     @Test func rejectsTextOutsideTheAgreedRequestBounds() {

@@ -31,6 +31,11 @@ final class LioTranslationPCMCollector: @unchecked Sendable {
         self.converter = converter
     }
 
+    nonisolated static func tap(for collector: LioTranslationPCMCollector)
+        -> @Sendable (AVAudioPCMBuffer, AVAudioTime) -> Void {
+        { buffer, _ in collector.append(buffer) }
+    }
+
     func append(_ input: AVAudioPCMBuffer) {
         lock.withLock {
             let remaining = LioTranslationWAV.maximumPCMBytes - pcm.count
