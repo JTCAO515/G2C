@@ -8,7 +8,7 @@ from starlette.concurrency import run_in_threadpool
 
 from cj_message.demo_dialogue import LIO_CHAT_PATTERN, LIO_VERSION, LIO_VERSION_V2, LIO_VERSION_V3, message_id
 from cj_message.domain import InvalidInput
-from cj_message.lio_context import SOURCE_EFFECT, TOOL_EFFECT, UNSETTLED_VISIBLE_ANSWER, UNSAVED_PLAN_ANSWER, display_answer, self_description
+from cj_message.lio_context import SOURCE_EFFECT, TOOL_EFFECT, UNSETTLED_VISIBLE_ANSWER, UNSAVED_PLAN_ANSWER, answer_locale, display_answer, self_description
 from cj_message.lio_plan_needs import BOUND_EFFECT, EDIT_BOUND_EFFECT
 from cj_run.core import Binding
 from cj_run.display_snapshot import SnapshotTooLarge
@@ -33,6 +33,7 @@ def _failure(status):
 
 def _message(item, state, *, expired=False, trip=None, memory=None, identity=True):
     failure = None
+    locale = answer_locale(item.text, item.locale)
     if trip is not None:
         status = 'completed'
     elif expired:
@@ -70,15 +71,15 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
         # weather producer. New nationwide calls always carry an exact city.
         url = BEIJING_PUBLIC_FORECAST if weather_city is None else city_weather_reference(weather_city['adcode'])
         if url is not None:
-            name = ('北京' if item.locale == 'zh' else 'Beijing') if weather_city is None else weather_city['name']
-            title = ('中国天气网 · '+name+'当前预报（参考）' if item.locale == 'zh'
+            name = ('北京' if locale == 'zh' else 'Beijing') if weather_city is None else weather_city['name']
+            title = ('中国天气网 · '+name+'当前预报（参考）' if locale == 'zh'
                      else 'Weather China · Current '+name+' forecast (reference)')
             sources.append(dict(title=title,url=url,observed_at=None))
     # Failed streams can leave provisional text in the original RUN. Keep
     # those bytes for diagnosis without returning them as a terminal answer.
-    answer = display_answer(state.text, item.locale) if state is not None and status != 'failed' else ''
+    answer = display_answer(state.text, locale) if state is not None and status != 'failed' else ''
     if identity and status == 'completed' and answer is not None:
-        introduction = self_description(item.text, item.locale)
+        introduction = self_description(item.text, locale)
         if introduction is not None:
             answer = introduction
     if answer is None:
