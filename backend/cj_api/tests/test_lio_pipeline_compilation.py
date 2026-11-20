@@ -110,8 +110,9 @@ class RetrievedCompilation(unittest.TestCase):
         fields=dict(fixed_items=[generic,known,moved],arrival=dict(place=dict(state='known',value=place['name_zh'])),
                     departure=dict(place=dict(state='known',value='机场')))
         expected=(('named-fixed',place['name_zh']),('compile-data-arrival-transfer',place['name_zh']))
-        self.assertEqual(declared_endpoint_names(fields,id_prefix='compile-data',retained=None),expected)
-        self.assertEqual(declared_endpoint_names(fields,id_prefix='compile-data',retained={'items':[{'id':'named-fixed'}]}),expected[1:])
+        self.assertEqual(declared_endpoint_names(fields,id_prefix='compile-data',retained=None,city_names=()),expected)
+        self.assertEqual(declared_endpoint_names(fields,id_prefix='compile-data',
+            retained={'items':[{'id':'named-fixed'}]},city_names=()),expected[1:])
         value=prepared(fields)
         lookups={s.item_id:None for s in value.skeleton.stops}
         lookups['compile-data-arrival-transfer']=place
@@ -122,6 +123,15 @@ class RetrievedCompilation(unittest.TestCase):
         self.assertEqual(arrival['schedule']['start']['time'],{'state':'unknown'})
         self.assertIn('booking are unconfirmed',arrival['note'])
         self.assertEqual(actual['compile-data-departure-transfer']['place']['state'],'unconfirmed')
+
+    def test_city_names_do_not_become_a_transfer_or_fixed_poi(self):
+        item=fixed()
+        for edge in ('start','end'):
+            item[edge]['place']={'state':'known','value':'北京市'}
+        fields=dict(fixed_items=[item],arrival=dict(place=dict(state='known',value='Beijing')),
+                    departure=dict(place=dict(state='known',value='北京首都国际机场')))
+        self.assertEqual(declared_endpoint_names(fields,id_prefix='compile-data',retained=None,
+            city_names=('北京','北京市','beijing')), (('compile-data-departure-transfer','北京首都国际机场'),))
 
     def test_retained_rich_original_title_fields_and_source_rows_are_not_rewritten(self):
         original=deepcopy(CASES['protected_fixed']['content']);before=deepcopy(original)

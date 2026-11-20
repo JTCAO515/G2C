@@ -11,23 +11,29 @@ from cj_feasibility.rich_assembly import Activity
 from cj_feasibility.rich_solver import DAY,Window
 from cj_trip.structured_v4 import adjacent_pairs,validate_document
 from cj_trip.domain import packed
+
+from .lio_city import _normalize
 from .lio_pipeline_skeleton import CapacityExceeded,SkeletonUnavailable
 
 
 _PROPOSED_WINDOWS={'sight':(9*3600,18*3600,90*60),'lunch':(11*3600,14*3600,60*60),
                    'dinner':(17*3600,22*3600,60*60)}
-_GENERIC_ENDPOINTS=frozenset({'酒店','宾馆','民宿','住处','机场','车站','火车站','高铁站','航站楼',
-                              'hotel','the hotel','my hotel','our hotel','airport','the airport','station','train station'})
+_GENERIC_ENDPOINTS=frozenset(map(_normalize, (
+    '酒店','宾馆','民宿','住处','机场','车站','火车站','高铁站','航站楼','市区','市中心',
+    'hotel','the hotel','my hotel','our hotel','airport','the airport','station','train station','city center','downtown',
+)))
 
 
-def declared_endpoint_names(fields,*,id_prefix,retained):
+def declared_endpoint_names(fields,*,id_prefix,retained,city_names):
     """Names eligible for exact lookup from checked traveler observations."""
     retained_ids=set() if retained is None else {item['id'] for item in retained['items']}
+    excluded=_GENERIC_ENDPOINTS|{_normalize(name)for name in city_names}
 
     def specific(observation):
         if observation.get('state')!='known':return None
         name=observation['value'].strip()
-        return name if name and name.casefold() not in _GENERIC_ENDPOINTS else None
+        normalized=_normalize(name)
+        return name if normalized and normalized not in excluded else None
 
     names=[]
     for item in fields.get('fixed_items',()):
