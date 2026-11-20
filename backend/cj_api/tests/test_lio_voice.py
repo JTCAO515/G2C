@@ -3,11 +3,34 @@ from types import SimpleNamespace
 import unittest
 
 from cj_api.lio_dialogue_routes import _message
-from cj_message.lio_context import PERSONA, UNSETTLED_VISIBLE_ANSWER, answer_prompt, display_answer
+from cj_message.lio_context import CAPABILITIES_EN, CAPABILITIES_ZH, LioCitation, PERSONA, UNSETTLED_VISIBLE_ANSWER, answer_prompt, display_answer
 from cj_message.lio_timeline import TimelineMessage
 
 
 class LioVoice(unittest.TestCase):
+    def test_question_language_uses_interface_only_when_undetermined(self):
+        from cj_message.lio_context import answer_locale
+
+        cases=(('How do I get from Beijing Capital Airport to downtown Beijing?','zh','en'),
+               ('怎么用 Alipay 买地铁票？','en','zh'),('How do I get to 故宫?','zh','en'),
+               ('你好','en','zh'),('Three days','zh','en'),('３？','zh','zh'),('３？','en','en'))
+        for text,default,expected in cases:
+            with self.subTest(text=text,default=default):
+                self.assertEqual(answer_locale(text,default),expected)
+
+    def test_timeline_templates_and_reference_titles_follow_question_language(self):
+        for default,text,answer,weather_title in (
+            ('zh','What can you do?',CAPABILITIES_EN,'Weather China'),
+            ('en','你能做啥',CAPABILITIES_ZH,'中国天气网'),
+        ):
+            with self.subTest(default=default,text=text):
+                citation=LioCitation('weather','Amap Weather',None,None)
+                state=SimpleNamespace(status='completed',text='Original',draft_outcome=None,
+                    effects=(citation.effect(),),budget_exhausted_stage='none')
+                shown=_message(TimelineMessage('language-test','source',1,text,default),state)
+                self.assertEqual(shown['answer'],answer)
+                self.assertIn(weather_title,shown['sources'][-1]['title'])
+
     def test_structured_identifiers_beside_chinese_are_not_public_words(self):
         identifier='20be0897-2fe5-4136-bf73-5966edb64a3a'
         for locale in ('zh','en'):
