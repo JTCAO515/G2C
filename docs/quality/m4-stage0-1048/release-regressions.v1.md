@@ -58,7 +58,7 @@ CJ_ENV=local uv run --locked python -B backend/cj_api/tests/lio_rejected_capture
 在同一中英会话中用夹具使原轮失败或 UNKNOWN，再提交新的、独立的用户消息。
 实际验证首轮用户数据进入下一轮、原未决动作不重派、原轮无写入授权、后续应答可见。
 覆盖 Demo 与非 Demo 的原日期边界；对话继续不能继承旧的规划执行授权。
-真实测试仍在首个 FAIL 或 UNKNOWN 后停止派发。
+真实测试遵守各自的停发规则。全国 #815 r11 按 [JT 的单窗决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-7040420562) 继续处理已知答复 FAIL。
 
 ```sh
 uv run --locked python -B scripts/pg_suites.py lio_failed_history
