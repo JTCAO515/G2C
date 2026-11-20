@@ -73,6 +73,7 @@ def main():
         "testToolsPhotoPickerPairsRelayFixtureLinesOnIOS17", "testToolsPhotoQuotaOffersRetryWithoutLocalRecognitionOnIOS17",
         "testToolsPhotoRemainsAvailableAfterSignInErrorOnIOS17",
         "testToolsEmptyPhotoAsksForAnotherAngle",
+        "testToolsPhotoTimeoutRetriesWithTheSameImageRequest",
     )):
         seed_translation_photo(args.simulator, output)
 

@@ -81,6 +81,33 @@ import XCTest
         XCTAssertFalse(app.buttons["lio.translation.retry"].exists)
     }
 
+    @objc func testToolsPhotoTimeoutRetriesWithTheSameImageRequest() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-translation-relay-preview",
+                               "--lio-translation-photo-timeout-preview", "-cj.ui.language.v1", "en",
+                               "-AppleLanguages", "(en)"]
+        app.launch()
+        defer { app.terminate() }
+        let tools = app.tabBars.buttons["Tools"]
+        XCTAssertTrue(tools.waitForExistence(timeout: 8))
+        tools.tap()
+        app.buttons["lio.tools.translation"].tap()
+        let photo = app.buttons["lio.translation.photo"]
+        XCTAssertTrue(photo.waitForExistence(timeout: 6))
+        photo.tap()
+        let fixture = app.images.matching(NSPredicate(format: "label BEGINSWITH %@", "Photo,")).firstMatch
+        XCTAssertTrue(fixture.waitForExistence(timeout: 8), app.debugDescription)
+        fixture.tap()
+        let notice = app.staticTexts["lio.translation.problem"]
+        XCTAssertTrue(notice.waitForExistence(timeout: 10))
+        XCTAssertEqual(notice.label, "Translation timed out. Try again.")
+        app.buttons["lio.translation.retry"].tap()
+        let first = app.descendants(matching: .any).matching(identifier: "lio.translation.line.0").firstMatch
+        XCTAssertTrue(first.waitForExistence(timeout: 10), app.debugDescription)
+        XCTAssertTrue(first.label.contains("Tea") && first.label.contains("茶"))
+    }
+
     @objc func testToolsAlreadyAcceptedTextDoesNotOfferAnotherSubmission() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
