@@ -85,9 +85,10 @@ DIRECT_ANSWER=re.compile(
     r'(?:what would you (?:recommend|suggest)|any (?:tips|advice))'
     r')[?？。.!！\s]*',re.I)
 ENGLISH_CAPITAL_QUESTION=re.compile(
-    r"\s*(?:is [\w .'-]{1,60} the capital|what is the capital) of [\w .'-]{1,60}[?？。.!！\s]*",re.I)
-# Country names can contain "and" or periods. A recognized plan clause takes precedence.
-CAPITAL_CLAUSE_BREAK=re.compile(r'\.|\s+(?:and(?:\s+then)?|then)\s+',re.I)
+    r"\s*(?:is [\w .'-]{1,60} the capital|what is the capital) of (?P<country>[\w .'-]{1,60})[?？。.!！\s]*",re.I)
+# Country names can contain "and" or periods. Itinerary wording in a following clause goes to planning.
+CAPITAL_PLANNING_TAIL=re.compile(
+    rf'(?:\.|\s+(?:and|then)\s+).*\b(?:plan(?:ning)?|itinerar(?:y|ies)|trips?|visit|(?:{NUMBER})[- ]+days?)\b',re.I)
 
 
 def publication_held(text):
@@ -259,8 +260,8 @@ class NationalLioPlanning:
         fixed=self_description(text,original.locale)
         if fixed is not None:return self._reply(worker,binding,state,fixed)
         if META_QUESTION.fullmatch(text) or DIRECT_ANSWER.fullmatch(text):return None
-        if ENGLISH_CAPITAL_QUESTION.fullmatch(text) and not any(
-                PLAN_REQUEST.match(clause) for clause in CAPITAL_CLAUSE_BREAK.split(text)[1:]):return None
+        capital=ENGLISH_CAPITAL_QUESTION.fullmatch(text)
+        if capital is not None and not CAPITAL_PLANNING_TAIL.search(capital['country']):return None
         today=original.question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
         turns,refs,previous=self.context(binding,PlanningTurn(text,today))
         if not refs and previous is None and _READONLY_DETAILS.fullmatch(text):
