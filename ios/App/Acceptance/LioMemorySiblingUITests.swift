@@ -1,6 +1,34 @@
 import XCTest
 
 @MainActor final class LioMemorySiblingUITests: XCTestCase {
+    func testMemoryEditorDoneKeepsTheUnsavedDraft() {
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.memory-siblings.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-memory-titled-acceptance", "-cj.ui.language.v1", "en"]
+        app.launch()
+        defer { app.terminate() }
+        let remember = app.buttons.matching(identifier: "lio.memory.remember").firstMatch
+        XCTAssertTrue(remember.waitForExistence(timeout: 10))
+        remember.tap()
+        app.tabBars.buttons["Memory"].tap()
+        let card = app.buttons["lio.memory.card.luxury-hotel"]
+        XCTAssertTrue(card.waitForExistence(timeout: 10))
+        card.tap()
+        let edit = app.buttons["lio.memory.edit"]
+        XCTAssertTrue(edit.waitForExistence(timeout: 10))
+        edit.tap()
+        let editor = app.descendants(matching: .any).matching(identifier: "lio.memory.editor").firstMatch
+        XCTAssertTrue(editor.waitForExistence(timeout: 5))
+        editor.tap()
+        editor.typeText(" Near a station.")
+        let keyboard = app.keyboards.firstMatch
+        XCTAssertTrue(keyboard.exists)
+        app.navigationBars.buttons["lio.memory.keyboard-done"].tap()
+        let dismissed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: keyboard)
+        XCTAssertEqual(XCTWaiter.wait(for: [dismissed], timeout: 5), .completed)
+        XCTAssertTrue((editor.value as? String)?.contains("Near a station.") == true)
+        XCTAssertTrue(app.buttons["lio.memory.save"].isEnabled)
+    }
+
     func testConfirmingEachPreferenceRefreshesItsSiblingAndTheMemoryGridInBothLanguages() throws {
         continueAfterFailure = false
         for (chinese, appearance) in [(false, "light"), (true, "light"), (false, "dark"), (true, "dark")] {

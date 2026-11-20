@@ -63,6 +63,7 @@ private struct LioTextTranslationView: View {
     @State private var source: LioTranslationLanguage = .english
     @State private var target: LioTranslationLanguage = .chinese
     @State private var input = ""
+    @FocusState private var editingText: Bool
     @State private var attempt: Attempt?
     @State private var retryAttempt: Attempt?
     @State private var result: LioTranslationResult?
@@ -112,6 +113,7 @@ private struct LioTextTranslationView: View {
                     languagePicker(language.text("To", "目标语言"), selection: $target, other: $source)
                 }
                 TextEditor(text: $input)
+                    .focused($editingText)
                     .foregroundStyle(LioTheme.ink)
                     .scrollContentBackground(.hidden)
                     .frame(minHeight: 116)
@@ -182,10 +184,33 @@ private struct LioTextTranslationView: View {
 
             }
             .padding(18)
+            .background {
+                ZStack {
+                    if editingText {
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .onTapGesture { editingText = false }
+                    }
+                    LioKeyboardScrollObserver(enabled: editingText) { editingText = false }
+                        .allowsHitTesting(false)
+                }
+                .accessibilityHidden(true)
+            }
         }
+        .accessibilityIdentifier("lio.translation.scroll")
+        .scrollDismissesKeyboard(.interactively)
+        .scrollBounceBehavior(editingText ? .always : .automatic, axes: .vertical)
         .background(LioTheme.paper)
         .navigationTitle(language.text("Translation", "翻译"))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if editingText {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(language.text("Done", "完成")) { editingText = false }
+                        .accessibilityIdentifier("lio.translation.keyboard-done")
+                }
+            }
+        }
         .onChange(of: input) { resetResult() }
         .onChange(of: source) { resetResult() }
         .onChange(of: target) { resetResult() }
@@ -480,6 +505,58 @@ private struct LioTextTranslationView: View {
             language.text("Translation limit reached. Try again later.", "翻译额度已用完，请稍后重试。")
         case .timedOut:
             language.text("Translation timed out. Try again.", "翻译超时，请重试。")
+        }
+    }
+}
+
+/// Observe the existing scroll gesture without replacing it or reserving space.
+private struct LioKeyboardScrollObserver: UIViewRepresentable {
+    let enabled: Bool
+    let onSwipeUp: () -> Void
+
+    func makeUIView(context: Context) -> Marker {
+        let marker = Marker()
+        marker.isUserInteractionEnabled = false
+        return marker
+    }
+
+    func updateUIView(_ marker: Marker, context: Context) {
+        marker.onSwipeUp = enabled ? onSwipeUp : nil
+        marker.attach()
+    }
+
+    static func dismantleUIView(_ marker: Marker, coordinator: ()) {
+        marker.detach()
+    }
+
+    final class Marker: UIView {
+        weak var scroll: UIScrollView?
+        var onSwipeUp: (() -> Void)?
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            if window == nil { detach() } else { attach() }
+        }
+
+        func attach() {
+            var ancestor = superview
+            while let view = ancestor, !(view is UIScrollView) { ancestor = view.superview }
+            let enclosing = ancestor as? UIScrollView
+            guard enclosing !== scroll else { return }
+            detach()
+            scroll = enclosing
+            enclosing?.panGestureRecognizer.addTarget(self, action: #selector(panEnded(_:)))
+        }
+
+        func detach() {
+            scroll?.panGestureRecognizer.removeTarget(self, action: #selector(panEnded(_:)))
+            scroll = nil
+        }
+
+        @objc private func panEnded(_ pan: UIPanGestureRecognizer) {
+            let offset = pan.translation(in: scroll)
+            guard pan.state == .ended, offset.y < -max(36, abs(offset.x)) else { return }
+            onSwipeUp?()
         }
     }
 }

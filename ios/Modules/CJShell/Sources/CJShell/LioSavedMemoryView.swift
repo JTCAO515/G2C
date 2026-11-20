@@ -365,6 +365,7 @@ private struct LioSavedMemoryDetail: View {
                     .accessibilityAddTraits(.isHeader)
             }
         }
+        .scrollDismissesKeyboard(.interactively)
         .lioPage()
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
@@ -374,6 +375,12 @@ private struct LioSavedMemoryDetail: View {
         .navigationBarBackButtonHidden(saving)
         .toolbar {
             ToolbarItem(placement: .principal) { Color.clear.frame(width: 1, height: 1).accessibilityHidden(true) }
+            if editing {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(language.text("Done", "完成")) { editing = false }
+                        .accessibilityIdentifier("lio.memory.keyboard-done")
+                }
+            }
         }
         .onChange(of: phase) { _, phase in
             if phase != .active { editing = false }
