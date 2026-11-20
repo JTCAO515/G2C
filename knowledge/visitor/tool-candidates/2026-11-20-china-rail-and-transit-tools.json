@@ -1,0 +1,236 @@
+[
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-20.rail-12306-english",
+    "name_zh": "中国铁路12306英文站",
+    "name_en": "China Railway 12306 English Website",
+    "category": "rail",
+    "purpose_zh": "外国旅客用护照在线购买、改签、退票、变更到站中国火车票的官方英文入口，并可查询车次与票价。售票与改签服务时间为5:00至次日1:00（周二5:00至23:30），信息查询与退票24小时可用。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "英文",
+      "简体中文（同域中文站）"
+    ],
+    "preparation": [
+      "有效外国护照（英文站只接受按规定可用的外国护照）",
+      "完成实名核验：按提示填写姓名/国籍/证件号自动核验，或上传护照资料页照片人工核验",
+      "可支付的银行卡或移动支付（中国或外国银行卡）"
+    ],
+    "official_links": [
+      {
+        "name": "12306 英文站",
+        "url": "https://www.12306.cn/en/index.html",
+        "type": "official_site"
+      },
+      {
+        "name": "12306 英文站常见问题",
+        "url": "https://www.12306.cn/en/faq.html",
+        "type": "official_help"
+      }
+    ],
+    "sources": [
+      {
+        "name": "中国铁路12306英文站·常见问题（服务范围、服务时间、可用证件）",
+        "url": "https://www.12306.cn/en/faq.html",
+        "type": "official_operator",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "注册是否需邮箱或境外手机号未说明",
+      "人工核验时长未说明",
+      "英文站覆盖的车次与席别范围未说明"
+    ],
+    "notes": "[阶段:A] [时效:低] [复核:2027-02-18] [依据:12306 CHINA RAILWAY／英文站FAQ“常见问题”] [来源级:S1] [英文:来源已有] 官方强调12306.cn是中国铁路客服中心官方网站，其他网站的购票问题铁路部门不予处理；本条只登记官方入口，不保证任一列车或日期有票。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-20.travelchina-official-guide",
+    "name_zh": "中国旅游网（文化和旅游部官方英文旅游指南）",
+    "name_en": "Travel China (Official Tourism Website of the PRC)",
+    "category": "other",
+    "purpose_zh": "文化和旅游部官方英文旅游网站，提供交通（火车/飞机/地铁/公交）、手机卡与网络、支付等面向外国旅客的指南文章，可用于行前了解全国通用做法并对接各运营方官方入口。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "英文"
+    ],
+    "preparation": [
+      "可联网的浏览器",
+      "无需注册"
+    ],
+    "official_links": [
+      {
+        "name": "Travel China 首页",
+        "url": "https://www.travelchina.org.cn/en/",
+        "type": "official_site"
+      },
+      {
+        "name": "Travel China·Public Transit",
+        "url": "https://www.travelchina.org.cn/en/article/eYesHS7SmCni",
+        "type": "official_help"
+      }
+    ],
+    "sources": [
+      {
+        "name": "Travel China（中国文化和旅游部官方旅游网站）·Public Transit / SIM Cards & Networks",
+        "url": "https://www.travelchina.org.cn/en/article/eYesHS7SmCni",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2026-03-25",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "站点是否有中文版、栏目结构是否与英文一致未核实",
+      "各篇文章的更新频率未说明",
+      "是否提供城市级细则未核实"
+    ],
+    "notes": "[阶段:A] [时效:低] [复核:2027-02-18] [依据:China Travel Guide／中国旅游网英文站文章正文] [来源级:S1] [英文:来源已有] 该站为全国性指南，城市细节仍需以当地运营方公告为准；本条不复制其正文，只登记入口与用途。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-20.rail-12306-hotline",
+    "name_zh": "中国铁路客服热线12306",
+    "name_en": "China Railway Customer Service Hotline 12306",
+    "category": "rail",
+    "purpose_zh": "铁路购票、改签、退票、乘车规则的官方电话咨询渠道；12306英文站页面给出的客服电话为+86 12306，并说明英文站规则可拨打该号码咨询。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "待核实"
+    ],
+    "preparation": [
+      "可拨打国际电话的手机（境外号码能否拨通待核实）",
+      "购票时使用的护照号与订单号"
+    ],
+    "official_links": [
+      {
+        "name": "12306 英文站（Contact us 列 +86 12306）",
+        "url": "https://www.12306.cn/en/index.html",
+        "type": "official_help"
+      }
+    ],
+    "sources": [
+      {
+        "name": "中国铁路12306英文站·首页 Contact us 与常见问题（铁路客服热线）",
+        "url": "https://www.12306.cn/en/index.html",
+        "type": "official_operator",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "英语服务时段与按键路径未说明",
+      "境外号码拨打是否收费未说明",
+      "是否受理护照实名核验的人工加急未说明"
+    ],
+    "notes": "[阶段:F] [时效:中] [复核:2026-12-20] [依据:12306 CHINA RAILWAY／英文站首页“Contact us”段] [来源级:S1] [英文:来源已有] [护照:见正文说明] 号码来自12306英文站首页 Contact us；本条不承诺接通语言或等待时长。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-20.alipay-transport-qr",
+    "name_zh": "支付宝“出行”乘车码",
+    "name_en": "Alipay Transport QR code",
+    "category": "city_transport",
+    "purpose_zh": "在支付宝内开通地铁/公交乘车二维码：打开支付宝→“出行”→选择城市→完成身份验证→获得二维码，进出站或上下车扫码。文化和旅游部官方旅游网把它列为外国旅客乘坐地铁与公交的可用方式之一。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "待核实"
+    ],
+    "preparation": [
+      "安装支付宝并完成注册",
+      "完成身份验证（是否需中国手机号待核实）",
+      "绑定可支付的银行卡或余额"
+    ],
+    "official_links": [],
+    "sources": [
+      {
+        "name": "Travel China（中国文化和旅游部官方旅游网站）·Public Transit（Metro/Bus 扫码步骤）",
+        "url": "https://www.travelchina.org.cn/en/article/eYesHS7SmCni",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2026-03-25",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "支持的城市清单未给出",
+      "境外银行卡能否直接扣费未说明",
+      "儿童无手机如何随行未说明",
+      "支付宝官方帮助页未取得，官方入口待补充"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:China Travel Guide／中国旅游网英文站文章正文] [来源级:S2] [英文:来源已有] 只记录官方指南描述的步骤与用途，不保证任一城市可用；扫码乘车的计费与补登规则以当地运营方为准。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-20.nia-12367-app",
+    "name_zh": "移民局12367 App/小程序",
+    "name_en": "NIA 12367 App and mini programs",
+    "category": "other",
+    "purpose_zh": "国家移民管理局的线上服务渠道，可用于外国人旅馆以外住宿登记的网上办理；2026年第7号公告列明可通过国家移民管理局政务服务网站、“移民局12367”应用程序、微信小程序或支付宝小程序办理，与现场办理具有同等效力。",
+    "cities": [
+      "nationwide"
+    ],
+    "languages": [
+      "待核实"
+    ],
+    "preparation": [
+      "护照信息",
+      "住宿地址与入住时间",
+      "能接收验证的手机号（是否需中国号码待核实）"
+    ],
+    "official_links": [
+      {
+        "name": "国家移民管理局官网（办事服务入口）",
+        "url": "https://www.nia.gov.cn/",
+        "type": "official_site"
+      }
+    ],
+    "sources": [
+      {
+        "name": "国家移民管理局·关于全国推广网上办理外国人旅馆以外住宿登记的公告（2026年第7号）",
+        "url": "https://www.nia.gov.cn/n741440/n741542/c1806111/content.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-09-21",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "App/小程序的注册与实名要求未说明",
+      "办理时限与回执形式未说明",
+      "儿童是否需单独登记未说明"
+    ],
+    "notes": "[阶段:E] [时效:中] [复核:2026-12-20] [依据:国家移民管理局关于全国推广网上办理外国人旅馆以外住宿登记的公告／2026年第7号公告正文] [来源级:S1] [英文:来源已有] 该渠道用于“旅馆以外住宿”的登记；住酒店由酒店办理，不需要旅客自行登记。本条只登记官方入口。",
+    "conflicts": [],
+    "related_entries": []
+  }
+]
