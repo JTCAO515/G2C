@@ -449,7 +449,8 @@ private struct LioTextTranslationView: View {
         case .alreadyAccepted:
             language.text("This translation was already sent.", "这次翻译已发送。")
         case .noRecognizedText:
-            language.text("No text was found to translate.", "没有识别到可翻译的文字。")
+            language.text("No text found. Try taking the photo from another angle.",
+                          "没有识别到文字，请换个角度重拍。")
         case .invalidRecording:
             language.text("Couldn’t use this recording. Try recording again.", "无法使用这段录音，请重新录制。")
         case .unreadableImage:
