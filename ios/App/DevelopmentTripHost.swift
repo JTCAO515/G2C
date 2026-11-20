@@ -126,6 +126,7 @@ private var developmentHostEnvironment: [String: String] {
     let trips: TripContainerHost
     #if G2C_DEMO_BETA
     let lioTripLibrary: LioTripLibrary?
+    let lioTranslationRelay: LioRelayTranslationClient?
     #endif
     let messages: DevelopmentMessageHost
     #if DEBUG
@@ -229,6 +230,12 @@ private var developmentHostEnvironment: [String: String] {
             #endif
         }
         #if G2C_DEMO_BETA
+        lioTranslationRelay = LioRelayTranslationClient.internalBeta(endpoint: endpoint, isCurrent: {
+            lifetime.current == lifetime.trip
+        }, bearer: {
+            guard lifetime.current == lifetime.trip else { return nil }
+            return configuration.token
+        })
         if tripEditingProfile != nil {
             lioTripLibrary = LioTripLibrary(list: {
                 var rows: [StructuredTripSummary] = []
@@ -870,6 +877,7 @@ private var developmentHostEnvironment: [String: String] {
     let lioChats: LioChatLibrary
     let lioTripHistory: LioTripHistoryClient
     let lioMemoryActions: LioMemoryActionsClient
+    let lioTranslationHistory: LioTranslationHistory
     private let lioPosition: LioChatContinuity
     private let lioPositionStore: LioChatPositionStore
     #endif
@@ -923,6 +931,9 @@ private var developmentHostEnvironment: [String: String] {
         }
         let credentials = DevelopmentMessageCredentials(token: configuration.token, scope: scope, lease: lease, lifetime: lifetime)
         #if G2C_DEMO_BETA
+        lioTranslationHistory = LioTranslationHistory(
+            directory: root.appendingPathComponent(LioTranslationHistory.directoryName, isDirectory: true),
+            isCurrent: isCurrent)
         let lioEndpoint = try MessageEndpoint(url: configuration.endpoint, maximumRequestBytes: LioMemoryWire.maximumRequestBytes,
                                               maximumResponseBytes: 4_500_000)
         let lioClient = try LioTimelineHTTP(endpoint: lioEndpoint, scope: scope, lease: lease,
@@ -1549,6 +1560,12 @@ private struct DevelopmentVerificationTransport: ClientTransport {
             let position = try LioChatPositionStore(directory: url, namespace: provider.namespace, keys: provider,
                                                     validate: { throw RecoveryError.inactive })
             try position.clearRetiredPosition()
+            #if G2C_DEMO_BETA
+            let translation = try captured[0].child(LioTranslationHistory.directoryName)
+            try translation.removeOwnedFile(named: LioTranslationHistory.fileName)
+            try translation.removeOwnedFile(named: LioTranslationHistory.relayOriginalsFileName)
+            try translation.removeEmptyChild()
+            #endif
         case .tripPending:
             guard let url else { throw CleanupFailure.unavailable }
             let (provider, id) = try provider(.localTripPendingV1)

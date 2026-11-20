@@ -9,7 +9,6 @@ public struct LioSavedMemoryView: View {
     let language: ShellLanguage
     @State private var surface: TypedMemorySurface?
     @State private var path: [Data] = []
-    @State private var reload = 0
     @State private var deletion: LioMemoryDeletionRoute?
     @State private var stoppedMemory = false
     @ScaledMetric(relativeTo: .headline) private var previewHeight = previewLineHeight * 3
@@ -84,10 +83,15 @@ public struct LioSavedMemoryView: View {
                             Task { await host.loadItems(surface: current, more: true) }
                         } label: {
                             Text(language.text("More memories", "更多记忆"))
+                                .font(.headline)
                                 .foregroundStyle(LioTheme.ink)
-                                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                .padding(.horizontal, LioTheme.Spacing.sm)
+                                .frame(minHeight: 44)
+                                .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
                                 .contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
                     }
@@ -121,18 +125,12 @@ public struct LioSavedMemoryView: View {
         }
         .onAppear {
             surface = host.enterSurface()
-            reload += 1
         }
         .onDisappear {
             host.leaveSurface(surface)
             surface = nil
         }
-        .onChange(of: path) { _, newPath in
-            if newPath.isEmpty { reload += 1 }
-        }
-        // Use the same snapshot to identify and start the task. The initial
-        // task must not pick up the surface created by onAppear and race its replacement.
-        .task(id: listSurface.map { _ in reload }) {
+        .task(id: listSurface) {
             guard let listSurface, !Task.isCancelled else { return }
             await host.loadItems(surface: listSurface)
             if !Task.isCancelled, deletion == nil, path.isEmpty, let model = host.erasurePresentation, model.original == nil,
@@ -265,7 +263,6 @@ public struct LioSavedMemoryView: View {
         stoppedMemory = false
         surface = host.enterSurface()
         path.removeAll()
-        reload += 1
     }
 }
 

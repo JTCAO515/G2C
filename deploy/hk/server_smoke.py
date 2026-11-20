@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import hashlib
 from http.client import IncompleteRead
 import json
+import os
 import re
 import socket
 from sqlite3 import Error as SQLiteError
@@ -17,6 +18,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 import uuid
 from zoneinfo import ZoneInfo
 
+from cj_message.lio_context import CAPABILITIES_EN
 from cj_strict_json import reject_duplicates
 from cj_usage.authorization_budget import CNY_SCALE
 from cj_usage.metered_exit import BudgetUnknown
@@ -135,6 +137,13 @@ def request(token, route, *, document=None):
     return value, ref if ref and re.fullmatch(r'[a-fA-F0-9-]{36}', ref) else None
 
 
+def _normalize_capability_copy(value):
+    value = re.sub(r'(?m)^[ \t]*(?:>[ \t]*|#{1,6}[ \t]+|[-+*][ \t]+|\d+[.)][ \t]+)+', '', value)
+    value = value.translate(str.maketrans({'‘': "'", '’': "'", '“': '"', '”': '"'}))
+    value = value.translate(str.maketrans('', '', '*_`~'))
+    return ' '.join(value.casefold().split())
+
+
 def valid_answer(case, answer):
     if not isinstance(answer, str) or not answer.strip():
         return False
@@ -148,6 +157,8 @@ def valid_answer(case, answer):
                     and re.search(r'我是|旅行|旅游|助手|\bI(?:\s+am|[’\']m)\b|travel|assistant', answer, re.I)
                     and not NEGATED_IDENTITY.search(answer))
     if kind == 'capability':
+        if locale == 'en':
+            return _normalize_capability_copy(CAPABILITIES_EN) in _normalize_capability_copy(answer)
         return bool(CAPABILITY_TOPIC.search(answer) and not NEGATED_CAPABILITIES.search(answer))
     headings = list(DAY_HEADER.finditer(answer))
     if [DAY_NUMBER[match.group(1) or match.group(2)] for match in headings] != [1, 2, 3]:
@@ -354,6 +365,16 @@ def run(budget, database, scope, token, owner, start, end):
     if not permitted(datetime.now(timezone.utc), start, end, minimum_seconds=CASE_LIMIT_SECONDS):
         print_json(dict(kind='batch', status='UNRUN', reason='approved_window_closed'))
         return 3
+    from deploy.hk.configuration import TRANSLATION_INTERNAL_SUBJECTS
+    from deploy.hk.translation_relay import translation_state
+    try:
+        translation_required = translation_state()
+        if translation_required != (TRANSLATION_INTERNAL_SUBJECTS in os.environ):
+            raise ValueError('translation worker differs from expected configuration')
+    except (OSError, ValueError):
+        print_json(dict(kind='batch', status='UNKNOWN', reason='translation_worker_state_unavailable'))
+        return 2
+    print_json(dict(kind='translation_requirement', required=translation_required))
     before = budget_state(budget, owner)
     print_json(dict(kind='restriction_intent', before=before))
     restricted = restrict(budget, before)
@@ -386,6 +407,10 @@ def run(budget, database, scope, token, owner, start, end):
     history_result = (history(token, results, allowed) if all(row['status']=='PASS' for row in results)
                       else dict(status='UNRUN', reason='earlier_case_stopped'))
     print_json(dict(kind='history', **history_result))
+    if translation_required:
+        from deploy.hk.translation_smoke import checks
+        checks(budget, scope, token, allowed, request, print_json, SmokeResult,
+               ready=history_result['status']=='PASS')
     _, price, used = settlement(budget, owner, restricted, before['tail'])
     print_json(dict(kind='cost', **price, line_usage_delta_cny_1e7=used-before['used']))
     return 0
@@ -395,7 +420,7 @@ def decide(events, wire_logs):
     cases = [entry for entry in events if entry['kind']=='case']
     history_rows = [entry for entry in events if entry['kind']=='history']
     costs = [entry for entry in events if entry['kind']=='cost']
-    outcomes = cases + history_rows
+    outcomes = cases + history_rows + [row for row in events if row['kind']=='translation']
     if any(row['status']=='FAIL' for row in outcomes):
         failed_read = any(row['status']=='FAIL' and 'dispatch_ms' in row
                           and any('outcome' in poll for poll in row.get('polls', ())) for row in cases)
@@ -412,6 +437,9 @@ def decide(events, wire_logs):
         return dict(status='UNKNOWN', concurrency='UNKNOWN', reason='invalid_smoke_status')
     if any(row['status']=='UNRUN' for row in outcomes):
         return dict(status='UNRUN', concurrency='UNRUN')
+    from deploy.hk.translation_smoke import complete
+    if not complete(events):
+        return dict(status='UNKNOWN', concurrency='UNRUN', reason='translation_smoke_incomplete')
     if (costs[0]['conservative_cny_1e7'] > 5*CNY_SCALE
             or costs[0]['line_usage_delta_cny_1e7'] > 5*CNY_SCALE):
         return dict(status='UNKNOWN', concurrency='UNRUN', reason='smoke_cost_boundary_unconfirmed')

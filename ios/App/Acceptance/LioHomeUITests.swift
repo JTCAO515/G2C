@@ -2,6 +2,56 @@ import XCTest
 import UIKit
 import CryptoKit
 
+@MainActor final class LioToolsUITests: XCTestCase {
+    func testToolsTextReportsOfflineUnavailableOnIOS17() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", "en"]
+        app.launch()
+        defer { app.terminate() }
+        app.tabBars.buttons["Tools"].tap()
+        app.buttons["lio.tools.translation"].tap()
+        let editor = app.textViews["lio.translation.input"]
+        XCTAssertTrue(editor.waitForExistence(timeout: 6))
+        editor.tap()
+        editor.typeText("Hello")
+        app.buttons["lio.translation.submit"].tap()
+        let problem = app.staticTexts["lio.translation.problem"]
+        XCTAssertTrue(problem.waitForExistence(timeout: 6))
+        XCTAssertTrue(problem.label.contains("iOS 18"))
+        XCTAssertFalse(app.staticTexts["lio.translation.result"].exists)
+    }
+
+    func testToolsTranslationEntryInBothLanguagesAndAppearances() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            for appearance in ["light", "dark"] {
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
+                                       "-lio.ui.appearance.v1", appearance]
+                app.launch()
+                let tools = app.tabBars.buttons[language == "en" ? "Tools" : "插件"]
+                XCTAssertTrue(tools.waitForExistence(timeout: 8))
+                tools.tap()
+                let translation = app.buttons["lio.tools.translation"]
+                XCTAssertTrue(translation.waitForExistence(timeout: 6))
+                try app.performAccessibilityAudit(for: .all)
+                translation.tap()
+                XCTAssertTrue(app.buttons["lio.translation.swap"].waitForExistence(timeout: 6))
+                XCTAssertTrue(app.textViews["lio.translation.input"].exists)
+                try app.performAccessibilityAudit(for: .all)
+                let screenshot = XCTAttachment(screenshot: app.screenshot())
+                screenshot.name = "translation-\(language)-\(appearance)"
+                screenshot.lifetime = .keepAlways
+                add(screenshot)
+                app.tabBars.buttons[language == "en" ? "Chat" : "聊天"].tap()
+                XCTAssertTrue(app.buttons["lio.example.0"].waitForExistence(timeout: 6))
+                app.terminate()
+            }
+        }
+    }
+}
+
 @MainActor final class LioHomeUITests: XCTestCase {
     func testUnsentOriginalAndDifferentDraftStayVisibleAcrossRelaunchInBothLanguages() throws {
         continueAfterFailure = false
@@ -1235,7 +1285,12 @@ import CryptoKit
                 for _ in 0..<3 where !edit.isHittable { app.swipeUp() }
                 XCTAssertTrue(edit.isHittable)
                 edit.tap()
-                XCTAssertEqual(app.textViews["lio.memory.editor"].value as? String, body)
+                let editors = app.descendants(matching: .any).matching(identifier: "lio.memory.editor")
+                let editor = editors.firstMatch
+                XCTAssertTrue(editor.waitForExistence(timeout: 8), app.debugDescription)
+                XCTAssertEqual(editors.count, 1)
+                XCTAssertTrue(editor.isEnabled)
+                XCTAssertEqual(editor.value as? String, body)
 
                 app.terminate()
             }

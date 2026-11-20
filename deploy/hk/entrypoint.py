@@ -67,6 +67,8 @@ def ready(database, runtime=None):
 
 def api(runtime,*,app_smoke_api_manifest=None):
     app=runtime.app();database=runtime.database()
+    from .translation_relay import register_translation_route
+    register_translation_route(app)
     @app.middleware('http')
     async def deployment_gate(request,call_next):
         if request.url.path=='/health/live':return JSONResponse({'status':'alive'})
@@ -105,7 +107,8 @@ def worker_pulse():
 
 def worker(runtime, *, tool_evidence=None,runtime_manifest=None,app_smoke_manifest=None,simulator_manifest=None,start_simulator=False):
     from .demo_login import signing_socket
-    with signing_socket(runtime):
+    from .translation_relay import active_translation
+    with signing_socket(runtime), active_translation(runtime, authorization):
         _run_worker(runtime, tool_evidence=tool_evidence,runtime_manifest=runtime_manifest,app_smoke_manifest=app_smoke_manifest,
                     simulator_manifest=simulator_manifest,start_simulator=start_simulator)
 
