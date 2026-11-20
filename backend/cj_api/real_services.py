@@ -994,7 +994,10 @@ class RealTools:
                     yield LioCitation(key, title, public_url, observed_at)
                 model_result = data if lio_locale is None else _lio_tool_result(
                     name, data, public_source, chinese, arguments, transit_policy=transit_request)
-                if transit_request and name == 'fact' and model_result['excerpts']:
+                if transit_request and name == 'fact':
+                    if not model_result['excerpts']:
+                        yield _lio_transit_answer(chinese, False)
+                        return
                     transit_evidence = True
                 results.append(dict(index=index,name=call.name,tool=name,result=model_result))
             if incremental:

@@ -1443,7 +1443,9 @@ class Boundaries(unittest.TestCase):
                 else:
                     evidence = json.loads(argument.messages[-1]['content'])['results'][0]['result']
                     self.followup = True
-                    self.projected_excerpts = evidence['excerpts']
+                    if not evidence['excerpts']:
+                        raise ProviderUnknown('Synthetic second model turn has no result')
+                    assert '240-Hour' in evidence['excerpts'][0]['text']
                     yield 'You qualify automatically for 30 days or 1'
                     yield '44 hours.'
 
@@ -1466,8 +1468,7 @@ class Boundaries(unittest.TestCase):
                 self.assertEqual(citation.url, NOTICE_URL)
                 answer = ''.join(chunk for chunk in chunks if isinstance(chunk,str))
                 self.assertIn(expected,answer)
-                self.assertTrue(worker.followup)
-                self.assertEqual(bool(worker.projected_excerpts),expected=='describes 240-hour')
+                self.assertEqual(worker.followup,expected=='describes 240-hour')
                 self.assertNotIn('automatically', answer)
                 self.assertNotIn('30 days', answer)
                 self.assertNotIn('144 hours', answer)
