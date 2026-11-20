@@ -12,7 +12,7 @@
 - [中英回归数据](regressions.v1.json)：25 个基础用例，50 个语言变体；输入、双语期望、具体判定、前置及原观察 ID 均登记。
 - [七项冒烟设计数据](basic-chain-smoke.v1.json)：7项×中英＝14项检查、8条实际用户消息，含调用预算、窗口、自动化与停派条件；不是可执行许可。
 
-后续修复候选的本地运行入口见[发版故障回归](release-regressions.v1.md)。 构建 48 使用[真机七项核对清单](build48-device-checklist.md)。
+后续修复候选的本地运行入口见[发版故障回归](release-regressions.v1.md)。 构建 49 使用[真机七项核对清单](build49-device-checklist.md)。
 
 ## 1. 每一行如何回放
 
