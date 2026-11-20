@@ -90,10 +90,10 @@
           },
           "items": {
             "zh": [
-              "构建 48 的服务复测仍按 #702 的独立清单执行，服务窗口见 #1048。"
+              "构建 49 的真机七项按 #702 的本版通知执行。构建 48 的清单供回看，服务窗口见 #1048。"
             ],
             "en": [
-              "Use the separate checklist in #702 for the build 48 service retest. See #1048 for the live testing window."
+              "For the seven build 49 iPhone checks, follow the build 49 announcement in #702. Keep the build 48 checklist for reference. See #1048 for the live testing window."
             ]
           }
         }
