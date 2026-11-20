@@ -160,6 +160,7 @@ private struct LioTextTranslationView: View {
                                   preparedPayload: retryAttempt.preparedPayload)
                         }
                         .frame(minHeight: 44)
+                        .disabled(!enabled)
                         .accessibilityIdentifier("lio.translation.retry")
                     }
                 }
@@ -183,7 +184,16 @@ private struct LioTextTranslationView: View {
         .onChange(of: source) { resetResult() }
         .onChange(of: target) { resetResult() }
         .onChange(of: enabled) { _, available in
-            if !available { resetResult() }
+            guard !available else { return }
+            // The root replaces this view on sign-out or owner change. A session
+            // pause within the same owner must not discard captured input.
+            let retainedInput = attempt ?? retryAttempt
+            let retainedProblem = problem ?? .signInRequired
+            resetResult()
+            if let retainedInput {
+                retryAttempt = retainedInput
+                problem = retainedProblem
+            }
         }
         .onDisappear { resetResult() }
         .task { reloadHistory() }
@@ -423,7 +433,7 @@ private struct LioTextTranslationView: View {
         case .failure(let error):
             problem = error
             switch error {
-            case .network, .quota, .service, .timedOut: retryAttempt = attempt
+            case .network, .quota, .service, .timedOut, .signInRequired, .accessDenied: retryAttempt = attempt
             default: break
             }
         case nil: break
