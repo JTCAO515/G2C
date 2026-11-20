@@ -39,8 +39,17 @@ CASES = (
     ('en.capability', 'What can you do?'),
     ('en.plan', 'A three-day trip to Beijing'),
 )
-DAY_HEADER = re.compile(
-    r'(?im)^\s*(?:[#>*_\-]+\s*)*(?:(?:Day|D)\s*([123])\b|第\s*([一二三123])\s*[天日])'
+DAY_LABEL = r'(?:\b(?:Day|D)[ \t]*([0-9]+)\b|第[ \t]*([零〇一二三四五六七八九十百0-9]+)[ \t]*[天日])'
+DAY_HEADER = re.compile(r'(?im)^\s*(?:[#>*_\-]+\s*)*' + DAY_LABEL)
+INLINE_DAY_BREAK = re.compile(
+    r'(?i)(?<=[。！？.!?；;])(?=[ \t]*[*_]*[ \t]*'
+    + DAY_LABEL + r'[ \t*_]*[:：–—-])'
+)
+DAY_MENTION = re.compile(DAY_LABEL, re.I)
+ITINERARY_QUOTES = re.compile(
+    r'\x60{3}[\s\S]*?\x60{3}|~~~[\s\S]*?~~~|\x60[^\x60\n]*\x60|'
+    r'“[^”]*”|‘[^’]*’|「[^」]*」|『[^』]*』|«[^»]*»|"[^"]*"|'
+    r"(?<!\w)'[^']*'(?!\w)"
 )
 DAY_NUMBER = {'一': 1, '二': 2, '三': 3, '1': 1, '2': 2, '3': 3}
 BEIJING_PLACE = re.compile(
@@ -152,8 +161,13 @@ def valid_answer(case, answer):
     if kind == 'capability':
         approved = CAPABILITIES_ZH if locale == 'zh' else CAPABILITIES_EN
         return _normalize_capability_copy(answer) == _normalize_capability_copy(approved)
+    def mask_quoted_day_labels(match):
+        quoted = match.group()
+        return re.sub(r'[^\n]', ' ', quoted) if DAY_MENTION.search(quoted) else quoted
+
+    answer = INLINE_DAY_BREAK.sub('\n', ITINERARY_QUOTES.sub(mask_quoted_day_labels, answer))
     headings = list(DAY_HEADER.finditer(answer))
-    if [DAY_NUMBER[match.group(1) or match.group(2)] for match in headings] != [1, 2, 3]:
+    if [DAY_NUMBER.get(match.group(1) or match.group(2)) for match in headings] != [1, 2, 3]:
         return False
     for index, match in enumerate(headings):
         day = answer[match.end():headings[index+1].start() if index < 2 else len(answer)]

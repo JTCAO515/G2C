@@ -87,6 +87,11 @@ private struct LioTextTranslationView: View {
             if case .photo = input { return true }
             return false
         }
+
+        var hasMedia: Bool {
+            if case .text = input { return false }
+            return true
+        }
     }
 
     var body: some View {
@@ -330,10 +335,9 @@ private struct LioTextTranslationView: View {
     private func startRecording(_ data: LioTranslationRecording) { begin(.recording(data)) }
 
     private func progress(for attempt: Attempt) -> String {
-        guard attempt.fromImage else { return language.text("Translating…", "正在翻译…") }
-        if attempt.preparedPayload == nil { return language.text("Preparing photo…", "正在准备照片…") }
-        if attempt.uploadSent { return language.text("Processing photo…", "正在处理照片…") }
-        return language.text("Uploading…", "正在上传…")
+        guard attempt.hasMedia else { return language.text("Translating…", "正在翻译…") }
+        return LioMediaTranslationProgress(payloadPrepared: attempt.preparedPayload != nil,
+                                           bodySent: attempt.uploadSent).label(language)
     }
 
     private func begin(_ input: Attempt.Input, text: [String] = [],
@@ -372,7 +376,7 @@ private struct LioTextTranslationView: View {
                     guard self.attempt?.id == id, isCurrent() else { return }
                     self.attempt?.uploadSent = true
                 }
-                reply = try await relay.translate(original, uploadFinished: attempt.fromImage ? uploadFinished : nil)
+                reply = try await relay.translate(original, uploadFinished: attempt.hasMedia ? uploadFinished : nil)
             } catch LioRelayTranslationFailure.alreadyAccepted {
                 guard self.attempt?.id == attempt.id, isCurrent() else { return }
                 try relayOriginals.accept(original, storage: history)

@@ -1,5 +1,21 @@
 import Foundation
 
+enum LioMediaTranslationProgress {
+    case preparing, uploading, processing
+
+    init(payloadPrepared: Bool, bodySent: Bool) {
+        self = bodySent ? .processing : (payloadPrepared ? .uploading : .preparing)
+    }
+
+    func label(_ language: LioLanguage) -> String {
+        switch self {
+        case .preparing: language.text("Preparing…", "正在准备…")
+        case .uploading: language.text("Uploading…", "正在上传…")
+        case .processing: language.text("Recognizing and translating…", "正在识别并翻译…")
+        }
+    }
+}
+
 enum LioTranslationMediaFailure: Error, Equatable {
     case noText, unreadableImage, mismatchedLines, cameraDenied, cameraUnavailable
     case microphoneDenied, recordingUnavailable, emptyRecording
