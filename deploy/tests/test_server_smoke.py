@@ -79,6 +79,10 @@ def test_plan_accepts_activities_with_formatted_schedule_labels(case, body, vali
 
 @pytest.mark.parametrize(('case', 'body', 'valid'), [
     ('en.plan', 'Day 1: Visit the Forbidden City. Day 2: Hike the Great Wall. Day 3: Explore the Temple of Heaven.', True),
+    ('en.plan', 'Day 1: Visit the Forbidden City. Day 2: Explore the Great Wall. '
+     'Day 3: Wander through the Summer Palace.', True),
+    ('en.plan', 'Day 1: Visit the Forbidden City. Day 2: Explore the Great Wall. '
+     'Day 3: Wander through the Summer Palace — canceled.', False),
     ('en.plan', '**Day 1:** Visit the Forbidden City. **Day 2:** Walk through Jingshan. '
      '**Day 3:** Explore the Summer Palace.', True),
     ('zh.plan', '第一天：参观故宫。第二天：游览颐和园。第三天：参观天坛。', True),
