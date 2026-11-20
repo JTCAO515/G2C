@@ -5,10 +5,10 @@ import Testing
 struct LocalSupportDirectoryTests {
     @Test func shipsTheVerifiedMainlandNumbersWithoutAnyDialling() throws {
         let catalog = try LocalSupportDirectory.bundled()
-        #expect(catalog.emergency.map(\.phone.number) == ["110", "120", "119", "122"])
-        #expect(catalog.hotlines.map(\.phone.number) == ["12345", "12367"])
-        #expect(catalog.consumer.map(\.phone.number) == ["12315", "12345"])
-        let all = catalog.emergency + catalog.hotlines + catalog.consumer
+        #expect(LocalSupportDirectory.emergencyContacts.map(\.phone.number) == ["110", "120", "119", "122"])
+        #expect(LocalSupportDirectory.helpContacts.map(\.phone.number) == ["12345", "12367"])
+        #expect(LocalSupportDirectory.consumerContacts.map(\.phone.number) == ["12315", "12345"])
+        let all = LocalSupportDirectory.emergencyContacts + LocalSupportDirectory.helpContacts + LocalSupportDirectory.consumerContacts
         #expect(!all.map(\.phone.number).contains("12308"))
         #expect(!all.map(\.phone.number).contains("12301"))
         #expect(catalog.verifiedAt == "2026-11-23")
@@ -25,6 +25,15 @@ struct LocalSupportDirectoryTests {
         let sanMarino = try #require(catalog.embassies.first { $0.countryCode == "SM" })
         #expect(sanMarino.address == nil)
         #expect(sanMarino.phone == nil)
+    }
+
+    @Test func fixedHotlinesAreIndependentOfAnUnreadableEmbassyCatalog() {
+        #expect(throws: (any Error).self) {
+            try LocalSupportDirectory.decode(Data("unreadable catalog".utf8))
+        }
+        #expect(LocalSupportDirectory.emergencyContacts.map(\.phone.number) == ["110", "120", "119", "122"])
+        #expect(LocalSupportDirectory.helpContacts.map(\.phone.number) == ["12345", "12367"])
+        #expect(LocalSupportDirectory.consumerContacts.map(\.phone.number) == ["12315", "12345"])
     }
 
     @Test func onlyAcceptsNormalizedASCIIDialStrings() throws {

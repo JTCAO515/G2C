@@ -49,8 +49,7 @@ public struct LioEmergencySupportSheet: View {
 
     public var body: some View {
         NavigationStack {
-            LioLocalSupportView(language: language, directory: try? LocalSupportDirectory.bundled(),
-                                draftStorage: draftStorage)
+            LioLocalSupportView(language: language, draftStorage: draftStorage)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button(language.text("Close", "关闭")) { dismiss() }

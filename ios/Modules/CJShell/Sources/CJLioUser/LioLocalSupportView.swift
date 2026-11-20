@@ -6,8 +6,14 @@ import UIKit
 
 struct LioLocalSupportView: View {
     let language: LioLanguage
-    let directory: LocalSupportDirectory?
-    var draftStorage: LocalSupportDraftStorage? = nil
+    private let directory: Result<LocalSupportDirectory, any Error>
+    private let draftStorage: LocalSupportDraftStorage?
+
+    init(language: LioLanguage, draftStorage: LocalSupportDraftStorage? = nil) {
+        self.language = language
+        self.draftStorage = draftStorage
+        self.directory = Result(catching: LocalSupportDirectory.bundled)
+    }
 
     @AppStorage("lio.local-support.nationality") private var nationality = ""
     @Environment(\.colorScheme) private var colorScheme
@@ -18,23 +24,27 @@ struct LioLocalSupportView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                if let directory {
-                    emergency(directory.emergency)
-                    contacts(language.text("Help lines", "求助热线"), directory.hotlines)
-                    embassySection(directory.embassies)
-                    contacts(language.text("Consumer services", "消费者服务"), directory.consumer)
-                    if let draftStorage {
-                        LioLocalSupportDraftEditor(language: language, storage: draftStorage)
-                    }
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(language.text("Verified as of \(directory.verifiedAt)", "信息核对至 \(directory.verifiedAt)"))
-                        Text(language.text("Phone services and availability may change.", "电话服务和接听情况可能变化。"))
-                    }
-                    .font(.footnote)
-                    .foregroundStyle(LioTheme.inkSecondary)
-                } else {
-                    Text(language.text("The phone directory is unavailable.", "电话目录暂不可用。"))
+                emergency(LocalSupportDirectory.emergencyContacts)
+                contacts(language.text("Help lines", "求助热线"), LocalSupportDirectory.helpContacts)
+                switch directory {
+                case .success(let catalog):
+                    embassySection(catalog.embassies)
+                case .failure:
+                    Text(language.text("Embassy contacts couldn’t be loaded.", "暂时无法显示使馆联系方式。"))
+                        .foregroundStyle(LioTheme.inkSecondary)
                 }
+                contacts(language.text("Consumer services", "消费者服务"), LocalSupportDirectory.consumerContacts)
+                if let draftStorage {
+                    LioLocalSupportDraftEditor(language: language, storage: draftStorage)
+                }
+                VStack(alignment: .leading, spacing: 6) {
+                    if case .success(let catalog) = directory {
+                        Text(language.text("Verified as of \(catalog.verifiedAt)", "信息核对至 \(catalog.verifiedAt)"))
+                    }
+                    Text(language.text("Phone services and availability may change.", "电话服务和接听情况可能变化。"))
+                }
+                .font(.footnote)
+                .foregroundStyle(LioTheme.inkSecondary)
                 #if DEBUG
                 if let value = ProcessInfo.processInfo.environment["G2C_LOCAL_SUPPORT_TEST_PHONE"],
                    let test = try? LocalSupportPhone(value) {
@@ -63,8 +73,10 @@ struct LioLocalSupportView: View {
             }
         }
         .sheet(isPresented: $selectingNationality) {
-            LocalSupportEmbassyPicker(language: language, embassies: directory?.embassies ?? [],
-                                      nationality: $nationality)
+            if case .success(let catalog) = directory {
+                LocalSupportEmbassyPicker(language: language, embassies: catalog.embassies,
+                                          nationality: $nationality)
+            }
         }
         .alert(language.text("Local Support", "本地协助"), isPresented: Binding(
             get: { actionMessage != nil },
