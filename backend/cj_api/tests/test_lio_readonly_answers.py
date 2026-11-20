@@ -166,6 +166,52 @@ class ReadOnlyAnswers(unittest.TestCase):
                 for day in (1,2,3):self.assertIn('第'+str(day)+'天'if locale=='zh'else'Day '+str(day),answer(events))
                 self.assertEqual(context(events)['authority'],'none')
 
+    def test_bare_city_recovers_false_cancellation_and_keeps_city_for_duration_followup(self):
+        for locale,city,first,last,question in (
+            ('zh','成都','去成都','三天','几天'),
+            ('en','Chengdu','Go to Chengdu','Three days','how many days'),
+        ):
+            for rejected in (False,True):
+                with self.subTest(locale=locale,rejected=rejected):
+                    wire=flow(first,city=None,days=None,intent='cancel',questions=('duration_days',),reply='Misread')
+                    if rejected:del wire['reply']
+                    published,events,lookups,result=run(wire,first,locale=locale)
+                    self.assertIsNotNone(result)
+                    self.assertEqual((published,lookups),([],[]))
+                    self.assertIn(question,answer(events).lower())
+                    previous=previous_turn(events)
+                    self.assertEqual((previous['authority'],previous['status']),('none','needs_details'))
+                    self.assertEqual(previous['facts']['city']['sources'],[dict(message_id='prior-0',quote=city)])
+                    self.assertEqual(previous['read_only_data_message_ids'],['prior-0'])
+                    self.assertEqual(previous['nonplanning_message_ids'],['prior-0'])
+                    wire=flow(last,city=None,days=3,index=1,questions=())
+                    wire.update(planning_request_index=0,needs_tools=False)
+                    published,events,lookups,_=run(wire,last,turns=(original(first),original(last)),previous=previous,locale=locale)
+                    self.assertEqual((published,lookups),([],[]))
+                    self.assertIn(city,answer(events))
+                    for day in (1,2,3):
+                        self.assertIn('第'+str(day)+'天'if locale=='zh'else'Day '+str(day),answer(events))
+                    self.assertEqual(context(events)['authority'],'none')
+
+    def test_duration_reply_cannot_promote_readonly_city_to_execution_root(self):
+        for locale,city,first,last in (
+            ('zh','成都','去成都','三天'),('en','Chengdu','Go to Chengdu','Three days'),
+        ):
+            for intent in ('plan','save'):
+                with self.subTest(locale=locale,intent=intent):
+                    rejected=flow(first,city=None,days=None,intent='cancel',questions=('duration_days',))
+                    del rejected['reply']
+                    _,events,_,_=run(rejected,first,locale=locale)
+                    wire=flow(last,city=None,days=3,index=1,intent=intent,questions=())
+                    wire.update(planning_request_index=1,needs_tools=False)
+                    published,events,lookups,_=run(wire,last,turns=(original(first),original(last)),
+                        previous=previous_turn(events),locale=locale)
+                    self.assertEqual(context(events)['authority'],'none')
+                    self.assertEqual((published,lookups),([],[]))
+                    self.assertIn(city,answer(events))
+                    for day in (1,2,3):
+                        self.assertIn('第'+str(day)+'天'if locale=='zh'else'Day '+str(day),answer(events))
+
     def test_readonly_date_conflict_asks_instead_of_overwriting_stated_end(self):
         text='规划北京三天，2026-12-01到达，2026-12-05离开。'
         wire=flow(text,city='北京',days=3,start='2026-12-01',questions=())
