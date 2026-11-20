@@ -72,6 +72,8 @@ def main():
     if args.tools and any(case in args.case for case in (
         "testToolsPhotoPickerPairsRelayFixtureLinesOnIOS17", "testToolsPhotoQuotaOffersRetryWithoutLocalRecognitionOnIOS17",
         "testToolsPhotoRemainsAvailableAfterSignInErrorOnIOS17",
+        "testToolsEmptyPhotoAsksForAnotherAngle",
+        "testToolsPhotoTimeoutRetriesWithTheSameImageRequest",
     )):
         seed_translation_photo(args.simulator, output)
 

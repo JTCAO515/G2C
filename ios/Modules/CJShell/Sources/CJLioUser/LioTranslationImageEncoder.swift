@@ -11,7 +11,7 @@ enum LioTranslationImageEncoder {
             throw LioTranslationMediaFailure.unreadableImage
         }
         CGImageDestinationAddImage(destination, photo, [
-            kCGImageDestinationLossyCompressionQuality: 0.94,
+            kCGImageDestinationLossyCompressionQuality: 0.8,
         ] as CFDictionary)
         guard CGImageDestinationFinalize(destination) else { throw LioTranslationMediaFailure.unreadableImage }
         return bytes as Data
@@ -22,7 +22,7 @@ enum LioTranslationImageEncoder {
               let photo = CGImageSourceCreateThumbnailAtIndex(image, 0, [
                 kCGImageSourceCreateThumbnailFromImageAlways: true,
                 kCGImageSourceCreateThumbnailWithTransform: true,
-                kCGImageSourceThumbnailMaxPixelSize: 4096,
+                kCGImageSourceThumbnailMaxPixelSize: 2048,
               ] as CFDictionary) else {
             throw LioTranslationMediaFailure.unreadableImage
         }
