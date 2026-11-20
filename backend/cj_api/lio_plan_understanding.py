@@ -19,7 +19,7 @@ from .lio_national_intake import _current_date_source,_current_date_anchors,_WEE
 from .lio_national_intake import fixed_detail_indexes
 from .lio_sourced_intake import _booking_source
 from .lio_planning_grounding import PlanningTurn
-from .lio_planning_grounding import CLOCK,NUMBER,NEGATED,OTHER,DATE_REFUSAL,DATES_UNDECIDED,_clock,_number
+from .lio_planning_grounding import CLOCK,RANGE,NUMBER,NEGATED,OTHER,DATE_REFUSAL,DATES_UNDECIDED,_clock,_number
 from .lio_positive_trip import supports as positive_trip_support
 from .local_lio_rich_calendar_source import read_rich_original
 from .lio_calendar_ordinals import fixed_ordinals
@@ -609,26 +609,38 @@ def original_plan_turns(database,worker,binding,view):
 
 _FIXED_SITE_REVISION=re.compile(
     r'(?:地点|地址|位置)\s*(?:变更|(?:还|尚)?(?:未定|没定|未确定|未知))|'
-    r'(?:地点|地址|位置)?\s*(?:改(?:到|在|去|为|成)|换(?:到|在|去)|移到|不在)|'
+    r'(?:地点|地址|位置)?\s*(?:改(?:到|在|去|为|成)|换(?:到|在|去|个地方)|移到|不在|不去)|'
     r'\b(?:(?:move(?:d)?|change(?:d)?|switch(?:ed)?|relocate(?:d)?)\s+to|'
-    r'(?:not|no longer)\s+(?:at|in)|(?:the )?(?:venue|location|address)\s+(?:changed|is (?:still )?(?:unknown|undecided)))\b',
+    r'(?:not|no longer)\s+(?:at|in)|somewhere else|'
+    r'(?:the )?(?:venue|location|address)\s+(?:changed|is (?:still )?(?:unknown|undecided)))\b',
     re.I)
-_FIXED_SITE_MENTION=re.compile(
-    r'地点|地址|位置|(?:在|于)\s*(?!(?:上午|下午|早上|晚上|中午))(?=[a-z\u3400-\u9fff])|'
-    r'\b(?:venue|location|address)\b|\b(?:at|in)\s+(?=[a-z\u3400-\u9fff])',re.I)
+_FIXED_CLOCK=rf'(?:{RANGE.pattern}|{CLOCK})'
+_FIXED_PLACE_TIME_TAIL=re.compile(rf'\s*(?:(?:(?:from|at|on)\s+|从|于){_FIXED_CLOCK})?\s*',re.I)
+_FIXED_KEEP=re.compile(r'照旧|不变|保持不变|如期|已确定|已锁定|(?:is|stays|remains) (?:unchanged|as (?:planned|scheduled))',re.I)
+_FIXED_TIME_ONLY=re.compile(
+    rf'(?:的?\s*(?:时间|时段)\s*(?:仍为|还为|还是|改为|改到|为|是|在)?\s*|'
+    rf'(?:(?:time|schedule|timing)\s+)?(?:(?:is|remains|starts|ends)\s+)?(?:still\s+)?(?:at\s+)?)'
+    rf'{_FIXED_CLOCK}',re.I)
 
 
 def _direct_fixed_place(label,before,after):
     """The place must directly modify the fixed event or its location."""
-    if OTHER.search(before)or '朋友'in before or _FIXED_SITE_REVISION.search(after):return False
+    if OTHER.search(before)or '朋友'in before:return False
     label=re.escape(label)
     location_link=(r'\s*(?:(?:的)?(?:地点|地址|位置)\s*(?:是|在|为|改为|改成|[:：])|(?:安排|改|定)?(?:在|于))\s*$'
                    r'|\s+(?:(?:venue|location|address)\s+)?'
                    r'(?:(?:(?:is|will be|takes place)\s+)?(?:at|in)|(?:(?:has|was|will)\s+)?(?:move|moved)\s+to)\s*$')
     if re.search(label+r'(?:'+location_link+r')',before,re.I) is not None:
-        return re.match(r'^\s*(?:$|(?:(?:from|on|at)\s+|从|于)[0-9])',after,re.I) is not None
+        return _FIXED_PLACE_TIME_TAIL.fullmatch(after) is not None
     return (re.search(r'(?:在|于)\s*$',before) is not None
             and re.fullmatch(r'\s*(?:进行|参加|举行|举办|的)?\s*'+label+r'\s*',after) is not None)
+
+
+def _fixed_followup_keeps_place(label,clause):
+    addressed=re.match(r'(?:(?:这次|本次|我的|我们的)|(?:the|my|our|this)\s+)?'+re.escape(label),clause,re.I)
+    if addressed is None:return False
+    rest=clause[addressed.end():].strip()
+    return _FIXED_KEEP.fullmatch(rest) is not None or _FIXED_TIME_ONLY.fullmatch(rest) is not None
 
 
 def _fixed_place_superseded(label,source_index,after_clause,turns):
@@ -636,10 +648,9 @@ def _fixed_place_superseded(label,source_index,after_clause,turns):
     remaining=(turns[source_index].text[after_clause:],*(turn.text for turn in turns[source_index+1:]))
     for text in remaining:
         for _,_,clause in _original_clauses(text):
-            revision=_FIXED_SITE_REVISION.search(clause)
-            if label in clause and (revision or _FIXED_SITE_MENTION.search(clause)):
+            if label.casefold() in clause.casefold()and not _fixed_followup_keeps_place(label,clause):
                 return True
-            if revision and not clause[:revision.start()].strip():
+            if _FIXED_SITE_REVISION.match(clause):
                 return True
     return False
 
