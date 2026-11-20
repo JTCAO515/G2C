@@ -4,6 +4,28 @@ import UIKit
 import CJLioUser
 
 @MainActor final class LioTabBarColorUnitTests: XCTestCase {
+    func testNativeTabOrderWithToolsAndMemoryInBothLanguages() throws {
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let cases: [(LioLanguage, [String])] = [
+            (.english, ["Chat", "Trips", "Tools", "Memory"]),
+            (.chinese, ["聊天", "行程", "插件", "记忆"]),
+        ]
+        for (language, expected) in cases {
+            let appeared = expectation(description: "Four-tab Lio Home appeared")
+            let window = UIWindow(windowScene: scene)
+            let host = UIHostingController(rootView:
+                LioHome(language: language, service: .unavailable, isDemo: true,
+                        savedMemory: AnyView(Text("Sample memory")), showsTools: true) { EmptyView() }
+                    .background(TabTestAppearanceNotice { appeared.fulfill() })
+            )
+            window.rootViewController = host
+            window.makeKeyAndVisible()
+            defer { window.isHidden = true }
+            XCTAssertEqual(XCTWaiter.wait(for: [appeared], timeout: 5), .completed)
+            let tabBar = try XCTUnwrap(tabController(in: host)?.tabBar)
+            XCTAssertEqual(tabBar.items?.compactMap(\.title), expected)
+        }
+    }
     func testNormalPaletteIsLocalToLioInBothLanguagesAndAppearances() throws {
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
         for chinese in [false, true] {
