@@ -16,7 +16,7 @@ from cj_needs.domain import InvalidInput
 
 from .lio_city import CityReference,forms,_normalize
 from .lio_sourced_intake import BookingSourceUnclear
-from .lio_positive_trip import destination_query,destination_request,known_city_term,supports
+from .lio_positive_trip import destination_query,destination_request,known_city_term,known_destination,supports
 from .lio_flow_intake import ReadOnlyPlanningData,ReadOnlyPlanningQuestion,parse_flow
 from .lio_national_intake import NONPERSISTENT,fields_for,fixed_sources_complete,province_evidence,diagnostic_code,StartDateConflict,FixedTimezoneConflict,DateDurationConflict,DateSourceUnclear
 from .lio_planning_grounding import PlanningTurn,standalone_question,NUMBER,_number,PLAN_REQUEST,discussion_reply
@@ -328,6 +328,8 @@ class NationalLioPlanning:
                 capture.reject(diagnostic_code(error),raw.encode('utf-8'))
                 rejected=True
         if rejected:
+            clarification=self._clarify_bare_destination(worker,binding,state,original.locale,text,previous)
+            if clarification is not None:return clarification
             state=self._hold_rejected_context(worker,binding,state)
             if binding.message_sequence==1:
                 outline=literal_itinerary(text)
@@ -376,6 +378,8 @@ class NationalLioPlanning:
             binding.run_id,len(turns)-1,intake.planning_request_index,intake.intent,
             intake.publication_hold,source_ids.index(barrier_mid)if barrier_mid is not None else None,authority)
         if intake.intent=='cancel':
+            clarification=self._clarify_bare_destination(worker,binding,state,original.locale,text,previous)
+            if clarification is not None:return clarification
             state=context(worker,binding,state,dict(authority='none',status='cancelled'))
             return self._answer(worker,binding,state,original.locale,'好，先不保存或修改行程。',"Okay, I won't save or change an itinerary.")
         # Facts choose the planning flow; advisory intent/needs_tools cannot
@@ -610,6 +614,17 @@ class NationalLioPlanning:
                 count=(date.fromisoformat(fields['departure']['date']['value'])-date.fromisoformat(start)).days+1
             return calendar.plan(worker,binding,state,details,original.locale,day_count=count,start_date=start)
         return self.plan_and_save(worker,binding,state,details,original.locale)
+
+    def _clarify_bare_destination(self,worker,binding,state,locale,text,previous):
+        if previous is not None or binding.message_sequence!=1:return None
+        city=known_destination(text)
+        if city is None or self.plan_and_save.has_saved_itinerary(binding):return None
+        mid=binding.message_id
+        state=self._context(worker,binding,state,dict(authority='none',status='needs_details',
+            facts={'city':dict(value=dict(query=city,normalized_name=None,province=None,source_index=0,quote=city),
+                sources=[dict(message_id=mid,quote=city)])},
+            nonplanning_message_ids=[mid],read_only_data_message_ids=[mid]))
+        return self._clarify(worker,binding,state,locale,'',[],['duration_days'])
 
     def _discuss(self,worker,binding,state,locale,turns,refs,**options):
         try:
