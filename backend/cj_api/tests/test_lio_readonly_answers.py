@@ -193,6 +193,25 @@ class ReadOnlyAnswers(unittest.TestCase):
                         self.assertIn('第'+str(day)+'天'if locale=='zh'else'Day '+str(day),answer(events))
                     self.assertEqual(context(events)['authority'],'none')
 
+    def test_duration_reply_cannot_promote_readonly_city_to_execution_root(self):
+        for locale,city,first,last in (
+            ('zh','成都','去成都','三天'),('en','Chengdu','Go to Chengdu','Three days'),
+        ):
+            for intent in ('plan','save'):
+                with self.subTest(locale=locale,intent=intent):
+                    rejected=flow(first,city=None,days=None,intent='cancel',questions=('duration_days',))
+                    del rejected['reply']
+                    _,events,_,_=run(rejected,first,locale=locale)
+                    wire=flow(last,city=None,days=3,index=1,intent=intent,questions=())
+                    wire.update(planning_request_index=1,needs_tools=False)
+                    published,events,lookups,_=run(wire,last,turns=(original(first),original(last)),
+                        previous=previous_turn(events),locale=locale)
+                    self.assertEqual(context(events)['authority'],'none')
+                    self.assertEqual((published,lookups),([],[]))
+                    self.assertIn(city,answer(events))
+                    for day in (1,2,3):
+                        self.assertIn('第'+str(day)+'天'if locale=='zh'else'Day '+str(day),answer(events))
+
     def test_readonly_date_conflict_asks_instead_of_overwriting_stated_end(self):
         text='规划北京三天，2026-12-01到达，2026-12-05离开。'
         wire=flow(text,city='北京',days=3,start='2026-12-01',questions=())

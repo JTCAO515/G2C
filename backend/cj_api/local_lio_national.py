@@ -693,7 +693,10 @@ class NationalLioPlanning:
         fresh_fact=any(ref['source_index']==request_index for ref in intake.sources.get('duration_days',[]))
         destination=(request is not None and intake.city is not None
             and intake.city['source_index']==request_index and destination_request(request,intake.city['query']))
-        current_trip=(intake.city is not None and (destination or intake.duration_days is not None and fresh_fact))
+        readonly_sources=()if previous is None else previous.get('read_only_data_message_ids',())
+        # A duration can complete a read-only outline. A new grant still needs an affirmative request.
+        current_trip=(intake.city is not None and source_ids[intake.city['source_index']]not in readonly_sources
+            and (destination or intake.duration_days is not None and fresh_fact))
         if request is not None and not publication_held(request)and (explicit or current_trip):
             if not denied or explicit and (request_index==current_index or barrier is not None and request_index>source_ids.index(barrier)):
                 return 'save'if intake.intent=='save'else'plan'
