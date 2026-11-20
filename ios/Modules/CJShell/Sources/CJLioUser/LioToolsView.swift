@@ -8,6 +8,7 @@ struct LioToolsView: View {
     let language: LioLanguage
     let history: LioTranslationHistory?
     let relay: LioRelayTranslationClient?
+    let draftStorage: LocalSupportDraftStorage?
     let enabled: Bool
     let sessionIsCurrent: @MainActor () -> Bool
 
@@ -16,7 +17,8 @@ struct LioToolsView: View {
             ScrollView {
                 VStack(spacing: 12) {
                     NavigationLink {
-                        LioLocalSupportView(language: language, directory: try? LocalSupportDirectory.bundled())
+                        LioLocalSupportView(language: language, directory: try? LocalSupportDirectory.bundled(),
+                                            draftStorage: draftStorage)
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "lifepreserver")

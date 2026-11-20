@@ -7,6 +7,7 @@ struct DemoBetaRootView: View {
     let shell: ShellState
     let root: DevelopmentAccountRoot
     @Environment(\.scenePhase) private var phase
+    @State private var draftClearFailed = false
     var body: some View {
         Group {
             if root.finishingDemoCleanup {
@@ -24,7 +25,8 @@ struct DemoBetaRootView: View {
                                   problem: root.lioSessionProblem), reconnect: {
                     root.accounts.suspend()
                     root.accounts.resume()
-                }, showsTools: true, toolsHistory: trip.messages.lioTranslationHistory, toolsSessionIsCurrent: {
+                }, showsTools: true, toolsHistory: trip.messages.lioTranslationHistory,
+                   toolsDraftStorage: root.localSupportDraftStorage(), toolsSessionIsCurrent: {
                     guard case .signedIn = root.accounts.state else { return false }
                     return root.trip === trip
                 }) {
@@ -32,7 +34,7 @@ struct DemoBetaRootView: View {
                     NavigationLink(shell.language.text("Delete account", "注销账号")) {
                         LioAccountDeletion(shell: shell, root: root)
                     }
-                    Button(shell.language.text("Sign out", "退出登录")) { root.accounts.signOut() }
+                    Button(shell.language.text("Sign out", "退出登录"), action: signOut)
                 }
                 .id(root.lioPresentationID)
             } else if root.accounts.isResuming {
@@ -43,10 +45,14 @@ struct DemoBetaRootView: View {
                                            if root.accounts.state == .storageUnavailable { root.accounts.suspend() }
                                            root.accounts.resume()
                                        },
-                                       signOut: { root.accounts.signOut() })
+                                       signOut: signOut)
             } else {
                 DemoInviteView(shell: shell, accounts: root.accounts)
             }
+        }
+        .alert(shell.language.text("Couldn’t clear the help draft.", "暂时无法清空求助草稿。"),
+               isPresented: $draftClearFailed) {
+            Button(shell.language.text("OK", "好"), role: .cancel) {}
         }
         .lioScenePrivacy()
         .onChange(of: phase) { _, current in
@@ -60,6 +66,11 @@ struct DemoBetaRootView: View {
                 do { try await Task.sleep(for: .seconds(20)) } catch { return }
             }
         }
+    }
+
+    private func signOut() {
+        do { try root.signOutWithLocalSupportCleanup() }
+        catch { draftClearFailed = true }
     }
 
     private var sessionReady: Bool {

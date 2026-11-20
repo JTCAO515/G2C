@@ -6,6 +6,7 @@ import UIKit
 struct LioLocalSupportView: View {
     let language: LioLanguage
     let directory: LocalSupportDirectory?
+    var draftStorage: LocalSupportDraftStorage? = nil
 
     @AppStorage("lio.local-support.nationality") private var nationality = ""
     @Environment(\.openURL) private var openURL
@@ -20,6 +21,9 @@ struct LioLocalSupportView: View {
                     contacts(language.text("Help lines", "求助热线"), directory.hotlines)
                     embassySection(directory.embassies)
                     contacts(language.text("Consumer services", "消费者服务"), directory.consumer)
+                    if let draftStorage {
+                        LioLocalSupportDraftEditor(language: language, storage: draftStorage)
+                    }
                     VStack(alignment: .leading, spacing: 6) {
                         Text(language.text("Verified as of \(directory.verifiedAt)", "信息核对至 \(directory.verifiedAt)"))
                         Text(language.text("Phone services and availability may change.", "电话服务和接听情况可能变化。"))
