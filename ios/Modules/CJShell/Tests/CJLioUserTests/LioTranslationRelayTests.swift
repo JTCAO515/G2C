@@ -63,6 +63,21 @@ struct LioTranslationRelayTests {
         }
     }
 
+    @Test @MainActor func forwardsUploadCompletionBeforeThePhotoResult() async throws {
+        var bodySent = false
+        let relay = LioRelayTranslationClient(requiresOriginalStore: false) { path, _, uploadFinished in
+            #expect(path == "/v1/tools/translate")
+            #expect(!bodySent)
+            uploadFinished?()
+            #expect(bodySent)
+            return (200, Data(#"{"version":"TRANSLATION.1","kind":"image","items":[]}"#.utf8))
+        }
+        let photo = LioRelayTranslationRequest(id: id, source: .english, target: .chinese,
+                                               payload: .jpeg(Data([0xff, 0xd8, 0xff, 0xd9])))
+        let result = try await relay.translate(photo, uploadFinished: { bodySent = true })
+        #expect(result.items.isEmpty && bodySent)
+    }
+
     @Test func microphonePCMConvertsToWireWAVInMemory() throws {
         let inputFormat = try #require(AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 1))
         let input = try #require(AVAudioPCMBuffer(pcmFormat: inputFormat, frameCapacity: 4800))

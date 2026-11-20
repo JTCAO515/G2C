@@ -7,7 +7,7 @@ extension LioRelayTranslationClient {
                                     isCurrent: @escaping @MainActor () -> Bool,
                                     bearer: @escaping @MainActor () -> String?) -> LioRelayTranslationClient? {
         guard endpoint.allowsDemoBetaActivation else { return nil }
-        return LioRelayTranslationClient(requiresOriginalStore: true) { path, body in
+        return LioRelayTranslationClient(requiresOriginalStore: true) { path, body, uploadFinished in
             guard path == "/v1/tools/translate",
                   let url = URL(string: path, relativeTo: endpoint.url)?.absoluteURL,
                   isCurrent(), let token = bearer() else {
@@ -24,7 +24,8 @@ extension LioRelayTranslationClient {
             policy.urlCache = nil
             policy.httpCookieStorage = nil
             policy.urlCredentialStorage = nil
-            let session = URLSession(configuration: policy, delegate: LioRelayNoRedirect(), delegateQueue: nil)
+            let delegate = LioRelayNoRedirect(bodyLength: body.count, uploadFinished: uploadFinished)
+            let session = URLSession(configuration: policy, delegate: delegate, delegateQueue: nil)
             defer { session.invalidateAndCancel() }
             let (stream, response) = try await session.bytes(for: request)
 
@@ -47,6 +48,20 @@ extension LioRelayTranslationClient {
 }
 
 private final class LioRelayNoRedirect: NSObject, URLSessionTaskDelegate {
+    let bodyLength: Int64
+    let uploadFinished: LioRelayTranslationClient.UploadFinished?
+
+    init(bodyLength: Int, uploadFinished: LioRelayTranslationClient.UploadFinished?) {
+        self.bodyLength = Int64(bodyLength)
+        self.uploadFinished = uploadFinished
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didSendBodyData bytesSent: Int64,
+                    totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {
+        guard totalBytesSent >= bodyLength, let uploadFinished else { return }
+        Task { @MainActor in uploadFinished() }
+    }
+
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
                     newRequest request: URLRequest, completionHandler: @escaping @Sendable (URLRequest?) -> Void) {
         completionHandler(nil)

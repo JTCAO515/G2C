@@ -81,6 +81,7 @@ private struct LioTextTranslationView: View {
         var request: LioTranslationRequest
         let input: Input
         var preparedPayload: LioRelayTranslationRequest.Payload?
+        var uploadSent = false
 
         var fromImage: Bool {
             if case .photo = input { return true }
@@ -148,7 +149,7 @@ private struct LioTextTranslationView: View {
                 }
                 LioTranslationImageInput(language: language, source: source, enabled: enabled,
                                          isCurrent: isCurrent, onImage: startPhoto)
-                if attempt != nil { ProgressView(language.text("Translating…", "正在翻译…")) }
+                if let attempt { ProgressView(progress(for: attempt)) }
                 if let result { resultCard(result) }
                 if let problem {
                     Text(message(for: problem))
@@ -328,6 +329,13 @@ private struct LioTextTranslationView: View {
 
     private func startRecording(_ data: LioTranslationRecording) { begin(.recording(data)) }
 
+    private func progress(for attempt: Attempt) -> String {
+        guard attempt.fromImage else { return language.text("Translating…", "正在翻译…") }
+        if attempt.preparedPayload == nil { return language.text("Preparing photo…", "正在准备照片…") }
+        if attempt.uploadSent { return language.text("Processing photo…", "正在处理照片…") }
+        return language.text("Uploading…", "正在上传…")
+    }
+
     private func begin(_ input: Attempt.Input, text: [String] = [],
                        preparedPayload: LioRelayTranslationRequest.Payload? = nil) {
         guard enabled, isCurrent() else { return }
@@ -360,7 +368,11 @@ private struct LioTextTranslationView: View {
                                                        payload: payload, storage: history)
             let reply: LioRelayTranslationResponse
             do {
-                reply = try await relay.translate(original)
+                let uploadFinished: LioRelayTranslationClient.UploadFinished = { [id = attempt.id] in
+                    guard self.attempt?.id == id, isCurrent() else { return }
+                    self.attempt?.uploadSent = true
+                }
+                reply = try await relay.translate(original, uploadFinished: attempt.fromImage ? uploadFinished : nil)
             } catch LioRelayTranslationFailure.alreadyAccepted {
                 guard self.attempt?.id == attempt.id, isCurrent() else { return }
                 try relayOriginals.accept(original, storage: history)

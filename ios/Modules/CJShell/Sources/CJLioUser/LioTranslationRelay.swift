@@ -276,23 +276,26 @@ enum LioTranslationWAV {
 @MainActor
 public struct LioRelayTranslationClient {
     public typealias Transport = @MainActor (String, Data) async throws -> (Int, Data)
-    private let send: Transport
+    typealias UploadFinished = @MainActor @Sendable () -> Void
+    typealias UploadTransport = @MainActor (String, Data, UploadFinished?) async throws -> (Int, Data)
+    private let send: UploadTransport
     let requiresOriginalStore: Bool
 
     public init(send: @escaping Transport) {
-        self.init(requiresOriginalStore: false, send: send)
+        self.init(requiresOriginalStore: false) { path, body, _ in try await send(path, body) }
     }
 
-    init(requiresOriginalStore: Bool, send: @escaping Transport) {
+    init(requiresOriginalStore: Bool, send: @escaping UploadTransport) {
         self.requiresOriginalStore = requiresOriginalStore
         self.send = send
     }
 
-    func translate(_ request: LioRelayTranslationRequest) async throws -> LioRelayTranslationResponse {
+    func translate(_ request: LioRelayTranslationRequest,
+                   uploadFinished: UploadFinished? = nil) async throws -> LioRelayTranslationResponse {
         try Task.checkCancellation()
         let body = try request.wireBody()
         do {
-            let (status, data) = try await send("/v1/tools/translate", body)
+            let (status, data) = try await send("/v1/tools/translate", body, uploadFinished)
             try Task.checkCancellation()
             return try LioRelayTranslationResponse.decode(status: status, body: data, expecting: request.kind)
         } catch let error as URLError {
