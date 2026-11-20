@@ -96,8 +96,8 @@
     "format_version": "visitor-entry.3",
     "entry_kind": "fact",
     "topic": "passport_booking",
-    "checked_on": "2026-11-16",
-    "expires_on": "2026-11-23",
+    "checked_on": "2026-11-20",
+    "expires_on": "2026-12-04",
     "id": "visitor.v3.shenzhen.museum-history-folk",
     "cities": [
       "shenzhen"

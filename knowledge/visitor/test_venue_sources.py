@@ -7,7 +7,7 @@ import unittest
 from validate_v3 import validate_entry_v3
 
 ROOT = Path(__file__).resolve().parent
-TODAY = date(2026, 11, 16)
+TODAY = date(2026, 11, 20)
 
 
 class VenueSourceScopeTests(unittest.TestCase):
