@@ -83,4 +83,46 @@ import XCTest
         XCTAssertTrue(button.isHittable)
         return button
     }
+
+    @objc func testLocalSupportDraftReopensAndClearsWithoutSending() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", "en"]
+        app.launchEnvironment["G2C_LIO_SUPPORT_DRAFT_FIXTURE"] = UUID().uuidString
+        let editor = app.descendants(matching: .any).matching(identifier: "lio.support.draft").firstMatch
+
+        func openDraft() {
+            app.launch()
+            let tools = app.tabBars.buttons["Tools"]
+            XCTAssertTrue(tools.waitForExistence(timeout: 8))
+            tools.tap()
+            app.buttons["lio.tools.local-support"].tap()
+            for _ in 0..<5 where !editor.isHittable { app.swipeUp() }
+            XCTAssertTrue(editor.isHittable)
+            let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: editor)
+            XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 5), .completed)
+        }
+
+        openDraft()
+        editor.tap()
+        editor.typeText("Need help\nSecond line")
+        XCTAssertEqual(editor.value as? String, "Need help\nSecond line")
+        let send = app.buttons["lio.support.send"]
+        XCTAssertTrue(send.exists)
+        XCTAssertFalse(send.isEnabled)
+
+        app.terminate()
+        openDraft()
+        XCTAssertEqual(editor.value as? String, "Need help\nSecond line")
+        let clear = app.buttons["lio.support.draft-clear"]
+        for _ in 0..<3 where !clear.isHittable { app.swipeUp() }
+        XCTAssertTrue(clear.isHittable)
+        clear.tap()
+
+        app.terminate()
+        openDraft()
+        XCTAssertNotEqual(editor.value as? String, "Need help\nSecond line")
+        XCTAssertFalse(app.buttons["lio.support.draft-clear"].isEnabled)
+        app.terminate()
+    }
 }
