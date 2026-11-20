@@ -6,7 +6,32 @@ import Testing
 struct LioTranslationRelayTests {
     let id = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
 
-    @Test func microphonePCMConvertsToWireWAVAndBackToARecognitionBufferInMemory() throws {
+    @Test @MainActor func sendsAllThreeKindsToTheSameEndpoint() async throws {
+        let wav = try LioTranslationWAV.encode(pcm: Data([1, 0, 2, 0]))
+        let jpeg = Data([0xff, 0xd8, 0xff, 0xd9])
+        let cases: [(LioRelayTranslationRequest.Payload, String, String, String)] = [
+            (.text("Tea"), "text", "text", "Tea"),
+            (.wav(wav), "speech", "media", wav.base64EncodedString()),
+            (.jpeg(jpeg), "image", "media", jpeg.base64EncodedString()),
+        ]
+        for (payload, kind, key, expectedValue) in cases {
+            let relay = LioRelayTranslationClient { path, body in
+                #expect(path == "/v1/tools/translate")
+                let fields = try #require(JSONSerialization.jsonObject(with: body) as? [String: String])
+                #expect(fields["kind"] == kind)
+                #expect(fields[key] == expectedValue)
+                let reply = """
+                {"version":"TRANSLATION.1","kind":"\(kind)","items":[{"source_text":"Tea","translated_text":"茶"}]}
+                """
+                return (200, Data(reply.utf8))
+            }
+            let reply = try await relay.translate(.init(id: id, source: .english, target: .chinese, payload: payload))
+            #expect(reply.items.map(\.sourceText) == ["Tea"])
+            #expect(reply.items.map(\.translatedText) == ["茶"])
+        }
+    }
+
+    @Test func microphonePCMConvertsToWireWAVInMemory() throws {
         let inputFormat = try #require(AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 1))
         let input = try #require(AVAudioPCMBuffer(pcmFormat: inputFormat, frameCapacity: 4800))
         input.frameLength = 4800
@@ -19,14 +44,9 @@ struct LioTranslationRelayTests {
         collector.append(input)
         let recording = try collector.finish()
         let wav = try recording.wireWAV()
-        let native = try recording.recognitionBuffer()
         #expect(wav.prefix(4) == Data("RIFF".utf8))
-        #expect(native.format.sampleRate == 16_000 && native.format.channelCount == 1)
-        #expect(native.format.commonFormat == .pcmFormatInt16)
-        #expect(native.frameLength > 0)
-        #expect(wav.count == 44 + Int(native.frameLength) * 2)
-        let pcm = try #require(native.int16ChannelData?.pointee)
-        #expect((0..<Int(native.frameLength)).contains { pcm[$0] != 0 })
+        #expect(wav.count > 44)
+        #expect(wav.dropFirst(44).contains { $0 != 0 })
     }
 
     @Test func textUsesTheRelaySchemaAndSendsNoMedia() throws {
@@ -169,20 +189,16 @@ struct LioTranslationRelayTests {
         }
     }
 
-    @Test @MainActor func relayQuotaResponseFallsBackThroughTheTranslationRouter() async throws {
+    @Test @MainActor func relayQuotaResponseIsReportedWithoutAnAnswer() async throws {
         let relay = LioRelayTranslationClient { route, body in
             #expect(route == "/v1/tools/translate")
             let json = try #require(JSONSerialization.jsonObject(with: body) as? [String: String])
             #expect(json["text"] == "Hello")
             return (429, Data(#"{"version":"TRANSLATION.1","error":"quota_exceeded"}"#.utf8))
         }
-        let translator = LioTranslator(remote: { request in
-            let response = try await relay.translate(.init(id: id, source: request.source,
-                                                           target: request.target, payload: .text(request.text[0])))
-            return response.items.map(\.translatedText)
-        }, local: { _ in ["你好"] })
-        let result = try await translator.translate(.init(source: .english, target: .chinese, text: ["Hello"]))
-        #expect(result == LioTranslationResult(text: ["你好"], offline: true))
+        await #expect(throws: LioTranslationFailure.quota) {
+            try await relay.translate(.init(id: id, source: .english, target: .chinese, payload: .text("Hello")))
+        }
     }
 
     @Test func distinguishesEmptyImageFromAnAlreadyAcceptedRequest() throws {

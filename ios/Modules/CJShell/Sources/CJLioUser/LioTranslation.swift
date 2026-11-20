@@ -4,8 +4,6 @@ import Foundation
 enum LioTranslationLanguage: String, CaseIterable, Codable, Sendable {
     case english = "en-US"
     case chinese = "zh-CN"
-
-    var locale: Locale.Language { Locale.Language(identifier: rawValue) }
 }
 
 struct LioTranslationRequest: Sendable {
@@ -15,67 +13,13 @@ struct LioTranslationRequest: Sendable {
 }
 
 enum LioTranslationFailure: Error, Equatable, Sendable {
-    case network, quota, service, unsupported, unavailableLocally
+    case network, quota, service, timedOut
     case signInRequired, accessDenied, alreadyAccepted, tooLong, noRecognizedText, unreadableImage
-    case speechDenied, speechUnavailable
+    case invalidRecording
 }
 
 struct LioTranslationResult: Equatable, Sendable {
     let text: [String]
-    let offline: Bool
-}
-
-@MainActor
-struct LioTranslator {
-    typealias Operation = @MainActor (LioTranslationRequest) async throws -> [String]
-    let remote: Operation?
-    let local: Operation
-
-    enum LanguagePack: Sendable { case installed, downloadable }
-
-    nonisolated static func translateLocally(
-        _ request: LioTranslationRequest,
-        languagePack: LanguagePack,
-        prepare: () async throws -> Void,
-        translate: (String) async throws -> String
-    ) async throws -> [String] {
-        try Task.checkCancellation()
-        if languagePack == .downloadable {
-            do {
-                try await prepare()
-            } catch is CancellationError {
-                throw CancellationError()
-            } catch {
-                try Task.checkCancellation()
-                throw LioTranslationFailure.unavailableLocally
-            }
-        }
-        var result: [String] = []
-        for text in request.text {
-            try Task.checkCancellation()
-            result.append(try await translate(text))
-        }
-        try Task.checkCancellation()
-        return result
-    }
-
-    func translate(_ request: LioTranslationRequest) async throws -> LioTranslationResult {
-        if let remote {
-            do {
-                let text = try await remote(request)
-                try Task.checkCancellation()
-                guard text.count == request.text.count else { throw LioTranslationFailure.service }
-                return .init(text: text, offline: false)
-            } catch LioTranslationFailure.network {
-            } catch LioTranslationFailure.quota {
-            } catch LioTranslationFailure.service {
-            }
-        }
-        try Task.checkCancellation()
-        let text = try await local(request)
-        try Task.checkCancellation()
-        return .init(text: text, offline: true)
-    }
 }
 
 struct LioRecentTranslation: Codable, Equatable, Identifiable {

@@ -121,7 +121,9 @@ struct CJProbeApp: App {
     private var translationRelayPreview: LioRelayTranslationClient? {
         guard ProcessInfo.processInfo.arguments.contains("--lio-translation-relay-preview") else { return nil }
         let photoQuotaFixture = ProcessInfo.processInfo.arguments.contains("--lio-translation-photo-quota-preview")
+        let photoLoginFixture = ProcessInfo.processInfo.arguments.contains("--lio-translation-photo-login-preview")
         var timedOutOriginal: Data?
+        var reauthPhoto: Data?
         return LioRelayTranslationClient { route, data in
             guard route == "/v1/tools/translate",
                   let fields = try JSONSerialization.jsonObject(with: data) as? [String: String],
@@ -139,11 +141,27 @@ struct CJProbeApp: App {
             if fields["kind"] == "text", fields["text"] == "Already sent" {
                 return (409, Data(#"{"version":"TRANSLATION.1","error":"request_already_used"}"#.utf8))
             }
+            if fields["kind"] == "text" {
+                switch fields["text"] {
+                case "Offline input": throw URLError(.notConnectedToInternet)
+                case "Expired input": return (401, Data())
+                case "Unavailable input": return (503, Data())
+                default: break
+                }
+            }
             if fields["kind"] == "text", fields["text"] == "Hello" {
                 return (200, Data(#"{"version":"TRANSLATION.1","kind":"text","items":[{"source_text":"Hello","translated_text":"你好"}]}"#.utf8))
             }
             if fields["kind"] == "image", let media = fields["media"], let image = Data(base64Encoded: media),
                image.starts(with: [0xff, 0xd8, 0xff]), fields["media_type"] == nil {
+                if photoLoginFixture {
+                    if let reauthPhoto {
+                        guard reauthPhoto == data else { return (422, Data()) }
+                    } else {
+                        reauthPhoto = data
+                        return (401, Data())
+                    }
+                }
                 if photoQuotaFixture {
                     return (429, Data(#"{"version":"TRANSLATION.1","error":"quota_exceeded"}"#.utf8))
                 }
