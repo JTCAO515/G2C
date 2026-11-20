@@ -27,6 +27,8 @@ private struct LioSessionRecoveryFixture: View {
             .padding(LioTheme.Spacing.sm)
             .background(LioTheme.surface)
         }
+        .lioEmergencySupportFallback(language: shell.language.lio,
+                                     enabled: ProcessInfo.processInfo.arguments.contains("--lio-support-sos"))
     }
 }
 #endif

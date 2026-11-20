@@ -78,4 +78,30 @@ import XCTest
         XCTAssertFalse(app.buttons["lio.support.draft-clear"].isEnabled)
         app.terminate()
     }
+
+    @objc func testSOSOpensEmergencyNumbersDuringChatAndRecovery() throws {
+        continueAfterFailure = false
+        for (arguments, hasNewChat) in [
+            (["--lio-chat-history-acceptance", "--lio-support-sos"], true),
+            (["--lio-chat-history-acceptance", "--lio-support-sos", "--lio-support-suspended"], false),
+            (["--lio-session-recovery-acceptance", "--lio-support-sos"], false),
+        ] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", "en"] + arguments
+            app.launch()
+            defer { app.terminate() }
+            let sos = app.buttons["lio.support.sos"]
+            XCTAssertTrue(sos.waitForExistence(timeout: 10))
+            XCTAssertTrue(sos.isEnabled)
+            if hasNewChat {
+                let newChat = app.buttons["lio.chat.newShortcut"]
+                XCTAssertTrue(newChat.exists)
+                XCTAssertLessThan(sos.frame.midX, newChat.frame.midX)
+                try app.performAccessibilityAudit(for: .all)
+            }
+            sos.tap()
+            XCTAssertTrue(app.staticTexts["Emergency numbers"].waitForExistence(timeout: 6))
+            XCTAssertTrue(app.buttons["lio.support.police"].label.contains("110"))
+        }
+    }
 }
