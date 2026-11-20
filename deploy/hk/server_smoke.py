@@ -47,6 +47,7 @@ INLINE_DAY_BREAK = re.compile(
 )
 DAY_MENTION = re.compile(DAY_LABEL, re.I)
 ITINERARY_QUOTES = re.compile(
+    r'\x60{3}[\s\S]*?\x60{3}|~~~[\s\S]*?~~~|\x60[^\x60\n]*\x60|'
     r'“[^”]*”|‘[^’]*’|「[^」]*」|『[^』]*』|«[^»]*»|"[^"]*"|'
     r"(?<!\w)'[^']*'(?!\w)"
 )

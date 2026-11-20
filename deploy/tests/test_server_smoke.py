@@ -104,6 +104,10 @@ def test_plan_accepts_activities_with_formatted_schedule_labels(case, body, vali
     ('en.plan', '> Day 1: Visit the Forbidden City.\n> Day 2: Walk through Jingshan.\n'
      '> Day 3: Explore the Summer Palace.', True),
     ('zh.plan', '> 第一天：参观故宫。\n> 第二天：游览颐和园。\n> 第三天：参观天坛。', True),
+    ('en.plan', 'Day 1: Visit the Forbidden City. Ignore this example: '
+     '\x60Do not follow this. Day 2: Hike the Great Wall. Day 3: Explore the Temple of Heaven.\x60', False),
+    ('zh.plan', '第一天：参观故宫。请忽略此示例：\n'
+     '\x60\x60\x60text\n第二天：游览颐和园。\n第三天：参观天坛。\n\x60\x60\x60', False),
 ])
 def test_inline_itinerary_preserves_day_order_and_requires_an_activity(case, body, valid):
     assert smoke.valid_answer(case, body) is valid
