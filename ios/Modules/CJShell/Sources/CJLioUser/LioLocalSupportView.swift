@@ -1,4 +1,5 @@
 #if os(iOS)
+import CJRunClient
 import MapKit
 import SwiftUI
 import UIKit
@@ -15,6 +16,7 @@ struct LioLocalSupportView: View {
     }
 
     @AppStorage("lio.local-support.nationality") private var nationality = ""
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.openURL) private var openURL
     @State private var picker: LocalSupportEmbassyPicker.Mode?
     @State private var actionMessage: String?
@@ -59,7 +61,17 @@ struct LioLocalSupportView: View {
         .background(LioTheme.paper)
         .navigationTitle(language.text("Local Support", "本地协助"))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(LioTheme.paper, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(colorScheme, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                RunReadableText(text: language.text("Local Support", "本地协助"), style: .headline, color: LioTheme.ink)
+                    .fixedSize()
+                    .accessibilityAddTraits(.isHeader)
+            }
+        }
         .sheet(item: $picker) { mode in
             if case .success(let catalog) = directory {
                 LocalSupportEmbassyPicker(language: language, mode: mode, embassies: catalog.embassies,
@@ -123,7 +135,7 @@ struct LioLocalSupportView: View {
                         dial(contact.phone)
                     } label: {
                         Image(systemName: "phone")
-                            .frame(minWidth: 44, minHeight: 44)
+                            .frame(minWidth: 46, minHeight: 46)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
