@@ -18,7 +18,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 import uuid
 from zoneinfo import ZoneInfo
 
-from cj_message.lio_context import CAPABILITIES_EN
+from cj_message.lio_context import CAPABILITIES_EN, CAPABILITIES_ZH
 from cj_strict_json import reject_duplicates
 from cj_usage.authorization_budget import CNY_SCALE
 from cj_usage.metered_exit import BudgetUnknown
@@ -52,14 +52,6 @@ BEIJING_PLACE = re.compile(
     r'Qianmen|Wangfujing|Sanlitun|Olympic|798 Art', re.I
 )
 NEGATED_IDENTITY = re.compile(r'不是\s*Lio|\bnot\s+Lio\b', re.I)
-CAPABILITY_TOPIC = re.compile(
-    r'行程|规划|路线|交通|景点|支付|地铁|翻译|计划|推荐|'
-    r'itinerar|trip plan|transport|attractions?|payment|subway|translat|route|sightseeing|recommend', re.I
-)
-NEGATED_CAPABILITIES = re.compile(
-    r"不能帮|无法提供|不提供|(?:cannot|can't|do not|don't) (?:help|plan|provide|offer)|"
-    r'(?:offer|provide) no (?:travel |trip )?(?:assistance|planning|help)|\bno ability to\b|没有能力', re.I
-)
 DAY_ACTIVITY = re.compile(
     r'^(?:可以?|建议)?(?:去|参观|游览|游玩|游逛|乘车|坐车|坐地铁|步行|登上|爬山|漫步|'
     r'散步|逛|前往|抵达|体验|品尝|欣赏|走访)|'
@@ -157,9 +149,8 @@ def valid_answer(case, answer):
                     and re.search(r'我是|旅行|旅游|助手|\bI(?:\s+am|[’\']m)\b|travel|assistant', answer, re.I)
                     and not NEGATED_IDENTITY.search(answer))
     if kind == 'capability':
-        if locale == 'en':
-            return _normalize_capability_copy(CAPABILITIES_EN) in _normalize_capability_copy(answer)
-        return bool(CAPABILITY_TOPIC.search(answer) and not NEGATED_CAPABILITIES.search(answer))
+        approved = CAPABILITIES_ZH if locale == 'zh' else CAPABILITIES_EN
+        return _normalize_capability_copy(answer) == _normalize_capability_copy(approved)
     headings = list(DAY_HEADER.finditer(answer))
     if [DAY_NUMBER[match.group(1) or match.group(2)] for match in headings] != [1, 2, 3]:
         return False
