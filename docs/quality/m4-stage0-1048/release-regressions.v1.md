@@ -96,3 +96,10 @@ uv run --locked python -B -m pytest -q \
 通过 `CJ_PG_BINDIR` 指定。PR 回执登记候选 SHA、执行入口和实际结果。
 真实冒烟以 [#1048 当前判定](https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6972969188)
 和候选原件为准。本地用例不改变已记录的真实失败、未知、费用或释放条件。
+
+## 2026-11-19 · 正文完整性与英文能力
+
+- **PLAN-D1**　[现场原件](https://github.com/JTCAO515/G2C/issues/1048#issuecomment-6999370846) 的 RUN 已 ACK 且 completed，三天正文可见，但第 1 天只有地点，没有活动、时段或顺序，判 **FAIL**。复跑中英各用一组同形合成反例（例如「第1天：故宫、景山」/ “Day 1: Forbidden City, Jingshan”），第 2、3 天都给完整正例。补上明确活动及可执行先后后应通过，例如「上午参观故宫，下午步行游览景山」/ “Morning: Tour the Forbidden City. Afternoon: Walk through Jingshan.” 相同语义的列表、加粗时段和时刻都可呈现实际安排。只有地点、否定活动、问句或待定占位均不通过。真实安排可用日内先后或时段表达，不编精确时刻、预约或营业时间。[提示修复 #1230](https://github.com/JTCAO515/G2C/pull/1230)
+- **CAP-EN**　[现场原件](https://github.com/JTCAO515/G2C/issues/1048#issuecomment-7003963155) 中，旧脚本错拒了完整英文能力文案。按 [JT 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-7004999143)，当轮人工兜底逐字核原 RUN 正文，别把这一放行当作脚本已修。后续自动门禁的正例为同源 [CAPABILITIES_EN](https://github.com/JTCAO515/G2C/blob/59cc874b5e87bd2e0451b81b144ee0bc2b15b6c9/backend/message/cj_message/lio_context.py#L22) 原文。订票、付款限制是正例的一部分。明确否认规划能力、单独标题、引用文案或在完整文案前后附加与其矛盾的否认均不得通过。例如 “I don’t plan your days.”、“It is not true that I can plan your days.” 及「完整文案 + “I cannot plan any itinerary.”」。在 [B 的 #1233](https://github.com/JTCAO515/G2C/pull/1233) 调原门禁判定；真机同时核正文是否真正可见，欢迎语和 ACK 不计。
+
+两条均保留原现场结果。[补跑回执](https://github.com/JTCAO515/G2C/issues/1048#issuecomment-7004930477)是服务端冒烟证据。
