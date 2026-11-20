@@ -113,3 +113,22 @@ uv run --locked python -B -m pytest -q \
 - 复跑原短问法，在独立新对话核对实际正文、原 MID/RUN 与规划分流。负例使用无日程的合成短答，例如「北京有很多地方可以去，故宫和长城都很值得看。你想先了解哪个景点？」。即使 ACK、RUN completed 和 timeline 200 齐全，缺任一日实际安排仍 FAIL。
 - 正例给出第 1–3 天各自可执行的活动和先后或时段。另用相同正文仅改变 Markdown 时段样式作对照，实际安排一致时结论一致。[cc73ce4b 加粗标签离线误拒](https://github.com/JTCAO515/G2C/issues/1048#issuecomment-7030645021)单独登记。
 - L 正核对是否从规划进件转入普通回答及触发原因，待同一原 RUN 的分流记录证实。复跑新候选按实际回复和原件判，保留未结算费用与原写入守卫。[L 排查](https://github.com/JTCAO515/G2C/issues/1048#issuecomment-7030689560)
+
+## 2026-11-20 · 只有目的地的规划请求误判为取消
+
+**CITY-ONLY**　[L8 原件回执](https://github.com/JTCAO515/G2C/issues/994#issuecomment-7033353443)：香港 `e28196e9` 新对话首句「去成都」的 RUN 已完成，进件标为 `cancel`，城市及天数为空。可见回复只给了穿衣建议，漏问天数，判 **FAIL**。原轮 2 PASS、1 FAIL、5 UNRUN，费用以原回执为准。
+
+- 本地用原问法「去成都」与英文对照 “Go to Chengdu” 各开新对话，注入与现场一致的进件分支（`cancel`，无城市、天数），核可见回复和原规划上下文。正例保留原文中的成都，询问游玩天数，日期、人数、天数仍为未知，NEEDS、Trip 与活跃 Memory 零写入。
+- 本地续答「三天」／“Three days” 后核城市和天数均可追溯至用户原文，给出逐日正文并维持只读。原 L8 续答仍为 UNRUN。
+- 「取消去成都」／“Cancel the Chengdu trip” 保留取消分流。「成都明天穿什么」／“What should I wear in Chengdu tomorrow?” 直接答穿衣问题。两个对照均不触发游玩天数追问或写入。
+- 既有 [只读正例](https://github.com/JTCAO515/G2C/blob/e28196e900a93dfbd68fbf95e3509ef0517296b9/backend/cj_api/tests/test_lio_readonly_answers.py#L154) 注入的是正确进件；修复 PR 需覆盖错误进件分支，再在新 L8 同源窗按原判定复验。
+
+本地入口为 `backend/cj_api/tests/test_lio_planning_flow.py` 的 `flow(..., city=None, days=None, intent='cancel', questions=())` 与 `run(wire, text, locale=...)`。已有正例可用 `uv run --locked python -B -m pytest -q backend/cj_api/tests/test_lio_readonly_answers.py -k 'bare_city or plan09'` 检查。
+
+## 2026-11-20 · 机场进城误回过境模板
+
+**FACT-TRANSIT**　[构建 49 第 2 项](https://github.com/JTCAO515/G2C/issues/1048#issuecomment-7033981816)：中文界面问 “How do I get from Beijing Capital Airport to downtown Beijing?”，可见回复给了过境免签说明，未回答进城交通，真机表现 **FAIL**。[B 原件对照](https://github.com/JTCAO515/G2C/issues/1048#issuecomment-7033959282)保留两条同题候选，现场原 RUN 以同轮核对为准。
+
+- 本地沿 `backend/cj_api/tests/test_m4_real_services.py` 的 `RealTools.answer` 夹具，用同一机场问法注入 `tool.fact` 的有摘录和无摘录结果。两种均须继续实际回答进城方式。对照地铁、支付也须回答实际问题。没有对应证据的实时价格、班次或政策不作断言。
+- 用真正的过境或签证问题对照。有适用来源时按原证据作政策回答；缺可核正文时保留原核证说明。普通旅行问法不得触发过境模板。
+- 英问中界面、中文问英文界面均按问题语言输出正文、兜底和引用标题；无法判断问题语言时沿用界面默认。现场语义与语言分别核对，完成状态与 ACK 不能替代正文。
