@@ -461,12 +461,14 @@ def fixed_declarations_complete(fields,turns,*,rich_phrases=False):
  return True
 
 
-def fixed_sources_complete(intake,fields,turns,city_reference,*,ordinal_days=None,rich_phrases=False):
+def fixed_sources_complete(intake,fields,turns,city_reference,*,ordinal_days=None,rich_phrases=False,
+                           bind_unbooked_self=False):
  """Check the model's fixed values against original declarations, before save.
 
  The existing city-independent fixed-source reader supplies a conservative
- comparison, never an alternative intent/city/date extractor. Unverifiable
- commitments remain questions rather than silently acquiring model values.
+ comparison, never an alternative intent/city/date extractor. Profile 9 may
+ narrow an unsourced group label to the traveler after validating the entire
+ original fixed event. Unverifiable commitments still require clarification.
  """
  from .lio_planning_grounding import RANGE,ISO,_fixed_item
  if not fixed_declarations_complete(fields,turns,rich_phrases=rich_phrases):return False
@@ -476,6 +478,7 @@ def fixed_sources_complete(intake,fields,turns,city_reference,*,ordinal_days=Non
  first=date.fromisoformat(first['value']) if first.get('state')=='known' else None
  party=fields.get('party_size',{})
  party=party['value'] if party.get('state')=='known' else None
+ confirmed_self=[]
  for index,item in enumerate(items):
   evidence=intake.sources.get('fixed_items.'+str(index),intake.sources.get('fixed_items',[]))
   description=item['description']
@@ -497,11 +500,18 @@ def fixed_sources_complete(intake,fields,turns,city_reference,*,ordinal_days=Non
   for edge in ('start','end'):
    for part in ('date','time','timezone'):
     if item[edge][part]!=expected[edge][part]:return False
-  if item['applies_to']!=expected['applies_to'] or item['locked']!=expected['locked']:return False
+  if item['locked']!=expected['locked']:return False
   booking=item['booking_status']
   if booking['state']=='known' and (booking['value']!='booked' or re.search(
       r'已(?:预订|订|预约)|已经(?:买票|预订|订|预约)|\b(?:booked|have tickets|has tickets)\b',description,re.I) is None):
    return False
+  if item['applies_to']!=expected['applies_to']:
+   if not (bind_unbooked_self and first is not None and party is None and personal and not collective
+       and item['applies_to']==['party'] and expected['applies_to']==['self'] and booking['state']!='known'):
+    return False
+   confirmed_self.append(item)
+ for item in confirmed_self:
+  item['applies_to']=['self']
  return True
 
 

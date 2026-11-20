@@ -240,6 +240,16 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_off
     # The normal source/compiler boundary checks restored values and quotes too.
     saved={}if previous is None else previous.get('facts',{})
     if dto.version=='LIO-planning-intake.8':
+        # Both markers encode absence for an unsourced optional party size.
+        # Retain UNKNOWN without copying the model's redundant note into NEEDS.
+        # A value, source, previous known count or any other duplicate still
+        # goes through the original observation validation.
+        party_note=data['uncertain_fields'].get('party_size')
+        if (data['party_size'] is None and data['unknown_fields'].count('party_size')==1
+                and party_note and party_note.strip() and len(party_note.encode())<=4096
+                and 'party_size' not in saved
+                and not any(ref['field']=='party_size' for ref in data['field_sources'])):
+            del data['uncertain_fields']['party_size']
         # Historical snapshots may predate the task-scope filter. Reuse only
         # affirmative source spans; returning an unchanged cache must not keep
         # translated facts alive after the execution projection withheld them.

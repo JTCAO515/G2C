@@ -592,7 +592,8 @@ class NationalLioPlanning:
                            planning_window=window,introduction=introduction)
         questions=[q for q in checked.get('questions',[]) if q['field']=='fixed_items']
         complete_fixed=fixed_sources_complete(intake,fields,turns,city,
-            ordinal_days=intake.duration_days if calendar is not None and undated else None)
+            ordinal_days=intake.duration_days if calendar is not None and undated else None,
+            bind_unbooked_self=True)
         if missing or questions or not complete_fixed:
             state=context(worker,binding,state,dict(authority=authority,status='needs_details',city=resolution))
             required=[]
