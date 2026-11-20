@@ -1,0 +1,347 @@
+[
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-sights.chenjiaci-tickets",
+    "title_zh": "陈家祠（广东民间工艺博物馆）门票多少钱、孩子什么时候免票",
+    "summary_zh": "馆方“开放时间及购票”页写明：全票10元/人，适用18岁（含）至60岁（不含）成人，需线上预约购票；半票5元/人，适用6岁（含）至18岁（不含）未成年人、身高1.3米以上儿童、全日制本科及以下学历学生、60岁（含）至65岁（不含）长者、重度残疾人的1名陪护人员。免预约购票、凭相应证件入场者包括：未满6岁儿童、身高1.3米（含）以下儿童、65周岁（含）以上老年人、残疾人、现役军人及退役军人等。另有购票数量限制：每个微信账号每天限购6张散客门票，每张身份证件每天限购1张。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广东民间工艺博物馆（陈家祠）",
+      "name_en": "Guangdong Folk Craft Museum (Chen Clan Ancestral Hall)",
+      "address": "广州市荔湾区中山七路恩龙里34号"
+    },
+    "audience": [
+      "带儿童的亲子家庭",
+      "需要判断孩子买全票、半票还是免票的家长"
+    ],
+    "themes": [
+      "attraction",
+      "family",
+      "passport_booking"
+    ],
+    "sources": [
+      {
+        "name": "广东民间工艺博物馆官网·开放时间及购票（散客参观须知·门票购买）",
+        "url": "https://www.gzcjc.com.cn/MYwebsite/rc/my_mpyy_xq.htm?token=e84fe1c22fcf404088c89c11252df775&leixing=mpyy",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "页面未标注更新日期，票价与年龄档位是否仍现行需复核",
+      "免票儿童是否需要预约、如何与成人订单绑定未说明",
+      "身高与年龄两个条件同时适用时以哪个为准未说明",
+      "外国护照持有人在线上购票时能否通过实名校验未说明"
+    ],
+    "notes": "[阶段:D] [时效:高] [复核:2026-12-04] [依据:广东民间工艺博物馆官网·开放时间及购票（散客参观须知·门票购买）／正文] [来源级:S1] [英文:来源已有] [儿童:年龄=见正文;身高=见正文;计算日=入园/乘车当日;陪同=见正文;证件=见正文] [护照:见正文说明] 免票与半票的身份条件来自同一页的两段（半票段写“6岁（含）-18岁（不含）”“1.3米以上儿童”，免票段写“未满6岁”“1.3米（含）以下”），本批按原文并列，不合并成单一规则。地址取自广州市文化广电旅游局A级景区名录（2026-06-30）。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-sights.chenjiaci-foreign-passport-entry",
+    "title_zh": "外国游客没有微信怎么买陈家祠门票、进馆要出示什么",
+    "summary_zh": "馆方页面用英文写明：线上购票只能通过微信（Online ticketing is available only via WeChat），没有微信的游客可凭护照直接在馆内售票窗口购票（Visitors without WeChat may purchase tickets directly at the on-site ticket window with their passports）。检票段写明：中国居民刷身份证或外国人永居证入闸；港澳台同胞和外国友人需同时出示门票订单二维码及相应身份证件；未携带身份证件的游客，需到综合服务处出示电子身份证或其他有效证件换取实体票。馆方同时声明从未授权任何第三方机构或个人售票或提供“讲解导览+门票预约”套餐，非官方渠道门票无法检票入场。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广东民间工艺博物馆（陈家祠）",
+      "name_en": "Guangdong Folk Craft Museum (Chen Clan Ancestral Hall)",
+      "address": "广州市荔湾区中山七路恩龙里34号"
+    },
+    "audience": [
+      "持外国护照、没有微信支付的游客",
+      "已在第三方平台买票、担心无法入场的家庭"
+    ],
+    "themes": [
+      "passport_booking",
+      "attraction"
+    ],
+    "sources": [
+      {
+        "name": "广东民间工艺博物馆官网·开放时间及购票（英文购票说明、检票入场段）",
+        "url": "https://www.gzcjc.com.cn/MYwebsite/rc/my_mpyy_xq.htm?token=e84fe1c22fcf404088c89c11252df775&leixing=mpyy",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "现场售票窗口的营业时段、排队情况、是否支持境外银行卡或现金未说明",
+      "窗口购票是否受瞬时人流上限2000人限制、满员后如何处理未说明",
+      "第三方平台票退票后“释放身份证号”对护照持有人如何操作未说明",
+      "综合服务处能否用护照复印件换实体票未说明"
+    ],
+    "notes": "[阶段:A] [时效:高] [复核:2026-12-04] [依据:广东民间工艺博物馆官网·开放时间及购票（英文购票说明、检票入场段）／正文] [来源级:S1] [英文:来源已有] [护照:见正文说明] 该段英文为馆方页面原文，属来源已有英文表述，本批据其含义概括，不整段复制。页面另写瞬时人流量上限2000人，黄金周建议提前购票。外国护照持有人现场购票这条路径是本条核心，但仍需以到场当日窗口安排为准。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-sights.chenjiaci-hours-and-last-entry",
+    "title_zh": "陈家祠周几闭馆、几点停止入场（含夏季延时）",
+    "summary_zh": "馆方页面写明：参观时间为9:00至17:30，17:00停止现场售票或入场；每年4月15日至10月15日实行延时开放，闭馆时间延时至18:00，下午场检票截止时间延时至17:30。闭馆日为逢周二闭馆（法定节假日除外）。检票分场：上午场9:00至14:00，下午场12:00至17:00（12:00-14:00两场重叠）。若馆内人数达到瞬时最大承载量，将采取限流措施暂停入场。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广东民间工艺博物馆（陈家祠）",
+      "name_en": "Guangdong Folk Craft Museum (Chen Clan Ancestral Hall)",
+      "address": "广州市荔湾区中山七路恩龙里34号"
+    },
+    "audience": [
+      "按半天安排老城行程的家庭",
+      "冬季到访、需要赶最后入场时间的游客"
+    ],
+    "themes": [
+      "attraction",
+      "trip_planning"
+    ],
+    "sources": [
+      {
+        "name": "广东民间工艺博物馆官网·开放时间及购票（参观时间、闭馆日、检票入场段）",
+        "url": "https://www.gzcjc.com.cn/MYwebsite/rc/my_mpyy_xq.htm?token=e84fe1c22fcf404088c89c11252df775&leixing=mpyy",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "法定节假日“除外”的具体开闭安排未给出",
+      "瞬时最大承载量2000人对应的暂停入场时长与恢复方式未说明",
+      "页面未标更新日期，周二闭馆是否长期不变需复核"
+    ],
+    "notes": "[阶段:D] [时效:高] [复核:2026-12-04] [依据:广东民间工艺博物馆官网·开放时间及购票（参观时间、闭馆日、检票入场段）／正文] [来源级:S1] [英文:来源已有] “17:00停止入场”与“4月15日-10月15日延时到18:00、下午场检票截止17:30”要按到访月份区分；11月属非延时季，按17:00停止入场理解。周二闭馆与法定节假日的关系，页面只写“法定节假日除外”，未列具体日期。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-sights.chenjiaci-refund-ladder",
+    "title_zh": "陈家祠线上门票怎么退、手续费怎么算",
+    "summary_zh": "馆方页面写明：2026年11月9日及以前购买的未使用门票，可在参观当日18时前在微信公众号“广东民间工艺博物馆”的门票订单中申请退票，每个订单仅可退款一次，退款2个工作日内从原购票渠道返还，未收到可咨询综合服务处（020-81819653）。自2026年11月10日起，对当日及之后购买的未使用门票实行阶梯退票：预约参观日期当日18:00前申请全额退款、免手续费；当日18:00起至之后2个自然日内申请收门票票价20%手续费；超出预约日期2个自然日后不再受理。所购门票30日内可申请电子发票，发票一经开具不能修改且不能办理退票。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广东民间工艺博物馆（陈家祠）",
+      "name_en": "Guangdong Folk Craft Museum (Chen Clan Ancestral Hall)",
+      "address": "广州市荔湾区中山七路恩龙里34号"
+    },
+    "audience": [
+      "行程可能因天气或航班变动的家庭",
+      "已在微信公众号下单、需要改期的游客"
+    ],
+    "themes": [
+      "attraction",
+      "seasonal_holiday"
+    ],
+    "sources": [
+      {
+        "name": "广东民间工艺博物馆官网·开放时间及购票（门票订单管理）",
+        "url": "https://www.gzcjc.com.cn/MYwebsite/rc/my_mpyy_xq.htm?token=e84fe1c22fcf404088c89c11252df775&leixing=mpyy",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "现场窗口购买的纸质票是否适用同一退票规则未说明",
+      "第三方平台购票的退款是否由平台处理未说明",
+      "境外银行卡支付的退款到账时间未说明",
+      "不可抗力（闭馆、台风）情形是否有免手续费例外未说明"
+    ],
+    "notes": "[阶段:D] [时效:高] [复核:2026-12-04] [依据:广东民间工艺博物馆官网·开放时间及购票（门票订单管理）／正文] [来源级:S1] [英文:来源已有] [护照:见正文说明] 页面同时保留11月9日前的旧规则与11月10日起的阶梯规则，按购票日期区分，不能混用。本条只采用退票规则，不含改期。综合服务处电话为国内号码。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-sights.chimelong-safari-child-rules",
+    "title_zh": "带小孩去长隆野生动物世界：谁必须有人陪、能带什么、婴儿车有尺寸限制吗",
+    "summary_zh": "长隆官网“游园须知”写明：未满16周岁的游客必须由16周岁（含）以上游客陪同入园。为保证动物安全，除婴儿食品和本人适量饮用水外，园区谢绝游客带入其他食品和饮品。禁止携带的载具包括露营车、手推车或带轮运送工具、含儿童座椅的行李箱、滑板等；手推婴儿车和手推轮椅车可以带入，但宽度超过50厘米的手推婴儿车不允许。自2018年7月10日起，长隆集团旗下主题公园内禁止使用“儿童安全绳（牵引绳）”。因恶劣天气等原因可能变更、延迟、取消表演或关闭部分展区，园方明确“不实行门票延期或退票政策”。客服电话400-883-0083，人工服务时间9:00-18:00。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "长隆野生动物世界",
+      "name_en": "Chimelong Safari Park",
+      "address": "广州市番禺区迎宾路"
+    },
+    "audience": [
+      "带幼儿或学龄儿童的家庭",
+      "携带婴儿车、行李箱或儿童安全绳的游客"
+    ],
+    "themes": [
+      "family",
+      "attraction"
+    ],
+    "sources": [
+      {
+        "name": "长隆旅游度假区官网·长隆野生动物世界·游园须知",
+        "url": "https://www.chimelong.com/gz/safaripark/notice/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "“未满16周岁须陪同”是否按入园日计算年龄、是否查证件未说明",
+      "婴儿食品的范围如何认定、是否需要安检说明未说明",
+      "园区内是否有寄存婴儿车或行李的收费服务未说明",
+      "页面未标更新日期"
+    ],
+    "notes": "[阶段:D] [时效:高] [复核:2026-12-04] [依据:游园须知|长隆野生动物世界官方网站|广州长隆度假区／长隆野生动物世界“游园须知”页正文] [来源级:S1] [英文:来源已有] [儿童:年龄=见正文;身高=见正文;计算日=入园/乘车当日;陪同=见正文;证件=见正文] “不实行门票延期或退票政策”写在不可抗逆因素段，指恶劣天气导致的表演变更与展区关闭；本批不据此推断所有情形一律不退。婴儿车宽度50厘米的限制对自带推车的家庭是硬条件，出行前应量宽度。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-sights.chimelong-safari-metro-access",
+    "title_zh": "坐地铁去长隆野生动物世界：从哪个站出来、再怎么换穿梭巴",
+    "summary_zh": "长隆官网交通指南“从地铁站/公交出发”页写明：从广州各地铁站搭乘至3号线或7号线，在汉溪长隆地铁站E出口出站，步行约5分钟到“长隆地铁广场穿梭巴士站”，再换乘度假区穿梭巴士进入园区。同页列出到汉溪长隆站的公共巴士首末班（页面注明时间仅供参考）：129路首班06:15、末班22:30；番163路首班08:00、末班20:30；番109路首班07:20、末班19:00。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "长隆野生动物世界",
+      "name_en": "Chimelong Safari Park",
+      "address": "广州市番禺区迎宾路"
+    },
+    "audience": [
+      "不自驾、带儿童乘地铁前往长隆的家庭",
+      "需要在末班车前返回市区的游客"
+    ],
+    "themes": [
+      "transport",
+      "family"
+    ],
+    "sources": [
+      {
+        "name": "长隆旅游度假区官网·交通指南·从地铁站/公交出发",
+        "url": "https://www.chimelong.com/gz/traffic/type_4.html",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "度假区穿梭巴士的班次间隔、首末班与是否免费未在该页给出",
+      "汉溪长隆站E出口到穿梭巴士站的无障碍电梯与推车通行条件未说明",
+      "地铁3号线、7号线末班时间未在该页给出",
+      "巴士首末班标注“仅供参考”，实际执行需另核"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:交通指南|长隆旅游度假区／长隆官网“交通指南”页正文] [来源级:S1] [英文:来源已有] 本条只解决“地铁站→穿梭巴站”这一段；园区到各酒店/各乐园的穿梭巴线路与班次另需官网交通页其他分页。公交末班最早的是番109（19:00），晚间返程应以地铁为主，但地铁末班时间本页未给。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-sights.chimelong-free-child-ticket",
+    "title_zh": "长隆主题乐园免票儿童的条件与陪同人数限制",
+    "summary_zh": "长隆官网“全部门票”页在长隆欢乐世界标准票的备注中写明：标准票适用对象为所有游客，凭购票时填写的有效身份证件验证，入园一次；免票方面，1名购票成人仅限携带1名年龄未满3周岁、或身高未达1.0米的免票儿童入园（另有说明的特殊票种除外）。该备注出现在欢乐世界门票下，页面其余乐园的门票备注需分别查看；本批未读到野生动物世界、飞鸟乐园各自的免票条款。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "长隆欢乐世界",
+      "name_en": "Chimelong Paradise",
+      "address": "广州市番禺区迎宾路"
+    },
+    "audience": [
+      "带3岁以下幼儿的家庭",
+      "需要判断是否给儿童单独购票的家长"
+    ],
+    "themes": [
+      "family",
+      "passport_booking"
+    ],
+    "sources": [
+      {
+        "name": "长隆旅游度假区官网·全部门票（长隆欢乐世界标准票备注）",
+        "url": "https://www.chimelong.com/gz/ticket/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "野生动物世界、飞鸟乐园、大马戏的免票条款未读到",
+      "免票儿童入园时如何核验年龄或身高（是否查证件）未说明",
+      "两名成人带两名免票幼儿是否可各带一名未说明",
+      "“有效身份证件”是否包括外国护照未说明"
+    ],
+    "notes": "[阶段:D] [时效:高] [复核:2026-12-04] [依据:全部门票|长隆旅游度假区／长隆官网“全部门票”页票种备注与页末备注] [来源级:S1] [英文:来源已有] [儿童:年龄=见正文;身高=见正文;计算日=入园/乘车当日;陪同=见正文;证件=见正文] [护照:见正文说明] 该免票条款挂在欢乐世界票种下，不能直接套用到野生动物世界；同日游玩多个园区时需分别核对。标准票要求“凭购票时填写的有效身份证件验证”，外国护照能否作为该证件本页未写。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-sights.canton-tower-selfdriving-bus",
+    "title_zh": "广州塔下的自动驾驶文旅巴士：怎么坐、等多久（2026国庆运营数据）",
+    "summary_zh": "广州市政府门户网站2026-10-08转《广州日报》报道：广州塔下的自动驾驶文旅示范线由广州公交集团下属巴士集团自动驾驶分公司运营，线路全长约4公里。国庆假期期间该线累计发班790车次、服务乘客4011人次；因客流集中，线路启动短线运行模式避开拥堵路段，发班机制改为“坐满即走，未满等3分钟”，高峰时段乘客排队等候不超过15分钟，日均发送班次比平时增长约130%。报道称广州巴士集团共有L4自动驾驶巴士150辆、累计开通自动驾驶线路32条。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州塔",
+      "name_en": "Canton Tower",
+      "address": "广州市海珠区阅江西路222号"
+    },
+    "audience": [
+      "在广州塔周边安排半日行程的家庭",
+      "想用短途观光车代替步行的游客"
+    ],
+    "themes": [
+      "attraction",
+      "transport",
+      "family"
+    ],
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站（来源：广州日报）·游广州塔，坐自动驾驶巴士！",
+        "url": "https://www.gz.gov.cn/zwfw/zxfw/jtfw/content/post_11030318.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-08",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "票价、购票方式、乘车点具体位置未在报道中给出",
+      "是否需预约、儿童是否占座或免票未说明",
+      "平日班次与首末班时间未说明",
+      "报道数据为2026年国庆假期，平日运力不同"
+    ],
+    "notes": "[阶段:D] [时效:高] [复核:2026-12-04] [依据:游广州塔，坐自动驾驶巴士！／广州市政府门户网站“交通服务”自动驾驶巴士稿正文] [来源级:S2] [英文:来源已有] 报道主体是国庆期间的运营成效，4公里线路与“坐满即走、未满等3分钟”的调度规则可作参考；票价、站点、儿童规则均缺依据，记为未知，不据运营数据推算班次。",
+    "conflicts": [],
+    "related_entries": []
+  }
+]

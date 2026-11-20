@@ -1,0 +1,265 @@
+[
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-t3.t3-metro-shuttle-route",
+    "title_zh": "去白云机场T3没有直达地铁：高增站换穿梭巴怎么走",
+    "summary_zh": "广州市政府英文站2026-05-12稿写明：白云机场T3没有直达地铁，机场建议轨道出行——乘地铁3号线或9号线到高增站，从B出口出站，换乘机场专用穿梭巴士前往T3交通中心，全程约15分钟。穿梭巴已加密，高峰时段约5分钟一班；高增站开往T3的服务时间为06:15至23:15，T3开往高增站为06:35至22:40。稿件同时说明T3已于2026年5月7日起承接原T1的11家国内航空公司。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州白云国际机场T3航站楼",
+      "name_en": "Baiyun Airport Terminal 3",
+      "address": null
+    },
+    "audience": [
+      "从市区坐地铁去T3乘机的旅客",
+      "带儿童与大件行李、需要预留换乘时间的家庭"
+    ],
+    "themes": [
+      "transport",
+      "arrival"
+    ],
+    "sources": [
+      {
+        "name": "Guangzhou International（广州市政府英文站）·A temporary goodbye to T1: Baiyun Airport completes airlines' shift to T3 and issues travel guide",
+        "url": "https://www.gz.gov.cn/guangzhouinternational/visitors/travellinginGZ/content/post_10808184.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2026-05-12",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "穿梭巴是否免费、是否需凭登机牌乘坐未说明",
+      "高增站B出口到穿梭巴站的无障碍电梯与推车通行条件未说明",
+      "非高峰时段的班次间隔未说明",
+      "首末班之外（23:15后、06:35前）如何到T3未说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:Guangzhou International／广州国际门户网站“Travelling in GZ”栏目正文] [来源级:S1] [英文:来源已有] 该稿是2026年5月T1关闭时的过渡说明，班次时间可能随运营调整；出发前应按航司与机场当日信息核对。地铁3号线与9号线均可到高增，但换乘路径与是否同站未在文中展开。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-t3.t1-closed-and-airport-south-station",
+    "title_zh": "T1航站楼与地铁机场南站现在还能用吗",
+    "summary_zh": "广州市政府英文站2026-05-12稿明确：白云机场T1航站楼在服务近22年后已停止运营，11家国内航空公司自5月7日起从T1转至T3；与T1连接的地铁“机场南站”（Metro Airport South Station）和城际铁路“白云机场南站”通道同步暂停使用。T3运行正常，值机与自助行李托运设备增加。这与南航官网T2问答中“T1（10号门）与T2（42号门）间有免费穿梭巴士、两楼地铁站间可免费乘地铁”的表述不一致。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州白云国际机场T1航站楼",
+      "name_en": "Baiyun Airport Terminal 1",
+      "address": null
+    },
+    "audience": [
+      "按旧攻略规划机场交通的旅客",
+      "需要判断该去T2还是T3的接送机家庭"
+    ],
+    "themes": [
+      "transport",
+      "arrival"
+    ],
+    "sources": [
+      {
+        "name": "Guangzhou International（广州市政府英文站）·A temporary goodbye to T1",
+        "url": "https://www.gz.gov.cn/guangzhouinternational/visitors/travellinginGZ/content/post_10808184.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2026-05-12",
+        "valid_until": null
+      },
+      {
+        "name": "中国南方航空官网·常见问题·广州白云国际机场T2航站楼（第6问 T1、T2接驳）",
+        "url": "https://www.csair.com/cn/tourguide/faq/airport/free-zhongzhuan.shtml",
+        "type": "official_transport",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "T1改造完成后是否恢复、何时恢复未说明",
+      "T2与T3之间旅客接驳方式（穿梭巴/城际/地铁）未在该稿列出",
+      "航司在T2与T3的具体分布未完整列出",
+      "机场南站停用后，原经该站进出T2的路径如何替代未说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:Guangzhou International／广州国际门户网站“Travelling in GZ”栏目正文；广州白云国际机场T2航站楼_机场服务_南航常见问题／南航官网常见问题“广州白云国际机场T2航站楼”] [来源级:S1] [英文:来源已有] 按发布时间后者（2026-05-12）覆盖前者：南航T2问答未标日期，其T1接驳段已不适用。本批保留两页原文，冲突不裁决，但行前应以“T1已停用、机场南站暂停”为当前状态理解，并向航司确认航站楼。",
+    "conflicts": [
+      "南航T2问答称T1与T2之间有免费穿梭巴士（T2 42号门—T1 10号门），且两楼地铁站间可免费乘坐；广州市政府英文站2026-05-12稿称T1已停止运营，与T1连接的地铁机场南站和城际白云机场南站通道暂停使用。"
+    ],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-t3.t3-checkin-deadline",
+    "title_zh": "T3国内航班提前多久停止值机、登机口几点关",
+    "summary_zh": "广州市政府英文站2026-05-12稿写明：T3国内航班值机在起飞前40分钟截止，登机口在起飞前15分钟关闭；建议旅客出发前确认航站楼与航司信息，并尽量提前网上值机。值机岛分布为：国际及地区航班主要在G、H、K岛，国内航班集中在C、D、E岛；国航、深航、山航、海航、首都航空、吉祥航空在D岛，东航、上航、春秋在E岛；两舱柜台C5-C8（国航、深航、山航、昆明航空）、K32-K36（东航、上航商务及头等）。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州白云国际机场T3航站楼",
+      "name_en": "Baiyun Airport Terminal 3",
+      "address": null
+    },
+    "audience": [
+      "从T3乘国内航班离穗的旅客",
+      "带孩子、需要预留安检与步行时间的家庭"
+    ],
+    "themes": [
+      "transport",
+      "trip_planning"
+    ],
+    "sources": [
+      {
+        "name": "Guangzhou International（广州市政府英文站）·A temporary goodbye to T1（T3 check-in 段）",
+        "url": "https://www.gz.gov.cn/guangzhouinternational/visitors/travellinginGZ/content/post_10808184.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2026-05-12",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "国际航班的值机截止时间未在该段给出",
+      "安检高峰排队时长与建议到达时间未说明",
+      "婴儿车托运与儿童值机的特殊柜台未说明",
+      "各航司后续是否再次调整航站楼未知"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:Guangzhou International／广州国际门户网站“Travelling in GZ”栏目正文] [来源级:S1] [英文:来源已有] 40分钟截载与15分钟关闸是T3国内航班的报道口径，各航司可能另有更早的内部截止时间；以航司购票通知为准。国际航班值机在4层（见T3国际指引条），本条不含国际截载时间。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-t3.t3-international-arrival-guide",
+    "title_zh": "T3国际到达与出发的机场服务：入境卡自助机、充电宝CCC标识、4层值机",
+    "summary_zh": "广州市政府英文站2026-02-12稿介绍白云机场T3国际出发与到达指引：T3已全面开放国际出发与到达；国际出发在4层办理值机；安检提示随身携带的充电宝须有“CCC”认证标识；入境旅客可用多语种自助终端（multilingual self-service kiosks）快速填写入境卡；入境事务官员在片中说明证件准备要点。该页为视频指引的文字简介，未给出具体通道编号与办理时限。签证、免签与入境资格类内容不在本条范围，只按主管部门官方渠道另条记录。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州白云国际机场T3航站楼",
+      "name_en": "Baiyun Airport Terminal 3",
+      "address": null
+    },
+    "audience": [
+      "从T3入境的首次来华旅客",
+      "携带充电宝、需要提前整理随身行李的家庭"
+    ],
+    "themes": [
+      "arrival"
+    ],
+    "sources": [
+      {
+        "name": "Guangzhou International（广州市政府英文站）·Guangzhou Baiyun Airport T3 international departure & arrival guide",
+        "url": "https://www.gz.gov.cn/guangzhouinternational/visitors/travellinginGZ/content/post_10689517.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2026-02-12",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "自助入境卡终端的具体位置与支持语言清单未说明",
+      "充电宝CCC要求的具体容量与数量限制未说明",
+      "入境排队时长与高峰时段未说明",
+      "儿童是否需单独填写入境卡未说明"
+    ],
+    "notes": "[阶段:B] [时效:高] [复核:2026-12-04] [依据:Guangzhou International／广州国际门户网站“Travelling in GZ”栏目正文] [来源级:S1] [英文:来源已有] 本条只写机场服务（值机楼层、自助入境卡终端、充电宝CCC标识），不含签证、免签、过境免签的资格或申请条件——该类内容只通过国家移民管理局等主管部门官方渠道查询。CCC标识要求出自该页对安检环节的描述，未展开容量限制。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-t3.t3-ride-hailing-pickup",
+    "title_zh": "在T3叫网约车去哪里上车",
+    "summary_zh": "广州市政府英文站2026-05-12稿写明：白云机场新启用P13停车场网约车等候区，距航站楼约2公里，提供约1100个车位，用于分流司机等待、减少航站楼周边拥堵。同稿另写：过渡期内，此前将车停在T1、却从T2或T3到达的旅客，可使用24小时免费摆渡车跨航站楼取车。稿件建议旅客出发前确认航站楼与航司信息。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州白云国际机场T3航站楼",
+      "name_en": "Baiyun Airport Terminal 3",
+      "address": null
+    },
+    "audience": [
+      "用网约车接送机的家庭",
+      "把车停在机场、需要跨楼取车的旅客"
+    ],
+    "themes": [
+      "transport",
+      "arrival"
+    ],
+    "sources": [
+      {
+        "name": "Guangzhou International（广州市政府英文站）·A temporary goodbye to T1（Ride-hailing and parking 段）",
+        "url": "https://www.gz.gov.cn/guangzhouinternational/visitors/travellinginGZ/content/post_10808184.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2026-05-12",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "从T3到达厅到P13的步行/摆渡方式与耗时未说明",
+      "P13是否对所有网约车平台开放未说明",
+      "出租车（巡游车）在T3的上客点未在该稿说明",
+      "24小时免费摆渡车的乘车点与班次未说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:Guangzhou International／广州国际门户网站“Travelling in GZ”栏目正文] [来源级:S1] [英文:来源已有] P13距航站楼约2公里，带儿童与行李时应预留接驳时间；本条不含出租车信息，T3出租车上客点需另查机场或交通部门说明。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-t3.guangzhou-multilingual-hotline",
+    "title_zh": "不会中文时打哪个官方多语种热线（含报警急救号码）",
+    "summary_zh": "广州市政府英文站“Useful Numbers”页列出：报警110、火警119、急救120，以及“Guangzhou Multilingual Public Service Hotline（广州多语种公共服务热线）”960169。该页更新日期标为2020-07-24，来源标注为eguangzhou.gov.cn。页面未说明960169的服务语言清单、服务时段与可受理事项范围，也未说明是否可用境外手机拨打。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": null,
+    "audience": [
+      "不会中文、需要电话求助的外国游客",
+      "遇到走失、遗失或医疗问题时需要转接的家庭"
+    ],
+    "themes": [
+      "emergency",
+      "accessibility"
+    ],
+    "sources": [
+      {
+        "name": "Guangzhou International（广州市政府英文站）·Useful Numbers",
+        "url": "https://www.gz.gov.cn/guangzhouinternational/home/quicklinks/content/post_6446644.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2020-07-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "960169 的服务语言、时段与受理范围未说明",
+      "境外手机能否拨通、是否收费未说明",
+      "110/119/120 是否有英语接听未说明",
+      "页面更新于2020年，号码是否仍有效需复核"
+    ],
+    "notes": "[阶段:F] [时效:低] [复核:2027-02-18] [依据:Guangzhou International／广州国际门户网站“Quick Links”栏目正文] [来源级:S1] 历史信息，可能已失效：页面更新日期为2020-07-24，本批只记号码本身与页面归属，不推断英语服务水平。紧急情况下先拨110/119/120，语言协助另议。",
+    "conflicts": [],
+    "related_entries": []
+  }
+]

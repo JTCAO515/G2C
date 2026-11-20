@@ -1,0 +1,129 @@
+[
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-weather.chimelong-rain-typhoon-policy",
+    "title_zh": "下雨或台风时去长隆：什么级别还开门、什么级别全停",
+    "summary_zh": "长隆官网“暴雨台风预案”页按预警级别列出安排：暴雨黄色、橙色、红色三种情况下，乐园仍然对外开放，但部分户外游乐设施和露天演艺节目暂停。台风白色、蓝色、黄色、橙色四种情况下，乐园仍然对外开放，同样暂停部分户外设施与露天演艺；台风红色情况下，乐园暂停营业，所有园区及演艺暂停营业。该页只列开闭与设施停运，未说明停运后是否退票或改期。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "长隆旅游度假区（广州）",
+      "name_en": "Chimelong Tourist Resort (Guangzhou)",
+      "address": "广州市番禺区迎宾路"
+    },
+    "audience": [
+      "雨季或台风季到访、行程可能临时调整的家庭",
+      "已购长隆门票、遇到预警信号的游客"
+    ],
+    "themes": [
+      "seasonal_holiday",
+      "attraction",
+      "family"
+    ],
+    "sources": [
+      {
+        "name": "长隆旅游度假区官网·暴雨台风预案",
+        "url": "https://www.chimelong.com/gz/weather/",
+        "type": "official_venue",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "红色台风停业时已购门票如何退改未说明",
+      "园区是否会在非红色预警下提前闭园未说明",
+      "各乐园（野生动物世界/欢乐世界/水上乐园）是否规则一致未在该页区分",
+      "页面未标更新日期"
+    ],
+    "notes": "[阶段:D] [时效:高] [复核:2026-12-04] [依据:暴雨台风预案|长隆旅游度假区／长隆官网“暴雨台风预案”页正文] [来源级:S1] [英文:来源已有] 该页与“游园须知”中“因恶劣天气变更、延迟、取消表演或关闭部分展区，不实行门票延期或退票政策”的表述方向一致，但两页都未给出红色台风停业时的退改细则；遇到预警应先查园方公告再决定是否前往。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-weather.official-weather-channels",
+    "title_zh": "在手机上查广州官方天气和预警看哪个网站",
+    "summary_zh": "广州市气象台网站（tqyb.com.cn）首页写明：本网站预报预警信息由广州市气象台发布；站内提供天气预警、天气预报（短时预报）、天气实况、台风路径图、卫星云图、雷达拼图、按区分街镇的精细化预报等栏目，并有 English 版、街镇服务网与 PDA 版入口。首页同时给出各区（越秀、海珠、荔湾、天河、黄埔、白云、花都、番禺、南沙、从化、增城）的天气入口，以及“点击查看分镇街预警”。该页为动态页面，具体数值需打开时读取。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": null,
+    "audience": [
+      "出发前或行程中需要判断是否改期的游客",
+      "带儿童、需要按区分天气安排户外活动的家庭"
+    ],
+    "themes": [
+      "seasonal_holiday",
+      "trip_planning"
+    ],
+    "sources": [
+      {
+        "name": "广州市气象台·广州天气（tqyb.com.cn）首页",
+        "url": "http://www.tqyb.com.cn/",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "英文版页面内容范围未逐页核对",
+      "是否有 App 或微信公众号入口未在该页确认",
+      "预警信号与景区/场馆停运之间的对应关系不在气象台页面",
+      "页面为动态站，抓取时数值为空，不能作为具体天气记录"
+    ],
+    "notes": "[阶段:D] [时效:高] [复核:2026-12-04] [依据:广州天气-广州市气象台,tqyb／广州市气象台官网首页正文] [来源级:S1] 只记录“这是广州市气象台官方发布渠道”与栏目结构，不抄录任何具体温度、雨量或预警级别（动态页面抓取时为空）。台风路径与雷达图可作行程判断参考，但是否闭园由各场馆/乐园自己公告。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-weather.pearl-river-cruise-carnival",
+    "title_zh": "珠江游嘉年华（2026-11-16至12-15）期间的家庭优惠与公益航班",
+    "summary_zh": "广州市港务局2026-11-16发布：2026年度国际都市游船嘉年华由广州市港务局主办、广州市城市建设投资集团有限公司承办，11月16日开幕，持续至12月15日；期间推出特色主题航线、船上文化演艺、滨水市集与游船互动体验。公益惠民方面，活动期间开设专属公益航班，为现役军人、退役军人、环卫工人、外卖配送员、快递员等服务群体提供公益乘船体验；并联动游船企业推出“88元3人同行”、茶居套餐等优惠。同文称广州珠江游连续三年游客接待量突破400万人次，2026年上半年接待216万人次、同比增长11.4%。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "珠江游（广州珠江水域游船）",
+      "name_en": "Pearl River Cruise",
+      "address": null
+    },
+    "audience": [
+      "三口之家寻找傍晚水上活动的游客",
+      "11月中旬至12月中旬在广州的旅客"
+    ],
+    "themes": [
+      "attraction",
+      "seasonal_holiday",
+      "family"
+    ],
+    "sources": [
+      {
+        "name": "广州市港务局·2026年度国际都市游船嘉年华在广州启幕",
+        "url": "https://gwj.gz.gov.cn/ghyw/tpxw/content/post_11105658.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-11-16",
+        "valid_until": "2026-12-15"
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "“88元3人同行”适用码头、船次、时段与是否含儿童未说明",
+      "公益航班的申请方式与资格核验未说明",
+      "各码头的购票渠道、儿童票与身高/年龄条件未说明",
+      "活动期间航班时刻与是否需预约未说明"
+    ],
+    "notes": "[阶段:D] [时效:高] [复核:2026-12-04] [依据:2026年度国际都市游船嘉年华在广州启幕 珠江水上文旅盛会点亮城市活力／广州市港务局2026年度游船嘉年华稿正文] [来源级:S1] [英文:来源已有] 活动有效期按正文“11月16日持续至12月15日”填在 valid_until；优惠细节（适用码头、人数组合中的儿童如何计算）均无依据，记为未知。珠江游由多家游船企业运营，本条不指向单一码头。",
+    "conflicts": [],
+    "related_entries": []
+  }
+]
