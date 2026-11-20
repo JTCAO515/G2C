@@ -65,6 +65,12 @@ def test_real_body_is_required(case, body, valid):
      '**Day 3:** Do not hike along the Great Wall.', False),
     ('en.plan', 'Day 1: Visit the Forbidden City.\nDay 2: Walk through Jingshan.\n'
      'Day 3\n- **Morning:** Great Wall.', False),
+    ('en.plan', 'Day 1: Visit the Forbidden City.\nDay 2: Walk through Jingshan.\n'
+     'Day 3: Hike along the Great Wall at Mutianyu — canceled.', False),
+    ('en.plan', 'Day 1: Visit the Forbidden City.\nDay 2: Walk through Jingshan.\n'
+     'Day 3\n- **Morning:** Visit the Temple of Heaven — cancelled.', False),
+    ('en.plan', 'Day 1: Visit the Forbidden City.\nDay 2: Walk through Jingshan.\n'
+     'Day 3: Hike along the Great Wall at Mutianyu — called off.', False),
     ('zh.plan', '第一天：参观故宫。\n第二天：游览颐和园。\n第三天\n- **上午：**不要参观天坛。', False),
 ])
 def test_plan_accepts_activities_with_formatted_schedule_labels(case, body, valid):

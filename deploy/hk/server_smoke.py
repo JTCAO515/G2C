@@ -68,6 +68,7 @@ NO_DAY_ACTIVITY = re.compile(
     r'没有(?:任何)?安排|并未安排|不安排|未安排|取消|暂无|不建议|不要|不去|不参观|不游览|'
     r'无法|不能|不可|不可能|未能|没法|禁止|闭馆|'
     r"\b(?:no (?:activity|activities|plans?)|nothing (?:is )?planned|not (?:planned|scheduled|possible)|"
+    r"cancel(?:l?ed|l?ation)|called off|"
     r"(?:do|should|can|will) not|(?:don|shouldn|won|can)[’']t|unable|impossible|avoid|skip)\b", re.I
 )
 DAY_QUESTION = re.compile(
