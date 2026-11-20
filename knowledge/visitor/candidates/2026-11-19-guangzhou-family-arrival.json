@@ -1,0 +1,354 @@
+[
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-arrival.t2-arrival-exits",
+    "title_zh": "白云机场T2到达后从哪里出站坐出租车、地铁和大巴",
+    "summary_zh": "南航官网“广州白云国际机场T2航站楼”问答写明：国内到达厅在T2主楼一层西南侧，出口靠近50、51号门；国际到达厅在一层东南侧，出口靠近52、53号门。到达旅客可在T2一层到达大厅外坐出租车，也可进入综合交通中心（GTC）换乘地铁、大巴、出租车或私家车。出租车方面，50号门为国内到达旅客上客点、53号门为国际到达旅客上客点。地铁“机场北站”在GTC大厅西侧负一层，交通中心与航站楼内各设一个出入口；GTC一层东西两侧各设大巴站点，西侧为市区及长途大巴，东侧为旅游大巴候车上客区。自驾接机车辆须停P6、P7、P8停车场候客。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州白云国际机场T2航站楼",
+      "name_en": "Baiyun Airport Terminal 2",
+      "address": null
+    },
+    "audience": [
+      "从T2入境的国际到达旅客",
+      "带儿童与托运行李、需要先确认出口的家庭游客"
+    ],
+    "themes": [
+      "arrival",
+      "transport"
+    ],
+    "sources": [
+      {
+        "name": "中国南方航空官网·常见问题·广州白云国际机场T2航站楼（第1、3问）",
+        "url": "https://www.csair.com/cn/tourguide/faq/airport/free-zhongzhuan.shtml",
+        "type": "official_transport",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "页面未标注更新日期，T1关闭改造后门牌与站点是否调整未知",
+      "国际到达取行李后到50/53号门的步行距离与无障碍电梯位置未说明",
+      "出租车排队时长、是否可刷卡支付未说明"
+    ],
+    "notes": "[阶段:B] [时效:高] [复核:2026-12-04] [依据:广州白云国际机场T2航站楼_机场服务_南航常见问题／南航官网常见问题“广州白云国际机场T2航站楼”] [来源级:S1] [英文:来源已有] 来源为航空公司官网的机场服务问答，属运营方说明，不是机场管理方公告。国际到达出口靠52/53号门、出租车上客点为53号门，国内到达为50/51号门、上客点50号门；两者不要混用。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-arrival.t2-wifi-passport",
+    "title_zh": "没有中国大陆手机号时在白云机场T2怎么拿到免费Wi-Fi",
+    "summary_zh": "南航官网T2问答第15条写明：T2无线热点1300个、出口带宽1G，提供“每5小时间隔认证”的免费服务；旅客可通过手机号或微信方式连接机场Wi-Fi。此外，航站楼旅客服务系统PISS终端支持扫描护照、身份证以及登机牌获取Wi-Fi登录密码。对没有中国大陆手机号、也无法用微信认证的外国旅客，该条提供了一条不依赖短信的取密码路径：找PISS终端扫护照或登机牌。页面未说明终端在哪些位置、是否需要排队或人工协助。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州白云国际机场T2航站楼",
+      "name_en": "Baiyun Airport Terminal 2",
+      "address": null
+    },
+    "audience": [
+      "无中国大陆手机号的外国旅客",
+      "手机无法接收国际短信、需要先联网联系接机人的家庭"
+    ],
+    "themes": [
+      "internet",
+      "arrival"
+    ],
+    "sources": [
+      {
+        "name": "中国南方航空官网·常见问题·广州白云国际机场T2航站楼（第15问）",
+        "url": "https://www.csair.com/cn/tourguide/faq/airport/free-zhongzhuan.shtml",
+        "type": "official_transport",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "PISS自助终端的具体楼层与位置未说明",
+      "护照扫描是否对所有国籍护照均可用未说明",
+      "每5小时认证到期后如何续期、是否需要重新扫码未说明",
+      "Wi-Fi名称（SSID）未在该页给出"
+    ],
+    "notes": "[阶段:E] [时效:低] [复核:2027-02-18] [依据:广州白云国际机场T2航站楼_机场服务_南航常见问题／南航官网常见问题“广州白云国际机场T2航站楼”] [来源级:S1] [英文:来源已有] 只采用“手机号/微信认证”与“PISS终端扫护照、身份证、登机牌取密码”两条；不推断短信验证一定可用，也不承诺现场有工作人员协助。若终端不可用，可改走人工问询柜台，但本页未给出柜台位置，记为未知。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-arrival.t2-left-luggage",
+    "title_zh": "白云机场T2行李寄存点在哪、几点关门",
+    "summary_zh": "南航官网T2问答第18条列出T2共3个行李寄存点：出发厅三层“云集市”西南侧（运营时间05:30-23:30）；出发厅三层“云集市”东南侧（00:00-24:00）；到达厅一层东侧（05:30-23:30）。第25条另列T2共有9间更衣室，其中主楼一层到达区5间（国内到达行李提取厅2间、国际到达行李提取厅2间、一层中转通道1间）。带儿童长途飞行后需要换衣、寄存推车或大件行李时，可按上述楼层找点；页面未给寄存价格、尺寸限制和最长寄存天数。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州白云国际机场T2航站楼",
+      "name_en": "Baiyun Airport Terminal 2",
+      "address": null
+    },
+    "audience": [
+      "红眼航班到达、当晚不直接进市区的家庭",
+      "需要临时寄存大件行李或婴儿车的旅客"
+    ],
+    "themes": [
+      "arrival",
+      "accessibility"
+    ],
+    "sources": [
+      {
+        "name": "中国南方航空官网·常见问题·广州白云国际机场T2航站楼（第18、25问）",
+        "url": "https://www.csair.com/cn/tourguide/faq/airport/free-zhongzhuan.shtml",
+        "type": "official_transport",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "寄存收费、尺寸与重量限制、最长寄存期限未说明",
+      "是否支持境外银行卡或现金支付未说明",
+      "婴儿车能否寄存、是否按大件计费未说明",
+      "页面未标更新日期，营业时间可能已调整"
+    ],
+    "notes": "[阶段:B] [时效:高] [复核:2026-12-04] [依据:广州白云国际机场T2航站楼_机场服务_南航常见问题／南航官网常见问题“广州白云国际机场T2航站楼”] [来源级:S1] [英文:来源已有] 只有一个到达厅寄存点且23:30关门，深夜到达时若需寄存只能走出发厅三层00:00-24:00的点位；该判断由两个时间直接比较得出，页面未明说。更衣室只记数量与楼层，未记是否含婴儿护理台。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-arrival.t2-lost-and-found",
+    "title_zh": "在白云机场T2丢了东西去哪里找（失物招领与行李查询）",
+    "summary_zh": "南航官网T2问答第20条写明：失物招领柜台位于三层出发厅集中商业区与H值机区交汇位置，运营时间00:00-24:00。第19条给出行李查询位置：机场国际行李查询在国际到达行李提取厅内50号转盘旁；南航国内行李查询在国内到达行李提取厅内34号转盘旁，电话020-86122921；南航国际行李查询同样在国际到达行李提取厅50号转盘旁，电话020-86122921。第21条另写T2共有6个急救站点，可提供日常医疗和急救服务。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州白云国际机场T2航站楼",
+      "name_en": "Baiyun Airport Terminal 2",
+      "address": null
+    },
+    "audience": [
+      "行李未同机到达或物品遗落在航站楼的旅客"
+    ],
+    "themes": [
+      "emergency",
+      "arrival"
+    ],
+    "sources": [
+      {
+        "name": "中国南方航空官网·常见问题·广州白云国际机场T2航站楼（第19、20、21问）",
+        "url": "https://www.csair.com/cn/tourguide/faq/airport/free-zhongzhuan.shtml",
+        "type": "official_transport",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "失物招领是否接受电话或线上报失、英语服务时间未说明",
+      "非南航承运航班的行李查询柜台未说明",
+      "6个急救站点的具体位置未逐点列出",
+      "报失所需材料（行李牌、登机牌、护照）未说明"
+    ],
+    "notes": "[阶段:F] [时效:低] [复核:2027-02-18] [依据:广州白云国际机场T2航站楼_机场服务_南航常见问题／南航官网常见问题“广州白云国际机场T2航站楼”] [来源级:S1] [英文:来源已有] 失物招领（航站楼内拾获物品）与行李查询（承运人行李延误/破损）是两套窗口，页面把两者分开列，不要混为同一柜台。电话为国内号码，境外手机能否拨通未说明。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-arrival.t2-currency-exchange",
+    "title_zh": "白云机场T2到达层哪里可以换人民币",
+    "summary_zh": "南航官网T2问答第22条列出T2货币兑换点：联合货币兑换在三层出发厅国际安检大厅内、三层国际出发联检大厅后商业集中区；方汇货币兑换在三层出发厅国际安检大厅内、三层出发厅国际值机区后方、一层国际到达出口外；广发银行在三层出发厅中庭“天空舞台”后方、P值机区尾。对国际到达旅客，可直接使用一层国际到达出口外的方汇兑换点，不必上三层。页面未给营业时间、汇率、手续费、可兑换币种，也未说明是否接受境外银行卡。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州白云国际机场T2航站楼",
+      "name_en": "Baiyun Airport Terminal 2",
+      "address": null
+    },
+    "audience": [
+      "抵达后需要现金支付交通或小额消费的旅客",
+      "持境外银行卡、暂未开通移动支付的家庭"
+    ],
+    "themes": [
+      "payment",
+      "arrival"
+    ],
+    "sources": [
+      {
+        "name": "中国南方航空官网·常见问题·广州白云国际机场T2航站楼（第22问）",
+        "url": "https://www.csair.com/cn/tourguide/faq/airport/free-zhongzhuan.shtml",
+        "type": "official_transport",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "三家兑换点的营业时间未说明",
+      "汇率、手续费、单笔限额未说明",
+      "可兑换币种与是否收境外银行卡未说明",
+      "ATM位置与境外卡取现条件未在本页说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:广州白云国际机场T2航站楼_机场服务_南航常见问题／南航官网常见问题“广州白云国际机场T2航站楼”] [来源级:S1] [英文:来源已有] 只记位置，不记汇率与费用（易变且该页未给）。境外银行卡能否在兑换点或ATM使用，本页无依据，未填写。机场内ATM位置另需官方来源，记为缺口。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-arrival.t3-night-bus-metro-link",
+    "title_zh": "【历史信息】深夜落地白云机场T3、地铁已收班时的接驳路径（2026年国庆临时安排）",
+    "summary_zh": "广州空港经济区管理委员会2026-10-01公告写明：T3航站楼接驳以“空港2路支线”为主力，往返高增地铁站与T3；广州地铁集团在高增地铁口至公交新站场间加建风雨连廊，出地铁即可进站台，现场有专职人员和志愿者为携带大件行李的老年旅客、初次到访广州的游客提供导乘与帮扶。针对假期夜间航班密集到达，空港2路支线配合地铁3号线运营同步延迟1小时收班，并列出深夜增开班次：高增站23:30、23:45、0:00、0:15共4班；T3站22:42至23:45间共10班。该文同时提到6月6日起的接驳公交免费措施。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州白云国际机场T3航站楼",
+      "name_en": "Baiyun Airport Terminal 3",
+      "address": null
+    },
+    "audience": [
+      "深夜抵达T3、地铁接近收班的旅客",
+      "带大件行李或推车、需要有人指路的家庭"
+    ],
+    "themes": [
+      "transport",
+      "arrival"
+    ],
+    "sources": [
+      {
+        "name": "广州空港经济区管理委员会·高增站场焕新升级，空港2支线全力护航T3国庆黄金周",
+        "url": "http://kgw.gz.gov.cn/gkmlpt/content/11/11029/post_11029825.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-10-01",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "原公告适用期仅为2026年10月1日及10月5-7日，平日与2026年11月是否沿用未知（不能当作现行班次）",
+      "空港2路支线的常规首末班、票价、是否仍免费未在本页给出",
+      "T3东客运站到航站楼步行时间未说明",
+      "深夜无公交时的出租车、网约车上客点未在本页说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:高增站场焕新升级，空港2支线全力护航T3国庆黄金周／广州空港委“高增站场焕新升级…国庆黄金周”稿正文] [来源级:S2] [英文:来源已有] 【历史信息，已过适用期】原公告发布于2026-10-01，临时延时与深夜增开班次只对应2026年10月1日及10月5—7日，不能当作现行时刻表。可复用的是“T3↔高增地铁站的空港2路支线+风雨连廊+现场导乘”这条接驳关系本身；出发前须向机场或公交运营方核当日班次。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-arrival.taxi-overcharge-refund",
+    "title_zh": "在广州遇到出租车议价、绕道、多收费怎么投诉和要回钱",
+    "summary_zh": "广州市政府门户网站2026-11-12转《广州日报》报道：广州推行巡游出租车“违约先行退费”机制。乘客遇司机议价、绕道、多收费等违章行为，可扫描车内“羊城打车明白卡”上的出租车投诉二维码，或拨打车内张贴的企业客服电话、广州12345政务服务便民热线反映；原则上1日内完成先行赔付（此前流程至少7个工作日）。报道称市区58家巡游车企业全部响应，签订服务承诺书并参与先行退费的车辆超过1.1万辆，并举例一名外籍乘客遇提前打表计费后获立案处罚与退费。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州市巡游出租汽车",
+      "name_en": "Guangzhou metered taxis",
+      "address": null
+    },
+    "audience": [
+      "乘巡游出租车被多收费的旅客",
+      "不会中文、需要可留痕投诉渠道的外国游客"
+    ],
+    "themes": [
+      "transport",
+      "emergency"
+    ],
+    "sources": [
+      {
+        "name": "广州市人民政府门户网站（来源：广州日报）·广州首创巡游出租车“违约先行退费”机制",
+        "url": "https://www.gz.gov.cn/zwfw/zxfw/jtfw/content/post_11098548.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-11-12",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "投诉二维码是否支持英文界面、是否需中国手机号提交未说明",
+      "12345热线英语服务时间未说明",
+      "“1日内先行赔付”的金额上限与到账方式未说明",
+      "网约车是否适用该机制未说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:广州首创巡游出租车“违约先行退费”机制 靶向治理出租车违章行为／广州市政府门户网站“交通服务”出租车退费机制稿正文] [来源级:S2] [英文:来源已有] 政府门户转载党报报道，不是交通运输部门规章原文；机制细节以主管部门公告为准。适用对象按原文限“巡游出租车”，未扩展到网约车。乘车时先留好车牌、时间与路线截图，投诉时用得上（本条未在来源中写作要求，属操作提示）。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-19.guangzhou-family-arrival.t1-t2-t3-shuttle-conflict",
+    "title_zh": "T1、T2、T3之间怎么接驳：两份官方说明口径不一致",
+    "summary_zh": "南航官网T2问答第6条写：白云机场提供两种免费接驳，一是免费穿梭巴士，高峰（06:00-08:00、15:00-18:00）5分钟一班、非高峰（08:00-15:00、18:00-23:00）10分钟一班、23:00-次日06:00为15分钟一班，路线为T2（42号门）—T1（10号门）—T2（42号门）；二是运营时间内机场南站（T1）与机场北站（T2）之间可免费乘地铁。而广州市政府门户网站2026-05-04转报道称，2026-05-07凌晨2时起T1航站楼关闭改造；2026-02-13春运指引另称机场配套T1、T2、T3免费穿梭巴士。三处说法并存，本批不裁决。",
+    "cities": [
+      "guangzhou"
+    ],
+    "place": {
+      "name_zh": "广州白云国际机场",
+      "name_en": "Baiyun Airport",
+      "address": null
+    },
+    "audience": [
+      "需要跨航站楼换乘的旅客",
+      "走错航站楼、需要临时改道的家庭"
+    ],
+    "themes": [
+      "transport",
+      "arrival"
+    ],
+    "sources": [
+      {
+        "name": "中国南方航空官网·常见问题·广州白云国际机场T2航站楼（第6问）",
+        "url": "https://www.csair.com/cn/tourguide/faq/airport/free-zhongzhuan.shtml",
+        "type": "official_transport",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      },
+      {
+        "name": "广州市人民政府门户网站（来源：广州日报新花城）·T1关闭改造交通指引",
+        "url": "https://www.gz.gov.cn/zwfw/zxfw/jtfw/content/post_10798042.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-05-04",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "T1是否已恢复开放、机场南站是否已恢复通行未知",
+      "T3与T2之间的旅客接驳方式与站点未在可用页面确认",
+      "穿梭巴士是否仍免费、路线是否改经T3未知",
+      "南航页面未标更新日期"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:广州白云国际机场T2航站楼_机场服务_南航常见问题／南航官网常见问题“广州白云国际机场T2航站楼”；5月7日起白云机场T1航站楼航司转场T3，交通接驳攻略→／广州市政府门户网站“交通服务”T1转场T3接驳攻略正文] [来源级:S1] [英文:来源已有] 南航问答未标日期，其T1相关段落可能与2026-05-04政府稿冲突；两页都保留原文，不做合并。行前应以机场当日公告为准。",
+    "conflicts": [
+      "南航T2问答称T1（10号门）与T2（42号门）间有免费穿梭巴士、两楼地铁站间可免费乘坐；广州市政府门户2026-05-04稿称2026-05-07凌晨2时起T1航站楼关闭改造。"
+    ],
+    "related_entries": []
+  }
+]

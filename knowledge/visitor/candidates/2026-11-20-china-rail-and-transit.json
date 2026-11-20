@@ -1,0 +1,555 @@
+[
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.china-rail.child-ticket-rules",
+    "title_zh": "外国游客带孩子坐中国火车：儿童票按身高还是按年龄",
+    "summary_zh": "中国铁路12306英文站“常见问题”写明两套并行的儿童规则：一是身高口径——1名成人可免费携带1名身高1.2米以下儿童，超过1名时其余儿童须购儿童票；身高1.2至1.5米购儿童票，超过1.5米购全价座票。二是自2023年1月1日起的年龄口径——随成人乘车的儿童，6岁以上14岁以下购儿童优惠票，14岁以上购全价票；每名持票成人可携带1名6岁以下持免费儿童票、不单独占座的儿童，超过1名时其余须购儿童优惠票。儿童票席别须与同行成人一致，到站不得远于成人车票到站。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "带儿童乘高铁/普速列车的家庭",
+      "首次来华、需要判断孩子是否占座与购票的家长"
+    ],
+    "themes": [
+      "rail",
+      "family"
+    ],
+    "sources": [
+      {
+        "name": "中国铁路12306英文站·常见问题（How to buy child tickets / Is there any discount for child tickets）",
+        "url": "https://www.12306.cn/en/faq.html",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "身高与年龄两套口径同时适用时以哪套优先，FAQ 未明确",
+      "免票儿童是否需要单独登记证件未说明",
+      "儿童卧铺占铺与免费儿童同行的具体收费未说明",
+      "外国护照儿童如何在线添加为乘车人未逐条说明"
+    ],
+    "notes": "[阶段:A] [时效:中] [复核:2026-12-20] [依据:12306 CHINA RAILWAY／12306英文站FAQ“常见问题”] [来源级:S1] [儿童:年龄=见正文;身高=见正文;计算日=入园/乘车当日;陪同=见正文;证件=见正文] 同一页同时保留身高口径（1.2/1.5米）与2023年起年龄口径（6/14岁），两者并存，本批不裁决；购票时以12306系统提示与车站公告为准。免费儿童不单独占座。",
+    "conflicts": [
+      "12306 FAQ 第2问按身高1.2米/1.5米划分免费与儿童票；同页另写自2023年1月1日起按6岁/14岁划分儿童优惠票与全价票。两套口径并存。"
+    ],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.china-rail.passport-ticket-channels",
+    "title_zh": "用外国护照买火车票：能在线买吗、怎么通过实名核验",
+    "summary_zh": "中国文化和旅游部官方旅游网“Public Transit”页写明：外国旅客可用外国人永久居留身份证或护照，通过中国铁路12306英文网站、12306 App 或电话订票热线购票；也可在车站窗口或代售点用护照等证件购票。实名核验：可在12306英文站或App按提示填写姓名、国籍、证件号，由系统自动完成核验；或上传护照资料页照片人工核验；也可持有效护照到车站窗口核验。12306英文站常见问题另写明：该英文网站只接受按规定可用的有效外国护照。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "持外国护照、需要提前买高铁票的游客",
+      "不会中文、希望用英文界面完成购票的家庭"
+    ],
+    "themes": [
+      "rail",
+      "passport_booking"
+    ],
+    "sources": [
+      {
+        "name": "Travel China（中国文化和旅游部官方旅游网站）·Public Transit（Train 段）",
+        "url": "https://www.travelchina.org.cn/en/article/eYesHS7SmCni",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2026-03-25",
+        "valid_until": null
+      },
+      {
+        "name": "中国铁路12306英文站·常见问题（What ID documents are accepted）",
+        "url": "https://www.12306.cn/en/faq.html",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "人工核验需要多长时间、是否影响当日购票未说明",
+      "儿童护照能否单独注册账户未说明",
+      "注册是否需要邮箱或手机号、境外号码是否可用未说明",
+      "英文站是否支持所有车次与席别未说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:China Travel Guide／中国旅游网英文站文章正文（China Travel Guide）；12306 CHINA RAILWAY／12306英文站FAQ“常见问题”] [来源级:S1] [护照:见正文说明] 在线渠道与窗口渠道并存；护照核验是购票前置条件，未完成核验无法在线购票。电话订票热线的具体号码与语言服务未在本条记录（12306 FAQ 另给客服电话 12306）。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.china-rail.12306-service-hours",
+    "title_zh": "12306 英文站什么时候能买票、什么时候能退票",
+    "summary_zh": "中国铁路12306英文站首页与常见问题写明：12306.cn 网站提供信息查询与退票服务24小时；售票与改签服务时间为5:00至次日1:00（周二为5:00至23:30）。常见问题另写明英文站提供购票、改签、退票与变更到站服务。对深夜到达、需要临时改签的旅客，售票窗口的服务时段与该在线时段不同，需以车站公告为准。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "深夜或凌晨需要改签、退票的旅客",
+      "跨时区、需要按北京时间安排购票的游客"
+    ],
+    "themes": [
+      "rail",
+      "trip_planning"
+    ],
+    "sources": [
+      {
+        "name": "中国铁路12306英文站·首页与常见问题（第8问 服务时间）",
+        "url": "https://www.12306.cn/en/faq.html",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "车站窗口的售票时段未在本条记录",
+      "周一凌晨（周日24:00后）是否延续到次日1:00未说明",
+      "节假日是否调整未说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:12306 CHINA RAILWAY／12306英文站FAQ“常见问题”] [来源级:S1] [护照:见正文说明] “5:00至次日1:00”是网站售票/改签时段，不是列车运行时段；退票24小时可提交，但现金票退款仍需到窗口办理（见退票条目）。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.china-rail.refund-fee-tiers",
+    "title_zh": "中国火车票退票手续费怎么算（8天/48小时/24小时三档）",
+    "summary_zh": "12306英文站常见问题第11问写明退票费：距发车8天（含）以上退票不收退票费；距发车48小时以上收票价5%；24小时以上不足48小时收10%；不足24小时收20%。退票费按0.5元向上取整（不足0.25元舍去、0.25至0.75元计0.5元、超过0.75元计1元），最低2元。若在发车前48小时至8天之间办理过改签或变更到站、改签为8天以后的车次，即使提前8天以上退票也收5%。春运高峰时段车次的改签/变更到站后退票，统一按票价20%收。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "行程可能变动、需要估算退票损失的家庭",
+      "赶飞机或航班延误后需退火车票的旅客"
+    ],
+    "themes": [
+      "rail",
+      "trip_planning"
+    ],
+    "sources": [
+      {
+        "name": "中国铁路12306英文站·常见问题（第11问 How is the ticket refund service fee charged）",
+        "url": "https://www.12306.cn/en/faq.html",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "春运高峰时段的具体日期范围未在本条记录",
+      "境外银行卡支付的退款到账时间未说明",
+      "改签后再退票的组合计算示例未给出"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:12306 CHINA RAILWAY／12306英文站FAQ“常见问题”] [来源级:S1] 退票费按距发车时间分档，不是按购票时间；改签会改变后续退票的费用档位，行程不确定时优先改签而非先退再买。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.china-rail.change-and-destination",
+    "title_zh": "火车票改签与变更到站：能改几次、要提前多久",
+    "summary_zh": "12306英文站常见问题写明：改签只能办理一次，可改日期、车次、席别或到站（同城车站除外）；发车48小时以前改签、或24至48小时之间改签为发车当日24时前开行的车次不收费用；24至48小时内改签为原日期之后的车次收较低票价5%，不足24小时改签为原日期之后收15%，发车后改签次日及以后车次收40%。变更到站须在发车前48小时提出，且变更到站后不得再改签；变更到站后如需退票，按退票费规则计算。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "需要临时改变行程或换到站的旅客"
+    ],
+    "themes": [
+      "rail"
+    ],
+    "sources": [
+      {
+        "name": "中国铁路12306英文站·常见问题（Ticket Change Guidelines / How to change your destination）",
+        "url": "https://www.12306.cn/en/faq.html",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "“较低票价”具体指原票与新票中较低者还是差额，FAQ 表述需按原文理解",
+      "团体票、通票的改签限制未说明",
+      "变更到站后能否再退票的时限未说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:12306 CHINA RAILWAY／12306英文站FAQ“常见问题”] [来源级:S1] 改签与变更到站是两种不同业务：改签可改日期/车次/席别，变更到站专指换到站且仅一次。改签后票价更高需补差、更低需按退票费规则扣减后退差。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.china-rail.free-refund-30min",
+    "title_zh": "买错火车票 30 分钟内能免费退吗（2026年春运起政策）",
+    "summary_zh": "12306英文站常见问题第17问写明：已注册的12306用户在官方平台（网站、App 或支付宝小程序）用电子支付或积分购买、且乘车日期自2026年2月2日（春运首日）起的车票，可在购票后30分钟内、且距发车4小时以上时，对同一订单每天享受一次免费退票。该政策不适用于改签票、计次/定期票、预约票、候补票、空铁/水铁联运票、团体票及铁路e卡通；适用车次包括境内列车及始发或终到香港西九龙的跨境列车。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "刚下单发现买错日期或车次的游客",
+      "带儿童、容易选错席别的家庭"
+    ],
+    "themes": [
+      "rail"
+    ],
+    "sources": [
+      {
+        "name": "中国铁路12306英文站·常见问题（第17问 误购免费退）",
+        "url": "https://www.12306.cn/en/faq.html",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "政策是否有结束日期未说明",
+      "未注册用户或窗口购票是否适用未说明",
+      "“每天一次”按账户还是按证件计算未说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:12306 CHINA RAILWAY／12306英文站FAQ“常见问题”] [来源级:S1] [护照:见正文说明] 两个条件同时满足才免费：购票后30分钟内、距发车4小时以上；且仅限官方平台电子支付订单。该政策自2026年春运起，属较新规则，出行前应再核。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.china-rail.boarding-with-passport",
+    "title_zh": "坐火车进出站要带什么：护照原件能过闸吗",
+    "summary_zh": "中国文化和旅游部官方旅游网写明：外国旅客可用购票时使用的有效身份证件原件，通过自动或人工检票闸机进出车站，并配合途中查票；相关规则可查12306英文站/App或拨打12306客服。12306英文站常见问题另写明：纸质行程单（itinerary sheet）与报销凭证均不能当作车票使用；电子客票需保留购票所用有效证件以便进出站与乘车。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "已在线购票、需要进站乘车的旅客",
+      "担心护照能否过自动闸机的家庭"
+    ],
+    "themes": [
+      "rail",
+      "passport_booking"
+    ],
+    "sources": [
+      {
+        "name": "Travel China（中国文化和旅游部官方旅游网站）·Public Transit（Railway station entry/exit 段）",
+        "url": "https://www.travelchina.org.cn/en/article/eYesHS7SmCni",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2026-03-25",
+        "valid_until": null
+      },
+      {
+        "name": "中国铁路12306英文站·常见问题（第10、11问 行程单与报销凭证）",
+        "url": "https://www.12306.cn/en/faq.html",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "哪些车站的自动闸机支持护照直接刷证未说明",
+      "护照无法过闸时的人工通道位置未说明",
+      "同行儿童无证件时如何过闸未说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:China Travel Guide／中国旅游网英文站文章正文（China Travel Guide）；12306 CHINA RAILWAY／12306英文站FAQ“常见问题”] [来源级:S1] [护照:见正文说明] 核心是“购票证件原件”，不是订单截图；行程单/报销凭证不能当票用。是否所有车站自动闸机支持护照，官方页面未逐一说明，实际操作以现场人工通道为备选。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.china-rail.child-without-id",
+    "title_zh": "孩子没有身份证件，怎么在12306上买儿童票",
+    "summary_zh": "12306英文站常见问题第3问写明：在12306.cn购买儿童票时，可把儿童的有效身份证件添加到“我的乘车人”后为其购票；对没有有效身份证件的儿童，可用同行成人的身份证件信息购票（姓名、证件类型、证件号须属同一人）。第6问补充：同一有效证件同一日期同一车次只能买一张票；无身份证件的儿童可在同一订单下使用同行成人身份信息购买儿童票。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "带无证件儿童乘火车的家庭",
+      "持外国护照、孩子证件类型不确定的家长"
+    ],
+    "themes": [
+      "rail",
+      "family"
+    ],
+    "sources": [
+      {
+        "name": "中国铁路12306英文站·常见问题（第3、6问 儿童票与代购）",
+        "url": "https://www.12306.cn/en/faq.html",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "外国护照儿童是否必须填写护照号未说明",
+      "使用成人证件购儿童票时进站如何核验未说明",
+      "一名成人能否为多名无证件儿童购票未说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:12306 CHINA RAILWAY／12306英文站FAQ“常见问题”] [来源级:S1] [儿童:年龄=见正文;身高=见正文;计算日=入园/乘车当日;陪同=见正文;证件=见正文] [护照:见正文说明] “用成人证件买儿童票”是官方给出的兜底路径，但进站核验方式未写明；带儿童出行建议同时携带儿童护照或出生证明备查（后者是否被接受未在来源中说明）。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.china-rail.luggage-limits",
+    "title_zh": "火车上能带多少行李：重量与尺寸上限",
+    "summary_zh": "12306英文站常见问题第6问写明免费携带行李上限：儿童（含免票儿童）10千克、外交人员35千克、其他旅客20千克；每件物品外部尺寸长宽高之和，普速列车不超过160厘米（杆状物品200厘米），动车组不超过130厘米；每件重量不超过20千克。残疾人使用的折叠轮椅不计入上述范围。该页另列禁止和限制携带物品清单（枪支、爆炸物、管制刀具、易燃易爆、剧毒腐蚀放射性物品等），并规定指甲油、去光剂、染发剂不超过20毫升，发胶等自喷压力容器不超过120毫升，安全火柴2小盒、打火机2个。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "带婴儿车、大件行李的家庭",
+      "需要判断充电宝、喷雾能否带上车的旅客"
+    ],
+    "themes": [
+      "rail",
+      "family"
+    ],
+    "sources": [
+      {
+        "name": "中国铁路12306英文站·常见问题（第6、7问 免费行李额与禁限带物品）",
+        "url": "https://www.12306.cn/en/faq.html",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "婴儿车是否计入免费行李额、能否在车厢内使用未说明",
+      "充电宝（移动电源）的容量限制未在该页列出",
+      "超限行李的托运办理方式与费用未说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:12306 CHINA RAILWAY／12306英文站FAQ“常见问题”] [来源级:S1] [儿童:年龄=见正文;身高=见正文;计算日=入园/乘车当日;陪同=见正文;证件=见正文] 动车组尺寸上限更严（130厘米），带大箱或婴儿车时应按动车组标准准备；折叠轮椅不计入额度是明确写的例外。禁限带清单较长，本条只概括与家庭最相关的几类。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.china-rail.beijing-metro-foreign-card",
+    "title_zh": "北京地铁能直接刷境外银行卡进站吗",
+    "summary_zh": "中国文化和旅游部官方旅游网“Public Transit”页写明：北京是中国大陆首个允许用境外银行卡刷卡支付地铁票价的城市；外国旅客无需买票或下载相关App，可持境外发行的万事达（Mastercard）或维萨（Visa）卡，在闸机刷卡乘坐27条城市轨道交通线路及市郊铁路S2线。该页同时提示，具体可用支付方式以现场标识或收费人员指引为准。这是该页给出的城市级说明，未列出不支持的线路或车站。",
+    "cities": [
+      "beijing"
+    ],
+    "place": null,
+    "audience": [
+      "持境外银行卡、没有中国手机号的旅客",
+      "在北京短期停留、只坐几趟地铁的家庭"
+    ],
+    "themes": [
+      "transport",
+      "payment"
+    ],
+    "sources": [
+      {
+        "name": "Travel China（中国文化和旅游部官方旅游网站）·Public Transit（Metro 段，北京外卡刷闸）",
+        "url": "https://www.travelchina.org.cn/en/article/eYesHS7SmCni",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2026-03-25",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "是否所有闸机支持、哪些车站不支持未说明",
+      "扣费币种、汇率与是否收手续费未说明",
+      "儿童随行如何过闸未说明",
+      "北京地铁官方公告未取得，官方入口待补充"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:China Travel Guide／中国旅游网英文站文章正文（China Travel Guide）] [来源级:S1] 来源是文旅部官方旅游网的城市级说明，不是北京地铁运营方公告；实际可用性以闸机标识与地铁官方公告为准。该条只适用于北京，不能推及其他城市。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.china-metro.ticket-and-pass",
+    "title_zh": "中国城市地铁怎么买票：单程票、储值卡与扫码",
+    "summary_zh": "中国文化和旅游部官方旅游网写明：中国共有55个城市有地铁；外国旅客可在车站售票窗口或自助售票机购买单程票；经常乘坐的旅客可凭护照在车站售票窗口购买地铁储值卡（metro pass）；购票或买卡可用中国或外国银行卡、人民币现金或移动支付App。部分移动支付App与地铁运营方App支持扫码过闸，以支付宝为例：打开支付宝→“出行（Transport）”→选择城市→完成身份验证后获得地铁二维码，进出站扫码。具体支付方式以现场标识或收费人员指引为准。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "第一次坐中国地铁、需要买票的外国游客",
+      "多日停留、想用储值卡减少排队的人"
+    ],
+    "themes": [
+      "transport",
+      "payment"
+    ],
+    "sources": [
+      {
+        "name": "Travel China（中国文化和旅游部官方旅游网站）·Public Transit（Metro 段）",
+        "url": "https://www.travelchina.org.cn/en/article/eYesHS7SmCni",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2026-03-25",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "储值卡的押金、退卡与余额退还规则未说明",
+      "儿童身高/年龄免票规则未在该页说明",
+      "哪些城市支持外卡购票未逐城列出",
+      "支付宝身份验证是否需中国手机号未说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:China Travel Guide／中国旅游网英文站文章正文（China Travel Guide）] [来源级:S1] [护照:见正文说明] 该页是全国性概述，具体城市规则（票价、儿童免票、外卡支持）各不相同，不能据本条推断任一城市细节；北京另有外卡直接刷闸的单独说明（见北京条目）。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.china-bus.payment-options",
+    "title_zh": "在中国坐公交怎么付钱：现金、交通卡还是扫码",
+    "summary_zh": "中国文化和旅游部官方旅游网写明：外国旅客可用人民币现金、交通卡或支付宝乘坐公交。现金支付建议提前准备零钱；可持护照到公交公司服务网点购买交通卡，购卡可用人民币现金或微信支付、支付宝；部分移动支付App与公交运营方App支持扫码，以支付宝为例：打开支付宝→“出行”→选择城市→完成身份验证后获得公交二维码，上车与下车时分别扫码。具体支付方式以现场标识或收费人员指引为准。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "不打算买地铁储值卡、偶尔坐公交的游客",
+      "带孩子、需要备零钱的家长"
+    ],
+    "themes": [
+      "transport",
+      "payment"
+    ],
+    "sources": [
+      {
+        "name": "Travel China（中国文化和旅游部官方旅游网站）·Public Transit（Bus 段）",
+        "url": "https://www.travelchina.org.cn/en/article/eYesHS7SmCni",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2026-03-25",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "“上下车都扫码”适用于哪些城市/线路（分段计价）未说明",
+      "儿童乘车是否免票、按身高还是年龄未说明",
+      "交通卡押金与退卡方式未说明",
+      "境外银行卡能否直接刷公交未说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:China Travel Guide／中国旅游网英文站文章正文（China Travel Guide）] [来源级:S1] “上车下车都扫码”对应分段计价线路，一票制线路通常只扫一次；本条按原文记录两种可能，不代为判断具体线路。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.china-rail.accessible-service",
+    "title_zh": "火车站的轮椅与重点旅客服务在哪里找",
+    "summary_zh": "12306英文站常见问题第5问写明：部分大型车站设有服务台，为老年人、婴幼儿与儿童、病人、残疾人及孕妇提供购票、进站、乘车、行李托运等优先服务；部分车站还为残疾人提供轮椅服务。具体以车站为准。同一FAQ另写明，残疾旅客使用的折叠轮椅不计入免费行李重量与尺寸限制。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "推婴儿车或带行动不便长者出行的家庭",
+      "需要轮椅协助的旅客"
+    ],
+    "themes": [
+      "rail",
+      "accessibility"
+    ],
+    "sources": [
+      {
+        "name": "中国铁路12306英文站·常见问题（第5、6问 重点旅客服务与轮椅）",
+        "url": "https://www.12306.cn/en/faq.html",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "哪些车站设服务台、是否需提前预约未说明",
+      "轮椅服务是否收费、能否送到站台未说明",
+      "婴儿车能否借用未说明",
+      "英语服务是否可用未说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:12306 CHINA RAILWAY／12306英文站FAQ“常见问题”] [来源级:S1] [护照:见正文说明] “部分大型车站”是原文限定，不能理解为所有车站都有；带婴儿车出行应预留人工通道与电梯的寻找时间（电梯位置本条未覆盖）。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.china-rail.lost-id-on-trip",
+    "title_zh": "坐火车途中护照丢了怎么办（官方流程）",
+    "summary_zh": "12306英文站常见问题第11问写明：乘车前遗失购票证件，应先向证件签发机关申请身份证明（含铁路临时身份证明），再凭证乘车；在车上或出站前遗失，应申请补票并支付手续费，列车核验座位正常使用后出具电子（或纸质）乘车记录；自乘车日起30天内，可持签发机关出具的身份证明与补票（及纸质乘车记录）到任意中途站退款窗口，申请退还原票与补票重复收取的票款；若已识别到出站记录，补票不予退款。",
+    "cities": [
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "证件遗失、仍要完成行程的旅客",
+      "需要知道退款时限的家庭"
+    ],
+    "themes": [
+      "rail",
+      "emergency"
+    ],
+    "sources": [
+      {
+        "name": "中国铁路12306英文站·常见问题（第11问 What should I do if I lost the ID document）",
+        "url": "https://www.12306.cn/en/faq.html",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "外国旅客护照遗失时“签发机关身份证明”具体指什么（使领馆证明/临时证件）未说明",
+      "补票手续费金额未说明",
+      "铁路临时身份证明的办理窗口与材料未说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:12306 CHINA RAILWAY／12306英文站FAQ“常见问题”] [来源级:S1] [护照:见正文说明] 该流程写的是“购票证件”遗失，未专门区分中国身份证与外国护照；外国旅客护照遗失还涉及使领馆补办旅行证件（本页未覆盖，属另一条官方渠道）。",
+    "conflicts": [],
+    "related_entries": []
+  }
+]

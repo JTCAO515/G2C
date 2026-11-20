@@ -1,0 +1,132 @@
+[
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.guangzhou-family-network.sim-card-passport",
+    "title_zh": "用护照在广州买手机卡：去哪办、要带什么",
+    "summary_zh": "中国文化和旅游部官方旅游网站“Travel China”英文指南（2026-03-17发布）写明：访客可携带护照或外国人永久居留身份证，到中国电信、中国移动、中国联通等运营商营业网点购买SIM卡并开通移动通信服务；多数套餐含一定通话时长与流量，流量额度有限，用量大时应向运营商咨询更合适的套餐。购买地点包括：机场（该指南点名北京首都、上海浦东、广州白云等国际机场设有专柜或门店，提供面向游客的套餐）、以及运营商官方营业厅或授权零售点。",
+    "cities": [
+      "guangzhou",
+      "nationwide"
+    ],
+    "place": {
+      "name_zh": "广州白云国际机场（手机卡销售点）",
+      "name_en": "Baiyun Airport SIM card counters",
+      "address": null
+    },
+    "audience": [
+      "落地后需要中国号码的家庭",
+      "没有中国手机号、需要接收验证码的旅客"
+    ],
+    "themes": [
+      "internet",
+      "arrival"
+    ],
+    "sources": [
+      {
+        "name": "Travel China（中国文化和旅游部官方旅游网站）·SIM Cards & Networks",
+        "url": "https://www.travelchina.org.cn/en/article/pnHHqMOGCItZ",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2026-03-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "白云机场具体柜台位置（T2/T3、楼层）与营业时间未说明",
+      "是否需要人脸识别、是否必须本人到场未在该页写明",
+      "套餐价格、流量额度、有效期与是否可续费未说明",
+      "儿童是否可单独办卡、是否需监护人未说明"
+    ],
+    "notes": "[阶段:E] [时效:低] [复核:2027-02-18] [依据:China Travel Guide／中国旅游网英文站文章正文（China Travel Guide）] [来源级:S1] [英文:来源已有] 该页是全国性官方指南，点名白云机场有销售点但未给位置；机场柜台的实际营业时间与库存需现场确认。运营商营业厅办卡普遍要求实名登记，护照是官方列明的证件之一。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.guangzhou-family-network.public-wifi-china-sim",
+    "title_zh": "公共Wi-Fi要中国手机号收验证码：没中国卡怎么办",
+    "summary_zh": "中国文化和旅游部官方旅游网站英文指南写明：中国的公共Wi-Fi通常需要用中国SIM卡的手机接收验证码完成认证，境外SIM卡收不到该验证码。该指南同时建议行前准备好替代上网方式（见eSIM条目）。南航T2问答另称T2航站楼的旅客服务系统PISS终端支持扫描护照、身份证或登机牌获取Wi-Fi登录密码，可作为机场内的另一条取密码路径——两处描述的是不同场所/不同设备，不能互相替代。",
+    "cities": [
+      "guangzhou",
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "只带境外手机卡的家庭",
+      "需要在机场、酒店以外场所上网的旅客"
+    ],
+    "themes": [
+      "internet"
+    ],
+    "sources": [
+      {
+        "name": "Travel China（中国文化和旅游部官方旅游网站）·SIM Cards & Networks（Wi-Fi & VPN 段）",
+        "url": "https://www.travelchina.org.cn/en/article/pnHHqMOGCItZ",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2026-03-17",
+        "valid_until": null
+      },
+      {
+        "name": "中国南方航空官网·常见问题·广州白云国际机场T2航站楼（第15问 免费Wi-Fi）",
+        "url": "https://www.csair.com/cn/tourguide/faq/airport/free-zhongzhuan.shtml",
+        "type": "official_transport",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "酒店、餐厅、商场Wi-Fi是否同样要求中国号码未说明",
+      "PISS终端是否在所有航站楼、所有时段可用未说明",
+      "公共Wi-Fi的认证有效期与限速未说明",
+      "是否有面向外国旅客的免验证码公共Wi-Fi未说明"
+    ],
+    "notes": "[阶段:E] [时效:低] [复核:2027-02-18] [依据:China Travel Guide／中国旅游网英文站文章正文（China Travel Guide）；广州白云国际机场T2航站楼_机场服务_南航常见问题／南航官网常见问题“广州白云国际机场T2航站楼”] [来源级:S1] 两处说法不冲突但容易被误读：官方旅游网讲的是“公共Wi-Fi一般要中国号码收码”，南航讲的是“T2有自助终端可扫护照取密码”。前者是普遍情况，后者是机场内的具体设备，不能据此推断全城公共Wi-Fi都能用护照认证。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.guangzhou-family-network.esim-options",
+    "title_zh": "不想买实体卡：eSIM 在中国大陆能不能用",
+    "summary_zh": "中国文化和旅游部官方旅游网站英文指南写明：eSIM适用于短期访问且设备支持eSIM的旅客（如iPhone XS及之后的机型、部分安卓机型）。在中国大陆，包括iPhone Air在内的少数机型支持本地eSIM开通，其他机型需通过国际eSIM服务商开通；指南建议行前从Airalo、Nomad等国际服务商购买含中国数据覆盖的区域套餐，入境后激活。该页同时提示：Google、YouTube、Facebook、Instagram、WhatsApp等网站在中国境内无法直接访问，需在入境前下载安装可用的VPN应用。",
+    "cities": [
+      "guangzhou",
+      "nationwide"
+    ],
+    "place": null,
+    "audience": [
+      "设备支持eSIM、想避免排队买卡的旅客",
+      "需要在行前就确保能上网的家庭"
+    ],
+    "themes": [
+      "internet"
+    ],
+    "sources": [
+      {
+        "name": "Travel China（中国文化和旅游部官方旅游网站）·SIM Cards & Networks（eSIM 与 VPN 段）",
+        "url": "https://www.travelchina.org.cn/en/article/pnHHqMOGCItZ",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2026-03-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": [
+      "国际eSIM在中国大陆的具体可用性与限速未说明",
+      "eSIM套餐是否含中国号码、能否接收验证码未说明",
+      "对儿童设备或副卡的支持未说明",
+      "指南列举的VPN品牌仅为示例，其可用性未核实"
+    ],
+    "notes": "[阶段:E] [时效:低] [复核:2027-02-18] [依据:China Travel Guide／中国旅游网英文站文章正文（China Travel Guide）] [来源级:S1] 本条只记录官方指南的选项描述，不推荐具体服务商，也不保证任何VPN或eSIM在大陆的实际可用性。若家庭需要中国号码接收验证码（如公共Wi-Fi、部分场馆预约），eSIM数据套餐可能不满足该需求，需与实体卡方案并行考虑。",
+    "conflicts": [],
+    "related_entries": []
+  }
+]

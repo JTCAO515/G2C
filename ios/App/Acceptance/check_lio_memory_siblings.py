@@ -15,6 +15,7 @@ def main():
     parser.add_argument('--simulator', required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--build-dir', type=Path, required=True)
+    parser.add_argument('--case', action='append')
     args = parser.parse_args()
     output = args.output.resolve()
     if output.is_relative_to(ROOT) or args.build_dir.resolve().is_relative_to(ROOT):
@@ -36,17 +37,20 @@ def main():
     settings.write_text(settings.read_text().replace(str(entry), str(generated))
                         .replace('space.go2china.foundation.local', 'space.go2china.memory-siblings.acceptance'))
     result = output / 'memory-siblings.xcresult'
+    suite = 'G2CControl/LioMemorySiblingUITests'
+    selectors = [f'-only-testing:{suite}/{case}' for case in args.case] if args.case else [f'-only-testing:{suite}']
     command = ['xcodebuild', '-project', str(project), '-scheme', 'G2CControl', '-destination', 'platform=iOS Simulator,id=' + args.simulator,
                '-derivedDataPath', str(args.build_dir), '-resultBundlePath', str(result), '-onlyUsePackageVersionsFromResolvedFile',
                '-parallel-testing-enabled', 'NO', 'ARCHS=arm64', 'ONLY_ACTIVE_ARCH=YES', 'CODE_SIGNING_ALLOWED=YES', 'CODE_SIGN_IDENTITY=-',
-               '-only-testing:G2CControl/LioMemorySiblingUITests', 'test']
+               *selectors, 'test']
     env = {k: v for k, v in os.environ.items() if not k.startswith(('G2C_DEV_', 'SIMCTL_CHILD_'))}
     with (output / 'xcodebuild.log').open('w') as log:
         subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=600)
     summary = subprocess.check_output(['xcrun', 'xcresulttool', 'get', 'test-results', 'summary', '--path', str(result)])
     (output / 'summary.json').write_bytes(summary)
     value = json.loads(summary)
-    assert value['passedTests'] == 1 and value['failedTests'] == 0 and value['skippedTests'] == 0
+    assert value['passedTests'] == (len(args.case) if args.case else 2)
+    assert value['failedTests'] == 0 and value['skippedTests'] == 0
 
 
 if __name__ == '__main__': main()
