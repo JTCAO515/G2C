@@ -1,0 +1,263 @@
+[
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-19.guangzhou-weather-site",
+    "name_zh": "广州天气（广州市气象台网站）",
+    "name_en": "Guangzhou Weather (tqyb.com.cn)",
+    "category": "other",
+    "purpose_zh": "查广州分区分街镇的天气预报、天气预警、台风路径、雷达与实况，用于判断当天是否适合户外或乐园行程、是否需要改期。网站由广州市气象台发布预报预警，另有英文版、街镇服务网与 PDA 版入口。",
+    "cities": [
+      "guangzhou"
+    ],
+    "languages": [
+      "中文",
+      "英文（有 English 入口，内容范围未逐页核对）"
+    ],
+    "preparation": [
+      "可联网的手机或电脑浏览器",
+      "无需注册与登录",
+      "无需中国大陆手机号"
+    ],
+    "official_links": [
+      {
+        "name": "广州天气（广州市气象台）",
+        "url": "http://www.tqyb.com.cn/",
+        "type": "official_site"
+      },
+      {
+        "name": "广州天气 PDA 版",
+        "url": "http://tqyb.com.cn/pda/",
+        "type": "official_site"
+      }
+    ],
+    "sources": [
+      {
+        "name": "广州市气象台·广州天气首页（栏目与英文/PDA入口说明）",
+        "url": "http://www.tqyb.com.cn/",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "是否有官方 App 或微信公众号入口未核实",
+      "英文版页面覆盖哪些栏目未核对",
+      "网站是否提供预警推送订阅未核实"
+    ],
+    "notes": "[阶段:D] [时效:高] [复核:2026-12-04] [依据:广州天气-广州市气象台,tqyb／首页正文] [来源级:S1] [英文:来源已有] 首页为动态页面，抓取时数值为空，本批只记录渠道与栏目结构，不记录任何具体天气值。预警发布不等于景区闭园，场馆与乐园的开闭以其自身公告为准。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-19.guangzhou-multilingual-hotline",
+    "name_zh": "广州多语种公共服务热线",
+    "name_en": "Guangzhou Multilingual Public Service Hotline (960169)",
+    "category": "translation",
+    "purpose_zh": "不会中文时拨打960169寻求公共服务方面的语言协助，用于报警、就医、交通、遗失等场景的沟通转接。市政府英文站“Useful Numbers”页与110（报警）、119（火警）、120（急救）并列列出该号码。",
+    "cities": [
+      "guangzhou"
+    ],
+    "languages": [
+      "待核实（页面未列语言清单）"
+    ],
+    "preparation": [
+      "能拨打电话的手机（境外号码能否拨通待核实）",
+      "提前把酒店中文地址、订单号存在手边",
+      "紧急人身安全先拨110/119/120"
+    ],
+    "official_links": [],
+    "sources": [
+      {
+        "name": "Guangzhou International（广州市政府英文站）·Useful Numbers",
+        "url": "https://www.gz.gov.cn/guangzhouinternational/home/quicklinks/content/post_6446644.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": "2020-07-24",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "服务语言清单、服务时段与受理范围未说明",
+      "境外手机能否拨通、是否收费未说明",
+      "官方介绍页或App入口待补充"
+    ],
+    "notes": "[阶段:F] [时效:中] [复核:2026-12-20] [依据:Guangzhou International／Quick Links“Useful Numbers”栏] [来源级:S1] [英文:来源已有] 来源页面更新日期为2020-07-24，属历史信息，可能已失效；本批只记录号码与出处，不承诺英语接通或办理结果。官方入口待补充。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-19.guangzhou-metro-foreign-card-tap",
+    "name_zh": "广州地铁境外银行卡拍卡过闸",
+    "name_en": "Guangzhou Metro contactless bank card gate entry",
+    "category": "city_transport",
+    "purpose_zh": "持维萨、万事达、美国运通、JCB等境外银行卡，在支持该功能的闸机上直接拍卡进出地铁，不用排队买票、不用预充值。据广州市地方金融管理局2026-01-23稿，广州地铁近400个站点约9000台闸机支持，项目在第138届广交会开幕前落地。",
+    "cities": [
+      "guangzhou"
+    ],
+    "languages": [
+      "中文",
+      "英文（闸机提示为中英文，据同一来源）"
+    ],
+    "preparation": [
+      "一张支持境外拍卡消费的实体银行卡或已绑卡的手机钱包",
+      "同一次车程用同一张卡进出闸",
+      "无需中国手机号、无需下载App（据该来源描述）"
+    ],
+    "official_links": [],
+    "sources": [
+      {
+        "name": "广州市地方金融管理局·来穗支付无忧 广州以开放姿态拥抱全球来客（支付场景段）",
+        "url": "http://jrjgj.gz.gov.cn/gzdt/content/post_10666488.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-01-23",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "支持外卡拍卡的车站与闸机名单未公布",
+      "计费方式、是否加收手续费、一人多卡如何处理未说明",
+      "儿童与免费乘车儿童如何过闸未说明",
+      "广州地铁官方票务公告未取得，官方入口待补充"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:广州市地方金融管理局网站 - 来穗支付无忧 广州以开放姿态拥抱全球来客／“来穗支付无忧”支付场景段] [来源级:S2] [英文:来源已有] 与广州地铁官网2024-06-27《票务规则》只列“银联信用卡（含手机闪付）”的表述存在时间差，本批保留双方原文不裁决。政府稿为宣传性报道，实际可用性以地铁运营方公告或现场闸机标识为准。",
+    "conflicts": [
+      "广州地铁2024-06-27《票务规则》只规定银联信用卡（含手机闪付）；市地方金融管理局2026-01-23稿称Visa、Mastercard、Amex、JCB等外卡可在近400站约9000台闸机拍卡过闸。"
+    ],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-19.ecny-overseas-app",
+    "name_zh": "数字人民币App（海外版）",
+    "name_en": "e-CNY App (overseas version)",
+    "category": "payment",
+    "purpose_zh": "境外用户凭手机号开通匿名钱包，用维萨、万事达等境外银行卡充值后，在境内受理数字人民币的商户消费。据广州市地方金融管理局2026-01-23稿，海外版支持210余个国家或地区的手机号开通，该功能已在广州推广使用。",
+    "cities": [
+      "guangzhou"
+    ],
+    "languages": [
+      "待核实"
+    ],
+    "preparation": [
+      "可接收验证码的手机号（境外号码是否全部适用待核实）",
+      "维萨或万事达等境外银行卡用于充值",
+      "安装数字人民币App海外版（下载渠道待核实）"
+    ],
+    "official_links": [],
+    "sources": [
+      {
+        "name": "广州市地方金融管理局·来穗支付无忧 广州以开放姿态拥抱全球来客（数字人民币段）",
+        "url": "http://jrjgj.gz.gov.cn/gzdt/content/post_10666488.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-01-23",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "匿名钱包余额与单笔限额未说明",
+      "广州受理数字人民币的商户范围未说明",
+      "官方下载入口与App语言未核实",
+      "硬钱包外币兑换机的具体布放点未说明"
+    ],
+    "notes": "[阶段:C] [时效:中] [复核:2026-12-20] [依据:广州市地方金融管理局网站 - 来穗支付无忧 广州以开放姿态拥抱全球来客／“来穗支付无忧”支付场景段] [来源级:S2] [英文:来源已有] 只记“可开通、可充值、广州在用”这一层；不写成所有商户通用。官方入口待补充。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-19.alipay-foreign-card",
+    "name_zh": "支付宝（绑定境外银行卡）",
+    "name_en": "Alipay (foreign card binding)",
+    "category": "payment",
+    "purpose_zh": "境外旅客自行注册支付宝并绑定境外银行卡后扫码付款。据广州市地方金融管理局2026-01-23稿，注册与绑卡“短短几分钟即可完成”，一定额度内免身份验证，交易额度够日常使用；单笔200元以内的国际卡交易免收手续费（活动期限未说明）。",
+    "cities": [
+      "guangzhou",
+      "nationwide"
+    ],
+    "languages": [
+      "待核实"
+    ],
+    "preparation": [
+      "手机与可接收验证码的号码（是否必须中国号码待核实）",
+      "支持绑定的境外银行卡",
+      "安装支付宝App"
+    ],
+    "official_links": [],
+    "sources": [
+      {
+        "name": "广州市地方金融管理局·来穗支付无忧 广州以开放姿态拥抱全球来客（优化流程段）",
+        "url": "http://jrjgj.gz.gov.cn/gzdt/content/post_10666488.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-01-23",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "支持绑定的卡组织与卡种名单未说明",
+      "“一定额度内免身份验证”的具体金额未说明",
+      "200元以内免手续费活动的起止时间未说明",
+      "官方帮助页与下载入口待补充"
+    ],
+    "notes": "[阶段:E] [时效:中] [复核:2026-12-20] [依据:广州市地方金融管理局网站 - 来穗支付无忧 广州以开放姿态拥抱全球来客／“来穗支付无忧”支付场景段] [来源级:S2] [英文:来源已有] 来源是政府宣传稿，不是支付宝官方规则；开通步骤、验证要求与限额以支付宝官方帮助页为准（本批未取得）。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-tool-candidate.1",
+    "id": "tool-candidate.2026-11-19.wechat-pay-foreign-card",
+    "name_zh": "微信支付（绑定境外银行卡）",
+    "name_en": "WeChat Pay (foreign card binding)",
+    "category": "payment",
+    "purpose_zh": "境外旅客注册微信支付并绑定境外银行卡后扫码付款。据广州市地方金融管理局2026-01-23稿，可自主注册并绑卡、几分钟完成，一定额度内免身份验证；文中举例印度客商在广交会支付服务咨询台旁完成微信支付注册。",
+    "cities": [
+      "guangzhou",
+      "nationwide"
+    ],
+    "languages": [
+      "待核实"
+    ],
+    "preparation": [
+      "手机与可接收验证码的号码（是否必须中国号码待核实）",
+      "支持绑定的境外银行卡",
+      "安装微信App"
+    ],
+    "official_links": [],
+    "sources": [
+      {
+        "name": "广州市地方金融管理局·来穗支付无忧 广州以开放姿态拥抱全球来客（优化流程段）",
+        "url": "http://jrjgj.gz.gov.cn/gzdt/content/post_10666488.html",
+        "type": "official_government",
+        "language": "zh",
+        "published_on": "2026-01-23",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-19",
+    "status": "待核实",
+    "missing": [
+      "支持绑定的卡组织与卡种名单未说明",
+      "免身份验证的额度与实名要求未说明",
+      "是否影响部分需实名的场馆预约未说明",
+      "官方帮助页与下载入口待补充"
+    ],
+    "notes": "[阶段:E] [时效:中] [复核:2026-12-20] [依据:广州市地方金融管理局网站 - 来穗支付无忧 广州以开放姿态拥抱全球来客／“来穗支付无忧”支付场景段] [来源级:S2] [英文:来源已有] 微信既是支付工具也是部分场馆的预约入口（如陈家祠、省博），但能否用境外号码注册微信、能否完成实名，本批未取得官方依据，记为缺口。",
+    "conflicts": [],
+    "related_entries": []
+  }
+]

@@ -15,6 +15,24 @@ import XCTest
         XCTAssertEqual(XCTWaiter.wait(for: [literal], timeout: 4), .completed)
     }
 
+    func testInvitationDoneDismissesKeyboardWithoutContinuing() {
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.updates.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-onboarding-preview", "-cj.ui.language.v1", "en"]
+        app.launch()
+        defer { app.terminate() }
+        let field = app.secureTextFields["demo.invite.code"]
+        XCTAssertTrue(field.waitForExistence(timeout: 8))
+        field.tap()
+        field.typeText("keyboard-check")
+        let keyboard = app.keyboards.firstMatch
+        XCTAssertTrue(keyboard.exists)
+        app.navigationBars.buttons["lio.invite.keyboard-done"].tap()
+        let dismissed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: keyboard)
+        XCTAssertEqual(XCTWaiter.wait(for: [dismissed], timeout: 5), .completed)
+        XCTAssertTrue(app.buttons["demo.invite.continue"].isEnabled)
+        XCTAssertFalse(app.buttons["demo.invite.signin"].exists)
+    }
+
     func testInvitationEmptyDarkPageAccessibility() throws {
         let app = XCUIApplication(bundleIdentifier: "space.go2china.updates.acceptance")
         app.launchArguments = ["--lio-preview", "--lio-onboarding-preview", "-lio.ui.appearance.v1", "dark", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]

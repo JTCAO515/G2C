@@ -1,6 +1,37 @@
 import XCTest
 
 @MainActor final class LioTabBarUITests: XCTestCase {
+    func testFourTabsAppearInOrderAndToolsStaysSelectedOnReturn() throws {
+        continueAfterFailure = false
+        for (language, labels) in [("en", ["Chat", "Trips", "Tools", "Memory"]),
+                                  ("zh-Hans", ["聊天", "行程", "插件", "记忆"])] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.tab.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-tab-order-acceptance", "-cj.ui.language.v1", language]
+            app.launch()
+            defer { app.terminate() }
+            let tabs = labels.map { app.tabBars.buttons[$0] }
+            XCTAssertTrue(tabs[0].waitForExistence(timeout: 10))
+            XCTAssertEqual(app.tabBars.buttons.count, 4)
+            for pair in zip(tabs, tabs.dropFirst()) {
+                XCTAssertLessThan(pair.0.frame.midX, pair.1.frame.midX)
+            }
+            XCTAssertTrue(tabs[0].isSelected)
+            try audit(app, name: "four-tabs-\(language)")
+            tabs[2].tap()
+            XCTAssertTrue(app.buttons["lio.tools.translation"].waitForExistence(timeout: 5))
+            XCUIDevice.shared.press(.home)
+            app.activate()
+            XCTAssertTrue(tabs[2].isSelected)
+            let tripsAvailable = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in tabs[1].isHittable }, object: nil)
+            XCTAssertEqual(XCTWaiter.wait(for: [tripsAvailable], timeout: 8), .completed)
+            tabs[1].tap()
+            XCTAssertTrue(tabs[1].isSelected)
+            tabs[3].tap()
+            XCTAssertTrue(tabs[3].isSelected)
+            tabs[0].tap()
+            XCTAssertTrue(tabs[0].isSelected)
+        }
+    }
     func testEnglishLightHomeAndHistoryTabs() throws { try exercise(chinese: false, appearance: "light") }
     func testChineseLightHomeAndHistoryTabs() throws { try exercise(chinese: true, appearance: "light") }
     func testEnglishDarkHomeAndHistoryTabs() throws { try exercise(chinese: false, appearance: "dark") }

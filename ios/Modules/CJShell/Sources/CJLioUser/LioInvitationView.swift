@@ -113,6 +113,7 @@ public struct LioInvitationView<Settings: View>: View {
                 }
                 .lioRow()
             }
+            .scrollDismissesKeyboard(.interactively)
             .lioPage()
             .navigationTitle(language.text("Internal demo", "内部演示"))
             .navigationBarTitleDisplayMode(.inline)
@@ -125,6 +126,12 @@ public struct LioInvitationView<Settings: View>: View {
                         .fixedSize()
                         .accessibilityAddTraits(.isHeader)
                         .accessibilityIdentifier("lio.invite.heading")
+                }
+                if enteringCode {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(language.text("Done", "完成")) { enteringCode = false }
+                            .accessibilityIdentifier("lio.invite.keyboard-done")
+                    }
                 }
             }
 

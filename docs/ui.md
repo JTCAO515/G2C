@@ -4,6 +4,8 @@
 
 App 对外名称统一为 **Go2China**（JT 2026-11-13）；桌面名称和用户文案使用全名。
 
+用户版的 Tab 顺序为聊天 / 行程 / 插件 / 记忆（Chat / Trips / Tools / Memory）。插件和记忆沿用各自的入口显示条件，Tab 选中和行程跳转沿用原规则。
+
 以 [JT 的 2026-11-09 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6736601057)及 [#702 修订](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6736604817)为准。Beta 和正式版进入独立的 Lio 外壳；CJShell 的页面、开发 profile 和负例留给 Debug。旧规格保留在附录。
 
 ### 助手对话

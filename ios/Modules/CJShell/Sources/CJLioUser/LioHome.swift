@@ -72,7 +72,7 @@ public struct LioHome<MenuContent: View>: View {
         let card: LioTripCard?
         let plan: ObjectIdentifier?
     }
-    private enum Tab { case chat, trips, memory, tools }
+    private enum Tab { case chat, trips, tools, memory }
     private enum Opening: Equatable { case beforeNext, before(Data), hidden }
     private struct ProfileEdit: Identifiable {
         let id = UUID()
@@ -161,13 +161,6 @@ public struct LioHome<MenuContent: View>: View {
                 .background(LioTabBarAppearance().frame(width: 0, height: 0))
                 .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
                 .tag(Tab.trips)
-            if let savedMemory {
-                savedMemory
-                    .environment(\.lioMemorySuggestions, memorySuggestions)
-                    .background(LioTabBarAppearance().frame(width: 0, height: 0))
-                    .tabItem { Label(language.text("Memory", "记忆"), systemImage: "bookmark") }
-                    .tag(Tab.memory)
-            }
             if showsTools {
                 LioToolsView(language: language, history: toolsHistory, relay: toolsRelay,
                              enabled: !restoringChat && session?.available != false && scenePhase != .background,
@@ -175,6 +168,13 @@ public struct LioHome<MenuContent: View>: View {
                     .background(LioTabBarAppearance().frame(width: 0, height: 0))
                     .tabItem { Label(language.text("Tools", "插件"), systemImage: "puzzlepiece.extension") }
                     .tag(Tab.tools)
+            }
+            if let savedMemory {
+                savedMemory
+                    .environment(\.lioMemorySuggestions, memorySuggestions)
+                    .background(LioTabBarAppearance().frame(width: 0, height: 0))
+                    .tabItem { Label(language.text("Memory", "记忆"), systemImage: "bookmark") }
+                    .tag(Tab.memory)
             }
         }
         .tint(LioTheme.vermilion)
