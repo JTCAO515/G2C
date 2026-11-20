@@ -110,10 +110,16 @@ struct CJProbeApp: App {
                 Text(shell.language.text("Sample trip unavailable.", "示例行程暂不可用。"))
             }
         } else {
-            LioHome(language: shell.language.lio, service: .demo, isDemo: true,
-                    showsTools: ProcessInfo.processInfo.arguments.contains("--lio-tools-preview"),
-                    toolsRelay: translationRelayPreview, toolsDraftStorage: localSupportDraftPreview) {
+            let home = LioHome(language: shell.language.lio, service: .demo, isDemo: true,
+                               showsTools: ProcessInfo.processInfo.arguments.contains("--lio-tools-preview"),
+                               toolsRelay: translationRelayPreview, toolsDraftStorage: localSupportDraftPreview) {
                 LioMenuSettings(shell: shell)
+            }
+            if ProcessInfo.processInfo.arguments.contains("--lio-support-dial-preview"),
+               let number = ProcessInfo.processInfo.environment["G2C_LOCAL_SUPPORT_TEST_PHONE"] {
+                LioSupportDialPreview(number: number, content: home)
+            } else {
+                home
             }
         }
     }
@@ -271,6 +277,26 @@ struct LioMenuSettings: View {
 
 
 #if DEBUG && G2C_LIO_APP && targetEnvironment(simulator)
+private struct LioSupportDialPreview<Content: View>: View {
+    let number: String
+    let content: Content
+    @State private var matched = false
+
+    var body: some View {
+        content
+            .environment(\.openURL, OpenURLAction { url in
+                matched = url.absoluteString == "tel:" + number
+                return matched ? .handled : .discarded
+            })
+            .overlay(alignment: .topLeading) {
+                Text(matched ? "Test dial request matched" : "Dial fixture ready")
+                    .font(.footnote)
+                    .accessibilityIdentifier(matched ? "fixture.support.dial-matched" : "fixture.support.dial-intercept-ready")
+                    .allowsHitTesting(false)
+            }
+    }
+}
+
 private struct LioPreviewTripFixture: Decodable {
     let trace: String
     let list: Data

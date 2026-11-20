@@ -87,6 +87,11 @@ def main():
         tests += "\n" + (HERE / "LioToolsMediaUITests.swift").read_text()
         tests += "\n" + (HERE / "LioToolsRelayUITests.swift").read_text()
         tests += "\n" + (HERE / "LioToolsLocalSupportUITests.swift").read_text()
+        if "testDebugDialUsesTheConfiguredNumberWithoutCalling" in args.case:
+            number = os.environ.get("G2C_LOCAL_SUPPORT_TEST_PHONE", "")
+            if len(number) != 11 or not number.isascii() or not number.isdecimal():
+                parser.error("Supply the designated local telephone fixture in G2C_LOCAL_SUPPORT_TEST_PHONE")
+            tests = tests.replace('"__LOCAL_SUPPORT_TEST_PHONE__"', json.dumps(number))
     (output / "G2CControl.swift").write_text(tests.replace("__LIO_RECORDED_TRIP_FIXTURE__", recorded_trip_fixture()))
     project = output / "G2CAcceptance.xcodeproj"
     settings = project / "project.pbxproj"
