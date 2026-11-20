@@ -16,7 +16,7 @@ from cj_needs.domain import InvalidInput
 
 from .lio_city import CityReference,forms,_normalize
 from .lio_sourced_intake import BookingSourceUnclear
-from .lio_positive_trip import destination_query,destination_request,supports
+from .lio_positive_trip import destination_query,destination_request,known_city_term,supports
 from .lio_flow_intake import ReadOnlyPlanningData,ReadOnlyPlanningQuestion,parse_flow
 from .lio_national_intake import NONPERSISTENT,fields_for,fixed_sources_complete,province_evidence,diagnostic_code,StartDateConflict,FixedTimezoneConflict,DateDurationConflict,DateSourceUnclear
 from .lio_planning_grounding import PlanningTurn,standalone_question,NUMBER,_number,PLAN_REQUEST,discussion_reply
@@ -38,6 +38,10 @@ _DURATION_QUESTION=re.compile(
     rf'(?:(?P<zh>(?P<zh_number>{NUMBER})[天日])(?:怎么玩|怎么安排)|'
     rf'(?:how (?:should|can) I spend|what (?:can|should) I do (?:in|for))\s+'
     rf'(?P<en>(?P<en_number>{NUMBER})\s+days?))[?？。.!！\s]*',re.I)
+_LITERAL_ITINERARY=re.compile(
+    rf'\s*(?:(?P<zh_city>[\u4e00-\u9fff]+?)\s*(?P<zh_days>{NUMBER})\s*[日天]游|'
+    rf"(?:an?\s+)?(?P<en_days>{NUMBER})(?:\s*-\s*|\s+)days?\s+(?:trip|itinerary|visit)\s+(?:to|in)\s+"
+    rf"(?P<en_city>[\w'-]+))[?？。.!！\s]*",re.I)
 
 
 def literal_duration_question(text):
@@ -46,6 +50,15 @@ def literal_duration_question(text):
     if match is None:return None
     number=_number(match['zh_number']or match['en_number'])
     return (number,match['zh']or match['en'])if number>0 else None
+
+
+def literal_itinerary(text):
+    """Read a bare city and day count for a conversational outline."""
+    match=_LITERAL_ITINERARY.fullmatch(text)
+    if match is None:return None
+    city=match['zh_city']or match['en_city']
+    days=_number(match['zh_days']or match['en_days'])
+    return (city,days)if days>0 and known_city_term(city)else None
 
 SOURCE_LANGUAGE=(
     ' Evidence ignores reply styling. Copy city.query and all quotes verbatim from indexed originals; '
@@ -315,7 +328,14 @@ class NationalLioPlanning:
                 capture.reject(diagnostic_code(error),raw.encode('utf-8'))
                 rejected=True
         if rejected:
-            return self._answer_after_rejection(worker,binding,state)
+            state=self._hold_rejected_context(worker,binding,state)
+            if binding.message_sequence==1:
+                outline=literal_itinerary(text)
+                if outline is not None:
+                    city,days=outline
+                    return self._discuss(worker,binding,state,original.locale,turns,refs,
+                        day_count=days,destination=city)
+            return None
         if isinstance(intake,ReadOnlyPlanningQuestion):
             held=publication_held(text)
             # A control-only question grants no publication authority. A later
@@ -516,7 +536,8 @@ class NationalLioPlanning:
             logging.getLogger('cj_usage.audit').warning(
                 'LIO_PLANNING_PROJECTION_REJECTED run_id=%s code=invalid_planning_fields',binding.run_id)
             worker.lio_city_context=None
-            return self._answer_after_rejection(worker,binding,state)
+            self._hold_rejected_context(worker,binding,state)
+            return None
         if not self.plan_and_save.supports_destination(binding,city):
             state=context(worker,binding,state,dict(authority='none',status='different_destination',city=resolution))
             return self._answer(worker,binding,state,original.locale,
@@ -595,14 +616,13 @@ class NationalLioPlanning:
             return discuss(worker,binding,state,locale,turns,refs,**options)
         except InvalidDiscussionAnswer:
             worker.lio_city_context=None
-            return self._answer_after_rejection(worker,binding,state)
+            self._hold_rejected_context(worker,binding,state)
+            return None
 
-    def _answer_after_rejection(self,worker,binding,state):
-        # The ordinary Worker answer can use original traveler text. This
-        # turn's rejected fields and any earlier publication grant stay out.
-        self._context(worker,binding,state,dict(authority='none',status='discussion',facts={},
+    def _hold_rejected_context(self,worker,binding,state):
+        # Keep rejected fields out of all future planning evidence.
+        return self._context(worker,binding,state,dict(authority='none',status='discussion',facts={},
             nonplanning_message_ids=[],authority_barrier_message_id=binding.message_id))
-        return None
 
     @staticmethod
     def _previous_city(intake,previous,text):
