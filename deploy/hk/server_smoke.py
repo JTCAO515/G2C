@@ -42,6 +42,11 @@ CASES = (
 DAY_HEADER = re.compile(
     r'(?im)^\s*(?:[#>*_\-]+\s*)*(?:(?:Day|D)\s*([123])\b|第\s*([一二三123])\s*[天日])'
 )
+INLINE_DAY_BREAK = re.compile(
+    r'(?i)(?<=[。！？.!?；;])(?=[ \t]*[*_]*[ \t]*'
+    r'(?:(?:Day|D)[ \t]*[123]\b|第[ \t]*[一二三123][ \t]*[天日])'
+    r'[ \t*_]*[:：–—-])'
+)
 DAY_NUMBER = {'一': 1, '二': 2, '三': 3, '1': 1, '2': 2, '3': 3}
 BEIJING_PLACE = re.compile(
     r'故宫|天安门|景山|长城|八达岭|慕田峪|颐和园|天坛|雍和宫|什刹海|南锣鼓巷|胡同|'
@@ -152,6 +157,7 @@ def valid_answer(case, answer):
     if kind == 'capability':
         approved = CAPABILITIES_ZH if locale == 'zh' else CAPABILITIES_EN
         return _normalize_capability_copy(answer) == _normalize_capability_copy(approved)
+    answer = INLINE_DAY_BREAK.sub('\n', answer)
     headings = list(DAY_HEADER.finditer(answer))
     if [DAY_NUMBER[match.group(1) or match.group(2)] for match in headings] != [1, 2, 3]:
         return False

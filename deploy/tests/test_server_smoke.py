@@ -77,6 +77,24 @@ def test_plan_accepts_activities_with_formatted_schedule_labels(case, body, vali
     assert smoke.valid_answer(case, body) is valid
 
 
+@pytest.mark.parametrize(('case', 'body', 'valid'), [
+    ('en.plan', 'Day 1: Visit the Forbidden City. Day 2: Hike the Great Wall. Day 3: Explore the Temple of Heaven.', True),
+    ('en.plan', '**Day 1:** Visit the Forbidden City. **Day 2:** Walk through Jingshan. '
+     '**Day 3:** Explore the Summer Palace.', True),
+    ('zh.plan', '第一天：参观故宫。第二天：游览颐和园。第三天：参观天坛。', True),
+    ('en.plan', 'Day 1: Visit the Forbidden City. Day 2: The Great Wall. Day 3: Explore the Temple of Heaven.', False),
+    ('en.plan', 'Day 1: Visit the Forbidden City. Day 2: Do not hike the Great Wall. '
+     'Day 3: Explore the Temple of Heaven.', False),
+    ('en.plan', 'Day 1: Visit the Forbidden City. Day 2 of any trip could be hard to plan. '
+     'Walk through Jingshan. Day 3: Explore the Summer Palace.', False),
+    ('en.plan', 'Day 1: Visit the Forbidden City. Day 3: Explore the Temple of Heaven. Day 2: Hike the Great Wall.', False),
+    ('en.plan', 'Day 1: Visit the Forbidden City. Day 2: Hike the Great Wall. '
+     'Day 2: Hike the Great Wall. Day 3: Explore the Temple of Heaven.', False),
+])
+def test_inline_itinerary_preserves_day_order_and_requires_an_activity(case, body, valid):
+    assert smoke.valid_answer(case, body) is valid
+
+
 @pytest.mark.parametrize(('locale', 'copy'), [('en', CAPABILITIES_EN), ('zh', CAPABILITIES_ZH)])
 def test_smoke_requires_the_exact_complete_approved_capability_copy(locale, copy):
     case = f'{locale}.capability'
