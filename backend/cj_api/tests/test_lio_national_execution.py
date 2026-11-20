@@ -73,6 +73,7 @@ class NationalExecution(unittest.TestCase):
         worker=Worker();worker.tools=SimpleNamespace(resolve_city=lambda *a:(lookups.append(a) or resolution))
         class Save:
             def __call__(self,*args):published.append(args);return args[2]
+            def has_saved_itinerary(self,binding):return False
             def supports_destination(self,binding,city):return same_destination
             def scene_context(self,binding,now):return None
             def planning_window_conflict(self,binding,fields):return source_conflict

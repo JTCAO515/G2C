@@ -124,3 +124,11 @@ uv run --locked python -B -m pytest -q \
 - 既有 [只读正例](https://github.com/JTCAO515/G2C/blob/e28196e900a93dfbd68fbf95e3509ef0517296b9/backend/cj_api/tests/test_lio_readonly_answers.py#L154) 注入的是正确进件；修复 PR 需覆盖错误进件分支，再在新 L8 同源窗按原判定复验。
 
 本地入口为 `backend/cj_api/tests/test_lio_planning_flow.py` 的 `flow(..., city=None, days=None, intent='cancel', questions=())` 与 `run(wire, text, locale=...)`。已有正例可用 `uv run --locked python -B -m pytest -q backend/cj_api/tests/test_lio_readonly_answers.py -k 'bare_city or plan09'` 检查。
+
+## 2026-11-20 · 机场进城误回过境模板
+
+**FACT-TRANSIT**　[构建 49 第 2 项](https://github.com/JTCAO515/G2C/issues/1048#issuecomment-7033981816)：中文界面问 “How do I get from Beijing Capital Airport to downtown Beijing?”，可见回复给了过境免签说明，未回答进城交通，真机表现 **FAIL**。[B 原件对照](https://github.com/JTCAO515/G2C/issues/1048#issuecomment-7033959282)保留两条同题候选，现场原 RUN 以同轮核对为准。
+
+- 本地沿 `backend/cj_api/tests/test_m4_real_services.py` 的 `RealTools.answer` 夹具，用同一机场问法注入 `tool.fact` 的有摘录和无摘录结果。两种均须继续实际回答进城方式。对照地铁、支付也须回答实际问题。没有对应证据的实时价格、班次或政策不作断言。
+- 用真正的过境或签证问题对照。有适用来源时按原证据作政策回答；缺可核正文时保留原核证说明。普通旅行问法不得触发过境模板。
+- 英问中界面、中文问英文界面均按问题语言输出正文、兜底和引用标题；无法判断问题语言时沿用界面默认。现场语义与语言分别核对，完成状态与 ACK 不能替代正文。
