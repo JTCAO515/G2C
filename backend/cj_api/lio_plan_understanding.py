@@ -19,7 +19,7 @@ from .lio_national_intake import _current_date_source,_current_date_anchors,_WEE
 from .lio_national_intake import fixed_detail_indexes
 from .lio_sourced_intake import _booking_source
 from .lio_planning_grounding import PlanningTurn
-from .lio_planning_grounding import CLOCK,NUMBER,NEGATED,DATE_REFUSAL,DATES_UNDECIDED,_clock,_number
+from .lio_planning_grounding import CLOCK,NUMBER,NEGATED,OTHER,DATE_REFUSAL,DATES_UNDECIDED,_clock,_number
 from .lio_positive_trip import supports as positive_trip_support
 from .local_lio_rich_calendar_source import read_rich_original
 from .lio_calendar_ordinals import fixed_ordinals
@@ -607,6 +607,18 @@ def original_plan_turns(database,worker,binding,view):
     return turns
 
 
+def _direct_fixed_place(label,before,after):
+    """The place must directly modify the fixed event or its location."""
+    if OTHER.search(before)or '朋友'in before:return False
+    label=re.escape(label)
+    location_link=(r'\s*(?:(?:的)?(?:地点|地址|位置)\s*(?:是|在|为|[:：])|(?:安排|改|定)?(?:在|于))\s*$'
+                   r'|\s+(?:(?:venue|location|address)\s+)?(?:(?:is|will be|takes place)\s+)?(?:at|in)\s*$')
+    if re.search(label+r'(?:'+location_link+r')',before,re.I) is not None:
+        return re.match(r'^\s*(?:$|(?:(?:from|on|at)\s+|从|于)[0-9])',after,re.I) is not None
+    return (re.search(r'(?:在|于)\s*$',before) is not None
+            and re.match(r'^\s*(?:进行|参加|举行|举办|的)?\s*'+label,after) is not None)
+
+
 def _fixed_place_grounded(place,label,references,turns):
     for ref in references:
         original=turns[ref.source_index].text
@@ -614,8 +626,9 @@ def _fixed_place_grounded(place,label,references,turns):
         offset=original.index(ref.quote)
         for occurrence in re.finditer(re.escape(place),ref.quote):
             start,end=offset+occurrence.start(),offset+occurrence.end()
-            clause=_source_clause(original,start,end)
-            if label in clause and not _ENDPOINT_DENIAL.search(clause)and _source_asserted(original,start,end):
+            left,right=_source_clause_bounds(original,start,end)
+            if (_direct_fixed_place(label,original[left:start],original[end:right])
+                    and not _ENDPOINT_DENIAL.search(original[left:right])and _source_asserted(original,start,end)):
                 return True
     return False
 

@@ -349,14 +349,22 @@ class PlanUnderstandingBoundary(unittest.TestCase):
 
     def test_only_the_fixed_items_original_location_can_seed_a_place_query(self):
         from cj_api.lio_pipeline_document import declared_endpoint_names
-        for language, place, label, fixed_text, absent, unrelated, confirmed, denied in (
+        for language, place, label, fixed_text, confirmed, denied, unrelated in (
             ('zh','北京饭店','酒店集合','第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变',
-             '请补全第二天安排','另外想看看北京饭店','酒店集合地点是北京饭店','酒店集合地点不是北京饭店'),
+             '酒店集合地点是北京饭店','酒店集合地点不是北京饭店',(
+                 '请补全第二天安排','另外想看看北京饭店','酒店集合照旧而我朋友住在北京饭店',
+                 '酒店集合照旧并且我晚上去北京饭店吃饭','酒店集合地点是北京饭店咖啡厅',
+             )),
             ('en','Beijing Hotel','hotel meetup','On day 1 I have a fixed hotel meetup from 9:00 to 10:00 a.m., keep it unchanged',
-             'Please fill out day two','Also show me the Beijing Hotel','The hotel meetup is at Beijing Hotel',
-             'The hotel meetup is not at Beijing Hotel'),
+             'The hotel meetup is at Beijing Hotel','The hotel meetup is not at Beijing Hotel',(
+                 'Please fill out day two','Also show me the Beijing Hotel',
+                 'The hotel meetup stays as planned while my friend stays at Beijing Hotel',
+                 'The hotel meetup stays as planned while I eat at Beijing Hotel tonight',
+                 'The hotel meetup is at Beijing Hotel West Gate',
+             )),
         ):
-            for detail, expected in ((absent,False),(unrelated,False),(confirmed,True),(denied,False)):
+            for detail in (*unrelated,confirmed,denied):
+                expected=detail==confirmed
                 with self.subTest(language=language,detail=detail):
                     value,turns=self.fixed_case()
                     turns=(PlanningTurn(fixed_text,turns[0].question_day),
@@ -368,9 +376,9 @@ class PlanUnderstandingBoundary(unittest.TestCase):
                     projection=prepare_plan_fields(parsed,turns)
                     endpoints=declared_endpoint_names(projection.fields,id_prefix='scope',retained=None,city_names=())
                     self.assertEqual(bool(endpoints),expected)
-                    # Negated details still go through the existing final
-                    # fixed guard. Assert their lookup eligibility before it.
-                    fields=projection.fields if detail==denied else self.compile(value,turns).fields
+                    # Keep the separate final fixed guard for details that
+                    # contain a denial or a different participant.
+                    fields=self.compile(value,turns).fields if detail in (confirmed,*unrelated[:2]) else projection.fields
                     item,=fields['fixed_items']
                     for edge, clock in (('start','09:00'),('end','10:00')):
                         self.assertEqual(item[edge]['place'],dict(state='known',value=place)if expected else dict(state='unknown'))
