@@ -385,6 +385,41 @@ class PlanUnderstandingBoundary(unittest.TestCase):
                         self.assertEqual(item[edge]['time'],dict(state='known',value=clock))
                     self.assertEqual(item['locked'],dict(state='known',value=True))
 
+    def test_fixed_location_uses_the_latest_original_even_when_model_cites_the_old_place(self):
+        from cj_api.lio_pipeline_document import declared_endpoint_names
+        for label, place, new_place, prior, same_turn, change, denial, restated, other_activity in (
+            ('酒店集合','北京饭店','北京南站',
+             '第一天我9:00–10:00要在北京饭店进行酒店集合，这项安排已确定，保持不变',
+             '第一天我9:00–10:00在北京饭店的酒店集合改在北京南站，这项安排已确定，保持不变',
+             '酒店集合改在北京南站','酒店集合不在北京饭店','酒店集合地点在北京南站','我朋友换到北京饭店住宿'),
+            ('hotel meetup','Beijing Hotel','Beijing South Station',
+             'On day 1 I have a fixed hotel meetup at Beijing Hotel from 9:00 to 10:00 a.m., keep it unchanged',
+             'On day 1 I have a fixed hotel meetup at Beijing Hotel from 9:00 to 10:00 moved to Beijing South Station, keep it unchanged',
+             'The hotel meetup moved to Beijing South Station','The hotel meetup is not at Beijing Hotel',
+             'The hotel meetup is at Beijing South Station','My friend moved to Beijing Hotel'),
+        ):
+            for primary, later, selected_place, is_current in (
+                (same_turn,None,place,False),(prior,change,place,False),(prior,denial,place,False),
+                (prior,restated,place,False),(prior,change,new_place,True),(prior,other_activity,place,True),
+            ):
+                with self.subTest(primary=primary,later=later,selected_place=selected_place):
+                    value,turns=self.fixed_case()
+                    day=turns[0].question_day
+                    turns=(PlanningTurn(primary,day),*((PlanningTurn(later,day),)if later else ()),turns[1])
+                    value['current_source_index']=len(turns)-1
+                    details=[dict(source_index=1,quote=later)]if selected_place==new_place else []
+                    value['fixed_items'][0].update(label=label,quote=primary,start_place=selected_place,
+                        end_place=selected_place,detail_refs=details)
+                    data=prepare_plan_fields(parse_plan_understanding(packed(value),turns),turns)
+                    endpoints=declared_endpoint_names(data.fields,id_prefix='scope',retained=None,city_names=())
+                    self.assertEqual(bool(endpoints),is_current)
+                    fixed,=data.fields['fixed_items']
+                    for edge,clock in (('start','09:00'),('end','10:00')):
+                        expected=dict(state='known',value=selected_place)if is_current else dict(state='unknown')
+                        self.assertEqual(fixed[edge]['place'],expected)
+                        self.assertEqual(fixed[edge]['time'],dict(state='known',value=clock))
+                    self.assertEqual(fixed['locked'],dict(state='known',value=True))
+
     def test_arrival_clock_never_uses_a_day_number_or_clipped_negation(self):
         for text,quote,clock,accepted in (
                 ('I arrive at 9 a.m.','I arrive at 9 a.m.','09:00',True),

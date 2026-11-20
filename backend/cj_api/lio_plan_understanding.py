@@ -607,16 +607,41 @@ def original_plan_turns(database,worker,binding,view):
     return turns
 
 
+_FIXED_SITE_REVISION=re.compile(
+    r'(?:地点|地址|位置)\s*(?:变更|(?:还|尚)?(?:未定|没定|未确定|未知))|'
+    r'(?:地点|地址|位置)?\s*(?:改(?:到|在|去|为|成)|换(?:到|在|去)|移到|不在)|'
+    r'\b(?:(?:move(?:d)?|change(?:d)?|switch(?:ed)?|relocate(?:d)?)\s+to|'
+    r'(?:not|no longer)\s+(?:at|in)|(?:the )?(?:venue|location|address)\s+(?:changed|is (?:still )?(?:unknown|undecided)))\b',
+    re.I)
+_FIXED_SITE_MENTION=re.compile(
+    r'地点|地址|位置|(?:在|于)\s*(?!(?:上午|下午|早上|晚上|中午))(?=[a-z\u3400-\u9fff])|'
+    r'\b(?:venue|location|address)\b|\b(?:at|in)\s+(?=[a-z\u3400-\u9fff])',re.I)
+
+
 def _direct_fixed_place(label,before,after):
     """The place must directly modify the fixed event or its location."""
-    if OTHER.search(before)or '朋友'in before:return False
+    if OTHER.search(before)or '朋友'in before or _FIXED_SITE_REVISION.search(after):return False
     label=re.escape(label)
-    location_link=(r'\s*(?:(?:的)?(?:地点|地址|位置)\s*(?:是|在|为|[:：])|(?:安排|改|定)?(?:在|于))\s*$'
-                   r'|\s+(?:(?:venue|location|address)\s+)?(?:(?:is|will be|takes place)\s+)?(?:at|in)\s*$')
+    location_link=(r'\s*(?:(?:的)?(?:地点|地址|位置)\s*(?:是|在|为|改为|改成|[:：])|(?:安排|改|定)?(?:在|于))\s*$'
+                   r'|\s+(?:(?:venue|location|address)\s+)?'
+                   r'(?:(?:(?:is|will be|takes place)\s+)?(?:at|in)|(?:(?:has|was|will)\s+)?(?:move|moved)\s+to)\s*$')
     if re.search(label+r'(?:'+location_link+r')',before,re.I) is not None:
         return re.match(r'^\s*(?:$|(?:(?:from|on|at)\s+|从|于)[0-9])',after,re.I) is not None
     return (re.search(r'(?:在|于)\s*$',before) is not None
-            and re.match(r'^\s*(?:进行|参加|举行|举办|的)?\s*'+label,after) is not None)
+            and re.fullmatch(r'\s*(?:进行|参加|举行|举办|的)?\s*'+label+r'\s*',after) is not None)
+
+
+def _fixed_place_superseded(label,source_index,after_clause,turns):
+    """A later original may withhold a stale place even when the model omits it."""
+    remaining=(turns[source_index].text[after_clause:],*(turn.text for turn in turns[source_index+1:]))
+    for text in remaining:
+        for _,_,clause in _original_clauses(text):
+            revision=_FIXED_SITE_REVISION.search(clause)
+            if label in clause and (revision or _FIXED_SITE_MENTION.search(clause)):
+                return True
+            if revision and not clause[:revision.start()].strip():
+                return True
+    return False
 
 
 def _fixed_place_grounded(place,label,references,turns):
@@ -628,7 +653,8 @@ def _fixed_place_grounded(place,label,references,turns):
             start,end=offset+occurrence.start(),offset+occurrence.end()
             left,right=_source_clause_bounds(original,start,end)
             if (_direct_fixed_place(label,original[left:start],original[end:right])
-                    and not _ENDPOINT_DENIAL.search(original[left:right])and _source_asserted(original,start,end)):
+                    and not _ENDPOINT_DENIAL.search(original[left:right])and _source_asserted(original,start,end)
+                    and not _fixed_place_superseded(label,ref.source_index,right,turns)):
                 return True
     return False
 
