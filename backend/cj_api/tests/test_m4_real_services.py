@@ -1364,6 +1364,57 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(citation.url,
             'https://uri.amap.com/navigation?from=116.4%2C39.9&to=116.5%2C40.0&mode=walk&callnative=0')
 
+    def test_lio_non_transit_fact_answers_remain_model_answers(self):
+        from cj_api.local_app import ISSUER, scope_for
+        from cj_fact.live_source import NOTICE_URL
+
+        subject='m4-synthetic-one'
+        binding=SimpleNamespace(scope=scope_for(ISSUER,subject),run_id='synthetic-fact-advice')
+        provider=self.provider(sse())
+        request=dict(name='fact',arguments=dict(start_date='2026-11-10',end_date='2026-11-10'))
+        contexts=([],[dict(text='II. 240-Hour Visa-Free Transit Policy'),dict(text='Synthetic text: 10 days.')],
+                  [dict(text='Read the airport transport directions.')])
+        questions=(
+            ('How do I get from Beijing Capital Airport to downtown Beijing?','Take the airport train.'),
+            ('How do I transfer to the subway?','Follow the subway signs.'),
+            ('How can I pay for a metro ticket?','Check the station payment options.'),
+        )
+        for question,answer in questions:
+            for excerpts in contexts:
+                for profiles in ({},{'streaming_subject':subject},
+                                 {'buffered_streaming_subjects':frozenset({subject})}):
+                    with self.subTest(question=question,excerpts=excerpts,profiles=profiles):
+                        tools=RealTools(RealServices(provider,KEY,frozenset({subject})),**profiles)
+                        rounds=[]
+
+                        class Worker:
+                            lio_planning=None
+
+                            def _model_history(self,*args):pass
+
+                            def _registered_stream(self,binding,key,registration,argument,*,progress=None):
+                                if registration=='tool.fact':
+                                    yield progress
+                                    yield json.dumps(dict(source_url=NOTICE_URL,retrieved_at='2026-11-10T01:00:00+00:00',
+                                                          excerpts=excerpts))
+                                elif key=='model.tool_turn.0':
+                                    rounds.append(key)
+                                    argument.native_reply['assistant']=dict(tool_calls=[dict(id='synthetic-fact')])
+                                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[request]))
+                                else:
+                                    rounds.append(key)
+                                    projected=json.loads(argument.messages[-1]['content'])['results'][0]['result']
+                                    assert projected['excerpts']==excerpts
+                                    if profiles:yield answer
+                                    else:yield json.dumps(dict(version='MODEL-tool-turn.1',kind='answer',
+                                                               answer=dict(en=answer,zh='合成回答。'),calls=[]))
+
+                        worker=Worker();worker.provider=provider
+                        seen=''.join(chunk for chunk in tools.answer(worker,binding,[dict(role='user',content=question)],
+                                                                   lio_locale='en') if isinstance(chunk,str))
+                        self.assertEqual(seen,answer)
+                        self.assertEqual(rounds,['model.tool_turn.0','model.tool_turn.1'])
+
     def test_lio_entry_policy_requires_the_article_and_withholds_stale_durations(self):
         from cj_api.local_app import ISSUER, scope_for
         from cj_fact.live_source import NOTICE_URL
@@ -1391,6 +1442,9 @@ class Boundaries(unittest.TestCase):
                     yield json.dumps(dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[request]))
                 else:
                     evidence = json.loads(argument.messages[-1]['content'])['results'][0]['result']
+                    self.followup = True
+                    if not evidence['excerpts']:
+                        raise ProviderUnknown('Synthetic second model turn has no result')
                     assert '240-Hour' in evidence['excerpts'][0]['text']
                     yield 'You qualify automatically for 30 days or 1'
                     yield '44 hours.'
@@ -1407,12 +1461,14 @@ class Boundaries(unittest.TestCase):
         ]:
             with self.subTest(excerpts=excerpts):
                 worker.excerpts = excerpts
+                worker.followup = False
                 chunks = list(tools.answer(worker,binding,[dict(role='user',content='Find the transit policy')],
                                            lio_locale='en'))
                 citation, = [chunk for chunk in chunks if isinstance(chunk,LioCitation)]
                 self.assertEqual(citation.url, NOTICE_URL)
                 answer = ''.join(chunk for chunk in chunks if isinstance(chunk,str))
                 self.assertIn(expected,answer)
+                self.assertEqual(worker.followup,expected=='describes 240-hour')
                 self.assertNotIn('automatically', answer)
                 self.assertNotIn('30 days', answer)
                 self.assertNotIn('144 hours', answer)

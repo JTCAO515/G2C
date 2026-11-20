@@ -254,7 +254,7 @@ def _weather_arguments_for_day(arguments, day):
     return canonical(data)
 
 
-def _lio_tool_result(name, data, source, chinese, arguments):
+def _lio_tool_result(name, data, source, chinese, arguments, *, transit_policy=False):
     """Project supplier evidence into the Lio model turn without machine provenance."""
     if name == 'place':
         return dict(query=data['query'], outcome=data['outcome'], places=data['places'],
@@ -269,6 +269,8 @@ def _lio_tool_result(name, data, source, chinese, arguments):
         return dict(forecasts=data['forecasts'], report_time=report_time if report_time != 'UNKNOWN' else None,
                     dates=json.loads(arguments)['dates'], note=note, source=source)
     excerpts = data['excerpts']
+    if not transit_policy:
+        return dict(excerpts=excerpts, source=source)
     policy = []
     for excerpt in excerpts:
         content = excerpt['text']
@@ -866,7 +868,7 @@ class RealTools:
                 ModelInput(messages,system,worker.provider,native_reply,
                     final_answer=round_index==turns-1 or len(seen)==tool_limit,turn_profile=profile,
                     lio_answer=lio_locale is not None,national=national,confirmed_destination=city is not None,
-                    retain_unsettled_answer=lio_locale is not None and not (transit_request or transit_evidence)))
+                    retain_unsettled_answer=lio_locale is not None and not transit_request))
             if incremental:
                 raw=None
                 saw_answer = False
@@ -874,7 +876,7 @@ class RealTools:
                     for chunk in chunks:
                         if 'assistant' in native_reply:raw=chunk
                         elif chunk:
-                            if transit_request or transit_evidence:
+                            if transit_request:
                                 saw_answer = True
                             else:
                                 yield chunk
@@ -903,7 +905,7 @@ class RealTools:
                 raise ProviderUnknown('live model tool turn unavailable') from None
             if not turn.calls:
                 answer = turn.answer_zh if chinese else turn.answer_en
-                yield _lio_transit_answer(chinese, transit_evidence) if transit_request or transit_evidence else answer
+                yield _lio_transit_answer(chinese, transit_evidence) if transit_request else answer
                 return
             if len(seen)+len(turn.calls)>tool_limit:
                 raise ProviderFailed('M4 per-run tool limit reached')
@@ -990,8 +992,9 @@ class RealTools:
                     title = title_zh if chinese else title_en
                     public_source = dict(title=title, url=public_url, observed_at=observed_at)
                     yield LioCitation(key, title, public_url, observed_at)
-                model_result = data if lio_locale is None else _lio_tool_result(name, data, public_source, chinese, arguments)
-                if name == 'fact' and lio_locale is not None:
+                model_result = data if lio_locale is None else _lio_tool_result(
+                    name, data, public_source, chinese, arguments, transit_policy=transit_request)
+                if transit_request and name == 'fact':
                     if not model_result['excerpts']:
                         yield _lio_transit_answer(chinese, False)
                         return

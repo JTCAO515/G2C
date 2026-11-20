@@ -38,6 +38,26 @@ CAPABILITY_PATTERN = (r'(?:(?:那|请问|所以)\s*)?(?:'
     r'what (?:can|could) you (?:do|help(?: me)? with)|what do you do|how can you help(?: me)?|what are you able to do'
     r')(?:呢|呀|啊|吗)?')
 _CAPABILITY_QUESTION = re.compile(CAPABILITY_PATTERN + r'[?？。.!！\s]*', re.I)
+_HAN_TEXT = re.compile(r'[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\U00020000-\U000323af]')
+_LATIN_TEXT = re.compile(r'[A-Za-z]')
+_ENGLISH_QUESTION_OPENING = re.compile(
+    r'^\W*(?:how|what|where|when|which|who|why|can|could|should|would|do|does|is|are|please)\b', re.I)
+_CHINESE_QUESTION_WORD = re.compile(r'请问|怎么|怎样|如何|哪里|哪儿|多少|多久|能否|是否|可以|吗|呢')
+
+
+def answer_locale(question, default):
+    """Choose the answer language from the current question's wording."""
+    han = _HAN_TEXT.search(question)
+    latin = _LATIN_TEXT.search(question)
+    if han is None:
+        return 'en' if latin is not None else default
+    if latin is None:
+        return 'zh'
+    if _ENGLISH_QUESTION_OPENING.match(question):
+        return 'en'
+    if han.start() < latin.start() or _CHINESE_QUESTION_WORD.search(question):
+        return 'zh'
+    return default
 
 
 def self_description(question, locale):
