@@ -1,0 +1,392 @@
+[
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.ds-c1-arrival.pvg-maglev-fare-hours",
+    "title_zh": "浦东机场磁悬浮到龙阳路的票价和运行时间",
+    "summary_zh": "浦东机场磁悬浮连接浦东机场与龙阳路：机场至龙阳路运行时段07:02–21:42，龙阳路至机场06:45–21:40；普通票单程50元、往返80元，贵宾票单程100元、往返160元，最高时速300公里。机场页注明信息仅供参考，以申通地铁公布为准。",
+    "cities": ["shanghai"],
+    "place": {"name_zh": "上海浦东国际机场磁悬浮车站", "name_en": "Shanghai Maglev Train", "address": null},
+    "audience": ["普通散客", "赶时间旅客", "首次来华游客"],
+    "themes": ["arrival", "transport"],
+    "sources": [
+      {
+        "name": "上海机场集团英文站·Transportation·Maglev",
+        "url": "https://www.shairport.com/ensh/cxf/index.html",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": "2025-03-17",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": ["未给出全程耗时", "未说明末班后替代交通", "票价与时段可能随运营调整"],
+    "notes": "[阶段:入境抵达] [时效:页面标注最近更新2025-03-17，票价/时刻属易变信息] [复核:待复核] [依据:页面表格Operating hours/Ticket price/Top Speed三行] [来源级:S2 机场运营方官网] 价格单位人民币，仅照录页面数值，未换算或推断优惠。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.ds-c1-arrival.sh-airport-link-line",
+    "title_zh": "浦东机场与虹桥机场之间的市域机场线首末班和间隔",
+    "summary_zh": "上海市域机场线连接浦东机场与虹桥机场：浦东机场1、2号航站楼站首班06:00、末班22:00；虹桥机场2号航站楼站首班06:00、末班22:00。同一页面在发车间隔上分别出现15分钟和每12分钟两种写法，本条保留两说。",
+    "cities": ["shanghai"],
+    "place": {"name_zh": "上海市域机场线（浦东机场—虹桥机场）", "name_en": "Shanghai Airport Link Line", "address": null},
+    "audience": ["转机旅客", "普通散客"],
+    "themes": ["arrival", "transport", "rail"],
+    "sources": [
+      {
+        "name": "上海机场集团英文站·Transportation·Airport Link Line",
+        "url": "https://www.shairport.com/ensh/syt/index.html",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": "2026-06-22",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": ["未给出全程运行时间", "未给出票价", "两处发车间隔写法不一致，需以运营方最新公告确认"],
+    "notes": "[阶段:入境抵达] [时效:页面标注最近更新2026-06-22] [复核:待复核] [依据:页面Operating Hours/Departure Interval表；第一段表列15 minutes，第二段文字为Every 12 minutes] [来源级:S2 机场运营方官网] 间隔冲突原样保留，未裁决；机场页提示以申通地铁为准。",
+    "conflicts": ["同一页面发车间隔一处写15分钟、另一处写每12分钟，未说明适用时段或方向差异"],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.ds-c1-arrival.pvg-t1-taxi-stand",
+    "title_zh": "浦东机场1号航站楼出租车在哪里上客",
+    "summary_zh": "浦东国际机场1号航站楼的出租车候客点位于到达层12号门外：从到达4号或8号门出，向南步行到12号门。该候客点24小时服务。机场页同时给出上海出租车计价标准，具体以现场与主管部门为准。",
+    "cities": ["shanghai"],
+    "place": {"name_zh": "上海浦东国际机场1号航站楼", "name_en": "Shanghai Pudong International Airport Terminal 1", "address": null},
+    "audience": ["携带行李旅客", "首次来华游客"],
+    "themes": ["arrival", "transport"],
+    "sources": [
+      {
+        "name": "上海机场集团英文站·Transportation·Taxis",
+        "url": "https://www.shairport.com/ensh/czc/index.html",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": "2024-04-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": ["未给出排队时长与高峰提示", "未说明网约车上车点"],
+    "notes": "[阶段:入境抵达] [时效:页面标注最近更新2024-04-16，上客点可能调整] [复核:待复核] [依据:页面Pudong International Airport T1段“The taxi pick-up point is located outside Arrivals Gate 12”] [来源级:S2 机场运营方官网] 上客点为页面原文；计价标准另见同页表格，未逐项抄录。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.ds-c1-arrival.pvg-t2-taxi-stand",
+    "title_zh": "浦东机场2号航站楼出租车在哪里上客",
+    "summary_zh": "浦东国际机场2号航站楼的出租车候客点位于到达层25号门外，候客点24小时服务。机场页提示上海出租车运价自2022年1月15日起调整，具体以主管部门公布为准。",
+    "cities": ["shanghai"],
+    "place": {"name_zh": "上海浦东国际机场2号航站楼", "name_en": "Shanghai Pudong International Airport Terminal 2", "address": null},
+    "audience": ["携带行李旅客", "首次来华游客"],
+    "themes": ["arrival", "transport"],
+    "sources": [
+      {
+        "name": "上海机场集团英文站·Transportation·Taxis",
+        "url": "https://www.shairport.com/ensh/czc/index.html",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": "2024-04-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": ["未给出夜间排队与运力提示", "未说明大型行李车型选择"],
+    "notes": "[阶段:入境抵达] [时效:页面标注最近更新2024-04-16] [复核:待复核] [依据:页面Pudong International Airport T2段“outside Arrival Gate 25”] [来源级:S2 机场运营方官网] 仅记录上客点与24小时服务，不推断车程或费用。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.ds-c1-arrival.hongqiao-taxi-stands",
+    "title_zh": "虹桥机场两座航站楼出租车分别在哪里上客",
+    "summary_zh": "虹桥国际机场1号航站楼的出租车候客点位于到达层接客大厅1号门外；2号航站楼的在到达层接客大厅4号门外。机场页同时列出上海出租车计价标准，并注明信息仅供参考。",
+    "cities": ["shanghai"],
+    "place": {"name_zh": "上海虹桥国际机场", "name_en": "Shanghai Hongqiao International Airport", "address": null},
+    "audience": ["携带行李旅客", "短途旅客"],
+    "themes": ["arrival", "transport"],
+    "sources": [
+      {
+        "name": "上海机场集团英文站·Transportation·Taxis",
+        "url": "https://www.shairport.com/ensh/czc/index.html",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": "2024-04-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": ["未给出两楼间转乘出租车的建议", "未给出排队时间"],
+    "notes": "[阶段:入境抵达] [时效:页面标注最近更新2024-04-16] [复核:待复核] [依据:页面Hongqiao T1段“outside Gate 1 of the Arrivals Floor Pick-up Hall”与T2段“outside Gate 4”] [来源级:S2 机场运营方官网] 一条覆盖两座航站楼，分述位置。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.ds-c1-arrival.shanghai-taxi-fare-rules",
+    "title_zh": "上海机场打车进城的计价规则有哪些",
+    "summary_zh": "机场官网列出的上海市区出租车标准为：起租价每3公里14元，途安及荣威Ei5纯电车型16元；超起租里程每公里2.7元；超过15公里部分加收50%空驶费；23:00至次日5:00起租价和超起租单价上浮30%；春节每单加10元，五一、国庆每单加5元；工作日高峰可加价5%、平峰可降价5%。无障碍出租车起租价19元。",
+    "cities": ["shanghai"],
+    "place": null,
+    "audience": ["普通散客", "预算敏感旅客"],
+    "themes": ["arrival", "transport", "payment"],
+    "sources": [
+      {
+        "name": "上海机场集团英文站·Transportation·Taxis（计价标准表）",
+        "url": "https://www.shairport.com/ensh/czc/index.html",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": "2024-04-16",
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": ["未给出机场到主要目的地的参考车费", "浮动加价由企业选择，实际是否执行未知", "节假日具体时间以国务院安排为准"],
+    "notes": "[阶段:入境抵达] [时效:页面标注最近更新2024-04-16，运价属易变信息] [复核:待复核] [依据:同页Shanghai Taxi Fare Standards表各行列] [来源级:S2 机场运营方官网] 数值照录，未计算总价；高峰/平峰±5%为运营企业可选，非固定加价。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.ds-c1-arrival.pvg-arrival-facilities",
+    "title_zh": "浦东机场到达后能用到哪些服务设施",
+    "summary_zh": "浦东国际机场服务设施目录列出与外国旅客抵达相关的项目：问询（Inquires）、失物招领、WiFi、WiFi租赁与SIM卡、银行、ATM取现、外币兑换、入境服务、移动支付服务、一站式综合服务中心、离境退税、警务站、行李寄存与医疗点等。目录只列项目，未给具体位置和营业时间。",
+    "cities": ["shanghai"],
+    "place": {"name_zh": "上海浦东国际机场", "name_en": "Shanghai Pudong International Airport", "address": null},
+    "audience": ["首次来华游客", "需要取现或上网的旅客"],
+    "themes": ["arrival", "payment", "internet"],
+    "sources": [
+      {
+        "name": "上海机场集团英文站·Service Facilities·Pudong Airport",
+        "url": "https://www.shairport.com/ensh/pdjc/index.html",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": ["各项设施的具体楼层、营业时间与是否24小时", "ATM所属银行与支持卡种", "SIM卡售卖的具体运营商与套餐", "页面未标注发布日期"],
+    "notes": "[阶段:入境抵达] [时效:设施目录可能随航站楼改造调整] [复核:待复核] [依据:页面Service Facilities图标目录，含Inquires、Lost & Found、WiFi、ATM Machine、Currency Exchange、Entry Service、One-Stop Comprehensive Service Center等] [来源级:S2 机场运营方官网] 本条只证明设施存在，不证明位置、价格或可用时段；未逐项打开子页。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.ds-c1-arrival.sh-airport-hotline",
+    "title_zh": "上海两场遇到问题打哪个服务热线",
+    "summary_zh": "上海机场集团英文站页脚给出浦东机场与虹桥机场共用的服务热线021-96990，并列出服务质量监督电话同为021-96990；旅客意见反馈邮箱浦东为pvg-service@shairport.com、虹桥为sha-service@shairport.com。",
+    "cities": ["shanghai"],
+    "place": {"name_zh": "上海浦东国际机场、上海虹桥国际机场", "name_en": "Shanghai Pudong / Hongqiao International Airport", "address": null},
+    "audience": ["普通散客", "需要中文以外协助的旅客"],
+    "themes": ["arrival", "emergency"],
+    "sources": [
+      {
+        "name": "上海机场集团英文站·页脚服务热线",
+        "url": "https://www.shairport.com/ensh/index.html",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": ["未说明热线服务语种与接听时段", "未标注页面发布日期"],
+    "notes": "[阶段:入境抵达] [时效:电话可能变更] [复核:待复核] [依据:页面页脚Service Hotline与Complaint Phone Numbers两栏] [来源级:S2 机场运营方官网] 邮箱为页面原文；不推断邮件回复时效。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.ds-c1-arrival.pek-beijing-service-counter",
+    "title_zh": "首都机场国际到达出口对面的北京服务柜台能办什么",
+    "summary_zh": "北京市政府英文门户的机场服务专题称，首都国际机场在国际到达出口对面设有北京服务（Beijing Service）柜台，提供24小时服务，可办理BEIJING PASS交通卡、ATM取现、SIM卡申领或领取、外币兑换、城市地图等事项。",
+    "cities": ["beijing"],
+    "place": {"name_zh": "北京首都国际机场北京服务柜台", "name_en": "Beijing Service Counter, Beijing Capital International Airport", "address": null},
+    "audience": ["首次来华游客", "需要交通卡或上网的旅客"],
+    "themes": ["arrival", "payment", "internet", "transport"],
+    "sources": [
+      {
+        "name": "北京国际门户网·Beijing Service·首都机场专题",
+        "url": "https://english.beijing.gov.cn/specials/beijingservice/index.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": ["柜台具体位置描述仅到“国际到达出口对面”", "未给出各项目价格与办理所需证件", "未标注页面发布日期"],
+    "notes": "[阶段:入境抵达] [时效:服务项目可能调整] [复核:待复核] [依据:页面PEK区块标题“Across From the International Arrivals Exit”“24/7 Services”及五项图标标题] [来源级:S1 市政府英文门户] 未打开各子页；不推断套餐、资费或办理时长。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.ds-c1-arrival.pkx-beijing-service-counter",
+    "title_zh": "大兴机场国际到达出口对面的北京服务柜台能办什么",
+    "summary_zh": "北京市政府英文门户的机场服务专题称，大兴国际机场同样在国际到达出口对面设北京服务柜台，24小时服务，项目包括BEIJING PASS交通卡、ATM取现、SIM卡申领或领取、外币兑换、城市地图，另有WiFi、行李打包、医疗与失物招领的入口链接。",
+    "cities": ["beijing"],
+    "place": {"name_zh": "北京大兴国际机场北京服务柜台", "name_en": "Beijing Service Counter, Beijing Daxing International Airport", "address": null},
+    "audience": ["首次来华游客", "夜间抵达旅客"],
+    "themes": ["arrival", "payment", "internet", "transport"],
+    "sources": [
+      {
+        "name": "北京国际门户网·Beijing Service·大兴机场专题",
+        "url": "https://english.beijing.gov.cn/specials/beijingservice/index.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": ["柜台在航站楼内的具体楼层与编号", "各项目资费与所需证件", "未标注页面发布日期"],
+    "notes": "[阶段:入境抵达] [时效:服务项目可能调整] [复核:待复核] [依据:页面PKX区块“Across From the International Arrivals Exit”“24/7 Services”与项目图标] [来源级:S1 市政府英文门户] 大兴页面的WiFi、失物招领链接指向大兴机场官网，本次未打开。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.ds-c1-arrival.pek-bus-express-tickets",
+    "title_zh": "首都机场机场巴士和机场快线车票怎么买",
+    "summary_zh": "北京首都国际机场的进城公共交通包括网约车、机场巴士和机场快线。市政府英文门户称，可在北京服务机场服务柜台的自助机上凭有效身份证件购买机场巴士和机场快线车票，工作人员会协助购票。",
+    "cities": ["beijing"],
+    "place": {"name_zh": "北京首都国际机场", "name_en": "Beijing Capital International Airport", "address": null},
+    "audience": ["首次来华游客", "自助出行旅客"],
+    "themes": ["arrival", "transport", "passport_booking"],
+    "sources": [
+      {
+        "name": "北京国际门户网·PEK Transport Between Airport and City Guide",
+        "url": "https://english.beijing.gov.cn/specials/beijingservice/pek/trafficsix/index.html",
+        "type": "official_government",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": ["机票以外证件类型清单", "机场巴士与机场快线的票价、线路与首末班", "自助机是否支持境外银行卡", "未标注页面发布日期"],
+    "notes": "[阶段:入境抵达] [时效:购票方式与线路可能调整] [复核:待复核] [依据:页面正文“purchase airport bus and airport express line tickets with your valid ID at the self-service machines at the ‘Beijing Service’ airport service counter”] [来源级:S1 市政府英文门户] 原文“valid ID”未列举证件种类，本条不扩展；乘车资格与票种以运营方为准。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.ds-c1-arrival.szx-metro-line-11",
+    "title_zh": "深圳机场坐地铁11号线进城怎么走、票价多少",
+    "summary_zh": "深圳宝安国际机场由地铁11号线（机场快线）连接市区：往碧头方向首班06:30、末班00:04；往岗厦北方向首班05:52、末班00:02；半程末班到机场北01:05、到松岗00:45。普通车厢单程2–10元，商务车厢6–30元。机场服务热线+86-755-23456789。",
+    "cities": ["shenzhen"],
+    "place": {"name_zh": "深圳宝安国际机场", "name_en": "Shenzhen Bao'an International Airport", "address": null},
+    "audience": ["普通散客", "夜间抵达旅客", "预算敏感旅客"],
+    "themes": ["arrival", "transport"],
+    "sources": [
+      {
+        "name": "深圳机场英文站·Transport·Subway",
+        "url": "https://www.szairport.com/szairporten/ditie/zlm_tt.shtml",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": ["未给出机场站到航站楼的具体步行路线", "商务车厢购票与进站方式", "页面未标注发布日期，时刻与票价可能调整"],
+    "notes": "[阶段:入境抵达] [时效:时刻与票价为易变信息，页面提示以深圳地铁时刻为准] [复核:待复核] [依据:页面Metro Line 11段Stations、Service Time表、Fare段] [来源级:S2 机场运营方官网] 末班含半程车说明，照录未换算；商务车厢票价区间照录。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.ds-c1-arrival.szx-hotline",
+    "title_zh": "深圳机场24小时服务热线是多少",
+    "summary_zh": "深圳宝安国际机场英文站页头标注24小时服务热线+86-755-23456789，页脚另列服务咨询电话与服务投诉电话为同一号码，服务投诉邮箱为FWGL@szairport.com。",
+    "cities": ["shenzhen"],
+    "place": {"name_zh": "深圳宝安国际机场", "name_en": "Shenzhen Bao'an International Airport", "address": null},
+    "audience": ["普通散客", "需要协助的旅客"],
+    "themes": ["arrival", "emergency"],
+    "sources": [
+      {
+        "name": "深圳机场英文站·页头服务热线",
+        "url": "https://www.szairport.com/szairporten/index.shtml",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": ["未说明热线服务语种", "未标注页面发布日期"],
+    "notes": "[阶段:入境抵达] [时效:电话可能变更] [复核:待复核] [依据:页头“24-Hour Service Hotline”与页脚“Service Enquiry Hotline”] [来源级:S2 机场运营方官网] 咨询与投诉同号，未推断分工。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.ds-c1-arrival.szx-lost-and-found",
+    "title_zh": "深圳机场丢了东西去哪里找",
+    "summary_zh": "深圳宝安国际机场失物招领位于航站楼4层出发厅A岛末端附近，24小时服务，电话(+86)0755-23456789；受理范围是航站楼内遗失物品的查询、保管与领取，页面另注明可能影响安全的无主物品除外。",
+    "cities": ["shenzhen"],
+    "place": {"name_zh": "深圳宝安国际机场失物招领", "name_en": "Lost and Found, Shenzhen Bao'an International Airport", "address": "航站楼4层出发厅A岛末端附近"},
+    "audience": ["遗失物品旅客", "转机旅客"],
+    "themes": ["arrival", "emergency"],
+    "sources": [
+      {
+        "name": "深圳机场英文站·Facilities·Lost and Found",
+        "url": "https://www.szairport.com/szairporten/blss/202008/607e78729a0b44eaaefb5e4d499c3121.shtml",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": ["领取所需证件与保管期限", "航空器上遗失物品是否受理", "页面末句被截断，除外情形未完整显示"],
+    "notes": "[阶段:入境抵达] [时效:位置与电话可能调整] [复核:待复核] [依据:页面Service Hours/Hotline/Location/Service Content四段] [来源级:S2 机场运营方官网] 地址为页面位置描述，非完整门牌；除外条款原文不完整，未补写。",
+    "conflicts": [],
+    "related_entries": []
+  },
+  {
+    "format_version": "visitor-candidate.1",
+    "id": "candidate.2026-11-20.ds-c1-arrival.szx-facilities-list",
+    "title_zh": "深圳机场到达后有哪些常用服务设施",
+    "summary_zh": "深圳宝安国际机场英文站的设施与服务目录列出：行李寄存、失物招领、商务中心、WiFi租赁、快递服务、更衣室、母婴室、外币兑换、急救站等。目录只给项目名称与子页链接，未在列表页给出位置和营业时间。",
+    "cities": ["shenzhen"],
+    "place": {"name_zh": "深圳宝安国际机场", "name_en": "Shenzhen Bao'an International Airport", "address": null},
+    "audience": ["首次来华游客", "需要兑换或上网的旅客"],
+    "themes": ["arrival", "internet", "payment"],
+    "sources": [
+      {
+        "name": "深圳机场英文站·Facilities and Services",
+        "url": "https://www.szairport.com/szairporten/blss/Amenities.shtml",
+        "type": "official_transport",
+        "language": "en",
+        "published_on": null,
+        "valid_until": null
+      }
+    ],
+    "collected_on": "2026-11-20",
+    "status": "待核实",
+    "missing": ["各设施的具体位置、营业时间与收费", "外币兑换支持的币种", "WiFi租赁资费与押金", "页面未标注发布日期"],
+    "notes": "[阶段:入境抵达] [时效:设施目录可能调整] [复核:待复核] [依据:页面Facilities and Services九项卡片标题] [来源级:S2 机场运营方官网] 仅证明项目存在；除失物招领外未打开子页核对细节。",
+    "conflicts": [],
+    "related_entries": []
+  }
+]
