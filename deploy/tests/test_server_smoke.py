@@ -2,6 +2,7 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 import json
 import sqlite3
+from types import SimpleNamespace
 
 import pytest
 
@@ -430,18 +431,34 @@ def test_ineligible_session_stops_before_opening_the_smoke_budget(
 
 def _itinerary_preview(places=('故宫博物院', '慕田峪长城', '颐和园'), *, message='same-mid'):
     return dict(version=smoke.PLAN_PREVIEW_VERSION, message_id=message, conversation_id='same-cid',
-                preview=dict(destination={'adcode': '110000'}, days=[
+                preview=dict(destination=None, days=[
                     dict(day_index=i, activities=[dict(place_name=name, cancelled=False)])
                     for i, name in enumerate(places, 1)]))
 
 
-@pytest.mark.parametrize('places', [
-    ('故宫博物院', '慕田峪长城', '颐和园'),
-    ('Forbidden City', 'Mutianyu Great Wall', 'Summer Palace'),
+@pytest.mark.parametrize(('locale', 'places'), [
+    ('zh', ('故宫博物院', '慕田峪长城', '颐和园')),
+    ('en', ('Forbidden City', 'Mutianyu Great Wall', 'Summer Palace')),
 ])
-def test_structured_preview_proves_both_language_plans(places):
-    value = _itinerary_preview(places)
-    smoke.check_itinerary_preview(value, 'same-mid', 'same-cid')
+def test_structured_preview_proves_both_language_plans(locale, places):
+    from cj_api.lio_itinerary_preview import effect, read_preview, render
+
+    days = [dict(day_index=index, activities=[dict(place_name=place, verb='visit', period=None)])
+            for index, place in enumerate(places, 1)]
+    answer, days = render(days, 3, None, locale)
+    state = SimpleNamespace(status='completed', draft_outcome=None, trip_proposal_published=False,
+                            text=answer, effects=(effect(answer, days),))
+    response = dict(version=smoke.PLAN_PREVIEW_VERSION, message_id='same-mid',
+                    conversation_id='same-cid', preview=read_preview(state, locale))
+    assert response['preview']==_itinerary_preview(places)['preview']
+    smoke.check_itinerary_preview(response, 'same-mid', 'same-cid')
+
+    state.text = '请问想去哪里？' if locale == 'zh' else 'Where would you like to go?'
+    response['preview'] = read_preview(state, locale)
+    assert response['preview'] is None
+    with pytest.raises(smoke.SmokeResult) as failure:
+        smoke.check_itinerary_preview(response, 'same-mid', 'same-cid')
+    assert (failure.value.status, failure.value.reason) == ('UNKNOWN', 'structured_plan_unavailable')
 
 
 @pytest.mark.parametrize(('problem', 'status', 'reason'), [
@@ -475,9 +492,9 @@ def test_structured_preview_rejects_unmatched_or_incomplete_evidence(problem, st
     elif problem == 'out-of-city':
         activity['city_adcode'] = '310000'
     elif problem == 'wrong-destination':
-        value['preview']['destination']['adcode'] = '310000'
+        value['preview']['destination'] = {'adcode': '310000'}
     elif problem == 'unconfirmed-city':
-        activity['place_name'] = 'Unverified attraction'
+        activity['place_name'] = 'Great Wall'
     elif problem == 'unavailable-status':
         activity['cancelled'] = 'false'
     with pytest.raises(smoke.SmokeResult) as failure:
