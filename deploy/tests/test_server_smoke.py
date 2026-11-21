@@ -513,3 +513,88 @@ def test_plan_passes_by_structure_even_without_headings_and_posts_once(monkeypat
     assert result['legacy_format_match'] is False
     assert result['structured_days'] == 3
     assert len(posts) == 1
+
+
+def _dated_trip(labels=('参观故宫博物院', 'Hike Mutianyu Great Wall', '游览颐和园。')):
+    return dict(trip_id='same-trip', title='Beijing', days=[
+        dict(date=f'2026-12-0{i}', items=[dict(item_id=f'stop-{i}', label=label,
+                                             start_time=None, end_time=None, fixed=False)])
+        for i, label in enumerate(labels, 1)])
+
+
+@pytest.mark.parametrize(('scenario', 'status', 'reason'), [
+    ('undated', 'UNKNOWN', 'structured_plan_day_dates_unavailable'),
+    ('gapped', 'FAIL', 'structured_plan_day_count'),
+    ('duplicate_date', 'FAIL', 'structured_plan_day_count'),
+    ('empty', 'FAIL', 'structured_plan_day_without_beijing_activity'),
+    ('cancelled', 'FAIL', 'structured_plan_day_without_beijing_activity'),
+    ('uncertain_city', 'UNKNOWN', 'structured_plan_activity_location_unconfirmed'),
+    ('negative_label', 'UNKNOWN', 'structured_plan_activity_location_unconfirmed'),
+])
+def test_same_message_saved_trip_fails_closed(scenario, status, reason):
+    trip = _dated_trip()
+    day = trip['days'][-1]
+    item = day['items'][0]
+    if scenario == 'undated':
+        day['date'] = None
+    elif scenario == 'gapped':
+        day['date'] = '2026-12-05'
+    elif scenario == 'duplicate_date':
+        day['date'] = '2026-12-02'
+    elif scenario == 'empty':
+        day['items'] = []
+    elif scenario == 'cancelled':
+        item['cancelled'] = True
+    elif scenario == 'uncertain_city':
+        item['label'] = 'Visit an unverified attraction'
+    elif scenario == 'negative_label':
+        item['label'] = 'Do not visit the Summer Palace'
+    with pytest.raises(smoke.SmokeResult) as failure:
+        smoke.check_timeline_itinerary(trip)
+    assert (failure.value.status, failure.value.reason) == (status, reason)
+
+
+def test_original_visible_saved_trip_can_pass_with_empty_prose_and_no_extra_read(monkeypatch):
+    monkeypatch.setattr(smoke, 'POLL_SECONDS', 0)
+    posts = []
+
+    def api(token, route, *, document=None):
+        if document is not None:
+            assert route == '/v2/lio/messages'
+            posts.append(document)
+            return dict(version='LIO-message-receipt.2', message_id=document['message_id'],
+                        conversation_id='same-cid'), None
+        if route == '/v2/lio/timeline':
+            return dict(version='LIO-timeline.2', conversation_id='default', messages=[]), None
+        assert route == '/v2/lio/timeline?conversation_id=same-cid'
+        return dict(version='LIO-timeline.2', conversation_id='same-cid', messages=[
+            dict(message_id=posts[0]['message_id'], status='completed', answer='', trip=_dated_trip())
+        ]), 'same-timeline-ref'
+
+    result = smoke.run_case('zh.plan', 'fixture', 'synthetic', lambda: True, api)
+    assert result['status'] == 'PASS'
+    assert result['structured_days'] == 3
+    assert result['structured_plan_source'] == 'timeline_trip'
+    assert result['structured_plan_ref'] == 'same-timeline-ref'
+    assert result['answer_chars'] == 0
+    assert len(posts) == 1
+
+
+def test_release_verify_requires_both_structured_plan_results_even_with_old_text_passes():
+    attempt = 'a' * 64
+    rows = [dict(kind='case', case=name, status='PASS', bound_model_attempts=[], polls=[])
+            for name, _ in smoke.CASES]
+    rows[2].update(dispatch_ms=1, bound_model_attempts=[attempt], polls=[
+        dict(start_ms=10, end_ms=30, http=200, answering=False),
+        dict(start_ms=1010, end_ms=1040, http=200, answering=True),
+        dict(start_ms=2010, end_ms=2040, http=200, answering=True),
+        dict(start_ms=3010, end_ms=3040, http=200, answering=False),
+    ])
+    rows += [dict(kind='history', status='PASS'), dict(kind='translation_requirement', required=False),
+             dict(kind='cost', conservative_cny_1e7=0, line_usage_delta_cny_1e7=0)]
+    logs = [f'M4_MODEL_WIRE_TIMING attempt_sha256={attempt} first_provider_body_ms=2590.0 socket_read_ms=2740.0']
+    rows[2].update(structured_days=3, structured_plan_source='timeline_trip')
+    assert smoke.decide(rows, logs) == dict(status='UNKNOWN', concurrency='UNRUN',
+                                            reason='structured_plan_evidence_missing')
+    rows[5].update(structured_days=3, structured_plan_source='original_preview')
+    assert smoke.decide(rows, logs) == dict(status='PASS', concurrency='PASS')

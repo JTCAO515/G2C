@@ -1,7 +1,7 @@
 """B-operated, same-owner Hong Kong deployment smoke over the app's HTTP API."""
 import argparse
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import hashlib
 from http.client import IncompleteRead
 import json
@@ -206,8 +206,19 @@ def _planned_beijing_activity(raw):
         return False
     if location is not None:
         return location == BEIJING_CODE
-    name = ' '.join(raw['place_name'].casefold().split())
+    return _known_beijing_name(raw['place_name'])
+
+
+def _known_beijing_name(value):
+    name = ' '.join(value.casefold().split())
     return True if name in BEIJING_ACTIVITY_NAMES else None
+
+
+def _require_daily_beijing_activities(activities):
+    if any(not any(outcomes) and None not in outcomes for outcomes in activities):
+        raise SmokeResult('FAIL', 'structured_plan_day_without_beijing_activity')
+    if any(not any(outcomes) for outcomes in activities):
+        raise SmokeResult('UNKNOWN', 'structured_plan_activity_location_unconfirmed')
 
 
 def check_itinerary_preview(value, message_id, conversation_id):
@@ -231,11 +242,55 @@ def check_itinerary_preview(value, message_id, conversation_id):
         raise SmokeResult('UNKNOWN', 'structured_plan_day_shape')
     if sorted(day['day_index'] for day in days) != [1, 2, 3]:
         raise SmokeResult('FAIL', 'structured_plan_day_count')
-    activities = [[_planned_beijing_activity(item) for item in day['activities']] for day in days]
-    if any(not any(outcomes) and None not in outcomes for outcomes in activities):
-        raise SmokeResult('FAIL', 'structured_plan_day_without_beijing_activity')
-    if any(not any(outcomes) for outcomes in activities):
-        raise SmokeResult('UNKNOWN', 'structured_plan_activity_location_unconfirmed')
+    _require_daily_beijing_activities([
+        [_planned_beijing_activity(item) for item in day['activities']]
+        for day in days
+    ])
+
+
+def _saved_beijing_activity(item):
+    if (type(item) is not dict or type(item.get('item_id')) is not str or not item['item_id']
+            or type(item.get('label')) is not str or not item['label'].strip()
+            or type(item.get('cancelled', False)) is not bool):
+        raise SmokeResult('UNKNOWN', 'structured_plan_activity_invalid')
+    # The v2 Trip card contains scheduled items of the published revision.
+    # User text in its label can provide positive locality evidence only.
+    if item.get('cancelled', False):
+        return False
+    label = item['label'].strip().rstrip('。.!')
+    if NO_DAY_ACTIVITY.search(label) or DAY_QUESTION.search(label):
+        return None
+    action = DAY_ACTIVITY.match(label)
+    return _known_beijing_name(label[action.end():] if action else label)
+
+
+def check_timeline_itinerary(trip):
+    # The caller has already matched the owner conversation and original MID.
+    if (type(trip) is not dict or type(trip.get('trip_id')) is not str or not trip['trip_id']
+            or type(trip.get('days')) is not list):
+        raise SmokeResult('UNKNOWN', 'structured_plan_shape')
+    days = trip['days']
+    if any(type(day) is not dict or type(day.get('items')) is not list for day in days):
+        raise SmokeResult('UNKNOWN', 'structured_plan_day_shape')
+    # LIO-timeline.2 groups all undated items under one null date. This
+    # representation cannot establish the number of original scheduled days.
+    dates = []
+    try:
+        for day in days:
+            value = day.get('date')
+            parsed = date.fromisoformat(value)
+            if parsed.isoformat() != value:
+                raise ValueError('non-canonical date')
+            dates.append(parsed)
+    except (TypeError, ValueError):
+        raise SmokeResult('UNKNOWN', 'structured_plan_day_dates_unavailable') from None
+    dates.sort()
+    if len(dates) != 3 or any((end - start).days != 1 for start, end in zip(dates, dates[1:])):
+        raise SmokeResult('FAIL', 'structured_plan_day_count')
+    _require_daily_beijing_activities([
+        [_saved_beijing_activity(item) for item in day['items']]
+        for day in days
+    ])
 
 
 def find_message(value, message_id, expected_conversation):
@@ -318,15 +373,23 @@ def run_case(case, prompt, token, allowed, send=request):
                 if conversation is not None and row is not None and row.get('status') == 'completed':
                     answer = row.get('answer')
                     if case.endswith('.plan'):
-                        if not isinstance(answer, str) or not answer.strip():
-                            raise SmokeResult('FAIL', 'required_answer_missing')
+                        if not isinstance(answer, str):
+                            raise SmokeResult('UNKNOWN', 'timeline_message_shape')
                         result['legacy_format_match'] = valid_answer(case, answer)
-                        if not allowed():
-                            raise SmokeResult('UNKNOWN', 'window_closed_before_structured_plan_read')
-                        query = urlencode({'conversation_id': conversation, 'message_id': message_id})
-                        preview, ref = send(token, PLAN_PREVIEW_ROUTE + '?' + query)
-                        check_itinerary_preview(preview, message_id, conversation)
-                        result.update(structured_days=3, structured_plan_ref=ref)
+                        trip = row.get('trip')
+                        if trip is not None:
+                            check_timeline_itinerary(trip)
+                            result.update(structured_plan_source='timeline_trip', structured_plan_ref=ref)
+                        else:
+                            if not answer.strip():
+                                raise SmokeResult('FAIL', 'required_answer_missing')
+                            if not allowed():
+                                raise SmokeResult('UNKNOWN', 'window_closed_before_structured_plan_read')
+                            query = urlencode({'conversation_id': conversation, 'message_id': message_id})
+                            preview, ref = send(token, PLAN_PREVIEW_ROUTE + '?' + query)
+                            check_itinerary_preview(preview, message_id, conversation)
+                            result.update(structured_plan_source='original_preview', structured_plan_ref=ref)
+                        result['structured_days'] = 3
                     elif not valid_answer(case, answer):
                         raise SmokeResult('FAIL', 'required_answer_missing')
                     result.update(status='PASS', answer_chars=len(answer),
@@ -510,6 +573,10 @@ def decide(events, wire_logs):
         return dict(status='UNKNOWN', concurrency='UNKNOWN', reason='invalid_smoke_status')
     if any(row['status']=='UNRUN' for row in outcomes):
         return dict(status='UNRUN', concurrency='UNRUN')
+    if any(row.get('structured_days') != 3
+           or row.get('structured_plan_source') not in ('timeline_trip', 'original_preview')
+           for row in cases if row['case'].endswith('.plan')):
+        return dict(status='UNKNOWN', concurrency='UNRUN', reason='structured_plan_evidence_missing')
     from deploy.hk.translation_smoke import complete
     if not complete(events):
         return dict(status='UNKNOWN', concurrency='UNRUN', reason='translation_smoke_incomplete')
