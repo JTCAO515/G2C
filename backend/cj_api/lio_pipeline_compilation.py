@@ -56,8 +56,10 @@ def _bind_transfer_clock(item, edge, original, timezone, locale, start_date):
             or zone['state']!='missing' and zone!={'state':'known','value':timezone}):
         return Activity(item['id'],())
     event=item['schedule']['start']
-    day=original.get('date')
-    if day is not None and day['state']=='known':
+    day=original.get('date',{'state':'missing'})
+    if day['state'] not in ('missing','known'):
+        return Activity(item['id'],())
+    if day['state']=='known':
         if start_date is None or date.fromisoformat(day['value']) != (
                 date.fromisoformat(start_date)+timedelta(days=event['day_index']-1)):
             return Activity(item['id'],())
