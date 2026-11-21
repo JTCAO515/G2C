@@ -1405,6 +1405,7 @@ class Boundaries(unittest.TestCase):
                                     rounds.append(key)
                                     projected=json.loads(argument.messages[-1]['content'])['results'][0]['result']
                                     assert projected['excerpts']==excerpts
+                                    assert argument.final_answer is (not excerpts)
                                     if profiles:yield answer
                                     else:yield json.dumps(dict(version='MODEL-tool-turn.1',kind='answer',
                                                                answer=dict(en=answer,zh='合成回答。'),calls=[]))

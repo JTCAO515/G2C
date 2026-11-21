@@ -40,6 +40,52 @@ def context(events):return json.loads(next(v.split(':',1)[1]for k,v in events if
 
 
 class PlanningFlow(unittest.TestCase):
+    def test_r12_full_trip_phrase_is_not_the_city_lookup(self):
+        for text, city, duration, locale in (
+                ('去成都玩三天', '成都', '三天', 'zh'),
+                ('I want to spend three days in Chengdu.', 'Chengdu', 'three days', 'en')):
+            with self.subTest(locale=locale):
+                wire=flow(text,city=text,intent='plan',questions=())
+                wire['city'].update(normalized_name=city,quote=text)
+                wire['field_sources']=[dict(field='duration_days',source_index=0,quote=duration)]
+                published,events,lookups,_=run(wire,text,locale=locale)
+                self.assertEqual(published,[])
+                self.assertEqual(len(lookups),1)
+                self.assertEqual(context(events)['facts']['city']['value']['query'],city)
+                self.assertIn('第3天' if locale=='zh' else 'Day 3',answer(events))
+
+    def test_r12_explicit_dated_city_only_asks_for_duration_in_request_language(self):
+        for text, city, quote, locale in (
+                ('我明天去上海，帮我规划一下。','上海','我明天去上海，帮我规划一下。','zh'),
+                ('I am going to Shanghai tomorrow. Could you make an itinerary?', 'Shanghai','tomorrow','en')):
+            with self.subTest(locale=locale):
+                wire=flow(text,city=city,days=None,start='2026-11-12',intent='plan',questions=('duration_days',),
+                    reply='What time do you arrive and where are you staying?' if locale=='zh' else '你几点到达，住在哪里？')
+                wire.update(planning_request_index=0,needs_tools=False)
+                wire['field_sources']=[dict(field='start_date',source_index=0,quote=quote)]
+                wire['unknown_fields']=['party_size','start_date','start_date','party_size']
+                if locale=='zh':
+                    wire['city'].update(query='',quote='')
+                    wire['question_fields']=['city']
+                published,events,lookups,_=run(wire,text,locale=locale)
+                self.assertEqual((published,lookups),([],[]))
+                current=context(events)
+                self.assertEqual(current['facts']['city']['value']['query'],city)
+                self.assertEqual(current['authority'],'none')
+                self.assertIn('几天' if locale=='zh' else 'days',answer(events))
+                self.assertNotIn('住在哪里',answer(events))
+                self.assertNotIn('what time',answer(events).lower())
+                self.assertEqual(current['facts']['start_date']['value'],'2026-11-12')
+                for fact in current['facts'].values():
+                    for source in fact['sources']:source['message_id']='prior-0'
+                reply='两天。'if locale=='zh'else'Two days.'
+                complete=flow(reply,city=None,days=2,index=1,intent='plan',questions=())
+                complete['field_sources']=[dict(field='duration_days',source_index=1,quote=reply[:-1])]
+                saved,_,_,_=run(complete,reply,locale=locale,previous=current,
+                                turns=(original(text),PlanningTurn(reply,date(2026,11,13))))
+                self.assertEqual(len(saved),1)
+                self.assertEqual(saved[0][3].fields['arrival']['date']['value'],'2026-11-12')
+
     def test_destination_duration_enter_full_undated_plan_without_optional_questions(self):
         for text,city,locale in [('去成都玩三天','成都','zh'),('Chengdu for three days','Chengdu','en')]:
             for intent in ('consult','discuss','plan'):
@@ -383,6 +429,21 @@ class PlanningFlow(unittest.TestCase):
                     self.assertEqual(fixed[edge]['time']['value'], clock)
                     self.assertNotEqual(fixed[edge]['place']['state'], 'known')
                 self.assertNotEqual(fixed['booking_status']['state'], 'known')
+                # r12 split the unknown hotel into a second pseudo-appointment
+                # and omitted the locator for the explicitly stated start.
+                main=wire['fixed_items'][0]
+                absence=place_unknown+('。' if locale=='zh' else '.')
+                pseudo=dict(main,label=place_unknown,quote=absence,locked=False,
+                    start_date=None,end_date=None,start_time=None,end_time=None,
+                    unknown_fields=['start_place','end_place'],uncertain_fields={'name_and_location':absence})
+                r12=dict(wire,city=None,field_sources=wire['field_sources'][1:],
+                    fixed_items=[dict(main,uncertain_fields={}),pseudo])
+                saved,_,_,_=run(r12,text,turns=turns,previous=previous,locale=locale)
+                self.assertEqual(len(saved),1)
+                [r12_item]=saved[0][3].fields['fixed_items']
+                self.assertEqual(r12_item['start']['time']['value'],'09:00')
+                self.assertEqual(r12_item['end']['time']['value'],'10:00')
+                self.assertNotEqual(r12_item['start']['place']['state'],'known')
                 for invalid_fixed in (dict(start_time='08:30'), dict(locked=False),
                                       dict(booking_evidence=dict(status='booked', source_index=1, quote=meetup))):
                     rejected_wire = dict(wire, fixed_items=[dict(wire['fixed_items'][0], **invalid_fixed)])
@@ -406,12 +467,14 @@ class PlanningFlow(unittest.TestCase):
             ('杭州','三天','明天起',
              '明天起在杭州待三天，给我排个行程吧。 第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变；酒店名称和位置尚未确定。请给每天的上午、下午安排写出计划时间段，不要声称已有预约。',
              '第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变；酒店名称和位置尚未确定。请给每天的上午、下午安排写出计划时间段，不要声称已有预约。',
-             '酒店集合','zh',(dict(applies_to=['party']),)),
+             '酒店集合','zh',(dict(applies_to=['party']),
+                 dict(uncertain_fields={'hotel_location':'酒店名称和位置尚未确定'}))),
             ('Hangzhou','three-day','starting tomorrow',
              'Could you put together a three-day Hangzhou itinerary starting tomorrow? On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged. The hotel name and location are not known yet. Include planned morning and afternoon time ranges each day, without claiming a booking.',
              'On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged.',
              'hotel meetup','en',(dict(start_time='09:00:00',end_time='10:00:00'),
                  dict(uncertain_fields={'place':'Hotel name and location are not known yet.'}),
+                 dict(uncertain_fields={'hotel_location':'The hotel name and location are not known yet.'}),
                  dict(unknown_fields=['start_place','end_place','start_timezone']),dict(locked=False))),
         ):
             for variation in variants:

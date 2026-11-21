@@ -76,6 +76,30 @@ def test_truncated_duplicate_and_legacy_versions_are_not_repaired_or_silently_ac
     with pytest.raises(FieldRejected):legacy._model_plan(raw,None,capture)
 
 
+@pytest.mark.parametrize('language',['zh','en'])
+def test_r12_first_dated_draft_separates_self_placeholders_from_stop_ids(language):
+    host,capture=publisher(4,language)
+    value=reply(4,language)
+    for _,rows in value['days']:
+        for row in rows:row[0]='self'
+    content,_,_=host.build_plan(packed(value),capture)
+    document=json.loads(content)
+    ids=[item['id'] for item in document['items']]
+    assert len(ids)==len(set(ids))==9 and ids[0]=='hotel'
+    assert document['items'][0]['fixed']==dict(state='known',value=True)
+    assert [item['text'] for item in document['items'][1:]]==[row[1] for _,rows in value['days'] for row in rows]
+
+    for ordinal,retained,placeholder,party in (
+            (False,False,'s1',1),(False,False,'self',3),
+            (True,False,'self',1),(False,True,'self',1)):
+        _,scope=publisher(4,language,ordinal=ordinal,party=party)
+        invalid=reply(4,language,ordinal=ordinal,delta=retained,party=party)
+        for _,rows in invalid['days']:
+            for row in rows:row[0]=placeholder
+        with pytest.raises(FieldRejected,match='duplicate new stop ID'):
+            expand(packed(invalid),scope,retained=retained,ordinal=ordinal)
+
+
 def test_subjects_are_explicit_and_timezone_must_be_confirmed_source_not_default():
     host,capture=publisher(4,'zh',party=3)
     content,candidate,_=host.build_plan(packed(reply(4,'zh',party=3)),capture)
