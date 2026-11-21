@@ -5,7 +5,9 @@ import json
 from cj_agent.draft import DraftRejected
 from cj_trip.domain import identifier, packed
 from cj_trip.lio_history import TripHead
+from cj_trip.place_selection import PLAN_SOURCE, validate_basis
 from cj_trip.structured_v4 import parse
+from .rich_calendar_source import original_reference
 
 _SUGGESTIONS = frozenset(('sight', 'meal', 'free_time'))
 
@@ -60,12 +62,9 @@ def check_document(context, capture, adjustment, document):
                 or (item['text'], item['place']) == (target['text'], target['place'])):
             raise DraftRejected('replacement must be a new unconfirmed suggestion in the original slot')
 
-    def pair(leg):
-        return leg['day_index'], leg['from_item_id'], leg['to_item_id']
-
-    retained = {pair(leg): leg for leg in before['legs'] if item_id not in pair(leg)[1:]}
+    retained = {_pair(leg): leg for leg in before['legs'] if item_id not in _pair(leg)[1:]}
     for leg in document['legs']:
-        original = retained.get(pair(leg))
+        original = retained.get(_pair(leg))
         if original is not None and packed(leg) != packed(original):
             raise DraftRejected('scoped adjustment changed an unaffected route')
 
@@ -79,3 +78,102 @@ def check_needs(context, candidate, item_id):
                                  if item['item_id'] != item_id]
     if packed(before) != packed(after):
         raise DraftRejected('scoped adjustment changed unselected NEEDS')
+
+
+def _pair(leg):
+    return leg['day_index'], leg['from_item_id'], leg['to_item_id']
+
+
+def _key(record):
+    return tuple(record[key] for key in ('provider', 'kind', 'reference', 'sha256'))
+
+
+def _place_refs(place):
+    return place.get('source'), place['name_en_source']
+
+
+def _item_refs(item):
+    tip = item['tip']
+    return (*_place_refs(item['place']), None if tip is None else tip['source'])
+
+
+def _references(document, *, adjusted_item=None, changed=False, before=None):
+    """Split provider references by actual retained Trip position."""
+    old_pairs = set() if before is None else {_pair(leg) for leg in before['legs']}
+    for item in document['items']:
+        if (item['id'] == adjusted_item) == changed:
+            yield from _item_refs(item)
+    for leg in document['legs']:
+        pair = _pair(leg)
+        affected = adjusted_item in pair[1:] or before is not None and pair not in old_pairs
+        if affected == changed:
+            yield leg['source']
+    if not changed:
+        for hotel in document['lodging']['recommendations']:
+            yield from _place_refs(hotel['place'])
+
+
+def _held_original(message, reference):
+    original_reference(reference, current=True)
+    saved = message.source_original(reference['message_id'])
+    actual = saved.reference
+    keys = ('conversation_id', 'generation', 'message_id', 'run_id', 'sequence',
+            'input_sha256', 'message_version')
+    if any(getattr(actual, key) != reference[key] for key in keys):
+        raise DraftRejected('retained provider original changed')
+
+
+def retained_evidence(context, document, adjusted_item, current_records, message):
+    """Read accepted Trip evidence only under its real, current MESSAGE holder.
+
+    Call after the scoped byte comparison. New positions must use current-RUN
+    records before any retained record is joined to the validation source.
+    """
+    before = parse(context.trip.content)
+    current_keys = {_key(record) for record in current_records}
+    for ref in _references(document, adjusted_item=adjusted_item, changed=True, before=before):
+        if ref is not None and _key(ref) not in current_keys:
+            raise DraftRejected('changed suggestion or route needs current original evidence')
+
+    basis = json.loads(context.needs_source)
+    if basis['version'] != PLAN_SOURCE:
+        raise DraftRejected('retained adjustment needs an accepted Source4 selection basis')
+    validate_basis(basis)
+    root = basis['calendar_basis']['fixed_bindings']['reference']
+    available = {_key(record): dict(record=record, original=root)
+                 for record in basis['rich_source']['records']}
+    # The accepted basis also keeps the prior Trip's exact referenced records
+    # so byte-restoring undo can recover the original product observations.
+    for entry in basis.get('prior_trip_evidence', ()):
+        available[_key(entry['record'])] = entry
+
+    prior = {}
+    for ref in _references(before):
+        if ref is None:
+            continue
+        key = _key(ref)
+        entry = available.get(key)
+        if entry is not None:
+            prior[key] = entry
+
+    joined = {}
+    originals = {}
+    for ref in _references(document, adjusted_item=adjusted_item, before=before):
+        if ref is None:
+            continue
+        key = _key(ref)
+        if key in current_keys:
+            continue
+        entry = prior.get(key)
+        if entry is None:
+            raise DraftRejected('retained provider observation differs from current Trip')
+        joined[key] = entry['record']
+        originals[packed(entry['original'])] = entry['original']
+    for reference in originals.values():
+        _held_original(message, reference)
+    return list(joined.values()), list(prior.values()), tuple(originals.values())
+
+
+def recheck_retained(message, originals):
+    for reference in originals:
+        _held_original(message, reference)

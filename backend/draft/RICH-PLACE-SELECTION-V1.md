@@ -126,6 +126,13 @@ are still represented as such. The publisher checks the unselected items,
 metadata, untouched route legs and unselected NEEDS, then rechecks the original
 authority in the sole existing publication transaction.
 
+For byte-identical retained items, lodging and unaffected routes, the writer
+may read provider records from the accepted current Trip's source basis. It
+checks their saved original MESSAGE references in the same active source holder
+and rechecks them before commit. Changed items and affected routes require
+current-run records for all provider references. The private basis retains the
+prior Trip's exact referenced records for byte-restoring undo.
+
 The return value is the existing rich plan receipt for this run, available via
 `Repository.rich_plan_receipt(binding)` with `action_id`, `trip_id`,
 `committed_version` and `candidate_hash`. The next Trip head uses the raw

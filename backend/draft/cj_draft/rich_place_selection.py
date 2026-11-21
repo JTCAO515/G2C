@@ -63,6 +63,10 @@ class LioSelectedRichPublisher(LioRichPublisher):
 
     def conditional_adjustment_source(self, binding, original, capture, checks, document, adjustment):
         """Issue scoped assembly inputs in the same active Source4 holder."""
+        rich, _, _ = self._adjustment_source(binding, original, capture, checks, document, adjustment)
+        return rich
+
+    def _adjustment_source(self, binding, original, capture, checks, document, adjustment):
         self.source.check(binding, capture)
         self._require_adjustment(binding, original, adjustment)
         check_document(self.source.contexts[binding], capture, adjustment, document)
