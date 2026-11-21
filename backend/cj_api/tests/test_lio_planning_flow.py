@@ -509,6 +509,30 @@ class PlanningFlow(unittest.TestCase):
                                          previous=previous, locale=locale)
                 self.assertEqual(len(published), 0)
 
+    def test_chongqing_does_not_restore_start_over_a_later_date_change(self):
+        for locale, first, duration, city, change, refusal in (
+            ('zh', '帮我安排三天，从明天开始。', '三天', '重庆',
+             '去重庆。出发日改成2026-11-20。', '去重庆。原来的出发日取消。'),
+            ('en', 'Plan three days starting tomorrow.', 'three days', 'Chongqing',
+             'Chongqing, China. Actually, start on 2026-11-20 instead.',
+             'Chongqing, China. Leave the start date undecided.'),
+        ):
+            initial = flow(first, city=None, intent='plan', questions=('city',))
+            initial['planning_request_index'] = 0
+            initial['field_sources'] = [dict(field='duration_days', source_index=0, quote=duration)]
+            previous = context(run(initial, first, locale=locale)[1])
+            for fact in previous['facts'].values():
+                for reference in fact['sources']:
+                    reference['message_id'] = 'prior-0'
+            for text in (change, refusal):
+                with self.subTest(text=text):
+                    wire = flow(text, city=city, start='2026-11-12', index=1, intent='plan', questions=())
+                    wire['planning_request_index'] = 0
+                    wire['field_sources'] = [dict(field='duration_days', source_index=0, quote=duration)]
+                    published, _, _, _ = run(wire, text, turns=(original(first), original(text)),
+                                             previous=previous, locale=locale)
+                    self.assertEqual(len(published), 0)
+
     def test_first_request_does_not_adopt_another_tasks_explicit_start_phrase(self):
         for locale, city, days, text in (
             ('zh', '杭州', '三天', '帮我规划杭州三天。我的牙科治疗从明天开始。'),

@@ -21,6 +21,10 @@ _EXPLICIT_START_TOMORROW=re.compile(r'(?:从明天开始|明天起|\b(?:starting
 _SHORT_PLAN=re.compile(
     rf'(?:(?:请|麻烦)?(?:帮|给|为)(?:我们|我))?\s*(?:规划|安排)\s*(?:{NUMBER})\s*天'
     rf'|(?:(?:could|can|would) you\s+|please\s+)?(?:help (?:me|us) (?:to )?)?plan\s+(?:{NUMBER})\s+days?',re.I)
+_DATE_REVISION=re.compile(
+    r'日期|改期|改成|改为|出发|启程|起程|到达|抵达|返程|提前|推迟|延期|另选|换一天|取消'
+    r'|\b(?:actually|instead|dates?|start(?:ing)?|depart\w*|arriv\w*|reschedul\w*|'
+    r'postpon\w*|delay\w*|earlier|later)\b',re.I)
 _TRAVEL_ENDPOINT=re.compile(r'到达|抵达|起飞|落地|返程|\b(?:arriv\w*|depart\w*|flight|train|land(?:s|ing|ed)?)\b',re.I)
 _META_REQUEST=re.compile(r'^\s*(?:(?:请帮我|请|帮我)?(?:(?:把|将)[^。！？!?\n]{0,40})?(?:翻译|复述|改写|引用)|'
     r'(?:(?:can|could|would) you\s+)?(?:please\s+)?(?:help(?: (?:me|us))?(?: to)?\s+)?'
@@ -226,6 +230,10 @@ def _fact_snapshot(data,source_ids,blocked=()):
     return snapshot
 
 
+def _date_reopened(text):
+    return DATE_EVIDENCE.search(text) is not None or _DATE_REVISION.search(text) is not None
+
+
 def _explicit_trip_start_quote(text, city=None):
     # Restore only a start phrase attached to the original planning request.
     # A date elsewhere in the message cannot source this trip's start.
@@ -233,7 +241,7 @@ def _explicit_trip_start_quote(text, city=None):
     first_clause=text.strip()
     if boundary is not None:
         rest=text[boundary.end():].strip()
-        if boundary[0].isalpha()or (city is None and rest)or DATE_EVIDENCE.search(rest):return None
+        if boundary[0].isalpha()or (city is None and rest)or _date_reopened(rest):return None
         first_clause=text[:boundary.start()].strip()
     start=_EXPLICIT_START_TOMORROW.search(first_clause)
     if start is None or text.count(start[0])!=1:return None
@@ -371,9 +379,10 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_off
                                 if ref['message_id']in source_ids[:-1]}
                 if len(source_indexes)==1:
                     source_index=source_indexes.pop()
-                    quote=_explicit_trip_start_quote(turns[source_index].text)
-                    if quote is not None:
-                        data['field_sources'].append(dict(field='start_date',source_index=source_index,quote=quote))
+                    if not any(_date_reopened(turn.text)for turn in turns[source_index+1:]):
+                        quote=_explicit_trip_start_quote(turns[source_index].text)
+                        if quote is not None:
+                            data['field_sources'].append(dict(field='start_date',source_index=source_index,quote=quote))
     city=data['city'];old_city=saved.get('city')
     same_city=(city is None or old_city is None or
         city['query'].casefold()==old_city['value']['query'].casefold()and
