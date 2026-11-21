@@ -135,7 +135,7 @@ def _dated_slot(target):
     return None
 
 
-def _select(items, target, starts_on, ends_on,*,national_names=False):
+def _select(items, target, starts_on, ends_on,*,national_names=False, required_name=None):
     if national_names:
         compound=_COMPOUND_ZH.fullmatch(target) or _COMPOUND_EN.fullmatch(target)
         if compound is not None:
@@ -147,9 +147,9 @@ def _select(items, target, starts_on, ends_on,*,national_names=False):
             except ValueError:return []
             if start>=end:return []
             # All supplied constraints must identify the same actual item.
-            return [item for item in _select(items,compound['slot'].strip(),starts_on,ends_on)
-                    if item['text'].casefold()==compound['name'].strip().casefold()
-                    and _known(item['schedule']['start']['time'])==compound['start']
+            return [item for item in _select(items,compound['slot'].strip(),starts_on,ends_on,
+                                             required_name=compound['name'].strip().casefold())
+                    if _known(item['schedule']['start']['time'])==compound['start']
                     and _known(item['schedule']['end']['time'])==compound['end']]
 
     relative = _slot(target)
@@ -191,6 +191,10 @@ def _select(items, target, starts_on, ends_on,*,national_names=False):
         if start_clock is None or end_clock is None:
             return []
         begins, ends = time.fromisoformat(start_clock), time.fromisoformat(end_clock)
+        # A broad period selection still withholds overlapping stops. A full
+        # name, day and clock cannot refer to a differently named stop.
+        if required_name is not None and item['text'].casefold() != required_name:
+            continue
         if lower <= begins < ends <= upper:
             selected.append(item)
         elif begins < upper and lower < ends:
