@@ -82,3 +82,41 @@ class CompoundEdit(unittest.TestCase):
         trip,text=self.example('en')
         old=select_lio_edit(trip,text,'en','legacy',starts_on=date(2026,11,11),ends_on=date(2026,11,13))
         self.assertEqual(old.status,'clarify')
+
+    def test_exact_r11_stop_ignores_a_different_stop_that_crosses_noon(self):
+        starts_on, ends_on = date(2026, 11, 22), date(2026, 11, 24)
+        for locale, name, replacement, text, broad in (
+            ('zh', '春熙路步行街', '成都博物馆',
+             '把第二天下午「春熙路步行街」（14:00–17:00）换成成都博物馆，其他安排和酒店集合不变。',
+             '把第二天下午换成成都博物馆。'),
+            ('en', 'Chunxi Road Pedestrian Street', 'Chengdu Museum',
+             'Replace “Chunxi Road Pedestrian Street” on day 2 afternoon (14:00–17:00) with Chengdu Museum; keep everything else and the hotel meetup unchanged.',
+             'Replace the afternoon of day 2 with Chengdu Museum.'),
+        ):
+            title = '成都三日游' if locale == 'zh' else 'Three days in Chengdu'
+            hotel = '酒店集合' if locale == 'zh' else 'hotel meetup'
+            pandas = '成都大熊猫繁育研究基地' if locale == 'zh' else 'Chengdu Research Base of Giant Panda Breeding'
+            items = [
+                stop('fixed-meetup', hotel, '2026-11-22', '09:00', '10:00', known(True)),
+                stop('d2a', pandas, '2026-11-23', '09:00', '12:30', known(False)),
+                stop('d2b', name, '2026-11-23', '14:00', '17:00', known(False)),
+                stop('d3', '杜甫草堂' if locale == 'zh' else 'Du Fu Thatched Cottage',
+                     '2026-11-24', '14:00', '16:00', known(False)),
+            ]
+            doc = dict(content_version='structured.2', title=title, items=items, sources=[])
+            trip = Trip('r11-current', 1, packed(doc))
+
+            def select(request):
+                return select_lio_edit(trip, request, locale, 'r11-exact', starts_on=starts_on,
+                                       ends_on=ends_on, national_names=True)
+
+            with self.subTest(locale=locale):
+                result = select(text)
+                self.assertEqual(result.status, 'preview')
+                self.assertEqual(result.candidate.affected_ids, ('d2b',))
+                self.assertFalse(result.candidate.can_publish)
+                self.assertEqual(json.loads(result.candidate.candidate.content)['items'],
+                                 [dict(item, text=replacement) if item['id'] == 'd2b' else item for item in items])
+                self.assertEqual(select(broad).status, 'clarify')
+                self.assertEqual(select(text.replace(name, pandas).replace('14:00–17:00', '09:00–12:30')).status,
+                                 'clarify')
