@@ -5,18 +5,20 @@ import Testing
 struct LioBuildUpdatesTests {
     @Test func bundledBookKeepsOnlyCurrentAndPreviousAndBothLanguages() throws {
         let book = try LioBuildUpdates.bundled.get()
-        #expect(book.currentBuild == 50)
-        #expect(book.releases.map(\.build) == [50, 49])
-        let current = try book.release(for: 50)
-        let previous = try book.release(for: 49)
-        #expect(current.previousBuild == 49)
+        #expect(book.currentBuild == 51)
+        #expect(book.releases.map(\.build) == [51, 50])
+        let current = try book.release(for: 51)
+        let previous = try book.release(for: 50)
+        #expect(current.previousBuild == 50)
         #expect(current.sections.map(\.id) == [.changes, .comparison, .testing, .known, .service])
         #expect(current.whatToTest(.chinese).contains("抽测构建 49 的第 1、3、4 项"))
         #expect(current.whatToTest(.english).contains("Wait until your account is enabled before checking live translation."))
-        #expect(previous.whatToTest(.chinese).contains("行程正式保存、修改与撤销，以及全国规划仍在验证。"))
-        #expect(previous.whatToTest(.english).contains("Formal itinerary saving, edits and undo, and planning across China are still being validated."))
-        #expect(previous.whatToTest(.chinese).contains("构建 48"))
-        #expect(throws: LioBuildUpdates.Failure.unlistedBuild) { try book.release(for: 51) }
+        #expect(current.whatToTest(.chinese).contains("翻译页改成上下双卡"))
+        #expect(current.whatToTest(.english).contains("Translation now has an input card above the result card."))
+        #expect(previous.whatToTest(.chinese).contains("修复打开语音输入时的闪退"))
+        #expect(previous.whatToTest(.english).contains("Updated the recording entry to address the crash"))
+        #expect(previous.whatToTest(.chinese).contains("构建 49"))
+        #expect(throws: LioBuildUpdates.Failure.unlistedBuild) { try book.release(for: 52) }
     }
 
     @Test func malformedOrIncompleteReleaseContentIsNotAccepted() throws {
