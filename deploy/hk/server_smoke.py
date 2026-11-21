@@ -1,7 +1,7 @@
 """B-operated, same-owner Hong Kong deployment smoke over the app's HTTP API."""
 import argparse
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import hashlib
 from http.client import IncompleteRead
 import json
@@ -50,6 +50,17 @@ ITINERARY_QUOTES = re.compile(
     r"(?<!\w)'[^']*'(?!\w)"
 )
 DAY_NUMBER = {'一': 1, '二': 2, '三': 3, '1': 1, '2': 2, '3': 3}
+PLAN_PREVIEW_ROUTE = '/v2/lio/itinerary-preview'
+PLAN_PREVIEW_VERSION = 'LIO-itinerary-preview.1'
+BEIJING_CODE = '110000'
+BEIJING_ACTIVITY_NAMES = frozenset({
+    '北京故宫', '故宫博物院', '天安门广场', '景山公园', '颐和园', '慕田峪长城', '八达岭长城',
+    '天坛', '天坛公园', '雍和宫', '南锣鼓巷', '什刹海', '北海公园', '圆明园', '恭王府',
+    'forbidden city', 'the forbidden city', 'tiananmen square', 'jingshan park',
+    'summer palace', 'the summer palace', 'mutianyu great wall', 'badaling great wall',
+    'temple of heaven', 'the temple of heaven', 'yonghe temple', 'shichahai',
+    'nanluoguxiang', 'beihai park', 'old summer palace', 'prince gong mansion',
+})
 BEIJING_PLACE = re.compile(
     r'故宫|天安门|景山|长城|八达岭|慕田峪|颐和园|天坛|雍和宫|什刹海|南锣鼓巷|胡同|'
     r'北海公园|国家博物馆|圆明园|国子监|恭王府|前门|王府井|三里屯|奥林匹克|'
@@ -178,6 +189,110 @@ def valid_answer(case, answer):
     return True
 
 
+def _location_code(raw):
+    if raw is None:
+        return None
+    if type(raw) is not str or re.fullmatch(r'[0-9]{6}', raw) is None:
+        raise SmokeResult('UNKNOWN', 'structured_plan_location_invalid')
+    return raw
+
+
+def _planned_beijing_activity(raw):
+    if (type(raw) is not dict or type(raw.get('place_name')) is not str
+            or not raw['place_name'].strip() or type(raw.get('cancelled')) is not bool):
+        raise SmokeResult('UNKNOWN', 'structured_plan_activity_invalid')
+    location = _location_code(raw.get('city_adcode'))
+    if raw['cancelled']:
+        return False
+    if location is not None:
+        return location == BEIJING_CODE
+    return _known_beijing_name(raw['place_name'])
+
+
+def _known_beijing_name(value):
+    name = ' '.join(value.casefold().split())
+    return True if name in BEIJING_ACTIVITY_NAMES else None
+
+
+def _require_daily_beijing_activities(activities):
+    if any(not any(outcomes) and None not in outcomes for outcomes in activities):
+        raise SmokeResult('FAIL', 'structured_plan_day_without_beijing_activity')
+    if any(not any(outcomes) for outcomes in activities):
+        raise SmokeResult('UNKNOWN', 'structured_plan_activity_location_unconfirmed')
+
+
+def check_itinerary_preview(value, message_id, conversation_id):
+    if (value.get('version') != PLAN_PREVIEW_VERSION or value.get('message_id') != message_id
+            or value.get('conversation_id') != conversation_id):
+        raise SmokeResult('UNKNOWN', 'structured_plan_binding')
+    preview = value.get('preview')
+    if preview is None:
+        raise SmokeResult('UNKNOWN', 'structured_plan_unavailable')
+    if type(preview) is not dict or type(preview.get('days')) is not list:
+        raise SmokeResult('UNKNOWN', 'structured_plan_shape')
+    destination = preview.get('destination')
+    if destination is not None and type(destination) is not dict:
+        raise SmokeResult('UNKNOWN', 'structured_plan_location_invalid')
+    if destination is not None and _location_code(destination.get('adcode')) not in (None, BEIJING_CODE):
+        raise SmokeResult('FAIL', 'structured_plan_wrong_destination')
+
+    days = preview['days']
+    if any(type(day) is not dict or type(day.get('day_index')) is not int
+           or type(day.get('activities')) is not list for day in days):
+        raise SmokeResult('UNKNOWN', 'structured_plan_day_shape')
+    if sorted(day['day_index'] for day in days) != [1, 2, 3]:
+        raise SmokeResult('FAIL', 'structured_plan_day_count')
+    _require_daily_beijing_activities([
+        [_planned_beijing_activity(item) for item in day['activities']]
+        for day in days
+    ])
+
+
+def _saved_beijing_activity(item):
+    if (type(item) is not dict or type(item.get('item_id')) is not str or not item['item_id']
+            or type(item.get('label')) is not str or not item['label'].strip()
+            or type(item.get('cancelled', False)) is not bool):
+        raise SmokeResult('UNKNOWN', 'structured_plan_activity_invalid')
+    # The v2 Trip card contains scheduled items of the published revision.
+    # User text in its label can provide positive locality evidence only.
+    if item.get('cancelled', False):
+        return False
+    label = item['label'].strip().rstrip('。.!')
+    if NO_DAY_ACTIVITY.search(label) or DAY_QUESTION.search(label):
+        return None
+    action = DAY_ACTIVITY.match(label)
+    return _known_beijing_name(label[action.end():] if action else label)
+
+
+def check_timeline_itinerary(trip):
+    # The caller has already matched the owner conversation and original MID.
+    if (type(trip) is not dict or type(trip.get('trip_id')) is not str or not trip['trip_id']
+            or type(trip.get('days')) is not list):
+        raise SmokeResult('UNKNOWN', 'structured_plan_shape')
+    days = trip['days']
+    if any(type(day) is not dict or type(day.get('items')) is not list for day in days):
+        raise SmokeResult('UNKNOWN', 'structured_plan_day_shape')
+    # LIO-timeline.2 groups all undated items under one null date. This
+    # representation cannot establish the number of original scheduled days.
+    dates = []
+    try:
+        for day in days:
+            value = day.get('date')
+            parsed = date.fromisoformat(value)
+            if parsed.isoformat() != value:
+                raise ValueError('non-canonical date')
+            dates.append(parsed)
+    except (TypeError, ValueError):
+        raise SmokeResult('UNKNOWN', 'structured_plan_day_dates_unavailable') from None
+    dates.sort()
+    if len(dates) != 3 or any((end - start).days != 1 for start, end in zip(dates, dates[1:])):
+        raise SmokeResult('FAIL', 'structured_plan_day_count')
+    _require_daily_beijing_activities([
+        [_saved_beijing_activity(item) for item in day['items']]
+        for day in days
+    ])
+
+
 def find_message(value, message_id, expected_conversation):
     if (value.get('version') != 'LIO-timeline.2' or not isinstance(value.get('messages'), list)
             or expected_conversation is not None and value.get('conversation_id') != expected_conversation):
@@ -199,6 +314,7 @@ def run_case(case, prompt, token, allowed, send=request):
     payload = dict(version='LIO-message.2', message_id=message_id, text=prompt,
                    locale=case[:2], new_conversation=True)
     started = time.monotonic()
+    deadline = started + CASE_LIMIT_SECONDS
     result = dict(case=case, status='UNRUN', polls=[], message_id=message_id)
     clock_ms = lambda: round((time.monotonic()-started)*1000, 3)
 
@@ -222,7 +338,7 @@ def run_case(case, prompt, token, allowed, send=request):
             pending = queue.submit(submit)
             conversation = None
             next_poll = time.monotonic()
-            while time.monotonic() < started + CASE_LIMIT_SECONDS:
+            while time.monotonic() < deadline:
                 if not allowed():
                     raise SmokeResult('UNKNOWN', 'window_or_budget_closed_after_post')
                 if conversation is None and pending.done():
@@ -257,7 +373,38 @@ def run_case(case, prompt, token, allowed, send=request):
                                       ('quota' if row.get('failure') == 'quota' else 'unavailable'))
                 if conversation is not None and row is not None and row.get('status') == 'completed':
                     answer = row.get('answer')
-                    if not valid_answer(case, answer):
+                    if case.endswith('.plan'):
+                        if not isinstance(answer, str):
+                            raise SmokeResult('UNKNOWN', 'timeline_message_shape')
+                        result['legacy_format_match'] = valid_answer(case, answer)
+                        trip = row.get('trip')
+                        if time.monotonic() >= deadline:
+                            raise SmokeResult('UNKNOWN', 'structured_plan_case_deadline')
+                        if not allowed():
+                            raise SmokeResult('UNKNOWN', 'window_closed_before_structured_plan_read')
+                        if trip is not None:
+                            check_timeline_itinerary(trip)
+                            basis = 'timeline_trip'
+                            read_start, read_end = sample['start_ms'], sample['end_ms']
+                        else:
+                            if not answer.strip():
+                                raise SmokeResult('FAIL', 'required_answer_missing')
+                            query = urlencode({'conversation_id': conversation, 'message_id': message_id})
+                            read_start = clock_ms()
+                            preview, ref = send(token, PLAN_PREVIEW_ROUTE + '?' + query)
+                            read_end = clock_ms()
+                            if time.monotonic() >= deadline:
+                                raise SmokeResult('UNKNOWN', 'structured_plan_case_deadline')
+                            if not allowed():
+                                raise SmokeResult('UNKNOWN', 'window_closed_after_structured_plan_read')
+                            check_itinerary_preview(preview, message_id, conversation)
+                            basis = 'original_preview'
+                        if not _request_id(ref):
+                            raise SmokeResult('UNKNOWN', 'structured_plan_read_ref_missing')
+                        result['structured_plan'] = dict(
+                            source=basis, days=3, conversation_id=conversation, message_id=message_id,
+                            ref=ref, start_ms=read_start, end_ms=read_end)
+                    elif not valid_answer(case, answer):
                         raise SmokeResult('FAIL', 'required_answer_missing')
                     result.update(status='PASS', answer_chars=len(answer),
                                   answer_sha256=hashlib.sha256(answer.encode()).hexdigest())
@@ -419,6 +566,44 @@ def run(budget, database, scope, token, owner, start, end):
     return 0
 
 
+def _request_id(value):
+    return type(value) is str and re.fullmatch(
+        r'[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}', value) is not None
+
+
+def _structured_plan_witness(row):
+    proof = row.get('structured_plan')
+    if type(proof) is not dict or type(proof.get('days')) is not int or proof['days'] != 3:
+        return None
+    cid, mid, ref = (proof.get(field) for field in ('conversation_id', 'message_id', 'ref'))
+    if (type(cid) is not str or not cid.strip() or not _request_id(mid) or not _request_id(ref)
+            or cid != row.get('conversation_id') or mid != row.get('message_id')):
+        return None
+
+    polls = row.get('polls')
+    if type(polls) is not list or not polls or type(polls[-1]) is not dict:
+        return None
+    timeline = polls[-1]
+    dispatch, start, end = row.get('dispatch_ms'), proof.get('start_ms'), proof.get('end_ms')
+    last_start, last_end = timeline.get('start_ms'), timeline.get('end_ms')
+    if (timeline.get('http') != 200
+            or any(type(value) not in (int, float) for value in (dispatch, start, end, last_start, last_end))
+            or not 0 <= dispatch <= last_start <= last_end <= CASE_LIMIT_SECONDS * 1000
+            or not dispatch <= start <= end <= CASE_LIMIT_SECONDS * 1000):
+        return None
+
+    if proof.get('source') == 'timeline_trip':
+        if (ref, start, end) != (timeline.get('ref'), last_start, last_end):
+            return None
+    elif proof.get('source') == 'original_preview':
+        timeline_ref = timeline.get('ref')
+        if start < last_end or (_request_id(timeline_ref) and ref.casefold() == timeline_ref.casefold()):
+            return None
+    else:
+        return None
+    return cid, mid.casefold(), ref.casefold()
+
+
 def decide(events, wire_logs):
     cases = [entry for entry in events if entry['kind']=='case']
     history_rows = [entry for entry in events if entry['kind']=='history']
@@ -440,6 +625,10 @@ def decide(events, wire_logs):
         return dict(status='UNKNOWN', concurrency='UNKNOWN', reason='invalid_smoke_status')
     if any(row['status']=='UNRUN' for row in outcomes):
         return dict(status='UNRUN', concurrency='UNRUN')
+    plan_witnesses = [_structured_plan_witness(row) for row in cases if row['case'].endswith('.plan')]
+    if (None in plan_witnesses
+            or any(len(set(values)) != 2 for values in zip(*plan_witnesses, strict=True))):
+        return dict(status='UNKNOWN', concurrency='UNRUN', reason='structured_plan_evidence_missing')
     from deploy.hk.translation_smoke import complete
     if not complete(events):
         return dict(status='UNKNOWN', concurrency='UNRUN', reason='translation_smoke_incomplete')

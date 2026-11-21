@@ -2,6 +2,8 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 import json
 import sqlite3
+from types import SimpleNamespace
+from uuid import uuid4
 
 import pytest
 
@@ -426,3 +428,269 @@ def test_ineligible_session_stops_before_opening_the_smoke_budget(
     record = json.loads(capsys.readouterr().out)
     assert record == dict(kind='batch', status='UNRUN', reason=reason)
     assert smoke.decide([record], []) == dict(status='UNRUN', concurrency='UNRUN')
+
+
+def _itinerary_preview(places=('故宫博物院', '慕田峪长城', '颐和园'), *, message='same-mid'):
+    return dict(version=smoke.PLAN_PREVIEW_VERSION, message_id=message, conversation_id='same-cid',
+                preview=dict(destination=None, days=[
+                    dict(day_index=i, activities=[dict(place_name=name, cancelled=False)])
+                    for i, name in enumerate(places, 1)]))
+
+
+@pytest.mark.parametrize(('locale', 'places'), [
+    ('zh', ('故宫博物院', '慕田峪长城', '颐和园')),
+    ('en', ('Forbidden City', 'Mutianyu Great Wall', 'Summer Palace')),
+])
+def test_structured_preview_proves_both_language_plans(locale, places):
+    from cj_api.local_lio_planning import (
+        _itinerary_preview_effect, _render_itinerary_preview, read_itinerary_preview,
+    )
+
+    days = [dict(day_index=index, activities=[dict(place_name=place, verb='visit', period=None)])
+            for index, place in enumerate(places, 1)]
+    answer, days = _render_itinerary_preview(days, 3, None, locale)
+    state = SimpleNamespace(status='completed', draft_outcome=None, trip_proposal_published=False,
+                            text=answer, effects=(_itinerary_preview_effect(answer, days),))
+    response = dict(version=smoke.PLAN_PREVIEW_VERSION, message_id='same-mid',
+                    conversation_id='same-cid', preview=read_itinerary_preview(state, locale))
+    assert response['preview']==_itinerary_preview(places)['preview']
+    smoke.check_itinerary_preview(response, 'same-mid', 'same-cid')
+
+    state.text = '请问想去哪里？' if locale == 'zh' else 'Where would you like to go?'
+    response['preview'] = read_itinerary_preview(state, locale)
+    assert response['preview'] is None
+    with pytest.raises(smoke.SmokeResult) as failure:
+        smoke.check_itinerary_preview(response, 'same-mid', 'same-cid')
+    assert (failure.value.status, failure.value.reason) == ('UNKNOWN', 'structured_plan_unavailable')
+
+
+@pytest.mark.parametrize(('problem', 'status', 'reason'), [
+    ('wrong-original', 'UNKNOWN', 'structured_plan_binding'),
+    ('missing', 'UNKNOWN', 'structured_plan_unavailable'),
+    ('two-days', 'FAIL', 'structured_plan_day_count'),
+    ('duplicate-day', 'FAIL', 'structured_plan_day_count'),
+    ('empty-day', 'FAIL', 'structured_plan_day_without_beijing_activity'),
+    ('cancelled', 'FAIL', 'structured_plan_day_without_beijing_activity'),
+    ('out-of-city', 'FAIL', 'structured_plan_day_without_beijing_activity'),
+    ('wrong-destination', 'FAIL', 'structured_plan_wrong_destination'),
+    ('unconfirmed-city', 'UNKNOWN', 'structured_plan_activity_location_unconfirmed'),
+    ('unavailable-status', 'UNKNOWN', 'structured_plan_activity_invalid'),
+])
+def test_structured_preview_rejects_unmatched_or_incomplete_evidence(problem, status, reason):
+    value = _itinerary_preview()
+    days = value['preview']['days']
+    activity = days[-1]['activities'][0]
+    if problem == 'wrong-original':
+        value['message_id'] = 'other'
+    elif problem == 'missing':
+        value['preview'] = None
+    elif problem == 'two-days':
+        days.pop()
+    elif problem == 'duplicate-day':
+        days[-1]['day_index'] = 2
+    elif problem == 'empty-day':
+        days[-1]['activities'].clear()
+    elif problem == 'cancelled':
+        activity['cancelled'] = True
+    elif problem == 'out-of-city':
+        activity['city_adcode'] = '310000'
+    elif problem == 'wrong-destination':
+        value['preview']['destination'] = {'adcode': '310000'}
+    elif problem == 'unconfirmed-city':
+        activity['place_name'] = 'Great Wall'
+    elif problem == 'unavailable-status':
+        activity['cancelled'] = 'false'
+    with pytest.raises(smoke.SmokeResult) as failure:
+        smoke.check_itinerary_preview(value, 'same-mid', 'same-cid')
+    assert (failure.value.status, failure.value.reason) == (status, reason)
+
+
+@pytest.mark.parametrize(('locale', 'body', 'scenario', 'expected'), [
+    ('zh', '故宫、慕田峪和颐和园都有适合当天安排的活动。', 'valid', 'PASS'),
+    ('en', 'Your itinerary covers three different parts of the city.', 'valid', 'PASS'),
+    ('en', 'Day 1: Visit the Forbidden City. Day 2: Hike the Great Wall. '
+           'Day 3: Explore the Temple of Heaven.', 'missing', 'structured_plan_unavailable'),
+    ('en', 'Day 1: Visit the Forbidden City. Day 2: Hike the Great Wall. '
+           'Day 3: Explore the Temple of Heaven.', 'other_message', 'structured_plan_binding'),
+    ('en', 'Day 1: Visit the Forbidden City. Day 2: Hike the Great Wall. '
+           'Day 3: Explore the Temple of Heaven.', 'expired', 'window_closed_before_structured_plan_read'),
+    ('en', 'Day 1: Visit the Forbidden City. Day 2: Hike the Great Wall. '
+           'Day 3: Explore the Temple of Heaven.', 'expired_after', 'window_closed_after_structured_plan_read'),
+    ('en', 'Day 1: Visit the Forbidden City. Day 2: Hike the Great Wall. '
+           'Day 3: Explore the Temple of Heaven.', 'deadline_before', 'structured_plan_case_deadline'),
+    ('en', 'Day 1: Visit the Forbidden City. Day 2: Hike the Great Wall. '
+           'Day 3: Explore the Temple of Heaven.', 'deadline_after', 'structured_plan_case_deadline'),
+    ('en', 'Day 1: Visit the Forbidden City. Day 2: Hike the Great Wall. '
+           'Day 3: Explore the Temple of Heaven.', 'missing_ref', 'structured_plan_read_ref_missing'),
+])
+def test_completed_plan_requires_its_own_structured_evidence_without_reposting(
+        monkeypatch, locale, body, scenario, expected):
+    monkeypatch.setattr(smoke, 'POLL_SECONDS', 0)
+    posts, previews = [], []
+    expired = False
+    elapsed = 0.0
+    ref = str(uuid4())
+    monkeypatch.setattr(smoke, 'time', SimpleNamespace(monotonic=lambda: elapsed, sleep=lambda _: None))
+
+    def api(token, route, *, document=None):
+        nonlocal expired, elapsed
+        if document is not None:
+            assert route == '/v2/lio/messages'
+            posts.append(document)
+            return dict(version='LIO-message-receipt.2', message_id=document['message_id'],
+                        conversation_id='same-cid'), None
+        if route == '/v2/lio/timeline':
+            return dict(version='LIO-timeline.2', conversation_id='default', messages=[]), None
+        mid = posts[0]['message_id']
+        if route == '/v2/lio/timeline?conversation_id=same-cid':
+            expired = scenario == 'expired'
+            if scenario == 'deadline_before':
+                elapsed = smoke.CASE_LIMIT_SECONDS + 1
+            return dict(version='LIO-timeline.2', conversation_id='same-cid', messages=[
+                dict(message_id=mid, status='completed', answer=body)]), None
+        assert route == f'{smoke.PLAN_PREVIEW_ROUTE}?conversation_id=same-cid&message_id={mid}'
+        previews.append(route)
+        response = _itinerary_preview(message='different-mid' if scenario == 'other_message' else mid)
+        if scenario == 'missing':
+            response['preview'] = None
+        if scenario == 'deadline_after':
+            elapsed = smoke.CASE_LIMIT_SECONDS + 1
+        if scenario == 'expired_after':
+            expired = True
+        return response, None if scenario == 'missing_ref' else ref
+
+    result = smoke.run_case(f'{locale}.plan', 'fixture', 'synthetic', lambda: not expired, api)
+    assert len(posts) == 1
+    assert len(previews) == int(scenario not in ('expired', 'deadline_before'))
+    assert result['legacy_format_match'] is (scenario != 'valid')
+    if expected == 'PASS':
+        assert result['status'] == 'PASS'
+        assert result['structured_plan'] == dict(source='original_preview', days=3, ref=ref,
+            conversation_id='same-cid', message_id=posts[0]['message_id'], start_ms=0, end_ms=0)
+    else:
+        assert (result['status'], result['reason']) == ('UNKNOWN', expected)
+        assert 'structured_plan' not in result
+
+
+def _dated_trip(labels=('参观故宫博物院', 'Hike Mutianyu Great Wall', '游览颐和园。')):
+    return dict(trip_id='same-trip', title='Beijing', days=[
+        dict(date=f'2026-12-0{i}', items=[dict(item_id=f'stop-{i}', label=label,
+                                             start_time=None, end_time=None, fixed=False)])
+        for i, label in enumerate(labels, 1)])
+
+
+@pytest.mark.parametrize(('scenario', 'status', 'reason'), [
+    ('undated', 'UNKNOWN', 'structured_plan_day_dates_unavailable'),
+    ('gapped', 'FAIL', 'structured_plan_day_count'),
+    ('duplicate_date', 'FAIL', 'structured_plan_day_count'),
+    ('empty', 'FAIL', 'structured_plan_day_without_beijing_activity'),
+    ('cancelled', 'FAIL', 'structured_plan_day_without_beijing_activity'),
+    ('uncertain_city', 'UNKNOWN', 'structured_plan_activity_location_unconfirmed'),
+    ('negative_label', 'UNKNOWN', 'structured_plan_activity_location_unconfirmed'),
+])
+def test_same_message_saved_trip_fails_closed(scenario, status, reason):
+    trip = _dated_trip()
+    day = trip['days'][-1]
+    item = day['items'][0]
+    if scenario == 'undated':
+        day['date'] = None
+    elif scenario == 'gapped':
+        day['date'] = '2026-12-05'
+    elif scenario == 'duplicate_date':
+        day['date'] = '2026-12-02'
+    elif scenario == 'empty':
+        day['items'] = []
+    elif scenario == 'cancelled':
+        item['cancelled'] = True
+    elif scenario == 'uncertain_city':
+        item['label'] = 'Visit an unverified attraction'
+    elif scenario == 'negative_label':
+        item['label'] = 'Do not visit the Summer Palace'
+    with pytest.raises(smoke.SmokeResult) as failure:
+        smoke.check_timeline_itinerary(trip)
+    assert (failure.value.status, failure.value.reason) == (status, reason)
+
+
+def test_original_visible_saved_trip_can_pass_with_empty_prose_and_no_extra_read(monkeypatch):
+    monkeypatch.setattr(smoke, 'POLL_SECONDS', 0)
+    posts = []
+    ref = str(uuid4())
+
+    def api(token, route, *, document=None):
+        if document is not None:
+            assert route == '/v2/lio/messages'
+            posts.append(document)
+            return dict(version='LIO-message-receipt.2', message_id=document['message_id'],
+                        conversation_id='same-cid'), None
+        if route == '/v2/lio/timeline':
+            return dict(version='LIO-timeline.2', conversation_id='default', messages=[]), None
+        assert route == '/v2/lio/timeline?conversation_id=same-cid'
+        return dict(version='LIO-timeline.2', conversation_id='same-cid', messages=[
+            dict(message_id=posts[0]['message_id'], status='completed', answer='', trip=_dated_trip())
+        ]), ref
+
+    result = smoke.run_case('zh.plan', 'fixture', 'synthetic', lambda: True, api)
+    assert result['status'] == 'PASS'
+    timeline = result['polls'][-1]
+    assert result['structured_plan'] == dict(source='timeline_trip', days=3, ref=ref,
+        conversation_id='same-cid', message_id=posts[0]['message_id'],
+        start_ms=timeline['start_ms'], end_ms=timeline['end_ms'])
+    assert result['answer_chars'] == 0
+    assert len(posts) == 1
+
+
+def test_release_verify_requires_two_distinct_original_bindings_even_with_old_text_passes():
+    from copy import deepcopy
+
+    attempt = 'a' * 64
+    rows = [dict(kind='case', case=name, status='PASS', bound_model_attempts=[], polls=[])
+            for name, _ in smoke.CASES]
+    rows[2].update(dispatch_ms=1, bound_model_attempts=[attempt], polls=[
+        dict(start_ms=10, end_ms=30, http=200, answering=False),
+        dict(start_ms=1010, end_ms=1040, http=200, answering=True),
+        dict(start_ms=2010, end_ms=2040, http=200, answering=True),
+        dict(start_ms=3010, end_ms=3040, http=200, answering=False, ref=str(uuid4())),
+    ])
+    rows[5].update(dispatch_ms=1, polls=[dict(start_ms=3010, end_ms=3040, http=200, ref=str(uuid4()))])
+    rows += [dict(kind='history', status='PASS'), dict(kind='translation_requirement', required=False),
+             dict(kind='cost', conservative_cny_1e7=0, line_usage_delta_cny_1e7=0)]
+    logs = [f'M4_MODEL_WIRE_TIMING attempt_sha256={attempt} first_provider_body_ms=2590.0 socket_read_ms=2740.0']
+    unknown = dict(status='UNKNOWN', concurrency='UNRUN', reason='structured_plan_evidence_missing')
+
+    rows[2].update(structured_days=3, structured_plan_source='timeline_trip')
+    rows[5].update(structured_days=3, structured_plan_source='original_preview')
+    assert smoke.decide(rows, logs) == unknown
+
+    rows[2].update(message_id=str(uuid4()), conversation_id='zh-original')
+    rows[5].update(message_id=str(uuid4()), conversation_id='en-original')
+    rows[2]['structured_plan'] = dict(source='timeline_trip', days=3, message_id=rows[2]['message_id'],
+        conversation_id='zh-original', ref=rows[2]['polls'][-1]['ref'], start_ms=3010, end_ms=3040)
+    rows[5]['structured_plan'] = dict(source='original_preview', days=3, message_id=rows[5]['message_id'],
+        conversation_id='en-original', ref=str(uuid4()), start_ms=3041, end_ms=3060)
+    assert smoke.decide(rows, logs) == dict(status='PASS', concurrency='PASS')
+
+    for field in ('conversation_id', 'message_id', 'ref'):
+        damaged = deepcopy(rows)
+        damaged[5]['structured_plan'].pop(field)
+        assert smoke.decide(damaged, logs) == unknown
+    for index, field, value in (
+        (2, 'ref', str(uuid4())),
+        (5, 'message_id', str(uuid4())),
+        (5, 'conversation_id', 'other-original'),
+        (5, 'start_ms', 3039),
+        (5, 'end_ms', smoke.CASE_LIMIT_SECONDS * 1000 + 1),
+    ):
+        damaged = deepcopy(rows)
+        damaged[index]['structured_plan'][field] = value
+        assert smoke.decide(damaged, logs) == unknown
+    for field in ('conversation_id', 'message_id'):
+        damaged = deepcopy(rows)
+        value = damaged[2][field]
+        damaged[5][field] = damaged[5]['structured_plan'][field] = value
+        assert smoke.decide(damaged, logs) == unknown
+    damaged = deepcopy(rows)
+    damaged[5]['structured_plan']['ref'] = damaged[2]['structured_plan']['ref'].upper()
+    assert smoke.decide(damaged, logs) == unknown
+    damaged = deepcopy(rows)
+    damaged[5]['structured_plan']['ref'] = damaged[5]['polls'][-1]['ref'].upper()
+    assert smoke.decide(damaged, logs) == unknown

@@ -350,6 +350,13 @@ def test_completed_smoke_rejects_missing_translation_requirement_or_evidence(mon
     monkeypatch.setattr(server_smoke, 'overlap_witness', lambda *args: True)
     common = [dict(kind='case', case=case, status='PASS', bound_model_attempts=[])
               for case, _ in server_smoke.CASES]
+    for row in common:
+        if row['case'].endswith('.plan'):
+            conversation, message, ref = 'fixture-' + row['case'], str(uuid4()), str(uuid4())
+            row.update(conversation_id=conversation, message_id=message, dispatch_ms=0,
+                       polls=[dict(ref=ref, http=200, start_ms=1, end_ms=2)],
+                       structured_plan=dict(source='timeline_trip', days=3, conversation_id=conversation,
+                                            message_id=message, ref=ref, start_ms=1, end_ms=2))
     common += [dict(kind='history', status='PASS'),
                dict(kind='cost', conservative_cny_1e7=0, line_usage_delta_cny_1e7=0)]
     required = dict(kind='translation_requirement', required=True)
