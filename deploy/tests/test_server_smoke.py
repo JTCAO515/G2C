@@ -441,20 +441,22 @@ def _itinerary_preview(places=('故宫博物院', '慕田峪长城', '颐和园'
     ('en', ('Forbidden City', 'Mutianyu Great Wall', 'Summer Palace')),
 ])
 def test_structured_preview_proves_both_language_plans(locale, places):
-    from cj_api.lio_itinerary_preview import effect, read_preview, render
+    from cj_api.local_lio_planning import (
+        _itinerary_preview_effect, _render_itinerary_preview, read_itinerary_preview,
+    )
 
     days = [dict(day_index=index, activities=[dict(place_name=place, verb='visit', period=None)])
             for index, place in enumerate(places, 1)]
-    answer, days = render(days, 3, None, locale)
+    answer, days = _render_itinerary_preview(days, 3, None, locale)
     state = SimpleNamespace(status='completed', draft_outcome=None, trip_proposal_published=False,
-                            text=answer, effects=(effect(answer, days),))
+                            text=answer, effects=(_itinerary_preview_effect(answer, days),))
     response = dict(version=smoke.PLAN_PREVIEW_VERSION, message_id='same-mid',
-                    conversation_id='same-cid', preview=read_preview(state, locale))
+                    conversation_id='same-cid', preview=read_itinerary_preview(state, locale))
     assert response['preview']==_itinerary_preview(places)['preview']
     smoke.check_itinerary_preview(response, 'same-mid', 'same-cid')
 
     state.text = '请问想去哪里？' if locale == 'zh' else 'Where would you like to go?'
-    response['preview'] = read_preview(state, locale)
+    response['preview'] = read_itinerary_preview(state, locale)
     assert response['preview'] is None
     with pytest.raises(smoke.SmokeResult) as failure:
         smoke.check_itinerary_preview(response, 'same-mid', 'same-cid')
