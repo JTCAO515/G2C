@@ -477,7 +477,8 @@ class MeteredDashScopeProvider:
     def invoke(self,messages,system,attempt,*,tools=None,receipt,guard,native_reply=None,tool_choice=None,
                native_turn_profile=None,final_answer=False,release_after_send=False,lio_answer=False,structured_profile=None,intake_source_index=None,wire_observer=None,
                draft_profile=None,draft_schema_sha256=None,exploration_schema_sha256=None,
-               unsettled_answer_limit=None,guarded_connect=False,discussion_reply=False):
+               unsettled_answer_limit=None,guarded_connect=False,discussion_reply=False,
+               discussion_preview_days=None,discussion_preview_sha256=None):
         from cj_usage.authorization_budget import canonical
         native_tools=tools or []
         buffered=native_turn_profile==M4_NATIVE_TURN_BUFFERED
@@ -498,6 +499,19 @@ class MeteredDashScopeProvider:
             raise ProviderFailed('unexpected exploration schema')
         if structured_profile not in (None,'LIO-planning-intake.1','LIO-planning-intake.2','LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5','LIO-planning-intake.6','LIO-planning-intake.7','LIO-planning-intake.8','LIO-planning-intake.9',*exploration_profiles) or structured_profile is not None and (native_tools or system is None):
             raise ProviderFailed('explicit nationwide structured profile required')
+        preview_format=None
+        if discussion_preview_days is not None or discussion_preview_sha256 is not None:
+            from cj_message.lio_context import (DISCUSSION_MAX_PREVIEW_DAYS,discussion_preview_format,
+                discussion_preview_format_sha256)
+            if (not discussion_reply or not release_after_send or native_tools or system is None
+                    or native_turn_profile is not None or native_reply is not None or lio_answer
+                    or tool_choice is not None or structured_profile is not None
+                    or draft_profile is not None or draft_schema_sha256 is not None
+                    or type(discussion_preview_days) is not int
+                    or not 1 <= discussion_preview_days <= DISCUSSION_MAX_PREVIEW_DAYS
+                    or discussion_preview_sha256!=discussion_preview_format_sha256(discussion_preview_days)):
+                raise ProviderFailed('explicit original discussion preview schema required')
+            preview_format=discussion_preview_format(discussion_preview_days)
         grouped_format=None
         rich_draft=False
         if draft_profile is not None or draft_schema_sha256 is not None:
@@ -562,7 +576,9 @@ class MeteredDashScopeProvider:
         if tool_choice is not None:body['tool_choice']=tool_choice
         if native_tools and not (proxy or incremental):body['response_format']=_m4_native_answer_format()
         elif not native_tools and system is not None:
-            if grouped_format is not None:
+            if preview_format is not None:
+                body['response_format']=preview_format
+            elif grouped_format is not None:
                 body['response_format']=grouped_format
             elif exploration:
                 body['response_format']=exploration_format(structured_profile)

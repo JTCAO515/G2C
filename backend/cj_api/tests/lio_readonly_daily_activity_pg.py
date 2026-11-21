@@ -10,6 +10,7 @@ import lio_projection_pg as projection
 from lio_dispatch_concurrency_pg import confirm_model_write
 import psycopg
 from fastapi.testclient import TestClient
+from jsonschema import Draft202012Validator
 from cj_agent.provider import DashScopeConfig, M4_BASE, M4_MODEL, MeteredDashScopeProvider, _M4_REQUEST_SENT
 from cj_api.local_app import ISSUER, LocalDatabase, create_local_app, load_confirmation_signer, scope_for
 from cj_api.local_run_context import load_run_context
@@ -62,6 +63,7 @@ def exercise(auth, conninfo):
                             demo_subjects=subjects, national_subjects=subjects)
     tools = RealTools(services, buffered_streaming_subjects=subjects)
     seen = []
+    expected_ledger = []
 
     cases = {
         'zh': ('北京三日游','北京','三日','第1天：参观〈地点〉。',
@@ -106,13 +108,21 @@ def exercise(auth, conninfo):
                                             dict(field='party_size',source_index=0,quote=''),
                                             dict(field='duration_days',source_index=1,quote=followup)]
             value.update(version='LIO-planning-intake.8',needs_tools=False)
-        elif continuation is not None:
+        else:
+            response_format=packet['response_format']
+            assert response_format['type']=='json_schema',response_format
+            schema=response_format['json_schema']['schema']
+            assert set(schema['required'])=={'answer','days','follow_up'}
+            [days,_]=schema['properties']['days']['anyOf']
+            assert days['minItems']==days['maxItems']==3
+            assert packet['max_tokens']==1024 and 'tools' not in packet
+        if index is None and continuation is not None:
             seen.append('discussion')
             assert 'Start every day line with the day label and an explicit activity verb' in packet['messages'][0]['content']
             assert continuation[0] in [m['content']for m in packet['messages']if m['role']=='user']
             assert continuation[1] in [m['content']for m in packet['messages']if m['role']=='user']
             value={'answer':continuation[4]}
-        else:
+        elif index is None:
             seen.append('discussion')
             system=packet['messages'][0]['content']
             # Hold model behavior fixed as a contract fixture. Only a prompt
@@ -122,7 +132,9 @@ def exercise(auth, conninfo):
                                    in system and example in system) else bare
             if structured == 'cancelled':chosen_reply=cancelled_answer[locale]
             value={'answer':chosen_reply}
-            if structured:
+            if structured == 'declined':
+                value.update(days=None,follow_up=None)
+            elif structured:
                 places = list(locations[locale])
                 if structured == 'cancelled':
                     places[0]+='（参观取消）' if locale=='zh' else ' (visit cancelled)'
@@ -130,6 +142,10 @@ def exercise(auth, conninfo):
                                  for i, place in enumerate(places, 1)]
                 if structured == 'invalid':
                     value['days'].pop()
+                if structured == 'valid':
+                    value['follow_up']=None
+            if structured in ('valid','declined'):
+                Draft202012Validator(schema).validate(value)
         yield _M4_REQUEST_SENT
         observation['http_status']=200
         frame=dict(id='legacy-plan-fixture-'+str(len(seen)),model=M4_MODEL,choices=[
@@ -166,7 +182,7 @@ def exercise(auth, conninfo):
     with TestClient(app) as api, patch('asyncio.open_connection',new=no_network), patch(
             'cj_agent.provider._m4_wire',new=fake_wire), patch('cj_api.lio_city.catalog_response',new=catalog):
         for locale,(prompt,city,duration_quote,example,answer,bare) in cases.items():
-            scenarios = (None, 'valid', 'invalid', 'cancelled')
+            scenarios = (None, 'valid', 'declined', 'invalid', 'cancelled')
             if locale=='en':scenarios+=('unsettled',)
             for structured in scenarios:
                 mid=str(uuid4())
@@ -182,6 +198,7 @@ def exercise(auth, conninfo):
                 outcome,=worker()
                 assert outcome.status==('unknown' if structured=='unsettled' else 'completed')
                 assert seen[before:]==['intake','discussion']
+                expected_ledger.extend(('RECEIVED','RECEIVED','INTENT' if structured=='unsettled' else 'RECEIVED'))
                 page=api.get('/v2/lio/timeline',headers=headers,params={'conversation_id':cid})
                 assert page.status_code==200
                 row,=page.json()['messages']
@@ -213,7 +230,7 @@ def exercise(auth, conninfo):
                     for table in ('cj_trip_record','cj_message_needs_binding','cj_memory_item'):
                         assert c.execute('SELECT count(*) FROM '+table).fetchone()==(0,)
                 print(f'{locale} {structured or "legacy"}: visible answer, one discussion, no Trip or Memory write',flush=True)
-        assert [entry['state'] for entry in budget.inspect()]==['RECEIVED']*26+['INTENT']
+        assert [entry['state'] for entry in budget.inspect()]==expected_ledger
         structured=None
         for locale,continuation in (
                 ('zh',('去成都','三天','成都','你打算玩几天？',

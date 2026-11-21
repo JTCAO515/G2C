@@ -2,8 +2,10 @@
 from dataclasses import dataclass
 from .domain import Unavailable
 from datetime import date
+from hashlib import sha256
 import json
 import re
+from typing import NamedTuple
 
 from .demo_dialogue import LIO_VERSION, LIO_VERSION_V3, LIO_VERSION_V4
 from .domain import Unavailable
@@ -147,6 +149,51 @@ def answer_prompt(locale, question=None):
     identity = (_TRAVELER_IDENTITY_PROMPT if question is not None
                 and _TRAVELER_IDENTITY_QUESTION.fullmatch(question.strip()) else '')
     return PERSONA + identity + (' Reply in Chinese.' if locale == 'zh' else ' Reply in English.')
+
+
+DISCUSSION_VISIT_VERBS = {
+    'visit': ('参观', 'Visit'), 'explore': ('游览', 'Explore'),
+    'walk': ('漫步', 'Walk around'), 'eat': ('去用餐', 'Eat at'),
+    'shop': ('去逛', 'Shop at'), 'relax': ('去休息', 'Relax at'),
+}
+DISCUSSION_VISIT_PERIODS = {
+    None: ('', ''), 'morning': ('上午', 'Morning: '),
+    'afternoon': ('下午', 'Afternoon: '), 'evening': ('晚上', 'Evening: '),
+}
+DISCUSSION_MAX_PREVIEW_DAYS = 366
+
+
+class DiscussionPreviewInput(NamedTuple):
+    messages: list[dict]
+    system: str
+    provider: object
+    day_count: int
+
+
+def discussion_preview_format(day_count):
+    if type(day_count) is not int or not 1 <= day_count <= DISCUSSION_MAX_PREVIEW_DAYS:
+        raise ValueError('bounded discussion day count required')
+    activity=dict(type='object',additionalProperties=False,required=['place_name','verb','period'],properties={
+        'place_name':dict(type='string',minLength=1,maxLength=240),
+        'verb':dict(type='string',enum=list(DISCUSSION_VISIT_VERBS)),
+        'period':dict(enum=list(DISCUSSION_VISIT_PERIODS)),
+    })
+    day=dict(type='object',additionalProperties=False,required=['day_index','activities'],properties={
+        'day_index':dict(type='integer',minimum=1,maximum=day_count),
+        'activities':dict(type='array',minItems=1,maxItems=8,items=activity),
+    })
+    fields={
+        'answer':dict(type='string',minLength=1,maxLength=12000),
+        'days':dict(anyOf=[dict(type='array',minItems=day_count,maxItems=day_count,items=day),dict(type='null')]),
+        'follow_up':dict(type=['string','null'],maxLength=280),
+    }
+    return dict(type='json_schema',json_schema=dict(name='LIO_discussion_preview_1',strict=True,
+        schema=dict(type='object',additionalProperties=False,required=list(fields),properties=fields)))
+
+
+def discussion_preview_format_sha256(day_count):
+    encoded=json.dumps(discussion_preview_format(day_count),sort_keys=True,separators=(',',':')).encode()
+    return sha256(encoded).hexdigest()
 
 
 _INTERNAL_ANSWER = re.compile(
