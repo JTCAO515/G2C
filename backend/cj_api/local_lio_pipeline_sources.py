@@ -5,6 +5,7 @@ here. The caller must preflight the complete graph, retain original attempts
 and use issued date checks and the sole selected publisher for final commit.
 """
 from dataclasses import dataclass
+import json
 from cj_draft.rich_place_selection import RichPlaceSelectionContextSource,LioSelectedRichPublisher
 from cj_message.lio_plan_needs import original_needs
 from cj_trip.postgres import Repository as TripRepository
@@ -15,6 +16,7 @@ from .local_lio_rich_source import RichProfileSource
 from .local_lio_rich_calendar_source import RichCalendarSource
 from .local_lio_provider_sources import RegisteredProviderSources
 from .local_lio_pipeline_places import lookup_selected_places
+from .lio_exploration_policy import select_adjustment
 
 
 @dataclass
@@ -40,7 +42,7 @@ class PipelineSources:
         _,value=self.worker._step(self.binding,read)
         return value
 
-    def publisher(self,checks):
+    def publisher(self,checks,*,adjustment=None):
         """Compose C's sole selected writer; this creates no new permission."""
         worker,binding=self.worker,self.binding
         def original(candidate,stored,expected):
@@ -50,7 +52,15 @@ class PipelineSources:
             current=self.source.contexts[binding]
             head=None if current is None else TripHead.from_trip(current.trip)
             return stored==worker.message_context.active_original(binding)and expected==head
-        return LioSelectedRichPublisher(self.original_publisher,self.repository.confirm,self.source,original,checks)
+        if adjustment is None:
+            return LioSelectedRichPublisher(self.original_publisher,self.repository.confirm,self.source,original,checks)
+        def authorize(candidate,stored,scope):
+            if not adjustment.matches(candidate,stored,scope):return False
+            current=self.source.contexts[binding]
+            return (current is not None and select_adjustment(current.trip,json.loads(stored.raw)['text'],
+                    adjustment.question_day)==adjustment.selection)
+        return LioSelectedRichPublisher(self.original_publisher,self.repository.confirm,self.source,original,checks,
+            adjustment_authority=authorize)
 
 
 def capture_pipeline_sources(host,worker,binding,view,fields,city_reference,*,day_count,start_date):
@@ -63,6 +73,15 @@ def capture_pipeline_sources(host,worker,binding,view,fields,city_reference,*,da
     profiles=RichProfileSource(host.database)
     state=profiles.record_plan_now(worker,binding,worker.runs.snapshot(binding))
     register(worker,binding,state,PlanningDetails(city_reference.name,fields,None,view.references))
+    return _capture_sources(host,worker,binding,view,profiles,day_count,start_date)
+
+
+def capture_adjustment_sources(host,worker,binding,view,authorization,document):
+    profiles=RichProfileSource(host.database,adjustment=authorization)
+    return _capture_sources(host,worker,binding,view,profiles,len(document['days']),document['calendar'].get('start_date'))
+
+
+def _capture_sources(host,worker,binding,view,profiles,day_count,start_date):
     original=host.legacy.calendar.context_publisher
     repository=TripRepository(original.repository.connect,original.repository.scope,
         host.legacy.calendar.confirmation,structured=True,calendar=True,rich=True)
