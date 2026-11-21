@@ -1,4 +1,5 @@
 import Foundation
+import CJTripClient
 
 struct LioTaxiPlace: Codable, Equatable, Identifiable, Sendable {
     struct Coordinate: Codable, Hashable, Sendable {
@@ -38,6 +39,15 @@ struct LioTaxiPlace: Codable, Equatable, Identifiable, Sendable {
         guard let point = itineraryPlace.mapPoint else { return nil }
         self.init(nameZH: itineraryPlace.nameZH, nameEN: itineraryPlace.nameEN,
                   addressZH: itineraryPlace.driverAddress,
+                  coordinate: Coordinate(latitude: point.latitude, longitude: point.longitude,
+                                         referenceSystem: .gcj02))
+    }
+
+    init?(tripPlace: TripPlaceProjection) {
+        guard let marker = tripPlace.markerCoordinate else { return nil }
+        let point = LioItinerary.Point(marker: marker)
+        self.init(nameZH: tripPlace.nameZH, nameEN: tripPlace.officialNameEN.value ?? tripPlace.nameZH,
+                  addressZH: tripPlace.addressZH.value,
                   coordinate: Coordinate(latitude: point.latitude, longitude: point.longitude,
                                          referenceSystem: .gcj02))
     }

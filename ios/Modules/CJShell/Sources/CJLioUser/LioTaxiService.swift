@@ -71,6 +71,22 @@ extension LioTaxiService {
               coordinate: .init(latitude: 39.9998, longitude: 116.2754, referenceSystem: .gcj02)),
     ]
 
+    static var previewFromArguments: LioTaxiService? {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard arguments.contains("--lio-taxi-preview") else { return nil }
+        if arguments.contains("--lio-taxi-preview-location-denied") { return preview(.locationDenied) }
+        if arguments.contains("--lio-taxi-preview-estimate-fails") { return preview(.estimateUnavailable) }
+        if arguments.contains("--lio-taxi-preview-no-app") { return preview(.missingApp) }
+        if arguments.contains("--lio-taxi-preview-rate-limited") { return preview(.rateLimited) }
+        if arguments.contains("--lio-taxi-preview-signed-out") { return preview(.signedOut) }
+        return preview()
+    }
+
+    @MainActor static var previewRecents: LioTaxiRecentPlaces {
+        LioTaxiRecentPlaces(directory: FileManager.default.temporaryDirectory
+            .appendingPathComponent("lio-taxi-preview", isDirectory: true))
+    }
+
     static func preview(_ scenario: PreviewScenario = .available) -> LioTaxiService {
         LioTaxiService(
             search: { query in
