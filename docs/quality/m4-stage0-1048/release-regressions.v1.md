@@ -152,3 +152,18 @@ uv run --locked python -B -m pytest -q \
 - **重庆中英**：两种首轮均正确问缺失城市。中文补重庆后停在第 2 天标题，英文补 Chongqing 后改用中文再次问目的地。原进件本地复现续轮退回普通答复。完整答复应保留已确认城市和日期，按提问语言给三天实际安排，并单独核写入。
 - **深圳英文**：ACK 后界面 failed/unavailable，原 RUN 与 Meter UNKNOWN，末笔模型 INTENT 保留，原正文不可读。沿既有 UNKNOWN 夹具核停发、同一原消息只读和保守占用，禁止重发或把空原件当作成功。深圳中文原保存、定向替换、绑定撤销全过，供正例对照。
 - **成都中文选项偏离**：C 实际选了菜单第二项，原问答及费用保留，冻结首选仍 UNRUN。动态编辑选菜单中第一项与所选目标不同的地点；该地点若在其他时段出现，仍按原固定题选择，核只改所选目标。
+
+## 2026-11-21 · 全国 r12 真实回归
+
+按[全国固定题](../../../eval/lio_national_cases.v1.json)和原 `question_day` 重放。用 `test_lio_planning_flow.py` 的 `run` 注入原进件、城市和写入回执，用 `test_m4_real_services.py` 的 `RealTools.answer` 夹具注入原工具结果。原件与真实结果见 [C 判定](https://github.com/JTCAO515/G2C/issues/815#issuecomment-7060446204) 和 [B 同轮审计](https://github.com/JTCAO515/G2C/issues/815#issuecomment-7060484557)。
+
+- **成都中文**：整句「去成都玩三天」进入城市查询，唯一候选成都仍触发确认。给出已在原文中明确的城市和天数，回读三个有活动且有顺序的日程。保留真正歧义时要求选择的对照。英文已有三天正文，但仍须在冻结题授权允许时核正式保存。
+- **西安中文**：原回复称未拿到保存确认，同时没有四天正文。注入写入未获确认，正文仍应给出四天安排并说明保存状态；读回确认才判保存通过。用同轮西安英文核对正式保存、仅替换目标项及撤销后逐字恢复。
+- **上海中英**：已明确城市时只追问缺失天数。用原进件覆盖中文重复问城市，以及英文改用中文问到达时间和住宿两种偏差。
+- **杭州中文**：原 RUN 返回 `failed/unavailable`，同轮审计见 `unknown_paths`，两轮模型工具决策相同、仅登记一次 fact。按原轮次注入进件拒绝、fact 返回 `unknown` 和重复工具建议。核服务继续给有依据的中文回答或明确说明缺项，禁止重复发同一工具、凭空断言、或在写入证据不足时保存。原故障由 B/L 结合审计继续定位。
+
+既有边界对照可从仓库根目录执行：
+
+```sh
+uv run --locked python -B -m pytest -q backend/cj_api/tests/test_lio_national_intake.py backend/cj_api/tests/test_m4_real_services.py -k 'NationalLioNationalIntake or non_transit_fact or cannot_redispatch_same_canonical or unknown_fact_audit'
+```
