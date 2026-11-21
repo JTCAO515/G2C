@@ -13,13 +13,12 @@ from cj_draft.lio_plan import LioPlanPublisher
 from cj_draft.rich_schema import GENERATION_PROFILES as RICH_GENERATION_PROFILES
 from cj_message.demo_dialogue import LIO_VERSION
 from cj_message.domain import Command, Unavailable
-from cj_message.lio_context import UNSAVED_PLAN_ANSWER,answer_prompt
+from cj_message.lio_context import UNSAVED_PLAN_ANSWER,answer_prompt,display_answer
 from cj_message.lio_plan_needs import BOUND_EFFECT, attach, original_needs
 from cj_message.needs_binding import needs_scope_for
 from cj_needs.domain import InvalidInput, decode, exact
 from cj_needs.preview import encode, preview
 from .lio_plan_pace import PlanPace,saved_summary
-from . import lio_itinerary_preview
 from cj_run.postgres import CommitUnknown
 
 from .lio_planning_grounding import (PLAN_REQUEST, PlanningTurn, discussion_reply, grounded_fields,
@@ -127,6 +126,116 @@ def clarify(worker, binding, state, text):
     return worker._event(binding, state, 'completed')
 
 
+ITINERARY_PREVIEW_VERSION = 'LIO-itinerary-preview.1'
+_ITINERARY_PREVIEW_EFFECT = 'lio_itinerary_preview.1:'
+_CANCELLED_PLACE = re.compile(
+    r'取消|停办|暂停|停运|停业|闭馆|关闭|不开放|无法参观'
+    r'|\b(?:cancel(?:l?ed|l?ation)|closed|suspended|no visit|no access|not open)\b',re.I)
+_PREVIEW_VERBS = {
+    'visit': ('参观', 'Visit'), 'explore': ('游览', 'Explore'),
+    'walk': ('漫步', 'Walk around'), 'eat': ('去用餐', 'Eat at'),
+    'shop': ('去逛', 'Shop at'), 'relax': ('去休息', 'Relax at'),
+}
+_PREVIEW_PERIODS = {
+    None: ('', ''), 'morning': ('上午', 'Morning: '),
+    'afternoon': ('下午', 'Afternoon: '), 'evening': ('晚上', 'Evening: '),
+}
+_ITINERARY_PREVIEW_FORMAT = (
+    ' For a complete day-by-day plan, use the following response format: one JSON object with answer, days and follow_up. '
+    'Answer is the complete standalone plain-text reply in case the structured plan is unavailable. '
+    'Days is an ordered array with one object per requested day: day_index and activities. '
+    'Each activity has exactly place_name (full proper name in the answer language), '
+    'verb (visit, explore, walk, eat, shop or relax), and period (morning, afternoon, evening or null). '
+    'Only include suggested visits you would actually show to the traveler. '
+    'Follow_up is one useful adjustment question in the answer language. '
+    'If you cannot provide the complete structured plan, return only answer.'
+)
+
+
+def _preview_line(text, limit):
+    return (type(text) is str and text == text.strip() and text.isprintable()
+            and 0 < len(text.encode('utf-8')) <= limit)
+
+
+def _preview_days(value, count):
+    if type(value) is not list or not 1 <= count <= 366 or len(value) != count:
+        return None
+    for index, day in enumerate(value, 1):
+        if (type(day) is not dict or day.keys() != {'day_index', 'activities'}
+                or type(day['day_index']) is not int or day['day_index'] != index
+                or type(day['activities']) is not list or not 1 <= len(day['activities']) <= 8):
+            return None
+        for activity in day['activities']:
+            if (type(activity) is not dict or activity.keys() != {'place_name', 'verb', 'period'}
+                    or not _preview_line(activity['place_name'], 240)
+                    or _CANCELLED_PLACE.search(activity['place_name']) is not None
+                    or type(activity['verb']) is not str or activity['verb'] not in _PREVIEW_VERBS
+                    or activity['period'] is not None and (type(activity['period']) is not str
+                                                           or activity['period'] not in _PREVIEW_PERIODS)):
+                return None
+    return value
+
+
+def _render_itinerary_preview(days, count, follow_up, locale):
+    days = _preview_days(days, count)
+    if days is None:
+        return None
+    zh = locale == 'zh'
+    lang = 0 if zh else 1
+    lines = []
+    for day in days:
+        activities = []
+        for activity in day['activities']:
+            verb, name = _PREVIEW_VERBS[activity['verb']][lang], activity['place_name']
+            if zh and activity['verb'] in ('eat', 'relax'):
+                action = '去' + name + verb[1:]
+            else:
+                action = verb + ('' if zh else ' ') + name
+            activities.append(_PREVIEW_PERIODS[activity['period']][lang] + action)
+        index = day['day_index']
+        lines.append(f'第{index}天：' + '，'.join(activities) + '。' if zh else
+                     f'Day {index}: ' + '. '.join(activities) + '.')
+    if _preview_line(follow_up, 280) and follow_up.endswith(('?', '？')):
+        lines.append(follow_up)
+    answer = '\n'.join(lines)
+    if display_answer(answer, locale) != answer:
+        return None
+    return answer, days
+
+
+def _preview_digest(text, days):
+    raw = json.dumps((text, days), ensure_ascii=False, separators=(',', ':'), sort_keys=True)
+    return sha256(raw.encode()).hexdigest()
+
+
+def _itinerary_preview_effect(text, days):
+    return _ITINERARY_PREVIEW_EFFECT + json.dumps(dict(content_sha256=_preview_digest(text, days), days=days),
+                                ensure_ascii=False, separators=(',', ':'))
+
+
+def read_itinerary_preview(state, locale):
+    if (state is None or state.status != 'completed' or state.draft_outcome is not None
+            or state.trip_proposal_published or not state.text.strip()
+            or display_answer(state.text, locale) != state.text):
+        return None
+    records = [entry.removeprefix(_ITINERARY_PREVIEW_EFFECT) for entry in state.effects if entry.startswith(_ITINERARY_PREVIEW_EFFECT)]
+    if len(records) != 1:
+        return None
+    try:
+        record = decode(records[0].encode())
+        if (type(record) is not dict or record.keys() != {'content_sha256', 'days'}
+                or type(record['days']) is not list
+                or record['content_sha256'] != _preview_digest(state.text, record['days'])):
+            return None
+        days = _preview_days(record['days'], len(record['days']))
+    except (InvalidInput, UnicodeError):
+        return None
+    if days is None:
+        return None
+    return dict(destination=None, days=[dict(day_index=day['day_index'], activities=[
+        dict(place_name=activity['place_name'], cancelled=False) for activity in day['activities']]) for day in days])
+
+
 class InvalidDiscussionAnswer(ProviderUnknown):
     """A settled model response failed the discussion envelope validation."""
 
@@ -163,7 +272,7 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
         else:
             system+=' The requested date window, compiled from the original traveler sources, is '+planning_window[0]+' through '+planning_window[1]+'. Use those dates or day numbers only.'
     if preview_requested:
-        system+=lio_itinerary_preview.FORMAT
+        system+=_ITINERARY_PREVIEW_FORMAT
     if introduction is not None:
         system+=(' This is a separate read-only trip proposal. Keep the saved itinerary and its locked arrangements unchanged. '
                  'Do not copy old bookings into the new dates or claim a second itinerary has been saved. '
@@ -192,12 +301,12 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
     except (InvalidInput, UnicodeError) as exc:
         _LOGGER.warning('lio_planning_discussion_invalid run_id=%s', binding.run_id)
         raise InvalidDiscussionAnswer('Lio discussion reply unavailable') from exc
-    preview = (lio_itinerary_preview.render(envelope['days'], day_count, envelope.get('follow_up'), locale)
+    preview = (_render_itinerary_preview(envelope['days'], day_count, envelope.get('follow_up'), locale)
                if structured else None)
     shown = present(reply if preview is None else preview[0])
     state = worker._event(binding, state, 'text_delta', shown)
     if preview is not None:
-        state = worker._event(binding, state, 'effect_committed', lio_itinerary_preview.effect(shown, preview[1]))
+        state = worker._event(binding, state, 'effect_committed', _itinerary_preview_effect(shown, preview[1]))
     state = worker._event(binding, state, 'effect_committed', DISCUSSION)
     return worker._event(binding, state, 'completed')
 

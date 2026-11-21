@@ -4,8 +4,7 @@ from datetime import date
 import json
 import unittest
 
-from cj_api.lio_itinerary_preview import read_preview
-from cj_api.local_lio_planning import PlanningTurn, discuss
+from cj_api.local_lio_planning import PlanningTurn, discuss, read_itinerary_preview
 from cj_run.core import Binding, State
 
 
@@ -55,17 +54,17 @@ class ItineraryPreview(unittest.TestCase):
                                             locale, question, city)
                 self.assertIn(day_one, state.text)
                 self.assertNotIn('Which place would you like to see?', state.text)
-                self.assertEqual(read_preview(state, locale), dict(destination=None, days=[
+                self.assertEqual(read_itinerary_preview(state, locale), dict(destination=None, days=[
                     dict(day_index=i, activities=[dict(place_name=name, cancelled=False)])
                     for i, name in enumerate(names, 1)]))
-                self.assertIsNone(read_preview(replace(state, text=state.text + ' changed'), locale))
+                self.assertIsNone(read_itinerary_preview(replace(state, text=state.text + ' changed'), locale))
                 prefix, payload = state.effects[0].split(':', 1)
                 changed = json.loads(payload)
                 changed['days'][0]['activities'][0]['place_name'] = 'Different place'
                 tampered = replace(state, effects=(prefix+':'+json.dumps(changed), *state.effects[1:]))
-                self.assertIsNone(read_preview(tampered, locale))
+                self.assertIsNone(read_itinerary_preview(tampered, locale))
                 for status in ('running', 'unknown', 'failed'):
-                    self.assertIsNone(read_preview(replace(state, status=status), locale))
+                    self.assertIsNone(read_itinerary_preview(replace(state, status=status), locale))
 
     def test_missing_or_invalid_days_keep_the_model_answer(self):
         answer = 'Visit the Forbidden City, the Great Wall and the Summer Palace over three days.'
@@ -76,7 +75,7 @@ class ItineraryPreview(unittest.TestCase):
             with self.subTest(packet=packet):
                 state = self.run_discussion(packet, 'en', 'Three days in Beijing', 'Beijing')
                 self.assertTrue(state.text.endswith(answer))
-                self.assertIsNone(read_preview(state, 'en'))
+                self.assertIsNone(read_itinerary_preview(state, 'en'))
 
     def test_model_cannot_supersede_place_authority_or_include_hidden_activities(self):
         answer = 'Visit the Forbidden City on your first day.'
@@ -86,5 +85,20 @@ class ItineraryPreview(unittest.TestCase):
                 activity = dict(days[0]['activities'][0], **{field: value})
                 state = self.run_discussion(dict(answer=answer, days=[dict(days[0], activities=[activity])]),
                                             'en', 'One day in Beijing', 'Beijing', days=1)
-                self.assertIsNone(read_preview(state, 'en'))
+                self.assertIsNone(read_itinerary_preview(state, 'en'))
                 self.assertTrue(state.text.endswith(answer))
+
+    def test_cancelled_activity_labels_keep_the_model_reply_without_preview(self):
+        for locale, question, city, label, reply in (
+            ('zh', '北京一日游', '北京', '故宫博物院（参观取消）', '故宫参观已取消，可以改去景山。'),
+            ('zh', '北京一日游', '北京', '故宫博物院（临时闭馆）', '故宫暂时闭馆，可以改去景山。'),
+            ('en', 'One day in Beijing', 'Beijing', 'Forbidden City (visit cancelled)',
+             'The Forbidden City visit was cancelled. We can go to Jingshan Park instead.'),
+            ('en', 'One day in Beijing', 'Beijing', 'Forbidden City (closed)',
+             'The Forbidden City is closed. We can go to Jingshan Park instead.'),
+        ):
+            with self.subTest(locale=locale, label=label):
+                days=[dict(day_index=1,activities=[dict(place_name=label, verb='visit', period=None)])]
+                state=self.run_discussion(dict(answer=reply,days=days),locale,question,city,days=1)
+                self.assertIsNone(read_itinerary_preview(state,locale))
+                self.assertTrue(state.text.endswith(reply))

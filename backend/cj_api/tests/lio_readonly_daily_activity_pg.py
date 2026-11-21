@@ -73,6 +73,8 @@ def exercise(auth, conninfo):
     }
     locations = dict(zh=('故宫博物院', '慕田峪长城', '颐和园'),
                      en=('Forbidden City', 'Mutianyu Great Wall', 'Summer Palace'))
+    cancelled_answer = dict(zh='故宫这项参观已取消，可以改去景山。',
+                            en='The Forbidden City visit is cancelled. Jingshan Park is an alternative.')
     chosen_reply = None
 
     async def fake_wire(config, raw, guard, observation, *, send_under_fence=None):
@@ -97,9 +99,12 @@ def exercise(auth, conninfo):
             # the schedule shape. The alternative reproduces a place list.
             chosen_reply=answer if ('Start every day line with the day label and an explicit activity verb'
                                    in system and example in system) else bare
+            if structured == 'cancelled':chosen_reply=cancelled_answer[locale]
             value={'answer':chosen_reply}
             if structured:
-                places = locations[locale]
+                places = list(locations[locale])
+                if structured == 'cancelled':
+                    places[0]+='（参观取消）' if locale=='zh' else ' (visit cancelled)'
                 value['days'] = [dict(day_index=i, activities=[dict(place_name=place, verb='visit', period=None)])
                                  for i, place in enumerate(places, 1)]
                 if structured == 'invalid':
@@ -140,7 +145,8 @@ def exercise(auth, conninfo):
     with TestClient(app) as api, patch('asyncio.open_connection',new=no_network), patch(
             'cj_agent.provider._m4_wire',new=fake_wire), patch('cj_api.lio_city.catalog_response',new=catalog):
         for locale,(prompt,city,duration_quote,example,answer,bare) in cases.items():
-            scenarios = (None, 'valid', 'invalid', 'unsettled') if locale == 'en' else (None, 'valid', 'invalid')
+            scenarios = (None, 'valid', 'invalid', 'cancelled')
+            if locale=='en':scenarios+=('unsettled',)
             for structured in scenarios:
                 mid=str(uuid4())
                 receipt=api.post('/v2/lio/messages',headers=headers,content=encode(dict(
@@ -159,7 +165,8 @@ def exercise(auth, conninfo):
                 assert page.status_code==200
                 row,=page.json()['messages']
                 assert (row['message_id'],row['status'],row['trip'],row['memory'])==(mid,'completed',None,None)
-                assert chosen_reply==answer, (locale,'place-only reply did not meet the plan contract')
+                expected_reply=cancelled_answer[locale] if structured=='cancelled' else answer
+                assert chosen_reply==expected_reply, (locale,'place-only reply did not meet the plan contract')
                 result = api.get(route, headers=headers, params=query)
                 assert result.status_code == 200, result.status_code
                 assert result.headers['Cache-Control'] == 'no-store'
@@ -175,7 +182,7 @@ def exercise(auth, conninfo):
                     lines = row['answer'].splitlines()[1:]
                     assert len(lines) == len(names) and all(name in line for name, line in zip(names, lines, strict=True))
                 else:
-                    assert row['answer'].endswith(answer)
+                    assert row['answer'].endswith(expected_reply)
                 assert result.json() == dict(version='LIO-itinerary-preview.1', preview=expected, **query)
                 with db.connect(scope) as c:
                     assert c.execute('SELECT acknowledged FROM cj_message_delivery WHERE run_id=%s',
@@ -185,7 +192,7 @@ def exercise(auth, conninfo):
                     for table in ('cj_trip_record','cj_message_needs_binding','cj_memory_item'):
                         assert c.execute('SELECT count(*) FROM '+table).fetchone()==(0,)
                 print(f'{locale} {structured or "legacy"}: visible answer, one discussion, no Trip or Memory write',flush=True)
-    assert [entry['state'] for entry in budget.inspect()]==['RECEIVED']*20+['INTENT']
+    assert [entry['state'] for entry in budget.inspect()]==['RECEIVED']*26+['INTENT']
 
 
 if __name__=='__main__':
