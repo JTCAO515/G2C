@@ -485,15 +485,24 @@ def test_structured_preview_rejects_unmatched_or_incomplete_evidence(problem, st
     assert (failure.value.status, failure.value.reason) == (status, reason)
 
 
-@pytest.mark.parametrize(('locale', 'body'), [
-    ('zh', '故宫、慕田峪和颐和园都有适合当天安排的活动。'),
-    ('en', 'Your itinerary covers three different parts of the city.'),
+@pytest.mark.parametrize(('locale', 'body', 'scenario', 'expected'), [
+    ('zh', '故宫、慕田峪和颐和园都有适合当天安排的活动。', 'valid', 'PASS'),
+    ('en', 'Your itinerary covers three different parts of the city.', 'valid', 'PASS'),
+    ('en', 'Day 1: Visit the Forbidden City. Day 2: Hike the Great Wall. '
+           'Day 3: Explore the Temple of Heaven.', 'missing', 'structured_plan_unavailable'),
+    ('en', 'Day 1: Visit the Forbidden City. Day 2: Hike the Great Wall. '
+           'Day 3: Explore the Temple of Heaven.', 'other_message', 'structured_plan_binding'),
+    ('en', 'Day 1: Visit the Forbidden City. Day 2: Hike the Great Wall. '
+           'Day 3: Explore the Temple of Heaven.', 'expired', 'window_closed_before_structured_plan_read'),
 ])
-def test_plan_passes_by_structure_even_without_headings_and_posts_once(monkeypatch, locale, body):
+def test_completed_plan_requires_its_own_structured_evidence_without_reposting(
+        monkeypatch, locale, body, scenario, expected):
     monkeypatch.setattr(smoke, 'POLL_SECONDS', 0)
-    posts = []
+    posts, previews = [], []
+    expired = False
 
     def api(token, route, *, document=None):
+        nonlocal expired
         if document is not None:
             assert route == '/v2/lio/messages'
             posts.append(document)
@@ -503,16 +512,26 @@ def test_plan_passes_by_structure_even_without_headings_and_posts_once(monkeypat
             return dict(version='LIO-timeline.2', conversation_id='default', messages=[]), None
         mid = posts[0]['message_id']
         if route == '/v2/lio/timeline?conversation_id=same-cid':
+            expired = scenario == 'expired'
             return dict(version='LIO-timeline.2', conversation_id='same-cid', messages=[
                 dict(message_id=mid, status='completed', answer=body)]), None
         assert route == f'{smoke.PLAN_PREVIEW_ROUTE}?conversation_id=same-cid&message_id={mid}'
-        return _itinerary_preview(message=mid), 'fixture'
+        previews.append(route)
+        response = _itinerary_preview(message='different-mid' if scenario == 'other_message' else mid)
+        if scenario == 'missing':
+            response['preview'] = None
+        return response, 'fixture'
 
-    result = smoke.run_case(f'{locale}.plan', 'fixture', 'synthetic', lambda: True, api)
-    assert result['status'] == 'PASS'
-    assert result['legacy_format_match'] is False
-    assert result['structured_days'] == 3
+    result = smoke.run_case(f'{locale}.plan', 'fixture', 'synthetic', lambda: not expired, api)
     assert len(posts) == 1
+    assert len(previews) == int(scenario != 'expired')
+    assert result['legacy_format_match'] is (scenario != 'valid')
+    if expected == 'PASS':
+        assert result['status'] == 'PASS'
+        assert result['structured_days'] == 3
+    else:
+        assert (result['status'], result['reason']) == ('UNKNOWN', expected)
+        assert 'structured_days' not in result
 
 
 def _dated_trip(labels=('参观故宫博物院', 'Hike Mutianyu Great Wall', '游览颐和园。')):
