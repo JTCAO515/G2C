@@ -3,7 +3,7 @@ import asyncio
 from copy import copy
 import json
 import os
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from datetime import datetime,timedelta,timezone
 from hashlib import sha256
@@ -13,6 +13,7 @@ import time
 from threading import Event
 from types import MappingProxyType
 from unittest.mock import patch
+from urllib.parse import parse_qs, urlsplit
 
 ROOT=Path(__file__).resolve().parents[3]
 sys.path[:0]=[str(ROOT),str(ROOT/'scripts'),str(ROOT/'backend/cj_api/tests')]
@@ -23,7 +24,7 @@ from lio_exploration_flow_pg import (SUBJECT,OUTSIDE,KEY,ISSUER,dev_auth,load_ru
     MeteredDashScopeProvider,DashScopeConfig,M4_BASE,M4_MODEL,RealServices,RealTools,
     CurrentScopeEpochReader,load_confirmation_signer,create_local_app,run_worker)
 import lio_exploration_flow_pg as native
-from cj_api.local_lio_exploration import ExplorationPlanning
+from cj_api.local_lio_exploration import ExplorationPlanning, Scene, defaults
 from cj_api.local_lio_calendar import LioCalendar
 from cj_api.local_worker_context import checker_for
 from cj_api.local_needs import protected_reader
@@ -34,13 +35,15 @@ from cj_api.local_lio_rich_calendar_source import RichCalendarSource
 from cj_api.local_lio_provider_sources import RegisteredProviderSources,POI2_REGISTRATION
 from cj_api.local_lio_rich_checks import RichUndatedChecks
 from cj_api.local_lio_pipeline_calls import Call,PipelineCalls
+from cj_api.local_lio_pipeline_places import apply_routes, lookup_selected_places, route_calls
 from cj_api.local_lio_planning import PlanningDetails,register
 from cj_api.lio_poi2_tool import POI2Input,registration
-from cj_api.lio_pipeline_document import compile_document
+from cj_api.lio_pipeline_document import compile_document, unconfirmed_legs, unconfirmed_place
 from cj_api.lio_pipeline_skeleton import recipes,parse_skeleton
 from cj_draft.rich_provider_source import RichProviderContextSource
 from cj_draft.lio_rich import LioRichPublisher
-from cj_feasibility.rich_assembly import assemble_unconfirmed
+from cj_draft.rich_adjustment import RichAdjustment
+from cj_feasibility.rich_assembly import Assembly, assemble as assemble_rich, assemble_unconfirmed
 from cj_feasibility.rich_edges import activity_windows
 from cj_feasibility.rich_solver import Limits
 from cj_memory.runtime import RuntimeDenied
@@ -51,7 +54,7 @@ from cj_needs.revision_lease import LeaseUnavailable
 from cj_place.gaode_v2 import TextSearch
 from cj_place import https_transport
 from cj_trip.domain import Conflict, Denied, packed
-from cj_trip.lio_history import TripHead
+from cj_trip.lio_history import TripHead, plan_action_id
 from cj_trip.planning_context import read_current
 from cj_message.needs_binding import needs_scope_for
 from cj_message.lio_plan_needs import lio_needs_id
@@ -70,7 +73,7 @@ from test_lio_exploration_profile import packet
 from cj_message.lio_exploration_schema import UNDERSTANDING,RESPONSE
 from rich_pg_support import prepare
 
-def exercise(root,conninfo):
+def exercise(root,conninfo,*,scoped=False):
     fixture=prepare(root,conninfo)
     auth,database,context,memory,subjects,scope,journal=(fixture.auth,fixture.database,fixture.context,
         fixture.memory,fixture.subjects,fixture.scope,fixture.journal)
@@ -127,34 +130,96 @@ def exercise(root,conninfo):
         original_run=binding.run_id if context is None else json.loads(context.needs_source)['planning_profile']['original']['run_id']
         skeleton=parse_skeleton(packed(proposal(day_recipes)),day_recipes,id_prefix='code-'+original_run[:12])
         origin=ExplorationOrigin(database,binding,worker.messages.query(binding.message_id))
-        lookups=[(s.item_id,s.name_zh)for s in skeleton.stops]+[('hotel-'+str(i),n[0])for i,n in enumerate(skeleton.hotels)]
+        hotel_prefix='lodging-candidate-' if scoped else 'hotel-'
+        lookups=[(s.item_id,s.name_zh)for s in skeleton.stops]+[(hotel_prefix+str(i),n[0])for i,n in enumerate(skeleton.hotels)]
         packets=tuple(POI2Input(TextSearch(name,'北京',2),'lookup-'+binding.run_id[:12]+'-'+str(i),origin,providers,(target,))
             for i,(target,name)in enumerate(lookups))
         def send_check():
             worker.memory_run.check()
             assert worker.message_context.active_original(binding).receipt.message_id==binding.message_id
+        class MatchedWriter(FixtureWriter):
+            def write(self, raw):
+                target=raw.split(b'\r\n',1)[0].split(b' ')[1].decode('ascii')
+                parsed=urlsplit(target)
+                self.path=parsed.path
+                self.query=parse_qs(parsed.query)
+                super().write(raw)
+
+            def response_value(self):
+                if self.path.startswith('/v3/direction/'):
+                    start,end=(self.query[key][0] for key in ('origin','destination'))
+                    return dict(status='1',infocode='10000',count='1',route=dict(origin=start,destination=end,
+                        paths=[dict(distance='120',duration='60',steps=[dict(polyline=start+';'+end)])]))
+                index=len(writers)
+                return dict(status='1',infocode='10000',count='1',pois=[dict(
+                    id='scoped-place-'+str(index),name=self.query['keywords'][0],cityname='北京市',
+                    adcode='110101',location=f'{116.4+index*0.0001:.4f},39.9')])
+
         async def dial():
-            reader=asyncio.StreamReader();writer=FixtureWriter(reader,send_check,available=False);writers.append(writer)
+            reader=asyncio.StreamReader()
+            writer=MatchedWriter(reader,send_check) if scoped else FixtureWriter(reader,send_check,available=False)
+            writers.append(writer)
             return reader,writer
+        if scoped and context is not None:
+            packets=()  # The adjustment must preserve previous Gaode observations without requerying.
+            # Initialize the actual RUN publication budget through the same
+            # registered model seam used by L's adjustment interpretation.
+            original_model(host,worker,binding,view,RESPONSE,'',
+                           dict(scene='adjustment',locale=locale,candidates=[]))
         with patch.object(https_transport,'_connect',dial):
             calls=PipelineCalls(worker,binding)
             # Keep the original native output reservation bound: this fixture
             # has only one 48k tool slot plus a reserved model slot at a time.
             replies=tuple(calls.parallel((Call('gaode',POI2_REGISTRATION,p),))[0]for p in packets)
-        assert all(json.loads(raw)['status']=='unavailable'for raw in replies)
+        assert all(json.loads(raw)['status']==('ok' if scoped else 'unavailable')for raw in replies)
         sealed=source.seal_providers(binding,captured)
         reader=RichUndatedChecks(source)
         def original_check(candidate,stored,expected):
             with database.connect(binding.scope)as db:exploration_original_protocol(db.cursor(),candidate,stored)
             return candidate==binding and stored==worker.message_context.active_original(binding)and expected == (None if context is None else TripHead.from_trip(context.trip))
-        publisher=LioRichPublisher(original,signer,source,original_check,reader)
+        adjustment=None
+        if scoped and context is not None:
+            prior=json.loads(context.trip.content)
+            selected=next(item for item in prior['items'] if item['schedule']['start']['day_index']==2
+                          and item['fixed']=={'state':'known','value':False} and item['kind']=='sight')
+            adjustment=RichAdjustment(TripHead.from_trip(context.trip),selected['id'],
+                                      'replace' if locale=='zh' else 'remove')
+
+        def fixture_authority(candidate,stored,scope):
+            # Exercise the C boundary with a simulated L admission. This fixture
+            # uses the actual signed generation transport and original source.
+            return scope==adjustment and original_check(candidate,stored,scope.head)
+
+        publisher=LioRichPublisher(original,signer,source,original_check,reader,
+            **({'adjustment_authority':fixture_authority} if scoped else {}))
         def assemble():
             with source.hold_for_publication(binding):
                 skeleton_calendar=dict(calendar={'state':'undated'},days=[dict(day_index=i)for i in range(1,captured.basis.day_count+1)])
                 checks=reader.capture(binding,sealed,skeleton_calendar)
+                if scoped and context is None:
+                    places,hotels=lookup_selected_places(skeleton,source,binding,sealed)
+                else:
+                    places,hotels={s.item_id:None for s in skeleton.stops},(None,None)
                 document,activities,proposed=compile_document(skeleton,captured.basis,locale=locale,subjects=('party',),
-                    timezone='Asia/Shanghai',code_checks=checks.checks,places={s.item_id:None for s in skeleton.stops},
-                    hotel_places=(None,None),protected_items=(),protected_activities=(),legacy_sources=())
+                    timezone='Asia/Shanghai',code_checks=checks.checks,places=places,
+                    hotel_places=hotels,protected_items=(),protected_activities=(),legacy_sources=())
+                if adjustment is not None:
+                    document=json.loads(context.trip.content)
+                    if adjustment.operation=='replace':
+                        item=next(item for item in document['items'] if item['id']==adjustment.item_id)
+                        item.update(text='另一个待确认建议',place=unconfirmed_place(('另一个待确认建议','Different suggestion')))
+                    else:
+                        document['items']=[item for item in document['items'] if item['id']!=adjustment.item_id]
+                    old_legs={(leg['from_item_id'],leg['to_item_id']):leg for leg in document['legs']
+                              if adjustment.item_id not in (leg['from_item_id'],leg['to_item_id'])}
+                    document['legs']=[old_legs.get((leg['from_item_id'],leg['to_item_id']),leg)
+                                      for leg in unconfirmed_legs(document)]
+                    document['date_checks']=checks.checks
+                    actual=worker.message_context.active_original(binding)
+                    producer=publisher.conditional_adjustment_source(binding,actual,sealed,checks,document,adjustment)
+                    assert not any(record['kind']=='retained_item' and record['payload']['item']['id']==adjustment.item_id
+                                   for record in producer.document['records'])
+                    return Assembly('CONDITIONAL_SCHEDULE','scoped fixture',packed(document)),checks,{}
                 if context is not None:
                     document=json.loads(context.trip.content)
                     target=next(item for item in document['items']if item['fixed']=={'state':'known','value':False})
@@ -163,6 +228,12 @@ def exercise(root,conninfo):
                     proposed={}
                 rich=publisher.conditional_source(binding,sealed,checks,document)
                 facts=tuple(ProfileFact(f.key,f.state,json.dumps(f.value,ensure_ascii=False))for f in view.profile.values())
+                if scoped:
+                    activities=tuple(replace(activity,nearby=True) for activity in activities)
+                    result=assemble_rich(document,source=rich,facts=facts,activities=activities,
+                        edges=edge,phase='order',locale=locale,limits=Limits(max_seconds=2),stop=Event())
+                    assert result.status=='CONDITIONAL_SCHEDULE',result
+                    return result,checks,(proposed,facts,activities)
                 result=assemble_unconfirmed(document,source=rich,facts=facts,activities=activities,
                     edges=edge,phase='order',locale=locale,limits=Limits(max_seconds=2),stop=Event(),
                     unconfirmed_items=frozenset(s.item_id for s in skeleton.stops))
@@ -170,10 +241,81 @@ def exercise(root,conninfo):
                 assert all(a.nearby is None for a in activities)
                 return result,checks,proposed
         _,(assembly,checks,proposed)=worker._step(binding,assemble)
+        if scoped and context is None:
+            proposed,facts,activities=proposed
+            ordered=json.loads(assembly.content)
+            route_packets,references=route_calls(ordered,city='北京',origin=origin,sources=providers)
+            with patch.object(https_transport,'_connect',dial):
+                route_replies={packet.argument.request_ref:json.loads(calls.parallel((packet,))[0])
+                               for packet in route_packets}
+            routed=apply_routes(ordered,references,route_replies)
+            assert any(leg['state']=='estimated' for leg in routed['legs'])
+            sealed=source.seal_providers(binding,captured)
+
+            def schedule():
+                with source.hold_for_publication(binding):
+                    checks=reader.capture(binding,sealed,routed)
+                    rich=publisher.conditional_source(binding,sealed,checks,routed)
+                    result=assemble_rich(routed,source=rich,facts=facts,activities=activities,
+                        edges=edge,phase='schedule',locale=locale,limits=Limits(max_seconds=2),stop=Event())
+                    assert result.status=='CONDITIONAL_SCHEDULE',result
+                    return result,checks
+            _,(assembly,checks)=worker._step(binding,schedule)
         actual=worker.messages.query(binding.message_id)
         def save():
             current=worker.message_context.active_original(binding)
             try:
+                if adjustment is not None:
+                    def publish(candidate, *, scope=adjustment, stored=actual):
+                        return publisher.publish_adjustment_for_message(binding,stored,current,candidate,sealed,
+                            adjustment=scope,checks=checks,before_publish=worker._publication_check)
+                    wrong=json.loads(assembly.content)
+                    other=next(item for item in wrong['items'] if item['id']!=adjustment.item_id)
+                    other['text']='outside authorized selection'
+                    foreign=json.loads(assembly.content)
+                    if adjustment.operation=='replace':
+                        changed=next(item for item in foreign['items'] if item['id']==adjustment.item_id)
+                        changed['place']=next(item['place'] for item in foreign['items'] if item['id']!=adjustment.item_id)
+                        try:publish(replace(assembly,content=packed(foreign)))
+                        except DraftRejected as error:
+                            assert 'current original evidence' in str(error)
+                        else:raise AssertionError('previous source authorized a new place')
+                        old_route=next(leg for leg in json.loads(context.trip.content)['legs']
+                                       if adjustment.item_id in (leg['from_item_id'],leg['to_item_id']))
+                        foreign=json.loads(assembly.content)
+                        index=next(i for i,leg in enumerate(foreign['legs']) if
+                            (leg['from_item_id'],leg['to_item_id'])==(old_route['from_item_id'],old_route['to_item_id']))
+                        assert old_route['state']=='estimated'
+                        foreign['legs'][index]=old_route
+                        try:publish(replace(assembly,content=packed(foreign)))
+                        except DraftRejected as error:
+                            assert 'current original evidence' in str(error)
+                        else:raise AssertionError('previous source authorized an affected route')
+                    for rejected_candidate in (
+                            lambda:publish(replace(assembly,content=packed(wrong))),
+                            lambda:publish(assembly,scope=replace(adjustment,head=replace(adjustment.head,version=99))),
+                            lambda:publish(assembly,stored=None)):
+                        try:rejected_candidate()
+                        except (DraftRejected,LeaseUnavailable):pass
+                        else:raise AssertionError('invalid scoped action reached writer')
+                    with patch.object(publisher,'adjustment_authority',None):
+                        try:publish(assembly)
+                        except DraftRejected:pass
+                        else:raise AssertionError('unissued adjustment reached writer')
+                    act=repo._act_in_tx
+                    def withdraw_authority(cursor,action):
+                        receipt=act(cursor,action)
+                        publisher.adjustment_authority=None
+                        return receipt
+                    try:
+                        with patch.object(repo,'_act_in_tx',withdraw_authority):
+                            try:publish(assembly)
+                            except DraftRejected:pass
+                            else:raise AssertionError('withdrawn adjustment authority committed')
+                    finally:publisher.adjustment_authority=fixture_authority
+                    assert repo.query_action(plan_action_id(binding.run_id)) is None
+                    assert repo.detail(context.trip.trip_id)==context.trip
+                    return publish(assembly)
                 for wrong_capture,wrong_checks,wrong_assembly in (
                         (copy(sealed),checks,assembly),
                         (sealed,copy(checks),assembly),
@@ -211,7 +353,11 @@ def exercise(root,conninfo):
         trip=repo.detail(receipt.trip_id)
         assert trip.version==(1 if context is None else 2) and json.loads(trip.content)['content_version']=='structured.4'
         assert json.loads(trip.content)['date_checks']==checks.checks
-        assert all(item['place']['state']=='unconfirmed'for item in json.loads(trip.content)['items'])
+        if scoped:
+            assert any(item['place']['state']=='matched' for item in json.loads(trip.content)['items'])
+            assert any(leg['state']=='estimated' for leg in json.loads(trip.content)['legs'])
+        else:
+            assert all(item['place']['state']=='unconfirmed'for item in json.loads(trip.content)['items'])
         assert repo.query_action(receipt.action_id)==receipt
         assert repo.rich_plan_receipt(binding)==receipt
         snapshot,_=sealed.records()
@@ -221,6 +367,11 @@ def exercise(root,conninfo):
         checker=checker_for(auth)
         historical=CurrentNeedsSource(database,checker,dev_auth.token(auth,SUBJECT,3600),protected_reader(database,checker))
         with repo.transaction()as cursor:origin=current_origin(cursor,repo,trip)
+        if adjustment is not None:
+            basis=json.loads(origin['source'])
+            assert basis['scoped_adjustment']==adjustment.basis()
+            assert basis['provider_outcomes']==[]
+            assert {entry['record']['kind'] for entry in basis['prior_trip_evidence']} >= {'place','route'}
         with history_sources(historical,origin)as historical_message:
             historical_message.check()
             assert historical_message.scope==binding.scope
@@ -253,6 +404,12 @@ def exercise(root,conninfo):
             restored=repo.detail(trip.trip_id)
             assert restored.version==3 and restored.content==context.trip.content
             assert [row.version for row in repo.lio_revisions(trip.trip_id,None,10)]==[3,2,1]
+            if adjustment is not None:
+                with repo.transaction()as cursor:
+                    restored_origin=current_origin(cursor,repo,restored)
+                archived=json.loads(restored_origin['source'])['prior_trip_evidence']
+                prior_item=next(item for item in json.loads(restored.content)['items'] if item['id']==adjustment.item_id)
+                assert any(entry['record']['reference']==prior_item['place']['source']['reference'] for entry in archived)
             assert repo.rich_undo_receipt(request)==actual_undo
             with patch.object(ConfirmationSigner,'issue',side_effect=AssertionError('original receipt must not resign')):
                 assert repo.undo_rich(request)==actual_undo
@@ -299,7 +456,16 @@ def exercise(root,conninfo):
         old=calendar_host.repository
         repository=Repository(old.connect,old.scope,old.confirm,structured=True,calendar=True,rich=True)
         return read_current(repository,needs_scope_for(binding.scope),lio_needs_id(binding.scope,binding.conversation_id))
-    with TestClient(app)as api,patch.object(RealTools,'_registrations',registry),patch.object(ExplorationPlanning,'_model',diagnosed),patch.object(LioCalendar,'current',current_rich):
+    def component_plan(host,worker,binding,state,view,locale,*,prior_model_calls=0):
+        # Use signed MESSAGE intake and the real C writer while isolating the
+        # producer from the L production orchestration for this component test.
+        facts=defaults(view.profile)
+        facts.update({key:fact.value for key,fact in view.profile.items() if fact.state!='not_needed'})
+        extra=dict(scene='plan_now_preview',locale=locale,duration_days=facts['duration_days'])
+        result=json.loads(diagnosed(host,worker,binding,view,RESPONSE,'',extra))
+        return host._finish(worker,binding,worker.runs.snapshot(binding),result['body'],Scene.ADJUSTMENT,locale)
+    scoped_hook=patch.object(ExplorationPlanning,'_plan',component_plan) if scoped else nullcontext()
+    with TestClient(app)as api,patch.object(RealTools,'_registrations',registry),patch.object(ExplorationPlanning,'_model',diagnosed),patch.object(LioCalendar,'current',current_rich),scoped_hook:
         for language in ('zh','en'):
             locale=language
             for i in range(1):
@@ -316,10 +482,14 @@ def exercise(root,conninfo):
                         account_admission=True,hk_demo_scopes=frozenset({scope}),lio_confirmation=signer)
                     expected='unknown'if rollback and step=='plan'else'completed'
                     assert [r.status for r in result]==[expected],result
-    assert len(saved)==4 and len(undone)==2 and len(writers)==36,(len(saved),len(undone),len(writers))
+    assert len(saved)==4 and len(undone)==2,(len(saved),len(undone))
+    if not scoped:
+        assert len(writers)==36
     assert all(w.closed and len(w.writes)==1 for w in writers)
     assert all(record['state']=='RECEIVED'for record in journal.inspect())
-    print('PASS ZH1/EN1 actual two signed rich versions and API-scope undo/receipt/late rollback; 36 unavailable tool fixture operations, 0 real suppliers; full HTTP4 host/release remains UNRUN',flush=True)
+    if scoped:
+        print('PASS ZH replacement and EN removal over matched places and estimated legs, no new providers on adjustment, exact prior Trip restored by undo',flush=True)
+    print('PASS ZH1/EN1 actual two signed rich versions and API-scope undo/receipt/late rollback; 0 real suppliers; full HTTP4 host/release remains UNRUN',flush=True)
 
 
 def main():
