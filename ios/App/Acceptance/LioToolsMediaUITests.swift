@@ -13,6 +13,7 @@ import XCTest
         XCTAssertTrue(tools.waitForExistence(timeout: 8))
         tools.tap()
         app.buttons["lio.tools.translation"].tap()
+        app.buttons["lio.translation.mode.voice"].tap()
         let voice = app.buttons["lio.translation.voice"]
         XCTAssertTrue(voice.waitForExistence(timeout: 6))
         voice.tap()
@@ -22,8 +23,9 @@ import XCTest
         XCTAssertEqual(app.state, .runningForeground)
         voice.tap()
         XCTAssertTrue(message.waitForExistence(timeout: 6))
-        XCTAssertTrue(app.textViews["lio.translation.input"].exists)
         XCTAssertFalse(app.staticTexts["lio.translation.transcript"].exists)
+        app.buttons["lio.translation.mode.text"].tap()
+        XCTAssertTrue(app.textViews["lio.translation.input"].exists)
     }
 
     @objc func testToolsUnavailableSimulatorCameraKeepsPhotoPickerAvailable() {
@@ -34,6 +36,7 @@ import XCTest
             app.launch()
             app.tabBars.buttons[language == "en" ? "Tools" : "插件"].tap()
             app.buttons["lio.tools.translation"].tap()
+            app.buttons["lio.translation.mode.photo"].tap()
             let camera = app.buttons["lio.translation.camera"]
             XCTAssertTrue(camera.waitForExistence(timeout: 6))
             camera.tap()

@@ -6,6 +6,32 @@ enum LioTranslationLanguage: String, CaseIterable, Codable, Sendable {
     case chinese = "zh-CN"
 }
 
+struct LioTranslationPresentation {
+    enum Mode: String, CaseIterable {
+        case text, voice, photo
+    }
+
+    private(set) var mode: Mode = .text
+    private(set) var isHistoryOpen = false
+    private(set) var captureID = UUID()
+
+    mutating func select(_ mode: Mode) {
+        guard self.mode != mode else { return }
+        self.mode = mode
+        captureID = UUID()
+    }
+
+    mutating func setHistoryOpen(_ open: Bool) {
+        guard isHistoryOpen != open else { return }
+        isHistoryOpen = open
+        if open { captureID = UUID() }
+    }
+
+    func acceptsCapture(_ mode: Mode, id: UUID) -> Bool {
+        self.mode == mode && !isHistoryOpen && captureID == id
+    }
+}
+
 struct LioTranslationRequest: Sendable {
     let source: LioTranslationLanguage
     let target: LioTranslationLanguage

@@ -13,6 +13,7 @@ import XCTest
         XCTAssertTrue(tools.waitForExistence(timeout: 8))
         tools.tap()
         app.buttons["lio.tools.translation"].tap()
+        app.buttons["lio.translation.mode.photo"].tap()
         let photo = app.buttons["lio.translation.photo"]
         XCTAssertTrue(photo.waitForExistence(timeout: 6))
         photo.tap()
@@ -38,6 +39,7 @@ import XCTest
         XCTAssertTrue(tools.waitForExistence(timeout: 8))
         tools.tap()
         app.buttons["lio.tools.translation"].tap()
+        app.buttons["lio.translation.mode.photo"].tap()
         let photo = app.buttons["lio.translation.photo"]
         XCTAssertTrue(photo.waitForExistence(timeout: 6))
         photo.tap()
@@ -68,6 +70,7 @@ import XCTest
         XCTAssertTrue(tools.waitForExistence(timeout: 8))
         tools.tap()
         app.buttons["lio.tools.translation"].tap()
+        app.buttons["lio.translation.mode.photo"].tap()
         let photo = app.buttons["lio.translation.photo"]
         XCTAssertTrue(photo.waitForExistence(timeout: 6))
         photo.tap()
@@ -93,6 +96,7 @@ import XCTest
         XCTAssertTrue(tools.waitForExistence(timeout: 8))
         tools.tap()
         app.buttons["lio.tools.translation"].tap()
+        app.buttons["lio.translation.mode.photo"].tap()
         let photo = app.buttons["lio.translation.photo"]
         XCTAssertTrue(photo.waitForExistence(timeout: 6))
         photo.tap()
@@ -146,6 +150,7 @@ import XCTest
         XCTAssertTrue(tools.waitForExistence(timeout: 8))
         tools.tap()
         app.buttons["lio.tools.translation"].tap()
+        app.buttons["lio.translation.mode.photo"].tap()
         let photo = app.buttons["lio.translation.photo"]
         XCTAssertTrue(photo.waitForExistence(timeout: 6))
         photo.tap()

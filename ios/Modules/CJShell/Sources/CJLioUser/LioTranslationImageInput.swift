@@ -11,6 +11,7 @@ struct LioTranslationImageInput: View {
     let isCurrent: @MainActor () -> Bool
     let onImage: (Data) -> Void
     @Environment(\.openURL) private var openURL
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var photoPickerPresented = false
     @State private var photoRequest: UUID?
     @State private var cameraRequest: UUID?
@@ -30,8 +31,11 @@ struct LioTranslationImageInput: View {
     @State private var failure: LioTranslationMediaFailure?
 
     var body: some View {
+        let actions = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading))
+            : AnyLayout(HStackLayout())
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
+            actions {
                 Button {
                     guard enabled, isCurrent() else { return }
                     photoRequest = UUID()

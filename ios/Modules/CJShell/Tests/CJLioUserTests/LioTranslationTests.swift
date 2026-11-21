@@ -4,6 +4,33 @@ import Testing
 
 @MainActor
 struct LioTranslationTests {
+    @Test func mediaCaptureCannotReturnAfterSwitchingAwayAndBack() {
+        var presentation = LioTranslationPresentation()
+        presentation.select(.voice)
+        let original = presentation.captureID
+        #expect(presentation.acceptsCapture(.voice, id: original))
+
+        presentation.select(.photo)
+        #expect(!presentation.acceptsCapture(.voice, id: original))
+        presentation.select(.voice)
+        #expect(!presentation.acceptsCapture(.voice, id: original))
+        #expect(presentation.acceptsCapture(.voice, id: presentation.captureID))
+    }
+
+    @Test func mediaCaptureCannotReturnAfterOpeningAndClosingHistory() {
+        var presentation = LioTranslationPresentation()
+        presentation.select(.photo)
+        let original = presentation.captureID
+        presentation.select(.photo)
+        #expect(presentation.acceptsCapture(.photo, id: original))
+
+        presentation.setHistoryOpen(true)
+        #expect(!presentation.acceptsCapture(.photo, id: original))
+        presentation.setHistoryOpen(false)
+        #expect(!presentation.acceptsCapture(.photo, id: original))
+        #expect(presentation.acceptsCapture(.photo, id: presentation.captureID))
+    }
+
     @Test func recentTranslationsSurviveReopeningAndCanBeCleared() throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: directory) }
