@@ -557,7 +557,9 @@ class NationalLioPlanning:
                 candidate['level']=='province' and candidate['name']==city.province
                 for candidate in prior_city['candidates'])
             date_boundary=0 if same_target else (source_ids.index(boundary_mid)if boundary_mid is not None else len(turns)-1)
-        elif previous is not None and previous.get('status')=='needs_city':
+        elif previous is not None and (previous.get('status')=='needs_city' or (
+                planning and previous.get('status')=='needs_details' and previous.get('authority')in ('plan','save')
+                and 'city' not in previous.get('facts',{}) and barrier_mid is None)):
             date_boundary=0
         if boundary_mid is not None:date_boundary=max(date_boundary,source_ids.index(boundary_mid))
         if date_boundary:
