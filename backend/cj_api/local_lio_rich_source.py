@@ -20,6 +20,7 @@ from . import lio_exploration_factors,lio_exploration_profile
 from .lio_exploration_profile import (CONTEXT,POLICY,decode_context,restore_context,
     default_proposals,snapshot,plan_now_request)
 from .local_lio_exploration_profile import ProfileContext
+from .lio_exploration_policy import ADJUSTMENT_EFFECT,AdjustmentAuthorization
 
 PLAN_NOW='lio_plan_now.1:'
 _FACTORY=object()
@@ -66,8 +67,9 @@ class _Issued:
 
 
 class RichProfileSource:
-    def __init__(self,database):
+    def __init__(self,database,*,adjustment:AdjustmentAuthorization|None=None):
         self.database=database
+        self.adjustment=adjustment
         self.contexts=ProfileContext(database)
         self._issued={}
 
@@ -87,8 +89,12 @@ class RichProfileSource:
             row=db.execute('SELECT demo_question_day FROM cj_message_receipt WHERE scope=%s AND message_id=%s AND run_id=%s',
                 (binding.scope,binding.message_id,binding.run_id)).fetchone()
         text=json.loads(stored.raw)['text']
-        if row is None or row[0] is None or plan_now_request(text)is None:
-            raise RuntimeDenied('actual native4 plan-now original required')
+        if row is None or row[0] is None:raise RuntimeDenied('actual original question clock required')
+        if self.adjustment is None:
+            if plan_now_request(text)is None:raise RuntimeDenied('actual native4 plan-now original required')
+        elif (row[0]!=self.adjustment.question_day
+                or not self.adjustment.matches(binding,stored,self.adjustment.selection.scope)):
+            raise RuntimeDenied('actual native4 adjustment original required')
         memory=worker.memory_run
         if memory is None:raise RuntimeDenied('actual current Memory capture required')
         raw=self._effect(binding,CONTEXT);saved=decode_context(raw.decode())
@@ -96,12 +102,23 @@ class RichProfileSource:
             raise RuntimeDenied('profile and Memory scope versions differ')
         view=self.contexts.read(worker,binding)
         profile=restore_context(saved,view.originals,memory,registered_city_terms=view.city_terms)
-        profile.update({fact.key:fact for fact in default_proposals(profile,view.originals[-1])})
+        if self.adjustment is None:
+            profile.update({fact.key:fact for fact in default_proposals(profile,view.originals[-1])})
         if packed(snapshot(profile,memory_epoch=memory.snapshot.epoch))!=packed(decode(raw)):
             raise RuntimeDenied('actual accepted planning profile differs')
         original=dict(protocol=LIO_VERSION_V4,message_id=binding.message_id,run_id=binding.run_id,
             input_sha256=stored.receipt.input_sha256,question_day=row[0].isoformat())
         return original,profile,raw
+
+    def _source_marker(self,binding,original,raw,policy):
+        if self.adjustment is not None:
+            marker=self._effect(binding,ADJUSTMENT_EFFECT)
+            if marker!=self.adjustment.marker():raise RuntimeDenied('committed adjustment scope differs')
+            return marker,None
+        marker=self._effect(binding,PLAN_NOW)
+        expected=dict(version='LIO-plan-now.1',original=original,policy=policy,profile_sha256=sha256(raw).hexdigest())
+        if decode(marker)!=expected:raise RuntimeDenied('actual code plan provenance differs')
+        return marker,dict(kind='plan_now',original=original,policy=policy)
 
     def record_plan_now(self,worker,binding,state):
         """Commit code provenance only for a literal admitted plan trigger.
@@ -109,6 +126,7 @@ class RichProfileSource:
         Call after ProfileContext.accept has committed the actual plan defaults.
         Existing WP4 outlines have no marker and cannot become formal authority.
         """
+        if self.adjustment is not None:raise RuntimeDenied('adjustment cannot issue plan-now provenance')
         original,profile,context=self._read(worker,binding,worker.messages.query(binding.message_id))
         marker=packed(dict(version='LIO-plan-now.1',original=original,policy=policy_descriptor(),
                            profile_sha256=sha256(context).hexdigest()))
@@ -126,11 +144,9 @@ class RichProfileSource:
         memory.check()
         original,profile,raw=self._read(worker,binding,message.original_message())
         if snapshot(profile)!=snapshot(expected_profile):raise RuntimeDenied('expected profile differs from committed source')
-        marker=self._effect(binding,PLAN_NOW);value=decode(marker)
         policy=policy_descriptor()
-        expected=dict(version='LIO-plan-now.1',original=original,policy=policy,profile_sha256=sha256(raw).hexdigest())
-        if value!=expected:raise RuntimeDenied('actual code plan provenance differs')
-        data=packed(dict(original=original,plan_now=dict(kind='plan_now',original=original,policy=policy),
+        marker,plan_now=self._source_marker(binding,original,raw,policy)
+        data=packed(dict(original=original,plan_now=plan_now,
             policy=policy,profile_states={key:fact.state for key,fact in profile.items()},
             profile=snapshot(profile,memory_epoch=memory.snapshot.epoch)))
         capture=PlanCapture(data,_factory=_FACTORY)
@@ -152,8 +168,10 @@ class RichProfileSource:
                 raise RuntimeDenied('captured Memory source changed')
             memory.check()
             original,profile,raw=self._read(worker,binding,message.original_message())
-            if (raw!=issued.context or self._effect(binding,PLAN_NOW)!=issued.marker or
-                    original!=capture.original or policy_descriptor()!=capture.policy or
+            policy=policy_descriptor()
+            marker,_=self._source_marker(binding,original,raw,policy)
+            if (raw!=issued.context or marker!=issued.marker or
+                    original!=capture.original or policy!=capture.policy or
                     packed(snapshot(profile,memory_epoch=memory.snapshot.epoch))!=packed(capture.profile)):
                 raise RuntimeDenied('captured planning provenance changed')
         held=_HeldPlan(check)

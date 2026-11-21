@@ -436,9 +436,11 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
                      cleanup_configuration=None,formal_memory_configuration=None,database=None,account_admission=False,message_subjects=None,
                      existing_display_reads=False,cleanup_subjects=None,demo_dialogue_subjects=None,
                      lio_dialogue_subjects=None,lio_memory_factory=None,lio_calendar_subjects=None,
-                     lio_exploration_subjects=None,lio_profile_epoch_reader=None):
+                     lio_exploration_subjects=None,lio_profile_epoch_reader=None,lio_rich_undo_sources=None):
     if os.environ.get('CJ_ENV') != 'local':
         raise CompositionUnavailable('CJ_ENV must explicitly be local')
+    if lio_rich_undo_sources is not None and (not lio_exploration_subjects or confirmation_signer is None):
+        raise CompositionUnavailable('native4 undo requires explicit subjects and the original Trip signer')
     auth_dir = Path(auth_dir)
     if needs_profile not in (None,'manual-v1'):
         raise CompositionUnavailable('unknown local NEEDS profile')
@@ -697,6 +699,11 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
                 register_lio_exploration_routes(app,exploration_boundary,database.run_repository,
                     LioTripCards(database,exploration_checker,calendar=True,rich=True),LioProfileCards(lio_profile_epoch_reader),
                     prepare_scope=database._provision_scope,memory_cards=memory_cards)
+                if lio_rich_undo_sources is not None:
+                    from .lio_rich_undo_routes import register_lio_rich_undo_routes
+                    from .lio_trip_routes import LioTripBoundary
+                    register_lio_rich_undo_routes(app,LioTripBoundary(database,exploration_checker,confirmation_signer,
+                        calendar=True,rich_undo_sources=lio_rich_undo_sources))
             if memory_cards is not None:
                 from .lio_memory_routes import register_lio_memory_routes
                 register_lio_memory_routes(app, memory_cards)

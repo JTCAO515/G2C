@@ -8,16 +8,26 @@ from zoneinfo import ZoneInfo
 
 from pydantic import ValidationError
 from cj_agent.provider import ProviderUnknown
+from cj_agent.draft import DraftRejected
+from cj_feasibility.rich_assembly import Assembly
 from cj_message.demo_dialogue import LIO_VERSION_V4
-from cj_message.lio_context import LioCitation,LioToolProgress,display_answer,self_description
+from cj_message.lio_context import LioCitation,LioToolProgress,UNSAVED_PLAN_ANSWER,display_answer,self_description
 from cj_message.lio_exploration_schema import UNDERSTANDING,RESPONSE,Understanding,ExplorationInput
-from cj_message.lio_wire import ExplorationOrigin
+from cj_message.lio_wire import ExplorationOrigin,exploration_original_protocol
 from cj_needs.domain import decode,InvalidInput
 from cj_trip.domain import packed
+from cj_trip.structured import SourceRejected
+from cj_trip.structured_v4 import validate_candidate
 
 from .lio_exploration_factors import BY_KEY,FACTORS,defaults
 from .lio_exploration_profile import snapshot,plan_now_request
-from .lio_exploration_policy import Scene,choose_scene,next_question_count,candidates,questions,exits,emergency_opening
+from .lio_exploration_policy import (Scene,choose_scene,next_question_count,candidates,questions,exits,
+    emergency_opening,ADJUSTMENT_EFFECT,AdjustmentAuthorization,adjustment_document,matches_adjustment,select_adjustment)
+from .lio_edit_selection import _replacement_label
+from .lio_pipeline_document import representation_size
+from .lio_pipeline_wording import _public
+from .local_lio_edit import _bind_current
+from .local_lio_rich_checks import RichUncollectedChecks
 from .lio_exploration_routes import PRESENTATION,PROGRESS,merged_presentation
 from .local_lio_exploration_profile import ProfileContext
 from .lio_positive_trip import known_city_term
@@ -172,7 +182,8 @@ class ExplorationPlanning:
             if arrival.get('state')!='known' or departure.get('state')!='known':return 'undated'
             first=date.fromisoformat(arrival['value']);last=date.fromisoformat(departure['value'])
         today=datetime.now(ZoneInfo('Asia/Shanghai')).date()
-        return 'on_trip' if first<=today<=last else 'before_trip'
+        if today>last:return 'after_trip'
+        return 'on_trip' if today>=first else 'before_trip'
 
     def _input(self,worker,view,text,extra):
         messages=[] if worker.memory_run is None else worker.memory_run.messages(text)[:-1]
@@ -293,6 +304,9 @@ class ExplorationPlanning:
         if scene==Scene.EMERGENCY:
             return self._finish(worker,binding,state,emergency_opening(text,locale),scene,locale)
         if direct:return self._plan(worker,binding,state,view,locale,prior_model_calls=1)
+        if self.generation is not None:
+            adjusted=_apply_scoped_adjustment(self,worker,binding,state,original,view,text)
+            if adjusted is not None:return adjusted
         if scene in (Scene.PRACTICAL,Scene.TODAY) or not self.enabled:
             return self._answer(worker,binding,state,text,original,view,scene if self.enabled else Scene.PRACTICAL)
         previous=self._previous_round(binding)
@@ -339,3 +353,89 @@ class ExplorationEditDispatch:
         if original.protocol==LIO_VERSION_V4 and self.exploration.enabled:
             return self.exploration.execute(worker,binding,state,text,replace(original,locale=locale))
         return self.legacy.execute(worker,binding,state,stored,text,locale,deadline)
+
+
+_BOOKING = re.compile(r'预订|预约|已确认|\b(?:booked|booking|reserved|reservation|confirmed)\b',re.I)
+_FOOD_PROMPT = (
+    'Suggest one meal or local food experience to use in the selected itinerary slot. '
+    'Return only a short suggestion in the question language as the body in the existing response JSON. '
+    'Use an empty groups array. Do not claim a booking, current opening, price or verified venue.'
+)
+
+
+def _food_suggestion(host,worker,binding,view,locale,target):
+    raw=host._model(worker,binding,view,RESPONSE,_FOOD_PROMPT,dict(
+        scene='scoped_food_adjustment',locale=locale,existing_stop=target['text'],groups=0,candidates=[]))
+    value=decode(raw.encode())
+    if (type(value) is not dict or value.keys()!={'version','body','groups'} or value['version']!=RESPONSE
+            or value['groups']!=[] or type(value['body']) is not str):
+        raise DraftRejected('one food suggestion required')
+    name=_replacement_label(value['body'],national_names=True)
+    if name is None or not _public(name,locale) or _BOOKING.search(name):
+        raise DraftRejected('one safe food suggestion required')
+    return name
+
+
+def _apply_scoped_adjustment(host,worker,binding,state,original,view,text):
+    if original.question_day is None or not matches_adjustment(text):return None
+    state,current=worker._step(binding,lambda:host.current(binding))
+    if current is None:return None
+    selected=select_adjustment(current.trip,text,original.question_day)
+    if selected is None:return None
+    locale=original.locale
+    document=json.loads(current.trip.content)
+    target,=(row for row in document['items'] if row['id']==selected.scope.item_id)
+    replacement=selected.replacement
+    try:
+        if selected.scope.operation=='replace' and replacement is None:
+            replacement=_food_suggestion(host,worker,binding,view,locale,target)
+        candidate=adjustment_document(current.trip,selected,replacement=replacement)
+        representation_size(candidate)
+        stored=worker.messages.query(binding.message_id)
+        authorization=AdjustmentAuthorization(binding,stored,original.question_day,selected)
+        def confirm(cursor):
+            actual=worker.message_context.active_original(binding)
+            exploration_original_protocol(cursor,binding,actual)
+            if not authorization.matches(binding,actual,selected.scope):
+                raise DraftRejected('scoped adjustment original changed')
+        state=_bind_current(worker,binding,worker.runs.snapshot(binding))
+        state=worker._event(binding,state,'effect_committed',ADJUSTMENT_EFFECT+authorization.marker().decode(),
+                            mutation=confirm)
+        from .local_lio_pipeline_sources import capture_adjustment_sources
+        bundle=capture_adjustment_sources(host,worker,binding,view,authorization,document)
+        state,_=_publish_scoped_adjustment(worker,binding,bundle,authorization,candidate)
+    except (DraftRejected,SourceRejected,InvalidInput):
+        state=worker._event(binding,worker.runs.snapshot(binding),'effect_committed',UNSAVED_PLAN_ANSWER)
+        message=('这次没能保存这一项调整，原行程保留。你想核对要改的哪一站？' if locale=='zh' else
+                 'I could not save this change. I kept your itinerary. Which stop would you like to check?')
+        return host._finish(worker,binding,state,message,Scene.ADJUSTMENT,locale)
+    old=target['text']
+    if locale=='zh':
+        message=(f'已从新版本去掉「{old}」。' if replacement is None else f'已将「{old}」换成「{replacement}」。')
+        message+='新版本已保存。还想调整哪天？'
+    else:
+        message=(f'I removed {old}.' if replacement is None else f'I replaced {old} with {replacement}.')
+        message+=' The new version is saved. Which day would you like to adjust next?'
+    return host._finish(worker,binding,state,message,Scene.ADJUSTMENT,locale)
+
+
+def _publish_scoped_adjustment(worker,binding,bundle,authorization,document):
+    capture=bundle.seal()
+    checks=RichUncollectedChecks(bundle.source)
+    publisher=bundle.publisher(checks,adjustment=authorization)
+    scope=authorization.selection.scope
+    def publish():
+        issued=checks.capture(binding,capture,document)
+        document['date_checks']=issued.checks
+        rich=publisher.conditional_adjustment_source(binding,authorization.original,capture,issued,document,scope)
+        validate_candidate(document,rich)
+        assembly=Assembly('CONDITIONAL_SCHEDULE','original_slot_and_unchanged_unselected_schedule',packed(document))
+        return publisher.publish_adjustment_for_message(binding,authorization.original,
+            worker.message_context.active_original(binding),assembly,capture,adjustment=scope,
+            checks=issued,before_publish=worker._publication_check)
+    previous=worker.drafts
+    worker.drafts=publisher
+    try:
+        return worker._step(binding,publish,lambda receipt:'trip_proposal:'+receipt.proposal_id,draft=True)
+    finally:
+        worker.drafts=previous
