@@ -291,7 +291,9 @@ class RunWorker:
             import json
             self._model_history(binding,json.loads(argument.messages),argument.system,message_refs=message_refs)
         if self.memory_history and registration in ('model.answer','model.draft','model.lio_intake.1','model.lio_intake.2','model.lio_intake.3','model.lio_intake.4','model.lio_intake.5','model.lio_intake.6','model.lio_intake.7','model.lio_intake.8','model.lio_intake.9'):
+            from cj_message.lio_context import DiscussionPreviewInput
             if registration in ('model.lio_intake.3','model.lio_intake.4','model.lio_intake.5','model.lio_intake.6','model.lio_intake.7','model.lio_intake.8','model.lio_intake.9'):messages,system,_,_=argument
+            elif type(argument) is DiscussionPreviewInput:messages,system=argument.messages,argument.system
             else:messages,system,_=argument
             self._model_history(binding,messages,system,message_refs=message_refs)
         options={'reserve_final_model':True} if self._lio_active and registration.startswith('tool.') else {}

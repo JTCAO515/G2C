@@ -1099,6 +1099,44 @@ class Boundaries(unittest.TestCase):
                         self.assertEqual({r['attempt_id']: r['state'] for r in self.budget.inspect()}[attempt], 'INTENT')
                 self.assertEqual(len(requests), 1)
 
+    def test_lio_preview_schema_is_bound_to_one_original_discussion(self):
+        from datetime import date
+        from cj_api.local_app import ISSUER, scope_for
+        from cj_api.local_lio_planning import PlanningTurn, discuss
+        from cj_run.core import Binding, State
+
+        subject='m4-synthetic-preview-original'
+        provider=self.provider(sse())
+        tools=RealTools(RealServices(provider,KEY,frozenset({subject})))
+        binding=Binding(scope_for(ISSUER,subject),'conversation','generation','message','run',1)
+        prepared=[]
+
+        class Worker:
+            memory_run=None
+            message_context=None
+
+            def _registered_stream(self,binding,key,registration,argument,**kwargs):
+                prepared.append(tools.registrations[registration].prepare_input(argument))
+                return iter(('{"answer":"A useful model answer."}',))
+
+            def _event(self,*args):return args[1]
+
+        worker=Worker()
+        worker.provider=provider
+        discuss(worker,binding,State(binding,status='running'),'en',
+                (PlanningTurn('A three-day trip to Beijing',date(2026,11,21)),),(),day_count=3)
+        [original]=prepared
+        request=json.loads(original.original_bytes)
+        self.assertEqual(request['discussion_preview_days'],3)
+        self.assertRegex(request['response_format_sha256'],r'^[0-9a-f]{64}$')
+        wrong=SimpleNamespace(binding=binding,operation_key='model.answer',registration_id='model.answer')
+        with self.assertRaises(BudgetUnknown):original.bind_operation(wrong,lambda:True)
+        with self.assertRaises(ProviderFailed):
+            list(provider.invoke(request['messages'],request['system'],'wrong-preview-hash',
+                receipt={},guard=lambda:True,discussion_reply=True,release_after_send=True,
+                discussion_preview_days=3,discussion_preview_sha256='0'*64))
+        self.assertEqual(self.budget.inspect(),[])
+
     def test_lio_timeline_keeps_uncertainty_plain_and_withholds_internal_answers(self):
         from cj_api.lio_dialogue_routes import _message
         from cj_message.lio_timeline import TimelineMessage

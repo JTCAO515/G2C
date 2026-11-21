@@ -13,7 +13,8 @@ from cj_draft.lio_plan import LioPlanPublisher
 from cj_draft.rich_schema import GENERATION_PROFILES as RICH_GENERATION_PROFILES
 from cj_message.demo_dialogue import LIO_VERSION
 from cj_message.domain import Command, Unavailable
-from cj_message.lio_context import UNSAVED_PLAN_ANSWER,answer_prompt,display_answer
+from cj_message.lio_context import (DISCUSSION_MAX_PREVIEW_DAYS, DISCUSSION_VISIT_PERIODS, DISCUSSION_VISIT_VERBS,
+    DiscussionPreviewInput, UNSAVED_PLAN_ANSWER, answer_prompt, display_answer)
 from cj_message.lio_plan_needs import BOUND_EFFECT, attach, original_needs
 from cj_message.needs_binding import needs_scope_for
 from cj_needs.domain import InvalidInput, decode, exact
@@ -131,24 +132,16 @@ _ITINERARY_PREVIEW_EFFECT = 'lio_itinerary_preview.1:'
 _CANCELLED_PLACE = re.compile(
     r'取消|停办|暂停|停运|停业|闭馆|关闭|不开放|无法参观'
     r'|\b(?:cancel(?:l?ed|l?ation)|closed|suspended|no visit|no access|not open)\b',re.I)
-_PREVIEW_VERBS = {
-    'visit': ('参观', 'Visit'), 'explore': ('游览', 'Explore'),
-    'walk': ('漫步', 'Walk around'), 'eat': ('去用餐', 'Eat at'),
-    'shop': ('去逛', 'Shop at'), 'relax': ('去休息', 'Relax at'),
-}
-_PREVIEW_PERIODS = {
-    None: ('', ''), 'morning': ('上午', 'Morning: '),
-    'afternoon': ('下午', 'Afternoon: '), 'evening': ('晚上', 'Evening: '),
-}
 _ITINERARY_PREVIEW_FORMAT = (
     ' For a complete day-by-day plan, use the following response format: one JSON object with answer, days and follow_up. '
-    'Answer is the complete standalone plain-text reply in case the structured plan is unavailable. '
-    'Days is an ordered array with one object per requested day: day_index and activities. '
+    'When the request includes a destination and day count, supply days as an ordered array '
+    'with one object per requested day: day_index and activities. Keep the answer a concise, complete plain-text fallback. '
     'Each activity has exactly place_name (full proper name in the answer language), '
     'verb (visit, explore, walk, eat, shop or relax), and period (morning, afternoon, evening or null). '
     'Only include suggested visits you would actually show to the traveler. '
     'Follow_up is one useful adjustment question in the answer language. '
-    'If you cannot provide the complete structured plan, return only answer.'
+    'Use null for days only if you cannot provide a complete structured plan. '
+    'In that case keep the useful standalone answer and set follow_up to null.'
 )
 
 
@@ -158,7 +151,7 @@ def _preview_line(text, limit):
 
 
 def _preview_days(value, count):
-    if type(value) is not list or not 1 <= count <= 366 or len(value) != count:
+    if type(value) is not list or not 1 <= count <= DISCUSSION_MAX_PREVIEW_DAYS or len(value) != count:
         return None
     for index, day in enumerate(value, 1):
         if (type(day) is not dict or day.keys() != {'day_index', 'activities'}
@@ -169,9 +162,9 @@ def _preview_days(value, count):
             if (type(activity) is not dict or activity.keys() != {'place_name', 'verb', 'period'}
                     or not _preview_line(activity['place_name'], 240)
                     or _CANCELLED_PLACE.search(activity['place_name']) is not None
-                    or type(activity['verb']) is not str or activity['verb'] not in _PREVIEW_VERBS
+                    or type(activity['verb']) is not str or activity['verb'] not in DISCUSSION_VISIT_VERBS
                     or activity['period'] is not None and (type(activity['period']) is not str
-                                                           or activity['period'] not in _PREVIEW_PERIODS)):
+                                                           or activity['period'] not in DISCUSSION_VISIT_PERIODS)):
                 return None
     return value
 
@@ -186,12 +179,12 @@ def _render_itinerary_preview(days, count, follow_up, locale):
     for day in days:
         activities = []
         for activity in day['activities']:
-            verb, name = _PREVIEW_VERBS[activity['verb']][lang], activity['place_name']
+            verb, name = DISCUSSION_VISIT_VERBS[activity['verb']][lang], activity['place_name']
             if zh and activity['verb'] in ('eat', 'relax'):
                 action = '去' + name + verb[1:]
             else:
                 action = verb + ('' if zh else ' ') + name
-            activities.append(_PREVIEW_PERIODS[activity['period']][lang] + action)
+            activities.append(DISCUSSION_VISIT_PERIODS[activity['period']][lang] + action)
         index = day['day_index']
         lines.append(f'第{index}天：' + '，'.join(activities) + '。' if zh else
                      f'Day {index}: ' + '. '.join(activities) + '.')
@@ -248,7 +241,8 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
     if worker.message_context is not None:
         messages = worker.message_context.answer_messages(binding, messages)
     system = answer_prompt(locale, turns[-1].text) + DISCUSSION_PROMPT
-    preview_requested = day_count is not None and planning_window is None and introduction is None
+    preview_requested = (day_count is not None and 1 <= day_count <= DISCUSSION_MAX_PREVIEW_DAYS
+                         and planning_window is None and introduction is None)
     if day_count is not None:
         day_example = '第1天：参观〈地点〉。' if locale == 'zh' else 'Day 1: Visit <place>.'
         system += (
@@ -282,9 +276,11 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
             reply=destination+(' · 未保存建议'if locale=='zh'else' · Unsaved suggestion')+'\n'+reply
         return reply if introduction is None else introduction+'\n\n'+reply
 
+    argument = (DiscussionPreviewInput(messages,system,worker.provider,day_count) if preview_requested
+                else (messages,system,worker.provider))
     try:
         raw = ''.join(worker._registered_stream(
-            binding, 'model.lio_discussion.0', 'model.answer', (messages, system, worker.provider),
+            binding, 'model.lio_discussion.0', 'model.answer', argument,
             message_refs=references))
     except CompleteUnsettledAnswer as error:
         raise CompleteUnsettledAnswer(present(error.complete_answer)) from error
@@ -303,6 +299,10 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
         raise InvalidDiscussionAnswer('Lio discussion reply unavailable') from exc
     preview = (_render_itinerary_preview(envelope['days'], day_count, envelope.get('follow_up'), locale)
                if structured else None)
+    if preview_requested and preview is None:
+        reason = 'missing_days' if envelope.get('days') is None else 'invalid_days'
+        logging.getLogger('cj_usage.audit').warning(
+            'LIO_DISCUSSION_PREVIEW_WITHHELD run_id=%s reason=%s', binding.run_id, reason)
     shown = present(reply if preview is None else preview[0])
     state = worker._event(binding, state, 'text_delta', shown)
     if preview is not None:

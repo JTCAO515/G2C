@@ -534,9 +534,11 @@ class RealTools:
 
     def _model_input(self,argument,*,release_after_send=False,national_intake=False,intake_profile='LIO-planning-intake.1',answer_preparation=False):
         from cj_draft.grouped_plan import GroupedDraftInput,response_format_sha256 as grouped_schema_sha256
+        from cj_message.lio_context import DiscussionPreviewInput,discussion_preview_format_sha256
         from cj_message.lio_exploration_schema import ExplorationInput,response_format_sha256 as exploration_sha
         exploration=type(argument) is ExplorationInput
         grouped=type(argument) is GroupedDraftInput
+        discussion_preview=type(argument) is DiscussionPreviewInput
         native_turn = type(argument) is ModelInput
         indexed=intake_profile in ('LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5','LIO-planning-intake.6','LIO-planning-intake.7','LIO-planning-intake.8','LIO-planning-intake.9')
         if exploration:
@@ -548,6 +550,11 @@ class RealTools:
             if release_after_send or national_intake or answer_preparation:
                 raise BudgetUnknown('explicit grouped draft registration required')
             messages,system,provider=argument.messages,argument.system,argument.provider
+            native_reply=None;final_answer=False;turn_profile=M4_NATIVE_TURN_PROFILE_V2
+        elif discussion_preview:
+            if not answer_preparation or release_after_send or national_intake:
+                raise BudgetUnknown('explicit discussion preview registration required')
+            messages,system,provider,_=argument
             native_reply=None;final_answer=False;turn_profile=M4_NATIVE_TURN_PROFILE_V2
         elif indexed:
             messages,system,provider,source_index=argument
@@ -602,6 +609,8 @@ class RealTools:
         raw=canonical(dict(messages=messages,system=system,endpoint=M4_BASE,model=M4_MODEL,synthetic_only=True,
                            native_tools=selected_tools,
                            **({'draft_profile':argument.profile,'response_format_sha256':grouped_schema_sha256(argument.profile)} if grouped else {}),
+                           **({'discussion_preview_days':argument.day_count,'response_format_sha256':
+                               discussion_preview_format_sha256(argument.day_count)} if discussion_preview else {}),
                            **({'response_mode':'lio-memory-json.1'} if release_after_send else {}),
                            **({'structured_profile':intake_profile} if national_intake else {}),
                            **({'response_format_sha256':exploration_sha(intake_profile),'lio_origin':argument.origin.descriptor()} if exploration else {}),
@@ -625,6 +634,8 @@ class RealTools:
             discussion_handoff = (answer_preparation and not native_turn
                                   and operation.operation_key == 'model.lio_discussion.0'
                                   and operation.registration_id == 'model.answer')
+            if discussion_preview and not discussion_handoff:
+                raise BudgetUnknown('original discussion preview operation required')
             retain_unsettled=(discussion_handoff or (native_turn and argument.retain_unsettled_answer
                                                      and operation.registration_id=='model.tool_turn'))
             guarded_connect = (release_after_send or discussion_handoff or grouped or national_intake
@@ -654,6 +665,8 @@ class RealTools:
                         lio_answer=inputs.get('answer_format_profile')=='lio-user.1',
                         **({'structured_profile':inputs['structured_profile']} if 'structured_profile' in inputs else {}),
                         **({'exploration_schema_sha256':inputs['response_format_sha256']} if exploration else {}),
+                        **({'discussion_preview_days':inputs['discussion_preview_days'],
+                            'discussion_preview_sha256':inputs['response_format_sha256']} if discussion_preview else {}),
                         **({'intake_source_index':inputs['current_source_index']} if 'current_source_index' in inputs else {}),
                         **({'draft_profile':inputs['draft_profile'],'draft_schema_sha256':inputs['response_format_sha256']}if 'draft_profile' in inputs else {}),
                         **capture)
