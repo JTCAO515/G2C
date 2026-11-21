@@ -50,6 +50,17 @@ ITINERARY_QUOTES = re.compile(
     r"(?<!\w)'[^']*'(?!\w)"
 )
 DAY_NUMBER = {'一': 1, '二': 2, '三': 3, '1': 1, '2': 2, '3': 3}
+PLAN_PREVIEW_ROUTE = '/v2/lio/itinerary-preview'
+PLAN_PREVIEW_VERSION = 'LIO-itinerary-preview.1'
+BEIJING_CODE = '110000'
+BEIJING_ACTIVITY_NAMES = frozenset({
+    '北京故宫', '故宫博物院', '天安门广场', '景山公园', '颐和园', '慕田峪长城', '八达岭长城',
+    '天坛', '天坛公园', '雍和宫', '南锣鼓巷', '什刹海', '北海公园', '圆明园', '恭王府',
+    'forbidden city', 'the forbidden city', 'tiananmen square', 'jingshan park',
+    'summer palace', 'the summer palace', 'mutianyu great wall', 'badaling great wall',
+    'temple of heaven', 'the temple of heaven', 'yonghe temple', 'shichahai',
+    'nanluoguxiang', 'beihai park', 'old summer palace', 'prince gong mansion',
+})
 BEIJING_PLACE = re.compile(
     r'故宫|天安门|景山|长城|八达岭|慕田峪|颐和园|天坛|雍和宫|什刹海|南锣鼓巷|胡同|'
     r'北海公园|国家博物馆|圆明园|国子监|恭王府|前门|王府井|三里屯|奥林匹克|'
@@ -178,6 +189,55 @@ def valid_answer(case, answer):
     return True
 
 
+def _location_code(raw):
+    if raw is None:
+        return None
+    if type(raw) is not str or re.fullmatch(r'[0-9]{6}', raw) is None:
+        raise SmokeResult('UNKNOWN', 'structured_plan_location_invalid')
+    return raw
+
+
+def _planned_beijing_activity(raw):
+    if (type(raw) is not dict or type(raw.get('place_name')) is not str
+            or not raw['place_name'].strip() or type(raw.get('cancelled')) is not bool):
+        raise SmokeResult('UNKNOWN', 'structured_plan_activity_invalid')
+    location = _location_code(raw.get('city_adcode'))
+    if raw['cancelled']:
+        return False
+    if location is not None:
+        return location == BEIJING_CODE
+    name = ' '.join(raw['place_name'].casefold().split())
+    return True if name in BEIJING_ACTIVITY_NAMES else None
+
+
+def check_itinerary_preview(value, message_id, conversation_id):
+    if (value.get('version') != PLAN_PREVIEW_VERSION or value.get('message_id') != message_id
+            or value.get('conversation_id') != conversation_id):
+        raise SmokeResult('UNKNOWN', 'structured_plan_binding')
+    preview = value.get('preview')
+    if preview is None:
+        raise SmokeResult('UNKNOWN', 'structured_plan_unavailable')
+    if type(preview) is not dict or type(preview.get('days')) is not list:
+        raise SmokeResult('UNKNOWN', 'structured_plan_shape')
+    destination = preview.get('destination')
+    if destination is not None and type(destination) is not dict:
+        raise SmokeResult('UNKNOWN', 'structured_plan_location_invalid')
+    if destination is not None and _location_code(destination.get('adcode')) not in (None, BEIJING_CODE):
+        raise SmokeResult('FAIL', 'structured_plan_wrong_destination')
+
+    days = preview['days']
+    if any(type(day) is not dict or type(day.get('day_index')) is not int
+           or type(day.get('activities')) is not list for day in days):
+        raise SmokeResult('UNKNOWN', 'structured_plan_day_shape')
+    if sorted(day['day_index'] for day in days) != [1, 2, 3]:
+        raise SmokeResult('FAIL', 'structured_plan_day_count')
+    activities = [[_planned_beijing_activity(item) for item in day['activities']] for day in days]
+    if any(not any(outcomes) and None not in outcomes for outcomes in activities):
+        raise SmokeResult('FAIL', 'structured_plan_day_without_beijing_activity')
+    if any(not any(outcomes) for outcomes in activities):
+        raise SmokeResult('UNKNOWN', 'structured_plan_activity_location_unconfirmed')
+
+
 def find_message(value, message_id, expected_conversation):
     if (value.get('version') != 'LIO-timeline.2' or not isinstance(value.get('messages'), list)
             or expected_conversation is not None and value.get('conversation_id') != expected_conversation):
@@ -257,7 +317,17 @@ def run_case(case, prompt, token, allowed, send=request):
                                       ('quota' if row.get('failure') == 'quota' else 'unavailable'))
                 if conversation is not None and row is not None and row.get('status') == 'completed':
                     answer = row.get('answer')
-                    if not valid_answer(case, answer):
+                    if case.endswith('.plan'):
+                        if not isinstance(answer, str) or not answer.strip():
+                            raise SmokeResult('FAIL', 'required_answer_missing')
+                        result['legacy_format_match'] = valid_answer(case, answer)
+                        if not allowed():
+                            raise SmokeResult('UNKNOWN', 'window_closed_before_structured_plan_read')
+                        query = urlencode({'conversation_id': conversation, 'message_id': message_id})
+                        preview, ref = send(token, PLAN_PREVIEW_ROUTE + '?' + query)
+                        check_itinerary_preview(preview, message_id, conversation)
+                        result.update(structured_days=3, structured_plan_ref=ref)
+                    elif not valid_answer(case, answer):
                         raise SmokeResult('FAIL', 'required_answer_missing')
                     result.update(status='PASS', answer_chars=len(answer),
                                   answer_sha256=hashlib.sha256(answer.encode()).hexdigest())

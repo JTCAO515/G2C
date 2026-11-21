@@ -426,3 +426,90 @@ def test_ineligible_session_stops_before_opening_the_smoke_budget(
     record = json.loads(capsys.readouterr().out)
     assert record == dict(kind='batch', status='UNRUN', reason=reason)
     assert smoke.decide([record], []) == dict(status='UNRUN', concurrency='UNRUN')
+
+
+def _itinerary_preview(places=('故宫博物院', '慕田峪长城', '颐和园'), *, message='same-mid'):
+    return dict(version=smoke.PLAN_PREVIEW_VERSION, message_id=message, conversation_id='same-cid',
+                preview=dict(destination={'adcode': '110000'}, days=[
+                    dict(day_index=i, activities=[dict(place_name=name, cancelled=False)])
+                    for i, name in enumerate(places, 1)]))
+
+
+@pytest.mark.parametrize('places', [
+    ('故宫博物院', '慕田峪长城', '颐和园'),
+    ('Forbidden City', 'Mutianyu Great Wall', 'Summer Palace'),
+])
+def test_structured_preview_proves_both_language_plans(places):
+    value = _itinerary_preview(places)
+    smoke.check_itinerary_preview(value, 'same-mid', 'same-cid')
+
+
+@pytest.mark.parametrize(('problem', 'status', 'reason'), [
+    ('wrong-original', 'UNKNOWN', 'structured_plan_binding'),
+    ('missing', 'UNKNOWN', 'structured_plan_unavailable'),
+    ('two-days', 'FAIL', 'structured_plan_day_count'),
+    ('duplicate-day', 'FAIL', 'structured_plan_day_count'),
+    ('empty-day', 'FAIL', 'structured_plan_day_without_beijing_activity'),
+    ('cancelled', 'FAIL', 'structured_plan_day_without_beijing_activity'),
+    ('out-of-city', 'FAIL', 'structured_plan_day_without_beijing_activity'),
+    ('wrong-destination', 'FAIL', 'structured_plan_wrong_destination'),
+    ('unconfirmed-city', 'UNKNOWN', 'structured_plan_activity_location_unconfirmed'),
+    ('unavailable-status', 'UNKNOWN', 'structured_plan_activity_invalid'),
+])
+def test_structured_preview_rejects_unmatched_or_incomplete_evidence(problem, status, reason):
+    value = _itinerary_preview()
+    days = value['preview']['days']
+    activity = days[-1]['activities'][0]
+    if problem == 'wrong-original':
+        value['message_id'] = 'other'
+    elif problem == 'missing':
+        value['preview'] = None
+    elif problem == 'two-days':
+        days.pop()
+    elif problem == 'duplicate-day':
+        days[-1]['day_index'] = 2
+    elif problem == 'empty-day':
+        days[-1]['activities'].clear()
+    elif problem == 'cancelled':
+        activity['cancelled'] = True
+    elif problem == 'out-of-city':
+        activity['city_adcode'] = '310000'
+    elif problem == 'wrong-destination':
+        value['preview']['destination']['adcode'] = '310000'
+    elif problem == 'unconfirmed-city':
+        activity['place_name'] = 'Unverified attraction'
+    elif problem == 'unavailable-status':
+        activity['cancelled'] = 'false'
+    with pytest.raises(smoke.SmokeResult) as failure:
+        smoke.check_itinerary_preview(value, 'same-mid', 'same-cid')
+    assert (failure.value.status, failure.value.reason) == (status, reason)
+
+
+@pytest.mark.parametrize(('locale', 'body'), [
+    ('zh', '故宫、慕田峪和颐和园都有适合当天安排的活动。'),
+    ('en', 'Your itinerary covers three different parts of the city.'),
+])
+def test_plan_passes_by_structure_even_without_headings_and_posts_once(monkeypatch, locale, body):
+    monkeypatch.setattr(smoke, 'POLL_SECONDS', 0)
+    posts = []
+
+    def api(token, route, *, document=None):
+        if document is not None:
+            assert route == '/v2/lio/messages'
+            posts.append(document)
+            return dict(version='LIO-message-receipt.2', message_id=document['message_id'],
+                        conversation_id='same-cid'), None
+        if route == '/v2/lio/timeline':
+            return dict(version='LIO-timeline.2', conversation_id='default', messages=[]), None
+        mid = posts[0]['message_id']
+        if route == '/v2/lio/timeline?conversation_id=same-cid':
+            return dict(version='LIO-timeline.2', conversation_id='same-cid', messages=[
+                dict(message_id=mid, status='completed', answer=body)]), None
+        assert route == f'{smoke.PLAN_PREVIEW_ROUTE}?conversation_id=same-cid&message_id={mid}'
+        return _itinerary_preview(message=mid), 'fixture'
+
+    result = smoke.run_case(f'{locale}.plan', 'fixture', 'synthetic', lambda: True, api)
+    assert result['status'] == 'PASS'
+    assert result['legacy_format_match'] is False
+    assert result['structured_days'] == 3
+    assert len(posts) == 1
