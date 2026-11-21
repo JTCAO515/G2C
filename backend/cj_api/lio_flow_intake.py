@@ -9,14 +9,18 @@ from cj_agent.lio_intake_optional_schema import OptionalIntake
 from cj_agent.lio_intake_flat_schema import DTO,City
 from cj_needs.domain import InvalidInput,decode
 from .lio_sourced_intake import parse_sourced,BookingSourceUnclear
-from .lio_positive_trip import destination_query
+from .lio_positive_trip import destination_query,known_city_term
+from .lio_planning_grounding import NUMBER,OPEN_PLAN
 from .lio_national_intake import ZONE_LITERAL,_clock_zone_marker
 
 CORE=('start_date','duration_days','party_size')
 _CHONGQING_CITY_ANSWER=re.compile(r'^\s*(?:去)?(?P<city>重庆|Chongqing)(?:,\s*China)?[。.!！]',re.I)
 _UNKNOWN_HOTEL_SITE=re.compile(r'酒店名称和位置尚未确定[。！]?|(?:the )?hotel name and location are (?:not known yet|unknown)\.?',re.I)
 _SAME_MEETUP_LOCK=re.compile(r';\s*keep it unchanged(?:[.!](?=\s|$)|\s*\Z)',re.I)
-_EXPLICIT_START_TOMORROW=re.compile(r'从明天开始|明天起|\b(?:starting|start|from) tomorrow\b',re.I)
+_EXPLICIT_START_TOMORROW=re.compile(r'(?:从明天开始|明天起|\b(?:starting|start|from) tomorrow)\Z',re.I)
+_SHORT_PLAN=re.compile(
+    rf'(?:(?:请|麻烦)?(?:帮|给|为)(?:我们|我))?\s*(?:规划|安排)\s*(?:{NUMBER})\s*天'
+    rf'|(?:(?:could|can|would) you\s+|please\s+)?(?:help (?:me|us) (?:to )?)?plan\s+(?:{NUMBER})\s+days?',re.I)
 _TRAVEL_ENDPOINT=re.compile(r'到达|抵达|起飞|落地|返程|\b(?:arriv\w*|depart\w*|flight|train|land(?:s|ing|ed)?)\b',re.I)
 _META_REQUEST=re.compile(r'^\s*(?:(?:请帮我|请|帮我)?(?:(?:把|将)[^。！？!?\n]{0,40})?(?:翻译|复述|改写|引用)|'
     r'(?:(?:can|could|would) you\s+)?(?:please\s+)?(?:help(?: (?:me|us))?(?: to)?\s+)?'
@@ -222,6 +226,24 @@ def _fact_snapshot(data,source_ids,blocked=()):
     return snapshot
 
 
+def _explicit_trip_start_quote(text, city=None):
+    # Restore only a start phrase attached to the original planning request.
+    # A date elsewhere in the message cannot source this trip's start.
+    boundary=_SOURCE_BREAK.search(text)
+    first_clause=text.strip()
+    if boundary is not None:
+        rest=text[boundary.end():].strip()
+        if boundary[0].isalpha()or (city is None and rest)or DATE_EVIDENCE.search(rest):return None
+        first_clause=text[:boundary.start()].strip()
+    start=_EXPLICIT_START_TOMORROW.search(first_clause)
+    if start is None or text.count(start[0])!=1:return None
+    request=first_clause[:start.start()].rstrip(' ,，')
+    if city is not None and known_city_term(city):
+        request=re.sub(r'\b'+re.escape(city)+r'\s+(?=(?:trip|itinerary|visit)\Z)', '',request,flags=re.I)
+    if OPEN_PLAN.fullmatch(request)or _SHORT_PLAN.fullmatch(request):return start[0]
+    return None
+
+
 def _normalize_optional_fixed_items(items,turns):
     original_zone=any(ZONE_LITERAL.search(turn.text)or _clock_zone_marker(turn.text)for turn in turns)
     for item in items:
@@ -326,9 +348,10 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_off
         _drop_unsourced_hotel_endpoint_aliases(data,turns)
         if (previous is None and request_index==0 and intent=='plan' and data['start_date'] is not None
                 and not any(ref['field']=='start_date'for ref in data['field_sources'])):
-            starts=_EXPLICIT_START_TOMORROW.findall(turns[0].text)
-            if len(starts)==1:
-                data['field_sources'].append(dict(field='start_date',source_index=0,quote=starts[0]))
+            city=data['city']
+            quote=_explicit_trip_start_quote(turns[0].text,city['query']if city is not None else None)
+            if quote is not None:
+                data['field_sources'].append(dict(field='start_date',source_index=0,quote=quote))
         # Historical snapshots may predate the task-scope filter. Reuse only
         # affirmative source spans; returning an unchanged cache must not keep
         # translated facts alive after the execution projection withheld them.
@@ -348,7 +371,9 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_off
                                 if ref['message_id']in source_ids[:-1]}
                 if len(source_indexes)==1:
                     source_index=source_indexes.pop()
-                    data['field_sources'].append(dict(field='start_date',source_index=source_index,quote=turns[source_index].text))
+                    quote=_explicit_trip_start_quote(turns[source_index].text)
+                    if quote is not None:
+                        data['field_sources'].append(dict(field='start_date',source_index=source_index,quote=quote))
     city=data['city'];old_city=saved.get('city')
     same_city=(city is None or old_city is None or
         city['query'].casefold()==old_city['value']['query'].casefold()and

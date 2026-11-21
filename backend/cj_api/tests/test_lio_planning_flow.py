@@ -463,8 +463,6 @@ class PlanningFlow(unittest.TestCase):
                           index=1,intent='plan',questions=())
                 if wire['city']:wire['city']['quote']=prefix
                 wire['field_sources']=[dict(field='duration_days',source_index=0,quote=duration)]
-                if locale=='en':
-                    wire['field_sources'].append(dict(field='start_date',source_index=0,quote='starting tomorrow'))
                 wire['planning_request_index']=1 if locale=='zh' else 0
                 details=[dict(source_index=1,quote='酒店名称和位置尚未确定。')]if locale=='zh'else []
                 wire['fixed_items']=[dict(label=label,kind='hotel',quote=meetup,source_index=1,detail_refs=details,
@@ -482,6 +480,45 @@ class PlanningFlow(unittest.TestCase):
                 self.assertEqual(trip.fields['departure']['date']['value'],'2026-11-14')
                 self.assertEqual(trip.fields['fixed_items'][0]['locked'],{'state':'known','value':True})
                 self.assertEqual(published[0][-1],locale)
+
+    def test_chongqing_city_reply_does_not_adopt_unrelated_dates(self):
+        for locale, first, duration, text, city in (
+            ('zh', '帮我安排三天。我朋友明天到家。', '三天', '去重庆。', '重庆'),
+            ('zh', '帮我安排三天。明天我在家乡看牙。', '三天', '去重庆。', '重庆'),
+            ('zh', '帮我安排三天，我朋友从明天开始工作。', '三天', '去重庆。', '重庆'),
+            ('zh', '帮我安排三天，从明天开始。明天是我朋友的出发日。', '三天', '去重庆。', '重庆'),
+            ('en', 'Plan three days. My friend arrives tomorrow.', 'three days', 'Chongqing, China.', 'Chongqing'),
+            ('en', 'Plan three days. I have a dental appointment tomorrow.', 'three days', 'Chongqing, China.', 'Chongqing'),
+            ('en', 'Plan three days. My friend is starting tomorrow.', 'three days', 'Chongqing, China.', 'Chongqing'),
+            ('en', "Plan three days starting tomorrow but that is my friend's trip.",
+             'three days', 'Chongqing, China.', 'Chongqing'),
+        ):
+            with self.subTest(first=first):
+                initial = flow(first, city=None, intent='plan', questions=('city',))
+                initial['planning_request_index'] = 0
+                initial['field_sources'] = [dict(field='duration_days', source_index=0, quote=duration)]
+                previous = context(run(initial, first, locale=locale)[1])
+                self.assertEqual(previous['authority'], 'plan')
+                for fact in previous['facts'].values():
+                    for reference in fact['sources']:
+                        reference['message_id'] = 'prior-0'
+                wire = flow(text, city=city, start='2026-11-12', index=1, intent='plan', questions=())
+                wire['planning_request_index'] = 0
+                wire['field_sources'] = [dict(field='duration_days', source_index=0, quote=duration)]
+                published, _, _, _ = run(wire, text, turns=(original(first), original(text)),
+                                         previous=previous, locale=locale)
+                self.assertEqual(len(published), 0)
+
+    def test_first_request_does_not_adopt_another_tasks_explicit_start_phrase(self):
+        for locale, city, days, text in (
+            ('zh', '杭州', '三天', '帮我规划杭州三天。我的牙科治疗从明天开始。'),
+            ('en', 'Hangzhou', 'three-day', 'Plan a three-day Hangzhou itinerary. My friend is starting tomorrow.'),
+        ):
+            with self.subTest(locale=locale):
+                wire = flow(text, city=city, start='2026-11-12', intent='plan', questions=())
+                wire['field_sources'] = [dict(field='duration_days', source_index=0, quote=days)]
+                published, _, _, _ = run(wire, text, locale=locale)
+                self.assertEqual(len(published), 0)
 
     def test_date_answer_finishes_plan_without_party_question(self):
         first='去成都玩三天';second='从2026-11-20开始'
