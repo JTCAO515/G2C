@@ -76,6 +76,7 @@ def exercise(auth, conninfo):
     cancelled_answer = dict(zh='故宫这项参观已取消，可以改去景山。',
                             en='The Forbidden City visit is cancelled. Jingshan Park is an alternative.')
     chosen_reply = None
+    continuation = None
 
     async def fake_wire(config, raw, guard, observation, *, send_under_fence=None):
         nonlocal chosen_reply
@@ -85,12 +86,32 @@ def exercise(auth, conninfo):
             'properties',{}).get('current_source_index',{}).get('const')
         if index is not None:
             seen.append('intake')
-            assert index==0
-            assert all('你能做什么' not in row['content'] and '你是谁' not in row['content']
-                       for row in packet['messages'])
-            value=flow(prompt,city=city,days=3,intent='plan',questions=(),index=index)
-            value.update(version='LIO-planning-intake.8',needs_tools=False,
-                         field_sources=[dict(field='duration_days',source_index=index,quote=duration_quote)])
+            if continuation is None:
+                assert index==0
+                assert all('你能做什么' not in row['content'] and '你是谁' not in row['content']
+                           for row in packet['messages'])
+                value=flow(prompt,city=city,days=3,intent='plan',questions=(),index=index)
+                value.update(field_sources=[dict(field='duration_days',source_index=index,quote=duration_quote)])
+            else:
+                first,followup,city_name,question,_,_=continuation
+                if index==0:
+                    value=flow(first,city=city_name,days=None,intent='plan',questions=('duration_days',),reply=question)
+                    value['planning_request_index']=0
+                else:
+                    assert index==1
+                    value=flow(followup,city=city_name,intent='plan',questions=(),index=index)
+                    value['city'].update(source_index=0,quote=first,normalized_name='成都')
+                    value['unknown_fields']=['start_date','party_size']
+                    value['field_sources']=[dict(field='start_date',source_index=0,quote=''),
+                                            dict(field='party_size',source_index=0,quote=''),
+                                            dict(field='duration_days',source_index=1,quote=followup)]
+            value.update(version='LIO-planning-intake.8',needs_tools=False)
+        elif continuation is not None:
+            seen.append('discussion')
+            assert 'Start every day line with the day label and an explicit activity verb' in packet['messages'][0]['content']
+            assert continuation[0] in [m['content']for m in packet['messages']if m['role']=='user']
+            assert continuation[1] in [m['content']for m in packet['messages']if m['role']=='user']
+            value={'answer':continuation[4]}
         else:
             seen.append('discussion')
             system=packet['messages'][0]['content']
@@ -192,7 +213,35 @@ def exercise(auth, conninfo):
                     for table in ('cj_trip_record','cj_message_needs_binding','cj_memory_item'):
                         assert c.execute('SELECT count(*) FROM '+table).fetchone()==(0,)
                 print(f'{locale} {structured or "legacy"}: visible answer, one discussion, no Trip or Memory write',flush=True)
-    assert [entry['state'] for entry in budget.inspect()]==['RECEIVED']*26+['INTENT']
+        assert [entry['state'] for entry in budget.inspect()]==['RECEIVED']*26+['INTENT']
+        structured=None
+        for locale,continuation in (
+                ('zh',('去成都','三天','成都','你打算玩几天？',
+                       '第一天：参观武侯祠。\n第二天：逛锦里。\n第三天：游览人民公园。','第三天')),
+                ('en',('Go to Chengdu','Three days','Chengdu','How many days for Chengdu?',
+                       'Day 1: Visit Wuhou Shrine.\nDay 2: Explore Jinli.\nDay 3: Walk in People’s Park.','Day 3'))):
+            first,followup,city_name,question,plan,daily=continuation
+            before=len(seen)
+            first_receipt=api.post('/v2/lio/messages',headers=headers,content=encode(dict(
+                version='LIO-message.2',message_id=str(uuid4()),locale=locale,text=first,new_conversation=True)))
+            assert first_receipt.status_code==200
+            cid=first_receipt.json()['conversation_id']
+            asked,=worker();assert asked.status=='completed'
+            first_row=api.get('/v2/lio/timeline',headers=headers,params={'conversation_id':cid}).json()['messages'][-1]
+            assert first_row['answer']==question
+            mid=str(uuid4())
+            next_receipt=api.post('/v2/lio/messages',headers=headers,content=encode(dict(
+                version='LIO-message.2',message_id=mid,locale=locale,text=followup,conversation_id=cid)))
+            assert next_receipt.status_code==200
+            result,=worker();assert result.status=='completed'
+            row=api.get('/v2/lio/timeline',headers=headers,params={'conversation_id':cid}).json()['messages'][-1]
+            assert (row['message_id'],row['status'],row['trip'],row['memory'])==(mid,'completed',None,None)
+            assert city_name in row['answer'] and daily in row['answer'] and row['answer'].endswith(plan)
+            assert seen[before:]==['intake','intake','discussion']
+            with db.connect(scope) as c:
+                for table in ('cj_trip_record','cj_message_needs_binding','cj_memory_item'):
+                    assert c.execute('SELECT count(*) FROM '+table).fetchone()==(0,)
+            print(f'{locale}: rejected r06 intake preserves the literal city and day count, no write',flush=True)
 
 
 if __name__=='__main__':
