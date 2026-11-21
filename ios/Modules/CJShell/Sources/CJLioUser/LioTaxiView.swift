@@ -324,16 +324,16 @@ private struct LioTaxiPlacePicker: View {
                     .disabled(query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 if isSearching { ProgressView(language.text("Searching…", "正在搜索…")) }
                 if let searchNotice { Text(searchNotice) }
-                rows(result)
+                rows(result, identifier: "lio.taxi.search-row")
             }
             if destination {
                 Section(language.text("My trip", "我的行程")) {
                     if tripPlaces.isEmpty { Text(language.text("No places from your trip.", "当前行程暂无可选地点。")) }
-                    rows(tripPlaces)
+                    rows(tripPlaces, identifier: "lio.taxi.trip-row")
                 }
                 Section(language.text("Recent", "最近")) {
                     if recent.isEmpty { Text(language.text("No recent destinations.", "暂无最近终点。")) }
-                    rows(recent)
+                    rows(recent, identifier: "lio.taxi.recent-row")
                 }
             }
         }
@@ -373,7 +373,7 @@ private struct LioTaxiPlacePicker: View {
         submittedQuery = value
     }
 
-    private func rows(_ places: [LioTaxiPlace]) -> some View {
+    private func rows(_ places: [LioTaxiPlace], identifier: String) -> some View {
         ForEach(places) { place in
             Button { select(place) } label: {
                 VStack(alignment: .leading, spacing: 4) {
@@ -384,6 +384,7 @@ private struct LioTaxiPlacePicker: View {
                 }
                 .frame(minHeight: 44)
             }
+            .accessibilityIdentifier(identifier)
         }
     }
 }

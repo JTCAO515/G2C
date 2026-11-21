@@ -94,6 +94,40 @@ import XCTest
         XCTAssertTrue(englishSettings.waitForExistence(timeout: 5))
     }
 
+    @objc func testTaxiSearchSelectionIsAvailableInRecentsAfterRelaunch() {
+        continueAfterFailure = false
+        let app = taxiFixture()
+        defer { app.terminate() }
+        app.buttons["lio.taxi.destination"].tap()
+        let field = app.textFields["Place name or address"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.tap()
+        field.typeText("Summer Palace")
+        app.buttons["Search"].firstMatch.tap()
+        let found = app.buttons.matching(identifier: "lio.taxi.search-row").firstMatch
+        XCTAssertTrue(found.waitForExistence(timeout: 5))
+        XCTAssertTrue(found.label.contains("Summer Palace"))
+        found.tap()
+        XCTAssertTrue(app.buttons["lio.taxi.destination"].waitForExistence(timeout: 5))
+        app.terminate()
+
+        let reopened = taxiFixture()
+        defer { reopened.terminate() }
+        reopened.buttons["lio.taxi.destination"].tap()
+        let recent = reopened.buttons.matching(identifier: "lio.taxi.recent-row").matching(
+            NSPredicate(format: "label CONTAINS %@", "Summer Palace")
+        ).firstMatch
+        for _ in 0..<5 {
+            if recent.isHittable { break }
+            reopened.swipeUp()
+        }
+        XCTAssertTrue(recent.isHittable)
+        recent.tap()
+        let selected = reopened.buttons["lio.taxi.destination"]
+        XCTAssertTrue(selected.waitForExistence(timeout: 5))
+        XCTAssertTrue(selected.label.contains("Summer Palace"))
+    }
+
     private func taxiFixture(language: String = "en", appearance: String = "light",
                              scenario: String? = nil, showGuide: Bool = false) -> XCUIApplication {
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
