@@ -64,6 +64,7 @@ struct LioTranslationActionStyle: ButtonStyle {
 }
 
 private struct LioTextTranslationView: View {
+    private typealias Mode = LioTranslationPresentation.Mode
     let language: LioLanguage
     let history: LioTranslationHistory?
     let enabled: Bool
@@ -76,9 +77,8 @@ private struct LioTextTranslationView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.self) private var environment
-    @State private var mode: Mode = .text
+    @State private var presentation = LioTranslationPresentation()
     @State private var outputMode: Mode = .text
-    @State private var showsHistory = false
     @State private var attempt: Attempt?
     @State private var retryAttempt: Attempt?
     @State private var result: LioTranslationResult?
@@ -93,29 +93,23 @@ private struct LioTextTranslationView: View {
 
     private var translationTitle: String { language.text("Translation", "翻译") }
     private var historyTitle: String { language.text("Recent translations", "最近翻译") }
-
-    private enum Mode: String, CaseIterable {
-        case text, voice, photo
-
-        var symbol: String {
-            switch self {
-            case .text: "text.alignleft"
-            case .voice: "mic"
-            case .photo: "camera"
-            }
-        }
-
-        func title(_ language: LioLanguage) -> String {
-            switch self {
-            case .text: language.text("Text", "文字")
-            case .voice: language.text("Voice", "语音")
-            case .photo: language.text("Photo", "拍照")
-            }
-        }
+    private var mode: Mode { presentation.mode }
+    private var historyPresented: Binding<Bool> {
+        Binding(get: { presentation.isHistoryOpen }, set: { presentation.setHistoryOpen($0) })
     }
 
     private struct Attempt: Identifiable {
-        enum Input { case text, photo(Data), recording(LioTranslationRecording) }
+        enum Input {
+            case text, photo(Data), recording(LioTranslationRecording)
+
+            var mode: Mode {
+                switch self {
+                case .text: .text
+                case .photo: .photo
+                case .recording: .voice
+                }
+            }
+        }
         let id = UUID()
         var request: LioTranslationRequest
         let input: Input
@@ -166,7 +160,7 @@ private struct LioTextTranslationView: View {
                     Button(language.text("Done", "完成")) { editingText = false }
                         .accessibilityIdentifier("lio.translation.keyboard-done")
                 } else {
-                    Button { showsHistory = true } label: {
+                    Button { presentation.setHistoryOpen(true) } label: {
                         Image(systemName: "clock")
                             .frame(minWidth: 44, minHeight: 44)
                     }
@@ -175,7 +169,7 @@ private struct LioTextTranslationView: View {
                 }
             }
         }
-        .sheet(isPresented: $showsHistory) { historySheet }
+        .sheet(isPresented: historyPresented) { historySheet }
         .onChange(of: input) { resetResult() }
         .onChange(of: source) { resetResult() }
         .onChange(of: target) { resetResult() }
@@ -224,14 +218,20 @@ private struct LioTextTranslationView: View {
     }
 
     private var originalCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let captureID = presentation.captureID
+        let captureEnabled = enabled && !presentation.isHistoryOpen
+        return VStack(alignment: .leading, spacing: 8) {
             cardHeading(language.text("Original text", "待译内容"))
             switch mode {
             case .text:
                 textInput
             case .voice:
-                LioRelayVoiceInput(language: language, source: source, enabled: enabled,
-                                   isCurrent: isCurrent, onRecording: startRecording)
+                LioRelayVoiceInput(language: language, source: source, enabled: captureEnabled,
+                                   isCurrent: { captureIsCurrent(.voice, id: captureID) }) { recording in
+                    guard captureIsCurrent(.voice, id: captureID) else { return }
+                    begin(.recording(recording))
+                }
+                .id(captureID)
                 if let spokenText {
                     Text(language.text("Recognized speech", "识别出的文字")).font(.subheadline)
                     Text(spokenText)
@@ -239,14 +239,22 @@ private struct LioTextTranslationView: View {
                         .accessibilityIdentifier("lio.translation.transcript")
                 }
             case .photo:
-                LioTranslationImageInput(language: language, source: source, enabled: enabled,
-                                         isCurrent: isCurrent, onImage: startPhoto)
+                LioTranslationImageInput(language: language, source: source, enabled: captureEnabled,
+                                         isCurrent: { captureIsCurrent(.photo, id: captureID) }) { data in
+                    guard captureIsCurrent(.photo, id: captureID) else { return }
+                    begin(.photo(data))
+                }
+                .id(captureID)
             }
         }
         .frame(maxWidth: .infinity, minHeight: 110, alignment: .topLeading)
         .padding(16)
         .background { keyboardDismissArea }
         .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+    }
+
+    private func captureIsCurrent(_ mode: Mode, id: UUID) -> Bool {
+        enabled && isCurrent() && presentation.acceptsCapture(mode, id: id)
     }
 
     @ViewBuilder
@@ -339,7 +347,7 @@ private struct LioTextTranslationView: View {
             ForEach(Mode.allCases, id: \.self) { choice in
                 Button {
                     withAnimation(LioTheme.Motion.animation(LioTheme.Motion.change, reduceMotion: reduceMotion)) {
-                        mode = choice
+                        presentation.select(choice)
                     }
                 } label: {
                     VStack(spacing: 3) {
@@ -395,7 +403,7 @@ private struct LioTextTranslationView: View {
             .toolbar {
                 ToolbarItem(placement: .principal) { toolbarTitle(historyTitle) }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { showsHistory = false } label: {
+                    Button { presentation.setHistoryOpen(false) } label: {
                         Image(systemName: "xmark")
                             .frame(minWidth: 44, minHeight: 44)
                     }
@@ -537,10 +545,6 @@ private struct LioTextTranslationView: View {
 
     private func start() { begin(.text, text: [input]) }
 
-    private func startPhoto(_ data: Data) { begin(.photo(data)) }
-
-    private func startRecording(_ data: LioTranslationRecording) { begin(.recording(data)) }
-
     private func progress(for attempt: Attempt) -> String {
         guard attempt.hasMedia else { return language.text("Translating…", "正在翻译…") }
         return LioMediaTranslationProgress(payloadPrepared: attempt.preparedPayload != nil,
@@ -549,9 +553,9 @@ private struct LioTextTranslationView: View {
 
     private func begin(_ input: Attempt.Input, text: [String] = [],
                        preparedPayload: LioRelayTranslationRequest.Payload? = nil) {
-        guard enabled, isCurrent() else { return }
+        guard enabled, isCurrent(), mode == input.mode, !presentation.isHistoryOpen else { return }
         resetResult()
-        outputMode = mode
+        outputMode = input.mode
         guard relay != nil else {
             problem = .accessDenied
             return
@@ -688,6 +692,24 @@ private struct LioTextTranslationView: View {
             language.text("Translation limit reached. Try again later.", "翻译额度已用完，请稍后重试。")
         case .timedOut:
             language.text("Translation timed out. Try again.", "翻译超时，请重试。")
+        }
+    }
+}
+
+private extension LioTranslationPresentation.Mode {
+    var symbol: String {
+        switch self {
+        case .text: "text.alignleft"
+        case .voice: "mic"
+        case .photo: "camera"
+        }
+    }
+
+    func title(_ language: LioLanguage) -> String {
+        switch self {
+        case .text: language.text("Text", "文字")
+        case .voice: language.text("Voice", "语音")
+        case .photo: language.text("Photo", "拍照")
         }
     }
 }
