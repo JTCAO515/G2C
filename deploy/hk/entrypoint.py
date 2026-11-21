@@ -71,6 +71,8 @@ def api(runtime,*,app_smoke_api_manifest=None):
     register_translation_route(app)
     from cj_api.taxi_tools import register_taxi_routes
     register_taxi_routes(app)
+    from cj_api.hotel_tools import register_hotel_route
+    register_hotel_route(app)
     @app.middleware('http')
     async def deployment_gate(request,call_next):
         if request.url.path=='/health/live':return JSONResponse({'status':'alive'})
