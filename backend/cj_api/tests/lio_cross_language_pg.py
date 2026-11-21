@@ -60,7 +60,7 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
         demo_accounts.manage(runtime,'insert',SUBJECT,control,operations)
     journal=AuthorizationBudget(root/'fixture-journal',clock=lambda:datetime(2026,11,9,tzinfo=timezone.utc))
     locale='en';text='';bad=False;wire=[];start=None;basic=False;regression=False;duplicate=False;city_chain=False;city_root=0
-    duplicate_absence=False
+    duplicate_absence=False;r12=False
     fixed={'en':'On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged',
            'zh':'第一天我9:00到10:00要在酒店集合，保持不变'}
     original_fixed='第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变；酒店名称和位置尚未确定。'
@@ -107,6 +107,7 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
                 value=flow(text,city='Chengdu'if locale=='en'else'成都',questions=(),intent='plan')
                 value.update(version='LIO-planning-intake.8',needs_tools=False)
                 value['field_sources']=[dict(field='duration_days',source_index=0,quote='three days'if locale=='en'else'三天')]
+                if r12 and locale=='zh':value['city'].update(query=text,quote=text,normalized_name='成都')
             else:
                 value=deepcopy(json.loads(CASE['original_output_utf8']))
                 days=system.split('Original local China days in that order: ',1)[1].splitlines()[0].split(', ')
@@ -128,6 +129,14 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
                                  uncertain_fields={'party_size':'未说明具体人数'if locale=='zh'else'No party size was specified'})
                     item.update(applies_to=['party'],start_timezone=None,end_timezone=None,unknown_fields=[],
                                 uncertain_fields={'start_place':note,'end_place':note})
+                if r12:
+                    note='酒店名称和位置尚未确定。'if locale=='zh'else'The hotel name and location are not known yet.'
+                    item.update(kind='hotel',quote=original_fixed if locale=='zh'else fixed['en'],
+                                unknown_fields=[],uncertain_fields={})
+                    pseudo=dict(item,label=note.rstrip('。.'),quote=note,locked=False,
+                        start_date=None,end_date=None,start_time=None,end_time=None,
+                        unknown_fields=['start_place','end_place'],uncertain_fields={'name_and_location':note})
+                    value.update(city=None,fixed_items=[item,pseudo],field_sources=value['field_sources'][1:])
                 if bad:value['city'].update(query='成都',quote='成都')
         elif 'MEMORY-EXTRACT@2'in system:
             value=dict(version='MEMORY-EXTRACT@2',entries=[])
@@ -180,6 +189,9 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
                     day[0]=(date.fromisoformat(start)+timedelta(days=index)).isoformat()
                 if duplicate:value['days'][0][1][0][0]=original_item['item_id']
                 else:value['days'][0][1].pop(0) # compliant fixture, never server-side repair
+            if r12:
+                for _,rows in value['days']:
+                    for row in rows:row[0]='self'
         identity=dict(id='cross-language-fixture-'+str(len(wire)),model=M4_MODEL)
         content=value if type(value)is str else json.dumps(value,ensure_ascii=False)
         if body.get('tools')and native_mode=='compact':
@@ -383,17 +395,22 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
                 city_chain=False
         plan_cases=()if fallback_only else(('en','en',False),('zh','zh',False),('translated','en',True),
                 ('r09-zh','zh',False),('r09-en','en',False),('r09-duplicate','zh',False),
-                ('r10-zh','zh',False),('r10-en','en',False))
+                ('r10-zh','zh',False),('r10-en','en',False),('r12-zh','zh',False),('r12-en','en',False))
         for label,language,invalid in plan_cases:
             locale=language;bad=invalid;cid=None;duplicate=label=='r09-duplicate'
             duplicate_absence=label.startswith('r10')
+            r12=label.startswith('r12')
             regression=label.startswith('r09') or duplicate_absence
             texts=(CASE['turns']if locale=='en'else('我想去成都玩三天。','明天开始。'+fixed['zh']+'。酒店名称和位置尚未确定。不要声称已经预订。'))
-            if regression and locale=='zh':
+            if (regression or r12) and locale=='zh':
                 texts=('去成都玩三天','从明天开始。 '+original_fixed+'请给每天的上午、下午安排写出计划时间段，不要声称已有预约。')
             if duplicate_absence and locale=='en':
                 texts=('Chengdu for three days','Start tomorrow. '+fixed['en']+'. The hotel name and location are unknown. '
                         'Give morning and afternoon planned times each day. Do not claim bookings.')
+            if r12 and locale=='en':
+                texts=('I want to spend three days in Chengdu.', 'Start tomorrow. '+fixed['en']+'. '
+                       'The hotel name and location are not known yet. Include planned morning and afternoon '
+                       'time ranges each day, without claiming a booking.')
             for index,text in enumerate(texts):
                 mid='cross-'+label+'-'+str(index)
                 sent=api.post('/v2/lio/messages',headers=headers,content=json.dumps(dict(version='LIO-message.2',message_id=mid,
@@ -439,7 +456,10 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
                             planned=[item for item in day['items']if not item['fixed']]
                             assert any(item['start_time']<'12:00'and item['end_time'] for item in planned)
                             assert any('12:00'<=item['start_time']<'17:00'and item['end_time'] for item in planned)
-                    assert meeting['start']['place']['state']==expected_place and meeting['end']['place']['state']==expected_place
+                    if r12:
+                        assert all(meeting[edge]['place']['state']!='known'for edge in ('start','end'))
+                    else:
+                        assert meeting['start']['place']['state']==expected_place and meeting['end']['place']['state']==expected_place
                 print(json.dumps(dict(mid=mid,cid=cid,run=outcome.run_id,status=outcome.status)),flush=True)
             if bad:
                 with database.connect(scope)as db:

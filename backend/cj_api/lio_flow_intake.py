@@ -18,6 +18,9 @@ _CHONGQING_CITY_ANSWER=re.compile(r'^\s*(?:去)?(?P<city>重庆|Chongqing)(?:,\s
 _UNKNOWN_HOTEL_SITE=re.compile(r'酒店名称和位置尚未确定[。！]?|(?:the )?hotel name and location are (?:not known yet|unknown)\.?',re.I)
 _SAME_MEETUP_LOCK=re.compile(r';\s*keep it unchanged(?:[.!](?=\s|$)|\s*\Z)',re.I)
 _EXPLICIT_START_TOMORROW=re.compile(r'(?:从明天开始|明天起|\b(?:starting|start|from) tomorrow)\Z',re.I)
+_CITY_DURATION_PHRASE=re.compile(
+    rf'\s*(?:(?:我|我们)?(?:想|要)?去(?P<zh>[\u4e00-\u9fff]+?)(?:玩|逛)(?:{NUMBER})[天日]'
+    rf"|(?:I|we) (?:want|would like) to spend (?:{NUMBER}) days? in (?P<en>[\w'-]+))[。.!！]?\s*",re.I)
 _SHORT_PLAN=re.compile(
     rf'(?:(?:请|麻烦)?(?:帮|给|为)(?:我们|我))?\s*(?:规划|安排)\s*(?:{NUMBER})\s*天'
     rf'|(?:(?:could|can|would) you\s+|please\s+)?(?:help (?:me|us) (?:to )?)?plan\s+(?:{NUMBER})\s+days?',re.I)
@@ -264,7 +267,39 @@ def _explicit_trip_start_quote(text, city=None):
     return None
 
 
+def _continue_trip_start_quote(text):
+    boundary=_SOURCE_BREAK.search(text)
+    first=text if boundary is None else text[:boundary.start()]
+    rest='' if boundary is None else text[boundary.end():]
+    start=_EXPLICIT_START_TOMORROW.fullmatch(first.strip())
+    if start is not None and not _date_reopened(rest):return start[0]
+    return None
+
+
+def _normalize_city_phrase(city,turns):
+    if city is None or city['source_index']>=len(turns):return
+    text=turns[city['source_index']].text
+    if city['query']!=city['quote'] or city['quote'].strip()!=text.strip():return
+    match=_CITY_DURATION_PHRASE.fullmatch(text)
+    if match is None:return
+    name=match['zh'] or match['en']
+    if known_city_term(name):city.update(query=name,quote=name)
+
+
 def _normalize_optional_fixed_items(items,turns):
+    paths=('start_place','end_place')
+    endpoints=tuple(edge+'_'+part for edge in ('start','end') for part in ('date','time','timezone','place'))
+    meetup_sources={item['source_index']for item in items if item['locked'] is True
+        and item['start_time'] is not None and item['end_time'] is not None
+        and re.fullmatch(r'hotel meetup|酒店集合',item['label'],re.I)}
+    items[:]=[item for item in items if not (
+        item['kind']=='hotel' and item['source_index']in meetup_sources and item['source_index']<len(turns)
+        and item['locked'] is False and item['booking_evidence']is None and not item['detail_refs']
+        and all(item[path]is None for path in endpoints)
+        and sorted(item['unknown_fields'])==sorted(paths)
+        and item['uncertain_fields']=={'name_and_location':item['quote']}
+        and _UNKNOWN_HOTEL_SITE.fullmatch(item['quote']) and _UNKNOWN_HOTEL_SITE.fullmatch(item['label'])
+        and item['quote'] in turns[item['source_index']].text)]
     original_zone=any(ZONE_LITERAL.search(turn.text)or _clock_zone_marker(turn.text)for turn in turns)
     for item in items:
         for edge in ('start','end'):
@@ -283,13 +318,14 @@ def _normalize_optional_fixed_items(items,turns):
                         None,'timezone not stated in original message'):
                     if path in unknown:unknown.remove(path)
                     uncertain.pop(path,None)
-        note=uncertain.get('place')
-        paths=('start_place','end_place')
+        aliases=uncertain.keys()&{'place','hotel_location'}
+        alias=next(iter(aliases))if len(aliases)==1 else None
+        note=uncertain.get(alias)
         if (hotel and note and _UNKNOWN_HOTEL_SITE.fullmatch(note)
                 and note.casefold()in text.casefold()
                 and all((item[path] is None or item[path].casefold()in ('hotel','the hotel','酒店'))
                         and path not in unknown and path not in uncertain for path in paths)):
-            del uncertain['place']
+            del uncertain[alias]
             unknown.extend(paths)
             for path in paths:item[path]=None
         if hotel and all(item[path] is None for path in paths):
@@ -366,6 +402,15 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_off
             unknown.remove('start_date')
         _normalize_optional_fixed_items(data['fixed_items'],turns)
         _drop_unsourced_hotel_endpoint_aliases(data,turns)
+        _normalize_city_phrase(data['city'],turns)
+        if (previous is not None and previous.get('status')=='plan_preview'
+                and previous.get('authority') in ('plan','save') and 'city' in saved
+                and request_index is not None and request_index<len(turns)-1 and intent=='plan'
+                and data['city'] is None and data['start_date'] is not None
+                and not any(ref['field']=='start_date'for ref in data['field_sources'])):
+            quote=_continue_trip_start_quote(turns[-1].text)
+            if quote is not None:
+                data['field_sources'].append(dict(field='start_date',source_index=len(turns)-1,quote=quote))
         if (previous is None and request_index==0 and intent=='plan' and data['start_date'] is not None
                 and not any(ref['field']=='start_date'for ref in data['field_sources'])):
             city=data['city']

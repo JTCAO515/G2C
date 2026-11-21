@@ -140,6 +140,11 @@ def expand(raw, capture, *, retained, ordinal):
                 raise FieldRejected('items', 'exact id/name/start/end/subjects row required')
             item_id, name, start, end, party = row
             identifier(item_id)
+            if (not retained and not ordinal and item_id=='self' and item_id in subjects
+                    and party==subjects[item_id]==['self']):
+                # The first draft has no retained stop to refer to. The model
+                # copied its participant into the new stop ID column.
+                item_id='suggestion-'+str(len(items)+1)
             if item_id in subjects:
                 raise FieldRejected('items.id', 'duplicate new stop ID')
             validate_subjects(party)

@@ -39,6 +39,10 @@ _DURATION_QUESTION=re.compile(
     rf'(?:how (?:should|can) I spend|what (?:can|should) I do (?:in|for))\s+'
     rf'(?P<en>(?P<en_number>{NUMBER})\s+days?))[?？。.!！\s]*',re.I)
 _DURATION_REPLY=re.compile(rf'\s*(?:(?P<zh>{NUMBER})\s*[天日]|(?P<en>{NUMBER})\s+days?)[。.!！\s]*',re.I)
+_DATED_CITY_QUESTION=re.compile(
+    r'\s*(?:我(?:们)?(?P<zh_date>明天)去(?P<zh_city>[\u4e00-\u9fff]+?)[，,]\s*(?:请)?帮(?:我|我们)规划一下'
+    r"|(?:I am|I'm|we are|we're) going to (?P<en_city>[\w'-]+) (?P<en_date>tomorrow)\.\s*"
+    r'(?:could|can|would) you (?:make|plan|create) an itinerary)[。.!！?？]*\s*',re.I)
 _LITERAL_ITINERARY=re.compile(
     rf'\s*(?:(?P<zh_city>[\u4e00-\u9fff]+?)\s*(?P<zh_days>{NUMBER})\s*[日天]游|'
     rf"(?:an?\s+)?(?P<en_days>{NUMBER})(?:\s*-\s*|\s+)days?\s+(?:trip|itinerary|visit)\s+(?:to|in)\s+"
@@ -306,6 +310,20 @@ class NationalLioPlanning:
             # Planning has no eligible history here. The ordinary model can
             # still read the traveler's words from the failed turn.
             return None
+        dated_city=_DATED_CITY_QUESTION.fullmatch(text)
+        if (dated_city is not None and previous is None and binding.message_sequence==1
+                and not self.plan_and_save.has_saved_itinerary(binding)):
+            city=dated_city['zh_city'] or dated_city['en_city']
+            if known_city_term(city):
+                mid=binding.message_id
+                quote=dated_city['zh_date'] or dated_city['en_date']
+                facts={'city':dict(value=dict(query=city,normalized_name=None,province=None,source_index=0,quote=city),
+                                  sources=[dict(message_id=mid,quote=city)]),
+                       'start_date':dict(value=(turns[-1].question_day+timedelta(days=1)).isoformat(),
+                                         sources=[dict(message_id=mid,quote=quote)])}
+                state=self._context(worker,binding,state,dict(authority='none',status='needs_details',
+                                                              facts=facts,nonplanning_message_ids=[]))
+                return self._clarify(worker,binding,state,original.locale,'',[],['duration_days'])
         literal=literal_duration_question(text)
         if (literal is not None and previous is None and binding.message_sequence==len(turns)
                 and all(self_description(turn.text,original.locale)is not None for turn in turns[:-1])

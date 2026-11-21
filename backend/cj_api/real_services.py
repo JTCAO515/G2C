@@ -861,13 +861,14 @@ class RealTools:
         controlled=self.controlled_probe is not None and (binding.scope,binding.message_id)==self.controlled_probe
         turns=5 if controlled else 8
         transit_evidence = False
+        answer_after_empty_fact = False
         for round_index in range(turns):
             if message_refs:worker._model_history(binding,messages,system,message_refs=message_refs)
             else:worker._model_history(binding,messages,system)
             native_reply={}
             chunks=worker._registered_stream(binding,'model.tool_turn.'+str(round_index),'model.tool_turn',
                 ModelInput(messages,system,worker.provider,native_reply,
-                    final_answer=round_index==turns-1 or len(seen)==tool_limit,turn_profile=profile,
+                    final_answer=answer_after_empty_fact or round_index==turns-1 or len(seen)==tool_limit,turn_profile=profile,
                     lio_answer=lio_locale is not None,national=national,confirmed_destination=city is not None,
                     retain_unsettled_answer=lio_locale is not None and not transit_request))
             if incremental:
@@ -908,6 +909,8 @@ class RealTools:
                 answer = turn.answer_zh if chinese else turn.answer_en
                 yield _lio_transit_answer(chinese, transit_evidence) if transit_request else answer
                 return
+            if answer_after_empty_fact:
+                raise ProviderFailed('model requested a tool on an answer-only turn')
             if len(seen)+len(turn.calls)>tool_limit:
                 raise ProviderFailed('M4 per-run tool limit reached')
             assistant=native_reply['assistant']
@@ -995,11 +998,16 @@ class RealTools:
                     yield LioCitation(key, title, public_url, observed_at)
                 model_result = data if lio_locale is None else _lio_tool_result(
                     name, data, public_source, chinese, arguments, transit_policy=transit_request)
-                if transit_request and name == 'fact':
-                    if not model_result['excerpts']:
-                        yield _lio_transit_answer(chinese, False)
-                        return
-                    transit_evidence = True
+                if lio_locale is not None and name == 'fact':
+                    if transit_request:
+                        if not model_result['excerpts']:
+                            yield _lio_transit_answer(chinese, False)
+                            return
+                        transit_evidence = True
+                    elif not model_result['excerpts']:
+                        answer_after_empty_fact = True
+                        system += (' The fact lookup returned no verifiable excerpts. Answer the original request '
+                                   'with what you can support, without making claims based on the empty result.')
                 results.append(dict(index=index,name=call.name,tool=name,result=model_result))
             if incremental:
                 for supplier_call,result in zip(assistant['tool_calls'],results,strict=True):
