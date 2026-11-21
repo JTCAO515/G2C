@@ -1,10 +1,11 @@
 """Only a supported original request can select one unlocked native4 change."""
 from copy import deepcopy
 from dataclasses import replace
-from datetime import date
+from datetime import date,datetime
 import json
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 import unittest
 
 from cj_api.lio_exploration_policy import Scene, exits
@@ -70,6 +71,18 @@ class ScopedAdjustment(unittest.TestCase):
         duplicated = Trip('same-id', 3, packed(duplicate))
         self.assertIsNone(select_adjustment(duplicated, 'Remove “演示地点1 / demonstration stop 1”.', DAY))
         self.assertIsNone(select_adjustment(trip('dated'), 'Make it more relaxed', date(2026, 12, 20)))
+
+    def test_completed_dated_trip_does_not_present_pretrip_controls(self):
+        from cj_api.lio_exploration_policy import choose_scene
+        from cj_api.local_lio_exploration import ExplorationPlanning
+        class CompletedTripClock(datetime):
+            @classmethod
+            def now(cls,tz=None):return datetime(2026,12,20,tzinfo=tz)
+        host=SimpleNamespace(current=lambda _:SimpleNamespace(trip=trip('dated')))
+        with patch('cj_api.local_lio_exploration.datetime',CompletedTripClock):
+            phase=ExplorationPlanning._phase(host,None)
+        self.assertEqual(phase,'after_trip')
+        self.assertIsNot(choose_scene('adjust',phase),Scene.ADJUSTMENT)
 
     def test_older_saved_content_leaves_the_original_edit_path_available(self):
         from cj_api.lio_exploration_policy import select_adjustment

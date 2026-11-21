@@ -182,7 +182,8 @@ class ExplorationPlanning:
             if arrival.get('state')!='known' or departure.get('state')!='known':return 'undated'
             first=date.fromisoformat(arrival['value']);last=date.fromisoformat(departure['value'])
         today=datetime.now(ZoneInfo('Asia/Shanghai')).date()
-        return 'on_trip' if first<=today<=last else 'before_trip'
+        if today>last:return 'after_trip'
+        return 'on_trip' if today>=first else 'before_trip'
 
     def _input(self,worker,view,text,extra):
         messages=[] if worker.memory_run is None else worker.memory_run.messages(text)[:-1]
