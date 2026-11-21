@@ -626,6 +626,9 @@ _SEPARATE_FIXED_OWNER=re.compile(
     r'|(?:my|our)\s+(?:friend|companion|colleague)(?:[’\x27]s\s+(?:separate|other)'
     r'|\s+(?:also\s+)?(?:has|have)\s+(?:another|a\s+separate))\s+',re.I)
 _FIXED_OWNER_SHIFT=re.compile(r'但|不过|而|\b(?:while|although|yet)\b',re.I)
+_OWN_FIXED_REFERENCE=re.compile(
+    r'我(?:们)?的?[这那](?:场|次)的?\s*'
+    r'|\b(?:mine|ours|my own|our own)\b\s*(?:(?:is|was|has|will be)\s+)?',re.I)
 
 
 def _direct_fixed_place(label,before,after):
@@ -648,16 +651,27 @@ def _fixed_followup_keeps_place(label,clause):
     return _FIXED_KEEP.fullmatch(rest) is not None or _FIXED_TIME_ONLY.fullmatch(rest) is not None
 
 
+def _own_fixed_site_revision(clause):
+    return any(_FIXED_SITE_REVISION.match(clause,reference.end())
+               for reference in _OWN_FIXED_REFERENCE.finditer(clause))
+
+
 def _fixed_place_superseded(label,source_index,after_clause,turns):
     """A later original may withhold a stale place even when the model omits it."""
     mention=re.compile(re.escape(label),re.I)
     remaining=(turns[source_index].text[after_clause:],*(turn.text for turn in turns[source_index+1:]))
     for text in remaining:
+        separate_seen=False
         for _,_,clause in _original_clauses(text):
             parts=mention.split(clause,maxsplit=2)
             if (len(parts)==2 and _SEPARATE_FIXED_OWNER.fullmatch(parts[0])
                     and not _FIXED_OWNER_SHIFT.search(parts[1])):
+                if _own_fixed_site_revision(parts[1]):
+                    return True
+                separate_seen=True
                 continue
+            if separate_seen and _own_fixed_site_revision(clause):
+                return True
             if len(parts)>1 and not _fixed_followup_keeps_place(label,clause):
                 return True
             if _FIXED_SITE_REVISION.match(clause):
