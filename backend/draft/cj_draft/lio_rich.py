@@ -23,6 +23,7 @@ from .calendar_plan import compose, FIRST_PLAN, REPLAN_DELTA
 from .lio_calendar import needs_projection
 from .lio_plan import LioPlanPublisher
 from .needs_publisher import NeedsDraftPublisher
+from .rich_adjustment import check_needs
 
 def protected_records(capture, current, checks):
     """Code projection of actual NEEDS/current Trip, never model source records."""
@@ -80,12 +81,19 @@ class LioRichPublisher(LioPlanPublisher):
     def conditional_source(self, binding, capture, checks, document):
         """Conditional data for the assembler while the real source is held."""
         self.source.check(binding, capture)
+        return self._conditional_source(binding, capture, checks, document)
+
+    def _conditional_source(self, binding, capture, checks, document, *, adjusted_item=None):
         with self.source.message_context.hold_for_effect(binding) as message, \
                 self.code_checks.hold(binding, checks, message) as check:
             check(document)
         current = self.source.contexts[binding]
-        records = [*capture.provider_records, *checks.records,
-                   *protected_records(capture, current, checks.checks)]
+        protected = protected_records(capture, current, checks.checks)
+        if adjusted_item is not None:
+            protected = [record for record in protected if not (
+                (record['provider'], record['kind']) == ('trip', 'retained_item')
+                and record['payload']['item']['id'] == adjusted_item)]
+        records = [*capture.provider_records, *checks.records, *protected]
         profile = capture.profile
         raw = packed(dict(version=SOURCE_VERSION, original=profile.original, plan_now=profile.plan_now,
             policy=profile.policy, profile_states=profile.profile_states, records=records))
@@ -94,6 +102,11 @@ class LioRichPublisher(LioPlanPublisher):
 
     def publish_assembly_for_message(self, binding, original, current, assembly, capture, *,
                                      checks, proposed_subjects, before_publish):
+        return self._publish_assembly(binding, original, current, assembly, capture, checks=checks,
+                                      proposed_subjects=proposed_subjects, before_publish=before_publish)
+
+    def _publish_assembly(self, binding, original, current, assembly, capture, *,
+                          checks, proposed_subjects, before_publish, adjustment=None):
         self.source.check(binding, capture)
         if (current is None or current != original or capture.binding != binding or before_publish is None
                 or self.repository.scope != trip_scope_for(binding.scope)
@@ -114,7 +127,8 @@ class LioRichPublisher(LioPlanPublisher):
         context = self.source.contexts[binding]
         expected = None if context is None else TripHead.from_trip(context.trip)
         self.require_lio(binding, original, expected)
-        rich = self.conditional_source(binding, capture, checks, document)
+        rich = (self.conditional_source(binding, capture, checks, document) if adjustment is None
+                else self.conditional_adjustment_source(binding, original, capture, checks, document, adjustment))
         validate_candidate(document, rich)
         by_id = {item['id']: item for item in document['items']}
         for record in rich.document['records']:
@@ -128,6 +142,8 @@ class LioRichPublisher(LioPlanPublisher):
         if source_window_conflicts(calendar, snapshot.fields) or time_check(packed(calendar)).status == 'CONFLICT':
             raise DraftRejected('known rich source/time conflict')
         candidate, _ = needs_projection(calendar, capture, proposed_subjects, context)
+        if adjustment is not None:
+            check_needs(context, candidate, adjustment.item_id)
         proposal = Proposal(proposal_id_for(binding.run_id),
             'trip-'+binding.run_id if context is None else context.trip.trip_id,
             0 if context is None else context.trip.version, PLAN_BASIS,
@@ -135,6 +151,8 @@ class LioRichPublisher(LioPlanPublisher):
         basis = json.loads(capture.raw)
         basis.update(version=self.plan_source_version, rich_source=json.loads(rich.raw),
                      provider_outcomes=self.source.provider_outcomes(binding, capture))
+        if adjustment is not None:
+            basis['scoped_adjustment'] = adjustment.basis()
         raw_basis = packed(basis)
         if len(raw_basis) > self.source.max_bytes:
             raise DraftRejected('rich retained source exceeds original byte bound')
@@ -143,6 +161,8 @@ class LioRichPublisher(LioPlanPublisher):
             check(document)
             def final(*, check_trip=None):
                 check(document)
+                if adjustment is not None:
+                    self._require_adjustment(binding, original, adjustment)
                 before_publish(check_trip=check_trip)  # Actual Trip eligibility, then original deadline last.
             token = self._rich_plan.set((binding, capture, raw_basis))
             try:

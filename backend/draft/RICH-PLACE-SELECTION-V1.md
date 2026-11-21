@@ -101,3 +101,33 @@ source-boundary independent review, exact CI, E's actual new scope, L's full
 production composition, deployed source/image qualification and a new B window.
 The national16 plan/IDs/budget are unchanged. P0 deployment and L's eight basic
 cases remain ahead of C's actual nationwide acceptance.
+
+## Scoped adjustment for WP5
+
+The host may configure `LioSelectedRichPublisher(..., adjustment_authority=check)`
+after issuing an actual adjustment decision under the current LIO-message.4
+original. The check receives `(binding, original, adjustment)` and must confirm
+the same owner, conversation, original MESSAGE/RUN, Trip head and authorized
+operation under the actual current holder. The host supplies the genuine
+calendar/profile/provider holders and checks for that original. An ordinary
+generation profile that requires a literal plan-now trigger cannot issue the
+adjustment decision.
+
+Pass `RichAdjustment(head=TripHead(trip_id, version, content_sha256),
+item_id=..., operation='replace' or 'remove')` to
+`conditional_adjustment_source(binding, original, capture, checks, document,
+adjustment)` for assembly and to
+`publish_adjustment_for_message(binding, original, current, assembly, capture,
+adjustment=adjustment, checks=checks, before_publish=...)` for commit. A
+replacement keeps the ID and time slot of the authorized suggestion. A removal
+drops just that item. The host supplies the complete candidate with current
+eligible evidence, including exact affected route endpoints. Unconfirmed edges
+are still represented as such. The publisher checks the unselected items,
+metadata, untouched route legs and unselected NEEDS, then rechecks the original
+authority in the sole existing publication transaction.
+
+The return value is the existing rich plan receipt for this run, available via
+`Repository.rich_plan_receipt(binding)` with `action_id`, `trip_id`,
+`committed_version` and `candidate_hash`. The next Trip head uses the raw
+content digest from the revision readback. History and rich undo use the
+existing revision and source-hold paths.

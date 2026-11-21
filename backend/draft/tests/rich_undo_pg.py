@@ -3,7 +3,7 @@ import asyncio
 from copy import copy
 import json
 import os
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from datetime import datetime,timedelta,timezone
 from hashlib import sha256
@@ -23,7 +23,7 @@ from lio_exploration_flow_pg import (SUBJECT,OUTSIDE,KEY,ISSUER,dev_auth,load_ru
     MeteredDashScopeProvider,DashScopeConfig,M4_BASE,M4_MODEL,RealServices,RealTools,
     CurrentScopeEpochReader,load_confirmation_signer,create_local_app,run_worker)
 import lio_exploration_flow_pg as native
-from cj_api.local_lio_exploration import ExplorationPlanning
+from cj_api.local_lio_exploration import ExplorationPlanning, Scene, defaults
 from cj_api.local_lio_calendar import LioCalendar
 from cj_api.local_worker_context import checker_for
 from cj_api.local_needs import protected_reader
@@ -36,11 +36,12 @@ from cj_api.local_lio_rich_checks import RichUndatedChecks
 from cj_api.local_lio_pipeline_calls import Call,PipelineCalls
 from cj_api.local_lio_planning import PlanningDetails,register
 from cj_api.lio_poi2_tool import POI2Input,registration
-from cj_api.lio_pipeline_document import compile_document
+from cj_api.lio_pipeline_document import compile_document, unconfirmed_legs, unconfirmed_place
 from cj_api.lio_pipeline_skeleton import recipes,parse_skeleton
 from cj_draft.rich_provider_source import RichProviderContextSource
 from cj_draft.lio_rich import LioRichPublisher
-from cj_feasibility.rich_assembly import assemble_unconfirmed
+from cj_draft.rich_adjustment import RichAdjustment
+from cj_feasibility.rich_assembly import Assembly, assemble_unconfirmed
 from cj_feasibility.rich_edges import activity_windows
 from cj_feasibility.rich_solver import Limits
 from cj_memory.runtime import RuntimeDenied
@@ -51,7 +52,7 @@ from cj_needs.revision_lease import LeaseUnavailable
 from cj_place.gaode_v2 import TextSearch
 from cj_place import https_transport
 from cj_trip.domain import Conflict, Denied, packed
-from cj_trip.lio_history import TripHead
+from cj_trip.lio_history import TripHead, plan_action_id
 from cj_trip.planning_context import read_current
 from cj_message.needs_binding import needs_scope_for
 from cj_message.lio_plan_needs import lio_needs_id
@@ -70,7 +71,7 @@ from test_lio_exploration_profile import packet
 from cj_message.lio_exploration_schema import UNDERSTANDING,RESPONSE
 from rich_pg_support import prepare
 
-def exercise(root,conninfo):
+def exercise(root,conninfo,*,scoped=False):
     fixture=prepare(root,conninfo)
     auth,database,context,memory,subjects,scope,journal=(fixture.auth,fixture.database,fixture.context,
         fixture.memory,fixture.subjects,fixture.scope,fixture.journal)
@@ -147,7 +148,21 @@ def exercise(root,conninfo):
         def original_check(candidate,stored,expected):
             with database.connect(binding.scope)as db:exploration_original_protocol(db.cursor(),candidate,stored)
             return candidate==binding and stored==worker.message_context.active_original(binding)and expected == (None if context is None else TripHead.from_trip(context.trip))
-        publisher=LioRichPublisher(original,signer,source,original_check,reader)
+        adjustment=None
+        if scoped and context is not None:
+            prior=json.loads(context.trip.content)
+            selected=next(item for item in prior['items'] if item['schedule']['start']['day_index']==2
+                          and item['fixed']=={'state':'known','value':False} and item['kind']=='sight')
+            adjustment=RichAdjustment(TripHead.from_trip(context.trip),selected['id'],
+                                      'replace' if locale=='zh' else 'remove')
+
+        def fixture_authority(candidate,stored,scope):
+            # Exercise the C boundary with a simulated L admission. This fixture
+            # uses the actual signed generation transport and original source.
+            return scope==adjustment and original_check(candidate,stored,scope.head)
+
+        publisher=LioRichPublisher(original,signer,source,original_check,reader,
+            **({'adjustment_authority':fixture_authority} if scoped else {}))
         def assemble():
             with source.hold_for_publication(binding):
                 skeleton_calendar=dict(calendar={'state':'undated'},days=[dict(day_index=i)for i in range(1,captured.basis.day_count+1)])
@@ -155,6 +170,20 @@ def exercise(root,conninfo):
                 document,activities,proposed=compile_document(skeleton,captured.basis,locale=locale,subjects=('party',),
                     timezone='Asia/Shanghai',code_checks=checks.checks,places={s.item_id:None for s in skeleton.stops},
                     hotel_places=(None,None),protected_items=(),protected_activities=(),legacy_sources=())
+                if adjustment is not None:
+                    document=json.loads(context.trip.content)
+                    if adjustment.operation=='replace':
+                        item=next(item for item in document['items'] if item['id']==adjustment.item_id)
+                        item.update(text='另一个待确认建议',place=unconfirmed_place(('另一个待确认建议','Different suggestion')))
+                    else:
+                        document['items']=[item for item in document['items'] if item['id']!=adjustment.item_id]
+                    document['legs']=unconfirmed_legs(document)
+                    document['date_checks']=checks.checks
+                    actual=worker.message_context.active_original(binding)
+                    producer=publisher.conditional_adjustment_source(binding,actual,sealed,checks,document,adjustment)
+                    assert not any(record['kind']=='retained_item' and record['payload']['item']['id']==adjustment.item_id
+                                   for record in producer.document['records'])
+                    return Assembly('CONDITIONAL_SCHEDULE','scoped fixture',packed(document)),checks,{}
                 if context is not None:
                     document=json.loads(context.trip.content)
                     target=next(item for item in document['items']if item['fixed']=={'state':'known','value':False})
@@ -174,6 +203,38 @@ def exercise(root,conninfo):
         def save():
             current=worker.message_context.active_original(binding)
             try:
+                if adjustment is not None:
+                    def publish(candidate, *, scope=adjustment, stored=actual):
+                        return publisher.publish_adjustment_for_message(binding,stored,current,candidate,sealed,
+                            adjustment=scope,checks=checks,before_publish=worker._publication_check)
+                    wrong=json.loads(assembly.content)
+                    other=next(item for item in wrong['items'] if item['id']!=adjustment.item_id)
+                    other['text']='outside authorized selection'
+                    for rejected_candidate in (
+                            lambda:publish(replace(assembly,content=packed(wrong))),
+                            lambda:publish(assembly,scope=replace(adjustment,head=replace(adjustment.head,version=99))),
+                            lambda:publish(assembly,stored=None)):
+                        try:rejected_candidate()
+                        except (DraftRejected,LeaseUnavailable):pass
+                        else:raise AssertionError('invalid scoped action reached writer')
+                    with patch.object(publisher,'adjustment_authority',None):
+                        try:publish(assembly)
+                        except DraftRejected:pass
+                        else:raise AssertionError('unissued adjustment reached writer')
+                    act=repo._act_in_tx
+                    def withdraw_authority(cursor,action):
+                        receipt=act(cursor,action)
+                        publisher.adjustment_authority=None
+                        return receipt
+                    try:
+                        with patch.object(repo,'_act_in_tx',withdraw_authority):
+                            try:publish(assembly)
+                            except DraftRejected:pass
+                            else:raise AssertionError('withdrawn adjustment authority committed')
+                    finally:publisher.adjustment_authority=fixture_authority
+                    assert repo.query_action(plan_action_id(binding.run_id)) is None
+                    assert repo.detail(context.trip.trip_id)==context.trip
+                    return publish(assembly)
                 for wrong_capture,wrong_checks,wrong_assembly in (
                         (copy(sealed),checks,assembly),
                         (sealed,copy(checks),assembly),
@@ -221,6 +282,8 @@ def exercise(root,conninfo):
         checker=checker_for(auth)
         historical=CurrentNeedsSource(database,checker,dev_auth.token(auth,SUBJECT,3600),protected_reader(database,checker))
         with repo.transaction()as cursor:origin=current_origin(cursor,repo,trip)
+        if adjustment is not None:
+            assert json.loads(origin['source'])['scoped_adjustment']==adjustment.basis()
         with history_sources(historical,origin)as historical_message:
             historical_message.check()
             assert historical_message.scope==binding.scope
@@ -299,7 +362,16 @@ def exercise(root,conninfo):
         old=calendar_host.repository
         repository=Repository(old.connect,old.scope,old.confirm,structured=True,calendar=True,rich=True)
         return read_current(repository,needs_scope_for(binding.scope),lio_needs_id(binding.scope,binding.conversation_id))
-    with TestClient(app)as api,patch.object(RealTools,'_registrations',registry),patch.object(ExplorationPlanning,'_model',diagnosed),patch.object(LioCalendar,'current',current_rich):
+    def component_plan(host,worker,binding,state,view,locale,*,prior_model_calls=0):
+        # Use signed MESSAGE intake and the real C writer while isolating the
+        # producer from the L production orchestration for this component test.
+        facts=defaults(view.profile)
+        facts.update({key:fact.value for key,fact in view.profile.items() if fact.state!='not_needed'})
+        extra=dict(scene='plan_now_preview',locale=locale,duration_days=facts['duration_days'])
+        result=json.loads(diagnosed(host,worker,binding,view,RESPONSE,'',extra))
+        return host._finish(worker,binding,worker.runs.snapshot(binding),result['body'],Scene.ADJUSTMENT,locale)
+    scoped_hook=patch.object(ExplorationPlanning,'_plan',component_plan) if scoped else nullcontext()
+    with TestClient(app)as api,patch.object(RealTools,'_registrations',registry),patch.object(ExplorationPlanning,'_model',diagnosed),patch.object(LioCalendar,'current',current_rich),scoped_hook:
         for language in ('zh','en'):
             locale=language
             for i in range(1):
