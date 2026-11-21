@@ -1,6 +1,47 @@
 import XCTest
 
 @MainActor extension LioToolsUITests {
+    @objc func testTaxiAndHotelsRemainUsableAtTheLargestTextSize() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-taxi-preview",
+                               "--lio-hotels-preview", "-cj.ui.language.v1", "en", "-lio.ui.appearance.v1", "dark",
+                               "-lio.taxi.seen-guide.v1", "YES", "-UIPreferredContentSizeCategoryName",
+                               "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch()
+        defer { app.terminate() }
+        let tools = app.tabBars.buttons["Tools"]
+        XCTAssertTrue(tools.waitForExistence(timeout: 8))
+        tools.tap()
+        app.buttons["lio.tools.taxi"].tap()
+        let destination = app.buttons["lio.taxi.destination"]
+        XCTAssertTrue(destination.waitForExistence(timeout: 6))
+        XCTAssertTrue(destination.isHittable)
+        let pickup = app.buttons["lio.taxi.pickup"]
+        if !pickup.isHittable { app.swipeUp() }
+        XCTAssertTrue(pickup.isHittable)
+        let taxiImage = XCTAttachment(screenshot: app.screenshot())
+        taxiImage.name = "taxi-maximum-text-dark"
+        taxiImage.lifetime = .keepAlways
+        add(taxiImage)
+
+        app.navigationBars.buttons.firstMatch.tap()
+        app.buttons["lio.tools.hotels"].tap()
+        let city = app.textFields["lio.hotels.city"]
+        XCTAssertTrue(city.waitForExistence(timeout: 6))
+        XCTAssertTrue(city.isHittable)
+        let find = app.buttons["lio.hotels.find"]
+        for _ in 0..<5 {
+            if find.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(find.isHittable)
+        let hotelsImage = XCTAttachment(screenshot: app.screenshot())
+        hotelsImage.name = "hotels-maximum-text-dark"
+        hotelsImage.lifetime = .keepAlways
+        add(hotelsImage)
+    }
+
     @objc func testToolsFixtureOrdersTaxiAndHotelsBeforeTranslation() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
