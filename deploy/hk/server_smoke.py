@@ -54,7 +54,7 @@ PLAN_PREVIEW_ROUTE = '/v2/lio/itinerary-preview'
 PLAN_PREVIEW_VERSION = 'LIO-itinerary-preview.1'
 BEIJING_CODE = '110000'
 BEIJING_ACTIVITY_NAMES = frozenset({
-    '北京故宫', '故宫博物院', '天安门广场', '景山公园', '颐和园', '慕田峪长城', '八达岭长城',
+    '故宫', '北京故宫', '故宫博物院', '天安门广场', '景山公园', '颐和园', '慕田峪长城', '八达岭长城',
     '天坛', '天坛公园', '雍和宫', '南锣鼓巷', '什刹海', '北海公园', '圆明园', '恭王府',
     'forbidden city', 'the forbidden city', 'tiananmen square', 'jingshan park',
     'summer palace', 'the summer palace', 'mutianyu great wall', 'badaling great wall',

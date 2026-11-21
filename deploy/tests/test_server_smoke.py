@@ -439,6 +439,7 @@ def _itinerary_preview(places=('故宫博物院', '慕田峪长城', '颐和园'
 
 @pytest.mark.parametrize(('locale', 'places'), [
     ('zh', ('故宫博物院', '慕田峪长城', '颐和园')),
+    ('zh', ('故宫', '慕田峪长城', '颐和园')),
     ('en', ('Forbidden City', 'Mutianyu Great Wall', 'Summer Palace')),
 ])
 def test_structured_preview_proves_both_language_plans(locale, places):
@@ -462,6 +463,20 @@ def test_structured_preview_proves_both_language_plans(locale, places):
     with pytest.raises(smoke.SmokeResult) as failure:
         smoke.check_itinerary_preview(response, 'same-mid', 'same-cid')
     assert (failure.value.status, failure.value.reason) == ('UNKNOWN', 'structured_plan_unavailable')
+
+
+@pytest.mark.parametrize(('activity', 'status', 'reason'), [
+    (dict(place_name='沈阳故宫'), 'UNKNOWN', 'structured_plan_activity_location_unconfirmed'),
+    (dict(place_name='台北故宫'), 'UNKNOWN', 'structured_plan_activity_location_unconfirmed'),
+    (dict(city_adcode='310000'), 'FAIL', 'structured_plan_day_without_beijing_activity'),
+    (dict(cancelled=True), 'FAIL', 'structured_plan_day_without_beijing_activity'),
+])
+def test_structured_preview_gugong_alias_respects_location_and_cancellation(activity, status, reason):
+    value = _itinerary_preview(('故宫', '慕田峪长城', '颐和园'))
+    value['preview']['days'][0]['activities'][0].update(activity)
+    with pytest.raises(smoke.SmokeResult) as failure:
+        smoke.check_itinerary_preview(value, 'same-mid', 'same-cid')
+    assert (failure.value.status, failure.value.reason) == (status, reason)
 
 
 @pytest.mark.parametrize(('problem', 'status', 'reason'), [
