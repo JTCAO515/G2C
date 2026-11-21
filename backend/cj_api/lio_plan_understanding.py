@@ -630,6 +630,9 @@ _OWN_FIXED_REFERENCE=re.compile(
     r'我(?:们)?的?[这那](?:场|次)的?\s*'
     r'|\b(?:mine|ours|my own|our own)\b\s*(?:(?:is|was|has|will be)\s+)?',re.I)
 _OWN_FIXED_CURRENT_SITE=re.compile(r'(?:(?:现在|目前)\s*)?在\s*|(?:(?:now|currently)\s+)?(?:at|in)\s+',re.I)
+_OWN_FIXED_CHINESE_TIME=re.compile(
+    r'(?:凌晨|早上|上午|中午|下午|晚上)?\s*(?:[01]?[0-9]|2[0-3])\s*[点时]'
+    r'(?:\s*(?:[0-5]?[0-9]\s*分|半))?\s*(?:照旧|不变|如期)?')
 
 
 def _direct_fixed_place(label,before,after):
@@ -659,7 +662,8 @@ def _own_fixed_site_revision(clause):
         direct=_OWN_FIXED_CURRENT_SITE.match(clause,reference.end())
         if direct:
             rest=clause[direct.end():].strip()
-            if rest and not _FIXED_TIME_ONLY.fullmatch(rest):
+            if (rest and not _FIXED_TIME_ONLY.fullmatch(rest)
+                    and not _OWN_FIXED_CHINESE_TIME.fullmatch(rest)):
                 return True
     return False
 

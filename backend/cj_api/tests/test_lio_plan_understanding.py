@@ -397,7 +397,8 @@ class PlanUnderstandingBoundary(unittest.TestCase):
               '我朋友也有个酒店集合，但我的酒店集合改到北京南站','我朋友说我的酒店集合改在北京南站',
               ('我朋友另有一场酒店集合但我这场改到北京南站',
                '我朋友另有一场酒店集合并且我这场改到北京南站',
-               '我朋友另有一场酒店集合并且我这场现在在北京南站'))),
+               '我朋友另有一场酒店集合并且我这场现在在北京南站'),
+              '我朋友另有一场酒店集合并且我这场在上午9点照旧')),
             ('hotel meetup','Beijing Hotel','Beijing South Station',
              'On day 1 I have a fixed hotel meetup at Beijing Hotel from 9:00 to 10:00 a.m., keep it unchanged',
              'On day 1 I have a fixed hotel meetup at Beijing Hotel from 9:00 to 10:00 moved to Beijing South Station, keep it unchanged',
@@ -411,10 +412,11 @@ class PlanUnderstandingBoundary(unittest.TestCase):
               'My friend says my hotel meetup moved to Beijing South Station.',
               ('My friend also has a separate hotel meetup while mine moved to Beijing South Station.',
                'My friend has a separate hotel meetup and mine moved to Beijing South Station.',
-               'My friend has a separate hotel meetup and mine is now at Beijing South Station.'))),
+               'My friend has a separate hotel meetup and mine is now at Beijing South Station.'),
+              'My friend has a separate hotel meetup and mine is at 9 a.m. as planned.')),
         ):
             spoken_denial,spoken_change,time_only=spoken
-            separate,separate_update,both,reported_update,implicit_own_updates=same_label
+            separate,separate_update,both,reported_update,implicit_own_updates,implicit_own_time=same_label
             for primary, later, selected_place, is_current in (
                 (same_turn,None,place,False),(prior,change,place,False),(prior,denial,place,False),
                 (prior,restated,place,False),(prior,change,new_place,True),(prior,other_activity,place,True),
@@ -422,6 +424,7 @@ class PlanUnderstandingBoundary(unittest.TestCase):
                 (prior,separate,place,True),(prior,separate_update,place,True),
                 (prior,both,place,False),(prior,reported_update,place,False),
                 *((prior,update,place,False)for update in implicit_own_updates),
+                (prior,implicit_own_time,place,True),
             ):
                 with self.subTest(primary=primary,later=later,selected_place=selected_place):
                     value,turns=self.fixed_case()
