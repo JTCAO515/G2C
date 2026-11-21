@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 import json
 import sqlite3
 from types import SimpleNamespace
+from uuid import uuid4
 
 import pytest
 
@@ -513,15 +514,26 @@ def test_structured_preview_rejects_unmatched_or_incomplete_evidence(problem, st
            'Day 3: Explore the Temple of Heaven.', 'other_message', 'structured_plan_binding'),
     ('en', 'Day 1: Visit the Forbidden City. Day 2: Hike the Great Wall. '
            'Day 3: Explore the Temple of Heaven.', 'expired', 'window_closed_before_structured_plan_read'),
+    ('en', 'Day 1: Visit the Forbidden City. Day 2: Hike the Great Wall. '
+           'Day 3: Explore the Temple of Heaven.', 'expired_after', 'window_closed_after_structured_plan_read'),
+    ('en', 'Day 1: Visit the Forbidden City. Day 2: Hike the Great Wall. '
+           'Day 3: Explore the Temple of Heaven.', 'deadline_before', 'structured_plan_case_deadline'),
+    ('en', 'Day 1: Visit the Forbidden City. Day 2: Hike the Great Wall. '
+           'Day 3: Explore the Temple of Heaven.', 'deadline_after', 'structured_plan_case_deadline'),
+    ('en', 'Day 1: Visit the Forbidden City. Day 2: Hike the Great Wall. '
+           'Day 3: Explore the Temple of Heaven.', 'missing_ref', 'structured_plan_read_ref_missing'),
 ])
 def test_completed_plan_requires_its_own_structured_evidence_without_reposting(
         monkeypatch, locale, body, scenario, expected):
     monkeypatch.setattr(smoke, 'POLL_SECONDS', 0)
     posts, previews = [], []
     expired = False
+    elapsed = 0.0
+    ref = str(uuid4())
+    monkeypatch.setattr(smoke, 'time', SimpleNamespace(monotonic=lambda: elapsed, sleep=lambda _: None))
 
     def api(token, route, *, document=None):
-        nonlocal expired
+        nonlocal expired, elapsed
         if document is not None:
             assert route == '/v2/lio/messages'
             posts.append(document)
@@ -532,6 +544,8 @@ def test_completed_plan_requires_its_own_structured_evidence_without_reposting(
         mid = posts[0]['message_id']
         if route == '/v2/lio/timeline?conversation_id=same-cid':
             expired = scenario == 'expired'
+            if scenario == 'deadline_before':
+                elapsed = smoke.CASE_LIMIT_SECONDS + 1
             return dict(version='LIO-timeline.2', conversation_id='same-cid', messages=[
                 dict(message_id=mid, status='completed', answer=body)]), None
         assert route == f'{smoke.PLAN_PREVIEW_ROUTE}?conversation_id=same-cid&message_id={mid}'
@@ -539,18 +553,23 @@ def test_completed_plan_requires_its_own_structured_evidence_without_reposting(
         response = _itinerary_preview(message='different-mid' if scenario == 'other_message' else mid)
         if scenario == 'missing':
             response['preview'] = None
-        return response, 'fixture'
+        if scenario == 'deadline_after':
+            elapsed = smoke.CASE_LIMIT_SECONDS + 1
+        if scenario == 'expired_after':
+            expired = True
+        return response, None if scenario == 'missing_ref' else ref
 
     result = smoke.run_case(f'{locale}.plan', 'fixture', 'synthetic', lambda: not expired, api)
     assert len(posts) == 1
-    assert len(previews) == int(scenario != 'expired')
+    assert len(previews) == int(scenario not in ('expired', 'deadline_before'))
     assert result['legacy_format_match'] is (scenario != 'valid')
     if expected == 'PASS':
         assert result['status'] == 'PASS'
-        assert result['structured_days'] == 3
+        assert result['structured_plan'] == dict(source='original_preview', days=3, ref=ref,
+            conversation_id='same-cid', message_id=posts[0]['message_id'], start_ms=0, end_ms=0)
     else:
         assert (result['status'], result['reason']) == ('UNKNOWN', expected)
-        assert 'structured_days' not in result
+        assert 'structured_plan' not in result
 
 
 def _dated_trip(labels=('参观故宫博物院', 'Hike Mutianyu Great Wall', '游览颐和园。')):
@@ -595,6 +614,7 @@ def test_same_message_saved_trip_fails_closed(scenario, status, reason):
 def test_original_visible_saved_trip_can_pass_with_empty_prose_and_no_extra_read(monkeypatch):
     monkeypatch.setattr(smoke, 'POLL_SECONDS', 0)
     posts = []
+    ref = str(uuid4())
 
     def api(token, route, *, document=None):
         if document is not None:
@@ -607,18 +627,21 @@ def test_original_visible_saved_trip_can_pass_with_empty_prose_and_no_extra_read
         assert route == '/v2/lio/timeline?conversation_id=same-cid'
         return dict(version='LIO-timeline.2', conversation_id='same-cid', messages=[
             dict(message_id=posts[0]['message_id'], status='completed', answer='', trip=_dated_trip())
-        ]), 'same-timeline-ref'
+        ]), ref
 
     result = smoke.run_case('zh.plan', 'fixture', 'synthetic', lambda: True, api)
     assert result['status'] == 'PASS'
-    assert result['structured_days'] == 3
-    assert result['structured_plan_source'] == 'timeline_trip'
-    assert result['structured_plan_ref'] == 'same-timeline-ref'
+    timeline = result['polls'][-1]
+    assert result['structured_plan'] == dict(source='timeline_trip', days=3, ref=ref,
+        conversation_id='same-cid', message_id=posts[0]['message_id'],
+        start_ms=timeline['start_ms'], end_ms=timeline['end_ms'])
     assert result['answer_chars'] == 0
     assert len(posts) == 1
 
 
-def test_release_verify_requires_both_structured_plan_results_even_with_old_text_passes():
+def test_release_verify_requires_two_distinct_original_bindings_even_with_old_text_passes():
+    from copy import deepcopy
+
     attempt = 'a' * 64
     rows = [dict(kind='case', case=name, status='PASS', bound_model_attempts=[], polls=[])
             for name, _ in smoke.CASES]
@@ -626,13 +649,45 @@ def test_release_verify_requires_both_structured_plan_results_even_with_old_text
         dict(start_ms=10, end_ms=30, http=200, answering=False),
         dict(start_ms=1010, end_ms=1040, http=200, answering=True),
         dict(start_ms=2010, end_ms=2040, http=200, answering=True),
-        dict(start_ms=3010, end_ms=3040, http=200, answering=False),
+        dict(start_ms=3010, end_ms=3040, http=200, answering=False, ref=str(uuid4())),
     ])
+    rows[5].update(dispatch_ms=1, polls=[dict(start_ms=3010, end_ms=3040, http=200, ref=str(uuid4()))])
     rows += [dict(kind='history', status='PASS'), dict(kind='translation_requirement', required=False),
              dict(kind='cost', conservative_cny_1e7=0, line_usage_delta_cny_1e7=0)]
     logs = [f'M4_MODEL_WIRE_TIMING attempt_sha256={attempt} first_provider_body_ms=2590.0 socket_read_ms=2740.0']
+    unknown = dict(status='UNKNOWN', concurrency='UNRUN', reason='structured_plan_evidence_missing')
+
     rows[2].update(structured_days=3, structured_plan_source='timeline_trip')
-    assert smoke.decide(rows, logs) == dict(status='UNKNOWN', concurrency='UNRUN',
-                                            reason='structured_plan_evidence_missing')
     rows[5].update(structured_days=3, structured_plan_source='original_preview')
+    assert smoke.decide(rows, logs) == unknown
+
+    rows[2].update(message_id=str(uuid4()), conversation_id='zh-original')
+    rows[5].update(message_id=str(uuid4()), conversation_id='en-original')
+    rows[2]['structured_plan'] = dict(source='timeline_trip', days=3, message_id=rows[2]['message_id'],
+        conversation_id='zh-original', ref=rows[2]['polls'][-1]['ref'], start_ms=3010, end_ms=3040)
+    rows[5]['structured_plan'] = dict(source='original_preview', days=3, message_id=rows[5]['message_id'],
+        conversation_id='en-original', ref=str(uuid4()), start_ms=3041, end_ms=3060)
     assert smoke.decide(rows, logs) == dict(status='PASS', concurrency='PASS')
+
+    for field in ('conversation_id', 'message_id', 'ref'):
+        damaged = deepcopy(rows)
+        damaged[5]['structured_plan'].pop(field)
+        assert smoke.decide(damaged, logs) == unknown
+    for index, field, value in (
+        (2, 'ref', str(uuid4())),
+        (5, 'message_id', str(uuid4())),
+        (5, 'conversation_id', 'other-original'),
+        (5, 'start_ms', 3039),
+        (5, 'end_ms', smoke.CASE_LIMIT_SECONDS * 1000 + 1),
+    ):
+        damaged = deepcopy(rows)
+        damaged[index]['structured_plan'][field] = value
+        assert smoke.decide(damaged, logs) == unknown
+    for field in ('conversation_id', 'message_id'):
+        damaged = deepcopy(rows)
+        value = damaged[2][field]
+        damaged[5][field] = damaged[5]['structured_plan'][field] = value
+        assert smoke.decide(damaged, logs) == unknown
+    damaged = deepcopy(rows)
+    damaged[5]['structured_plan']['ref'] = damaged[2]['structured_plan']['ref'].upper()
+    assert smoke.decide(damaged, logs) == unknown

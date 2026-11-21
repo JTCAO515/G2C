@@ -314,6 +314,7 @@ def run_case(case, prompt, token, allowed, send=request):
     payload = dict(version='LIO-message.2', message_id=message_id, text=prompt,
                    locale=case[:2], new_conversation=True)
     started = time.monotonic()
+    deadline = started + CASE_LIMIT_SECONDS
     result = dict(case=case, status='UNRUN', polls=[], message_id=message_id)
     clock_ms = lambda: round((time.monotonic()-started)*1000, 3)
 
@@ -337,7 +338,7 @@ def run_case(case, prompt, token, allowed, send=request):
             pending = queue.submit(submit)
             conversation = None
             next_poll = time.monotonic()
-            while time.monotonic() < started + CASE_LIMIT_SECONDS:
+            while time.monotonic() < deadline:
                 if not allowed():
                     raise SmokeResult('UNKNOWN', 'window_or_budget_closed_after_post')
                 if conversation is None and pending.done():
@@ -377,19 +378,32 @@ def run_case(case, prompt, token, allowed, send=request):
                             raise SmokeResult('UNKNOWN', 'timeline_message_shape')
                         result['legacy_format_match'] = valid_answer(case, answer)
                         trip = row.get('trip')
+                        if time.monotonic() >= deadline:
+                            raise SmokeResult('UNKNOWN', 'structured_plan_case_deadline')
+                        if not allowed():
+                            raise SmokeResult('UNKNOWN', 'window_closed_before_structured_plan_read')
                         if trip is not None:
                             check_timeline_itinerary(trip)
-                            result.update(structured_plan_source='timeline_trip', structured_plan_ref=ref)
+                            basis = 'timeline_trip'
+                            read_start, read_end = sample['start_ms'], sample['end_ms']
                         else:
                             if not answer.strip():
                                 raise SmokeResult('FAIL', 'required_answer_missing')
-                            if not allowed():
-                                raise SmokeResult('UNKNOWN', 'window_closed_before_structured_plan_read')
                             query = urlencode({'conversation_id': conversation, 'message_id': message_id})
+                            read_start = clock_ms()
                             preview, ref = send(token, PLAN_PREVIEW_ROUTE + '?' + query)
+                            read_end = clock_ms()
+                            if time.monotonic() >= deadline:
+                                raise SmokeResult('UNKNOWN', 'structured_plan_case_deadline')
+                            if not allowed():
+                                raise SmokeResult('UNKNOWN', 'window_closed_after_structured_plan_read')
                             check_itinerary_preview(preview, message_id, conversation)
-                            result.update(structured_plan_source='original_preview', structured_plan_ref=ref)
-                        result['structured_days'] = 3
+                            basis = 'original_preview'
+                        if not _request_id(ref):
+                            raise SmokeResult('UNKNOWN', 'structured_plan_read_ref_missing')
+                        result['structured_plan'] = dict(
+                            source=basis, days=3, conversation_id=conversation, message_id=message_id,
+                            ref=ref, start_ms=read_start, end_ms=read_end)
                     elif not valid_answer(case, answer):
                         raise SmokeResult('FAIL', 'required_answer_missing')
                     result.update(status='PASS', answer_chars=len(answer),
@@ -552,6 +566,43 @@ def run(budget, database, scope, token, owner, start, end):
     return 0
 
 
+def _request_id(value):
+    return type(value) is str and re.fullmatch(
+        r'[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}', value) is not None
+
+
+def _structured_plan_witness(row):
+    proof = row.get('structured_plan')
+    if type(proof) is not dict or type(proof.get('days')) is not int or proof['days'] != 3:
+        return None
+    cid, mid, ref = (proof.get(field) for field in ('conversation_id', 'message_id', 'ref'))
+    if (type(cid) is not str or not cid.strip() or not _request_id(mid) or not _request_id(ref)
+            or cid != row.get('conversation_id') or mid != row.get('message_id')):
+        return None
+
+    polls = row.get('polls')
+    if type(polls) is not list or not polls or type(polls[-1]) is not dict:
+        return None
+    timeline = polls[-1]
+    dispatch, start, end = row.get('dispatch_ms'), proof.get('start_ms'), proof.get('end_ms')
+    last_start, last_end = timeline.get('start_ms'), timeline.get('end_ms')
+    if (timeline.get('http') != 200
+            or any(type(value) not in (int, float) for value in (dispatch, start, end, last_start, last_end))
+            or not 0 <= dispatch <= last_start <= last_end <= CASE_LIMIT_SECONDS * 1000
+            or not dispatch <= start <= end <= CASE_LIMIT_SECONDS * 1000):
+        return None
+
+    if proof.get('source') == 'timeline_trip':
+        if (ref, start, end) != (timeline.get('ref'), last_start, last_end):
+            return None
+    elif proof.get('source') == 'original_preview':
+        if start < last_end or ref == timeline.get('ref'):
+            return None
+    else:
+        return None
+    return cid, mid.casefold(), ref.casefold()
+
+
 def decide(events, wire_logs):
     cases = [entry for entry in events if entry['kind']=='case']
     history_rows = [entry for entry in events if entry['kind']=='history']
@@ -573,9 +624,9 @@ def decide(events, wire_logs):
         return dict(status='UNKNOWN', concurrency='UNKNOWN', reason='invalid_smoke_status')
     if any(row['status']=='UNRUN' for row in outcomes):
         return dict(status='UNRUN', concurrency='UNRUN')
-    if any(row.get('structured_days') != 3
-           or row.get('structured_plan_source') not in ('timeline_trip', 'original_preview')
-           for row in cases if row['case'].endswith('.plan')):
+    plan_witnesses = [_structured_plan_witness(row) for row in cases if row['case'].endswith('.plan')]
+    if (None in plan_witnesses
+            or any(len(set(values)) != 2 for values in zip(*plan_witnesses, strict=True))):
         return dict(status='UNKNOWN', concurrency='UNRUN', reason='structured_plan_evidence_missing')
     from deploy.hk.translation_smoke import complete
     if not complete(events):
