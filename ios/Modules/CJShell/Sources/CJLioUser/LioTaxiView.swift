@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 
 struct LioTaxiView: View {
+    private typealias Action = LioTaxiRequestState.Action
     let language: LioLanguage
     let service: LioTaxiService
     let tripPlaces: [LioTaxiPlace]
@@ -14,15 +15,12 @@ struct LioTaxiView: View {
     @State private var pickupNotice: String?
     @State private var recentNotice: String?
     @State private var failure: RequestFailure?
-    @State private var operation: Operation?
+    @State private var requests = LioTaxiRequestState()
     @State private var sheet: Sheet?
     @State private var driverPlace: LioTaxiPlace?
     @State private var showOptions = false
     @AppStorage("lio.taxi.seen-guide.v1") private var seenGuide = false
-
-    private enum Operation: Equatable {
-        case estimate, handoff
-    }
+    @Environment(\.scenePhase) private var scenePhase
 
     private enum Sheet: String, Identifiable {
         case destination, pickup, guide, alipay
@@ -30,7 +28,7 @@ struct LioTaxiView: View {
     }
 
     private struct RequestFailure {
-        let operation: Operation
+        let action: Action
         let message: String
     }
 
@@ -38,6 +36,8 @@ struct LioTaxiView: View {
         guard let pickup, let destination else { return nil }
         return LioTaxiRoute(pickup: pickup, destination: destination)
     }
+
+    private var requestPending: Bool { requests.current != nil }
 
     var body: some View {
         ScrollView {
@@ -81,20 +81,19 @@ struct LioTaxiView: View {
             do {
                 let location = try await service.currentPickup()
                 guard pickup == nil, !Task.isCancelled else { return }
-                pickup = location
+                selectPickup(location)
             } catch {
                 guard pickup == nil, !Task.isCancelled else { return }
                 pickupNotice = message(error)
             }
         }
-        .onChange(of: route) {
-            operation = nil
-            failure = nil
-            fares = []
+        .onDisappear { requests.retire() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .background { requests.retire() }
         }
-        .task(id: operation) {
-            guard let operation, let route else { return }
-            await perform(operation, for: route)
+        .task(id: requests.current?.id) {
+            guard let operation = requests.current else { return }
+            await perform(operation)
         }
         .sheet(item: $sheet) { shown in
             switch shown {
@@ -105,11 +104,13 @@ struct LioTaxiView: View {
                         tripPlaces: tripPlaces, recent: recent, search: service.search
                     ) { place in
                         if shown == .destination {
-                            destination = place
+                            if destination != place {
+                                retireRouteRequest()
+                                destination = place
+                            }
                             record(place)
                         } else {
-                            pickup = place
-                            pickupNotice = nil
+                            selectPickup(place)
                         }
                         sheet = nil
                     }
@@ -174,11 +175,11 @@ struct LioTaxiView: View {
                     .font(.footnote)
                     .foregroundStyle(LioTheme.inkSecondary)
             }
-            Button(language.text("Get an estimate", "查看估价")) { operation = .estimate }
+            Button(language.text("Get an estimate", "查看估价")) { start(.estimate) }
                 .buttonStyle(.bordered)
                 .controlSize(.large)
                 .accessibilityIdentifier("lio.taxi.estimate")
-                .disabled(route == nil || operation != nil)
+                .disabled(route == nil || requestPending)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
@@ -187,23 +188,23 @@ struct LioTaxiView: View {
 
     private var rideActions: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Button(language.text("Open in DiDi", "在滴滴打开")) { operation = .handoff }
+            Button(language.text("Open in DiDi", "在滴滴打开")) { start(.handoff) }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .accessibilityIdentifier("lio.taxi.handoff")
-                .disabled(route == nil || operation != nil)
+                .disabled(route == nil || requestPending)
             if let destination, destination.addressZH != nil {
                 Button(language.text("Show the driver", "给司机看")) { driverPlace = destination }
                     .buttonStyle(.bordered)
                     .controlSize(.large)
                     .accessibilityIdentifier("lio.taxi.driver")
             }
-            if operation != nil { ProgressView(language.text("Getting ride details…", "正在获取打车信息…")) }
+            if requestPending { ProgressView(language.text("Getting ride details…", "正在获取打车信息…")) }
             if let failure {
                 Text(failure.message)
-                Button(language.text("Try again", "重试")) { operation = failure.operation }
+                Button(language.text("Try again", "重试")) { start(failure.action) }
                     .frame(minHeight: 44)
-                    .disabled(route == nil || operation != nil)
+                    .disabled(route == nil || requestPending)
             }
         }
     }
@@ -218,28 +219,58 @@ struct LioTaxiView: View {
         }
     }
 
-    private func perform(_ action: Operation, for route: LioTaxiRoute) async {
+    private func start(_ action: Action) {
+        guard let route else { return }
+        requests.start(action, route: route)
+    }
+
+    private func selectPickup(_ place: LioTaxiPlace) {
+        if pickup != place {
+            retireRouteRequest()
+            pickup = place
+        }
+        pickupNotice = nil
+    }
+
+    private func retireRouteRequest() {
+        requests.retire()
+        failure = nil
+        fares = []
+        showOptions = false
+    }
+
+    private func isCurrent(_ operation: LioTaxiRequestState.Operation) -> Bool {
+        !Task.isCancelled && requests.accepts(operation, route: route)
+    }
+
+    private func perform(_ operation: LioTaxiRequestState.Operation) async {
+        guard isCurrent(operation) else { return }
         failure = nil
         do {
-            switch action {
+            switch operation.action {
             case .estimate:
-                let result = try await service.estimate(route)
-                try Task.checkCancellation()
+                let result = try await service.estimate(operation.route)
+                guard isCurrent(operation) else { return }
                 fares = result
             case .handoff:
-                let link = try await service.rideLink(route)
-                try Task.checkCancellation()
+                let link = try await service.rideLink(operation.route)
+                guard isCurrent(operation) else { return }
+                guard UIApplication.shared.applicationState == .active else {
+                    requests.retire()
+                    return
+                }
                 let opened = await service.openRideLink(link)
-                try Task.checkCancellation()
+                guard isCurrent(operation) else { return }
                 showOptions = !opened
             }
         } catch is CancellationError {
+            if isCurrent(operation) { requests.retire() }
             return
         } catch {
-            guard !Task.isCancelled else { return }
-            failure = RequestFailure(operation: action, message: message(error))
+            guard isCurrent(operation) else { return }
+            failure = RequestFailure(action: operation.action, message: message(error))
         }
-        operation = nil
+        requests.retire()
     }
 
     private func message(_ error: Error) -> String {

@@ -5,6 +5,31 @@ struct LioTaxiRoute: Equatable, Sendable {
     let destination: LioTaxiPlace
 }
 
+struct LioTaxiRequestState {
+    enum Action {
+        case estimate, handoff
+    }
+
+    struct Operation: Identifiable {
+        let id = UUID()
+        let action: Action
+        let route: LioTaxiRoute
+    }
+
+    private(set) var current: Operation?
+
+    mutating func start(_ action: Action, route: LioTaxiRoute) {
+        guard current == nil else { return }
+        current = Operation(action: action, route: route)
+    }
+
+    mutating func retire() { current = nil }
+
+    func accepts(_ operation: Operation, route: LioTaxiRoute?) -> Bool {
+        current?.id == operation.id && route == operation.route
+    }
+}
+
 struct LioTaxiFare: Identifiable, Sendable {
     enum Price: Sendable {
         case range(minimum: Decimal, maximum: Decimal, currency: String)
@@ -51,6 +76,7 @@ extension LioTaxiService {
             search: { query in
                 previewDestinations.filter {
                     $0.nameZH.localizedStandardContains(query) || $0.nameEN.localizedStandardContains(query)
+                        || $0.addressZH?.localizedStandardContains(query) == true
                 }
             },
             currentPickup: {

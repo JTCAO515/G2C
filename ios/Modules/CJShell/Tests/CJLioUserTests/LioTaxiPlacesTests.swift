@@ -3,12 +3,33 @@ import Testing
 @testable import CJLioUser
 
 struct LioTaxiPlacesTests {
+    @Test func lateTaxiReplyCannotReplaceAnotherRouteOrOpenItsLink() throws {
+        let pickup = LioTaxiPlace(nameZH: "示例起点", nameEN: "Pickup", addressZH: nil,
+                                  coordinate: .init(latitude: 39.9, longitude: 116.4, referenceSystem: .wgs84))
+        let destination = LioTaxiPlace(nameZH: "示例终点", nameEN: "Destination", addressZH: nil,
+                                       coordinate: .init(latitude: 40.05, longitude: 116.3, referenceSystem: .gcj02))
+        let firstRoute = LioTaxiRoute(pickup: pickup, destination: destination)
+        let differentRoute = LioTaxiRoute(pickup: destination, destination: pickup)
+        var requests = LioTaxiRequestState()
+        requests.start(.handoff, route: firstRoute)
+        let original = try #require(requests.current)
+        #expect(requests.accepts(original, route: firstRoute))
+        #expect(!requests.accepts(original, route: differentRoute))
+        requests.retire()
+        #expect(!requests.accepts(original, route: firstRoute))
+        requests.start(.handoff, route: firstRoute)
+        let replacement = try #require(requests.current)
+        #expect(!requests.accepts(original, route: firstRoute))
+        #expect(requests.accepts(replacement, route: firstRoute))
+    }
+
     #if DEBUG
     @MainActor @Test func fixtureHandlesLinkWithoutOpeningAnExternalApp() async throws {
         let service = LioTaxiService.preview()
         let pickup = try await service.currentPickup()
         let matches = try await service.search("Summer Palace")
         let destination = try #require(matches.first)
+        #expect(try await service.search("新建宫门路").first == destination)
         let route = LioTaxiRoute(pickup: pickup, destination: destination)
         #expect(pickup.coordinate.referenceSystem == .wgs84)
         #expect(destination.coordinate.referenceSystem == .gcj02)
