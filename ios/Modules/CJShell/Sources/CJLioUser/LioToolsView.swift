@@ -15,6 +15,11 @@ struct LioToolsView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
+                    #if DEBUG
+                    if ProcessInfo.processInfo.arguments.contains("--lio-taxi-preview") {
+                        previewTaxi
+                    }
+                    #endif
                     NavigationLink {
                         LioTextTranslationView(language: language, history: history, enabled: enabled, isCurrent: {
                             UIApplication.shared.applicationState != .background && sessionIsCurrent()
@@ -43,6 +48,33 @@ struct LioToolsView: View {
         }
         .tint(LioTheme.vermilion)
     }
+
+    #if DEBUG
+    private var previewTaxi: some View {
+        let arguments = ProcessInfo.processInfo.arguments
+        let scenario: LioTaxiService.PreviewScenario
+        if arguments.contains("--lio-taxi-preview-location-denied") { scenario = .locationDenied }
+        else if arguments.contains("--lio-taxi-preview-estimate-fails") { scenario = .estimateUnavailable }
+        else if arguments.contains("--lio-taxi-preview-no-app") { scenario = .missingApp }
+        else if arguments.contains("--lio-taxi-preview-rate-limited") { scenario = .rateLimited }
+        else if arguments.contains("--lio-taxi-preview-signed-out") { scenario = .signedOut }
+        else { scenario = .available }
+
+        return NavigationLink {
+            LioTaxiView(language: language, service: .preview(scenario), tripPlaces: LioTaxiService.previewDestinations,
+                       recentStore: LioTaxiRecentPlaces(directory: FileManager.default.temporaryDirectory
+                        .appendingPathComponent("lio-taxi-preview", isDirectory: true)))
+        } label: {
+            Label(language.text("Taxi", "打车"), systemImage: "car")
+                .foregroundStyle(LioTheme.ink)
+                .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+                .padding(.horizontal, 16)
+                .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("lio.tools.taxi")
+    }
+    #endif
 }
 
 struct LioTranslationActionStyle: ButtonStyle {
