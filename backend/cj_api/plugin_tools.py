@@ -1,5 +1,6 @@
 """Shared App-authenticated boundary and metadata-only plugin call counts."""
 
+from contextlib import closing
 from datetime import datetime
 from hashlib import sha256
 import json
@@ -39,9 +40,8 @@ class PluginCalls:
         subject = json.dumps([principal.issuer, principal.subject], separators=(',', ':'))
         owner = sha256(subject.encode()).hexdigest()
         day = self.clock().astimezone(SHANGHAI).date().isoformat()
-        db = sqlite3.connect(self.path)
         try:
-            with db:
+            with closing(sqlite3.connect(self.path)) as db, db:
                 db.execute("""CREATE TABLE IF NOT EXISTS plugin_call (
                     day TEXT NOT NULL, owner TEXT NOT NULL, operation TEXT NOT NULL,
                     used INTEGER NOT NULL, PRIMARY KEY (day, owner, operation))""")
@@ -52,8 +52,6 @@ class PluginCalls:
                     raise PluginError(429, 'quota_exceeded')
         except sqlite3.Error:
             raise PluginError(503, 'unavailable') from None
-        finally:
-            db.close()
 
 
 def _authorize(checker, token, internal):

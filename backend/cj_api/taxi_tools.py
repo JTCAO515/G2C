@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Annotated, Literal
-from urllib.parse import parse_qsl, urlsplit
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
@@ -93,21 +93,11 @@ class EstimateOutput(WireModel):
 
 
 def _public_link(raw, allowed):
-    if type(raw) is not str or not 0 < len(raw) <= 4096:
+    # Until #1309 verifies the real URL grammar, only fixed, reviewed fixture
+    # URLs are approved. Provider-controlled path, query and fragment never pass.
+    if type(raw) is not str or raw not in allowed:
         raise PluginError(502, 'supplier_unavailable')
-    try:
-        raw.encode('ascii')
-        parsed = urlsplit(raw)
-        valid = (all(32 < ord(char) < 127 for char in raw) and '\\' not in raw
-                 and parsed.username is None and parsed.password is None and parsed.port is None
-                 and (parsed.scheme, parsed.hostname) in allowed
-                 and not {key.casefold() for key, _ in parse_qsl(parsed.query, max_num_fields=32)}
-                         & {'key', 'api_key', 'access_token', 'token'})
-    except (UnicodeError, ValueError):
-        valid = False
-    if not valid:
-        raise PluginError(502, 'supplier_unavailable')
-    return dict(url=raw, link_type='https' if parsed.scheme == 'https' else 'app_scheme')
+    return dict(url=raw, link_type='https' if urlsplit(raw).scheme == 'https' else 'app_scheme')
 
 
 class TaxiService:
@@ -141,8 +131,6 @@ class TaxiService:
 
     def link(self, request):
         params = self._points(request, with_names=False)
-        if request.vehicle_category is not None:
-            params['product_category'] = request.vehicle_category
         result = self.provider.call(DiDiTool.LINK, params)
         data = result.get('structuredContent')
         raw = data.get('url') if type(data) is dict else None

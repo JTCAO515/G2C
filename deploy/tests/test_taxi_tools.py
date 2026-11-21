@@ -48,7 +48,7 @@ def app_context(tmp_path):
         assert value.coordinate_system == 'WGS-84'
         return SimpleNamespace(lat='39.901', lng='116.406', name=value.name or '经核对的公共地点')
 
-    taxi = TaxiService(DiDiInformation(transport), resolve, {('https', 'taxi.example.invalid')},
+    taxi = TaxiService(DiDiInformation(transport), resolve, {FIXTURE_LINK},
                        clock=lambda: NOW)
     app = FastAPI()
     register_taxi_routes(app, taxi=taxi, checker=SimpleNamespace(check=check),
@@ -83,7 +83,7 @@ def test_fixture_estimate_and_link_allow_no_identity_fields(app_context):
         ('taxi_estimate', dict(from_lat='39.901', from_lng='116.406', to_lat='39.901', to_lng='116.406',
                                from_name='北京西站', to_name='经核对的公共地点')),
         ('taxi_generate_ride_app_link', dict(from_lat='39.901', from_lng='116.406', to_lat='39.901',
-                                             to_lng='116.406', product_category='1')),
+                                             to_lng='116.406')),
     ]
 
 
@@ -176,9 +176,20 @@ def test_upstream_error_mapping_does_not_echo_provider_message():
 
 @pytest.mark.parametrize('link', ['https://taxi.example.invalid.evil.test/', 'https://x@taxi.example.invalid/',
                                  'https://taxi.example.invalid:443/', 'http://taxi.example.invalid/',
+                                 'https://taxi.example.invalid/route?opaque=private',
+                                 'https://taxi.example.invalid/route#private',
+                                 'https://taxi.example.invalid/route/private',
                                  'https://taxi.example.invalid/?%6bey=fixture'])
 def test_unapproved_provider_link_is_never_forwarded(link):
     from cj_api.taxi_tools import _public_link
 
     with pytest.raises(PluginError, match='^supplier_unavailable$'):
-        _public_link(link, {('https', 'taxi.example.invalid')})
+        _public_link(link, {FIXTURE_LINK})
+
+
+
+def test_counter_open_failure_has_stable_error(tmp_path):
+    calls = PluginCalls(tmp_path / 'missing' / 'counts.sqlite', clock=lambda: NOW)
+    with pytest.raises(PluginError, match='^unavailable$') as raised:
+        calls.reserve(check('internal').principal, ESTIMATE, 50)
+    assert raised.value.status == 503
