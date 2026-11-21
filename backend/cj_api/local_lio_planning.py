@@ -19,6 +19,7 @@ from cj_message.needs_binding import needs_scope_for
 from cj_needs.domain import InvalidInput, decode, exact
 from cj_needs.preview import encode, preview
 from .lio_plan_pace import PlanPace,saved_summary
+from . import lio_itinerary_preview
 from cj_run.postgres import CommitUnknown
 
 from .lio_planning_grounding import (PLAN_REQUEST, PlanningTurn, discussion_reply, grounded_fields,
@@ -138,6 +139,7 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
     if worker.message_context is not None:
         messages = worker.message_context.answer_messages(binding, messages)
     system = answer_prompt(locale, turns[-1].text) + DISCUSSION_PROMPT
+    preview_requested = day_count is not None and planning_window is None and introduction is None
     if day_count is not None:
         day_example = '第1天：参观〈地点〉。' if locale == 'zh' else 'Day 1: Visit <place>.'
         system += (
@@ -160,6 +162,8 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
             system+=' The itinerary has no start date. Use only day numbers and do not invent calendar dates.'
         else:
             system+=' The requested date window, compiled from the original traveler sources, is '+planning_window[0]+' through '+planning_window[1]+'. Use those dates or day numbers only.'
+    if preview_requested:
+        system+=lio_itinerary_preview.FORMAT
     if introduction is not None:
         system+=(' This is a separate read-only trip proposal. Keep the saved itinerary and its locked arrangements unchanged. '
                  'Do not copy old bookings into the new dates or claim a second itinerary has been saved. '
@@ -177,7 +181,10 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
         raise CompleteUnsettledAnswer(present(error.complete_answer)) from error
     try:
         envelope = decode(raw.encode('utf-8'))
-        exact(envelope, ('answer',))
+        if not preview_requested or type(envelope) is not dict or 'answer' not in envelope:
+            exact(envelope, ('answer',))
+        structured = (preview_requested
+                      and envelope.keys() in ({'answer', 'days'}, {'answer', 'days', 'follow_up'}))
         reply = envelope['answer']
         if type(reply) is not str or not reply.strip():
             raise InvalidInput('discussion answer must be nonblank text')
@@ -185,7 +192,12 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
     except (InvalidInput, UnicodeError) as exc:
         _LOGGER.warning('lio_planning_discussion_invalid run_id=%s', binding.run_id)
         raise InvalidDiscussionAnswer('Lio discussion reply unavailable') from exc
-    state = worker._event(binding, state, 'text_delta',present(reply))
+    preview = (lio_itinerary_preview.render(envelope['days'], day_count, envelope.get('follow_up'), locale)
+               if structured else None)
+    shown = present(reply if preview is None else preview[0])
+    state = worker._event(binding, state, 'text_delta', shown)
+    if preview is not None:
+        state = worker._event(binding, state, 'effect_committed', lio_itinerary_preview.effect(shown, preview[1]))
     state = worker._event(binding, state, 'effect_committed', DISCUSSION)
     return worker._event(binding, state, 'completed')
 

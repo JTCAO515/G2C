@@ -28,7 +28,7 @@ def source_c0(*,resource_root=None):
     from cj_api.lio_pipeline_model import SKELETON_SYSTEM,WORDING_SYSTEM
     policy_files = ('backend/agent/cj_agent/provider.py', 'backend/agent/cj_agent/worker.py', 'backend/cj_api/real_services.py',
              'backend/cj_api/local_lio_planning.py', 'backend/cj_api/local_lio_national.py',
-             'backend/cj_api/lio_scene.py',
+             'backend/cj_api/lio_scene.py', 'backend/cj_api/lio_itinerary_preview.py',
              'backend/fact/cj_fact/visitor.py',
              'backend/cj_api/lio_national_intake.py', 'backend/agent/cj_agent/lio_intake_schema.py',
              'backend/agent/cj_agent/lio_intake_current_schema.py',

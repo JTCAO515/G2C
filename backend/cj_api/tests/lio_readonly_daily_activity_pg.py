@@ -28,8 +28,10 @@ from test_lio_planning_flow import flow
 def exercise(auth, conninfo):
     root = auth.parent
     subject = 'm4-synthetic-demo-999999999999'
+    other_subject = 'm4-synthetic-demo-999999999998'
     subjects = frozenset({subject})
-    dev_auth.init(auth, subjects)
+    admitted = frozenset({subject, other_subject})
+    dev_auth.init(auth, admitted)
     scope = scope_for(ISSUER, subject)
     now = int(time.time())
     meter_file = root / 'meter.json'
@@ -38,12 +40,14 @@ def exercise(auth, conninfo):
         max_steps=12, max_tools=4, max_output=60000, max_seconds=600),
         output_limits=dict(model=12000, tool=4000, memory=12000)), history=[])))
     meter = load_run_context(meter_file)
-    local_run_context.provision_budget(conninfo, meter, subject)
-    dev_auth.activate_travel(conninfo, subject, meter, ABI)
+    for person in (subject, other_subject):
+        local_run_context.provision_budget(conninfo, meter, person)
+        dev_auth.activate_travel(conninfo, person, meter, ABI)
     with psycopg.connect(**json.loads(conninfo.read_bytes())) as admin:
-        assert admin.execute("UPDATE cj_message_scope SET demo_invite_digest=%s,"
-                             "demo_invite_expires_at=clock_timestamp()+interval '1 hour',demo_session_floor=0 WHERE scope=%s",
-                             (sha256(b'private-plan-fixture').hexdigest(),scope)).rowcount==1
+        for person in admitted:
+            assert admin.execute("UPDATE cj_message_scope SET demo_invite_digest=%s,"
+                                 "demo_invite_expires_at=clock_timestamp()+interval '1 hour',demo_session_floor=0 WHERE scope=%s",
+                                 (sha256(person.encode()).hexdigest(),scope_for(ISSUER, person))).rowcount==1
     db = LocalDatabase(conninfo, run_context=meter, travel_context=True, needs_context=True, trip_context=True)
     memory = TypedRuntimeConfiguration.from_bytes(encode(dict(version='local-memory-run.2',
         collection=dict(version='local-memory-typed.1', collection=dict(version='local-memory-policy.1',
@@ -67,6 +71,8 @@ def exercise(auth, conninfo):
                'Day 1: Visit the Forbidden City.\nDay 2: Walk the Great Wall.\nDay 3: Tour the Summer Palace.\nWhich day should we adjust?',
                'Day 1: Forbidden City.\nDay 2: Great Wall.\nDay 3: Summer Palace.\nWhich day should we adjust?'),
     }
+    locations = dict(zh=('故宫', '慕田峪长城', '颐和园'),
+                     en=('Forbidden City', 'Great Wall', 'Summer Palace'))
     chosen_reply = None
 
     async def fake_wire(config, raw, guard, observation, *, send_under_fence=None):
@@ -92,12 +98,19 @@ def exercise(auth, conninfo):
             chosen_reply=answer if ('Start every day line with the day label and an explicit activity verb'
                                    in system and example in system) else bare
             value={'answer':chosen_reply}
+            if structured:
+                places = locations[locale]
+                value['days'] = [dict(day_index=i, activities=[dict(place_name=place, verb='visit', period=None)])
+                                 for i, place in enumerate(places, 1)]
+                if structured == 'invalid':
+                    value['days'].pop()
         yield _M4_REQUEST_SENT
         observation['http_status']=200
         frame=dict(id='legacy-plan-fixture-'+str(len(seen)),model=M4_MODEL,choices=[
             dict(index=0,delta=dict(content=json.dumps(value,ensure_ascii=False)),finish_reason='stop')],
             usage=dict(prompt_tokens=100,completion_tokens=100,total_tokens=200))
-        yield ('data: '+json.dumps(frame,ensure_ascii=False)+'\n\ndata: [DONE]\n\n').encode()
+        end = '' if index is None and structured == 'unsettled' else 'data: [DONE]\n\n'
+        yield ('data: '+json.dumps(frame,ensure_ascii=False)+'\n\n'+end).encode()
 
     async def catalog(key, guard, *, send_under_fence=None):
         def admitted():
@@ -112,9 +125,10 @@ def exercise(auth, conninfo):
         raise AssertionError('private fixture attempted an unmocked connection')
 
     app = create_local_app(conninfo_path=None,auth_dir=auth,database=db,run_context=meter,account_admission=True,
-                           demo_dialogue_subjects=subjects,lio_dialogue_subjects=subjects)
+                           demo_dialogue_subjects=admitted,lio_dialogue_subjects=admitted)
     headers = {'Authorization':'Bearer '+dev_auth.token(auth,subject,300),
                'Content-Type':'application/octet-stream'}
+    other_headers = {'Authorization': 'Bearer '+dev_auth.token(auth,other_subject,300)}
 
     def worker():
         return run_worker.run_once(db,model,auth,memory_configuration_for_scope=lambda _:memory,
@@ -126,30 +140,52 @@ def exercise(auth, conninfo):
     with TestClient(app) as api, patch('asyncio.open_connection',new=no_network), patch(
             'cj_agent.provider._m4_wire',new=fake_wire), patch('cj_api.lio_city.catalog_response',new=catalog):
         for locale,(prompt,city,duration_quote,example,answer,bare) in cases.items():
-            mid=str(uuid4())
-            receipt=api.post('/v2/lio/messages',headers=headers,content=encode(dict(
-                version='LIO-message.2',message_id=mid,locale=locale,text=prompt,new_conversation=True)))
-            assert receipt.status_code==200,receipt.status_code
-            cid=receipt.json()['conversation_id']
-            before=len(seen)
-            outcome,=worker()
-            assert outcome.status=='completed'
-            assert seen[before:]==['intake','discussion']
-            page=api.get('/v2/lio/timeline',headers=headers,params={'conversation_id':cid})
-            assert page.status_code==200
-            row,=page.json()['messages']
-            assert (row['message_id'],row['status'],row['trip'],row['memory'])==(mid,'completed',None,None)
-            assert chosen_reply==answer, (locale,'place-only reply did not meet the plan contract')
-            assert row['answer'].endswith(answer)
-            with db.connect(scope) as c:
-                assert c.execute('SELECT acknowledged FROM cj_message_delivery WHERE run_id=%s',
-                                 (outcome.run_id,)).fetchone()==(True,)
-                assert c.execute('SELECT count(*) FROM cj_run_metered_operation WHERE run_id=%s',
-                                 (outcome.run_id,)).fetchone()==(3,)
-                for table in ('cj_trip_record','cj_message_needs_binding','cj_memory_item'):
-                    assert c.execute('SELECT count(*) FROM '+table).fetchone()==(0,)
-            print(f'{locale}: complete day activities, one discussion, no write',flush=True)
-    assert [entry['state'] for entry in budget.inspect()]==['RECEIVED']*6
+            scenarios = (None, 'valid', 'invalid', 'unsettled') if locale == 'en' else (None, 'valid', 'invalid')
+            for structured in scenarios:
+                mid=str(uuid4())
+                receipt=api.post('/v2/lio/messages',headers=headers,content=encode(dict(
+                    version='LIO-message.2',message_id=mid,locale=locale,text=prompt,new_conversation=True)))
+                assert receipt.status_code==200,receipt.status_code
+                cid=receipt.json()['conversation_id']
+                route = '/v2/lio/itinerary-preview'
+                query = dict(conversation_id=cid, message_id=mid)
+                pending = api.get(route, headers=headers, params=query)
+                assert pending.status_code == 200 and pending.json()['preview'] is None
+                before=len(seen)
+                outcome,=worker()
+                assert outcome.status==('unknown' if structured=='unsettled' else 'completed')
+                assert seen[before:]==['intake','discussion']
+                page=api.get('/v2/lio/timeline',headers=headers,params={'conversation_id':cid})
+                assert page.status_code==200
+                row,=page.json()['messages']
+                assert (row['message_id'],row['status'],row['trip'],row['memory'])==(mid,'completed',None,None)
+                assert chosen_reply==answer, (locale,'place-only reply did not meet the plan contract')
+                result = api.get(route, headers=headers, params=query)
+                assert result.status_code == 200, result.status_code
+                assert result.headers['Cache-Control'] == 'no-store'
+                assert api.get(route, params=query).status_code == 401
+                foreign = api.get(route, headers=other_headers, params=query)
+                assert foreign.status_code == 404, foreign.status_code
+                assert api.get(route, headers=headers, params=dict(query, conversation_id='lio-dialogue-'+'0'*32)).status_code==404
+                expected = None
+                if structured == 'valid':
+                    names = locations[locale]
+                    expected = dict(destination=None, days=[dict(day_index=i,
+                        activities=[dict(place_name=name, cancelled=False)]) for i, name in enumerate(names, 1)])
+                    lines = row['answer'].splitlines()[1:]
+                    assert len(lines) == len(names) and all(name in line for name, line in zip(names, lines, strict=True))
+                else:
+                    assert row['answer'].endswith(answer)
+                assert result.json() == dict(version='LIO-itinerary-preview.1', preview=expected, **query)
+                with db.connect(scope) as c:
+                    assert c.execute('SELECT acknowledged FROM cj_message_delivery WHERE run_id=%s',
+                                     (outcome.run_id,)).fetchone()==(True,)
+                    assert c.execute('SELECT count(*) FROM cj_run_metered_operation WHERE run_id=%s',
+                                     (outcome.run_id,)).fetchone()==(3,)
+                    for table in ('cj_trip_record','cj_message_needs_binding','cj_memory_item'):
+                        assert c.execute('SELECT count(*) FROM '+table).fetchone()==(0,)
+                print(f'{locale} {structured or "legacy"}: visible answer, one discussion, no Trip or Memory write',flush=True)
+    assert [entry['state'] for entry in budget.inspect()]==['RECEIVED']*20+['INTENT']
 
 
 if __name__=='__main__':
