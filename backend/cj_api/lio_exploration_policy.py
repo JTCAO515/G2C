@@ -15,7 +15,8 @@ from cj_trip.domain import packed
 from cj_trip.lio_history import TripHead
 
 from .lio_exploration_factors import BY_KEY, FACTORS
-from .lio_edit_selection import _edit_parts, _replacement_label, match_edit
+from .lio_edit_selection import _QUALIFIED_LABEL, _edit_parts, _replacement_label, match_edit
+from .lio_flow_intake import _quoted_data_spans
 from cj_message.lio_context import display_answer
 
 
@@ -158,7 +159,9 @@ _FOOD = re.compile(r'(?:(?:请|能|可以|帮我)\s*)?(?:多加点美食|多安�
                    r'|(?:(?:please|(?:can|could|would) you)\s+)?add more (?:local )?food', re.I)
 _REMOVE = re.compile(r'(?:(?:请)?去掉\s*|(?:(?:please|(?:can|could|would) you)\s+)?remove\s+)(?P<name>.+)', re.I)
 _EXPLICIT_REQUEST = re.compile(r'^(?:请|帮我|能|可以|(?:please|(?:can|could|would) you)\b)',re.I)
-_CONDITIONAL_TARGET = re.compile(r'如果|要是|除非|等我|经我同意|再执行|才执行|\b(?:if|unless|provided|until)\b',re.I)
+_CONDITIONAL_CHANGE = re.compile(
+    r'要是|除非|(?:确认|同意|批准|核实|核对)(?:之后|以后|后|了再)|以后再|晚些再|才执行'
+    r'|\b(?:until|when|once|pending|approv(?:e|es|ed))\b',re.I)
 _QUOTES = {'「': '」', '“': '”', '"': '"', "'": "'"}
 _SUGGESTED = frozenset(('sight', 'meal', 'free_time'))
 ADJUSTMENT_EFFECT = 'lio_rich_adjustment.1:'
@@ -193,12 +196,24 @@ def _unlocked(item):
             and item['source_category'] == 'unknown' and not item['source_refs'])
 
 
+def _literal_name(text):
+    text=text.strip()
+    if (len(text)>2 and _QUOTES.get(text[0])==text[-1]
+            and _quoted_data_spans(text)==((0,len(text)),)):
+        return text[1:-1].strip()
+    return None
+
+
+def _qualified_name(text):
+    return _QUALIFIED_LABEL.search(text) is not None or _CONDITIONAL_CHANGE.search(text) is not None
+
+
 def _named_item(items, label):
-    label = label.strip()
-    if label and _QUOTES.get(label[0]) == label[-1]:
-        label = label[1:-1].strip()
-    elif _CONDITIONAL_TARGET.search(label):
+    label=label.strip()
+    literal=_literal_name(label)
+    if literal is None and _qualified_name(label):
         return None
+    label=label if literal is None else literal
     matches = [item for item in items if item['text'].casefold() == label.casefold()]
     if len(matches) == 1 and _unlocked(matches[0]):
         return matches[0]
@@ -257,6 +272,8 @@ def select_adjustment(trip, text, question_day):
         return None
     replacements = []
     for target, raw in _edit_parts(swap):
+        if _literal_name(raw) is None and _qualified_name(raw):
+            continue
         item = _named_item(items, target)
         label = _replacement_label(raw, national_names=True)
         if item is not None and label is not None and label.casefold() != item['text'].casefold():

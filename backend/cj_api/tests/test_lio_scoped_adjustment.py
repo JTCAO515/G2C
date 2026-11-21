@@ -103,6 +103,19 @@ class ScopedAdjustment(unittest.TestCase):
         self.assertIsNone(select_adjustment(current,'Remove Lunch only if open.',DAY))
         self.assertIsNotNone(select_adjustment(current,'Remove “Lunch only if open”.',DAY))
 
+    def test_pending_approval_in_an_unquoted_name_does_not_issue_scope(self):
+        from cj_api.lio_exploration_policy import select_adjustment
+        for name,command,literal in (
+                ('午餐确认后再改','去掉午餐确认后再改。','去掉「午餐确认后再改」。'),
+                ('Lunch after I approve','Remove Lunch after I approve.','Remove “Lunch after I approve”.')):
+            with self.subTest(command=command):
+                doc=deepcopy(CASES['matched']['content'])
+                doc['items'][0]['text']=name
+                current=Trip('proposed-trip',4,packed(doc))
+                self.assertIsNone(select_adjustment(current,command,DAY))
+                self.assertEqual(select_adjustment(current,literal,DAY).scope.item_id,doc['items'][0]['id'])
+        self.assertIsNone(select_adjustment(trip(),'把「演示地点1 / demonstration stop 1」换成甜品确认后再改。',DAY))
+
     def test_authority_binds_the_exact_message_run_trip_head_and_operation(self):
         from cj_api.lio_exploration_policy import AdjustmentAuthorization, select_adjustment
         binding=Binding('owner','chat','generation','message','run',9)
