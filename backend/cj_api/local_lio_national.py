@@ -38,6 +38,7 @@ _DURATION_QUESTION=re.compile(
     rf'(?:(?P<zh>(?P<zh_number>{NUMBER})[天日])(?:怎么玩|怎么安排)|'
     rf'(?:how (?:should|can) I spend|what (?:can|should) I do (?:in|for))\s+'
     rf'(?P<en>(?P<en_number>{NUMBER})\s+days?))[?？。.!！\s]*',re.I)
+_DURATION_REPLY=re.compile(rf'\s*(?:(?P<zh>{NUMBER})\s*[天日]|(?P<en>{NUMBER})\s+days?)[。.!！\s]*',re.I)
 _LITERAL_ITINERARY=re.compile(
     rf'\s*(?:(?P<zh_city>[\u4e00-\u9fff]+?)\s*(?P<zh_days>{NUMBER})\s*[日天]游|'
     rf"(?:an?\s+)?(?P<en_days>{NUMBER})(?:\s*-\s*|\s+)days?\s+(?:trip|itinerary|visit)\s+(?:to|in)\s+"
@@ -59,6 +60,30 @@ def literal_itinerary(text):
     city=match['zh_city']or match['en_city']
     days=_number(match['zh_days']or match['en_days'])
     return (city,days)if days>0 and known_city_term(city)else None
+
+def _duration_followup_outline(turns,refs,previous,sequence):
+    """Recover a bare duration as read-only data after a completed city question."""
+    if (previous is None or previous.get('status')!='needs_details'
+            or previous.get('authority')not in ('none','plan')
+            or previous.get('authority_barrier_message_id')is not None
+            or not refs or refs[-1].get('sequence')!=sequence-1):
+        return None
+    facts=previous.get('facts',{})
+    if facts.keys()!={'city'}:return None
+    mid=refs[-1]['message_id']
+    if (mid in previous.get('uncompleted_request_message_ids',()) or (
+            mid in previous.get('nonplanning_message_ids',())
+            and mid not in previous.get('read_only_data_message_ids',()))):
+        return None
+    fact=facts['city']
+    if {ref['message_id']for ref in fact['sources']}!={mid}:return None
+    city=known_destination(turns[-2].text)
+    if city is None or destination_query(turns[-2].text,fact['value']['query'])!=city:return None
+    duration=_DURATION_REPLY.fullmatch(turns[-1].text)
+    if duration is None:return None
+    days=_number(duration['zh']or duration['en'])
+    return (city,days)if days>0 else None
+
 
 SOURCE_LANGUAGE=(
     ' Evidence ignores reply styling. Copy city.query and all quotes verbatim from indexed originals; '
@@ -331,12 +356,13 @@ class NationalLioPlanning:
             clarification=self._clarify_bare_destination(worker,binding,state,original.locale,text,previous)
             if clarification is not None:return clarification
             state=self._hold_rejected_context(worker,binding,state)
-            if binding.message_sequence==1:
-                outline=literal_itinerary(text)
-                if outline is not None:
-                    city,days=outline
-                    return self._discuss(worker,binding,state,original.locale,turns,refs,
-                        day_count=days,destination=city)
+            outline=(literal_itinerary(text)if binding.message_sequence==1 else
+                     _duration_followup_outline(turns,refs,previous,binding.message_sequence))
+            if outline is not None and (binding.message_sequence==1 or
+                    not self.plan_and_save.has_saved_itinerary(binding)):
+                city,days=outline
+                return self._discuss(worker,binding,state,original.locale,turns,refs,
+                    day_count=days,destination=city,context_rejected=True)
             return None
         if isinstance(intake,ReadOnlyPlanningQuestion):
             held=publication_held(text)
@@ -557,7 +583,9 @@ class NationalLioPlanning:
                 candidate['level']=='province' and candidate['name']==city.province
                 for candidate in prior_city['candidates'])
             date_boundary=0 if same_target else (source_ids.index(boundary_mid)if boundary_mid is not None else len(turns)-1)
-        elif previous is not None and previous.get('status')=='needs_city':
+        elif previous is not None and (previous.get('status')=='needs_city' or (
+                planning and previous.get('status')=='needs_details' and previous.get('authority')in ('plan','save')
+                and 'city' not in previous.get('facts',{}) and barrier_mid is None)):
             date_boundary=0
         if boundary_mid is not None:date_boundary=max(date_boundary,source_ids.index(boundary_mid))
         if date_boundary:
@@ -627,12 +655,12 @@ class NationalLioPlanning:
             nonplanning_message_ids=[mid],read_only_data_message_ids=[mid]))
         return self._clarify(worker,binding,state,locale,'',[],['duration_days'])
 
-    def _discuss(self,worker,binding,state,locale,turns,refs,**options):
+    def _discuss(self,worker,binding,state,locale,turns,refs,*,context_rejected=False,**options):
         try:
             return discuss(worker,binding,state,locale,turns,refs,**options)
         except InvalidDiscussionAnswer:
             worker.lio_city_context=None
-            self._hold_rejected_context(worker,binding,state)
+            if not context_rejected:self._hold_rejected_context(worker,binding,state)
             return None
 
     def _hold_rejected_context(self,worker,binding,state):

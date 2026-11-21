@@ -650,6 +650,7 @@ class RealTools:
                         release_after_send=discussion_handoff or inputs.get('response_mode')=='lio-memory-json.1',
                         **({'guarded_connect':True} if guarded_connect else {}),
                         **({'unsettled_answer_limit':operation.command.output_limit} if retain_unsettled else {}),
+                        **({'discussion_reply':True} if discussion_handoff else {}),
                         lio_answer=inputs.get('answer_format_profile')=='lio-user.1',
                         **({'structured_profile':inputs['structured_profile']} if 'structured_profile' in inputs else {}),
                         **({'exploration_schema_sha256':inputs['response_format_sha256']} if exploration else {}),

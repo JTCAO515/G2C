@@ -15,6 +15,14 @@ struct LioToolsView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
+                    #if DEBUG
+                    if let service = LioTaxiService.previewFromArguments {
+                        previewTaxi(service)
+                    }
+                    if ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview") {
+                        previewHotels
+                    }
+                    #endif
                     NavigationLink {
                         LioTextTranslationView(language: language, history: history, enabled: enabled, isCurrent: {
                             UIApplication.shared.applicationState != .background && sessionIsCurrent()
@@ -43,6 +51,39 @@ struct LioToolsView: View {
         }
         .tint(LioTheme.vermilion)
     }
+
+    #if DEBUG
+    private func previewTaxi(_ service: LioTaxiService) -> some View {
+        NavigationLink {
+            LioTaxiView(language: language, service: service, tripPlaces: LioTaxiService.previewDestinations,
+                       recentStore: LioTaxiService.previewRecents)
+        } label: {
+            Label(language.text("Taxi", "打车"), systemImage: "car")
+                .foregroundStyle(LioTheme.ink)
+                .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+                .padding(.horizontal, 16)
+                .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("lio.tools.taxi")
+    }
+
+    private var previewHotels: some View {
+        let partial = ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview-partial")
+        return NavigationLink {
+            LioHotelsView(language: language, service: .preview(unapplied: partial ? [.guests] : []),
+                          suggestedArea: LioHotelService.previewArea)
+        } label: {
+            Label(language.text("Hotels", "酒店"), systemImage: "bed.double")
+                .foregroundStyle(LioTheme.ink)
+                .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+                .padding(.horizontal, 16)
+                .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("lio.tools.hotels")
+    }
+    #endif
 }
 
 struct LioTranslationActionStyle: ButtonStyle {

@@ -96,6 +96,46 @@ class PlanningFlow(unittest.TestCase):
                 for day in range(1,4):self.assertIn('第'+str(day)+'天'if locale=='zh'else'Day '+str(day),answer(events))
                 self.assertNotIn('哪天',answer(events));self.assertNotIn('几个人',answer(events))
 
+    def test_r06_rejected_duration_intake_preserves_the_original_city_in_read_only_reply(self):
+        for locale, first, last, city, daily, fallback in (
+                ('zh', '去成都', '三天', '成都', '第3天', '未保存建议'),
+                ('en', 'Go to Chengdu', 'Three days', 'Chengdu', 'Day 3', 'Unsaved suggestion')):
+            with self.subTest(locale=locale):
+                first_wire=flow(first,city=city,days=None,intent='plan',questions=('duration_days',))
+                first_wire.update(planning_request_index=0,needs_tools=False)
+                previous=context(run(first_wire,first,locale=locale)[1])
+                self.assertEqual(previous['status'],'needs_details')
+                for reference in previous['facts']['city']['sources']:reference['message_id']='prior-0'
+                wire=flow(last,city=city,index=1,intent='plan',questions=())
+                wire.update(unknown_fields=['start_date','party_size'],needs_tools=False,
+                            reply='Got it! A relaxed three-day trip to Chengdu.')
+                wire['city'].update(source_index=0,quote=first,normalized_name='成都')
+                # r06: the supplier attached empty locators to two optional unknowns.
+                wire['field_sources']=[dict(field='start_date',quote='',source_index=0),
+                    dict(field='party_size',quote='',source_index=0),
+                    dict(field='duration_days',quote=last,source_index=1)]
+                published,events,lookups,result=run(wire,last,turns=(original(first),original(last)),
+                                                     previous=previous,locale=locale)
+                self.assertIsNotNone(result)
+                self.assertEqual((published,lookups),([],[]))
+                reply=answer(events)
+                self.assertIn(city,reply)
+                self.assertIn(daily,reply)
+                self.assertIn(fallback,reply)
+                self.assertEqual(context(events)['facts'],{})
+                self.assertEqual(context(events)['authority'],'none')
+                self.assertEqual(sum(kind=='discussion_input'for kind,_ in events),1)
+                _,failed_outline,_,ordinary=run(wire,last,turns=(original(first),original(last)),previous=previous,
+                                                 locale=locale,discussion_output='{"answer":null}')
+                self.assertIsNone(ordinary)
+                self.assertEqual(sum(value.startswith('lio_planning_context.1:')for _,value in failed_outline),1)
+                for blocked in (None,dict(previous,status='consult'),
+                                dict(previous,authority_barrier_message_id='prior-0'),
+                                dict(previous,nonplanning_message_ids=['prior-0'],read_only_data_message_ids=[]),
+                                dict(previous,uncompleted_request_message_ids=['prior-0'])):
+                    _,denied,_,_=run(wire,last,turns=(original(first),original(last)),previous=blocked,locale=locale)
+                    self.assertFalse(any(kind=='discussion_input'for kind,_ in denied))
+
     def test_bare_destination_after_fixed_answers_continues_in_the_question_language(self):
         # #994 r08 item 7 (a new single-turn chat): the English bare
         # destination was labelled consult/root=None and fell to a generic
@@ -360,6 +400,202 @@ class PlanningFlow(unittest.TestCase):
                     rejected, _, _, _ = run(clipped_wire, full_text, turns=(original(first), original(full_text)),
                                              previous=previous, locale=locale)
                     self.assertEqual(rejected, [])
+
+    def test_r11_fixed_meetup_keeps_valid_date_clocks_and_unknown_venue(self):
+        for city, days, date_quote, text, quote, label, locale, variants in (
+            ('杭州','三天','明天起',
+             '明天起在杭州待三天，给我排个行程吧。 第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变；酒店名称和位置尚未确定。请给每天的上午、下午安排写出计划时间段，不要声称已有预约。',
+             '第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变；酒店名称和位置尚未确定。请给每天的上午、下午安排写出计划时间段，不要声称已有预约。',
+             '酒店集合','zh',(dict(applies_to=['party']),)),
+            ('Hangzhou','three-day','starting tomorrow',
+             'Could you put together a three-day Hangzhou itinerary starting tomorrow? On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged. The hotel name and location are not known yet. Include planned morning and afternoon time ranges each day, without claiming a booking.',
+             'On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged.',
+             'hotel meetup','en',(dict(start_time='09:00:00',end_time='10:00:00'),
+                 dict(uncertain_fields={'place':'Hotel name and location are not known yet.'}),
+                 dict(unknown_fields=['start_place','end_place','start_timezone']),dict(locked=False))),
+        ):
+            for variation in variants:
+                with self.subTest(locale=locale,variation=variation):
+                    wire=flow(text,city=city,start='2026-11-12',intent='plan',questions=())
+                    wire['city']['quote']=city
+                    wire['field_sources']=[dict(field='duration_days',source_index=0,quote=days),
+                        dict(field='start_date',source_index=0,quote=date_quote)]
+                    fixed=dict(label=label,kind='hotel',quote=quote,source_index=0,detail_refs=[],
+                        applies_to=['self'],locked=True,booking_evidence=None,
+                        start_date='2026-11-12',start_time='09:00',start_timezone=None,start_place=None,
+                        end_date='2026-11-12',end_time='10:00',end_timezone=None,end_place=None,
+                        unknown_fields=[],uncertain_fields={})
+                    wire['fixed_items']=[dict(fixed,**variation)]
+                    published,_,_,_=run(wire,text,locale=locale)
+                    self.assertEqual(len(published),1)
+                    item,=published[0][3].fields['fixed_items']
+                    self.assertEqual(item['applies_to'],['self'])
+                    self.assertEqual(item['locked'],{'state':'known','value':True})
+                    for edge,clock in (('start','09:00'),('end','10:00')):
+                        self.assertEqual(item[edge]['time']['value'],clock)
+                        self.assertNotEqual(item[edge]['place']['state'],'known')
+                    if variation.get('unknown_fields'):
+                        explicit='On day 1 I have a fixed hotel meetup from 9 to 10 a.m. UTC; keep it unchanged.'
+                        original_text=text.replace(quote,explicit)
+                        wire['fixed_items'][0]['quote']=explicit
+                        denied,_,_,_=run(wire,original_text,locale=locale)
+                        self.assertEqual(denied,[])
+
+    def test_r11_local_hotel_venue_absence_does_not_become_a_travel_endpoint(self):
+        text=('Could you put together a three-day Hangzhou itinerary starting tomorrow? On day 1 I have a fixed '
+              'hotel meetup from 9 to 10 a.m.; keep it unchanged. The hotel name and location are not known yet.')
+        note='Hotel name and location are not known yet.'
+        wire=flow(text,city='Hangzhou',start='2026-11-12',intent='plan',questions=())
+        wire['field_sources']=[dict(field='duration_days',source_index=0,quote='three-day')]
+        wire['extra_fields']={edge:dict(date=day,place='Hangzhou',time=clock,timezone='Asia/Shanghai')
+                              for edge,day,clock in (('arrival','2026-11-12','09:00'),
+                                                      ('departure','2026-11-14','18:00'))}
+        wire['extra_unknown_fields']=['arrival.location','departure.location']
+        wire['extra_uncertain_fields']={f'{edge}.location':note for edge in ('arrival','departure')}
+        wire['fixed_items']=[dict(label='hotel meetup',kind='appointment',
+            quote='On day 1 I have a fixed hotel meetup from 9 to 10 a.m.; keep it unchanged.',
+            source_index=0,detail_refs=[],applies_to=['self'],locked=True,booking_evidence=None,
+            start_date='2026-11-12',start_time='09:00',start_timezone=None,start_place='hotel',
+            end_date='2026-11-12',end_time='10:00',end_timezone=None,end_place='hotel',
+            unknown_fields=[],uncertain_fields={'place':note})]
+        published,_,_,_=run(wire,text,locale='en')
+        self.assertEqual(len(published),1)
+        fields=published[0][3].fields
+        self.assertEqual(fields['arrival']['date']['value'],'2026-11-12')
+        self.assertEqual(fields['arrival']['time'],{'state':'missing'})
+        self.assertEqual(fields['departure']['time'],{'state':'missing'})
+        item,=fields['fixed_items']
+        self.assertEqual(item['start']['place'],{'state':'unknown'})
+        self.assertEqual(item['end']['place'],{'state':'unknown'})
+        explicit_leg=text+' My flight arrives at 09:00.'
+        denied,_,_,_=run(wire,explicit_leg,locale='en')
+        self.assertEqual(denied,[])
+
+    def test_r11_shanghai_asks_for_days_despite_redundant_absence_markers(self):
+        text='我明天去上海，帮我规划一下。'
+        wire=flow(text,city='上海',days=None,start='2026-11-12',intent='plan',
+                  reply='你打算在上海玩几天？',questions=('duration_days',))
+        wire['planning_request_index']=0
+        wire['unknown_fields']=['party_size','start_date','party_size']
+        wire['field_sources']=[dict(field='start_date',source_index=0,quote='明天')]
+        published,events,lookups,_=run(wire,text)
+        self.assertIn('几天',answer(events))
+        self.assertEqual((published,lookups),([],[]))
+
+    def test_r11_chongqing_city_answer_completes_the_earlier_plan(self):
+        for locale,first,duration,prefix,city,meetup,label,participant in (
+            ('zh','帮我安排三天，从明天开始。','三天','去重庆。','重庆',
+             '第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变；','酒店集合','party'),
+            ('en','Plan three days starting tomorrow.','three days','Chongqing, China.','Chongqing',
+             'On day 1 I have a fixed hotel meetup from 9 to 10 a.m.','hotel meetup','self'),
+        ):
+            with self.subTest(locale=locale):
+                initial=flow(first,city=None,intent='plan',questions=('city',))
+                initial['planning_request_index']=0
+                initial['unknown_fields']=['start_date','party_size']
+                previous=context(run(initial,first,locale=locale)[1])
+                for fact in previous['facts'].values():
+                    for reference in fact['sources']:reference['message_id']='prior-0'
+                continuation=('酒店名称和位置尚未确定。请给每天的上午、下午安排写出计划时间段，不要声称已有预约。'
+                    if locale=='zh' else '; keep it unchanged. The hotel name and location are not known yet.')
+                text=prefix+' '+meetup+continuation
+                wire=flow(text,city=city if locale=='zh'else None,start='2026-11-12',
+                          index=1,intent='plan',questions=())
+                if wire['city']:wire['city']['quote']=prefix
+                wire['field_sources']=[dict(field='duration_days',source_index=0,quote=duration)]
+                wire['planning_request_index']=1 if locale=='zh' else 0
+                details=[dict(source_index=1,quote='酒店名称和位置尚未确定。')]if locale=='zh'else []
+                wire['fixed_items']=[dict(label=label,kind='hotel',quote=meetup,source_index=1,detail_refs=details,
+                    applies_to=[participant],locked=locale=='zh',booking_evidence=None,
+                    start_date='2026-11-12',start_time='09:00',start_timezone=None,start_place=None,
+                    end_date='2026-11-12',end_time='10:00',end_timezone=None,end_place=None,
+                    unknown_fields=[],uncertain_fields={})]
+                resolution=dict(status='resolved',candidates=[dict(adcode='500000',name='重庆市',province='重庆市',
+                    parent_city=None,level='province',timezone='Asia/Shanghai')],requested_name=city,source={})
+                published,events,_,_=run(wire,text,turns=(original(first),original(text)),previous=previous,
+                    locale=locale,resolution=resolution)
+                self.assertEqual(len(published),1,answer(events))
+                trip=published[0][3]
+                self.assertEqual(trip.city,'重庆市')
+                self.assertEqual(trip.fields['departure']['date']['value'],'2026-11-14')
+                self.assertEqual(trip.fields['fixed_items'][0]['locked'],{'state':'known','value':True})
+                self.assertEqual(published[0][-1],locale)
+
+    def test_chongqing_city_reply_does_not_adopt_unrelated_dates(self):
+        for locale, first, duration, text, city in (
+            ('zh', '帮我安排三天。我朋友明天到家。', '三天', '去重庆。', '重庆'),
+            ('zh', '帮我安排三天。明天我在家乡看牙。', '三天', '去重庆。', '重庆'),
+            ('zh', '帮我安排三天，我朋友从明天开始工作。', '三天', '去重庆。', '重庆'),
+            ('zh', '帮我安排三天，从明天开始。明天是我朋友的出发日。', '三天', '去重庆。', '重庆'),
+            ('en', 'Plan three days. My friend arrives tomorrow.', 'three days', 'Chongqing, China.', 'Chongqing'),
+            ('en', 'Plan three days. I have a dental appointment tomorrow.', 'three days', 'Chongqing, China.', 'Chongqing'),
+            ('en', 'Plan three days. My friend is starting tomorrow.', 'three days', 'Chongqing, China.', 'Chongqing'),
+            ('en', "Plan three days starting tomorrow but that is my friend's trip.",
+             'three days', 'Chongqing, China.', 'Chongqing'),
+        ):
+            with self.subTest(first=first):
+                initial = flow(first, city=None, intent='plan', questions=('city',))
+                initial['planning_request_index'] = 0
+                initial['field_sources'] = [dict(field='duration_days', source_index=0, quote=duration)]
+                previous = context(run(initial, first, locale=locale)[1])
+                self.assertEqual(previous['authority'], 'plan')
+                for fact in previous['facts'].values():
+                    for reference in fact['sources']:
+                        reference['message_id'] = 'prior-0'
+                wire = flow(text, city=city, start='2026-11-12', index=1, intent='plan', questions=())
+                wire['planning_request_index'] = 0
+                wire['field_sources'] = [dict(field='duration_days', source_index=0, quote=duration)]
+                published, _, _, _ = run(wire, text, turns=(original(first), original(text)),
+                                         previous=previous, locale=locale)
+                self.assertEqual(len(published), 0)
+
+    def test_chongqing_does_not_restore_start_over_a_later_date_change(self):
+        for locale, first, duration, old_date, city, change, refusal in (
+            ('zh', '帮我安排三天，从明天开始。', '三天', '从明天开始', '重庆',
+             '去重庆。出发日改成2026-11-20。', '去重庆。原来的出发日取消。'),
+            ('en', 'Plan three days starting tomorrow.', 'three days', 'starting tomorrow', 'Chongqing',
+             'Chongqing, China. Actually, start on 2026-11-20 instead.',
+             'Chongqing, China. Leave the start date undecided.'),
+        ):
+            initial = flow(first, city=None, intent='plan', questions=('city',))
+            initial['planning_request_index'] = 0
+            initial['field_sources'] = [dict(field='duration_days', source_index=0, quote=duration)]
+            previous = context(run(initial, first, locale=locale)[1])
+            for fact in previous['facts'].values():
+                for reference in fact['sources']:
+                    reference['message_id'] = 'prior-0'
+            for text in (change, refusal):
+                for locator in (None, old_date):
+                    with self.subTest(text=text, locator=locator):
+                        wire = flow(text, city=city, start='2026-11-12', index=1, intent='plan', questions=())
+                        wire['planning_request_index'] = 0
+                        wire['field_sources'] = [dict(field='duration_days', source_index=0, quote=duration)]
+                        if locator is not None:
+                            wire['field_sources'].append(dict(field='start_date', source_index=0, quote=locator))
+                        published, _, _, _ = run(wire, text, turns=(original(first), original(text)),
+                                                 previous=previous, locale=locale)
+                        self.assertEqual(len(published), 0)
+            confirmed = ('去重庆。从2026-11-20开始。' if locale == 'zh'
+                         else 'Chongqing, China. Start my trip on 2026-11-20.')
+            current = flow(confirmed, city=city, start='2026-11-20', index=1, intent='plan', questions=())
+            current['planning_request_index'] = 0
+            current['field_sources'] = [dict(field='duration_days', source_index=0, quote=duration),
+                                        dict(field='start_date', source_index=1, quote='2026-11-20')]
+            published, _, _, _ = run(current, confirmed, turns=(original(first), original(confirmed)),
+                                     previous=previous, locale=locale)
+            self.assertEqual(len(published), 1)
+            self.assertEqual(published[0][3].fields['arrival']['date']['value'], '2026-11-20')
+
+    def test_first_request_does_not_adopt_another_tasks_explicit_start_phrase(self):
+        for locale, city, days, text in (
+            ('zh', '杭州', '三天', '帮我规划杭州三天。我的牙科治疗从明天开始。'),
+            ('en', 'Hangzhou', 'three-day', 'Plan a three-day Hangzhou itinerary. My friend is starting tomorrow.'),
+        ):
+            with self.subTest(locale=locale):
+                wire = flow(text, city=city, start='2026-11-12', intent='plan', questions=())
+                wire['field_sources'] = [dict(field='duration_days', source_index=0, quote=days)]
+                published, _, _, _ = run(wire, text, locale=locale)
+                self.assertEqual(len(published), 0)
 
     def test_date_answer_finishes_plan_without_party_question(self):
         first='去成都玩三天';second='从2026-11-20开始'

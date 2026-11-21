@@ -3,9 +3,13 @@ from copy import deepcopy
 import json
 from pathlib import Path
 import sys
+from types import SimpleNamespace
 import unittest
 
 from jsonschema import Draft202012Validator,ValidationError
+from cj_api.lio_trip_routes import _history
+from cj_trip.domain import Conflict,Trip,packed
+from cj_trip.lio_history import TripHead
 ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT))
 from contracts.message.check_lio_trip_history_v4 import SCHEMA,validate
@@ -25,6 +29,36 @@ def fixture():
 
 
 class HistoryContract(unittest.TestCase):
+    def test_rich_history_projects_original_mixed_versions_and_immediate_restore_target(self):
+        contracts=ROOT/'contracts/trip'
+        old=json.loads((contracts/'structured-examples.3.json').read_bytes())['base']
+        rich=json.loads((contracts/'structured-examples.4.json').read_bytes())['cases']['dated']['content']
+        prior=Trip('shared-trip',1,packed(old))
+        current=Trip('shared-trip',2,packed(rich))
+        head=TripHead.from_trip(current)
+        conversation='lio-dialogue-'+'a'*32
+
+        def revisions(trip_id,*,before=None):
+            self.assertEqual(trip_id,current.trip_id)
+            return (current,prior) if before is None else (prior,) if before==2 else ()
+
+        context=SimpleNamespace(
+            metadata=SimpleNamespace(principal=SimpleNamespace(issuer='local',subject='owner')),
+            lio_current_trip=lambda *_:head,lio_revisions=revisions,
+        )
+        snapshot=json.loads(_history(context,None,conversation,rich=True))
+        validate(snapshot)
+        self.assertEqual(snapshot['current']['content_sha256'],head.content_sha256)
+        self.assertEqual(snapshot['history'][0]['version'],'LIO-trip-card.2')
+        self.assertEqual(snapshot['undo_target']['restore_hash'],TripHead.from_trip(prior).content_sha256)
+        self.assertEqual(snapshot['undo_target']['restore_version'],1)
+        older=json.loads(_history(context,2,conversation,rich=True))
+        validate(older)
+        self.assertEqual(older['history'],snapshot['history'])
+        self.assertIsNone(older['undo_target'])
+        context.lio_revisions=lambda *_:(current,)
+        with self.assertRaises(Conflict):_history(context,None,conversation,rich=True)
+
     def test_additive_schema_and_mixed_original_content_preserve_exact_identity(self):
         Draft202012Validator.check_schema(SCHEMA)
         value=fixture();before=deepcopy(value)

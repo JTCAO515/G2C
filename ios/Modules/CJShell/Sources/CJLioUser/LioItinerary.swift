@@ -16,17 +16,20 @@ struct LioItinerary: Equatable, Identifiable, Sendable {
         let name: String
         let time: String?
         let point: Point?
+        let taxiDestination: LioTaxiPlace?
         let fixed: Bool?
         let endTime: String?
         let endDate: String?
         let endDayNumber: Int?
 
         init(id: String, name: String, time: String?, point: Point?, fixed: Bool?,
-             endTime: String? = nil, endDate: String? = nil, endDayNumber: Int? = nil) {
+             endTime: String? = nil, endDate: String? = nil, endDayNumber: Int? = nil,
+             taxiDestination: LioTaxiPlace? = nil) {
             self.id = id
             self.name = name
             self.time = time
             self.point = point
+            self.taxiDestination = taxiDestination
             self.fixed = fixed
             self.endTime = endTime
             self.endDate = endDate
@@ -87,6 +90,13 @@ struct LioItinerary: Equatable, Identifiable, Sendable {
             return language.text("I planned a \(count)-day trip with the dates left open.", "我先安排了 \(count) 天行程，日期可以之后再定。")
         }
         return language.text("I planned a \(count)-day trip and left some dates open.", "我安排了 \(count) 天行程，有些日期可以之后再定。")
+    }
+}
+
+extension LioItinerary.Point {
+    init(marker: PlaceCoordinateV1) {
+        self.init(latitude: NSDecimalNumber(decimal: marker.latitude.value).doubleValue,
+                  longitude: NSDecimalNumber(decimal: marker.longitude.value).doubleValue)
     }
 }
 
@@ -182,15 +192,13 @@ extension LioItinerary {
         for item in document.items {
             let startDate = item.start.date.lioValue
             let endDate = item.end.date.lioValue
-            let coordinate = places.first { item.sourceReferences.contains($0.id) }?.markerCoordinate
-            let point = coordinate.map {
-                Point(latitude: NSDecimalNumber(decimal: $0.latitude.value).doubleValue,
-                      longitude: NSDecimalNumber(decimal: $0.longitude.value).doubleValue)
-            }
+            let place = places.first { item.sourceReferences.contains($0.id) }
+            let point = place?.markerCoordinate.map(Point.init(marker:))
             stopsByDate[startDate, default: []].append(
                 Stop(id: item.id, name: item.text, time: item.start.time.lioValue,
                      point: point, fixed: item.fixed.lioValue, endTime: item.end.time.lioValue,
-                     endDate: endDate == startDate ? nil : endDate)
+                     endDate: endDate == startDate ? nil : endDate,
+                     taxiDestination: place.flatMap(LioTaxiPlace.init(tripPlace:)))
             )
         }
         var dates: [String?] = stopsByDate.keys.compactMap { $0 }.sorted().map(Optional.some)
@@ -214,14 +222,14 @@ extension LioItinerary {
                       days: document.days.map { day in
                 Day(number: day.index, stops: document.items.filter { $0.startDayIndex == day.index }.map { entry in
                     let item = entry.value
-                    let coordinate = places.first { item.sourceReferences.contains($0.id) }?.markerCoordinate
-                    let point = coordinate.map { Point(latitude: NSDecimalNumber(decimal: $0.latitude.value).doubleValue,
-                                                       longitude: NSDecimalNumber(decimal: $0.longitude.value).doubleValue) }
+                    let place = places.first { item.sourceReferences.contains($0.id) }
+                    let point = place?.markerCoordinate.map(Point.init(marker:))
                     let endingDate = document.days[entry.endDayIndex - 1].date
                     return Stop(id: item.id, name: item.text, time: item.start.time.lioValue, point: point,
                                 fixed: item.fixed.lioValue, endTime: item.end.time.lioValue,
                                 endDate: endingDate == day.date ? nil : endingDate,
-                                endDayNumber: calendar == .undated && entry.endDayIndex != day.index ? entry.endDayIndex : nil)
+                                endDayNumber: calendar == .undated && entry.endDayIndex != day.index ? entry.endDayIndex : nil,
+                                taxiDestination: place.flatMap(LioTaxiPlace.init(tripPlace:)))
                 }, date: day.date)
             }, calendar: calendar)
         }

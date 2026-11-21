@@ -9,9 +9,23 @@ from cj_agent.lio_intake_optional_schema import OptionalIntake
 from cj_agent.lio_intake_flat_schema import DTO,City
 from cj_needs.domain import InvalidInput,decode
 from .lio_sourced_intake import parse_sourced,BookingSourceUnclear
-from .lio_positive_trip import destination_query
+from .lio_positive_trip import destination_query,known_city_term
+from .lio_planning_grounding import NUMBER,OPEN_PLAN
+from .lio_national_intake import ZONE_LITERAL,_clock_zone_marker
 
 CORE=('start_date','duration_days','party_size')
+_CHONGQING_CITY_ANSWER=re.compile(r'^\s*(?:去)?(?P<city>重庆|Chongqing)(?:,\s*China)?[。.!！]',re.I)
+_UNKNOWN_HOTEL_SITE=re.compile(r'酒店名称和位置尚未确定[。！]?|(?:the )?hotel name and location are (?:not known yet|unknown)\.?',re.I)
+_SAME_MEETUP_LOCK=re.compile(r';\s*keep it unchanged(?:[.!](?=\s|$)|\s*\Z)',re.I)
+_EXPLICIT_START_TOMORROW=re.compile(r'(?:从明天开始|明天起|\b(?:starting|start|from) tomorrow)\Z',re.I)
+_SHORT_PLAN=re.compile(
+    rf'(?:(?:请|麻烦)?(?:帮|给|为)(?:我们|我))?\s*(?:规划|安排)\s*(?:{NUMBER})\s*天'
+    rf'|(?:(?:could|can|would) you\s+|please\s+)?(?:help (?:me|us) (?:to )?)?plan\s+(?:{NUMBER})\s+days?',re.I)
+_DATE_REVISION=re.compile(
+    r'日期|改期|改天|改[成为到]|出发|启程|起程|到达|抵达|返程|提前|推迟|延期|另选|换一天|取消|之前那天|原来那天'
+    r'|\b(?:actually|instead|dates?|start(?:ing)?|depart\w*|arriv\w*|reschedul\w*|'
+    r'postpon\w*|delay\w*|earlier|later|(?:previous|old) (?:day|time))\b',re.I)
+_TRAVEL_ENDPOINT=re.compile(r'到达|抵达|起飞|落地|返程|\b(?:arriv\w*|depart\w*|flight|train|land(?:s|ing|ed)?)\b',re.I)
 _META_REQUEST=re.compile(r'^\s*(?:(?:请帮我|请|帮我)?(?:(?:把|将)[^。！？!?\n]{0,40})?(?:翻译|复述|改写|引用)|'
     r'(?:(?:can|could|would) you\s+)?(?:please\s+)?(?:help(?: (?:me|us))?(?: to)?\s+)?'
     r'(?:translate|rephrase|paraphrase|repeat|quote)\b|how (?:do|would) (?:you|I) say\b|'
@@ -216,6 +230,99 @@ def _fact_snapshot(data,source_ids,blocked=()):
     return snapshot
 
 
+def _date_reopened(text):
+    return DATE_EVIDENCE.search(text) is not None or _DATE_REVISION.search(text) is not None
+
+
+def _require_current_city_continuation_dates(intake, previous, turns):
+    if (previous is None or intake.city is None or intake.intent not in ('plan','save')
+            or previous.get('status') not in ('needs_city','needs_details')
+            or previous.get('authority') not in ('plan','save') or 'city' in previous.get('facts',{})):
+        return
+    latest=max((index for index,turn in enumerate(turns)if _date_reopened(turn.text)),default=0)
+    for field in ('start_date','arrival.date','departure.date'):
+        sources=intake.sources.get(field,())
+        if sources and all(ref['source_index']<latest for ref in sources):
+            raise InvalidInput('trip date source precedes the latest original date instruction')
+
+
+def _explicit_trip_start_quote(text, city=None):
+    # Restore only a start phrase attached to the original planning request.
+    # A date elsewhere in the message cannot source this trip's start.
+    boundary=_SOURCE_BREAK.search(text)
+    first_clause=text.strip()
+    if boundary is not None:
+        rest=text[boundary.end():].strip()
+        if boundary[0].isalpha()or (city is None and rest)or _date_reopened(rest):return None
+        first_clause=text[:boundary.start()].strip()
+    start=_EXPLICIT_START_TOMORROW.search(first_clause)
+    if start is None or text.count(start[0])!=1:return None
+    request=first_clause[:start.start()].rstrip(' ,，')
+    if city is not None and known_city_term(city):
+        request=re.sub(r'\b'+re.escape(city)+r'\s+(?=(?:trip|itinerary|visit)\Z)', '',request,flags=re.I)
+    if OPEN_PLAN.fullmatch(request)or _SHORT_PLAN.fullmatch(request):return start[0]
+    return None
+
+
+def _normalize_optional_fixed_items(items,turns):
+    original_zone=any(ZONE_LITERAL.search(turn.text)or _clock_zone_marker(turn.text)for turn in turns)
+    for item in items:
+        for edge in ('start','end'):
+            path=edge+'_time'
+            value=item[path]
+            if value is not None and re.fullmatch(r'[0-9]{2}:[0-9]{2}:00',value):
+                item[path]=value[:5]
+        unknown=item['unknown_fields']
+        uncertain=item['uncertain_fields']
+        if item['source_index']>=len(turns):continue
+        text=turns[item['source_index']].text
+        hotel=item['kind']=='hotel' or re.fullmatch(r'hotel meetup|酒店集合',item['label'],re.I)
+        if hotel and not original_zone:
+            for path in ('start_timezone','end_timezone'):
+                if item[path] is None and unknown.count(path)<=1 and uncertain.get(path)in (
+                        None,'timezone not stated in original message'):
+                    if path in unknown:unknown.remove(path)
+                    uncertain.pop(path,None)
+        note=uncertain.get('place')
+        paths=('start_place','end_place')
+        if (hotel and note and _UNKNOWN_HOTEL_SITE.fullmatch(note)
+                and note.casefold()in text.casefold()
+                and all((item[path] is None or item[path].casefold()in ('hotel','the hotel','酒店'))
+                        and path not in unknown and path not in uncertain for path in paths)):
+            del uncertain['place']
+            unknown.extend(paths)
+            for path in paths:item[path]=None
+        if hotel and all(item[path] is None for path in paths):
+            # A standalone missing hotel name carries no values to bind to
+            # the fixed clock or reservation.
+            item['detail_refs']=[ref for ref in item['detail_refs']if not (
+                ref['source_index']==item['source_index'] and ref['quote'] in text
+                and _UNKNOWN_HOTEL_SITE.fullmatch(ref['quote']))]
+        quote=item['quote']
+        if (hotel and item['locked'] is False and 'locked' not in unknown and 'locked' not in uncertain
+                and text.count(quote)==1):
+            inside=_SAME_MEETUP_LOCK.search(quote)
+            ending=_SAME_MEETUP_LOCK.match(text,text.index(quote)+len(quote))
+            if ending or inside and inside.end()==len(quote):
+                if ending:item['quote']+=ending[0]
+                item['locked']=True
+
+
+def _drop_unsourced_hotel_endpoint_aliases(data,turns):
+    if not data['fixed_items'] or any(_TRAVEL_ENDPOINT.search(turn.text) for turn in turns):return
+    for edge in ('arrival','departure'):
+        key=edge+'.location'
+        note=data['extra_uncertain_fields'].get(key)
+        if (edge in data['extra_fields'] and data['extra_unknown_fields'].count(key)==1
+                and note and _UNKNOWN_HOTEL_SITE.fullmatch(note)
+                and any(note.casefold()in turn.text.casefold()for turn in turns)
+                and not any(ref['field'].startswith(edge+'.')for ref in data['field_sources'])
+                and not any(path.startswith(edge+'.') and path!=key
+                            for path in (*data['extra_uncertain_fields'],*data['extra_unknown_fields']))):
+            del data['extra_fields'][edge],data['extra_uncertain_fields'][key]
+            data['extra_unknown_fields'].remove(key)
+
+
 def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_offset=0,read_only=None):
     value=decode(raw.encode() if type(raw)is str else raw)
     rebound=rebind_sources(value,turns,memory_offset=memory_offset)
@@ -244,18 +351,49 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_off
         # Retain UNKNOWN without copying the model's redundant note into NEEDS.
         # A value, source, previous known count or any other duplicate still
         # goes through the original observation validation.
+        unknown=data['unknown_fields']
         party_note=data['uncertain_fields'].get('party_size')
-        if (data['party_size'] is None and data['unknown_fields'].count('party_size')==1
-                and party_note and party_note.strip() and len(party_note.encode())<=4096
-                and 'party_size' not in saved
+        if (data['party_size'] is None and 'party_size'in unknown and 'party_size' not in saved
                 and not any(ref['field']=='party_size' for ref in data['field_sources'])):
-            del data['uncertain_fields']['party_size']
+            if data['duration_days'] is None and questions==['duration_days']:
+                while unknown.count('party_size')>1:unknown.remove('party_size')
+            if unknown.count('party_size')==1 and party_note and party_note.strip()and len(party_note.encode())<=4096:
+                del data['uncertain_fields']['party_size']
+        # A clarification may carry a sourced date alongside a redundant
+        # absence marker. The date still goes through the original validator.
+        if (data['duration_days'] is None and questions==['duration_days'] and data['start_date'] is not None
+                and unknown.count('start_date')==1 and any(ref['field']=='start_date'for ref in data['field_sources'])):
+            unknown.remove('start_date')
+        _normalize_optional_fixed_items(data['fixed_items'],turns)
+        _drop_unsourced_hotel_endpoint_aliases(data,turns)
+        if (previous is None and request_index==0 and intent=='plan' and data['start_date'] is not None
+                and not any(ref['field']=='start_date'for ref in data['field_sources'])):
+            city=data['city']
+            quote=_explicit_trip_start_quote(turns[0].text,city['query']if city is not None else None)
+            if quote is not None:
+                data['field_sources'].append(dict(field='start_date',source_index=0,quote=quote))
         # Historical snapshots may predate the task-scope filter. Reuse only
         # affirmative source spans; returning an unchanged cache must not keep
         # translated facts alive after the execution projection withheld them.
         saved={field:fact for field,fact in saved.items()if not any(
             ref['message_id']in source_ids and _nonplanning_fact_source(
                 turns[source_ids.index(ref['message_id'])].text,ref['quote'])for ref in fact['sources'])}
+        duration=saved.get('duration_days')
+        city_answer=_CHONGQING_CITY_ANSWER.match(turns[-1].text)
+        if (city_answer and previous is not None and previous.get('status') in ('needs_city','needs_details')
+                and previous.get('authority') in ('plan','save') and intent=='plan' and 'city' not in saved
+                and duration is not None and duration['value']==data['duration_days']):
+            name=city_answer['city']
+            if data['city'] is None:
+                data['city']=dict(query=name,normalized_name=None,province=None,source_index=len(turns)-1,quote=name)
+            if data['start_date'] is not None and not any(ref['field']=='start_date'for ref in data['field_sources']):
+                source_indexes={source_ids.index(ref['message_id'])for ref in duration['sources']
+                                if ref['message_id']in source_ids[:-1]}
+                if len(source_indexes)==1:
+                    source_index=source_indexes.pop()
+                    quote=_explicit_trip_start_quote(turns[source_index].text)
+                    if quote is not None:
+                        data['field_sources'].append(dict(field='start_date',source_index=source_index,quote=quote))
     city=data['city'];old_city=saved.get('city')
     same_city=(city is None or old_city is None or
         city['query'].casefold()==old_city['value']['query'].casefold()and
@@ -281,6 +419,7 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_off
         error.control=replace(error.control,intent=intent,publication_hold=hold is not None,planning_request_index=request_index)
         raise
     intake=replace(intake,intent=intent,publication_hold=hold is not None,planning_request_index=request_index)
+    _require_current_city_continuation_dates(intake,previous,turns)
     if schema is OptionalIntake and intent=='plan'and request_index is None:
         # This null-root variant only reaches the DATA-only question after the
         # complete DTO and original source/compiler checks above have passed.

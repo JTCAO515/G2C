@@ -10,6 +10,7 @@ from cj_message.domain import InvalidInput,Unavailable
 from cj_run.core import Binding
 from pydantic import BaseModel,ConfigDict,Field,ValidationError
 from cj_needs.domain import decode,InvalidInput as InvalidProfileInput
+from cj_trip.domain import Conflict as TripConflict,Denied as TripDenied
 
 from .lio_dialogue_routes import _failure,_json,_query,_message
 from .message_routes import BodyError,_read_body,_token,message_failure
@@ -129,6 +130,20 @@ def timeline(boundary,resolve_runs,trip_cards,memory_cards,profile_cards,token,c
     return boundary.with_history_context(token,read)
 
 
+def _trip_history(boundary,trip_cards,token,cid,before):
+    from .lio_trip_routes import _history
+    if not trip_cards.rich:raise Unavailable('explicit rich itinerary reader required')
+
+    def read(context):
+        def project():
+            if context.lio_exploration_timeline(cid,None).conversation_id!=cid:
+                raise InvalidInput('original conversation required')
+            raw=trip_cards.boundary.with_operation(token,lambda trip_context:_history(trip_context,before,cid,rich=True))
+            return json.loads(raw)
+        return context.with_lio_timeline_projection(project)
+    return boundary.with_history_context(token,read)
+
+
 def register_lio_exploration_routes(app,boundary,resolve_runs,trip_cards,profile_cards,*,prepare_scope,memory_cards=None):
     @app.post('/v4/lio/messages')
     async def send(request:Request):
@@ -171,5 +186,26 @@ def register_lio_exploration_routes(app,boundary,resolve_runs,trip_cards,profile
         except (ValueError,UnicodeError):return _failure(400)
         try:
             value=await run_in_threadpool(timeline,boundary,resolve_runs,trip_cards,memory_cards,profile_cards,token,cid,before)
+        except Exception as error:return _failure(message_failure(request,error,False).status_code)
+        return _json(value)
+
+    @app.get('/v4/lio/trip')
+    async def trip_history(request:Request):
+        token=_token(request)
+        if token is None:return _failure(401)
+        try:
+            params=_query(request,('conversation_id',),('before',))
+            cid=params['conversation_id']
+            if not LIO_CHAT_PATTERN.fullmatch(cid):raise InvalidInput('conversation required')
+            raw_before=params.get('before')
+            before=None
+            if raw_before is not None:
+                if not re.fullmatch(r'[1-9][0-9]{0,18}',raw_before):raise InvalidInput('invalid history cursor')
+                before=int(raw_before)
+                if before>=2**63:raise InvalidInput('invalid history cursor')
+        except (ValueError,UnicodeError):return _failure(400)
+        try:value=await run_in_threadpool(_trip_history,boundary,trip_cards,token,cid,before)
+        except TripConflict:return _failure(409)
+        except TripDenied:return _failure(403)
         except Exception as error:return _failure(message_failure(request,error,False).status_code)
         return _json(value)
