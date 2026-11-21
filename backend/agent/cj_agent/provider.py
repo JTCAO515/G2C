@@ -477,7 +477,7 @@ class MeteredDashScopeProvider:
     def invoke(self,messages,system,attempt,*,tools=None,receipt,guard,native_reply=None,tool_choice=None,
                native_turn_profile=None,final_answer=False,release_after_send=False,lio_answer=False,structured_profile=None,intake_source_index=None,wire_observer=None,
                draft_profile=None,draft_schema_sha256=None,exploration_schema_sha256=None,
-               unsettled_answer_limit=None,guarded_connect=False):
+               unsettled_answer_limit=None,guarded_connect=False,discussion_reply=False):
         from cj_usage.authorization_budget import canonical
         native_tools=tools or []
         buffered=native_turn_profile==M4_NATIVE_TURN_BUFFERED
@@ -754,7 +754,15 @@ class MeteredDashScopeProvider:
                             else:
                                 envelope=json.loads(original,
                                     object_pairs_hook=reject_duplicates(ValueError,'duplicate_answer_field'))
-                                candidate=envelope['answer'] if type(envelope) is dict and envelope.keys()=={'answer'} else None
+                                if type(envelope) is dict:
+                                    fields=envelope.keys()
+                                    if (fields=={'answer'} or discussion_reply and fields in (
+                                            {'answer','days'},{'answer','days','follow_up'})):
+                                        candidate=envelope['answer']
+                                    else:
+                                        candidate=None
+                                else:
+                                    candidate=None
                             if type(candidate) is str and candidate.strip():
                                 if self.config.api_key in candidate:
                                     raise ProviderUnknown('M4 structured model secret echo rejected')

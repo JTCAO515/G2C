@@ -13,6 +13,7 @@ from cj_message.lio_plan_needs import BOUND_EFFECT, EDIT_BOUND_EFFECT
 from cj_run.core import Binding
 from cj_run.display_snapshot import SnapshotTooLarge
 
+from .local_lio_planning import ITINERARY_PREVIEW_VERSION,read_itinerary_preview
 from .lio_weather import CITY_EFFECT,reference as city_weather_reference
 from .history_routes import _query
 from .message_routes import BodyError, _read_body, _token, message_failure
@@ -140,6 +141,29 @@ def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversat
     return boundary.with_history_context(token, project)
 
 
+def _itinerary_preview(boundary, resolve_runs, token, conversation_id, mid):
+    def read(context):
+        original = context.query_lio_message(mid)
+        if original is None or original.receipt.conversation_id != conversation_id:
+            return _failure(404)
+        receipt = original.receipt
+        binding = Binding(context.scope, conversation_id, receipt.generation, mid, receipt.run_id, receipt.sequence)
+        (state, expired), = resolve_runs(context.scope).lio_timeline([binding])
+        text = json.loads(original.raw)['text']
+        locale = answer_locale(text, 'en')
+        preview = (read_itinerary_preview(state, locale)
+                   if not expired and self_description(text, locale) is None else None)
+        current = context.query_lio_receipt(mid)
+        if current is None or (current.conversation_id, current.run_id) != (conversation_id, receipt.run_id):
+            return _failure(503)
+        if current.requires_exploration or current.requires_new_lio:
+            return _failure(400)
+        return _json(dict(version=ITINERARY_PREVIEW_VERSION, conversation_id=conversation_id,
+                          message_id=mid, preview=preview))
+
+    return boundary.with_history_context(token, read)
+
+
 def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, prepare_scope, memory_cards=None,calendar_cards=None,calendar_boundary=None):
     async def send(request, version, receipt_version):
         token = _token(request)
@@ -239,3 +263,21 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
     @app.get('/v2/lio/timeline')
     async def timeline_conversation(request: Request):
         return await timeline(request, True)
+
+    @app.get('/v2/lio/itinerary-preview')
+    async def itinerary_preview(request: Request):
+        token = _token(request)
+        if token is None:
+            return _failure(401)
+        try:
+            params = _query(request, ('conversation_id', 'message_id'))
+            cid = params['conversation_id']
+            if LIO_CHAT_PATTERN.fullmatch(cid) is None:
+                raise InvalidInput('invalid Lio conversation identifier')
+            mid = message_id(params['message_id'])
+        except (ValueError, UnicodeError):
+            return _failure(400)
+        try:
+            return await run_in_threadpool(_itinerary_preview, boundary, resolve_runs, token, cid, mid)
+        except Exception as exc:
+            return _failure(message_failure(request, exc, False).status_code)
