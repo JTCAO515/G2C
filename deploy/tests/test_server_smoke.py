@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
 import sqlite3
 
@@ -197,8 +197,12 @@ def test_concurrency_requires_real_bound_provider_wait():
 def test_nonbusiness_window_stays_unrun_and_real_failure_wins():
     before = datetime(2026, 11, 18, 0, tzinfo=timezone.utc)
     after = datetime(2026, 11, 19, 0, tzinfo=timezone.utc)
-    for hour, allowed in [(0, True), (14, True), (15, False), (23, False)]:
-        assert smoke.permitted(before.replace(hour=hour), before, after) is allowed
+    for hour in range(24):
+        assert smoke.permitted(before.replace(hour=hour), before, after)
+    assert not smoke.permitted(before - timedelta(seconds=1), before, after)
+    assert not smoke.permitted(after, before, after)
+    assert smoke.permitted(after - timedelta(seconds=90), before, after, minimum_seconds=90)
+    assert not smoke.permitted(after - timedelta(seconds=89), before, after, minimum_seconds=90)
     assert smoke.decide([dict(kind='batch',status='UNRUN')], [])['status'] == 'UNRUN'
     assert smoke.decide([dict(kind='case',status='FAIL')], [])['status'] == 'FAIL'
     assert smoke.decide([dict(kind='case',status='UNKNOWN')], [])['status'] == 'UNKNOWN'

@@ -22,13 +22,14 @@ Response content, exception text, authentication and business data are absent.
 There are no retries, signed requests, model/tool calls, account changes or
 budget operations. The first failure stops the remaining requests.
 
-The intended interval is ten minutes during Beijing 08:00–23:00. A delayed job
-checks its actual start time and rechecks immediately before each GET. Crossing
-quiet hours or expiry preserves completed metadata and skips the remaining GET;
-it does not report a complete successful observation. The hard expiry is
-2027-01-01 00:00 Beijing. If M4 ends sooner, B disables the variable immediately.
-GitHub may delay/drop scheduled jobs, so this is not a ten-minute availability
-SLA or overnight coverage.
+The configured workflow schedule determines the ten-minute observation cadence.
+A job may run at any hour before authorization expires under the
+[JT timing decision](https://github.com/JTCAO515/G2C/issues/495#issuecomment-7042305501).
+It checks expiry at actual start and immediately before each GET. Crossing
+expiry preserves completed metadata and skips the remaining GET. The hard
+expiry is 2027-01-01 00:00 Beijing. If M4 ends sooner, B disables the variable
+immediately. GitHub may delay or drop scheduled jobs, so the cadence provides
+no availability SLA.
 
 GitHub Actions failure notifications depend on the recipient's existing GitHub
 notification settings. After JT approves the target and activation, one manual

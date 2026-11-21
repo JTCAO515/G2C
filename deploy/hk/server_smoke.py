@@ -16,7 +16,6 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 import uuid
-from zoneinfo import ZoneInfo
 
 from cj_message.lio_context import CAPABILITIES_EN, CAPABILITIES_ZH
 from cj_strict_json import reject_duplicates
@@ -25,7 +24,6 @@ from cj_usage.metered_exit import BudgetUnknown
 from psycopg import Error as PostgresError
 
 ORIGIN = 'https://api-beta.go2china.space'
-SHANGHAI = ZoneInfo('Asia/Shanghai')
 CASE_LIMIT_SECONDS = 90
 POLL_SECONDS = 1
 HTTP_SECONDS = 5
@@ -193,9 +191,7 @@ def find_message(value, message_id, expected_conversation):
 
 
 def permitted(now, start, end, *, minimum_seconds=0):
-    local = now.astimezone(SHANGHAI)
-    return (start <= now < end and (end - now).total_seconds() >= minimum_seconds
-            and 8 <= local.hour < 23)
+    return start <= now < end and (end - now).total_seconds() >= minimum_seconds
 
 
 def run_case(case, prompt, token, allowed, send=request):

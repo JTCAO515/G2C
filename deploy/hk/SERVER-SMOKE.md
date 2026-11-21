@@ -1,6 +1,6 @@
 # 香港应用发布后的 API 冒烟
 
-每次香港 API/worker 切换成功后立即执行。B 在同一个已登记的闲时维护段内操作，按 [JT 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6972695033) 处理结果。调用许可限北京时间 08:00–23:00、M4 的既有香港测试环境和一名既有 C 合成账号。正式基础 8、全国 16 和 JT 本人真机复测另记。
+每次香港 API/worker 切换成功后立即执行。B 在同一个已登记的闲时维护段内操作，按 [JT 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6972695033) 处理结果。调用许可限实际窗口和剩余时长、M4 的既有香港测试环境和一名既有 C 合成账号。按 [JT 的时段补充决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-7042305501)，窗口可在任何时段执行。正式基础 8、全国 16 和 JT 本人真机复测另记。
 
 1. 切换前确认 ECS 免费试用资格、现役和回退镜像、在途及原账。用原 C 合成账号的合法短期会话做脚本 `preflight`。这一步校验签名、受邀范围、会话覆盖整个窗口和既有 C 子额，业务请求数为零。会话被拒绝或期限不足时登记 UNRUN。
 2. 应用单次切换并独立读回现役 source/image。锁定该版本和空闲维护段，使用现有 `probes/application-deploy.lock` 串行执行脚本。使用运行角色内的 `python -B -m deploy.hk.server_smoke run`，stdin 只接来自私有提供方的 `access_token`、`starts_at`、`ends_at` 三字段 JSON。运行输出放 0600 文件。已有版本可用独审通过的两文件原字节启动同一入口，不换应用运行镜像或启动配置。

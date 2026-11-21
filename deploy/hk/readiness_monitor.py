@@ -57,13 +57,11 @@ def inactive_state(now):
     local = now.astimezone(timezone(timedelta(hours=8)))
     if local >= ENDS_AT:
         return 'SKIPPED_EXPIRED'
-    if not 8 <= local.hour < 23:
-        return 'SKIPPED_QUIET_HOURS'
     return None
 
 
 def run(clock=utcnow, fetch=get, *, notification_drill=False):
-    """Recheck the allowed time immediately before every new GET."""
+    """Recheck authorization expiry immediately before every new GET."""
     now = clock()
     result = dict(version='G2C-public-readiness-observation.1',
                   observed_at=now.isoformat(), observations=[],

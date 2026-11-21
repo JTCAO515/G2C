@@ -1,5 +1,6 @@
 """One original Mac journal → one fixed HK journal; never reset or re-adopt."""
 import argparse
+from datetime import date
 import fcntl
 import hashlib
 import json
@@ -10,10 +11,12 @@ import sqlite3
 import uuid
 
 from cj_usage import authorization_budget as budget
+from cj_usage.translation_budget import DAILY_LIMITS, FIRST_MODEL, SERVICE, TEXT_MODEL, TranslationOperation, translation_price
 
 MAC_ROOT=Path.home()/'.local/share/g2c/m4-real-services'
 HK_ROOT=Path('/budget')
 SEALED='sealed-for-'+budget.HK_PRODUCER
+TRANSLATION_ATTEMPT = re.compile(re.escape(SERVICE) + r':([0-9a-f]{32}):([0-9a-f]{32}):([0-9]{2})')
 
 
 def checksum(path):
@@ -32,17 +35,64 @@ def save(path,value,*,new=False):
     finally:os.close(descriptor)
 
 
+def valid_translation_attempt(identity, kind, digest, state, receipt, value):
+    match = TRANSLATION_ATTEMPT.fullmatch(identity)
+    if not match or kind != 'model' or receipt is None:
+        return False
+    if type(value) is not dict or receipt != budget.canonical(value).decode():
+        return False
+    owner, request, stage_text = match.groups()
+    stage = int(stage_text)
+    modality, units, day = (value.get(key) for key in ('modality', 'units', 'day'))
+    if (type(modality) is not str or modality not in DAILY_LIMITS
+            or type(units) is not int or not 1 <= units <= DAILY_LIMITS[modality]
+            or type(day) is not str or stage > 24 or (stage and modality == 'text')):
+        return False
+    try:
+        operation = TranslationOperation(owner, uuid.UUID(hex=request), date.fromisoformat(day), modality, units)
+    except ValueError:
+        return False
+    model = FIRST_MODEL[modality] if stage == 0 else TEXT_MODEL
+    metadata = operation.metadata(stage, model)
+    if hashlib.sha256(budget.canonical(metadata)).hexdigest() != digest:
+        return False
+    if state == 'INTENT':
+        return receipt == budget.canonical(metadata).decode()
+    if set(value) != metadata.keys() | {'receipt_sha256', 'usage'}:
+        return False
+    return (budget.canonical({key: value[key] for key in metadata}) == budget.canonical(metadata)
+            and type(value['receipt_sha256']) is str
+            and re.fullmatch('[0-9a-f]{64}', value['receipt_sha256']) is not None
+            and translation_price(value) is not None)
+
+
 def attempts(connection):
     info=connection.execute('PRAGMA table_info(attempt)').fetchall()
     if [r[1] for r in info]!=['id','kind','input_sha','state','receipt'] or info[0][5]!=1:
         raise ValueError('original_attempt_schema_required')
     rows=connection.execute('SELECT id,kind,input_sha,state,receipt FROM attempt ORDER BY id').fetchall()
     if not rows:raise ValueError('existing_nonempty_M4_shared_history_required')
+    translation_prefix = SERVICE + ':'
+    contains_translation = False
     for identity,kind,digest,state,receipt in rows:
         if (type(identity) is not str or not 1<=len(identity)<=128 or kind not in budget.LIMITS
                 or type(digest) is not str or re.fullmatch('[0-9a-f]{64}',digest) is None
-                or state not in ('INTENT','RECEIVED') or (state=='INTENT')!=(receipt is None)
-                or receipt is not None and type(json.loads(receipt)) is not dict):
+                or state not in ('INTENT','RECEIVED')):
+            raise ValueError('original_attempt_history_invalid')
+        value = json.loads(receipt) if receipt is not None else None
+        if identity.startswith(translation_prefix) or (type(value) is dict and value.get('service') == SERVICE):
+            contains_translation = True
+            valid = valid_translation_attempt(identity, kind, digest, state, receipt, value)
+        else:
+            valid = ((state == 'INTENT') == (receipt is None)
+                     and (receipt is None or type(value) is dict))
+        if not valid:
+            raise ValueError('original_attempt_history_invalid')
+    if contains_translation:
+        has_producer = connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='producer'").fetchone()
+        if (not has_producer or connection.execute(
+                'SELECT identity FROM producer WHERE singleton=1').fetchone() != (budget.HK_PRODUCER,)):
             raise ValueError('original_attempt_history_invalid')
     return len(rows),hashlib.sha256(budget.canonical(rows)).hexdigest()
 

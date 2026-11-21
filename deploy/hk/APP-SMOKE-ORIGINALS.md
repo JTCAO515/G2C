@@ -71,6 +71,6 @@ plan_sha256、冻结step nonce。checkpoint在服务端以O_EXCL写owner/plan/no
   实际A UI产物、单步单writer、完整候选CID集合与正常renderer投影仍由A/C联合核验。
 
 prepare模块只以当前C plan.2生成新的本机0700/0600 PREPARED_NOT_ACTIVE包；旧plan仅只读归档，
-不联网、不分配MID、不开户/加钱。新窗口仍须遵守北京时间23:00–08:00不发新合成请求。
+不联网、不分配MID、不开户/加钱。按 [JT 的时段补充决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-7042305501)，新请求可在任何时段的实际 ACTIVE 窗口内执行，并遵守该窗口的停发时点。
 本机路径和inode不能直接当香港资格；B须在真实主机按现有流程装配、核实源像/角色/原账/全部在途，
 独审固定helper与包后再签实际新lease。候选没有全部十四项真实PASS之前不通知JT重试。
