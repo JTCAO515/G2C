@@ -3,8 +3,8 @@
     "format_version": "visitor-entry.3",
     "entry_kind": "fact",
     "topic": "passport_booking",
-    "checked_on": "2026-11-16",
-    "expires_on": "2026-11-23",
+    "checked_on": "2026-11-20",
+    "expires_on": "2026-12-04",
     "id": "visitor.v3.beijing.palace-museum",
     "cities": [
       "beijing"
@@ -15,8 +15,8 @@
       "name_en": "The Palace Museum",
       "wikidata_qid": "Q2047427"
     },
-    "text_zh": "故宫博物院常规散客参观需提前订票，最早可在参观7日前开始预订；通常周一闭馆，法定节假日除外。7天是可预订窗口，不是最少提前天数。年票、团体、专题开放日和临时停展另查。",
-    "text_en": "Regular individual visits to the Palace Museum require advance ticket booking. Booking opens up to seven days ahead; this is a maximum window, not a seven-day minimum. Mondays are normally closed except statutory public holidays. Annual passes, groups, themed opening days and temporary gallery closures have separate arrangements.",
+    "text_zh": "故宫博物院常规散客参观需提前在线订票，官方导览页提供在线订票入口；除法定节假日外全年实行周一全天闭馆，法定节假日期间照常开放，遇重大活动或特殊情况另行公告。可提前预订的天数以官方购票页当前公示为准，本条不再记录具体窗口。年票、团体、专题开放日和临时停展另查。",
+    "text_en": "Regular individual visits to the Palace Museum require advance online ticket booking; the official visitor page links to the online ticketing service. The museum closes all day on Mondays throughout the year except statutory public holidays, when it opens as usual; major events or special circumstances are announced separately. The number of days tickets can be booked ahead is set by the current official ticketing page and is not recorded here. Annual passes, groups, themed opening days and temporary gallery closures have separate arrangements.",
     "source_urls": [
       "https://www.dpm.org.cn/",
       "https://www.dpm.org.cn/Visit.html"
@@ -27,16 +27,16 @@
         1
       ],
       "closed_weekdays_public_holiday_exception": true,
-      "advance_booking_days": 7,
-      "advance_booking_rule": "window_max"
+      "advance_booking_days": null,
+      "advance_booking_rule": null
     }
   },
   {
     "format_version": "visitor-entry.3",
     "entry_kind": "fact",
     "topic": "passport_booking",
-    "checked_on": "2026-11-16",
-    "expires_on": "2026-11-23",
+    "checked_on": "2026-11-20",
+    "expires_on": "2026-12-04",
     "id": "visitor.v3.xian.beilin-museum",
     "cities": [
       "xian"
@@ -98,8 +98,8 @@
     "format_version": "visitor-entry.3",
     "entry_kind": "fact",
     "topic": "passport_booking",
-    "checked_on": "2026-11-17",
-    "expires_on": "2026-11-23",
+    "checked_on": "2026-11-20",
+    "expires_on": "2026-12-04",
     "id": "visitor.v3.chengdu.du-fu-thatched-cottage",
     "cities": [
       "chengdu"
@@ -128,8 +128,8 @@
     "format_version": "visitor-entry.3",
     "entry_kind": "fact",
     "topic": "passport_booking",
-    "checked_on": "2026-11-17",
-    "expires_on": "2026-11-23",
+    "checked_on": "2026-11-20",
+    "expires_on": "2026-12-04",
     "id": "visitor.v3.chengdu.panda-base",
     "cities": [
       "chengdu"
@@ -161,8 +161,8 @@
     "format_version": "visitor-entry.3",
     "entry_kind": "fact",
     "topic": "passport_booking",
-    "checked_on": "2026-11-17",
-    "expires_on": "2026-11-23",
+    "checked_on": "2026-11-20",
+    "expires_on": "2026-12-04",
     "id": "visitor.v3.xian.qin-mausoleum-museum",
     "cities": [
       "xian"
