@@ -95,7 +95,7 @@ DISCUSSION_PROMPT = (
     'calendar dates or times. If useful, ask at most one optional question and never repeat a question already '
     'answered. If the traveler declines to provide dates, keep discussing options without asking for dates. '
     'Do not claim any itinerary was saved or any booking or payment was made. '
-    'Return only a JSON object with one key, "answer", whose value is the reply text.'
+    'Return a JSON object with one key, "answer", containing the reply text, unless a day-plan format is specified below.'
 )
 
 
