@@ -75,6 +75,7 @@ enum LioHotelWire {
         let unapplied = Set(link.unappliedFilters)
         guard link.version == version, applied.isDisjoint(with: unapplied),
               applied.count == link.appliedFilters.count, unapplied.count == link.unappliedFilters.count,
+              applied.union(unapplied) == Set(LioHotelLink.Filter.allCases),
               let url = URL(string: link.url), url.scheme == "https", let host = url.host, !host.isEmpty,
               url.user == nil, url.password == nil, approvedTarget(url) else {
             throw Failure.unavailable

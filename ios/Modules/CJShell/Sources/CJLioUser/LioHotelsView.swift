@@ -147,6 +147,8 @@ struct LioHotelsView: View {
             switch error {
             case .cityRequired:
                 notice = language.text("Enter a city to search for hotels.", "请输入城市再查找酒店。")
+            case .invalidCity:
+                notice = language.text("Enter a city name of up to 100 characters.", "请输入不超过 100 字的城市名称。")
             case .checkoutMustFollowCheckin:
                 notice = language.text("Checkout must be after check-in.", "退房日期须晚于入住日期。")
             case .invalidGuestCount:
@@ -169,8 +171,9 @@ struct LioHotelsView: View {
                 if reply.unappliedFilters.isEmpty {
                     await open(reply.destination, for: operation)
                 } else {
-                    let filters = reply.unappliedFilters.map { $0.title(language) }
-                        .joined(separator: language.text(", ", "、"))
+                    let locale = Locale(identifier: language == .chinese ? "zh_CN" : "en_US")
+                    let filters = reply.unappliedFilters.map { $0.title(language, for: search.scope) }
+                        .formatted(.list(type: .and).locale(locale))
                     notice = language.text("On Trip.com, check \(filters).",
                                            "到 Trip.com 后，请确认\(filters)。")
                     reviewLink = reply

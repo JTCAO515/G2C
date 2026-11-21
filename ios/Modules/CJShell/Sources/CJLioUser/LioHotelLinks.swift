@@ -13,7 +13,7 @@ struct LioHotelSearch: Sendable {
     }
 
     enum Validation: Error, Equatable {
-        case cityRequired, checkoutMustFollowCheckin, invalidGuestCount
+        case cityRequired, invalidCity, checkoutMustFollowCheckin, invalidGuestCount
     }
 
     static let calendar: Calendar = {
@@ -32,6 +32,8 @@ struct LioHotelSearch: Sendable {
         if case .city(let city) = scope {
             let trimmed = city.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { throw .cityRequired }
+            guard trimmed.unicodeScalars.count <= 100,
+                  !trimmed.unicodeScalars.contains(where: { $0.value < 32 }) else { throw .invalidCity }
             self.scope = .city(trimmed)
         } else {
             self.scope = scope
@@ -54,17 +56,20 @@ struct LioHotelSearch: Sendable {
 }
 
 struct LioHotelLink: Sendable {
-    enum Filter: String, Decodable, Hashable, Sendable {
-        case city, area = "location", checkIn = "check_in", checkOut = "check_out", guests, language
+    enum Filter: String, CaseIterable, Decodable, Hashable, Sendable {
+        case location, checkIn = "check_in", checkOut = "check_out", guests, language
         case acceptsForeignGuests = "accepts_foreign_guests"
 
-        func title(_ language: LioLanguage) -> String {
+        func title(_ language: LioLanguage, for scope: LioHotelSearch.Scope) -> String {
             switch self {
-            case .city: language.text("city", "城市")
-            case .area: language.text("area", "片区")
+            case .location:
+                switch scope {
+                case .city: language.text("the city", "城市")
+                case .area: language.text("the area", "片区")
+                }
             case .checkIn: language.text("check-in", "入住日期")
             case .checkOut: language.text("checkout", "退房日期")
-            case .guests: language.text("guests", "人数")
+            case .guests: language.text("the guest count", "人数")
             case .language: language.text("the display language", "界面语言")
             case .acceptsForeignGuests: language.text("whether the hotel accepts international guests", "是否接待境外旅客")
             }
@@ -131,18 +136,14 @@ extension LioHotelService {
         LioHotelService(
             link: { request in
                 _ = try LioHotelWire.encode(request)
-                let scope: LioHotelLink.Filter
-                switch request.scope {
-                case .city: scope = .city
-                case .area: scope = .area
-                }
-                let filters: [LioHotelLink.Filter] = [scope, .checkIn, .checkOut, .guests, .language]
+                let filters = LioHotelLink.Filter.allCases
+                let missing = Set(unapplied).union([.acceptsForeignGuests])
                 let path = "/v1/tools/hotel/out/fixture_handle_aaaaaaaaaaaa"
                 let payload = try JSONSerialization.data(withJSONObject: [
                     "version": "HOTEL.1",
                     "url": "https://hotel.example.invalid\(path)",
-                    "applied_filters": filters.filter { !unapplied.contains($0) }.map(\.rawValue),
-                    "unapplied_filters": unapplied.map(\.rawValue),
+                    "applied_filters": filters.filter { !missing.contains($0) }.map(\.rawValue),
+                    "unapplied_filters": filters.filter { missing.contains($0) }.map(\.rawValue),
                 ])
                 return try LioHotelWire.readLink(payload) { $0.host == "hotel.example.invalid" && $0.path == path }
             },

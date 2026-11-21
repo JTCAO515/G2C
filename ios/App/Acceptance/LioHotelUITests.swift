@@ -120,7 +120,7 @@ import XCTest
         app.swipeUp()
         find.tap()
         XCTAssertTrue(notice.waitForExistence(timeout: 5))
-        XCTAssertEqual(notice.label, "On Trip.com, check guests.")
+        XCTAssertEqual(notice.label, "On Trip.com, check the guest count and whether the hotel accepts international guests.")
         let pickup = app.buttons["lio.hotels.partial-link"]
         XCTAssertTrue(pickup.exists)
         XCTAssertTrue(app.staticTexts["lio.hotels.partial-link.disclosure"].exists)
@@ -137,7 +137,7 @@ import XCTest
         area.tap()
         let notice = app.staticTexts["lio.hotels.notice"]
         XCTAssertTrue(notice.waitForExistence(timeout: 5))
-        XCTAssertEqual(notice.label, "On Trip.com, check guests.")
+        XCTAssertEqual(notice.label, "On Trip.com, check the guest count and whether the hotel accepts international guests.")
         XCTAssertTrue(app.buttons["lio.hotels.partial-link"].exists)
     }
 

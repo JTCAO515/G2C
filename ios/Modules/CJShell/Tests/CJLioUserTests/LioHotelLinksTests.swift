@@ -39,6 +39,14 @@ struct LioHotelLinksTests {
         #expect(throws: LioHotelSearch.Validation.cityRequired) {
             try LioHotelSearch(scope: .city(" "), checkIn: arrival, checkOut: departure, guests: 2, language: .chinese)
         }
+        #expect(throws: LioHotelSearch.Validation.invalidCity) {
+            try LioHotelSearch(scope: .city(String(repeating: "市", count: 101)), checkIn: arrival,
+                               checkOut: departure, guests: 2, language: .chinese)
+        }
+        #expect(throws: LioHotelSearch.Validation.invalidCity) {
+            try LioHotelSearch(scope: .city("北\n京"), checkIn: arrival,
+                               checkOut: departure, guests: 2, language: .chinese)
+        }
         #expect(throws: LioHotelSearch.Validation.checkoutMustFollowCheckin) {
             try LioHotelSearch(scope: .city("北京"), checkIn: arrival, checkOut: arrival, guests: 2, language: .chinese)
         }
@@ -66,11 +74,28 @@ struct LioHotelLinksTests {
         #expect(throws: LioHotelWire.Failure.unavailable) { try LioHotelWire.readLink(conflict) { _ in true } }
         let external = Data("""
         {"version":"HOTEL.1","url":"https://unknown.example.invalid/out",
-         "applied_filters":["city"],"unapplied_filters":[]}
+         "applied_filters":["location","check_in","check_out","guests","language"],
+         "unapplied_filters":["accepts_foreign_guests"]}
         """.utf8)
         #expect(throws: LioHotelWire.Failure.unavailable) {
             try LioHotelWire.readLink(external) { $0.host == "hotel.example.invalid" }
         }
+    }
+
+    @Test func hotelLinkRejectsAResponseWithAnUnreportedFilter() {
+        let incomplete = Data("""
+        {"version":"HOTEL.1","url":"https://hotel.example.invalid/out",
+         "applied_filters":["location","check_in","check_out","guests","language"],"unapplied_filters":[]}
+        """.utf8)
+        #expect(throws: LioHotelWire.Failure.unavailable) { try LioHotelWire.readLink(incomplete) { _ in true } }
+    }
+
+    @Test func unappliedHotelLocationUsesTheOriginalSearchKind() {
+        let area = LioHotelArea(nameZH: "示例片区", nameEN: "Example area",
+                               center: .init(latitude: 39.9, longitude: 116.4, referenceSystem: .wgs84),
+                               radiusMetres: 1_000)
+        #expect(LioHotelLink.Filter.location.title(.chinese, for: .city("北京")) == "城市")
+        #expect(LioHotelLink.Filter.location.title(.chinese, for: .area(area)) == "片区")
     }
 
     #if DEBUG
@@ -96,7 +121,7 @@ struct LioHotelLinksTests {
         #expect(parts.host == "hotel.example.invalid")
         #expect(parts.path == "/v1/tools/hotel/out/fixture_handle_aaaaaaaaaaaa")
         #expect(parts.queryItems == nil)
-        #expect(reply.unappliedFilters.map { $0.title(.english) } == ["guests"])
+        #expect(reply.unappliedFilters == [.guests, .acceptsForeignGuests])
         #expect(await service.open(reply.destination))
     }
     #endif
