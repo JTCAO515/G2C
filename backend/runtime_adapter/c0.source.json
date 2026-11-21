@@ -3,14 +3,14 @@
   "adapter_files": {
     "backend/runtime_adapter/__init__.py": "b7f8d6f176bb1a49e545f665eb035ebbcd4e0bfd439ee40e7404d521eea44f6e",
     "backend/runtime_adapter/adapter.py": "4d0d49dd94ca685ffdad3139b42dbe71ad76ea61833af40ef30bf4214eefcf76",
-    "backend/runtime_adapter/configuration.py": "5aa1566423a9dba7d4b64107bb194a9601a2efd47c308cbe033d801eb7e245cb",
+    "backend/runtime_adapter/configuration.py": "fb0951ff121e2d44e7100ec82315681aed13907cfff17f58686d7f7bfc9bd42a",
     "backend/runtime_adapter/contract.py": "37289fd9b2c6b29845d43ee094cf761a7e4d76bd48581b051484ceb854cd4bbd",
     "backend/runtime_adapter/evidence.py": "80474e588c4f4b3470a1befebb5071477ab7cc35608966b6de57500d339289cf",
     "backend/runtime_adapter/journal.py": "77f04f30a0986943dd6d66206b119422f41666d195bfda9414e601d2a93b3d4c",
     "backend/runtime_adapter/ports.py": "a932b5aca19afc4d4d65f89c22753b007ce5a95e784507d503bb93f3b74e174c",
     "backend/runtime_adapter/profiles.py": "b15d1bd8c9ece05ced4e4a345ad5b237ac2e2255a8126bc72a397ac9a6a455d5"
   },
-  "adapter_sha256": "17cec046818909c877027aef07dab824a04b3cd286b67cfaf2d0c8118f60ee09",
+  "adapter_sha256": "8bcfb58b5bfe3df87801218f9ebc696552a43912952403d064736d074811142b",
   "c0": {
     "example.clarification": "If useful, ask at most one optional question and never repeat a question already answered. If the traveler declines to provide dates, keep discussing options without asking for dates.",
     "prompt.answer_style": "Be friendly and concise. Answer in the requested language.",
@@ -90,7 +90,6 @@
     "backend/cj_api/lio_exploration_routes.py": "35ce2edff60502b13682fb0a5bd70da7cca30475e46a4cb144280da7536e7c25",
     "backend/cj_api/lio_flat_intake.py": "0198af5aff37ef346c24cade652c5e9d222fe0de547e8de5523c427cb2d94c2a",
     "backend/cj_api/lio_flow_intake.py": "140f102ef30484bd1379e8104c9c5981c111a40c89cf63f22a7f91401876bb3e",
-    "backend/cj_api/lio_itinerary_preview.py": "eb5b05fc52c42791904ed11e95e46f333a10c1fb3704a37855abdb1a0bccab62",
     "backend/cj_api/lio_national_intake.py": "84a3604e5ba9f690f34e77a8720fd400a78aff5b4ac4784bdca04c930a51c991",
     "backend/cj_api/lio_pipeline_document.py": "b20dc37fa3b49c9e3892192ed4d7c2f758882987e079c1388672ba6e6488dd5e",
     "backend/cj_api/lio_pipeline_model.py": "82b59ae5d0b95bb696be02b62856171c2487406f801a6ef18cb8e2fa929dedc7",
@@ -109,7 +108,7 @@
     "backend/cj_api/local_lio_exploration.py": "aeffa82295c9e8ac4a3bc9a7116a1d86d1a5ddd1ce8aded6f79546a1f6650ece",
     "backend/cj_api/local_lio_exploration_profile.py": "98ed943cf7f9269b8950426284d7ecbeeb25d6b1552796a6863fdd62933e4e64",
     "backend/cj_api/local_lio_national.py": "a664714152bd2671750d25307b30f8925d14e0dc1cb10ce2048af2e2af65c035",
-    "backend/cj_api/local_lio_planning.py": "91dd8a8d96bf4fa9cce1efc4451bb8cf2b58be00b8ede858c4bf19cc5645e21b",
+    "backend/cj_api/local_lio_planning.py": "0e87d2f0158b68ad65db4318e806d33ac3e101d1d1d08177b17cb525310b5e6e",
     "backend/cj_api/local_lio_provider_sources.py": "e660b41217d461c7dba4dbf29221829a3f7dfb0b8870d76080d0aeb35296a9b9",
     "backend/cj_api/local_lio_rich_calendar_source.py": "0c2a8d2595eb4368d5ea7002fc92ee40164a699229f38e09f9f8d839d27604e2",
     "backend/cj_api/local_lio_rich_checks.py": "9be1935d74b241f67a5d37dad3d835e0ebff1f318fdf540615ca98707f7f7321",
@@ -138,7 +137,7 @@
     "eval/optimization/score_v2.py": "015fa9f21b418fe49a5ac07a5fb3027e0422620a6616029f2ba6438bfa1e9322",
     "tooling/optimization/uv.lock": "c3729fbcd04627cb07bde4f5f21b9c4fbfa4748b3d7468d550c7fc2af62bc343"
   },
-  "system_prompt_sha256": "118d8ce7b672067b9ee9742b0653204bab7ec56260ade8e41c3e2d778f3df7fb",
+  "system_prompt_sha256": "075966171bdac3192cf5ae340cc506b2cc82969409762782ddf36017a5314900",
   "task_sha256": "9d4376ba7512d6f3c0741036ae1bd0dda99752bbc9f8b8fb8dd7025c61a530ec",
   "task_version": "G2C-dialogue-cases.2",
   "tool_implementation_sha256": "14c067afdb48b634e17d7085fffc83dbc7454e48891bd5a1839cbd668b639e5c",

@@ -1,6 +1,38 @@
 import XCTest
 
 @MainActor final class LioSavedTripViewportUITests: XCTestCase {
+    func testTripTaxiUsesOnlyTheOriginalMappedPlace() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.viewport.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-taxi-preview", "-cj.ui.language.v1", "zh-Hans",
+                               "-lio.taxi.seen-guide.v1", "YES"]
+        app.launch()
+        defer { app.terminate() }
+        let trips = app.tabBars.buttons["行程"]
+        XCTAssertTrue(trips.waitForExistence(timeout: 12))
+        trips.tap()
+        let card = app.buttons["Draft"]
+        XCTAssertTrue(card.waitForExistence(timeout: 8))
+        card.tap()
+        let routeMap = app.descendants(matching: .any).matching(identifier: "lio.trip.route-map").firstMatch
+        XCTAssertTrue(routeMap.waitForExistence(timeout: 8))
+        let taxi = app.buttons["lio.trip.taxi.source-item-2"]
+        for _ in 0..<6 {
+            if taxi.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(taxi.isHittable)
+        XCTAssertTrue(app.buttons["lio.trip.focus.source-item-2"].exists)
+        XCTAssertFalse(app.buttons["lio.trip.taxi.item-1"].exists)
+        XCTAssertFalse(app.buttons["lio.trip.taxi.source-item-3"].exists)
+        taxi.tap()
+        let destination = app.buttons["lio.taxi.destination"]
+        XCTAssertTrue(destination.waitForExistence(timeout: 6))
+        XCTAssertTrue(destination.label.contains("合成公园"))
+        XCTAssertTrue(destination.label.contains("合成路"))
+        capture(app, "trip-taxi-prefilled-destination")
+    }
+
     func testEnglishListAndChatReturn() throws { try exercise(chinese: false) }
     func testChineseListAndChatReturn() throws { try exercise(chinese: true) }
     func testEnglishReducedMotionReturn() throws { try exerciseReducedMotion(chinese: false) }

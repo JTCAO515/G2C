@@ -13,7 +13,7 @@ from cj_message.lio_plan_needs import BOUND_EFFECT, EDIT_BOUND_EFFECT
 from cj_run.core import Binding
 from cj_run.display_snapshot import SnapshotTooLarge
 
-from . import lio_itinerary_preview
+from .local_lio_planning import ITINERARY_PREVIEW_VERSION,read_itinerary_preview
 from .lio_weather import CITY_EFFECT,reference as city_weather_reference
 from .history_routes import _query
 from .message_routes import BodyError, _read_body, _token, message_failure
@@ -151,14 +151,14 @@ def _itinerary_preview(boundary, resolve_runs, token, conversation_id, mid):
         (state, expired), = resolve_runs(context.scope).lio_timeline([binding])
         text = json.loads(original.raw)['text']
         locale = answer_locale(text, 'en')
-        preview = (lio_itinerary_preview.read_preview(state, locale)
+        preview = (read_itinerary_preview(state, locale)
                    if not expired and self_description(text, locale) is None else None)
         current = context.query_lio_receipt(mid)
         if current is None or (current.conversation_id, current.run_id) != (conversation_id, receipt.run_id):
             return _failure(503)
         if current.requires_exploration or current.requires_new_lio:
             return _failure(400)
-        return _json(dict(version=lio_itinerary_preview.VERSION, conversation_id=conversation_id,
+        return _json(dict(version=ITINERARY_PREVIEW_VERSION, conversation_id=conversation_id,
                           message_id=mid, preview=preview))
 
     return boundary.with_history_context(token, read)

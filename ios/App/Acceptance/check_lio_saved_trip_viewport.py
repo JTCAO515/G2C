@@ -60,7 +60,7 @@ def main():
     summary = subprocess.check_output(['xcrun', 'xcresulttool', 'get', 'test-results', 'summary', '--path', str(result)])
     (output / 'summary.json').write_bytes(summary)
     value = json.loads(summary)
-    assert value['passedTests'] == (len(args.case) if args.case else 6)
+    assert value['passedTests'] == (len(args.case) if args.case else 7)
     assert value['failedTests'] == 0 and value['skippedTests'] == 0
 
 
