@@ -629,6 +629,7 @@ _FIXED_OWNER_SHIFT=re.compile(r'但|不过|而|\b(?:while|although|yet)\b',re.I)
 _OWN_FIXED_REFERENCE=re.compile(
     r'我(?:们)?的?[这那](?:场|次)的?\s*'
     r'|\b(?:mine|ours|my own|our own)\b\s*(?:(?:is|was|has|will be)\s+)?',re.I)
+_OWN_FIXED_CURRENT_SITE=re.compile(r'(?:(?:现在|目前)\s*)?在\s*|(?:(?:now|currently)\s+)?(?:at|in)\s+',re.I)
 
 
 def _direct_fixed_place(label,before,after):
@@ -652,8 +653,15 @@ def _fixed_followup_keeps_place(label,clause):
 
 
 def _own_fixed_site_revision(clause):
-    return any(_FIXED_SITE_REVISION.match(clause,reference.end())
-               for reference in _OWN_FIXED_REFERENCE.finditer(clause))
+    for reference in _OWN_FIXED_REFERENCE.finditer(clause):
+        if _FIXED_SITE_REVISION.match(clause,reference.end()):
+            return True
+        direct=_OWN_FIXED_CURRENT_SITE.match(clause,reference.end())
+        if direct:
+            rest=clause[direct.end():].strip()
+            if rest and not _FIXED_TIME_ONLY.fullmatch(rest):
+                return True
+    return False
 
 
 def _fixed_place_superseded(label,source_index,after_clause,turns):

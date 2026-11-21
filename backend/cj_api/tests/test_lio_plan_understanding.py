@@ -396,7 +396,8 @@ class PlanUnderstandingBoundary(unittest.TestCase):
              ('我朋友也有个酒店集合，和我的不是同一场','我朋友另有一场酒店集合在北京南站',
               '我朋友也有个酒店集合，但我的酒店集合改到北京南站','我朋友说我的酒店集合改在北京南站',
               ('我朋友另有一场酒店集合但我这场改到北京南站',
-               '我朋友另有一场酒店集合并且我这场改到北京南站'))),
+               '我朋友另有一场酒店集合并且我这场改到北京南站',
+               '我朋友另有一场酒店集合并且我这场现在在北京南站'))),
             ('hotel meetup','Beijing Hotel','Beijing South Station',
              'On day 1 I have a fixed hotel meetup at Beijing Hotel from 9:00 to 10:00 a.m., keep it unchanged',
              'On day 1 I have a fixed hotel meetup at Beijing Hotel from 9:00 to 10:00 moved to Beijing South Station, keep it unchanged',
@@ -409,7 +410,8 @@ class PlanUnderstandingBoundary(unittest.TestCase):
               'My friend also has a separate hotel meetup, but my hotel meetup moved to Beijing South Station.',
               'My friend says my hotel meetup moved to Beijing South Station.',
               ('My friend also has a separate hotel meetup while mine moved to Beijing South Station.',
-               'My friend has a separate hotel meetup and mine moved to Beijing South Station.'))),
+               'My friend has a separate hotel meetup and mine moved to Beijing South Station.',
+               'My friend has a separate hotel meetup and mine is now at Beijing South Station.'))),
         ):
             spoken_denial,spoken_change,time_only=spoken
             separate,separate_update,both,reported_update,implicit_own_updates=same_label
