@@ -621,6 +621,18 @@ _FIXED_TIME_ONLY=re.compile(
     rf'(?:的?\s*(?:时间|时段)\s*(?:仍为|还为|还是|改为|改到|为|是|在)?\s*|'
     rf'(?:(?:time|schedule|timing)\s+)?(?:(?:is|remains|starts|ends)\s+)?(?:still\s+)?(?:at\s+)?)'
     rf'{_FIXED_CLOCK}',re.I)
+_SEPARATE_FIXED_OWNER=re.compile(
+    r'(?:我(?:的)?|我们(?:的)?)?(?:朋友|同伴|同事)(?:也有|另有)(?:一)?(?:个|场|次)?'
+    r'|(?:my|our)\s+(?:friend|companion|colleague)(?:[’\x27]s\s+(?:separate|other)'
+    r'|\s+(?:also\s+)?(?:has|have)\s+(?:another|a\s+separate))\s+',re.I)
+_FIXED_OWNER_SHIFT=re.compile(r'但|不过|而|\b(?:while|although|yet)\b',re.I)
+_OWN_FIXED_REFERENCE=re.compile(
+    r'我(?:们)?的?[这那](?:场|次)的?\s*'
+    r'|\b(?:mine|ours|my own|our own)\b\s*(?:(?:is|was|has|will be)\s+)?',re.I)
+_OWN_FIXED_CURRENT_SITE=re.compile(r'(?:(?:现在|目前)\s*)?在\s*|(?:(?:now|currently)\s+)?(?:at|in)\s+',re.I)
+_OWN_FIXED_CHINESE_TIME=re.compile(
+    r'(?:凌晨|早上|上午|中午|下午|晚上)?\s*(?:[01]?[0-9]|2[0-3])\s*[点时]'
+    r'(?:\s*(?:[0-5]?[0-9]\s*分|半))?\s*(?:照旧|不变|如期)?')
 
 
 def _direct_fixed_place(label,before,after):
@@ -643,12 +655,36 @@ def _fixed_followup_keeps_place(label,clause):
     return _FIXED_KEEP.fullmatch(rest) is not None or _FIXED_TIME_ONLY.fullmatch(rest) is not None
 
 
+def _own_fixed_site_revision(clause):
+    for reference in _OWN_FIXED_REFERENCE.finditer(clause):
+        if _FIXED_SITE_REVISION.match(clause,reference.end()):
+            return True
+        direct=_OWN_FIXED_CURRENT_SITE.match(clause,reference.end())
+        if direct:
+            rest=clause[direct.end():].strip()
+            if (rest and not _FIXED_TIME_ONLY.fullmatch(rest)
+                    and not _OWN_FIXED_CHINESE_TIME.fullmatch(rest)):
+                return True
+    return False
+
+
 def _fixed_place_superseded(label,source_index,after_clause,turns):
     """A later original may withhold a stale place even when the model omits it."""
+    mention=re.compile(re.escape(label),re.I)
     remaining=(turns[source_index].text[after_clause:],*(turn.text for turn in turns[source_index+1:]))
     for text in remaining:
+        separate_seen=False
         for _,_,clause in _original_clauses(text):
-            if label.casefold() in clause.casefold()and not _fixed_followup_keeps_place(label,clause):
+            parts=mention.split(clause,maxsplit=2)
+            if (len(parts)==2 and _SEPARATE_FIXED_OWNER.fullmatch(parts[0])
+                    and not _FIXED_OWNER_SHIFT.search(parts[1])):
+                if _own_fixed_site_revision(parts[1]):
+                    return True
+                separate_seen=True
+                continue
+            if separate_seen and _own_fixed_site_revision(clause):
+                return True
+            if len(parts)>1 and not _fixed_followup_keeps_place(label,clause):
                 return True
             if _FIXED_SITE_REVISION.match(clause):
                 return True

@@ -387,25 +387,44 @@ class PlanUnderstandingBoundary(unittest.TestCase):
 
     def test_fixed_location_uses_the_latest_original_even_when_model_cites_the_old_place(self):
         from cj_api.lio_pipeline_document import declared_endpoint_names
-        for label, place, new_place, prior, same_turn, change, denial, restated, other_activity, spoken in (
+        for label, place, new_place, prior, same_turn, change, denial, restated, other_activity, spoken, same_label in (
             ('酒店集合','北京饭店','北京南站',
              '第一天我9:00–10:00要在北京饭店进行酒店集合，这项安排已确定，保持不变',
              '第一天我9:00–10:00在北京饭店的酒店集合改在北京南站，这项安排已确定，保持不变',
              '酒店集合改在北京南站','酒店集合不在北京饭店','酒店集合地点在北京南站','我朋友换到北京饭店住宿',
-             ('这次酒店集合不去北京饭店了','这次酒店集合换个地方去北京南站','酒店集合时间仍为9:00–10:00')),
+             ('这次酒店集合不去北京饭店了','这次酒店集合换个地方去北京南站','酒店集合时间仍为9:00–10:00'),
+             ('我朋友也有个酒店集合，和我的不是同一场','我朋友另有一场酒店集合在北京南站',
+              '我朋友也有个酒店集合，但我的酒店集合改到北京南站','我朋友说我的酒店集合改在北京南站',
+              ('我朋友另有一场酒店集合但我这场改到北京南站',
+               '我朋友另有一场酒店集合并且我这场改到北京南站',
+               '我朋友另有一场酒店集合并且我这场现在在北京南站'),
+              '我朋友另有一场酒店集合并且我这场在上午9点照旧')),
             ('hotel meetup','Beijing Hotel','Beijing South Station',
              'On day 1 I have a fixed hotel meetup at Beijing Hotel from 9:00 to 10:00 a.m., keep it unchanged',
              'On day 1 I have a fixed hotel meetup at Beijing Hotel from 9:00 to 10:00 moved to Beijing South Station, keep it unchanged',
              'The hotel meetup moved to Beijing South Station','The hotel meetup is not at Beijing Hotel',
              'The hotel meetup is at Beijing South Station','My friend moved to Beijing Hotel',
              ('The hotel meetup won’t be at Beijing Hotel anymore','The hotel meetup is somewhere else now',
-              'The hotel meetup time is still 9:00 to 10:00 a.m.')),
+              'The hotel meetup time is still 9:00 to 10:00 a.m.'),
+             ('My friend also has a separate hotel meetup.',
+              "My friend's separate hotel meetup moved to Beijing South Station.",
+              'My friend also has a separate hotel meetup, but my hotel meetup moved to Beijing South Station.',
+              'My friend says my hotel meetup moved to Beijing South Station.',
+              ('My friend also has a separate hotel meetup while mine moved to Beijing South Station.',
+               'My friend has a separate hotel meetup and mine moved to Beijing South Station.',
+               'My friend has a separate hotel meetup and mine is now at Beijing South Station.'),
+              'My friend has a separate hotel meetup and mine is at 9 a.m. as planned.')),
         ):
             spoken_denial,spoken_change,time_only=spoken
+            separate,separate_update,both,reported_update,implicit_own_updates,implicit_own_time=same_label
             for primary, later, selected_place, is_current in (
                 (same_turn,None,place,False),(prior,change,place,False),(prior,denial,place,False),
                 (prior,restated,place,False),(prior,change,new_place,True),(prior,other_activity,place,True),
                 (prior,spoken_denial,place,False),(prior,spoken_change,place,False),(prior,time_only,place,True),
+                (prior,separate,place,True),(prior,separate_update,place,True),
+                (prior,both,place,False),(prior,reported_update,place,False),
+                *((prior,update,place,False)for update in implicit_own_updates),
+                (prior,implicit_own_time,place,True),
             ):
                 with self.subTest(primary=primary,later=later,selected_place=selected_place):
                     value,turns=self.fixed_case()
