@@ -1,4 +1,5 @@
 """Query layout only; a DTO/candidate list does not grant a provider source."""
+from dataclasses import replace
 from types import SimpleNamespace
 import unittest
 
@@ -69,17 +70,27 @@ class PipelineSearch(unittest.TestCase):
         source=SimpleNamespace(providers=object(),profiles=SimpleNamespace(database=object()),binding=binding,worker=worker,
             seal=lambda:None,places=lambda plan,_,**kwargs:({stop.item_id:None for stop in plan.stops},()))
         endpoint=('fixed-meetup','北京饭店')
+        airport_endpoints=(endpoint,('arrival-transfer','北京大兴机场'),('departure-transfer','北京首都机场'))
+        airport_days=recipes(3,'relaxed',light_first=False,light_last=False)
+        airport_days=(*airport_days[:-1],replace(airport_days[-1],meals=('lunch',)))
+        airport_plan=parse_skeleton(packed(proposal(airport_days)),airport_days,id_prefix='airport-case')
+        airport_required=len(airport_plan.stops)+len(airport_plan.hotels)
 
-        for spare,requested in ((0,False),(1,True)):
-            with self.subTest(spare=spare):
+        for plan,legs,slots,names,requested in (
+                (skeleton,leg_count,required+2*leg_count,(endpoint,),()),
+                (skeleton,leg_count,required+2*leg_count+1,(endpoint,),(endpoint,)),
+                (airport_plan,17,44,airport_endpoints,airport_endpoints),
+                (airport_plan,17,airport_required+17,airport_endpoints,())):
+            with self.subTest(legs=legs,slots=slots):
                 seen=[]
-                calls=SimpleNamespace(gaode_slots_left=required+2*leg_count+spare,
+                calls=SimpleNamespace(gaode_slots_left=slots,
                     parallel=lambda batch:seen.extend(call.argument.targets[0]for call in batch))
-                prepared=SimpleNamespace(skeleton=skeleton,sources=source,city=SimpleNamespace(adcode='110000'),
-                    calls=calls,preflight_size=(18,leg_count,10000),endpoint_names=(endpoint,))
+                prepared=SimpleNamespace(skeleton=plan,sources=source,city=SimpleNamespace(adcode='110000'),
+                    calls=calls,preflight_size=(legs+3,legs,10000),endpoint_names=names)
                 retrieve_skeleton(prepared)
-                self.assertEqual(endpoint[0] in seen,requested)
-                self.assertEqual(len(seen),required+spare)
+                named_ids={target for target,_ in names}
+                self.assertEqual(named_ids.intersection(seen),{target for target,_ in requested})
+                self.assertEqual(len(seen),len(plan.stops)+len(plan.hotels)+len(requested))
 
     def test_invalid_optional_keywords_do_not_interrupt_the_required_place_batch(self):
         skeleton=self.skeleton(3)

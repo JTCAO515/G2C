@@ -1,15 +1,19 @@
 """Complete post-retrieval data for C's assembler; no source lease or save."""
 from copy import deepcopy
+from datetime import date
 import json
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
 
 from cj_api.lio_pipeline_compilation import compile_retrieved
+from cj_api.lio_plan_understanding import parse_plan_understanding,prepare_plan_fields
+from cj_api.lio_planning_grounding import PlanningTurn
 from cj_api.lio_pipeline_document import declared_endpoint_names,representation_size
 from cj_api.lio_pipeline_preflight import preflight_document
 from cj_api.lio_pipeline_skeleton import recipes,parse_skeleton,CapacityExceeded
 from cj_feasibility.rich_edges import activity_windows
+from cj_message.lio_plan_input_schema import PLAN_UNDERSTANDING
 from cj_trip.domain import packed
 from cj_trip.structured_v4 import validate_document
 from test_lio_pipeline_document import checks
@@ -123,6 +127,86 @@ class RetrievedCompilation(unittest.TestCase):
         self.assertEqual(arrival['schedule']['start']['time'],{'state':'unknown'})
         self.assertIn('booking are unconfirmed',arrival['note'])
         self.assertEqual(actual['compile-data-departure-transfer']['place']['state'],'unconfirmed')
+
+    def test_known_airport_event_clocks_bind_both_route_anchor_windows(self):
+        fields = {
+            'arrival': {'place': {'state': 'known', 'value': '北京大兴机场'},
+                        'time': {'state': 'known', 'value': '06:30'},
+                        'date': {'state': 'known', 'value': '2026-11-22'},
+                        'timezone': {'state': 'known', 'value': 'Asia/Shanghai'}},
+            'departure': {'place': {'state': 'known', 'value': '北京首都机场'},
+                          'time': {'state': 'known', 'value': '18:00'},
+                          'date': {'state': 'known', 'value': '2026-11-24'},
+                          'timezone': {'state': 'known', 'value': 'Asia/Shanghai'}},
+        }
+        original = deepcopy(fields)
+        value = prepared(fields)
+        value.projected = value.projection = projection(fields, start='2026-11-22')
+        result = compile_retrieved(value, {stop.item_id: None for stop in value.skeleton.stops},
+                                   (None, None), checks=checks(3, dated=True), subjects=('party',),
+                                   locale='en', retained=None)
+        validate_document(result.document)
+        transported = {item['id']: item for item in result.document['items'] if item['kind'] == 'transport'}
+        for edge, clock, day, point in (('arrival', '06:30', 1, 23400), ('departure', '18:00', 3, 237600)):
+            key = 'compile-data-'+edge+'-transfer'
+            item = transported[key]
+            self.assertEqual(item['schedule']['start'], item['schedule']['end'])
+            event = item['schedule']['start']
+            self.assertEqual(event['day_index'], day)
+            self.assertEqual(event['time'], {'state': 'known', 'value': clock})
+            self.assertEqual(event['timezone'], {'state': 'known', 'value': 'Asia/Shanghai'})
+            self.assertEqual(event['utc_offset'], {'state': 'unknown'})
+            self.assertEqual(item['fixed'], {'state': 'known', 'value': False})
+            self.assertIn('booking', item['note'])
+            for activities in (result.order_activities, result.schedule_activities):
+                window, = next(activity.windows for activity in activities if activity.item_id == key)
+                self.assertEqual((window.start, window.end), (point, point))
+        self.assertEqual(fields, original)
+
+    def test_transfer_clock_with_a_different_calendar_day_or_zone_stays_unconfirmed(self):
+        for extra in ({'date': {'state': 'known', 'value': '2026-11-23'}},
+                      {'timezone': {'state': 'known', 'value': 'UTC'}}):
+            with self.subTest(extra=extra):
+                fields = {'arrival': dict({'place': {'state': 'known', 'value': '北京大兴机场'},
+                                           'time': {'state': 'known', 'value': '06:30'}}, **extra)}
+                value = prepared(fields)
+                value.projection = projection(fields, start='2026-11-22')
+                result = compile_retrieved(value, {stop.item_id: None for stop in value.skeleton.stops},
+                                           (None, None), checks=checks(3, dated=True), subjects=('party',),
+                                           locale='en', retained=None)
+                item, = (row for row in result.document['items'] if row['kind'] == 'transport')
+                self.assertEqual(item['schedule']['start']['time'], {'state': 'unknown'})
+                self.assertEqual(next(a.windows for a in result.order_activities if a.item_id == item['id']), ())
+
+    def test_explicitly_undecided_departure_date_cannot_become_a_last_day_clock(self):
+        for text,start,clock,place,mode,uncertain in (
+                ('从2026-11-22开始。我的航班18:00起飞。我从北京首都机场出发。离境日期还没定。',
+                 '从2026-11-22开始','18:00','北京首都机场','航班','离境日期还没定'),
+                ('Start my trip on 2026-11-22. My flight leaves at 6 pm. I leave from Beijing Capital Airport. '
+                 'My departure date is undecided.', 'Start my trip on 2026-11-22','6 pm',
+                 'Beijing Capital Airport','flight','My departure date is undecided')):
+            for date_state in ('unknown','uncertain'):
+                with self.subTest(text=text,date_state=date_state):
+                    turns=(PlanningTurn(text,date(2026,11,21)),PlanningTurn('Plan now',date(2026,11,21)))
+                    packet=dict(version=PLAN_UNDERSTANDING,current_source_index=1,companions=[],fixed_items=[],
+                        temporary_conditions=[],observations=[dict(field=field,state=state,value=value,note=uncertain if state=='uncertain' else None,
+                            sources=[dict(source_index=0,quote=quote)]) for field,state,value,quote in (
+                                ('start_date','known','2026-11-22',start),('departure.time','known','18:00',clock),
+                                ('departure.place','known',place,place),('departure.mode','known','flight',mode),
+                                ('departure.date',date_state,None,uncertain))])
+                    projected=prepare_plan_fields(parse_plan_understanding(packed(packet),turns),turns)
+                    original_date={'state':date_state}
+                    if date_state=='uncertain':original_date['note']=uncertain
+                    self.assertEqual(projected.fields['departure']['date'],original_date)
+                    value=prepared()
+                    value.projected=value.projection=projected
+                    result=compile_retrieved(value,{stop.item_id:None for stop in value.skeleton.stops},
+                        (None,None),checks=checks(3,dated=True),subjects=('party',),locale='en',retained=None)
+                    item,=(row for row in result.document['items'] if row['kind']=='transport')
+                    self.assertEqual(item['schedule']['start']['time'],{'state':'unknown'})
+                    for activities in (result.order_activities,result.schedule_activities):
+                        self.assertEqual(next(a.windows for a in activities if a.item_id==item['id']),())
+
 
     def test_city_names_do_not_become_a_transfer_or_fixed_poi(self):
         item=fixed()

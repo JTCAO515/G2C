@@ -102,9 +102,13 @@ def retrieve_skeleton(prepared):
     required=len(sights)+len(meals)+len(skeleton.hotels)
     if required>prepared.calls.gaode_slots_left:
         raise PipelineCapacity('complete original place lookup set exceeds the remaining allowance')
-    # A transit leg may use a second attempt when its taxi fallback is needed.
-    route_slots=2*prepared.preflight_size[1]
-    optional_slots=max(0,prepared.calls.gaode_slots_left-required-route_slots)
+    # Hold every possible fallback when that can fit. If it cannot, keep one
+    # primary attempt per leg and use spare capacity for original named places.
+    # Taxi alternatives still use the same remaining cap after definite no-route results.
+    legs=prepared.preflight_size[1]
+    spare=prepared.calls.gaode_slots_left-required
+    route_slots=2*legs if 2*legs<=spare else legs
+    optional_slots=max(0,spare-route_slots)
     worker,binding=bundle.worker,bundle.binding
     origin=ExplorationOrigin(bundle.profiles.database,binding,worker.messages.query(binding.message_id))
     mandatory=sight_and_hotel_calls(sights,skeleton.hotels,city=prepared.city.adcode,

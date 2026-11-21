@@ -231,6 +231,14 @@ def selected_provider_join(host,worker,binding,bundle,skeleton,calls,scenario):
     return len(writers)
 
 
+def fixed_meetup(locale, named):
+    if locale=='zh':
+        site='北京饭店进行' if named else ''
+        return '第一天我9:00–10:00要在'+site+'酒店集合，这项安排已确定，保持不变'
+    meetup='a fixed hotel meetup at Beijing Hotel' if named else 'a hotel meetup'
+    return f'On day 1 I have {meetup} from 9:00 to 10:00. Keep this arrangement unchanged.'
+
+
 def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1,2),followups=True,duration_days=3,travel_pace='relaxed',provider_available=True,failed_kind=None,refusal_question=None):
     original_model=ExplorationPlanning._model
     original_http=httpx.MockTransport.handle_request
@@ -238,9 +246,13 @@ def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1
     wires=[];completed=[];lookups=[];posted={};saved_runs={};active={};supplier_wires=[];all_saved={}
     duration_quote=('三','四','五')[duration_days-3]+'天'
     pace_quote={'relaxed':'轻松','moderate':'适中','packed':'紧凑'}[travel_pace]
+    named_route_case=(2 if production and early_departure and provider_available
+                      and duration_days==3 and travel_pace=='relaxed'
+                      and failed_kind is None and refusal_question is None else None)
     def post(api,url,**kwargs):
         if url=='/v4/lio/messages':
             value=json.loads(kwargs['content'])
+            named=named_route_case is not None and value['message_id'].startswith(f"flow4-{value['locale']}-{named_route_case}-")
             if natural_direct and value['text']in ('直接出方案','Plan now'):
                 value['text']=('节奏改为：轻松。 直接出方案。'if value['locale']=='zh'else
                     'Pace: relaxed. Please give me a plan now.')
@@ -250,13 +262,16 @@ def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1
                 kwargs['content']=packed(value)
             if value['text']in ('我想去中国玩几天','I want to explore China'):
                 if duration_days!=3:value['text']+=('。'+duration_quote if value['locale']=='zh'else'. '+str(duration_days)+' days')
-                value['text']+='。明天出发。两个人。第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变'if value['locale']=='zh'else(
-                    '. Start my trip tomorrow. Two people. On day 1 I have a hotel meetup from 9:00 to 10:00. Keep this arrangement unchanged.')
+                zh=value['locale']=='zh'
+                value['text']+=('。明天出发。两个人。' if zh else '. Start my trip tomorrow. Two people. ')+fixed_meetup(value['locale'],named)
                 if early_departure:
-                    value['text']+='。我的航班18:00起飞'if value['locale']=='zh'else'. My flight leaves at 6 pm'
-                value['text']+='。第一天就排满'if value['locale']=='zh'else'. Fill the first day.'
+                    value['text']+='。我的航班18:00起飞'if zh else'. My flight leaves at 6 pm'
+                if named:
+                    value['text']+=('。我06:30到达。北京大兴机场。我从北京首都机场出发' if zh else
+                                    '. I arrive at 6:30 am. Beijing Daxing Airport. I leave from Beijing Capital Airport')
+                value['text']+='。第一天就排满'if zh else'. Fill the first day.'
                 kwargs['content']=packed(value)
-            posted.update(text=value['text'],locale=value['locale'])
+            posted.update(text=value['text'],locale=value['locale'],named=named)
         return original_post(api,url,**kwargs)
     def response(transport,request):
         body=json.loads(request.content)
@@ -283,8 +298,9 @@ def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1
                     source_index=extra['current_source_index'],quote='节奏改为：轻松。'if posted['locale']=='zh'else'Pace: relaxed.')])])
         elif version==PLAN_UNDERSTANDING:
             zh=extra['locale']=='zh'
-            quote='第一天我9:00–10:00要在酒店集合，这项安排已确定，保持不变'if zh else(
-                'On day 1 I have a hotel meetup from 9:00 to 10:00. Keep this arrangement unchanged.')
+            named=posted['named']
+            quote=fixed_meetup(extra['locale'],named)
+            site=('北京饭店'if zh else'Beijing Hotel')if named else None
             beginning=(date.fromisoformat(extra['original_question_days'][0])+timedelta(days=1)).isoformat()
             value=dict(version=version,current_source_index=extra['current_source_index'],observations=[
                 dict(field='start_date',state='known',value=beginning,note=None,
@@ -299,9 +315,16 @@ def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1
                      sources=[dict(source_index=0,quote='第一天就排满'if zh else'Fill the first day')])],
                 companions=[],fixed_items=[dict(label='酒店集合'if zh else'hotel meetup',source_index=0,quote=quote,
                     detail_refs=[],kind='appointment',applies_to=['self'],locked=True,booking_evidence=None,
-                    start_date=None,start_time='09:00',start_timezone=None,start_place=None,
-                    end_date=None,end_time='10:00',end_timezone=None,end_place=None,
+                    start_date=None,start_time='09:00',start_timezone=None,start_place=site,
+                    end_date=None,end_time='10:00',end_timezone=None,end_place=site,
                     unknown_fields=[],uncertain_fields={})],temporary_conditions=[])
+            if named:
+                value['observations'].append(dict(field='arrival.time',state='known',value='06:30',note=None,
+                    sources=[dict(source_index=0,quote='06:30'if zh else'6:30 am')]))
+                for field,name in (('arrival.place','北京大兴机场'if zh else'Beijing Daxing Airport'),
+                                   ('departure.place','北京首都机场'if zh else'Beijing Capital Airport')):
+                    value['observations'].append(dict(field=field,state='known',value=name,note=None,
+                        sources=[dict(source_index=0,quote=name)]))
             if not early_departure:
                 value['observations']=[row for row in value['observations']if row['field']not in ('departure.time','departure.mode')]
         elif version==SKELETON:
@@ -424,7 +447,7 @@ def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1
             # ledger merely to run unrelated regression cases in one cohort.
             for language in ('zh','en'):
                 saved_runs.clear()
-                native.main(saved_runs=saved_runs,generation=True,languages=(language,),cases=cases,followups=followups,trip_days=duration_days,pace_labels=(pace_quote,travel_pace.title()),unconfirmed_places=not provider_available,refusal_question=refusal_question)
+                native.main(saved_runs=saved_runs,generation=True,languages=(language,),cases=cases,followups=followups,trip_days=duration_days,pace_labels=(pace_quote,travel_pace.title()),unconfirmed_places=not provider_available,refusal_question=refusal_question,named_route_case=named_route_case)
                 assert len(saved_runs)==(0 if refusal_question is not None else len(cases))
                 all_saved.update(saved_runs)
         else:native.main(saved_runs=saved_runs)
