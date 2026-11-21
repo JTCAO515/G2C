@@ -44,8 +44,8 @@ class ItineraryPreview(unittest.TestCase):
 
     def test_same_model_plan_drives_visible_days_and_read_only_preview(self):
         for locale, question, city, names, day_one in (
-            ('zh', '北京三日游', '北京', ('故宫', '慕田峪长城', '颐和园'), '第1天：上午参观故宫。'),
-            ('en', 'Three days in Beijing', 'Beijing', ('Forbidden City', 'Great Wall', 'Summer Palace'),
+            ('zh', '北京三日游', '北京', ('故宫博物院', '慕田峪长城', '颐和园'), '第1天：上午参观故宫博物院。'),
+            ('en', 'Three days in Beijing', 'Beijing', ('Forbidden City', 'Mutianyu Great Wall', 'Summer Palace'),
              'Day 1: Morning: Visit Forbidden City.'),
         ):
             with self.subTest(locale=locale):

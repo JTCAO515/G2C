@@ -71,8 +71,8 @@ def exercise(auth, conninfo):
                'Day 1: Visit the Forbidden City.\nDay 2: Walk the Great Wall.\nDay 3: Tour the Summer Palace.\nWhich day should we adjust?',
                'Day 1: Forbidden City.\nDay 2: Great Wall.\nDay 3: Summer Palace.\nWhich day should we adjust?'),
     }
-    locations = dict(zh=('故宫', '慕田峪长城', '颐和园'),
-                     en=('Forbidden City', 'Great Wall', 'Summer Palace'))
+    locations = dict(zh=('故宫博物院', '慕田峪长城', '颐和园'),
+                     en=('Forbidden City', 'Mutianyu Great Wall', 'Summer Palace'))
     chosen_reply = None
 
     async def fake_wire(config, raw, guard, observation, *, send_under_fence=None):
