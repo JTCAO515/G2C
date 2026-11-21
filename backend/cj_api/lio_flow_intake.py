@@ -22,9 +22,9 @@ _SHORT_PLAN=re.compile(
     rf'(?:(?:请|麻烦)?(?:帮|给|为)(?:我们|我))?\s*(?:规划|安排)\s*(?:{NUMBER})\s*天'
     rf'|(?:(?:could|can|would) you\s+|please\s+)?(?:help (?:me|us) (?:to )?)?plan\s+(?:{NUMBER})\s+days?',re.I)
 _DATE_REVISION=re.compile(
-    r'日期|改期|改成|改为|出发|启程|起程|到达|抵达|返程|提前|推迟|延期|另选|换一天|取消'
+    r'日期|改期|改天|改[成为到]|出发|启程|起程|到达|抵达|返程|提前|推迟|延期|另选|换一天|取消|之前那天|原来那天'
     r'|\b(?:actually|instead|dates?|start(?:ing)?|depart\w*|arriv\w*|reschedul\w*|'
-    r'postpon\w*|delay\w*|earlier|later)\b',re.I)
+    r'postpon\w*|delay\w*|earlier|later|(?:previous|old) (?:day|time))\b',re.I)
 _TRAVEL_ENDPOINT=re.compile(r'到达|抵达|起飞|落地|返程|\b(?:arriv\w*|depart\w*|flight|train|land(?:s|ing|ed)?)\b',re.I)
 _META_REQUEST=re.compile(r'^\s*(?:(?:请帮我|请|帮我)?(?:(?:把|将)[^。！？!?\n]{0,40})?(?:翻译|复述|改写|引用)|'
     r'(?:(?:can|could|would) you\s+)?(?:please\s+)?(?:help(?: (?:me|us))?(?: to)?\s+)?'
@@ -234,6 +234,18 @@ def _date_reopened(text):
     return DATE_EVIDENCE.search(text) is not None or _DATE_REVISION.search(text) is not None
 
 
+def _require_current_city_continuation_dates(intake, previous, turns):
+    if (previous is None or intake.city is None or intake.intent not in ('plan','save')
+            or previous.get('status') not in ('needs_city','needs_details')
+            or previous.get('authority') not in ('plan','save') or 'city' in previous.get('facts',{})):
+        return
+    latest=max((index for index,turn in enumerate(turns)if _date_reopened(turn.text)),default=0)
+    for field in ('start_date','arrival.date','departure.date'):
+        sources=intake.sources.get(field,())
+        if sources and all(ref['source_index']<latest for ref in sources):
+            raise InvalidInput('trip date source precedes the latest original date instruction')
+
+
 def _explicit_trip_start_quote(text, city=None):
     # Restore only a start phrase attached to the original planning request.
     # A date elsewhere in the message cannot source this trip's start.
@@ -379,10 +391,9 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_off
                                 if ref['message_id']in source_ids[:-1]}
                 if len(source_indexes)==1:
                     source_index=source_indexes.pop()
-                    if not any(_date_reopened(turn.text)for turn in turns[source_index+1:]):
-                        quote=_explicit_trip_start_quote(turns[source_index].text)
-                        if quote is not None:
-                            data['field_sources'].append(dict(field='start_date',source_index=source_index,quote=quote))
+                    quote=_explicit_trip_start_quote(turns[source_index].text)
+                    if quote is not None:
+                        data['field_sources'].append(dict(field='start_date',source_index=source_index,quote=quote))
     city=data['city'];old_city=saved.get('city')
     same_city=(city is None or old_city is None or
         city['query'].casefold()==old_city['value']['query'].casefold()and
@@ -408,6 +419,7 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_off
         error.control=replace(error.control,intent=intent,publication_hold=hold is not None,planning_request_index=request_index)
         raise
     intake=replace(intake,intent=intent,publication_hold=hold is not None,planning_request_index=request_index)
+    _require_current_city_continuation_dates(intake,previous,turns)
     if schema is OptionalIntake and intent=='plan'and request_index is None:
         # This null-root variant only reaches the DATA-only question after the
         # complete DTO and original source/compiler checks above have passed.

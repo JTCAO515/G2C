@@ -510,10 +510,10 @@ class PlanningFlow(unittest.TestCase):
                 self.assertEqual(len(published), 0)
 
     def test_chongqing_does_not_restore_start_over_a_later_date_change(self):
-        for locale, first, duration, city, change, refusal in (
-            ('zh', '帮我安排三天，从明天开始。', '三天', '重庆',
+        for locale, first, duration, old_date, city, change, refusal in (
+            ('zh', '帮我安排三天，从明天开始。', '三天', '从明天开始', '重庆',
              '去重庆。出发日改成2026-11-20。', '去重庆。原来的出发日取消。'),
-            ('en', 'Plan three days starting tomorrow.', 'three days', 'Chongqing',
+            ('en', 'Plan three days starting tomorrow.', 'three days', 'starting tomorrow', 'Chongqing',
              'Chongqing, China. Actually, start on 2026-11-20 instead.',
              'Chongqing, China. Leave the start date undecided.'),
         ):
@@ -525,13 +525,26 @@ class PlanningFlow(unittest.TestCase):
                 for reference in fact['sources']:
                     reference['message_id'] = 'prior-0'
             for text in (change, refusal):
-                with self.subTest(text=text):
-                    wire = flow(text, city=city, start='2026-11-12', index=1, intent='plan', questions=())
-                    wire['planning_request_index'] = 0
-                    wire['field_sources'] = [dict(field='duration_days', source_index=0, quote=duration)]
-                    published, _, _, _ = run(wire, text, turns=(original(first), original(text)),
-                                             previous=previous, locale=locale)
-                    self.assertEqual(len(published), 0)
+                for locator in (None, old_date):
+                    with self.subTest(text=text, locator=locator):
+                        wire = flow(text, city=city, start='2026-11-12', index=1, intent='plan', questions=())
+                        wire['planning_request_index'] = 0
+                        wire['field_sources'] = [dict(field='duration_days', source_index=0, quote=duration)]
+                        if locator is not None:
+                            wire['field_sources'].append(dict(field='start_date', source_index=0, quote=locator))
+                        published, _, _, _ = run(wire, text, turns=(original(first), original(text)),
+                                                 previous=previous, locale=locale)
+                        self.assertEqual(len(published), 0)
+            confirmed = ('去重庆。从2026-11-20开始。' if locale == 'zh'
+                         else 'Chongqing, China. Start my trip on 2026-11-20.')
+            current = flow(confirmed, city=city, start='2026-11-20', index=1, intent='plan', questions=())
+            current['planning_request_index'] = 0
+            current['field_sources'] = [dict(field='duration_days', source_index=0, quote=duration),
+                                        dict(field='start_date', source_index=1, quote='2026-11-20')]
+            published, _, _, _ = run(current, confirmed, turns=(original(first), original(confirmed)),
+                                     previous=previous, locale=locale)
+            self.assertEqual(len(published), 1)
+            self.assertEqual(published[0][3].fields['arrival']['date']['value'], '2026-11-20')
 
     def test_first_request_does_not_adopt_another_tasks_explicit_start_phrase(self):
         for locale, city, days, text in (
