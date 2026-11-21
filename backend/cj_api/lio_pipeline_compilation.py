@@ -6,6 +6,7 @@ host must capture/check/hold their actual sources again for final publication.
 """
 from copy import deepcopy
 from dataclasses import dataclass,replace
+from datetime import date,timedelta
 
 from cj_draft.calendar_plan import protected_base_data
 from cj_feasibility.rich_assembly import Activity
@@ -48,6 +49,32 @@ def _nearby(place,hotel):
     return initial_mode(endpoint(place),endpoint(hotel))=='walking'
 
 
+def _bind_transfer_clock(item, edge, original, timezone, locale, start_date):
+    clock=original.get('time')
+    zone=original.get('timezone',{'state':'missing'})
+    if (clock is None or clock['state']!='known'
+            or zone['state']!='missing' and zone!={'state':'known','value':timezone}):
+        return Activity(item['id'],())
+    event=item['schedule']['start']
+    day=original.get('date')
+    if day is not None and day['state']=='known':
+        if start_date is None or date.fromisoformat(day['value']) != (
+                date.fromisoformat(start_date)+timedelta(days=event['day_index']-1)):
+            return Activity(item['id'],())
+    value=dict(event,time=clock,timezone={'state':'known','value':timezone})
+    item['schedule']={'start':deepcopy(value),'end':deepcopy(value)}
+    # The anchor records the original arrival/departure event. C's windows
+    # still reserve the travel buffers around it and order the actual routes.
+    site=original['place']['value']
+    if locale=='zh':
+        item['text']='抵达'+site if edge=='arrival' else '从'+site+'出发'
+        item['note']='时间沿用你给出的到达或出发时点。接送安排和预订待确认。'
+    else:
+        item['text']=('Arrive at ' if edge=='arrival' else 'Depart from ') + site
+        item['note']='This is your stated arrival or departure time. Transfer arrangements and booking remain unconfirmed.'
+    return _protected_activity(item)
+
+
 def compile_retrieved(prepared,places,hotel_places,*,checks,subjects,locale,retained):
     """Rebuild every preflight item with observed places, without defaults.
 
@@ -82,12 +109,16 @@ def compile_retrieved(prepared,places,hotel_places,*,checks,subjects,locale,reta
         id_prefix=prepared.id_prefix,timezone=prepared.city.timezone,locale=locale)
     # fields_for binds destination-city metadata to both NEEDS edges. That is
     # not a traveler-supplied airport/station or a request for pickup service.
-    transfers=transfer_items(prepared.projected.fields,day_count,id_prefix=prepared.id_prefix,locale=locale)
+    projected=prepared.projected.fields
+    calendar_date=base['calendar'].get('start_date')
+    transfers=transfer_items(projected,day_count,id_prefix=prepared.id_prefix,locale=locale)
+    transfer_bounds=[]
     for item in transfers:
         place=places.get(item['id'])
         if place is not None:item['place']=deepcopy(place)
-    transfer_bounds=tuple(Activity(item['id'],())for item in transfers)
-    document,activities,proposed=compile_document(skeleton,_CalendarData(base['calendar'].get('start_date')),
+        edge=item['id'].removeprefix(prepared.id_prefix+'-').removesuffix('-transfer')
+        transfer_bounds.append(_bind_transfer_clock(item,edge,projected[edge],prepared.city.timezone,locale,calendar_date))
+    document,activities,proposed=compile_document(skeleton,_CalendarData(calendar_date),
         locale=locale,subjects=subjects,timezone=prepared.city.timezone,code_checks=checks,
         places=places,hotel_places=hotel_places,protected_items=protected,
         protected_activities=tuple(_protected_activity(item)for item in protected),legacy_sources=base['sources'],

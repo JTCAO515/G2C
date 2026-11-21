@@ -124,6 +124,48 @@ class RetrievedCompilation(unittest.TestCase):
         self.assertIn('booking are unconfirmed',arrival['note'])
         self.assertEqual(actual['compile-data-departure-transfer']['place']['state'],'unconfirmed')
 
+    def test_known_airport_event_clocks_bind_both_route_anchor_windows(self):
+        fields = {
+            'arrival': {'place': {'state': 'known', 'value': '北京大兴机场'},
+                        'time': {'state': 'known', 'value': '06:30'}},
+            'departure': {'place': {'state': 'known', 'value': '北京首都机场'},
+                          'time': {'state': 'known', 'value': '18:00'}},
+        }
+        original = deepcopy(fields)
+        result = build(prepared(fields))
+        validate_document(result.document)
+        transported = {item['id']: item for item in result.document['items'] if item['kind'] == 'transport'}
+        for edge, clock, day, point in (('arrival', '06:30', 1, 23400), ('departure', '18:00', 3, 237600)):
+            key = 'compile-data-'+edge+'-transfer'
+            item = transported[key]
+            self.assertEqual(item['schedule']['start'], item['schedule']['end'])
+            event = item['schedule']['start']
+            self.assertEqual(event['day_index'], day)
+            self.assertEqual(event['time'], {'state': 'known', 'value': clock})
+            self.assertEqual(event['timezone'], {'state': 'known', 'value': 'Asia/Shanghai'})
+            self.assertEqual(event['utc_offset'], {'state': 'unknown'})
+            self.assertEqual(item['fixed'], {'state': 'known', 'value': False})
+            self.assertIn('booking', item['note'])
+            for activities in (result.order_activities, result.schedule_activities):
+                window, = next(activity.windows for activity in activities if activity.item_id == key)
+                self.assertEqual((window.start, window.end), (point, point))
+        self.assertEqual(fields, original)
+
+    def test_transfer_clock_with_a_different_calendar_day_or_zone_stays_unconfirmed(self):
+        for extra in ({'date': {'state': 'known', 'value': '2026-11-23'}},
+                      {'timezone': {'state': 'known', 'value': 'UTC'}}):
+            with self.subTest(extra=extra):
+                fields = {'arrival': dict({'place': {'state': 'known', 'value': '北京大兴机场'},
+                                           'time': {'state': 'known', 'value': '06:30'}}, **extra)}
+                value = prepared(fields)
+                value.projection = projection(fields, start='2026-11-22')
+                result = compile_retrieved(value, {stop.item_id: None for stop in value.skeleton.stops},
+                                           (None, None), checks=checks(3, dated=True), subjects=('party',),
+                                           locale='en', retained=None)
+                item, = (row for row in result.document['items'] if row['kind'] == 'transport')
+                self.assertEqual(item['schedule']['start']['time'], {'state': 'unknown'})
+                self.assertEqual(next(a.windows for a in result.order_activities if a.item_id == item['id']), ())
+
     def test_city_names_do_not_become_a_transfer_or_fixed_poi(self):
         item=fixed()
         for edge in ('start','end'):
