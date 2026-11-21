@@ -1,7 +1,92 @@
 {
   "schema": 1,
-  "currentBuild": 50,
+  "currentBuild": 51,
   "releases": [
+    {
+      "build": 51,
+      "previousBuild": 50,
+      "sections": [
+        {
+          "id": "changes",
+          "title": {
+            "en": "New and improved",
+            "zh": "本版新增和修改"
+          },
+          "items": {
+            "zh": [
+              "翻译页改成上下双卡。上面输入文字、录音或选图，下面查看译文。底部可切换文字、语音和拍照，最近翻译从右上角打开。"
+            ],
+            "en": [
+              "Translation now has an input card above the result card. Add text, a recording, or a photo at the top and see the translation below. Switch modes at the bottom and open recent translations from the top right."
+            ]
+          }
+        },
+        {
+          "id": "comparison",
+          "title": {
+            "en": "Changes since the previous build",
+            "zh": "与上一版的区别"
+          },
+          "items": {
+            "zh": [
+              "与构建 50 相比，切换输入方式会保留文字草稿，打开最近翻译会保留当前结果。照片译文仍逐行对照。"
+            ],
+            "en": [
+              "Compared with build 50, switching input modes keeps your text draft. Opening recent translations keeps the current result. Photo translations remain paired line by line."
+            ]
+          }
+        },
+        {
+          "id": "testing",
+          "title": {
+            "en": "Suggested checks",
+            "zh": "建议怎么测"
+          },
+          "items": {
+            "zh": [
+              "核对上下双卡、互换语言、切换输入方式和打开最近翻译。用「完成」、点空白和上滑收起键盘，确认草稿仍在。核对聊天、行程、插件、记忆的顺序。",
+              "账号开通后，文字中英各三条，语音中英各三次（含无声录音），再测菜单、路牌、小票、药品说明各三张照片。",
+              "抽测构建 49 的第 1、3、4 项。强退重开恢复旧对话和草稿，历史打开旧和新对话，切后台 10 秒及锁屏 60 秒后恢复。"
+            ],
+            "en": [
+              "Check the two cards, language swap, mode switching and recent translations. Use Done, tap an empty spot and swipe up to dismiss the keyboard. Verify that the text draft stays and the tabs appear in Chat, Trips, Tools, Memory order.",
+              "Once your account is enabled, translate three texts and three recordings in each direction, including a silent recording. Test three photos each of menus, signs, receipts, and medicine instructions.",
+              "Repeat build 49 checks 1, 3, and 4. Restore an older chat and draft after a force-quit, open both chats from history, then return after 10 seconds in the background and 60 seconds locked."
+            ]
+          }
+        },
+        {
+          "id": "known",
+          "title": {
+            "en": "Known issues and checks to avoid",
+            "zh": "已知问题和暂不测试内容"
+          },
+          "items": {
+            "zh": [
+              "翻译需要联网。真实千问翻译等账号开通后再测。"
+            ],
+            "en": [
+              "Translation requires an internet connection. Wait until your account is enabled before checking live translation."
+            ]
+          }
+        },
+        {
+          "id": "service",
+          "title": {
+            "en": "Online service changes",
+            "zh": "在线服务变化"
+          },
+          "items": {
+            "zh": [
+              "本版调整翻译页面。账号资格与真实翻译复测通知见 #1274。"
+            ],
+            "en": [
+              "This build updates the Translation screen. See #1274 for account enablement and the live translation retest."
+            ]
+          }
+        }
+      ]
+    },
     {
       "build": 50,
       "previousBuild": 49,
@@ -84,103 +169,6 @@
             ],
             "en": [
               "This round focuses on app interactions. See #1274 for the live translation retest notice once the service is enabled."
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "build": 49,
-      "previousBuild": 48,
-      "sections": [
-        {
-          "id": "changes",
-          "title": {
-            "en": "New and improved",
-            "zh": "本版新增和修改"
-          },
-          "items": {
-            "zh": [
-              "从行程列表打开已保存的行程时，iOS 18 或更新版本从所点卡片缩放到详情。",
-              "内测新增「插件」页。翻译支持中英文字、语音和图片，可复制或朗读译文，在本机查看最近记录。",
-              "修复删除一条记忆后列表可能加载失败的问题，并提高「更多记忆」按钮的可读性。"
-            ],
-            "en": [
-              "On iOS 18 or later, opening a saved itinerary from Trips zooms from the selected card into its details.",
-              "The internal build adds the Tools tab. Translate Chinese and English text, speech, and photos, copy or listen to translations, and view recent translations on this device.",
-              "Fixed an issue where the memory list could fail to reload after deleting an entry and made the More memories button easier to read."
-            ]
-          }
-        },
-        {
-          "id": "comparison",
-          "title": {
-            "en": "Changes since the previous build",
-            "zh": "与上一版的区别"
-          },
-          "items": {
-            "zh": [
-              "与构建 48 相比，行程列表新增缩放转场。从聊天打开行程详情时，沿用系统默认转场。",
-              "与构建 48 相比，本版新增中英翻译，删掉一条记忆后可以继续查看其余记忆。"
-            ],
-            "en": [
-              "Compared with build 48, opening details from the Trips list uses a zoom transition. Opening details from Chat still uses the standard navigation animation.",
-              "Compared with build 48, this build adds Chinese and English translation and keeps the remaining memories visible after you delete an entry."
-            ]
-          }
-        },
-        {
-          "id": "testing",
-          "title": {
-            "en": "Suggested checks",
-            "zh": "建议怎么测"
-          },
-          "items": {
-            "zh": [
-              "从行程列表打开一条已保存行程。返回后，确认同一张卡片可见并能再次打开。",
-              "从聊天内已保存的行程卡点“查看”，确认打开同一条行程。再检查深色和减弱动态效果。",
-              "在 iOS 18 或更新版本打开「插件」→「翻译」，按需连接 Wi-Fi 下载语言包。输入或粘贴一句话，互换中英后再试，核对离线标识、复制、朗读和最近记录。",
-              "用中英各试一小段语音和一张有两行文字的图片。分别试拍照和相册，对照识别出的文字和译文。若拒绝权限，查看设置提示。"
-            ],
-            "en": [
-              "Open a saved itinerary from Trips. Go back and check that the same card is visible and opens again.",
-              "Tap View on a saved itinerary card in Chat and check that it opens the same itinerary. Repeat in Dark Mode and with Reduce Motion enabled.",
-              "On iOS 18 or later, open Tools → Translation and download the languages over Wi-Fi if prompted. Type or paste a sentence, swap Chinese and English, then check the offline label, copying, playback, and recent translations.",
-              "Try a short recording and a two-line image in each language. Try the camera and Photos and check the originals and translations. If you deny permission, check the Settings guidance."
-            ]
-          }
-        },
-        {
-          "id": "known",
-          "title": {
-            "en": "Known issues and checks to avoid",
-            "zh": "已知问题和暂不测试内容"
-          },
-          "items": {
-            "zh": [
-              "iOS 17 或开启减弱动态效果时使用系统默认转场。真机转场体验仍待确认。",
-              "行程正式保存、修改与撤销，以及全国规划仍在验证。",
-              "本版翻译使用 Apple 本机能力，离线译文需要 iOS 18 或更新版本和已下载的语言包。iOS 17 可以打开插件页、查看照片识别出的文字。麦克风和相机效果待 iPhone 真机验证。"
-            ],
-            "en": [
-              "iOS 17 and Reduce Motion use the standard navigation animation. The animation is awaiting verification on an iPhone.",
-              "Formal itinerary saving, edits and undo, and planning across China are still being validated.",
-              "This build uses Apple on-device translation, which requires iOS 18 or later and downloaded languages. On iOS 17, you can open Tools and read text recognized from photos. Microphone and camera behavior still need iPhone verification."
-            ]
-          }
-        },
-        {
-          "id": "service",
-          "title": {
-            "en": "Online service changes",
-            "zh": "在线服务变化"
-          },
-          "items": {
-            "zh": [
-              "构建 49 的真机七项按 #702 的本版通知执行。构建 48 的清单供回看，服务窗口见 #1048。"
-            ],
-            "en": [
-              "For the seven build 49 iPhone checks, follow the build 49 announcement in #702. Keep the build 48 checklist for reference. See #1048 for the live testing window."
             ]
           }
         }
