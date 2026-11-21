@@ -96,6 +96,46 @@ class PlanningFlow(unittest.TestCase):
                 for day in range(1,4):self.assertIn('第'+str(day)+'天'if locale=='zh'else'Day '+str(day),answer(events))
                 self.assertNotIn('哪天',answer(events));self.assertNotIn('几个人',answer(events))
 
+    def test_r06_rejected_duration_intake_preserves_the_original_city_in_read_only_reply(self):
+        for locale, first, last, city, daily, fallback in (
+                ('zh', '去成都', '三天', '成都', '第3天', '未保存建议'),
+                ('en', 'Go to Chengdu', 'Three days', 'Chengdu', 'Day 3', 'Unsaved suggestion')):
+            with self.subTest(locale=locale):
+                first_wire=flow(first,city=city,days=None,intent='plan',questions=('duration_days',))
+                first_wire.update(planning_request_index=0,needs_tools=False)
+                previous=context(run(first_wire,first,locale=locale)[1])
+                self.assertEqual(previous['status'],'needs_details')
+                for reference in previous['facts']['city']['sources']:reference['message_id']='prior-0'
+                wire=flow(last,city=city,index=1,intent='plan',questions=())
+                wire.update(unknown_fields=['start_date','party_size'],needs_tools=False,
+                            reply='Got it! A relaxed three-day trip to Chengdu.')
+                wire['city'].update(source_index=0,quote=first,normalized_name='成都')
+                # r06: the supplier attached empty locators to two optional unknowns.
+                wire['field_sources']=[dict(field='start_date',quote='',source_index=0),
+                    dict(field='party_size',quote='',source_index=0),
+                    dict(field='duration_days',quote=last,source_index=1)]
+                published,events,lookups,result=run(wire,last,turns=(original(first),original(last)),
+                                                     previous=previous,locale=locale)
+                self.assertIsNotNone(result)
+                self.assertEqual((published,lookups),([],[]))
+                reply=answer(events)
+                self.assertIn(city,reply)
+                self.assertIn(daily,reply)
+                self.assertIn(fallback,reply)
+                self.assertEqual(context(events)['facts'],{})
+                self.assertEqual(context(events)['authority'],'none')
+                self.assertEqual(sum(kind=='discussion_input'for kind,_ in events),1)
+                _,failed_outline,_,ordinary=run(wire,last,turns=(original(first),original(last)),previous=previous,
+                                                 locale=locale,discussion_output='{"answer":null}')
+                self.assertIsNone(ordinary)
+                self.assertEqual(sum(value.startswith('lio_planning_context.1:')for _,value in failed_outline),1)
+                for blocked in (None,dict(previous,status='consult'),
+                                dict(previous,authority_barrier_message_id='prior-0'),
+                                dict(previous,nonplanning_message_ids=['prior-0'],read_only_data_message_ids=[]),
+                                dict(previous,uncompleted_request_message_ids=['prior-0'])):
+                    _,denied,_,_=run(wire,last,turns=(original(first),original(last)),previous=blocked,locale=locale)
+                    self.assertFalse(any(kind=='discussion_input'for kind,_ in denied))
+
     def test_bare_destination_after_fixed_answers_continues_in_the_question_language(self):
         # #994 r08 item 7 (a new single-turn chat): the English bare
         # destination was labelled consult/root=None and fell to a generic

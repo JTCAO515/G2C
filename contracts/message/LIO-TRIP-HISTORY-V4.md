@@ -34,7 +34,15 @@ does not dispatch a new action as old undo1/2. Restoring old1–3 is allowed thr
 the explicit new rich consumer, while old detail/edit/undo interfaces keep their
 own version gates. Unknown ACKs query the same action/target; no fresh ID or replay.
 
-This document/schema/checker is a consumption design. Until actual protected
-Source4/handler/routes and exact-head review/CI are completed, native history,
-undo and formal writes remain UNRUN. Fixtures are not original authority,
-physical-device, deployment or supplier acceptance.
+The selected native4 host reads history through `GET /v4/lio/trip` using
+`conversation_id` and an optional `before` cursor. The host admits undo only
+with the original Trip signer and an explicitly configured current Memory and
+profile holder.
+
+- Send the complete `LIO-trip-undo.4` envelope in `POST /v4/lio/trip-undos`.
+- Read the original action through `GET /v4/lio/trip-undo-receipts` with
+  `action_id`, `conversation_id` and the entire target object encoded as a JSON
+  query value. Both actions return `LIO-trip-undo-receipt.4`.
+
+Signed local fixtures verify history, undo and receipt lookup. Release,
+physical-device and live supplier acceptance have their own gates.

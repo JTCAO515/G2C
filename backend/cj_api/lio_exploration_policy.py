@@ -1,12 +1,22 @@
 """Code-owned scene/question/exit policies for #922 §3.3–3.4, opt-in native4."""
+from collections import Counter
 from dataclasses import dataclass
+from datetime import date
 from enum import Enum
+import json
 import re
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from cj_message.lio_exploration_schema import QuestionGroup as ModelQuestionGroup
+from cj_draft.rich_adjustment import RichAdjustment
+from cj_message.domain import Stored
+from cj_run.core import Binding
+from cj_trip.domain import packed
+from cj_trip.lio_history import TripHead
 
 from .lio_exploration_factors import BY_KEY, FACTORS
+from .lio_edit_selection import _QUALIFIED_LABEL, _edit_parts, _replacement_label, match_edit
+from .lio_flow_intake import _quoted_data_spans
 from cj_message.lio_context import display_answer
 
 
@@ -141,3 +151,151 @@ def emergency_opening(text,locale):
     phone='120' if medical else '110'
     return ('请立即拨打'+phone+'，并请身边的人协助说明你的位置。' if locale=='zh' else
             'Call '+phone+' now and ask someone nearby to help explain your location.')
+
+
+_RELAX = re.compile(r'(?:(?:请|帮我)\s*)?(?:再轻松(?:点|一点)|安排得轻松一点|把行程排得轻松一点)'
+                    r'|(?:(?:please|(?:can|could|would) you)\s+)?make (?:it|the trip|my itinerary) more relaxed', re.I)
+_FOOD = re.compile(r'(?:(?:请|能|可以|帮我)\s*)?(?:多加点美食|多安排点美食)(?:吗)?'
+                   r'|(?:(?:please|(?:can|could|would) you)\s+)?add more (?:local )?food', re.I)
+_REMOVE = re.compile(r'(?:(?:请)?去掉\s*|(?:(?:please|(?:can|could|would) you)\s+)?remove\s+)(?P<name>.+)', re.I)
+_EXPLICIT_REQUEST = re.compile(r'^(?:请|帮我|能|可以|(?:please|(?:can|could|would) you)\b)',re.I)
+_CONDITIONAL_CHANGE = re.compile(
+    r'要是|除非|(?:确认|同意|批准|核实|核对)(?:之后|以后|后|了再)|以后再|晚些再|才执行'
+    r'|\b(?:until|when|once|pending|approv(?:e|es|ed))\b',re.I)
+_QUOTES = {'「': '」', '“': '”', '"': '"', "'": "'"}
+_SUGGESTED = frozenset(('sight', 'meal', 'free_time'))
+ADJUSTMENT_EFFECT = 'lio_rich_adjustment.1:'
+
+
+@dataclass(frozen=True)
+class SelectedAdjustment:
+    scope: RichAdjustment
+    kind: str
+    replacement: str | None = None
+
+
+@dataclass(frozen=True)
+class AdjustmentAuthorization:
+    binding: Binding
+    original: Stored
+    question_day: date
+    selection: SelectedAdjustment
+
+    def matches(self, binding, original, scope):
+        return binding == self.binding and original == self.original and scope == self.selection.scope
+
+    def marker(self):
+        return packed(dict(version='LIO-scoped-adjustment.1', message_id=self.binding.message_id,
+                           run_id=self.binding.run_id, input_sha256=self.original.receipt.input_sha256,
+                           question_day=self.question_day.isoformat(), adjustment=self.selection.scope.basis()))
+
+
+def _unlocked(item):
+    return (item['kind'] in _SUGGESTED and item['fixed'] == dict(state='known', value=False)
+            and item['verification'] == 'pending' and not item['evidence']
+            and item['source_category'] == 'unknown' and not item['source_refs'])
+
+
+def _literal_name(text):
+    text=text.strip()
+    if (len(text)>2 and _QUOTES.get(text[0])==text[-1]
+            and _quoted_data_spans(text)==((0,len(text)),)):
+        return text[1:-1].strip()
+    return None
+
+
+def _qualified_name(text):
+    return _QUALIFIED_LABEL.search(text) is not None or _CONDITIONAL_CHANGE.search(text) is not None
+
+
+def _named_item(items, label):
+    label=label.strip()
+    literal=_literal_name(label)
+    if literal is None and _qualified_name(label):
+        return None
+    label=label if literal is None else literal
+    matches = [item for item in items if item['text'].casefold() == label.casefold()]
+    if len(matches) == 1 and _unlocked(matches[0]):
+        return matches[0]
+    return None
+
+
+def _optional_sight(items):
+    by_day = Counter(item['schedule']['start']['day_index'] for item in items if item['kind'] == 'sight')
+    options = []
+    for index, item in enumerate(items):
+        day = item['schedule']['start']['day_index']
+        if item['kind'] == 'sight' and by_day[day] > 1 and _unlocked(item):
+            options.append((by_day[day], index))
+    return items[max(options)[1]] if options else None
+
+
+def _request_text(text):
+    return text.strip().rstrip('。！!？?.').rstrip()
+
+
+def matches_adjustment(text):
+    text = _request_text(text)
+    return (_RELAX.fullmatch(text) is not None or _FOOD.fullmatch(text) is not None
+            or _REMOVE.fullmatch(text) is not None or match_edit(text) is not None)
+
+
+def select_adjustment(trip, text, question_day):
+    document = json.loads(trip.content)
+    if document.get('content_version') != 'structured.4':
+        return None
+    calendar = document['calendar']
+    if calendar['state'] == 'dated' and date.fromisoformat(calendar['start_date']) <= question_day:
+        return None
+    question = text.rstrip().endswith(('?', '？'))
+    text = _request_text(text)
+    if question and not _EXPLICIT_REQUEST.match(text):
+        return None
+    items = document['items']
+    food = _FOOD.fullmatch(text) is not None
+    if food or _RELAX.fullmatch(text):
+        item = next((row for row in items if row['kind'] == 'free_time' and _unlocked(row)), None) if food else None
+        if item is None:
+            item = _optional_sight(items)
+        if item is None:
+            return None
+        scope = RichAdjustment(TripHead.from_trip(trip), item['id'], 'replace' if food else 'remove')
+        return SelectedAdjustment(scope, 'meal' if food else item['kind'])
+    remove = _REMOVE.fullmatch(text)
+    if remove is not None:
+        item = _named_item(items, remove['name'])
+        if item is not None:
+            return SelectedAdjustment(RichAdjustment(TripHead.from_trip(trip), item['id'], 'remove'), item['kind'])
+        return None
+    swap = match_edit(text)
+    if swap is None:
+        return None
+    replacements = []
+    for target, raw in _edit_parts(swap):
+        if _literal_name(raw) is None and _qualified_name(raw):
+            continue
+        item = _named_item(items, target)
+        label = _replacement_label(raw, national_names=True)
+        if item is not None and label is not None and label.casefold() != item['text'].casefold():
+            replacements.append((item, label))
+    if len(replacements) == 1:
+        (item, label), = replacements
+        return SelectedAdjustment(RichAdjustment(TripHead.from_trip(trip), item['id'], 'replace'), item['kind'], label)
+    return None
+
+
+def adjustment_document(trip, selection, *, replacement):
+    from .lio_pipeline_document import unconfirmed_legs,unconfirmed_place
+    document = json.loads(trip.content)
+    selected_id = selection.scope.item_id
+    if selection.scope.operation == 'remove':
+        document['items'] = [item for item in document['items'] if item['id'] != selected_id]
+    else:
+        item, = (row for row in document['items'] if row['id'] == selected_id)
+        item.update(text=replacement, kind=selection.kind, place=unconfirmed_place((replacement, replacement)),
+                    note=None, tip=None, reason_refs=[])
+    def pair(leg):
+        return leg['day_index'], leg['from_item_id'], leg['to_item_id']
+    existing = {pair(leg): leg for leg in document['legs'] if selected_id not in pair(leg)[1:]}
+    document['legs'] = [existing.get(pair(leg), leg) for leg in unconfirmed_legs(document)]
+    return document

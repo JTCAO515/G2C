@@ -1,6 +1,7 @@
 """Lio history and explicit undo over the original source-bound Trip authority."""
 import base64
 import binascii
+from hashlib import sha256
 import json
 import re
 
@@ -15,13 +16,13 @@ from cj_needs.domain import Denied as NeedsDenied
 from cj_trip.auth_boundary import Boundary
 from cj_trip.current_needs_source import CurrentNeedsSource
 from cj_trip.domain import Conflict, Denied, packed
-from cj_trip.lio_history import Undo
+from cj_trip.lio_history import TripHead, Undo
 from cj_trip.needs_edit_store import NeedsEdits
 from cj_trip.operation import OperationWithheld
 
 from .history_routes import _query
 from .lio_dialogue_routes import _failure, _json
-from .lio_trip_cards import _card,calendar_card
+from .lio_trip_cards import _card,calendar_card,rich_card
 from .local_app import scope_for, trip_resolver
 from .local_needs import protected_reader
 from .message_routes import BodyError, _read_body, _token
@@ -48,21 +49,26 @@ def _undo(action_id, target):
 
 
 class LioTripBoundary(Boundary):
-    def __init__(self, database, checker, confirmation_signer,*,calendar=False):
+    def __init__(self, database, checker, confirmation_signer,*,calendar=False,rich_undo_sources=None):
         self.database = database
         self.reader = protected_reader(database, checker)
+        self.rich_undo_sources = rich_undo_sources
 
         resolve = trip_resolver(database)
-        super().__init__(checker, resolve, confirmation_signer, structured=True,calendar=calendar)
+        super().__init__(checker, resolve, confirmation_signer,structured=True,calendar=calendar,
+                         rich=rich_undo_sources is not None)
 
     def _bind(self, token):
         repository, principal, check = super()._bind(token)
         edits = NeedsEdits(CurrentNeedsSource(self.database, self.checker, token, self.reader))
+        rich_undo_sources = self.rich_undo_sources
         repository.needs_edits = edits
+        repository.rich_undo_sources = rich_undo_sources
 
         def guard(stage):
             check(stage)
-            if repository.needs_edits is not edits:
+            if (repository.needs_edits is not edits or repository.rich_undo_sources is not rich_undo_sources
+                    or self.rich_undo_sources is not rich_undo_sources):
                 raise Denied('Lio source binding changed')
 
         return repository, principal, guard
@@ -74,8 +80,19 @@ def _head(context, conversation):
     return context.lio_current_trip(needs_scope_for(scope), lio_needs_id(scope, conversation or lio_conversation(scope)))
 
 
-def _history(context, before, conversation,*,calendar=False):
-    card=calendar_card if calendar else _card
+def _rich_target(current, prior):
+    return dict(trip_id=current.trip_id,expected_version=current.version,
+                original_hash=sha256(current.content).hexdigest(),content_version=json.loads(current.content)['content_version'],
+                restore_version=prior.version,restore_hash=sha256(prior.content).hexdigest(),
+                restore_content_version=json.loads(prior.content)['content_version'])
+
+
+def _history(context, before, conversation,*,calendar=False,rich=False):
+    def card(trip):
+        if rich and json.loads(trip.content)['content_version']=='structured.4':
+            return rich_card(trip)
+        return calendar_card(trip) if calendar or rich else _card(trip)
+
     head = _head(context, conversation)
     current = None
     target = None
@@ -83,9 +100,17 @@ def _history(context, before, conversation,*,calendar=False):
     if head is not None:
         if before is None:
             snapshot = context.lio_revisions(head.trip_id)
+            if rich and (not snapshot or TripHead.from_trip(snapshot[0])!=head):
+                raise Conflict('Lio history changed')
             current = card(snapshot[0])
-            target = _target(head) if head.version > 1 else None
             revisions = snapshot[1:]
+            if head.version>1:
+                if rich:
+                    if not revisions or revisions[0].version!=head.version-1:
+                        raise Conflict('previous Lio itinerary unavailable')
+                    target=_rich_target(snapshot[0],revisions[0])
+                else:
+                    target=_target(head)
         elif before <= head.version:
             revisions = context.lio_revisions(head.trip_id, before=before)
         else:
@@ -98,6 +123,7 @@ def _history(context, before, conversation,*,calendar=False):
     if conversation is not None:
         value.update(version='LIO-trip-history.2', conversation_id=conversation)
     if calendar:value['version']='LIO-trip-history.3'
+    if rich:value['version']='LIO-trip-history.4'
     response = packed(value)
     if len(response) > 4_500_000:
         raise ValueError('Lio history response exceeds its bound')
