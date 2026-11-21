@@ -134,3 +134,18 @@ class NationalLioCity(unittest.TestCase):
         self.assertEqual(resolve(raw,"'Xian'")['status'],'ambiguous')
         self.assertEqual(resolve(raw,"'西安'")['candidates'][0]['adcode'],'610100')
         self.assertEqual(resolve(raw,'献县')['candidates'][0]['adcode'],'130929')
+
+    def test_xian_journey_alias_resolves_the_city_and_explicit_districts_stay_available(self):
+        value=json.loads(data())
+        value['districts'][0]['districts'].extend([
+            node('吉林省','220000','province',[node('辽源市','220400','city',[node('西安区','220403','district')])]),
+            node('黑龙江省','230000','province',[node('牡丹江市','231000','city',[node('西安区','231005','district')])]),
+        ])
+        raw=json.dumps(value,ensure_ascii=False).encode()
+        for query in ('西安',"Xi'an",'Xi’an'):
+            with self.subTest(query=query):
+                result=resolve(raw,query)
+                self.assertEqual(result['status'],'resolved')
+                self.assertEqual([c['adcode'] for c in result['candidates']],['610100'])
+        self.assertEqual(resolve(raw,'西安区')['status'],'ambiguous')
+        self.assertEqual(resolve(raw,'西安',province='吉林')['candidates'][0]['adcode'],'220403')

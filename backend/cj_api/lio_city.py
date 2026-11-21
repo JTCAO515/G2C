@@ -129,6 +129,12 @@ def resolve(raw,name,province=None,normalized_name=None):
         filtered=[c for c in matches if hint in forms(c.province,'province')]
         if filtered:matches=filtered
         elif matches:province_unconfirmed=True
+    if province is None and not translated and (key=='西安' or re.fullmatch(r"xi['’]an",name.strip(),re.I)):
+        # This journey alias denotes the city when the catalogue confirms it.
+        # Explicit district names and province hints keep their own resolution.
+        xian=[c for c in matches if (c.adcode,c.name,c.level)==('610100','西安市','city')]
+        if xian and all(c in xian or c.level=='district' for c in matches):
+            matches=xian
     status='not_found' if not matches else 'ambiguous' if len(matches)>1 else 'confirmation_required' if translated or province_unconfirmed else 'resolved'
     if status in ('resolved','confirmation_required') and matches[0].level=='province' and matches[0].adcode not in {
             '110000','120000','310000','500000','810000','820000'}:

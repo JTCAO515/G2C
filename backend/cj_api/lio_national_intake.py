@@ -467,7 +467,7 @@ _FIXED_GROUP_SCOPE=re.compile(
  r'all (?:the )?(?:travelers|travellers|participants|guests)|'
  r'my (?:friends?|companions?|partner|children|family)|'
  r'(?:with|alongside) (?:me|my|us|our))\b',re.I)
-_FIXED_SENTENCE_END=frozenset('.。!?！？\n')
+_FIXED_SENTENCE_END=frozenset('.。!?！？;；\n')
 
 
 def _unclipped_fixed_source(description,primary,turns):
@@ -519,6 +519,8 @@ def fixed_sources_complete(intake,fields,turns,city_reference,*,ordinal_days=Non
   if intake.start_date is not None and sum(1 for _ in RANGE.finditer(re.sub(ISO,' ',description)))>1:return False
   details='\n'.join(ref['quote'] for ref in evidence if description not in ref['quote'])
   comparison=description+'\n'+details
+  # A final instruction on wording is not a negation of the earlier meetup.
+  comparison=re.sub(r'(?<=[，。；])不要声称已有预约[。！]?\s*\Z','',comparison)
   if first is None and ordinal_days is not None:
    from .lio_calendar_ordinals import fixed_ordinals
    try:fixed_ordinals(description,ordinal_days)
