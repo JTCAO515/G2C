@@ -596,7 +596,8 @@ def _structured_plan_witness(row):
         if (ref, start, end) != (timeline.get('ref'), last_start, last_end):
             return None
     elif proof.get('source') == 'original_preview':
-        if start < last_end or ref == timeline.get('ref'):
+        timeline_ref = timeline.get('ref')
+        if start < last_end or (_request_id(timeline_ref) and ref.casefold() == timeline_ref.casefold()):
             return None
     else:
         return None

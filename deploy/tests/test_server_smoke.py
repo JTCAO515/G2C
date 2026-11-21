@@ -691,3 +691,6 @@ def test_release_verify_requires_two_distinct_original_bindings_even_with_old_te
     damaged = deepcopy(rows)
     damaged[5]['structured_plan']['ref'] = damaged[2]['structured_plan']['ref'].upper()
     assert smoke.decide(damaged, logs) == unknown
+    damaged = deepcopy(rows)
+    damaged[5]['structured_plan']['ref'] = damaged[5]['polls'][-1]['ref'].upper()
+    assert smoke.decide(damaged, logs) == unknown
