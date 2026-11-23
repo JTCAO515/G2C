@@ -173,7 +173,10 @@ private struct LioRootFailureView: View {
                                 + "\n" + "\n".join((HERE / name).read_text() for name in fixtures) + "\n" + beta_root)
     settings.write_text(settings.read_text().replace("space.go2china.foundation.local", "space.go2china.lio.acceptance")
                         .replace(json.dumps(str(app_source)), json.dumps(str(generated_source))))
-    if args.tools and "testLocalSupportDraftReopensAndClearsWithoutSending" in args.case:
+    if args.tools and any(case in args.case for case in (
+        "testLocalSupportDraftReopensAndClearsWithoutSending",
+        "testLocalSupportDraftRejectsOverflowAtLargestTextSize",
+    )):
         bundle = "space.go2china.lio.acceptance"
         entitlement = output / "LocalSupportDraft.entitlements"
         entitlement.write_bytes(plistlib.dumps({
