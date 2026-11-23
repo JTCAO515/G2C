@@ -42,6 +42,17 @@ struct LioToolsView: View {
                     }
                     #endif
                     NavigationLink {
+                        LioMetroGuideView(language: language)
+                    } label: {
+                        Label(language.text("Metro Guide", "地铁指南"), systemImage: "tram")
+                            .foregroundStyle(LioTheme.ink)
+                            .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("lio.tools.metro-guide")
+                    NavigationLink {
                         LioTextTranslationView(language: language, history: history, enabled: enabled, isCurrent: {
                             UIApplication.shared.applicationState != .background && sessionIsCurrent()
                         }, relay: relay)
