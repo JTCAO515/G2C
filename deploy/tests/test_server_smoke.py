@@ -289,6 +289,59 @@ def test_smoke_keeps_the_original_short_prompts():
     }
 
 
+@pytest.mark.parametrize(('reason', 'expected'), [
+    ('http_503', 'FAIL'), ('http_timeout', 'FAIL'), ('required_answer_missing', 'FAIL'),
+    ('message_write_outcome', 'FAIL'), ('http_429', 'HOLD'), ('unbound_message_ack', 'HOLD'),
+    ('translation_receipt_unknown', 'HOLD'),
+])
+def test_quick_smoke_rolls_back_only_for_service_failure(reason, expected):
+    assert smoke.quick_status(dict(status='UNKNOWN', reason=reason)) == expected
+
+
+@pytest.mark.parametrize('unresolved', [0, 1])
+def test_quick_smoke_calls_chat_text_and_link_once_with_original_budget(monkeypatch, capsys, unresolved):
+    from cj_api.taxi_tools import LINK
+    from cj_api.translation import ROUTE
+    from deploy.hk import translation_relay, translation_smoke
+
+    calls = []
+
+    def chat(case, prompt, token, allowed, *, quick):
+        assert (case, prompt, token, quick) == ('zh.quick', '你是谁', 'chat-session', True)
+        calls.append('chat')
+        return dict(status='PASS')
+
+    def send(token, route, *, document, timeout, content_type):
+        assert token == 'plugin-session' and timeout == 55 and content_type == 'application/json'
+        calls.append(route)
+        if route == ROUTE:
+            return dict(version='TRANSLATION.1', kind='text', items=[
+                dict(source_text='你好', translated_text='Greetings.')]), None
+        assert route == LINK and set(document) == {'version', 'origin', 'destination'}
+        return dict(version='TAXI.1', link_type='https',
+                    url='https://v.didi.cn/XvYQEWe?slat=39.89591&slng=116.3213&dlat=40.053061&dlng=116.306205'), None
+
+    monkeypatch.setattr(translation_relay, 'translation_state', lambda: True)
+    monkeypatch.setattr(smoke, 'run_case', chat)
+    monkeypatch.setattr(smoke, 'request', send)
+    monkeypatch.setattr(translation_smoke, 'receipt', lambda *args: 23)
+    monkeypatch.setattr(ceiling, 'budget_state', lambda *args: dict(tail=0, used=0))
+    monkeypatch.setattr(ceiling, 'restrict', lambda budget, before: ceiling.dialogue_cash_cap(before['translation_required']))
+    monkeypatch.setattr(ceiling, 'settlement', lambda budget, owner, cap, tail: (
+        1, dict(estimated_cny_1e7=11, conservative_cny_1e7=11, unresolved_attempts=unresolved), 11))
+
+    start = datetime.now(timezone.utc)
+    assert smoke.run_quick(None, 'chat-session', 'c-owner', start, start + timedelta(minutes=10),
+                           ('plugin-scope', 'plugin-session')) == (2 if unresolved else 0)
+    assert calls == (['chat'] if unresolved else ['chat', ROUTE, LINK])
+    records = [json.loads(row) for row in capsys.readouterr().out.splitlines()]
+    assert next(row['restricted'] for row in records if row['kind'] == 'restricted') == 3*CNY_SCALE
+    cost = next(row for row in records if row['kind'] == 'cost')
+    assert cost['conservative_cny_1e7'] == (11 if unresolved else 34)
+    assert cost['unresolved_attempts'] == unresolved
+    assert records[-1] == dict(kind='quick_verdict', status='HOLD' if unresolved else 'PASS', rollback=False)
+
+
 @pytest.mark.parametrize('wire_version', (1, 2))
 def test_smoke_post_is_accepted_by_the_original_lio_wire(monkeypatch, wire_version):
     from io import BytesIO
@@ -814,3 +867,64 @@ def test_lio_and_translation_keep_separate_admission_and_receipt_scopes(
     assert smoke.main() == (0 if translation_eligible else 3)
     if not translation_eligible:
         assert json.loads(capsys.readouterr().out)['reason'] == 'eligible_translation_session_required'
+
+
+@pytest.mark.parametrize(('action', 'candidate', 'active'), [
+    ('quick', 'translation-only', True),
+    ('quick-preflight', 'translation-only', True),
+    ('quick-preflight', 'shared', False),
+])
+def test_quick_admission_checks_both_plugin_rosters_even_before_cutover(
+        monkeypatch, capsys, action, candidate, active):
+    import io
+    from hashlib import sha256
+
+    from cj_api import local_account_admission_v2, local_worker_context
+    from cj_auth.interfaces import AdmissionDecision, AdmissionReason, AdmissionStatus, TrustedPrincipal
+    from cj_strict_json import compact
+    from cj_usage import authorization_budget
+    from deploy.hk import configuration, plugin_roster
+
+    start = datetime.now(timezone.utc)
+    end = start + timedelta(minutes=10)
+    cohort = frozenset(plugin_roster.generate_plugin_subjects())
+    extra = ['fixture-c-en', 'fixture-c-zh']
+    monkeypatch.setattr(plugin_roster, 'EXTRA_TRANSLATION_SUBJECTS_SHA256', sha256(compact(extra)).hexdigest())
+    if active:
+        monkeypatch.setenv(configuration.TRANSLATION_INTERNAL_SUBJECTS, json.dumps(sorted(cohort) + extra))
+    else:
+        monkeypatch.delenv(configuration.TRANSLATION_INTERNAL_SUBJECTS, raising=False)
+
+    def allowed(subject):
+        return AdmissionDecision(AdmissionStatus.ALLOWED, AdmissionReason.ACCEPTED,
+                                 TrustedPrincipal('issuer', subject, 'audience', 0, 0,
+                                                  int(end.timestamp()) + 1))
+
+    def plugin_checker(auth, database, *, selected_subjects):
+        subject = extra[0] if candidate == 'translation-only' else min(cohort)
+        result = (allowed(subject) if subject in selected_subjects else
+                  AdmissionDecision(AdmissionStatus.DENIED, AdmissionReason.NOT_INVITED))
+        return SimpleNamespace(check=lambda token: result)
+
+    runtime = SimpleNamespace(auth=None, demo_subjects=('lio-only',), close=lambda: None, database=object)
+    monkeypatch.setattr(configuration, 'authorization', lambda: None)
+    monkeypatch.setattr(configuration, 'load_secret_environment', lambda role: None)
+    monkeypatch.setattr(configuration.Runtime, 'load', lambda *args, **kwargs: runtime)
+    monkeypatch.setattr(local_worker_context, 'checker_for',
+                        lambda *args, **kwargs: SimpleNamespace(check=lambda token: allowed('lio-only')))
+    monkeypatch.setattr(local_account_admission_v2, 'account_checker_for', plugin_checker)
+    monkeypatch.setattr(authorization_budget, 'AuthorizationBudget', lambda *args, **kw: object())
+    monkeypatch.setattr(ceiling, 'budget_state', lambda *args: dict(policy=policy(BASELINE), used=0))
+    monkeypatch.setattr(smoke, 'run_quick', lambda *args: pytest.fail('quick business calls started'))
+    monkeypatch.setattr(smoke.sys, 'argv', ['server_smoke', action])
+    monkeypatch.setattr(smoke.sys, 'stdin', io.TextIOWrapper(io.BytesIO(json.dumps({
+        'access_token': 'chat-session', 'translation_access_token': 'plugin-session',
+        'starts_at': start.isoformat(), 'ends_at': end.isoformat(),
+    }).encode())))
+
+    if candidate == 'shared':
+        assert smoke.main() == 0
+        assert json.loads(capsys.readouterr().out) == dict(kind='preflight', status='PASS', provider_calls=0)
+    else:
+        assert smoke.main() == 3
+        assert json.loads(capsys.readouterr().out)['reason'] == 'eligible_quick_plugin_session_required'

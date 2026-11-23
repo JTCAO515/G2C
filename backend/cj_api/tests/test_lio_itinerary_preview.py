@@ -19,9 +19,11 @@ class DiscussionWorker:
     def __init__(self, packet):
         self.packet = packet
         self.calls = []
+        self.prompt = None
 
     def _registered_stream(self, binding, key, registration, argument, **kwargs):
         self.calls.append((key, registration))
+        self.prompt = argument[1]
         return iter((json.dumps(self.packet, ensure_ascii=False),))
 
     def _event(self, binding, state, kind, value=''):
@@ -33,7 +35,7 @@ class DiscussionWorker:
 
 
 class ItineraryPreview(unittest.TestCase):
-    def run_discussion(self, packet, locale, question, destination, *, days=3):
+    def run_discussion(self, packet, locale, question, destination, *, days=3, check_prompt=None):
         binding = Binding('scope', 'conversation', 'generation', 'message', 'run', 1)
         worker = DiscussionWorker(packet)
         state = discuss(worker, binding, State(binding, status='running'), locale,
@@ -42,6 +44,8 @@ class ItineraryPreview(unittest.TestCase):
         self.assertEqual(worker.calls, [('model.lio_discussion.0', 'model.answer')])
         self.assertEqual(state.status, 'completed')
         self.assertFalse(state.trip_proposal_published)
+        if check_prompt is not None:
+            check_prompt(worker.prompt)
         return state
 
     def test_same_model_plan_drives_visible_days_and_read_only_preview(self):
@@ -80,7 +84,7 @@ class ItineraryPreview(unittest.TestCase):
                 self.assertTrue(state.text.endswith(answer))
                 self.assertIsNone(read_itinerary_preview(state, 'en'))
 
-    def test_multi_region_landmark_must_name_a_specific_stop(self):
+    def test_landmark_precision_does_not_hide_a_complete_visible_itinerary(self):
         validator=Draft202012Validator(discussion_preview_format(3)['json_schema']['schema'])
         for locale,question,destination,other_days,ambiguous,specific,answer in (
             ('zh','北京三日游','北京',('故宫','颐和园'),('长城','长城（北京段）'),'八达岭长城',
@@ -94,16 +98,18 @@ class ItineraryPreview(unittest.TestCase):
                     names=(*other_days,label)
                     packet=dict(answer=answer,follow_up=None,days=[dict(day_index=index,activities=[
                         dict(place_name=name,verb='visit',period=None)]) for index,name in enumerate(names,1)])
-                    expected=label==specific
                     state=self.run_discussion(packet,locale,question,destination)
                     preview=read_itinerary_preview(state,locale)
-                    self.assertEqual(validator.is_valid(packet),expected)
-                    if expected:
-                        self.assertIn(specific,state.text)
-                        self.assertEqual(preview['days'][2]['activities'],[dict(place_name=specific,cancelled=False)])
-                    else:
-                        self.assertIsNone(preview)
-                        self.assertTrue(state.text.endswith(answer))
+                    self.assertTrue(validator.is_valid(packet))
+                    self.assertIn(label,state.text)
+                    self.assertEqual(preview['days'][2]['activities'],[dict(place_name=label,cancelled=False)])
+
+    def test_ordinary_discussion_requests_two_activities_with_an_explicit_pacing_exception(self):
+        def check(prompt):
+            self.assertIn('at least two different named activities per day',prompt)
+            self.assertIn('unless the traveler asks for fewer',prompt)
+        self.run_discussion(dict(answer='Here is a plan.'),'en','A three-day trip to Beijing',
+                            'Beijing',check_prompt=check)
 
     def test_model_cannot_supersede_place_authority_or_include_hidden_activities(self):
         answer = 'Visit the Forbidden City on your first day.'

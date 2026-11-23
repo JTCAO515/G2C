@@ -146,10 +146,10 @@ def exercise(auth, conninfo):
                     value['days'].pop()
                 if structured in ('valid','bare_site'):
                     value['follow_up']=None
-            if structured in ('valid','declined'):
+            if structured in ('valid','declined','bare_site'):
                 Draft202012Validator(schema).validate(value)
-            elif structured == 'bare_site':
-                assert not Draft202012Validator(schema).is_valid(value)
+            if structured == 'bare_site':
+                assert 'at least two different named activities per day' in system
         yield _M4_REQUEST_SENT
         observation['http_status']=200
         frame=dict(id='legacy-plan-fixture-'+str(len(seen)),model=M4_MODEL,choices=[
@@ -217,8 +217,9 @@ def exercise(auth, conninfo):
                 assert foreign.status_code == 404, foreign.status_code
                 assert api.get(route, headers=headers, params=dict(query, conversation_id='lio-dialogue-'+'0'*32)).status_code==404
                 expected = None
-                if structured == 'valid':
-                    names = locations[locale]
+                if structured in ('valid','bare_site'):
+                    names = locations[locale] if structured == 'valid' else (
+                        ('故宫','颐和园','长城') if locale=='zh' else ('Forbidden City','Summer Palace','Great Wall'))
                     expected = dict(destination=None, days=[dict(day_index=i,
                         activities=[dict(place_name=name, cancelled=False)]) for i, name in enumerate(names, 1)])
                     lines = row['answer'].splitlines()[1:]
