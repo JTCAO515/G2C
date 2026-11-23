@@ -316,23 +316,33 @@ private struct LocalSupportEmbassyPicker: View {
     @State private var search = ""
 
     private var filtered: [LocalSupportDirectory.Embassy] {
-        embassies.filter {
-            search.isEmpty || $0.country.zh.localizedStandardContains(search)
-                || $0.country.en.localizedStandardContains(search)
-                || $0.name.localized(language).localizedStandardContains(search)
+        let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
+        return embassies.filter {
+            query.isEmpty || $0.country.zh.localizedStandardContains(query)
+                || $0.country.en.localizedStandardContains(query)
+                || $0.name.localized(language).localizedStandardContains(query)
         }.sorted { $0.country.localized(language).localizedCompare($1.country.localized(language)) == .orderedAscending }
     }
 
     var body: some View {
+        let matches = filtered
         NavigationStack {
-            List(filtered) { embassy in
-                Button {
-                    nationality = embassy.countryCode
-                    dismiss()
-                } label: {
-                    Text(embassy.country.localized(language)).frame(minHeight: 44)
+            List {
+                if matches.isEmpty {
+                    Text(language.text("No matching embassies. Try another country name.",
+                                       "没有找到匹配的使馆，请换一个国家名称。"))
+                        .foregroundStyle(LioTheme.inkSecondary)
+                        .accessibilityIdentifier("lio.support.country.no-results")
                 }
-                .accessibilityIdentifier("lio.support.country." + embassy.countryCode)
+                ForEach(matches) { embassy in
+                    Button {
+                        nationality = embassy.countryCode
+                        dismiss()
+                    } label: {
+                        Text(embassy.country.localized(language)).frame(minHeight: 44)
+                    }
+                    .accessibilityIdentifier("lio.support.country." + embassy.countryCode)
+                }
             }
             .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always),
                         prompt: language.text("Search countries", "搜索国家"))

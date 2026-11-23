@@ -66,8 +66,33 @@ import XCTest
         XCTAssertFalse(app.staticTexts["Embassy of the Republic of Korea"].exists)
     }
 
-    private func openLocalSupport(_ app: XCUIApplication) {
-        let tools = app.tabBars.buttons["Tools"]
+    @objc func testLocalSupportExplainsWhenNoEmbassyMatches() {
+        continueAfterFailure = false
+        for (language, copy) in [
+            ("en", "No matching embassies. Try another country name."),
+            ("zh-Hans", "没有找到匹配的使馆，请换一个国家名称。"),
+        ] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
+                                   "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+            app.launch()
+            defer { app.terminate() }
+            openLocalSupport(app, language: language)
+            showNationalityButton(in: app).tap()
+
+            let search = app.searchFields.firstMatch
+            XCTAssertTrue(search.waitForExistence(timeout: 5))
+            search.tap()
+            search.typeText("zzzzzxzzzz")
+            let empty = app.staticTexts["lio.support.country.no-results"]
+            XCTAssertTrue(empty.waitForExistence(timeout: 5))
+            XCTAssertEqual(empty.label, copy)
+            XCTAssertFalse(app.buttons["lio.support.country.JP"].exists)
+        }
+    }
+
+    private func openLocalSupport(_ app: XCUIApplication, language: String = "en") {
+        let tools = app.tabBars.buttons[language == "en" ? "Tools" : "插件"]
         XCTAssertTrue(tools.waitForExistence(timeout: 8))
         tools.tap()
         let support = app.buttons["lio.tools.local-support"]
