@@ -91,6 +91,15 @@ struct LioLocalSupportView: View {
             Text(language.text("Embassy contacts couldn’t be loaded.", "暂时无法显示使馆联系方式。"))
                 .foregroundStyle(LioTheme.inkSecondary)
         }
+        NavigationLink {
+            LioConsulateDirectoryView(language: language)
+        } label: {
+            Label(language.text("Consulates General", "总领馆"), systemImage: "building.columns")
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("lio.support.consulates")
         contacts(language.text("Consumer services", "消费者服务"), LocalSupportDirectory.consumerContacts)
         if let draftStorage {
             LioLocalSupportDraftEditor(language: language, storage: draftStorage)
@@ -341,14 +350,22 @@ private struct LocalSupportEmbassyPicker: View {
 
     var body: some View {
         NavigationStack {
-            List(filtered) { embassy in
-                Button {
-                    nationality = embassy.countryCode
-                    dismiss()
-                } label: {
-                    Text(embassy.country.localized(language)).frame(minHeight: 44)
+            List {
+                let matches = filtered
+                if matches.isEmpty {
+                    Text(language.text("No matching countries or regions", "未找到匹配的国家或地区"))
+                        .foregroundStyle(LioTheme.ink)
+                        .accessibilityIdentifier("lio.support.country-empty")
                 }
-                .accessibilityIdentifier("lio.support.country." + embassy.countryCode)
+                ForEach(matches) { embassy in
+                    Button {
+                        nationality = embassy.countryCode
+                        dismiss()
+                    } label: {
+                        Text(embassy.country.localized(language)).frame(minHeight: 44)
+                    }
+                    .accessibilityIdentifier("lio.support.country." + embassy.countryCode)
+                }
             }
             .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always),
                         prompt: language.text("Search countries", "搜索国家"))

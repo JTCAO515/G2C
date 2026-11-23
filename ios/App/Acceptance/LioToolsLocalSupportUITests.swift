@@ -1,6 +1,63 @@
 import XCTest
 
 @MainActor extension LioToolsUITests {
+    @objc func testLocalSupportShowsVerifiedConsularDistricts() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", "en",
+                               "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+        app.launch()
+        defer { app.terminate() }
+        openLocalSupport(app)
+        let entry = app.buttons["lio.support.consulates"]
+        for _ in 0..<6 where !entry.isHittable { app.swipeUp() }
+        XCTAssertTrue(entry.isHittable)
+        entry.tap()
+        let search = app.searchFields.firstMatch
+        if !search.isHittable { app.swipeDown() }
+        XCTAssertTrue(search.waitForExistence(timeout: 6))
+        search.tap()
+        search.typeText("Australia")
+        let shanghai = app.buttons["lio.support.consulate.t20090730_9374624.shtml"]
+        XCTAssertTrue(shanghai.waitForExistence(timeout: 6))
+        shanghai.tap()
+        let district = app.staticTexts["lio.support.consulate.district"]
+        XCTAssertTrue(district.waitForExistence(timeout: 6))
+        XCTAssertTrue(district.label.contains("Jiangsu"))
+        XCTAssertTrue(app.descendants(matching: .any)["lio.support.consulate.source"].exists)
+        try app.performAccessibilityAudit(for: .all)
+    }
+
+    @objc func testUnlistedConsularDistrictShowsOfficialAlternativeWithoutInventingData() throws {
+        for language in ["en", "zh-Hans"] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
+                                   "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+            app.launch()
+            defer { app.terminate() }
+            openLocalSupport(app, language: language)
+            let entry = app.buttons["lio.support.consulates"]
+            for _ in 0..<6 where !entry.isHittable { app.swipeUp() }
+            XCTAssertTrue(entry.isHittable)
+            entry.tap()
+            let search = app.searchFields.firstMatch
+            if !search.isHittable { app.swipeDown() }
+            XCTAssertTrue(search.waitForExistence(timeout: 6))
+            search.tap()
+            search.typeText("Austria")
+            let guangzhou = app.buttons["lio.support.consulate.t20090802_9330086.shtml"]
+            XCTAssertTrue(guangzhou.waitForExistence(timeout: 6))
+            guangzhou.tap()
+            XCTAssertTrue(app.staticTexts["lio.support.consulate.district-unlisted"].waitForExistence(timeout: 6))
+            XCTAssertFalse(app.staticTexts["lio.support.consulate.district"].exists)
+            XCTAssertTrue(app.descendants(matching: .any)["lio.support.consulate.additional-source"].exists)
+            XCTAssertTrue(app.staticTexts[language == "en"
+                ? "This office does not handle passports, visas or document certification."
+                : "该馆不办理护照、签证或文件认证。"].exists)
+            try app.performAccessibilityAudit(for: .all)
+        }
+    }
+
     @objc func testLocalSupportShowsChineseHelpCardWithoutDialing() throws {
         continueAfterFailure = false
         for language in ["en", "zh-Hans"] {
@@ -61,6 +118,46 @@ import XCTest
                 screenshot.lifetime = .keepAlways
                 add(screenshot)
                 try app.performAccessibilityAudit(for: .all)
+            }
+        }
+    }
+
+    @objc func testLocalSupportShowsVerifiedJapanCanadaAndEmptySearchInBothLanguages() {
+        for language in ["en", "zh-Hans"] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
+                                   "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+            app.launch()
+            defer { app.terminate() }
+            openLocalSupport(app, language: language)
+            showNationalityButton(in: app).tap()
+            let search = app.searchFields.firstMatch
+            XCTAssertTrue(search.waitForExistence(timeout: 5))
+            search.tap()
+            let unmatched = "NoSuchCountry"
+            search.typeText(unmatched)
+            XCTAssertTrue(app.staticTexts["lio.support.country-empty"].waitForExistence(timeout: 2))
+            search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: unmatched.count))
+
+            let countries = [
+                ("JP", "Japan", "Embassy of Japan", "日本国驻华大使馆",
+                 "No. 1, Liang Ma Qiao Dong Jie", "亮马桥东街1号", "+861085319800"),
+                ("CA", "Canada", "Embassy of Canada", "加拿大驻华大使馆",
+                 "No. 19, Dong Zhi Men Wai Da Jie, Chao Yang District", "东直门外大街19号", "+861051394000"),
+            ]
+            for (index, entry) in countries.enumerated() {
+                let (code, countryName, enTitle, zhTitle, enAddress, zhAddress, number) = entry
+                if index > 0 { showNationalityButton(in: app).tap() }
+                let search = app.searchFields.firstMatch
+                XCTAssertTrue(search.waitForExistence(timeout: 5))
+                search.tap()
+                search.typeText(countryName)
+                let country = app.buttons["lio.support.country." + code]
+                XCTAssertTrue(country.waitForExistence(timeout: 5))
+                country.tap()
+                XCTAssertTrue(app.staticTexts[language == "en" ? enTitle : zhTitle].exists)
+                XCTAssertTrue(app.staticTexts[language == "en" ? enAddress : zhAddress].exists)
+                XCTAssertTrue(app.staticTexts[number].exists)
             }
         }
     }
