@@ -193,13 +193,13 @@ import XCTest
 
     @objc func testSOSOpensEmergencyNumbersDuringChatAndRecovery() throws {
         continueAfterFailure = false
-        for (arguments, hasNewChat, showConnectionError) in [
+        for (index, (arguments, hasNewChat, showConnectionError)) in [
             (["--lio-chat-history-acceptance", "--lio-support-sos"], true, false),
             (["--lio-chat-history-acceptance", "--lio-support-sos", "--lio-support-suspended"], false, false),
             (["--lio-session-recovery-acceptance", "--lio-support-sos"], false, false),
             (["--lio-session-recovery-acceptance", "--lio-support-sos"], false, true),
             (["--lio-onboarding-preview", "--lio-support-sos"], false, false),
-        ] {
+        ].enumerated() {
             let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
             app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", "en"] + arguments
             app.launch()
@@ -219,6 +219,18 @@ import XCTest
             sos.tap()
             XCTAssertTrue(app.staticTexts["Emergency numbers"].waitForExistence(timeout: 6))
             XCTAssertTrue(app.buttons["lio.support.police"].label.contains("110"))
+            let attachment = XCTAttachment(screenshot: app.screenshot())
+            attachment.name = "sos-sheet-state-\(index)"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+            try app.performAccessibilityAudit(for: .all)
+            let close = app.buttons["Close"]
+            XCTAssertTrue(close.isHittable)
+            XCTAssertGreaterThanOrEqual(close.frame.height, 44)
+            XCTAssertGreaterThanOrEqual(close.frame.width, 44)
+            close.tap()
+            XCTAssertTrue(sos.waitForExistence(timeout: 6))
+            XCTAssertFalse(app.staticTexts["Emergency numbers"].exists)
         }
     }
 

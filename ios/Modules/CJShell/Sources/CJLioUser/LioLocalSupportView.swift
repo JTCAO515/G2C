@@ -8,10 +8,13 @@ struct LioLocalSupportView: View {
     let language: LioLanguage
     private let directory: Result<LocalSupportDirectory, any Error>
     private let draftStorage: LocalSupportDraftStorage?
+    private let compactEmergencyCards: Bool
 
-    init(language: LioLanguage, draftStorage: LocalSupportDraftStorage? = nil) {
+    init(language: LioLanguage, draftStorage: LocalSupportDraftStorage? = nil,
+         compactEmergencyCards: Bool = false) {
         self.language = language
         self.draftStorage = draftStorage
+        self.compactEmergencyCards = compactEmergencyCards
         self.directory = Result(catching: LocalSupportDirectory.bundled)
     }
 
@@ -108,10 +111,22 @@ struct LioLocalSupportView: View {
                     dial(contact.phone)
                 } label: {
                     VStack(alignment: .leading, spacing: 4) {
-                        Image(systemName: "phone.fill")
+                        let icon = Image(systemName: "phone.fill")
                             .foregroundStyle(LioTheme.danger)
                             .accessibilityHidden(true)
-                        Text(contact.title.zh).font(.headline)
+                        let name = Text(contact.title.zh).font(.headline)
+                        if compactEmergencyCards {
+                            let heading = dynamicTypeSize.isAccessibilitySize
+                                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
+                                : AnyLayout(HStackLayout(spacing: 6))
+                            heading {
+                                icon
+                                name
+                            }
+                        } else {
+                            icon
+                            name
+                        }
                         Text(contact.title.en).font(.subheadline)
                         Text(contact.phone.number).font(.title2.monospacedDigit())
                     }

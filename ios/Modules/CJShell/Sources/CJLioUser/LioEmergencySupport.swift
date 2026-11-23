@@ -49,10 +49,16 @@ public struct LioEmergencySupportSheet: View {
 
     public var body: some View {
         NavigationStack {
-            LioLocalSupportView(language: language, draftStorage: draftStorage)
+            LioLocalSupportView(language: language, draftStorage: draftStorage, compactEmergencyCards: true)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button(language.text("Close", "关闭")) { dismiss() }
+                        Button(action: { dismiss() }) {
+                            Image(systemName: "xmark")
+                                .frame(minWidth: 44, minHeight: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(language.text("Close", "关闭"))
                     }
                 }
         }
