@@ -28,3 +28,11 @@ For J-line triage. Testers send original screenshots, copied Problem notes, and 
 ### 截图及问题记录 / Screenshot and Problem notes
 
 <!-- 只写各项是否已通过内部渠道提供、暂无或未能获取 / For each item, say sent internally, unavailable, or not captured -->
+
+### 接手线 / Follow-up lane
+
+<!--
+J 线先按构建、操作与现象查 #1341 已有子票。重复归入原票，缺关键复现信息就在内部渠道补问。
+按现象填写接手线。A 处理 App 界面与交互，B 核对登录资格和在线服务，L 核对回答与规划质量，C 核对行程与记忆数据及跨线验收。
+Check #1341 for duplicates. Follow up in the internal channel if reproduction details are missing. Record the lane that will investigate and link this issue under #1341.
+-->
