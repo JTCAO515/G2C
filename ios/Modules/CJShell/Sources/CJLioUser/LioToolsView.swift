@@ -17,8 +17,7 @@ struct LioToolsView: View {
             ScrollView {
                 VStack(spacing: 12) {
                     NavigationLink {
-                        LioLocalSupportView(language: language, directory: try? LocalSupportDirectory.bundled(),
-                                            draftStorage: draftStorage)
+                        LioLocalSupportView(language: language, draftStorage: draftStorage)
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "lifepreserver")

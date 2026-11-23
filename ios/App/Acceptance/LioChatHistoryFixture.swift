@@ -15,7 +15,10 @@ private struct LioChatHistoryFixture: View {
             switch clients {
             case .success(let clients):
                 LioHome(language: shell.language.lio, service: clients.original, isDemo: false,
-                        chatLibrary: clients.library) {
+                        chatLibrary: clients.library,
+                        session: ProcessInfo.processInfo.arguments.contains("--lio-support-suspended")
+                            ? .init(revision: UUID(), available: false, showsRetry: true) : nil,
+                        showsTools: ProcessInfo.processInfo.arguments.contains("--lio-support-sos")) {
                     LioMenuSettings(shell: shell)
                     if ProcessInfo.processInfo.arguments.contains("--lio-chat-recovery-acceptance") {
                         Button("Recreate client") { self.clients = Result { try clients.recreated(shell: shell) } }

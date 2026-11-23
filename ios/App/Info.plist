@@ -42,7 +42,7 @@
 <key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>
 <key>NSLocalNetworkUsageDescription</key><string>Connect to the development Mac for synthetic-data testing. / 连接开发机执行合成数据测试。</string>
 #endif
-#if G2C_DEMO_BETA_PLIST
+#if G2C_DEMO_BETA_PLIST || G2C_TOOLS_PREVIEW_PLIST
 <key>NSMicrophoneUsageDescription</key><string>Record what you want to translate. / 录下需要翻译的语音。</string>
 <key>NSCameraUsageDescription</key><string>Take a photo of text you want to translate. / 拍摄需要翻译的文字。</string>
 <key>NSPhotoLibraryUsageDescription</key><string>Choose a photo with text to translate. / 选择含有待翻译文字的图片。</string>
