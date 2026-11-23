@@ -4,6 +4,7 @@ import hashlib
 import base64
 import importlib.util
 import json
+import plistlib
 import os
 from pathlib import Path
 import subprocess
@@ -150,12 +151,13 @@ def main():
     branch_start = beta_source.index("                LioSessionRecoveryView(language:")
     branch_end = beta_source.index("            } else {", branch_start)
     recovery_branch = beta_source[branch_start:branch_end]
-    # Compile the production recovery expression and callbacks unchanged against
-    # the actual account host, with a synthetic failing activation and no network.
+    # Keep the production recovery expression. The synthetic account host
+    # provides sign-out without the production support-draft store.
     beta_root = """
 private struct LioRootFailureView: View {
     let shell: ShellState
     let root: LioActivationFailureRoot
+    private func signOut() { root.accounts.signOut() }
     var body: some View {
         if root.accounts.isResuming {
 """ + recovery_branch + """
@@ -171,6 +173,19 @@ private struct LioRootFailureView: View {
                                 + "\n" + "\n".join((HERE / name).read_text() for name in fixtures) + "\n" + beta_root)
     settings.write_text(settings.read_text().replace("space.go2china.foundation.local", "space.go2china.lio.acceptance")
                         .replace(json.dumps(str(app_source)), json.dumps(str(generated_source))))
+    if args.tools and any(case in args.case for case in (
+        "testLocalSupportDraftReopensAndClearsWithoutSending",
+        "testLocalSupportDraftRejectsOverflowAtLargestTextSize",
+    )):
+        bundle = "space.go2china.lio.acceptance"
+        entitlement = output / "LocalSupportDraft.entitlements"
+        entitlement.write_bytes(plistlib.dumps({
+            "application-identifier": bundle,
+            "keychain-access-groups": [bundle],
+        }))
+        settings.write_text(settings.read_text().replace(
+            json.dumps(str(ROOT / "ios/App/Development.entitlements")), json.dumps(str(entitlement)),
+        ))
     result = output / "lio-home.xcresult"
     env = {key: value for key, value in os.environ.items() if not key.startswith(("G2C_DEV_", "SIMCTL_CHILD_"))}
     suite = "G2CControl/LioVoiceOverUITests" if args.voiceover else "G2CControl/LioHomeUITests"

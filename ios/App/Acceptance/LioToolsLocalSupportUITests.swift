@@ -83,4 +83,111 @@ import XCTest
         XCTAssertTrue(button.isHittable)
         return button
     }
+
+    @objc func testLocalSupportDraftReopensAndClearsWithoutSending() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", "en"]
+        app.launchEnvironment["G2C_LIO_SUPPORT_DRAFT_FIXTURE"] = UUID().uuidString
+        let editor = app.descendants(matching: .any).matching(identifier: "lio.support.draft").firstMatch
+
+        func openDraft() {
+            app.launch()
+            let tools = app.tabBars.buttons["Tools"]
+            XCTAssertTrue(tools.waitForExistence(timeout: 8))
+            tools.tap()
+            app.buttons["lio.tools.local-support"].tap()
+            for _ in 0..<5 where !editor.isHittable { app.swipeUp() }
+            XCTAssertTrue(editor.isHittable)
+            let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: editor)
+            XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 5), .completed)
+        }
+
+        openDraft()
+        editor.tap()
+        editor.typeText("Need help\nSecond line")
+        XCTAssertEqual(editor.value as? String, "Need help\nSecond line")
+        let send = app.buttons["lio.support.send"]
+        XCTAssertTrue(send.exists)
+        XCTAssertFalse(send.isEnabled)
+
+        app.terminate()
+        openDraft()
+        XCTAssertEqual(editor.value as? String, "Need help\nSecond line")
+        let clear = app.buttons["lio.support.draft-clear"]
+        for _ in 0..<3 where !clear.isHittable { app.swipeUp() }
+        XCTAssertTrue(clear.isHittable)
+        clear.tap()
+
+        app.terminate()
+        openDraft()
+        XCTAssertNotEqual(editor.value as? String, "Need help\nSecond line")
+        XCTAssertFalse(app.buttons["lio.support.draft-clear"].isEnabled)
+        app.terminate()
+    }
+
+    @objc func testLocalSupportDraftRejectsOverflowAtLargestTextSize() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", "en", "-UIPreferredContentSizeCategoryName",
+                               "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launchEnvironment["G2C_LIO_SUPPORT_DRAFT_FIXTURE"] = UUID().uuidString
+        let editor = app.descendants(matching: .any).matching(identifier: "lio.support.draft").firstMatch
+
+        func openDraft() {
+            app.launch()
+            openLocalSupport(app)
+            for _ in 0..<16 where !editor.isHittable { app.swipeUp() }
+            XCTAssertTrue(editor.isHittable)
+            let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: editor)
+            XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 5), .completed)
+        }
+
+        openDraft()
+        editor.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        editor.typeText("Need help\nSecond line")
+        XCTAssertEqual(editor.value as? String, "Need help\nSecond line")
+        let send = app.buttons["lio.support.send"]
+        XCTAssertTrue(send.exists)
+        XCTAssertFalse(send.isEnabled)
+
+        app.terminate()
+        openDraft()
+        let initial = "Need help\nSecond line"
+        XCTAssertEqual(editor.value as? String, initial)
+        editor.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        editor.typeText(String(repeating: "a", count: 1000 - initial.count))
+        let maximum = try XCTUnwrap(editor.value as? String)
+        XCTAssertEqual(maximum.count, 1000)
+        XCTAssertEqual(maximum.replacingOccurrences(of: "a", with: ""), initial)
+        editor.typeText("z")
+        XCTAssertEqual(editor.value as? String, maximum)
+        XCTAssertTrue(app.staticTexts["lio.support.draft-message"].exists)
+        app.terminate()
+        openDraft()
+        XCTAssertEqual(editor.value as? String, maximum)
+        let clear = app.buttons["lio.support.draft-clear"]
+        let directory = app.scrollViews.firstMatch
+        for _ in 0..<6 where !clear.isHittable {
+            // Drag beside the text field to scroll the page, not the long draft.
+            let start = directory.coordinate(withNormalizedOffset: CGVector(dx: 0.025, dy: 0.82))
+            let end = directory.coordinate(withNormalizedOffset: CGVector(dx: 0.025, dy: 0.30))
+            start.press(forDuration: 0.05, thenDragTo: end)
+        }
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "largest-support-draft-clear"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        XCTAssertTrue(clear.isHittable)
+        clear.tap()
+
+        app.terminate()
+        openDraft()
+        XCTAssertNotEqual(editor.value as? String, maximum)
+        XCTAssertFalse(app.buttons["lio.support.draft-clear"].isEnabled)
+        app.terminate()
+    }
+
 }
