@@ -16,6 +16,11 @@ struct LioToolsView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
+                    Text(language.text("Tools", "插件"))
+                        .font(.largeTitle.bold())
+                        .foregroundStyle(LioTheme.ink)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityAddTraits(.isHeader)
                     if let taxiEntry {
                         taxi(taxiEntry)
                     }
@@ -28,6 +33,7 @@ struct LioToolsView: View {
                         LioTextTranslationView(language: language, history: history, enabled: enabled, isCurrent: {
                             UIApplication.shared.applicationState != .background && sessionIsCurrent()
                         }, relay: relay)
+                            .toolbar(.visible, for: .navigationBar)
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "character.bubble")
@@ -49,6 +55,8 @@ struct LioToolsView: View {
             }
             .background(LioTheme.paper)
             .navigationTitle(language.text("Tools", "插件"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
         }
         .tint(LioTheme.vermilion)
     }
@@ -57,6 +65,7 @@ struct LioToolsView: View {
         NavigationLink {
             LioTaxiView(language: language, service: entry.service, tripPlaces: entry.tripPlaces,
                        recentStore: entry.recentStore)
+                .toolbar(.visible, for: .navigationBar)
         } label: {
             Label(language.text("Taxi", "打车"), systemImage: "car")
                 .foregroundStyle(LioTheme.ink)
@@ -74,6 +83,7 @@ struct LioToolsView: View {
         return NavigationLink {
             LioHotelsView(language: language, service: .preview(unapplied: partial ? [.guests] : []),
                           suggestedArea: LioHotelService.previewArea)
+                .toolbar(.visible, for: .navigationBar)
         } label: {
             Label(language.text("Hotels", "酒店"), systemImage: "bed.double")
                 .foregroundStyle(LioTheme.ink)
