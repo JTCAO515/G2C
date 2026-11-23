@@ -5,19 +5,19 @@ import Testing
 struct LioBuildUpdatesTests {
     @Test func bundledBookKeepsOnlyCurrentAndPreviousAndBothLanguages() throws {
         let book = try LioBuildUpdates.bundled.get()
-        #expect(book.currentBuild == 51)
-        #expect(book.releases.map(\.build) == [51, 50])
-        let current = try book.release(for: 51)
-        let previous = try book.release(for: 50)
-        #expect(current.previousBuild == 50)
+        #expect(book.currentBuild == 53)
+        #expect(book.releases.map(\.build) == [53, 51])
+        let current = try book.release(for: 53)
+        let previous = try book.release(for: 51)
+        #expect(current.previousBuild == 51)
         #expect(current.sections.map(\.id) == [.changes, .comparison, .testing, .known, .service])
-        #expect(current.whatToTest(.chinese).contains("抽测构建 49 的第 1、3、4 项"))
-        #expect(current.whatToTest(.english).contains("Wait until your account is enabled before checking live translation."))
-        #expect(current.whatToTest(.chinese).contains("翻译页改成上下双卡"))
-        #expect(current.whatToTest(.english).contains("Translation now has an input card above the result card."))
-        #expect(previous.whatToTest(.chinese).contains("修复打开语音输入时的闪退"))
-        #expect(previous.whatToTest(.english).contains("Updated the recording entry to address the crash"))
-        #expect(previous.whatToTest(.chinese).contains("构建 49"))
+        #expect(current.whatToTest(.chinese).contains("用默认字号测中英界面"))
+        #expect(current.whatToTest(.english).contains("Translation and taxi estimates require internet access and an enabled tester account."))
+        #expect(current.whatToTest(.chinese).contains("常用语卡片可放大、朗读"))
+        #expect(current.whatToTest(.english).contains("Phrase cards show and read common phrases."))
+        #expect(previous.whatToTest(.chinese).contains("翻译页改成上下双卡"))
+        #expect(previous.whatToTest(.english).contains("Translation now has an input card above the result card."))
+        #expect(previous.whatToTest(.chinese).contains("抽测构建 49 的第 1、3、4 项"))
         #expect(throws: LioBuildUpdates.Failure.unlistedBuild) { try book.release(for: 52) }
     }
 
