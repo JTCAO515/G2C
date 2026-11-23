@@ -21,7 +21,11 @@ from cj_api.local_app import ISSUER,scope_for
 from cj_api.real_services import RealServices,RealTools
 from cj_trip.confirmation import ConfirmationSigner
 from local_run_context import provision_budget_connection
-from .configuration import ASSEMBLY_PROBE_MESSAGE,MODEL_STREAM_SUBJECT,Runtime,authorization,decoded,load_secret_environment,local_database_target
+from .configuration import (
+    ASSEMBLY_PROBE_MESSAGE, MODEL_STREAM_SUBJECT, TAXI_INTERNAL_SUBJECTS, Runtime,
+    authorization, decoded, load_secret_environment, local_database_target,
+)
+from .plugin_roster import configured_plugin_subjects
 from . import checkpoint,demo_quota,local_postgres
 
 
@@ -70,7 +74,14 @@ def api(runtime,*,app_smoke_api_manifest=None):
     from .translation_relay import register_translation_route
     register_translation_route(app)
     from cj_api.taxi_tools import register_taxi_routes
-    register_taxi_routes(app)
+    taxi_subjects = frozenset()
+    raw_taxi_subjects = os.environ.get(TAXI_INTERNAL_SUBJECTS)
+    if raw_taxi_subjects is not None:
+        try:
+            taxi_subjects = configured_plugin_subjects(raw_taxi_subjects)
+        except ValueError:
+            logging.getLogger(__name__).warning('ALERT taxi_roster_unavailable')
+    register_taxi_routes(app, internal=taxi_subjects)
     from cj_api.hotel_tools import register_hotel_route
     register_hotel_route(app)
     @app.middleware('http')
