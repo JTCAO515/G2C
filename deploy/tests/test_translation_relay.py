@@ -4,11 +4,13 @@ from datetime import datetime
 from http.client import HTTPResponse
 from io import BytesIO
 from pathlib import Path
+from struct import pack
 from tempfile import TemporaryDirectory
 import time
 from types import SimpleNamespace
 from uuid import uuid4
 import wave
+from zlib import compress, crc32
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -16,7 +18,7 @@ import httpx
 import pytest
 
 from cj_api.translation import (
-    DashScopeTranslation, ROUTE, TTS_RESULT_HOST, TTS_ROUTE, TTS_VERSION,
+    DashScopeTranslation, IMAGE_LAYOUT_ROUTE, IMAGE_LAYOUT_VERSION, ROUTE, TTS_RESULT_HOST, TTS_ROUTE, TTS_VERSION,
     TranslationError, TranslationRelay, VERSION,
 )
 from cj_auth.interfaces import AdmissionDecision, AdmissionReason, AdmissionStatus, TrustedPrincipal
@@ -42,6 +44,16 @@ def _wav(seconds=1, rate=16_000, *, frames=None):
         audio.setparams((1, 2, rate, 0, 'NONE', 'not compressed'))
         audio.writeframes(b'\0\0' * (seconds * rate if frames is None else frames))
     return b64encode(raw.getvalue()).decode()
+
+
+
+def _layout_body():
+    def chunk(kind, data):
+        return pack('>I', len(data)) + kind + data + pack('>I', crc32(kind + data))
+
+    header = chunk(b'IHDR', pack('>IIBBBBB', 80, 50, 8, 0, 0, 0, 0))
+    image = b'\x89PNG\r\n\x1a\n' + header + chunk(b'IDAT', compress(b'\0' * (81 * 50))) + chunk(b'IEND', b'')
+    return dict(_body('image', media=b64encode(image).decode()), version=IMAGE_LAYOUT_VERSION)
 
 
 def _check(token):
@@ -82,6 +94,20 @@ def interface(budget, request):
                 usage={'input_tokens': 0, 'output_tokens': 0, 'characters': 4}))
         if model == IMAGE_MODEL:
             assert http_request.url.path.endswith('/multimodal-generation/generation')
+            task = payload['parameters']['ocr_options']['task']
+            if task == 'advanced_recognition':
+                image, = payload['input']['messages'][0]['content']
+                assert image['image'].startswith('data:image/png;base64,')
+                assert image['enable_rotate'] is False
+                location = [2, 3, 20, 3, 20, 12, 2, 12]
+                if scenario == 'layout_bad':
+                    location[2] = 81
+                text_lines = [] if scenario == 'layout_empty' else [{'text': '你好', 'location': location}]
+                layout = [{'ocr_result': {'words_info': text_lines}}]
+                return httpx.Response(200, json=dict(request_id=str(uuid4()),
+                    output={'choices': [{'message': {'content': layout}, 'finish_reason':'stop'}]},
+                    usage={'input_tokens': 30, 'output_tokens': 8}))
+            assert task == 'text_recognition'
             return httpx.Response(200, json=dict(request_id=str(uuid4()),
                 output={'choices': [{'message': {'content': [{'text': '菜單\n火鍋'}]}}]},
                 usage={'input_tokens': 30, 'output_tokens': 8}))
@@ -145,7 +171,8 @@ def interface(budget, request):
                                  DashScopeTranslation('fixture-key', connection=Connection),
                                  lambda issuer, subject: subject)
         tts_enabled = scenario in ('tts_ok', 'tts_code', 'tts_empty')
-        with translation_socket(relay, path=path, tts_enabled=tts_enabled):
+        layout_enabled = scenario in ('layout_ok', 'layout_empty', 'layout_bad')
+        with translation_socket(relay, path=path, tts_enabled=tts_enabled, layout_enabled=layout_enabled):
             app = FastAPI()
             register_translation_route(app, send=lambda token, raw, **opts: socket_request(token, raw, path=path, **opts))
             with TestClient(app) as client:
@@ -229,6 +256,31 @@ def test_reject_wrong_encoding_and_disallow_provider_url(interface):
     assert _post(client, _body('image', media='https://example.test/person.png')).status_code == 400
     assert _post(client, {**_body(text='你好'), 'model': 'qwen-max'}).status_code == 400
     assert calls == []
+
+
+@pytest.mark.parametrize(('interface', 'expected', 'attempts_count'), [
+    ('layout_ok', 200, 2), ('layout_empty', 200, 1), ('layout_bad', 502, 1), ('layout_closed', 403, 0),
+], indirect=['interface'])
+def test_image_layout_is_internal_bounded_and_uses_original_image_journal(interface, expected, attempts_count):
+    client, calls, ledger = interface
+    body = _layout_body()
+    inside = {'Authorization': 'Bearer internal-fixture'}
+    outside = {'Authorization': 'Bearer external-fixture'}
+    assert client.post(IMAGE_LAYOUT_ROUTE, json=body, headers=outside).status_code == 403
+    assert calls == []
+    response = client.post(IMAGE_LAYOUT_ROUTE, json=body, headers=inside)
+    assert response.status_code == expected
+    result = response.json()
+    assert result['version'] == IMAGE_LAYOUT_VERSION
+    if expected == 200:
+        items = [] if attempts_count == 1 else [{'source_text': '你好', 'translated_text': 'Hello',
+                                                 'location': [2, 3, 20, 3, 20, 12, 2, 12]}]
+        assert result == dict(version=IMAGE_LAYOUT_VERSION, image_width=80, image_height=50, items=items)
+    if attempts_count:
+        assert _post(client, dict(body, version=VERSION)).status_code == 409
+    assert calls == [IMAGE_MODEL, TEXT_MODEL][:attempts_count]
+    assert [r['state'] for r in ledger.inspect()] == ['RECEIVED'] * attempts_count
+    assert '你好' not in repr(ledger.inspect())
 
 
 @pytest.mark.parametrize('enabled', [False, True])
