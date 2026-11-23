@@ -181,7 +181,10 @@ private struct LioRootFailureView: View {
     if args.tools:
         project_text = project_text.replace('G2C_DEBUG_LOCAL_NETWORK=1"', 'G2C_DEBUG_LOCAL_NETWORK=1 G2C_TOOLS_PREVIEW_PLIST=1"')
     settings.write_text(project_text)
-    if args.tools and "testLocalSupportDraftReopensAndClearsWithoutSending" in args.case:
+    if args.tools and any(case in args.case for case in (
+        "testLocalSupportDraftReopensAndClearsWithoutSending",
+        "testLocalSupportDraftRejectsOverflowAtLargestTextSize",
+    )):
         bundle = "space.go2china.lio.acceptance"
         entitlement = output / "LocalSupportDraft.entitlements"
         entitlement.write_bytes(plistlib.dumps({

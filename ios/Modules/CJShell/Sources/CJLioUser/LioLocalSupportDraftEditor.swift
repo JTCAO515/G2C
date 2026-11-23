@@ -4,6 +4,7 @@ import SwiftUI
 struct LioLocalSupportDraftEditor: View {
     let language: LioLanguage
     @State private var draft: LocalSupportDraft
+    @State private var editorText = ""
 
     init(language: LioLanguage, storage: LocalSupportDraftStorage) {
         self.language = language
@@ -17,7 +18,14 @@ struct LioLocalSupportDraftEditor: View {
                 .accessibilityAddTraits(.isHeader)
             TextField(language.text("Describe what's happening, where you are and what you need",
                                     "描述你的情况、所在位置和需要的帮助"),
-                      text: Binding(get: { draft.text }, set: { draft.edit($0) }), axis: .vertical)
+                      text: Binding(get: { editorText }, set: { value in
+                          editorText = value
+                          draft.edit(value)
+                      }), axis: .vertical)
+                .onChange(of: editorText) { _, value in
+                    // Reset the native field after a rejected edit leaves the draft unchanged.
+                    if value != draft.text { editorText = draft.text }
+                }
                 .lineLimit(4...10)
                 .padding(12)
                 .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
@@ -37,7 +45,10 @@ struct LioLocalSupportDraftEditor: View {
                 .font(.footnote)
                 .foregroundStyle(LioTheme.inkSecondary)
         }
-        .task { draft.load() }
+        .task {
+            draft.load()
+            editorText = draft.text
+        }
     }
 
     @ViewBuilder private var controls: some View {
@@ -45,10 +56,13 @@ struct LioLocalSupportDraftEditor: View {
             .frame(minHeight: 44)
             .disabled(true)
             .accessibilityIdentifier("lio.support.send")
-        Button(language.text("Clear", "清空"), action: draft.clear)
-            .frame(minHeight: 44)
-            .disabled(!draft.canEdit || draft.text.isEmpty)
-            .accessibilityIdentifier("lio.support.draft-clear")
+        Button(language.text("Clear", "清空")) {
+            draft.clear()
+            editorText = draft.text
+        }
+        .frame(minHeight: 44)
+        .disabled(!draft.canEdit || draft.text.isEmpty)
+        .accessibilityIdentifier("lio.support.draft-clear")
     }
 
     private func message(_ issue: LocalSupportDraft.Problem) -> String {
