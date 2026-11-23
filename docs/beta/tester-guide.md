@@ -28,4 +28,4 @@ This build is for approved internal members. Use sample content and the default 
 
 **怎么反馈 / How to report a problem**\
 把**截图**、**问题记录**和**大概发生时间**（注明时区）发到 JT 指定的内测群（如微信群）。从失败提示或菜单里的内测说明打开「问题记录」，点「复制」，把文字贴到群里。发之前请遮住或删去邀请码、令牌及个人信息。无需 GitHub 账号。\
-Send a **screenshot**, the **copied Problem notes**, and the **approximate time** with your time zone to the private test group named in your invitation (for example, a WeChat group). Open Problem notes from the error message or the beta information in the menu, tap Copy, and paste the text into the group. Remove access codes, tokens, and personal details before sending. You can report issues without a GitHub account.
+Send a **screenshot**, the **copied Problem notes**, and the **approximate time** with your time zone to the private test group JT designates (for example, a WeChat group). Open Problem notes from the error message or the beta information in the menu, tap Copy, and paste the text into the group. Remove access codes, tokens, and personal details before sending. You can report issues without a GitHub account.
