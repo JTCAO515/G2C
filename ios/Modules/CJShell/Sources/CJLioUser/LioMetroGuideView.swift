@@ -24,26 +24,30 @@ struct LioMetroGuideView: View {
                     .accessibilityIdentifier("lio.metro.city")
                 }
 
+                Link(destination: city.mapURL) {
+                    Label(language.text("Official line map and stations", "官方线路图和车站"),
+                          systemImage: "map")
+                        .foregroundStyle(LioTheme.ink)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("lio.metro.map")
+                Link(destination: city.guideURL) {
+                    Label(language.text("Official ticket guide", "官方票务指南"), systemImage: "arrow.up.right")
+                        .foregroundStyle(LioTheme.ink)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("lio.metro.source")
+
                 instruction(language.text("Buy a ticket", "买票"), text: city.buying(in: language),
                             icon: "ticket", id: "ticket")
                 instruction(language.text("Security check", "安检"), text: city.security(in: language),
                             icon: "checkmark.shield", id: "security")
                 instruction(language.text("Enter and exit", "进站与出站"), text: city.entering(in: language),
                             icon: "tram", id: "gates")
-
-                Link(destination: city.mapURL) {
-                    Label(language.text("Official line map and stations", "官方线路图和车站"),
-                          systemImage: "map")
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                        .contentShape(Rectangle())
-                }
-                .accessibilityIdentifier("lio.metro.map")
-                Link(destination: city.guideURL) {
-                    Label(language.text("Official ticket guide", "官方票务指南"), systemImage: "arrow.up.right")
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                        .contentShape(Rectangle())
-                }
-                .accessibilityIdentifier("lio.metro.source")
             }
             .padding(18)
         }
