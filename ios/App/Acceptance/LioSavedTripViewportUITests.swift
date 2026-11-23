@@ -30,6 +30,11 @@ import XCTest
         XCTAssertTrue(destination.waitForExistence(timeout: 6))
         XCTAssertTrue(destination.label.contains("合成公园"))
         XCTAssertTrue(destination.label.contains("合成路"))
+        let estimate = app.buttons["lio.taxi.estimate"]
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == YES"), object: estimate)
+        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 6), .completed)
+        estimate.tap()
+        XCTAssertTrue(app.staticTexts["¥35–48"].waitForExistence(timeout: 6))
         capture(app, "trip-taxi-prefilled-destination")
     }
 

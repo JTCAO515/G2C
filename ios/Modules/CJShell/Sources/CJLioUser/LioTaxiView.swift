@@ -167,7 +167,7 @@ struct LioTaxiView: View {
             ForEach(fares) { fare in
                 VStack(alignment: .leading, spacing: 4) {
                     Text(language.text(fare.nameEN, fare.nameZH))
-                    Text(price(fare.price)).foregroundStyle(LioTheme.inkSecondary)
+                    Text(fare.priceDisplay).foregroundStyle(LioTheme.inkSecondary)
                 }
             }
             if !fares.isEmpty {
@@ -259,7 +259,7 @@ struct LioTaxiView: View {
                     requests.retire()
                     return
                 }
-                let opened = await service.openRideLink(link)
+                let opened = try await service.openRideLink(link)
                 guard isCurrent(operation) else { return }
                 showOptions = !opened
             }
@@ -289,17 +289,10 @@ struct LioTaxiView: View {
             language.text("Sign in again, then try again.", "请重新登录后重试。")
         case .notEnabled:
             language.text("Taxi isn’t available for this account.", "此账号暂未开通打车。")
+        case .timedOut:
+            language.text("DiDi took too long. Try again.", "滴滴响应超时，请重试。")
         case .unavailable, nil:
             language.text("Taxi details aren’t available right now. Try again.", "暂时无法获取打车信息，请重试。")
-        }
-    }
-
-    private func price(_ price: LioTaxiFare.Price) -> String {
-        switch price {
-        case .range(let minimum, let maximum, let currency):
-            "\(minimum.formatted(.currency(code: currency)))–\(maximum.formatted(.currency(code: currency)))"
-        case .description(let description):
-            description
         }
     }
 
@@ -357,11 +350,11 @@ private struct LioTaxiPlacePicker: View {
                 if let searchNotice { Text(searchNotice) }
                 rows(result, identifier: "lio.taxi.search-row")
             }
+            Section(language.text("My trip", "我的行程")) {
+                if tripPlaces.isEmpty { Text(language.text("No places from your trip.", "当前行程暂无可选地点。")) }
+                rows(tripPlaces, identifier: "lio.taxi.trip-row")
+            }
             if destination {
-                Section(language.text("My trip", "我的行程")) {
-                    if tripPlaces.isEmpty { Text(language.text("No places from your trip.", "当前行程暂无可选地点。")) }
-                    rows(tripPlaces, identifier: "lio.taxi.trip-row")
-                }
                 Section(language.text("Recent", "最近")) {
                     if recent.isEmpty { Text(language.text("No recent destinations.", "暂无最近终点。")) }
                     rows(recent, identifier: "lio.taxi.recent-row")

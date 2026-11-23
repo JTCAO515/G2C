@@ -10,13 +10,20 @@ struct LioToolsView: View {
     let relay: LioRelayTranslationClient?
     let enabled: Bool
     let sessionIsCurrent: @MainActor () -> Bool
+    @Environment(\.lioTaxiEntry) private var taxiEntry
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
+                    Text(language.text("Tools", "插件"))
+                        .font(.largeTitle.bold())
+                        .foregroundStyle(LioTheme.ink)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityAddTraits(.isHeader)
                     NavigationLink {
                         LioLocalSupportView(language: language, directory: try? LocalSupportDirectory.bundled())
+                            .toolbar(.visible, for: .navigationBar)
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "lifepreserver")
@@ -33,10 +40,10 @@ struct LioToolsView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("lio.tools.local-support")
-                    #if DEBUG
-                    if let service = LioTaxiService.previewFromArguments {
-                        previewTaxi(service)
+                    if let taxiEntry {
+                        taxi(taxiEntry)
                     }
+                    #if DEBUG
                     if ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview") {
                         previewHotels
                     }
@@ -45,6 +52,7 @@ struct LioToolsView: View {
                         LioTextTranslationView(language: language, history: history, enabled: enabled, isCurrent: {
                             UIApplication.shared.applicationState != .background && sessionIsCurrent()
                         }, relay: relay)
+                            .toolbar(.visible, for: .navigationBar)
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "character.bubble")
@@ -66,15 +74,17 @@ struct LioToolsView: View {
             }
             .background(LioTheme.paper)
             .navigationTitle(language.text("Tools", "插件"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
         }
         .tint(LioTheme.vermilion)
     }
 
-    #if DEBUG
-    private func previewTaxi(_ service: LioTaxiService) -> some View {
+    private func taxi(_ entry: LioTaxiEntry) -> some View {
         NavigationLink {
-            LioTaxiView(language: language, service: service, tripPlaces: LioTaxiService.previewDestinations,
-                       recentStore: LioTaxiService.previewRecents)
+            LioTaxiView(language: language, service: entry.service, tripPlaces: entry.tripPlaces,
+                       recentStore: entry.recentStore)
+                .toolbar(.visible, for: .navigationBar)
         } label: {
             Label(language.text("Taxi", "打车"), systemImage: "car")
                 .foregroundStyle(LioTheme.ink)
@@ -86,11 +96,13 @@ struct LioToolsView: View {
         .accessibilityIdentifier("lio.tools.taxi")
     }
 
+    #if DEBUG
     private var previewHotels: some View {
         let partial = ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview-partial")
         return NavigationLink {
             LioHotelsView(language: language, service: .preview(unapplied: partial ? [.guests] : []),
                           suggestedArea: LioHotelService.previewArea)
+                .toolbar(.visible, for: .navigationBar)
         } label: {
             Label(language.text("Hotels", "酒店"), systemImage: "bed.double")
                 .foregroundStyle(LioTheme.ink)
