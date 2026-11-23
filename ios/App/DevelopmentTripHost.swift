@@ -1200,6 +1200,7 @@ private var developmentHostEnvironment: [String: String] {
     }
 
     func signOutWithLocalSupportCleanup() throws {
+        defer { accounts.signOut() }
         var scope = localSupportDraftScope
         if scope == .guest {
             do {
@@ -1214,7 +1215,6 @@ private var developmentHostEnvironment: [String: String] {
         }
         try localSupportVault.clear(scope)
         if scope != .guest { try localSupportVault.clear(.guest) }
-        accounts.signOut()
     }
 
     func finishDemoCleanup() {

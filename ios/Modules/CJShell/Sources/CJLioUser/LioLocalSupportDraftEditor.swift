@@ -61,7 +61,7 @@ struct LioLocalSupportDraftEditor: View {
             editorText = draft.text
         }
         .frame(minHeight: 44)
-        .disabled(!draft.canEdit || draft.text.isEmpty)
+        .disabled(!draft.canClear)
         .accessibilityIdentifier("lio.support.draft-clear")
     }
 
