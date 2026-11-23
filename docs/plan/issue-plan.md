@@ -184,7 +184,29 @@
 
 以上不新增队列或文件归属；不把局部原语、布局fixture或接口ABI当作正式App组合。当前可恢复字段与逐项缺口看各父票及A handoff；接口到达后沿24→15→23→26→27推进，#27由最后交付线关闭，M3里程碑不在本线关闭。
 
-### 现行线与文件归属（JT 2026-11-12，优先于下方各节）
+### 现行线程与开发流程（JT 2026-11-23，优先于下方各节）
+
+依据：JT 2026-11-23 决定合并线程、加速上线（[#495](https://github.com/JTCAO515/G2C/issues/495)，构建 52 目标见 [#1341](https://github.com/JTCAO515/G2C/issues/1341)）。原 B、L 合并为 S，原 C、J 合并为 Q；D、E、F、G 归档（T1 训练启动时另开）。下一节「现行线与文件归属（2026-11-12）」保留为历史；冲突时以本节和实时 Issue 为准。
+
+| 线 | 线程名称 | 拥有的文件 | 职责 |
+|---|---|---|---|
+| A | G2C - A - iOS App | `ios/**`、`docs/ui.md`、`docs/design/**` | App 开发、TestFlight 构建与上传、三处同源更新说明 |
+| S | G2C - S - 服务端 | 原 B、L 的全部文件（`deploy/**`、`backend/usage/**`、`backend/run/**`、`backend/auth/**`、`backend/agent/**`、`backend/migrations/**`、`backend/cj_api/lio_*`、`backend/cj_api/local_lio_*`、`backend/message/cj_message/lio_*`、`backend/fact/**`、翻译与打车接口、协调文件），以及 C0 文件 | 香港平台、对话与规划、插件服务端；修复、部署、快速冒烟一条线完成 |
+| Q | G2C - Q - 验收内测 | 原 C、J 的全部文件（`eval/**`、`docs/quality/**`、`docs/beta/**`、`.github/ISSUE_TEMPLATE/beta-feedback.md`、`backend/trip/**`、`backend/draft/**`、`backend/feasibility/**` 等原 C 文件） | 发布后验收、全国 16 条、内测反馈每日分拣 |
+| R | G2C - R - 独立审查 | 无（只读，不占开发名额） | 红线 PR 审查、C0 叶子核对 |
+| H | G2C - H - 预设知识 | `knowledge/visitor/**` | 由「G2C - H 线派工」线程派工 |
+
+**开发流程：**
+1. **谁改谁上线**：S 修代码 → CI → 红线才过 R → 合并 → 自行部署 → 10 分钟快速冒烟。A 修代码 → CI → 合并 → 按批构建上传。
+2. **跨线依赖只有两条**：S → A（接口就绪即通知）；A、S → Q（新版本即通知验收）。
+3. **合并规则**：非红线 PR，精确 head CI 全绿即可锁 head 合并；红线 PR（密钥、计费、鉴权与会话、部署门禁、迁移）须有 R 的 `Review: APPROVE <head>`。
+4. **发布节奏**：服务端随时部署，只跑快速冒烟（中文问答、文字翻译、打车链接），只有服务出错（5xx、超时、无回答）才回滚，内容质量不挡。App 有一批用户可见修复就发新构建。完整验收、全国 16 条、JT 真机走查放在发布之后。
+5. **反馈闭环**：内部测试群 → Q 每日去敏分拣成子票（挂 #1341）→ 分给 A 或 S → 下一版修复。
+6. **底线不变**：密钥只在服务器；打车只生成链接、不下单；费用上限照旧；守卫不放宽。
+7. **停下来问 JT**：#225 合规、外部内测、收费方向、追加预算、新的外部账号或密钥、真实环境不可逆操作。
+8. **状态**：各线在 [#759](https://github.com/JTCAO515/G2C/issues/759) 维护一条「【X 线状态】」评论，原地更新。
+
+### 现行线与文件归属（JT 2026-11-12，已由上一节取代，保留为历史）
 
 依据：8 条开发线、无常驻 Main、Claude 统一规划（[#495/6813752426](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6813752426)）；B 拆为 B/L（[#495/6814548220](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6814548220)）；线程名称（[#495/6814680193](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6814680193)）。里程碑：M4（受邀内测）、M5（公开首发）、T1（训练，条件研发）、Harness（不阻断内测）。下方旧节保留为历史；冲突时以本节和实时 Issue 为准。
 
