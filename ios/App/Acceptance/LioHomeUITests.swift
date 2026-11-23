@@ -3,6 +3,45 @@ import UIKit
 import CryptoKit
 
 @MainActor final class LioToolsUITests: XCTestCase {
+    func testPaymentGuideShowsSetupAndTroubleshootingInBothLanguages() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            for appearance in ["light", "dark"] {
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
+                                       "-lio.ui.appearance.v1", appearance, "-UIPreferredContentSizeCategoryName",
+                                       "UICTContentSizeCategoryL"]
+                app.launch()
+                defer { app.terminate() }
+                let tools = app.tabBars.buttons[language == "en" ? "Tools" : "插件"]
+                XCTAssertTrue(tools.waitForExistence(timeout: 8))
+                tools.tap()
+                app.buttons["lio.tools.payment-guide"].tap()
+                for provider in ["alipay", "weixin"] {
+                    app.buttons["lio.payment.provider." + provider].tap()
+                    XCTAssertTrue(app.staticTexts["lio.payment.step.register"].exists)
+                    XCTAssertTrue(app.staticTexts["lio.payment.step.find-card"].exists)
+                    XCTAssertTrue(app.staticTexts["lio.payment.step.add-card"].exists)
+                    XCTAssertTrue(app.staticTexts["lio.payment.step.verify"].exists)
+                    XCTAssertTrue(app.descendants(matching: .any)["lio.payment.official"].exists)
+                    try app.performAccessibilityAudit(for: .all)
+                    let screenshot = XCTAttachment(screenshot: app.screenshot())
+                    screenshot.name = "payment-\(provider)-\(language)-\(appearance)"
+                    screenshot.lifetime = .keepAlways
+                    add(screenshot)
+                    let problems = app.buttons["lio.payment.problems"]
+                    for _ in 0..<4 where !problems.isHittable { app.swipeUp() }
+                    XCTAssertTrue(problems.isHittable)
+                    problems.tap()
+                    XCTAssertTrue(app.staticTexts["lio.payment.step.issuer"].waitForExistence(timeout: 6))
+                    try app.performAccessibilityAudit(for: .all)
+                    app.navigationBars.firstMatch.buttons.firstMatch.tap()
+                    app.navigationBars.firstMatch.buttons.firstMatch.tap()
+                }
+            }
+        }
+    }
+
     func testToolsTextReportsOfflineUnavailableOnIOS17() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
