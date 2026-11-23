@@ -327,6 +327,27 @@ def test_smoke_stops_after_a_rejected_translation(budget):
                              lambda: True, send, events.append, server_smoke.SmokeResult, ready=True)
     assert calls == ['zh']
     assert [row['status'] for row in events] == ['FAIL', 'UNRUN']
+    assert [row['conservative_cny_1e7'] for row in events] == [CNY_SCALE, 0]
+    assert [row['unresolved_attempts'] for row in events] == [1, 0]
+
+
+def test_smoke_accounts_for_the_original_translation_hold_without_resending(budget):
+    from uuid import UUID
+    from deploy.hk import server_smoke, translation_smoke
+
+    calls, events = [], []
+
+    def send(token, route, *, document):
+        calls.append(document['source_lang'])
+        operation = budget.operation('internal', UUID(document['request_id']), 'text', 1)
+        budget.begin(operation, 0, TEXT_MODEL)
+        raise server_smoke.SmokeResult('UNKNOWN', 'http_timeout')
+
+    assert translation_smoke.checks(budget.authorization, 'internal', 'synthetic-fixture',
+        lambda: True, send, events.append, server_smoke.SmokeResult, ready=True) == events
+    assert calls == ['zh'] and [row['status'] for row in events] == ['UNKNOWN', 'UNRUN']
+    assert [row['state'] for row in budget.authorization.inspect()] == ['INTENT']
+    assert events[0]['conservative_cny_1e7'] == CNY_SCALE and events[0]['estimated_cny_1e7'] == 0
 
 
 def test_revocation_during_tls_connect_blocks_the_supplier_post(budget):
@@ -392,9 +413,28 @@ def test_completed_smoke_rejects_missing_translation_requirement_or_evidence(mon
     assert server_smoke.decide(common, []) == unavailable
     assert server_smoke.decide(common + [required], []) == unavailable
     assert server_smoke.decide(common + [disabled], [])['status'] == 'PASS'
-    translations = [dict(kind='translation', language=language, status='PASS') for language in ('zh', 'en')]
-    assert server_smoke.decide(common + [required, *translations], [])['status'] == 'PASS'
+    translations = [dict(kind='translation', language=language, status='PASS',
+                         conservative_cny_1e7=100, estimated_cny_1e7=100, unresolved_attempts=0)
+                    for language in ('zh', 'en')]
+    assert server_smoke.decide(common + [required, *translations], [])['status'] == 'UNKNOWN'
     assert server_smoke.decide(common + [disabled, *translations], []) == unavailable
+
+    translation_cost = dict(conservative_cny_1e7=200, estimated_cny_1e7=200, unresolved_attempts=0)
+    def cost_for(dialogue_amount):
+        dialogue_cost = dict(conservative_cny_1e7=dialogue_amount, estimated_cny_1e7=dialogue_amount,
+                             unresolved_attempts=0)
+        return dict(kind='cost', conservative_cny_1e7=dialogue_amount+200,
+                    estimated_cny_1e7=dialogue_amount+200, unresolved_attempts=0,
+                    line_usage_delta_cny_1e7=dialogue_amount,
+                    dialogue_cost=dialogue_cost, translation_cost=translation_cost)
+
+    for dialogue_amount in (3*CNY_SCALE+1, 5*CNY_SCALE):
+        verdict = server_smoke.decide(common[:-1] + [cost_for(dialogue_amount), required, *translations], [])
+        assert verdict['reason'] == 'smoke_cost_boundary_unconfirmed'
+    good = cost_for(3*CNY_SCALE)
+    assert server_smoke.decide(common[:-1] + [good, required, *translations], [])['status'] == 'PASS'
+    incomplete = dict(good, conservative_cny_1e7=3*CNY_SCALE)
+    assert server_smoke.decide(common[:-1] + [incomplete, required, *translations], [])['status'] == 'UNKNOWN'
 
 
 @pytest.mark.parametrize('headers,encode', [
