@@ -16,13 +16,13 @@
             "zh": [
               "本地协助可离线查看紧急号码和使领馆目录，也可出示中文求助卡。聊天页可打开 SOS，求助草稿只保存在本机。",
               "常用语卡片可放大、朗读；地铁指南提供北京、上海和成都的乘车步骤及官方线路图。",
-              "支付开通指南介绍支付宝和微信支付的境外卡绑定步骤及常见问题。",
+              "支付开通指南介绍支付宝和微信支付的境外卡绑定步骤及常见问题。汇率换算新增欧洲央行参考汇率，含人民币，并显示汇率日期。",
               "打车可从行程选地点、查看估价或在滴滴打开。中文地址可直接给司机看。"
             ],
             "en": [
               "Use Local Support offline to view emergency numbers, find embassies and consulates, or show a help card in Chinese. Open SOS from Chat. Help drafts stay on this device.",
               "Phrase cards show and read common phrases. The Metro Guide covers Beijing, Shanghai and Chengdu, with links to official maps.",
-              "The Payment Setup Guide explains how to link an international card in Alipay or Weixin Pay and what to check when setup fails.",
+              "The Payment Setup Guide explains how to link an international card in Alipay or Weixin Pay and what to check when setup fails. Currency Converter shows the ECB reference rates and their date, including Chinese yuan.",
               "Use a trip stop to get a taxi estimate, open DiDi, or show the pickup or destination address in Chinese."
             ]
           }
@@ -50,12 +50,12 @@
           },
           "items": {
             "zh": [
-              "用默认字号测中英界面，打开旧对话、切后台再恢复，核对草稿；再测三种翻译和打车预填。",
+              "用默认字号测中英界面，打开旧对话、切后台再恢复，核对草稿；再测三种翻译和打车预填。在汇率换算里试一次人民币换算，核对来源日期。",
               "开飞行模式查看本地协助、使馆、中文卡和草稿。请勿拨打任何号码。滴滴只走到确认页，请勿下单。",
               "遇到问题，请在内部测试群发截图、问题记录及发生时间。"
             ],
             "en": [
-              "At the default text size, check both languages. Reopen an earlier chat, return from the background, and confirm the draft. Try all three translation modes and taxi prefill.",
+              "At the default text size, check both languages. Reopen an earlier chat, return from the background, and confirm the draft. Try all three translation modes and taxi prefill. Convert a yuan amount and check the rate date.",
               "In airplane mode, check Local Support, embassies, the Chinese cards and drafts. Do not place any calls. In DiDi, stop at vehicle confirmation without ordering.",
               "Share a screenshot, the copied issue record and the time it happened in the internal testing group."
             ]
@@ -69,11 +69,11 @@
           },
           "items": {
             "zh": [
-              "酒店、汇率、照片内译文、千问朗读、附近、天气、航班、上网卡、玩乐暂未开放。",
+              "酒店、照片内译文、千问朗读、附近、天气、航班、上网卡、玩乐暂未开放。",
               "本地协助暂不发送求助消息，也不会从对话自动触发。查看当前位置的中文地址和医疗卡尚未开放。"
             ],
             "en": [
-              "Hotels, currency conversion, translated photo layouts, Qwen voice playback, Nearby, Weather, Flights, eSIM and Activities are unavailable in this build.",
+              "Hotels, translated photo layouts, Qwen voice playback, Nearby, Weather, Flights, eSIM and Activities are unavailable in this build.",
               "Local Support does not send help requests or open automatically from chat. The Chinese address lookup and medical card are unavailable."
             ]
           }
