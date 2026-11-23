@@ -138,22 +138,15 @@ struct LioLocalSupportView: View {
                     : AnyLayout(HStackLayout(spacing: 10))
                 layout {
                     VStack(alignment: .leading, spacing: 4) {
-                        if dynamicTypeSize.isAccessibilitySize {
-                            RunReadableText(text: contact.title.localized(language), style: .headline, color: LioTheme.ink)
-                            RunReadableText(text: contact.phone.number, color: LioTheme.ink)
-                            if let detail = contact.detail {
-                                RunReadableText(text: detail.localized(language), color: LioTheme.inkSecondary)
-                            }
-                        } else {
-                            Text(contact.title.localized(language)).font(.headline)
-                            Text(contact.phone.number).monospacedDigit()
-                            if let detail = contact.detail {
-                                Text(detail.localized(language))
-                                    .font(.subheadline)
-                                    .foregroundStyle(LioTheme.inkSecondary)
-                            }
+                        Text(contact.title.localized(language)).font(.headline)
+                        Text(contact.phone.number).monospacedDigit()
+                        if let detail = contact.detail {
+                            Text(detail.localized(language))
+                                .font(.subheadline)
+                                .foregroundStyle(LioTheme.inkSecondary)
                         }
                     }
+                    .fixedSize(horizontal: false, vertical: true)
                     if !dynamicTypeSize.isAccessibilitySize {
                         Spacer(minLength: 4)
                     }
