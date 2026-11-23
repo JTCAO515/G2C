@@ -103,27 +103,31 @@ struct LioLocalSupportView: View {
     private func emergency(_ contacts: [LocalSupportDirectory.Contact]) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             heading(language.text("Emergency numbers", "紧急报警"))
-            let columns = Array(repeating: GridItem(.flexible()), count: dynamicTypeSize.isAccessibilitySize ? 1 : 2)
-            LazyVGrid(columns: columns, spacing: 10) {
-                ForEach(contacts) { contact in
-                    Button {
-                        dial(contact.phone)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Image(systemName: "phone.fill")
-                                .foregroundStyle(LioTheme.danger)
-                                .accessibilityHidden(true)
-                            Text(contact.title.zh).font(.headline)
-                            Text(contact.title.en).font(.subheadline)
-                            Text(contact.phone.number).font(.title2.monospacedDigit())
-                        }
-                        .padding(12)
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                        .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
-                        .contentShape(Rectangle())
+            let buttons = ForEach(contacts) { contact in
+                Button {
+                    dial(contact.phone)
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Image(systemName: "phone.fill")
+                            .foregroundStyle(LioTheme.danger)
+                            .accessibilityHidden(true)
+                        Text(contact.title.zh).font(.headline)
+                        Text(contact.title.en).font(.subheadline)
+                        Text(contact.phone.number).font(.title2.monospacedDigit())
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("lio.support." + contact.id)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("lio.support." + contact.id)
+            }
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: 10) { buttons }
+            } else {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    buttons
                 }
             }
         }
@@ -138,22 +142,15 @@ struct LioLocalSupportView: View {
                     : AnyLayout(HStackLayout(spacing: 10))
                 layout {
                     VStack(alignment: .leading, spacing: 4) {
-                        if dynamicTypeSize.isAccessibilitySize {
-                            RunReadableText(text: contact.title.localized(language), style: .headline, color: LioTheme.ink)
-                            RunReadableText(text: contact.phone.number, color: LioTheme.ink)
-                            if let detail = contact.detail {
-                                RunReadableText(text: detail.localized(language), color: LioTheme.inkSecondary)
-                            }
-                        } else {
-                            Text(contact.title.localized(language)).font(.headline)
-                            Text(contact.phone.number).monospacedDigit()
-                            if let detail = contact.detail {
-                                Text(detail.localized(language))
-                                    .font(.subheadline)
-                                    .foregroundStyle(LioTheme.inkSecondary)
-                            }
+                        Text(contact.title.localized(language)).font(.headline)
+                        Text(contact.phone.number).monospacedDigit()
+                        if let detail = contact.detail {
+                            Text(detail.localized(language))
+                                .font(.subheadline)
+                                .foregroundStyle(LioTheme.inkSecondary)
                         }
                     }
+                    .fixedSize(horizontal: false, vertical: true)
                     if !dynamicTypeSize.isAccessibilitySize {
                         Spacer(minLength: 4)
                     }
