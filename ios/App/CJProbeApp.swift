@@ -112,10 +112,18 @@ struct CJProbeApp: App {
         } else {
             LioHome(language: shell.language.lio, service: .demo, isDemo: true,
                     showsTools: ProcessInfo.processInfo.arguments.contains("--lio-tools-preview"),
-                    toolsRelay: translationRelayPreview) {
+                    toolsRelay: translationRelayPreview, toolsDraftStorage: localSupportDraftPreview) {
                 LioMenuSettings(shell: shell)
             }
         }
+    }
+
+    private var localSupportDraftPreview: LocalSupportDraftStorage? {
+        guard let value = ProcessInfo.processInfo.environment["G2C_LIO_SUPPORT_DRAFT_FIXTURE"],
+              let identity = UUID(uuidString: value),
+              let applicationID = try? DevelopmentKeychainIdentity.read() else { return nil }
+        return LocalSupportKeychainDraft(applicationIdentifier: applicationID)
+            .storage(for: .account(environment: identity, account: identity), isCurrent: { true })
     }
 
     private var translationRelayPreview: LioRelayTranslationClient? {

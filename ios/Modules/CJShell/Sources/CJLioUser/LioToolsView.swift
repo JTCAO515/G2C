@@ -8,6 +8,7 @@ struct LioToolsView: View {
     let language: LioLanguage
     let history: LioTranslationHistory?
     let relay: LioRelayTranslationClient?
+    let draftStorage: LocalSupportDraftStorage?
     let enabled: Bool
     let sessionIsCurrent: @MainActor () -> Bool
     @Environment(\.lioTaxiEntry) private var taxiEntry
@@ -22,7 +23,8 @@ struct LioToolsView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .accessibilityAddTraits(.isHeader)
                     NavigationLink {
-                        LioLocalSupportView(language: language, directory: try? LocalSupportDirectory.bundled())
+                        LioLocalSupportView(language: language, directory: try? LocalSupportDirectory.bundled(),
+                                            draftStorage: draftStorage)
                             .toolbar(.visible, for: .navigationBar)
                     } label: {
                         HStack(spacing: 12) {
