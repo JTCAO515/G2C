@@ -8,6 +8,7 @@ struct LioToolsView: View {
     let language: LioLanguage
     let history: LioTranslationHistory?
     let relay: LioRelayTranslationClient?
+    let currencyRelay: LioCurrencyRelayClient?
     let enabled: Bool
     let sessionIsCurrent: @MainActor () -> Bool
     @Environment(\.lioTaxiEntry) private var taxiEntry
@@ -48,6 +49,21 @@ struct LioToolsView: View {
                         previewHotels
                     }
                     #endif
+                    if let currencyRelay {
+                        NavigationLink {
+                            LioCurrencyView(language: language, load: currencyRelay.load)
+                                .toolbar(.visible, for: .navigationBar)
+                        } label: {
+                            Label(language.text("Currency Converter", "汇率换算"),
+                                  systemImage: "arrow.left.arrow.right")
+                                .foregroundStyle(LioTheme.ink)
+                                .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+                                .padding(.horizontal, 16)
+                                .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("lio.tools.currency")
+                    }
                     NavigationLink {
                         LioMetroGuideView(language: language)
                             .toolbar(.visible, for: .navigationBar)

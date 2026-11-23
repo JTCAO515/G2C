@@ -1,17 +1,19 @@
 #if os(iOS)
+import CJRunClient
 import SwiftUI
 
 struct LioCurrencyView: View {
     let language: LioLanguage
     let load: @MainActor () async throws -> LioCurrencyRates
     @Environment(\.locale) private var locale
+    @Environment(\.colorScheme) private var colorScheme
     @State private var snapshot: LioCurrencyRates?
     @State private var amount = "100"
     @State private var origin: LioCurrencyRates.Currency = .cny
     @State private var destination: LioCurrencyRates.Currency = .usd
     @State private var refresh = 0
     @State private var isLoading = true
-    @State private var loadFailed = false
+    @State private var loadProblem: LioCurrencyRelayFailure?
 
     var body: some View {
         ScrollView {
@@ -21,15 +23,20 @@ struct LioCurrencyView: View {
                     Text(language.text("Rate source", "汇率来源") + " · " + snapshot.source + " · " + snapshot.date)
                         .font(.footnote)
                         .accessibilityIdentifier("lio.currency.source")
+                    Text(language.text("For reference. Your bank or payment provider sets the actual rate.",
+                                       "仅供参考，以银行或支付机构的实际汇率为准。"))
+                        .font(.footnote)
+                        .accessibilityIdentifier("lio.currency.disclaimer")
                 }
 
                 if isLoading {
                     ProgressView(language.text("Getting exchange rates…", "正在获取汇率…"))
-                } else if loadFailed {
-                    Text(snapshot == nil
-                         ? language.text("Exchange rates are unavailable.", "暂时无法获取汇率。")
-                         : language.text("Couldn't refresh. Showing the last available rates.", "暂时无法更新，显示上次获取的汇率。"))
+                } else if let loadProblem {
+                    Text(message(loadProblem))
                         .accessibilityIdentifier("lio.currency.error")
+                    if snapshot != nil {
+                        Text(language.text("Showing the last available rates.", "正在显示上次获取的汇率。"))
+                    }
                 }
 
                 if !isLoading {
@@ -49,6 +56,16 @@ struct LioCurrencyView: View {
         .background(LioTheme.paper)
         .navigationTitle(language.text("Currency Converter", "汇率换算"))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(LioTheme.paper, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(colorScheme, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                RunReadableText(text: language.text("Currency Converter", "汇率换算"), style: .headline, color: LioTheme.ink)
+                    .fixedSize()
+                    .accessibilityAddTraits(.isHeader)
+            }
+        }
         .task(id: refresh) {
             isLoading = true
             defer { if !Task.isCancelled { isLoading = false } }
@@ -58,11 +75,28 @@ struct LioCurrencyView: View {
                 snapshot = rates
                 if !rates.currencies.contains(origin) { origin = .cny }
                 if !rates.currencies.contains(destination) { destination = .eur }
-                loadFailed = false
+                loadProblem = nil
+            } catch is CancellationError {
+                return
             } catch {
                 guard !Task.isCancelled else { return }
-                loadFailed = true
+                loadProblem = error as? LioCurrencyRelayFailure ?? .unavailable
             }
+        }
+    }
+
+    private func message(_ failure: LioCurrencyRelayFailure) -> String {
+        switch failure {
+        case .signInRequired:
+            language.text("Sign in again to get exchange rates.", "请重新登录后获取汇率。")
+        case .unavailableForAccount:
+            language.text("Exchange rates aren’t available for this account.", "此账号暂时无法使用汇率换算。")
+        case .offline:
+            language.text("Connect to the internet to get exchange rates.", "请联网后获取汇率。")
+        case .timedOut:
+            language.text("Getting exchange rates took too long. Try again.", "汇率获取超时，请重试。")
+        case .unavailable:
+            language.text("Exchange rates are unavailable. Try again.", "暂时无法获取汇率，请重试。")
         }
     }
 
