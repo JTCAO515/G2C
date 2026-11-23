@@ -172,13 +172,14 @@ def active_nearby(runtime, authorization_guard):
             values = json.loads(raw)
             if type(values) is not list or not values or any(type(item) is not str for item in values):
                 raise ValueError('explicit Nearby roster required')
-            roster = frozenset(values)
-            if len(roster) != len(values) or not roster.issubset(generate_plugin_subjects()):
+            selected = frozenset(values)
+            if len(selected) != len(values) or len(selected) > 10 or not selected.issubset(generate_plugin_subjects()):
                 raise ValueError('invalid Nearby roster')
             provider = GaodeNearby(os.environ['CJ_AMAP_WEB_KEY'])
             journal = AuthorizationBudget(HK_JOURNAL_ROOT, authorization_guard=authorization_guard, demo=True)
-            checker = account_checker_for(runtime.auth, runtime.database(), selected_subjects=roster)
+            checker = account_checker_for(runtime.auth, runtime.database(), selected_subjects=selected)
             service = NearbyService(provider, NearbyBudget(journal))
+            roster = selected
         except (KeyError, BudgetUnknown, CompositionUnavailable, psycopg.Error, sqlite3.Error,
                 ValueError, OSError, RecursionError):
             print('ALERT nearby_relay_configuration_unavailable', file=sys.stderr, flush=True)

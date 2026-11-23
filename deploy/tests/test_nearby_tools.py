@@ -136,6 +136,27 @@ def test_gaode_response_cannot_echo_the_server_key(encoded):
     assert mismatch.value.status == 502 and fixture_key not in str(mismatch.value)
 
 
+def test_nearby_refuses_more_than_the_authorized_pilot_roster(monkeypatch):
+    from contextlib import contextmanager
+    from deploy.hk import nearby_relay
+
+    @contextmanager
+    def closed_socket(service, checker, roster, *, disabled):
+        assert (service, checker, roster) == (None, None, frozenset())
+        yield
+
+    def supplier_must_not_start(_key):
+        pytest.fail('A roster above 10 must be refused before supplier creation')
+
+    subjects = nearby_relay.generate_plugin_subjects()[:11]
+    monkeypatch.setenv(nearby_relay.NEARBY_INTERNAL_SUBJECTS, json.dumps(subjects))
+    monkeypatch.setenv('CJ_AMAP_WEB_KEY', 'fixture-gaode-key')
+    monkeypatch.setattr(nearby_relay, 'GaodeNearby', supplier_must_not_start)
+    monkeypatch.setattr(nearby_relay, 'nearby_socket', closed_socket)
+    with nearby_relay.active_nearby(None, None):
+        pass
+
+
 @pytest.mark.parametrize('enabled', [False, True])
 def test_nearby_http_relay_respects_internal_admission_and_closed_state(ledger, enabled):
     supplier = Supplier()
