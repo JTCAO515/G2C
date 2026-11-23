@@ -17,7 +17,7 @@ struct LioTranslatedPhotoView: View {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: 6) {
                     selector(.translated, language.text("Translated", "译图"))
-                    selector(.original, language.text("Original", "原图"))
+                    selector(.original, language.text("Original", "照片"))
                     selector(.lines, language.text("Line by line", "逐行对照"))
                 }
                 .accessibilityIdentifier("lio.translation.photo-layout.display")
@@ -26,7 +26,7 @@ struct LioTranslatedPhotoView: View {
                 case .translated:
                     picture(photo.translated, label: language.text("Translated photo", "带译文的照片"))
                 case .original:
-                    picture(photo.original, label: language.text("Original photo", "原始照片"))
+                    picture(photo.original, label: language.text("Original photo", "未翻译的照片"))
                 case .lines:
                     ForEach(lines) { line in
                         VStack(alignment: .leading, spacing: 5) {
@@ -54,7 +54,7 @@ struct LioTranslatedPhotoView: View {
                 .font(.subheadline.weight(.semibold))
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .background(display == choice ? LioTheme.surfaceSunken : LioTheme.surface,
-                            in: RoundedRectangle(cornerRadius: 12))
+                            in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(display == choice ? .isSelected : [])
