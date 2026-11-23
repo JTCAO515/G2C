@@ -202,12 +202,23 @@ def test_counter_open_failure_has_stable_error(tmp_path):
     (114.164, 22.308), (113.546, 22.19), (121.565, 25.033), (139.6917, 35.6895),
 ])
 @pytest.mark.parametrize('route', [ESTIMATE, LINK])
-def test_non_mainland_destination_stops_before_any_didi_call(app_context, lng, lat, route):
+@pytest.mark.parametrize('coordinate_system', ['WGS-84', 'GCJ-02'])
+def test_non_mainland_destination_stops_before_any_didi_call(app_context, lng, lat, route, coordinate_system):
     client, seen, _ = app_context
-    result = client.post(route, headers=AUTH, json=dict(payload(), destination=dict(point(), lng=lng, lat=lat)))
+    destination = dict(point(), lng=lng, lat=lat, coordinate_system=coordinate_system)
+    result = client.post(route, headers=AUTH, json=dict(payload(), destination=destination))
     assert result.status_code == 422
     assert result.json() == {'error': 'out_of_service_area'}
     assert seen == []
+
+
+def test_verified_gcj_input_is_passed_through_once(app_context):
+    client, seen, _ = app_context
+    body = payload()
+    body['origin'] = dict(body['origin'], lng=116.410244, lat=39.916404, coordinate_system='GCJ-02')
+    body['destination'] = dict(body['destination'], lng=116.410244, lat=39.916404, coordinate_system='GCJ-02')
+    assert client.post(LINK, headers=AUTH, json=body).status_code == 200
+    assert seen == [('taxi_generate_ride_app_link', GCJ)]
 
 
 def test_unknown_reverse_name_rejects_before_estimate():
