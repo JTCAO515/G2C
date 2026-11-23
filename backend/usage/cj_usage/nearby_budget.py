@@ -38,18 +38,18 @@ class NearbyBudget:
     def begin(self, scope, request_id: UUID, operation):
         self.authorization.check_date()
         owner = scope_hash(scope)
-        identifier = f'{SERVICE}:{owner}:{request_id.hex}:{operation}'
         day = self.authorization.clock().astimezone(SHANGHAI).date().isoformat()
+        request = f'{SERVICE}:{owner}:{request_id.hex}:{operation}'
+        identifier = f'{request}:{day}'
         witness = dict(service=SERVICE, operation=operation, day=day, endpoint=ORIGIN+OPERATIONS[operation])
         raw = canonical(witness)
         with self.authorization.mutation() as db:
-            if db.execute('SELECT 1 FROM attempt WHERE id=?', (identifier,)).fetchone():
+            if db.execute('SELECT 1 FROM attempt WHERE id GLOB ?', (f'{request}:*',)).fetchone():
                 raise NearbyDuplicate('original Nearby attempt already recorded')
             total, daily = db.execute(
-                """SELECT count(*), sum(CASE WHEN id GLOB ? AND json_extract(receipt,'$.day')=?
-                                               THEN 1 ELSE 0 END)
-                   FROM attempt WHERE kind='place' AND id GLOB ? AND json_extract(receipt,'$.operation')=?""",
-                (f'{SERVICE}:{owner}:*', day, f'{SERVICE}:*', operation),
+                """SELECT count(*), sum(CASE WHEN id GLOB ? THEN 1 ELSE 0 END)
+                   FROM attempt WHERE kind='place' AND id GLOB ?""",
+                (f'{SERVICE}:{owner}:*:{operation}:{day}', f'{SERVICE}:*:{operation}:*'),
             ).fetchone()
             if total >= M4_OPERATION_LIMIT or (daily or 0) >= DAILY_ACCOUNT_LIMIT:
                 raise NearbyLimit('Nearby operation count exhausted')
@@ -57,8 +57,9 @@ class NearbyBudget:
             used = sum(estimates[kind]+holds[kind] for kind in LIMITS if kind != 'model')
             if used + LIMITS['place'][1]*CNY_SCALE > min(TOOL_STOP_CNY, TOOL_TOTAL_CNY)*CNY_SCALE:
                 raise NearbyLimit('original Gaode cash allowance exhausted')
-            db.execute("INSERT INTO attempt VALUES(?,?,?,'INTENT',?)",
-                       (identifier, 'place', hashlib.sha256(raw).hexdigest(), raw.decode()))
+            # Keep the original HK ledger's NULL receipt contract for unsettled attempts.
+            db.execute("INSERT INTO attempt VALUES(?,?,?,'INTENT',NULL)",
+                       (identifier, 'place', hashlib.sha256(raw).hexdigest()))
         return identifier, witness
 
     def finish(self, attempt, raw):

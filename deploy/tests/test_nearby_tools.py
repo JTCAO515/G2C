@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -13,9 +13,9 @@ from fastapi.testclient import TestClient
 from cj_api.nearby_tools import GaodeNearby, NearbyLocationRequest, NearbySearchRequest, NearbyService, REVERSE
 from cj_api.plugin_tools import PluginError
 from cj_auth.interfaces import AdmissionDecision, AdmissionReason, AdmissionStatus
-from cj_usage.authorization_budget import AMAP_PRICE, LIMITS, AuthorizationBudget, authorization_usage
+from cj_usage.authorization_budget import AMAP_PRICE, CNY_SCALE, LIMITS, AuthorizationBudget, authorization_usage, journal_state
 from cj_usage.metered_exit import BudgetUnknown
-from cj_usage.nearby_budget import NearbyBudget, SHANGHAI
+from cj_usage.nearby_budget import NearbyBudget, NearbyDuplicate, SHANGHAI
 from deploy.hk.nearby_relay import nearby_request, nearby_socket, register_nearby_routes
 
 
@@ -100,6 +100,25 @@ def test_nearby_charges_share_cash_and_preserve_the_legacy_place_count(ledger, m
     ledger.begin('legacy-first-place', 'place', b'legacy input')
     with pytest.raises(BudgetUnknown, match='call allowance'):
         ledger.begin('legacy-second-place', 'place', b'legacy input')
+
+
+def test_nearby_unresolved_attempt_retains_the_original_export_and_cross_day_deduplication(ledger):
+    from scripts.m4_budget_transfer import attempts
+
+    nearby = NearbyBudget(ledger)
+    request_id = uuid4()
+    attempt = nearby.begin('owner', request_id, 'search')
+    with ledger.connect() as db:
+        assert attempts(db) == journal_state(db)
+        assert authorization_usage(db)[2]['place'] == LIMITS['place'][1] * CNY_SCALE
+    tomorrow = ledger.clock() + timedelta(days=1)
+    ledger.clock = lambda: tomorrow
+    with pytest.raises(NearbyDuplicate):
+        nearby.begin('owner', request_id, 'search')
+    nearby.finish(attempt, b'original supplier fixture response')
+    with ledger.connect() as db:
+        assert attempts(db) == journal_state(db)
+        assert authorization_usage(db)[1]['place'] == AMAP_PRICE
 
 
 @pytest.mark.parametrize('encoded', [False, True])
