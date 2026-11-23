@@ -150,6 +150,13 @@ public struct LioHome<MenuContent: View>: View {
         let tripPlan = tripPlan
         TabView(selection: $tab) {
             chat
+                #if DEBUG
+                .safeAreaInset(edge: .top) {
+                    if ProcessInfo.processInfo.arguments.contains("--lio-emergency-guidance-preview") {
+                        LioEmergencyChatPreview(language: language)
+                    }
+                }
+                #endif
                 .background(LioTabBarAppearance().frame(width: 0, height: 0))
                 .tabItem { Label(language.text("Chat", "聊天"), systemImage: "bubble.left") }
                 .tag(Tab.chat)
