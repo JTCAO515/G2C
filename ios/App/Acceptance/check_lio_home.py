@@ -75,6 +75,7 @@ def main():
         "testToolsPhotoRemainsAvailableAfterSignInErrorOnIOS17",
         "testToolsEmptyPhotoAsksForAnotherAngle",
         "testToolsPhotoTimeoutRetriesWithTheSameImageRequest",
+        "testToolsPhotoShowsPositionedTranslationAndLineComparison",
     )):
         seed_translation_photo(args.simulator, output)
 

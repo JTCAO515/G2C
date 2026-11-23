@@ -1,9 +1,10 @@
 """Bounded Gaode Nearby and reverse lookup, independent of the Lio run path."""
 
-from collections import OrderedDict
+from collections import Counter, OrderedDict
 from contextlib import closing
 from http.client import HTTPException, HTTPSConnection
 import json
+import logging
 import re
 from threading import Lock
 from time import monotonic
@@ -29,6 +30,7 @@ BODY_LIMIT = 256 * 1024
 CATEGORY_CODES = {'food': '050000', 'coffee': '050500', 'sights': '110000', 'shopping': '060000'}
 CACHE_SECONDS = 60
 CACHE_CAPACITY = 32
+_LOGGER = logging.getLogger(__name__)
 
 
 class Position(WireModel):
@@ -129,11 +131,22 @@ def _photo(entries):
     return None
 
 
+class _InvalidPoi(ValueError):
+    """A single POI cannot be projected without inventing required fields."""
+
+
 def _poi(row):
+    if type(row) is not dict:
+        raise _InvalidPoi('row_shape')
     name, identifier, code = (_text(row.get(field)) for field in ('name', 'id', 'typecode'))
-    if not (name and identifier and code and re.fullmatch(r'[0-9]{6}', code)):
-        raise ValueError('Gaode POI core fields unavailable')
-    coord = Coordinate(row['location'])
+    if not name or not identifier:
+        raise _InvalidPoi('identity')
+    if not code or re.fullmatch(r'[0-9]{6}', code) is None:
+        raise _InvalidPoi('type_code')
+    try:
+        coord = Coordinate(row.get('location'))
+    except ValueError:
+        raise _InvalidPoi('coordinate') from None
     business = row.get('business')
     if type(business) is not dict:
         business = {}
@@ -195,12 +208,29 @@ class NearbyService:
                 location=location, types=types, radius=request.radius_m,
                 sortrule='distance' if request.sort == 'distance' else 'weight', page_size=25,
                 page_num=1, show_fields='business,photos'), authorize)
-            pois = value['pois']
-            if type(pois) is not list or len(pois) > 25 or any(type(row) is not dict for row in pois):
-                raise ValueError('Gaode POI list unavailable')
-            result = dict(version=VERSION, source='Gaode', items=[_poi(row) for row in pois])
         except (KeyError, ValueError):
             raise PluginError(502, 'supplier_unavailable') from None
+        pois = value.get('pois')
+        if 'pois' not in value and value.get('count') == '0':
+            pois = []
+        if type(pois) is not list or len(pois) > 25:
+            _LOGGER.warning('G2C_NEARBY_POI_PROJECTION reason=collection_shape')
+            raise PluginError(502, 'supplier_unavailable')
+        items = []
+        rejected = Counter()
+        for row in pois:
+            try:
+                items.append(_poi(row))
+            except _InvalidPoi as error:
+                rejected[str(error)] += 1
+        result = dict(version=VERSION, source='Gaode', items=items)
+        if rejected:
+            omitted = sum(rejected.values())
+            _LOGGER.warning('G2C_NEARBY_POI_PROJECTION rows=%d omitted=%d reasons=%s',
+                            len(pois), omitted, dict(rejected))
+            if not items:
+                raise PluginError(502, 'supplier_unavailable')
+            result['omitted_items'] = omitted
         authorize()
         with self.cache_lock:
             self.cache[key] = (self.clock()+CACHE_SECONDS, result)
