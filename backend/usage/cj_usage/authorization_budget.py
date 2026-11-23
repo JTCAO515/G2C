@@ -88,6 +88,12 @@ def _price_receipt(kind, raw):
             return None
         return prompt*MODEL_INPUT_PRICE+completion*MODEL_OUTPUT_PRICE
     endpoint=receipt.get('endpoint')
+    if kind=='place' and receipt.get('service')=='amap-nearby.1':
+        from .nearby_budget import OPERATIONS, ORIGIN
+        operation=receipt.get('operation')
+        if type(operation) is str and operation in OPERATIONS and endpoint==ORIGIN+OPERATIONS[operation]:
+            return AMAP_PRICE
+        return None
     if kind in AMAP_ENDPOINTS and type(endpoint) is str and endpoint in AMAP_ENDPOINTS[kind]:
         return AMAP_PRICE
     return None
@@ -202,7 +208,12 @@ class AuthorizationBudget:
             if db.execute('SELECT 1 FROM attempt WHERE id=?',(attempt,)).fetchone():
                 raise BudgetUnknown('M4 original attempt is read only')
             counts,estimates,holds=authorization_usage(db)
-            if counts[kind]>=LIMITS[kind][0]:raise BudgetUnknown('M4 call allowance exhausted')
+            count=counts[kind]
+            if kind=='place':
+                # The separately authorized Nearby counts share cash, not the
+                # legacy Lio place allowance.
+                count-=db.execute("SELECT count(*) FROM attempt WHERE kind='place' AND id GLOB 'amap-nearby.1:*'").fetchone()[0]
+            if count>=LIMITS[kind][0]:raise BudgetUnknown('M4 call allowance exhausted')
             reserve=LIMITS[kind][1]*CNY_SCALE
             if kind=='model':
                 if estimates[kind]+holds[kind]+reserve>min(MODEL_STOP_CNY,MODEL_TOTAL_CNY)*CNY_SCALE:

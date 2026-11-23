@@ -19,6 +19,8 @@ from .lio_exploration_factors import BY_KEY
 
 PRESENTATION='lio_presentation.1:'
 PROGRESS='lio_progress.1:'
+LOCAL_SUPPORT_EFFECT='lio_local_support_open.1'
+LOCAL_SUPPORT_ACTION_VERSION='LIO-local-support-action.1'
 
 
 def merged_presentation(sections):
@@ -144,6 +146,26 @@ def _trip_history(boundary,trip_cards,token,cid,before):
     return boundary.with_history_context(token,read)
 
 
+def _local_support_action(boundary,resolve_runs,token,cid,mid):
+    def read(context):
+        def project():
+            stored=context.query_lio_message(mid)
+            if stored is None or stored.receipt.conversation_id!=cid:
+                return _failure(404)
+            original=stored.receipt
+            binding=Binding(context.scope,cid,original.generation,mid,original.run_id,original.sequence)
+            (state,expired),=resolve_runs(context.scope).lio_timeline([binding])
+            action=None
+            if not expired and state is not None and state.status=='completed' and LOCAL_SUPPORT_EFFECT in state.effects:
+                action='open_local_support'
+            current=context.query_lio_message(mid)
+            if current is None or current.receipt!=original:
+                raise Unavailable('original message changed during local support projection')
+            return _json(dict(version=LOCAL_SUPPORT_ACTION_VERSION,conversation_id=cid,message_id=mid,action=action))
+        return context.with_lio_timeline_projection(project)
+    return boundary.with_history_context(token,read)
+
+
 def register_lio_exploration_routes(app,boundary,resolve_runs,trip_cards,profile_cards,*,prepare_scope,memory_cards=None):
     @app.post('/v4/lio/messages')
     async def send(request:Request):
@@ -188,6 +210,21 @@ def register_lio_exploration_routes(app,boundary,resolve_runs,trip_cards,profile
             value=await run_in_threadpool(timeline,boundary,resolve_runs,trip_cards,memory_cards,profile_cards,token,cid,before)
         except Exception as error:return _failure(message_failure(request,error,False).status_code)
         return _json(value)
+
+    @app.get('/v4/lio/local-support-action')
+    async def local_support_action(request:Request):
+        token=_token(request)
+        if token is None:return _failure(401)
+        try:
+            params=_query(request,('conversation_id','message_id'))
+            cid=params['conversation_id']
+            if LIO_CHAT_PATTERN.fullmatch(cid) is None:raise InvalidInput('conversation required')
+            mid=message_id(params['message_id'])
+        except (ValueError,UnicodeError):return _failure(400)
+        try:
+            return await run_in_threadpool(_local_support_action,boundary,resolve_runs,token,cid,mid)
+        except Exception as error:
+            return _failure(message_failure(request,error,False).status_code)
 
     @app.get('/v4/lio/trip')
     async def trip_history(request:Request):

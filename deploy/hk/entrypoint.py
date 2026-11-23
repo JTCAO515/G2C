@@ -72,6 +72,8 @@ def api(runtime,*,app_smoke_api_manifest=None):
     app=runtime.app();database=runtime.database()
     from .translation_relay import register_translation_route
     register_translation_route(app)
+    from .nearby_relay import register_nearby_routes
+    register_nearby_routes(app)
     from .taxi_runtime import register_runtime_taxi
     register_runtime_taxi(app, runtime.auth, database)
     from .currency_runtime import register_runtime_currency
@@ -117,7 +119,8 @@ def worker_pulse():
 def worker(runtime, *, tool_evidence=None,runtime_manifest=None,app_smoke_manifest=None,simulator_manifest=None,start_simulator=False):
     from .demo_login import signing_socket
     from .translation_relay import active_translation
-    with signing_socket(runtime), active_translation(runtime, authorization):
+    from .nearby_relay import active_nearby
+    with signing_socket(runtime), active_translation(runtime, authorization), active_nearby(runtime, authorization):
         _run_worker(runtime, tool_evidence=tool_evidence,runtime_manifest=runtime_manifest,app_smoke_manifest=app_smoke_manifest,
                     simulator_manifest=simulator_manifest,start_simulator=start_simulator)
 

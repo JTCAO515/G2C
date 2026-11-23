@@ -20,6 +20,7 @@ struct LioLocalSupportView: View {
                 if let directory {
                     emergency(directory.emergency)
                     contacts(language.text("Help lines", "求助热线"), directory.hotlines)
+                    helpCard
                     embassySection(directory.embassies)
                     contacts(language.text("Consumer services", "消费者服务"), directory.consumer)
                     VStack(alignment: .leading, spacing: 6) {
@@ -30,6 +31,7 @@ struct LioLocalSupportView: View {
                     .foregroundStyle(LioTheme.inkSecondary)
                 } else {
                     Text(language.text("The phone directory is unavailable.", "电话目录暂不可用。"))
+                    helpCard
                 }
                 #if DEBUG
                 if let value = ProcessInfo.processInfo.environment["G2C_LOCAL_SUPPORT_TEST_PHONE"],
@@ -70,6 +72,18 @@ struct LioLocalSupportView: View {
         } message: {
             Text(actionMessage ?? "")
         }
+    }
+
+    private var helpCard: some View {
+        NavigationLink {
+            LioLocalHelpCardView(language: language)
+        } label: {
+            Label(language.text("Show a Local", "给当地人看"), systemImage: "text.bubble")
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("lio.support.help-card")
     }
 
     private func emergency(_ contacts: [LocalSupportDirectory.Contact]) -> some View {
