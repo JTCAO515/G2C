@@ -4,6 +4,8 @@ from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
+import time
+from types import SimpleNamespace
 from uuid import uuid4
 import wave
 
@@ -12,14 +14,17 @@ from fastapi.testclient import TestClient
 import httpx
 import pytest
 
-from cj_api.translation import DashScopeTranslation, ROUTE, TranslationRelay, VERSION
+from cj_api.translation import (
+    DashScopeTranslation, ROUTE, TTS_RESULT_HOST, TTS_ROUTE, TTS_VERSION,
+    TranslationError, TranslationRelay, VERSION,
+)
 from cj_auth.interfaces import AdmissionDecision, AdmissionReason, AdmissionStatus, TrustedPrincipal
 from cj_usage.authorization_budget import (
     AuthorizationBudget, CNY_SCALE, HK_PRODUCER, M1_ESTIMATED, M1_UNRESOLVED_CNY, MAC_PRODUCER,
     authorization_usage, journal_state,
 )
 from cj_usage.translation_budget import (
-    BEIJING, IMAGE_MODEL, SPEECH_MODEL, TEXT_MODEL, TranslationBudget, TranslationLimit,
+    BEIJING, IMAGE_MODEL, SPEECH_MODEL, TEXT_MODEL, TTS_MODEL, TranslationBudget, TranslationLimit,
 )
 from deploy.hk.translation_relay import register_translation_route, socket_request, translation_socket
 from scripts.m4_budget_transfer import attempts
@@ -56,7 +61,6 @@ def budget(tmp_path):
 @pytest.fixture
 def interface(budget, request):
     import json
-    from types import SimpleNamespace
 
     calls = []
     def fake(http_request):
@@ -206,6 +210,87 @@ def test_reject_wrong_encoding_and_disallow_provider_url(interface):
     assert _post(client, _body('image', media='https://example.test/person.png')).status_code == 400
     assert _post(client, {**_body(text='你好'), 'model': 'qwen-max'}).status_code == 400
     assert calls == []
+
+
+@pytest.mark.parametrize('enabled', [False, True])
+def test_tts_uses_private_worker_audio_and_original_receipt_once(budget, enabled):
+    audio = b64decode(_wav())
+    calls = []
+
+    class Provider:
+        def synthesize(self, request, deadline, authorize):
+            assert (request.language, request.text) == ('zh', '测试朗读')
+            authorize()
+            calls.append('synthesize')
+            return str(uuid4()), {'characters': 4}, 'provider-result'
+
+        def fetch_audio(self, url, deadline):
+            assert url == 'provider-result'
+            calls.append('download')
+            return audio
+
+    relay = TranslationRelay(SimpleNamespace(check=_check), budget, Provider(), lambda issuer, subject: subject)
+    body = dict(version=TTS_VERSION, request_id=str(uuid4()), language='zh', text='测试朗读')
+    with TemporaryDirectory(prefix='g2c-tts-', dir='/tmp') as directory:
+        path = Path(directory) / 'relay.sock'
+        with translation_socket(relay, path=path, tts_enabled=enabled):
+            app = FastAPI()
+            register_translation_route(app, send=lambda token, raw, **kw: socket_request(token, raw, path=path, **kw))
+            with TestClient(app, headers={'Authorization': 'Bearer internal-fixture'}) as client:
+                assert client.post(TTS_ROUTE, json=body, headers={'Authorization': 'Bearer external-fixture'}).status_code == 403
+                reply = client.post(TTS_ROUTE, json=body)
+                if enabled:
+                    assert reply.status_code == 200
+                    assert reply.headers['content-type'] == 'audio/wav' and reply.content == audio
+                    assert client.post(TTS_ROUTE, json=body).status_code == 409
+                else:
+                    assert reply.json() == {'version': TTS_VERSION, 'error': 'not_enabled'}
+    assert calls == (['synthesize', 'download'] if enabled else [])
+    with budget.authorization.connect() as db:
+        _, estimates, _ = authorization_usage(db)
+    assert estimates['model'] == M1_ESTIMATED + (3200 if enabled else 0)
+    assert '测试朗读' not in str(budget.authorization.inspect())
+
+
+def test_tts_daily_limit_uses_original_owner_and_does_not_change_text_quota(budget):
+    for _ in range(200):
+        operation = budget.operation('owner-a', uuid4(), 'tts', 1)
+        budget.begin(operation, 0, TTS_MODEL)
+        budget.finish(operation, 0, TTS_MODEL, str(uuid4()), {'characters': 1})
+    with pytest.raises(TranslationLimit, match='daily translation'):
+        budget.begin(budget.operation('owner-a', uuid4(), 'tts', 1), 0, TTS_MODEL)
+    budget.begin(budget.operation('owner-b', uuid4(), 'tts', 1), 0, TTS_MODEL)
+    budget.begin(budget.operation('owner-a', uuid4(), 'text', 1), 0, TEXT_MODEL)
+
+
+def test_tts_download_connects_to_beijing_asset_over_tls_without_api_key():
+    data = b64decode(_wav())
+    calls = []
+
+    class Connection:
+        def __init__(self, host, *, timeout):
+            assert host == TTS_RESULT_HOST and 0 < timeout <= 8
+            calls.append(host)
+
+        def request(self, method, path, *, headers):
+            assert (method, path, headers) == ('GET', '/one.wav?signature=fake', {'Accept': 'audio/wav'})
+
+        def getresponse(self):
+            return SimpleNamespace(status=200, read=lambda limit: data, close=lambda: None)
+
+        def close(self):
+            pass
+
+    provider = DashScopeTranslation('fixture-api-key', connection=Connection)
+    deadline = time.monotonic() + 15
+    assert provider.fetch_audio('http://' + TTS_RESULT_HOST + '/one.wav?signature=fake', deadline) == data
+    with pytest.raises(TranslationError, match='provider_unavailable'):
+        provider.fetch_audio('https://other.invalid/one.wav?signature=fake', deadline)
+    assert calls == [TTS_RESULT_HOST]
+    credential_echo = b'fixture-api-key'
+    data = data[:44] + credential_echo + data[44 + len(credential_echo):]
+    with pytest.raises(TranslationError, match='provider_unavailable'):
+        provider.fetch_audio('https://' + TTS_RESULT_HOST + '/one.wav?signature=fake', deadline)
 
 
 def test_voice_limit_is_atomic_and_isolated_per_owner(budget):
