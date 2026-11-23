@@ -17,67 +17,56 @@ extension EnvironmentValues {
 
 struct LioLocalSupportView: View {
     let language: LioLanguage
-    let directory: LocalSupportDirectory?
+    private let directory: LocalSupportDirectory?
+    private let compactEmergencyCards: Bool
     @Environment(\.lioLocalSupportDraft) private var draftStorage
+
+    init(language: LioLanguage, directory: LocalSupportDirectory? = try? LocalSupportDirectory.bundled(),
+         compactEmergencyCards: Bool = false) {
+        self.language = language
+        self.directory = directory
+        self.compactEmergencyCards = compactEmergencyCards
+    }
 
     @AppStorage("lio.local-support.nationality") private var nationality = ""
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.openURL) private var openURL
     @State private var selectingNationality = false
     @State private var actionMessage: String?
 
+    private var title: String { language.text("Local Support", "本地协助") }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                if let directory {
-                    emergency(directory.emergency)
-                    contacts(language.text("Help lines", "求助热线"), directory.hotlines)
-                    helpCard
-                    embassySection(directory.embassies)
-                    contacts(language.text("Consumer services", "消费者服务"), directory.consumer)
-                    if let draftStorage {
-                        LioLocalSupportDraftEditor(language: language, storage: draftStorage)
-                    }
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(language.text("Verified as of \(directory.verifiedAt)", "信息核对至 \(directory.verifiedAt)"))
-                        Text(language.text("Phone services and availability may change.", "电话服务和接听情况可能变化。"))
-                    }
-                    .font(.footnote)
-                    .foregroundStyle(LioTheme.inkSecondary)
-                } else {
-                    Text(language.text("The phone directory is unavailable.", "电话目录暂不可用。"))
-                    helpCard
-                }
-                #if DEBUG
-                if let value = ProcessInfo.processInfo.environment["G2C_LOCAL_SUPPORT_TEST_PHONE"],
-                   let test = try? LocalSupportPhone(value) {
-                    Button(language.text("Test dial", "测试拨号")) { dial(test) }
-                        .frame(minHeight: 44)
-                        .accessibilityIdentifier("lio.support.test-dial")
-                }
-                #endif
+                directorySections
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(18)
         }
         .foregroundStyle(LioTheme.ink)
         .background(LioTheme.paper)
-        .navigationTitle(language.text("Local Support", "本地协助"))
+        .navigationTitle(dynamicTypeSize.isAccessibilitySize ? "" : title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(LioTheme.paper, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarColorScheme(colorScheme, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
         .toolbar {
-            ToolbarItem(placement: .principal) {
-                RunReadableText(text: language.text("Local Support", "本地协助"), style: .headline, color: LioTheme.ink)
-                    .fixedSize()
-                    .accessibilityAddTraits(.isHeader)
+            if !dynamicTypeSize.isAccessibilitySize {
+                ToolbarItem(placement: .principal) {
+                    RunReadableText(text: title, style: .headline, color: LioTheme.ink)
+                        .fixedSize()
+                        .accessibilityAddTraits(.isHeader)
+                }
             }
         }
         .sheet(isPresented: $selectingNationality) {
-            LocalSupportEmbassyPicker(language: language, embassies: directory?.embassies ?? [],
-                                      nationality: $nationality)
+            if let catalog = directory {
+                LocalSupportEmbassyPicker(language: language, embassies: catalog.embassies,
+                                          nationality: $nationality)
+            }
         }
         .alert(language.text("Local Support", "本地协助"), isPresented: Binding(
             get: { actionMessage != nil },
@@ -87,6 +76,41 @@ struct LioLocalSupportView: View {
         } message: {
             Text(actionMessage ?? "")
         }
+    }
+
+    @ViewBuilder private var directorySections: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            heading(title)
+        }
+        emergency(LocalSupportDirectory.emergencyContacts)
+        contacts(language.text("Help lines", "求助热线"), LocalSupportDirectory.helpContacts)
+        helpCard
+        if let catalog = directory {
+            embassySection(catalog.embassies)
+        } else {
+            Text(language.text("Embassy contacts couldn’t be loaded.", "暂时无法显示使馆联系方式。"))
+                .foregroundStyle(LioTheme.inkSecondary)
+        }
+        contacts(language.text("Consumer services", "消费者服务"), LocalSupportDirectory.consumerContacts)
+        if let draftStorage {
+            LioLocalSupportDraftEditor(language: language, storage: draftStorage)
+        }
+        VStack(alignment: .leading, spacing: 6) {
+            if let catalog = directory {
+                Text(language.text("Verified as of \(catalog.verifiedAt)", "信息核对至 \(catalog.verifiedAt)"))
+            }
+            Text(language.text("Phone services and availability may change.", "电话服务和接听情况可能变化。"))
+        }
+        .font(.footnote)
+        .foregroundStyle(LioTheme.inkSecondary)
+        #if DEBUG
+        if let value = ProcessInfo.processInfo.environment["G2C_LOCAL_SUPPORT_TEST_PHONE"],
+           let test = try? LocalSupportPhone(value) {
+            Button(language.text("Test dial", "测试拨号")) { dial(test) }
+                .frame(minHeight: 44)
+                .accessibilityIdentifier("lio.support.test-dial")
+        }
+        #endif
     }
 
     private var helpCard: some View {
@@ -104,26 +128,43 @@ struct LioLocalSupportView: View {
     private func emergency(_ contacts: [LocalSupportDirectory.Contact]) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             heading(language.text("Emergency numbers", "紧急报警"))
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                ForEach(contacts) { contact in
-                    Button {
-                        dial(contact.phone)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Image(systemName: "phone.fill")
-                                .foregroundStyle(LioTheme.danger)
-                                .accessibilityHidden(true)
-                            Text(contact.title.zh).font(.headline)
-                            Text(contact.title.en).font(.subheadline)
-                            Text(contact.phone.number).font(.title2.monospacedDigit())
+            let buttons = ForEach(contacts) { contact in
+                Button {
+                    dial(contact.phone)
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        let icon = Image(systemName: "phone.fill")
+                            .foregroundStyle(LioTheme.danger)
+                            .accessibilityHidden(true)
+                        let name = Text(contact.title.zh).font(.headline)
+                        if compactEmergencyCards {
+                            let heading = dynamicTypeSize.isAccessibilitySize
+                                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
+                                : AnyLayout(HStackLayout(spacing: 6))
+                            heading {
+                                icon
+                                name
+                            }
+                        } else {
+                            icon
+                            name
                         }
-                        .padding(12)
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                        .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
-                        .contentShape(Rectangle())
+                        Text(contact.title.en).font(.subheadline)
+                        Text(contact.phone.number).font(.title2.monospacedDigit())
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("lio.support." + contact.id)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("lio.support." + contact.id)
+            }
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: 10) { buttons }
+            } else {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    buttons
                 }
             }
         }
@@ -133,7 +174,10 @@ struct LioLocalSupportView: View {
         VStack(alignment: .leading, spacing: 10) {
             heading(label)
             ForEach(contacts) { contact in
-                HStack(spacing: 10) {
+                let layout = dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+                    : AnyLayout(HStackLayout(spacing: 10))
+                layout {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(contact.title.localized(language)).font(.headline)
                         Text(contact.phone.number).monospacedDigit()
@@ -143,7 +187,10 @@ struct LioLocalSupportView: View {
                                 .foregroundStyle(LioTheme.inkSecondary)
                         }
                     }
-                    Spacer(minLength: 4)
+                    .fixedSize(horizontal: false, vertical: true)
+                    if !dynamicTypeSize.isAccessibilitySize {
+                        Spacer(minLength: 4)
+                    }
                     Button {
                         dial(contact.phone)
                     } label: {
@@ -156,6 +203,7 @@ struct LioLocalSupportView: View {
                     .accessibilityIdentifier("lio.support." + contact.id)
                 }
                 .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
             }
         }
@@ -204,6 +252,7 @@ private struct LocalSupportEmbassyCard: View {
     let dial: (LocalSupportPhone) -> Void
     let copy: (String) -> Void
 
+    @Environment(\.openURL) private var openURL
     @State private var mapUnavailable = false
 
     var body: some View {
@@ -229,14 +278,14 @@ private struct LocalSupportEmbassyCard: View {
                 Button(language.text("Copy address", "复制地址")) { copy(address.zh) }
                     .frame(minHeight: 44)
                     .accessibilityIdentifier("lio.support.embassy.copy-address")
-                if let latitude = embassy.latitude, let longitude = embassy.longitude {
-                    Button(language.text("Open in Maps", "在地图中打开")) {
-                        showOnMap(CLLocationCoordinate2D(latitude: latitude, longitude: longitude))
-                    }
-                    .frame(minHeight: 44)
-                } else {
-                    Text(language.text("Map location is unavailable. You can copy the address.",
-                                       "暂无地图定位，可以复制地址。"))
+                Button(language.text("Open in Maps", "在地图中打开")) {
+                    openInMaps(address: address.zh)
+                }
+                .frame(minHeight: 44)
+                .accessibilityIdentifier("lio.support.embassy.open-map")
+                if embassy.latitude == nil {
+                    Text(language.text("Maps searches by address. If you’re offline, you can copy it.",
+                                       "地图会按地址搜索。离线时可以复制地址。"))
                         .font(.footnote)
                         .foregroundStyle(LioTheme.inkSecondary)
                 }
@@ -253,10 +302,25 @@ private struct LocalSupportEmbassyCard: View {
         }
     }
 
-    private func showOnMap(_ coordinate: CLLocationCoordinate2D) {
-        let item = MKMapItem(placemark: MKPlacemark(coordinate: coordinate))
-        item.name = embassy.name.localized(language)
-        mapUnavailable = !item.openInMaps()
+    private func openInMaps(address: String) {
+        if let latitude = embassy.latitude, let longitude = embassy.longitude {
+            let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+            let item = MKMapItem(placemark: MKPlacemark(coordinate: coordinate))
+            item.name = embassy.name.localized(language)
+            mapUnavailable = !item.openInMaps()
+            return
+        }
+
+        var url = URLComponents()
+        url.scheme = "https"
+        url.host = "maps.apple.com"
+        url.path = "/"
+        url.queryItems = [URLQueryItem(name: "q", value: "\(embassy.name.zh) \(address)")]
+        guard let mapsURL = url.url else {
+            mapUnavailable = true
+            return
+        }
+        openURL(mapsURL) { accepted in mapUnavailable = !accepted }
     }
 }
 

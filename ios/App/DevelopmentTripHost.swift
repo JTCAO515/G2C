@@ -1191,11 +1191,23 @@ private var developmentHostEnvironment: [String: String] {
         return .account(environment: owner.environment, account: owner.account)
     }
 
-    func localSupportDraftStorage() -> LocalSupportDraftStorage {
+    func localSupportDraftStorage() -> LocalSupportDraftStorage? {
         let scope = localSupportDraftScope
+        guard canUseLocalSupportDraft(scope) else { return nil }
         return localSupportVault.storage(for: scope) { [weak self] in
             guard let self else { return false }
-            return !self.finishingDemoCleanup && self.localSupportDraftScope == scope
+            return self.canUseLocalSupportDraft(scope)
+        }
+    }
+
+    private func canUseLocalSupportDraft(_ scope: LocalSupportKeychainDraft.Scope) -> Bool {
+        guard !finishingDemoCleanup, !accounts.isResuming, localSupportDraftScope == scope else { return false }
+        switch scope {
+        case .guest:
+            return accounts.state == .signedOut
+        case .account:
+            guard case .signedIn = accounts.state, let trip else { return false }
+            return trip === lioRetainedTrip
         }
     }
 
