@@ -39,6 +39,7 @@ struct DemoBetaRootView: View {
                     }
                     Button(shell.language.text("Sign out", "退出登录"), action: signOut)
                 }
+                .lioLocalAddressRelay(sessionReady ? trip.lioLocalAddressRelay : nil)
                 .id(root.lioPresentationID)
             } else if root.accounts.isResuming {
                 LioSessionRecoveryView(language: shell.language.lio,

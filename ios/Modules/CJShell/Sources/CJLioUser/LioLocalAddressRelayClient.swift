@@ -14,7 +14,7 @@ enum LioLocalAddressRelayFailure: Error, Equatable {
     case outcomeUnknown
 }
 
-@MainActor public struct LioLocalAddressRelayClient {
+@MainActor public final class LioLocalAddressRelayClient {
     typealias Exchange = @MainActor (URLRequest) async throws -> (Data, URLResponse)
 
     private struct Lookup: Encodable {
@@ -51,6 +51,9 @@ enum LioLocalAddressRelayFailure: Error, Equatable {
     private let isCurrent: @MainActor () -> Bool
     private let bearer: @MainActor () -> String?
     private let exchange: Exchange
+    #if os(iOS)
+    private var hasUnconfirmedLookup = false
+    #endif
 
     init(baseURL: URL, isCurrent: @escaping @MainActor () -> Bool,
          bearer: @escaping @MainActor () -> String?, exchange: @escaping Exchange) {
@@ -137,6 +140,42 @@ enum LioLocalAddressRelayFailure: Error, Equatable {
 
 #if os(iOS)
 extension LioLocalAddressRelayClient {
+    var isAvailable: Bool { isCurrent() }
+
+    func resolveCurrentAddress() async -> LioLocalAddressResult {
+        guard isAvailable else { return .unavailable }
+        guard !hasUnconfirmedLookup else { return .outcomeUnknown }
+        let location = LioTaxiPickupLocation()
+        let coordinate: LioTaxiPlace.Coordinate
+        do {
+            coordinate = try await location.pickup().coordinate
+        } catch {
+            return location.permissionWasDenied ? .permissionDenied : .unavailable
+        }
+        guard !Task.isCancelled, isAvailable else { return .unavailable }
+        guard !hasUnconfirmedLookup else { return .outcomeUnknown }
+        hasUnconfirmedLookup = true
+        do {
+            let address = try await lookup(coordinate, requestID: UUID())
+            hasUnconfirmedLookup = false
+            return .address(address)
+        } catch LioLocalAddressRelayFailure.offline {
+            hasUnconfirmedLookup = false
+            return .offline
+        } catch LioLocalAddressRelayFailure.notEnabled {
+            hasUnconfirmedLookup = false
+            return .notEnabled
+        } catch LioLocalAddressRelayFailure.rateLimited {
+            hasUnconfirmedLookup = false
+            return .rateLimited
+        } catch LioLocalAddressRelayFailure.outcomeUnknown, LioLocalAddressRelayFailure.previousAttempt, is CancellationError {
+            return .outcomeUnknown
+        } catch {
+            hasUnconfirmedLookup = false
+            return .unavailable
+        }
+    }
+
     public static func internalBeta(endpoint: MessageEndpoint,
                                     isCurrent: @escaping @MainActor () -> Bool,
                                     bearer: @escaping @MainActor () -> String?) -> LioLocalAddressRelayClient? {

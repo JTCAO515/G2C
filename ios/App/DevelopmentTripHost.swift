@@ -128,6 +128,7 @@ private var developmentHostEnvironment: [String: String] {
     let lioTripLibrary: LioTripLibrary?
     let lioTranslationRelay: LioRelayTranslationClient?
     let lioTaxiRelay: LioTaxiRelayClient?
+    let lioLocalAddressRelay: LioLocalAddressRelayClient?
     #endif
     let messages: DevelopmentMessageHost
     #if DEBUG
@@ -231,6 +232,12 @@ private var developmentHostEnvironment: [String: String] {
             #endif
         }
         #if G2C_DEMO_BETA
+        lioLocalAddressRelay = LioLocalAddressRelayClient.internalBeta(endpoint: endpoint, isCurrent: {
+            lifetime.current == lifetime.trip
+        }, bearer: {
+            guard lifetime.current == lifetime.trip else { return nil }
+            return configuration.token
+        })
         lioTaxiRelay = LioTaxiRelayClient.internalBeta(endpoint: endpoint, isCurrent: {
             lifetime.current == lifetime.trip
         }, bearer: {

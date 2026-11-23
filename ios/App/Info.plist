@@ -11,6 +11,7 @@
 <key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
 <key>G2CDemoBeta</key><true/>
 <key>G2CTaxiEnabled</key><string>$(G2C_TAXI_ENABLED)</string>
+<key>G2CLocalAddressEnabled</key><string>$(G2C_LOCAL_ADDRESS_ENABLED)</string>
 <key>ITSAppUsesNonExemptEncryption</key><false/>
 <key>UISupportedInterfaceOrientations</key><array>
 <string>UIInterfaceOrientationPortrait</string>
@@ -44,7 +45,7 @@
 <key>NSLocalNetworkUsageDescription</key><string>Connect to the development Mac for synthetic-data testing. / 连接开发机执行合成数据测试。</string>
 #endif
 #if G2C_DEMO_BETA_PLIST
-<key>NSLocationWhenInUseUsageDescription</key><string>Use your location when you open Taxi to set a pickup point. / 打开打车时使用你的位置设置起点。</string>
+<key>NSLocationWhenInUseUsageDescription</key><string>Use your location to set a taxi pickup point or find your address when you ask. / 在你设置打车起点或查看当前位置的地址时使用定位。</string>
 #endif
 #if G2C_DEMO_BETA_PLIST || G2C_TOOLS_PREVIEW_PLIST
 <key>NSMicrophoneUsageDescription</key><string>Record what you want to translate. / 录下需要翻译的语音。</string>

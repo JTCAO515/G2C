@@ -12,6 +12,10 @@ import Foundation
         manager.delegate = self
     }
 
+    var permissionWasDenied: Bool {
+        manager.authorizationStatus == .denied || manager.authorizationStatus == .restricted
+    }
+
     func pickup() async throws -> LioTaxiPlace {
         try Task.checkCancellation()
         guard pending == nil else { throw LioTaxiFailure.locationDenied }

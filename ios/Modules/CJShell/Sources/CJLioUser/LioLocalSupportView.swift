@@ -8,10 +8,25 @@ private enum LioLocalSupportDraftKey: EnvironmentKey {
     static let defaultValue: LocalSupportDraftStorage? = nil
 }
 
+private enum LioLocalAddressRelayKey: EnvironmentKey {
+    static let defaultValue: LioLocalAddressRelayClient? = nil
+}
+
 extension EnvironmentValues {
+    fileprivate var lioLocalAddressRelay: LioLocalAddressRelayClient? {
+        get { self[LioLocalAddressRelayKey.self] }
+        set { self[LioLocalAddressRelayKey.self] = newValue }
+    }
+
     var lioLocalSupportDraft: LocalSupportDraftStorage? {
         get { self[LioLocalSupportDraftKey.self] }
         set { self[LioLocalSupportDraftKey.self] = newValue }
+    }
+}
+
+public extension View {
+    func lioLocalAddressRelay(_ relay: LioLocalAddressRelayClient?) -> some View {
+        environment(\.lioLocalAddressRelay, relay)
     }
 }
 
@@ -20,6 +35,7 @@ struct LioLocalSupportView: View {
     private let directory: LocalSupportDirectory?
     private let compactEmergencyCards: Bool
     @Environment(\.lioLocalSupportDraft) private var draftStorage
+    @Environment(\.lioLocalAddressRelay) private var addressRelay
 
     init(language: LioLanguage, directory: LocalSupportDirectory? = try? LocalSupportDirectory.bundled(),
          compactEmergencyCards: Bool = false) {
@@ -85,6 +101,17 @@ struct LioLocalSupportView: View {
         emergency(LocalSupportDirectory.emergencyContacts)
         contacts(language.text("Help lines", "求助热线"), LocalSupportDirectory.helpContacts)
         helpCard
+        if addressRelay?.isAvailable == true {
+            NavigationLink {
+                localAddress
+            } label: {
+                Label(language.text("Where Am I?", "我在哪"), systemImage: "location")
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("lio.support.location")
+        }
         if let catalog = directory {
             embassySection(catalog.embassies)
         } else {
@@ -120,6 +147,12 @@ struct LioLocalSupportView: View {
                 .accessibilityIdentifier("lio.support.test-dial")
         }
         #endif
+    }
+
+    @ViewBuilder private var localAddress: some View {
+        if let addressRelay, addressRelay.isAvailable {
+            LioLocalAddressView(language: language, resolve: addressRelay.resolveCurrentAddress)
+        }
     }
 
     private var helpCard: some View {
