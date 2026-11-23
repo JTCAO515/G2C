@@ -113,6 +113,19 @@ enum LioTaxiWire {
         return url
     }
 
+    static func approvesDiDiTarget(_ type: LinkType, _ url: URL) -> Bool {
+        guard type == .https, let parts = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              parts.host == "v.didi.cn", parts.port == nil, parts.fragment == nil,
+              parts.percentEncodedPath == "/XvYQEWe", let coordinates = parts.queryItems,
+              coordinates.count == 4,
+              Set(coordinates.map(\.name)) == ["slat", "slng", "dlat", "dlng"] else { return false }
+        return coordinates.allSatisfy { item in
+            guard let value = item.value, let coordinate = Double(value) else { return false }
+            let limit = item.name.hasSuffix("lat") ? 90.0 : 180.0
+            return (-limit...limit).contains(coordinate)
+        }
+    }
+
     static func failure(status: Int, body: Data) -> LioTaxiFailure {
         let code = (try? decoder.decode(ErrorBody.self, from: body))?.error
         return switch (status, code) {
@@ -122,6 +135,7 @@ enum LioTaxiWire {
         case (422, "coordinate_unverified"): .coordinateUnverified
         case (429, "quota_exceeded"): .quotaExceeded
         case (429, "rate_limited"): .rateLimited
+        case (504, "supplier_timeout"): .timedOut
         default: .unavailable
         }
     }

@@ -39,7 +39,7 @@ struct LioTaxiFare: Identifiable, Sendable {
 
 enum LioTaxiFailure: Error, Equatable {
     case locationDenied, outOfService, rateLimited, quotaExceeded, coordinateUnverified
-    case signInRequired, notEnabled, unavailable
+    case signInRequired, notEnabled, timedOut, unavailable
 }
 
 struct LioTaxiService {

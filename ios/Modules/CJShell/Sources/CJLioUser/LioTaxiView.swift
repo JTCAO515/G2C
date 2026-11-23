@@ -289,6 +289,8 @@ struct LioTaxiView: View {
             language.text("Sign in again, then try again.", "请重新登录后重试。")
         case .notEnabled:
             language.text("Taxi isn’t available for this account.", "此账号暂未开通打车。")
+        case .timedOut:
+            language.text("DiDi took too long. Try again.", "滴滴响应超时，请重试。")
         case .unavailable, nil:
             language.text("Taxi details aren’t available right now. Try again.", "暂时无法获取打车信息，请重试。")
         }
