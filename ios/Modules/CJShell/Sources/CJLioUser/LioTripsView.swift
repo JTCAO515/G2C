@@ -294,10 +294,17 @@ struct LioTripsView: View {
                 .accessibilityAddTraits(.isHeader)
             Text(language.text("Tell Lio where you’d like to go.", "告诉 Lio 你想去哪儿。"))
                 .foregroundStyle(LioTheme.inkSecondary)
-            Button(language.text("Chat with Lio", "和 Lio 聊聊"), action: openChat)
-                .buttonStyle(.borderedProminent)
-                .foregroundStyle(LioTheme.onVermilion)
-                .frame(minHeight: 44)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.vertical, 2)
+            Button(action: openChat) {
+                Text(language.text("Chat with Lio", "和 Lio 聊聊"))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.vertical, 2)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .foregroundStyle(LioTheme.onVermilion)
+            .frame(minHeight: 44)
         }
         .multilineTextAlignment(.center)
         .padding(24)
