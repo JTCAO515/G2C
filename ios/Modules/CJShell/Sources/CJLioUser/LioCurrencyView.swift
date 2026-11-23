@@ -1,10 +1,12 @@
 #if os(iOS)
+import CJRunClient
 import SwiftUI
 
 struct LioCurrencyView: View {
     let language: LioLanguage
     let load: @MainActor () async throws -> LioCurrencyRates
     @Environment(\.locale) private var locale
+    @Environment(\.colorScheme) private var colorScheme
     @State private var snapshot: LioCurrencyRates?
     @State private var amount = "100"
     @State private var origin: LioCurrencyRates.Currency = .cny
@@ -54,6 +56,16 @@ struct LioCurrencyView: View {
         .background(LioTheme.paper)
         .navigationTitle(language.text("Currency Converter", "汇率换算"))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(LioTheme.paper, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(colorScheme, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                RunReadableText(text: language.text("Currency Converter", "汇率换算"), style: .headline, color: LioTheme.ink)
+                    .fixedSize()
+                    .accessibilityAddTraits(.isHeader)
+            }
+        }
         .task(id: refresh) {
             isLoading = true
             defer { if !Task.isCancelled { isLoading = false } }
