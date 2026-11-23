@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from http.client import HTTPSConnection, HTTPException, HTTPResponse, IncompleteRead
 from io import BytesIO
 import json
+import logging
 import re
 import time
 from uuid import UUID
@@ -31,21 +32,24 @@ CHAT = '/compatible-mode/v1/chat/completions'
 MULTIMODAL = '/api/v1/services/aigc/multimodal-generation/generation'
 MAX_PROVIDER_RESPONSE = 256 * 1024
 SUPPLIER_ID = re.compile(r'[a-zA-Z0-9_-]{1,128}')
+_LOGGER = logging.getLogger(__name__)
 
 
 class TranslationError(Exception):
-    def __init__(self, status, code):
+    def __init__(self, status, code, *, reason=None, supplier_http=None):
         super().__init__(code)
         self.status = status
         self.code = code
+        self.reason = reason
+        self.supplier_http = supplier_http
 
 
 def invalid():
     return TranslationError(400, 'invalid_request')
 
 
-def supplier_unavailable():
-    return TranslationError(502, 'provider_unavailable')
+def supplier_unavailable(reason=None, supplier_http=None):
+    return TranslationError(502, 'provider_unavailable', reason=reason, supplier_http=supplier_http)
 
 
 def _audio(data):
@@ -145,6 +149,8 @@ class DashScopeTranslation:
         if remaining <= 0:
             raise supplier_unavailable()
         body = bytearray()
+        phase = 'supplier_connect'
+        supplier_http = None
         raw = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode()
         try:
             with closing(self._connection(DASHSCOPE, timeout=min(remaining, 12))) as connection:
@@ -154,31 +160,36 @@ class DashScopeTranslation:
                 # DNS and TLS can block. Check the App session after both and
                 # immediately before the only write carrying the paid request.
                 authorize()
+                phase = 'supplier_request'
                 connection.request('POST', path, body=raw, headers={
                     'Authorization': 'Bearer ' + self._api_key, 'Content-Type': 'application/json',
                 })
+                phase = 'supplier_response_headers'
                 with closing(connection.getresponse()) as response:
-                    if response.status != 200:
-                        raise supplier_unavailable()
+                    supplier_http = response.status
+                    if supplier_http != 200:
+                        raise supplier_unavailable('supplier_http', supplier_http)
+                    phase = 'supplier_response_body'
                     length = response.getheader('Content-Length')
                     if response.chunked:
                         if length is not None:
-                            raise supplier_unavailable()
+                            raise supplier_unavailable(phase, supplier_http)
                     elif (length is None or re.fullmatch(r'[0-9]{1,7}', length) is None
                           or not 0 < int(length) <= MAX_PROVIDER_RESPONSE):
-                        raise supplier_unavailable()
+                        raise supplier_unavailable(phase, supplier_http)
                     while chunk := response.read1(32 * 1024):
                         if len(body) + len(chunk) > MAX_PROVIDER_RESPONSE or time.monotonic() >= deadline:
-                            raise supplier_unavailable()
+                            raise supplier_unavailable(phase, supplier_http)
                         body.extend(chunk)
                     if length is not None and len(body) != int(length):
-                        raise supplier_unavailable()
+                        raise supplier_unavailable(phase, supplier_http)
+            phase = 'supplier_response_json'
             value = json.loads(body, object_pairs_hook=reject_duplicates(ValueError, 'duplicate provider field'))
             if type(value) is not dict or 'error' in value or 'code' in value:
-                raise supplier_unavailable()
+                raise supplier_unavailable('supplier_error_envelope', supplier_http)
             return value
         except (HTTPException, OSError, RecursionError, ValueError):
-            raise supplier_unavailable() from None
+            raise supplier_unavailable(phase, supplier_http) from None
 
     def request(self, model, item, source, target, deadline, authorize):
         if model == IMAGE_MODEL:
@@ -210,7 +221,7 @@ class DashScopeTranslation:
                 completed = choice.get('finish_reason') in (None, 'stop')
             else:
                 if response['model'] != model:
-                    raise supplier_unavailable()
+                    raise supplier_unavailable('supplier_model_identity', 200)
                 supplier_id = response['id']
                 choice, = response['choices']
                 text = choice['message']['content']
@@ -221,11 +232,11 @@ class DashScopeTranslation:
                 })
             if (type(supplier_id) is not str or not SUPPLIER_ID.fullmatch(supplier_id)
                     or type(text) is not str or len(text) > MAX_TEXT or not completed):
-                raise supplier_unavailable()
+                raise supplier_unavailable('supplier_receipt_shape', 200)
             text.encode('utf-8')
             return supplier_id, usage, text
         except (KeyError, TypeError, ValueError):
-            raise supplier_unavailable() from None
+            raise supplier_unavailable('supplier_receipt_shape', 200) from None
 
     def require_safe_text(self, value):
         if self._api_key in value or '\x00' in value:
@@ -263,11 +274,17 @@ class TranslationRelay:
                     raise TranslationError(503, 'unavailable')
                 self.budget.authorization.check_date()
 
-            supplier_id, usage, text = self.provider.request(
-                model, value, request.source_lang, request.target_lang, deadline, authorize_send)
-            if model == SPEECH_MODEL and (
-                    type(usage['seconds']) is not int or not 1 <= usage['seconds'] <= request.units):
-                raise supplier_unavailable()
+            try:
+                supplier_id, usage, text = self.provider.request(
+                    model, value, request.source_lang, request.target_lang, deadline, authorize_send)
+                if model == SPEECH_MODEL and (
+                        type(usage['seconds']) is not int or not 1 <= usage['seconds'] <= request.units):
+                    raise supplier_unavailable('speech_usage_seconds', 200)
+            except TranslationError as error:
+                if model == SPEECH_MODEL and error.status == 502:
+                    _LOGGER.warning('G2C_TRANSLATION_ASR_FAILURE reason=%s supplier_http=%s',
+                                    error.reason, error.supplier_http)
+                raise
             self.budget.finish(operation, stage, model, supplier_id, usage)
             self.provider.require_safe_text(text)
             return text
