@@ -14,11 +14,12 @@ from cj_auth.interfaces import AdmissionDecision, AdmissionReason, AdmissionStat
 
 AUTH = {'Authorization': 'Bearer internal'}
 NOW = datetime(2026, 11, 20, 22, tzinfo=timezone.utc)
-FIXTURE_LINK = 'https://taxi.example.invalid/route'
+GCJ = dict(from_lat='39.916404',from_lng='116.410244',to_lat='39.916404',to_lng='116.410244')
+FIXTURE_LINK = 'https://v.didi.cn/XvYQEWe?slat=39.916404&slng=116.410244&dlat=39.916404&dlng=116.410244'
 
 
 def point(name=None):
-    return dict(lat=39.9, lng=116.4, coordinate_system='WGS-84', name=name)
+    return dict(lat=39.915, lng=116.404, coordinate_system='WGS-84', name=name)
 
 
 def payload():
@@ -42,14 +43,11 @@ def app_context(tmp_path):
         if tool == 'taxi_estimate':
             return {'structuredContent': {'items': [{'productName': '快车', 'productCategory': '1',
                     'priceText': '约 20 元', 'private': 'excluded'}], 'traceId': 'fixture-trace'}}
-        return {'structuredContent': {'url': FIXTURE_LINK}}
+        if tool == 'maps_regeocode':
+            return {'content': [{'text': json.dumps({'display_name': '经核对的公共地点'})}]}
+        return {'structuredContent': {'appLink': FIXTURE_LINK}}
 
-    def resolve(value, include_name):
-        assert value.coordinate_system == 'WGS-84'
-        return SimpleNamespace(lat='39.901', lng='116.406', name=value.name or '经核对的公共地点')
-
-    taxi = TaxiService(DiDiInformation(transport), resolve, {FIXTURE_LINK},
-                       clock=lambda: NOW)
+    taxi = TaxiService(DiDiInformation(transport), clock=lambda: NOW)
     app = FastAPI()
     register_taxi_routes(app, taxi=taxi, checker=SimpleNamespace(check=check),
                          internal=frozenset({'internal', 'internal-other'}),
@@ -80,10 +78,9 @@ def test_fixture_estimate_and_link_allow_no_identity_fields(app_context):
     response = client.post(LINK, headers=AUTH, json=dict(payload(), vehicle_category='1'))
     assert response.json() == {'version': 'TAXI.1', 'url': FIXTURE_LINK, 'link_type': 'https'}
     assert seen == [
-        ('taxi_estimate', dict(from_lat='39.901', from_lng='116.406', to_lat='39.901', to_lng='116.406',
-                               from_name='北京西站', to_name='经核对的公共地点')),
-        ('taxi_generate_ride_app_link', dict(from_lat='39.901', from_lng='116.406', to_lat='39.901',
-                                             to_lng='116.406')),
+        ('maps_regeocode', dict(location='116.410244,39.916404')),
+        ('taxi_estimate', dict(GCJ, from_name='北京西站', to_name='经核对的公共地点')),
+        ('taxi_generate_ride_app_link', GCJ),
     ]
 
 
@@ -133,7 +130,7 @@ def test_per_account_per_route_quota_precedes_dispatch(app_context):
     response = client.post(ESTIMATE, headers=AUTH, json=payload())
     assert response.status_code == 429
     assert response.json() == {'error': 'quota_exceeded'}
-    assert len(seen) == 50
+    assert [tool for tool, _ in seen].count('taxi_estimate') == 50
     assert client.post(LINK, headers=AUTH, json=payload()).status_code == 200
     assert client.post(ESTIMATE, headers={'Authorization': 'Bearer internal-other'},
                        json=payload()).status_code == 200
@@ -161,7 +158,7 @@ def test_count_atomic_at_boundary_and_resets_at_shanghai_midnight(tmp_path):
 
 
 def test_upstream_error_mapping_does_not_echo_provider_message():
-    provider = DiDiInformation(lambda *_: {'error': {'code': -32001, 'message': 'private'}})
+    provider = DiDiInformation(lambda *_: {'error': {'code': -32001, 'message': 'private'}}, wait=lambda _: None)
     with pytest.raises(PluginError, match='^rate_limited$') as raised:
         provider.call('taxi_estimate', {})
     assert raised.value.status == 429
@@ -174,17 +171,23 @@ def test_upstream_error_mapping_does_not_echo_provider_message():
     assert raised.value.status == 504
 
 
-@pytest.mark.parametrize('link', ['https://taxi.example.invalid.evil.test/', 'https://x@taxi.example.invalid/',
-                                 'https://taxi.example.invalid:443/', 'http://taxi.example.invalid/',
-                                 'https://taxi.example.invalid/route?opaque=private',
-                                 'https://taxi.example.invalid/route#private',
-                                 'https://taxi.example.invalid/route/private',
-                                 'https://taxi.example.invalid/?%6bey=fixture'])
+@pytest.mark.parametrize('link', [
+    FIXTURE_LINK.replace('v.didi.cn', 'v.didi.cn.evil.test'),
+    FIXTURE_LINK.replace('v.didi.cn', 'x@v.didi.cn'),
+    FIXTURE_LINK.replace('v.didi.cn', 'v.didi.cn:443'),
+    FIXTURE_LINK.replace('https:', 'http:'),
+    FIXTURE_LINK + '&opaque=private',
+    FIXTURE_LINK + '#private',
+    FIXTURE_LINK.replace('/XvYQEWe', '/XvYQEWe/private'),
+    FIXTURE_LINK + '&%6bey=fixture',
+    FIXTURE_LINK + '&slat=39.916404',
+    FIXTURE_LINK.replace('dlng=116.410244', 'dlng=116.4102'),
+])
 def test_unapproved_provider_link_is_never_forwarded(link):
     from cj_api.taxi_tools import _public_link
 
     with pytest.raises(PluginError, match='^supplier_unavailable$'):
-        _public_link(link, {FIXTURE_LINK})
+        _public_link(link, GCJ)
 
 
 
@@ -193,3 +196,73 @@ def test_counter_open_failure_has_stable_error(tmp_path):
     with pytest.raises(PluginError, match='^unavailable$') as raised:
         calls.reserve(check('internal').principal, ESTIMATE, 50)
     assert raised.value.status == 503
+
+
+@pytest.mark.parametrize(('lng', 'lat'), [
+    (114.164, 22.308), (113.546, 22.19), (121.565, 25.033), (139.6917, 35.6895),
+])
+@pytest.mark.parametrize('route', [ESTIMATE, LINK])
+def test_non_mainland_destination_stops_before_any_didi_call(app_context, lng, lat, route):
+    client, seen, _ = app_context
+    result = client.post(route, headers=AUTH, json=dict(payload(), destination=dict(point(), lng=lng, lat=lat)))
+    assert result.status_code == 422
+    assert result.json() == {'error': 'out_of_service_area'}
+    assert seen == []
+
+
+def test_unknown_reverse_name_rejects_before_estimate():
+    from cj_api.taxi_tools import EstimateRequest
+
+    calls = []
+    def send(tool, params):
+        calls.append(tool)
+        return {'content': [{'text': '{"display_name": ""}'}]}
+    with pytest.raises(PluginError, match='^coordinate_unverified$'):
+        TaxiService(DiDiInformation(send)).estimate(EstimateRequest.model_validate(payload()))
+    assert calls == ['maps_regeocode']
+
+
+@pytest.mark.parametrize(('code', 'status', 'kind'), [
+    (-32002, 502, 'supplier_unavailable'), (-32010, 400, 'invalid_request'),
+    (-32050, 502, 'supplier_unavailable'),
+])
+def test_supplier_rpc_failure_remains_bounded_and_redacted(code, status, kind, caplog):
+    provider = DiDiInformation(lambda *_: {'error': {'code': code, 'message': 'private-path'}})
+    with pytest.raises(PluginError, match=f'^{kind}$') as raised:
+        provider.call('taxi_estimate', {})
+    assert raised.value.status == status
+    assert 'private-path' not in caplog.text
+    assert ('didi_key_rejected' in caplog.text) is (code == -32002)
+
+
+def test_provider_rate_limit_waits_and_retries_once():
+    seen = []
+    def dispatch(tool, params):
+        seen.append((tool, params))
+        return {'error': {'code': -32001}}
+    waits = []
+    provider = DiDiInformation(dispatch, wait=waits.append)
+    with pytest.raises(PluginError, match='^rate_limited$'):
+        provider.call('taxi_estimate', {'from_name': '北京市'})
+    assert waits == [0.25]
+    assert seen == [('taxi_estimate', {'from_name': '北京市'})] * 2
+
+
+def test_expired_link_refreshes_the_named_estimate_only_once():
+    from cj_api.taxi_tools import LinkRequest
+
+    calls = []
+    def dispatch(tool, params):
+        calls.append(tool)
+        if tool == 'taxi_generate_ride_app_link':
+            if calls.count(tool) == 1:
+                return {'error': {'code': -32021}}
+            return {'structuredContent': {'appLink': FIXTURE_LINK}}
+        if tool == 'maps_regeocode':
+            return {'content': [{'text': '{"display_name":"北京地点"}'}]}
+        return {'structuredContent': {}}
+
+    result = TaxiService(DiDiInformation(dispatch)).link(LinkRequest.model_validate(payload()))
+    assert result['url'] == FIXTURE_LINK
+    assert calls == ['taxi_generate_ride_app_link', 'maps_regeocode', 'taxi_estimate',
+                     'taxi_generate_ride_app_link']

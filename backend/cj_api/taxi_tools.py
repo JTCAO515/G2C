@@ -1,48 +1,74 @@
 """Information-only taxi contracts. HK stays disabled until provider verification."""
 
 from datetime import datetime, timezone
-from enum import Enum
+from decimal import Decimal, InvalidOperation
+import json
+import logging
+from time import sleep
 from typing import Annotated, Literal
-from urllib.parse import urlsplit
+from urllib.parse import parse_qsl, urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
+from cj_strict_json import reject_duplicates
+
+from .didi_mcp import DiDiTool
 from .plugin_tools import PluginError, register_plugin
+from .taxi_geography import gcj_to_wgs, in_mainland, wgs_to_gcj
 
 
 VERSION = 'TAXI.1'
 ESTIMATE = '/v1/tools/taxi/estimate'
 LINK = '/v1/tools/taxi/link'
 DAILY_LIMIT = 50
+APP_LINK_HOST = 'v.didi.cn'
+APP_LINK_PATH = '/XvYQEWe'
+LINK_COORDINATES = {
+    'slng': 'from_lng', 'slat': 'from_lat', 'dlng': 'to_lng', 'dlat': 'to_lat',
+}
+_LOGGER = logging.getLogger(__name__)
 
 
-class DiDiTool(str, Enum):
-    TEXT_SEARCH = 'maps_textsearch'
-    REGEOCODE = 'maps_regeocode'
-    ESTIMATE = 'taxi_estimate'
-    LINK = 'taxi_generate_ride_app_link'
+class DiDiEstimateExpired(PluginError):
+    def __init__(self):
+        super().__init__(502, 'supplier_unavailable')
 
 
 class DiDiInformation:
     """Transport receives only fixed-tool calls. This adapter owns error mapping."""
 
-    def __init__(self, transport):
+    def __init__(self, transport, *, wait=sleep):
         self._transport = transport
+        self._wait = wait
 
-    def call(self, tool, params):
-        selected = DiDiTool(tool)
+    def _send(self, selected, params):
         try:
-            result = self._transport(selected.value, params)
+            result = self._transport(selected, params)
         except TimeoutError:
             raise PluginError(504, 'supplier_timeout') from None
         except OSError:
             raise PluginError(502, 'supplier_unavailable') from None
         if type(result) is not dict:
             raise PluginError(502, 'supplier_unavailable')
-        if 'error' in result:
-            error = result['error']
-            if type(error) is dict and error.get('code') == -32001:
-                raise PluginError(429, 'rate_limited')
+        error = result.get('error')
+        return result, error.get('code') if type(error) is dict else None
+
+    def call(self, tool, params, *, retry=True):
+        selected = DiDiTool(tool)
+        result, code = self._send(selected, params)
+        if retry and (code == -32001 or (code == -32021 and selected is DiDiTool.ESTIMATE)):
+            if code == -32001:
+                self._wait(0.25)
+            result, code = self._send(selected, params)
+        if code == -32001:
+            raise PluginError(429, 'rate_limited')
+        if code == -32002:
+            _LOGGER.warning('ALERT didi_key_rejected')
+        if code == -32010:
+            raise PluginError(400, 'invalid_request')
+        if code == -32021:
+            raise DiDiEstimateExpired()
+        if 'error' in result or result.get('isError') is True:
             raise PluginError(502, 'supplier_unavailable')
         return result
 
@@ -92,31 +118,69 @@ class EstimateOutput(WireModel):
     trace_id: Annotated[str, Field(pattern=r'^[A-Za-z0-9_-]{1,128}$')] | None = None
 
 
-def _public_link(raw, allowed):
-    # Until #1309 verifies the real URL grammar, only fixed, reviewed fixture
-    # URLs are approved. Provider-controlled path, query and fragment never pass.
-    if type(raw) is not str or raw not in allowed:
-        raise PluginError(502, 'supplier_unavailable')
-    return dict(url=raw, link_type='https' if urlsplit(raw).scheme == 'https' else 'app_scheme')
+def _public_link(raw, params):
+    try:
+        if type(raw) is not str or len(raw) > 512 or any(ord(char) <= 32 for char in raw):
+            raise ValueError('invalid link')
+        target = urlsplit(raw)
+        if ((target.scheme, target.netloc, target.path) != ('https', APP_LINK_HOST, APP_LINK_PATH)
+                or target.fragment):
+            raise ValueError('invalid link target')
+        pairs = parse_qsl(target.query, strict_parsing=True)
+        query = dict(pairs)
+        if (len(pairs) != len(LINK_COORDINATES) or query.keys() != LINK_COORDINATES.keys()
+                or any(Decimal(query[key]) != Decimal(params[field]) for key, field in LINK_COORDINATES.items())):
+            raise ValueError('invalid link coordinates')
+    except (InvalidOperation, ValueError):
+        raise PluginError(502, 'supplier_unavailable') from None
+    return dict(url=raw, link_type='https')
+
+
+def _gcj_strings(point):
+    source = (point.lng, point.lat)
+    if not 72 < point.lng < 136 or not 17 < point.lat < 55:
+        raise PluginError(422, 'out_of_service_area')
+    original_wgs = source if point.coordinate_system == 'WGS-84' else gcj_to_wgs(*source)
+    if not in_mainland(*original_wgs):
+        raise PluginError(422, 'out_of_service_area')
+    lng, lat = wgs_to_gcj(*source) if point.coordinate_system == 'WGS-84' else source
+    return f'{lng:.6f}', f'{lat:.6f}'
 
 
 class TaxiService:
-    def __init__(self, provider, resolve_point, allowed_links, *, clock=lambda: datetime.now(timezone.utc)):
+    def __init__(self, provider, *, clock=lambda: datetime.now(timezone.utc)):
         self.provider = provider
-        self.resolve_point = resolve_point
-        self.allowed_links = allowed_links
         self.clock = clock
 
-    def _points(self, request, *, with_names):
-        first = self.resolve_point(request.origin, with_names)
-        last = self.resolve_point(request.destination, with_names)
-        params = dict(from_lat=first.lat, from_lng=first.lng, to_lat=last.lat, to_lng=last.lng)
-        if with_names:
-            params.update(from_name=first.name, to_name=last.name)
-        return params
+    def _points(self, request):
+        # Validate both before any DiDi call, including reverse geocoding.
+        first_lng, first_lat = _gcj_strings(request.origin)
+        last_lng, last_lat = _gcj_strings(request.destination)
+        return dict(from_lat=first_lat, from_lng=first_lng, to_lat=last_lat, to_lng=last_lng)
+
+    def _resolve_name(self, point, lng, lat):
+        if point.name is not None:
+            return point.name
+        result = self.provider.call(DiDiTool.REGEOCODE, {'location': f'{lng},{lat}'})
+        try:
+            text = result['content'][0]['text']
+            address = json.loads(text, object_pairs_hook=reject_duplicates(ValueError, 'duplicate address field'))
+        except (IndexError, KeyError, RecursionError, TypeError, ValueError):
+            raise PluginError(422, 'coordinate_unverified') from None
+        for key in ('display_name', 'formatted_address'):
+            name = address.get(key) if type(address) is dict else None
+            if (type(name) is str and 0 < len(name) <= 120 and not any(ord(char) < 32 for char in name)
+                    and any('\u4e00' <= char <= '\u9fff' for char in name)):
+                return name
+        raise PluginError(422, 'coordinate_unverified')
+
+    def _named_estimate(self, request, params, *, retry=True):
+        origin = self._resolve_name(request.origin, params['from_lng'], params['from_lat'])
+        destination = self._resolve_name(request.destination, params['to_lng'], params['to_lat'])
+        return self.provider.call(DiDiTool.ESTIMATE, dict(params, from_name=origin, to_name=destination), retry=retry)
 
     def estimate(self, request):
-        result = self.provider.call(DiDiTool.ESTIMATE, self._points(request, with_names=True))
+        result = self._named_estimate(request, self._points(request))
         try:
             data = result['structuredContent']
             output = EstimateOutput.model_validate(dict(
@@ -130,11 +194,15 @@ class TaxiService:
                     observed_at=self.clock().isoformat())
 
     def link(self, request):
-        params = self._points(request, with_names=False)
-        result = self.provider.call(DiDiTool.LINK, params)
+        points = self._points(request)
+        try:
+            result = self.provider.call(DiDiTool.LINK, points)
+        except DiDiEstimateExpired:
+            self._named_estimate(request, points, retry=False)
+            result = self.provider.call(DiDiTool.LINK, points, retry=False)
         data = result.get('structuredContent')
-        raw = data.get('url') if type(data) is dict else None
-        return dict(version=VERSION, **_public_link(raw, self.allowed_links))
+        raw = data.get('appLink') if type(data) is dict else None
+        return dict(version=VERSION, **_public_link(raw, points))
 
 
 def register_taxi_routes(app, *, taxi=None, checker=None, internal=frozenset(), calls=None):
