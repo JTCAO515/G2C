@@ -63,6 +63,7 @@ struct CJProbeApp: App {
                 if let demo { DemoBetaRootView(shell: shell, root: demo) }
                 else {
                     Text(shell.language.text("Lio is temporarily unavailable.", "暂时打不开 Lio。"))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .lioEmergencySupportFallback(language: shell.language.lio, enabled: true)
                 }
                 #elseif DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
