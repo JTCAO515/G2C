@@ -12,7 +12,7 @@ from jsonschema import Draft202012Validator,ValidationError
 from cj_agent.lio_intake_flow_schema import response_format,response_format_sha256
 from cj_api.lio_flow_intake import parse_flow
 from cj_api.lio_planning_grounding import PlanningTurn
-from cj_api.local_lio_national import NationalLioPlanning
+from cj_api.local_lio_national import NationalLioPlanning, OptionalIntake
 from cj_needs.domain import InvalidInput
 import test_lio_national_execution as execution
 
@@ -40,6 +40,22 @@ def context(events):return json.loads(next(v.split(':',1)[1]for k,v in events if
 
 
 class PlanningFlow(unittest.TestCase):
+    def test_r12_shanghai_original_duplicate_absence_does_not_discard_its_sourced_date(self):
+        text = 'I am going to Shanghai tomorrow. Could you make an itinerary?'
+        draft = flow(text, city='Shanghai', days=None, intent='plan', start='2026-11-22',
+                     reply='How many days will you spend in Shanghai?', questions=('duration_days',))
+        draft.update(version='LIO-planning-intake.8', planning_request_index=0,
+                     unknown_fields=['party_size', 'start_date', 'start_date', 'party_size'])
+        draft['field_sources'] = [dict(field='start_date', source_index=0, quote='tomorrow')]
+        turns = (PlanningTurn(text, date(2026, 11, 21)),)
+        _, questions, facts = parse_flow(json.dumps(draft), turns, (), 'first', None, schema=OptionalIntake)
+        self.assertEqual(questions, ['duration_days'])
+        self.assertEqual(facts['start_date']['value'], '2026-11-22')
+        self.assertNotIn('party_size', facts)
+        with self.assertRaises(InvalidInput):
+            parse_flow(json.dumps(dict(draft, start_date='2026-11-23')), turns, (), 'first', None,
+                       schema=OptionalIntake)
+
     def test_r12_full_trip_phrase_is_not_the_city_lookup(self):
         for text, city, duration, locale in (
                 ('去成都玩三天', '成都', '三天', 'zh'),

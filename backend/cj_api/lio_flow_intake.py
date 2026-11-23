@@ -395,11 +395,12 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_off
                 while unknown.count('party_size')>1:unknown.remove('party_size')
             if unknown.count('party_size')==1 and party_note and party_note.strip()and len(party_note.encode())<=4096:
                 del data['uncertain_fields']['party_size']
-        # A clarification may carry a sourced date alongside a redundant
-        # absence marker. The date still goes through the original validator.
+        # A duration clarification may repeat the absence marker for a
+        # separately sourced date. Keep the original date validator.
         if (data['duration_days'] is None and questions==['duration_days'] and data['start_date'] is not None
-                and unknown.count('start_date')==1 and any(ref['field']=='start_date'for ref in data['field_sources'])):
-            unknown.remove('start_date')
+                and 'start_date' not in data['uncertain_fields']
+                and any(ref['field']=='start_date'for ref in data['field_sources'])):
+            unknown[:]=[field for field in unknown if field!='start_date']
         _normalize_optional_fixed_items(data['fixed_items'],turns)
         _drop_unsourced_hotel_endpoint_aliases(data,turns)
         _normalize_city_phrase(data['city'],turns)
