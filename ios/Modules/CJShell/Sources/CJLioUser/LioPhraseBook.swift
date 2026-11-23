@@ -44,7 +44,7 @@ enum LioPhraseCategory: String, CaseIterable, Identifiable {
         case .dining:
             [
                 .init("dining-menu", "请问，有英文菜单吗？", "Is there a menu in English?"),
-                .init("dining-mild", "这道菜可以做成不辣的吗？", "Could you make this dish mild?"),
+                .init("dining-mild", "这道菜可以做成不辣的吗？", "Could you make this dish not spicy?"),
                 .init("dining-vegetarian", "我吃素，有什么菜可以点？", "I'm vegetarian. Which dishes can I order?"),
                 .init("dining-check", "您好，我们想结账。", "We'd like the check, please."),
             ]
@@ -58,7 +58,7 @@ enum LioPhraseCategory: String, CaseIterable, Identifiable {
         case .taxi:
             [
                 .init("taxi-address", "麻烦送我到这个地址。", "Please take me to this address."),
-                .init("taxi-stop", "在这里停车就可以，谢谢。", "Here is fine. Thank you."),
+                .init("taxi-stop", "在这里停车就可以，谢谢。", "Please stop here. Thank you."),
                 .init("taxi-terminal", "请到机场这个航站楼。", "Please go to this airport terminal."),
                 .init("taxi-trunk", "可以帮我打开后备箱吗？", "Could you open the trunk for me?"),
             ]
