@@ -18,13 +18,13 @@ Use Chat to ask Lio questions, plan a trip, or revisit a conversation. Trips sho
 | 3. 在「插件 → 翻译」输入一句话，交换中英再试。 | Open Tools → Translation. Translate a sentence, swap Chinese and English, and try again. |
 | 4. 中英各录一句，对照识别文字和译文。 | Record a short sentence in each language and compare the transcript with the translation. |
 | 5. 拍一张只有示例文字的路牌或菜单，核对识别文字和译文。 | Photograph a sample sign or menu and check the recognized text and translation. |
-| 6. 设备支持且已下载语言包时，断网试文字翻译，查看「离线翻译」标记。 | On a supported device with language packs installed, go offline and look for the Offline translation label. |
+| 6. 回到聊天历史，重新打开之前的对话，核对原消息。 | Open chat history, reopen an earlier chat, and check that its messages are still there. |
 | 7. 从行程选公开地点或手动输入，打开滴滴链接，核对起点和终点后停止。 | Use public places from a trip or enter them manually. Open DiDi, check pickup and drop-off, then stop. |
 | 8. 在「插件」打开「本地协助」，查看求助信息。测试时请勿拨号。 | Open Local Support in Tools and view the help information. Stop before placing any call. |
 
 **限制 / Limits**\
-仅限获准的内部成员，请用示例内容和系统默认字号。打车只检查链接，进入滴滴后不要下单或付款。52 隐藏酒店入口。更多已知限制见 [构建说明](https://github.com/JTCAO515/G2C/issues/702)。\
-This build is for approved internal members. Use sample content and the default iPhone text size. Check the DiDi link and stop before ordering or paying. Hotels are hidden in build 52. See the [build notes](https://github.com/JTCAO515/G2C/issues/702) for other known limits.
+仅限获准的内部成员，请用示例内容和系统默认字号。千问翻译需要联网。打车只检查链接，进入滴滴后不要下单或付款。52 隐藏酒店入口。更多已知限制见 [构建说明](https://github.com/JTCAO515/G2C/issues/702)。\
+This build is for approved internal members. Use sample content and the default iPhone text size. Qwen translation requires an internet connection. Check the DiDi link and stop before ordering or paying. Hotels are hidden in build 52. See the [build notes](https://github.com/JTCAO515/G2C/issues/702) for other known limits.
 
 **怎么反馈 / How to report a problem**\
 把**截图**、**问题记录**和**大概发生时间**（注明时区）发到 JT 指定的内测群（如微信群）。从失败提示或菜单里的内测说明打开「问题记录」，点「复制」，把文字贴到群里。发之前请遮住或删去邀请码、令牌及个人信息。无需 GitHub 账号。\
