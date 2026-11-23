@@ -290,3 +290,56 @@ def test_live_counter_never_recreates_a_missing_quota_journal(tmp_path):
         calls.reserve(owner,ESTIMATE,50)
     assert rejected.value.status==503
     assert not path.exists()
+
+
+def test_runtime_roster_and_original_counter_gate_provider_dispatch(monkeypatch, tmp_path):
+    from deploy.hk import taxi_runtime
+    from deploy.hk.configuration import DIDI_MCP_KEY, TAXI_INTERNAL_SUBJECTS
+    from deploy.hk.demo_login import invitation_subject
+    from deploy.hk.plugin_roster import generate_plugin_subjects
+
+    subjects = generate_plugin_subjects()
+    allowed, excluded = subjects[0], invitation_subject(f'CJ_Tester@{1:02d}')
+    parent = tmp_path/'plugin-state'
+    parent.mkdir(mode=0o700)
+    database = parent/'taxi.sqlite'
+    database.touch(mode=0o600)
+    monkeypatch.setenv(DIDI_MCP_KEY, 'fixture-key')
+    monkeypatch.setenv(TAXI_INTERNAL_SUBJECTS, json.dumps(subjects))
+    seen = []
+
+    def account_checker(auth, db, *, selected_subjects):
+        assert selected_subjects == frozenset(subjects)
+        def admit(token):
+            subject = {'inside-fixture': allowed, 'outside-fixture': excluded}[token]
+            principal = TrustedPrincipal('fixture-issuer', subject, 'app', 1, 1, 2)
+            return AdmissionDecision(AdmissionStatus.ALLOWED, AdmissionReason.ACCEPTED, principal)
+        return SimpleNamespace(check=admit)
+
+    def dispatch(tool, params):
+        seen.append(tool)
+        return {'structuredContent': {'items': [
+            {'productName': '快车', 'productCategory': '1', 'priceText': '20 元'},
+        ]}}
+
+    monkeypatch.setattr(taxi_runtime, 'account_checker_for', account_checker)
+    monkeypatch.setattr(taxi_runtime, 'DiDiMCPTransport', lambda key: dispatch)
+    app = FastAPI()
+    taxi_runtime.register_runtime_taxi(app, object(), object(), counts_path=database)
+    body = payload()
+    body['destination']['name'] = '西二旗地铁站'
+
+    def call(client, token):
+        return client.post(ESTIMATE, headers={'Authorization': 'Bearer '+token}, json=body)
+
+    with TestClient(app) as client:
+        assert call(client, 'outside-fixture').status_code == 403
+        assert not seen
+        assert call(client, 'inside-fixture').status_code == 200
+        assert seen == ['taxi_estimate']
+        database.unlink()
+        denied = call(client, 'inside-fixture')
+        assert denied.status_code == 503
+        assert denied.json() == {'error': 'unavailable'}
+        assert seen == ['taxi_estimate']
+        assert not database.exists()
