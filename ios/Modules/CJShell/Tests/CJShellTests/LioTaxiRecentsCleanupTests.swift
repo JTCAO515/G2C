@@ -1,4 +1,7 @@
 import CJCleanupClient
+import CJLioUser
+import CJMessageClient
+import CJTripClient
 import Darwin
 import Foundation
 import Testing
@@ -10,9 +13,16 @@ import Testing
         defer { try? FileManager.default.removeItem(at: root) }
         let selected = try seedAccount("selected", at: root, bytes: Data([1]))
         let adjacent = try seedAccount("adjacent", at: root, bytes: Data([2]))
+        let tripRoot = root.appendingPathComponent("trip-journal", isDirectory: true)
+        try FileManager.default.createDirectory(at: tripRoot, withIntermediateDirectories: false,
+                                                attributes: [.posixPermissions: 0o700])
+        try TripPendingStore.requireEmptyNamespace(directory: tripRoot)
+        let scope = try StorageScope(environment: UUID().uuidString, account: UUID().uuidString)
+        try EncryptedFileStorage(directory: selected, keys: NoKeys()).clearLocalSnapshot(scope: scope)
         let account = try DeviceCleanupDirectory(existingPrivateDirectory: selected)
         try LioTaxiRecentsCleanup.erase(in: account)
         try account.requireEmpty()
+        try TripPendingStore.requireEmptyNamespace(directory: tripRoot)
         try LioTaxiRecentsCleanup.erase(in: account)
         #expect(try Data(contentsOf: recentFile(in: adjacent)) == Data([2]))
     }
@@ -28,6 +38,13 @@ import Testing
         #expect(throws: CleanupFailure.unavailable) { try LioTaxiRecentsCleanup.erase(in: account) }
         #expect(!FileManager.default.fileExists(atPath: known.path))
         #expect(try Data(contentsOf: unknown) == Data([3]))
+    }
+
+    private final class NoKeys: MessageEncryptionKeyProvider {
+        func existing(for scope: StorageScope, expectedID: UUID?) throws -> MessageStorageKey? {
+            Issue.record("Local cleanup requested a key")
+            return nil
+        }
     }
 
     private func temporaryRoot() throws -> URL {
@@ -52,7 +69,7 @@ import Testing
     }
 
     private func recentFile(in account: URL) -> URL {
-        account.appendingPathComponent("taxi-recents", isDirectory: true)
-            .appendingPathComponent("recent-taxi-places.json")
+        LioTaxiRecentPlaces.storageDirectory(inMessageDirectory: account)
+            .appendingPathComponent(LioTaxiRecentPlaces.fileName)
     }
 }

@@ -128,7 +128,6 @@ private var developmentHostEnvironment: [String: String] {
     let lioTripLibrary: LioTripLibrary?
     let lioTranslationRelay: LioRelayTranslationClient?
     let lioTaxiRelay: LioTaxiRelayClient?
-    let lioTaxiRecentDirectory: URL
     #endif
     let messages: DevelopmentMessageHost
     #if DEBUG
@@ -232,7 +231,6 @@ private var developmentHostEnvironment: [String: String] {
             #endif
         }
         #if G2C_DEMO_BETA
-        lioTaxiRecentDirectory = root.appendingPathComponent(LioTaxiRecentPlaces.directoryName, isDirectory: true)
         lioTaxiRelay = LioTaxiRelayClient.internalBeta(endpoint: endpoint, isCurrent: {
             lifetime.current == lifetime.trip
         }, bearer: {
@@ -887,6 +885,7 @@ private var developmentHostEnvironment: [String: String] {
     let lioTripHistory: LioTripHistoryClient
     let lioMemoryActions: LioMemoryActionsClient
     let lioTranslationHistory: LioTranslationHistory
+    let lioTaxiRecentDirectory: URL
     private let lioPosition: LioChatContinuity
     private let lioPositionStore: LioChatPositionStore
     #endif
@@ -940,6 +939,7 @@ private var developmentHostEnvironment: [String: String] {
         }
         let credentials = DevelopmentMessageCredentials(token: configuration.token, scope: scope, lease: lease, lifetime: lifetime)
         #if G2C_DEMO_BETA
+        lioTaxiRecentDirectory = LioTaxiRecentPlaces.storageDirectory(inMessageDirectory: root)
         lioTranslationHistory = LioTranslationHistory(
             directory: root.appendingPathComponent(LioTranslationHistory.directoryName, isDirectory: true),
             isCurrent: isCurrent)
@@ -1623,6 +1623,7 @@ private struct DevelopmentVerificationTransport: ClientTransport {
             try translation.removeOwnedFile(named: LioTranslationHistory.fileName)
             try translation.removeOwnedFile(named: LioTranslationHistory.relayOriginalsFileName)
             try translation.removeEmptyChild()
+            try LioTaxiRecentsCleanup.erase(in: captured[0])
             #endif
         case .tripPending:
             guard let url else { throw CleanupFailure.unavailable }
@@ -1631,9 +1632,6 @@ private struct DevelopmentVerificationTransport: ClientTransport {
                 binding: tripBinding, expectedKeyID: id, provider: provider)
             for directory in captured { try directory.validateIdentity() }
             try store.clearLocalFiles()
-            #if G2C_DEMO_BETA
-            try LioTaxiRecentsCleanup.erase(in: captured[0])
-            #endif
         case .tripScoped, .needsPlanning:
             let (provider, id) = try provider(.localTripPendingV1)
             guard captured.count == 2 else { throw CleanupFailure.unavailable }

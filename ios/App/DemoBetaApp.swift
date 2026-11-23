@@ -27,7 +27,7 @@ struct DemoBetaRootView: View {
                     root.accounts.resume()
                 }, showsTools: true, toolsHistory: trip.messages.lioTranslationHistory,
                    toolsRelay: trip.lioTranslationRelay, toolsDraftStorage: root.localSupportDraftStorage(),
-                   taxiRelay: trip.lioTaxiRelay, taxiRecentDirectory: trip.lioTaxiRecentDirectory,
+                   taxiRelay: trip.lioTaxiRelay, taxiRecentDirectory: trip.messages.lioTaxiRecentDirectory,
                    toolsSessionIsCurrent: {
                     guard case .signedIn = root.accounts.state else { return false }
                     return root.trip === trip

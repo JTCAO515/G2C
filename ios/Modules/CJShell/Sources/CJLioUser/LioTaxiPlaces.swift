@@ -57,6 +57,10 @@ struct LioTaxiPlace: Codable, Equatable, Identifiable, Sendable {
     public static let directoryName = "taxi-recents"
     public static let fileName = "recent-taxi-places.json"
 
+    public static func storageDirectory(inMessageDirectory directory: URL) -> URL {
+        directory.appendingPathComponent(directoryName, isDirectory: true)
+    }
+
     private let directory: URL
     private let isCurrent: @MainActor () -> Bool
     private var file: URL { directory.appendingPathComponent(Self.fileName) }
