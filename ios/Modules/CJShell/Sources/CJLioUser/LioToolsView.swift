@@ -61,6 +61,17 @@ struct LioToolsView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("lio.tools.translation")
+                    NavigationLink {
+                        LioPaymentGuideView(language: language)
+                    } label: {
+                        Label(language.text("Payment Setup Guide", "支付开通指南"), systemImage: "wallet.pass")
+                            .foregroundStyle(LioTheme.ink)
+                            .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("lio.tools.payment-guide")
                 }
                 .padding(18)
             }
