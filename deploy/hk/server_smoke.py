@@ -507,7 +507,7 @@ def original_model_attempts(database, scope, message_id):
 
 
 def run(budget, database, scope, token, owner, start, end, *, translation_session=None):
-    from deploy.hk.server_smoke_budget import budget_state, restrict, settlement
+    from deploy.hk.server_smoke_budget import budget_state, dialogue_cash_cap, restrict, settlement
 
     def allowed():
         return permitted(datetime.now(timezone.utc), start, end)
@@ -529,6 +529,8 @@ def run(budget, database, scope, token, owner, start, end, *, translation_sessio
         return 3
     print_json(dict(kind='translation_requirement', required=translation_required))
     before = budget_state(budget, owner)
+    before['translation_required'] = translation_required
+    dialogue_limit = dialogue_cash_cap(translation_required)
     print_json(dict(kind='restriction_intent', before=before))
     restricted = restrict(budget, before)
     print_json(dict(kind='restricted', before=before, restricted=restricted))
@@ -548,7 +550,7 @@ def run(budget, database, scope, token, owner, start, end, *, translation_sessio
                 if result['status'] == 'PASS':
                     bound = original_model_attempts(database, scope, result['message_id'])
                     result['bound_model_attempts'] = sorted(bound.intersection(price['model_attempts']))
-                    if used-before['used'] > 5*CNY_SCALE:
+                    if used-before['used'] > dialogue_limit:
                         raise ValueError('original C cash bound exceeded')
             except (ValueError, SQLiteError, PostgresError, BudgetUnknown):
                 result['accounting'] = 'UNKNOWN'
@@ -560,13 +562,24 @@ def run(budget, database, scope, token, owner, start, end, *, translation_sessio
     history_result = (history(token, results, allowed) if all(row['status']=='PASS' for row in results)
                       else dict(status='UNRUN', reason='earlier_case_stopped'))
     print_json(dict(kind='history', **history_result))
+    translation_cost = {}
     if translation_required:
-        from deploy.hk.translation_smoke import checks
+        from deploy.hk.translation_smoke import METER_FIELDS, checks
         translation_scope, translation_token = translation_session
-        checks(budget, translation_scope, translation_token, allowed, request, print_json, SmokeResult,
-               ready=history_result['status']=='PASS')
+        _, dialogue_price, used = settlement(budget, owner, restricted, before['tail'])
+        dialogue_within_cap = max(used-before['used'], dialogue_price['conservative_cny_1e7']) <= dialogue_limit
+        if not dialogue_within_cap:
+            print_json(dict(kind='cost', **dialogue_price, line_usage_delta_cny_1e7=used-before['used']))
+            raise ValueError('combined smoke headroom not available before translation')
+        translation_rows = checks(budget, translation_scope, translation_token, allowed, request, print_json, SmokeResult,
+                                  ready=history_result['status']=='PASS')
+        translation_cost = {key: sum(row[key] for row in translation_rows) for key in METER_FIELDS}
     _, price, used = settlement(budget, owner, restricted, before['tail'])
-    print_json(dict(kind='cost', **price, line_usage_delta_cny_1e7=used-before['used']))
+    dialogue_cost = {key: price[key] for key in translation_cost}
+    for key, value in translation_cost.items():
+        price[key] += value
+    print_json(dict(kind='cost', **price, line_usage_delta_cny_1e7=used-before['used'],
+                    dialogue_cost=dialogue_cost, translation_cost=translation_cost))
     return 0
 
 
@@ -633,12 +646,32 @@ def decide(events, wire_logs):
     if (None in plan_witnesses
             or any(len(set(values)) != 2 for values in zip(*plan_witnesses, strict=True))):
         return dict(status='UNKNOWN', concurrency='UNRUN', reason='structured_plan_evidence_missing')
-    from deploy.hk.translation_smoke import complete
+    from deploy.hk.server_smoke_budget import CASH_CAP, dialogue_cash_cap
+    from deploy.hk.translation_smoke import METER_FIELDS, RESERVATION, complete
     if not complete(events):
         return dict(status='UNKNOWN', concurrency='UNRUN', reason='translation_smoke_incomplete')
-    if (costs[0]['conservative_cny_1e7'] > 5*CNY_SCALE
-            or costs[0]['line_usage_delta_cny_1e7'] > 5*CNY_SCALE):
+    required = next(row['required'] for row in events if row['kind']=='translation_requirement')
+    cost = costs[0]
+    usage = cost.get('line_usage_delta_cny_1e7')
+    total = cost.get('conservative_cny_1e7')
+    limit = dialogue_cash_cap(required)
+    if type(usage) is not int or not 0 <= usage <= limit or type(total) is not int or not 0 <= total <= CASH_CAP:
         return dict(status='UNKNOWN', concurrency='UNRUN', reason='smoke_cost_boundary_unconfirmed')
+    if required:
+        translated = [row for row in outcomes if row['kind']=='translation']
+        for row in translated:
+            amount = row.get('conservative_cny_1e7')
+            if (type(amount) is not int or not 0 < amount <= RESERVATION
+                    or row.get('estimated_cny_1e7') != amount or row.get('unresolved_attempts') != 0):
+                return dict(status='UNKNOWN', concurrency='UNRUN', reason='translation_smoke_cost_unconfirmed')
+        translation_total = {key: sum(row[key] for row in translated) for key in METER_FIELDS}
+        dialogue_cost = cost.get('dialogue_cost')
+        if (cost.get('translation_cost') != translation_total or type(dialogue_cost) is not dict
+                or any(type(dialogue_cost.get(key)) is not int or dialogue_cost[key] < 0
+                       or cost.get(key) != dialogue_cost[key] + translation_total[key] for key in METER_FIELDS)
+                or dialogue_cost['conservative_cny_1e7'] > limit
+                or usage + translation_total['conservative_cny_1e7'] > CASH_CAP):
+            return dict(status='UNKNOWN', concurrency='UNRUN', reason='smoke_cost_boundary_unconfirmed')
     concurrent = any(overlap_witness(row, set(row['bound_model_attempts']), wire_logs) for row in cases)
     return dict(status='PASS' if concurrent else 'UNKNOWN', concurrency='PASS' if concurrent else 'UNKNOWN')
 
