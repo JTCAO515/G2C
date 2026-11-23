@@ -123,12 +123,6 @@ private struct LioNearbyPlacePreview: View {
                         .buttonStyle(.plain)
                         .frame(minHeight: 44)
                 }
-                if let operation {
-                    Text(operation == .showAddress
-                         ? place.name + "\n" + place.address
-                         : language.text("This action is unavailable with sample places.", "示例地点暂不支持此操作。"))
-                        .font(operation == .showAddress ? .title : .body)
-                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(18)
@@ -137,6 +131,81 @@ private struct LioNearbyPlacePreview: View {
         .background(LioTheme.paper)
         .navigationTitle(language.text("Place details", "地点详情"))
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $operation) { action in
+            NavigationStack {
+                switch action {
+                case .taxi:
+                    LioTaxiView(language: language, service: .preview(), tripPlaces: [],
+                               recentStore: nil, destination: taxiDestination)
+                case .showAddress:
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(place.name).font(.largeTitle.bold())
+                            Text(place.address).font(.title2)
+                            if let name = place.englishName { Text(name) }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(24)
+                    }
+                    .foregroundStyle(LioTheme.ink)
+                    .background(LioTheme.paper)
+                    .navigationTitle(action.title(language))
+                case .directions, .askLio, .addToTrip:
+                    LioNearbyActionPreview(language: language, place: place, action: action)
+                }
+            }
+        }
+    }
+    private var taxiDestination: LioTaxiPlace {
+        LioTaxiPlace(nameZH: place.name, nameEN: place.englishName ?? place.name, addressZH: place.address,
+                     coordinate: .init(latitude: 39.9, longitude: 116.4, referenceSystem: .gcj02))
+    }
+}
+
+private struct LioNearbyActionPreview: View {
+    let language: LioLanguage
+    let place: LioNearbyPlace
+    let action: LioNearbyPlace.Operation
+
+    @State private var selectedDay = 1
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(place.name).font(.headline)
+                Text(place.address)
+                switch action {
+                case .directions:
+                    Text(language.text("Directions will open in AMap when available.", "导航开通后会在高德地图打开。"))
+                case .askLio:
+                    Text(language.text("What should I know before visiting this place?", "去这个地点之前，有什么需要注意？"))
+                        .textSelection(.enabled)
+                    Text(language.text("This sample did not send a chat message.", "此示例未发送聊天消息。"))
+                case .addToTrip:
+                    Picker(language.text("Day", "第几天"), selection: $selectedDay) {
+                        ForEach(1...3, id: \.self) { day in
+                            Text(language.text("Day \(day)", "第 \(day) 天")).tag(day)
+                        }
+                    }
+                    Text(language.text("This sample does not save changes to your trip.", "此示例不会保存行程修改。"))
+                case .taxi, .showAddress:
+                    EmptyView()
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(18)
+        }
+        .foregroundStyle(LioTheme.ink)
+        .background(LioTheme.paper)
+        .navigationTitle(action.title(language))
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button(language.text("Done", "完成")) { dismiss() }
+                    .frame(minHeight: 44)
+            }
+        }
     }
 }
 #endif

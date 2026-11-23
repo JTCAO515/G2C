@@ -91,6 +91,7 @@ def main():
         tests += "\n" + (HERE / "LioTaxiUITests.swift").read_text()
         tests += "\n" + (HERE / "LioHotelUITests.swift").read_text()
         tests += "\n" + (HERE / "LioToolsLocalSupportUITests.swift").read_text()
+        tests += "\n" + (HERE / "LioNearbyUITests.swift").read_text()
     (output / "G2CControl.swift").write_text(tests.replace("__LIO_RECORDED_TRIP_FIXTURE__", recorded_trip_fixture()))
     project = output / "G2CAcceptance.xcodeproj"
     settings = project / "project.pbxproj"

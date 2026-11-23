@@ -14,7 +14,8 @@ struct LioNearbyPlace: Identifiable, Equatable {
         }
     }
 
-    enum Operation: String, CaseIterable {
+    enum Operation: String, CaseIterable, Identifiable {
+        var id: Self { self }
         case taxi, directions, showAddress, askLio, addToTrip
 
         func title(_ language: LioLanguage) -> String {
