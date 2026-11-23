@@ -18,7 +18,7 @@ Use Chat to ask Lio questions, plan a trip, or revisit a conversation. Trips sho
 | 3. 在「插件 → 翻译」输入一句话，交换中英再试。 | Open Tools → Translation. Translate a sentence, swap Chinese and English, and try again. |
 | 4. 中英各录一句，对照识别文字和译文。 | Record a short sentence in each language and compare the transcript with the translation. |
 | 5. 拍一张只有示例文字的路牌或菜单，核对识别文字和译文。 | Photograph a sample sign or menu and check the recognized text and translation. |
-| 6. 回到聊天历史，重新打开之前的对话，核对原消息。 | Open chat history, reopen an earlier chat, and check that its messages are still there. |
+| 6. 在「插件 → 本地协助 → 我的使馆」搜索国籍，再用英文国名试一次。选中后查看对应使馆的名称、地址和电话。 | In Tools → Local Support → My embassy, search for a nationality, then try an English country name. Select a result and check the embassy name, address, and phone number. |
 | 7. 从行程选公开地点或手动输入，打开滴滴链接，核对起点和终点后停止。 | Use public places from a trip or enter them manually. Open DiDi, check pickup and drop-off, then stop. |
 | 8. 在「插件」打开「本地协助」，查看求助信息。测试时请勿拨号。 | Open Local Support in Tools and view the help information. Stop before placing any call. |
 
