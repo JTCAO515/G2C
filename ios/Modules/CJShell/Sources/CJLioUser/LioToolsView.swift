@@ -61,6 +61,18 @@ struct LioToolsView: View {
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("lio.tools.metro-guide")
                     NavigationLink {
+                        LioPaymentGuideView(language: language)
+                            .toolbar(.visible, for: .navigationBar)
+                    } label: {
+                        Label(language.text("Payment Setup Guide", "支付开通指南"), systemImage: "wallet.pass")
+                            .foregroundStyle(LioTheme.ink)
+                            .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("lio.tools.payment-guide")
+                    NavigationLink {
                         LioTextTranslationView(language: language, history: history, enabled: enabled, isCurrent: {
                             UIApplication.shared.applicationState != .background && sessionIsCurrent()
                         }, relay: relay)
