@@ -31,6 +31,7 @@ from cj_usage.metered_exit import BudgetUnknown
 from cj_usage.translation_budget import TranslationBudget, TranslationDuplicate, TranslationLimit
 
 from .configuration import TRANSLATION_INTERNAL_SUBJECTS
+from .plugin_roster import configured_plugin_subjects
 
 
 
@@ -211,14 +212,9 @@ def active_translation(runtime, authorization_guard):
     relay = None
     if raw is not None:
         try:
-            subjects = json.loads(raw)
-            if (type(subjects) is not list or not 0 < len(subjects) <= 100
-                    or any(type(s) is not str or not re.fullmatch(r'[A-Za-z0-9_.:@-]{1,128}', s)
-                           for s in subjects)
-                    or len(set(subjects)) != len(subjects)):
-                raise ValueError('explicit_internal_translation_roster_required')
+            subjects = configured_plugin_subjects(raw)
             budget = AuthorizationBudget(HK_JOURNAL_ROOT, authorization_guard=authorization_guard, demo=True)
-            checker = account_checker_for(runtime.auth, runtime.database(), selected_subjects=frozenset(subjects))
+            checker = account_checker_for(runtime.auth, runtime.database(), selected_subjects=subjects)
             provider = DashScopeTranslation(os.environ['CJ_MODEL_API_KEY'])
             relay = TranslationRelay(checker, TranslationBudget(budget), provider, scope_for)
         except (BudgetUnknown, CompositionUnavailable, psycopg.Error, sqlite3.Error,
