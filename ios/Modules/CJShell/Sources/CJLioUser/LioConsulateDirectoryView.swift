@@ -69,11 +69,28 @@ private struct LioConsulateDetailView: View {
                 }
 
                 Text(language.text("Consular district", "领区")).font(.headline)
-                Text(language == .english
-                     ? entry.districtEn ?? entry.districtZh ?? "Check the official directory for the consular district."
-                     : entry.districtZh ?? "请在外交部目录确认领区。")
-                    .foregroundStyle(LioTheme.inkSecondary)
-                    .accessibilityIdentifier("lio.support.consulate.district")
+                if let district = language == .english ? entry.districtEn ?? entry.districtZh : entry.districtZh {
+                    Text(district)
+                        .foregroundStyle(LioTheme.inkSecondary)
+                        .accessibilityIdentifier("lio.support.consulate.district")
+                } else {
+                    Text(language.text("China’s foreign ministry directory does not list this consular district.",
+                                       "中国外交部目录未列出该馆领区。"))
+                        .accessibilityIdentifier("lio.support.consulate.district-unlisted")
+                    if let source = entry.additionalDistrictSource {
+                        Link(destination: source) {
+                            Label(language.text("See Austria’s official directory", "查看奥地利外交部目录"),
+                                  systemImage: "arrow.up.right")
+                                .foregroundStyle(LioTheme.ink)
+                                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("lio.support.consulate.additional-source")
+                        Text(language.text("This office does not handle passports, visas or document certification.",
+                                           "该馆不办理护照、签证或文件认证。"))
+                    }
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(18)

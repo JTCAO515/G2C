@@ -28,6 +28,36 @@ import XCTest
         try app.performAccessibilityAudit(for: .all)
     }
 
+    @objc func testUnlistedConsularDistrictShowsOfficialAlternativeWithoutInventingData() throws {
+        for language in ["en", "zh-Hans"] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
+                                   "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+            app.launch()
+            defer { app.terminate() }
+            openLocalSupport(app, language: language)
+            let entry = app.buttons["lio.support.consulates"]
+            for _ in 0..<6 where !entry.isHittable { app.swipeUp() }
+            XCTAssertTrue(entry.isHittable)
+            entry.tap()
+            let search = app.searchFields.firstMatch
+            if !search.isHittable { app.swipeDown() }
+            XCTAssertTrue(search.waitForExistence(timeout: 6))
+            search.tap()
+            search.typeText("Austria")
+            let guangzhou = app.buttons["lio.support.consulate.t20090802_9330086.shtml"]
+            XCTAssertTrue(guangzhou.waitForExistence(timeout: 6))
+            guangzhou.tap()
+            XCTAssertTrue(app.staticTexts["lio.support.consulate.district-unlisted"].waitForExistence(timeout: 6))
+            XCTAssertFalse(app.staticTexts["lio.support.consulate.district"].exists)
+            XCTAssertTrue(app.descendants(matching: .any)["lio.support.consulate.additional-source"].exists)
+            XCTAssertTrue(app.staticTexts[language == "en"
+                ? "This office does not handle passports, visas or document certification."
+                : "该馆不办理护照、签证或文件认证。"].exists)
+            try app.performAccessibilityAudit(for: .all)
+        }
+    }
+
     @objc func testLocalSupportShowsChineseHelpCardWithoutDialing() throws {
         continueAfterFailure = false
         for language in ["en", "zh-Hans"] {
