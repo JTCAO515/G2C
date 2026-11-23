@@ -13,6 +13,7 @@ enum LioLocalAddressRelayFailure: Error, Equatable {
     case invalidLocation
     case previousAttempt
     case outcomeUnknown
+    case localCleanupUnavailable
 }
 
 @MainActor public final class LioLocalAddressRelayClient {
@@ -88,10 +89,9 @@ enum LioLocalAddressRelayFailure: Error, Equatable {
         try Self.sync(pendingDirectory, access: O_RDONLY | O_DIRECTORY)
         try Self.sync(pendingDirectory.deletingLastPathComponent(), access: O_RDONLY | O_DIRECTORY)
 
+        let address: String
         do {
-            let address = try await lookup(coordinate, requestID: requestID)
-            try clearPending(original)
-            return address
+            address = try await lookup(coordinate, requestID: requestID)
         } catch let failure as LioLocalAddressRelayFailure {
             switch failure {
             case .previousAttempt, .outcomeUnknown:
@@ -101,6 +101,8 @@ enum LioLocalAddressRelayFailure: Error, Equatable {
                 throw failure
             }
         }
+        try clearPending(original)
+        return address
     }
 
     func hasUnconfirmedLookup() throws -> Bool {
@@ -137,12 +139,12 @@ enum LioLocalAddressRelayFailure: Error, Equatable {
         try requireCurrentSession()
         do {
             guard try hasUnconfirmedLookup(), try Data(contentsOf: pendingFile) == original else {
-                throw LioLocalAddressRelayFailure.outcomeUnknown
+                throw LioLocalAddressRelayFailure.localCleanupUnavailable
             }
             try FileManager.default.removeItem(at: pendingFile)
             try Self.sync(pendingDirectory, access: O_RDONLY | O_DIRECTORY)
         } catch {
-            throw LioLocalAddressRelayFailure.outcomeUnknown
+            throw LioLocalAddressRelayFailure.localCleanupUnavailable
         }
     }
 
@@ -255,6 +257,8 @@ extension LioLocalAddressRelayClient {
             return .notEnabled
         } catch LioLocalAddressRelayFailure.rateLimited {
             return .rateLimited
+        } catch LioLocalAddressRelayFailure.localCleanupUnavailable {
+            return .localCleanupUnavailable
         } catch LioLocalAddressRelayFailure.outcomeUnknown, LioLocalAddressRelayFailure.previousAttempt, is CancellationError {
             return .outcomeUnknown
         } catch {

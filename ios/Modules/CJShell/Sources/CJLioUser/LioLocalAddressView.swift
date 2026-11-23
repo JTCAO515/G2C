@@ -10,6 +10,7 @@ enum LioLocalAddressResult: Equatable {
     case notEnabled
     case rateLimited
     case outcomeUnknown
+    case localCleanupUnavailable
     case unavailable
 }
 
@@ -67,6 +68,9 @@ struct LioLocalAddressView: View {
                     case .outcomeUnknown:
                         message(language.text("The address couldn’t be confirmed. You can still use the help cards.",
                                               "未能确认当前位置的地址。你仍可以使用求助卡片。"))
+                    case .localCleanupUnavailable:
+                        message(language.text("Couldn't finish on this device. Please try again later.",
+                                              "这台设备暂时无法完成操作，请稍后再试。"))
                     case .unavailable:
                         message(language.text("Your address couldn't be found. Try again.",
                                               "暂时查不到当前位置的地址，请重试。"))

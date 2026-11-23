@@ -106,6 +106,25 @@ import Testing
         #expect(try !client.hasUnconfirmedLookup())
     }
 
+    @Test(arguments: [200, 429])
+    func aTerminalResponseWithMissingLocalMarkerIsNotAnUnknownServiceResult(status: Int) async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let marker = root.appending(path: LioLocalAddressRelayClient.pendingFileName)
+        let client = LioLocalAddressRelayClient(
+            baseURL: endpoint, pendingDirectory: root, isCurrent: { true }, bearer: { "fixture" }
+        ) { request in
+            try FileManager.default.removeItem(at: marker)
+            let url = try #require(request.url)
+            let data = Data(#"{"version":"NEARBY.1","source":"Gaode","address_zh":"北京市示例路"}"#.utf8)
+            return (data, HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil)!)
+        }
+        await #expect(throws: LioLocalAddressRelayFailure.localCleanupUnavailable) {
+            try await client.lookupOnce(position)
+        }
+        #expect(try !client.hasUnconfirmedLookup())
+    }
+
     @Test func invalidStoragePathPreventsDispatch() async throws {
         let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false)
