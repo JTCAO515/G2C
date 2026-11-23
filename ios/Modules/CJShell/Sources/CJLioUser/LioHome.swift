@@ -186,9 +186,9 @@ public struct LioHome<MenuContent: View>: View {
                 .tag(Tab.trips)
             if showsTools {
                 LioToolsView(language: language, history: toolsHistory, relay: toolsRelay,
-                             draftStorage: toolsDraftStorage,
                              enabled: !restoringChat && session?.available != false && scenePhase != .background,
                              sessionIsCurrent: toolsSessionIsCurrent)
+                    .environment(\.lioLocalSupportDraft, toolsDraftStorage)
                     .background(LioTabBarAppearance().frame(width: 0, height: 0))
                     .tabItem { Label(language.text("Tools", "插件"), systemImage: "puzzlepiece.extension") }
                     .tag(Tab.tools)

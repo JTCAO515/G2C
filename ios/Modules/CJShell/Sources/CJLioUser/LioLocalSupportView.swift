@@ -4,10 +4,21 @@ import MapKit
 import SwiftUI
 import UIKit
 
+private enum LioLocalSupportDraftKey: EnvironmentKey {
+    static let defaultValue: LocalSupportDraftStorage? = nil
+}
+
+extension EnvironmentValues {
+    var lioLocalSupportDraft: LocalSupportDraftStorage? {
+        get { self[LioLocalSupportDraftKey.self] }
+        set { self[LioLocalSupportDraftKey.self] = newValue }
+    }
+}
+
 struct LioLocalSupportView: View {
     let language: LioLanguage
     let directory: LocalSupportDirectory?
-    var draftStorage: LocalSupportDraftStorage? = nil
+    @Environment(\.lioLocalSupportDraft) private var draftStorage
 
     @AppStorage("lio.local-support.nationality") private var nationality = ""
     @Environment(\.colorScheme) private var colorScheme
