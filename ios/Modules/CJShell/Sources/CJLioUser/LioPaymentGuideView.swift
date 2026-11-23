@@ -1,4 +1,5 @@
 #if os(iOS)
+import CJRunClient
 import SwiftUI
 
 struct LioPaymentGuideView: View {
@@ -31,13 +32,36 @@ struct LioPaymentGuideView: View {
 
 private struct LioPaymentProviderGuideView: View {
     let provider: LioPaymentGuideProvider
+    @Environment(\.colorScheme) private var colorScheme
     let language: LioLanguage
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
+                Link(destination: provider.officialInstructions) {
+                    Label(language.text("Official setup guide", "官方开通指南"), systemImage: "arrow.up.right")
+                        .foregroundStyle(LioTheme.ink)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("lio.payment.official")
+
                 ForEach(provider.steps(in: language)) { step in
-                    card(step)
+                    NavigationLink {
+                        ScrollView {
+                            card(step).padding(18)
+                        }
+                        .background(LioTheme.paper)
+                        .navigationBarTitleDisplayMode(.inline)
+                    } label: {
+                        Label(step.title, systemImage: step.icon)
+                            .foregroundStyle(LioTheme.ink)
+                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("lio.payment.open-step." + step.id)
                 }
 
                 NavigationLink {
@@ -51,8 +75,15 @@ private struct LioPaymentProviderGuideView: View {
                         .padding(18)
                     }
                     .background(LioTheme.paper)
-                    .navigationTitle(language.text("Common problems", "常见失败原因"))
                     .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .principal) {
+                            RunReadableText(text: language.text("Common problems", "常见失败原因"),
+                                            style: .headline, color: LioTheme.ink)
+                                .fixedSize()
+                                .accessibilityAddTraits(.isHeader)
+                        }
+                    }
                 } label: {
                     Label(language.text("Common problems", "常见失败原因"), systemImage: "questionmark.circle")
                         .foregroundStyle(LioTheme.ink)
@@ -61,15 +92,6 @@ private struct LioPaymentProviderGuideView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("lio.payment.problems")
-
-                Link(destination: provider.officialInstructions) {
-                    Label(language.text("Official setup guide", "官方开通指南"), systemImage: "arrow.up.right")
-                        .foregroundStyle(LioTheme.ink)
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("lio.payment.official")
             }
             .foregroundStyle(LioTheme.ink)
             .padding(18)
@@ -77,6 +99,16 @@ private struct LioPaymentProviderGuideView: View {
         .background(LioTheme.paper)
         .navigationTitle(provider.title(in: language))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(LioTheme.paper, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(colorScheme, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                RunReadableText(text: provider.title(in: language), style: .headline, color: LioTheme.ink)
+                    .fixedSize()
+                    .accessibilityAddTraits(.isHeader)
+            }
+        }
     }
 
     private func card(_ step: LioPaymentGuideStep) -> some View {
@@ -84,8 +116,8 @@ private struct LioPaymentProviderGuideView: View {
             Label(step.title, systemImage: step.icon)
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
-            Text(step.detail)
-                .foregroundStyle(LioTheme.inkSecondary)
+            RunReadableText(text: step.detail, color: LioTheme.ink)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityIdentifier("lio.payment.step." + step.id)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
