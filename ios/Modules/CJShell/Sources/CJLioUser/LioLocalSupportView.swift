@@ -1,4 +1,5 @@
 #if os(iOS)
+import CJRunClient
 import MapKit
 import SwiftUI
 import UIKit
@@ -8,6 +9,7 @@ struct LioLocalSupportView: View {
     let directory: LocalSupportDirectory?
 
     @AppStorage("lio.local-support.nationality") private var nationality = ""
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.openURL) private var openURL
     @State private var selectingNationality = false
     @State private var actionMessage: String?
@@ -45,7 +47,17 @@ struct LioLocalSupportView: View {
         .background(LioTheme.paper)
         .navigationTitle(language.text("Local Support", "本地协助"))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(LioTheme.paper, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(colorScheme, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                RunReadableText(text: language.text("Local Support", "本地协助"), style: .headline, color: LioTheme.ink)
+                    .fixedSize()
+                    .accessibilityAddTraits(.isHeader)
+            }
+        }
         .sheet(isPresented: $selectingNationality) {
             LocalSupportEmbassyPicker(language: language, embassies: directory?.embassies ?? [],
                                       nationality: $nationality)
@@ -107,7 +119,7 @@ struct LioLocalSupportView: View {
                         dial(contact.phone)
                     } label: {
                         Image(systemName: "phone")
-                            .frame(minWidth: 44, minHeight: 44)
+                            .frame(minWidth: 46, minHeight: 46)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -201,7 +213,6 @@ private struct LocalSupportEmbassyCard: View {
                 }
             }
         }
-        .accessibilityIdentifier("lio.support.embassy.card")
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
@@ -246,7 +257,8 @@ private struct LocalSupportEmbassyPicker: View {
                 }
                 .accessibilityIdentifier("lio.support.country." + embassy.countryCode)
             }
-            .searchable(text: $search, prompt: language.text("Search countries", "搜索国家"))
+            .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always),
+                        prompt: language.text("Search countries", "搜索国家"))
             .navigationTitle(language.text("Choose your nationality", "选择你的国籍"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
