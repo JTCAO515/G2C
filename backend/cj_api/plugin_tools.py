@@ -3,6 +3,7 @@
 from contextlib import closing
 from datetime import datetime
 from hashlib import sha256
+from pathlib import Path
 import json
 import re
 import sqlite3
@@ -32,16 +33,18 @@ class PluginError(Exception):
 class PluginCalls:
     """A committed count survives restarts and precedes every provider dispatch."""
 
-    def __init__(self, path, *, clock=lambda: datetime.now(SHANGHAI)):
+    def __init__(self, path, *, clock=lambda: datetime.now(SHANGHAI), require_existing=False):
         self.path = path
         self.clock = clock
+        self.require_existing = require_existing
 
     def reserve(self, principal, operation, limit):
         subject = json.dumps([principal.issuer, principal.subject], separators=(',', ':'))
         owner = sha256(subject.encode()).hexdigest()
         day = self.clock().astimezone(SHANGHAI).date().isoformat()
         try:
-            with closing(sqlite3.connect(self.path)) as db, db:
+            target = Path(self.path).absolute().as_uri() + '?mode=rw' if self.require_existing else self.path
+            with closing(sqlite3.connect(target, uri=self.require_existing)) as db, db:
                 db.execute("""CREATE TABLE IF NOT EXISTS plugin_call (
                     day TEXT NOT NULL, owner TEXT NOT NULL, operation TEXT NOT NULL,
                     used INTEGER NOT NULL, PRIMARY KEY (day, owner, operation))""")
@@ -78,7 +81,8 @@ async def _bounded_body(request):
     return data
 
 
-def register_plugin(app, path, model, operation, *, enabled, checker, internal, calls, limit):
+def register_plugin(app, path, model, operation, *, enabled, checker, internal, calls, limit,
+                    count_provider_calls=False):
     @app.post(path)
     async def execute(request: Request):
         try:
@@ -98,11 +102,16 @@ def register_plugin(app, path, model, operation, *, enabled, checker, internal, 
             except (ValueError, RecursionError):
                 raise PluginError(400, 'invalid_request') from None
 
-            def run():
+            def reserve(operation_path, operation_limit):
                 current = _authorize(checker, token, internal)
                 if (current.issuer, current.subject) != (principal.issuer, principal.subject):
                     raise PluginError(401, 'sign_in_required')
-                calls.reserve(current, path, limit)
+                calls.reserve(current, operation_path, operation_limit)
+
+            def run():
+                reserve(path, limit)
+                if count_provider_calls:
+                    return operation(arguments, reserve)
                 return operation(arguments)
 
             status, body = 200, await run_in_threadpool(run)

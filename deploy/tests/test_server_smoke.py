@@ -709,3 +709,78 @@ def test_release_verify_requires_two_distinct_original_bindings_even_with_old_te
     damaged = deepcopy(rows)
     damaged[5]['structured_plan']['ref'] = damaged[5]['polls'][-1]['ref'].upper()
     assert smoke.decide(damaged, logs) == unknown
+
+
+def test_enabled_translation_without_its_admitted_session_is_unrun(monkeypatch, capsys):
+    from deploy.hk import configuration, translation_relay
+    from deploy.hk import server_smoke_budget
+
+    start = datetime.now(timezone.utc)
+    monkeypatch.setenv(configuration.TRANSLATION_INTERNAL_SUBJECTS, 'fixture')
+    monkeypatch.setattr(translation_relay, 'translation_state', lambda: True)
+    monkeypatch.setattr(server_smoke_budget, 'budget_state', lambda *args: pytest.fail('smoke budget accessed'))
+
+    assert smoke.run(None, None, None, 'lio-only', None, start, start + timedelta(minutes=5)) == 3
+    assert json.loads(capsys.readouterr().out) == {
+        'kind': 'batch', 'status': 'UNRUN', 'reason': 'eligible_translation_session_required',
+    }
+
+
+@pytest.mark.parametrize('mode', ['eligible', 'denied', 'same_scope'])
+def test_lio_and_translation_keep_separate_admission_and_receipt_scopes(
+        monkeypatch, capsys, mode):
+    import io
+    import sys
+
+    from cj_api import local_account_admission_v2, local_worker_context
+    from cj_api.local_app import scope_for
+    from cj_auth.interfaces import AdmissionDecision, AdmissionReason, AdmissionStatus, TrustedPrincipal
+    from cj_usage import authorization_budget
+    from deploy.hk import configuration, plugin_roster
+
+    end = datetime(2026, 11, 18, 12, 25, tzinfo=timezone.utc)
+    translation_eligible = mode == 'eligible'
+    def admit(subject):
+        return AdmissionDecision(AdmissionStatus.ALLOWED, AdmissionReason.ACCEPTED,
+                                 TrustedPrincipal('issuer', subject, 'audience', 0, 0,
+                                                  int(end.timestamp())))
+    subjects = plugin_roster.generate_plugin_subjects()
+    runtime = SimpleNamespace(auth=None, demo_subjects=('lio-only',), close=lambda: None, database=object)
+    monkeypatch.setattr(configuration, 'authorization', lambda: None)
+    monkeypatch.setattr(configuration, 'load_secret_environment', lambda role: None)
+    monkeypatch.setattr(configuration.Runtime, 'load', lambda *args, **kwargs: runtime)
+    monkeypatch.setenv(configuration.TRANSLATION_INTERNAL_SUBJECTS, json.dumps(subjects))
+    monkeypatch.setattr(local_worker_context, 'checker_for',
+                        lambda *args, **kwargs: SimpleNamespace(check=lambda token: admit('lio-only')))
+
+    def translation_checker(auth, database, *, selected_subjects):
+        assert selected_subjects == frozenset(subjects)
+        def check(token):
+            assert token == 'translation-fixture'
+            if mode == 'denied':
+                return AdmissionDecision(AdmissionStatus.DENIED, AdmissionReason.NOT_INVITED)
+            return admit(subjects[0] if translation_eligible else 'lio-only')
+        return SimpleNamespace(check=check)
+
+    def budget(*args, **kwargs):
+        assert translation_eligible
+        return None
+
+    def run(_, database, scope, token, owner, start, stop, *, translation_session):
+        assert translation_eligible
+        assert (scope, token) == (scope_for('issuer', 'lio-only'), 'lio-fixture')
+        assert translation_session == (scope_for('issuer', subjects[0]), 'translation-fixture')
+        return 0
+
+    monkeypatch.setattr(local_account_admission_v2, 'account_checker_for', translation_checker)
+    monkeypatch.setattr(authorization_budget, 'AuthorizationBudget', budget)
+    monkeypatch.setattr(smoke, 'run', run)
+    monkeypatch.setattr(sys, 'argv', ['server_smoke', 'run'])
+    monkeypatch.setattr(sys, 'stdin', io.TextIOWrapper(io.BytesIO(json.dumps({
+        'access_token': 'lio-fixture', 'translation_access_token': 'translation-fixture',
+        'starts_at': '2026-11-18T12:00:00+00:00', 'ends_at': end.isoformat(),
+    }).encode())))
+
+    assert smoke.main() == (0 if translation_eligible else 3)
+    if not translation_eligible:
+        assert json.loads(capsys.readouterr().out)['reason'] == 'eligible_translation_session_required'

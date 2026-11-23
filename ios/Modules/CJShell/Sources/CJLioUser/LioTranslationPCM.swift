@@ -8,6 +8,18 @@ struct LioTranslationRecording: Sendable {
         try LioTranslationWAV.encode(pcm: pcm)
     }
 
+    func recognitionBuffer() throws -> AVAudioPCMBuffer {
+        let frames = AVAudioFrameCount(pcm.count / MemoryLayout<Int16>.size)
+        guard let format = Self.format(), frames > 0,
+              let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames),
+              let samples = buffer.int16ChannelData?.pointee else {
+            throw LioTranslationMediaFailure.emptyRecording
+        }
+        buffer.frameLength = frames
+        pcm.copyBytes(to: UnsafeMutableRawBufferPointer(start: samples, count: pcm.count))
+        return buffer
+    }
+
     fileprivate static func format() -> AVAudioFormat? {
         AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: Double(LioTranslationWAV.sampleRate),
                       channels: 1, interleaved: true)

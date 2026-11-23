@@ -51,7 +51,7 @@ def budget(tmp_path):
 
 
 @pytest.fixture
-def interface(budget):
+def interface(budget, request):
     import json
     from types import SimpleNamespace
 
@@ -68,7 +68,12 @@ def interface(budget):
                 output={'choices': [{'message': {'content': [{'text': '菜單\n火鍋'}]}}]},
                 usage={'input_tokens': 30, 'output_tokens': 8}))
         if model == SPEECH_MODEL:
-            usage = {'seconds': 1}
+            scenario = getattr(request, 'param', None)
+            if scenario == 'http':
+                return httpx.Response(400, json={'error': {'message': 'private provider detail'}})
+            usage = {
+                'seconds': {'invalid_seconds': 2}.get(scenario, 1),
+            } if scenario != 'missing_usage' else {}
             content = '你好'
             assert payload['messages'][0]['content'][0]['input_audio']['format'] == 'wav'
         else:
@@ -151,6 +156,28 @@ def test_provider_redirect_is_not_followed_or_retried(interface):
     assert _post(client, body).status_code == 409
     assert calls == [TEXT_MODEL]
     assert ledger.inspect()[0]['state'] == 'INTENT'
+
+
+@pytest.mark.parametrize(('interface', 'reason', 'upstream_http'), [
+    ('http', 'supplier_http', 400),
+    ('missing_usage', 'supplier_receipt_shape', 200),
+    ('invalid_seconds', 'speech_usage_seconds', 200),
+], indirect=['interface'])
+def test_asr_502_exposes_only_diagnostics_and_keeps_the_original_hold(
+        interface, reason, upstream_http, caplog):
+    client, calls, ledger = interface
+    body = _body('speech', media=_wav())
+    reply = _post(client, body)
+    assert reply.status_code == 502
+    assert reply.json() == {'version': VERSION, 'error': 'provider_unavailable'}
+    assert _post(client, body).status_code == 409
+    assert calls == [SPEECH_MODEL]
+    assert [row['state'] for row in ledger.inspect()] == ['INTENT']
+    messages = [row.getMessage() for row in caplog.records if row.name == 'cj_api.translation']
+    assert messages == [
+        f'G2C_TRANSLATION_ASR_FAILURE reason={reason} supplier_http={upstream_http}',
+    ]
+    assert 'private provider detail' not in caplog.text
 
 
 def test_reject_wrong_encoding_and_disallow_provider_url(interface):

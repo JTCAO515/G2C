@@ -12,6 +12,8 @@ public struct LioHome<MenuContent: View>: View {
     private let toolsHistory: LioTranslationHistory?
     private let toolsDraftStorage: LocalSupportDraftStorage?
     private let toolsRelay: LioRelayTranslationClient?
+    private let taxiRelay: LioTaxiRelayClient?
+    private let taxiRecentDirectory: URL?
     private let toolsSessionIsCurrent: @MainActor () -> Bool
     private let reconnect: (@MainActor () -> Void)?
     private let session: LioSessionAvailability?
@@ -98,6 +100,7 @@ public struct LioHome<MenuContent: View>: View {
                 reconnect: (@MainActor () -> Void)? = nil, showsTools: Bool = false,
                 toolsHistory: LioTranslationHistory? = nil, toolsRelay: LioRelayTranslationClient? = nil,
                 toolsDraftStorage: LocalSupportDraftStorage? = nil,
+                taxiRelay: LioTaxiRelayClient? = nil, taxiRecentDirectory: URL? = nil,
                 toolsSessionIsCurrent: @escaping @MainActor () -> Bool = { true },
                 @ViewBuilder menu: () -> MenuContent) {
         self.language = language
@@ -106,6 +109,8 @@ public struct LioHome<MenuContent: View>: View {
         self.toolsHistory = toolsHistory
         self.toolsDraftStorage = toolsDraftStorage
         self.toolsRelay = toolsRelay
+        self.taxiRelay = taxiRelay
+        self.taxiRecentDirectory = taxiRecentDirectory
         self.toolsSessionIsCurrent = toolsSessionIsCurrent
         self.reconnect = reconnect
         self.session = session
@@ -146,6 +151,21 @@ public struct LioHome<MenuContent: View>: View {
         }
     }
 
+    private var taxiEntry: LioTaxiEntry? {
+        if let taxiRelay, let taxiRecentDirectory {
+            var seen = Set<LioTaxiPlace.ID>()
+            let places = conversation.itineraries.flatMap { $0.days.flatMap { $0.stops.compactMap(\.taxiDestination) } }
+                .filter { seen.insert($0.id).inserted }
+            return .internalBeta(relay: taxiRelay, recentDirectory: taxiRecentDirectory,
+                                 tripPlaces: places)
+        }
+        #if DEBUG
+        return LioTaxiEntry.previewFromArguments
+        #else
+        return nil
+        #endif
+    }
+
     public var body: some View {
         let currentConversation = conversation
         let pending = conversation.pending
@@ -182,6 +202,7 @@ public struct LioHome<MenuContent: View>: View {
                     .tag(Tab.memory)
             }
         }
+        .environment(\.lioTaxiEntry, taxiEntry)
         .tint(LioTheme.vermilion)
         .sensoryFeedback(.success, trigger: savedCelebrations)
         .disabled(chatControlsSuspended)

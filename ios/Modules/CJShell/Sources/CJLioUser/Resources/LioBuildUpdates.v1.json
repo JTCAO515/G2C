@@ -14,10 +14,12 @@
           },
           "items": {
             "zh": [
+              "内部测试版。请在内测群反馈问题。",
               "聊天右上角新增紧急求助。在本地协助可查看离线电话、选择国籍看使馆，也可把求助内容保存在本机。",
               "打车支持滴滴估价和跳转。从行程地点点「打车去这里」可预填终点。"
             ],
             "en": [
+              "Internal test build. Please report problems in the internal testing group.",
               "Open Emergency Help from the top right of Chat. Local Support includes offline phone numbers, an embassy for your selected nationality, and help drafts saved on this device.",
               "Taxi shows DiDi estimates and opens DiDi. Tap Taxi here on a trip stop to fill in the destination."
             ]
@@ -31,10 +33,10 @@
           },
           "items": {
             "zh": [
-              "与构建 51 相比，新增本地协助和打车。翻译使用千问处理文字、录音和照片。"
+              "与构建 51 相比，新增本地协助和打车。文字、录音和照片优先由千问翻译，网络或服务不可用时尝试本机兜底。"
             ],
             "en": [
-              "Compared with build 51, this build adds Local Support and Taxi. Qwen translates text, recordings, and photos."
+              "Build 52 adds Local Support and Taxi. Qwen is the primary translator for text, recordings, and photos. The app tries on-device translation when the network or service is unavailable."
             ]
           }
         },
@@ -46,16 +48,14 @@
           },
           "items": {
             "zh": [
-              "记录机型、iOS、语言和测试账号标签。首次安装后登录并同意，中英各问三题（含首都机场进城），生成并保存三天行程。强退重开、后台 10 秒和锁屏 60 秒后核对对话及草稿。",
-              "翻译文字和语音中英各三次（含一次无声录音），再测菜单、路牌、小票、药品说明各一张照片。用「完成」、点空白和上滑收起键盘。",
-              "从 SOS 进入协助，选择国籍，重开检查草稿，开启飞行模式再打开。拨号只用指定测试号码，到系统确认后取消。",
-              "打车从行程预填、估价、查看司机卡片，并核对已装和未装滴滴的表现。检查 Tab 顺序、中英、浅深色和字号。失败请截图并复制问题记录到 #1334。"
+              "默认字号下检查中英文聊天、行程和草稿恢复。翻译请分别试文字、语音和照片；准备好语言包后试离线兜底。",
+              "从 SOS 打开本地协助，查看使馆和草稿。拨号测试只用指定测试号码，到系统确认后取消。",
+              "从行程进入打车，核对预填、估价、给司机看和滴滴跳转。失败请在内测群发送截图、问题记录和大概时间。"
             ],
             "en": [
-              "Record the iPhone model, iOS version, language, and test account label. Sign in on a fresh install, accept the notice, ask three questions in each language including how to reach central Beijing from Capital Airport, and save a three-day trip. Check chat and drafts after a force-quit, 10 seconds in the background, and 60 seconds locked.",
-              "Translate three texts and three recordings in each direction, including a silent recording. Try a menu, sign, receipt, and medicine label. Dismiss the keyboard with Done, a background tap, and a swipe.",
-              "Open Emergency Help, choose your nationality, check the draft after reopening, and reopen in Airplane Mode. Use only the designated test number and cancel at the system prompt.",
-              "Try Taxi from a trip stop, check the estimate and driver card, and compare phones with and without DiDi. Check tabs, both languages, light and dark mode, and text size. Report failures with a screenshot and copied problem record in #1334."
+              "At the default text size, check chat in both languages, trips, and draft recovery. Try text, voice, and photo translation, then test offline once the language packs are available.",
+              "Open Local Support from SOS. Check embassy details and drafts. Use only the designated test number and cancel at the system confirmation.",
+              "Open Taxi from a trip stop. Check prefill, the estimate, the driver card, and handoff to DiDi. Share screenshots, copied problem notes, and the approximate time in the internal testing group."
             ]
           }
         },
@@ -67,10 +67,12 @@
           },
           "items": {
             "zh": [
-              "酒店暂未开放。打车在滴滴确认页停止，不下单。翻译和估价需要联网。"
+              "酒店入口暂未开放。打车估价和跳转需要联网，只到滴滴确认页，不下单或付款。地点搜索限于已加载行程地点，当前位置暂只显示为起点。",
+              "本机翻译需要 iOS 18 或更新版本和已下载的语言包，离线语音还取决于设备的本机语音识别支持。"
             ],
             "en": [
-              "Hotels are unavailable. Stop at DiDi’s confirmation screen without placing a ride. Translation and fare estimates require internet access."
+              "Hotels are unavailable. Taxi estimates and handoff require internet access. Stop at DiDi’s confirmation screen. Place search is limited to loaded trip stops, and current location is shown as the pickup point.",
+              "Offline translation requires iOS 18 or later and downloaded language packs. Offline voice also depends on on-device speech recognition support."
             ]
           }
         },

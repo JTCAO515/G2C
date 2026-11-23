@@ -17,7 +17,7 @@ enum LioTranslationImageEncoder {
         return bytes as Data
     }
 
-    private static func thumbnail(from data: Data) throws -> CGImage {
+    static func thumbnail(from data: Data) throws -> CGImage {
         guard let image = CGImageSourceCreateWithData(data as CFData, nil),
               let photo = CGImageSourceCreateThumbnailAtIndex(image, 0, [
                 kCGImageSourceCreateThumbnailFromImageAlways: true,

@@ -42,8 +42,6 @@ enum LioTaxiWire {
             let name: String
             let currency: String
             let priceDisplay: String
-            let priceMinMinor: Int?
-            let priceMaxMinor: Int?
         }
 
         let version: String
@@ -90,14 +88,14 @@ enum LioTaxiWire {
             guard !quote.category.isEmpty, !quote.name.isEmpty, !quote.priceDisplay.isEmpty else {
                 throw LioTaxiFailure.unavailable
             }
-            let price: LioTaxiFare.Price
-            if quote.currency == "CNY", let min = quote.priceMinMinor, let max = quote.priceMaxMinor,
-               0 <= min, min <= max {
-                price = .range(minimum: Decimal(min) / 100, maximum: Decimal(max) / 100, currency: quote.currency)
-            } else {
-                price = .description(quote.priceDisplay)
+            let nameEN = switch quote.category {
+            case "1": "Express"
+            case "201": "Discount Express"
+            case "8": "Premier"
+            default: quote.name
             }
-            return LioTaxiFare(id: quote.category, nameZH: quote.name, nameEN: quote.name, price: price)
+            return LioTaxiFare(id: quote.category, nameZH: quote.name, nameEN: nameEN,
+                              priceDisplay: quote.priceDisplay)
         }
     }
 
@@ -115,6 +113,19 @@ enum LioTaxiWire {
         return url
     }
 
+    static func approvesDiDiTarget(_ type: LinkType, _ url: URL) -> Bool {
+        guard type == .https, let parts = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              parts.host == "v.didi.cn", parts.port == nil, parts.fragment == nil,
+              parts.percentEncodedPath == "/XvYQEWe", let coordinates = parts.queryItems,
+              coordinates.count == 4,
+              Set(coordinates.map(\.name)) == ["slat", "slng", "dlat", "dlng"] else { return false }
+        return coordinates.allSatisfy { item in
+            guard let value = item.value, let coordinate = Double(value) else { return false }
+            let limit = item.name.hasSuffix("lat") ? 90.0 : 180.0
+            return (-limit...limit).contains(coordinate)
+        }
+    }
+
     static func failure(status: Int, body: Data) -> LioTaxiFailure {
         let code = (try? decoder.decode(ErrorBody.self, from: body))?.error
         return switch (status, code) {
@@ -124,6 +135,7 @@ enum LioTaxiWire {
         case (422, "coordinate_unverified"): .coordinateUnverified
         case (429, "quota_exceeded"): .quotaExceeded
         case (429, "rate_limited"): .rateLimited
+        case (504, "supplier_timeout"): .timedOut
         default: .unavailable
         }
     }

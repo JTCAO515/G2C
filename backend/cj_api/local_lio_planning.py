@@ -14,7 +14,7 @@ from cj_draft.rich_schema import GENERATION_PROFILES as RICH_GENERATION_PROFILES
 from cj_message.demo_dialogue import LIO_VERSION
 from cj_message.domain import Command, Unavailable
 from cj_message.lio_context import (DISCUSSION_MAX_PREVIEW_DAYS, DISCUSSION_VISIT_PERIODS, DISCUSSION_VISIT_VERBS,
-    DiscussionPreviewInput, UNSAVED_PLAN_ANSWER, answer_prompt, display_answer)
+    DiscussionPreviewInput, UNSAVED_PLAN_ANSWER, answer_prompt, display_answer, unqualified_landmark_name)
 from cj_message.lio_plan_needs import BOUND_EFFECT, attach, original_needs
 from cj_message.needs_binding import needs_scope_for
 from cj_needs.domain import InvalidInput, decode, exact
@@ -139,6 +139,9 @@ _ITINERARY_PREVIEW_FORMAT = (
     'Each activity has exactly place_name (full proper name in the answer language), '
     'verb (visit, explore, walk, eat, shop or relax), and period (morning, afternoon, evening or null). '
     'Only include suggested visits you would actually show to the traveler. '
+    'Name the exact venue, branch, station or section when a landmark spans multiple locations. '
+    'A Great Wall visit needs its own named section, for example Badaling Great Wall (八达岭长城) '
+    'or Mutianyu Great Wall (慕田峪长城). Choose another concrete local stop if you cannot name the section. '
     'Follow_up is one useful adjustment question in the answer language. '
     'Use null for days only if you cannot provide a complete structured plan. '
     'In that case keep the useful standalone answer and set follow_up to null.'
@@ -162,6 +165,7 @@ def _preview_days(value, count):
             if (type(activity) is not dict or activity.keys() != {'place_name', 'verb', 'period'}
                     or not _preview_line(activity['place_name'], 240)
                     or _CANCELLED_PLACE.search(activity['place_name']) is not None
+                    or unqualified_landmark_name(activity['place_name'])
                     or type(activity['verb']) is not str or activity['verb'] not in DISCUSSION_VISIT_VERBS
                     or activity['period'] is not None and (type(activity['period']) is not str
                                                            or activity['period'] not in DISCUSSION_VISIT_PERIODS)):
