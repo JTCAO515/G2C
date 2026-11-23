@@ -88,6 +88,16 @@ private struct LioPhrasePosterView: View {
                     readButton(language.text("Read English", "朗读英文"), phrase.english, locale: "en-US")
                 }
                 .buttonStyle(.bordered)
+                #if DEBUG
+                if ProcessInfo.processInfo.arguments.contains("--lio-tts-preview") {
+                    LioSpokenPreviewButton(language: language, phrase: .init(language: .chinese, text: phrase.chinese),
+                                           title: language.text("Play Chinese sample", "播放中文示例"),
+                                           identifier: "lio.tts.phrase.zh")
+                    LioSpokenPreviewButton(language: language, phrase: .init(language: .english, text: phrase.english),
+                                           title: language.text("Play English sample", "播放英文示例"),
+                                           identifier: "lio.tts.phrase.en")
+                }
+                #endif
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(24)

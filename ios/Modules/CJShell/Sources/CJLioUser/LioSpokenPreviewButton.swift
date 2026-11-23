@@ -5,10 +5,12 @@ import SwiftUI
 struct LioSpokenPreviewButton: View {
     let language: LioLanguage
     let phrase: LioSpokenClip.Phrase
+    var title: String? = nil
+    var identifier = "lio.tts.sample"
     @State private var clip = LioSpokenClip { _, _ in
         // A short local audio sample exercises playback without a model call.
         var pcm = Data()
-        for sample in 0..<12_800 {
+        for sample in 0..<48_000 {
             let volume = sin(Double(sample) * 2 * .pi * 440 / Double(LioTranslationWAV.sampleRate))
             var value = Int16(volume * 1400).littleEndian
             withUnsafeBytes(of: &value) { pcm.append(contentsOf: $0) }
@@ -32,7 +34,7 @@ struct LioSpokenPreviewButton: View {
             } label: {
                 Label(
                     request == nil
-                       ? language.text("Play sample audio", "播放示例音频")
+                       ? (title ?? language.text("Play sample audio", "播放示例音频"))
                        : language.text("Stop audio", "停止播放"),
                     systemImage: request == nil ? "speaker.wave.2" : "stop.circle"
                 )
@@ -40,7 +42,7 @@ struct LioSpokenPreviewButton: View {
                 .frame(minHeight: 44)
             }
             .buttonStyle(.plain)
-            .accessibilityIdentifier("lio.tts.sample")
+            .accessibilityIdentifier(identifier)
             if request != nil, !playing {
                 ProgressView(language.text("Getting audio…", "正在获取音频…"))
             }

@@ -3,6 +3,48 @@ import UIKit
 import CryptoKit
 
 @MainActor final class LioToolsUITests: XCTestCase {
+    func testQwenAudioFixtureUsesBothEntryPointsAndStops() throws {
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-tts-preview", "--lio-translation-relay-preview",
+                               "-cj.ui.language.v1", "en"]
+        app.launch()
+        defer { app.terminate() }
+        let tools = app.tabBars.buttons["Tools"]
+        XCTAssertTrue(tools.waitForExistence(timeout: 8))
+        tools.tap()
+        app.buttons["lio.tools.phrase-cards"].tap()
+        app.buttons["lio.phrases.category.dining"].tap()
+        app.buttons["lio.phrases.card.dining-menu"].tap()
+        let phrase = app.buttons["lio.tts.phrase.zh"]
+        XCTAssertTrue(phrase.waitForExistence(timeout: 5))
+        try app.performAccessibilityAudit(for: .all)
+        phrase.tap()
+        XCTAssertEqual(phrase.label, "Stop audio")
+        phrase.tap()
+        XCTAssertEqual(phrase.label, "Play Chinese sample")
+        app.buttons["lio.phrases.done"].tap()
+
+        tools.tap()
+        app.buttons["lio.tools.translation"].tap()
+        let editor = app.textViews["lio.translation.input"]
+        XCTAssertTrue(editor.waitForExistence(timeout: 6))
+        editor.tap()
+        editor.typeText("Hello")
+        app.buttons["lio.translation.submit"].tap()
+        let result = app.staticTexts["lio.translation.result"]
+        XCTAssertTrue(result.waitForExistence(timeout: 8))
+        let done = app.buttons["lio.translation.keyboard-done"]
+        if done.exists { done.tap() }
+        let translation = app.buttons["lio.tts.sample"]
+        for _ in 0..<4 where !translation.isHittable { app.scrollViews.firstMatch.swipeUp() }
+        XCTAssertTrue(translation.isHittable)
+        translation.tap()
+        XCTAssertEqual(translation.label, "Stop audio")
+        translation.tap()
+        XCTAssertEqual(translation.label, "Play sample audio")
+    }
+
+
     func testPhraseCardsShowFiveScenariosAndBothLanguages() throws {
         continueAfterFailure = false
         for language in ["en", "zh-Hans"] {
