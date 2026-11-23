@@ -70,6 +70,41 @@ def test_nearby_converts_then_searches_once_and_reuses_short_cache(ledger):
     assert '116.406171' not in str(ledger.inspect())
 
 
+@pytest.mark.parametrize('mode', ['mixed','empty','invalid'])
+def test_nearby_projection_preserves_usable_rows_and_distinguishes_empty_results(ledger, caplog, mode):
+    class ProjectionSupplier(Supplier):
+        def query(self, operation, params, reserve):
+            value, raw = super().query(operation, params, reserve)
+            if operation != 'search':
+                return value, raw
+            invalid = dict(name='synthetic POI without coordinates',id='B456',typecode='050501',location=[])
+            if mode == 'mixed':
+                value['pois'].append(invalid)
+            elif mode == 'empty':
+                value = {'count':'0'}
+            else:
+                value['pois'] = [invalid]
+            return value, json.dumps(value).encode()
+
+    provider = ProjectionSupplier()
+    service = NearbyService(provider, NearbyBudget(ledger))
+    body = NearbySearchRequest.model_validate(payload(categories=['coffee'], radius_m=500, sort='distance'))
+    if mode == 'invalid':
+        with pytest.raises(PluginError) as rejected:
+            service.search('owner', body, lambda: None)
+        assert rejected.value.status == 502
+    else:
+        result = service.search('owner', body, lambda: None)
+        if mode == 'mixed':
+            assert result['omitted_items'] == 1
+            assert [row['id'] for row in result['items']] == ['B123']
+        else:
+            assert result == dict(version='NEARBY.1', source='Gaode', items=[])
+    assert [row['state'] for row in ledger.inspect()] == ['RECEIVED','RECEIVED']
+    if mode != 'empty':
+        assert 'coordinate' in caplog.text and 'synthetic POI without coordinates' not in caplog.text
+
+
 def test_reverse_uses_same_scope_limit_and_never_resends_an_original(ledger, monkeypatch):
     from cj_usage import nearby_budget
 
