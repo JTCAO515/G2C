@@ -53,7 +53,7 @@ def supplier_unavailable(reason=None, supplier_http=None):
 
 
 def _audio(data):
-    """Read and re-encode only the counted PCM samples, in memory."""
+    """Re-encode the original PCM and give the ASR one full billed second."""
     try:
         with wave.open(BytesIO(data), 'rb') as src:
             if (src.getnchannels(), src.getsampwidth(), src.getframerate(), src.getcomptype()) != (
@@ -68,9 +68,10 @@ def _audio(data):
     except (EOFError, OSError, ValueError, wave.Error):
         raise invalid() from None
     destination = BytesIO()
+    wire_frames = max(frames, SAMPLE_RATE)
     with wave.open(destination, 'wb') as wav:
-        wav.setparams((1, 2, SAMPLE_RATE, frames, 'NONE', 'not compressed'))
-        wav.writeframes(pcm)
+        wav.setparams((1, 2, SAMPLE_RATE, wire_frames, 'NONE', 'not compressed'))
+        wav.writeframes(pcm + b'\0\0' * (wire_frames - frames))
     return destination.getvalue(), (frames + SAMPLE_RATE - 1) // SAMPLE_RATE
 
 
