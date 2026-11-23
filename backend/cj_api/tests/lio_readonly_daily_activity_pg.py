@@ -138,14 +138,18 @@ def exercise(auth, conninfo):
                 places = list(locations[locale])
                 if structured == 'cancelled':
                     places[0]+='（参观取消）' if locale=='zh' else ' (visit cancelled)'
+                if structured == 'bare_site':
+                    places=('故宫','颐和园','长城') if locale=='zh' else ('Forbidden City','Summer Palace','Great Wall')
                 value['days'] = [dict(day_index=i, activities=[dict(place_name=place, verb='visit', period=None)])
                                  for i, place in enumerate(places, 1)]
                 if structured == 'invalid':
                     value['days'].pop()
-                if structured == 'valid':
+                if structured in ('valid','bare_site'):
                     value['follow_up']=None
             if structured in ('valid','declined'):
                 Draft202012Validator(schema).validate(value)
+            elif structured == 'bare_site':
+                assert not Draft202012Validator(schema).is_valid(value)
         yield _M4_REQUEST_SENT
         observation['http_status']=200
         frame=dict(id='legacy-plan-fixture-'+str(len(seen)),model=M4_MODEL,choices=[
@@ -182,7 +186,7 @@ def exercise(auth, conninfo):
     with TestClient(app) as api, patch('asyncio.open_connection',new=no_network), patch(
             'cj_agent.provider._m4_wire',new=fake_wire), patch('cj_api.lio_city.catalog_response',new=catalog):
         for locale,(prompt,city,duration_quote,example,answer,bare) in cases.items():
-            scenarios = (None, 'valid', 'declined', 'invalid', 'cancelled')
+            scenarios = (None, 'valid', 'declined', 'invalid', 'cancelled', 'bare_site')
             if locale=='en':scenarios+=('unsettled',)
             for structured in scenarios:
                 mid=str(uuid4())

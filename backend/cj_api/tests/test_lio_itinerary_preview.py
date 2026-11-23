@@ -4,7 +4,10 @@ from datetime import date
 import json
 import unittest
 
+from jsonschema import Draft202012Validator
+
 from cj_api.local_lio_planning import PlanningTurn, discuss, read_itinerary_preview
+from cj_message.lio_context import discussion_preview_format
 from cj_run.core import Binding, State
 
 
@@ -76,6 +79,31 @@ class ItineraryPreview(unittest.TestCase):
                 state = self.run_discussion(packet, 'en', 'Three days in Beijing', 'Beijing')
                 self.assertTrue(state.text.endswith(answer))
                 self.assertIsNone(read_itinerary_preview(state, 'en'))
+
+    def test_multi_region_landmark_must_name_a_specific_stop(self):
+        validator=Draft202012Validator(discussion_preview_format(3)['json_schema']['schema'])
+        for locale,question,destination,other_days,ambiguous,specific,answer in (
+            ('zh','北京三日游','北京',('故宫','颐和园'),('长城','长城（北京段）'),'八达岭长城',
+             '先参观故宫和颐和园，第三天可以去长城。你想选哪个段？'),
+            ('en','A three-day trip to Beijing','Beijing',('Forbidden City','Summer Palace'),
+             ('Great Wall','Great Wall of China','Great Wall (Beijing section)'), 'Mutianyu Great Wall',
+             'Visit the Forbidden City and Summer Palace. Which Great Wall section would you like on day three?'),
+        ):
+            for label in (*ambiguous,specific):
+                with self.subTest(locale=locale,label=label):
+                    names=(*other_days,label)
+                    packet=dict(answer=answer,follow_up=None,days=[dict(day_index=index,activities=[
+                        dict(place_name=name,verb='visit',period=None)]) for index,name in enumerate(names,1)])
+                    expected=label==specific
+                    state=self.run_discussion(packet,locale,question,destination)
+                    preview=read_itinerary_preview(state,locale)
+                    self.assertEqual(validator.is_valid(packet),expected)
+                    if expected:
+                        self.assertIn(specific,state.text)
+                        self.assertEqual(preview['days'][2]['activities'],[dict(place_name=specific,cancelled=False)])
+                    else:
+                        self.assertIsNone(preview)
+                        self.assertTrue(state.text.endswith(answer))
 
     def test_model_cannot_supersede_place_authority_or_include_hidden_activities(self):
         answer = 'Visit the Forbidden City on your first day.'
