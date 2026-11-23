@@ -74,6 +74,15 @@ struct LioLocalSupportView: View {
         }
         emergency(LocalSupportDirectory.emergencyContacts)
         contacts(language.text("Help lines", "求助热线"), LocalSupportDirectory.helpContacts)
+        NavigationLink {
+            LioLocalHelpCardView(language: language)
+        } label: {
+            Label(language.text("Show a Local", "给当地人看"), systemImage: "text.bubble")
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("lio.support.help-card")
         switch directory {
         case .success(let catalog):
             embassySection(catalog.embassies)
