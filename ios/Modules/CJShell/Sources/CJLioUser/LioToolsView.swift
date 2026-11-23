@@ -550,6 +550,11 @@ private struct LioTextTranslationView: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.large)
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("--lio-tts-preview") {
+                LioSpokenPreviewButton(language: language, phrase: .init(language: target, text: translated))
+            }
+            #endif
         }
     }
 
