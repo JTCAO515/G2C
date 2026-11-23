@@ -73,6 +73,7 @@ private struct LioPhrasePosterView: View {
     let phrase: LioTravelPhrase
     let language: LioLanguage
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.lioSpokenClip) private var spokenClip
     @State private var speaker = AVSpeechSynthesizer()
 
     var body: some View {
@@ -83,11 +84,20 @@ private struct LioPhrasePosterView: View {
                 Text(phrase.english)
                     .font(.title3)
                     .foregroundStyle(LioTheme.inkSecondary)
-                VStack(alignment: .leading, spacing: 12) {
-                    readButton(language.text("Read Chinese", "朗读中文"), phrase.chinese, locale: "zh-CN")
-                    readButton(language.text("Read English", "朗读英文"), phrase.english, locale: "en-US")
+                if let spokenClip {
+                    LioSpokenPlaybackControls(language: language, clip: spokenClip, choices: [
+                        .init(id: "lio.phrases.read.zh-CN", title: language.text("Read Chinese", "朗读中文"),
+                              phrase: .init(language: .chinese, text: phrase.chinese)),
+                        .init(id: "lio.phrases.read.en-US", title: language.text("Read English", "朗读英文"),
+                              phrase: .init(language: .english, text: phrase.english)),
+                    ])
+                } else {
+                    VStack(alignment: .leading, spacing: 12) {
+                        readButton(language.text("Read Chinese", "朗读中文"), phrase.chinese, locale: "zh-CN")
+                        readButton(language.text("Read English", "朗读英文"), phrase.english, locale: "en-US")
+                    }
+                    .buttonStyle(.bordered)
                 }
-                .buttonStyle(.bordered)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(24)

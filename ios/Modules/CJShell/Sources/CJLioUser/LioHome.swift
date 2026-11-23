@@ -12,6 +12,7 @@ public struct LioHome<MenuContent: View>: View {
     private let toolsHistory: LioTranslationHistory?
     private let toolsDraftStorage: LocalSupportDraftStorage?
     private let toolsRelay: LioRelayTranslationClient?
+    private let spokenClip: LioSpokenClip?
     private let taxiRelay: LioTaxiRelayClient?
     private let taxiRecentDirectory: URL?
     private let toolsSessionIsCurrent: @MainActor () -> Bool
@@ -99,7 +100,8 @@ public struct LioHome<MenuContent: View>: View {
                 session: LioSessionAvailability? = nil,
                 reconnect: (@MainActor () -> Void)? = nil, showsTools: Bool = false,
                 toolsHistory: LioTranslationHistory? = nil, toolsRelay: LioRelayTranslationClient? = nil,
-                taxiRelay: LioTaxiRelayClient? = nil, taxiRecentDirectory: URL? = nil,
+                spokenClip: LioSpokenClip? = nil, taxiRelay: LioTaxiRelayClient? = nil,
+                taxiRecentDirectory: URL? = nil,
                 toolsDraftStorage: LocalSupportDraftStorage? = nil,
                 toolsSessionIsCurrent: @escaping @MainActor () -> Bool = { true },
                 @ViewBuilder menu: () -> MenuContent) {
@@ -109,6 +111,7 @@ public struct LioHome<MenuContent: View>: View {
         self.toolsHistory = toolsHistory
         self.toolsDraftStorage = toolsDraftStorage
         self.toolsRelay = toolsRelay
+        self.spokenClip = spokenClip
         self.taxiRelay = taxiRelay
         self.taxiRecentDirectory = taxiRecentDirectory
         self.toolsSessionIsCurrent = toolsSessionIsCurrent
@@ -190,6 +193,7 @@ public struct LioHome<MenuContent: View>: View {
                              enabled: !restoringChat && session?.available != false && scenePhase != .background,
                              sessionIsCurrent: toolsSessionIsCurrent)
                     .environment(\.lioLocalSupportDraft, activeSupportDraft)
+                    .environment(\.lioSpokenClip, activeSpokenClip)
                     .background(LioTabBarAppearance().frame(width: 0, height: 0))
                     .tabItem { Label(language.text("Tools", "插件"), systemImage: "puzzlepiece.extension") }
                     .tag(Tab.tools)
@@ -632,6 +636,11 @@ public struct LioHome<MenuContent: View>: View {
     }
 
     private var chatControlsSuspended: Bool { restoringChat || session?.available == false }
+    private var activeSpokenClip: LioSpokenClip? {
+        guard !chatControlsSuspended, scenePhase == .active, toolsSessionIsCurrent() else { return nil }
+        return spokenClip
+    }
+
     private var activeSupportDraft: LocalSupportDraftStorage? {
         guard !chatControlsSuspended, scenePhase == .active, toolsSessionIsCurrent() else { return nil }
         return toolsDraftStorage

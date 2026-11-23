@@ -26,7 +26,8 @@ struct DemoBetaRootView: View {
                     root.accounts.suspend()
                     root.accounts.resume()
                 }, showsTools: true, toolsHistory: trip.messages.lioTranslationHistory,
-                   toolsRelay: trip.lioTranslationRelay, taxiRelay: trip.lioTaxiRelay,
+                   toolsRelay: trip.lioTranslationRelay, spokenClip: trip.lioSpokenClip,
+                   taxiRelay: trip.lioTaxiRelay,
                    taxiRecentDirectory: trip.messages.lioTaxiRecentDirectory,
                    toolsDraftStorage: root.localSupportDraftStorage(),
                    toolsSessionIsCurrent: {

@@ -168,6 +168,7 @@ private struct LioTextTranslationView: View {
     @State private var imageLines: [LioImageTranslationLine] = []
     @State private var spokenText: String?
     @State private var problem: LioTranslationFailure?
+    @Environment(\.lioSpokenClip) private var spokenClip
     @State private var speaker = AVSpeechSynthesizer()
     @State private var recent: [LioRecentTranslation] = []
     @State private var confirmsClearHistory = false
@@ -565,11 +566,17 @@ private struct LioTextTranslationView: View {
             }
             actions {
                 Button(language.text("Copy", "复制")) { UIPasteboard.general.string = translated }
-                Button(language.text("Listen", "朗读")) {
-                    speaker.stopSpeaking(at: .immediate)
-                    let utterance = AVSpeechUtterance(string: translated)
-                    utterance.voice = AVSpeechSynthesisVoice(language: target.rawValue)
-                    speaker.speak(utterance)
+                if let spokenClip {
+                    LioSpokenPlaybackControls(language: language, clip: spokenClip,
+                                              choices: [.init(id: "lio.translation.listen", title: language.text("Listen", "朗读"),
+                                                              phrase: .init(language: target, text: translated))])
+                } else {
+                    Button(language.text("Listen", "朗读")) {
+                        speaker.stopSpeaking(at: .immediate)
+                        let utterance = AVSpeechUtterance(string: translated)
+                        utterance.voice = AVSpeechSynthesisVoice(language: target.rawValue)
+                        speaker.speak(utterance)
+                    }
                 }
             }
             .buttonStyle(.bordered)

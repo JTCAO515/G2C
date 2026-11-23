@@ -11,6 +11,7 @@
 <key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
 <key>G2CDemoBeta</key><true/>
 <key>G2CTaxiEnabled</key><string>$(G2C_TAXI_ENABLED)</string>
+<key>G2CSpokenRelayEnabled</key><string>$(G2C_SPOKEN_RELAY_ENABLED)</string>
 <key>ITSAppUsesNonExemptEncryption</key><false/>
 <key>UISupportedInterfaceOrientations</key><array>
 <string>UIInterfaceOrientationPortrait</string>
