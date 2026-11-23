@@ -23,7 +23,7 @@ enum LioPaymentGuideProvider: String, CaseIterable, Identifiable {
         case .alipay:
             URL(string: "https://english.beijing.gov.cn/latest/specials/essentialtipsfornewarrivals/paymentservices/202408/t20240830_3785647.html")!
         case .weixin:
-            URL(string: "https://www.tencent.com/en-us/articles/2202108.html")!
+            URL(string: "https://www.tenpayglobal.com/en/consumption/wechat/")!
         }
     }
 

@@ -5,7 +5,7 @@ struct LioPaymentGuideTests {
     @Test func bothProvidersHaveBilingualSetupStepsAndOfficialSources() {
         let providers = LioPaymentGuideProvider.allCases
         #expect(providers == [.alipay, .weixin])
-        #expect(providers.compactMap { $0.officialInstructions.host } == ["english.beijing.gov.cn", "www.tencent.com"])
+        #expect(providers.compactMap { $0.officialInstructions.host } == ["english.beijing.gov.cn", "www.tenpayglobal.com"])
         for provider in providers {
             #expect(provider.officialInstructions.scheme == "https")
             for language in [LioLanguage.chinese, .english] {
