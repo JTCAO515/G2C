@@ -10,6 +10,7 @@ public struct LioHome<MenuContent: View>: View {
     private let isDemo: Bool
     private let showsTools: Bool
     private let toolsHistory: LioTranslationHistory?
+    private let toolsDraftStorage: LocalSupportDraftStorage?
     private let toolsRelay: LioRelayTranslationClient?
     private let toolsSessionIsCurrent: @MainActor () -> Bool
     private let reconnect: (@MainActor () -> Void)?
@@ -95,12 +96,14 @@ public struct LioHome<MenuContent: View>: View {
                 session: LioSessionAvailability? = nil,
                 reconnect: (@MainActor () -> Void)? = nil, showsTools: Bool = false,
                 toolsHistory: LioTranslationHistory? = nil, toolsRelay: LioRelayTranslationClient? = nil,
+                toolsDraftStorage: LocalSupportDraftStorage? = nil,
                 toolsSessionIsCurrent: @escaping @MainActor () -> Bool = { true },
                 @ViewBuilder menu: () -> MenuContent) {
         self.language = language
         self.isDemo = isDemo
         self.showsTools = showsTools
         self.toolsHistory = toolsHistory
+        self.toolsDraftStorage = toolsDraftStorage
         self.toolsRelay = toolsRelay
         self.toolsSessionIsCurrent = toolsSessionIsCurrent
         self.reconnect = reconnect
@@ -163,6 +166,7 @@ public struct LioHome<MenuContent: View>: View {
                 .tag(Tab.trips)
             if showsTools {
                 LioToolsView(language: language, history: toolsHistory, relay: toolsRelay,
+                             draftStorage: toolsDraftStorage,
                              enabled: !restoringChat && session?.available != false && scenePhase != .background,
                              sessionIsCurrent: toolsSessionIsCurrent)
                     .background(LioTabBarAppearance().frame(width: 0, height: 0))
