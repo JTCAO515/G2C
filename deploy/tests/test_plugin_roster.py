@@ -3,6 +3,7 @@ import json
 
 import pytest
 
+from cj_strict_json import compact
 from deploy.hk import plugin_roster
 from deploy.hk.demo_login import invitation_subject
 
@@ -34,6 +35,23 @@ def test_configuration_rejects_a_different_plugin_roster(change):
     }
     with pytest.raises(ValueError, match='exact_internal_plugin_roster_required'):
         plugin_roster.configured_plugin_subjects(json.dumps(bad[change]))
+
+
+def test_translation_admits_only_the_existing_cohort_and_three_original_named_accounts(monkeypatch):
+    cohort = plugin_roster.generate_plugin_subjects()
+    named = [cohort[0], 'fixture-c-zh', 'fixture-c-en']
+    extra = sorted(set(named) - set(cohort))
+    monkeypatch.setattr(plugin_roster, 'EXTRA_TRANSLATION_SUBJECTS_SHA256', sha256(compact(extra)).hexdigest())
+    complete = sorted(set(cohort) | set(named))
+    assert len(complete) == 101
+    assert plugin_roster.configured_translation_subjects(json.dumps(cohort)) == set(cohort)
+    assert plugin_roster.configured_translation_subjects(json.dumps(complete[::-1])) == set(complete)
+    with pytest.raises(ValueError, match='exact_internal_plugin_roster_required'):
+        plugin_roster.configured_plugin_subjects(json.dumps(complete))
+    for wrong in (cohort[1:] + extra, cohort + extra[:1], complete + [named[0]],
+                  cohort + extra[:1] + [invitation_subject('CJ_Tester@01')]):
+        with pytest.raises(ValueError, match='exact_internal_translation_roster_required'):
+            plugin_roster.configured_translation_subjects(json.dumps(wrong))
 
 
 @pytest.mark.parametrize('configuration', ['valid', 'other_subject', 'missing_key', 'public_counts'])
