@@ -1,0 +1,2911 @@
+{
+  "data_version": 1,
+  "verified_at": "2026-11-23",
+  "embassies": [
+    {
+      "country_code": "AE",
+      "country": {
+        "zh": "阿拉伯联合酋长国",
+        "en": "United Arab Emirates"
+      },
+      "name": {
+        "zh": "阿拉伯联合酋长国驻华大使馆",
+        "en": "Embassy of the United Arab Emirates"
+      },
+      "address": {
+        "zh": "朝阳区东方东路22号亮马桥外交公寓LA10-04",
+        "en": "LA 10-04, Liang Ma Qiao Diplomatic Residence Compound,No. 22, Dong Fang Dong Road, Chaoyang District"
+      },
+      "phone": "+861065327650",
+      "website": "https://www.mofa.gov.ae/zh-cn/missions/beijing"
+    },
+    {
+      "country_code": "AF",
+      "country": {
+        "zh": "阿富汗",
+        "en": "Afghanistan"
+      },
+      "name": {
+        "zh": "阿富汗驻华大使馆",
+        "en": "Embassy of Afghanistan"
+      },
+      "address": {
+        "zh": "朝阳区东直门外大街8号",
+        "en": "No.8, Dong Zhi Men Wai Da Jie, Chaoyang District, Beijing"
+      },
+      "phone": "+861065321629"
+    },
+    {
+      "country_code": "AG",
+      "country": {
+        "zh": "安提瓜和巴布达",
+        "en": "Antigua & Barbuda"
+      },
+      "name": {
+        "zh": "安提瓜和巴布达驻华大使馆",
+        "en": "Embassy of Antigua and Barbuda"
+      },
+      "address": {
+        "zh": "1-52 三里屯外交公寓办公楼",
+        "en": "1-52,Office Building, Sanlitun Diplomatic Compound"
+      },
+      "phone": "+861065320148"
+    },
+    {
+      "country_code": "AL",
+      "country": {
+        "zh": "阿尔巴尼亚",
+        "en": "Albania"
+      },
+      "name": {
+        "zh": "阿尔巴尼亚共和国驻华大使馆",
+        "en": "Embassy of the Republic of Albania"
+      },
+      "address": {
+        "zh": "光华路28号",
+        "en": "No. 28, Guang Hua Lu"
+      },
+      "phone": "+861065321120",
+      "website": "https://www.ambasadat.gov.al/china"
+    },
+    {
+      "country_code": "AM",
+      "country": {
+        "zh": "亚美尼亚",
+        "en": "Armenia"
+      },
+      "name": {
+        "zh": "亚美尼亚共和国驻华大使馆",
+        "en": "Embassy of the Republic of Armenia"
+      },
+      "address": {
+        "zh": "朝阳区塔园南小街9号",
+        "en": "No. 9, Ta Yuan Nanxiaojie, Chaoyang District"
+      },
+      "phone": "+861065325677",
+      "website": "https://china.mfa.am"
+    },
+    {
+      "country_code": "AO",
+      "country": {
+        "zh": "安哥拉",
+        "en": "Angola"
+      },
+      "name": {
+        "zh": "安哥拉共和国驻华大使馆",
+        "en": "Embassy of the Republic of Angola"
+      },
+      "address": {
+        "zh": "塔园外交人员办公楼1-8-1",
+        "en": "1-8-1, Ta Yuan Diplomatic Office Building"
+      },
+      "phone": "+861065326968"
+    },
+    {
+      "country_code": "AR",
+      "country": {
+        "zh": "阿根廷",
+        "en": "Argentina"
+      },
+      "name": {
+        "zh": "阿根廷共和国驻华大使馆",
+        "en": "Embassy of the Argentine Republic"
+      },
+      "address": {
+        "zh": "三里屯东五街11号",
+        "en": "No. 11, Dong Wu Jie, San Li Tun"
+      },
+      "phone": "+861065321406"
+    },
+    {
+      "country_code": "AT",
+      "country": {
+        "zh": "奥地利",
+        "en": "Austria"
+      },
+      "name": {
+        "zh": "奥地利共和国驻华大使馆",
+        "en": "Embassy of the Republic of Austria"
+      },
+      "address": {
+        "zh": "建国门外秀水南街5号",
+        "en": "No. 5, Xiu Shui Nan Jie, Jian Guo Men Wai"
+      },
+      "phone": "+861085311700"
+    },
+    {
+      "country_code": "AU",
+      "country": {
+        "zh": "澳大利亚",
+        "en": "Australia"
+      },
+      "name": {
+        "zh": "澳大利亚驻华大使馆",
+        "en": "Embassy of Australia"
+      },
+      "address": {
+        "zh": "三里屯东直门外大街21号",
+        "en": "No. 21, Dong Zhi Men Wai Da Jie, San Li Tun"
+      },
+      "phone": "+861051404111"
+    },
+    {
+      "country_code": "AZ",
+      "country": {
+        "zh": "阿塞拜疆",
+        "en": "Azerbaijan"
+      },
+      "name": {
+        "zh": "阿塞拜疆共和国驻华大使馆",
+        "en": "Embassy of the Republic of Azerbaijan"
+      },
+      "address": {
+        "zh": "亮马桥中街5号院",
+        "en": "Liangmaqiao Middle Street5,100600"
+      },
+      "phone": "+861065324614",
+      "website": "https://www.beijing.mfa.gov.az"
+    },
+    {
+      "country_code": "BA",
+      "country": {
+        "zh": "波斯尼亚和黑塞哥维那",
+        "en": "Bosnia & Herzegovina"
+      },
+      "name": {
+        "zh": "波斯尼亚和黑塞哥维那驻华大使馆",
+        "en": "Embassy of Bosnia and Herzegovina"
+      },
+      "address": {
+        "zh": "塔园外交人员办公楼1单元5楼1号",
+        "en": "1-5-1, Ta Yuan Diplomatic Office Building"
+      },
+      "phone": "+861065326587",
+      "website": "https://www.bhembassychina.com"
+    },
+    {
+      "country_code": "BB",
+      "country": {
+        "zh": "巴巴多斯",
+        "en": "Barbados"
+      },
+      "name": {
+        "zh": "巴巴多斯驻华大使馆",
+        "en": "Embassy of Barbados"
+      },
+      "address": {
+        "zh": "朝阳区东方东路22号亮马桥外交公寓A区09-02号",
+        "en": "Villa 09-02, Block A, Liang Ma Qiao Diplomatic Office Compound, No. 22 Dong Fang Dong Lu, Chaoyang District"
+      },
+      "phone": "+861085325404"
+    },
+    {
+      "country_code": "BD",
+      "country": {
+        "zh": "孟加拉国",
+        "en": "Bangladesh"
+      },
+      "name": {
+        "zh": "孟加拉人民共和国驻华大使馆",
+        "en": "Embassy of the People's Republic of Bangladesh"
+      },
+      "address": {
+        "zh": "光华路42号",
+        "en": "No. 42, Guang Hua Lu, Beijing, 100600"
+      },
+      "phone": "+861065322521",
+      "website": "https://beijing.mofa.gov.bd"
+    },
+    {
+      "country_code": "BE",
+      "country": {
+        "zh": "比利时",
+        "en": "Belgium"
+      },
+      "name": {
+        "zh": "比利时王国驻华大使馆",
+        "en": "Embassy of the Kingdom of Belgium"
+      },
+      "address": {
+        "zh": "朝阳区三里屯路6号",
+        "en": "No. 6, San Li Tun Lu"
+      },
+      "phone": "+861065321736",
+      "website": "http://china.diplomatie.belgium.be"
+    },
+    {
+      "country_code": "BF",
+      "country": {
+        "zh": "布基纳法索",
+        "en": "Burkina Faso"
+      },
+      "name": {
+        "zh": "布基纳法索驻华大使馆",
+        "en": "Embassy of the Burkina Faso"
+      },
+      "address": {
+        "zh": "朝阳区塔园外交公寓办公楼2单元061,062号",
+        "en": "No.2-061, 062, Ta Yuan Diplomatic Office Building Chao Yang District"
+      },
+      "phone": "+861065323743"
+    },
+    {
+      "country_code": "BG",
+      "country": {
+        "zh": "保加利亚",
+        "en": "Bulgaria"
+      },
+      "name": {
+        "zh": "保加利亚共和国驻华大使馆",
+        "en": "Embassy of the Republic of Bulgaria"
+      },
+      "address": {
+        "zh": "建国门外秀水北街4号",
+        "en": "No. 4, Xiu Shui Bei Jie, Jian Guo Men Wai"
+      },
+      "phone": "+861065321946",
+      "website": "https://www.mfa.bg/embassies/china"
+    },
+    {
+      "country_code": "BH",
+      "country": {
+        "zh": "巴林",
+        "en": "Bahrain"
+      },
+      "name": {
+        "zh": "巴林王国驻华大使馆",
+        "en": "Embassy of the Kingdom of Bahrain"
+      },
+      "address": {
+        "zh": "朝阳区东方东路22号亮马桥外交公寓10-06",
+        "en": "10-06, Liang Ma Qiao Diplomatic Residence Compound,No. 22, Dong Fang Dong Lu, Chaoyang District"
+      },
+      "phone": "+861065326483"
+    },
+    {
+      "country_code": "BI",
+      "country": {
+        "zh": "布隆迪",
+        "en": "Burundi"
+      },
+      "name": {
+        "zh": "布隆迪共和国驻华大使馆",
+        "en": "Embassy of the Republic of Burundi"
+      },
+      "address": {
+        "zh": "光华路25号",
+        "en": "No. 25, Guang Hua Lu"
+      },
+      "phone": "+861065321801"
+    },
+    {
+      "country_code": "BJ",
+      "country": {
+        "zh": "贝宁",
+        "en": "Benin"
+      },
+      "name": {
+        "zh": "贝宁共和国驻华大使馆",
+        "en": "Embassy of the Republic of Benin"
+      },
+      "address": {
+        "zh": "光华路38号",
+        "en": "No. 38, Guang Hua Lu"
+      },
+      "phone": "+861065322741"
+    },
+    {
+      "country_code": "BN",
+      "country": {
+        "zh": "文莱",
+        "en": "Brunei"
+      },
+      "name": {
+        "zh": "文莱达鲁萨兰国驻华大使馆",
+        "en": "Embassy of Brunei Darussalam"
+      },
+      "address": {
+        "zh": "朝阳区亮马桥北街1号",
+        "en": "No.1, Liang Ma Qiao Bei Jie, Chaoyang District"
+      },
+      "phone": "+861065329773"
+    },
+    {
+      "country_code": "BO",
+      "country": {
+        "zh": "玻利维亚",
+        "en": "Bolivia"
+      },
+      "name": {
+        "zh": "多民族玻利维亚国驻华大使馆",
+        "en": "Embassy of the Pluri-national State of Bolivia"
+      },
+      "address": {
+        "zh": "塔园外交人员办公楼2-3-2号",
+        "en": "2-3-2, Ta Yuan Diplomatic Office Building"
+      },
+      "phone": "+861065323074",
+      "website": "https://www.embolchina.cn"
+    },
+    {
+      "country_code": "BR",
+      "country": {
+        "zh": "巴西",
+        "en": "Brazil"
+      },
+      "name": {
+        "zh": "巴西联邦共和国驻华大使馆",
+        "en": "Embassy of the Federative Republic of Brazil"
+      },
+      "address": {
+        "zh": "光华路27号",
+        "en": "No. 27, Guang Hua Lu"
+      },
+      "phone": "+861065322881"
+    },
+    {
+      "country_code": "BS",
+      "country": {
+        "zh": "巴哈马",
+        "en": "Bahamas"
+      },
+      "name": {
+        "zh": "巴哈马国驻华大使馆",
+        "en": "Embassy of the Commonwealth of The Bahamas"
+      },
+      "address": {
+        "zh": "朝阳区东方东路22号亮马桥外交公寓A区09-01号",
+        "en": "Villa 09-01,Section A, Liang Ma Qiao Diplomatic Compound, No.22 Dong Fang Dong Lu, Chaoyang District District, Beijing, 100600"
+      },
+      "phone": "+861065322922",
+      "website": "https://www.bahamasembassy.cn"
+    },
+    {
+      "country_code": "BW",
+      "country": {
+        "zh": "博茨瓦纳",
+        "en": "Botswana"
+      },
+      "name": {
+        "zh": "博茨瓦纳共和国驻华大使馆",
+        "en": "Embassy of the Republic of Botswana"
+      },
+      "address": {
+        "zh": "朝阳区三里屯东三街1号",
+        "en": "No. 1, Dong San Jie, San Li Tun, Chao Yang District, Beijing"
+      },
+      "phone": "+861065326898"
+    },
+    {
+      "country_code": "BY",
+      "country": {
+        "zh": "白俄罗斯",
+        "en": "Belarus"
+      },
+      "name": {
+        "zh": "白俄罗斯共和国驻华大使馆",
+        "en": "Embassy of the Republic of Belarus"
+      },
+      "address": {
+        "zh": "日坛东一街1号",
+        "en": "No. 1, Dong Yi Jie, Ri Tan"
+      },
+      "phone": "+861065321691",
+      "website": "https://www.china.mfa.gov.by"
+    },
+    {
+      "country_code": "CA",
+      "country": {
+        "zh": "加拿大",
+        "en": "Canada"
+      },
+      "name": {
+        "zh": "加拿大驻华大使馆",
+        "en": "Embassy of Canada"
+      },
+      "address": {
+        "zh": "东直门外大街19号",
+        "en": "No. 19, Dong Zhi Men Wai Da Jie, Chao Yang District"
+      },
+      "phone": "+861051394000"
+    },
+    {
+      "country_code": "CD",
+      "country": {
+        "zh": "刚果（金）",
+        "en": "Congo - Kinshasa"
+      },
+      "name": {
+        "zh": "刚果民主共和国驻华大使馆",
+        "en": "Embassy of the Democratic Republic of Congo"
+      },
+      "address": {
+        "zh": "三里屯东五街6号",
+        "en": "No. 6, Dong Wu Jie, San Li Tun"
+      },
+      "phone": "+861065323224"
+    },
+    {
+      "country_code": "CF",
+      "country": {
+        "zh": "中非共和国",
+        "en": "Central African Republic"
+      },
+      "name": {
+        "zh": "中非共和国驻华大使馆",
+        "en": "Embassy of the Central African Republic"
+      },
+      "address": {
+        "zh": "塔园外交公寓1-1-132",
+        "en": "1-1-132, Ta Yuan Diplomatic Office Building, No. 1, Xin Dong Lu"
+      },
+      "phone": "+861065327353"
+    },
+    {
+      "country_code": "CG",
+      "country": {
+        "zh": "刚果（布）",
+        "en": "Congo - Brazzaville"
+      },
+      "name": {
+        "zh": "刚果共和国驻华大使馆",
+        "en": "Embassy of the Republic of the Congo"
+      },
+      "address": {
+        "zh": "三里屯东四街7号",
+        "en": "No. 7, Dong Si Jie, San Li Tun"
+      },
+      "phone": "+861065321658"
+    },
+    {
+      "country_code": "CH",
+      "country": {
+        "zh": "瑞士",
+        "en": "Switzerland"
+      },
+      "name": {
+        "zh": "瑞士驻华大使馆",
+        "en": "Embassy of Switzerland"
+      },
+      "address": {
+        "zh": "三里屯东五街3号",
+        "en": "No. 3, Dong Wu Jie, San Li Tun"
+      },
+      "phone": "+861085328888",
+      "website": "https://www.eda.admin.ch/beijing"
+    },
+    {
+      "country_code": "CI",
+      "country": {
+        "zh": "科特迪瓦",
+        "en": "Côte d’Ivoire"
+      },
+      "name": {
+        "zh": "科特迪瓦共和国驻华大使馆",
+        "en": "Embassy of the Republic of Cote d'Ivoire"
+      },
+      "address": {
+        "zh": "三里屯北小街9号",
+        "en": "No. 9, Bei Xiao Jie, Sanlitun"
+      },
+      "phone": "+861065323572"
+    },
+    {
+      "country_code": "CL",
+      "country": {
+        "zh": "智利",
+        "en": "Chile"
+      },
+      "name": {
+        "zh": "智利共和国驻华大使馆",
+        "en": "Embassy of the Republic of Chile"
+      },
+      "address": {
+        "zh": "三里屯东四街1号",
+        "en": "No. 1, Dong Si Jie, San Li Tun"
+      },
+      "phone": "+861059792370"
+    },
+    {
+      "country_code": "CM",
+      "country": {
+        "zh": "喀麦隆",
+        "en": "Cameroon"
+      },
+      "name": {
+        "zh": "喀麦隆共和国驻华大使馆",
+        "en": "Embassy of the Republic of Cameroon"
+      },
+      "address": {
+        "zh": "三里屯东五街7号",
+        "en": "No. 7, Dong Wu Jie, San Li Tun, Beijing 100600"
+      },
+      "phone": "+861065321828"
+    },
+    {
+      "country_code": "CO",
+      "country": {
+        "zh": "哥伦比亚",
+        "en": "Colombia"
+      },
+      "name": {
+        "zh": "哥伦比亚共和国驻华大使馆",
+        "en": "Embassy of the Republic of Colombia"
+      },
+      "address": {
+        "zh": "光华路34号",
+        "en": "No. 34, Guang Hua Lu"
+      },
+      "phone": "+861065321971",
+      "website": "https://china.embajada.gov.co"
+    },
+    {
+      "country_code": "CR",
+      "country": {
+        "zh": "哥斯达黎加",
+        "en": "Costa Rica"
+      },
+      "name": {
+        "zh": "哥斯达黎加共和国驻华大使馆",
+        "en": "Embassy of the Republic of Costa Rica"
+      },
+      "address": {
+        "zh": "齐家园外交公寓06-01别墅",
+        "en": "Villa 06-01, Qijiayuan Diplomatic Residence Compound"
+      },
+      "phone": "+861065324157"
+    },
+    {
+      "country_code": "CU",
+      "country": {
+        "zh": "古巴",
+        "en": "Cuba"
+      },
+      "name": {
+        "zh": "古巴共和国驻华大使馆",
+        "en": "Embassy of the Republic of Cuba"
+      },
+      "address": {
+        "zh": "建国门外秀水南街1号",
+        "en": "No.1, Xiu Shui Nan Jie, Jian Guo Men Wai"
+      },
+      "phone": "+861065326656"
+    },
+    {
+      "country_code": "CV",
+      "country": {
+        "zh": "佛得角",
+        "en": "Cape Verde"
+      },
+      "name": {
+        "zh": "佛得角共和国驻华大使馆",
+        "en": "Embassy of the Republic of Cabo Verde"
+      },
+      "address": {
+        "zh": "塔园外交公寓5-1-71",
+        "en": "No. 5-1-71, Building No. 5, Ta Yuan Diplomatic Compound"
+      },
+      "phone": "+861065327547"
+    },
+    {
+      "country_code": "CY",
+      "country": {
+        "zh": "塞浦路斯",
+        "en": "Cyprus"
+      },
+      "name": {
+        "zh": "塞浦路斯共和国驻华大使馆",
+        "en": "Embassy of the Republic of Cyprus"
+      },
+      "address": {
+        "zh": "塔园外交人员办公楼2-13-2",
+        "en": "2-13-2, Ta Yuan Diplomatic Office Building, No. 14, Liang Ma He Nan Lu"
+      },
+      "phone": "+861065325057",
+      "website": "https://www.mfa.gov.cy/embassybeijing"
+    },
+    {
+      "country_code": "CZ",
+      "country": {
+        "zh": "捷克",
+        "en": "Czechia"
+      },
+      "name": {
+        "zh": "捷克共和国驻华大使馆",
+        "en": "Embassy of the Czech Republic"
+      },
+      "address": {
+        "zh": "建国门外日坛路2号",
+        "en": "No. 2, Ri Tan Lu, Jian Guo Men Wai"
+      },
+      "phone": "+861085329500",
+      "website": "https://www.mfa.cz/beijing"
+    },
+    {
+      "country_code": "DE",
+      "country": {
+        "zh": "德国",
+        "en": "Germany"
+      },
+      "name": {
+        "zh": "德意志联邦共和国驻华大使馆",
+        "en": "Embassy of the Federal Republic of Germany"
+      },
+      "address": {
+        "zh": "东直门外大街17号",
+        "en": "No.17, Dong Zhi Men Wai Da Jie"
+      },
+      "phone": "+861085329000"
+    },
+    {
+      "country_code": "DJ",
+      "country": {
+        "zh": "吉布提",
+        "en": "Djibouti"
+      },
+      "name": {
+        "zh": "吉布提共和国驻华大使馆",
+        "en": "Embassy of the Republic of Djibouti"
+      },
+      "address": {
+        "zh": "新东路1号塔园外交公寓1-1-122",
+        "en": "No.1-1-122,Ta Yuan Diplomatic Compound, No.1 Xin Dong Lu"
+      },
+      "phone": "+861065327857"
+    },
+    {
+      "country_code": "DK",
+      "country": {
+        "zh": "丹麦",
+        "en": "Denmark"
+      },
+      "name": {
+        "zh": "丹麦王国驻华大使馆",
+        "en": "Embassy of the Kingdom of Denmark"
+      },
+      "address": {
+        "zh": "三里屯东五街1号",
+        "en": "No.1, Dong Wu Jie, San Li Tun"
+      },
+      "phone": "+861085329900",
+      "website": "https://kina.um.dk"
+    },
+    {
+      "country_code": "DM",
+      "country": {
+        "zh": "多米尼克",
+        "en": "Dominica"
+      },
+      "name": {
+        "zh": "多米尼克国驻华大使馆",
+        "en": "Embassy of the Commonwealth of Dominica"
+      },
+      "address": {
+        "zh": "朝阳区建国门外交公寓2-2-62",
+        "en": "Jian Guo Men Diplomatic Compound 2-2-62,100600"
+      },
+      "phone": "+861065323351",
+      "website": "https://dominicaembassychina.dm/en"
+    },
+    {
+      "country_code": "DO",
+      "country": {
+        "zh": "多米尼加共和国",
+        "en": "Dominican Republic"
+      },
+      "name": {
+        "zh": "多米尼加共和国驻华大使馆",
+        "en": "Embassy of the Dominican Republic"
+      },
+      "address": {
+        "zh": "朝阳区东方东路19号亮马桥外交办公大楼LD01-0-1501,100600",
+        "en": "Unit1501, 15th floor, DRC Liang Ma Qiao Diplomatic Office Building, No.19, Dong Fang Dong Lu (East Road), Chaoyang District 100600 Beijing"
+      },
+      "phone": "+861085326145",
+      "website": "https://chn.mirex.gob.do"
+    },
+    {
+      "country_code": "DZ",
+      "country": {
+        "zh": "阿尔及利亚",
+        "en": "Algeria"
+      },
+      "name": {
+        "zh": "阿尔及利亚民主人民共和国驻华大使馆",
+        "en": "Embassy of the People's Democratic Republic of Algeria"
+      },
+      "address": {
+        "zh": "朝阳区三里屯路7号",
+        "en": "No. 7, San Li Tun Lu, Chaoyang District"
+      },
+      "phone": "+861065321231",
+      "website": "https://embbeijing.mfa.gov.dz"
+    },
+    {
+      "country_code": "EC",
+      "country": {
+        "zh": "厄瓜多尔",
+        "en": "Ecuador"
+      },
+      "name": {
+        "zh": "厄瓜多尔共和国驻华大使馆",
+        "en": "Embassy of the Republic of Ecuador"
+      },
+      "address": {
+        "zh": "三里屯外交人员办公楼2单元62号",
+        "en": "2-62,San Li Tun Diplomatic Office Building"
+      },
+      "phone": "+861085319499"
+    },
+    {
+      "country_code": "EE",
+      "country": {
+        "zh": "爱沙尼亚",
+        "en": "Estonia"
+      },
+      "name": {
+        "zh": "爱沙尼亚共和国驻华大使馆",
+        "en": "Embassy of the Republic of Estonia"
+      },
+      "address": {
+        "zh": "朝阳区亮马桥北小街1号",
+        "en": "No.1, Liang Ma Qiao Bei Xiao Jie, Chaoyang District, Beijing 100600"
+      },
+      "phone": "+861085316700",
+      "website": "https://beijing.mfa.ee"
+    },
+    {
+      "country_code": "EG",
+      "country": {
+        "zh": "埃及",
+        "en": "Egypt"
+      },
+      "name": {
+        "zh": "阿拉伯埃及共和国驻华大使馆",
+        "en": "Embassy of the Arab Republic of Egypt"
+      },
+      "address": {
+        "zh": "日坛东路2号",
+        "en": "No.2, Ri Tan Dong Lu"
+      },
+      "phone": "+861065321825"
+    },
+    {
+      "country_code": "ER",
+      "country": {
+        "zh": "厄立特里亚",
+        "en": "Eritrea"
+      },
+      "name": {
+        "zh": "厄立特里亚国驻华大使馆",
+        "en": "Embassy of the State of Eritrea"
+      },
+      "address": {
+        "zh": "塔园外交人员办公楼2-10-1",
+        "en": "2-10-1, Ta Yuan Diplomatic Office Building"
+      },
+      "phone": "+861065326534"
+    },
+    {
+      "country_code": "ES",
+      "country": {
+        "zh": "西班牙",
+        "en": "Spain"
+      },
+      "name": {
+        "zh": "西班牙驻华大使馆",
+        "en": "Embassy of Spain"
+      },
+      "address": {
+        "zh": "三里屯路9号",
+        "en": "No. 9, San Li Tun Lu"
+      },
+      "phone": "+861065323629",
+      "website": "http://www.exteriores.gob.es/embajadas/pekin"
+    },
+    {
+      "country_code": "ET",
+      "country": {
+        "zh": "埃塞俄比亚",
+        "en": "Ethiopia"
+      },
+      "name": {
+        "zh": "埃塞俄比亚联邦民主共和国驻华大使馆",
+        "en": "Embassy of the Federal Democratic Republic of Ethiopia"
+      },
+      "address": {
+        "zh": "建国门外秀水南街3号",
+        "en": "No.3, Xiu Shui Nan Jie, Jian Guo Men Wai, 100600"
+      },
+      "phone": "+861065325258"
+    },
+    {
+      "country_code": "FI",
+      "country": {
+        "zh": "芬兰",
+        "en": "Finland"
+      },
+      "name": {
+        "zh": "芬兰共和国驻华大使馆",
+        "en": "Embassy of the Republic of Finland"
+      },
+      "address": {
+        "zh": "朝阳区新源南路8号 启皓西塔19层",
+        "en": "F19,West Tower,Genesis,No.8 Xinyuannanlu,Chaoyang District."
+      },
+      "phone": "+861085198300",
+      "website": "https://www.finlandabroad.fi"
+    },
+    {
+      "country_code": "FJ",
+      "country": {
+        "zh": "斐济",
+        "en": "Fiji"
+      },
+      "name": {
+        "zh": "斐济共和国驻华大使馆",
+        "en": "Embassy of the Republic of Fiji"
+      },
+      "address": {
+        "zh": "北京市朝阳区工体北路1号三里屯外交公寓办公楼1-71",
+        "en": "1-71, Office Building, Sanlitun Diplomatic Compound, No.1 Gongti North Road, Chaoyang District, Beijing"
+      },
+      "phone": "+861065327305"
+    },
+    {
+      "country_code": "FM",
+      "country": {
+        "zh": "密克罗尼西亚",
+        "en": "Micronesia"
+      },
+      "name": {
+        "zh": "密克罗尼西亚联邦驻华大使馆",
+        "en": "Embassy of the Federated States of Micronesia"
+      },
+      "address": {
+        "zh": "建国门外外交公寓1-1-11",
+        "en": "1-1-11, Jian Guo Men Wai Diplomatic Compound"
+      },
+      "phone": "+861065324708"
+    },
+    {
+      "country_code": "FR",
+      "country": {
+        "zh": "法国",
+        "en": "France"
+      },
+      "name": {
+        "zh": "法兰西共和国驻华大使馆",
+        "en": "Embassy of the French Republic"
+      },
+      "address": {
+        "zh": "朝阳区天泽路60号",
+        "en": "No.60, Tian Ze Lu, Chaoyang District, 100600"
+      },
+      "phone": "+861085312000",
+      "website": "https://cn.ambafrance.org"
+    },
+    {
+      "country_code": "GA",
+      "country": {
+        "zh": "加蓬",
+        "en": "Gabon"
+      },
+      "name": {
+        "zh": "加蓬共和国驻华大使馆",
+        "en": "Embassy of the Gabonese Republic"
+      },
+      "address": {
+        "zh": "光华路36号",
+        "en": "No. 36, Guang Hua Lu"
+      },
+      "phone": "+861065322810",
+      "website": "https://www.affaires-etrangeres.gouv.ga/ambassade/chine"
+    },
+    {
+      "country_code": "GB",
+      "country": {
+        "zh": "英国",
+        "en": "United Kingdom"
+      },
+      "name": {
+        "zh": "大不列颠及北爱尔兰联合王国驻华大使馆",
+        "en": "Embassy of the United Kingdom of Great Britain and Northern Ireland"
+      },
+      "address": {
+        "zh": "光华路11号",
+        "en": "No.11,Guang Hua Lu"
+      },
+      "phone": "+861051924000"
+    },
+    {
+      "country_code": "GD",
+      "country": {
+        "zh": "格林纳达",
+        "en": "Grenada"
+      },
+      "name": {
+        "zh": "格林纳达驻华大使馆",
+        "en": "Embassy of Grenada"
+      },
+      "address": {
+        "zh": "塔园外交公寓5-2-52",
+        "en": "5-2-52, Ta Yuan Diplomatic Compound Building"
+      },
+      "phone": "+861065321208",
+      "website": "https://gndembassyprc.mofa.gov.gd"
+    },
+    {
+      "country_code": "GE",
+      "country": {
+        "zh": "格鲁吉亚",
+        "en": "Georgia"
+      },
+      "name": {
+        "zh": "格鲁吉亚驻华大使馆",
+        "en": "Embassy of Georgia"
+      },
+      "address": {
+        "zh": "朝阳区霄云路18号京润水上花园别墅A18",
+        "en": "A18,King's Garden Villa,No.18 Xiao Yun Road, Chaoyang District, Beijing"
+      },
+      "phone": "+861064681203",
+      "website": "https://china.mfa.gov.ge"
+    },
+    {
+      "country_code": "GH",
+      "country": {
+        "zh": "加纳",
+        "en": "Ghana"
+      },
+      "name": {
+        "zh": "加纳共和国驻华大使馆",
+        "en": "Embassy of the Republic of Ghana"
+      },
+      "address": {
+        "zh": "三里屯路8号",
+        "en": "No. 8, San Li Tun Lu"
+      },
+      "phone": "+861065321319",
+      "website": "https://beijing.mfa.gov.gh"
+    },
+    {
+      "country_code": "GM",
+      "country": {
+        "zh": "冈比亚",
+        "en": "Gambia"
+      },
+      "name": {
+        "zh": "冈比亚共和国驻华大使馆",
+        "en": "Embassy of the Republic of the Gambia"
+      },
+      "address": {
+        "zh": "朝阳区秀水街1号建国门外外交公寓01-5-051/052",
+        "en": "Jian Guo Men Wai Diplomatic Compound 01-5-051/052, No. 1, Xiu Shui Jie, Chaoyang District, Beijing 100600"
+      },
+      "phone": "+861085326991"
+    },
+    {
+      "country_code": "GN",
+      "country": {
+        "zh": "几内亚",
+        "en": "Guinea"
+      },
+      "name": {
+        "zh": "几内亚共和国驻华大使馆",
+        "en": "Embassy of the Republic of Guinea"
+      },
+      "address": {
+        "zh": "三里屯西六街2号",
+        "en": "No. 2, Xi Liu Jie, San Li Tun"
+      },
+      "phone": "+861065323649"
+    },
+    {
+      "country_code": "GQ",
+      "country": {
+        "zh": "赤道几内亚",
+        "en": "Equatorial Guinea"
+      },
+      "name": {
+        "zh": "赤道几内亚共和国驻华大使馆",
+        "en": "Embassy of the Republic of Equatorial Guinea"
+      },
+      "address": {
+        "zh": "三里屯东四街2号",
+        "en": "No. 2, Dong Si Jie, San Li Tun"
+      },
+      "phone": "+861065323679"
+    },
+    {
+      "country_code": "GR",
+      "country": {
+        "zh": "希腊",
+        "en": "Greece"
+      },
+      "name": {
+        "zh": "希腊共和国驻华大使馆",
+        "en": "Embassy of the Hellenic Republic"
+      },
+      "address": {
+        "zh": "朝阳区光华路19号",
+        "en": "No.19, Guang Hua Lu, Chao Yang District, Beijing, 100600"
+      },
+      "phone": "+861085325493",
+      "website": "https://www.mfa.gr/china/en/the-embassy"
+    },
+    {
+      "country_code": "GW",
+      "country": {
+        "zh": "几内亚比绍",
+        "en": "Guinea-Bissau"
+      },
+      "name": {
+        "zh": "几内亚比绍共和国驻华大使馆",
+        "en": "Embassy of the Republic of Guinea-Bissau"
+      },
+      "address": {
+        "zh": "塔园外交公寓4-2-112",
+        "en": "4-2-112, Ta Yuan Diplomatic Compound"
+      },
+      "phone": "+861065327393"
+    },
+    {
+      "country_code": "GY",
+      "country": {
+        "zh": "圭亚那",
+        "en": "Guyana"
+      },
+      "name": {
+        "zh": "圭亚那合作共和国驻华大使馆",
+        "en": "Embassy of the Cooperative Republic of Guyana"
+      },
+      "address": {
+        "zh": "建国门外秀水东街1号",
+        "en": "No. 1, Xiu Shui Dong Jie, Jian Guo Men Wai"
+      },
+      "phone": "+861065321337",
+      "website": "https://www.guyanaembassybeijing.cn"
+    },
+    {
+      "country_code": "HN",
+      "country": {
+        "zh": "洪都拉斯",
+        "en": "Honduras"
+      },
+      "name": {
+        "zh": "洪都拉斯共和国驻华大使馆",
+        "en": "Embassy of the Republic of Honduras"
+      },
+      "address": {
+        "zh": "朝阳区东方东路19号亮马桥外交办公大楼LD01-0-802B",
+        "en": "LD01-0-802B, Liangmaqiao Diplomatic Office Building, 19 Dongfang East Road, Chaoyang District, Beijing"
+      },
+      "phone": "+861085321545"
+    },
+    {
+      "country_code": "HR",
+      "country": {
+        "zh": "克罗地亚",
+        "en": "Croatia"
+      },
+      "name": {
+        "zh": "克罗地亚共和国驻华大使馆",
+        "en": "Embassy of the Republic of Croatia"
+      },
+      "address": {
+        "zh": "齐家园外交公寓别墅5-2",
+        "en": "Villa 5-2, Qi Jia Yuan Diplomatic Residence Compound"
+      },
+      "phone": "+861065326242"
+    },
+    {
+      "country_code": "HU",
+      "country": {
+        "zh": "匈牙利",
+        "en": "Hungary"
+      },
+      "name": {
+        "zh": "匈牙利驻华大使馆",
+        "en": "Embassy of Hungary"
+      },
+      "address": {
+        "zh": "三里屯东直门外大街10号",
+        "en": "No.10, Dong Zhi Men Wai Da Jie, San Li Tun"
+      },
+      "phone": "+861065321431",
+      "website": "https://peking.mfa.gov.hu/eng"
+    },
+    {
+      "country_code": "ID",
+      "country": {
+        "zh": "印度尼西亚",
+        "en": "Indonesia"
+      },
+      "name": {
+        "zh": "印度尼西亚共和国驻华大使馆",
+        "en": "Embassy of the Republic of Indonesia"
+      },
+      "address": {
+        "zh": "朝阳区东直门外大街4号",
+        "en": "No.4, Dong Zhi Men Wai Da Jie, Chaoyang District"
+      },
+      "phone": "+861065325486",
+      "website": "https://www.kemlu.go.id/beijing"
+    },
+    {
+      "country_code": "IE",
+      "country": {
+        "zh": "爱尔兰",
+        "en": "Ireland"
+      },
+      "name": {
+        "zh": "爱尔兰驻华大使馆",
+        "en": "Embassy of Ireland"
+      },
+      "address": {
+        "zh": "日坛东路3号",
+        "en": "No.3, Ri Tan Dong Lu"
+      },
+      "phone": "+861085316200"
+    },
+    {
+      "country_code": "IL",
+      "country": {
+        "zh": "以色列",
+        "en": "Israel"
+      },
+      "name": {
+        "zh": "以色列国驻华大使馆",
+        "en": "Embassy of the State of Israel"
+      },
+      "address": {
+        "zh": "朝阳区天泽路17号,100600",
+        "en": "No. 17, Tian Ze Lu, Chaoyang District, 100600"
+      },
+      "phone": "+861085320500"
+    },
+    {
+      "country_code": "IN",
+      "country": {
+        "zh": "印度",
+        "en": "India"
+      },
+      "name": {
+        "zh": "印度共和国驻华大使馆",
+        "en": "Embassy of the Republic of India"
+      },
+      "address": {
+        "zh": "朝阳区亮马桥北街5号",
+        "en": "No.5, Liang Ma Qiao Bei Jie, Chaoyang District, Beijing 100600"
+      },
+      "phone": "+861085312500",
+      "website": "https://www.eoibeijing.gov.in"
+    },
+    {
+      "country_code": "IQ",
+      "country": {
+        "zh": "伊拉克",
+        "en": "Iraq"
+      },
+      "name": {
+        "zh": "伊拉克共和国驻华大使馆",
+        "en": "Embassy of the Republic of Iraq"
+      },
+      "address": {
+        "zh": "建国门外秀水北街25号",
+        "en": "No. 25, Xiu Shui Bei Jie, Jian Guo Men Wai"
+      },
+      "phone": "+861065323385"
+    },
+    {
+      "country_code": "IR",
+      "country": {
+        "zh": "伊朗",
+        "en": "Iran"
+      },
+      "name": {
+        "zh": "伊朗伊斯兰共和国驻华大使馆",
+        "en": "Embassy of the Islamic Republic of Iran"
+      },
+      "address": {
+        "zh": "三里屯东六街13号",
+        "en": "No. 13, Dong Liu Jie, San Li Tun"
+      },
+      "phone": "+861065322040"
+    },
+    {
+      "country_code": "IS",
+      "country": {
+        "zh": "冰岛",
+        "en": "Iceland"
+      },
+      "name": {
+        "zh": "冰岛驻华大使馆",
+        "en": "Embassy of Iceland"
+      },
+      "address": {
+        "zh": "朝阳区亮马桥北小街1号",
+        "en": "No.1, Liang Ma Qiao Bei Xiao Jie, Chaoyang District, Beijing 100600"
+      },
+      "phone": "+861085316900",
+      "website": "https://mfa.is/Beijing"
+    },
+    {
+      "country_code": "IT",
+      "country": {
+        "zh": "意大利",
+        "en": "Italy"
+      },
+      "name": {
+        "zh": "意大利共和国驻华大使馆",
+        "en": "Embassy of the Republic of Italy"
+      },
+      "address": {
+        "zh": "三里屯东二街2号",
+        "en": "No. 2, Dong Er Jie, San Li Tun"
+      },
+      "phone": "+861085327600",
+      "website": "https://www.ambpechino.esteri.it"
+    },
+    {
+      "country_code": "JM",
+      "country": {
+        "zh": "牙买加",
+        "en": "Jamaica"
+      },
+      "name": {
+        "zh": "牙买加驻华大使馆",
+        "en": "Embassy of Jamaica"
+      },
+      "address": {
+        "zh": "秀水街1号建国门外外交公寓6-2-72",
+        "en": "Office 6-2-72, Jian Guo Men Wai Diplomatic Compound,No. 1, Xiu Shui Street"
+      },
+      "phone": "+861065320670"
+    },
+    {
+      "country_code": "JO",
+      "country": {
+        "zh": "约旦",
+        "en": "Jordan"
+      },
+      "name": {
+        "zh": "约旦哈希姆王国驻华大使馆",
+        "en": "Embassy of the Hashemite Kingdom of Jordan"
+      },
+      "address": {
+        "zh": "三里屯东六街5号",
+        "en": "No.5,Dong Liu Jie,San Li Tun"
+      },
+      "phone": "+861065323906",
+      "website": "https://mfa.gov.jo/zh/embassy/BeijingZh"
+    },
+    {
+      "country_code": "JP",
+      "country": {
+        "zh": "日本",
+        "en": "Japan"
+      },
+      "name": {
+        "zh": "日本国驻华大使馆",
+        "en": "Embassy of Japan"
+      },
+      "address": {
+        "zh": "亮马桥东街1号",
+        "en": "No. 1, Liang Ma Qiao Dong Jie"
+      },
+      "phone": "+861085319800"
+    },
+    {
+      "country_code": "KE",
+      "country": {
+        "zh": "肯尼亚",
+        "en": "Kenya"
+      },
+      "name": {
+        "zh": "肯尼亚共和国驻华大使馆",
+        "en": "Embassy of the Republic of Kenya"
+      },
+      "address": {
+        "zh": "三里屯西六街4号",
+        "en": "No. 4, Xi Liu Jie, San Li Tun"
+      },
+      "phone": "+861065323381"
+    },
+    {
+      "country_code": "KG",
+      "country": {
+        "zh": "吉尔吉斯斯坦",
+        "en": "Kyrgyzstan"
+      },
+      "name": {
+        "zh": "吉尔吉斯共和国驻华大使馆",
+        "en": "Embassy of the Kyrgyz Republic"
+      },
+      "address": {
+        "zh": "朝阳区霄云路18号京润水上花园别墅H区10/11号",
+        "en": "H-10/11, Kings Garden Villas, No.18, Xiao Yun Road, Chaoyang District, 100125"
+      },
+      "phone": "+861064681297",
+      "website": "https://mfa.gov.kg/ru"
+    },
+    {
+      "country_code": "KH",
+      "country": {
+        "zh": "柬埔寨",
+        "en": "Cambodia"
+      },
+      "name": {
+        "zh": "柬埔寨王国驻华大使馆",
+        "en": "Royal Embassy of Cambodia"
+      },
+      "address": {
+        "zh": "东直门外大街9号",
+        "en": "No. 9, Dong Zhi Men Wai Da Jie"
+      },
+      "phone": "+861065321889"
+    },
+    {
+      "country_code": "KI",
+      "country": {
+        "zh": "基里巴斯",
+        "en": "Kiribati"
+      },
+      "name": {
+        "zh": "基里巴斯共和国驻华大使馆",
+        "en": "Embassy of the Republic of Kiribati in China"
+      },
+      "address": {
+        "zh": "朝阳区建国门街道,建国门外外交公寓6-2-131",
+        "en": "Building 6-2, Room 131, Jian Guo Men Wai DRC"
+      },
+      "phone": "+861065327077"
+    },
+    {
+      "country_code": "KM",
+      "country": {
+        "zh": "科摩罗",
+        "en": "Comoros"
+      },
+      "name": {
+        "zh": "科摩罗联盟驻华大使馆",
+        "en": "Embassy of the Union of the Comoros"
+      },
+      "address": {
+        "zh": "朝阳区秀水街1号建国门外外交公寓2-2-122",
+        "en": "Apt2-2-122, Jian Guo Men Wai DRC, No.1, Xiu Shui Jie, Chaoyang District, Beijing 100600"
+      },
+      "phone": "+861085322041"
+    },
+    {
+      "country_code": "KP",
+      "country": {
+        "zh": "朝鲜",
+        "en": "North Korea"
+      },
+      "name": {
+        "zh": "朝鲜民主主义人民共和国驻华大使馆",
+        "en": "Embassy of the Democratic People's Republic of Korea"
+      },
+      "address": {
+        "zh": "建国门外日坛北路11号",
+        "en": "No.11, Ri Tan Bei Lu,Jian Guo Men Wai"
+      }
+    },
+    {
+      "country_code": "KR",
+      "country": {
+        "zh": "韩国",
+        "en": "South Korea"
+      },
+      "name": {
+        "zh": "大韩民国驻华大使馆",
+        "en": "Embassy of the Republic of Korea"
+      },
+      "address": {
+        "zh": "朝阳区东方东路20号",
+        "en": "No. 20, Dong Fang Dong Lu, Chaoyang District"
+      },
+      "phone": "+861085310700"
+    },
+    {
+      "country_code": "KW",
+      "country": {
+        "zh": "科威特",
+        "en": "Kuwait"
+      },
+      "name": {
+        "zh": "科威特国驻华大使馆",
+        "en": "Embassy of the State of Kuwait"
+      },
+      "address": {
+        "zh": "朝阳区光华路23号",
+        "en": "No. 23, Guang Hua Lu"
+      },
+      "phone": "+861065322216"
+    },
+    {
+      "country_code": "KZ",
+      "country": {
+        "zh": "哈萨克斯坦",
+        "en": "Kazakhstan"
+      },
+      "name": {
+        "zh": "哈萨克斯坦共和国驻华大使馆",
+        "en": "Embassy of the Republic of Kazakhstan"
+      },
+      "address": {
+        "zh": "三里屯东六街9号",
+        "en": "No. 9, Dong Liu Jie, San Li Tun"
+      },
+      "phone": "+861065324189",
+      "website": "https://www.mfa.gov.kz/beijing"
+    },
+    {
+      "country_code": "LA",
+      "country": {
+        "zh": "老挝",
+        "en": "Laos"
+      },
+      "name": {
+        "zh": "老挝人民民主共和国驻华大使馆",
+        "en": "Embassy of the Lao People's Democratic Republic"
+      },
+      "address": {
+        "zh": "三里屯东四街11号",
+        "en": "No.11, Dong Si Jie, San Li Tun"
+      },
+      "phone": "+861065321224"
+    },
+    {
+      "country_code": "LB",
+      "country": {
+        "zh": "黎巴嫩",
+        "en": "Lebanon"
+      },
+      "name": {
+        "zh": "黎巴嫩共和国驻华大使馆",
+        "en": "Embassy of the Republic of Lebanon"
+      },
+      "address": {
+        "zh": "三里屯东六街10号",
+        "en": "No. 10, Dong Liu Jie, San Li Tun"
+      },
+      "phone": "+861065321560"
+    },
+    {
+      "country_code": "LK",
+      "country": {
+        "zh": "斯里兰卡",
+        "en": "Sri Lanka"
+      },
+      "name": {
+        "zh": "斯里兰卡民主社会主义共和国驻华大使馆",
+        "en": "Embassy of the Democratic Socialist Republic of Sri Lanka"
+      },
+      "address": {
+        "zh": "建国门外建华路3号",
+        "en": "No. 3, Jian Hua Lu, Jian Guo Men Wai"
+      },
+      "phone": "+861065321861",
+      "website": "https://www.beijing.embassy.gov.lk"
+    },
+    {
+      "country_code": "LR",
+      "country": {
+        "zh": "利比里亚",
+        "en": "Liberia"
+      },
+      "name": {
+        "zh": "利比里亚共和国驻华大使馆",
+        "en": "Embassy of the Republic of Liberia"
+      },
+      "address": {
+        "zh": "霄云路18号京润水上花园G36号",
+        "en": "Beijing No.G36, King's Garden Villa, No.18 Xiao Yun Road Chaoyang district, Beijing"
+      },
+      "phone": "+861064403007"
+    },
+    {
+      "country_code": "LS",
+      "country": {
+        "zh": "莱索托",
+        "en": "Lesotho"
+      },
+      "name": {
+        "zh": "莱索托王国驻华大使馆",
+        "en": "Embassy of the Kingdom of Lesotho"
+      },
+      "address": {
+        "zh": "朝阳区建外大街9号齐家园外交公寓6-4号",
+        "en": "No.6-4, Qi Jia Yuan Diplomatic Compound, No.9, Jian Guo Men Wai Da Jie, Chaoyang District"
+      },
+      "phone": "+861065326843"
+    },
+    {
+      "country_code": "LU",
+      "country": {
+        "zh": "卢森堡",
+        "en": "Luxembourg"
+      },
+      "name": {
+        "zh": "卢森堡大公国驻华大使馆",
+        "en": "Embassy of the Grand Duchy of Luxembourg"
+      },
+      "address": {
+        "zh": "朝阳区工体北路甲2号盈科中心B座1701室",
+        "en": "Unit 1701, Tower B, Pacific Century Place, 2A Gong Ti Bei Lu, Beijing 100027, PRC"
+      },
+      "phone": "+861085880900",
+      "website": "https://pekin.mae.lu"
+    },
+    {
+      "country_code": "LV",
+      "country": {
+        "zh": "拉脱维亚",
+        "en": "Latvia"
+      },
+      "name": {
+        "zh": "拉脱维亚共和国驻华大使馆",
+        "en": "Embassy of the Republic of Latvia"
+      },
+      "address": {
+        "zh": "朝阳区东方东路22号亮马桥外交公寓A区02-02别墅",
+        "en": "Villa 02-02, Section A of Liang Ma Qiao Diplomatic Residence Compound, No.22, Dong Fang East Street, Chaoyang District"
+      },
+      "phone": "+861085323009",
+      "website": "https://www.mfa.gov.lv/china"
+    },
+    {
+      "country_code": "LY",
+      "country": {
+        "zh": "利比亚",
+        "en": "Libya"
+      },
+      "name": {
+        "zh": "利比亚国驻华大使馆",
+        "en": "Embassy of State of Libya"
+      },
+      "address": {
+        "zh": "三里屯东六街3号",
+        "en": "No. 3, Dong Liu Jie, San Li Tun"
+      },
+      "phone": "+861065323666"
+    },
+    {
+      "country_code": "MA",
+      "country": {
+        "zh": "摩洛哥",
+        "en": "Morocco"
+      },
+      "name": {
+        "zh": "摩洛哥王国驻华大使馆",
+        "en": "Embassy of the Kingdom of Morocco"
+      },
+      "address": {
+        "zh": "朝阳区工体北路1号院三里屯外交公寓办公楼2单元041/042",
+        "en": "2-041/042, Office Building, San Li Tun Diplomatic Compound, No. 1 Gong Ti Bei Lu, Chaoyang District"
+      },
+      "phone": "+861065321489"
+    },
+    {
+      "country_code": "MC",
+      "country": {
+        "zh": "摩纳哥",
+        "en": "Monaco"
+      },
+      "name": {
+        "zh": "摩纳哥公国驻华大使馆",
+        "en": "Embassy of the Principality of Monaco"
+      }
+    },
+    {
+      "country_code": "MD",
+      "country": {
+        "zh": "摩尔多瓦",
+        "en": "Moldova"
+      },
+      "name": {
+        "zh": "摩尔多瓦共和国驻华大使馆",
+        "en": "Embassy of the Republic of Moldova"
+      },
+      "address": {
+        "zh": "亮马河南路14号塔园外交人员办公楼2-9-1",
+        "en": "No.2-9-1, Ta Yuan Diplomatic Office Building, No.14, Liang Ma He Nan Lu"
+      },
+      "phone": "+861065325494",
+      "website": "https://china.mfa.gov.md"
+    },
+    {
+      "country_code": "ME",
+      "country": {
+        "zh": "黑山",
+        "en": "Montenegro"
+      },
+      "name": {
+        "zh": "黑山驻华大使馆",
+        "en": "Embassy of Montenegro"
+      },
+      "address": {
+        "zh": "三里屯外交公寓3号楼1单元12号",
+        "en": "No.3-1-12, San Li Tun Diplomatic Compound"
+      },
+      "phone": "+861065327610"
+    },
+    {
+      "country_code": "MG",
+      "country": {
+        "zh": "马达加斯加",
+        "en": "Madagascar"
+      },
+      "name": {
+        "zh": "马达加斯加共和国驻华大使馆",
+        "en": "Embassy of the Republic of Madagascar"
+      },
+      "address": {
+        "zh": "三里屯东街3号",
+        "en": "No. 3, San Li Tun Dong Jie"
+      },
+      "phone": "+861065321353"
+    },
+    {
+      "country_code": "MK",
+      "country": {
+        "zh": "北马其顿",
+        "en": "North Macedonia"
+      },
+      "name": {
+        "zh": "北马其顿共和国驻华大使馆",
+        "en": "Embassy of the Republic of North Macedonia"
+      },
+      "address": {
+        "zh": "三里屯外交公寓办公楼3-2-21",
+        "en": "San Li Tun Diplomatic Compound,Office Building 3-2-21"
+      },
+      "phone": "+861065327846"
+    },
+    {
+      "country_code": "ML",
+      "country": {
+        "zh": "马里",
+        "en": "Mali"
+      },
+      "name": {
+        "zh": "马里共和国驻华大使馆",
+        "en": "Embassy of the Republic of Mali"
+      },
+      "address": {
+        "zh": "三里屯东四街8号",
+        "en": "No. 8, Dong Si Jie, San Li Tun"
+      },
+      "phone": "+861065321704"
+    },
+    {
+      "country_code": "MM",
+      "country": {
+        "zh": "缅甸",
+        "en": "Myanmar (Burma)"
+      },
+      "name": {
+        "zh": "缅甸联邦共和国驻华大使馆",
+        "en": "Embassy of the Republic of the Union of Myanmar"
+      },
+      "address": {
+        "zh": "东直门外大街6号",
+        "en": "No.6, Dong Zhi Men Wai Da Jie"
+      },
+      "phone": "+861065320351"
+    },
+    {
+      "country_code": "MN",
+      "country": {
+        "zh": "蒙古",
+        "en": "Mongolia"
+      },
+      "name": {
+        "zh": "蒙古国驻华大使馆",
+        "en": "Embassy of Mongolia"
+      },
+      "address": {
+        "zh": "建国门外秀水北街2号",
+        "en": "No. 2, Xiu Shui Bei Jie, Jian Guo Men Wai"
+      },
+      "phone": "+861065321203",
+      "website": "https://beijing.embassy.mn"
+    },
+    {
+      "country_code": "MR",
+      "country": {
+        "zh": "毛里塔尼亚",
+        "en": "Mauritania"
+      },
+      "name": {
+        "zh": "毛里塔尼亚伊斯兰共和国驻华大使馆",
+        "en": "Embassy of the Islamic Republic of Mauritania"
+      },
+      "address": {
+        "zh": "三里屯东三街9号",
+        "en": "No. 9, Dong San Jie, San Li Tun"
+      },
+      "phone": "+861065321703",
+      "website": "https://www.ambarim-beijing.com"
+    },
+    {
+      "country_code": "MT",
+      "country": {
+        "zh": "马耳他",
+        "en": "Malta"
+      },
+      "name": {
+        "zh": "马耳他共和国驻华大使馆",
+        "en": "Embassy of the Republic of Malta"
+      },
+      "address": {
+        "zh": "三里屯外交人员办公楼1-51",
+        "en": "1-51, San Li Tun Diplomatic Office Building"
+      },
+      "phone": "+861085328400"
+    },
+    {
+      "country_code": "MU",
+      "country": {
+        "zh": "毛里求斯",
+        "en": "Mauritius"
+      },
+      "name": {
+        "zh": "毛里求斯共和国驻华大使馆",
+        "en": "Embassy of the Republic of Mauritius"
+      },
+      "address": {
+        "zh": "东直门外大街23号东外外交办公楼202",
+        "en": "202 Dong Wai Diplomatic Office Building, No. 23, Dong Zhi Men Wai Da Jie"
+      },
+      "phone": "+861065325695"
+    },
+    {
+      "country_code": "MV",
+      "country": {
+        "zh": "马尔代夫",
+        "en": "Maldives"
+      },
+      "name": {
+        "zh": "马尔代夫共和国驻华大使馆",
+        "en": "Embassy of the Republic of Maldives"
+      },
+      "address": {
+        "zh": "建外秀水街1号建外外交公寓1-5-31",
+        "en": "1-5-31, Jian Guo Men Wai Diplomatic Compound, No.1, Jian Wai Xiu Shui Street"
+      },
+      "phone": "+861085323847",
+      "website": "https://cn.mdvmission.gov.mv"
+    },
+    {
+      "country_code": "MW",
+      "country": {
+        "zh": "马拉维",
+        "en": "Malawi"
+      },
+      "name": {
+        "zh": "马拉维共和国驻华大使馆",
+        "en": "Embassy of the Republic of Malawi"
+      },
+      "address": {
+        "zh": "东直门外大街23号东外外交办公大楼503室",
+        "en": "503 Dong Wai Diplomatic Office Building, No. 23, Dong Zhi Men Wai Da Jie"
+      },
+      "phone": "+861065324868"
+    },
+    {
+      "country_code": "MX",
+      "country": {
+        "zh": "墨西哥",
+        "en": "Mexico"
+      },
+      "name": {
+        "zh": "墨西哥合众国驻华大使馆",
+        "en": "Embassy of the United Mexican States"
+      },
+      "address": {
+        "zh": "三里屯东五街5号",
+        "en": "No. 5, Dong Wu Jie, San Li Tun"
+      },
+      "phone": "+861085328300"
+    },
+    {
+      "country_code": "MY",
+      "country": {
+        "zh": "马来西亚",
+        "en": "Malaysia"
+      },
+      "name": {
+        "zh": "马来西亚驻华大使馆",
+        "en": "Embassy of Malaysia"
+      },
+      "address": {
+        "zh": "朝阳区亮马桥北街2号",
+        "en": "No. 2, Liang Ma Qiao Bei Jie, Chaoyang District"
+      },
+      "phone": "+861065322531"
+    },
+    {
+      "country_code": "MZ",
+      "country": {
+        "zh": "莫桑比克",
+        "en": "Mozambique"
+      },
+      "name": {
+        "zh": "莫桑比克共和国驻华大使馆",
+        "en": "Embassy of the Republic of Mozambique"
+      },
+      "address": {
+        "zh": "塔园外交人员办公楼1单元7楼2号",
+        "en": "1-7-2, Ta Yuan Diplomatic Office Building"
+      },
+      "phone": "+861065323664"
+    },
+    {
+      "country_code": "NA",
+      "country": {
+        "zh": "纳米比亚",
+        "en": "Namibia"
+      },
+      "name": {
+        "zh": "纳米比亚共和国驻华大使馆",
+        "en": "Embassy of the Republic of Namibia"
+      },
+      "address": {
+        "zh": "塔园外交人员办公楼2-9-2",
+        "en": "2-9-2, Ta Yuan Diplomatic Office Building"
+      },
+      "phone": "+861065324810"
+    },
+    {
+      "country_code": "NE",
+      "country": {
+        "zh": "尼日尔",
+        "en": "Niger"
+      },
+      "name": {
+        "zh": "尼日尔共和国驻华大使馆",
+        "en": "Embassy of the Republic of Niger"
+      },
+      "address": {
+        "zh": "三里屯外交人员办公楼1-21",
+        "en": "No. 1-21, San Li Tun Diplomatic Office Building"
+      },
+      "phone": "+861065324279"
+    },
+    {
+      "country_code": "NG",
+      "country": {
+        "zh": "尼日利亚",
+        "en": "Nigeria"
+      },
+      "name": {
+        "zh": "尼日利亚联邦共和国驻华大使馆",
+        "en": "Embassy of the Federal Republic of Nigeria"
+      },
+      "address": {
+        "zh": "三里屯东5街2号",
+        "en": "No. 2, Dong Wu Jie, San Li Tun"
+      },
+      "phone": "+861065323631"
+    },
+    {
+      "country_code": "NI",
+      "country": {
+        "zh": "尼加拉瓜",
+        "en": "Nicaragua"
+      },
+      "name": {
+        "zh": "尼加拉瓜共和国驻华大使馆",
+        "en": "Embassy of the Republic of Nicaragua"
+      },
+      "address": {
+        "zh": "朝阳区建国门外外交公寓4-2-161",
+        "en": "4-2-161 Apartment, Jianguomenwai Diplomatic Residence Compound, Chaoyang District, Beijing."
+      },
+      "phone": "+861085321198"
+    },
+    {
+      "country_code": "NL",
+      "country": {
+        "zh": "荷兰",
+        "en": "Netherlands"
+      },
+      "name": {
+        "zh": "荷兰王国驻华大使馆",
+        "en": "Embassy of the Kingdom of the Netherlands"
+      },
+      "address": {
+        "zh": "亮马河南路4号",
+        "en": "No.4, Liang Ma He Nan Lu"
+      },
+      "phone": "+861085320200",
+      "website": "https://www.niyuhelan.nl"
+    },
+    {
+      "country_code": "NO",
+      "country": {
+        "zh": "挪威",
+        "en": "Norway"
+      },
+      "name": {
+        "zh": "挪威王国驻华大使馆",
+        "en": "Royal Norwegian Embassy"
+      },
+      "address": {
+        "zh": "三里屯东1街1号",
+        "en": "No. 1, Dong Yi Jie, San Li Tun"
+      },
+      "phone": "+861085319600",
+      "website": "https://www.norway.no/zh/china"
+    },
+    {
+      "country_code": "NP",
+      "country": {
+        "zh": "尼泊尔",
+        "en": "Nepal"
+      },
+      "name": {
+        "zh": "尼泊尔驻华大使馆",
+        "en": "Embassy of Nepal"
+      },
+      "address": {
+        "zh": "三里屯路西6街1号",
+        "en": "No.1, Xi Liu Jie, San Li Tun Lu"
+      },
+      "phone": "+861065321795",
+      "website": "https://www.nepalembassy.org.cn"
+    },
+    {
+      "country_code": "NR",
+      "country": {
+        "zh": "瑙鲁",
+        "en": "Nauru"
+      },
+      "name": {
+        "zh": "瑙鲁共和国驻华大使馆",
+        "en": "Embassy of the Republic of Naoero"
+      },
+      "address": {
+        "zh": "朝阳区建国门外外交公寓15号楼1单元071号、072号",
+        "en": "15-1-071/072,Jianguomenwai DRC,Chaoyang District,Beijing"
+      },
+      "phone": "+861085325866"
+    },
+    {
+      "country_code": "NZ",
+      "country": {
+        "zh": "新西兰",
+        "en": "New Zealand"
+      },
+      "name": {
+        "zh": "新西兰驻华大使馆",
+        "en": "Embassy of New Zealand"
+      },
+      "address": {
+        "zh": "日坛东二街1号",
+        "en": "No.1, Ri Tan Dong Er Jie"
+      },
+      "phone": "+861085327000",
+      "website": "https://www.mfat.govt.nz/china"
+    },
+    {
+      "country_code": "OM",
+      "country": {
+        "zh": "阿曼",
+        "en": "Oman"
+      },
+      "name": {
+        "zh": "阿曼苏丹国驻华大使馆",
+        "en": "Embassy of the Sultanate of Oman"
+      },
+      "address": {
+        "zh": "亮马河南路6号",
+        "en": "No. 6, Liang Ma He Nan Lu"
+      },
+      "phone": "+861065323692"
+    },
+    {
+      "country_code": "PA",
+      "country": {
+        "zh": "巴拿马",
+        "en": "Panama"
+      },
+      "name": {
+        "zh": "巴拿马共和国驻华大使馆",
+        "en": "Embassy of the Republic of Panama"
+      },
+      "address": {
+        "zh": "朝阳区亮马桥北小街7号亮马桥外交公寓C区别墅LC04-04",
+        "en": "Villa LC04-04,Section C, Liang Ma Qiao Diplomatic Compound,No.7 Bei Xiao Jie,Liang Ma Qiao,Chaoyang District,Beijing 100600"
+      },
+      "phone": "+861065325981"
+    },
+    {
+      "country_code": "PE",
+      "country": {
+        "zh": "秘鲁",
+        "en": "Peru"
+      },
+      "name": {
+        "zh": "秘鲁共和国驻华大使馆",
+        "en": "Embassy of the Republic of Peru"
+      },
+      "address": {
+        "zh": "三里屯外交人员办公楼1-91",
+        "en": "1-91, San Li Tun Diplomatic Compound, Chaoyang"
+      },
+      "phone": "+861065323719"
+    },
+    {
+      "country_code": "PG",
+      "country": {
+        "zh": "巴布亚新几内亚",
+        "en": "Papua New Guinea"
+      },
+      "name": {
+        "zh": "巴布亚新几内亚驻华大使馆",
+        "en": "Embassy of the Independent State of Papua New Guinea"
+      },
+      "address": {
+        "zh": "塔园外交人员办公楼2单元11层2号",
+        "en": "2-11-2, Ta Yuan Diplomatic Office Building"
+      },
+      "phone": "+861065324312"
+    },
+    {
+      "country_code": "PH",
+      "country": {
+        "zh": "菲律宾",
+        "en": "Philippines"
+      },
+      "name": {
+        "zh": "菲律宾共和国驻华大使馆",
+        "en": "Embassy of the Republic of Philippines"
+      },
+      "address": {
+        "zh": "建国门外秀水北街23号",
+        "en": "23 Xiu Shui Bei Jie, Jian Guo Men Wai"
+      },
+      "phone": "+861065321872",
+      "website": "https://beijingpe.dfa.gov.ph"
+    },
+    {
+      "country_code": "PK",
+      "country": {
+        "zh": "巴基斯坦",
+        "en": "Pakistan"
+      },
+      "name": {
+        "zh": "巴基斯坦伊斯兰共和国驻华大使馆",
+        "en": "Embassy of the Islamic Republic of Pakistan"
+      },
+      "address": {
+        "zh": "东直门外大街1号",
+        "en": "No.1, Dong Zhi Men Wai Da Jie"
+      },
+      "phone": "+861085327900"
+    },
+    {
+      "country_code": "PL",
+      "country": {
+        "zh": "波兰",
+        "en": "Poland"
+      },
+      "name": {
+        "zh": "波兰共和国驻华大使馆",
+        "en": "Embassy of the Republic of Poland"
+      },
+      "address": {
+        "zh": "建国门外日坛路1号",
+        "en": "No. 1, Ri Tan Lu, Jian Guo Men Wai"
+      },
+      "phone": "+861085317100",
+      "website": "https://www.gov.pl/web/chiny/ambasada-rp-w-pekinie"
+    },
+    {
+      "country_code": "PS",
+      "country": {
+        "zh": "巴勒斯坦领土",
+        "en": "Palestinian Territories"
+      },
+      "name": {
+        "zh": "巴勒斯坦国驻华大使馆",
+        "en": "Embassy of the State of Palestine"
+      },
+      "address": {
+        "zh": "三里屯东3街2号",
+        "en": "No. 2, Dong San Jie, San Li Tun"
+      },
+      "phone": "+861065323327"
+    },
+    {
+      "country_code": "PT",
+      "country": {
+        "zh": "葡萄牙",
+        "en": "Portugal"
+      },
+      "name": {
+        "zh": "葡萄牙共和国驻华大使馆",
+        "en": "Embassy of the Republic of Portugal"
+      },
+      "address": {
+        "zh": "三里屯东5街8号",
+        "en": "No.8, Dong Wu Jie, San Li Tun"
+      },
+      "phone": "+861065324798",
+      "website": "https://pequim.embaixadaportugal.mne.gov.pt/pt"
+    },
+    {
+      "country_code": "QA",
+      "country": {
+        "zh": "卡塔尔",
+        "en": "Qatar"
+      },
+      "name": {
+        "zh": "卡塔尔国驻华大使馆",
+        "en": "Embassy of the State of Qatar"
+      },
+      "address": {
+        "zh": "朝阳区亮马桥外交公寓A区7号楼",
+        "en": "A-7 Liang Ma Qiao Diplomatic Compound, Chaoyang District"
+      },
+      "phone": "+861065322233"
+    },
+    {
+      "country_code": "RO",
+      "country": {
+        "zh": "罗马尼亚",
+        "en": "Romania"
+      },
+      "name": {
+        "zh": "罗马尼亚驻华大使馆",
+        "en": "Embassy of Romania"
+      },
+      "address": {
+        "zh": "日坛路东2街",
+        "en": "No.2 Ri Tan Lu Dong Er Jie"
+      },
+      "phone": "+861065323442",
+      "website": "https://beijing.mae.ro"
+    },
+    {
+      "country_code": "RS",
+      "country": {
+        "zh": "塞尔维亚",
+        "en": "Serbia"
+      },
+      "name": {
+        "zh": "塞尔维亚共和国驻华大使馆",
+        "en": "Embassy of the Republic of Serbia"
+      },
+      "address": {
+        "zh": "三里屯东6街1号",
+        "en": "No.1, Dong Liu Jie, San Li Tun"
+      },
+      "phone": "+861065323516"
+    },
+    {
+      "country_code": "RU",
+      "country": {
+        "zh": "俄罗斯",
+        "en": "Russia"
+      },
+      "name": {
+        "zh": "俄罗斯联邦驻华大使馆",
+        "en": "Embassy of the Russian Federation"
+      },
+      "address": {
+        "zh": "东直门北中街4号",
+        "en": "No.4,Dong Zhi Men Bei Zhong Jie"
+      },
+      "phone": "+861065321381",
+      "website": "https://beijing.mid.ru/zh"
+    },
+    {
+      "country_code": "RW",
+      "country": {
+        "zh": "卢旺达",
+        "en": "Rwanda"
+      },
+      "name": {
+        "zh": "卢旺达共和国驻华大使馆",
+        "en": "Embassy of the Republic of Rwanda"
+      },
+      "address": {
+        "zh": "秀水北街30号",
+        "en": "No. 30, Xiu Shui Bei Jie"
+      },
+      "phone": "+861065322193",
+      "website": "https://www.rwandainchina.gov.rw"
+    },
+    {
+      "country_code": "SA",
+      "country": {
+        "zh": "沙特阿拉伯",
+        "en": "Saudi Arabia"
+      },
+      "name": {
+        "zh": "沙特阿拉伯王国驻华大使馆",
+        "en": "Royal Embassy of Saudi Arabia"
+      },
+      "address": {
+        "zh": "三里屯北小街1号",
+        "en": "No.1,Bei Xiao Jie,San Li Tun"
+      },
+      "phone": "+861085316555"
+    },
+    {
+      "country_code": "SB",
+      "country": {
+        "zh": "所罗门群岛",
+        "en": "Solomon Islands"
+      },
+      "name": {
+        "zh": "所罗门群岛驻华大使馆",
+        "en": "Embassy of Solomon Islands"
+      },
+      "address": {
+        "zh": "朝阳区亮马河南路14号塔园外交办公大楼2-151C",
+        "en": "151C Floor, Unit 2, Tayuan Diplomatic Office Building, No.14 Liang Ma He South Road, Chaoyang District, Beijing, China, 100600"
+      },
+      "phone": "+861065320019"
+    },
+    {
+      "country_code": "SC",
+      "country": {
+        "zh": "塞舌尔",
+        "en": "Seychelles"
+      },
+      "name": {
+        "zh": "塞舌尔共和国驻华大使馆",
+        "en": "Embassy of the Republic of Seychelles"
+      },
+      "address": {
+        "zh": "朝阳区秀水街1号建国门外外交公寓6号楼2单元121房间,邮政编码:100600",
+        "en": "No.6-2-121,Jian Guo Men Wai Diplomatic Compound,No.1,Xiu Shui Road,"
+      },
+      "phone": "+861085325655"
+    },
+    {
+      "country_code": "SD",
+      "country": {
+        "zh": "苏丹",
+        "en": "Sudan"
+      },
+      "name": {
+        "zh": "苏丹共和国驻华大使馆",
+        "en": "Embassy of the Republic of the Sudan"
+      },
+      "address": {
+        "zh": "三里屯东二街1号",
+        "en": "No.1, Dong Er Jie, San Li Tun"
+      },
+      "phone": "+861065323715",
+      "website": "https://www.sudanembassybj.com"
+    },
+    {
+      "country_code": "SE",
+      "country": {
+        "zh": "瑞典",
+        "en": "Sweden"
+      },
+      "name": {
+        "zh": "瑞典驻华大使馆",
+        "en": "Embassy of Sweden"
+      },
+      "address": {
+        "zh": "东直门外大街3号",
+        "en": "No. 3, Dongzhimenwai Dajie, Chaoyang District"
+      },
+      "phone": "+861085311800"
+    },
+    {
+      "country_code": "SG",
+      "country": {
+        "zh": "新加坡",
+        "en": "Singapore"
+      },
+      "name": {
+        "zh": "新加坡共和国驻华大使馆",
+        "en": "Embassy of the Republic of Singapore"
+      },
+      "address": {
+        "zh": "朝阳区建国门外秀水北街1号",
+        "en": "No. 1 Xiu Shui Bei Jie, Jian Guo Men Wai, Chaoyang District"
+      }
+    },
+    {
+      "country_code": "SI",
+      "country": {
+        "zh": "斯洛文尼亚",
+        "en": "Slovenia"
+      },
+      "name": {
+        "zh": "斯洛文尼亚共和国驻华大使馆",
+        "en": "Embassy of the Republic of Slovenia"
+      },
+      "address": {
+        "zh": "朝阳区亮马桥北小街7号,亮马桥外交公寓C区别墅LC04-02号",
+        "en": "LC04-02, Block C, Liang Ma Qiao DRC, No.7,"
+      },
+      "phone": "+861085326191",
+      "website": "https://www.beijing.embassy.si"
+    },
+    {
+      "country_code": "SK",
+      "country": {
+        "zh": "斯洛伐克",
+        "en": "Slovakia"
+      },
+      "name": {
+        "zh": "斯洛伐克共和国驻华大使馆",
+        "en": "Embassy of the Slovak Republic"
+      },
+      "address": {
+        "zh": "建国门外日坛路",
+        "en": "Ri Tan Lu, Jian Guo Men Wai"
+      },
+      "phone": "+861065321530",
+      "website": "https://www.mzv.sk/peking"
+    },
+    {
+      "country_code": "SL",
+      "country": {
+        "zh": "塞拉利昂",
+        "en": "Sierra Leone"
+      },
+      "name": {
+        "zh": "塞拉利昂共和国驻华大使馆",
+        "en": "Embassy of the Republic of Sierra Leone"
+      },
+      "address": {
+        "zh": "朝阳区东直门外大街7号",
+        "en": "No. 7, Dong Zhi Men Wai Da Jie, Chaoyang District, Beijing"
+      },
+      "phone": "+861065321222"
+    },
+    {
+      "country_code": "SM",
+      "country": {
+        "zh": "圣马力诺",
+        "en": "San Marino"
+      },
+      "name": {
+        "zh": "圣马力诺共和国驻华大使馆",
+        "en": "Embassy of the Republic of San Marino"
+      }
+    },
+    {
+      "country_code": "SN",
+      "country": {
+        "zh": "塞内加尔",
+        "en": "Senegal"
+      },
+      "name": {
+        "zh": "塞内加尔共和国驻华大使馆",
+        "en": "Embassy of the Republic of Senegal"
+      },
+      "address": {
+        "zh": "朝阳区东直门外大街23号东外外交办公楼305",
+        "en": "305 Dong Wai Diplomatic Office Buiding, No. 23,Dong Zhi Men Wai Da Jie ,Chaoyang District,Beijing"
+      },
+      "phone": "+861065325035"
+    },
+    {
+      "country_code": "SO",
+      "country": {
+        "zh": "索马里",
+        "en": "Somalia"
+      },
+      "name": {
+        "zh": "索马里联邦共和国驻华大使馆",
+        "en": "Embassy of the Federal Republic of Somalia"
+      },
+      "address": {
+        "zh": "三里屯路2号",
+        "en": "No.2, San Li Tun Road"
+      },
+      "phone": "+861065321651"
+    },
+    {
+      "country_code": "SR",
+      "country": {
+        "zh": "苏里南",
+        "en": "Suriname"
+      },
+      "name": {
+        "zh": "苏里南共和国驻华大使馆",
+        "en": "Embassy of the Republic of Suriname"
+      },
+      "address": {
+        "zh": "建国门外外交公寓2-2-22",
+        "en": "2-2-22, Jian Guo Men Wai Diplomatic Compound"
+      },
+      "phone": "+861065322939",
+      "website": "https://www.surinameembassy.cn"
+    },
+    {
+      "country_code": "SS",
+      "country": {
+        "zh": "南苏丹",
+        "en": "South Sudan"
+      },
+      "name": {
+        "zh": "南苏丹共和国驻华大使馆",
+        "en": "Embassy of the Republic of South Sudan"
+      },
+      "address": {
+        "zh": "霄云路18号京润水上花园别墅H1-2",
+        "en": "Kings Garden Villas H1-2, No.18, Xiao Yun Road"
+      },
+      "phone": "+861064649921"
+    },
+    {
+      "country_code": "ST",
+      "country": {
+        "zh": "圣多美和普林西比",
+        "en": "São Tomé & Príncipe"
+      },
+      "name": {
+        "zh": "圣多美和普林西比民主共和国驻华大使馆",
+        "en": "Embassy of the Democratic Republic of Sao Tome and Principe"
+      },
+      "address": {
+        "zh": "朝阳区秀水街1号建国门外外交公寓4-2-92",
+        "en": "4-2-92, Jian Guo Men Wai Diplomatic Compound, No.1, Xiu Shui Jie, Chaoyang District"
+      },
+      "phone": "+861085324825"
+    },
+    {
+      "country_code": "SV",
+      "country": {
+        "zh": "萨尔瓦多",
+        "en": "El Salvador"
+      },
+      "name": {
+        "zh": "萨尔瓦多共和国驻华大使馆",
+        "en": "Embassy of the Republic of El Salvador"
+      },
+      "address": {
+        "zh": "北京市朝阳区亮马桥外交公寓A区8号楼2号别墅",
+        "en": "Villa LA08-02, Liang Ma Qiao Diplomatic Residence Compound, Chaoyang District, Beijing"
+      },
+      "phone": "+861085326057"
+    },
+    {
+      "country_code": "SY",
+      "country": {
+        "zh": "叙利亚",
+        "en": "Syria"
+      },
+      "name": {
+        "zh": "阿拉伯叙利亚共和国驻华大使馆",
+        "en": "Embassy of the Syrian Arab Republic"
+      },
+      "address": {
+        "zh": "三里屯东4街6号",
+        "en": "No.6, Dong Si Jie, San Li Tun"
+      },
+      "phone": "+861065321372"
+    },
+    {
+      "country_code": "TD",
+      "country": {
+        "zh": "乍得",
+        "en": "Chad"
+      },
+      "name": {
+        "zh": "乍得共和国驻华大使馆",
+        "en": "Embassy of the Republic of Chad"
+      },
+      "address": {
+        "zh": "新东路1号塔园外交公寓4号楼2单元4层",
+        "en": "4-2-41, Ta Yuan Diplomatic Building, No.1, Xin Dong Lu"
+      },
+      "phone": "+861085323822"
+    },
+    {
+      "country_code": "TG",
+      "country": {
+        "zh": "多哥",
+        "en": "Togo"
+      },
+      "name": {
+        "zh": "多哥共和国驻华大使馆",
+        "en": "Embassy of the Republic of Togo"
+      },
+      "address": {
+        "zh": "东直门外大街11号",
+        "en": "No. 11, Dong Zhi Men Wai Da Jie"
+      },
+      "phone": "+861065322202"
+    },
+    {
+      "country_code": "TH",
+      "country": {
+        "zh": "泰国",
+        "en": "Thailand"
+      },
+      "name": {
+        "zh": "泰王国驻华大使馆",
+        "en": "Royal Thai Embassy"
+      },
+      "address": {
+        "zh": "光华路21号",
+        "en": "No.21, Guang Hua Lu"
+      },
+      "phone": "+861085318700"
+    },
+    {
+      "country_code": "TJ",
+      "country": {
+        "zh": "塔吉克斯坦",
+        "en": "Tajikistan"
+      },
+      "name": {
+        "zh": "塔吉克斯坦共和国驻华大使馆",
+        "en": "Embassy of the Republic of Tajikistan"
+      },
+      "address": {
+        "zh": "亮马桥外交公寓A区1-4",
+        "en": "No. 1-4, Section A, Liang Ma Qiao Diplomatic Compound"
+      },
+      "phone": "+861065322598",
+      "website": "https://mfa.tj/tg/beijing"
+    },
+    {
+      "country_code": "TL",
+      "country": {
+        "zh": "东帝汶",
+        "en": "Timor-Leste"
+      },
+      "name": {
+        "zh": "东帝汶民主共和国驻华大使馆",
+        "en": "Embassy of the Democratic Republic of Timor-Leste"
+      },
+      "address": {
+        "zh": "朝阳区东直门外大街23号东外外交办公大楼405",
+        "en": "No. 405 Dong Wai Diplomatic Office Building, No. 23 Dong Zhi Men Wai Da Jie, Chaoyang District"
+      },
+      "phone": "+861085325457",
+      "website": "https://www.embtimorleste-beijing.com"
+    },
+    {
+      "country_code": "TM",
+      "country": {
+        "zh": "土库曼斯坦",
+        "en": "Turkmenistan"
+      },
+      "name": {
+        "zh": "土库曼斯坦驻华大使馆",
+        "en": "Embassy of Turkmenistan"
+      },
+      "address": {
+        "zh": "朝阳区霄云路18号京润水上花园别墅雅趣园A-1",
+        "en": "King's Garden Villas A-1, No.18, Xiaoyun Road"
+      },
+      "phone": "+861065326975"
+    },
+    {
+      "country_code": "TN",
+      "country": {
+        "zh": "突尼斯",
+        "en": "Tunisia"
+      },
+      "name": {
+        "zh": "突尼斯共和国驻华大使馆",
+        "en": "Embassy of the Republic of Tunisia"
+      },
+      "address": {
+        "zh": "朝阳区三里屯东街1号",
+        "en": "No. 1, San Li Tun Dong Jie, Chaoyang District"
+      },
+      "phone": "+861065322435"
+    },
+    {
+      "country_code": "TO",
+      "country": {
+        "zh": "汤加",
+        "en": "Tonga"
+      },
+      "name": {
+        "zh": "汤加王国驻华大使馆",
+        "en": "Embassy of the Kingdom of Tonga"
+      },
+      "address": {
+        "zh": "建国门外外交公寓1-3-22",
+        "en": "1-3-22, Jian Guo Men Wai Diplomatic Compound"
+      },
+      "phone": "+861065327203"
+    },
+    {
+      "country_code": "TR",
+      "country": {
+        "zh": "土耳其",
+        "en": "Türkiye"
+      },
+      "name": {
+        "zh": "土耳其共和国驻华大使馆",
+        "en": "Embassy of the Republic of Türkiye"
+      },
+      "address": {
+        "zh": "三里屯东五街9号",
+        "en": "No.9,Dong Wu Jie,San Li Tun"
+      },
+      "phone": "+861065321715",
+      "website": "https://pekin-be.mfa.gov.tr"
+    },
+    {
+      "country_code": "TT",
+      "country": {
+        "zh": "特立尼达和多巴哥",
+        "en": "Trinidad & Tobago"
+      },
+      "name": {
+        "zh": "特立尼达和多巴哥共和国驻华大使馆",
+        "en": "Embassy of the Republic of Trinidad and Tobago"
+      },
+      "address": {
+        "zh": "朝阳区亮马桥北小街7号亮马桥外交公寓C区别墅04-03",
+        "en": "Villa 04-03, Section C, Liang Ma Qiao Diplomatic Compound, No.7 Bei Xiao Jie, Liang Ma Qiao, Chaoyang District, Beijing 100600"
+      },
+      "phone": "+861085323432",
+      "website": "http://www.foreign.gov.tt/embbeijing"
+    },
+    {
+      "country_code": "TZ",
+      "country": {
+        "zh": "坦桑尼亚",
+        "en": "Tanzania"
+      },
+      "name": {
+        "zh": "坦桑尼亚联合共和国驻华大使馆",
+        "en": "Embassy of the United Republic of Tanzania"
+      },
+      "address": {
+        "zh": "三里屯亮马河南路8号",
+        "en": "No.8, Liang Ma He Nan Lu, San Li Tun"
+      },
+      "phone": "+861065321491",
+      "website": "https://cn.tzembassy.go.tz"
+    },
+    {
+      "country_code": "UA",
+      "country": {
+        "zh": "乌克兰",
+        "en": "Ukraine"
+      },
+      "name": {
+        "zh": "乌克兰驻华大使馆",
+        "en": "Embassy of Ukraine"
+      },
+      "address": {
+        "zh": "三里屯东六街11号",
+        "en": "No. 11, Dong Liu Jie, San Li Tun"
+      },
+      "website": "https://china.mfa.gov.ua"
+    },
+    {
+      "country_code": "UG",
+      "country": {
+        "zh": "乌干达",
+        "en": "Uganda"
+      },
+      "name": {
+        "zh": "乌干达共和国驻华大使馆",
+        "en": "Embassy of the Republic of Uganda"
+      },
+      "address": {
+        "zh": "三里屯东街5号",
+        "en": "No. 5, San Li Tun Dong Jie"
+      },
+      "phone": "+861065321708",
+      "website": "https://www.beijing.mofa.go.ug"
+    },
+    {
+      "country_code": "US",
+      "country": {
+        "zh": "美国",
+        "en": "United States"
+      },
+      "name": {
+        "zh": "美利坚合众国驻华大使馆",
+        "en": "Embassy of the United States of America"
+      },
+      "address": {
+        "zh": "安家楼路55号",
+        "en": "No. 55, An Jia Lou Road"
+      },
+      "phone": "+861085313000",
+      "website": "https://china.usembassy-china.org.cn/zh"
+    },
+    {
+      "country_code": "UY",
+      "country": {
+        "zh": "乌拉圭",
+        "en": "Uruguay"
+      },
+      "name": {
+        "zh": "乌拉圭东岸共和国驻华大使馆",
+        "en": "Embassy of the Oriental Republic of Uruguay"
+      },
+      "address": {
+        "zh": "朝阳区东方东路22号院亮马桥外交公寓A区03-01号",
+        "en": "No. 03-01 Section A, Liangmaqiao DRC, No. 22 Dongfang Donglu, Chaoyang District, Beijing"
+      },
+      "phone": "+861065324445"
+    },
+    {
+      "country_code": "UZ",
+      "country": {
+        "zh": "乌兹别克斯坦",
+        "en": "Uzbekistan"
+      },
+      "name": {
+        "zh": "乌兹别克斯坦共和国驻华大使馆",
+        "en": "Embassy of the Republic of Uzbekistan"
+      },
+      "address": {
+        "zh": "朝阳区亮马桥路41号",
+        "en": "No.41, Liang Ma Qiao Street, Chaoyang District, Beijing, PRC"
+      },
+      "phone": "+861065326305",
+      "website": "https://china.mfa.uz"
+    },
+    {
+      "country_code": "VE",
+      "country": {
+        "zh": "委内瑞拉",
+        "en": "Venezuela"
+      },
+      "name": {
+        "zh": "委内瑞拉玻利瓦尔共和国驻华大使馆",
+        "en": "Embassy of the Bolivarian Republic of Venezuela"
+      },
+      "address": {
+        "zh": "三里屯路14号",
+        "en": "No. 14, San Li Tun Lu, 100600"
+      },
+      "phone": "+861065321295"
+    },
+    {
+      "country_code": "VN",
+      "country": {
+        "zh": "越南",
+        "en": "Vietnam"
+      },
+      "name": {
+        "zh": "越南社会主义共和国驻华大使馆",
+        "en": "Embassy of the Socialist Republic of Viet Nam"
+      },
+      "address": {
+        "zh": "建国门外光华路32号",
+        "en": "No. 32, Guang Hua Lu, Jian Guo Men Wai"
+      },
+      "phone": "+861065321155"
+    },
+    {
+      "country_code": "VU",
+      "country": {
+        "zh": "瓦努阿图",
+        "en": "Vanuatu"
+      },
+      "name": {
+        "zh": "瓦努阿图共和国驻华大使馆",
+        "en": "Embassy of the Republic of Vanuatu"
+      },
+      "address": {
+        "zh": "三里屯外交公寓办公楼2单元11号",
+        "en": "No.2-11, Office Building, San Li Tun Diplomatic Compound"
+      },
+      "phone": "+861065320337"
+    },
+    {
+      "country_code": "WS",
+      "country": {
+        "zh": "萨摩亚",
+        "en": "Samoa"
+      },
+      "name": {
+        "zh": "萨摩亚独立国驻华大使馆",
+        "en": "Embassy of the Independent State of Samoa"
+      },
+      "address": {
+        "zh": "塔园外交办公楼2单元072号",
+        "en": "Floor7, Unit 2, Ta Yuan Diplomatic Office Building"
+      },
+      "phone": "+861065321673",
+      "website": "https://www.samoaembassy.cn"
+    },
+    {
+      "country_code": "YE",
+      "country": {
+        "zh": "也门",
+        "en": "Yemen"
+      },
+      "name": {
+        "zh": "也门共和国驻华大使馆",
+        "en": "Embassy of the Republic of Yemen"
+      },
+      "address": {
+        "zh": "三里屯东3街5号",
+        "en": "No. 5, Dong San Jie, San Li Tun"
+      },
+      "phone": "+861065321558",
+      "website": "https://yemenembassy.cn"
+    },
+    {
+      "country_code": "ZA",
+      "country": {
+        "zh": "南非",
+        "en": "South Africa"
+      },
+      "name": {
+        "zh": "南非共和国驻华大使馆",
+        "en": "Embassy of the Republic of South Africa"
+      },
+      "address": {
+        "zh": "东直门外大街5号",
+        "en": "No.5, Dong Zhi Men Wai Da Jie"
+      },
+      "phone": "+861085320000",
+      "website": "https://www.dirco.gov.za/beijing/index.html"
+    },
+    {
+      "country_code": "ZM",
+      "country": {
+        "zh": "赞比亚",
+        "en": "Zambia"
+      },
+      "name": {
+        "zh": "赞比亚共和国驻华大使馆",
+        "en": "Embassy of the Republic of Zambia"
+      },
+      "address": {
+        "zh": "三里屯东四街5号",
+        "en": "No. 5, Dong Si Jie, San Li Tun"
+      },
+      "phone": "+861065321554"
+    },
+    {
+      "country_code": "ZW",
+      "country": {
+        "zh": "津巴布韦",
+        "en": "Zimbabwe"
+      },
+      "name": {
+        "zh": "津巴布韦共和国驻华大使馆",
+        "en": "Embassy of the Republic of Zimbabwe"
+      },
+      "address": {
+        "zh": "三里屯东三街7号",
+        "en": "No. 7, Dong San Jie, San Li Tun"
+      },
+      "phone": "+861065323795"
+    }
+  ]
+}
