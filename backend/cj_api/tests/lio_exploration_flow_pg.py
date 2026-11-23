@@ -297,10 +297,23 @@ def exercise(root,conninfo,*,saved_runs=(),generation=False,languages=('zh','en'
             assert message['profile']==[] and message['question_groups']==[] and not message['answer']
         locale='zh'
         fault=None
-        _,message=send('flow4-practical','在北京怎么坐地铁')
+        practical_cid,message=send('flow4-practical','在北京怎么坐地铁')
         assert message['question_groups']==[] and message['exits']==[]
-        _,message=send('flow4-emergency','有人受伤需要急救')
+        emergency_cid,message=send('flow4-emergency','有人受伤需要急救')
         assert message['question_groups']==[] and message['answer'].startswith('请立即拨打120')
+        action_route='/v4/lio/local-support-action'
+        params=dict(conversation_id=emergency_cid,message_id='flow4-emergency')
+        action=api.get(action_route,headers=headers,params=params)
+        assert action.status_code==200,action.text
+        assert action.json()==dict(version='LIO-local-support-action.1',**params,action='open_local_support')
+        quiet=api.get(action_route,headers=headers,params=dict(
+            conversation_id=practical_cid,message_id='flow4-practical'))
+        assert quiet.status_code==200 and quiet.json()['action'] is None
+        wrong=api.get(action_route,headers=headers,params=dict(
+            conversation_id=practical_cid,message_id='flow4-emergency'))
+        assert wrong.status_code==404
+        outsider={'Authorization':'Bearer '+dev_auth.token(auth,OUTSIDE,3600)}
+        assert api.get(action_route,headers=outsider,params=params).status_code==403
         prior=api.get('/v4/lio/timeline',headers=headers,params=dict(conversation_id=jt_cid))
         assert prior.status_code==200,prior.text
         with database.connect(scope)as db:

@@ -28,7 +28,7 @@ from .lio_pipeline_document import representation_size
 from .lio_pipeline_wording import _public
 from .local_lio_edit import _bind_current
 from .local_lio_rich_checks import RichUncollectedChecks
-from .lio_exploration_routes import PRESENTATION,PROGRESS,merged_presentation
+from .lio_exploration_routes import LOCAL_SUPPORT_EFFECT,PRESENTATION,PROGRESS,merged_presentation
 from .local_lio_exploration_profile import ProfileContext
 from .lio_positive_trip import known_city_term
 from .local_lio_national import _READONLY_DETAILS
@@ -209,6 +209,11 @@ class ExplorationPlanning:
         if len(texts)>32:raise ProviderUnknown('bounded exploration bubbles required')
         sections=dict(segments=[dict(purpose='direction' if scene==Scene.EXPLORATION else 'response',text=part) for part in texts],
                       question_groups=list(groups),notices=[],exits=list(exits(scene,locale)))
+        if scene==Scene.EMERGENCY:
+            support=('你也可以打开「本地协助」查看求助卡片。' if locale=='zh' else
+                     'You can also open Local Support to see the help cards.')
+            sections['segments'].append(dict(purpose='notice',text=support))
+            state=worker._event(binding,state,'effect_committed',LOCAL_SUPPORT_EFFECT)
         state=worker._event(binding,state,'effect_committed',PRESENTATION+json.dumps(sections,ensure_ascii=False,separators=(',',':')))
         state=worker._event(binding,state,'effect_committed',ROUND+json.dumps(dict(keys=[group['factor_key'] for group in groups])))
         state=worker._event(binding,state,'text_delta',merged_presentation(sections))
