@@ -34,6 +34,19 @@ struct LioToolsView: View {
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("lio.tools.local-support")
                     #if DEBUG
+                    if ProcessInfo.processInfo.arguments.contains("--lio-weather-preview") {
+                        NavigationLink {
+                            LioWeatherPreviewView(language: language)
+                        } label: {
+                            Label(language.text("Weather", "天气"), systemImage: "cloud.sun")
+                                .foregroundStyle(LioTheme.ink)
+                                .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+                                .padding(.horizontal, 16)
+                                .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("lio.tools.weather")
+                    }
                     if let service = LioTaxiService.previewFromArguments {
                         previewTaxi(service)
                     }
