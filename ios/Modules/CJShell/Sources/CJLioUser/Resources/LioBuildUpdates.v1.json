@@ -17,13 +17,13 @@
               "本地协助可离线查看紧急号码和使领馆目录，也可出示中文求助卡。聊天页可打开 SOS，求助草稿只保存在本机。",
               "常用语卡片可放大、朗读；地铁指南提供北京、上海和成都的乘车步骤及官方线路图。",
               "支付开通指南介绍支付宝和微信支付的境外卡绑定步骤及常见问题。汇率换算新增欧洲央行参考汇率，含人民币，并显示汇率日期。",
-              "打车可从行程选地点、查看估价或在滴滴打开。中文地址可直接给司机看。"
+              "打车可从行程选地点、查看估价或在滴滴打开。可把目的地的中文地址直接给司机看。"
             ],
             "en": [
               "Use Local Support offline to view emergency numbers, find embassies and consulates, or show a help card in Chinese. Open SOS from Chat. Help drafts stay on this device.",
               "Phrase cards show and read common phrases. The Metro Guide covers Beijing, Shanghai and Chengdu, with links to official maps.",
               "The Payment Setup Guide explains how to link an international card in Alipay or Weixin Pay and what to check when setup fails. Currency Converter shows the ECB reference rates and their date, including Chinese yuan.",
-              "Use a trip stop to get a taxi estimate, open DiDi, or show the pickup or destination address in Chinese."
+              "Use a trip stop to get a taxi estimate, open DiDi, or show the destination address in Chinese."
             ]
           }
         },
