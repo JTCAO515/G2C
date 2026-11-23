@@ -350,14 +350,22 @@ private struct LocalSupportEmbassyPicker: View {
 
     var body: some View {
         NavigationStack {
-            List(filtered) { embassy in
-                Button {
-                    nationality = embassy.countryCode
-                    dismiss()
-                } label: {
-                    Text(embassy.country.localized(language)).frame(minHeight: 44)
+            List {
+                let matches = filtered
+                if matches.isEmpty {
+                    Text(language.text("No matching countries or regions", "未找到匹配的国家或地区"))
+                        .foregroundStyle(LioTheme.ink)
+                        .accessibilityIdentifier("lio.support.country-empty")
                 }
-                .accessibilityIdentifier("lio.support.country." + embassy.countryCode)
+                ForEach(matches) { embassy in
+                    Button {
+                        nationality = embassy.countryCode
+                        dismiss()
+                    } label: {
+                        Text(embassy.country.localized(language)).frame(minHeight: 44)
+                    }
+                    .accessibilityIdentifier("lio.support.country." + embassy.countryCode)
+                }
             }
             .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always),
                         prompt: language.text("Search countries", "搜索国家"))
