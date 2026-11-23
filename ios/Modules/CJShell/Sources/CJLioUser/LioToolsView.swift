@@ -61,6 +61,17 @@ struct LioToolsView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("lio.tools.translation")
+                    NavigationLink {
+                        LioPhraseCardsView(language: language)
+                    } label: {
+                        Label(language.text("Phrase Cards", "常用语卡片"), systemImage: "text.bubble")
+                            .foregroundStyle(LioTheme.ink)
+                            .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("lio.tools.phrase-cards")
                 }
                 .padding(18)
             }

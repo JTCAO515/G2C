@@ -3,6 +3,43 @@ import UIKit
 import CryptoKit
 
 @MainActor final class LioToolsUITests: XCTestCase {
+    func testPhraseCardsShowFiveScenariosAndBothLanguages() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            for appearance in ["light", "dark"] {
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
+                                       "-lio.ui.appearance.v1", appearance, "-UIPreferredContentSizeCategoryName",
+                                       "UICTContentSizeCategoryL"]
+                app.launch()
+                defer { app.terminate() }
+                let tools = app.tabBars.buttons[language == "en" ? "Tools" : "插件"]
+                XCTAssertTrue(tools.waitForExistence(timeout: 8))
+                tools.tap()
+                app.buttons["lio.tools.phrase-cards"].tap()
+                for category in ["dining", "directions", "taxi", "shopping", "healthcare"] {
+                    XCTAssertTrue(app.buttons["lio.phrases.category." + category].exists)
+                }
+                try app.performAccessibilityAudit(for: .all)
+                app.buttons["lio.phrases.category.dining"].tap()
+                app.buttons["lio.phrases.card.dining-menu"].tap()
+                XCTAssertTrue(app.staticTexts["请问，有英文菜单吗？"].waitForExistence(timeout: 5))
+                XCTAssertTrue(app.staticTexts["Is there a menu in English?"].exists)
+                XCTAssertTrue(app.buttons["lio.phrases.read.zh-CN"].isHittable)
+                XCTAssertTrue(app.buttons["lio.phrases.read.en-US"].isHittable)
+                try app.performAccessibilityAudit(for: .all)
+                let screenshot = XCTAttachment(screenshot: app.screenshot())
+                screenshot.name = "phrase-card-\(language)-\(appearance)"
+                screenshot.lifetime = .keepAlways
+                add(screenshot)
+                app.buttons["lio.phrases.read.zh-CN"].tap()
+                app.buttons["lio.phrases.read.en-US"].tap()
+                app.buttons["lio.phrases.done"].tap()
+                XCTAssertTrue(app.buttons["lio.phrases.card.dining-menu"].isHittable)
+            }
+        }
+    }
+
     func testToolsTextReportsOfflineUnavailableOnIOS17() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
