@@ -115,9 +115,6 @@ def main():
                                 'space.go2china.app', 'app'], capture_output=True)
     if installed.returncode == 0:
         parser.error('Use a task-owned simulator without an ordinary App installation')
-    now = datetime.now(timezone.utc) + timedelta(hours=8)
-    if not 8 <= now.hour < 23:
-        parser.error('The native action window is outside Beijing 08:00–23:00')
     output.mkdir(parents=True, mode=0o700)
     for case in args.case or ('snapshot', 'audit'):
         exercise(output / case, build, args.simulator, case + ('_all' if case == 'audit' else '') + '_in_window')

@@ -1,6 +1,6 @@
 """Offline boundary controls only. These fixtures are never real smoke scores."""
 from copy import deepcopy
-from datetime import datetime,timezone
+from datetime import datetime,timedelta,timezone
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -11,7 +11,7 @@ import pytest
 from eval.basic_chain.cost import costs
 from eval.basic_chain.judge import judge,semantic
 from eval.basic_chain.plan import make_plan,check_plan,packed,digest,decode,Invalid
-from eval.basic_chain.runner import execute,private_read,save,day_guard,preflight
+from eval.basic_chain.runner import execute,private_read,save,preflight
 from eval.basic_chain.semantics_v2 import semantic as semantic_v2
 
 H='a'*64
@@ -222,10 +222,32 @@ def test_json_duplicate_nonfinite_and_private_files():
         with pytest.raises(Invalid):private_read(path)
 
 
-def test_night_guard_boundary():
-    for hour in (15,23): # UTC -> 23:00 and 07:00 CST
-        with pytest.raises(Invalid):day_guard(NOW.replace(hour=hour))
-    day_guard(NOW.replace(hour=0));day_guard(NOW.replace(hour=14))
+@pytest.mark.parametrize('utc_hour', [14, 15, 16, 23, 0])
+def test_execution_uses_issued_window_at_any_hour(tmp_path, utc_hour):
+    plan, *_ = fixture()
+    now = NOW.replace(hour=utc_hour)
+    config = dict(version='LIO-basic-chain-host.1', evidence_layer='L2+L3', app=APP,
+                  candidate=CANDIDATE, subjects={'zh': 'synthetic-zh'},
+                  native_authority_ref='TEST-ONLY', ledger_anchor_ref='TEST-ONLY', synthetic_only=True)
+    calls = []
+
+    def adapter(name, request):
+        calls.append((name, request['action']))
+        if request['action'] == 'preflight':
+            return dict(CANDIDATE, version='LIO-basic-chain-preflight.1', subject='synthetic-zh',
+                        run_id=plan['run_id'], plan_sha256=digest(plan), nonce=request['step']['nonce'],
+                        status='ACTIVE', authority_verified=True, bounded_app_claims_verified=True,
+                        idle_verified=True, capture_ready=True, starts_at=(now - timedelta(minutes=1)).isoformat(),
+                        ends_at=(now + timedelta(minutes=1)).isoformat(), available_cny='60',
+                        required_remaining_hold_cny='56', app=APP, admission_ref='CONTROL')
+        if name == 'app':
+            raise Invalid('control: missing original UI result')
+        assert request['action'] == 'stop_new'
+        return {}
+
+    report = execute(plan, config, tmp_path / 'window', clock=lambda: now, call=adapter)
+    assert calls == [('backend', 'preflight'), ('app', 'one_gate'), ('backend', 'stop_new')]
+    assert report['totals'] == dict(PASS=0, FAIL=0, UNKNOWN=1, UNRUN=13)
 
 
 def test_preflight_rejects_stale_other_plan_unqualified_or_wrong_owner():

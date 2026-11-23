@@ -10,7 +10,6 @@ import os
 from pathlib import Path
 import stat
 import subprocess
-from zoneinfo import ZoneInfo
 
 from .judge import judge
 from .plan import VERSION,check_plan, decode, packed, require, Invalid, is_sha, digest
@@ -31,10 +30,6 @@ def save(path,value):
     fd=os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600)
     with os.fdopen(fd,'wb')as stream:
         stream.write(packed(value));stream.flush();os.fsync(stream.fileno())
-
-
-def day_guard(now):
-    require(8<=now.astimezone(ZoneInfo('Asia/Shanghai')).hour<23,'23:00–08:00: no new synthetic action')
 
 
 class Programs:
@@ -117,12 +112,10 @@ def execute(plan,config,directory,*,clock=lambda:datetime.now(timezone.utc),call
         if stop:break
         observation=None
         try:
-            day_guard(clock())
             request=dict(run_id=plan['run_id'],plan_sha256=digest(plan),step=step,context=contexts[step['locale']])
             admission=call('backend',dict(request,action='preflight'))
             context=preflight(admission,config,plan,step,clock())|contexts[step['locale']]
             if step['gate_id']=='SM01':require(context['old_cid'],'actual App old chat setup required')
-            day_guard(clock())
             ui=call('app',dict(request,action='one_gate',admission_ref=admission['admission_ref']))
             observation=call('backend',dict(request,action='observe_original',ui=ui))
             require(observation['ui']==ui,'observer substituted A original UI facts')
