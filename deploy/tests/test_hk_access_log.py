@@ -271,7 +271,7 @@ def test_query_bounds_window_and_filters(tmp_path):
 def test_hk_api_installs_access_log_outermost(monkeypatch):
     from deploy.hk import entrypoint
     app=FastAPI();captured={}
-    runtime=SimpleNamespace(app=lambda:app,database=lambda:None)
+    runtime=SimpleNamespace(app=lambda:app,database=lambda:None,auth=object())
     monkeypatch.setattr(entrypoint,'ready',lambda database,runtime:None)
     import uvicorn
     monkeypatch.setattr(uvicorn,'run',lambda app,**kw:captured.update(app=app,**kw))

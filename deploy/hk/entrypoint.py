@@ -21,7 +21,10 @@ from cj_api.local_app import ISSUER,scope_for
 from cj_api.real_services import RealServices,RealTools
 from cj_trip.confirmation import ConfirmationSigner
 from local_run_context import provision_budget_connection
-from .configuration import ASSEMBLY_PROBE_MESSAGE,MODEL_STREAM_SUBJECT,Runtime,authorization,decoded,load_secret_environment,local_database_target
+from .configuration import (
+    ASSEMBLY_PROBE_MESSAGE, MODEL_STREAM_SUBJECT, Runtime,
+    authorization, decoded, load_secret_environment, local_database_target,
+)
 from . import checkpoint,demo_quota,local_postgres
 
 
@@ -69,8 +72,8 @@ def api(runtime,*,app_smoke_api_manifest=None):
     app=runtime.app();database=runtime.database()
     from .translation_relay import register_translation_route
     register_translation_route(app)
-    from cj_api.taxi_tools import register_taxi_routes
-    register_taxi_routes(app)
+    from .taxi_runtime import register_runtime_taxi
+    register_runtime_taxi(app, runtime.auth, database)
     from cj_api.hotel_tools import register_hotel_route
     register_hotel_route(app)
     @app.middleware('http')
