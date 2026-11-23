@@ -42,4 +42,4 @@ def register_runtime_taxi(app, auth, database, *, counts_path=COUNTS):
 
     checker = account_checker_for(auth, database, selected_subjects=roster)
     register_taxi_routes(app, taxi=TaxiService(provider), checker=checker, internal=roster,
-                         calls=PluginCalls(counts_path))
+                         calls=PluginCalls(counts_path, require_existing=True))

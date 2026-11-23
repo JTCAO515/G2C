@@ -277,3 +277,16 @@ def test_expired_link_refreshes_the_named_estimate_only_once():
     assert result['url'] == FIXTURE_LINK
     assert calls == ['taxi_generate_ride_app_link', 'maps_regeocode', 'taxi_estimate',
                      'taxi_generate_ride_app_link']
+
+
+def test_live_counter_never_recreates_a_missing_quota_journal(tmp_path):
+    path = tmp_path/'taxi.sqlite'
+    path.touch(mode=0o600)
+    calls = PluginCalls(path,clock=lambda:NOW,require_existing=True)
+    owner = check('internal').principal
+    calls.reserve(owner,ESTIMATE,50)
+    path.unlink()
+    with pytest.raises(PluginError, match='^unavailable$') as rejected:
+        calls.reserve(owner,ESTIMATE,50)
+    assert rejected.value.status==503
+    assert not path.exists()
