@@ -23,11 +23,13 @@ import CJMessageHTTP
     }
 
     func estimate(_ route: LioTaxiRoute) async throws -> [LioTaxiFare] {
-        try LioTaxiWire.readFares(await post(.estimate, route: route))
+        let data = try await post(.estimate, route: route)
+        return try LioTaxiWire.readFares(data)
     }
 
     func rideLink(_ route: LioTaxiRoute) async throws -> URL {
-        try LioTaxiWire.readLink(await post(.link, route: route), allowing: LioTaxiWire.approvesDiDiTarget)
+        let data = try await post(.link, route: route)
+        return try LioTaxiWire.readLink(data, allowing: LioTaxiWire.approvesDiDiTarget)
     }
 
     private func post(_ operation: Operation, route: LioTaxiRoute) async throws -> Data {
@@ -46,8 +48,13 @@ import CJMessageHTTP
         let response: URLResponse
         do {
             (data, response) = try await exchange(request)
-        } catch let error as URLError where error.code == .timedOut {
-            throw LioTaxiFailure.timedOut
+        } catch {
+            guard isCurrent() else { throw CancellationError() }
+            try Task.checkCancellation()
+            if (error as? URLError)?.code == .timedOut {
+                throw LioTaxiFailure.timedOut
+            }
+            throw error
         }
 
         guard isCurrent() else { throw CancellationError() }

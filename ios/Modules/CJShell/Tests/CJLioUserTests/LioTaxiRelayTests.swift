@@ -54,6 +54,36 @@ import Testing
         #expect(sends == 1)
     }
 
+    @Test func expiredSessionSuppressesDelayedTransportErrors() async throws {
+        var current = true
+        var sends = 0
+        let relay = LioTaxiRelayClient(baseURL: base, isCurrent: { current }, bearer: { "fixture-only" }) { _ in
+            sends += 1
+            current = false
+            throw URLError(.timedOut)
+        }
+        await #expect(throws: CancellationError.self) { try await relay.estimate(route) }
+        #expect(sends == 1)
+    }
+
+    @Test func activeSessionReportsATransportTimeoutAndDoesNotRetry() async throws {
+        var sends = 0
+        let relay = LioTaxiRelayClient(baseURL: base, isCurrent: { true }, bearer: { "fixture-only" }) { _ in
+            sends += 1
+            throw URLError(.timedOut)
+        }
+        await #expect(throws: LioTaxiFailure.timedOut) { try await relay.estimate(route) }
+        #expect(sends == 1)
+    }
+
+    @Test func rejectsAResponseFromADifferentOrigin() async throws {
+        let foreign = URL(string: "https://other.example.invalid/v1/tools/taxi/estimate")!
+        let relay = LioTaxiRelayClient(baseURL: base, isCurrent: { true }, bearer: { "fixture-only" }) { _ in
+            (quote, response(foreign, status: 200))
+        }
+        await #expect(throws: LioTaxiFailure.unavailable) { try await relay.estimate(route) }
+    }
+
     @Test func redirectAndInvalidHandoffNeverReturnAURL() async throws {
         let invalid = [
             (link, "https", 302),
