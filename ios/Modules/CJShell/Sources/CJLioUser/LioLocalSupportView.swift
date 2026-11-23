@@ -103,27 +103,31 @@ struct LioLocalSupportView: View {
     private func emergency(_ contacts: [LocalSupportDirectory.Contact]) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             heading(language.text("Emergency numbers", "紧急报警"))
-            let columns = Array(repeating: GridItem(.flexible()), count: dynamicTypeSize.isAccessibilitySize ? 1 : 2)
-            LazyVGrid(columns: columns, spacing: 10) {
-                ForEach(contacts) { contact in
-                    Button {
-                        dial(contact.phone)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Image(systemName: "phone.fill")
-                                .foregroundStyle(LioTheme.danger)
-                                .accessibilityHidden(true)
-                            Text(contact.title.zh).font(.headline)
-                            Text(contact.title.en).font(.subheadline)
-                            Text(contact.phone.number).font(.title2.monospacedDigit())
-                        }
-                        .padding(12)
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                        .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
-                        .contentShape(Rectangle())
+            let buttons = ForEach(contacts) { contact in
+                Button {
+                    dial(contact.phone)
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Image(systemName: "phone.fill")
+                            .foregroundStyle(LioTheme.danger)
+                            .accessibilityHidden(true)
+                        Text(contact.title.zh).font(.headline)
+                        Text(contact.title.en).font(.subheadline)
+                        Text(contact.phone.number).font(.title2.monospacedDigit())
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("lio.support." + contact.id)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("lio.support." + contact.id)
+            }
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: 10) { buttons }
+            } else {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    buttons
                 }
             }
         }
