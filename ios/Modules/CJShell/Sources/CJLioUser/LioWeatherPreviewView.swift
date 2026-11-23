@@ -5,6 +5,7 @@ struct LioWeatherPreviewView: View {
     let language: LioLanguage
     @State private var city = City.beijing
     @State private var locationUnavailable = false
+    @State private var showHourly = false
 
     private enum City: CaseIterable {
         case beijing, chengdu, shanghai
@@ -17,11 +18,11 @@ struct LioWeatherPreviewView: View {
             }
         }
 
-        var conditions: [Int] {
+        var conditions: (current: Int, low: Int, high: Int) {
             switch self {
-            case .beijing: [8, 3, 11]
-            case .chengdu: [16, 13, 20]
-            case .shanghai: [13, 9, 17]
+            case .beijing: (8, 3, 11)
+            case .chengdu: (16, 13, 20)
+            case .shanghai: (13, 9, 17)
             }
         }
 
@@ -34,7 +35,10 @@ struct LioWeatherPreviewView: View {
                 HStack {
                     Menu {
                         ForEach(City.allCases, id: \.self) { option in
-                            Button(option.title(language)) { city = option; locationUnavailable = false }
+                            Button(option.title(language)) {
+                                city = option
+                                locationUnavailable = false
+                            }
                         }
                     } label: {
                         Label(city.title(language), systemImage: "chevron.down")
@@ -66,32 +70,41 @@ struct LioWeatherPreviewView: View {
 
     private var current: some View {
         tile(language.text("Now", "当前")) {
-            Label("\(city.conditions[0]) °C", systemImage: city.rain > 50 ? "cloud.rain" : "cloud.sun")
+            Label("\(city.conditions.current) °C", systemImage: city.rain > 50 ? "cloud.rain" : "cloud.sun")
                 .font(.title2.bold())
                 .accessibilityIdentifier("lio.weather.current")
-            Text(language.text("Low", "最低") + " \(city.conditions[1]) °C · " +
-                 language.text("High", "最高") + " \(city.conditions[2]) °C")
+            Text(language.text("Low", "最低") + " \(city.conditions.low) °C · " +
+                 language.text("High", "最高") + " \(city.conditions.high) °C")
             Text(language.text("Chance of rain", "降水概率") + " \(city.rain)%")
+            Text(language.text("Sample trip: day 1", "示例行程：第 1 天"))
+                .font(.subheadline)
         }
     }
 
     private var forecast: some View {
         VStack(spacing: 14) {
             tile(language.text("Next hours", "逐小时")) {
-                ForEach(1...3, id: \.self) { hour in
+                ForEach(1...(showHourly ? 24 : 3), id: \.self) { hour in
                     HStack {
                         Text(language.text("In \(hour) hr", "\(hour) 小时后"))
                         Spacer()
-                        Text("\(city.conditions[0] + hour) °C")
+                        Text("\(city.conditions.current + hour % 4) °C")
                     }
                 }
+                Button(showHourly
+                       ? language.text("Show fewer hours", "收起逐小时天气")
+                       : language.text("Show 24 hours", "查看 24 小时")) {
+                    showHourly.toggle()
+                }
+                .buttonStyle(.plain)
+                .frame(minHeight: 44)
             }
             tile(language.text("Seven-day forecast", "未来七天")) {
                 ForEach(0..<7, id: \.self) { day in
                     HStack {
                         Text(day == 0 ? language.text("Today", "今天") : language.text("Day \(day + 1)", "第 \(day + 1) 天"))
                         Spacer()
-                        Text("\(city.conditions[1] + day % 3)–\(city.conditions[2] + day % 2) °C")
+                        Text("\(city.conditions.low + day % 3)–\(city.conditions.high + day % 2) °C")
                     }
                 }
             }
