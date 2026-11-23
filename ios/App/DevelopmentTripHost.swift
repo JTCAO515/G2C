@@ -1057,6 +1057,7 @@ private var developmentHostEnvironment: [String: String] {
     private let persistence: KeychainSessionStore
     private let demoMode: Bool
     #if G2C_DEMO_BETA
+    private let localSupportVault: LocalSupportKeychainDraft
     @ObservationIgnored private var lioChatContinuity: LioChatContinuity?
     @ObservationIgnored private var lioPresentationOwner: LioPresentationOwner?
     private struct LioPresentationOwner: Equatable {
@@ -1185,6 +1186,37 @@ private var developmentHostEnvironment: [String: String] {
 
     var finishingDemoCleanup: Bool { cleanupWorkflow?.holdsBusinessFence == true }
 
+    private var localSupportDraftScope: LocalSupportKeychainDraft.Scope {
+        guard let owner = lioPresentationOwner else { return .guest }
+        return .account(environment: owner.environment, account: owner.account)
+    }
+
+    func localSupportDraftStorage() -> LocalSupportDraftStorage {
+        let scope = localSupportDraftScope
+        return localSupportVault.storage(for: scope) { [weak self] in
+            guard let self else { return false }
+            return !self.finishingDemoCleanup && self.localSupportDraftScope == scope
+        }
+    }
+
+    func signOutWithLocalSupportCleanup() throws {
+        defer { accounts.signOut() }
+        var scope = localSupportDraftScope
+        if scope == .guest {
+            do {
+                if let material = try persistence.load() {
+                    let invite = try material.withBytes { try DemoInviteSession.decode($0) }
+                    let configuration = DevelopmentSessionConfiguration.demo(invite)
+                    scope = .account(environment: configuration.environmentID, account: configuration.accountID)
+                }
+            } catch SessionFailure.restorationBlocked {
+                scope = .guest
+            }
+        }
+        try localSupportVault.clear(scope)
+        if scope != .guest { try localSupportVault.clear(.guest) }
+    }
+
     func finishDemoCleanup() {
         guard cleanup?.presentation.controlsFinalized == true else { return }
         accounts.signOut()
@@ -1195,6 +1227,9 @@ private var developmentHostEnvironment: [String: String] {
                  approvedBetaAPI: Bool, composition: DevelopmentBetaComposition?, proposalID: String?,
                  offlineProfile: DevelopmentOfflineProfile?, cleanup: CleanupDeviceVersion?, demoMode: Bool) throws {
         let applicationID = try DevelopmentKeychainIdentity.read()
+        #if G2C_DEMO_BETA
+        localSupportVault = LocalSupportKeychainDraft(applicationIdentifier: applicationID)
+        #endif
         cleanupEnabled = cleanup != nil
         cleanupVersion = cleanup ?? .v3
         self.shell = shell; self.endpoint = endpoint; self.tokens = tokens
@@ -1551,6 +1586,20 @@ private struct DevelopmentVerificationTransport: ClientTransport {
     }
     private var memoryBinding: MemoryBinding { .init(environment: scope.environment, account: scope.account, generation: scope.generation, selection: scope.generation) }
     private var tripBinding: TripBinding { .init(environment: scope.environment, account: scope.account, generation: scope.generation, selection: scope.generation) }
+    #if G2C_DEMO_BETA
+    private var localSupportScope: LocalSupportKeychainDraft.Scope {
+        .account(environment: scope.environment, account: scope.account)
+    }
+
+    func clearLocalSupportDraft() throws {
+        try LocalSupportKeychainDraft(applicationIdentifier: applicationID).clear(localSupportScope)
+    }
+
+    func verifyLocalSupportDraftAbsent() throws {
+        try LocalSupportKeychainDraft(applicationIdentifier: applicationID).requireAbsent(localSupportScope)
+    }
+    #endif
+
     func eraseFiles(for target: DeviceCleanupTarget) throws {
         let captured = try layout.directories(for: target)
         let firstPhysical = try layout.primaryURL(for: target)
@@ -1878,6 +1927,11 @@ private func developmentCleanupHash(_ value: Data) -> String {
             if try layout.primaryURL(for: target) != nil { try offline.clearDeviceTemporaryWrites(account: scope.account) }
         case .messageKey, .tripKey, .memoryKey, .needsKey, .feedbackKey, .offlineKey:
             try stores.eraseKey(for: target)
+        #if G2C_DEMO_BETA
+        case .encryptedMessage:
+            try stores.eraseFiles(for: target)
+            try stores.clearLocalSupportDraft()
+        #endif
         default: try stores.eraseFiles(for: target)
         }
     }
@@ -1896,6 +1950,11 @@ private func developmentCleanupHash(_ value: Data) -> String {
                 else { guard names.allSatisfy({ $0 == "snapshot.aesgcm" }) else { throw CleanupFailure.unavailable } }
                 try directory.validateIdentity()
             }
+        #if G2C_DEMO_BETA
+        case .encryptedMessage:
+            try layout.requireEmpty(for: target)
+            try stores.verifyLocalSupportDraftAbsent()
+        #endif
         default: try layout.requireEmpty(for: target)
         }
     }
