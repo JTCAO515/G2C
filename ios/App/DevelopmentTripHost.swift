@@ -232,12 +232,6 @@ private var developmentHostEnvironment: [String: String] {
             #endif
         }
         #if G2C_DEMO_BETA
-        lioLocalAddressRelay = LioLocalAddressRelayClient.internalBeta(endpoint: endpoint, isCurrent: {
-            lifetime.current == lifetime.trip
-        }, bearer: {
-            guard lifetime.current == lifetime.trip else { return nil }
-            return configuration.token
-        })
         lioTaxiRelay = LioTaxiRelayClient.internalBeta(endpoint: endpoint, isCurrent: {
             lifetime.current == lifetime.trip
         }, bearer: {
@@ -293,6 +287,15 @@ private var developmentHostEnvironment: [String: String] {
         messages = try DevelopmentMessageHost(configuration: configuration, shell: shell,
             session: lifetime.session, operation: lifetime.operation,travelProfile:travelProfile,tripDiscussions:tripDiscussions,
             scopedEdits:scopedEdits,scopedResults:scopedResults,needsPlanning:needsPlanning,currentNeeds:currentNeeds,isCurrent: { lifetime.current != nil })
+        #if G2C_DEMO_BETA
+        lioLocalAddressRelay = LioLocalAddressRelayClient.internalBeta(
+            endpoint: endpoint, pendingDirectory: messages.lioLocalAddressPendingDirectory,
+            isCurrent: { lifetime.current == lifetime.trip },
+            bearer: {
+                guard lifetime.current == lifetime.trip else { return nil }
+                return configuration.token
+            })
+        #endif
         if scopedEdits {
             let originals = root.appendingPathExtension("ScopedOriginals")
             let receipts = root.appendingPathExtension("ScopedReceipts")
@@ -893,6 +896,7 @@ private var developmentHostEnvironment: [String: String] {
     let lioMemoryActions: LioMemoryActionsClient
     let lioTranslationHistory: LioTranslationHistory
     let lioTaxiRecentDirectory: URL
+    let lioLocalAddressPendingDirectory: URL
     private let lioPosition: LioChatContinuity
     private let lioPositionStore: LioChatPositionStore
     #endif
@@ -947,6 +951,7 @@ private var developmentHostEnvironment: [String: String] {
         let credentials = DevelopmentMessageCredentials(token: configuration.token, scope: scope, lease: lease, lifetime: lifetime)
         #if G2C_DEMO_BETA
         lioTaxiRecentDirectory = LioTaxiRecentPlaces.storageDirectory(inMessageDirectory: root)
+        lioLocalAddressPendingDirectory = root.appending(path: "local-address", directoryHint: .isDirectory)
         lioTranslationHistory = LioTranslationHistory(
             directory: root.appendingPathComponent(LioTranslationHistory.directoryName, isDirectory: true),
             isCurrent: isCurrent)

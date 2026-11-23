@@ -4,10 +4,12 @@ import Foundation
 
 @MainActor final class LioTaxiPickupLocation: NSObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
+    private let isCurrent: @MainActor () -> Bool
     private var pending: CheckedContinuation<LioTaxiPlace, any Error>?
     private var timeout: Task<Void, Never>?
 
-    override init() {
+    init(isCurrent: @escaping @MainActor () -> Bool = { true }) {
+        self.isCurrent = isCurrent
         super.init()
         manager.delegate = self
     }
@@ -18,6 +20,7 @@ import Foundation
 
     func pickup() async throws -> LioTaxiPlace {
         try Task.checkCancellation()
+        guard isCurrent() else { throw CancellationError() }
         guard pending == nil else { throw LioTaxiFailure.locationDenied }
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
@@ -59,6 +62,10 @@ import Foundation
     }
 
     private func requestIfAuthorized() {
+        guard isCurrent() else {
+            finish(.failure(CancellationError()))
+            return
+        }
         switch manager.authorizationStatus {
         case .authorizedWhenInUse, .authorizedAlways:
             guard timeout == nil else { return }

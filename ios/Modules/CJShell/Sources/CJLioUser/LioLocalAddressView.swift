@@ -15,10 +15,18 @@ enum LioLocalAddressResult: Equatable {
 
 struct LioLocalAddressView: View {
     let language: LioLanguage
+    let isCurrent: @MainActor () -> Bool
     let resolve: @MainActor () async -> LioLocalAddressResult
     @Environment(\.colorScheme) private var colorScheme
     @State private var request: UUID?
     @State private var outcome: LioLocalAddressResult?
+
+    init(language: LioLanguage, isCurrent: @escaping @MainActor () -> Bool = { true },
+         resolve: @escaping @MainActor () async -> LioLocalAddressResult) {
+        self.language = language
+        self.isCurrent = isCurrent
+        self.resolve = resolve
+    }
 
     private var title: String { language.text("Where Am I?", "我在哪") }
 
@@ -28,13 +36,14 @@ struct LioLocalAddressView: View {
                 Text(language.text("Use your current location to find the address in Chinese.",
                                    "使用当前位置查看中文地址。"))
                     .foregroundStyle(LioTheme.inkSecondary)
-                if let outcome {
-                    switch outcome {
+                if isCurrent(), let result = outcome {
+                    switch result {
                     case .address(let address):
                         Text(address)
                             .font(.largeTitle.bold())
                             .accessibilityIdentifier("lio.support.location.address")
                         Button {
+                            guard isCurrent() else { outcome = nil; return }
                             UIPasteboard.general.string = address
                         } label: {
                             Label(language.text("Copy address", "复制地址"), systemImage: "doc.on.doc")
@@ -67,6 +76,7 @@ struct LioLocalAddressView: View {
                     ProgressView(language.text("Finding your address…", "正在查找地址…"))
                 }
                 Button {
+                    guard isCurrent() else { outcome = nil; return }
                     outcome = nil
                     request = UUID()
                 } label: {
@@ -103,7 +113,11 @@ struct LioLocalAddressView: View {
         .task(id: request) {
             guard request != nil else { return }
             let result = await resolve()
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled, isCurrent() else {
+                outcome = nil
+                request = nil
+                return
+            }
             outcome = result
             request = nil
         }

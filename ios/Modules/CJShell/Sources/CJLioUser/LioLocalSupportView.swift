@@ -151,7 +151,8 @@ struct LioLocalSupportView: View {
 
     @ViewBuilder private var localAddress: some View {
         if let addressRelay, addressRelay.isAvailable {
-            LioLocalAddressView(language: language, resolve: addressRelay.resolveCurrentAddress)
+            LioLocalAddressView(language: language, isCurrent: { addressRelay.isAvailable },
+                                resolve: addressRelay.resolveCurrentAddress)
         }
     }
 

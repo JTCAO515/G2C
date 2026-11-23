@@ -51,16 +51,91 @@ enum LioLocalAddressRelayFailure: Error, Equatable {
     private let isCurrent: @MainActor () -> Bool
     private let bearer: @MainActor () -> String?
     private let exchange: Exchange
-    #if os(iOS)
-    private var hasUnconfirmedLookup = false
-    #endif
+    private let pendingDirectory: URL
 
-    init(baseURL: URL, isCurrent: @escaping @MainActor () -> Bool,
+    init(baseURL: URL, pendingDirectory: URL, isCurrent: @escaping @MainActor () -> Bool,
          bearer: @escaping @MainActor () -> String?, exchange: @escaping Exchange) {
         url = baseURL.appending(path: "v1/tools/nearby/reverse")
+        self.pendingDirectory = pendingDirectory
         self.isCurrent = isCurrent
         self.bearer = bearer
         self.exchange = exchange
+    }
+
+    func lookupOnce(_ coordinate: LioTaxiPlace.Coordinate) async throws -> String {
+        try requireCurrentSession()
+        guard try !hasUnconfirmedLookup() else { throw LioLocalAddressRelayFailure.previousAttempt }
+        if try !pendingDirectoryExists() {
+            try FileManager.default.createDirectory(at: pendingDirectory, withIntermediateDirectories: false,
+                                                    attributes: [.posixPermissions: 0o700])
+        }
+        var directory = pendingDirectory
+        var attributes = URLResourceValues()
+        attributes.isExcludedFromBackup = true
+        try directory.setResourceValues(attributes)
+        let requestID = UUID()
+        let original = Data(requestID.uuidString.lowercased().utf8)
+        #if os(iOS)
+        try original.write(to: pendingFile, options: [.atomic, .completeFileProtection])
+        #else
+        try original.write(to: pendingFile, options: .atomic)
+        #endif
+
+        do {
+            let address = try await lookup(coordinate, requestID: requestID)
+            try clearPending(original)
+            return address
+        } catch let failure as LioLocalAddressRelayFailure {
+            switch failure {
+            case .previousAttempt, .outcomeUnknown:
+                throw failure
+            default:
+                try clearPending(original)
+                throw failure
+            }
+        }
+    }
+
+    func hasUnconfirmedLookup() throws -> Bool {
+        try requireCurrentSession()
+        guard try pendingDirectoryExists() else { return false }
+        do {
+            let metadata = try pendingFile.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey])
+            guard metadata.isRegularFile == true, metadata.isSymbolicLink == false, metadata.fileSize == 36 else {
+                throw LioLocalAddressRelayFailure.outcomeUnknown
+            }
+            return true
+        } catch let error as CocoaError where error.code == .fileReadNoSuchFile || error.code == .fileNoSuchFile {
+            return false
+        }
+    }
+
+    private func pendingDirectoryExists() throws -> Bool {
+        do {
+            let metadata = try pendingDirectory.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+            guard metadata.isDirectory == true, metadata.isSymbolicLink == false else {
+                throw LioLocalAddressRelayFailure.outcomeUnknown
+            }
+            return true
+        } catch let error as CocoaError where error.code == .fileReadNoSuchFile || error.code == .fileNoSuchFile {
+            return false
+        }
+    }
+
+    private var pendingFile: URL {
+        pendingDirectory.appending(path: "pending-address-request")
+    }
+
+    private func clearPending(_ original: Data) throws {
+        try requireCurrentSession()
+        do {
+            guard try hasUnconfirmedLookup(), try Data(contentsOf: pendingFile) == original else {
+                throw LioLocalAddressRelayFailure.outcomeUnknown
+            }
+            try FileManager.default.removeItem(at: pendingFile)
+        } catch {
+            throw LioLocalAddressRelayFailure.outcomeUnknown
+        }
     }
 
     func lookup(_ coordinate: LioTaxiPlace.Coordinate, requestID: UUID) async throws -> String {
@@ -144,8 +219,12 @@ extension LioLocalAddressRelayClient {
 
     func resolveCurrentAddress() async -> LioLocalAddressResult {
         guard isAvailable else { return .unavailable }
-        guard !hasUnconfirmedLookup else { return .outcomeUnknown }
-        let location = LioTaxiPickupLocation()
+        do {
+            guard try !hasUnconfirmedLookup() else { return .outcomeUnknown }
+        } catch {
+            return .outcomeUnknown
+        }
+        let location = LioTaxiPickupLocation(isCurrent: isCurrent)
         let coordinate: LioTaxiPlace.Coordinate
         do {
             coordinate = try await location.pickup().coordinate
@@ -153,30 +232,22 @@ extension LioLocalAddressRelayClient {
             return location.permissionWasDenied ? .permissionDenied : .unavailable
         }
         guard !Task.isCancelled, isAvailable else { return .unavailable }
-        guard !hasUnconfirmedLookup else { return .outcomeUnknown }
-        hasUnconfirmedLookup = true
         do {
-            let address = try await lookup(coordinate, requestID: UUID())
-            hasUnconfirmedLookup = false
-            return .address(address)
+            return .address(try await lookupOnce(coordinate))
         } catch LioLocalAddressRelayFailure.offline {
-            hasUnconfirmedLookup = false
             return .offline
         } catch LioLocalAddressRelayFailure.notEnabled {
-            hasUnconfirmedLookup = false
             return .notEnabled
         } catch LioLocalAddressRelayFailure.rateLimited {
-            hasUnconfirmedLookup = false
             return .rateLimited
         } catch LioLocalAddressRelayFailure.outcomeUnknown, LioLocalAddressRelayFailure.previousAttempt, is CancellationError {
             return .outcomeUnknown
         } catch {
-            hasUnconfirmedLookup = false
             return .unavailable
         }
     }
 
-    public static func internalBeta(endpoint: MessageEndpoint,
+    public static func internalBeta(endpoint: MessageEndpoint, pendingDirectory: URL,
                                     isCurrent: @escaping @MainActor () -> Bool,
                                     bearer: @escaping @MainActor () -> String?) -> LioLocalAddressRelayClient? {
         guard endpoint.allowsDemoBetaActivation,
@@ -184,7 +255,8 @@ extension LioLocalAddressRelayClient {
             return nil
         }
 
-        return LioLocalAddressRelayClient(baseURL: endpoint.url, isCurrent: isCurrent, bearer: bearer) { request in
+        return LioLocalAddressRelayClient(baseURL: endpoint.url, pendingDirectory: pendingDirectory,
+                                          isCurrent: isCurrent, bearer: bearer) { request in
             let policy = URLSessionConfiguration.ephemeral
             policy.timeoutIntervalForResource = 20
             policy.urlCache = nil
