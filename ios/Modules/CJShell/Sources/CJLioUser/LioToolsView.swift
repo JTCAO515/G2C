@@ -34,6 +34,19 @@ struct LioToolsView: View {
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("lio.tools.local-support")
                     #if DEBUG
+                    if ProcessInfo.processInfo.arguments.contains("--lio-currency-preview") {
+                        NavigationLink {
+                            LioCurrencyView(language: language, load: LioCurrencyRates.fixture)
+                        } label: {
+                            Label(language.text("Currency Converter", "汇率换算"), systemImage: "arrow.left.arrow.right")
+                                .foregroundStyle(LioTheme.ink)
+                                .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+                                .padding(.horizontal, 16)
+                                .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("lio.tools.currency")
+                    }
                     if let service = LioTaxiService.previewFromArguments {
                         previewTaxi(service)
                     }
