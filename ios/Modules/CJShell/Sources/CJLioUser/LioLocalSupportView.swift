@@ -314,14 +314,8 @@ private struct LocalSupportEmbassyCard: View {
         var url = URLComponents()
         url.scheme = "https"
         url.host = "maps.apple.com"
-        let query = "\(embassy.name.zh) \(address)"
-        if #available(iOS 18.4, *) {
-            url.path = "/search"
-            url.queryItems = [URLQueryItem(name: "query", value: query)]
-        } else {
-            url.path = "/"
-            url.queryItems = [URLQueryItem(name: "q", value: query)]
-        }
+        url.path = "/"
+        url.queryItems = [URLQueryItem(name: "q", value: "\(embassy.name.zh) \(address)")]
         guard let mapsURL = url.url else {
             mapUnavailable = true
             return
