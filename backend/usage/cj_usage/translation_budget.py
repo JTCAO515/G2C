@@ -16,11 +16,12 @@ from .sublimits import scope_hash
 
 SERVICE = 'translation.1'
 SUBLIMIT = 300 * CNY_SCALE
-DAILY_LIMITS = {'text': 300, 'speech': 1800, 'image': 50}
+DAILY_LIMITS = {'text': 300, 'speech': 1800, 'image': 50, 'tts': 200}
 TEXT_MODEL = 'qwen-mt-flash'
 SPEECH_MODEL = 'qwen3-asr-flash'
 IMAGE_MODEL = 'qwen-vl-ocr'
-FIRST_MODEL = {'text': TEXT_MODEL, 'speech': SPEECH_MODEL, 'image': IMAGE_MODEL}
+TTS_MODEL = 'qwen3-tts-flash'
+FIRST_MODEL = {'text': TEXT_MODEL, 'speech': SPEECH_MODEL, 'image': IMAGE_MODEL, 'tts': TTS_MODEL}
 BEIJING = ZoneInfo('Asia/Shanghai')
 
 
@@ -40,6 +41,11 @@ def translation_price(receipt):
     usage = receipt.get('usage')
     if type(usage) is not dict:
         return None
+    if model == TTS_MODEL:
+        chars = usage.get('characters')
+        if set(usage) != {'characters'} or type(chars) is not int or not 1 <= chars <= 1024:
+            return None
+        return 800 * chars
     if model == SPEECH_MODEL:
         seconds = usage.get('seconds')
         if set(usage) != {'seconds'} or type(seconds) is not int or not 1 <= seconds <= 60:
@@ -91,7 +97,7 @@ class TranslationBudget:
         if (not 0 <= stage <= 24 or operation.modality not in DAILY_LIMITS
                 or not 1 <= operation.units <= DAILY_LIMITS[operation.modality]
                 or (model != (FIRST_MODEL[operation.modality] if stage == 0 else TEXT_MODEL))
-                or (stage and operation.modality == 'text')):
+                or (stage and operation.modality in ('text', 'tts'))):
             raise BudgetUnknown('invalid translation stage')
         attempt = operation.identifier(stage)
         metadata = operation.metadata(stage, model)

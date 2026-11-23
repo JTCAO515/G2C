@@ -14,7 +14,10 @@ import pytest
 
 from cj_api.translation import DashScopeTranslation, ROUTE, TranslationRelay, VERSION
 from cj_auth.interfaces import AdmissionDecision, AdmissionReason, AdmissionStatus, TrustedPrincipal
-from cj_usage.authorization_budget import AuthorizationBudget, CNY_SCALE, HK_PRODUCER, M1_UNRESOLVED_CNY, MAC_PRODUCER, authorization_usage, journal_state
+from cj_usage.authorization_budget import (
+    AuthorizationBudget, CNY_SCALE, HK_PRODUCER, M1_ESTIMATED, M1_UNRESOLVED_CNY, MAC_PRODUCER,
+    authorization_usage, journal_state,
+)
 from cj_usage.translation_budget import (
     BEIJING, IMAGE_MODEL, SPEECH_MODEL, TEXT_MODEL, TranslationBudget, TranslationLimit,
 )
@@ -254,6 +257,22 @@ def test_hk_proof_keeps_translation_intent_and_receipt_in_signed_digest(budget):
         assert db.execute('SELECT * FROM attempt ORDER BY id').fetchall() == original
         _, estimates, holds = authorization_usage(db)
         assert estimates['model'] > 0 and holds['model'] == (M1_UNRESOLVED_CNY + 2) * CNY_SCALE
+
+
+@pytest.mark.parametrize('settled', [False, True])
+def test_hk_export_can_read_tts_history_without_a_live_tts_route(budget, settled):
+    ledger = budget.authorization
+    model = 'qwen3-tts-flash'
+    operation = budget.operation('scope-fixture', uuid4(), 'tts', 1)
+    budget.begin(operation, 0, model)
+    if settled:
+        budget.finish(operation, 0, model, str(uuid4()), {'characters': 4})
+    with ledger.connect() as db:
+        db.execute('UPDATE producer SET identity=?', (HK_PRODUCER,))
+        assert attempts(db) == journal_state(db)
+        _, estimates, holds = authorization_usage(db)
+    assert estimates['model'] == M1_ESTIMATED + (3200 if settled else 0)
+    assert holds['model'] == (M1_UNRESOLVED_CNY + (0 if settled else 1)) * CNY_SCALE
 
 
 def test_mac_transfer_keeps_rejecting_runtime_translation_attempts(budget):
