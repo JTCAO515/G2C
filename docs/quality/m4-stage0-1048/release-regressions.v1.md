@@ -167,3 +167,9 @@ uv run --locked python -B -m pytest -q \
 ```sh
 uv run --locked python -B -m pytest -q backend/cj_api/tests/test_lio_national_intake.py backend/cj_api/tests/test_m4_real_services.py -k 'NationalLioNationalIntake or non_transit_fact or cannot_redispatch_same_canonical or unknown_fact_audit'
 ```
+
+## 2026-11-23 · 千问中→英语音 502
+
+- **现场原件**：香港中→英语音原请求返回 502。访问日志和原账只证明 ASR 已登记 INTENT，MT 未派发。原响应未留上游状态，历史上游根因仍为 UNKNOWN。保留原请求、原 hold 和费用，未知结果不重发。[#1234 同轮核证](https://github.com/JTCAO515/G2C/issues/1234#issuecomment-7090390102)
+- **离线回归**：[B 的诊断 PR #1332](https://github.com/JTCAO515/G2C/pull/1332) 中，`deploy/tests/test_translation_relay.py` 的 `test_asr_502_exposes_only_diagnostics_and_keeps_the_original_hold` 用无网对照区分供应商拒绝、传输失败和回执缺项。错误只记录固定诊断字段，502 保留原 ASR INTENT，MT 零派发。该用例的 PASS 只证明诊断与原账边界。
+- **真机复验**：按[构建 52 清单 MT02](../build52-release-acceptance.md#千问翻译与本机兜底)，用已获准的内部账号在匹配香港源像上各测中→英和英→中。只有真机可见正确听写和千问译文，并能核同轮 ASR、MT 终态与原账，才判对应在线方向 PASS。本机兜底按清单的 FB03 独立登记。当前构建 52 复验 UNRUN。
