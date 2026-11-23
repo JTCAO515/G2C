@@ -134,9 +134,9 @@ ssh -i "$G2C_HK_SSH_KEY_FILE" -o BatchMode=yes -o StrictHostKeyChecking=yes \
 PASS / FAIL / UNKNOWN / UNRUN，不能从健康或本地 fixture 推导真实端到端 PASS。
 
 切换后由 B 只读核原账前后锚、运行角色、拥有的 Trip/Memory 行集和全局在途，交回可复核结果。
-每次切换使用[服务端冒烟流程](SERVER-SMOKE.md)。切换前校验既有 C 会话覆盖本轮窗口；
-切换和独立读回成功后立即执行冒烟。PASS 后放行复测，真实 FAIL／UNKNOWN 走原回退流程，
-UNRUN 保持现役并登记原因。
+每次切换使用[服务端快速冒烟流程](SERVER-SMOKE.md)。切换前校验既有 C 会话覆盖本轮窗口；
+切换和独立读回成功后执行中文问答、文字翻译、滴滴预填链接。真实 5xx、超时或无有效回答时
+走原回退流程。HOLD／UNRUN 停发、核原动作并登记原因。完整内容质量验收由 Q 随后执行。
 L 在对应票和 #702 记录 source/image、检查层级、未跑项及 B 的账锚引用。
 同源 source 未经通知变化，旧评测包和剩余 ID 不得直接续用。
 

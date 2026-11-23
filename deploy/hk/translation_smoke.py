@@ -19,7 +19,7 @@ BATCH_RESERVATION = len(TRANSLATION_CASES) * RESERVATION
 METER_FIELDS = ('estimated_cny_1e7', 'conservative_cny_1e7', 'unresolved_attempts')
 
 
-def matches(source, text, reply):
+def matches(source, text, reply, *, structure_only=False):
     if (reply.get('version') != VERSION or reply.get('kind') != 'text'
             or type(reply.get('items')) is not list or len(reply['items']) != 1):
         return False
@@ -27,6 +27,8 @@ def matches(source, text, reply):
     if type(row) is not dict or row.get('source_text') != text or type(row.get('translated_text')) is not str:
         return False
     answer = row['translated_text'].strip()
+    if structure_only:
+        return bool(answer)
     if source == 'zh':
         return re.fullmatch(r'(?i)(?:hello|hi)[.!?！。\s]*', answer) is not None
     return re.fullmatch(r'(?:早上好|早安|上午好)[！。!?.,，\s]*', answer) is not None
@@ -49,9 +51,10 @@ def receipt(budget, scope, request_id):
     return _price_receipt(kind, raw)
 
 
-def checks(budget, scope, token, allowed, send, emit, error_type, *, ready):
+def checks(budget, scope, token, allowed, send, emit, error_type, *,
+           ready, cases=TRANSLATION_CASES, structure_only=False):
     rows = []
-    for source, target, prompt in TRANSLATION_CASES:
+    for source, target, prompt in cases:
         row = dict(kind='translation', language=source, status='UNRUN', reason='earlier_case_stopped',
                    estimated_cny_1e7=0, conservative_cny_1e7=0, unresolved_attempts=0, paid_cny='UNKNOWN')
         if ready and allowed():
@@ -61,7 +64,7 @@ def checks(budget, scope, token, allowed, send, emit, error_type, *, ready):
                     'version': VERSION, 'request_id': str(request), 'kind': 'text',
                     'source_lang': source, 'target_lang': target, 'text': prompt,
                 })
-                if not matches(source, prompt, result):
+                if not matches(source, prompt, result, structure_only=structure_only):
                     raise error_type('FAIL', 'translation_result_invalid')
                 row.update(status='PASS', reason=None)
             except error_type as error:

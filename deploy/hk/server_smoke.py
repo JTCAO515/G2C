@@ -1,7 +1,8 @@
 """B-operated, same-owner Hong Kong deployment smoke over the app's HTTP API."""
 import argparse
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
+from functools import partial
 import hashlib
 from http.client import IncompleteRead
 import json
@@ -111,15 +112,15 @@ class NoRedirect(HTTPRedirectHandler):
         return None
 
 
-def request(token, route, *, document=None):
+def request(token, route, *, document=None, timeout=HTTP_SECONDS, content_type='application/octet-stream'):
     opener = build_opener(NoRedirect())
     headers = {'Authorization': 'Bearer ' + token, 'Accept': 'application/json'}
     data = None
     if document is not None:
-        headers['Content-Type'] = 'application/octet-stream'
+        headers['Content-Type'] = content_type
         data = json.dumps(document, ensure_ascii=False).encode()
     try:
-        with opener.open(Request(ORIGIN + route, data=data, headers=headers), timeout=HTTP_SECONDS) as response:
+        with opener.open(Request(ORIGIN + route, data=data, headers=headers), timeout=timeout) as response:
             if response.status != 200:
                 raise SmokeResult('FAIL', f'http_{response.status}')
             raw = response.read(4_500_001)
@@ -309,7 +310,7 @@ def permitted(now, start, end, *, minimum_seconds=0):
     return start <= now < end and (end - now).total_seconds() >= minimum_seconds
 
 
-def run_case(case, prompt, token, allowed, send=request):
+def run_case(case, prompt, token, allowed, send=request, *, quick=False):
     message_id = str(uuid.uuid4())
     payload = dict(version='LIO-message.2', message_id=message_id, text=prompt,
                    locale=case[:2], new_conversation=True)
@@ -368,12 +369,17 @@ def run_case(case, prompt, token, allowed, send=request):
                 sample = dict(start_ms=began, end_ms=clock_ms(), http=200, ref=ref,
                               answering=bool(row and row.get('status')=='answering' and not row.get('answer')))
                 result['polls'].append(sample)
-                if row is not None and row.get('status') == 'failed':
+                if row is not None and row.get('status') == 'failed' and not quick:
                     raise SmokeResult('FAIL' if row.get('failure') == 'quota' else 'UNKNOWN', 'original_run_' +
                                       ('quota' if row.get('failure') == 'quota' else 'unavailable'))
-                if conversation is not None and row is not None and row.get('status') == 'completed':
+                if conversation is not None and row is not None and (
+                        row.get('status') == 'completed' or quick and row.get('status') == 'failed'):
                     answer = row.get('answer')
-                    if case.endswith('.plan'):
+                    if quick:
+                        if not isinstance(answer, str) or not answer.strip():
+                            reason = 'original_run_quota' if row.get('failure') == 'quota' else 'required_answer_missing'
+                            raise SmokeResult('FAIL', reason)
+                    elif case.endswith('.plan'):
                         if not isinstance(answer, str):
                             raise SmokeResult('UNKNOWN', 'timeline_message_shape')
                         result['legacy_format_match'] = valid_answer(case, answer)
@@ -571,7 +577,8 @@ def run(budget, database, scope, token, owner, start, end, *, translation_sessio
         if not dialogue_within_cap:
             print_json(dict(kind='cost', **dialogue_price, line_usage_delta_cny_1e7=used-before['used']))
             raise ValueError('combined smoke headroom not available before translation')
-        translation_rows = checks(budget, translation_scope, translation_token, allowed, request, print_json, SmokeResult,
+        plugin_send = partial(request, timeout=55, content_type='application/json')
+        translation_rows = checks(budget, translation_scope, translation_token, allowed, plugin_send, print_json, SmokeResult,
                                   ready=history_result['status']=='PASS')
         translation_cost = {key: sum(row[key] for row in translation_rows) for key in METER_FIELDS}
     _, price, used = settlement(budget, owner, restricted, before['tail'])
@@ -581,6 +588,90 @@ def run(budget, database, scope, token, owner, start, end, *, translation_sessio
     print_json(dict(kind='cost', **price, line_usage_delta_cny_1e7=used-before['used'],
                     dialogue_cost=dialogue_cost, translation_cost=translation_cost))
     return 0
+
+
+def quick_status(result):
+    if result['status'] in {'PASS', 'UNRUN'}:
+        return result['status']
+    reason = result.get('reason') or ''
+    if reason in {'http_timeout', 'message_write_outcome', 'original_run_deadline',
+                  'required_answer_missing', 'translation_result_invalid', 'taxi_link_missing',
+                  'invalid_api_response'} or re.fullmatch(r'http_5[0-9]{2}', reason):
+        return 'FAIL'
+    return 'HOLD'
+
+
+def quick_taxi(token, send):
+    from cj_api.plugin_tools import PluginError
+    from cj_api.taxi_tools import LINK, VERSION, _public_link
+
+    origin = dict(lat=39.895910, lng=116.321300, coordinate_system='GCJ-02')
+    destination = dict(lat=40.053061, lng=116.306205, coordinate_system='GCJ-02')
+    try:
+        result, ref = send(token, LINK, document=dict(version=VERSION, origin=origin, destination=destination))
+        if result.get('version') != VERSION or result.get('link_type') != 'https':
+            raise SmokeResult('FAIL', 'taxi_link_missing')
+        _public_link(result.get('url'), dict(from_lat='39.895910', from_lng='116.321300',
+                                            to_lat='40.053061', to_lng='116.306205'))
+        return dict(status='PASS', ref=ref)
+    except SmokeResult as error:
+        return dict(status=error.status, reason=error.reason)
+    except PluginError:
+        return dict(status='FAIL', reason='taxi_link_missing')
+
+
+def run_quick(budget, token, owner, start, end, translation_session):
+    from deploy.hk.server_smoke_budget import CASH_CAP, budget_state, dialogue_cash_cap, restrict, settlement
+    from deploy.hk.translation_relay import translation_state
+    from deploy.hk.translation_smoke import METER_FIELDS, TRANSLATION_CASES, checks
+
+    def allowed():
+        return permitted(datetime.now(timezone.utc), start, end, minimum_seconds=60)
+
+    def finish(status):
+        print_json(dict(kind='quick_verdict', status=status, rollback=status == 'FAIL'))
+        return {'PASS': 0, 'FAIL': 1, 'HOLD': 2, 'UNRUN': 3}[status]
+
+    if end-start > timedelta(minutes=10) or not allowed():
+        return finish('UNRUN')
+    if translation_session is None or translation_state() is not True:
+        return finish('UNRUN')
+
+    before = budget_state(budget, owner)
+    before['translation_required'] = True
+    print_json(dict(kind='restriction_intent', before=before))
+    restricted = restrict(budget, before)
+    print_json(dict(kind='restricted', before=before, restricted=restricted))
+    chat = run_case('zh.quick', '你是谁', token, allowed, quick=True)
+    print_json(dict(kind='case', **chat))
+    chat_status = quick_status(chat)
+    try:
+        _, cost, used = settlement(budget, owner, restricted, before['tail'])
+    except (ValueError, OSError, SQLiteError, BudgetUnknown):
+        print_json(dict(kind='cost', status='HOLD', reason='original_cost_boundary_unconfirmed'))
+        return finish('FAIL' if chat_status == 'FAIL' else 'HOLD')
+    line_usage = used-before['used']
+    limit = dialogue_cash_cap(True)
+    within_cap = 0 <= line_usage <= limit and 0 <= cost['conservative_cny_1e7'] <= limit
+    scope, plugin_token = translation_session
+    plugin_send = partial(request, timeout=55, content_type='application/json')
+    translated, = checks(budget, scope, plugin_token, allowed, plugin_send, print_json, SmokeResult,
+                         ready=within_cap and chat_status == 'PASS', cases=TRANSLATION_CASES[:1],
+                         structure_only=True)
+    combined = {name: cost[name]+translated[name] for name in METER_FIELDS}
+    print_json(dict(kind='cost', **combined, paid_cny='UNKNOWN', line_usage_delta_cny_1e7=line_usage))
+    if chat_status != 'PASS':
+        return finish(chat_status)
+    if not within_cap or max(line_usage, cost['conservative_cny_1e7']) + translated['conservative_cny_1e7'] > CASH_CAP:
+        return finish('HOLD')
+    translation_status = quick_status(translated)
+    if translation_status != 'PASS':
+        return finish(translation_status)
+    if not allowed():
+        return finish('UNRUN')
+    taxi = quick_taxi(plugin_token, plugin_send)
+    print_json(dict(kind='taxi', **taxi))
+    return finish(quick_status(taxi))
 
 
 def _request_id(value):
@@ -678,7 +769,7 @@ def decide(events, wire_logs):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('preflight', 'run', 'restore', 'verify'))
+    parser.add_argument('action', choices=('preflight', 'quick', 'run', 'restore', 'verify'))
     args = parser.parse_args()
     raw = sys.stdin.buffer.read(2_000_001)
     if len(raw) > 2_000_000:
@@ -728,13 +819,13 @@ def main():
             raw_roster = os.environ.get(TRANSLATION_INTERNAL_SUBJECTS)
             if raw_roster is not None:
                 from cj_api.local_account_admission_v2 import account_checker_for
-                from deploy.hk.plugin_roster import configured_plugin_subjects
+                from deploy.hk.plugin_roster import configured_translation_subjects
 
                 translation_token = envelope.get('translation_access_token')
                 if not isinstance(translation_token, str) or not translation_token:
                     print_json(dict(kind='batch', status='UNRUN', reason='eligible_translation_session_required'))
                     return 3
-                roster = configured_plugin_subjects(raw_roster)
+                roster = configured_translation_subjects(raw_roster)
                 translation = account_checker_for(runtime.auth, runtime.database(), selected_subjects=roster).check(
                     translation_token)
                 if translation.status is AdmissionStatus.UNKNOWN:
@@ -756,6 +847,8 @@ def main():
                     raise ValueError('C standing budget qualification failed')
                 print_json(dict(kind='preflight', status='PASS', provider_calls=0))
                 return 0
+            if args.action == 'quick':
+                return run_quick(budget, token, owner, start, end, translation_session)
             return run(budget, runtime.database(), scope, token, owner, start, end,
                        translation_session=translation_session)
         finally:

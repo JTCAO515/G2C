@@ -31,7 +31,7 @@ from cj_usage.metered_exit import BudgetUnknown
 from cj_usage.translation_budget import TranslationBudget, TranslationDuplicate, TranslationLimit
 
 from .configuration import TRANSLATION_INTERNAL_SUBJECTS
-from .plugin_roster import configured_plugin_subjects
+from .plugin_roster import configured_translation_subjects
 
 
 
@@ -212,7 +212,7 @@ def active_translation(runtime, authorization_guard):
     relay = None
     if raw is not None:
         try:
-            subjects = configured_plugin_subjects(raw)
+            subjects = configured_translation_subjects(raw)
             budget = AuthorizationBudget(HK_JOURNAL_ROOT, authorization_guard=authorization_guard, demo=True)
             checker = account_checker_for(runtime.auth, runtime.database(), selected_subjects=subjects)
             provider = DashScopeTranslation(os.environ['CJ_MODEL_API_KEY'])

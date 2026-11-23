@@ -289,6 +289,56 @@ def test_smoke_keeps_the_original_short_prompts():
     }
 
 
+@pytest.mark.parametrize(('reason', 'expected'), [
+    ('http_503', 'FAIL'), ('http_timeout', 'FAIL'), ('required_answer_missing', 'FAIL'),
+    ('message_write_outcome', 'FAIL'), ('http_429', 'HOLD'), ('unbound_message_ack', 'HOLD'),
+    ('translation_receipt_unknown', 'HOLD'),
+])
+def test_quick_smoke_rolls_back_only_for_service_failure(reason, expected):
+    assert smoke.quick_status(dict(status='UNKNOWN', reason=reason)) == expected
+
+
+def test_quick_smoke_calls_chat_text_and_link_once_with_original_budget(monkeypatch, capsys):
+    from cj_api.taxi_tools import LINK
+    from cj_api.translation import ROUTE
+    from deploy.hk import translation_relay, translation_smoke
+
+    calls = []
+
+    def chat(case, prompt, token, allowed, *, quick):
+        assert (case, prompt, token, quick) == ('zh.quick', '你是谁', 'chat-session', True)
+        calls.append('chat')
+        return dict(status='PASS')
+
+    def send(token, route, *, document, timeout, content_type):
+        assert token == 'plugin-session' and timeout == 55 and content_type == 'application/json'
+        calls.append(route)
+        if route == ROUTE:
+            return dict(version='TRANSLATION.1', kind='text', items=[
+                dict(source_text='你好', translated_text='Greetings.')]), None
+        assert route == LINK and set(document) == {'version', 'origin', 'destination'}
+        return dict(version='TAXI.1', link_type='https',
+                    url='https://v.didi.cn/XvYQEWe?slat=39.89591&slng=116.3213&dlat=40.053061&dlng=116.306205'), None
+
+    monkeypatch.setattr(translation_relay, 'translation_state', lambda: True)
+    monkeypatch.setattr(smoke, 'run_case', chat)
+    monkeypatch.setattr(smoke, 'request', send)
+    monkeypatch.setattr(translation_smoke, 'receipt', lambda *args: 23)
+    monkeypatch.setattr(ceiling, 'budget_state', lambda *args: dict(tail=0, used=0))
+    monkeypatch.setattr(ceiling, 'restrict', lambda budget, before: ceiling.dialogue_cash_cap(before['translation_required']))
+    monkeypatch.setattr(ceiling, 'settlement', lambda budget, owner, cap, tail: (
+        1, dict(estimated_cny_1e7=11, conservative_cny_1e7=11, unresolved_attempts=0), 11))
+
+    start = datetime.now(timezone.utc)
+    assert smoke.run_quick(None, 'chat-session', 'c-owner', start, start + timedelta(minutes=10),
+                           ('plugin-scope', 'plugin-session')) == 0
+    assert calls == ['chat', ROUTE, LINK]
+    records = [json.loads(row) for row in capsys.readouterr().out.splitlines()]
+    assert next(row['restricted'] for row in records if row['kind'] == 'restricted') == 3*CNY_SCALE
+    assert next(row['conservative_cny_1e7'] for row in records if row['kind'] == 'cost') == 34
+    assert records[-1] == dict(kind='quick_verdict', status='PASS', rollback=False)
+
+
 @pytest.mark.parametrize('wire_version', (1, 2))
 def test_smoke_post_is_accepted_by_the_original_lio_wire(monkeypatch, wire_version):
     from io import BytesIO
