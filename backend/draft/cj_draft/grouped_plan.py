@@ -117,6 +117,7 @@ def expand(raw, capture, *, retained, ordinal):
     if not ordinal:
         first, last, _ = LioSourceWindowPublisher._source_window(snapshot.fields)
     items, subjects, days = [], {}, set()
+    copied_participant_ids = []
     for group in value['days']:
         if type(group) is not list or len(group) != 2:
             raise FieldRejected('days', 'exact day/rows pair required')
@@ -140,17 +141,23 @@ def expand(raw, capture, *, retained, ordinal):
                 raise FieldRejected('items', 'exact id/name/start/end/subjects row required')
             item_id, name, start, end, party = row
             identifier(item_id)
-            if (not retained and not ordinal and item_id=='self' and item_id in subjects
-                    and party==subjects[item_id]==['self']):
-                # The first draft has no retained stop to refer to. The model
-                # copied its participant into the new stop ID column.
-                item_id='suggestion-'+str(len(items)+1)
             if item_id in subjects:
-                raise FieldRejected('items.id', 'duplicate new stop ID')
-            validate_subjects(party)
-            subjects[item_id] = party
+                if retained or ordinal or item_id != 'self' or party != subjects[item_id] or party != ['self']:
+                    raise FieldRejected('items.id', 'duplicate new stop ID')
+                # Wait until all explicit stop IDs are known before repairing
+                # the copied participant placeholder in a new dated draft.
+                copied_participant_ids.append(len(items))
+            else:
+                validate_subjects(party)
+                subjects[item_id] = party
             items.append(dict(id=item_id, text=name, start_time=start, end_time=end,
                               timezone=zone['value'], **{('day_index' if ordinal else 'date'): day}))
+    for position in copied_participant_ids:
+        suffix = position + 1
+        while (item_id := f'suggestion-{suffix}') in subjects:
+            suffix += 1
+        items[position]['id'] = item_id
+        subjects[item_id] = ['self']
     return value, items, subjects
 
 
