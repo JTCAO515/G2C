@@ -23,8 +23,7 @@ struct LioToolsView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .accessibilityAddTraits(.isHeader)
                     NavigationLink {
-                        LioLocalSupportView(language: language, directory: try? LocalSupportDirectory.bundled(),
-                                            draftStorage: draftStorage)
+                        LioLocalSupportView(language: language, draftStorage: draftStorage)
                             .toolbar(.visible, for: .navigationBar)
                     } label: {
                         HStack(spacing: 12) {
