@@ -3,6 +3,41 @@ import UIKit
 import CryptoKit
 
 @MainActor final class LioToolsUITests: XCTestCase {
+    func testMetroGuideSwitchesCitiesAndShowsOfficialLinks() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            for appearance in ["light", "dark"] {
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
+                                       "-lio.ui.appearance.v1", appearance, "-UIPreferredContentSizeCategoryName",
+                                       "UICTContentSizeCategoryL"]
+                app.launch()
+                defer { app.terminate() }
+                let tools = app.tabBars.buttons[language == "en" ? "Tools" : "插件"]
+                XCTAssertTrue(tools.waitForExistence(timeout: 8))
+                tools.tap()
+                app.buttons["lio.tools.metro-guide"].tap()
+                let picker = app.buttons["lio.metro.city"]
+                XCTAssertTrue(picker.waitForExistence(timeout: 6))
+                for city in language == "en" ? ["Shanghai", "Chengdu", "Beijing"] : ["上海", "成都", "北京"] {
+                    picker.tap()
+                    app.buttons[city].tap()
+                    XCTAssertTrue(picker.label.contains(city) || (picker.value as? String)?.contains(city) == true)
+                    XCTAssertTrue(app.staticTexts["lio.metro.ticket"].exists)
+                    XCTAssertTrue(app.staticTexts["lio.metro.security"].exists)
+                    XCTAssertTrue(app.staticTexts["lio.metro.gates"].exists)
+                    XCTAssertTrue(app.descendants(matching: .any)["lio.metro.map"].exists)
+                    XCTAssertTrue(app.descendants(matching: .any)["lio.metro.source"].exists)
+                }
+                try app.performAccessibilityAudit(for: .all)
+                let screenshot = XCTAttachment(screenshot: app.screenshot())
+                screenshot.name = "metro-guide-\(language)-\(appearance)"
+                screenshot.lifetime = .keepAlways
+                add(screenshot)
+            }
+        }
+    }
+
     func testPhraseCardsShowFiveScenariosAndBothLanguages() throws {
         continueAfterFailure = false
         for language in ["en", "zh-Hans"] {
