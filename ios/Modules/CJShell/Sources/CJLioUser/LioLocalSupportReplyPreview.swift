@@ -26,7 +26,8 @@ struct LioLocalSupportReplyPreview: View {
                     showingSupport = true
                 } label: {
                     Label(language.text("Open Local Support", "打开本地协助"), systemImage: "sos.circle")
-                        .frame(minHeight: 44)
+                        .frame(minWidth: 44, minHeight: 46)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("lio.reply.open-local-support")
