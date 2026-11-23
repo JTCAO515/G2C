@@ -167,7 +167,7 @@ struct LioTaxiView: View {
             ForEach(fares) { fare in
                 VStack(alignment: .leading, spacing: 4) {
                     Text(language.text(fare.nameEN, fare.nameZH))
-                    Text(price(fare.price)).foregroundStyle(LioTheme.inkSecondary)
+                    Text(fare.priceDisplay).foregroundStyle(LioTheme.inkSecondary)
                 }
             }
             if !fares.isEmpty {
@@ -291,15 +291,6 @@ struct LioTaxiView: View {
             language.text("Taxi isn’t available for this account.", "此账号暂未开通打车。")
         case .unavailable, nil:
             language.text("Taxi details aren’t available right now. Try again.", "暂时无法获取打车信息，请重试。")
-        }
-    }
-
-    private func price(_ price: LioTaxiFare.Price) -> String {
-        switch price {
-        case .range(let minimum, let maximum, let currency):
-            "\(minimum.formatted(.currency(code: currency)))–\(maximum.formatted(.currency(code: currency)))"
-        case .description(let description):
-            description
         }
     }
 

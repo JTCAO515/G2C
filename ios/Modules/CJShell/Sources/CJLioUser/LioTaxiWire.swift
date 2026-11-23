@@ -42,8 +42,6 @@ enum LioTaxiWire {
             let name: String
             let currency: String
             let priceDisplay: String
-            let priceMinMinor: Int?
-            let priceMaxMinor: Int?
         }
 
         let version: String
@@ -90,14 +88,14 @@ enum LioTaxiWire {
             guard !quote.category.isEmpty, !quote.name.isEmpty, !quote.priceDisplay.isEmpty else {
                 throw LioTaxiFailure.unavailable
             }
-            let price: LioTaxiFare.Price
-            if quote.currency == "CNY", let min = quote.priceMinMinor, let max = quote.priceMaxMinor,
-               0 <= min, min <= max {
-                price = .range(minimum: Decimal(min) / 100, maximum: Decimal(max) / 100, currency: quote.currency)
-            } else {
-                price = .description(quote.priceDisplay)
+            let nameEN = switch quote.category {
+            case "1": "Express"
+            case "201": "Discount Express"
+            case "8": "Premier"
+            default: quote.name
             }
-            return LioTaxiFare(id: quote.category, nameZH: quote.name, nameEN: quote.name, price: price)
+            return LioTaxiFare(id: quote.category, nameZH: quote.name, nameEN: nameEN,
+                              priceDisplay: quote.priceDisplay)
         }
     }
 
