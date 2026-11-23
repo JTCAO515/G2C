@@ -238,12 +238,15 @@ class ExistingBudget:
             yield db
 
 
-def test_c_cash_cap_and_restore_preserve_original_unknown_hold():
+@pytest.mark.parametrize(('translation_required', 'dialogue_cap'), [(None, 5), (False, 5), (True, 3)])
+def test_c_cash_cap_and_restore_preserve_original_unknown_hold(translation_required, dialogue_cap):
     budget = ExistingBudget()
     owner = 'a'*32
     before = ceiling.budget_state(budget, owner)
+    if translation_required is not None:
+        before['translation_required'] = translation_required
     restricted = ceiling.restrict(budget, before)
-    assert json.loads(restricted)['active_cap'] == 5*CNY_SCALE
+    assert json.loads(restricted)['active_cap'] == dialogue_cap*CNY_SCALE
     attempt = f'g2c1-{owner}-' + 'b'*32
     with budget.db:
         budget.db.execute('INSERT INTO attempt VALUES (?,?,?,?,?)',
@@ -257,6 +260,9 @@ def test_c_cash_cap_and_restore_preserve_original_unknown_hold():
     with pytest.raises(ValueError, match='drained journal'):
         ceiling.restore(budget, before, restricted, before['ledger'])
     current = journal_state(budget.db)
+    if translation_required:
+        with pytest.raises(ValueError, match='restriction receipt'):
+            ceiling.restore(budget, dict(before, translation_required=False), restricted, current)
     ceiling.restore(budget, before, restricted, current)
     restored = ceiling.budget_state(budget, owner)
     assert restored['ledger'] == current
@@ -724,6 +730,30 @@ def test_enabled_translation_without_its_admitted_session_is_unrun(monkeypatch, 
     assert json.loads(capsys.readouterr().out) == {
         'kind': 'batch', 'status': 'UNRUN', 'reason': 'eligible_translation_session_required',
     }
+
+
+def test_active_smoke_closes_translation_before_dispatch_if_c_headroom_changed(monkeypatch):
+    from deploy.hk import configuration, translation_relay, translation_smoke
+
+    monkeypatch.setenv(configuration.TRANSLATION_INTERNAL_SUBJECTS, 'fixture')
+    monkeypatch.setattr(translation_relay, 'translation_state', lambda: True)
+    monkeypatch.setattr(ceiling, 'budget_state', lambda *args: dict(tail=0, used=0))
+    def restricted(_, before):
+        assert before['translation_required'] is True
+        return 'restricted'
+    monkeypatch.setattr(ceiling, 'restrict', restricted)
+    monkeypatch.setattr(smoke, 'run_case', lambda *args: dict(status='PASS', message_id='fixture'))
+    monkeypatch.setattr(smoke, 'history', lambda *args: dict(status='PASS'))
+    monkeypatch.setattr(smoke, 'original_model_attempts', lambda *args: set())
+    stable = (0, dict(conservative_cny_1e7=3*CNY_SCALE, model_attempts=[]), 3*CNY_SCALE)
+    drifted = (0, dict(conservative_cny_1e7=3*CNY_SCALE+1), 3*CNY_SCALE+1)
+    reads = iter([stable]*len(smoke.CASES) + [drifted])
+    monkeypatch.setattr(ceiling, 'settlement', lambda *args: next(reads))
+    monkeypatch.setattr(translation_smoke, 'checks', lambda *args, **kwargs: pytest.fail('translation accessed'))
+    start = datetime.now(timezone.utc)
+    with pytest.raises(ValueError, match='headroom not available before translation'):
+        smoke.run(None, None, None, 'c-token', 'c-owner', start, start+timedelta(minutes=5),
+                  translation_session=('translation-scope', 'translation-token'))
 
 
 @pytest.mark.parametrize('mode', ['eligible', 'denied', 'same_scope'])

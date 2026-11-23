@@ -1,4 +1,4 @@
-"""Temporary ¥5 restriction of the existing C sublimit. No account quota changes."""
+"""Temporary restriction of the existing C sublimit within the fixed smoke cap."""
 import hashlib
 
 from cj_usage.authorization_budget import CNY_SCALE, LIMITS, _price_receipt, journal_state
@@ -7,6 +7,19 @@ from cj_usage.sublimits import policy, usage
 from deploy.hk.app_smoke_ceiling import BASELINE
 
 CASH_CAP = 5 * CNY_SCALE
+
+
+def dialogue_cash_cap(translation_required):
+    if translation_required is False:
+        return CASH_CAP
+    if translation_required is not True:
+        raise ValueError('original translation smoke mode required')
+    from deploy.hk.translation_smoke import BATCH_RESERVATION
+    return CASH_CAP - BATCH_RESERVATION
+
+
+def _temporary_limit(before):
+    return min(BASELINE['cap'], before['used'] + dialogue_cash_cap(before.get('translation_required', False)))
 
 
 def _policy_and_scope(db, owner):
@@ -31,7 +44,7 @@ def budget_state(budget, owner):
 def restrict(budget, before):
     if before['policy'] != policy(BASELINE):
         raise ValueError('original C standing policy required')
-    limit = min(BASELINE['cap'], before['used'] + CASH_CAP)
+    limit = _temporary_limit(before)
     if limit - before['used'] < CNY_SCALE:
         raise ValueError('insufficient C room for one reservation')
     restricted = policy(dict(BASELINE, active_cap=limit))
@@ -81,7 +94,7 @@ def summarize(rows, owner):
 
 
 def restore(budget, before, restricted, expected_ledger):
-    limit = min(BASELINE['cap'], before['used'] + CASH_CAP)
+    limit = _temporary_limit(before)
     if (before['policy'] != policy(BASELINE) or restricted == before['policy']
             or restricted != policy(dict(BASELINE, active_cap=limit))):
         raise ValueError('original smoke restriction receipt required')
