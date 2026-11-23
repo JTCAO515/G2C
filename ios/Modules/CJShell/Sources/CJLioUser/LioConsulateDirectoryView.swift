@@ -55,7 +55,7 @@ private struct LioConsulateDetailView: View {
                     .accessibilityAddTraits(.isHeader)
 
                 Link(destination: entry.source) {
-                    Label(language.text("Official directory entry", "外交部目录原文"), systemImage: "arrow.up.right")
+                    Label(language.text("Official directory entry", "外交部官方目录"), systemImage: "arrow.up.right")
                         .foregroundStyle(LioTheme.ink)
                         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                         .contentShape(Rectangle())
