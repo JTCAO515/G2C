@@ -1,9 +1,8 @@
 from copy import deepcopy
-from datetime import date, datetime
+from datetime import date, timedelta
 from hashlib import sha256
 import json
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 import pytest
 from jsonschema import Draft202012Validator, FormatChecker
@@ -33,14 +32,14 @@ def record(provider, kind, payload):
                 sha256=sha256(packed(payload)).hexdigest(), payload=payload)
 
 
-def venue(entry=VENUE, *, visit_date=date(2026, 11, 16), locale='zh', **kwargs):
+def venue(entry=VENUE, *, visit_date=date(2026, 11, 16), locale='zh', question_day=None, **kwargs):
     payload = dict(entry_id=entry['id'], entry_sha256=sha256(packed(entry)).hexdigest(),
                    checked_on=entry['checked_on'], expires_on=entry['expires_on'],
                    subject_key=entry['subject']['key'], item_ids=['item-1'], amap_ids=['poi-1'])
     # Test the actual dated source eligibility, not a direct RichSource bypass.
     case = deepcopy(EXAMPLES['cases']['unconfirmed'])
-    # Maintained H content is observed today in China; visit/fixture dates stay fixed.
-    case['source']['original']['question_day'] = datetime.now(ZoneInfo('Asia/Shanghai')).date().isoformat()
+    # Replay the source at its recorded check date, independently of CI's wall clock.
+    case['source']['original']['question_day'] = entry['checked_on'] if question_day is None else question_day
     case['host_expected']['expected_original'] = deepcopy(case['source']['original'])
     r = record('visitor', 'tip', payload)
     case['source']['records'] = [r]
@@ -106,6 +105,15 @@ def test_city_or_similar_name_cannot_replace_exact_applicability(kwargs):
         venue(**kwargs)
 
 
+@pytest.mark.parametrize('question_day', [
+    (date.fromisoformat(VENUE['checked_on']) - timedelta(days=1)).isoformat(),
+    VENUE['expires_on'],
+])
+def test_h_observation_outside_validity_is_rejected(question_day):
+    with pytest.raises(SourceRejected, match='H observation outside its checked validity period'):
+        venue(question_day=question_day)
+
+
 def test_changed_h_bytes_are_not_accepted_under_the_original_reference():
     original = venue()[0]
     assert original.source.title == VENUE['subject']['name_zh']
@@ -114,7 +122,7 @@ def test_changed_h_bytes_are_not_accepted_under_the_original_reference():
                    checked_on=VENUE['checked_on'], expires_on=VENUE['expires_on'],
                    subject_key=VENUE['subject']['key'], item_ids=['item-1'], amap_ids=['poi-1'])
     case = deepcopy(EXAMPLES['cases']['unconfirmed'])
-    case['source']['original']['question_day'] = datetime.now(ZoneInfo('Asia/Shanghai')).date().isoformat()
+    case['source']['original']['question_day'] = VENUE['checked_on']
     case['host_expected']['expected_original'] = deepcopy(case['source']['original'])
     r = record('visitor', 'tip', payload)
     case['source']['records'] = case['host_expected']['eligible_records'] = [r]
