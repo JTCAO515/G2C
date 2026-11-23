@@ -92,7 +92,7 @@ def main():
         tests += "\n" + (HERE / "LioTaxiUITests.swift").read_text()
         tests += "\n" + (HERE / "LioHotelUITests.swift").read_text()
         tests += "\n" + (HERE / "LioToolsLocalSupportUITests.swift").read_text()
-        if "testDebugDialUsesTheConfiguredNumberWithoutCalling" in args.case:
+        if "testDebugDialUsesTheConfiguredNumberWithoutCalling" in (args.case or []):
             number = os.environ.get("G2C_LOCAL_SUPPORT_TEST_PHONE", "")
             if len(number) != 11 or not number.isascii() or not number.isdecimal():
                 parser.error("Supply the designated local telephone fixture in G2C_LOCAL_SUPPORT_TEST_PHONE")
@@ -176,8 +176,11 @@ private struct LioRootFailureView: View {
     generated_source.write_text(app.replace(preview, fixture_routes)
                                 .replace("import CJLioUser\n", "@testable import CJLioUser\n")
                                 + "\n" + "\n".join((HERE / name).read_text() for name in fixtures) + "\n" + beta_root)
-    settings.write_text(settings.read_text().replace("space.go2china.foundation.local", "space.go2china.lio.acceptance")
-                        .replace(json.dumps(str(app_source)), json.dumps(str(generated_source))))
+    project_text = settings.read_text().replace("space.go2china.foundation.local", "space.go2china.lio.acceptance")
+    project_text = project_text.replace(json.dumps(str(app_source)), json.dumps(str(generated_source)))
+    if args.tools:
+        project_text = project_text.replace('G2C_DEBUG_LOCAL_NETWORK=1"', 'G2C_DEBUG_LOCAL_NETWORK=1 G2C_TOOLS_PREVIEW_PLIST=1"')
+    settings.write_text(project_text)
     if args.tools and "testLocalSupportDraftReopensAndClearsWithoutSending" in args.case:
         bundle = "space.go2china.lio.acceptance"
         entitlement = output / "LocalSupportDraft.entitlements"

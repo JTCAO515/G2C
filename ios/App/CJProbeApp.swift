@@ -61,12 +61,19 @@ struct CJProbeApp: App {
             Group {
                 #if G2C_DEMO_BETA
                 if let demo { DemoBetaRootView(shell: shell, root: demo) }
-                else { Text(shell.language.text("Lio is temporarily unavailable.", "暂时打不开 Lio。")) }
+                else {
+                    Text(shell.language.text("Lio is temporarily unavailable.", "暂时打不开 Lio。"))
+                        .lioEmergencySupportFallback(language: shell.language.lio, enabled: true)
+                }
                 #elseif DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
                 #if targetEnvironment(simulator)
                 #if G2C_LIO_APP
                 if canPreviewLio, ProcessInfo.processInfo.arguments.contains("--lio-onboarding-preview") {
                     LioOnboardingPreview(shell: shell)
+                        .lioEmergencySupportFallback(
+                            language: shell.language.lio,
+                            enabled: ProcessInfo.processInfo.arguments.contains("--lio-support-sos")
+                        )
                 } else if canPreviewLio, ProcessInfo.processInfo.arguments.contains("--lio-preview") {
                     lioPreview
                 } else {

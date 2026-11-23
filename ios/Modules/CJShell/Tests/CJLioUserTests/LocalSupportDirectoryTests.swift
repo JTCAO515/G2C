@@ -67,4 +67,12 @@ struct LocalSupportDirectoryTests {
             #expect(throws: (any Error).self) { try LocalSupportDirectory.decode(Data(changed.utf8)) }
         }
     }
+    @Test func rejectsDuplicateDirectoryKeysAndKeepsPublicNumbersAvailable() {
+        let duplicate = #"{"data_version":1,"verified_at":"2026-11-23","embassies":[],"embassies":[]}"#
+        #expect(throws: LocalSupportDirectory.Failure.invalidMetadata) {
+            try LocalSupportDirectory.decode(Data(duplicate.utf8))
+        }
+        #expect(LocalSupportDirectory.emergencyContacts.map(\.phone.number) == ["110", "120", "119", "122"])
+    }
+
 }

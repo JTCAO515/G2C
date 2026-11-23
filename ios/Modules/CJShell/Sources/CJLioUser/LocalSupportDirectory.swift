@@ -1,3 +1,4 @@
+import CJStrictJSON
 import Foundation
 
 struct LocalSupportPhone: Decodable, Equatable, Sendable {
@@ -110,6 +111,8 @@ struct LocalSupportDirectory: Sendable {
     }
 
     static func decode(_ data: Data) throws -> Self {
+        var reader = StrictJSONReader<DirectoryJSONPolicy>(bytes: Array(data))
+        try reader.check()
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
         let file = try decoder.decode(EmbassyFile.self, from: data)
@@ -144,4 +147,10 @@ struct LocalSupportDirectory: Sendable {
         Contact("tourism", "旅游投诉", "Tourism complaints", 12345,
                 detail: Text(zh: "通过当地政务服务热线反映旅游问题。", en: "Contact the local public service hotline about tourism complaints.")),
     ]
+}
+
+
+private enum DirectoryJSONPolicy: StrictJSONPolicy {
+    static var failure: LocalSupportDirectory.Failure { .invalidMetadata }
+    static var requiresObjectRoot: Bool { true }
 }

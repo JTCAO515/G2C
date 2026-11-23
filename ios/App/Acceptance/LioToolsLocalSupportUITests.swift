@@ -56,6 +56,7 @@ import XCTest
         showNationalityButton(in: app)
         XCTAssertTrue(app.staticTexts["Embassy of Japan"].exists)
         XCTAssertTrue(app.buttons["lio.support.embassy.copy-address"].exists)
+        XCTAssertTrue(app.buttons["lio.support.embassy.open-map"].exists)
         XCTAssertFalse(app.staticTexts["Embassy of the Republic of Korea"].exists)
         app.terminate()
         app.launch()
@@ -128,10 +129,12 @@ import XCTest
 
     @objc func testSOSOpensEmergencyNumbersDuringChatAndRecovery() throws {
         continueAfterFailure = false
-        for (arguments, hasNewChat) in [
-            (["--lio-chat-history-acceptance", "--lio-support-sos"], true),
-            (["--lio-chat-history-acceptance", "--lio-support-sos", "--lio-support-suspended"], false),
-            (["--lio-session-recovery-acceptance", "--lio-support-sos"], false),
+        for (arguments, hasNewChat, showConnectionError) in [
+            (["--lio-chat-history-acceptance", "--lio-support-sos"], true, false),
+            (["--lio-chat-history-acceptance", "--lio-support-sos", "--lio-support-suspended"], false, false),
+            (["--lio-session-recovery-acceptance", "--lio-support-sos"], false, false),
+            (["--lio-session-recovery-acceptance", "--lio-support-sos"], false, true),
+            (["--lio-onboarding-preview", "--lio-support-sos"], false, false),
         ] {
             let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
             app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", "en"] + arguments
@@ -139,6 +142,9 @@ import XCTest
             defer { app.terminate() }
             let sos = app.buttons["lio.support.sos"]
             XCTAssertTrue(sos.waitForExistence(timeout: 10))
+            if showConnectionError {
+                app.buttons["synthetic.recovery.offline"].tap()
+            }
             XCTAssertTrue(sos.isEnabled)
             if hasNewChat {
                 let newChat = app.buttons["lio.chat.newShortcut"]
@@ -150,6 +156,30 @@ import XCTest
             XCTAssertTrue(app.staticTexts["Emergency numbers"].waitForExistence(timeout: 6))
             XCTAssertTrue(app.buttons["lio.support.police"].label.contains("110"))
         }
+    }
+
+    @objc func testLocalSupportShowsConsumerContactsAtLargestTextSize() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", "en",
+                               "-lio.ui.appearance.v1", "dark", "-UIPreferredContentSizeCategoryName",
+                               "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch()
+        defer { app.terminate() }
+        openLocalSupport(app)
+        try app.performAccessibilityAudit(for: .all)
+        let consumer = app.buttons["lio.support.consumer"]
+        for _ in 0..<12 where !consumer.isHittable {
+            app.scrollViews.firstMatch.swipeUp()
+        }
+        XCTAssertTrue(consumer.isHittable)
+        XCTAssertTrue(app.staticTexts["12315"].exists)
+        XCTAssertGreaterThanOrEqual(consumer.frame.height, 44)
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "local-support-largest-text"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+        try app.performAccessibilityAudit(for: .all)
     }
 
     @objc func testDebugDialUsesTheConfiguredNumberWithoutCalling() {
