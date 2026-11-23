@@ -1,13 +1,13 @@
 ---
-name: 内测反馈 / Internal beta feedback
-about: 构建 52 的脱敏复现摘要 / Redacted build 52 reproduction summary
+name: 内测分拣（J 线） / Internal beta triage (J line)
+about: 将构建 52 的内部反馈整理为脱敏子票 / File a redacted follow-up for build 52
 title: "[Beta 52] "
 labels: []
 ---
 
-这是公开 Issue。原截图、复制的问题记录和精确时间只通过 JT 指定的内部渠道提交。公开摘要请去掉邀请码、编号、令牌、个人信息及服务参考号，使用合成输入。
+供 J 线填写。测试者通过内测邀请指定的内部渠道提交原截图、复制的问题记录及精确时间。J 线用合成输入描述复现步骤，公开票只记脱敏摘要，去掉邀请码、编号、令牌、个人信息及服务参考号。
 
-This issue is public. Send original screenshots, copied Problem notes, and exact timestamps only through the approved internal channel. Remove access codes, assigned numbers, tokens, personal data, and service references from this summary. Use sample data.
+For J-line triage. Testers send original screenshots, copied Problem notes, and exact timestamps through the internal channel named in the invitation. Use sample data to describe the steps. This public issue contains only a redacted summary without access codes, assigned numbers, tokens, personal data, or service references.
 
 ### 构建及环境 / Build and environment
 
