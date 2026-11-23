@@ -116,7 +116,7 @@
     "backend/cj_api/local_memory_history.py": "c7bbe834c80b004aea4c5d31a51a9e77cbeaa197806a5b41e2b0b8c22acd5674",
     "backend/cj_api/real_services.py": "2e7753a55c2cab28aed43c45fd7b3078b90b2f25944a5a733c8d65a93800ddb0",
     "backend/cj_api/tool_evidence.py": "b223e97e4419949a0a36b618469d669eccf3e97c15fc9ebc54c8d987a7a7867a",
-    "backend/draft/cj_draft/grouped_plan.py": "5e71c5911ac3c8c9150e18edb809be49347313ac8c5116cc6202880e2bd6399c",
+    "backend/draft/cj_draft/grouped_plan.py": "1b7fbada1331ac101bb2572e4b885d114e157b240f49d623f0062eacd1509f05",
     "backend/draft/cj_draft/lio_plan.py": "9985c0e3d117f98fd953a97e5b457dfc811592c7cf1b0a6c94d57c5890ba8fa9",
     "backend/draft/cj_draft/rich_calendar_source.py": "8250f55afb06dce9b33647299a34dc4d7d39075b79c89b81470e7d15237c477d",
     "backend/draft/cj_draft/rich_first.py": "f14e57dee9f4cd0a9e75e041a9ca2bcae1bdc87eab8f2d4e09517219748dc44e",
@@ -137,7 +137,7 @@
     "eval/optimization/score_v2.py": "015fa9f21b418fe49a5ac07a5fb3027e0422620a6616029f2ba6438bfa1e9322",
     "tooling/optimization/uv.lock": "c3729fbcd04627cb07bde4f5f21b9c4fbfa4748b3d7468d550c7fc2af62bc343"
   },
-  "system_prompt_sha256": "ddef7903a550d5c457cbaa4614296411b7198c65516555e93b9d281d5880dd83",
+  "system_prompt_sha256": "5ee5d8ee01ea250a4efc3333afa0b5caa051d7fc96aedeb26559d4720d694409",
   "task_sha256": "9d4376ba7512d6f3c0741036ae1bd0dda99752bbc9f8b8fb8dd7025c61a530ec",
   "task_version": "G2C-dialogue-cases.2",
   "tool_implementation_sha256": "2e7753a55c2cab28aed43c45fd7b3078b90b2f25944a5a733c8d65a93800ddb0",

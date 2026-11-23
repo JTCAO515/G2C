@@ -1,4 +1,4 @@
-from base64 import b64encode
+from base64 import b64decode, b64encode
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from io import BytesIO
@@ -27,11 +27,11 @@ def _body(kind='text', **content):
                 source_lang='zh', target_lang='en', **content)
 
 
-def _wav(seconds=1, rate=16_000):
+def _wav(seconds=1, rate=16_000, *, frames=None):
     raw = BytesIO()
     with wave.open(raw, 'wb') as audio:
         audio.setparams((1, 2, rate, 0, 'NONE', 'not compressed'))
-        audio.writeframes(b'\0\0' * (seconds * rate))
+        audio.writeframes(b'\0\0' * (seconds * rate if frames is None else frames))
     return b64encode(raw.getvalue()).decode()
 
 
@@ -71,6 +71,12 @@ def interface(budget, request):
             scenario = getattr(request, 'param', None)
             if scenario == 'http':
                 return httpx.Response(400, json={'error': {'message': 'private provider detail'}})
+            if scenario == 'subsecond':
+                sent = payload['messages'][0]['content'][0]['input_audio']['data']
+                with wave.open(BytesIO(b64decode(sent.partition(',')[2])), 'rb') as audio:
+                    seconds = audio.getnframes() // audio.getframerate()
+                return httpx.Response(200, json=dict(model=model, id=str(uuid4()), choices=[
+                    {'message': {'content': '你好'}, 'finish_reason': 'stop'}], usage={'seconds': seconds}))
             usage = {
                 'seconds': {'invalid_seconds': 2}.get(scenario, 1),
             } if scenario != 'missing_usage' else {}
@@ -178,6 +184,17 @@ def test_asr_502_exposes_only_diagnostics_and_keeps_the_original_hold(
         f'G2C_TRANSLATION_ASR_FAILURE reason={reason} supplier_http={upstream_http}',
     ]
     assert 'private provider detail' not in caplog.text
+
+
+@pytest.mark.parametrize('interface', ['subsecond'], indirect=True)
+def test_subsecond_speech_keeps_the_first_billed_second_and_returns_a_translation(interface):
+    client, calls, ledger = interface
+    response = _post(client, _body('speech', media=_wav(frames=14959)))
+    assert response.status_code == 200
+    assert response.json()['items'] == [{'source_text': '你好', 'translated_text': 'Hello'}]
+    assert calls == [SPEECH_MODEL, TEXT_MODEL]
+    rows = ledger.inspect()
+    assert len(rows) == 2 and all(row['state'] == 'RECEIVED' for row in rows)
 
 
 def test_reject_wrong_encoding_and_disallow_provider_url(interface):
