@@ -15,6 +15,7 @@ from zlib import compress, crc32
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 import httpx
+from PIL import Image
 import pytest
 
 from cj_api.translation import (
@@ -47,7 +48,13 @@ def _wav(seconds=1, rate=16_000, *, frames=None):
 
 
 
-def _layout_body():
+def _layout_body(*, jpeg=False):
+    if jpeg:
+        buffer = BytesIO()
+        with Image.new('L', (80, 50)) as image:
+            image.save(buffer, format='JPEG')
+        return dict(_body('image', media=b64encode(buffer.getvalue()).decode()), version=IMAGE_LAYOUT_VERSION)
+
     def chunk(kind, data):
         return pack('>I', len(data)) + kind + data + pack('>I', crc32(kind + data))
 
@@ -97,7 +104,7 @@ def interface(budget, request):
             task = payload['parameters']['ocr_options']['task']
             if task == 'advanced_recognition':
                 image, = payload['input']['messages'][0]['content']
-                assert image['image'].startswith('data:image/png;base64,')
+                assert image['image'].startswith(('data:image/png;base64,', 'data:image/jpeg;base64,'))
                 assert image['enable_rotate'] is False
                 location = [2, 3, 20, 3, 20, 12, 2, 12]
                 if scenario == 'layout_bad':
@@ -171,7 +178,7 @@ def interface(budget, request):
                                  DashScopeTranslation('fixture-key', connection=Connection),
                                  lambda issuer, subject: subject)
         tts_enabled = scenario in ('tts_ok', 'tts_code', 'tts_empty')
-        layout_enabled = scenario in ('layout_ok', 'layout_empty', 'layout_bad')
+        layout_enabled = scenario in ('layout_ok', 'layout_jpeg', 'layout_empty', 'layout_bad')
         with translation_socket(relay, path=path, tts_enabled=tts_enabled, layout_enabled=layout_enabled):
             app = FastAPI()
             register_translation_route(app, send=lambda token, raw, **opts: socket_request(token, raw, path=path, **opts))
@@ -258,12 +265,13 @@ def test_reject_wrong_encoding_and_disallow_provider_url(interface):
     assert calls == []
 
 
-@pytest.mark.parametrize(('interface', 'expected', 'attempts_count'), [
-    ('layout_ok', 200, 2), ('layout_empty', 200, 1), ('layout_bad', 502, 1), ('layout_closed', 403, 0),
+@pytest.mark.parametrize(('interface', 'expected', 'attempts_count', 'jpeg'), [
+    ('layout_ok', 200, 2, False), ('layout_jpeg', 200, 2, True), ('layout_empty', 200, 1, False),
+    ('layout_bad', 502, 1, False), ('layout_closed', 403, 0, False),
 ], indirect=['interface'])
-def test_image_layout_is_internal_bounded_and_uses_original_image_journal(interface, expected, attempts_count):
+def test_image_layout_is_internal_bounded_and_uses_original_image_journal(interface, expected, attempts_count, jpeg):
     client, calls, ledger = interface
-    body = _layout_body()
+    body = _layout_body(jpeg=jpeg)
     inside = {'Authorization': 'Bearer internal-fixture'}
     outside = {'Authorization': 'Bearer external-fixture'}
     assert client.post(IMAGE_LAYOUT_ROUTE, json=body, headers=outside).status_code == 403
@@ -281,6 +289,23 @@ def test_image_layout_is_internal_bounded_and_uses_original_image_journal(interf
     assert calls == [IMAGE_MODEL, TEXT_MODEL][:attempts_count]
     assert [r['state'] for r in ledger.inspect()] == ['RECEIVED'] * attempts_count
     assert '你好' not in repr(ledger.inspect())
+
+
+@pytest.mark.parametrize('interface', ['layout_ok'], indirect=True)
+def test_image_layout_rejects_header_only_images_without_a_reservation(interface):
+    client, calls, ledger = interface
+    body = _layout_body()
+    valid_png = b64decode(body['media'])
+    png_header_only = valid_png[:33] + valid_png[-12:]
+    jpeg_header_only = bytes.fromhex('ffd8 ffc0000b080032005001011100 ffd9')
+    auth = {'Authorization': 'Bearer internal-fixture'}
+    for media in (png_header_only, jpeg_header_only):
+        payload = dict(body, media=b64encode(media).decode())
+        response = client.post(IMAGE_LAYOUT_ROUTE, json=payload, headers=auth)
+        assert response.status_code == 400
+        assert response.json() == dict(version=IMAGE_LAYOUT_VERSION, error='invalid_request')
+    assert calls == []
+    assert ledger.inspect() == []
 
 
 @pytest.mark.parametrize('enabled', [False, True])

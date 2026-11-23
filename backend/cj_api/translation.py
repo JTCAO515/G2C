@@ -13,6 +13,7 @@ from urllib.parse import urlsplit
 from uuid import UUID
 import wave
 
+from PIL import Image
 
 from cj_auth.interfaces import AdmissionReason, AdmissionStatus
 from cj_strict_json import reject_duplicates
@@ -87,42 +88,28 @@ def _audio(data):
 
 
 
-def _jpeg_size(media):
-    if not media.endswith(b'\xff\xd9'):
-        raise invalid()
-    offset = 2
-    while offset + 4 <= len(media) and media[offset] == 0xff:
-        offset += 1
-        while offset < len(media) and media[offset] == 0xff:
-            offset += 1
-        if offset + 3 > len(media):
-            break
-        marker = media[offset]
-        offset += 1
-        if marker in (0x00, 0xd8, 0xd9, 0xda):
-            break
-        length = int.from_bytes(media[offset:offset + 2], 'big')
-        if length < 2 or offset + length > len(media):
-            break
-        if marker in (0xc0, 0xc1, 0xc2) and length >= 8:
-            height = int.from_bytes(media[offset + 3:offset + 5], 'big')
-            width = int.from_bytes(media[offset + 5:offset + 7], 'big')
-            return width, height
-        offset += length
-    raise invalid()
-
-
 def _layout_size(media, media_type):
-    if media_type == 'image/png':
-        if len(media) < 33 or media[8:16] != b'\x00\x00\x00\x0dIHDR':
-            raise invalid()
-        width = int.from_bytes(media[16:20], 'big')
-        height = int.from_bytes(media[20:24], 'big')
-    else:
-        width, height = _jpeg_size(media)
-    if (not 15 <= width <= MAX_LAYOUT_DIMENSION or not 15 <= height <= MAX_LAYOUT_DIMENSION
-            or not MIN_LAYOUT_PIXELS <= width * height <= MAX_LAYOUT_PIXELS):
+    png = media_type == 'image/png'
+    expected_end = b'\x00\x00\x00\x00IEND\xaeB\x60\x82' if png else b'\xff\xd9'
+    if not media.endswith(expected_end):
         raise invalid()
+
+    formats = ('PNG',) if png else ('JPEG',)
+    try:
+        with Image.open(BytesIO(media), formats=formats) as image:
+            width, height = image.size
+            if (not 15 <= width <= MAX_LAYOUT_DIMENSION or not 15 <= height <= MAX_LAYOUT_DIMENSION
+                    or not MIN_LAYOUT_PIXELS <= width * height <= MAX_LAYOUT_PIXELS
+                    or (png and image.n_frames != 1)):
+                raise invalid()
+            image.verify()
+        # Pillow requires a fresh image object after verify. Decode within the
+        # checked canvas to catch truncated image data before reserving OCR.
+        with Image.open(BytesIO(media), formats=formats) as image:
+            image.load()
+    # Pillow may report missing PNG scan data as an IndexError during verify.
+    except (Image.DecompressionBombError, EOFError, IndexError, OSError, SyntaxError, ValueError):
+        raise invalid() from None
     return width, height
 
 
