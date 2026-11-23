@@ -71,6 +71,7 @@ struct LioToolsView: View {
                     .accessibilityIdentifier("lio.tools.translation")
                     NavigationLink {
                         LioPhraseCardsView(language: language)
+                            .toolbar(.visible, for: .navigationBar)
                     } label: {
                         Label(language.text("Phrase Cards", "常用语卡片"), systemImage: "text.bubble")
                             .foregroundStyle(LioTheme.ink)
