@@ -34,6 +34,19 @@ struct LioToolsView: View {
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("lio.tools.local-support")
                     #if DEBUG
+                    if ProcessInfo.processInfo.arguments.contains("--lio-esim-preview") {
+                        NavigationLink {
+                            LioESIMPreviewView(language: language)
+                        } label: {
+                            Label(language.text("eSIM", "上网卡"), systemImage: "esim")
+                                .foregroundStyle(LioTheme.ink)
+                                .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+                                .padding(.horizontal, 16)
+                                .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("lio.tools.esim")
+                    }
                     if let service = LioTaxiService.previewFromArguments {
                         previewTaxi(service)
                     }
