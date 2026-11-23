@@ -197,5 +197,6 @@ JT 已决定跳过 52，原执行单并入 [53 验收清单](../build53-release-
 | [#1370 两次模拟器对比度 FAIL](https://github.com/JTCAO515/G2C/issues/1370#issuecomment-7097195549) | 系统默认字号打开地铁指南，检查「官方票务指南」控件 `lio.metro.source`，中英文分别验浅深色及完整 `.all`。A 的原候选 L1 失败保留；实际分发版重新验收。 |
 | [#1370 上海线路图入口](https://github.com/JTCAO515/G2C/issues/1370#issuecomment-7097251728) | 在地铁指南选上海，点「官方线路图」。原候选跳到运营方「车站信息」；通过时直接落在运营方网络示意图或已核的官方原图，核页面内容与所属城市。北京与成都入口各复核一次。 |
 | [#1369 常用语两处语义差异](https://github.com/JTCAO515/G2C/issues/1369#issuecomment-7097151302) | 点菜 `dining-mild` 保留「不辣」与英文等义；打车 `taxi-stop` 两种语言都明确请求停车。核大字卡的中英文及实际朗读与所选句子一致。 |
+| [#1371 两次模拟器对比度 FAIL](https://github.com/JTCAO515/G2C/issues/1371#issuecomment-7097327837) · [微信支付链接核对](https://github.com/JTCAO515/G2C/issues/1371#issuecomment-7097363399) | 用中英、浅深色、默认字号分别在支付宝和微信支付指南核「官方开通指南」控件 `lio.payment.official`，运行完整 `.all`。点开后须读到对应平台的开通与绑卡说明。原腾讯链接 HTTP 200 但本次未读到指南正文；用实际 iPhone 落地确认。 |
 
-这三行记录候选的内容核对和模拟器结果。构建 53 真机复验当前 UNRUN。
+本节记录候选内容、链接核对和模拟器结果。构建 53 真机复验当前 UNRUN。
