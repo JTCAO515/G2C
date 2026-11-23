@@ -652,17 +652,18 @@ def run_quick(budget, token, owner, start, end, translation_session):
         return finish('FAIL' if chat_status == 'FAIL' else 'HOLD')
     line_usage = used-before['used']
     limit = dialogue_cash_cap(True)
-    within_cap = 0 <= line_usage <= limit and 0 <= cost['conservative_cny_1e7'] <= limit
+    ledger_ready = (0 <= line_usage <= limit and 0 <= cost['conservative_cny_1e7'] <= limit
+                    and cost['unresolved_attempts'] == 0)
     scope, plugin_token = translation_session
     plugin_send = partial(request, timeout=55, content_type='application/json')
     translated, = checks(budget, scope, plugin_token, allowed, plugin_send, print_json, SmokeResult,
-                         ready=within_cap and chat_status == 'PASS', cases=TRANSLATION_CASES[:1],
+                         ready=ledger_ready and chat_status == 'PASS', cases=TRANSLATION_CASES[:1],
                          structure_only=True)
     combined = {name: cost[name]+translated[name] for name in METER_FIELDS}
     print_json(dict(kind='cost', **combined, paid_cny='UNKNOWN', line_usage_delta_cny_1e7=line_usage))
     if chat_status != 'PASS':
         return finish(chat_status)
-    if not within_cap or max(line_usage, cost['conservative_cny_1e7']) + translated['conservative_cny_1e7'] > CASH_CAP:
+    if not ledger_ready or max(line_usage, cost['conservative_cny_1e7']) + translated['conservative_cny_1e7'] > CASH_CAP:
         return finish('HOLD')
     translation_status = quick_status(translated)
     if translation_status != 'PASS':
@@ -769,8 +770,9 @@ def decide(events, wire_logs):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('preflight', 'quick', 'run', 'restore', 'verify'))
+    parser.add_argument('action', choices=('preflight', 'quick-preflight', 'quick', 'run', 'restore', 'verify'))
     args = parser.parse_args()
+    quick_mode = args.action in {'quick', 'quick-preflight'}
     raw = sys.stdin.buffer.read(2_000_001)
     if len(raw) > 2_000_000:
         raise ValueError('bounded smoke input required')
@@ -817,15 +819,22 @@ def main():
             owner = scope_hash(scope)
             translation_session = None
             raw_roster = os.environ.get(TRANSLATION_INTERNAL_SUBJECTS)
-            if raw_roster is not None:
+            if raw_roster is not None or quick_mode:
                 from cj_api.local_account_admission_v2 import account_checker_for
-                from deploy.hk.plugin_roster import configured_translation_subjects
+                from deploy.hk.plugin_roster import configured_translation_subjects, generate_plugin_subjects
 
                 translation_token = envelope.get('translation_access_token')
+                eligibility = ('eligible_quick_plugin_session_required' if quick_mode
+                               else 'eligible_translation_session_required')
                 if not isinstance(translation_token, str) or not translation_token:
-                    print_json(dict(kind='batch', status='UNRUN', reason='eligible_translation_session_required'))
+                    print_json(dict(kind='batch', status='UNRUN', reason=eligibility))
                     return 3
-                roster = configured_translation_subjects(raw_roster)
+                if raw_roster is None:
+                    roster = frozenset(generate_plugin_subjects())
+                else:
+                    roster = configured_translation_subjects(raw_roster)
+                    if quick_mode:
+                        roster = roster.intersection(generate_plugin_subjects())
                 translation = account_checker_for(runtime.auth, runtime.database(), selected_subjects=roster).check(
                     translation_token)
                 if translation.status is AdmissionStatus.UNKNOWN:
@@ -835,11 +844,11 @@ def main():
                         or principal.expires_at < end.timestamp()
                         or (principal.issuer, principal.subject)
                         == (decision.principal.issuer, decision.principal.subject)):
-                    print_json(dict(kind='batch', status='UNRUN', reason='eligible_translation_session_required'))
+                    print_json(dict(kind='batch', status='UNRUN', reason=eligibility))
                     return 3
                 translation_session = (scope_for(principal.issuer, principal.subject), translation_token)
             budget = AuthorizationBudget(HK_JOURNAL_ROOT, authorization_guard=authorization, demo=True)
-            if args.action == 'preflight':
+            if args.action in {'preflight', 'quick-preflight'}:
                 state = budget_state(budget, owner)
                 from deploy.hk.app_smoke_ceiling import BASELINE
                 from cj_usage.sublimits import policy
