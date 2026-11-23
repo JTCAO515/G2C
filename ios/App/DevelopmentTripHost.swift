@@ -127,6 +127,8 @@ private var developmentHostEnvironment: [String: String] {
     #if G2C_DEMO_BETA
     let lioTripLibrary: LioTripLibrary?
     let lioTranslationRelay: LioRelayTranslationClient?
+    let lioTaxiRelay: LioTaxiRelayClient?
+    let lioTaxiRecentDirectory: URL
     #endif
     let messages: DevelopmentMessageHost
     #if DEBUG
@@ -230,6 +232,13 @@ private var developmentHostEnvironment: [String: String] {
             #endif
         }
         #if G2C_DEMO_BETA
+        lioTaxiRecentDirectory = root.appendingPathComponent("taxi-recents", isDirectory: true)
+        lioTaxiRelay = LioTaxiRelayClient.internalBeta(endpoint: endpoint, isCurrent: {
+            lifetime.current == lifetime.trip
+        }, bearer: {
+            guard lifetime.current == lifetime.trip else { return nil }
+            return configuration.token
+        })
         lioTranslationRelay = LioRelayTranslationClient.internalBeta(endpoint: endpoint, isCurrent: {
             lifetime.current == lifetime.trip
         }, bearer: {

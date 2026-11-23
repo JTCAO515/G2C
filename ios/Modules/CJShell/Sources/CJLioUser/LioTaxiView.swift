@@ -350,11 +350,11 @@ private struct LioTaxiPlacePicker: View {
                 if let searchNotice { Text(searchNotice) }
                 rows(result, identifier: "lio.taxi.search-row")
             }
+            Section(language.text("My trip", "我的行程")) {
+                if tripPlaces.isEmpty { Text(language.text("No places from your trip.", "当前行程暂无可选地点。")) }
+                rows(tripPlaces, identifier: "lio.taxi.trip-row")
+            }
             if destination {
-                Section(language.text("My trip", "我的行程")) {
-                    if tripPlaces.isEmpty { Text(language.text("No places from your trip.", "当前行程暂无可选地点。")) }
-                    rows(tripPlaces, identifier: "lio.taxi.trip-row")
-                }
                 Section(language.text("Recent", "最近")) {
                     if recent.isEmpty { Text(language.text("No recent destinations.", "暂无最近终点。")) }
                     rows(recent, identifier: "lio.taxi.recent-row")

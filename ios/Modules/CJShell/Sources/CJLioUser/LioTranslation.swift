@@ -42,7 +42,14 @@ enum LioTranslationFailure: Error, Equatable, Sendable {
     case network, quota, service, timedOut
     case signInRequired, accessDenied, alreadyAccepted, tooLong, unreadableImage
     case noRecognizedText(LioEmptyTranslationMedia)
-    case invalidRecording
+    case invalidRecording, unsupportedOffline, unavailableOffline, speechDenied, speechUnavailable
+
+    var allowsOfflineFallback: Bool {
+        switch self {
+        case .network, .quota, .service, .timedOut: true
+        default: false
+        }
+    }
 
 }
 
@@ -65,6 +72,12 @@ enum LioEmptyTranslationMedia: Equatable, Sendable {
 
 struct LioTranslationResult: Equatable, Sendable {
     let text: [String]
+    let offline: Bool
+
+    init(text: [String], offline: Bool = false) {
+        self.text = text
+        self.offline = offline
+    }
 }
 
 struct LioRecentTranslation: Codable, Equatable, Identifiable {

@@ -2,6 +2,7 @@
 import AVFoundation
 import CJRunClient
 import SwiftUI
+import Translation
 import UIKit
 
 struct LioToolsView: View {
@@ -167,6 +168,7 @@ private struct LioTextTranslationView: View {
         let input: Input
         var preparedPayload: LioRelayTranslationRequest.Payload?
         var uploadSent = false
+        var usesOfflineEngine = false
 
         var fromImage: Bool {
             if case .photo = input { return true }
@@ -185,6 +187,22 @@ private struct LioTextTranslationView: View {
                 languages
                 originalCard
                 translationCard
+                if #available(iOS 18.0, *), let attempt, attempt.usesOfflineEngine {
+                    Color.clear.frame(height: 0).accessibilityHidden(true)
+                        .translationTask(source: Locale.Language(identifier: attempt.request.source.rawValue),
+                                         target: Locale.Language(identifier: attempt.request.target.rawValue)) { @Sendable session in
+                            do {
+                                let text = try await LioOfflineTranslation.translate(attempt.request, using: session)
+                                try Task.checkCancellation()
+                                await finish(attempt.id, result: .success(.init(text: text, offline: true)))
+                            } catch is CancellationError {
+                                await finish(attempt.id, result: nil)
+                            } catch {
+                                await finish(attempt.id, result: .failure(error as? LioTranslationFailure ?? .unavailableOffline))
+                            }
+                        }
+                        .id(attempt.id)
+                }
             }
             .padding(18)
             .background {
@@ -240,8 +258,12 @@ private struct LioTextTranslationView: View {
         .onDisappear { resetResult() }
         .task { reloadHistory() }
         .task(id: attempt?.id) {
-            guard let attempt, let relay, isCurrent() else { return }
-            await translateWithRelay(attempt, using: relay)
+            guard let attempt, isCurrent() else { return }
+            if let relay {
+                await translateWithRelay(attempt, using: relay)
+            } else {
+                await prepareOffline(attempt)
+            }
         }
     }
 
@@ -364,6 +386,13 @@ private struct LioTextTranslationView: View {
                 if let problem {
                     Text(message(for: problem))
                         .accessibilityIdentifier("lio.translation.problem")
+                    if problem == .speechDenied, let settings = URL(string: UIApplication.openSettingsURLString) {
+                        Button { UIApplication.shared.open(settings) } label: {
+                            Text(language.text("Open Settings", "打开设置"))
+                                .frame(minHeight: 44)
+                                .contentShape(Rectangle())
+                        }
+                    }
                     if let retryAttempt {
                         Button(language.text("Retry", "重试")) {
                             begin(retryAttempt.input, text: retryAttempt.request.text,
@@ -510,6 +539,11 @@ private struct LioTextTranslationView: View {
             ? AnyLayout(VStackLayout(alignment: .leading))
             : AnyLayout(HStackLayout())
         return VStack(alignment: .leading, spacing: 8) {
+            if value.offline {
+                Text(language.text("Offline translation", "离线翻译"))
+                    .font(.footnote)
+                    .foregroundStyle(LioTheme.inkSecondary)
+            }
             if imageLines.isEmpty {
                 Text(translated)
                     .foregroundStyle(LioTheme.ink)
@@ -558,6 +592,9 @@ private struct LioTextTranslationView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(entry.input)
                     Text(entry.output)
+                    if entry.offline {
+                        Text(language.text("Offline translation", "离线翻译")).font(.footnote)
+                    }
                 }
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -608,10 +645,6 @@ private struct LioTextTranslationView: View {
         guard enabled, isCurrent(), mode == input.mode, !presentation.isHistoryOpen else { return }
         resetResult()
         outputMode = input.mode
-        guard relay != nil else {
-            problem = .accessDenied
-            return
-        }
         attempt = Attempt(request: .init(source: source, target: target, text: text), input: input,
                           preparedPayload: preparedPayload)
     }
@@ -678,11 +711,46 @@ private struct LioTextTranslationView: View {
             }
         } catch let error as LioTranslationFailure {
             guard !Task.isCancelled else { return }
-            finish(attempt.id, result: .failure(error))
+            if #available(iOS 18.0, *), error.allowsOfflineFallback {
+                await prepareOffline(attempt)
+            } else {
+                finish(attempt.id, result: .failure(error))
+            }
         } catch LioTranslationMediaFailure.unreadableImage {
             finish(attempt.id, result: .failure(.unreadableImage))
         } catch {
             finish(attempt.id, result: .failure(.service))
+        }
+    }
+
+    private func prepareOffline(_ attempt: Attempt) async {
+        guard self.attempt?.id == attempt.id, isCurrent(), !Task.isCancelled else { return }
+        guard #available(iOS 18.0, *) else {
+            finish(attempt.id, result: .failure(.unsupportedOffline))
+            return
+        }
+        do {
+            let lines: [String]
+            switch attempt.input {
+            case .text:
+                lines = attempt.request.text
+            case .photo(let data):
+                lines = try await LioOfflineTranslation.readPhoto(data, language: attempt.request.source)
+            case .recording(let recording):
+                lines = [try await LioRecordedTranslationSpeech.text(from: recording, language: attempt.request.source,
+                    isCurrent: { self.attempt?.id == attempt.id && isCurrent() })]
+            }
+            try Task.checkCancellation()
+            guard self.attempt?.id == attempt.id, isCurrent() else { return }
+            if case .recording = attempt.input { spokenText = lines.first }
+            self.attempt?.request = .init(source: attempt.request.source, target: attempt.request.target, text: lines)
+            self.attempt?.usesOfflineEngine = true
+        } catch is CancellationError {
+            finish(attempt.id, result: nil)
+        } catch let error as LioTranslationFailure {
+            finish(attempt.id, result: .failure(error))
+        } catch {
+            finish(attempt.id, result: .failure(attempt.fromImage ? .unreadableImage : .speechUnavailable))
         }
     }
 
@@ -698,7 +766,7 @@ private struct LioTextTranslationView: View {
             }
             let entry = LioRecentTranslation(source: attempt.request.source, target: attempt.request.target,
                                              input: attempt.request.text.joined(separator: "\n"),
-                                             output: value.text.joined(separator: "\n"), offline: false)
+                                             output: value.text.joined(separator: "\n"), offline: value.offline)
             do {
                 let saved: [LioRecentTranslation]?
                 if let relayOriginal {
@@ -713,7 +781,8 @@ private struct LioTextTranslationView: View {
         case .failure(let error):
             problem = error
             switch error {
-            case .network, .quota, .service, .timedOut, .signInRequired, .accessDenied: retryAttempt = attempt
+            case .network, .quota, .service, .timedOut, .signInRequired, .accessDenied, .unavailableOffline:
+                retryAttempt = attempt
             default: break
             }
         case nil: break
@@ -744,6 +813,18 @@ private struct LioTextTranslationView: View {
             language.text("Translation limit reached. Try again later.", "翻译额度已用完，请稍后重试。")
         case .timedOut:
             language.text("Translation timed out. Try again.", "翻译超时，请重试。")
+        case .unsupportedOffline:
+            language.text("Offline translation requires iOS 18 or later and a supported language pair.",
+                          "离线翻译需要 iOS 18 或更新版本，并且语言组合须受支持。")
+        case .unavailableOffline:
+            language.text("Offline translation isn’t ready. Connect to download the language packs.",
+                          "离线翻译暂不可用，请联网下载语言包。")
+        case .speechDenied:
+            language.text("Allow Speech Recognition in Settings for offline voice translation.",
+                          "请在设置中允许语音识别，以使用离线语音翻译。")
+        case .speechUnavailable:
+            language.text("Offline speech recognition isn’t available for this language on this device.",
+                          "此设备暂不支持该语言的离线语音识别。")
         }
     }
 }
