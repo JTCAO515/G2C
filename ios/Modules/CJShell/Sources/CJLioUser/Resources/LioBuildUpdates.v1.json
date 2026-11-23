@@ -35,10 +35,10 @@
           },
           "items": {
             "zh": [
-              "构建 53 接续构建 51。翻译的文字、语音、图片均使用在线千问。"
+              "构建 53 接续构建 51。翻译的文字、语音、图片均使用在线千问。图片译文可按照片中的文字位置显示，也可逐行对照。"
             ],
             "en": [
-              "Build 53 follows build 51. Text, voice and photo translation use Qwen online."
+              "Build 53 follows build 51. Text, voice and photo translation use Qwen online. See translated text in place on the photo, or switch to a line-by-line view."
             ]
           }
         },
@@ -50,12 +50,12 @@
           },
           "items": {
             "zh": [
-              "用默认字号测中英界面，打开旧对话、切后台再恢复，核对草稿；再测三种翻译和打车预填。在汇率换算里试一次人民币换算，核对来源日期。语音翻译可加测一段约一秒的中文录音。",
+              "用默认字号测中英界面，打开旧对话、切后台再恢复，核对草稿；再测三种翻译和打车预填。图片翻译可切换译图、照片和逐行对照。在汇率换算里试一次人民币换算，核对来源日期。语音翻译可加测一段约一秒的中文录音。",
               "开飞行模式查看本地协助、使馆、中文卡和草稿。请勿拨打任何号码。滴滴只走到确认页，请勿下单。",
               "遇到问题，请在内部测试群发截图、问题记录及发生时间。"
             ],
             "en": [
-              "At the default text size, check both languages. Reopen an earlier chat, return from the background, and confirm the draft. Try all three translation modes and taxi prefill. Convert a yuan amount and check the rate date. Include a Chinese voice recording around one second long.",
+              "At the default text size, check both languages. Reopen an earlier chat, return from the background, and confirm the draft. Try all three translation modes and taxi prefill. For photos, switch between the translated photo, the photo itself and the line-by-line view. Convert a yuan amount and check the rate date. Include a Chinese voice recording around one second long.",
               "In airplane mode, check Local Support, embassies, the Chinese cards and drafts. Do not place any calls. In DiDi, stop at vehicle confirmation without ordering.",
               "Share a screenshot, the copied issue record and the time it happened in the internal testing group."
             ]
@@ -69,11 +69,11 @@
           },
           "items": {
             "zh": [
-              "酒店、照片内译文、千问朗读、附近、天气、航班、上网卡、玩乐暂未开放。",
+              "酒店、千问朗读、附近、天气、航班、上网卡、玩乐暂未开放。",
               "本地协助暂不发送求助消息，也不会从对话自动触发。查看当前位置的中文地址和医疗卡尚未开放。"
             ],
             "en": [
-              "Hotels, translated photo layouts, Qwen voice playback, Nearby, Weather, Flights, eSIM and Activities are unavailable in this build.",
+              "Hotels, Qwen voice playback, Nearby, Weather, Flights, eSIM and Activities are unavailable in this build.",
               "Local Support does not send help requests or open automatically from chat. The Chinese address lookup and medical card are unavailable."
             ]
           }
