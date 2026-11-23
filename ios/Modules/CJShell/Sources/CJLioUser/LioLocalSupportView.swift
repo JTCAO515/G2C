@@ -193,7 +193,7 @@ private struct LocalSupportEmbassyCard: View {
                     .frame(minHeight: 44)
                     .accessibilityIdentifier("lio.support.embassy.call")
             } else {
-                Text(language.text("An embassy switchboard number is unavailable.", "暂无可核实的使馆总机号码。"))
+                Text(language.text("An embassy switchboard number is unavailable.", "暂无使馆总机号码。"))
                     .foregroundStyle(LioTheme.inkSecondary)
             }
             if let phone = embassy.consularPhone {
