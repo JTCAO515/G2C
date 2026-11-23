@@ -10,15 +10,16 @@ struct LioToolsView: View {
     let relay: LioRelayTranslationClient?
     let enabled: Bool
     let sessionIsCurrent: @MainActor () -> Bool
+    @Environment(\.lioTaxiEntry) private var taxiEntry
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
-                    #if DEBUG
-                    if let service = LioTaxiService.previewFromArguments {
-                        previewTaxi(service)
+                    if let taxiEntry {
+                        taxi(taxiEntry)
                     }
+                    #if DEBUG
                     if ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview") {
                         previewHotels
                     }
@@ -52,11 +53,10 @@ struct LioToolsView: View {
         .tint(LioTheme.vermilion)
     }
 
-    #if DEBUG
-    private func previewTaxi(_ service: LioTaxiService) -> some View {
+    private func taxi(_ entry: LioTaxiEntry) -> some View {
         NavigationLink {
-            LioTaxiView(language: language, service: service, tripPlaces: LioTaxiService.previewDestinations,
-                       recentStore: LioTaxiService.previewRecents)
+            LioTaxiView(language: language, service: entry.service, tripPlaces: entry.tripPlaces,
+                       recentStore: entry.recentStore)
         } label: {
             Label(language.text("Taxi", "打车"), systemImage: "car")
                 .foregroundStyle(LioTheme.ink)
@@ -68,6 +68,7 @@ struct LioToolsView: View {
         .accessibilityIdentifier("lio.tools.taxi")
     }
 
+    #if DEBUG
     private var previewHotels: some View {
         let partial = ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview-partial")
         return NavigationLink {

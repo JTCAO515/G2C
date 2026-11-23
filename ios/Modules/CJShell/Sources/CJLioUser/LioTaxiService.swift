@@ -42,13 +42,13 @@ enum LioTaxiFailure: Error, Equatable {
     case signInRequired, notEnabled, timedOut, unavailable
 }
 
-struct LioTaxiService {
-    let search: @MainActor (String) async throws -> [LioTaxiPlace]
-    let currentPickup: @MainActor () async throws -> LioTaxiPlace
-    let estimate: @MainActor (LioTaxiRoute) async throws -> [LioTaxiFare]
-    let rideLink: @MainActor (LioTaxiRoute) async throws -> URL
-    let openRideLink: @MainActor (URL) async -> Bool
-    let openAppStore: @MainActor () -> Void
+struct LioTaxiService: Sendable {
+    let search: @MainActor @Sendable (String) async throws -> [LioTaxiPlace]
+    let currentPickup: @MainActor @Sendable () async throws -> LioTaxiPlace
+    let estimate: @MainActor @Sendable (LioTaxiRoute) async throws -> [LioTaxiFare]
+    let rideLink: @MainActor @Sendable (LioTaxiRoute) async throws -> URL
+    let openRideLink: @MainActor @Sendable (URL) async -> Bool
+    let openAppStore: @MainActor @Sendable () -> Void
 }
 
 #if DEBUG

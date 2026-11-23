@@ -11,6 +11,7 @@ public struct LioHome<MenuContent: View>: View {
     private let showsTools: Bool
     private let toolsHistory: LioTranslationHistory?
     private let toolsRelay: LioRelayTranslationClient?
+    private let taxiEntry: LioTaxiEntry?
     private let toolsSessionIsCurrent: @MainActor () -> Bool
     private let reconnect: (@MainActor () -> Void)?
     private let session: LioSessionAvailability?
@@ -95,6 +96,7 @@ public struct LioHome<MenuContent: View>: View {
                 session: LioSessionAvailability? = nil,
                 reconnect: (@MainActor () -> Void)? = nil, showsTools: Bool = false,
                 toolsHistory: LioTranslationHistory? = nil, toolsRelay: LioRelayTranslationClient? = nil,
+                taxiEntry: LioTaxiEntry? = nil,
                 toolsSessionIsCurrent: @escaping @MainActor () -> Bool = { true },
                 @ViewBuilder menu: () -> MenuContent) {
         self.language = language
@@ -102,6 +104,11 @@ public struct LioHome<MenuContent: View>: View {
         self.showsTools = showsTools
         self.toolsHistory = toolsHistory
         self.toolsRelay = toolsRelay
+        #if DEBUG
+        self.taxiEntry = taxiEntry ?? LioTaxiEntry.previewFromArguments
+        #else
+        self.taxiEntry = taxiEntry
+        #endif
         self.toolsSessionIsCurrent = toolsSessionIsCurrent
         self.reconnect = reconnect
         self.session = session
@@ -177,6 +184,7 @@ public struct LioHome<MenuContent: View>: View {
                     .tag(Tab.memory)
             }
         }
+        .environment(\.lioTaxiEntry, taxiEntry)
         .tint(LioTheme.vermilion)
         .sensoryFeedback(.success, trigger: savedCelebrations)
         .disabled(restoringChat || session?.available == false)
