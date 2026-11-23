@@ -38,24 +38,24 @@ struct LioLocalAddressView: View {
                                               "定位权限未开启。你仍可以使用求助卡片。"))
                     case .offline:
                         message(language.text("Connect to the internet to look up your address.",
-                                              "请联网查询当前位置的中文地址。"))
+                                              "联网后可查看当前位置的中文地址。"))
                     case .unavailable:
                         message(language.text("Your address couldn't be found. Try again.",
                                               "暂时查不到当前位置的地址，请重试。"))
                     }
                 }
                 if request != nil {
-                    ProgressView(language.text("Finding your address…", "正在查询地址…"))
+                    ProgressView(language.text("Finding your address…", "正在查找地址…"))
                 }
                 Button {
                     outcome = nil
                     request = UUID()
                 } label: {
-                    Label(language.text("Find my address", "查询我的地址"), systemImage: "location")
+                    Label(language.text("Find my address", "查看我的地址"), systemImage: "location")
                         .foregroundStyle(LioTheme.ink)
                         .frame(minHeight: 44)
                         .padding(.horizontal, 14)
-                        .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: 12))
+                        .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
                 }
                 .buttonStyle(.plain)
                 .disabled(request != nil)
