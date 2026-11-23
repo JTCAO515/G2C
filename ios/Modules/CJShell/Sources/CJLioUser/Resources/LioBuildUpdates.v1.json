@@ -87,11 +87,13 @@
           "items": {
             "zh": [
               "翻译和打车需要联网，供已开通的内测账号使用。滴滴决定实际价格。打车只在滴滴继续。",
-              "修复很短的中文语音翻译偶尔失败。"
+              "修复很短的中文语音翻译偶尔失败。",
+              "修复追问行程天数时偶尔丢失已提供日期。"
             ],
             "en": [
               "Translation and taxi estimates require internet access and an enabled tester account. DiDi sets the final price and handles the ride.",
-              "Fixed occasional failures when translating very short Chinese recordings."
+              "Fixed occasional failures when translating very short Chinese recordings.",
+              "Fixed an issue where Lio could lose dates you had already shared when asking how many days you would travel."
             ]
           }
         }
