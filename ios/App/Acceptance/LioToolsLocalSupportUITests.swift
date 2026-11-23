@@ -1,6 +1,33 @@
 import XCTest
 
 @MainActor extension LioToolsUITests {
+    @objc func testLocalSupportShowsVerifiedConsularDistricts() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", "en",
+                               "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+        app.launch()
+        defer { app.terminate() }
+        openLocalSupport(app)
+        let entry = app.buttons["lio.support.consulates"]
+        for _ in 0..<6 where !entry.isHittable { app.swipeUp() }
+        XCTAssertTrue(entry.isHittable)
+        entry.tap()
+        let search = app.searchFields.firstMatch
+        if !search.isHittable { app.swipeDown() }
+        XCTAssertTrue(search.waitForExistence(timeout: 6))
+        search.tap()
+        search.typeText("Australia")
+        let shanghai = app.buttons["lio.support.consulate.t20090730_9374624.shtml"]
+        XCTAssertTrue(shanghai.waitForExistence(timeout: 6))
+        shanghai.tap()
+        let district = app.staticTexts["lio.support.consulate.district"]
+        XCTAssertTrue(district.waitForExistence(timeout: 6))
+        XCTAssertTrue(district.label.contains("Jiangsu"))
+        XCTAssertTrue(app.descendants(matching: .any)["lio.support.consulate.source"].exists)
+        try app.performAccessibilityAudit(for: .all)
+    }
+
     @objc func testLocalSupportShowsChineseHelpCardWithoutDialing() throws {
         continueAfterFailure = false
         for language in ["en", "zh-Hans"] {

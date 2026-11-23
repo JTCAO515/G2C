@@ -91,6 +91,15 @@ struct LioLocalSupportView: View {
             Text(language.text("Embassy contacts couldn’t be loaded.", "暂时无法显示使馆联系方式。"))
                 .foregroundStyle(LioTheme.inkSecondary)
         }
+        NavigationLink {
+            LioConsulateDirectoryView(language: language)
+        } label: {
+            Label(language.text("Consulates General", "总领馆"), systemImage: "building.columns")
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("lio.support.consulates")
         contacts(language.text("Consumer services", "消费者服务"), LocalSupportDirectory.consumerContacts)
         if let draftStorage {
             LioLocalSupportDraftEditor(language: language, storage: draftStorage)
