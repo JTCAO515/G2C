@@ -12,6 +12,7 @@ public struct LioHome<MenuContent: View>: View {
     private let toolsHistory: LioTranslationHistory?
     private let toolsDraftStorage: LocalSupportDraftStorage?
     private let toolsRelay: LioRelayTranslationClient?
+    private let currencyRelay: LioCurrencyRelayClient?
     private let taxiRelay: LioTaxiRelayClient?
     private let taxiRecentDirectory: URL?
     private let toolsSessionIsCurrent: @MainActor () -> Bool
@@ -99,7 +100,8 @@ public struct LioHome<MenuContent: View>: View {
                 session: LioSessionAvailability? = nil,
                 reconnect: (@MainActor () -> Void)? = nil, showsTools: Bool = false,
                 toolsHistory: LioTranslationHistory? = nil, toolsRelay: LioRelayTranslationClient? = nil,
-                taxiRelay: LioTaxiRelayClient? = nil, taxiRecentDirectory: URL? = nil,
+                currencyRelay: LioCurrencyRelayClient? = nil, taxiRelay: LioTaxiRelayClient? = nil,
+                taxiRecentDirectory: URL? = nil,
                 toolsDraftStorage: LocalSupportDraftStorage? = nil,
                 toolsSessionIsCurrent: @escaping @MainActor () -> Bool = { true },
                 @ViewBuilder menu: () -> MenuContent) {
@@ -109,6 +111,7 @@ public struct LioHome<MenuContent: View>: View {
         self.toolsHistory = toolsHistory
         self.toolsDraftStorage = toolsDraftStorage
         self.toolsRelay = toolsRelay
+        self.currencyRelay = currencyRelay
         self.taxiRelay = taxiRelay
         self.taxiRecentDirectory = taxiRecentDirectory
         self.toolsSessionIsCurrent = toolsSessionIsCurrent
@@ -187,6 +190,7 @@ public struct LioHome<MenuContent: View>: View {
                 .tag(Tab.trips)
             if showsTools {
                 LioToolsView(language: language, history: toolsHistory, relay: toolsRelay,
+                             currencyRelay: currencyRelay,
                              enabled: !restoringChat && session?.available != false && scenePhase != .background,
                              sessionIsCurrent: toolsSessionIsCurrent)
                     .environment(\.lioLocalSupportDraft, activeSupportDraft)

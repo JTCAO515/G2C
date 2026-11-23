@@ -128,6 +128,7 @@ private var developmentHostEnvironment: [String: String] {
     let lioTripLibrary: LioTripLibrary?
     let lioTranslationRelay: LioRelayTranslationClient?
     let lioTaxiRelay: LioTaxiRelayClient?
+    let lioCurrencyRelay: LioCurrencyRelayClient?
     #endif
     let messages: DevelopmentMessageHost
     #if DEBUG
@@ -231,18 +232,17 @@ private var developmentHostEnvironment: [String: String] {
             #endif
         }
         #if G2C_DEMO_BETA
-        lioTaxiRelay = LioTaxiRelayClient.internalBeta(endpoint: endpoint, isCurrent: {
-            lifetime.current == lifetime.trip
-        }, bearer: {
-            guard lifetime.current == lifetime.trip else { return nil }
+        let relaySessionIsCurrent: @MainActor () -> Bool = { lifetime.current == lifetime.trip }
+        let relayBearer: @MainActor () -> String? = {
+            guard relaySessionIsCurrent() else { return nil }
             return configuration.token
-        })
-        lioTranslationRelay = LioRelayTranslationClient.internalBeta(endpoint: endpoint, isCurrent: {
-            lifetime.current == lifetime.trip
-        }, bearer: {
-            guard lifetime.current == lifetime.trip else { return nil }
-            return configuration.token
-        })
+        }
+        lioTaxiRelay = LioTaxiRelayClient.internalBeta(endpoint: endpoint, isCurrent: relaySessionIsCurrent,
+                                                       bearer: relayBearer)
+        lioTranslationRelay = LioRelayTranslationClient.internalBeta(endpoint: endpoint, isCurrent: relaySessionIsCurrent,
+                                                                     bearer: relayBearer)
+        lioCurrencyRelay = LioCurrencyRelayClient.internalBeta(endpoint: endpoint, isCurrent: relaySessionIsCurrent,
+                                                               bearer: relayBearer)
         if tripEditingProfile != nil {
             lioTripLibrary = LioTripLibrary(list: {
                 var rows: [StructuredTripSummary] = []
