@@ -50,12 +50,12 @@
           },
           "items": {
             "zh": [
-              "用默认字号测中英界面，打开旧对话、切后台再恢复，核对草稿；再测三种翻译和打车预填。在汇率换算里试一次人民币换算，核对来源日期。",
+              "用默认字号测中英界面，打开旧对话、切后台再恢复，核对草稿；再测三种翻译和打车预填。在汇率换算里试一次人民币换算，核对来源日期。语音翻译可加测一段约一秒的中文录音。",
               "开飞行模式查看本地协助、使馆、中文卡和草稿。请勿拨打任何号码。滴滴只走到确认页，请勿下单。",
               "遇到问题，请在内部测试群发截图、问题记录及发生时间。"
             ],
             "en": [
-              "At the default text size, check both languages. Reopen an earlier chat, return from the background, and confirm the draft. Try all three translation modes and taxi prefill. Convert a yuan amount and check the rate date.",
+              "At the default text size, check both languages. Reopen an earlier chat, return from the background, and confirm the draft. Try all three translation modes and taxi prefill. Convert a yuan amount and check the rate date. Include a Chinese voice recording around one second long.",
               "In airplane mode, check Local Support, embassies, the Chinese cards and drafts. Do not place any calls. In DiDi, stop at vehicle confirmation without ordering.",
               "Share a screenshot, the copied issue record and the time it happened in the internal testing group."
             ]
@@ -86,10 +86,12 @@
           },
           "items": {
             "zh": [
-              "翻译和打车需要联网，供已开通的内测账号使用。滴滴决定实际价格。打车只在滴滴继续。"
+              "翻译和打车需要联网，供已开通的内测账号使用。滴滴决定实际价格。打车只在滴滴继续。",
+              "修复很短的中文语音翻译偶尔失败。"
             ],
             "en": [
-              "Translation and taxi estimates require internet access and an enabled tester account. DiDi sets the final price and handles the ride."
+              "Translation and taxi estimates require internet access and an enabled tester account. DiDi sets the final price and handles the ride.",
+              "Fixed occasional failures when translating very short Chinese recordings."
             ]
           }
         }
