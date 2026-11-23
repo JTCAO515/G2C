@@ -304,6 +304,21 @@ private struct LioTextTranslationView: View {
                     begin(.photo(data))
                 }
                 .id(captureID)
+                #if DEBUG
+                if ProcessInfo.processInfo.arguments.contains("--lio-photo-layout-preview"),
+                   let photo = LioTranslatedPhoto.fixture(),
+                   let lines = try? LioImageTranslationLine.pair(["茶", "咖啡"], with: ["Tea", "Coffee"]) {
+                    NavigationLink {
+                        LioTranslatedPhotoView(language: language, photo: photo, lines: lines)
+                    } label: {
+                        Text(language.text("Open sample photo", "打开示例照片"))
+                            .foregroundStyle(LioTheme.ink)
+                            .frame(minHeight: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("lio.translation.photo-layout.preview")
+                }
+                #endif
             }
         }
         .frame(maxWidth: .infinity, minHeight: 110, alignment: .topLeading)

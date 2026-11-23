@@ -46,3 +46,32 @@ import XCTest
         }
     }
 }
+
+@MainActor extension LioToolsUITests {
+    @objc func testPhotoLayoutFixtureSwitchesOriginalTranslationAndLines() throws {
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-photo-layout-preview",
+                               "-cj.ui.language.v1", "en"]
+        app.launch()
+        defer { app.terminate() }
+
+        let tools = app.tabBars.buttons["Tools"]
+        XCTAssertTrue(tools.waitForExistence(timeout: 8))
+        tools.tap()
+        app.buttons["lio.tools.translation"].tap()
+        app.buttons["lio.translation.mode.photo"].tap()
+        let preview = app.buttons["lio.translation.photo-layout.preview"]
+        XCTAssertTrue(preview.waitForExistence(timeout: 5))
+        preview.tap()
+
+        let photo = app.images["lio.translation.photo-layout.image"]
+        XCTAssertTrue(photo.waitForExistence(timeout: 5))
+        XCTAssertEqual(photo.label, "Translated photo")
+        app.buttons["Original"].tap()
+        XCTAssertEqual(photo.label, "Original photo")
+        app.buttons["Line by line"].tap()
+        let line = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@ AND label CONTAINS %@", "咖啡", "Coffee"))
+        XCTAssertTrue(line.firstMatch.exists)
+        try app.performAccessibilityAudit(for: .all)
+    }
+}
