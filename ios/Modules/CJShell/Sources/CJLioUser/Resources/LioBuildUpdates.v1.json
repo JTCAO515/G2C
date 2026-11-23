@@ -33,10 +33,10 @@
           },
           "items": {
             "zh": [
-              "与构建 51 相比，新增本地协助和打车。文字、录音和照片优先由千问翻译，网络或服务不可用时尝试本机兜底。"
+              "与构建 51 相比，新增本地协助和打车。千问翻译支持中英文字、语音和照片。"
             ],
             "en": [
-              "Build 52 adds Local Support and Taxi. Qwen is the primary translator for text, recordings, and photos. The app tries on-device translation when the network or service is unavailable."
+              "Build 52 adds Local Support and Taxi. Qwen translates text, voice, and photos between Chinese and English."
             ]
           }
         },
@@ -48,12 +48,12 @@
           },
           "items": {
             "zh": [
-              "默认字号下检查中英文聊天、行程和草稿恢复。翻译请分别试文字、语音和照片；准备好语言包后试离线兜底。",
+              "默认字号下检查中英文聊天、行程和草稿恢复。翻译请分别试文字、语音和照片。",
               "从 SOS 打开本地协助，查看使馆和草稿。拨号测试只用指定测试号码，到系统确认后取消。",
               "从行程进入打车，核对预填、估价、给司机看和滴滴跳转。失败请在内测群发送截图、问题记录和大概时间。"
             ],
             "en": [
-              "At the default text size, check chat in both languages, trips, and draft recovery. Try text, voice, and photo translation, then test offline once the language packs are available.",
+              "At the default text size, check chat in both languages, trips, and draft recovery. Try text, voice, and photo translation.",
               "Open Local Support from SOS. Check embassy details and drafts. Use only the designated test number and cancel at the system confirmation.",
               "Open Taxi from a trip stop. Check prefill, the estimate, the driver card, and handoff to DiDi. Share screenshots, copied problem notes, and the approximate time in the internal testing group."
             ]
@@ -68,11 +68,11 @@
           "items": {
             "zh": [
               "酒店入口暂未开放。打车估价和跳转需要联网，只到滴滴确认页，不下单或付款。地点搜索限于已加载行程地点，当前位置暂只显示为起点。",
-              "本机翻译需要 iOS 18 或更新版本和已下载的语言包，离线语音还取决于设备的本机语音识别支持。"
+              "千问翻译需要联网。网络或服务不可用时保留输入，可稍后重试。"
             ],
             "en": [
               "Hotels are unavailable. Taxi estimates and handoff require internet access. Stop at DiDi’s confirmation screen. Place search is limited to loaded trip stops, and current location is shown as the pickup point.",
-              "Offline translation requires iOS 18 or later and downloaded language packs. Offline voice also depends on on-device speech recognition support."
+              "Qwen translation needs an internet connection. If the network or service is unavailable, your input stays available to retry."
             ]
           }
         },

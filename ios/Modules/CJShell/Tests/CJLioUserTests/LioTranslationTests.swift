@@ -4,16 +4,6 @@ import Testing
 
 @MainActor
 struct LioTranslationTests {
-    @Test func offlineFallbackIsOnlyForNetworkQuotaAndServiceFailures() {
-        for failure: LioTranslationFailure in [.network, .quota, .service, .timedOut] {
-            #expect(failure.allowsOfflineFallback)
-        }
-        for failure: LioTranslationFailure in [.signInRequired, .accessDenied, .alreadyAccepted,
-                                                .tooLong, .invalidRecording, .noRecognizedText(.speech)] {
-            #expect(!failure.allowsOfflineFallback)
-        }
-    }
-
     @Test func mediaCaptureCannotReturnAfterSwitchingAwayAndBack() {
         var presentation = LioTranslationPresentation()
         presentation.select(.voice)
