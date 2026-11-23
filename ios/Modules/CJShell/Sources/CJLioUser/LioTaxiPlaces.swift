@@ -53,15 +53,21 @@ struct LioTaxiPlace: Codable, Equatable, Identifiable, Sendable {
     }
 }
 
-@MainActor struct LioTaxiRecentPlaces {
-    private let directory: URL
-    private var file: URL { directory.appendingPathComponent("recent-taxi-places.json") }
+@MainActor public struct LioTaxiRecentPlaces {
+    public static let directoryName = "taxi-recents"
+    public static let fileName = "recent-taxi-places.json"
 
-    init(directory: URL) {
+    private let directory: URL
+    private let isCurrent: @MainActor () -> Bool
+    private var file: URL { directory.appendingPathComponent(Self.fileName) }
+
+    init(directory: URL, isCurrent: @escaping @MainActor () -> Bool = { true }) {
         self.directory = directory
+        self.isCurrent = isCurrent
     }
 
     func load() throws -> [LioTaxiPlace] {
+        guard isCurrent() else { throw CancellationError() }
         do {
             let data = try Data(contentsOf: file)
             return Array(try JSONDecoder().decode([LioTaxiPlace].self, from: data).prefix(10))
@@ -73,7 +79,8 @@ struct LioTaxiPlace: Codable, Equatable, Identifiable, Sendable {
     func record(_ place: LioTaxiPlace) throws -> [LioTaxiPlace] {
         let others = try load().filter { $0.id != place.id }
         let entries = Array(([place] + others).prefix(10))
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
+                                                attributes: [.posixPermissions: 0o700])
         var storedDirectory = directory
         var attributes = URLResourceValues()
         attributes.isExcludedFromBackup = true

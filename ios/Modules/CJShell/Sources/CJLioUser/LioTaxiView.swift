@@ -259,7 +259,7 @@ struct LioTaxiView: View {
                     requests.retire()
                     return
                 }
-                let opened = await service.openRideLink(link)
+                let opened = try await service.openRideLink(link)
                 guard isCurrent(operation) else { return }
                 showOptions = !opened
             }

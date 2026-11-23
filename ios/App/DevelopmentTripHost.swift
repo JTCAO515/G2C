@@ -232,7 +232,7 @@ private var developmentHostEnvironment: [String: String] {
             #endif
         }
         #if G2C_DEMO_BETA
-        lioTaxiRecentDirectory = root.appendingPathComponent("taxi-recents", isDirectory: true)
+        lioTaxiRecentDirectory = root.appendingPathComponent(LioTaxiRecentPlaces.directoryName, isDirectory: true)
         lioTaxiRelay = LioTaxiRelayClient.internalBeta(endpoint: endpoint, isCurrent: {
             lifetime.current == lifetime.trip
         }, bearer: {
@@ -1200,6 +1200,7 @@ private var developmentHostEnvironment: [String: String] {
     }
 
     func signOutWithLocalSupportCleanup() throws {
+        defer { accounts.signOut() }
         var scope = localSupportDraftScope
         if scope == .guest {
             do {
@@ -1214,7 +1215,6 @@ private var developmentHostEnvironment: [String: String] {
         }
         try localSupportVault.clear(scope)
         if scope != .guest { try localSupportVault.clear(.guest) }
-        accounts.signOut()
     }
 
     func finishDemoCleanup() {
@@ -1631,6 +1631,9 @@ private struct DevelopmentVerificationTransport: ClientTransport {
                 binding: tripBinding, expectedKeyID: id, provider: provider)
             for directory in captured { try directory.validateIdentity() }
             try store.clearLocalFiles()
+            #if G2C_DEMO_BETA
+            try LioTaxiRecentsCleanup.erase(in: captured[0])
+            #endif
         case .tripScoped, .needsPlanning:
             let (provider, id) = try provider(.localTripPendingV1)
             guard captured.count == 2 else { throw CleanupFailure.unavailable }

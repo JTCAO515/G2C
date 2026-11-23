@@ -32,6 +32,13 @@ import CJMessageHTTP
         return try LioTaxiWire.readLink(data, allowing: LioTaxiWire.approvesDiDiTarget)
     }
 
+    var permitsLocalAccess: Bool { isCurrent() }
+
+    func requireCurrentSession() throws {
+        guard isCurrent() else { throw CancellationError() }
+        try Task.checkCancellation()
+    }
+
     private func post(_ operation: Operation, route: LioTaxiRoute) async throws -> Data {
         try Task.checkCancellation()
         guard isCurrent(), let token = bearer(), !token.isEmpty else {
@@ -49,16 +56,14 @@ import CJMessageHTTP
         do {
             (data, response) = try await exchange(request)
         } catch {
-            guard isCurrent() else { throw CancellationError() }
-            try Task.checkCancellation()
+            try requireCurrentSession()
             if (error as? URLError)?.code == .timedOut {
                 throw LioTaxiFailure.timedOut
             }
             throw error
         }
 
-        guard isCurrent() else { throw CancellationError() }
-        try Task.checkCancellation()
+        try requireCurrentSession()
         guard let http = response as? HTTPURLResponse, http.url == url else {
             throw LioTaxiFailure.unavailable
         }

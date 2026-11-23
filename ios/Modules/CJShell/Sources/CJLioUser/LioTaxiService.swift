@@ -47,7 +47,7 @@ struct LioTaxiService: Sendable {
     let currentPickup: @MainActor @Sendable () async throws -> LioTaxiPlace
     let estimate: @MainActor @Sendable (LioTaxiRoute) async throws -> [LioTaxiFare]
     let rideLink: @MainActor @Sendable (LioTaxiRoute) async throws -> URL
-    let openRideLink: @MainActor @Sendable (URL) async -> Bool
+    let openRideLink: @MainActor @Sendable (URL) async throws -> Bool
     let openAppStore: @MainActor @Sendable () -> Void
 }
 

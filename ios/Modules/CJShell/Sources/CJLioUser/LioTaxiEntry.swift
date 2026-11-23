@@ -14,18 +14,20 @@ public struct LioTaxiEntry: Sendable {
                     || $0.addressZH?.localizedStandardContains(query) == true
             }
         }, currentPickup: {
-            try await LioTaxiPickupLocation().pickup()
+            try relay.requireCurrentSession()
+            return try await LioTaxiPickupLocation().pickup()
         }, estimate: { route in
             try await relay.estimate(route)
         }, rideLink: { route in
             try await relay.rideLink(route)
         }, openRideLink: { url in
-            await UIApplication.shared.open(url, options: [.universalLinksOnly: true])
+            try relay.requireCurrentSession()
+            return await UIApplication.shared.open(url, options: [.universalLinksOnly: true])
         }, openAppStore: {
             UIApplication.shared.open(URL(string: "https://apps.apple.com/app/id554499054")!)
         })
-        return Self(service: service, recentStore: LioTaxiRecentPlaces(directory: recentDirectory),
-                    tripPlaces: tripPlaces)
+        let recent = LioTaxiRecentPlaces(directory: recentDirectory, isCurrent: { relay.permitsLocalAccess })
+        return Self(service: service, recentStore: recent, tripPlaces: tripPlaces)
     }
 
 }
