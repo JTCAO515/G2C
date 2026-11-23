@@ -86,7 +86,7 @@ struct LioActivitiesPreviewView: View {
                 TextField(language.text("Search activities", "搜索玩乐"), text: $keyword)
                     .padding(.horizontal, 10)
                     .frame(minHeight: 44)
-                    .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: 10))
+                    .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
                 if matches.isEmpty {
                     Text(language.text("No activities match your search.", "未找到符合条件的玩乐。"))
                 }
