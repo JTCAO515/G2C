@@ -31,7 +31,7 @@ struct LioFlightsPreviewView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Picker(language.text("Find flights by", "查询方式"), selection: $mode) {
+                Picker(language.text("Find flights by", "查找方式"), selection: $mode) {
                     Text(language.text("Flight number", "航班号")).tag(Mode.number)
                     Text(language.text("Route", "起降城市")).tag(Mode.route)
                 }
@@ -44,7 +44,7 @@ struct LioFlightsPreviewView: View {
                     field(language.text("Arrival, e.g. JFK", "到达地，例如 JFK"), text: $arrival)
                 }
                 DatePicker(language.text("Flight date", "航班日期"), selection: $date, displayedComponents: [.date])
-                Button(language.text("Find flights", "查询航班")) { search() }
+                Button(language.text("Find flights", "查航班")) { search() }
                     .buttonStyle(.plain)
                     .frame(minHeight: 44)
                 if searched, matches.isEmpty {
@@ -95,7 +95,7 @@ struct LioFlightsPreviewView: View {
             .autocorrectionDisabled()
             .padding(.horizontal, 8)
             .frame(minHeight: 44)
-            .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: 10))
+            .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
     }
 
     private func search() {
