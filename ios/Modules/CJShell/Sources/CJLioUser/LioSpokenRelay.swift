@@ -6,6 +6,8 @@ import CJMessageHTTP
 enum LioSpokenRelayFailure: Error, Equatable {
     case invalidText
     case signInRequired
+    case unavailableForAccount
+    case alreadyUsed
     case quota
     case unavailable
     case offline
@@ -26,6 +28,11 @@ enum LioSpokenRelayFailure: Error, Equatable {
             case version, language, text
             case requestID = "request_id"
         }
+    }
+
+    private struct Problem: Decodable {
+        let version: String
+        let error: String
     }
 
     private let url: URL
@@ -94,6 +101,14 @@ enum LioSpokenRelayFailure: Error, Equatable {
             return bytes
         case 401:
             throw LioSpokenRelayFailure.signInRequired
+        case 403:
+            throw LioSpokenRelayFailure.unavailableForAccount
+        case 409:
+            let result = try JSONDecoder().decode(Problem.self, from: bytes)
+            guard result.version == "TTS.1", result.error == "request_already_used" else {
+                throw LioSpokenRelayFailure.unavailable
+            }
+            throw LioSpokenRelayFailure.alreadyUsed
         case 429:
             throw LioSpokenRelayFailure.quota
         default:
@@ -111,7 +126,8 @@ enum LioSpokenRelayFailure: Error, Equatable {
 extension LioSpokenClip {
     public static func internalBeta(endpoint: MessageEndpoint,
                                     isCurrent: @escaping @MainActor () -> Bool,
-                                    bearer: @escaping @MainActor () -> String?) -> LioSpokenClip? {
+                                    bearer: @escaping @MainActor () -> String?,
+                                    history: LioTranslationHistory) -> LioSpokenClip? {
         guard endpoint.allowsDemoBetaActivation,
               Bundle.main.object(forInfoDictionaryKey: "G2CSpokenRelayEnabled") as? String == "YES" else {
             return nil
@@ -137,7 +153,7 @@ extension LioSpokenClip {
             }
             return (data, response)
         }
-        return LioSpokenClip(isCurrent: isCurrent) { phrase, id in
+        return LioSpokenClip(isCurrent: isCurrent, storage: history.spokenLedgerStorage()) { phrase, id in
             try await relay.audio(for: phrase, requestID: id)
         }
     }

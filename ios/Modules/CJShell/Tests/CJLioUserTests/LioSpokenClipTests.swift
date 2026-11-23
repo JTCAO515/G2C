@@ -3,6 +3,94 @@ import Testing
 @testable import CJLioUser
 
 @MainActor struct LioSpokenClipTests {
+    @Test func settledButUnavailableAudioDoesNotSubmitAgain() async {
+        var saved: Data?
+        var sent = 0
+        let storage = LioSpokenLedgerStorage(load: { saved }, save: { saved = $0 })
+        let load: LioSpokenClip.Load = { _, _ in
+            sent += 1
+            throw LioSpokenRelayFailure.alreadyUsed
+        }
+        let phrase = LioSpokenClip.Phrase(language: .english, text: "Tea")
+        let first = LioSpokenClip(storage: storage, load: load)
+        await #expect(throws: LioSpokenRelayFailure.alreadyUsed) { try await first.audio(for: phrase) }
+        let restored = LioSpokenClip(storage: storage, load: load)
+        await #expect(throws: LioSpokenRelayFailure.alreadyUsed) { try await restored.audio(for: phrase) }
+        #expect(sent == 1)
+    }
+
+    @Test func onDiskLedgerIsOwnerScopedAndDoesNotFollowASymlink() throws {
+        let parent = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: parent) }
+        var isCurrent = true
+        let directory = parent.appendingPathComponent(LioTranslationHistory.directoryName)
+        let history = LioTranslationHistory(directory: directory, isCurrent: { isCurrent })
+        let store = history.spokenLedgerStorage()
+        #expect(try store.load() == nil)
+        let fixture = Data("synthetic".utf8)
+        try store.save(fixture)
+        #expect(try store.load() == fixture)
+        isCurrent = false
+        #expect(throws: CancellationError.self) { try store.load() }
+        isCurrent = true
+
+        let ledger = directory.appendingPathComponent(LioTranslationHistory.spokenLedgerFileName)
+        let otherFile = parent.appendingPathComponent("other.json")
+        try fixture.write(to: otherFile)
+        try FileManager.default.removeItem(at: ledger)
+        try FileManager.default.createSymbolicLink(at: ledger, withDestinationURL: otherFile)
+        #expect(throws: CocoaError.self) { try store.load() }
+    }
+
+    @Test func recreatingTheSessionKeepsPreviouslyReturnedAudio() async throws {
+        let wav = try LioTranslationWAV.encode(pcm: Data(repeating: 0, count: 32))
+        var stored: Data?
+        var calls = 0
+        let storage = LioSpokenLedgerStorage(load: { stored }, save: { stored = $0 })
+        let load: LioSpokenClip.Load = { _, _ in
+            calls += 1
+            return wav
+        }
+        let phrase = LioSpokenClip.Phrase(language: .chinese, text: "茶")
+        let first = LioSpokenClip(storage: storage, load: load)
+        _ = try await first.audio(for: phrase)
+        let restored = LioSpokenClip(storage: storage, load: load)
+        #expect(try await restored.audio(for: phrase) == wav)
+        #expect(calls == 1)
+        #expect(stored?.range(of: Data("茶".utf8)) == nil)
+    }
+
+    @Test func restoredAttemptKeepsTheOriginalIdentifier() async throws {
+        let wav = try LioTranslationWAV.encode(pcm: Data(repeating: 0, count: 32))
+        var stored: Data?
+        var sent: [UUID] = []
+        let storage = LioSpokenLedgerStorage(load: { stored }, save: { stored = $0 })
+        let load: LioSpokenClip.Load = { _, id in
+            sent.append(id)
+            if sent.count == 1 { throw URLError(.timedOut) }
+            return wav
+        }
+        let phrase = LioSpokenClip.Phrase(language: .english, text: "Tea")
+        let first = LioSpokenClip(storage: storage, load: load)
+        await #expect(throws: URLError.self) { try await first.audio(for: phrase) }
+        let restored = LioSpokenClip(storage: storage, load: load)
+        #expect(try await restored.audio(for: phrase) == wav)
+        #expect(sent.count == 2)
+        #expect(Set(sent).count == 1)
+    }
+
+    @Test func noRequestLeavesWhenTheOriginalIdentifierCannotBeSaved() async throws {
+        let wav = try LioTranslationWAV.encode(pcm: Data(repeating: 0, count: 32))
+        var sent = false
+        let storage = LioSpokenLedgerStorage(load: { nil }, save: { _ in throw CocoaError(.fileWriteUnknown) })
+        let clip = LioSpokenClip(storage: storage) { _, _ in
+            sent = true
+            return wav
+        }
+        await #expect(throws: CocoaError.self) { try await clip.audio(for: .init(language: .english, text: "Tea")) }
+        #expect(!sent)
+    }
+
     @Test func revisitingTheFirstPhraseUsesItsCachedAudio() async throws {
         let wav = try LioTranslationWAV.encode(pcm: Data(repeating: 0, count: 32))
         var calls = 0

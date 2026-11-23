@@ -65,6 +65,7 @@ struct LioSpokenPlaybackControls: View {
                 let bytes = try await clip.audio(for: pending.choice.phrase)
                 guard request?.id == pending.id, phase == .active else { return }
                 let sound = try AVAudioPlayer(data: bytes, fileTypeHint: AVFileType.wav.rawValue)
+                try clip.requireCurrentSession()
                 guard sound.play() else { throw LioSpokenRelayFailure.unavailable }
                 player = sound
                 try await Task.sleep(for: .seconds(sound.duration))
@@ -84,6 +85,9 @@ struct LioSpokenPlaybackControls: View {
         .onChange(of: phase) { _, current in
             if current != .active { stop() }
         }
+        .onChange(of: clip.canPlayCurrentAudio) { _, allowed in
+            if !allowed { stop() }
+        }
         .onDisappear { stop() }
     }
 
@@ -99,6 +103,10 @@ struct LioSpokenPlaybackControls: View {
             language.text("Read up to 280 characters at a time.", "一次最多朗读 280 个字符。")
         case .signInRequired:
             language.text("Sign in again to use audio.", "请重新登录后使用朗读。")
+        case .unavailableForAccount:
+            language.text("Audio isn’t available for this account.", "此账号暂时无法使用朗读。")
+        case .alreadyUsed:
+            language.text("This audio was already created and isn’t saved on this device.", "这段音频已生成，但本机没有保存。")
         case .quota:
             language.text("Your daily reading limit is reached.", "今天的朗读次数已用完。")
         case .offline:

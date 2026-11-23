@@ -1,4 +1,11 @@
+import CryptoKit
 import Foundation
+
+@MainActor struct LioSpokenLedgerStorage {
+    static let maximumEncodedBytes = 14 * 1024 * 1024
+    let load: () throws -> Data?
+    let save: (Data) throws -> Void
+}
 
 @MainActor public final class LioSpokenClip {
     struct Phrase: Hashable {
@@ -6,6 +13,11 @@ import Foundation
         let text: String
 
         var bytes: Data { Data(text.utf8) }
+
+        var fingerprint: String {
+            let message = Data(language.rawValue.utf8) + Data([0]) + bytes
+            return SHA256.hash(data: message).map { String(format: "%02x", $0) }.joined()
+        }
 
         static func == (lhs: Phrase, rhs: Phrase) -> Bool {
             lhs.language == rhs.language && lhs.bytes == rhs.bytes
@@ -19,40 +31,131 @@ import Foundation
 
     enum Failure: Error { case alreadyLoading }
 
-    typealias Load = @MainActor (Phrase, UUID) async throws -> Data
-    private let isCurrent: @MainActor () -> Bool
-    private let load: Load
-    private let cached = NSCache<NSString, NSData>()
-    private var originalIDs: [Phrase: UUID] = [:]
-    private var inFlight: Set<Phrase> = []
+    private struct Ledger: Codable {
+        struct Record: Codable {
+            let fingerprint: String
+            let id: UUID
+            var settled: Bool
+            var audio: Data?
+        }
 
-    init(isCurrent: @escaping @MainActor () -> Bool = { true }, load: @escaping Load) {
+        var schema = 1
+        var records: [Record] = []
+
+        var audioBytes: Int {
+            records.compactMap { $0.audio?.count }.reduce(0, +)
+        }
+    }
+
+    typealias Load = @MainActor (Phrase, UUID) async throws -> Data
+    private static let maximumSavedAudioBytes = 8 * 1024 * 1024
+    private static let maximumRecords = 8192
+    private let isCurrent: @MainActor () -> Bool
+    private let storage: LioSpokenLedgerStorage?
+    private let load: Load
+    private var loadedLedger: Ledger?
+    private var inFlight: Set<String> = []
+
+    init(isCurrent: @escaping @MainActor () -> Bool = { true },
+         storage: LioSpokenLedgerStorage? = nil, load: @escaping Load) {
         self.isCurrent = isCurrent
+        self.storage = storage
         self.load = load
-        cached.countLimit = 12
-        cached.totalCostLimit = 8 * 1024 * 1024
     }
 
     func audio(for phrase: Phrase) async throws -> Data {
         try requireCurrentSession()
-        let key = (phrase.language.rawValue + ":" + phrase.bytes.base64EncodedString()) as NSString
-        if let audio = cached.object(forKey: key) { return audio as Data }
+        let key = phrase.fingerprint
+        var ledger = try currentLedger()
+        let id: UUID
+        if let record = ledger.records.first(where: { $0.fingerprint == key }) {
+            if record.settled {
+                guard let audio = record.audio else { throw LioSpokenRelayFailure.alreadyUsed }
+                return audio
+            }
+            id = record.id
+        } else {
+            guard ledger.records.count < Self.maximumRecords else { throw LioSpokenRelayFailure.unavailable }
+            id = UUID()
+            ledger.records.append(.init(fingerprint: key, id: id, settled: false))
+            try persist(ledger)
+        }
 
-        guard inFlight.insert(phrase).inserted else { throw Failure.alreadyLoading }
-        defer { inFlight.remove(phrase) }
-        let originalID = originalIDs[phrase] ?? UUID()
-        originalIDs[phrase] = originalID
+        guard inFlight.insert(key).inserted else { throw Failure.alreadyLoading }
+        defer { inFlight.remove(key) }
 
-        let data = try await load(phrase, originalID)
-        try requireCurrentSession()
-        try validateWAV(data)
-        cached.setObject(data as NSData, forKey: key, cost: data.count)
-        return data
+        do {
+            let data = try await load(phrase, id)
+            try requireCurrentSession()
+            try validateWAV(data)
+            try settle(key, audio: data)
+            return data
+        } catch LioSpokenRelayFailure.alreadyUsed {
+            try requireCurrentSession()
+            try settle(key, audio: nil)
+            throw LioSpokenRelayFailure.alreadyUsed
+        }
     }
 
-    private func requireCurrentSession() throws {
+    var canPlayCurrentAudio: Bool { isCurrent() }
+
+    func requireCurrentSession() throws {
         try Task.checkCancellation()
         guard isCurrent() else { throw CancellationError() }
+    }
+
+    private func currentLedger() throws -> Ledger {
+        if let loadedLedger { return loadedLedger }
+        let ledger: Ledger
+        if let encoded = try storage?.load() {
+            guard encoded.count <= LioSpokenLedgerStorage.maximumEncodedBytes else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            ledger = try JSONDecoder().decode(Ledger.self, from: encoded)
+            guard ledger.schema == 1, ledger.records.count <= Self.maximumRecords,
+                  Set(ledger.records.map(\.fingerprint)).count == ledger.records.count,
+                  ledger.records.allSatisfy({
+                      $0.fingerprint.utf8.count == 64 && ($0.settled || $0.audio == nil)
+                  }),
+                  ledger.audioBytes <= Self.maximumSavedAudioBytes else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            for audio in ledger.records.compactMap(\.audio) { try validateWAV(audio) }
+        } else {
+            ledger = Ledger()
+        }
+        loadedLedger = ledger
+        return ledger
+    }
+
+    private func persist(_ ledger: Ledger) throws {
+        do {
+            if let storage { try storage.save(JSONEncoder().encode(ledger)) }
+            loadedLedger = ledger
+        } catch {
+            loadedLedger = nil
+            throw error
+        }
+    }
+
+    private func settle(_ key: String, audio: Data?) throws {
+        var ledger = try currentLedger()
+        guard let index = ledger.records.firstIndex(where: { $0.fingerprint == key }) else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        var record = ledger.records.remove(at: index)
+        record.settled = true
+        record.audio = audio
+        ledger.records.append(record)
+
+        var used = ledger.audioBytes
+        for entry in ledger.records.indices where used > Self.maximumSavedAudioBytes {
+            if let old = ledger.records[entry].audio {
+                used -= old.count
+                ledger.records[entry].audio = nil
+            }
+        }
+        try persist(ledger)
     }
 
     private func validateWAV(_ data: Data) throws {

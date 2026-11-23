@@ -241,8 +241,6 @@ private var developmentHostEnvironment: [String: String] {
                                                        bearer: relayBearer)
         lioTranslationRelay = LioRelayTranslationClient.internalBeta(endpoint: endpoint, isCurrent: relaySessionIsCurrent,
                                                                      bearer: relayBearer)
-        lioSpokenClip = LioSpokenClip.internalBeta(endpoint: endpoint, isCurrent: relaySessionIsCurrent,
-                                                 bearer: relayBearer)
         if tripEditingProfile != nil {
             lioTripLibrary = LioTripLibrary(list: {
                 var rows: [StructuredTripSummary] = []
@@ -283,9 +281,14 @@ private var developmentHostEnvironment: [String: String] {
                 catch { return nil } // unavailable saved source; never substitute a draft/default
             }
         } else { currentNeeds=nil }
-        messages = try DevelopmentMessageHost(configuration: configuration, shell: shell,
+        let messageHost = try DevelopmentMessageHost(configuration: configuration, shell: shell,
             session: lifetime.session, operation: lifetime.operation,travelProfile:travelProfile,tripDiscussions:tripDiscussions,
             scopedEdits:scopedEdits,scopedResults:scopedResults,needsPlanning:needsPlanning,currentNeeds:currentNeeds,isCurrent: { lifetime.current != nil })
+        messages = messageHost
+        #if G2C_DEMO_BETA
+        lioSpokenClip = LioSpokenClip.internalBeta(endpoint: endpoint, isCurrent: relaySessionIsCurrent,
+                                                 bearer: relayBearer, history: messageHost.lioTranslationHistory)
+        #endif
         if scopedEdits {
             let originals = root.appendingPathExtension("ScopedOriginals")
             let receipts = root.appendingPathExtension("ScopedReceipts")
@@ -1634,6 +1637,7 @@ private struct DevelopmentVerificationTransport: ClientTransport {
             let translation = try captured[0].child(LioTranslationHistory.directoryName)
             try translation.removeOwnedFile(named: LioTranslationHistory.fileName)
             try translation.removeOwnedFile(named: LioTranslationHistory.relayOriginalsFileName)
+            try translation.removeOwnedFile(named: LioTranslationHistory.spokenLedgerFileName)
             try translation.removeEmptyChild()
             try LioTaxiRecentsCleanup.erase(in: captured[0])
             #endif

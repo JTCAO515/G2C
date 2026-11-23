@@ -80,6 +80,7 @@ struct LioRecentTranslation: Codable, Equatable, Identifiable {
     public static let directoryName = "translation-history"
     public static let fileName = "recent.json"
     public static let relayOriginalsFileName = "relay-originals.json"
+    public static let spokenLedgerFileName = "spoken-ledger.json"
     private let directory: URL
     private let isCurrent: @MainActor () -> Bool
     private var file: URL { directory.appendingPathComponent(Self.fileName) }
@@ -126,6 +127,35 @@ struct LioRecentTranslation: Codable, Equatable, Identifiable {
 
     func saveRelayOriginals(_ data: Data) throws {
         try protectedWrite(data, to: directory.appendingPathComponent(Self.relayOriginalsFileName))
+    }
+
+    func spokenLedgerStorage() -> LioSpokenLedgerStorage {
+        let path = directory.appendingPathComponent(Self.spokenLedgerFileName)
+        return LioSpokenLedgerStorage(load: {
+            try requireCurrent()
+            let descriptor = open(path.path, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+            if descriptor < 0 && errno == ENOENT { return nil }
+            guard descriptor >= 0 else { throw CocoaError(.fileReadUnknown) }
+            defer { close(descriptor) }
+
+            var info = stat()
+            let limit = LioSpokenLedgerStorage.maximumEncodedBytes
+            guard fstat(descriptor, &info) == 0,
+                  info.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG),
+                  info.st_size >= 0, info.st_size <= off_t(limit) else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            let file = FileHandle(fileDescriptor: descriptor, closeOnDealloc: false)
+            guard let bytes = try file.read(upToCount: limit + 1), bytes.count == Int(info.st_size) else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            return bytes
+        }, save: { data in
+            guard data.count <= LioSpokenLedgerStorage.maximumEncodedBytes else {
+                throw CocoaError(.fileWriteOutOfSpace)
+            }
+            try protectedWrite(data, to: path)
+        })
     }
 
     private func protectedWrite(_ data: Data, to destination: URL) throws {
