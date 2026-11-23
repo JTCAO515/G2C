@@ -36,24 +36,44 @@ def test_configuration_rejects_a_different_plugin_roster(change):
         plugin_roster.configured_plugin_subjects(json.dumps(bad[change]))
 
 
-@pytest.mark.parametrize('valid', [True, False])
-def test_hk_taxi_gets_only_the_configured_full_cohort(monkeypatch, valid):
-    from types import SimpleNamespace
-
+@pytest.mark.parametrize('configuration', ['valid', 'other_subject', 'missing_key', 'public_counts'])
+def test_hk_taxi_only_arms_with_the_full_cohort_and_private_counter(monkeypatch, tmp_path, configuration):
     from fastapi import FastAPI
-    import uvicorn
 
-    from cj_api import taxi_tools
-    from deploy.hk.configuration import TAXI_INTERNAL_SUBJECTS
-    from deploy.hk.entrypoint import api
+    from deploy.hk import taxi_runtime
+    from deploy.hk.configuration import DIDI_MCP_KEY, TAXI_INTERNAL_SUBJECTS
 
-    observed = []
-    monkeypatch.setattr(taxi_tools, 'register_taxi_routes', lambda app, *, internal: observed.append(internal))
-    monkeypatch.setattr(uvicorn, 'run', lambda *args, **kwargs: None)
-    subjects = plugin_roster.generate_plugin_subjects()
-    monkeypatch.setenv(TAXI_INTERNAL_SUBJECTS, json.dumps(subjects if valid else subjects[:-1]))
-    api(SimpleNamespace(app=FastAPI, database=object))
-    assert observed == [frozenset(subjects if valid else [])]
+    enabled = configuration == 'valid'
+    database = object()
+    checked = []
+    registered = []
+    subject_list = plugin_roster.generate_plugin_subjects()
+    counts = tmp_path / 'plugin-state' / 'taxi.sqlite'
+    counts.parent.mkdir(mode=0o700)
+    counts.touch(mode=0o600 if configuration != 'public_counts' else 0o644)
+    monkeypatch.setenv(TAXI_INTERNAL_SUBJECTS, json.dumps(
+        subject_list if configuration != 'other_subject'
+        else [*subject_list[:-1], invitation_subject(f'CJ_Tester@{7:02d}')]))
+    if configuration != 'missing_key':
+        monkeypatch.setenv(DIDI_MCP_KEY, 'dummy-test-value')
+    else:
+        monkeypatch.delenv(DIDI_MCP_KEY, raising=False)
+
+    def checker(auth, db, *, selected_subjects):
+        assert db is database
+        checked.append(selected_subjects)
+        return object()
+
+    monkeypatch.setattr(taxi_runtime, 'account_checker_for', checker)
+    monkeypatch.setattr(taxi_runtime, 'register_taxi_routes', lambda app, **kw: registered.append(kw))
+    taxi_runtime.register_runtime_taxi(FastAPI(), object(), database, counts_path=counts)
+
+    if enabled:
+        assert checked == [frozenset(subject_list)]
+        assert registered[0]['internal'] == frozenset(subject_list)
+        assert registered[0]['calls'].path == counts
+    else:
+        assert checked == [] and registered == [{}]
 
 
 def test_deep_invalid_configuration_fails_closed_for_the_plugin():
