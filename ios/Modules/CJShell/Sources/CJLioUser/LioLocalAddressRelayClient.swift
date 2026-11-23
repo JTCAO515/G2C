@@ -1,4 +1,5 @@
 import CJStrictJSON
+import Darwin
 import Foundation
 #if os(iOS)
 import CJMessageHTTP
@@ -45,6 +46,8 @@ enum LioLocalAddressRelayFailure: Error, Equatable {
         static let requiresObjectRoot = true
     }
 
+    public static let pendingDirectoryName = "local-address"
+    public static let pendingFileName = "pending-address-request"
     private static let version = "NEARBY.1"
     private static let maximumResponseBytes = 4_096
     private let url: URL
@@ -80,6 +83,10 @@ enum LioLocalAddressRelayFailure: Error, Equatable {
         #else
         try original.write(to: pendingFile, options: .atomic)
         #endif
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: pendingFile.path)
+        try Self.sync(pendingFile, access: O_RDWR)
+        try Self.sync(pendingDirectory, access: O_RDONLY | O_DIRECTORY)
+        try Self.sync(pendingDirectory.deletingLastPathComponent(), access: O_RDONLY | O_DIRECTORY)
 
         do {
             let address = try await lookup(coordinate, requestID: requestID)
@@ -123,7 +130,7 @@ enum LioLocalAddressRelayFailure: Error, Equatable {
     }
 
     private var pendingFile: URL {
-        pendingDirectory.appending(path: "pending-address-request")
+        pendingDirectory.appending(path: Self.pendingFileName)
     }
 
     private func clearPending(_ original: Data) throws {
@@ -133,9 +140,17 @@ enum LioLocalAddressRelayFailure: Error, Equatable {
                 throw LioLocalAddressRelayFailure.outcomeUnknown
             }
             try FileManager.default.removeItem(at: pendingFile)
+            try Self.sync(pendingDirectory, access: O_RDONLY | O_DIRECTORY)
         } catch {
             throw LioLocalAddressRelayFailure.outcomeUnknown
         }
+    }
+
+    private static func sync(_ path: URL, access: Int32) throws {
+        let descriptor = open(path.path, access | O_NOFOLLOW | O_CLOEXEC)
+        guard descriptor >= 0 else { throw CocoaError(.fileWriteUnknown) }
+        defer { close(descriptor) }
+        guard fsync(descriptor) == 0 else { throw CocoaError(.fileWriteUnknown) }
     }
 
     func lookup(_ coordinate: LioTaxiPlace.Coordinate, requestID: UUID) async throws -> String {

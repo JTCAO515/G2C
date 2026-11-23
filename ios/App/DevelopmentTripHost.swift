@@ -951,7 +951,8 @@ private var developmentHostEnvironment: [String: String] {
         let credentials = DevelopmentMessageCredentials(token: configuration.token, scope: scope, lease: lease, lifetime: lifetime)
         #if G2C_DEMO_BETA
         lioTaxiRecentDirectory = LioTaxiRecentPlaces.storageDirectory(inMessageDirectory: root)
-        lioLocalAddressPendingDirectory = root.appending(path: "local-address", directoryHint: .isDirectory)
+        lioLocalAddressPendingDirectory = root.appending(path: LioLocalAddressRelayClient.pendingDirectoryName,
+                                                        directoryHint: .isDirectory)
         lioTranslationHistory = LioTranslationHistory(
             directory: root.appendingPathComponent(LioTranslationHistory.directoryName, isDirectory: true),
             isCurrent: isCurrent)
@@ -1648,6 +1649,7 @@ private struct DevelopmentVerificationTransport: ClientTransport {
             try translation.removeOwnedFile(named: LioTranslationHistory.relayOriginalsFileName)
             try translation.removeEmptyChild()
             try LioTaxiRecentsCleanup.erase(in: captured[0])
+            try LioLocalAddressCleanup.erase(in: captured[0])
             #endif
         case .tripPending:
             guard let url else { throw CleanupFailure.unavailable }
