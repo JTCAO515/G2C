@@ -31,31 +31,24 @@ struct LioTaxiRequestState {
 }
 
 struct LioTaxiFare: Identifiable, Sendable {
-    enum Price: Sendable {
-        case range(minimum: Decimal, maximum: Decimal, currency: String)
-        case description(String)
-    }
-
     let id: String
     let nameZH: String
     let nameEN: String
-    let price: Price
+    let priceDisplay: String
 }
 
 enum LioTaxiFailure: Error, Equatable {
     case locationDenied, outOfService, rateLimited, quotaExceeded, coordinateUnverified
-    case signInRequired, notEnabled, unavailable
+    case signInRequired, notEnabled, timedOut, unavailable
 }
 
-/// App-facing operations used by the preview and by a future Hong Kong adapter.
-/// These values do not define the server's request or response formats.
-struct LioTaxiService {
-    let search: @MainActor (String) async throws -> [LioTaxiPlace]
-    let currentPickup: @MainActor () async throws -> LioTaxiPlace
-    let estimate: @MainActor (LioTaxiRoute) async throws -> [LioTaxiFare]
-    let rideLink: @MainActor (LioTaxiRoute) async throws -> URL
-    let openRideLink: @MainActor (URL) async -> Bool
-    let openAppStore: @MainActor () -> Void
+struct LioTaxiService: Sendable {
+    let search: @MainActor @Sendable (String) async throws -> [LioTaxiPlace]
+    let currentPickup: @MainActor @Sendable () async throws -> LioTaxiPlace
+    let estimate: @MainActor @Sendable (LioTaxiRoute) async throws -> [LioTaxiFare]
+    let rideLink: @MainActor @Sendable (LioTaxiRoute) async throws -> URL
+    let openRideLink: @MainActor @Sendable (URL) async throws -> Bool
+    let openAppStore: @MainActor @Sendable () -> Void
 }
 
 #if DEBUG
@@ -112,17 +105,13 @@ extension LioTaxiService {
                 default:
                     let response = Data("""
                     {"version":"TAXI.1","observed_at":"2026-11-21T00:00:00Z","vehicles":[
-                        {"category":"standard","name":"普通车型","currency":"CNY","price_display":"¥35–48",
+                        {"category":"1","name":"快车","currency":"CNY","price_display":"¥35–48",
                          "price_min_minor":3500,"price_max_minor":4800},
-                        {"category":"comfort","name":"舒适车型","currency":"CNY","price_display":"¥52–65",
+                        {"category":"8","name":"专车","currency":"CNY","price_display":"¥52–65",
                          "price_min_minor":5200,"price_max_minor":6500}
                     ]}
                     """.utf8)
-                    let fares = try LioTaxiWire.readFares(response)
-                    let names = ["standard": "Standard", "comfort": "Comfort"]
-                    return fares.map { fare in
-                        LioTaxiFare(id: fare.id, nameZH: fare.nameZH, nameEN: names[fare.id] ?? fare.nameEN, price: fare.price)
-                    }
+                    return try LioTaxiWire.readFares(response)
                 }
             },
             rideLink: { route in

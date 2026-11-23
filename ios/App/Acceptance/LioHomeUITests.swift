@@ -3,7 +3,7 @@ import UIKit
 import CryptoKit
 
 @MainActor final class LioToolsUITests: XCTestCase {
-    func testToolsTextReportsOfflineUnavailableOnIOS17() {
+    func testToolsTextRetainsInputWhenTheOnlineRelayIsUnavailable() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
         app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", "en"]
@@ -15,10 +15,12 @@ import CryptoKit
         XCTAssertTrue(editor.waitForExistence(timeout: 6))
         editor.tap()
         editor.typeText("Hello")
+        app.buttons["lio.translation.keyboard-done"].tap()
         app.buttons["lio.translation.submit"].tap()
         let problem = app.staticTexts["lio.translation.problem"]
         XCTAssertTrue(problem.waitForExistence(timeout: 6))
-        XCTAssertTrue(problem.label.contains("iOS 18"))
+        XCTAssertEqual(problem.label, "Online translation isn’t available for this account.")
+        XCTAssertEqual(editor.value as? String, "Hello")
         XCTAssertFalse(app.staticTexts["lio.translation.result"].exists)
     }
 
