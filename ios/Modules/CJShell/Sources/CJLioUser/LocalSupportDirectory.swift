@@ -57,20 +57,34 @@ struct LocalSupportDirectory: Sendable {
         let countryCode: String
         let country: Text
         let name: Text
-        let address: Text
-        let phone: LocalSupportPhone
+        let address: Text?
+        let phone: LocalSupportPhone?
         let consularPhone: LocalSupportPhone?
-        let website: URL
-        let latitude: Double
-        let longitude: Double
+        let website: URL?
+        let latitude: Double?
+        let longitude: Double?
         var id: String { countryCode }
 
         fileprivate var isValid: Bool {
             countryCode.utf8.count == 2 && countryCode.utf8.allSatisfy { (65...90).contains($0) }
-                && country.isComplete && name.isComplete && address.isComplete
-                && (website.scheme == "https" || website.scheme == "http")
-                && website.host?.isEmpty == false && website.user == nil && website.password == nil
-                && (-90...90).contains(latitude) && (-180...180).contains(longitude)
+                && country.isComplete && name.isComplete && address?.isComplete != false
+                && website.map(Self.isWebAddress) != false && hasValidCoordinates
+        }
+
+        private static func isWebAddress(_ url: URL) -> Bool {
+            (url.scheme == "https" || url.scheme == "http")
+                && url.host?.isEmpty == false && url.user == nil && url.password == nil
+        }
+
+        private var hasValidCoordinates: Bool {
+            switch (latitude, longitude) {
+            case let (latitude?, longitude?):
+                (-90...90).contains(latitude) && (-180...180).contains(longitude)
+            case (nil, nil):
+                true
+            default:
+                false
+            }
         }
     }
 

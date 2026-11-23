@@ -11,7 +11,20 @@ struct LocalSupportDirectoryTests {
         let all = catalog.emergency + catalog.hotlines + catalog.consumer
         #expect(!all.map(\.phone.number).contains("12308"))
         #expect(!all.map(\.phone.number).contains("12301"))
-        #expect(catalog.verifiedAt == "2026-11-20")
+        #expect(catalog.verifiedAt == "2026-11-23")
+    }
+
+    @Test func bundlesTheFullForeignMinistryIndexAndKeepsUnverifiedFieldsAbsent() throws {
+        let catalog = try LocalSupportDirectory.bundled()
+        #expect(catalog.embassies.count == 178)
+        let japan = try #require(catalog.embassies.first { $0.countryCode == "JP" })
+        #expect(japan.phone?.number == "+861085319800")
+        #expect(japan.address?.zh == "亮马桥东街1号")
+        #expect(japan.latitude == nil)
+        #expect(japan.longitude == nil)
+        let sanMarino = try #require(catalog.embassies.first { $0.countryCode == "SM" })
+        #expect(sanMarino.address == nil)
+        #expect(sanMarino.phone == nil)
     }
 
     @Test func onlyAcceptsNormalizedASCIIDialStrings() throws {
@@ -38,7 +51,8 @@ struct LocalSupportDirectoryTests {
             ("Test Street, Beijing", ""),
             ("+861012345678", "110#"),
             ("https://example.invalid", "tel:110"),
-            ("39.9", "91")
+            ("39.9", "91"),
+            ("\"latitude\":39.9,", "")
         ] {
             let changed = good.replacingOccurrences(of: original, with: replacement)
             #expect(throws: (any Error).self) { try LocalSupportDirectory.decode(Data(changed.utf8)) }
