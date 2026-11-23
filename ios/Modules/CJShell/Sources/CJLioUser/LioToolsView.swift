@@ -206,6 +206,8 @@ private struct LioTextTranslationView: View {
     @State private var retryAttempt: Attempt?
     @State private var result: LioTranslationResult?
     @State private var imageLines: [LioImageTranslationLine] = []
+    @State private var positionedPhoto: LioPositionedTranslation?
+    @State private var photoDisplay = PhotoResultDisplay.translated
     @State private var spokenText: String?
     @State private var problem: LioTranslationFailure?
     @State private var speaker = AVSpeechSynthesizer()
@@ -219,6 +221,10 @@ private struct LioTextTranslationView: View {
     private var mode: Mode { presentation.mode }
     private var historyPresented: Binding<Bool> {
         Binding(get: { presentation.isHistoryOpen }, set: { presentation.setHistoryOpen($0) })
+    }
+
+    private enum PhotoResultDisplay: String {
+        case translated, photo, lines
     }
 
     private struct Attempt: Identifiable {
@@ -587,20 +593,21 @@ private struct LioTextTranslationView: View {
                     .textSelection(.enabled)
                     .accessibilityIdentifier("lio.translation.result")
             } else {
-                // This header is the home for a future photo/line display selector.
-                Label(language.text("Line by line", "逐行对照"), systemImage: "list.bullet")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(LioTheme.inkSecondary)
-                ForEach(imageLines) { line in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(line.original)
-                            .font(.subheadline)
-                        Text(line.translated).font(.body.weight(.medium))
+                if let positionedPhoto {
+                    HStack(spacing: 6) {
+                        photoDisplayButton(.translated, title: language.text("Translated", "译图"))
+                        photoDisplayButton(.photo, title: language.text("Photo", "照片"))
+                        photoDisplayButton(.lines, title: language.text("Lines", "逐行"))
                     }
-                    .foregroundStyle(LioTheme.ink)
-                    .textSelection(.enabled)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityIdentifier("lio.translation.line.\(line.id)")
+                    switch photoDisplay {
+                    case .translated, .photo:
+                        LioPositionedTranslationView(language: language, translation: positionedPhoto,
+                                                     showsTranslation: photoDisplay == .translated)
+                    case .lines:
+                        lineComparison
+                    }
+                } else {
+                    lineComparison
                 }
             }
             actions {
@@ -614,6 +621,39 @@ private struct LioTextTranslationView: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.large)
+        }
+    }
+
+    private func photoDisplayButton(_ display: PhotoResultDisplay, title: String) -> some View {
+        Button { photoDisplay = display } label: {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(LioTheme.ink)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(photoDisplay == display ? LioTheme.surfaceSunken : LioTheme.surface,
+                            in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(photoDisplay == display ? .isSelected : [])
+        .accessibilityIdentifier("lio.translation.photo-layout." + display.rawValue)
+    }
+
+    private var lineComparison: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label(language.text("Line by line", "逐行对照"), systemImage: "list.bullet")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(LioTheme.inkSecondary)
+            ForEach(imageLines) { line in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(line.original)
+                        .font(.subheadline)
+                    Text(line.translated).font(.body.weight(.medium))
+                }
+                .foregroundStyle(LioTheme.ink)
+                .textSelection(.enabled)
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("lio.translation.line.\(line.id)")
+            }
         }
     }
 
@@ -660,6 +700,8 @@ private struct LioTextTranslationView: View {
         attempt = nil
         result = nil
         imageLines = []
+        positionedPhoto = nil
+        photoDisplay = .translated
         retryAttempt = nil
         spokenText = nil
         problem = nil
@@ -704,7 +746,8 @@ private struct LioTextTranslationView: View {
             self.attempt?.preparedPayload = payload
             guard !relay.requiresOriginalStore || history != nil else { throw LioRelayTranslationFailure.originalUnavailable }
             let original = try relayOriginals.request(source: attempt.request.source, target: attempt.request.target,
-                                                       payload: payload, storage: history)
+                                                       payload: payload, storage: history,
+                                                       prefersImageLayout: attempt.fromImage && relay.supportsImageLayout)
             let reply: LioRelayTranslationResponse
             do {
                 let uploadFinished: LioRelayTranslationClient.UploadFinished = { [id = attempt.id] in
@@ -727,6 +770,9 @@ private struct LioTextTranslationView: View {
                 try relayOriginals.accept(original, storage: history)
                 finish(attempt.id, result: .failure(.noRecognizedText(.init(kind: reply.kind))))
                 return
+            }
+            if original.usesImageLayout, case .jpeg(let preparedImage) = payload {
+                positionedPhoto = try LioPositionedTranslation(image: preparedImage, reply: reply)
             }
             if case .recording = attempt.input { spokenText = reply.items.first?.sourceText }
             self.attempt?.request = .init(source: attempt.request.source, target: attempt.request.target,

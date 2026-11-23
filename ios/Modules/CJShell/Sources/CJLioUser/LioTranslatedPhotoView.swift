@@ -75,6 +75,62 @@ struct LioTranslatedPhotoView: View {
     }
 }
 
+struct LioPositionedTranslationView: View {
+    let language: LioLanguage
+    let translation: LioPositionedTranslation
+    let showsTranslation: Bool
+
+    var body: some View {
+        if let image = UIImage(data: translation.image) {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .accessibilityHidden(showsTranslation)
+                .overlay {
+                    if showsTranslation {
+                        annotationLayer
+                    }
+                }
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel(showsTranslation ? language.text("Translated photo", "带译文的照片")
+                                    : language.text("Original photo", "未翻译的照片"))
+                .accessibilityIdentifier(showsTranslation ? "lio.translation.photo-layout.positioned"
+                                         : "lio.translation.photo-layout.original")
+        }
+    }
+
+    private var annotationLayer: some View {
+        GeometryReader { proxy in
+            let xScale = proxy.size.width / translation.size.width
+            let yScale = proxy.size.height / translation.size.height
+            ForEach(translation.items.indices, id: \.self) { index in
+                let item = translation.items[index]
+                let width = item.bounds.width * xScale
+                let height = item.bounds.height * yScale
+                Text(item.text)
+                    .font(.caption.weight(.semibold))
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.15)
+                    .lineLimit(1)
+                    .frame(width: width, height: height)
+                    .foregroundStyle(LioTheme.ink)
+                    .background(LioTheme.surface)
+                    .mask {
+                        Path { path in
+                            path.addLines(item.points.map {
+                                CGPoint(x: ($0.x - item.bounds.minX) * xScale,
+                                        y: ($0.y - item.bounds.minY) * yScale)
+                            })
+                            path.closeSubpath()
+                        }
+                        .fill(.white)
+                    }
+                    .position(x: item.bounds.midX * xScale, y: item.bounds.midY * yScale)
+            }
+        }
+    }
+}
+
 #if DEBUG
 extension LioTranslatedPhoto {
     @MainActor static func fixture() -> LioTranslatedPhoto? {

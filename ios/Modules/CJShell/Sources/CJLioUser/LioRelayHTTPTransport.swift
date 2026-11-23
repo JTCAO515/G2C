@@ -7,8 +7,11 @@ extension LioRelayTranslationClient {
                                     isCurrent: @escaping @MainActor () -> Bool,
                                     bearer: @escaping @MainActor () -> String?) -> LioRelayTranslationClient? {
         guard endpoint.allowsDemoBetaActivation else { return nil }
-        return LioRelayTranslationClient(requiresOriginalStore: true) { path, body, uploadFinished in
-            guard path == "/v1/tools/translate",
+        let supportsImageLayout = Bundle.main.object(forInfoDictionaryKey: "G2CImageLayoutEnabled") as? String == "YES"
+        return LioRelayTranslationClient(requiresOriginalStore: true, supportsImageLayout: supportsImageLayout) {
+            path, body, uploadFinished in
+            guard path == LioRelayTranslationRequest.route
+                    || (supportsImageLayout && path == LioRelayTranslationRequest.imageLayoutRoute),
                   let url = URL(string: path, relativeTo: endpoint.url)?.absoluteURL,
                   isCurrent(), let token = bearer() else {
                 throw LioRelayTranslationFailure.signInRequired

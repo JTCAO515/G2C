@@ -146,16 +146,34 @@ struct CJProbeApp: App {
         let photoEmptyFixture = ProcessInfo.processInfo.arguments.contains("--lio-translation-photo-empty-preview")
         let photoTimeoutFixture = ProcessInfo.processInfo.arguments.contains("--lio-translation-photo-timeout-preview")
         let photoLoginFixture = ProcessInfo.processInfo.arguments.contains("--lio-translation-photo-login-preview")
+        let layoutFixture = ProcessInfo.processInfo.arguments.contains("--lio-translation-photo-layout-preview")
         var timedOutOriginal: Data?
         var timedOutPhoto: Data?
         var reauthPhoto: Data?
-        return LioRelayTranslationClient { route, data in
-            guard route == "/v1/tools/translate",
-                  let fields = try JSONSerialization.jsonObject(with: data) as? [String: String],
-                  fields["version"] == "TRANSLATION.1",
+        return LioRelayTranslationClient(supportsImageLayout: layoutFixture) { route, data in
+            guard let fields = try JSONSerialization.jsonObject(with: data) as? [String: String],
                   fields["source_lang"] == "en", fields["target_lang"] == "zh" else {
                 return (400, Data())
             }
+            if layoutFixture && route == "/v1/tools/translate/image-layout" &&
+                fields["version"] == "IMAGE-LAYOUT.1" && fields["kind"] == "image",
+               let media = fields["media"], let bytes = Data(base64Encoded: media),
+               let bitmap = UIImage(data: bytes)?.cgImage {
+                let width = bitmap.width, height = bitmap.height
+                let left = width * 8 / 100, right = width * 45 / 100
+                let firstTop = height * 8 / 100, firstBottom = height * 42 / 100
+                let secondTop = height * 50 / 100, secondBottom = height * 86 / 100
+                let items: [[String: Any]] = [
+                    ["source_text": "Tea", "translated_text": "茶",
+                     "location": [left, firstTop, right, firstTop, right, firstBottom, left, firstBottom]],
+                    ["source_text": "Coffee", "translated_text": "咖啡",
+                     "location": [left, secondTop, right, secondTop, right, secondBottom, left, secondBottom]]
+                ]
+                return (200, try JSONSerialization.data(withJSONObject: [
+                    "version": "IMAGE-LAYOUT.1", "image_width": width, "image_height": height, "items": items
+                ]))
+            }
+            guard route == "/v1/tools/translate", fields["version"] == "TRANSLATION.1" else { return (400, Data()) }
             if fields["kind"] == "text", fields["text"] == "Timed out" {
                 if let timedOutOriginal {
                     return timedOutOriginal == data ? (409, Data()) : (422, Data())
