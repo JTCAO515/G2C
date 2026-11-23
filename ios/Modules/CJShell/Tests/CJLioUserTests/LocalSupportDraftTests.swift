@@ -30,6 +30,30 @@ import Testing
         #expect(draft.problem == .tooLong)
     }
 
+    @Test func failedKeyboardEraseCanBeRetriedWithoutReenteringText() {
+        struct Unavailable: Error {}
+        var stored: String? = "Saved draft"
+        var clearAttempts = 0
+        let storage = LocalSupportDraftStorage(load: { stored }, save: { stored = $0 }, clear: {
+            clearAttempts += 1
+            if clearAttempts == 1 { throw Unavailable() }
+            stored = nil
+        })
+        let draft = LocalSupportDraft(storage: storage)
+        draft.load()
+        draft.edit("")
+        #expect(draft.text.isEmpty)
+        #expect(draft.problem == .cannotClear)
+        #expect(stored == "Saved draft")
+        #expect(draft.canClear)
+
+        draft.clear()
+        #expect(clearAttempts == 2)
+        #expect(stored == nil)
+        #expect(draft.problem == nil)
+        #expect(!draft.canClear)
+    }
+
     @Test func loadFailureDoesNotOverwriteStoredData() {
         struct Unavailable: Error {}
         var writes = 0

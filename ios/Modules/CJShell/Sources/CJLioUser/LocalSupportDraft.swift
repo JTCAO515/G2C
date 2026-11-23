@@ -22,6 +22,9 @@ final class LocalSupportDraft {
     private(set) var text = ""
     private(set) var canEdit = false
     private(set) var problem: Problem?
+    private var clearFailed = false
+
+    var canClear: Bool { canEdit && (!text.isEmpty || clearFailed) }
 
     init(storage: LocalSupportDraftStorage) { self.storage = storage }
 
@@ -48,9 +51,13 @@ final class LocalSupportDraft {
             return
         }
         text = value
+        if value.isEmpty {
+            clear()
+            return
+        }
         do {
-            if value.isEmpty { try storage.clear() }
-            else { try storage.save(value) }
+            try storage.save(value)
+            clearFailed = false
             problem = nil
         } catch {
             problem = .cannotSave
@@ -62,8 +69,10 @@ final class LocalSupportDraft {
         do {
             try storage.clear()
             text = ""
+            clearFailed = false
             problem = nil
         } catch {
+            clearFailed = true
             problem = .cannotClear
         }
     }
