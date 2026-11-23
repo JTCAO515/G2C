@@ -1,13 +1,15 @@
 #if os(iOS)
+import CJRunClient
 import SwiftUI
 
 struct LioMetroGuideView: View {
     let language: LioLanguage
+    @Environment(\.colorScheme) private var colorScheme
     @State private var city = LioMetroCity.beijing
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Text(language.text("City", "城市"))
                         .foregroundStyle(LioTheme.ink)
@@ -54,20 +56,30 @@ struct LioMetroGuideView: View {
         .background(LioTheme.paper)
         .navigationTitle(language.text("Metro Guide", "地铁指南"))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(LioTheme.paper, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(colorScheme, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                RunReadableText(text: language.text("Metro Guide", "地铁指南"), style: .headline, color: LioTheme.ink)
+                    .fixedSize()
+                    .accessibilityAddTraits(.isHeader)
+            }
+        }
     }
 
     private func instruction(_ title: String, text: String, icon: String, id: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Label(title, systemImage: icon)
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
-            Text(text)
-                .foregroundStyle(LioTheme.inkSecondary)
+            RunReadableText(text: text, color: LioTheme.ink)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityIdentifier("lio.metro." + id)
         }
         .foregroundStyle(LioTheme.ink)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
+        .padding(12)
         .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
     }
 }
