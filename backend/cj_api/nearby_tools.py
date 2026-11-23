@@ -8,7 +8,7 @@ import re
 from threading import Lock
 from time import monotonic
 from typing import Annotated, Literal
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import unquote, urlencode, urlsplit
 from uuid import UUID
 
 from pydantic import Field, field_validator
@@ -86,8 +86,11 @@ class GaodeNearby:
             if len(raw) > BODY_LIMIT:
                 raise ValueError('Gaode response bound')
             value = json.loads(raw, object_pairs_hook=reject_duplicates(ValueError, 'duplicate Gaode field'))
-            if type(value) is not dict or self._key in json.dumps(value, ensure_ascii=False):
+            if type(value) is not dict:
                 raise ValueError('invalid Gaode response')
+            normalized = json.dumps(value, ensure_ascii=False)
+            if self._key in normalized or self._key in unquote(normalized):
+                raise ValueError('Gaode response echoed private configuration')
             code = value.get('infocode')
             if type(code) is str and code in {'10003', '10004', '10019', '10020', '10021', '10044'}:
                 raise PluginError(429, 'rate_limited')
@@ -117,7 +120,8 @@ def _photo(entries):
         try:
             parsed = urlsplit(url)
             host = parsed.hostname or ''
-            if (parsed.scheme == 'https' and parsed.netloc == host and not parsed.fragment
+            if (parsed.scheme == 'https' and parsed.netloc == host and not parsed.query and not parsed.fragment
+                    and '%' not in parsed.path
                     and host.endswith(('.autonavi.com', '.amap.com'))):
                 return url
         except ValueError:

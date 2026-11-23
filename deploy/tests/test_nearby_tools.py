@@ -102,8 +102,14 @@ def test_nearby_charges_share_cash_and_preserve_the_legacy_place_count(ledger, m
         ledger.begin('legacy-second-place', 'place', b'legacy input')
 
 
-def test_gaode_response_cannot_echo_the_server_key():
+@pytest.mark.parametrize('encoded', [False, True])
+def test_gaode_response_cannot_echo_the_server_key(encoded):
     fixture_key = 'local-fixture-key-only'
+    if encoded:
+        quoted = ''.join(f'%{ord(char):02X}' for char in fixture_key)
+        row = {'photos': [{'url': f'https://store.is.autonavi.com/picture?marker={quoted}'}]}
+    else:
+        row = {'name': fixture_key}
 
     class Transport:
         def __init__(self, host, timeout):
@@ -119,7 +125,7 @@ def test_gaode_response_cannot_echo_the_server_key():
 
         def getresponse(self):
             return SimpleNamespace(status=200, close=lambda: None, read=lambda _: json.dumps(
-                dict(status='1', infocode='10000', pois=[{'name': fixture_key}])).encode())
+                dict(status='1', infocode='10000', pois=[row])).encode())
 
         def close(self):
             pass
