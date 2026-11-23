@@ -1,6 +1,36 @@
 import XCTest
 
 @MainActor extension LioToolsUITests {
+    @objc func testLocalAddressFixtureShowsChineseAddressAndFailureStates() throws {
+        continueAfterFailure = false
+        for scenario in ["address", "denied", "offline"] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-where-am-i-preview",
+                                   "-cj.ui.language.v1", "en", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+            if scenario != "address" { app.launchArguments += ["--lio-where-am-i-" + scenario] }
+            app.launch()
+            defer { app.terminate() }
+            openLocalSupport(app)
+            let entry = app.buttons["lio.support.where-am-i"]
+            for _ in 0..<6 where !entry.isHittable { app.swipeUp() }
+            XCTAssertTrue(entry.isHittable)
+            entry.tap()
+            app.buttons["lio.support.location.lookup"].tap()
+            if scenario == "address" {
+                let address = app.staticTexts["lio.support.location.address"]
+                XCTAssertTrue(address.waitForExistence(timeout: 6))
+                XCTAssertEqual(address.label, "北京市示例大道1号")
+                XCTAssertTrue(app.buttons["lio.support.location.copy"].exists)
+            } else {
+                let problem = app.staticTexts["lio.support.location.problem"]
+                XCTAssertTrue(problem.waitForExistence(timeout: 6))
+                XCTAssertTrue(problem.label.contains(scenario == "denied" ? "Location access is off" : "Connect to the internet"))
+                XCTAssertFalse(app.staticTexts["lio.support.location.address"].exists)
+            }
+            try app.performAccessibilityAudit(for: .all)
+        }
+    }
+
     @objc func testLocalSupportListsPhonesWithoutCallingInBothLanguagesAndAppearances() throws {
         continueAfterFailure = false
         for language in ["en", "zh-Hans"] {

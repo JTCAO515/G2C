@@ -74,6 +74,24 @@ struct LioLocalSupportView: View {
         }
         emergency(LocalSupportDirectory.emergencyContacts)
         contacts(language.text("Help lines", "求助热线"), LocalSupportDirectory.helpContacts)
+        #if DEBUG
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("--lio-where-am-i-preview") {
+            NavigationLink {
+                LioLocalAddressView(language: language) {
+                    if arguments.contains("--lio-where-am-i-denied") { return .permissionDenied }
+                    if arguments.contains("--lio-where-am-i-offline") { return .offline }
+                    return .address("北京市示例大道1号")
+                }
+            } label: {
+                Label(language.text("Where Am I?", "我在哪"), systemImage: "location")
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("lio.support.where-am-i")
+        }
+        #endif
         switch directory {
         case .success(let catalog):
             embassySection(catalog.embassies)
