@@ -54,3 +54,9 @@ def test_hk_taxi_gets_only_the_configured_full_cohort(monkeypatch, valid):
     monkeypatch.setenv(TAXI_INTERNAL_SUBJECTS, json.dumps(subjects if valid else subjects[:-1]))
     api(SimpleNamespace(app=FastAPI, database=object))
     assert observed == [frozenset(subjects if valid else [])]
+
+
+def test_deep_invalid_configuration_fails_closed_for_the_plugin():
+    deep = '[' * 2500 + 'null' + ']' * 2500
+    with pytest.raises(ValueError, match='exact_internal_plugin_roster_required'):
+        plugin_roster.configured_plugin_subjects(deep)

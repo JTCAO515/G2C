@@ -506,7 +506,7 @@ def original_model_attempts(database, scope, message_id):
     return {hashlib.sha256(row[0].encode()).hexdigest() for row in attempts}
 
 
-def run(budget, database, scope, token, owner, start, end):
+def run(budget, database, scope, token, owner, start, end, *, translation_session=None):
     from deploy.hk.server_smoke_budget import budget_state, restrict, settlement
 
     def allowed():
@@ -524,6 +524,9 @@ def run(budget, database, scope, token, owner, start, end):
     except (OSError, ValueError):
         print_json(dict(kind='batch', status='UNKNOWN', reason='translation_worker_state_unavailable'))
         return 2
+    if translation_required and translation_session is None:
+        print_json(dict(kind='batch', status='UNRUN', reason='eligible_translation_session_required'))
+        return 3
     print_json(dict(kind='translation_requirement', required=translation_required))
     before = budget_state(budget, owner)
     print_json(dict(kind='restriction_intent', before=before))
@@ -559,7 +562,8 @@ def run(budget, database, scope, token, owner, start, end):
     print_json(dict(kind='history', **history_result))
     if translation_required:
         from deploy.hk.translation_smoke import checks
-        checks(budget, scope, token, allowed, request, print_json, SmokeResult,
+        translation_scope, translation_token = translation_session
+        checks(budget, translation_scope, translation_token, allowed, request, print_json, SmokeResult,
                ready=history_result['status']=='PASS')
     _, price, used = settlement(budget, owner, restricted, before['tail'])
     print_json(dict(kind='cost', **price, line_usage_delta_cny_1e7=used-before['used']))
@@ -657,7 +661,7 @@ def main():
     from cj_auth.interfaces import AdmissionStatus
     from cj_usage.authorization_budget import AuthorizationBudget, HK_JOURNAL_ROOT
     from cj_usage.sublimits import scope_hash
-    from deploy.hk.configuration import Runtime, authorization, load_secret_environment
+    from deploy.hk.configuration import TRANSLATION_INTERNAL_SUBJECTS, Runtime, authorization, load_secret_environment
     from deploy.hk.server_smoke_budget import budget_state, restore
 
     load_secret_environment('worker')
@@ -687,6 +691,27 @@ def main():
                 return 3
             scope = scope_for(decision.principal.issuer, decision.principal.subject)
             owner = scope_hash(scope)
+            translation_session = None
+            raw_roster = os.environ.get(TRANSLATION_INTERNAL_SUBJECTS)
+            if raw_roster is not None:
+                from cj_api.local_account_admission_v2 import account_checker_for
+                from deploy.hk.plugin_roster import configured_plugin_subjects
+
+                translation_token = envelope.get('translation_access_token')
+                if not isinstance(translation_token, str) or not translation_token:
+                    print_json(dict(kind='batch', status='UNRUN', reason='eligible_translation_session_required'))
+                    return 3
+                roster = configured_plugin_subjects(raw_roster)
+                translation = account_checker_for(runtime.auth, runtime.database(), selected_subjects=roster).check(
+                    translation_token)
+                if translation.status is AdmissionStatus.UNKNOWN:
+                    raise ValueError('translation original admission unavailable')
+                principal = translation.principal
+                if (translation.status is not AdmissionStatus.ALLOWED or principal is None
+                        or principal.expires_at < end.timestamp()):
+                    print_json(dict(kind='batch', status='UNRUN', reason='eligible_translation_session_required'))
+                    return 3
+                translation_session = (scope_for(principal.issuer, principal.subject), translation_token)
             budget = AuthorizationBudget(HK_JOURNAL_ROOT, authorization_guard=authorization, demo=True)
             if args.action == 'preflight':
                 state = budget_state(budget, owner)
@@ -696,7 +721,8 @@ def main():
                     raise ValueError('C standing budget qualification failed')
                 print_json(dict(kind='preflight', status='PASS', provider_calls=0))
                 return 0
-            return run(budget, runtime.database(), scope, token, owner, start, end)
+            return run(budget, runtime.database(), scope, token, owner, start, end,
+                       translation_session=translation_session)
         finally:
             runtime.close()
 

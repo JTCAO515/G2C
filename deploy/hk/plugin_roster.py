@@ -1,6 +1,8 @@
 """The fixed JT-approved G2C invite cohort for internal plug-ins."""
 import json
 
+from cj_strict_json import compact
+
 from .demo_login import invitation_subject
 
 
@@ -9,7 +11,10 @@ def generate_plugin_subjects():
 
 
 def configured_plugin_subjects(raw):
-    subjects = json.loads(raw)
+    try:
+        subjects = json.loads(raw)
+    except (ValueError, RecursionError):
+        raise ValueError('exact_internal_plugin_roster_required') from None
     expected = frozenset(generate_plugin_subjects())
     if (type(subjects) is not list or len(subjects) != len(expected)
             or any(type(subject) is not str for subject in subjects)
@@ -19,4 +24,4 @@ def configured_plugin_subjects(raw):
 
 
 if __name__ == '__main__':
-    print(json.dumps(generate_plugin_subjects(), separators=(',', ':')))
+    print(compact(generate_plugin_subjects()).decode('utf-8'))
