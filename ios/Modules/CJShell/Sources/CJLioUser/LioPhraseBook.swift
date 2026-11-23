@@ -67,7 +67,7 @@ enum LioPhraseCategory: String, CaseIterable, Identifiable {
                 .init("shopping-price", "请问这件的价格是多少？", "What's the price of this item?"),
                 .init("shopping-size", "这款还有别的尺码吗？", "Do you have this in another size?"),
                 .init("shopping-card", "这里可以用境外银行卡付款吗？", "Can I pay here with an international bank card?"),
-                .init("shopping-receipt", "能给我一张购物小票吗？", "Could I have a receipt?"),
+                .init("shopping-printed-slip", "能给我一张购物小票吗？", "May I have a printed slip?"),
             ]
         case .healthcare:
             [
