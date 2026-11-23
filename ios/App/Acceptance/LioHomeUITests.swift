@@ -19,12 +19,16 @@ import CryptoKit
                 app.buttons["lio.tools.payment-guide"].tap()
                 for provider in ["alipay", "weixin"] {
                     app.buttons["lio.payment.provider." + provider].tap()
-                    XCTAssertTrue(app.staticTexts["lio.payment.step.register"].exists)
-                    XCTAssertTrue(app.staticTexts["lio.payment.step.find-card"].exists)
-                    XCTAssertTrue(app.staticTexts["lio.payment.step.add-card"].exists)
-                    XCTAssertTrue(app.staticTexts["lio.payment.step.verify"].exists)
                     XCTAssertTrue(app.descendants(matching: .any)["lio.payment.official"].exists)
                     try app.performAccessibilityAudit(for: .all)
+                    for step in ["register", "find-card", "add-card", "verify"] {
+                        let row = app.buttons["lio.payment.open-step." + step]
+                        XCTAssertTrue(row.exists)
+                        row.tap()
+                        XCTAssertTrue(app.staticTexts["lio.payment.step." + step].exists)
+                        try app.performAccessibilityAudit(for: .all)
+                        app.navigationBars.firstMatch.buttons.firstMatch.tap()
+                    }
                     let screenshot = XCTAttachment(screenshot: app.screenshot())
                     screenshot.name = "payment-\(provider)-\(language)-\(appearance)"
                     screenshot.lifetime = .keepAlways
