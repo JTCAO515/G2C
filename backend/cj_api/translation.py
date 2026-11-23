@@ -377,6 +377,8 @@ class DashScopeTranslation:
             raise supplier_unavailable('supplier_receipt_shape', 200) from None
 
     def fetch_audio(self, url, deadline):
+        phase = 'supplier_audio_url'
+        supplier_http = None
         try:
             if type(url) is not str or len(url) > 2048 or any(ord(char) <= 32 for char in url):
                 raise ValueError('invalid TTS asset')
@@ -385,9 +387,10 @@ class DashScopeTranslation:
                     or not target.path.startswith('/') or not target.query or target.fragment):
                 raise ValueError('untrusted TTS asset')
             path = target.path + '?' + target.query
+            phase = 'supplier_audio_connect'
             seconds = deadline - time.monotonic()
             if seconds <= 0:
-                raise supplier_unavailable()
+                raise TimeoutError()
             # The official asset examples use HTTP. Fetch only the same
             # Beijing host over TLS, without sending the DashScope key.
             with closing(self._connection(TTS_RESULT_HOST, timeout=min(seconds, 8))) as connection:
@@ -398,16 +401,20 @@ class DashScopeTranslation:
                 if seconds <= 0:
                     raise TimeoutError()
                 transport.settimeout(min(seconds, 8))
+                phase = 'supplier_audio_request'
                 connection.request('GET', path, headers={'Accept': 'audio/wav'})
+                phase = 'supplier_audio_headers'
                 with closing(connection.getresponse()) as response:
-                    if response.status != 200:
-                        raise supplier_unavailable('supplier_audio_status', response.status)
+                    supplier_http = response.status
+                    if supplier_http != 200:
+                        raise supplier_unavailable('supplier_audio_status', supplier_http)
                     length = response.getheader('Content-Length')
                     if (response.chunked or length is None or re.fullmatch(r'[0-9]{1,7}', length) is None
                             or not 44 <= int(length) <= MAX_TTS_WAV):
-                        raise supplier_unavailable('invalid_supplier_audio')
+                        raise supplier_unavailable(phase, supplier_http)
                     remaining = int(length)
                     wav = bytearray()
+                    phase = 'supplier_audio_body'
                     while remaining:
                         seconds = deadline - time.monotonic()
                         if seconds <= 0:
@@ -420,18 +427,19 @@ class DashScopeTranslation:
                             raise IncompleteRead(b'')
                         wav.extend(chunk)
                         remaining -= len(chunk)
+            phase = 'invalid_supplier_audio'
             if (not wav.startswith(b'RIFF') or wav[8:12] != b'WAVE'
                     or int.from_bytes(wav[4:8], 'little') != len(wav) - 8 or self._api_key.encode() in wav):
-                raise supplier_unavailable('invalid_supplier_audio')
+                raise supplier_unavailable(phase, supplier_http)
             with wave.open(BytesIO(wav), 'rb') as audio:
                 frames = audio.getnframes()
                 if frames <= 0 or len(audio.readframes(frames)) != frames * audio.getnchannels() * audio.getsampwidth():
-                    raise supplier_unavailable('invalid_supplier_audio')
+                    raise supplier_unavailable(phase, supplier_http)
             if time.monotonic() >= deadline:
-                raise TimeoutError()
+                raise supplier_unavailable('supplier_audio_deadline', supplier_http)
             return bytes(wav)
         except (TypeError, ValueError, OSError, HTTPException, EOFError, wave.Error):
-            raise supplier_unavailable('supplier_audio_unavailable') from None
+            raise supplier_unavailable(phase, supplier_http) from None
 
 
 class TranslationRelay:
@@ -521,6 +529,11 @@ class TranslationRelay:
         receipt, usage, url = self.provider.synthesize(request, deadline, authorize_send)
         self.budget.finish(operation, 0, TTS_MODEL, receipt, usage)
         authorize_send()
-        audio = self.provider.fetch_audio(url, deadline)
+        try:
+            audio = self.provider.fetch_audio(url, deadline)
+        except TranslationError as error:
+            _LOGGER.warning('G2C_TRANSLATION_TTS_AUDIO_FAILURE reason=%s supplier_http=%s',
+                            error.reason, error.supplier_http)
+            raise
         authorize_send()
         return {'version': TTS_VERSION, 'audio': b64encode(audio).decode('ascii')}
