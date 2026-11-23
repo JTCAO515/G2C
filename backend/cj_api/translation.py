@@ -174,7 +174,7 @@ class DashScopeTranslation:
         self._api_key = api_key
         self._connection = connection
 
-    def _post(self, path, payload, deadline, authorize):
+    def _post(self, path, payload, deadline, authorize, *, empty_success_code=False):
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             raise supplier_unavailable()
@@ -215,7 +215,8 @@ class DashScopeTranslation:
                         raise supplier_unavailable(phase, supplier_http)
             phase = 'supplier_response_json'
             value = json.loads(body, object_pairs_hook=reject_duplicates(ValueError, 'duplicate provider field'))
-            if type(value) is not dict or 'error' in value or 'code' in value:
+            if (type(value) is not dict or 'error' in value
+                    or 'code' in value and (not empty_success_code or value['code'] != '')):
                 raise supplier_unavailable('supplier_error_envelope', supplier_http)
             return value
         except (HTTPException, OSError, RecursionError, ValueError):
@@ -277,13 +278,13 @@ class DashScopeTranslation:
             'model': TTS_MODEL, 'input': {
                 'text': request.text, 'voice': 'Cherry', 'language_type': LANGUAGES[request.language],
             },
-        }, deadline, authorize)
+        }, deadline, authorize, empty_success_code=True)
         try:
             supplier_id = result['request_id']
-            if not SUPPLIER_ID.fullmatch(supplier_id):
+            if result.get('status_code', 200) != 200 or not SUPPLIER_ID.fullmatch(supplier_id):
                 raise ValueError('invalid TTS receipt')
             output = result['output']
-            if type(output) is not dict or output.get('finish_reason', 'stop') != 'stop':
+            if type(output) is not dict or output['finish_reason'] != 'stop':
                 raise ValueError('incomplete audio result')
             return supplier_id, {'characters': result['usage']['characters']}, output['audio']['url']
         except (KeyError, TypeError, ValueError):
@@ -304,17 +305,46 @@ class DashScopeTranslation:
             # The official asset examples use HTTP. Fetch only the same
             # Beijing host over TLS, without sending the DashScope key.
             with closing(self._connection(TTS_RESULT_HOST, timeout=min(seconds, 8))) as connection:
+                connection.connect()
+                connection.auto_open = False
+                transport = connection.sock
+                seconds = deadline - time.monotonic()
+                if seconds <= 0:
+                    raise TimeoutError()
+                transport.settimeout(min(seconds, 8))
                 connection.request('GET', path, headers={'Accept': 'audio/wav'})
                 with closing(connection.getresponse()) as response:
                     if response.status != 200:
                         raise supplier_unavailable('supplier_audio_status', response.status)
-                    wav = response.read(MAX_TTS_WAV + 1)
-            if (len(wav) > MAX_TTS_WAV or not wav.startswith(b'RIFF')
-                    or wav[8:12] != b'WAVE' or int.from_bytes(wav[4:8], 'little') != len(wav) - 8
-                    or self._api_key.encode() in wav or time.monotonic() >= deadline):
+                    length = response.getheader('Content-Length')
+                    if (response.chunked or length is None or re.fullmatch(r'[0-9]{1,7}', length) is None
+                            or not 44 <= int(length) <= MAX_TTS_WAV):
+                        raise supplier_unavailable('invalid_supplier_audio')
+                    remaining = int(length)
+                    wav = bytearray()
+                    while remaining:
+                        seconds = deadline - time.monotonic()
+                        if seconds <= 0:
+                            raise TimeoutError()
+                        # read1 never waits for the whole body. Reapply the time
+                        # left to the underlying socket on every bounded read.
+                        transport.settimeout(min(seconds, 8))
+                        chunk = response.read1(min(32 * 1024, remaining))
+                        if not chunk:
+                            raise IncompleteRead(b'')
+                        wav.extend(chunk)
+                        remaining -= len(chunk)
+            if (not wav.startswith(b'RIFF') or wav[8:12] != b'WAVE'
+                    or int.from_bytes(wav[4:8], 'little') != len(wav) - 8 or self._api_key.encode() in wav):
                 raise supplier_unavailable('invalid_supplier_audio')
-            return wav
-        except (TypeError, ValueError, OSError, HTTPException):
+            with wave.open(BytesIO(wav), 'rb') as audio:
+                frames = audio.getnframes()
+                if frames <= 0 or len(audio.readframes(frames)) != frames * audio.getnchannels() * audio.getsampwidth():
+                    raise supplier_unavailable('invalid_supplier_audio')
+            if time.monotonic() >= deadline:
+                raise TimeoutError()
+            return bytes(wav)
+        except (TypeError, ValueError, OSError, HTTPException, EOFError, wave.Error):
             raise supplier_unavailable('supplier_audio_unavailable') from None
 
 

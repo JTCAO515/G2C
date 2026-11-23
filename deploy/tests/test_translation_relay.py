@@ -1,6 +1,7 @@
 from base64 import b64decode, b64encode
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from http.client import HTTPResponse
 from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -63,19 +64,28 @@ def interface(budget, request):
     import json
 
     calls = []
+    scenario = getattr(request, 'param', None)
     def fake(http_request):
         payload = json.loads(http_request.content)
         model = payload['model']
         calls.append(model)
         assert http_request.url.host == 'dashscope.aliyuncs.com'
         assert http_request.headers['Authorization'] == 'Bearer fixture-key'
+        if model == TTS_MODEL:
+            assert http_request.url.path.endswith('/multimodal-generation/generation')
+            assert payload['input'] == {'text': '测试朗读', 'voice': 'Cherry', 'language_type': 'Chinese'}
+            failure = scenario == 'tts_code'
+            return httpx.Response(200, json=dict(status_code=200, request_id=str(uuid4()),
+                code='InvalidParameter' if failure else '', message='',
+                output={'finish_reason': 'stop', 'audio': {
+                    'url': f'http://{TTS_RESULT_HOST}/official.wav?signature=fixture'}},
+                usage={'input_tokens': 0, 'output_tokens': 0, 'characters': 4}))
         if model == IMAGE_MODEL:
             assert http_request.url.path.endswith('/multimodal-generation/generation')
             return httpx.Response(200, json=dict(request_id=str(uuid4()),
                 output={'choices': [{'message': {'content': [{'text': '菜單\n火鍋'}]}}]},
                 usage={'input_tokens': 30, 'output_tokens': 8}))
         if model == SPEECH_MODEL:
-            scenario = getattr(request, 'param', None)
             if scenario == 'http':
                 return httpx.Response(400, json={'error': {'message': 'private provider detail'}})
             if scenario == 'subsecond':
@@ -100,13 +110,21 @@ def interface(budget, request):
             choices=[{'message': {'content': content}, 'finish_reason': 'stop'}], usage=usage))
 
     class Connection:
+        response_class = HTTPResponse
+
         def __init__(self, host, timeout):
             self.host = host
+            self.sock = SimpleNamespace(settimeout=lambda _: None)
 
         def connect(self):
-            assert self.host == 'dashscope.aliyuncs.com'
+            assert self.host in ('dashscope.aliyuncs.com', TTS_RESULT_HOST)
 
-        def request(self, method, path, *, body, headers):
+        def request(self, method, path, *, body=None, headers):
+            if self.host == TTS_RESULT_HOST:
+                assert (method, path, headers) == ('GET', '/official.wav?signature=fixture', {'Accept': 'audio/wav'})
+                calls.append('download')
+                self.reply = httpx.Response(200, content=b64decode(_wav(frames=0 if scenario=='tts_empty' else None)))
+                return
             assert self.auto_open is False
             self.reply = fake(httpx.Request(method, 'https://' + self.host + path, content=body, headers=headers))
 
@@ -126,9 +144,10 @@ def interface(budget, request):
         relay = TranslationRelay(SimpleNamespace(check=_check), budget,
                                  DashScopeTranslation('fixture-key', connection=Connection),
                                  lambda issuer, subject: subject)
-        with translation_socket(relay, path=path):
+        tts_enabled = scenario in ('tts_ok', 'tts_code', 'tts_empty')
+        with translation_socket(relay, path=path, tts_enabled=tts_enabled):
             app = FastAPI()
-            register_translation_route(app, send=lambda token, raw: socket_request(token, raw, path=path))
+            register_translation_route(app, send=lambda token, raw, **opts: socket_request(token, raw, path=path, **opts))
             with TestClient(app) as client:
                 yield client, calls, budget.authorization
 
@@ -252,6 +271,75 @@ def test_tts_uses_private_worker_audio_and_original_receipt_once(budget, enabled
     assert '测试朗读' not in str(budget.authorization.inspect())
 
 
+@pytest.mark.parametrize(('interface', 'status', 'receipt', 'assets'), [
+    ('tts_ok', 200, 'RECEIVED', ['download']),
+    ('tts_code', 502, 'INTENT', []),
+    ('tts_empty', 502, 'RECEIVED', ['download']),
+], indirect=['interface'])
+def test_tts_official_http_envelope_retains_original_settlement(interface, status, receipt, assets):
+    client, calls, ledger = interface
+    body = dict(version=TTS_VERSION, request_id=str(uuid4()), language='zh', text='测试朗读')
+    auth = {'Authorization': 'Bearer internal-fixture'}
+    reply = client.post(TTS_ROUTE, json=body, headers=auth)
+    assert reply.status_code == status
+    if status == 200:
+        assert reply.headers['Content-Type'] == 'audio/wav' and reply.content == b64decode(_wav())
+    assert client.post(TTS_ROUTE, json=body, headers=auth).status_code == 409
+    assert calls == [TTS_MODEL, *assets]
+    row, = ledger.inspect()
+    assert row['state'] == receipt
+
+
+def test_tts_audio_deadline_stops_between_body_reads(monkeypatch):
+    now = [0.0]
+    chunks = []
+    timeouts = []
+    monkeypatch.setattr(time, 'monotonic', lambda: now[0])
+
+    class Response:
+        status = 200
+        chunked = False
+
+        def getheader(self, name):
+            assert name == 'Content-Length'
+            return '9000'
+
+        def read(self, _):
+            pytest.fail('TTS must avoid an unbounded body read')
+
+        def read1(self, limit):
+            assert limit == 9000
+            chunks.append(1)
+            now[0] = 5.0
+            return b'partial'
+
+        def close(self):
+            pass
+
+    class Connection:
+        def __init__(self, host, timeout):
+            assert host == TTS_RESULT_HOST and timeout <= 5
+            self.sock = SimpleNamespace(settimeout=timeouts.append)
+
+        def connect(self):
+            pass
+
+        def request(self, method, path, *, headers):
+            pass
+
+        def getresponse(self):
+            return Response()
+
+        def close(self):
+            pass
+
+    provider = DashScopeTranslation('fixture-key', connection=Connection)
+    with pytest.raises(TranslationError, match='provider_unavailable'):
+        provider.fetch_audio(f'https://{TTS_RESULT_HOST}/slow.wav?signature=fixture', 5)
+    assert chunks == [1]
+    assert timeouts and all(0 < timeout <= 5 for timeout in timeouts)
+
+
 def test_tts_daily_limit_uses_original_owner_and_does_not_change_text_quota(budget):
     for _ in range(200):
         operation = budget.operation('owner-a', uuid4(), 'tts', 1)
@@ -272,11 +360,15 @@ def test_tts_download_connects_to_beijing_asset_over_tls_without_api_key():
             assert host == TTS_RESULT_HOST and 0 < timeout <= 8
             calls.append(host)
 
+        def connect(self):
+            self.sock = SimpleNamespace(settimeout=lambda _: None)
+
         def request(self, method, path, *, headers):
             assert (method, path, headers) == ('GET', '/one.wav?signature=fake', {'Accept': 'audio/wav'})
 
         def getresponse(self):
-            return SimpleNamespace(status=200, read=lambda limit: data, close=lambda: None)
+            return SimpleNamespace(status=200, chunked=False, getheader=lambda _: str(len(data)),
+                                   read=lambda _: data, read1=lambda limit: data[:limit], close=lambda: None)
 
         def close(self):
             pass
