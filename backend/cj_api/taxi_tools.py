@@ -21,6 +21,7 @@ VERSION = 'TAXI.1'
 ESTIMATE = '/v1/tools/taxi/estimate'
 LINK = '/v1/tools/taxi/link'
 DAILY_LIMIT = 50
+REVERSE_COUNT = 'didi:maps_regeocode'
 APP_LINK_HOST = 'v.didi.cn'
 APP_LINK_PATH = '/XvYQEWe'
 LINK_COORDINATES = {
@@ -53,12 +54,14 @@ class DiDiInformation:
         error = result.get('error')
         return result, error.get('code') if type(error) is dict else None
 
-    def call(self, tool, params, *, retry=True):
+    def call(self, tool, params, *, retry=True, before_retry=None):
         selected = DiDiTool(tool)
         result, code = self._send(selected, params)
         if retry and (code == -32001 or (code == -32021 and selected is DiDiTool.ESTIMATE)):
             if code == -32001:
                 self._wait(0.25)
+            if before_retry is not None:
+                before_retry()
             result, code = self._send(selected, params)
         if code == -32001:
             raise PluginError(429, 'rate_limited')
@@ -158,10 +161,12 @@ class TaxiService:
         last_lng, last_lat = _gcj_strings(request.destination)
         return dict(from_lat=first_lat, from_lng=first_lng, to_lat=last_lat, to_lng=last_lng)
 
-    def _resolve_name(self, point, lng, lat):
-        if point.name is not None:
-            return point.name
-        result = self.provider.call(DiDiTool.REGEOCODE, {'location': f'{lng},{lat}'})
+    def _resolve_name(self, lng, lat, reserve):
+        def count():
+            reserve(REVERSE_COUNT, None)
+
+        count()
+        result = self.provider.call(DiDiTool.REGEOCODE, {'location': f'{lng},{lat}'}, before_retry=count)
         try:
             text = result['content'][0]['text']
             address = json.loads(text, object_pairs_hook=reject_duplicates(ValueError, 'duplicate address field'))
@@ -174,13 +179,14 @@ class TaxiService:
                 return name
         raise PluginError(422, 'coordinate_unverified')
 
-    def _named_estimate(self, request, params, *, retry=True):
-        origin = self._resolve_name(request.origin, params['from_lng'], params['from_lat'])
-        destination = self._resolve_name(request.destination, params['to_lng'], params['to_lat'])
-        return self.provider.call(DiDiTool.ESTIMATE, dict(params, from_name=origin, to_name=destination), retry=retry)
+    def _named_estimate(self, params, reserve, *, retry=True):
+        origin = self._resolve_name(params['from_lng'], params['from_lat'], reserve)
+        destination = self._resolve_name(params['to_lng'], params['to_lat'], reserve)
+        return self.provider.call(DiDiTool.ESTIMATE, dict(params, from_name=origin, to_name=destination),
+                                  retry=retry, before_retry=lambda: reserve(ESTIMATE, DAILY_LIMIT))
 
-    def estimate(self, request):
-        result = self._named_estimate(request, self._points(request))
+    def estimate(self, request, reserve):
+        result = self._named_estimate(self._points(request), reserve)
         try:
             data = result['structuredContent']
             output = EstimateOutput.model_validate(dict(
@@ -193,12 +199,14 @@ class TaxiService:
         return dict(version=VERSION, **output.model_dump(exclude_none=True),
                     observed_at=self.clock().isoformat())
 
-    def link(self, request):
+    def link(self, request, reserve):
         points = self._points(request)
         try:
-            result = self.provider.call(DiDiTool.LINK, points)
+            result = self.provider.call(DiDiTool.LINK, points, before_retry=lambda: reserve(LINK, DAILY_LIMIT))
         except DiDiEstimateExpired:
-            self._named_estimate(request, points, retry=False)
+            reserve(ESTIMATE, DAILY_LIMIT)
+            self._named_estimate(points, reserve, retry=False)
+            reserve(LINK, DAILY_LIMIT)
             result = self.provider.call(DiDiTool.LINK, points, retry=False)
         data = result.get('structuredContent')
         raw = data.get('appLink') if type(data) is dict else None
@@ -208,6 +216,8 @@ class TaxiService:
 def register_taxi_routes(app, *, taxi=None, checker=None, internal=frozenset(), calls=None):
     enabled = taxi is not None
     register_plugin(app, ESTIMATE, EstimateRequest, taxi.estimate if enabled else None,
-                    enabled=enabled, checker=checker, internal=internal, calls=calls, limit=DAILY_LIMIT)
+                    enabled=enabled, checker=checker, internal=internal, calls=calls, limit=DAILY_LIMIT,
+                    count_provider_calls=True)
     register_plugin(app, LINK, LinkRequest, taxi.link if enabled else None,
-                    enabled=enabled, checker=checker, internal=internal, calls=calls, limit=DAILY_LIMIT)
+                    enabled=enabled, checker=checker, internal=internal, calls=calls, limit=DAILY_LIMIT,
+                    count_provider_calls=True)

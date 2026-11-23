@@ -51,9 +51,10 @@ def test_transport_uses_only_fixed_post_and_puts_key_in_query(wire):
     assert 'fixture' not in json.dumps(headers) + json.dumps(body)
 
 
-def test_credential_echo_in_supplier_body_is_rejected(wire):
+@pytest.mark.parametrize('echo',[b'fixture+key',b'fixture\\u002bkey',b'fixture%2Bkey'])
+def test_credential_echo_in_supplier_body_is_rejected(wire, echo):
     connection, reply = wire
-    connection.reply = reply(b'{"jsonrpc":"2.0","id":1,"result":{"text":"fixture+key"}}')
+    connection.reply = reply(b'{"jsonrpc":"2.0","id":1,"result":{"text":"'+echo+b'"}}')
     transfer = DiDiInformation(DiDiMCPTransport('fixture+key', connection=connection))
     with pytest.raises(PluginError, match='^supplier_unavailable$') as raised:
         transfer.call('taxi_estimate', {})

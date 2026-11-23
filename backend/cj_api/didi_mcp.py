@@ -4,7 +4,7 @@ from contextlib import closing
 from enum import Enum
 from http.client import HTTPSConnection, HTTPException
 import json
-from urllib.parse import urlencode
+from urllib.parse import unquote, urlencode
 
 from cj_strict_json import compact, reject_duplicates
 
@@ -19,6 +19,20 @@ class DiDiTool(str, Enum):
     REGEOCODE = 'maps_regeocode'
     ESTIMATE = 'taxi_estimate'
     LINK = 'taxi_generate_ride_app_link'
+
+
+def _echoes_credential(value, key):
+    pending = [value]
+    while pending:
+        item = pending.pop()
+        if isinstance(item, dict):
+            pending.extend(item.keys())
+            pending.extend(item.values())
+        elif isinstance(item, list):
+            pending.extend(item)
+        elif isinstance(item, str) and (key in item or key in unquote(item)):
+            return True
+    return False
 
 
 class DiDiMCPTransport:
@@ -51,7 +65,8 @@ class DiDiMCPTransport:
                     if len(raw) > MAX_REPLY or self._key.encode() in raw or endpoint.encode() in raw:
                         raise OSError('didi_reply_unavailable')
             packet = json.loads(raw, object_pairs_hook=reject_duplicates(ValueError, 'duplicate DiDi field'))
-            if (type(packet) is not dict or packet.get('jsonrpc') != '2.0'
+            if (_echoes_credential(packet, self._key) or type(packet) is not dict
+                    or packet.get('jsonrpc') != '2.0'
                     or type(packet.get('id')) is not int or packet['id'] != 1
                     or ('result' in packet) == ('error' in packet)):
                 raise OSError('didi_reply_unavailable')

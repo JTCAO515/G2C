@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 import pytest
 
 from cj_api.plugin_tools import PluginCalls, PluginError
-from cj_api.taxi_tools import DiDiInformation, ESTIMATE, LINK, TaxiService, register_taxi_routes
+from cj_api.taxi_tools import DiDiInformation, ESTIMATE, LINK, REVERSE_COUNT, TaxiService, register_taxi_routes
 from cj_auth.interfaces import AdmissionDecision, AdmissionReason, AdmissionStatus, TrustedPrincipal
 
 
@@ -69,7 +69,9 @@ def test_hong_kong_default_disabled():
 
 def test_fixture_estimate_and_link_allow_no_identity_fields(app_context):
     client, seen, _ = app_context
-    response = client.post(ESTIMATE, headers=AUTH, json=payload())
+    body = payload()
+    body['origin']['name'] = '未验证的客户端文本'
+    response = client.post(ESTIMATE, headers=AUTH, json=body)
     assert response.status_code == 200
     assert response.json() == {'version': 'TAXI.1',
                                'vehicles': [{'category': '1', 'name': '快车', 'currency': 'CNY',
@@ -79,7 +81,8 @@ def test_fixture_estimate_and_link_allow_no_identity_fields(app_context):
     assert response.json() == {'version': 'TAXI.1', 'url': FIXTURE_LINK, 'link_type': 'https'}
     assert seen == [
         ('maps_regeocode', dict(location='116.410244,39.916404')),
-        ('taxi_estimate', dict(GCJ, from_name='北京西站', to_name='经核对的公共地点')),
+        ('maps_regeocode', dict(location='116.410244,39.916404')),
+        ('taxi_estimate', dict(GCJ, from_name='经核对的公共地点', to_name='经核对的公共地点')),
         ('taxi_generate_ride_app_link', GCJ),
     ]
 
@@ -229,7 +232,7 @@ def test_unknown_reverse_name_rejects_before_estimate():
         calls.append(tool)
         return {'content': [{'text': '{"display_name": ""}'}]}
     with pytest.raises(PluginError, match='^coordinate_unverified$'):
-        TaxiService(DiDiInformation(send)).estimate(EstimateRequest.model_validate(payload()))
+        TaxiService(DiDiInformation(send)).estimate(EstimateRequest.model_validate(payload()), lambda *args: None)
     assert calls == ['maps_regeocode']
 
 
@@ -273,10 +276,13 @@ def test_expired_link_refreshes_the_named_estimate_only_once():
             return {'content': [{'text': '{"display_name":"北京地点"}'}]}
         return {'structuredContent': {}}
 
-    result = TaxiService(DiDiInformation(dispatch)).link(LinkRequest.model_validate(payload()))
+    reservations = []
+    result = TaxiService(DiDiInformation(dispatch)).link(
+        LinkRequest.model_validate(payload()), lambda operation, limit: reservations.append((operation, limit)))
     assert result['url'] == FIXTURE_LINK
-    assert calls == ['taxi_generate_ride_app_link', 'maps_regeocode', 'taxi_estimate',
-                     'taxi_generate_ride_app_link']
+    assert calls == ['taxi_generate_ride_app_link', 'maps_regeocode', 'maps_regeocode',
+                     'taxi_estimate', 'taxi_generate_ride_app_link']
+    assert reservations == [(ESTIMATE,50), (REVERSE_COUNT,None), (REVERSE_COUNT,None), (LINK,50)]
 
 
 def test_live_counter_never_recreates_a_missing_quota_journal(tmp_path):
@@ -318,6 +324,8 @@ def test_runtime_roster_and_original_counter_gate_provider_dispatch(monkeypatch,
 
     def dispatch(tool, params):
         seen.append(tool)
+        if tool == 'maps_regeocode':
+            return {'content': [{'text': '{"display_name":"核实地点"}'}]}
         return {'structuredContent': {'items': [
             {'productName': '快车', 'productCategory': '1', 'priceText': '20 元'},
         ]}}
@@ -336,10 +344,41 @@ def test_runtime_roster_and_original_counter_gate_provider_dispatch(monkeypatch,
         assert call(client, 'outside-fixture').status_code == 403
         assert not seen
         assert call(client, 'inside-fixture').status_code == 200
-        assert seen == ['taxi_estimate']
+        assert seen == ['maps_regeocode','maps_regeocode','taxi_estimate']
         database.unlink()
         denied = call(client, 'inside-fixture')
         assert denied.status_code == 503
         assert denied.json() == {'error': 'unavailable'}
-        assert seen == ['taxi_estimate']
+        assert seen == ['maps_regeocode','maps_regeocode','taxi_estimate']
         assert not database.exists()
+
+
+
+@pytest.mark.parametrize(('route', 'rpc_error', 'estimate_count', 'expected_calls'), [
+    (ESTIMATE, -32001, 49, ['maps_regeocode','maps_regeocode','taxi_estimate']),
+    (ESTIMATE, -32021, 49, ['maps_regeocode','maps_regeocode','taxi_estimate']),
+    (LINK, -32021, 50, ['taxi_generate_ride_app_link']),
+])
+def test_additional_supplier_call_cannot_exceed_the_original_estimate_quota(
+        tmp_path, route, rpc_error, estimate_count, expected_calls):
+    calls = PluginCalls(tmp_path/'counter.sqlite', clock=lambda: NOW)
+    owner = check('internal').principal
+    seen = []
+    for _ in range(estimate_count):
+        calls.reserve(owner, ESTIMATE, 50)
+
+    def transport(tool, params):
+        seen.append(tool)
+        if tool == 'maps_regeocode':
+            return {'content': [{'text': '{"display_name": "核实地点"}'}]}
+        return {'error': {'code': rpc_error}}
+
+    service = TaxiService(DiDiInformation(transport, wait=lambda _: None))
+    app=FastAPI()
+    register_taxi_routes(app, taxi=service, checker=SimpleNamespace(check=check),
+                         internal=frozenset({'internal'}), calls=calls)
+    with TestClient(app) as client:
+        error = client.post(route, headers=AUTH, json=payload())
+    assert error.status_code == 429
+    assert error.json() == {'error': 'quota_exceeded'}
+    assert seen == expected_calls

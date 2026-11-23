@@ -81,7 +81,8 @@ async def _bounded_body(request):
     return data
 
 
-def register_plugin(app, path, model, operation, *, enabled, checker, internal, calls, limit):
+def register_plugin(app, path, model, operation, *, enabled, checker, internal, calls, limit,
+                    count_provider_calls=False):
     @app.post(path)
     async def execute(request: Request):
         try:
@@ -101,11 +102,16 @@ def register_plugin(app, path, model, operation, *, enabled, checker, internal, 
             except (ValueError, RecursionError):
                 raise PluginError(400, 'invalid_request') from None
 
-            def run():
+            def reserve(operation_path, operation_limit):
                 current = _authorize(checker, token, internal)
                 if (current.issuer, current.subject) != (principal.issuer, principal.subject):
                     raise PluginError(401, 'sign_in_required')
-                calls.reserve(current, path, limit)
+                calls.reserve(current, operation_path, operation_limit)
+
+            def run():
+                reserve(path, limit)
+                if count_provider_calls:
+                    return operation(arguments, reserve)
                 return operation(arguments)
 
             status, body = 200, await run_in_threadpool(run)
