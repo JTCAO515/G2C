@@ -112,6 +112,24 @@ def test_subjects_are_explicit_and_timezone_must_be_confirmed_source_not_default
         host.build_plan(packed(reply(4,'zh',party=3)),capture)
 
 
+def test_first_dated_draft_keeps_explicit_stop_ids_when_repairing_self_placeholders():
+    host, capture = publisher(4, 'zh')
+    value = reply(4, 'zh')
+    first_day = value['days'][0][1]
+    first_day[0][0] = first_day[1][0] = 'self'
+    # The model's third stop already has the ID the server would generate for
+    # the second stop when it repairs the copied participant placeholder.
+    value['days'][1][1][0][0] = 'suggestion-2'
+
+    content, _, _ = host.build_plan(packed(value), capture)
+    items = json.loads(content)['items']
+
+    assert items[0]['id'] == 'hotel'
+    assert items[3]['id'] == 'suggestion-2'
+    assert len({item['id'] for item in items}) == len(items) == 9
+    assert [item['text'] for item in items[1:]] == [row[1] for _, rows in value['days'] for row in rows]
+
+
 @pytest.mark.parametrize('ordinal',[False,True])
 def test_five_days_three_periods_and_empty_fixed_items_are_valid_with_explicit_party(ordinal):
     host,capture=publisher(5,'en',ordinal=ordinal,party=3)
