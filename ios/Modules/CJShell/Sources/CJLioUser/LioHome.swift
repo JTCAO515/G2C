@@ -189,7 +189,7 @@ public struct LioHome<MenuContent: View>: View {
                 LioToolsView(language: language, history: toolsHistory, relay: toolsRelay,
                              enabled: !restoringChat && session?.available != false && scenePhase != .background,
                              sessionIsCurrent: toolsSessionIsCurrent)
-                    .environment(\.lioLocalSupportDraft, toolsDraftStorage)
+                    .environment(\.lioLocalSupportDraft, activeSupportDraft)
                     .background(LioTabBarAppearance().frame(width: 0, height: 0))
                     .tabItem { Label(language.text("Tools", "插件"), systemImage: "puzzlepiece.extension") }
                     .tag(Tab.tools)
@@ -262,7 +262,7 @@ public struct LioHome<MenuContent: View>: View {
             }
         }
         .sheet(isPresented: $showsEmergencySupport) {
-            LioEmergencySupportSheet(language: language, draftStorage: toolsDraftStorage)
+            LioEmergencySupportSheet(language: language, draftStorage: activeSupportDraft)
         }
         .sheet(isPresented: $showsProblemNotes) { problemNotesSheet }
         .safeAreaInset(edge: .top, spacing: 0) {
@@ -632,6 +632,11 @@ public struct LioHome<MenuContent: View>: View {
     }
 
     private var chatControlsSuspended: Bool { restoringChat || session?.available == false }
+    private var activeSupportDraft: LocalSupportDraftStorage? {
+        guard !chatControlsSuspended, scenePhase == .active, toolsSessionIsCurrent() else { return nil }
+        return toolsDraftStorage
+    }
+
     private var chatMasked: Bool { restoringChat && !warmRestoration }
     private var chatControlWidth: CGFloat { showsTools && chatLibrary != nil ? 88 : 44 }
 

@@ -55,7 +55,7 @@ struct DemoBetaRootView: View {
         }
         .lioEmergencySupportFallback(language: shell.language.lio,
                                      enabled: root.lioRetainedTrip == nil || root.finishingDemoCleanup,
-                                     draftStorage: root.finishingDemoCleanup ? nil : root.localSupportDraftStorage())
+                                     draftStorage: root.localSupportDraftStorage())
         .alert(shell.language.text("Couldn’t clear the help draft.", "暂时无法清空求助草稿。"),
                isPresented: $draftClearFailed) {
             Button(shell.language.text("OK", "好"), role: .cancel) {}

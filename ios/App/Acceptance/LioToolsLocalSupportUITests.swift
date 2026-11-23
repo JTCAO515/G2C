@@ -219,6 +219,28 @@ import XCTest
         app.terminate()
     }
 
+    @objc func testSOSKeepsPrivateDraftOutOfSuspendedSession() {
+        for suspended in [false, true] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-chat-history-acceptance", "--lio-support-sos",
+                                   "--lio-support-draft-fence", "-cj.ui.language.v1", "en"]
+            if suspended { app.launchArguments.append("--lio-support-suspended") }
+            app.launch()
+            defer { app.terminate() }
+
+            let sos = app.buttons["lio.support.sos"]
+            XCTAssertTrue(sos.waitForExistence(timeout: 10))
+            sos.tap()
+            XCTAssertTrue(app.buttons["lio.support.police"].waitForExistence(timeout: 6))
+            let draft = app.descendants(matching: .any).matching(identifier: "lio.support.draft").firstMatch
+            if suspended {
+                XCTAssertFalse(draft.exists)
+            } else {
+                XCTAssertTrue(draft.waitForExistence(timeout: 6))
+            }
+        }
+    }
+
     @objc func testSOSOpensEmergencyNumbersDuringChatAndRecovery() throws {
         continueAfterFailure = false
         for (index, (arguments, hasNewChat, showConnectionError)) in [
