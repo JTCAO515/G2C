@@ -27,11 +27,23 @@ struct LioTaxiWireTests {
         ]}
         """.utf8)
         let fare = try #require(LioTaxiWire.readFares(data).first)
-        if case .description(let text) = fare.price {
-            #expect(text == "Price after pickup")
-        } else {
-            Issue.record("A price range was invented from a text quote")
-        }
+        #expect(fare.priceDisplay == "Price after pickup")
+    }
+
+    @Test func publishedQuoteKeepsProviderPriceAndLocalizesOnlyKnownCategories() throws {
+        let response = Data("""
+        {"version":"TAXI.1","observed_at":"2026-11-23T00:00:00Z","vehicles":[
+          {"category":"1","name":"快车","currency":"CNY","price_display":"约¥35","price_min_minor":3000,"price_max_minor":4200},
+          {"category":"201","name":"特惠快车","currency":"CNY","price_display":"¥28起"},
+          {"category":"8","name":"专车","currency":"CNY","price_display":"约¥70"},
+          {"category":"99","name":"滴滴定制车","currency":"CNY","price_display":"¥52–65"}
+        ]}
+        """.utf8)
+        let fares = try LioTaxiWire.readFares(response)
+        #expect(fares.map(\.nameEN) == ["Express", "Discount Express", "Premier", "滴滴定制车"])
+        #expect(fares.map(\.nameZH) == ["快车", "特惠快车", "专车", "滴滴定制车"])
+        let express = try #require(fares.first)
+        #expect(express.priceDisplay == "约¥35")
     }
 
     @Test func linksRequireATargetAllowedByTheCaller() throws {

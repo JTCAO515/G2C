@@ -47,7 +47,7 @@ extension LioRelayTranslationClient {
     }
 }
 
-private final class LioRelayNoRedirect: NSObject, URLSessionTaskDelegate {
+final class LioRelayNoRedirect: NSObject, URLSessionTaskDelegate {
     let bodyLength: Int64
     let uploadFinished: LioRelayTranslationClient.UploadFinished?
 
