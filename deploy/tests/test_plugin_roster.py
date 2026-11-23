@@ -57,6 +57,6 @@ def test_hk_taxi_gets_only_the_configured_full_cohort(monkeypatch, valid):
 
 
 def test_deep_invalid_configuration_fails_closed_for_the_plugin():
-    deep = '[' * 2500 + 'null' + ']' * 2500
+    deep = '[' * 32_000 + 'null' + ']' * 32_000
     with pytest.raises(ValueError, match='exact_internal_plugin_roster_required'):
         plugin_roster.configured_plugin_subjects(deep)

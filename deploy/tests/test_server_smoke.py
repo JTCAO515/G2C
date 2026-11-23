@@ -726,9 +726,9 @@ def test_enabled_translation_without_its_admitted_session_is_unrun(monkeypatch, 
     }
 
 
-@pytest.mark.parametrize('translation_eligible', [True, False])
+@pytest.mark.parametrize('mode', ['eligible', 'denied', 'same_scope'])
 def test_lio_and_translation_keep_separate_admission_and_receipt_scopes(
-        monkeypatch, capsys, translation_eligible):
+        monkeypatch, capsys, mode):
     import io
     import sys
 
@@ -739,6 +739,7 @@ def test_lio_and_translation_keep_separate_admission_and_receipt_scopes(
     from deploy.hk import configuration, plugin_roster
 
     end = datetime(2026, 11, 18, 12, 25, tzinfo=timezone.utc)
+    translation_eligible = mode == 'eligible'
     def admit(subject):
         return AdmissionDecision(AdmissionStatus.ALLOWED, AdmissionReason.ACCEPTED,
                                  TrustedPrincipal('issuer', subject, 'audience', 0, 0,
@@ -756,8 +757,9 @@ def test_lio_and_translation_keep_separate_admission_and_receipt_scopes(
         assert selected_subjects == frozenset(subjects)
         def check(token):
             assert token == 'translation-fixture'
-            return (admit(subjects[0]) if translation_eligible else
-                    AdmissionDecision(AdmissionStatus.DENIED, AdmissionReason.NOT_INVITED))
+            if mode == 'denied':
+                return AdmissionDecision(AdmissionStatus.DENIED, AdmissionReason.NOT_INVITED)
+            return admit(subjects[0] if translation_eligible else 'lio-only')
         return SimpleNamespace(check=check)
 
     def budget(*args, **kwargs):

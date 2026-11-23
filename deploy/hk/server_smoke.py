@@ -708,7 +708,9 @@ def main():
                     raise ValueError('translation original admission unavailable')
                 principal = translation.principal
                 if (translation.status is not AdmissionStatus.ALLOWED or principal is None
-                        or principal.expires_at < end.timestamp()):
+                        or principal.expires_at < end.timestamp()
+                        or (principal.issuer, principal.subject)
+                        == (decision.principal.issuer, decision.principal.subject)):
                     print_json(dict(kind='batch', status='UNRUN', reason='eligible_translation_session_required'))
                     return 3
                 translation_session = (scope_for(principal.issuer, principal.subject), translation_token)
