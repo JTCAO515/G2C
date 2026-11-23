@@ -202,6 +202,43 @@ struct LioTranslationRelayTests {
         #expect(try history.loadRelayOriginals() == unsupportedWireVersion)
     }
 
+    @Test @MainActor func previousPhotoRequestKeepsItsOriginalProtocolAndIDAcrossRollout() throws {
+        let photo: LioRelayTranslationRequest.Payload = .jpeg(Data([0xff, 0xd8, 0xff, 7]))
+        var originals = LioRelayOriginalRequests()
+        let prior = try originals.request(source: .chinese, target: .english, payload: photo)
+        let resumed = try originals.request(source: .chinese, target: .english, payload: photo, prefersImageLayout: true)
+        #expect(resumed.id == prior.id)
+        #expect(resumed.route == LioRelayTranslationRequest.route)
+        #expect(try resumed.wireBody() == prior.wireBody())
+
+        var enabled = LioRelayOriginalRequests()
+        let layout = try enabled.request(source: .chinese, target: .english, payload: photo, prefersImageLayout: true)
+        let afterRollback = try enabled.request(source: .chinese, target: .english, payload: photo)
+        #expect(afterRollback.id == layout.id)
+        #expect(afterRollback.route == LioRelayTranslationRequest.imageLayoutRoute)
+        #expect(try afterRollback.wireBody() == layout.wireBody())
+    }
+
+    @Test @MainActor func layoutUsesItsDedicatedRouteAndMatchingVersion() async throws {
+        let request = LioRelayTranslationRequest(id: id, source: .chinese, target: .english,
+                                                 payload: .jpeg(Data([0xff, 0xd8, 0xff, 7])), usesImageLayout: true)
+        let client = LioRelayTranslationClient(requiresOriginalStore: false, supportsImageLayout: true) { path, body, _ in
+            #expect(path == "/v1/tools/translate/image-layout")
+            let fields = try #require(JSONSerialization.jsonObject(with: body) as? [String: String])
+            #expect(fields["version"] == "IMAGE-LAYOUT.1")
+            #expect(fields["request_id"] == id.uuidString.lowercased())
+            return (200, Data(#"{"version":"IMAGE-LAYOUT.1","image_width":32,"image_height":16,"items":[]}"#.utf8))
+        }
+        let reply = try await client.translate(request)
+        #expect(reply.imageWidth == 32)
+        #expect(reply.kind == .image)
+        let disabled = LioRelayTranslationClient { _, _ in
+            Issue.record("Disabled coordinate translation must not send a request.")
+            return (500, Data())
+        }
+        await #expect(throws: LioRelayTranslationFailure.accessDenied) { try await disabled.translate(request) }
+    }
+
     @Test func imageUsesBase64AndKeepsEveryReturnedLine() throws {
         let request = LioRelayTranslationRequest(id: id, source: .chinese, target: .english, payload: .png(Data([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3])))
         let json = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(request)) as? [String: String])

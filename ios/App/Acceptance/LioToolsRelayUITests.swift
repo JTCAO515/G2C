@@ -27,6 +27,45 @@ import XCTest
         XCTAssertTrue(second.label.contains("Coffee") && second.label.contains("咖啡"), second.debugDescription)
     }
 
+    @objc func testToolsPhotoShowsPositionedTranslationAndLineComparison() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-translation-relay-preview",
+                               "--lio-translation-photo-layout-preview", "-cj.ui.language.v1", "en",
+                               "-AppleLanguages", "(en)"]
+        app.launch()
+        defer { app.terminate() }
+        let tools = app.tabBars.buttons["Tools"]
+        XCTAssertTrue(tools.waitForExistence(timeout: 8))
+        tools.tap()
+        app.buttons["lio.tools.translation"].tap()
+        app.buttons["lio.translation.mode.photo"].tap()
+        let photo = app.buttons["lio.translation.photo"]
+        XCTAssertTrue(photo.waitForExistence(timeout: 6))
+        photo.tap()
+        let fixture = app.images.matching(NSPredicate(format: "label BEGINSWITH %@", "Photo,")).firstMatch
+        XCTAssertTrue(fixture.waitForExistence(timeout: 8))
+        fixture.tap()
+
+        let overlay = app.descendants(matching: .any).matching(identifier: "lio.translation.photo-layout.positioned").firstMatch
+        XCTAssertTrue(overlay.waitForExistence(timeout: 10))
+        let tea = app.staticTexts["茶"]
+        let coffee = app.staticTexts["咖啡"]
+        XCTAssertTrue(tea.exists && coffee.exists)
+        XCTAssertLessThan(tea.frame.midY, coffee.frame.midY)
+        try app.performAccessibilityAudit(for: .all)
+
+        app.buttons["lio.translation.photo-layout.photo"].tap()
+        let original = app.descendants(matching: .any).matching(identifier: "lio.translation.photo-layout.original").firstMatch
+        XCTAssertTrue(original.waitForExistence(timeout: 6))
+        XCTAssertFalse(tea.exists)
+
+        app.buttons["lio.translation.photo-layout.lines"].tap()
+        let first = app.descendants(matching: .any).matching(identifier: "lio.translation.line.0").firstMatch
+        XCTAssertTrue(first.waitForExistence(timeout: 6))
+        XCTAssertTrue(first.label.contains("Tea") && first.label.contains("茶"))
+    }
+
     @objc func testToolsPhotoQuotaOffersRetryWithoutLocalRecognitionOnIOS17() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
