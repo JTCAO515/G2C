@@ -15,6 +15,24 @@ struct LioToolsView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
+                    NavigationLink {
+                        LioLocalSupportView(language: language, directory: try? LocalSupportDirectory.bundled())
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "lifepreserver")
+                            Text(language.text("Local Support", "本地协助"))
+                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 8)
+                            Image(systemName: "chevron.forward")
+                                .accessibilityHidden(true)
+                        }
+                        .foregroundStyle(LioTheme.ink)
+                        .padding(16)
+                        .frame(minHeight: 56)
+                        .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("lio.tools.local-support")
                     #if DEBUG
                     if let service = LioTaxiService.previewFromArguments {
                         previewTaxi(service)
