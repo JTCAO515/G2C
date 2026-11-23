@@ -161,17 +161,6 @@ DISCUSSION_VISIT_PERIODS = {
     'afternoon': ('下午', 'Afternoon: '), 'evening': ('晚上', 'Evening: '),
 }
 DISCUSSION_MAX_PREVIEW_DAYS = 366
-_UNQUALIFIED_LANDMARK_NAMES = (
-    '长城', '万里长城', '中国长城', '北京长城', '长城（北京段）', '长城(北京段)',
-    'Great Wall', 'the Great Wall', 'The Great Wall', 'Great Wall of China',
-    'the Great Wall of China', 'The Great Wall of China', 'Beijing Great Wall',
-    'Great Wall (Beijing)', 'Great Wall (Beijing section)',
-)
-_UNQUALIFIED_LANDMARK_KEYS = frozenset(name.casefold() for name in _UNQUALIFIED_LANDMARK_NAMES)
-
-
-def unqualified_landmark_name(name):
-    return ' '.join(name.casefold().split()) in _UNQUALIFIED_LANDMARK_KEYS
 
 
 class DiscussionPreviewInput(NamedTuple):
@@ -186,8 +175,7 @@ def discussion_preview_format(day_count):
         raise ValueError('bounded discussion day count required')
     activity=dict(type='object',additionalProperties=False,required=['place_name','verb','period'],properties={
         'place_name': {'type': 'string', 'minLength': 1, 'maxLength': 240,
-            'description': 'Exact visit location, including the named branch or section of a multi-site landmark.',
-            'not': {'enum': list(_UNQUALIFIED_LANDMARK_NAMES)}},
+            'description': 'Name of the visit location, with its branch or section whenever known.'},
         'verb':dict(type='string',enum=list(DISCUSSION_VISIT_VERBS)),
         'period':dict(enum=list(DISCUSSION_VISIT_PERIODS)),
     })
