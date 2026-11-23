@@ -182,7 +182,7 @@ uv run --locked python -B -m pytest -q backend/cj_api/tests/test_lio_national_in
 
 ## 2026-11-23 · 短语音真实 502 与对照
 
-- 香港 `2abaed51` 的一条 0.935 秒中→英合成语音在真实路由返回 502。上游 HTTP 200，原回执报 `speech_usage_seconds`，只登记 ASR INTENT，原保守占用 ¥1 保留。同段语音补静音到 1 秒的独立对照返回 200，ASR 和 MT 原账各一笔 RECEIVED，估算与保守占用均 ¥0.0002463。实付待账单。[S 原件摘要及修复 #1382](https://github.com/JTCAO515/G2C/pull/1382)
+- 香港 `2abaed51` 的一条 0.935 秒中→英合成语音在真实路由返回 502。上游返回 HTTP 200，S 的诊断记录为 `speech_usage_seconds`，只登记 ASR INTENT，原保守占用 ¥1 保留。同段语音补静音到 1 秒的独立对照返回 200，ASR 和 MT 原账各一笔 RECEIVED，估算与保守占用均 ¥0.0002463。实付待账单。[S 原件摘要及修复 #1382](https://github.com/JTCAO515/G2C/pull/1382)
 - 53 的 MT02 在匹配修复源上复验正常长度和不足 1 秒的获准示例。核可见听写、正确译文、同轮 ASR/MT 回执和日额；不足 1 秒已校验语音应可译，计量仍按原音频进位且最少 1 秒。保留超长、上游计量缺失、去重和未结占用的原对照。新源香港及 53 真机均 UNRUN。
 
 ## 2026-11-23 · 西安 r12 草稿活动 ID
