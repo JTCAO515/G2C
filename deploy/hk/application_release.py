@@ -6,9 +6,11 @@ from pathlib import Path
 
 REPOSITORY = 'JTCAO515/G2C'
 CI_PATH = '.github/workflows/ci.yml'
+# The postgres-shard matrix in ci.yml; must change in the same commit as that matrix.
+POSTGRES_SHARDS = 8
 CI_JOBS = frozenset({
     'changes', 'python', 'postgres', 'swift-packages', 'ios-app', 'swift',
-    *(f'postgres-shard ({shard})' for shard in range(4)),
+    *(f'postgres-shard ({shard})' for shard in range(POSTGRES_SHARDS)),
 })
 BLOCKING_CONCLUSIONS = frozenset({
     'failure', 'cancelled', 'timed_out', 'startup_failure', 'action_required', 'stale',
@@ -77,7 +79,7 @@ def verify_release_ci(github, source):
             or any(job['head_sha'] != source or job['run_id'] != run_id
                    or job['status'] != 'completed' or job['conclusion'] != 'success' or not job['steps']
                    for job in jobs)):
-        raise ValueError('ten successful ci.yml jobs on the exact release source required')
+        raise ValueError(f'{len(CI_JOBS)} successful ci.yml jobs on the exact release source required')
 
 
 def verify_release_review(github, source, gate):

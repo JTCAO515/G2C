@@ -110,7 +110,7 @@ pending/inflight Memory 任务；历史 UNKNOWN 原件和占用保留，不能�
 
 ### 3. L 执行 B 的固定应用切换
 
-应用发布核目标 SHA 的 main `ci.yml` 十项任务及相关 PR 的精确 head R APPROVE。独立运维工作流跳过或未执行不阻挡应用发布，目标 SHA 上明确的失败或取消仍阻挡。依据 [JT 2026-11-18 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6972695033)。
+应用发布核目标 SHA 的 main `ci.yml` 十四项任务（含 8 个 `postgres-shard`）及相关 PR 的精确 head R APPROVE。独立运维工作流跳过或未执行不阻挡应用发布，目标 SHA 上明确的失败或取消仍阻挡。依据 [JT 2026-11-18 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6972695033)。
 
 发布前核 #759/#702 无其他 ACTIVE 批次，公告本次开始/结束；活动轨迹未归还时不穿插。当前双兼容签名策略用 `application_release_host.py`，将同一已审提交的 `application_release.py` 放在同一个私有发布包中。二者一并固定摘要。旧单 ABI 入口保留给原固定包。当前入口要求最长两小时的明确 gate 时段，保留部署互斥锁和全部在途检查。
 B 的发布脚本负责：互斥锁、窗口和精确源／镜像／门禁检查；关闭 API 入口后再次检查排空；
