@@ -159,7 +159,7 @@ class QWeather:
             return _project(request.kind, value)
         except httpx.TimeoutException:
             raise PluginError(504, 'supplier_timeout') from None
-        except (httpx.HTTPError, KeyError, TypeError, ValueError, RecursionError):
+        except (httpx.HTTPError, AttributeError, KeyError, TypeError, ValueError, RecursionError):
             raise PluginError(502, 'supplier_unavailable') from None
 
 

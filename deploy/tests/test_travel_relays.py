@@ -154,9 +154,10 @@ def test_provider_payment_hold_survives_restart_and_never_redirects(tmp_path, mo
         assert client.post(WEATHER, json=WEATHER_BODY, headers=HEADERS).status_code == 502
 
 
-def test_provider_response_echo_is_rejected(tmp_path):
+@pytest.mark.parametrize('payload', [dict(OBSERVATION, condition=dict(text=KEY)), dict(OBSERVATION, precipitation='broken')])
+def test_provider_response_echo_and_invalid_fields_are_rejected(tmp_path, payload):
     def reply(_):
-        return httpx.Response(200, json=dict(OBSERVATION, condition=dict(text=KEY)))
+        return httpx.Response(200, json=payload)
 
     with route_client(tmp_path, register_weather, QWeather('example.qweatherapi.com', KEY, client=fixture_transport(reply))) as client:
         result = client.post(WEATHER, json=WEATHER_BODY, headers=HEADERS)
@@ -179,3 +180,7 @@ def test_optional_credentials_backup_only_one_row_and_fail_closed(tmp_path):
     with pytest.raises(ValueError, match='identity'):
         install(env, 'CJ_VARIFLIGHT_MCP_KEY', b'other-fixture-key\n', owner)
     assert b'CJ_VARIFLIGHT_MCP_KEY' not in env.read_bytes()
+    env.chmod(0o600)
+    env.write_bytes(before.replace(b'old-weather', 'unusual\u0085separator'.encode()))
+    with pytest.raises(ValueError, match='format'):
+        install(env, 'CJ_VARIFLIGHT_MCP_KEY', b'other-fixture-key\n', owner)

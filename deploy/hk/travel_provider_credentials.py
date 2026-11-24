@@ -25,7 +25,8 @@ def read_env(path, owner):
         raw = stream.read(65537)
     if len(raw) > 65536 or not raw.endswith(b'\n') or b'\r' in raw:
         raise ValueError('api_env_format_mismatch')
-    raw.decode('utf-8')
+    if len(raw.decode('utf-8').splitlines()) != raw.count(b'\n'):
+        raise ValueError('api_env_format_mismatch')
     names = set()
     for line in raw[:-1].split(b'\n'):
         name, sep, value = line.partition(b'=')

@@ -69,7 +69,13 @@ class GuardedTravel:
             except SupplierPaymentRequired:
                 self.stopped = True
                 try:
-                    os.close(os.open(self.hold, os.O_WRONLY | os.O_NOFOLLOW | os.O_CREAT | os.O_EXCL, 0o600))
+                    descriptor = os.open(self.hold, os.O_WRONLY | os.O_NOFOLLOW | os.O_CREAT | os.O_EXCL, 0o600)
+                    os.close(descriptor)
+                    directory = os.open(self.hold.parent, os.O_RDONLY | os.O_DIRECTORY)
+                    try:
+                        os.fsync(directory)
+                    finally:
+                        os.close(directory)
                 except FileExistsError:
                     pass
                 except OSError:
