@@ -97,7 +97,9 @@ def retired_for(database):
         from .local_app import scope_for
         owner=scope_for(principal.issuer,principal.subject)
         lease = _retirement_lease.get()
-        if lease is not None and lease.database is database:
+        # A lease belongs to the thread that opened it. A context copied into
+        # another thread falls back to its own fresh read (the unleased path).
+        if lease is not None and lease.database is database and lease.thread == get_ident():
             return lease.read(owner,principal.issued_at)
         with database.connect(owner) as conn:
             return _current_account(conn,owner,principal.issued_at)
