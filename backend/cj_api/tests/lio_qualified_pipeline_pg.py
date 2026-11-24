@@ -30,6 +30,8 @@ import lio_route_sources_pg
 # can place the steps on different shards; each step keeps the same per-step assertions.
 STEPS={'natural':1,'production':2,'wording':2,'duration5':2,'provider_unavailable':2,'route_sources':1}
 COMPONENT_STEPS=('natural','route_sources')
+# The original totals: 10 qualifications for production, 2 for the component run.
+assert sum(STEPS.values())==10 and sum(STEPS[step] for step in COMPONENT_STEPS)==2
 
 
 def main(*,natural_direct=False,production=False,steps=None):

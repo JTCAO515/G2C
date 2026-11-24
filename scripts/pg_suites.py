@@ -796,30 +796,31 @@ def group_lio_failed_history():
 GROUPS.update(lio_failed_history=group_lio_failed_history)
 
 
-# CI minutes per group (ubuntu-latest under eatmydata, run 45380910374 on 2026-11-24; groups
-# under 0.2 minutes are left to DEFAULT_MINUTES). Used only to balance --shard; every group still
-# runs on exactly one shard. Refresh from the "pg suite timings" line each shard prints.
+# CI minutes per group: median of ci runs 45380910374, 45390074551 and 45418513962 on
+# 2026-11-24 (ubuntu-latest, eatmydata; the last one with two lanes per runner). Groups under 0.2
+# minutes are left to DEFAULT_MINUTES. Used only to balance --shard; every group still runs on
+# exactly one shard. Refresh from the "pg suite timings" lines each lane prints.
 MINUTES = {
-    'lio_exploration_qualified_production': 11.2, 'e2e': 9.7,
-    'lio_exploration_qualified_natural': 7.0, 'lio_exploration_qualified_wording': 5.4,
-    'lio_exploration_qualified_duration5': 5.1, 'memory_run': 4.8,
-    'lio_exploration_qualified_provider_unavailable': 4.5, 'real_services': 3.7,
-    'scoped_runtime': 3.5, 'lio_calendar': 3.5, 'hk_typed_worker': 3.0, 'memory_decision': 2.9,
-    'trip_manual': 2.8, 'lio_exploration_rich_selection': 2.8, 'background_v3': 2.7,
-    'memory_typed': 2.5, 'lio_projection': 2.5, 'travel_message': 1.9,
-    'lio_exploration_qualified_route_sources': 1.9, 'needs_actions': 1.7,
-    'memory_erasure_api': 1.7, 'lio_exploration_rich_provider': 1.7,
-    'lio_exploration_providers': 1.6, 'registered_exit': 1.3, 'lio_exploration_rich_source': 1.3,
-    'lio_exploration_rich_selection_undo': 1.3, 'memory_ending_worker': 1.1,
-    'memory_auto_ending': 1.1, 'scoped_result': 1.0, 'local_run_host': 1.0,
-    'lio_failed_history': 1.0, 'lio_exploration_flow': 0.9, 'memory_publication': 0.7,
-    'fact_tool': 0.7, 'structured_read': 0.6, 'runtime_actor': 0.6, 'needs_trip': 0.6,
-    'trip_calendar': 0.5, 'place_draft_source': 0.5, 'edit_memory': 0.5, 'place_tool': 0.4,
-    'needs_runtime': 0.4, 'memory_trip_erasure': 0.4, 'memory_incremental_worker': 0.4,
-    'hk_recovery': 0.4, 'supabase_pool_reset': 0.3, 'memory_decision_evidence': 0.3,
-    'hk_cloud_rehearsal': 0.3, 'feasibility_runtime': 0.3, 'background_limits': 0.3,
-    'background_jobs': 0.3, 'trip': 0.2, 'runtime_fixture_boundary': 0.2, 'message_source': 0.2,
-    'memory_payload': 0.2, 'local_budget_exit': 0.2, 'domain_runners': 0.2, 'deploy_recovery': 0.2,
+    'e2e': 9.2, 'lio_exploration_qualified_production': 8.2, 'memory_run': 6.2,
+    'lio_exploration_qualified_duration5': 5.7, 'lio_exploration_qualified_natural': 5.6,
+    'lio_exploration_qualified_wording': 4.4, 'scoped_runtime': 4.0, 'lio_calendar': 4.0,
+    'real_services': 3.7, 'lio_exploration_qualified_provider_unavailable': 3.7,
+    'lio_projection': 3.5, 'lio_exploration_rich_selection': 3.4, 'hk_typed_worker': 3.2,
+    'trip_manual': 3.0, 'background_v3': 3.0, 'memory_decision': 2.9, 'memory_typed': 2.5,
+    'lio_exploration_rich_provider': 2.1, 'travel_message': 2.0, 'registered_exit': 1.9,
+    'needs_actions': 1.7, 'lio_exploration_qualified_route_sources': 1.7,
+    'lio_exploration_rich_selection_undo': 1.6, 'lio_exploration_providers': 1.6,
+    'lio_exploration_rich_source': 1.5, 'memory_erasure_api': 1.4, 'memory_ending_worker': 1.2,
+    'lio_exploration_flow': 1.2, 'scoped_result': 1.1, 'memory_auto_ending': 1.1,
+    'local_run_host': 1.1, 'lio_failed_history': 1.0, 'runtime_actor': 0.7,
+    'memory_publication': 0.7, 'fact_tool': 0.7, 'edit_memory': 0.7, 'needs_trip': 0.6,
+    'trip_calendar': 0.5, 'structured_read': 0.5, 'needs_runtime': 0.5, 'memory_trip_erasure': 0.5,
+    'place_tool': 0.4, 'place_draft_source': 0.4, 'memory_incremental_worker': 0.4,
+    'memory_decision_evidence': 0.4, 'hk_recovery': 0.4, 'supabase_pool_reset': 0.3,
+    'message_source': 0.3, 'hk_cloud_rehearsal': 0.3, 'feasibility_runtime': 0.3,
+    'background_limits': 0.3, 'runtime_fixture_boundary': 0.2, 'memory_payload': 0.2,
+    'local_budget_exit': 0.2, 'domain_runners': 0.2, 'deploy_recovery': 0.2,
+    'background_jobs': 0.2,
 }
 DEFAULT_MINUTES = 0.1
 

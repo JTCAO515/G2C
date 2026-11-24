@@ -61,7 +61,14 @@ class ClassifyTests(unittest.TestCase):
     def test_blank_lines_ignored_and_empty_refused(self):
         self.check(['', 'ios/a.swift', ''], 'false', 'true', 'true')
         with self.assertRaises(ValueError):
-            classify(['', '  '])
+            classify(['', ''])
+
+    def test_edge_spaces_are_part_of_the_path(self):
+        # " docs/a.md" and "\tios/x.swift" are not under docs/ or ios/, so nothing is skipped
+        # for them as documentation or iOS.
+        self.check([' docs/a.md'], 'false', 'false', 'false')
+        self.check(['HANDOFF.md '], 'false', 'false', 'false')
+        self.check(['\tios/x.swift', 'ios/a.swift'], 'false', 'false', 'true')
 
     def test_cli_prints_outputs_and_fails_closed_on_empty_input(self):
         ok = subprocess.run([sys.executable, '-B', str(SCRIPT)], input='ios/a.swift\0',

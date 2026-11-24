@@ -25,7 +25,7 @@ def split(data):
 
 
 def classify(paths):
-    paths = [p for p in (line.strip() for line in paths) if p]
+    paths = [p for p in paths if p]  # no strip: a name with edge spaces is its own path
     if not paths:
         raise ValueError('no changed paths')
     flag = lambda value: 'true' if value else 'false'
