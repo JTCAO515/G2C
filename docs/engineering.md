@@ -83,7 +83,7 @@ H 是整票起工/完整验证的原生硬门槛；C 是固定契约后可并行
 | 准备项 | 状态（2026-11-04 核对；PR #36 时为文档基线）/ 后续 owner（进展见 HANDOFF） |
 |---|---|
 | Swift/Xcode、Python、依赖管理与锁定、最低系统矩阵 | Python `requires-python >=3.12,<3.15`（`.python-version` 3.14），`uv.lock` 锁定；Swift 包各带 `Package.resolved`；CI 在 ubuntu-latest 与 macos-26 运行；真机系统矩阵归 CJ-004/#29 |
-| iOS/API 启动、构建、测试、lint、生成客户端命令 | `scripts/test.py`、`scripts/pg_suites.py`、`scripts/check.sh`；CI 的 python、postgres（4 分片）、swift-packages、swift、ios-app 与 pr-lint 全部阻塞，见 README 与 backend/README.md；PR 阶段按路径跳过（只改 iOS 跳过 PG 分片、不碰 App 相关路径跳过 swift/ios-app），main 推送全量运行（JT 2026-11-24，#1445）；生成代码一致性（`scripts/generate.sh --check`、`ios/scripts/generate_api.py --check`）与 `scripts/check-generated-*.sh` 尚未进 CI（#521） |
+| iOS/API 启动、构建、测试、lint、生成客户端命令 | `scripts/test.py`、`scripts/pg_suites.py`、`scripts/check.sh`；CI 的 python、postgres（4 分片）、swift-packages、swift、ios-app 与 pr-lint 全部阻塞，见 README 与 backend/README.md；PR 阶段按路径跳过（只改 iOS 跳过 PG 分片、不碰 App 相关路径跳过 swift/ios-app），main 推送全量运行且只验证最新提交，新的 main push 取消旧的未完成运行，发布用冻结窗口里的 main 最新提交（JT 2026-11-24，#1445）；生成代码一致性（`scripts/generate.sh --check`、`ios/scripts/generate_api.py --check`）与 `scripts/check-generated-*.sh` 尚未进 CI（#521） |
 | 空库 schema / 后续迁移 / 回退检查 | 47 版有序迁移链（`backend/migrations/manifest.json`），每版有 down 与 sha256，CI 跑 up → down → up；表仍在 public schema；本地运行角色 `cj_m1_runtime`、清理角色 `cj_local_cleanup` 与逐表 ENABLE/FORCE RLS 只用于本地运行，生产角色与授权待 CJ-027/#30 |
 | 隔离 Auth/数据空间、设备可达 HTTPS、私有存储/日志登记 | 未创建；CJ-005/CJ-027 在实际授权范围内准备并验证 |
 | 主模型/地图/事实来源端点、预算与地域网络 | 未调用；对应验证票与 JT 预算决定 |
