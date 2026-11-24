@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 import json
 import logging
+import re
 from time import sleep
 from typing import Annotated, Literal
 from urllib.parse import parse_qsl, urlsplit
@@ -20,6 +21,7 @@ from .taxi_geography import gcj_to_wgs, in_mainland, wgs_to_gcj
 VERSION = 'TAXI.1'
 ESTIMATE = '/v1/tools/taxi/estimate'
 LINK = '/v1/tools/taxi/link'
+SEARCH = '/v1/tools/taxi/search'
 DAILY_LIMIT = 50
 REVERSE_COUNT = 'didi:maps_regeocode'
 APP_LINK_HOST = 'v.didi.cn'
@@ -106,6 +108,71 @@ class LinkRequest(EstimateRequest):
     vehicle_category: Annotated[str, Field(pattern=r'^[A-Za-z0-9_-]{1,48}$')] | None = None
 
 
+CITY_ALIASES = {'beijing': '北京市', 'shanghai': '上海市', 'chengdu': '成都市'}
+CITY_NAME = re.compile(r'[\u3400-\u9fff]{2,24}')
+
+
+def _city(raw):
+    city = raw.strip()
+    city = CITY_ALIASES.get(city.lower(), city)
+    if not CITY_NAME.fullmatch(city):
+        raise ValueError('a city name is required')
+    return city if city.endswith(('市', '自治州', '地区', '盟')) else city + '市'
+
+
+class SearchRequest(WireModel):
+    version: Literal['TAXI.1']
+    query: Annotated[str, Field(min_length=1, max_length=100)]
+    city: Annotated[str, Field(min_length=1, max_length=50)]
+    near: Point | None = None
+
+    @field_validator('city')
+    @classmethod
+    def full_city(cls, value):
+        return _city(value)
+
+    @field_validator('query')
+    @classmethod
+    def visible_query(cls, value):
+        query = value.strip()
+        if not query or any(ord(char) < 32 for char in query):
+            raise ValueError('nonempty search keyword required')
+        query.encode('utf8')
+        return query
+
+
+def _search_rows(result, city):
+    try:
+        rows = json.loads(result['content'][0]['text'],
+                          object_pairs_hook=reject_duplicates(ValueError, 'duplicate POI field'))
+        if type(rows) is not list or len(rows) > 100:
+            raise ValueError('invalid POI list')
+    except (IndexError, KeyError, TypeError, ValueError, RecursionError):
+        raise PluginError(502, 'supplier_unavailable') from None
+
+    items = []
+    for row in rows:
+        try:
+            point = Point(lat=row['location']['lat'], lng=row['location']['lng'],
+                          coordinate_system='GCJ-02', name=row['display_name'])
+            if not point.name or _city(row['city']) != city or not in_mainland(*gcj_to_wgs(point.lng, point.lat)):
+                continue
+            address = row.get('address') or row.get('address_all')
+            if type(address) is not str or not address.strip() or len(address) > 240 or any(ord(c) < 32 for c in address):
+                address = None
+            elif address:
+                address.encode('utf8')
+        except (AttributeError, KeyError, TypeError, ValueError):
+            continue
+        items.append(dict(name_zh=point.name, address_zh=address, city=city, lat=point.lat, lng=point.lng,
+                          coordinate_system='GCJ-02'))
+        if len(items) == 20:
+            break
+    if rows and not items:
+        raise PluginError(502, 'supplier_unavailable')
+    return items
+
+
 class Vehicle(WireModel):
     category: Annotated[str, Field(pattern=r'^[A-Za-z0-9_-]{1,48}$')]
     name: Annotated[str, Field(min_length=1, max_length=80)]
@@ -161,6 +228,15 @@ class TaxiService:
         last_lng, last_lat = _gcj_strings(request.destination)
         return dict(from_lat=first_lat, from_lng=first_lng, to_lat=last_lat, to_lng=last_lng)
 
+    def search(self, request, reserve):
+        params = dict(keywords=request.query, city=request.city)
+        if request.near is not None:
+            lng, lat = _gcj_strings(request.near)
+            params['location'] = f'{lng},{lat}'
+        reserve('didi:maps_textsearch', DAILY_LIMIT)
+        result = self.provider.call(DiDiTool.TEXT_SEARCH, params, retry=False)
+        return dict(version=VERSION, items=_search_rows(result, request.city))
+
     def _resolve_name(self, lng, lat, reserve):
         def count():
             reserve(REVERSE_COUNT, None)
@@ -215,6 +291,9 @@ class TaxiService:
 
 def register_taxi_routes(app, *, taxi=None, checker=None, internal=frozenset(), calls=None):
     enabled = taxi is not None
+    register_plugin(app, SEARCH, SearchRequest, taxi.search if enabled else None,
+                    enabled=enabled, checker=checker, internal=internal, calls=calls, limit=DAILY_LIMIT,
+                    count_provider_calls=True)
     register_plugin(app, ESTIMATE, EstimateRequest, taxi.estimate if enabled else None,
                     enabled=enabled, checker=checker, internal=internal, calls=calls, limit=DAILY_LIMIT,
                     count_provider_calls=True)
