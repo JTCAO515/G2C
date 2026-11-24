@@ -115,8 +115,12 @@ enum LioTaxiSearchNotice {
         switch error as? LioTaxiFailure {
         case .notEnabled:
             return language.text("Place search isn’t available for this account yet.", "此账号暂未开通地点搜索。")
-        case .quotaExceeded, .rateLimited:
-            return language.text("You’ve searched a lot today. Try again later.", "今天的搜索次数较多，请稍后再试。")
+        case .quotaExceeded:
+            return language.text("Place search has reached its limit for now. Try again later.", "地点搜索次数已达上限，请稍后再试。")
+        case .rateLimited:
+            return language.text("Too many searches right now. Wait a moment, then search again.", "搜索太频繁，请稍等片刻再搜索。")
+        case .outOfService:
+            return language.text("Place search covers mainland China only. Choose a mainland city.", "地点搜索只支持中国大陆城市，请换一个城市。")
         case .signInRequired:
             return language.text("Sign in again, then search.", "请重新登录后再搜索。")
         case .timedOut:
