@@ -42,6 +42,8 @@ enum LioTaxiWire {
             let name: String
             let currency: String
             let priceDisplay: String
+            let priceMinMinor: Int?
+            let priceMaxMinor: Int?
         }
 
         let version: String
@@ -77,6 +79,7 @@ enum LioTaxiWire {
             let nameZh: String
             let nameEn: String?
             let addressZh: String?
+            let addressEn: String?
             let city: String?
             let lat: Double
             let lng: Double
@@ -140,8 +143,11 @@ enum LioTaxiWire {
             }
             let address = item.addressZh?.trimmingCharacters(in: .whitespacesAndNewlines)
             let english = item.nameEn?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let addressEnglish = item.addressEn?.trimmingCharacters(in: .whitespacesAndNewlines)
+            // name_en / address_en are optional (#1451): without them English screens show the Chinese text.
             return LioTaxiPlace(nameZH: name, nameEN: english?.isEmpty == false ? english! : name,
                                 addressZH: address?.isEmpty == false ? address : nil,
+                                addressEN: addressEnglish?.isEmpty == false ? addressEnglish : nil,
                                 coordinate: .init(latitude: item.lat, longitude: item.lng, referenceSystem: system))
         }
     }
@@ -159,14 +165,11 @@ enum LioTaxiWire {
             guard !quote.category.isEmpty, !quote.name.isEmpty, !quote.priceDisplay.isEmpty else {
                 throw LioTaxiFailure.unavailable
             }
-            let nameEN = switch quote.category {
-            case "1": "Express"
-            case "201": "Discount Express"
-            case "8": "Premier"
-            default: quote.name
-            }
-            return LioTaxiFare(id: quote.category, nameZH: quote.name, nameEN: nameEN,
-                              priceDisplay: quote.priceDisplay)
+            return LioTaxiFare(id: quote.category, nameZH: quote.name,
+                               nameEN: LioTaxiFareText.englishName(category: quote.category, chinese: quote.name),
+                               priceDisplay: LioTaxiFareText.price(display: quote.priceDisplay, currency: quote.currency,
+                                                                   minMinor: quote.priceMinMinor,
+                                                                   maxMinor: quote.priceMaxMinor))
         }
     }
 

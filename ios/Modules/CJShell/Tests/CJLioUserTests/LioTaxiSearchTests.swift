@@ -131,9 +131,15 @@ import Testing
     }
 
     @Test func failureNoticesDistinguishAccountLimitAndOutage() {
-        let notices = [LioTaxiFailure.notEnabled, .quotaExceeded, .signInRequired, .timedOut, .unavailable,
-                       .queryTooLong].map { LioTaxiSearchNotice.failure($0, language: .chinese) }
-        #expect(Set(notices).count == notices.count)
+        let failures = [LioTaxiFailure.notEnabled, .quotaExceeded, .rateLimited, .outOfService, .signInRequired,
+                        .timedOut, .unavailable, .queryTooLong]
+        for language in [LioLanguage.chinese, .english] {
+            let notices = failures.map { LioTaxiSearchNotice.failure($0, language: language) }
+            #expect(Set(notices).count == notices.count)
+        }
+        // A short supplier rate limit (429 rate_limited, not retried by the server) asks to wait, not to come back tomorrow.
+        #expect(LioTaxiSearchNotice.failure(LioTaxiWire.failure(status: 429, body: Data(#"{"error":"rate_limited"}"#.utf8)),
+                                            language: .chinese) == "搜索太频繁，请稍等片刻再搜索。")
         #expect(LioTaxiSearchNotice.failure(URLError(.notConnectedToInternet), language: .english)
             .localizedStandardContains("offline"))
     }

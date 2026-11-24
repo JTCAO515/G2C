@@ -1,10 +1,12 @@
 """Information-only taxi contracts. HK stays disabled until provider verification."""
 
+from collections import OrderedDict
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 import json
 import logging
 import re
+from threading import Lock
 from time import sleep
 import unicodedata
 from typing import Annotated, Literal
@@ -147,6 +149,7 @@ class SearchRequest(WireModel):
     query: Annotated[str, Field(min_length=1, max_length=100)]
     city: Annotated[str, Field(min_length=1, max_length=50)]
     near: Point | None = None
+    locale: Literal['zh', 'en'] = 'zh'
 
     @field_validator('city')
     @classmethod
@@ -256,10 +259,91 @@ def _gcj_strings(point):
     return f'{lng:.6f}', f'{lat:.6f}'
 
 
+# Keep one batch well inside the relay's 4000-character input and its latency.
+TRANSLATION_TEXT_LIMIT = 1500
+ENGLISH_CACHE_CAPACITY = 4096
+CJK = re.compile(r'[\u3000-\u303f\u3400-\u9fff\uf900-\ufaff\uff00-\uffef'
+                 r'\U00020000-\U0003134f\U0002f800-\U0002fa1f]')
+NUMBERED = re.compile(r'\s*[\[［]([0-9]{1,3})[\]］]\s?(.*)')
+
+
+def _english(line):
+    text = line.strip()
+    if 0 < len(text) <= 200 and _visible(text) and not CJK.search(text):
+        return text
+    return None
+
+
 class TaxiService:
-    def __init__(self, provider, *, clock=lambda: datetime.now(timezone.utc)):
+    def __init__(self, provider, *, clock=lambda: datetime.now(timezone.utc), translator=None):
         self.provider = provider
         self.clock = clock
+        # translator(token, zh_text) -> en_text | None. M4 entry 9 (amended #1457):
+        # place names/addresses only, metered per account by the translation relay.
+        self.translator = translator
+        self._english_cache = OrderedDict()
+        self._english_lock = Lock()
+
+    def _cached_english(self, key):
+        with self._english_lock:
+            value = self._english_cache.get(key)
+            if value is not None:
+                self._english_cache.move_to_end(key)
+            return value
+
+    def _remember_english(self, key, value):
+        with self._english_lock:
+            self._english_cache[key] = value
+            self._english_cache.move_to_end(key)
+            while len(self._english_cache) > ENGLISH_CACHE_CAPACITY:
+                self._english_cache.popitem(last=False)
+
+    def _add_english(self, items, token):
+        """Best effort: any failure only omits name_en/address_en."""
+        pending, lines = [], []
+        for item in items:
+            key = (item['name_zh'], item['address_zh'])
+            cached = self._cached_english(key)
+            if cached is not None:
+                item.update(cached)
+                continue
+            fields = [item['name_zh']] + ([item['address_zh']] if item['address_zh'] else [])
+            numbered = [f'[{len(lines) + n}] {text}' for n, text in enumerate(fields, 1)]
+            if len('\n'.join(lines + numbered)) > TRANSLATION_TEXT_LIMIT:
+                continue  # not sent this time; later items may still fit or be cached
+            pending.append((item, key, len(fields)))
+            lines.extend(numbered)
+        if not pending or self.translator is None or token is None:
+            return
+        try:
+            reply = self.translator(token, '\n'.join(lines))
+        except (OSError, ValueError, KeyError, TypeError, PluginError):
+            return
+        if type(reply) is not str:
+            return
+        translated = [line for line in reply.split('\n') if line.strip()]
+        if len(translated) != len(lines):
+            return
+        aligned = []
+        for number, line in enumerate(translated, 1):
+            match = NUMBERED.fullmatch(line)
+            if match is None or int(match[1]) != number:
+                return  # merged, split or reordered lines: never guess the pairing
+            aligned.append(match[2])
+        translated = aligned
+        position = 0
+        for item, key, count in pending:
+            name = _english(translated[position])
+            address = _english(translated[position + 1]) if count == 2 else None
+            position += count
+            english = {}
+            if name is not None:
+                english['name_en'] = name
+            if address is not None:
+                english['address_en'] = address
+            item.update(english)
+            if name is not None and (count == 1 or address is not None):
+                self._remember_english(key, english)
 
     def _points(self, request):
         # Validate both before any DiDi call, including reverse geocoding.
@@ -267,7 +351,7 @@ class TaxiService:
         last_lng, last_lat = _gcj_strings(request.destination)
         return dict(from_lat=first_lat, from_lng=first_lng, to_lat=last_lat, to_lng=last_lng)
 
-    def search(self, request, reserve):
+    def search(self, request, reserve, token=None):
         if request.city.startswith(NON_MAINLAND):
             raise PluginError(422, 'out_of_service_area')
         params = dict(keywords=request.query, city=request.city)
@@ -276,7 +360,10 @@ class TaxiService:
             params['location'] = f'{lng},{lat}'
         reserve('didi:maps_textsearch', DAILY_LIMIT)
         result = self.provider.call(DiDiTool.TEXT_SEARCH, params, retry=False)
-        return dict(version=VERSION, items=_search_rows(result, request.city))
+        items = _search_rows(result, request.city)
+        if request.locale == 'en' and items:
+            self._add_english(items, token)
+        return dict(version=VERSION, items=items)
 
     def _resolve_name(self, lng, lat, reserve):
         def count():
@@ -334,7 +421,7 @@ def register_taxi_routes(app, *, taxi=None, checker=None, internal=frozenset(), 
     enabled = taxi is not None
     register_plugin(app, SEARCH, SearchRequest, taxi.search if enabled else None,
                     enabled=enabled, checker=checker, internal=internal, calls=calls, limit=DAILY_LIMIT,
-                    count_provider_calls=True)
+                    count_provider_calls=True, pass_token=True)
     register_plugin(app, ESTIMATE, EstimateRequest, taxi.estimate if enabled else None,
                     enabled=enabled, checker=checker, internal=internal, calls=calls, limit=DAILY_LIMIT,
                     count_provider_calls=True)
