@@ -3,6 +3,17 @@ import Testing
 @testable import CJLioUser
 
 struct LioTaxiPlacesTests {
+    @MainActor @Test func retiredSessionCannotReadOrRecreateTaxiRecents() throws {
+        let place = LioTaxiPlace(nameZH: "示例地点", nameEN: "Example", addressZH: nil,
+                                 coordinate: .init(latitude: 39.9, longitude: 116.4, referenceSystem: .gcj02))
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let retired = LioTaxiRecentPlaces(directory: directory, isCurrent: { false })
+        #expect(throws: CancellationError.self) { try retired.load() }
+        #expect(throws: CancellationError.self) { try retired.record(place) }
+        #expect(!FileManager.default.fileExists(atPath: directory.path))
+    }
+
     @Test func lateTaxiReplyCannotReplaceAnotherRouteOrOpenItsLink() throws {
         let pickup = LioTaxiPlace(nameZH: "示例起点", nameEN: "Pickup", addressZH: nil,
                                   coordinate: .init(latitude: 39.9, longitude: 116.4, referenceSystem: .wgs84))
@@ -36,8 +47,8 @@ struct LioTaxiPlacesTests {
         #expect(try await service.estimate(route).count == 2)
         let link = try await service.rideLink(route)
         #expect(link.host == "example.invalid")
-        #expect(await service.openRideLink(link))
-        #expect(await !LioTaxiService.preview(.missingApp).openRideLink(link))
+        #expect(try await service.openRideLink(link))
+        #expect(try await !LioTaxiService.preview(.missingApp).openRideLink(link))
     }
     #endif
 

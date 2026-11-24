@@ -14,6 +14,7 @@ import XCTest
                 let price = app.staticTexts[language == "en"
                     ? "Final price is set by DiDi" : "以滴滴实际价格为准"]
                 XCTAssertTrue(price.waitForExistence(timeout: 5))
+                XCTAssertTrue(app.staticTexts["¥35–48"].exists)
                 let screenshot = XCTAttachment(screenshot: app.screenshot())
                 screenshot.name = "taxi-estimate-\(language)-\(appearance)"
                 screenshot.lifetime = .keepAlways

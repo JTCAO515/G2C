@@ -4,6 +4,7 @@ import hashlib
 import base64
 import importlib.util
 import json
+import plistlib
 import os
 from pathlib import Path
 import subprocess
@@ -74,6 +75,7 @@ def main():
         "testToolsPhotoRemainsAvailableAfterSignInErrorOnIOS17",
         "testToolsEmptyPhotoAsksForAnotherAngle",
         "testToolsPhotoTimeoutRetriesWithTheSameImageRequest",
+        "testToolsPhotoShowsPositionedTranslationAndLineComparison",
     )):
         seed_translation_photo(args.simulator, output)
 
@@ -90,6 +92,12 @@ def main():
         tests += "\n" + (HERE / "LioToolsKeyboardUITests.swift").read_text()
         tests += "\n" + (HERE / "LioTaxiUITests.swift").read_text()
         tests += "\n" + (HERE / "LioHotelUITests.swift").read_text()
+        tests += "\n" + (HERE / "LioToolsLocalSupportUITests.swift").read_text()
+        if "testDebugDialUsesTheConfiguredNumberWithoutCalling" in (args.case or []):
+            number = os.environ.get("G2C_LOCAL_SUPPORT_TEST_PHONE", "")
+            if len(number) != 11 or not number.isascii() or not number.isdecimal():
+                parser.error("Supply the designated local telephone fixture in G2C_LOCAL_SUPPORT_TEST_PHONE")
+            tests = tests.replace('"__LOCAL_SUPPORT_TEST_PHONE__"', json.dumps(number))
     (output / "G2CControl.swift").write_text(tests.replace("__LIO_RECORDED_TRIP_FIXTURE__", recorded_trip_fixture()))
     project = output / "G2CAcceptance.xcodeproj"
     settings = project / "project.pbxproj"
@@ -149,12 +157,13 @@ def main():
     branch_start = beta_source.index("                LioSessionRecoveryView(language:")
     branch_end = beta_source.index("            } else {", branch_start)
     recovery_branch = beta_source[branch_start:branch_end]
-    # Compile the production recovery expression and callbacks unchanged against
-    # the actual account host, with a synthetic failing activation and no network.
+    # Keep the production recovery expression. The synthetic account host
+    # provides sign-out without the production support-draft store.
     beta_root = """
 private struct LioRootFailureView: View {
     let shell: ShellState
     let root: LioActivationFailureRoot
+    private func signOut() { root.accounts.signOut() }
     var body: some View {
         if root.accounts.isResuming {
 """ + recovery_branch + """
@@ -168,8 +177,24 @@ private struct LioRootFailureView: View {
     generated_source.write_text(app.replace(preview, fixture_routes)
                                 .replace("import CJLioUser\n", "@testable import CJLioUser\n")
                                 + "\n" + "\n".join((HERE / name).read_text() for name in fixtures) + "\n" + beta_root)
-    settings.write_text(settings.read_text().replace("space.go2china.foundation.local", "space.go2china.lio.acceptance")
-                        .replace(json.dumps(str(app_source)), json.dumps(str(generated_source))))
+    project_text = settings.read_text().replace("space.go2china.foundation.local", "space.go2china.lio.acceptance")
+    project_text = project_text.replace(json.dumps(str(app_source)), json.dumps(str(generated_source)))
+    if args.tools:
+        project_text = project_text.replace('G2C_DEBUG_LOCAL_NETWORK=1"', 'G2C_DEBUG_LOCAL_NETWORK=1 G2C_TOOLS_PREVIEW_PLIST=1"')
+    settings.write_text(project_text)
+    if args.tools and any(case in args.case for case in (
+        "testLocalSupportDraftReopensAndClearsWithoutSending",
+        "testLocalSupportDraftRejectsOverflowAtLargestTextSize",
+    )):
+        bundle = "space.go2china.lio.acceptance"
+        entitlement = output / "LocalSupportDraft.entitlements"
+        entitlement.write_bytes(plistlib.dumps({
+            "application-identifier": bundle,
+            "keychain-access-groups": [bundle],
+        }))
+        settings.write_text(settings.read_text().replace(
+            json.dumps(str(ROOT / "ios/App/Development.entitlements")), json.dumps(str(entitlement)),
+        ))
     result = output / "lio-home.xcresult"
     env = {key: value for key, value in os.environ.items() if not key.startswith(("G2C_DEV_", "SIMCTL_CHILD_"))}
     suite = "G2CControl/LioVoiceOverUITests" if args.voiceover else "G2CControl/LioHomeUITests"

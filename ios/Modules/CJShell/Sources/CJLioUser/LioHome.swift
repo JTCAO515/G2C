@@ -10,7 +10,11 @@ public struct LioHome<MenuContent: View>: View {
     private let isDemo: Bool
     private let showsTools: Bool
     private let toolsHistory: LioTranslationHistory?
+    private let toolsDraftStorage: LocalSupportDraftStorage?
     private let toolsRelay: LioRelayTranslationClient?
+    private let currencyRelay: LioCurrencyRelayClient?
+    private let taxiRelay: LioTaxiRelayClient?
+    private let taxiRecentDirectory: URL?
     private let toolsSessionIsCurrent: @MainActor () -> Bool
     private let reconnect: (@MainActor () -> Void)?
     private let session: LioSessionAvailability?
@@ -31,6 +35,7 @@ public struct LioHome<MenuContent: View>: View {
     @State private var restoreChatFailure: LioFailureDiagnosis?
     @State private var restoreChatRequest = 0
     @State private var showsProblemNotes = false
+    @State private var showsEmergencySupport = false
     @State private var draft = ""
     @State private var chatDrafts: [Data: String] = [:]
     @State private var questionDrafts: [Data: LioQuestionDraft] = [:]
@@ -95,13 +100,20 @@ public struct LioHome<MenuContent: View>: View {
                 session: LioSessionAvailability? = nil,
                 reconnect: (@MainActor () -> Void)? = nil, showsTools: Bool = false,
                 toolsHistory: LioTranslationHistory? = nil, toolsRelay: LioRelayTranslationClient? = nil,
+                currencyRelay: LioCurrencyRelayClient? = nil, taxiRelay: LioTaxiRelayClient? = nil,
+                taxiRecentDirectory: URL? = nil,
+                toolsDraftStorage: LocalSupportDraftStorage? = nil,
                 toolsSessionIsCurrent: @escaping @MainActor () -> Bool = { true },
                 @ViewBuilder menu: () -> MenuContent) {
         self.language = language
         self.isDemo = isDemo
         self.showsTools = showsTools
         self.toolsHistory = toolsHistory
+        self.toolsDraftStorage = toolsDraftStorage
         self.toolsRelay = toolsRelay
+        self.currencyRelay = currencyRelay
+        self.taxiRelay = taxiRelay
+        self.taxiRecentDirectory = taxiRecentDirectory
         self.toolsSessionIsCurrent = toolsSessionIsCurrent
         self.reconnect = reconnect
         self.session = session
@@ -142,6 +154,21 @@ public struct LioHome<MenuContent: View>: View {
         }
     }
 
+    private var taxiEntry: LioTaxiEntry? {
+        if let taxiRelay, let taxiRecentDirectory {
+            var seen = Set<LioTaxiPlace.ID>()
+            let places = conversation.itineraries.flatMap { $0.days.flatMap { $0.stops.compactMap(\.taxiDestination) } }
+                .filter { seen.insert($0.id).inserted }
+            return .internalBeta(relay: taxiRelay, recentDirectory: taxiRecentDirectory,
+                                 tripPlaces: places)
+        }
+        #if DEBUG
+        return LioTaxiEntry.previewFromArguments
+        #else
+        return nil
+        #endif
+    }
+
     public var body: some View {
         let currentConversation = conversation
         let pending = conversation.pending
@@ -163,8 +190,10 @@ public struct LioHome<MenuContent: View>: View {
                 .tag(Tab.trips)
             if showsTools {
                 LioToolsView(language: language, history: toolsHistory, relay: toolsRelay,
+                             currencyRelay: currencyRelay,
                              enabled: !restoringChat && session?.available != false && scenePhase != .background,
                              sessionIsCurrent: toolsSessionIsCurrent)
+                    .environment(\.lioLocalSupportDraft, activeSupportDraft)
                     .background(LioTabBarAppearance().frame(width: 0, height: 0))
                     .tabItem { Label(language.text("Tools", "插件"), systemImage: "puzzlepiece.extension") }
                     .tag(Tab.tools)
@@ -177,10 +206,11 @@ public struct LioHome<MenuContent: View>: View {
                     .tag(Tab.memory)
             }
         }
+        .environment(\.lioTaxiEntry, taxiEntry)
         .tint(LioTheme.vermilion)
         .sensoryFeedback(.success, trigger: savedCelebrations)
-        .disabled(restoringChat || session?.available == false)
-        .opacity(restoringChat && !warmRestoration ? 0 : 1)
+        .disabled(chatControlsSuspended)
+        .opacity(chatMasked ? 0 : 1)
         .overlay {
             if restoringChat && !warmRestoration {
                 VStack(spacing: 20) {
@@ -216,6 +246,27 @@ public struct LioHome<MenuContent: View>: View {
                 .tint(LioTheme.vermilion)
                 .accessibilityIdentifier("lio.chat.recovery")
             }
+        }
+        .overlay(alignment: .topTrailing) {
+            if showsTools && tab == .chat && chatControlsSuspended {
+                ZStack {
+                    if !chatMasked {
+                        VStack(spacing: LioTheme.Spacing.xxs) {
+                            Color.clear.frame(width: 44, height: 44)
+                            Text("Lio").font(.subheadline.weight(.semibold)).hidden()
+                        }
+                        .accessibilityHidden(true)
+                    }
+                    LioEmergencySupportButton(language: language, standalone: chatMasked) {
+                        showsEmergencySupport = true
+                    }
+                }
+                .padding(.top, LioTheme.Spacing.xxs)
+                .padding(.trailing, LioTheme.Spacing.md + (!chatMasked && chatLibrary != nil ? 44 : 0))
+            }
+        }
+        .sheet(isPresented: $showsEmergencySupport) {
+            LioEmergencySupportSheet(language: language, draftStorage: activeSupportDraft)
         }
         .sheet(isPresented: $showsProblemNotes) { problemNotesSheet }
         .safeAreaInset(edge: .top, spacing: 0) {
@@ -584,6 +635,15 @@ public struct LioHome<MenuContent: View>: View {
         }
     }
 
+    private var chatControlsSuspended: Bool { restoringChat || session?.available == false }
+    private var activeSupportDraft: LocalSupportDraftStorage? {
+        guard !chatControlsSuspended, scenePhase == .active, toolsSessionIsCurrent() else { return nil }
+        return toolsDraftStorage
+    }
+
+    private var chatMasked: Bool { restoringChat && !warmRestoration }
+    private var chatControlWidth: CGFloat { showsTools && chatLibrary != nil ? 88 : 44 }
+
     private var floatingControls: some View {
         HStack(alignment: .top, spacing: LioTheme.Spacing.xs) {
             Button {
@@ -596,6 +656,7 @@ public struct LioHome<MenuContent: View>: View {
             .lioFloatingSurface(Circle(), interactive: true)
             .accessibilityLabel(language.text("Menu", "菜单"))
             .accessibilityIdentifier("lio.menu")
+            .frame(width: chatControlWidth, alignment: .leading)
             Spacer(minLength: 0)
             VStack(spacing: LioTheme.Spacing.xxs) {
                 LioPortrait(size: 44)
@@ -607,25 +668,42 @@ public struct LioHome<MenuContent: View>: View {
                     .accessibilityIdentifier("lio.name")
             }
             Spacer(minLength: 0)
-            if let chatLibrary {
-                Button {
-                    startNewChat(chatLibrary)
-                } label: {
-                    controlIcon("square.and.pencil")
-                }
-                .buttonStyle(.plain)
-                .lioFloatingSurface(Circle(), interactive: true)
-                .disabled(!canSwitchChat)
-                .accessibilityLabel(language.text("New chat", "新对话"))
-                .accessibilityIdentifier("lio.chat.newShortcut")
-            } else {
-                Color.clear.frame(width: 44, height: 44).accessibilityHidden(true)
-            }
+            chatRightControls
+                .frame(width: chatControlWidth, alignment: .trailing)
         }
         .padding(.horizontal, LioTheme.Spacing.md)
         .padding(.top, LioTheme.Spacing.xxs)
         .padding(.bottom, LioTheme.Spacing.xs)
         .lioFloatingGroup()
+    }
+
+    @ViewBuilder private var chatRightControls: some View {
+        if showsTools {
+            HStack(spacing: 0) {
+                if chatControlsSuspended {
+                    Color.clear.frame(width: 44, height: 44).accessibilityHidden(true)
+                } else {
+                    LioEmergencySupportButton(language: language, standalone: false) {
+                        showsEmergencySupport = true
+                    }
+                }
+                if let chatLibrary { newChatControl(chatLibrary) }
+            }
+            .lioFloatingSurface(Capsule(), interactive: true)
+        } else if let chatLibrary {
+            newChatControl(chatLibrary)
+                .lioFloatingSurface(Circle(), interactive: true)
+        } else {
+            Color.clear.frame(width: 44, height: 44).accessibilityHidden(true)
+        }
+    }
+
+    private func newChatControl(_ library: LioChatLibrary) -> some View {
+        Button { startNewChat(library) } label: { controlIcon("square.and.pencil") }
+            .buttonStyle(.plain)
+            .disabled(!canSwitchChat)
+            .accessibilityLabel(language.text("New chat", "新对话"))
+            .accessibilityIdentifier("lio.chat.newShortcut")
     }
 
     /// A 44pt round control. The symbol stops growing at xxxLarge so it stays inside the circle;

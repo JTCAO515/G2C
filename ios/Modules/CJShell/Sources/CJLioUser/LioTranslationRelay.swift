@@ -23,11 +23,27 @@ struct LioRelayTranslationRequest: Encodable {
     }
 
     static let version = "TRANSLATION.1"
+    static let imageLayoutVersion = "IMAGE-LAYOUT.1"
+    static let route = "/v1/tools/translate"
+    static let imageLayoutRoute = route + "/image-layout"
     private static let maximumMedia = 3 * 1024 * 1024 - 4096
     let id: UUID
     let source: LioTranslationLanguage
     let target: LioTranslationLanguage
     let payload: Payload
+    let usesImageLayout: Bool
+
+    init(id: UUID, source: LioTranslationLanguage, target: LioTranslationLanguage, payload: Payload,
+         usesImageLayout: Bool = false) {
+        self.id = id
+        self.source = source
+        self.target = target
+        self.payload = payload
+        self.usesImageLayout = usesImageLayout
+    }
+
+    var wireVersion: String { usesImageLayout ? Self.imageLayoutVersion : Self.version }
+    var route: String { usesImageLayout ? Self.imageLayoutRoute : Self.route }
 
     func wireBody() throws -> Data {
         let encoder = JSONEncoder()
@@ -53,9 +69,11 @@ struct LioRelayTranslationRequest: Encodable {
     }
 
     func encode(to encoder: any Encoder) throws {
-        guard source != target else { throw LioRelayTranslationFailure.invalidInput }
+        guard source != target, !usesImageLayout || kind == .image else {
+            throw LioRelayTranslationFailure.invalidInput
+        }
         var body = encoder.container(keyedBy: CodingKeys.self)
-        try body.encode(Self.version, forKey: .version)
+        try body.encode(wireVersion, forKey: .version)
         try body.encode(id.uuidString.lowercased(), forKey: .id)
         try body.encode(kind.rawValue, forKey: .kind)
         try body.encode(wireLanguage(source), forKey: .source)
@@ -114,25 +132,30 @@ struct LioRelayTranslationRequest: Encodable {
         let id: UUID
         let wireFingerprint: Data
         var accepted: Bool
+        let usesImageLayout: Bool?
     }
 
     private var memory: [Identity: Original] = [:]
 
     mutating func request(source: LioTranslationLanguage, target: LioTranslationLanguage,
                           payload: LioRelayTranslationRequest.Payload,
-                          storage: LioTranslationHistory? = nil) throws -> LioRelayTranslationRequest {
-        let proposed = LioRelayTranslationRequest(id: UUID(), source: source, target: target, payload: payload)
+                          storage: LioTranslationHistory? = nil, prefersImageLayout: Bool = false)
+        throws -> LioRelayTranslationRequest {
+        let proposed = LioRelayTranslationRequest(id: UUID(), source: source, target: target, payload: payload,
+                                                  usesImageLayout: prefersImageLayout)
         let identity = Identity(proposed)
         var pending = try load(storage)
         if let original = pending[identity] {
             guard !original.accepted else { throw LioRelayTranslationFailure.alreadyAccepted }
-            let request = LioRelayTranslationRequest(id: original.id, source: source, target: target, payload: payload)
+            let request = LioRelayTranslationRequest(id: original.id, source: source, target: target,
+                                                      payload: payload, usesImageLayout: original.usesImageLayout == true)
             guard try wireFingerprint(request) == original.wireFingerprint else {
                 throw LioRelayTranslationFailure.originalUnavailable
             }
             return request
         }
-        pending[identity] = try Original(id: proposed.id, wireFingerprint: wireFingerprint(proposed), accepted: false)
+        pending[identity] = try Original(id: proposed.id, wireFingerprint: wireFingerprint(proposed),
+                                          accepted: false, usesImageLayout: proposed.usesImageLayout)
         try save(pending, storage: storage)
         return proposed
     }
@@ -175,10 +198,12 @@ struct LioRelayTranslationResponse: Decodable {
     struct Line: Decodable {
         let sourceText: String
         let translatedText: String
+        let location: [Int]?
 
         private enum CodingKeys: String, CodingKey {
             case sourceText = "source_text"
             case translatedText = "translated_text"
+            case location
         }
     }
 
@@ -196,8 +221,28 @@ struct LioRelayTranslationResponse: Decodable {
     let version: String
     let kind: LioRelayTranslationRequest.Kind
     let items: [Line]
+    let imageWidth: Int?
+    let imageHeight: Int?
 
-    static func decode(status: Int, body: Data, expecting kind: LioRelayTranslationRequest.Kind) throws -> Self {
+    private enum CodingKeys: String, CodingKey {
+        case version, kind, items
+        case imageWidth = "image_width"
+        case imageHeight = "image_height"
+    }
+
+    init(from decoder: any Decoder) throws {
+        let fields = try decoder.container(keyedBy: CodingKeys.self)
+        version = try fields.decode(String.self, forKey: .version)
+        kind = version == LioRelayTranslationRequest.imageLayoutVersion
+            ? .image : try fields.decode(LioRelayTranslationRequest.Kind.self, forKey: .kind)
+        items = try fields.decode([Line].self, forKey: .items)
+        imageWidth = try fields.decodeIfPresent(Int.self, forKey: .imageWidth)
+        imageHeight = try fields.decodeIfPresent(Int.self, forKey: .imageHeight)
+    }
+
+    static func decode(status: Int, body: Data, expecting kind: LioRelayTranslationRequest.Kind,
+                       usesImageLayout: Bool = false) throws -> Self {
+        let version = usesImageLayout ? LioRelayTranslationRequest.imageLayoutVersion : LioRelayTranslationRequest.version
         switch status {
         case 401: throw LioRelayTranslationFailure.signInRequired
         case 403: throw LioRelayTranslationFailure.accessDenied
@@ -213,7 +258,7 @@ struct LioRelayTranslationResponse: Decodable {
         let decoder = JSONDecoder()
         if status == 200 {
             guard let decoded = try? decoder.decode(Self.self, from: body),
-                  decoded.version == LioRelayTranslationRequest.version, decoded.kind == kind,
+                  decoded.version == version, decoded.kind == kind,
                   decoded.validItemCount, decoded.items.allSatisfy({
                       !$0.sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                       && !$0.translatedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -224,7 +269,7 @@ struct LioRelayTranslationResponse: Decodable {
         }
 
         guard let error = try? decoder.decode(ServiceError.self, from: body),
-              error.version == LioRelayTranslationRequest.version else {
+              error.version == version else {
             throw LioRelayTranslationFailure.rejected(status)
         }
         guard error.error == "quota_exceeded" else { throw LioRelayTranslationFailure.rejected(status) }
@@ -280,24 +325,30 @@ public struct LioRelayTranslationClient {
     typealias UploadTransport = @MainActor (String, Data, UploadFinished?) async throws -> (Int, Data)
     private let send: UploadTransport
     let requiresOriginalStore: Bool
+    let supportsImageLayout: Bool
 
-    public init(send: @escaping Transport) {
-        self.init(requiresOriginalStore: false) { path, body, _ in try await send(path, body) }
+    public init(supportsImageLayout: Bool = false, send: @escaping Transport) {
+        self.init(requiresOriginalStore: false, supportsImageLayout: supportsImageLayout) { path, body, _ in
+            try await send(path, body)
+        }
     }
 
-    init(requiresOriginalStore: Bool, send: @escaping UploadTransport) {
+    init(requiresOriginalStore: Bool, supportsImageLayout: Bool = false, send: @escaping UploadTransport) {
         self.requiresOriginalStore = requiresOriginalStore
+        self.supportsImageLayout = supportsImageLayout
         self.send = send
     }
 
     func translate(_ request: LioRelayTranslationRequest,
                    uploadFinished: UploadFinished? = nil) async throws -> LioRelayTranslationResponse {
         try Task.checkCancellation()
+        guard !request.usesImageLayout || supportsImageLayout else { throw LioRelayTranslationFailure.accessDenied }
         let body = try request.wireBody()
         do {
-            let (status, data) = try await send("/v1/tools/translate", body, uploadFinished)
+            let (status, data) = try await send(request.route, body, uploadFinished)
             try Task.checkCancellation()
-            return try LioRelayTranslationResponse.decode(status: status, body: data, expecting: request.kind)
+            return try LioRelayTranslationResponse.decode(status: status, body: data, expecting: request.kind,
+                                                          usesImageLayout: request.usesImageLayout)
         } catch let error as URLError {
             switch error.code {
             case .cancelled: throw CancellationError()

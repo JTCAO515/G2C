@@ -1,7 +1,8 @@
 """B-operated, same-owner Hong Kong deployment smoke over the app's HTTP API."""
 import argparse
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
+from functools import partial
 import hashlib
 from http.client import IncompleteRead
 import json
@@ -111,15 +112,15 @@ class NoRedirect(HTTPRedirectHandler):
         return None
 
 
-def request(token, route, *, document=None):
+def request(token, route, *, document=None, timeout=HTTP_SECONDS, content_type='application/octet-stream'):
     opener = build_opener(NoRedirect())
     headers = {'Authorization': 'Bearer ' + token, 'Accept': 'application/json'}
     data = None
     if document is not None:
-        headers['Content-Type'] = 'application/octet-stream'
+        headers['Content-Type'] = content_type
         data = json.dumps(document, ensure_ascii=False).encode()
     try:
-        with opener.open(Request(ORIGIN + route, data=data, headers=headers), timeout=HTTP_SECONDS) as response:
+        with opener.open(Request(ORIGIN + route, data=data, headers=headers), timeout=timeout) as response:
             if response.status != 200:
                 raise SmokeResult('FAIL', f'http_{response.status}')
             raw = response.read(4_500_001)
@@ -309,7 +310,7 @@ def permitted(now, start, end, *, minimum_seconds=0):
     return start <= now < end and (end - now).total_seconds() >= minimum_seconds
 
 
-def run_case(case, prompt, token, allowed, send=request):
+def run_case(case, prompt, token, allowed, send=request, *, quick=False):
     message_id = str(uuid.uuid4())
     payload = dict(version='LIO-message.2', message_id=message_id, text=prompt,
                    locale=case[:2], new_conversation=True)
@@ -368,12 +369,17 @@ def run_case(case, prompt, token, allowed, send=request):
                 sample = dict(start_ms=began, end_ms=clock_ms(), http=200, ref=ref,
                               answering=bool(row and row.get('status')=='answering' and not row.get('answer')))
                 result['polls'].append(sample)
-                if row is not None and row.get('status') == 'failed':
+                if row is not None and row.get('status') == 'failed' and not quick:
                     raise SmokeResult('FAIL' if row.get('failure') == 'quota' else 'UNKNOWN', 'original_run_' +
                                       ('quota' if row.get('failure') == 'quota' else 'unavailable'))
-                if conversation is not None and row is not None and row.get('status') == 'completed':
+                if conversation is not None and row is not None and (
+                        row.get('status') == 'completed' or quick and row.get('status') == 'failed'):
                     answer = row.get('answer')
-                    if case.endswith('.plan'):
+                    if quick:
+                        if not isinstance(answer, str) or not answer.strip():
+                            reason = 'original_run_quota' if row.get('failure') == 'quota' else 'required_answer_missing'
+                            raise SmokeResult('FAIL', reason)
+                    elif case.endswith('.plan'):
                         if not isinstance(answer, str):
                             raise SmokeResult('UNKNOWN', 'timeline_message_shape')
                         result['legacy_format_match'] = valid_answer(case, answer)
@@ -507,7 +513,7 @@ def original_model_attempts(database, scope, message_id):
 
 
 def run(budget, database, scope, token, owner, start, end, *, translation_session=None):
-    from deploy.hk.server_smoke_budget import budget_state, restrict, settlement
+    from deploy.hk.server_smoke_budget import budget_state, dialogue_cash_cap, restrict, settlement
 
     def allowed():
         return permitted(datetime.now(timezone.utc), start, end)
@@ -529,6 +535,8 @@ def run(budget, database, scope, token, owner, start, end, *, translation_sessio
         return 3
     print_json(dict(kind='translation_requirement', required=translation_required))
     before = budget_state(budget, owner)
+    before['translation_required'] = translation_required
+    dialogue_limit = dialogue_cash_cap(translation_required)
     print_json(dict(kind='restriction_intent', before=before))
     restricted = restrict(budget, before)
     print_json(dict(kind='restricted', before=before, restricted=restricted))
@@ -548,7 +556,7 @@ def run(budget, database, scope, token, owner, start, end, *, translation_sessio
                 if result['status'] == 'PASS':
                     bound = original_model_attempts(database, scope, result['message_id'])
                     result['bound_model_attempts'] = sorted(bound.intersection(price['model_attempts']))
-                    if used-before['used'] > 5*CNY_SCALE:
+                    if used-before['used'] > dialogue_limit:
                         raise ValueError('original C cash bound exceeded')
             except (ValueError, SQLiteError, PostgresError, BudgetUnknown):
                 result['accounting'] = 'UNKNOWN'
@@ -560,14 +568,111 @@ def run(budget, database, scope, token, owner, start, end, *, translation_sessio
     history_result = (history(token, results, allowed) if all(row['status']=='PASS' for row in results)
                       else dict(status='UNRUN', reason='earlier_case_stopped'))
     print_json(dict(kind='history', **history_result))
+    translation_cost = {}
     if translation_required:
-        from deploy.hk.translation_smoke import checks
+        from deploy.hk.translation_smoke import METER_FIELDS, checks
         translation_scope, translation_token = translation_session
-        checks(budget, translation_scope, translation_token, allowed, request, print_json, SmokeResult,
-               ready=history_result['status']=='PASS')
+        _, dialogue_price, used = settlement(budget, owner, restricted, before['tail'])
+        dialogue_within_cap = max(used-before['used'], dialogue_price['conservative_cny_1e7']) <= dialogue_limit
+        if not dialogue_within_cap:
+            print_json(dict(kind='cost', **dialogue_price, line_usage_delta_cny_1e7=used-before['used']))
+            raise ValueError('combined smoke headroom not available before translation')
+        plugin_send = partial(request, timeout=55, content_type='application/json')
+        translation_rows = checks(budget, translation_scope, translation_token, allowed, plugin_send, print_json, SmokeResult,
+                                  ready=history_result['status']=='PASS')
+        translation_cost = {key: sum(row[key] for row in translation_rows) for key in METER_FIELDS}
     _, price, used = settlement(budget, owner, restricted, before['tail'])
-    print_json(dict(kind='cost', **price, line_usage_delta_cny_1e7=used-before['used']))
+    dialogue_cost = {key: price[key] for key in translation_cost}
+    for key, value in translation_cost.items():
+        price[key] += value
+    print_json(dict(kind='cost', **price, line_usage_delta_cny_1e7=used-before['used'],
+                    dialogue_cost=dialogue_cost, translation_cost=translation_cost))
     return 0
+
+
+def quick_status(result):
+    if result['status'] in {'PASS', 'UNRUN'}:
+        return result['status']
+    reason = result.get('reason') or ''
+    if reason in {'http_timeout', 'message_write_outcome', 'original_run_deadline',
+                  'required_answer_missing', 'translation_result_invalid', 'taxi_link_missing',
+                  'invalid_api_response'} or re.fullmatch(r'http_5[0-9]{2}', reason):
+        return 'FAIL'
+    return 'HOLD'
+
+
+def quick_taxi(token, send):
+    from cj_api.plugin_tools import PluginError
+    from cj_api.taxi_tools import LINK, VERSION, _public_link
+
+    origin = dict(lat=39.895910, lng=116.321300, coordinate_system='GCJ-02')
+    destination = dict(lat=40.053061, lng=116.306205, coordinate_system='GCJ-02')
+    try:
+        result, ref = send(token, LINK, document=dict(version=VERSION, origin=origin, destination=destination))
+        if result.get('version') != VERSION or result.get('link_type') != 'https':
+            raise SmokeResult('FAIL', 'taxi_link_missing')
+        _public_link(result.get('url'), dict(from_lat='39.895910', from_lng='116.321300',
+                                            to_lat='40.053061', to_lng='116.306205'))
+        return dict(status='PASS', ref=ref)
+    except SmokeResult as error:
+        return dict(status=error.status, reason=error.reason)
+    except PluginError:
+        return dict(status='FAIL', reason='taxi_link_missing')
+
+
+def run_quick(budget, token, owner, start, end, translation_session):
+    from deploy.hk.server_smoke_budget import CASH_CAP, budget_state, dialogue_cash_cap, restrict, settlement
+    from deploy.hk.translation_relay import translation_state
+    from deploy.hk.translation_smoke import METER_FIELDS, TRANSLATION_CASES, checks
+
+    def allowed():
+        return permitted(datetime.now(timezone.utc), start, end, minimum_seconds=60)
+
+    def finish(status):
+        print_json(dict(kind='quick_verdict', status=status, rollback=status == 'FAIL'))
+        return {'PASS': 0, 'FAIL': 1, 'HOLD': 2, 'UNRUN': 3}[status]
+
+    if end-start > timedelta(minutes=10) or not allowed():
+        return finish('UNRUN')
+    if translation_session is None or translation_state() is not True:
+        return finish('UNRUN')
+
+    before = budget_state(budget, owner)
+    before['translation_required'] = True
+    print_json(dict(kind='restriction_intent', before=before))
+    restricted = restrict(budget, before)
+    print_json(dict(kind='restricted', before=before, restricted=restricted))
+    chat = run_case('zh.quick', '你是谁', token, allowed, quick=True)
+    print_json(dict(kind='case', **chat))
+    chat_status = quick_status(chat)
+    try:
+        _, cost, used = settlement(budget, owner, restricted, before['tail'])
+    except (ValueError, OSError, SQLiteError, BudgetUnknown):
+        print_json(dict(kind='cost', status='HOLD', reason='original_cost_boundary_unconfirmed'))
+        return finish('FAIL' if chat_status == 'FAIL' else 'HOLD')
+    line_usage = used-before['used']
+    limit = dialogue_cash_cap(True)
+    ledger_ready = (0 <= line_usage <= limit and 0 <= cost['conservative_cny_1e7'] <= limit
+                    and cost['unresolved_attempts'] == 0)
+    scope, plugin_token = translation_session
+    plugin_send = partial(request, timeout=55, content_type='application/json')
+    translated, = checks(budget, scope, plugin_token, allowed, plugin_send, print_json, SmokeResult,
+                         ready=ledger_ready and chat_status == 'PASS', cases=TRANSLATION_CASES[:1],
+                         structure_only=True)
+    combined = {name: cost[name]+translated[name] for name in METER_FIELDS}
+    print_json(dict(kind='cost', **combined, paid_cny='UNKNOWN', line_usage_delta_cny_1e7=line_usage))
+    if chat_status != 'PASS':
+        return finish(chat_status)
+    if not ledger_ready or max(line_usage, cost['conservative_cny_1e7']) + translated['conservative_cny_1e7'] > CASH_CAP:
+        return finish('HOLD')
+    translation_status = quick_status(translated)
+    if translation_status != 'PASS':
+        return finish(translation_status)
+    if not allowed():
+        return finish('UNRUN')
+    taxi = quick_taxi(plugin_token, plugin_send)
+    print_json(dict(kind='taxi', **taxi))
+    return finish(quick_status(taxi))
 
 
 def _request_id(value):
@@ -633,20 +738,41 @@ def decide(events, wire_logs):
     if (None in plan_witnesses
             or any(len(set(values)) != 2 for values in zip(*plan_witnesses, strict=True))):
         return dict(status='UNKNOWN', concurrency='UNRUN', reason='structured_plan_evidence_missing')
-    from deploy.hk.translation_smoke import complete
+    from deploy.hk.server_smoke_budget import CASH_CAP, dialogue_cash_cap
+    from deploy.hk.translation_smoke import METER_FIELDS, RESERVATION, complete
     if not complete(events):
         return dict(status='UNKNOWN', concurrency='UNRUN', reason='translation_smoke_incomplete')
-    if (costs[0]['conservative_cny_1e7'] > 5*CNY_SCALE
-            or costs[0]['line_usage_delta_cny_1e7'] > 5*CNY_SCALE):
+    required = next(row['required'] for row in events if row['kind']=='translation_requirement')
+    cost = costs[0]
+    usage = cost.get('line_usage_delta_cny_1e7')
+    total = cost.get('conservative_cny_1e7')
+    limit = dialogue_cash_cap(required)
+    if type(usage) is not int or not 0 <= usage <= limit or type(total) is not int or not 0 <= total <= CASH_CAP:
         return dict(status='UNKNOWN', concurrency='UNRUN', reason='smoke_cost_boundary_unconfirmed')
+    if required:
+        translated = [row for row in outcomes if row['kind']=='translation']
+        for row in translated:
+            amount = row.get('conservative_cny_1e7')
+            if (type(amount) is not int or not 0 < amount <= RESERVATION
+                    or row.get('estimated_cny_1e7') != amount or row.get('unresolved_attempts') != 0):
+                return dict(status='UNKNOWN', concurrency='UNRUN', reason='translation_smoke_cost_unconfirmed')
+        translation_total = {key: sum(row[key] for row in translated) for key in METER_FIELDS}
+        dialogue_cost = cost.get('dialogue_cost')
+        if (cost.get('translation_cost') != translation_total or type(dialogue_cost) is not dict
+                or any(type(dialogue_cost.get(key)) is not int or dialogue_cost[key] < 0
+                       or cost.get(key) != dialogue_cost[key] + translation_total[key] for key in METER_FIELDS)
+                or dialogue_cost['conservative_cny_1e7'] > limit
+                or usage + translation_total['conservative_cny_1e7'] > CASH_CAP):
+            return dict(status='UNKNOWN', concurrency='UNRUN', reason='smoke_cost_boundary_unconfirmed')
     concurrent = any(overlap_witness(row, set(row['bound_model_attempts']), wire_logs) for row in cases)
     return dict(status='PASS' if concurrent else 'UNKNOWN', concurrency='PASS' if concurrent else 'UNKNOWN')
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('preflight', 'run', 'restore', 'verify'))
+    parser.add_argument('action', choices=('preflight', 'quick-preflight', 'quick', 'run', 'restore', 'verify'))
     args = parser.parse_args()
+    quick_mode = args.action in {'quick', 'quick-preflight'}
     raw = sys.stdin.buffer.read(2_000_001)
     if len(raw) > 2_000_000:
         raise ValueError('bounded smoke input required')
@@ -693,15 +819,22 @@ def main():
             owner = scope_hash(scope)
             translation_session = None
             raw_roster = os.environ.get(TRANSLATION_INTERNAL_SUBJECTS)
-            if raw_roster is not None:
+            if raw_roster is not None or quick_mode:
                 from cj_api.local_account_admission_v2 import account_checker_for
-                from deploy.hk.plugin_roster import configured_plugin_subjects
+                from deploy.hk.plugin_roster import configured_translation_subjects, generate_plugin_subjects
 
                 translation_token = envelope.get('translation_access_token')
+                eligibility = ('eligible_quick_plugin_session_required' if quick_mode
+                               else 'eligible_translation_session_required')
                 if not isinstance(translation_token, str) or not translation_token:
-                    print_json(dict(kind='batch', status='UNRUN', reason='eligible_translation_session_required'))
+                    print_json(dict(kind='batch', status='UNRUN', reason=eligibility))
                     return 3
-                roster = configured_plugin_subjects(raw_roster)
+                if raw_roster is None:
+                    roster = frozenset(generate_plugin_subjects())
+                else:
+                    roster = configured_translation_subjects(raw_roster)
+                    if quick_mode:
+                        roster = roster.intersection(generate_plugin_subjects())
                 translation = account_checker_for(runtime.auth, runtime.database(), selected_subjects=roster).check(
                     translation_token)
                 if translation.status is AdmissionStatus.UNKNOWN:
@@ -711,11 +844,11 @@ def main():
                         or principal.expires_at < end.timestamp()
                         or (principal.issuer, principal.subject)
                         == (decision.principal.issuer, decision.principal.subject)):
-                    print_json(dict(kind='batch', status='UNRUN', reason='eligible_translation_session_required'))
+                    print_json(dict(kind='batch', status='UNRUN', reason=eligibility))
                     return 3
                 translation_session = (scope_for(principal.issuer, principal.subject), translation_token)
             budget = AuthorizationBudget(HK_JOURNAL_ROOT, authorization_guard=authorization, demo=True)
-            if args.action == 'preflight':
+            if args.action in {'preflight', 'quick-preflight'}:
                 state = budget_state(budget, owner)
                 from deploy.hk.app_smoke_ceiling import BASELINE
                 from cj_usage.sublimits import policy
@@ -723,6 +856,8 @@ def main():
                     raise ValueError('C standing budget qualification failed')
                 print_json(dict(kind='preflight', status='PASS', provider_calls=0))
                 return 0
+            if args.action == 'quick':
+                return run_quick(budget, token, owner, start, end, translation_session)
             return run(budget, runtime.database(), scope, token, owner, start, end,
                        translation_session=translation_session)
         finally:

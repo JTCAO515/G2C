@@ -1,22 +1,34 @@
-from base64 import b64encode
+from base64 import b64decode, b64encode
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from http.client import HTTPResponse
 from io import BytesIO
 from pathlib import Path
+from struct import pack
 from tempfile import TemporaryDirectory
+import time
+from types import SimpleNamespace
 from uuid import uuid4
 import wave
+from zlib import compress, crc32
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 import httpx
+from PIL import Image
 import pytest
 
-from cj_api.translation import DashScopeTranslation, ROUTE, TranslationRelay, VERSION
+from cj_api.translation import (
+    DashScopeTranslation, IMAGE_LAYOUT_ROUTE, IMAGE_LAYOUT_VERSION, ROUTE, TTS_RESULT_HOST, TTS_ROUTE, TTS_VERSION,
+    TranslationError, TranslationRelay, VERSION,
+)
 from cj_auth.interfaces import AdmissionDecision, AdmissionReason, AdmissionStatus, TrustedPrincipal
-from cj_usage.authorization_budget import AuthorizationBudget, CNY_SCALE, HK_PRODUCER, M1_UNRESOLVED_CNY, MAC_PRODUCER, authorization_usage, journal_state
+from cj_usage.authorization_budget import (
+    AuthorizationBudget, CNY_SCALE, HK_PRODUCER, M1_ESTIMATED, M1_UNRESOLVED_CNY, MAC_PRODUCER,
+    authorization_usage, journal_state,
+)
 from cj_usage.translation_budget import (
-    BEIJING, IMAGE_MODEL, SPEECH_MODEL, TEXT_MODEL, TranslationBudget, TranslationLimit,
+    BEIJING, IMAGE_MODEL, SPEECH_MODEL, TEXT_MODEL, TTS_MODEL, TranslationBudget, TranslationLimit,
 )
 from deploy.hk.translation_relay import register_translation_route, socket_request, translation_socket
 from scripts.m4_budget_transfer import attempts
@@ -27,12 +39,28 @@ def _body(kind='text', **content):
                 source_lang='zh', target_lang='en', **content)
 
 
-def _wav(seconds=1, rate=16_000):
+def _wav(seconds=1, rate=16_000, *, frames=None):
     raw = BytesIO()
     with wave.open(raw, 'wb') as audio:
         audio.setparams((1, 2, rate, 0, 'NONE', 'not compressed'))
-        audio.writeframes(b'\0\0' * (seconds * rate))
+        audio.writeframes(b'\0\0' * (seconds * rate if frames is None else frames))
     return b64encode(raw.getvalue()).decode()
+
+
+
+def _layout_body(*, jpeg=False):
+    if jpeg:
+        buffer = BytesIO()
+        with Image.new('L', (80, 50)) as image:
+            image.save(buffer, format='JPEG')
+        return dict(_body('image', media=b64encode(buffer.getvalue()).decode()), version=IMAGE_LAYOUT_VERSION)
+
+    def chunk(kind, data):
+        return pack('>I', len(data)) + kind + data + pack('>I', crc32(kind + data))
+
+    header = chunk(b'IHDR', pack('>IIBBBBB', 80, 50, 8, 0, 0, 0, 0))
+    image = b'\x89PNG\r\n\x1a\n' + header + chunk(b'IDAT', compress(b'\0' * (81 * 50))) + chunk(b'IEND', b'')
+    return dict(_body('image', media=b64encode(image).decode()), version=IMAGE_LAYOUT_VERSION)
 
 
 def _check(token):
@@ -53,24 +81,52 @@ def budget(tmp_path):
 @pytest.fixture
 def interface(budget, request):
     import json
-    from types import SimpleNamespace
 
     calls = []
+    scenario = getattr(request, 'param', None)
     def fake(http_request):
         payload = json.loads(http_request.content)
         model = payload['model']
         calls.append(model)
         assert http_request.url.host == 'dashscope.aliyuncs.com'
         assert http_request.headers['Authorization'] == 'Bearer fixture-key'
+        if model == TTS_MODEL:
+            assert http_request.url.path.endswith('/multimodal-generation/generation')
+            assert payload['input'] == {'text': '测试朗读', 'voice': 'Cherry', 'language_type': 'Chinese'}
+            failure = scenario == 'tts_code'
+            return httpx.Response(200, json=dict(status_code=200, request_id=str(uuid4()),
+                code='InvalidParameter' if failure else '', message='',
+                output={'finish_reason': 'stop', 'audio': {
+                    'url': f'http://{TTS_RESULT_HOST}/official.wav?signature=fixture'}},
+                usage={'input_tokens': 0, 'output_tokens': 0, 'characters': 4}))
         if model == IMAGE_MODEL:
             assert http_request.url.path.endswith('/multimodal-generation/generation')
+            task = payload['parameters']['ocr_options']['task']
+            if task == 'advanced_recognition':
+                image, = payload['input']['messages'][0]['content']
+                assert image['image'].startswith(('data:image/png;base64,', 'data:image/jpeg;base64,'))
+                assert image['enable_rotate'] is False
+                location = [2, 3, 20, 3, 20, 12, 2, 12]
+                if scenario == 'layout_bad':
+                    location[2] = 81
+                text_lines = [] if scenario == 'layout_empty' else [{'text': '你好', 'location': location}]
+                layout = [{'ocr_result': {'words_info': text_lines}}]
+                return httpx.Response(200, json=dict(request_id=str(uuid4()),
+                    output={'choices': [{'message': {'content': layout}, 'finish_reason':'stop'}]},
+                    usage={'input_tokens': 30, 'output_tokens': 8}))
+            assert task == 'text_recognition'
             return httpx.Response(200, json=dict(request_id=str(uuid4()),
                 output={'choices': [{'message': {'content': [{'text': '菜單\n火鍋'}]}}]},
                 usage={'input_tokens': 30, 'output_tokens': 8}))
         if model == SPEECH_MODEL:
-            scenario = getattr(request, 'param', None)
             if scenario == 'http':
                 return httpx.Response(400, json={'error': {'message': 'private provider detail'}})
+            if scenario == 'subsecond':
+                sent = payload['messages'][0]['content'][0]['input_audio']['data']
+                with wave.open(BytesIO(b64decode(sent.partition(',')[2])), 'rb') as audio:
+                    seconds = audio.getnframes() // audio.getframerate()
+                return httpx.Response(200, json=dict(model=model, id=str(uuid4()), choices=[
+                    {'message': {'content': '你好'}, 'finish_reason': 'stop'}], usage={'seconds': seconds}))
             usage = {
                 'seconds': {'invalid_seconds': 2}.get(scenario, 1),
             } if scenario != 'missing_usage' else {}
@@ -87,13 +143,24 @@ def interface(budget, request):
             choices=[{'message': {'content': content}, 'finish_reason': 'stop'}], usage=usage))
 
     class Connection:
+        response_class = HTTPResponse
+
         def __init__(self, host, timeout):
             self.host = host
+            self.sock = SimpleNamespace(settimeout=lambda _: None)
 
         def connect(self):
-            assert self.host == 'dashscope.aliyuncs.com'
+            assert self.host in ('dashscope.aliyuncs.com', TTS_RESULT_HOST)
 
-        def request(self, method, path, *, body, headers):
+        def request(self, method, path, *, body=None, headers):
+            if self.host == TTS_RESULT_HOST:
+                assert (method, path, headers) == ('GET', '/official.wav?signature=fixture', {'Accept': 'audio/wav'})
+                calls.append('download')
+                if scenario == 'tts_download_denied':
+                    self.reply = httpx.Response(403, content=b'private signed audio link')
+                    return
+                self.reply = httpx.Response(200, content=b64decode(_wav(frames=0 if scenario=='tts_empty' else None)))
+                return
             assert self.auto_open is False
             self.reply = fake(httpx.Request(method, 'https://' + self.host + path, content=body, headers=headers))
 
@@ -113,9 +180,11 @@ def interface(budget, request):
         relay = TranslationRelay(SimpleNamespace(check=_check), budget,
                                  DashScopeTranslation('fixture-key', connection=Connection),
                                  lambda issuer, subject: subject)
-        with translation_socket(relay, path=path):
+        tts_enabled = scenario in ('tts_ok', 'tts_code', 'tts_empty', 'tts_download_denied')
+        layout_enabled = scenario in ('layout_ok', 'layout_jpeg', 'layout_empty', 'layout_bad')
+        with translation_socket(relay, path=path, tts_enabled=tts_enabled, layout_enabled=layout_enabled):
             app = FastAPI()
-            register_translation_route(app, send=lambda token, raw: socket_request(token, raw, path=path))
+            register_translation_route(app, send=lambda token, raw, **opts: socket_request(token, raw, path=path, **opts))
             with TestClient(app) as client:
                 yield client, calls, budget.authorization
 
@@ -180,12 +249,237 @@ def test_asr_502_exposes_only_diagnostics_and_keeps_the_original_hold(
     assert 'private provider detail' not in caplog.text
 
 
+@pytest.mark.parametrize('interface', ['subsecond'], indirect=True)
+def test_subsecond_speech_keeps_the_first_billed_second_and_returns_a_translation(interface):
+    client, calls, ledger = interface
+    response = _post(client, _body('speech', media=_wav(frames=14959)))
+    assert response.status_code == 200
+    assert response.json()['items'] == [{'source_text': '你好', 'translated_text': 'Hello'}]
+    assert calls == [SPEECH_MODEL, TEXT_MODEL]
+    rows = ledger.inspect()
+    assert len(rows) == 2 and all(row['state'] == 'RECEIVED' for row in rows)
+
+
 def test_reject_wrong_encoding_and_disallow_provider_url(interface):
     client, calls, _ = interface
     assert _post(client, _body('speech', media=_wav(rate=8_000))).status_code == 400
     assert _post(client, _body('image', media='https://example.test/person.png')).status_code == 400
     assert _post(client, {**_body(text='你好'), 'model': 'qwen-max'}).status_code == 400
     assert calls == []
+
+
+@pytest.mark.parametrize(('interface', 'expected', 'attempts_count', 'jpeg'), [
+    ('layout_ok', 200, 2, False), ('layout_jpeg', 200, 2, True), ('layout_empty', 200, 1, False),
+    ('layout_bad', 502, 1, False), ('layout_closed', 403, 0, False),
+], indirect=['interface'])
+def test_image_layout_is_internal_bounded_and_uses_original_image_journal(interface, expected, attempts_count, jpeg):
+    client, calls, ledger = interface
+    body = _layout_body(jpeg=jpeg)
+    inside = {'Authorization': 'Bearer internal-fixture'}
+    outside = {'Authorization': 'Bearer external-fixture'}
+    assert client.post(IMAGE_LAYOUT_ROUTE, json=body, headers=outside).status_code == 403
+    assert calls == []
+    response = client.post(IMAGE_LAYOUT_ROUTE, json=body, headers=inside)
+    assert response.status_code == expected
+    result = response.json()
+    assert result['version'] == IMAGE_LAYOUT_VERSION
+    if expected == 200:
+        items = [] if attempts_count == 1 else [{'source_text': '你好', 'translated_text': 'Hello',
+                                                 'location': [2, 3, 20, 3, 20, 12, 2, 12]}]
+        assert result == dict(version=IMAGE_LAYOUT_VERSION, image_width=80, image_height=50, items=items)
+    if attempts_count:
+        assert _post(client, dict(body, version=VERSION)).status_code == 409
+    assert calls == [IMAGE_MODEL, TEXT_MODEL][:attempts_count]
+    assert [r['state'] for r in ledger.inspect()] == ['RECEIVED'] * attempts_count
+    assert '你好' not in repr(ledger.inspect())
+
+
+@pytest.mark.parametrize('interface', ['layout_ok'], indirect=True)
+def test_image_layout_rejects_header_only_images_without_a_reservation(interface):
+    client, calls, ledger = interface
+    body = _layout_body()
+    valid_png = b64decode(body['media'])
+    png_header_only = valid_png[:33] + valid_png[-12:]
+    jpeg_header_only = bytes.fromhex('ffd8 ffc0000b080032005001011100 ffd9')
+    auth = {'Authorization': 'Bearer internal-fixture'}
+    for media in (png_header_only, jpeg_header_only):
+        payload = dict(body, media=b64encode(media).decode())
+        response = client.post(IMAGE_LAYOUT_ROUTE, json=payload, headers=auth)
+        assert response.status_code == 400
+        assert response.json() == dict(version=IMAGE_LAYOUT_VERSION, error='invalid_request')
+    assert calls == []
+    assert ledger.inspect() == []
+
+
+@pytest.mark.parametrize('enabled', [False, True])
+def test_tts_uses_private_worker_audio_and_original_receipt_once(budget, enabled):
+    audio = b64decode(_wav())
+    calls = []
+
+    class Provider:
+        def synthesize(self, request, deadline, authorize):
+            assert (request.language, request.text) == ('zh', '测试朗读')
+            authorize()
+            calls.append('synthesize')
+            return str(uuid4()), {'characters': 4}, 'provider-result'
+
+        def fetch_audio(self, url, deadline):
+            assert url == 'provider-result'
+            calls.append('download')
+            return audio
+
+    relay = TranslationRelay(SimpleNamespace(check=_check), budget, Provider(), lambda issuer, subject: subject)
+    body = dict(version=TTS_VERSION, request_id=str(uuid4()), language='zh', text='测试朗读')
+    with TemporaryDirectory(prefix='g2c-tts-', dir='/tmp') as directory:
+        path = Path(directory) / 'relay.sock'
+        with translation_socket(relay, path=path, tts_enabled=enabled):
+            app = FastAPI()
+            register_translation_route(app, send=lambda token, raw, **kw: socket_request(token, raw, path=path, **kw))
+            with TestClient(app, headers={'Authorization': 'Bearer internal-fixture'}) as client:
+                assert client.post(TTS_ROUTE, json=body, headers={'Authorization': 'Bearer external-fixture'}).status_code == 403
+                reply = client.post(TTS_ROUTE, json=body)
+                if enabled:
+                    assert reply.status_code == 200
+                    assert reply.headers['content-type'] == 'audio/wav' and reply.content == audio
+                    assert client.post(TTS_ROUTE, json=body).status_code == 409
+                else:
+                    assert reply.json() == {'version': TTS_VERSION, 'error': 'not_enabled'}
+    assert calls == (['synthesize', 'download'] if enabled else [])
+    with budget.authorization.connect() as db:
+        _, estimates, _ = authorization_usage(db)
+    assert estimates['model'] == M1_ESTIMATED + (3200 if enabled else 0)
+    assert '测试朗读' not in str(budget.authorization.inspect())
+
+
+@pytest.mark.parametrize(('interface', 'status', 'receipt', 'assets'), [
+    ('tts_ok', 200, 'RECEIVED', ['download']),
+    ('tts_code', 502, 'INTENT', []),
+    ('tts_empty', 502, 'RECEIVED', ['download']),
+], indirect=['interface'])
+def test_tts_official_http_envelope_retains_original_settlement(interface, status, receipt, assets):
+    client, calls, ledger = interface
+    body = dict(version=TTS_VERSION, request_id=str(uuid4()), language='zh', text='测试朗读')
+    auth = {'Authorization': 'Bearer internal-fixture'}
+    reply = client.post(TTS_ROUTE, json=body, headers=auth)
+    assert reply.status_code == status
+    if status == 200:
+        assert reply.headers['Content-Type'] == 'audio/wav' and reply.content == b64decode(_wav())
+    assert client.post(TTS_ROUTE, json=body, headers=auth).status_code == 409
+    assert calls == [TTS_MODEL, *assets]
+    row, = ledger.inspect()
+    assert row['state'] == receipt
+
+
+@pytest.mark.parametrize(('interface', 'reason', 'http'), [
+    ('tts_empty', 'invalid_supplier_audio', 200),
+    ('tts_download_denied', 'supplier_audio_status', 403),
+], indirect=['interface'])
+def test_tts_audio_failure_logs_only_stage_and_status(interface, reason, http, caplog):
+    client, calls, ledger = interface
+    body = dict(version=TTS_VERSION, request_id=str(uuid4()), language='zh', text='测试朗读')
+    reply = client.post(TTS_ROUTE, json=body, headers={'Authorization': 'Bearer internal-fixture'})
+    assert reply.status_code == 502
+    assert reply.json() == {'version': TTS_VERSION, 'error': 'provider_unavailable'}
+    assert calls == [TTS_MODEL, 'download']
+    assert [row['state'] for row in ledger.inspect()] == ['RECEIVED']
+    assert f'G2C_TRANSLATION_TTS_AUDIO_FAILURE reason={reason} supplier_http={http}' in caplog.text
+    for private in ('private signed audio link', 'signature=fixture', '测试朗读', 'internal-fixture'):
+        assert private not in caplog.text
+
+
+def test_tts_audio_deadline_stops_between_body_reads(monkeypatch):
+    now = [0.0]
+    chunks = []
+    timeouts = []
+    monkeypatch.setattr(time, 'monotonic', lambda: now[0])
+
+    class Response:
+        status = 200
+        chunked = False
+
+        def getheader(self, name):
+            assert name == 'Content-Length'
+            return '9000'
+
+        def read(self, _):
+            pytest.fail('TTS must avoid an unbounded body read')
+
+        def read1(self, limit):
+            assert limit == 9000
+            chunks.append(1)
+            now[0] = 5.0
+            return b'partial'
+
+        def close(self):
+            pass
+
+    class Connection:
+        def __init__(self, host, timeout):
+            assert host == TTS_RESULT_HOST and timeout <= 5
+            self.sock = SimpleNamespace(settimeout=timeouts.append)
+
+        def connect(self):
+            pass
+
+        def request(self, method, path, *, headers):
+            pass
+
+        def getresponse(self):
+            return Response()
+
+        def close(self):
+            pass
+
+    provider = DashScopeTranslation('fixture-key', connection=Connection)
+    with pytest.raises(TranslationError, match='provider_unavailable'):
+        provider.fetch_audio(f'https://{TTS_RESULT_HOST}/slow.wav?signature=fixture', 5)
+    assert chunks == [1]
+    assert timeouts and all(0 < timeout <= 5 for timeout in timeouts)
+
+
+def test_tts_daily_limit_uses_original_owner_and_does_not_change_text_quota(budget):
+    for _ in range(200):
+        operation = budget.operation('owner-a', uuid4(), 'tts', 1)
+        budget.begin(operation, 0, TTS_MODEL)
+        budget.finish(operation, 0, TTS_MODEL, str(uuid4()), {'characters': 1})
+    with pytest.raises(TranslationLimit, match='daily translation'):
+        budget.begin(budget.operation('owner-a', uuid4(), 'tts', 1), 0, TTS_MODEL)
+    budget.begin(budget.operation('owner-b', uuid4(), 'tts', 1), 0, TTS_MODEL)
+    budget.begin(budget.operation('owner-a', uuid4(), 'text', 1), 0, TEXT_MODEL)
+
+
+def test_tts_download_connects_to_beijing_asset_over_tls_without_api_key():
+    data = b64decode(_wav())
+    calls = []
+
+    class Connection:
+        def __init__(self, host, *, timeout):
+            assert host == TTS_RESULT_HOST and 0 < timeout <= 8
+            calls.append(host)
+
+        def connect(self):
+            self.sock = SimpleNamespace(settimeout=lambda _: None)
+
+        def request(self, method, path, *, headers):
+            assert (method, path, headers) == ('GET', '/one.wav?signature=fake', {'Accept': 'audio/wav'})
+
+        def getresponse(self):
+            return SimpleNamespace(status=200, chunked=False, getheader=lambda _: str(len(data)),
+                                   read=lambda _: data, read1=lambda limit: data[:limit], close=lambda: None)
+
+        def close(self):
+            pass
+
+    provider = DashScopeTranslation('fixture-api-key', connection=Connection)
+    deadline = time.monotonic() + 15
+    assert provider.fetch_audio('http://' + TTS_RESULT_HOST + '/one.wav?signature=fake', deadline) == data
+    with pytest.raises(TranslationError, match='provider_unavailable'):
+        provider.fetch_audio('https://other.invalid/one.wav?signature=fake', deadline)
+    assert calls == [TTS_RESULT_HOST]
+    credential_echo = b'fixture-api-key'
+    data = data[:44] + credential_echo + data[44 + len(credential_echo):]
+    with pytest.raises(TranslationError, match='provider_unavailable'):
+        provider.fetch_audio('https://' + TTS_RESULT_HOST + '/one.wav?signature=fake', deadline)
 
 
 def test_voice_limit_is_atomic_and_isolated_per_owner(budget):
@@ -237,6 +531,22 @@ def test_hk_proof_keeps_translation_intent_and_receipt_in_signed_digest(budget):
         assert db.execute('SELECT * FROM attempt ORDER BY id').fetchall() == original
         _, estimates, holds = authorization_usage(db)
         assert estimates['model'] > 0 and holds['model'] == (M1_UNRESOLVED_CNY + 2) * CNY_SCALE
+
+
+@pytest.mark.parametrize('settled', [False, True])
+def test_hk_export_can_read_tts_history_without_a_live_tts_route(budget, settled):
+    ledger = budget.authorization
+    model = 'qwen3-tts-flash'
+    operation = budget.operation('scope-fixture', uuid4(), 'tts', 1)
+    budget.begin(operation, 0, model)
+    if settled:
+        budget.finish(operation, 0, model, str(uuid4()), {'characters': 4})
+    with ledger.connect() as db:
+        db.execute('UPDATE producer SET identity=?', (HK_PRODUCER,))
+        assert attempts(db) == journal_state(db)
+        _, estimates, holds = authorization_usage(db)
+    assert estimates['model'] == M1_ESTIMATED + (3200 if settled else 0)
+    assert holds['model'] == (M1_UNRESOLVED_CNY + (0 if settled else 1)) * CNY_SCALE
 
 
 def test_mac_transfer_keeps_rejecting_runtime_translation_attempts(budget):
@@ -327,6 +637,27 @@ def test_smoke_stops_after_a_rejected_translation(budget):
                              lambda: True, send, events.append, server_smoke.SmokeResult, ready=True)
     assert calls == ['zh']
     assert [row['status'] for row in events] == ['FAIL', 'UNRUN']
+    assert [row['conservative_cny_1e7'] for row in events] == [CNY_SCALE, 0]
+    assert [row['unresolved_attempts'] for row in events] == [1, 0]
+
+
+def test_smoke_accounts_for_the_original_translation_hold_without_resending(budget):
+    from uuid import UUID
+    from deploy.hk import server_smoke, translation_smoke
+
+    calls, events = [], []
+
+    def send(token, route, *, document):
+        calls.append(document['source_lang'])
+        operation = budget.operation('internal', UUID(document['request_id']), 'text', 1)
+        budget.begin(operation, 0, TEXT_MODEL)
+        raise server_smoke.SmokeResult('UNKNOWN', 'http_timeout')
+
+    assert translation_smoke.checks(budget.authorization, 'internal', 'synthetic-fixture',
+        lambda: True, send, events.append, server_smoke.SmokeResult, ready=True) == events
+    assert calls == ['zh'] and [row['status'] for row in events] == ['UNKNOWN', 'UNRUN']
+    assert [row['state'] for row in budget.authorization.inspect()] == ['INTENT']
+    assert events[0]['conservative_cny_1e7'] == CNY_SCALE and events[0]['estimated_cny_1e7'] == 0
 
 
 def test_revocation_during_tls_connect_blocks_the_supplier_post(budget):
@@ -392,9 +723,28 @@ def test_completed_smoke_rejects_missing_translation_requirement_or_evidence(mon
     assert server_smoke.decide(common, []) == unavailable
     assert server_smoke.decide(common + [required], []) == unavailable
     assert server_smoke.decide(common + [disabled], [])['status'] == 'PASS'
-    translations = [dict(kind='translation', language=language, status='PASS') for language in ('zh', 'en')]
-    assert server_smoke.decide(common + [required, *translations], [])['status'] == 'PASS'
+    translations = [dict(kind='translation', language=language, status='PASS',
+                         conservative_cny_1e7=100, estimated_cny_1e7=100, unresolved_attempts=0)
+                    for language in ('zh', 'en')]
+    assert server_smoke.decide(common + [required, *translations], [])['status'] == 'UNKNOWN'
     assert server_smoke.decide(common + [disabled, *translations], []) == unavailable
+
+    translation_cost = dict(conservative_cny_1e7=200, estimated_cny_1e7=200, unresolved_attempts=0)
+    def cost_for(dialogue_amount):
+        dialogue_cost = dict(conservative_cny_1e7=dialogue_amount, estimated_cny_1e7=dialogue_amount,
+                             unresolved_attempts=0)
+        return dict(kind='cost', conservative_cny_1e7=dialogue_amount+200,
+                    estimated_cny_1e7=dialogue_amount+200, unresolved_attempts=0,
+                    line_usage_delta_cny_1e7=dialogue_amount,
+                    dialogue_cost=dialogue_cost, translation_cost=translation_cost)
+
+    for dialogue_amount in (3*CNY_SCALE+1, 5*CNY_SCALE):
+        verdict = server_smoke.decide(common[:-1] + [cost_for(dialogue_amount), required, *translations], [])
+        assert verdict['reason'] == 'smoke_cost_boundary_unconfirmed'
+    good = cost_for(3*CNY_SCALE)
+    assert server_smoke.decide(common[:-1] + [good, required, *translations], [])['status'] == 'PASS'
+    incomplete = dict(good, conservative_cny_1e7=3*CNY_SCALE)
+    assert server_smoke.decide(common[:-1] + [incomplete, required, *translations], [])['status'] == 'UNKNOWN'
 
 
 @pytest.mark.parametrize('headers,encode', [

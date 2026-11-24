@@ -14,8 +14,15 @@ private struct LioChatHistoryFixture: View {
         Group {
             switch clients {
             case .success(let clients):
+                let arguments = ProcessInfo.processInfo.arguments
+                let suspended = arguments.contains("--lio-support-suspended")
+                let draftStorage: LocalSupportDraftStorage? = arguments.contains("--lio-support-draft-fence")
+                    ? LocalSupportDraftStorage(load: { "Synthetic help draft" }, save: { _ in }, clear: {}) : nil
                 LioHome(language: shell.language.lio, service: clients.original, isDemo: false,
-                        chatLibrary: clients.library) {
+                        chatLibrary: clients.library,
+                        session: suspended ? .init(revision: UUID(), available: false, showsRetry: true) : nil,
+                        showsTools: arguments.contains("--lio-support-sos"),
+                        toolsDraftStorage: draftStorage, toolsSessionIsCurrent: { !suspended }) {
                     LioMenuSettings(shell: shell)
                     if ProcessInfo.processInfo.arguments.contains("--lio-chat-recovery-acceptance") {
                         Button("Recreate client") { self.clients = Result { try clients.recreated(shell: shell) } }

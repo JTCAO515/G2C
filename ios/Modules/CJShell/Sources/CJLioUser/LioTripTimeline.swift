@@ -52,16 +52,14 @@ struct LioTripTimeline: View {
     @State private var selectedDay: Int?
     @State private var focusedStop: String?
     @State private var mapUnavailable = false
-    #if DEBUG
     @State private var selectedTaxiPlace: LioTaxiPlace?
-    private let previewTaxiService = LioTaxiService.previewFromArguments
+    @Environment(\.lioTaxiEntry) private var taxiEntry
 
     private var taxiPlaces: [LioTaxiPlace] {
         var seen = Set<LioTaxiPlace.ID>()
         return itinerary.days.flatMap { $0.stops.compactMap(\.taxiDestination) }
             .filter { seen.insert($0.id).inserted }
     }
-    #endif
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.self) private var environment
     private var ink: Color { Color(LioTheme.ink.resolve(in: environment)) }
@@ -144,16 +142,14 @@ struct LioTripTimeline: View {
         }
         .foregroundStyle(LioTheme.ink)
         .animation(LioTheme.Motion.animation(LioTheme.Motion.change, reduceMotion: reduceMotion), value: selectedDay)
-        #if DEBUG
         .sheet(item: $selectedTaxiPlace) { place in
-            if let service = previewTaxiService {
+            if let taxiEntry {
                 NavigationStack {
-                    LioTaxiView(language: language, service: service, tripPlaces: taxiPlaces,
-                               recentStore: LioTaxiService.previewRecents, destination: place)
+                    LioTaxiView(language: language, service: taxiEntry.service, tripPlaces: taxiPlaces,
+                               recentStore: taxiEntry.recentStore, destination: place)
                 }
             }
         }
-        #endif
     }
 
     private func timelineStop(_ stop: LioItinerary.Stop, number: Int, last: Bool) -> some View {
@@ -195,15 +191,13 @@ struct LioTripTimeline: View {
                         .font(.subheadline)
                         .foregroundStyle(LioTheme.jade)
                 }
-                #if DEBUG
-                if let destination = stop.taxiDestination, previewTaxiService != nil {
+                if let destination = stop.taxiDestination, taxiEntry != nil {
                     Button { selectedTaxiPlace = destination } label: {
                         Label(language.text("Taxi here", "打车去这里"), systemImage: "car")
                             .frame(minHeight: 44)
                     }
                     .accessibilityIdentifier("lio.trip.taxi.\(stop.id)")
                 }
-                #endif
             }
             .padding(.bottom, last ? 0 : 24)
         }

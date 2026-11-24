@@ -127,6 +127,8 @@ private var developmentHostEnvironment: [String: String] {
     #if G2C_DEMO_BETA
     let lioTripLibrary: LioTripLibrary?
     let lioTranslationRelay: LioRelayTranslationClient?
+    let lioTaxiRelay: LioTaxiRelayClient?
+    let lioCurrencyRelay: LioCurrencyRelayClient?
     #endif
     let messages: DevelopmentMessageHost
     #if DEBUG
@@ -230,12 +232,17 @@ private var developmentHostEnvironment: [String: String] {
             #endif
         }
         #if G2C_DEMO_BETA
-        lioTranslationRelay = LioRelayTranslationClient.internalBeta(endpoint: endpoint, isCurrent: {
-            lifetime.current == lifetime.trip
-        }, bearer: {
-            guard lifetime.current == lifetime.trip else { return nil }
+        let relaySessionIsCurrent: @MainActor () -> Bool = { lifetime.current == lifetime.trip }
+        let relayBearer: @MainActor () -> String? = {
+            guard relaySessionIsCurrent() else { return nil }
             return configuration.token
-        })
+        }
+        lioTaxiRelay = LioTaxiRelayClient.internalBeta(endpoint: endpoint, isCurrent: relaySessionIsCurrent,
+                                                       bearer: relayBearer)
+        lioTranslationRelay = LioRelayTranslationClient.internalBeta(endpoint: endpoint, isCurrent: relaySessionIsCurrent,
+                                                                     bearer: relayBearer)
+        lioCurrencyRelay = LioCurrencyRelayClient.internalBeta(endpoint: endpoint, isCurrent: relaySessionIsCurrent,
+                                                               bearer: relayBearer)
         if tripEditingProfile != nil {
             lioTripLibrary = LioTripLibrary(list: {
                 var rows: [StructuredTripSummary] = []
@@ -878,6 +885,7 @@ private var developmentHostEnvironment: [String: String] {
     let lioTripHistory: LioTripHistoryClient
     let lioMemoryActions: LioMemoryActionsClient
     let lioTranslationHistory: LioTranslationHistory
+    let lioTaxiRecentDirectory: URL
     private let lioPosition: LioChatContinuity
     private let lioPositionStore: LioChatPositionStore
     #endif
@@ -931,6 +939,7 @@ private var developmentHostEnvironment: [String: String] {
         }
         let credentials = DevelopmentMessageCredentials(token: configuration.token, scope: scope, lease: lease, lifetime: lifetime)
         #if G2C_DEMO_BETA
+        lioTaxiRecentDirectory = LioTaxiRecentPlaces.storageDirectory(inMessageDirectory: root)
         lioTranslationHistory = LioTranslationHistory(
             directory: root.appendingPathComponent(LioTranslationHistory.directoryName, isDirectory: true),
             isCurrent: isCurrent)
@@ -1048,6 +1057,7 @@ private var developmentHostEnvironment: [String: String] {
     private let persistence: KeychainSessionStore
     private let demoMode: Bool
     #if G2C_DEMO_BETA
+    private let localSupportVault: LocalSupportKeychainDraft
     @ObservationIgnored private var lioChatContinuity: LioChatContinuity?
     @ObservationIgnored private var lioPresentationOwner: LioPresentationOwner?
     private struct LioPresentationOwner: Equatable {
@@ -1176,6 +1186,49 @@ private var developmentHostEnvironment: [String: String] {
 
     var finishingDemoCleanup: Bool { cleanupWorkflow?.holdsBusinessFence == true }
 
+    private var localSupportDraftScope: LocalSupportKeychainDraft.Scope {
+        guard let owner = lioPresentationOwner else { return .guest }
+        return .account(environment: owner.environment, account: owner.account)
+    }
+
+    func localSupportDraftStorage() -> LocalSupportDraftStorage? {
+        let scope = localSupportDraftScope
+        guard canUseLocalSupportDraft(scope) else { return nil }
+        return localSupportVault.storage(for: scope) { [weak self] in
+            guard let self else { return false }
+            return self.canUseLocalSupportDraft(scope)
+        }
+    }
+
+    private func canUseLocalSupportDraft(_ scope: LocalSupportKeychainDraft.Scope) -> Bool {
+        guard !finishingDemoCleanup, !accounts.isResuming, localSupportDraftScope == scope else { return false }
+        switch scope {
+        case .guest:
+            return accounts.state == .signedOut
+        case .account:
+            guard case .signedIn = accounts.state, let trip else { return false }
+            return trip === lioRetainedTrip
+        }
+    }
+
+    func signOutWithLocalSupportCleanup() throws {
+        defer { accounts.signOut() }
+        var scope = localSupportDraftScope
+        if scope == .guest {
+            do {
+                if let material = try persistence.load() {
+                    let invite = try material.withBytes { try DemoInviteSession.decode($0) }
+                    let configuration = DevelopmentSessionConfiguration.demo(invite)
+                    scope = .account(environment: configuration.environmentID, account: configuration.accountID)
+                }
+            } catch SessionFailure.restorationBlocked {
+                scope = .guest
+            }
+        }
+        try localSupportVault.clear(scope)
+        if scope != .guest { try localSupportVault.clear(.guest) }
+    }
+
     func finishDemoCleanup() {
         guard cleanup?.presentation.controlsFinalized == true else { return }
         accounts.signOut()
@@ -1186,6 +1239,9 @@ private var developmentHostEnvironment: [String: String] {
                  approvedBetaAPI: Bool, composition: DevelopmentBetaComposition?, proposalID: String?,
                  offlineProfile: DevelopmentOfflineProfile?, cleanup: CleanupDeviceVersion?, demoMode: Bool) throws {
         let applicationID = try DevelopmentKeychainIdentity.read()
+        #if G2C_DEMO_BETA
+        localSupportVault = LocalSupportKeychainDraft(applicationIdentifier: applicationID)
+        #endif
         cleanupEnabled = cleanup != nil
         cleanupVersion = cleanup ?? .v3
         self.shell = shell; self.endpoint = endpoint; self.tokens = tokens
@@ -1542,6 +1598,20 @@ private struct DevelopmentVerificationTransport: ClientTransport {
     }
     private var memoryBinding: MemoryBinding { .init(environment: scope.environment, account: scope.account, generation: scope.generation, selection: scope.generation) }
     private var tripBinding: TripBinding { .init(environment: scope.environment, account: scope.account, generation: scope.generation, selection: scope.generation) }
+    #if G2C_DEMO_BETA
+    private var localSupportScope: LocalSupportKeychainDraft.Scope {
+        .account(environment: scope.environment, account: scope.account)
+    }
+
+    func clearLocalSupportDraft() throws {
+        try LocalSupportKeychainDraft(applicationIdentifier: applicationID).clear(localSupportScope)
+    }
+
+    func verifyLocalSupportDraftAbsent() throws {
+        try LocalSupportKeychainDraft(applicationIdentifier: applicationID).requireAbsent(localSupportScope)
+    }
+    #endif
+
     func eraseFiles(for target: DeviceCleanupTarget) throws {
         let captured = try layout.directories(for: target)
         let firstPhysical = try layout.primaryURL(for: target)
@@ -1565,6 +1635,7 @@ private struct DevelopmentVerificationTransport: ClientTransport {
             try translation.removeOwnedFile(named: LioTranslationHistory.fileName)
             try translation.removeOwnedFile(named: LioTranslationHistory.relayOriginalsFileName)
             try translation.removeEmptyChild()
+            try LioTaxiRecentsCleanup.erase(in: captured[0])
             #endif
         case .tripPending:
             guard let url else { throw CleanupFailure.unavailable }
@@ -1868,6 +1939,11 @@ private func developmentCleanupHash(_ value: Data) -> String {
             if try layout.primaryURL(for: target) != nil { try offline.clearDeviceTemporaryWrites(account: scope.account) }
         case .messageKey, .tripKey, .memoryKey, .needsKey, .feedbackKey, .offlineKey:
             try stores.eraseKey(for: target)
+        #if G2C_DEMO_BETA
+        case .encryptedMessage:
+            try stores.eraseFiles(for: target)
+            try stores.clearLocalSupportDraft()
+        #endif
         default: try stores.eraseFiles(for: target)
         }
     }
@@ -1886,6 +1962,11 @@ private func developmentCleanupHash(_ value: Data) -> String {
                 else { guard names.allSatisfy({ $0 == "snapshot.aesgcm" }) else { throw CleanupFailure.unavailable } }
                 try directory.validateIdentity()
             }
+        #if G2C_DEMO_BETA
+        case .encryptedMessage:
+            try layout.requireEmpty(for: target)
+            try stores.verifyLocalSupportDraftAbsent()
+        #endif
         default: try layout.requireEmpty(for: target)
         }
     }

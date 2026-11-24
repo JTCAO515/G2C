@@ -61,12 +61,20 @@ struct CJProbeApp: App {
             Group {
                 #if G2C_DEMO_BETA
                 if let demo { DemoBetaRootView(shell: shell, root: demo) }
-                else { Text(shell.language.text("Lio is temporarily unavailable.", "暂时打不开 Lio。")) }
+                else {
+                    Text(shell.language.text("Lio is temporarily unavailable.", "暂时打不开 Lio。"))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .lioEmergencySupportFallback(language: shell.language.lio, enabled: true)
+                }
                 #elseif DEBUG && (targetEnvironment(simulator) || (os(iOS) && G2C_M4_DEVICE_ACCEPTANCE))
                 #if targetEnvironment(simulator)
                 #if G2C_LIO_APP
                 if canPreviewLio, ProcessInfo.processInfo.arguments.contains("--lio-onboarding-preview") {
                     LioOnboardingPreview(shell: shell)
+                        .lioEmergencySupportFallback(
+                            language: shell.language.lio,
+                            enabled: ProcessInfo.processInfo.arguments.contains("--lio-support-sos")
+                        )
                 } else if canPreviewLio, ProcessInfo.processInfo.arguments.contains("--lio-preview") {
                     lioPreview
                 } else {
@@ -110,12 +118,26 @@ struct CJProbeApp: App {
                 Text(shell.language.text("Sample trip unavailable.", "示例行程暂不可用。"))
             }
         } else {
-            LioHome(language: shell.language.lio, service: .demo, isDemo: true,
-                    showsTools: ProcessInfo.processInfo.arguments.contains("--lio-tools-preview"),
-                    toolsRelay: translationRelayPreview) {
+            let home = LioHome(language: shell.language.lio, service: .demo, isDemo: true,
+                               showsTools: ProcessInfo.processInfo.arguments.contains("--lio-tools-preview"),
+                               toolsRelay: translationRelayPreview, toolsDraftStorage: localSupportDraftPreview) {
                 LioMenuSettings(shell: shell)
             }
+            if ProcessInfo.processInfo.arguments.contains("--lio-support-dial-preview"),
+               let number = ProcessInfo.processInfo.environment["G2C_LOCAL_SUPPORT_TEST_PHONE"] {
+                LioSupportDialPreview(number: number, content: home)
+            } else {
+                home
+            }
         }
+    }
+
+    private var localSupportDraftPreview: LocalSupportDraftStorage? {
+        guard let value = ProcessInfo.processInfo.environment["G2C_LIO_SUPPORT_DRAFT_FIXTURE"],
+              let identity = UUID(uuidString: value),
+              let applicationID = try? DevelopmentKeychainIdentity.read() else { return nil }
+        return LocalSupportKeychainDraft(applicationIdentifier: applicationID)
+            .storage(for: .account(environment: identity, account: identity), isCurrent: { true })
     }
 
     private var translationRelayPreview: LioRelayTranslationClient? {
@@ -124,16 +146,34 @@ struct CJProbeApp: App {
         let photoEmptyFixture = ProcessInfo.processInfo.arguments.contains("--lio-translation-photo-empty-preview")
         let photoTimeoutFixture = ProcessInfo.processInfo.arguments.contains("--lio-translation-photo-timeout-preview")
         let photoLoginFixture = ProcessInfo.processInfo.arguments.contains("--lio-translation-photo-login-preview")
+        let layoutFixture = ProcessInfo.processInfo.arguments.contains("--lio-translation-photo-layout-preview")
         var timedOutOriginal: Data?
         var timedOutPhoto: Data?
         var reauthPhoto: Data?
-        return LioRelayTranslationClient { route, data in
-            guard route == "/v1/tools/translate",
-                  let fields = try JSONSerialization.jsonObject(with: data) as? [String: String],
-                  fields["version"] == "TRANSLATION.1",
+        return LioRelayTranslationClient(supportsImageLayout: layoutFixture) { route, data in
+            guard let fields = try JSONSerialization.jsonObject(with: data) as? [String: String],
                   fields["source_lang"] == "en", fields["target_lang"] == "zh" else {
                 return (400, Data())
             }
+            if layoutFixture && route == "/v1/tools/translate/image-layout" &&
+                fields["version"] == "IMAGE-LAYOUT.1" && fields["kind"] == "image",
+               let media = fields["media"], let bytes = Data(base64Encoded: media),
+               let bitmap = UIImage(data: bytes)?.cgImage {
+                let width = bitmap.width, height = bitmap.height
+                let left = width * 8 / 100, right = width * 45 / 100
+                let firstTop = height * 8 / 100, firstBottom = height * 42 / 100
+                let secondTop = height * 50 / 100, secondBottom = height * 86 / 100
+                let items: [[String: Any]] = [
+                    ["source_text": "Tea", "translated_text": "茶",
+                     "location": [left, firstTop, right, firstTop, right, firstBottom, left, firstBottom]],
+                    ["source_text": "Coffee", "translated_text": "咖啡",
+                     "location": [left, secondTop, right, secondTop, right, secondBottom, left, secondBottom]]
+                ]
+                return (200, try JSONSerialization.data(withJSONObject: [
+                    "version": "IMAGE-LAYOUT.1", "image_width": width, "image_height": height, "items": items
+                ]))
+            }
+            guard route == "/v1/tools/translate", fields["version"] == "TRANSLATION.1" else { return (400, Data()) }
             if fields["kind"] == "text", fields["text"] == "Timed out" {
                 if let timedOutOriginal {
                     return timedOutOriginal == data ? (409, Data()) : (422, Data())
@@ -295,6 +335,26 @@ struct LioMenuSettings: View {
 
 
 #if DEBUG && G2C_LIO_APP && targetEnvironment(simulator)
+private struct LioSupportDialPreview<Content: View>: View {
+    let number: String
+    let content: Content
+    @State private var matched = false
+
+    var body: some View {
+        content
+            .environment(\.openURL, OpenURLAction { url in
+                matched = url.absoluteString == "tel:" + number
+                return matched ? .handled : .discarded
+            })
+            .overlay(alignment: .topLeading) {
+                Text(matched ? "Test dial request matched" : "Dial fixture ready")
+                    .font(.footnote)
+                    .accessibilityIdentifier(matched ? "fixture.support.dial-matched" : "fixture.support.dial-intercept-ready")
+                    .allowsHitTesting(false)
+            }
+    }
+}
+
 private struct LioPreviewTripFixture: Decodable {
     let trace: String
     let list: Data

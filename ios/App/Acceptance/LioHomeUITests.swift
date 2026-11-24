@@ -3,6 +3,121 @@ import UIKit
 import CryptoKit
 
 @MainActor final class LioToolsUITests: XCTestCase {
+    func testPaymentGuideShowsSetupAndTroubleshootingInBothLanguages() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            for appearance in ["light", "dark"] {
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
+                                       "-lio.ui.appearance.v1", appearance, "-UIPreferredContentSizeCategoryName",
+                                       "UICTContentSizeCategoryL"]
+                app.launch()
+                defer { app.terminate() }
+                let tools = app.tabBars.buttons[language == "en" ? "Tools" : "插件"]
+                XCTAssertTrue(tools.waitForExistence(timeout: 8))
+                tools.tap()
+                app.buttons["lio.tools.payment-guide"].tap()
+                for provider in ["alipay", "weixin"] {
+                    app.buttons["lio.payment.provider." + provider].tap()
+                    XCTAssertTrue(app.descendants(matching: .any)["lio.payment.official"].exists)
+                    try app.performAccessibilityAudit(for: .all)
+                    for step in ["register", "find-card", "add-card", "verify"] {
+                        let row = app.buttons["lio.payment.open-step." + step]
+                        XCTAssertTrue(row.exists)
+                        row.tap()
+                        XCTAssertTrue(app.staticTexts["lio.payment.step." + step].exists)
+                        try app.performAccessibilityAudit(for: .all)
+                        app.navigationBars.firstMatch.buttons.firstMatch.tap()
+                    }
+                    let screenshot = XCTAttachment(screenshot: app.screenshot())
+                    screenshot.name = "payment-\(provider)-\(language)-\(appearance)"
+                    screenshot.lifetime = .keepAlways
+                    add(screenshot)
+                    let problems = app.buttons["lio.payment.problems"]
+                    for _ in 0..<4 where !problems.isHittable { app.swipeUp() }
+                    XCTAssertTrue(problems.isHittable)
+                    problems.tap()
+                    XCTAssertTrue(app.staticTexts["lio.payment.step.issuer"].waitForExistence(timeout: 6))
+                    try app.performAccessibilityAudit(for: .all)
+                    app.navigationBars.firstMatch.buttons.firstMatch.tap()
+                    app.navigationBars.firstMatch.buttons.firstMatch.tap()
+                }
+            }
+        }
+    }
+
+    func testMetroGuideSwitchesCitiesAndShowsOfficialLinks() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            for appearance in ["light", "dark"] {
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
+                                       "-lio.ui.appearance.v1", appearance, "-UIPreferredContentSizeCategoryName",
+                                       "UICTContentSizeCategoryL"]
+                app.launch()
+                defer { app.terminate() }
+                let tools = app.tabBars.buttons[language == "en" ? "Tools" : "插件"]
+                XCTAssertTrue(tools.waitForExistence(timeout: 8))
+                tools.tap()
+                app.buttons["lio.tools.metro-guide"].tap()
+                let picker = app.buttons["lio.metro.city"]
+                XCTAssertTrue(picker.waitForExistence(timeout: 6))
+                for city in language == "en" ? ["Shanghai", "Chengdu", "Beijing"] : ["上海", "成都", "北京"] {
+                    picker.tap()
+                    app.buttons[city].tap()
+                    XCTAssertTrue(picker.label.contains(city) || (picker.value as? String)?.contains(city) == true)
+                    XCTAssertTrue(app.staticTexts["lio.metro.ticket"].exists)
+                    XCTAssertTrue(app.staticTexts["lio.metro.security"].exists)
+                    XCTAssertTrue(app.staticTexts["lio.metro.gates"].exists)
+                    XCTAssertTrue(app.descendants(matching: .any)["lio.metro.map"].exists)
+                    XCTAssertTrue(app.descendants(matching: .any)["lio.metro.source"].exists)
+                }
+                try app.performAccessibilityAudit(for: .all)
+                let screenshot = XCTAttachment(screenshot: app.screenshot())
+                screenshot.name = "metro-guide-\(language)-\(appearance)"
+                screenshot.lifetime = .keepAlways
+                add(screenshot)
+            }
+        }
+    }
+
+    func testPhraseCardsShowFiveScenariosAndBothLanguages() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            for appearance in ["light", "dark"] {
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
+                                       "-lio.ui.appearance.v1", appearance, "-UIPreferredContentSizeCategoryName",
+                                       "UICTContentSizeCategoryL"]
+                app.launch()
+                defer { app.terminate() }
+                let tools = app.tabBars.buttons[language == "en" ? "Tools" : "插件"]
+                XCTAssertTrue(tools.waitForExistence(timeout: 8))
+                tools.tap()
+                app.buttons["lio.tools.phrase-cards"].tap()
+                for category in ["dining", "directions", "taxi", "shopping", "healthcare"] {
+                    XCTAssertTrue(app.buttons["lio.phrases.category." + category].exists)
+                }
+                try app.performAccessibilityAudit(for: .all)
+                app.buttons["lio.phrases.category.dining"].tap()
+                app.buttons["lio.phrases.card.dining-menu"].tap()
+                XCTAssertTrue(app.staticTexts["请问，有英文菜单吗？"].waitForExistence(timeout: 5))
+                XCTAssertTrue(app.staticTexts["Is there a menu in English?"].exists)
+                XCTAssertTrue(app.buttons["lio.phrases.read.zh-CN"].isHittable)
+                XCTAssertTrue(app.buttons["lio.phrases.read.en-US"].isHittable)
+                try app.performAccessibilityAudit(for: .all)
+                let screenshot = XCTAttachment(screenshot: app.screenshot())
+                screenshot.name = "phrase-card-\(language)-\(appearance)"
+                screenshot.lifetime = .keepAlways
+                add(screenshot)
+                app.buttons["lio.phrases.read.zh-CN"].tap()
+                app.buttons["lio.phrases.read.en-US"].tap()
+                app.buttons["lio.phrases.done"].tap()
+                XCTAssertTrue(app.buttons["lio.phrases.card.dining-menu"].isHittable)
+            }
+        }
+    }
+
     func testToolsTextReportsOfflineUnavailableOnIOS17() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")

@@ -1,5 +1,6 @@
 """A content-free HTTP relay into the existing HK worker's private socket."""
 
+from base64 import b64decode
 from contextlib import contextmanager, ExitStack
 import fcntl
 import json
@@ -15,7 +16,7 @@ import sys
 from threading import BoundedSemaphore, Thread
 
 from fastapi import Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 import psycopg
 from starlette.concurrency import run_in_threadpool
 from starlette.requests import ClientDisconnect
@@ -24,14 +25,18 @@ from cj_api.composition import CompositionUnavailable
 from cj_api.local_account_admission_v2 import account_checker_for
 from cj_api.local_app import scope_for
 from cj_api.translation import (
-    DashScopeTranslation, MAX_BODY, ROUTE, TranslationError, TranslationInput, TranslationRelay, VERSION,
+    DashScopeTranslation, IMAGE_LAYOUT_ROUTE, IMAGE_LAYOUT_VERSION, MAX_BODY, MAX_TTS_WAV,
+    ROUTE, TTS_ROUTE, TTS_VERSION,
+    TranslationError, TranslationInput, TranslationRelay, TtsInput, VERSION,
 )
 from cj_usage.authorization_budget import AuthorizationBudget, HK_JOURNAL_ROOT
 from cj_usage.metered_exit import BudgetUnknown
 from cj_usage.translation_budget import TranslationBudget, TranslationDuplicate, TranslationLimit
 
-from .configuration import TRANSLATION_INTERNAL_SUBJECTS
-from .plugin_roster import configured_plugin_subjects
+from .configuration import (
+    TRANSLATION_IMAGE_LAYOUT_ENABLED, TRANSLATION_INTERNAL_SUBJECTS, TRANSLATION_TTS_ENABLED,
+)
+from .plugin_roster import configured_translation_subjects
 
 
 
@@ -39,6 +44,7 @@ SOCKET = Path('/run/g2c-demo/translation.sock')
 STATE_VERSION = 'TRANSLATION-state.1'
 TOKEN_LIMIT = 4096
 MAX_RESPONSE = 256 * 1024
+MAX_TTS_RESPONSE = 4 * ((MAX_TTS_WAV + 2) // 3) + 256
 REQUEST_TIMEOUT = 50
 MAX_CONCURRENT = 4
 
@@ -51,9 +57,9 @@ def _token_valid(value):
     return 0 < len(value) <= TOKEN_LIMIT and all(0x21 <= c <= 0x7e for c in value)
 
 
-def _response(channel):
+def _response(channel, limit=MAX_RESPONSE):
     size = int.from_bytes(channel.read(4), 'big')
-    if not 0 < size <= MAX_RESPONSE:
+    if not 0 < size <= limit:
         raise ValueError('bounded translation response required')
     raw = channel.read(size)
     if len(raw) != size:
@@ -64,13 +70,16 @@ def _response(channel):
     return status, body
 
 
-def socket_request(token, raw, *, path=SOCKET):
+def socket_request(token, raw, *, path=SOCKET, tts=False, layout=False):
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
         connection.settimeout(REQUEST_TIMEOUT)
         connection.connect(str(path))
-        connection.sendall(b'\x01' + token.encode('ascii') + b'\n' + len(raw).to_bytes(4, 'big') + raw)
+        operation = b'\x03' if layout else b'\x01'
+        if tts:
+            operation = b'\x02'
+        connection.sendall(operation + token.encode('ascii') + b'\n' + len(raw).to_bytes(4, 'big') + raw)
         with connection.makefile('rb') as incoming:
-            return _response(incoming)
+            return _response(incoming, MAX_TTS_RESPONSE if tts else MAX_RESPONSE)
 
 
 def translation_state(path=SOCKET, *, worker_pid=1):
@@ -95,8 +104,28 @@ def register_translation_route(app, *, send=socket_request):
     slots = BoundedSemaphore(MAX_CONCURRENT)
 
     @app.post(ROUTE)
+    @app.post(TTS_ROUTE)
+    @app.post(IMAGE_LAYOUT_ROUTE)
     async def translate(request: Request):
+        tts = request.url.path == TTS_ROUTE
+        layout = request.url.path == IMAGE_LAYOUT_ROUTE
+
         def render(status, body):
+            if tts and status == 200:
+                try:
+                    if body['version'] != TTS_VERSION:
+                        raise ValueError('invalid TTS version')
+                    audio = b64decode(body['audio'], validate=True)
+                    if not 0 < len(audio) <= MAX_TTS_WAV:
+                        raise ValueError('invalid TTS audio size')
+                except (KeyError, TypeError, ValueError):
+                    status, body = 502, _error('provider_unavailable')
+                else:
+                    return Response(audio, media_type='audio/wav', headers={'Cache-Control': 'no-store'})
+            if tts:
+                body = dict(body, version=TTS_VERSION)
+            elif layout:
+                body = dict(body, version=IMAGE_LAYOUT_VERSION)
             return JSONResponse(body, status_code=status, headers={'Cache-Control': 'no-store'})
 
         provided = request.headers.getlist('authorization')
@@ -113,7 +142,12 @@ def register_translation_route(app, *, send=socket_request):
                 if len(data) + len(chunk) > MAX_BODY:
                     return render(413, _error('request_too_large'))
                 data.extend(chunk)
-            status, body = await run_in_threadpool(send, provided[0][7:], bytes(data))
+            if tts:
+                status, body = await run_in_threadpool(send, provided[0][7:], bytes(data), tts=True)
+            elif layout:
+                status, body = await run_in_threadpool(send, provided[0][7:], bytes(data), layout=True)
+            else:
+                status, body = await run_in_threadpool(send, provided[0][7:], bytes(data))
             return render(status, body)
         except (ClientDisconnect, OSError, ValueError):
             return render(503, _error('unavailable'))
@@ -121,7 +155,7 @@ def register_translation_route(app, *, send=socket_request):
             slots.release()
 
 
-def _dispatch(relay, incoming, *, disabled):
+def _dispatch(relay, incoming, *, disabled, tts=False, layout=False):
     token = incoming.readline(TOKEN_LIMIT + 2)
     if not token.endswith(b'\n') or not _token_valid(token[:-1]):
         raise TranslationError(401, 'sign_in_required')
@@ -139,11 +173,13 @@ def _dispatch(relay, incoming, *, disabled):
         if disabled:
             raise TranslationError(403, 'not_enabled')
         raise TranslationError(503, 'unavailable')
-    return relay.translate(token, TranslationInput.read(raw), owner)
+    if tts:
+        return relay.synthesize(token, TtsInput.read(raw), owner)
+    return relay.translate(token, TranslationInput.read(raw, layout=layout), owner)
 
 
 @contextmanager
-def translation_socket(relay, *, path=SOCKET, disabled=False):
+def translation_socket(relay, *, path=SOCKET, disabled=False, tts_enabled=False, layout_enabled=False):
     """Copy neither the supplier key nor the shared budget writer into the API."""
     root = path.parent
     info = root.lstat()
@@ -153,6 +189,7 @@ def translation_socket(relay, *, path=SOCKET, disabled=False):
 
     class Handler(StreamRequestHandler):
         def handle(self):
+            operation = b''
             self.request.settimeout(5)
             if not slots.acquire(blocking=False):
                 status, body = 503, _error('unavailable')
@@ -161,10 +198,16 @@ def translation_socket(relay, *, path=SOCKET, disabled=False):
                     operation = self.rfile.read(1)
                     if operation == b'\x00':
                         status, body = 200, dict(version=STATE_VERSION, enabled=relay is not None)
-                    elif operation != b'\x01':
-                        raise TranslationError(400, 'invalid_request')
-                    else:
+                    elif operation == b'\x01':
                         status, body = 200, _dispatch(relay, self.rfile, disabled=disabled)
+                    elif operation == b'\x02':
+                        status, body = 200, _dispatch(relay if tts_enabled else None, self.rfile,
+                                                      disabled=disabled or not tts_enabled, tts=True)
+                    elif operation == b'\x03':
+                        status, body = 200, _dispatch(relay if layout_enabled else None, self.rfile,
+                                                      disabled=disabled or not layout_enabled, layout=True)
+                    else:
+                        raise TranslationError(400, 'invalid_request')
                 except TranslationError as error:
                     status, body = error.status, _error(error.code)
                 except TranslationLimit:
@@ -176,7 +219,8 @@ def translation_socket(relay, *, path=SOCKET, disabled=False):
                 finally:
                     slots.release()
             raw = json.dumps([status, body], ensure_ascii=False, separators=(',', ':')).encode()
-            if len(raw) > MAX_RESPONSE:
+            limit = MAX_TTS_RESPONSE if operation == b'\x02' else MAX_RESPONSE
+            if len(raw) > limit:
                 raw = json.dumps([502, _error('provider_unavailable')], separators=(',', ':')).encode()
             try:
                 self.wfile.write(len(raw).to_bytes(4, 'big') + raw)
@@ -212,7 +256,7 @@ def active_translation(runtime, authorization_guard):
     relay = None
     if raw is not None:
         try:
-            subjects = configured_plugin_subjects(raw)
+            subjects = configured_translation_subjects(raw)
             budget = AuthorizationBudget(HK_JOURNAL_ROOT, authorization_guard=authorization_guard, demo=True)
             checker = account_checker_for(runtime.auth, runtime.database(), selected_subjects=subjects)
             provider = DashScopeTranslation(os.environ['CJ_MODEL_API_KEY'])
@@ -222,7 +266,9 @@ def active_translation(runtime, authorization_guard):
             print('ALERT translation_relay_unavailable', file=sys.stderr, flush=True)
     with ExitStack() as stack:
         try:
-            stack.enter_context(translation_socket(relay, disabled=raw is None))
+            stack.enter_context(translation_socket(relay, disabled=raw is None,
+                                                  tts_enabled=os.environ.get(TRANSLATION_TTS_ENABLED) == '1',
+                                                  layout_enabled=os.environ.get(TRANSLATION_IMAGE_LAYOUT_ENABLED) == '1'))
         except (OSError, ValueError):
             if raw is not None and relay is not None:
                 print('ALERT translation_relay_unavailable', file=sys.stderr, flush=True)
