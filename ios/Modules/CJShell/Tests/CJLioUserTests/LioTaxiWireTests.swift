@@ -30,7 +30,7 @@ struct LioTaxiWireTests {
         #expect(fare.priceDisplay == "Price after pickup")
     }
 
-    @Test func publishedQuoteKeepsProviderPriceAndLocalizesOnlyKnownCategories() throws {
+    @Test func publishedQuoteUsesTheRangeAndNamesUnknownCategoriesGenerically() throws {
         let response = Data("""
         {"version":"TAXI.1","observed_at":"2026-11-23T00:00:00Z","vehicles":[
           {"category":"1","name":"快车","currency":"CNY","price_display":"约¥35","price_min_minor":3000,"price_max_minor":4200},
@@ -61,8 +61,23 @@ struct LioTaxiWireTests {
         #expect(fares.map(\.nameEN) == ["Surprise Deal", "DiDi Lite", "6-Seat Premier", "Luxe", "Taxi"])
         #expect(fares.map(\.priceDisplay) == ["¥29", "¥31–36", "¥88", "¥126", "¥40"])
         #expect(LioTaxiFareText.price(display: "35", currency: "CNY", minMinor: 3550, maxMinor: 4800) == "¥35.5–48")
+        #expect(LioTaxiFareText.price(display: "", currency: "CNY", minMinor: 3505, maxMinor: 3505) == "¥35.05")
+        #expect(LioTaxiFareText.price(display: "", currency: "CNY", minMinor: 99, maxMinor: 120) == "¥0.99–1.2")
+        let taxi = try #require(fares.last)
+        #expect(taxi.secondaryName(in: .english) == nil && fares.first?.secondaryName(in: .english) == "惊喜特价")
+        #expect(fares.first?.secondaryName(in: .chinese) == nil)
         #expect(LioTaxiFareText.price(display: "Price after pickup", currency: "CNY", minMinor: nil, maxMinor: nil)
             == "Price after pickup")
+    }
+
+    /// #1451: English screens ask for English names with `locale: "en"`; Chinese requests are unchanged.
+    @Test func englishSearchesAskForEnglishNames() throws {
+        let english = try JSONSerialization.jsonObject(with: LioTaxiWire.encodeSearch(
+            .init(text: "Canton Tower", city: .guangzhou, near: nil, english: true))) as? [String: Any]
+        #expect(english?["locale"] as? String == "en")
+        let chinese = try JSONSerialization.jsonObject(with: LioTaxiWire.encodeSearch(
+            .init(text: "广州塔", city: .guangzhou, near: nil))) as? [String: Any]
+        #expect(chinese?["locale"] == nil && chinese?.keys.sorted() == ["city", "query", "version"])
     }
 
     /// #1451: English screens lead with name_en / address_en; the driver still gets Chinese.

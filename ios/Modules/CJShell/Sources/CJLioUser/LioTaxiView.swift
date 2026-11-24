@@ -18,7 +18,6 @@ struct LioTaxiView: View {
     @State private var requests = LioTaxiRequestState()
     @State private var sheet: Sheet?
     @State private var driverPlace: LioTaxiPlace?
-    @State private var showOptions = false
     @AppStorage("lio.taxi.seen-guide.v1") private var seenGuide = false
     @Environment(\.scenePhase) private var scenePhase
 
@@ -117,14 +116,6 @@ struct LioTaxiView: View {
         .fullScreenCover(item: $driverPlace) { place in
             LioTaxiDriverCard(language: language, place: place)
         }
-        .confirmationDialog(language.text("Open DiDi another way", "换一种方式打开滴滴"), isPresented: $showOptions,
-                            titleVisibility: .visible) {
-            Button(language.text("Get DiDi in the App Store", "前往 App Store 安装"), action: service.openAppStore)
-            Button(language.text("Use DiDi in Alipay", "查看支付宝小程序说明")) { sheet = .alipay }
-            if let destination, destination.addressZH != nil {
-                Button(language.text("Show the driver", "给司机看")) { driverPlace = destination }
-            }
-        }
     }
 
     private var routeCard: some View {
@@ -202,8 +193,8 @@ struct LioTaxiView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(language.text(fare.nameEN, fare.nameZH))
-                        if language == .english {
-                            Text(fare.nameZH).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                        if let secondary = fare.secondaryName(in: language) {
+                            Text(secondary).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
                         }
                     }
                     Spacer(minLength: 8)
@@ -293,7 +284,6 @@ struct LioTaxiView: View {
         requests.retire()
         failure = nil
         fares = []
-        showOptions = false
     }
 
     private func isCurrent(_ operation: LioTaxiRequestState.Operation) -> Bool {
@@ -318,7 +308,8 @@ struct LioTaxiView: View {
                 }
                 let opened = try await service.openRideLink(link)
                 guard isCurrent(operation) else { return }
-                showOptions = !opened
+                // DiDi isn't installed: go straight to the App Store (#1451); other ways stay in the help sheet.
+                if !opened { service.openAppStore() }
             }
         } catch is CancellationError {
             if isCurrent(operation) { requests.retire() }
@@ -493,7 +484,7 @@ private struct LioTaxiPlacePicker: View {
     private func submit() {
         // Bias results towards the pickup only when it lies in the chosen city.
         let bias = near.flatMap { LioTaxiCity.nearest(to: $0) == selectedCity ? $0 : nil }
-        let value = LioTaxiSearchQuery(text: query, city: selectedCity, near: bias)
+        let value = LioTaxiSearchQuery(text: query, city: selectedCity, near: bias, english: language == .english)
         guard !value.text.isEmpty, !isSearching else { return }
         submittedQuery = value
     }

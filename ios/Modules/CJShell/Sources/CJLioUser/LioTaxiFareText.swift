@@ -56,8 +56,12 @@ enum LioTaxiFareText {
         return text
     }
 
+    /// Whole yuan, or up to two decimals without trailing zeros (3505 → "35.05", 3550 → "35.5", 99 → "0.99").
     private static func yuan(_ minor: Int) -> String {
-        minor % 100 == 0 ? String(minor / 100) : String(format: "%.1f", Double(minor) / 100)
-            .replacingOccurrences(of: ".0", with: "")
+        let whole = String(minor / 100), cents = minor % 100
+        guard cents != 0 else { return whole }
+        var fraction = String(format: "%02d", cents)
+        if fraction.hasSuffix("0") { fraction.removeLast() }
+        return whole + "." + fraction
     }
 }

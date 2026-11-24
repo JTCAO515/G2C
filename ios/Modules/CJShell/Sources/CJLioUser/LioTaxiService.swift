@@ -35,6 +35,11 @@ struct LioTaxiFare: Identifiable, Sendable {
     let nameZH: String
     let nameEN: String
     let priceDisplay: String
+
+    /// The provider's Chinese name under the English one, unless they are the same (e.g. "Taxi").
+    func secondaryName(in language: LioLanguage) -> String? {
+        language == .english && nameEN != nameZH ? nameZH : nil
+    }
 }
 
 enum LioTaxiFailure: Error, Equatable {
