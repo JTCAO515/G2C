@@ -80,6 +80,20 @@ class PlanDetail(unittest.TestCase):
         self.assertNotIn('run_id', state.text)
         self.assertIn('第1天：上午参观', state.text)
 
+    def test_display_wording_is_normalized_instead_of_hiding_the_detail(self):
+        answer = RICH.replace('用护照在官方渠道预约', '用护照在官方渠道查询并核实预约')
+        _, state = self.discuss(dict(answer=answer, days=DAYS, follow_up=None))
+        self.assertIn('用护照在官方渠道查看并确认预约', state.text)
+        self.assertIn('玉林路', state.text)
+        self.assertIsNotNone(read_itinerary_preview(state, 'zh'))
+
+    def test_fallback_is_logged_with_a_fixed_reason(self):
+        with self.assertLogs('cj_usage.audit', level='INFO') as logs:
+            self.discuss(dict(answer=RICH.replace('杜甫草堂', '青城山'), days=DAYS, follow_up=None))
+        self.assertTrue(any('LIO_DISCUSSION_DETAIL_WITHHELD' in line and 'reason=day_activity' in line
+                            for line in logs.output), logs.output)
+        self.assertFalse(any('青城山' in line for line in logs.output))
+
     def test_prompt_asks_for_periods_transport_and_tips_not_one_line(self):
         worker, _ = self.discuss(dict(answer=RICH, days=DAYS, follow_up=None))
         for clause in ('morning, afternoon and evening', 'how to get there',
