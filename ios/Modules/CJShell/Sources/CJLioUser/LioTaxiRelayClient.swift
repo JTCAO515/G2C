@@ -6,7 +6,7 @@ import CJMessageHTTP
 @MainActor public struct LioTaxiRelayClient {
     typealias Exchange = @MainActor (URLRequest) async throws -> (Data, URLResponse)
     private enum Operation: String {
-        case estimate, link
+        case estimate, link, search
     }
 
     private let baseURL: URL
@@ -23,13 +23,19 @@ import CJMessageHTTP
     }
 
     func estimate(_ route: LioTaxiRoute) async throws -> [LioTaxiFare] {
-        let data = try await post(.estimate, route: route)
+        let data = try await post(.estimate, body: try LioTaxiWire.encode(route))
         return try LioTaxiWire.readFares(data)
     }
 
     func rideLink(_ route: LioTaxiRoute) async throws -> URL {
-        let data = try await post(.link, route: route)
+        let data = try await post(.link, body: try LioTaxiWire.encode(route))
         return try LioTaxiWire.readLink(data, allowing: LioTaxiWire.approvesDiDiTarget)
+    }
+
+    func search(_ query: LioTaxiSearchQuery) async throws -> [LioTaxiPlace] {
+        guard !query.text.isEmpty else { return [] }
+        let data = try await post(.search, body: try LioTaxiWire.encodeSearch(query))
+        return try LioTaxiWire.readPlaces(data)
     }
 
     var permitsLocalAccess: Bool { isCurrent() }
@@ -39,7 +45,7 @@ import CJMessageHTTP
         try Task.checkCancellation()
     }
 
-    private func post(_ operation: Operation, route: LioTaxiRoute) async throws -> Data {
+    private func post(_ operation: Operation, body: @autoclosure () throws -> Data) async throws -> Data {
         try Task.checkCancellation()
         guard isCurrent(), let token = bearer(), !token.isEmpty else {
             throw LioTaxiFailure.signInRequired
@@ -49,7 +55,7 @@ import CJMessageHTTP
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization")
-        request.httpBody = try LioTaxiWire.encode(route)
+        request.httpBody = try body()
 
         let data: Data
         let response: URLResponse

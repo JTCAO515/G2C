@@ -55,6 +55,38 @@ enum LioTaxiWire {
         let linkType: LinkType
     }
 
+    private struct NearPoint: Encodable {
+        let lat: Double
+        let lng: Double
+        let coordinateSystem: String
+
+        enum CodingKeys: String, CodingKey {
+            case lat, lng, coordinateSystem = "coordinate_system"
+        }
+    }
+
+    private struct SearchRequest: Encodable {
+        let version: String
+        let query: String
+        let city: String
+        let near: NearPoint?
+    }
+
+    private struct SearchResult: Decodable {
+        struct Item: Decodable {
+            let nameZh: String
+            let nameEn: String?
+            let addressZh: String?
+            let city: String?
+            let lat: Double
+            let lng: Double
+            let coordinateSystem: String
+        }
+
+        let version: String
+        let items: [Item]
+    }
+
     private struct ErrorBody: Decodable {
         let error: String
     }
@@ -73,6 +105,45 @@ enum LioTaxiWire {
         let data = try encoder.encode(body)
         guard data.count <= 4_096 else { throw LioTaxiFailure.unavailable }
         return data
+    }
+
+    static func encodeSearch(_ query: LioTaxiSearchQuery) throws -> Data {
+        guard query.text.count <= LioTaxiSearchQuery.maximumLength else { throw LioTaxiFailure.queryTooLong }
+        let near = try query.near.map { point -> NearPoint in
+            guard (-90...90).contains(point.latitude), (-180...180).contains(point.longitude) else {
+                throw LioTaxiFailure.coordinateUnverified
+            }
+            return NearPoint(lat: point.latitude, lng: point.longitude,
+                             coordinateSystem: point.referenceSystem == .wgs84 ? "WGS-84" : "GCJ-02")
+        }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        let data = try encoder.encode(SearchRequest(version: version, query: query.text,
+                                                    city: query.city.nameZH, near: near))
+        guard data.count <= 4_096 else { throw LioTaxiFailure.queryTooLong }
+        return data
+    }
+
+    static func readPlaces(_ data: Data) throws -> [LioTaxiPlace] {
+        let result = try decoder.decode(SearchResult.self, from: data)
+        guard result.version == version else { throw LioTaxiFailure.unavailable }
+        return try result.items.map { item in
+            let system: LioTaxiPlace.Coordinate.ReferenceSystem
+            switch item.coordinateSystem {
+            case "GCJ-02": system = .gcj02
+            case "WGS-84": system = .wgs84
+            default: throw LioTaxiFailure.unavailable
+            }
+            let name = item.nameZh.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !name.isEmpty, (-90...90).contains(item.lat), (-180...180).contains(item.lng) else {
+                throw LioTaxiFailure.unavailable
+            }
+            let address = item.addressZh?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let english = item.nameEn?.trimmingCharacters(in: .whitespacesAndNewlines)
+            return LioTaxiPlace(nameZH: name, nameEN: english?.isEmpty == false ? english! : name,
+                                addressZH: address?.isEmpty == false ? address : nil,
+                                coordinate: .init(latitude: item.lat, longitude: item.lng, referenceSystem: system))
+        }
     }
 
     static func readFares(_ data: Data) throws -> [LioTaxiFare] {

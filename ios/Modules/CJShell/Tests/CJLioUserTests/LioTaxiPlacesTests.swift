@@ -38,9 +38,9 @@ struct LioTaxiPlacesTests {
     @MainActor @Test func fixtureHandlesLinkWithoutOpeningAnExternalApp() async throws {
         let service = LioTaxiService.preview()
         let pickup = try await service.currentPickup()
-        let matches = try await service.search("Summer Palace")
+        let matches = try await service.search(.init(text: "Summer Palace", city: .beijing, near: nil))
         let destination = try #require(matches.first)
-        #expect(try await service.search("新建宫门路").first == destination)
+        #expect(try await service.search(.init(text: "新建宫门路", city: .beijing, near: nil)).first == destination)
         let route = LioTaxiRoute(pickup: pickup, destination: destination)
         #expect(pickup.coordinate.referenceSystem == .wgs84)
         #expect(destination.coordinate.referenceSystem == .gcj02)

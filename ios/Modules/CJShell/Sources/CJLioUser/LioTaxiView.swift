@@ -101,7 +101,8 @@ struct LioTaxiView: View {
                 NavigationStack {
                     LioTaxiPlacePicker(
                         language: language, destination: shown == .destination,
-                        tripPlaces: tripPlaces, recent: recent, search: service.search
+                        tripPlaces: tripPlaces, recent: recent, near: pickup?.coordinate,
+                        search: service.search
                     ) { place in
                         if shown == .destination {
                             if destination != place {
@@ -291,6 +292,8 @@ struct LioTaxiView: View {
             language.text("Taxi isn’t available for this account.", "此账号暂未开通打车。")
         case .timedOut:
             language.text("DiDi took too long. Try again.", "滴滴响应超时，请重试。")
+        case .queryTooLong:
+            language.text("Use a shorter name.", "请输入更短的地点名称。")
         case .unavailable, nil:
             language.text("Taxi details aren’t available right now. Try again.", "暂时无法获取打车信息，请重试。")
         }
@@ -329,26 +332,55 @@ private struct LioTaxiPlacePicker: View {
     let destination: Bool
     let tripPlaces: [LioTaxiPlace]
     let recent: [LioTaxiPlace]
-    let search: @MainActor (String) async throws -> [LioTaxiPlace]
+    let near: LioTaxiPlace.Coordinate?
+    let search: @MainActor (LioTaxiSearchQuery) async throws -> [LioTaxiPlace]
     let select: (LioTaxiPlace) -> Void
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("lio.taxi.search-city.v1") private var storedCity = LioTaxiCity.beijing.rawValue
+    @State private var city: LioTaxiCity?
     @State private var query = ""
-    @State private var submittedQuery: String?
+    @State private var submittedQuery: LioTaxiSearchQuery?
     @State private var result: [LioTaxiPlace] = []
     @State private var searchNotice: String?
     @State private var isSearching = false
 
+    private var selectedCity: LioTaxiCity {
+        city ?? near.flatMap(LioTaxiCity.nearest(to:)) ?? LioTaxiCity(rawValue: storedCity) ?? .beijing
+    }
+
     var body: some View {
         List {
-            Section(language.text("Search for a place", "搜索地点")) {
-                TextField(language.text("Place name or address", "地点名或地址"), text: $query)
+            Section {
+                Picker(language.text("City", "城市"), selection: Binding(
+                    get: { selectedCity },
+                    set: { chosen in
+                        city = chosen
+                        storedCity = chosen.rawValue
+                        result = []
+                        searchNotice = nil
+                    }
+                )) {
+                    ForEach(LioTaxiCity.allCases) { option in
+                        Text(option.name(in: language)).tag(option)
+                    }
+                }
+                .accessibilityIdentifier("lio.taxi.search-city")
+                TextField(language.text("Place name, e.g. \(selectedCity.exampleZH)",
+                                        "地点名，例如\(selectedCity.exampleZH)"), text: $query)
                     .submitLabel(.search)
                     .onSubmit(submit)
+                    .accessibilityIdentifier("lio.taxi.search-field")
                 Button(language.text("Search", "搜索"), action: submit)
-                    .disabled(query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSearching)
                 if isSearching { ProgressView(language.text("Searching…", "正在搜索…")) }
-                if let searchNotice { Text(searchNotice) }
+                if let searchNotice {
+                    Label(searchNotice, systemImage: "magnifyingglass")
+                        .foregroundStyle(LioTheme.inkSecondary)
+                        .accessibilityIdentifier("lio.taxi.search-notice")
+                }
                 rows(result, identifier: "lio.taxi.search-row")
+            } header: {
+                Text(language.text("Search for a place", "搜索地点"))
             }
             Section(language.text("My trip", "我的行程")) {
                 if tripPlaces.isEmpty { Text(language.text("No places from your trip.", "当前行程暂无可选地点。")) }
@@ -379,12 +411,12 @@ private struct LioTaxiPlacePicker: View {
                 let matches = try await search(submittedQuery)
                 try Task.checkCancellation()
                 result = matches
-                if matches.isEmpty { searchNotice = language.text("No matches. Try another name.", "没有匹配地点，请换个名称。") }
+                if matches.isEmpty { searchNotice = LioTaxiSearchNotice.noMatches(for: submittedQuery, language: language) }
             } catch is CancellationError {
                 return
             } catch {
                 guard !Task.isCancelled else { return }
-                searchNotice = language.text("Search is unavailable. Try again.", "搜索暂不可用，请重试。")
+                searchNotice = LioTaxiSearchNotice.failure(error, language: language)
             }
             isSearching = false
             self.submittedQuery = nil
@@ -392,8 +424,10 @@ private struct LioTaxiPlacePicker: View {
     }
 
     private func submit() {
-        let value = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !value.isEmpty else { return }
+        // Bias results towards the pickup only when it lies in the chosen city.
+        let bias = near.flatMap { LioTaxiCity.nearest(to: $0) == selectedCity ? $0 : nil }
+        let value = LioTaxiSearchQuery(text: query, city: selectedCity, near: bias)
+        guard !value.text.isEmpty, !isSearching else { return }
         submittedQuery = value
     }
 

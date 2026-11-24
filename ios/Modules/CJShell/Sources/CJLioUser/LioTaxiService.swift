@@ -39,11 +39,11 @@ struct LioTaxiFare: Identifiable, Sendable {
 
 enum LioTaxiFailure: Error, Equatable {
     case locationDenied, outOfService, rateLimited, quotaExceeded, coordinateUnverified
-    case signInRequired, notEnabled, timedOut, unavailable
+    case signInRequired, notEnabled, timedOut, unavailable, queryTooLong
 }
 
 struct LioTaxiService: Sendable {
-    let search: @MainActor @Sendable (String) async throws -> [LioTaxiPlace]
+    let search: @MainActor @Sendable (LioTaxiSearchQuery) async throws -> [LioTaxiPlace]
     let currentPickup: @MainActor @Sendable () async throws -> LioTaxiPlace
     let estimate: @MainActor @Sendable (LioTaxiRoute) async throws -> [LioTaxiFare]
     let rideLink: @MainActor @Sendable (LioTaxiRoute) async throws -> URL
@@ -62,6 +62,22 @@ extension LioTaxiService {
               coordinate: .init(latitude: 39.9163, longitude: 116.3972, referenceSystem: .gcj02)),
         .init(nameZH: "颐和园", nameEN: "Summer Palace", addressZH: "新建宫门路19号",
               coordinate: .init(latitude: 39.9998, longitude: 116.2754, referenceSystem: .gcj02)),
+    ]
+
+    /// Fixture search results for the #1421 acceptance places in Beijing, Shanghai and Chengdu.
+    static let previewSearchPlaces: [LioTaxiCity: [LioTaxiPlace]] = [
+        .beijing: previewDestinations + [
+            .init(nameZH: "天安门", nameEN: "Tian'anmen", addressZH: "北京市东城区东长安街",
+                  coordinate: .init(latitude: 39.9087, longitude: 116.3975, referenceSystem: .gcj02)),
+        ],
+        .shanghai: [
+            .init(nameZH: "外滩", nameEN: "The Bund", addressZH: "上海市黄浦区中山东一路",
+                  coordinate: .init(latitude: 31.2400, longitude: 121.4905, referenceSystem: .gcj02)),
+        ],
+        .chengdu: [
+            .init(nameZH: "宽窄巷子", nameEN: "Kuanzhai Alley", addressZH: "四川省成都市青羊区长顺街",
+                  coordinate: .init(latitude: 30.6638, longitude: 104.0537, referenceSystem: .gcj02)),
+        ],
     ]
 
     static var previewFromArguments: LioTaxiService? {
@@ -83,9 +99,9 @@ extension LioTaxiService {
     static func preview(_ scenario: PreviewScenario = .available) -> LioTaxiService {
         LioTaxiService(
             search: { query in
-                previewDestinations.filter {
-                    $0.nameZH.localizedStandardContains(query) || $0.nameEN.localizedStandardContains(query)
-                        || $0.addressZH?.localizedStandardContains(query) == true
+                (previewSearchPlaces[query.city] ?? []).filter {
+                    $0.nameZH.localizedStandardContains(query.text) || $0.nameEN.localizedStandardContains(query.text)
+                        || $0.addressZH?.localizedStandardContains(query.text) == true
                 }
             },
             currentPickup: {

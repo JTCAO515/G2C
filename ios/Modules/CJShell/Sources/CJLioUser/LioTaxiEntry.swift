@@ -9,10 +9,7 @@ public struct LioTaxiEntry: Sendable {
     @MainActor static func internalBeta(relay: LioTaxiRelayClient, recentDirectory: URL,
                                         tripPlaces: [LioTaxiPlace]) -> Self {
         let service = LioTaxiService(search: { query in
-            tripPlaces.filter {
-                $0.nameZH.localizedStandardContains(query) || $0.nameEN.localizedStandardContains(query)
-                    || $0.addressZH?.localizedStandardContains(query) == true
-            }
+            try await relay.search(query)
         }, currentPickup: {
             try relay.requireCurrentSession()
             return try await LioTaxiPickupLocation().pickup()
