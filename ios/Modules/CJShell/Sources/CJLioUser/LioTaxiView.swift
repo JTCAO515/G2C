@@ -18,12 +18,11 @@ struct LioTaxiView: View {
     @State private var requests = LioTaxiRequestState()
     @State private var sheet: Sheet?
     @State private var driverPlace: LioTaxiPlace?
-    @State private var showOptions = false
     @AppStorage("lio.taxi.seen-guide.v1") private var seenGuide = false
     @Environment(\.scenePhase) private var scenePhase
 
     private enum Sheet: String, Identifiable {
-        case destination, pickup, guide, alipay
+        case destination, pickup, guide
         var id: Self { self }
     }
 
@@ -107,8 +106,8 @@ struct LioTaxiView: View {
                         sheet = nil
                     }
                 }
-            case .guide, .alipay:
-                guide(alipayOnly: shown == .alipay)
+            case .guide:
+                guide
                     .onDisappear {
                         if shown == .guide { seenGuide = true }
                     }
@@ -116,14 +115,6 @@ struct LioTaxiView: View {
         }
         .fullScreenCover(item: $driverPlace) { place in
             LioTaxiDriverCard(language: language, place: place)
-        }
-        .confirmationDialog(language.text("Open DiDi another way", "换一种方式打开滴滴"), isPresented: $showOptions,
-                            titleVisibility: .visible) {
-            Button(language.text("Get DiDi in the App Store", "前往 App Store 安装"), action: service.openAppStore)
-            Button(language.text("Use DiDi in Alipay", "查看支付宝小程序说明")) { sheet = .alipay }
-            if let destination, destination.addressZH != nil {
-                Button(language.text("Show the driver", "给司机看")) { driverPlace = destination }
-            }
         }
     }
 
@@ -202,8 +193,8 @@ struct LioTaxiView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(language.text(fare.nameEN, fare.nameZH))
-                        if language == .english {
-                            Text(fare.nameZH).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                        if let secondary = fare.secondaryName(in: language) {
+                            Text(secondary).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
                         }
                     }
                     Spacer(minLength: 8)
@@ -293,7 +284,6 @@ struct LioTaxiView: View {
         requests.retire()
         failure = nil
         fares = []
-        showOptions = false
     }
 
     private func isCurrent(_ operation: LioTaxiRequestState.Operation) -> Bool {
@@ -318,7 +308,8 @@ struct LioTaxiView: View {
                 }
                 let opened = try await service.openRideLink(link)
                 guard isCurrent(operation) else { return }
-                showOptions = !opened
+                // DiDi isn't installed: go straight to the App Store (#1451); other ways stay in the help sheet.
+                if !opened { service.openAppStore() }
             }
         } catch is CancellationError {
             if isCurrent(operation) { requests.retire() }
@@ -355,27 +346,24 @@ struct LioTaxiView: View {
         }
     }
 
-    private func guide(alipayOnly: Bool) -> some View {
+    private var guide: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
-                    if !alipayOnly {
-                        LioStepCard(step: 1, symbol: "globe",
-                                    text: language.text("In DiDi settings, switch the app language to English.",
-                                                        "在滴滴设置中把语言切换到英文。"))
-                        LioStepCard(step: 2, symbol: "creditcard",
-                                    text: language.text("In DiDi payment settings, add your international card and check that it is accepted.",
-                                                        "在滴滴的支付设置中添加境外银行卡，并确认是否可用。"))
-                    }
-                    LioStepCard(step: alipayOnly ? 1 : 3, symbol: "app.badge",
+                    LioStepCard(step: 1, symbol: "globe",
+                                text: language.text("In DiDi settings, switch the app language to English.",
+                                                    "在滴滴设置中把语言切换到英文。"))
+                    LioStepCard(step: 2, symbol: "creditcard",
+                                text: language.text("In DiDi payment settings, add your international card and check that it is accepted.",
+                                                    "在滴滴的支付设置中添加境外银行卡，并确认是否可用。"))
+                    LioStepCard(step: 3, symbol: "app.badge",
                                 text: language.text("In Alipay, search for the DiDi mini program and choose your ride there.",
                                                     "在支付宝搜索滴滴小程序，可在小程序里打车。"))
                 }
                 .padding(LioTheme.Spacing.md)
             }
             .background(LioTheme.paper)
-            .navigationTitle(alipayOnly ? language.text("DiDi in Alipay", "支付宝里的滴滴")
-                                      : language.text("Taxi guide", "打车指南"))
+            .navigationTitle(language.text("Taxi guide", "打车指南"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
