@@ -259,9 +259,12 @@ def _gcj_strings(point):
     return f'{lng:.6f}', f'{lat:.6f}'
 
 
-TRANSLATION_TEXT_LIMIT = 4000
+# Keep one batch well inside the relay's 4000-character input and its latency.
+TRANSLATION_TEXT_LIMIT = 1500
 ENGLISH_CACHE_CAPACITY = 4096
-CJK = re.compile(r'[\u3400-\u9fff\uf900-\ufaff]')
+CJK = re.compile(r'[\u3000-\u303f\u3400-\u9fff\uf900-\ufaff\uff00-\uffef'
+                 r'\U00020000-\U0003134f\U0002f800-\U0002fa1f]')
+NUMBERED = re.compile(r'\s*[\[［]([0-9]{1,3})[\]］]\s?(.*)')
 
 
 def _english(line):
@@ -305,10 +308,11 @@ class TaxiService:
                 item.update(cached)
                 continue
             fields = [item['name_zh']] + ([item['address_zh']] if item['address_zh'] else [])
-            if len('\n'.join(lines + fields)) > TRANSLATION_TEXT_LIMIT:
-                break
+            numbered = [f'[{len(lines) + n}] {text}' for n, text in enumerate(fields, 1)]
+            if len('\n'.join(lines + numbered)) > TRANSLATION_TEXT_LIMIT:
+                continue  # not sent this time; later items may still fit or be cached
             pending.append((item, key, len(fields)))
-            lines.extend(fields)
+            lines.extend(numbered)
         if not pending or self.translator is None or token is None:
             return
         try:
@@ -317,9 +321,16 @@ class TaxiService:
             return
         if type(reply) is not str:
             return
-        translated = reply.split('\n')
+        translated = [line for line in reply.split('\n') if line.strip()]
         if len(translated) != len(lines):
             return
+        aligned = []
+        for number, line in enumerate(translated, 1):
+            match = NUMBERED.fullmatch(line)
+            if match is None or int(match[1]) != number:
+                return  # merged, split or reordered lines: never guess the pairing
+            aligned.append(match[2])
+        translated = aligned
         position = 0
         for item, key, count in pending:
             name = _english(translated[position])

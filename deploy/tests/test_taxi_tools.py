@@ -630,7 +630,11 @@ class Translator:
 def english_lines(text):
     table = {'天安门': 'Tiananmen', '东长安街': 'East Chang\'an Avenue', '故宫': 'Palace Museum',
              '景山前街4号': 'No. 4 Jingshan Front Street'}
-    return '\n'.join(table.get(line, 'Unknown') for line in text.split('\n'))
+    out = []
+    for line in text.split('\n'):
+        number, _, source = line.partition('] ')
+        out.append(number + '] ' + table.get(source, 'Unknown'))
+    return '\n'.join(out)
 
 
 def english_client(tmp_path, rows, translator):
@@ -656,7 +660,7 @@ def test_search_in_english_adds_translated_fields_from_one_batch(tmp_path):
              coordinate_system='GCJ-02', name_en='Tiananmen', address_en="East Chang'an Avenue"),
         dict(name_zh='故宫', address_zh='景山前街4号', city='北京市', lat=39.9163, lng=116.3972,
              coordinate_system='GCJ-02', name_en='Palace Museum', address_en='No. 4 Jingshan Front Street')]
-    assert translator.calls == [('internal', '天安门\n东长安街\n故宫\n景山前街4号')]
+    assert translator.calls == [('internal', '[1] 天安门\n[2] 东长安街\n[3] 故宫\n[4] 景山前街4号')]
     assert all('name_en' not in item and 'address_en' not in item for item in plain.json()['items'])
     assert used(path) == {SEARCH: 2, 'didi:maps_textsearch': 2}
 
@@ -675,20 +679,24 @@ def test_search_english_reuses_cached_places_and_translates_only_new_ones(tmp_pa
         state['rows'] = [row(), row('故宫', lat=39.9163, lng=116.3972, address=None)]
         second = client.post(SEARCH, headers=AUTH, json=search_body(locale='en')).json()['items']
         third = client.post(SEARCH, headers=AUTH, json=search_body(locale='en')).json()['items']
-    assert translator.calls == [('internal', '天安门\n东长安街'), ('internal', '故宫')]
+    assert translator.calls == [('internal', '[1] 天安门\n[2] 东长安街'), ('internal', '[1] 故宫')]
     assert second == third
     assert second[1]['name_en'] == 'Palace Museum' and 'address_en' not in second[1]
+
+
+PARTIAL = ('[1] Tiananmen\n[2] 东长安街', '[1] Tiananmen\n[2] East\u202eAvenue', '[1] Tiananmen\n[2] ' + 'x' * 201,
+           '[1] Tiananmen\n[2]    ', '[1] Tiananmen\n[2] East \U00020000 Avenue', '[1] Tiananmen\n[2] East\u3001Avenue')
 
 
 @pytest.mark.parametrize('translator', [
     Translator(None),
     Translator(error=OSError('socket down')),
     Translator(error=ValueError('bad reply')),
-    Translator('Tiananmen'),
-    Translator('Tiananmen\n东长安街'),
-    Translator('Tiananmen\nEast‮Avenue'),
-    Translator('Tiananmen\n' + 'x' * 201),
-    Translator('Tiananmen\n   '),
+    Translator('[1] Tiananmen'),
+    Translator('Tiananmen\nEast Avenue'),
+    Translator('[2] Tiananmen\n[1] East Avenue'),
+    Translator('[1] Tiananmen\n[1] East Avenue'),
+    *(Translator(reply) for reply in PARTIAL),
 ])
 def test_search_english_failure_omits_only_the_affected_fields(tmp_path, translator):
     client, path = english_client(tmp_path, [row()], translator)
@@ -697,8 +705,7 @@ def test_search_english_failure_omits_only_the_affected_fields(tmp_path, transla
     assert response.status_code == 200
     item = response.json()['items'][0]
     assert item['name_zh'] == '天安门' and item['address_zh'] == '东长安街'
-    if translator.reply in ('Tiananmen\n东长安街', 'Tiananmen\nEast‮Avenue', 'Tiananmen\n' + 'x' * 201,
-                            'Tiananmen\n   '):
+    if translator.reply in PARTIAL:
         assert item['name_en'] == 'Tiananmen' and 'address_en' not in item
     else:
         assert 'name_en' not in item and 'address_en' not in item
@@ -731,12 +738,12 @@ def test_search_rejects_unknown_locale_before_dispatch(tmp_path, locale):
 def test_search_english_batch_stays_within_the_translation_text_limit(tmp_path):
     long_address = '路' * 240
     rows = [row(f'地点{n:02d}', lat=39.9 + n / 1000, address=long_address) for n in range(20)]
-    translator = Translator(lambda text: '\n'.join('Place' for _ in text.split('\n')))
+    translator = Translator(lambda text: '\n'.join(line.partition('] ')[0] + '] Place' for line in text.split('\n')))
     client, _ = english_client(tmp_path, rows, translator)
     with client:
         items = client.post(SEARCH, headers=AUTH, json=search_body(locale='en')).json()['items']
     (_, text), = translator.calls
-    assert len(text) <= 4000
+    assert len(text) <= 1500
     translated = [item for item in items if 'name_en' in item]
     assert translated and len(translated) < 20 and translated == items[:len(translated)]
 
@@ -786,3 +793,29 @@ def test_runtime_taxi_search_is_wired_to_the_relay_translator(monkeypatch, tmp_p
     taxi_runtime.register_runtime_taxi(FastAPI(), object(), object(), counts_path=database)
     (kwargs,) = built
     assert callable(kwargs['translator'])
+
+
+def test_search_english_cut_off_items_still_use_their_cache(tmp_path):
+    translator = Translator(lambda text: '\n'.join(line.partition('] ')[0] + '] Place' for line in text.split('\n')))
+    long_rows = [row(f'地点{n:02d}', lat=39.9 + n / 1000, address='路' * 240) for n in range(19)]
+    tail = row('故宫', lat=39.9163, lng=116.3972, address=None)
+    state = {'rows': [tail]}
+    path = tmp_path / 'english-count.sqlite'
+    app = FastAPI()
+    register_taxi_routes(app, taxi=TaxiService(DiDiInformation(lambda tool, params: rows_reply(state['rows'])),
+                                               clock=lambda: NOW, translator=translator),
+                         checker=SimpleNamespace(check=check), internal=frozenset({'internal'}),
+                         calls=PluginCalls(path, clock=lambda: NOW))
+    with TestClient(app) as client:
+        assert client.post(SEARCH, headers=AUTH, json=search_body(locale='en')).status_code == 200
+        state['rows'] = [*long_rows, tail]
+        items = client.post(SEARCH, headers=AUTH, json=search_body(locale='en')).json()['items']
+    assert items[-1]['name_zh'] == '故宫' and items[-1]['name_en'] == 'Place'
+    assert '[1] 故宫' == translator.calls[0][1] and '故宫' not in translator.calls[1][1]
+
+
+def test_pass_token_requires_provider_call_counting():
+    from cj_api.plugin_tools import register_plugin
+    with pytest.raises(ValueError):
+        register_plugin(FastAPI(), '/fixture', object, lambda *args: None, enabled=False, checker=None,
+                        internal=frozenset(), calls=None, limit=1, pass_token=True)

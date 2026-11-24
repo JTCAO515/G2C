@@ -83,6 +83,9 @@ async def _bounded_body(request):
 
 def register_plugin(app, path, model, operation, *, enabled, checker, internal, calls, limit,
                     count_provider_calls=False, pass_token=False):
+    if pass_token and not count_provider_calls:
+        raise ValueError('pass_token requires provider call counting')
+
     @app.post(path)
     async def execute(request: Request):
         try:
