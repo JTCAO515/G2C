@@ -96,7 +96,10 @@ jobs:
       # Groups are balanced by measured minutes (scripts/pg_suites.py MINUTES); each runs once.
       # eatmydata turns fsync into a no-op for the throwaway clusters on this disposable runner;
       # writes still reach the page cache, so process kills and restarts behave as before.
-      - run: eatmydata uv run --locked python -B scripts/pg_suites.py --shard ${{ matrix.shard }}/4
+      # Two lanes per runner (4 vCPU): each lane runs half of this shard's groups in parallel,
+      # lane 1 in its own copy of the checkout (.github/scripts/pg_lanes.sh).
+      - name: PostgreSQL suites (two lanes)
+        run: bash .github/scripts/pg_lanes.sh ${{ matrix.shard }} ${{ strategy.job-total }} 2
 
   postgres:
     # Stable required check. Passes only if every shard passed, or all were skipped for a
