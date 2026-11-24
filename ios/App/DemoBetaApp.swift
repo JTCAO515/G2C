@@ -92,11 +92,11 @@ struct DemoBetaRootView: View {
     private var medicalCardCleanupMessage: String {
         switch medicalCardCleanupFailure {
         case .medicalCardAndHelpDraft:
-            shell.language.text("Signed out. Couldn’t clear the medical card and help draft.",
-                                "已退出登录。医疗卡和求助草稿暂时未能清空。")
+            shell.language.text("Couldn’t clear the medical card and help draft.",
+                                "暂时无法清空医疗卡和求助草稿。")
         case .medicalCard, nil:
-            shell.language.text("Signed out. Couldn’t clear the medical card.",
-                                "已退出登录。医疗卡暂时未能清空。")
+            shell.language.text("Couldn’t clear the medical card.",
+                                "暂时无法清空医疗卡。")
         }
     }
 
