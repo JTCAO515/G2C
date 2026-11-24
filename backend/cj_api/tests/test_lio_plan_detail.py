@@ -87,6 +87,13 @@ class PlanDetail(unittest.TestCase):
         self.assertIn('玉林路', state.text)
         self.assertIsNotNone(read_itinerary_preview(state, 'zh'))
 
+    def test_non_idempotent_display_rewrite_keeps_the_flat_lines_and_preview(self):
+        # A technical host glued to an identifier only becomes visible as internal after one rewrite.
+        _, state = self.discuss(dict(answer=RICH + '\nrestapi.amap.comrun_id', days=DAYS, follow_up=None))
+        self.assertIn('第1天：上午参观', state.text)
+        self.assertNotIn('run_id', state.text)
+        self.assertIsNotNone(read_itinerary_preview(state, 'zh'))
+
     def test_fallback_is_logged_with_a_fixed_reason(self):
         with self.assertLogs('cj_usage.audit', level='INFO') as logs:
             self.discuss(dict(answer=RICH.replace('杜甫草堂', '青城山'), days=DAYS, follow_up=None))

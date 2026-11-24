@@ -162,7 +162,8 @@ def _detailed_answer(answer, days, locale):
     inside that day's section; otherwise the rendered lines are shown.
     """
     answer = display_answer(answer, locale)
-    if answer is None:
+    # Show only text that the display filter leaves unchanged on a second pass.
+    if answer is None or display_answer(answer, locale) != answer:
         return None, 'display'
     starts = []
     for day in days:
