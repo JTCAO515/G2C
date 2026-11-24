@@ -59,6 +59,8 @@ class AnswerStyle(unittest.TestCase):
                       (root / 'real_services.py').read_text())
         self.assertIn('answer_prompt(locale, turns[-1].text, detailed=True) + DISCUSSION_PROMPT',
                       (root / 'local_lio_planning.py').read_text())
+        self.assertIn('answer_prompt(locale,question=text,detailed=True)',
+                      (root.parent / 'agent/cj_agent/worker.py').read_text())
 
 
 if __name__ == '__main__':

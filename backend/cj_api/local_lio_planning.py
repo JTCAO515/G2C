@@ -156,26 +156,30 @@ _CN_DIGITS = '零一二三四五六七八九十'
 def _detailed_answer(answer, days, locale):
     """The model's own day-by-day answer, only when it shows exactly the preview's days in order.
 
-    Each day label first appears in order, and every structured activity of that
-    day is named inside that day's section; otherwise the rendered lines are shown.
+    Returns (text, None) or (None, reason). The text is the display-normalized
+    answer, so ordinary wording rewrites do not hide the detail. Each day label
+    first appears in order, and every structured activity of that day is named
+    inside that day's section; otherwise the rendered lines are shown.
     """
-    if display_answer(answer, locale) != answer:
-        return None
+    answer = display_answer(answer, locale)
+    # Show only text that the display filter leaves unchanged on a second pass.
+    if answer is None or display_answer(answer, locale) != answer:
+        return None, 'display'
     starts = []
     for day in days:
         index = day['day_index']
         label = _DAY_LABEL[locale].format(n=index, cn=_CN_DIGITS[index] if index <= 10 else index)
         found = re.search(label, answer, re.I)
         if found is None:
-            return None
+            return None, 'day_label'
         starts.append(found.start())
     if starts != sorted(starts):
-        return None
+        return None, 'day_order'
     for day, start, end in zip(days, starts, [*starts[1:], len(answer)]):
         section = answer[start:end].casefold()
         if any(activity['place_name'].casefold() not in section for activity in day['activities']):
-            return None
-    return answer
+            return None, 'day_activity'
+    return answer, None
 
 
 def _preview_line(text, limit):
@@ -341,7 +345,13 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
         reason = 'missing_days' if envelope.get('days') is None else 'invalid_days'
         logging.getLogger('cj_usage.audit').warning(
             'LIO_DISCUSSION_PREVIEW_WITHHELD run_id=%s reason=%s', binding.run_id, reason)
-    detailed = _detailed_answer(reply, preview[1], locale) if preview is not None else None
+    detailed = None
+    if preview is not None:
+        detailed, withheld = _detailed_answer(reply, preview[1], locale)
+        if withheld is not None:
+            # Fixed reason code only; never log model text.
+            logging.getLogger('cj_usage.audit').info(
+                'LIO_DISCUSSION_DETAIL_WITHHELD run_id=%s reason=%s', binding.run_id, withheld)
     shown = present(reply if preview is None else detailed or preview[0])
     state = worker._event(binding, state, 'text_delta', shown)
     if preview is not None:
