@@ -22,7 +22,7 @@ struct LioTaxiView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     private enum Sheet: String, Identifiable {
-        case destination, pickup, guide, alipay
+        case destination, pickup, guide
         var id: Self { self }
     }
 
@@ -106,8 +106,8 @@ struct LioTaxiView: View {
                         sheet = nil
                     }
                 }
-            case .guide, .alipay:
-                guide(alipayOnly: shown == .alipay)
+            case .guide:
+                guide
                     .onDisappear {
                         if shown == .guide { seenGuide = true }
                     }
@@ -346,27 +346,24 @@ struct LioTaxiView: View {
         }
     }
 
-    private func guide(alipayOnly: Bool) -> some View {
+    private var guide: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
-                    if !alipayOnly {
-                        LioStepCard(step: 1, symbol: "globe",
-                                    text: language.text("In DiDi settings, switch the app language to English.",
-                                                        "在滴滴设置中把语言切换到英文。"))
-                        LioStepCard(step: 2, symbol: "creditcard",
-                                    text: language.text("In DiDi payment settings, add your international card and check that it is accepted.",
-                                                        "在滴滴的支付设置中添加境外银行卡，并确认是否可用。"))
-                    }
-                    LioStepCard(step: alipayOnly ? 1 : 3, symbol: "app.badge",
+                    LioStepCard(step: 1, symbol: "globe",
+                                text: language.text("In DiDi settings, switch the app language to English.",
+                                                    "在滴滴设置中把语言切换到英文。"))
+                    LioStepCard(step: 2, symbol: "creditcard",
+                                text: language.text("In DiDi payment settings, add your international card and check that it is accepted.",
+                                                    "在滴滴的支付设置中添加境外银行卡，并确认是否可用。"))
+                    LioStepCard(step: 3, symbol: "app.badge",
                                 text: language.text("In Alipay, search for the DiDi mini program and choose your ride there.",
                                                     "在支付宝搜索滴滴小程序，可在小程序里打车。"))
                 }
                 .padding(LioTheme.Spacing.md)
             }
             .background(LioTheme.paper)
-            .navigationTitle(alipayOnly ? language.text("DiDi in Alipay", "支付宝里的滴滴")
-                                      : language.text("Taxi guide", "打车指南"))
+            .navigationTitle(language.text("Taxi guide", "打车指南"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -484,7 +481,7 @@ private struct LioTaxiPlacePicker: View {
     private func submit() {
         // Bias results towards the pickup only when it lies in the chosen city.
         let bias = near.flatMap { LioTaxiCity.nearest(to: $0) == selectedCity ? $0 : nil }
-        let value = LioTaxiSearchQuery(text: query, city: selectedCity, near: bias, english: language == .english)
+        let value = LioTaxiSearchQuery(text: query, city: selectedCity, near: bias)
         guard !value.text.isEmpty, !isSearching else { return }
         submittedQuery = value
     }

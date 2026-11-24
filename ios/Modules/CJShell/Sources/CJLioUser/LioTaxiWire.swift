@@ -72,8 +72,6 @@ enum LioTaxiWire {
         let query: String
         let city: String
         let near: NearPoint?
-        /// "en" only; omitted for Chinese so the request stays as before.
-        let locale: String?
     }
 
     private struct SearchResult: Decodable {
@@ -124,8 +122,7 @@ enum LioTaxiWire {
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
         let data = try encoder.encode(SearchRequest(version: version, query: query.text,
-                                                    city: query.city.nameZH, near: near,
-                                                    locale: query.english ? "en" : nil))
+                                                    city: query.city.nameZH, near: near))
         guard data.count <= 4_096 else { throw LioTaxiFailure.queryTooLong }
         return data
     }

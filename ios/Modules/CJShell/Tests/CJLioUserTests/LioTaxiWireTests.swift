@@ -70,16 +70,6 @@ struct LioTaxiWireTests {
             == "Price after pickup")
     }
 
-    /// #1451: English screens ask for English names with `locale: "en"`; Chinese requests are unchanged.
-    @Test func englishSearchesAskForEnglishNames() throws {
-        let english = try JSONSerialization.jsonObject(with: LioTaxiWire.encodeSearch(
-            .init(text: "Canton Tower", city: .guangzhou, near: nil, english: true))) as? [String: Any]
-        #expect(english?["locale"] as? String == "en")
-        let chinese = try JSONSerialization.jsonObject(with: LioTaxiWire.encodeSearch(
-            .init(text: "广州塔", city: .guangzhou, near: nil))) as? [String: Any]
-        #expect(chinese?["locale"] == nil && chinese?.keys.sorted() == ["city", "query", "version"])
-    }
-
     /// #1451: English screens lead with name_en / address_en; the driver still gets Chinese.
     @Test func englishPlaceFieldsAreOptionalAndLeadOnEnglishScreens() throws {
         let data = Data("""
