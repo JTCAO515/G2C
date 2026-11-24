@@ -46,11 +46,9 @@ struct LioNearbyView: View {
     @State private var radius = 1000
     @State private var nearest = false
     @State private var places: [LioNearbyPOI] = []
-    @State private var phase = Phase.locating
+    @State private var phase = LioNearbyPhase.locating
     @State private var selected: LioNearbyPOI?
     @State private var camera: MapCameraPosition = .automatic
-
-    private enum Phase: Equatable { case locating, searching, ready, failed(LioNearbyFailure) }
 
     private var query: LioNearbyQuery? {
         here.map { LioNearbyQuery(center: $0.coordinate, categories: categories, radius: radius, nearest: nearest) }
@@ -251,8 +249,12 @@ struct LioNearbyView: View {
             try Task.checkCancellation()
             here = location
             if location.coordinate == previous?.coordinate {
-                // Same spot: the search task does not rerun, so restore the page and skip another lookup.
-                phase = previousPhase == .locating ? .ready : previousPhase
+                // Same spot: the search task keyed by the query does not rerun, and the address is unchanged.
+                switch phase.afterRelocatingToSameSpot(before: previousPhase) {
+                case .keep: break
+                case .show(let restored): phase = restored
+                case .searchAgain: await search()
+                }
                 return
             }
             address = try? await service.reverse(location.coordinate)
@@ -285,8 +287,8 @@ struct LioNearbyView: View {
         case .locationDenied: language.text("Allow location access to see places near you.", "请允许使用位置，才能查看你附近的地点。")
         case .signInRequired: language.text("Sign in again, then try again.", "请重新登录后重试。")
         case .notEnabled: language.text("Nearby isn’t available for this account yet.", "此账号暂未开通附近。")
-        case .quotaExceeded: language.text("You’ve looked around a lot today. Try again tomorrow.", "今天的查找次数已用完，明天再试。")
-        case .rateLimited: language.text("Too many lookups right now. Try again in a moment.", "查找太频繁，请稍后再试。")
+        case .quotaExceeded: language.text("Nearby has reached its lookup limit for now. Try again later.", "附近的查找次数已达上限，请稍后再试。")
+        case .rateLimited: language.text("Too many lookups right now. Try again later.", "查找太频繁，请稍后再试。")
         case .timedOut: language.text("This took too long. Try again.", "查找超时，请重试。")
         case .unavailable: language.text("Nearby isn’t available right now. Try again.", "附近暂时不可用，请重试。")
         }
