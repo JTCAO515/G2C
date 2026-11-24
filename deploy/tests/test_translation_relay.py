@@ -159,6 +159,14 @@ def interface(budget, request):
                 if scenario == 'tts_download_denied':
                     self.reply = httpx.Response(403, content=b'private signed audio link')
                     return
+                if scenario in ('tts_placeholder', 'tts_placeholder_misaligned'):
+                    data = bytearray(b64decode(_wav(rate=24_000, frames=36_480)))
+                    data[4:8] = pack('<I', 2_147_483_583)
+                    data[40:44] = pack('<I', 2_147_483_547)
+                    if scenario == 'tts_placeholder_misaligned':
+                        data.pop()
+                    self.reply = httpx.Response(200, content=bytes(data))
+                    return
                 self.reply = httpx.Response(200, content=b64decode(_wav(frames=0 if scenario=='tts_empty' else None)))
                 return
             assert self.auto_open is False
@@ -180,7 +188,8 @@ def interface(budget, request):
         relay = TranslationRelay(SimpleNamespace(check=_check), budget,
                                  DashScopeTranslation('fixture-key', connection=Connection),
                                  lambda issuer, subject: subject)
-        tts_enabled = scenario in ('tts_ok', 'tts_code', 'tts_empty', 'tts_download_denied')
+        tts_enabled = scenario in ('tts_ok', 'tts_code', 'tts_empty', 'tts_download_denied',
+                                   'tts_placeholder', 'tts_placeholder_misaligned')
         layout_enabled = scenario in ('layout_ok', 'layout_jpeg', 'layout_empty', 'layout_bad')
         with translation_socket(relay, path=path, tts_enabled=tts_enabled, layout_enabled=layout_enabled):
             app = FastAPI()
@@ -385,6 +394,20 @@ def test_tts_audio_failure_logs_only_stage_and_status(interface, reason, http, c
     assert f'G2C_TRANSLATION_TTS_AUDIO_FAILURE reason={reason} supplier_http={http}' in caplog.text
     for private in ('private signed audio link', 'signature=fixture', '测试朗读', 'internal-fixture'):
         assert private not in caplog.text
+
+
+@pytest.mark.parametrize(('interface', 'expected'), [
+    ('tts_placeholder', 200), ('tts_placeholder_misaligned', 502),
+], indirect=['interface'])
+def test_tts_repairs_observed_supplier_placeholder_only_when_complete_pcm(interface, expected):
+    client, calls, ledger = interface
+    body = dict(version=TTS_VERSION, request_id=str(uuid4()), language='zh', text='测试朗读')
+    response = client.post(TTS_ROUTE, json=body, headers={'Authorization': 'Bearer internal-fixture'})
+    assert response.status_code == expected
+    if expected == 200:
+        assert response.content == b64decode(_wav(rate=24_000, frames=36_480))
+    assert calls == [TTS_MODEL, 'download']
+    assert [row['state'] for row in ledger.inspect()] == ['RECEIVED']
 
 
 def test_tts_audio_deadline_stops_between_body_reads(monkeypatch):
