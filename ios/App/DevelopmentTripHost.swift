@@ -129,6 +129,7 @@ private var developmentHostEnvironment: [String: String] {
     let lioTranslationRelay: LioRelayTranslationClient?
     let lioTaxiRelay: LioTaxiRelayClient?
     let lioCurrencyRelay: LioCurrencyRelayClient?
+    let lioNearbyRelay: LioNearbyRelayClient?
     #endif
     let messages: DevelopmentMessageHost
     #if DEBUG
@@ -243,6 +244,8 @@ private var developmentHostEnvironment: [String: String] {
                                                                      bearer: relayBearer)
         lioCurrencyRelay = LioCurrencyRelayClient.internalBeta(endpoint: endpoint, isCurrent: relaySessionIsCurrent,
                                                                bearer: relayBearer)
+        lioNearbyRelay = LioNearbyRelayClient.internalBeta(endpoint: endpoint, isCurrent: relaySessionIsCurrent,
+                                                           bearer: relayBearer)
         if tripEditingProfile != nil {
             lioTripLibrary = LioTripLibrary(list: {
                 var rows: [StructuredTripSummary] = []

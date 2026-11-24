@@ -13,6 +13,7 @@
 <key>G2CTaxiEnabled</key><string>$(G2C_TAXI_ENABLED)</string>
 <key>G2CImageLayoutEnabled</key><string>$(G2C_IMAGE_LAYOUT_ENABLED)</string>
 <key>G2CCurrencyEnabled</key><string>$(G2C_CURRENCY_ENABLED)</string>
+<key>G2CNearbyEnabled</key><string>$(G2C_NEARBY_ENABLED)</string>
 <key>ITSAppUsesNonExemptEncryption</key><false/>
 <key>UISupportedInterfaceOrientations</key><array>
 <string>UIInterfaceOrientationPortrait</string>
