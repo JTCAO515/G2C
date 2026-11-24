@@ -496,12 +496,12 @@ def test_search_supplier_failures_map_once_and_still_count(tmp_path, failure, st
     search_body(query='天安\x00门'),
     search_body(query='天安\x7f门'),
     search_body(query='天安\x85门'),
-    search_body(query='天安‮门'),
-    search_body(query='天安⁦门'),
+    search_body(query='天安\u202e门'),
+    search_body(query='天安\u2066门'),
     search_body(near=dict(point(), lng=181)),
     search_body(near=dict(point(), lat='39.9')),
     search_body(near=dict(point(), coordinate_system='BD-09')),
-    search_body(near=dict(point(), name='名‮称')),
+    search_body(near=dict(point(), name='名\u202e称')),
 ])
 def test_search_request_boundary_rejects_before_any_count_or_dispatch(tmp_path, data):
     seen = []
@@ -519,18 +519,29 @@ def test_search_near_outside_service_area_stops_before_didi(tmp_path, lng, lat):
     with client:
         response = client.post(SEARCH, headers=AUTH, json=search_body(near=dict(point(), lng=lng, lat=lat)))
     assert (response.status_code, response.json()) == (422, {'error': 'out_of_service_area'})
-    assert seen == [] and 'didi:maps_textsearch' not in used(path)
+    assert seen == [] and used(path) == {SEARCH: 1}
 
 
 @pytest.mark.parametrize('city', ['香港', '香港特别行政区', '澳门', '澳門', '台北', '臺北市', '台湾', 'Hong Kong',
-                                  'hongkong', 'Macau', 'Taipei'])
+                                  'hongkong', 'Macau', 'Taipei', '花莲', '花蓮縣', '台东', '屏东', '宜兰', '苗栗',
+                                  '彰化', '南投', '云林', '雲林', '澎湖', '金门', '金門', '中国台湾',
+                                  '中国香港', '中國澳門', '中国台北市'])
 def test_search_non_mainland_city_is_out_of_service_and_never_sent(tmp_path, city):
     seen = []
     client, path = search_client(tmp_path, lambda tool, params: seen.append((tool, params)))
     with client:
         response = client.post(SEARCH, headers=AUTH, json=search_body(city=city))
     assert (response.status_code, response.json()) == (422, {'error': 'out_of_service_area'})
-    assert seen == [] and 'didi:maps_textsearch' not in used(path)
+    assert seen == [] and used(path) == {SEARCH: 1}
+
+
+@pytest.mark.parametrize('city', ['台州', '台山', '南京', '中山', '金华', '连云港', '花都', '连江'])
+def test_search_mainland_cities_sharing_a_prefix_are_still_sent(tmp_path, city):
+    seen = []
+    client, _ = search_client(tmp_path, lambda tool, params: seen.append(params) or rows_reply([]))
+    with client:
+        assert client.post(SEARCH, headers=AUTH, json=search_body(city=city)).status_code == 200
+    assert seen == [dict(keywords='天安门', city=city + '市')]
 
 
 def test_search_with_only_other_city_or_non_mainland_results_is_empty_not_502(tmp_path):
@@ -543,7 +554,8 @@ def test_search_with_only_other_city_or_non_mainland_results_is_empty_not_502(tm
 
 
 def test_search_with_only_malformed_results_is_supplier_error(tmp_path):
-    rows = [dict(display_name='天安门', city='北京市'), row(lat=None), row(name='天安‮门'), 'x']
+    rows = [dict(display_name='天安门', city='北京市'), row(lat=None), row(name='天安\u202e门'), 'x',
+            row(name=None), row(name=7), row(name=''), row(city=None)]
     client, _ = search_client(tmp_path, lambda tool, params: rows_reply(rows))
     with client:
         response = client.post(SEARCH, headers=AUTH, json=search_body())
@@ -552,7 +564,7 @@ def test_search_with_only_malformed_results_is_supplier_error(tmp_path):
 
 def test_search_accepts_numeric_string_coordinates_and_drops_unsafe_addresses(tmp_path):
     rows = [row(lat='39.916404', lng='116.410244'), row('故宫', lat='39.9', lng='1e2'),
-            row('景山', lat=39.92, lng=116.39, address='景山‮前街'),
+            row('景山', lat=39.92, lng=116.39, address='景山\u202e前街'),
             row('北海', lat=39.93, lng=116.38, address='北海\x85公园')]
     client, _ = search_client(tmp_path, lambda tool, params: rows_reply(rows))
     with client:
@@ -574,3 +586,27 @@ def test_search_sends_only_keyword_city_and_optional_point(tmp_path):
         assert client.post(SEARCH, headers=AUTH, json=search_body(city='上海市', query='外滩')).status_code == 200
     assert seen == [('maps_textsearch', dict(keywords='宽窄巷子', city='成都市')),
                     ('maps_textsearch', dict(keywords='外滩', city='上海市'))]
+
+
+def test_search_drops_null_names_and_keeps_usable_rows(tmp_path):
+    rows = [row(name=None), row(name='   '), row('故宫', lat=39.9163, lng=116.3972)]
+    client, _ = search_client(tmp_path, lambda tool, params: rows_reply(rows))
+    with client:
+        response = client.post(SEARCH, headers=AUTH, json=search_body())
+    assert response.status_code == 200
+    assert [item['name_zh'] for item in response.json()['items']] == ['故宫']
+
+
+@pytest.mark.parametrize('name', ['\U0001f469\u200d\U0001f467 亲子乐园', 'Caf\u00e9\u00ad馆', '\ufeff北京西站'])
+def test_estimate_keeps_accepting_names_with_harmless_format_characters(app_context, name):
+    client, _, _ = app_context
+    assert client.post(ESTIMATE, headers=AUTH, json=dict(payload(), origin=point(name))).status_code == 200
+
+
+@pytest.mark.parametrize('name', ['北京\x7f西站', '北京\x85西站', '北京\u202e西站', '北京\u2067西站',
+                                  '北京\u200f西站', '北京\u2028西站'])
+def test_estimate_rejects_control_and_bidi_names(app_context, name):
+    client, seen, _ = app_context
+    response = client.post(ESTIMATE, headers=AUTH, json=dict(payload(), origin=point(name)))
+    assert (response.status_code, response.json()) == (400, {'error': 'invalid_request'})
+    assert seen == []

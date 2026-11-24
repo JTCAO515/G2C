@@ -83,12 +83,16 @@ class WireModel(BaseModel):
     model_config = ConfigDict(extra='forbid', strict=True)
 
 
-INVISIBLE = frozenset({'Cc', 'Cf', 'Cs', 'Zl', 'Zp'})
+INVISIBLE = frozenset({'Cc', 'Cs', 'Zl', 'Zp'})
+BIDI_CONTROLS = frozenset('\u061c\u200e\u200f\u202a\u202b\u202c\u202d\u202e\u2066\u2067\u2068\u2069')
 
 
 def _visible(text):
-    """Reject C0/DEL/C1 controls, bidi and other format characters, and surrogates."""
-    return all(unicodedata.category(char) not in INVISIBLE for char in text)
+    """Reject C0/DEL/C1 controls, surrogates, line separators and bidi controls.
+
+    Other format characters (ZWJ in emoji, soft hyphen) stay: Gaode POI names can carry them.
+    """
+    return all(char not in BIDI_CONTROLS and unicodedata.category(char) not in INVISIBLE for char in text)
 
 
 class Point(WireModel):
@@ -122,12 +126,15 @@ CITY_ALIASES = {'beijing': '北京市', 'shanghai': '上海市', 'chengdu': '成
 CITY_NAME = re.compile(r'[\u3400-\u9fff]{2,24}')
 # Outside the mainland service area: never suffixed with 市 and never sent to DiDi.
 NON_MAINLAND = ('香港', '澳门', '澳門', '台湾', '台灣', '臺灣', '臺湾', '台北', '臺北', '新北', '台中', '臺中',
-                '台南', '臺南', '高雄', '桃园', '桃園', '基隆', '新竹', '嘉义', '嘉義')
+                '台南', '臺南', '高雄', '桃园', '桃園', '基隆', '新竹', '嘉义', '嘉義', '花莲', '花蓮', '台东', '台東',
+                '臺東', '屏东', '屏東', '宜兰', '宜蘭', '苗栗', '彰化', '南投', '云林', '雲林', '澎湖', '金门', '金門',
+                '马祖', '馬祖')
 
 
 def _city(raw):
     city = raw.strip()
     city = CITY_ALIASES.get(city.lower(), city)
+    city = city.removeprefix('中国').removeprefix('中國')
     if not CITY_NAME.fullmatch(city):
         raise ValueError('a city name is required')
     if city.startswith(NON_MAINLAND):
@@ -183,9 +190,11 @@ def _search_rows(result, city):
     malformed = 0
     for row in rows:
         try:
+            if type(row['display_name']) is not str or type(row['city']) is not str:
+                raise TypeError('supplier row shape')
             point = Point(lat=_coordinate(row['location']['lat']), lng=_coordinate(row['location']['lng']),
                           coordinate_system='GCJ-02', name=row['display_name'])
-            row_city = _row_city(row['city']) if type(row['city']) is str else None
+            row_city = _row_city(row['city'])
             address = row.get('address') or row.get('address_all')
         except (AttributeError, KeyError, TypeError, ValueError):
             malformed += 1
