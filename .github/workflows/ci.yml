@@ -1,4 +1,6 @@
 # CI per ADR-0004: every job blocks. Local equivalent: scripts/check.sh.
+# Pull requests skip jobs by changed path (.github/scripts/ci_paths.py, JT approved 2026-11-24);
+# a skipped job reports "skipped", which satisfies the required check. Pushes to main run every job.
 name: ci
 
 on:
@@ -22,10 +24,12 @@ env:
 
 jobs:
   changes:
-    # Fails open: any error leaves docs_only empty, so every dependent job still runs.
+    # Fails open: any error leaves the outputs empty, so every dependent job still runs.
     runs-on: ubuntu-latest
     outputs:
       docs_only: ${{ steps.diff.outputs.docs_only }}
+      ios_only: ${{ steps.diff.outputs.ios_only }}
+      app_changed: ${{ steps.diff.outputs.app_changed }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,14 +39,12 @@ jobs:
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
+        # --no-renames lists both sides of a move, so a file moved out of backend/ still counts.
         run: |
-          files=$(git diff --name-only "$BASE...$HEAD")
-          test -n "$files"
-          if echo "$files" | grep -qvE '^(docs/|HANDOFF\.md$)'; then
-            echo "docs_only=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "docs_only=true" >> "$GITHUB_OUTPUT"
-          fi
+          git diff --name-only --no-renames "$BASE...$HEAD" > "$RUNNER_TEMP/changed.txt"
+          cat "$RUNNER_TEMP/changed.txt"
+          python3 -B .github/scripts/ci_paths.py < "$RUNNER_TEMP/changed.txt" > "$RUNNER_TEMP/outputs.txt"
+          cat "$RUNNER_TEMP/outputs.txt" | tee -a "$GITHUB_OUTPUT"
 
   python:
     # Unit, contract, wire and standalone checks that need no database.
@@ -55,6 +57,8 @@ jobs:
         with:
           fetch-depth: 0
       - run: python3 -B scripts/handoff.py check
+      - name: Pull request path classifier tests
+        run: python3 -B .github/scripts/test_ci_paths.py
       - uses: astral-sh/setup-uv@v6
         if: needs.changes.outputs.docs_only != 'true'
       - run: uv sync --locked
@@ -64,8 +68,9 @@ jobs:
 
   postgres-shard:
     # Fresh private Unix-socket clusters only; migrations up/down/up plus every PG-backed suite.
+    # Skipped for docs-only and iOS-only pull requests.
     needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' }}
+    if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' && needs.changes.outputs.ios_only != 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -93,16 +98,18 @@ jobs:
       - run: eatmydata uv run --locked python -B scripts/pg_suites.py --shard ${{ matrix.shard }}/4
 
   postgres:
-    # Stable required check. Passes only if every shard passed, or all were skipped for docs.
+    # Stable required check. Passes only if every shard passed, or all were skipped for a
+    # docs-only or iOS-only pull request.
     needs: [changes, postgres-shard]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - env:
           DOCS_ONLY: ${{ needs.changes.outputs.docs_only }}
+          IOS_ONLY: ${{ needs.changes.outputs.ios_only }}
           RESULT: ${{ needs.postgres-shard.result }}
         run: |
-          test "$RESULT" = success || { test "$DOCS_ONLY" = true && test "$RESULT" = skipped; }
+          test "$RESULT" = success || { { test "$DOCS_ONLY" = true || test "$IOS_ONLY" = true; } && test "$RESULT" = skipped; }
 
   swift-packages:
     needs: changes
@@ -119,8 +126,9 @@ jobs:
     # Every package is tested on one runner, reusing locked compiler outputs.
     # Inventory order builds the broad Shell graph first; Cleanup has a distinct
     # locked swift-collections version and runs last to avoid repeated switches.
+    # Skipped for pull requests that touch nothing the App reads (app_changed=false).
     needs: [changes, swift-packages]
-    if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' && needs.swift-packages.result == 'success' }}
+    if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' && needs.changes.outputs.app_changed != 'false' && needs.swift-packages.result == 'success' }}
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
@@ -132,8 +140,9 @@ jobs:
   ios-app:
     # The App target with the CJShell four-tab shell and all iOS modules, built for the simulator.
     # arm64 only: Swift 6.3.3 crashes in IRGen on the x86_64 slice of CJFeedbackClient/FeedbackView.swift.
+    # Skipped for pull requests that touch nothing the App reads (app_changed=false).
     needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' }}
+    if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' && needs.changes.outputs.app_changed != 'false' }}
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
