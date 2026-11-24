@@ -126,6 +126,8 @@ struct LioMetroMapCanvas: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     static let maximumZoom: CGFloat = 12
+    /// How far from a station's dot, in points, a tap still selects it.
+    static let tapReach: CGFloat = 22
 
     var body: some View {
         GeometryReader { proxy in
@@ -136,7 +138,7 @@ struct LioMetroMapCanvas: View {
                 .gesture(magnify(size: size).simultaneously(with: drag(size: size)))
                 .onTapGesture { location in
                     let point = layout.mapPoint(location)
-                    if let station = map.station(nearX: point.x, y: point.y, radius: 22 / layout.scale) {
+                    if let station = map.station(nearX: point.x, y: point.y, radius: Self.tapReach / layout.scale) {
                         onSelect(station)
                     }
                 }
@@ -303,7 +305,7 @@ struct LioMetroMapCanvas: View {
                                width: measured.width, height: measured.height)
             guard !taken.contains(where: { $0.intersects(frame) }) else { continue }
             taken.append(frame)
-            context.fill(Path(roundedRect: frame.insetBy(dx: -2, dy: 0), cornerRadius: 3),
+            context.fill(Path(frame.insetBy(dx: -2, dy: 0)),
                          with: .color(LioTheme.paper.opacity(0.8)))
             context.draw(text, in: frame)
         }
