@@ -12,12 +12,14 @@ struct LioToolsView: View {
     let enabled: Bool
     let sessionIsCurrent: @MainActor () -> Bool
     @Environment(\.lioTaxiEntry) private var taxiEntry
+    @Environment(\.lioNearbyService) private var nearbyService
     @Environment(\.dynamicTypeSize) private var typeSize
 
     private var availability: LioToolCatalog.Availability {
         var available = LioToolCatalog.Availability()
         available.taxi = taxiEntry != nil
         available.currency = currencyRelay != nil
+        available.nearby = nearbyService != nil
         #if DEBUG
         available.hotels = ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview")
         #endif
@@ -89,7 +91,9 @@ struct LioToolsView: View {
         case .phrases:
             LioPhraseCardsView(language: language)
         case .nearby:
-            EmptyView()
+            if let nearbyService {
+                LioNearbyView(language: language, service: nearbyService)
+            }
         case .hotels:
             #if DEBUG
             let partial = ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview-partial")

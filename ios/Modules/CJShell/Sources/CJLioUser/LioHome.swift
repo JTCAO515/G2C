@@ -14,6 +14,7 @@ public struct LioHome<MenuContent: View>: View {
     private let toolsRelay: LioRelayTranslationClient?
     private let currencyRelay: LioCurrencyRelayClient?
     private let taxiRelay: LioTaxiRelayClient?
+    private let nearbyRelay: LioNearbyRelayClient?
     private let taxiRecentDirectory: URL?
     private let toolsSessionIsCurrent: @MainActor () -> Bool
     private let reconnect: (@MainActor () -> Void)?
@@ -119,6 +120,7 @@ public struct LioHome<MenuContent: View>: View {
                 reconnect: (@MainActor () -> Void)? = nil, showsTools: Bool = false,
                 toolsHistory: LioTranslationHistory? = nil, toolsRelay: LioRelayTranslationClient? = nil,
                 currencyRelay: LioCurrencyRelayClient? = nil, taxiRelay: LioTaxiRelayClient? = nil,
+                nearbyRelay: LioNearbyRelayClient? = nil,
                 taxiRecentDirectory: URL? = nil,
                 toolsDraftStorage: LocalSupportDraftStorage? = nil,
                 toolsSessionIsCurrent: @escaping @MainActor () -> Bool = { true },
@@ -131,6 +133,7 @@ public struct LioHome<MenuContent: View>: View {
         self.toolsRelay = toolsRelay
         self.currencyRelay = currencyRelay
         self.taxiRelay = taxiRelay
+        self.nearbyRelay = nearbyRelay
         self.taxiRecentDirectory = taxiRecentDirectory
         self.toolsSessionIsCurrent = toolsSessionIsCurrent
         self.reconnect = reconnect
@@ -170,6 +173,15 @@ public struct LioHome<MenuContent: View>: View {
         return conversation.turns.reversed().flatMap { turn in
             turn.memoryTags.filter { !handledTags.contains($0) }.map(\.text)
         }
+    }
+
+    private var nearbyService: LioNearbyService? {
+        if let nearbyRelay { return .internalBeta(relay: nearbyRelay) }
+        #if DEBUG
+        return LioNearbyService.previewFromArguments
+        #else
+        return nil
+        #endif
     }
 
     private var taxiEntry: LioTaxiEntry? {
@@ -225,6 +237,7 @@ public struct LioHome<MenuContent: View>: View {
             }
         }
         .environment(\.lioTaxiEntry, taxiEntry)
+        .environment(\.lioNearbyService, nearbyService)
         .tint(LioTheme.vermilion)
         .sensoryFeedback(.success, trigger: savedCelebrations)
         .disabled(chatControlsSuspended)
