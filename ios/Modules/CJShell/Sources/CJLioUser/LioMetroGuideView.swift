@@ -98,6 +98,22 @@ struct LioMetroCityGuideView: View {
                     .accessibilityIdentifier("lio.metro.city")
                 }
 
+                #if DEBUG
+                if LioMetroMapPreview.requested, let demo = LioMetroMapPreview.map {
+                    // #1454 framework preview with synthetic data; real city data waits for JT's source approval.
+                    NavigationLink {
+                        LioMetroMapView(map: demo, language: language)
+                            .navigationTitle(language.text("Metro map (demo data)", "地铁图（示例数据）"))
+                            .navigationBarTitleDisplayMode(.inline)
+                    } label: {
+                        Label(language.text("Interactive metro map (demo data)", "可交互地铁图（示例数据）"),
+                              systemImage: "point.3.connected.trianglepath.dotted")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    }
+                    .accessibilityIdentifier("lio.metro.map.preview")
+                }
+                #endif
                 VStack(alignment: .leading, spacing: 4) {
                     Link(destination: city.mapURL) {
                         Label(language.text("Official line map and stations", "官方线路图和车站"),
