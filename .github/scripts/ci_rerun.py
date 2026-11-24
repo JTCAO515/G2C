@@ -7,8 +7,11 @@ or that lacks that annotation (for example a job someone cancelled), blocks the 
 `postgres` summary is the one job allowed to fail with steps, and only when every failed
 `postgres-shard (N)` was itself never acquired. At most MAX_RERUNS re-runs per run.
 
-Usage (from .github/workflows/ci-rerun.yml): ci_rerun.py; reads GITHUB_REPOSITORY, RUN_ID,
-RUN_ATTEMPT and GH_TOKEN. CI_RERUN_DRY_RUN=1 prints the decision without re-running.
+Only main pushes are handled. With RUN_ID set (workflow_run) that run is checked; without it
+(schedule) only the newest main-push ci run is checked, which gives it a second re-run (a
+re-run started with GITHUB_TOKEN does not fire workflow_run again) and leaves runs of
+superseded commits alone.
+Reads GITHUB_REPOSITORY, GH_TOKEN and optionally RUN_ID; CI_RERUN_DRY_RUN=1 only prints.
 """
 import json
 import os
@@ -21,9 +24,12 @@ UNACQUIRED = 'not acquired by Runner'
 FAILED = {'failure', 'cancelled', 'timed_out', 'startup_failure'}
 
 
-def unacquired(job, annotations):
-    return (job.get('conclusion') in FAILED and not job.get('runner_name') and not job.get('steps')
-            and any(UNACQUIRED in (a.get('message') or '') for a in annotations))
+def never_ran(job):
+    return job.get('conclusion') in FAILED and not job.get('runner_name') and not job.get('steps')
+
+
+def unacquired(job, annotations_for):
+    return never_ran(job) and any(UNACQUIRED in (a.get('message') or '') for a in annotations_for(job))
 
 
 def decide(jobs, annotations_for, attempt):
@@ -33,7 +39,7 @@ def decide(jobs, annotations_for, attempt):
     failed = [job for job in jobs if job.get('conclusion') in FAILED]
     if not failed:
         return False, 'no failed jobs'
-    stuck = {job['name'] for job in failed if unacquired(job, annotations_for(job))}
+    stuck = {job['name'] for job in failed if unacquired(job, annotations_for)}
     real = [job['name'] for job in failed if job['name'] not in stuck]
     shards_stuck = any(name.startswith('postgres-shard') for name in stuck)
     shards_real = any(name.startswith('postgres-shard') for name in real)
@@ -63,13 +69,24 @@ def api(path, method='GET'):
     raise SystemExit(f'GitHub API unavailable for {path}')
 
 
-def main():
-    run, attempt = os.environ['RUN_ID'], int(os.environ['RUN_ATTEMPT'])
-    jobs = api(f'actions/runs/{run}/attempts/{attempt}/jobs?per_page=100')['jobs']
+def handle(run):
+    if run['event'] != 'push' or run['head_branch'] != 'main' or run['conclusion'] != 'failure':
+        print(f"run {run['id']}: not a failed main push, skipped")
+        return
+    attempt = run['run_attempt']
+    jobs = api(f"actions/runs/{run['id']}/attempts/{attempt}/jobs?per_page=100")['jobs']
     rerun, reason = decide(jobs, lambda job: api(f"check-runs/{job['id']}/annotations"), attempt)
-    print(f'run {run} attempt {attempt}: {"re-run" if rerun else "no re-run"} ({reason})')
+    print(f"run {run['id']} attempt {attempt}: {'re-run' if rerun else 'no re-run'} ({reason})")
     if rerun and os.environ.get('CI_RERUN_DRY_RUN') != '1':
-        api(f'actions/runs/{run}/rerun-failed-jobs', method='POST')
+        api(f"actions/runs/{run['id']}/rerun-failed-jobs", method='POST')
+
+
+def main():
+    if os.environ.get('RUN_ID'):
+        handle(api(f"actions/runs/{os.environ['RUN_ID']}"))
+        return
+    for run in api('actions/workflows/ci.yml/runs?event=push&branch=main&per_page=1')['workflow_runs']:
+        handle(run)
 
 
 if __name__ == '__main__':

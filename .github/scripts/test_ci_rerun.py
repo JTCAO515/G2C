@@ -59,6 +59,14 @@ class DecideTests(unittest.TestCase):
         self.assertFalse(run(jobs, attempt=MAX_RERUNS + 1)[0])
         self.assertEqual(MAX_RERUNS, 2)
 
+    def test_annotations_are_read_only_for_jobs_that_never_ran(self):
+        asked = []
+        def annotations_for(j):
+            asked.append(j['name'])
+            return j['_annotations']
+        decide([job('swift', 'failure'), miss('ios-app')], annotations_for, 1)
+        self.assertEqual(asked, ['ios-app'])
+
     def test_nothing_failed(self):
         self.assertFalse(run([job('python'), job('swift', 'skipped')])[0])
 
