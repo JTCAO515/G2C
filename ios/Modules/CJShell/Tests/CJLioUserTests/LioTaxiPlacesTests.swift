@@ -44,7 +44,7 @@ struct LioTaxiPlacesTests {
         let route = LioTaxiRoute(pickup: pickup, destination: destination)
         #expect(pickup.coordinate.referenceSystem == .wgs84)
         #expect(destination.coordinate.referenceSystem == .gcj02)
-        #expect(try await service.estimate(route).count == 2)
+        #expect(try await service.estimate(route).count == 6)
         let link = try await service.rideLink(route)
         #expect(link.host == "example.invalid")
         #expect(try await service.openRideLink(link))
