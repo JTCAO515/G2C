@@ -120,11 +120,58 @@ def github_fixture(evidence):
     def fetch(path):
         if path.endswith('/status'):
             return {'state': evidence['state']}
+        if '/attempts/' in path:
+            rows = evidence['attempts'][int(path.split('/attempts/')[1].split('/')[0])]
+            return {'total_count': len(rows), 'jobs': rows}
         key = 'workflow_runs' if path.startswith('actions/runs?') else (
             'check_runs' if '/check-runs?' in path else 'jobs')
         rows = evidence[key]
         return {'total_count': len(rows), key: rows}
     return fetch
+
+
+def rerun_after(workflow_evidence, **earlier):
+    # Attempt 1 left one job record (check run id 99); attempt 2 is the green inventory.
+    ci = workflow_evidence['workflow_runs'][0]
+    ci['run_attempt'] = 2
+    job = dict(id=99, name='ios-app', run_id=1, head_sha=SOURCE, status='completed',
+               conclusion='cancelled', runner_name='', steps=[])
+    job.update(earlier)
+    workflow_evidence['attempts'] = {1: [job]}
+    workflow_evidence['check_runs'].append(dict(id=99, name='ios-app', head_sha=SOURCE,
+                                                conclusion=job['conclusion']))
+    return workflow_evidence
+
+
+@pytest.mark.parametrize('conclusion', ['cancelled', 'failure'])
+def test_release_ci_accepts_an_earlier_attempt_that_never_got_a_runner(workflow_evidence, conclusion):
+    evidence = rerun_after(workflow_evidence, conclusion=conclusion)
+    application_release.verify_release_ci(github_fixture(evidence), SOURCE)
+
+
+@pytest.mark.parametrize('earlier', [
+    dict(conclusion='failure', runner_name='GitHub Actions 7', steps=[{'conclusion': 'failure'}]),
+    dict(conclusion='failure', runner_name='', steps=[{'conclusion': 'failure'}]),
+    dict(conclusion='cancelled', runner_name='GitHub Actions 7', steps=[]),
+])
+def test_release_ci_rejects_an_earlier_attempt_whose_job_ran(workflow_evidence, earlier):
+    evidence = rerun_after(workflow_evidence, **earlier)
+    with pytest.raises(ValueError):
+        application_release.verify_release_ci(github_fixture(evidence), SOURCE)
+
+
+def test_release_ci_still_rejects_unrelated_cancelled_checks_after_a_runner_miss(workflow_evidence):
+    evidence = rerun_after(workflow_evidence)
+    evidence['check_runs'].append(dict(id=100, name='swift', head_sha=SOURCE, conclusion='cancelled'))
+    with pytest.raises(ValueError):
+        application_release.verify_release_ci(github_fixture(evidence), SOURCE)
+
+
+def test_release_ci_rejects_a_runner_miss_left_in_the_final_attempt(workflow_evidence):
+    evidence = rerun_after(workflow_evidence)
+    evidence['workflow_runs'][0]['conclusion'] = 'failure'
+    with pytest.raises(ValueError):
+        application_release.verify_release_ci(github_fixture(evidence), SOURCE)
 
 
 def test_release_ci_accepts_skipped_monitor_with_all_required_jobs(workflow_evidence):
