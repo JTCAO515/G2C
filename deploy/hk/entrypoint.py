@@ -78,6 +78,8 @@ def api(runtime,*,app_smoke_api_manifest=None):
     register_runtime_taxi(app, runtime.auth, database)
     from .currency_runtime import register_runtime_currency
     register_runtime_currency(app, runtime.auth, database)
+    from .travel_runtime import register_runtime_travel
+    register_runtime_travel(app, runtime.auth, database)
     from cj_api.hotel_tools import register_hotel_route
     register_hotel_route(app)
     @app.middleware('http')
