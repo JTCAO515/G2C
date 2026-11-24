@@ -34,7 +34,7 @@ import XCTest
             let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
             app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language]
             app.launch()
-            app.tabBars.buttons[language == "en" ? "Tools" : "插件"].tap()
+            app.tabBars.buttons[language == "en" ? "Tools" : "工具"].tap()
             app.buttons["lio.tools.translation"].tap()
             app.buttons["lio.translation.mode.photo"].tap()
             let camera = app.buttons["lio.translation.camera"]

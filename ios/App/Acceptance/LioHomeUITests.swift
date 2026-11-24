@@ -13,7 +13,7 @@ import CryptoKit
                                        "UICTContentSizeCategoryL"]
                 app.launch()
                 defer { app.terminate() }
-                let tools = app.tabBars.buttons[language == "en" ? "Tools" : "插件"]
+                let tools = app.tabBars.buttons[language == "en" ? "Tools" : "工具"]
                 XCTAssertTrue(tools.waitForExistence(timeout: 8))
                 tools.tap()
                 app.buttons["lio.tools.payment-guide"].tap()
@@ -56,7 +56,7 @@ import CryptoKit
                                        "UICTContentSizeCategoryL"]
                 app.launch()
                 defer { app.terminate() }
-                let tools = app.tabBars.buttons[language == "en" ? "Tools" : "插件"]
+                let tools = app.tabBars.buttons[language == "en" ? "Tools" : "工具"]
                 XCTAssertTrue(tools.waitForExistence(timeout: 8))
                 tools.tap()
                 app.buttons["lio.tools.metro-guide"].tap()
@@ -91,7 +91,7 @@ import CryptoKit
                                        "UICTContentSizeCategoryL"]
                 app.launch()
                 defer { app.terminate() }
-                let tools = app.tabBars.buttons[language == "en" ? "Tools" : "插件"]
+                let tools = app.tabBars.buttons[language == "en" ? "Tools" : "工具"]
                 XCTAssertTrue(tools.waitForExistence(timeout: 8))
                 tools.tap()
                 app.buttons["lio.tools.phrase-cards"].tap()
@@ -145,7 +145,7 @@ import CryptoKit
                 app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
                                        "-lio.ui.appearance.v1", appearance]
                 app.launch()
-                let tools = app.tabBars.buttons[language == "en" ? "Tools" : "插件"]
+                let tools = app.tabBars.buttons[language == "en" ? "Tools" : "工具"]
                 XCTAssertTrue(tools.waitForExistence(timeout: 8))
                 tools.tap()
                 let translation = app.buttons["lio.tools.translation"]

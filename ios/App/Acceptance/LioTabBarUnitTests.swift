@@ -8,7 +8,7 @@ import CJLioUser
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
         let cases: [(LioLanguage, [String])] = [
             (.english, ["Chat", "Trips", "Tools", "Memory"]),
-            (.chinese, ["聊天", "行程", "插件", "记忆"]),
+            (.chinese, ["聊天", "行程", "工具", "记忆"]),
         ]
         for (language, expected) in cases {
             let appeared = expectation(description: "Four-tab Lio Home appeared")
