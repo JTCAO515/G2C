@@ -329,6 +329,11 @@ def exercise(root,conninfo):
         class Cursor:
             def __init__(self,base,connection):self.base,self.connection=base,connection
             def __getattr__(self,name):return getattr(self.base,name)
+            # with-statements look up dunders on the type, not via __getattr__ (#1447 lease reads).
+            def __enter__(self):
+                self.base.__enter__()
+                return self
+            def __exit__(self,*args):return self.base.__exit__(*args)
             def execute(self,query,*args,**kwargs):
                 if query.startswith('INSERT INTO cj_trip_needs_action'):self.connection.saved=True
                 self.base.execute(query,*args,**kwargs)
