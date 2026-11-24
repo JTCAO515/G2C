@@ -1,0 +1,29 @@
+# Re-run ci jobs that GitHub never gave a runner (hosted macOS arm64 capacity, #1445).
+# Only capacity misses with zero steps are re-run, at most twice; any job that ran and failed
+# stops it (.github/scripts/ci_rerun.py). Code from the triggering run is never checked out.
+name: ci-rerun
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+
+permissions:
+  actions: write
+  contents: read
+  checks: read
+
+jobs:
+  rerun:
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Re-run jobs that never acquired a runner
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        run: python3 -B .github/scripts/ci_rerun.py
