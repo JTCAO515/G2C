@@ -8,6 +8,7 @@ from io import BytesIO
 import json
 import logging
 import re
+from struct import pack
 import time
 from urllib.parse import urlsplit
 from uuid import UUID
@@ -29,6 +30,10 @@ TTS_ROUTE = '/v1/tools/tts'
 TTS_RESULT_HOST = 'dashscope-result-bj.oss-cn-beijing.aliyuncs.com'
 MAX_TTS_TEXT = 280
 MAX_TTS_WAV = 2_500_000
+TTS_RIFF_PLACEHOLDER = 2_147_483_583
+TTS_PCM_PLACEHOLDER = 2_147_483_547
+TTS_PCM_HEADER = pack('<4sIHHIIHH4sI', b'fmt ', 16, 1, 1, 24_000, 48_000, 2, 16,
+                      b'data', TTS_PCM_PLACEHOLDER)
 MAX_BODY = 4 * 1024 * 1024
 MAX_MEDIA = 3 * 1024 * 1024 - 4096
 MAX_TEXT = 4000
@@ -62,6 +67,17 @@ def invalid():
 
 def supplier_unavailable(reason=None, supplier_http=None):
     return TranslationError(502, 'provider_unavailable', reason=reason, supplier_http=supplier_http)
+
+
+def _normalize_tts_lengths(wav):
+    # The supplier emits streaming length placeholders even on a complete
+    # HTTP download. Normalize only its observed single-chunk PCM16 layout.
+    pcm_bytes = len(wav) - 44
+    if (pcm_bytes > 0 and pcm_bytes % 2 == 0
+            and int.from_bytes(wav[4:8], 'little') == TTS_RIFF_PLACEHOLDER
+            and wav[12:44] == TTS_PCM_HEADER):
+        wav[4:8] = pack('<I', len(wav) - 8)
+        wav[40:44] = pack('<I', pcm_bytes)
 
 
 def _audio(data):
@@ -428,8 +444,10 @@ class DashScopeTranslation:
                         wav.extend(chunk)
                         remaining -= len(chunk)
             phase = 'invalid_supplier_audio'
-            if (not wav.startswith(b'RIFF') or wav[8:12] != b'WAVE'
-                    or int.from_bytes(wav[4:8], 'little') != len(wav) - 8 or self._api_key.encode() in wav):
+            if not wav.startswith(b'RIFF') or wav[8:12] != b'WAVE' or self._api_key.encode() in wav:
+                raise supplier_unavailable(phase, supplier_http)
+            _normalize_tts_lengths(wav)
+            if int.from_bytes(wav[4:8], 'little') != len(wav) - 8:
                 raise supplier_unavailable(phase, supplier_http)
             with wave.open(BytesIO(wav), 'rb') as audio:
                 frames = audio.getnframes()
