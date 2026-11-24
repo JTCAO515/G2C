@@ -2,9 +2,9 @@
 # Pull requests skip jobs by changed path (.github/scripts/ci_paths.py, JT approved 2026-11-24);
 # a skipped job reports "skipped", which satisfies the required check. Pushes to main run every job.
 # Main verifies only its newest commit (JT approved 2026-11-24, #1445): a new main push cancels
-# the queued or running ci run of the previous main push. A cancelled run is not re-run
-# (ci-rerun.yml handles failures only), and its commit cannot be a release source; releases use
-# the main head of a merge freeze, whose push run nothing cancels.
+# the queued or running ci run of the previous main push; re-runs never cancel it. A cancelled
+# run is not re-run (ci-rerun.yml handles failures only), and its commit cannot be a release
+# source; releases use the main head of a merge freeze, whose push run nothing cancels.
 name: ci
 
 on:
@@ -16,9 +16,11 @@ permissions:
   contents: read
 
 concurrency:
-  # All main pushes share one group, so a newer main push cancels the older run.
-  # Heads of the same PR still share their ref and replace obsolete PR runs, as before.
-  group: ${{ github.event_name == 'push' && 'ci-main-push' || format('ci-{0}', github.ref) }}
+  # First attempts of main pushes share one group, so a newer main push cancels the older run.
+  # A re-run (manual or ci-rerun.yml) gets its own group per commit, so re-running an older
+  # commit never cancels the newest main run. Heads of the same PR still share their ref and
+  # replace obsolete PR runs, as before.
+  group: ${{ github.event_name != 'push' && format('ci-{0}', github.ref) || github.run_attempt == '1' && 'ci-main-push' || format('ci-main-rerun-{0}', github.sha) }}
   cancel-in-progress: true
 
 env:
