@@ -3,7 +3,7 @@ from types import SimpleNamespace
 import unittest
 
 from cj_api.lio_dialogue_routes import _message
-from cj_message.lio_context import CAPABILITIES_EN, CAPABILITIES_ZH, LioCitation, PERSONA, UNSETTLED_VISIBLE_ANSWER, answer_prompt, display_answer
+from cj_message.lio_context import ANSWER_DETAIL, CAPABILITIES_EN, CAPABILITIES_ZH, LioCitation, PERSONA, UNSETTLED_VISIBLE_ANSWER, answer_prompt, display_answer
 from cj_message.lio_timeline import TimelineMessage
 
 
@@ -64,11 +64,11 @@ class LioVoice(unittest.TestCase):
         self.assertLessEqual(len(PERSONA.split()), 450)
         for clause in (
             'foreign-passport visitor', 'Chinese ID card', 'Chinese phone number',
-            'WeChat Pay or Alipay', '30 Chinese characters or 20 English words',
-            '80 characters or 50 words', '150 characters or 90 words', 'at most 3 list items',
-            'Count the closing question', 'do not count towards English word limits',
+            # Length bands revised by #1474 (docs/lio-voice.md §3); detail bands live in ANSWER_DETAIL.
+            'WeChat Pay or Alipay', '40 Chinese characters or 25 English words',
+            'do not count towards English word limits',
             'first answer what you can', 'once in the first person', 'keep helping',
-            'The app handles saving', 'end with one specific question',
+            'The app handles saving', 'End with at most one specific question',
             'Chinese name in bold', 'omit unknown names', '110 (police)', '120 (ambulance)',
             '我综合了地图、天气等多方面的信息', 'I combine maps, weather and other trusted information',
         ):
@@ -78,6 +78,8 @@ class LioVoice(unittest.TestCase):
             self.assertNotIn(term, PERSONA.casefold())
         for locale, ending in (('zh', 'Reply in Chinese.'), ('en', 'Reply in English.')):
             self.assertEqual(answer_prompt(locale), PERSONA + ' ' + ending)
+        for clause in ('120–300 Chinese characters or 80–180 English words', 'up to 500 characters or 300 words'):
+            self.assertIn(clause, ANSWER_DETAIL)
 
     def test_coordinate_pairs_fail_closed_at_the_timeline(self):
         for text in (

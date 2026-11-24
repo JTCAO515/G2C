@@ -854,7 +854,7 @@ class RealTools:
         else:
             from cj_message.lio_context import LioCitation, LioToolProgress, answer_prompt
             chinese = lio_locale == 'zh'
-            system += ' ' + answer_prompt(lio_locale,question=messages[-1]['content'])
+            system += ' ' + answer_prompt(lio_locale,question=messages[-1]['content'],detailed=True)
             if worker.lio_planning is not None:
                 system += worker.lio_planning.scene_context(binding,datetime.now(timezone.utc))
             today = lio_question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
