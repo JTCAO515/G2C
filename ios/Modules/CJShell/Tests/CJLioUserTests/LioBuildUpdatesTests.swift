@@ -5,20 +5,20 @@ import Testing
 struct LioBuildUpdatesTests {
     @Test func bundledBookKeepsOnlyCurrentAndPreviousAndBothLanguages() throws {
         let book = try LioBuildUpdates.bundled.get()
-        #expect(book.currentBuild == 54)
-        #expect(book.releases.map(\.build) == [54, 53])
-        let current = try book.release(for: 54)
-        let previous = try book.release(for: 53)
-        #expect(current.previousBuild == 53)
+        #expect(book.currentBuild == 55)
+        #expect(book.releases.map(\.build) == [55, 54])
+        let current = try book.release(for: 55)
+        let previous = try book.release(for: 54)
+        #expect(current.previousBuild == 54)
         #expect(current.sections.map(\.id) == [.changes, .comparison, .testing, .known, .service])
         #expect(current.whatToTest(.chinese).contains("用默认字号测中英界面"))
-        #expect(current.whatToTest(.english).contains("Taxi place search requires internet access and an enabled tester account."))
-        #expect(current.whatToTest(.chinese).contains("「插件」改名为「工具」"))
-        #expect(current.whatToTest(.english).contains("Translation is one page"))
-        #expect(previous.whatToTest(.chinese).contains("常用语卡片可放大、朗读"))
-        #expect(previous.whatToTest(.english).contains("Phrase cards show and read common phrases."))
+        #expect(current.whatToTest(.english).contains("Nearby and taxi place search require internet access and an enabled tester account."))
+        #expect(current.whatToTest(.chinese).contains("底部改为「聊天 / 行程 / 工具 / 我的」"))
+        #expect(current.whatToTest(.english).contains("Open in DiDi now opens DiDi"))
+        #expect(previous.whatToTest(.chinese).contains("「插件」改名为「工具」"))
+        #expect(previous.whatToTest(.english).contains("Translation is one page"))
         #expect(previous.whatToTest(.chinese).contains("用默认字号测中英界面"))
-        #expect(throws: LioBuildUpdates.Failure.unlistedBuild) { try book.release(for: 51) }
+        #expect(throws: LioBuildUpdates.Failure.unlistedBuild) { try book.release(for: 53) }
     }
 
     @Test func malformedOrIncompleteReleaseContentIsNotAccepted() throws {
