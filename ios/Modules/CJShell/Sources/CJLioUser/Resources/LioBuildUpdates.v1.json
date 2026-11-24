@@ -1,7 +1,104 @@
 {
   "schema": 1,
-  "currentBuild": 51,
+  "currentBuild": 53,
   "releases": [
+    {
+      "build": 53,
+      "previousBuild": 51,
+      "sections": [
+        {
+          "id": "changes",
+          "title": {
+            "en": "New and improved",
+            "zh": "本版新增和修改"
+          },
+          "items": {
+            "zh": [
+              "本地协助可离线查看紧急号码和使领馆目录，也可出示中文求助卡。聊天页可打开 SOS，求助草稿只保存在本机。",
+              "常用语卡片可放大、朗读；地铁指南提供北京、上海和成都的乘车步骤及官方线路图。",
+              "支付开通指南介绍支付宝和微信支付的境外卡绑定步骤及常见问题。汇率换算新增欧洲央行参考汇率，含人民币，并显示汇率日期。",
+              "打车可从行程选地点、查看估价或在滴滴打开。可把目的地的中文地址直接给司机看。"
+            ],
+            "en": [
+              "Use Local Support offline to view emergency numbers, find embassies and consulates, or show a help card in Chinese. Open SOS from Chat. Help drafts stay on this device.",
+              "Phrase cards show and read common phrases. The Metro Guide covers Beijing, Shanghai and Chengdu, with links to official maps.",
+              "The Payment Setup Guide explains how to link an international card in Alipay or Weixin Pay and what to check when setup fails. Currency Converter shows the ECB reference rates and their date, including Chinese yuan.",
+              "Use a trip stop to get a taxi estimate, open DiDi, or show the destination address in Chinese."
+            ]
+          }
+        },
+        {
+          "id": "comparison",
+          "title": {
+            "en": "Changes since the previous build",
+            "zh": "与上一版的区别"
+          },
+          "items": {
+            "zh": [
+              "构建 53 接续构建 51。翻译的文字、语音、图片均使用在线千问。图片译文可按照片中的文字位置显示，也可逐行对照。"
+            ],
+            "en": [
+              "Build 53 follows build 51. Text, voice and photo translation use Qwen online. See translated text in place on the photo, or switch to a line-by-line view."
+            ]
+          }
+        },
+        {
+          "id": "testing",
+          "title": {
+            "en": "Suggested checks",
+            "zh": "建议怎么测"
+          },
+          "items": {
+            "zh": [
+              "用默认字号测中英界面，打开旧对话、切后台再恢复，核对草稿；再测三种翻译和打车预填。图片翻译可切换译图、照片和逐行对照。在汇率换算里试一次人民币换算，核对来源日期。语音翻译可加测一段约一秒的中文录音。",
+              "开飞行模式查看本地协助、使馆、中文卡和草稿。请勿拨打任何号码。滴滴只走到确认页，请勿下单。",
+              "遇到问题，请在内部测试群发截图、问题记录及发生时间。"
+            ],
+            "en": [
+              "At the default text size, check both languages. Reopen an earlier chat, return from the background, and confirm the draft. Try all three translation modes and taxi prefill. For photos, switch between the translated photo, the photo itself and the line-by-line view. Convert a yuan amount and check the rate date. Include a Chinese voice recording around one second long.",
+              "In airplane mode, check Local Support, embassies, the Chinese cards and drafts. Do not place any calls. In DiDi, stop at vehicle confirmation without ordering.",
+              "Share a screenshot, the copied issue record and the time it happened in the internal testing group."
+            ]
+          }
+        },
+        {
+          "id": "known",
+          "title": {
+            "en": "Known issues and checks to avoid",
+            "zh": "已知问题和暂不测试内容"
+          },
+          "items": {
+            "zh": [
+              "酒店、千问朗读、附近、天气、航班、上网卡、玩乐暂未开放。",
+              "本地协助暂不发送求助消息，也不会从对话自动触发。查看当前位置的中文地址和医疗卡尚未开放。"
+            ],
+            "en": [
+              "Hotels, Qwen voice playback, Nearby, Weather, Flights, eSIM and Activities are unavailable in this build.",
+              "Local Support does not send help requests or open automatically from chat. The Chinese address lookup and medical card are unavailable."
+            ]
+          }
+        },
+        {
+          "id": "service",
+          "title": {
+            "en": "Online service changes",
+            "zh": "在线服务变化"
+          },
+          "items": {
+            "zh": [
+              "翻译和打车需要联网，供已开通的内测账号使用。滴滴决定实际价格。打车只在滴滴继续。",
+              "修复很短的中文语音翻译偶尔失败。",
+              "修复追问行程天数时偶尔丢失已提供日期。"
+            ],
+            "en": [
+              "Translation and taxi estimates require internet access and an enabled tester account. DiDi sets the final price and handles the ride.",
+              "Fixed occasional failures when translating very short Chinese recordings.",
+              "Fixed an issue where Lio could lose dates you had already shared when asking how many days you would travel."
+            ]
+          }
+        }
+      ]
+    },
     {
       "build": 51,
       "previousBuild": 50,
@@ -82,93 +179,6 @@
             ],
             "en": [
               "This build updates the Translation screen. See #1274 for account enablement and the live translation retest."
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "build": 50,
-      "previousBuild": 49,
-      "sections": [
-        {
-          "id": "changes",
-          "title": {
-            "en": "New and improved",
-            "zh": "本版新增和修改"
-          },
-          "items": {
-            "zh": [
-              "更新语音录音入口，修复打开语音输入时的闪退。翻译页可用右上角「完成」、点空白或上滑收起键盘。",
-              "顺序为聊天、行程、插件、记忆。邀请码与记忆编辑也可用「完成」收起键盘。"
-            ],
-            "en": [
-              "Updated the recording entry to address the crash when opening voice input. In Translation, tap Done at the top right, tap an empty spot, or swipe up to dismiss the keyboard.",
-              "The tabs are Chat, Trips, Tools, and Memory. Done also dismisses the keyboard on the invitation and memory editing screens."
-            ]
-          }
-        },
-        {
-          "id": "comparison",
-          "title": {
-            "en": "Changes since the previous build",
-            "zh": "与上一版的区别"
-          },
-          "items": {
-            "zh": [
-              "与构建 49 相比，翻译使用千问和香港翻译服务，需要联网。语音和照片上传后显示「正在识别并翻译…」。"
-            ],
-            "en": [
-              "Compared with build 49, translation uses Qwen through the Hong Kong translation service and requires an internet connection. After sending audio or a photo, the app shows “Recognizing and translating…”."
-            ]
-          }
-        },
-        {
-          "id": "testing",
-          "title": {
-            "en": "Suggested checks",
-            "zh": "建议怎么测"
-          },
-          "items": {
-            "zh": [
-              "打开「插件 → 翻译」，点语音入口，核对不闪退。打开录音后可切后台结束这次录音。",
-              "翻译页输入几字，分别用「完成」、点空白和上滑收起键盘，确认输入保留、按钮位置正常。核对四个底部入口的顺序。",
-              "抽测构建 49 的第 1、3、4 项：强退重开恢复旧对话和草稿，历史分别打开旧和新对话，切后台 10 秒及锁屏 60 秒后恢复。"
-            ],
-            "en": [
-              "Open Tools → Translation and tap voice input. Check that the app stays open. You can leave the app in the background to end the recording.",
-              "Enter a few words in Translation. Dismiss the keyboard with Done, an empty-area tap, and an upward swipe. Check that the draft and buttons stay in place. Check the four tabs in order.",
-              "Repeat build 49 checks 1, 3, and 4: force-quit and restore an older chat and its draft, open both chats from history, then return after 10 seconds in the background and 60 seconds locked."
-            ]
-          }
-        },
-        {
-          "id": "known",
-          "title": {
-            "en": "Known issues and checks to avoid",
-            "zh": "已知问题和暂不测试内容"
-          },
-          "items": {
-            "zh": [
-              "真实翻译等账号开通通知后再测。收到通知后，文字中英各三条、语音中英各三次（含无声录音），并用菜单、路牌、小票和药品说明各三张照片核对结果。"
-            ],
-            "en": [
-              "Wait until your account is enabled before checking live translation. When notified, translate three texts and three recordings in each direction, including a silent recording, and test three photos each of menus, signs, receipts, and medicine instructions."
-            ]
-          }
-        },
-        {
-          "id": "service",
-          "title": {
-            "en": "Online service changes",
-            "zh": "在线服务变化"
-          },
-          "items": {
-            "zh": [
-              "本次先核对 App 操作。服务可用后会在 #1274 补发真实翻译复测通知。"
-            ],
-            "en": [
-              "This round focuses on app interactions. See #1274 for the live translation retest notice once the service is enabled."
             ]
           }
         }
