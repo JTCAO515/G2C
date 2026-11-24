@@ -148,7 +148,7 @@ import XCTest
                                "-cj.ui.language.v1", language, "-lio.ui.appearance.v1", appearance]
         if partial { app.launchArguments.append("--lio-hotels-preview-partial") }
         app.launch()
-        let tools = app.tabBars.buttons[language == "en" ? "Tools" : "插件"]
+        let tools = app.tabBars.buttons[language == "en" ? "Tools" : "工具"]
         XCTAssertTrue(tools.waitForExistence(timeout: 8))
         tools.tap()
         app.buttons["lio.tools.hotels"].tap()

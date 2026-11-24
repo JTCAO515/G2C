@@ -137,7 +137,7 @@ import XCTest
                                "-lio.taxi.seen-guide.v1", showGuide ? "NO" : "YES"]
         if let scenario { app.launchArguments.append("--lio-taxi-preview-\(scenario)") }
         app.launch()
-        let tools = app.tabBars.buttons[language == "en" ? "Tools" : "插件"]
+        let tools = app.tabBars.buttons[language == "en" ? "Tools" : "工具"]
         XCTAssertTrue(tools.waitForExistence(timeout: 8))
         tools.tap()
         app.buttons["lio.tools.taxi"].tap()

@@ -10,7 +10,7 @@ import XCTest
                                        "-lio.ui.appearance.v1", appearance]
                 app.launch()
                 defer { app.terminate() }
-                let tools = app.tabBars.buttons[language == "en" ? "Tools" : "插件"]
+                let tools = app.tabBars.buttons[language == "en" ? "Tools" : "工具"]
                 XCTAssertTrue(tools.waitForExistence(timeout: 8))
                 tools.tap()
                 app.buttons["lio.tools.translation"].tap()
@@ -44,7 +44,7 @@ import XCTest
                                        "UICTContentSizeCategoryAccessibilityXXXL"]
                 app.launch()
                 defer { app.terminate() }
-                let tools = app.tabBars.buttons[language == "en" ? "Tools" : "插件"]
+                let tools = app.tabBars.buttons[language == "en" ? "Tools" : "工具"]
                 XCTAssertTrue(tools.waitForExistence(timeout: 8))
                 tools.tap()
                 app.buttons["lio.tools.translation"].tap()

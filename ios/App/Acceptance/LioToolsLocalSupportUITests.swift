@@ -145,7 +145,7 @@ import XCTest
                                        "-lio.ui.appearance.v1", appearance]
                 app.launch()
                 defer { app.terminate() }
-                let tools = app.tabBars.buttons[language == "en" ? "Tools" : "插件"]
+                let tools = app.tabBars.buttons[language == "en" ? "Tools" : "工具"]
                 XCTAssertTrue(tools.waitForExistence(timeout: 8))
                 tools.tap()
                 let support = app.buttons["lio.tools.local-support"]
@@ -242,7 +242,7 @@ import XCTest
     }
 
     private func openLocalSupport(_ app: XCUIApplication, language: String = "en") {
-        let tools = app.tabBars.buttons[language == "en" ? "Tools" : "插件"]
+        let tools = app.tabBars.buttons[language == "en" ? "Tools" : "工具"]
         XCTAssertTrue(tools.waitForExistence(timeout: 8))
         tools.tap()
         let support = app.buttons["lio.tools.local-support"]

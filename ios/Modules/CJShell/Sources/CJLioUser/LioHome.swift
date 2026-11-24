@@ -43,7 +43,7 @@ public struct LioHome<MenuContent: View>: View {
     @State private var menuOpen = false
     @State private var followsAnswer = true
     @State private var opening = Opening.beforeNext
-    @State private var tab = Tab.chat
+    @State private var tab = Tab.initial
     @State private var tripPath: [LioTripRoute] = []
     @Namespace private var tripZoomNamespace
     @State private var memoryBusy = false
@@ -77,7 +77,25 @@ public struct LioHome<MenuContent: View>: View {
         let card: LioTripCard?
         let plan: ObjectIdentifier?
     }
-    private enum Tab { case chat, trips, tools, memory }
+    private enum Tab {
+        case chat, trips, tools, memory
+
+        /// Chat, except that Debug builds accept `--lio-initial-tab tools` for local screenshots.
+        static var initial: Tab {
+            #if DEBUG
+            let arguments = ProcessInfo.processInfo.arguments
+            if let index = arguments.firstIndex(of: "--lio-initial-tab"), index + 1 < arguments.count {
+                switch arguments[index + 1] {
+                case "trips": return .trips
+                case "tools": return .tools
+                case "memory": return .memory
+                default: break
+                }
+            }
+            #endif
+            return .chat
+        }
+    }
     private enum Opening: Equatable { case beforeNext, before(Data), hidden }
     private struct ProfileEdit: Identifiable {
         let id = UUID()
@@ -195,7 +213,7 @@ public struct LioHome<MenuContent: View>: View {
                              sessionIsCurrent: toolsSessionIsCurrent)
                     .environment(\.lioLocalSupportDraft, activeSupportDraft)
                     .background(LioTabBarAppearance().frame(width: 0, height: 0))
-                    .tabItem { Label(language.text("Tools", "插件"), systemImage: "puzzlepiece.extension") }
+                    .tabItem { Label(LioToolCatalog.title(language), systemImage: "square.grid.2x2") }
                     .tag(Tab.tools)
             }
             if let savedMemory {
