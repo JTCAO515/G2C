@@ -5,6 +5,8 @@ RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.l
     && pip install --no-cache-dir uv==0.12.14
 WORKDIR /app
 COPY pyproject.toml uv.lock ./
+# Third-party dependencies only: this layer is reused until pyproject.toml or uv.lock changes.
+RUN uv sync --locked --no-dev --no-install-project
 COPY backend ./backend
 COPY scripts ./scripts
 COPY deploy ./deploy
