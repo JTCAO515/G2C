@@ -14,6 +14,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import time
 
 ROOT = Path(__file__).resolve().parents[1]
 WORK = ROOT / '.local/pg-suites'
@@ -723,15 +724,39 @@ def group_runtime_fixture_boundary():
 GROUPS.update(runtime_fixture_boundary=group_runtime_fixture_boundary)
 
 
-def group_lio_exploration():
+def _lio_exploration_env():
     pg=Path(os.environ.get('CJ_PG17_BINDIR',bindir()))
-    env=dict(clean_env(),CJ_PG_BINDIR=str(pg),PATH=str(pg)+os.pathsep+os.environ['PATH'])
-    results=[script('backend/cj_api/tests/'+name,env=env) for name in
-             ('lio_exploration_origin_pg.py','lio_exploration_flow_pg.py')]
-    return 1 if any(results) else 0
+    return dict(clean_env(),CJ_PG_BINDIR=str(pg),PATH=str(pg)+os.pathsep+os.environ['PATH'])
 
 
-GROUPS.update(lio_exploration=group_lio_exploration)
+def _lio_exploration_parts():
+    # Read the literal PARTS tuple without importing the suite (it imports this module).
+    import ast
+    source=(BACKEND/'cj_api/tests/lio_exploration_origin_pg.py').read_text(encoding='utf-8')
+    for node in ast.parse(source).body:
+        if isinstance(node,ast.Assign) and [getattr(t,'id',None) for t in node.targets]==['PARTS']:
+            parts=ast.literal_eval(node.value)
+            if parts and all(isinstance(p,str) for p in parts) and len(set(parts))==len(parts):
+                return parts
+    raise SystemExit('lio_exploration_origin_pg.py must define a literal PARTS tuple of unique names')
+
+
+def _lio_exploration_group(part):
+    def group():
+        return script('backend/cj_api/tests/lio_exploration_origin_pg.py',part,env=_lio_exploration_env())
+    return group
+
+
+def group_lio_exploration_flow():
+    return script('backend/cj_api/tests/lio_exploration_flow_pg.py',env=_lio_exploration_env())
+
+
+# One group per independent origin proof (formerly a single ~37 min group), then the flow script.
+_LIO_EXPLORATION={'lio_exploration_'+part:_lio_exploration_group(part) for part in _lio_exploration_parts()}
+_LIO_EXPLORATION.update(lio_exploration_flow=group_lio_exploration_flow)
+if len(_LIO_EXPLORATION)!=len(_lio_exploration_parts())+1 or set(_LIO_EXPLORATION)&set(GROUPS):
+    raise SystemExit('lio exploration group names collide')
+GROUPS.update(_LIO_EXPLORATION)
 
 
 def group_runtime_actor():
@@ -770,21 +795,74 @@ def group_lio_failed_history():
 GROUPS.update(lio_failed_history=group_lio_failed_history)
 
 
+# Median CI minutes per group (ubuntu-latest, 8 green runs on 2026-11-24). Used only to
+# balance --shard; every group still runs on exactly one shard. Unlisted groups count as
+# DEFAULT_MINUTES. Refresh from the "pg suite timings" line each shard prints.
+MINUTES = {
+    'lio_exploration_qualified_pipeline': 24.8, 'e2e': 8.6, 'memory_run': 6.1,
+    'scoped_runtime': 5.1, 'lio_calendar': 4.7, 'background_v3': 3.5, 'real_services': 3.4,
+    'trip_manual': 3.3, 'lio_exploration_rich_selection': 3.3, 'memory_typed': 3.1,
+    'hk_typed_worker': 3.1, 'lio_projection': 3.0, 'travel_message': 2.6, 'memory_decision': 2.6,
+    'lio_exploration_rich_provider': 2.0, 'needs_actions': 1.8, 'memory_ending_worker': 1.6,
+    'lio_exploration_rich_source': 1.6, 'registered_exit': 1.5, 'memory_erasure_api': 1.5,
+    'lio_exploration_rich_selection_undo': 1.4, 'lio_exploration_providers': 1.3,
+    'scoped_result': 1.2, 'local_run_host': 1.2, 'memory_auto_ending': 1.1,
+    'memory_publication': 1.0, 'lio_exploration_flow': 1.0, 'runtime_actor': 0.9,
+    'lio_failed_history': 0.9, 'fact_tool': 0.7, 'edit_memory': 0.7, 'trip_calendar': 0.6,
+    'memory_trip_erasure': 0.6, 'needs_trip': 0.5, 'supabase_pool_reset': 0.4,
+    'structured_read': 0.4, 'place_tool': 0.4, 'place_draft_source': 0.4, 'needs_runtime': 0.4,
+    'hk_recovery': 0.4, 'feasibility_runtime': 0.4, 'message_source': 0.3,
+    'memory_incremental_worker': 0.3, 'memory_decision_evidence': 0.3, 'hk_cloud_rehearsal': 0.3,
+    'background_limits': 0.3, 'background_jobs': 0.3,
+}
+DEFAULT_MINUTES = 0.15
+
+
+def shard_plan(count):
+    """Partition every group into `count` shards, longest first onto the least-loaded shard."""
+    if count < 1:
+        raise SystemExit('shard count must be positive')
+    weight = lambda name: MINUTES.get(name, DEFAULT_MINUTES)
+    loads, plan = [0.0] * count, [[] for _ in range(count)]
+    for name in sorted(GROUPS, key=lambda name: (-weight(name), name)):
+        index = min(range(count), key=lambda i: (loads[i], i))
+        plan[index].append(name)
+        loads[index] += weight(name)
+    order = {name: i for i, name in enumerate(GROUPS)}
+    plan = [sorted(names, key=order.__getitem__) for names in plan]
+    flat = [name for names in plan for name in names]
+    if len(flat) != len(GROUPS) or set(flat) != set(GROUPS):
+        raise SystemExit('shard plan must run every group exactly once')
+    return plan
+
+
 def main(argv):
+    if argv[:1] == ['--plan']:
+        plan = shard_plan(int(argv[1]))
+        print(json.dumps([{'minutes': round(sum(MINUTES.get(n, DEFAULT_MINUTES) for n in names), 1),
+                           'groups': names} for names in plan], indent=1))
+        return 0
     if argv[:1] == ['--shard']:
         index, count = map(int, argv[1].split('/'))
-        names = list(GROUPS)[index::count]
+        if not 0 <= index < count:
+            raise SystemExit(f'shard index {index} outside 0..{count - 1}')
+        names = shard_plan(count)[index]
+        print(f'pg suite shard {index}/{count}: {len(names)} of {len(GROUPS)} groups: '
+              + ' '.join(names), flush=True)
     else:
         names = argv or list(GROUPS)
-    results = {}
+    results, timings = {}, {}
     for name in names:
         print(f'::group::pg suite {name}', flush=True)
+        started = time.monotonic()
         try:
             results[name] = GROUPS[name]()
         except Exception as error:  # report and continue with remaining groups
             print(f'::error::pg suite {name}: {type(error).__name__}: {error}', flush=True)
             results[name] = 1
+        timings[name] = round((time.monotonic() - started) / 60, 2)
         print('::endgroup::', flush=True)
+    print('pg suite timings (minutes): ' + json.dumps(timings))
     print(json.dumps(results))
     return 1 if any(results.values()) else 0
 

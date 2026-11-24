@@ -77,17 +77,20 @@ jobs:
       CJ_PG16_BINDIR: /usr/lib/postgresql/16/bin
     steps:
       - uses: actions/checkout@v4
-      - name: Install PostgreSQL 16 and 17 (PGDG)
+      - name: Install PostgreSQL 16 and 17 (PGDG) and eatmydata
         run: |
           sudo apt-get update
-          sudo apt-get install -y postgresql-common
+          sudo apt-get install -y postgresql-common eatmydata
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
           sudo apt-get install -y postgresql-16 postgresql-17
           "$CJ_PG16_BINDIR/postgres" --version
           "$CJ_PG17_BINDIR/postgres" --version
       - uses: astral-sh/setup-uv@v6
       - run: uv sync --locked
-      - run: uv run --locked python -B scripts/pg_suites.py --shard ${{ matrix.shard }}/4
+      # Groups are balanced by measured minutes (scripts/pg_suites.py MINUTES); each runs once.
+      # eatmydata turns fsync into a no-op for the throwaway clusters on this disposable runner;
+      # writes still reach the page cache, so process kills and restarts behave as before.
+      - run: eatmydata uv run --locked python -B scripts/pg_suites.py --shard ${{ matrix.shard }}/4
 
   postgres:
     # Stable required check. Passes only if every shard passed, or all were skipped for docs.
