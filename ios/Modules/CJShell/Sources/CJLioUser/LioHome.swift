@@ -84,7 +84,7 @@ public struct LioHome<MenuContent: View>: View {
         let plan: ObjectIdentifier?
     }
     private enum Tab {
-        case chat, trips, tools, memory
+        case chat, trips, tools, me
 
         /// Chat, except that Debug builds accept `--lio-initial-tab tools` for local screenshots.
         static var initial: Tab {
@@ -94,7 +94,7 @@ public struct LioHome<MenuContent: View>: View {
                 switch arguments[index + 1] {
                 case "trips": return .trips
                 case "tools": return .tools
-                case "memory": return .memory
+                case "memory", "me": return .me
                 default: break
                 }
             }
@@ -233,13 +233,13 @@ public struct LioHome<MenuContent: View>: View {
                     .tabItem { Label(LioToolCatalog.title(language), systemImage: "square.grid.2x2") }
                     .tag(Tab.tools)
             }
-            if let savedMemory {
-                savedMemory
-                    .environment(\.lioMemorySuggestions, memorySuggestions)
-                    .background(LioTabBarAppearance().frame(width: 0, height: 0))
-                    .tabItem { Label(language.text("Memory", "记忆"), systemImage: "bookmark") }
-                    .tag(Tab.memory)
-            }
+            // #1452: Memory moves into Me, together with the settings and account rows from the chat menu.
+            LioMeView(language: language,
+                      memory: savedMemory.map { AnyView($0.environment(\.lioMemorySuggestions, memorySuggestions)) },
+                      menu: menu)
+                .background(LioTabBarAppearance().frame(width: 0, height: 0))
+                .tabItem { Label(language.text("Me", "我的"), systemImage: "person.crop.circle") }
+                .tag(Tab.me)
         }
         .environment(\.lioTaxiEntry, taxiEntry)
         .environment(\.lioNearbyService, nearbyService)
@@ -535,7 +535,6 @@ public struct LioHome<MenuContent: View>: View {
                         }
                         .lioRow()
                     }
-                    menu.lioRow()
                 }
                 .lioPage()
                 .toolbarBackground(LioTheme.paper, for: .navigationBar)
