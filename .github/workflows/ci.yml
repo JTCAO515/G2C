@@ -60,6 +60,8 @@ jobs:
       - run: python3 -B scripts/handoff.py check
       - name: Pull request path classifier tests
         run: python3 -B .github/scripts/test_ci_paths.py
+      - name: Capacity-miss re-run decision tests
+        run: python3 -B .github/scripts/test_ci_rerun.py
       - uses: astral-sh/setup-uv@v6
         if: needs.changes.outputs.docs_only != 'true'
       - run: uv sync --locked
