@@ -126,8 +126,8 @@ struct LioItineraryTimelineView: View {
                 if stop.place.driverAddress != nil {
                     HStack(spacing: LioTheme.Spacing.xs) {
                         chip(language.text("Taxi", "打车"), "car.fill")
-                        chip(language.text("Directions", "导航"), "arrow.triangle.turn.up.right.diamond")
-                        chip(language.text("Driver card", "司机卡"), "character.bubble")
+                        chip(language.text("Map", "导航"), "arrow.triangle.turn.up.right.diamond")
+                        chip(language.text("Driver", "司机卡"), "character.bubble")
                     }
                 }
             }
@@ -192,6 +192,7 @@ extension LioItineraryTimelineView {
 
     /// Proposal fixture: well-known Beijing sights with approximate public coordinates, for screenshots only.
     static func beijingPreview(_ language: LioLanguage) -> LioRichItinerary {
+        #if DEBUG
         func t(_ en: String, _ zh: String) -> String { language.text(en, zh) }
         func place(_ zh: String, _ en: String, _ lat: Double, _ lng: Double) -> LioRichItinerary.Place {
             .init(nameZH: zh, nameEN: en, address: zh, matched: true, point: .init(latitude: lat, longitude: lng))
@@ -236,6 +237,10 @@ extension LioItineraryTimelineView {
                      lodgingArea: t("Stay around Wangfujing or Dongsi for easy metro access.", "住王府井或东四一带，地铁方便。"),
                      hotels: [.init(id: "h1", place: place("王府井一带", "Wangfujing area", 39.914, 116.410),
                                     note: t("Walk to the Palace Museum", "步行可到故宫"))])
+        #else
+        // Release builds never show the proposal preview.
+        return .init(title: "", undated: true, days: [], lodgingArea: "", hotels: [])
+        #endif
     }
 }
 #endif
