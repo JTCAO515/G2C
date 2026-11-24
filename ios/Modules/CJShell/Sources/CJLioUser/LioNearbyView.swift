@@ -243,11 +243,18 @@ struct LioNearbyView: View {
     }
 
     private func locate() async {
+        let previous = here
+        let previousPhase = phase
         phase = .locating
         do {
             let location = try await service.currentLocation()
             try Task.checkCancellation()
             here = location
+            if location.coordinate == previous?.coordinate {
+                // Same spot: the search task does not rerun, so restore the page and skip another lookup.
+                phase = previousPhase == .locating ? .ready : previousPhase
+                return
+            }
             address = try? await service.reverse(location.coordinate)
         } catch is CancellationError {
             return
@@ -278,7 +285,8 @@ struct LioNearbyView: View {
         case .locationDenied: language.text("Allow location access to see places near you.", "请允许使用位置，才能查看你附近的地点。")
         case .signInRequired: language.text("Sign in again, then try again.", "请重新登录后重试。")
         case .notEnabled: language.text("Nearby isn’t available for this account yet.", "此账号暂未开通附近。")
-        case .quotaExceeded, .rateLimited: language.text("You’ve looked around a lot today. Try again later.", "今天查找次数较多，请稍后再试。")
+        case .quotaExceeded: language.text("You’ve looked around a lot today. Try again tomorrow.", "今天的查找次数已用完，明天再试。")
+        case .rateLimited: language.text("Too many lookups right now. Try again in a moment.", "查找太频繁，请稍后再试。")
         case .timedOut: language.text("This took too long. Try again.", "查找超时，请重试。")
         case .unavailable: language.text("Nearby isn’t available right now. Try again.", "附近暂时不可用，请重试。")
         }

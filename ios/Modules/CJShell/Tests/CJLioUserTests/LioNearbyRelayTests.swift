@@ -143,4 +143,36 @@ import Testing
         await #expect(throws: LioNearbyFailure.signInRequired) { try await signedOut.reverse(center) }
         #expect(sends == 0)
     }
+
+    @Test func lateRepliesAfterASessionChangeAreDiscarded() async throws {
+        var current = true
+        let relay = LioNearbyRelayClient(baseURL: base, isCurrent: { current }, bearer: { "fixture-only" },
+                                         newRequestID: { requestID }) { request in
+            current = false
+            return (items, response(try #require(request.url), status: 200))
+        }
+        await #expect(throws: CancellationError.self) {
+            try await relay.search(.init(center: center, categories: [.food], radius: 500, nearest: false))
+        }
+    }
+
+    @Test func aRetiredSessionSendsNothing() async throws {
+        var sends = 0
+        let relay = LioNearbyRelayClient(baseURL: base, isCurrent: { false }, bearer: { "fixture-only" },
+                                         newRequestID: { requestID }) { request in
+            sends += 1
+            return (items, response(try #require(request.url), status: 200))
+        }
+        await #expect(throws: LioNearbyFailure.signInRequired) { try await relay.reverse(center) }
+        #expect(sends == 0)
+    }
+
+    @Test func aReplyFromAnotherOriginIsRejected() async throws {
+        let foreign = URL(string: "https://other.example.invalid/v1/tools/nearby/search")!
+        let relay = LioNearbyRelayClient(baseURL: base, isCurrent: { true }, bearer: { "fixture-only" },
+                                         newRequestID: { requestID }) { _ in (items, response(foreign, status: 200)) }
+        await #expect(throws: LioNearbyFailure.unavailable) {
+            try await relay.search(.init(center: center, categories: [.food], radius: 500, nearest: false))
+        }
+    }
 }
