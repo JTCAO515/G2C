@@ -19,7 +19,10 @@ public struct LioTaxiEntry: Sendable {
             try await relay.rideLink(route)
         }, openRideLink: { url in
             try relay.requireCurrentSession()
-            return await UIApplication.shared.open(url, options: [.universalLinksOnly: true])
+            // v.didi.cn is not a universal link for this path; it redirects to DiDi's OneTravel app link with
+            // pickup and destination (#1451, checked by S). Open it normally only when DiDi is installed.
+            guard let didi = URL(string: "OneTravel://"), UIApplication.shared.canOpenURL(didi) else { return false }
+            return await UIApplication.shared.open(url)
         }, openAppStore: {
             UIApplication.shared.open(URL(string: "https://apps.apple.com/app/id554499054")!)
         })

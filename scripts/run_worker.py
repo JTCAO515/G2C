@@ -182,6 +182,18 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
             issue_run_credential = None
             issue.cache_clear()
 
+    @contextmanager
+    def lease_retirement_reads():
+        # #1447: account-admission RUNs without a run credential (real tester
+        # scopes) used to check out one runtime connection per retirement check,
+        # hundreds per RUN. Reuse only the physical connection exactly like
+        # lease_run_credential: each check is still a fresh read-only transaction
+        # with the current scope/release, so a retirement stays visible at once.
+        from cj_api.local_account_admission_v2 import permit_retirement_read_lease,retirement_read_operation
+        with permit_retirement_read_lease(database,lambda:tools_configuration.services.require_scope(scope)), \
+                retirement_read_operation(purpose='hk_worker_retirement'):
+            yield
+
     def memory_credential():
         return bootstrap_credential if issue_run_credential is None else issue_run_credential()
 
@@ -357,7 +369,9 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         memory=memory,edit_publisher=None if edit_config is None else edit_config.publisher,edit_results=database.edit_results,
         memory_history=history is not None,history_adapter=history,
         message_context=message_context,
-        execution_lease=lease_run_credential if run_credential else lease_execution if reuse_connections else nullcontext,
+        execution_lease=(lease_run_credential if run_credential else lease_execution if reuse_connections
+                         else lease_retirement_reads if account_checker_builder is not None
+                         and getattr(tools_configuration,'services',None) is not None else nullcontext),
         owned_transaction_lease=(lambda: database.lease_run_transactions(runs.repository)) if reuse_connections else None,
         tools=tools_configuration,place_sources=place_sources,lio_original=lio_original,
         lio_planning=lio_planning,

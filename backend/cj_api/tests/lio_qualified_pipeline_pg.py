@@ -24,7 +24,19 @@ import lio_pipeline_models_pg
 import lio_route_sources_pg
 
 
-def main(*,natural_direct=False,production=False):
+# Each step runs native flows on its own fresh private clusters; the value is the number of
+# fresh-account qualifications it performs. production=True runs every step (10 in total);
+# the component run is natural + route_sources (2). `steps` runs a subset in this order so CI
+# can place the steps on different shards; each step keeps the same per-step assertions.
+STEPS={'natural':1,'production':2,'wording':2,'duration5':2,'provider_unavailable':2,'route_sources':1}
+COMPONENT_STEPS=('natural','route_sources')
+
+
+def main(*,natural_direct=False,production=False,steps=None):
+    full=tuple(STEPS) if production else COMPONENT_STEPS
+    steps=full if steps is None else tuple(steps)
+    if not steps or len(set(steps))!=len(steps) or not set(steps)<=set(full):
+        raise SystemExit(f'unknown or repeated qualified pipeline steps {steps}; expected a subset of {full}')
     original_manage=demo_accounts.manage
     original_router=LocalBudgetRouter.for_run
     original_run_once=native.run_worker.run_once
@@ -62,17 +74,25 @@ def main(*,natural_direct=False,production=False):
         return outcomes
     with patch.object(demo_accounts,'manage',manage),patch.object(LocalBudgetRouter,'for_run',router), \
             patch.object(native.run_worker,'run_once',run_once):
-        lio_pipeline_models_pg.main(natural_direct=natural_direct)
-        if production:
-            lio_pipeline_models_pg.main(natural_direct=natural_direct,production=True)
-            from lio_wording_connection_pg import check_wording_connections
-            check_wording_connections(lio_pipeline_models_pg.main, production=True, cases=(0,),
-                duration_days=4, natural_direct=True)
-            lio_pipeline_models_pg.main(production=True,cases=(0,),duration_days=5,travel_pace='moderate')
-            lio_pipeline_models_pg.main(production=True,cases=(0,),provider_available=False)
-        lio_route_sources_pg.main()
-    assert len(qualified)==(10 if production else 2)and selected and checked
-    print('PASS '+str(len(qualified))+' fresh same-account native4 qualifications via accepted B operator; original budget/config unchanged; actual registered plan-model and place/route consumers selected Native4RegisteredExit; every observed RUN <=6 model including Memory and <=45 amap; fixture HTTP/0 real; '+('full generation exercised'if production else'component generation only')+'; real G6 UNRUN',flush=True)
+        for step in steps:
+            if step=='natural':
+                lio_pipeline_models_pg.main(natural_direct=natural_direct)
+            elif step=='production':
+                lio_pipeline_models_pg.main(natural_direct=natural_direct,production=True)
+            elif step=='wording':
+                from lio_wording_connection_pg import check_wording_connections
+                check_wording_connections(lio_pipeline_models_pg.main, production=True, cases=(0,),
+                    duration_days=4, natural_direct=True)
+            elif step=='duration5':
+                lio_pipeline_models_pg.main(production=True,cases=(0,),duration_days=5,travel_pace='moderate')
+            elif step=='provider_unavailable':
+                lio_pipeline_models_pg.main(production=True,cases=(0,),provider_available=False)
+            elif step=='route_sources':
+                lio_route_sources_pg.main()
+            else:
+                raise SystemExit(f'qualified pipeline step {step!r} has no runner')
+    assert len(qualified)==sum(STEPS[step] for step in steps) and selected and checked
+    print('PASS '+str(len(qualified))+' fresh same-account native4 qualifications via accepted B operator; original budget/config unchanged; actual registered plan-model and place/route consumers selected Native4RegisteredExit; every observed RUN <=6 model including Memory and <=45 amap; fixture HTTP/0 real; '+('full generation exercised'if production else'component generation only')+'; real G6 UNRUN'+('' if steps==full else ' [steps: '+','.join(steps)+']'),flush=True)
 
 
 if __name__=='__main__':main()

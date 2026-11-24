@@ -78,6 +78,7 @@ def main():
     results.append(run('eval/lio_calendar_transitions',
                        [*pytest, 'eval/tests/test_lio_calendar_transitions.py']))
     results.append(run('eval/lio_voice', [*pytest, 'eval/tests/test_lio_voice.py']))
+    results.append(run('eval/lio_answer_quality', [*pytest, 'eval/tests/test_lio_answer_quality.py']))
     results.append(run('eval/basic_chain', [*pytest, 'eval/tests/test_basic_chain.py','eval/tests/test_basic_cost_v2.py',
                        'eval/tests/test_basic_native_v2.py','eval/tests/test_basic_joint_v2.py','eval/tests/test_basic_driver_v2.py',
                        'eval/tests/test_basic_chain_sm06_prefixes.py']))

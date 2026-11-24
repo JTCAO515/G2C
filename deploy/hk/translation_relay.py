@@ -70,9 +70,9 @@ def _response(channel, limit=MAX_RESPONSE):
     return status, body
 
 
-def socket_request(token, raw, *, path=SOCKET, tts=False, layout=False):
+def socket_request(token, raw, *, path=SOCKET, tts=False, layout=False, timeout=REQUEST_TIMEOUT):
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
-        connection.settimeout(REQUEST_TIMEOUT)
+        connection.settimeout(timeout)
         connection.connect(str(path))
         operation = b'\x03' if layout else b'\x01'
         if tts:

@@ -73,13 +73,18 @@ public struct LioHome<MenuContent: View>: View {
         let available: Bool
     }
     private enum SessionRefreshFailure: Error { case changedConversation }
+    private struct MemoryResume: Equatable {
+        let active: Bool
+        let session: UUID?
+        let ready: Bool
+    }
     private struct TripObservation: Equatable {
         let active: Bool
         let card: LioTripCard?
         let plan: ObjectIdentifier?
     }
     private enum Tab {
-        case chat, trips, tools, memory
+        case chat, trips, tools, me
 
         /// Chat, except that Debug builds accept `--lio-initial-tab tools` for local screenshots.
         static var initial: Tab {
@@ -89,7 +94,7 @@ public struct LioHome<MenuContent: View>: View {
                 switch arguments[index + 1] {
                 case "trips": return .trips
                 case "tools": return .tools
-                case "memory": return .memory
+                case "memory", "me": return .me
                 default: break
                 }
             }
@@ -237,13 +242,13 @@ public struct LioHome<MenuContent: View>: View {
                     .tabItem { Label(LioToolCatalog.title(language), systemImage: "square.grid.2x2") }
                     .tag(Tab.tools)
             }
-            if let savedMemory {
-                savedMemory
-                    .environment(\.lioMemorySuggestions, memorySuggestions)
-                    .background(LioTabBarAppearance().frame(width: 0, height: 0))
-                    .tabItem { Label(language.text("Memory", "记忆"), systemImage: "bookmark") }
-                    .tag(Tab.memory)
-            }
+            // #1452: Memory moves into Me, together with the settings and account rows from the chat menu.
+            LioMeView(language: language,
+                      memory: savedMemory.map { AnyView($0.environment(\.lioMemorySuggestions, memorySuggestions)) },
+                      menu: menu)
+                .background(LioTabBarAppearance().frame(width: 0, height: 0))
+                .tabItem { Label(language.text("Me", "我的"), systemImage: "person.crop.circle") }
+                .tag(Tab.me)
         }
         .environment(\.lioTaxiEntry, taxiEntry)
         .environment(\.lioNearbyService, nearbyService)
@@ -377,16 +382,18 @@ public struct LioHome<MenuContent: View>: View {
         .task(id: tripPlan?.pending == true && scenePhase == .active) {
             if scenePhase == .active, tripPlan?.pending == true { await tripPlan?.awaitUndo() }
         }
-        .task(id: scenePhase) {
+        .task(id: MemoryResume(active: scenePhase == .active, session: session?.revision,
+                               ready: session?.available != false)) {
             guard scenePhase == .active, let memoryActions else { return }
-            do {
-                memoryPending = try memoryActions.hasPendingChoice()
-            } catch {
-                memoryNotice = language.text("Couldn’t show your saved choice.", "暂时无法显示你的选择。")
+            let pending = LioMemoryResumeCheck.pendingChoice(sessionReady: session?.available != false,
+                                                             check: memoryActions.hasPendingChoice) { error in
+                LioDiagnosticLog.shared.record(error: error, stage: .localRecord)
             }
+            if let pending { memoryPending = pending }
         }
-        .task(id: memoryPending && scenePhase == .active) {
-            guard memoryPending, scenePhase == .active, let memoryActions else { return }
+        .task(id: memoryPending && scenePhase == .active && session?.available != false) {
+            // Wait for the session after returning from the background, like the resume check above (#1450).
+            guard memoryPending, scenePhase == .active, session?.available != false, let memoryActions else { return }
             await awaitMemoryChoice(memoryActions)
         }
         .task(id: pending?.id) {
@@ -537,7 +544,6 @@ public struct LioHome<MenuContent: View>: View {
                         }
                         .lioRow()
                     }
-                    menu.lioRow()
                 }
                 .lioPage()
                 .toolbarBackground(LioTheme.paper, for: .navigationBar)

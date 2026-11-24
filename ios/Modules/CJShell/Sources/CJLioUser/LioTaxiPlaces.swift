@@ -20,6 +20,8 @@ struct LioTaxiPlace: Codable, Equatable, Identifiable, Sendable {
     let nameZH: String
     let nameEN: String
     let addressZH: String?
+    /// English address from the search relay when it has one (#1451); older saved places have none.
+    let addressEN: String?
     let coordinate: Coordinate
 
     var id: ID { ID(name: nameZH, coordinate: coordinate) }
@@ -28,10 +30,21 @@ struct LioTaxiPlace: Codable, Equatable, Identifiable, Sendable {
         language == .chinese ? nameZH : nameEN
     }
 
-    init(nameZH: String, nameEN: String, addressZH: String?, coordinate: Coordinate) {
+    /// The Chinese name under the English one, so travellers can match signs and show the driver.
+    func secondaryName(in language: LioLanguage) -> String? {
+        language == .english && nameEN != nameZH ? nameZH : nil
+    }
+
+    /// English address first on English screens when known; the driver card always uses `addressZH`.
+    func address(in language: LioLanguage) -> String? {
+        language == .english ? (addressEN ?? addressZH) : addressZH
+    }
+
+    init(nameZH: String, nameEN: String, addressZH: String?, addressEN: String? = nil, coordinate: Coordinate) {
         self.nameZH = nameZH
         self.nameEN = nameEN
         self.addressZH = addressZH
+        self.addressEN = addressEN
         self.coordinate = coordinate
     }
 
