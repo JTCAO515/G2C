@@ -162,7 +162,7 @@
   {"id": "bj126", "nameZH": "南锣鼓巷", "nameEN": "Nanluogu Xiang", "x": 921.2, "y": 582.9, "lines": ["bj-06", "bj-08"]},
   {"id": "bj127", "nameZH": "东大桥", "nameEN": "Dongdaqiao", "x": 1124.8, "y": 608.5, "lines": ["bj-06", "bj-17"]},
   {"id": "bj128", "nameZH": "呼家楼", "nameEN": "Hujialou", "x": 1178.8, "y": 608.5, "lines": ["bj-06", "bj-10"]},
-  {"id": "bj129", "nameZH": "金台路", "nameEN": "Jingtai Lu", "x": 1233.8, "y": 608.5, "lines": ["bj-06", "bj-14"]},
+  {"id": "bj129", "nameZH": "金台路", "nameEN": "Jintai Lu", "x": 1233.8, "y": 608.5, "lines": ["bj-06", "bj-14"]},
   {"id": "bj130", "nameZH": "十里堡", "nameEN": "Shilipu", "x": 1264.1, "y": 608.5, "lines": ["bj-06"]},
   {"id": "bj131", "nameZH": "青年路", "nameEN": "Qingnian Lu", "x": 1300.1, "y": 608.5, "lines": ["bj-06"]},
   {"id": "bj132", "nameZH": "褡裢坡", "nameEN": "Dalianpo", "x": 1378.7, "y": 608.5, "lines": ["bj-06"]},

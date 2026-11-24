@@ -121,7 +121,8 @@ struct LioMetroMapCanvas: View {
 
     @State private var zoom: CGFloat = 1
     @State private var pan: CGSize = .zero
-    @State private var gestureStart: (zoom: CGFloat, pan: CGSize)?
+    @State private var lastMagnification: CGFloat?
+    @State private var lastTranslation: CGSize?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     static let maximumZoom: CGFloat = 12
@@ -182,34 +183,36 @@ struct LioMetroMapCanvas: View {
         return CGSize(width: min(max(pan.width, -limitX), limitX), height: min(max(pan.height, -limitY), limitY))
     }
 
+    // Both gestures apply only the change since their previous update, so pinching and dragging
+    // together compose instead of overwriting each other, and lifting one finger never jumps.
     private func magnify(size: CGSize) -> some Gesture {
         MagnifyGesture()
             .onChanged { value in
-                let start = gestureStart ?? (zoom, pan)
-                if gestureStart == nil { gestureStart = start }
-                let newZoom = min(max(start.zoom * value.magnification, 1), Self.maximumZoom)
+                let step = value.magnification / (lastMagnification ?? 1)
+                lastMagnification = value.magnification
+                let newZoom = min(max(zoom * step, 1), Self.maximumZoom)
                 // Zoom about the pinch point so the station under the fingers stays put.
                 let anchor = CGPoint(x: value.startAnchor.x * size.width - size.width / 2,
                                      y: value.startAnchor.y * size.height - size.height / 2)
-                let ratio = newZoom / start.zoom
+                let ratio = newZoom / zoom
                 zoom = newZoom
-                pan = Self.clamped(pan: CGSize(width: anchor.x - (anchor.x - start.pan.width) * ratio,
-                                               height: anchor.y - (anchor.y - start.pan.height) * ratio),
+                pan = Self.clamped(pan: CGSize(width: anchor.x - (anchor.x - pan.width) * ratio,
+                                               height: anchor.y - (anchor.y - pan.height) * ratio),
                                    zoom: newZoom, map: map, size: size)
             }
-            .onEnded { _ in gestureStart = nil }
+            .onEnded { _ in lastMagnification = nil }
     }
 
     private func drag(size: CGSize) -> some Gesture {
         DragGesture(minimumDistance: 4)
             .onChanged { value in
-                if gestureStart == nil { gestureStart = (zoom, pan) }
-                let start = gestureStart ?? (zoom, pan)
-                pan = Self.clamped(pan: CGSize(width: start.pan.width + value.translation.width,
-                                               height: start.pan.height + value.translation.height),
+                let previous = lastTranslation ?? .zero
+                lastTranslation = value.translation
+                pan = Self.clamped(pan: CGSize(width: pan.width + value.translation.width - previous.width,
+                                               height: pan.height + value.translation.height - previous.height),
                                    zoom: zoom, map: map, size: size)
             }
-            .onEnded { _ in gestureStart = nil }
+            .onEnded { _ in lastTranslation = nil }
     }
 
     private func zoomControls(size: CGSize) -> some View {
