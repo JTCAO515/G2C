@@ -4,6 +4,7 @@ import SwiftUI
 
 /// Metro guide (#1421): choose a city first, then read how to buy a ticket, pass security and use
 /// the gates, with the operator's official line map. Only cities with verified guidance are listed.
+/// Beijing, Shanghai and Guangzhou also open an interactive line map (#1450).
 struct LioMetroGuideView: View {
     let language: LioLanguage
     @Environment(\.colorScheme) private var colorScheme
@@ -98,6 +99,16 @@ struct LioMetroCityGuideView: View {
                     .accessibilityIdentifier("lio.metro.city")
                 }
 
+                if city.mapResource != nil {
+                    NavigationLink {
+                        LioMetroMapScreen(language: language, city: city)
+                    } label: {
+                        interactiveMapCard
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("lio.metro.interactive")
+                }
+
                 VStack(alignment: .leading, spacing: 4) {
                     Link(destination: city.mapURL) {
                         Label(language.text("Official line map and stations", "官方线路图和车站"),
@@ -131,6 +142,36 @@ struct LioMetroCityGuideView: View {
         .background(LioTheme.paper)
         .modifier(LioMetroNavigationTitle(title: city.name(in: language) + language.text(" Metro", "地铁"),
                                           colorScheme: colorScheme))
+    }
+
+    /// #1450: the bundled, zoomable line map, drawn from the operator's own station data.
+    private var interactiveMapCard: some View {
+        HStack(spacing: LioTheme.Spacing.sm) {
+            Image(systemName: "point.3.connected.trianglepath.dotted")
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(LioTheme.onVermilion)
+                .frame(width: 48, height: 48)
+                .background(LioTheme.vermilion, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(language.text("Interactive line map", "可交互线路图")).font(.headline)
+                Text(language.text("Zoom in, tap a station, then take a taxi or get directions.",
+                                   "缩放查看，点车站可打车或导航。"))
+                    .font(.footnote)
+                    .foregroundStyle(LioTheme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 8)
+            Image(systemName: "chevron.forward")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(LioTheme.inkSecondary)
+                .accessibilityHidden(true)
+        }
+        .foregroundStyle(LioTheme.ink)
+        .padding(LioTheme.Spacing.md)
+        .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
+        .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+        .contentShape(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
     }
 
     private func instruction(step: Int, _ section: LioMetroGuideSection) -> some View {
