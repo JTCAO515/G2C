@@ -249,18 +249,42 @@ def main():
             with patch.dict(os.environ,env):exercise(root,conninfo)
 
 
-if __name__=='__main__':
-    main()
-    from lio_rich_source_pg import main as rich_source_main
-    rich_source_main()
-    from lio_provider_sources_pg import main as providers_main
-    providers_main()
-    from lio_qualified_pipeline_pg import main as qualified_pipeline_main
-    qualified_pipeline_main(production=True)
-    import runpy
-    runpy.run_path(str(ROOT/'backend/draft/tests/rich_provider_pg.py'),run_name='__main__')
+# Independent proofs, each on its own private cluster. With no arguments every part runs
+# in this order; scripts/pg_suites.py reads PARTS and runs each part as its own group so
+# CI can place them on different shards. Adding a proof here adds it to CI automatically.
+PARTS=('origin','rich_source','providers','qualified_pipeline','rich_provider','api_scope_hold',
+       'rich_selection','rich_selection_undo')
+
+
+def run_part(name):
     import subprocess
-    subprocess.run([sys.executable,'-B','-m','pytest','-q','-p','no:cacheprovider',
-                    str(ROOT/'backend/memory/tests/test_api_scope_hold.py')],check=True)
-    for script in ('rich_selection_pg.py','rich_selection_undo_pg.py'):
-        subprocess.run([sys.executable,'-B',str(ROOT/'backend/cj_api/tests/lio_rich_component_pg.py'),script],check=True)
+    if name=='origin':
+        main()
+    elif name=='rich_source':
+        from lio_rich_source_pg import main as rich_source_main
+        rich_source_main()
+    elif name=='providers':
+        from lio_provider_sources_pg import main as providers_main
+        providers_main()
+    elif name=='qualified_pipeline':
+        from lio_qualified_pipeline_pg import main as qualified_pipeline_main
+        qualified_pipeline_main(production=True)
+    elif name=='rich_provider':
+        import runpy
+        runpy.run_path(str(ROOT/'backend/draft/tests/rich_provider_pg.py'),run_name='__main__')
+    elif name=='api_scope_hold':
+        subprocess.run([sys.executable,'-B','-m','pytest','-q','-p','no:cacheprovider',
+                        str(ROOT/'backend/memory/tests/test_api_scope_hold.py')],check=True)
+    elif name in ('rich_selection','rich_selection_undo'):
+        subprocess.run([sys.executable,'-B',str(ROOT/'backend/cj_api/tests/lio_rich_component_pg.py'),
+                        name+'_pg.py'],check=True)
+    else:
+        raise SystemExit(f'unknown lio exploration part {name!r}; expected one of {PARTS}')
+
+
+if __name__=='__main__':
+    names=sys.argv[1:] or PARTS
+    if not set(names)<=set(PARTS):
+        raise SystemExit(f'unknown lio exploration parts {sorted(set(names)-set(PARTS))}; expected {PARTS}')
+    for name in names:
+        run_part(name)
