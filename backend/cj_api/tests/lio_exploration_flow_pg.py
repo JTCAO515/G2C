@@ -8,6 +8,7 @@ import re
 from pathlib import Path
 import sys
 import tempfile
+import threading
 import time
 import traceback
 from unittest.mock import patch
@@ -168,9 +169,28 @@ def exercise(root,conninfo,*,saved_runs=(),generation=False,languages=('zh','en'
                 rollback_factory_calls.append(True)
                 return run_worker._lio_generation()
             planning=dict(lio_generation_factory=observed_factory)
-        outcomes=run_worker.run_once(database,model,auth,tools_configuration=tools,real_services=services,
-            memory_configuration_for_scope=lambda owner:memory if owner==scope else None,
-            account_admission=True,hk_demo_scopes=frozenset({scope}),lio_confirmation=signer,**planning)
+        # #1447: retirement checks in one RUN reuse a single physical connection
+        # (a fresh read-only transaction each time), never one runtime checkout
+        # per admission check. Bound: the RUN lease's own connection plus the one
+        # setup admission while binding Memory before the lease starts.
+        opened=database._open_runtime_connection
+        retirement_checkouts=[]
+        worker_thread=threading.get_ident()
+        def counted_open():
+            # Only the worker RUN thread; an in-process API call made during the
+            # RUN (memory race below) does its own unleased reads by design.
+            frame=sys._getframe(1) if threading.get_ident()==worker_thread else None
+            while frame is not None:
+                if frame.f_code.co_name=='retired' and frame.f_code.co_filename.endswith('local_account_admission_v2.py'):
+                    retirement_checkouts.append(True)
+                    break
+                frame=frame.f_back
+            return opened()
+        with patch.object(database,'_open_runtime_connection',side_effect=counted_open):
+            outcomes=run_worker.run_once(database,model,auth,tools_configuration=tools,real_services=services,
+                memory_configuration_for_scope=lambda owner:memory if owner==scope else None,
+                account_admission=True,hk_demo_scopes=frozenset({scope}),lio_confirmation=signer,**planning)
+        assert len(retirement_checkouts)<=2,('retirement checkouts per RUN',len(retirement_checkouts))
         if [outcome.status for outcome in outcomes]!=[expected]:
             with database.connect(scope)as db:
                 for outcome in outcomes:

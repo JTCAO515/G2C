@@ -74,6 +74,17 @@ def exercise(root,conninfo):
             with permit_retirement_read_lease(database,lambda:None),retirement_read_operation():
                 assert independent.check(tokens['alice']).status is AdmissionStatus.ALLOWED
                 assert independent.check(tokens['bob']).status is AdmissionStatus.UNKNOWN
+                # #1447: a context copied into another thread (e.g. an in-process API
+                # call during a worker RUN) must not borrow the leased connection; it
+                # falls back to its own fresh read instead of failing as UNKNOWN.
+                import contextvars,threading
+                foreign=[]
+                context=contextvars.copy_context()
+                worker=threading.Thread(target=lambda:foreign.append(context.run(independent.check,tokens['alice']).status))
+                worker.start();worker.join()
+                assert foreign==[AdmissionStatus.ALLOWED],foreign
+                assert len(opened)==2 and opened[1].closed
+                opened.pop()
                 result=post(progress_url+'/confirmation',dict(version='CLEANUP-API@1',
                             registry_digest=prepared['registry_digest'],confirmation='DELETE_ACCOUNT'))
                 assert independent.check(tokens['alice']).status is AdmissionStatus.DENIED
