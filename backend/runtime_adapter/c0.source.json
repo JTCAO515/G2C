@@ -79,7 +79,7 @@
     "backend/agent/cj_agent/lio_intake_optional_schema.py": "0e7c7c6ec9c8b0f95c245174efeddb3fc6b190f2b119ec204694df590b44d140",
     "backend/agent/cj_agent/lio_intake_schema.py": "10fb2f6ac2effe75ee33aacd75d9000090342c75538b316d5bdfede599cb2311",
     "backend/agent/cj_agent/lio_intake_start_schema.py": "553ca376c75d9e718a5013902c02c5e348fbe942991fd298a8a48452f99012b1",
-    "backend/agent/cj_agent/provider.py": "a7ef83de9d0df14df010b31f04d2b8180a12872b1b611f42db3dd8103397c8b3",
+    "backend/agent/cj_agent/provider.py": "60e52e7c900cd9b6e7bf9fbd06261d7e2a8867f23831a6e220c9a9c9d4f594e0",
     "backend/agent/cj_agent/worker.py": "e0758088c71b18d949d38e169d4bcea5fa06486858eae7c6b682994ba14b5dec",
     "backend/cj_api/lio_calendar_edit.py": "a692bf79cda0c5928fccbd4904f0291302bd805d965a23c8c9061099d5d3b4b4",
     "backend/cj_api/lio_calendar_ordinals.py": "f7f34103c4db79c5cb85e61f723f2869c91196fb71f181dd2609cc767dab09c3",
@@ -137,7 +137,7 @@
     "eval/optimization/score_v2.py": "015fa9f21b418fe49a5ac07a5fb3027e0422620a6616029f2ba6438bfa1e9322",
     "tooling/optimization/uv.lock": "c3729fbcd04627cb07bde4f5f21b9c4fbfa4748b3d7468d550c7fc2af62bc343"
   },
-  "system_prompt_sha256": "ee065cab0cd18142a2515c864dbedefa84c7767269c1acc4d07dd4f3cdc95886",
+  "system_prompt_sha256": "8a09abed4938cb0442652f6402d139c39add8e427db4d17ec170db0479603680",
   "task_sha256": "9d4376ba7512d6f3c0741036ae1bd0dda99752bbc9f8b8fb8dd7025c61a530ec",
   "task_version": "G2C-dialogue-cases.2",
   "tool_implementation_sha256": "71f19e9df910bd08c74d2785c3d5e2f3d5cf17ce96254dc1908ba8df867075e2",
