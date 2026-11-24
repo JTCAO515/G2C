@@ -4,60 +4,130 @@ import Observation
 import SwiftUI
 import UIKit
 
+/// Hold to talk: recording starts on press and is translated on release.
+/// Sliding up before release cancels; a tap shows how to use it. VoiceOver users
+/// activate once to start and again to translate.
 struct LioRelayVoiceInput: View {
     let language: LioLanguage
     let source: LioTranslationLanguage
     let enabled: Bool
     let isCurrent: @MainActor () -> Bool
     let onRecording: (LioTranslationRecording) -> Void
+    /// Recording prompt shown above the input bar while the button is held.
+    @Binding var prompt: LioVoicePrompt?
+    @Binding var notice: LioTranslationInputNotice?
     @State private var recorder = LioRelayVoiceRecorder()
-    @Environment(\.openURL) private var openURL
+    @State private var pressed = false
+    @State private var dragHeight: CGFloat = 0
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var cancelling: Bool { LioHoldToTalk.isCancelling(dragHeight: dragHeight) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Button {
-                guard enabled, isCurrent() else { return }
-                if recorder.isBusy { recorder.stop() }
-                else { recorder.start(isCurrent: isCurrent, onRecording: onRecording) }
-            } label: {
-                Label(recorder.isBusy
-                      ? language.text("Stop recording", "停止录音")
-                      : language.text("Speak", "语音输入"),
-                      systemImage: recorder.isBusy ? "stop.circle" : "mic")
-            }
-            .buttonStyle(LioTranslationActionStyle())
+        Image(systemName: recorder.isBusy ? "waveform" : "mic.fill")
+            .font(.title3.weight(.semibold))
+            .foregroundStyle(pressed || recorder.isBusy ? LioTheme.onVermilion : LioTheme.vermilion)
+            .frame(width: 44, height: 44)
+            .background(pressed || recorder.isBusy ? LioTheme.vermilion : LioTheme.surfaceSunken, in: Circle())
+            .scaleEffect(pressed && !reduceMotion ? 1.15 : 1)
+            .animation(LioTheme.Motion.animation(LioTheme.Motion.micro, reduceMotion: reduceMotion), value: pressed)
+            .opacity(enabled ? 1 : 0.5)
+            .contentShape(Circle())
+            .gesture(holdGesture, including: enabled ? .all : .none)
+            .accessibilityElement()
+            .accessibilityLabel(recorder.isBusy ? language.text("Stop and translate", "停止并翻译")
+                                                : language.text("Hold to talk", "按住说话"))
+            .accessibilityHint(language.text("Release to translate.", "松开即翻译。"))
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { toggleForAccessibility() }
             .accessibilityIdentifier("lio.translation.voice")
-            if let startedAt = recorder.startedAt {
-                HStack {
-                    Text(language.text("Recording", "录音中"))
-                    Text(timerInterval: startedAt...startedAt.addingTimeInterval(60), countsDown: false)
-                        .monospacedDigit()
-                }
-                .accessibilityElement(children: .combine)
+            .onChange(of: recorder.startedAt) { updatePrompt() }
+            .onChange(of: dragHeight) { updatePrompt() }
+            .onChange(of: recorder.failure) { _, failure in
+                guard let failure else { return }
+                notice = failure == .microphoneDenied
+                    ? deniedNotice
+                    : .init(text: language.text("Couldn’t record speech. Try again.", "暂时无法录音，请再试一次。"))
             }
-            if let failure = recorder.failure {
-                if failure == .microphoneDenied {
-                    Text(language.text("Allow microphone access in Settings to use voice input.", "请在设置中允许使用麦克风。"))
-                    Button(language.text("Open Settings", "打开设置")) {
-                        if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
-                    }
-                    .frame(minHeight: 44)
-                } else {
-                    Text(language.text("Couldn’t record speech. Try again.", "暂时无法录音，请再试一次。"))
-                }
+            .onChange(of: enabled) { _, available in
+                if !available { retire() }
             }
-        }
-        .foregroundStyle(LioTheme.ink)
-        .onChange(of: enabled) { _, available in
-            if !available { recorder.cancel() }
-        }
-        .onChange(of: source) { recorder.cancel() }
-        .onChange(of: scenePhase) { _, phase in
-            if phase == .background { recorder.cancel() }
-        }
-        .onDisappear { recorder.cancel() }
+            .onChange(of: source) { retire() }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .background { retire() }
+            }
+            .onDisappear { retire() }
     }
+
+    private var holdGesture: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { value in
+                dragHeight = value.translation.height
+                guard !pressed else { return }
+                pressed = true
+                notice = nil
+                guard enabled, isCurrent() else { return }
+                if AVAudioApplication.shared.recordPermission == .denied {
+                    notice = deniedNotice
+                    return
+                }
+                recorder.start(isCurrent: isCurrent, onRecording: onRecording)
+            }
+            .onEnded { _ in
+                let decision = LioHoldToTalk.release(recordingStartedAt: recorder.startedAt, at: Date(),
+                                                     dragHeight: dragHeight)
+                pressed = false
+                dragHeight = 0
+                switch decision {
+                case .translate: recorder.stop()
+                case .cancel, .tooShort: recorder.cancel()
+                }
+                if recorder.failure == nil, notice?.opensSettings != true,
+                   let hint = LioHoldToTalk.hint(decision, language: language) {
+                    notice = .init(text: hint)
+                }
+                prompt = nil
+            }
+    }
+
+    private var deniedNotice: LioTranslationInputNotice {
+        .init(text: language.text("Allow microphone access in Settings to use voice input.", "请在设置中允许使用麦克风。"),
+              opensSettings: true)
+    }
+
+    private func toggleForAccessibility() {
+        guard enabled, isCurrent() else { return }
+        if AVAudioApplication.shared.recordPermission == .denied {
+            notice = deniedNotice
+            return
+        }
+        if recorder.isBusy { recorder.stop() }
+        else {
+            notice = nil
+            recorder.start(isCurrent: isCurrent, onRecording: onRecording)
+        }
+    }
+
+    private func updatePrompt() {
+        guard let startedAt = recorder.startedAt else { prompt = nil; return }
+        prompt = LioVoicePrompt(startedAt: startedAt,
+                                text: LioHoldToTalk.recordingPrompt(cancelling: cancelling, language: language),
+                                cancelling: cancelling)
+    }
+
+    private func retire() {
+        recorder.cancel()
+        pressed = false
+        dragHeight = 0
+        prompt = nil
+    }
+}
+
+struct LioVoicePrompt: Equatable {
+    let startedAt: Date
+    let text: String
+    let cancelling: Bool
 }
 
 @MainActor @Observable
@@ -76,6 +146,12 @@ private final class LioRelayVoiceRecorder {
 
     func start(isCurrent: @escaping @MainActor () -> Bool, onRecording: @escaping (LioTranslationRecording) -> Void) {
         guard operation == nil, isCurrent() else { return }
+        // Asking for the microphone without a usage description terminates the app;
+        // builds without one (such as plain Debug) report that recording is unavailable.
+        guard Bundle.main.object(forInfoDictionaryKey: "NSMicrophoneUsageDescription") != nil else {
+            failure = .recordingUnavailable
+            return
+        }
         let id = UUID()
         operation = id
         failure = nil

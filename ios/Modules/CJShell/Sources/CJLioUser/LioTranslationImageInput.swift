@@ -10,8 +10,6 @@ struct LioTranslationImageInput: View {
     let enabled: Bool
     let isCurrent: @MainActor () -> Bool
     let onImage: (Data) -> Void
-    @Environment(\.openURL) private var openURL
-    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var photoPickerPresented = false
     @State private var photoRequest: UUID?
     @State private var cameraRequest: UUID?
@@ -29,41 +27,38 @@ struct LioTranslationImageInput: View {
         let source: Source
     }
     @State private var failure: LioTranslationMediaFailure?
+    /// Shown above the input bar; `opensSettings` adds an "Open Settings" action.
+    @Binding var notice: LioTranslationInputNotice?
 
     var body: some View {
-        let actions = typeSize.isAccessibilitySize
-            ? AnyLayout(VStackLayout(alignment: .leading))
-            : AnyLayout(HStackLayout())
-        VStack(alignment: .leading, spacing: 8) {
-            actions {
-                Button {
-                    guard enabled, isCurrent() else { return }
-                    photoRequest = UUID()
-                    photoPickerPresented = true
-                } label: {
-                    Label(language.text("Choose photo", "从相册选择"), systemImage: "photo")
-                }
-                .accessibilityIdentifier("lio.translation.photo")
-                Button {
-                    requestCamera()
-                } label: {
-                    Label(language.text("Take photo", "拍照"), systemImage: "camera")
-                }
-                .disabled(cameraRequest != nil)
-                .accessibilityIdentifier("lio.translation.camera")
+        Menu {
+            Button {
+                requestCamera()
+            } label: {
+                Label(language.text("Take photo", "拍照"), systemImage: "camera")
             }
-            .controlSize(.large)
-            .buttonStyle(LioTranslationActionStyle())
-            if let failure {
-                Text(message(failure)).foregroundStyle(LioTheme.ink)
-                    .accessibilityIdentifier("lio.translation.image-problem")
-                if failure == .cameraDenied {
-                    Button(language.text("Open Settings", "打开设置")) {
-                        if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
-                    }
-                    .frame(minHeight: 44)
-                }
+            .disabled(cameraRequest != nil)
+            .accessibilityIdentifier("lio.translation.camera")
+            Button {
+                guard enabled, isCurrent() else { return }
+                photoRequest = UUID()
+                photoPickerPresented = true
+            } label: {
+                Label(language.text("Choose from library", "从相册选"), systemImage: "photo.on.rectangle")
             }
+            .accessibilityIdentifier("lio.translation.photo")
+        } label: {
+            Image(systemName: "camera")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(enabled ? LioTheme.ink : LioTheme.inkSecondary)
+                .frame(width: 44, height: 44)
+                .background(LioTheme.surfaceSunken, in: Circle())
+        }
+        .disabled(!enabled)
+        .accessibilityLabel(language.text("Translate a photo", "拍照或选图翻译"))
+        .accessibilityIdentifier("lio.translation.camera-menu")
+        .onChange(of: failure) { _, value in
+            notice = value.map { LioTranslationInputNotice(text: message($0), opensSettings: $0 == .cameraDenied) }
         }
         .photosPicker(isPresented: $photoPickerPresented, selection: selection(for: photoRequest), matching: .images)
         .sheet(item: $camera) { presented in
@@ -133,7 +128,8 @@ struct LioTranslationImageInput: View {
         guard cameraRequest == request else { return }
         defer { if cameraRequest == request { cameraRequest = nil } }
         guard isCurrent() else { return }
-        guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
+        guard UIImagePickerController.isSourceTypeAvailable(.camera),
+              Bundle.main.object(forInfoDictionaryKey: "NSCameraUsageDescription") != nil else {
             failure = .cameraUnavailable
             return
         }
