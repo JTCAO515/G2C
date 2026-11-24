@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 import pytest
 
 from cj_api.plugin_tools import PluginCalls, PluginError
-from cj_api.taxi_tools import DiDiInformation, ESTIMATE, LINK, REVERSE_COUNT, TaxiService, register_taxi_routes
+from cj_api.taxi_tools import DiDiInformation, ESTIMATE, LINK, REVERSE_COUNT, SEARCH, TaxiService, register_taxi_routes
 from cj_auth.interfaces import AdmissionDecision, AdmissionReason, AdmissionStatus, TrustedPrincipal
 
 
@@ -40,6 +40,15 @@ def app_context(tmp_path):
 
     def transport(tool, params):
         seen.append((tool, params))
+        if tool == 'maps_textsearch':
+            if params['keywords'] == '找不到':
+                return {'content': [{'text': '[]'}]}
+            return {'content': [{'text': json.dumps([
+                dict(display_name='天安门', city='北京市', address='东长安街',
+                     location=dict(lat=39.916404, lng=116.410244)),
+                dict(display_name='跨城市结果', city='上海市', address='上海',
+                     location=dict(lat=31.23, lng=121.47)),
+            ])}]}
         if tool == 'taxi_estimate':
             return {'structuredContent': {'items': [{'productName': '快车', 'productCategory': '1',
                     'priceText': '约 20 元', 'private': 'excluded'}], 'traceId': 'fixture-trace'}}
@@ -60,11 +69,26 @@ def test_hong_kong_default_disabled():
     app = FastAPI()
     register_taxi_routes(app)
     with TestClient(app) as client:
-        for route in (ESTIMATE, LINK):
+        for route in (ESTIMATE, LINK, SEARCH):
             response = client.post(route, headers=AUTH, json=payload())
             assert response.status_code == 403
             assert response.json() == {'error': 'not_enabled'}
             assert response.headers['cache-control'] == 'no-store'
+
+
+def test_search_calls_expected_city_and_normalized_coordinates(app_context):
+    client, seen, _ = app_context
+    body = dict(version='TAXI.1', city='Beijing', query=' 天安门 ', near=point())
+    outside = client.post(SEARCH, headers={'Authorization': 'Bearer invited-external'}, json=body)
+    assert outside.status_code == 403 and seen == []
+    response = client.post(SEARCH, headers=AUTH, json=body)
+    assert response.status_code == 200
+    assert seen == [('maps_textsearch', dict(city='北京市', keywords='天安门', location='116.410244,39.916404'))]
+    assert response.json() == dict(version='TAXI.1', items=[
+        dict(name_zh='天安门', address_zh='东长安街', city='北京市', lat=39.916404, lng=116.410244,
+             coordinate_system='GCJ-02')])
+    no_match = client.post(SEARCH, headers=AUTH, json=dict(version='TAXI.1', city='北京', query='找不到'))
+    assert no_match.json() == dict(version='TAXI.1', items=[])
 
 
 def test_fixture_estimate_and_link_allow_no_identity_fields(app_context):

@@ -74,7 +74,15 @@ class DiDiMCPTransport:
                 error = packet['error']
                 code = error.get('code') if type(error) is dict else None
                 return {'error': {'code': code if type(code) is int else None}}
-            return packet['result']
+            result = packet['result']
+            if tool is DiDiTool.TEXT_SEARCH and type(result) is dict and 'content' in result:
+                try:
+                    decoded = json.loads(result['content'][0]['text'])
+                except (IndexError, KeyError, TypeError, ValueError):
+                    decoded = None
+                if _echoes_credential(decoded, self._key):
+                    raise OSError('didi_reply_unavailable')
+            return result
         except TimeoutError:
             raise TimeoutError('didi_http_timeout') from None
         except (HTTPException, OSError, RecursionError, ValueError):
