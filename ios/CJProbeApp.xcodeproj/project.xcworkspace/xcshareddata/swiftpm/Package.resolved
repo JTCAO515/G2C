@@ -1,5 +1,5 @@
 {
-  "originHash" : "caec64b2596ff8613e8573753fe9d0c276460b217cfd178d129d6630eade1756",
+  "originHash" : "adcfb4b1ace3c8e16e052fa4d0c07a23040466958402fd6197164b215a657ac9",
   "pins" : [
     {
       "identity" : "supabase-swift",
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-asn1.git",
       "state" : {
-        "revision" : "97fd57437fc94cfa6b62f2b8f84c50f433534e17",
-        "version" : "1.7.5"
+        "revision" : "3b6410f7dee09eb33cdd26260c5fd47fda19b0e2",
+        "version" : "1.7.3"
       }
     },
     {
@@ -33,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-collections",
       "state" : {
-        "revision" : "88754449ab766a739610b660e117762115fabc9c",
-        "version" : "1.7.6"
+        "revision" : "35a1edcb8ebd2bfe251d587f0b69e62af28f508c",
+        "version" : "1.7.3"
       }
     },
     {
