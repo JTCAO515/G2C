@@ -64,3 +64,55 @@ enum LioMetroCity: String, CaseIterable, Identifiable {
         )
     }
 }
+
+extension LioMetroCity {
+    /// The city's Chinese name, shown on its card in both languages so travellers can match signs.
+    var nativeName: String { name(in: .chinese) }
+
+    var identifier: String { "lio.metro.city." + rawValue }
+
+    func summary(in language: LioLanguage) -> String {
+        switch self {
+        case .beijing: language.text("Tickets, security and the official map", "买票、安检和官方线路图")
+        case .shanghai: language.text("Tickets, transport card and the official map", "单程票、交通卡和官方线路图")
+        case .chengdu: language.text("Tickets, security and the official map", "买票、安检和官方线路图")
+        }
+    }
+}
+
+/// The three steps of the written guide, in the order a traveller meets them.
+enum LioMetroGuideSection: CaseIterable {
+    case ticket, security, gates
+
+    var identifier: String {
+        switch self {
+        case .ticket: "lio.metro.ticket"
+        case .security: "lio.metro.security"
+        case .gates: "lio.metro.gates"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .ticket: "ticket"
+        case .security: "checkmark.shield"
+        case .gates: "tram"
+        }
+    }
+
+    func title(in language: LioLanguage) -> String {
+        switch self {
+        case .ticket: language.text("Buy a ticket", "买票")
+        case .security: language.text("Security check", "安检")
+        case .gates: language.text("Enter and exit", "进站与出站")
+        }
+    }
+
+    func text(for city: LioMetroCity, in language: LioLanguage) -> String {
+        switch self {
+        case .ticket: city.buying(in: language)
+        case .security: city.security(in: language)
+        case .gates: city.entering(in: language)
+        }
+    }
+}

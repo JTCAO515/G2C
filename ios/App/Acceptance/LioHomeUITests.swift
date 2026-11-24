@@ -60,6 +60,12 @@ import CryptoKit
                 XCTAssertTrue(tools.waitForExistence(timeout: 8))
                 tools.tap()
                 app.buttons["lio.tools.metro-guide"].tap()
+                // Choose a city first (#1421), then switch cities inside the guide.
+                for city in ["beijing", "shanghai", "chengdu"] {
+                    XCTAssertTrue(app.buttons["lio.metro.city.\(city)"].waitForExistence(timeout: 6))
+                }
+                try app.performAccessibilityAudit(for: .all)
+                app.buttons["lio.metro.city.beijing"].tap()
                 let picker = app.buttons["lio.metro.city"]
                 XCTAssertTrue(picker.waitForExistence(timeout: 6))
                 for city in language == "en" ? ["Shanghai", "Chengdu", "Beijing"] : ["上海", "成都", "北京"] {
