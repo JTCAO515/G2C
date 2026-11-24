@@ -42,23 +42,14 @@ struct LioTaxiView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                placeCard(language.text("Destination", "终点"), place: destination,
-                          identifier: "lio.taxi.destination",
-                          placeholder: language.text("Choose a destination", "选择终点")) {
-                    sheet = .destination
-                }
-                placeCard(language.text("Pickup", "起点"), place: pickup,
-                          identifier: "lio.taxi.pickup",
-                          placeholder: language.text("Choose a pickup point", "选择起点")) {
-                    sheet = .pickup
-                }
+                routeCard
                 if let pickupNotice { Text(pickupNotice).foregroundStyle(LioTheme.inkSecondary) }
                 if let recentNotice { Text(recentNotice).foregroundStyle(LioTheme.inkSecondary) }
                 estimateCard
-                rideActions
             }
-            .padding(18)
+            .padding(LioTheme.Spacing.md)
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) { rideActions }
         .background(LioTheme.paper)
         .foregroundStyle(LioTheme.ink)
         .tint(LioTheme.vermilion)
@@ -136,77 +127,133 @@ struct LioTaxiView: View {
         }
     }
 
-    private func placeCard(_ title: String, place: LioTaxiPlace?, identifier: String, placeholder: String,
-                           action: @escaping () -> Void) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.headline).accessibilityAddTraits(.isHeader)
-            Button(action: action) {
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(place?.name(in: language) ?? placeholder)
-                        if let address = place?.addressZH {
-                            Text(address).font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
-                        }
-                    }
-                    Spacer(minLength: 0)
-                    Image(systemName: "chevron.forward").accessibilityHidden(true)
-                }
-                .foregroundStyle(LioTheme.ink)
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
+    private var routeCard: some View {
+        HStack(alignment: .center, spacing: LioTheme.Spacing.sm) {
+            VStack(spacing: 0) {
+                Circle().fill(LioTheme.jade).frame(width: 10, height: 10)
+                Rectangle().fill(LioTheme.hairline).frame(width: 2).frame(maxHeight: .infinity)
+                Circle().fill(LioTheme.vermilion).frame(width: 10, height: 10)
+            }
+            .padding(.vertical, 18)
+            .accessibilityHidden(true)
+            VStack(spacing: 0) {
+                placeRow(language.text("Pickup", "起点"), place: pickup, identifier: "lio.taxi.pickup",
+                         placeholder: language.text("Choose a pickup point", "选择起点")) { sheet = .pickup }
+                Divider().overlay(LioTheme.hairline)
+                placeRow(language.text("Destination", "终点"), place: destination, identifier: "lio.taxi.destination",
+                         placeholder: language.text("Choose a destination", "选择终点")) { sheet = .destination }
+            }
+            Button(action: swapPlaces) {
+                Image(systemName: "arrow.up.arrow.down")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(LioTheme.vermilion)
+                    .frame(width: 44, height: 44)
+                    .background(LioTheme.surfaceSunken, in: Circle())
             }
             .buttonStyle(.plain)
-            .accessibilityIdentifier(identifier)
+            .disabled(pickup == nil || destination == nil || requestPending)
+            .accessibilityLabel(language.text("Swap pickup and destination", "互换起点和终点"))
+            .accessibilityIdentifier("lio.taxi.swap")
         }
-        .padding(16)
+        .padding(.horizontal, LioTheme.Spacing.md)
+        .padding(.vertical, LioTheme.Spacing.xs)
         .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
     }
 
+    private func placeRow(_ title: String, place: LioTaxiPlace?, identifier: String, placeholder: String,
+                          action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                    Text(place?.name(in: language) ?? placeholder)
+                        .font(.headline)
+                        .foregroundStyle(place == nil ? LioTheme.inkSecondary : LioTheme.ink)
+                    if let address = place?.addressZH {
+                        Text(address).font(.subheadline).foregroundStyle(LioTheme.inkSecondary).lineLimit(1)
+                    }
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.forward").font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                    .accessibilityHidden(true)
+            }
+            .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(identifier)
+    }
+
+    private func swapPlaces() {
+        guard let pickup, let destination else { return }
+        retireRouteRequest()
+        self.pickup = destination
+        self.destination = pickup
+    }
+
     private var estimateCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
             Text(language.text("Estimated fares", "预估车费")).font(.headline).accessibilityAddTraits(.isHeader)
             ForEach(fares) { fare in
-                VStack(alignment: .leading, spacing: 4) {
+                HStack {
                     Text(language.text(fare.nameEN, fare.nameZH))
-                    Text(fare.priceDisplay).foregroundStyle(LioTheme.inkSecondary)
+                    Spacer(minLength: 8)
+                    Text(fare.priceDisplay).font(.headline).monospacedDigit()
                 }
+                .accessibilityElement(children: .combine)
             }
             if !fares.isEmpty {
                 Text(language.text("Final price is set by DiDi", "以滴滴实际价格为准"))
                     .font(.footnote)
                     .foregroundStyle(LioTheme.inkSecondary)
             }
-            Button(language.text("Get an estimate", "查看估价")) { start(.estimate) }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
+            Button(fares.isEmpty ? language.text("Get an estimate", "查看估价")
+                                 : language.text("Update the estimate", "重新估价")) { start(.estimate) }
+                .buttonStyle(LioSecondaryButtonStyle())
                 .accessibilityIdentifier("lio.taxi.estimate")
                 .disabled(route == nil || requestPending)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
+        .padding(LioTheme.Spacing.md)
         .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
     }
 
     private var rideActions: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Button(language.text("Open in DiDi", "在滴滴打开")) { start(.handoff) }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .accessibilityIdentifier("lio.taxi.handoff")
-                .disabled(route == nil || requestPending)
-            if let destination, destination.addressZH != nil {
-                Button(language.text("Show the driver", "给司机看")) { driverPlace = destination }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
-                    .accessibilityIdentifier("lio.taxi.driver")
-            }
+        VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
             if requestPending { ProgressView(language.text("Getting ride details…", "正在获取打车信息…")) }
             if let failure {
-                Text(failure.message)
-                Button(language.text("Try again", "重试")) { start(failure.action) }
-                    .frame(minHeight: 44)
+                HStack {
+                    Text(failure.message).font(.subheadline)
+                    Spacer(minLength: 8)
+                    Button(language.text("Try again", "重试")) { start(failure.action) }
+                        .frame(minHeight: 44)
+                        .disabled(route == nil || requestPending)
+                }
+            }
+            if route == nil {
+                Text(pickup == nil ? language.text("Choose a pickup point to continue.", "先选择起点。")
+                                   : language.text("Choose a destination to continue.", "先选择终点。"))
+                    .font(.footnote)
+                    .foregroundStyle(LioTheme.inkSecondary)
+                    .accessibilityIdentifier("lio.taxi.handoff-reason")
+            }
+            HStack(spacing: LioTheme.Spacing.xs) {
+                if let destination, destination.addressZH != nil {
+                    Button(language.text("Show the driver", "给司机看")) { driverPlace = destination }
+                        .buttonStyle(LioSecondaryButtonStyle(fullWidth: false))
+                        .accessibilityIdentifier("lio.taxi.driver")
+                }
+                Button(language.text("Open in DiDi", "在滴滴打开")) { start(.handoff) }
+                    .buttonStyle(LioPrimaryButtonStyle())
+                    .accessibilityIdentifier("lio.taxi.handoff")
                     .disabled(route == nil || requestPending)
             }
+        }
+        .padding(.horizontal, LioTheme.Spacing.md)
+        .padding(.vertical, LioTheme.Spacing.sm)
+        .background(LioTheme.paper)
+        .overlay(alignment: .top) {
+            Rectangle().fill(LioTheme.hairline).frame(height: LioTheme.outlineWidth).accessibilityHidden(true)
         }
     }
 
@@ -302,17 +349,20 @@ struct LioTaxiView: View {
     private func guide(alipayOnly: Bool) -> some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
                     if !alipayOnly {
-                        Text(language.text("In DiDi settings, switch the app language to English.",
-                                           "在滴滴设置中把语言切换到英文。"))
-                        Text(language.text("In DiDi payment settings, add your international card and check that it is accepted.",
-                                           "在滴滴的支付设置中添加境外银行卡，并确认是否可用。"))
+                        LioStepCard(step: 1, symbol: "globe",
+                                    text: language.text("In DiDi settings, switch the app language to English.",
+                                                        "在滴滴设置中把语言切换到英文。"))
+                        LioStepCard(step: 2, symbol: "creditcard",
+                                    text: language.text("In DiDi payment settings, add your international card and check that it is accepted.",
+                                                        "在滴滴的支付设置中添加境外银行卡，并确认是否可用。"))
                     }
-                    Text(language.text("In Alipay, search for the DiDi mini program and choose your ride there.",
-                                       "在支付宝搜索滴滴小程序，可在小程序里打车。"))
+                    LioStepCard(step: alipayOnly ? 1 : 3, symbol: "app.badge",
+                                text: language.text("In Alipay, search for the DiDi mini program and choose your ride there.",
+                                                    "在支付宝搜索滴滴小程序，可在小程序里打车。"))
                 }
-                .padding(18)
+                .padding(LioTheme.Spacing.md)
             }
             .background(LioTheme.paper)
             .navigationTitle(alipayOnly ? language.text("DiDi in Alipay", "支付宝里的滴滴")
@@ -356,6 +406,9 @@ private struct LioTaxiPlacePicker: View {
                     set: { chosen in
                         city = chosen
                         storedCity = chosen.rawValue
+                        // Drop a search still running for the previous city.
+                        submittedQuery = nil
+                        isSearching = false
                         result = []
                         searchNotice = nil
                     }
@@ -413,6 +466,11 @@ private struct LioTaxiPlacePicker: View {
                 result = matches
                 if matches.isEmpty { searchNotice = LioTaxiSearchNotice.noMatches(for: submittedQuery, language: language) }
             } catch is CancellationError {
+                // A session change ends the search without cancelling this task; leave the picker usable.
+                if !Task.isCancelled {
+                    isSearching = false
+                    self.submittedQuery = nil
+                }
                 return
             } catch {
                 guard !Task.isCancelled else { return }
