@@ -190,25 +190,61 @@ def test_gaode_response_cannot_echo_the_server_key(encoded):
     assert mismatch.value.status == 502 and fixture_key not in str(mismatch.value)
 
 
-def test_nearby_refuses_more_than_the_authorized_pilot_roster(monkeypatch):
+def _nearby_roster(monkeypatch, subjects):
     from contextlib import contextmanager
     from deploy.hk import nearby_relay
 
+    opened = []
+
     @contextmanager
-    def closed_socket(service, checker, roster, *, disabled):
-        assert (service, checker, roster) == (None, None, frozenset())
+    def socket(service, checker, roster, *, disabled):
+        opened.append((service, checker, roster, disabled))
         yield
 
-    def supplier_must_not_start(_key):
-        pytest.fail('A roster above 10 must be refused before supplier creation')
-
-    subjects = nearby_relay.generate_plugin_subjects()[:11]
     monkeypatch.setenv(nearby_relay.NEARBY_INTERNAL_SUBJECTS, json.dumps(subjects))
-    monkeypatch.setenv('CJ_AMAP_WEB_KEY', 'fixture-gaode-key')
-    monkeypatch.setattr(nearby_relay, 'GaodeNearby', supplier_must_not_start)
-    monkeypatch.setattr(nearby_relay, 'nearby_socket', closed_socket)
-    with nearby_relay.active_nearby(None, None):
+    monkeypatch.setenv('CJ_AMAP_WEB_KEY', 'fixture-gaode-key-0123456789')
+    monkeypatch.setattr(nearby_relay, 'AuthorizationBudget', lambda *args, **kwargs: object())
+    monkeypatch.setattr(nearby_relay, 'account_checker_for',
+                        lambda auth, database, *, selected_subjects: ('checker', selected_subjects))
+    monkeypatch.setattr(nearby_relay, 'nearby_socket', socket)
+    runtime = SimpleNamespace(auth=object(), database=lambda: object())
+    with nearby_relay.active_nearby(runtime, None):
         pass
+    (service, checker, roster, disabled), = opened
+    return service, checker, roster, disabled
+
+
+def test_nearby_accepts_the_authorized_internal_cohort(monkeypatch):
+    from deploy.hk.plugin_roster import generate_plugin_subjects
+
+    cohort = generate_plugin_subjects()
+    for subjects in (cohort, cohort[:1], cohort[:11]):
+        service, checker, roster, disabled = _nearby_roster(monkeypatch, subjects)
+        assert service is not None and not disabled
+        assert roster == frozenset(subjects) and checker == ('checker', frozenset(subjects))
+
+
+@pytest.mark.parametrize('subjects', [
+    [],
+    'not-a-list',
+    ['outside-the-internal-cohort'],
+    'cohort+outside',
+    'cohort+duplicate',
+    [7],
+])
+def test_nearby_refuses_rosters_outside_the_authorized_cohort(monkeypatch, subjects):
+    from deploy.hk import nearby_relay
+    from deploy.hk.demo_login import invitation_subject
+
+    cohort = nearby_relay.generate_plugin_subjects()
+    subjects = {'cohort+outside': [*cohort, invitation_subject('CJ_Tester@01')],
+                'cohort+duplicate': [*cohort, cohort[0]]}.get(subjects, subjects) if type(subjects) is str else subjects
+
+    def supplier_must_not_start(_key):
+        pytest.fail('An unauthorized roster must be refused before supplier creation')
+
+    monkeypatch.setattr(nearby_relay, 'GaodeNearby', supplier_must_not_start)
+    assert _nearby_roster(monkeypatch, subjects)[:3] == (None, None, frozenset())
 
 
 @pytest.mark.parametrize('enabled', [False, True])
