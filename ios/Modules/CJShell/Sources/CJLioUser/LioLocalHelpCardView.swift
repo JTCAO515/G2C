@@ -35,10 +35,22 @@ private enum LioLocalHelpMessage: String, CaseIterable, Identifiable {
 struct LioLocalHelpCardView: View {
     let language: LioLanguage
     @State private var message = LioLocalHelpMessage.assistance
+    @Environment(\.lioMedicalCard) private var medicalCard
+    @State private var showsMedicalCard = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
+                if let medicalCard, medicalCard.isCurrent() {
+                    Button {
+                        showsMedicalCard = true
+                    } label: {
+                        Label(language.text("Medical card", "医疗卡"), systemImage: "cross.case")
+                            .frame(minHeight: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("lio.support.help-card.medical-card")
+                }
                 Menu {
                     ForEach(LioLocalHelpMessage.allCases) { option in
                         Button(option.title(in: language)) { message = option }
@@ -65,6 +77,13 @@ struct LioLocalHelpCardView: View {
         .navigationTitle(language.text("Show a Local", "给当地人看"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
+        .fullScreenCover(isPresented: $showsMedicalCard) {
+            if let medicalCard {
+                NavigationStack {
+                    LioMedicalCardView(language: language, storage: medicalCard, opensDisplay: true)
+                }
+            }
+        }
     }
 }
 #endif

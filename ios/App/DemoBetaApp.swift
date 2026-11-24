@@ -8,6 +8,7 @@ struct DemoBetaRootView: View {
     let root: DevelopmentAccountRoot
     @Environment(\.scenePhase) private var phase
     @State private var draftClearFailed = false
+    @State private var medicalCardClearFailed = false
     var body: some View {
         Group {
             if root.finishingDemoCleanup {
@@ -40,6 +41,7 @@ struct DemoBetaRootView: View {
                     }
                     Button(shell.language.text("Sign out", "退出登录"), action: signOut)
                 }
+                .lioMedicalCardStorage(root.localMedicalCardStorage())
                 .id(root.lioPresentationID)
             } else if root.accounts.isResuming {
                 LioSessionRecoveryView(language: shell.language.lio,
@@ -61,6 +63,11 @@ struct DemoBetaRootView: View {
                isPresented: $draftClearFailed) {
             Button(shell.language.text("OK", "好"), role: .cancel) {}
         }
+        .alert(shell.language.text("Couldn’t clear the medical card. Try signing out again.",
+                                   "暂时无法清空医疗卡，请重新尝试退出。"),
+               isPresented: $medicalCardClearFailed) {
+            Button(shell.language.text("OK", "好"), role: .cancel) {}
+        }
         .lioScenePrivacy()
         .onChange(of: phase) { _, current in
             guard !root.finishingDemoCleanup else { return }
@@ -76,6 +83,8 @@ struct DemoBetaRootView: View {
     }
 
     private func signOut() {
+        do { try root.clearMedicalCardBeforeSignOut() }
+        catch { medicalCardClearFailed = true; return }
         do { try root.signOutWithLocalSupportCleanup() }
         catch { draftClearFailed = true }
     }

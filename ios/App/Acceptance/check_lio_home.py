@@ -185,6 +185,7 @@ private struct LioRootFailureView: View {
     if args.tools and any(case in args.case for case in (
         "testLocalSupportDraftReopensAndClearsWithoutSending",
         "testLocalSupportDraftRejectsOverflowAtLargestTextSize",
+        "testMedicalCardRequiresDisclosureAndCanBeShownAndCleared",
     )):
         bundle = "space.go2china.lio.acceptance"
         entitlement = output / "LocalSupportDraft.entitlements"
