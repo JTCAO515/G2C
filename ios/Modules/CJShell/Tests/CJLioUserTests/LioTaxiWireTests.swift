@@ -40,10 +40,50 @@ struct LioTaxiWireTests {
         ]}
         """.utf8)
         let fares = try LioTaxiWire.readFares(response)
-        #expect(fares.map(\.nameEN) == ["Express", "Discount Express", "Premier", "滴滴定制车"])
+        #expect(fares.map(\.nameEN) == ["Express", "Discount Express", "Premier", "Other ride option"])
         #expect(fares.map(\.nameZH) == ["快车", "特惠快车", "专车", "滴滴定制车"])
-        let express = try #require(fares.first)
-        #expect(express.priceDisplay == "约¥35")
+        // A published range wins over the display text; display text that already has a currency is kept.
+        #expect(fares.map(\.priceDisplay) == ["¥30–42", "¥28起", "约¥70", "¥52–65"])
+    }
+
+    /// #1451: build 54 showed these untranslated and with bare numbers.
+    @Test func everyRideOptionGetsAnEnglishNameAndAYuanPrice() throws {
+        let response = Data("""
+        {"version":"TAXI.1","observed_at":"2026-11-24T00:00:00Z","vehicles":[
+          {"category":"314","name":"惊喜特价","currency":"CNY","price_display":"29"},
+          {"category":"260","name":"滴滴轻享","currency":"CNY","price_display":"31-36"},
+          {"category":"16","name":"六座专车","currency":"CNY","price_display":"88"},
+          {"category":"4","name":"豪华车","currency":"CNY","price_display":"126","price_min_minor":12600,"price_max_minor":12600},
+          {"category":"77","name":"Taxi","currency":"CNY","price_display":"¥40"}
+        ]}
+        """.utf8)
+        let fares = try LioTaxiWire.readFares(response)
+        #expect(fares.map(\.nameEN) == ["Surprise Deal", "DiDi Lite", "6-Seat Premier", "Luxe", "Taxi"])
+        #expect(fares.map(\.priceDisplay) == ["¥29", "¥31–36", "¥88", "¥126", "¥40"])
+        #expect(LioTaxiFareText.price(display: "35", currency: "CNY", minMinor: 3550, maxMinor: 4800) == "¥35.5–48")
+        #expect(LioTaxiFareText.price(display: "Price after pickup", currency: "CNY", minMinor: nil, maxMinor: nil)
+            == "Price after pickup")
+    }
+
+    /// #1451: English screens lead with name_en / address_en; the driver still gets Chinese.
+    @Test func englishPlaceFieldsAreOptionalAndLeadOnEnglishScreens() throws {
+        let data = Data("""
+        {"version":"TAXI.1","items":[
+          {"name_zh":"广州塔","name_en":"Canton Tower","address_zh":"阅江西路222号","address_en":"222 Yuejiang West Rd",
+           "city":"广州","lat":23.1065,"lng":113.3245,"coordinate_system":"GCJ-02"},
+          {"name_zh":"天河城","address_zh":"天河路208号","city":"广州","lat":23.1322,"lng":113.3226,"coordinate_system":"GCJ-02"}
+        ]}
+        """.utf8)
+        let places = try LioTaxiWire.readPlaces(data)
+        let tower = try #require(places.first), mall = try #require(places.last)
+        #expect(tower.name(in: .english) == "Canton Tower" && tower.secondaryName(in: .english) == "广州塔")
+        #expect(tower.address(in: .english) == "222 Yuejiang West Rd" && tower.address(in: .chinese) == "阅江西路222号")
+        #expect(tower.secondaryName(in: .chinese) == nil && tower.addressZH == "阅江西路222号")
+        #expect(mall.name(in: .english) == "天河城" && mall.secondaryName(in: .english) == nil)
+        #expect(mall.address(in: .english) == "天河路208号" && mall.addressEN == nil)
+        // Saved places from before #1451 have no English address and still decode.
+        let saved = Data(#"{"nameZH":"外滩","nameEN":"The Bund","addressZH":"中山东一路","coordinate":{"latitude":31.24,"longitude":121.49,"referenceSystem":"gcj02"}}"#.utf8)
+        #expect(try JSONDecoder().decode(LioTaxiPlace.self, from: saved).addressEN == nil)
     }
 
     @Test func linksRequireATargetAllowedByTheCaller() throws {

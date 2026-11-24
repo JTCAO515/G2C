@@ -169,7 +169,10 @@ struct LioTaxiView: View {
                     Text(place?.name(in: language) ?? placeholder)
                         .font(.headline)
                         .foregroundStyle(place == nil ? LioTheme.inkSecondary : LioTheme.ink)
-                    if let address = place?.addressZH {
+                    if let secondary = place?.secondaryName(in: language) {
+                        Text(secondary).font(.subheadline).foregroundStyle(LioTheme.inkSecondary).lineLimit(1)
+                    }
+                    if let address = place?.address(in: language) {
                         Text(address).font(.subheadline).foregroundStyle(LioTheme.inkSecondary).lineLimit(1)
                     }
                 }
@@ -178,6 +181,7 @@ struct LioTaxiView: View {
                     .accessibilityHidden(true)
             }
             .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+            .padding(.vertical, 6)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -196,7 +200,12 @@ struct LioTaxiView: View {
             Text(language.text("Estimated fares", "预估车费")).font(.headline).accessibilityAddTraits(.isHeader)
             ForEach(fares) { fare in
                 HStack {
-                    Text(language.text(fare.nameEN, fare.nameZH))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(language.text(fare.nameEN, fare.nameZH))
+                        if language == .english {
+                            Text(fare.nameZH).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                        }
+                    }
                     Spacer(minLength: 8)
                     Text(fare.priceDisplay).font(.headline).monospacedDigit()
                 }
@@ -494,7 +503,10 @@ private struct LioTaxiPlacePicker: View {
             Button { select(place) } label: {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(place.name(in: language)).foregroundStyle(LioTheme.ink)
-                    if let address = place.addressZH {
+                    if let secondary = place.secondaryName(in: language) {
+                        Text(secondary).font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
+                    }
+                    if let address = place.address(in: language) {
                         Text(address).font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
                     }
                 }

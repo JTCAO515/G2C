@@ -72,6 +72,7 @@ extension LioTaxiService {
         ],
         .shanghai: [
             .init(nameZH: "外滩", nameEN: "The Bund", addressZH: "上海市黄浦区中山东一路",
+                  addressEN: "Zhongshan East 1st Rd, Huangpu, Shanghai",
                   coordinate: .init(latitude: 31.2400, longitude: 121.4905, referenceSystem: .gcj02)),
         ],
         .chengdu: [
@@ -124,7 +125,11 @@ extension LioTaxiService {
                         {"category":"1","name":"快车","currency":"CNY","price_display":"¥35–48",
                          "price_min_minor":3500,"price_max_minor":4800},
                         {"category":"8","name":"专车","currency":"CNY","price_display":"¥52–65",
-                         "price_min_minor":5200,"price_max_minor":6500}
+                         "price_min_minor":5200,"price_max_minor":6500},
+                        {"category":"314","name":"惊喜特价","currency":"CNY","price_display":"29"},
+                        {"category":"260","name":"滴滴轻享","currency":"CNY","price_display":"31-36"},
+                        {"category":"16","name":"六座专车","currency":"CNY","price_display":"88"},
+                        {"category":"4","name":"豪华车","currency":"CNY","price_display":"126"}
                     ]}
                     """.utf8)
                     return try LioTaxiWire.readFares(response)
