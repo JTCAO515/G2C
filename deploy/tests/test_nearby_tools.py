@@ -10,7 +10,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from cj_api.nearby_tools import GaodeNearby, NearbyLocationRequest, NearbySearchRequest, NearbyService, REVERSE
+from cj_api.nearby_tools import GaodeNearby, NearbyLocationRequest, NearbySearchRequest, NearbyService, REVERSE, SEARCH
 from cj_api.plugin_tools import PluginError
 from cj_auth.interfaces import AdmissionDecision, AdmissionReason, AdmissionStatus
 from cj_usage.authorization_budget import AMAP_PRICE, CNY_SCALE, LIMITS, AuthorizationBudget, authorization_usage, journal_state
@@ -233,4 +233,10 @@ def test_nearby_http_relay_respects_internal_admission_and_closed_state(ledger, 
                     assert response.json()['address_zh'] == '北京市东城区示例地点'
                 else:
                     assert response.json() == {'error':'not_enabled'}
-    assert len(supplier.calls) == int(enabled)
+                search = payload(crs='GCJ-02', categories=['coffee'], radius_m=500, sort='distance')
+                assert browser.post(SEARCH, json=search, headers={'Authorization': 'Bearer unknown'}).status_code == 403
+                response = browser.post(SEARCH, json=search, headers={'Authorization': 'Bearer synthetic'})
+                assert response.status_code == (200 if enabled else 403)
+                if enabled:
+                    assert [item['name_zh'] for item in response.json()['items']] == ['咖啡厅']
+    assert [operation for operation, _ in supplier.calls] == (['reverse', 'search'] if enabled else [])

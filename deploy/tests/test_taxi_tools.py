@@ -406,3 +406,171 @@ def test_additional_supplier_call_cannot_exceed_the_original_estimate_quota(
     assert error.status_code == 429
     assert error.json() == {'error': 'quota_exceeded'}
     assert seen == expected_calls
+
+
+# --- TAXI.1 search red-line negatives (#1422 post-merge review) ---
+
+def search_body(**other):
+    return dict(dict(version='TAXI.1', city='北京', query='天安门'), **other)
+
+
+def search_client(tmp_path, transport, *, wait=lambda _: None):
+    path = tmp_path / 'search-count.sqlite'
+    app = FastAPI()
+    register_taxi_routes(app, taxi=TaxiService(DiDiInformation(transport, wait=wait), clock=lambda: NOW),
+                         checker=SimpleNamespace(check=check), internal=frozenset({'internal'}),
+                         calls=PluginCalls(path, clock=lambda: NOW))
+    return TestClient(app), path
+
+
+def used(path):
+    import sqlite3
+    if not path.exists():
+        return {}
+    with sqlite3.connect(path) as db:
+        return dict(db.execute('SELECT operation, used FROM plugin_call'))
+
+
+def row(name='天安门', city='北京市', lat=39.916404, lng=116.410244, **other):
+    return dict(dict(display_name=name, city=city, address='东长安街', location=dict(lat=lat, lng=lng)), **other)
+
+
+def rows_reply(rows):
+    return {'content': [{'text': json.dumps(rows, ensure_ascii=False)}]}
+
+
+def test_search_route_quota_is_enforced_before_dispatch(tmp_path):
+    seen = []
+    client, path = search_client(tmp_path, lambda tool, params: seen.append(tool) or rows_reply([row()]))
+    with client:
+        for _ in range(50):
+            assert client.post(SEARCH, headers=AUTH, json=search_body()).status_code == 200
+        response = client.post(SEARCH, headers=AUTH, json=search_body())
+    assert response.status_code == 429
+    assert response.json() == {'error': 'quota_exceeded'}
+    assert seen.count('maps_textsearch') == 50
+    assert used(path) == {SEARCH: 50, 'didi:maps_textsearch': 50}
+
+
+@pytest.mark.parametrize(('failure', 'status', 'error'), [
+    (TimeoutError('private url'), 504, 'supplier_timeout'),
+    (OSError('private url'), 502, 'supplier_unavailable'),
+    ({'error': {'code': -32050, 'message': 'private'}}, 502, 'supplier_unavailable'),
+    ({'error': {'code': -32002, 'message': 'private'}}, 502, 'supplier_unavailable'),
+    ({'error': {'code': -32010, 'message': 'private'}}, 400, 'invalid_request'),
+    ({'error': {'code': -32001, 'message': 'private'}}, 429, 'rate_limited'),
+    ({'error': {'code': -32021, 'message': 'private'}}, 502, 'supplier_unavailable'),
+    ({'isError': True, 'content': []}, 502, 'supplier_unavailable'),
+    ({'content': [{'text': 'not json'}]}, 502, 'supplier_unavailable'),
+])
+def test_search_supplier_failures_map_once_and_still_count(tmp_path, failure, status, error):
+    seen, waits = [], []
+
+    def transport(tool, params):
+        seen.append(tool)
+        if isinstance(failure, Exception):
+            raise failure
+        return failure
+
+    client, path = search_client(tmp_path, transport, wait=waits.append)
+    with client:
+        response = client.post(SEARCH, headers=AUTH, json=search_body())
+    assert (response.status_code, response.json()) == (status, {'error': error})
+    assert 'private' not in response.text
+    assert seen == ['maps_textsearch'] and waits == []
+    assert used(path) == {SEARCH: 1, 'didi:maps_textsearch': 1}
+
+
+@pytest.mark.parametrize('data', [
+    search_body(subject='internal-other'),
+    search_body(near=dict(point(), phone='0000000')),
+    search_body(version='TAXI.2'),
+    search_body(city='Paris'),
+    search_body(city='北京1'),
+    search_body(city='   '),
+    search_body(city='北'),
+    search_body(query=''),
+    search_body(query='   '),
+    search_body(query='x' * 101),
+    search_body(query=7),
+    search_body(query='天安\x00门'),
+    search_body(query='天安\x7f门'),
+    search_body(query='天安\x85门'),
+    search_body(query='天安‮门'),
+    search_body(query='天安⁦门'),
+    search_body(near=dict(point(), lng=181)),
+    search_body(near=dict(point(), lat='39.9')),
+    search_body(near=dict(point(), coordinate_system='BD-09')),
+    search_body(near=dict(point(), name='名‮称')),
+])
+def test_search_request_boundary_rejects_before_any_count_or_dispatch(tmp_path, data):
+    seen = []
+    client, path = search_client(tmp_path, lambda tool, params: seen.append(tool))
+    with client:
+        response = client.post(SEARCH, headers=AUTH, json=data)
+    assert (response.status_code, response.json()) == (400, {'error': 'invalid_request'})
+    assert seen == [] and used(path) == {}
+
+
+@pytest.mark.parametrize(('lng', 'lat'), [(114.164, 22.308), (139.6917, 35.6895), (121.565, 25.033)])
+def test_search_near_outside_service_area_stops_before_didi(tmp_path, lng, lat):
+    seen = []
+    client, path = search_client(tmp_path, lambda tool, params: seen.append(tool))
+    with client:
+        response = client.post(SEARCH, headers=AUTH, json=search_body(near=dict(point(), lng=lng, lat=lat)))
+    assert (response.status_code, response.json()) == (422, {'error': 'out_of_service_area'})
+    assert seen == [] and 'didi:maps_textsearch' not in used(path)
+
+
+@pytest.mark.parametrize('city', ['香港', '香港特别行政区', '澳门', '澳門', '台北', '臺北市', '台湾', 'Hong Kong',
+                                  'hongkong', 'Macau', 'Taipei'])
+def test_search_non_mainland_city_is_out_of_service_and_never_sent(tmp_path, city):
+    seen = []
+    client, path = search_client(tmp_path, lambda tool, params: seen.append((tool, params)))
+    with client:
+        response = client.post(SEARCH, headers=AUTH, json=search_body(city=city))
+    assert (response.status_code, response.json()) == (422, {'error': 'out_of_service_area'})
+    assert seen == [] and 'didi:maps_textsearch' not in used(path)
+
+
+def test_search_with_only_other_city_or_non_mainland_results_is_empty_not_502(tmp_path):
+    rows = [row('外滩', '上海市', 31.24, 121.49), row('维多利亚港', '香港', 22.29, 114.17),
+            row('假北京', '北京市', 22.29, 114.17)]
+    client, _ = search_client(tmp_path, lambda tool, params: rows_reply(rows))
+    with client:
+        response = client.post(SEARCH, headers=AUTH, json=search_body())
+    assert (response.status_code, response.json()) == (200, dict(version='TAXI.1', items=[]))
+
+
+def test_search_with_only_malformed_results_is_supplier_error(tmp_path):
+    rows = [dict(display_name='天安门', city='北京市'), row(lat=None), row(name='天安‮门'), 'x']
+    client, _ = search_client(tmp_path, lambda tool, params: rows_reply(rows))
+    with client:
+        response = client.post(SEARCH, headers=AUTH, json=search_body())
+    assert (response.status_code, response.json()) == (502, {'error': 'supplier_unavailable'})
+
+
+def test_search_accepts_numeric_string_coordinates_and_drops_unsafe_addresses(tmp_path):
+    rows = [row(lat='39.916404', lng='116.410244'), row('故宫', lat='39.9', lng='1e2'),
+            row('景山', lat=39.92, lng=116.39, address='景山‮前街'),
+            row('北海', lat=39.93, lng=116.38, address='北海\x85公园')]
+    client, _ = search_client(tmp_path, lambda tool, params: rows_reply(rows))
+    with client:
+        response = client.post(SEARCH, headers=AUTH, json=search_body())
+    assert response.status_code == 200
+    assert response.json()['items'] == [
+        dict(name_zh='天安门', address_zh='东长安街', city='北京市', lat=39.916404, lng=116.410244,
+             coordinate_system='GCJ-02'),
+        dict(name_zh='景山', address_zh=None, city='北京市', lat=39.92, lng=116.39, coordinate_system='GCJ-02'),
+        dict(name_zh='北海', address_zh=None, city='北京市', lat=39.93, lng=116.38, coordinate_system='GCJ-02'),
+    ]
+
+
+def test_search_sends_only_keyword_city_and_optional_point(tmp_path):
+    seen = []
+    client, _ = search_client(tmp_path, lambda tool, params: seen.append((tool, params)) or rows_reply([]))
+    with client:
+        assert client.post(SEARCH, headers=AUTH, json=search_body(city='Chengdu', query='宽窄巷子')).status_code == 200
+        assert client.post(SEARCH, headers=AUTH, json=search_body(city='上海市', query='外滩')).status_code == 200
+    assert seen == [('maps_textsearch', dict(keywords='宽窄巷子', city='成都市')),
+                    ('maps_textsearch', dict(keywords='外滩', city='上海市'))]

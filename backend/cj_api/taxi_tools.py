@@ -6,6 +6,7 @@ import json
 import logging
 import re
 from time import sleep
+import unicodedata
 from typing import Annotated, Literal
 from urllib.parse import parse_qsl, urlsplit
 
@@ -82,6 +83,14 @@ class WireModel(BaseModel):
     model_config = ConfigDict(extra='forbid', strict=True)
 
 
+INVISIBLE = frozenset({'Cc', 'Cf', 'Cs', 'Zl', 'Zp'})
+
+
+def _visible(text):
+    """Reject C0/DEL/C1 controls, bidi and other format characters, and surrogates."""
+    return all(unicodedata.category(char) not in INVISIBLE for char in text)
+
+
 class Point(WireModel):
     lat: Annotated[float, Field(ge=-90, le=90, allow_inf_nan=False)]
     lng: Annotated[float, Field(ge=-180, le=180, allow_inf_nan=False)]
@@ -92,9 +101,8 @@ class Point(WireModel):
     @classmethod
     def validate_name(cls, name):
         if name is not None:
-            if not name.strip() or any(ord(char) < 32 for char in name):
+            if not name.strip() or not _visible(name):
                 raise ValueError('invalid name')
-            name.encode('utf-8')
         return name
 
 
@@ -108,8 +116,13 @@ class LinkRequest(EstimateRequest):
     vehicle_category: Annotated[str, Field(pattern=r'^[A-Za-z0-9_-]{1,48}$')] | None = None
 
 
-CITY_ALIASES = {'beijing': '北京市', 'shanghai': '上海市', 'chengdu': '成都市'}
+CITY_ALIASES = {'beijing': '北京市', 'shanghai': '上海市', 'chengdu': '成都市',
+                'hong kong': '香港', 'hongkong': '香港', 'macau': '澳门', 'macao': '澳门',
+                'taipei': '台北', 'taiwan': '台湾'}
 CITY_NAME = re.compile(r'[\u3400-\u9fff]{2,24}')
+# Outside the mainland service area: never suffixed with 市 and never sent to DiDi.
+NON_MAINLAND = ('香港', '澳门', '澳門', '台湾', '台灣', '臺灣', '臺湾', '台北', '臺北', '新北', '台中', '臺中',
+                '台南', '臺南', '高雄', '桃园', '桃園', '基隆', '新竹', '嘉义', '嘉義')
 
 
 def _city(raw):
@@ -117,6 +130,8 @@ def _city(raw):
     city = CITY_ALIASES.get(city.lower(), city)
     if not CITY_NAME.fullmatch(city):
         raise ValueError('a city name is required')
+    if city.startswith(NON_MAINLAND):
+        return city
     return city if city.endswith(('市', '自治州', '地区', '盟')) else city + '市'
 
 
@@ -135,10 +150,24 @@ class SearchRequest(WireModel):
     @classmethod
     def visible_query(cls, value):
         query = value.strip()
-        if not query or any(ord(char) < 32 for char in query):
+        if not query or not _visible(query):
             raise ValueError('nonempty search keyword required')
-        query.encode('utf8')
         return query
+
+
+COORDINATE_TEXT = re.compile(r'-?[0-9]{1,3}(?:\.[0-9]{1,15})?')
+
+
+def _coordinate(value):
+    # Real maps_textsearch returns JSON numbers; plain decimal text is accepted, anything else fails Point.
+    return float(value) if type(value) is str and COORDINATE_TEXT.fullmatch(value) else value
+
+
+def _row_city(value):
+    try:
+        return _city(value)
+    except ValueError:
+        return None
 
 
 def _search_rows(result, city):
@@ -151,24 +180,25 @@ def _search_rows(result, city):
         raise PluginError(502, 'supplier_unavailable') from None
 
     items = []
+    malformed = 0
     for row in rows:
         try:
-            point = Point(lat=row['location']['lat'], lng=row['location']['lng'],
+            point = Point(lat=_coordinate(row['location']['lat']), lng=_coordinate(row['location']['lng']),
                           coordinate_system='GCJ-02', name=row['display_name'])
-            if not point.name or _city(row['city']) != city or not in_mainland(*gcj_to_wgs(point.lng, point.lat)):
-                continue
+            row_city = _row_city(row['city']) if type(row['city']) is str else None
             address = row.get('address') or row.get('address_all')
-            if type(address) is not str or not address.strip() or len(address) > 240 or any(ord(c) < 32 for c in address):
-                address = None
-            elif address:
-                address.encode('utf8')
         except (AttributeError, KeyError, TypeError, ValueError):
+            malformed += 1
             continue
+        if row_city != city or not in_mainland(*gcj_to_wgs(point.lng, point.lat)):
+            continue
+        if type(address) is not str or not address.strip() or len(address) > 240 or not _visible(address):
+            address = None
         items.append(dict(name_zh=point.name, address_zh=address, city=city, lat=point.lat, lng=point.lng,
                           coordinate_system='GCJ-02'))
         if len(items) == 20:
             break
-    if rows and not items:
+    if malformed and not items:
         raise PluginError(502, 'supplier_unavailable')
     return items
 
@@ -229,6 +259,8 @@ class TaxiService:
         return dict(from_lat=first_lat, from_lng=first_lng, to_lat=last_lat, to_lng=last_lng)
 
     def search(self, request, reserve):
+        if request.city.startswith(NON_MAINLAND):
+            raise PluginError(422, 'out_of_service_area')
         params = dict(keywords=request.query, city=request.city)
         if request.near is not None:
             lng, lat = _gcj_strings(request.near)
