@@ -406,6 +406,9 @@ private struct LioTaxiPlacePicker: View {
                     set: { chosen in
                         city = chosen
                         storedCity = chosen.rawValue
+                        // Drop a search still running for the previous city.
+                        submittedQuery = nil
+                        isSearching = false
                         result = []
                         searchNotice = nil
                     }
@@ -463,6 +466,11 @@ private struct LioTaxiPlacePicker: View {
                 result = matches
                 if matches.isEmpty { searchNotice = LioTaxiSearchNotice.noMatches(for: submittedQuery, language: language) }
             } catch is CancellationError {
+                // A session change ends the search without cancelling this task; leave the picker usable.
+                if !Task.isCancelled {
+                    isSearching = false
+                    self.submittedQuery = nil
+                }
                 return
             } catch {
                 guard !Task.isCancelled else { return }
