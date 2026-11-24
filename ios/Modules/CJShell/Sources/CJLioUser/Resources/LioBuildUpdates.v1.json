@@ -17,13 +17,15 @@
               "「插件」改名为「工具」，首页改成双列卡片，每个工具都有图标和一句话说明。",
               "翻译合成一个页面：上方显示译文，下方是输入栏。按住麦克风说话，松开即翻译；点相机可拍照或从相册选图。",
               "打车的起点和终点可以直接搜索地点名称，先选城市再搜；没有结果时会提示换个叫法或核对城市。",
-              "新增「附近」：查看身边的美食、景点、咖啡和购物，可打车前往、用高德地图导航或出示中文地址。地铁指南改为先选城市。"
+              "新增「附近」：查看身边的美食、景点、咖啡和购物，可打车前往、用高德地图导航或出示中文地址。地铁指南改为先选城市。",
+              "本地协助的「给当地人看」新增医疗卡：血型、过敏、用药和紧急联系人只保存在这台手机上，可全屏给医生看，也可随时一键清空。"
             ],
             "en": [
               "Plugins is now called Tools, with a two-column card for each tool showing an icon and one line about it.",
               "Translation is one page: the translation on top and an input bar below. Hold the microphone to talk and release to translate; tap the camera to take a photo or choose one.",
               "Search for taxi pickup and destination places by name after choosing a city. If nothing is found, you get a tip to try another name or check the city.",
-              "New Nearby tool: find food, sights, coffee and shopping around you, then take a taxi, get directions in AMap or show the address in Chinese. The Metro Guide now starts by choosing a city."
+              "New Nearby tool: find food, sights, coffee and shopping around you, then take a taxi, get directions in AMap or show the address in Chinese. The Metro Guide now starts by choosing a city.",
+              "Show a Local in Local Support now has a medical card: blood type, allergies, medicines and emergency contacts stay only on this phone, can be shown full screen to a doctor and cleared at any time."
             ]
           }
         },
