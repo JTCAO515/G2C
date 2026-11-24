@@ -99,10 +99,10 @@ struct LioTaxiSearchQuery: Equatable, Sendable {
 /// Explicit notices for the place picker: what was searched, where, and what to try next.
 enum LioTaxiSearchNotice {
     static func noMatches(for query: LioTaxiSearchQuery, language: LioLanguage) -> String {
-        let city = query.city
+        let city = query.city, typed = query.text
         return language.text(
-            "No places found for “\(query.text)” in \(city.nameEN). Check the city, try the Chinese name (for example “\(city.exampleZH)”), or add a street.",
-            "在\(city.nameZH)没有找到“\(query.text)”。请确认城市，或换个叫法（例如“\(city.exampleZH)”），也可以加上路名。"
+            "No places found for “\(typed)” in \(city.nameEN). Check the city, try the Chinese name (for example “\(city.exampleZH)”), or add a street.",
+            "在\(city.nameZH)没有找到“\(typed)”。请确认城市，或换个叫法（例如“\(city.exampleZH)”），也可以加上路名。"
         )
     }
 
