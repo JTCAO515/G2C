@@ -10,8 +10,8 @@ import io
 SPEC = importlib.util.spec_from_file_location('export_lio_updates', Path(__file__).with_name('export_lio_build_updates.py'))
 EXPORT = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(EXPORT)
-CURRENT_BUILD = 53
-PREVIOUS_BUILD = 51
+CURRENT_BUILD = 54
+PREVIOUS_BUILD = 53
 
 
 class ExportBuildUpdatesTests(unittest.TestCase):
