@@ -25,6 +25,10 @@ struct CJProbeApp: App {
     @Environment(\.scenePhase) private var scenePhase
     #endif
 
+    #if DEBUG && targetEnvironment(simulator) && G2C_LIO_APP
+    private let localMedicalCardPreview = Self.makeMedicalCardPreview()
+    #endif
+
     init() {
         let shell = ShellState()
         _shell = State(initialValue: shell)
@@ -123,6 +127,7 @@ struct CJProbeApp: App {
                                toolsRelay: translationRelayPreview, toolsDraftStorage: localSupportDraftPreview) {
                 LioMenuSettings(shell: shell)
             }
+            .lioMedicalCardStorage(localMedicalCardPreview)
             if ProcessInfo.processInfo.arguments.contains("--lio-support-dial-preview"),
                let number = ProcessInfo.processInfo.environment["G2C_LOCAL_SUPPORT_TEST_PHONE"] {
                 LioSupportDialPreview(number: number, content: home)
@@ -130,6 +135,14 @@ struct CJProbeApp: App {
                 home
             }
         }
+    }
+
+    private static func makeMedicalCardPreview() -> LocalMedicalCardStorage? {
+        guard let value = ProcessInfo.processInfo.environment["G2C_LIO_MEDICAL_CARD_FIXTURE"],
+              let identity = UUID(uuidString: value),
+              let applicationID = try? DevelopmentKeychainIdentity.read() else { return nil }
+        return try? LocalMedicalCardVault(applicationIdentifier: applicationID)
+            .storage(for: .init(environment: identity, account: identity), isCurrent: { true })
     }
 
     private var localSupportDraftPreview: LocalSupportDraftStorage? {

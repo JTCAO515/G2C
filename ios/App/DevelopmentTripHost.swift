@@ -1058,6 +1058,8 @@ private var developmentHostEnvironment: [String: String] {
     private let demoMode: Bool
     #if G2C_DEMO_BETA
     private let localSupportVault: LocalSupportKeychainDraft
+    private let medicalCardVault: LocalMedicalCardVault
+    @ObservationIgnored private var medicalCardStorageForTrip: (UUID, LocalMedicalCardStorage)?
     @ObservationIgnored private var lioChatContinuity: LioChatContinuity?
     @ObservationIgnored private var lioPresentationOwner: LioPresentationOwner?
     private struct LioPresentationOwner: Equatable {
@@ -1211,8 +1213,28 @@ private var developmentHostEnvironment: [String: String] {
         }
     }
 
-    func signOutWithLocalSupportCleanup() throws {
-        defer { accounts.signOut() }
+    func localMedicalCardStorage() -> LocalMedicalCardStorage? {
+        let scope = localSupportDraftScope
+        guard case .account(let environment, let account) = scope, let trip,
+              canUseLocalSupportDraft(scope) else {
+            medicalCardStorageForTrip = nil
+            return nil
+        }
+        if let (identity, storage) = medicalCardStorageForTrip, identity == trip.id { return storage }
+        let tripID = trip.id
+        guard let storage = try? medicalCardVault.storage(for: .init(environment: environment, account: account),
+                                                         isCurrent: { [weak self] in
+            self?.trip?.id == tripID && self?.canUseLocalSupportDraft(scope) == true
+        }) else { return nil }
+        medicalCardStorageForTrip = (tripID, storage)
+        return storage
+    }
+
+    enum LocalSupportSignOutFailure: Error {
+        case medicalCard, medicalCardAndHelpDraft
+    }
+
+    private func supportScopeForSignOut() throws -> LocalSupportKeychainDraft.Scope {
         var scope = localSupportDraftScope
         if scope == .guest {
             do {
@@ -1225,8 +1247,25 @@ private var developmentHostEnvironment: [String: String] {
                 scope = .guest
             }
         }
-        try localSupportVault.clear(scope)
-        if scope != .guest { try localSupportVault.clear(.guest) }
+        return scope
+    }
+
+    func signOutWithLocalSupportCleanup() throws {
+        defer { accounts.signOut() }
+        let scope = try supportScopeForSignOut()
+        var medicalCardFailed = false
+        if case .account(let environment, let account) = scope {
+            do { try medicalCardVault.clear(.init(environment: environment, account: account)) }
+            catch { medicalCardFailed = true }
+        }
+        do {
+            try localSupportVault.clear(scope)
+            if scope != .guest { try localSupportVault.clear(.guest) }
+        } catch {
+            if medicalCardFailed { throw LocalSupportSignOutFailure.medicalCardAndHelpDraft }
+            throw error
+        }
+        if medicalCardFailed { throw LocalSupportSignOutFailure.medicalCard }
     }
 
     func finishDemoCleanup() {
@@ -1241,6 +1280,7 @@ private var developmentHostEnvironment: [String: String] {
         let applicationID = try DevelopmentKeychainIdentity.read()
         #if G2C_DEMO_BETA
         localSupportVault = LocalSupportKeychainDraft(applicationIdentifier: applicationID)
+        medicalCardVault = LocalMedicalCardVault(applicationIdentifier: applicationID)
         #endif
         cleanupEnabled = cleanup != nil
         cleanupVersion = cleanup ?? .v3
@@ -1605,10 +1645,14 @@ private struct DevelopmentVerificationTransport: ClientTransport {
 
     func clearLocalSupportDraft() throws {
         try LocalSupportKeychainDraft(applicationIdentifier: applicationID).clear(localSupportScope)
+        try LocalMedicalCardVault(applicationIdentifier: applicationID)
+            .clear(.init(environment: scope.environment, account: scope.account))
     }
 
     func verifyLocalSupportDraftAbsent() throws {
         try LocalSupportKeychainDraft(applicationIdentifier: applicationID).requireAbsent(localSupportScope)
+        try LocalMedicalCardVault(applicationIdentifier: applicationID)
+            .requireAbsent(.init(environment: scope.environment, account: scope.account))
     }
     #endif
 

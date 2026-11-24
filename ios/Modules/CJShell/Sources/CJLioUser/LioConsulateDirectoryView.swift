@@ -4,11 +4,11 @@ import SwiftUI
 struct LioConsulateDirectoryView: View {
     let language: LioLanguage
     @State private var search = ""
-    private let directory = Result { try LioConsulateDirectory.bundled() }
+    private static let directory = Result { try LioConsulateDirectory.bundled() }
 
     var body: some View {
         List {
-            switch directory {
+            switch Self.directory {
             case .success(let entries):
                 let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
                 let matches = query.isEmpty ? entries : entries.filter { $0.matches(query) }

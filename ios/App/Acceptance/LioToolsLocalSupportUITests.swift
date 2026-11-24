@@ -1,6 +1,56 @@
 import XCTest
 
 @MainActor extension LioToolsUITests {
+    @objc func testMedicalCardRequiresDisclosureAndCanBeShownAndCleared() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", "en",
+                               "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+        app.launchEnvironment["G2C_LIO_MEDICAL_CARD_FIXTURE"] = UUID().uuidString
+        app.launch()
+        defer { app.terminate() }
+        openLocalSupport(app)
+        let helpCard = app.buttons["lio.support.help-card"]
+        XCTAssertTrue(helpCard.waitForExistence(timeout: 6), app.debugDescription)
+        let scroll = app.scrollViews.firstMatch
+        for _ in 0..<6 where !helpCard.isHittable {
+            let start = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.72))
+            let end = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.46))
+            start.press(forDuration: 0.05, thenDragTo: end)
+        }
+        XCTAssertTrue(helpCard.isHittable, app.debugDescription)
+        helpCard.tap()
+        app.buttons["lio.support.help-card.medical-card"].tap()
+
+        let consent = app.buttons["I understand"]
+        let field = app.descendants(matching: .any)["lio.medical-card.field.bloodType"]
+        XCTAssertTrue(consent.waitForExistence(timeout: 8))
+        XCTAssertFalse(field.exists)
+        consent.tap()
+        XCTAssertTrue(field.waitForExistence(timeout: 6), app.debugDescription)
+        field.tap()
+        field.typeText("Synthetic sample")
+
+        let save = app.buttons["Save on this phone"]
+        XCTAssertTrue(save.waitForExistence(timeout: 6))
+        XCTAssertTrue(save.isHittable)
+        save.tap()
+        app.alerts.buttons["OK"].tap()
+        app.buttons["Show medical card"].tap()
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Synthetic sample")).firstMatch
+            .waitForExistence(timeout: 6))
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "血型 / Blood type")).firstMatch.exists)
+        try app.performAccessibilityAudit(for: .all) { issue in
+            print("AX_MEDICAL_CARD: \(issue.compactDescription), \(issue.element?.identifier ?? "<no identifier>")")
+            return false
+        }
+        app.buttons["Done"].tap()
+
+        app.buttons["Clear card"].tap()
+        XCTAssertTrue(consent.waitForExistence(timeout: 6))
+        XCTAssertFalse(field.exists)
+    }
+
     @objc func testLocalSupportShowsVerifiedConsularDistricts() throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")

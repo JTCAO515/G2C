@@ -8,6 +8,7 @@ struct DemoBetaRootView: View {
     let root: DevelopmentAccountRoot
     @Environment(\.scenePhase) private var phase
     @State private var draftClearFailed = false
+    @State private var medicalCardCleanupFailure: DevelopmentAccountRoot.LocalSupportSignOutFailure?
     var body: some View {
         Group {
             if root.finishingDemoCleanup {
@@ -40,6 +41,7 @@ struct DemoBetaRootView: View {
                     }
                     Button(shell.language.text("Sign out", "退出登录"), action: signOut)
                 }
+                .lioMedicalCardStorage(root.localMedicalCardStorage())
                 .id(root.lioPresentationID)
             } else if root.accounts.isResuming {
                 LioSessionRecoveryView(language: shell.language.lio,
@@ -61,6 +63,12 @@ struct DemoBetaRootView: View {
                isPresented: $draftClearFailed) {
             Button(shell.language.text("OK", "好"), role: .cancel) {}
         }
+        .alert(medicalCardCleanupMessage, isPresented: Binding(
+            get: { medicalCardCleanupFailure != nil },
+            set: { if !$0 { medicalCardCleanupFailure = nil } }
+        )) {
+            Button(shell.language.text("OK", "好"), role: .cancel) {}
+        }
         .lioScenePrivacy()
         .onChange(of: phase) { _, current in
             guard !root.finishingDemoCleanup else { return }
@@ -77,7 +85,19 @@ struct DemoBetaRootView: View {
 
     private func signOut() {
         do { try root.signOutWithLocalSupportCleanup() }
+        catch let failure as DevelopmentAccountRoot.LocalSupportSignOutFailure { medicalCardCleanupFailure = failure }
         catch { draftClearFailed = true }
+    }
+
+    private var medicalCardCleanupMessage: String {
+        switch medicalCardCleanupFailure {
+        case .medicalCardAndHelpDraft:
+            shell.language.text("Couldn’t clear the medical card and help draft.",
+                                "暂时无法清空医疗卡和求助草稿。")
+        case .medicalCard, nil:
+            shell.language.text("Couldn’t clear the medical card.",
+                                "暂时无法清空医疗卡。")
+        }
     }
 
     private var sessionReady: Bool {
