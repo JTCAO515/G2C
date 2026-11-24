@@ -1,7 +1,7 @@
 import Foundation
 
 enum LioMetroCity: String, CaseIterable, Identifiable {
-    case beijing, shanghai, chengdu
+    case beijing, shanghai, guangzhou, chengdu
 
     var id: Self { self }
 
@@ -9,6 +9,7 @@ enum LioMetroCity: String, CaseIterable, Identifiable {
         switch self {
         case .beijing: language.text("Beijing", "北京")
         case .shanghai: language.text("Shanghai", "上海")
+        case .guangzhou: language.text("Guangzhou", "广州")
         case .chengdu: language.text("Chengdu", "成都")
         }
     }
@@ -17,6 +18,7 @@ enum LioMetroCity: String, CaseIterable, Identifiable {
         switch self {
         case .beijing: URL(string: "https://map.bjsubway.com/mobile")!
         case .shanghai: URL(string: "https://service.shmetro.com/czxx/index.htm")!
+        case .guangzhou: URL(string: "https://cs.gzmtr.com/ckfw/")!
         case .chengdu: URL(string: "https://www.chengdurail.com/index/jtxwt.htm")!
         }
     }
@@ -26,6 +28,7 @@ enum LioMetroCity: String, CaseIterable, Identifiable {
         case .beijing:
             URL(string: "https://english.beijing.gov.cn/travellinginbeijing/transportation/beijingsubway/202512/t20251229_4374803.html")!
         case .shanghai: URL(string: "https://service.shmetro.com/cczn/index.htm")!
+        case .guangzhou: URL(string: "https://cs.gzmtr.com/ckfw/pwzy_202001/")!
         case .chengdu: URL(string: "https://www.chengdurail.com/ckfw/pwzc.htm")!
         }
     }
@@ -41,6 +44,11 @@ enum LioMetroCity: String, CaseIterable, Identifiable {
             language.text(
                 "Buy a single-ride ticket at a station machine or service counter. If you already use a Shanghai transport card, you can use it at the gates.",
                 "可到车站售票机或服务中心购单程票。已有上海公共交通卡时，可在闸机刷卡进站。"
+            )
+        case .guangzhou:
+            language.text(
+                "Buy a single-journey ticket at a station machine: choose the line and your destination station, then pay. Staff at the customer service centre can help if you show the station name.",
+                "在车站售票机选择线路和目的站后购买单程票。需要帮助时，可把站名出示给客服中心的工作人员。"
             )
         case .chengdu:
             language.text(
@@ -71,10 +79,27 @@ extension LioMetroCity {
 
     var identifier: String { "lio.metro.city." + rawValue }
 
+    /// The bundled interactive map, for cities whose operator data has been checked (#1450).
+    var mapResource: String? {
+        switch self {
+        case .beijing, .shanghai, .guangzhou: "LioMetroMap.\(rawValue).v1"
+        case .chengdu: nil
+        }
+    }
+
+    var taxiCity: LioTaxiCity {
+        switch self {
+        case .beijing: .beijing
+        case .shanghai: .shanghai
+        case .guangzhou: .guangzhou
+        case .chengdu: .chengdu
+        }
+    }
+
     func summary(in language: LioLanguage) -> String {
         switch self {
-        case .beijing: language.text("Tickets, security and the official map", "买票、安检和官方线路图")
-        case .shanghai: language.text("Tickets, transport card and the official map", "单程票、交通卡和官方线路图")
+        case .beijing, .guangzhou: language.text("Interactive line map, tickets and security", "可交互线路图、买票和安检")
+        case .shanghai: language.text("Interactive line map, tickets and transport card", "可交互线路图、单程票和交通卡")
         case .chengdu: language.text("Tickets, security and the official map", "买票、安检和官方线路图")
         }
     }

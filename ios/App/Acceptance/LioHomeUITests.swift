@@ -46,6 +46,76 @@ import CryptoKit
         }
     }
 
+    /// #1450 item 2: the interactive map opens from a city, finds a station and shows its lines,
+    /// the taxi and directions actions, and the operator source with its check date.
+    func testMetroMapFindsAStationAndShowsItsLines() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-taxi-preview", "-cj.ui.language.v1", language,
+                                   "-lio.ui.appearance.v1", "light", "-UIPreferredContentSizeCategoryName",
+                                   "UICTContentSizeCategoryL"]
+            app.launch()
+            defer { app.terminate() }
+            let english = language == "en"
+            let tools = app.tabBars.buttons[english ? "Tools" : "工具"]
+            XCTAssertTrue(tools.waitForExistence(timeout: 8))
+            tools.tap()
+            app.buttons["lio.tools.metro-guide"].tap()
+            for (city, station, lines) in [("guangzhou", english ? "Tiyu Xilu" : "体育西路", english ? "Line 1" : "1号线"),
+                                           ("shanghai", english ? "People's Square" : "人民广场", english ? "Line 8" : "8号线"),
+                                           ("beijing", english ? "Xizhimen" : "西直门", english ? "Line 13" : "13号线")] {
+                XCTAssertTrue(app.buttons["lio.metro.city.\(city)"].waitForExistence(timeout: 6))
+                app.buttons["lio.metro.city.\(city)"].tap()
+                let entry = app.buttons["lio.metro.interactive"]
+                XCTAssertTrue(entry.waitForExistence(timeout: 6))
+                entry.tap()
+                XCTAssertTrue(app.descendants(matching: .any)["lio.metro.map.canvas"].waitForExistence(timeout: 8))
+                let source = app.descendants(matching: .any)["lio.metro.map.source"]
+                XCTAssertTrue(source.exists)
+                XCTAssertTrue(source.label.contains(english ? "checked 24 Nov 2026" : "核对于2026年11月24日"))
+                capture(app, "metro-map-\(city)-\(language)")
+                app.buttons["lio.metro.map.zoom-in"].tap()
+                app.buttons["lio.metro.map.zoom-in"].tap()
+                capture(app, "metro-map-\(city)-zoomed-\(language)")
+                app.buttons["lio.metro.map.find"].tap()
+                let search = app.searchFields.firstMatch
+                XCTAssertTrue(search.waitForExistence(timeout: 6))
+                search.tap()
+                search.typeText(station)
+                let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", station)).firstMatch
+                XCTAssertTrue(row.waitForExistence(timeout: 6))
+                row.tap()
+                XCTAssertTrue(app.staticTexts["lio.metro.station.name-zh"].waitForExistence(timeout: 6))
+                XCTAssertTrue(app.descendants(matching: .any)["lio.metro.station.lines"].label.contains(lines))
+                XCTAssertTrue(app.staticTexts["lio.metro.station.interchange"].exists)
+                XCTAssertTrue(app.buttons["lio.metro.station.taxi"].exists)
+                XCTAssertTrue(app.buttons["lio.metro.station.directions"].exists)
+                capture(app, "metro-station-\(city)-\(language)")
+                if city == "guangzhou" {
+                    // The preview place search has no metro stations, so this proves the query it sent:
+                    // the app's own taxi search for "<station>地铁站" in the station's city.
+                    app.buttons["lio.metro.station.taxi"].tap()
+                    let notice = app.staticTexts["lio.metro.station.notice"]
+                    XCTAssertTrue(notice.waitForExistence(timeout: 8))
+                    XCTAssertTrue(notice.label.contains("体育西路地铁站"))
+                    capture(app, "metro-taxi-search-\(city)-\(language)")
+                }
+                app.swipeDown(velocity: .fast)
+                XCTAssertTrue(app.descendants(matching: .any)["lio.metro.map.canvas"].waitForExistence(timeout: 6))
+                app.navigationBars.buttons.element(boundBy: 0).tap() // back to the city
+                app.navigationBars.buttons.element(boundBy: 0).tap() // back to the city list
+            }
+        }
+    }
+
+    private func capture(_ app: XCUIApplication, _ name: String) {
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = name
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+    }
+
     func testMetroGuideSwitchesCitiesAndShowsOfficialLinks() throws {
         continueAfterFailure = false
         for language in ["en", "zh-Hans"] {
@@ -61,14 +131,14 @@ import CryptoKit
                 tools.tap()
                 app.buttons["lio.tools.metro-guide"].tap()
                 // Choose a city first (#1421), then switch cities inside the guide.
-                for city in ["beijing", "shanghai", "chengdu"] {
+                for city in ["beijing", "shanghai", "guangzhou", "chengdu"] {
                     XCTAssertTrue(app.buttons["lio.metro.city.\(city)"].waitForExistence(timeout: 6))
                 }
                 try app.performAccessibilityAudit(for: .all)
                 app.buttons["lio.metro.city.beijing"].tap()
                 let picker = app.buttons["lio.metro.city"]
                 XCTAssertTrue(picker.waitForExistence(timeout: 6))
-                for city in language == "en" ? ["Shanghai", "Chengdu", "Beijing"] : ["上海", "成都", "北京"] {
+                for city in language == "en" ? ["Shanghai", "Guangzhou", "Chengdu", "Beijing"] : ["上海", "广州", "成都", "北京"] {
                     picker.tap()
                     app.buttons[city].tap()
                     XCTAssertTrue(picker.label.contains(city) || (picker.value as? String)?.contains(city) == true)
