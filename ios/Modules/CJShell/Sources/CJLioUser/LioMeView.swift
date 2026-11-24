@@ -114,7 +114,7 @@ struct LioMeView<Menu: View>: View {
             .font(.body.weight(.semibold))
             .foregroundStyle(tint)
             .frame(width: 36, height: 36)
-            .background(background, in: RoundedRectangle(cornerRadius: 10))
+            .background(background, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
             .accessibilityHidden(true)
     }
 }
