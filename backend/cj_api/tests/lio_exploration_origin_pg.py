@@ -252,8 +252,11 @@ def main():
 # Independent proofs, each on its own private cluster. With no arguments every part runs
 # in this order; scripts/pg_suites.py reads PARTS and runs each part as its own group so
 # CI can place them on different shards. Adding a proof here adds it to CI automatically.
-PARTS=('origin','rich_source','providers','qualified_pipeline','rich_provider','api_scope_hold',
-       'rich_selection','rich_selection_undo')
+# qualified_<step> runs one step of lio_qualified_pipeline_pg.main(production=True); together
+# they are every step of that proof, in its order (see STEPS there).
+PARTS=('origin','rich_source','providers','qualified_natural','qualified_production',
+       'qualified_wording','qualified_duration5','qualified_provider_unavailable',
+       'qualified_route_sources','rich_provider','api_scope_hold','rich_selection','rich_selection_undo')
 
 
 def run_part(name):
@@ -266,9 +269,9 @@ def run_part(name):
     elif name=='providers':
         from lio_provider_sources_pg import main as providers_main
         providers_main()
-    elif name=='qualified_pipeline':
+    elif name.startswith('qualified_'):
         from lio_qualified_pipeline_pg import main as qualified_pipeline_main
-        qualified_pipeline_main(production=True)
+        qualified_pipeline_main(production=True,steps=(name[len('qualified_'):],))
     elif name=='rich_provider':
         import runpy
         runpy.run_path(str(ROOT/'backend/draft/tests/rich_provider_pg.py'),run_name='__main__')
@@ -283,6 +286,9 @@ def run_part(name):
 
 
 if __name__=='__main__':
+    from lio_qualified_pipeline_pg import STEPS as QUALIFIED_STEPS
+    if [p[len('qualified_'):] for p in PARTS if p.startswith('qualified_')]!=list(QUALIFIED_STEPS):
+        raise SystemExit('PARTS qualified_* must list every lio_qualified_pipeline_pg STEPS entry in order')
     names=sys.argv[1:] or PARTS
     if not set(names)<=set(PARTS):
         raise SystemExit(f'unknown lio exploration parts {sorted(set(names)-set(PARTS))}; expected {PARTS}')
