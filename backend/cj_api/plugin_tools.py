@@ -82,7 +82,10 @@ async def _bounded_body(request):
 
 
 def register_plugin(app, path, model, operation, *, enabled, checker, internal, calls, limit,
-                    count_provider_calls=False):
+                    count_provider_calls=False, pass_token=False):
+    if pass_token and not count_provider_calls:
+        raise ValueError('pass_token requires provider call counting')
+
     @app.post(path)
     async def execute(request: Request):
         try:
@@ -111,6 +114,10 @@ def register_plugin(app, path, model, operation, *, enabled, checker, internal, 
             def run():
                 reserve(path, limit)
                 if count_provider_calls:
+                    # pass_token: the operation may forward the caller's own bearer to an
+                    # internal relay that re-authorizes and meters it (taxi English names).
+                    if pass_token:
+                        return operation(arguments, reserve, token)
                     return operation(arguments, reserve)
                 return operation(arguments)
 
