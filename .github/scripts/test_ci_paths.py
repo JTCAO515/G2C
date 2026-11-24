@@ -5,7 +5,7 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from ci_paths import classify  # noqa: E402
+from ci_paths import classify, split  # noqa: E402
 
 SCRIPT = Path(__file__).resolve().parent / 'ci_paths.py'
 
@@ -41,6 +41,22 @@ class ClassifyTests(unittest.TestCase):
     def test_prefixes_are_anchored(self):
         self.check(['backend/ios/a.py'], 'false', 'false', 'false')
         self.check(['docs-old/a.md'], 'false', 'false', 'false')
+        for path in ('iosx/a', '.github-old/x', 'contracts-v2/x', 'digital-assets-old/x', '.gitattributes.bak'):
+            with self.subTest(path=path):
+                self.check([path], 'false', 'false', 'false')
+
+    def test_quoted_or_non_ascii_paths(self):
+        # With core.quotePath=false and -z, non-ASCII names arrive raw and classify normally.
+        self.check(['ios/App/新.swift'], 'false', 'true', 'true')
+        self.check(['docs/说明.md'], 'true', 'false', 'false')
+        # A C-quoted name (quotePath left on) is unknown, so every job runs.
+        self.check(['"ios/App/\\346\\226\\260.swift"'], 'false', 'false', 'true')
+        self.check(['backend/a.py', '"docs/\\346.md"'], 'false', 'false', 'true')
+
+    def test_nul_separated_input(self):
+        self.assertEqual(split('ios/a b.swift\0docs/x.md\0'), ['ios/a b.swift', 'docs/x.md', ''])
+        self.assertEqual(split('a\nb\n'), ['a', 'b'])
+        self.check(split('ios/a b.swift\0docs/x.md\0'), 'false', 'true', 'true')
 
     def test_blank_lines_ignored_and_empty_refused(self):
         self.check(['', 'ios/a.swift', ''], 'false', 'true', 'true')
@@ -48,7 +64,7 @@ class ClassifyTests(unittest.TestCase):
             classify(['', '  '])
 
     def test_cli_prints_outputs_and_fails_closed_on_empty_input(self):
-        ok = subprocess.run([sys.executable, '-B', str(SCRIPT)], input='ios/a.swift\n',
+        ok = subprocess.run([sys.executable, '-B', str(SCRIPT)], input='ios/a.swift\0',
                             capture_output=True, text=True)
         self.assertEqual(ok.returncode, 0)
         self.assertEqual(ok.stdout, 'docs_only=false\nios_only=true\napp_changed=true\n')
