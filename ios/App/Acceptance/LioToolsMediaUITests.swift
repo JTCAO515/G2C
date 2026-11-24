@@ -13,7 +13,6 @@ import XCTest
         XCTAssertTrue(tools.waitForExistence(timeout: 8))
         tools.tap()
         app.buttons["lio.tools.translation"].tap()
-        app.buttons["lio.translation.mode.voice"].tap()
         let voice = app.buttons["lio.translation.voice"]
         XCTAssertTrue(voice.waitForExistence(timeout: 6))
         voice.tap()
@@ -24,7 +23,6 @@ import XCTest
         voice.tap()
         XCTAssertTrue(message.waitForExistence(timeout: 6))
         XCTAssertFalse(app.staticTexts["lio.translation.transcript"].exists)
-        app.buttons["lio.translation.mode.text"].tap()
         XCTAssertTrue(app.textViews["lio.translation.input"].exists)
     }
 
@@ -36,11 +34,13 @@ import XCTest
             app.launch()
             app.tabBars.buttons[language == "en" ? "Tools" : "工具"].tap()
             app.buttons["lio.tools.translation"].tap()
-            app.buttons["lio.translation.mode.photo"].tap()
+            app.buttons["lio.translation.camera-menu"].tap()
             let camera = app.buttons["lio.translation.camera"]
             XCTAssertTrue(camera.waitForExistence(timeout: 6))
             camera.tap()
-            XCTAssertTrue(app.staticTexts["lio.translation.image-problem"].waitForExistence(timeout: 6))
+            XCTAssertTrue(app.descendants(matching: .any)["lio.translation.input-notice"].waitForExistence(timeout: 6))
+            app.buttons["lio.translation.camera-menu"].tap()
+            XCTAssertTrue(app.buttons["lio.translation.photo"].waitForExistence(timeout: 6))
             XCTAssertTrue(app.buttons["lio.translation.photo"].isEnabled)
             app.terminate()
         }

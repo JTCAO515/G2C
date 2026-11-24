@@ -37,7 +37,9 @@ struct LioTextTranslationView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.self) private var environment
     @State private var presentation = LioTranslationPresentation()
-    @State private var outputMode: Mode = .text
+    @State private var voicePrompt: LioVoicePrompt?
+    @State private var inputNotice: LioTranslationInputNotice?
+    @Environment(\.openURL) private var openURL
     @State private var attempt: Attempt?
     @State private var retryAttempt: Attempt?
     @State private var result: LioTranslationResult?
@@ -54,7 +56,6 @@ struct LioTextTranslationView: View {
 
     private var translationTitle: String { language.text("Translation", "翻译") }
     private var historyTitle: String { language.text("Recent translations", "最近翻译") }
-    private var mode: Mode { presentation.mode }
     private var historyPresented: Binding<Bool> {
         Binding(get: { presentation.isHistoryOpen }, set: { presentation.setHistoryOpen($0) })
     }
@@ -96,8 +97,7 @@ struct LioTextTranslationView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 languages
-                originalCard
-                translationCard
+                resultArea
             }
             .padding(18)
             .background {
@@ -115,9 +115,7 @@ struct LioTextTranslationView: View {
         .background(LioTheme.paper)
         .navigationTitle(translationTitle)
         .navigationBarTitleDisplayMode(.inline)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            if !editingText { modeBar }
-        }
+        .safeAreaInset(edge: .bottom, spacing: 0) { inputBar }
         .toolbar {
             ToolbarItem(placement: .principal) { toolbarTitle(translationTitle) }
             ToolbarItem(placement: .topBarTrailing) {
@@ -182,44 +180,114 @@ struct LioTextTranslationView: View {
         .background(LioTheme.surface, in: Capsule())
     }
 
-    private var originalCard: some View {
-        let captureID = presentation.captureID
-        let captureEnabled = enabled && !presentation.isHistoryOpen
-        return VStack(alignment: .leading, spacing: 8) {
-            cardHeading(language.text("Original text", "待译内容"))
-            switch mode {
-            case .text:
-                textInput
-            case .voice:
-                LioRelayVoiceInput(language: language, source: source, enabled: captureEnabled,
-                                   isCurrent: { captureIsCurrent(.voice, id: captureID) }) { recording in
-                    guard captureIsCurrent(.voice, id: captureID) else { return }
-                    begin(.recording(recording))
-                }
-                .id(captureID)
-                if let spokenText {
-                    Text(language.text("Recognized speech", "识别出的文字")).font(.subheadline)
-                    Text(spokenText)
-                        .textSelection(.enabled)
-                        .accessibilityIdentifier("lio.translation.transcript")
-                }
-            case .photo:
-                LioTranslationImageInput(language: language, source: source, enabled: captureEnabled,
-                                         isCurrent: { captureIsCurrent(.photo, id: captureID) }) { data in
-                    guard captureIsCurrent(.photo, id: captureID) else { return }
-                    begin(.photo(data))
-                }
-                .id(captureID)
-            }
-        }
-        .frame(maxWidth: .infinity, minHeight: 110, alignment: .topLeading)
-        .padding(16)
-        .background { keyboardDismissArea }
-        .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+    /// Voice, photo and typed input share one bar, like a chat composer. Inputs pause
+    /// while a translation is in flight or the history sheet is open, which retires any
+    /// capture that was still being prepared.
+    private var captureEnabled: Bool {
+        enabled && !presentation.isHistoryOpen && attempt == nil
     }
 
-    private func captureIsCurrent(_ mode: Mode, id: UUID) -> Bool {
-        enabled && isCurrent() && presentation.acceptsCapture(mode, id: id)
+    private func captureIsCurrent() -> Bool {
+        enabled && isCurrent() && !presentation.isHistoryOpen
+    }
+
+    private var hasTypedText: Bool {
+        !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var inputBar: some View {
+        VStack(spacing: 8) {
+            if let voicePrompt {
+                HStack(spacing: 8) {
+                    Image(systemName: voicePrompt.cancelling ? "xmark.circle.fill" : "waveform")
+                        .foregroundStyle(voicePrompt.cancelling ? LioTheme.danger : LioTheme.vermilion)
+                        .accessibilityHidden(true)
+                    Text(voicePrompt.text)
+                    Spacer(minLength: 8)
+                    Text(timerInterval: voicePrompt.startedAt...voicePrompt.startedAt.addingTimeInterval(60),
+                         countsDown: false)
+                        .monospacedDigit()
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(LioTheme.ink)
+                .padding(.horizontal, 16)
+                .frame(minHeight: 44)
+                .lioCard(Capsule())
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("lio.translation.recording")
+            } else if let inputNotice {
+                HStack(spacing: 8) {
+                    Text(inputNotice.text)
+                        .font(.subheadline)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 8)
+                    if inputNotice.opensSettings {
+                        Button(language.text("Open Settings", "打开设置")) {
+                            if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .frame(minHeight: 44)
+                    }
+                }
+                .foregroundStyle(LioTheme.ink)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 6)
+                .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+                .accessibilityIdentifier("lio.translation.input-notice")
+            }
+            HStack(alignment: .bottom, spacing: 8) {
+                LioTranslationImageInput(language: language, source: source, enabled: captureEnabled,
+                                         isCurrent: captureIsCurrent, onImage: { data in
+                    guard captureIsCurrent() else { return }
+                    begin(.photo(data))
+                }, notice: $inputNotice)
+                TextField(language.text("Type, or hold the mic to talk", "输入文字，或按住麦克风说话"),
+                          text: $input, axis: .vertical)
+                    .lineLimit(1...5)
+                    .focused($editingText)
+                    .font(.body)
+                    .foregroundStyle(LioTheme.ink)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 11)
+                    .frame(minHeight: 44)
+                    .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: LioTheme.Radius.card).stroke(LioTheme.hairline, lineWidth: LioTheme.outlineWidth)
+                            .allowsHitTesting(false)
+                    }
+                    .accessibilityLabel(language.text("Text to translate", "要翻译的文本"))
+                    .accessibilityIdentifier("lio.translation.input")
+                if hasTypedText {
+                    Button(action: start) {
+                        Image(systemName: "arrow.up")
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(LioTheme.onVermilion)
+                            .frame(width: 44, height: 44)
+                            .background(LioTheme.vermilion, in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(attempt != nil || problem == .alreadyAccepted)
+                    .opacity(attempt != nil || problem == .alreadyAccepted ? 0.5 : 1)
+                    .accessibilityLabel(language.text("Translate", "翻译"))
+                    .accessibilityIdentifier("lio.translation.submit")
+                } else {
+                    LioRelayVoiceInput(language: language, source: source, enabled: captureEnabled,
+                                       isCurrent: captureIsCurrent, onRecording: { recording in
+                        guard captureIsCurrent() else { return }
+                        begin(.recording(recording))
+                    }, prompt: $voicePrompt, notice: $inputNotice)
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.top, 8)
+        .padding(.bottom, 8)
+        .background(LioTheme.paper.opacity(0.96))
+        .overlay(alignment: .top) {
+            Rectangle().fill(LioTheme.hairline).frame(height: LioTheme.outlineWidth)
+                .accessibilityHidden(true)
+        }
+        .onChange(of: input) { _, _ in inputNotice = nil }
     }
 
     @ViewBuilder
@@ -232,66 +300,77 @@ struct LioTextTranslationView: View {
         }
     }
 
-    private var textInput: some View {
-        let actions = typeSize.isAccessibilitySize
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
-            : AnyLayout(HStackLayout(spacing: 10))
-        return VStack(alignment: .leading, spacing: 8) {
-            TextEditor(text: $input)
-                .focused($editingText)
-                .font(LioTheme.display(.title3))
-                .foregroundStyle(LioTheme.ink)
-                .scrollContentBackground(.hidden)
-                .frame(minHeight: 100)
-                .accessibilityLabel(language.text("Text to translate", "要翻译的文本"))
-                .accessibilityIdentifier("lio.translation.input")
-            actions { textInputActions }
-        }
-    }
-
-    @ViewBuilder
-    private var textInputActions: some View {
-        PasteButton(payloadType: String.self) { values in
-            if let text = values.first { input = text }
-        }
-        .frame(minHeight: 44)
-        Button(language.text("Clear", "清空")) { input = ""; resetResult() }
-            .frame(minHeight: 44)
-        Button(action: start) {
-            Label(language.text("Translate", "翻译"), systemImage: "arrow.forward")
-                .font(.subheadline.weight(.semibold))
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .buttonStyle(LioTranslationActionStyle(prominent: true))
-        .accessibilityIdentifier("lio.translation.submit")
-        .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                  || attempt != nil || problem == .alreadyAccepted)
-    }
-
-    private var translationCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            cardHeading(language.text("Translation", "译文"))
-            if mode == outputMode {
-                if let attempt { ProgressView(progress(for: attempt)) }
-                if let result { resultContent(result) }
-                if let problem {
-                    Text(message(for: problem))
-                        .accessibilityIdentifier("lio.translation.problem")
-                    if let retryAttempt {
-                        Button(language.text("Retry", "重试")) {
-                            begin(retryAttempt.input, text: retryAttempt.request.text,
-                                  preparedPayload: retryAttempt.preparedPayload)
-                        }
-                        .frame(minHeight: 44)
-                        .disabled(!enabled)
-                        .accessibilityIdentifier("lio.translation.retry")
+    /// The latest translation, its original and any problem; an empty page explains the three inputs.
+    private var resultArea: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if let attempt {
+                ProgressView(progress(for: attempt))
+                    .foregroundStyle(LioTheme.inkSecondary)
+            }
+            if let result {
+                if let original = originalText {
+                    Text(original)
+                        .font(.subheadline)
+                        .foregroundStyle(LioTheme.inkSecondary)
+                        .textSelection(.enabled)
+                        .accessibilityLabel(language.text("You said: ", "你说的：") + original)
+                        .accessibilityIdentifier("lio.translation.transcript")
+                }
+                resultContent(result)
+            }
+            if let problem {
+                Text(message(for: problem))
+                    .foregroundStyle(LioTheme.ink)
+                    .accessibilityIdentifier("lio.translation.problem")
+                if let retryAttempt {
+                    Button(language.text("Retry", "重试")) {
+                        begin(retryAttempt.input, text: retryAttempt.request.text,
+                              preparedPayload: retryAttempt.preparedPayload)
                     }
+                    .frame(minHeight: 44)
+                    .disabled(!enabled)
+                    .accessibilityIdentifier("lio.translation.retry")
                 }
             }
+            if attempt == nil, result == nil, problem == nil {
+                emptyState
+            }
         }
-        .frame(maxWidth: .infinity, minHeight: 110, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 160, alignment: .topLeading)
         .padding(16)
-        .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+        .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+    }
+
+    /// What was translated, when it isn't already on screen in the input field or as a photo.
+    private var originalText: String? {
+        if let spokenText { return spokenText }
+        return nil
+    }
+
+    private var emptyState: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(language.text("Translations appear here", "译文会显示在这里"))
+                .font(LioTheme.display(.title3).weight(.semibold))
+                .foregroundStyle(LioTheme.ink)
+            emptyRow("keyboard", language.text("Type below and tap the arrow", "在下方输入文字，点箭头翻译"))
+            emptyRow("mic.fill", language.text("Hold the mic, speak, then release", "按住麦克风说话，松开即翻译"))
+            emptyRow("camera", language.text("Tap the camera to take or choose a photo", "点相机，拍照或从相册选图"))
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("lio.translation.empty")
+    }
+
+    private func emptyRow(_ symbol: String, _ text: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Image(systemName: symbol)
+                .foregroundStyle(LioTheme.vermilion)
+                .frame(width: 22)
+                .accessibilityHidden(true)
+            Text(text)
+                .font(.subheadline)
+                .foregroundStyle(LioTheme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     private func cardHeading(_ label: String) -> some View {
@@ -305,47 +384,6 @@ struct LioTextTranslationView: View {
         RunReadableText(text: title, style: .headline, color: Color(LioTheme.ink.resolve(in: environment)))
             .fixedSize()
             .accessibilityAddTraits(.isHeader)
-    }
-
-    private var modeBar: some View {
-        HStack(spacing: 4) {
-            ForEach(Mode.allCases, id: \.self) { choice in
-                Button {
-                    withAnimation(LioTheme.Motion.animation(LioTheme.Motion.change, reduceMotion: reduceMotion)) {
-                        presentation.select(choice)
-                    }
-                } label: {
-                    VStack(spacing: 3) {
-                        Image(systemName: choice.symbol)
-                            .font(.body.weight(.semibold))
-                            .accessibilityHidden(true)
-                        Text(choice.title(language))
-                            .font(.caption.weight(.semibold))
-                            .multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .foregroundStyle(LioTheme.ink)
-                    .frame(maxWidth: .infinity, minHeight: 52)
-                    .background(mode == choice ? LioTheme.surfaceSunken : LioTheme.surface, in: Capsule())
-                    .overlay {
-                        if mode == choice {
-                            Capsule().strokeBorder(LioTheme.inkSecondary)
-                                .allowsHitTesting(false)
-                                .accessibilityHidden(true)
-                        }
-                    }
-                    .contentShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(mode == choice ? [.isSelected] : [])
-                .accessibilityIdentifier("lio.translation.mode.\(choice.rawValue)")
-                .disabled(attempt != nil)
-            }
-        }
-        .padding(5)
-        .lioFloatingSurface(Capsule())
-        .padding(.horizontal, 18)
-        .padding(.vertical, 8)
     }
 
     private var historySheet: some View {
@@ -425,6 +463,7 @@ struct LioTextTranslationView: View {
         return VStack(alignment: .leading, spacing: 8) {
             if imageLines.isEmpty {
                 Text(translated)
+                    .font(LioTheme.display(.title2).weight(.semibold))
                     .foregroundStyle(LioTheme.ink)
                     .textSelection(.enabled)
                     .accessibilityIdentifier("lio.translation.result")
@@ -554,9 +593,9 @@ struct LioTextTranslationView: View {
 
     private func begin(_ input: Attempt.Input, text: [String] = [],
                        preparedPayload: LioRelayTranslationRequest.Payload? = nil) {
-        guard enabled, isCurrent(), mode == input.mode, !presentation.isHistoryOpen else { return }
+        guard enabled, isCurrent(), !presentation.isHistoryOpen else { return }
+        presentation.select(input.mode)
         resetResult()
-        outputMode = input.mode
         guard relay != nil else {
             problem = .accessDenied
             return
@@ -697,24 +736,6 @@ struct LioTextTranslationView: View {
             language.text("Translation limit reached. Try again later.", "翻译额度已用完，请稍后重试。")
         case .timedOut:
             language.text("Translation timed out. Try again.", "翻译超时，请重试。")
-        }
-    }
-}
-
-private extension LioTranslationPresentation.Mode {
-    var symbol: String {
-        switch self {
-        case .text: "text.alignleft"
-        case .voice: "mic"
-        case .photo: "camera"
-        }
-    }
-
-    func title(_ language: LioLanguage) -> String {
-        switch self {
-        case .text: language.text("Text", "文字")
-        case .voice: language.text("Voice", "语音")
-        case .photo: language.text("Photo", "拍照")
         }
     }
 }

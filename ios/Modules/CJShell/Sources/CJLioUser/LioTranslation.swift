@@ -158,3 +158,34 @@ struct LioRecentTranslation: Codable, Equatable, Identifiable {
         }
     }
 }
+
+/// A short message shown above the translation input bar, such as a denied permission.
+struct LioTranslationInputNotice: Equatable, Sendable {
+    let text: String
+    var opensSettings = false
+}
+
+/// Press-and-hold voice input: hold the microphone, release to translate, slide up to cancel.
+enum LioHoldToTalk {
+    enum Release: Equatable { case translate, tooShort, cancel }
+
+    static let minimumDuration: TimeInterval = 0.4
+    static let cancelDistance: CGFloat = 70
+
+    static func isCancelling(dragHeight: CGFloat) -> Bool { dragHeight < -cancelDistance }
+
+    static func release(recordingStartedAt start: Date?, at end: Date, dragHeight: CGFloat) -> Release {
+        if isCancelling(dragHeight: dragHeight) { return .cancel }
+        guard let start, end.timeIntervalSince(start) >= minimumDuration else { return .tooShort }
+        return .translate
+    }
+
+    static func hint(_ release: Release, language: LioLanguage) -> String? {
+        release == .tooShort ? language.text("Hold to talk, release to translate", "按住说话，松开即翻译") : nil
+    }
+
+    static func recordingPrompt(cancelling: Bool, language: LioLanguage) -> String {
+        cancelling ? language.text("Release to cancel", "松开取消")
+                   : language.text("Release to translate, slide up to cancel", "松开翻译，上滑取消")
+    }
+}

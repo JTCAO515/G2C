@@ -16,14 +16,22 @@ import XCTest
                 app.buttons["lio.tools.translation"].tap()
                 XCTAssertTrue(app.buttons["lio.translation.swap"].waitForExistence(timeout: 6))
 
-                for mode in ["text", "voice", "photo"] {
-                    app.buttons["lio.translation.mode.\(mode)"].tap()
-                    try app.performAccessibilityAudit(for: .all)
-                    let screenshot = XCTAttachment(screenshot: app.screenshot())
-                    screenshot.name = "translation-\(mode)-\(language)-\(appearance)"
-                    screenshot.lifetime = .keepAlways
-                    add(screenshot)
-                }
+                // One page (#1421): text field, hold-to-talk microphone and camera menu share the bar.
+                XCTAssertTrue(app.textViews["lio.translation.input"].isHittable)
+                XCTAssertTrue(app.buttons["lio.translation.voice"].isHittable)
+                XCTAssertTrue(app.buttons["lio.translation.camera-menu"].isHittable)
+                XCTAssertFalse(app.buttons["lio.translation.mode.text"].exists)
+                try app.performAccessibilityAudit(for: .all)
+                let screenshot = XCTAttachment(screenshot: app.screenshot())
+                screenshot.name = "translation-page-\(language)-\(appearance)"
+                screenshot.lifetime = .keepAlways
+                add(screenshot)
+                app.buttons["lio.translation.camera-menu"].tap()
+                XCTAssertTrue(app.buttons["lio.translation.camera"].waitForExistence(timeout: 5))
+                XCTAssertTrue(app.buttons["lio.translation.photo"].exists)
+                try app.performAccessibilityAudit(for: .all)
+                app.buttons["lio.translation.camera-menu"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+                    .withOffset(CGVector(dx: 0, dy: -300)).tap()
 
                 app.navigationBars.buttons["lio.translation.history"].tap()
                 let close = app.navigationBars.buttons["lio.translation.history-close"]
@@ -50,17 +58,16 @@ import XCTest
                 app.buttons["lio.tools.translation"].tap()
                 XCTAssertTrue(app.buttons["lio.translation.swap"].waitForExistence(timeout: 6))
                 XCTAssertTrue(app.textViews["lio.translation.input"].isHittable)
-                for mode in ["text", "voice", "photo"] {
-                    XCTAssertTrue(app.buttons["lio.translation.mode.\(mode)"].isHittable)
-                }
+                XCTAssertTrue(app.buttons["lio.translation.voice"].isHittable)
+                XCTAssertTrue(app.buttons["lio.translation.camera-menu"].isHittable)
 
                 let screenshot = XCTAttachment(screenshot: app.screenshot())
                 screenshot.name = "translation-maximum-size-\(language)-\(appearance)"
                 screenshot.lifetime = .keepAlways
                 add(screenshot)
 
-                app.buttons["lio.translation.mode.photo"].tap()
-                XCTAssertTrue(app.buttons["lio.translation.camera"].isHittable)
+                app.buttons["lio.translation.camera-menu"].tap()
+                XCTAssertTrue(app.buttons["lio.translation.camera"].waitForExistence(timeout: 5))
                 XCTAssertTrue(app.buttons["lio.translation.photo"].isHittable)
             }
         }
@@ -83,18 +90,15 @@ import XCTest
         editor.typeText("Hello")
         app.navigationBars.buttons["lio.translation.keyboard-done"].tap()
 
-        let voiceMode = app.buttons["lio.translation.mode.voice"]
-        XCTAssertTrue(voiceMode.waitForExistence(timeout: 5))
-        voiceMode.tap()
-        XCTAssertTrue(app.buttons["lio.translation.voice"].isHittable)
-        XCTAssertFalse(editor.exists)
-
-        app.buttons["lio.translation.mode.photo"].tap()
-        XCTAssertTrue(app.buttons["lio.translation.camera"].isHittable)
-        XCTAssertTrue(app.buttons["lio.translation.photo"].isHittable)
+        // With typed text the microphone gives way to the send arrow; the camera menu stays.
+        XCTAssertTrue(app.buttons["lio.translation.submit"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["lio.translation.voice"].exists)
+        app.buttons["lio.translation.camera-menu"].tap()
+        XCTAssertTrue(app.buttons["lio.translation.camera"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["lio.translation.photo"].isHittable)
+        app.buttons["lio.translation.camera-menu"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .withOffset(CGVector(dx: 0, dy: -300)).tap()
 
-        app.buttons["lio.translation.mode.text"].tap()
         XCTAssertEqual(editor.value as? String, "Hello")
         app.buttons["lio.translation.submit"].tap()
         let result = app.staticTexts["lio.translation.result"]
@@ -120,8 +124,9 @@ import XCTest
         app.buttons["lio.tools.translation"].tap()
         let editor = app.textViews["lio.translation.input"]
         XCTAssertTrue(editor.waitForExistence(timeout: 6))
-        let translate = app.buttons["lio.translation.submit"]
-        let initialFrame = translate.frame
+        // The input bar follows the keyboard like a chat composer (#1421) and returns when it closes.
+        let camera = app.buttons["lio.translation.camera-menu"]
+        let initialFrame = camera.frame
         let keyboard = app.keyboards.firstMatch
         let done = app.navigationBars.buttons["lio.translation.keyboard-done"]
 
@@ -135,8 +140,8 @@ import XCTest
             let hidden = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: keyboard)
             XCTAssertEqual(XCTWaiter.wait(for: [hidden], timeout: 5), .completed)
             XCTAssertFalse(done.exists)
-            XCTAssertEqual(translate.frame.origin.x, initialFrame.origin.x, accuracy: 1)
-            XCTAssertEqual(translate.frame.origin.y, initialFrame.origin.y, accuracy: 1)
+            XCTAssertEqual(camera.frame.origin.x, initialFrame.origin.x, accuracy: 1)
+            XCTAssertEqual(camera.frame.origin.y, initialFrame.origin.y, accuracy: 1)
         }
 
         capture("translation-before-editing")
@@ -152,19 +157,17 @@ import XCTest
 
         editor.tap()
         XCTAssertTrue(keyboard.waitForExistence(timeout: 5))
-        editor.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0.25))
-            .withOffset(CGVector(dx: -8, dy: 0)).tap()
+        editor.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0))
+            .withOffset(CGVector(dx: 0, dy: -120)).tap()
         expectDismissed()
 
         editor.tap()
         XCTAssertTrue(keyboard.waitForExistence(timeout: 5))
         let scroller = app.scrollViews["lio.translation.scroll"]
         XCTAssertTrue(scroller.exists)
-        let belowEditor = editor.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1))
-            .withOffset(CGVector(dx: 0, dy: 5))
-        let aboveEditor = editor.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0))
-            .withOffset(CGVector(dx: 0, dy: -5))
-        belowEditor.press(forDuration: 0.05, thenDragTo: aboveEditor)
+        let lower = scroller.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45))
+        let upper = scroller.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15))
+        lower.press(forDuration: 0.05, thenDragTo: upper)
         expectDismissed()
         XCTAssertEqual(editor.value as? String, "Keep this draft")
     }
