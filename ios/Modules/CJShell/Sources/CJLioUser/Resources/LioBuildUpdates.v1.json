@@ -17,14 +17,14 @@
               "「插件」改名为「工具」，首页改成双列卡片，每个工具都有图标和一句话说明。",
               "翻译合成一个页面：上方显示译文，下方是输入栏。按住麦克风说话，松开即翻译；点相机可拍照或从相册选图。",
               "打车的起点和终点可以直接搜索地点名称，先选城市再搜；没有结果时会提示换个叫法或核对城市。打车和本地协助页面按新版界面重新排版。",
-              "新增「附近」：查看身边的美食、景点、咖啡和购物，可打车前往、用高德地图导航或出示中文地址。地铁指南改为先选城市。",
+              "地铁指南改为先选城市，再看乘车步骤和官方线路图。",
               "本地协助的「给当地人看」新增医疗卡：血型、过敏、用药和紧急联系人只保存在这台手机上，可全屏给医生看，也可随时一键清空。"
             ],
             "en": [
               "Plugins is now called Tools, with a two-column card for each tool showing an icon and one line about it.",
               "Translation is one page: the translation on top and an input bar below. Hold the microphone to talk and release to translate; tap the camera to take a photo or choose one.",
               "Search for taxi pickup and destination places by name after choosing a city. If nothing is found, you get a tip to try another name or check the city. Taxi and Local Support have a new layout.",
-              "New Nearby tool: find food, sights, coffee and shopping around you, then take a taxi, get directions in AMap or show the address in Chinese. The Metro Guide now starts by choosing a city.",
+              "The Metro Guide now starts by choosing a city, then shows riding steps and official maps.",
               "Show a Local in Local Support now has a medical card: blood type, allergies, medicines and emergency contacts stay only on this phone, can be shown full screen to a doctor and cleared at any time."
             ]
           }
@@ -37,10 +37,10 @@
           },
           "items": {
             "zh": [
-              "构建 54 接续构建 53。翻译去掉了文字、语音、拍照三种模式切换。附近的地图使用苹果地图，中国大陆底图来自高德。"
+              "构建 54 接续构建 53。翻译去掉了文字、语音、拍照三种模式切换。"
             ],
             "en": [
-              "Build 54 follows build 53. Translation no longer switches between text, voice and photo modes. The Nearby map uses Apple Maps, whose mainland China map data comes from AMap."
+              "Build 54 follows build 53. Translation no longer switches between text, voice and photo modes."
             ]
           }
         },
@@ -54,13 +54,13 @@
             "zh": [
               "用默认字号测中英界面：工具首页卡片，以及翻译页的打字、按住说话、拍照和从相册选图。",
               "打车：在北京、上海、成都各搜 3 个常见地点（如天安门、外滩、宽窄巷子），确认能生成滴滴链接。只走到滴滴确认页，请勿下单。",
-              "附近：允许定位后切换分类、范围和排序，打开一个地点试打车、导航和出示地址。地铁指南先选城市再看步骤。",
+              "地铁指南：先选城市再看乘车步骤，打开官方线路图链接。打车和本地协助：核对新版界面的中英显示。",
               "遇到问题，请在内部测试群发截图、问题记录及发生时间。"
             ],
             "en": [
               "At the default text size, check both languages: the Tools cards, and typing, holding to talk, taking a photo and choosing a photo in Translation.",
               "Taxi: search 3 common places each in Beijing, Shanghai and Chengdu (for example Tiananmen, the Bund, Kuanzhai Alley) and check that a DiDi link opens. Stop at vehicle confirmation without ordering.",
-              "Nearby: allow location, switch categories, distance and order, then open a place and try taxi, directions and the Chinese address. In the Metro Guide, choose a city first.",
+              "Metro Guide: choose a city, view the riding steps and open an official map link. Taxi and Local Support: check the new layout in both languages.",
               "Share a screenshot, the copied issue record and the time it happened in the internal testing group."
             ]
           }
@@ -74,11 +74,11 @@
           "items": {
             "zh": [
               "可缩放的交互式地铁图还在等待授权，本版只有城市选择、乘车步骤和官方线路图链接。",
-              "酒店、千问朗读、天气、航班、上网卡、玩乐暂未开放。本地协助暂不发送求助消息。附近暂不支持问 Lio 和加进行程。"
+              "附近、酒店、千问朗读、天气、航班、上网卡、玩乐暂未开放。本地协助暂不发送求助消息。"
             ],
             "en": [
               "The zoomable metro map is waiting for approval. This build has city choice, riding steps and links to official maps.",
-              "Hotels, Qwen voice playback, Weather, Flights, eSIM and Activities are unavailable. Local Support does not send help requests. Nearby cannot yet ask Lio or add a place to a trip."
+              "Nearby, Hotels, Qwen voice playback, Weather, Flights, eSIM and Activities are unavailable. Local Support does not send help requests."
             ]
           }
         },
@@ -90,11 +90,11 @@
           },
           "items": {
             "zh": [
-              "打车地点搜索和附近需要联网，供已开通的内测账号使用。地点来自滴滴和高德。",
+              "打车地点搜索需要联网，供已开通的内测账号使用。地点来自滴滴和高德。",
               "滴滴决定实际价格。打车只在滴滴继续。"
             ],
             "en": [
-              "Taxi place search and Nearby require internet access and an enabled tester account. Places come from DiDi and AMap.",
+              "Taxi place search requires internet access and an enabled tester account. Places come from DiDi and AMap.",
               "DiDi sets the final price and handles the ride."
             ]
           }

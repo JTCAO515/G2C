@@ -12,7 +12,7 @@ struct LioBuildUpdatesTests {
         #expect(current.previousBuild == 53)
         #expect(current.sections.map(\.id) == [.changes, .comparison, .testing, .known, .service])
         #expect(current.whatToTest(.chinese).contains("用默认字号测中英界面"))
-        #expect(current.whatToTest(.english).contains("Taxi place search and Nearby require internet access and an enabled tester account."))
+        #expect(current.whatToTest(.english).contains("Taxi place search requires internet access and an enabled tester account."))
         #expect(current.whatToTest(.chinese).contains("「插件」改名为「工具」"))
         #expect(current.whatToTest(.english).contains("Translation is one page"))
         #expect(previous.whatToTest(.chinese).contains("常用语卡片可放大、朗读"))
