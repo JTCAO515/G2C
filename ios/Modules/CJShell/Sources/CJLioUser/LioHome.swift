@@ -215,6 +215,14 @@ public struct LioHome<MenuContent: View>: View {
                 .background(LioTabBarAppearance().frame(width: 0, height: 0))
                 .tabItem { Label(language.text("Chat", "聊天"), systemImage: "bubble.left") }
                 .tag(Tab.chat)
+            if LioItineraryTimelineView.previewRequested {
+                // #1453 proposal screenshots only (Debug launch argument).
+                NavigationStack {
+                    LioItineraryTimelineView(itinerary: LioItineraryTimelineView.beijingPreview(language), language: language)
+                }
+                .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
+                .tag(Tab.trips)
+            } else {
             LioTripsView(itineraries: conversation.itineraries, language: language, library: tripLibrary,
                          tripPlan: tripPlan, currentPlan: tripPlan?.current(for: tripCard),
                          canUndo: canObserve && tripPlan?.requestedCard == tripCard,
@@ -223,6 +231,7 @@ public struct LioHome<MenuContent: View>: View {
                 .background(LioTabBarAppearance().frame(width: 0, height: 0))
                 .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
                 .tag(Tab.trips)
+            }
             if showsTools {
                 LioToolsView(language: language, history: toolsHistory, relay: toolsRelay,
                              currencyRelay: currencyRelay,
