@@ -34,20 +34,24 @@ def _inventory(github, path, key):
     raise ValueError('complete GitHub inventory required')
 
 
-def _runner_misses(github, run):
-    """Job ids of earlier ci.yml attempts that GitHub never gave a runner.
+def _runner_misses(github, run, latest):
+    """Job ids of earlier attempts of `run` that GitHub never gave a runner (JT 2026-11-24, #1445).
 
-    Hosted macOS capacity can end a job with no runner and zero steps; ci-rerun.yml then
-    re-runs it. Such a job ran nothing, so its record does not block. Any earlier job that ran
-    (runner or steps) and did not succeed still blocks the release.
+    Hosted macOS capacity can end a job with no runner and zero steps; ci-rerun.yml then re-runs
+    it. Only such a job may be passed over, only when it comes from the Actions attempts of this
+    same main-push ci.yml run, and only when its same-name job succeeded in the latest attempt.
+    Any earlier job that ran (runner or steps) and did not succeed still blocks the release.
     """
+    succeeded = {job['name'] for job in latest if job['conclusion'] == 'success' and job['steps']}
     misses = set()
     for attempt in range(1, run.get('run_attempt', 1)):
         for job in _inventory(github, f"actions/runs/{run['id']}/attempts/{attempt}/jobs", 'jobs'):
             if job['conclusion'] not in BLOCKING_CONCLUSIONS:
                 continue
-            if job.get('runner_name') or job['steps']:
-                raise ValueError('an earlier ci.yml attempt on the release source ran a job that did not succeed')
+            if (job.get('runner_name') or job['steps'] or job['run_id'] != run['id']
+                    or job.get('run_attempt') != attempt or job['name'] not in succeeded):
+                raise ValueError('an earlier ci.yml attempt on the release source has a job that '
+                                 'ran, or was not re-run successfully, and did not succeed')
             misses.add(job['id'])
     return misses
 
@@ -59,7 +63,8 @@ def verify_release_ci(github, source):
             and run['event'] == 'push' and run['head_branch'] == 'main'
             and run['repository']['full_name'] == REPOSITORY
             and run['head_repository']['full_name'] == REPOSITORY]
-    misses = _runner_misses(github, runs[0]) if len(runs) == 1 else set()
+    jobs = _inventory(github, f"actions/runs/{runs[0]['id']}/jobs", 'jobs') if len(runs) == 1 else []
+    misses = _runner_misses(github, runs[0], jobs) if len(runs) == 1 else set()
     if any(row['head_sha'] != source or row['conclusion'] in BLOCKING_CONCLUSIONS
            for row in [*workflows, *(check for check in checks if check['id'] not in misses)]):
         raise ValueError('GitHub recorded a failed or cancelled check on the release source')
@@ -68,7 +73,6 @@ def verify_release_ci(github, source):
     if len(runs) != 1 or runs[0]['status'] != 'completed' or runs[0]['conclusion'] != 'success':
         raise ValueError('successful exact-source main ci.yml run required')
     run_id = runs[0]['id']
-    jobs = _inventory(github, f'actions/runs/{run_id}/jobs', 'jobs')
     if (len(jobs) != len(CI_JOBS) or {job['name'] for job in jobs} != CI_JOBS
             or any(job['head_sha'] != source or job['run_id'] != run_id
                    or job['status'] != 'completed' or job['conclusion'] != 'success' or not job['steps']
