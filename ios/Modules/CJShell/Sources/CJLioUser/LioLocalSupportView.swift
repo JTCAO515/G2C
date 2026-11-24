@@ -47,6 +47,7 @@ struct LioLocalSupportView: View {
         }
         .foregroundStyle(LioTheme.ink)
         .background(LioTheme.paper)
+        .tint(LioTheme.vermilion)
         .navigationTitle(dynamicTypeSize.isAccessibilitySize ? "" : title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(LioTheme.paper, for: .navigationBar)
@@ -84,22 +85,24 @@ struct LioLocalSupportView: View {
         }
         emergency(LocalSupportDirectory.emergencyContacts)
         contacts(language.text("Help lines", "求助热线"), LocalSupportDirectory.helpContacts)
-        helpCard
+        VStack(alignment: .leading, spacing: 10) {
+            heading(language.text("Show and find help", "出示与求助"))
+            helpCard
+            NavigationLink {
+                LioConsulateDirectoryView(language: language)
+            } label: {
+                linkCard(language.text("Consulates General", "总领馆"), symbol: "building.columns",
+                         detail: language.text("Find a consulate by city", "按城市查找总领馆"))
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("lio.support.consulates")
+        }
         if let catalog = directory {
             embassySection(catalog.embassies)
         } else {
             Text(language.text("Embassy contacts couldn’t be loaded.", "暂时无法显示使馆联系方式。"))
                 .foregroundStyle(LioTheme.inkSecondary)
         }
-        NavigationLink {
-            LioConsulateDirectoryView(language: language)
-        } label: {
-            Label(language.text("Consulates General", "总领馆"), systemImage: "building.columns")
-                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("lio.support.consulates")
         contacts(language.text("Consumer services", "消费者服务"), LocalSupportDirectory.consumerContacts)
         if let draftStorage {
             LioLocalSupportDraftEditor(language: language, storage: draftStorage)
@@ -126,12 +129,35 @@ struct LioLocalSupportView: View {
         NavigationLink {
             LioLocalHelpCardView(language: language)
         } label: {
-            Label(language.text("Show a Local", "给当地人看"), systemImage: "text.bubble")
-                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                .contentShape(Rectangle())
+            linkCard(language.text("Show a Local", "给当地人看"), symbol: "text.bubble",
+                     detail: language.text("Large Chinese cards for asking for help", "大字中文求助卡"))
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("lio.support.help-card")
+    }
+
+    private func linkCard(_ title: String, symbol: String, detail: String) -> some View {
+        HStack(spacing: LioTheme.Spacing.sm) {
+            Image(systemName: symbol)
+                .font(.title3)
+                .foregroundStyle(LioTheme.vermilion)
+                .frame(width: 40, height: 40)
+                .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.headline)
+                Text(detail).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+            }
+            Spacer(minLength: 8)
+            Image(systemName: "chevron.forward").font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                .accessibilityHidden(true)
+        }
+        .foregroundStyle(LioTheme.ink)
+        .padding(12)
+        .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+        .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+        .contentShape(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+        .accessibilityElement(children: .combine)
     }
 
     private func emergency(_ contacts: [LocalSupportDirectory.Contact]) -> some View {
@@ -163,7 +189,7 @@ struct LioLocalSupportView: View {
                     }
                     .padding(12)
                     .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                    .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                    .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -213,7 +239,7 @@ struct LioLocalSupportView: View {
                 }
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
             }
         }
     }
@@ -234,14 +260,14 @@ struct LioLocalSupportView: View {
                        : language.text("Change nationality", "更改国籍")) {
                     selectingNationality = true
                 }
-                .frame(minHeight: 44)
+                .buttonStyle(LioSecondaryButtonStyle())
                 .accessibilityIdentifier("lio.support.nationality")
             }
         }
     }
 
     private func heading(_ text: String) -> some View {
-        Text(text).font(.title2.bold()).accessibilityAddTraits(.isHeader)
+        Text(text).font(LioTheme.display(.title3).weight(.semibold)).accessibilityAddTraits(.isHeader)
     }
 
     private func dial(_ phone: LocalSupportPhone) {
@@ -302,7 +328,7 @@ private struct LocalSupportEmbassyCard: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+        .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
         .alert(language.text("Maps couldn’t open this address.", "地图无法打开此地址。"), isPresented: $mapUnavailable) {
             if let address = embassy.address {
                 Button(language.text("Copy address", "复制地址")) { copy(address.zh) }
