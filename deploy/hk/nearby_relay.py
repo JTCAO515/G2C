@@ -173,7 +173,8 @@ def active_nearby(runtime, authorization_guard):
             if type(values) is not list or not values or any(type(item) is not str for item in values):
                 raise ValueError('explicit Nearby roster required')
             selected = frozenset(values)
-            if len(selected) != len(values) or len(selected) > 10 or not selected.issubset(generate_plugin_subjects()):
+            # M4 entry 12 (JT 2026-11-24): any non-empty subset of the G2C@01-99 internal cohort.
+            if len(selected) != len(values) or not selected.issubset(generate_plugin_subjects()):
                 raise ValueError('invalid Nearby roster')
             provider = GaodeNearby(os.environ['CJ_AMAP_WEB_KEY'])
             journal = AuthorizationBudget(HK_JOURNAL_ROOT, authorization_guard=authorization_guard, demo=True)
