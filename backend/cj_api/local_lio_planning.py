@@ -135,7 +135,8 @@ _CANCELLED_PLACE = re.compile(
 _ITINERARY_PREVIEW_FORMAT = (
     ' For a complete day-by-day plan, use the following response format: one JSON object with answer, days and follow_up. '
     'When the request includes a destination and day count, supply days as an ordered array '
-    'with one object per requested day: day_index and activities. Keep the answer a concise, complete plain-text fallback. '
+    'with one object per requested day: day_index and activities. The answer is the full day-by-day plan shown to the traveler. '
+    'Use exactly the same full place names in the answer and in days, under the same day heading. '
     'Each activity has exactly place_name (full proper name in the answer language), '
     'verb (visit, explore, walk, eat, shop or relax), and period (morning, afternoon, evening or null). '
     'Only include suggested visits you would actually show to the traveler. '
@@ -146,6 +147,35 @@ _ITINERARY_PREVIEW_FORMAT = (
     'Use null for days only if you cannot provide a complete structured plan. '
     'In that case keep the useful standalone answer and set follow_up to null.'
 )
+
+
+_DAY_LABEL = {'zh': '第\\s*(?:{n}|{cn})\\s*天', 'en': r'\bDay\s*{n}\b'}
+_CN_DIGITS = '零一二三四五六七八九十'
+
+
+def _detailed_answer(answer, days, locale):
+    """The model's own day-by-day answer, only when it shows exactly the preview's days in order.
+
+    Each day label first appears in order, and every structured activity of that
+    day is named inside that day's section; otherwise the rendered lines are shown.
+    """
+    if display_answer(answer, locale) != answer:
+        return None
+    starts = []
+    for day in days:
+        index = day['day_index']
+        label = _DAY_LABEL[locale].format(n=index, cn=_CN_DIGITS[index] if index <= 10 else index)
+        found = re.search(label, answer, re.I)
+        if found is None:
+            return None
+        starts.append(found.start())
+    if starts != sorted(starts):
+        return None
+    for day, start, end in zip(days, starts, [*starts[1:], len(answer)]):
+        section = answer[start:end].casefold()
+        if any(activity['place_name'].casefold() not in section for activity in day['activities']):
+            return None
+    return answer
 
 
 def _preview_line(text, limit):
@@ -243,7 +273,7 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
         messages = [*current[:-1], *messages]
     if worker.message_context is not None:
         messages = worker.message_context.answer_messages(binding, messages)
-    system = answer_prompt(locale, turns[-1].text) + DISCUSSION_PROMPT
+    system = answer_prompt(locale, turns[-1].text, detailed=True) + DISCUSSION_PROMPT
     preview_requested = (day_count is not None and 1 <= day_count <= DISCUSSION_MAX_PREVIEW_DAYS
                          and planning_window is None and introduction is None)
     if day_count is not None:
@@ -256,12 +286,17 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
             'Dates and party size are optional: do not ask for them, even when unknown or undecided. '
             'This is a conversational plan, not a saved trip. Do not claim it has been saved. '
             'Do not introduce yourself or discuss knowing the traveler. '
-            'Use one concise line per day. Start every day line with the day label and an explicit activity verb '
-            'before the full name of a real place. Say what the traveler would do there. A place list or a theme '
-            f'alone is not a day plan. Use this format with a real place: {day_example} '
+            'Start every day line with the day label and an explicit activity verb '
+            'before the full name of a real place, in bold, as the heading of that day. '
+            f'Use this heading format with a real place: {day_example} '
+            'Under each heading write 2–4 short bullet lines for morning, afternoon and evening. '
+            'Each bullet names the full place and says what the traveler would do there, how to get there '
+            'when useful (metro line or station, walk or taxi time), and one practical tip such as a passport '
+            'reservation, an approximate ticket range, the best time to go or where to eat nearby. '
+            'A place list or a theme alone is not a day plan. '
             'When morning/afternoon/evening periods were requested, cover every requested period with '
-            'an activity and a full place name, keeping the period on that day line. '
-            'Keep the JSON compact, omit introductions and repeated summaries; the day lines override only the usual three-item limit. '
+            'an activity and a full place name under that day. '
+            'Omit introductions and repeated summaries; the day sections override the usual list limits. '
             'End with exactly one specific question about a useful adjustment, not date or party size.'
         )
         if planning_window is None:
@@ -306,7 +341,8 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
         reason = 'missing_days' if envelope.get('days') is None else 'invalid_days'
         logging.getLogger('cj_usage.audit').warning(
             'LIO_DISCUSSION_PREVIEW_WITHHELD run_id=%s reason=%s', binding.run_id, reason)
-    shown = present(reply if preview is None else preview[0])
+    detailed = _detailed_answer(reply, preview[1], locale) if preview is not None else None
+    shown = present(reply if preview is None else detailed or preview[0])
     state = worker._event(binding, state, 'text_delta', shown)
     if preview is not None:
         state = worker._event(binding, state, 'effect_committed', _itinerary_preview_effect(shown, preview[1]))
