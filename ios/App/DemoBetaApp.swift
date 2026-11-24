@@ -8,7 +8,7 @@ struct DemoBetaRootView: View {
     let root: DevelopmentAccountRoot
     @Environment(\.scenePhase) private var phase
     @State private var draftClearFailed = false
-    @State private var medicalCardClearFailed = false
+    @State private var medicalCardCleanupFailure: DevelopmentAccountRoot.LocalSupportSignOutFailure?
     var body: some View {
         Group {
             if root.finishingDemoCleanup {
@@ -63,9 +63,10 @@ struct DemoBetaRootView: View {
                isPresented: $draftClearFailed) {
             Button(shell.language.text("OK", "好"), role: .cancel) {}
         }
-        .alert(shell.language.text("Couldn’t clear the medical card. Try signing out again.",
-                                   "暂时无法清空医疗卡，请重新尝试退出。"),
-               isPresented: $medicalCardClearFailed) {
+        .alert(medicalCardCleanupMessage, isPresented: Binding(
+            get: { medicalCardCleanupFailure != nil },
+            set: { if !$0 { medicalCardCleanupFailure = nil } }
+        )) {
             Button(shell.language.text("OK", "好"), role: .cancel) {}
         }
         .lioScenePrivacy()
@@ -83,10 +84,20 @@ struct DemoBetaRootView: View {
     }
 
     private func signOut() {
-        do { try root.clearMedicalCardBeforeSignOut() }
-        catch { medicalCardClearFailed = true; return }
         do { try root.signOutWithLocalSupportCleanup() }
+        catch let failure as DevelopmentAccountRoot.LocalSupportSignOutFailure { medicalCardCleanupFailure = failure }
         catch { draftClearFailed = true }
+    }
+
+    private var medicalCardCleanupMessage: String {
+        switch medicalCardCleanupFailure {
+        case .medicalCardAndHelpDraft:
+            shell.language.text("Signed out. Couldn’t clear the medical card and help draft.",
+                                "已退出登录。医疗卡和求助草稿暂时未能清空。")
+        case .medicalCard, nil:
+            shell.language.text("Signed out. Couldn’t clear the medical card.",
+                                "已退出登录。医疗卡暂时未能清空。")
+        }
     }
 
     private var sessionReady: Bool {

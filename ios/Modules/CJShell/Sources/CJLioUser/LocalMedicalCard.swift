@@ -128,10 +128,16 @@ enum LocalMedicalCardFailure: Error, Equatable {
     }
 
     func clear() throws {
-        try keys.remove()
-        if try existingFileSize() != nil {
-            try FileManager.default.removeItem(at: file)
+        // Either erased component makes the remaining one unable to reveal
+        // a card. Attempt both and distinguish partial cleanup from success.
+        let keyRemoval = Result { try keys.remove() }
+        let fileRemoval = Result {
+            if try existingFileSize() != nil {
+                try FileManager.default.removeItem(at: file)
+            }
         }
+        try keyRemoval.get()
+        try fileRemoval.get()
         try requireAbsent()
     }
 

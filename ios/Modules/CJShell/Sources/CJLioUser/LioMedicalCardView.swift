@@ -92,6 +92,9 @@ struct LioMedicalCardView: View {
                 Text(language.text("The medical card is unavailable on this device.", "这台设备暂时无法使用医疗卡。"))
                     .foregroundStyle(LioTheme.ink)
                 Button(language.text("Try again", "重试"), action: load)
+                if storage.isCurrent(), scenePhase == .active {
+                    Button(language.text("Clear card", "清空医疗卡"), role: .destructive, action: clear)
+                }
             } else if storage.isCurrent(), scenePhase == .active {
                 if !loaded {
                     ProgressView()

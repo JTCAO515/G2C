@@ -43,6 +43,21 @@ import Testing
         #expect(throws: (any Error).self) { try store.load() }
     }
 
+    @Test func keychainFailureDoesNotLeaveTheEncryptedCardBehind() throws {
+        let fixture = Fixture()
+        defer { fixture.removeDirectory() }
+        let store = fixture.store()
+        try store.save(LocalMedicalCard())
+        fixture.failsKeyRemoval = true
+        #expect(throws: LocalMedicalCardFailure.unavailable) { try store.clear() }
+        #expect(try store.load() == nil)
+        #expect(fixture.key != nil)
+
+        fixture.failsKeyRemoval = false
+        try store.clear()
+        try store.requireAbsent()
+    }
+
     @Test func theEncryptedCardCannotBeOpenedUnderAnotherAccount() throws {
         let fixture = Fixture()
         defer { fixture.removeDirectory() }
@@ -76,6 +91,7 @@ import Testing
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
         var key: SymmetricKey?
         var created = 0
+        var failsKeyRemoval = false
         var file: URL { directory.appending(path: "card.aesgcm") }
 
         func store(scope: String = "selected owner") -> LocalMedicalCardFileStore {
@@ -87,7 +103,10 @@ import Testing
                     self.created += 1
                     return value
                 },
-                remove: { self.key = nil }
+                remove: {
+                    guard !self.failsKeyRemoval else { throw LocalMedicalCardFailure.unavailable }
+                    self.key = nil
+                }
             ))
         }
 

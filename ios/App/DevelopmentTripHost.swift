@@ -1230,11 +1230,8 @@ private var developmentHostEnvironment: [String: String] {
         return storage
     }
 
-    func clearMedicalCardBeforeSignOut() throws {
-        let scope = try supportScopeForSignOut()
-        if case .account(let environment, let account) = scope {
-            try medicalCardVault.clear(.init(environment: environment, account: account))
-        }
+    enum LocalSupportSignOutFailure: Error {
+        case medicalCard, medicalCardAndHelpDraft
     }
 
     private func supportScopeForSignOut() throws -> LocalSupportKeychainDraft.Scope {
@@ -1256,8 +1253,19 @@ private var developmentHostEnvironment: [String: String] {
     func signOutWithLocalSupportCleanup() throws {
         defer { accounts.signOut() }
         let scope = try supportScopeForSignOut()
-        try localSupportVault.clear(scope)
-        if scope != .guest { try localSupportVault.clear(.guest) }
+        var medicalCardFailed = false
+        if case .account(let environment, let account) = scope {
+            do { try medicalCardVault.clear(.init(environment: environment, account: account)) }
+            catch { medicalCardFailed = true }
+        }
+        do {
+            try localSupportVault.clear(scope)
+            if scope != .guest { try localSupportVault.clear(.guest) }
+        } catch {
+            if medicalCardFailed { throw LocalSupportSignOutFailure.medicalCardAndHelpDraft }
+            throw error
+        }
+        if medicalCardFailed { throw LocalSupportSignOutFailure.medicalCard }
     }
 
     func finishDemoCleanup() {
