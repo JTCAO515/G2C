@@ -55,7 +55,6 @@ def destination_stay(quote, registered_city_terms, *, whole_message):
     # A model may cite the full request, including the ordinary request to plan it.
     # Strip only this explicit trailing request. Conditions, alternatives and origin
     # statements must still fail the complete destination and duration grammar.
-    clause = quote.strip()
     if whole_message:
         clause = re.sub(r"(?:[，,。.]\s*(?:请|麻烦)?帮我规划(?:一下)?行程[。.!！]?|"
                         r"[,;]\s*please plan (?:my|our) (?:trip|itinerary)[.!]?)\s*$",

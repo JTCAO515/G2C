@@ -119,7 +119,9 @@ class ExplorationProfileTests(unittest.TestCase):
                 self.assertEqual(parse([packet('city','成都',quote)],text)[0].value,'成都')
         self.assertEqual(parse([packet('duration_days',3,'我想去成都玩3天')],text)[0].value,3)
         self.assertEqual(parse([packet('duration_days','3天','我想去成都玩3天')],text)[0].value,3)
-        for request,city in (('我想去成都玩3天，帮我规划一下行程。','成都'),
+        for request,city in (('我想去成都玩3天。','成都'),
+                             ('I want to visit Chengdu for 3 days.','Chengdu'),
+                             ('我想去成都玩3天，帮我规划一下行程。','成都'),
                              ('I want to visit Chengdu for 3 days, please plan my trip.','Chengdu')):
             self.assertEqual(parse([packet('city',city,request)],request)[0].value,city)
             self.assertEqual(parse([packet('duration_days',3,request)],request)[0].value,3)
