@@ -193,13 +193,16 @@ struct LioToolsView: View {
 struct LioToolCard: View {
     let tool: LioTool
     let language: LioLanguage
+    /// The icon's tile grows with the symbol (both follow `.title3`), so wide symbols such as `house.and.flag`
+    /// stay inside it at accessibility text sizes.
+    @ScaledMetric(relativeTo: .title3) private var iconTile: CGFloat = 36
 
     var body: some View {
         VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
             Image(systemName: tool.symbol)
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(LioTheme.vermilion)
-                .frame(width: 36, height: 36)
+                .frame(width: iconTile, height: iconTile)
                 .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
                 .accessibilityHidden(true)
             Text(tool.name(language))
