@@ -85,3 +85,25 @@ def test_release_checks_remote_evidence_before_claiming_local_cutover(tmp_path,m
     monkeypatch.setattr(host,'verify_cutover_evidence',failed_remote_evidence)
     with pytest.raises(ValueError,match='original remote evidence rejected'):
         host.main([str(stage),'--apply'])
+
+
+def test_cutover_checks_every_pr_since_the_live_source_after_the_listed_reviews(monkeypatch):
+    from deploy.hk import application_release_host as host
+
+    source, live, landed = "a" * 40, "b" * 40, "c" * 40
+    gate = dict(source=source, previous_source=live, pr_number=1, review_approved_head="d" * 40,
+                related_reviews=[dict(pr_number=2, source=landed, review_approved_head="e" * 40)])
+    calls = []
+    monkeypatch.setattr(host, "verify_release_ci", lambda github, sha: calls.append("ci"))
+    monkeypatch.setattr(host, "verify_release_review",
+                        lambda github, sha, row: calls.append(("review", row["pr_number"])))
+
+    def gap(github, previous, candidate, verified):
+        calls.append(("range", previous, candidate, frozenset(verified)))
+        raise ValueError("PR #3 in the release range lacks a current exact-head R approval")
+
+    monkeypatch.setattr(host, "verify_release_range", gap)
+    with pytest.raises(ValueError, match="#3"):
+        host.verify_cutover_evidence(lambda path: {"status": "ahead"}, source, gate)
+    assert calls == ["ci", ("review", 1), ("review", 2),
+                     ("range", live, source, frozenset({(1, "d" * 40), (2, "e" * 40)}))]
