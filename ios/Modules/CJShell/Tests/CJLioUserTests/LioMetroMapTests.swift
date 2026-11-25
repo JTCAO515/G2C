@@ -29,7 +29,12 @@ struct LioMetroMapDataTests {
             #expect(!station.nameEN.contains("  "))
             #expect(!station.lines.isEmpty)
             #expect((0...map.width).contains(station.x) && (0...map.height).contains(station.y))
+            // No capital inside a word ("ShaTian"): the operators' own style capitalises words only.
+            #expect(station.nameEN.range(of: "[a-z][A-Z]", options: .regularExpression) == nil, "\(station.nameEN)")
         }
+        // Two stations never share an English name (Shenzhen's file once gave Buyong its neighbour's).
+        let english = map.stations.map { $0.nameEN.lowercased() }
+        #expect(Set(english).count == english.count)
     }
 
     /// Interchanges agree both ways: a station names every line that lists it, and only those.
@@ -85,6 +90,8 @@ struct LioMetroMapDataTests {
         #expect(try lines(.guangzhou, "广州南站") == ["2号线", "7号线", "22号线"])
         #expect(try lines(.shenzhen, "车公庙") == ["1号线", "7号线", "9号线", "11号线"])
         #expect(try lines(.shenzhen, "深圳北") == ["4号线", "5号线", "6号线"])
+        let shenzhen = try LioMetroMap.bundled(.shenzhen)
+        #expect(shenzhen.stations.first { $0.nameZH == "步涌" }?.nameEN == "Buyong")
         let guangzhou = try LioMetroMap.bundled(.guangzhou)
         #expect(guangzhou.stations.first { $0.nameZH == "广州南站" }?.nameEN == "Guangzhou South Railway Station")
     }
