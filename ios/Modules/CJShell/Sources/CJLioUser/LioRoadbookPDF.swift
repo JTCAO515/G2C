@@ -36,6 +36,17 @@ enum LioRoadbookPDF {
         return name + language.text("-roadbook.pdf", "-路书.pdf")
     }
 
+    /// The one folder exports go to: the app's temporary folder, never the account's roadbook folder
+    /// (whose cleanup accepts only roadbook copies). Removed when sharing ends.
+    static var exportDirectory: URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("LioRoadbookExport", isDirectory: true)
+    }
+
+    /// Removes every exported PDF; a missing folder is fine.
+    static func removeExports() {
+        try? FileManager.default.removeItem(at: exportDirectory)
+    }
+
     /// Writes into a folder inside the app (normally its temporary folder) for the share sheet.
     /// Earlier exports in the folder are removed first so only the file being shared stays on the phone.
     static func write(_ roadbook: LioRoadbook, language: LioLanguage, to directory: URL) throws -> URL {
