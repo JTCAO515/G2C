@@ -108,8 +108,7 @@ private actor ExplorationHomeWire: ClientTransport {
     private static let conversation = "lio-dialogue-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     private let showsProgress: Bool
     private let version: Int
-    /// #1453: the first reply carries a LIO-trip-card.3 summary. A second v4 reply makes the English Dynamic Type
-    /// audit hang on main without any plan card (#1501), so this case stays on one reply.
+    /// #1453: the first reply carries a LIO-trip-card.3 summary.
     private let plans: Bool
     private var progressReads = 0
     private var chinese = false
