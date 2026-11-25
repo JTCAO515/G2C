@@ -13,13 +13,16 @@ from collections import OrderedDict
 from http.client import HTTPException, HTTPSConnection
 import json
 import re
+import copy
 from threading import Lock
 from typing import Annotated, Literal
+import unicodedata
 from uuid import UUID
 
 from pydantic import Field, field_validator, model_validator
 
 from cj_place.models import Coordinate
+from cj_strict_json import reject_duplicates
 from cj_usage.metered_exit import BudgetUnknown
 from cj_usage.roadbook_budget import MAX_OUTPUT_TOKENS, MAX_REQUEST_PLACES, MODEL, RoadbookDuplicate, RoadbookLimit
 
@@ -31,6 +34,8 @@ VERSION = 'ROADBOOK.1'
 ROUTE = '/v1/tools/roadbook/places'
 PROMPT_VERSION = 1
 FIELDS = ('summary', 'why_go', 'time_needed', 'hours_booking', 'tickets', 'getting_there', 'food_tip', 'notes')
+# The restaurant tip is written by the server from Gaode's around-search, never by the model (#1569 review).
+MODEL_FIELDS = tuple(field for field in FIELDS if field != 'food_tip')
 LANGUAGES = ('zh', 'en')
 FIELD_LIMITS = {'zh': 120, 'en': 320}
 OFFICIAL = {'zh': '以官方为准。', 'en': 'Check official sources.'}
@@ -46,27 +51,36 @@ SUPPLIER_ID = re.compile(r'[A-Za-z0-9_-]{1,128}')
 PLACE_ID = re.compile(r'[A-Za-z0-9._-]{1,64}')
 POI_ID = re.compile(r'[A-Za-z0-9]{1,32}')
 
-_CURRENCY = re.compile(r'[¥￥]|元|RMB|CNY|yuan', re.IGNORECASE)
+# Checks run on NFKC-normalized text, so full-width digits and colons count as ordinary ones.
+_UNIT = r'(?:元|块钱|块|人民币|美元|yuan|kuai|rmb|cny|usd|dollars?)'
+_PRICE = re.compile(r'(?:[¥$]|us\$|rmb|cny|usd)\s*\d|\d\s*' + _UNIT, re.IGNORECASE)
 _APPROX_RANGE = re.compile(
-    r'(约|大约|大概|about|around|approximately|roughly)\s*[¥￥]?\s*\d{1,4}\s*(元|yuan)?\s*(–|—|-|~|～|至|到|to)\s*[¥￥]?\s*\d{1,4}',
-    re.IGNORECASE)
-_TODAY = re.compile(r'今天|今日|今晚|today|tonight', re.IGNORECASE)
-_OPEN_NOW = re.compile(r'开放|营业|开门|闭馆|关门|开着|open|closed|close', re.IGNORECASE)
-_CLOCK = re.compile(r'(?<!\d)([01]?\d|2[0-3])[:：]([0-5]\d)(?!\d)')
-_SHOP = re.compile(r'店|馆|餐厅|饭庄|酒楼|食府|restaurant|caf[eé]|bistro|diner', re.IGNORECASE)
+    r'(?:约|大约|大概|about|around|approximately|roughly)\s*(?:[¥$]\s*)?\d{1,4}(?:\s*' + _UNIT + r')?\s*'
+    r'(?:–|—|-|~|至|到|to)\s*(?:[¥$]\s*)?\d{1,4}(?:\s*' + _UNIT + r')?', re.IGNORECASE)
+_NOW = re.compile(r'今天|今日|今晚|目前|现在|当前|此刻|眼下|\b(?:today|tonight|now|currently|right now|at the moment)\b',
+                  re.IGNORECASE)
+_STATE = re.compile(r'开放|营业|开门|闭馆|闭园|关门|不开|开着|休息|停业|暂停|\b(?:open|opens|opened|closed|closing|shut)\b',
+                    re.IGNORECASE)
+_HHMM = re.compile(r'(?<!\d)([01]?\d|2[0-3]):([0-5]\d)(?!\d)')
+_OTHER_CLOCK = re.compile(r'\d{1,2}\s*(?:点钟|点半|点)|\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)(?![a-z])', re.IGNORECASE)
+
+
+def _clocks(text):
+    return {(int(hour), int(minute)) for hour, minute in _HHMM.findall(text)}
+
 
 RULES = {
     'zh': ('你在为外国游客写中国景点的简短说明。只用用户消息里给出的高德事实，不要补充事实。'
-           '只输出一个 JSON 对象，键必须正好是：' + '、'.join(FIELDS) + '，值都是简短中文字符串。'
+           '只输出一个 JSON 对象，键必须正好是：' + '、'.join(MODEL_FIELDS) + '，值都是简短中文字符串。'
            '价格只能写成「约 X–Y 元」这样的区间，并说明以官方为准；不要写任何实时信息，'
            '比如今天是否开放、余票、当天价格。时刻只能照抄事实里的开放时间。'
-           '餐饮只能提事实里列出的餐馆名，不要编店名。开放时间和预约方式最后加「以官方为准」。'),
+           '不要写任何餐馆或商店的名字。开放时间和预约方式最后加「以官方为准」。'),
     'en': ('You write short notes on a Chinese sight for foreign visitors. Use only the Gaode facts in the user '
            'message and add no facts of your own. Output one JSON object whose keys are exactly: '
-           + ', '.join(FIELDS) + ', each a short English string. Write prices only as a range such as '
+           + ', '.join(MODEL_FIELDS) + ', each a short English string. Write prices only as a range such as '
            '"about 40–60 yuan" and say to check official sources; never state anything live such as whether '
            'it is open today, tickets left or today\'s price. Copy clock times only from the opening hours in '
-           'the facts. Mention only restaurants listed in the facts, with their Chinese names. End the hours '
+           'the facts. Do not name any restaurant or shop. End the hours '
            'and booking note with "check official sources".'),
 }
 
@@ -143,11 +157,11 @@ class MemoryRoadbookCache:
             value = self.values.get((key, PROMPT_VERSION))
             if value is not None:
                 self.values.move_to_end((key, PROMPT_VERSION))
-            return value
+            return copy.deepcopy(value)
 
     def put(self, key, value):
         with self._lock:
-            self.values[(key, PROMPT_VERSION)] = value
+            self.values[(key, PROMPT_VERSION)] = copy.deepcopy(value)
             self.values.move_to_end((key, PROMPT_VERSION))
             while len(self.values) > self.capacity:
                 self.values.popitem(last=False)
@@ -195,9 +209,7 @@ def _facts(row, around):
 
 
 def messages_for(language, facts):
-    public = {key: facts[key] for key in ('name', 'opening', 'restaurants', 'metro') if key in facts}
-    if 'restaurants' in public:
-        public['restaurants'] = [dict(name_zh=item['name_zh']) for item in public['restaurants']]
+    public = {key: facts[key] for key in ('name', 'opening', 'metro') if key in facts}
     return [dict(role='system', content=RULES[language]),
             dict(role='user', content=json.dumps(public, ensure_ascii=False))]
 
@@ -206,38 +218,45 @@ def _field(name, value, facts, language):
     text = _text(value, FIELD_LIMITS[language])
     if text is None:
         return None
-    if _TODAY.search(text) and _OPEN_NOW.search(text):
+    plain = unicodedata.normalize('NFKC', text)
+    if _NOW.search(plain) and _STATE.search(plain):
+        return None  # nothing live: whether it is open now or today is not known here
+    if name == 'tickets':
+        rest = _APPROX_RANGE.sub('', plain)
+        if _PRICE.search(rest) or re.search(r'\d', rest):
+            return None  # every number must sit in an "about X–Y" range
+    elif _PRICE.search(plain):
+        return None  # prices only in tickets
+    if _OTHER_CLOCK.search(plain):
+        return None  # only HH:MM copied from Gaode's opening hours
+    clocks = _clocks(plain)
+    if clocks and (name != 'hours_booking'
+                   or not clocks <= _clocks(unicodedata.normalize('NFKC', facts.get('opening') or ''))):
         return None
-    if _CURRENCY.search(text) and (name != 'tickets' or not _APPROX_RANGE.search(text)):
-        return None
-    clocks = [match.group(0).replace('：', ':') for match in _CLOCK.finditer(text)]
-    if clocks:
-        opening = (facts.get('opening') or '').replace('：', ':')
-        if name != 'hours_booking' or any(clock not in opening for clock in clocks):
-            return None
-    if name == 'food_tip':
-        # Gaode's name, or the same name without the branch in brackets, are the only shop names allowed.
-        names = set()
-        for item in facts.get('restaurants') or []:
-            names.add(item['name_zh'])
-            names.add(re.split(r'[(（]', item['name_zh'], maxsplit=1)[0].strip())
-        rest = text
-        for allowed in sorted(filter(None, names), key=len, reverse=True):
-            rest = rest.replace(allowed, '')
-        if _SHOP.search(rest):
-            return None
     return text
+
+
+def food_tip(restaurants, language):
+    """The restaurant line, written from Gaode's around-search only."""
+    if not restaurants:
+        return ('附近没有找到带地址的餐馆，以地图为准。' if language == 'zh'
+                else 'No restaurant with an address was found nearby; check a map.')
+    if language == 'zh':
+        return '附近可就餐：' + '、'.join(f"{item['name_zh']}（约 {item['distance_m']} 米）" for item in restaurants) + '。'
+    return 'Places to eat nearby: ' + ', '.join(
+        f"{item['name_zh']} (about {item['distance_m']} m)" for item in restaurants) + '.'
 
 
 def checked_fields(raw, facts, language):
     """The model's JSON with every unchecked claim replaced, or None when it is not the agreed object."""
     try:
-        value = json.loads(raw)
+        value = json.loads(raw, object_pairs_hook=reject_duplicates(ValueError, 'duplicate roadbook field'))
     except (TypeError, ValueError):
         return None
-    if type(value) is not dict or set(value) != set(FIELDS):
+    if type(value) is not dict or set(value) != set(MODEL_FIELDS):
         return None
-    return {name: _field(name, value[name], facts, language) or OFFICIAL[language] for name in FIELDS}
+    fields = {name: _field(name, value[name], facts, language) or OFFICIAL[language] for name in MODEL_FIELDS}
+    return {name: fields.get(name) or food_tip(facts.get('restaurants') or [], language) for name in FIELDS}
 
 
 class DashScopeRoadbook:
@@ -253,16 +272,18 @@ class DashScopeRoadbook:
         body = json.dumps(dict(model=MODEL, messages=messages, max_tokens=MAX_OUTPUT_TOKENS, temperature=0.3,
                                response_format={'type': 'json_object'}, enable_thinking=False),
                           ensure_ascii=False).encode()
-        reserve()
         connection = self._connection()
         try:
+            if hasattr(connection, 'connect'):
+                connection.connect()  # DNS and TLS first; the call is reserved only when it can be sent
+            reserve()
             connection.request('POST', CHAT, body, {'Authorization': 'Bearer ' + self._api_key,
                                                     'Content-Type': 'application/json'})
             response = connection.getresponse()
             data = response.read(MAX_PROVIDER_RESPONSE + 1)
             if response.status != 200 or len(data) > MAX_PROVIDER_RESPONSE:
                 raise PluginError(502, 'supplier_unavailable')
-            reply = json.loads(data)
+            reply = json.loads(data, object_pairs_hook=reject_duplicates(ValueError, 'duplicate DashScope field'))
             choice, = reply['choices']
             supplier, text, finish = reply['id'], choice['message']['content'], choice['finish_reason']
             usage = {'input_tokens': reply['usage']['prompt_tokens'],
@@ -361,8 +382,8 @@ class RoadbookService:
                 allowed = not self.budget.cache_only() and self.budget.admits(operation)
             except RoadbookLimit:
                 allowed = False
-            except BudgetUnknown:
-                raise PluginError(503, 'unavailable') from None
+            except Exception:
+                raise PluginError(503, 'unavailable') from None  # nothing was sent
             stopped = None if allowed else 'limited'
             stages = [0]
             for index, place in enumerate(todo):

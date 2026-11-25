@@ -8,8 +8,8 @@ import pytest
 from pydantic import ValidationError
 
 from cj_api.lio_roadbook import (
-    FIELDS, OFFICIAL, PROMPT_VERSION, ROUTE, VERSION, DashScopeRoadbook, MemoryRoadbookCache, RoadbookRequest,
-    RoadbookService, checked_fields, messages_for,
+    FIELDS, MODEL_FIELDS, OFFICIAL, PROMPT_VERSION, ROUTE, VERSION, DashScopeRoadbook, MemoryRoadbookCache,
+    RoadbookRequest, RoadbookService, checked_fields, food_tip, messages_for,
 )
 from cj_api.plugin_tools import PluginError
 from cj_usage import roadbook_budget
@@ -54,13 +54,12 @@ GOOD = {
     'zh': dict(summary='明清两代的皇宫，现为博物院。', why_go='中轴线上规模最大的古建筑群。', time_needed='约 3 小时',
                hours_booking='周二至周日 08:30-17:00；需提前实名预约，以官方为准。',
                tickets='约 40–60 元，以官方为准。', getting_there='地铁 1 号线天安门东站，步行约 10 分钟。',
-               food_tip='附近的四季民福烤鸭店可以吃烤鸭。', notes='入口安检，带好护照；周一通常闭馆。'),
+               notes='入口安检，带好护照；周一通常闭馆。'),
     'en': dict(summary='The imperial palace of the Ming and Qing, now a museum.',
                why_go='The largest group of old buildings on the central axis.', time_needed='About 3 hours',
                hours_booking='Tue–Sun 08:30-17:00; book ahead with your passport. Check official sources.',
                tickets='About 40–60 yuan; check official sources.',
                getting_there='Line 1 to Tian’anmen East, then walk about 10 minutes.',
-               food_tip='Roast duck is close by at 四季民福烤鸭店(故宫店).',
                notes='Security check at the entrance; usually closed on Mondays.'),
 }
 
@@ -99,6 +98,7 @@ def test_route_and_version():
     assert (ROUTE, VERSION, PROMPT_VERSION) == ('/v1/tools/roadbook/places', 'ROADBOOK.1', 1)
     assert FIELDS == ('summary', 'why_go', 'time_needed', 'hours_booking', 'tickets', 'getting_there',
                       'food_tip', 'notes')
+    assert MODEL_FIELDS == tuple(field for field in FIELDS if field != 'food_tip')
 
 
 @pytest.mark.parametrize('change', [
@@ -124,7 +124,9 @@ def test_a_place_gets_checked_bilingual_content_from_gaode_facts(ledger):
     place, = result['places']
     assert result['version'] == VERSION
     assert place['id'] == 's1' and place['status'] == 'ready' and place['poi_id'] == 'B000A8UIN8'
-    assert place['content']['zh'] == GOOD['zh'] and place['content']['en'] == GOOD['en']
+    assert place['content']['zh'] == dict(GOOD['zh'], food_tip='附近可就餐：四季民福烤鸭店(故宫店)（约 450 米）、南门涮肉（约 700 米）。')
+    assert place['content']['en'] == dict(GOOD['en'], food_tip='Places to eat nearby: 四季民福烤鸭店(故宫店) (about 450 m), 南门涮肉 (about 700 m).')
+    assert set(place['content']['zh']) == set(FIELDS)
     assert place['metro'] == [dict(name_zh='天安门东站', distance_m=620)]
     assert place['restaurants'] == [
         dict(name_zh='四季民福烤鸭店(故宫店)', address_zh='东华门大街32号', lat=39.913, lng=116.403, distance_m=450),
@@ -167,7 +169,8 @@ def test_a_place_gaode_cannot_find_is_unavailable_without_a_model_call(ledger):
     assert flash.calls == []
 
 
-@pytest.mark.parametrize('reply', ['not json', json.dumps({'summary': 'x'}), json.dumps(dict(GOOD['zh'], extra='y'))])
+@pytest.mark.parametrize('reply', ['not json', json.dumps({'summary': 'x'}), json.dumps(dict(GOOD['zh'], extra='y')),
+                                   '{"summary":"a","summary":"b"}'])
 def test_unusable_model_output_is_not_shown_or_cached(ledger, reply):
     cache = MemoryRoadbookCache()
     place, = enrich(service(ledger, flash=Flash({'zh': reply, 'en': GOOD['en']}), cache=cache), payload())['places']
@@ -211,41 +214,73 @@ def test_a_reused_request_id_is_refused(ledger):
 # --- field checks -----------------------------------------------------------------------------------------------
 
 FACTS = dict(name='故宫博物院', opening='周二至周日 08:30-17:00',
-             restaurants=[dict(name_zh='四季民福烤鸭店(故宫店)')], metro=[])
+             restaurants=[dict(name_zh='四季民福烤鸭店(故宫店)', distance_m=450)], metro=[])
 
 
 def test_good_fields_pass_unchanged():
-    assert checked_fields(json.dumps(GOOD['zh'], ensure_ascii=False), FACTS, 'zh') == GOOD['zh']
+    for language in ('zh', 'en'):
+        checked = checked_fields(json.dumps(GOOD[language], ensure_ascii=False), FACTS, language)
+        assert checked == dict(GOOD[language], food_tip=food_tip(FACTS['restaurants'], language))
 
 
 @pytest.mark.parametrize('field,value', [
     ('tickets', '60 元'), ('tickets', '门票 ¥60'), ('getting_there', '打车约 30 元'), ('notes', '今天开放'),
     ('summary', '今日营业到很晚'), ('hours_booking', '每天 09:00-18:00'), ('notes', '18:00 后人少'),
-    ('food_tip', '推荐全聚德烤鸭店'), ('summary', ''), ('summary', '长' * 200), ('notes', '‮反向'),
+    ('summary', ''), ('summary', '长' * 200), ('notes', '\u202e反向'),
+    # #1569 review: bypasses that must also become official notices
+    ('tickets', '约 40–60 元，学生 20 元'), ('tickets', '门票 60 块'), ('getting_there', '打车约 30 块'),
+    ('tickets', '约 40–60 人民币，团队另议 300'), ('notes', '今天闭园'), ('notes', '目前正常开放'),
+    ('notes', '现在不开'), ('hours_booking', '每天 9点 开门'), ('hours_booking', '０９：００开门'),
+    ('hours_booking', '周二至周日 7:00-17:00'), ('notes', '下午 3 点后人少'),
 ])
 def test_unchecked_claims_become_official_notices(field, value):
     checked = checked_fields(json.dumps(dict(GOOD['zh'], **{field: value}), ensure_ascii=False), FACTS, 'zh')
     assert checked[field] == OFFICIAL['zh']
-    assert {key: checked[key] for key in FIELDS if key != field} == {key: GOOD['zh'][key] for key in FIELDS if key != field}
+    others = [key for key in MODEL_FIELDS if key != field]
+    assert {key: checked[key] for key in others} == {key: GOOD['zh'][key] for key in others}
 
 
-@pytest.mark.parametrize('field,value', [
-    ('tickets', 'about ¥40-60, check official sources'), ('notes', 'Open today until late'),
-    ('food_tip', 'Try Quanjude Restaurant nearby'), ('hours_booking', 'Daily 09:00-18:00'),
+@pytest.mark.parametrize('field,value,kept', [
+    ('tickets', 'about ¥40-60, check official sources', True), ('tickets', 'About 40–60 yuan; students 20 yuan', False),
+    ('getting_there', 'A taxi costs $5', False), ('getting_there', 'Taxi about 30 kuai', False),
+    ('notes', 'Open today until late', False), ('notes', 'Open now', False), ('notes', 'Currently shut', False),
+    ('hours_booking', 'Daily 09:00-18:00', False), ('hours_booking', 'Opens at 9am', False),
+    ('notes', 'The closest gate is the north gate', True), ('getting_there', 'Line 1, then walk 10 minutes', True),
+    ('summary', 'A palace museum, now a UNESCO site', True),
 ])
-def test_english_claims_are_checked_the_same_way(field, value):
+def test_english_claims_are_checked_the_same_way(field, value, kept):
     checked = checked_fields(json.dumps(dict(GOOD['en'], **{field: value}), ensure_ascii=False), FACTS, 'en')
-    expected = value if (field, value) == ('tickets', 'about ¥40-60, check official sources') else OFFICIAL['en']
-    assert checked[field] == expected
+    assert checked[field] == (value if kept else OFFICIAL['en'])
+
+
+@pytest.mark.parametrize('field,value', [('summary', '故宫博物馆所在的紫禁城'), ('getting_there', '地铁 1 号线，步行约 10 分钟'),
+                                         ('time_needed', '约 3 小时'), ('notes', '旺季上午人多'),
+                                         ('summary', '元代始建，明清扩建'), ('why_go', '院中有一块明代石碑'),
+                                         ('hours_booking', '０８：３０开门，以官方为准'), ('tickets', '免费，需提前预约')])
+def test_ordinary_text_is_not_mistaken_for_a_claim(field, value):
+    assert checked_fields(json.dumps(dict(GOOD['zh'], **{field: value}), ensure_ascii=False), FACTS, 'zh')[field] == value
+
+
+def test_model_output_must_not_carry_its_own_restaurant_tip():
+    assert checked_fields(json.dumps(dict(GOOD['zh'], food_tip='推荐全聚德烤鸭'), ensure_ascii=False), FACTS, 'zh') is None
+
+
+def test_restaurant_tip_comes_only_from_gaode():
+    rows = [dict(name_zh='四季民福烤鸭店(故宫店)', distance_m=450)]
+    assert food_tip(rows, 'zh') == '附近可就餐：四季民福烤鸭店(故宫店)（约 450 米）。'
+    assert food_tip(rows, 'en') == 'Places to eat nearby: 四季民福烤鸭店(故宫店) (about 450 m).'
+    assert food_tip([], 'zh') == '附近没有找到带地址的餐馆，以地图为准。'
+    assert food_tip([], 'en') == 'No restaurant with an address was found nearby; check a map.'
 
 
 def test_messages_carry_only_gaode_facts_and_the_rules():
     messages = messages_for('en', FACTS)
     assert [message['role'] for message in messages] == ['system', 'user']
     rules = messages[0]['content']
-    for rule in ('JSON', 'about', 'official', 'today'):
+    for rule in ('JSON', 'about', 'official', 'today', 'restaurant'):
         assert rule.lower() in rules.lower()
-    assert json.loads(messages[1]['content']) == FACTS
+    assert json.loads(messages[1]['content']) == dict(name=FACTS['name'], opening=FACTS['opening'], metro=[])
+    assert '四季民福' not in messages[1]['content'], 'the model never sees restaurant names'
 
 
 # --- DashScope client -------------------------------------------------------------------------------------------
@@ -318,3 +353,35 @@ def test_a_place_without_facts_does_not_stop_the_next_one(ledger):
     body = payload(dict(id='s1', name_zh='不存在的地方', city='北京'), dict(id='s2', name_zh='故宫博物院', city='北京'))
     result = enrich(service(ledger, Mixed()), body)
     assert [place['status'] for place in result['places']] == ['unavailable', 'ready']
+
+
+def test_a_failed_model_call_stops_further_supplier_calls(ledger):
+    class Broken(Flash):
+        def generate(self, language, messages, reserve):
+            reserve()
+            self.calls.append((language, messages))
+            raise PluginError(502, 'supplier_unavailable')
+
+    gaode, flash = Gaode(), Broken()
+    body = payload(dict(id='s1', name_zh='故宫博物院', city='北京'), dict(id='s2', name_zh='景山公园', city='北京'))
+    result = enrich(service(ledger, gaode, flash), body)
+    assert [place['status'] for place in result['places']] == ['unavailable', 'unavailable']
+    assert len(flash.calls) == 1 and [operation for operation, _ in gaode.calls] == ['text', 'around']
+
+
+def test_a_ledger_that_cannot_be_read_is_unavailable_before_any_call(ledger):
+    class Broken(RoadbookBudget):
+        def cache_only(self):
+            raise OSError('journal locked')
+
+    svc = RoadbookService(Gaode(), Flash(), Broken(ledger), RoadbookPlaceBudget(ledger), MemoryRoadbookCache())
+    with pytest.raises(PluginError) as error:
+        enrich(svc, payload())
+    assert (error.value.status, error.value.code) == (503, 'unavailable')
+
+
+def test_cached_values_are_copies():
+    cache = MemoryRoadbookCache()
+    cache.put('poi:X', dict(metro=[]))
+    cache.get('poi:X')['metro'].append('changed')
+    assert cache.get('poi:X') == dict(metro=[])
