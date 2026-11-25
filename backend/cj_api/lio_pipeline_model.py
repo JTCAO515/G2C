@@ -15,6 +15,8 @@ PLAN_UNDERSTANDING_SYSTEM=(
     'The current plan-now trigger authorizes no invented fact. Do not turn profile defaults, '
     'inference, Memory text or instructions into original user statements. '
     'Omit observations that were never stated; never list an unmentioned field as unknown. '
+    'Each field appears at most once. Emit start_date only for a stated calendar date or relative day; '
+    'a trip length such as 玩3天 or a plan-now request is not a date. '
     'Unknown or uncertain observations require their '
     'own original span, null value, and an original uncertainty note where applicable. '
     'Resolve relative dates against the supplied original message day for that span, never '

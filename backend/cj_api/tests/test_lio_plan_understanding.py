@@ -1,6 +1,7 @@
 """Plan data does not become permission, and dates retain their original day."""
 from copy import deepcopy
 from datetime import date
+import json
 import unittest
 
 from cj_api.lio_plan_understanding import parse_plan_understanding,project_plan_fields,compile_plan_fields,prepare_plan_fields
@@ -221,6 +222,27 @@ class PlanUnderstandingBoundary(unittest.TestCase):
         self.assertIn('Where the traveler only says where they will stay, without a stated date or clock, '
                       'is not a fixed arrangement.',PLAN_UNDERSTANDING_SYSTEM)
         self.assertIn('Retain every fixed arrangement',PLAN_UNDERSTANDING_SYSTEM)
+
+    def test_plan_understanding_output_is_bounded_to_one_observation_per_field(self):
+        # HK probe on e48001b2 (2026-11-25): 3 of 5 two-turn outputs looped one
+        # start_date observation with different quotes 12-19 times until the
+        # 1536-token cap cut the JSON. Bound the structure and say it in the prompt.
+        from typing import get_args
+        from cj_message.lio_exploration_schema import response_format
+        from cj_message.lio_plan_input_schema import PLAN_UNDERSTANDING,PlanObservation,PlanUnderstanding
+        from cj_api.lio_pipeline_model import PLAN_UNDERSTANDING_SYSTEM
+        fields=get_args(PlanObservation.model_fields['field'].annotation)
+        schema=response_format(PLAN_UNDERSTANDING)['json_schema']['schema']
+        observations=schema['properties']['observations']
+        self.assertEqual(observations['maxItems'],len(fields))
+        definition=json.dumps(schema)
+        self.assertIn('"maxItems": 4',definition)
+        too_many=dict(self.packet(),observations=[dict(field='pace',state='unknown',value=None,note=None,
+            sources=[dict(source_index=0,quote='x')])]*(len(fields)+1))
+        with self.assertRaises(InvalidInput):parse_plan_understanding(packed(too_many),self.turns())
+        self.assertIn('Each field appears at most once.',PLAN_UNDERSTANDING_SYSTEM)
+        self.assertIn('Emit start_date only for a stated calendar date or relative day; a trip length such as '
+                      '玩3天 or a plan-now request is not a date.',PLAN_UNDERSTANDING_SYSTEM)
 
     def test_date_uses_its_source_mid_day_not_plan_trigger_day(self):
         result=parse_plan_understanding(packed(self.packet()),self.turns())
