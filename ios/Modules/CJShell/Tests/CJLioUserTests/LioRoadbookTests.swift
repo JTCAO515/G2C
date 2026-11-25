@@ -292,3 +292,46 @@ import Testing
         #expect(LioRoadbook.visibleNote(" 步行可到故宫 ") == "步行可到故宫")
     }
 }
+
+/// Saved plans (#1547 / #1553) become "My trips" roadbooks without inventing details the summary does not have.
+@MainActor struct LioRoadbookSavedPlanTests {
+    static let plan = LioPlanSummary(tripID: "trip-1", tripVersion: 3, title: "北京三天", startDate: "2026-12-01", undated: false,
+                                     days: [.init(number: 1, date: "2026-12-01", items: [
+                                        .init(id: "a", label: "故宫博物院", startTime: "09:00", endTime: "12:00", fixed: nil),
+                                        .init(id: "b", label: "簋街", startTime: "18:30", endTime: nil, fixed: nil)]),
+                                            .init(number: 2, date: "2026-12-02", items: [])])
+
+    @Test func aSavedPlanIsAMyTripsRoadbookPerVersion() {
+        let book = LioRoadbook(savedPlan: Self.plan)
+        #expect(book.source == .saved)
+        #expect(book.id == "saved.trip-1.v3")
+        #expect(book.city == nil)
+        #expect(book.coverTitle(.chinese) == "北京三天")
+        #expect(book.coverLine(.chinese) == "2 天 · 12月1日–12月2日")
+        let segments = LioRoadbook.segments(book.itinerary.days[0])
+        #expect(segments.map(\.period) == [.morning, .evening])
+        let newer = LioPlanSummary(tripID: "trip-1", tripVersion: 4, title: "北京三天", startDate: nil, undated: true, days: [])
+        #expect(LioRoadbook(savedPlan: newer).id != book.id, "a changed plan is offered beside an older kept copy")
+    }
+
+    @Test func summaryPlacesOfferNoTaxiOrDriverCard() {
+        let stop = LioRoadbook(savedPlan: Self.plan).itinerary.days[0].stops[0]
+        #expect(LioRoadbook.taxiDestination(stop.place) == nil)
+        #expect(LioRoadbook.driverAddress(stop.place) == nil)
+        #expect(stop.kind.title(.chinese).isEmpty)
+    }
+
+    @Test func savedRoadbooksKeepAndExportOffline() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("roadbook-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = LioRoadbookStore(directory: directory)
+        try store.save(LioRoadbook(savedPlan: Self.plan))
+        let kept = try #require(store.load().first)
+        #expect(kept.source == .saved && kept.itinerary.days[0].stops.map(\.place.nameZH) == ["故宫博物院", "簋街"])
+        #expect(kept.itinerary.days[0].stops[0].kind == .unspecified)
+        let files = try FileManager.default.contentsOfDirectory(atPath: directory.path)
+        #expect(files.allSatisfy(LioAccountFolders.isRoadbookFileName), "account cleanup can remove every file")
+        let text = try #require(PDFDocument(data: LioRoadbookPDF.data(for: kept, language: .english))?.string)
+        #expect(text.contains("故宫博物院") && text.contains("Morning") && text.contains("Evening"))
+    }
+}

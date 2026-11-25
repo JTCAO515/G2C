@@ -131,9 +131,9 @@ struct LioRoadbookArchive: Codable, Equatable, Sendable {
 @MainActor struct LioRoadbookStore {
     enum Failure: Error, Equatable { case notCurrent }
 
-    static let directoryName = "roadbooks"
+    nonisolated static let directoryName = "roadbooks"
 
-    static func storageDirectory(inMessageDirectory directory: URL) -> URL {
+    nonisolated static func storageDirectory(inMessageDirectory directory: URL) -> URL {
         directory.appendingPathComponent(directoryName, isDirectory: true)
     }
 
