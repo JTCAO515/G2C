@@ -454,8 +454,8 @@ def test_dashscope_connects_before_reserving_and_refuses_repeated_receipt_keys()
 
 def test_a_request_stops_calling_suppliers_after_its_deadline(ledger, monkeypatch):
     from cj_api import lio_roadbook
-    clock = iter([0, 0, 100])
-    monkeypatch.setattr(lio_roadbook, 'monotonic', lambda: next(clock, 100))
+    clock = iter([0, 0, 1000])
+    monkeypatch.setattr(lio_roadbook, 'monotonic', lambda: next(clock, 1000))
     gaode, flash = Gaode(), Flash()
     body = payload(dict(id='s1', name_zh='故宫博物院', city='北京'), dict(id='s2', name_zh='景山公园', city='北京'))
     result = enrich(service(ledger, gaode, flash), body)
