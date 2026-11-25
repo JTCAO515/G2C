@@ -1,4 +1,5 @@
 #if os(iOS)
+import CJRunClient
 import SwiftUI
 import UIKit
 
@@ -97,10 +98,8 @@ struct LioMetroMapScreen: View {
 
     private func sourceBar(_ map: LioMetroMap) -> some View {
         Link(destination: map.source.urls[0]) {
-            Text(map.sourceLine(in: language))
-                .font(.caption)
-                .foregroundStyle(LioTheme.inkSecondary)
-                .multilineTextAlignment(.leading)
+            // A label that wraps and grows with the text size: the plain Text was flagged as clipped (#1450).
+            RunReadableText(text: map.sourceLine(in: language), style: .caption, color: LioTheme.inkSecondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, LioTheme.Spacing.md)
                 .padding(.vertical, LioTheme.Spacing.xs)
@@ -108,6 +107,9 @@ struct LioMetroMapScreen: View {
         }
         .background(LioTheme.surface)
         .overlay(alignment: .top) { Rectangle().fill(LioTheme.hairline).frame(height: 1) }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(map.sourceLine(in: language))
+        .accessibilityAddTraits(.isLink)
         .accessibilityIdentifier("lio.metro.map.source")
     }
 }
