@@ -136,7 +136,9 @@ struct LioRoadbookView: View {
     @State private var expanded: Set<String> = []
     /// Owns the fill-in task: it is cancelled only when this roadbook screen goes away for good, not when
     /// another screen (Local Support, the driver card) covers it, so a request in flight is never thrown away.
-    @State private var filler = LioRoadbookFillTask()
+    /// It starts as nil and is made in `fill()`: the view value the task captures then only holds nil,
+    /// so the task never keeps its own owner alive (#1631 review).
+    @State private var filler: LioRoadbookFillTask?
     @Environment(\.lioTaxiEntry) private var taxiEntry
     #if os(iOS)
     @Environment(\.lioRoadbookEnricher) private var enricher
@@ -526,7 +528,9 @@ struct LioRoadbookView: View {
         filling = true
         notice = nil
         let batches = LioRoadbookWire.batches(book.placesToFillIn())
-        filler.task = Task {
+        let holder = LioRoadbookFillTask()
+        filler = holder
+        holder.task = Task {
             defer { filling = false }
             var limited = false, missing = false
             for batch in batches {
