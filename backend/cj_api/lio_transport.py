@@ -188,9 +188,10 @@ def _seats(spaces):
         return []
     if type(spaces) is not list or len(spaces) > 16:
         raise ValueError('invalid seat list')
-    seats = []
+    seats, seen = [], set()
     for space in spaces:
-        if type(space) is not dict or space.get('code') not in SEATS or type(space.get('cost')) is not str:
+        if (type(space) is not dict or type(space.get('code')) is not str or space['code'] not in SEATS
+                or space['code'] in seen or type(space.get('cost')) is not str):
             continue
         try:
             price = Decimal(space['cost'])
@@ -198,6 +199,7 @@ def _seats(spaces):
             continue
         if not price.is_finite() or not 0 < price <= 100000 or price != price.quantize(Decimal('0.01')):
             continue
+        seen.add(space['code'])
         zh, en = SEATS[space['code']]
         seats.append(dict(class_zh=zh, class_en=en, price_cny_minor=int(price * 100)))
     return seats
@@ -267,6 +269,7 @@ def validate_rail_items(items):
             return False
         for seat in item['seats']:
             if (type(seat) is not dict or seat.keys() != {'class_zh', 'class_en', 'price_cny_minor'}
+                    or type(seat['class_zh']) is not str or type(seat['class_en']) is not str
                     or (seat['class_zh'], seat['class_en']) not in classes
                     or type(seat['price_cny_minor']) is not int or not 0 < seat['price_cny_minor'] <= 10_000_000):
                 return False
