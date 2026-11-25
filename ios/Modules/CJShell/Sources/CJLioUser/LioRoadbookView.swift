@@ -347,7 +347,7 @@ struct LioRoadbookView: View {
                 ForEach(itinerary.hotels) { hotel in
                     VStack(alignment: .leading, spacing: 2) {
                         Text(hotel.place.displayName(language)).font(.subheadline.weight(.semibold))
-                        if let note = hotel.note { Text(note).font(.footnote).foregroundStyle(LioTheme.inkSecondary) }
+                        if let note = LioRoadbook.visibleNote(hotel.note) { Text(note).font(.footnote).foregroundStyle(LioTheme.inkSecondary) }
                     }
                 }
             }
