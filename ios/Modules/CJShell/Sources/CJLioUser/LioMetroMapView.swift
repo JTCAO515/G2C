@@ -119,20 +119,26 @@ struct LioMetroMapCanvas: View {
     let selected: LioMetroMap.Station?
     let onSelect: (LioMetroMap.Station) -> Void
 
-    @State private var zoom: CGFloat = 1
-    @State private var pan: CGSize = .zero
-    @State private var lastMagnification: CGFloat?
-    @State private var lastTranslation: CGSize?
+    @State private var viewport = LioMetroViewport()
+    /// Live gestures. They reset by themselves when a gesture ends or the system cancels it.
+    @GestureState private var pinch: Pinch?
+    @GestureState private var dragOffset: CGSize = .zero
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    static let maximumZoom: CGFloat = 12
+    private struct Pinch: Equatable {
+        let magnification: CGFloat
+        let anchor: UnitPoint
+    }
     /// How far from a station's dot, in points, a tap still selects it.
     static let tapReach: CGFloat = 22
 
     var body: some View {
         GeometryReader { proxy in
             let size = proxy.size
-            let layout = Layout(map: map, size: size, zoom: zoom, pan: pan)
+            let shown = viewport.showing(magnification: pinch?.magnification,
+                                         anchor: anchorPoint(pinch?.anchor ?? .center, size: size), drag: dragOffset)
+                .clamped(content: Self.content(map: map, size: size), view: size)
+            let layout = Layout(map: map, size: size, zoom: shown.zoom, pan: shown.pan)
             Canvas { context, _ in draw(in: &context, layout: layout) }
                 .contentShape(Rectangle())
                 .gesture(magnify(size: size).simultaneously(with: drag(size: size)))
@@ -177,54 +183,49 @@ struct LioMetroMapCanvas: View {
         }
     }
 
-    /// Keep at least part of the map on screen whatever the pan.
-    static func clamped(pan: CGSize, zoom: CGFloat, map: LioMetroMap, size: CGSize) -> CGSize {
-        let layout = Layout(map: map, size: size, zoom: zoom, pan: .zero)
-        let limitX = max(0, (map.width * layout.scale - size.width) / 2) + size.width * 0.25
-        let limitY = max(0, (map.height * layout.scale - size.height) / 2) + size.height * 0.25
-        return CGSize(width: min(max(pan.width, -limitX), limitX), height: min(max(pan.height, -limitY), limitY))
+    /// The map's size in points at zoom 1, fitted to the view.
+    static func content(map: LioMetroMap, size: CGSize) -> CGSize {
+        let fit = Layout(map: map, size: size, zoom: 1, pan: .zero).scale
+        return CGSize(width: map.width * fit, height: map.height * fit)
     }
 
-    // Both gestures apply only the change since their previous update, so pinching and dragging
-    // together compose instead of overwriting each other, and lifting one finger never jumps.
+    private func anchorPoint(_ anchor: UnitPoint, size: CGSize) -> CGPoint {
+        CGPoint(x: anchor.x * size.width - size.width / 2, y: anchor.y * size.height - size.height / 2)
+    }
+
+    /// Commit a viewport; clamp it only when no other gesture is still live, so the picture never jumps.
+    private func commit(_ next: LioMetroViewport, size: CGSize, otherGestureLive: Bool) {
+        viewport = otherGestureLive ? next : next.clamped(content: Self.content(map: map, size: size), view: size)
+    }
+
     private func magnify(size: CGSize) -> some Gesture {
         MagnifyGesture()
-            .onChanged { value in
-                let step = value.magnification / (lastMagnification ?? 1)
-                lastMagnification = value.magnification
-                let newZoom = min(max(zoom * step, 1), Self.maximumZoom)
-                // Zoom about the pinch point so the station under the fingers stays put.
-                let anchor = CGPoint(x: value.startAnchor.x * size.width - size.width / 2,
-                                     y: value.startAnchor.y * size.height - size.height / 2)
-                let ratio = newZoom / zoom
-                zoom = newZoom
-                pan = Self.clamped(pan: CGSize(width: anchor.x - (anchor.x - pan.width) * ratio,
-                                               height: anchor.y - (anchor.y - pan.height) * ratio),
-                                   zoom: newZoom, map: map, size: size)
+            .updating($pinch) { value, state, _ in
+                state = Pinch(magnification: value.magnification, anchor: value.startAnchor)
             }
-            .onEnded { _ in lastMagnification = nil }
+            .onEnded { value in
+                commit(viewport.endingPinch(by: value.magnification, about: anchorPoint(value.startAnchor, size: size),
+                                            liveDrag: dragOffset),
+                       size: size, otherGestureLive: dragOffset != .zero)
+            }
     }
 
     private func drag(size: CGSize) -> some Gesture {
         DragGesture(minimumDistance: 4)
-            .onChanged { value in
-                let previous = lastTranslation ?? .zero
-                lastTranslation = value.translation
-                pan = Self.clamped(pan: CGSize(width: pan.width + value.translation.width - previous.width,
-                                               height: pan.height + value.translation.height - previous.height),
-                                   zoom: zoom, map: map, size: size)
+            .updating($dragOffset) { value, state, _ in state = value.translation }
+            .onEnded { value in
+                commit(viewport.dragged(by: value.translation), size: size, otherGestureLive: pinch != nil)
             }
-            .onEnded { _ in lastTranslation = nil }
     }
 
     private func zoomControls(size: CGSize) -> some View {
         VStack(spacing: 0) {
             zoomButton("plus.magnifyingglass", label: language.text("Zoom in", "放大"), id: "lio.metro.map.zoom-in") {
-                setZoom(zoom * 2, size: size)
+                setZoom(viewport.zoom * 2, size: size)
             }
             Divider().frame(width: 28)
             zoomButton("minus.magnifyingglass", label: language.text("Zoom out", "缩小"), id: "lio.metro.map.zoom-out") {
-                setZoom(zoom / 2, size: size)
+                setZoom(viewport.zoom / 2, size: size)
             }
         }
         .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
@@ -245,14 +246,10 @@ struct LioMetroMapCanvas: View {
     }
 
     private func setZoom(_ value: CGFloat, size: CGSize) {
-        let newZoom = min(max(value, 1), Self.maximumZoom)
-        let ratio = newZoom / zoom
-        let update = {
-            zoom = newZoom
-            pan = Self.clamped(pan: CGSize(width: pan.width * ratio, height: pan.height * ratio),
-                               zoom: newZoom, map: map, size: size)
-        }
-        if reduceMotion { update() } else { withAnimation(LioTheme.Motion.change, update) }
+        // Zoom about the view's centre, like a pinch there.
+        let next = viewport.pinched(by: value / viewport.zoom, about: .zero)
+            .clamped(content: Self.content(map: map, size: size), view: size)
+        if reduceMotion { viewport = next } else { withAnimation(LioTheme.Motion.change) { viewport = next } }
     }
 
     // MARK: Drawing

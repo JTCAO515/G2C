@@ -232,3 +232,49 @@ enum LioMetroStationAction {
         return [amap.url, apple.url].compactMap { $0 }
     }
 }
+
+/// Zoom and pan of the map on screen (#1450). The view commits a viewport only when a gesture
+/// ends or a zoom button is pressed; a live pinch or drag is drawn on top of it, so a gesture the
+/// system cancels simply disappears instead of leaving stale state for the next one.
+struct LioMetroViewport: Equatable {
+    static let maximumZoom: CGFloat = 12
+
+    var zoom: CGFloat = 1
+    /// Offset of the map's centre from the view's centre, in points.
+    var pan: CGSize = .zero
+
+    /// Zoom by `magnification` about `anchor` (an offset from the view's centre), keeping the
+    /// point under the fingers where it is. Zoom stays between the whole map and `maximumZoom`.
+    func pinched(by magnification: CGFloat, about anchor: CGPoint) -> Self {
+        let newZoom = min(max(zoom * magnification, 1), Self.maximumZoom)
+        let ratio = newZoom / zoom
+        return Self(zoom: newZoom, pan: CGSize(width: anchor.x - (anchor.x - pan.width) * ratio,
+                                               height: anchor.y - (anchor.y - pan.height) * ratio))
+    }
+
+    func dragged(by translation: CGSize) -> Self {
+        Self(zoom: zoom, pan: CGSize(width: pan.width + translation.width, height: pan.height + translation.height))
+    }
+
+    /// What is on screen while gestures are live: the drag first, then the pinch about its anchor.
+    func showing(magnification: CGFloat?, anchor: CGPoint, drag: CGSize) -> Self {
+        let moved = dragged(by: drag)
+        return magnification.map { moved.pinched(by: $0, about: anchor) } ?? moved
+    }
+
+    /// The viewport to keep when a pinch ends while a drag may still be live, chosen so the
+    /// picture does not move: drawing it with that drag gives what was just on screen.
+    func endingPinch(by magnification: CGFloat, about anchor: CGPoint, liveDrag: CGSize) -> Self {
+        let shown = showing(magnification: magnification, anchor: anchor, drag: liveDrag)
+        return shown.dragged(by: CGSize(width: -liveDrag.width, height: -liveDrag.height))
+    }
+
+    /// Keep at least a quarter of the view covered by the map. `content` is the map's size in
+    /// points at zoom 1 (fitted to the view).
+    func clamped(content: CGSize, view: CGSize) -> Self {
+        let limitX = max(0, (content.width * zoom - view.width) / 2) + view.width * 0.25
+        let limitY = max(0, (content.height * zoom - view.height) / 2) + view.height * 0.25
+        return Self(zoom: zoom, pan: CGSize(width: min(max(pan.width, -limitX), limitX),
+                                            height: min(max(pan.height, -limitY), limitY)))
+    }
+}
