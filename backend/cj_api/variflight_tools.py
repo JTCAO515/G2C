@@ -21,6 +21,7 @@ DAILY_LIMIT = 50
 ENDPOINT = 'https://c-gw.variflight.com/chat_message/mcp/api'
 LOGGER = logging.getLogger(__name__)
 READ_ONLY_TOOLS = frozenset({'getFlightList', 'getFlightStatus'})
+MAX_FLIGHTS = 100
 PROTOCOLS = ('2025-11-25', '2025-06-18', '2025-03-26')
 SESSION = re.compile(r'[\x21-\x7e]{1,256}')
 NUMBER = r'[A-Z0-9]{2,3}[0-9]{1,4}[A-Z]?'
@@ -109,7 +110,8 @@ def _records(payload):
         return payload
     if type(payload) is not dict:
         raise ValueError('invalid flight results')
-    for field in ('flights', 'flightList', 'data'):
+    # getFlightList answers structuredContent {"kind": "collection", "items": [...]} (HK, #1521).
+    for field in ('flights', 'flightList', 'data', 'items'):
         if field in payload:
             rows = payload[field]
             if type(rows) is dict and 'flights' in rows:
@@ -147,22 +149,24 @@ def _flight(row):
             if not re.fullmatch(AIRPORT, _public_text(value)):
                 raise ValueError('invalid airport code')
             result[field] = value
+    if type(row.get('isShare')) is int and row['isShare'] in (0, 1):
+        result['codeshare'] = row['isShare'] == 1
     for field, aliases in (
         ('status', ('status', 'flightStatus')),
-        ('planned_departure', ('plannedDeparture', 'scheduledDeparture', 'flightDeptimePlan')),
-        ('planned_arrival', ('plannedArrival', 'scheduledArrival', 'flightArrtimePlan')),
-        ('actual_departure', ('actualDeparture', 'flightDeptimeAct')),
-        ('actual_arrival', ('actualArrival', 'flightArrtimeAct')),
+        ('planned_departure', ('plannedDeparture', 'scheduledDeparture', 'flightDeptimePlan', 'departurePlanTime')),
+        ('planned_arrival', ('plannedArrival', 'scheduledArrival', 'flightArrtimePlan', 'arrivalPlanTime')),
+        ('actual_departure', ('actualDeparture', 'flightDeptimeAct', 'departureActualTime')),
+        ('actual_arrival', ('actualArrival', 'flightArrtimeAct', 'arrivalActualTime')),
         ('departure_terminal', ('departureTerminal', 'flightDepTerminal')),
         ('arrival_terminal', ('arrivalTerminal', 'flightArrTerminal')),
         ('gate', ('gate', 'boardingGate')),
-        ('check_in_counter', ('checkInCounter', 'checkinCounter')),
-        ('baggage_carousel', ('baggageCarousel', 'baggageClaim')),
-        ('airline_name_zh', ('airlineNameZh',)),
-        ('airline_name_en', ('airlineNameEn',)),
-        ('departure_airport_name_zh', ('departureAirportNameZh',)),
+        ('check_in_counter', ('checkInCounter', 'checkinCounter', 'checkinTable')),
+        ('baggage_carousel', ('baggageCarousel', 'baggageClaim', 'baggageTurntable')),
+        ('airline_name_zh', ('airlineNameZh', 'airlineCnName')),
+        ('airline_name_en', ('airlineNameEn', 'airlineName')),
+        ('departure_airport_name_zh', ('departureAirportNameZh', 'depAirport')),
         ('departure_airport_name_en', ('departureAirportNameEn',)),
-        ('arrival_airport_name_zh', ('arrivalAirportNameZh',)),
+        ('arrival_airport_name_zh', ('arrivalAirportNameZh', 'arrAirport')),
         ('arrival_airport_name_en', ('arrivalAirportNameEn',)),
     ):
         if (value := _take(row, aliases)) is not None:
@@ -182,8 +186,9 @@ def _project(result, day, key):
             raise ValueError('unsupported flight content')
         payload = supplier_json(block['text'], key)
     rows = _records(payload)
+    # A busy route (e.g. Shanghai -> Beijing, both airports) lists about 75 flights; keep them all within a bound.
     return dict(version=VERSION, source='VariFlight', date=day,
-                items=[_flight(row) for row in rows[:30]], more=len(rows) > 30)
+                items=[_flight(row) for row in rows[:MAX_FLIGHTS]], more=len(rows) > MAX_FLIGHTS)
 
 
 class VariFlight:

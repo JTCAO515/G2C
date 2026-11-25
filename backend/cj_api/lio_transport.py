@@ -316,6 +316,10 @@ def validate_rail_items(items):
 
 
 def _stamp(value):
+    """A VariFlight time as (day, HH:MM, minutes): 'YYYY-MM-DD HH:MM[:SS]' or 10-digit epoch seconds (China time)."""
+    if type(value) is str and re.fullmatch(r'[0-9]{10}', value):
+        moment = datetime.fromtimestamp(int(value), SHANGHAI)
+        return moment.date().isoformat(), moment.strftime('%H:%M'), moment.hour * 60 + moment.minute
     match = STAMP.fullmatch(value) if type(value) is str else None
     if match is None:
         raise ValueError('invalid flight time')
@@ -334,7 +338,8 @@ def _airport(code, fallback_zh, fallback_en):
 
 def _flight_items(rows, day):
     items, seen = [], set()
-    for row in rows:
+    # Operating flights first, so a codeshare with the same airports and times is the one dropped.
+    for row in sorted(rows, key=lambda row: row.get('codeshare') is True):
         try:
             depart_day, depart_time, depart = _stamp(row.get('planned_departure'))
             arrive_day, arrive_time, arrive = _stamp(row.get('planned_arrival'))
@@ -354,7 +359,7 @@ def _flight_items(rows, day):
         seen.add(key)
         item = dict(number=row['flight_number'])
         carrier = {name: row[field] for name, field in (('name_zh', 'airline_name_zh'), ('name_en', 'airline_name_en'))
-                   if field in row}
+                   if field in row and (name == 'name_zh' or row[field].isascii())}
         if carrier:
             item['carrier'] = carrier
         item.update(
