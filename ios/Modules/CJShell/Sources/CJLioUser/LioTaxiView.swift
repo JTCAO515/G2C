@@ -509,41 +509,10 @@ private struct LioTaxiPlacePicker: View {
 struct LioTaxiDriverCard: View {
     let language: LioLanguage
     let place: LioTaxiPlace
-    @Environment(\.dismiss) private var dismiss
-    @State private var priorIdleTimer: Bool?
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    Text(place.nameZH).font(LioTheme.display(.largeTitle).weight(.bold))
-                    if let address = place.addressZH { Text(address).font(.title2.weight(.semibold)) }
-                    Text(place.nameEN).font(.body).foregroundStyle(LioTheme.inkSecondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(24)
-            }
-            .background(LioTheme.paper)
-            .foregroundStyle(LioTheme.ink)
-            .navigationTitle(language.text("Show the driver", "给司机看"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(language.text("Close", "关闭")) { dismiss() }
-                }
-            }
-        }
-        .onAppear {
-            guard priorIdleTimer == nil else { return }
-            priorIdleTimer = UIApplication.shared.isIdleTimerDisabled
-            UIApplication.shared.isIdleTimerDisabled = true
-        }
-        .onDisappear {
-            if let priorIdleTimer {
-                UIApplication.shared.isIdleTimerDisabled = priorIdleTimer
-                self.priorIdleTimer = nil
-            }
-        }
+        LioDriverSign(language: language, nameZH: place.nameZH, nameEN: place.nameEN, addressZH: place.addressZH,
+                      identifierPrefix: "lio.taxi.driver-card")
     }
 }
 #endif
