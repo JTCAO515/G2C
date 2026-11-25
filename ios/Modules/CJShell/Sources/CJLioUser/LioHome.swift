@@ -13,8 +13,10 @@ public struct LioHome<MenuContent: View>: View {
     private let toolsDraftStorage: LocalSupportDraftStorage?
     private let toolsRelay: LioRelayTranslationClient?
     private let currencyRelay: LioCurrencyRelayClient?
+    private let transportRelay: LioTransportRelayClient?
     private let taxiRelay: LioTaxiRelayClient?
     private let nearbyRelay: LioNearbyRelayClient?
+    private let hotelRelay: LioHotelRelayClient?
     private let taxiRecentDirectory: URL?
     private let savedPlansStore: LioSavedPlans?
     private let roadbookDirectory: URL?
@@ -132,6 +134,8 @@ public struct LioHome<MenuContent: View>: View {
                 toolsHistory: LioTranslationHistory? = nil, toolsRelay: LioRelayTranslationClient? = nil,
                 currencyRelay: LioCurrencyRelayClient? = nil, taxiRelay: LioTaxiRelayClient? = nil,
                 nearbyRelay: LioNearbyRelayClient? = nil,
+                hotelRelay: LioHotelRelayClient? = nil,
+                transportRelay: LioTransportRelayClient? = nil,
                 taxiRecentDirectory: URL? = nil,
                 savedPlans: LioSavedPlans? = nil,
                 roadbookDirectory: URL? = nil,
@@ -147,6 +151,8 @@ public struct LioHome<MenuContent: View>: View {
         self.currencyRelay = currencyRelay
         self.taxiRelay = taxiRelay
         self.nearbyRelay = nearbyRelay
+        self.hotelRelay = hotelRelay
+        self.transportRelay = transportRelay
         self.taxiRecentDirectory = taxiRecentDirectory
         var plans = savedPlans
         #if DEBUG
@@ -289,6 +295,8 @@ public struct LioHome<MenuContent: View>: View {
         .environment(\.lioTaxiEntry, taxiEntry)
         .environment(\.lioNearbyService, nearbyService)
         .environment(\.lioMetroNearby, metroNearby)
+        .environment(\.lioHotelFinder, hotelRelay.map { .internalBeta(relay: $0) })
+        .environment(\.lioTransportRelay, transportRelay)
         .tint(LioTheme.vermilion)
         .sensoryFeedback(.success, trigger: savedCelebrations)
         .disabled(chatControlsSuspended)

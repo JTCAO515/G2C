@@ -107,7 +107,7 @@
   {"id": "da091", "nameZH": "普兰店开发区", "nameEN": "Pulandian Kaifaqu", "x": 1529.4, "y": 77.6, "geo": [121.949244, 39.412332], "lines": ["da-7"]},
   {"id": "da092", "nameZH": "海湾高中", "nameEN": "Haiwan Gaozhong", "x": 1503.7, "y": 112.9, "geo": [121.946613, 39.399042], "lines": ["da-7"]},
   {"id": "da093", "nameZH": "大医三院", "nameEN": "Dayisanyuan", "x": 1458.1, "y": 122.4, "geo": [121.934112, 39.386497], "lines": ["da-7"]},
-  {"id": "da094", "nameZH": "长店堡", "nameEN": "Changdianbao", "x": 1409.6, "y": 131.3, "geo": [121.897125, 39.37959], "lines": ["da-7"]},
+  {"id": "da094", "nameZH": "长店堡", "nameEN": "Changdianpu", "x": 1409.6, "y": 131.3, "geo": [121.897125, 39.37959], "lines": ["da-7"]},
   {"id": "da095", "nameZH": "石河北海", "nameEN": "Shihe Beihai", "x": 1375.8, "y": 157.0, "geo": [121.862484, 39.359692], "lines": ["da-7"]},
   {"id": "da096", "nameZH": "普湾体育场", "nameEN": "Puwan Tiyuchang", "x": 1343.5, "y": 181.2, "geo": [121.839482, 39.358163], "lines": ["da-7"]},
   {"id": "da097", "nameZH": "石河黄旗", "nameEN": "Shihe Huangqi", "x": 1311.2, "y": 206.9, "geo": [121.820923, 39.327436], "lines": ["da-7"]},

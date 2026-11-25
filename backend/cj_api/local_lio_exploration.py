@@ -2,6 +2,7 @@
 from datetime import date,datetime,timedelta,timezone
 from dataclasses import replace
 import json
+import logging
 import os
 import re
 from zoneinfo import ZoneInfo
@@ -20,7 +21,7 @@ from cj_trip.structured import SourceRejected
 from cj_trip.structured_v4 import validate_candidate
 
 from .lio_exploration_factors import BY_KEY,FACTORS,defaults
-from .lio_exploration_profile import snapshot,plan_now_request
+from .lio_exploration_profile import drop_log_key,drop_unquoted_updates,snapshot,plan_now_request
 from .lio_exploration_policy import (Scene,choose_scene,next_question_count,candidates,questions,exits,
     emergency_opening,ADJUSTMENT_EFFECT,AdjustmentAuthorization,adjustment_document,matches_adjustment,select_adjustment)
 from .lio_edit_selection import _replacement_label
@@ -302,8 +303,14 @@ class ExplorationPlanning:
             return self._plan(worker,binding,state,replace(view,profile=profile),locale)
         raw=self._model(worker,binding,view,UNDERSTANDING,UNDERSTANDING_SYSTEM,dict(locale=locale,
             current_source_index=len(view.originals)-1,factors=[dict(key=f.key,inferable=f.inferable,multiple=f.multiple) for f in FACTORS]))
-        try:understood=Understanding.model_validate(decode(raw.encode()))
+        try:
+            # An update citing no or an empty quote is unsupported: drop it, keep the rest (JT 2026-11-25).
+            cleaned,unquoted=drop_unquoted_updates(decode(raw.encode()))
+            understood=Understanding.model_validate(cleaned)
         except (ValidationError,InvalidInput) as error:raise ProviderUnknown('sourced understanding unavailable') from error
+        for key in unquoted:
+            logging.getLogger('cj_usage.audit').info('LIO_PROFILE_UPDATE_DROPPED run_id=%s factor=%s reason=%s',
+                binding.run_id,drop_log_key(key),'empty source quote')
         if understood.current_source_index!=len(view.originals)-1:raise ProviderUnknown('understanding original index differs')
         direct=request is not None and understood.intent!='emergency'
         # Broader administrative spellings are learned from the existing

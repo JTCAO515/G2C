@@ -32,7 +32,7 @@
   {"id": "do021", "nameZH": "荔香公园", "nameEN": "Lixiang Gongyuan", "x": 422.8, "y": 476.5, "geo": [113.951317, 22.917814], "lines": ["do-1"]},
   {"id": "do022", "nameZH": "凤山", "nameEN": "Fengshan", "x": 432.9, "y": 495.4, "geo": [113.971094, 22.908933], "lines": ["do-1"]},
   {"id": "do023", "nameZH": "黄江", "nameEN": "Huangjiang", "x": 446.2, "y": 520.3, "geo": [113.998348, 22.893783], "lines": ["do-1"]},
-  {"id": "do024", "nameZH": "黄牛埔", "nameEN": "Huangniubu", "x": 458.1, "y": 540.5, "geo": [113.996658, 22.872806], "lines": ["do-1"]},
+  {"id": "do024", "nameZH": "黄牛埔", "nameEN": "Huangniupu", "x": 458.1, "y": 540.5, "geo": [113.996658, 22.872806], "lines": ["do-1"]},
   {"id": "do025", "nameZH": "梅塘", "nameEN": "Meitang", "x": 469.7, "y": 563.9, "geo": [113.985086, 22.843124], "lines": ["do-1"]},
   {"id": "do026", "nameZH": "东莞火车站", "nameEN": "Dongguan Railway Station", "x": 507.0, "y": 64.8, "geo": [113.86, 23.0886], "lines": ["do-2"]},
   {"id": "do027", "nameZH": "茶山", "nameEN": "Chashan", "x": 461.3, "y": 64.8, "geo": [113.844, 23.0795], "lines": ["do-2"]},

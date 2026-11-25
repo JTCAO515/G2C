@@ -296,7 +296,8 @@ struct LioAttractionBookingDetail: View {
     }
 
     private var links: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        let partners = LioAttractionPartner.links(for: rule)
+        return VStack(alignment: .leading, spacing: 10) {
             Link(destination: rule.officialChannel.url) {
                 Label(language.text("Book on \(rule.officialChannel.nameEN)", "去\(rule.officialChannel.nameZH)预约"),
                       systemImage: "arrow.up.right.square")
@@ -304,7 +305,7 @@ struct LioAttractionBookingDetail: View {
                     .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             }
             .accessibilityIdentifier("lio.booking.official")
-            ForEach(LioAttractionPartner.links(for: rule), id: \.url) { link in
+            ForEach(partners, id: \.url) { link in
                 Link(destination: link.url) {
                     Label(language.text("Tickets on \(link.partner.name(language))", "在 \(link.partner.name(language)) 看门票"),
                           systemImage: "ticket")
@@ -313,11 +314,10 @@ struct LioAttractionBookingDetail: View {
                 }
                 .accessibilityIdentifier("lio.booking.partner")
             }
-            Text(language.text("Booking and payment happen on the official channel or the ticket site; Go2China does not sell tickets.",
-                               "预约和付款在官方渠道或票务网站完成，Go2China 不售票。"))
+            Text(LioAttractionPartner.paymentNote(language, for: rule))
                 .font(.footnote).foregroundStyle(LioTheme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-            if !LioAttractionPartner.links(for: rule).isEmpty, let disclosure = LioAttractionPartner.disclosure(language) {
+            if !partners.isEmpty, let disclosure = LioAttractionPartner.disclosure(language) {
                 Text(disclosure).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

@@ -162,3 +162,15 @@ import Testing
         #expect(store.load().first?.placesToFillIn().contains { $0.id == stopID } == false, "not asked (or paid for) again")
     }
 }
+
+/// #1616 review P2: covering the screen does not cancel a fill-in; releasing the screen does.
+@MainActor struct LioRoadbookFillTaskTests {
+    @Test func releasingTheHolderCancelsTheTask() async {
+        var holder: LioRoadbookFillTask? = LioRoadbookFillTask()
+        let task = Task<Void, Never> { try? await Task.sleep(for: .seconds(60)) }
+        holder?.task = task
+        #expect(!task.isCancelled)
+        holder = nil
+        #expect(task.isCancelled)
+    }
+}

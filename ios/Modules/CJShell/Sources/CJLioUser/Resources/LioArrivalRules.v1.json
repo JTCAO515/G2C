@@ -72,12 +72,12 @@
       "valid_until": null,
       "checked_at": "2026-11-25",
       "summary": {
-        "zh": "持本人普通护照和确定日期及行程的联程客票，经中国前往第三国或地区，可从 24 个省份 65 个开放口岸中的任一口岸免签入境，在规定区域停留活动不超过 10 天。",
-        "en": "With your own ordinary passport and an onward ticket with a confirmed date and itinerary to a third country or region, you may enter visa-free at any of 65 open ports in 24 provinces and stay up to 10 days within the permitted area."
+        "zh": "持本人普通护照和确定日期及行程的联程客票，经中国前往第三国或地区，可从 24 个省份 65 个开放口岸中的任一口岸免签入境，在规定区域停留活动不超过 10 天；可在这些省份的允许停留区域内跨省活动。",
+        "en": "With your own ordinary passport and an onward ticket with a confirmed date and itinerary to a third country or region, you may enter visa-free at any of 65 open ports in 24 provinces and stay up to 10 days within the permitted areas, travelling across provinces inside them."
       },
       "not_covered": {
-        "zh": "工作、学习、新闻采访等需事先批准的活动，仍应办妥签证。具体口岸和停留区域以官方为准。",
-        "en": "Work, study, journalism and other activities that need prior approval still require a visa. Check the official list for ports and permitted areas."
+        "zh": "工作、学习、新闻采访等需事先批准的活动，仍应办妥签证。山西、黑龙江、江西、广西、四川、云南只限官方表中列出的城市，出了允许停留区域不适用。具体口岸和停留区域以官方为准。",
+        "en": "Work, study, journalism and other activities that need prior approval still require a visa. In Shanxi, Heilongjiang, Jiangxi, Guangxi, Sichuan and Yunnan only the cities in the official table count; outside the permitted areas this does not apply. Check the official list for ports and permitted areas."
       },
       "sources": [
         {
