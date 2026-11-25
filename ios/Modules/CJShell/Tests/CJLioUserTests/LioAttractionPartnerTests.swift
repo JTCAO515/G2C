@@ -9,6 +9,15 @@ struct LioAttractionPartnerTests {
         LioAttractionBookingRule.all.first { $0.id == id }!
     }
 
+    /// The same rule with third-party links switched on, as a mis-edit of the table would do.
+    private func allowingThirdParties(_ r: LioAttractionBookingRule) -> LioAttractionBookingRule {
+        .init(id: r.id, nameEN: r.nameEN, nameZH: r.nameZH, cityEN: r.cityEN, cityZH: r.cityZH, aliases: r.aliases,
+              requirement: r.requirement, windowDays: r.windowDays, releaseTime: r.releaseTime, passport: r.passport,
+              closedWeekdays: r.closedWeekdays, openOnPublicHolidays: r.openOnPublicHolidays,
+              limitsEN: r.limitsEN, limitsZH: r.limitsZH, notesEN: r.notesEN, notesZH: r.notesZH,
+              officialChannel: r.officialChannel, partnerLinks: true, sources: r.sources, checkedOn: r.checkedOn)
+    }
+
     @Test func officialOnlyVenuesNeverGetThirdPartyLinks() {
         // JT: the Palace Museum, National Museum, Mao Memorial Hall, Tian'anmen and Shaanxi History Museum
         // stay on their official channels.
@@ -18,6 +27,23 @@ struct LioAttractionPartnerTests {
             #expect(LioAttractionPartner.links(for: rule(id)).isEmpty, "\(id) is official-channel only")
         }
         #expect(Set(LioAttractionPartner.officialOnly) == Set(officialOnly))
+    }
+
+    @Test func officialOnlyHoldsEvenIfTheTableIsMisedited() {
+        // The lock is in the partner code, not only in the table's partnerLinks values.
+        for id in LioAttractionPartner.officialOnly {
+            #expect(LioAttractionPartner.links(for: allowingThirdParties(rule(id))).isEmpty, "\(id)")
+        }
+        #expect(!LioAttractionPartner.links(for: allowingThirdParties(rule("xian.beilin-museum"))).isEmpty)
+    }
+
+    @Test func pagesWithoutThirdPartyLinksSayOfficialChannelOnly() {
+        #expect(LioAttractionPartner.paymentNote(.chinese, for: rule("beijing.palace-museum"))
+                == "预约和付款都在官方渠道完成，Go2China 不售票。")
+        #expect(LioAttractionPartner.paymentNote(.chinese, for: rule("beijing.mutianyu"))
+                == "预约和付款在官方渠道或票务网站完成，Go2China 不售票。")
+        #expect(LioAttractionPartner.paymentNote(.english, for: rule("beijing.palace-museum"))
+                == "Booking and payment happen on the official channel; Go2China does not sell tickets.")
     }
 
     @Test func otherVenuesGetAPublicTripComSearchForTheirEnglishName() throws {

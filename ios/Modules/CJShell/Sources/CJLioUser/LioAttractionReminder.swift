@@ -51,7 +51,7 @@ enum LioAttractionReminder {
     }
 
     static func request(for rule: LioAttractionBookingRule, visit: Date, now: Date, language: LioLanguage) -> Request? {
-        let id = "g2c.attraction.\(rule.id).\(dayKey(visit))"
+        let id = LioAttractionReminderItem.prefix + "\(rule.id).\(dayKey(visit))"
         let day = visitText(visit, language)
         let check = language.text("Book on the official channel; check the official rules.", "请到官方渠道预约，以官方为准。")
         switch plan(for: rule, visit: visit, now: now) {
@@ -85,6 +85,33 @@ enum LioAttractionReminder {
     }
 }
 
+/// One reminder that is set, read back from its notification identifier
+/// `g2c.attraction.<rule id>.<yyyy-MM-dd>`; nothing else is stored.
+struct LioAttractionReminderItem: Equatable, Sendable {
+    static let prefix = "g2c.attraction."
+    let id: String
+    let ruleID: String
+    /// The visit day, midnight Beijing time.
+    let visit: Date
+
+    init?(id: String) {
+        guard id.hasPrefix(Self.prefix) else { return nil }
+        let rest = id.dropFirst(Self.prefix.count)
+        guard let dot = rest.lastIndex(of: ".") else { return nil }
+        let ruleID = String(rest[..<dot]), day = String(rest[rest.index(after: dot)...])
+        guard !ruleID.isEmpty, let visit = LioAttractionBookingRule.day(day),
+              LioAttractionReminder.dayKey(visit) == day else { return nil }
+        (self.id, self.ruleID, self.visit) = (id, ruleID, visit)
+    }
+
+    var rule: LioAttractionBookingRule? { LioAttractionBookingRule.all.first { $0.id == ruleID } }
+
+    /// When tickets open and when the reminder fires, as of `now`.
+    func plan(now: Date) -> LioAttractionReminder.Plan? {
+        rule.map { LioAttractionReminder.plan(for: $0, visit: visit, now: now) }
+    }
+}
+
 /// The system notification centre, behind a protocol so scheduling can be tested without it.
 protocol LioAttractionReminderCenter: Sendable {
     func requestAuthorization() async -> Bool
@@ -104,6 +131,14 @@ struct LioAttractionReminderScheduler: Sendable {
     }
 
     func isScheduled(_ id: String) async -> Bool { await center.pendingIDs().contains(id) }
+
+    /// Read-only view of the reminders set on this phone, soonest visit first, for the trip home page.
+    /// It neither adds nor removes anything and does not ask for permission.
+    func scheduled() async -> [LioAttractionReminderItem] {
+        await center.pendingIDs().compactMap(LioAttractionReminderItem.init(id:))
+            .filter { $0.rule != nil }
+            .sorted { ($0.visit, $0.ruleID) < ($1.visit, $1.ruleID) }
+    }
     func cancel(_ id: String) async { await center.remove(id) }
 }
 
