@@ -255,6 +255,84 @@ class OneScreenTests(unittest.TestCase):
                 main(['score', path])  # the default profile keeps plain text answers only
 
 
+ENTRY_PROBES = [  # #1664 third review: 39 correct statements must pass, 33 slips must fail
+    ('GB', "Good news: you do **not** need a visa for a 10-day trip to Shanghai.", True, 'markdown negation (preview flat)'),
+    ('GB', "Short answer: not if you're transiting, but a plain 10-day London–Shanghai return normally needs a visa.", False, 'after3: if in another clause'),
+    ('GB',"The 240-hour transit option lets you stay 10 days.",True,'过境10天'),
+    ('GB',"过境免签最多可停留 10 天。",True,'过境10天zh'),
+    ('GB',"A 10-day London–Shanghai return is visa-free.",True,'行程天数'),
+    ('GB',"You can stay 10 days visa-free on this trip.",True,'行程天数2'),
+    ('GB',"For a 10-day trip, visa-free for up to 30 days covers you.",True,'行程+上限'),
+    ('GB',"You'd need a visa only if you plan to work or study.",True,'限定work'),
+    ('GB',"For stays of 31 days or more you need a visa.",True,'限定31+'),
+    ('GB',"After 30 days you need a visa.",True,'限定after'),
+    ('GB',"If you don't meet these conditions, you need a visa before you travel.",True,'not_covered原文'),
+    ('GB',"Otherwise you need a visa.",True,'otherwise'),
+    ('GB',"Check whether you need a visa on the embassy site.",True,'whether'),
+    ('GB',"Do UK citizens need a visa for China? No.",True,'复述问题'),
+    ('GB',"All you need is a passport — no visa required.",True,'need passport no visa'),
+    ('GB',"You need a valid passport, not a visa.",True,'passport not visa'),
+    ('GB',"Entry requires an onward ticket for visa-free transit.",True,'requires...visa-free'),
+    ('GB',"UK citizens no longer need a visa for trips up to 30 days.",True,'no longer'),
+    ('GB',"超过 30 天才需要签证。",True,'超过zh'),
+    ('GB',"入住酒店后 24 小时内要办住宿登记。",True,'24h登记'),
+    ('US',"入住酒店后 24 小时内要办住宿登记。",True,'24h登记US'),
+    ('US',"以前是 72 和 144 小时，现在统一为 240 小时。",True,'旧政策统一'),
+    ('US',"过境免签已从 144 小时延长到 240 小时。",True,'旧政策延长'),
+    ('US',"240 小时（原 144 小时）过境免签。",True,'旧政策原'),
+    ('US',"The limit went up from 144 hours to 240 hours.",True,'旧政策up from'),
+    ('US',"240 hours, formerly 144 hours.",True,'旧formerly'),
+    ('US',"有人说不得跨市，其实允许区域内可以跨省。",True,'先标误解'),
+    ('US',"很多人以为不得跨市，其实可以跨省。",True,'很多人以为'),
+    ('US',"常被误传「只能在入境城市」，实际可以跨省。",True,'误传'),
+    ('US',"并不是只能在入境城市活动，允许区域内可跨省。",True,'并不是只能'),
+    ('US',"不能原路返回，联程客票必须去第三国。",True,'不能原路返回(正确)'),
+    ('US',"联程票不能是返回出发国的。",True,'不能返回出发国'),
+    ('US',"出了允许停留区域就不能再用过境免签，不得离开规定区域。",True,'不得离开区域'),
+    ('US',"You don't have to stay in the city where you land.",True,"don't have to stay"),
+    ('US',"You cannot leave the permitted areas.",True,'cannot leave areas(正确)'),
+    ('US',"You may not travel outside the permitted area.",True,'may not travel outside area'),
+    ('US',"A common mistake is thinking you can't leave the arrival city.",True,'common mistake'),
+    ('US',"Contrary to popular belief, you can travel across provinces.",True,'contrary'),
+    ('US',"From any of 65 ports in 24 provinces, 57 countries qualify for transit.",True,'正确数字'),
+    ('US',"美国护照持有人需要签证才能来中国旅游，但可以用 240 小时过境免签。",True,'US需要签证正确'),
+    ('US',"出发前请前往第三国的联程客票。",True,'第三国'),
+    ('US',"入境后不得跨市旅行。",False,'不得跨市'),
+    ('US',"其实不得跨市。",False,'其实不得跨市'),
+    ('US',"过境期间不能跨省。",False,'不能跨省'),
+    ('US',"可以办 144 小时过境免签。",False,'144'),
+    ('US',"可以停留 144 小时。",False,'144无过境'),
+    ('US',"UK passport holders can stay 144 hours visa-free.",False,'144 holders'),
+    ('US',"Holders of a US passport get 72 hours.",False,'72 holders'),
+    ('US',"Travellers told about 144 hours: that is the rule.",False,'144 told'),
+    ('US',"可以原路返回美国。",False,'原路返回'),
+    ('US',"可以飞回出发国。",False,'飞回出发国'),
+    ('US',"You can fly back to the US on the same ticket.",False,'fly back to US'),
+    ('US',"You must stay in the arrival city.",False,'must stay arrival city'),
+    ('US',"You're limited to the city you land in.",False,'limited to city'),
+    ('US',"You can only stay in your arrival city.",False,'only stay in arrival city'),
+    ('US',"只能待在落地的城市。",False,'只能待在落地的城市'),
+    ('US',"过境期间只可在入境城市活动。",False,'只可在入境城市'),
+    ('US',"过境免签可从 53 个口岸入境。",False,'53口岸'),
+    ('US',"Transit applies to 54 countries.",False,'54国'),
+    ('US',"Visa-free transit is 6 days.",False,'transit 6天'),
+    ('US',"过境免签可停留 6 天。",False,'过境6天'),
+    ('GB',"A plain 10-day trip needs a visa.",False,'needs a visa'),
+    ('GB',"British travellers need a visa for China.",False,'need a visa'),
+    ('GB',"You'll need to get a tourist visa.",False,'get a tourist visa'),
+    ('GB',"You must apply for an L visa before you go.",False,'must apply visa'),
+    ('GB',"英国护照需要办签证。",False,'需要办签证zh'),
+    ('GB',"英国人来华仍需签证。",False,'仍需签证'),
+    ('GB',"英国人来华须办签证。",False,'须办签证'),
+    ('GB',"You can stay visa-free for up to 15 days.",False,'up to 15'),
+    ('GB',"15-day visa-free entry applies.",False,'15-day visa-free'),
+    ('GB',"You can stay up to 15 days without a visa.",False,'15 days without visa'),
+    ('GB',"英国护照可以 15 天免签入境。",False,'15天免签'),
+    ('GB',"英国护照免签停留 15 天。",False,'免签停留15天'),
+    ('GB',"Actually, you cannot leave the arrival city.",False,'actually cannot leave'),
+]
+
+
 class SplitAndEntryFacts(unittest.TestCase):
     """JT 2026-11-25 two bubbles (first paragraph = the answer) and the preview's invented
     transit rule (\u4e0d\u5f97\u8de8\u5e02); entry facts come from the landing-mode rules file."""
@@ -337,6 +415,13 @@ class SplitAndEntryFacts(unittest.TestCase):
         from datetime import date
         with patch.object(quality, 'today', lambda: date(2027, 1, 1)):
             self.assertTrue(self.check('visa-uk-en', 'Yes.\n\nYou need to apply for a visa.')['checks']['entry_facts'])
+
+    def test_entry_facts_third_review_probe_set(self):
+        from eval.lio_answer_quality import _entry_facts_hold
+        self.assertEqual((sum(p[2] for p in ENTRY_PROBES), sum(not p[2] for p in ENTRY_PROBES)), (40, 34))
+        for country, text, expected, note in ENTRY_PROBES:
+            with self.subTest(note=note):
+                self.assertEqual(_entry_facts_hold(text, country), expected, text)
 
     def test_rules_load_lazily_with_a_clear_error(self):
         import eval.lio_answer_quality as quality
