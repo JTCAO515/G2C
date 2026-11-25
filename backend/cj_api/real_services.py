@@ -224,8 +224,6 @@ def _asks_transit_policy(text):
     return bool(_TRANSIT_POLICY.search(text) or (_TRANSIT_TOPIC.search(text) and _TRANSIT_VISA.search(text)))
 
 
-
-
 def _lio_transit_request(messages):
     question = messages[-1]['content']
     if _asks_transit_policy(question):
