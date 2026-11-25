@@ -289,6 +289,17 @@ import Testing
         #expect(single.text(.chinese) == "每晚 ¥420")
     }
 
+    // MARK: - Layout
+
+    /// At accessibility text sizes the date labels broke mid-word ("Checko / ut") and "Show the driver"
+    /// took three lines in a half-width button, so labels and buttons stack instead (#1606 screenshots).
+    @Test func accessibilitySizesStackLabelsAndButtons() {
+        #expect(!LioHotelLayout.stacksControls(at: .large))
+        #expect(!LioHotelLayout.stacksControls(at: .xxxLarge))
+        #expect(LioHotelLayout.stacksControls(at: .accessibility1))
+        #expect(LioHotelLayout.stacksControls(at: .accessibility5))
+    }
+
     // MARK: - Relay
 
     @Test func relayPostsWithTheBearerAndKeepsOnlyRelayHandoffs() async throws {
