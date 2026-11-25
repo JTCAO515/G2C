@@ -52,6 +52,9 @@ struct LioAttractionPartnerTests {
         let links = LioAttractionPartner.links(for: rule("beijing.mutianyu"))
         let trip = try #require(links.first { $0.partner == .tripCom })
         #expect(trip.url.absoluteString == "https://www.trip.com/things-to-do/list?keyword=Mutianyu%20Great%20Wall")
+        let klook = try #require(links.first { $0.partner == .klook })
+        #expect(klook.url.absoluteString == "https://www.klook.com/search/result/?query=Mutianyu%20Great%20Wall")
+        #expect(links.map(\.partner) == [.tripCom, .klook])
         let terracotta = try #require(LioAttractionPartner.links(for: rule("xian.qin-mausoleum-museum")).first)
         #expect(terracotta.url.absoluteString == "https://www.trip.com/things-to-do/list?keyword=Terracotta%20Warriors")
     }
