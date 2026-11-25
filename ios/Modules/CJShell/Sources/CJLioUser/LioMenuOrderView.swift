@@ -433,95 +433,47 @@ struct LioMenuFlagBadge: View {
 
 // MARK: - Card for staff
 
+/// The waiter card, drawn by the shared show card (#1611): Chinese large for staff, English small for the
+/// traveller, screen kept awake. The note toggles sit under the card and change it as they are ticked.
 struct LioMenuCardSheet: View {
     let language: LioLanguage
     let reading: LioMenuReading
     @Binding var order: LioMenuOrder
-    @Environment(\.dismiss) private var dismiss
-    @State private var priorIdleTimer: Bool?
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                LioMenuCardContent(language: language, card: order.card(in: reading), order: $order)
-                    .padding(24)
-            }
-            .background(LioTheme.paper)
-            .foregroundStyle(LioTheme.ink)
-            .navigationTitle(language.text("Show staff", "给服务员看"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(language.text("Close", "关闭")) { dismiss() }
-                        .accessibilityIdentifier("lio.menu.card.done")
-                }
-            }
-        }
-        .tint(LioTheme.vermilion)
-        .onAppear {
-            guard priorIdleTimer == nil else { return }
-            priorIdleTimer = UIApplication.shared.isIdleTimerDisabled
-            UIApplication.shared.isIdleTimerDisabled = true
-        }
-        .onDisappear {
-            if let priorIdleTimer {
-                UIApplication.shared.isIdleTimerDisabled = priorIdleTimer
-                self.priorIdleTimer = nil
-            }
+        LioShowCardSheet(language: language, content: order.card(in: reading).showCard,
+                         title: language.text("Show staff", "给服务员看"), identifierPrefix: "lio.menu.card") {
+            LioMenuNoteToggles(language: language, order: $order)
         }
     }
 }
 
-struct LioMenuCardContent: View {
+struct LioMenuNoteToggles: View {
     let language: LioLanguage
-    let card: LioMenuOrder.Card
     @Binding var order: LioMenuOrder
 
     var body: some View {
-        VStack(alignment: .leading, spacing: LioTheme.Spacing.lg) {
-            VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
-                Text(card.greeting).font(.title3.weight(.semibold)).foregroundStyle(LioTheme.inkSecondary)
-                ForEach(card.lines, id: \.self) { line in
-                    Text(line).font(LioTheme.display(.largeTitle).weight(.bold))
-                }
-                if !card.notes.isEmpty {
-                    VStack(alignment: .leading, spacing: LioTheme.Spacing.xxs) {
-                        Text("备注：").font(.title3.weight(.semibold)).foregroundStyle(LioTheme.inkSecondary)
-                        ForEach(card.notes, id: \.self) { note in
-                            Text(note).font(.title2.weight(.semibold))
-                        }
-                    }
-                    .accessibilityIdentifier("lio.menu.card.notes")
-                }
-                Text(card.closing).font(.title3.weight(.semibold)).foregroundStyle(LioTheme.inkSecondary)
-            }
-            .textSelection(.enabled)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(LioTheme.Spacing.md)
-            .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
-            .accessibilityIdentifier("lio.menu.card")
-            VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
-                Text(language.text("Add a note for staff", "加备注")).font(.headline)
-                ForEach(notes, id: \.id) { note in
-                    Button { order.toggle(note) } label: {
-                        HStack {
-                            Image(systemName: order.has(note) ? "checkmark.circle.fill" : "circle")
-                                .foregroundStyle(order.has(note) ? LioTheme.vermilion : LioTheme.inkSecondary)
-                            VStack(alignment: .leading, spacing: 0) {
-                                Text(note.chinese)
-                                if language == .english {
-                                    Text(note.english).font(.caption).foregroundStyle(LioTheme.inkSecondary)
-                                }
+        VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+            Text(language.text("Add a note for staff", "加备注")).font(.headline)
+            ForEach(notes, id: \.id) { note in
+                Button { order.toggle(note) } label: {
+                    HStack {
+                        Image(systemName: order.has(note) ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(order.has(note) ? LioTheme.vermilion : LioTheme.inkSecondary)
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(note.chinese)
+                            if language == .english {
+                                Text(note.english).font(.caption).foregroundStyle(LioTheme.inkSecondary)
                             }
-                            Spacer()
                         }
-                        .frame(minHeight: 44)
-                        .contentShape(Rectangle())
+                        Spacer()
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("lio.menu.note.\(note.id)")
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(order.has(note) ? .isSelected : [])
+                .accessibilityIdentifier("lio.menu.note.\(note.id)")
             }
         }
     }

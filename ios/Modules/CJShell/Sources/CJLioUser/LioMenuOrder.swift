@@ -280,13 +280,29 @@ struct LioMenuOrder: Equatable, Sendable {
         /// Full sentences, one per line.
         let notes: [String]
         let closing = "谢谢！"
+        /// What the card says, for the traveller.
+        var englishLines: [String] = []
+        var englishNotes: [String] = []
+
+        /// The shared show card (#1611): dishes largest, needs and thanks under them, English small.
+        var showCard: LioShowCardContent {
+            // With no dish the greeting is the main line, so it is not repeated above it.
+            LioShowCardContent(leadZH: lines.isEmpty ? nil : greeting,
+                               mainZH: lines.isEmpty ? greeting : lines.joined(separator: "\n"),
+                               detailsZH: notes + [closing],
+                               english: ["Hello, I'd like to order:"] + englishLines + englishNotes)
+        }
     }
 
     func card(in reading: LioMenuReading) -> Card {
-        let names = Dictionary(reading.dishes.filter(\.isLegible).map { ($0.id, $0.nameZH ?? "") },
-                               uniquingKeysWith: { first, _ in first })
-        let lines = dishIDs.compactMap { id in names[id].map { "\($0) × \(quantities[id] ?? 0)" } }
-        return Card(lines: lines, notes: notes.map(\.chinese))
+        var names: [String: (zh: String, en: String)] = [:]
+        for dish in reading.dishes where dish.isLegible && names[dish.id] == nil {
+            names[dish.id] = (dish.nameZH ?? "", dish.nameEN)
+        }
+        let ordered = dishIDs.compactMap { id in names[id].map { ($0, quantities[id] ?? 0) } }
+        return Card(lines: ordered.map { "\($0.0.zh) × \($0.1)" }, notes: notes.map(\.chinese),
+                    englishLines: ordered.map { "\($0.0.en.isEmpty ? $0.0.zh : $0.0.en) × \($0.1)" },
+                    englishNotes: notes.map(\.english))
     }
 }
 
