@@ -1,6 +1,6 @@
 {
   "asset": "Lio 八个状态短视频",
-  "source": "基于获认可的 Lio 主素材；三段加密试片各有 64 张重画全身的源姿势、Practical-RIFE 4.26 补帧和 ffmpeg 编码",
+  "source": "基于获认可的 Lio 高清原件；各状态 64 张完整绘制的全身姿势，Practical-RIFE 4.26 本机补间，FFmpeg 编码",
   "files": {
     "lio-greeting-still.png": {
       "bytes": 299367,
@@ -20,72 +20,72 @@
       "keyframes": 64
     },
     "lio-idle-still.png": {
-      "bytes": 300688,
-      "sha256": "129face5a96b2afc2bdab53b244494d860ce6e1751721d0724248c6e1d22c23a",
+      "bytes": 299607,
+      "sha256": "68c9c7a3b0a87e9bce35a0cb5fc985252ac535c93bcccc9c06fcae2d7e098704",
       "width": 720,
       "height": 720
     },
     "lio-idle.mp4": {
-      "bytes": 560192,
-      "sha256": "d71093200a3ce43f349e5cba3bcc04646ad1a39cee5bb70a54b4e476c4ffbdcf",
+      "bytes": 834764,
+      "sha256": "bcab3a05f3c523c7ae433fcb24e2ab5130d1ed3b642c57eaa22a582a7f85cb8c",
       "width": 720,
       "height": 720,
       "fps": 30,
       "codec": "h264",
-      "duration_ms": 1600,
-      "frames": 48,
-      "keyframes": 9
+      "duration_ms": 2000,
+      "frames": 60,
+      "keyframes": 64
     },
     "lio-offline-still.png": {
-      "bytes": 314768,
-      "sha256": "1cf76958de932dfdf8a6ff9cd49dcd5731391ac8d4d4aaffc19a0c83be6bb4ef",
+      "bytes": 313169,
+      "sha256": "e577a074bd3eca47ac6f2af9375be111d0ecfda8492f20907b5d221245bd982a",
       "width": 720,
       "height": 720
     },
     "lio-offline.mp4": {
-      "bytes": 690457,
-      "sha256": "1ea32c8f1732fa3c78f1154168120ad8a0386a6c5e39ed7eeb9dca858a54e781",
+      "bytes": 835874,
+      "sha256": "3133e12397382ede4fb6e7c40de5f9d12293c26e3c13712b7a2d3009743dcb95",
       "width": 720,
       "height": 720,
       "fps": 30,
       "codec": "h264",
-      "duration_ms": 1600,
-      "frames": 48,
-      "keyframes": 9
+      "duration_ms": 2000,
+      "frames": 60,
+      "keyframes": 64
     },
     "lio-planning-still.png": {
-      "bytes": 328532,
-      "sha256": "71746982d8751422d7cd413ed654decbf76ef31320fb919f1cb4286383b8f551",
+      "bytes": 323795,
+      "sha256": "75e6de478441a2bf9d17f1b7ff930daf66a944c372946fc38dec5de0d83c0cfa",
       "width": 720,
       "height": 720
     },
     "lio-planning.mp4": {
-      "bytes": 701930,
-      "sha256": "cddc9c775bd5782b668513386b7d6a232a1182e7a832f6b31744f9edbdf90645",
+      "bytes": 892728,
+      "sha256": "862795a376c9be14a0288a95ae408f26d35c0d29d1993d8fbb412870c3f7319a",
       "width": 720,
       "height": 720,
       "fps": 30,
       "codec": "h264",
-      "duration_ms": 1600,
-      "frames": 48,
-      "keyframes": 9
+      "duration_ms": 2000,
+      "frames": 60,
+      "keyframes": 64
     },
     "lio-remembered-still.png": {
-      "bytes": 298054,
-      "sha256": "d1a474dd6c40e438008357f887b8728cc6578b5776ece3435f52fd6d3c8cb6ec",
+      "bytes": 295914,
+      "sha256": "d9f403bf1ae49e19584863c5fdb9a53972ffbec11ce3ae8fe41b07a0ddf5f9b7",
       "width": 720,
       "height": 720
     },
     "lio-remembered.mp4": {
-      "bytes": 655806,
-      "sha256": "225c72584713f71c763e558e48eec3d3d2e997962417912130ffc5b92647af15",
+      "bytes": 811494,
+      "sha256": "15e56b4bfcf4a98a9305f6008293a0e7a4e9f67694c8793475e27528deef9721",
       "width": 720,
       "height": 720,
       "fps": 30,
       "codec": "h264",
-      "duration_ms": 1600,
-      "frames": 48,
-      "keyframes": 9
+      "duration_ms": 2000,
+      "frames": 60,
+      "keyframes": 64
     },
     "lio-searching-still.png": {
       "bytes": 289249,
@@ -105,21 +105,21 @@
       "keyframes": 64
     },
     "lio-taking-longer-still.png": {
-      "bytes": 304695,
-      "sha256": "7409258abb9be8753bd50c9a639b6db0a42622e050d842938262fa7773d0bc45",
+      "bytes": 303669,
+      "sha256": "4d9319581c45f644ae596ed15d898c088846a195916f721e7e73708f60263336",
       "width": 720,
       "height": 720
     },
     "lio-taking-longer.mp4": {
-      "bytes": 626548,
-      "sha256": "482127c807090c8b581bf5eda123fe4dd781d58a0170a2e88b9ef68b02802859",
+      "bytes": 921374,
+      "sha256": "115280c116d6ac8bb863736437b3df12563c14e9625a2c182ed995d743759897",
       "width": 720,
       "height": 720,
       "fps": 30,
       "codec": "h264",
-      "duration_ms": 1600,
-      "frames": 48,
-      "keyframes": 9
+      "duration_ms": 2000,
+      "frames": 60,
+      "keyframes": 64
     },
     "lio-thinking-still.png": {
       "bytes": 302107,
@@ -139,8 +139,8 @@
       "keyframes": 64
     },
     "lio-video-preview.png": {
-      "bytes": 322262,
-      "sha256": "38b2ae02b93e5c966b1c92f15ffeccf7886440195165505b740d2c672937d945",
+      "bytes": 323950,
+      "sha256": "feee21ca7cb33cf66a53771148fd4d99531bb6bddfb58c3eef904cddb9ac135e",
       "width": 1012,
       "height": 566
     }
