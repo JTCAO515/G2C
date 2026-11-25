@@ -84,7 +84,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [0, 1, 2, 3]
+        # Keep in step with POSTGRES_SHARDS in deploy/hk/application_release.py (release gate).
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
     env:
       CJ_PG_BINDIR: /usr/lib/postgresql/17/bin
       CJ_PG17_BINDIR: /usr/lib/postgresql/17/bin
