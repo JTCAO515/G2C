@@ -9,7 +9,7 @@ CI_PATH = '.github/workflows/ci.yml'
 # The postgres-shard matrix in ci.yml; must change in the same commit as that matrix.
 POSTGRES_SHARDS = 8
 CI_JOBS = frozenset({
-    'changes', 'python', 'postgres', 'swift-packages', 'ios-app', 'swift',
+    'changes', 'python', 'postgres', 'swift-packages', 'swift',
     *(f'postgres-shard ({shard})' for shard in range(POSTGRES_SHARDS)),
 })
 BLOCKING_CONCLUSIONS = frozenset({
