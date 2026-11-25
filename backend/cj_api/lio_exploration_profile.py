@@ -300,6 +300,29 @@ def parse_updates(raw, originals,*,registered_city_terms=()):
     return tuple(facts)
 
 
+
+def parse_supported_updates(raw, originals,*,registered_city_terms=()):
+    """Keep each independently grounded model update; drop only unsupported ones.
+
+    JT 2026-11-25: an unsupported update is never accepted and is asked again
+    later, while the other grounded updates are used. A malformed packet still
+    fails whole. Each kept update passes the unchanged strict parse_updates on
+    its own; persisted-profile restore keeps using parse_updates directly.
+    Returns (facts, ((factor_key, code_reason), ...)).
+    """
+    try:
+        packet = _Updates.model_validate(decode(raw.encode() if isinstance(raw, str) else raw))
+    except ValidationError:
+        raise InvalidInput('exact sourced profile updates required') from None
+    facts, dropped = [], []
+    for update in packet.updates:
+        single = json.dumps(dict(version='LIO-profile-update.1', updates=[update.model_dump()]))
+        try:
+            facts.extend(parse_updates(single, originals, registered_city_terms=registered_city_terms))
+        except InvalidInput as error:
+            dropped.append((update.factor_key, str(error)))
+    return tuple(facts), tuple(dropped)
+
 def memory_prefill(memory_run):
     """Consume the already captured, admitted Memory payload, never a model copy.
 

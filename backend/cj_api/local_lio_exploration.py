@@ -134,6 +134,21 @@ def _bubbles(text,locale):
     return [' '.join(words[index:index+50]) for index in range(0,len(words),50)]
 
 
+def city_lookup_quotes(updates,originals,city_terms):
+    """Original city spans to resolve. A non-original span never reaches the
+    resolver; JT 2026-11-25: its update is dropped by the profile later instead
+    of failing the run. Known/registered terms and non-literal values are skipped."""
+    quotes=[]
+    for update in updates:
+        if update.factor_key!='city' or update.state!='known' or not isinstance(update.value,str):continue
+        for reference in update.sources:
+            if reference.source_index>=len(originals) or reference.quote not in originals[reference.source_index].text:continue
+            if update.value!=reference.quote:continue
+            if known_city_term(reference.quote) or reference.quote in city_terms:continue
+            quotes.append(reference.quote)
+    return quotes
+
+
 class ExplorationPlanning:
     def __init__(self,database,legacy,*,enabled=True,generation=None):
         self.database,self.legacy,self.enabled=database,legacy,enabled
@@ -293,16 +308,10 @@ class ExplorationPlanning:
         direct=request is not None and understood.intent!='emergency'
         # Broader administrative spellings are learned from the existing
         # registered provider resolver, never promoted from a model token.
-        for update in (()if direct else understood.updates):
-            if update.factor_key!='city' or update.state!='known' or not isinstance(update.value,str):continue
-            for reference in update.sources:
-                if reference.source_index>=len(view.originals) or reference.quote not in view.originals[reference.source_index].text:
-                    raise ProviderUnknown('city evidence is not an original span')
-                if update.value!=reference.quote:continue
-                if known_city_term(reference.quote) or reference.quote in view.city_terms:continue
-                resolution=worker.tools.resolve_city(worker,binding,dict(query=reference.quote,normalized_name=None,province=None))
-                state=worker.runs.snapshot(binding)
-                state=worker._event(binding,state,'effect_committed','lio_city_resolution.1:'+json.dumps(resolution,ensure_ascii=False,separators=(',',':')))
+        for quote in city_lookup_quotes(()if direct else understood.updates,view.originals,view.city_terms):
+            resolution=worker.tools.resolve_city(worker,binding,dict(query=quote,normalized_name=None,province=None))
+            state=worker.runs.snapshot(binding)
+            state=worker._event(binding,state,'effect_committed','lio_city_resolution.1:'+json.dumps(resolution,ensure_ascii=False,separators=(',',':')))
         state=worker.runs.snapshot(binding)
         state,profile=self.profiles.accept(worker,binding,state,json.dumps(dict(version='LIO-profile-update.1',
             updates=[update.model_dump() for update in understood.updates])),expected=view,plan_now=direct)
