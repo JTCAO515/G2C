@@ -9,6 +9,7 @@ from runtime_adapter.contract import decode,Unavailable
 from cj_draft.grouped_plan import GENERATION_PROFILES
 from cj_draft.rich_schema import GENERATION_PROFILES as RICH_PROFILES
 from cj_message.lio_exploration_schema import PROFILES as EXPLORATION_PROFILES,response_format,response_format_sha256
+from cj_message.lio_plan_input_schema import PLAN_UNDERSTANDING
 from cj_message.lio_context import DISCUSSION_MAX_PREVIEW_DAYS,discussion_preview_format_sha256
 
 
@@ -52,6 +53,8 @@ class RuntimeModel:
                      or logical.get('draft_profile') in RICH_PROFILES
                      or preview)
         maximum=config.max_output_tokens if full_output else min(1024,config.max_output_tokens)
+        if structured==PLAN_UNDERSTANDING:
+            maximum=2*config.max_output_tokens  # JT 2026-11-25, mirrors provider.py
         if (body['model']!=config.model_id or body['stream'] is not True or
                 body['stream_options']!={'include_usage':True} or body['enable_thinking'] is not False or
                 body['max_tokens']!=maximum):
