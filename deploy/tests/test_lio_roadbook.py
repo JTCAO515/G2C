@@ -242,6 +242,7 @@ def test_good_fields_pass_unchanged():
     ('notes', '这几天闭馆'), ('notes', '暂停入园'), ('notes', '票已售完'), ('notes', '预约已满'), ('notes', '已恢复开放'),
     ('getting_there', '打车30块左右'), ('getting_there', '打车 30 多元'), ('getting_there', '十几块就到'),
     ('getting_there', '人民币30'), ('tickets', '成人六十，学生三十'), ('getting_there', '约 30 港币'),
+    ('getting_there', '打车约三十rmb'), ('getting_there', '停车费20rmb/小时'),
 ])
 def test_unchecked_claims_become_official_notices(field, value):
     checked = checked_fields(json.dumps(dict(GOOD['zh'], **{field: value}), ensure_ascii=False), FACTS, 'zh')
@@ -271,6 +272,8 @@ def test_unchecked_claims_become_official_notices(field, value):
     ('tickets', 'City pass holders and university students may get discounts', True),
     ('hours_booking', 'Tickets 14 days ahead; check official sources.', True),
     ('notes', 'A Starbucks is near the gate', True), ('summary', 'Built in 1900 by European architects', True),
+    ('getting_there', 'Taxi about 30RMB', False), ('getting_there', 'Parking RMB30 an hour', False),
+    ('getting_there', 'About 20bucks by taxi', False), ('getting_there', 'HKD30 by bus', False),
 ])
 def test_english_claims_are_checked_the_same_way(field, value, kept):
     checked = checked_fields(json.dumps(dict(GOOD['en'], **{field: value}), ensure_ascii=False), FACTS, 'en')

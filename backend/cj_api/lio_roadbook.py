@@ -58,14 +58,14 @@ POI_ID = re.compile(r'[A-Za-z0-9]{1,32}')
 # 块 is also a measure word (一块石碑): only 块钱, or 块 not followed by a Chinese character other than
 # 左右/钱/以上/上下, is money.
 _UNIT = (r'(?:元|圆|块钱|块(?![\u4e00-\u9fff])|块(?=左右|钱|以上|上下|就)|人民币|港币|港元|欧元|美元|'
-         r'\b(?:yuan|kuai|rmb|cny|usd|hkd|eur|bucks?|dollars?)\b|€)')
+         r'(?<![a-z])(?:yuan|kuai|rmb|cny|usd|hkd|eur|bucks?|dollars?)(?![a-z])|€)')
 _CN_NUMBER = r'[零〇一二三四五六七八九十百千万两]'
 _EN_WORDS = (r'one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|'
              r'seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand')
 _EN_NUMBER = r'\b(?:' + _EN_WORDS + r')\b'
 _NUMBER = r'(?:\d|' + _CN_NUMBER + r'|' + _EN_NUMBER + r')'
 _PRICE = re.compile(
-    r'(?:[¥$€]|\bus\$|\b(?:rmb|cny|usd|hkd|eur)\b|人民币|港币)\s*' + _NUMBER
+    r'(?:[¥$€]|(?<![a-z])us\$|(?<![a-z])(?:rmb|cny|usd|hkd|eur)(?![a-z])|人民币|港币)\s*' + _NUMBER
     + r'|' + _NUMBER + r'\s*(?:多|几|余)?\s*' + _UNIT
     + r'|(?:门票|票价|\b(?:ticket|tickets|fare|fares|price|costs?)\b)\s*(?:[:：是为约]\s*)?\d+(?!\d)'
       r'(?!\s*(?:天|日|周|个?小时|days?|weeks?|hours?))', re.IGNORECASE)
