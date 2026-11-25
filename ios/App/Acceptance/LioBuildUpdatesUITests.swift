@@ -280,6 +280,7 @@ import XCTest
         for _ in 0..<80 {
             let exists = element.exists
             var frame = exists ? element.frame : .zero
+            var needsBottomWitness = false
             if exists, !frame.isEmpty, element.elementType == .textView,
                frame.height > viewport.height || paragraphSize != nil {
                 // XCTest can report just the on-screen portion of a long text view once
@@ -295,6 +296,7 @@ import XCTest
                         let visible = full.intersection(app.frame)
                         if full.minY < frame.minY, abs(visible.minY - frame.minY) < 1,
                            abs(visible.maxY - frame.maxY) < 1 {
+                            needsBottomWitness = frame.maxY >= app.frame.maxY - 1
                             frame = full
                         }
                     } else {
@@ -337,12 +339,18 @@ import XCTest
                 // a skipped middle cannot be treated as a complete paragraph.
                 if last > first && first <= covered + 1 { covered = max(covered, last) }
                 if covered >= frame.height - 1 {
-                    XCTAssertTrue(element.isHittable)
-                    XCTAssertGreaterThanOrEqual(covered, frame.height - 1)
-                    return
+                    if !needsBottomWitness {
+                        XCTAssertTrue(element.isHittable)
+                        XCTAssertGreaterThanOrEqual(covered, frame.height - 1)
+                        return
+                    }
+                    // A taller reflow can fill the same screen. Expose the real end
+                    // below the crop before crediting the last slice.
+                    delta = -min(step, 80)
+                } else {
+                    let wantedOffset = max(0, covered - 24)
+                    delta = min(step, max(-step, viewport.minY - frame.minY - wantedOffset))
                 }
-                let wantedOffset = max(0, covered - 24)
-                delta = min(step, max(-step, viewport.minY - frame.minY - wantedOffset))
             } else {
                 if viewport.contains(frame) {
                     var lastFrame: CGRect?
