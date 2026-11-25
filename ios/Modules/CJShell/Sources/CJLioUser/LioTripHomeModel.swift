@@ -164,8 +164,13 @@ struct LioTripTicks: Codable, Equatable, Sendable {
     }
 
     struct Snapshot: Codable, Equatable, Sendable {
+        static let maximumEndedPlans = 50
+
         var profile: LioTripProfile?
         var ticks = LioTripTicks()
+        /// Saved plans whose trips the traveller ended here; they are not taken as the current trip again.
+        /// Optional so files written before it existed still read.
+        var endedPlanIDs: [String]?
     }
 
     let directory: URL
@@ -257,6 +262,10 @@ final class LioTripHomeModel {
     private var visible: Bool { store == nil || store?.current == true }
 
     var profile: LioTripProfile? { visible ? cached.profile : nil }
+    /// Read back through the same cap as when written.
+    var endedPlanIDs: Set<String> {
+        visible ? Set((cached.endedPlanIDs ?? []).suffix(LioTripHomeStore.Snapshot.maximumEndedPlans)) : []
+    }
     var ticks: LioTripTicks { visible ? cached.ticks : LioTripTicks() }
 
     func reload() {
@@ -268,22 +277,30 @@ final class LioTripHomeModel {
 
     func start(_ profile: LioTripProfile) {
         // A new trip starts with no ticks: a tick belongs to the trip it was made for.
-        write(.init(profile: profile, ticks: LioTripTicks()))
+        write(.init(profile: profile, ticks: LioTripTicks(), endedPlanIDs: cached.endedPlanIDs))
     }
 
     func update(_ change: (inout LioTripProfile) -> Void) {
         guard var profile = cached.profile else { return }
         change(&profile)
-        write(.init(profile: profile, ticks: cached.ticks))
+        write(.init(profile: profile, ticks: cached.ticks, endedPlanIDs: cached.endedPlanIDs))
     }
 
     func setTick(_ key: String, done: Bool, at date: Date = .now) {
         var ticks = cached.ticks
         ticks.set(key, done: done, at: date)
-        write(.init(profile: cached.profile, ticks: ticks))
+        write(.init(profile: cached.profile, ticks: ticks, endedPlanIDs: cached.endedPlanIDs))
     }
 
     /// Ends this trip on the phone: the profile and ticks go; saved plans and tool data stay where they are.
+    /// Ending a trip that follows a saved plan remembers the plan, so a finished plan is not shown again as the
+    /// current trip and the traveller gets a fresh start (#1667 review P2).
+    func end(plan planID: String?) {
+        guard let planID, !planID.isEmpty, planID.utf8.count <= 256 else { return clear() }
+        let ended = Array(((cached.endedPlanIDs ?? []).filter { $0 != planID } + [planID]).suffix(LioTripHomeStore.Snapshot.maximumEndedPlans))
+        write(.init(profile: nil, ticks: LioTripTicks(), endedPlanIDs: ended))
+    }
+
     func clear() {
         guard visible else { return }
         if unread { reload() }

@@ -121,3 +121,47 @@ class OneScreenLayout(unittest.TestCase):
     def test_unknown_layout_is_rejected(self):
         with self.assertRaises(ValueError):
             answer_prompt('en', layout='compact')
+
+
+class TwoBubbleSplit(unittest.TestCase):
+    """JT 2026-11-25 (via coordination): one-screen answers show as at most two bubbles. The
+    server still sends one message; the app splits at the first blank line when layout=split."""
+
+    def test_first_paragraph_is_the_answer_or_the_action(self):
+        from cj_message.lio_context import ONE_SCREEN_DETAIL
+        for clause in ('The first paragraph is only the direct answer',
+                       'at most 35 Chinese characters or 20 English words',
+                       'no line break inside it',
+                       'then one blank line',
+                       'any assumption you made, such as party size, pace or season, goes after it',
+                       'In an emergency the first paragraph is only the action, such as calling 110 or 120'):
+            with self.subTest(clause=clause):
+                self.assertIn(clause, ONE_SCREEN_DETAIL)
+        self.assertEqual(ONE_SCREEN_DETAIL.count('blank line'), 1)
+
+    def test_flat_still_has_no_paragraph_rule(self):
+        for locale in ('zh', 'en'):
+            with self.subTest(locale=locale):
+                self.assertNotIn('first paragraph', answer_prompt(locale, detailed=True))
+
+
+class OneScreenEntryFacts(unittest.TestCase):
+    """Preview 2026-11-25: a capped transit-visa answer invented "不得跨市旅行". Under one-screen,
+    entry rules come only from supplied official facts (docs/lio-voice.md §4.3 item 9)."""
+
+    def test_the_memory_ban_holds_whether_or_not_facts_are_supplied(self):
+        # #1663 review: the ban must be its own sentence, not a tail of the "no facts" case.
+        from cj_message.lio_context import ONE_SCREEN_DETAIL
+        ban = 'Never state rule details such as permitted areas, ports or eligible countries from memory.'
+        self.assertIn(ban, ONE_SCREEN_DETAIL)
+        self.assertLess(ONE_SCREEN_DETAIL.index(ban), ONE_SCREEN_DETAIL.index('If no official facts are supplied'))
+
+    def test_entry_answers_give_the_conclusion_and_where_to_confirm(self):
+        from cj_message.lio_context import ONE_SCREEN_DETAIL
+        for clause in ('For visa, entry and transit questions',
+                       'only from supplied official facts',
+                       'rule details such as permitted areas, ports or eligible countries from memory',
+                       'say where to confirm',
+                       'If no official facts are supplied, say that the rule depends on the passport and trip'):
+            with self.subTest(clause=clause):
+                self.assertIn(clause, ONE_SCREEN_DETAIL)

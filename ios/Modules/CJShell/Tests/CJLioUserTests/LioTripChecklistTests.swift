@@ -484,4 +484,19 @@ struct LioTripChecklistTests {
         #expect(LioTripChecklist.reminderID(rule: rule, visit: Self.day("2026-12-09"))
                 == LioAttractionReminder.reminderID(for: rule, visit: Self.day("2026-12-09").start(in: Self.shanghai)))
     }
+
+    // MARK: - #1667 review P2
+
+    @Test func anEndedPlanIsNotTheTripAgain() {
+        // Only a saved plan, already over: it shows as ended until the traveller ends it, then the start page.
+        var input = LioTripChecklistInput(now: Self.at("2026-12-20 10:00"), plans: [Self.beijingPlan])
+        #expect(LioTripChecklist(input).phase == .ended)
+        input.endedPlanIDs = [Self.beijingPlan.tripID]
+        let list = LioTripChecklist(input)
+        #expect(!list.hasTrip)
+        #expect(list.plan == nil)
+        // A newer plan is still picked up.
+        input.plans = [Self.plan("next", start: "2027-01-05", days: [[]]), Self.beijingPlan]
+        #expect(LioTripChecklist(input).plan?.tripID == "next")
+    }
 }

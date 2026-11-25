@@ -71,7 +71,7 @@
   {"id": "ji054", "nameZH": "历山路", "nameEN": "Lishan Lu", "x": 560.2, "y": 678.1, "geo": [117.041955, 36.688889], "lines": ["ji-3"]},
   {"id": "ji055", "nameZH": "七里堡", "nameEN": "Qilipu", "x": 604.8, "y": 678.1, "geo": [117.067563, 36.690665], "lines": ["ji-3"]},
   {"id": "ji056", "nameZH": "祝甸", "nameEN": "Zhudian", "x": 647.9, "y": 678.1, "geo": [117.082382, 36.697363], "lines": ["ji-3"]},
-  {"id": "ji057", "nameZH": "八涧堡", "nameEN": "Bajianbao", "x": 694.6, "y": 677.4, "geo": [117.103395, 36.704998], "lines": ["ji-3", "ji-4"]},
+  {"id": "ji057", "nameZH": "八涧堡", "nameEN": "Bajianpu", "x": 694.6, "y": 677.4, "geo": [117.103395, 36.704998], "lines": ["ji-3", "ji-4"]},
   {"id": "ji058", "nameZH": "姜家庄", "nameEN": "Jiangjiazhuang", "x": 752.8, "y": 677.4, "geo": [117.127551, 36.706385], "lines": ["ji-3"]},
   {"id": "ji059", "nameZH": "凤凰北路", "nameEN": "Fenghuang Beilu", "x": 813.2, "y": 677.4, "geo": [117.145572, 36.708422], "lines": ["ji-3", "ji-6"]},
   {"id": "ji060", "nameZH": "鲍山", "nameEN": "Baoshan", "x": 883.6, "y": 676.7, "geo": [117.187961, 36.709211], "lines": ["ji-3"]},
