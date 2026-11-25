@@ -49,15 +49,17 @@ def known_destination(text):
     return mention if mention is not None and known_city_term(mention)else None
 
 
-def destination_stay(quote, registered_city_terms):
+def destination_stay(quote, registered_city_terms, *, whole_message):
     """Read a destination and stay length only when the whole quote assigns both roles."""
     clause = quote.strip().rstrip('。.!！').strip()
     # A model may cite the full request, including the ordinary request to plan it.
     # Strip only this explicit trailing request. Conditions, alternatives and origin
     # statements must still fail the complete destination and duration grammar.
-    clause = re.sub(r"(?:[，,。.]\s*(?:请|麻烦)?帮我规划(?:一下)?行程[。.!！]?|"
-                    r"[,;]\s*please plan (?:my|our) (?:trip|itinerary)[.!]?)\s*$",
-                    "", clause.strip(), flags=re.I)
+    clause = quote.strip()
+    if whole_message:
+        clause = re.sub(r"(?:[，,。.]\s*(?:请|麻烦)?帮我规划(?:一下)?行程[。.!！]?|"
+                        r"[,;]\s*please plan (?:my|our) (?:trip|itinerary)[.!]?)\s*$",
+                        "", clause.strip(), flags=re.I)
     match = re.fullmatch(
         r'(?:(?:我们|我)?(?:想去|要去|去))?\s*(.+?)\s*玩\s*(' + _NUMBER + r')\s*(?:天|日)',
         clause, re.I)
@@ -107,7 +109,11 @@ def supports(key,clause,quote,*,registered_city_terms=()):
         position=match.end()
     if len(set(city.casefold() for city in found['city']))>1:return False
     if found['city'] and not requested and found['city'][0].casefold() not in {city.casefold()for city in cities}:return False
-    if key=='city':return len(found['city'])==1 and found['city'][0].casefold()==quote.casefold()
+    if key=='city':
+        city = re.escape(quote.strip())
+        if re.search(r'(?:从\s*'+city+r'|\bfrom\s+'+city+r'(?!\w)|'+city+r'\s*出发)',clause,re.I):
+            return False
+        return len(found['city'])==1 and found['city'][0].casefold()==quote.casefold()
     if key=='duration_days':
         counts=[]
         for word in found['duration']:
