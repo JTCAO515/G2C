@@ -48,6 +48,7 @@ SOCKET = Path('/run/g2c-demo/menu.sock')
 # The photo is at most 3 MB - 4 KB, about 4 MiB as base64 inside the JSON (contract); 6 MiB leaves room.
 MAX_BODY = 6 * 1024 * 1024
 MAX_RESPONSE = 256 * 1024      # at most 30 short bilingual dishes
+API_SLOTS = 2
 # One recognition and up to two flash calls (40 s client timeout each) behind a 45 s service deadline that is
 # checked before each call, so a request can run past 45 s; the API waits for it.
 RELAY_TIMEOUT = 150
@@ -66,8 +67,11 @@ def menu_request(token, raw, *, path=SOCKET):
             response = incoming.read(size)
             if len(response) != size:
                 raise ValueError('incomplete menu response')
-            status, body = json.loads(response)
-            if status not in RESPONSE_STATUS or type(body) is not dict:
+            value = json.loads(response)
+            if type(value) is not list or len(value) != 2:
+                raise ValueError('invalid menu reply')
+            status, body = value
+            if type(status) is not int or status not in RESPONSE_STATUS or type(body) is not dict:
                 raise ValueError('invalid menu reply')
             return status, body
 
@@ -87,21 +91,32 @@ async def _bounded_body(request):
 
 
 def register_menu_routes(app, *, send=menu_request):
+    # The API holds up to 6 MiB per request before the worker authorizes it: bound how many it holds at once
+    # (the worker has the same two slots), as the translation image relay does.
+    slots = BoundedSemaphore(API_SLOTS)
+
     @app.post(ROUTE)
     async def execute(request: Request):
+        held = False
         try:
             supplied = request.headers.getlist('authorization')
             match = BEARER.fullmatch(supplied[0]) if len(supplied) == 1 else None
             if match is None:
                 raise PluginError(401, 'sign_in_required')
+            if not slots.acquire(blocking=False):
+                raise PluginError(503, 'unavailable')
+            held = True
             raw = await _bounded_body(request)
             status, body = await run_in_threadpool(send, match[1], bytes(raw))
         except PluginError as error:
             status, body = error.status, {'error': error.code}
         except ClientDisconnect:
             status, body = 400, {'error': 'invalid_request'}
-        except (OSError, ValueError):
+        except (OSError, ValueError, TypeError):
             status, body = 503, {'error': 'unavailable'}
+        finally:
+            if held:
+                slots.release()
         return JSONResponse(body, status_code=status, headers={'Cache-Control': 'no-store'})
 
 

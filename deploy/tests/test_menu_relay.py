@@ -187,3 +187,77 @@ def test_the_worker_reads_the_menu_roster_from_its_secret_file():
 
     assert menu_relay.MENU_INTERNAL_SUBJECTS == 'CJ_MENU_INTERNAL_SUBJECTS_JSON'
     assert 'MENU_INTERNAL_SUBJECTS' in inspect.getsource(configuration.load_secret_environment)
+
+
+def test_the_api_holds_at_most_two_bodies_at_once():
+    import threading
+
+    entered, release, calls = threading.Semaphore(0), threading.Event(), []
+
+    def send(token, raw):
+        calls.append(len(raw))
+        entered.release()
+        assert release.wait(10)
+        return 200, {'version': 'MENU.1', 'items': [], 'truncated': False}
+
+    app = FastAPI()
+    register_menu_routes(app, send=send)
+    with TestClient(app) as browser:
+        results = []
+        workers = [threading.Thread(target=lambda: results.append(
+            browser.post(ROUTE, json=fixtures.payload(), headers=AUTH).status_code)) for _ in range(2)]
+        for worker in workers:
+            worker.start()
+        assert entered.acquire(timeout=10) and entered.acquire(timeout=10)
+        # Both slots are held: a third body is refused before it is read, and never reaches the worker.
+        third = browser.post(ROUTE, json=fixtures.payload(), headers=AUTH)
+        assert (third.status_code, third.json()) == (503, {'error': 'unavailable'})
+        assert len(calls) == 2
+        release.set()
+        for worker in workers:
+            worker.join(10)
+        assert results == [200, 200]
+        # The slots are released afterwards.
+        assert browser.post(ROUTE, json=fixtures.payload(), headers=AUTH).status_code == 200
+        # A request refused for its bearer never takes a slot.
+        assert browser.post(ROUTE, json=fixtures.payload()).status_code == 401
+
+
+def test_a_body_without_length_is_counted_while_streaming(tmp_path):
+    with relay(tmp_path) as (browser, reader, model):
+        def chunks():
+            yield b'{"version":"MENU.1","media":"'
+            for _ in range(MAX_BODY // (64 * 1024) + 1):
+                yield b'A' * (64 * 1024)
+            yield b'"}'
+        big = browser.post(ROUTE, content=chunks(), headers={**AUTH, 'Content-Type': 'application/json'})
+        assert (big.status_code, big.json()) == (413, {'error': 'request_too_large'})
+        assert reader.calls == []
+
+
+@pytest.mark.parametrize('reply', [b'5', b'null', b'{"error":"x"}', b'[200]', b'["200",{}]', b'[200,{},1]'])
+def test_a_malformed_worker_reply_is_unavailable(reply):
+    import socket
+    import threading
+
+    with TemporaryDirectory(prefix='g2c-menu-', dir='/tmp') as directory:
+        path = Path(directory) / 'menu.sock'
+        server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        server.bind(str(path))
+        server.listen(1)
+
+        def answer():
+            connection, _ = server.accept()
+            with connection:
+                connection.recv(65536)
+                connection.sendall(len(reply).to_bytes(4, 'big') + reply)
+
+        thread = threading.Thread(target=answer, daemon=True)
+        thread.start()
+        app = FastAPI()
+        register_menu_routes(app, send=lambda token, raw: menu_request(token, raw, path=path))
+        with TestClient(app) as browser:
+            response = browser.post(ROUTE, json=fixtures.payload(), headers=AUTH)
+        thread.join(5)
+        server.close()
+    assert (response.status_code, response.json()) == (503, {'error': 'unavailable'})
