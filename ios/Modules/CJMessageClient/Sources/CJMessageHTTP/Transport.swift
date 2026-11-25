@@ -901,13 +901,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         if let deviceCompletion {
             guard baseURL == deviceCompletion.endpoint.url,
                   LocalDeviceCompletionRoute.accepts(request, hasBody: body != nil, operationID: operationID, version: deviceVersion) else { throw MessageHTTPFailure.productionActivationUnavailable }
-            try await deviceCompletion.validate(); try Task.checkCancellation()
-            let (response, responseBody) = try await transport.send(request, body: nil, baseURL: baseURL, operationID: operationID)
-            try await deviceCompletion.validate(); try Task.checkCancellation()
-            guard !(300..<400).contains(response.status.code), let responseBody else { throw MessageHTTPFailure.invalidResponse }
-            let bytes = try await Data(collecting: responseBody, upTo: deviceCompletion.endpoint.maximumResponseBytes)
-            try await deviceCompletion.validate(); try Task.checkCancellation()
-            return (response, HTTPBody(bytes))
+            return try await sendLocalRead(request, baseURL: baseURL, operationID: operationID, capability: deviceCompletion)
         }
         if let deviceCleanup {
             guard baseURL == deviceCleanup.endpoint.url,
@@ -916,13 +910,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
                 return try await sendLocalWrite(request, body: body, baseURL: baseURL, operationID: operationID,
                     capability: deviceCleanup, messageWire: nil)
             }
-            try await deviceCleanup.validate(); try Task.checkCancellation()
-            let (response, body) = try await transport.send(request, body: nil, baseURL: baseURL, operationID: operationID)
-            try await deviceCleanup.validate(); try Task.checkCancellation()
-            guard !(300..<400).contains(response.status.code), let body else { throw MessageHTTPFailure.invalidResponse }
-            let bytes = try await Data(collecting: body, upTo: deviceCleanup.endpoint.maximumResponseBytes)
-            try await deviceCleanup.validate(); try Task.checkCancellation()
-            return (response, HTTPBody(bytes))
+            return try await sendLocalRead(request, baseURL: baseURL, operationID: operationID, capability: deviceCleanup)
         }
 
         if let memoryCandidates {
