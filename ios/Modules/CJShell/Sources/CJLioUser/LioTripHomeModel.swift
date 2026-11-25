@@ -48,6 +48,10 @@ struct LioTripDay: Codable, Comparable, Hashable, Sendable, CustomStringConverti
         return Self(date: date, timeZone: utc)
     }
 
+    /// Day `number` of a trip that starts on this day (day 1 is this day). Plan day numbers come from files,
+    /// so they are clamped before any arithmetic.
+    func tripDay(_ number: Int) -> Self { adding(days: min(max(number, -36_600), 36_600) - 1) }
+
     /// Whole days from this day to `other`; negative when `other` is earlier.
     func days(until other: Self) -> Int {
         let utc = TimeZone(identifier: "UTC")!
@@ -140,7 +144,7 @@ struct LioTripTicks: Codable, Equatable, Sendable {
 
     /// Ticks or unticks a task; the oldest ticks are dropped beyond the cap.
     mutating func set(_ key: String, done value: Bool, at date: Date) {
-        guard key.utf8.count <= Self.maximumKeyLength else { return }
+        guard !key.isEmpty, key.utf8.count <= Self.maximumKeyLength else { return }
         if value { done[key] = date } else { done[key] = nil }
         if done.count > Self.maximumCount {
             let keep = done.sorted { $0.value > $1.value }.prefix(Self.maximumCount)

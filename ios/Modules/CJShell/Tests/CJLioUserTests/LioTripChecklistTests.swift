@@ -320,9 +320,9 @@ struct LioTripChecklistTests {
         input.arrivalChecklist = nil
         input.entry = nil
         guard case .landingTasks(_, let total, let next) = LioTripChecklist(input).now else { Issue.record("not landing"); return }
-        #expect(total == 6) // payment, hotel, two bookings, medical card, check-in
-        // Tomorrow's Palace Museum tickets are on sale now: that comes before the table's order.
-        #expect(next?.key == "booking.beijing.palace-museum.2026-12-09")
+        // Payment, hotel, medical card, check-in; the bookings still ahead now sit with the days in China.
+        #expect(total == 4)
+        #expect(next?.key == "payment")
     }
 
     @Test(arguments: [
@@ -398,5 +398,34 @@ struct LioTripChecklistTests {
         #expect(LioTripHomeCopy.pastSummary(open: 0, done: 10, .chinese) == "已完成 10 项")
         #expect(LioTripHomeCopy.pastSummary(open: 2, done: 0, .english) == "2 not ticked")
         #expect(LioTripHomeCopy.pastSummary(open: 1, done: 8, .english) == "1 not ticked · 8 done")
+    }
+
+    // MARK: - #1649 review
+
+    @Test func aBookingStillAheadStaysInChinaOnceTheTripHasStarted() throws {
+        // 9 Dec, in China: the 11 Dec National Museum tickets opened on 4 Dec, before arrival.
+        let list = LioTripChecklist(Self.everything(Self.at("2026-12-09 12:00")))
+        let museum = try #require(list.tasks.first { $0.key == "booking.beijing.national-museum.2026-12-11" })
+        #expect(museum.stage == .inChina)
+        #expect(!list.pastTasks.contains { $0.key.hasPrefix("booking.") })
+        // Before the trip the same booking is a before-you-fly task.
+        let before = LioTripChecklist(Self.everything(Self.at("2026-11-26 10:00")))
+        #expect(before.tasks.first { $0.key == "booking.beijing.national-museum.2026-12-11" }?.stage == .beforeTrip)
+    }
+
+    @Test func extremeDayNumbersFromADamagedPlanDoNotCrash() {
+        var input = Self.everything(Self.at("2026-12-09 12:00"))
+        input.plans = [LioPlanSummary(tripID: "bad", tripVersion: 1, title: "Bad", startDate: "2026-12-08", undated: false,
+                                      days: [.init(number: .min, date: nil, items: [.init(id: "a", label: "故宫博物院", startTime: nil, endTime: nil, fixed: nil)]),
+                                             .init(number: .max, date: nil, items: [])])]
+        let list = LioTripChecklist(input)
+        #expect(list.hasTrip)
+        #expect(LioTripDay("2026-12-08")!.tripDay(.min) == LioTripDay("2026-12-08")!.adding(days: -36_601))
+    }
+
+    @Test func anEmptyTickKeyIsRefusedOnWriteAsOnRead() {
+        var ticks = LioTripTicks()
+        ticks.set("", done: true, at: Self.at("2026-11-26 10:00"))
+        #expect(ticks.done.isEmpty)
     }
 }

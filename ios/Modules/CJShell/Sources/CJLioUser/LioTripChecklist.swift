@@ -314,11 +314,12 @@ struct LioTripChecklist: Equatable, Sendable {
     /// Real-name booking tasks for sights on the plan whose name matches the rule table exactly.
     static func bookingTasks(plan: LioPlanSummary, arrival: LioTripDay?, input: LioTripChecklistInput) -> [LioTripTask] {
         let start = plan.startDate.flatMap(LioTripDay.init)
+        let today = LioTripDay(date: input.now, timeZone: input.timeZone)
         var seen = Set<String>()
         var found: [(task: LioTripTask, order: Date)] = []
         for day in plan.days {
             // Only dates the plan itself states; an undated plan has no visit day to count releases from.
-            let visit = day.date.flatMap(LioTripDay.init) ?? start?.adding(days: day.number - 1)
+            let visit = day.date.flatMap(LioTripDay.init) ?? start?.tripDay(day.number)
             for item in day.items {
                 guard let rule = LioAttractionBookingRule.match(nameZH: item.label, nameEN: item.label),
                       rule.requirement == .required else { continue }
@@ -328,7 +329,11 @@ struct LioTripChecklist: Equatable, Sendable {
                 let reminderSet = visit.map { input.scheduledReminders.contains(reminderID(rule: rule, visit: $0)) } ?? false
                 let release = releaseDay(timing)
                 let stage: LioTripStage = {
-                    guard let arrival, let release else { return .beforeTrip }
+                    guard let arrival else { return .beforeTrip }
+                    // Once the trip is under way, a visit still ahead stays with the days in China, so it is not
+                    // folded away with the stages already behind the traveller (#1649 review P2-1).
+                    if today >= arrival, let visit, visit >= today { return .inChina }
+                    guard let release else { return .beforeTrip }
                     return release < arrival ? .beforeTrip : .inChina
                 }()
                 let task = LioTripTask(key: key, stage: stage,
@@ -437,7 +442,7 @@ struct LioTripChecklist: Equatable, Sendable {
     /// The plan's day for a trip day: the day with that date, else the same day number.
     static func planDay(_ plan: LioPlanSummary?, number: Int, today: LioTripDay, arrival: LioTripDay?) -> LioPlanSummary.Day? {
         guard let plan else { return nil }
-        let date = arrival?.adding(days: number - 1)
+        let date = arrival?.tripDay(number)
         if let date, let dated = plan.days.first(where: { $0.date == date.description }) { return dated }
         return plan.days.first { $0.number == number }
     }
@@ -457,7 +462,7 @@ struct LioTripChecklist: Equatable, Sendable {
         let start = plan.startDate.flatMap(LioTripDay.init)
         let tripDay = arrival.map { $0.days(until: today) + 1 }
         return plan.days.filter { $0.number >= first && $0.number < first + 2 }.map { day in
-            let date = day.date.flatMap(LioTripDay.init) ?? start?.adding(days: day.number - 1)
+            let date = day.date.flatMap(LioTripDay.init) ?? start?.tripDay(day.number)
             return LioTripScheduleDay(number: day.number, date: date, isToday: date.map { $0 == today } ?? (day.number == tripDay),
                                       stops: day.items.map { LioTripStopRef(name: $0.label, time: $0.startTime) })
         }
