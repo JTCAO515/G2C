@@ -32,7 +32,7 @@ enum LioDietaryNeed: String, Sendable, CaseIterable, Hashable {
     /// The show-staff cards print it next to the allergen.
     func examples(_ language: LioLanguage) -> String? {
         switch self {
-        case .gluten: language.text("Wheat (flour, noodles, soy sauce)", "小麦（面粉、面条、酱油）")
+        case .gluten: language.text("Wheat (flour, noodles, soy sauce…)", "小麦（面粉、面条、酱油等）")
         case .treeNut: language.text("Tree nuts (walnuts, almonds, cashews…)", "坚果（核桃、杏仁、腰果等）")
         default: nil
         }
