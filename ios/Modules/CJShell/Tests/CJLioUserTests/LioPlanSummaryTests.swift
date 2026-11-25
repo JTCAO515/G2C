@@ -59,38 +59,68 @@ struct LioPlanSummaryTests {
         #expect(plan.itinerary.shareText(.english).hasPrefix("北京三日\n\nDay 1 · 2026-12-01\n09:00 天安门广场"))
     }
 
-    @Test func savedPlansKeepOneNewestCopyPerTrip() throws {
+    @Test @MainActor func savedPlansKeepOneNewestCopyPerTripInOneAccountFile() throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: directory) }
-        let store = LioSavedPlans(directory: directory)
-        #expect(store.load().isEmpty)
+        let store = LioSavedPlans(directory: LioSavedPlans.storageDirectory(inMessageDirectory: directory), isCurrent: { true })
+        #expect(try store.load().isEmpty)
         let first = Self.plan(version: 1)
         try store.save(first, at: Date(timeIntervalSince1970: 10))
         var other = Self.plan(version: 1, id: "trip/other:id")
         try store.save(other, at: Date(timeIntervalSince1970: 20))
-        #expect(store.load().map(\.tripID) == ["trip/other:id", "trip-1"])
+        #expect(try store.load().map(\.tripID) == ["trip/other:id", "trip-1"])
 
         let newer = Self.plan(version: 2)
         try store.save(newer, at: Date(timeIntervalSince1970: 30))
-        #expect(store.load() == [newer, other])
+        #expect(try store.load() == [newer, other])
 
         try store.remove("trip-1")
         try store.remove("trip-1")
-        #expect(store.load() == [other])
+        #expect(try store.load() == [other])
         other = Self.plan(version: 3, id: "trip/other:id")
         try store.save(other)
-        #expect(store.load() == [other])
+        #expect(try store.load() == [other])
+        // Cleanup knows exactly one file in one folder.
+        let folder = directory.appendingPathComponent(LioSavedPlans.directoryName, isDirectory: true)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: folder.path) == [LioSavedPlans.fileName])
+    }
+
+    @Test @MainActor func savedPlansKeepTheNewestFifty() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = LioSavedPlans(directory: directory, isCurrent: { true })
+        for index in 0..<55 { try store.save(Self.plan(version: 1, id: "t\(index)"), at: Date(timeIntervalSince1970: Double(index))) }
+        let ids = try store.load().map(\.tripID)
+        #expect(ids.count == LioSavedPlans.maximumCount && ids.first == "t54" && ids.last == "t5")
+    }
+
+    @Test @MainActor func anotherAccountReadsAndWritesNothing() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        var current = true
+        let store = LioSavedPlans(directory: directory, isCurrent: { current })
+        let model = LioSavedPlansModel(store: store)
+        let plan = Self.plan(version: 1)
+        model.save(plan)
+        #expect(model.isSaved(plan) && model.plans == [plan])
+        current = false
+        #expect(!model.available && model.plans.isEmpty && !model.isSaved(plan))
+        #expect(throws: CancellationError.self) { try store.load() }
+        #expect(throws: CancellationError.self) { try store.save(Self.plan(version: 2)) }
+        model.remove(plan)
+        current = true
+        #expect(model.plans == [plan])
     }
 
     @Test @MainActor func modelReportsSavedOnlyForTheSameVersion() throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: directory) }
-        let model = LioSavedPlansModel(store: LioSavedPlans(directory: directory))
+        let model = LioSavedPlansModel(store: LioSavedPlans(directory: directory, isCurrent: { true }))
         let plan = Self.plan(version: 1)
         #expect(model.available && !model.isSaved(plan))
         model.save(plan)
         #expect(model.isSaved(plan) && !model.isSaved(Self.plan(version: 2)))
-        #expect(LioSavedPlansModel(store: LioSavedPlans(directory: directory)).plans == [plan])
+        #expect(LioSavedPlansModel(store: LioSavedPlans(directory: directory, isCurrent: { true })).plans == [plan])
         model.remove(plan)
         #expect(model.plans.isEmpty)
 

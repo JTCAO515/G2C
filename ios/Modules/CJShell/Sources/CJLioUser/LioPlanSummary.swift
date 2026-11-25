@@ -1,5 +1,4 @@
 import CJMessageHTTP
-import CryptoKit
 import Foundation
 import Observation
 
@@ -88,77 +87,102 @@ extension LioRichItinerary {
     }
 }
 
-/// Plans the user saved on this device (#1453), newest first; one file per trip, replaced by a newer version.
-struct LioSavedPlans: Sendable {
-    let directory: URL
+/// Plans the user saved on this device (#1453), newest first, in the signed-in account's message folder.
+/// One file per account; account cleanup removes it. A newer version of a trip replaces the older copy.
+@MainActor public struct LioSavedPlans {
+    public static let directoryName = "saved-plans"
+    public static let fileName = "saved-plans.json"
+    static let maximumCount = 50
 
-    static func appDefault() throws -> LioSavedPlans {
-        let support = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
-                                                  appropriateFor: nil, create: true)
-        return LioSavedPlans(directory: support.appendingPathComponent("lio-saved-plans", isDirectory: true))
+    public static func storageDirectory(inMessageDirectory directory: URL) -> URL {
+        directory.appendingPathComponent(directoryName, isDirectory: true)
     }
 
+    let directory: URL
+    private let isCurrent: @MainActor () -> Bool
+    private var file: URL { directory.appendingPathComponent(Self.fileName) }
+
+    public init(directory: URL, isCurrent: @escaping @MainActor () -> Bool) {
+        self.directory = directory
+        self.isCurrent = isCurrent
+    }
+
+    var current: Bool { isCurrent() }
+
     private struct Record: Codable {
-        let version: Int
         let savedAt: Date
         let plan: LioPlanSummary
     }
-
-    func save(_ plan: LioPlanSummary, at date: Date = Date()) throws {
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let data = try JSONEncoder().encode(Record(version: 1, savedAt: date, plan: plan))
-        try data.write(to: file(for: plan.tripID), options: [.atomic, .completeFileProtection])
+    private struct Archive: Codable {
+        let version: Int
+        let records: [Record]
     }
 
-    func load() -> [LioPlanSummary] {
-        guard let files = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else {
-            return []
-        }
-        return files.compactMap { file -> Record? in
-            guard file.pathExtension == "json", let data = try? Data(contentsOf: file),
-                  let record = try? JSONDecoder().decode(Record.self, from: data), record.version == 1 else { return nil }
-            return record
-        }
-        .sorted { $0.savedAt > $1.savedAt }
-        .map(\.plan)
+    func load() throws -> [LioPlanSummary] { try records().map(\.plan) }
+
+    func save(_ plan: LioPlanSummary, at date: Date = Date()) throws {
+        let others = try records().filter { $0.plan.tripID != plan.tripID }
+        try write(Array(([Record(savedAt: date, plan: plan)] + others).prefix(Self.maximumCount)))
     }
 
     func remove(_ tripID: String) throws {
-        let file = file(for: tripID)
-        guard FileManager.default.fileExists(atPath: file.path) else { return }
-        try FileManager.default.removeItem(at: file)
+        let all = try records()
+        guard all.contains(where: { $0.plan.tripID == tripID }) else { return }
+        try write(all.filter { $0.plan.tripID != tripID })
     }
 
-    private func file(for tripID: String) -> URL {
-        // Trip IDs are server values; hash them so any character set makes a safe file name.
-        let name = SHA256.hash(data: Data(tripID.utf8)).map { String(format: "%02x", $0) }.joined()
-        return directory.appendingPathComponent(name + ".json")
+    private func records() throws -> [Record] {
+        guard isCurrent() else { throw CancellationError() }
+        do {
+            let archive = try JSONDecoder().decode(Archive.self, from: Data(contentsOf: file))
+            guard archive.version == 1 else { return [] }
+            return archive.records.sorted { $0.savedAt > $1.savedAt }
+        } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
+            return []
+        }
+    }
+
+    private func write(_ records: [Record]) throws {
+        guard isCurrent() else { throw CancellationError() }
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
+                                                attributes: [.posixPermissions: 0o700])
+        var storedDirectory = directory
+        var attributes = URLResourceValues()
+        attributes.isExcludedFromBackup = true
+        try storedDirectory.setResourceValues(attributes)
+        let data = try JSONEncoder().encode(Archive(version: 1, records: records))
+        #if os(iOS)
+        try data.write(to: file, options: [.atomic, .completeFileProtection])
+        #else
+        try data.write(to: file, options: .atomic)
+        #endif
     }
 }
 
-/// Saved plans for this device (#1453). A failed write keeps the previous list; nothing is reported as saved.
+/// Saved plans for the current account (#1453). Nothing shows once the account is no longer current, and a
+/// failed write keeps the previous list; nothing is reported as saved.
 @MainActor @Observable
 final class LioSavedPlansModel {
     private let store: LioSavedPlans?
-    private(set) var plans: [LioPlanSummary]
+    private var cached: [LioPlanSummary]
 
     init(store: LioSavedPlans?) {
         self.store = store
-        plans = store?.load() ?? []
+        cached = (try? store?.load()) ?? []
     }
 
-    static func appDefault() -> LioSavedPlansModel { LioSavedPlansModel(store: try? LioSavedPlans.appDefault()) }
+    var storeDirectory: URL? { store?.directory }
+    var available: Bool { store?.current == true }
+    var plans: [LioPlanSummary] { available ? cached : [] }
 
-    var available: Bool { store != nil }
-
-    /// Saved means a plan with the same trip; a newer version of it is saved again.
+    /// The same version of the same trip; a newer version of a saved trip can be saved again.
     func isSaved(_ plan: LioPlanSummary) -> Bool { plans.contains(plan) }
 
     func save(_ plan: LioPlanSummary) {
         guard let store else { return }
         do {
             try store.save(plan)
-            plans = store.load()
+            cached = try store.load()
         } catch {}
     }
 
@@ -166,7 +190,7 @@ final class LioSavedPlansModel {
         guard let store else { return }
         do {
             try store.remove(plan.tripID)
-            plans = store.load()
+            cached = try store.load()
         } catch {}
     }
 }

@@ -30,6 +30,7 @@ struct DemoBetaRootView: View {
                    toolsRelay: trip.lioTranslationRelay, currencyRelay: trip.lioCurrencyRelay,
                    taxiRelay: trip.lioTaxiRelay, nearbyRelay: trip.lioNearbyRelay,
                    taxiRecentDirectory: trip.messages.lioTaxiRecentDirectory,
+                   savedPlans: trip.messages.lioSavedPlans,
                    toolsDraftStorage: root.localSupportDraftStorage(),
                    toolsSessionIsCurrent: {
                     guard case .signedIn = root.accounts.state else { return false }

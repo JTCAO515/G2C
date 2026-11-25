@@ -16,6 +16,7 @@ public struct LioHome<MenuContent: View>: View {
     private let taxiRelay: LioTaxiRelayClient?
     private let nearbyRelay: LioNearbyRelayClient?
     private let taxiRecentDirectory: URL?
+    private let savedPlansStore: LioSavedPlans?
     private let toolsSessionIsCurrent: @MainActor () -> Bool
     private let reconnect: (@MainActor () -> Void)?
     private let session: LioSessionAvailability?
@@ -43,7 +44,7 @@ public struct LioHome<MenuContent: View>: View {
     @State private var profileEdit: ProfileEdit?
     /// #1453: the open day-by-day plan, plans saved on this device, and what the composer gets after the plan closes.
     @State private var planSheet: LioPlanSummary?
-    @State private var savedPlans = LioSavedPlansModel.appDefault()
+    @State private var savedPlans: LioSavedPlansModel
     @State private var planFollowUp: String?
     @State private var menuOpen = false
     @State private var followsAnswer = true
@@ -131,6 +132,7 @@ public struct LioHome<MenuContent: View>: View {
                 currencyRelay: LioCurrencyRelayClient? = nil, taxiRelay: LioTaxiRelayClient? = nil,
                 nearbyRelay: LioNearbyRelayClient? = nil,
                 taxiRecentDirectory: URL? = nil,
+                savedPlans: LioSavedPlans? = nil,
                 toolsDraftStorage: LocalSupportDraftStorage? = nil,
                 toolsSessionIsCurrent: @escaping @MainActor () -> Bool = { true },
                 @ViewBuilder menu: () -> MenuContent) {
@@ -144,6 +146,16 @@ public struct LioHome<MenuContent: View>: View {
         self.taxiRelay = taxiRelay
         self.nearbyRelay = nearbyRelay
         self.taxiRecentDirectory = taxiRecentDirectory
+        var plans = savedPlans
+        #if DEBUG
+        // Acceptance and previews keep saved plans in their own folder; a signed-in build uses the account's.
+        if plans == nil, ProcessInfo.processInfo.arguments.contains("--lio-home-plan-acceptance") {
+            plans = LioSavedPlans(directory: FileManager.default.temporaryDirectory
+                .appendingPathComponent("LioSavedPlansPreview", isDirectory: true), isCurrent: { true })
+        }
+        #endif
+        savedPlansStore = plans
+        _savedPlans = State(initialValue: LioSavedPlansModel(store: plans))
         self.toolsSessionIsCurrent = toolsSessionIsCurrent
         self.reconnect = reconnect
         self.session = session
@@ -415,6 +427,10 @@ public struct LioHome<MenuContent: View>: View {
         .sheet(item: $planSheet, onDismiss: continuePlanInChat) { plan in
             LioPlanSheet(plan: plan, language: language, actions: planActions(plan))
         }
+        .task(id: savedPlansStore?.directory) {
+            // A different account's folder gets its own list.
+            if savedPlans.storeDirectory != savedPlansStore?.directory { savedPlans = LioSavedPlansModel(store: savedPlansStore) }
+        }
     }
 
     private func planActions(_ plan: LioPlanSummary) -> LioItineraryTimelineView.Actions {
@@ -423,7 +439,11 @@ public struct LioHome<MenuContent: View>: View {
             actions.saved = savedPlans.isSaved(plan)
             actions.save = { savedPlans.save(plan) }
         }
-        // Changing a day goes back to the chat as an ordinary message the user finishes and sends.
+        // Changing a day goes back to the chat as an ordinary message the user finishes and sends. That is only
+        // offered in the chat that made the plan; a plan opened from Trips in another chat can be saved and shared.
+        guard conversation.turns.contains(where: { turn in
+            turn.exploration?.trip.map { LioPlanSummary($0).tripID } == plan.tripID
+        }) else { return actions }
         actions.adjustDay = { day in
             planFollowUp = language.text("Change day \(day) of “\(plan.title)”: ", "调整「\(plan.title)」第 \(day) 天：")
             planSheet = nil
@@ -438,9 +458,18 @@ public struct LioHome<MenuContent: View>: View {
     private func continuePlanInChat() {
         guard let followUp = planFollowUp else { return }
         planFollowUp = nil
+        let fromOtherTab = tab != .chat
         tab = .chat
         if draft.isEmpty { draft = followUp }
-        typing = true
+        if fromOtherTab {
+            // Switching tabs ends typing; focus the composer once the chat is showing.
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(350))
+                if tab == .chat { typing = true }
+            }
+        } else {
+            typing = true
+        }
     }
 
     @ViewBuilder

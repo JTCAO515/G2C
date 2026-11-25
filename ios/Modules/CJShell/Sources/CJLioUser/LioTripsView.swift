@@ -177,11 +177,8 @@ struct LioTripsView: View {
                 Group {
                 if library != nil {
                     if listUnavailable {
-                        ContentUnavailableView {
-                            Label(language.text("Trips unavailable", "暂时无法显示行程"), systemImage: "suitcase")
-                        } actions: {
-                            Button(language.text("Try again", "再试一次")) { listAttempt += 1 }
-                        }
+                        // Plans saved on this device stay listed above the server list's state.
+                        if plans.isEmpty { listUnavailableView } else { tripList { listUnavailableView } }
                     } else if let saved {
                         if saved.isEmpty {
                             emptyOrPlans
@@ -198,8 +195,10 @@ struct LioTripsView: View {
                                 }
                             }
                         }
-                    } else {
+                    } else if plans.isEmpty {
                         ProgressView()
+                    } else {
+                        tripList { ProgressView() }
                     }
                 } else if shownItineraries.isEmpty {
                     emptyOrPlans
@@ -291,6 +290,14 @@ struct LioTripsView: View {
         }
         .clipped()
         .accessibilityIdentifier("lio.trip.list")
+    }
+
+    private var listUnavailableView: some View {
+        ContentUnavailableView {
+            Label(language.text("Trips unavailable", "暂时无法显示行程"), systemImage: "suitcase")
+        } actions: {
+            Button(language.text("Try again", "再试一次")) { listAttempt += 1 }
+        }
     }
 
     @ViewBuilder private var emptyOrPlans: some View {
