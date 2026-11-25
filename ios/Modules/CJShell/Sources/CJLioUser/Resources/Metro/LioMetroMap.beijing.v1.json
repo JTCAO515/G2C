@@ -1,6 +1,7 @@
 {
  "schema": "lio.metro.v1",
  "city": "beijing",
+ "cityInfo": {"nameZH": "北京", "nameEN": "Beijing", "provinceZH": "北京市", "featured": 1},
  "source": {"operatorZH": "北京地铁", "operatorEN": "Beijing Subway", "urls": ["https://map.bjsubway.com/", "https://map_en.bjsubway.com/"], "checkedOn": "2026-11-24"},
  "canvas": {"width": 1798, "height": 1229},
  "lines": [
