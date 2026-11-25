@@ -96,6 +96,63 @@ class ExplorationProfileTests(unittest.TestCase):
             with self.subTest(key=key),self.assertRaises(InvalidInput):
                 parse([packet(key,value,quote)],quote)
 
+    def test_literal_duration_span_value_becomes_the_same_grounded_count(self):
+        # HK run 64089b78 probe (2026-11-25): flash often returns duration_days as
+        # the literal span (for example "3天") instead of an integer. The value is
+        # still grounded only when it states the same count as its original quote.
+        for quote,value,expected in (('3天','3天',3),('三天','三天',3),('4 days','4 days',4),('3天','3 天',3)):
+            with self.subTest(quote=quote,value=value):
+                self.assertEqual(parse([packet('duration_days',value,quote)],quote)[0].value,expected)
+        for quote,value in (('三天','4天'),('3天','3'),('3天','three'),('3天','3天半'),('3天',''),('3天','300天')):
+            with self.subTest(quote=quote,value=value),self.assertRaises(InvalidInput):
+                parse([packet('duration_days',value,quote)],quote)
+
+    def test_understanding_prompt_keeps_lodging_location_out_of_factors(self):
+        # HK run 64089b78 probe (2026-11-25): "住在春熙路附近的酒店" was reported as
+        # lodging_tier/must_see, so parse_updates rejected the whole understanding.
+        from cj_api.local_lio_exploration import UNDERSTANDING_SYSTEM
+        self.assertIn('A hotel name or where the traveler stays is not lodging_tier, must_see or any other factor; omit it.',
+                      UNDERSTANDING_SYSTEM)
+        self.assertIn('duration_days value is an integer day count.',UNDERSTANDING_SYSTEM)
+        self.assertIn('Use only the fourteen supplied factors',UNDERSTANDING_SYSTEM)
+
+    def test_profile_extraction_keeps_grounded_updates_and_drops_only_unsupported_ones(self):
+        # JT 2026-11-25 (via coordination, "只丢不合格的那项"): an unsupported update is
+        # dropped and never accepted; the other grounded updates are kept. A malformed
+        # packet still fails whole, and persisted-profile restore stays strict.
+        from cj_api.lio_exploration_profile import parse_supported_updates
+        text='我想去成都玩3天，住在春熙路附近的酒店，不要紧凑'
+        updates=[packet('city','成都','成都'),packet('duration_days',3,'3天'),
+                 packet('lodging_tier','春熙路附近的酒店','住在春熙路附近的酒店'),
+                 packet('pace','packed','不要紧凑'),packet('pace','packed','invented quote'),
+                 packet('lodging_tier',None,'住在春熙路附近的酒店',state='not_needed'),
+                 packet('must_see','春熙路','春熙路',state='inferred'),packet('invented_factor','x','成都')]
+        raw=json.dumps(dict(version='LIO-profile-update.1',updates=updates))
+        originals=(Original('mid-0',1,text),)
+        facts,dropped=parse_supported_updates(raw,originals)
+        self.assertEqual({fact.key:fact.value for fact in facts},{'city':'成都','duration_days':3})
+        self.assertEqual([key for key,_ in dropped],['lodging_tier','pace','pace','lodging_tier','must_see','invented_factor'])
+        self.assertEqual({reason for _,reason in dropped},{'profile value differs from its original quote',
+            'profile quote is absent or negated','explicit profile refusal required','unknown exploration factor'})
+        with self.assertRaises(InvalidInput):parse_updates(raw,originals)
+        for malformed in ('{}',json.dumps(dict(version='LIO-profile-update.1',updates=[dict(factor_key='city')])),'not json'):
+            with self.subTest(malformed=malformed),self.assertRaises(InvalidInput):
+                parse_supported_updates(malformed,originals)
+
+    def test_only_original_city_spans_reach_the_resolver_and_others_are_skipped(self):
+        # JT 2026-11-25: a non-original city span is never sent to the resolver; its
+        # update is dropped by the profile instead of failing the whole run.
+        from cj_api.local_lio_exploration import city_lookup_quotes
+        from cj_message.lio_exploration_schema import ProfileUpdate
+        def update(value,quote,index=0,state='known'):
+            return ProfileUpdate(factor_key='city',value=value,state=state,sources=[dict(source_index=index,quote=quote)])
+        originals=(Original('mid-0',1,'我想去阆中古城玩三天'),)
+        self.assertEqual(city_lookup_quotes([update('阆中','阆中')],originals,()),['阆中'])
+        self.assertEqual(city_lookup_quotes([update('大理','大理'),update('阆中','阆中',index=3)],originals,()),[])
+        self.assertEqual(city_lookup_quotes([update('阆中','阆中')],originals,('阆中',)),[])
+        self.assertEqual(city_lookup_quotes([update('阆中','阆中古城')],originals,()),[])
+        self.assertEqual(city_lookup_quotes([update('阆中','阆中',state='inferred')],originals,()),[])
+
     def test_duration_first_visit_and_multiselect_values_are_grounded(self):
         for quote,value in (('三天',3),('4 days',4),('five days',5),('366天',366)):
             self.assertEqual(parse([packet('duration_days',value,quote)],quote)[0].value,value)

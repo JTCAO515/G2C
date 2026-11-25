@@ -4,6 +4,7 @@ No old Lio factory installs this component. WP4 supplies the selected native4
 consumer and its ordinary-text extraction; this stage grants no Trip/Memory write.
 """
 from hashlib import sha256
+import logging
 from dataclasses import dataclass
 import json
 
@@ -12,7 +13,8 @@ from cj_memory.runtime import RuntimeDenied
 from cj_agent.provider import ProviderUnknown
 from cj_needs.domain import InvalidInput
 
-from .lio_exploration_profile import (CONTEXT, Original, merge, parse_updates,default_proposals,
+from .lio_exploration_factors import BY_KEY
+from .lio_exploration_profile import (CONTEXT, Original, merge, parse_supported_updates,default_proposals,
     decode_context, restore_context, memory_prefill, snapshot)
 
 
@@ -111,9 +113,14 @@ class ProfileContext:
                 [dict(role='user',content=o.text) for o in originals],
                 'Sourced internal planning profile data; no publication authority.',message_refs=refs)
         try:
-            updates = parse_updates(raw_updates,originals,registered_city_terms=view.city_terms)
+            # JT 2026-11-25: drop only unsupported updates; a malformed packet still fails.
+            updates,dropped = parse_supported_updates(raw_updates,originals,registered_city_terms=view.city_terms)
         except InvalidInput as error:
             raise ProviderUnknown('sourced profile extraction unavailable') from error
+        for key,reason in dropped:
+            # Code-owned reason strings only; an unknown model key may contain traveler text.
+            logging.getLogger('cj_usage.audit').info('LIO_PROFILE_UPDATE_DROPPED run_id=%s factor=%s reason=%s',
+                binding.run_id,key if key in BY_KEY else 'unknown',reason)
         profile = merge(profile,updates,memory_prefill(worker.memory_run))
         if plan_now:
             profile.update({fact.key:fact for fact in default_proposals(profile,originals[-1])})
