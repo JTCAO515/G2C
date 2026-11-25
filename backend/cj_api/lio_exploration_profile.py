@@ -10,7 +10,7 @@ from cj_message.lio_exploration_schema import ProfileUpdate
 
 from .lio_exploration_factors import BY_KEY, LABELS, defaults
 from .lio_planning_grounding import NUMBERS,planning_withdrawn
-from .lio_positive_trip import supports as positive_trip_support
+from .lio_positive_trip import destination_stay,supports as positive_trip_support
 
 CONTEXT = 'lio_planning_context.2:'
 VERSION = 'lio_planning_context.2'
@@ -218,7 +218,7 @@ def _supported_source(update, clause, quote,registered_city_terms=()):
     return whole == part
 
 
-def _known_value(update, sources):
+def _known_value(update, sources, registered_city_terms=()):
     """Known values must be literal spans or canonical equivalents of those spans."""
     value = tuple(update.value) if isinstance(update.value, list) else update.value
     quotes = [source.quote for source in sources]
@@ -226,10 +226,16 @@ def _known_value(update, sources):
         pattern=r'([0-9]{1,3}|one|two|three|four|five|six|seven|eight|nine|ten|[一二两三四五六七八九十])(?:\s*|-)(?:天|日|days?)'
         def count(match):
             return int(match[1]) if match[1].isascii() and match[1].isdecimal() else NUMBERS[match[1].casefold()]
-        matches=[re.fullmatch(pattern,_positive_payload('duration_days',quote),re.I) for quote in quotes]
-        if any(match is None for match in matches):
-            raise InvalidInput('affirmative original duration required')
-        counts = {count(match) for match in matches}
+        counts = set()
+        for quote in quotes:
+            match = re.fullmatch(pattern,_positive_payload('duration_days',quote),re.I)
+            if match is not None:
+                counts.add(count(match))
+            else:
+                stay = destination_stay(quote, registered_city_terms)
+                if stay is None:
+                    raise InvalidInput('affirmative original duration required')
+                counts.add(stay[1])
         if type(value) is str:
             # A literal day-count span (for example "3天") states the same count
             # as an int; it is still accepted only when it equals the quote's count.
@@ -250,6 +256,10 @@ def _known_value(update, sources):
         expected = [_canonical(update.factor_key, quote) for quote in quotes]
         if all(value == candidate for candidate in expected):
             return value
+        if update.factor_key == 'city' and type(value) is str:
+            stays = [destination_stay(quote, registered_city_terms) for quote in quotes]
+            if all(stay is not None and stay[0].casefold() == value.strip().casefold() for stay in stays):
+                return stays[0][0]  # Preserve the spelling in the source.
         if BY_KEY[update.factor_key].multiple and isinstance(value, tuple) and value and len(set(value)) == len(value):
             combined = tuple(dict.fromkeys(v for group in expected for v in group))
             if set(value) == set(combined):
@@ -295,7 +305,7 @@ def parse_updates(raw, originals,*,registered_city_terms=()):
                     factor.multiple and isinstance(value, tuple) and value and len(value) == len(set(value)) and set(value) <= allowed):
                 raise InvalidInput('bounded inferred factor value required')
         else:
-            value = _known_value(update, sources)
+            value = _known_value(update, sources, registered_city_terms)
         facts.append(Fact(factor.key, value, state, tuple(sources)))
     return tuple(facts)
 

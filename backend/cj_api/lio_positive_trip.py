@@ -49,6 +49,25 @@ def known_destination(text):
     return mention if mention is not None and known_city_term(mention)else None
 
 
+def destination_stay(quote, registered_city_terms):
+    """Read a destination and stay length only when the whole quote assigns both roles."""
+    clause = quote.strip().rstrip('。.!！').strip()
+    match = re.fullmatch(
+        r'(?:(?:我们|我)?(?:想去|要去|去))?\s*(.+?)\s*玩\s*(' + _NUMBER + r')\s*(?:天|日)',
+        clause, re.I)
+    if match is None:
+        match = re.fullmatch(
+            r'(?:(?:I|we)\s+(?:want|would like)\s+to\s+)?(?:visit|go to|travel to)\s+'
+            r'(.+?)\s+for\s+(' + _NUMBER + r')\s+days?', clause, re.I)
+    if match is None:
+        return None
+    city, number = match.groups()
+    if not known_city_term(city) and city.casefold() not in {term.casefold() for term in registered_city_terms}:
+        return None
+    days = int(number) if number.isascii() and number.isdecimal() else NUMBERS[number.casefold()]
+    return city, days
+
+
 def supports(key,clause,quote,*,registered_city_terms=()):
     if key not in ('city','duration_days','party_type'):return False
     # Only the source-owned catalogue is eligible. Model-proposed strings must

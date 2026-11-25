@@ -107,6 +107,42 @@ class ExplorationProfileTests(unittest.TestCase):
             with self.subTest(quote=quote,value=value),self.assertRaises(InvalidInput):
                 parse([packet('duration_days',value,quote)],quote)
 
+    def test_whole_trip_request_quote_grounds_its_single_city_and_day_count(self):
+        # HK run -45 (2026-11-26, first turn): the model quoted the whole clause "我想去成都玩3天"
+        # for both city and duration_days, so both were dropped ("profile value differs from its
+        # original quote" / "affirmative original duration required"). A quote that parses fully
+        # under the finite positive trip grammar grounds its one city span and one day count.
+        from cj_api.lio_exploration_profile import parse_updates
+        text='我想去成都玩3天，住在春熙路附近的酒店，直接出方案'
+        for quote in ('我想去成都玩3天','成都玩3天','想去成都玩3天'):
+            with self.subTest(quote=quote):
+                self.assertEqual(parse([packet('city','成都',quote)],text)[0].value,'成都')
+        self.assertEqual(parse([packet('duration_days',3,'我想去成都玩3天')],text)[0].value,3)
+        self.assertEqual(parse([packet('duration_days','3天','我想去成都玩3天')],text)[0].value,3)
+        english='I want to visit Chengdu for 3 days'
+        self.assertEqual(parse([packet('city','Chengdu',english)],english)[0].value,'Chengdu')
+        self.assertEqual(parse([packet('duration_days',3,english)],english)[0].value,3)
+        # A registered (non-built-in) city term is grounded the same way.
+        originals=(Original('mid-0',1,'我想去重庆玩2天'),)
+        facts=parse_updates(json.dumps(dict(version='LIO-profile-update.1',updates=[
+            packet('city','重庆','我想去重庆玩2天'),packet('duration_days',2,'我想去重庆玩2天')])),
+            originals,registered_city_terms=('重庆',))
+        self.assertEqual([(f.key,f.value)for f in facts],[('city','重庆'),('duration_days',2)])
+        # Still strict: a different value, a negated or non-grammar clause, or two counts.
+        for key,value,quote,source in (
+                ('city','成都','从成都出发','从成都出发'),
+                ('city','Chengdu','Departing from Chengdu','Departing from Chengdu'),
+                ('duration_days',3,'departing from Chengdu in 3 days','departing from Chengdu in 3 days'),
+                ('city','上海','我想去成都玩3天',text),('duration_days',4,'我想去成都玩3天',text),
+                ('city','成都','我不想去成都玩3天','我不想去成都玩3天'),
+                ('duration_days',3,'我不想去成都玩3天','我不想去成都玩3天'),
+                ('city','成都','我想去成都玩3天吗','我想去成都玩3天吗'),
+                ('duration_days',3,'我想去成都玩3天或4天','我想去成都玩3天或4天'),
+                ('duration_days',3,'我想去成都玩3天玩4天','我想去成都玩3天玩4天'),
+                ('city','成都','我想去成都上海玩3天','我想去成都上海玩3天')):
+            with self.subTest(key=key,quote=quote),self.assertRaises(InvalidInput):
+                parse([packet(key,value,quote)],source)
+
     def test_understanding_prompt_keeps_lodging_location_out_of_factors(self):
         # HK run 64089b78 probe (2026-11-25): "住在春熙路附近的酒店" was reported as
         # lodging_tier/must_see, so parse_updates rejected the whole understanding.
