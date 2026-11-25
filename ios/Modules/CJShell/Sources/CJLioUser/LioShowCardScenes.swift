@@ -24,7 +24,7 @@ struct LioShowCardContent: Equatable, Sendable {
 
 /// The places a traveller shows a card in.
 enum LioShowCardScene: String, CaseIterable, Identifiable, Sendable {
-    case hotel, pharmacy, restaurant, directions, bank
+    case hotel, pharmacy, restaurant, payment, directions, bank
 
     var id: Self { self }
 
@@ -33,6 +33,7 @@ enum LioShowCardScene: String, CaseIterable, Identifiable, Sendable {
         case .hotel: "bed.double"
         case .pharmacy: "cross.case"
         case .restaurant: "fork.knife"
+        case .payment: "creditcard"
         case .directions: "signpost.right"
         case .bank: "banknote"
         }
@@ -43,6 +44,7 @@ enum LioShowCardScene: String, CaseIterable, Identifiable, Sendable {
         case .hotel: language.text("Hotel front desk", "酒店前台")
         case .pharmacy: language.text("Pharmacy", "药店")
         case .restaurant: language.text("Restaurant", "餐厅")
+        case .payment: language.text("Paying", "付款")
         case .directions: language.text("Asking the way", "问路")
         case .bank: language.text("Bank and money exchange", "银行与换汇")
         }
@@ -58,6 +60,7 @@ enum LioShowCardKind: String, CaseIterable, Identifiable, Sendable {
     case checkIn, extendStay, luggage, callTaxi
     case symptoms, sameMedicine, drugAllergy
     case noChilli, foodAllergy
+    case payCash, payForeignCard, scanMyCode, paymentFailed
     case howToGet, nearest, lost
     case exchange, atmCard, foreignCardATM
 
@@ -68,6 +71,7 @@ enum LioShowCardKind: String, CaseIterable, Identifiable, Sendable {
         case .checkIn, .extendStay, .luggage, .callTaxi: .hotel
         case .symptoms, .sameMedicine, .drugAllergy: .pharmacy
         case .noChilli, .foodAllergy: .restaurant
+        case .payCash, .payForeignCard, .scanMyCode, .paymentFailed: .payment
         case .howToGet, .nearest, .lost: .directions
         case .exchange, .atmCard, .foreignCardATM: .bank
         }
@@ -86,6 +90,10 @@ enum LioShowCardKind: String, CaseIterable, Identifiable, Sendable {
         case .drugAllergy: language.text("Medicine allergies", "药物过敏")
         case .noChilli: language.text("No chilli", "不要辣")
         case .foodAllergy: language.text("Food allergies", "食物过敏")
+        case .payCash: language.text("Can I pay cash?", "可以付现金吗")
+        case .payForeignCard: language.text("Can I pay by card?", "可以刷外国卡吗")
+        case .scanMyCode: language.text("Scan my payment code", "扫我的付款码")
+        case .paymentFailed: language.text("My payment failed", "付款没成功")
         case .howToGet: language.text("How do I get there?", "去这里怎么走")
         case .nearest: language.text("Where is the nearest…", "最近的……在哪")
         case .lost: language.text("I'm lost", "我迷路了")
@@ -107,6 +115,8 @@ enum LioShowCardKind: String, CaseIterable, Identifiable, Sendable {
         case .drugAllergy: [.drugAllergies]
         case .noChilli: [.spice]
         case .foodAllergy: [.foodAllergies]
+        case .payCash, .payForeignCard, .paymentFailed: []
+        case .scanMyCode: [.wallet]
         case .howToGet: [.place]
         case .nearest: [.nearest]
         case .lost: [.hotel]
@@ -218,6 +228,26 @@ enum LioShowCardKind: String, CaseIterable, Identifiable, Sendable {
                 english: ["I'm allergic to the foods below. Please leave them out, including sauces, seasoning and stock:"]
                     + allergies.map(\.english),
                 noteZH: "如果不确定，请告诉我。谢谢！", noteEN: "If you're not sure, please tell me. Thank you!")
+        case .payCash:
+            return LioShowCardContent(mainZH: "您好，请问可以付现金吗？", english: ["Hello, can I pay in cash?"])
+        case .payForeignCard:
+            return LioShowCardContent(mainZH: "您好，请问可以刷外国银行卡吗？", detailsZH: ["比如 Visa 或 Mastercard。"],
+                                      english: ["Hello, can I pay with a foreign bank card?", "For example Visa or Mastercard."])
+        case .scanMyCode:
+            var card = LioShowCardContent(mainZH: "您好，请帮我扫一下我的付款码。",
+                                          english: ["Hello, could you scan my payment code, please?"])
+            if let wallet = input.wallet {
+                card.detailsZH.append("我用的是\(wallet.chinese)。")
+                card.english.append("I'm using \(wallet.english).")
+            }
+            return card
+        case .paymentFailed:
+            return LioShowCardContent(mainZH: "不好意思，我的付款没有成功。",
+                                      detailsZH: ["请先帮我看一下您那边有没有收到款，以免重复付款。",
+                                                  "可以换一种方式付吗？比如现金、刷卡，或者您扫我的付款码。"],
+                                      english: ["Sorry, my payment didn't go through.",
+                                                "Could you first check whether you received it, so I don't pay twice?",
+                                                "Could I pay another way? For example cash, a card, or you scan my payment code."])
         case .howToGet:
             var card = LioShowCardContent(mainZH: "您好，请问去这里怎么走？", english: ["Hello, how do I get here?"])
             if let place = input.cleanPlace {
@@ -276,6 +306,7 @@ enum LioShowCardField: String, CaseIterable, Sendable {
     case bookingName, nights, roomNumber, pickUpTime, destination
     case symptoms, symptomDays, conditions, medicineName, drugAllergies
     case spice, foodAllergies
+    case wallet
     case place, nearest, hotel
     case amount, currency, atmLocation
 }
@@ -334,6 +365,7 @@ struct LioShowCardInput: Equatable, Sendable {
     var drugAllergies: Set<LioDrugAllergen> = []
     var spice = LioSpiceLevel.none
     var foodAllergies: Set<LioFoodAllergen> = []
+    var wallet: LioPaymentWallet?
     var placeZH: String?
     var nearest = LioNearestPlace.metro
     var amount: String?
@@ -509,6 +541,14 @@ enum LioFoodAllergen: String, CaseIterable, Codable, Identifiable, Sendable {
         case .sesame: "Sesame"
         }
     }
+}
+
+enum LioPaymentWallet: String, CaseIterable, Codable, Identifiable, Sendable {
+    case alipay, weixin
+    var id: Self { self }
+    var chinese: String { self == .alipay ? "支付宝" : "微信支付" }
+    var english: String { self == .alipay ? "Alipay" : "Weixin Pay" }
+    func title(_ language: LioLanguage) -> String { language == .chinese ? chinese : english }
 }
 
 enum LioNearestPlace: String, CaseIterable, Identifiable, Sendable {

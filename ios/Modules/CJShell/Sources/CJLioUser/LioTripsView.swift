@@ -143,6 +143,8 @@ struct LioTripsView: View {
     var plans: [LioPlanSummary] = []
     var openPlan: (LioPlanSummary) -> Void = { _ in }
     var removePlan: (LioPlanSummary) -> Void = { _ in }
+    /// #1647: with the trip home on, this list is "All trips" and offers a way back; nil keeps the list as it was.
+    var backToTripHome: (() -> Void)? = nil
     let openChat: () -> Void
     @State private var saved: [LioTripLibrary.Entry]?
     @State private var listUnavailable = false
@@ -223,6 +225,23 @@ struct LioTripsView: View {
             .toolbarBackground(LioTheme.paper, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(colorScheme, for: .navigationBar)
+            .toolbar {
+                if let backToTripHome {
+                    ToolbarItem(placement: .topBarLeading) {
+                        // A toolbar Label shows only its icon; spell out the text so the way back reads clearly.
+                        Button(action: backToTripHome) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "chevron.backward")
+                                    .fontWeight(.semibold)
+                                    .accessibilityHidden(true)
+                                Text(language.text("This trip", "这趟旅行"))
+                            }
+                        }
+                        .accessibilityLabel(language.text("This trip", "这趟旅行"))
+                        .accessibilityIdentifier("lio.trip.back-to-home")
+                    }
+                }
+            }
             .navigationDestination(for: LioTripRoute.self) { route in
                 if let library {
                     LioTripDetail(tripID: String(decoding: route.tripID, as: UTF8.self), library: library,

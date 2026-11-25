@@ -99,7 +99,8 @@ def flight_reply(rows, events=None, status=200):
             return httpx.Response(202)
         assert call['params']['name'] == 'getFlightList'
         arguments = call['params']['arguments']
-        matching = [row for row in rows if (row['dep'], row['arr']) == (arguments['dep'], arguments['arr'])]
+        matching = [row for row in rows
+                    if row['dep'] in arguments['dep'].split(',') and row['arr'] in arguments['arr'].split(',')]
         return httpx.Response(200, json=dict(jsonrpc='2.0', id=2, result={'structuredContent': {'flights': matching}}))
     return reply
 
@@ -291,8 +292,9 @@ def test_flights_share_the_flights_plugin_daily_count(tmp_path):
                  arrive_airport=dict(iata='PKX', name_zh='北京大兴国际机场', name_en='Beijing Daxing International Airport'),
                  depart_time='13:05', arrive_time='15:25', duration_min=140, next_day=False),
         ]
-        assert sorted(arguments['dep'] + arguments['arr'] for arguments in events if type(arguments) is dict) == [
-            'PVGPEK', 'PVGPKX', 'SHAPEK', 'SHAPKX']
+        # One getFlightList per search: VariFlight takes up to three airports per side, comma separated (#1521).
+        assert [(arguments['dep'], arguments['arr']) for arguments in events if type(arguments) is dict] == [
+            ('SHA,PVG', 'PEK,PKX')]
         for _ in range(49):
             assert client.post(FLIGHTS, json=FLIGHT_BODY, headers=HEADERS).status_code == 200
         assert client.post(FLIGHTS, json=FLIGHT_BODY, headers=HEADERS).status_code == 429

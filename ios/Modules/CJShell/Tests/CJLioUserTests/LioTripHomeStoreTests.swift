@@ -226,9 +226,21 @@ import Testing
         let reread = LioTripHomeModel(store: LioTripHomeStore(directory: directory, isCurrent: { true }))
         #expect(reread.endedPlanIDs == ["plan-1", "plan-2"])
         #expect(reread.profile == profile())
-        // Ending a trip without a plan just clears it.
+        // Ending a trip without a plan clears it but keeps the plans ended before (#1668 review P2).
         reread.end(plan: nil)
-        #expect(try LioTripHomeStore(directory: directory, isCurrent: { true }).load() == .init())
+        #expect(try LioTripHomeStore(directory: directory, isCurrent: { true }).load()
+                == .init(profile: nil, ticks: LioTripTicks(), endedPlanIDs: ["plan-1", "plan-2"]))
+        #expect(reread.endedPlanIDs == ["plan-1", "plan-2"])
+    }
+
+    @Test func endingATripWithNoPlansEverEndedRemovesTheFile() throws {
+        let directory = try folder()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let model = LioTripHomeModel(store: LioTripHomeStore(directory: directory, isCurrent: { true }))
+        model.start(profile())
+        model.end(plan: nil)
+        #expect(!FileManager.default.fileExists(atPath: directory.appendingPathComponent(LioTripHomeStore.fileName).path))
+        #expect(model.profile == nil)
     }
 
     @Test func aFileWrittenBeforeEndedPlansExistedStillReads() throws {
