@@ -174,6 +174,20 @@ def test_rail_goes_through_the_worker_relay_with_the_callers_own_bearer(tmp_path
         ('trip.com', 'https://www.trip.com/trains/china/route/shanghai-to-beijing/')]
 
 
+def test_non_rail_segments_with_an_empty_railway_object_are_skipped():
+    # Real AMap cross-city replies often carry "railway": {"alters": [], "spaces": []} on walking/metro segments.
+    reply = amap_reply(*DEFAULT_RAILS)
+    for transit in reply['route']['transits']:
+        transit['segments'].insert(0, dict(walking={'distance': '300'}, bus={}, railway=dict(alters=[], spaces=[])))
+        transit['segments'].append(dict(walking={}, bus={}, railway=dict(alters=[], spaces=[], trip='')))
+    assert rail_items(reply) == TRAINS
+
+
+def test_station_names_with_unpaired_surrogates_are_rejected():
+    with pytest.raises(ValueError):
+        rail_items(amap_reply(railway('G2', '上海\ud800虹桥', '北京南', '0800', '1228')))
+
+
 def test_rail_projection_keeps_only_known_seats_and_never_claims_availability():
     assert rail_items(amap_reply(*DEFAULT_RAILS)) == TRAINS
     assert rail_items(amap_reply()) == []
