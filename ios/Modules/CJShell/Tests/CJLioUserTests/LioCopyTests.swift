@@ -25,15 +25,24 @@ struct LioCopyTests {
         return []
     }
 
-    /// Strings a metro map file shows, leaving out only its station names: those are places
-    /// (Xi'an's 龙首原 is not the banned "原操作"). Line names, river names and the source note
-    /// are still checked.
+    /// Strings a metro map file shows, leaving out only place names: station names and the operator
+    /// (Xi'an's 龙首原 and 太原地铁 are places, not the banned "原操作"). Line names, river names and the
+    /// rest of the source note are still checked.
     private func metroMapStrings(_ object: Any) -> [String] {
         guard let file = object as? [String: Any] else { return resourceStrings(object) }
         let stations = (file["stations"] as? [[String: Any]] ?? []).map { station in
             station.filter { $0.key != "nameZH" && $0.key != "nameEN" }
         }
-        return file.filter { $0.key != "stations" }.values.flatMap(resourceStrings) + stations.flatMap(resourceStrings)
+        let source = (file["source"] as? [String: Any] ?? [:]).filter { $0.key != "operatorZH" && $0.key != "operatorEN" }
+        return file.filter { $0.key != "stations" && $0.key != "source" }.values.flatMap(resourceStrings)
+            + stations.flatMap(resourceStrings) + resourceStrings(source)
+    }
+
+    /// The metro city catalogue is city and province names only (太原 is a city).
+    private func metroCityStrings(_ object: Any) -> [String] {
+        (object as? [[String: Any]] ?? []).flatMap { city in
+            resourceStrings(city.filter { !["nameZH", "nameEN", "provinceZH"].contains($0.key) })
+        }
     }
 
     @Test func metroMapsSkipOnlyStationNames() throws {
@@ -46,7 +55,8 @@ struct LioCopyTests {
         // The same character anywhere else in a map file is still caught.
         #expect(flagged(["stations": [station], "lines": [["nameZH": "原线", "nameEN": "Line 1"]]]) == ["原线"])
         #expect(flagged(["stations": [station], "water": [["nameZH": "原江", "nameEN": "River"]]]) == ["原江"])
-        #expect(flagged(["stations": [station], "source": ["operatorZH": "原运营方"]]) == ["原运营方"])
+        #expect(flagged(["stations": [station], "source": ["operatorZH": "太原地铁"]]).isEmpty)
+        #expect(flagged(["stations": [station], "source": ["operatorZH": "太原地铁", "englishZH": "原来的拼音"]]) == ["原来的拼音"])
     }
 
     @Test func userCopyHasZeroBackendTerms() throws {
@@ -71,7 +81,8 @@ struct LioCopyTests {
             let text = try String(contentsOf: file, encoding: .utf8)
             if file.pathExtension == "json" {
                 let object = try JSONSerialization.jsonObject(with: Data(text.utf8))
-                let strings = file.lastPathComponent.hasPrefix("LioMetroMap.") ? metroMapStrings(object) : resourceStrings(object)
+                let strings = file.lastPathComponent.hasPrefix("LioMetroMap.") ? metroMapStrings(object)
+                    : file.lastPathComponent.hasPrefix("LioMetroCities.") ? metroCityStrings(object) : resourceStrings(object)
                 return strings.filter { value in
                     vocabulary.firstMatch(in: value, range: NSRange(value.startIndex..., in: value)) != nil
                 }.map { "\(file.lastPathComponent): \($0)" }

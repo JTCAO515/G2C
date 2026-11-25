@@ -13,6 +13,14 @@ struct LioMetroMap: Equatable, Sendable {
         /// Where the English names come from when the operator publishes none (#1450, JT 2026-11-25:
         /// find English first, then pinyin).
         let english: English?
+        /// The map layout a city's file was drawn from when it is not the operator's own (#1450, JT
+        /// 2026-11-25: AMap's network maps, made into our own bundled maps).
+        let provider: Provider?
+
+        struct Provider: Equatable, Sendable {
+            let nameZH: String
+            let nameEN: String
+        }
 
         struct English: Equatable, Sendable {
             let nameZH: String
@@ -128,7 +136,9 @@ extension LioMetroMap {
 
     static func bundled(_ city: LioMetroCity) throws -> LioMetroMap {
         guard let name = city.mapResource,
-              let url = Bundle.module.url(forResource: name, withExtension: "json") else { throw LioMetroMapFailure.missing }
+              let url = Bundle.module.url(forResource: name, withExtension: "json", subdirectory: "Metro") else {
+            throw LioMetroMapFailure.missing
+        }
         return try read(Data(contentsOf: url), city: city)
     }
 
@@ -138,6 +148,7 @@ extension LioMetroMap {
             let urls: [String]
             let checkedOn: String
             let englishZH, englishEN, englishURL: String?
+            let providerZH, providerEN: String?
         }
         struct Canvas: Decodable { let width, height: Double }
         struct Line: Decodable {
@@ -165,7 +176,7 @@ extension LioMetroMap {
     static func read(_ data: Data, city: LioMetroCity) throws -> LioMetroMap {
         guard let file = try? JSONDecoder().decode(File.self, from: data) else { throw LioMetroMapFailure.unreadable }
         guard file.schema == schema else { throw LioMetroMapFailure.invalid("schema") }
-        guard file.city == city.rawValue else { throw LioMetroMapFailure.invalid("city") }
+        guard file.city == city.id else { throw LioMetroMapFailure.invalid("city") }
         let urls = file.source.urls.compactMap(URL.init(string:))
         guard !file.source.operatorZH.isEmpty, !file.source.operatorEN.isEmpty, !urls.isEmpty,
               urls.count == file.source.urls.count, urls.allSatisfy({ $0.scheme == "https" && $0.host != nil }),
@@ -178,6 +189,12 @@ extension LioMetroMap {
             english = .init(nameZH: zh, nameEN: en, url: url)
         default:
             throw LioMetroMapFailure.invalid("source")
+        }
+        let provider: Source.Provider?
+        switch (file.source.providerZH, file.source.providerEN) {
+        case (nil, nil): provider = nil
+        case let (zh?, en?) where !zh.isEmpty && !en.isEmpty: provider = .init(nameZH: zh, nameEN: en)
+        default: throw LioMetroMapFailure.invalid("source")
         }
         guard file.canvas.width > 0, file.canvas.height > 0, !file.lines.isEmpty, !file.stations.isEmpty else {
             throw LioMetroMapFailure.invalid("empty")
@@ -225,7 +242,7 @@ extension LioMetroMap {
         return LioMetroMap(
             city: city,
             source: .init(operatorZH: file.source.operatorZH, operatorEN: file.source.operatorEN, urls: urls,
-                          checkedOn: file.source.checkedOn, english: english),
+                          checkedOn: file.source.checkedOn, english: english, provider: provider),
             width: file.canvas.width, height: file.canvas.height, lines: lines, stations: stations, water: water,
             stationIndex: Dictionary(uniqueKeysWithValues: stations.enumerated().map { ($1.id, $0) }),
             lineIndex: Dictionary(uniqueKeysWithValues: lines.enumerated().map { ($1.id, $0) })
@@ -259,6 +276,12 @@ extension LioMetroMap {
         let english = source.english.map {
             language.text(" English names: \($0.nameEN).", "英文站名：\($0.nameZH)。")
         } ?? ""
+        if let provider = source.provider {
+            return language.text(
+                "Lines and stations: based on \(provider.nameEN), checked \(checked).\(english) Schematic, not to scale.",
+                "线路与站点：参考\(provider.nameZH)，核对于\(checked)。\(english)示意图，不按比例。"
+            )
+        }
         return language.text(
             "Lines and stations: \(source.operatorEN) official website, checked \(checked).\(english) Schematic, not to scale.",
             "线路与站点：\(source.operatorZH)官网，核对于\(checked)。\(english)示意图，不按比例。"

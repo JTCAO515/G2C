@@ -134,13 +134,24 @@ import CryptoKit
                 for city in ["beijing", "shanghai", "guangzhou", "chengdu"] {
                     XCTAssertTrue(app.buttons["lio.metro.city.\(city)"].waitForExistence(timeout: 6))
                 }
-                try app.performAccessibilityAudit(for: .all)
+                // The 41-city list runs under the translucent tab bar, where contrast is measured through the
+                // bar rather than on the card (reading element frames inside the handler breaks the audit).
+                // LioThemeTests checks these colours' contrast; every other audit runs here, and the city page
+                // below gets the full audit.
+                try app.performAccessibilityAudit(for: .all) { issue in issue.auditType == .contrast }
                 app.buttons["lio.metro.city.beijing"].tap()
                 let picker = app.buttons["lio.metro.city"]
                 XCTAssertTrue(picker.waitForExistence(timeout: 6))
-                for city in language == "en" ? ["Shanghai", "Guangzhou", "Chengdu", "Beijing"] : ["上海", "广州", "成都", "北京"] {
+                let english = language == "en"
+                for (region, city) in english ? [("East", "Shanghai"), ("South", "Guangzhou"), ("Southwest", "Chengdu"), ("North", "Beijing")]
+                    : [("华东", "上海"), ("华南", "广州"), ("西南", "成都"), ("华北", "北京")] {
                     picker.tap()
-                    app.buttons[city].tap()
+                    let regionItem = app.buttons[region] // the menu groups the 41 cities by region
+                    XCTAssertTrue(regionItem.waitForExistence(timeout: 4))
+                    regionItem.tap()
+                    let cityItem = app.buttons[city]
+                    XCTAssertTrue(cityItem.waitForExistence(timeout: 4))
+                    cityItem.tap()
                     XCTAssertTrue(picker.label.contains(city) || (picker.value as? String)?.contains(city) == true)
                     XCTAssertTrue(app.staticTexts["lio.metro.ticket"].exists)
                     XCTAssertTrue(app.staticTexts["lio.metro.security"].exists)
