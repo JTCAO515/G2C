@@ -246,8 +246,8 @@
       "https://www.panda.org.cn/cn/service/notice/",
       "https://www.panda.org.cn/en/service/notice/"
     ],
-    "checked_on": "2026-11-16",
-    "expires_on": "2026-11-23"
+    "checked_on": "2026-11-20",
+    "expires_on": "2026-12-04"
   },
   {
     "format_version": "visitor-entry.3",
@@ -278,7 +278,7 @@
       "https://www.panda.org.cn/cn/service/notice/",
       "https://www.panda.org.cn/en/service/notice/"
     ],
-    "checked_on": "2026-11-16",
-    "expires_on": "2026-11-23"
+    "checked_on": "2026-11-20",
+    "expires_on": "2026-12-04"
   }
 ]

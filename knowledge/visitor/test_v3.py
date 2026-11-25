@@ -77,6 +77,7 @@ class NineCityContentTests(unittest.TestCase):
     def test_date_city_shape_and_version_boundaries_remain_strict(self):
         for patch in [{'cities': ['suzhou']}, {'cities': ['taizhou']},
                       {'checked_on': '2026-11-21'}, {'expires_on': '2026-11-19'},
+                      {'expires_on': TODAY.isoformat()},
                       {'format_version': 'visitor-entry.2'}, {'extra': True}]:
             with self.subTest(patch=patch), self.assertRaises(ValueError):
                 validate_entry_v3({**self.entry, **patch}, as_of=TODAY)
