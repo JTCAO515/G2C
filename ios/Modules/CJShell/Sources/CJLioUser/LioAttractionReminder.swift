@@ -51,7 +51,7 @@ enum LioAttractionReminder {
     }
 
     static func request(for rule: LioAttractionBookingRule, visit: Date, now: Date, language: LioLanguage) -> Request? {
-        let id = LioAttractionReminderItem.prefix + "\(rule.id).\(dayKey(visit))"
+        let id = reminderID(for: rule, visit: visit)
         let day = visitText(visit, language)
         let check = language.text("Book on the official channel; check the official rules.", "请到官方渠道预约，以官方为准。")
         switch plan(for: rule, visit: visit, now: now) {
@@ -70,6 +70,12 @@ enum LioAttractionReminder {
         default:
             return nil
         }
+    }
+
+    /// The notification identifier for a sight and visit day, `g2c.attraction.<rule id>.<yyyy-MM-dd>`.
+    /// Other features use it to tell whether a reminder is set, instead of building the format themselves.
+    static func reminderID(for rule: LioAttractionBookingRule, visit: Date) -> String {
+        LioAttractionReminderItem.prefix + "\(rule.id).\(dayKey(visit))"
     }
 
     static func dayKey(_ date: Date) -> String {
@@ -139,6 +145,7 @@ struct LioAttractionReminderScheduler: Sendable {
             .filter { $0.rule != nil }
             .sorted { ($0.visit, $0.ruleID) < ($1.visit, $1.ruleID) }
     }
+
     func cancel(_ id: String) async { await center.remove(id) }
 }
 

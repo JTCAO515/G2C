@@ -44,6 +44,8 @@ struct LioAttractionPartnerTests {
                 == "预约和付款在官方渠道或票务网站完成，Go2China 不售票。")
         #expect(LioAttractionPartner.paymentNote(.english, for: rule("beijing.palace-museum"))
                 == "Booking and payment happen on the official channel; Go2China does not sell tickets.")
+        #expect(LioAttractionPartner.paymentNote(.english, for: rule("beijing.mutianyu"))
+                == "Booking and payment happen on the official channel or the ticket site; Go2China does not sell tickets.")
     }
 
     @Test func otherVenuesGetAPublicTripComSearchForTheirEnglishName() throws {
