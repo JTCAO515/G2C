@@ -76,6 +76,9 @@ def _price_receipt(kind, raw):
         if receipt.get('service') == 'translation.1':
             from .translation_budget import translation_price
             return translation_price(receipt)
+        if receipt.get('service') == 'roadbook.1':
+            from .roadbook_budget import roadbook_price
+            return roadbook_price(receipt)
         if (receipt.get('model_id')!='qwen3.8-flash' or receipt.get('region')!='cn-beijing'
                 or receipt.get('endpoint')!='https://dashscope.aliyuncs.com/compatible-mode/v1'):
             return None
