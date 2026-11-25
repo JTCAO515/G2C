@@ -18,15 +18,35 @@ struct LioCopyTests {
         }
     }
 
-    /// Strings a resource shows. `skipping` leaves out proper names, such as metro station names
-    /// (Xi'an's 龙首原 is a place, not the banned "原操作").
-    private func resourceStrings(_ value: Any, skipping keys: Set<String> = []) -> [String] {
+    private func resourceStrings(_ value: Any) -> [String] {
         if let text = value as? String { return [text] }
-        if let array = value as? [Any] { return array.flatMap { resourceStrings($0, skipping: keys) } }
-        if let object = value as? [String: Any] {
-            return object.filter { !keys.contains($0.key) }.values.flatMap { resourceStrings($0, skipping: keys) }
-        }
+        if let array = value as? [Any] { return array.flatMap(resourceStrings) }
+        if let object = value as? [String: Any] { return object.values.flatMap(resourceStrings) }
         return []
+    }
+
+    /// Strings a metro map file shows, leaving out only its station names: those are places
+    /// (Xi'an's 龙首原 is not the banned "原操作"). Line names, river names and the source note
+    /// are still checked.
+    private func metroMapStrings(_ object: Any) -> [String] {
+        guard let file = object as? [String: Any] else { return resourceStrings(object) }
+        let stations = (file["stations"] as? [[String: Any]] ?? []).map { station in
+            station.filter { $0.key != "nameZH" && $0.key != "nameEN" }
+        }
+        return file.filter { $0.key != "stations" }.values.flatMap(resourceStrings) + stations.flatMap(resourceStrings)
+    }
+
+    @Test func metroMapsSkipOnlyStationNames() throws {
+        let vocabulary = try NSRegularExpression(pattern: banned, options: [.caseInsensitive])
+        func flagged(_ object: [String: Any]) -> [String] {
+            metroMapStrings(object).filter { vocabulary.firstMatch(in: $0, range: NSRange($0.startIndex..., in: $0)) != nil }
+        }
+        let station: [String: Any] = ["id": "s1", "nameZH": "龙首原", "nameEN": "Longshouyuan"]
+        #expect(flagged(["stations": [station]]).isEmpty)
+        // The same character anywhere else in a map file is still caught.
+        #expect(flagged(["stations": [station], "lines": [["nameZH": "原线", "nameEN": "Line 1"]]]) == ["原线"])
+        #expect(flagged(["stations": [station], "water": [["nameZH": "原江", "nameEN": "River"]]]) == ["原江"])
+        #expect(flagged(["stations": [station], "source": ["operatorZH": "原运营方"]]) == ["原运营方"])
     }
 
     @Test func userCopyHasZeroBackendTerms() throws {
@@ -51,8 +71,8 @@ struct LioCopyTests {
             let text = try String(contentsOf: file, encoding: .utf8)
             if file.pathExtension == "json" {
                 let object = try JSONSerialization.jsonObject(with: Data(text.utf8))
-                let names: Set<String> = file.lastPathComponent.hasPrefix("LioMetroMap.") ? ["nameZH", "nameEN"] : []
-                return resourceStrings(object, skipping: names).filter { value in
+                let strings = file.lastPathComponent.hasPrefix("LioMetroMap.") ? metroMapStrings(object) : resourceStrings(object)
+                return strings.filter { value in
                     vocabulary.firstMatch(in: value, range: NSRange(value.startIndex..., in: value)) != nil
                 }.map { "\(file.lastPathComponent): \($0)" }
             }
