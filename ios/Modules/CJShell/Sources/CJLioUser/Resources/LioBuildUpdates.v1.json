@@ -15,13 +15,13 @@
           "items": {
             "zh": [
               "地铁指南扩到全国 41 个开通地铁的城市，新增西安等城市的可交互线路图。城市用双列卡片排列，可搜索，点城市直接打开线路图；线路图在缩放、拖动被打断后不再跳动。",
-              "「我的」里的「我的记忆」改为从底部弹出，右上角「完成」可随时关闭。",
+              "「我的」里的「我的记忆」改为从底部弹出，在记忆列表点右上角「完成」关闭。",
               "英文界面打车搜索地点时，显示英文地点名和地址。",
               "聊天内容较长时调整系统字号，App 不再卡住。"
             ],
             "en": [
               "The Metro Guide now covers all 41 mainland cities with a metro, adding interactive line maps such as Xi'an. Cities are shown as two-column cards you can search; tap a city to open its line map. The map no longer jumps after a zoom or drag is interrupted.",
-              "Your memory in Me now opens as a sheet; tap Done at the top right to close it.",
+              "Your memory in Me now opens as a sheet; tap Done at the top right of the list to close it.",
               "In English, taxi place search shows English place names and addresses.",
               "Changing the system text size during a long chat no longer makes the app stop responding."
             ]
@@ -51,13 +51,13 @@
           "items": {
             "zh": [
               "地铁：在「工具」打开地铁指南，搜索一个新城市（如西安、哈尔滨），打开线路图后缩放、拖动并查找一个车站。",
-              "在「我的」打开我的记忆，进入一条记忆修改后点右上角「完成」保存，返回列表后点右上角「完成」关闭。",
+              "在「我的」打开我的记忆，进入一条记忆点「编辑」，修改后点「保存」（右上角「完成」只收起键盘），返回列表后点右上角「完成」关闭。",
               "打车：英文界面搜索一个地点，有英文名的地点显示英文名和地址（没有英文名时显示中文）。把系统字号调大后回到一段较长的聊天，确认 App 仍可正常滚动和输入。",
               "遇到问题，请在内部测试群发截图、问题记录及发生时间。"
             ],
             "en": [
               "Metro: in Tools, open the Metro Guide, search a newly added city such as Xi'an or Harbin, then zoom, drag and find a station on its line map.",
-              "In Me, open your memory, edit an entry and tap Done at the top right to save, then go back and tap Done to close it.",
+              "In Me, open your memory, open an entry, tap Edit, change it and tap Save (Done at the top right only hides the keyboard), then go back to the list and tap Done to close it.",
               "Taxi: in English, search for a place; places with an English name show it in English (others stay in Chinese). Make the system text larger, return to a long chat and check that it still scrolls and accepts typing.",
               "Share a screenshot, the copied issue record and the time it happened in the internal testing group."
             ]
