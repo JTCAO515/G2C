@@ -1342,19 +1342,23 @@ class Boundaries(unittest.TestCase):
             worker=Worker();worker.provider=provider
             list(tools.answer(worker,binding,[dict(role='user',content=question)],lio_locale=locale))
             return systems[0]
-        english=('The traveler asked a question: start directly with the answer in English. Do not open with a greeting '
-                 'such as Hey or Hi, never reply with "Hey! Where are you off to?", and write the whole answer in English; '
-                 'Chinese appears only in the bold name brackets.')
-        chinese='The traveler asked a question: start directly with the answer. Do not open with a greeting such as 你好, and never reply with 你好！准备去哪儿玩？'
+        # A/B on b19f2b00: quoting the example phrases primed copying them (alipay-zh 2/3),
+        # and an English bare greeting was answered in Chinese. Closings quote no example.
+        english=('The traveler asked a specific question: start with the answer itself, in English, with no greeting. '
+                 'Write the whole answer in English; Chinese appears only in the bold name brackets.')
+        chinese='旅行者提出了具体问题：直接给出答案本身，不要用问候语开头。'
+        greet_en='The traveler only greeted you: reply briefly in English.'
         system=system_for('How do I get from Pudong Airport to the Bund?','en')
-        self.assertTrue(system.endswith(english) or english in system[-len(english)-80:],system[-300:])
-        self.assertNotIn(chinese,system)
+        self.assertIn(english,system);self.assertNotIn(chinese,system);self.assertNotIn(greet_en,system)
         system=system_for('外国游客在中国怎么用支付宝？','zh')
         self.assertIn(chinese,system);self.assertNotIn(english,system)
+        for closing in (english,chinese,greet_en):
+            for phrase in ('Hey! Where are you off to?','你好！准备去哪儿玩？'):self.assertNotIn(phrase,closing)
         for greeting,locale in (('Hi','en'),('Hey!','en'),('你好','zh'),('您好！','zh')):
             with self.subTest(greeting=greeting):
                 system=system_for(greeting,locale)
                 self.assertNotIn(english,system);self.assertNotIn(chinese,system)
+                self.assertEqual(greet_en in system,locale=='en')
 
     def test_lio_saved_scene_is_only_in_model_system_not_public_answer(self):
         from cj_api.local_app import ISSUER,scope_for

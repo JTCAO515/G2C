@@ -869,14 +869,15 @@ class RealTools:
             transit_request = _lio_transit_request(messages)
             if transit_request:
                 system += ' For current visa-free transit policy use the official entry notice before making policy claims.'
+            # HK run -41 eval: flash copied the persona greeting example and answered an
+            # English question in Chinese; restate answer-first and the locale last.
+            # Quoting the example phrase itself primed copying it (A/B), so none is quoted.
             if _LIO_BARE_GREETING.fullmatch(messages[-1]['content']) is None:
-                # HK run -41 eval: flash copied the persona greeting example and answered an
-                # English question in Chinese; restate answer-first and the locale last.
-                system += (' The traveler asked a question: start directly with the answer. Do not open with a greeting '
-                           'such as 你好, and never reply with 你好！准备去哪儿玩？' if chinese else
-                           ' The traveler asked a question: start directly with the answer in English. Do not open with a greeting '
-                           'such as Hey or Hi, never reply with "Hey! Where are you off to?", and write the whole answer in English; '
-                           'Chinese appears only in the bold name brackets.')
+                system += (' 旅行者提出了具体问题：直接给出答案本身，不要用问候语开头。' if chinese else
+                           ' The traveler asked a specific question: start with the answer itself, in English, with no greeting. '
+                           'Write the whole answer in English; Chinese appears only in the bold name brackets.')
+            elif not chinese:
+                system += ' The traveler only greeted you: reply briefly in English.'
         if binding.scope in self.buffered_streaming_scopes:profile=M4_NATIVE_TURN_BUFFERED
         elif binding.scope in self.streaming_scopes:profile=M4_NATIVE_TURN_STREAM
         else:profile=M4_NATIVE_TURN_PROFILE_V2
