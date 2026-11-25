@@ -77,6 +77,12 @@ def exercise(auth, conninfo):
                 choices=[dict(index=0,delta=dict(content=json.dumps(value)),finish_reason='stop')],
                 usage=dict(prompt_tokens=100,completion_tokens=100,total_tokens=200))
             return httpx.Response(200,stream=httpx.ByteStream(('data: '+json.dumps(event)+'\n\ndata: [DONE]\n\n').encode()))
+        if 'response_format' not in body:
+            # JT 2026-11-25 B: after intake, a consult message continues to the detailed answer path.
+            event=dict(id='chatcmpl-c936-answer-'+str(len(sent)),model=M4_MODEL,
+                choices=[dict(index=0,delta=dict(content='I can help you plan a visit. What are your travel interests?'),finish_reason='stop')],
+                usage=dict(prompt_tokens=100,completion_tokens=100,total_tokens=200))
+            return httpx.Response(200,stream=httpx.ByteStream(('data: '+json.dumps(event)+'\n\ndata: [DONE]\n\n').encode()))
         from test_lio_planning_flow import flow
         schema = body['response_format']['json_schema']['schema']
         index = schema['properties']['current_source_index']['const']
@@ -138,7 +144,7 @@ def exercise(auth, conninfo):
     routing=SimulatorRunRequests(dut,tools)
     first=dut.reply(spec.opening,'en',first=True)
     assert first['run_outcome']=='completed' and not first['profile_complete']
-    assert len(sent)==1 and dut.latest==ids[0]
+    assert len(sent)==2 and dut.latest==ids[0]  # JT 2026-11-25 B: DUT consult = intake + answer
     actor=NativeActorHost(database,tools,source,actor_spec,Authority(),directory,
         profile_id=profile['id'],attempt=1,dut_message=lambda:dut.latest,deadline=time.monotonic()+120)
     links=EpisodeLinks(directory,actor.owner,actor_spec,guard=actor._guard)
@@ -146,17 +152,17 @@ def exercise(auth, conninfo):
     history=[dict(speaker='user',text=spec.opening),dict(speaker='assistant',text=first['text'])]
     choice=bridge.choose(simulator_messages(profile,history,1))
     text=render_choice(profile,choice,None,1)['text']
-    assert dut.pending[0]==text and len(sent)==2
+    assert dut.pending[0]==text and len(sent)==3  # JT 2026-11-25 B: DUT consult = intake + answer
     second=dut.reply(text,'en',first=False)
-    assert second['run_outcome']=='completed' and len(sent)==3
+    assert second['run_outcome']=='completed' and len(sent)==5  # JT 2026-11-25 B: DUT consult = intake + answer
     assert dut.previous.receipt.conversation_id==dut.conversation_id
-    assert all('hidden_answers'not in compact(b).decode() and SIMULATOR_SYSTEM not in compact(b).decode() for b in(sent[0],sent[2]))
-    assert SIMULATOR_SYSTEM in compact(sent[1]).decode()
+    assert all('hidden_answers'not in compact(b).decode() and SIMULATOR_SYSTEM not in compact(b).decode() for b in(sent[0],sent[1],sent[3],sent[4]))
+    assert SIMULATOR_SYSTEM in compact(sent[2]).decode()  # JT 2026-11-25 B: DUT consult = intake + answer
     rogue='c936-'+'f'*64
     rogue_wire=compact(dict(version='LIO-message.2',message_id=rogue,text='Synthetic unclaimed guard control',locale='en',new_conversation=True))
     rogue_receipt=boundary.receive_lio(token,rogue_wire,prepare_scope=database._provision_scope,version='LIO-message.2')
     assert [x.status for x in worker.process()]==['unknown']
-    assert len(sent)==3
+    assert len(sent)==5  # JT 2026-11-25 B: DUT consult = intake + answer
     with database.connect(scope)as db:
         db.execute('SET TRANSACTION READ ONLY')
         formats=db.execute('SELECT format_version FROM cj_usage_ledger_candidate').fetchall()

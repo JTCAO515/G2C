@@ -117,6 +117,12 @@ def exercise(root,conninfo):
                 visitor_call=dict(index=0,id='visitor-original-'+str(len(wire)),type='function',
                     function=dict(name='visitor_fact',arguments=json.dumps(dict(topic=current['visitor_topic'],city='Beijing'))))
                 content=None
+        elif body.get('tools') and [m['content'] for m in body['messages'] if m['role']=='user'][-1] not in ('Who am I?','我是谁'):
+            # JT 2026-11-25 B: a consult question continues to the detailed answer path
+            # after intake (quoted translation, unsaved preference); identity stays below.
+            asked=[m['content'] for m in body['messages'] if m['role']=='user'][-1]
+            assert asked in (*QUOTED_REQUESTS.values(),PREFERENCE),asked
+            content='Starting 2026-11-20, two people.' if asked in QUOTED_REQUESTS.values() else 'I can suggest a relaxed pace.'
         elif body.get('tools'):
             # Identity is answered only with the actual saved Memory selection.
             visible=json.dumps(body['messages'],ensure_ascii=False)
@@ -308,7 +314,7 @@ def exercise(root,conninfo):
                 dict(**identity,choices=[],usage=dict(prompt_tokens=40,completion_tokens=10,total_tokens=50))]
         raw=''.join('data: '+json.dumps(e)+'\n\n' for e in events)+'data: [DONE]\n\n'
         return httpx.Response(200,stream=httpx.ByteStream(raw.encode()))
-    async def city_exchange(key,guard):
+    async def city_exchange(key,guard,*,send_under_fence=None):
         assert key==KEY and guard() is True
         city_calls.append('original district exchange')
         return city_catalog()
@@ -336,7 +342,7 @@ def exercise(root,conninfo):
         confirmation_signer=signer,demo_dialogue_subjects=subjects,lio_dialogue_subjects=subjects,lio_memory_factory=memory_host)
     register_typed_routes(app,database=database,auth_dir=auth,configuration=memory.collection)
     headers={'Authorization':'Bearer '+dev_auth.token(auth,SUBJECT,3600),'Content-Type':'application/octet-stream'}
-    with TestClient(app) as api,patch('cj_api.lio_city._catalog_exchange',side_effect=city_exchange):
+    with TestClient(app) as api,patch('cj_api.lio_city.catalog_response',side_effect=city_exchange):
         for index,(question,(locale,mention,duration)) in enumerate({**MISSING_REQUESTS,**DISCUSSION_REQUESTS}.items()):
             discussing=question in DISCUSSION_REQUESTS
             current.update(zh='杭州' if discussing else '成都',en='Hangzhou' if discussing else 'Chengdu',locale=locale,mention=mention,party='两个人',duration=duration,fixed_description='not-present',missing_question=question)
@@ -605,7 +611,7 @@ def exercise(root,conninfo):
             cases.append(dict(locale=locale,zh='广州',en='Guangzhou',first=f'规划广州{zh_word}天豪华游，没定日期，没定人数'if locale=='zh'else
                 f'Plan {word} days in Guangzhou, luxury, no dates yet.',reply=None,count=count,party=None,start=None,opening_days=True,
                 duration_quote=zh_word+'天'if locale=='zh'else word+' days',date_quote=None,party_quote=None,expect_preview=True))
-    with TestClient(app)as api,patch('cj_api.lio_city._catalog_exchange',side_effect=city_exchange):
+    with TestClient(app)as api,patch('cj_api.lio_city.catalog_response',side_effect=city_exchange):
         for bad_subjects in ([],['all'],['companion:1']):
             cases.append(dict(locale='zh',zh='北京',en='Beijing',first='规划三天北京豪华游 26.12.01出发 三个人',reply=None,count=3,party=3,start='2026-12-01',
                 opening_days=True,duration_quote='三天',date_quote='26.12.01',party_quote='三个人',bad_subjects=bad_subjects,expect_reject=True))

@@ -506,15 +506,20 @@ class NationalLioPlanning:
                     **({'city':previous['city']}if previous is not None and previous.get('city')is not None else {})))
                 return self._clarify(worker,binding,state,original.locale,intake.reply,question_fields,missing[:1],
                     arrival=intake.extraction['fields'].get('arrival',{}).get('date'))
+        if not planning and intake.intent=='consult' and intake.needs_tools and intake.city is None:
+            from .real_services import _lio_transit_request
+            if _lio_transit_request(messages):
+                context(worker,binding,state,dict(authority='none',status='consult'))
+                return None
+        if not planning and intake.intent=='consult' and not (intake.needs_tools and intake.city is not None):
+            # JT 2026-11-25 B/D: consult questions use the detailed answer path,
+            # never the intake side reply or a city question (answer first, then ask).
+            context(worker,binding,state,previous if authority!='none'else dict(authority='none',status='consult'))
+            return None
         if not planning and not (intake.intent=='consult'and intake.needs_tools):
             state=context(worker,binding,state,previous if authority!='none'else dict(authority='none',status='consult'))
             return self._reply(worker,binding,state,intake.reply,collect_memory=intake.intent=='consult')
         if intake.city is None:
-            if not planning and intake.intent=='consult' and intake.needs_tools:
-                from .real_services import _lio_transit_request
-                if _lio_transit_request(messages):
-                    context(worker,binding,state,dict(authority='none',status='consult'))
-                    return None
             state=context(worker,binding,state,dict(authority=authority,status='needs_city'))
             return self._clarify(worker,binding,state,original.locale,intake.reply,question_fields,['city'])
         resolution=self._previous_city(intake,previous,text)

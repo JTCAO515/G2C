@@ -67,6 +67,12 @@ def exercise(root,conninfo,*,failure,answer_locale=None,followup_text=None):
                 choices=[dict(index=0,delta={'content':reply},finish_reason='stop')],
                 usage=dict(prompt_tokens=100,completion_tokens=100,total_tokens=200))
             return httpx.Response(200,stream=httpx.ByteStream(('data: '+json.dumps(value)+'\n\ndata: [DONE]\n\n').encode()))
+        if 'response_format' not in body:
+            # JT 2026-11-25 B: after intake, a consult message continues to the detailed answer path.
+            value=dict(id='answer-nondemo-'+str(len(sent)),model=M4_MODEL,
+                choices=[dict(index=0,delta={'content':'I can help you plan a visit. Which places interest you?'},finish_reason='stop')],
+                usage=dict(prompt_tokens=100,completion_tokens=100,total_tokens=200))
+            return httpx.Response(200,stream=httpx.ByteStream(('data: '+json.dumps(value)+'\n\ndata: [DONE]\n\n').encode()))
         index=body['response_format']['json_schema']['schema']['properties']['current_source_index']['const']
         wire=flow('Synthetic general travel question',city=None,days=None,intent='consult',
             reply='I can help you plan a visit. Which places interest you?',questions=(),index=index)
