@@ -104,6 +104,57 @@ import Testing
         #expect(LioReturnHotelTools.hotelStore(roadbookDirectory: nil, isCurrent: { true }) == nil)
     }
 
+    @Test func aHotelSearchResultBecomesTheStayHotelWithItsChineseAddress() {
+        let offer = LioHotelOffer(id: "h1", nameZH: "全季酒店（北京东单店）", nameEN: nil,
+                                  addressZH: "北京市东城区东单北大街98号", addressEN: nil,
+                                  coordinate: .init(latitude: 39.91, longitude: 116.42, referenceSystem: .gcj02),
+                                  rating: nil, price: nil, metro: nil, foreignGuests: .unknown,
+                                  booking: URL(string: "https://hotel.example.invalid/out/h1")!)
+        let hotel = LioStayHotel(hotelSearchOffer: offer)
+        #expect(hotel.source == .hotelSearch && hotel.roomNumber == nil)
+        #expect(hotel.place == offer.taxiPlace)
+        #expect(hotel.place.addressZH == "北京市东城区东单北大街98号")
+        #expect(hotel.place.nameEN == "全季酒店（北京东单店）", "no English name: the Chinese name stands in")
+    }
+
+    private func offer(_ id: String, nameZH: String, latitude: Double) -> LioHotelOffer {
+        LioHotelOffer(id: id, nameZH: nameZH, nameEN: nil, addressZH: "北京市东城区", addressEN: nil,
+                      coordinate: .init(latitude: latitude, longitude: 116.42, referenceSystem: .gcj02),
+                      rating: nil, price: nil, metro: nil, foreignGuests: .unknown,
+                      booking: URL(string: "https://hotel.example.invalid/out/\(id)")!)
+    }
+
+    /// #1685 review: setting the same hotel again keeps the room typed on Back to Hotel; another hotel starts empty.
+    @Test func settingTheSavedHotelAgainKeepsItsRoomNumber() {
+        let quanji = offer("h1", nameZH: "全季酒店（北京东单店）", latitude: 39.91)
+        let saved = LioStayHotel(place: quanji.taxiPlace, roomNumber: "1208", source: .manual)
+        #expect(LioStayHotel(hotelSearchOffer: quanji, replacing: saved).roomNumber == "1208")
+        let other = offer("h2", nameZH: "如家酒店（北京王府井店）", latitude: 39.92)
+        #expect(LioStayHotel(hotelSearchOffer: other, replacing: saved).roomNumber == nil)
+        #expect(LioStayHotel(hotelSearchOffer: quanji, replacing: nil).roomNumber == nil)
+    }
+
+    /// #1685 review: a failed save is shown only under the hotel that failed, and a new search starts clean
+    /// from what is saved now (so a hotel changed elsewhere is not still marked as set).
+    @Test func theSaveMarkBelongsToOneHotelAndANewSearchStartsFromTheSavedOne() {
+        let a = offer("h1", nameZH: "全季酒店（北京东单店）", latitude: 39.91).taxiPlace.id
+        let b = offer("h2", nameZH: "如家酒店（北京王府井店）", latitude: 39.92).taxiPlace.id
+        var mark = LioStayHotelMark()
+        mark.didFail(a)
+        #expect(mark.failed(a) && !mark.failed(b))
+        mark.refresh(savedHotel: nil)
+        #expect(!mark.failed(a), "a new search clears the old failure")
+        mark.didSave(b)
+        #expect(mark.isSaved(b) && !mark.isSaved(a))
+        mark.didFail(a)
+        #expect(mark.failed(a) && mark.isSaved(b))
+        mark.didSave(a)
+        #expect(mark.isSaved(a) && !mark.isSaved(b) && !mark.failed(a))
+        let elsewhere = LioStayHotel(hotelSearchOffer: offer("h2", nameZH: "如家酒店（北京王府井店）", latitude: 39.92))
+        mark.refresh(savedHotel: elsewhere)
+        #expect(mark.isSaved(b) && !mark.isSaved(a), "the hotel saved now wins over the one tapped earlier")
+    }
+
     @Test func onlyAnExplicitYesTurnsTheBuildFlagOn() {
         #expect(LioShowCardFeature.enabled(infoValue: "YES"))
         for value: Any? in [nil, "", "NO", "yes", "$(G2C_SHOW_CARD_ENABLED)", true, false, 1] {

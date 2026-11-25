@@ -38,6 +38,38 @@ struct LioStayHotel: Codable, Equatable, Sendable {
     }
 }
 
+extension LioStayHotel {
+    /// "Set as my hotel" on a hotel search result (#1573): its GCJ-02 point and Chinese address, no room yet.
+    /// Setting the hotel that is already saved keeps the room typed on Back to Hotel (#1685 review).
+    init(hotelSearchOffer offer: LioHotelOffer, replacing current: LioStayHotel? = nil) {
+        let place = offer.taxiPlace
+        self.init(place: place, roomNumber: current?.place.id == place.id ? current?.roomNumber : nil,
+                  source: .hotelSearch)
+    }
+}
+
+/// Which hotel search result shows "Saved as my hotel", and which one a failed save belongs to (#1685 review).
+struct LioStayHotelMark: Equatable {
+    private var saved: LioTaxiPlace.ID?
+    private var failure: LioTaxiPlace.ID?
+
+    /// On opening the page and on each new search: start from the hotel saved now, with no old failure.
+    mutating func refresh(savedHotel: LioStayHotel?) {
+        saved = savedHotel?.place.id
+        failure = nil
+    }
+
+    mutating func didSave(_ id: LioTaxiPlace.ID) {
+        saved = id
+        failure = nil
+    }
+
+    mutating func didFail(_ id: LioTaxiPlace.ID) { failure = id }
+
+    func isSaved(_ id: LioTaxiPlace.ID) -> Bool { saved == id }
+    func failed(_ id: LioTaxiPlace.ID) -> Bool { failure == id && saved != id }
+}
+
 enum LioReturnHotel {
     private static let hotelWordsZH = ["酒店", "宾馆", "饭店", "旅馆", "客栈", "民宿", "公寓", "招待所", "青旅", "旅舍"]
     private static let hotelWordsEN = ["hotel", "inn", "hostel", "guesthouse", "guest house", "resort", "apartment", "lodge"]
