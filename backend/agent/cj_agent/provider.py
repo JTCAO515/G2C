@@ -562,9 +562,13 @@ class MeteredDashScopeProvider:
             prompt+='\nUse the supplied tools for current facts. Final answer must be JSON {"zh":"...","en":"..."}; cite sources and '+uncertainty+'.'
         elif system is not None and 'json' not in prompt.casefold():
             prompt+='\nReturn a single JSON object matching the requested output format.'
+        from cj_message.lio_plan_input_schema import PLAN_UNDERSTANDING
+        # JT 2026-11-25: only the V4 plan understanding may use twice the configured cap (3072).
+        limit=(2*self.config.max_output_tokens if structured_profile==PLAN_UNDERSTANDING else
+               self.config.max_output_tokens if compact or incremental or structured_profile is not None or rich_draft or preview_format is not None
+               else min(1024,self.config.max_output_tokens))
         body=dict(model=M4_MODEL,messages=[dict(role='system',content=prompt),*wire_messages],stream=True,
-                  stream_options={'include_usage':True},enable_thinking=False,
-                  max_tokens=self.config.max_output_tokens if compact or incremental or structured_profile is not None or rich_draft or preview_format is not None else min(1024,self.config.max_output_tokens))
+                  stream_options={'include_usage':True},enable_thinking=False,max_tokens=limit)
         if proxy:
             definition=(_m4_compact_turn_function(native_tools,final_answer) if compact else
                         _m4_turn_function(native_tools,final_answer))
