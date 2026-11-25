@@ -47,8 +47,9 @@ def test_limits_match_the_authorization():
 
 def test_list_price_uses_the_m4_flash_token_rates():
     assert menu_price(_receipt()) == 1500 * MODEL_INPUT_PRICE + 2500 * MODEL_OUTPUT_PRICE
-    # About ¥0.008 for a typical menu, inside the ¥0.015–0.03 per menu in the approved plan.
+    # About ¥0.008 for a typical call; even two calls at the output cap stay under ¥0.04 a menu.
     assert menu_price(_receipt()) < CNY_SCALE // 100
+    assert 2 * menu_price(_receipt(usage=_usage(2000, MAX_OUTPUT_TOKENS))) < 4 * CNY_SCALE // 100
 
 
 @pytest.mark.parametrize('changes', [
@@ -229,3 +230,36 @@ def test_hk_proof_rejects_edited_menu_receipt_metadata(budget, key, value):
         db.execute('UPDATE attempt SET receipt=? WHERE id=?', (canonical(receipt).decode(), settled))
         with pytest.raises(ValueError, match='original_attempt_history_invalid'):
             attempts(db)
+
+
+def _rows(budget):
+    with budget.authorization.connect() as db:
+        return db.execute('SELECT id,state FROM attempt ORDER BY id').fetchall()
+
+
+def test_a_refused_call_leaves_no_intent(budget, monkeypatch):
+    for _ in range(DAILY_MENUS):
+        _call(budget, budget.operation('scope-a', uuid4(), 1), 0)
+    before = _rows(budget)
+    with pytest.raises(MenuLimit):
+        budget.begin(budget.operation('scope-a', uuid4(), 1), 0)
+    monkeypatch.setattr(menu_budget, 'SUBLIMIT', 0)
+    with pytest.raises(MenuLimit):
+        budget.begin(budget.operation('scope-b', uuid4(), 1), 0)
+    assert _rows(budget) == before and all(state == 'RECEIVED' for _, state in before)
+
+
+def test_other_model_rows_keep_their_prices():
+    from cj_usage.authorization_budget import _price_receipt
+    from cj_usage.roadbook_budget import roadbook_price
+    from cj_usage.translation_budget import TEXT_MODEL, translation_price
+
+    roadbook = dict(service='roadbook.1', region='cn-beijing', model_id='qwen3.8-flash', day='2026-11-26',
+                    places=1, stage=0, receipt_sha256='0' * 64, usage=_usage(1200, 600))
+    translation = dict(service='translation.1', region='cn-beijing', model_id=TEXT_MODEL, day='2026-11-26',
+                       modality='text', units=1, stage=0, receipt_sha256='0' * 64, usage=_usage(100, 50))
+    menu = _receipt()
+    assert _price_receipt('model', canonical(roadbook).decode()) == roadbook_price(roadbook) is not None
+    assert _price_receipt('model', canonical(translation).decode()) == translation_price(translation) is not None
+    assert _price_receipt('model', canonical(menu).decode()) == menu_price(menu) is not None
+    assert _price_receipt('model', canonical(dict(menu, model_id='qwen-plus')).decode()) is None

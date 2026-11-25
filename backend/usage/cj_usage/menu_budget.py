@@ -28,7 +28,7 @@ CACHE_ONLY_PERCENT = 80
 DAILY_MENUS = 10
 CALLS_PER_MENU = 2
 MODEL = 'qwen3.8-flash'
-MAX_OUTPUT_TOKENS = 4000
+MAX_OUTPUT_TOKENS = 6000  # 15 short bilingual dishes per call
 BEIJING = ZoneInfo('Asia/Shanghai')
 
 

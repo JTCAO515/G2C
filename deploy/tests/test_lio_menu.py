@@ -130,6 +130,13 @@ def test_lines_take_prices_off_and_drop_lines_without_chinese():
     assert not truncated
 
 
+def test_two_dishes_on_one_line_are_split_at_prices_and_wide_gaps():
+    lines, _ = menu_lines('宫保鸡丁 38 鱼香肉丝 32\n麻婆豆腐 26元 回锅肉 42元\n米饭  馒头\n夫妻 肺片 30')
+    assert [(line['text'], line['price']) for line in lines] == [
+        ('宫保鸡丁', '38'), ('鱼香肉丝', '32'), ('麻婆豆腐', '26元'), ('回锅肉', '42元'), ('米饭', None),
+        ('馒头', None), ('夫妻 肺片', '30')]
+
+
 def test_long_menus_are_cut_and_say_so():
     lines, truncated = menu_lines('\n'.join(f'菜{index}' for index in range(MAX_LINES + 5)))
     assert len(lines) == MAX_LINES and truncated
@@ -178,6 +185,7 @@ def test_the_model_sees_only_menu_text_and_the_fixed_rules():
     for ingredient in INGREDIENTS:
         assert ingredient in RULES
     assert '不写「安全」「不含」' in RULES
+    assert '每个输入行恰好输出一项' in RULES and '酱油：soy likely、gluten likely' in RULES
 
 
 # Requests

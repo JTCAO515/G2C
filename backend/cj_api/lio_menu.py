@@ -2,7 +2,7 @@
 
 M4 item 19 with entry 9 (JT 2026-11-25): the App sends one menu photo. The server reads it once with entry 9's
 image recognition model, splits the text into lines and takes printed prices off the line ends, then asks the
-flash model, at most twice, which lines are dishes and what each dish is: a short bilingual description,
+flash model, at most twice (15 lines a call), which lines are dishes and what each dish is: a short bilingual description,
 main ingredients, method, portion, a spice level and the ingredients it may contain. Every dish name must be
 a continuous part of its own recognised line, or the line becomes "unclear" (the App says: ask staff). The
 model never sees the user's dietary needs, account or location: only the recognised menu text. The photo is
@@ -38,14 +38,14 @@ from .translation import MAX_MEDIA, TranslationError
 VERSION = 'MENU.1'
 ROUTE = '/v1/tools/menu/explain'
 PROMPT_VERSION = 1
-LINES_PER_CALL = 25
+LINES_PER_CALL = 15  # about 220 output tokens a dish: well inside MAX_OUTPUT_TOKENS
 MAX_LINES = LINES_PER_CALL * CALLS_PER_MENU
 MAX_LINE_LENGTH = 60
 INGREDIENTS = ('pork', 'beef', 'lamb', 'poultry', 'fish', 'shellfish', 'peanut', 'tree_nut', 'egg', 'dairy',
                'gluten', 'soy', 'sesame', 'alcohol', 'coriander', 'animal_broth')
 CERTAINTIES = ('likely', 'possible')
 TEXT_FIELDS = ('summary', 'ingredients', 'method', 'portion')
-FIELD_LIMITS = {'zh': 80, 'en': 200}
+FIELD_LIMITS = {'zh': 60, 'en': 160}
 DEADLINE_SECONDS = 45
 DASHSCOPE = 'dashscope.aliyuncs.com'
 CHAT = '/compatible-mode/v1/chat/completions'
@@ -53,7 +53,7 @@ MAX_PROVIDER_RESPONSE = 256 * 1024
 SUPPLIER_ID = re.compile(r'[A-Za-z0-9_-]{1,128}')
 
 _CJK = re.compile(r'[一-鿿]')
-# A printed price at the end of a line (checked after NFKC, so ￥ is ¥): ¥38, 38元, 38/份, 12.5元/位.
+# A printed price at the end of a line or segment (checked after NFKC, so ￥ is ¥): ¥38, 38元, 38/份, 12.5元/位.
 _PRICE_TAIL = re.compile(r'\s*(?:¥\s*)?\d{1,4}(?:\.\d{1,2})?\s*(?:元)?\s*(?:/\s*(?:份|位|例|斤|只|个|碗|盘|杯|瓶|两|串))?\s*$')
 # No guarantee that something is absent: allergy and diet flags are the App's, from `contains` only.
 _ABSENCE = re.compile(r'安全|不含|无(?:花生|坚果|海鲜|虾|蟹|鱼|蛋|奶|麸质|麦|大豆|芝麻|酒|猪|牛|羊|肉|过敏)|'
@@ -66,18 +66,26 @@ RULES = """你在帮外国游客看懂一张中文菜单。输入是菜单照片
 - dish：这一行是一道菜（含主食、汤、饮品）的名字；
 - unclear：看起来是菜名，但字缺失或错乱，看不出是什么菜；
 - other：店名、分类标题、说明文字等，不是菜。
-只输出一个 JSON 对象 {"items": [...]}：每个输入行恰好一项，按行号顺序。每项字段：
-- "i"：行号；"kind"：dish、unclear 或 other。
-- kind 为 dish 时再给：
-  "name_zh"：该行里的菜名原文，必须是该行文字中连续的一段，不改字、不补字；
-  "name_en"：常见英文菜名；
-  "summary_en"、"summary_zh"：一句话说明这是什么菜；
-  "ingredients_en"、"ingredients_zh"：主要食材；
-  "method_en"、"method_zh"：做法，如炒、炖、蒸；
-  "portion_en"、"portion_zh"：大致分量，如「一盘，约 2 人份」；
-  "spice"：0 不辣、1 微辣、2 中辣、3 很辣，拿不准写 null；
-  "contains"：对象，列出这道菜按常见做法会用到的配料。键只能从 pork, beef, lamb, poultry, fish, shellfish, peanut, tree_nut, egg, dairy, gluten, soy, sesame, alcohol, coriander, animal_broth 中选；值为 "likely"（通常会用）或 "possible"（常作调料、高汤或点缀）。宁可多列 possible，不要漏。
-规则：按这道菜在中国常见的做法写，各店可能不同；拿不准的字段写 null，不要编造。不写价格，不写「安全」「不含」「无××」这类保证。中文字段每项不超过 40 个字，英文字段不超过 120 个字符。"""
+只输出一个 JSON 对象 {"items": [...]}：每个输入行恰好输出一项，按行号顺序，不要重复同一行，不要多写。kind 为 unclear 或 other 时只写 "i" 和 "kind"。
+kind 为 dish 时的字段（字数是上限，越短越好）：
+- "name_zh"：该行里的菜名原文，必须是该行文字中连续的一段，不改字、不补字；一行里有几道菜时只取第一道。
+- "name_en"：有通行英文名就用通行名（如 Kung Pao Chicken）；没有就用「主料 + 做法」的描述性名称，不要逐字直译（如「蚂蚁上树」写 Glass Noodles with Minced Pork）。不超过 50 个字符。
+- "summary_en"、"summary_zh"：一句话说清是什么、什么口味（如 sweet and sour、savory、numbing）。花椒的麻（numbing / 麻）和辣是两回事，川菜要点出。名字有典故的可在这里一句带过。英文不超过 100 个字符，中文不超过 30 个字。
+- "ingredients_en"、"ingredients_zh"：主要食材，用短词列出，不写句子。英文不超过 60 个字符，中文不超过 20 个字。
+- "method_en"、"method_zh"：做法，一两个词，如 Stir-fried / 爆炒。
+- "portion_en"、"portion_zh"：常见分量，如 Shared plate / 一盘，约 2 人份；拿不准写 null。
+- "spice"：辣度 0 不辣、1 微辣、2 中辣、3 很辣，只看辣椒，不算花椒；拿不准写 null。
+- "contains"：对象，只列这道菜按常见做法会用到的配料，没有的键不写。键只能从 pork, beef, lamb, poultry, fish, shellfish, peanut, tree_nut, egg, dairy, gluten, soy, sesame, alcohol, coriander, animal_broth 中选；值 "likely" 表示通常会用，"possible" 表示常作调料、油、高汤或点缀。宁可多列 possible，不要漏。shellfish 包括虾、蟹、贝类以及鱿鱼、章鱼等软体海鲜。
+隐性配料要按下面的对应标出：
+- 酱油：soy likely、gluten likely（酿造酱油含小麦）；大多数炒菜、红烧、凉拌都有酱油。
+- 蚝油、虾皮、虾米、XO 酱：shellfish；鱼露：fish。
+- 炒菜常用花生油：peanut possible；猪油：pork possible；高汤、鸡精、鸡粉：animal_broth possible，素菜也一样。
+- 料酒、绍兴酒（红烧、炖、炒肉常用）：alcohol possible。
+- 香油、芝麻酱、芝麻：sesame。豆瓣酱、甜面酱：soy，gluten possible。腐乳：soy。
+- 面条、饺子皮、包子、面糊、勾芡：gluten；炒饭、蛋饺、面糊：egg。宫保类有的店用腰果：tree_nut possible。香菜点缀：coriander possible。
+规则：按这道菜在中国常见的做法写，各店可能不同；拿不准的字段写 null，不要编造。不写价格，不写「正宗」「必点」「招牌」这类评价，不写「安全」「不含」「无××」这类保证。
+完整示例（输入 {"i": 0, "text": "宫保鸡丁"}）：
+{"i": 0, "kind": "dish", "name_zh": "宫保鸡丁", "name_en": "Kung Pao Chicken", "summary_en": "Diced chicken stir-fried with peanuts and dried chili; sweet, sour and a little numbing.", "summary_zh": "鸡丁与花生、干辣椒同炒，酸甜微麻。", "ingredients_en": "Chicken, peanuts, dried chili, Sichuan pepper", "ingredients_zh": "鸡肉、花生、干辣椒、花椒", "method_en": "Stir-fried", "method_zh": "爆炒", "portion_en": "Shared plate, 2 people", "portion_zh": "一盘，约 2 人份", "spice": 2, "contains": {"poultry": "likely", "peanut": "likely", "soy": "likely", "gluten": "likely", "alcohol": "possible", "tree_nut": "possible"}}"""
 
 
 class MenuRequest(WireModel):
@@ -117,16 +125,24 @@ def menu_lines(text):
     """Recognised lines that may name a dish: (name text, printed price or None), and whether some were cut."""
     lines = []
     for raw in text.splitlines():
-        line = unicodedata.normalize('NFKC', raw).strip()
-        if not line or len(line) > MAX_LINE_LENGTH or not _visible(line):
-            continue
-        price = None
-        match = _PRICE_TAIL.search(line)
-        if match and match.start() > 0 and re.search(r'\d', match.group(0)):
-            price, line = match.group(0).strip(), line[:match.start()].strip()
-        if _CJK.search(line):
-            lines.append(dict(text=line, price=price))
+        for line in _segments(unicodedata.normalize('NFKC', raw).strip()):
+            if len(line) > MAX_LINE_LENGTH or not _visible(line):
+                continue
+            price = None
+            match = _PRICE_TAIL.search(line)
+            if match and match.start() > 0 and re.search(r'\d', match.group(0)):
+                price, line = match.group(0).strip(), line[:match.start()].strip()
+            if _CJK.search(line):
+                lines.append(dict(text=line, price=price))
     return lines[:MAX_LINES], len(lines) > MAX_LINES
+
+
+# Two dishes recognised on one line: split at wide gaps, tabs, or a price followed by more Chinese text.
+_SPLIT = re.compile(r'\s{2,}|\t|(?<=\d元)\s+|(?<=/份)\s+|(?<=\d)\s+(?=[\u4e00-\u9fff])')
+
+
+def _segments(line):
+    return [part.strip() for part in _SPLIT.split(line) if part.strip()]
 
 
 def cache_key(line):
