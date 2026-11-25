@@ -263,8 +263,11 @@ struct LioAttractionBookingDetail: View {
         case .unknownWindow: return language.text("The booking window is not published, so no reminder can be set.", "官方未写提前几天放票，暂不能设提醒。")
         case .notNeeded: return language.text("No booking needed.", "不需要预约。")
         case .pastVisit: return language.text("Pick a future day.", "请选今天以后的日期。")
-        case .stale: return language.text("These rules are due for review before then; check the official channel nearer the time.",
-                                          "到那时规则可能已变化，请临近时查官方渠道。")
+        case .stale where stale:
+            return language.text("These rules are due for review; check the official channel.", "规则待复核，请查官方渠道。")
+        case .stale:
+            return language.text("These rules are due for review before then; check the official channel nearer the time.",
+                                 "到那时规则可能已变化，请临近时查官方渠道。")
         }
     }
 
