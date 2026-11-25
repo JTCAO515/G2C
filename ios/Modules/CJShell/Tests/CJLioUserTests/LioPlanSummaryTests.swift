@@ -112,6 +112,19 @@ struct LioPlanSummaryTests {
         #expect(model.plans == [plan])
     }
 
+    @Test @MainActor func aNewSessionForTheSameFolderSeesTheSavedPlans() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        var firstSession = true
+        let earlier = LioSavedPlans(directory: directory, isCurrent: { firstSession })
+        LioSavedPlansModel(store: earlier).save(Self.plan(version: 1))
+        firstSession = false
+        let later = LioSavedPlans(directory: directory, isCurrent: { true })
+        #expect(earlier.id != later.id)
+        #expect(LioSavedPlansModel(store: earlier).plans.isEmpty)
+        #expect(LioSavedPlansModel(store: later).plans == [Self.plan(version: 1)])
+    }
+
     @Test @MainActor func modelReportsSavedOnlyForTheSameVersion() throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: directory) }

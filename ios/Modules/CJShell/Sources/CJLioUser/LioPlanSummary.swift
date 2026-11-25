@@ -99,6 +99,8 @@ extension LioRichItinerary {
     }
 
     let directory: URL
+    /// Distinguishes stores made for different host sessions, even for the same folder.
+    let id = UUID()
     private let isCurrent: @MainActor () -> Bool
     private var file: URL { directory.appendingPathComponent(Self.fileName) }
 
@@ -171,7 +173,7 @@ final class LioSavedPlansModel {
         cached = (try? store?.load()) ?? []
     }
 
-    var storeDirectory: URL? { store?.directory }
+    var storeID: UUID? { store?.id }
     var available: Bool { store?.current == true }
     var plans: [LioPlanSummary] { available ? cached : [] }
 

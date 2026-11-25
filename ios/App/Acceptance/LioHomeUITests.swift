@@ -2424,6 +2424,16 @@ import CryptoKit
             XCTAssertTrue(element("lio.plan.saved").waitForExistence(timeout: 5), app.debugDescription)
             app.buttons["lio.plan.done"].tap()
             XCTAssertTrue(element("lio.plan.saved").waitForNonExistence(timeout: 5))
+            // From Trips, changing a day returns to the chat with the text ready; the earlier draft stays.
+            row.tap()
+            let adjustFromTrips = app.buttons["lio.plan.adjust-day"]
+            reveal(adjustFromTrips); adjustFromTrips.tap()
+            XCTAssertTrue(composer.waitForExistence(timeout: 5))
+            XCTAssertTrue(element("lio.plan.saved").waitForNonExistence(timeout: 5))
+            XCTAssertEqual(composer.value as? String,
+                           chinese ? "调整「北京三日行」第 1 天：" : "Change day 1 of “Three days in Beijing”: ")
+            showLioTab(app, ["Trips", "行程"])
+            XCTAssertTrue(row.waitForExistence(timeout: 5), app.debugDescription)
             row.press(forDuration: 1.2)
             let remove = app.buttons[chinese ? "从行程中移除" : "Remove from Trips"]
             XCTAssertTrue(remove.waitForExistence(timeout: 5), app.debugDescription)

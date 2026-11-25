@@ -150,8 +150,10 @@ public struct LioHome<MenuContent: View>: View {
         #if DEBUG
         // Acceptance and previews keep saved plans in their own folder; a signed-in build uses the account's.
         if plans == nil, ProcessInfo.processInfo.arguments.contains("--lio-home-plan-acceptance") {
+            // One folder per launch, so a run that stopped early never starts the next one as saved.
             plans = LioSavedPlans(directory: FileManager.default.temporaryDirectory
-                .appendingPathComponent("LioSavedPlansPreview", isDirectory: true), isCurrent: { true })
+                .appendingPathComponent("LioSavedPlansPreview-\(ProcessInfo.processInfo.processIdentifier)", isDirectory: true),
+                                  isCurrent: { true })
         }
         #endif
         savedPlansStore = plans
@@ -427,9 +429,9 @@ public struct LioHome<MenuContent: View>: View {
         .sheet(item: $planSheet, onDismiss: continuePlanInChat) { plan in
             LioPlanSheet(plan: plan, language: language, actions: planActions(plan))
         }
-        .task(id: savedPlansStore?.directory) {
-            // A different account's folder gets its own list.
-            if savedPlans.storeDirectory != savedPlansStore?.directory { savedPlans = LioSavedPlansModel(store: savedPlansStore) }
+        .task(id: savedPlansStore?.id) {
+            // Each host session (another account, or the same account after returning) brings its own store.
+            if savedPlans.storeID != savedPlansStore?.id { savedPlans = LioSavedPlansModel(store: savedPlansStore) }
         }
     }
 
@@ -458,18 +460,10 @@ public struct LioHome<MenuContent: View>: View {
     private func continuePlanInChat() {
         guard let followUp = planFollowUp else { return }
         planFollowUp = nil
-        let fromOtherTab = tab != .chat
-        tab = .chat
         if draft.isEmpty { draft = followUp }
-        if fromOtherTab {
-            // Switching tabs ends typing; focus the composer once the chat is showing.
-            Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(350))
-                if tab == .chat { typing = true }
-            }
-        } else {
-            typing = true
-        }
+        // From the chat the composer is focused; from Trips the chat opens with the text ready (switching tabs
+        // ends typing, and focusing during that transition is not reliable).
+        if tab == .chat { typing = true } else { tab = .chat }
     }
 
     @ViewBuilder
