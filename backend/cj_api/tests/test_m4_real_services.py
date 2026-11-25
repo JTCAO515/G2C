@@ -1168,6 +1168,26 @@ class Boundaries(unittest.TestCase):
                 discussion_preview_days=3,discussion_preview_sha256='0'*64))
         self.assertEqual(self.budget.inspect(),[])
 
+    def test_discussion_preview_uses_the_answer_output_limit(self):
+        # JT 2026-11-25 (via coordination): the day-by-day preview may use the
+        # answer limit; HK batch -39 cut a 5-day plan at 1024 tokens.
+        from cj_message.lio_context import discussion_preview_format_sha256
+        for days,expected in ((5,M4_REAL_OUTPUT_TOKENS),(None,1024)):
+            with self.subTest(days=days):
+                self.sent.clear()
+                provider=MeteredDashScopeProvider(
+                    DashScopeConfig(M4_BASE,M4_MODEL,KEY,max_output_tokens=M4_REAL_OUTPUT_TOKENS),
+                    self.budget,transport=httpx.MockTransport(
+                        lambda request:self.sent.append(request) or httpx.Response(200,stream=httpx.ByteStream(sse().encode()))))
+                preview={} if days is None else dict(discussion_preview_days=days,
+                    discussion_preview_sha256=discussion_preview_format_sha256(days))
+                try:
+                    list(provider.invoke([dict(role='user',content='Synthetic five-day request')],'Discussion test',
+                        'preview-limit-'+str(days),receipt={},guard=lambda:True,discussion_reply=True,
+                        release_after_send=True,**preview))
+                except (ProviderFailed,BudgetUnknown):pass
+                self.assertEqual(json.loads(self.sent[0].content)['max_tokens'],expected)
+
     def test_lio_timeline_keeps_uncertainty_plain_and_withholds_internal_answers(self):
         from cj_api.lio_dialogue_routes import _message
         from cj_message.lio_timeline import TimelineMessage
