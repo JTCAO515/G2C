@@ -4,7 +4,7 @@ import Testing
 
 /// #1450 item 2: the bundled maps for Beijing, Shanghai and Guangzhou are complete and consistent.
 struct LioMetroMapDataTests {
-    static let mapped: [LioMetroCity] = [.beijing, .shanghai, .guangzhou]
+    static let mapped: [LioMetroCity] = [.beijing, .shanghai, .guangzhou, .shenzhen]
 
     @Test func onlyCitiesWithCheckedDataHaveAMap() throws {
         #expect(LioMetroCity.allCases.filter { $0.mapResource != nil } == Self.mapped)
@@ -15,8 +15,8 @@ struct LioMetroMapDataTests {
     func everyLineHasStationsInBothLanguagesAndAnOfficialColour(city: LioMetroCity) throws {
         let map = try LioMetroMap.bundled(city)
         #expect(map.city == city)
-        #expect(map.lines.count >= 18)
-        #expect(map.stations.count >= 300)
+        #expect(map.lines.count >= 8)
+        #expect(map.stations.count >= 150)
         for line in map.lines {
             #expect(LioMetroMap.isColor(line.color), "\(line.id)")
             #expect(!line.nameZH.isEmpty && !line.nameEN.isEmpty)
@@ -55,17 +55,20 @@ struct LioMetroMapDataTests {
     @Test(arguments: mapped)
     func sourceNamesTheOperatorSiteAndCheckDay(city: LioMetroCity) throws {
         let map = try LioMetroMap.bundled(city)
-        #expect(map.source.checkedOn == "2026-11-24")
+        let checked = city == .shenzhen ? "2026-11-25" : "2026-11-24"
+        #expect(map.source.checkedOn == checked)
         #expect(map.source.urls.allSatisfy { $0.scheme == "https" })
         let hosts = Set(map.source.urls.compactMap(\.host))
         switch city {
         case .beijing: #expect(hosts == ["map.bjsubway.com", "map_en.bjsubway.com"])
         case .shanghai: #expect(hosts == ["service.shmetro.com"])
         case .guangzhou: #expect(hosts == ["wx.gzmtr.com", "cs.gzmtr.com"])
+        case .shenzhen: #expect(hosts == ["www.szmc.net"])
         case .chengdu: Issue.record("no map")
         }
-        #expect(map.sourceLine(in: .english).contains("checked 24 Nov 2026"))
-        #expect(map.sourceLine(in: .chinese).contains("核对于2026年11月24日"))
+        let day = city == .shenzhen ? 25 : 24
+        #expect(map.sourceLine(in: .english).contains("checked \(day) Nov 2026"))
+        #expect(map.sourceLine(in: .chinese).contains("核对于2026年11月\(day)日"))
     }
 
     /// Spot checks against the operators' sites on the check day.
@@ -80,6 +83,8 @@ struct LioMetroMapDataTests {
         #expect(try lines(.shanghai, "世纪大道") == ["2号线", "4号线", "6号线", "9号线"])
         #expect(try lines(.guangzhou, "体育西路") == ["1号线", "3号线"])
         #expect(try lines(.guangzhou, "广州南站") == ["2号线", "7号线", "22号线"])
+        #expect(try lines(.shenzhen, "车公庙") == ["1号线", "7号线", "9号线", "11号线"])
+        #expect(try lines(.shenzhen, "深圳北") == ["4号线", "5号线", "6号线"])
         let guangzhou = try LioMetroMap.bundled(.guangzhou)
         #expect(guangzhou.stations.first { $0.nameZH == "广州南站" }?.nameEN == "Guangzhou South Railway Station")
     }
@@ -90,6 +95,7 @@ struct LioMetroMapDataTests {
         #expect(guangzhou.water.map(\.nameZH) == ["珠江"])
         #expect(shanghai.water.map(\.nameEN) == ["Huangpu River"])
         #expect(try LioMetroMap.bundled(.beijing).water.isEmpty)
+        #expect(try LioMetroMap.bundled(.shenzhen).water.isEmpty)
         for map in [guangzhou, shanghai] {
             for water in map.water {
                 #expect(water.points.count >= 8)

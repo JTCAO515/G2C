@@ -4,8 +4,8 @@ import Testing
 struct LioMetroGuideTests {
     @Test func eachCityHasAnOfficialMapAndBilingualInstructions() {
         let cities = LioMetroCity.allCases
-        #expect(cities == [.beijing, .shanghai, .guangzhou, .chengdu])
-        #expect(cities.compactMap { $0.mapURL.host } == ["map.bjsubway.com", "service.shmetro.com", "cs.gzmtr.com", "www.chengdurail.com"])
+        #expect(cities == [.beijing, .shanghai, .guangzhou, .shenzhen, .chengdu])
+        #expect(cities.compactMap { $0.mapURL.host } == ["map.bjsubway.com", "service.shmetro.com", "cs.gzmtr.com", "www.szmc.net", "www.chengdurail.com"])
         for city in cities {
             #expect(city.mapURL.scheme == "https")
             #expect(city.guideURL.scheme == "https")
@@ -24,6 +24,7 @@ struct LioMetroCityPickerTests {
         #expect(LioMetroCity.beijing.nativeName == "北京")
         #expect(LioMetroCity.shanghai.nativeName == "上海")
         #expect(LioMetroCity.guangzhou.nativeName == "广州")
+        #expect(LioMetroCity.shenzhen.nativeName == "深圳")
         #expect(LioMetroCity.chengdu.nativeName == "成都")
         for city in LioMetroCity.allCases {
             for language in [LioLanguage.english, .chinese] {

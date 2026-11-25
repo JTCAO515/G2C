@@ -184,7 +184,8 @@ extension LioMetroMap {
         let names = file.stations.map(\.nameZH)
         guard Set(names).count == names.count else { throw LioMetroMapFailure.invalid("duplicate name") }
         let water = try (file.water ?? []).map { item -> Water in
-            guard !item.nameZH.isEmpty, !item.nameEN.isEmpty, item.points.count >= 2,
+            guard !item.nameZH.trimmingCharacters(in: .whitespaces).isEmpty,
+                  !item.nameEN.trimmingCharacters(in: .whitespaces).isEmpty, item.points.count >= 2,
                   item.points.allSatisfy({ $0.count == 2 && (0...file.canvas.width).contains($0[0])
                       && (0...file.canvas.height).contains($0[1]) }) else {
                 throw LioMetroMapFailure.invalid("water \(item.nameZH)")
