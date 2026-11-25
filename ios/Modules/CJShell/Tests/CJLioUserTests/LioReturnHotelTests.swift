@@ -83,6 +83,13 @@ import Testing
                                                                 addressZH: "北京市东城区王府井东街8号"))
     }
 
+    @Test func aSavedRoomIsCleanedWhenReadBack() throws {
+        let json = #"{"place":{"nameZH":"北京饭店","nameEN":"","addressZH":null,"coordinate":{"latitude":39.9,"longitude":116.4,"referenceSystem":"gcj02"}},"roomNumber":"  0815  ","source":"manual"}"#
+        let hotel = try JSONDecoder().decode(LioStayHotel.self, from: Data(json.utf8))
+        #expect(hotel.roomNumber == "0815")
+        #expect(hotel.place.nameEN.isEmpty, "a hotel without an English name is kept")
+    }
+
     @Test func featureIsOffUnlessTheBuildSaysYes() {
         #expect(LioShowCardFeature.enabled(infoValue: nil) == false)
         #expect(LioShowCardFeature.enabled(infoValue: "NO") == false)
@@ -97,7 +104,8 @@ import Testing
                      "back to hotel", "How do I get back to the hotel?"] {
             #expect(LioReturnHotel.isReturnRequest(text), "\(text)")
         }
-        for text in ["推荐酒店", "find a hotel near the Bund", "酒店早餐几点", "hotel prices in Shanghai"] {
+        for text in ["推荐酒店", "find a hotel near the Bund", "酒店早餐几点", "hotel prices in Shanghai",
+                     "We came back from the hotel", "How do I return the hotel key?"] {
             #expect(!LioReturnHotel.isReturnRequest(text), "\(text)")
         }
     }

@@ -6,6 +6,8 @@ import SwiftUI
 struct LioReturnHotelView: View {
     let language: LioLanguage
     let store: LioReturnHotelStore?
+    /// Details typed on the show cards, kept on this device (JT, 2026-11-25).
+    var detailsStore: LioShowCardDetailsStore?
     /// Taxi search and the DiDi hand-off; nil when taxi is not available in this build.
     let taxiEntry: LioTaxiEntry?
     @State private var hotel: LioStayHotel?
@@ -18,9 +20,11 @@ struct LioReturnHotelView: View {
         var id: Self { self }
     }
 
-    init(language: LioLanguage, store: LioReturnHotelStore?, taxiEntry: LioTaxiEntry?, initialHotel: LioStayHotel? = nil) {
+    init(language: LioLanguage, store: LioReturnHotelStore?, detailsStore: LioShowCardDetailsStore? = nil,
+         taxiEntry: LioTaxiEntry?, initialHotel: LioStayHotel? = nil) {
         self.language = language
         self.store = store
+        self.detailsStore = detailsStore
         self.taxiEntry = taxiEntry
         _hotel = State(initialValue: initialHotel)
         _room = State(initialValue: initialHotel?.roomNumber ?? "")
@@ -38,7 +42,7 @@ struct LioReturnHotelView: View {
                     Text(notice).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
                 }
                 NavigationLink {
-                    LioShowCardsView(language: language, hotel: hotel)
+                    LioShowCardsView(language: language, hotel: hotel, detailsStore: detailsStore)
                 } label: {
                     Label(language.text("Show cards: front desk, pharmacy, restaurant…", "出示卡：前台、药店、餐厅……"),
                           systemImage: "person.text.rectangle")
@@ -61,6 +65,8 @@ struct LioReturnHotelView: View {
             do {
                 hotel = try store.load()
                 room = hotel?.roomNumber ?? ""
+            } catch is CancellationError {
+                return
             } catch {
                 notice = language.text("Your saved hotel could not be read. Set it again.", "已保存的酒店打不开了，请重新设置。")
             }
@@ -108,7 +114,10 @@ struct LioReturnHotelView: View {
                 TextField(language.text("Optional", "选填"), text: $room)
                     .keyboardType(.numbersAndPunctuation)
                     .textFieldStyle(.roundedBorder)
-                    .onSubmit { save(LioStayHotel(place: hotel.place, roomNumber: room, source: hotel.source)) }
+                    .onChange(of: room) { _, value in
+                        guard value != (hotel.roomNumber ?? "") else { return }
+                        save(LioStayHotel(place: hotel.place, roomNumber: value, source: hotel.source))
+                    }
                     .accessibilityIdentifier("lio.return-hotel.room")
             }
             .frame(minHeight: 44)
@@ -128,9 +137,12 @@ struct LioReturnHotelView: View {
             }
             .buttonStyle(LioSecondaryButtonStyle())
             .accessibilityIdentifier("lio.return-hotel.driver")
-            Button(language.text("Change hotel", "更换酒店")) { sheet = .choose }
-                .foregroundStyle(LioTheme.vermilion)
-                .frame(minHeight: 44)
+            Button { sheet = .choose } label: {
+                Text(language.text("Change hotel", "更换酒店"))
+                    .foregroundStyle(LioTheme.vermilion)
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
+            }
                 .accessibilityIdentifier("lio.return-hotel.change")
         }
         .padding(LioTheme.Spacing.md)
