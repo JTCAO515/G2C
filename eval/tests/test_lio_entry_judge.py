@@ -39,16 +39,27 @@ class EntryJudge(unittest.TestCase):
         self.assertIn('airside', system)
         self.assertIn('Hong Kong', system)
         self.assertIn('The transit-240h policy requires', system)
+        # Acceptance on 087f127e (S, 2026-11-26): 0.961 with 6 false alarms on statements true
+        # under one listed policy; a contradiction must now name the rule it breaks.
+        self.assertIn('true under any one listed policy', system)
+        self.assertIn('"rule"', system)
         self.assertIn('uk-canada-visa-free-2026', user)
         self.assertIn('<answer>\nA plain 10-day trip needs a visa.\n</answer>', user)
         self.assertNotIn('Authorization', json.dumps(body))
 
     def test_verdict_parsing_is_strict(self):
-        self.assertEqual(parse_verdict('{"contradicts": true, "sentence": "x"}'), (True, 'x'))
-        self.assertEqual(parse_verdict('{"contradicts": false, "sentence": ""}'), (False, ''))
+        rules = {'transit-240h', 'otherwise'}
+        self.assertEqual(parse_verdict('{"contradicts": true, "rule": "transit-240h", "sentence": "x"}', rules), (True, 'x'))
+        self.assertEqual(parse_verdict('{"contradicts": false, "rule": "", "sentence": ""}', rules), (False, ''))
+        # A contradiction that names no supplied rule is not grounded and does not count.
+        for raw in ('{"contradicts": true, "rule": "", "sentence": "x"}',
+                    '{"contradicts": true, "rule": "uk-canada-visa-free-2026", "sentence": "x"}',
+                    '{"contradicts": true, "sentence": "x"}'):
+            with self.subTest(raw=raw):
+                self.assertEqual(parse_verdict(raw, rules), (False, ''))
         for raw in ('', 'yes', '{"contradicts": "true"}', '{"sentence": "x"}', '[1]', '{"contradicts": true, "sentence": 5}'):
             with self.subTest(raw=raw), self.assertRaises(JudgeUnavailable):
-                parse_verdict(raw)
+                parse_verdict(raw, {'transit-240h'})
 
     def test_validate_reports_accuracy_false_alarms_and_misses(self):
         rows = [dict(country='GB', text='ok', correct=True), dict(country='GB', text='bad', correct=False),

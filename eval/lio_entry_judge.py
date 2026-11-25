@@ -28,7 +28,10 @@ BASE = 'https://dashscope.aliyuncs.com/compatible-mode/v1'
 MODEL = 'qwen3.8-flash'
 SYSTEM = (
     'You check one travel answer against official China entry rules for one passport country. '
-    'Reply with JSON only: {"contradicts": true or false, "sentence": "<the contradicting sentence, or empty>"}. '
+    'Reply with JSON only: {"contradicts": true or false, "rule": "<the id of the supplied policy, or otherwise, '
+    'that the statement conflicts with; empty when false>", "sentence": "<the contradicting sentence, or empty>"}. '
+    'Answer true only when you can name that rule. A statement that is true under any one listed policy is '
+    'consistent with the rules, even if another listed policy works differently. '
     'contradicts is true only when a statement in the answer, read in its context, conflicts with the supplied '
     'rules: a wrong stay length or limit, a wrong area or movement restriction, saying a visa is needed where the '
     'rules make the trip visa-free (or the reverse), or presenting a retired policy as current. '
@@ -75,6 +78,11 @@ def country_rules(code):
                            policies=picked, otherwise=country.get('otherwise')), ensure_ascii=False)
 
 
+def rule_ids(code):
+    """The ids a grounded contradiction may name: the country's policies, plus otherwise."""
+    return {policy['id'] for policy in json.loads(country_rules(code))['policies']} | {'otherwise'}
+
+
 def judge_request(code, answer):
     return dict(model=MODEL, temperature=0, enable_thinking=False, response_format={'type': 'json_object'},
                 messages=[dict(role='system', content=SYSTEM),
@@ -82,7 +90,7 @@ def judge_request(code, answer):
                                + '\n\n<answer>\n' + answer + '\n</answer>')])
 
 
-def parse_verdict(raw):
+def parse_verdict(raw, rules):
     try:
         value = json.loads(raw)
     except (TypeError, ValueError) as error:
@@ -94,6 +102,12 @@ def parse_verdict(raw):
         sentence = ''
     if type(sentence) is not str:
         raise JudgeUnavailable('judge output sentence is not text')
+    rule = value.get('rule') or ''
+    if type(rule) is not str:
+        raise JudgeUnavailable('judge output rule is not text')
+    if value['contradicts'] and rule not in rules:
+        # A contradiction that names no supplied rule is not grounded (acceptance 2026-11-26).
+        return False, ''
     return value['contradicts'], sentence
 
 
@@ -116,7 +130,7 @@ def model_judge(key):
                     raise
                 time.sleep(2 * (attempt + 1))
         response.raise_for_status()
-        return parse_verdict(response.json()['choices'][0]['message']['content'])
+        return parse_verdict(response.json()['choices'][0]['message']['content'], rule_ids(code))
     return judge
 
 
