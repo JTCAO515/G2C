@@ -86,6 +86,31 @@ import Testing
         }
     }
 
+    /// The server reads AMap's Chinese seat names into nine classes (#1521 smoke); a train can list all of them.
+    @Test func acceptsAllNineSeatClassesButNotMore() async throws {
+        let classes = [("商务座", "Business class"), ("特等座", "Premium class"), ("一等座", "First class"),
+                       ("二等座", "Second class"), ("软卧", "Soft sleeper"), ("硬卧", "Hard sleeper"),
+                       ("软座", "Soft seat"), ("硬座", "Hard seat"), ("无座", "Standing (no seat)")]
+        func reply(_ count: Int) -> Data {
+            let seats = (0..<count).map { index in
+                let (zh, en) = classes[index % classes.count]
+                return #"{"class_zh":"\#(zh)","class_en":"\#(en)","price_cny_minor":\#(10_000 + index)}"#
+            }.joined(separator: ",")
+            return Data(String(decoding: Self.reply, as: UTF8.self).replacingOccurrences(
+                of: #""seats":[{"class_zh":"二等座","class_en":"Second class","price_cny_minor":62600}]"#,
+                with: #""seats":[\#(seats)]"#).utf8)
+        }
+        let nine = reply(9), ten = reply(10)
+        let accepting = LioTransportRelayClient(baseURL: origin, isCurrent: { true }, bearer: { "synthetic-owner" }) { _ in
+            (nine, response(route, status: 200))
+        }
+        #expect(try await accepting.search(try query()).rail.options.first?.fares.count == 9)
+        let refusing = LioTransportRelayClient(baseURL: origin, isCurrent: { true }, bearer: { "synthetic-owner" }) { _ in
+            (ten, response(route, status: 200))
+        }
+        await #expect(throws: LioTransportRelayFailure.unavailable) { try await refusing.search(try query()) }
+    }
+
     @Test func missingCredentialOrSessionDoesNotSend() async throws {
         var calls = 0
         let exchange: LioTransportRelayClient.Exchange = { _ in
