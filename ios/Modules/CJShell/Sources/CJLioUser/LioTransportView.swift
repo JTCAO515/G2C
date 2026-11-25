@@ -10,6 +10,7 @@ struct LioTransportView: View {
     let service: LioTransportService
     @Environment(\.lioTaxiEntry) private var taxiEntry
     @Environment(\.lioTransportRelay) private var relay
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var fromText = ""
     @State private var toText = ""
     @State private var date = Date()
@@ -194,7 +195,10 @@ struct LioTransportView: View {
                     .foregroundStyle(LioTheme.inkSecondary)
                     .accessibilityIdentifier("lio.transport.sample")
             }
-            HStack(spacing: LioTheme.Spacing.xs) {
+            let tabs = LioTransportModeTabs.stacks(at: dynamicTypeSize)
+                ? AnyLayout(VStackLayout(spacing: LioTheme.Spacing.xs))
+                : AnyLayout(HStackLayout(spacing: LioTheme.Spacing.xs))
+            tabs {
                 ForEach(LioTransportMode.allCases) { item in
                     modeTab(item, result.result(for: item))
                 }

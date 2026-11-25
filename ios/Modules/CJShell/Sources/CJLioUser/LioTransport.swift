@@ -1,7 +1,15 @@
 import Foundation
+import SwiftUI
 
 /// Intercity transport search (#1517 / #1519): compare trains, flights and buses between two cities.
 /// Booking and payment always happen outside the app (12306, Trip.com, the bus station).
+/// The train / flight / bus tabs above the results.
+enum LioTransportModeTabs {
+    /// At accessibility sizes three side-by-side tabs split words ("Trai/n") and cut the price ("from ¥…"),
+    /// so they stack one per row there.
+    static func stacks(at size: DynamicTypeSize) -> Bool { size.isAccessibilitySize }
+}
+
 enum LioTransportMode: String, CaseIterable, Identifiable, Sendable {
     case rail, flight, bus
 
