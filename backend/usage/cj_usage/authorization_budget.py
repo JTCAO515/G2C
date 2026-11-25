@@ -109,11 +109,13 @@ def shared_tool_services():
     """Gaode services authorized apart from the Lio pipeline that share the tool cash ceiling.
 
     service -> (kind, origin, operations, counted separately from entry 3's allowance of that kind).
-    Nearby (entry 12 item 1), hotel search (item 3, revised in #1534) and roadbook places (entry 18) are
-    place calls; intercity trains (item 4, #1520) are route calls. Each has its own count.
+    Nearby (entry 12 item 1), hotel search (item 3, revised in #1534), metro station surroundings (item 5,
+    #1577) and roadbook places (entry 18) are place calls; intercity trains (item 4, #1520) are route calls.
+    Each has its own count.
     """
-    from . import hotel_budget,nearby_budget,roadbook_budget,transit_budget
+    from . import hotel_budget,metro_nearby_budget,nearby_budget,roadbook_budget,transit_budget
     return {nearby_budget.SERVICE:('place',nearby_budget.ORIGIN,nearby_budget.OPERATIONS,True),
+            metro_nearby_budget.SERVICE:('place',metro_nearby_budget.ORIGIN,metro_nearby_budget.OPERATIONS,True),
             hotel_budget.SERVICE:('place',hotel_budget.ORIGIN,hotel_budget.OPERATIONS,True),
             roadbook_budget.AMAP_SERVICE:('place',roadbook_budget.AMAP_ORIGIN,roadbook_budget.AMAP_OPERATIONS,True),
             transit_budget.SERVICE:(transit_budget.KIND,transit_budget.ORIGIN,transit_budget.OPERATIONS,True)}

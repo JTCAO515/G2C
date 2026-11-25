@@ -67,6 +67,9 @@ struct LioMetroMap: Equatable, Sendable {
         let y: Double
         /// Every line that stops here, in the order the file lists the lines.
         let lines: [String]
+        /// Where the station really is (GCJ-02, AMap's station point), for searching its surroundings.
+        /// Missing for the few stations AMap's network data does not have yet.
+        var geo: LioTaxiPlace.Coordinate? = nil
 
         var isInterchange: Bool { lines.count > 1 }
 
@@ -159,6 +162,7 @@ extension LioMetroMap {
         struct Station: Decodable {
             let id, nameZH, nameEN: String
             let x, y: Double
+            let geo: [Double]?
             let lines: [String]
         }
         let schema: String
@@ -220,6 +224,12 @@ extension LioMetroMap {
             guard station.lines == (listed[station.id] ?? []) else {
                 throw LioMetroMapFailure.invalid("station lines \(station.id)")
             }
+            // A position is [longitude, latitude] inside mainland China's range, or absent.
+            if let geo = station.geo {
+                guard geo.count == 2, (73.0...136.0).contains(geo[0]), (3.0...54.0).contains(geo[1]) else {
+                    throw LioMetroMapFailure.invalid("station position \(station.id)")
+                }
+            }
         }
         let names = file.stations.map(\.nameZH)
         guard Set(names).count == names.count else { throw LioMetroMapFailure.invalid("duplicate name") }
@@ -234,7 +244,8 @@ extension LioMetroMap {
         }
 
         let stations = file.stations.map {
-            Station(id: $0.id, nameZH: $0.nameZH, nameEN: $0.nameEN, x: $0.x, y: $0.y, lines: $0.lines)
+            Station(id: $0.id, nameZH: $0.nameZH, nameEN: $0.nameEN, x: $0.x, y: $0.y, lines: $0.lines,
+                    geo: $0.geo.map { .init(latitude: $0[1], longitude: $0[0], referenceSystem: .gcj02) })
         }
         let lines = file.lines.map {
             Line(id: $0.id, nameZH: $0.nameZH, nameEN: $0.nameEN, color: $0.color, loop: $0.loop, segments: $0.segments)
