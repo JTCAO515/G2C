@@ -1,0 +1,124 @@
+{
+  "asset": "Lio 八个状态动图",
+  "source": "基于 PR #1500 的 Lio 高清原件，由 Codex 内置图像生成和 Pillow 合成",
+  "files": {
+    "lio-greeting-still.png": {
+      "bytes": 263166,
+      "sha256": "ee33241ab3a7326a0be4b61d21ca9befbea7ddcbd3f73e79a3294894e0045fe5",
+      "width": 512,
+      "height": 512
+    },
+    "lio-greeting.gif": {
+      "bytes": 1264682,
+      "sha256": "b506177018c94241a32e97a496ef9670ce040909a827aed7bd930fe819f53332",
+      "width": 512,
+      "height": 512,
+      "frames": 11,
+      "duration_ms": 1870
+    },
+    "lio-idle-still.png": {
+      "bytes": 267459,
+      "sha256": "673ec1fe22aba70186d2972a65bc7ee1306a5f8a979830df0f4d3611dde0b97c",
+      "width": 512,
+      "height": 512
+    },
+    "lio-idle.gif": {
+      "bytes": 988400,
+      "sha256": "4baccf9fd342c59948845d872de5c6f4842a2bb9100d3a100872b5de66159ac0",
+      "width": 512,
+      "height": 512,
+      "frames": 11,
+      "duration_ms": 1820
+    },
+    "lio-motion-preview.png": {
+      "bytes": 494734,
+      "sha256": "51a6b4ad72767ff750a724f15483d2605e3730cea8fd30fd7d45c611b3bafc5d",
+      "width": 1008,
+      "height": 590
+    },
+    "lio-offline-still.png": {
+      "bytes": 266723,
+      "sha256": "78b6d32d1f103121eb80ce831db23cf797721b0b5d183277775b174c7675f5f2",
+      "width": 512,
+      "height": 512
+    },
+    "lio-offline.gif": {
+      "bytes": 1069912,
+      "sha256": "1bc399dbdd996473a8e76f6c0ff00e0bd3ff21980e9785c7764c1047de925137",
+      "width": 512,
+      "height": 512,
+      "frames": 11,
+      "duration_ms": 1870
+    },
+    "lio-planning-still.png": {
+      "bytes": 238456,
+      "sha256": "fc4c4974090f7fd6dacfe3bb7012f0d5159b1e4b78eff7853cfa4fbdb4fc1782",
+      "width": 512,
+      "height": 512
+    },
+    "lio-planning.gif": {
+      "bytes": 1007085,
+      "sha256": "f6e5676f94baca38a6eb8ae6bdcc6c1c4de82093e964c6e47ddab4fb7be82cea",
+      "width": 512,
+      "height": 512,
+      "frames": 11,
+      "duration_ms": 1870
+    },
+    "lio-remembered-still.png": {
+      "bytes": 267873,
+      "sha256": "ee892824d324298dd0ff1f38486af9122cdc97ff998a53db7cc41c10f67faf4c",
+      "width": 512,
+      "height": 512
+    },
+    "lio-remembered.gif": {
+      "bytes": 1067758,
+      "sha256": "bd29e25701f75afe56b15cf6c102a5a398505e55cc19b2c5410d3239bd3ebcf0",
+      "width": 512,
+      "height": 512,
+      "frames": 11,
+      "duration_ms": 1870
+    },
+    "lio-searching-still.png": {
+      "bytes": 235275,
+      "sha256": "76cc65b47bce6ca69fdf6fa8bacbe6786e8ea3561f377b8789336dc6e4540ad2",
+      "width": 512,
+      "height": 512
+    },
+    "lio-searching.gif": {
+      "bytes": 867407,
+      "sha256": "b0dcdc3e6db6c353d65b8d50484ed722ae8aadb9a5ab71ebfcfab4fe638b4aa5",
+      "width": 512,
+      "height": 512,
+      "frames": 11,
+      "duration_ms": 1870
+    },
+    "lio-taking-longer-still.png": {
+      "bytes": 266802,
+      "sha256": "96234a1cf6c8ef6160a5a0c8e5afebcab4de3e5eda21e27c731103421defe594",
+      "width": 512,
+      "height": 512
+    },
+    "lio-taking-longer.gif": {
+      "bytes": 1293744,
+      "sha256": "ca1e558b5c3e24aeb72593ee3b774fbb276708fe79b03ddd42bc90d7f9852e2a",
+      "width": 512,
+      "height": 512,
+      "frames": 11,
+      "duration_ms": 1870
+    },
+    "lio-thinking-still.png": {
+      "bytes": 267404,
+      "sha256": "258fc2a0390aad48dbc1c869f10f243b5b89ecf405630fc1644ccef1b57d68f7",
+      "width": 512,
+      "height": 512
+    },
+    "lio-thinking.gif": {
+      "bytes": 932253,
+      "sha256": "d438265d7de326249cf495274a3e2ea2b38426b47b156687ed96cebfa075baea",
+      "width": 512,
+      "height": 512,
+      "frames": 11,
+      "duration_ms": 1870
+    }
+  }
+}
