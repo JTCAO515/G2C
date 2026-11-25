@@ -144,6 +144,28 @@ ANSWER_DETAIL = (
     'numbers; say where to check.'
 )
 
+# JT 2026-11-25 "all A" (docs/lio-voice.md §3.2, §4.2): one screen, the rest on tap.
+# Used only when the contract layer passes layout='one-screen'; flat stays byte-identical.
+ONE_SCREEN_DETAIL = (
+    ' Fit the answer on one phone screen. The first sentence answers the question directly; if you assume '
+    'something such as party size, pace or season, say it in that sentence. Then give at most three short '
+    'points: for a procedure up to 4 numbered steps; for a recommendation one best pick and two alternatives; '
+    'for where to go two or three options, one line each, then your advice; for a day plan one line per day. '
+    'Body length: procedures and facts 80–150 Chinese characters or 50–90 English words; recommendations '
+    'nearby 80–130 or 50–80; comparisons 120–180 or 70–110; day plans 120–200 or 70–120; a change says only '
+    'what changed, 50–100 or 30–60. Emergencies have no length limit: start with the action and keep every '
+    'life-saving step. Keep the names, numbers and the one tip that matters most; leave further detail to '
+    'the follow-ups instead of the body. Give routes only from supplied tool results or as a short direction, '
+    'and never correct yourself mid-answer. Bold only place names and key numbers; no headings, tables or raw '
+    'links. Well-established reference figures are not invented: give them as approximate ranges and say '
+    'where to confirm. Live prices, ticket availability and whether a place is open today stay without '
+    'numbers; say where to check.'
+)
+CLOSING_QUESTION = ('End with at most one specific question, only when there is a useful next step to choose, '
+                    'offering 2–3 easy choices; never repeat one.')
+NO_CLOSING_QUESTION = 'Do not end with a question or an offer; the app shows buttons and follow-ups below the answer.'
+LAYOUTS = ('flat', 'one-screen')
+
 _TRAVELER_IDENTITY_QUESTION = re.compile(r'(?:我是谁|你了解我什么|who am i|what do you know about me)[?？。.!！\s]*', re.I)
 _TRAVELER_IDENTITY_PROMPT = (
     'For this question only, if no saved memory is supplied, say in Chinese: '
@@ -196,13 +218,19 @@ def asks_about_sources(question):
     return question is not None and _SOURCES_QUESTION.search(question) is not None
 
 
-def answer_prompt(locale, question=None, *, detailed=False, greeting_example=True, sources_example=True):
+def answer_prompt(locale, question=None, *, detailed=False, greeting_example=True, sources_example=True,
+                  layout='flat'):
+    if layout not in LAYOUTS:
+        raise ValueError('unknown answer layout')
     identity = (_TRAVELER_IDENTITY_PROMPT if question is not None
                 and _TRAVELER_IDENTITY_QUESTION.fullmatch(question.strip()) else '')
     persona = PERSONA if greeting_example else PERSONA.replace(_GREETING_EXAMPLE, '', 1)
     # HK B3 2026-11-25: answers copied quoted persona examples; the answer path keeps
     # the sources sentence only for an actual sources question.
     persona = persona if sources_example else persona.replace(_SOURCES_EXAMPLE, '', 1)
+    if layout == 'one-screen':
+        return (persona.replace(CLOSING_QUESTION, NO_CLOSING_QUESTION, 1) + identity + ONE_SCREEN_DETAIL
+                + (' Reply in Chinese.' if locale == 'zh' else ' Reply in English.'))
     return (persona + identity + (ANSWER_DETAIL if detailed else '')
             + (' Reply in Chinese.' if locale == 'zh' else ' Reply in English.'))
 
