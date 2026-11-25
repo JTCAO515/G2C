@@ -1,6 +1,8 @@
 # CI per ADR-0004: every job blocks. Local equivalent: scripts/check.sh.
 # Pull requests skip jobs by changed path (.github/scripts/ci_paths.py, JT approved 2026-11-24);
 # a skipped job reports "skipped", which satisfies the required check. Pushes to main run every job.
+# Every job has a timeout-minutes of about 2.5 times its longest successful run (150 runs,
+# 2026-11-25), so a stuck job fails instead of holding the main run that newer pushes wait behind.
 # Main verifies only its newest commit (JT approved 2026-11-24, #1445), but a main run that has
 # started always runs to the end: a new main push waits behind it and replaces the main push still
 # waiting, if any, which GitHub cancels before it starts. So the commits skipped under a burst of
@@ -35,6 +37,7 @@ jobs:
   changes:
     # Fails open: any error leaves the outputs empty, so every dependent job still runs.
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       docs_only: ${{ steps.diff.outputs.docs_only }}
       ios_only: ${{ steps.diff.outputs.ios_only }}
@@ -62,6 +65,7 @@ jobs:
     needs: changes
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -86,12 +90,15 @@ jobs:
     needs: changes
     if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' && needs.changes.outputs.ios_only != 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
         # Keep in step with POSTGRES_SHARDS in deploy/hk/application_release.py (release gate).
         shard: [0, 1, 2, 3, 4, 5, 6, 7]
     env:
+      # Each lane stops itself first (pg_lanes.sh prints its log), before the job's 40-minute limit.
+      PG_LANE_MINUTES: "30"
       CJ_PG_BINDIR: /usr/lib/postgresql/17/bin
       CJ_PG17_BINDIR: /usr/lib/postgresql/17/bin
       CJ_PG16_BINDIR: /usr/lib/postgresql/16/bin
@@ -121,6 +128,7 @@ jobs:
     needs: [changes, postgres-shard]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - env:
           DOCS_ONLY: ${{ needs.changes.outputs.docs_only }}
@@ -133,6 +141,7 @@ jobs:
     needs: changes
     if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: Inventory, full coverage and failure propagation tests
@@ -148,6 +157,7 @@ jobs:
     needs: [changes, swift-packages]
     if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' && needs.changes.outputs.app_changed != 'false' && needs.swift-packages.result == 'success' }}
     runs-on: macos-26
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - name: Verify Xcode toolchain
@@ -162,6 +172,7 @@ jobs:
     needs: changes
     if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' && needs.changes.outputs.app_changed != 'false' }}
     runs-on: macos-26
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - name: Verify Xcode toolchain
