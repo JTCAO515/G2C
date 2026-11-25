@@ -37,10 +37,12 @@ _AUDIT = logging.getLogger('cj_usage.audit')
 
 VERSION = 'ROADBOOK.1'
 ROUTE = '/v1/tools/roadbook/places'
-PROMPT_VERSION = 1
+PROMPT_VERSION = 2
 FIELDS = ('summary', 'why_go', 'time_needed', 'hours_booking', 'tickets', 'getting_there', 'food_tip', 'notes')
-# The restaurant tip is written by the server from Gaode's around-search, never by the model (#1569 review).
-MODEL_FIELDS = tuple(field for field in FIELDS if field != 'food_tip')
+# The restaurant tip (#1569 review) and how to get there (run -44: the model invented "no metro data" lines)
+# are written by the server from Gaode's around-search, never by the model.
+SERVER_FIELDS = ('getting_there', 'food_tip')
+MODEL_FIELDS = tuple(field for field in FIELDS if field not in SERVER_FIELDS)
 LANGUAGES = ('zh', 'en')
 FIELD_LIMITS = {'zh': 120, 'en': 320}
 OFFICIAL = {'zh': '以官方为准。', 'en': 'Check official sources.'}
@@ -78,9 +80,6 @@ _ANY_UNIT = re.compile(r'[¥$€]|' + _UNIT, re.IGNORECASE)
 _BIG_NUMBER = re.compile(r'[零〇一二三四五六七八九两]*[十百千万]' + _CN_NUMBER + r'*(?![\u4e00-\u9fff])|'
                          r'\b(?:ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|'
                          r'twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand)\b', re.IGNORECASE)
-_APPROX_RANGE = re.compile(
-    r'(?:约|大约|大概|about|around|approximately|roughly)\s*(?:[¥$€]\s*)?(\d{1,4})(?:\s*' + _UNIT + r')?\s*'
-    r'(?:–|—|-|~|至|到|to)\s*(?:[¥$€]\s*)?(\d{1,4})(?:\s*' + _UNIT + r')?', re.IGNORECASE)
 # Nothing live: availability, closures for the time being, or whether it is open now or today.
 _LIVE = re.compile(r'余票|售罄|售完|已满|约满|满员|修缮|恢复开放|'
                    r'\b(?:sold out|fully booked|booked out|tickets? (?:left|remaining|available)|availability|'
@@ -96,23 +95,33 @@ _OTHER_CLOCK = re.compile(
     r'\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|h)(?![a-z])', re.IGNORECASE)
 
 
+# Talk about the prompt instead of the place (run -44: "No metro information provided in facts").
+_META = re.compile(r'事实|数据|资料|未提供|没有提供|未给出|输入|信息不足|无相关信息|'
+                   r'\b(?:facts?|data|provided|input|source data|null|not (?:available|specified|listed|given))\b',
+                   re.IGNORECASE)
+
+
 def _clocks(text):
     return {(int(hour), int(minute)) for hour, minute in _HHMM.findall(text)}
 
 
 RULES = {
-    'zh': ('你在为外国游客写中国景点的简短说明。只用用户消息里给出的高德事实，不要补充事实。'
+    'zh': ('你在为外国游客写中国景点的简短说明。用户消息里是地点名称和高德给出的开放时间。'
+           '简介、看点和停留时长可以用广为人知的常识，拿不准就写得笼统些。'
            '只输出一个 JSON 对象，键必须正好是：' + '、'.join(MODEL_FIELDS) + '，值都是简短中文字符串。'
-           '价格只能写成「约 X–Y 元」这样的区间，并说明以官方为准；不要写任何实时信息，'
-           '比如今天是否开放、余票、当天价格。时刻只能照抄事实里的开放时间。'
-           '不要写任何餐馆或商店的名字。开放时间和预约方式最后加「以官方为准」。'),
-    'en': ('You write short notes on a Chinese sight for foreign visitors. Use only the Gaode facts in the user '
-           'message and add no facts of your own. Output one JSON object whose keys are exactly: '
-           + ', '.join(MODEL_FIELDS) + ', each a short English string. Write prices only as a range such as '
-           '"about 40–60 yuan" and say to check official sources; never state anything live such as whether '
-           'it is open today, tickets left or today\'s price. Copy clock times only from the opening hours in '
-           'the facts. Do not name any restaurant or shop. End the hours '
-           'and booking note with "check official sources".'),
+           '不要写任何金额或价格数字：tickets 只说是否需要门票或预约，最后加「以官方为准」。'
+           '不要写任何实时信息，比如今天是否开放、余票。时刻只能照抄开放时间。不要写任何餐馆或商店的名字。'
+           '不要提到事实、数据或信息本身，也不要说什么没有提供；某项拿不准就写「以官方为准」。'
+           '开放时间和预约方式最后加「以官方为准」。'),
+    'en': ('You write short notes on a Chinese sight for foreign visitors. The user message gives the place name '
+           'and its opening hours from Gaode. For the summary, why to go and time needed you may use well-known '
+           'general knowledge; when unsure, stay general. Output one JSON object whose keys are exactly: '
+           + ', '.join(MODEL_FIELDS) + ', each a short English string. Never write an amount or a price: '
+           'tickets only says whether a ticket or booking is needed and ends with "check official sources". '
+           'Never state anything live such as whether it is open today or tickets left. Copy clock times only '
+           'from the opening hours. Do not name any restaurant or shop. Never talk about facts, data or '
+           'information as such, and never say something was not provided; when unsure, write "Check official '
+           'sources." End the hours and booking note with "check official sources".'),
 }
 
 
@@ -171,8 +180,8 @@ class RoadbookRequest(WireModel):
 
 
 def cache_key(place):
-    """The Gaode POI when the App knows it, otherwise the public name in its city."""
-    return f'poi:{place.poi_id}' if place.poi_id else f'name:{place.city}:{place.name_zh}'
+    """The Gaode POI when the App knows it, otherwise the public name in its city; a new prompt starts afresh."""
+    return f'v{PROMPT_VERSION}:' + (f'poi:{place.poi_id}' if place.poi_id else f'name:{place.city}:{place.name_zh}')
 
 
 class MemoryRoadbookCache:
@@ -199,7 +208,9 @@ class MemoryRoadbookCache:
 
 
 def _station_name(name):
-    stem = re.sub(r'[(（]地铁站[)）]$', '', name).removesuffix('地铁站').strip()
+    """前门(地铁站) → 前门站; an entrance such as 前门地铁站A东北口 or 陆家嘴地铁站6号口 is its station."""
+    stem = re.sub(r'[(（]地铁站[)）]$', '', name)
+    stem = re.sub(r'(?:地铁站|站)[^站]*口$', '', stem).removesuffix('地铁站').strip()
     return stem if stem.endswith('站') else stem + '站'
 
 
@@ -224,7 +235,9 @@ def _facts(row, around):
         if not code or not title or distance is None:
             continue
         if code.startswith('1505') and len(metro) < MAX_STATIONS:
-            metro.append(dict(name_zh=_station_name(title), distance_m=distance))
+            station = _station_name(title)
+            if all(item['name_zh'] != station for item in metro):  # nearest entrance of each station only
+                metro.append(dict(name_zh=station, distance_m=distance))
         elif code.startswith('05') and len(restaurants) < MAX_RESTAURANTS:
             address = _text(item.get('address'), 200)
             try:
@@ -250,14 +263,15 @@ def _field(name, value, facts, language):
     if text is None:
         return None
     plain = unicodedata.normalize('NFKC', text)
+    if _META.search(plain):
+        return None  # about the prompt, not the place
     if _LIVE.search(plain) or (_NOW.search(plain) and _STATE.search(plain)):
         return None  # nothing live: availability, or whether it is open now, today or for now
     if name == 'tickets':
-        rest = _APPROX_RANGE.sub(lambda match: '' if int(match.group(1)) < int(match.group(2)) else match.group(0), plain)
-        if _PRICE.search(rest) or _ANY_UNIT.search(rest) or re.search(r'\d', rest) or _BIG_NUMBER.search(rest):
-            return None  # every amount must sit in an "about X–Y" range with X < Y
+        if _PRICE.search(plain) or _ANY_UNIT.search(plain) or re.search(r'\d', plain) or _BIG_NUMBER.search(plain):
+            return None  # the facts carry no price, so any amount is made up (run -44: "about 40–60 yuan")
     elif _PRICE.search(plain):
-        return None  # prices only in tickets
+        return None  # no prices anywhere
     if _OTHER_CLOCK.search(plain):
         return None  # only HH:MM copied from Gaode's opening hours
     clocks = _clocks(plain)
@@ -281,6 +295,15 @@ def food_tip(restaurants, language):
             else 'No restaurant with an address was found nearby; check a map.')
 
 
+def getting_there(metro, language):
+    """How to get there, written from Gaode's around-search only."""
+    if metro:
+        if language == 'zh':
+            return '最近的地铁站：' + '、'.join(f"{item['name_zh']}（约 {item['distance_m']} 米）" for item in metro) + '。'
+        return 'Nearest metro: ' + ', '.join(f"{item['name_zh']} (about {item['distance_m']} m)" for item in metro) + '.'
+    return '可打车前往，地铁和公交请看地图。' if language == 'zh' else 'Take a taxi, or check a map for metro and buses.'
+
+
 def checked_fields(raw, facts, language):
     """The model's JSON with every unchecked claim replaced, or None when it is not the agreed object."""
     try:
@@ -290,7 +313,9 @@ def checked_fields(raw, facts, language):
     if type(value) is not dict or set(value) != set(MODEL_FIELDS):
         return None
     fields = {name: _field(name, value[name], facts, language) or OFFICIAL[language] for name in MODEL_FIELDS}
-    return {name: fields.get(name) or food_tip(facts.get('restaurants') or [], language) for name in FIELDS}
+    fields['getting_there'] = getting_there(facts.get('metro') or [], language)
+    fields['food_tip'] = food_tip(facts.get('restaurants') or [], language)
+    return {name: fields[name] for name in FIELDS}
 
 
 def refusal(raw, finish):
