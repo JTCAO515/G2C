@@ -107,6 +107,18 @@ enum LioRoadbookPDF {
                 if let tip = stop.tip, !tip.isEmpty {
                     text.add(language.text("Reminder: ", "提醒：") + tip + language.text(" (check official sources)", "（以官方为准）"), .accentBody)
                 }
+                if let detail = roadbook.details[stop.id] {
+                    for field in LioRoadbookDetail.Field.allCases {
+                        text.add(field.title(language) + language.text(": ", "：") + detail.field(field, language), .body)
+                    }
+                    if !detail.metro.isEmpty {
+                        text.add(language.text("Metro nearby: ", "附近地铁：")
+                                 + detail.metro.map { $0.text(language) }.joined(separator: language.text("; ", "；")), .secondary)
+                    }
+                    for restaurant in detail.restaurants {
+                        text.add(restaurant.nameZH + "  " + restaurant.addressZH, .secondary)
+                    }
+                }
                 if let leg = entry.legAfter { text.add("↓ " + leg.description(language), .secondary) }
             }
         }

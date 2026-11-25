@@ -458,6 +458,8 @@ struct LioMetroStationSheet: View {
     @State private var places: [LioMetroNearbyPlace]?
     @State private var nearbyNotice: String?
     @State private var chosen: LioMetroNearbyPlace?
+    /// The server has not opened surroundings for this account: the section is left out, not shown as broken.
+    @State private var nearbyClosed = false
 
     var body: some View {
         NavigationStack {
@@ -508,7 +510,7 @@ struct LioMetroStationSheet: View {
                     }
                     // Station surroundings (#1450, M4 entry 12 item 5): only where the build enables them and
                     // the station has a position; the request names the station, never a location.
-                    if let nearby, station.geo != nil {
+                    if let nearby, station.geo != nil, !nearbyClosed {
                         surroundings(nearby)
                     }
                 }
@@ -615,6 +617,8 @@ struct LioMetroStationSheet: View {
             places = try await nearby.search(map.city.id, station.id, [category], language)
         } catch is CancellationError {
             return
+        } catch LioNearbyFailure.notEnabled {
+            nearbyClosed = true
         } catch LioNearbyFailure.signInRequired {
             nearbyNotice = language.text("Sign in to see what is nearby.", "登录后可查看周边。")
         } catch {

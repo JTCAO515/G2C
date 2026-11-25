@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 #if os(iOS)
 import CJMessageHTTP
 import UIKit
@@ -7,6 +8,13 @@ import UIKit
 /// #1510: hotel search for the Tools tab (HOTEL.2 draft, #1508). The Hong Kong relay returns a list of
 /// hotels; booking always happens on the partner site through a relay hand-off link. Nothing is booked
 /// or paid in the app, and the partner's affiliate ID never reaches the app.
+
+/// Layout choices for the hotel screen that depend on the text size.
+enum LioHotelLayout {
+    /// At accessibility sizes, labels go above their controls and the card buttons stack full width,
+    /// so "Check-in" never breaks mid-word and "Show the driver" stays on one or two lines.
+    static func stacksControls(at size: DynamicTypeSize) -> Bool { size.isAccessibilitySize }
+}
 
 /// Nightly price bands in yuan, matching the search form.
 enum LioHotelPriceBand: String, CaseIterable, Identifiable, Sendable {

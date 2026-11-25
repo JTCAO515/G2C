@@ -21,6 +21,7 @@ from uuid import UUID
 
 from pydantic import Field, field_validator
 
+from cj_strict_json import reject_duplicates
 from cj_usage.metered_exit import BudgetUnknown
 from cj_usage.metro_nearby_budget import MetroNearbyDuplicate, MetroNearbyLimit
 
@@ -78,7 +79,10 @@ def write_station_table(table, path=STATIONS):
 
 def load_stations(path=STATIONS):
     """(city, station) → Gaode 'lng,lat'. Positions are checked once here, at the boundary."""
-    table = json.loads(Path(path).read_text(encoding='utf-8'))
+    table = json.loads(Path(path).read_text(encoding='utf-8'),
+                       object_pairs_hook=reject_duplicates(ValueError, 'duplicate station table field'))
+    if type(table) is not dict:
+        raise ValueError('invalid station table')
     stations = {}
     for city, rows in table.items():
         if re.fullmatch(r'[a-z]{2,20}', city) is None or type(rows) is not dict:

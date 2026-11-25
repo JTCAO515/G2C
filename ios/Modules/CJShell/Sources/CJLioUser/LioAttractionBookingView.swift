@@ -210,6 +210,7 @@ struct LioAttractionBookingDetail: View {
             DatePicker(language.text("Visit day", "参观日"), selection: $visit,
                        in: LioAttractionBookingRule.calendar.startOfDay(for: today)..., displayedComponents: .date)
                 .environment(\.calendar, LioAttractionBookingRule.calendar)
+                .environment(\.locale, Locale(identifier: language == .chinese ? "zh_CN" : "en_GB"))
                 .frame(minHeight: 44)
             if rule.closedOn(visit) {
                 Label(language.text("Closed on this day. Pick another day unless it is a public holiday.",
@@ -263,8 +264,11 @@ struct LioAttractionBookingDetail: View {
         case .unknownWindow: return language.text("The booking window is not published, so no reminder can be set.", "官方未写提前几天放票，暂不能设提醒。")
         case .notNeeded: return language.text("No booking needed.", "不需要预约。")
         case .pastVisit: return language.text("Pick a future day.", "请选今天以后的日期。")
-        case .stale: return language.text("These rules are due for review before then; check the official channel nearer the time.",
-                                          "到那时规则可能已变化，请临近时查官方渠道。")
+        case .stale where stale:
+            return language.text("These rules are due for review; check the official channel.", "规则待复核，请查官方渠道。")
+        case .stale:
+            return language.text("These rules are due for review before then; check the official channel nearer the time.",
+                                 "到那时规则可能已变化，请临近时查官方渠道。")
         }
     }
 
@@ -300,9 +304,23 @@ struct LioAttractionBookingDetail: View {
                     .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             }
             .accessibilityIdentifier("lio.booking.official")
-            Text(language.text("Booking and payment happen on the official channel; Go2China does not sell tickets.",
-                               "预约和付款都在官方渠道完成，Go2China 不售票。"))
+            ForEach(LioAttractionPartner.links(for: rule), id: \.url) { link in
+                Link(destination: link.url) {
+                    Label(language.text("Tickets on \(link.partner.name(language))", "在 \(link.partner.name(language)) 看门票"),
+                          systemImage: "ticket")
+                        .foregroundStyle(LioTheme.vermilion)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                }
+                .accessibilityIdentifier("lio.booking.partner")
+            }
+            Text(language.text("Booking and payment happen on the official channel or the ticket site; Go2China does not sell tickets.",
+                               "预约和付款在官方渠道或票务网站完成，Go2China 不售票。"))
                 .font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if !LioAttractionPartner.links(for: rule).isEmpty, let disclosure = LioAttractionPartner.disclosure(language) {
+                Text(disclosure).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
