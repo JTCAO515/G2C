@@ -28,6 +28,11 @@ class EntryJudge(unittest.TestCase):
         self.assertIn('contradicts', system)
         self.assertIn('complete set', system)
         self.assertIn('144', system)
+        # Acceptance run on c8faf430 (S, 2026-11-26): misses on going back to the origin
+        # country, false alarms mixing visa-free entry with transit.
+        self.assertIn('third country or region', system)
+        self.assertIn('back to the country the trip started from', system)
+        self.assertIn('separate policies', system)
         self.assertIn('uk-canada-visa-free-2026', user)
         self.assertIn('<answer>\nA plain 10-day trip needs a visa.\n</answer>', user)
         self.assertNotIn('Authorization', json.dumps(body))
@@ -66,6 +71,29 @@ class EntryJudge(unittest.TestCase):
         self.assertEqual(result['entry_facts'], {'transit-visa-zh': True, 'visa-uk-en': False})
         self.assertEqual(result['rate'], 0.5)
         self.assertEqual(score_answers({'alipay-zh': 'x'}, judge)['missing'], ['transit-visa-zh', 'visa-uk-en'])
+
+    def test_model_calls_retry_transient_failures(self):
+        import httpx
+        from unittest.mock import patch
+        from eval.lio_entry_judge import model_judge
+        calls = []
+        ok = httpx.Response(200, json={'choices': [{'message': {'content': '{"contradicts": false, "sentence": ""}'}}]},
+                            request=httpx.Request('POST', 'https://x'))
+        def post(*args, **kwargs):
+            calls.append(1)
+            if len(calls) < 3:
+                raise httpx.ConnectError('EOF', request=httpx.Request('POST', 'https://x'))
+            return ok
+        with patch('httpx.post', post), patch('time.sleep', lambda seconds: None):
+            self.assertEqual(model_judge('k')('GB', 'ok'), (False, ''))
+        self.assertEqual(len(calls), 3)
+        calls.clear()
+        def always(*args, **kwargs):
+            calls.append(1)
+            raise httpx.ConnectError('EOF', request=httpx.Request('POST', 'https://x'))
+        with patch('httpx.post', always), patch('time.sleep', lambda seconds: None), self.assertRaises(httpx.ConnectError):
+            model_judge('k')('GB', 'ok')
+        self.assertEqual(len(calls), 3)
 
     def test_cli_requires_the_key(self):
         with tempfile.TemporaryDirectory() as folder:
