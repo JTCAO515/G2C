@@ -90,7 +90,7 @@
   {"id": "na076", "nameZH": "体育中心西", "nameEN": "Tiyu Zhongxin Xi", "x": 756.1, "y": 413.6, "lines": ["na-4"]},
   {"id": "na077", "nameZH": "体育中心东", "nameEN": "Tiyu Zhongxin Dong", "x": 799.9, "y": 414.1, "lines": ["na-4"]},
   {"id": "na078", "nameZH": "良庆大桥南", "nameEN": "Liangqing Daqiao Nan", "x": 842.7, "y": 414.1, "lines": ["na-4"]},
-  {"id": "na079", "nameZH": "良庆圩", "nameEN": "Liangqingwei", "x": 888.9, "y": 414.1, "lines": ["na-4"]},
+  {"id": "na079", "nameZH": "良庆圩", "nameEN": "Liangqingxu", "x": 888.9, "y": 414.1, "lines": ["na-4"]},
   {"id": "na080", "nameZH": "楞塘村", "nameEN": "Lengtangcun", "x": 924.9, "y": 414.1, "lines": ["na-4"]},
   {"id": "na081", "nameZH": "清平坡", "nameEN": "Qingpingpo", "x": 999.3, "y": 414.6, "lines": ["na-4"]},
   {"id": "na082", "nameZH": "龙岗", "nameEN": "Longgang", "x": 1030.5, "y": 414.6, "lines": ["na-4"]},

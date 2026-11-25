@@ -27,7 +27,7 @@
 | 常州（changzhou） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/changzhou-3204） | 站名拼音 | 2026-11-25 |
 | 大连（dalian） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/dalian-2102） | 维基百科大连地铁车站列表；未收录的站用拼音 | 2026-11-25 |
 | 东莞（dongguan） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/dongguan-4419） | 站名拼音 | 2026-11-25 |
-| 佛山（foshan） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/foshan-4406） | 站名拼音 | 2026-11-25 |
+| 佛山（foshan） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/foshan-4406） | 与广州共用的站用广州地铁官网英文；其余用站名拼音 | 2026-11-25 |
 | 福州（fuzhou） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/fuzhou-3501） | 站名拼音 | 2026-11-25 |
 | 贵阳（guiyang） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/guiyang-5201） | 站名拼音 | 2026-11-25 |
 | 哈尔滨（haerbin） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/haerbin-2301） | 站名拼音 | 2026-11-25 |

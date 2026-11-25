@@ -198,7 +198,7 @@
   {"id": "ch173", "nameZH": "北碚", "nameEN": "Beibei", "x": 436.0, "y": 190.1, "lines": ["ch-7"]},
   {"id": "ch174", "nameZH": "百乐园", "nameEN": "Baileyuan", "x": 1172.0, "y": 607.7, "lines": ["ch-8"]},
   {"id": "ch175", "nameZH": "桃花桥", "nameEN": "Taohuaqiao", "x": 1171.4, "y": 633.2, "lines": ["ch-8"]},
-  {"id": "ch176", "nameZH": "重庆东站", "nameEN": "Chongqing East", "x": 1200.5, "y": 655.8, "lines": ["ch-8"]},
+  {"id": "ch176", "nameZH": "重庆东站", "nameEN": "Chongqing East Railway Station", "x": 1200.5, "y": 655.8, "lines": ["ch-8"]},
   {"id": "ch177", "nameZH": "高滩岩", "nameEN": "Gaotanyan", "x": 276.2, "y": 566.7, "lines": ["ch-9"]},
   {"id": "ch178", "nameZH": "天梨路", "nameEN": "Tianlilu", "x": 345.1, "y": 567.9, "lines": ["ch-9"]},
   {"id": "ch179", "nameZH": "土湾", "nameEN": "Tuwan", "x": 491.8, "y": 602.3, "lines": ["ch-9"]},

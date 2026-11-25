@@ -40,7 +40,7 @@
   {"id": "ch024", "nameZH": "中信广场", "nameEN": "Zhongxin Guangchang", "x": 723.9, "y": 902.8, "lines": ["ch-1"]},
   {"id": "ch025", "nameZH": "尚双塘", "nameEN": "Shangshuangtang", "x": 723.9, "y": 941.9, "lines": ["ch-1"]},
   {"id": "ch026", "nameZH": "磁浮机场站", "nameEN": "Maglev Airport Station", "x": 1376.8, "y": 662.4, "lines": ["ch-2"]},
-  {"id": "ch027", "nameZH": "磁浮榔梨", "nameEN": "Cifulangli", "x": 1165.1, "y": 720.2, "lines": ["ch-2"]},
+  {"id": "ch027", "nameZH": "磁浮榔梨", "nameEN": "Maglev Langli", "x": 1165.1, "y": 720.2, "lines": ["ch-2"]},
   {"id": "ch028", "nameZH": "磁浮高铁站", "nameEN": "Maglev Changsha South Railway Station", "x": 1007.6, "y": 777.6, "lines": ["ch-2"]},
   {"id": "ch029", "nameZH": "龙虎岭", "nameEN": "Longhuling", "x": 60.0, "y": 267.0, "lines": ["ch-3"]},
   {"id": "ch030", "nameZH": "华龙(长沙智谷)", "nameEN": "Hualong (Changsha Zhigu)", "x": 60.5, "y": 337.4, "lines": ["ch-3"]},
@@ -148,7 +148,7 @@
   {"id": "ch132", "nameZH": "麓谷公园", "nameEN": "Lugu Gongyuan", "x": 421.4, "y": 473.0, "lines": ["ch-7"]},
   {"id": "ch133", "nameZH": "涧塘", "nameEN": "Jiantang", "x": 456.4, "y": 473.0, "lines": ["ch-7"]},
   {"id": "ch134", "nameZH": "湖南工商大学", "nameEN": "Hunan Gongshang Daxue", "x": 484.0, "y": 473.0, "lines": ["ch-7"]},
-  {"id": "ch135", "nameZH": "白鸽咀", "nameEN": "Baigeju", "x": 519.5, "y": 473.0, "lines": ["ch-7"]},
+  {"id": "ch135", "nameZH": "白鸽咀", "nameEN": "Baigezui", "x": 519.5, "y": 473.0, "lines": ["ch-7"]},
   {"id": "ch136", "nameZH": "湘雅三医院", "nameEN": "Xiangyasan Yiyuan", "x": 541.4, "y": 473.0, "lines": ["ch-7"]},
   {"id": "ch137", "nameZH": "湘雅医院", "nameEN": "Xiangya Yiyuan", "x": 704.1, "y": 474.6, "lines": ["ch-7"]},
   {"id": "ch138", "nameZH": "烈士公园南(湖南省博物馆)", "nameEN": "Lieshigongyuan Nan (Hunansheng Bowuguan)", "x": 726.0, "y": 491.8, "lines": ["ch-7"]},
@@ -164,6 +164,6 @@
   {"id": "ch148", "nameZH": "龙峰", "nameEN": "Longfeng", "x": 1255.8, "y": 597.7, "lines": ["ch-7"]},
   {"id": "ch149", "nameZH": "大路村", "nameEN": "Dalu Cun", "x": 1299.7, "y": 598.2, "lines": ["ch-7"]},
   {"id": "ch150", "nameZH": "木马塅", "nameEN": "Mumaduan", "x": 1322.6, "y": 638.9, "lines": ["ch-7"]},
-  {"id": "ch151", "nameZH": "黄花机场T1T2", "nameEN": "Huanghua Jichang T1t2", "x": 1376.8, "y": 670.7, "lines": ["ch-7"]}
+  {"id": "ch151", "nameZH": "黄花机场T1T2", "nameEN": "Huanghua Jichang T1 T2", "x": 1376.8, "y": 670.7, "lines": ["ch-7"]}
  ]
 }

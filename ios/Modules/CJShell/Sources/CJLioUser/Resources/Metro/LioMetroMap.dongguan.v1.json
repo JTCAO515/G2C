@@ -44,7 +44,7 @@
   {"id": "do033", "nameZH": "西平", "nameEN": "Xiping", "x": 232.3, "y": 235.4, "lines": ["do-2"]},
   {"id": "do034", "nameZH": "蛤地", "nameEN": "Gedi", "x": 202.6, "y": 264.8, "lines": ["do-2"]},
   {"id": "do035", "nameZH": "陈屋", "nameEN": "Chenwu", "x": 171.1, "y": 294.6, "lines": ["do-2"]},
-  {"id": "do036", "nameZH": "寮厦", "nameEN": "Liaosha", "x": 141.6, "y": 325.0, "lines": ["do-2"]},
+  {"id": "do036", "nameZH": "寮厦", "nameEN": "Liaoxia", "x": 141.6, "y": 325.0, "lines": ["do-2"]},
   {"id": "do037", "nameZH": "珊美", "nameEN": "Shanmei", "x": 121.2, "y": 356.5, "lines": ["do-2"]},
   {"id": "do038", "nameZH": "展览中心", "nameEN": "Zhanlanzhongxin", "x": 121.2, "y": 399.9, "lines": ["do-2"]},
   {"id": "do039", "nameZH": "虎门火车站", "nameEN": "Humen Railway Station", "x": 137.3, "y": 435.4, "lines": ["do-2"]}

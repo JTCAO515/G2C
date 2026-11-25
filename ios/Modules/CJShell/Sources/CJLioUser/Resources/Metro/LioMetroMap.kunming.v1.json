@@ -30,7 +30,7 @@
   {"id": "ku015", "nameZH": "联大街", "nameEN": "Lianda Jie", "x": 703.7, "y": 731.9, "lines": ["ku-1", "ku-5"]},
   {"id": "ku016", "nameZH": "谊康南路", "nameEN": "Yikang Nanlu", "x": 703.7, "y": 810.7, "lines": ["ku-1"]},
   {"id": "ku017", "nameZH": "大学城", "nameEN": "Daxuecheng", "x": 703.7, "y": 852.2, "lines": ["ku-1"]},
-  {"id": "ku018", "nameZH": "大学城南·云南开放大学", "nameEN": "Daxue Chengnan Yunnan Kaifang Daxue", "x": 703.7, "y": 894.1, "lines": ["ku-1"]},
+  {"id": "ku018", "nameZH": "大学城南·云南开放大学", "nameEN": "Daxuecheng Nan · Yunnan Kaifang Daxue", "x": 703.7, "y": 894.1, "lines": ["ku-1"]},
   {"id": "ku019", "nameZH": "市级行政中心清风", "nameEN": "Shiji Xingzheng Zhongxin Qingfeng", "x": 664.5, "y": 650.4, "lines": ["ku-1"]},
   {"id": "ku020", "nameZH": "宜和路", "nameEN": "Yihe Lu", "x": 695.5, "y": 628.5, "lines": ["ku-1"]},
   {"id": "ku021", "nameZH": "白龙潭", "nameEN": "Bailongtan", "x": 774.3, "y": 686.4, "lines": ["ku-1"]},

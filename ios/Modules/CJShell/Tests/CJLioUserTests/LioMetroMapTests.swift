@@ -173,7 +173,10 @@ struct LioMetroMapDataTests {
                                        ("suzhou", "高铁苏州北站", "Suzhou North Railway Station"), ("ningbo", "丽园南路", "Liyuan South Road"),
                                        ("kunming", "昆明南火车站", "Kunming South Railway Station"),
                                        ("nanning", "安吉客运站", "Anji Coach Station"), ("dongguan", "虎门火车站", "Humen Railway Station"),
-                                       ("foshan", "林岳东(2号线)", "Linyue Dong (Line 2)"), ("hangzhou", "奥体中心", "Olympic Sports Center")] {
+                                       ("foshan", "林岳东(2号线)", "Linyue Dong (Line 2)"), ("hangzhou", "奥体中心", "Olympic Sports Center"),
+                                       ("foshan", "朝安", "Chao'an"), ("wuhan", "沌阳大道", "Zhuanyang Boulevard"),
+                                       ("changsha", "黄花机场T1T2", "Huanghua Jichang T1 T2"),
+                                       ("chongqing", "重庆东站", "Chongqing East Railway Station")] {
             guard let city = LioMetroCity.named(id) else { continue }
             #expect(try LioMetroMap.bundled(city).stations.first { $0.nameZH == station }?.nameEN == english, "\(id) \(station)")
         }
