@@ -23,14 +23,29 @@ class ExplorationWireTests(unittest.TestCase):
         self.assertEqual(response_format_sha256(RESPONSE),'0b9d19e67383838d2e2aa97c36faa59d141080fb23ec7c1f4166702d2c44c03f')
 
     def test_profiles_observe_actual_schema_and_lower_config_without_new_numeric_cap(self):
+        from cj_message.lio_plan_input_schema import PLAN_UNDERSTANDING
         for profile in PROFILES:
             for limit in (768,1536):
                 with self.subTest(profile=profile,limit=limit):
-                    read,model=observer(profile,limit)
+                    # JT 2026-11-25: plan understanding follows the config at twice its cap.
+                    expected=2*limit if profile==PLAN_UNDERSTANDING else limit
+                    read,model=observer(profile,limit,wire_change=dict(max_tokens=expected))
                     self.assertEqual(read('token','mid','op'),configured_model(model,M4_NATIVE_TURN_BUFFERED))
-                    for wrong in (limit-1,limit+1):
+                    for wrong in (expected-1,expected+1):
                         read,_=observer(profile,limit,wire_change=dict(max_tokens=wrong))
                         with self.assertRaisesRegex(Unavailable,'ACTUAL_MODEL_WIRE_PARAMETERS_CHANGED'):read('token','mid','op')
+
+    def test_plan_understanding_observes_twice_the_configured_cap(self):
+        # JT 2026-11-25 (via coordination, "批准提到 3072"): only plan understanding
+        # may use twice the configured output cap (1536 -> 3072 in production).
+        from cj_message.lio_plan_input_schema import PLAN_UNDERSTANDING
+        for limit in (768,1536):
+            with self.subTest(limit=limit):
+                read,model=observer(PLAN_UNDERSTANDING,limit,wire_change=dict(max_tokens=2*limit))
+                self.assertEqual(read('token','mid','op'),configured_model(model,M4_NATIVE_TURN_BUFFERED))
+                for wrong in (limit,2*limit-1,2*limit+1):
+                    read,_=observer(PLAN_UNDERSTANDING,limit,wire_change=dict(max_tokens=wrong))
+                    with self.assertRaisesRegex(Unavailable,'ACTUAL_MODEL_WIRE_PARAMETERS_CHANGED'):read('token','mid','op')
 
     def test_declared_schema_and_actual_wire_schema_must_both_match_the_fixed_profile(self):
         for profile in PROFILES:

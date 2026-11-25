@@ -335,3 +335,24 @@ import Testing
         #expect(text.contains("故宫博物院") && text.contains("Morning") && text.contains("Evening"))
     }
 }
+
+/// #1558 review follow-ups: exported PDFs do not stay on the phone, and a kept copy records when it was kept.
+@MainActor struct LioRoadbookExportCleanupTests {
+    @Test func exportsLiveInOneAppFolderAndAreRemovedAfterSharing() throws {
+        let folder = LioRoadbookPDF.exportDirectory
+        #expect(folder.lastPathComponent == "LioRoadbookExport")
+        #expect(folder.deletingLastPathComponent().standardizedFileURL
+                == FileManager.default.temporaryDirectory.standardizedFileURL)
+        let url = try LioRoadbookPDF.write(LioRoadbookTests.roadbook(), language: .chinese, to: folder)
+        #expect(FileManager.default.fileExists(atPath: url.path))
+        LioRoadbookPDF.removeExports()
+        #expect(!FileManager.default.fileExists(atPath: folder.path))
+        LioRoadbookPDF.removeExports()  // nothing left to remove is fine
+    }
+
+    @Test func aKeptCopyRecordsWhenItWasKept() {
+        let kept = LioRoadbookTests.roadbook(created: 1_000).kept(at: Date(timeIntervalSince1970: 5_000))
+        #expect(kept.createdAt == Date(timeIntervalSince1970: 5_000))
+        #expect(kept.id == "planned.beijing" && kept.source == .planned && kept.city?.nameZH == "北京")
+    }
+}

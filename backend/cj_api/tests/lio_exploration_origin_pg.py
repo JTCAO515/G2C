@@ -163,6 +163,7 @@ def exercise(root,conninfo):
     from types import SimpleNamespace
     from cj_message.lio_wire import ExplorationOrigin
     from cj_message.lio_exploration_schema import (ExplorationInput,PROFILES,response_format,response_format_sha256)
+    from cj_message.lio_plan_input_schema import PLAN_UNDERSTANDING
     from cj_message.lio_pipeline_schema import SKELETON,WORDING,Skeleton,Wording
     from cj_api.lio_pipeline_skeleton import recipes
     from test_lio_pipeline_skeleton import proposal
@@ -206,7 +207,8 @@ def exercise(root,conninfo):
             assert result['version']==profile
             if profile==SKELETON:Skeleton.model_validate(result)
             elif profile==WORDING:Wording.model_validate(result)
-            assert wire[-1]['max_tokens']==limit and wire[-1]['response_format']==response_format(profile)
+            # JT 2026-11-25: plan understanding follows the config at twice its cap.
+            assert wire[-1]['max_tokens']==(2*limit if profile==PLAN_UNDERSTANDING else limit) and wire[-1]['response_format']==response_format(profile)
         before=len(wire)
         for argument in (dict(profile=PROFILES[0],client_enabled=True),
             ExplorationInput('LIO-exploration-unknown.1',b'[]','unknown',model,origin),
