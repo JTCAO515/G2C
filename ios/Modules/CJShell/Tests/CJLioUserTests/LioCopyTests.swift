@@ -18,9 +18,11 @@ struct LioCopyTests {
         }
     }
 
-    /// A Swift literal that is nothing but one web address (no spaces, escapes or interpolation) is a link
-    /// target, not copy, so its query parameter names are not scanned. Text around an address still is.
-    private static let bareURLLiteral = try! NSRegularExpression(pattern: #"^"https://[^\s"\\]+"$"#)
+    /// A Swift literal that is nothing but one web address (ASCII address characters only: no spaces, escapes,
+    /// interpolation or non-ASCII text) is a link target, not copy, so its query parameter names are not
+    /// scanned. Text around an address, with or without a space, still is.
+    private static let bareURLLiteral = try! NSRegularExpression(
+        pattern: ##"^"https://[A-Za-z0-9\-._~:/?#\[\]@!$&'()*+,;=%]+"$"##)
 
     private func isBareURL(_ literal: String) -> Bool {
         Self.bareURLLiteral.firstMatch(in: literal, range: NSRange(literal.startIndex..., in: literal)) != nil
@@ -39,6 +41,9 @@ struct LioCopyTests {
         #expect(flagged(#""Open https://www.klook.com/search/result/?query=x""#))
         #expect(flagged(#""https://example.com/?query=\(name)""#))
         #expect(flagged(#""http://example.com/?query=x""#))
+        // Chinese straight after the address, with no space or after full-width punctuation, is still copy.
+        #expect(flagged(#""https://www.klook.com/search/result/?query=x查询""#))
+        #expect(flagged(#""https://example.com/?query=x，查看原操作""#))
     }
 
     private func resourceStrings(_ value: Any) -> [String] {
