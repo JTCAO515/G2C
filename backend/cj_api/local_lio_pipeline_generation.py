@@ -24,7 +24,7 @@ from .local_lio_pipeline import (DestinationUnresolved,prepare_generation,retrie
     word_retrieved_plan,publish_retrieved_plan)
 
 
-_SAFE=re.compile(r'[A-Za-z0-9_.:\-]{1,80}')
+_SAFE=re.compile(r'[A-Za-z0-9_.:*\-]{1,80}')
 
 
 def _safe(value):
@@ -32,27 +32,58 @@ def _safe(value):
     return text if _SAFE.fullmatch(text) else 'redacted'
 
 
+_FIELDS=None
+
+
+def _known_fields():
+    """Field names declared by the pipeline schemas; any other location key may be model-written."""
+    global _FIELDS
+    if _FIELDS is None:
+        from pydantic import BaseModel
+        from cj_message import lio_exploration_schema,lio_pipeline_schema,lio_plan_input_schema
+        names=set()
+        for module in (lio_exploration_schema,lio_pipeline_schema,lio_plan_input_schema):
+            for value in vars(module).values():
+                if isinstance(value,type)and issubclass(value,BaseModel):names.update(value.model_fields)
+        _FIELDS=frozenset(names)
+    return _FIELDS
+
+
+def _location(item):
+    parts=list(item.get('loc',()))
+    if item.get('type')=='extra_forbidden'and parts:parts[-1]='*'
+    return '.'.join(str(part)if type(part)is int or part=='*'or part in _known_fields()else'*'for part in parts)or'root'
+
+
 def _log_refusal(binding,stage,error=None,*,reason=None,capacity=False):
-    """Content-free diagnosis (HK run -42): stage, class, code fields and cause locations only."""
-    details=['run_id='+_safe(getattr(binding,'run_id','unknown')),'stage='+stage]
-    if error is not None:
-        details+=['error='+type(error).__name__,'message_sha256='+hashlib.sha256(str(error).encode()).hexdigest()[:12]]
-        for name in ('field','rule'):
-            if isinstance(getattr(error,name,None),str):details.append(name+'='+_safe(getattr(error,name)))
-        cause=error.__cause__
-        if cause is not None:
-            details.append('cause='+type(cause).__name__)
-            errors=getattr(cause,'errors',None)
-            if callable(errors):
-                try:items=errors()
-                except Exception:items=[]
-                details.append('cause_errors='+','.join(
-                    _safe('.'.join(str(part)for part in item.get('loc',()))or'root')+':'+_safe(item.get('type','unknown'))
-                    for item in items[:8]))
-                details.append('cause_error_count='+str(len(items)))
-    if reason:details.append('reason='+_safe(reason))
-    if capacity:details.append('capacity=1')
-    logging.getLogger('cj_usage.audit').info('LIO_PIPELINE_REFUSED '+' '.join(details))
+    """Content-free diagnosis (HK run -42): stage, class, code fields and cause locations only.
+
+    Location keys outside the schema field names are written as "*": an extra or dict key
+    may be model-written and contain traveler text. Logging never changes the refusal.
+    """
+    try:
+        details=['run_id='+_safe(getattr(binding,'run_id','unknown')),'stage='+stage]
+        if error is not None:
+            details.append('error='+type(error).__name__)
+            try:details.append('message_sha256='+hashlib.sha256(str(error).encode()).hexdigest()[:12])
+            except Exception:details.append('message_sha256=unavailable')
+            for name in ('field','rule'):
+                if isinstance(getattr(error,name,None),str):details.append(name+'='+_safe(getattr(error,name)))
+            cause=error.__cause__
+            if cause is not None:
+                details.append('cause='+type(cause).__name__)
+                errors=getattr(cause,'errors',None)
+                if callable(errors):
+                    try:items=errors()
+                    except Exception:items=[]
+                    details.append('cause_errors='+','.join(
+                        _safe(_location(item))+':'+_safe(item.get('type','unknown'))for item in items[:8]))
+                    details.append('cause_error_count='+str(len(items)))
+        if reason:details.append('reason='+_safe(reason))
+        if capacity:details.append('capacity=1')
+        logging.getLogger('cj_usage.audit').info('LIO_PIPELINE_REFUSED '+' '.join(details))
+    except Exception:
+        logging.getLogger('cj_usage.audit').info('LIO_PIPELINE_REFUSED stage=%s error=log_unavailable',stage)
 
 
 class PipelineGeneration:

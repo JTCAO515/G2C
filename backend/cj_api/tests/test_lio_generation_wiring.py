@@ -151,7 +151,7 @@ class GenerationWiring(unittest.TestCase):
             except ValidationError as error:
                 try:raise SkeletonUnavailable('complete typed skeleton required')from error
                 except SkeletonUnavailable as wrapped:return wrapped
-        cases=(('retrieve',skeleton_failure(),'SkeletonUnavailable',('cause=ValidationError','ordinal:int_parsing')),
+        cases=(('retrieve',skeleton_failure(),'SkeletonUnavailable',('cause=ValidationError','cause_errors=*:int_parsing')),
                ('compile',PlaceSelectionBlocked('place selection is ambiguous; '+secret),'PlaceSelectionBlocked',()),
                ('word',WordingUnavailable('exact wording batch item set required'),'WordingUnavailable',()),
                ('publish',SourceRejected('days.0.items.2.place','quote_in_original'),'SourceRejected',
@@ -191,6 +191,37 @@ class GenerationWiring(unittest.TestCase):
                 self.assertNotIn(secret,line[0])
                 self.assertNotIn('春熙路',line[0])
 
+
+
+    def test_refusal_log_keeps_only_schema_field_names_in_error_locations(self):
+        # #1654 review: pydantic locations can carry model-written keys (extra keys, dict keys).
+        from cj_api.local_lio_pipeline_generation import _log_refusal
+        from cj_api.lio_pipeline_skeleton import SkeletonUnavailable
+        from cj_message.lio_pipeline_schema import Skeleton
+        from cj_message.lio_plan_input_schema import PlanUnderstanding
+        def wrapped(model,value):
+            try:model.model_validate(value)
+            except Exception as error:
+                try:raise SkeletonUnavailable('complete typed skeleton required')from error
+                except SkeletonUnavailable as outer:return outer
+            self.fail('expected a validation error')
+        extra=wrapped(Skeleton,{'version':'x','days':[{'30.6578:104.0812':1}]})
+        uncertain=wrapped(PlanUnderstanding,{'fixed_items':[{'uncertain_fields':{'Chunxi_Road_Atour_Hotel':1}}]})
+        for error in (extra,uncertain):
+            with self.subTest(error=str(error.__cause__)[:40]),self.assertLogs('cj_usage.audit','INFO')as logs:
+                _log_refusal(SimpleNamespace(run_id='run-1'),'retrieve',error)
+            line=logs.output[0]
+            self.assertIn('cause_errors=',line)
+            for leaked in ('30.6578','104.0812','Chunxi','Atour'):self.assertNotIn(leaked,line)
+        with self.assertLogs('cj_usage.audit','INFO')as logs:
+            _log_refusal(SimpleNamespace(run_id='run-1'),'retrieve',extra)
+        self.assertRegex(logs.output[0],r'days\.0\.\*:extra_forbidden')
+
+    def test_refusal_log_never_raises(self):
+        from cj_api.local_lio_pipeline_generation import _log_refusal
+        class Broken(Exception):
+            def __str__(self):raise RuntimeError('broken')
+        _log_refusal(SimpleNamespace(run_id='run-1'),'word',Broken())
 
 
 if __name__=='__main__':unittest.main()
