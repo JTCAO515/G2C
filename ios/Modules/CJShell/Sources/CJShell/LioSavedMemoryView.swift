@@ -1,6 +1,7 @@
 #if os(iOS)
 import CJLioUser
 import CJMemoryClient
+import CJRunClient
 import SwiftUI
 import UIKit
 
@@ -15,6 +16,7 @@ public struct LioSavedMemoryView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.lioMemorySuggestions) private var suggestions
+    @Environment(\.lioCloseMemory) private var close
 
     public init(host: TypedMemoryContainerHost, language: ShellLanguage) {
         self.host = host
@@ -116,6 +118,20 @@ public struct LioSavedMemoryView: View {
             .toolbarBackground(LioTheme.paper, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(colorScheme, for: .navigationBar)
+            .toolbar {
+                if let close {
+                    ToolbarItem(placement: .confirmationAction) {
+                        // Same as the chat menu's Done: text that follows Dynamic Type in the navigation bar.
+                        Button { close() } label: {
+                            RunReadableText(text: language.text("Done", "完成"), color: LioTheme.vermilion)
+                                .fixedSize()
+                                .frame(minHeight: 44)
+                        }
+                        .accessibilityLabel(language.text("Done", "完成"))
+                        .accessibilityIdentifier("lio.me.memory.done")
+                    }
+                }
+            }
             .navigationDestination(for: Data.self) { id in
                 if let surface {
                     LioSavedMemoryDetail(host: host, surface: surface, itemID: String(decoding: id, as: UTF8.self),
