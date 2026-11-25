@@ -17,14 +17,7 @@ struct LioRoadbookLibraryView: View {
               count: typeSize.isAccessibilitySize ? 1 : 2)
     }
 
-    /// Kept copies first replace the same roadbook offered as a candidate; then my trips, Lio's plans, routes.
-    /// Kept copies first replace the same roadbook offered as a candidate; then my trips, Lio's plans and
-    /// the popular routes (#1509), one card per id.
-    private var books: [LioRoadbook] {
-        var seen = Set<String>()
-        let all = (kept + candidates + LioRoadbookTemplates.all(language)).filter { seen.insert($0.id).inserted }
-        return LioRoadbook.Source.allCases.flatMap { source in all.filter { $0.source == source } }
-    }
+    private var books: [LioRoadbook] { LioRoadbook.library(kept: kept, candidates: candidates, language: language) }
 
     var body: some View {
         ScrollView {

@@ -403,9 +403,21 @@ import Testing
 
     @Test func placesWaitForCheckedAddressesBeforeTaxiOrDriverCard() {
         for book in LioRoadbookTemplates.all(.chinese) {
-            for stop in book.itinerary.days.flatMap(\.stops) where !stop.place.matched {
-                #expect(LioRoadbook.taxiDestination(stop.place) == nil && LioRoadbook.driverAddress(stop.place) == nil)
+            let places = book.itinerary.days.flatMap(\.stops).map(\.place) + book.itinerary.hotels.map(\.place)
+            for place in places {
+                #expect(!place.matched && place.point == nil && place.address == nil, "\(place.nameZH)")
+                #expect(LioRoadbook.taxiDestination(place) == nil && LioRoadbook.driverAddress(place) == nil)
             }
         }
+    }
+
+    @Test func theLibraryKeepsOneCardPerIdInSourceOrder() {
+        let template = LioRoadbookTemplates.beijing(.chinese)
+        let kept = template.kept(at: Date(timeIntervalSince1970: 9))
+        let saved = LioRoadbook(id: "saved.t.v1", source: .saved, city: nil, createdAt: .now, itinerary: LioRoadbookTests.itinerary())
+        let planned = LioRoadbookTests.roadbook()
+        let books = LioRoadbook.library(kept: [kept], candidates: [planned, saved], language: .chinese)
+        #expect(books.map(\.id) == ["saved.t.v1", "planned.beijing", "template.beijing-3d", "template.shanghai-2d"])
+        #expect(books[2].createdAt == Date(timeIntervalSince1970: 9), "the kept copy replaces the template")
     }
 }
