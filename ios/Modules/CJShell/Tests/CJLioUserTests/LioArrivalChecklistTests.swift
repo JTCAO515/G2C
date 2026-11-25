@@ -4,7 +4,7 @@ import Testing
 
 struct LioArrivalChecklistTests {
     @Test func stepsFollowTheFirstHoursInOrder() {
-        #expect(LioArrivalStep.allCases == [.entry, .payment, .internet, .taxi, .emergency])
+        #expect(LioArrivalStep.allCases == [.entry, .payment, .internet, .transfer, .taxi, .emergency])
         for language in [LioLanguage.english, .chinese] {
             let titles = LioArrivalStep.allCases.map { $0.title(language) }
             #expect(Set(titles).count == titles.count)
@@ -64,5 +64,40 @@ struct LioArrivalChecklistTests {
             #expect(texts.allSatisfy { !$0.isEmpty })
             #expect(texts.allSatisfy { !$0.localizedCaseInsensitiveContains("http") && !$0.contains("www.") })
         }
+    }
+
+    /// Getting from the airport: guidance only. No booking or partner links unless JT approves them.
+    @Test func airportTransferGuidanceCoversTheChoicesWithoutLinks() {
+        #expect(LioArrivalTransferOption.allCases == [.preBooked, .taxi, .busOrMetro])
+        for language in [LioLanguage.english, .chinese] {
+            let texts = LioArrivalTransferOption.allCases.flatMap { [$0.title(language), $0.detail(language)] }
+                + [LioArrivalTransferOption.footnote(language)]
+            #expect(texts.allSatisfy { !$0.isEmpty })
+            #expect(texts.allSatisfy { !$0.localizedCaseInsensitiveContains("http") && !$0.contains("www.") })
+            #expect(Set(LioArrivalTransferOption.allCases.map { $0.title(language) }).count == 3)
+        }
+        #expect(Set(LioArrivalTransferOption.allCases.map(\.symbol)).count == 3)
+    }
+
+    @Test func progressFromBeforeTheTransferStepStillLoads() {
+        let old = LioArrivalProgress(stored: "entry,payment,internet,taxi")
+        #expect(old.doneCount == 4 && !old.isDone(.transfer))
+        var next = old
+        next.toggle(.transfer)
+        #expect(next.stored == "entry,payment,internet,transfer,taxi")
+    }
+
+    /// The trip home page reads and writes the same ticks and nationality; the keys are stored on devices.
+    @Test func sharedStorageKeysStayStable() {
+        #expect(LioArrivalProgress.storageKey == "lio.arrival.progress.v1")
+        #expect(LioArrivalTrip.nationalityStorageKey == "lio.local-support.nationality")
+    }
+
+    @Test func stayDaysFromATripAreKeptInTheFormsRange() {
+        #expect(LioArrivalTrip.formStayDays(7) == 7)
+        #expect(LioArrivalTrip.formStayDays(0) == 1)
+        #expect(LioArrivalTrip.formStayDays(-3) == 1)
+        #expect(LioArrivalTrip.formStayDays(120) == 90)
+        #expect(LioArrivalTrip.formStayRange == 1...90)
     }
 }

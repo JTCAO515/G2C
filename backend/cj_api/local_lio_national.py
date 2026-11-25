@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 from cj_agent.lio_intake_optional_schema import SYSTEM as FACTS_SYSTEM,OptionalIntake
 from cj_message.demo_dialogue import LIO_VERSION, LIO_VERSION_V3
 from cj_message.domain import Command,Unavailable
-from cj_message.lio_context import answer_prompt,self_description,CAPABILITY_PATTERN
+from cj_message.lio_context import answer_prompt,self_description,greeting_reply,CAPABILITY_PATTERN
 from cj_message.lio_plan_needs import BOUND_EFFECT
 from cj_needs.domain import InvalidInput
 
@@ -299,7 +299,7 @@ class NationalLioPlanning:
         return [*messages[:-1],*(dict(role='user',content=text) for text in texts)],refs
 
     def execute(self,worker,binding,state,text,original):
-        fixed=self_description(text,original.locale)
+        fixed=self_description(text,original.locale) or greeting_reply(text,original.locale)
         if fixed is not None:return self._reply(worker,binding,state,fixed)
         if META_QUESTION.fullmatch(text) or DIRECT_ANSWER.fullmatch(text):return None
         capital=ENGLISH_CAPITAL_QUESTION.fullmatch(text)

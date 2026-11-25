@@ -10,7 +10,7 @@ struct LioArrivalView: View {
     /// The trip's first day, if known; otherwise today.
     var arrival: LioArrivalDay?
     var rules: LioArrivalRules? = try? LioArrivalRules.bundled()
-    @AppStorage("lio.arrival.progress.v1") private var storedProgress = ""
+    @AppStorage(LioArrivalProgress.storageKey) private var storedProgress = ""
 
     private var progress: LioArrivalProgress { LioArrivalProgress(stored: storedProgress) }
 
@@ -45,6 +45,7 @@ struct LioArrivalView: View {
         case .entry: LioArrivalEntryView(language: language, rules: rules, arrival: arrival?.pickerDate() ?? .now)
         case .payment: LioPaymentGuideView(language: language)
         case .internet: LioArrivalInternetView(language: language)
+        case .transfer: LioArrivalTransferView(language: language)
         case .taxi: LioArrivalTaxiView(language: language, tripHotel: LioArrivalHotel(hotels: hotels))
         case .emergency: LioLocalSupportView(language: language)
         }
@@ -108,16 +109,19 @@ private struct LioArrivalStepRow<Destination: View>: View {
 struct LioArrivalEntryView: View {
     let language: LioLanguage
     let rules: LioArrivalRules?
-    @AppStorage("lio.local-support.nationality") private var nationality = ""
+    @AppStorage(LioArrivalTrip.nationalityStorageKey) private var nationality = ""
     @State private var otherNationality = false
     @State private var arrival: Date
-    @State private var stayDays = 7
-    @State private var onward = false
+    @State private var stayDays: Int
+    @State private var onward: Bool
 
-    init(language: LioLanguage, rules: LioArrivalRules?, arrival: Date) {
+    /// The trip home page passes its own trip's days; the form still lets the traveller change them.
+    init(language: LioLanguage, rules: LioArrivalRules?, arrival: Date, stayDays: Int = 7, onward: Bool = false) {
         self.language = language
         self.rules = rules
         _arrival = State(initialValue: arrival)
+        _stayDays = State(initialValue: LioArrivalTrip.formStayDays(stayDays))
+        _onward = State(initialValue: onward)
     }
 
     private static let other = "OTHER"
@@ -170,7 +174,7 @@ struct LioArrivalEntryView: View {
             }
             DatePicker(language.text("Arrival day", "入境日期"), selection: $arrival, displayedComponents: .date)
                 .accessibilityIdentifier("lio.arrival.date")
-            Stepper(value: $stayDays, in: 1...90) {
+            Stepper(value: $stayDays, in: LioArrivalTrip.formStayRange) {
                 Text(language.text("Days in China: \(stayDays)", "在华停留：\(stayDays) 天"))
             }
             .accessibilityIdentifier("lio.arrival.days")
@@ -363,7 +367,38 @@ private struct LioArrivalInternetView: View {
     }
 }
 
-// MARK: - Step 4: taxi to the hotel
+// MARK: - Step 4: leaving the airport (guidance only)
+
+private struct LioArrivalTransferView: View {
+    let language: LioLanguage
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
+                ForEach(LioArrivalTransferOption.allCases) { option in
+                    VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+                        Label(option.title(language), systemImage: option.symbol).font(.headline)
+                        Text(option.detail(language)).font(.subheadline).fixedSize(horizontal: false, vertical: true)
+                    }
+                    .foregroundStyle(LioTheme.ink)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(LioTheme.Spacing.md)
+                    .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("lio.arrival.transfer." + option.rawValue)
+                }
+                Text(LioArrivalTransferOption.footnote(language))
+                    .font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+            }
+            .padding(18)
+        }
+        .background(LioTheme.paper)
+        .navigationTitle(LioArrivalStep.transfer.title(language))
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+// MARK: - Step 5: taxi to the hotel
 
 private struct LioArrivalTaxiView: View {
     let language: LioLanguage

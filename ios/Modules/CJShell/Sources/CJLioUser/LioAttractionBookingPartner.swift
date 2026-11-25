@@ -40,6 +40,15 @@ enum LioAttractionPartner: Sendable, Equatable {
         return trip.url.map { [Link(partner: .tripCom, url: $0)] } ?? []
     }
 
+    /// Where booking and payment happen: only the official channel when no third-party link is offered.
+    static func paymentNote(_ language: LioLanguage, for rule: LioAttractionBookingRule) -> String {
+        links(for: rule).isEmpty
+            ? language.text("Booking and payment happen on the official channel; Go2China does not sell tickets.",
+                            "预约和付款都在官方渠道完成，Go2China 不售票。")
+            : language.text("Booking and payment happen on the official channel or the ticket site; Go2China does not sell tickets.",
+                            "预约和付款在官方渠道或票务网站完成，Go2China 不售票。")
+    }
+
     static func disclosure(_ language: LioLanguage, affiliate: Bool = affiliateLinks) -> String? {
         affiliate ? LioHotelResults.disclosure(language) : nil
     }

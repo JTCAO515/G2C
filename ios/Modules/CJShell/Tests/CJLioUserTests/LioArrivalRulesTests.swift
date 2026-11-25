@@ -231,6 +231,23 @@ struct LioArrivalRulesTests {
         #expect(Self.day("2026-12-31") > Self.day("2026-12-30"))
     }
 
+    /// NIA, 2026-08-20: 57 countries, 65 ports in 24 provinces; travel across provinces is allowed only inside the
+    /// permitted areas, and in six provinces only the listed cities count.
+    @Test func transitRuleStatesTheCurrentAreasAndTheirLimits() throws {
+        let transit = try #require(try LioArrivalRules.bundled().policy("transit-240h"))
+        #expect(transit.summary.zh.contains("24 个省份 65 个开放口岸"))
+        #expect(transit.summary.en.contains("65 open ports in 24 provinces"))
+        #expect(transit.summary.zh.contains("跨省"))
+        #expect(transit.summary.en.contains("across provinces"))
+        for province in ["山西", "黑龙江", "江西", "广西", "四川", "云南"] {
+            #expect(transit.notCovered.zh.contains(province), "\(province)")
+        }
+        for province in ["Shanxi", "Heilongjiang", "Jiangxi", "Guangxi", "Sichuan", "Yunnan"] {
+            #expect(transit.notCovered.en.contains(province), "\(province)")
+        }
+        #expect(transit.sources.map(\.url.absoluteString) == ["https://www.nia.gov.cn/n741440/n741577/c1731205/content.html"])
+    }
+
     // MARK: - Arrival card: official channel only
 
     @Test func arrivalCardOpensOnlyTheImmigrationAdministrationsPage() {

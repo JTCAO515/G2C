@@ -44,6 +44,14 @@ struct LioHotelOffersView: View {
     @State private var bookingNotice: String?
     @FocusState private var typing: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    private var stacked: Bool { LioHotelLayout.stacksControls(at: typeSize) }
+    /// Label beside its control, or above it at accessibility text sizes.
+    private var row: AnyLayout {
+        stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: LioTheme.Spacing.xxs))
+            : AnyLayout(HStackLayout(spacing: LioTheme.Spacing.xs))
+    }
 
     /// #225: once under the list, and only when the hand-offs carry an affiliate ID.
     private var showsDisclosure: Bool {
@@ -109,20 +117,18 @@ struct LioHotelOffersView: View {
                   prompt: language.text("For example, Beijing", "例如：北京"), id: "lio.hotel-search.city")
             field(language.text("Area or landmark (optional)", "区域或地标（选填）"), text: $landmark,
                   prompt: language.text("For example, Wangfujing", "例如：王府井"), id: "lio.hotel-search.landmark")
-            DatePicker(language.text("Check-in", "入住"), selection: $checkIn,
-                       in: LioHotelSearch.calendar.startOfDay(for: Date())..., displayedComponents: .date)
-                .accessibilityIdentifier("lio.hotel-search.check-in")
-            DatePicker(language.text("Checkout", "退房"), selection: $checkOut, in: checkIn..., displayedComponents: .date)
-                .accessibilityIdentifier("lio.hotel-search.check-out")
+            date(language.text("Check-in", "入住"), selection: $checkIn,
+                 in: LioHotelSearch.calendar.startOfDay(for: Date())..., id: "lio.hotel-search.check-in")
+            date(language.text("Checkout", "退房"), selection: $checkOut, in: checkIn..., id: "lio.hotel-search.check-out")
             Stepper(value: $guests, in: 1...LioHotelQuery.maximumGuests) {
                 Text(language.text("Guests: \(guests)", "人数：\(guests)"))
             }
             .accessibilityLabel(language.text("Guests", "人数"))
             .accessibilityValue(String(guests))
             .accessibilityIdentifier("lio.hotel-search.guests")
-            HStack {
+            row {
                 Text(language.text("Price a night", "每晚价格"))
-                Spacer(minLength: LioTheme.Spacing.xs)
+                if !stacked { Spacer(minLength: LioTheme.Spacing.xs) }
                 Picker(language.text("Price a night", "每晚价格"), selection: $price) {
                     ForEach(LioHotelPriceBand.allCases) { band in
                         Text(band.title(language)).tag(band)
@@ -147,6 +153,18 @@ struct LioHotelOffersView: View {
         .padding(LioTheme.Spacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
         .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+    }
+
+    private func date(_ title: String, selection: Binding<Date>, in range: PartialRangeFrom<Date>,
+                      id: String) -> some View {
+        row {
+            Text(title)
+            if !stacked { Spacer(minLength: LioTheme.Spacing.xs) }
+            DatePicker(title, selection: selection, in: range, displayedComponents: .date)
+                .labelsHidden()
+                .accessibilityIdentifier(id)
+        }
+        .frame(minHeight: 44)
     }
 
     private func field(_ title: String, text: Binding<String>, prompt: String, id: String) -> some View {
@@ -233,7 +251,8 @@ struct LioHotelOffersView: View {
                 .font(.footnote)
                 .foregroundStyle(LioTheme.inkSecondary)
             foreignGuests(offer.foreignGuests)
-            HStack(spacing: LioTheme.Spacing.xs) {
+            (stacked ? AnyLayout(VStackLayout(spacing: LioTheme.Spacing.xs))
+                : AnyLayout(HStackLayout(spacing: LioTheme.Spacing.xs))) {
                 Button(language.text("Show the driver", "给司机看")) { driverPlace = offer.taxiPlace }
                     .buttonStyle(LioSecondaryButtonStyle())
                     .accessibilityIdentifier("lio.hotel-search.driver")
