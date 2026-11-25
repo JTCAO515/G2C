@@ -29,7 +29,7 @@ struct LioPaymentGuideTests {
                 #expect(source?.url.scheme == "https", "\(item.id) needs an official https source")
                 #expect(!(source?.name.isEmpty ?? true))
                 if item.detail.contains(where: { $0.isASCII && $0.isNumber }) {
-                    #expect(item.detail.lowercased().contains(language.text("the payment page shows", "以付款页面显示为准")),
+                    #expect(item.detail.lowercased().contains(language.text("check the payment page", "以付款页面显示为准")),
                             "\(item.id) \(language): numbers can change, so the payment page has the final word")
                 }
             }
@@ -56,7 +56,14 @@ struct LioPaymentGuideTests {
             #expect(!text.contains("发卡行") && !text.lowercased().contains("issuer"))
         }
         let limit = LioPaymentGuideProvider.paymentFailures(in: .chinese).first { $0.id == "limit" }?.detail ?? ""
-        #expect(limit.contains("6,500") && limit.contains("65,000") && limit.contains("支付宝请看付款页面"))
+        #expect(limit.contains("6,500") && limit.contains("65,000") && limit.contains("支付宝的外卡限额请看付款页面"))
+        #expect(!limit.contains("都有限额"), "Alipay's limit is not stated by the linked page")
+        // Second review of #1623: the WeChat page says nothing about personal payment codes.
+        for language in [LioLanguage.chinese, .english] {
+            let transfer = LioPaymentGuideProvider.paymentFailures(in: language).first { $0.id == "transfer" }
+            #expect(!(transfer?.detail.contains(language.text("personal code", "个人收款码")) ?? true))
+            #expect(!(transfer?.title.contains(language.text("pay a person", "付给个人")) ?? true))
+        }
     }
 
     @Test func setupStepsKeepNoSource() {
