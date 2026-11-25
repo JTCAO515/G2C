@@ -28,6 +28,16 @@ enum LioDietaryNeed: String, Sendable, CaseIterable, Hashable {
         }
     }
 
+    /// Where an allergen hides, for needs travellers often get wrong (soy sauce has wheat); `nil` otherwise.
+    /// The show-staff cards print it next to the allergen.
+    func examples(_ language: LioLanguage) -> String? {
+        switch self {
+        case .gluten: language.text("Wheat (flour, noodles, soy sauce)", "小麦（面粉、面条、酱油）")
+        case .treeNut: language.text("Tree nuts (walnuts, almonds, cashews…)", "坚果（核桃、杏仁、腰果等）")
+        default: nil
+        }
+    }
+
     /// The allergen named in a "may contain" warning; the need's own name for preferences.
     func allergen(_ language: LioLanguage) -> String {
         switch self {
