@@ -1188,6 +1188,25 @@ class Boundaries(unittest.TestCase):
                 except (ProviderFailed,BudgetUnknown):pass
                 self.assertEqual(json.loads(self.sent[0].content)['max_tokens'],expected)
 
+    def test_plan_understanding_uses_twice_the_configured_output_cap(self):
+        # JT 2026-11-25 (via coordination, "批准提到 3072"): only the V4 plan
+        # understanding call may send twice the configured cap (3072 in production).
+        from cj_message.lio_exploration_schema import UNDERSTANDING,response_format_sha256
+        from cj_message.lio_plan_input_schema import PLAN_UNDERSTANDING
+        for profile,expected in ((PLAN_UNDERSTANDING,2*M4_REAL_OUTPUT_TOKENS),(UNDERSTANDING,M4_REAL_OUTPUT_TOKENS)):
+            with self.subTest(profile=profile):
+                self.sent.clear()
+                provider=MeteredDashScopeProvider(
+                    DashScopeConfig(M4_BASE,M4_MODEL,KEY,max_output_tokens=M4_REAL_OUTPUT_TOKENS),
+                    self.budget,transport=httpx.MockTransport(
+                        lambda request:self.sent.append(request) or httpx.Response(200,stream=httpx.ByteStream(sse().encode()))))
+                try:
+                    list(provider.invoke([dict(role='user',content='Synthetic plan request')],'Plan understanding test',
+                        'cap-'+profile,receipt={},guard=lambda:True,structured_profile=profile,
+                        exploration_schema_sha256=response_format_sha256(profile)))
+                except (ProviderFailed,ProviderUnknown,BudgetUnknown):pass
+                self.assertEqual(json.loads(self.sent[0].content)['max_tokens'],expected)
+
     def test_lio_timeline_keeps_uncertainty_plain_and_withholds_internal_answers(self):
         from cj_api.lio_dialogue_routes import _message
         from cj_message.lio_timeline import TimelineMessage

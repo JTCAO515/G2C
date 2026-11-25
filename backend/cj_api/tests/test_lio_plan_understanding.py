@@ -244,6 +244,14 @@ class PlanUnderstandingBoundary(unittest.TestCase):
         self.assertIn('Emit start_date only for a stated calendar date or relative day; a trip length such as '
                       '玩3天 or a plan-now request is not a date.',PLAN_UNDERSTANDING_SYSTEM)
 
+    def test_plan_understanding_prompt_says_unknown_has_no_note(self):
+        # HK probe on ac6a0e8d (2026-11-25): the only remaining refusal (4/14) was an
+        # unknown observation that carried a note; only uncertain carries one.
+        from cj_api.lio_pipeline_model import PLAN_UNDERSTANDING_SYSTEM
+        self.assertIn('an unknown observation has a null note, and only an uncertain observation carries '
+                      'an original uncertainty note.',PLAN_UNDERSTANDING_SYSTEM)
+        self.assertNotIn('original uncertainty note where applicable',PLAN_UNDERSTANDING_SYSTEM)
+
     def test_date_uses_its_source_mid_day_not_plan_trigger_day(self):
         result=parse_plan_understanding(packed(self.packet()),self.turns())
         self.assertEqual(result.observations[0].value,'2026-11-15')
