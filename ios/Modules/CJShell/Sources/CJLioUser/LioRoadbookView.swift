@@ -139,6 +139,7 @@ struct LioRoadbookView: View {
     @State private var filled: [String: LioRoadbookDetail] = [:]
     @State private var filling = false
     @State private var expanded: Set<String> = []
+    @State private var filler: Task<Void, Never>?
     @Environment(\.lioTaxiEntry) private var taxiEntry
     #if os(iOS)
     @Environment(\.lioRoadbookEnricher) private var enricher
@@ -191,7 +192,10 @@ struct LioRoadbookView: View {
         .sheet(item: $shared, onDismiss: LioRoadbookPDF.removeExports) { file in
             LioRoadbookShareSheet(items: [file.url]).ignoresSafeArea()
         }
-        .onDisappear(perform: LioRoadbookPDF.removeExports)
+        .onDisappear {
+            LioRoadbookPDF.removeExports()
+            filler?.cancel()  // later batches are not sent once the roadbook closes
+        }
         .sheet(item: $taxiPlace) { place in
             if let taxiEntry {
                 NavigationStack {
@@ -412,7 +416,7 @@ struct LioRoadbookView: View {
                     Label(detail.metro.map { $0.text(language) }.joined(separator: language.text("; ", "；")),
                           systemImage: "tram").font(.subheadline)
                 }
-                ForEach(detail.restaurants, id: \.nameZH) { restaurant in
+                ForEach(detail.restaurants) { restaurant in
                     HStack(alignment: .top, spacing: LioTheme.Spacing.xs) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(restaurant.nameZH).font(.subheadline.weight(.semibold))
@@ -528,10 +532,11 @@ struct LioRoadbookView: View {
         filling = true
         notice = nil
         let batches = LioRoadbookWire.batches(book.placesToFillIn())
-        Task {
+        filler = Task {
             defer { filling = false }
             var limited = false, missing = false
             for batch in batches {
+                guard !Task.isCancelled else { break }
                 do {
                     let result = try await enricher.enrich(batch)
                     for (id, status) in result {

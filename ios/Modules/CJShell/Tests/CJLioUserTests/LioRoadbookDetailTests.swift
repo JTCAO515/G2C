@@ -143,3 +143,22 @@ import Testing
         #expect(partly.placesToFillIn().count == 5, "filled places are not asked again")
     }
 }
+
+/// #1616 review P1: filling in, then keeping offline, must keep the details.
+@MainActor struct LioRoadbookKeepDetailsTests {
+    @Test func keepingAFilledInRoadbookKeepsItsDetails() throws {
+        let detail = try #require(try LioRoadbookWire.read(Data(LioRoadbookDetailTests.reply.utf8),
+                                                         asked: LioRoadbookDetailTests.places.map(\.id))["d1s2"]?.detail)
+        let base = LioRoadbookTests.roadbook()
+        let stopID = base.itinerary.days[0].stops[0].id
+        let kept = base.with(details: [stopID: detail]).kept(at: Date(timeIntervalSince1970: 7))
+        #expect(kept.details[stopID] == detail && kept.createdAt == Date(timeIntervalSince1970: 7))
+
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("roadbook-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = LioRoadbookStore(directory: directory)
+        try store.save(kept)
+        #expect(store.load().first?.details[stopID] == detail)
+        #expect(store.load().first?.placesToFillIn().contains { $0.id == stopID } == false, "not asked (or paid for) again")
+    }
+}

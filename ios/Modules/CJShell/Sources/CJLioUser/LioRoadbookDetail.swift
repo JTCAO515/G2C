@@ -44,7 +44,8 @@ struct LioRoadbookDetail: Codable, Equatable, Sendable {
         }
     }
 
-    struct Restaurant: Codable, Equatable, Sendable {
+    struct Restaurant: Codable, Equatable, Sendable, Identifiable {
+        var id: String { nameZH + "|" + addressZH }
         let nameZH: String
         let addressZH: String
         let latitude: Double
@@ -217,7 +218,7 @@ struct LioRoadbookEnricher: Sendable {
         try Task.checkCancellation()
         guard isCurrent(), let token = bearer(), !token.isEmpty else { throw LioRoadbookFailure.signInRequired }
         let url = baseURL.appending(path: LioRoadbookWire.path)
-        var request = URLRequest(url: url, timeoutInterval: 90)
+        var request = URLRequest(url: url, timeoutInterval: 180)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization")
@@ -254,7 +255,7 @@ extension LioRoadbookRelayClient {
         else { return nil }
         return LioRoadbookRelayClient(baseURL: endpoint.url, isCurrent: isCurrent, bearer: bearer) { request in
             let policy = URLSessionConfiguration.ephemeral
-            policy.timeoutIntervalForResource = 90
+            policy.timeoutIntervalForResource = 180
             policy.urlCache = nil
             policy.httpCookieStorage = nil
             policy.urlCredentialStorage = nil
