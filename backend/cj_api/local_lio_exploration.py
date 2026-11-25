@@ -44,6 +44,8 @@ UNDERSTANDING_SYSTEM=(
     'factor_key,value,sources[{source_index,quote}]. Copy exact contiguous original quotes. '
     'Never source a user statement from saved Memory or the server profile. Do not repeat unchanged facts. '
     'Use only the fourteen supplied factors; no age,nationality or monetary-budget factor. '
+    'A hotel name or where the traveler stays is not lodging_tier, must_see or any other factor; omit it. '
+    'duration_days value is an integer day count. '
     'Known values must be literal original spans or full affirmative canonical equivalents; '
     'a negative/question/quoted example is not an affirmative choice. Preserve other wording verbatim, '
     'never keyword-normalize dislike or a conditional. Duration is a literal positive day count; '

@@ -96,6 +96,26 @@ class ExplorationProfileTests(unittest.TestCase):
             with self.subTest(key=key),self.assertRaises(InvalidInput):
                 parse([packet(key,value,quote)],quote)
 
+    def test_literal_duration_span_value_becomes_the_same_grounded_count(self):
+        # HK run 64089b78 probe (2026-11-25): flash often returns duration_days as
+        # the literal span (for example "3天") instead of an integer. The value is
+        # still grounded only when it states the same count as its original quote.
+        for quote,value,expected in (('3天','3天',3),('三天','三天',3),('4 days','4 days',4),('3天','3 天',3)):
+            with self.subTest(quote=quote,value=value):
+                self.assertEqual(parse([packet('duration_days',value,quote)],quote)[0].value,expected)
+        for quote,value in (('三天','4天'),('3天','3'),('3天','three'),('3天','3天半'),('3天',''),('3天','300天')):
+            with self.subTest(quote=quote,value=value),self.assertRaises(InvalidInput):
+                parse([packet('duration_days',value,quote)],quote)
+
+    def test_understanding_prompt_keeps_lodging_location_out_of_factors(self):
+        # HK run 64089b78 probe (2026-11-25): "住在春熙路附近的酒店" was reported as
+        # lodging_tier/must_see, so parse_updates rejected the whole understanding.
+        from cj_api.local_lio_exploration import UNDERSTANDING_SYSTEM
+        self.assertIn('A hotel name or where the traveler stays is not lodging_tier, must_see or any other factor; omit it.',
+                      UNDERSTANDING_SYSTEM)
+        self.assertIn('duration_days value is an integer day count.',UNDERSTANDING_SYSTEM)
+        self.assertIn('Use only the fourteen supplied factors',UNDERSTANDING_SYSTEM)
+
     def test_duration_first_visit_and_multiselect_values_are_grounded(self):
         for quote,value in (('三天',3),('4 days',4),('five days',5),('366天',366)):
             self.assertEqual(parse([packet('duration_days',value,quote)],quote)[0].value,value)
