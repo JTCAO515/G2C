@@ -63,9 +63,10 @@
 - 八个字段：`summary` 一句话简介、`why_go` 为什么值得去、`time_needed` 建议停留时长、`hours_booking` 开放时间与预约方式、`tickets` 门票约数、`getting_there` 怎么到达、`food_tip` 周边餐饮、`notes` 注意事项。中文每项不超过 120 字，英文不超过 320 个字符。
 - `food_tip` 由服务端根据 `restaurants` 生成（中文「附近可就餐：店名（约 N 米）」，英文「Places to eat nearby: 店名 (about N m)」；没有带地址的餐馆时写「附近没有找到带地址的餐馆，以地图为准。」），模型不写、也看不到餐馆名。
 - 其余七个字段由模型写，服务端逐项检查（先把全角字符转成半角），没通过的字段换成 `以官方为准。`（英文 `Check official sources.`），其余字段照常返回：
-  - 价格只能出现在 `tickets`：去掉所有「约 / about X–Y（元、块、yuan…）」区间（要求 X < Y）之后，不能再有阿拉伯数字或任何货币单位（元、块钱、人民币、¥、$、yuan、kuai、RMB…）。其他字段里，数字（含中文数字、英文数字词）紧挨货币单位，或「门票 / 票价 / ticket / fare / price」后面跟数字，一律视为价格；
-  - 不能写余票、售罄、sold out、tickets left 这类实时供应信息；不能同时出现时间词（今天、目前、现在、暂时、暂停、近期、本周 / today、now、currently、temporarily、this week…）与状态词（开放、营业、闭馆、闭园、不开、维修 / open、closed、shut…）；
+  - 价格只能出现在 `tickets`：去掉所有「约 / about X–Y（元、块、yuan…）」区间（要求 X < Y）之后，不能再有阿拉伯数字、带十/百/千的中文数字、ten 以上的英文数字词或任何货币单位（元、圆、块钱、人民币、港币、欧元、美元、¥、$、€、yuan、kuai、RMB、HKD、bucks…）。其他字段里，数字（含中文数字、英文数字词，可带「多、几、余」）紧挨货币单位，单位在前（人民币30、¥30）也算；「门票 / 票价 / ticket / fare / price」后面直接跟数字也算价格，但「提前 7 天」这类天数、时长不算。「块」后面跟汉字时是量词（一块石碑、十几块石碑），不算货币，「块钱」「块左右」「块就」除外；tickets 里带十/百/千的中文数字只有单独出现时（成人六十）才算金额，后面跟汉字的（十一黄金周、十三陵）不算；
+  - 不能写余票、售罄、已满、修缮、恢复开放、sold out、fully booked、renovation 这类实时或临时状态；不能同时出现时间词（今天、目前、现在、暂时、暂不、暂停、临时、正在、近期、这几天、本周 / today、now、currently、at present、temporarily、this week、for now…）与状态词（开放、营业、闭馆、闭园、关闭、不开、维修、入园 / open、closed、shut…）；
   - 时刻只能写成 HH:MM，只能出现在 `hours_booking`，并且每个时刻都必须出现在高德给的开放时间里；「9点」「16时」「四点」「3pm」「16h」等写法一律不收；
+  - 整个请求从开始算 45 秒后不再发起新的供应商调用，余下的地点为 `unavailable`；
   - 超长、空白或含不可见控制字符的字段同样替换。
 - `metro`、`restaurants` 直接来自高德周边搜索，按距离排序；`restaurants` 只收有中文地址的店，坐标为 GCJ-02，App 可以用它们「打车去这里」和「给司机看」。
 - 模型输出被截断（`finish_reason=length`）或不是约定的 JSON 时，这个地点为 `unavailable`，不缓存；已发生的调用照常计费。

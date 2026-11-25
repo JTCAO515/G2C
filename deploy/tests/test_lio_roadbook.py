@@ -237,6 +237,11 @@ def test_good_fields_pass_unchanged():
     ('getting_there', '打车约三十块钱'), ('notes', '今天余票充足'), ('notes', '暂停开放'), ('notes', '暂时闭馆'),
     ('notes', '近期闭馆维修'), ('notes', '本周闭馆'), ('tickets', '约 60–60 元'), ('notes', '门票 60'),
     ('hours_booking', '16时关门'), ('hours_booking', '8时30分开门'), ('notes', '四点以后人少'), ('notes', '票已售罄'),
+    # third #1569 review (P2): temporary closures, more ways to write money
+    ('notes', '暂不开放'), ('notes', '临时闭馆'), ('notes', '目前关闭'), ('notes', '修缮中'), ('notes', '正在维修'),
+    ('notes', '这几天闭馆'), ('notes', '暂停入园'), ('notes', '票已售完'), ('notes', '预约已满'), ('notes', '已恢复开放'),
+    ('getting_there', '打车30块左右'), ('getting_there', '打车 30 多元'), ('getting_there', '十几块就到'),
+    ('getting_there', '人民币30'), ('tickets', '成人六十，学生三十'), ('getting_there', '约 30 港币'),
 ])
 def test_unchecked_claims_become_official_notices(field, value):
     checked = checked_fields(json.dumps(dict(GOOD['zh'], **{field: value}), ensure_ascii=False), FACTS, 'zh')
@@ -257,6 +262,15 @@ def test_unchecked_claims_become_official_notices(field, value):
     ('notes', 'Closed this week', False), ('notes', 'It is presently open', False), ('notes', 'Often sold out', False),
     ('hours_booking', 'Gates open at 16h', False), ('notes', 'Tickets 60', False),
     ('notes', 'Usually closed on Mondays', True), ('why_go', 'One of the largest palaces in the world', True),
+    ('notes', 'Fully booked on weekends', False), ('notes', 'Closed for renovation', False),
+    ('notes', 'Under renovation', False), ('notes', 'At present the east gate is shut', False),
+    ('tickets', 'Adults sixty, students thirty', False), ('getting_there', 'About 20 bucks by taxi', False),
+    ('getting_there', 'A taxi is about €5', False),
+    ('hours_booking', 'Book tickets 7 days in advance; check official sources.', True),
+    ('summary', 'Recently restored, the hall shines again', True),
+    ('tickets', 'City pass holders and university students may get discounts', True),
+    ('hours_booking', 'Tickets 14 days ahead; check official sources.', True),
+    ('notes', 'A Starbucks is near the gate', True), ('summary', 'Built in 1900 by European architects', True),
 ])
 def test_english_claims_are_checked_the_same_way(field, value, kept):
     checked = checked_fields(json.dumps(dict(GOOD['en'], **{field: value}), ensure_ascii=False), FACTS, 'en')
@@ -267,7 +281,11 @@ def test_english_claims_are_checked_the_same_way(field, value, kept):
                                          ('time_needed', '约 3 小时'), ('notes', '旺季上午人多'),
                                          ('summary', '元代始建，明清扩建'), ('why_go', '院中有一块明代石碑'),
                                          ('hours_booking', '０８：３０开门，以官方为准'), ('tickets', '免费，需提前预约'),
-                                         ('tickets', '约 40–60 元，学生半价，提前一天预约'), ('notes', '一块石碑记载了历史')])
+                                         ('tickets', '约 40–60 元，学生半价，提前一天预约'), ('notes', '一块石碑记载了历史'),
+                                         ('hours_booking', '门票需提前7天预约，以官方为准'), ('notes', '最近的入口是午门，周一闭馆'),
+                                         ('notes', '院里有十几块石碑'), ('summary', '殿内挂着三十多块匾额'),
+                                         ('tickets', '十一黄金周人多，约 40–60 元'), ('tickets', '十人以上可团体预约'),
+                                         ('hours_booking', '门票15天内有效，以官方为准')])
 def test_ordinary_text_is_not_mistaken_for_a_claim(field, value):
     assert checked_fields(json.dumps(dict(GOOD['zh'], **{field: value}), ensure_ascii=False), FACTS, 'zh')[field] == value
 
@@ -429,3 +447,14 @@ def test_dashscope_connects_before_reserving_and_refuses_repeated_receipt_keys()
     with pytest.raises(PluginError):
         DashScopeRoadbook('sk-test', connection=lambda: Repeated(completion(), [])).generate(
             'zh', messages_for('zh', FACTS), lambda: None)
+
+
+def test_a_request_stops_calling_suppliers_after_its_deadline(ledger, monkeypatch):
+    from cj_api import lio_roadbook
+    clock = iter([0, 0, 100])
+    monkeypatch.setattr(lio_roadbook, 'monotonic', lambda: next(clock, 100))
+    gaode, flash = Gaode(), Flash()
+    body = payload(dict(id='s1', name_zh='故宫博物院', city='北京'), dict(id='s2', name_zh='景山公园', city='北京'))
+    result = enrich(service(ledger, gaode, flash), body)
+    assert [place['status'] for place in result['places']] == ['unavailable', 'unavailable']
+    assert len(gaode.calls) <= 1 and flash.calls == []
