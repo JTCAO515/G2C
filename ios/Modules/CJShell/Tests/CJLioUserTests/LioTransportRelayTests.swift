@@ -45,7 +45,8 @@ import Testing
         let request = try #require(sent.first)
         #expect(sent.count == 1 && request.url == route && request.httpMethod == "POST")
         #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer synthetic-owner")
-        let body = try #require(JSONSerialization.jsonObject(with: try #require(request.httpBody)) as? [String: Any])
+        let bytes = try #require(request.httpBody)
+        let body = try #require(JSONSerialization.jsonObject(with: bytes) as? [String: Any])
         #expect(body.keys.sorted() == ["date", "destination", "modes", "origin", "version"])
         #expect(body["version"] as? String == "TRANSPORT.1" && body["origin"] as? String == "shanghai")
         #expect(body["destination"] as? String == "beijing" && body["date"] as? String == "2026-12-03")
@@ -142,6 +143,18 @@ import Testing
                         .timedOut, .unavailable] {
             #expect(!failure.message(.english).isEmpty && !failure.message(.chinese).isEmpty)
         }
+    }
+
+    @Test func theRelayReplacesOnlyTheGuideNeverTheDebugSample() async throws {
+        let relay = LioTransportRelayClient(baseURL: origin, isCurrent: { true }, bearer: { "synthetic-owner" }) { _ in
+            (Self.reply, response(route, status: 200))
+        }
+        #expect(LioTransportService.guideOnly.isGuideOnly)
+        #expect(try await LioTransportService.guideOnly.upgraded(with: relay).search(try query()).rail.options.count == 1)
+        #expect(try await LioTransportService.guideOnly.upgraded(with: nil).search(try query()).rail == .guideOnly)
+        #if DEBUG
+        #expect(try await LioTransportService.preview.upgraded(with: relay).search(try query()).isSample)
+        #endif
     }
 
     @Test func aRelayServiceIsPreferredOverTheGuideWhenTheBuildEnablesIt() async throws {
