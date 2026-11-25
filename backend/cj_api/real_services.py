@@ -861,7 +861,8 @@ class RealTools:
             weather_day = _lio_weather_day(messages[-1]['content'], today)
             tomorrow = today + timedelta(days=1)
             system += f' In China, today is {today.isoformat()} and tomorrow is {tomorrow.isoformat()}.'
-            system += (' Use the confirmed destination timezone and administrative code for tools: '+city.name+' '+city.adcode+'.' if city is not None else ' Use Beijing calendar dates for legacy weather.' if not national else ' No destination is confirmed. Do not call place or weather tools; ask for the destination first.')+' Only cite links supplied as public sources.'
+            system += (' Use the confirmed destination timezone and administrative code for tools: '+city.name+' '+city.adcode+'.' if city is not None else ' Use Beijing calendar dates for legacy weather.' if not national else (' No destination is confirmed. Do not call place or weather tools. Answer the question directly; ask for the destination '
+                'only when the answer depends on it, and never reply with only a greeting unless the traveler only greets you.'))+' Only cite links supplied as public sources.'
             transit_request = _lio_transit_request(messages)
             if transit_request:
                 system += ' For current visa-free transit policy use the official entry notice before making policy claims.'

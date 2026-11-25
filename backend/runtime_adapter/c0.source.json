@@ -114,7 +114,7 @@
     "backend/cj_api/local_lio_rich_checks.py": "9be1935d74b241f67a5d37dad3d835e0ebff1f318fdf540615ca98707f7f7321",
     "backend/cj_api/local_lio_rich_source.py": "c9faf8b1688ef76be0879fd9dc0eddb92dad00c00f2ab87b4e0f5d94474eb04a",
     "backend/cj_api/local_memory_history.py": "c7bbe834c80b004aea4c5d31a51a9e77cbeaa197806a5b41e2b0b8c22acd5674",
-    "backend/cj_api/real_services.py": "71f19e9df910bd08c74d2785c3d5e2f3d5cf17ce96254dc1908ba8df867075e2",
+    "backend/cj_api/real_services.py": "c8b7c44d34298432364ccb964185b10ddbcfc8390982467173d8e500ae40af99",
     "backend/cj_api/tool_evidence.py": "b223e97e4419949a0a36b618469d669eccf3e97c15fc9ebc54c8d987a7a7867a",
     "backend/draft/cj_draft/grouped_plan.py": "1b7fbada1331ac101bb2572e4b885d114e157b240f49d623f0062eacd1509f05",
     "backend/draft/cj_draft/lio_plan.py": "9985c0e3d117f98fd953a97e5b457dfc811592c7cf1b0a6c94d57c5890ba8fa9",
@@ -137,10 +137,10 @@
     "eval/optimization/score_v2.py": "015fa9f21b418fe49a5ac07a5fb3027e0422620a6616029f2ba6438bfa1e9322",
     "tooling/optimization/uv.lock": "c3729fbcd04627cb07bde4f5f21b9c4fbfa4748b3d7468d550c7fc2af62bc343"
   },
-  "system_prompt_sha256": "7ba52ba2676613c172c7597f1dfd29e49b70a3677f6bbc3fc08a016625e1f3ec",
+  "system_prompt_sha256": "76bf15fd0fb830cc4d93cd3b136d5edfdf75ccddccb783a77aa7a693746e2beb",
   "task_sha256": "9d4376ba7512d6f3c0741036ae1bd0dda99752bbc9f8b8fb8dd7025c61a530ec",
   "task_version": "G2C-dialogue-cases.2",
-  "tool_implementation_sha256": "71f19e9df910bd08c74d2785c3d5e2f3d5cf17ce96254dc1908ba8df867075e2",
+  "tool_implementation_sha256": "c8b7c44d34298432364ccb964185b10ddbcfc8390982467173d8e500ae40af99",
   "tool_schema_sha256": "2f98879d196151b892b25ecaa8b229425ba22e3999916d0e5e4a03e96d882865",
   "version": "G2C-runtime-adapter.1"
 }
