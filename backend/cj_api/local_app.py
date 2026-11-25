@@ -716,6 +716,11 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
                     register_lio_calendar_trip_routes(app,LioTripBoundary(database,calendar_checker,confirmation_signer,calendar=True))
                     register_local_calendar_read_routes(app,database=database,auth_dir=auth_dir,
                                                        selected_subjects=lio_calendar_subjects)
+                    if lio_exploration_subjects:
+                        # Native rich saves (structured.4) come only from exploration; read.2 rejects them.
+                        from cj_trip.local_rich_read import register_local_rich_read_routes
+                        register_local_rich_read_routes(app,database=database,auth_dir=auth_dir,
+                                                       selected_subjects=lio_exploration_subjects)
     if database.edit_results:
         from .run_display_composition import build_run_display_reader
         from .scoped_result_routes import register_scoped_result_routes

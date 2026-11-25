@@ -1,6 +1,7 @@
 {
  "schema": "lio.metro.v1",
  "city": "shenzhen",
+ "cityInfo": {"nameZH": "深圳", "nameEN": "Shenzhen", "provinceZH": "广东省", "featured": 4},
  "source": {"operatorZH": "深圳地铁", "operatorEN": "Shenzhen Metro", "urls": ["https://www.szmc.net/map/"], "checkedOn": "2026-11-25"},
  "canvas": {"width": 1621, "height": 1148},
  "lines": [

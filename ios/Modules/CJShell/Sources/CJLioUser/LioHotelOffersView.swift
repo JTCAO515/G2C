@@ -45,11 +45,10 @@ struct LioHotelOffersView: View {
     @FocusState private var typing: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var disclosure: String {
-        language.text(
-            "Some links are affiliate links. If you book through them, Go2China may earn a commission at no extra cost to you.",
-            "部分链接为推广链接，你通过它预订时，Go2China 可能获得佣金，价格不受影响。"
-        )
+    /// #225: once under the list, and only when the hand-offs carry an affiliate ID.
+    private var showsDisclosure: Bool {
+        if case .ready(let found) = phase { return found.affiliateLinks }
+        return false
     }
 
     var body: some View {
@@ -62,7 +61,10 @@ struct LioHotelOffersView: View {
                     VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
                         Text(language.text("Booking and payment happen on Trip.com, not in Go2China.",
                                            "预订和付款在 Trip.com 完成，不在 Go2China 内进行。"))
-                        Text(disclosure).accessibilityIdentifier("lio.hotel-search.footer.disclosure")
+                        if showsDisclosure {
+                            Text(LioHotelResults.disclosure(language))
+                                .accessibilityIdentifier("lio.hotel-search.footer.disclosure")
+                        }
                     }
                     .font(.footnote)
                     .foregroundStyle(LioTheme.inkSecondary)
@@ -246,11 +248,6 @@ struct LioHotelOffersView: View {
                 .accessibilityIdentifier("lio.hotel-search.book")
             }
             .padding(.top, LioTheme.Spacing.xxs)
-            Text(disclosure)
-                .font(.caption)
-                .foregroundStyle(LioTheme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityIdentifier("lio.hotel-search.book.disclosure")
         }
         .padding(LioTheme.Spacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
