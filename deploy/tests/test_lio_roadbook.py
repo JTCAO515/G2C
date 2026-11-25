@@ -232,6 +232,11 @@ def test_good_fields_pass_unchanged():
     ('tickets', '约 40–60 人民币，团队另议 300'), ('notes', '今天闭园'), ('notes', '目前正常开放'),
     ('notes', '现在不开'), ('hours_booking', '每天 9点 开门'), ('hours_booking', '０９：００开门'),
     ('hours_booking', '周二至周日 7:00-17:00'), ('notes', '下午 3 点后人少'),
+    # second #1569 review: number words, live availability and temporary closures
+    ('tickets', '门票六十元'), ('tickets', '约 40–60 元，学生半价二十元'), ('getting_there', '打车约三十元'),
+    ('getting_there', '打车约三十块钱'), ('notes', '今天余票充足'), ('notes', '暂停开放'), ('notes', '暂时闭馆'),
+    ('notes', '近期闭馆维修'), ('notes', '本周闭馆'), ('tickets', '约 60–60 元'), ('notes', '门票 60'),
+    ('hours_booking', '16时关门'), ('hours_booking', '8时30分开门'), ('notes', '四点以后人少'), ('notes', '票已售罄'),
 ])
 def test_unchecked_claims_become_official_notices(field, value):
     checked = checked_fields(json.dumps(dict(GOOD['zh'], **{field: value}), ensure_ascii=False), FACTS, 'zh')
@@ -247,6 +252,11 @@ def test_unchecked_claims_become_official_notices(field, value):
     ('hours_booking', 'Daily 09:00-18:00', False), ('hours_booking', 'Opens at 9am', False),
     ('notes', 'The closest gate is the north gate', True), ('getting_there', 'Line 1, then walk 10 minutes', True),
     ('summary', 'A palace museum, now a UNESCO site', True),
+    ('tickets', 'Sixty yuan', False), ('getting_there', 'A taxi costs about thirty yuan', False),
+    ('notes', 'Tickets left today', False), ('notes', 'Temporarily closed for renovation', False),
+    ('notes', 'Closed this week', False), ('notes', 'It is presently open', False), ('notes', 'Often sold out', False),
+    ('hours_booking', 'Gates open at 16h', False), ('notes', 'Tickets 60', False),
+    ('notes', 'Usually closed on Mondays', True), ('why_go', 'One of the largest palaces in the world', True),
 ])
 def test_english_claims_are_checked_the_same_way(field, value, kept):
     checked = checked_fields(json.dumps(dict(GOOD['en'], **{field: value}), ensure_ascii=False), FACTS, 'en')
@@ -256,7 +266,8 @@ def test_english_claims_are_checked_the_same_way(field, value, kept):
 @pytest.mark.parametrize('field,value', [('summary', '故宫博物馆所在的紫禁城'), ('getting_there', '地铁 1 号线，步行约 10 分钟'),
                                          ('time_needed', '约 3 小时'), ('notes', '旺季上午人多'),
                                          ('summary', '元代始建，明清扩建'), ('why_go', '院中有一块明代石碑'),
-                                         ('hours_booking', '０８：３０开门，以官方为准'), ('tickets', '免费，需提前预约')])
+                                         ('hours_booking', '０８：３０开门，以官方为准'), ('tickets', '免费，需提前预约'),
+                                         ('tickets', '约 40–60 元，学生半价，提前一天预约'), ('notes', '一块石碑记载了历史')])
 def test_ordinary_text_is_not_mistaken_for_a_claim(field, value):
     assert checked_fields(json.dumps(dict(GOOD['zh'], **{field: value}), ensure_ascii=False), FACTS, 'zh')[field] == value
 
@@ -385,3 +396,36 @@ def test_cached_values_are_copies():
     cache.put('poi:X', dict(metro=[]))
     cache.get('poi:X')['metro'].append('changed')
     assert cache.get('poi:X') == dict(metro=[])
+
+
+def test_a_long_restaurant_line_stays_within_the_field_limit():
+    rows = [dict(name_zh='很长的餐馆名字' * 4 + str(n), distance_m=100 * n) for n in range(1, 4)]
+    for language in ('zh', 'en'):
+        tip = food_tip(rows, language)
+        assert len(tip) <= (120 if language == 'zh' else 320)
+        assert rows[0]['name_zh'] in tip
+
+
+def test_dashscope_connects_before_reserving_and_refuses_repeated_receipt_keys():
+    events = []
+
+    class Ordered(Connection):
+        def connect(self):
+            self.events.append(('connect',))
+
+    client = DashScopeRoadbook('sk-test', connection=lambda: Ordered(completion(), events))
+    client.generate('zh', messages_for('zh', FACTS), lambda: events.append(('reserve',)))
+    assert [event[0] for event in events][:3] == ['connect', 'reserve', 'send']
+
+    class Repeated(Connection):
+        def getresponse(self):
+            class Response:
+                status = 200
+
+                def read(self, limit=None):
+                    return b'{"id":"a","id":"b","model":"qwen3.8-flash","choices":[],"usage":{}}'
+            return Response()
+
+    with pytest.raises(PluginError):
+        DashScopeRoadbook('sk-test', connection=lambda: Repeated(completion(), [])).generate(
+            'zh', messages_for('zh', FACTS), lambda: None)

@@ -52,17 +52,30 @@ PLACE_ID = re.compile(r'[A-Za-z0-9._-]{1,64}')
 POI_ID = re.compile(r'[A-Za-z0-9]{1,32}')
 
 # Checks run on NFKC-normalized text, so full-width digits and colons count as ordinary ones.
-_UNIT = r'(?:元|块钱|块|人民币|美元|yuan|kuai|rmb|cny|usd|dollars?)'
-_PRICE = re.compile(r'(?:[¥$]|us\$|rmb|cny|usd)\s*\d|\d\s*' + _UNIT, re.IGNORECASE)
+# 块 is also a measure word (一块石碑): only 块钱, or 块 not followed by a Chinese character, is money.
+_UNIT = r'(?:元|块钱|块(?![\u4e00-\u9fff])|人民币|美元|yuan|kuai|rmb|cny|usd|dollars?)'
+_CN_NUMBER = r'[零〇一二三四五六七八九十百千万两]'
+_EN_NUMBER = (r'\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty|'
+              r'fifty|sixty|seventy|eighty|ninety|hundred|thousand|[a-z]+teen|[a-z]+ty)\b')
+_NUMBER = r'(?:\d|' + _CN_NUMBER + r'|' + _EN_NUMBER + r')'
+_PRICE = re.compile(r'(?:[¥$]|us\$|rmb|cny|usd)\s*' + _NUMBER + r'|' + _NUMBER + r'\s*' + _UNIT
+                    + r'|(?:门票|票价|ticket|tickets|fare|fares|price|costs?)\s*\D{0,3}\d', re.IGNORECASE)
+_ANY_UNIT = re.compile(r'[¥$]|' + _UNIT, re.IGNORECASE)
 _APPROX_RANGE = re.compile(
-    r'(?:约|大约|大概|about|around|approximately|roughly)\s*(?:[¥$]\s*)?\d{1,4}(?:\s*' + _UNIT + r')?\s*'
-    r'(?:–|—|-|~|至|到|to)\s*(?:[¥$]\s*)?\d{1,4}(?:\s*' + _UNIT + r')?', re.IGNORECASE)
-_NOW = re.compile(r'今天|今日|今晚|目前|现在|当前|此刻|眼下|\b(?:today|tonight|now|currently|right now|at the moment)\b',
-                  re.IGNORECASE)
-_STATE = re.compile(r'开放|营业|开门|闭馆|闭园|关门|不开|开着|休息|停业|暂停|\b(?:open|opens|opened|closed|closing|shut)\b',
-                    re.IGNORECASE)
+    r'(?:约|大约|大概|about|around|approximately|roughly)\s*(?:[¥$]\s*)?(\d{1,4})(?:\s*' + _UNIT + r')?\s*'
+    r'(?:–|—|-|~|至|到|to)\s*(?:[¥$]\s*)?(\d{1,4})(?:\s*' + _UNIT + r')?', re.IGNORECASE)
+# Nothing live: availability, or whether it is open now, today or for the time being.
+_LIVE = re.compile(r'余票|售罄|满员|约满|\b(?:sold out|tickets? (?:left|remaining|available)|availability)\b',
+                   re.IGNORECASE)
+_NOW = re.compile(r'今天|今日|今晚|目前|现在|当前|此刻|眼下|暂时|暂停|近期|最近|本周|这周|本月|即日起|'
+                  r'\b(?:today|tonight|now|currently|right now|at the moment|presently|temporarily|recently|'
+                  r'this week|this month|until further notice)\b', re.IGNORECASE)
+_STATE = re.compile(r'开放|营业|开门|闭馆|闭园|关门|不开|开着|休息|停业|维修|'
+                    r'\b(?:open|opens|opened|closed|closing|shut)\b', re.IGNORECASE)
 _HHMM = re.compile(r'(?<!\d)([01]?\d|2[0-3]):([0-5]\d)(?!\d)')
-_OTHER_CLOCK = re.compile(r'\d{1,2}\s*(?:点钟|点半|点)|\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)(?![a-z])', re.IGNORECASE)
+_OTHER_CLOCK = re.compile(
+    r'\d{1,2}\s*(?:点钟|点半|点|时(?!间|代|期|候|节))|' + _CN_NUMBER + r'{1,3}\s*(?:点钟|点半|点(?!心|评|赞|菜))|'
+    r'\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|h)(?![a-z])', re.IGNORECASE)
 
 
 def _clocks(text):
@@ -219,12 +232,12 @@ def _field(name, value, facts, language):
     if text is None:
         return None
     plain = unicodedata.normalize('NFKC', text)
-    if _NOW.search(plain) and _STATE.search(plain):
-        return None  # nothing live: whether it is open now or today is not known here
+    if _LIVE.search(plain) or (_NOW.search(plain) and _STATE.search(plain)):
+        return None  # nothing live: availability, or whether it is open now, today or for now
     if name == 'tickets':
-        rest = _APPROX_RANGE.sub('', plain)
-        if _PRICE.search(rest) or re.search(r'\d', rest):
-            return None  # every number must sit in an "about X–Y" range
+        rest = _APPROX_RANGE.sub(lambda match: '' if int(match.group(1)) < int(match.group(2)) else match.group(0), plain)
+        if _PRICE.search(rest) or _ANY_UNIT.search(rest) or re.search(r'\d', rest):
+            return None  # every amount must sit in an "about X–Y" range with X < Y
     elif _PRICE.search(plain):
         return None  # prices only in tickets
     if _OTHER_CLOCK.search(plain):
@@ -237,14 +250,17 @@ def _field(name, value, facts, language):
 
 
 def food_tip(restaurants, language):
-    """The restaurant line, written from Gaode's around-search only."""
-    if not restaurants:
-        return ('附近没有找到带地址的餐馆，以地图为准。' if language == 'zh'
-                else 'No restaurant with an address was found nearby; check a map.')
-    if language == 'zh':
-        return '附近可就餐：' + '、'.join(f"{item['name_zh']}（约 {item['distance_m']} 米）" for item in restaurants) + '。'
-    return 'Places to eat nearby: ' + ', '.join(
-        f"{item['name_zh']} (about {item['distance_m']} m)" for item in restaurants) + '.'
+    """The restaurant line, written from Gaode's around-search only, within the field limit."""
+    def line(rows):
+        if language == 'zh':
+            return '附近可就餐：' + '、'.join(f"{item['name_zh']}（约 {item['distance_m']} 米）" for item in rows) + '。'
+        return 'Places to eat nearby: ' + ', '.join(f"{item['name_zh']} (about {item['distance_m']} m)" for item in rows) + '.'
+
+    for count in range(len(restaurants), 0, -1):
+        if len(line(restaurants[:count])) <= FIELD_LIMITS[language]:
+            return line(restaurants[:count])
+    return ('附近没有找到带地址的餐馆，以地图为准。' if language == 'zh'
+            else 'No restaurant with an address was found nearby; check a map.')
 
 
 def checked_fields(raw, facts, language):
