@@ -267,7 +267,9 @@ class GenerationWiring(unittest.TestCase):
         for locale,last_hint in (('zh','最后一天的景点离酒店有一段距离'),('en',"the last day's sights are some distance from the hotel")):
             body=self.saved_reply(locale,((1,'a'),(3,'b')))
             self.assertIn(last_hint,body.lower()if locale=='en'else body)
-            self.assertIn(last_hint,(self.saved_reply(locale,((3,'b'),))).lower()if locale=='en'else self.saved_reply(locale,((3,'b'),)))
+            last_only=self.saved_reply(locale,((3,'b'),))
+            self.assertIn(last_hint,last_only.lower()if locale=='en'else last_only)
+            self.assertIn('想换近一点的可以告诉我'if locale=='zh'else'tell me to swap in somewhere closer',last_only)
         for locale,hint in (('zh','第一天的景点离酒店有一段距离，到达后建议打车过去；想换近一点的可以告诉我'),
                             ('en',"Day 1's sights are some distance from the hotel; take a taxi after you arrive, or tell me to swap in somewhere closer")):
             for far in ((),((1,'p-stop-1'),)):
@@ -307,9 +309,11 @@ class GenerationWiring(unittest.TestCase):
         cases=((dict(reason='KNOWN_OPENING_CONFLICT'),'有景点在安排的那天不开放','a stop is closed on its planned day'),
                (dict(reason='EXPLICIT_CONSTRAINTS_INFEASIBLE'),'有一天的时间排不开','one of the days could not fit in time'),
                (dict(reason='FIRST_DAY_LIGHT_RECIPE_REQUIRED'),'到达时间未定，第一天只能轻松安排','with no arrival time, day 1 must stay light'),
-               (dict(reason='EDGE_WINDOWS_CONFLICT'),'到达或离开的时间和安排对不上','your arrival or departure time clashes with the plan'),
+               (dict(reason='EXPLICIT_CLOCK_OR_ZONE_REQUIRED'),'有一项安排（包括到达或离开）还缺具体时间',
+                'an arrangement (including arrival or departure) still has no exact time'),
+               (dict(reason='EDGE_WINDOWS_CONFLICT'),None,None),
                (dict(error=DestinationUnresolved({})),'目的地还没能确认是哪座城市','I could not confirm which city you mean'),
-               (dict(error=PlaceSelectionBlocked('x')),'有几个地点没能确认是哪一处','I could not confirm which place some stops are'),
+               (dict(error=PlaceSelectionBlocked('x')),'有地点没能确认是哪一处','I could not confirm which place a stop is'),
                (dict(error=WordingUnavailable('x')),'整理行程文字时出了问题','something went wrong while writing up the plan'),
                (dict(error=SourceRejected('f','r')),None,None),
                (dict(reason='SOMETHING_NEW'),None,None))
@@ -335,7 +339,8 @@ class GenerationWiring(unittest.TestCase):
                     self.assertIn('这次没能把完整方案保存'if locale=='zh'else'I could not save a complete plan',body)
                     if detail:self.assertIn(detail,body)
                     else:
-                        for wrong in ('之前保存','固定安排在时间','saved arrangements','fixed arrangements do not fit'):
+                        for wrong in ('之前保存','固定安排缺少','固定安排在时间','对不上','saved arrangements',
+                                      'fixed arrangement has','fixed arrangements do not fit','clashes'):
                             self.assertNotIn(wrong,body)
 
 
