@@ -67,6 +67,22 @@ def test_original_native_and_structured_full_output_rules_are_unchanged(logical)
         observer(configured,logical,wire(1024))('fixture-token','fixture-mid','fixture-op')
 
 
+def test_discussion_preview_observation_accepts_the_answer_cap():
+    # JT 2026-11-25 (via coordination): the day-by-day discussion preview uses
+    # the answer output limit; the observer must expect what provider.py sends.
+    from cj_message.lio_context import discussion_preview_format_sha256
+    configured=provider(1536)
+    logical=dict(discussion_preview_days=5,response_format_sha256=discussion_preview_format_sha256(5))
+    assert observer(configured,logical,wire(1536))('fixture-token','fixture-mid','fixture-op')==configured_model(configured,M4_NATIVE_TURN_BUFFERED)
+    with pytest.raises(Unavailable,match='ACTUAL_MODEL_WIRE_PARAMETERS_CHANGED'):
+        observer(configured,logical,wire(1024))('fixture-token','fixture-mid','fixture-op')
+    for forged in (dict(logical,response_format_sha256='0'*64),dict(logical,discussion_preview_days=0),
+                   dict(logical,discussion_preview_days='5'),dict(response_format_sha256=logical['response_format_sha256'])):
+        with pytest.raises(Unavailable,match='ACTUAL_MODEL_WIRE_PARAMETERS_CHANGED'):
+            observer(configured,forged,wire(1536))('fixture-token','fixture-mid','fixture-op')
+        assert observer(configured,forged,wire(1024))('fixture-token','fixture-mid','fixture-op')==configured_model(configured,M4_NATIVE_TURN_BUFFERED)
+
+
 @pytest.mark.parametrize('change',[dict(model='wrong-model'),dict(stream=False),dict(stream_options={}),dict(enable_thinking=True)])
 def test_new_rich_profile_does_not_relax_other_actual_wire_parameters(change):
     configured=provider(1536);body=wire(1536);body.update(change)
