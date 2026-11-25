@@ -208,7 +208,7 @@ struct LioTransportCity: Equatable, Hashable, Identifiable, Sendable {
 
 struct LioTransportQuery: Equatable, Sendable {
     enum Problem: Error, Equatable, Sendable {
-        case unknownFrom, unknownTo, sameCity, pastDate
+        case unknownFrom, unknownTo, sameCity, pastDate, tooFarAhead
 
         func message(_ language: LioLanguage) -> String {
             switch self {
@@ -220,6 +220,8 @@ struct LioTransportQuery: Equatable, Sendable {
                 language.text("Departure and destination are the same city.", "出发和到达是同一个城市。")
             case .pastDate:
                 language.text("Choose today or a later date.", "请选择今天或以后的日期。")
+            case .tooFarAhead:
+                language.text("Choose a date within the next 60 days.", "请选择 60 天以内的日期。")
             }
         }
     }
@@ -243,7 +245,17 @@ struct LioTransportQuery: Equatable, Sendable {
         guard origin != destination else { return .failure(.sameCity) }
         let day = dayString(date)
         guard day >= dayString(today) else { return .failure(.pastDate) }
+        guard day <= dayString(lastBookableDay(today: today)) else { return .failure(.tooFarAhead) }
         return .success(Self(from: origin, to: destination, day: day))
+    }
+
+    /// TRANSPORT.1 accepts today to 60 days ahead in China time.
+    static let daysAhead = 60
+
+    static func lastBookableDay(today: Date = Date()) -> Date {
+        let start = calendar.startOfDay(for: today)
+        return calendar.date(byAdding: .day, value: daysAhead, to: start)
+            .map { calendar.date(bySettingHour: 12, minute: 0, second: 0, of: $0) ?? $0 } ?? start
     }
 
     static func dayString(_ date: Date) -> String {
@@ -325,6 +337,11 @@ struct LioTransportResult: Equatable, Sendable {
     let bus: LioTransportModeResult
     /// Debug preview data; the screen labels it as a sample.
     let isSample: Bool
+
+    /// What the page shows when a search fails: the guide and booking links still work.
+    static func guideOnly(for query: LioTransportQuery) -> LioTransportResult {
+        LioTransportResult(query: query, rail: .guideOnly, flight: .guideOnly, bus: .guideOnly, isSample: false)
+    }
 
     func result(for mode: LioTransportMode) -> LioTransportModeResult {
         switch mode {

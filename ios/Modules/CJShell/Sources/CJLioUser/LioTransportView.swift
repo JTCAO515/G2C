@@ -70,6 +70,9 @@ struct LioTransportView: View {
             } catch {
                 guard !Task.isCancelled, self.pending == pending else { return }
                 failure = (error as? LioTransportRelayFailure) ?? .unavailable
+                // Keep the booking links, tips and stations on screen even when the search fails.
+                result = .guideOnly(for: pending)
+                mode = .rail
             }
             self.pending = nil
         }
@@ -99,7 +102,7 @@ struct LioTransportView: View {
                 .accessibilityIdentifier("lio.transport.swap")
             }
             DatePicker(language.text("Date", "日期"), selection: $date,
-                       in: LioTransportQuery.calendar.startOfDay(for: Date())...,
+                       in: LioTransportQuery.calendar.startOfDay(for: Date())...LioTransportQuery.lastBookableDay(),
                        displayedComponents: [.date])
                 .frame(minHeight: 44)
                 .accessibilityIdentifier("lio.transport.date")
