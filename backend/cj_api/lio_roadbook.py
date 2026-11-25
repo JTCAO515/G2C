@@ -13,6 +13,7 @@ Routes, the worker socket, the roster and deployment belong to deploy/hk (S line
 from collections import OrderedDict
 from http.client import HTTPException, HTTPSConnection
 import json
+import logging
 import re
 import copy
 from threading import Lock
@@ -30,6 +31,8 @@ from cj_usage.roadbook_budget import MAX_OUTPUT_TOKENS, MAX_REQUEST_PLACES, MODE
 
 from .plugin_tools import PluginError
 from .taxi_tools import WireModel, _visible
+
+_AUDIT = logging.getLogger('cj_usage.audit')
 
 
 VERSION = 'ROADBOOK.1'
@@ -290,6 +293,25 @@ def checked_fields(raw, facts, language):
     return {name: fields.get(name) or food_tip(facts.get('restaurants') or [], language) for name in FIELDS}
 
 
+def refusal(raw, finish):
+    """Why a model reply was not used, with counts only: never any of the reply's text."""
+    if finish != 'stop':
+        return dict(reason='model_cut_off')
+    try:
+        value = json.loads(raw, object_pairs_hook=reject_duplicates(ValueError, 'duplicate roadbook field'))
+    except (TypeError, ValueError):
+        return dict(reason='model_not_json')
+    if type(value) is not dict:
+        return dict(reason='model_not_object')
+    return dict(reason='model_fields', missing=len(set(MODEL_FIELDS) - set(value)),
+                extra=len(set(value) - set(MODEL_FIELDS)), food_tip=int('food_tip' in value))
+
+
+def _unavailable(request, index, language, why):
+    _AUDIT.info('ROADBOOK_PLACE_UNAVAILABLE request_id=%s index=%s language=%s %s', request.request_id, index,
+                language or '-', ' '.join(f'{key}={value}' for key, value in why.items()))
+
+
 class DashScopeRoadbook:
     """Minimal Beijing DashScope chat client for flash, JSON output, no thinking, at most 1000 tokens."""
 
@@ -364,7 +386,8 @@ class RoadbookService:
 
         supplier, usage, text, finish = self.model.generate(language, messages_for(language, facts), reserve)
         self.budget.finish(operation, stage, supplier, usage)
-        return checked_fields(text, facts, language) if finish == 'stop' else None
+        checked = checked_fields(text, facts, language) if finish == 'stop' else None
+        return checked, (refusal(text, finish) if checked is None else None)
 
     def _enrich_one(self, scope, request, operation, index, place, stages, authorize):
         if place.poi_id:
@@ -380,20 +403,23 @@ class RoadbookService:
         except (TypeError, ValueError):
             location = None
         if row is None or location is None:
+            _unavailable(request, index, None, dict(reason='gaode_no_place' if row is None else 'gaode_no_location'))
             return None
         around = self._gaode(scope, request, index, 'around', dict(
             location=location, types=AROUND_TYPES, radius=AROUND_RADIUS_M, sortrule='distance',
             page_size=AROUND_PAGE_SIZE, page_num=1, show_fields='business'), authorize)
         facts = _facts(row, around)
         if facts is None:
+            _unavailable(request, index, None, dict(reason='gaode_bad_place'))
             return None
         content = {}
         for language in LANGUAGES:
             # Model stages run in order across the request: a skipped place does not leave a gap.
             stage = stages[0]
             stages[0] += 1
-            checked = self._model(operation, stage, language, facts, authorize)
+            checked, why = self._model(operation, stage, language, facts, authorize)
             if checked is None:
+                _unavailable(request, index, language, why)
                 return None
             content[language] = checked
         return dict(poi_id=facts['poi_id'], content=content, metro=facts['metro'], restaurants=facts['restaurants'])
@@ -437,8 +463,9 @@ class RoadbookService:
                     stopped = 'limited'
                     results[place.id] = dict(id=place.id, status=stopped)
                     continue
-                except (BudgetUnknown, PluginError):
+                except (BudgetUnknown, PluginError) as error:
                     # A failed or unknown supplier call keeps its hold; later model stages cannot start.
+                    _unavailable(request, index, None, dict(reason='supplier', code=getattr(error, 'code', 'unknown')))
                     stopped = 'unavailable'
                     results[place.id] = dict(id=place.id, status=stopped)
                     continue
