@@ -72,11 +72,13 @@ import Testing
     @Test func returnActionsUseTheTaxiPlaceAndTheDriverSign() {
         let hotel = LioStayHotel(place: place, roomNumber: "1208", source: .trip)
         #expect(hotel.place == place)
-        let sign = hotel.driverSign
+        let sign = LioShowCardContent.driver(nameZH: hotel.place.nameZH, nameEN: hotel.place.nameEN,
+                                             addressZH: hotel.place.addressZH, requestZH: LioStayHotel.driverRequestZH)
         #expect(sign.mainZH == "北京王府井希尔顿酒店")
         #expect(sign.leadZH == "请送我回这家酒店")
         #expect(sign.detailsZH == ["北京市东城区王府井东街8号"])
         #expect(sign.english == ["Hilton Beijing Wangfujing"])
+        #expect(LioAccountFolders.returnHotelDirectoryName == LioReturnHotelStore.directoryName)
         #expect(hotel.showCardHotel == LioShowCardInput.Hotel(nameZH: "北京王府井希尔顿酒店",
                                                                 addressZH: "北京市东城区王府井东街8号"))
     }

@@ -76,8 +76,9 @@ struct LioReturnHotelView: View {
                 }
             case .driver:
                 if let hotel {
-                    LioShowCardSheet(language: language, content: hotel.driverSign,
-                                     title: language.text("Show the driver", "给司机看"), identifierPrefix: "lio.driver")
+                    LioDriverSign(language: language, nameZH: hotel.place.nameZH, nameEN: hotel.place.nameEN,
+                                  addressZH: hotel.place.addressZH, requestZH: LioStayHotel.driverRequestZH,
+                                  identifierPrefix: "lio.return-hotel.driver-sign")
                 }
             case .choose:
                 LioStayHotelPicker(language: language, tripPlaces: taxiEntry?.tripPlaces ?? [],

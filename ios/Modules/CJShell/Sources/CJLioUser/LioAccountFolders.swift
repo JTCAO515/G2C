@@ -11,6 +11,9 @@ public enum LioAccountFolders {
         LioRoadbookStore.storageDirectory(inMessageDirectory: directory)
     }
 
+    /// The stay hotel for Back to Hotel (`LioReturnHotelStore`, #1573): one fixed file name.
+    public static let returnHotelDirectoryName = LioReturnHotelStore.directoryName
+
     /// The only file names a roadbook folder may hold; anything else keeps cleanup incomplete.
     public static func isRoadbookFileName(_ name: String) -> Bool {
         // Bytes, not characters: a hex letter followed by a combining mark must not pass.

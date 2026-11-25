@@ -20,10 +20,8 @@ struct LioStayHotel: Codable, Equatable, Sendable {
         self.source = source
     }
 
-    /// The driver sign for going back: the hotel's Chinese name large, its Chinese address, the English name small.
-    var driverSign: LioShowCardContent {
-        .driver(nameZH: place.nameZH, nameEN: place.nameEN, addressZH: place.addressZH, requestZH: "请送我回这家酒店")
-    }
+    /// The request above the hotel's name on the driver sign.
+    static let driverRequestZH = "请送我回这家酒店"
 
     var showCardHotel: LioShowCardInput.Hotel {
         LioShowCardInput.Hotel(nameZH: place.nameZH, addressZH: place.addressZH)
@@ -65,11 +63,11 @@ enum LioShowCardFeature {
 }
 
 /// The stay hotel for the signed-in account, in its message folder; account cleanup removes it.
-@MainActor struct LioReturnHotelStore {
-    static let directoryName = "return-hotel"
-    static let fileName = "return-hotel.json"
+@MainActor public struct LioReturnHotelStore {
+    nonisolated public static let directoryName = "return-hotel"
+    nonisolated public static let fileName = "return-hotel.json"
 
-    static func storageDirectory(inMessageDirectory directory: URL) -> URL {
+    nonisolated public static func storageDirectory(inMessageDirectory directory: URL) -> URL {
         directory.appendingPathComponent(directoryName, isDirectory: true)
     }
 

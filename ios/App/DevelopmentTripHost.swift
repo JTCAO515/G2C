@@ -1688,6 +1688,7 @@ private struct DevelopmentVerificationTransport: ClientTransport {
             try translation.removeEmptyChild()
             try LioTaxiRecentsCleanup.erase(in: captured[0])
             try LioSavedPlansCleanup.erase(in: captured[0])
+            try LioReturnHotelCleanup.erase(in: captured[0])
             try LioRoadbookCleanup.erase(in: captured[0])
             #endif
         case .tripPending:

@@ -6,20 +6,34 @@ import UIKit
 /// The full-screen card a traveller turns towards someone (#1572): Chinese large, English small, screen kept awake.
 /// Same layout as the driver sign (#1550); accessibility identifiers are `<prefix>.request`, `<prefix>.name`,
 /// `<prefix>.address`, `<prefix>.english`, `<prefix>.note` and `<prefix>.done`, matching the driver sign's.
-struct LioShowCardSheet: View {
+/// An optional accessory (for example the ordering card's note checklist) sits under the card.
+struct LioShowCardSheet<Accessory: View>: View {
     let language: LioLanguage
     let content: LioShowCardContent
     var title: String?
     var identifierPrefix = "lio.show-card.sheet"
+    @ViewBuilder var accessory: () -> Accessory
     @Environment(\.dismiss) private var dismiss
     @State private var priorIdleTimer: Bool?
+
+    init(language: LioLanguage, content: LioShowCardContent, title: String? = nil,
+         identifierPrefix: String = "lio.show-card.sheet", @ViewBuilder accessory: @escaping () -> Accessory) {
+        self.language = language
+        self.content = content
+        self.title = title
+        self.identifierPrefix = identifierPrefix
+        self.accessory = accessory
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                LioShowCardFace(content: content, identifierPrefix: identifierPrefix)
-                    .textSelection(.enabled)
-                    .padding(LioTheme.Spacing.lg)
+                VStack(alignment: .leading, spacing: LioTheme.Spacing.lg) {
+                    LioShowCardFace(content: content, identifierPrefix: identifierPrefix)
+                        .textSelection(.enabled)
+                    accessory()
+                }
+                .padding(LioTheme.Spacing.lg)
             }
             .background(LioTheme.paper)
             .foregroundStyle(LioTheme.ink)
@@ -52,6 +66,13 @@ struct LioShowCardSheet: View {
     }
 }
 
+extension LioShowCardSheet where Accessory == EmptyView {
+    init(language: LioLanguage, content: LioShowCardContent, title: String? = nil,
+         identifierPrefix: String = "lio.show-card.sheet") {
+        self.init(language: language, content: content, title: title, identifierPrefix: identifierPrefix) { EmptyView() }
+    }
+}
+
 /// The card's text, used full screen and as the smaller preview while filling in details.
 struct LioShowCardFace: View {
     let content: LioShowCardContent
@@ -69,25 +90,19 @@ struct LioShowCardFace: View {
                 .font(compact ? LioTheme.display(.title2).weight(.bold) : LioTheme.display(.largeTitle).weight(.bold))
                 .accessibilityAddTraits(.isHeader)
                 .accessibilityIdentifier(identifierPrefix + ".name")
+            // One text per block, so UI tests read `<prefix>.address` as a static text (the driver sign's address).
             if !content.detailsZH.isEmpty {
-                VStack(alignment: .leading, spacing: compact ? 4 : 8) {
-                    ForEach(Array(content.detailsZH.enumerated()), id: \.offset) { _, line in
-                        Text(line).font((compact ? Font.headline : .title2).weight(.semibold))
-                    }
-                }
-                .accessibilityElement(children: .combine)
-                .accessibilityIdentifier(identifierPrefix + ".address")
+                Text(content.detailsZH.joined(separator: "\n"))
+                    .font((compact ? Font.headline : .title2).weight(.semibold))
+                    .lineSpacing(compact ? 4 : 8)
+                    .accessibilityIdentifier(identifierPrefix + ".address")
             }
             if !content.english.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(Array(content.english.enumerated()), id: \.offset) { _, line in
-                        Text(line)
-                    }
-                }
-                .font(compact ? .footnote : .body)
-                .foregroundStyle(LioTheme.inkSecondary)
-                .accessibilityElement(children: .combine)
-                .accessibilityIdentifier(identifierPrefix + ".english")
+                Text(content.english.joined(separator: "\n"))
+                    .font(compact ? .footnote : .body)
+                    .lineSpacing(4)
+                    .foregroundStyle(LioTheme.inkSecondary)
+                    .accessibilityIdentifier(identifierPrefix + ".english")
             }
             if let noteZH = content.noteZH {
                 VStack(alignment: .leading, spacing: 4) {
