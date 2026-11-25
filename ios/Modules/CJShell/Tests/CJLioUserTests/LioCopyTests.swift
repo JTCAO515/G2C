@@ -18,6 +18,29 @@ struct LioCopyTests {
         }
     }
 
+    /// A Swift literal that is nothing but one web address (no spaces, escapes or interpolation) is a link
+    /// target, not copy, so its query parameter names are not scanned. Text around an address still is.
+    private static let bareURLLiteral = try! NSRegularExpression(pattern: #"^"https://[^\s"\\]+"$"#)
+
+    private func isBareURL(_ literal: String) -> Bool {
+        Self.bareURLLiteral.firstMatch(in: literal, range: NSRange(literal.startIndex..., in: literal)) != nil
+    }
+
+    @Test func onlyBareWebAddressesAreExempt() throws {
+        let vocabulary = try NSRegularExpression(pattern: banned, options: [.caseInsensitive])
+        func flagged(_ literal: String) -> Bool {
+            !isBareURL(literal) && vocabulary.firstMatch(in: literal, range: NSRange(literal.startIndex..., in: literal)) != nil
+        }
+        // An address whose parameter is named query is a link, not copy.
+        #expect(!flagged(#""https://www.klook.com/search/result/?query=Mutianyu""#))
+        // Copy that says query is still caught, and so is an address with text after it.
+        #expect(flagged(#""Search query""#))
+        #expect(flagged(#""https://www.klook.com/search/result/?query=x 查询""#))
+        #expect(flagged(#""Open https://www.klook.com/search/result/?query=x""#))
+        #expect(flagged(#""https://example.com/?query=\(name)""#))
+        #expect(flagged(#""http://example.com/?query=x""#))
+    }
+
     private func resourceStrings(_ value: Any) -> [String] {
         if let text = value as? String { return [text] }
         if let array = value as? [Any] { return array.flatMap(resourceStrings) }
@@ -84,7 +107,7 @@ struct LioCopyTests {
             return literals.matches(in: text, range: NSRange(text.startIndex..., in: text)).compactMap { match in
                 guard let span = Range(match.range, in: text) else { return nil }
                 let literal = String(text[span])
-                guard vocabulary.firstMatch(in: literal, range: NSRange(literal.startIndex..., in: literal)) != nil else {
+                guard !isBareURL(literal), vocabulary.firstMatch(in: literal, range: NSRange(literal.startIndex..., in: literal)) != nil else {
                     return nil
                 }
                 let line = text[..<span.lowerBound].filter { $0 == "\n" }.count + 1
