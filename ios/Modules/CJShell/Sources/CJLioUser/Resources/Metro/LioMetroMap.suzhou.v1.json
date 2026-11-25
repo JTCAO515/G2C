@@ -132,7 +132,7 @@
   {"id": "su114", "nameZH": "苏州湾东", "nameEN": "Suzhouwan Dong", "x": 608.5, "y": 1000.2, "lines": ["su-4"]},
   {"id": "su115", "nameZH": "松陵大道", "nameEN": "Songling Dadao", "x": 646.4, "y": 1023.9, "lines": ["su-4"]},
   {"id": "su116", "nameZH": "吴江人民广场", "nameEN": "Wujiang Renmin Guangchang", "x": 703.7, "y": 1023.4, "lines": ["su-4"]},
-  {"id": "su117", "nameZH": "吴江汽车站", "nameEN": "Wujiang Qichezhan", "x": 757.2, "y": 1022.9, "lines": ["su-4"]},
+  {"id": "su117", "nameZH": "吴江汽车站", "nameEN": "Wujiang Bus Station", "x": 757.2, "y": 1022.9, "lines": ["su-4"]},
   {"id": "su118", "nameZH": "庞金路", "nameEN": "Pangjin Lu", "x": 807.9, "y": 1022.9, "lines": ["su-4"]},
   {"id": "su119", "nameZH": "同里", "nameEN": "Tongli", "x": 855.2, "y": 1022.4, "lines": ["su-4"]},
   {"id": "su120", "nameZH": "阳澄湖南", "nameEN": "Yangchenghu Nan", "x": 1019.6, "y": 291.6, "lines": ["su-5"]},

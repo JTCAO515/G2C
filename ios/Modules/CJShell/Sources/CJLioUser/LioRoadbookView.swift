@@ -167,7 +167,12 @@ struct LioRoadbookView: View {
             }
         }
         .onAppear { kept = store?.contains(roadbook.id) ?? false }
-        .sheet(item: $shared) { file in LioRoadbookShareSheet(items: [file.url]).ignoresSafeArea() }
+        // The exported PDF may hold a saved trip: it leaves the phone only through the share sheet
+        // and is removed as soon as sharing ends or the roadbook closes.
+        .sheet(item: $shared, onDismiss: LioRoadbookPDF.removeExports) { file in
+            LioRoadbookShareSheet(items: [file.url]).ignoresSafeArea()
+        }
+        .onDisappear(perform: LioRoadbookPDF.removeExports)
         .sheet(item: $taxiPlace) { place in
             if let taxiEntry {
                 NavigationStack {
@@ -427,7 +432,7 @@ struct LioRoadbookView: View {
     private func keep() {
         guard let store else { return }
         do {
-            try store.save(roadbook)
+            try store.save(roadbook.kept())
             kept = true
             notice = nil
             onChange()
@@ -440,7 +445,7 @@ struct LioRoadbookView: View {
         guard !exporting else { return }
         exporting = true
         let roadbook = roadbook, language = language
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("LioRoadbook", isDirectory: true)
+        let folder = LioRoadbookPDF.exportDirectory
         Task {
             defer { exporting = false }
             do {

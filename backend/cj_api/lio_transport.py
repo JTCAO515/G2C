@@ -11,6 +11,7 @@ Authorization: docs/authorizations/M4.md items 11, 12 (④) and 14 (JT 2026-11-2
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
+import logging
 import re
 from typing import Literal
 from uuid import uuid4
@@ -36,6 +37,10 @@ STAMP = re.compile(r'([0-9]{4}-[0-9]{2}-[0-9]{2})[ T]([01][0-9]|2[0-3]):([0-5][0
 RAIL_NOTE = dict(availability_note_zh='余票以 12306 为准', availability_note_en='Seats left: check on 12306')
 FLIGHT_NOTE = dict(price_note_zh='价格随时变动，以订票页为准', price_note_en='Prices change often; check when booking')
 # 12306 seat-class codes; any other code is dropped rather than guessed.
+LOGGER = logging.getLogger(__name__)
+ITEM_KEYS = frozenset({'number', 'depart_station', 'arrive_station', 'depart_time', 'arrive_time', 'duration_min',
+                       'next_day', 'seats', 'availability'})
+TIME = re.compile(r'([01][0-9]|2[0-3]):[0-5][0-9]')
 SEATS = {
     '9': ('商务座', 'Business class'), 'P': ('特等座', 'Premium class'), 'M': ('一等座', 'First class'),
     'O': ('二等座', 'Second class'), '4': ('软卧', 'Soft sleeper'), '3': ('硬卧', 'Hard sleeper'),
@@ -152,7 +157,7 @@ class TransportInput(WireModel):
 
 def _text(value, limit=40):
     if (type(value) is not str or not value.strip() or len(value) > limit
-            or any(ord(char) < 32 or 0x7f <= ord(char) < 0xa0 for char in value)):
+            or any(ord(char) < 32 or 0x7f <= ord(char) < 0xa0 or 0xd800 <= ord(char) <= 0xdfff for char in value)):
         raise ValueError('invalid supplier text')
     return value.strip()
 
@@ -183,9 +188,10 @@ def _seats(spaces):
         return []
     if type(spaces) is not list or len(spaces) > 16:
         raise ValueError('invalid seat list')
-    seats = []
+    seats, seen = [], set()
     for space in spaces:
-        if type(space) is not dict or space.get('code') not in SEATS or type(space.get('cost')) is not str:
+        if (type(space) is not dict or type(space.get('code')) is not str or space['code'] not in SEATS
+                or space['code'] in seen or type(space.get('cost')) is not str):
             continue
         try:
             price = Decimal(space['cost'])
@@ -193,6 +199,7 @@ def _seats(spaces):
             continue
         if not price.is_finite() or not 0 < price <= 100000 or price != price.quantize(Decimal('0.01')):
             continue
+        seen.add(space['code'])
         zh, en = SEATS[space['code']]
         seats.append(dict(class_zh=zh, class_en=en, price_cny_minor=int(price * 100)))
     return seats
@@ -211,7 +218,9 @@ def rail_items(value):
             raise ValueError('bounded transit segments required')
         for segment in segments:
             railway = segment.get('railway') if type(segment) is dict else None
-            if railway in (None, {}, []):
+            # Walking and metro segments often carry an empty railway object ({"alters": [], "spaces": []});
+            # only a segment with a train number is a train.
+            if railway in (None, {}, []) or type(railway) is dict and railway.get('trip') in (None, '', []):
                 continue
             number = _text(railway['trip'], 8)
             if not TRAIN.fullmatch(number):
@@ -229,6 +238,42 @@ def rail_items(value):
                 items.append(item)
     items.sort(key=lambda item: (item['depart_time'], item['number']))
     return items[:MAX_ITEMS]
+
+
+def _valid_station(station):
+    if type(station) is not dict or 'name_zh' not in station or not station.keys() <= {'name_zh', 'name_en'}:
+        return False
+    try:
+        _text(station['name_zh'], 41)
+        if 'name_en' in station:
+            _text(station['name_en'], 120)
+    except ValueError:
+        return False
+    return station['name_zh'].endswith('站')
+
+
+def validate_rail_items(items):
+    """Whether a worker reply has exactly the shape `rail_items` produces; checked once where it enters the API."""
+    if type(items) is not list or len(items) > MAX_ITEMS:
+        return False
+    classes = set(SEATS.values())
+    for item in items:
+        if (type(item) is not dict or item.keys() != ITEM_KEYS or item['availability'] is not None
+                or type(item['number']) is not str or not TRAIN.fullmatch(item['number'])
+                or not _valid_station(item['depart_station']) or not _valid_station(item['arrive_station'])
+                or type(item['depart_time']) is not str or not TIME.fullmatch(item['depart_time'])
+                or type(item['arrive_time']) is not str or not TIME.fullmatch(item['arrive_time'])
+                or type(item['duration_min']) is not int or not 0 < item['duration_min'] <= 7 * 1440
+                or type(item['next_day']) is not bool
+                or type(item['seats']) is not list or len(item['seats']) > len(SEATS)):
+            return False
+        for seat in item['seats']:
+            if (type(seat) is not dict or seat.keys() != {'class_zh', 'class_en', 'price_cny_minor'}
+                    or type(seat['class_zh']) is not str or type(seat['class_en']) is not str
+                    or (seat['class_zh'], seat['class_en']) not in classes
+                    or type(seat['price_cny_minor']) is not int or not 0 < seat['price_cny_minor'] <= 10_000_000):
+                return False
+    return True
 
 
 def _stamp(value):
@@ -330,6 +375,10 @@ class TransportService:
         except PluginError as error:
             return dict(result, status=_status(error))
         except (OSError, ValueError, KeyError, TypeError):
+            return dict(result, status='unavailable')
+        if not validate_rail_items(items):
+            # Content-free: never log what the worker sent.
+            LOGGER.warning('transport_rail_reply_invalid')
             return dict(result, status='unavailable')
         return dict(result, status='ok' if items else 'empty', items=items)
 

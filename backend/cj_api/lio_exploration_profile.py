@@ -223,7 +223,7 @@ def _known_value(update, sources):
     value = tuple(update.value) if isinstance(update.value, list) else update.value
     quotes = [source.quote for source in sources]
     if update.factor_key == 'duration_days':
-        pattern=r'([0-9]{1,3}|one|two|three|four|five|six|seven|eight|nine|ten|[一二两三四五六七八九十])\s*(?:天|日|days?)'
+        pattern=r'([0-9]{1,3}|one|two|three|four|five|six|seven|eight|nine|ten|[一二两三四五六七八九十])(?:\s*|-)(?:天|日|days?)'
         def count(match):
             return int(match[1]) if match[1].isascii() and match[1].isdecimal() else NUMBERS[match[1].casefold()]
         matches=[re.fullmatch(pattern,_positive_payload('duration_days',quote),re.I) for quote in quotes]
