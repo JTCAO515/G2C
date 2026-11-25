@@ -191,6 +191,22 @@ enum LioRoadbookWire {
     }
 }
 
+/// Holds the fill-in task for one roadbook screen and cancels it when the screen's state is released.
+@MainActor final class LioRoadbookFillTask {
+    var task: Task<Void, Never>?
+    deinit { task?.cancel() }
+}
+
+#if os(iOS)
+/// The parts of the roadbook screen a fill-in writes to, handed to the task instead of the screen itself.
+@MainActor struct LioRoadbookFillState {
+    let filled: Binding<[String: LioRoadbookDetail]>
+    let notice: Binding<String?>
+    let filling: Binding<Bool>
+    let kept: Binding<Bool>
+}
+#endif
+
 /// What the roadbook screen needs from the relay.
 struct LioRoadbookEnricher: Sendable {
     let enrich: @MainActor @Sendable ([LioRoadbookPlaceQuery]) async throws -> [String: LioRoadbookPlaceStatus]

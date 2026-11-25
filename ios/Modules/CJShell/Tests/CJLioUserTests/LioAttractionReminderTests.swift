@@ -96,6 +96,41 @@ struct LioAttractionReminderTests {
         #expect(zh.body.contains("12月5日") && zh.body.contains("以官方为准"))
     }
 
+    @Test func scheduledRemindersCanBeReadWithoutChangingThem() async throws {
+        // The trip home page reads what is set; it never adds, removes or asks for permission.
+        let center = FakeReminderCenter(granted: false, pending: [
+            "g2c.attraction.beijing.palace-museum.2026-12-05",
+            "g2c.attraction.beijing.mao-mausoleum.2026-12-09",
+            "g2c.attraction.nowhere.unknown-sight.2026-12-01",   // rule no longer in the table
+            "g2c.attraction.beijing.palace-museum.2026-13-40",   // not a date
+            "g2c.other-feature.2026-12-01",                      // another feature's notification
+        ])
+        let items = await LioAttractionReminderScheduler(center: center).scheduled()
+        #expect(items.map(\.ruleID) == ["beijing.palace-museum", "beijing.mao-mausoleum"], "sorted by visit day")
+        #expect(items.map(\.visit) == [beijing(2026, 12, 5), beijing(2026, 12, 9)])
+        #expect(items[0].id == "g2c.attraction.beijing.palace-museum.2026-12-05")
+        #expect(items[0].rule?.nameZH == "故宫博物院")
+        #expect(items[0].plan(now: beijing(2026, 11, 25, 9)) == .exact(opens: beijing(2026, 11, 28, 20), fire: beijing(2026, 11, 28, 19, 50)))
+        #expect(items[1].plan(now: beijing(2026, 11, 25, 9)) == .firstDay(day: beijing(2026, 12, 3), fire: beijing(2026, 12, 3, 9)))
+        #expect(await center.added.isEmpty)
+        #expect(await center.authorizationRequests == 0, "reading never asks for permission")
+        #expect(await center.pendingIDs().count == 5, "reading removes nothing")
+    }
+
+    @Test func reminderIDsRoundTrip() throws {
+        let palace = rule("beijing.palace-museum")
+        let request = try #require(LioAttractionReminder.request(for: palace, visit: beijing(2026, 12, 5),
+                                                                 now: beijing(2026, 11, 25, 9), language: .english))
+        // Other features (the trip home page) build the same identifier through this function.
+        #expect(LioAttractionReminder.reminderID(for: palace, visit: beijing(2026, 12, 5)) == request.id)
+        #expect(LioAttractionReminder.reminderID(for: palace, visit: beijing(2026, 12, 5, 23, 59)) == request.id,
+                "any time on the visit day gives the same identifier")
+        let item = try #require(LioAttractionReminderItem(id: request.id))
+        #expect(item.ruleID == palace.id && item.visit == beijing(2026, 12, 5))
+        #expect(LioAttractionReminderItem(id: "g2c.attraction.") == nil)
+        #expect(LioAttractionReminderItem(id: "g2c.attraction.beijing.palace-museum") == nil)
+    }
+
     @Test func schedulerAsksOnceThenAddsAndCancels() async throws {
         let center = FakeReminderCenter()
         let scheduler = LioAttractionReminderScheduler(center: center)
@@ -117,9 +152,10 @@ struct LioAttractionReminderTests {
 actor FakeReminderCenter: LioAttractionReminderCenter {
     let granted: Bool
     private(set) var added: [LioAttractionReminder.Request] = []
-    private var pending: Set<String> = []
-    init(granted: Bool = true) { self.granted = granted }
-    func requestAuthorization() async -> Bool { granted }
+    private(set) var authorizationRequests = 0
+    private var pending: Set<String>
+    init(granted: Bool = true, pending: Set<String> = []) { self.granted = granted; self.pending = pending }
+    func requestAuthorization() async -> Bool { authorizationRequests += 1; return granted }
     func add(_ request: LioAttractionReminder.Request) async throws { added.append(request); pending.insert(request.id) }
     func pendingIDs() async -> Set<String> { pending }
     func remove(_ id: String) async { pending.remove(id) }

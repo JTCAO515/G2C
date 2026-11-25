@@ -62,6 +62,21 @@ def answer_locale(question, default):
     return default
 
 
+_BARE_GREETING = re.compile(r'\s*(?:(?:你好|您好|嗨|哈喽)(?:呀|啊)?|hello|hi(?: there)?|hey(?: there)?)[!！。.~～?？,，\s]*', re.I)
+GREETING_REPLY = {'zh': '你好！准备去哪儿玩？', 'en': 'Hey! Where are you off to?'}
+
+
+def greeting_reply(question, locale):
+    """The approved brief reply for a bare greeting, chosen by locale; else None.
+
+    HK A/B 2026-11-25: with the greeting example in the answer system the model
+    copied it for real questions, so bare greetings are answered here instead.
+    """
+    if _BARE_GREETING.fullmatch(question):
+        return GREETING_REPLY['zh' if locale == 'zh' else 'en']
+    return None
+
+
 def self_description(question, locale):
     if _SELF_QUESTION.fullmatch(question.strip()):
         return IDENTITY_ZH if locale == 'zh' else IDENTITY_EN
@@ -164,10 +179,31 @@ class LioCitation:
         return SOURCE_EFFECT + json.dumps(value, ensure_ascii=False, separators=(',', ':'))
 
 
-def answer_prompt(locale, question=None, *, detailed=False):
+_GREETING_EXAMPLE = 'Greet briefly, only when the traveler only greets you: 你好！准备去哪儿玩？ / Hey! Where are you off to? '
+_SOURCES_EXAMPLE = ('If asked about sources, say 我综合了地图、天气等多方面的信息 / I combine maps, weather and other '
+                    'trusted information, then return to the travel question. ')
+# Only questions about Lio's own information; everyday "where do you get a SIM card" stays ordinary.
+_SOURCES_QUESTION = re.compile(r'(?:信息|数据|资料|消息)(?:的)?来源|你的(?:来源|依据)|你(?:是)?从哪(?:里|儿)?(?:得到|查到|找到|知道|获取|看到)(?:的|这|那)|'
+                               r'哪来的(?:信息|数据|资料|消息)|(?:信息|数据|资料|消息)(?:是)?(?:从)?哪(?:里|儿)?来的|'
+                               r"\b(?:your|its|lio's) (?:sources?|(?:information|data) sources?)\b|"
+                               r'\bwhere (?:do|does|did) (?:you|lio) (?:get|find) (?:your|this|that|these|those|the) '
+                               r'(?:info|information|data|facts|sources?)\b|'
+                               r"\bwhere (?:do|does|did) (?:your|this|that|the|lio's) (?:info|information|data|facts) come from\b|"
+                               r'\bhow do you know(?: (?:this|that|these|those|it))?\s*[?？.!！]*\s*$', re.I)
+
+
+def asks_about_sources(question):
+    return question is not None and _SOURCES_QUESTION.search(question) is not None
+
+
+def answer_prompt(locale, question=None, *, detailed=False, greeting_example=True, sources_example=True):
     identity = (_TRAVELER_IDENTITY_PROMPT if question is not None
                 and _TRAVELER_IDENTITY_QUESTION.fullmatch(question.strip()) else '')
-    return (PERSONA + identity + (ANSWER_DETAIL if detailed else '')
+    persona = PERSONA if greeting_example else PERSONA.replace(_GREETING_EXAMPLE, '', 1)
+    # HK B3 2026-11-25: answers copied quoted persona examples; the answer path keeps
+    # the sources sentence only for an actual sources question.
+    persona = persona if sources_example else persona.replace(_SOURCES_EXAMPLE, '', 1)
+    return (persona + identity + (ANSWER_DETAIL if detailed else '')
             + (' Reply in Chinese.' if locale == 'zh' else ' Reply in English.'))
 
 
