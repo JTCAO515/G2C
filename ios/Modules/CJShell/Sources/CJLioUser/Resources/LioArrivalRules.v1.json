@@ -1,0 +1,125 @@
+{
+  "data_version": 1,
+  "checked_at": "2026-11-25",
+  "review_every_days": 30,
+  "official_fallback": [
+    {
+      "url": "https://cs.mfa.gov.cn/",
+      "publisher": { "zh": "中国领事服务网（外交部）", "en": "China Consular Service (Ministry of Foreign Affairs)" }
+    },
+    {
+      "url": "https://www.nia.gov.cn/",
+      "publisher": { "zh": "国家移民管理局", "en": "National Immigration Administration" }
+    }
+  ],
+  "policies": [
+    {
+      "id": "unilateral-visa-free-2026",
+      "kind": "visa_free",
+      "max_stay_days": 30,
+      "valid_from": null,
+      "valid_until": "2026-12-31",
+      "checked_at": "2026-11-25",
+      "summary": {
+        "zh": "持普通护照来华经商、旅游观光、探亲访友、交流访问、过境，停留不超过 30 天，可免办签证入境。",
+        "en": "Ordinary passport holders may enter visa-free for business, tourism, visiting family or friends, exchanges or transit, staying up to 30 days."
+      },
+      "not_covered": {
+        "zh": "不符合免签条件的，仍需在入境前办妥来华签证。",
+        "en": "If you do not meet these conditions, get a Chinese visa before you travel."
+      },
+      "sources": [
+        {
+          "url": "https://au.china-embassy.gov.cn/lsfw/qz/202511/t20251105_11747322.htm",
+          "publisher": { "zh": "中国驻澳大利亚大使馆：关于延长单方面免签政策的通知", "en": "Chinese Embassy in Australia: Notice on extending the unilateral visa-free policy" },
+          "published": "2025-11-05"
+        }
+      ]
+    },
+    {
+      "id": "uk-canada-visa-free-2026",
+      "kind": "visa_free",
+      "max_stay_days": 30,
+      "valid_from": "2026-02-17",
+      "valid_until": "2026-12-31",
+      "checked_at": "2026-11-25",
+      "summary": {
+        "zh": "持普通护照来华经商、旅游观光、探亲访友、过境，停留不超过 30 天，可免办签证入境。",
+        "en": "Ordinary passport holders may enter visa-free for business, tourism, visiting family or friends or transit, staying up to 30 days."
+      },
+      "not_covered": {
+        "zh": "不符合免签条件的，仍需在入境前办妥来华签证。",
+        "en": "If you do not meet these conditions, get a Chinese visa before you travel."
+      },
+      "sources": [
+        {
+          "url": "https://vancouver.china-consulate.gov.cn/eng/ggjry/202602/t20260217_11860944.htm",
+          "publisher": { "zh": "中国驻温哥华总领事馆：对加拿大、英国免签政策的通知", "en": "Chinese Consulate General in Vancouver: Notice on the visa-free policy for Canada and the UK" },
+          "published": "2026-02-16"
+        },
+        {
+          "url": "https://www.fmprc.gov.cn/eng/xw/fyrbt/fyrbt/202602/t20260215_11860467.html",
+          "publisher": { "zh": "外交部发言人答记者问", "en": "Ministry of Foreign Affairs spokesperson's remarks" },
+          "published": "2026-02-15"
+        }
+      ]
+    },
+    {
+      "id": "transit-240h",
+      "kind": "transit",
+      "max_stay_days": 10,
+      "valid_from": null,
+      "valid_until": null,
+      "checked_at": "2026-11-25",
+      "summary": {
+        "zh": "持有效国际旅行证件和确定日期及座位的联程客票，经中国前往第三国（地区），可从 24 个省（区、市）60 个开放口岸中的任一口岸免签入境，在规定区域停留不超过 10 天。",
+        "en": "With a valid passport and an onward ticket with a confirmed date and seat to a third country or region, you may enter visa-free at any of 60 open ports in 24 provinces and stay up to 10 days within the permitted area."
+      },
+      "not_covered": {
+        "zh": "工作、学习、新闻采访等需事先批准的活动，仍应办妥签证。具体口岸和停留区域以官方为准。",
+        "en": "Work, study, journalism and other activities that need prior approval still require a visa. Check the official list for ports and permitted areas."
+      },
+      "sources": [
+        {
+          "url": "https://s.nia.gov.cn/mps/zcjd/202506/t20250550_1010.html",
+          "publisher": { "zh": "国家移民管理局政务服务平台：过境免签政策", "en": "National Immigration Administration: Visa-free transit policy" },
+          "published": "2025-06-27"
+        },
+        {
+          "url": "https://www.nia.gov.cn/n897453/c1722989/content.html",
+          "publisher": { "zh": "国家移民管理局：240 小时过境免签适用国家扩展至 55 国", "en": "National Immigration Administration: 240-hour visa-free transit extended to 55 countries" },
+          "published": "2025-06-12"
+        }
+      ]
+    }
+  ],
+  "countries": [
+    { "code": "US", "name": { "zh": "美国", "en": "United States" }, "policies": ["transit-240h"], "otherwise": "visa_required", "checked_at": "2026-11-25" },
+    { "code": "GB", "name": { "zh": "英国", "en": "United Kingdom" }, "policies": ["uk-canada-visa-free-2026", "transit-240h"], "otherwise": "visa_required", "checked_at": "2026-11-25" },
+    { "code": "CA", "name": { "zh": "加拿大", "en": "Canada" }, "policies": ["uk-canada-visa-free-2026", "transit-240h"], "otherwise": "visa_required", "checked_at": "2026-11-25" },
+    { "code": "DE", "name": { "zh": "德国", "en": "Germany" }, "policies": ["unilateral-visa-free-2026", "transit-240h"], "otherwise": "visa_required", "checked_at": "2026-11-25" },
+    { "code": "FR", "name": { "zh": "法国", "en": "France" }, "policies": ["unilateral-visa-free-2026", "transit-240h"], "otherwise": "visa_required", "checked_at": "2026-11-25" },
+    { "code": "IT", "name": { "zh": "意大利", "en": "Italy" }, "policies": ["unilateral-visa-free-2026", "transit-240h"], "otherwise": "visa_required", "checked_at": "2026-11-25" },
+    { "code": "ES", "name": { "zh": "西班牙", "en": "Spain" }, "policies": ["unilateral-visa-free-2026", "transit-240h"], "otherwise": "visa_required", "checked_at": "2026-11-25" },
+    { "code": "NL", "name": { "zh": "荷兰", "en": "Netherlands" }, "policies": ["unilateral-visa-free-2026", "transit-240h"], "otherwise": "visa_required", "checked_at": "2026-11-25" },
+    { "code": "AU", "name": { "zh": "澳大利亚", "en": "Australia" }, "policies": ["unilateral-visa-free-2026", "transit-240h"], "otherwise": "visa_required", "checked_at": "2026-11-25" },
+    { "code": "NZ", "name": { "zh": "新西兰", "en": "New Zealand" }, "policies": ["unilateral-visa-free-2026", "transit-240h"], "otherwise": "visa_required", "checked_at": "2026-11-25" },
+    { "code": "JP", "name": { "zh": "日本", "en": "Japan" }, "policies": ["unilateral-visa-free-2026", "transit-240h"], "otherwise": "visa_required", "checked_at": "2026-11-25" },
+    { "code": "KR", "name": { "zh": "韩国", "en": "South Korea" }, "policies": ["unilateral-visa-free-2026", "transit-240h"], "otherwise": "visa_required", "checked_at": "2026-11-25" },
+    { "code": "SG", "name": { "zh": "新加坡", "en": "Singapore" }, "policies": ["transit-240h"], "otherwise": "check_official", "checked_at": "2026-11-25" }
+  ],
+  "arrival_card": {
+    "checked_at": "2026-11-25",
+    "summary": {
+      "zh": "外国人入境卡可在出发前网上填报，官方服务免费。境外有假冒网站收费，只走官方渠道：国家移民管理局网页、「移民局12367」、微信和支付宝小程序。来不及提前填的，入境口岸有自助设备和纸质入境卡。",
+      "en": "You can fill in China's arrival card online before you fly. The official service is free. Fake sites charge fees, so use only official channels: the NIA web page, the NIA 12367 app, or the WeChat and Alipay mini-programs. If you cannot do it in advance, ports of entry have self-service devices and paper cards."
+    },
+    "sources": [
+      {
+        "url": "https://wb.beijing.gov.cn/en/express/202512/t20251231_4383257.html",
+        "publisher": { "zh": "北京市外办转发国家移民管理局提醒：警惕虚假入境卡填报网站", "en": "Beijing Foreign Affairs Office, relaying the NIA warning on fake arrival-card websites" },
+        "published": "2025-12-31"
+      }
+    ]
+  }
+}

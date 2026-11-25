@@ -26,9 +26,11 @@ struct LioToolsView: View {
         available.hotels = hotelSearch != nil
         available.roadbook = LioRoadbookFeature.enabled(infoValue: Bundle.main.object(forInfoDictionaryKey: "G2CRoadbookEnabled"))
         available.transport = LioTransportService.fromBuild() != nil
+        available.arrival = LioArrivalFeature.enabled(infoValue: Bundle.main.object(forInfoDictionaryKey: LioArrivalFeature.infoKey))
         #if DEBUG
         available.hotels = available.hotels || ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview")
         if LioRoadbookPreview.requested { available.roadbook = true }
+        if LioArrivalPreview.requested { available.arrival = true }
         #endif
         return available
     }
@@ -103,6 +105,8 @@ struct LioToolsView: View {
 
     @ViewBuilder private func destination(_ tool: LioTool) -> some View {
         switch tool {
+        case .arrival:
+            LioArrivalView(language: language, hotels: arrivalTrip?.hotels ?? [], arrival: arrivalTrip?.arrival)
         case .localSupport:
             LioLocalSupportView(language: language, directory: try? LocalSupportDirectory.bundled())
         case .taxi:
@@ -141,6 +145,18 @@ struct LioToolsView: View {
                 hotelLinks
             }
         }
+    }
+
+    /// Arrival mode uses the stays and first day of the next saved dated plan (or the first saved plan).
+    private var arrivalTrip: (hotels: [LioRichItinerary.Hotel], arrival: Date?)? {
+        #if DEBUG
+        if LioArrivalPreview.requested { return (LioArrivalPreview.hotels, nil) }
+        #endif
+        let plans = savedPlans?.plans ?? []
+        let today = LioArrivalDay(date: .now)
+        let upcoming = plans.first { plan in plan.startDate.flatMap(LioArrivalDay.init).map { $0 >= today } ?? false }
+        guard let plan = upcoming ?? plans.first else { return nil }
+        return (plan.itinerary.hotels, plan.startDate.flatMap(LioArrivalDay.init)?.date)
     }
 
     @ViewBuilder private var hotelLinks: some View {

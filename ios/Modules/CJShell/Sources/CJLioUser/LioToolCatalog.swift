@@ -1,10 +1,11 @@
 /// The Tools tab (formerly "插件"): one card per tool with an icon, a name and one sentence.
 /// Tools whose service is not enabled for this build are left out rather than shown disabled.
 enum LioTool: CaseIterable, Sendable {
-    case localSupport, taxi, hotels, roadbook, transport, nearby, currency, metro, payment, translation, phrases
+    case arrival, localSupport, taxi, hotels, roadbook, transport, nearby, currency, metro, payment, translation, phrases
 
     var symbol: String {
         switch self {
+        case .arrival: "airplane.arrival"
         case .localSupport: "lifepreserver"
         case .taxi: "car.fill"
         case .nearby: "mappin.and.ellipse"
@@ -21,6 +22,7 @@ enum LioTool: CaseIterable, Sendable {
 
     var identifier: String {
         switch self {
+        case .arrival: "lio.tools.arrival"
         case .localSupport: "lio.tools.local-support"
         case .taxi: "lio.tools.taxi"
         case .nearby: "lio.tools.nearby"
@@ -37,6 +39,7 @@ enum LioTool: CaseIterable, Sendable {
 
     func name(_ language: LioLanguage) -> String {
         switch self {
+        case .arrival: language.text("Arrival Mode", "落地模式")
         case .localSupport: language.text("Local Support", "本地协助")
         case .taxi: language.text("Taxi", "打车")
         case .nearby: language.text("Nearby", "附近")
@@ -54,6 +57,7 @@ enum LioTool: CaseIterable, Sendable {
     /// One short sentence under the name; kept to two lines at the default text size.
     func summary(_ language: LioLanguage) -> String {
         switch self {
+        case .arrival: language.text("Your first hours in China, step by step", "落地首日要做的事")
         case .localSupport: language.text("Emergency numbers, embassies, help cards", "急救、使领馆和求助卡")
         case .taxi: language.text("Find a place and open DiDi", "搜地点，用滴滴打车")
         case .nearby: language.text("Food, sights and shops around you", "身边的美食和景点")
@@ -83,6 +87,8 @@ enum LioToolCatalog {
         var roadbook = false
         /// #1519: `G2CTransportEnabled`, off unless the build says YES.
         var transport = false
+        /// `G2CArrivalModeEnabled`, off unless the build says YES; JT decides when to turn it on.
+        var arrival = false
     }
 
     static func title(_ language: LioLanguage) -> String {
@@ -98,6 +104,7 @@ enum LioToolCatalog {
             case .hotels: availability.hotels
             case .roadbook: availability.roadbook
             case .transport: availability.transport
+            case .arrival: availability.arrival
             case .localSupport, .metro, .payment, .translation, .phrases: true
             }
         }
