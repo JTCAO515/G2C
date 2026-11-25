@@ -10,6 +10,15 @@ struct LioRoadbookLibraryView: View {
     let candidates: [LioRoadbook]
     @State private var kept: [LioRoadbook] = []
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.lioRoadbookEnricher) private var injectedEnricher
+
+    /// The host's relay, or the Debug stand-in for previews and screenshots.
+    private var enricher: LioRoadbookEnricher? {
+        #if DEBUG
+        if LioRoadbookPreview.requested { return LioRoadbookPreview.enricher }
+        #endif
+        return injectedEnricher
+    }
 
     /// Two cards per row like the Tools tab; one at accessibility text sizes.
     private var columns: [GridItem] {
@@ -17,12 +26,7 @@ struct LioRoadbookLibraryView: View {
               count: typeSize.isAccessibilitySize ? 1 : 2)
     }
 
-    /// Kept copies first replace the same roadbook offered as a candidate; then my trips, Lio's plans, routes.
-    private var books: [LioRoadbook] {
-        let keptIDs = Set(kept.map(\.id))
-        let all = kept + candidates.filter { !keptIDs.contains($0.id) }
-        return LioRoadbook.Source.allCases.flatMap { source in all.filter { $0.source == source } }
-    }
+    private var books: [LioRoadbook] { LioRoadbook.library(kept: kept, candidates: candidates, language: language) }
 
     var body: some View {
         ScrollView {
@@ -43,6 +47,7 @@ struct LioRoadbookLibraryView: View {
                     ForEach(books) { book in
                         NavigationLink {
                             LioRoadbookView(roadbook: book, language: language, store: store, onChange: reload)
+                                .environment(\.lioRoadbookEnricher, enricher)
                         } label: {
                             LioRoadbookCard(roadbook: book, language: language, kept: kept.contains { $0.id == book.id })
                         }
@@ -126,13 +131,23 @@ struct LioRoadbookView: View {
     @State private var shared: SharedFile?
     @State private var taxiPlace: LioTaxiPlace?
     @State private var driverPlace: LioRichItinerary.Place?
+    @State private var filled: [String: LioRoadbookDetail] = [:]
+    @State private var filling = false
+    @State private var expanded: Set<String> = []
+    @State private var filler: Task<Void, Never>?
     @Environment(\.lioTaxiEntry) private var taxiEntry
+    #if os(iOS)
+    @Environment(\.lioRoadbookEnricher) private var enricher
+    #endif
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// The roadbook as shown: places filled in during this visit on top of the ones it already had.
+    private var book: LioRoadbook { roadbook.with(details: filled) }
 
     private struct SharedFile: Identifiable { let url: URL; var id: URL { url } }
 
     private var day: LioRichItinerary.Day? {
-        roadbook.itinerary.days.first { $0.number == selectedDay } ?? roadbook.itinerary.days.first
+        book.itinerary.days.first { $0.number == selectedDay } ?? book.itinerary.days.first
     }
 
     var body: some View {
@@ -143,7 +158,7 @@ struct LioRoadbookView: View {
                     Text(notice).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
                         .accessibilityIdentifier("lio.roadbook.notice")
                 }
-                if roadbook.itinerary.days.count > 1 { dayPicker }
+                if book.itinerary.days.count > 1 { dayPicker }
                 if let day { dayPage(day) }
                 lodging
                 essentials
@@ -154,7 +169,7 @@ struct LioRoadbookView: View {
         }
         .foregroundStyle(LioTheme.ink)
         .background(LioTheme.paper)
-        .navigationTitle(roadbook.coverTitle(language))
+        .navigationTitle(book.coverTitle(language))
         .navigationBarTitleDisplayMode(.inline)
         .tint(LioTheme.vermilion)
         .toolbar {
@@ -166,13 +181,16 @@ struct LioRoadbookView: View {
                 .accessibilityIdentifier("lio.roadbook.export")
             }
         }
-        .onAppear { kept = store?.contains(roadbook.id) ?? false }
+        .onAppear { kept = store?.contains(book.id) ?? false }
         // The exported PDF may hold a saved trip: it leaves the phone only through the share sheet
         // and is removed as soon as sharing ends or the roadbook closes.
         .sheet(item: $shared, onDismiss: LioRoadbookPDF.removeExports) { file in
             LioRoadbookShareSheet(items: [file.url]).ignoresSafeArea()
         }
-        .onDisappear(perform: LioRoadbookPDF.removeExports)
+        .onDisappear {
+            LioRoadbookPDF.removeExports()
+            filler?.cancel()  // later batches are not sent once the roadbook closes
+        }
         .sheet(item: $taxiPlace) { place in
             if let taxiEntry {
                 NavigationStack {
@@ -200,12 +218,12 @@ struct LioRoadbookView: View {
         VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
             Text(language.text("Travel roadbook", "自由行路书"))
                 .font(.footnote.weight(.semibold)).foregroundStyle(LioTheme.vermilion)
-            Text(roadbook.coverTitle(language))
+            Text(book.coverTitle(language))
                 .font(LioTheme.display(.largeTitle).weight(.bold))
                 .accessibilityAddTraits(.isHeader)
                 .accessibilityIdentifier("lio.roadbook.cover.title")
-            if roadbook.city != nil { Text(roadbook.itinerary.title).font(.headline) }
-            Text(roadbook.coverLine(language)).font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
+            if book.city != nil { Text(book.itinerary.title).font(.headline) }
+            Text(book.coverLine(language)).font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
                 .accessibilityIdentifier("lio.roadbook.cover.line")
             HStack(spacing: LioTheme.Spacing.xs) {
                 if kept {
@@ -228,6 +246,19 @@ struct LioRoadbookView: View {
                 .accessibilityIdentifier("lio.roadbook.pdf")
             }
             .padding(.top, LioTheme.Spacing.xs)
+            #if os(iOS)
+            if enricher != nil, !book.placesToFillIn().isEmpty {
+                Button { fill() } label: {
+                    Label(filling ? language.text("Filling in…", "正在补充…")
+                                  : language.text("Add place details", "补充景点信息"), systemImage: "sparkles")
+                }
+                .buttonStyle(LioSecondaryButtonStyle(fullWidth: false))
+                .disabled(filling)
+                .accessibilityIdentifier("lio.roadbook.fill")
+                Text(language.text("Sends only place names and the city.", "只发送地点名和城市。"))
+                    .font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+            }
+            #endif
         }
         .padding(LioTheme.Spacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -237,7 +268,7 @@ struct LioRoadbookView: View {
     private var dayPicker: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: LioTheme.Spacing.xs) {
-                ForEach(roadbook.itinerary.days) { item in
+                ForEach(book.itinerary.days) { item in
                     let selected = item.number == day?.number
                     Button {
                         withAnimation(LioTheme.Motion.animation(LioTheme.Motion.change, reduceMotion: reduceMotion)) {
@@ -269,7 +300,7 @@ struct LioRoadbookView: View {
     private func dayPage(_ day: LioRichItinerary.Day) -> some View {
         VStack(alignment: .leading, spacing: LioTheme.Spacing.md) {
             VStack(alignment: .leading, spacing: LioTheme.Spacing.xxs) {
-                Text(roadbook.dayTitle(day, language)).font(LioTheme.display(.title2).weight(.bold))
+                Text(book.dayTitle(day, language)).font(LioTheme.display(.title2).weight(.bold))
                     .accessibilityAddTraits(.isHeader)
                 let summary = [day.theme, day.area].filter { !$0.isEmpty }.joined(separator: " · ")
                 if !summary.isEmpty { Text(summary).foregroundStyle(LioTheme.inkSecondary) }
@@ -334,6 +365,9 @@ struct LioRoadbookView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
             }
+            if let detail = book.details[stop.id] {
+                detailSection(detail, stopID: stop.id)
+            }
             if destination != nil || address != nil {
                 HStack(spacing: LioTheme.Spacing.xs) {
                     if let destination {
@@ -360,10 +394,55 @@ struct LioRoadbookView: View {
         .accessibilityIdentifier("lio.roadbook.stop.\(stop.id)")
     }
 
+    // MARK: place details (ROADBOOK.1)
+
+    private func detailSection(_ detail: LioRoadbookDetail, stopID: String) -> some View {
+        DisclosureGroup(isExpanded: Binding(get: { expanded.contains(stopID) },
+                                            set: { if $0 { expanded.insert(stopID) } else { expanded.remove(stopID) } })) {
+            VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+                ForEach(LioRoadbookDetail.Field.allCases, id: \.self) { field in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(field.title(language)).font(.footnote.weight(.semibold)).foregroundStyle(LioTheme.inkSecondary)
+                        Text(detail.field(field, language)).font(.subheadline)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+                if !detail.metro.isEmpty {
+                    Label(detail.metro.map { $0.text(language) }.joined(separator: language.text("; ", "；")),
+                          systemImage: "tram").font(.subheadline)
+                }
+                ForEach(detail.restaurants) { restaurant in
+                    HStack(alignment: .top, spacing: LioTheme.Spacing.xs) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(restaurant.nameZH).font(.subheadline.weight(.semibold))
+                            Text(restaurant.addressZH).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                        }
+                        Spacer(minLength: 0)
+                        if taxiEntry != nil {
+                            Button { taxiPlace = restaurant.taxiPlace } label: {
+                                Image(systemName: "car.fill").frame(width: 44, height: 44)
+                            }
+                            .accessibilityLabel(language.text("Taxi to \(restaurant.nameZH)", "打车去\(restaurant.nameZH)"))
+                        }
+                        Button { driverPlace = restaurant.place } label: {
+                            Image(systemName: "person.text.rectangle").frame(width: 44, height: 44)
+                        }
+                        .accessibilityLabel(language.text("Show the driver", "给司机看"))
+                    }
+                }
+                Text(LioRoadbook.officialNotice(language)).font(.caption).foregroundStyle(LioTheme.inkSecondary)
+            }
+            .padding(.top, LioTheme.Spacing.xs)
+        } label: {
+            Label(language.text("Place details", "景点详情"), systemImage: "text.book.closed").font(.subheadline.weight(.semibold))
+        }
+        .accessibilityIdentifier("lio.roadbook.detail.\(stopID)")
+    }
+
     // MARK: back matter
 
     @ViewBuilder private var lodging: some View {
-        let itinerary = roadbook.itinerary
+        let itinerary = book.itinerary
         if !itinerary.lodgingArea.isEmpty || !itinerary.hotels.isEmpty {
             VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
                 Label(language.text("Where to stay", "住宿区域"), systemImage: "bed.double")
@@ -432,7 +511,7 @@ struct LioRoadbookView: View {
     private func keep() {
         guard let store else { return }
         do {
-            try store.save(roadbook.kept())
+            try store.save(book.kept())
             kept = true
             notice = nil
             onChange()
@@ -441,10 +520,49 @@ struct LioRoadbookView: View {
         }
     }
 
+    #if os(iOS)
+    /// Asks the relay for every place not filled in yet, at most eight per request, and keeps the answers.
+    private func fill() {
+        guard let enricher, !filling else { return }
+        filling = true
+        notice = nil
+        let batches = LioRoadbookWire.batches(book.placesToFillIn())
+        filler = Task {
+            defer { filling = false }
+            var limited = false, missing = false
+            for batch in batches {
+                guard !Task.isCancelled else { break }
+                do {
+                    let result = try await enricher.enrich(batch)
+                    for (id, status) in result {
+                        switch status {
+                        case .ready(let detail): filled[id] = detail
+                        case .limited: limited = true
+                        case .unavailable: missing = true
+                        }
+                    }
+                } catch let failure as LioRoadbookFailure {
+                    notice = failure.message(language)
+                    break
+                } catch {
+                    notice = LioRoadbookFailure.unavailable.message(language)
+                    break
+                }
+                if limited { break }
+            }
+            if notice == nil, limited { notice = LioRoadbookFailure.limited.message(language) }
+            else if notice == nil, missing {
+                notice = language.text("Some places couldn’t be filled in.", "部分地点暂时无法补充。")
+            }
+            if kept, let store { try? store.save(book) }
+        }
+    }
+    #endif
+
     private func export() {
         guard !exporting else { return }
         exporting = true
-        let roadbook = roadbook, language = language
+        let roadbook = book, language = language
         let folder = LioRoadbookPDF.exportDirectory
         Task {
             defer { exporting = false }

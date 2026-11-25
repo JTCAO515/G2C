@@ -125,7 +125,12 @@ extension LioMetroNearbyService {
     #if DEBUG
     /// Sample places for the simulator (`--lio-metro-nearby-preview`), marked as samples in their names.
     @MainActor static var previewFromArguments: Self? {
-        guard ProcessInfo.processInfo.arguments.contains("--lio-metro-nearby-preview") else { return nil }
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("--lio-metro-nearby-preview-closed") {
+            // An account the server has not opened surroundings for (403 not_enabled).
+            return LioMetroNearbyService { _, _, _, _ in throw LioNearbyFailure.notEnabled }
+        }
+        guard arguments.contains("--lio-metro-nearby-preview") else { return nil }
         return LioMetroNearbyService { _, station, categories, _ in
             let all: [(LioNearbyPlace.Category, String, String, Int, String?)] = [
                 (.sights, "示例公园", "Sample Park", 240, "4.7"),
