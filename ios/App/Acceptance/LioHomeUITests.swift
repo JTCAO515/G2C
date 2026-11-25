@@ -105,6 +105,53 @@ import CryptoKit
         }
     }
 
+    /// #1450 station surroundings (M4 entry 12 item 5): the station sheet lists sights, shopping, food and coffee
+    /// around the station (sample places here), switches category, and offers a taxi or directions for a place.
+    func testMetroStationShowsWhatIsNearby() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-taxi-preview", "--lio-metro-nearby-preview",
+                                   "-cj.ui.language.v1", language, "-lio.ui.appearance.v1", "light",
+                                   "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+            app.launch()
+            defer { app.terminate() }
+            let english = language == "en"
+            let tools = app.tabBars.buttons[english ? "Tools" : "工具"]
+            XCTAssertTrue(tools.waitForExistence(timeout: 8))
+            tools.tap()
+            let metro = app.buttons["lio.tools.metro-guide"]
+            XCTAssertTrue(metro.waitForExistence(timeout: 6))
+            metro.tap()
+            app.buttons["lio.metro.city.guangzhou"].tap()
+            XCTAssertTrue(app.descendants(matching: .any)["lio.metro.map.canvas"].waitForExistence(timeout: 8))
+            app.buttons["lio.metro.map.find"].tap()
+            let search = app.searchFields.firstMatch
+            XCTAssertTrue(search.waitForExistence(timeout: 6))
+            search.tap()
+            search.typeText(english ? "Tiyu Xilu" : "体育西路")
+            let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", english ? "Tiyu Xilu" : "体育西路")).firstMatch
+            XCTAssertTrue(row.waitForExistence(timeout: 6))
+            row.tap()
+            XCTAssertTrue(app.staticTexts["lio.metro.station.name-zh"].waitForExistence(timeout: 6))
+            app.swipeUp()
+            let places = app.buttons.matching(identifier: "lio.metro.nearby.place")
+            XCTAssertTrue(places.firstMatch.waitForExistence(timeout: 6))
+            XCTAssertEqual(places.count, 2) // sample sights
+            XCTAssertTrue(places.firstMatch.label.contains(english ? "Sample Park" : "示例公园"))
+            XCTAssertTrue(app.buttons["lio.metro.nearby.sights"].isSelected)
+            capture(app, "metro-nearby-sights-\(language)")
+            app.buttons["lio.metro.nearby.shopping"].tap()
+            XCTAssertTrue(app.buttons["lio.metro.nearby.shopping"].isSelected)
+            XCTAssertTrue(places.firstMatch.waitForExistence(timeout: 6))
+            XCTAssertTrue(places.firstMatch.label.contains(english ? "Sample Shopping Centre" : "示例购物中心"))
+            places.firstMatch.tap()
+            XCTAssertTrue(app.buttons[english ? "Taxi here" : "打车去这里"].waitForExistence(timeout: 6))
+            XCTAssertTrue(app.buttons[english ? "Directions in AMap" : "用高德地图导航"].exists)
+            capture(app, "metro-nearby-actions-\(language)")
+        }
+    }
+
     /// #1450: the map page and the station sheet pass the full accessibility audit in both languages and
     /// appearances, at the default text size and the largest accessibility size.
     func testMetroMapPassesTheAccessibilityAudit() throws {
@@ -113,7 +160,8 @@ import CryptoKit
             for language in ["en", "zh-Hans"] {
                 for appearance in ["light", "dark"] {
                     let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-                    app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-taxi-preview", "-cj.ui.language.v1",
+                    app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-taxi-preview",
+                                           "--lio-metro-nearby-preview", "-cj.ui.language.v1",
                                            language, "-lio.ui.appearance.v1", appearance,
                                            "-UIPreferredContentSizeCategoryName", size]
                     app.launch()
@@ -138,6 +186,8 @@ import CryptoKit
                     XCTAssertTrue(row.waitForExistence(timeout: 6))
                     row.tap()
                     XCTAssertTrue(app.staticTexts["lio.metro.station.name-zh"].waitForExistence(timeout: 6))
+                    // The station sheet includes its surroundings (sample places) in the audit.
+                    XCTAssertTrue(app.buttons["lio.metro.nearby.place"].firstMatch.waitForExistence(timeout: 6))
                     try audit(app, "metro-station-\(label)")
                 }
             }
