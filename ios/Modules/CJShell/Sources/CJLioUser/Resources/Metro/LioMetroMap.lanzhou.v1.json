@@ -24,7 +24,7 @@
   {"id": "la013", "nameZH": "省政府", "nameEN": "Shengzhengfu", "x": 468.9, "y": 137.0, "lines": ["la-1"]},
   {"id": "la014", "nameZH": "东方红广场", "nameEN": "Dongfanghong Guangchang", "x": 499.2, "y": 137.0, "lines": ["la-1", "la-2"]},
   {"id": "la015", "nameZH": "兰州大学", "nameEN": "Lanzhou Daxue", "x": 566.4, "y": 136.6, "lines": ["la-1"]},
-  {"id": "la016", "nameZH": "五里铺", "nameEN": "Wuli Pu", "x": 637.8, "y": 136.6, "lines": ["la-1", "la-2"]},
+  {"id": "la016", "nameZH": "五里铺", "nameEN": "Wulipu", "x": 637.8, "y": 136.6, "lines": ["la-1", "la-2"]},
   {"id": "la017", "nameZH": "省气象局", "nameEN": "Sheng Qixiangju", "x": 666.9, "y": 136.6, "lines": ["la-1"]},
   {"id": "la018", "nameZH": "拱星墩", "nameEN": "Gongxingdun", "x": 697.7, "y": 136.6, "lines": ["la-1"]},
   {"id": "la019", "nameZH": "焦家湾", "nameEN": "Jiaojiawan", "x": 763.6, "y": 136.6, "lines": ["la-1"]},

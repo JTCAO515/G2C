@@ -11,7 +11,7 @@
  ],
  "stations": [
   {"id": "wu001", "nameZH": "国际机场", "nameEN": "Guoji Jichang", "x": 60.0, "y": 145.1, "lines": ["wu-1", "wu-3"]},
-  {"id": "wu002", "nameZH": "大地窝堡", "nameEN": "Dadi Wopu", "x": 139.0, "y": 145.1, "lines": ["wu-1"]},
+  {"id": "wu002", "nameZH": "大地窝堡", "nameEN": "Dadiwopu", "x": 139.0, "y": 145.1, "lines": ["wu-1"]},
   {"id": "wu003", "nameZH": "宣仁墩", "nameEN": "Xuanrendun", "x": 227.8, "y": 145.1, "lines": ["wu-1"]},
   {"id": "wu004", "nameZH": "三工", "nameEN": "Sangong", "x": 283.9, "y": 163.1, "lines": ["wu-1"]},
   {"id": "wu005", "nameZH": "迎宾路口", "nameEN": "Yingbin Lukou", "x": 294.9, "y": 194.2, "lines": ["wu-1"]},
