@@ -1,7 +1,7 @@
 /// The Tools tab (formerly "插件"): one card per tool with an icon, a name and one sentence.
 /// Tools whose service is not enabled for this build are left out rather than shown disabled.
 enum LioTool: CaseIterable, Sendable {
-    case localSupport, taxi, hotels, nearby, currency, metro, payment, translation, phrases
+    case localSupport, taxi, hotels, roadbook, transport, nearby, currency, metro, payment, translation, phrases
 
     var symbol: String {
         switch self {
@@ -14,6 +14,8 @@ enum LioTool: CaseIterable, Sendable {
         case .translation: "character.bubble"
         case .phrases: "text.bubble"
         case .hotels: "bed.double"
+        case .roadbook: "book.closed"
+        case .transport: "train.side.front.car"
         }
     }
 
@@ -28,6 +30,8 @@ enum LioTool: CaseIterable, Sendable {
         case .translation: "lio.tools.translation"
         case .phrases: "lio.tools.phrase-cards"
         case .hotels: "lio.tools.hotels"
+        case .roadbook: "lio.tools.roadbook"
+        case .transport: "lio.tools.transport"
         }
     }
 
@@ -42,6 +46,8 @@ enum LioTool: CaseIterable, Sendable {
         case .translation: language.text("Translation", "翻译")
         case .phrases: language.text("Phrase Cards", "常用语卡片")
         case .hotels: language.text("Hotels", "酒店")
+        case .roadbook: language.text("Roadbook", "路书")
+        case .transport: language.text("Intercity Travel", "城际交通")
         }
     }
 
@@ -52,11 +58,13 @@ enum LioTool: CaseIterable, Sendable {
         case .taxi: language.text("Find a place and open DiDi", "搜地点，用滴滴打车")
         case .nearby: language.text("Food, sights and shops around you", "身边的美食和景点")
         case .currency: language.text("Convert yuan at ECB reference rates", "人民币外币参考换算")
-        case .metro: language.text("Tickets, entry and line maps", "买票、进站和线路图")
+        case .metro: language.text("Interactive line maps by city", "各城市可交互线路图")
         case .payment: language.text("Set up Alipay and Weixin Pay", "开通支付宝和微信支付")
         case .translation: language.text("Type, speak or snap a photo", "打字、说话或拍照翻译")
         case .phrases: language.text("Show or play common phrases", "常用语大字给对方看")
         case .hotels: language.text("Find hotels by city and dates", "按城市和日期找酒店")
+        case .roadbook: language.text("Your trip day by day, offline", "按天离线看的旅行手册")
+        case .transport: language.text("Compare trains, flights and buses", "比较火车、飞机和大巴")
         }
     }
 
@@ -71,6 +79,10 @@ enum LioToolCatalog {
         var currency = false
         var hotels = false
         var nearby = false
+        /// #1515: `G2CRoadbookEnabled`, off unless the build says YES.
+        var roadbook = false
+        /// #1519: `G2CTransportEnabled`, off unless the build says YES.
+        var transport = false
     }
 
     static func title(_ language: LioLanguage) -> String {
@@ -84,6 +96,8 @@ enum LioToolCatalog {
             case .nearby: availability.nearby
             case .currency: availability.currency
             case .hotels: availability.hotels
+            case .roadbook: availability.roadbook
+            case .transport: availability.transport
             case .localSupport, .metro, .payment, .translation, .phrases: true
             }
         }

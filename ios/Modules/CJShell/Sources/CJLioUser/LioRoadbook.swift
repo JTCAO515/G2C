@@ -74,6 +74,12 @@ struct LioRoadbook: Identifiable, Sendable {
         LioTaxiPlace(itineraryPlace: place)
     }
 
+    /// Trimmed note text, or nil when there is nothing to show.
+    static func visibleNote(_ note: String?) -> String? {
+        guard let text = note?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { return nil }
+        return text
+    }
+
     /// The driver card shows only a checked address.
     static func driverAddress(_ place: LioRichItinerary.Place) -> String? { place.driverAddress }
 }
@@ -148,5 +154,26 @@ extension LioRoadbook {
         }
         if !entries.isEmpty { segments.append(.init(period: current, entries: entries)) }
         return segments
+    }
+}
+
+/// #1515: the Roadbook tool is shown only when the build's Info.plist sets `G2CRoadbookEnabled` to the string YES.
+enum LioRoadbookFeature {
+    static func enabled(infoValue: Any?) -> Bool { infoValue as? String == "YES" }
+}
+
+extension LioRoadbook {
+    /// A plan saved from the chat (#1547): names and times only, so no taxi, driver card or map is offered.
+    /// One roadbook per saved version, so a kept copy of an older version stays beside a changed plan.
+    init(savedPlan plan: LioPlanSummary, createdAt: Date = .now) {
+        self.init(id: "saved.\(plan.tripID).v\(plan.tripVersion)", source: .saved, city: nil,
+                  createdAt: createdAt, itinerary: plan.itinerary)
+    }
+}
+
+extension LioRoadbook {
+    /// The same roadbook stamped with the moment it is kept on this phone.
+    func kept(at date: Date = .now) -> LioRoadbook {
+        LioRoadbook(id: id, source: source, city: city, createdAt: date, itinerary: itinerary)
     }
 }

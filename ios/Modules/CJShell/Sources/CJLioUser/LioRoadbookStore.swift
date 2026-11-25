@@ -125,24 +125,44 @@ struct LioRoadbookArchive: Codable, Equatable, Sendable {
     }
 }
 
-/// Roadbooks kept in the app's own Application Support folder: protected on disk, left out of backups,
+/// Roadbooks kept on this phone inside the signed-in account's message folder (like taxi recents and
+/// translation history), so they go with the account's local data: protected on disk, left out of backups,
 /// never uploaded. One JSON file per roadbook, named by a hash so an id never becomes a path.
-struct LioRoadbookStore: Sendable {
-    let directory: URL
+@MainActor struct LioRoadbookStore {
+    enum Failure: Error, Equatable { case notCurrent }
 
-    static func appDefault() throws -> LioRoadbookStore {
-        let support = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
-                                                  appropriateFor: nil, create: true)
-        return LioRoadbookStore(directory: support.appendingPathComponent("LioRoadbooks", isDirectory: true))
+    nonisolated static let directoryName = "roadbooks"
+
+    nonisolated static func storageDirectory(inMessageDirectory directory: URL) -> URL {
+        directory.appendingPathComponent(directoryName, isDirectory: true)
     }
 
+    let directory: URL
+    /// False once the account that owns the folder has signed out or changed.
+    let isCurrent: @MainActor () -> Bool
+
+    init(directory: URL, isCurrent: @escaping @MainActor () -> Bool = { true }) {
+        self.directory = directory
+        self.isCurrent = isCurrent
+    }
+
+    #if DEBUG
+    /// Debug previews only: a folder outside any account.
+    static func preview() throws -> LioRoadbookStore {
+        let support = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
+                                                  appropriateFor: nil, create: true)
+        return LioRoadbookStore(directory: support.appendingPathComponent("LioRoadbookPreview", isDirectory: true))
+    }
+    #endif
+
     func save(_ roadbook: LioRoadbook) throws {
+        guard isCurrent() else { throw Failure.notCurrent }
         try prepareDirectory()
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         let data = try encoder.encode(LioRoadbookArchive(roadbook))
         #if os(iOS)
-        try data.write(to: file(for: roadbook.id), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        try data.write(to: file(for: roadbook.id), options: [.atomic, .completeFileProtection])
         #else
         try data.write(to: file(for: roadbook.id), options: [.atomic])
         #endif
@@ -150,7 +170,7 @@ struct LioRoadbookStore: Sendable {
 
     /// Newest first. A copy that cannot be read is skipped rather than stopping the library from opening.
     func load() -> [LioRoadbook] {
-        guard let files = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else {
+        guard isCurrent(), let files = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else {
             return []
         }
         return files.filter { $0.pathExtension == "json" }.compactMap { file in
@@ -161,10 +181,11 @@ struct LioRoadbookStore: Sendable {
         .sorted { $0.createdAt != $1.createdAt ? $0.createdAt > $1.createdAt : $0.id < $1.id }
     }
 
-    func contains(_ id: String) -> Bool { FileManager.default.fileExists(atPath: file(for: id).path) }
+    func contains(_ id: String) -> Bool { isCurrent() && FileManager.default.fileExists(atPath: file(for: id).path) }
 
     /// Removes this device's copy at the traveller's request; the trip itself is not touched.
     func remove(_ id: String) throws {
+        guard isCurrent() else { throw Failure.notCurrent }
         let file = file(for: id)
         guard FileManager.default.fileExists(atPath: file.path) else { return }
         try FileManager.default.removeItem(at: file)
@@ -176,7 +197,8 @@ struct LioRoadbookStore: Sendable {
     }
 
     private func prepareDirectory() throws {
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
+                                                attributes: [.posixPermissions: 0o700])
         var values = URLResourceValues()
         values.isExcludedFromBackup = true
         var folder = directory

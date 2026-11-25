@@ -36,11 +36,29 @@ enum LioRoadbookPDF {
         return name + language.text("-roadbook.pdf", "-路书.pdf")
     }
 
+    /// The one folder exports go to: the app's temporary folder, never the account's roadbook folder
+    /// (whose cleanup accepts only roadbook copies). Removed when sharing ends.
+    static var exportDirectory: URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("LioRoadbookExport", isDirectory: true)
+    }
+
+    /// Removes every exported PDF; a missing folder is fine.
+    static func removeExports() {
+        try? FileManager.default.removeItem(at: exportDirectory)
+    }
+
     /// Writes into a folder inside the app (normally its temporary folder) for the share sheet.
+    /// Earlier exports in the folder are removed first so only the file being shared stays on the phone.
     static func write(_ roadbook: LioRoadbook, language: LioLanguage, to directory: URL) throws -> URL {
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let files = FileManager.default
+        if files.fileExists(atPath: directory.path) { try files.removeItem(at: directory) }
+        try files.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         let url = directory.appendingPathComponent(fileName(for: roadbook, language: language))
+        #if os(iOS)
+        try data(for: roadbook, language: language).write(to: url, options: [.atomic, .completeFileProtection])
+        #else
         try data(for: roadbook, language: language).write(to: url, options: [.atomic])
+        #endif
         return url
     }
 
@@ -103,7 +121,7 @@ enum LioRoadbookPDF {
             if !itinerary.lodgingArea.isEmpty { text.add(itinerary.lodgingArea, .body) }
             for hotel in itinerary.hotels {
                 text.add(placeName(hotel.place, language), .subheading)
-                if let note = hotel.note { text.add(note, .secondary) }
+                if let note = LioRoadbook.visibleNote(hotel.note) { text.add(note, .secondary) }
             }
         }
         for section in LioRoadbookEssentials.sections(language) {
@@ -210,13 +228,14 @@ enum LioRoadbookPDF {
                               height: LioRoadbookPDF.pageSize.height - 2 * LioRoadbookPDF.margin - LioRoadbookPDF.footerHeight)
             var location = 0
             repeat {
-                begin(accent: accent && location == 0)
                 let frame = CTFramesetterCreateFrame(framesetter, CFRange(location: location, length: 0),
                                                      CGPath(rect: body, transform: nil), nil)
+                let drawn = CTFrameGetVisibleStringRange(frame).length
+                // Nothing fits (a line taller than the page): stop rather than add blank pages.
+                guard drawn > 0 else { break }
+                begin(accent: accent && location == 0)
                 CTFrameDraw(frame, context)
                 context.endPDFPage()
-                let drawn = CTFrameGetVisibleStringRange(frame).length
-                guard drawn > 0 else { break }
                 location += drawn
             } while location < text.length
         }

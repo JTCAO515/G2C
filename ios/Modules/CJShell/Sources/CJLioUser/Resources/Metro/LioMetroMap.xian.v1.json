@@ -1,6 +1,7 @@
 {
  "schema": "lio.metro.v1",
  "city": "xian",
+ "cityInfo": {"nameZH": "西安", "nameEN": "Xi'an", "provinceZH": "陕西省", "featured": 7},
  "source": {"operatorZH": "西安地铁", "operatorEN": "Xi'an Metro", "urls": ["https://m.xianrail.com/metroRoute"], "englishZH": "维基百科西安地铁车站列表（站名标识拼音）", "englishEN": "Wikipedia list of Xi'an Metro stations (the signs' pinyin)", "englishURL": "https://en.wikipedia.org/wiki/List_of_Xi%27an_Metro_stations", "checkedOn": "2026-11-25"},
  "canvas": {"width": 1561, "height": 864},
  "lines": [

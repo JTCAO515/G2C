@@ -1,4 +1,5 @@
 #if os(iOS)
+import CJRunClient
 import SwiftUI
 import UIKit
 
@@ -97,10 +98,8 @@ struct LioMetroMapScreen: View {
 
     private func sourceBar(_ map: LioMetroMap) -> some View {
         Link(destination: map.source.urls[0]) {
-            Text(map.sourceLine(in: language))
-                .font(.caption)
-                .foregroundStyle(LioTheme.inkSecondary)
-                .multilineTextAlignment(.leading)
+            // A label that wraps and grows with the text size: the plain Text was flagged as clipped (#1450).
+            RunReadableText(text: map.sourceLine(in: language), style: .caption, color: LioTheme.inkSecondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, LioTheme.Spacing.md)
                 .padding(.vertical, LioTheme.Spacing.xs)
@@ -108,6 +107,9 @@ struct LioMetroMapScreen: View {
         }
         .background(LioTheme.surface)
         .overlay(alignment: .top) { Rectangle().fill(LioTheme.hairline).frame(height: 1) }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(map.sourceLine(in: language))
+        .accessibilityAddTraits(.isLink)
         .accessibilityIdentifier("lio.metro.map.source")
     }
 }
@@ -242,6 +244,9 @@ struct LioMetroMapCanvas: View {
         .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
         .overlay { RoundedRectangle(cornerRadius: LioTheme.Radius.small).stroke(LioTheme.hairline) }
         .padding(LioTheme.Spacing.sm)
+        // Map controls keep their size, as system map controls do; at accessibility sizes a long press
+        // shows each one large (below). Unbounded, the icons overflowed their 44-point buttons.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 
     private func zoomButton(_ symbol: String, label: String, id: String, action: @escaping () -> Void) -> some View {
@@ -253,6 +258,7 @@ struct LioMetroMapCanvas: View {
                 .contentShape(Rectangle())
         }
         .accessibilityLabel(label)
+        .accessibilityShowsLargeContentViewer { Label(label, systemImage: symbol) }
         .accessibilityIdentifier(id)
     }
 
@@ -473,7 +479,8 @@ struct LioMetroStationSheet: View {
                                 .accessibilityIdentifier("lio.metro.station.interchange")
                         }
                     }
-                    if taxiEntry != nil {
+                    // Taxi place search covers some cities only; elsewhere directions remain.
+                    if taxiEntry != nil, map.city.taxiCity != nil {
                         Button(action: taxi) {
                             action(language.text("Taxi to this station", "打车去这站"), symbol: "car.fill", prominent: true)
                                 .overlay(alignment: .trailing) {
@@ -526,8 +533,8 @@ struct LioMetroStationSheet: View {
 
     /// Finds "<station>地铁站" with the app's own place search, then opens the usual taxi page.
     private func taxi() {
-        guard let taxiEntry else { return }
-        let query = LioTaxiSearchQuery(text: map.searchName(for: station), city: map.city.taxiCity, near: nil)
+        guard let taxiEntry, let city = map.city.taxiCity else { return }
+        let query = LioTaxiSearchQuery(text: map.searchName(for: station), city: city, near: nil)
         searching = true
         notice = nil
         Task { @MainActor in

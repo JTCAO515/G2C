@@ -889,6 +889,8 @@ private var developmentHostEnvironment: [String: String] {
     let lioMemoryActions: LioMemoryActionsClient
     let lioTranslationHistory: LioTranslationHistory
     let lioTaxiRecentDirectory: URL
+    let lioSavedPlans: LioSavedPlans
+    let lioRoadbookDirectory: URL
     private let lioPosition: LioChatContinuity
     private let lioPositionStore: LioChatPositionStore
     #endif
@@ -943,6 +945,8 @@ private var developmentHostEnvironment: [String: String] {
         let credentials = DevelopmentMessageCredentials(token: configuration.token, scope: scope, lease: lease, lifetime: lifetime)
         #if G2C_DEMO_BETA
         lioTaxiRecentDirectory = LioTaxiRecentPlaces.storageDirectory(inMessageDirectory: root)
+        lioSavedPlans = LioSavedPlans(directory: LioSavedPlans.storageDirectory(inMessageDirectory: root), isCurrent: isCurrent)
+        lioRoadbookDirectory = LioAccountFolders.roadbooks(inMessageDirectory: root)
         lioTranslationHistory = LioTranslationHistory(
             directory: root.appendingPathComponent(LioTranslationHistory.directoryName, isDirectory: true),
             isCurrent: isCurrent)
@@ -1683,6 +1687,8 @@ private struct DevelopmentVerificationTransport: ClientTransport {
             try translation.removeOwnedFile(named: LioTranslationHistory.relayOriginalsFileName)
             try translation.removeEmptyChild()
             try LioTaxiRecentsCleanup.erase(in: captured[0])
+            try LioSavedPlansCleanup.erase(in: captured[0])
+            try LioRoadbookCleanup.erase(in: captured[0])
             #endif
         case .tripPending:
             guard let url else { throw CleanupFailure.unavailable }

@@ -15,6 +15,8 @@ struct LioToolsView: View {
     @Environment(\.lioNearbyService) private var nearbyService
     @Environment(\.lioHotelFinder) private var hotelFinder
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.lioRoadbookDirectory) private var roadbookDirectory
+    @Environment(\.lioSavedPlans) private var savedPlans
 
     private var availability: LioToolCatalog.Availability {
         var available = LioToolCatalog.Availability()
@@ -22,8 +24,11 @@ struct LioToolsView: View {
         available.currency = currencyRelay != nil
         available.nearby = nearbyService != nil
         available.hotels = hotelSearch != nil
+        available.roadbook = LioRoadbookFeature.enabled(infoValue: Bundle.main.object(forInfoDictionaryKey: "G2CRoadbookEnabled"))
+        available.transport = LioTransportService.fromBuild() != nil
         #if DEBUG
         available.hotels = available.hotels || ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview")
+        if LioRoadbookPreview.requested { available.roadbook = true }
         #endif
         return available
     }
@@ -78,6 +83,24 @@ struct LioToolsView: View {
         .tint(LioTheme.vermilion)
     }
 
+    /// Offline copies live in the signed-in account's folder (#1553) and stop when the session changes.
+    private var roadbookStore: LioRoadbookStore? {
+        #if DEBUG
+        if LioRoadbookPreview.requested { return try? LioRoadbookStore.preview() }
+        #endif
+        guard let roadbookDirectory else { return nil }
+        return LioRoadbookStore(directory: roadbookDirectory, isCurrent: sessionIsCurrent)
+    }
+
+    /// Roadbooks that can be made now: the account's saved plans (#1547). Debug previews show only
+    /// preview roadbooks, because their copies are kept outside the account folder.
+    private var roadbookCandidates: [LioRoadbook] {
+        #if DEBUG
+        if LioRoadbookPreview.requested { return LioRoadbookPreview.library(language) }
+        #endif
+        return (savedPlans?.plans ?? []).map { LioRoadbook(savedPlan: $0) }
+    }
+
     @ViewBuilder private func destination(_ tool: LioTool) -> some View {
         switch tool {
         case .localSupport:
@@ -105,6 +128,12 @@ struct LioToolsView: View {
             if let nearbyService {
                 LioNearbyView(language: language, service: nearbyService)
             }
+        case .transport:
+            if let service = LioTransportService.fromBuild() {
+                LioTransportView(language: language, service: service)
+            }
+        case .roadbook:
+            LioRoadbookLibraryView(language: language, store: roadbookStore, candidates: roadbookCandidates)
         case .hotels:
             if let hotelSearch {
                 LioHotelOffersView(language: language, finder: hotelSearch)

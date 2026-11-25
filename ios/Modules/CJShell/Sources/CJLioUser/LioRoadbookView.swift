@@ -9,14 +9,19 @@ struct LioRoadbookLibraryView: View {
     /// Roadbooks that can be made now (saved trips, Lio's plans, routes). Kept ones replace these by id.
     let candidates: [LioRoadbook]
     @State private var kept: [LioRoadbook] = []
+    @Environment(\.dynamicTypeSize) private var typeSize
 
-    private var groups: [(LioRoadbook.Source, [LioRoadbook])] {
+    /// Two cards per row like the Tools tab; one at accessibility text sizes.
+    private var columns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: LioTheme.Spacing.sm, alignment: .top),
+              count: typeSize.isAccessibilitySize ? 1 : 2)
+    }
+
+    /// Kept copies first replace the same roadbook offered as a candidate; then my trips, Lio's plans, routes.
+    private var books: [LioRoadbook] {
         let keptIDs = Set(kept.map(\.id))
         let all = kept + candidates.filter { !keptIDs.contains($0.id) }
-        return LioRoadbook.Source.allCases.compactMap { source in
-            let books = all.filter { $0.source == source }
-            return books.isEmpty ? nil : (source, books)
-        }
+        return LioRoadbook.Source.allCases.flatMap { source in all.filter { $0.source == source } }
     }
 
     var body: some View {
@@ -26,7 +31,7 @@ struct LioRoadbookLibraryView: View {
                                    "按天带着走的旅行手册，离线也能看，可导出 PDF 打印或分享。"))
                     .foregroundStyle(LioTheme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
-                if groups.isEmpty {
+                if books.isEmpty {
                     Text(language.text("No roadbooks yet. Ask Lio to plan a trip in Chat, then make a roadbook from it.",
                                        "还没有路书。先在聊天里让 Lio 规划行程，再生成路书。"))
                         .padding(LioTheme.Spacing.md)
@@ -34,18 +39,15 @@ struct LioRoadbookLibraryView: View {
                         .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
                         .accessibilityIdentifier("lio.roadbook.empty")
                 }
-                ForEach(groups, id: \.0) { source, books in
-                    VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
-                        Text(source.title(language)).font(.headline).accessibilityAddTraits(.isHeader)
-                        ForEach(books) { book in
-                            NavigationLink {
-                                LioRoadbookView(roadbook: book, language: language, store: store, onChange: reload)
-                            } label: {
-                                LioRoadbookRow(roadbook: book, language: language, kept: kept.contains { $0.id == book.id })
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityIdentifier("lio.roadbook.row.\(book.id)")
+                LazyVGrid(columns: columns, spacing: LioTheme.Spacing.sm) {
+                    ForEach(books) { book in
+                        NavigationLink {
+                            LioRoadbookView(roadbook: book, language: language, store: store, onChange: reload)
+                        } label: {
+                            LioRoadbookCard(roadbook: book, language: language, kept: kept.contains { $0.id == book.id })
                         }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("lio.roadbook.row.\(book.id)")
                     }
                 }
             }
@@ -63,36 +65,51 @@ struct LioRoadbookLibraryView: View {
     private func reload() { kept = store?.load() ?? [] }
 }
 
-private struct LioRoadbookRow: View {
+/// One roadbook as a card: city, the plan's title, days and dates, and whether it is kept on this phone.
+private struct LioRoadbookCard: View {
     let roadbook: LioRoadbook
     let language: LioLanguage
     let kept: Bool
 
     var body: some View {
-        HStack(alignment: .top, spacing: LioTheme.Spacing.sm) {
-            Image(systemName: "book.closed")
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(LioTheme.vermilion)
-                .frame(width: 44, height: 44)
-                .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: LioTheme.Spacing.xxs) {
-                Text(roadbook.coverTitle(language)).font(.headline)
-                Text(roadbook.itinerary.title).font(.subheadline)
-                Text(roadbook.coverLine(language)).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
-                if kept {
-                    Label(language.text("On this phone", "已离线保存"), systemImage: "checkmark.circle.fill")
-                        .font(.footnote.weight(.semibold)).foregroundStyle(LioTheme.jade)
-                }
+        VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+            HStack(alignment: .center, spacing: LioTheme.Spacing.xs) {
+                Image(systemName: "book.closed")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(LioTheme.vermilion)
+                    .frame(width: 36, height: 36)
+                    .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+                    .accessibilityHidden(true)
+                Text(roadbook.source.title(language))
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(LioTheme.inkSecondary)
+                    .lineLimit(2)
             }
-            .fixedSize(horizontal: false, vertical: true)
+            Text(roadbook.coverTitle(language))
+                .font(.headline)
+                .lineLimit(2)
+            Text(roadbook.itinerary.title)
+                .font(.subheadline)
+                .lineLimit(2)
+            Text(roadbook.coverLine(language))
+                .font(.footnote)
+                .foregroundStyle(LioTheme.inkSecondary)
+                .lineLimit(2)
+            if kept {
+                Label(language.text("On this phone", "已离线保存"), systemImage: "checkmark.circle.fill")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(LioTheme.jade)
+                    .lineLimit(2)
+            }
             Spacer(minLength: 0)
-            Image(systemName: "chevron.right").foregroundStyle(LioTheme.inkSecondary).accessibilityHidden(true)
         }
+        .fixedSize(horizontal: false, vertical: true)
+        .multilineTextAlignment(.leading)
+        .frame(maxWidth: .infinity, minHeight: 132, alignment: .topLeading)
         .padding(LioTheme.Spacing.md)
-        .frame(maxWidth: .infinity, alignment: .leading)
         .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
         .contentShape(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -150,7 +167,12 @@ struct LioRoadbookView: View {
             }
         }
         .onAppear { kept = store?.contains(roadbook.id) ?? false }
-        .sheet(item: $shared) { file in LioRoadbookShareSheet(items: [file.url]).ignoresSafeArea() }
+        // The exported PDF may hold a saved trip: it leaves the phone only through the share sheet
+        // and is removed as soon as sharing ends or the roadbook closes.
+        .sheet(item: $shared, onDismiss: LioRoadbookPDF.removeExports) { file in
+            LioRoadbookShareSheet(items: [file.url]).ignoresSafeArea()
+        }
+        .onDisappear(perform: LioRoadbookPDF.removeExports)
         .sheet(item: $taxiPlace) { place in
             if let taxiEntry {
                 NavigationStack {
@@ -160,7 +182,10 @@ struct LioRoadbookView: View {
             }
         }
         .fullScreenCover(item: Binding(get: { driverPlace.map(DriverPlace.init) }, set: { driverPlace = $0?.place })) { item in
-            LioRoadbookDriverCard(place: item.place, language: language)
+            // The app's shared driver sign (#1550): large Chinese name and checked address, screen kept awake.
+            LioDriverSign(language: language, nameZH: item.place.nameZH, nameEN: item.place.nameEN,
+                          addressZH: LioRoadbook.driverAddress(item.place), requestZH: "请送我到这里",
+                          identifierPrefix: "lio.roadbook.driver")
         }
     }
 
@@ -347,7 +372,7 @@ struct LioRoadbookView: View {
                 ForEach(itinerary.hotels) { hotel in
                     VStack(alignment: .leading, spacing: 2) {
                         Text(hotel.place.displayName(language)).font(.subheadline.weight(.semibold))
-                        if let note = hotel.note { Text(note).font(.footnote).foregroundStyle(LioTheme.inkSecondary) }
+                        if let note = LioRoadbook.visibleNote(hotel.note) { Text(note).font(.footnote).foregroundStyle(LioTheme.inkSecondary) }
                     }
                 }
             }
@@ -407,7 +432,7 @@ struct LioRoadbookView: View {
     private func keep() {
         guard let store else { return }
         do {
-            try store.save(roadbook)
+            try store.save(roadbook.kept())
             kept = true
             notice = nil
             onChange()
@@ -420,7 +445,7 @@ struct LioRoadbookView: View {
         guard !exporting else { return }
         exporting = true
         let roadbook = roadbook, language = language
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("LioRoadbook", isDirectory: true)
+        let folder = LioRoadbookPDF.exportDirectory
         Task {
             defer { exporting = false }
             do {
@@ -431,51 +456,6 @@ struct LioRoadbookView: View {
             } catch {
                 notice = language.text("Couldn’t make the PDF. Try again.", "暂时无法生成 PDF，请重试。")
             }
-        }
-    }
-}
-
-/// Large Chinese name and address for a driver, with the screen kept awake while it is shown.
-struct LioRoadbookDriverCard: View {
-    let place: LioRichItinerary.Place
-    let language: LioLanguage
-    @Environment(\.dismiss) private var dismiss
-    @State private var priorIdleTimer: Bool?
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    Text("请送我到这里").font(.headline).foregroundStyle(LioTheme.inkSecondary)
-                    Text(place.nameZH).font(LioTheme.display(.largeTitle).weight(.bold))
-                        .accessibilityIdentifier("lio.roadbook.driver.name")
-                    if let address = place.driverAddress {
-                        Text(address).font(.title2.weight(.semibold)).accessibilityIdentifier("lio.roadbook.driver.address")
-                    }
-                    if place.nameEN != place.nameZH { Text(place.nameEN).foregroundStyle(LioTheme.inkSecondary) }
-                }
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(24)
-            }
-            .background(LioTheme.paper)
-            .foregroundStyle(LioTheme.ink)
-            .navigationTitle(language.text("Show the driver", "给司机看"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(language.text("Close", "关闭")) { dismiss() }.accessibilityIdentifier("lio.roadbook.driver.close")
-                }
-            }
-        }
-        .tint(LioTheme.vermilion)
-        .onAppear {
-            guard priorIdleTimer == nil else { return }
-            priorIdleTimer = UIApplication.shared.isIdleTimerDisabled
-            UIApplication.shared.isIdleTimerDisabled = true
-        }
-        .onDisappear {
-            if let priorIdleTimer { UIApplication.shared.isIdleTimerDisabled = priorIdleTimer }
         }
     }
 }

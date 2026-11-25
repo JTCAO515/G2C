@@ -57,7 +57,7 @@ struct LioHotelQuery: Equatable, Sendable {
                 language.text("Enter an area or landmark of up to 100 characters.", "请输入不超过 100 字的区域或地标。")
             case .stayTooLong: language.text("Search for stays of up to 30 nights.", "一次最多搜索 30 晚。")
             case .tooManyGuests: language.text("Search for up to 10 guests.", "一次最多搜索 10 位客人。")
-            case .checkInPast: language.text("Choose a check-in date from today on.", "入住日期不能早于今天。")
+            case .checkInPast: language.text("Check-in can’t be before today.", "入住日期不能早于今天。")
             }
         }
     }
@@ -110,6 +110,9 @@ struct LioHotelQuery: Equatable, Sendable {
 struct LioHotelOffer: Identifiable, Hashable, Sendable {
     enum ForeignGuests: String, Hashable, Sendable {
         case accepted, notAccepted = "not_accepted", unknown
+
+        /// Only an explicit "accepted" earns the green badge.
+        var isConfirmed: Bool { self == .accepted }
 
         func label(_ language: LioLanguage) -> String {
             switch self {
@@ -227,6 +230,16 @@ struct LioHotelResults: Sendable {
     let source: Source
     let offers: [LioHotelOffer]
     let unappliedFilters: [Filter]
+    /// Whether "Book" hands off through an affiliate link; the #225 disclosure is shown only then.
+    let affiliateLinks: Bool
+
+    /// #225 disclosure draft; shown once under the list, only for affiliate hand-offs (wording for JT to confirm).
+    static func disclosure(_ language: LioLanguage) -> String {
+        language.text(
+            "Some links are affiliate links. If you book through them, Go2China may earn a commission at no extra cost to you.",
+            "部分链接为推广链接，你通过它预订时，Go2China 可能获得佣金，价格不受影响。"
+        )
+    }
 }
 
 enum LioHotelFailure: Error, Equatable {
@@ -322,6 +335,7 @@ enum LioHotelSearchWire {
     private struct Reply: Decodable {
         let version: String
         let source: String
+        let affiliateLinks: Bool?
         let appliedFilters: [LioHotelResults.Filter]
         let unappliedFilters: [LioHotelResults.Filter]
         let items: [Item]
@@ -346,7 +360,6 @@ enum LioHotelSearchWire {
         return try encoder.encode(request)
     }
 
-    /// Booking links must be the relay's own hand-off path, so the affiliate redirect stays server-side.
     /// Booking links must be one opaque handle on the relay's own hand-off path (no `..`, extra segments,
     /// query or fragment), so the affiliate redirect stays server-side.
     static func isRelayHandoff(_ url: URL, relay: URL) -> Bool {
@@ -398,7 +411,8 @@ enum LioHotelSearchWire {
                 booking: booking)
         }
         return LioHotelResults(source: source, offers: offers,
-                               unappliedFilters: LioHotelResults.Filter.allCases.filter(unapplied.contains))
+                               unappliedFilters: LioHotelResults.Filter.allCases.filter(unapplied.contains),
+                               affiliateLinks: reply.affiliateLinks ?? true)
     }
 
     static func failure(status: Int, body: Data) -> LioHotelFailure {
@@ -551,7 +565,7 @@ extension LioHotelFinder {
              "foreign_guests": "accepted", "booking_url": link("bjhotel_aaaaaaaaaaa")],
         ]
         let reply: [String: Any] = [
-            "version": LioHotelSearchWire.version, "source": "Trip.com",
+            "version": LioHotelSearchWire.version, "source": "Trip.com", "affiliate_links": false,
             "applied_filters": ["near", "guests"], "unapplied_filters": ["check_in", "check_out", "price"],
             "items": items,
         ]

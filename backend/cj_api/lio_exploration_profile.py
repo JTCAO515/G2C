@@ -223,11 +223,18 @@ def _known_value(update, sources):
     value = tuple(update.value) if isinstance(update.value, list) else update.value
     quotes = [source.quote for source in sources]
     if update.factor_key == 'duration_days':
-        matches=[re.fullmatch(r'([0-9]{1,3}|one|two|three|four|five|six|seven|eight|nine|ten|[一二两三四五六七八九十])\s*(?:天|日|days?)',
-                 _positive_payload('duration_days',quote),re.I) for quote in quotes]
+        pattern=r'([0-9]{1,3}|one|two|three|four|five|six|seven|eight|nine|ten|[一二两三四五六七八九十])(?:\s*|-)(?:天|日|days?)'
+        def count(match):
+            return int(match[1]) if match[1].isascii() and match[1].isdecimal() else NUMBERS[match[1].casefold()]
+        matches=[re.fullmatch(pattern,_positive_payload('duration_days',quote),re.I) for quote in quotes]
         if any(match is None for match in matches):
             raise InvalidInput('affirmative original duration required')
-        counts = {int(match[1]) if match[1].isascii() and match[1].isdecimal() else NUMBERS[match[1].casefold()] for match in matches}
+        counts = {count(match) for match in matches}
+        if type(value) is str:
+            # A literal day-count span (for example "3天") states the same count
+            # as an int; it is still accepted only when it equals the quote's count.
+            literal=re.fullmatch(pattern,value.strip(),re.I)
+            value=count(literal) if literal is not None else value
         if type(value) is int and 1 <= value <= 366 and counts == {value}:
             return value
     elif update.factor_key == 'first_visit':
@@ -292,6 +299,29 @@ def parse_updates(raw, originals,*,registered_city_terms=()):
         facts.append(Fact(factor.key, value, state, tuple(sources)))
     return tuple(facts)
 
+
+
+def parse_supported_updates(raw, originals,*,registered_city_terms=()):
+    """Keep each independently grounded model update; drop only unsupported ones.
+
+    JT 2026-11-25: an unsupported update is never accepted and is asked again
+    later, while the other grounded updates are used. A malformed packet still
+    fails whole. Each kept update passes the unchanged strict parse_updates on
+    its own; persisted-profile restore keeps using parse_updates directly.
+    Returns (facts, ((factor_key, code_reason), ...)).
+    """
+    try:
+        packet = _Updates.model_validate(decode(raw.encode() if isinstance(raw, str) else raw))
+    except ValidationError:
+        raise InvalidInput('exact sourced profile updates required') from None
+    facts, dropped = [], []
+    for update in packet.updates:
+        single = json.dumps(dict(version='LIO-profile-update.1', updates=[update.model_dump()]))
+        try:
+            facts.extend(parse_updates(single, originals, registered_city_terms=registered_city_terms))
+        except InvalidInput as error:
+            dropped.append((update.factor_key, str(error)))
+    return tuple(facts), tuple(dropped)
 
 def memory_prefill(memory_run):
     """Consume the already captured, admitted Memory payload, never a model copy.
