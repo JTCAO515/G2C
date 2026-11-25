@@ -7,8 +7,9 @@ still runs (fail open). A C-quoted path is treated as unknown and also runs ever
 
 - docs_only:   every path is documentation -> heavy jobs skip (python keeps the handoff check).
 - ios_only:    every path is under ios/ or documentation, at least one under ios/ ->
-               the four PostgreSQL shards skip; python, swift-packages, swift and ios-app run.
-- app_changed: some path can affect the Swift packages or the App build -> swift and ios-app
+               the PostgreSQL shards skip; python, swift-packages and swift run.
+- app_changed: some path can affect the Swift packages or the App build -> swift (the macOS job:
+  App build and package tests)
                run; when false they skip. Swift tests read contracts/ and digital-assets/,
                the package inventory lives in .github/, and .gitattributes changes checkouts.
 """
