@@ -16,7 +16,7 @@ struct LioMenuOrderView: View {
     @State private var appliedMemory = false
     @State private var photo: Data?
     @State private var reading: LioMenuReading?
-    @State private var failed = false
+    @State private var failure: LioMenuFailure?
     @State private var order = LioMenuOrder()
     @State private var showsCard = false
     @State private var pickerItem: PhotosPickerItem?
@@ -38,9 +38,8 @@ struct LioMenuOrderView: View {
                             .frame(maxWidth: .infinity)
                             .accessibilityIdentifier("lio.menu.reading")
                     }
-                    if failed || cameraProblem != nil {
-                        Text(cameraProblem ?? language.text("Couldn't read this menu. Try a clearer, flatter photo.",
-                                                            "暂时无法识别这份菜单，请换一张更清楚、更平整的照片。"))
+                    if let problem = cameraProblem ?? failure.map(message) {
+                        Text(problem)
                             .foregroundStyle(LioTheme.danger)
                             .accessibilityIdentifier("lio.menu.failed")
                     }
@@ -102,24 +101,41 @@ struct LioMenuOrderView: View {
             guard let item else { return }
             pickerItem = nil
             Task {
-                if let data = try? await item.loadTransferable(type: Data.self) { photo = data } else { failed = true }
+                if let data = try? await item.loadTransferable(type: Data.self) { photo = data } else {
+                    failure = .unreadablePhoto
+                }
             }
         }
         .task(id: photo) {
             guard let photo else { return }
-            failed = false
+            failure = nil
             cameraProblem = nil
             do {
                 let jpeg = try await LioTranslationImageEncoder.jpeg(from: photo)
                 let found = try await service.read(jpeg)
                 guard !Task.isCancelled, self.photo == photo else { return }
                 reading = found
+            } catch is CancellationError {
+                return
             } catch {
                 guard !Task.isCancelled, self.photo == photo else { return }
-                failed = true
+                failure = error as? LioMenuFailure ?? .unavailable
             }
             // The photo is not kept once it is read.
             self.photo = nil
+        }
+    }
+
+    private func message(_ failure: LioMenuFailure) -> String {
+        switch failure {
+        case .signInRequired: language.text("Sign in to read menus.", "登录后才能识别菜单。")
+        case .notEnabled: language.text("Menu reading isn't available for this account yet.", "这个账号暂时还不能识别菜单。")
+        case .quota: language.text("You've read today's menus. Try again tomorrow.", "今天的菜单识别次数已用完，明天再试。")
+        case .timedOut: language.text("That took too long. Try again.", "识别超时了，请再试一次。")
+        case .unreadablePhoto: language.text("Couldn't open this photo. Try another one.", "这张照片打不开，请换一张。")
+        case .alreadyUsed, .unavailable:
+            language.text("Couldn't read this menu. Try a clearer, flatter photo.",
+                          "暂时无法识别这份菜单，请换一张更清楚、更平整的照片。")
         }
     }
 
@@ -249,6 +265,13 @@ struct LioMenuResults: View {
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(LioTheme.vermilion)
                     .accessibilityIdentifier("lio.menu.sample")
+            }
+            if reading.truncated {
+                Text(language.text("This menu is long: only the first part was read. Photograph the rest separately.",
+                                   "菜单较长，只识别了前一部分，其余可以分开再拍。"))
+                    .font(.footnote)
+                    .foregroundStyle(LioTheme.inkSecondary)
+                    .accessibilityIdentifier("lio.menu.truncated")
             }
             Text(language.text("\(reading.dishes.count) dishes. Tap + to add to your order.",
                                "识别到 \(reading.dishes.count) 道菜，点「+」加入点单。"))
