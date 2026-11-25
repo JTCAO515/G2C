@@ -92,13 +92,13 @@ struct LioToolsView: View {
         return LioRoadbookStore(directory: roadbookDirectory, isCurrent: sessionIsCurrent)
     }
 
-    /// Roadbooks that can be made now: the account's saved plans (#1547). Debug previews show only
-    /// preview roadbooks, because their copies are kept outside the account folder.
+    /// Roadbooks that can be made now: the account's saved plans (#1547), plus Debug previews.
     private var roadbookCandidates: [LioRoadbook] {
+        var books = (savedPlans?.plans ?? []).map { LioRoadbook(savedPlan: $0) }
         #if DEBUG
-        if LioRoadbookPreview.requested { return LioRoadbookPreview.library(language) }
+        if LioRoadbookPreview.requested { books += LioRoadbookPreview.library(language) }
         #endif
-        return (savedPlans?.plans ?? []).map { LioRoadbook(savedPlan: $0) }
+        return books
     }
 
     @ViewBuilder private func destination(_ tool: LioTool) -> some View {
