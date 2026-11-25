@@ -9,7 +9,7 @@ from pydantic import ValidationError
 
 from cj_api.lio_roadbook import (
     FIELDS, MODEL_FIELDS, OFFICIAL, PROMPT_VERSION, ROUTE, VERSION, DashScopeRoadbook, MemoryRoadbookCache,
-    RoadbookRequest, RoadbookService, checked_fields, food_tip, messages_for,
+    RoadbookRequest, RoadbookService, _station_name, checked_fields, food_tip, getting_there, messages_for,
 )
 from cj_api.plugin_tools import PluginError
 from cj_usage import roadbook_budget
@@ -53,13 +53,12 @@ class Gaode:
 GOOD = {
     'zh': dict(summary='明清两代的皇宫，现为博物院。', why_go='中轴线上规模最大的古建筑群。', time_needed='约 3 小时',
                hours_booking='周二至周日 08:30-17:00；需提前实名预约，以官方为准。',
-               tickets='约 40–60 元，以官方为准。', getting_there='地铁 1 号线天安门东站，步行约 10 分钟。',
+               tickets='需提前实名预约购票，以官方为准。',
                notes='入口安检，带好护照；周一通常闭馆。'),
     'en': dict(summary='The imperial palace of the Ming and Qing, now a museum.',
                why_go='The largest group of old buildings on the central axis.', time_needed='About 3 hours',
                hours_booking='Tue–Sun 08:30-17:00; book ahead with your passport. Check official sources.',
-               tickets='About 40–60 yuan; check official sources.',
-               getting_there='Line 1 to Tian’anmen East, then walk about 10 minutes.',
+               tickets='A ticket booked ahead with your passport; check official sources.',
                notes='Security check at the entrance; usually closed on Mondays.'),
 }
 
@@ -95,10 +94,10 @@ def enrich(svc, body, scope='scope-a'):
 # --- request ---------------------------------------------------------------------------------------------------
 
 def test_route_and_version():
-    assert (ROUTE, VERSION, PROMPT_VERSION) == ('/v1/tools/roadbook/places', 'ROADBOOK.1', 1)
+    assert (ROUTE, VERSION, PROMPT_VERSION) == ('/v1/tools/roadbook/places', 'ROADBOOK.1', 2)
     assert FIELDS == ('summary', 'why_go', 'time_needed', 'hours_booking', 'tickets', 'getting_there',
                       'food_tip', 'notes')
-    assert MODEL_FIELDS == tuple(field for field in FIELDS if field != 'food_tip')
+    assert MODEL_FIELDS == ('summary', 'why_go', 'time_needed', 'hours_booking', 'tickets', 'notes')
 
 
 @pytest.mark.parametrize('change', [
@@ -124,8 +123,10 @@ def test_a_place_gets_checked_bilingual_content_from_gaode_facts(ledger):
     place, = result['places']
     assert result['version'] == VERSION
     assert place['id'] == 's1' and place['status'] == 'ready' and place['poi_id'] == 'B000A8UIN8'
-    assert place['content']['zh'] == dict(GOOD['zh'], food_tip='附近可就餐：四季民福烤鸭店(故宫店)（约 450 米）、南门涮肉（约 700 米）。')
-    assert place['content']['en'] == dict(GOOD['en'], food_tip='Places to eat nearby: 四季民福烤鸭店(故宫店) (about 450 m), 南门涮肉 (about 700 m).')
+    assert place['content']['zh'] == dict(GOOD['zh'], getting_there='最近的地铁站：天安门东站（约 620 米）。',
+                                          food_tip='附近可就餐：四季民福烤鸭店(故宫店)（约 450 米）、南门涮肉（约 700 米）。')
+    assert place['content']['en'] == dict(GOOD['en'], getting_there='Nearest metro: 天安门东站 (about 620 m).',
+                                          food_tip='Places to eat nearby: 四季民福烤鸭店(故宫店) (about 450 m), 南门涮肉 (about 700 m).')
     assert set(place['content']['zh']) == set(FIELDS)
     assert place['metro'] == [dict(name_zh='天安门东站', distance_m=620)]
     assert place['restaurants'] == [
@@ -192,7 +193,7 @@ def test_a_cut_off_answer_is_billed_but_neither_shown_nor_cached(ledger):
     (json.dumps(['x']), 'stop', 'reason=model_not_object'),
     (json.dumps(dict(GOOD['zh'], food_tip='推荐全聚德烤鸭'), ensure_ascii=False), 'stop',
      'reason=model_fields missing=0 extra=1 food_tip=1'),
-    (json.dumps({'summary': '紫禁城'}, ensure_ascii=False), 'stop', 'reason=model_fields missing=6 extra=0 food_tip=0'),
+    (json.dumps({'summary': '紫禁城'}, ensure_ascii=False), 'stop', 'reason=model_fields missing=5 extra=0 food_tip=0'),
     (json.dumps(GOOD['zh'], ensure_ascii=False), 'length', 'reason=model_cut_off'),
 ])
 def test_why_a_place_is_unavailable_is_logged_without_its_text(ledger, caplog, reply, finish, logged):
@@ -244,29 +245,33 @@ FACTS = dict(name='故宫博物院', opening='周二至周日 08:30-17:00',
 def test_good_fields_pass_unchanged():
     for language in ('zh', 'en'):
         checked = checked_fields(json.dumps(GOOD[language], ensure_ascii=False), FACTS, language)
-        assert checked == dict(GOOD[language], food_tip=food_tip(FACTS['restaurants'], language))
+        assert checked == dict(GOOD[language], getting_there=getting_there([], language),
+                               food_tip=food_tip(FACTS['restaurants'], language))
 
 
 @pytest.mark.parametrize('field,value', [
-    ('tickets', '60 元'), ('tickets', '门票 ¥60'), ('getting_there', '打车约 30 元'), ('notes', '今天开放'),
+    ('tickets', '60 元'), ('tickets', '门票 ¥60'), ('notes', '打车约 30 元'), ('notes', '今天开放'),
     ('summary', '今日营业到很晚'), ('hours_booking', '每天 09:00-18:00'), ('notes', '18:00 后人少'),
     ('summary', ''), ('summary', '长' * 200), ('notes', '\u202e反向'),
     # #1569 review: bypasses that must also become official notices
-    ('tickets', '约 40–60 元，学生 20 元'), ('tickets', '门票 60 块'), ('getting_there', '打车约 30 块'),
+    ('tickets', '约 40–60 元，学生 20 元'), ('tickets', '门票 60 块'), ('notes', '打车约 30 块'),
     ('tickets', '约 40–60 人民币，团队另议 300'), ('notes', '今天闭园'), ('notes', '目前正常开放'),
     ('notes', '现在不开'), ('hours_booking', '每天 9点 开门'), ('hours_booking', '０９：００开门'),
     ('hours_booking', '周二至周日 7:00-17:00'), ('notes', '下午 3 点后人少'),
     # second #1569 review: number words, live availability and temporary closures
-    ('tickets', '门票六十元'), ('tickets', '约 40–60 元，学生半价二十元'), ('getting_there', '打车约三十元'),
-    ('getting_there', '打车约三十块钱'), ('notes', '今天余票充足'), ('notes', '暂停开放'), ('notes', '暂时闭馆'),
+    ('tickets', '门票六十元'), ('tickets', '约 40–60 元，学生半价二十元'), ('notes', '打车约三十元'),
+    ('notes', '打车约三十块钱'), ('notes', '今天余票充足'), ('notes', '暂停开放'), ('notes', '暂时闭馆'),
     ('notes', '近期闭馆维修'), ('notes', '本周闭馆'), ('tickets', '约 60–60 元'), ('notes', '门票 60'),
     ('hours_booking', '16时关门'), ('hours_booking', '8时30分开门'), ('notes', '四点以后人少'), ('notes', '票已售罄'),
     # third #1569 review (P2): temporary closures, more ways to write money
     ('notes', '暂不开放'), ('notes', '临时闭馆'), ('notes', '目前关闭'), ('notes', '修缮中'), ('notes', '正在维修'),
     ('notes', '这几天闭馆'), ('notes', '暂停入园'), ('notes', '票已售完'), ('notes', '预约已满'), ('notes', '已恢复开放'),
-    ('getting_there', '打车30块左右'), ('getting_there', '打车 30 多元'), ('getting_there', '十几块就到'),
-    ('getting_there', '人民币30'), ('tickets', '成人六十，学生三十'), ('getting_there', '约 30 港币'),
-    ('getting_there', '打车约三十rmb'), ('getting_there', '停车费20rmb/小时'),
+    ('notes', '打车30块左右'), ('notes', '打车 30 多元'), ('notes', '十几块就到'),
+    ('notes', '人民币30'), ('tickets', '成人六十，学生三十'), ('notes', '约 30 港币'),
+    ('notes', '打车约三十rmb'), ('notes', '停车费20rmb/小时'),
+    # run -44: the facts carry no price, so a range is made up too; talk about the prompt is not about the place
+    ('tickets', '约 40–60 元，以官方为准'), ('tickets', '约 40–60 元，学生半价，提前一天预约'),
+    ('tickets', '十一黄金周人多，约 40–60 元'), ('notes', '输入数据里没有开放时间'), ('summary', '未提供相关信息'),
 ])
 def test_unchecked_claims_become_official_notices(field, value):
     checked = checked_fields(json.dumps(dict(GOOD['zh'], **{field: value}), ensure_ascii=False), FACTS, 'zh')
@@ -276,42 +281,48 @@ def test_unchecked_claims_become_official_notices(field, value):
 
 
 @pytest.mark.parametrize('field,value,kept', [
-    ('tickets', 'about ¥40-60, check official sources', True), ('tickets', 'About 40–60 yuan; students 20 yuan', False),
-    ('getting_there', 'A taxi costs $5', False), ('getting_there', 'Taxi about 30 kuai', False),
+    ('tickets', 'about ¥40-60, check official sources', False), ('tickets', 'About 40–60 yuan; students 20 yuan', False),
+    ('notes', 'A taxi costs $5', False), ('notes', 'Taxi about 30 kuai', False),
     ('notes', 'Open today until late', False), ('notes', 'Open now', False), ('notes', 'Currently shut', False),
     ('hours_booking', 'Daily 09:00-18:00', False), ('hours_booking', 'Opens at 9am', False),
-    ('notes', 'The closest gate is the north gate', True), ('getting_there', 'Line 1, then walk 10 minutes', True),
+    ('notes', 'The closest gate is the north gate', True), ('notes', 'Line 1, then walk 10 minutes', True),
     ('summary', 'A palace museum, now a UNESCO site', True),
-    ('tickets', 'Sixty yuan', False), ('getting_there', 'A taxi costs about thirty yuan', False),
+    ('tickets', 'Sixty yuan', False), ('notes', 'A taxi costs about thirty yuan', False),
     ('notes', 'Tickets left today', False), ('notes', 'Temporarily closed for renovation', False),
     ('notes', 'Closed this week', False), ('notes', 'It is presently open', False), ('notes', 'Often sold out', False),
     ('hours_booking', 'Gates open at 16h', False), ('notes', 'Tickets 60', False),
     ('notes', 'Usually closed on Mondays', True), ('why_go', 'One of the largest palaces in the world', True),
     ('notes', 'Fully booked on weekends', False), ('notes', 'Closed for renovation', False),
     ('notes', 'Under renovation', False), ('notes', 'At present the east gate is shut', False),
-    ('tickets', 'Adults sixty, students thirty', False), ('getting_there', 'About 20 bucks by taxi', False),
-    ('getting_there', 'A taxi is about €5', False),
+    ('tickets', 'Adults sixty, students thirty', False), ('notes', 'About 20 bucks by taxi', False),
+    ('notes', 'A taxi is about €5', False),
     ('hours_booking', 'Book tickets 7 days in advance; check official sources.', True),
     ('summary', 'Recently restored, the hall shines again', True),
     ('tickets', 'City pass holders and university students may get discounts', True),
     ('hours_booking', 'Tickets 14 days ahead; check official sources.', True),
     ('notes', 'A Starbucks is near the gate', True), ('summary', 'Built in 1900 by European architects', True),
-    ('getting_there', 'Taxi about 30RMB', False), ('getting_there', 'Parking RMB30 an hour', False),
-    ('getting_there', 'About 20bucks by taxi', False), ('getting_there', 'HKD30 by bus', False),
+    ('notes', 'Taxi about 30RMB', False), ('notes', 'Parking RMB30 an hour', False),
+    ('notes', 'About 20bucks by taxi', False), ('notes', 'HKD30 by bus', False),
+    ('tickets', 'about 40–60 yuan. Please check official sources for current pricing.', False),
+    ('notes', 'No metro information provided in the source data', False),
+    ('notes', 'The input data contains null values for opening times.', False),
+    ('tickets', 'Ticket information is not available; check official sources', False),
+    ('tickets', 'Free entry to the public areas', True),
 ])
 def test_english_claims_are_checked_the_same_way(field, value, kept):
+    """run -44 also added: 'about 40–60 yuan' copied from the prompt, and lines about the facts themselves."""
     checked = checked_fields(json.dumps(dict(GOOD['en'], **{field: value}), ensure_ascii=False), FACTS, 'en')
     assert checked[field] == (value if kept else OFFICIAL['en'])
 
 
-@pytest.mark.parametrize('field,value', [('summary', '故宫博物馆所在的紫禁城'), ('getting_there', '地铁 1 号线，步行约 10 分钟'),
+@pytest.mark.parametrize('field,value', [('summary', '故宫博物馆所在的紫禁城'), ('notes', '地铁 1 号线，步行约 10 分钟'),
                                          ('time_needed', '约 3 小时'), ('notes', '旺季上午人多'),
                                          ('summary', '元代始建，明清扩建'), ('why_go', '院中有一块明代石碑'),
                                          ('hours_booking', '０８：３０开门，以官方为准'), ('tickets', '免费，需提前预约'),
-                                         ('tickets', '约 40–60 元，学生半价，提前一天预约'), ('notes', '一块石碑记载了历史'),
+                                         ('notes', '一块石碑记载了历史'),
                                          ('hours_booking', '门票需提前7天预约，以官方为准'), ('notes', '最近的入口是午门，周一闭馆'),
                                          ('notes', '院里有十几块石碑'), ('summary', '殿内挂着三十多块匾额'),
-                                         ('tickets', '十一黄金周人多，约 40–60 元'), ('tickets', '十人以上可团体预约'),
+                                         ('tickets', '十一黄金周人多，需预约'), ('tickets', '十人以上可团体预约'),
                                          ('hours_booking', '门票15天内有效，以官方为准')])
 def test_ordinary_text_is_not_mistaken_for_a_claim(field, value):
     assert checked_fields(json.dumps(dict(GOOD['zh'], **{field: value}), ensure_ascii=False), FACTS, 'zh')[field] == value
@@ -485,3 +496,38 @@ def test_a_request_stops_calling_suppliers_after_its_deadline(ledger, monkeypatc
     result = enrich(service(ledger, gaode, flash), body)
     assert [place['status'] for place in result['places']] == ['unavailable', 'unavailable']
     assert len(gaode.calls) <= 1 and flash.calls == []
+
+
+def test_how_to_get_there_comes_only_from_gaode_stations():
+    stations = [dict(name_zh='前门站', distance_m=333), dict(name_zh='天安门东站', distance_m=620)]
+    assert getting_there(stations, 'zh') == '最近的地铁站：前门站（约 333 米）、天安门东站（约 620 米）。'
+    assert getting_there(stations, 'en') == 'Nearest metro: 前门站 (about 333 m), 天安门东站 (about 620 m).'
+    assert getting_there([], 'zh') == '可打车前往，地铁和公交请看地图。'
+    assert getting_there([], 'en') == 'Take a taxi, or check a map for metro and buses.'
+
+
+@pytest.mark.parametrize('name,station', [
+    ('天安门东(地铁站)', '天安门东站'), ('前门站', '前门站'), ('前门地铁站A东北口', '前门站'),
+    ('金鱼胡同地铁站B通道-直梯口', '金鱼胡同站'), ('陆家嘴地铁站6号口', '陆家嘴站'), ('陆家嘴地铁站出入口', '陆家嘴站'),
+    ('菜市口地铁站A口', '菜市口站'), ('五道口(地铁站)', '五道口站'), ('南锣鼓巷地铁站', '南锣鼓巷站'),
+])
+def test_station_entrances_count_as_their_station(name, station):
+    assert _station_name(name) == station
+
+
+def test_each_station_is_listed_once_at_its_nearest_entrance(ledger):
+    around = [dict(id='E1', name='前门地铁站A东北口', typecode='150501', location='116.39,39.90', distance='325'),
+              dict(id='E2', name='前门站', typecode='150500', location='116.39,39.90', distance='333'),
+              dict(id='E3', name='天安门东(地铁站)', typecode='150500', location='116.40,39.91', distance='620')]
+
+    class Stations(Gaode):
+        def query(self, operation, params, reserve):
+            if operation != 'around':
+                return super().query(operation, params, reserve)
+            reserve()
+            data = {'pois': around}
+            return data, json.dumps(data, ensure_ascii=False).encode()
+
+    place, = enrich(service(ledger, Stations()), payload())['places']
+    assert place['metro'] == [dict(name_zh='前门站', distance_m=325), dict(name_zh='天安门东站', distance_m=620)]
+    assert place['content']['zh']['getting_there'] == '最近的地铁站：前门站（约 325 米）、天安门东站（约 620 米）。'

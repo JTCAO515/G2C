@@ -42,6 +42,9 @@ struct LioHotelOffersView: View {
     @State private var problem: String?
     @State private var driverPlace: LioTaxiPlace?
     @State private var bookingNotice: String?
+    /// Back to Hotel (#1573): set only when `G2CShowCardEnabled` is on, so the button is hidden otherwise.
+    @Environment(\.lioReturnHotelStore) private var returnHotelStore
+    @State private var stayMark = LioStayHotelMark()
     @FocusState private var typing: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -96,6 +99,7 @@ struct LioHotelOffersView: View {
         .environment(\.calendar, LioHotelSearch.calendar)
         .environment(\.timeZone, LioHotelSearch.calendar.timeZone)
         .environment(\.locale, Locale(identifier: language == .chinese ? "zh_CN" : "en_US"))
+        .onAppear(perform: refreshStayMark)
         .task(id: pending) {
             guard let pending else { return }
             await run(pending)
@@ -267,6 +271,27 @@ struct LioHotelOffersView: View {
                 .accessibilityIdentifier("lio.hotel-search.book")
             }
             .padding(.top, LioTheme.Spacing.xxs)
+            if let returnHotelStore {
+                // Its own row: "Show the driver" and "Book" already fill the width in English (hotel line).
+                let saved = stayMark.isSaved(offer.taxiPlace.id)
+                Button {
+                    setStayHotel(offer, in: returnHotelStore)
+                } label: {
+                    Label(saved ? language.text("Saved as my hotel", "已设为我的酒店")
+                                : language.text("Set as my hotel", "设为我的酒店"),
+                          systemImage: saved ? "checkmark" : "house.and.flag")
+                }
+                .buttonStyle(LioSecondaryButtonStyle())
+                .disabled(saved)
+                .accessibilityIdentifier("lio.hotel-search.set-stay")
+                if stayMark.failed(offer.taxiPlace.id) {
+                    Text(Self.staySaveFailed(language))
+                        .font(.footnote)
+                        .foregroundStyle(LioTheme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("lio.hotel-search.set-stay.failed")
+                }
+            }
         }
         .padding(LioTheme.Spacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -304,6 +329,7 @@ struct LioHotelOffersView: View {
                                           guests: guests, price: price, language: language)
             problem = nil
             bookingNotice = nil
+            refreshStayMark()
             phase = .searching
             pending = Pending(query: query)
         } catch {
@@ -323,6 +349,30 @@ struct LioHotelOffersView: View {
             phase = .failed((error as? LioHotelFailure ?? .unavailable).message(language))
         }
         if pending == request { pending = nil }
+    }
+
+    private static func staySaveFailed(_ language: LioLanguage) -> String {
+        language.text("Not saved. Try again.", "没能保存，请再试一次。")
+    }
+
+    /// Starts from the hotel saved now, which may have changed on Back to Hotel since this page last looked.
+    private func refreshStayMark() {
+        guard let returnHotelStore else { return }
+        stayMark.refresh(savedHotel: (try? returnHotelStore.load()) ?? nil)
+    }
+
+    private func setStayHotel(_ offer: LioHotelOffer, in store: LioReturnHotelStore) {
+        do {
+            let current = (try? store.load()) ?? nil
+            try store.save(LioStayHotel(hotelSearchOffer: offer, replacing: current))
+            stayMark.didSave(offer.taxiPlace.id)
+            AccessibilityNotification.Announcement(language.text("Saved as my hotel", "已设为我的酒店")).post()
+        } catch is CancellationError {
+            return
+        } catch {
+            stayMark.didFail(offer.taxiPlace.id)
+            AccessibilityNotification.Announcement(Self.staySaveFailed(language)).post()
+        }
     }
 
     private func book(_ offer: LioHotelOffer) async {

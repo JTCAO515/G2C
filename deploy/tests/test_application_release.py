@@ -206,8 +206,9 @@ def test_release_ci_accepts_a_successful_check_no_longer_in_ci_jobs(workflow_evi
     application_release.verify_release_ci(github_fixture(workflow_evidence), SOURCE)
 
 
-def test_release_ci_rejects_a_failed_or_cancelled_check_no_longer_in_ci_jobs(workflow_evidence):
-    workflow_evidence['check_runs'].append(dict(id=98, name='ios-app', head_sha=SOURCE, conclusion='failure'))
+@pytest.mark.parametrize('conclusion', ['failure', 'cancelled'])
+def test_release_ci_rejects_a_failed_or_cancelled_check_no_longer_in_ci_jobs(workflow_evidence, conclusion):
+    workflow_evidence['check_runs'].append(dict(id=98, name='ios-app', head_sha=SOURCE, conclusion=conclusion))
     with pytest.raises(ValueError):
         application_release.verify_release_ci(github_fixture(workflow_evidence), SOURCE)
 

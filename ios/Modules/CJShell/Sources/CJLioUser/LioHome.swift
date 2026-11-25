@@ -21,7 +21,8 @@ public struct LioHome<MenuContent: View>: View {
     private let savedPlansStore: LioSavedPlans?
     private let roadbookDirectory: URL?
     private let roadbookRelay: LioRoadbookRelayClient?
-    private let menuRelay: LioMenuRelayClient?
+    /// Built once: a new closure on every render would make SwiftUI treat the environment value as changed.
+    private let menuService: LioMenuService?
     /// #1647: the trip home (behind `G2CTripHomeEnabled`) and the account's message folder its tools read.
     private let tripHomeStore: LioTripHomeStore?
     private let messageDirectory: URL?
@@ -178,7 +179,7 @@ public struct LioHome<MenuContent: View>: View {
         savedPlansStore = plans
         self.roadbookDirectory = roadbookDirectory
         self.roadbookRelay = roadbookRelay
-        self.menuRelay = menuRelay
+        self.menuService = LioMenuService.fromBuild(relay: menuRelay.map(LioMenuService.relay))
         self.tripHomeStore = tripHomeStore
         self.messageDirectory = messageDirectory
         _savedPlans = State(initialValue: LioSavedPlansModel(store: plans))
@@ -329,7 +330,7 @@ public struct LioHome<MenuContent: View>: View {
         .environment(\.lioTransportRelay, transportRelay)
         .lioRoadbookEnricher(roadbookRelay.map { LioRoadbookEnricher.internalBeta(relay: $0) })
         // Menu ordering (#1606): the signed-in relay when the build enables it, or Debug's `--lio-menu-preview`.
-        .environment(\.lioMenuService, LioMenuService.fromBuild(relay: menuRelay.map(LioMenuService.relay)))
+        .environment(\.lioMenuService, menuService)
         .tint(LioTheme.vermilion)
         .sensoryFeedback(.success, trigger: savedCelebrations)
         .disabled(chatControlsSuspended)
@@ -1472,6 +1473,7 @@ public struct LioHome<MenuContent: View>: View {
 
 /// The trip home in the Trips tab. `LioHome` re-renders on every streamed answer, so the saved profile, the tools
 /// and the Arrival Mode rules are read once here (and again only when the language changes), not on each render.
+/// After a language change the home stays on screen, keeping its navigation, until the new tools are ready.
 private struct LioTripHomeTab: View {
     let language: LioLanguage
     let store: LioTripHomeStore?
@@ -1490,10 +1492,9 @@ private struct LioTripHomeTab: View {
 
     var body: some View {
         Group {
-            if let loaded, loaded.language == language {
+            if let loaded {
                 LioTripHome(language: language, store: store, plans: plans, tools: loaded.tools,
                             showAllTrips: showAllTrips, openChat: openChat, model: loaded.model)
-                    .id(loaded.language)
             } else {
                 LioTheme.paper.ignoresSafeArea()
             }
