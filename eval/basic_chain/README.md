@@ -26,8 +26,8 @@ uv run --locked python -B -m eval.basic_chain run --execute \
 普通 App 消息，第二条必须续同一 CID。新目录必须不存在；实际产物目录 0700、文件
 0600，不覆盖旧原件或 FAIL/UNKNOWN。不自动重试任何 UI 提交或 reader 失败。
 
-运行在每项 UI 动作前检查北京时间，23:00–08:00 不启动新动作。夜间如需核对原动作，
-使用 B 单独授权的原件读取流程，不通过重跑本脚本重新提交。供应商发票未取得时实付
+按 [JT 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-7042305501)，任何时段均可在 B 正式签发的窗口内运行。
+如需核对原动作，使用 B 单独授权的原件读取流程，不通过重跑本脚本重新提交。供应商发票未取得时实付
 为 UNKNOWN，不把它算成零；foreground/background 覆盖或原 usage 缺失则整项 UNKNOWN。
 
 **当前真实执行仍 UNRUN。** 仓库实现不授予实际窗口；必须先拿到 B 受审查的有界

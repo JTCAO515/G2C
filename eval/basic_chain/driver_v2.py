@@ -3,7 +3,6 @@
 No MESSAGE sender exists here. Prepare UI -> server checkpoint -> actual UI
 action -> collect original evidence. Tokens stay inside B's issued client.
 """
-from datetime import datetime,timezone
 from decimal import Decimal
 from hashlib import sha256
 import time
@@ -18,7 +17,7 @@ from .cost_v2 import costs
 from .joint_v2 import Conversations,assess,draft_marker
 from .history_v2 import targets
 from .plan import VERSION,Invalid,check_plan,decode,digest,packed,require
-from .runner import Programs,day_guard,private_read,save
+from .runner import Programs,private_read,save
 
 
 def _original_files(entries):
@@ -85,7 +84,7 @@ def _purpose(config,plan):
             'actual original usage and purpose restriction do not match')
 
 
-def execute(plan,config,directory,*,now=lambda:datetime.now(timezone.utc),clock=time.monotonic,sleep=time.sleep,call=None):
+def execute(plan,config,directory,*,clock=time.monotonic,sleep=time.sleep,call=None):
     check_plan(plan)
     require(plan['version']==VERSION and config['version']=='LIO-basic-chain-host.2','current append-only execution versions required')
     require(config['app']==plan['app']and config['synthetic_only']is True,'actual synthetic App candidate required')
@@ -106,7 +105,6 @@ def execute(plan,config,directory,*,now=lambda:datetime.now(timezone.utc),clock=
         if stopped:break
         reference=None;money=None
         try:
-            day_guard(now())
             state=contexts[step['locale']]
             instruction=dict(version='LIO-basic-ui-instruction.2',run_id=plan['run_id'],step=step,app=plan['app'],
                 expected_draft=draft_marker(plan,step)if step['gate_id']in('SM01','SM04')else None,
@@ -129,7 +127,6 @@ def execute(plan,config,directory,*,now=lambda:datetime.now(timezone.utc),clock=
             point=native.checkpoint(host,expected,plan,step);reference=point.reference
             require(reference not in read_references,'server checkpoint reused across distinct actions')
             read_references.add(reference)
-            day_guard(now())
             save(root/f'{stem}-admission.json',dict(version='LIO-basic-ui-admission.2',run_id=plan['run_id'],
                 nonce=step['nonce'],checkpoint_ref=reference,qualification_sha256=expected['qualification_sha256']))
             ui=_wait(root/f'{stem}-A-completed.json',clock()+config['ui_action_seconds'],clock,sleep)

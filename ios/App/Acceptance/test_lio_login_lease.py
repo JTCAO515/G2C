@@ -60,7 +60,20 @@ class LoginLeaseTests(unittest.TestCase):
             with self.assertRaises(ValueError): self.check(self.value, raw=bad)
         with self.assertRaises(ValueError): self.check(self.value, digest='0' * 64)
 
-    def test_time_is_utc_bounded_current_and_within_the_beijing_day(self):
+    def test_current_bounded_window_can_start_at_night_or_cross_midnight(self):
+        intervals = [
+            ('2026-11-16T15:00:00Z', '2026-11-16T15:05:00Z'),  # 23:00 Beijing
+            ('2026-11-16T15:58:00Z', '2026-11-16T16:03:00Z'),  # Beijing midnight
+            ('2026-11-16T23:00:00Z', '2026-11-16T23:05:00Z'),  # 07:00 Beijing
+        ]
+        for start, end in intervals:
+            now = datetime.fromisoformat(start)
+            with self.subTest(start=start, end=end):
+                self.assertEqual(set(self.check(dict(self.value, starts_at=start, ends_at=end), now=now)), {'zh', 'en'})
+                with self.assertRaises(ValueError):
+                    self.check(dict(self.value, starts_at=start, ends_at=end), now=datetime.fromisoformat(end))
+
+    def test_time_is_utc_bounded_and_current(self):
         cases = [dict(starts_at='2026-11-16T12:02:00Z'), dict(ends_at='2026-11-16T12:01:00Z'),
                  dict(ends_at='2026-11-16T12:11:00Z'), dict(starts_at='2026-11-16T12:00:00'),
                  dict(starts_at='2026-11-16T14:59:00Z', ends_at='2026-11-16T15:05:00Z')]

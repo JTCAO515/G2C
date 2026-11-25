@@ -3,20 +3,13 @@
 No provider/SDK calls, native IDs or permissions are manufactured here. Every
 action uses the separately installed App's native UI. A missing ACK is UNKNOWN.
 """
-from datetime import datetime
 import hashlib
 from pathlib import Path
 import plistlib
 import subprocess
 import time
-from zoneinfo import ZoneInfo
 
 from lio_basic_ui_projection import EvidenceUnknown, project, semantic_nodes
-
-
-def day_guard():
-    if not 8 <= datetime.now(ZoneInfo('Asia/Shanghai')).hour < 23:
-        raise EvidenceUnknown('Outside the admitted UI preparation/action hours')
 
 
 def artifact(path):
@@ -47,7 +40,6 @@ class Capture:
         self.owned_drafts = {''}
 
     def action(self, kind, **fields):
-        day_guard()
         return self.native.command(kind, **fields)
 
     def raw(self):

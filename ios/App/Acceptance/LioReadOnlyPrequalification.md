@@ -12,8 +12,8 @@ aware current time. App and SDK objects are compared as canonical JSON bytes
 and separately hashed. It binds B's current source/image, two distinct simulator
 UDIDs and exactly one Chinese and one English identity. Each identity retains
 the actual subject, default conversation ID and **string** generation. Missing
-or guessed generations are not substituted. The issued interval is current,
-at most 600 seconds, and entirely inside one Beijing 08:00–23:00 day.
+or guessed generations are not substituted. The issued interval must contain the
+current time and last at most 600 seconds. Under [JT’s decision](https://github.com/JTCAO515/G2C/issues/495#issuecomment-7042305501), it may start at any hour or cross midnight.
 
 `ReadOnlyApp` wraps the existing pinned external native controller. Its caller
 must supply the approved lease reader, a current clock and an installed-App

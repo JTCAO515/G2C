@@ -41,6 +41,19 @@ class ReadOnlyLeaseTests(unittest.TestCase):
         self.assertEqual(identities['zh'], self.identities[0])
         self.assertEqual(identities['en'], self.identities[1])
 
+    def test_current_bounded_window_can_start_at_night_or_cross_midnight(self):
+        intervals = [
+            ('2026-11-17T15:00:00Z', '2026-11-17T15:05:00Z'),  # 23:00 Beijing
+            ('2026-11-17T15:58:00Z', '2026-11-17T16:03:00Z'),  # Beijing midnight
+            ('2026-11-17T23:00:00Z', '2026-11-17T23:05:00Z'),  # 07:00 Beijing
+        ]
+        for start, end in intervals:
+            now = datetime.fromisoformat(start)
+            with self.subTest(start=start, end=end):
+                self.assertEqual(set(self.check(dict(self.value, starts_at=start, ends_at=end), now=now)), {'zh', 'en'})
+                with self.assertRaises(ValueError):
+                    self.check(dict(self.value, starts_at=start, ends_at=end), now=datetime.fromisoformat(end))
+
     def test_expired_future_naive_or_long_windows_never_grant_reads(self):
         changes = [dict(ends_at='2026-11-17T01:01:00Z'), dict(starts_at='2026-11-17T01:02:00Z'),
                    dict(ends_at='2026-11-17T01:10:01Z'),

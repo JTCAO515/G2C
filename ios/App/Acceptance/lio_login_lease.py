@@ -5,7 +5,6 @@ import json
 from pathlib import Path
 import re
 from uuid import UUID
-from zoneinfo import ZoneInfo
 
 from lio_basic_ui_driver import compact, reject_duplicates
 
@@ -49,9 +48,6 @@ def validate_login_lease(raw, external_sha256, expected, now):
         dates.append(datetime.fromisoformat(value[key].replace('Z', '+00:00')))
     start, end = dates
     require(now.tzinfo is not None and start <= now < end and 0 < (end - start).total_seconds() <= 600)
-    local_start, local_end = (date.astimezone(ZoneInfo('Asia/Shanghai')) for date in dates)
-    require(local_start.date() == local_end.date() and local_start.hour >= 8
-            and (local_end.hour < 23 or (local_end.hour == 23 and local_end.minute == local_end.second == 0)))
     require(value['file_format'] == 'one_ascii_line_no_lf_preserve_bytes'
             and value['official_ui'] == UI and value['allowed_actions'] == ACTIONS)
     identities = value['identities']
