@@ -100,9 +100,8 @@ def assemble_unconfirmed(document, *, source, facts, activities, edges: EdgeWind
     The host derives these IDs from the actual sealed outcomes and rechecks
     their coverage in the final source frame. This argument and the returned
     status grant no authority. Only unknown proximity for those IDs may remain
-    unconfirmed; hard conflicts and every other UNKNOWN (known false proximity is
-    returned in edge_far for disclosure, JT 2026-11-26)
-    keep the normal refusal. No coordinates, route durations or facts are made up.
+    unconfirmed; hard conflicts and every other UNKNOWN keep the normal refusal.
+    Known false proximity is returned in edge_far for disclosure (JT 2026-11-26). No coordinates, route durations or facts are made up.
     """
     if type(unconfirmed_items) is not frozenset or not unconfirmed_items:
         raise ValueError('explicit code-qualified unavailable item set required')

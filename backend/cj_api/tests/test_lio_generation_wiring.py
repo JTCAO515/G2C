@@ -224,6 +224,27 @@ class GenerationWiring(unittest.TestCase):
         _log_refusal(SimpleNamespace(run_id='run-1'),'word',Broken())
 
 
+    def saved_reply(self,locale,far):
+        from cj_api.local_lio_pipeline_generation import PipelineGeneration
+        import cj_api.local_lio_pipeline_generation as generation
+        host=SimpleNamespace(current=lambda _:None,_finish=lambda worker,binding,state,body,scene,lang:body)
+        worker=SimpleNamespace(runs=SimpleNamespace(snapshot=lambda _:object()),_event=lambda binding,state,kind,value:state)
+        capture=SimpleNamespace(basis=SimpleNamespace(day_count=3,start_date=None))
+        with patch.multiple(generation,prepare_generation=unittest.mock.DEFAULT,retrieve_skeleton=unittest.mock.DEFAULT,
+                compile_retrieved_plan=unittest.mock.DEFAULT,order_retrieved_plan=unittest.mock.DEFAULT,
+                route_ordered_plan=unittest.mock.DEFAULT,schedule_retrieved_plan=unittest.mock.DEFAULT,
+                word_retrieved_plan=unittest.mock.DEFAULT,publish_retrieved_plan=unittest.mock.DEFAULT)as stages:
+            stages['prepare_generation'].return_value=SimpleNamespace(projection=SimpleNamespace(fields={}))
+            stages['retrieve_skeleton'].return_value=({},(),capture)
+            stages['order_retrieved_plan'].return_value=SimpleNamespace(content='{}',status='CONDITIONAL_SCHEDULE',reason='')
+            stages['route_ordered_plan'].return_value=({},capture)
+            stages['schedule_retrieved_plan'].return_value=SimpleNamespace(content='{}',status='CONDITIONAL_SCHEDULE',reason='')
+            stages['word_retrieved_plan'].return_value=SimpleNamespace(summary='Summary.',unknown_transfers=(),
+                edge_proximity_unconfirmed=(),edge_far=far)
+            stages['publish_retrieved_plan'].return_value=(None,SimpleNamespace(proposal_id='p'))
+            return PipelineGeneration().plan(host,worker,SimpleNamespace(run_id='r'),'view',locale=locale,
+                effective={},prior_model_calls=1)
+
     def test_far_edge_days_are_disclosed_on_anchors_and_in_the_saved_reply(self):
         # JT 2026-11-26 (coordination thread, "照样保存并提示（推荐）"): a located hotel with a
         # first/last-day stop outside walking range saves; the anchor note and the reply say so.
@@ -243,6 +264,10 @@ class GenerationWiring(unittest.TestCase):
                     self.assertEqual(FAR_EDGE_HINTS[locale][1]in notes['p-lodging-d3-back'],last)
                     self.assertEqual(notes['p-stop-1'],'Fine.')
                     self.assertEqual(document['items'][0]['note'],'Hotel estimate.')  # input not mutated
+        for locale,last_hint in (('zh','最后一天的景点离酒店有一段距离'),('en',"the last day's sights are some distance from the hotel")):
+            body=self.saved_reply(locale,((1,'a'),(3,'b')))
+            self.assertIn(last_hint,body.lower()if locale=='en'else body)
+            self.assertIn(last_hint,(self.saved_reply(locale,((3,'b'),))).lower()if locale=='en'else self.saved_reply(locale,((3,'b'),)))
         for locale,hint in (('zh','第一天的景点离酒店有一段距离，到达后建议打车过去；想换近一点的可以告诉我'),
                             ('en',"Day 1's sights are some distance from the hotel; take a taxi after you arrive, or tell me to swap in somewhere closer")):
             for far in ((),((1,'p-stop-1'),)):
@@ -278,14 +303,15 @@ class GenerationWiring(unittest.TestCase):
         from cj_api.local_lio_pipeline_places import PlaceSelectionBlocked
         from cj_api.lio_pipeline_model import WordingUnavailable
         from cj_trip.structured import SourceRejected
+        # #1681 review: only reasons with one sure cause name it; ambiguous ones stay generic or neutral.
         cases=((dict(reason='KNOWN_OPENING_CONFLICT'),'有景点在安排的那天不开放','a stop is closed on its planned day'),
-               (dict(reason='EXPLICIT_CONSTRAINTS_INFEASIBLE'),'你给的固定安排在时间上排不开','your fixed arrangements do not fit in time'),
+               (dict(reason='EXPLICIT_CONSTRAINTS_INFEASIBLE'),'有一天的时间排不开','one of the days could not fit in time'),
                (dict(reason='FIRST_DAY_LIGHT_RECIPE_REQUIRED'),'到达时间未定，第一天只能轻松安排','with no arrival time, day 1 must stay light'),
                (dict(reason='EDGE_WINDOWS_CONFLICT'),'到达或离开的时间和安排对不上','your arrival or departure time clashes with the plan'),
                (dict(error=DestinationUnresolved({})),'目的地还没能确认是哪座城市','I could not confirm which city you mean'),
                (dict(error=PlaceSelectionBlocked('x')),'有几个地点没能确认是哪一处','I could not confirm which place some stops are'),
                (dict(error=WordingUnavailable('x')),'整理行程文字时出了问题','something went wrong while writing up the plan'),
-               (dict(error=SourceRejected('f','r')),'和你之前保存的安排核对不上','it did not match your saved arrangements'),
+               (dict(error=SourceRejected('f','r')),None,None),
                (dict(reason='SOMETHING_NEW'),None,None))
         for spec,zh,en in cases:
             for locale,detail in (('zh',zh),('en',en)):
@@ -308,6 +334,9 @@ class GenerationWiring(unittest.TestCase):
                             effective={},prior_model_calls=1)
                     self.assertIn('这次没能把完整方案保存'if locale=='zh'else'I could not save a complete plan',body)
                     if detail:self.assertIn(detail,body)
+                    else:
+                        for wrong in ('之前保存','固定安排在时间','saved arrangements','fixed arrangements do not fit'):
+                            self.assertNotIn(wrong,body)
 
 
 if __name__=='__main__':unittest.main()

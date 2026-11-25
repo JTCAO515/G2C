@@ -97,17 +97,16 @@ _REASON_DETAIL={
     'EDGE_CONSTRAINTS_UNCONFIRMED':('到达或离开的时间和安排对不上','your arrival or departure time clashes with the plan'),
     'EXPLICIT_CLOCK_OR_ZONE_REQUIRED':('有固定安排缺少具体时间','a fixed arrangement has no exact time'),
     'NEGATIVE_DECLARED_DURATION':('有固定安排的结束时间早于开始时间','a fixed arrangement ends before it starts'),
-    'EXPLICIT_CONSTRAINTS_INFEASIBLE':('你给的固定安排在时间上排不开','your fixed arrangements do not fit in time'),
-    'DECLARED_OCCUPANCY_OVERLAP':('你给的固定安排在时间上排不开','your fixed arrangements do not fit in time'),
+    # Solver infeasibility covers opening hours, travel time and edge windows too: stay neutral.
+    'EXPLICIT_CONSTRAINTS_INFEASIBLE':('有一天的时间排不开','one of the days could not fit in time'),
+    'DECLARED_OCCUPANCY_OVERLAP':('有一天的时间排不开','one of the days could not fit in time'),
 }
 _ERROR_DETAIL={
     'DestinationUnresolved':('目的地还没能确认是哪座城市','I could not confirm which city you mean'),
     'PlaceSelectionBlocked':('有几个地点没能确认是哪一处','I could not confirm which place some stops are'),
-    'SkeletonUnavailable':('整理行程文字时出了问题','something went wrong while writing up the plan'),
     'WordingUnavailable':('整理行程文字时出了问题','something went wrong while writing up the plan'),
-    'DraftRejected':('整理行程文字时出了问题','something went wrong while writing up the plan'),
-    'SourceRejected':('和你之前保存的安排核对不上','it did not match your saved arrangements'),
-    'InvalidInput':('和你之前保存的安排核对不上','it did not match your saved arrangements'),
+    # SkeletonUnavailable, DraftRejected, SourceRejected and InvalidInput have several causes
+    # (time windows, size, structure, fixed-item dates): they keep the generic reply (#1681 review).
 }
 
 
@@ -175,9 +174,9 @@ class PipelineGeneration:
             # JT 2026-11-26: a located hotel with day-1 sights outside walking range; saved and said.
             unverified+=('；第一天的景点离酒店有一段距离，到达后建议打车过去；想换近一点的可以告诉我'if locale=='zh'else
                 ". Day 1's sights are some distance from the hotel; take a taxi after you arrive, or tell me to swap in somewhere closer")
-        elif far_days:
-            unverified+=('；最后一天的景点离酒店有一段距离，建议留出打车时间；想换近一点的可以告诉我'if locale=='zh'else
-                ". The last day's sights are some distance from the hotel; allow time for a taxi, or tell me to swap in somewhere closer")
+        if far_days-{1}:
+            unverified+=('；最后一天的景点离酒店有一段距离，建议留出打车时间'if locale=='zh'else
+                ". The last day's sights are some distance from the hotel; allow time for a taxi")
         if worded.edge_proximity_unconfirmed:
             # JT 2026-11-25: saved without an observed lodging point; say so.
             unverified+=('；首末日的抵达或离开时间未定，已建议把活动安排在住处附近；补充酒店位置后可以再调整'if locale=='zh'else
