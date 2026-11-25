@@ -71,6 +71,8 @@ jobs:
         run: python3 -B .github/scripts/test_ci_paths.py
       - name: Capacity-miss re-run decision tests
         run: python3 -B .github/scripts/test_ci_rerun.py
+      - name: Merge guard and open-PR overlap tests
+        run: python3 -B .github/scripts/test_merge_pr.py
       - uses: astral-sh/setup-uv@v6
         if: needs.changes.outputs.docs_only != 'true'
       - run: uv sync --locked
