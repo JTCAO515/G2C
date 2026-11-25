@@ -236,3 +236,26 @@ def test_provider_uses_the_registered_transit_path_and_keeps_the_key_in_the_quer
     assert (host, method, parsed.path) == ('restapi.amap.com', 'GET', '/v3/direction/transit/integrated')
     query = parse_qs(parsed.query)
     assert query['key'] == ['offlineamapkey0123456789'] and query['cityd'] == ['北京']
+
+
+def test_failed_reauthorization_writes_nothing_and_never_calls_amap(ledger):
+    supplier = Supplier()
+
+    def signed_out():
+        raise PluginError(401, 'sign_in_required')
+
+    with pytest.raises(PluginError) as refused:
+        TransitRailService(supplier, TransitBudget(ledger)).trains('owner', str(uuid4()), 'shanghai', 'beijing', DAY,
+                                                                   signed_out)
+    assert (refused.value.status, refused.value.code) == (401, 'sign_in_required') and supplier.calls == []
+    with ledger.connect() as db:
+        assert db.execute("SELECT count(*) FROM attempt WHERE id GLOB 'amap-transit.1:*'").fetchone()[0] == 0
+
+
+@pytest.mark.parametrize('request_id', [7, None, b'not-text', ['list']])
+def test_a_request_id_that_is_not_text_is_an_invalid_request(ledger, request_id):
+    supplier = Supplier()
+    with pytest.raises(PluginError) as invalid:
+        TransitRailService(supplier, TransitBudget(ledger)).trains('owner', request_id, 'shanghai', 'beijing', DAY,
+                                                                   lambda: None)
+    assert (invalid.value.status, invalid.value.code) == (400, 'invalid_request') and supplier.calls == []
