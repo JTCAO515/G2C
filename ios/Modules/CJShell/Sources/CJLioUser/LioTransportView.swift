@@ -42,10 +42,10 @@ struct LioTransportView: View {
                 if let result, pending == nil {
                     results(result)
                 }
-                Text(language.text("Go2China doesn't sell tickets. Booking and payment happen on 12306, Trip.com or at the station.",
-                                   "Go2China 不卖票。订票和付款在 12306、Trip.com 或车站完成。"))
+                Text(LioTransportCopy.footer(result != nil && pending == nil ? mode : nil, language))
                     .font(.footnote)
                     .foregroundStyle(LioTheme.inkSecondary)
+                    .accessibilityIdentifier("lio.transport.footer")
             }
             .padding(18)
         }
@@ -108,7 +108,7 @@ struct LioTransportView: View {
                             .buttonStyle(.plain)
                             .font(.subheadline)
                             .padding(.horizontal, LioTheme.Spacing.sm)
-                            .frame(minHeight: 36)
+                            .frame(minHeight: 44)
                             .background(LioTheme.surfaceSunken, in: Capsule())
                             .accessibilityIdentifier("lio.transport.city.\(city.id)")
                     }
@@ -267,6 +267,12 @@ struct LioTransportView: View {
                 .font(.footnote)
                 .foregroundStyle(LioTheme.inkSecondary)
             LioTransportBookingButtons(language: language, mode: mode, query: result.query)
+            if LioTransportCopy.showsDisclosure(LioTransportLinks.booking(mode, query: result.query, language: language)) {
+                Text(LioTransportCopy.disclosure(language))
+                    .font(.footnote)
+                    .foregroundStyle(LioTheme.inkSecondary)
+                    .accessibilityIdentifier("lio.transport.disclosure")
+            }
             LioTransportTips(language: language, mode: mode)
             LioTransportHubList(language: language, mode: mode, query: result.query, driverHub: $driverHub)
         }
@@ -309,7 +315,7 @@ private struct LioTransportOptionCard: View {
                 Text(option.departTime).font(LioTheme.display(.title3).weight(.semibold))
                 Image(systemName: "arrow.right").font(.caption).foregroundStyle(LioTheme.inkSecondary)
                     .accessibilityHidden(true)
-                Text(option.arriveTime + (option.arrivesNextDay ? " +1" : ""))
+                Text(LioTransportFormat.arrival(option, language))
                     .font(LioTheme.display(.title3).weight(.semibold))
                 Spacer(minLength: LioTheme.Spacing.xs)
                 Text(LioTransportFormat.duration(option.durationMinutes, language))
@@ -347,7 +353,7 @@ private struct LioTransportOptionDetail: View {
                     stop(option.departTime, option.departure)
                     Label(LioTransportFormat.duration(option.durationMinutes, language), systemImage: "clock")
                         .font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
-                    stop(option.arriveTime + (option.arrivesNextDay ? language.text(" next day", " 次日") : ""),
+                    stop(LioTransportFormat.arrival(option, language),
                          option.arrival)
                 }
                 .padding(LioTheme.Spacing.md)
@@ -488,7 +494,7 @@ private struct LioTransportHubRow: View {
             Button { driverHub = hub } label: { icon("character.bubble") }
                 .buttonStyle(.plain)
                 .accessibilityLabel(language.text("Show the driver: \(hub.nameEN)", "给司机看：\(hub.nameZH)"))
-                .accessibilityIdentifier("lio.transport.driver")
+                .accessibilityIdentifier("lio.transport.driver.\(hub.id)")
             if let taxiEntry, let place = hub.taxiPlace {
                 NavigationLink {
                     LioTaxiView(language: language, service: taxiEntry.service, tripPlaces: taxiEntry.tripPlaces,
@@ -496,7 +502,7 @@ private struct LioTransportHubRow: View {
                 } label: { icon("car.fill") }
                 .buttonStyle(.plain)
                 .accessibilityLabel(language.text("Taxi to \(hub.nameEN)", "打车去\(hub.nameZH)"))
-                .accessibilityIdentifier("lio.transport.taxi")
+                .accessibilityIdentifier("lio.transport.taxi.\(hub.id)")
             }
         }
         .padding(.vertical, LioTheme.Spacing.xs)

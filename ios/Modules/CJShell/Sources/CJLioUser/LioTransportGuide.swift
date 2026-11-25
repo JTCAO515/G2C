@@ -39,7 +39,7 @@ enum LioTransportGuide {
 
     private static let rail: [Tip] = [
         Tip(id: "rail.passport", titleEN: "Book with your passport", titleZH: "凭护照购票",
-            bodyEN: "Train tickets are real-name. Book on the 12306 English website or app after registering and verifying your passport (allow a few days), or on Trip.com in English with a foreign card. The name and number must match the passport you travel with.",
+            bodyEN: "Train tickets are real-name. Book on the 12306 English website or app after registering and verifying your passport (verification may take a few days, so register early), or on Trip.com in English with a foreign card. The name and number must match the passport you travel with.",
             bodyZH: "火车票实名制。可在 12306 英文网站或 App 注册并核验护照后购票（核验可能需要几天，请提前办），也可在 Trip.com 用英文和境外银行卡订票。姓名和证件号必须与出行所持护照一致。"),
         Tip(id: "rail.ticket", titleEN: "Your passport is your ticket", titleZH: "护照就是车票",
             bodyEN: "Tickets are electronic. You do not need to print anything; keep the booking confirmation with the train number, car and seat on your phone.",
