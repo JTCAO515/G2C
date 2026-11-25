@@ -59,21 +59,20 @@ enum LioReturnHotel {
         let lower = text.lowercased()
         let chinese = ["回酒店", "回宾馆", "回饭店", "回旅馆", "回民宿", "回住处", "回住的地方"]
         if chinese.contains(where: text.contains) { return true }
+        let place = #"(hotel|hostel|accommodation)\b(?!\s+(search|list|results?|prices?|deals?))"#
         let patterns = [
-            #"\b(go|get|going|getting|take me|head|heading|walk|ride)\s+back\s+to\s+(my\s+|the\s+)?(hotel|hostel)\b"#,
-            #"\breturn\s+to\s+(my\s+|the\s+)?(hotel|hostel)\b"#,
-            #"^\s*back\s+to\s+(my\s+|the\s+)?(hotel|hostel)\b"#,
+            #"\b(go|get|going|getting|take|bring|drive|head|heading|walk|ride)(\s+me|\s+us)?\s+back\s+to\s+(my\s+|our\s+|the\s+)?"# + place,
+            #"\breturn\s+to\s+(my\s+|our\s+|the\s+)?"# + place,
+            #"\bback\s+to\s+(my|our)\s+"# + place,
+            #"^\s*back\s+to\s+(the\s+)?"# + place,
         ]
         return patterns.contains { lower.range(of: $0, options: .regularExpression) != nil }
     }
 }
 
-/// `G2CShowCardEnabled`: off unless the build says YES.
+/// `G2CShowCardEnabled`: off unless the build says YES (same rule as `G2CRoadbookEnabled`).
 enum LioShowCardFeature {
-    static func enabled(infoValue: Any?) -> Bool {
-        if let flag = infoValue as? Bool { return flag }
-        return infoValue as? String == "YES"
-    }
+    static func enabled(infoValue: Any?) -> Bool { infoValue as? String == "YES" }
 }
 
 /// The stay hotel for the signed-in account, in its message folder; account cleanup removes it.
@@ -139,5 +138,26 @@ enum LioShowCardFeature {
         #else
         try data.write(to: file, options: .atomic)
         #endif
+    }
+}
+
+/// What the Tools tab needs for Back to Hotel (#1574), so its entry stays a few lines.
+@MainActor enum LioReturnHotelTools {
+    /// The account's message folder is the parent of its roadbook folder (`LioAccountFolders.roadbooks`);
+    /// sign-out cleans this same folder (`LioReturnHotelCleanup`, `LioShowCardDetailsCleanup`).
+    nonisolated static func messageDirectory(roadbookDirectory: URL?) -> URL? {
+        roadbookDirectory?.deletingLastPathComponent()
+    }
+
+    static func hotelStore(roadbookDirectory: URL?, isCurrent: @escaping @MainActor () -> Bool) -> LioReturnHotelStore? {
+        messageDirectory(roadbookDirectory: roadbookDirectory).map {
+            LioReturnHotelStore(directory: LioReturnHotelStore.storageDirectory(inMessageDirectory: $0), isCurrent: isCurrent)
+        }
+    }
+
+    static func detailsStore(roadbookDirectory: URL?, isCurrent: @escaping @MainActor () -> Bool) -> LioShowCardDetailsStore? {
+        messageDirectory(roadbookDirectory: roadbookDirectory).map {
+            LioShowCardDetailsStore(directory: LioShowCardDetailsStore.storageDirectory(inMessageDirectory: $0), isCurrent: isCurrent)
+        }
     }
 }

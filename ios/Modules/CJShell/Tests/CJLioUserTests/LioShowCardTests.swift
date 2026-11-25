@@ -160,6 +160,14 @@ struct LioShowCardTests {
             #expect(content.detailsZH.contains("这是给孩子用的，孩子 6 岁。"))
             #expect(content.english.contains("This is for a child aged 6."))
         }
+        for (age, shown) in [("0", "0"), ("17", "17"), ("07", "7")] {
+            input.childAge = age
+            #expect(LioShowCardKind.symptoms.content(input).detailsZH.contains("这是给孩子用的，孩子 \(shown) 岁。"), "\(age)")
+        }
+        for age in ["18", "-1", "１２", "1.5", "123"] {
+            input.childAge = age
+            #expect(input.cleanChildAge == nil, "\(age)")
+        }
         input.childAge = "six"
         #expect(LioShowCardKind.symptoms.content(input).detailsZH.contains("这是给孩子用的。"), "only digits make an age")
     }
@@ -182,6 +190,13 @@ struct LioShowCardTests {
         input.currency = .jpy
         input.amount = "1,000"
         #expect(LioShowCardKind.exchange.content(input).english.first == "Hello, I'd like to exchange 1,000 Japanese yen for Chinese yuan.")
+        input.amount = "1"
+        input.currency = .eur
+        #expect(LioShowCardKind.exchange.content(input).english.first == "Hello, I'd like to exchange 1 euro for Chinese yuan.")
+        input.currency = .gbp
+        #expect(LioShowCardKind.exchange.content(input).english.first == "Hello, I'd like to exchange 1 British pound for Chinese yuan.")
+        input.amount = "1.00"
+        #expect(LioShowCardKind.exchange.content(input).english.first == "Hello, I'd like to exchange 1.00 British pounds for Chinese yuan.")
         input.amount = "-5"
         #expect(input.cleanAmount == nil)
         input.amount = "abc"

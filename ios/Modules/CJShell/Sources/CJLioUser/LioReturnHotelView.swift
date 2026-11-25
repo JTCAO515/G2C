@@ -115,8 +115,10 @@ struct LioReturnHotelView: View {
                     .keyboardType(.numbersAndPunctuation)
                     .textFieldStyle(.roundedBorder)
                     .onChange(of: room) { _, value in
-                        guard value != (hotel.roomNumber ?? "") else { return }
-                        save(LioStayHotel(place: hotel.place, roomNumber: value, source: hotel.source))
+                        // Keep the text as typed (so "12 A" can be entered); the stored copy is cleaned.
+                        let updated = LioStayHotel(place: hotel.place, roomNumber: value, source: hotel.source)
+                        guard updated != hotel else { return }
+                        save(updated, keepTypedRoom: true)
                     }
                     .accessibilityIdentifier("lio.return-hotel.room")
             }
@@ -173,9 +175,9 @@ struct LioReturnHotelView: View {
         .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
     }
 
-    private func save(_ new: LioStayHotel) {
+    private func save(_ new: LioStayHotel, keepTypedRoom: Bool = false) {
         hotel = new
-        room = new.roomNumber ?? ""
+        if !keepTypedRoom { room = new.roomNumber ?? "" }
         guard let store else { return }
         do {
             try store.save(new)
@@ -184,6 +186,18 @@ struct LioReturnHotelView: View {
             notice = language.text("Not saved on this device; it is kept only until you leave this page.",
                                    "未能保存到本机，只在离开本页前有效。")
         }
+    }
+}
+
+private struct LioReturnHotelStoreKey: EnvironmentKey {
+    static let defaultValue: LioReturnHotelStore? = nil
+}
+
+extension EnvironmentValues {
+    /// The account's stay hotel store (#1573), set by the Tools tab only when `G2CShowCardEnabled` is on.
+    var lioReturnHotelStore: LioReturnHotelStore? {
+        get { self[LioReturnHotelStoreKey.self] }
+        set { self[LioReturnHotelStoreKey.self] = newValue }
     }
 }
 
@@ -280,6 +294,48 @@ struct LioStayHotelPicker: View {
 }
 #endif
 
+#if os(iOS)
+import SwiftUI
+
+extension LioReturnHotelTools {
+    /// The Back to Hotel page for the Tools tab; Debug `--lio-return-hotel-preview` shows sample data.
+    @ViewBuilder static func page(language: LioLanguage, roadbookDirectory: URL?, taxiEntry: LioTaxiEntry?,
+                                  isCurrent: @escaping @MainActor () -> Bool) -> some View {
+        #if DEBUG
+        if LioReturnHotelPreview.requested {
+            LioReturnHotelView(language: language, store: nil, taxiEntry: taxiEntry ?? LioReturnHotelPreview.taxiEntry,
+                               initialHotel: LioReturnHotelPreview.hotel)
+        } else {
+            LioReturnHotelView(language: language, store: hotelStore(roadbookDirectory: roadbookDirectory, isCurrent: isCurrent),
+                               detailsStore: detailsStore(roadbookDirectory: roadbookDirectory, isCurrent: isCurrent),
+                               taxiEntry: taxiEntry)
+        }
+        #else
+        LioReturnHotelView(language: language, store: hotelStore(roadbookDirectory: roadbookDirectory, isCurrent: isCurrent),
+                           detailsStore: detailsStore(roadbookDirectory: roadbookDirectory, isCurrent: isCurrent),
+                           taxiEntry: taxiEntry)
+        #endif
+    }
+
+    /// The store hotel search uses for "Set as my hotel": only while Back to Hotel is shown.
+    static func storeForHotelSearch(shown: Bool, roadbookDirectory: URL?,
+                                    isCurrent: @escaping @MainActor () -> Bool) -> LioReturnHotelStore? {
+        #if DEBUG
+        if LioReturnHotelPreview.requested { return LioReturnHotelPreview.store }
+        #endif
+        return shown ? hotelStore(roadbookDirectory: roadbookDirectory, isCurrent: isCurrent) : nil
+    }
+
+    /// Whether the Tools tab shows Back to Hotel: `G2CShowCardEnabled = YES`, or the Debug preview.
+    static var shownInTools: Bool {
+        #if DEBUG
+        if LioReturnHotelPreview.requested { return true }
+        #endif
+        return LioShowCardFeature.enabled(infoValue: Bundle.main.object(forInfoDictionaryKey: "G2CShowCardEnabled"))
+    }
+}
+#endif
+
 #if DEBUG && os(iOS)
 /// Debug launch arguments for #1571 screenshots: `--lio-return-hotel-preview` shows the entry with a saved hotel;
 /// add `--lio-return-hotel-empty` for the first-run state.
@@ -293,6 +349,12 @@ enum LioReturnHotelPreview {
                                                 addressEN: "8 Wangfujing East Street, Dongcheng, Beijing",
                                                 coordinate: .init(latitude: 39.9139, longitude: 116.4143, referenceSystem: .gcj02)),
                             roomNumber: "1208", source: .hotelSearch)
+    }
+
+    /// A throwaway folder so the hotel search preview can show "Set as my hotel".
+    @MainActor static var store: LioReturnHotelStore {
+        LioReturnHotelStore(directory: FileManager.default.temporaryDirectory.appendingPathComponent("lio-return-hotel-preview"),
+                            isCurrent: { true })
     }
 
     @MainActor static var taxiEntry: LioTaxiEntry {
