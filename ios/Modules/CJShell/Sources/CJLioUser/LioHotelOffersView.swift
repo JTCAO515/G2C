@@ -107,7 +107,8 @@ struct LioHotelOffersView: View {
                   prompt: language.text("For example, Beijing", "例如：北京"), id: "lio.hotel-search.city")
             field(language.text("Area or landmark (optional)", "区域或地标（选填）"), text: $landmark,
                   prompt: language.text("For example, Wangfujing", "例如：王府井"), id: "lio.hotel-search.landmark")
-            DatePicker(language.text("Check-in", "入住"), selection: $checkIn, displayedComponents: .date)
+            DatePicker(language.text("Check-in", "入住"), selection: $checkIn,
+                       in: LioHotelSearch.calendar.startOfDay(for: Date())..., displayedComponents: .date)
                 .accessibilityIdentifier("lio.hotel-search.check-in")
             DatePicker(language.text("Checkout", "退房"), selection: $checkOut, in: checkIn..., displayedComponents: .date)
                 .accessibilityIdentifier("lio.hotel-search.check-out")

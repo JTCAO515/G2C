@@ -18,7 +18,7 @@ import Testing
         let arrival = try day("2026-12-03")
         let departure = try #require(LioHotelSearch.calendar.date(byAdding: .day, value: nights, to: arrival))
         return try LioHotelQuery(city: city, landmark: landmark, checkIn: arrival, checkOut: departure,
-                                 guests: guests, price: price, language: .english)
+                                 guests: guests, price: price, language: .english, today: arrival)
     }
 
     private func reply(items: String, version: String = "HOTEL.2", source: String = "Gaode",
@@ -115,8 +115,8 @@ import Testing
     }
 
     @Test func fullResultReadsEveryCardField() throws {
-        let results = try LioHotelSearchWire.read(reply(items: fullItem), allowing: approved)
-        #expect(results.source == .gaode)
+        let results = try LioHotelSearchWire.read(reply(items: fullItem, source: "Trip.com"), allowing: approved)
+        #expect(results.source == .tripCom)
         #expect(results.unappliedFilters == [.checkIn, .checkOut, .price])
         #expect(results.notice(.english) ==
                 "This list doesn’t take the check-in date, the checkout date, and the price range into account yet. Confirm them on Trip.com before you book.")
@@ -160,7 +160,7 @@ import Testing
         #expect(hotel.foreignGuests == .unknown)
 
         let refused = fullItem.replacingOccurrences(of: #""accepted""#, with: #""not_accepted""#)
-        #expect(try LioHotelSearchWire.read(reply(items: refused), allowing: approved).offers.first?.foreignGuests == .notAccepted)
+        #expect(try LioHotelSearchWire.read(reply(items: refused, source: "Trip.com"), allowing: approved).offers.first?.foreignGuests == .notAccepted)
         let live = fullItem.replacingOccurrences(of: #""reference""#, with: #""live""#)
         #expect(try LioHotelSearchWire.read(reply(items: live), allowing: approved).offers.first?.price?.kind == .live)
         let noKind = fullItem.replacingOccurrences(of: #""price_kind":"reference","#, with: "")
@@ -197,6 +197,38 @@ import Testing
         #expect(try LioHotelSearchWire.read(reply(items: ""), allowing: approved).offers.isEmpty)
     }
 
+    @Test func handoffLinksAreOneOpaqueSegmentOnTheRelay() throws {
+        func ok(_ text: String) throws -> Bool { LioHotelSearchWire.isRelayHandoff(try #require(URL(string: text)), relay: base) }
+        #expect(try ok("https://relay.example.invalid/v1/tools/hotel/out/AbC_def-1234567890xyz"))
+        #expect(try !ok("https://relay.example.invalid/v1/tools/hotel/out/../../v1/tools/taxi/link"))
+        #expect(try !ok("https://relay.example.invalid/v1/tools/hotel/out/abcdefghijklmnop/extra"))
+        #expect(try !ok("https://relay.example.invalid/v1/tools/hotel/out/short"))
+        #expect(try !ok("https://relay.example.invalid/v1/tools/hotel/out/abcdefghijklmnopqrstuv?next=x"))
+        #expect(try !ok("https://relay.example.invalid/v1/tools/hotel/out/abcdefghijklmnopqrstuv#frag"))
+        #expect(try !ok("https://relay.example.invalid/v1/tools/hotel/out/abcdefghij%2Fklmnopqrstuv"))
+    }
+
+    @Test func gaodeListsNeverClaimInternationalGuestPolicy() throws {
+        // Step one of #1508: Gaode has no foreign-guest data, so the app shows "check on Trip.com" whatever arrives.
+        let gaode = try #require(try LioHotelSearchWire.read(reply(items: fullItem, source: "Gaode"), allowing: approved).offers.first)
+        #expect(gaode.foreignGuests == .unknown)
+        let trip = try #require(try LioHotelSearchWire.read(reply(items: fullItem, source: "Trip.com"), allowing: approved).offers.first)
+        #expect(trip.foreignGuests == .accepted)
+    }
+
+    @Test func checkInCannotBeInThePast() throws {
+        let today = try day("2026-12-03")
+        let yesterday = try #require(LioHotelSearch.calendar.date(byAdding: .day, value: -1, to: today))
+        let tomorrow = try #require(LioHotelSearch.calendar.date(byAdding: .day, value: 1, to: today))
+        #expect(throws: LioHotelQuery.Problem.checkInPast) {
+            try LioHotelQuery(city: "北京", landmark: nil, checkIn: yesterday, checkOut: tomorrow, guests: 1,
+                              price: .any, language: .english, today: today)
+        }
+        #expect(try LioHotelQuery(city: "北京", landmark: nil, checkIn: today, checkOut: tomorrow, guests: 1,
+                                  price: .any, language: .english, today: today).checkIn == "2026-12-03")
+        #expect(LioHotelQuery.Problem.checkInPast.message(.english) != LioHotelQuery.Problem.checkInPast.message(.chinese))
+    }
+
     @Test func relayErrorsMapToTravellerProblems() {
         func body(_ code: String) -> Data { Data(#"{"error":"\#(code)"}"#.utf8) }
         #expect(LioHotelSearchWire.failure(status: 401, body: Data()) == .signInRequired)
@@ -213,7 +245,7 @@ import Testing
     // MARK: - Card text
 
     @Test func cardTextIsBilingual() throws {
-        let hotel = try #require(try LioHotelSearchWire.read(reply(items: fullItem), allowing: approved).offers.first)
+        let hotel = try #require(try LioHotelSearchWire.read(reply(items: fullItem, source: "Trip.com"), allowing: approved).offers.first)
         #expect(hotel.priceText(.english) == "¥980–1,460 a night · reference")
         #expect(hotel.priceText(.chinese) == "参考价 每晚 ¥980–1,460")
         #expect(hotel.metroText(.english) == "350 m to Wangfujing Station")
