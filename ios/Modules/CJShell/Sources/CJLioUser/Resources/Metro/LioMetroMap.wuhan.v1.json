@@ -306,7 +306,7 @@
   {"id": "wu284", "nameZH": "百步亭花园路", "nameEN": "Baibutinghuayuan Road", "x": 898.0, "y": 252.0, "geo": [114.315485, 30.654377], "lines": ["wu-13"]},
   {"id": "wu285", "nameZH": "幸福湾", "nameEN": "Xingfuwan", "x": 1000.7, "y": 252.0, "geo": [114.344101, 30.672102], "lines": ["wu-13"]},
   {"id": "wu286", "nameZH": "朱家河", "nameEN": "Zhujiahe", "x": 1039.3, "y": 252.0, "geo": [114.364654, 30.680146], "lines": ["wu-13"]},
-  {"id": "wu287", "nameZH": "谌家矶", "nameEN": "Chenjiaji", "x": 1078.0, "y": 252.0, "geo": [114.37312, 30.683869], "lines": ["wu-13"]},
+  {"id": "wu287", "nameZH": "谌家矶", "nameEN": "Shenjiaji", "x": 1078.0, "y": 252.0, "geo": [114.37312, 30.683869], "lines": ["wu-13"]},
   {"id": "wu288", "nameZH": "青龙", "nameEN": "Qinglong", "x": 1117.3, "y": 252.0, "geo": [114.390414, 30.70546], "lines": ["wu-13"]},
   {"id": "wu289", "nameZH": "高车", "nameEN": "Gaoche", "x": 1156.0, "y": 252.0, "geo": [114.40904, 30.713601], "lines": ["wu-13"]},
   {"id": "wu290", "nameZH": "武湖", "nameEN": "Wuhu", "x": 1194.7, "y": 252.0, "geo": [114.42999, 30.707017], "lines": ["wu-13"]},

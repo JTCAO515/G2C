@@ -232,7 +232,7 @@
   {"id": "ha209", "nameZH": "受降", "nameEN": "Shouxiang", "x": 307.9, "y": 782.0, "geo": [119.960606, 30.12226], "lines": ["ha-8"]},
   {"id": "ha210", "nameZH": "富阳客运中心", "nameEN": "Fuyang Coach Center", "x": 278.0, "y": 801.1, "geo": [119.936705, 30.111197], "lines": ["ha-8"]},
   {"id": "ha211", "nameZH": "高桥", "nameEN": "Gaoqiao", "x": 251.5, "y": 837.1, "geo": [119.931422, 30.094878], "lines": ["ha-8"]},
-  {"id": "ha212", "nameZH": "阳陂湖", "nameEN": "Yangpihu", "x": 252.2, "y": 862.9, "geo": [119.932134, 30.081727], "lines": ["ha-8"]},
+  {"id": "ha212", "nameZH": "阳陂湖", "nameEN": "Yangbeihu", "x": 252.2, "y": 862.9, "geo": [119.932134, 30.081727], "lines": ["ha-8"]},
   {"id": "ha213", "nameZH": "公望街", "nameEN": "Gongwang Street", "x": 252.9, "y": 890.0, "geo": [119.93339, 30.065493], "lines": ["ha-8"]},
   {"id": "ha214", "nameZH": "桂花西路", "nameEN": "West Guihua Road", "x": 252.9, "y": 922.0, "geo": [119.9343, 30.048389], "lines": ["ha-8"]},
   {"id": "ha215", "nameZH": "霞鸣街", "nameEN": "Xiaming Street", "x": 549.1, "y": 805.8, "geo": [120.073174, 30.14323], "lines": ["ha-8"]},

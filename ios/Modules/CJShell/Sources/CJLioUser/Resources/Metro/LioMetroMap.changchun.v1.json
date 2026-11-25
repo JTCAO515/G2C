@@ -35,7 +35,7 @@
   {"id": "ch018", "nameZH": "西湖", "nameEN": "Xihu", "x": 134.9, "y": 431.9, "geo": [125.169993, 43.856159], "lines": ["ch-2"]},
   {"id": "ch019", "nameZH": "双丰", "nameEN": "Shuangfeng", "x": 157.9, "y": 407.9, "geo": [125.185602, 43.867421], "lines": ["ch-2", "ch-6"]},
   {"id": "ch020", "nameZH": "长春西站", "nameEN": "Changchun West Railway Station", "x": 177.1, "y": 384.4, "geo": [125.201137, 43.87657], "lines": ["ch-2", "ch-6"]},
-  {"id": "ch021", "nameZH": "兴隆堡", "nameEN": "Xinglongbao", "x": 203.5, "y": 355.1, "geo": [125.224131, 43.883822], "lines": ["ch-2"]},
+  {"id": "ch021", "nameZH": "兴隆堡", "nameEN": "Xinglongpu", "x": 203.5, "y": 355.1, "geo": [125.224131, 43.883822], "lines": ["ch-2"]},
   {"id": "ch022", "nameZH": "西环城路", "nameEN": "Xihuancheng Lu", "x": 245.7, "y": 354.1, "geo": [125.240387, 43.884055], "lines": ["ch-2"]},
   {"id": "ch023", "nameZH": "和平大街", "nameEN": "Heping Dajie", "x": 299.4, "y": 355.1, "geo": [125.254528, 43.884187], "lines": ["ch-2"]},
   {"id": "ch024", "nameZH": "万福街", "nameEN": "Wanfu Jie", "x": 330.1, "y": 355.6, "geo": [125.265774, 43.884307], "lines": ["ch-2"]},

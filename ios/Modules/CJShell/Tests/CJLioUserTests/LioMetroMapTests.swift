@@ -212,8 +212,12 @@ struct LioMetroMapDataTests {
                                        ("foshan", "朝安", "Chao'an"), ("wuhan", "沌阳大道", "Zhuanyang Boulevard"),
                                        ("changsha", "黄花机场T1T2", "Huanghua Jichang T1 T2"),
                                        ("chongqing", "重庆东站", "Chongqing East Railway Station"),
-                                       // #1578 cross-check with AMap's own English: 埔 is pǔ in Guangdong, 陂 is pí here.
-                                       ("dongguan", "黄牛埔", "Huangniupu"), ("hangzhou", "阳陂湖", "Yangpihu")] {
+                                       // #1578 cross-check with AMap's own English and Wikipedia's station lists.
+                                       ("dongguan", "黄牛埔", "Huangniupu"), ("hangzhou", "阳陂湖", "Yangbeihu"),
+                                       ("ningbo", "邱隘", "Qiuga"), ("ningbo", "邱隘东", "Qiuga East"),
+                                       ("wuhan", "谌家矶", "Shenjiaji"), ("changchun", "兴隆堡", "Xinglongpu"),
+                                       ("dalian", "长店堡", "Changdianpu"), ("jinan", "八涧堡", "Bajianpu"),
+                                       ("nanchang", "中堡", "Zhongbao")] {
             guard let city = LioMetroCity.named(id) else { continue }
             #expect(try LioMetroMap.bundled(city).stations.first { $0.nameZH == station }?.nameEN == english, "\(id) \(station)")
         }
