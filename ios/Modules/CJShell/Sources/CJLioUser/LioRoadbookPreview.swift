@@ -103,7 +103,7 @@ enum LioRoadbookPreview {
                          stops: [a, b], legs: [.init(fromID: a.id, toID: b.id, estimate: .init(mode: .walking, seconds: 1500, metres: 1800))]),
                    .init(number: 2, date: nil, theme: t("Leafy streets", "梧桐街区"), area: t("Xuhui", "徐汇区"), stops: [c], legs: [])],
             lodgingArea: t("Stay near People's Square for metro lines 1, 2 and 8.", "住人民广场附近，1、2、8 号线方便。"), hotels: [])
-        return .init(id: "template.shanghai-2d", source: .template, city: .init(nameZH: "上海", nameEN: "Shanghai"),
+        return .init(id: "preview.shanghai", source: .template, city: .init(nameZH: "上海", nameEN: "Shanghai"),
                      createdAt: Date(timeIntervalSince1970: 1_794_000_000), itinerary: itinerary)
     }
 }
