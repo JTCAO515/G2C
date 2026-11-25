@@ -73,13 +73,13 @@
           },
           "items": {
             "zh": [
-              "注销账号后，景点预约的提醒仍会弹出，下一版修；可先逐条「取消提醒」。本地协助暂不发送求助消息。",
+              "规划行程可能保存失败，请截图反馈。注销账号后，景点预约的提醒仍会弹出，下一版修；可先逐条「取消提醒」。本地协助暂不发送求助消息。",
               "八达岭 12-16 起、其他景点和入境规则 12-25 起只显示官方链接；行程跨过 12-31 或之后入境的，入境结论现在就只显示官方链接。",
               "火车只列部分车次，完整时刻请到 12306。酒店价格为参考价，日期、人数和是否接待外国人请在 Trip.com 确认。",
               "点餐只显示菜单上印清楚的价格；过敏标记按常见做法推断，请向服务员确认。路书补充信息每天最多 60 个地点、5 本路书。会员方案仍是预览，不扣费。"
             ],
             "en": [
-              "Sight reminders still fire after account deletion; to be fixed in the next build. Cancel them first if needed. Local Support does not send help requests yet.",
+              "Trip plans may fail to save; please send a screenshot. Sight reminders still fire after account deletion; to be fixed in the next build. Cancel them first if needed. Local Support does not send help requests yet.",
               "Badaling from Dec 16, other sights and entry rules from Dec 25 show only official links; for trips past Dec 31 or arriving later, entry already does.",
               "Trains list some departures; see 12306. Hotel prices are reference only; confirm dates, guests and whether foreigners are accepted on Trip.com.",
               "Menu prices show only when clearly printed; allergy flags are typical recipes, so ask staff. Roadbook details: 60 places and 5 books a day. Plans remain a preview."
