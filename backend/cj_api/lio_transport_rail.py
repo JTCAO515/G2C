@@ -27,6 +27,8 @@ class TransitRailService:
 
     def trains(self, scope, request_id, origin_id, destination_id, day, authorize):
         origin, destination = CITIES.get(origin_id), CITIES.get(destination_id)
+        if type(request_id) is not str:
+            raise PluginError(400, 'invalid_request')
         try:
             request = UUID(request_id)
             valid_day = type(day) is str and DATE.fullmatch(day) is not None and date.fromisoformat(day)

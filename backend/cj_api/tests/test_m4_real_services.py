@@ -1278,6 +1278,30 @@ class Boundaries(unittest.TestCase):
                 self.assertEqual((output,receipt,reply),([],{},{}))
                 self.assertEqual(self.budget.inspect()[-1]['state'],'INTENT')
 
+    def test_national_answer_without_destination_answers_before_asking(self):
+        # HK run -40 eval (2026-11-25): with "ask for the destination first", consult
+        # answers without a city became the bare persona greeting (even an emergency).
+        from cj_api.local_app import ISSUER,scope_for
+        subject='m4-synthetic-one';provider=self.provider(sse())
+        subjects=frozenset({subject});tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects))
+        binding=SimpleNamespace(scope=scope_for(ISSUER,subject),run_id='no-destination-original')
+        systems=[]
+        class Worker:
+            lio_planning=None
+            def _model_history(self,*args):pass
+            def _registered_stream(self,original,key,registration,argument,**kwargs):
+                systems.append(argument.system)
+                yield json.dumps(dict(version='MODEL-tool-turn.1',kind='answer',
+                    answer=dict(zh='先在支付宝绑定外卡。',en='Link a foreign card in Alipay first.'),calls=[]))
+        worker=Worker();worker.provider=provider
+        chunks=list(tools.answer(worker,binding,[dict(role='user',content='How do I use Alipay in China?')],lio_locale='en'))
+        self.assertEqual(chunks,['Link a foreign card in Alipay first.'])
+        system=systems[0]
+        self.assertNotIn('ask for the destination first',system)
+        self.assertIn('No destination is confirmed. Do not call place or weather tools.',system)
+        self.assertIn('Answer the question directly; ask for the destination only when the answer depends on it, '
+                      'and never reply with only a greeting unless the traveler only greets you.',system)
+
     def test_lio_saved_scene_is_only_in_model_system_not_public_answer(self):
         from cj_api.local_app import ISSUER,scope_for
         from cj_api.lio_scene import scene_prompt

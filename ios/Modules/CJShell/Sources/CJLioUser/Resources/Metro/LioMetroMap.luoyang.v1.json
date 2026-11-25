@@ -31,7 +31,7 @@
   {"id": "lu020", "nameZH": "二乔路", "nameEN": "Erqiao Lu", "x": 231.7, "y": 60.0, "lines": ["lu-2"]},
   {"id": "lu021", "nameZH": "邙岭", "nameEN": "Mangling", "x": 284.3, "y": 60.0, "lines": ["lu-2"]},
   {"id": "lu022", "nameZH": "国花路", "nameEN": "Guohua Lu", "x": 320.3, "y": 110.3, "lines": ["lu-2"]},
-  {"id": "lu023", "nameZH": "洛阳火车站", "nameEN": "Luoyang Huochezhan", "x": 319.7, "y": 148.4, "lines": ["lu-2"]},
+  {"id": "lu023", "nameZH": "洛阳火车站", "nameEN": "Luoyang Railway Station", "x": 319.7, "y": 148.4, "lines": ["lu-2"]},
   {"id": "lu024", "nameZH": "纱厂路", "nameEN": "Shachang Lu", "x": 319.7, "y": 185.3, "lines": ["lu-2"]},
   {"id": "lu025", "nameZH": "牡丹桥", "nameEN": "Mudan Qiao", "x": 319.7, "y": 256.7, "lines": ["lu-2"]},
   {"id": "lu026", "nameZH": "文博园", "nameEN": "Wenboyuan", "x": 319.7, "y": 292.7, "lines": ["lu-2"]},

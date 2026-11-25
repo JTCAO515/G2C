@@ -10,7 +10,7 @@
  ],
  "stations": [
   {"id": "na001", "nameZH": "平潮", "nameEN": "Pingchao", "x": 60.0, "y": 60.0, "lines": ["na-1"]},
-  {"id": "na002", "nameZH": "南通西站", "nameEN": "Nantong Xizhan", "x": 83.8, "y": 75.1, "lines": ["na-1"]},
+  {"id": "na002", "nameZH": "南通西站", "nameEN": "Nantong West Railway Station", "x": 83.8, "y": 75.1, "lines": ["na-1"]},
   {"id": "na003", "nameZH": "集成村", "nameEN": "Jichengcun", "x": 125.6, "y": 101.8, "lines": ["na-1"]},
   {"id": "na004", "nameZH": "河口", "nameEN": "Hekou", "x": 163.5, "y": 125.9, "lines": ["na-1"]},
   {"id": "na005", "nameZH": "唐闸公园", "nameEN": "Tangzha Gongyuan", "x": 208.8, "y": 154.2, "lines": ["na-1"]},
@@ -38,7 +38,7 @@
   {"id": "na027", "nameZH": "航运学院", "nameEN": "Hangyun Xueyuan", "x": 618.3, "y": 539.2, "lines": ["na-1"]},
   {"id": "na028", "nameZH": "振兴路", "nameEN": "Zhenxing Lu", "x": 617.7, "y": 565.9, "lines": ["na-1"]},
   {"id": "na029", "nameZH": "幸福", "nameEN": "Xingfu", "x": 365.3, "y": 115.3, "lines": ["na-2"]},
-  {"id": "na030", "nameZH": "南通火车站", "nameEN": "Nantong Huochezhan", "x": 365.3, "y": 143.2, "lines": ["na-2"]},
+  {"id": "na030", "nameZH": "南通火车站", "nameEN": "Nantong Railway Station", "x": 365.3, "y": 143.2, "lines": ["na-2"]},
   {"id": "na031", "nameZH": "长岸", "nameEN": "Chang'an", "x": 365.7, "y": 172.8, "lines": ["na-2"]},
   {"id": "na032", "nameZH": "北大街", "nameEN": "Beida Jie", "x": 365.0, "y": 201.1, "lines": ["na-2"]},
   {"id": "na033", "nameZH": "北城大桥", "nameEN": "Beicheng Daqiao", "x": 365.3, "y": 230.0, "lines": ["na-2"]},
@@ -50,7 +50,7 @@
   {"id": "na039", "nameZH": "汽车东站", "nameEN": "Qiche Dongzhan", "x": 552.7, "y": 336.4, "lines": ["na-2"]},
   {"id": "na040", "nameZH": "通富北路", "nameEN": "Tongfu Beilu", "x": 590.0, "y": 336.1, "lines": ["na-2"]},
   {"id": "na041", "nameZH": "观音山", "nameEN": "Guanyinshan", "x": 628.3, "y": 336.4, "lines": ["na-2"]},
-  {"id": "na042", "nameZH": "南通东站", "nameEN": "Nantong Dongzhan", "x": 665.5, "y": 336.4, "lines": ["na-2"]},
+  {"id": "na042", "nameZH": "南通东站", "nameEN": "Nantong East Railway Station", "x": 665.5, "y": 336.4, "lines": ["na-2"]},
   {"id": "na043", "nameZH": "先锋", "nameEN": "Xianfeng", "x": 702.8, "y": 336.1, "lines": ["na-2"]}
  ]
 }

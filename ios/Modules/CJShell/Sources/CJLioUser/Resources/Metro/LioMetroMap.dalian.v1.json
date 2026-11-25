@@ -15,7 +15,7 @@
  ],
  "stations": [
   {"id": "da001", "nameZH": "姚家", "nameEN": "Yaojia", "x": 745.5, "y": 450.9, "lines": ["da-1"]},
-  {"id": "da002", "nameZH": "大连北站", "nameEN": "Dalian Beizhan", "x": 723.4, "y": 484.7, "lines": ["da-1", "da-2"]},
+  {"id": "da002", "nameZH": "大连北站", "nameEN": "Dalian North Railway Station", "x": 723.4, "y": 484.7, "lines": ["da-1", "da-2"]},
   {"id": "da003", "nameZH": "华北路", "nameEN": "Huabeilu", "x": 723.4, "y": 507.4, "lines": ["da-1"]},
   {"id": "da004", "nameZH": "华南北", "nameEN": "Huananbei", "x": 723.4, "y": 530.2, "lines": ["da-1"]},
   {"id": "da005", "nameZH": "华南广场", "nameEN": "Huananguangchang", "x": 723.4, "y": 553.0, "lines": ["da-1"]},
