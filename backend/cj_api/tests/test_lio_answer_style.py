@@ -142,3 +142,17 @@ class TwoBubbleSplit(unittest.TestCase):
         for locale in ('zh', 'en'):
             with self.subTest(locale=locale):
                 self.assertNotIn('first paragraph', answer_prompt(locale, detailed=True))
+
+
+class OneScreenEntryFacts(unittest.TestCase):
+    """Preview 2026-11-25: a capped transit-visa answer invented "不得跨市旅行". Under one-screen,
+    entry rules come only from supplied official facts (docs/lio-voice.md §4.3 item 9)."""
+
+    def test_entry_answers_give_the_conclusion_and_where_to_confirm(self):
+        from cj_message.lio_context import ONE_SCREEN_DETAIL
+        for clause in ('For visa, entry and transit questions',
+                       'only from supplied official facts',
+                       'never state rule details such as permitted areas, ports or eligible countries from memory',
+                       'say where to confirm'):
+            with self.subTest(clause=clause):
+                self.assertIn(clause, ONE_SCREEN_DETAIL)
