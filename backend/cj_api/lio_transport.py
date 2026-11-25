@@ -183,13 +183,19 @@ def _station(value):
     return station
 
 
-def _seats(spaces):
+SEAT_CODE = re.compile(r'[A-Za-z0-9]{1,8}')
+
+
+def _seats(spaces, dropped):
     if spaces in (None, [], {}):
         return []
     if type(spaces) is not list or len(spaces) > 16:
         raise ValueError('invalid seat list')
     seats, seen = [], set()
     for space in spaces:
+        if type(space) is dict and space.get('code') not in SEATS:
+            code = space.get('code')
+            dropped.append(code if type(code) is str and SEAT_CODE.fullmatch(code) else '?')
         if (type(space) is not dict or type(space.get('code')) is not str or space['code'] not in SEATS
                 or space['code'] in seen or type(space.get('cost')) is not str):
             continue
@@ -211,7 +217,7 @@ def rail_items(value):
     transits = route.get('transits') if type(route) is dict else None
     if type(transits) is not list or len(transits) > 32:
         raise ValueError('bounded transit options required')
-    items, seen = [], set()
+    items, seen, dropped, without_seats = [], set(), [], 0
     for transit in transits:
         segments = transit.get('segments') if type(transit) is dict else None
         if type(segments) is not list or len(segments) > 64:
@@ -231,11 +237,18 @@ def rail_items(value):
             minutes, next_day = _span(depart, arrive)
             item = dict(number=number, depart_station=_station(departure['name']),
                         arrive_station=_station(arrival['name']), depart_time=depart_time, arrive_time=arrive_time,
-                        duration_min=minutes, next_day=next_day, seats=_seats(railway.get('spaces')),
+                        duration_min=minutes, next_day=next_day, seats=_seats(railway.get('spaces'), dropped),
                         availability=None)
+            if railway.get('spaces') in (None, [], {}):
+                without_seats += 1
             if (number, depart_time) not in seen:
                 seen.add((number, depart_time))
                 items.append(item)
+    # Content-free smoke diagnostics (#1521): supplier seat-class codes only, never names or prices.
+    if without_seats:
+        LOGGER.info('transport_rail_segments_without_seats count=%d', without_seats)
+    if dropped:
+        LOGGER.info('transport_rail_seat_codes_dropped codes=%s', ','.join(dict.fromkeys(dropped[:20])))
     items.sort(key=lambda item: (item['depart_time'], item['number']))
     return items[:MAX_ITEMS]
 

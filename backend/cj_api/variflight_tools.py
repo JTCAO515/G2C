@@ -1,6 +1,7 @@
 """Fixed-tool VariFlight MCP relay for public flight lookups."""
 
 from datetime import date
+import logging
 import re
 from time import monotonic
 from typing import Annotated, Literal
@@ -18,6 +19,7 @@ ROUTE = '/v1/tools/flights'
 VERSION = 'FLIGHTS.1'
 DAILY_LIMIT = 50
 ENDPOINT = 'https://c-gw.variflight.com/chat_message/mcp/api'
+LOGGER = logging.getLogger(__name__)
 PROTOCOLS = ('2025-11-25', '2025-06-18', '2025-03-26')
 SESSION = re.compile(r'[\x21-\x7e]{1,256}')
 NUMBER = r'[A-Z0-9]{2,3}[0-9]{1,4}[A-Z]?'
@@ -89,6 +91,9 @@ def _rpc_response(response, identifier, deadline, key):
             raise ValueError('invalid RPC result')
         if 'error' in packet:
             error = packet['error']
+            # Content-free: the RPC error code only, never the supplier message.
+            code = error.get('code') if type(error) is dict else None
+            LOGGER.warning('variflight_rpc_error code=%s', code if type(code) is int else 'unknown')
             if type(error) is dict and error.get('code') == 402:
                 raise SupplierPaymentRequired()
             raise PluginError(502, 'supplier_unavailable')
@@ -166,6 +171,7 @@ def _flight(row):
 
 def _project(result, day, key):
     if result.get('isError') is True:
+        LOGGER.warning('variflight_tool_error')
         raise PluginError(502, 'supplier_unavailable')
     if 'structuredContent' in result:
         payload = result['structuredContent']
@@ -199,6 +205,8 @@ class VariFlight:
                 return None, None
             if response.status_code == 404:
                 self.session = None
+            if response.status_code != 200:
+                LOGGER.warning('variflight_http_status status=%d', response.status_code)
             check_status(response.status_code)
             return (_rpc_response(response, payload['id'], deadline, self.key),
                     response.headers.get('Mcp-Session-Id'))
@@ -232,7 +240,8 @@ class VariFlight:
             return _project(packet, arguments['date'], self.key)
         except httpx.TimeoutException:
             raise PluginError(504, 'supplier_timeout') from None
-        except (httpx.HTTPError, AttributeError, KeyError, TypeError, UnicodeError, ValueError, RecursionError):
+        except (httpx.HTTPError, AttributeError, KeyError, TypeError, UnicodeError, ValueError, RecursionError) as error:
+            LOGGER.warning('variflight_reply_unusable error=%s', type(error).__name__)
             raise PluginError(502, 'supplier_unavailable') from None
 
 

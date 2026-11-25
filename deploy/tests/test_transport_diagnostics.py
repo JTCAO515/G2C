@@ -44,7 +44,10 @@ def query(tool_reply):
 
 @pytest.mark.parametrize(('tool_reply', 'expected'), [
     (lambda call: httpx.Response(200, json=dict(jsonrpc='2.0', id=2, error=dict(
-        code=-32602, message='Unknown tool getFlightList for ' + KEY))), 'variflight_rpc_error code=-32602'),
+        code=-32602, message='Unknown tool getFlightList'))), 'variflight_rpc_error code=-32602'),
+    # A reply that echoes the key is discarded before any branch is read (existing guard).
+    (lambda call: httpx.Response(200, json=dict(jsonrpc='2.0', id=2, error=dict(
+        code=-32602, message='Unknown tool for ' + KEY))), 'variflight_reply_unusable error=ValueError'),
     (lambda call: httpx.Response(200, json=dict(jsonrpc='2.0', id=2, result=dict(
         isError=True, content=[dict(type='text', text='tool failed near Shanghai')]))), 'variflight_tool_error'),
     (lambda call: httpx.Response(500, text='upstream exploded'), 'variflight_http_status status=500'),
