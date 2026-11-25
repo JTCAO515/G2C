@@ -1,0 +1,507 @@
+#if os(iOS)
+import SwiftUI
+import UIKit
+
+/// Tools → Roadbook (#1514): roadbooks kept on this phone plus ones that can be made from trips and routes.
+struct LioRoadbookLibraryView: View {
+    let language: LioLanguage
+    let store: LioRoadbookStore?
+    /// Roadbooks that can be made now (saved trips, Lio's plans, routes). Kept ones replace these by id.
+    let candidates: [LioRoadbook]
+    @State private var kept: [LioRoadbook] = []
+
+    private var groups: [(LioRoadbook.Source, [LioRoadbook])] {
+        let keptIDs = Set(kept.map(\.id))
+        let all = kept + candidates.filter { !keptIDs.contains($0.id) }
+        return LioRoadbook.Source.allCases.compactMap { source in
+            let books = all.filter { $0.source == source }
+            return books.isEmpty ? nil : (source, books)
+        }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: LioTheme.Spacing.lg) {
+                Text(language.text("Take your trip day by day, even offline. Export it as a PDF to print or share.",
+                                   "按天带着走的旅行手册，离线也能看，可导出 PDF 打印或分享。"))
+                    .foregroundStyle(LioTheme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if groups.isEmpty {
+                    Text(language.text("No roadbooks yet. Ask Lio to plan a trip in Chat, then make a roadbook from it.",
+                                       "还没有路书。先在聊天里让 Lio 规划行程，再生成路书。"))
+                        .padding(LioTheme.Spacing.md)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                        .accessibilityIdentifier("lio.roadbook.empty")
+                }
+                ForEach(groups, id: \.0) { source, books in
+                    VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
+                        Text(source.title(language)).font(.headline).accessibilityAddTraits(.isHeader)
+                        ForEach(books) { book in
+                            NavigationLink {
+                                LioRoadbookView(roadbook: book, language: language, store: store, onChange: reload)
+                            } label: {
+                                LioRoadbookRow(roadbook: book, language: language, kept: kept.contains { $0.id == book.id })
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("lio.roadbook.row.\(book.id)")
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, LioTheme.Spacing.md)
+            .padding(.vertical, 18)
+        }
+        .foregroundStyle(LioTheme.ink)
+        .background(LioTheme.paper)
+        .navigationTitle(language.text("Roadbook", "路书"))
+        .navigationBarTitleDisplayMode(.inline)
+        .tint(LioTheme.vermilion)
+        .onAppear(perform: reload)
+    }
+
+    private func reload() { kept = store?.load() ?? [] }
+}
+
+private struct LioRoadbookRow: View {
+    let roadbook: LioRoadbook
+    let language: LioLanguage
+    let kept: Bool
+
+    var body: some View {
+        HStack(alignment: .top, spacing: LioTheme.Spacing.sm) {
+            Image(systemName: "book.closed")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(LioTheme.vermilion)
+                .frame(width: 44, height: 44)
+                .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: LioTheme.Spacing.xxs) {
+                Text(roadbook.coverTitle(language)).font(.headline)
+                Text(roadbook.itinerary.title).font(.subheadline)
+                Text(roadbook.coverLine(language)).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                if kept {
+                    Label(language.text("On this phone", "已离线保存"), systemImage: "checkmark.circle.fill")
+                        .font(.footnote.weight(.semibold)).foregroundStyle(LioTheme.jade)
+                }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right").foregroundStyle(LioTheme.inkSecondary).accessibilityHidden(true)
+        }
+        .padding(LioTheme.Spacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+        .contentShape(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+    }
+}
+
+/// One roadbook: cover, a day at a time split into morning / afternoon / evening, where to stay and the essentials.
+struct LioRoadbookView: View {
+    let roadbook: LioRoadbook
+    let language: LioLanguage
+    let store: LioRoadbookStore?
+    var onChange: () -> Void = {}
+    @State private var selectedDay: Int?
+    @State private var kept = false
+    @State private var notice: String?
+    @State private var exporting = false
+    @State private var shared: SharedFile?
+    @State private var taxiPlace: LioTaxiPlace?
+    @State private var driverPlace: LioRichItinerary.Place?
+    @Environment(\.lioTaxiEntry) private var taxiEntry
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private struct SharedFile: Identifiable { let url: URL; var id: URL { url } }
+
+    private var day: LioRichItinerary.Day? {
+        roadbook.itinerary.days.first { $0.number == selectedDay } ?? roadbook.itinerary.days.first
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: LioTheme.Spacing.lg) {
+                cover
+                if let notice {
+                    Text(notice).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                        .accessibilityIdentifier("lio.roadbook.notice")
+                }
+                if roadbook.itinerary.days.count > 1 { dayPicker }
+                if let day { dayPage(day) }
+                lodging
+                essentials
+                Text(LioRoadbook.officialNotice(language)).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+            }
+            .padding(.horizontal, LioTheme.Spacing.md)
+            .padding(.vertical, 18)
+        }
+        .foregroundStyle(LioTheme.ink)
+        .background(LioTheme.paper)
+        .navigationTitle(roadbook.coverTitle(language))
+        .navigationBarTitleDisplayMode(.inline)
+        .tint(LioTheme.vermilion)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { export() } label: {
+                    Label(language.text("Export PDF", "导出 PDF"), systemImage: "square.and.arrow.up")
+                }
+                .disabled(exporting)
+                .accessibilityIdentifier("lio.roadbook.export")
+            }
+        }
+        .onAppear { kept = store?.contains(roadbook.id) ?? false }
+        .sheet(item: $shared) { file in LioRoadbookShareSheet(items: [file.url]).ignoresSafeArea() }
+        .sheet(item: $taxiPlace) { place in
+            if let taxiEntry {
+                NavigationStack {
+                    LioTaxiView(language: language, service: taxiEntry.service, tripPlaces: taxiEntry.tripPlaces,
+                                recentStore: taxiEntry.recentStore, destination: place)
+                }
+            }
+        }
+        .fullScreenCover(item: Binding(get: { driverPlace.map(DriverPlace.init) }, set: { driverPlace = $0?.place })) { item in
+            LioRoadbookDriverCard(place: item.place, language: language)
+        }
+    }
+
+    private struct DriverPlace: Identifiable {
+        let place: LioRichItinerary.Place
+        var id: String { place.nameZH + (place.address ?? "") }
+    }
+
+    // MARK: cover
+
+    private var cover: some View {
+        VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+            Text(language.text("Travel roadbook", "自由行路书"))
+                .font(.footnote.weight(.semibold)).foregroundStyle(LioTheme.vermilion)
+            Text(roadbook.coverTitle(language))
+                .font(LioTheme.display(.largeTitle).weight(.bold))
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("lio.roadbook.cover.title")
+            if roadbook.city != nil { Text(roadbook.itinerary.title).font(.headline) }
+            Text(roadbook.coverLine(language)).font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
+                .accessibilityIdentifier("lio.roadbook.cover.line")
+            HStack(spacing: LioTheme.Spacing.xs) {
+                if kept {
+                    Label(language.text("On this phone", "已离线保存"), systemImage: "checkmark.circle.fill")
+                        .font(.subheadline.weight(.semibold)).foregroundStyle(LioTheme.jade)
+                        .frame(minHeight: 44)
+                        .accessibilityIdentifier("lio.roadbook.kept")
+                } else if store != nil {
+                    Button { keep() } label: {
+                        Label(language.text("Keep offline", "离线保存"), systemImage: "arrow.down.circle")
+                    }
+                    .buttonStyle(LioSecondaryButtonStyle(fullWidth: false))
+                    .accessibilityIdentifier("lio.roadbook.keep")
+                }
+                Button { export() } label: {
+                    Label(language.text("PDF", "导出 PDF"), systemImage: "doc.richtext")
+                }
+                .buttonStyle(LioSecondaryButtonStyle(fullWidth: false))
+                .disabled(exporting)
+                .accessibilityIdentifier("lio.roadbook.pdf")
+            }
+            .padding(.top, LioTheme.Spacing.xs)
+        }
+        .padding(LioTheme.Spacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+    }
+
+    private var dayPicker: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: LioTheme.Spacing.xs) {
+                ForEach(roadbook.itinerary.days) { item in
+                    let selected = item.number == day?.number
+                    Button {
+                        withAnimation(LioTheme.Motion.animation(LioTheme.Motion.change, reduceMotion: reduceMotion)) {
+                            selectedDay = item.number
+                        }
+                    } label: {
+                        VStack(spacing: 2) {
+                            Text(language.text("Day \(item.number)", "第 \(item.number) 天")).font(.subheadline.weight(.semibold))
+                            if !item.area.isEmpty { Text(item.area).font(.caption).lineLimit(1) }
+                        }
+                        .foregroundStyle(selected ? LioTheme.onVermilion : LioTheme.ink)
+                        .padding(.horizontal, LioTheme.Spacing.md)
+                        .frame(minHeight: 48)
+                        .background(selected ? LioTheme.vermilion : LioTheme.surface, in: Capsule())
+                        .overlay { Capsule().stroke(LioTheme.hairline, lineWidth: selected ? 0 : LioTheme.outlineWidth) }
+                        .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(selected ? [.isSelected] : [])
+                    .accessibilityIdentifier("lio.roadbook.day.\(item.number)")
+                }
+            }
+            .padding(.vertical, 2)
+        }
+    }
+
+    // MARK: a day
+
+    private func dayPage(_ day: LioRichItinerary.Day) -> some View {
+        VStack(alignment: .leading, spacing: LioTheme.Spacing.md) {
+            VStack(alignment: .leading, spacing: LioTheme.Spacing.xxs) {
+                Text(roadbook.dayTitle(day, language)).font(LioTheme.display(.title2).weight(.bold))
+                    .accessibilityAddTraits(.isHeader)
+                let summary = [day.theme, day.area].filter { !$0.isEmpty }.joined(separator: " · ")
+                if !summary.isEmpty { Text(summary).foregroundStyle(LioTheme.inkSecondary) }
+            }
+            let segments = LioRoadbook.segments(day)
+            if segments.isEmpty {
+                Text(language.text("No activities planned for this day yet.", "这一天还没有安排。"))
+                    .foregroundStyle(LioTheme.inkSecondary)
+            }
+            ForEach(segments) { segment in
+                VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
+                    Label(segment.period.title(language), systemImage: segment.period.symbol)
+                        .font(.headline).foregroundStyle(LioTheme.vermilion)
+                        .accessibilityAddTraits(.isHeader)
+                        .accessibilityIdentifier("lio.roadbook.period.\(segment.period)")
+                    ForEach(segment.entries) { entry in
+                        stopCard(entry)
+                        if let leg = entry.legAfter {
+                            Label(leg.description(language), systemImage: leg.symbol)
+                                .font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.leading, LioTheme.Spacing.md)
+                                .accessibilityIdentifier("lio.roadbook.leg.\(entry.number)")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func stopCard(_ entry: LioRoadbookEntry) -> some View {
+        let stop = entry.stop
+        let destination = taxiEntry == nil ? nil : LioRoadbook.taxiDestination(stop.place)
+        let address = LioRoadbook.driverAddress(stop.place)
+        return VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+            HStack(alignment: .top, spacing: LioTheme.Spacing.sm) {
+                Text("\(entry.number)").font(.subheadline.weight(.bold)).foregroundStyle(LioTheme.onVermilion)
+                    .frame(minWidth: 28, minHeight: 28).background(LioTheme.vermilion, in: Circle())
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(stop.place.displayName(language)).font(.headline)
+                    if language == .english, stop.place.nameEN != stop.place.nameZH {
+                        Text(stop.place.nameZH).font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
+                    }
+                    let meta = [stop.kind.title(language), stop.time, stop.note].compactMap { $0 }.filter { !$0.isEmpty }
+                    Text(meta.joined(separator: " · ")).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                }
+            }
+            if !stop.text.isEmpty { Text(stop.text) }
+            if let address {
+                Label(address, systemImage: "mappin").font(.subheadline).textSelection(.enabled)
+            } else {
+                Text(language.text("Suggested place — check the address before you go.", "地点建议，出发前请再确认地址。"))
+                    .font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+            }
+            if let tip = stop.tip, !tip.isEmpty {
+                VStack(alignment: .leading, spacing: 2) {
+                    Label(tip, systemImage: "exclamationmark.circle").font(.subheadline)
+                    Text(language.text("Check official sources", "以官方为准")).font(.caption).foregroundStyle(LioTheme.inkSecondary)
+                }
+                .padding(LioTheme.Spacing.xs)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+            }
+            if destination != nil || address != nil {
+                HStack(spacing: LioTheme.Spacing.xs) {
+                    if let destination {
+                        Button { taxiPlace = destination } label: {
+                            Label(language.text("Taxi here", "打车去这里"), systemImage: "car.fill")
+                        }
+                        .buttonStyle(LioSecondaryButtonStyle(fullWidth: false))
+                        .accessibilityIdentifier("lio.roadbook.taxi.\(stop.id)")
+                    }
+                    if address != nil {
+                        Button { driverPlace = stop.place } label: {
+                            Label(language.text("Show driver", "给司机看"), systemImage: "text.below.photo")
+                        }
+                        .buttonStyle(LioSecondaryButtonStyle(fullWidth: false))
+                        .accessibilityIdentifier("lio.roadbook.driver.\(stop.id)")
+                    }
+                }
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(LioTheme.Spacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+        .accessibilityIdentifier("lio.roadbook.stop.\(stop.id)")
+    }
+
+    // MARK: back matter
+
+    @ViewBuilder private var lodging: some View {
+        let itinerary = roadbook.itinerary
+        if !itinerary.lodgingArea.isEmpty || !itinerary.hotels.isEmpty {
+            VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+                Label(language.text("Where to stay", "住宿区域"), systemImage: "bed.double")
+                    .font(.headline).accessibilityAddTraits(.isHeader)
+                if !itinerary.lodgingArea.isEmpty { Text(itinerary.lodgingArea) }
+                ForEach(itinerary.hotels) { hotel in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(hotel.place.displayName(language)).font(.subheadline.weight(.semibold))
+                        if let note = hotel.note { Text(note).font(.footnote).foregroundStyle(LioTheme.inkSecondary) }
+                    }
+                }
+            }
+            .padding(LioTheme.Spacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+        }
+    }
+
+    private var essentials: some View {
+        VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
+            ForEach(LioRoadbookEssentials.sections(language)) { section in
+                DisclosureGroup {
+                    VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
+                        ForEach(section.items) { item in essentialItem(item) }
+                        if section.id == "emergency" {
+                            NavigationLink {
+                                LioLocalSupportView(language: language, directory: try? LocalSupportDirectory.bundled())
+                            } label: {
+                                Label(language.text("Open Local Support", "打开本地协助"), systemImage: "lifepreserver")
+                                    .frame(minHeight: 44)
+                            }
+                            .accessibilityIdentifier("lio.roadbook.local-support")
+                        }
+                    }
+                    .padding(.top, LioTheme.Spacing.xs)
+                } label: {
+                    Label(section.title, systemImage: section.symbol).font(.headline).foregroundStyle(LioTheme.ink)
+                }
+                .padding(LioTheme.Spacing.md)
+                .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                .accessibilityIdentifier("lio.roadbook.essentials.\(section.id)")
+            }
+        }
+    }
+
+    @ViewBuilder private func essentialItem(_ item: LioRoadbookEssentialItem) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            if let phone = item.phone, let url = URL(string: "tel:" + phone) {
+                Link(destination: url) {
+                    Label("\(item.title)  \(phone)", systemImage: "phone.fill").font(.subheadline.weight(.semibold))
+                        .frame(minHeight: 44, alignment: .leading)
+                }
+            } else {
+                Text(item.title).font(.subheadline.weight(.semibold))
+            }
+            if language == .english, let chinese = item.chinese, chinese != item.title {
+                Text(chinese).font(.title3)
+            }
+            if let detail = item.detail { Text(detail).font(.footnote).foregroundStyle(LioTheme.inkSecondary) }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    // MARK: actions
+
+    private func keep() {
+        guard let store else { return }
+        do {
+            try store.save(roadbook)
+            kept = true
+            notice = nil
+            onChange()
+        } catch {
+            notice = language.text("Couldn’t keep this roadbook on your phone. Try again.", "暂时无法离线保存，请重试。")
+        }
+    }
+
+    private func export() {
+        guard !exporting else { return }
+        exporting = true
+        let roadbook = roadbook, language = language
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("LioRoadbook", isDirectory: true)
+        Task {
+            defer { exporting = false }
+            do {
+                let url = try await Task.detached(priority: .userInitiated) {
+                    try LioRoadbookPDF.write(roadbook, language: language, to: folder)
+                }.value
+                shared = SharedFile(url: url)
+            } catch {
+                notice = language.text("Couldn’t make the PDF. Try again.", "暂时无法生成 PDF，请重试。")
+            }
+        }
+    }
+}
+
+/// Large Chinese name and address for a driver, with the screen kept awake while it is shown.
+struct LioRoadbookDriverCard: View {
+    let place: LioRichItinerary.Place
+    let language: LioLanguage
+    @Environment(\.dismiss) private var dismiss
+    @State private var priorIdleTimer: Bool?
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("请送我到这里").font(.headline).foregroundStyle(LioTheme.inkSecondary)
+                    Text(place.nameZH).font(LioTheme.display(.largeTitle).weight(.bold))
+                        .accessibilityIdentifier("lio.roadbook.driver.name")
+                    if let address = place.driverAddress {
+                        Text(address).font(.title2.weight(.semibold)).accessibilityIdentifier("lio.roadbook.driver.address")
+                    }
+                    if place.nameEN != place.nameZH { Text(place.nameEN).foregroundStyle(LioTheme.inkSecondary) }
+                }
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(24)
+            }
+            .background(LioTheme.paper)
+            .foregroundStyle(LioTheme.ink)
+            .navigationTitle(language.text("Show the driver", "给司机看"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(language.text("Close", "关闭")) { dismiss() }.accessibilityIdentifier("lio.roadbook.driver.close")
+                }
+            }
+        }
+        .tint(LioTheme.vermilion)
+        .onAppear {
+            guard priorIdleTimer == nil else { return }
+            priorIdleTimer = UIApplication.shared.isIdleTimerDisabled
+            UIApplication.shared.isIdleTimerDisabled = true
+        }
+        .onDisappear {
+            if let priorIdleTimer { UIApplication.shared.isIdleTimerDisabled = priorIdleTimer }
+        }
+    }
+}
+
+/// The system share sheet for the exported PDF (Save to Files, Print, AirDrop, Mail…).
+struct LioRoadbookShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
+}
+
+#if DEBUG
+#Preview("Roadbook library") {
+    NavigationStack {
+        LioRoadbookLibraryView(language: .chinese, store: nil, candidates: LioRoadbookPreview.library(.chinese))
+    }
+}
+
+#Preview("Roadbook") {
+    NavigationStack {
+        LioRoadbookView(roadbook: LioRoadbookPreview.beijing(.english), language: .english, store: nil)
+    }
+}
+#endif
+#endif
