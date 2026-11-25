@@ -18,9 +18,11 @@ struct LioRoadbookLibraryView: View {
     }
 
     /// Kept copies first replace the same roadbook offered as a candidate; then my trips, Lio's plans, routes.
+    /// Kept copies first replace the same roadbook offered as a candidate; then my trips, Lio's plans and
+    /// the popular routes (#1509), one card per id.
     private var books: [LioRoadbook] {
-        let keptIDs = Set(kept.map(\.id))
-        let all = kept + candidates.filter { !keptIDs.contains($0.id) }
+        var seen = Set<String>()
+        let all = (kept + candidates + LioRoadbookTemplates.all(language)).filter { seen.insert($0.id).inserted }
         return LioRoadbook.Source.allCases.flatMap { source in all.filter { $0.source == source } }
     }
 
