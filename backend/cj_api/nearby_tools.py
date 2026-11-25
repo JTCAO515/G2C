@@ -66,14 +66,16 @@ class NearbySearchRequest(NearbyLocationRequest):
 
 
 class GaodeNearby:
-    def __init__(self, key, *, connection=HTTPSConnection):
+    def __init__(self, key, *, connection=HTTPSConnection, operations=OPERATIONS):
         if not re.fullmatch(r'[A-Za-z0-9_-]{16,256}', key):
             raise ValueError('valid Gaode server configuration required')
         self._key = key
         self._connection = connection
+        # Hotel search (#1511) reuses the same bounded transport with its own budgeted operations.
+        self._operations = operations
 
     def query(self, operation, params, before_send):
-        path = OPERATIONS[operation] + '?' + urlencode(dict(params, key=self._key, output='json'))
+        path = self._operations[operation] + '?' + urlencode(dict(params, key=self._key, output='json'))
         try:
             with closing(self._connection(HOST, timeout=8)) as connection:
                 connection.connect()

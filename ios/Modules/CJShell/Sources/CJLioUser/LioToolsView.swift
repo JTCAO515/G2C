@@ -22,8 +22,10 @@ struct LioToolsView: View {
         available.currency = currencyRelay != nil
         available.nearby = nearbyService != nil
         available.hotels = hotelSearch != nil
+        available.roadbook = LioRoadbookFeature.enabled(infoValue: Bundle.main.object(forInfoDictionaryKey: "G2CRoadbookEnabled"))
         #if DEBUG
         available.hotels = available.hotels || ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview")
+        if LioRoadbookPreview.requested { available.roadbook = true }
         #endif
         return available
     }
@@ -78,6 +80,26 @@ struct LioToolsView: View {
         .tint(LioTheme.vermilion)
     }
 
+    /// Offline copies need the signed-in account's folder, which is wired with saved trips (#1453);
+    /// until then only Debug previews can keep copies.
+    private var roadbookStore: LioRoadbookStore? {
+        #if DEBUG
+        LioRoadbookPreview.requested ? try? LioRoadbookStore.preview() : nil
+        #else
+        nil
+        #endif
+    }
+
+    /// Roadbooks that can be made now. Saved trips and Lio's plans are connected once #1453 lands; until then
+    /// only Debug previews are offered.
+    private var roadbookCandidates: [LioRoadbook] {
+        #if DEBUG
+        LioRoadbookPreview.requested ? LioRoadbookPreview.library(language) : []
+        #else
+        []
+        #endif
+    }
+
     @ViewBuilder private func destination(_ tool: LioTool) -> some View {
         switch tool {
         case .localSupport:
@@ -105,6 +127,8 @@ struct LioToolsView: View {
             if let nearbyService {
                 LioNearbyView(language: language, service: nearbyService)
             }
+        case .roadbook:
+            LioRoadbookLibraryView(language: language, store: roadbookStore, candidates: roadbookCandidates)
         case .hotels:
             if let hotelSearch {
                 LioHotelOffersView(language: language, finder: hotelSearch)

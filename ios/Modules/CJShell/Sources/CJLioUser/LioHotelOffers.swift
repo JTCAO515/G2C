@@ -43,7 +43,7 @@ enum LioHotelPriceBand: String, CaseIterable, Identifiable, Sendable {
 /// A validated hotel search: city, an optional landmark or district, dates, guests and price band.
 struct LioHotelQuery: Equatable, Sendable {
     enum Problem: Error, Equatable {
-        case search(LioHotelSearch.Validation), invalidLandmark, stayTooLong, tooManyGuests
+        case search(LioHotelSearch.Validation), invalidLandmark, stayTooLong, tooManyGuests, checkInPast
 
         func message(_ language: LioLanguage) -> String {
             switch self {
@@ -57,6 +57,7 @@ struct LioHotelQuery: Equatable, Sendable {
                 language.text("Enter an area or landmark of up to 100 characters.", "请输入不超过 100 字的区域或地标。")
             case .stayTooLong: language.text("Search for stays of up to 30 nights.", "一次最多搜索 30 晚。")
             case .tooManyGuests: language.text("Search for up to 10 guests.", "一次最多搜索 10 位客人。")
+            case .checkInPast: language.text("Check-in can’t be before today.", "入住日期不能早于今天。")
             }
         }
     }
@@ -74,7 +75,7 @@ struct LioHotelQuery: Equatable, Sendable {
     let language: LioLanguage
 
     init(city: String, landmark: String?, checkIn: Date, checkOut: Date, guests: Int,
-         price: LioHotelPriceBand, language: LioLanguage) throws(Problem) {
+         price: LioHotelPriceBand, language: LioLanguage, today: Date = Date()) throws(Problem) {
         let stay: LioHotelSearch
         do {
             stay = try LioHotelSearch(scope: .city(city), checkIn: checkIn, checkOut: checkOut, guests: guests,
@@ -84,6 +85,7 @@ struct LioHotelQuery: Equatable, Sendable {
         }
         guard guests <= Self.maximumGuests else { throw .tooManyGuests }
         let calendar = LioHotelSearch.calendar
+        guard calendar.compare(checkIn, to: today, toGranularity: .day) != .orderedAscending else { throw .checkInPast }
         let nights = calendar.dateComponents([.day], from: calendar.startOfDay(for: checkIn),
                                              to: calendar.startOfDay(for: checkOut)).day ?? 0
         guard nights <= Self.maximumNights else { throw .stayTooLong }
@@ -108,6 +110,9 @@ struct LioHotelQuery: Equatable, Sendable {
 struct LioHotelOffer: Identifiable, Hashable, Sendable {
     enum ForeignGuests: String, Hashable, Sendable {
         case accepted, notAccepted = "not_accepted", unknown
+
+        /// Only an explicit "accepted" earns the green badge.
+        var isConfirmed: Bool { self == .accepted }
 
         func label(_ language: LioLanguage) -> String {
             switch self {
@@ -225,6 +230,16 @@ struct LioHotelResults: Sendable {
     let source: Source
     let offers: [LioHotelOffer]
     let unappliedFilters: [Filter]
+    /// Whether "Book" hands off through an affiliate link; the #225 disclosure is shown only then.
+    let affiliateLinks: Bool
+
+    /// #225 disclosure draft; shown once under the list, only for affiliate hand-offs (wording for JT to confirm).
+    static func disclosure(_ language: LioLanguage) -> String {
+        language.text(
+            "Some links are affiliate links. If you book through them, Go2China may earn a commission at no extra cost to you.",
+            "部分链接为推广链接，你通过它预订时，Go2China 可能获得佣金，价格不受影响。"
+        )
+    }
 }
 
 enum LioHotelFailure: Error, Equatable {
@@ -320,6 +335,7 @@ enum LioHotelSearchWire {
     private struct Reply: Decodable {
         let version: String
         let source: String
+        let affiliateLinks: Bool?
         let appliedFilters: [LioHotelResults.Filter]
         let unappliedFilters: [LioHotelResults.Filter]
         let items: [Item]
@@ -344,11 +360,16 @@ enum LioHotelSearchWire {
         return try encoder.encode(request)
     }
 
-    /// Booking links must be the relay's own hand-off path, so the affiliate redirect stays server-side.
+    /// Booking links must be one opaque handle on the relay's own hand-off path (no `..`, extra segments,
+    /// query or fragment), so the affiliate redirect stays server-side.
     static func isRelayHandoff(_ url: URL, relay: URL) -> Bool {
-        url.scheme == "https" && url.host != nil && url.host == relay.host && url.port == relay.port
-            && url.user == nil && url.password == nil && url.path.hasPrefix(handoffPath)
-            && url.path.count > handoffPath.count
+        guard url.scheme == "https", url.host != nil, url.host == relay.host, url.port == relay.port,
+              url.user == nil, url.password == nil, url.query == nil, url.fragment == nil,
+              let raw = URLComponents(url: url, resolvingAgainstBaseURL: false)?.percentEncodedPath,
+              raw.hasPrefix(handoffPath) else { return false }
+        let handle = raw.dropFirst(handoffPath.count)
+        return (16...128).contains(handle.count)
+            && handle.unicodeScalars.allSatisfy { ($0.isASCII && CharacterSet.alphanumerics.contains($0)) || $0 == "_" || $0 == "-" }
     }
 
     static func read(_ data: Data, allowing approvedTarget: (URL) -> Bool) throws -> LioHotelResults {
@@ -384,11 +405,14 @@ enum LioHotelSearchWire {
                 addressEN: nonEmpty(item.addressEn),
                 coordinate: .init(latitude: item.lat, longitude: item.lng, referenceSystem: .gcj02),
                 rating: nonEmpty(item.rating), price: price, metro: metro,
-                foreignGuests: item.foreignGuests.flatMap(LioHotelOffer.ForeignGuests.init(rawValue:)) ?? .unknown,
+                // Gaode has no foreign-guest data (#1508 step one): never show a policy it cannot know.
+                foreignGuests: source == .gaode ? .unknown
+                    : item.foreignGuests.flatMap(LioHotelOffer.ForeignGuests.init(rawValue:)) ?? .unknown,
                 booking: booking)
         }
         return LioHotelResults(source: source, offers: offers,
-                               unappliedFilters: LioHotelResults.Filter.allCases.filter(unapplied.contains))
+                               unappliedFilters: LioHotelResults.Filter.allCases.filter(unapplied.contains),
+                               affiliateLinks: reply.affiliateLinks ?? true)
     }
 
     static func failure(status: Int, body: Data) -> LioHotelFailure {
@@ -507,10 +531,11 @@ extension LioHotelFinder {
 extension LioHotelFinder {
     static let previewHost = "hotel.example.invalid"
 
-    /// Four Beijing hotels around Wangfujing for screenshots and UI tests; links never leave the fixture host.
+    /// Four Beijing hotels around Wangfujing for screenshots and UI tests, shaped like the Trip.com list of
+    /// #1508 step two (with foreign-guest answers); links never leave the fixture host.
     static let preview = LioHotelFinder(search: { query in
         try LioHotelSearchWire.read(previewReply(language: query.language)) {
-            $0.scheme == "https" && $0.host == previewHost && $0.path.hasPrefix(LioHotelSearchWire.handoffPath)
+            LioHotelSearchWire.isRelayHandoff($0, relay: URL(string: "https://\(previewHost)")!)
         }
     }, open: { _ in true })
 
@@ -540,7 +565,7 @@ extension LioHotelFinder {
              "foreign_guests": "accepted", "booking_url": link("bjhotel_aaaaaaaaaaa")],
         ]
         let reply: [String: Any] = [
-            "version": LioHotelSearchWire.version, "source": "Gaode",
+            "version": LioHotelSearchWire.version, "source": "Trip.com", "affiliate_links": false,
             "applied_filters": ["near", "guests"], "unapplied_filters": ["check_in", "check_out", "price"],
             "items": items,
         ]
