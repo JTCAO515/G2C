@@ -54,25 +54,26 @@ import Testing
     }
 
     @Test func theRelayPostsToTheStationRouteAndMapsRefusals() async throws {
-        var paths = [String]()
-        var status = 200
-        var answer = reply
+        // One mutable script the exchange reads; a class, so the closure captures a reference, not a var.
+        final class Script { var paths = [String](); var status = 200; var answer = Data() }
+        let script = Script()
+        script.answer = reply
         let relay = LioNearbyRelayClient(baseURL: base, isCurrent: { true }, bearer: { "fixture-only" },
                                          newRequestID: { requestID }) { request in
             let url = try #require(request.url)
-            paths.append(url.path)
+            script.paths.append(url.path)
             #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer fixture-only")
-            return (answer, response(url, status: status))
+            return (script.answer, response(url, status: script.status))
         }
         let body = try LioMetroNearbyWire.encode(city: "guangzhou", station: "gz012", categories: [.shopping],
                                                  language: .chinese, requestID: requestID)
         #expect(try LioMetroNearbyWire.read(try await relay.metroNearby(body), city: "guangzhou", station: "gz012").count == 2)
-        #expect(paths == ["/v1/tools/metro/nearby"])
+        #expect(script.paths == ["/v1/tools/metro/nearby"])
         for (code, body, failure) in [(429, #"{"error":"quota_exceeded"}"#, LioNearbyFailure.quotaExceeded),
                                       (403, #"{"error":"not_enabled"}"#, .notEnabled),
                                       (404, #"{"error":"station_not_found"}"#, .unavailable)] {
-            status = code
-            answer = Data(body.utf8)
+            script.status = code
+            script.answer = Data(body.utf8)
             await #expect(throws: failure) { try await relay.metroNearby(Data()) }
         }
     }
