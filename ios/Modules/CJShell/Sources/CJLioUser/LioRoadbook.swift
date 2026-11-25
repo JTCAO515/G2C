@@ -74,6 +74,12 @@ struct LioRoadbook: Identifiable, Sendable {
         LioTaxiPlace(itineraryPlace: place)
     }
 
+    /// Trimmed note text, or nil when there is nothing to show.
+    static func visibleNote(_ note: String?) -> String? {
+        guard let text = note?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { return nil }
+        return text
+    }
+
     /// The driver card shows only a checked address.
     static func driverAddress(_ place: LioRichItinerary.Place) -> String? { place.driverAddress }
 }
