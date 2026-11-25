@@ -18,16 +18,21 @@ class PlanQuote(Data):
     quote:str=Field(min_length=1,max_length=4096)
 
 
+PLAN_FIELDS=('start_date','party_size','pace','departure.mode','first_day_full','budget_currency','budget_total',
+    'budget_per_person','budget_paid','budget_basis','budget_includes','overseas_timezone',
+    'arrival.date','arrival.time','arrival.timezone','arrival.place',
+    'departure.date','departure.time','departure.timezone','departure.place',
+    'overseas_departure.date','overseas_departure.time','overseas_departure.timezone','overseas_departure.place')
+
+
 class PlanObservation(Data):
-    field:Literal['start_date','party_size','pace','departure.mode','first_day_full','budget_currency','budget_total',
-        'budget_per_person','budget_paid','budget_basis','budget_includes','overseas_timezone',
-        'arrival.date','arrival.time','arrival.timezone','arrival.place',
-        'departure.date','departure.time','departure.timezone','departure.place',
-        'overseas_departure.date','overseas_departure.time','overseas_departure.timezone','overseas_departure.place']
+    field:Literal[PLAN_FIELDS]
     state:Literal['known','unknown','uncertain']
     value:str|int|bool|list[str]|None
     note:str|None=Field(max_length=4096)
-    sources:list[PlanQuote]=Field(min_length=1,max_length=8)
+    # HK probe 2026-11-25: one field looped with new quotes until the token cap;
+    # a field's evidence is a few original spans, never an open-ended list.
+    sources:list[PlanQuote]=Field(min_length=1,max_length=4)
 
 
 class PlanCompanion(Data):
@@ -72,7 +77,7 @@ class PlanCondition(Data):
 class PlanUnderstanding(Data):
     version:Literal['LIO-exploration-plan-understanding.1']
     current_source_index:int=Field(ge=0)
-    observations:list[PlanObservation]=Field(max_length=64)
+    observations:list[PlanObservation]=Field(max_length=len(PLAN_FIELDS))  # at most one per field
     companions:list[PlanCompanion]=Field(max_length=32)
     fixed_items:list[PlanFixed]=Field(max_length=100)
     temporary_conditions:list[PlanCondition]=Field(max_length=32)
