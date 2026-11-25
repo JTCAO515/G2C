@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import Testing
 @testable import CJLioUser
 
@@ -342,5 +343,16 @@ struct LioTransportGuideTests {
             #expect(!mode.symbol.isEmpty)
             #expect(!mode.name(.english).isEmpty && !mode.name(.chinese).isEmpty)
         }
+    }
+}
+
+/// Build 57 walkthrough: at accessibility text sizes three side-by-side mode tabs split words ("Trai/n")
+/// and cut the price ("from ¥…"), so they stack one per row there.
+struct LioTransportModeTabLayoutTests {
+    @Test func tabsStackOnlyAtAccessibilitySizes() {
+        #expect(!LioTransportModeTabs.stacks(at: .large))
+        #expect(!LioTransportModeTabs.stacks(at: .xxxLarge))
+        #expect(LioTransportModeTabs.stacks(at: .accessibility1))
+        #expect(LioTransportModeTabs.stacks(at: .accessibility5))
     }
 }
