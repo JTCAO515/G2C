@@ -30,8 +30,10 @@ SYSTEM = (
     'You check one travel answer against official China entry rules for one passport country. '
     'Reply with JSON only: {"contradicts": true or false, "rule": "<the id of the supplied policy, or otherwise, '
     'that the statement conflicts with; empty when false>", "sentence": "<the contradicting sentence, or empty>"}. '
-    'Answer true only when you can name that rule. A statement that is true under any one listed policy is '
-    'consistent with the rules, even if another listed policy works differently. '
+    'Answer true only when you can name that rule; use otherwise for a retired or unlisted scheme and for a stay '
+    'that needs a visa. A statement that is true under any one listed policy is consistent with the rules, even if '
+    'another listed policy works differently. Presenting a retired or unlisted scheme as current is a '
+    'contradiction even if its stay length fits a listed policy. '
     'contradicts is true only when a statement in the answer, read in its context, conflicts with the supplied '
     'rules: a wrong stay length or limit, a wrong area or movement restriction, saying a visa is needed where the '
     'rules make the trip visa-free (or the reverse), or presenting a retired policy as current. '
@@ -49,6 +51,10 @@ SYSTEM = (
 
 class JudgeUnavailable(ValueError):
     pass
+
+
+class Ungrounded(JudgeUnavailable):
+    """The judge said contradicts=true without naming a supplied rule: its own failure, never a pass."""
 
 
 def _rules():
@@ -102,12 +108,14 @@ def parse_verdict(raw, rules):
         sentence = ''
     if type(sentence) is not str:
         raise JudgeUnavailable('judge output sentence is not text')
-    rule = value.get('rule') or ''
+    rule = value.get('rule')
+    rule = '' if rule is None else rule
     if type(rule) is not str:
         raise JudgeUnavailable('judge output rule is not text')
-    if value['contradicts'] and rule not in rules:
-        # A contradiction that names no supplied rule is not grounded (acceptance 2026-11-26).
-        return False, ''
+    rule = rule.strip().lower()
+    rule = 'otherwise' if rule == 'visa_required' else rule
+    if value['contradicts'] and rule not in {key.lower() for key in rules}:
+        raise Ungrounded('judge contradiction names no supplied rule')
     return value['contradicts'], sentence
 
 
@@ -136,10 +144,13 @@ def model_judge(key):
 
 def validate(rows, judge):
     """Accuracy of the judge on labeled sentences; a false alarm fails a correct sentence."""
-    false_alarms, misses, unavailable, malformed = [], [], [], []
+    false_alarms, misses, unavailable, malformed, ungrounded = [], [], [], [], []
     for row in rows:
         try:
             contradicts, _ = judge(row['country'], row['text'])
+        except Ungrounded:  # a contradiction without a supplied rule: reported apart, never a pass
+            ungrounded.append(dict(country=row['country'], text=row['text']))
+            continue
         except JudgeUnavailable:  # the judge answered but not in the required form: its own failure
             malformed.append(dict(country=row['country'], text=row['text']))
             continue
@@ -151,9 +162,9 @@ def validate(rows, judge):
         elif not row['correct'] and not contradicts:
             misses.append(dict(country=row['country'], text=row['text']))
     total = len(rows)
-    judged = total - len(unavailable) - len(malformed)
+    judged = total - len(unavailable) - len(malformed) - len(ungrounded)
     return dict(total=total, judged=judged, unavailable=len(unavailable), malformed=len(malformed),
-                malformed_rows=malformed,
+                malformed_rows=malformed, ungrounded=len(ungrounded), ungrounded_rows=ungrounded,
                 accuracy=round((judged - len(false_alarms) - len(misses)) / judged, 3) if judged else None,
                 false_alarms=len(false_alarms), misses=len(misses), unavailable_rows=unavailable,
                 correct_rows=sum(row['correct'] for row in rows), wrong_rows=sum(not row['correct'] for row in rows),

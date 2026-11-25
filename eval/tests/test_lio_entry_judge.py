@@ -6,8 +6,8 @@ import tempfile
 import unittest
 from contextlib import redirect_stdout
 
-from eval.lio_entry_judge import (ENTRY_CASES, JudgeUnavailable, country_rules, judge_request, main, parse_verdict,
-                                  score_answers, validate)
+from eval.lio_entry_judge import (ENTRY_CASES, JudgeUnavailable, Ungrounded, country_rules, judge_request, main,
+                                  parse_verdict, rule_ids, score_answers, validate)
 
 
 class EntryJudge(unittest.TestCase):
@@ -43,6 +43,9 @@ class EntryJudge(unittest.TestCase):
         # under one listed policy; a contradiction must now name the rule it breaks.
         self.assertIn('true under any one listed policy', system)
         self.assertIn('"rule"', system)
+        # #1675 review: a retired/unlisted scheme presented as current wins over the stay length.
+        self.assertIn('even if its stay length fits a listed policy', system)
+        self.assertIn('use otherwise', system)
         self.assertIn('uk-canada-visa-free-2026', user)
         self.assertIn('<answer>\nA plain 10-day trip needs a visa.\n</answer>', user)
         self.assertNotIn('Authorization', json.dumps(body))
@@ -51,12 +54,21 @@ class EntryJudge(unittest.TestCase):
         rules = {'transit-240h', 'otherwise'}
         self.assertEqual(parse_verdict('{"contradicts": true, "rule": "transit-240h", "sentence": "x"}', rules), (True, 'x'))
         self.assertEqual(parse_verdict('{"contradicts": false, "rule": "", "sentence": ""}', rules), (False, ''))
-        # A contradiction that names no supplied rule is not grounded and does not count.
+        # Aliases: case, spaces and the raw otherwise value are accepted.
+        for rule in (' Transit-240H ', 'visa_required', 'OTHERWISE'):
+            with self.subTest(rule=rule):
+                self.assertEqual(parse_verdict(json.dumps(dict(contradicts=True, rule=rule, sentence='x')), rules), (True, 'x'))
+        # A contradiction naming no supplied rule is the judge's own failure, reported apart, never a pass.
         for raw in ('{"contradicts": true, "rule": "", "sentence": "x"}',
                     '{"contradicts": true, "rule": "uk-canada-visa-free-2026", "sentence": "x"}',
                     '{"contradicts": true, "sentence": "x"}'):
-            with self.subTest(raw=raw):
-                self.assertEqual(parse_verdict(raw, rules), (False, ''))
+            with self.subTest(raw=raw), self.assertRaises(Ungrounded):
+                parse_verdict(raw, rules)
+        for raw in ('{"contradicts": false, "rule": false}', '{"contradicts": true, "rule": 5}', '{"contradicts": false, "rule": []}'):
+            with self.subTest(raw=raw), self.assertRaises(JudgeUnavailable):
+                parse_verdict(raw, rules)
+        self.assertEqual(rule_ids('GB'), {'uk-canada-visa-free-2026', 'transit-240h', 'otherwise'})
+        self.assertEqual(rule_ids('US'), {'transit-240h', 'otherwise'})
         for raw in ('', 'yes', '{"contradicts": "true"}', '{"sentence": "x"}', '[1]', '{"contradicts": true, "sentence": 5}'):
             with self.subTest(raw=raw), self.assertRaises(JudgeUnavailable):
                 parse_verdict(raw, {'transit-240h'})
@@ -83,6 +95,14 @@ class EntryJudge(unittest.TestCase):
             return verdicts[text], ''
         down = validate(rows, offline)
         self.assertEqual((down['judged'], down['malformed'], down['unavailable']), (3, 0, 1))
+        self.assertEqual(partial['accuracy'], round(1 / 3, 3))
+        def ungrounded(country, text):
+            if text == 'ok':
+                raise Ungrounded('no rule')
+            return verdicts[text], ''
+        unsure = validate(rows, ungrounded)
+        self.assertEqual((unsure['judged'], unsure['ungrounded'], unsure['malformed']), (3, 1, 0))
+        self.assertEqual(unsure['ungrounded_rows'], [dict(country='GB', text='ok')])
 
     def test_score_answers_judges_only_entry_cases(self):
         seen = []
@@ -136,6 +156,18 @@ class EntryJudge(unittest.TestCase):
         with patch('httpx.post', read_error), patch('time.sleep', lambda seconds: None), self.assertRaises(httpx.ReadTimeout):
             model_judge('k')('GB', 'ok')
         self.assertEqual(len(calls), 1)
+
+    def test_model_judge_checks_rules_per_country(self):
+        import httpx
+        from unittest.mock import patch
+        from eval.lio_entry_judge import model_judge
+        reply = httpx.Response(200, json={'choices': [{'message': {'content':
+                    '{"contradicts": true, "rule": "uk-canada-visa-free-2026", "sentence": "x"}'}}]},
+                    request=httpx.Request('POST', 'https://x'))
+        with patch('httpx.post', lambda *a, **k: reply):
+            self.assertEqual(model_judge('k')('GB', 'x'), (True, 'x'))
+            with self.assertRaises(Ungrounded):
+                model_judge('k')('US', 'x')
 
     def test_cli_requires_the_key(self):
         with tempfile.TemporaryDirectory() as folder:
