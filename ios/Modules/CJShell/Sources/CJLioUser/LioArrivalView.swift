@@ -8,7 +8,7 @@ struct LioArrivalView: View {
     /// The trip's stays, if there is a trip; the taxi step uses the first matched address.
     var hotels: [LioRichItinerary.Hotel] = []
     /// The trip's first day, if known; otherwise today.
-    var arrival: Date?
+    var arrival: LioArrivalDay?
     var rules: LioArrivalRules? = try? LioArrivalRules.bundled()
     @AppStorage("lio.arrival.progress.v1") private var storedProgress = ""
 
@@ -42,7 +42,7 @@ struct LioArrivalView: View {
 
     @ViewBuilder private func destination(_ step: LioArrivalStep) -> some View {
         switch step {
-        case .entry: LioArrivalEntryView(language: language, rules: rules, arrival: arrival ?? .now)
+        case .entry: LioArrivalEntryView(language: language, rules: rules, arrival: arrival?.date(in: .current) ?? .now)
         case .payment: LioPaymentGuideView(language: language)
         case .internet: LioArrivalInternetView(language: language)
         case .taxi: LioArrivalTaxiView(language: language, tripHotel: LioArrivalHotel(hotels: hotels))
@@ -134,7 +134,7 @@ struct LioArrivalEntryView: View {
     }
 
     private var trip: LioArrivalTrip {
-        LioArrivalTrip(countryCode: selection.wrappedValue, arrival: LioArrivalDay(date: arrival),
+        LioArrivalTrip(countryCode: selection.wrappedValue, arrival: LioArrivalDay(date: arrival, calendar: .current),
                        stayDays: stayDays, onwardToThirdCountry: onward)
     }
 
@@ -258,7 +258,7 @@ private struct LioArrivalDecisionCard: View {
         case .transit(let policy):
             language.text("Visa-free transit, up to \(policy.maxStayDays) days", "可过境免签，最多停留 \(policy.maxStayDays) 天")
         case .visaRequired:
-            language.text("Get a visa before you travel", "需要提前办理签证")
+            language.text("Not covered by these visa-free rules", "不在这些免签政策范围内")
         case .checkOfficial:
             language.text("Check the official sources", "请以官方为准")
         }
@@ -274,8 +274,8 @@ private struct LioArrivalDecisionCard: View {
             }
             return lines
         case .visaRequired:
-            return [language.text("Your trip is outside the visa-free rules in the official notices we checked.",
-                                  "按我们核对过的官方通知，你的行程不在免签范围内。")]
+            return [language.text("By the official notices we checked, your trip is outside these visa-free rules, so you usually need a visa before you travel. Regional policies, such as Hainan's, are not included here.",
+                                  "按我们核对过的官方通知，你的行程不在这些免签政策范围内，通常需要提前办理签证。海南等区域性政策未纳入。")]
         case .checkOfficial(let reason):
             return [reasonText(reason)]
         }
@@ -294,6 +294,9 @@ private struct LioArrivalDecisionCard: View {
         case .policyMayEndDuringTrip:
             language.text("Your trip runs past the published end date of the visa-free policy.",
                           "你的行程跨过了免签政策公布的截止日期。")
+        case .stayAtLimit:
+            language.text("Your stay is one day over the limit as we count it (arrival and departure days included). Official notices count from 00:00 the day after arrival, so check the official notice for your dates.",
+                          "按我们的算法（入境和离境当天都算），你的停留比上限多一天。官方从入境次日零时起算，请按官方通知核对你的日期。")
         case .overdueForReview:
             language.text("These rules are due for a recheck, so we are not giving an answer from them.",
                           "这些规则已过核对期，暂不据此给出结论。")
@@ -311,21 +314,20 @@ private struct LioArrivalSources: View {
             Text(language.text("Official sources · checked \(checkedAt)", "官方来源 · 核对于 \(checkedAt)"))
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(LioTheme.inkSecondary)
+            // The loader accepts only official https links, so every source here can be opened as is.
             ForEach(sources, id: \.url) { source in
-                if LioArrivalRules.isOfficial(source.url) {
-                    Link(destination: source.url) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(source.publisher.text(language)).font(.footnote)
-                            Text([source.url.host, source.published.map(\.description)].compactMap { $0 }
-                                .joined(separator: " · "))
-                                .font(.caption).foregroundStyle(LioTheme.inkSecondary)
-                        }
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                        .multilineTextAlignment(.leading)
-                        .contentShape(Rectangle())
+                Link(destination: source.url) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(source.publisher.text(language)).font(.footnote)
+                        Text([source.url.host, source.published.map(\.description)].compactMap { $0 }
+                            .joined(separator: " · "))
+                            .font(.caption).foregroundStyle(LioTheme.inkSecondary)
                     }
-                    .foregroundStyle(LioTheme.vermilion)
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .multilineTextAlignment(.leading)
+                    .contentShape(Rectangle())
                 }
+                .foregroundStyle(LioTheme.vermilion)
             }
         }
         .accessibilityIdentifier("lio.arrival.sources")

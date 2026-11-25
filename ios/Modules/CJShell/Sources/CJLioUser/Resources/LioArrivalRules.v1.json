@@ -72,8 +72,8 @@
       "valid_until": null,
       "checked_at": "2026-11-25",
       "summary": {
-        "zh": "持有效国际旅行证件和确定日期及座位的联程客票，经中国前往第三国（地区），可从 24 个省（区、市）60 个开放口岸中的任一口岸免签入境，在规定区域停留不超过 10 天。",
-        "en": "With a valid passport and an onward ticket with a confirmed date and seat to a third country or region, you may enter visa-free at any of 60 open ports in 24 provinces and stay up to 10 days within the permitted area."
+        "zh": "持本人普通护照和确定日期及行程的联程客票，经中国前往第三国或地区，可从 24 个省份 65 个开放口岸中的任一口岸免签入境，在规定区域停留活动不超过 10 天。",
+        "en": "With your own ordinary passport and an onward ticket with a confirmed date and itinerary to a third country or region, you may enter visa-free at any of 65 open ports in 24 provinces and stay up to 10 days within the permitted area."
       },
       "not_covered": {
         "zh": "工作、学习、新闻采访等需事先批准的活动，仍应办妥签证。具体口岸和停留区域以官方为准。",
@@ -81,14 +81,9 @@
       },
       "sources": [
         {
-          "url": "https://s.nia.gov.cn/mps/zcjd/202506/t20250550_1010.html",
-          "publisher": { "zh": "国家移民管理局政务服务平台：过境免签政策", "en": "National Immigration Administration: Visa-free transit policy" },
-          "published": "2025-06-27"
-        },
-        {
-          "url": "https://www.nia.gov.cn/n897453/c1722989/content.html",
-          "publisher": { "zh": "国家移民管理局：240 小时过境免签适用国家扩展至 55 国", "en": "National Immigration Administration: 240-hour visa-free transit extended to 55 countries" },
-          "published": "2025-06-12"
+          "url": "https://www.nia.gov.cn/n741440/n741577/c1731205/content.html",
+          "publisher": { "zh": "国家移民管理局：过境免签政策（57 国）", "en": "National Immigration Administration: Visa-free transit policy (57 countries)" },
+          "published": "2026-08-20"
         }
       ]
     }

@@ -93,6 +93,13 @@ struct LioArrivalRulesTests {
                 root["arrival_card"] = card
             },
         ]
+        // Foundation keeps the last of two duplicate keys; the strict reader rejects the file instead.
+        let text = try #require(String(data: valid, encoding: .utf8))
+        let duplicated = text.replacingOccurrences(of: #""review_every_days": 30,"#,
+                                                   with: #""review_every_days": 30, "review_every_days": 90,"#)
+        #expect(duplicated != text)
+        #expect((try? LioArrivalRules.decode(Data(duplicated.utf8))) == nil)
+
         for (name, edit) in broken {
             var root = try #require(try JSONSerialization.jsonObject(with: valid) as? Object)
             edit(&root)
@@ -142,12 +149,24 @@ struct LioArrivalRulesTests {
         else { Issue.record("transit"); return }
         #expect(policy.id == "transit-240h")
         #expect(rules.evaluate(trip("US", days: 7), today: Self.today).outcome == .visaRequired)
-        #expect(rules.evaluate(trip("US", days: 11, onward: true), today: Self.today).outcome == .visaRequired)
+        #expect(rules.evaluate(trip("US", days: 12, onward: true), today: Self.today).outcome == .visaRequired)
+    }
+
+    /// Official notices count the stay from 00:00 the day after entry; we count calendar days including both ends.
+    /// Exactly one day over our limit is left to the official notice rather than answered either way.
+    @Test func oneDayOverTheLimitIsLeftToOfficialSources() throws {
+        let rules = try LioArrivalRules.bundled()
+        guard case .visaFree = rules.evaluate(trip("DE", days: 30), today: Self.today).outcome
+        else { Issue.record("30 calendar days"); return }
+        #expect(rules.evaluate(trip("DE", days: 31), today: Self.today).outcome == .checkOfficial(.stayAtLimit))
+        #expect(rules.evaluate(trip("DE", days: 32), today: Self.today).outcome == .visaRequired)
+        #expect(rules.evaluate(trip("US", days: 11, onward: true), today: Self.today).outcome
+            == .checkOfficial(.stayAtLimit))
     }
 
     @Test func longStaysFallBackToTransitOrVisa() throws {
         let rules = try LioArrivalRules.bundled()
-        #expect(rules.evaluate(trip("JP", days: 31), today: Self.today).outcome == .visaRequired)
+        #expect(rules.evaluate(trip("JP", days: 32), today: Self.today).outcome == .visaRequired)
         guard case .transit = rules.evaluate(trip("JP", arrive: "2027-02-01", days: 5, onward: true),
                                              today: Self.today).outcome
         else { Issue.record("an open-ended transit rule still applies"); return }
@@ -170,6 +189,20 @@ struct LioArrivalRulesTests {
         let late = Self.day("2026-12-26")
         #expect(rules.isOverdue(today: late))
         #expect(rules.evaluate(trip("DE"), today: late).outcome == .checkOfficial(.overdueForReview))
+    }
+
+    @Test func pickedDayIsTheTravellersOwnCalendarDay() throws {
+        var tokyo = Calendar(identifier: .gregorian)
+        tokyo.timeZone = try #require(TimeZone(identifier: "Asia/Tokyo"))
+        // 00:30 on 1 January 2027 in Tokyo is still 31 December in Beijing.
+        let picked = try #require(tokyo.date(from: DateComponents(year: 2027, month: 1, day: 1, hour: 0, minute: 30)))
+        #expect(LioArrivalDay(date: picked, calendar: tokyo) == Self.day("2027-01-01"))
+        #expect(LioArrivalDay(date: picked) == Self.day("2026-12-31"))
+        let rules = try LioArrivalRules.bundled()
+        let trip = LioArrivalTrip(countryCode: "JP", arrival: LioArrivalDay(date: picked, calendar: tokyo),
+                                  stayDays: 5, onwardToThirdCountry: false)
+        #expect(rules.evaluate(trip, today: Self.today).outcome == .checkOfficial(.policyEnded))
+        #expect(Self.day("2027-01-01").date(in: tokyo) == tokyo.date(from: DateComponents(year: 2027, month: 1, day: 1)))
     }
 
     @Test func daysParseStrictlyAndCountForward() throws {

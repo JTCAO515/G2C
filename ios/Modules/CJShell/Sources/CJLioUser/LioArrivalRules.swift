@@ -1,3 +1,4 @@
+import CJStrictJSON
 import Foundation
 
 /// A calendar day in Beijing time, written `yyyy-MM-dd` in the rules file. Entry rules end at "24:00 Beijing time",
@@ -15,9 +16,19 @@ struct LioArrivalDay: Comparable, Hashable, Sendable, CustomStringConvertible, D
         self.year = year; self.month = month; self.day = day
     }
 
-    init(date: Date) {
-        let parts = Self.calendar.dateComponents([.year, .month, .day], from: date)
+    /// The Beijing calendar day of an instant (used for "today").
+    init(date: Date) { self.init(date: date, calendar: Self.calendar) }
+
+    /// The day a person picked on their own calendar. A traveller in Tokyo who picks 1 January means 1 January,
+    /// even though it is still 31 December in Beijing at that instant.
+    init(date: Date, calendar: Calendar) {
+        let parts = calendar.dateComponents([.year, .month, .day], from: date)
         year = parts.year!; month = parts.month!; day = parts.day!
+    }
+
+    /// Midnight of this day on the given calendar, for date pickers.
+    func date(in calendar: Calendar) -> Date {
+        calendar.date(from: DateComponents(year: year, month: month, day: day))!
     }
 
     init(from decoder: any Decoder) throws {
@@ -38,8 +49,7 @@ struct LioArrivalDay: Comparable, Hashable, Sendable, CustomStringConvertible, D
         (lhs.year, lhs.month, lhs.day) < (rhs.year, rhs.month, rhs.day)
     }
 
-    /// Midnight Beijing time on this day.
-    var date: Date { Self.calendar.date(from: DateComponents(year: year, month: month, day: day))! }
+    private var date: Date { Self.calendar.date(from: DateComponents(year: year, month: month, day: day))! }
 
     private static let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
@@ -107,13 +117,16 @@ struct LioArrivalTrip: Equatable, Sendable {
     var stayDays: Int
     var onwardToThirdCountry: Bool
 
-    /// The day the traveller leaves China, counting the arrival day as day 1.
+    /// The day the traveller leaves China. `stayDays` counts calendar days in China, arrival and departure included.
     var lastDay: LioArrivalDay { arrival.adding(days: max(stayDays, 1) - 1) }
 }
 
 struct LioArrivalDecision: Equatable, Sendable {
     enum Reason: Equatable, Sendable {
         case notCovered, notVerified, policyEnded, policyMayEndDuringTrip, overdueForReview
+        /// One day over the limit as we count it. Official notices count the stay from 00:00 the day after
+        /// entry, so this may still fit; we do not decide that for the traveller.
+        case stayAtLimit
     }
     enum Outcome: Equatable, Sendable {
         case visaFree(LioArrivalPolicy)
@@ -146,6 +159,8 @@ struct LioArrivalRules: Decodable, Equatable, Sendable {
     }
 
     static func decode(_ data: Data) throws -> Self {
+        var reader = StrictJSONReader<LioArrivalJSONPolicy>(bytes: Array(data))
+        try reader.check()
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
         let rules = try decoder.decode(Self.self, from: data)
@@ -185,19 +200,21 @@ struct LioArrivalRules: Decodable, Equatable, Sendable {
         if isOverdue(today: today) { return decision(.checkOfficial(.overdueForReview)) }
 
         let own = country.policies.compactMap(policy)
-        var ended = false, mayEnd = false
+        var ended = false, mayEnd = false, atLimit = false
         for kind in [LioArrivalPolicy.Kind.visaFree, .transit] {
             for policy in own where policy.kind == kind {
                 if kind == .transit && !trip.onwardToThirdCountry { continue }
-                guard trip.stayDays >= 1, trip.stayDays <= policy.maxStayDays else { continue }
+                guard trip.stayDays >= 1, trip.stayDays <= policy.maxStayDays + 1 else { continue }
                 if let from = policy.validFrom, trip.arrival < from { continue }
                 if let until = policy.validUntil {
                     if trip.arrival > until { ended = true; continue }
                     if trip.lastDay > until { mayEnd = true; continue }
                 }
+                if trip.stayDays == policy.maxStayDays + 1 { atLimit = true; continue }
                 return decision(kind == .visaFree ? .visaFree(policy) : .transit(policy))
             }
         }
+        if atLimit { return decision(.checkOfficial(.stayAtLimit)) }
         if mayEnd { return decision(.checkOfficial(.policyMayEndDuringTrip)) }
         if ended { return decision(.checkOfficial(.policyEnded)) }
         switch country.otherwise {
@@ -242,4 +259,11 @@ enum LioArrivalCard {
             && url.port == nil && url.query == nil && url.fragment == nil
             && url.path.hasPrefix("/ArrivalCardFillingPC")
     }
+}
+
+/// Rejects duplicate keys and other JSON Foundation would accept silently.
+private enum LioArrivalJSONPolicy: StrictJSONPolicy {
+    static var failure: CocoaError { CocoaError(.fileReadCorruptFile) }
+    static var requiresObjectRoot: Bool { true }
+    static var maximumDepth: Int { 8 }
 }
