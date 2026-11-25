@@ -55,11 +55,13 @@ SUPPLIER_ID = re.compile(r'[A-Za-z0-9_-]{1,128}')
 _CJK = re.compile(r'[一-鿿]')
 # A printed price at the end of a line or segment (checked after NFKC, so ￥ is ¥): ¥38, 38元, 38/份, 12.5元/位.
 _PRICE_TAIL = re.compile(r'\s*(?:¥\s*)?\d{1,4}(?:\.\d{1,2})?\s*(?:元)?\s*(?:/\s*(?:份|位|例|斤|只|个|碗|盘|杯|瓶|两|串))?\s*$')
-# No guarantee that something is absent: allergy and diet flags are the App's, from `contains` only.
-_ABSENCE = re.compile(r'安全|不含|无(?:花生|坚果|海鲜|虾|蟹|鱼|蛋|奶|麸质|麦|大豆|芝麻|酒|猪|牛|羊|肉|过敏)|'
-                      r'\b(?:safe|free of|[a-z]+-free|does not contain|doesn\'t contain|contains no|no (?:pork|beef|'
-                      r'meat|nuts?|peanuts?|shellfish|fish|eggs?|dairy|milk|gluten|wheat|soy|sesame|alcohol))\b',
-                      re.IGNORECASE)
+# No guarantee that something is absent, and no diet label (vegetarian, halal): allergy and diet flags are the
+# App's, from `contains` only.
+_ABSENCE = re.compile(
+    r'安全|不含|素食|全素|纯素|清真|无(?:花生|坚果|海鲜|虾|蟹|鱼|蛋|奶|麸质|麦|大豆|芝麻|酒|猪|牛|羊|肉|过敏)|'
+    r'\b(?:safe|free of|vegetarians?|vegans?|halal|[a-z]+-free|does not contain|doesn\'t contain|contains no|'
+    r'no (?:pork|beef|meat|nuts?|peanuts?|shellfish|fish|eggs?|dairy|milk|gluten|wheat|soy|sesame|alcohol))\b',
+    re.IGNORECASE)
 
 RULES = """你在帮外国游客看懂一张中文菜单。输入是菜单照片识别出的若干行，JSON 数组，每项 {"i": 行号, "text": 该行文字}。
 逐行判断：
@@ -320,7 +322,10 @@ class MenuService:
         except TranslationError:
             raise PluginError(502, 'supplier_unavailable') from None
         self.image_budget.finish(operation, 0, IMAGE_MODEL, supplier, usage)
-        self.reader.require_safe_text(text)
+        try:
+            self.reader.require_safe_text(text)
+        except TranslationError:
+            raise PluginError(502, 'supplier_unavailable') from None
         return text
 
     def explain(self, scope, request, authorize):

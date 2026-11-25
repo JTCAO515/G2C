@@ -8,12 +8,12 @@ import pytest
 from pydantic import ValidationError
 
 from cj_api.lio_menu import (
-    INGREDIENTS, LINES_PER_CALL, MAX_LINES, PROMPT_VERSION, RULES, VERSION, MemoryMenuCache, MenuRequest,
+    DashScopeMenu, INGREDIENTS, LINES_PER_CALL, MAX_LINES, PROMPT_VERSION, RULES, VERSION, MemoryMenuCache, MenuRequest,
     MenuService, cache_key, checked_items, image_url, menu_lines, messages_for,
 )
 from cj_api.plugin_tools import PluginError
 from cj_api.translation import MAX_MEDIA, supplier_unavailable
-from cj_usage.menu_budget import MenuDuplicate, MenuLimit
+from cj_usage.menu_budget import MAX_OUTPUT_TOKENS, MenuDuplicate, MenuLimit
 from cj_usage.metered_exit import BudgetUnknown
 from cj_usage.translation_budget import IMAGE_MODEL, TranslationLimit
 
@@ -163,6 +163,13 @@ def test_absence_claims_are_blanked_and_ingredients_are_bounded():
     assert entry['contains'] == {'egg': 'likely', 'soy': 'possible'}
 
 
+@pytest.mark.parametrize('claim', ['Suitable for vegetarians.', 'A vegan classic.', 'Halal-friendly.', '素食者也可以点。',
+                                   '清真做法。'])
+def test_diet_labels_are_left_to_the_app(claim):
+    entry = checked_items(reply(dish(0, '蛋炒饭', summary_en=claim, summary_zh=claim)), ['蛋炒饭'])[0]
+    assert entry['summary_en'] == '' and entry['summary_zh'] == ''
+
+
 @pytest.mark.parametrize('changes', [dict(spice=4), dict(spice='hot'), dict(spice=True), dict(contains=[]),
                                      dict(name_en=None), dict(name_zh=None)])
 def test_a_dish_with_a_bad_field_becomes_unclear(changes):
@@ -306,3 +313,87 @@ def test_a_failed_read_is_a_supplier_error():
     with pytest.raises(PluginError) as error:
         explain(service(reader=Broken()))
     assert (error.value.status, error.value.code) == (502, 'supplier_unavailable')
+
+
+def test_unsafe_recognised_text_is_a_supplier_error():
+    class Echo(Reader):
+        def require_safe_text(self, value):
+            raise supplier_unavailable()
+
+    with pytest.raises(PluginError) as error:
+        explain(service(reader=Echo()))
+    assert (error.value.status, error.value.code) == (502, 'supplier_unavailable')
+
+
+class Connection:
+    def __init__(self, reply, events, status=200):
+        self.reply, self.events, self.status = reply, events, status
+
+    def connect(self):
+        self.events.append(('connect',))
+
+    def request(self, method, path, body, headers):
+        self.events.append(('send', method, path, json.loads(body), headers['Authorization']))
+
+    def getresponse(self):
+        reply, status = self.reply, self.status
+
+        class Response:
+            def read(self, limit=None):
+                return json.dumps(reply).encode()
+
+        response = Response()
+        response.status = status
+        return response
+
+    def close(self):
+        self.events.append(('close',))
+
+
+def completion(**changes):
+    value = dict(id='chatcmpl-abc', model='qwen3.8-flash',
+                 choices=[dict(message=dict(content='{"items":[]}'), finish_reason='stop')],
+                 usage=dict(prompt_tokens=900, completion_tokens=400, total_tokens=1300))
+    value.update(changes)
+    return value
+
+
+def test_dashscope_request_is_flash_json_without_thinking_and_reserved_after_connect():
+    events = []
+    client = DashScopeMenu('sk-test', connection=lambda: Connection(completion(), events))
+    result = client.generate(messages_for(['宫保鸡丁']), lambda: events.append(('reserve',)))
+    assert [event[0] for event in events] == ['connect', 'reserve', 'send', 'close']
+    _, method, path, body, auth = events[2]
+    assert (method, path, auth) == ('POST', '/compatible-mode/v1/chat/completions', 'Bearer sk-test')
+    assert body['model'] == 'qwen3.8-flash' and body['max_tokens'] == MAX_OUTPUT_TOKENS
+    assert body['enable_thinking'] is False and body['response_format'] == {'type': 'json_object'}
+    assert body['messages'] == messages_for(['宫保鸡丁'])
+    assert result == ('chatcmpl-abc', {'input_tokens': 900, 'output_tokens': 400}, '{"items":[]}', 'stop')
+
+
+def test_a_cut_off_reply_is_passed_on_as_length():
+    client = DashScopeMenu('sk-test', connection=lambda: Connection(
+        completion(choices=[dict(message=dict(content='{"items":['), finish_reason='length')]), []))
+    assert client.generate(messages_for(['宫保鸡丁']), lambda: None)[3] == 'length'
+
+
+@pytest.mark.parametrize('changes', [dict(model='qwen-plus'), dict(id='bad id!'), dict(choices=[]),
+                                     dict(usage=dict(prompt_tokens=1)),
+                                     dict(choices=[dict(message=dict(content='sk-test'), finish_reason='stop')]),
+                                     dict(choices=[dict(message=dict(content='{}'), finish_reason='tool_calls')])])
+def test_dashscope_receipts_must_match_the_request(changes):
+    client = DashScopeMenu('sk-test', connection=lambda: Connection(completion(**changes), []))
+    with pytest.raises(PluginError):
+        client.generate(messages_for(['宫保鸡丁']), lambda: None)
+
+
+def test_a_failed_http_answer_is_a_supplier_error():
+    client = DashScopeMenu('sk-test', connection=lambda: Connection(completion(), [], status=500))
+    with pytest.raises(PluginError) as error:
+        client.generate(messages_for(['宫保鸡丁']), lambda: None)
+    assert error.value.code == 'supplier_unavailable'
+
+
+def test_the_key_is_required():
+    with pytest.raises(ValueError):
+        DashScopeMenu('')
