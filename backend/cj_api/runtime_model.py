@@ -9,6 +9,7 @@ from runtime_adapter.contract import decode,Unavailable
 from cj_draft.grouped_plan import GENERATION_PROFILES
 from cj_draft.rich_schema import GENERATION_PROFILES as RICH_PROFILES
 from cj_message.lio_exploration_schema import PROFILES as EXPLORATION_PROFILES,response_format,response_format_sha256
+from cj_message.lio_context import DISCUSSION_MAX_PREVIEW_DAYS,discussion_preview_format_sha256
 
 
 def configured_model(provider,native_turn_profile):
@@ -42,9 +43,14 @@ class RuntimeModel:
         profile=logical.get('native_turn_profile')
         if profile is not None and profile!=self.native_turn_profile:
             raise Unavailable('ACTUAL_NATIVE_MODEL_PROFILE_CHANGED')
+        days=logical.get('discussion_preview_days')
+        # JT 2026-11-25: the day-by-day discussion preview uses the answer limit (provider.py).
+        preview=(type(days) is int and 1<=days<=DISCUSSION_MAX_PREVIEW_DAYS
+                 and logical.get('response_format_sha256')==discussion_preview_format_sha256(days))
         full_output=(profile in (M4_NATIVE_TURN_BUFFERED,M4_NATIVE_TURN_STREAM,M4_NATIVE_TURN_PROFILE_V2)
                      or logical.get('structured_profile') is not None
-                     or logical.get('draft_profile') in RICH_PROFILES)
+                     or logical.get('draft_profile') in RICH_PROFILES
+                     or preview)
         maximum=config.max_output_tokens if full_output else min(1024,config.max_output_tokens)
         if (body['model']!=config.model_id or body['stream'] is not True or
                 body['stream_options']!={'include_usage':True} or body['enable_thinking'] is not False or
