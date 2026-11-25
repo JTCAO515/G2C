@@ -211,11 +211,13 @@ class MainChangesTests(unittest.TestCase):
             git(work, 'commit', '--quiet', '-m', 'rename after ci', date='2026-11-25T07:12:00Z')
             git(work, 'merge', '--quiet', '--no-ff', '-m', 'Merge pull request #9', 'side', date='2026-11-25T07:20:00Z')
             git(work, 'push', '--quiet', 'origin', 'main')
+            pr_head = git(work, 'rev-parse', 'main~3').strip()  # a PR branched at 'before ci'
+            git(work, 'push', '--quiet', 'origin', f'{pr_head}:refs/pull/5/head')
             cwd = os.getcwd()
             os.chdir(work)
             try:
                 started = datetime.datetime(2026, 11, 25, 7, 0, tzinfo=datetime.timezone.utc)
-                files, log_for = merge_pr.main_changes_since(started)
+                files, log_for = merge_pr.main_changes_since(started, 5, pr_head)
                 side_log, main_log = log_for(['side.swift']), log_for(['main.swift'])
             finally:
                 os.chdir(cwd)
@@ -250,6 +252,72 @@ class MergeReadBackTests(unittest.TestCase):
             self.merge_with([{'merged': False, 'head': {'sha': HEAD}}] * 5)
         with self.assertRaises(RuntimeError):
             self.merge_with([RuntimeError('503')] * 5)
+
+
+class HeadAncestorTests(unittest.TestCase):
+    """Main commits the PR head already contains are never counted (#1636 on 6ef47a96: #1627's
+    merge bf554005 fell inside the two-minute margin but was already in the PR branch)."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        origin, self.work = os.path.join(self.tmp.name, 'origin.git'), os.path.join(self.tmp.name, 'work')
+        git(self.tmp.name, 'init', '--quiet', '--bare', '-b', 'main', origin)
+        git(self.tmp.name, 'clone', '--quiet', origin, self.work)
+        git(self.work, 'checkout', '--quiet', '-b', 'main')
+        self.commit('shared.swift', '2026-11-25T06:00:00Z', 'start')
+        # #1627 merges into main at 07:00, inside the margin of a CI run that starts at 07:01.
+        git(self.work, 'checkout', '--quiet', '-b', 'other-pr')
+        self.commit('shared.swift', '2026-11-25T06:50:00Z', 'other PR work')
+        git(self.work, 'checkout', '--quiet', 'main')
+        git(self.work, 'merge', '--quiet', '--no-ff', '-m', 'Merge pull request #1627', 'other-pr',
+            date='2026-11-25T07:00:00Z')
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def commit(self, path, date, message):
+        with open(os.path.join(self.work, path), 'a') as out:
+            out.write(message + '\n')
+        git(self.work, 'add', path)
+        git(self.work, 'commit', '--quiet', '-m', message, date=date)
+
+    def pr(self, start, date):
+        git(self.work, 'checkout', '--quiet', '-b', 'pr', start)
+        self.commit('shared.swift', date, 'this PR')
+        head = git(self.work, 'rev-parse', 'HEAD').strip()
+        git(self.work, 'push', '--quiet', 'origin', 'HEAD:refs/pull/7/head')
+        git(self.work, 'checkout', '--quiet', 'main')
+        return head
+
+    def changes(self, head):
+        git(self.work, 'push', '--quiet', 'origin', 'main')
+        cwd = os.getcwd()
+        os.chdir(self.work)
+        try:
+            started = datetime.datetime(2026, 11, 25, 7, 1, tzinfo=datetime.timezone.utc)
+            files, log_for = merge_pr.main_changes_since(started, 7, head)
+            return files, log_for(['shared.swift', 'later.swift'])
+        finally:
+            os.chdir(cwd)
+
+    def test_main_commit_already_in_the_head_is_not_counted(self):
+        head = self.pr('main', '2026-11-25T07:00:30Z')  # branch made after #1627 merged
+        self.commit('later.swift', '2026-11-25T07:10:00Z', 'after ci')
+        files, log = self.changes(head)
+        self.assertEqual(files, {'later.swift'})
+        self.assertNotIn('#1627', log)
+        self.assertIn('after ci', log)
+
+    def test_main_commit_in_the_margin_but_not_in_the_head_still_counts(self):
+        head = self.pr('main~1', '2026-11-25T06:55:00Z')  # branch made before #1627 merged
+        files, log = self.changes(head)
+        self.assertEqual(files, {'shared.swift'})
+        self.assertIn('#1627', log)
+
+    def test_head_that_moved_on_github_stops(self):
+        head = self.pr('main', '2026-11-25T07:00:30Z')
+        with self.assertRaises(Blocked):
+            self.changes('f' * 40)
 
 
 class ArgumentTests(unittest.TestCase):
