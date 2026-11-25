@@ -57,7 +57,7 @@
   {"id": "ch040", "nameZH": "林溪大街", "nameEN": "Linxi Dajie", "x": 984.6, "y": 344.1, "lines": ["ch-2"]},
   {"id": "ch041", "nameZH": "雾开河大街", "nameEN": "Wukaihe Dajie", "x": 1019.7, "y": 344.5, "lines": ["ch-2"]},
   {"id": "ch042", "nameZH": "伪满皇宫", "nameEN": "Weiman Huanggong", "x": 581.6, "y": 260.6, "lines": ["ch-3", "ch-4"]},
-  {"id": "ch043", "nameZH": "东广场", "nameEN": "Dong Guangchang", "x": 545.6, "y": 261.5, "lines": ["ch-3"]},
+  {"id": "ch043", "nameZH": "东广场", "nameEN": "Dongguangchang", "x": 545.6, "y": 261.5, "lines": ["ch-3"]},
   {"id": "ch044", "nameZH": "芙蓉桥", "nameEN": "Furong Qiao", "x": 461.6, "y": 281.2, "lines": ["ch-3"]},
   {"id": "ch045", "nameZH": "西安桥", "nameEN": "Xi'an Qiao", "x": 447.7, "y": 299.0, "lines": ["ch-3"]},
   {"id": "ch046", "nameZH": "南昌路", "nameEN": "Nanchang Lu", "x": 434.3, "y": 317.2, "lines": ["ch-3"]},
