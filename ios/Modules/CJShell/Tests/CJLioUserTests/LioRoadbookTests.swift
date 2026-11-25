@@ -244,3 +244,51 @@ struct LioRoadbookTests {
         #expect(LioRoadbookPDF.fileName(for: odd, language: .chinese) == "西安-路书.pdf")
     }
 }
+
+/// Review follow-ups on #1524: per-account folder, signed-out guard, tighter files, one export at a time.
+struct LioRoadbookStorageHardeningTests {
+    @Test func copiesLiveInTheAccountsMessageFolder() {
+        let account = URL(fileURLWithPath: "/tmp/account-a", isDirectory: true)
+        #expect(LioRoadbookStore.storageDirectory(inMessageDirectory: account).lastPathComponent == "roadbooks")
+        #expect(LioRoadbookStore.storageDirectory(inMessageDirectory: account).deletingLastPathComponent().path == account.path)
+    }
+
+    @Test func aRetiredAccountCanNeitherReadNorWrite() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("roadbook-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try LioRoadbookStore(directory: directory).save(LioRoadbookTests.roadbook())
+        let retired = LioRoadbookStore(directory: directory, isCurrent: { false })
+        #expect(retired.load().isEmpty)
+        #expect(!retired.contains("planned.beijing"))
+        #expect(throws: LioRoadbookStore.Failure.notCurrent) { try retired.save(LioRoadbookTests.roadbook(id: "other")) }
+        #expect(throws: LioRoadbookStore.Failure.notCurrent) { try retired.remove("planned.beijing") }
+        #expect(LioRoadbookStore(directory: directory).load().map(\.id) == ["planned.beijing"])
+    }
+
+    @Test func theFolderIsPrivateToTheApp() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("roadbook-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try LioRoadbookStore(directory: directory).save(LioRoadbookTests.roadbook())
+        let permissions = try FileManager.default.attributesOfItem(atPath: directory.path)[.posixPermissions] as? Int
+        #expect(permissions == 0o700)
+    }
+
+    @Test func onlyTheLatestExportIsKept() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("roadbook-pdf-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let first = try LioRoadbookPDF.write(LioRoadbookTests.roadbook(), language: .english, to: directory)
+        let second = try LioRoadbookPDF.write(LioRoadbookTests.roadbook(), language: .chinese, to: directory)
+        let files = try FileManager.default.contentsOfDirectory(atPath: directory.path)
+        #expect(files == [second.lastPathComponent])
+        #expect(!FileManager.default.fileExists(atPath: first.path))
+    }
+
+    @Test func emptyNotesAreLeftOut() throws {
+        let base = LioRoadbookTests.itinerary()
+        let itinerary = LioRichItinerary(title: base.title, undated: true, days: base.days, lodgingArea: "",
+                                         hotels: [.init(id: "h", place: LioRoadbookTests.place("王府井一带", "Wangfujing area"), note: "  ")])
+        let book = LioRoadbookTests.roadbook(itinerary)
+        #expect(LioRoadbook.visibleNote(book.itinerary.hotels[0].note) == nil)
+        #expect(LioRoadbook.visibleNote(" 步行可到故宫 ") == "步行可到故宫")
+    }
+}
