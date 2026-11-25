@@ -60,7 +60,8 @@
 - `source`：第一步是 `Gaode`，以后可能是 `Trip.com`。来源是 `Gaode` 时 `foreign_guests` 一律为 `unknown`，App 也一律显示「请在 Trip.com 确认」。来源是 `Trip.com` 时可能为 `accepted`、`not_accepted` 或 `unknown`。
 - 可选字段缺失时直接省略，不发 `null`：`name_en`、`address_en`（仅英文请求，来自千问英译，失败时省略）、`rating`（字符串）、`price_cny`、`price_kind`、`metro`（最近地铁站在 2 公里以内才给）。`price_kind` 为 `reference` 时是高德参考价，不是实时房价。
 - `booking_url` 是香港本站的交接链接，handle 由 22 位 `[A-Za-z0-9_-]` 组成，24 小时内有效，服务重启后失效。打开后 302 到 Trip.com 酒店列表页（带城市、日期、人数，酒店名填在搜索框）。城市不在已核对的列表里时，跳到 Trip.com 酒店首页。联盟 ID 只在香港配置，第一步不带。未知或过期的 handle 返回 404，不跳转到任何外部地址。
-- `omitted_items`：缺少名称、坐标或中文地址而被略去的条数；没有略去时省略该字段。
+- `omitted_items`：被略去的条数，包括缺少名称、坐标或中文地址的行，类型或格式不合规的行，以及重复 `id` 的后续行（保留第一条）；没有略去时省略该字段。
+- 同一响应内 `items[].id` 唯一。
 - App 内不下单、不付款。预订和付款在 Trip.com 完成。
 
 ## 错误与额度
