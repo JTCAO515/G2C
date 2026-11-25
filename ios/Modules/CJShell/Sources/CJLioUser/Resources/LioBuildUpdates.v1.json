@@ -54,13 +54,13 @@
             "zh": [
               "行程：点「先只做准备」，关掉「还没定日期」选到达日期，再选护照国籍看入境结论；点「去办」进工具再返回。",
               "回酒店：在「酒店」点「设为我的酒店」，再试打车回酒店、给司机看和全屏出示卡。点餐：拍中文菜单，勾忌口，选菜，打开点单卡（约 10–40 秒，每天最多 10 张）。",
-              "景点预约：故宫选 7 天内的日期，点「提醒我」并允许通知。城际交通：查上海→北京，点「预订」。路书：打开北京三日路线，试打车、景点详情、离线保存和导出 PDF。附近：逐类查「必需品」。地铁：广州「体育西路」看周边。",
+              "景点预约：故宫选 7 天内的日期，点「提醒我」并允许通知。城际交通：查上海→北京，点「去 12306 订票」或「去 Trip.com 订票」。路书：打开「北京三日经典路线」，试打车、景点详情、离线保存和导出 PDF。附近：逐类查「必需品」。地铁：广州「体育西路」看周边。",
               "这是这些功能第一次真机联调，遇到问题请在内部测试群发截图、问题记录和发生时间。"
             ],
             "en": [
               "Trips: tap Just get ready, turn off Dates not decided yet, set an arrival date and passport for the entry result, open a tool with Go and come back.",
-              "Back to Hotel: tap Set as my hotel in Hotels, then try Taxi back, Show the driver and a full-screen card. Menu Helper: photograph a Chinese menu, tick needs, pick dishes, open the order card (10-40 s; 10 menus a day).",
-              "Sight Bookings: Palace Museum, a day within 7 days, Remind me. Intercity Travel: Shanghai to Beijing, tap Book. Roadbook: Beijing three-day route; try taxi, sight details, Keep offline, Export PDF. Nearby: each Essentials type. Metro: Guangzhou Tiyu Xilu.",
+              "Back to Hotel: tap Set as my hotel in Hotels, then try Take a taxi back, Show the driver and a full-screen card. Menu Helper: photograph a Chinese menu, tick needs, pick dishes, open the order card (10-40 s; 10 menus a day).",
+              "Sight Bookings: Palace Museum, a day within 7 days, Remind me. Intercity Travel: Shanghai to Beijing, tap Book on 12306 or Trip.com. Roadbook: Three classic days in Beijing; try a taxi, Place details, Keep offline, Export PDF. Nearby: each Essentials type. Metro: Guangzhou Tiyu Xilu.",
               "First run on devices: share a screenshot, the issue record and the time in the testing group."
             ]
           }
