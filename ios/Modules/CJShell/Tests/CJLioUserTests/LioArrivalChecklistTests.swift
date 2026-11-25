@@ -86,4 +86,18 @@ struct LioArrivalChecklistTests {
         next.toggle(.transfer)
         #expect(next.stored == "entry,payment,internet,transfer,taxi")
     }
+
+    /// The trip home page reads and writes the same ticks and nationality; the keys are stored on devices.
+    @Test func sharedStorageKeysStayStable() {
+        #expect(LioArrivalProgress.storageKey == "lio.arrival.progress.v1")
+        #expect(LioArrivalTrip.nationalityStorageKey == "lio.local-support.nationality")
+    }
+
+    @Test func stayDaysFromATripAreKeptInTheFormsRange() {
+        #expect(LioArrivalTrip.formStayDays(7) == 7)
+        #expect(LioArrivalTrip.formStayDays(0) == 1)
+        #expect(LioArrivalTrip.formStayDays(-3) == 1)
+        #expect(LioArrivalTrip.formStayDays(120) == 90)
+        #expect(LioArrivalTrip.formStayRange == 1...90)
+    }
 }
