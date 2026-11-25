@@ -442,5 +442,8 @@
   {"id": "sh414", "nameZH": "三林南", "nameEN": "South Sanlin", "x": 550.5, "y": 1056.2, "lines": ["sh-51"]},
   {"id": "sh415", "nameZH": "康桥东", "nameEN": "East Kangqiao", "x": 974.0, "y": 1056.2, "lines": ["sh-51"]},
   {"id": "sh416", "nameZH": "上海国际旅游度假区", "nameEN": "Shanghai International Resort", "x": 1019.9, "y": 1068.5, "lines": ["sh-51"]}
+ ],
+ "water": [
+  {"nameZH": "黄浦江", "nameEN": "Huangpu River", "points": [[559.5, 963.5], [542.6, 904.7], [614.3, 866.0], [653.0, 846.7], [699.5, 812.2], [716.5, 734.2], [701.5, 647.8], [801.5, 608.2], [864.5, 558.9], [912.2, 487.3]]}
  ]
 }
