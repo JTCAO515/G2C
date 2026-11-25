@@ -69,12 +69,14 @@ class PositiveTripTests(unittest.TestCase):
         for text in ("I don't want to spend 3 days in Chengdu","I'd not like to spend 3 days in Chengdu",
                      'Do I want to spend 3 days in Chengdu?','If I spend 3 days in Chengdu',
                      'Translate "spend 3 days in Chengdu"','Never spend 3 days in Chengdu',
-                     'I want to spend not 3 days in Chengdu',"Don't plan a 3-day trip to Chengdu"):
+                     'I want to spend not 3 days in Chengdu',"Don't plan a 3-day trip to Chengdu",
+                     'Spend 3 days in Chengdu?','Spend 3 days in Chengdu？'):
             with self.subTest(text=text),self.assertRaises(InvalidInput):
                 parse(text,[update('city','Chengdu','Chengdu'),update('duration_days',3,'3-day' if '3-day' in text else '3 days')])
 
     def test_relative_days_are_not_reinterpreted_as_trip_duration(self):
-        for text,quote in (('3天后开始','3天'),('in 3 days','3 days')):
+        for text,quote in (('3天后开始','3天'),('in 3 days','3 days'),('Plan a trip to Chengdu in 3-days','3-days'),
+                           ('Plan a trip to Chengdu in 3-day','3-day')):
             with self.subTest(text=text),self.assertRaises(InvalidInput):
                 parse(text,[update('duration_days',3,quote)])
 

@@ -9,7 +9,7 @@ _DATE=(r'(?:[0-9]{2}(?:[0-9]{2})?[./-][0-9]{1,2}[./-][0-9]{1,2}|'
        r'(?:[0-9]{2}(?:[0-9]{2})?年)?[0-9]{1,2}月[0-9]{1,2}[日号]?|'
        r'大后天|后天|明天|今天|(?:下+|本|这)(?:周|星期|礼拜)[一二三四五六天日]|'
        r'next\s+'+_WEEKDAY+r'|tomorrow|today|'
-       r'in\s+'+_NUMBER+r'\s+days?|'+_NUMBER+r'天(?:之|以)?后)')
+       r'in\s+'+_NUMBER+r'(?:\s+|-)days?|'+_NUMBER+r'天(?:之|以)?后)')
 _KNOWN_CITIES={'北京','上海','成都','杭州','西安','beijing','shanghai','chengdu','hangzhou',"xi'an"}
 
 
@@ -60,7 +60,10 @@ def supports(key,clause,quote,*,registered_city_terms=()):
         r'(?:(?:can|could) you\s+|please\s+)?(?:plan|organize|create)\b|(?:I|we) (?:want|would like) to (?:visit|go to)\b|'
         # #1541: everyday affirmative English requests. Negation/question/conditional
         # words (not, don't, do, if, translate, never) remain outside the grammar.
-        r"(?:I|we)(?:'d|\u2019d|\s+would)\s+like\s+to\s+(?:visit|go\s+to|spend)\b|(?:I|we)\s+want\s+to\s+spend\b|spend\b)"
+        r"(?:I|we)(?:'d|\u2019d|\s+would)\s+like\s+to\s+(?:visit|go\s+to|spend)\b|(?:I|we)\s+want\s+to\s+spend\b)"
+        # A bare imperative "Spend ..." is affirmative but is not a request that
+        # lets a trailing question mark pass ("Spend 3 days in Chengdu?").
+        r'|(?P<spend>spend\b)'
         r'|(?P<date>'+_DATE+r')'
         r'|(?P<duration>'+_NUMBER+r'\s*(?:天|日)|'+_NUMBER+r'\s+days?|'+_NUMBER+r'-days?)'
         r'|(?P<party>'+_NUMBER+r'\s*(?:个人|人)|'+_NUMBER+r'\s+(?:people|persons?|adults?))'

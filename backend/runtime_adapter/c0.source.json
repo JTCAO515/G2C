@@ -97,7 +97,7 @@
     "backend/cj_api/lio_plan_pace.py": "23ba03c5034fa17ae844809b96d67093b58037ef7240d454c07b061d6b294e1c",
     "backend/cj_api/lio_planning_grounding.py": "c8abe36e358cc2ff662947f831b3fcdf086c081e5772910675a16e34c8cdd65a",
     "backend/cj_api/lio_poi2_tool.py": "dc912594718512013d38c1d5b920c9272c62d36a1bf5034a61b4c511fcc5428e",
-    "backend/cj_api/lio_positive_trip.py": "afe9a3b3a551b8a9649f95c3cfbe21a020762e0dacc7c467d91bad9621529c28",
+    "backend/cj_api/lio_positive_trip.py": "2d926cc49df8fadec1d70f11756ecb4b622484fce2837134e4b566af47d430d1",
     "backend/cj_api/lio_profile_cards.py": "15614a7171fd0f354809d5179e68ae0339db6345833c6ecf6b0ec641f8eaf405",
     "backend/cj_api/lio_scene.py": "b331831401b4a1ca9302257e607a03b1ab50990d1bb7c2da5377f47c87588fce",
     "backend/cj_api/lio_sourced_intake.py": "ef357326f4142fc821e246b44de681ea7897e6e3e7537e20b4554649311b6633",
@@ -137,7 +137,7 @@
     "eval/optimization/score_v2.py": "015fa9f21b418fe49a5ac07a5fb3027e0422620a6616029f2ba6438bfa1e9322",
     "tooling/optimization/uv.lock": "c3729fbcd04627cb07bde4f5f21b9c4fbfa4748b3d7468d550c7fc2af62bc343"
   },
-  "system_prompt_sha256": "04e4e783619f2b47875201afb8a54c98d06274d8efdb2392c31906f600c593ca",
+  "system_prompt_sha256": "9d5cee54411bc0742081eff7bffdd9ed746cf3465adebbfac28b45ac45091fc7",
   "task_sha256": "9d4376ba7512d6f3c0741036ae1bd0dda99752bbc9f8b8fb8dd7025c61a530ec",
   "task_version": "G2C-dialogue-cases.2",
   "tool_implementation_sha256": "71f19e9df910bd08c74d2785c3d5e2f3d5cf17ce96254dc1908ba8df867075e2",
