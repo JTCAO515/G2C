@@ -13,7 +13,7 @@ struct LioBuildUpdatesTests {
         #expect(current.sections.map(\.id) == [.changes, .comparison, .testing, .known, .service])
         #expect(current.whatToTest(.chinese).contains("全国 41 个开通地铁的城市"))
         #expect(current.whatToTest(.english).contains("all 41 mainland cities with a metro"))
-        #expect(current.whatToTest(.chinese).contains("规划行程入口开通后可用"))
+        #expect(current.whatToTest(.chinese).contains("按天展示的行程放在下一版"))
         #expect(current.whatToTest(.english).contains("no longer makes the app stop responding"))
         #expect(previous.whatToTest(.chinese).contains("底部改为「聊天 / 行程 / 工具 / 我的」"))
         #expect(previous.whatToTest(.english).contains("Open in DiDi now opens DiDi"))

@@ -15,13 +15,13 @@
           "items": {
             "zh": [
               "地铁指南扩到全国 41 个开通地铁的城市，新增西安等城市的可交互线路图。城市用双列卡片排列，可搜索，点城市直接打开线路图；线路图在缩放、拖动被打断后不再跳动。",
-              "「我的记忆」改为整页打开，「完成」在页面右上角；编辑时点键盘上的完成不会再把整页关掉。",
+              "「我的」里的「我的记忆」改为从底部弹出，右上角「完成」可随时关闭。",
               "英文界面打车搜索地点时，显示英文地点名和地址。",
               "聊天内容较长时调整系统字号，App 不再卡住。"
             ],
             "en": [
               "The Metro Guide now covers all 41 mainland cities with a metro, adding interactive line maps such as Xi'an. Cities are shown as two-column cards you can search; tap a city to open its line map. The map no longer jumps after a zoom or drag is interrupted.",
-              "Your memory now opens as a full page with Done at the top right. Tapping Done on the keyboard while editing no longer closes the page.",
+              "Your memory in Me now opens as a sheet; tap Done at the top right to close it.",
               "In English, taxi place search shows English place names and addresses.",
               "Changing the system text size during a long chat no longer makes the app stop responding."
             ]
@@ -51,14 +51,14 @@
           "items": {
             "zh": [
               "地铁：在「工具」打开地铁指南，搜索一个新城市（如西安、哈尔滨），打开线路图后缩放、拖动并查找一个车站。",
-              "在「我的」打开我的记忆，编辑一条后点键盘上的完成，页面应保持打开；再点右上角「完成」关闭。",
-              "打车：英文界面搜索一个地点，看地点名和地址是否为英文。把系统字号调大后回到一段较长的聊天，确认 App 仍可正常滚动和输入。",
+              "在「我的」打开我的记忆，进入一条记忆修改后点右上角「完成」保存，返回列表后点右上角「完成」关闭。",
+              "打车：英文界面搜索一个地点，有英文名的地点显示英文名和地址（没有英文名时显示中文）。把系统字号调大后回到一段较长的聊天，确认 App 仍可正常滚动和输入。",
               "遇到问题，请在内部测试群发截图、问题记录及发生时间。"
             ],
             "en": [
               "Metro: in Tools, open the Metro Guide, search a newly added city such as Xi'an or Harbin, then zoom, drag and find a station on its line map.",
-              "In Me, open your memory, edit an entry and tap Done on the keyboard: the page should stay open. Then tap Done at the top right to close it.",
-              "Taxi: in English, search for a place and check that names and addresses are in English. Make the system text larger, return to a long chat and check that it still scrolls and accepts typing.",
+              "In Me, open your memory, edit an entry and tap Done at the top right to save, then go back and tap Done to close it.",
+              "Taxi: in English, search for a place; places with an English name show it in English (others stay in Chinese). Make the system text larger, return to a long chat and check that it still scrolls and accepts typing.",
               "Share a screenshot, the copied issue record and the time it happened in the internal testing group."
             ]
           }
@@ -72,12 +72,12 @@
           "items": {
             "zh": [
               "会员方案只是预览，不能购买，也不会扣费。个人信息暂时只能查看。",
-              "按天展示的行程：规划行程入口开通后可用，放在下一版。支付宝里的滴滴暂不能一键打开。地铁线路图为示意图，不显示真实地理位置。",
+              "按天展示的行程放在下一版。支付宝里的滴滴暂不能一键打开。地铁线路图为示意图，不显示真实地理位置。",
               "酒店、千问朗读、天气、航班、上网卡、玩乐暂未开放。本地协助暂不发送求助消息。"
             ],
             "en": [
               "Plans are a preview only: nothing can be bought or charged. Profile is view-only for now.",
-              "Day-by-day trip plans arrive once the trip planning entry opens, in a later build. DiDi in Alipay can't be opened directly yet. The metro line map is a diagram, not a geographic map.",
+              "Day-by-day trip plans come in a later build. DiDi in Alipay can't be opened directly yet. The metro line map is a diagram, not a geographic map.",
               "Hotels, Qwen voice playback, Weather, Flights, eSIM and Activities are unavailable. Local Support does not send help requests."
             ]
           }
