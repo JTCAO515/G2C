@@ -57,7 +57,8 @@ def main():
     app = app_source.read_text()
     marker = 'LioOnboardingPreview(shell: shell)'
     assert app.count(marker) == 1
-    generated_app.write_text(app.replace(marker, 'if ProcessInfo.processInfo.arguments.contains("--lio-invitation-traits-acceptance") { LioInvitationInputFixture { LioOnboardingPreview(shell: shell) } } else { LioOnboardingPreview(shell: shell) }')
+    # Group keeps the replacement a single view: the app applies modifiers (e.g. lioEmergencySupportFallback) after it.
+    generated_app.write_text(app.replace(marker, 'Group { if ProcessInfo.processInfo.arguments.contains("--lio-invitation-traits-acceptance") { LioInvitationInputFixture { LioOnboardingPreview(shell: shell) } } else { LioOnboardingPreview(shell: shell) } }')
                              + '\n' + (HERE/'LioInvitationInputFixture.swift').read_text())
     settings.write_text(settings.read_text().replace('space.go2china.foundation.local', 'space.go2china.updates.acceptance')
                         .replace(str(original_info), str(output/'Info.plist'))

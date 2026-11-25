@@ -10,6 +10,15 @@ struct LioMetroMap: Equatable, Sendable {
         let urls: [URL]
         /// `yyyy-MM-dd`, the day the data was last compared with the operator's site.
         let checkedOn: String
+        /// Where the English names come from when the operator publishes none (#1450, JT 2026-11-25:
+        /// find English first, then pinyin).
+        let english: English?
+
+        struct English: Equatable, Sendable {
+            let nameZH: String
+            let nameEN: String
+            let url: URL
+        }
 
         func name(in language: LioLanguage) -> String { language.text(operatorEN, operatorZH) }
     }
@@ -124,7 +133,12 @@ extension LioMetroMap {
     }
 
     private struct File: Decodable {
-        struct Source: Decodable { let operatorZH, operatorEN: String; let urls: [String]; let checkedOn: String }
+        struct Source: Decodable {
+            let operatorZH, operatorEN: String
+            let urls: [String]
+            let checkedOn: String
+            let englishZH, englishEN, englishURL: String?
+        }
         struct Canvas: Decodable { let width, height: Double }
         struct Line: Decodable {
             let id, nameZH, nameEN, color: String
@@ -156,6 +170,15 @@ extension LioMetroMap {
         guard !file.source.operatorZH.isEmpty, !file.source.operatorEN.isEmpty, !urls.isEmpty,
               urls.count == file.source.urls.count, urls.allSatisfy({ $0.scheme == "https" && $0.host != nil }),
               isDay(file.source.checkedOn) else { throw LioMetroMapFailure.invalid("source") }
+        let english: Source.English?
+        switch (file.source.englishZH, file.source.englishEN, file.source.englishURL.flatMap(URL.init(string:))) {
+        case (nil, nil, nil) where file.source.englishURL == nil:
+            english = nil
+        case let (zh?, en?, url?) where !zh.isEmpty && !en.isEmpty && url.scheme == "https" && url.host != nil:
+            english = .init(nameZH: zh, nameEN: en, url: url)
+        default:
+            throw LioMetroMapFailure.invalid("source")
+        }
         guard file.canvas.width > 0, file.canvas.height > 0, !file.lines.isEmpty, !file.stations.isEmpty else {
             throw LioMetroMapFailure.invalid("empty")
         }
@@ -202,7 +225,7 @@ extension LioMetroMap {
         return LioMetroMap(
             city: city,
             source: .init(operatorZH: file.source.operatorZH, operatorEN: file.source.operatorEN, urls: urls,
-                          checkedOn: file.source.checkedOn),
+                          checkedOn: file.source.checkedOn, english: english),
             width: file.canvas.width, height: file.canvas.height, lines: lines, stations: stations, water: water,
             stationIndex: Dictionary(uniqueKeysWithValues: stations.enumerated().map { ($1.id, $0) }),
             lineIndex: Dictionary(uniqueKeysWithValues: lines.enumerated().map { ($1.id, $0) })
@@ -233,9 +256,12 @@ extension LioMetroMap {
         } else {
             checked = source.checkedOn
         }
+        let english = source.english.map {
+            language.text(" English names: \($0.nameEN).", "英文站名：\($0.nameZH)。")
+        } ?? ""
         return language.text(
-            "Lines and stations: \(source.operatorEN) official website, checked \(checked). Schematic, not to scale.",
-            "线路与站点：\(source.operatorZH)官网，核对于\(checked)。示意图，不按比例。"
+            "Lines and stations: \(source.operatorEN) official website, checked \(checked).\(english) Schematic, not to scale.",
+            "线路与站点：\(source.operatorZH)官网，核对于\(checked)。\(english)示意图，不按比例。"
         )
     }
 }
