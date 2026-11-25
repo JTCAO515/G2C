@@ -481,7 +481,7 @@ private struct LioTaxiPlacePicker: View {
     private func submit() {
         // Bias results towards the pickup only when it lies in the chosen city.
         let bias = near.flatMap { LioTaxiCity.nearest(to: $0) == selectedCity ? $0 : nil }
-        let value = LioTaxiSearchQuery(text: query, city: selectedCity, near: bias)
+        let value = LioTaxiSearchQuery(text: query, city: selectedCity, near: bias, english: language == .english)
         guard !value.text.isEmpty, !isSearching else { return }
         submittedQuery = value
     }
