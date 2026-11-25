@@ -20,7 +20,7 @@ from .lio_national_intake import fixed_detail_indexes
 from .lio_sourced_intake import _booking_source
 from .lio_planning_grounding import PlanningTurn
 from .lio_planning_grounding import CLOCK,RANGE,NUMBER,NEGATED,OTHER,DATE_REFUSAL,DATES_UNDECIDED,_clock,_number
-from .lio_positive_trip import supports as positive_trip_support
+from .lio_positive_trip import destination_stay,supports as positive_trip_support
 from .local_lio_rich_calendar_source import read_rich_original
 from .lio_calendar_ordinals import fixed_ordinals
 from .local_lio_calendar import date_completion
@@ -57,8 +57,7 @@ _FULL_FIRST=re.compile(r'(?:请|我想|我希望|我们希望)?(?:把)?第(?:一
 _LIGHT_FIRST=re.compile(r'第(?:一|1)天(?:不要|别)(?:安排|排)满|(?:不要|别)(?:把)?第(?:一|1)天(?:安排|排)满|'
     r'(?:不要|别)(?:安排|排)满第(?:一|1)天|(?:please )?(?:do not|don[’\x27]t) (?:fill|pack)(?: up)? (?:my |our |the )?first day|'
     r'(?:please )?keep (?:my |our |the )?first day light',re.I)
-_FIRST_DAY_MENTION=re.compile(
-    r'第\s*(?:一|1)\s*[天日]|首[天日]|\bfirst[-\s]+day\b|\bday[-\s]+(?:one|1)\b',re.I)
+_PLAIN_HOTEL_AREA=re.compile(r'住在[\u3400-\u9fff]{1,24}附近的酒店')
 _META_SOURCE=re.compile(r'^\s*(?:(?:(?:can|could|would) you\s+)?(?:please\s+)?'
     r'(?:translate|rephrase|paraphrase|repeat|quote|explain)\b|'
     r'(?:请帮我|请|帮我)?(?:把|将)?(?:下面|以下|上面|这)[^，,。！？;]{0,40}(?:翻译|复述|引用|改写|解释)|'
@@ -725,6 +724,18 @@ def _ground_fixed_places(value,turns):
     return value.model_copy(update=dict(fixed_items=fixed))
 
 
+def _simple_plan_request(turns):
+    """A complete destination, optional hotel area, and two plain planning prompts."""
+    if len(turns)!=2 or turns[1].text.strip().rstrip('。!！')!='直接出方案':
+        return False
+    clauses=[part.strip() for part in re.split(r'[，,]',turns[0].text.strip().rstrip('。!！'))]
+    if len(clauses) not in (2,3) or clauses[-1] not in ('帮我规划行程','帮我规划一下行程'):
+        return False
+    if len(clauses)==3 and _PLAIN_HOTEL_AREA.fullmatch(clauses[1]) is None:
+        return False
+    return destination_stay(clauses[0],(),whole_message=False) is not None
+
+
 def parse_plan_understanding(raw,turns):
     try:value=PlanUnderstanding.model_validate(decode(raw.encode()if type(raw)is str else raw))
     except ValidationError as error:raise InvalidInput('complete typed plan understanding required')from error
@@ -743,11 +754,11 @@ def parse_plan_understanding(raw,turns):
         if observation.field in seen:raise InvalidInput('one explicit planning observation per field required')
         seen.add(observation.field)
         for reference in observation.sources:check(reference)
-        # An unstated first-day option is a model default. Keep rejecting a
-        # bad quote or value, and validate any real mention of the first day.
+        # A plain two-message plan request supplies no first-day option.
+        # For other requests keep the original semantic validation.
         if (observation.field=='first_day_full' and observation.state=='known'
                 and type(observation.value)is bool and observation.note is None
-                and not any(_FIRST_DAY_MENTION.search(turn.text) for turn in turns)):
+                and _simple_plan_request(turns)):
             continue
         observations.append(observation)
         if observation.state=='known':
