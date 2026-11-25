@@ -143,7 +143,33 @@ struct LioTransportResultTests {
         let overnight = LioTransportOption(mode: .rail, number: "D312", carrierZH: nil, carrierEN: nil,
                                            departure: Self.hongqiao, arrival: Self.beijingSouth, departTime: "19:45",
                                            arriveTime: "07:36", durationMinutes: 711, fares: [])
-        #expect(overnight.arrivesNextDay)
+        #expect(overnight.arrivesNextDay && overnight.arrivalDayOffset == 1)
+        let overThirtyHours = LioTransportOption(mode: .rail, number: "Z1", carrierZH: nil, carrierEN: nil,
+                                           departure: Self.hongqiao, arrival: Self.beijingSouth, departTime: "08:00",
+                                           arriveTime: "14:00", durationMinutes: 1800, fares: [])
+        #expect(overThirtyHours.arrivesNextDay && overThirtyHours.arrivalDayOffset == 1)
+        let longer = LioTransportOption(mode: .rail, number: "Z2", carrierZH: nil, carrierEN: nil,
+                                        departure: Self.hongqiao, arrival: Self.beijingSouth, departTime: "22:00",
+                                        arriveTime: "08:00", durationMinutes: 2040, fares: [])
+        #expect(longer.arrivalDayOffset == 2)
+        #expect(LioTransportFormat.arrival(longer, .english) == "08:00 +2")
+        #expect(LioTransportFormat.arrival(overnight, .chinese) == "07:36 +1")
+        let midnight = LioTransportOption(mode: .rail, number: "G9", carrierZH: nil, carrierEN: nil,
+                                          departure: Self.hongqiao, arrival: Self.beijingSouth, departTime: "20:00",
+                                          arriveTime: "00:00", durationMinutes: 240, fares: [])
+        #expect(midnight.arrivalDayOffset == 1 && LioTransportFormat.arrival(midnight, .english) == "00:00 +1")
+        let unparsed = LioTransportOption(mode: .rail, number: "K1", carrierZH: nil, carrierEN: nil,
+                                          departure: Self.hongqiao, arrival: Self.beijingSouth, departTime: "late",
+                                          arriveTime: "06:00", durationMinutes: 600, fares: [])
+        #expect(unparsed.arrivalDayOffset == 0)
+        // VoiceOver reads the day change in words, not "plus one".
+        #expect(LioTransportFormat.arrivalSpoken(Self.train("G2", minutes: 268, fares: []), .english) == "Arrives 12:28")
+        #expect(LioTransportFormat.arrivalSpoken(Self.train("G2", minutes: 268, fares: []), .chinese) == "12:28 到达")
+        #expect(LioTransportFormat.arrivalSpoken(overnight, .english) == "Arrives 07:36 the next day")
+        #expect(LioTransportFormat.arrivalSpoken(overnight, .chinese) == "次日 07:36 到达")
+        #expect(LioTransportFormat.arrivalSpoken(longer, .english) == "Arrives 08:00, 2 days later")
+        #expect(LioTransportFormat.arrivalSpoken(longer, .chinese) == "2 天后 08:00 到达")
+        #expect(LioTransportFormat.arrival(Self.train("G2", minutes: 268, fares: []), .english) == "12:28")
     }
 
     @Test func formatsDurationsAndPricesInBothLanguages() {
@@ -196,6 +222,44 @@ struct LioTransportResultTests {
         #expect(result.bus == .guideOnly)
     }
     #endif
+}
+
+/// #225 disclosure (JT 2026-11-25): one shared wording, shown once under the list only for affiliate links;
+/// the "booking happens outside Go2China" footer always names the platforms actually linked.
+struct LioTransportDisclosureTests {
+    private static func query() throws -> LioTransportQuery {
+        try LioTransportQuery.make(from: "上海", to: "北京", date: LioTransportQuery.date(year: 2026, month: 12, day: 3),
+                                   today: LioTransportQuery.date(year: 2026, month: 11, day: 25)).get()
+    }
+
+    @Test func affiliateDisclosureUsesTheConfirmedWording() {
+        #expect(LioTransportCopy.disclosure(.chinese) == "部分链接为推广链接，你通过它预订时，Go2China 可能获得佣金，价格不受影响。")
+        #expect(LioTransportCopy.disclosure(.english) ==
+                "Some links are affiliate links. If you book through them, Go2China may earn a commission at no extra cost to you.")
+    }
+
+    @Test func plainLinksShowNoDisclosureAffiliateLinksDo() throws {
+        for mode in LioTransportMode.allCases {
+            let links = LioTransportLinks.booking(mode, query: try Self.query(), language: .english)
+            #expect(links.allSatisfy { !$0.affiliate })
+            #expect(!LioTransportCopy.showsDisclosure(links))
+        }
+        let affiliate = LioTransportBookingLink(provider: .tripCom, url: URL(string: "https://www.trip.com/")!,
+                                                affiliate: true)
+        #expect(LioTransportCopy.showsDisclosure([affiliate]))
+    }
+
+    @Test func footerNamesThePlatformsActuallyLinked() {
+        #expect(LioTransportCopy.footer(.rail, .chinese) == "预订和付款在 12306 或 Trip.com 完成，不在 Go2China 内进行。")
+        #expect(LioTransportCopy.footer(.rail, .english) == "Booking and payment happen on 12306 or Trip.com, not in Go2China.")
+        #expect(LioTransportCopy.footer(.flight, .chinese) == "预订和付款在 Trip.com 完成，不在 Go2China 内进行。")
+        #expect(LioTransportCopy.footer(.flight, .english) == "Booking and payment happen on Trip.com, not in Go2China.")
+        #expect(LioTransportCopy.footer(.bus, .chinese) == "购票和付款在客运站完成，不在 Go2China 内进行。")
+        #expect(LioTransportCopy.footer(.bus, .english) == "Tickets are bought and paid for at the bus station, not in Go2China.")
+        #expect(LioTransportCopy.footer(nil, .chinese) == "预订和付款在 12306、Trip.com 或车站完成，不在 Go2China 内进行。")
+        #expect(LioTransportCopy.footer(nil, .english) ==
+                "Booking and payment happen on 12306, Trip.com or at the station, not in Go2China.")
+    }
 }
 
 struct LioTransportEntryTests {

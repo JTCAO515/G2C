@@ -2,25 +2,32 @@ import Foundation
 import Testing
 @testable import CJLioUser
 
-/// #1450 item 2: the bundled maps for Beijing, Shanghai and Guangzhou are complete and consistent.
+/// #1450 item 2: every bundled map is complete and consistent.
 struct LioMetroMapDataTests {
-    static let mapped: [LioMetroCity] = [.beijing, .shanghai, .guangzhou, .shenzhen, .xian]
+    static let mapped: [LioMetroCity] = LioMetroCity.allCases
+    /// Built from the operator's own data; the rest from AMap's network maps (JT 2026-11-25).
+    static let fromOperators: Set<String> = ["beijing", "shanghai", "guangzhou", "shenzhen", "xian"]
 
-    @Test func onlyCitiesWithCheckedDataHaveAMap() throws {
-        #expect(LioMetroCity.allCases.filter { $0.mapResource != nil } == Self.mapped)
-        #expect(throws: LioMetroMapFailure.missing) { try LioMetroMap.bundled(.chengdu) }
+    @Test func everyListedCityHasAMap() throws {
+        // The operator-built cities stay; any AMap-based city can be removed by deleting its file.
+        #expect(Self.fromOperators.isSubset(of: Set(Self.mapped.map(\.id))))
+        for city in Self.mapped { #expect(throws: Never.self) { try LioMetroMap.bundled(city) } }
     }
 
     @Test(arguments: mapped)
     func everyLineHasStationsInBothLanguagesAndAnOfficialColour(city: LioMetroCity) throws {
         let map = try LioMetroMap.bundled(city)
         #expect(map.city == city)
-        #expect(map.lines.count >= 8)
-        #expect(map.stations.count >= 150)
+        #expect(map.lines.count >= 2)
+        #expect(map.stations.count >= 25)
+        #expect(Set(map.lines.map(\.nameZH)).count == map.lines.count) // a branch is a segment, not a second line
         for line in map.lines {
             #expect(LioMetroMap.isColor(line.color), "\(line.id)")
             #expect(!line.nameZH.isEmpty && !line.nameEN.isEmpty)
             #expect(line.segments.allSatisfy { $0.count >= 2 })
+            // A station never follows itself (AMap once listed Zhengzhou's 新郑机场 twice in a row).
+            #expect(line.segments.allSatisfy { segment in zip(segment, segment.dropFirst()).allSatisfy { $0 != $1 } },
+                    "\(line.id)")
             #expect(line.edges.allSatisfy { map.station($0.0) != nil && map.station($0.1) != nil })
         }
         for station in map.stations {
@@ -31,6 +38,12 @@ struct LioMetroMapDataTests {
             #expect((0...map.width).contains(station.x) && (0...map.height).contains(station.y))
             // No capital inside a word ("ShaTian"): the operators' own style capitalises words only.
             #expect(station.nameEN.range(of: "[a-z][A-Z]", options: .regularExpression) == nil, "\(station.nameEN)")
+            // Names we generate (not an operator's own, like Beijing's "Sihui Dong(E)"): words start with a
+            // capital and a bracket stands apart, "Chengdu Yixueyuan (Xindu Xiaoqu)".
+            if map.source.provider != nil {
+                #expect(station.nameEN.range(of: #"^[a-z]|\S\(|\(\s*[a-z]|Railway$"#, options: .regularExpression) == nil,
+                        "\(station.nameEN)")
+            }
         }
         // Two stations never share an English name (Shenzhen's file once gave Buyong its neighbour's).
         let english = map.stations.map { $0.nameEN.lowercased() }
@@ -51,35 +64,44 @@ struct LioMetroMapDataTests {
                 #expect(map.station(id)?.lines.contains(line.id) == true, "\(line.id) \(id)")
             }
         }
-        // Every line connects to the rest of the network through at least one interchange.
-        for line in map.lines where map.lines.count > 1 {
-            #expect(line.segments.joined().contains { map.station($0)?.isInterchange == true }, "\(line.id)")
+        // Lines connect through interchanges. Some real lines stand alone (Suzhou's Line 11 meets
+        // Shanghai's, not Suzhou's), so only the operator-built maps require it of every line.
+        #expect(map.stations.contains { $0.isInterchange })
+        if Self.fromOperators.contains(city.id) {
+            for line in map.lines where map.lines.count > 1 {
+                #expect(line.segments.joined().contains { map.station($0)?.isInterchange == true }, "\(line.id)")
+            }
         }
     }
 
     @Test(arguments: mapped)
-    func sourceNamesTheOperatorSiteAndCheckDay(city: LioMetroCity) throws {
+    func sourceNamesWhereTheMapCameFromAndTheCheckDay(city: LioMetroCity) throws {
         let map = try LioMetroMap.bundled(city)
-        let checked = [.shenzhen, .xian].contains(city) ? "2026-11-25" : "2026-11-24"
-        #expect(map.source.checkedOn == checked)
+        let early: Set<String> = ["beijing", "shanghai", "guangzhou"]
+        #expect(map.source.checkedOn == (early.contains(city.id) ? "2026-11-24" : "2026-11-25"))
         #expect(map.source.urls.allSatisfy { $0.scheme == "https" })
         let hosts = Set(map.source.urls.compactMap(\.host))
-        switch city {
-        case .beijing: #expect(hosts == ["map.bjsubway.com", "map_en.bjsubway.com"])
-        case .shanghai: #expect(hosts == ["service.shmetro.com"])
-        case .guangzhou: #expect(hosts == ["wx.gzmtr.com", "cs.gzmtr.com"])
-        case .shenzhen: #expect(hosts == ["www.szmc.net"])
-        case .xian: #expect(hosts == ["m.xianrail.com"])
-        case .chengdu: Issue.record("no map")
+        switch city.id {
+        case "beijing": #expect(hosts == ["map.bjsubway.com", "map_en.bjsubway.com"])
+        case "shanghai": #expect(hosts == ["service.shmetro.com"])
+        case "guangzhou": #expect(hosts == ["wx.gzmtr.com", "cs.gzmtr.com"])
+        case "shenzhen": #expect(hosts == ["www.szmc.net"])
+        case "xian": #expect(hosts == ["m.xianrail.com"])
+        default:
+            // Made from AMap's network maps into our own bundled map, and the page says so.
+            #expect(hosts == ["www.amap.com"])
+            #expect(map.source.provider?.nameZH == "高德地图地铁线网图")
+            #expect(map.sourceLine(in: .english).contains("based on AMap metro network maps"))
+            #expect(map.sourceLine(in: .chinese).contains("参考高德地图地铁线网图"))
         }
-        let day = [.shenzhen, .xian].contains(city) ? 25 : 24
+        #expect((map.source.provider != nil) == !Self.fromOperators.contains(city.id))
         // English names come from the operator except where it publishes none (#1450, JT 2026-11-25).
-        #expect((map.source.english != nil) == (city == .xian))
-        if let english = map.source.english {
-            #expect(english.url.host == "en.wikipedia.org")
-            #expect(map.sourceLine(in: .english).contains("English names: Wikipedia list"))
-            #expect(map.sourceLine(in: .chinese).contains("英文站名：维基百科"))
+        #expect((map.source.english == nil) == ["beijing", "shanghai", "guangzhou", "shenzhen"].contains(city.id))
+        if map.source.english != nil {
+            #expect(map.sourceLine(in: .english).contains("English names:"))
+            #expect(map.sourceLine(in: .chinese).contains("英文站名："))
         }
+        let day = early.contains(city.id) ? 24 : 25
         #expect(map.sourceLine(in: .english).contains("checked \(day) Nov 2026"))
         #expect(map.sourceLine(in: .chinese).contains("核对于2026年11月\(day)日"))
     }
@@ -107,6 +129,31 @@ struct LioMetroMapDataTests {
         #expect(shenzhen.stations.first { $0.nameZH == "步涌" }?.nameEN == "Buyong")
         let guangzhou = try LioMetroMap.bundled(.guangzhou)
         #expect(guangzhou.stations.first { $0.nameZH == "广州南站" }?.nameEN == "Guangzhou South Railway Station")
+        // Cities added in batches: checked while bundled, so removing one needs no test change.
+        let spotChecks: [(String, String, [String])] = [
+            ("chengdu", "天府广场", ["1号线", "2号线"]), ("tianjin", "西站", ["1号线", "4号线", "6号线"]), ("nanjing", "新街口", ["1号线", "2号线"]),
+            ("wuhan", "洪山广场", ["2号线", "4号线"]), ("chongqing", "小什字", ["1号线", "6号线"]),
+            ("hangzhou", "武林广场", ["1号线", "3号线"]), ("shenyang", "青年大街", ["1号线", "2号线"]),
+            ("shijiazhuang", "新百广场", ["1号线", "3号线"]), ("taiyuan", "大南门", ["1号线", "2号线"]),
+            ("huhehaote", "新华广场", ["1号线", "2号线"]), ("zhengzhou", "郑州大学", ["1号线", "8号线"]),
+            ("luoyang", "解放路", ["1号线", "2号线"]), ("jinan", "王府庄", ["1号线", "2号线"]),
+            ("zhengzhou", "南四环", ["2号线", "城郊线"]),
+        ]
+        for (id, station, expected) in spotChecks {
+            guard let city = LioMetroCity.named(id) else { continue }
+            #expect(try lines(city, station) == expected, "\(id) \(station)")
+        }
+        // Hand-checked English where AMap's pinyin was swapped or a character reads locally.
+        for (id, station, english) in [("jinan", "梁王", "Liangwang"), ("jinan", "梁王西", "Liangwang Xi"),
+                                       ("zhengzhou", "祭城", "Zhaicheng"), ("tianjin", "人民医院", "Renminyiyuan"),
+                                       ("tianjin", "泰达", "TEDA"), ("chengdu", "杉板桥", "Shabanqiao"),
+                                       ("chengdu", "涌泉", "Yongquan")] {
+            guard let city = LioMetroCity.named(id) else { continue }
+            #expect(try LioMetroMap.bundled(city).stations.first { $0.nameZH == station }?.nameEN == english, "\(id) \(station)")
+        }
+        if let chongqing = LioMetroCity.named("chongqing") {
+            #expect(try LioMetroMap.bundled(chongqing).stations.first { $0.nameZH == "鱼嘴" }?.nameEN == "Yuzui")
+        }
     }
 
     /// #1450 look: schematic rivers drawn behind the lines, only where the city has one worth showing.

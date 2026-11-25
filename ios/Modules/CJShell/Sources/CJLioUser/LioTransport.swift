@@ -276,8 +276,16 @@ struct LioTransportOption: Equatable, Hashable, Identifiable, Sendable {
 
     var lowestPriceMinor: Int? { fares.map(\.priceMinor).min() }
 
-    /// Overnight services arrive at an earlier clock time than they leave.
-    var arrivesNextDay: Bool { arriveTime < departTime }
+    /// Days after the departure day on which the service arrives, from the departure clock time plus the
+    /// duration (so trips longer than a day are counted correctly).
+    var arrivalDayOffset: Int {
+        let parts = departTime.split(separator: ":").compactMap { Int($0) }
+        // An unreadable departure time never guesses a day change.
+        guard parts.count == 2, (0..<24).contains(parts[0]), (0..<60).contains(parts[1]) else { return 0 }
+        return (parts[0] * 60 + parts[1] + durationMinutes) / 1440
+    }
+
+    var arrivesNextDay: Bool { arrivalDayOffset > 0 }
 
     func carrier(_ language: LioLanguage) -> String? {
         language == .chinese ? carrierZH : carrierEN
@@ -340,6 +348,48 @@ struct LioTransportBookingLink: Equatable, Sendable {
 
     let provider: Provider
     let url: URL
+    /// True only for a server hand-off link that carries an affiliate ID (after the Trip.com credentials are
+    /// handed over, #1368); the links built in the app are plain public pages.
+    let affiliate: Bool
+
+    init(provider: Provider, url: URL, affiliate: Bool = false) {
+        self.provider = provider
+        self.url = url
+        self.affiliate = affiliate
+    }
+}
+
+/// Booking copy (#225, wording confirmed by JT 2026-11-25; same as Hotels).
+enum LioTransportCopy {
+    static func disclosure(_ language: LioLanguage) -> String {
+        language.text(
+            "Some links are affiliate links. If you book through them, Go2China may earn a commission at no extra cost to you.",
+            "部分链接为推广链接，你通过它预订时，Go2China 可能获得佣金，价格不受影响。"
+        )
+    }
+
+    /// The disclosure appears once under the list, and only when a shown link really carries an affiliate ID.
+    static func showsDisclosure(_ links: [LioTransportBookingLink]) -> Bool {
+        links.contains(where: \.affiliate)
+    }
+
+    /// Always shown at the bottom, naming the platforms the page actually links to.
+    static func footer(_ mode: LioTransportMode?, _ language: LioLanguage) -> String {
+        switch mode {
+        case .rail:
+            language.text("Booking and payment happen on 12306 or Trip.com, not in Go2China.",
+                          "预订和付款在 12306 或 Trip.com 完成，不在 Go2China 内进行。")
+        case .flight:
+            language.text("Booking and payment happen on Trip.com, not in Go2China.",
+                          "预订和付款在 Trip.com 完成，不在 Go2China 内进行。")
+        case .bus:
+            language.text("Tickets are bought and paid for at the bus station, not in Go2China.",
+                          "购票和付款在客运站完成，不在 Go2China 内进行。")
+        case nil:
+            language.text("Booking and payment happen on 12306, Trip.com or at the station, not in Go2China.",
+                          "预订和付款在 12306、Trip.com 或车站完成，不在 Go2China 内进行。")
+        }
+    }
 }
 
 /// Plain public pages (no affiliate tag; that would need JT's approval, #1518).
@@ -387,6 +437,21 @@ enum LioTransportFormat {
         if fen == 0 { return "¥\(yuan)" }
         if fen % 10 == 0 { return "¥\(yuan).\(fen / 10)" }
         return "¥\(yuan)." + String(format: "%02d", fen)
+    }
+
+    static func arrival(_ option: LioTransportOption, _ language: LioLanguage) -> String {
+        let offset = option.arrivalDayOffset
+        return offset > 0 ? "\(option.arriveTime) +\(offset)" : option.arriveTime
+    }
+
+    /// What VoiceOver reads for the arrival: the day change in words rather than "+1".
+    static func arrivalSpoken(_ option: LioTransportOption, _ language: LioLanguage) -> String {
+        let time = option.arriveTime
+        switch option.arrivalDayOffset {
+        case 0: return language.text("Arrives \(time)", "\(time) 到达")
+        case 1: return language.text("Arrives \(time) the next day", "次日 \(time) 到达")
+        case let days: return language.text("Arrives \(time), \(days) days later", "\(days) 天后 \(time) 到达")
+        }
     }
 
     static func from(_ minor: Int, _ language: LioLanguage) -> String {

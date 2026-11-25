@@ -186,29 +186,12 @@ private struct LioRichStopDetail: View {
             }.padding(20)
         }
         .foregroundStyle(LioTheme.ink).lioPage().tint(LioTheme.vermilion)
-        .sheet(isPresented: $showingDriver) { LioDriverCard(place: stop.place, language: language) }
+        .sheet(isPresented: $showingDriver) {
+            LioDriverSign(language: language, nameZH: stop.place.nameZH, nameEN: stop.place.nameEN,
+                          addressZH: stop.place.driverAddress, requestZH: "请送我到这里",
+                          identifierPrefix: "lio.rich.driver")
+        }
     }
 }
 
-private struct LioDriverCard: View {
-    let place: LioRichItinerary.Place
-    let language: LioLanguage
-    @Environment(\.dismiss) private var dismiss
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
-                Button(language.text("Done", "完成")) { dismiss() }
-                    .frame(minHeight: 44).contentShape(Rectangle()).accessibilityIdentifier("lio.rich.driver.done")
-                Text(language.text("Please take me here", "请送我到这里"))
-                    .font(.headline).foregroundStyle(LioTheme.inkSecondary)
-                Text(place.nameZH).font(.largeTitle.weight(.bold)).accessibilityAddTraits(.isHeader)
-                    .accessibilityIdentifier("lio.rich.driver.name")
-                if let address = place.driverAddress {
-                    Text(address).font(.title2).accessibilityIdentifier("lio.rich.driver.address")
-                }
-            }
-            .textSelection(.enabled).fixedSize(horizontal: false, vertical: true).padding(24)
-        }.foregroundStyle(LioTheme.ink).lioPage()
-    }
-}
 #endif
