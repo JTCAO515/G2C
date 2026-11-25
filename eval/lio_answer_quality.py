@@ -90,46 +90,25 @@ def entry_facts():
 
 
 SENTENCE = re.compile(r'(?<=[。！？!?；;\n])|(?<=\.)\s+')
-# Precision first: only clear slips fail; a correct sentence must never fail. Each claim
-# needs its object (the entry city, the origin country), and a negation right before it or
-# a correction in the same sentence (a myth marker first, or the correct rule stated) clears it.
-CITY_LIMIT = re.compile(
-    r'不得跨[市省]|(?<!能)不能跨[市省]|不可跨[市省]|只(?:能|可)(?:待|留|停留)?在?(?:入境|落地|所在)的?城市|仅限(?:入境|落地)城市|'
-    r'(?:不能|不可|不得)离开(?:入境|落地)的?城市|'
-    r"(?:cannot|can't|may not|not allowed to)\s+travel (?:to|across) (?:other |different )?provinces|"
-    r'(?:must|have to|can only|cannot|can\'t|may not|not allowed to)\s+(?:stay|remain|leave|be)\b[^.]{0,25}?\b(?:arrival|entry|landing) city|'
-    r'(?:must|have to)\s+stay in the (?:same )?city (?:where )?you (?:land|arrive|enter)|limited to the city|'
-    r'only stay in (?:your|the) (?:arrival|entry|landing) city', re.I)
-RETURN_HOME = re.compile(r'原路返回|飞回出发国|返回出发国|fly back to (?:the (?:US|UK)|your (?:home|origin) country)|return to your (?:home|origin) country', re.I)
-NEAR_NEGATION = re.compile(r"(?:n't|\bnot\b|\bno\b|never|no longer|不能是?|不可|不得|不用|无需|并不是|不是)\s*$", re.I)
-CORRECTION = re.compile(r'有人说|有人以为|很多人以为|误以为|误传|误解|并不是|不是只能|myth|misconception|common mistake|'
-                        r'contrary to|not true|some people say', re.I)
-CORRECT_RULE = re.compile(r'可以?跨省|可跨省|跨省活动|across provinces|travel across|第三国|third country', re.I)
-OLD_TRANSIT = re.compile(r'(?<!\d)(?:72|144)\s*(?:个)?(?:小时|-?hours?\b)', re.I)
-TRANSIT = re.compile(r'过境|transit', re.I)
-NEEDS_VISA = re.compile(
-    r"\b(?:need|needs|needed)\s+(?:to\s+(?:get|apply for|obtain)\s+)?(?:a|an)\s+(?:[a-z]+\s+)?visa\b|"
-    r"\bmust\s+(?:get|apply for|obtain)\s+(?:a|an)\s+(?:[a-z]+\s+)?visa\b|\brequires?\s+(?:a|an)\s+visa\b|"
-    r'(?:需要|仍需|须|必须)(?:办|申请|办理)?签证', re.I)
-VISA_CONDITION = re.compile(r'\bonly if\b|\bif you\b|\bif\b|otherwise|whether|unless|\bwork|stud(?:y|ies)|journalis|\bover\b|'
-                            r'\bafter \d+|more than|longer than|or more|beyond|exceed|超过|以上|才|否则|工作|学习|留学|采访', re.I)
-CONTRAST = re.compile(r'\bbut\b|\bhowever\b|但是?|不过|然而|[;；]', re.I)
-VISA_FREE_CAP = re.compile(r'(\d+)\s*天免签|免签(?:停留|入境)?(?:最多|最长|不超过|可达)?\s*(\d+)\s*天|(\d+)-day visa-free|'
-                           r'visa-free (?:entry |stays? )?(?:for )?(?:up to|of up to|at most|a maximum of) (\d+) days|'
-                           r'up to (\d+) days without a visa', re.I)
+# Code catches only the clear slips seen in real answers; semantic correctness stays with
+# model/human review (docs/lio-voice.md §9.1). Precision first: a correct sentence never fails.
+# 1. The invented ban on crossing city/province lines (preview 2026-11-25: 「不得跨市旅行」).
+CROSS_BAN = re.compile(r'(?<![不并非没别])(?:不得|严禁|禁止)跨(?:市|省)(?!活动)')
+# 2. The retired 72/144-hour transit policy named as current.
+OLD_TRANSIT = re.compile(r'(?<!\d)(?:72|144)\s*(?:个)?(?:小时|-hour)\s*(?:过境|visa-free transit|transit)', re.I)
+# 3. A visa-free national told that a short trip needs a visa (run -41: "a plain 10-day ... needs a visa").
+SHORT_TRIP_VISA = re.compile(r'(?<![\w-])(\d+)[- ]?(?:day|天)\b[^.。;；?？]{0,40}?\b(?:needs|requires)\s+a\s+visa\b|'
+                             r'(\d+)\s*天的?(?:行程|旅行)[^。；？]{0,10}(?:需要|须)(?:办|申请)?签证', re.I)
+# 4. A wrong visa-free ceiling stated as the rule.
+VISA_FREE_CAP = re.compile(r'(\d+)\s*天免签|免签(?:停留|入境)?(?:最多|最长|不超过)\s*(\d+)\s*天|(\d+)-day visa-free|'
+                           r'visa-free (?:entry |stays? )?(?:for )?(?:up to|of up to|at most|a maximum of) (\d+) days', re.I)
+HISTORY = re.compile(r'以前|过去|旧|曾|原来|已统一|统一为|取消|改为|延长|\b(?:used to|before 20\d\d|formerly|old|replaced|no longer|now)\b', re.I)
+MYTH = re.compile(r'有人说|有人以为|很多人以为|误以为|误传|误解|并不是|并非|别听信|不是|myth|misconception|many people think|'
+                  r'common mistake|contrary to|not true', re.I)
 
 
 def today():
     return date.today()
-
-
-def _cleared(sentence, match):
-    """A claim is cleared by a negation right before it or a correction in the same sentence."""
-    before = sentence[:match.start()]
-    if NEAR_NEGATION.search(before[-12:]):
-        return True
-    marker = CORRECTION.search(sentence)
-    return bool(marker and marker.start() < match.start()) or bool(CORRECT_RULE.search(sentence))
 
 
 def _entry_facts_hold(text, country):
@@ -138,27 +117,15 @@ def _entry_facts_hold(text, country):
     if days is not None and today() > facts['visa_free_until'][country]:
         days = None  # the rules file has not been renewed: do not enforce an expired policy
     for sentence in (re.sub(r'[*_`]', '', part).strip() for part in SENTENCE.split(text) if part and part.strip()):
-        for pattern in (CITY_LIMIT, RETURN_HOME):
-            for match in pattern.finditer(sentence):
-                if not _cleared(sentence, match):
-                    return False
-        if OLD_TRANSIT.search(sentence) and '240' not in sentence:
+        if sentence.endswith(('?', '？')) or MYTH.search(sentence) or HISTORY.search(sentence):
+            continue
+        if CROSS_BAN.search(sentence) or OLD_TRANSIT.search(sentence):
             return False
-        if TRANSIT.search(sentence):
-            for regex, key in ((r'(\d+)\s*个?(?:开放)?口岸|(\d+)\s*(?:open |border |entry )?ports\b', 'ports'),
-                               (r'(\d+)\s*个?国家|(\d+)\s*国(?![内际])|(\d+)\s*countries', 'countries'),
-                               (r'(\d+)\s*(?:天|-?days?\b)', 'transit_days')):
-                for match in re.finditer(regex, sentence, re.I):
-                    if int(next(group for group in match.groups() if group)) != facts[key]:
-                        return False
-        if days is not None and not sentence.rstrip().endswith(('?', '？')):
-            for match in NEEDS_VISA.finditer(sentence):
-                # A condition only clears the claim inside its own clause ("not if X, but Y needs a visa").
-                clause = CONTRAST.split(sentence[:match.start()])[-1] + sentence[match.start():]
-                clause = CONTRAST.split(clause)[0] if CONTRAST.search(sentence[match.end():]) else clause
-                if not VISA_CONDITION.search(clause) and not NEAR_NEGATION.search(sentence[:match.start()][-12:]):
+        if days is not None:
+            for match in SHORT_TRIP_VISA.finditer(sentence):
+                if int(next(group for group in match.groups() if group)) <= days:
                     return False
-            if not TRANSIT.search(sentence):
+            if not re.search(r'过境|transit', sentence, re.I):
                 for match in VISA_FREE_CAP.finditer(sentence):
                     if int(next(group for group in match.groups() if group)) != days:
                         return False
