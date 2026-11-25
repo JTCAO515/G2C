@@ -1,38 +1,32 @@
 """TRANSPORT.1: intercity trains and flights for the Tools tab (#1520).
 
-Read-only. Trains come from AMap cross-city transit planning, flights from the existing VariFlight relay.
+Read-only. Trains come from AMap cross-city transit planning through the private worker relay (the AMap key
+and the AMap cash ledger live only in the worker; `rail_items` is the projection that relay applies), flights
+from the existing VariFlight relay.
 Booking and payment always happen outside the app; seat availability is never claimed (12306 decides).
 Each mode is reserved and fails on its own, so one supplier problem never hides the other mode.
 Authorization: docs/authorizations/M4.md items 11, 12 (④) and 14 (JT 2026-11-25, #1518).
 """
 
-from contextlib import closing
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
-from pathlib import Path
 import re
-import sqlite3
-from time import monotonic
 from typing import Literal
+from uuid import uuid4
 
-import httpx
 from pydantic import field_validator, model_validator
 
 from .plugin_tools import SHANGHAI, PluginError, register_plugin
 from .taxi_tools import WireModel
-from .travel_provider import check_status, checked_key, provider_client, read_reply, supplier_json
 from .variflight_tools import ROUTE as FLIGHTS_ROUTE, DAILY_LIMIT as FLIGHTS_DAILY_LIMIT, FlightInput
 
 
 ROUTE = '/v1/tools/transport/search'
 VERSION = 'TRANSPORT.1'
 DAILY_LIMIT = 50                      # searches per person per day (route)
-RAIL_OPERATION = 'amap:transit-crosscity'
-RAIL_DAILY_LIMIT = 30                 # M4 item 12 ④: per person per day
-RAIL_TOTAL_LIMIT = 1500               # M4 item 12 ④: all accounts together
-AMAP_ENDPOINT = 'https://restapi.amap.com/v3/direction/transit/integrated'
-AMAP_RATE_CODES = frozenset({'10003', '10004', '10019', '10020', '10021', '10044'})
+RAIL_DAILY_LIMIT = 30                 # M4 item 12 ④: per person per day, enforced by the worker budget
+RAIL_TOTAL_LIMIT = 1500               # M4 item 12 ④: all accounts together, shared AMap cash service table
 MAX_DAYS_AHEAD = 60
 MAX_ITEMS = 20
 DATE = re.compile(r'[0-9]{4}-[0-9]{2}-[0-9]{2}')
@@ -156,25 +150,6 @@ class TransportInput(WireModel):
         return self
 
 
-class TotalCalls:
-    """All-account count for a capped supplier operation; committed before every dispatch."""
-
-    def __init__(self, path, *, limit=RAIL_TOTAL_LIMIT, operation=RAIL_OPERATION):
-        self.path, self.limit, self.operation = Path(path), limit, operation
-
-    def reserve(self):
-        try:
-            with closing(sqlite3.connect(self.path)) as db, db:
-                db.execute('CREATE TABLE IF NOT EXISTS supplier_total (operation TEXT PRIMARY KEY, used INTEGER NOT NULL)')
-                changed = db.execute("""INSERT INTO supplier_total VALUES (?, 1)
-                    ON CONFLICT (operation) DO UPDATE SET used = used + 1 WHERE used < ?""",
-                                     (self.operation, self.limit)).rowcount
-        except sqlite3.Error:
-            raise PluginError(503, 'unavailable') from None
-        if changed != 1:
-            raise PluginError(429, 'quota_exceeded')
-
-
 def _text(value, limit=40):
     if (type(value) is not str or not value.strip() or len(value) > limit
             or any(ord(char) < 32 or 0x7f <= ord(char) < 0xa0 for char in value)):
@@ -223,8 +198,9 @@ def _seats(spaces):
     return seats
 
 
-def _rail_items(value):
-    route = value.get('route')
+def rail_items(value):
+    """Project an AMap /v3/direction/transit/integrated reply to train items (used by the worker relay)."""
+    route = value.get('route') if type(value) is dict else None
     transits = route.get('transits') if type(route) is dict else None
     if type(transits) is not list or len(transits) > 32:
         raise ValueError('bounded transit options required')
@@ -253,39 +229,6 @@ def _rail_items(value):
                 items.append(item)
     items.sort(key=lambda item: (item['depart_time'], item['number']))
     return items[:MAX_ITEMS]
-
-
-class AmapRail:
-    """One AMap cross-city transit request per search; only the train segments are kept."""
-
-    def __init__(self, key, *, client=provider_client):
-        checked_key(key)
-        if not re.fullmatch(r'[A-Za-z0-9_-]{16,256}', key):
-            raise ValueError('valid AMap server configuration required')
-        self.key, self.client = key, client
-
-    def trains(self, origin, destination, day):
-        params = dict(key=self.key, output='json', extensions='base', strategy='0', nightflag='1',
-                      origin='%.6f,%.6f' % origin.centre, destination='%.6f,%.6f' % destination.centre,
-                      city=origin.name_zh, cityd=destination.name_zh, date=day, time='08:00')
-        deadline = monotonic() + 12
-        try:
-            with self.client() as client:
-                with client.stream('GET', AMAP_ENDPOINT, params=params, headers={'Accept': 'application/json'}) as response:
-                    check_status(response.status_code)
-                    raw = b''.join(read_reply(response, deadline))
-            value = supplier_json(raw, self.key)
-            if type(value) is not dict:
-                raise ValueError('invalid AMap response')
-            if value.get('infocode') in AMAP_RATE_CODES:
-                raise PluginError(429, 'rate_limited')
-            if value.get('status') != '1' or value.get('infocode') != '10000':
-                raise ValueError('AMap did not return a success receipt')
-            return _rail_items(value)
-        except httpx.TimeoutException:
-            raise PluginError(504, 'supplier_timeout') from None
-        except (httpx.HTTPError, AttributeError, KeyError, TypeError, UnicodeError, ValueError, RecursionError):
-            raise PluginError(502, 'supplier_unavailable') from None
 
 
 def _stamp(value):
@@ -368,23 +311,26 @@ def _status(error):
 
 
 class TransportService:
-    """`rail` is an AmapRail, `flights` the (payment-guarded) VariFlight relay; either may be absent."""
+    """`rail` is the worker relay client, `flights` the (payment-guarded) VariFlight relay; either may be absent.
 
-    def __init__(self, *, rail=None, flights=None, total=None, wrap_link=lambda url: url):
-        if rail is not None and total is None:
-            raise ValueError('AMap rail needs an all-account cap')
-        self.rail, self.flights, self.total, self.wrap_link = rail, flights, total, wrap_link
+    The rail client is called as `trains(token, request_id, origin_id, destination_id, day)`; the worker
+    re-authorizes the caller's own bearer, meters AMap per person and in the shared cash ledger, and returns
+    `rail_items` or raises PluginError.
+    """
 
-    def _rail(self, origin, destination, day, reserve):
+    def __init__(self, *, rail=None, flights=None, wrap_link=lambda url: url):
+        self.rail, self.flights, self.wrap_link = rail, flights, wrap_link
+
+    def _rail(self, origin, destination, day, token):
         result = dict(status='not_enabled', source='AMap', items=[], **RAIL_NOTE)
         if self.rail is None:
             return result
         try:
-            reserve(RAIL_OPERATION, RAIL_DAILY_LIMIT)
-            self.total.reserve()
-            items = self.rail.trains(origin, destination, day)
+            items = self.rail.trains(token, str(uuid4()), origin.id, destination.id, day)
         except PluginError as error:
             return dict(result, status=_status(error))
+        except (OSError, ValueError, KeyError, TypeError):
+            return dict(result, status='unavailable')
         return dict(result, status='ok' if items else 'empty', items=items)
 
     def _flight(self, origin, destination, day, reserve):
@@ -392,7 +338,7 @@ class TransportService:
         if self.flights is None:
             return result
         try:
-            # Shares the FLIGHTS.1 per-person daily count (M4 item 14: together at most 50 a day).
+            # Same operation name as the FLIGHTS.1 route on the shared flights counter (M4 item 14: 50 a day together).
             reserve(FLIGHTS_ROUTE, FLIGHTS_DAILY_LIMIT)
         except PluginError as error:
             return dict(result, status=_status(error))
@@ -413,13 +359,13 @@ class TransportService:
         items = _flight_items(rows, day)
         return dict(result, status='ok' if items else 'empty', items=items)
 
-    def query(self, request, reserve):
+    def query(self, request, reserve, token):
         origin, destination, day = CITIES[request.origin], CITIES[request.destination], request.date
         body = dict(version=VERSION, date=day,
                     origin=dict(id=origin.id, name_zh=origin.name_zh, name_en=origin.name_en),
                     destination=dict(id=destination.id, name_zh=destination.name_zh, name_en=destination.name_en))
         if 'rail' in request.modes:
-            body['rail'] = self._rail(origin, destination, day, reserve)
+            body['rail'] = self._rail(origin, destination, day, token)
         if 'flight' in request.modes:
             body['flight'] = self._flight(origin, destination, day, reserve)
         body['links'] = links(origin, destination, day, request.modes, self.wrap_link)
@@ -428,4 +374,5 @@ class TransportService:
 
 def register_transport(app, *, service=None, checker=None, internal=frozenset(), calls=None):
     register_plugin(app, ROUTE, TransportInput, service.query if service else None, enabled=service is not None,
-                    checker=checker, internal=internal, calls=calls, limit=DAILY_LIMIT, count_provider_calls=True)
+                    checker=checker, internal=internal, calls=calls, limit=DAILY_LIMIT, count_provider_calls=True,
+                    pass_token=True)

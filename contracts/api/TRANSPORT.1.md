@@ -54,10 +54,10 @@ Asia/Shanghai 每日按账号计数，鉴权和请求校验通过后、调用供
 | 计数 | 上限 | 用尽时 |
 |---|---|---|
 | 路由 `/v1/tools/transport/search` | 每人每天 50 次 | 整次请求 `429 quota_exceeded` |
-| 火车 `amap:transit-crosscity` | 每人每天 30 次；所有账号合计 1500 次 | `rail.status = quota_exceeded` |
+| 火车（worker 预算 `amap-transit.1`，按 request_id 计） | 每人每天 30 次；所有账号合计 1500 次，登记在与附近、酒店共用高德现金（合计 ¥500）的服务表 | `rail.status = quota_exceeded` |
 | 机票（与 `FLIGHTS.1` 路由共用同一计数） | 每人每天 50 次（两处合计） | `flight.status = quota_exceeded` |
 
-每次火车查询调用高德公交路径规划（`/v3/direction/transit/integrated`，跨城）一次，只发送两城市中心坐标、中文城市名和日期。每次机票查询最多调用飞常准 4 次（每组机场一次，各自计入 `variflight:dispatch`），只发送机场代码和日期。不发送账号、手机号或其他身份信息。飞常准返回需要付费（HTTP 402 或 RPC 402）时，与航班插件共用的停用标记立即生效，两处都停止调用飞常准，直到人工确认后移除；此时 `flight.status = not_enabled`。供应商错误信息不回显，响应中出现密钥的结果整体丢弃。
+火车经 API 进程之外的私有 worker 中转：API 把调用者自己的 Bearer 和一次性 request_id 转给 worker，worker 重新鉴权、按人计数、记高德现金账本后调用高德公交路径规划（`/v3/direction/transit/integrated`，跨城）一次，只发送两城市中心坐标、中文城市名和日期。高德 Key 只在 worker，API 进程没有。每次机票查询最多调用飞常准 4 次（每组机场一次，各自计入 `variflight:dispatch`），只发送机场代码和日期。不发送账号、手机号或其他身份信息。飞常准返回需要付费（HTTP 402 或 RPC 402）时，与航班插件共用的停用标记立即生效，两处都停止调用飞常准，直到人工确认后移除；此时 `flight.status = not_enabled`。供应商错误信息不回显，响应中出现密钥的结果整体丢弃。
 
 ## 错误
 
