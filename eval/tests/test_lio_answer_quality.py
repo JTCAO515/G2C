@@ -178,11 +178,15 @@ class OneScreenTests(unittest.TestCase):
         def first(text, case=tipping):
             return check_answer(case, dict(text=text, actions=['Open etiquette tips']), profile=ONE_SCREEN)['checks']['first_answer']
         for text in ('Of course not, tipping is not expected.', 'Hi-speed trains have no tipping either; tipping is not expected.',
-                     'Hello Kitty cafes do not expect tips either.', 'Sure-footed hikers tip guides, but tipping is not expected.'):
+                     'Sure-footed hikers tip guides, but tipping is not expected.'):
             with self.subTest(passes=text):self.assertTrue(first(text))
-        for text in ('当然可以，把 Visa 绑到支付宝就能扫码付。', '没问题，外国游客可以直接用支付宝。', '你好像需要先绑卡，再扫码付款。'):
+        for text in ('当然可以，把 Visa 绑到支付宝就能扫码付。', '没问题，外国游客可以直接用支付宝。', '你好像需要先绑卡，再扫码付款。',
+                     '嗨皮的地方先放一放，先把 Visa 绑到支付宝。'):
             with self.subTest(passes=text):self.assertTrue(first(text, case))
-        for text in ('Sure! Tipping is not expected.', 'Absolutely. Tipping is not expected.', 'Of course! No tipping.'):
+        # Re-review of 15110e8d: a greeting followed by any word is still a greeting.
+        for text in ('Sure! Tipping is not expected.', 'Absolutely. Tipping is not expected.', 'Of course! No tipping.',
+                     'Hi there, tipping is not expected.', 'Hello there! Tipping is not expected.',
+                     'Hi everyone, tipping is not expected.', 'Hello traveler, tipping is not expected.', 'Hi Sarah, no tipping.'):
             with self.subTest(fails=text):self.assertFalse(first(text))
         for text in ('当然可以！把 Visa 绑到支付宝。', '没问题。先绑卡。'):
             with self.subTest(fails=text):self.assertFalse(first(text, case))

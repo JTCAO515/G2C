@@ -41,7 +41,7 @@ MAX_ACTIONS, MAX_CHIPS = 2, 3  # S contract: at most 3 chips per answer (2026-11
 # Openings that are not an answer: greetings, self-introductions and praise anywhere at the start;
 # assent words ("当然可以", "Sure") only when they stand alone as the whole first sentence.
 _END = r'(?![\w-])'
-PREFACE = re.compile(r'\s*(?:(?:你好|您好|嗨)(?!像)|hey' + _END + r'|hi' + _END + r'(?!\s+[A-Z])|hello' + _END + r'(?!\s+[A-Z])|'
+PREFACE = re.compile(r'\s*(?:你好(?!像)|您好|嗨(?!皮)|hey' + _END + r'|hi' + _END + r'|hello' + _END + r'|'
                      r'我是\s*Lio|I[\'’]m Lio|好问题|这是个好问题|问得好|great question|good question|happy to help|glad you asked)', re.I)
 ASSENT = re.compile(r'\s*(?:当然可以|当然|没问题|好的|sure|of course|absolutely|certainly)\W*', re.I)
 FIRST_SENTENCE = re.compile(r'\s*(.*?)([。！？!?\n]|\.(?=\s|$)|$)', re.S)
