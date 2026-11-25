@@ -244,6 +244,9 @@ struct LioMetroMapCanvas: View {
         .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
         .overlay { RoundedRectangle(cornerRadius: LioTheme.Radius.small).stroke(LioTheme.hairline) }
         .padding(LioTheme.Spacing.sm)
+        // Map controls keep their size, as system map controls do; at accessibility sizes a long press
+        // shows each one large (below). Unbounded, the icons overflowed their 44-point buttons.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 
     private func zoomButton(_ symbol: String, label: String, id: String, action: @escaping () -> Void) -> some View {
@@ -255,6 +258,7 @@ struct LioMetroMapCanvas: View {
                 .contentShape(Rectangle())
         }
         .accessibilityLabel(label)
+        .accessibilityShowsLargeContentViewer { Label(label, systemImage: symbol) }
         .accessibilityIdentifier(id)
     }
 
