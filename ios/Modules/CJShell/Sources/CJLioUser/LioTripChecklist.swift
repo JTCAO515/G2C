@@ -24,7 +24,9 @@ enum LioTripPhase: Equatable, Sendable {
         case .beforeTrip: .beforeTrip
         case .arrivalDay: .arrivalDay
         case .inChina: .inChina
-        case .departureDay, .ended: .departure
+        // The last day is still a day in China: its bookings and plan stay open (#1649 review P3-6).
+        case .departureDay: .inChina
+        case .ended: .departure
         }
     }
 }
@@ -332,7 +334,8 @@ struct LioTripChecklist: Equatable, Sendable {
                     guard let arrival else { return .beforeTrip }
                     // Once the trip is under way, a visit still ahead stays with the days in China, so it is not
                     // folded away with the stages already behind the traveller (#1649 review P2-1).
-                    if today >= arrival, let visit, visit >= today { return .inChina }
+                    // An undated plan's booking has no visit day; during the trip it stays open too (P3-8).
+                    if today >= arrival, visit.map({ $0 >= today }) ?? true { return .inChina }
                     guard let release else { return .beforeTrip }
                     return release < arrival ? .beforeTrip : .inChina
                 }()
@@ -439,11 +442,16 @@ struct LioTripChecklist: Equatable, Sendable {
 
     // MARK: - Day by day
 
-    /// The plan's day for a trip day: the day with that date, else the same day number.
+    /// The plan's day for a trip day: the day with that date, else the same day number. The "Now" card and the
+    /// day-by-day section both use it, so they always agree on today.
     static func planDay(_ plan: LioPlanSummary?, number: Int, today: LioTripDay, arrival: LioTripDay?) -> LioPlanSummary.Day? {
         guard let plan else { return nil }
-        let date = arrival?.tripDay(number)
-        if let date, let dated = plan.days.first(where: { $0.date == date.description }) { return dated }
+        // By date first (the day's own date, else counted from the plan's start), then by day number.
+        let start = plan.startDate.flatMap(LioTripDay.init)
+        let date = arrival?.tripDay(number) ?? today
+        if let dated = plan.days.first(where: { (($0.date.flatMap(LioTripDay.init)) ?? start?.tripDay($0.number)) == date }) {
+            return dated
+        }
         return plan.days.first { $0.number == number }
     }
 
@@ -451,19 +459,21 @@ struct LioTripChecklist: Equatable, Sendable {
     static func scheduleDays(plan: LioPlanSummary?, arrival: LioTripDay?, today: LioTripDay,
                              phase: LioTripPhase) -> [LioTripScheduleDay] {
         guard let plan else { return [] }
-        let first: Int
+        // Today's plan day is the one the "Now" card uses, so both always show the same day (#1649 review P3-1).
+        let todayNumber: Int?
         switch phase {
-        case .beforeTrip: first = 1
-        case .arrivalDay: first = 1
-        case .inChina(let day), .departureDay(let day): first = day
-        case .ended: return []
+        case .beforeTrip, .ended: todayNumber = nil
+        case .arrivalDay: todayNumber = planDay(plan, number: 1, today: today, arrival: arrival)?.number ?? 1
+        case .inChina(let day), .departureDay(let day):
+            todayNumber = planDay(plan, number: day, today: today, arrival: arrival)?.number ?? day
         }
+        if case .ended = phase { return [] }
+        let first = todayNumber ?? 1
         // Only dates the plan states; an undated plan's day N is shown as day N of the trip, without a date.
         let start = plan.startDate.flatMap(LioTripDay.init)
-        let tripDay = arrival.map { $0.days(until: today) + 1 }
         return plan.days.filter { $0.number >= first && $0.number < first + 2 }.map { day in
             let date = day.date.flatMap(LioTripDay.init) ?? start?.tripDay(day.number)
-            return LioTripScheduleDay(number: day.number, date: date, isToday: date.map { $0 == today } ?? (day.number == tripDay),
+            return LioTripScheduleDay(number: day.number, date: date, isToday: day.number == todayNumber,
                                       stops: day.items.map { LioTripStopRef(name: $0.label, time: $0.startTime) })
         }
     }

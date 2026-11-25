@@ -233,10 +233,22 @@ final class LioTripHomeModel {
     private var cached: LioTripHomeStore.Snapshot
     /// Set when the last save did not reach the device; cleared by the next successful one.
     private(set) var saveFailed = false
+    /// The file exists but could not be read (for example the phone is locked): nothing is written until a read
+    /// succeeds, so an empty screen never overwrites the saved trip (#1649 review P3-2).
+    private var unread = false
 
     init(store: LioTripHomeStore?, initial: LioTripHomeStore.Snapshot = .init()) {
         self.store = store
-        cached = (try? store?.load()) ?? initial
+        guard let store else {
+            cached = initial
+            return
+        }
+        do {
+            cached = try store.load()
+        } catch {
+            cached = initial
+            unread = true
+        }
     }
 
     var storeID: UUID? { store?.id }
@@ -250,6 +262,7 @@ final class LioTripHomeModel {
     func reload() {
         guard let store, store.current, let snapshot = try? store.load() else { return }
         cached = snapshot
+        unread = false
     }
 
     func start(_ profile: LioTripProfile) {
@@ -272,6 +285,11 @@ final class LioTripHomeModel {
     /// Ends this trip on the phone: the profile and ticks go; saved plans and tool data stay where they are.
     func clear() {
         guard visible else { return }
+        if unread { reload() }
+        guard !unread else {
+            saveFailed = true
+            return
+        }
         if let store {
             do {
                 try store.clear()
@@ -286,6 +304,10 @@ final class LioTripHomeModel {
 
     private func write(_ snapshot: LioTripHomeStore.Snapshot) {
         guard visible else { return }
+        guard !unread else {
+            saveFailed = true
+            return
+        }
         if let store {
             do {
                 try store.save(snapshot)
