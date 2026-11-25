@@ -231,7 +231,8 @@ import XCTest
             XCTAssertTrue(app.frame.contains(done.frame))
             XCTAssertGreaterThanOrEqual(done.frame.height, 44)
             done.tap()
-            XCTAssertTrue(info.waitForExistence(timeout: 5))
+            // Closing the information page returns to the Me tab's row (#1452).
+            XCTAssertTrue(app.buttons["lio.information"].waitForExistence(timeout: 5))
             app.terminate()
         }
     }
