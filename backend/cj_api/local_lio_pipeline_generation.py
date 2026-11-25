@@ -66,6 +66,11 @@ class PipelineGeneration:
         unverified=('天气、当天开放情况和部分交通尚未确认'if worded.unknown_transfers else'天气和当天开放情况尚未确认')if locale=='zh'else(
             'Weather, opening information and some routes remain unverified'if worded.unknown_transfers else
             'Weather and opening information remain unverified')
+        if worded.edge_proximity_unconfirmed:
+            # JT 2026-11-25: saved without an observed lodging point; say so.
+            unverified+=('；首末日的抵达或离开时间未定，已建议把活动安排在住处附近；补充酒店位置后可以再调整'if locale=='zh'else
+                '. Arrival or departure times are not set, so first- and last-day activities are kept near where you stay; '
+                'you can adjust after adding your hotel')
         body=(worded.summary+'\n\n'+('行程已保存；'+unverified+'。想先看哪一天？'if locale=='zh'else
             'The itinerary is saved. '+unverified+'. Which day would you like to see first?'))
         return host._finish(worker,binding,state,body,Scene.ADJUSTMENT,locale)

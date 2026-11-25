@@ -169,6 +169,31 @@ def test_unknown_arrival_first_day_recipe_and_last_day_proximity_are_enforced():
         assert assemble(case['content'],**dict(args,activities=modified)).status==expected
 
 
+def test_unknown_lodging_saves_edge_days_with_disclosed_unconfirmed_proximity():
+    # JT 2026-11-25 (via coordination, option "照样保存并提示"): when the host has no
+    # observed lodging point, unknown first/last-day proximity no longer blocks the
+    # save; it is returned for disclosure. Known-false proximity and every other
+    # check keep their original refusal, and the default remains UNKNOWN.
+    case = light_case()
+    args = arguments(case,edges=activity_windows(2))
+    args['activities']=tuple(replace(a,windows=(Window(18*3600,21*3600),)) if a.item_id=='item-4' else a for a in args['activities'])
+    unknown=tuple(replace(a,nearby=None) if a.item_id in ('item-1','item-5') else a for a in args['activities'])
+    assert assemble(case['content'],**dict(args,activities=unknown)).status=='UNKNOWN'
+    result=assemble(case['content'],**dict(args,activities=unknown),lodging_unconfirmed=True)
+    assert result.status=='CONDITIONAL_SCHEDULE'and result.reason!='EDGE_DAY_PROXIMITY_UNCONFIRMED'
+    assert result.edge_proximity_unconfirmed==('item-1','item-5')
+    validate_candidate(json.loads(result.content),args['source'])
+    assert assemble(case['content'],**args,lodging_unconfirmed=True).edge_proximity_unconfirmed==()
+    false=tuple(replace(a,nearby=False) if a.item_id=='item-5' else a for a in unknown)
+    refused=assemble(case['content'],**dict(args,activities=false),lodging_unconfirmed=True)
+    assert (refused.status,refused.reason,refused.content)==('CONFLICT','EDGE_DAY_NEARBY_REQUIRED',None)
+    ids=frozenset({'item-1'})
+    combined=assemble_unconfirmed(case['content'],**dict(args,activities=unknown),unconfirmed_items=ids,lodging_unconfirmed=True)
+    assert combined.status=='UNCONFIRMED_SKELETON'and combined.edge_proximity_unconfirmed==('item-5',)
+    for flag in (None,1,'yes'):
+        with pytest.raises(ValueError):assemble(case['content'],**args,lodging_unconfirmed=flag)
+
+
 def test_first_day_full_override_is_disclosed_and_light_recipe_is_not_silently_imposed():
     case = deepcopy(CASES['unconfirmed'])
     assert assemble(case['content'],**arguments(case,edges=activity_windows(2))).reason=='FIRST_DAY_LIGHT_RECIPE_REQUIRED'
