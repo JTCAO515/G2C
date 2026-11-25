@@ -14,7 +14,9 @@ jobs:
   pr-lint:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - name: Require an Issue reference in the PR body
         env:
@@ -26,3 +28,16 @@ jobs:
               raise SystemExit("PR body must contain Closes/Fixes/Resolves/Refs #<issue number>")
           print("Issue reference present")
           PYTHON
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Report open PRs that touch the same files (report only, never fails)
+        # Open PRs must not overlap (docs/plan/issue-plan.md 现行流程 3); merge_pr.py stops the
+        # merge itself when main changed the same files after this PR's CI started.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: python3 -B .github/scripts/pr_overlap.py
