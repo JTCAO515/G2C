@@ -103,7 +103,8 @@ struct LioTripHomeStartSheet: View {
         _nationality = nationality
         self.save = save
         let defaultArrival = LioTripDay(date: .now).adding(days: 14)
-        _datesSet = State(initialValue: initial == nil || initial?.arrival != nil)
+        // A new trip starts with no dates, so nothing the traveller did not pick is saved (#1665 review P3-2).
+        _datesSet = State(initialValue: initial?.arrival != nil)
         _arrival = State(initialValue: (initial?.arrival ?? defaultArrival).start())
         _stayDays = State(initialValue: initial?.stayDays ?? Self.defaultStayDays)
         _cityID = State(initialValue: initial?.cityID)

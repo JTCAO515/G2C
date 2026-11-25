@@ -4,7 +4,8 @@ import SwiftUI
 /// Debug launch arguments for the trip home screenshots: `--lio-trip-home-preview <state>`, where the state is
 /// `none`, `before`, `arrival`, `china`, `evening` or `ended`. Sample data only, kept in memory: a Beijing plan,
 /// a German passport, a saved hotel, preview reminders. Arrival Mode is a stand-in that answers visa-free for
-/// any dated trip, as its rules do for a German passport on these dates; nothing is written to an account folder.
+/// any dated trip, as its rules do for a German passport on these dates. Nothing is written to an account folder
+/// or to the shared passport setting; the sample hotel sits in a temporary folder for Back to Hotel to read.
 enum LioTripHomePreview {
     /// Always false outside Debug builds.
     static var requested: Bool {
@@ -153,7 +154,7 @@ extension LioTripHomePreview {
         return LioTripHome(language: language, store: nil, plans: scene == .none ? [] : [plan(language)],
                            tools: tools(scene, language), showAllTrips: {}, openChat: openChat,
                            fixedNow: now(scene), timeZone: beijing,
-                           model: LioTripHomeModel(store: nil, initial: snapshot(scene)))
+                           model: LioTripHomeModel(store: nil, initial: snapshot(scene)), keepsSettingsInMemory: true)
     }
 }
 #endif
