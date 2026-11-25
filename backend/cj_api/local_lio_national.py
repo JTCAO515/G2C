@@ -1,5 +1,5 @@
 """Nationwide Lio planning intake over original MESSAGE/RUN/NEEDS authorities."""
-from dataclasses import asdict
+from dataclasses import asdict,replace
 from datetime import datetime,timezone,timedelta
 from hashlib import sha256
 import json
@@ -18,7 +18,7 @@ from .lio_city import CityReference,forms,_normalize
 from .lio_sourced_intake import BookingSourceUnclear
 from .lio_positive_trip import destination_query,destination_request,known_city_term,known_destination,supports
 from .lio_flow_intake import ReadOnlyPlanningData,ReadOnlyPlanningQuestion,parse_flow
-from .lio_national_intake import NONPERSISTENT,fields_for,fixed_sources_complete,province_evidence,diagnostic_code,StartDateConflict,FixedTimezoneConflict,DateDurationConflict,DateSourceUnclear
+from .lio_national_intake import Intake,NONPERSISTENT,fields_for,fixed_sources_complete,province_evidence,diagnostic_code,StartDateConflict,FixedTimezoneConflict,DateDurationConflict,DateSourceUnclear
 from .lio_planning_grounding import PlanningTurn,standalone_question,NUMBER,_number,PLAN_REQUEST,discussion_reply
 from .local_lio_planning import InvalidDiscussionAnswer,PlanningDetails,register,discuss
 from .rejected_intake_capture import capture_rejected_intake
@@ -390,6 +390,12 @@ class NationalLioPlanning:
                 status='discussion'if held else'needs_details',facts=facts,nonplanning_message_ids=[],
                 **({'authority_barrier_message_id':binding.message_id}if held else {})))
             return self._clarify(worker,binding,state,original.locale,intake.reply,question_fields,['duration_days'])
+        if isinstance(intake,Intake) and intake.city is not None:
+            # A locator for the whole short request 「去成都」 names only its
+            # literal place; the request verb is not part of the lookup name.
+            literal=destination_query(turns[intake.city['source_index']].text,intake.city['query'])
+            if literal is not None and literal!=intake.city['query']:
+                intake=replace(intake,city=dict(intake.city,query=literal))
         calendar=self.calendar if self.calendar is not None and original.protocol==LIO_VERSION_V3 else None
         if calendar is not None:
             converted=calendar.convert(worker,binding,state,intake,original,turns,refs)
