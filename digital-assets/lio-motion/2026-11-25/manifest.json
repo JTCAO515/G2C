@@ -20,14 +20,14 @@
       "keyframes": 64
     },
     "lio-idle-still.png": {
-      "bytes": 299607,
-      "sha256": "68c9c7a3b0a87e9bce35a0cb5fc985252ac535c93bcccc9c06fcae2d7e098704",
+      "bytes": 299353,
+      "sha256": "5a6074f59d7c8c11135b984c9028f79db42ca3b958af1465dfaceb8c189058e1",
       "width": 720,
       "height": 720
     },
     "lio-idle.mp4": {
-      "bytes": 834764,
-      "sha256": "bcab3a05f3c523c7ae433fcb24e2ab5130d1ed3b642c57eaa22a582a7f85cb8c",
+      "bytes": 940050,
+      "sha256": "621fe738ecd7ecbe931c6fe824fdc8a193f2d88929626291c6006e16667e3488",
       "width": 720,
       "height": 720,
       "fps": 30,
@@ -139,8 +139,8 @@
       "keyframes": 64
     },
     "lio-video-preview.png": {
-      "bytes": 323950,
-      "sha256": "feee21ca7cb33cf66a53771148fd4d99531bb6bddfb58c3eef904cddb9ac135e",
+      "bytes": 323926,
+      "sha256": "595b8a0436cda5fa86290496f421d8df876da4254f7edd42cd3057c1d2c78ae2",
       "width": 1012,
       "height": 566
     }
