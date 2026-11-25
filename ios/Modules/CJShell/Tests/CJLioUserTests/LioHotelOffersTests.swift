@@ -23,9 +23,10 @@ import Testing
 
     private func reply(items: String, version: String = "HOTEL.2", source: String = "Gaode",
                        unapplied: String = #"["check_in","check_out","price"]"#,
-                       applied: String = #"["near","guests"]"#) -> Data {
-        Data("""
-        {"version":"\(version)","source":"\(source)","applied_filters":\(applied),
+                       applied: String = #"["near","guests"]"#, affiliate: String? = "false") -> Data {
+        let flag = affiliate.map { #""affiliate_links":\#($0),"# } ?? ""
+        return Data("""
+        {"version":"\(version)","source":"\(source)",\(flag)"applied_filters":\(applied),
          "unapplied_filters":\(unapplied),"items":[\(items)]}
         """.utf8)
     }
@@ -67,7 +68,7 @@ import Testing
     @Test func everyQueryProblemHasBilingualAdvice() {
         let problems: [LioHotelQuery.Problem] = [
             .invalidLandmark, .stayTooLong, .tooManyGuests, .search(.cityRequired), .search(.invalidCity),
-            .search(.checkoutMustFollowCheckin), .search(.invalidGuestCount),
+            .search(.checkoutMustFollowCheckin), .search(.invalidGuestCount), .checkInPast,
         ]
         for problem in problems {
             #expect(!problem.message(.english).isEmpty)
@@ -149,7 +150,7 @@ import Testing
          "coordinate_system":"GCJ-02","rating":4.2,"price_cny":{"min":700,"max":300},"metro":{"name_zh":"","distance_m":-5},
          "foreign_guests":"maybe","booking_url":"https://relay.example.invalid/v1/tools/hotel/out/handle_bbbbbbbbbbbbbbbbbbbbbb"}
         """
-        let hotel = try #require(try LioHotelSearchWire.read(reply(items: sparse), allowing: approved).offers.first)
+        let hotel = try #require(try LioHotelSearchWire.read(reply(items: sparse, source: "Trip.com"), allowing: approved).offers.first)
         #expect(hotel.title(.english) == "王府井胡同客栈")
         #expect(hotel.subtitle(.english) == nil)
         #expect(hotel.address(.english) == "东城区菊儿胡同3号")
@@ -227,6 +228,31 @@ import Testing
         #expect(try LioHotelQuery(city: "北京", landmark: nil, checkIn: today, checkOut: tomorrow, guests: 1,
                                   price: .any, language: .english, today: today).checkIn == "2026-12-03")
         #expect(LioHotelQuery.Problem.checkInPast.message(.english) != LioHotelQuery.Problem.checkInPast.message(.chinese))
+    }
+
+    @Test func affiliateDisclosureFollowsTheReply() throws {
+        // #225: the disclosure appears only when the hand-off really carries an affiliate ID.
+        #expect(try LioHotelSearchWire.read(reply(items: fullItem, affiliate: "false"), allowing: approved).affiliateLinks == false)
+        #expect(try LioHotelSearchWire.read(reply(items: fullItem, affiliate: "true"), allowing: approved).affiliateLinks == true)
+        // A reply that does not say is treated as affiliate, so the disclosure is never missing.
+        #expect(try LioHotelSearchWire.read(reply(items: fullItem, affiliate: nil), allowing: approved).affiliateLinks == true)
+        #expect(throws: LioHotelFailure.unavailable) {
+            try LioHotelSearchWire.read(reply(items: fullItem, affiliate: #""yes""#), allowing: approved)
+        }
+        #expect(LioHotelResults.disclosure(.english).contains("affiliate"))
+        #expect(LioHotelResults.disclosure(.chinese).contains("推广链接"))
+    }
+
+    @Test func gaodeReferencePricesNeverShowAnAcceptedBadge() throws {
+        // Step one: a Gaode list with reference prices claims nothing about international guests.
+        let item = fullItem.replacingOccurrences(of: #""foreign_guests":"accepted""#,
+                                                 with: #""foreign_guests":"unknown""#)
+        let hotel = try #require(try LioHotelSearchWire.read(reply(items: item, source: "Gaode"), allowing: approved).offers.first)
+        #expect(hotel.price?.kind == .reference)
+        #expect(hotel.foreignGuests == .unknown)
+        #expect(!hotel.foreignGuests.isConfirmed)
+        #expect(hotel.foreignGuests.label(.english) == "International guests: check on Trip.com")
+        #expect(LioHotelOffer.ForeignGuests.accepted.isConfirmed)
     }
 
     @Test func relayErrorsMapToTravellerProblems() {
