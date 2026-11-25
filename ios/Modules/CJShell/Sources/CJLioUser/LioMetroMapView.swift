@@ -473,7 +473,8 @@ struct LioMetroStationSheet: View {
                                 .accessibilityIdentifier("lio.metro.station.interchange")
                         }
                     }
-                    if taxiEntry != nil {
+                    // Taxi place search covers some cities only; elsewhere directions remain.
+                    if taxiEntry != nil, map.city.taxiCity != nil {
                         Button(action: taxi) {
                             action(language.text("Taxi to this station", "打车去这站"), symbol: "car.fill", prominent: true)
                                 .overlay(alignment: .trailing) {
@@ -526,8 +527,8 @@ struct LioMetroStationSheet: View {
 
     /// Finds "<station>地铁站" with the app's own place search, then opens the usual taxi page.
     private func taxi() {
-        guard let taxiEntry else { return }
-        let query = LioTaxiSearchQuery(text: map.searchName(for: station), city: map.city.taxiCity, near: nil)
+        guard let taxiEntry, let city = map.city.taxiCity else { return }
+        let query = LioTaxiSearchQuery(text: map.searchName(for: station), city: city, near: nil)
         searching = true
         notice = nil
         Task { @MainActor in

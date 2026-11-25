@@ -3,10 +3,12 @@ import CJRunClient
 import SwiftUI
 
 /// Metro guide (#1421): choose a city first, then read how to buy a ticket, pass security and use
-/// the gates, with the operator's official line map. Only cities with verified guidance are listed.
-/// Beijing, Shanghai and Guangzhou also open an interactive line map (#1450).
+/// the gates. Every mainland metro city (41, #1450) opens an interactive line map; the cities whose
+/// operator guidance was checked also link the official map and ticket guide.
 struct LioMetroGuideView: View {
     let language: LioLanguage
+    @State private var finding = false
+    @State private var found: LioMetroCity?
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
@@ -16,32 +18,60 @@ struct LioMetroGuideView: View {
                     .font(LioTheme.display(.title2).weight(.semibold))
                     .foregroundStyle(LioTheme.ink)
                     .accessibilityAddTraits(.isHeader)
-                ForEach(LioMetroCity.allCases) { city in
-                    NavigationLink {
-                        LioMetroCityGuideView(language: language, city: city)
-                    } label: {
-                        cityCard(city)
+                ForEach(LioMetroRegion.allCases, id: \.self) { region in
+                    let cities = LioMetroCity.cities(in: region)
+                    if !cities.isEmpty {
+                        Text(region.name(in: language))
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(LioTheme.inkSecondary)
+                            .padding(.top, LioTheme.Spacing.xs)
+                            .accessibilityAddTraits(.isHeader)
+                        ForEach(cities) { city in
+                            NavigationLink {
+                                LioMetroCityGuideView(language: language, city: city)
+                            } label: {
+                                cityCard(city)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel(city.name(in: language) + language.text(", ", "，") + city.summary(in: language))
+                            .accessibilityAddTraits(.isButton)
+                            .accessibilityIdentifier(city.identifier)
+                        }
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(city.name(in: language) + language.text(", ", "，") + city.summary(in: language))
-                    .accessibilityAddTraits(.isButton)
-                    .accessibilityIdentifier(city.identifier)
                 }
             }
             .padding(18)
         }
         .background(LioTheme.paper)
         .modifier(LioMetroNavigationTitle(title: language.text("Metro Guide", "地铁指南"), colorScheme: colorScheme))
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { finding = true } label: {
+                    Label(language.text("Find a city", "查找城市"), systemImage: "magnifyingglass")
+                }
+                .accessibilityIdentifier("lio.metro.city.find")
+            }
+        }
+        .sheet(isPresented: $finding) {
+            LioMetroCityFinder(language: language) { city in
+                finding = false
+                found = city
+            }
+        }
+        .navigationDestination(item: $found) { city in
+            LioMetroCityGuideView(language: language, city: city)
+        }
     }
 
     private func cityCard(_ city: LioMetroCity) -> some View {
         HStack(spacing: LioTheme.Spacing.sm) {
+            // White on vermilion: the theme guarantees this pair's contrast (the audit failed 天 on sunken).
             Text(city.nativeName.prefix(1))
                 .font(LioTheme.display(.title2).weight(.bold))
-                .foregroundStyle(LioTheme.vermilion)
+                .foregroundStyle(LioTheme.onVermilion)
                 .frame(width: 48, height: 48)
-                .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+                .background(LioTheme.vermilion, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
@@ -53,7 +83,8 @@ struct LioMetroGuideView: View {
                 Text(city.summary(in: language))
                     .font(.footnote)
                     .foregroundStyle(LioTheme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(nil)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
             Spacer(minLength: 8)
             Image(systemName: "chevron.forward")
@@ -66,6 +97,48 @@ struct LioMetroGuideView: View {
         .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
         .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
         .contentShape(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+    }
+}
+
+/// Every metro city, searchable by English or Chinese name or province.
+private struct LioMetroCityFinder: View {
+    let language: LioLanguage
+    let onSelect: (LioMetroCity) -> Void
+    @State private var text = ""
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(LioMetroRegion.allCases, id: \.self) { region in
+                    let cities = LioMetroCity.cities(in: region, matching: text)
+                    if !cities.isEmpty {
+                        Section(region.name(in: language)) {
+                            ForEach(cities) { city in
+                                Button { onSelect(city) } label: {
+                                    HStack {
+                                        Text(city.name(in: language)).foregroundStyle(LioTheme.ink)
+                                        Spacer(minLength: 8)
+                                        Text(language == .english ? city.nameZH : city.provinceZH)
+                                            .foregroundStyle(LioTheme.inkSecondary)
+                                    }
+                                    .frame(minHeight: 44)
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
+            }
+            .searchable(text: $text, placement: .navigationBarDrawer(displayMode: .always),
+                        prompt: language.text("City or province", "城市或省份"))
+            .navigationTitle(language.text("Find a city", "查找城市"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button(language.text("Close", "关闭")) { dismiss() } }
+            }
+        }
     }
 }
 
@@ -88,8 +161,13 @@ struct LioMetroCityGuideView: View {
                         .foregroundStyle(LioTheme.ink)
                     Spacer(minLength: 8)
                     Menu {
-                        ForEach(LioMetroCity.allCases) { option in
-                            Button(option.name(in: language)) { city = option }
+                        // Region first, then its cities: 41 in one menu would run off the screen.
+                        ForEach(LioMetroRegion.allCases, id: \.self) { region in
+                            Menu(region.name(in: language)) {
+                                ForEach(LioMetroCity.cities(in: region)) { option in
+                                    Button(option.name(in: language)) { city = option }
+                                }
+                            }
                         }
                     } label: {
                         Label(city.name(in: language), systemImage: "chevron.down")
@@ -109,8 +187,9 @@ struct LioMetroCityGuideView: View {
                     .accessibilityIdentifier("lio.metro.interactive")
                 }
 
+                if let guide = city.guide {
                 VStack(alignment: .leading, spacing: 4) {
-                    Link(destination: city.mapURL) {
+                    Link(destination: guide.mapURL) {
                         Label(language.text("Official line map and stations", "官方线路图和车站"),
                               systemImage: "map")
                             .font(.headline)
@@ -120,7 +199,7 @@ struct LioMetroCityGuideView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("lio.metro.map")
-                    Link(destination: city.guideURL) {
+                    Link(destination: guide.guideURL) {
                         Label(language.text("Official ticket guide", "官方票务指南"), systemImage: "arrow.up.right")
                             .foregroundStyle(LioTheme.ink)
                             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
@@ -132,6 +211,7 @@ struct LioMetroCityGuideView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 4)
                 .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                }
 
                 ForEach(Array(LioMetroGuideSection.allCases.enumerated()), id: \.offset) { index, section in
                     instruction(step: index + 1, section)

@@ -134,13 +134,35 @@ import CryptoKit
                 for city in ["beijing", "shanghai", "guangzhou", "chengdu"] {
                     XCTAssertTrue(app.buttons["lio.metro.city.\(city)"].waitForExistence(timeout: 6))
                 }
-                try app.performAccessibilityAudit(for: .all)
+                // The city list runs on under the translucent tab bar, where contrast is measured through the bar
+                // rather than on the card. Only that case is set aside: contrast issues are collected during the
+                // audit (reading an element's frame inside the handler breaks the audit) and each must then lie
+                // under the tab bar. Every other audit runs, and the city page below gets the full audit.
+                let tabBar = app.tabBars.firstMatch
+                XCTAssertTrue(tabBar.exists)
+                let tabBarTop = tabBar.frame.minY
+                var underTabBar: [XCUIElement] = []
+                try app.performAccessibilityAudit(for: .all) { issue in
+                    guard issue.auditType == .contrast, let element = issue.element else { return false }
+                    underTabBar.append(element)
+                    return true
+                }
+                for element in underTabBar {
+                    XCTAssertGreaterThan(element.frame.maxY, tabBarTop, "contrast issue above the tab bar: \(element)")
+                }
                 app.buttons["lio.metro.city.beijing"].tap()
                 let picker = app.buttons["lio.metro.city"]
                 XCTAssertTrue(picker.waitForExistence(timeout: 6))
-                for city in language == "en" ? ["Shanghai", "Guangzhou", "Chengdu", "Beijing"] : ["上海", "广州", "成都", "北京"] {
+                let english = language == "en"
+                for (region, city) in english ? [("East", "Shanghai"), ("South", "Guangzhou"), ("Southwest", "Chengdu"), ("North", "Beijing")]
+                    : [("华东", "上海"), ("华南", "广州"), ("西南", "成都"), ("华北", "北京")] {
                     picker.tap()
-                    app.buttons[city].tap()
+                    let regionItem = app.buttons[region] // the menu groups the 41 cities by region
+                    XCTAssertTrue(regionItem.waitForExistence(timeout: 4))
+                    regionItem.tap()
+                    let cityItem = app.buttons[city]
+                    XCTAssertTrue(cityItem.waitForExistence(timeout: 4))
+                    cityItem.tap()
                     XCTAssertTrue(picker.label.contains(city) || (picker.value as? String)?.contains(city) == true)
                     XCTAssertTrue(app.staticTexts["lio.metro.ticket"].exists)
                     XCTAssertTrue(app.staticTexts["lio.metro.security"].exists)
