@@ -9,14 +9,19 @@ struct LioRoadbookLibraryView: View {
     /// Roadbooks that can be made now (saved trips, Lio's plans, routes). Kept ones replace these by id.
     let candidates: [LioRoadbook]
     @State private var kept: [LioRoadbook] = []
+    @Environment(\.dynamicTypeSize) private var typeSize
 
-    private var groups: [(LioRoadbook.Source, [LioRoadbook])] {
+    /// Two cards per row like the Tools tab; one at accessibility text sizes.
+    private var columns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: LioTheme.Spacing.sm, alignment: .top),
+              count: typeSize.isAccessibilitySize ? 1 : 2)
+    }
+
+    /// Kept copies first replace the same roadbook offered as a candidate; then my trips, Lio's plans, routes.
+    private var books: [LioRoadbook] {
         let keptIDs = Set(kept.map(\.id))
         let all = kept + candidates.filter { !keptIDs.contains($0.id) }
-        return LioRoadbook.Source.allCases.compactMap { source in
-            let books = all.filter { $0.source == source }
-            return books.isEmpty ? nil : (source, books)
-        }
+        return LioRoadbook.Source.allCases.flatMap { source in all.filter { $0.source == source } }
     }
 
     var body: some View {
@@ -26,7 +31,7 @@ struct LioRoadbookLibraryView: View {
                                    "按天带着走的旅行手册，离线也能看，可导出 PDF 打印或分享。"))
                     .foregroundStyle(LioTheme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
-                if groups.isEmpty {
+                if books.isEmpty {
                     Text(language.text("No roadbooks yet. Ask Lio to plan a trip in Chat, then make a roadbook from it.",
                                        "还没有路书。先在聊天里让 Lio 规划行程，再生成路书。"))
                         .padding(LioTheme.Spacing.md)
@@ -34,18 +39,15 @@ struct LioRoadbookLibraryView: View {
                         .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
                         .accessibilityIdentifier("lio.roadbook.empty")
                 }
-                ForEach(groups, id: \.0) { source, books in
-                    VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
-                        Text(source.title(language)).font(.headline).accessibilityAddTraits(.isHeader)
-                        ForEach(books) { book in
-                            NavigationLink {
-                                LioRoadbookView(roadbook: book, language: language, store: store, onChange: reload)
-                            } label: {
-                                LioRoadbookRow(roadbook: book, language: language, kept: kept.contains { $0.id == book.id })
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityIdentifier("lio.roadbook.row.\(book.id)")
+                LazyVGrid(columns: columns, spacing: LioTheme.Spacing.sm) {
+                    ForEach(books) { book in
+                        NavigationLink {
+                            LioRoadbookView(roadbook: book, language: language, store: store, onChange: reload)
+                        } label: {
+                            LioRoadbookCard(roadbook: book, language: language, kept: kept.contains { $0.id == book.id })
                         }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("lio.roadbook.row.\(book.id)")
                     }
                 }
             }
@@ -63,36 +65,51 @@ struct LioRoadbookLibraryView: View {
     private func reload() { kept = store?.load() ?? [] }
 }
 
-private struct LioRoadbookRow: View {
+/// One roadbook as a card: city, the plan's title, days and dates, and whether it is kept on this phone.
+private struct LioRoadbookCard: View {
     let roadbook: LioRoadbook
     let language: LioLanguage
     let kept: Bool
 
     var body: some View {
-        HStack(alignment: .top, spacing: LioTheme.Spacing.sm) {
-            Image(systemName: "book.closed")
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(LioTheme.vermilion)
-                .frame(width: 44, height: 44)
-                .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: LioTheme.Spacing.xxs) {
-                Text(roadbook.coverTitle(language)).font(.headline)
-                Text(roadbook.itinerary.title).font(.subheadline)
-                Text(roadbook.coverLine(language)).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
-                if kept {
-                    Label(language.text("On this phone", "已离线保存"), systemImage: "checkmark.circle.fill")
-                        .font(.footnote.weight(.semibold)).foregroundStyle(LioTheme.jade)
-                }
+        VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+            HStack(alignment: .center, spacing: LioTheme.Spacing.xs) {
+                Image(systemName: "book.closed")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(LioTheme.vermilion)
+                    .frame(width: 36, height: 36)
+                    .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+                    .accessibilityHidden(true)
+                Text(roadbook.source.title(language))
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(LioTheme.inkSecondary)
+                    .lineLimit(1)
             }
-            .fixedSize(horizontal: false, vertical: true)
+            Text(roadbook.coverTitle(language))
+                .font(.headline)
+                .lineLimit(2)
+            Text(roadbook.itinerary.title)
+                .font(.subheadline)
+                .lineLimit(2)
+            Text(roadbook.coverLine(language))
+                .font(.footnote)
+                .foregroundStyle(LioTheme.inkSecondary)
+                .lineLimit(2)
+            if kept {
+                Label(language.text("On this phone", "已离线保存"), systemImage: "checkmark.circle.fill")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(LioTheme.jade)
+                    .lineLimit(1)
+            }
             Spacer(minLength: 0)
-            Image(systemName: "chevron.right").foregroundStyle(LioTheme.inkSecondary).accessibilityHidden(true)
         }
+        .fixedSize(horizontal: false, vertical: true)
+        .multilineTextAlignment(.leading)
+        .frame(maxWidth: .infinity, minHeight: 132, alignment: .topLeading)
         .padding(LioTheme.Spacing.md)
-        .frame(maxWidth: .infinity, alignment: .leading)
         .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
         .contentShape(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+        .accessibilityElement(children: .combine)
     }
 }
 
