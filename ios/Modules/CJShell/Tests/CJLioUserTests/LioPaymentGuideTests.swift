@@ -46,6 +46,14 @@ struct LioPaymentGuideTests {
         #expect(english.contains("Weixin Pay") && english.contains("Alipay") && english.contains("international card"))
     }
 
+    @Test func declinedCardAdviceStatesNoGuessAboutTheCause() {
+        // A (2026-11-25): the source says issuers verify card payments; it does not say how often they decline.
+        let chinese = LioPaymentGuideProvider.paymentFailures(in: .chinese).first { $0.id == "declined" }?.detail ?? ""
+        let english = LioPaymentGuideProvider.paymentFailures(in: .english).first { $0.id == "declined" }?.detail ?? ""
+        #expect(!chinese.contains("多半") && !chinese.contains("通常") && chinese.contains("发卡行验证"))
+        #expect(!english.contains("usually") && !english.contains("most") && english.contains("issuer's approval"))
+    }
+
     @Test func setupStepsKeepNoSource() {
         for provider in LioPaymentGuideProvider.allCases {
             #expect(provider.steps(in: .english).allSatisfy { $0.source == nil })

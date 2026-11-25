@@ -80,8 +80,8 @@ enum LioPaymentGuideProvider: String, CaseIterable, Identifiable {
         return [
             .init(id: "declined", icon: "creditcard.trianglebadge.exclamationmark",
                   title: language.text("Payment declined", "付款被拒"),
-                  detail: language.text("Card payments go through your card issuer, so a decline usually comes from the issuer. Contact your issuer or try another card. You can also pay in cash, or by card at a shop showing your card's logo.",
-                                        "外卡付款要经过发卡行，被拒多半是发卡行没有放行。请联系发卡行或换一张卡；也可以付现金，或在有你卡片标识的商户直接刷卡。"),
+                  detail: language.text("Card payments need your card issuer's approval. If a payment is declined, contact your issuer or try another card. You can also pay in cash, or by card at a shop showing your card's logo.",
+                                        "外卡付款需要经过发卡行验证。付款被拒时，请联系发卡行或换一张卡；也可以付现金，或在有你卡片标识的商户直接刷卡。"),
                   source: pbocGuide),
             .init(id: "limit", icon: "gauge.with.dots.needle.67percent",
                   title: language.text("Over the limit", "超过限额"),
