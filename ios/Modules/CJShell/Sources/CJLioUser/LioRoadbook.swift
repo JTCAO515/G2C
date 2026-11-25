@@ -28,6 +28,8 @@ struct LioRoadbook: Identifiable, Sendable {
     let city: City?
     let createdAt: Date
     let itinerary: LioRichItinerary
+    /// Places filled in through ROADBOOK.1, by stop id; kept with the offline copy and printed in the PDF.
+    var details: [String: LioRoadbookDetail] = [:]
 
     func coverTitle(_ language: LioLanguage) -> String { city?.name(language) ?? itinerary.title }
 
@@ -174,6 +176,16 @@ extension LioRoadbook {
 extension LioRoadbook {
     /// The same roadbook stamped with the moment it is kept on this phone.
     func kept(at date: Date = .now) -> LioRoadbook {
-        LioRoadbook(id: id, source: source, city: city, createdAt: date, itinerary: itinerary)
+        LioRoadbook(id: id, source: source, city: city, createdAt: date, itinerary: itinerary, details: details)
+    }
+}
+
+extension LioRoadbook {
+    /// The library order: kept copies replace the same roadbook offered again; then my trips, Lio's plans
+    /// and the popular routes (#1509), one card per id.
+    static func library(kept: [LioRoadbook], candidates: [LioRoadbook], language: LioLanguage) -> [LioRoadbook] {
+        var seen = Set<String>()
+        let all = (kept + candidates + LioRoadbookTemplates.all(language)).filter { seen.insert($0.id).inserted }
+        return Source.allCases.flatMap { source in all.filter { $0.source == source } }
     }
 }

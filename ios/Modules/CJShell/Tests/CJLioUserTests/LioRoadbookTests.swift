@@ -356,3 +356,68 @@ import Testing
         #expect(kept.id == "planned.beijing" && kept.source == .planned && kept.city?.nameZH == "北京")
     }
 }
+
+/// Popular routes (JT 2026-11-25): Beijing 3 days and Shanghai 2 days first, written by hand, bilingual,
+/// with no prices, no live information and no invented travel times.
+@MainActor struct LioRoadbookTemplateTests {
+    @Test func beijingAndShanghaiComeFirst() {
+        for language in [LioLanguage.chinese, .english] {
+            let books = LioRoadbookTemplates.all(language)
+            #expect(books.map(\.id) == ["template.beijing-3d", "template.shanghai-2d"])
+            #expect(books.map(\.itinerary.days.count) == [3, 2])
+            #expect(books.allSatisfy { $0.source == .template && $0.itinerary.undated })
+            #expect(books.map { $0.city?.nameZH } == ["北京", "上海"])
+        }
+    }
+
+    @Test func everyStopIsNamedTimedAndBilingual() {
+        for book in LioRoadbookTemplates.all(.english) {
+            for day in book.itinerary.days {
+                #expect(!day.theme.isEmpty && !day.area.isEmpty && !day.stops.isEmpty)
+                for stop in day.stops {
+                    #expect(!stop.place.nameZH.isEmpty && !stop.place.nameEN.isEmpty && stop.place.nameEN != stop.place.nameZH)
+                    #expect(LioRoadbookPeriod(time: stop.time) != nil, "\(stop.id)")
+                    #expect(!stop.text.isEmpty)
+                }
+                #expect(day.legs.isEmpty, "no invented travel times")
+            }
+            #expect(!book.itinerary.lodgingArea.isEmpty)
+            let periods = Set(book.itinerary.days.flatMap { LioRoadbook.segments($0).map(\.period) })
+            #expect(periods == Set(LioRoadbookPeriod.allCases))
+        }
+    }
+
+    @Test func templateTextHasNoPricesOrLiveClaims() throws {
+        let price = try NSRegularExpression(pattern: #"\d\s*(元|块|yuan|RMB)|[¥$]"#, options: [.caseInsensitive])
+        let live = try NSRegularExpression(pattern: #"今天|今日|余票|售罄|today|sold out"#, options: [.caseInsensitive])
+        for language in [LioLanguage.chinese, .english] {
+            for book in LioRoadbookTemplates.all(language) {
+                let text = book.itinerary.days.flatMap(\.stops).map { [$0.text, $0.tip ?? "", $0.note ?? ""].joined(separator: " ") }
+                    .joined(separator: " ") + book.itinerary.lodgingArea
+                let range = NSRange(text.startIndex..., in: text)
+                #expect(price.firstMatch(in: text, range: range) == nil, "\(book.id)")
+                #expect(live.firstMatch(in: text, range: range) == nil, "\(book.id)")
+            }
+        }
+    }
+
+    @Test func placesWaitForCheckedAddressesBeforeTaxiOrDriverCard() {
+        for book in LioRoadbookTemplates.all(.chinese) {
+            let places = book.itinerary.days.flatMap(\.stops).map(\.place) + book.itinerary.hotels.map(\.place)
+            for place in places {
+                #expect(!place.matched && place.point == nil && place.address == nil, "\(place.nameZH)")
+                #expect(LioRoadbook.taxiDestination(place) == nil && LioRoadbook.driverAddress(place) == nil)
+            }
+        }
+    }
+
+    @Test func theLibraryKeepsOneCardPerIdInSourceOrder() {
+        let template = LioRoadbookTemplates.beijing(.chinese)
+        let kept = template.kept(at: Date(timeIntervalSince1970: 9))
+        let saved = LioRoadbook(id: "saved.t.v1", source: .saved, city: nil, createdAt: .now, itinerary: LioRoadbookTests.itinerary())
+        let planned = LioRoadbookTests.roadbook()
+        let books = LioRoadbook.library(kept: [kept], candidates: [planned, saved], language: .chinese)
+        #expect(books.map(\.id) == ["saved.t.v1", "planned.beijing", "template.beijing-3d", "template.shanghai-2d"])
+        #expect(books[2].createdAt == Date(timeIntervalSince1970: 9), "the kept copy replaces the template")
+    }
+}

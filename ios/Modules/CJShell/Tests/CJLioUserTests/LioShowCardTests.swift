@@ -144,6 +144,69 @@ struct LioShowCardTests {
         #expect(input.cleanRoomNumber == nil)
     }
 
+    @Test func pharmacyConditionsShowOnlyWhenChosen() {
+        var input = LioShowCardInput()
+        input.symptoms = [.cough]
+        for kind in [LioShowCardKind.symptoms, .sameMedicine] {
+            let plain = kind.content(input)
+            #expect(!plain.detailsZH.contains { $0.contains("怀孕") || $0.contains("哺乳") || $0.contains("孩子") })
+        }
+        input.conditions = [.forChild, .pregnant, .breastfeeding]
+        input.childAge = " 6 "
+        for kind in [LioShowCardKind.symptoms, .sameMedicine] {
+            let content = kind.content(input)
+            #expect(content.detailsZH.contains("我怀孕了。") && content.english.contains("I'm pregnant."))
+            #expect(content.detailsZH.contains("我在哺乳期。") && content.english.contains("I'm breastfeeding."))
+            #expect(content.detailsZH.contains("这是给孩子用的，孩子 6 岁。"))
+            #expect(content.english.contains("This is for a child aged 6."))
+        }
+        input.childAge = "six"
+        #expect(LioShowCardKind.symptoms.content(input).detailsZH.contains("这是给孩子用的。"), "only digits make an age")
+    }
+
+    @Test func emptySelectionsStillReadAsAWholeRequest() {
+        let none = LioShowCardInput()
+        #expect(LioShowCardKind.symptoms.content(none).mainZH == "您好，我身体不太舒服。")
+        #expect(LioShowCardKind.drugAllergy.content(none).mainZH == "我对某些药物过敏。")
+        #expect(LioShowCardKind.foodAllergy.content(none).mainZH == "我对某些食物过敏，请先跟我确认配料。")
+        for kind in [LioShowCardKind.symptoms, .drugAllergy, .foodAllergy] {
+            #expect(!kind.content(none).mainZH.hasSuffix("："), "\(kind) ends on a colon with nothing after it")
+        }
+    }
+
+    @Test func exchangeUsesTheSingularForOne() {
+        var input = LioShowCardInput()
+        input.amount = "1"
+        input.currency = .usd
+        #expect(LioShowCardKind.exchange.content(input).english.first == "Hello, I'd like to exchange 1 US dollar for Chinese yuan.")
+        input.currency = .jpy
+        input.amount = "1,000"
+        #expect(LioShowCardKind.exchange.content(input).english.first == "Hello, I'd like to exchange 1,000 Japanese yen for Chinese yuan.")
+        input.amount = "-5"
+        #expect(input.cleanAmount == nil)
+        input.amount = "abc"
+        #expect(input.cleanAmount == nil)
+    }
+
+    @Test func pickerTitlesReadNaturallyInEnglish() {
+        #expect(LioNearestPlace.atm.title(.english) == "ATM")
+        #expect(LioNearestPlace.metro.title(.english) == "Metro station")
+        #expect(LioExchangeCurrency.usd.title(.english) == "US dollars")
+        #expect(LioExchangeCurrency.eur.title(.english) == "Euros")
+        #expect(LioExchangeCurrency.usd.title(.chinese) == "美元")
+    }
+
+    @Test func nearestAndForeignCardCards() {
+        var input = LioShowCardInput()
+        input.nearest = .toilet
+        let nearest = LioShowCardKind.nearest.content(input)
+        #expect(nearest.mainZH == "您好，请问最近的洗手间在哪里？")
+        #expect(nearest.english.first == "Hello, where is the nearest toilet?")
+        let foreign = LioShowCardKind.foreignCardATM.content(input)
+        #expect(foreign.mainZH == "您好，请问这里的 ATM 可以用外国银行卡取人民币吗？")
+        #expect(foreign.detailsZH == ["我的卡是外国银行卡（比如 Visa、Mastercard）。"])
+    }
+
     private func filledInput() -> LioShowCardInput {
         var input = LioShowCardInput(hotel: hotel)
         input.roomNumber = "1208"
@@ -161,6 +224,8 @@ struct LioShowCardTests {
         input.amount = "100"
         input.currency = .eur
         input.atmLocation = "王府井大街 ATM"
+        input.conditions = [.pregnant]
+        input.childAge = "4"
         return input
     }
 }
