@@ -2,12 +2,38 @@ import Foundation
 
 /// Popular routes (JT 2026-11-25): Beijing 3 days and Shanghai 2 days first; Xi'an and Chengdu follow.
 /// Written by hand in both languages: well-known public places, suggested times, general reminders only.
-/// No prices, no live information and no travel times. Places stay "suggested" (no taxi, no driver card)
-/// until G2C - S has checked each address and coordinate with Gaode (M4 item 18, ids bj-001…, sh-001…).
+/// No prices, no live information and no travel times. Every place carries the Chinese address and GCJ-02
+/// point G2C - S checked with Gaode (M4 item 18, ids bj-001…, sh-001…), so taxi and the driver card work.
 enum LioRoadbookTemplates {
     static func all(_ language: LioLanguage) -> [LioRoadbook] {
         [beijing(language), shanghai(language)]
     }
+
+    /// Checked by G2C - S with Gaode on 2026-11-25 (roadbook-template-places.chosen.json): address, latitude,
+    /// longitude (GCJ-02). An address that was only a district has the place name added for the driver.
+    static let checked: [String: (address: String, latitude: Double, longitude: Double)] = [
+        "bj-001": ("东长安街", 39.903182, 116.397755),
+        "bj-002": ("景山前街4号", 39.917839, 116.397029),
+        "bj-003": ("景山西街44号", 39.925875, 116.396551),
+        "bj-004": ("东城区王府井大街", 39.916176, 116.411122),
+        "bj-005": ("渤海镇慕田峪村", 40.431668, 116.565052),
+        "bj-006": ("东直门大街5-11号", 39.941746, 116.424768),
+        "bj-007": ("天坛东里甲1号", 39.881913, 116.410829),
+        "bj-008": ("交道口街道南大街(南锣鼓巷地铁站E西北口旁)", 39.937182, 116.402394),
+        "bj-009": ("地安门西大街49号", 39.941893, 116.385121),
+        "bj-010": ("钟楼湾胡同临字9号(什刹海地铁站A2西北口步行240米)", 39.940781, 116.395937),
+        "bj-011": ("东城区王府井", 39.908966, 116.412422),
+        "bj-012": ("东城区东四", 39.929562, 116.425171),
+        "sh-001": ("福佑路168号", 31.227714, 121.492497),
+        "sh-002": ("黄浦区城隍庙", 31.224865, 121.493520),
+        "sh-003": ("南京东路558号", 31.235983, 121.479494),
+        "sh-004": ("中山东二路1号", 31.233516, 121.492127),
+        "sh-005": ("人民大道201号", 31.228231, 121.475480),
+        "sh-006": ("徐汇区武康路", 31.209252, 121.440627),
+        "sh-007": ("太仓路181弄6-15号", 31.220351, 121.474491),
+        "sh-008": ("浦东新区陆家嘴", 31.237015, 121.502500),
+        "sh-009": ("黄浦区人民广场", 31.228818, 121.475233),
+    ]
 
     private struct Spot {
         let id: String
@@ -25,20 +51,24 @@ enum LioRoadbookTemplates {
                              lodging: (String, String), hotels: [(String, String, String)],
                              _ language: LioLanguage) -> LioRoadbook {
         func t(_ pair: (String, String)) -> String { language.text(pair.1, pair.0) }
-        func place(_ zh: String, _ en: String) -> LioRichItinerary.Place {
-            .init(nameZH: zh, nameEN: en, address: nil, matched: false, point: nil)
+        func place(_ id: String, _ zh: String, _ en: String) -> LioRichItinerary.Place {
+            guard let checked = checked[id] else {
+                return .init(nameZH: zh, nameEN: en, address: nil, matched: false, point: nil)
+            }
+            return .init(nameZH: zh, nameEN: en, address: checked.address, matched: true,
+                         point: .init(latitude: checked.latitude, longitude: checked.longitude))
         }
         let builtDays = days.enumerated().map { offset, day in
             let stops = day.spots.map { spot in
                 LioRichItinerary.Stop(id: spot.id, kind: spot.kind, text: t(spot.text), time: spot.time,
-                                      place: place(spot.zh, spot.en), note: t(spot.note), tip: spot.tip.map(t))
+                                      place: place(spot.id, spot.zh, spot.en), note: t(spot.note), tip: spot.tip.map(t))
             }
             // No legs: travel between stops is not estimated for a route nobody has planned yet.
             return LioRichItinerary.Day(number: offset + 1, date: nil, theme: t(day.theme), area: t(day.area),
                                         stops: stops, legs: [])
         }
         let itinerary = LioRichItinerary(title: t(title), undated: true, days: builtDays, lodgingArea: t(lodging),
-                                         hotels: hotels.map { .init(id: $0.0, place: place($0.1, $0.2), note: nil) })
+                                         hotels: hotels.map { .init(id: $0.0, place: place($0.0, $0.1, $0.2), note: nil) })
         return LioRoadbook(id: id, source: .template, city: city, createdAt: Date(timeIntervalSince1970: 0),
                            itinerary: itinerary)
     }

@@ -401,14 +401,25 @@ import Testing
         }
     }
 
-    @Test func placesWaitForCheckedAddressesBeforeTaxiOrDriverCard() {
+    /// Every place carries the address and point S checked with Gaode, so taxi and the driver card work.
+    @Test func everyPlaceIsCheckedSoTaxiAndTheDriverCardWork() {
+        // Rough city boxes: a point outside means a wrong or swapped coordinate.
+        let boxes = ["北京": (39.4...41.1, 115.4...117.6), "上海": (30.6...31.9, 120.8...122.2)]
+        var ids: [String] = []
         for book in LioRoadbookTemplates.all(.chinese) {
-            let places = book.itinerary.days.flatMap(\.stops).map(\.place) + book.itinerary.hotels.map(\.place)
-            for place in places {
-                #expect(!place.matched && place.point == nil && place.address == nil, "\(place.nameZH)")
-                #expect(LioRoadbook.taxiDestination(place) == nil && LioRoadbook.driverAddress(place) == nil)
+            let box = boxes[book.city?.nameZH ?? ""]!
+            let places = book.itinerary.days.flatMap(\.stops).map { ($0.id, $0.place) }
+                + book.itinerary.hotels.map { ($0.id, $0.place) }
+            for (id, place) in places {
+                ids.append(id)
+                let point = place.mapPoint
+                #expect(place.matched && LioRoadbook.taxiDestination(place) != nil, "\(id)")
+                #expect(LioRoadbook.driverAddress(place).map { $0.count >= 4 } == true, "\(id)")
+                #expect(point.map { box.0.contains($0.latitude) && box.1.contains($0.longitude) } == true, "\(id)")
             }
         }
+        #expect(Set(ids) == Set(LioRoadbookTemplates.checked.keys) && ids.count == Set(ids).count,
+                "one checked row per place, none left over")
     }
 
     @Test func theLibraryKeepsOneCardPerIdInSourceOrder() {
