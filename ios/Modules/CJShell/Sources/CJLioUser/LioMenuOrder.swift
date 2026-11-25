@@ -286,7 +286,9 @@ struct LioMenuOrder: Equatable, Sendable {
 
         /// The shared show card (#1611): dishes largest, needs and thanks under them, English small.
         var showCard: LioShowCardContent {
-            LioShowCardContent(leadZH: greeting, mainZH: lines.isEmpty ? greeting : lines.joined(separator: "\n"),
+            // With no dish the greeting is the main line, so it is not repeated above it.
+            LioShowCardContent(leadZH: lines.isEmpty ? nil : greeting,
+                               mainZH: lines.isEmpty ? greeting : lines.joined(separator: "\n"),
                                detailsZH: notes + [closing],
                                english: ["Hello, I'd like to order:"] + englishLines + englishNotes)
         }

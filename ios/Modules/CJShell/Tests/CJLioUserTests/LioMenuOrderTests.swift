@@ -157,6 +157,18 @@ struct LioMenuOrderCardTests {
         #expect(content.noteZH == nil && content.noteEN == nil)
     }
 
+    @Test func showCardNeverRepeatsTheGreetingAndFallsBackToChineseNames() throws {
+        let empty = LioMenuOrder().card(in: .sample).showCard
+        #expect(empty.leadZH == nil && empty.mainZH == "您好，我想点这些菜：")
+        let unnamed = LioMenuDish(id: "x", nameZH: "夫妻肺片", nameEN: "", summaryEN: "", summaryZH: "",
+                                  ingredientsEN: "", ingredientsZH: "", methodEN: "", methodZH: "", portionEN: "",
+                                  portionZH: "", spice: nil, contains: [:], priceText: nil)
+        var order = LioMenuOrder()
+        order.add(unnamed)
+        let card = order.card(in: LioMenuReading(dishes: [unnamed, unnamed]))
+        #expect(card.lines == ["夫妻肺片 × 1"] && card.englishLines == ["夫妻肺片 × 1"])
+    }
+
     @Test func quantitiesAreBoundedAndRemovable() throws {
         var order = LioMenuOrder()
         let dish = try #require(LioMenuReading.sample.dishes.first { $0.nameZH != nil })
