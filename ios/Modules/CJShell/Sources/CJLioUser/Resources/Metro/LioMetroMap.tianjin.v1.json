@@ -208,7 +208,7 @@
   {"id": "ti187", "nameZH": "会展中心", "nameEN": "Convention and Exhibition Center", "x": 1018.0, "y": 567.5, "lines": ["ti-11"]},
   {"id": "ti188", "nameZH": "太湖路", "nameEN": "Taihu Road", "x": 981.5, "y": 567.5, "lines": ["ti-11"]},
   {"id": "ti189", "nameZH": "市民广场", "nameEN": "Citizen Plaza", "x": 946.0, "y": 567.5, "lines": ["ti-11"]},
-  {"id": "ti190", "nameZH": "泰达", "nameEN": "Taida", "x": 908.0, "y": 568.0, "lines": ["ti-11"]},
+  {"id": "ti190", "nameZH": "泰达", "nameEN": "TEDA", "x": 908.0, "y": 568.0, "lines": ["ti-11"]},
   {"id": "ti191", "nameZH": "塘沽", "nameEN": "Tanggu", "x": 870.0, "y": 568.5, "lines": ["ti-11"]},
   {"id": "ti192", "nameZH": "胡家园", "nameEN": "Hujiayuan", "x": 828.0, "y": 568.5, "lines": ["ti-11"]},
   {"id": "ti193", "nameZH": "钢管公司", "nameEN": "Gangguan Gongsi", "x": 785.5, "y": 568.5, "lines": ["ti-11"]},

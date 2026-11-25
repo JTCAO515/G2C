@@ -145,7 +145,9 @@ struct LioMetroMapDataTests {
         }
         // Hand-checked English where AMap's pinyin was swapped or a character reads locally.
         for (id, station, english) in [("jinan", "梁王", "Liangwang"), ("jinan", "梁王西", "Liangwang Xi"),
-                                       ("zhengzhou", "祭城", "Zhaicheng"), ("tianjin", "人民医院", "Renminyiyuan")] {
+                                       ("zhengzhou", "祭城", "Zhaicheng"), ("tianjin", "人民医院", "Renminyiyuan"),
+                                       ("tianjin", "泰达", "TEDA"), ("chengdu", "杉板桥", "Shabanqiao"),
+                                       ("chengdu", "涌泉", "Yongquan")] {
             guard let city = LioMetroCity.named(id) else { continue }
             #expect(try LioMetroMap.bundled(city).stations.first { $0.nameZH == station }?.nameEN == english, "\(id) \(station)")
         }
