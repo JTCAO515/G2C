@@ -95,7 +95,9 @@ struct CJProbeApp: App {
                 // to exercise their existing Release negative cases.
                 ShellView(state: shell)
                 #else
-                LioHome(language: shell.language.lio, service: .unavailable, isDemo: false) { LioMenuSettings(shell: shell) }
+                LioInformationHost(shell: shell) { information in
+                    LioHome(language: shell.language.lio, service: .unavailable, isDemo: false) { LioMenuSettings(shell: shell, showingInformation: information) }
+                }
                 #endif
             }
             #if G2C_LIO_APP
@@ -114,18 +116,22 @@ struct CJProbeApp: App {
         if let encoded = ProcessInfo.processInfo.environment["G2C_LIO_PREVIEW_TRIP"] {
             switch Result(catching: { try LioPreviewTripFixture.library(encoded) }) {
             case .success(let library):
-                LioHome(language: shell.language.lio, service: .demo, isDemo: true, tripLibrary: library,
-                        recordedMap: { document in
-                    AnyView(LioRecordedTripMap(document: document, language: shell.language))
-                }) { LioMenuSettings(shell: shell) }
+                LioInformationHost(shell: shell) { information in
+                    LioHome(language: shell.language.lio, service: .demo, isDemo: true, tripLibrary: library,
+                            recordedMap: { document in
+                        AnyView(LioRecordedTripMap(document: document, language: shell.language))
+                    }) { LioMenuSettings(shell: shell, showingInformation: information) }
+                }
             case .failure:
                 Text(shell.language.text("Sample trip unavailable.", "示例行程暂不可用。"))
             }
         } else {
-            let home = LioHome(language: shell.language.lio, service: .demo, isDemo: true,
-                               showsTools: ProcessInfo.processInfo.arguments.contains("--lio-tools-preview"),
-                               toolsRelay: translationRelayPreview, toolsDraftStorage: localSupportDraftPreview) {
-                LioMenuSettings(shell: shell)
+            let home = LioInformationHost(shell: shell) { information in
+                LioHome(language: shell.language.lio, service: .demo, isDemo: true,
+                                   showsTools: ProcessInfo.processInfo.arguments.contains("--lio-tools-preview"),
+                                   toolsRelay: translationRelayPreview, toolsDraftStorage: localSupportDraftPreview) {
+                    LioMenuSettings(shell: shell, showingInformation: information)
+                }
             }
             .lioMedicalCardStorage(localMedicalCardPreview)
             if ProcessInfo.processInfo.arguments.contains("--lio-support-dial-preview"),
@@ -299,18 +305,32 @@ struct LioLanguagePicker: View {
     let shell: ShellState
 
     var body: some View {
-        Picker(shell.language.text("Language", "语言"),
-               selection: Binding(get: { shell.language }, set: { shell.selectLanguage($0) })) {
-            Text("English").tag(ShellLanguage.english)
-            Text("简体中文").tag(ShellLanguage.chinese)
+        Menu {
+            Picker(shell.language.text("Language", "语言"),
+                   selection: Binding(get: { shell.language }, set: { shell.selectLanguage($0) })) {
+                Text("English").tag(ShellLanguage.english)
+                Text("简体中文").tag(ShellLanguage.chinese)
+            }
+        } label: {
+            HStack {
+                RunReadableText(text: shell.language.text("Language", "语言"), color: LioTheme.ink)
+                Spacer(minLength: 8)
+                RunReadableText(text: shell.language.text("English", "简体中文"), color: LioTheme.inkSecondary)
+                    .fixedSize(horizontal: true, vertical: true)
+                Image(systemName: "chevron.up.chevron.down").font(.caption).accessibilityHidden(true)
+            }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
+        .accessibilityLabel(shell.language.text("Language", "语言"))
+        .accessibilityValue(shell.language.text("English", "简体中文"))
         .accessibilityIdentifier("lio.language")
     }
 }
 
 struct LioMenuSettings: View {
     let shell: ShellState
-    @State private var showingInformation = false
+    @Binding var showingInformation: Bool
 
     var body: some View {
         LioLanguagePicker(shell: shell)
@@ -318,6 +338,18 @@ struct LioMenuSettings: View {
         Button(shell.language.text("Internal demo information", "内部演示说明")) { showingInformation = true }
             .frame(minHeight: 44, alignment: .leading)
             .accessibilityIdentifier("lio.information")
+    }
+}
+
+// A settings row can leave the lazy List when Dynamic Type changes. Keep the sheet
+// and its presentation state on the signed-in home for the same session instead.
+struct LioInformationHost<Content: View>: View {
+    let shell: ShellState
+    @ViewBuilder let content: (Binding<Bool>) -> Content
+    @State private var showingInformation = false
+
+    var body: some View {
+        content($showingInformation)
             .sheet(isPresented: $showingInformation) {
                 NavigationStack {
                     LioDemoNoticePage(language: shell.language.lio) { EmptyView() }
@@ -393,7 +425,9 @@ private struct LioOnboardingPreview: View {
 
     var body: some View {
         if admitted {
-            LioHome(language: shell.language.lio, service: .demo, isDemo: true) { LioMenuSettings(shell: shell) }
+            LioInformationHost(shell: shell) { information in
+                LioHome(language: shell.language.lio, service: .demo, isDemo: true) { LioMenuSettings(shell: shell, showingInformation: information) }
+            }
         } else {
             LioInvitationView(language: shell.language.lio, isBusy: false, notice: nil,
                               onInvite: { _ in admitted = true }, onRestore: { admitted = true }) {

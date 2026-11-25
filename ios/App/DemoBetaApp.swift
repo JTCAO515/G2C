@@ -14,40 +14,42 @@ struct DemoBetaRootView: View {
             if root.finishingDemoCleanup {
                 NavigationStack { LioAccountDeletion(shell: shell, root: root) }
             } else if let trip = root.lioRetainedTrip {
-                LioHome(language: shell.language.lio, service: trip.messages.lio, isDemo: false,
-                        chatLibrary: trip.messages.lioChats, tripLibrary: trip.lioTripLibrary,
-                        tripHistory: trip.messages.lioTripHistory,
-                        memoryActions: trip.messages.lioMemoryActions,
-                        savedMemory: trip.typedMemory.map { AnyView(LioSavedMemoryView(host: $0.host, language: shell.language).id(trip.id)) },
-                        recordedMap: { document in
-                    AnyView(LioRecordedTripMap(document: document, language: shell.language))
-                }, session: .init(revision: trip.id, available: sessionReady,
-                                  showsRetry: root.accounts.state == .networkUnknown || root.accounts.state == .storageUnavailable,
-                                  problem: root.lioSessionProblem), reconnect: {
-                    root.accounts.suspend()
-                    root.accounts.resume()
-                }, showsTools: true, toolsHistory: trip.messages.lioTranslationHistory,
-                   toolsRelay: trip.lioTranslationRelay, currencyRelay: trip.lioCurrencyRelay,
-                   taxiRelay: trip.lioTaxiRelay, nearbyRelay: trip.lioNearbyRelay,
-                   hotelRelay: trip.lioHotelRelay,
-                   transportRelay: trip.lioTransportRelay,
-                   taxiRecentDirectory: trip.messages.lioTaxiRecentDirectory,
-                   savedPlans: trip.messages.lioSavedPlans,
-                   roadbookDirectory: trip.messages.lioRoadbookDirectory,
-                   roadbookRelay: trip.lioRoadbookRelay,
-                   menuRelay: trip.lioMenuRelay,
-                   tripHomeStore: trip.messages.lioTripHomeStore,
-                   messageDirectory: trip.messages.lioMessageDirectory,
-                   toolsDraftStorage: root.localSupportDraftStorage(),
-                   toolsSessionIsCurrent: {
-                    guard case .signedIn = root.accounts.state else { return false }
-                    return root.trip === trip
-                }) {
-                    LioMenuSettings(shell: shell)
-                    NavigationLink(shell.language.text("Delete account", "注销账号")) {
-                        LioAccountDeletion(shell: shell, root: root)
+                LioInformationHost(shell: shell) { information in
+                    LioHome(language: shell.language.lio, service: trip.messages.lio, isDemo: false,
+                            chatLibrary: trip.messages.lioChats, tripLibrary: trip.lioTripLibrary,
+                            tripHistory: trip.messages.lioTripHistory,
+                            memoryActions: trip.messages.lioMemoryActions,
+                            savedMemory: trip.typedMemory.map { AnyView(LioSavedMemoryView(host: $0.host, language: shell.language).id(trip.id)) },
+                            recordedMap: { document in
+                        AnyView(LioRecordedTripMap(document: document, language: shell.language))
+                    }, session: .init(revision: trip.id, available: sessionReady,
+                                      showsRetry: root.accounts.state == .networkUnknown || root.accounts.state == .storageUnavailable,
+                                      problem: root.lioSessionProblem), reconnect: {
+                        root.accounts.suspend()
+                        root.accounts.resume()
+                    }, showsTools: true, toolsHistory: trip.messages.lioTranslationHistory,
+                       toolsRelay: trip.lioTranslationRelay, currencyRelay: trip.lioCurrencyRelay,
+                       taxiRelay: trip.lioTaxiRelay, nearbyRelay: trip.lioNearbyRelay,
+                       hotelRelay: trip.lioHotelRelay,
+                       transportRelay: trip.lioTransportRelay,
+                       taxiRecentDirectory: trip.messages.lioTaxiRecentDirectory,
+                       savedPlans: trip.messages.lioSavedPlans,
+                       roadbookDirectory: trip.messages.lioRoadbookDirectory,
+                       roadbookRelay: trip.lioRoadbookRelay,
+                       menuRelay: trip.lioMenuRelay,
+                       tripHomeStore: trip.messages.lioTripHomeStore,
+                       messageDirectory: trip.messages.lioMessageDirectory,
+                       toolsDraftStorage: root.localSupportDraftStorage(),
+                       toolsSessionIsCurrent: {
+                        guard case .signedIn = root.accounts.state else { return false }
+                        return root.trip === trip
+                    }) {
+                        LioMenuSettings(shell: shell, showingInformation: information)
+                        NavigationLink(shell.language.text("Delete account", "注销账号")) {
+                            LioAccountDeletion(shell: shell, root: root)
+                        }
+                        Button(shell.language.text("Sign out", "退出登录"), action: signOut)
                     }
-                    Button(shell.language.text("Sign out", "退出登录"), action: signOut)
                 }
                 .lioMedicalCardStorage(root.localMedicalCardStorage())
                 .id(root.lioPresentationID)

@@ -71,7 +71,7 @@ def main():
                'ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=YES','CODE_SIGN_IDENTITY=-',f'CURRENT_PROJECT_VERSION={current}',*selectors,'test']
     (output/'command.json').write_text(json.dumps(command, indent=2)+'\n')
     env = {k:v for k,v in os.environ.items() if not k.startswith(('G2C_DEV_','SIMCTL_CHILD_'))}
-    expected = len(args.case) if args.case else 17
+    expected = len(args.case) if args.case else 18
     with (output/'updates.log').open('w') as log:
         subprocess.run(command,cwd=ROOT,env=env,stdout=log,stderr=subprocess.STDOUT,check=True,timeout=900 * expected)
     summary = subprocess.check_output(['xcrun','xcresulttool','get','test-results','summary','--path',str(result)])
