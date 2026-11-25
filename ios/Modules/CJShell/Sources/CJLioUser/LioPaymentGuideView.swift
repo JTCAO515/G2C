@@ -21,12 +21,75 @@ struct LioPaymentGuideView: View {
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("lio.payment.provider." + provider.rawValue)
                 }
+                NavigationLink {
+                    LioPaymentFailuresView(language: language)
+                } label: {
+                    Label(language.text("If a payment fails", "付款失败排查"), systemImage: "exclamationmark.bubble")
+                        .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+                        .padding(.horizontal, 16)
+                        .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                        .foregroundStyle(LioTheme.ink)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("lio.payment.failures")
             }
             .padding(18)
         }
         .background(LioTheme.paper)
         .navigationTitle(language.text("Payment Setup Guide", "支付开通指南"))
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/// What to do when a payment fails (JT, 2026-11-25), each card with the official page it comes from.
+private struct LioPaymentFailuresView: View {
+    let language: LioLanguage
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                ForEach(LioPaymentGuideProvider.paymentFailures(in: language)) { item in
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label(item.title, systemImage: item.icon)
+                            .font(.headline)
+                            .accessibilityAddTraits(.isHeader)
+                        RunReadableText(text: item.detail, color: LioTheme.ink)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .accessibilityIdentifier("lio.payment.failure." + item.id)
+                        if let source = item.source {
+                            Link(destination: source.url) {
+                                Label(language.text("Source: ", "来源：") + source.name, systemImage: "arrow.up.right")
+                                    .font(.footnote)
+                                    .foregroundStyle(LioTheme.inkSecondary)
+                                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("lio.payment.failure-source." + item.id)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
+                    .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                }
+            }
+            .foregroundStyle(LioTheme.ink)
+            .padding(18)
+        }
+        .background(LioTheme.paper)
+        .navigationTitle(language.text("If a payment fails", "付款失败排查"))
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(LioTheme.paper, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(colorScheme, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                RunReadableText(text: language.text("If a payment fails", "付款失败排查"), style: .headline, color: LioTheme.ink)
+                    .fixedSize()
+                    .accessibilityAddTraits(.isHeader)
+            }
+        }
     }
 }
 

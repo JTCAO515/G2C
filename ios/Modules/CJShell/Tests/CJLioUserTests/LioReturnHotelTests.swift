@@ -72,13 +72,22 @@ import Testing
     @Test func returnActionsUseTheTaxiPlaceAndTheDriverSign() {
         let hotel = LioStayHotel(place: place, roomNumber: "1208", source: .trip)
         #expect(hotel.place == place)
-        let sign = hotel.driverSign
+        let sign = LioShowCardContent.driver(nameZH: hotel.place.nameZH, nameEN: hotel.place.nameEN,
+                                             addressZH: hotel.place.addressZH, requestZH: LioStayHotel.driverRequestZH)
         #expect(sign.mainZH == "北京王府井希尔顿酒店")
         #expect(sign.leadZH == "请送我回这家酒店")
         #expect(sign.detailsZH == ["北京市东城区王府井东街8号"])
         #expect(sign.english == ["Hilton Beijing Wangfujing"])
+        #expect(LioAccountFolders.returnHotelDirectoryName == LioReturnHotelStore.directoryName)
         #expect(hotel.showCardHotel == LioShowCardInput.Hotel(nameZH: "北京王府井希尔顿酒店",
                                                                 addressZH: "北京市东城区王府井东街8号"))
+    }
+
+    @Test func aSavedRoomIsCleanedWhenReadBack() throws {
+        let json = #"{"place":{"nameZH":"北京饭店","nameEN":"","addressZH":null,"coordinate":{"latitude":39.9,"longitude":116.4,"referenceSystem":"gcj02"}},"roomNumber":"  0815  ","source":"manual"}"#
+        let hotel = try JSONDecoder().decode(LioStayHotel.self, from: Data(json.utf8))
+        #expect(hotel.roomNumber == "0815")
+        #expect(hotel.place.nameEN.isEmpty, "a hotel without an English name is kept")
     }
 
     @Test func featureIsOffUnlessTheBuildSaysYes() {
@@ -95,7 +104,8 @@ import Testing
                      "back to hotel", "How do I get back to the hotel?"] {
             #expect(LioReturnHotel.isReturnRequest(text), "\(text)")
         }
-        for text in ["推荐酒店", "find a hotel near the Bund", "酒店早餐几点", "hotel prices in Shanghai"] {
+        for text in ["推荐酒店", "find a hotel near the Bund", "酒店早餐几点", "hotel prices in Shanghai",
+                     "We came back from the hotel", "How do I return the hotel key?"] {
             #expect(!LioReturnHotel.isReturnRequest(text), "\(text)")
         }
     }
