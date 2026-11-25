@@ -125,7 +125,7 @@
     "backend/fact/cj_fact/visitor.py": "f31d59604a3b4731344f2d33b480b9cf47e8674371d0a3843067c9314e040f02",
     "backend/memory/cj_memory/epoch_projection.py": "29fd2a8d1ffe417680248b631ccaa1b98e36f68aeaab05baf116297f3d15774f",
     "backend/message/cj_message/demo_dialogue.py": "357aeadcd3cac08067bcadb40a5dfd90c4d6bbd7169232ca5cfa3607dfc1ce4c",
-    "backend/message/cj_message/lio_context.py": "2d6323fc9e6b3450171328cec632bacc848b23b886a7556d88e2772a15fa2b1a",
+    "backend/message/cj_message/lio_context.py": "b6a2115fa841e2021c2b0eb86cb71c39bc4782ec1012cc84de8f72ce1aed7c98",
     "backend/message/cj_message/lio_exploration_schema.py": "3f65fcf71b301522d06aec0b23758261d288eae283c81c20a5e94ea3fd42cbb3",
     "backend/message/cj_message/lio_pipeline_schema.py": "d46dfe27500e5f8304cd46a3ee25ae8453e84b1a229d22795fa3dd54773e9653",
     "backend/message/cj_message/lio_wire.py": "05d514c2ea863ad51202be8064c79b07ba5d20cb669e95db113a05a468c965d2",
@@ -137,7 +137,7 @@
     "eval/optimization/score_v2.py": "015fa9f21b418fe49a5ac07a5fb3027e0422620a6616029f2ba6438bfa1e9322",
     "tooling/optimization/uv.lock": "c3729fbcd04627cb07bde4f5f21b9c4fbfa4748b3d7468d550c7fc2af62bc343"
   },
-  "system_prompt_sha256": "aec47274130f6716f61f6113b7e6bb3d9bab5c140ce081e8299236c6195eeba0",
+  "system_prompt_sha256": "f655f8730a14dfc5b0fbfbae888a64da0f8358b35bc55fbbff88a471c72fa2dc",
   "task_sha256": "9d4376ba7512d6f3c0741036ae1bd0dda99752bbc9f8b8fb8dd7025c61a530ec",
   "task_version": "G2C-dialogue-cases.2",
   "tool_implementation_sha256": "a9a8816f79777d24859deb081308ed9dcdfe5755476656955e1b3961c7a1e75f",

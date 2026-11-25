@@ -147,14 +147,15 @@ ANSWER_DETAIL = (
 # JT 2026-11-25 "all A" (docs/lio-voice.md §3.2, §4.2): one screen, the rest on tap.
 # Used only when the contract layer passes layout='one-screen'; flat stays byte-identical.
 ONE_SCREEN_DETAIL = (
-    ' Fit the answer on one phone screen. The first sentence answers the question directly; if you assume '
-    'something such as party size, pace or season, say it in that sentence. Then give at most three short '
-    'points: for a procedure up to 4 numbered steps; for a recommendation one best pick and two alternatives; '
+    ' Fit the answer on one phone screen. The first paragraph is only the direct answer: the first sentence answers '
+    'the question directly, at most 35 Chinese characters or 20 English words, with no line break inside it; if '
+    'you assume something such as party size, pace or season, say it there, then one blank line, then at most '
+    'three short points: for a procedure up to 4 numbered steps; for a recommendation one best pick and two alternatives; '
     'for where to go two or three options, one line each, then your advice; for a day plan one line per day. '
     'Body length: procedures and facts 80–150 Chinese characters or 50–90 English words; recommendations '
     'nearby 80–130 or 50–80; comparisons 120–180 or 70–110; day plans 120–200 or 70–120; a change says only '
-    'what changed, 50–100 or 30–60. Emergencies have no length limit: start with the action and keep every '
-    'life-saving step. Keep the names, numbers and the one tip that matters most; leave further detail to '
+    'what changed, 50–100 or 30–60. In an emergency the first paragraph is only the action, such as calling 120, '
+    'then keep every life-saving step with no length limit. Keep the names, numbers and the one tip that matters most; leave further detail to '
     'the follow-ups instead of the body. Give routes only from supplied tool results or as a short direction, '
     'and never correct yourself mid-answer. Bold only place names and key numbers; no headings, tables or raw '
     'links. Well-established reference figures are not invented: give them as approximate ranges and say '
