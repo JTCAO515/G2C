@@ -64,6 +64,8 @@ struct LioMenuWireTests {
         body([dish("l1", ["contains": ["msg": "likely"]])]),
         body([dish("l1", ["contains": ["peanut": "maybe"]])]),
         body([dish("l1", ["spice": 4])]),
+        body([dish("l1", ["spice": 2.5])]),
+        Data(#"{"version":"MENU.1","truncated":false,"items":[{"id":"l1","kind":"unclear","price_text":null}"#.utf8),
         body([dish("l1", ["name_zh": " "])]),
         body([dish("l1", ["extra": "field"])]),
         body([["id": "l1", "kind": "unclear", "price_text": NSNull(), "name_zh": "猜的"]]),
@@ -117,6 +119,17 @@ struct LioMenuWireTests {
                                                                  headerFields: nil)!)
         }
         await #expect(throws: LioMenuFailure.unavailable) { try await client.read(LioMenuWireTests.jpeg) }
+    }
+
+    @Test func networkProblemsAreToldApart() async {
+        for (code, failure) in [(URLError.Code.notConnectedToInternet, LioMenuFailure.offline),
+                                (.timedOut, .timedOut), (.badServerResponse, .unavailable)] {
+            let client = LioMenuRelayClient(baseURL: base, isCurrent: { true }, bearer: { "token" }) { _ in
+                throw URLError(code)
+            }
+            await #expect(throws: failure) { try await client.read(LioMenuWireTests.jpeg) }
+        }
+        #expect(LioMenuWire.timeout > 90)
     }
 
     @Test func quotaAnswersSaySo() async {
