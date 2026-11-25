@@ -9,7 +9,7 @@ import XCTest
         let remember = app.buttons.matching(identifier: "lio.memory.remember").firstMatch
         XCTAssertTrue(remember.waitForExistence(timeout: 10))
         remember.tap()
-        app.tabBars.buttons["Memory"].tap()
+        openLioMemory(app, chinese: false)
         let card = app.buttons["lio.memory.card.luxury-hotel"]
         XCTAssertTrue(card.waitForExistence(timeout: 10))
         card.tap()
@@ -40,47 +40,66 @@ import XCTest
             let choices = app.buttons.matching(identifier: "lio.memory.remember")
             let two = XCTNSPredicateExpectation(predicate: NSPredicate(format: "count == 2"), object: choices)
             XCTAssertEqual(XCTWaiter.wait(for: [two], timeout: 10), .completed)
-            let memory = app.tabBars.buttons[chinese ? "记忆" : "Memory"]
             let chat = app.tabBars.buttons[chinese ? "聊天" : "Chat"]
             let hotel = app.buttons["lio.memory.card.luxury-hotel"]
             let museum = app.buttons["lio.memory.card.museum"]
             let suggestions = app.staticTexts["lio.memory.suggestions"]
             let firstSuggestion = app.staticTexts["lio.memory.suggestion.0"]
             let secondSuggestion = app.staticTexts["lio.memory.suggestion.1"]
-            memory.tap()
+            openLioMemory(app, chinese: chinese)
             XCTAssertTrue(suggestions.waitForExistence(timeout: 8))
             XCTAssertEqual(firstSuggestion.label, chinese ? "你偏好豪华酒店。" : "You prefer luxury hotels.")
             XCTAssertEqual(secondSuggestion.label, chinese ? "你喜欢参观博物馆。" : "You enjoy museums.")
             XCTAssertTrue(app.staticTexts[chinese ? "你让 Lio 记住的内容会出现在这里。" : "Things you ask Lio to remember appear here."].waitForExistence(timeout: 10))
             XCTAssertFalse(hotel.exists); XCTAssertFalse(museum.exists)
             try app.performAccessibilityAudit(for: .all)
+            closeLioMemory(app)
             chat.tap()
             choices.element(boundBy: 0).tap()
             let one = XCTNSPredicateExpectation(predicate: NSPredicate(format: "count == 1"), object: choices)
             XCTAssertEqual(XCTWaiter.wait(for: [one], timeout: 10), .completed)
-            memory.tap()
+            openLioMemory(app, chinese: chinese)
             XCTAssertTrue(hotel.waitForExistence(timeout: 10))
             XCTAssertEqual(hotel.value as? String, chinese ? "你偏好豪华酒店。" : "You prefer luxury hotels.")
             XCTAssertFalse(museum.exists, "The unconfirmed sibling must not be saved")
             XCTAssertEqual(firstSuggestion.label, chinese ? "你喜欢参观博物馆。" : "You enjoy museums.")
             XCTAssertFalse(secondSuggestion.exists)
+            closeLioMemory(app)
             chat.tap()
             XCTAssertTrue(choices.firstMatch.waitForExistence(timeout: 10))
             choices.firstMatch.tap()
             let none = XCTNSPredicateExpectation(predicate: NSPredicate(format: "count == 0"), object: choices)
             XCTAssertEqual(XCTWaiter.wait(for: [none], timeout: 10), .completed)
-            memory.tap()
+            openLioMemory(app, chinese: chinese)
             XCTAssertFalse(suggestions.exists)
             XCTAssertTrue(hotel.waitForExistence(timeout: 10))
             XCTAssertTrue(museum.waitForExistence(timeout: 10))
             XCTAssertEqual(museum.value as? String, chinese ? "你喜欢参观博物馆。" : "You enjoy museums.")
             XCTAssertEqual(hotel.frame.width, museum.frame.width, accuracy: 0.5)
             XCTAssertEqual(hotel.frame.height, museum.frame.height, accuracy: 0.5)
-            app.buttons["fixture.siblings.inspect"].tap()
-            XCTAssertEqual(app.staticTexts["fixture.siblings.state"].label, "saved=2|actions=2|stale=0|refreshed=true")
+            // Audit the memory grid as before #1452 moved it into a sheet, then close it to reach the fixture controls.
             try app.performAccessibilityAudit(for: .all)
             let image = XCTAttachment(screenshot: app.screenshot())
             image.name = "two-confirmed-preferences-\(appearance)-\(chinese ? "zh" : "en")"; image.lifetime = .keepAlways; add(image)
+            closeLioMemory(app)
+            app.buttons["fixture.siblings.inspect"].tap()
+            XCTAssertEqual(app.staticTexts["fixture.siblings.state"].label, "saved=2|actions=2|stale=0|refreshed=true")
         }
     }
+}
+
+/// #1452: Memory moved from its own tab into Me, where it opens as a sheet with a Done button.
+@MainActor private func openLioMemory(_ app: XCUIApplication, chinese: Bool) {
+    let me = app.tabBars.buttons[chinese ? "我的" : "Me"]
+    XCTAssertTrue(me.waitForExistence(timeout: 12))
+    me.tap()
+    let entry = app.buttons["lio.me.memory"]
+    XCTAssertTrue(entry.waitForExistence(timeout: 8))
+    entry.tap()
+}
+
+/// Close the Memory sheet before switching tabs or using fixture controls, if it is open.
+@MainActor private func closeLioMemory(_ app: XCUIApplication) {
+    let done = app.buttons["lio.me.memory.done"]
+    if done.exists { done.tap() }
 }
