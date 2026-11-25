@@ -196,7 +196,7 @@
   {"id": "zh174", "nameZH": "龙王庙", "nameEN": "Longwangmiao", "x": 1145.3, "y": 453.9, "lines": ["zh-8"]},
   {"id": "zh175", "nameZH": "绿博园", "nameEN": "Lüboyuan", "x": 1167.0, "y": 454.4, "lines": ["zh-8"]},
   {"id": "zh176", "nameZH": "鲁庙", "nameEN": "Lumiao", "x": 1187.6, "y": 454.4, "lines": ["zh-8"]},
-  {"id": "zh177", "nameZH": "郑州西站", "nameEN": "Zhengzhou Xizhan", "x": 60.0, "y": 471.4, "lines": ["zh-9"]},
+  {"id": "zh177", "nameZH": "郑州西站", "nameEN": "Zhengzhou West Railway Station", "x": 60.0, "y": 471.4, "lines": ["zh-9"]},
   {"id": "zh178", "nameZH": "李商隐公园", "nameEN": "Lishangyin Gongyuan", "x": 104.5, "y": 471.4, "lines": ["zh-9"]},
   {"id": "zh179", "nameZH": "庙王", "nameEN": "Miaowang", "x": 150.0, "y": 471.4, "lines": ["zh-9"]},
   {"id": "zh180", "nameZH": "柳湖", "nameEN": "Liuhu", "x": 192.9, "y": 471.4, "lines": ["zh-9"]},

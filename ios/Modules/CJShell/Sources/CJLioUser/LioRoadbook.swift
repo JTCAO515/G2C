@@ -161,3 +161,19 @@ extension LioRoadbook {
 enum LioRoadbookFeature {
     static func enabled(infoValue: Any?) -> Bool { infoValue as? String == "YES" }
 }
+
+extension LioRoadbook {
+    /// A plan saved from the chat (#1547): names and times only, so no taxi, driver card or map is offered.
+    /// One roadbook per saved version, so a kept copy of an older version stays beside a changed plan.
+    init(savedPlan plan: LioPlanSummary, createdAt: Date = .now) {
+        self.init(id: "saved.\(plan.tripID).v\(plan.tripVersion)", source: .saved, city: nil,
+                  createdAt: createdAt, itinerary: plan.itinerary)
+    }
+}
+
+extension LioRoadbook {
+    /// The same roadbook stamped with the moment it is kept on this phone.
+    func kept(at date: Date = .now) -> LioRoadbook {
+        LioRoadbook(id: id, source: source, city: city, createdAt: date, itinerary: itinerary)
+    }
+}

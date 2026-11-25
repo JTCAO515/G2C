@@ -34,7 +34,7 @@
   {"id": "la023", "nameZH": "张苏滩", "nameEN": "Zhangsutan", "x": 637.8, "y": 111.8, "lines": ["la-2"]},
   {"id": "la024", "nameZH": "团结新村", "nameEN": "Tuanjie Xincun", "x": 637.8, "y": 166.5, "lines": ["la-2"]},
   {"id": "la025", "nameZH": "红星巷", "nameEN": "Hongxing Xiang", "x": 613.0, "y": 192.6, "lines": ["la-2"]},
-  {"id": "la026", "nameZH": "兰州火车站", "nameEN": "Lanzhou Huochezhan", "x": 569.0, "y": 192.2, "lines": ["la-2"]},
+  {"id": "la026", "nameZH": "兰州火车站", "nameEN": "Lanzhou Railway Station", "x": 569.0, "y": 192.2, "lines": ["la-2"]},
   {"id": "la027", "nameZH": "邮电大楼", "nameEN": "Youdian Dalou", "x": 536.9, "y": 167.4, "lines": ["la-2"]}
  ]
 }

@@ -83,7 +83,7 @@ private struct LioRoadbookCard: View {
                 Text(roadbook.source.title(language))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(LioTheme.inkSecondary)
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
             Text(roadbook.coverTitle(language))
                 .font(.headline)
@@ -99,7 +99,7 @@ private struct LioRoadbookCard: View {
                 Label(language.text("On this phone", "已离线保存"), systemImage: "checkmark.circle.fill")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(LioTheme.jade)
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
             Spacer(minLength: 0)
         }
@@ -167,7 +167,12 @@ struct LioRoadbookView: View {
             }
         }
         .onAppear { kept = store?.contains(roadbook.id) ?? false }
-        .sheet(item: $shared) { file in LioRoadbookShareSheet(items: [file.url]).ignoresSafeArea() }
+        // The exported PDF may hold a saved trip: it leaves the phone only through the share sheet
+        // and is removed as soon as sharing ends or the roadbook closes.
+        .sheet(item: $shared, onDismiss: LioRoadbookPDF.removeExports) { file in
+            LioRoadbookShareSheet(items: [file.url]).ignoresSafeArea()
+        }
+        .onDisappear(perform: LioRoadbookPDF.removeExports)
         .sheet(item: $taxiPlace) { place in
             if let taxiEntry {
                 NavigationStack {
@@ -177,13 +182,10 @@ struct LioRoadbookView: View {
             }
         }
         .fullScreenCover(item: Binding(get: { driverPlace.map(DriverPlace.init) }, set: { driverPlace = $0?.place })) { item in
-            // The taxi page's card when the place has a checked coordinate; the roadbook's own card only
-            // for a checked address without one.
-            if let place = LioTaxiPlace(itineraryPlace: item.place) {
-                LioTaxiDriverCard(language: language, place: place)
-            } else {
-                LioRoadbookDriverCard(place: item.place, language: language)
-            }
+            // The app's shared driver sign (#1550): large Chinese name and checked address, screen kept awake.
+            LioDriverSign(language: language, nameZH: item.place.nameZH, nameEN: item.place.nameEN,
+                          addressZH: LioRoadbook.driverAddress(item.place), requestZH: "请送我到这里",
+                          identifierPrefix: "lio.roadbook.driver")
         }
     }
 
@@ -430,7 +432,7 @@ struct LioRoadbookView: View {
     private func keep() {
         guard let store else { return }
         do {
-            try store.save(roadbook)
+            try store.save(roadbook.kept())
             kept = true
             notice = nil
             onChange()
@@ -443,7 +445,7 @@ struct LioRoadbookView: View {
         guard !exporting else { return }
         exporting = true
         let roadbook = roadbook, language = language
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("LioRoadbook", isDirectory: true)
+        let folder = LioRoadbookPDF.exportDirectory
         Task {
             defer { exporting = false }
             do {
@@ -454,51 +456,6 @@ struct LioRoadbookView: View {
             } catch {
                 notice = language.text("Couldn’t make the PDF. Try again.", "暂时无法生成 PDF，请重试。")
             }
-        }
-    }
-}
-
-/// Large Chinese name and address for a driver, with the screen kept awake while it is shown.
-struct LioRoadbookDriverCard: View {
-    let place: LioRichItinerary.Place
-    let language: LioLanguage
-    @Environment(\.dismiss) private var dismiss
-    @State private var priorIdleTimer: Bool?
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    Text("请送我到这里").font(.headline).foregroundStyle(LioTheme.inkSecondary)
-                    Text(place.nameZH).font(LioTheme.display(.largeTitle).weight(.bold))
-                        .accessibilityIdentifier("lio.roadbook.driver.name")
-                    if let address = place.driverAddress {
-                        Text(address).font(.title2.weight(.semibold)).accessibilityIdentifier("lio.roadbook.driver.address")
-                    }
-                    if place.nameEN != place.nameZH { Text(place.nameEN).foregroundStyle(LioTheme.inkSecondary) }
-                }
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(24)
-            }
-            .background(LioTheme.paper)
-            .foregroundStyle(LioTheme.ink)
-            .navigationTitle(language.text("Show the driver", "给司机看"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(language.text("Close", "关闭")) { dismiss() }.accessibilityIdentifier("lio.roadbook.driver.close")
-                }
-            }
-        }
-        .tint(LioTheme.vermilion)
-        .onAppear {
-            guard priorIdleTimer == nil else { return }
-            priorIdleTimer = UIApplication.shared.isIdleTimerDisabled
-            UIApplication.shared.isIdleTimerDisabled = true
-        }
-        .onDisappear {
-            if let priorIdleTimer { UIApplication.shared.isIdleTimerDisabled = priorIdleTimer }
         }
     }
 }

@@ -15,6 +15,8 @@ struct LioToolsView: View {
     @Environment(\.lioNearbyService) private var nearbyService
     @Environment(\.lioHotelFinder) private var hotelFinder
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.lioRoadbookDirectory) private var roadbookDirectory
+    @Environment(\.lioSavedPlans) private var savedPlans
 
     private var availability: LioToolCatalog.Availability {
         var available = LioToolCatalog.Availability()
@@ -81,24 +83,22 @@ struct LioToolsView: View {
         .tint(LioTheme.vermilion)
     }
 
-    /// Offline copies need the signed-in account's folder, which is wired with saved trips (#1453);
-    /// until then only Debug previews can keep copies.
+    /// Offline copies live in the signed-in account's folder (#1553) and stop when the session changes.
     private var roadbookStore: LioRoadbookStore? {
         #if DEBUG
-        LioRoadbookPreview.requested ? try? LioRoadbookStore.preview() : nil
-        #else
-        nil
+        if LioRoadbookPreview.requested { return try? LioRoadbookStore.preview() }
         #endif
+        guard let roadbookDirectory else { return nil }
+        return LioRoadbookStore(directory: roadbookDirectory, isCurrent: sessionIsCurrent)
     }
 
-    /// Roadbooks that can be made now. Saved trips and Lio's plans are connected once #1453 lands; until then
-    /// only Debug previews are offered.
+    /// Roadbooks that can be made now: the account's saved plans (#1547). Debug previews show only
+    /// preview roadbooks, because their copies are kept outside the account folder.
     private var roadbookCandidates: [LioRoadbook] {
         #if DEBUG
-        LioRoadbookPreview.requested ? LioRoadbookPreview.library(language) : []
-        #else
-        []
+        if LioRoadbookPreview.requested { return LioRoadbookPreview.library(language) }
         #endif
+        return (savedPlans?.plans ?? []).map { LioRoadbook(savedPlan: $0) }
     }
 
     @ViewBuilder private func destination(_ tool: LioTool) -> some View {
