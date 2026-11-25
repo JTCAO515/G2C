@@ -1968,20 +1968,20 @@ private func developmentCleanupHash(_ value: Data) -> String {
             guard var next = execution else { throw CleanupFailure.stale }
             if next.steps[target.rawValue] != nil {
                 // An existing intent never repeats an uncertain deletion.
-                do { try verify(target) } catch { return .unknown }
+                do { try verify(target, reason: invocation.reason) } catch { return .unknown }
                 if next.steps[target.rawValue] == .confirmed { continue }
             } else {
                 next.steps[target.rawValue] = .started; try save(next)
-                do { try erase(target); try verify(target) } catch { return .unknown }
+                do { try erase(target, reason: invocation.reason); try verify(target, reason: invocation.reason) } catch { return .unknown }
             }
             guard var completed = execution else { throw CleanupFailure.stale }
             completed.steps[target.rawValue] = .confirmed; try save(completed)
         }
         try validateExecution(invocation, intent)
-        for target in invocation.targets { try verify(target) }
+        for target in invocation.targets { try verify(target, reason: invocation.reason) }
         return .confirmed
     }
-    private func erase(_ target: DeviceCleanupTarget) throws {
+    private func erase(_ target: DeviceCleanupTarget, reason: DeviceCleanupReason) throws {
         switch target {
         case .sdkSession:
             let current = try currentSDKHash()
@@ -1998,13 +1998,14 @@ private func developmentCleanupHash(_ value: Data) -> String {
         case .encryptedMessage:
             try stores.eraseFiles(for: target)
             try stores.clearLocalSupportDraft()
-            // Nationality and arrival progress sit in shared UserDefaults (JT 2026-11-25: cleared on deletion).
-            LioDeviceDefaultsCleanup.erase()
+            // Nationality and arrival progress sit in shared UserDefaults. JT 2026-11-25 approved clearing them
+            // when the account is deleted only, not when a session is found invalid or offline data expires.
+            if LioDeviceDefaultsCleanup.applies(to: reason.rawValue) { LioDeviceDefaultsCleanup.erase() }
         #endif
         default: try stores.eraseFiles(for: target)
         }
     }
-    private func verify(_ target: DeviceCleanupTarget) throws {
+    private func verify(_ target: DeviceCleanupTarget, reason: DeviceCleanupReason) throws {
         switch target {
         case .sdkSession: guard try currentSDKHash() == nil else { throw CleanupFailure.unavailable }
         case .messageKey, .tripKey, .memoryKey, .needsKey, .feedbackKey, .offlineKey:
@@ -2023,7 +2024,12 @@ private func developmentCleanupHash(_ value: Data) -> String {
         case .encryptedMessage:
             try layout.requireEmpty(for: target)
             try stores.verifyLocalSupportDraftAbsent()
-            try LioDeviceDefaultsCleanup.requireAbsent()
+            if LioDeviceDefaultsCleanup.applies(to: reason.rawValue) {
+                // A resumed cleanup only verifies a started step; removing two shared keys again is harmless and
+                // keeps an interrupted deletion from ending as unknown.
+                LioDeviceDefaultsCleanup.erase()
+                try LioDeviceDefaultsCleanup.requireAbsent()
+            }
         #endif
         default: try layout.requireEmpty(for: target)
         }

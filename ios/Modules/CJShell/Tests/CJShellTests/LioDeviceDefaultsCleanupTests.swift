@@ -1,3 +1,4 @@
+import CJCleanupClient
 import Foundation
 import Testing
 @testable import CJShell
@@ -26,6 +27,14 @@ struct LioDeviceDefaultsCleanupTests {
         // Running it again (a resumed cleanup) is harmless.
         LioDeviceDefaultsCleanup.erase(in: defaults)
         try LioDeviceDefaultsCleanup.requireAbsent(in: defaults)
+    }
+
+    /// JT approved clearing on account deletion only: a session found invalid or expired offline data keeps them.
+    @Test func onlyAccountDeletionClearsThem() {
+        #expect(LioDeviceDefaultsCleanup.applies(to: DeviceCleanupReason.accountCleanup.rawValue))
+        #expect(!LioDeviceDefaultsCleanup.applies(to: DeviceCleanupReason.sessionInvalid.rawValue))
+        #expect(!LioDeviceDefaultsCleanup.applies(to: DeviceCleanupReason.offlineExpired.rawValue))
+        #expect(!LioDeviceDefaultsCleanup.applies(to: ""))
     }
 
     @Test func eachKeyAloneKeepsTheCheckIncomplete() throws {

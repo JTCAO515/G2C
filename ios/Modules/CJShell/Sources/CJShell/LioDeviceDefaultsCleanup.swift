@@ -7,6 +7,9 @@ public enum LioDeviceDefaultsCleanup {
     /// Must match the `@AppStorage` keys in LioLocalSupportView, LioArrivalView and the arrival checklist.
     public static let keys = ["lio.local-support.nationality", "lio.arrival.progress.v1"]
 
+    /// Only account deletion (`account_cleanup`) clears them; `session_invalid` and `offline_expired` cleanups keep them.
+    public static func applies(to cleanupReason: String) -> Bool { cleanupReason == "account_cleanup" }
+
     public static func erase(in defaults: UserDefaults = .standard) {
         for key in keys { defaults.removeObject(forKey: key) }
     }
