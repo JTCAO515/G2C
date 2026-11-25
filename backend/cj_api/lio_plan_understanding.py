@@ -57,6 +57,8 @@ _FULL_FIRST=re.compile(r'(?:请|我想|我希望|我们希望)?(?:把)?第(?:一
 _LIGHT_FIRST=re.compile(r'第(?:一|1)天(?:不要|别)(?:安排|排)满|(?:不要|别)(?:把)?第(?:一|1)天(?:安排|排)满|'
     r'(?:不要|别)(?:安排|排)满第(?:一|1)天|(?:please )?(?:do not|don[’\x27]t) (?:fill|pack)(?: up)? (?:my |our |the )?first day|'
     r'(?:please )?keep (?:my |our |the )?first day light',re.I)
+_FIRST_DAY_MENTION=re.compile(
+    r'第\s*(?:一|1)\s*[天日]|首[天日]|\bfirst[-\s]+day\b|\bday[-\s]+(?:one|1)\b',re.I)
 _META_SOURCE=re.compile(r'^\s*(?:(?:(?:can|could|would) you\s+)?(?:please\s+)?'
     r'(?:translate|rephrase|paraphrase|repeat|quote|explain)\b|'
     r'(?:请帮我|请|帮我)?(?:把|将)?(?:下面|以下|上面|这)[^，,。！？;]{0,40}(?:翻译|复述|引用|改写|解释)|'
@@ -736,10 +738,18 @@ def parse_plan_understanding(raw,turns):
             raise InvalidInput('translation or explanation data is not an original traveler constraint')
 
     seen=set()
+    observations=[]
     for observation in value.observations:
         if observation.field in seen:raise InvalidInput('one explicit planning observation per field required')
         seen.add(observation.field)
         for reference in observation.sources:check(reference)
+        # An unstated first-day option is a model default. Keep rejecting a
+        # bad quote or value, and validate any real mention of the first day.
+        if (observation.field=='first_day_full' and observation.state=='known'
+                and type(observation.value)is bool and observation.note is None
+                and not any(_FIRST_DAY_MENTION.search(turn.text) for turn in turns)):
+            continue
+        observations.append(observation)
         if observation.state=='known':
             if observation.value is None or observation.note is not None:
                 raise InvalidInput('known observation requires a value without uncertainty')
@@ -809,6 +819,7 @@ def parse_plan_understanding(raw,turns):
             raise InvalidInput('temporary condition must be an original span')
         if any(subject.startswith('companion:')and subject[10:]not in companions for subject in condition.applies_to):
             raise InvalidInput('temporary-condition companion must be declared')
+    value=value.model_copy(update=dict(observations=observations))
     _latest_edge_options(value,turns)
     _latest_event_clocks(value,turns)
     _latest_party(value,turns)
