@@ -5,8 +5,7 @@ import UIKit
 
 /// The one "show the driver" card: the Chinese name large, the Chinese address under it, the English name small.
 /// It takes plain text, so a station or airport without coordinates can use it without a made-up location.
-/// The screen stays awake while it is shown. The taxi card (also used by hotels and roadbooks) and the trip stop
-/// detail present this view; other "show the driver" cards should use it too.
+/// The screen stays awake while it is shown. Taxi, trip, hotel, roadbook and transport cards all present this view.
 struct LioDriverSign: View {
     let language: LioLanguage
     let nameZH: String
