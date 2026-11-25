@@ -158,6 +158,27 @@ class PlanningFlow(unittest.TestCase):
                 for day in range(1,4):self.assertIn('第'+str(day)+'天'if locale=='zh'else'Day '+str(day),answer(events))
                 self.assertNotIn('哪天',answer(events));self.assertNotIn('几个人',answer(events))
 
+    def test_duration_reply_resolves_the_literal_city_of_a_whole_destination_locator(self):
+        # HK batch -39 (run 34b39ada): turn 2 relocated the city as the whole
+        # turn-1 request 「去成都」, so the lookup asked to confirm 四川省 成都市.
+        for first,last,city,locale in [('去成都','三天','成都','zh'),('Go to Chengdu','Three days','Chengdu','en')]:
+            with self.subTest(locale=locale):
+                wire=flow(first,city=city,days=None,intent='plan',questions=('duration_days',),
+                    reply='想玩几天？'if locale=='zh'else'How many days would you like?')
+                wire.update(planning_request_index=0,needs_tools=False)
+                previous=context(run(wire,first,locale=locale)[1])
+                for item in previous['facts'].values():
+                    for reference in item['sources']:reference['message_id']='prior-0'
+                last_wire=flow(last,city=first,days=3,intent='plan',index=1,questions=(),reply='已了解。')
+                last_wire.update(planning_request_index=0,needs_tools=False)
+                last_wire['city'].update(source_index=0,normalized_name=city)
+                published,events,lookups,_=run(last_wire,last,turns=(original(first),original(last)),
+                    previous=previous,locale=locale)
+                self.assertEqual(published,[])
+                self.assertEqual([lookup[2]['query'] for lookup in lookups],[city])
+                self.assertEqual(context(events)['status'],'plan_preview')
+                for day in range(1,4):self.assertIn('第'+str(day)+'天'if locale=='zh'else'Day '+str(day),answer(events))
+
     def test_r06_rejected_duration_intake_preserves_the_original_city_in_read_only_reply(self):
         for locale, first, last, city, daily, fallback in (
                 ('zh', '去成都', '三天', '成都', '第3天', '未保存建议'),
