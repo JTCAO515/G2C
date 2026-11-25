@@ -13,6 +13,7 @@ struct LioToolsView: View {
     let sessionIsCurrent: @MainActor () -> Bool
     @Environment(\.lioTaxiEntry) private var taxiEntry
     @Environment(\.lioNearbyService) private var nearbyService
+    @Environment(\.lioHotelFinder) private var hotelFinder
     @Environment(\.dynamicTypeSize) private var typeSize
 
     private var availability: LioToolCatalog.Availability {
@@ -20,10 +21,20 @@ struct LioToolsView: View {
         available.taxi = taxiEntry != nil
         available.currency = currencyRelay != nil
         available.nearby = nearbyService != nil
+        available.hotels = hotelSearch != nil
         #if DEBUG
-        available.hotels = ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview")
+        available.hotels = available.hotels || ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview")
         #endif
         return available
+    }
+
+    /// Hotel search (#1510) only when the build enables it (`G2CHotelEnabled`, off by default), or with the
+    /// Debug preview fixture (`--lio-hotel-search-preview`).
+    private var hotelSearch: LioHotelFinder? {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--lio-hotel-search-preview") { return .preview }
+        #endif
+        return hotelFinder
     }
 
     private var columns: [GridItem] {
@@ -95,14 +106,22 @@ struct LioToolsView: View {
                 LioNearbyView(language: language, service: nearbyService)
             }
         case .hotels:
-            #if DEBUG
-            let partial = ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview-partial")
-            LioHotelsView(language: language, service: .preview(unapplied: partial ? [.guests] : []),
-                          suggestedArea: LioHotelService.previewArea)
-            #else
-            EmptyView()
-            #endif
+            if let hotelSearch {
+                LioHotelOffersView(language: language, finder: hotelSearch)
+            } else {
+                hotelLinks
+            }
         }
+    }
+
+    @ViewBuilder private var hotelLinks: some View {
+        #if DEBUG
+        let partial = ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview-partial")
+        LioHotelsView(language: language, service: .preview(unapplied: partial ? [.guests] : []),
+                      suggestedArea: LioHotelService.previewArea)
+        #else
+        EmptyView()
+        #endif
     }
 }
 

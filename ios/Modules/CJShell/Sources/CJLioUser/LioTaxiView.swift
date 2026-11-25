@@ -505,7 +505,8 @@ private struct LioTaxiPlacePicker: View {
     }
 }
 
-private struct LioTaxiDriverCard: View {
+/// Full-screen Chinese name and address for a driver; also used by hotel search (#1510).
+struct LioTaxiDriverCard: View {
     let language: LioLanguage
     let place: LioTaxiPlace
     @Environment(\.dismiss) private var dismiss
