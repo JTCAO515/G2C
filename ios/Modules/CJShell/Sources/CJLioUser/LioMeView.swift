@@ -1,5 +1,18 @@
 #if os(iOS)
+import CJRunClient
 import SwiftUI
+
+private struct LioCloseMemoryKey: EnvironmentKey {
+    static let defaultValue: (@MainActor () -> Void)? = nil
+}
+
+public extension EnvironmentValues {
+    /// Set when the memory page is presented from Me; the page shows Done on its root and calls this.
+    var lioCloseMemory: (@MainActor () -> Void)? {
+        get { self[LioCloseMemoryKey.self] }
+        set { self[LioCloseMemoryKey.self] = newValue }
+    }
+}
 
 /// The "Me" tab (#1452): profile, saved memory, subscription preview, settings and account, help.
 /// Settings and account rows come from the host (`menu`), so the tab adds no new account actions.
@@ -79,25 +92,28 @@ struct LioMeView<Menu: View>: View {
         .sheet(isPresented: $showingMemory) { memorySheet }
     }
 
-    private var memorySheet: some View {
-        (memory ?? AnyView(unavailable))
-            .safeAreaInset(edge: .top, spacing: 0) {
-                HStack {
-                    Spacer()
-                    Button { showingMemory = false } label: {
-                        Text(language.text("Done", "完成"))
-                            .font(.body.weight(.semibold))
-                            .foregroundStyle(LioTheme.vermilion)
-                            .frame(minWidth: 44, minHeight: 44)
-                            .contentShape(Rectangle())
+    /// The memory page keeps its own NavigationStack and puts Done in its own navigation bar (via
+    /// `lioCloseMemory`), so nothing covers its back or keyboard Done buttons (#1489 follow-up).
+    @ViewBuilder private var memorySheet: some View {
+        if let memory {
+            memory.environment(\.lioCloseMemory) { showingMemory = false }
+        } else {
+            NavigationStack {
+                unavailable
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button { showingMemory = false } label: {
+                                RunReadableText(text: language.text("Done", "完成"), color: LioTheme.vermilion)
+                                    .fixedSize()
+                                    .frame(minHeight: 44)
+                            }
+                            .accessibilityLabel(language.text("Done", "完成"))
+                            .accessibilityIdentifier("lio.me.memory.done")
+                        }
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("lio.me.memory.done")
-                }
-                .padding(.horizontal, 16)
-                .background(LioTheme.paper)
             }
             .tint(LioTheme.vermilion)
+        }
     }
 
     private var header: some View {
@@ -114,7 +130,9 @@ struct LioMeView<Menu: View>: View {
                     .font(.footnote.weight(.medium))
                     .foregroundStyle(LioTheme.jade)
                     .padding(.horizontal, 8).padding(.vertical, 3)
-                    .background(LioTheme.jade.opacity(0.12), in: Capsule())
+                    // Jade text on the plain surface keeps WCAG AA contrast; a tinted fill fell just short.
+                    .background(LioTheme.surface, in: Capsule())
+                    .overlay { Capsule().stroke(LioTheme.jade.opacity(0.5), lineWidth: 1) }
             }
             Spacer(minLength: 0)
         }
