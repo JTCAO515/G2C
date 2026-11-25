@@ -208,4 +208,44 @@ import Testing
         let permissions = try FileManager.default.attributesOfItem(atPath: folder.path)[.posixPermissions] as? NSNumber
         #expect(permissions?.int16Value == 0o700)
     }
+
+    // MARK: - #1667 review P2: ending a trip that follows a saved plan
+
+    @Test func endingAPlansTripRemembersThePlanAndStartsFresh() throws {
+        let directory = try folder()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let model = LioTripHomeModel(store: LioTripHomeStore(directory: directory, isCurrent: { true }))
+        model.start(profile())
+        model.setTick("payment", done: true)
+        model.end(plan: "plan-1")
+        #expect(model.profile == nil)
+        #expect(!model.ticks.isDone("payment"))
+        #expect(model.endedPlanIDs == ["plan-1"])
+        model.end(plan: "plan-2")
+        model.start(profile())
+        let reread = LioTripHomeModel(store: LioTripHomeStore(directory: directory, isCurrent: { true }))
+        #expect(reread.endedPlanIDs == ["plan-1", "plan-2"])
+        #expect(reread.profile == profile())
+        // Ending a trip without a plan just clears it.
+        reread.end(plan: nil)
+        #expect(try LioTripHomeStore(directory: directory, isCurrent: { true }).load() == .init())
+    }
+
+    @Test func aFileWrittenBeforeEndedPlansExistedStillReads() throws {
+        let directory = try folder()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let json = #"{"version":1,"snapshot":{"profile":{"arrival":"2026-12-08","stayDays":7,"startedAt":0},"ticks":{"done":{"payment":0}}}}"#
+        try Data(json.utf8).write(to: directory.appendingPathComponent(LioTripHomeStore.fileName))
+        let model = LioTripHomeModel(store: LioTripHomeStore(directory: directory, isCurrent: { true }))
+        #expect(model.profile?.stayDays == 7)
+        #expect(model.ticks.isDone("payment"))
+        #expect(model.endedPlanIDs.isEmpty)
+    }
+
+    @Test func endedPlansAreCapped() {
+        let model = LioTripHomeModel(store: nil)
+        for index in 0..<(LioTripHomeStore.Snapshot.maximumEndedPlans + 5) { model.end(plan: "plan-\(index)") }
+        #expect(model.endedPlanIDs.count == LioTripHomeStore.Snapshot.maximumEndedPlans)
+        #expect(!model.endedPlanIDs.contains("plan-0"))
+    }
 }

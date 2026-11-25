@@ -109,7 +109,9 @@ struct LioTripHome: View {
             }
         }
         .confirmationDialog(language.text("End this trip?", "结束这趟旅行？"), isPresented: $confirmsEnd, titleVisibility: .visible) {
-            Button(language.text("End trip", "结束旅行"), role: .destructive) { model.clear() }
+            Button(language.text("End trip", "结束旅行"), role: .destructive) {
+                model.end(plan: checklist(at: fixedNow ?? .now).plan?.tripID)
+            }
             Button(language.text("Cancel", "取消"), role: .cancel) {}
         } message: {
             Text(language.text("This clears the trip’s dates, city and ticks on this phone. Saved plans and what you keep in the tools stay.",
@@ -121,7 +123,7 @@ struct LioTripHome: View {
 
     private func checklist(at date: Date) -> LioTripChecklist {
         LioTripChecklist(.init(
-            now: date, timeZone: timeZone, profile: model.profile, plans: plans, ticks: model.ticks,
+            now: date, timeZone: timeZone, profile: model.profile, plans: plans, endedPlanIDs: model.endedPlanIDs, ticks: model.ticks,
             entry: tools.arrival?.entry(model.profile, nationality.wrappedValue, date),
             arrivalChecklist: tools.arrival?.checklist(),
             hotelSaved: tools.hotelStore == nil ? nil : hotel != nil,

@@ -161,6 +161,8 @@ struct LioTripChecklistInput: Sendable {
     var profile: LioTripProfile?
     /// Plans saved on this device (#1453), newest first.
     var plans: [LioPlanSummary] = []
+    /// Plans whose trips the traveller ended; never taken as the current trip again.
+    var endedPlanIDs: Set<String> = []
     var ticks = LioTripTicks()
     /// Arrival Mode (`G2CArrivalModeEnabled`): its entry decision and its checklist.
     var entry: LioTripEntryStatus?
@@ -208,7 +210,8 @@ struct LioTripChecklist: Equatable, Sendable {
 
     init(_ input: LioTripChecklistInput) {
         let today = LioTripDay(date: input.now, timeZone: input.timeZone)
-        let plan = Self.currentPlan(profile: input.profile, plans: input.plans, today: today)
+        let plan = Self.currentPlan(profile: input.profile, plans: input.plans.filter { !input.endedPlanIDs.contains($0.tripID) },
+                                    today: today)
         let arrival = input.profile?.arrival ?? plan?.startDate.flatMap(LioTripDay.init)
         let stayDays = input.profile?.stayDays ?? plan.map { max($0.days.count, 1) }
         let lastDay = arrival.flatMap { start in stayDays.map { start.adding(days: max($0, 1) - 1) } }
