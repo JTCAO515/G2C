@@ -44,6 +44,44 @@ MAX_ACTIONS, MAX_CHIPS = 2, 3  # S contract: at most 3 chips per answer (2026-11
 # answer has no valid first-version button and ends with 2-3 tappable follow-ups
 # (docs/lio-voice.md §4.2, §9.1).
 V1_ACTION_CASES = frozenset({'alipay-zh', 'visa-card-en', 'taxi-foreigner-zh', 'uber-taxi-en'})
+# Two bubbles (JT 2026-11-25, docs/lio-voice.md §3.2): layout=split answers put only the answer
+# (or, in an emergency, the action) in the first paragraph, then a blank line.
+SPLIT_KINDS = frozenset({'task', 'nearby', 'compare', 'emergency'})
+FIRST_PARAGRAPH_UNITS = (35, 20)
+BLANK_LINE = re.compile(r'\n[ \t\u3000]*\n')
+# Entry facts come from the landing-mode rules (single source, coordination 2026-11-25).
+ARRIVAL_RULES = ROOT.parent / 'ios/Modules/CJShell/Sources/CJLioUser/Resources/LioArrivalRules.v1.json'
+ENTRY_CASES = frozenset({'transit-visa-zh', 'visa-uk-en'})
+
+
+def _entry_facts():
+    rules = json.loads(ARRIVAL_RULES.read_text())
+    transit = next(policy for policy in rules['policies'] if policy['id'] == 'transit-240h')
+    summary = transit['summary']['zh']
+    countries = ' '.join(source['publisher']['zh'] for source in transit['sources'])
+    return dict(ports=int(re.search(r'(\d+)\s*个开放口岸', summary)[1]),
+                provinces=int(re.search(r'(\d+)\s*个省份', summary)[1]),
+                countries=int(re.search(r'(\d+)\s*国', countries)[1]))
+
+
+ENTRY_FACTS = _entry_facts()
+# Statements the current rules contradict (cross-province stays are allowed in the permitted area).
+ENTRY_FALSE = re.compile(r'不得跨[市省]|不能跨[市省]|不可跨[市省]|只能(?:留|待|停留)在(?:入境|落地|所在)(?:的)?城市|'
+                         r'(?:must|have to) stay (?:in|within) the (?:same )?city|cannot (?:leave|travel outside) the (?:entry |same )?city', re.I)
+ENTRY_COUNTS = (('ports', re.compile(r'(\d+)\s*个?(?:开放)?口岸|(\d+)\s*(?:open )?(?:ports|border ports|entry ports)', re.I)),
+                ('provinces', re.compile(r'(\d+)\s*个?省(?:份|区|级)?|(\d+)\s*provinces', re.I)),
+                ('countries', re.compile(r'(\d+)\s*个?国家|(\d+)\s*国(?!内|际)|(\d+)\s*countries', re.I)))
+
+
+def _entry_facts_hold(text):
+    if ENTRY_FALSE.search(text):
+        return False
+    for key, pattern in ENTRY_COUNTS:
+        for match in pattern.finditer(text):
+            number = next(group for group in match.groups() if group)
+            if int(number) != ENTRY_FACTS[key]:
+                return False
+    return True
 # Openings that are not an answer: greetings, self-introductions and praise anywhere at the start;
 # assent words ("当然可以", "Sure") only when they stand alone as the whole first sentence.
 _END = r'(?![\w-])'
@@ -151,6 +189,13 @@ def check_answer(case, answer, profile=DETAIL):
                                     and len(actions) <= MAX_ACTIONS and len(chips) <= MAX_CHIPS
                                     and (bool(actions) if case['id'] in V1_ACTION_CASES
                                          else not actions and len(chips) >= 2))
+        if kind in SPLIT_KINDS:
+            parts = BLANK_LINE.split(answer.strip(), maxsplit=1)
+            head = parts[0].strip()
+            checks['first_paragraph'] = (len(parts) == 2 and bool(head) and '\n' not in head
+                                         and count_units(head, locale) <= FIRST_PARAGRAPH_UNITS[LOCALES.index(locale)])
+        if case['id'] in ENTRY_CASES:
+            checks['entry_facts'] = _entry_facts_hold(answer)
     else:
         if 'min_units' in case:
             checks['detail_length'] = units >= case['min_units']
@@ -193,7 +238,7 @@ def summarize(cases, answers, profile=DETAIL):
             values = [ok for row in rows for name, ok in row['checks'].items() if names(name)]
             return round(sum(values) / len(values), 3) if values else None
         result['rates'] = {name: rate(lambda n, name=name: n == name)
-                           for name in ('screen_budget', 'first_answer', 'has_action')}
+                           for name in ('screen_budget', 'first_answer', 'has_action', 'first_paragraph', 'entry_facts')}
         result['rates']['elements_in_budget'] = rate(lambda n: n.startswith('element_'))
     return result
 

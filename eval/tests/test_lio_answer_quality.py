@@ -254,5 +254,53 @@ class OneScreenTests(unittest.TestCase):
                 main(['score', path])  # the default profile keeps plain text answers only
 
 
+class SplitAndEntryFacts(unittest.TestCase):
+    """JT 2026-11-25 two bubbles (first paragraph = the answer) and the preview's invented
+    transit rule (\u4e0d\u5f97\u8de8\u5e02); entry facts come from the landing-mode rules file."""
+
+    def setUp(self):
+        self.cases = {case['id']: case for case in load_cases()}
+
+    def check(self, case_id, text, chips=('1', '2')):
+        actions = ['Open guide'] if case_id in ('alipay-zh', 'visa-card-en') else []
+        return check_answer(self.cases[case_id], dict(text=text, actions=actions, chips=list(chips)), profile=ONE_SCREEN)
+
+    def test_first_paragraph_is_short_single_line_and_followed_by_a_blank_line(self):
+        good = self.check('alipay-zh', '出发前把 Visa 卡绑到支付宝就能扫码付款。\n\n1. 下载支付宝。\n2. 添加 Visa 卡。')
+        self.assertTrue(good['checks']['first_paragraph'], good)
+        for text in ('出发前把 Visa 卡绑到支付宝就能扫码付款。\n1. 下载支付宝。',            # no blank line
+                     '出发前把 Visa 卡绑到支付宝，\n就能扫码付款。\n\n1. 下载。',               # line break inside
+                     '出发前先把你的 Visa 或者万事达卡绑定到支付宝的国际版账户里，之后在商店里就能直接扫码付款了。\n\n1. 下载。'):
+            with self.subTest(text=text):
+                self.assertFalse(self.check('alipay-zh', text)['checks']['first_paragraph'])
+        english = self.check('visa-card-en', 'Visa works at big hotels, but link it to Alipay for everyday payments.\n\n1. Download Alipay.')
+        self.assertTrue(english['checks']['first_paragraph'])
+        long_en = self.check('visa-card-en', ' '.join(['word'] * 21) + '.\n\n1. Download Alipay.')
+        self.assertFalse(long_en['checks']['first_paragraph'])
+        # Emergencies split too: the first paragraph is only the action.
+        self.assertTrue(self.check('collapse-en', 'Call 120 now.\n\n1. Check breathing.')['checks']['first_paragraph'])
+
+    def test_single_layout_answers_are_not_checked_for_a_split(self):
+        greeting = check_answer(self.cases['greeting-zh'], '你好！准备去哪儿玩？', profile=ONE_SCREEN)
+        self.assertNotIn('first_paragraph', greeting['checks'])
+        for case_id in ('plan-beijing-3d-zh', 'followup-hangzhou-zh'):
+            with self.subTest(case=case_id):
+                self.assertNotIn('first_paragraph', self.check(case_id, '先按两位成人排。\n第 1 天 故宫')['checks'])
+        self.assertNotIn('first_paragraph', check_answer(self.cases['alipay-zh'], '绑卡。'))  # detail profile unchanged
+
+    def test_entry_facts_follow_the_landing_mode_rules(self):
+        from eval.lio_answer_quality import ENTRY_FACTS
+        self.assertEqual(ENTRY_FACTS, dict(ports=65, provinces=24, countries=57))
+        zh = '美国护照可以办 240 小时过境免签。\n\n需要去第三国的联程客票，从 24 个省份的 65 个口岸入境，可在允许区域内跨省活动。'
+        self.assertTrue(self.check('transit-visa-zh', zh)['checks']['entry_facts'])
+        for wrong in ('入境后不得跨市旅行。', '可以从 53 个口岸入境。', '只适用于 54 个国家。', '覆盖 20 个省份。'):
+            with self.subTest(wrong=wrong):
+                text = '美国护照可以办 240 小时过境免签。\n\n' + wrong
+                self.assertFalse(self.check('transit-visa-zh', text)['checks']['entry_facts'])
+        en_wrong = 'You can use 240-hour transit.\n\nYou must stay in the city where you land.'
+        self.assertFalse(self.check('visa-uk-en', en_wrong)['checks']['entry_facts'])
+        self.assertNotIn('entry_facts', self.check('alipay-zh', '绑卡。\n\n1. 下载。')['checks'])
+
+
 if __name__ == '__main__':
     unittest.main()
