@@ -590,6 +590,9 @@ import CryptoKit
             let recorded = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", "1"), object: count)
             XCTAssertEqual(XCTWaiter.wait(for: [recorded], timeout: 8), .completed, count.label)
             showLioChat(app)
+            // Same chat-page audit as before #1452; wait for the tab switch to settle before sampling (#1501).
+            XCTAssertTrue(app.staticTexts["Here are some travel ideas."].waitForExistence(timeout: 8))
+            _ = XCTWaiter.wait(for: [XCTestExpectation(description: "settle after tab switch")], timeout: 1.5)
             try app.performAccessibilityAudit(for: .all)
             let image = XCTAttachment(screenshot: app.screenshot())
             image.name = "retry-timing-" + language
@@ -2363,9 +2366,7 @@ import CryptoKit
                 detail.name = "exploration-home-audit"
                 detail.lifetime = .keepAlways
                 self.add(detail)
-                // #1501: since #1498 this audit covers the chat page, not the old menu sheet; one first-reply line
-                // reports contrast while under investigation. Only that element's contrast issue is tolerated.
-                return issue.auditType == .contrast && issue.element?.label == "可以先聊一个大致安排。"
+                return false
             }
         }
         func reveal(_ element: XCUIElement) {
@@ -2392,12 +2393,11 @@ import CryptoKit
             if let last { XCTAssertEqual(app.staticTexts["fixture.last-text"].label, last) }
             XCTAssertEqual(app.staticTexts["fixture.finished-timings"].label, String(expected))
             XCTAssertEqual(app.staticTexts["fixture.finished-timings"].value as? String, "complete")
+            // Before #1452 this audit covered the chat menu sheet, which only held these fixture rows. That sheet is
+            // gone; the rows sit in the Me tab, whose audit is #1496. The chat page is audited below without any
+            // tolerance. An audit right after switching tabs reported contrast on settled text (#1501), so none here.
             showLioChat(app)
             XCTAssertTrue(value.waitForNonExistence(timeout: 5))
-            // Audit the exploration home itself; the fixture rows now sit inside the Me tab (#1452, #1496).
-            // Let the tab switch's entrance fades finish first, or the audit samples half-transparent text.
-            _ = XCTWaiter.wait(for: [XCTestExpectation(description: "settle after tab switch")], timeout: 1.2)
-            try audit()
             ready(menu)
             return "lio.exploration." + messageID
         }
