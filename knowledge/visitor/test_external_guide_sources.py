@@ -78,14 +78,14 @@ class ExternalGuideSourceScopeTests(unittest.TestCase):
                   'subject': {'key': f'{city}.example-venue', 'name_zh': '合成场馆',
                               'name_en': 'Synthetic venue', 'wikidata_qid': None}}
         with self.subTest(allowed=page):
-            validate_entry_v3(record, as_of=date(2026, 11, 16))
+            validate_entry_v3(record, as_of=date(2026, 11, 20))
         for url in invalid_urls:
             with self.subTest(page=page, url=url), self.assertRaises(ValueError):
-                validate_entry_v3({**record, 'source_urls': [url]}, as_of=date(2026, 11, 16))
+                validate_entry_v3({**record, 'source_urls': [url]}, as_of=date(2026, 11, 20))
         for change in ({'cities': [wrong_city]}, {'cities': [city, 'beijing']},
                        {'subject': None}, {'topic': 'payment'}, {'topic': 'visa_entry'}):
             with self.subTest(page=page, change=change), self.assertRaises(ValueError):
-                validate_entry_v3({**record, **change}, as_of=date(2026, 11, 16))
+                validate_entry_v3({**record, **change}, as_of=date(2026, 11, 20))
 
     def test_fucheng_listing_keeps_exact_url_and_taizhou_venue_boundary(self):
         page = ('https://map.baidu.com/mobile/webapp/search/search/'
