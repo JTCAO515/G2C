@@ -37,7 +37,7 @@ from .translation import MAX_MEDIA, TranslationError
 
 VERSION = 'MENU.1'
 ROUTE = '/v1/tools/menu/explain'
-PROMPT_VERSION = 1
+PROMPT_VERSION = 2  # 2: 夫妻肺片 example for descriptive English names (run -44 smoke)
 LINES_PER_CALL = 15  # about 220 output tokens a dish: well inside MAX_OUTPUT_TOKENS
 MAX_LINES = LINES_PER_CALL * CALLS_PER_MENU
 MAX_LINE_LENGTH = 60
@@ -71,7 +71,7 @@ RULES = """你在帮外国游客看懂一张中文菜单。输入是菜单照片
 只输出一个 JSON 对象 {"items": [...]}：每个输入行恰好输出一项，按行号顺序，不要重复同一行，不要多写。kind 为 unclear 或 other 时只写 "i" 和 "kind"。
 kind 为 dish 时的字段（字数是上限，越短越好）：
 - "name_zh"：该行里的菜名原文，必须是该行文字中连续的一段，不改字、不补字；一行里有几道菜时只取第一道。
-- "name_en"：有通行英文名就用通行名（如 Kung Pao Chicken）；没有就用「主料 + 做法」的描述性名称，不要逐字直译（如「蚂蚁上树」写 Glass Noodles with Minced Pork）。不超过 50 个字符。
+- "name_en"：有通行英文名就用通行名（如 Kung Pao Chicken）；没有就用「主料 + 做法」的描述性名称，不要逐字直译（如「蚂蚁上树」写 Glass Noodles with Minced Pork，「夫妻肺片」写 Sliced Beef and Offal in Chili Oil）。不超过 50 个字符。
 - "summary_en"、"summary_zh"：一句话说清是什么、什么口味（如 sweet and sour、savory、numbing）。花椒的麻（numbing / 麻）和辣是两回事，川菜要点出。名字有典故的可在这里一句带过。英文不超过 100 个字符，中文不超过 30 个字。
 - "ingredients_en"、"ingredients_zh"：主要食材，用短词列出，不写句子。英文不超过 60 个字符，中文不超过 20 个字。
 - "method_en"、"method_zh"：做法，一两个词，如 Stir-fried / 爆炒。
@@ -124,7 +124,10 @@ def image_url(media):
 
 
 def menu_lines(text):
-    """Recognised lines that may name a dish: (name text, printed price or None), and whether some were cut."""
+    """Recognised lines that may name a dish, and whether some were cut.
+
+    Each line is {text, price: its own printed price or None, prices_after: the lines that were only a price
+    and came right after it}. A price-only line is never sent to the model; see `line_prices`."""
     lines = []
     for raw in text.splitlines():
         for line in _segments(unicodedata.normalize('NFKC', raw).strip()):
@@ -132,11 +135,36 @@ def menu_lines(text):
                 continue
             price = None
             match = _PRICE_TAIL.search(line)
-            if match and match.start() > 0 and re.search(r'\d', match.group(0)):
+            if match and re.search(r'\d', match.group(0)):
+                if match.start() == 0:
+                    if lines:
+                        lines[-1]['prices_after'].append(line.strip())
+                    continue
                 price, line = match.group(0).strip(), line[:match.start()].strip()
             if _CJK.search(line):
-                lines.append(dict(text=line, price=price))
+                lines.append(dict(text=line, price=price, prices_after=[]))
     return lines[:MAX_LINES], len(lines) > MAX_LINES
+
+
+def line_prices(lines, results):
+    """Each line's printed price: its own, or one from a column of prices read after a column of names.
+
+    Text recognition often reads a column of dish names and then that column's prices. A run of k price-only lines
+    goes, in order, to the dish or unclear lines right before it, but only when exactly k of them come in a row
+    with no price of their own; a heading, a priced line or an earlier price run ends that row. Any other count
+    shows no price: one price left unread would move every price after it to the wrong dish."""
+    prices = [line['price'] for line in lines]
+    for end, line in enumerate(lines):
+        column = line['prices_after']
+        if not column or results[end]['kind'] == 'other' or line['price'] is not None:
+            continue
+        start = end
+        while (start > 0 and results[start - 1]['kind'] != 'other' and lines[start - 1]['price'] is None
+               and not lines[start - 1]['prices_after']):
+            start -= 1
+        if end + 1 - start == len(column):
+            prices[start:end + 1] = column
+    return prices
 
 
 # Two dishes recognised on one line: split at wide gaps, tabs, or a price followed by more Chinese text.
@@ -286,8 +314,8 @@ class DashScopeMenu:
         return supplier, usage, text, finish
 
 
-def _wire(index, entry, line):
-    item = dict(id=f'l{index}', kind=entry['kind'], price_text=line['price'])
+def _wire(index, entry, price):
+    item = dict(id=f'l{index}', kind=entry['kind'], price_text=price)
     if entry['kind'] == 'dish':
         item.update({key: value for key, value in entry.items() if key != 'kind'})
     return item
@@ -376,7 +404,8 @@ class MenuService:
             raise PluginError(429, 'quota_exceeded') from None
         except BudgetUnknown:
             raise PluginError(503, 'unavailable') from None
-        items = [_wire(index, results[index], line) for index, line in enumerate(lines)
+        prices = line_prices(lines, results)
+        items = [_wire(index, results[index], prices[index]) for index in range(len(lines))
                  if results[index]['kind'] != 'other']
         authorize()
         return dict(version=VERSION, items=items, truncated=truncated)

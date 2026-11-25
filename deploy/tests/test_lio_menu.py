@@ -137,6 +137,12 @@ def test_two_dishes_on_one_line_are_split_at_prices_and_wide_gaps():
         ('馒头', None), ('夫妻 肺片', '30')]
 
 
+def test_lines_that_are_only_a_price_are_kept_with_the_line_before_and_never_sent_as_dishes():
+    lines, _ = menu_lines('38\n宫保鸡丁\n麻婆豆腐\n¥38\n26元\nKung Pao\n30/份\n蛋炒饭 15元')
+    assert [(line['text'], line['price'], line['prices_after']) for line in lines] == [
+        ('宫保鸡丁', None, []), ('麻婆豆腐', None, ['¥38', '26元', '30/份']), ('蛋炒饭', '15元', [])]
+
+
 def test_long_menus_are_cut_and_say_so():
     lines, truncated = menu_lines('\n'.join(f'菜{index}' for index in range(MAX_LINES + 5)))
     assert len(lines) == MAX_LINES and truncated
@@ -201,6 +207,8 @@ def test_the_model_sees_only_menu_text_and_the_fixed_rules():
         assert ingredient in RULES
     assert '不写「安全」「不含」' in RULES
     assert '每个输入行恰好输出一项' in RULES and '酱油：soy likely、gluten likely' in RULES
+    # Smoke on run -44: 夫妻肺片 came back word for word as "Husband and Wife Slices".
+    assert '「夫妻肺片」写 Sliced Beef and Offal in Chili Oil' in RULES
 
 
 # Requests
@@ -241,6 +249,48 @@ def test_one_photo_read_one_explanation_and_prices_from_the_photo():
     assert not any(price in sent for price in ('¥38', '26元', '15/份'))
 
 
+# Text recognition of the run -44 smoke menu (two columns): each column's names, then that column's prices.
+COLUMNS = ('测试川菜馆\n（合成菜单 · 仅供测试）\n热菜\n凉菜与主食\n宫保鸡丁\n麻婆豆腐\n鱼香肉丝\n回锅肉\n水煮鱼\n'
+           '38\n26元\n32\n42元\n68\n夫妻肺片\n担担面\n蛋炒饭\n□茶鸭\n30/份\n18\n15元\n26\n'
+           '米饭 2元    馒头 3元\n本菜单为合成测试图，菜品与价格均为虚构')
+
+
+def columns_model():
+    def answer(rows):
+        def item(row):
+            text = row['text']
+            if any(word in text for word in ('川菜馆', '合成', '热菜', '凉菜')):
+                return dict(i=row['i'], kind='other')
+            return dict(i=row['i'], kind='unclear') if '□' in text else dish(row['i'], text)
+        return reply(*(item(row) for row in rows))
+    return Model(answer)
+
+
+def test_a_column_of_prices_goes_back_to_the_column_of_names_before_it():
+    model = columns_model()
+    result, _ = explain(service(reader=Reader(COLUMNS), model=model))
+    assert [(item['kind'], item.get('name_zh'), item['price_text']) for item in result['items']] == [
+        ('dish', '宫保鸡丁', '38'), ('dish', '麻婆豆腐', '26元'), ('dish', '鱼香肉丝', '32'), ('dish', '回锅肉', '42元'),
+        ('dish', '水煮鱼', '68'), ('dish', '夫妻肺片', '30/份'), ('dish', '担担面', '18'), ('dish', '蛋炒饭', '15元'),
+        ('unclear', None, '26'), ('dish', '米饭', '2元'), ('dish', '馒头', '3元')]
+    sent = [row['text'] for messages in model.messages for row in json.loads(messages[1]['content'])]
+    assert not any(text in sent for text in ('26元', '42元', '30/份', '15元'))
+
+
+@pytest.mark.parametrize('text,prices', [
+    ('宫保鸡丁\n38\n麻婆豆腐\n26元', ['38', '26元']),                    # read row by row
+    ('宫保鸡丁 38\n麻婆豆腐\n26', ['38', '26']),                          # a line with its own price ends the column
+    ('宫保鸡丁\n麻婆豆腐\n蛋炒饭\n38\n26', [None, None, None]),            # one price unread: which one is unknown
+    ('热菜\n宫保鸡丁\n麻婆豆腐\n12\n38\n26', [None, None]),                # more prices than names
+    ('宫保鸡丁 38\n麻婆豆腐\n26\n15', ['38', None]),                       # the priced line is not counted
+    ('热菜\n15\n宫保鸡丁', [None]),                                        # a price after a heading is no one's
+])
+def test_a_price_column_is_used_only_when_it_matches_the_names_one_for_one(text, prices):
+    model = columns_model()
+    result, _ = explain(service(reader=Reader(text), model=model))
+    assert [item['price_text'] for item in result['items']] == prices
+
+
 def test_a_second_menu_with_the_same_dishes_uses_the_cache_and_no_model_call():
     cache, model = MemoryMenuCache(), Model()
     explain(service(model=model, cache=cache))
@@ -251,7 +301,7 @@ def test_a_second_menu_with_the_same_dishes_uses_the_cache_and_no_model_call():
     assert budget.operations == [1]
     assert [item['id'] for item in result['items']] == ['l0', 'l2', 'l3', 'l4', 'l5']
     assert cache.get(cache_key('宫保鸡丁'))['name_zh'] == '宫保鸡丁'
-    assert PROMPT_VERSION == 1
+    assert PROMPT_VERSION == 2
 
 
 def test_a_fully_cached_menu_makes_no_model_call():
