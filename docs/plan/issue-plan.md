@@ -210,7 +210,7 @@
    - PR 开放、不是草稿、目标是 main，head 与给定的一致；
    - 该 head 最新的成员审查结论是 `Review: APPROVE <head>`；
    - 该 head 最新的 ci.yml 运行成功，head 上所有检查都已通过；
-   - 这次 CI 开始后才进入 main 的提交，没有改到本 PR 改过的文件，或同一共享区（`contracts/`、`docs/plan/`、`backend/migrations/`、`scripts/test.py`）。
+   - 这次 CI 开始后才进入 main 的提交，没有改到本 PR 改过的文件，或同一共享区（`contracts/`、`docs/plan/`、`backend/migrations/`、`scripts/test.py`）。PR head 已经包含的 main 提交（例如更新分支时合进来的）不计入重叠（#1682 起）。
 
    退出码：0 已合并；2 有条件不满足；3 main 冻结中，要告诉协调线程；1 GitHub 或 git 暂时不可用，或合并结果读不回来，先看一眼 PR 状态再重试；64 参数错误。因文件重叠被拦下时，按提示把分支更新到最新 main（`gh pr update-branch <PR>` 或合并 `origin/main`），等新 head 的 CI 跑完并重新审查后再运行。pr-lint 会在 PR 上用警告列出与之改同一文件的其他开放 PR，只报告、不失败，用来尽早发现违反第 3 条的情况。同一 Swift 模块里不同文件之间的冲突，例如两处同名声明，脚本查不出来，仍靠合并后的 main CI 发现：main 变红后，由造成问题的线立即修复或 revert。
 8. **底线不变**：密钥只在服务器；不在 App 里收钱；只限内部测试者；费用上限与守卫不放宽；停下来问 JT 的事项（#225 合规、外部内测、收费、追加预算、新的外部账号或密钥、真实环境不可逆操作）不变。
