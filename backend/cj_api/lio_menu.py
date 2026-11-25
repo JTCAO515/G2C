@@ -127,8 +127,9 @@ def menu_lines(text):
     """Recognised lines that may name a dish, and whether some were cut.
 
     Each line is {text, price: its own printed price or None, prices_after: the lines that were only a price
-    and came right after it}. A price-only line is never sent to the model; see `line_prices`."""
-    lines = []
+    and came right after it}. Price-only lines before the first line are kept as the first line's
+    `prices_before`. A price-only line is never sent to the model; see `line_prices`."""
+    lines, leading = [], []
     for raw in text.splitlines():
         segments = _segments(unicodedata.normalize('NFKC', raw).strip())
         for line in segments:
@@ -140,12 +141,12 @@ def menu_lines(text):
                 if match.start() == 0:
                     # Only a whole recognised line can be part of a price column: a number cut from a line with
                     # a dish in it ("1 宫保鸡丁", "¥38 宫保鸡丁") is a dish number or that dish's own price.
-                    if len(segments) == 1 and lines:
-                        lines[-1]['prices_after'].append(line.strip())
+                    if len(segments) == 1:
+                        (lines[-1]['prices_after'] if lines else leading).append(line.strip())
                     continue
                 price, line = match.group(0).strip(), line[:match.start()].strip()
             if _CJK.search(line):
-                lines.append(dict(text=line, price=price, prices_after=[]))
+                lines.append(dict(text=line, price=price, prices_before=[] if lines else leading, prices_after=[]))
     return lines[:MAX_LINES], len(lines) > MAX_LINES
 
 
@@ -153,20 +154,31 @@ def line_prices(lines, results):
     """Each line's printed price: its own, or one from a column of prices read after a column of names.
 
     Text recognition often reads a column of dish names and then that column's prices. A run of k price-only lines
-    goes, in order, to the dish or unclear lines right before it, but only when exactly k of them come in a row
-    with no price of their own; a heading, a priced line or an earlier price run ends that row. Any other count
-    shows no price: one price left unread would move every price after it to the wrong dish."""
+    goes, in order, to the dish or unclear lines right before it, when exactly k of them come in a row with no
+    price of their own; a heading, a priced line or an earlier price run ends that row.
+
+    If any run does not fit that way (a different count, or a run after a heading, a priced line or nothing), the
+    menu's price-only lines are not columns of prices (numbers or prices printed above each dish, say, or a price
+    left unread), and no line gets one: a wrong price is worse than none. A line's own price always stays."""
     prices = [line['price'] for line in lines]
+    if lines and lines[0]['prices_before']:
+        return prices
+    columns = {}
     for end, line in enumerate(lines):
         column = line['prices_after']
-        if not column or results[end]['kind'] == 'other' or line['price'] is not None:
+        if not column:
             continue
+        if results[end]['kind'] == 'other' or line['price'] is not None:
+            return prices
         start = end
         while (start > 0 and results[start - 1]['kind'] != 'other' and lines[start - 1]['price'] is None
                and not lines[start - 1]['prices_after']):
             start -= 1
-        if end + 1 - start == len(column):
-            prices[start:end + 1] = column
+        if end + 1 - start != len(column):
+            return prices
+        columns[start] = column
+    for start, column in columns.items():
+        prices[start:start + len(column)] = column
     return prices
 
 

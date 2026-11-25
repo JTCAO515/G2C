@@ -141,6 +141,7 @@ def test_lines_that_are_only_a_price_are_kept_with_the_line_before_and_never_sen
     lines, _ = menu_lines('38\n宫保鸡丁\n麻婆豆腐\n¥38\n26元\nKung Pao\n30/份\n蛋炒饭 15元')
     assert [(line['text'], line['price'], line['prices_after']) for line in lines] == [
         ('宫保鸡丁', None, []), ('麻婆豆腐', None, ['¥38', '26元', '30/份']), ('蛋炒饭', '15元', [])]
+    assert [line['prices_before'] for line in lines] == [['38'], [], []]
 
 
 def test_long_menus_are_cut_and_say_so():
@@ -289,6 +290,14 @@ def test_a_column_of_prices_goes_back_to_the_column_of_names_before_it():
     ('01 宫保鸡丁\n02 麻婆豆腐', [None, None]),
     ('¥38 宫保鸡丁\n¥26 麻婆豆腐\n¥15 蛋炒饭', [None, None, None]),
     ('38    宫保鸡丁\n26    麻婆豆腐', [None, None]),
+    # A number or price on its own line above each dish: every run matches one for one, one line too late. The
+    # first one has no dish before it, so the menu's prices are not columns and none is given.
+    ('1\n宫保鸡丁\n2\n麻婆豆腐\n3\n蛋炒饭', [None, None, None]),
+    ('热菜\n1\n宫保鸡丁\n2\n麻婆豆腐\n3\n蛋炒饭', [None, None, None]),
+    ('热菜\n①\n宫保鸡丁\n②\n麻婆豆腐', [None, None]),
+    ('¥38\n宫保鸡丁\n¥26\n麻婆豆腐\n¥15\n蛋炒饭 15元', [None, None, '15元']),
+    # Any run that does not match makes every column price on the menu doubtful; a dish's own price stays.
+    ('宫保鸡丁\n38\n麻婆豆腐\n鱼香肉丝\n32\n回锅肉 42元', [None, None, None, '42元']),
 ])
 def test_a_price_column_is_used_only_when_it_matches_the_names_one_for_one(text, prices):
     model = columns_model()
