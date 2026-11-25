@@ -25,6 +25,7 @@ PLAN_UNDERSTANDING_SYSTEM=(
     'departure.mode is flight or train only from an explicit original departure event. '
     'first_day_full is true only for an affirmative request to fill the first day, '
     'false for an explicit request to keep it light; preserve the latest option with its own source. '
+    'If the traveler only gives a hotel area or asks to make the plan, omit first_day_full entirely. '
     'These are planning options, never new NEEDS event fields. Omit unsupported options; never guess a mode. '
     'Retain every fixed arrangement and its explicit subjects, clocks, locks and original refs. '
     'Where the traveler only says where they will stay, without a stated date or clock, is not a fixed arrangement. '

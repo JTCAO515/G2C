@@ -92,7 +92,7 @@
     "backend/cj_api/lio_flow_intake.py": "548b1ac13ede68c913c2d77e91a203325766cd4ded0905b5b1a0c41c723a3adc",
     "backend/cj_api/lio_national_intake.py": "84a3604e5ba9f690f34e77a8720fd400a78aff5b4ac4784bdca04c930a51c991",
     "backend/cj_api/lio_pipeline_document.py": "b20dc37fa3b49c9e3892192ed4d7c2f758882987e079c1388672ba6e6488dd5e",
-    "backend/cj_api/lio_pipeline_model.py": "8e89dd1934ebc12bb7efaf2b99c54fe2f88e7875e53b1c4b5aa3fadb9e9b05b5",
+    "backend/cj_api/lio_pipeline_model.py": "8ef7b908e67a4f8cf5b36b92a29a6371d9ac1d087f9212cf1df4f823ee1e2a60",
     "backend/cj_api/lio_pipeline_skeleton.py": "ffb1a2b3881548176415ee088e59e880d3f2c535baf6119f4e6598ced62d2ee0",
     "backend/cj_api/lio_plan_pace.py": "23ba03c5034fa17ae844809b96d67093b58037ef7240d454c07b061d6b294e1c",
     "backend/cj_api/lio_planning_grounding.py": "c8abe36e358cc2ff662947f831b3fcdf086c081e5772910675a16e34c8cdd65a",
@@ -137,7 +137,7 @@
     "eval/optimization/score_v2.py": "015fa9f21b418fe49a5ac07a5fb3027e0422620a6616029f2ba6438bfa1e9322",
     "tooling/optimization/uv.lock": "c3729fbcd04627cb07bde4f5f21b9c4fbfa4748b3d7468d550c7fc2af62bc343"
   },
-  "system_prompt_sha256": "d270a080c5a53bd837a7c64e8ff7007da77dc14e69b736cb6660bd31380d65ab",
+  "system_prompt_sha256": "649885e757dd81d119659aedda51be79d6aa2af3835e85272003f169bc17cd6c",
   "task_sha256": "9d4376ba7512d6f3c0741036ae1bd0dda99752bbc9f8b8fb8dd7025c61a530ec",
   "task_version": "G2C-dialogue-cases.2",
   "tool_implementation_sha256": "a9a8816f79777d24859deb081308ed9dcdfe5755476656955e1b3961c7a1e75f",

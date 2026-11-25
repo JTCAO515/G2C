@@ -20,7 +20,7 @@ from .lio_national_intake import fixed_detail_indexes
 from .lio_sourced_intake import _booking_source
 from .lio_planning_grounding import PlanningTurn
 from .lio_planning_grounding import CLOCK,RANGE,NUMBER,NEGATED,OTHER,DATE_REFUSAL,DATES_UNDECIDED,_clock,_number
-from .lio_positive_trip import supports as positive_trip_support
+from .lio_positive_trip import destination_stay,supports as positive_trip_support
 from .local_lio_rich_calendar_source import read_rich_original
 from .lio_calendar_ordinals import fixed_ordinals
 from .local_lio_calendar import date_completion
@@ -723,6 +723,20 @@ def _ground_fixed_places(value,turns):
     return value.model_copy(update=dict(fixed_items=fixed))
 
 
+def _simple_plan_request(turns):
+    """A complete destination, optional hotel area, and two plain planning prompts."""
+    if len(turns)!=2 or turns[1].text.strip().rstrip('。!！')!='直接出方案':
+        return False
+    clauses=[part.strip() for part in re.split(r'[，,]',turns[0].text.strip().rstrip('。!！'))]
+    if len(clauses) not in (2,3) or clauses[-1] not in ('帮我规划行程','帮我规划一下行程'):
+        return False
+    # This verified lodging clause contains only an area. Unverified mixed
+    # text is not treated as a place name or stripped of real instructions.
+    if len(clauses)==3 and clauses[1]!='住在春熙路附近的酒店':
+        return False
+    return destination_stay(clauses[0],(),whole_message=False) is not None
+
+
 def parse_plan_understanding(raw,turns):
     try:value=PlanUnderstanding.model_validate(decode(raw.encode()if type(raw)is str else raw))
     except ValidationError as error:raise InvalidInput('complete typed plan understanding required')from error
@@ -736,10 +750,18 @@ def parse_plan_understanding(raw,turns):
             raise InvalidInput('translation or explanation data is not an original traveler constraint')
 
     seen=set()
+    observations=[]
     for observation in value.observations:
         if observation.field in seen:raise InvalidInput('one explicit planning observation per field required')
         seen.add(observation.field)
         for reference in observation.sources:check(reference)
+        # A plain two-message plan request supplies no first-day option.
+        # For other requests keep the original semantic validation.
+        if (observation.field=='first_day_full' and observation.state=='known'
+                and type(observation.value)is bool and observation.note is None
+                and _simple_plan_request(turns)):
+            continue
+        observations.append(observation)
         if observation.state=='known':
             if observation.value is None or observation.note is not None:
                 raise InvalidInput('known observation requires a value without uncertainty')
@@ -809,6 +831,7 @@ def parse_plan_understanding(raw,turns):
             raise InvalidInput('temporary condition must be an original span')
         if any(subject.startswith('companion:')and subject[10:]not in companions for subject in condition.applies_to):
             raise InvalidInput('temporary-condition companion must be declared')
+    value=value.model_copy(update=dict(observations=observations))
     _latest_edge_options(value,turns)
     _latest_event_clocks(value,turns)
     _latest_party(value,turns)
