@@ -37,12 +37,30 @@ class PipelineModel(unittest.TestCase):
 
     def test_forged_items_missing_items_unknown_reasons_and_truncation_refuse(self):
         items=[dict(item_id='p-1',tip=None)]
+        # HK run -43 (2026-11-25): an unsupported reason factor no longer refuses the whole plan;
+        # it drops that item's reason (see the test below). Forged, missing, duplicate and
+        # truncated output still refuse.
         for rows in ([],[dict(item_id='foreign',reason=None,reason_refs=[],tip=None)],
-                     [dict(item_id='p-1',reason='Your default',reason_refs=['pace'],tip=None)],
                      [dict(item_id='p-1',reason=None,reason_refs=[],tip=None)]*2):
             with self.assertRaises(WordingUnavailable):
                 parse_wording(packed(dict(version=WORDING,items=rows)),items,allowed_reason_keys={'interests'})
         with self.assertRaises(WordingUnavailable):parse_wording(b'{',items,allowed_reason_keys=set())
+
+
+    def test_unsupported_reason_factor_drops_only_that_reason(self):
+        # HK run -43 (2026-11-25): LIO_PIPELINE_REFUSED stage=word message_sha256=d90d4e1dfddc
+        # ("only existing known/memory reason factors allowed") refused a complete plan.
+        items=[dict(item_id='p-1',tip='Sourced tip'),dict(item_id='p-2',tip=None),dict(item_id='p-3',tip=None)]
+        rows=[dict(item_id='p-1',reason='Your default pace.',reason_refs=['pace'],tip='Sourced tip reworded'),
+              dict(item_id='p-2',reason='Fits your interests.',reason_refs=['interests','interests'],tip=None),
+              dict(item_id='p-3',reason='Fits your interests.',reason_refs=['interests'],tip=None)]
+        with self.assertLogs('cj_usage.audit','INFO')as logs:
+            result=parse_wording(packed(dict(version=WORDING,items=rows)),items,allowed_reason_keys={'interests'})
+        self.assertEqual(result['p-1'],dict(note=None,reason_refs=[],tip='Sourced tip reworded'))
+        self.assertEqual(result['p-2'],dict(note=None,reason_refs=[],tip=None))
+        self.assertEqual(result['p-3'],dict(note='Fits your interests.',reason_refs=['interests'],tip=None))
+        self.assertEqual(logs.output,['INFO:cj_usage.audit:LIO_WORDING_REASON_DROPPED items=2 of=3'])
+        self.assertNotIn('pace',logs.output[0])
 
 
 if __name__=='__main__':unittest.main()
