@@ -383,5 +383,46 @@ class ExplorationProfileTests(unittest.TestCase):
                         self.assertEqual(result.value,tuple(value) if factor.multiple else value)
 
 
+class UnquotedAndDroppedShapes(unittest.TestCase):
+    """Probe 2026-11-25 (main 8af0e85c, en 2/5): not_needed factors came with empty quotes and the
+    whole understanding failed; HK run -42 dropped city/duration with no clue why."""
+
+    def test_updates_with_an_empty_quote_are_dropped_before_validation(self):
+        from cj_api.lio_exploration_profile import drop_unquoted_updates
+        from cj_message.lio_exploration_schema import Understanding
+        value = dict(version='LIO-exploration-understanding.1', intent='plan', current_source_index=0, updates=[
+            packet('city', 'Chengdu', 'Chengdu'),
+            packet('season', None, '', state='not_needed'),
+            dict(factor_key='pace', value=None, state='not_needed', sources=[dict(source_index=0, quote='  ')]),
+            dict(factor_key='party_type', value=None, state='not_needed', sources=[]),
+            dict(factor_key='duration_days', value=3, state='known',
+                 sources=[dict(source_index=0, quote='3 days'), dict(source_index=0, quote='')])])
+        cleaned, dropped = drop_unquoted_updates(value)
+        self.assertEqual([u['factor_key'] for u in cleaned['updates']], ['city'])
+        self.assertEqual(dropped, ('season', 'pace', 'party_type', 'duration_days'))
+        Understanding.model_validate(cleaned)
+        self.assertEqual(len(value['updates']), 5)  # the original packet is not mutated
+        # Anything that is not an update list stays for the strict validator to reject.
+        for bad in ([], dict(updates='x'), dict(updates=[1])):
+            with self.subTest(bad=bad):
+                self.assertEqual(drop_unquoted_updates(bad), (bad, ()))
+
+    def test_dropped_update_shapes_are_content_free(self):
+        from cj_api.lio_exploration_profile import dropped_shapes
+        originals = (Original('mid-0', 1, '我想去成都玩3天'), Original('mid-1', 2, '直接出方案'))
+        raw = json.dumps(dict(version='LIO-profile-update.1', updates=[
+            packet('city', '成都市', '成都', index=0),
+            packet('duration_days', 3, '玩3天', index=1),
+            packet('secret-key-春熙路', 'x', '春熙路', index=7)]))
+        shapes = dropped_shapes(raw, originals)
+        self.assertEqual(shapes['city'], 'source_offsets=1 quote_found=1 value_type=str')
+        self.assertEqual(shapes['duration_days'], 'source_offsets=0 quote_found=0 value_type=int')
+        self.assertNotIn('secret-key-春熙路', shapes)
+        self.assertEqual(dropped_shapes('not json', originals), {})
+        for shape in shapes.values():
+            for leaked in ('成都', '3天', '春熙路'):
+                self.assertNotIn(leaked, shape)
+
+
 if __name__ == '__main__':
     unittest.main()

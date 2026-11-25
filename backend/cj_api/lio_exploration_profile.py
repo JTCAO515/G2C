@@ -301,6 +301,55 @@ def parse_updates(raw, originals,*,registered_city_terms=()):
 
 
 
+def drop_unquoted_updates(value):
+    """Remove updates citing no or an empty quote before strict validation.
+
+    Probe 2026-11-25 (main 8af0e85c): not_needed factors arrived with quote="" and the
+    whole understanding failed. An unquoted update is unsupported, so it is dropped like
+    any other unsupported update (JT 2026-11-25); the packet shape stays strict.
+    Returns (value without those updates, dropped factor keys); never mutates value.
+    """
+    updates = value.get('updates') if isinstance(value, dict) else None
+    if not isinstance(updates, list) or not all(isinstance(update, dict) for update in updates):
+        return value, ()
+    kept, dropped = [], []
+    for update in updates:
+        sources = update.get('sources')
+        if (isinstance(sources, list) and sources and all(isinstance(source, dict) and isinstance(source.get('quote'), str)
+                and source['quote'].strip() for source in sources)):
+            kept.append(update)
+        else:
+            dropped.append(update.get('factor_key'))
+    if not dropped:
+        return value, ()
+    return {**value, 'updates': kept}, tuple(dropped)
+
+
+def dropped_shapes(raw, originals):
+    """Content-free shape of each update for the drop log: how many messages back each
+    cited source is, whether its quote occurs there, and the value type. Keys outside
+    the factor bank are omitted (a model key may contain traveler text)."""
+    try:
+        updates = decode(raw.encode() if isinstance(raw, str) else raw)['updates']
+    except Exception:
+        return {}
+    shapes = {}
+    for update in updates if isinstance(updates, list) else ():
+        key = update.get('factor_key') if isinstance(update, dict) else None
+        if key not in BY_KEY or not isinstance(update.get('sources'), list):
+            continue
+        offsets, found = [], []
+        for source in update['sources']:
+            index = source.get('source_index') if isinstance(source, dict) else None
+            valid = type(index) is int and 0 <= index < len(originals)
+            offsets.append(str(len(originals) - 1 - index) if valid else 'invalid')
+            found.append('1' if valid and isinstance(source.get('quote'), str) and source['quote']
+                         and source['quote'] in originals[index].text else '0')
+        shapes[key] = ('source_offsets=' + ','.join(offsets) + ' quote_found=' + ','.join(found)
+                       + ' value_type=' + type(update.get('value')).__name__)
+    return shapes
+
+
 def parse_supported_updates(raw, originals,*,registered_city_terms=()):
     """Keep each independently grounded model update; drop only unsupported ones.
 
