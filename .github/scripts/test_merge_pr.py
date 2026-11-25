@@ -33,6 +33,14 @@ class FreezeTests(unittest.TestCase):
             with self.assertRaises(Frozen):
                 check_freeze(note(f'**当前：{state}**\n'))
 
+    def test_paused_main_admits_only_declared_fixes(self):
+        paused = note('**当前：暂停合并（main 编译不过）**\n')
+        with self.assertRaises(Frozen):
+            check_freeze(paused)
+        self.assertTrue(check_freeze(paused, fix_main=True).startswith('暂停合并'))
+        with self.assertRaises(Frozen):
+            check_freeze(note('**当前：已冻结**\n'), fix_main=True)
+
     def test_missing_line_or_file_stops(self):
         with self.assertRaises(Frozen):
             check_freeze(note('当前未冻结\n'))

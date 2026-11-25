@@ -6,7 +6,8 @@ Run it from a checkout of this repository with `origin` pointing at GitHub, with
 `gh`. `--freeze-note` (or G2C_FREEZE_NOTE) names the coordination thread's main-freeze.md; it lives
 outside the repository, so the path is never written here. In order, it stops unless:
 
-1. main is not frozen: the note's `**当前：...**` line says 未冻结 (any other or missing state stops);
+1. main is open: the note's `**当前：...**` line says 未冻结. While it says 暂停合并 (main is broken),
+   only a PR that repairs main may merge, declared with --fix-main; any other or missing state stops;
 2. the PR is open, not a draft, targets main and its head is exactly --head;
 3. the newest member `Review: APPROVE|REQUEST CHANGES <head>` comment approves that head;
 4. the newest ci.yml pull_request run of the head succeeded and every check on the head passed
@@ -53,15 +54,15 @@ def freeze_state(text):
     return match.group(1).strip() if match else None
 
 
-def check_freeze(path):
+def check_freeze(path, fix_main=False):
     try:
         text = Path(path).read_text(encoding='utf-8')
     except OSError as error:
         raise Frozen(f'cannot read the freeze note {path}: {error}') from error
     state = freeze_state(text)
-    if state is None or not state.startswith('未冻结'):
-        raise Frozen(f'main is not open for merging: {state or "no 当前 line in the freeze note"}')
-    return state
+    if state is not None and (state.startswith('未冻结') or (fix_main and state.startswith('暂停合并'))):
+        return state
+    raise Frozen(f'main is not open for merging: {state or "no 当前 line in the freeze note"}')
 
 
 def check_pr(pr, head):
@@ -181,8 +182,8 @@ def merge(number, head):
     raise Blocked('merge did not go through: ' + (result.stderr.strip() or result.stdout.strip()))
 
 
-def guard(number, head, note, dry_run=False):
-    check_freeze(note)
+def guard(number, head, note, dry_run=False, fix_main=False):
+    check_freeze(note, fix_main)
     check_pr(gh(f'pulls/{number}'), head)
     check_review(paged(f'issues/{number}/comments'), head)
     runs = gh(f'actions/workflows/ci.yml/runs?event=pull_request&head_sha={head}&per_page=20')['workflow_runs']
@@ -194,7 +195,7 @@ def guard(number, head, note, dry_run=False):
           f'no overlap with {len(later)} files main changed since that CI started')
     if dry_run:
         return None
-    check_freeze(note)
+    check_freeze(note, fix_main)
     commit = merge(number, head)
     print(f'merged #{number} as {commit}')
     return commit
@@ -207,13 +208,15 @@ def main(argv=None):
     parser.add_argument('--freeze-note', default=os.environ.get('G2C_FREEZE_NOTE'),
                         help='path to main-freeze.md (default: $G2C_FREEZE_NOTE)')
     parser.add_argument('--dry-run', action='store_true', help='check everything, do not merge')
+    parser.add_argument('--fix-main', action='store_true',
+                        help='this PR repairs a broken main; allowed while the note says 暂停合并')
     args = parser.parse_args(argv)
     if not re.fullmatch(r'[0-9a-f]{40}', args.head):
         parser.error('--head must be the full 40-character SHA')
     if not args.freeze_note:
         parser.error('--freeze-note or G2C_FREEZE_NOTE is required')
     try:
-        guard(args.pr, args.head, args.freeze_note, args.dry_run)
+        guard(args.pr, args.head, args.freeze_note, args.dry_run, args.fix_main)
     except Blocked as stop:
         print(f'NOT MERGED #{args.pr}: {stop}', file=sys.stderr)
         return stop.code
