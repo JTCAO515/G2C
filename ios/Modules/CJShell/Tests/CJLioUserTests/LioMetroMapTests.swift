@@ -107,6 +107,41 @@ struct LioMetroMapDataTests {
     }
 
     /// Spot checks against the operators' sites on the check day.
+    /// Station surroundings (#1450, JT 2026-11-25) search around each station's real position. Every
+    /// station of a map built from AMap's network data has one; the operator-built maps list a few newer
+    /// stations AMap does not have yet. Positions sit near their city and neighbours along a line are close,
+    /// which catches a position matched to the wrong station.
+    @Test(arguments: mapped)
+    func stationsHaveTheirRealPositions(city: LioMetroCity) throws {
+        let map = try LioMetroMap.bundled(city)
+        let placed = map.stations.compactMap(\.geo)
+        if map.source.provider != nil {
+            #expect(placed.count == map.stations.count, "\(city.id)")
+        } else {
+            #expect(Double(placed.count) >= 0.95 * Double(map.stations.count), "\(city.id)")
+        }
+        func km(_ a: LioTaxiPlace.Coordinate, _ b: LioTaxiPlace.Coordinate) -> Double {
+            let dLat = (b.latitude - a.latitude) * .pi / 180, dLng = (b.longitude - a.longitude) * .pi / 180
+            let h = sin(dLat / 2) * sin(dLat / 2)
+                + cos(a.latitude * .pi / 180) * cos(b.latitude * .pi / 180) * sin(dLng / 2) * sin(dLng / 2)
+            return 2 * 6371 * asin(sqrt(h))
+        }
+        let centre = LioTaxiPlace.Coordinate(latitude: placed.map(\.latitude).sorted()[placed.count / 2],
+                                             longitude: placed.map(\.longitude).sorted()[placed.count / 2],
+                                             referenceSystem: .gcj02)
+        for station in map.stations {
+            guard let geo = station.geo else { continue }
+            #expect(geo.referenceSystem == .gcj02)
+            #expect(km(geo, centre) < 150, "\(city.id) \(station.nameZH)")
+        }
+        for line in map.lines {
+            for (a, b) in line.edges {
+                guard let p = map.station(a)?.geo, let q = map.station(b)?.geo else { continue }
+                #expect(km(p, q) < 60, "\(city.id) \(line.nameZH) \(a)–\(b)")
+            }
+        }
+    }
+
     @Test func wellKnownInterchangesMatchTheOperators() throws {
         func lines(_ city: LioMetroCity, _ name: String) throws -> [String] {
             let map = try LioMetroMap.bundled(city)
@@ -260,6 +295,23 @@ struct LioMetroMapBehaviourTests {
                 object["lines"] = lines
             }, city: .beijing)
         }
+        // A station position outside mainland China's range, or not a [longitude, latitude] pair.
+        for geo in [[200.0, 39.9], [116.3], [39.9, 116.3]] {
+            #expect(throws: LioMetroMapFailure.invalid("station position s1")) {
+                try LioMetroMap.read(Self.file { object in
+                    var stations = object["stations"] as! [[String: Any]]
+                    stations[0]["geo"] = geo
+                    object["stations"] = stations
+                }, city: .beijing)
+            }
+        }
+        let placed = try LioMetroMap.read(Self.file { object in
+            var stations = object["stations"] as! [[String: Any]]
+            stations[0]["geo"] = [116.177, 39.926]
+            object["stations"] = stations
+        }, city: .beijing)
+        #expect(placed.station("s1")?.geo == .init(latitude: 39.926, longitude: 116.177, referenceSystem: .gcj02))
+        #expect(placed.station("s2")?.geo == nil)
         // An interchange that only one side knows about.
         #expect(throws: LioMetroMapFailure.invalid("station lines s2")) {
             try LioMetroMap.read(Self.file { object in
