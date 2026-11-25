@@ -9,7 +9,7 @@
   {"id": "ta-2", "nameZH": "2号线", "nameEN": "Line 2", "color": "#CC0000", "loop": false, "segments": [["ta025", "ta026", "ta027", "ta028", "ta029", "ta030", "ta031", "ta009", "ta032", "ta033", "ta034", "ta035", "ta036", "ta037", "ta038", "ta039", "ta040", "ta041", "ta042", "ta043", "ta044", "ta045", "ta046"]]}
  ],
  "stations": [
-  {"id": "ta001", "nameZH": "河龙湾", "nameEN": "He Longwan", "x": 60.0, "y": 324.0, "lines": ["ta-1"]},
+  {"id": "ta001", "nameZH": "河龙湾", "nameEN": "Helongwan", "x": 60.0, "y": 324.0, "lines": ["ta-1"]},
   {"id": "ta002", "nameZH": "西铭路", "nameEN": "Ximing Lu", "x": 122.6, "y": 324.0, "lines": ["ta-1"]},
   {"id": "ta003", "nameZH": "西客站", "nameEN": "Xike Zhan", "x": 181.3, "y": 324.4, "lines": ["ta-1"]},
   {"id": "ta004", "nameZH": "金阳路", "nameEN": "Jinyang Lu", "x": 240.4, "y": 324.4, "lines": ["ta-1"]},
