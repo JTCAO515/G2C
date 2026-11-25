@@ -146,9 +146,11 @@ def exercise(root,conninfo):
         updates[:]=[]
         send('profile-after-disable','聊聊旅行','zh')
         assert 'pace' not in profiles[-1]
+        # JT 2026-11-25 ("只丢不合格的那项"): an unsupported update is dropped and never
+        # accepted; the run completes with one profile event that lacks it.
         updates[:]=[packet('pace','packed','invented quote')]
-        _,events=send('profile-bad-quote','我喜欢轻松','zh',expected='unknown')
-        assert not events
+        _,events=send('profile-bad-quote','我喜欢轻松','zh')
+        assert len(events)==1 and 'pace' not in profiles[-1]
         for tag,text,locale,key,value,quote in (
             ('negative-en','not packed','en','pace','packed','not packed'),
             ('negative-zh','不要紧凑','zh','pace','packed','不要紧凑'),
@@ -159,8 +161,8 @@ def exercise(root,conninfo):
             ('negative-city','I do not want Beijing','en','city','Beijing','Beijing'),
             ('negative-days','not 3 days','en','duration_days',3,'not 3 days')):
             updates[:]=[packet(key,value,quote)]
-            _,events=send('profile-'+tag,text,locale,expected='unknown')
-            assert not events
+            _,events=send('profile-'+tag,text,locale)
+            assert len(events)==1 and key not in profiles[-1]
         raw.update(operation_id='profile-memory-race',item_id='profile-memory-race')
         saved=api.post('/v2/memories',content=json.dumps(raw).encode(),headers=headers)
         assert saved.status_code==200,saved.text
@@ -174,7 +176,7 @@ def exercise(root,conninfo):
             assert db.execute('SELECT count(*) FROM cj_trip_proposal').fetchone()[0]==0
             assert db.execute('SELECT count(*) FROM cj_memory_item').fetchone()[0]==2
         assert journal.inspect()==[]
-        print('PASS actual Memory disable stops profile prefill; invalid quote yields UNKNOWN/zero profile; disable race yields context_invalid/zero profile; zero Trip/proposal/model/implicit long-term Memory',flush=True)
+        print('PASS actual Memory disable stops profile prefill; invalid quote is dropped/never accepted; disable race yields context_invalid/zero profile; zero Trip/proposal/model/implicit long-term Memory',flush=True)
 
 def main():
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey

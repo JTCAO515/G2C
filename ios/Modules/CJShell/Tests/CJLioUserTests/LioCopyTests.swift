@@ -25,15 +25,18 @@ struct LioCopyTests {
         return []
     }
 
-    /// Strings a metro map file shows, leaving out only its station names: those are places
-    /// (Xi'an's 龙首原 is not the banned "原操作"). Line names, river names and the source note
-    /// are still checked.
+    /// Strings a metro map file shows, leaving out only place names: station names, the operator, and the
+    /// city and its province (Xi'an's 龙首原 and the city 太原 are places, not the banned "原操作"). Line
+    /// names, river names and the rest of the source note are still checked.
     private func metroMapStrings(_ object: Any) -> [String] {
         guard let file = object as? [String: Any] else { return resourceStrings(object) }
         let stations = (file["stations"] as? [[String: Any]] ?? []).map { station in
             station.filter { $0.key != "nameZH" && $0.key != "nameEN" }
         }
-        return file.filter { $0.key != "stations" }.values.flatMap(resourceStrings) + stations.flatMap(resourceStrings)
+        let source = (file["source"] as? [String: Any] ?? [:]).filter { $0.key != "operatorZH" && $0.key != "operatorEN" }
+        let city = (file["cityInfo"] as? [String: Any] ?? [:]).filter { !["nameZH", "nameEN", "provinceZH"].contains($0.key) }
+        return file.filter { !["stations", "source", "cityInfo"].contains($0.key) }.values.flatMap(resourceStrings)
+            + stations.flatMap(resourceStrings) + resourceStrings(source) + resourceStrings(city)
     }
 
     @Test func metroMapsSkipOnlyStationNames() throws {
@@ -46,7 +49,9 @@ struct LioCopyTests {
         // The same character anywhere else in a map file is still caught.
         #expect(flagged(["stations": [station], "lines": [["nameZH": "原线", "nameEN": "Line 1"]]]) == ["原线"])
         #expect(flagged(["stations": [station], "water": [["nameZH": "原江", "nameEN": "River"]]]) == ["原江"])
-        #expect(flagged(["stations": [station], "source": ["operatorZH": "原运营方"]]) == ["原运营方"])
+        #expect(flagged(["stations": [station], "source": ["operatorZH": "太原地铁"]]).isEmpty)
+        #expect(flagged(["stations": [station], "cityInfo": ["nameZH": "太原", "provinceZH": "山西省", "featured": 1]]).isEmpty)
+        #expect(flagged(["stations": [station], "source": ["operatorZH": "太原地铁", "englishZH": "原来的拼音"]]) == ["原来的拼音"])
     }
 
     @Test func userCopyHasZeroBackendTerms() throws {

@@ -209,7 +209,8 @@ def _assemble_retrieved(prepared,compiled,capture,document,*,phase,locale,stop,a
             return rich,facts,unconfirmed
     _,(rich,facts,unconfirmed)=worker._step(binding,read)
     arguments=dict(source=rich,facts=facts,activities=activities,
-        edges=prepared.edges,phase=phase,locale=locale,limits=Limits(),stop=stop)
+        edges=prepared.edges,phase=phase,locale=locale,limits=Limits(),stop=stop,
+        lodging_unconfirmed=compiled.lodging_unconfirmed)
     if unconfirmed:return assemble_unconfirmed(document,**arguments,unconfirmed_items=unconfirmed)
     return assemble(document,**arguments)
 

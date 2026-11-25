@@ -313,8 +313,11 @@ def exercise(root,conninfo,*,saved_runs=(),generation=False,languages=('zh','en'
         fault=None
         for language,text in (('zh','规划不要三天'),('en','Plan not 3 days')):
             locale=language
-            _,message=send('flow4-poison-'+language,text,expected='unknown')
-            assert message['profile']==[] and message['question_groups']==[] and not message['answer']
+            # JT 2026-11-25 ("只丢不合格的那项"): the negated city/duration updates are
+            # dropped, never accepted, and asked again; the run itself continues.
+            _,message=send('flow4-poison-'+language,text)
+            assert message['profile']==[] and message['status']=='completed'
+            assert {'city','duration_days'}<={group['factor_key']for group in message['question_groups']}
         locale='zh'
         fault=None
         practical_cid,message=send('flow4-practical','在北京怎么坐地铁')
