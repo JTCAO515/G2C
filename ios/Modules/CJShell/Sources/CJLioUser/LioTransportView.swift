@@ -317,6 +317,7 @@ private struct LioTransportOptionCard: View {
                     .accessibilityHidden(true)
                 Text(LioTransportFormat.arrival(option, language))
                     .font(LioTheme.display(.title3).weight(.semibold))
+                    .accessibilityLabel(LioTransportFormat.arrivalSpoken(option, language))
                 Spacer(minLength: LioTheme.Spacing.xs)
                 Text(LioTransportFormat.duration(option.durationMinutes, language))
                     .font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
@@ -355,6 +356,9 @@ private struct LioTransportOptionDetail: View {
                         .font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
                     stop(LioTransportFormat.arrival(option, language),
                          option.arrival)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel(LioTransportFormat.arrivalSpoken(option, language)
+                                            + language.text(", ", "，") + option.arrival.name(in: language))
                 }
                 .padding(LioTheme.Spacing.md)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -376,8 +380,19 @@ private struct LioTransportOptionDetail: View {
                 Text(option.mode.availabilityNote(language))
                     .font(.footnote).foregroundStyle(LioTheme.inkSecondary)
                 LioTransportBookingButtons(language: language, mode: option.mode, query: query)
+                if LioTransportCopy.showsDisclosure(LioTransportLinks.booking(option.mode, query: query,
+                                                                               language: language)) {
+                    Text(LioTransportCopy.disclosure(language))
+                        .font(.footnote)
+                        .foregroundStyle(LioTheme.inkSecondary)
+                        .accessibilityIdentifier("lio.transport.detail.disclosure")
+                }
                 LioTransportHubActions(language: language, hub: option.departure, driverHub: $driverHub)
                 LioTransportTips(language: language, mode: option.mode)
+                Text(LioTransportCopy.footer(option.mode, language))
+                    .font(.footnote)
+                    .foregroundStyle(LioTheme.inkSecondary)
+                    .accessibilityIdentifier("lio.transport.detail.footer")
             }
             .padding(18)
         }
