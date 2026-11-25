@@ -147,7 +147,7 @@ struct LioMetroMapDataTests {
             ("ningbo", "鼓楼", ["1号线", "2号线"]), ("shaoxing", "梅山广场", ["1号线", "2号线"]),
             ("hefei", "合肥南站", ["1号线", "4号线", "5号线"]), ("fuzhou", "东街口", ["1号线", "4号线"]),
             ("xiamen", "吕厝", ["1号线", "2号线"]), ("nanchang", "八一广场", ["1号线", "2号线"]),
-            ("qingdao", "青岛北站", ["1号线", "3号线", "8号线"]),
+            ("qingdao", "青岛北站", ["1号线", "3号线", "8号线"]), ("hangzhou", "奥体中心（6号线）", ["6号线", "7号线"]),
         ]
         for (id, station, expected) in spotChecks {
             guard let city = LioMetroCity.named(id) else { continue }
@@ -165,7 +165,10 @@ struct LioMetroMapDataTests {
                                        ("nanjing", "湖北路·二中", "Hubeilu · Erzhong"),
                                        ("nanjing", "南京站", "Nanjing Railway Station"), ("wuxi", "北栅口", "Beizhakou"),
                                        ("hefei", "合肥南站", "Hefei South Railway Station"), ("chengdu", "火车北站", "Chengdu North Railway Station"),
-                                       ("ningbo", "长江路", "Changjiang Road"), ("hangzhou", "火车站", "Shaoxing Railway Station")] {
+                                       ("ningbo", "长江路", "Changjiang Road"), ("hangzhou", "火车站", "Shaoxing Railway Station"),
+                                       ("hangzhou", "之江文化中心", "Zhijiang Cultural Center"), ("hangzhou", "西文街", "Xiwen Street"),
+                                       ("suzhou", "高铁苏州北站", "Suzhou North Railway Station"), ("ningbo", "丽园南路", "Liyuan South Road"),
+                                       ("kunming", "昆明南火车站", "Kunming South Railway Station")] {
             guard let city = LioMetroCity.named(id) else { continue }
             #expect(try LioMetroMap.bundled(city).stations.first { $0.nameZH == station }?.nameEN == english, "\(id) \(station)")
         }

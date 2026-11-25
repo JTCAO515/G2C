@@ -2,7 +2,7 @@
  "schema": "lio.metro.v1",
  "city": "shaoxing",
  "cityInfo": {"nameZH": "绍兴", "nameEN": "Shaoxing", "provinceZH": "浙江省"},
- "source": {"operatorZH": "绍兴地铁", "operatorEN": "Shaoxing Metro", "urls": ["https://www.amap.com/ssr/subway/shaoxing-3306"], "providerZH": "高德地图地铁线网图", "providerEN": "AMap metro network maps", "englishZH": "站名拼音", "englishEN": "pinyin of the Chinese names", "englishURL": "https://www.amap.com/ssr/subway/shaoxing-3306", "checkedOn": "2026-11-25"},
+ "source": {"operatorZH": "绍兴地铁", "operatorEN": "Shaoxing Metro", "urls": ["https://www.amap.com/ssr/subway/shaoxing-3306"], "providerZH": "高德地图地铁线网图", "providerEN": "AMap metro network maps", "englishZH": "高德地图英文站名；未提供的用拼音", "englishEN": "AMap's English station names; pinyin where it has none", "englishURL": "https://www.amap.com/ssr/subway/shaoxing-3306", "checkedOn": "2026-11-25"},
  "canvas": {"width": 866, "height": 684},
  "lines": [
   {"id": "sh-1", "nameZH": "1号线", "nameEN": "Line 1", "color": "#E3002A", "loop": false, "segments": [["sh001", "sh002", "sh003", "sh004", "sh005", "sh006", "sh007", "sh008", "sh009", "sh010", "sh011", "sh012", "sh013", "sh014", "sh015", "sh016", "sh017", "sh018", "sh019", "sh020", "sh021", "sh022", "sh023", "sh024", "sh025", "sh026", "sh027", "sh028"]]},

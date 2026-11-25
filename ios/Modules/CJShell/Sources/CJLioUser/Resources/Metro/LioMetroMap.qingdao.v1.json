@@ -141,7 +141,7 @@
   {"id": "qi124", "nameZH": "胶东机场", "nameEN": "Jiaodong Jichang", "x": 557.1, "y": 111.3, "lines": ["qi-6"]},
   {"id": "qi125", "nameZH": "胶东", "nameEN": "Jiaodong", "x": 557.1, "y": 193.3, "lines": ["qi-6"]},
   {"id": "qi126", "nameZH": "大涧", "nameEN": "Dajian", "x": 626.8, "y": 250.7, "lines": ["qi-6"]},
-  {"id": "qi127", "nameZH": "红岛火车站", "nameEN": "Hongdao Huochezhan", "x": 727.1, "y": 328.9, "lines": ["qi-6"]},
+  {"id": "qi127", "nameZH": "红岛火车站", "nameEN": "Hongdao Railway Station", "x": 727.1, "y": 328.9, "lines": ["qi-6"]},
   {"id": "qi128", "nameZH": "健康中心", "nameEN": "Jiankang Zhongxin", "x": 727.1, "y": 416.9, "lines": ["qi-6"]},
   {"id": "qi129", "nameZH": "健身中心(红岛会展)", "nameEN": "Jianshen Zhongxin (Hongdao Huizhan)", "x": 727.1, "y": 485.9, "lines": ["qi-6"]},
   {"id": "qi130", "nameZH": "观涛", "nameEN": "Guantao", "x": 819.8, "y": 524.2, "lines": ["qi-6"]},
@@ -188,8 +188,8 @@
   {"id": "qi171", "nameZH": "龙湾", "nameEN": "Longwan", "x": 169.5, "y": 1180.6, "lines": ["qi-8"]},
   {"id": "qi172", "nameZH": "琅琊", "nameEN": "Langya", "x": 170.3, "y": 1209.7, "lines": ["qi-8"]},
   {"id": "qi173", "nameZH": "贡口湾", "nameEN": "Gongkouwan", "x": 157.3, "y": 1234.2, "lines": ["qi-8"]},
-  {"id": "qi174", "nameZH": "董家口港", "nameEN": "Dongjia Kougang", "x": 129.7, "y": 1234.2, "lines": ["qi-8"]},
+  {"id": "qi174", "nameZH": "董家口港", "nameEN": "Dongjiakou Gang", "x": 129.7, "y": 1234.2, "lines": ["qi-8"]},
   {"id": "qi175", "nameZH": "泊里", "nameEN": "Poli", "x": 96.8, "y": 1234.2, "lines": ["qi-8"]},
-  {"id": "qi176", "nameZH": "董家口火车站", "nameEN": "Dongjiakou Huochezhan", "x": 60.0, "y": 1234.2, "lines": ["qi-8"]}
+  {"id": "qi176", "nameZH": "董家口火车站", "nameEN": "Dongjiakou Railway Station", "x": 60.0, "y": 1234.2, "lines": ["qi-8"]}
  ]
 }
