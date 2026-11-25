@@ -7,7 +7,7 @@ struct LioNearbyPreviewView: View {
     @State private var center: String?
     @State private var radius = 500
     @State private var nearest = false
-    @State private var categories = Set(LioNearbyPlace.Category.allCases)
+    @State private var categories = Set(LioNearbyPlace.Category.leisure)
     @State private var locationUnavailable = false
 
     var body: some View {
@@ -49,7 +49,7 @@ struct LioNearbyPreviewView: View {
     private var filters: some View {
         HStack(spacing: 10) {
             Menu(language.text("Categories", "分类")) {
-                ForEach(LioNearbyPlace.Category.allCases, id: \.self) { category in
+                ForEach(LioNearbyPlace.Category.leisure, id: \.self) { category in
                     Toggle(category.title(language), isOn: Binding(
                         get: { categories.contains(category) },
                         set: { selected in
