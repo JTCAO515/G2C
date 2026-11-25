@@ -1998,6 +1998,8 @@ private func developmentCleanupHash(_ value: Data) -> String {
         case .encryptedMessage:
             try stores.eraseFiles(for: target)
             try stores.clearLocalSupportDraft()
+            // Nationality and arrival progress sit in shared UserDefaults (JT 2026-11-25: cleared on deletion).
+            LioDeviceDefaultsCleanup.erase()
         #endif
         default: try stores.eraseFiles(for: target)
         }
@@ -2021,6 +2023,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
         case .encryptedMessage:
             try layout.requireEmpty(for: target)
             try stores.verifyLocalSupportDraftAbsent()
+            try LioDeviceDefaultsCleanup.requireAbsent()
         #endif
         default: try layout.requireEmpty(for: target)
         }
