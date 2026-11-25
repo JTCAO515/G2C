@@ -214,3 +214,93 @@ def test_hk_proof_rejects_edited_roadbook_receipt_metadata(budget, key, value):
         db.execute('UPDATE attempt SET receipt=? WHERE id=?', (canonical(receipt).decode(), settled))
         with pytest.raises(ValueError, match='original_attempt_history_invalid'):
             attempts(db)
+
+
+# M4 item 18 Gaode calls (JT 2026-11-25: separately counted, at most 2000, sharing only the ¥500 tool cash).
+
+from cj_usage.authorization_budget import AMAP_PRICE, separately_counted_place, shared_place_services
+from cj_usage.roadbook_budget import (
+    AMAP_DAILY_CALLS, AMAP_OPERATIONS, AMAP_ORIGIN, AMAP_SERVICE, M4_AMAP_LIMIT, RoadbookPlaceBudget,
+)
+
+
+@pytest.fixture
+def places(budget):
+    return RoadbookPlaceBudget(budget.authorization)
+
+
+def _gaode(places, scope, request, index, operation):
+    attempt = places.begin(scope, request, index, operation)
+    places.finish(attempt, b'{"status":"1"}')
+    return attempt
+
+
+def test_gaode_limits_match_the_authorization():
+    assert AMAP_SERVICE == 'amap-roadbook.1'
+    assert M4_AMAP_LIMIT == 2000
+    assert AMAP_DAILY_CALLS == DAILY_PLACES * 2
+    assert AMAP_OPERATIONS == {'text': '/v5/place/text', 'detail': '/v5/place/detail', 'around': '/v5/place/around'}
+    origin, operations, separate = shared_place_services()[AMAP_SERVICE]
+    assert (origin, operations, separate) == (AMAP_ORIGIN, AMAP_OPERATIONS, True)
+
+
+def test_gaode_calls_are_priced_and_kept_out_of_the_legacy_place_allowance(places):
+    request = uuid4()
+    _gaode(places, 'scope-a', request, 0, 'text')
+    _gaode(places, 'scope-a', request, 0, 'around')
+    with places.authorization.mutation() as db:
+        counts, estimates, _ = authorization_usage(db)
+        assert counts['place'] == 2 and separately_counted_place(db) == 2
+        assert estimates['place'] == 2 * AMAP_PRICE
+
+
+def test_each_place_identifies_once_and_searches_around_once(places):
+    request = uuid4()
+    _gaode(places, 'scope-a', request, 3, 'detail')
+    for operation in ('detail', 'text'):
+        with pytest.raises(RoadbookDuplicate):
+            places.begin('scope-a', request, 3, operation)
+    _gaode(places, 'scope-a', request, 3, 'around')
+    with pytest.raises(RoadbookDuplicate):
+        places.begin('scope-a', request, 3, 'around')
+    _gaode(places, 'scope-a', request, 4, 'text')
+
+
+@pytest.mark.parametrize('index,operation', [(-1, 'text'), (20, 'text'), (0, 'reverse'), (0, 'search')])
+def test_unknown_gaode_steps_are_refused(places, index, operation):
+    with pytest.raises(BudgetUnknown):
+        places.begin('scope-a', uuid4(), index, operation)
+
+
+def test_gaode_calls_per_owner_and_day_are_capped(places, monkeypatch):
+    monkeypatch.setattr(roadbook_budget, 'AMAP_DAILY_CALLS', 3)
+    request = uuid4()
+    for index in range(3):
+        _gaode(places, 'scope-a', request, index, 'text')
+    with pytest.raises(RoadbookLimit):
+        places.begin('scope-a', request, 3, 'text')
+    _gaode(places, 'scope-b', uuid4(), 0, 'text')
+
+
+def test_gaode_total_is_capped_for_m4(places, monkeypatch):
+    monkeypatch.setattr(roadbook_budget, 'M4_AMAP_LIMIT', 2)
+    _gaode(places, 'scope-a', uuid4(), 0, 'text')
+    places.begin('scope-b', uuid4(), 0, 'text')  # an unsettled call still counts
+    with pytest.raises(RoadbookLimit):
+        places.begin('scope-c', uuid4(), 0, 'text')
+
+
+def test_gaode_calls_share_the_tool_cash_ceiling(places, monkeypatch):
+    from cj_usage import authorization_budget
+    monkeypatch.setattr(authorization_budget, 'TOOL_TOTAL_CNY', 0)
+    monkeypatch.setattr(roadbook_budget, 'TOOL_TOTAL_CNY', 0)
+    with pytest.raises(RoadbookLimit):
+        places.begin('scope-a', uuid4(), 0, 'text')
+
+
+def test_hk_proof_accepts_gaode_roadbook_rows(places):
+    _gaode(places, 'scope-a', uuid4(), 0, 'text')
+    places.begin('scope-a', uuid4(), 1, 'around')
+    with places.authorization.connect() as db:
+        db.execute('UPDATE producer SET identity=?', (HK_PRODUCER,))
+        assert attempts(db) == journal_state(db)

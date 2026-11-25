@@ -107,11 +107,13 @@ def shared_place_services():
     """Gaode services authorized apart from the Lio pipeline that share the tool cash ceiling.
 
     service -> (origin, operations, counted separately from entry 3's place allowance).
-    Nearby (entry 12 item 1) and hotel search (entry 12 item 3, revised in #1534) have their own counts.
+    Nearby (entry 12 item 1), hotel search (entry 12 item 3, revised in #1534) and roadbook places
+    (entry 18) have their own counts.
     """
-    from . import hotel_budget,nearby_budget
+    from . import hotel_budget,nearby_budget,roadbook_budget
     return {nearby_budget.SERVICE:(nearby_budget.ORIGIN,nearby_budget.OPERATIONS,True),
-            hotel_budget.SERVICE:(hotel_budget.ORIGIN,hotel_budget.OPERATIONS,True)}
+            hotel_budget.SERVICE:(hotel_budget.ORIGIN,hotel_budget.OPERATIONS,True),
+            roadbook_budget.AMAP_SERVICE:(roadbook_budget.AMAP_ORIGIN,roadbook_budget.AMAP_OPERATIONS,True)}
 
 
 def separately_counted_place(db):

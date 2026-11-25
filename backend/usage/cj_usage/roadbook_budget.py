@@ -13,8 +13,8 @@ from uuid import UUID
 from zoneinfo import ZoneInfo
 
 from .authorization_budget import (
-    CNY_SCALE, LIMITS, MODEL_INPUT_PRICE, MODEL_OUTPUT_PRICE, MODEL_STOP_CNY, MODEL_TOTAL_CNY,
-    authorization_usage, canonical,
+    CNY_SCALE, LIMITS, MODEL_INPUT_PRICE, MODEL_OUTPUT_PRICE, MODEL_STOP_CNY, MODEL_TOTAL_CNY, TOOL_STOP_CNY,
+    TOOL_TOTAL_CNY, authorization_usage, canonical,
 )
 from .metered_exit import BudgetUnknown
 from .sublimits import scope_hash
@@ -30,6 +30,16 @@ CALLS_PER_PLACE = 2
 MODEL = 'qwen3.8-flash'
 MAX_OUTPUT_TOKENS = 1000  # M4 item 18: one call writes at most 1000 tokens
 BEIJING = ZoneInfo('Asia/Shanghai')
+
+# Gaode facts for the same places (M4 item 18, JT 2026-11-25 「单独计次，上限 2000 次」): per place one
+# identification (text search, or detail when the POI id is known) and one around search; counted
+# separately from entry 3's place allowance, at most M4_AMAP_LIMIT calls, sharing only the ¥500 tool cash.
+AMAP_SERVICE = 'amap-roadbook.1'
+AMAP_ORIGIN = 'https://restapi.amap.com'
+AMAP_OPERATIONS = {'text': '/v5/place/text', 'detail': '/v5/place/detail', 'around': '/v5/place/around'}
+AMAP_SLOTS = {'text': 'identify', 'detail': 'identify', 'around': 'around'}
+M4_AMAP_LIMIT = 2000
+AMAP_DAILY_CALLS = DAILY_PLACES * 2
 
 
 class RoadbookLimit(BudgetUnknown):
@@ -160,3 +170,48 @@ class RoadbookBudget:
         if roadbook_price(receipt) is None:
             raise BudgetUnknown('roadbook billing receipt unavailable')
         self.authorization.finish(operation.identifier(stage), receipt)
+
+
+class RoadbookPlaceBudget:
+    """Gaode calls for roadbook places in the original HK journal, like Nearby and hotel search."""
+
+    def __init__(self, authorization):
+        self.authorization = authorization
+
+    def begin(self, scope, request_id: UUID, index, operation):
+        if (operation not in AMAP_OPERATIONS or type(index) is not int
+                or not 0 <= index < MAX_REQUEST_PLACES):
+            raise BudgetUnknown('unknown roadbook place step')
+        self.authorization.check_date()
+        owner = scope_hash(scope)
+        day = self.authorization.clock().astimezone(BEIJING).date().isoformat()
+        place = f'{AMAP_SERVICE}:{owner}:{request_id.hex}:{index:02d}'
+        identifier = f'{place}:{operation}:{day}'
+        witness = dict(service=AMAP_SERVICE, operation=operation, day=day,
+                       endpoint=AMAP_ORIGIN + AMAP_OPERATIONS[operation])
+        raw = canonical(witness)
+        with self.authorization.mutation() as db:
+            steps = db.execute('SELECT id FROM attempt WHERE id GLOB ?', (f'{place}:*',)).fetchall()
+            if any(AMAP_SLOTS.get(row[0].split(':')[4]) == AMAP_SLOTS[operation] for row in steps):
+                raise RoadbookDuplicate('original roadbook place step already recorded')
+            total, daily = db.execute(
+                """SELECT count(*), sum(CASE WHEN id GLOB ? THEN 1 ELSE 0 END)
+                   FROM attempt WHERE kind='place' AND id GLOB ?""",
+                (f'{AMAP_SERVICE}:{owner}:*:*:*:{day}', f'{AMAP_SERVICE}:*'),
+            ).fetchone()
+            if total >= M4_AMAP_LIMIT:
+                raise RoadbookLimit('roadbook Gaode call count exhausted for M4')
+            if (daily or 0) >= AMAP_DAILY_CALLS:
+                raise RoadbookLimit('daily roadbook Gaode call count exhausted')
+            _, estimates, holds = authorization_usage(db)
+            used = sum(estimates[kind] + holds[kind] for kind in LIMITS if kind != 'model')
+            if used + LIMITS['place'][1] * CNY_SCALE > min(TOOL_STOP_CNY, TOOL_TOTAL_CNY) * CNY_SCALE:
+                raise RoadbookLimit('original Gaode cash allowance exhausted')
+            # Keep the original HK ledger's NULL receipt contract for unsettled attempts.
+            db.execute("INSERT INTO attempt VALUES(?,?,?,'INTENT',NULL)",
+                       (identifier, 'place', hashlib.sha256(raw).hexdigest()))
+        return identifier, witness
+
+    def finish(self, attempt, raw):
+        identifier, witness = attempt
+        self.authorization.finish(identifier, dict(witness, response_sha256=hashlib.sha256(raw).hexdigest()))
