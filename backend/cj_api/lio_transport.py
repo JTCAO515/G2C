@@ -152,7 +152,7 @@ class TransportInput(WireModel):
 
 def _text(value, limit=40):
     if (type(value) is not str or not value.strip() or len(value) > limit
-            or any(ord(char) < 32 or 0x7f <= ord(char) < 0xa0 for char in value)):
+            or any(ord(char) < 32 or 0x7f <= ord(char) < 0xa0 or 0xd800 <= ord(char) <= 0xdfff for char in value)):
         raise ValueError('invalid supplier text')
     return value.strip()
 
@@ -211,7 +211,9 @@ def rail_items(value):
             raise ValueError('bounded transit segments required')
         for segment in segments:
             railway = segment.get('railway') if type(segment) is dict else None
-            if railway in (None, {}, []):
+            # Walking and metro segments often carry an empty railway object ({"alters": [], "spaces": []});
+            # only a segment with a train number is a train.
+            if railway in (None, {}, []) or type(railway) is dict and railway.get('trip') in (None, '', []):
                 continue
             number = _text(railway['trip'], 8)
             if not TRAIN.fullmatch(number):
