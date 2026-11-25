@@ -112,7 +112,8 @@ ONE_SCREEN_PLAN_ZH = dict(text="""按第一次来、节奏轻松排了三天。�
 **第 3 天** 上午天坛，午饭后颐和园
 
 故宫要用护照实名预约，最多提前 7 天，周一闭馆。""",
-    actions=['放票时提醒我'], chips=['再轻松点', '多加美食', '我有具体日期'])
+    # The design example's 「放票时提醒我」 (remind_tickets) is not in the first whitelist.
+    actions=[], chips=['再轻松点', '多加美食', '我有具体日期'])
 
 
 class OneScreenTests(unittest.TestCase):
@@ -168,16 +169,17 @@ class OneScreenTests(unittest.TestCase):
         # First whitelist (S contract, A confirmed 2026-11-25): open_guide payment-setup /
         # payment-troubleshooting / taxi, and view_trip for a saved trip. Elsewhere 2-3 chips suffice.
         from eval.lio_answer_quality import V1_ACTION_CASES
-        self.assertEqual(V1_ACTION_CASES, {'alipay-zh', 'visa-card-en', 'taxi-foreigner-zh', 'uber-taxi-en',
-                                           'plan-beijing-3d-zh', 'plan-chengdu-followup-zh', 'plan-xian-2d-en'})
+        # Default-dialogue plans are unsaved suggestions, so view_trip has no saved trip to open (#1638 review).
+        self.assertEqual(V1_ACTION_CASES, {'alipay-zh', 'visa-card-en', 'taxi-foreigner-zh', 'uber-taxi-en'})
         def has_action(case_id, actions, chips):
             return check_answer(self.cases[case_id], dict(text='先坐机场线到东直门。', actions=actions, chips=chips),
                                 profile=ONE_SCREEN)['checks']['has_action']
-        for case_id in ('metro-airport-zh', 'collapse-en', 'tipping-en', 'followup-hangzhou-zh'):
+        for case_id in ('metro-airport-zh', 'collapse-en', 'tipping-en', 'followup-hangzhou-zh', 'plan-beijing-3d-zh'):
             with self.subTest(case=case_id):
                 self.assertTrue(has_action(case_id, [], ['票价多少？', '要换乘几次？']))
                 self.assertFalse(has_action(case_id, [], ['票价多少？']))
-                self.assertTrue(has_action(case_id, ['Open guide'], []))
+                # No first-version button exists here: a button alone does not replace the follow-ups.
+                self.assertFalse(has_action(case_id, ['Open guide'], []))
         for case_id in sorted(V1_ACTION_CASES):
             with self.subTest(case=case_id):
                 self.assertFalse(has_action(case_id, [], ['1', '2', '3']))

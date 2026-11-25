@@ -39,10 +39,11 @@ SCENARIO_KIND = {'planning': 'plan', 'practical': 'task', 'chat': 'task', 'recom
                  'greeting': 'greeting', 'followup': 'edit', 'emergency': 'emergency'}
 MAX_ACTIONS, MAX_CHIPS = 2, 3  # S contract: at most 3 chips per answer (2026-11-25)
 # Cases whose question has a button in the first whitelist (S contract, A confirmed 2026-11-25):
-# open_guide payment-setup / payment-troubleshooting / taxi, and view_trip once a plan is saved.
-# Every other answer may end with 2-3 tappable follow-ups instead (docs/lio-voice.md §4.2, §9.1).
-V1_ACTION_CASES = frozenset({'alipay-zh', 'visa-card-en', 'taxi-foreigner-zh', 'uber-taxi-en',
-                             'plan-beijing-3d-zh', 'plan-chengdu-followup-zh', 'plan-xian-2d-en'})
+# open_guide payment-setup / payment-troubleshooting / taxi. view_trip needs a saved trip, and
+# default-dialogue plans are unsaved suggestions, so no planning case qualifies. Every other
+# answer has no valid first-version button and ends with 2-3 tappable follow-ups
+# (docs/lio-voice.md §4.2, §9.1).
+V1_ACTION_CASES = frozenset({'alipay-zh', 'visa-card-en', 'taxi-foreigner-zh', 'uber-taxi-en'})
 # Openings that are not an answer: greetings, self-introductions and praise anywhere at the start;
 # assent words ("当然可以", "Sure") only when they stand alone as the whole first sentence.
 _END = r'(?![\w-])'
@@ -148,7 +149,8 @@ def check_answer(case, answer, profile=DETAIL):
             shown = [c for c in chips if c.strip()]
             checks['has_action'] = (len(visible) == len(actions) and len(shown) == len(chips)
                                     and len(actions) <= MAX_ACTIONS and len(chips) <= MAX_CHIPS
-                                    and (bool(actions) or case['id'] not in V1_ACTION_CASES and len(chips) >= 2))
+                                    and (bool(actions) if case['id'] in V1_ACTION_CASES
+                                         else not actions and len(chips) >= 2))
     else:
         if 'min_units' in case:
             checks['detail_length'] = units >= case['min_units']
