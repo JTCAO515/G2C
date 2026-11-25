@@ -44,6 +44,9 @@ enum LioArrivalStep: String, CaseIterable, Sendable, Identifiable {
 
 /// Ticked steps, stored on the device as a comma-separated list of step names.
 struct LioArrivalProgress: Equatable, Sendable {
+    /// Shared with the trip home page, which ticks the same steps. Only step names are ever stored here.
+    static let storageKey = "lio.arrival.progress.v1"
+
     private(set) var done: Set<LioArrivalStep>
 
     init(stored: String) {
