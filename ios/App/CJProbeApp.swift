@@ -95,12 +95,13 @@ struct CJProbeApp: App {
                 // to exercise their existing Release negative cases.
                 ShellView(state: shell)
                 #else
-                LioInformationHost(shell: shell) { information in
-                    LioHome(language: shell.language.lio, service: .unavailable, isDemo: false) { LioMenuSettings(shell: shell, showingInformation: information) }
-                }
+                LioHome(language: shell.language.lio, service: .unavailable, isDemo: false) { LioMenuSettings(shell: shell) }
                 #endif
             }
             #if G2C_LIO_APP
+            #if !G2C_DEMO_BETA
+            .modifier(LioInformationHost(shell: shell))
+            #endif
             .preferredColorScheme(appearance.colorScheme)
             #endif
         }
@@ -116,22 +117,18 @@ struct CJProbeApp: App {
         if let encoded = ProcessInfo.processInfo.environment["G2C_LIO_PREVIEW_TRIP"] {
             switch Result(catching: { try LioPreviewTripFixture.library(encoded) }) {
             case .success(let library):
-                LioInformationHost(shell: shell) { information in
-                    LioHome(language: shell.language.lio, service: .demo, isDemo: true, tripLibrary: library,
-                            recordedMap: { document in
-                        AnyView(LioRecordedTripMap(document: document, language: shell.language))
-                    }) { LioMenuSettings(shell: shell, showingInformation: information) }
-                }
+                LioHome(language: shell.language.lio, service: .demo, isDemo: true, tripLibrary: library,
+                        recordedMap: { document in
+                    AnyView(LioRecordedTripMap(document: document, language: shell.language))
+                }) { LioMenuSettings(shell: shell) }
             case .failure:
                 Text(shell.language.text("Sample trip unavailable.", "示例行程暂不可用。"))
             }
         } else {
-            let home = LioInformationHost(shell: shell) { information in
-                LioHome(language: shell.language.lio, service: .demo, isDemo: true,
-                                   showsTools: ProcessInfo.processInfo.arguments.contains("--lio-tools-preview"),
-                                   toolsRelay: translationRelayPreview, toolsDraftStorage: localSupportDraftPreview) {
-                    LioMenuSettings(shell: shell, showingInformation: information)
-                }
+            let home = LioHome(language: shell.language.lio, service: .demo, isDemo: true,
+                               showsTools: ProcessInfo.processInfo.arguments.contains("--lio-tools-preview"),
+                               toolsRelay: translationRelayPreview, toolsDraftStorage: localSupportDraftPreview) {
+                LioMenuSettings(shell: shell)
             }
             .lioMedicalCardStorage(localMedicalCardPreview)
             if ProcessInfo.processInfo.arguments.contains("--lio-support-dial-preview"),
@@ -330,33 +327,37 @@ struct LioLanguagePicker: View {
 
 struct LioMenuSettings: View {
     let shell: ShellState
-    @Binding var showingInformation: Bool
+    @Environment(LioInformationPresentation.self) private var information
 
     var body: some View {
         LioLanguagePicker(shell: shell)
         LioAppearancePicker(language: shell.language.lio)
-        Button(shell.language.text("Internal demo information", "内部演示说明")) { showingInformation = true }
+        Button(shell.language.text("Internal demo information", "内部演示说明")) { information.isPresented = true }
             .frame(minHeight: 44, alignment: .leading)
             .accessibilityIdentifier("lio.information")
     }
 }
 
-// A settings row can leave the lazy List when Dynamic Type changes. Keep the sheet
-// and its presentation state on the signed-in home for the same session instead.
-struct LioInformationHost<Content: View>: View {
-    let shell: ShellState
-    @ViewBuilder let content: (Binding<Bool>) -> Content
-    @State private var showingInformation = false
+@Observable private final class LioInformationPresentation {
+    var isPresented = false
+}
 
-    var body: some View {
-        content($showingInformation)
-            .sheet(isPresented: $showingInformation) {
+// The settings row leaves the lazy list when text size changes. Keep its presentation
+// on the signed-in home, so the sheet survives a reflow and closes with that session.
+struct LioInformationHost: ViewModifier {
+    let shell: ShellState
+    @State private var information = LioInformationPresentation()
+
+    func body(content: Content) -> some View {
+        content
+            .environment(information)
+            .sheet(isPresented: $information.isPresented) {
                 NavigationStack {
                     LioDemoNoticePage(language: shell.language.lio) { EmptyView() }
                         .safeAreaInset(edge: .top, spacing: 0) {
                             HStack {
                                 Spacer()
-                                Button { showingInformation = false } label: {
+                                Button { information.isPresented = false } label: {
                                     Text(shell.language.text("Done", "完成"))
                                         .font(.body)
                                         .foregroundStyle(LioTheme.ink)
@@ -425,9 +426,7 @@ private struct LioOnboardingPreview: View {
 
     var body: some View {
         if admitted {
-            LioInformationHost(shell: shell) { information in
-                LioHome(language: shell.language.lio, service: .demo, isDemo: true) { LioMenuSettings(shell: shell, showingInformation: information) }
-            }
+            LioHome(language: shell.language.lio, service: .demo, isDemo: true) { LioMenuSettings(shell: shell) }
         } else {
             LioInvitationView(language: shell.language.lio, isBusy: false, notice: nil,
                               onInvite: { _ in admitted = true }, onRestore: { admitted = true }) {
