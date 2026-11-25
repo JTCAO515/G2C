@@ -56,12 +56,28 @@ struct LioMetroMap: Equatable, Sendable {
         func name(in language: LioLanguage) -> String { language.text(nameEN, nameZH) }
     }
 
+    /// A river or other water drawn behind the lines (#1450 look). Schematic: it follows the
+    /// drawing through points between stations on its two banks, not the real shoreline.
+    struct Water: Equatable, Sendable {
+        let nameZH: String
+        let nameEN: String
+        let points: [(x: Double, y: Double)]
+
+        func name(in language: LioLanguage) -> String { language.text(nameEN, nameZH) }
+
+        static func == (lhs: Self, rhs: Self) -> Bool {
+            lhs.nameZH == rhs.nameZH && lhs.nameEN == rhs.nameEN
+                && lhs.points.map(\.x) == rhs.points.map(\.x) && lhs.points.map(\.y) == rhs.points.map(\.y)
+        }
+    }
+
     let city: LioMetroCity
     let source: Source
     let width: Double
     let height: Double
     let lines: [Line]
     let stations: [Station]
+    let water: [Water]
     private let stationIndex: [String: Int]
     private let lineIndex: [String: Int]
 
@@ -123,9 +139,11 @@ extension LioMetroMap {
         let schema: String
         let city: String
         let source: Source
+        struct Water: Decodable { let nameZH, nameEN: String; let points: [[Double]] }
         let canvas: Canvas
         let lines: [Line]
         let stations: [Station]
+        let water: [Water]?
     }
 
     /// Decodes and checks a map file: every line has stations, names exist in both languages,
@@ -165,6 +183,14 @@ extension LioMetroMap {
         }
         let names = file.stations.map(\.nameZH)
         guard Set(names).count == names.count else { throw LioMetroMapFailure.invalid("duplicate name") }
+        let water = try (file.water ?? []).map { item -> Water in
+            guard !item.nameZH.isEmpty, !item.nameEN.isEmpty, item.points.count >= 2,
+                  item.points.allSatisfy({ $0.count == 2 && (0...file.canvas.width).contains($0[0])
+                      && (0...file.canvas.height).contains($0[1]) }) else {
+                throw LioMetroMapFailure.invalid("water \(item.nameZH)")
+            }
+            return Water(nameZH: item.nameZH, nameEN: item.nameEN, points: item.points.map { ($0[0], $0[1]) })
+        }
 
         let stations = file.stations.map {
             Station(id: $0.id, nameZH: $0.nameZH, nameEN: $0.nameEN, x: $0.x, y: $0.y, lines: $0.lines)
@@ -176,7 +202,7 @@ extension LioMetroMap {
             city: city,
             source: .init(operatorZH: file.source.operatorZH, operatorEN: file.source.operatorEN, urls: urls,
                           checkedOn: file.source.checkedOn),
-            width: file.canvas.width, height: file.canvas.height, lines: lines, stations: stations,
+            width: file.canvas.width, height: file.canvas.height, lines: lines, stations: stations, water: water,
             stationIndex: Dictionary(uniqueKeysWithValues: stations.enumerated().map { ($1.id, $0) }),
             lineIndex: Dictionary(uniqueKeysWithValues: lines.enumerated().map { ($1.id, $0) })
         )

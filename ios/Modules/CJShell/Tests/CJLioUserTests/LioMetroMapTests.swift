@@ -84,6 +84,20 @@ struct LioMetroMapDataTests {
         #expect(guangzhou.stations.first { $0.nameZH == "广州南站" }?.nameEN == "Guangzhou South Railway Station")
     }
 
+    /// #1450 look: schematic rivers drawn behind the lines, only where the city has one worth showing.
+    @Test func schematicWaterIsNamedAndInsideTheMap() throws {
+        let guangzhou = try LioMetroMap.bundled(.guangzhou), shanghai = try LioMetroMap.bundled(.shanghai)
+        #expect(guangzhou.water.map(\.nameZH) == ["珠江"])
+        #expect(shanghai.water.map(\.nameEN) == ["Huangpu River"])
+        #expect(try LioMetroMap.bundled(.beijing).water.isEmpty)
+        for map in [guangzhou, shanghai] {
+            for water in map.water {
+                #expect(water.points.count >= 8)
+                #expect(water.points.allSatisfy { (0...map.width).contains($0.x) && (0...map.height).contains($0.y) })
+            }
+        }
+    }
+
     @Test func loopsCloseAndBranchesShareTheirJunction() throws {
         let beijing = try LioMetroMap.bundled(.beijing)
         let line2 = try #require(beijing.line("bj-02"))
@@ -159,6 +173,18 @@ struct LioMetroMapBehaviourTests {
                 object["stations"] = stations
             }, city: .beijing)
         }
+        // Water outside the map, or with a single point.
+        #expect(throws: LioMetroMapFailure.invalid("water 江")) {
+            try LioMetroMap.read(Self.file { $0["water"] = [["nameZH": "江", "nameEN": "River", "points": [[10, 10], [500, 10]]]] },
+                                 city: .beijing)
+        }
+        #expect(throws: LioMetroMapFailure.invalid("water 江")) {
+            try LioMetroMap.read(Self.file { $0["water"] = [["nameZH": "江", "nameEN": "River", "points": [[10, 10]]]] },
+                                 city: .beijing)
+        }
+        #expect(try LioMetroMap.read(Self.file { $0["water"] = [["nameZH": "江", "nameEN": "River",
+                                                                 "points": [[10, 10], [150, 60]]]] },
+                                     city: .beijing).water.first?.points.count == 2)
         // A line that lists a station the file does not have.
         #expect(throws: LioMetroMapFailure.invalid("line b")) {
             try LioMetroMap.read(Self.file { object in

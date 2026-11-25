@@ -124,6 +124,9 @@ struct LioMetroMapCanvas: View {
     @GestureState private var pinch: Pinch?
     @GestureState private var dragOffset: CGSize = .zero
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var palette: LioMetroPalette { colorScheme == .dark ? .dark : .light }
 
     private struct Pinch: Equatable {
         let magnification: CGFloat
@@ -139,7 +142,10 @@ struct LioMetroMapCanvas: View {
                                          anchor: anchorPoint(pinch?.anchor ?? .center, size: size), drag: dragOffset)
                 .clamped(content: Self.content(map: map, size: size), view: size)
             let layout = Layout(map: map, size: size, zoom: shown.zoom, pan: shown.pan)
-            Canvas { context, _ in draw(in: &context, layout: layout) }
+            ZStack {
+                LioMetroPaperBackground(palette: palette)
+                Canvas { context, _ in draw(in: &context, layout: layout) }
+            }
                 .contentShape(Rectangle())
                 .gesture(magnify(size: size).simultaneously(with: drag(size: size)))
                 .onTapGesture { location in
@@ -220,6 +226,11 @@ struct LioMetroMapCanvas: View {
 
     private func zoomControls(size: CGSize) -> some View {
         VStack(spacing: 0) {
+            zoomButton("arrow.down.right.and.arrow.up.left", label: language.text("Whole map", "全图"), id: "lio.metro.map.fit") {
+                showWholeMap()
+            }
+            .disabled(viewport == LioMetroViewport())
+            Divider().frame(width: 28)
             zoomButton("plus.magnifyingglass", label: language.text("Zoom in", "放大"), id: "lio.metro.map.zoom-in") {
                 setZoom(viewport.zoom * 2, size: size)
             }
@@ -245,6 +256,10 @@ struct LioMetroMapCanvas: View {
         .accessibilityIdentifier(id)
     }
 
+    private func showWholeMap() {
+        if reduceMotion { viewport = LioMetroViewport() } else { withAnimation(LioTheme.Motion.change) { viewport = LioMetroViewport() } }
+    }
+
     private func setZoom(_ value: CGFloat, size: CGSize) {
         // Zoom about the view's centre, like a pinch there.
         let next = viewport.pinched(by: value / viewport.zoom, about: .zero)
@@ -256,8 +271,22 @@ struct LioMetroMapCanvas: View {
 
     private func draw(in context: inout GraphicsContext, layout: Layout) {
         let gap = 36 * layout.scale // on-screen distance between typical neighbours
-        let lineWidth = min(8, max(2.5, gap * 0.12))
+        // Thin and small for the whole map, growing as the traveller zooms in.
+        let lineWidth = min(7, max(1.4, gap * 0.11))
         let visible = CGRect(origin: .zero, size: layout.size).insetBy(dx: -40, dy: -40)
+        let colors = palette
+
+        // Water first, so lines and stations sit on top of it.
+        let waterWidth = max(8, gap * 0.7)
+        for water in map.water {
+            var path = Path()
+            path.addLines(water.points.map { layout.viewPoint(x: $0.x, y: $0.y) })
+            context.stroke(path, with: .color(colors.water),
+                           style: StrokeStyle(lineWidth: waterWidth, lineCap: .round, lineJoin: .round))
+            context.stroke(path, with: .color(colors.waterCurrent),
+                           style: StrokeStyle(lineWidth: max(1, waterWidth * 0.1), lineCap: .round, lineJoin: .round,
+                                              dash: [2, 6]))
+        }
 
         for line in map.lines {
             var path = Path()
@@ -266,8 +295,7 @@ struct LioMetroMapCanvas: View {
                 path.move(to: layout.viewPoint(x: a.x, y: a.y))
                 path.addLine(to: layout.viewPoint(x: b.x, y: b.y))
             }
-            let rgb = line.rgb
-            context.stroke(path, with: .color(Color(red: rgb.red, green: rgb.green, blue: rgb.blue)),
+            context.stroke(path, with: .color(Self.color(line)),
                            style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
         }
 
@@ -275,10 +303,21 @@ struct LioMetroMapCanvas: View {
         for station in map.stations {
             let point = layout.viewPoint(x: station.x, y: station.y)
             guard visible.contains(point) else { continue }
-            let radius = station.isInterchange ? lineWidth * 1.1 + 1.5 : lineWidth * 0.75
-            let dot = Path(ellipseIn: CGRect(x: point.x - radius, y: point.y - radius, width: radius * 2, height: radius * 2))
-            context.fill(dot, with: .color(LioTheme.surface))
-            context.stroke(dot, with: .color(LioTheme.ink), lineWidth: station.isInterchange ? 1.5 : 1)
+            let radius: CGFloat
+            if station.isInterchange {
+                // Interchanges: a light dot with a fine warm-grey ring.
+                radius = lineWidth * 0.95 + 0.8
+                let dot = Path(ellipseIn: CGRect(x: point.x - radius, y: point.y - radius, width: radius * 2, height: radius * 2))
+                context.fill(dot, with: .color(colors.interchangeFill))
+                context.stroke(dot, with: .color(colors.interchangeRing), lineWidth: max(0.8, lineWidth * 0.32))
+            } else {
+                // Other stations take their line's colour, so the map is not black and white.
+                radius = lineWidth * 0.55
+                let dot = Path(ellipseIn: CGRect(x: point.x - radius, y: point.y - radius, width: radius * 2, height: radius * 2))
+                context.fill(dot, with: .color(colors.stationFill))
+                let line = station.lines.first.flatMap(map.line)
+                context.stroke(dot, with: .color(line.map(Self.color) ?? colors.label), lineWidth: max(0.8, lineWidth * 0.45))
+            }
             if station.id == selected?.id {
                 let ring = Path(ellipseIn: CGRect(x: point.x - radius - 4, y: point.y - radius - 4,
                                                   width: radius * 2 + 8, height: radius * 2 + 8))
@@ -287,25 +326,115 @@ struct LioMetroMapCanvas: View {
             labels.append((station, point, radius))
         }
 
-        // Interchanges are named first; other names appear once there is room for them.
-        guard gap >= 22 else { return }
+        // Names: the whole map shows only the biggest interchanges; more appear as there is room.
+        func rank(_ station: LioMetroMap.Station) -> Int {
+            station.id == selected?.id ? 0 : station.lines.count >= 3 ? 1 : station.isInterchange ? 2 : 3
+        }
+        let limit = gap >= 40 ? 3 : gap >= 26 ? 2 : 1
         let fontSize = min(13, max(9, gap * 0.24))
         var taken: [CGRect] = []
-        let ordered = labels.filter { gap >= 40 || $0.0.isInterchange || $0.0.id == selected?.id }
-            .sorted { ($0.0.id == selected?.id ? 0 : $0.0.isInterchange ? 1 : 2) < ($1.0.id == selected?.id ? 0 : $1.0.isInterchange ? 1 : 2) }
-        for (station, point, radius) in ordered {
+        for (station, point, radius) in labels.filter({ rank($0.0) <= limit }).sorted(by: { rank($0.0) < rank($1.0) }) {
             let text = context.resolve(Text(station.name(in: language))
                 .font(.system(size: fontSize, weight: station.isInterchange ? .semibold : .regular))
-                .foregroundStyle(LioTheme.ink))
+                .foregroundStyle(colors.label))
             let measured = text.measure(in: CGSize(width: 240, height: 60))
             let frame = CGRect(x: point.x + radius + 3, y: point.y - measured.height / 2,
                                width: measured.width, height: measured.height)
             guard !taken.contains(where: { $0.intersects(frame) }) else { continue }
             taken.append(frame)
-            context.fill(Path(frame.insetBy(dx: -2, dy: 0)),
-                         with: .color(LioTheme.paper.opacity(0.8)))
+            context.fill(Path(frame.insetBy(dx: -2, dy: 0)), with: .color(colors.background.opacity(0.85)))
             context.draw(text, in: frame)
         }
+
+        // River names last, on the water itself, at the first stretch (from the middle out) where
+        // they cover no station name.
+        guard gap >= 18 else { return }
+        for water in map.water where water.points.count >= 2 {
+            let name = context.resolve(Text(water.name(in: language))
+                .font(.system(size: min(14, max(10, gap * 0.28)), weight: .medium).italic())
+                .foregroundStyle(colors.waterLabel))
+            let size = name.measure(in: CGSize(width: 240, height: 60))
+            let stretches = Array(zip(water.points, water.points.dropFirst()))
+            let middle = stretches.count / 2
+            let order = stretches.indices.sorted { abs($0 - middle) < abs($1 - middle) }
+            for index in order {
+                let (a, b) = stretches[index]
+                let centre = layout.viewPoint(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2)
+                let frame = CGRect(x: centre.x - size.width / 2, y: centre.y - size.height / 2,
+                                   width: size.width, height: size.height)
+                guard CGRect(origin: .zero, size: layout.size).contains(frame),
+                      !taken.contains(where: { $0.intersects(frame) }) else { continue }
+                context.draw(name, in: frame)
+                break
+            }
+        }
+    }
+
+    private static func color(_ line: LioMetroMap.Line) -> Color {
+        let rgb = line.rgb
+        return Color(red: rgb.red, green: rgb.green, blue: rgb.blue)
+    }
+}
+
+/// The map's own colours (#1450 look, "warm paper"): a soft paper background with schematic water,
+/// line-coloured stations and warm-grey names, with a matching dark set.
+struct LioMetroPalette {
+    let background: Color
+    let grain: Color
+    let vignette: Color
+    let water: Color
+    let waterCurrent: Color
+    let waterLabel: Color
+    let label: Color
+    let interchangeFill: Color
+    let interchangeRing: Color
+    let stationFill: Color
+
+    private static func hex(_ value: Int, _ alpha: Double = 1) -> Color {
+        Color(red: Double((value >> 16) & 0xFF) / 255, green: Double((value >> 8) & 0xFF) / 255,
+              blue: Double(value & 0xFF) / 255).opacity(alpha)
+    }
+
+    static let light = LioMetroPalette(
+        background: hex(0xF3EEE4), grain: hex(0x6B5A3E, 0.07), vignette: hex(0x6B5A3E, 0.14),
+        water: hex(0xC9DDE6), waterCurrent: hex(0xA9C6D3, 0.8), waterLabel: hex(0x6F96A8),
+        label: hex(0x3B3732), interchangeFill: hex(0xFFFFFF), interchangeRing: hex(0x5B544B), stationFill: hex(0xFFFFFF))
+
+    static let dark = LioMetroPalette(
+        background: hex(0x1F1D1A), grain: hex(0xF3EEE4, 0.05), vignette: hex(0x000000, 0.35),
+        water: hex(0x263840), waterCurrent: hex(0x3A5562, 0.9), waterLabel: hex(0x7FA6B8),
+        label: hex(0xEAE4D9), interchangeFill: hex(0xF1ECE3), interchangeRing: hex(0x1F1D1A), stationFill: hex(0x1F1D1A))
+}
+
+/// Paper behind the map: a flat colour, a fine fixed grain and a soft vignette. It does not move
+/// with the map, so it is drawn once per size rather than on every gesture frame.
+private struct LioMetroPaperBackground: View {
+    let palette: LioMetroPalette
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack {
+                palette.background
+                Canvas { context, size in
+                    var seed: UInt64 = 0x9E3779B97F4A7C15
+                    func next() -> Double {
+                        seed = seed &* 6364136223846793005 &+ 1442695040888963407
+                        return Double(seed >> 11) / Double(1 << 53)
+                    }
+                    let count = Int(size.width * size.height / 90)
+                    for _ in 0..<count {
+                        let side = 0.6 + next() * 0.9
+                        context.fill(Path(CGRect(x: next() * size.width, y: next() * size.height, width: side, height: side)),
+                                     with: .color(palette.grain))
+                    }
+                }
+                RadialGradient(colors: [.clear, palette.vignette], center: .center,
+                               startRadius: min(proxy.size.width, proxy.size.height) * 0.45,
+                               endRadius: max(proxy.size.width, proxy.size.height) * 0.75)
+            }
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }
 
