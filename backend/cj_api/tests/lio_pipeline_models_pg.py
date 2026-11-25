@@ -285,7 +285,7 @@ def main(*,natural_direct=False,early_departure=True,production=False,cases=(0,1
         if version not in (PLAN_UNDERSTANDING,SKELETON,WORDING)and not(natural or duration_update or pace_update):return original_http(transport,request)
         extra=json.loads(body['messages'][-1]['content'])
         assert body['response_format']==response_format(version)
-        assert 1<=body['max_tokens']<=1536
+        assert 1<=body['max_tokens']<=(3072 if version==PLAN_UNDERSTANDING else 1536)  # JT 2026-11-25
         if duration_update or pace_update:
             factor='duration_days'if duration_update else'pace'
             proposal_value=duration_days if duration_update else travel_pace
