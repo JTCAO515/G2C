@@ -6,13 +6,15 @@ import pytest
 
 from cj_usage import roadbook_budget
 from cj_usage.authorization_budget import (
-    AuthorizationBudget, CNY_SCALE, MODEL_INPUT_PRICE, MODEL_OUTPUT_PRICE, authorization_usage,
+    AuthorizationBudget, CNY_SCALE, HK_PRODUCER, LIMITS, M1_UNRESOLVED_CNY, MAC_PRODUCER, MODEL_INPUT_PRICE,
+    MODEL_OUTPUT_PRICE, authorization_usage, journal_state,
 )
 from cj_usage.metered_exit import BudgetUnknown
 from cj_usage.roadbook_budget import (
     BEIJING, DAILY_BOOKS, DAILY_PLACES, MODEL, SERVICE, RoadbookBudget, RoadbookDuplicate, RoadbookLimit,
     roadbook_price,
 )
+from scripts.m4_budget_transfer import attempts
 
 
 @pytest.fixture
@@ -46,7 +48,7 @@ def test_list_price_uses_the_m4_flash_token_rates():
 @pytest.mark.parametrize('changes', [
     dict(service='translation.1'), dict(region='intl'), dict(model_id='qwen-plus'),
     dict(usage={'input_tokens': 10}), dict(usage=_usage(0, 10)), dict(usage=_usage(40_000, 10)),
-    dict(usage=_usage(10, 1537)), dict(usage={'input_tokens': 10, 'output_tokens': 10, 'extra': 1}),
+    dict(usage=_usage(10, 1001)), dict(usage={'input_tokens': 10, 'output_tokens': 10, 'extra': 1}),
     dict(usage=_usage(True, 10)),
 ])
 def test_unpriceable_receipts_stay_held(changes):
@@ -129,3 +131,86 @@ def test_receipts_without_valid_usage_are_refused(budget):
     budget.begin(operation, 0)
     with pytest.raises(BudgetUnknown):
         budget.finish(operation, 0, 'chatcmpl-1', {'input_tokens': 10})
+
+
+def test_output_is_capped_at_the_authorized_thousand_tokens():
+    assert roadbook_price(_receipt(usage=_usage(10, 1000))) is not None
+    assert roadbook_price(_receipt(usage=_usage(10, 1001))) is None
+
+
+def test_cache_only_reads_without_writing_and_follows_the_shared_stop_line(budget, monkeypatch):
+    with budget.authorization.connect() as db:
+        before = journal_state(db)
+    assert not budget.cache_only()
+    with budget.authorization.connect() as db:
+        assert journal_state(db) == before
+    monkeypatch.setattr(roadbook_budget, 'LIMITS', dict(LIMITS, model=(0, 1)))
+    assert budget.cache_only()
+    with pytest.raises(RoadbookLimit):
+        budget.begin(budget.operation('scope-a', uuid4(), 1), 0)
+
+
+def test_cache_only_stops_after_the_authorization_expires(tmp_path):
+    expired = AuthorizationBudget(tmp_path / 'expired', clock=lambda: datetime(2027, 1, 2, tzinfo=BEIJING))
+    with pytest.raises(BudgetUnknown):
+        RoadbookBudget(expired).cache_only()
+
+
+def _roadbook_journal(budget):
+    settled = budget.operation('scope-fixture', uuid4(), 1)
+    _call(budget, settled, 0)
+    pending = budget.operation('scope-other', uuid4(), 2)
+    budget.begin(pending, 0)
+    return settled.identifier(0), pending.identifier(0)
+
+
+def test_hk_proof_accepts_roadbook_intents_and_receipts(budget):
+    _roadbook_journal(budget)
+    with budget.authorization.connect() as db:
+        db.execute('UPDATE producer SET identity=?', (HK_PRODUCER,))
+        original = db.execute('SELECT * FROM attempt ORDER BY id').fetchall()
+        assert attempts(db) == journal_state(db)
+        assert db.execute('SELECT * FROM attempt ORDER BY id').fetchall() == original
+        _, estimates, holds = authorization_usage(db)
+        assert estimates['model'] > 0 and holds['model'] == (M1_UNRESOLVED_CNY + 1) * CNY_SCALE
+
+
+def test_mac_transfer_rejects_runtime_roadbook_attempts(budget):
+    _roadbook_journal(budget)
+    with budget.authorization.connect() as db:
+        assert db.execute('SELECT identity FROM producer').fetchone() == (MAC_PRODUCER,)
+        with pytest.raises(ValueError, match='original_attempt_history_invalid'):
+            attempts(db)
+
+
+@pytest.mark.parametrize('source,field,value', [
+    ('pending', 'input_sha', '0' * 64),
+    ('pending', 'receipt', None),
+    ('pending', 'kind', 'place'),
+    ('received', 'receipt', '{"unexpected":"metadata"}'),
+    ('received', 'id', 'roadbook.0:'),
+])
+def test_hk_proof_rejects_tampered_roadbook_rows(budget, source, field, value):
+    settled, pending = _roadbook_journal(budget)
+    target = pending if source == 'pending' else settled
+    with budget.authorization.connect() as db:
+        db.execute('UPDATE producer SET identity=?', (HK_PRODUCER,))
+        if field == 'id':
+            value = target.replace('roadbook.1:', value)
+        db.execute('UPDATE attempt SET ' + field + '=? WHERE id=?', (value, target))
+        with pytest.raises(ValueError, match='original_attempt_history_invalid'):
+            attempts(db)
+
+
+@pytest.mark.parametrize('key,value', [('places', 3), ('day', '2026-11-27'), ('stage', 1)])
+def test_hk_proof_rejects_edited_roadbook_receipt_metadata(budget, key, value):
+    import json
+    settled, _ = _roadbook_journal(budget)
+    with budget.authorization.connect() as db:
+        db.execute('UPDATE producer SET identity=?', (HK_PRODUCER,))
+        receipt = json.loads(db.execute('SELECT receipt FROM attempt WHERE id=?', (settled,)).fetchone()[0])
+        receipt[key] = value
+        from cj_usage.authorization_budget import canonical
+        db.execute('UPDATE attempt SET receipt=? WHERE id=?', (canonical(receipt).decode(), settled))
+        with pytest.raises(ValueError, match='original_attempt_history_invalid'):
+            attempts(db)

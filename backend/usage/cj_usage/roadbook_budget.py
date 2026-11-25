@@ -28,7 +28,7 @@ DAILY_BOOKS = 5
 MAX_REQUEST_PLACES = 20
 CALLS_PER_PLACE = 2
 MODEL = 'qwen3.8-flash'
-MAX_OUTPUT_TOKENS = 1536
+MAX_OUTPUT_TOKENS = 1000  # M4 item 18: one call writes at most 1000 tokens
 BEIJING = ZoneInfo('Asia/Shanghai')
 
 
@@ -87,6 +87,18 @@ def _charged(db):
     return charged
 
 
+def _refusal(db):
+    """Why one more reserved call would not fit, or None."""
+    reserve = LIMITS['model'][1] * CNY_SCALE
+    counts, estimates, holds = authorization_usage(db)
+    if (counts['model'] >= LIMITS['model'][0]
+            or estimates['model'] + holds['model'] + reserve > min(MODEL_STOP_CNY, MODEL_TOTAL_CNY) * CNY_SCALE):
+        return 'shared model authorization ceiling'
+    if _charged(db) + reserve > cache_only_limit():
+        return 'roadbook authorization ceiling (cache only)'
+    return None
+
+
 class RoadbookBudget:
     def __init__(self, authorization):
         self.authorization = authorization
@@ -100,9 +112,13 @@ class RoadbookBudget:
         return RoadbookOperation(scope_hash(scope), request, now.date(), places)
 
     def cache_only(self):
-        """True once one more call would pass 80% of the sublimit: serve cached places only."""
-        with self.authorization.mutation() as db:
-            return _charged(db) + LIMITS['model'][1] * CNY_SCALE > cache_only_limit()
+        """True when one more call would not fit: 80% of the sublimit, or the shared model stop line.
+
+        A read-only look at the journal (no write lock, no control-file write)."""
+        self.authorization.check_date()
+        with self.authorization.connect() as db:
+            self.authorization.require_producer(db)
+            return _refusal(db) is not None
 
     def begin(self, operation, stage):
         """Reserve exactly one upstream call, using the parent ledger lock."""
@@ -128,12 +144,9 @@ class RoadbookBudget:
                 (operation.identifier(stage - 1),),
             ).fetchone():
                 raise BudgetUnknown('original roadbook stage not settled')
-            counts, estimates, holds = authorization_usage(db)
-            if (counts['model'] >= LIMITS['model'][0]
-                    or estimates['model'] + holds['model'] + reserve > min(MODEL_STOP_CNY, MODEL_TOTAL_CNY) * CNY_SCALE):
-                raise RoadbookLimit('shared model authorization ceiling')
-            if _charged(db) + reserve > cache_only_limit():
-                raise RoadbookLimit('roadbook authorization ceiling (cache only)')
+            refusal = _refusal(db)
+            if refusal is not None:
+                raise RoadbookLimit(refusal)
             record = canonical(metadata)
             db.execute("INSERT INTO attempt VALUES(?,?,?,'INTENT',?)",
                        (attempt, 'model', hashlib.sha256(record).hexdigest(), record.decode()))
