@@ -3,9 +3,10 @@
 M4 item 18 (JT 2026-11-25): for each place not yet cached, Gaode identifies it once (detail when the POI is
 known, otherwise a name + city text search) and searches around it once (restaurants and metro stations);
 then the flash model writes eight short bilingual fields, Chinese and English in one call each, using only
-those facts. Every field is checked: prices must be approximate ranges, nothing may claim what is open today,
-clock times must come from Gaode's opening hours, and restaurant names must be Gaode's. A field that fails
-becomes "check official sources". Nothing about the traveller is sent: only public place names and the city.
+those facts; the restaurant line is written by the server from Gaode's around-search. Every model field is
+checked: prices must be approximate ranges in tickets, nothing live (availability, open or closed now, today or
+for the time being), clock times only as HH:MM from Gaode's opening hours. A field that fails becomes
+"check official sources". Nothing about the traveller is sent: only public place names and the city.
 Routes, the worker socket, the roster and deployment belong to deploy/hk (S line).
 """
 
@@ -15,6 +16,7 @@ import json
 import re
 import copy
 from threading import Lock
+from time import monotonic
 from typing import Annotated, Literal
 import unicodedata
 from uuid import UUID
@@ -44,6 +46,7 @@ AROUND_RADIUS_M = 1000
 AROUND_PAGE_SIZE = 25
 MAX_RESTAURANTS = 3
 MAX_STATIONS = 2
+REQUEST_SECONDS = 45   # no supplier call starts after this, counted from the start of a request
 DASHSCOPE = 'dashscope.aliyuncs.com'
 CHAT = '/compatible-mode/v1/chat/completions'
 MAX_PROVIDER_RESPONSE = 128 * 1024
@@ -52,25 +55,35 @@ PLACE_ID = re.compile(r'[A-Za-z0-9._-]{1,64}')
 POI_ID = re.compile(r'[A-Za-z0-9]{1,32}')
 
 # Checks run on NFKC-normalized text, so full-width digits and colons count as ordinary ones.
-# 块 is also a measure word (一块石碑): only 块钱, or 块 not followed by a Chinese character, is money.
-_UNIT = r'(?:元|块钱|块(?![\u4e00-\u9fff])|人民币|美元|yuan|kuai|rmb|cny|usd|dollars?)'
+# 块 is also a measure word (一块石碑): only 块钱, or 块 not followed by a Chinese character other than
+# 左右/钱/以上/上下, is money.
+_UNIT = (r'(?:元|圆|块钱|块(?![\u4e00-\u9fff])|块(?=左右|钱|以上|上下)|人民币|港币|港元|欧元|美元|'
+         r'yuan|kuai|rmb|cny|usd|hkd|eur|bucks?|dollars?|€)')
 _CN_NUMBER = r'[零〇一二三四五六七八九十百千万两]'
 _EN_NUMBER = (r'\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty|'
               r'fifty|sixty|seventy|eighty|ninety|hundred|thousand|[a-z]+teen|[a-z]+ty)\b')
 _NUMBER = r'(?:\d|' + _CN_NUMBER + r'|' + _EN_NUMBER + r')'
-_PRICE = re.compile(r'(?:[¥$]|us\$|rmb|cny|usd)\s*' + _NUMBER + r'|' + _NUMBER + r'\s*' + _UNIT
-                    + r'|(?:门票|票价|ticket|tickets|fare|fares|price|costs?)\s*\D{0,3}\d', re.IGNORECASE)
-_ANY_UNIT = re.compile(r'[¥$]|' + _UNIT, re.IGNORECASE)
+_PRICE = re.compile(
+    r'(?:[¥$€]|us\$|rmb|cny|usd|hkd|eur|人民币|港币)\s*' + _NUMBER
+    + r'|' + _NUMBER + r'\s*(?:多|几|余)?\s*' + _UNIT + r'|' + _NUMBER + r'\s*(?:多|几|余)\s*块'
+    + r'|(?:门票|票价|ticket|tickets|fare|fares|price|costs?)\s*(?:[:：是为约]\s*)?\d+'
+      r'(?!\s*(?:天|日|周|个?小时|days?|weeks?|hours?))', re.IGNORECASE)
+_ANY_UNIT = re.compile(r'[¥$€]|' + _UNIT, re.IGNORECASE)
+# Unit-less amounts in tickets: Chinese numbers with 十/百/千, or English number words from ten up.
+_BIG_NUMBER = re.compile(r'[零〇一二三四五六七八九两]*[十百千万]' + _CN_NUMBER + r'*|'
+                         r'\b(?:ten|eleven|twelve|fifteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|'
+                         r'hundred|thousand|[a-z]+teen|[a-z]+ty)\b', re.IGNORECASE)
 _APPROX_RANGE = re.compile(
-    r'(?:约|大约|大概|about|around|approximately|roughly)\s*(?:[¥$]\s*)?(\d{1,4})(?:\s*' + _UNIT + r')?\s*'
-    r'(?:–|—|-|~|至|到|to)\s*(?:[¥$]\s*)?(\d{1,4})(?:\s*' + _UNIT + r')?', re.IGNORECASE)
-# Nothing live: availability, or whether it is open now, today or for the time being.
-_LIVE = re.compile(r'余票|售罄|满员|约满|\b(?:sold out|tickets? (?:left|remaining|available)|availability)\b',
-                   re.IGNORECASE)
-_NOW = re.compile(r'今天|今日|今晚|目前|现在|当前|此刻|眼下|暂时|暂停|近期|最近|本周|这周|本月|即日起|'
-                  r'\b(?:today|tonight|now|currently|right now|at the moment|presently|temporarily|recently|'
-                  r'this week|this month|until further notice)\b', re.IGNORECASE)
-_STATE = re.compile(r'开放|营业|开门|闭馆|闭园|关门|不开|开着|休息|停业|维修|'
+    r'(?:约|大约|大概|about|around|approximately|roughly)\s*(?:[¥$€]\s*)?(\d{1,4})(?:\s*' + _UNIT + r')?\s*'
+    r'(?:–|—|-|~|至|到|to)\s*(?:[¥$€]\s*)?(\d{1,4})(?:\s*' + _UNIT + r')?', re.IGNORECASE)
+# Nothing live: availability, closures for the time being, or whether it is open now or today.
+_LIVE = re.compile(r'余票|售罄|售完|已满|约满|满员|修缮|恢复开放|'
+                   r'\b(?:sold out|fully booked|booked out|tickets? (?:left|remaining|available)|availability|'
+                   r'renovation|under repair|reopened)\b', re.IGNORECASE)
+_NOW = re.compile(r'今天|今日|今晚|目前|现在|当前|此刻|眼下|暂时|暂不|暂停|临时|正在|近期|近日|这几天|本周|这周|本月|即日起|'
+                  r'\b(?:today|tonight|now|currently|right now|at the moment|at present|presently|temporarily|'
+                  r'this week|this month|for now|until further notice)\b', re.IGNORECASE)
+_STATE = re.compile(r'开放|营业|开门|闭馆|闭园|关门|关闭|不开|开着|休息|停业|维修|入园|开园|'
                     r'\b(?:open|opens|opened|closed|closing|shut)\b', re.IGNORECASE)
 _HHMM = re.compile(r'(?<!\d)([01]?\d|2[0-3]):([0-5]\d)(?!\d)')
 _OTHER_CLOCK = re.compile(
@@ -236,7 +249,7 @@ def _field(name, value, facts, language):
         return None  # nothing live: availability, or whether it is open now, today or for now
     if name == 'tickets':
         rest = _APPROX_RANGE.sub(lambda match: '' if int(match.group(1)) < int(match.group(2)) else match.group(0), plain)
-        if _PRICE.search(rest) or _ANY_UNIT.search(rest) or re.search(r'\d', rest):
+        if _PRICE.search(rest) or _ANY_UNIT.search(rest) or re.search(r'\d', rest) or _BIG_NUMBER.search(rest):
             return None  # every amount must sit in an "about X–Y" range with X < Y
     elif _PRICE.search(plain):
         return None  # prices only in tickets
@@ -384,7 +397,15 @@ class RoadbookService:
         return dict(poi_id=facts['poi_id'], content=content, metro=facts['metro'], restaurants=facts['restaurants'])
 
     def enrich(self, scope, request, authorize):
-        authorize()
+        deadline = monotonic() + REQUEST_SECONDS
+        outer = authorize
+
+        def authorize():
+            if monotonic() >= deadline:
+                raise PluginError(503, 'unavailable')
+            outer()
+
+        outer()
         results, todo = {}, []
         for place in request.places:
             cached = self.cache.get(cache_key(place))
@@ -424,5 +445,5 @@ class RoadbookService:
                     continue
                 self.cache.put(cache_key(place), value)
                 results[place.id] = dict(id=place.id, status='ready', **value)
-        authorize()
+        outer()
         return dict(version=VERSION, places=[results[place.id] for place in request.places])
