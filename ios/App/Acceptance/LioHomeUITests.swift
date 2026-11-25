@@ -152,6 +152,14 @@ import CryptoKit
                 let cards = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'lio.metro.city.' AND identifier != 'lio.metro.city.find'"))
                 let cut = cards.allElementsBoundByIndex.filter { $0.frame.minY < tabBarTop && $0.frame.maxY > tabBarTop }
                 XCTAssertLessThanOrEqual(unresolved, cut.count * 2, "contrast issues without an element and no card under the tab bar")
+                if unresolved > 0 {
+                    // Record what the allowance was used for, for review and later checks.
+                    let note = XCTAttachment(string: "cards cut by the tab bar: \(cut.count) (\(cut.map(\.identifier).joined(separator: ", ")))\n"
+                        + "contrast issues without an element allowed: \(unresolved) of at most \(cut.count * 2)")
+                    note.name = "metro-cities-tab-bar-allowance-\(language)-\(appearance)"
+                    note.lifetime = .keepAlways
+                    add(note)
+                }
                 let cities = XCTAttachment(screenshot: app.screenshot())
                 cities.name = "metro-cities-\(language)-\(appearance)"
                 cities.lifetime = .keepAlways

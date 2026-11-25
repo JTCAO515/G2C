@@ -20,10 +20,16 @@
 | 深圳（shenzhen） | 深圳地铁官网（https://www.szmc.net/map/） | 运营方官网 | 2026-11-25 |
 | 成都（chengdu） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/chengdu-5101） | 维基百科成都地铁车站列表；未收录的站用拼音 | 2026-11-25 |
 | 西安（xian） | 西安地铁官网（https://m.xianrail.com/metroRoute） | 维基百科西安地铁车站列表（站名标识拼音） | 2026-11-25 |
+| 长春（changchun） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/changchun-2201） | 站名拼音 | 2026-11-25 |
+| 大连（dalian） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/dalian-2102） | 维基百科大连地铁车站列表；未收录的站用拼音 | 2026-11-25 |
+| 哈尔滨（haerbin） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/haerbin-2301） | 站名拼音 | 2026-11-25 |
 | 呼和浩特（huhehaote） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/huhehaote-1501） | 站名拼音 | 2026-11-25 |
 | 济南（jinan） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/jinan-3701） | 站名拼音 | 2026-11-25 |
+| 兰州（lanzhou） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/lanzhou-6201） | 站名拼音 | 2026-11-25 |
 | 洛阳（luoyang） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/luoyang-4103） | 站名拼音 | 2026-11-25 |
+| 沈阳（shenyang） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/shenyang-2101） | 站名拼音 | 2026-11-25 |
 | 石家庄（shijiazhuang） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/shijiazhuang-1301） | 维基百科石家庄地铁车站列表；未收录的站用拼音 | 2026-11-25 |
 | 太原（taiyuan） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/taiyuan-1401） | 站名拼音 | 2026-11-25 |
 | 天津（tianjin） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/tianjin-1200） | 维基百科天津地铁车站列表；未收录的站用拼音 | 2026-11-25 |
+| 乌鲁木齐（wulumuqi） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/wulumuqi-6501） | 站名拼音 | 2026-11-25 |
 | 郑州（zhengzhou） | 参考高德地图地铁线网图（https://www.amap.com/ssr/subway/zhengzhou-4101） | 维基百科郑州地铁车站列表；未收录的站用拼音 | 2026-11-25 |
