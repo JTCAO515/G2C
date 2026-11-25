@@ -196,6 +196,7 @@ def test_rail_daily_and_total_caps_are_enforced_before_dispatch(tmp_path):
     assert capped['rail']['status'] == 'quota_exceeded' and len(seen) == 30
 
     seen.clear()
+    (tmp_path / 'total').mkdir()
     with make_client(tmp_path / 'total', amap=amap, total=2) as client:
         statuses = [client.post(ROUTE, json=dict(BODY, modes=['rail']), headers=HEADERS).json()['rail']['status']
                     for _ in range(3)]
