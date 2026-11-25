@@ -224,4 +224,124 @@ class GenerationWiring(unittest.TestCase):
         _log_refusal(SimpleNamespace(run_id='run-1'),'word',Broken())
 
 
+    def saved_reply(self,locale,far):
+        from cj_api.local_lio_pipeline_generation import PipelineGeneration
+        import cj_api.local_lio_pipeline_generation as generation
+        host=SimpleNamespace(current=lambda _:None,_finish=lambda worker,binding,state,body,scene,lang:body)
+        worker=SimpleNamespace(runs=SimpleNamespace(snapshot=lambda _:object()),_event=lambda binding,state,kind,value:state)
+        capture=SimpleNamespace(basis=SimpleNamespace(day_count=3,start_date=None))
+        with patch.multiple(generation,prepare_generation=unittest.mock.DEFAULT,retrieve_skeleton=unittest.mock.DEFAULT,
+                compile_retrieved_plan=unittest.mock.DEFAULT,order_retrieved_plan=unittest.mock.DEFAULT,
+                route_ordered_plan=unittest.mock.DEFAULT,schedule_retrieved_plan=unittest.mock.DEFAULT,
+                word_retrieved_plan=unittest.mock.DEFAULT,publish_retrieved_plan=unittest.mock.DEFAULT)as stages:
+            stages['prepare_generation'].return_value=SimpleNamespace(projection=SimpleNamespace(fields={}))
+            stages['retrieve_skeleton'].return_value=({},(),capture)
+            stages['order_retrieved_plan'].return_value=SimpleNamespace(content='{}',status='CONDITIONAL_SCHEDULE',reason='')
+            stages['route_ordered_plan'].return_value=({},capture)
+            stages['schedule_retrieved_plan'].return_value=SimpleNamespace(content='{}',status='CONDITIONAL_SCHEDULE',reason='')
+            stages['word_retrieved_plan'].return_value=SimpleNamespace(summary='Summary.',unknown_transfers=(),
+                edge_proximity_unconfirmed=(),edge_far=far)
+            stages['publish_retrieved_plan'].return_value=(None,SimpleNamespace(proposal_id='p'))
+            return PipelineGeneration().plan(host,worker,SimpleNamespace(run_id='r'),'view',locale=locale,
+                effective={},prior_model_calls=1)
+
+    def test_far_edge_days_are_disclosed_on_anchors_and_in_the_saved_reply(self):
+        # JT 2026-11-26 (coordination thread, "照样保存并提示（推荐）"): a located hotel with a
+        # first/last-day stop outside walking range saves; the anchor note and the reply say so.
+        from cj_api.local_lio_pipeline import disclose_far_edges, FAR_EDGE_HINTS
+        from cj_api.local_lio_pipeline_generation import PipelineGeneration
+        import cj_api.local_lio_pipeline_generation as generation
+        document=dict(items=[dict(id='p-lodging-d1-out',kind='hotel',note='Hotel estimate.'),
+                             dict(id='p-lodging-d3-back',kind='hotel',note='Hotel estimate.'),
+                             dict(id='p-stop-1',kind='sight',note='Fine.')])
+        for locale in ('zh','en'):
+            for far,(first,last) in (((),(False,False)),(((1,'p-stop-1'),),(True,False)),(((3,'p-stop-9'),),(False,True)),
+                                     (((1,'a'),(3,'b')),(True,True))):
+                with self.subTest(locale=locale,far=far):
+                    value=disclose_far_edges(document,far,id_prefix='p',day_count=3,locale=locale)
+                    notes={i['id']:i['note']for i in value['items']}
+                    self.assertEqual(FAR_EDGE_HINTS[locale][0]in notes['p-lodging-d1-out'],first)
+                    self.assertEqual(FAR_EDGE_HINTS[locale][1]in notes['p-lodging-d3-back'],last)
+                    self.assertEqual(notes['p-stop-1'],'Fine.')
+                    self.assertEqual(document['items'][0]['note'],'Hotel estimate.')  # input not mutated
+        for locale,last_hint in (('zh','最后一天的景点离酒店有一段距离'),('en',"the last day's sights are some distance from the hotel")):
+            body=self.saved_reply(locale,((1,'a'),(3,'b')))
+            self.assertIn(last_hint,body.lower()if locale=='en'else body)
+            last_only=self.saved_reply(locale,((3,'b'),))
+            self.assertIn(last_hint,last_only.lower()if locale=='en'else last_only)
+            self.assertIn('想换近一点的可以告诉我'if locale=='zh'else'tell me to swap in somewhere closer',last_only)
+        for locale,hint in (('zh','第一天的景点离酒店有一段距离，到达后建议打车过去；想换近一点的可以告诉我'),
+                            ('en',"Day 1's sights are some distance from the hotel; take a taxi after you arrive, or tell me to swap in somewhere closer")):
+            for far in ((),((1,'p-stop-1'),)):
+                with self.subTest(reply=locale,far=far):
+                    host=SimpleNamespace(current=lambda _:None,_finish=lambda worker,binding,state,body,scene,lang:body)
+                    worker=SimpleNamespace(runs=SimpleNamespace(snapshot=lambda _:object()),
+                        _event=lambda binding,state,kind,value:self.fail('saved plan emitted a refusal event'))
+                    prepared=SimpleNamespace(projection=SimpleNamespace(fields={}))
+                    capture=SimpleNamespace(basis=SimpleNamespace(day_count=3,start_date=None))
+                    with patch.multiple(generation,prepare_generation=unittest.mock.DEFAULT,
+                            retrieve_skeleton=unittest.mock.DEFAULT,compile_retrieved_plan=unittest.mock.DEFAULT,
+                            order_retrieved_plan=unittest.mock.DEFAULT,route_ordered_plan=unittest.mock.DEFAULT,
+                            schedule_retrieved_plan=unittest.mock.DEFAULT,word_retrieved_plan=unittest.mock.DEFAULT,
+                            publish_retrieved_plan=unittest.mock.DEFAULT)as stages:
+                        stages['prepare_generation'].return_value=prepared
+                        stages['retrieve_skeleton'].return_value=({},(),capture)
+                        stages['order_retrieved_plan'].return_value=SimpleNamespace(content='{}',status='CONDITIONAL_SCHEDULE',reason='')
+                        stages['route_ordered_plan'].return_value=({},capture)
+                        stages['schedule_retrieved_plan'].return_value=SimpleNamespace(content='{}',status='CONDITIONAL_SCHEDULE',reason='')
+                        stages['word_retrieved_plan'].return_value=SimpleNamespace(summary='Summary.',unknown_transfers=(),
+                            edge_proximity_unconfirmed=(),edge_far=far)
+                        stages['publish_retrieved_plan'].return_value=(None,SimpleNamespace(proposal_id='p'))
+                        body=PipelineGeneration().plan(host,worker,SimpleNamespace(run_id='r'),'view',locale=locale,
+                            effective={},prior_model_calls=1)
+                    self.assertIn('行程已保存'if locale=='zh'else'The itinerary is saved',body)
+                    self.assertEqual(hint in body,bool(far),body)
+
+    def test_remaining_refusals_name_their_reason(self):
+        # Coordination 2026-11-26: a plan that still cannot be saved says why, not just "没能保存".
+        from cj_api.local_lio_pipeline_generation import PipelineGeneration
+        import cj_api.local_lio_pipeline_generation as generation
+        from cj_api.local_lio_pipeline import DestinationUnresolved
+        from cj_api.local_lio_pipeline_places import PlaceSelectionBlocked
+        from cj_api.lio_pipeline_model import WordingUnavailable
+        from cj_trip.structured import SourceRejected
+        # #1681 review: only reasons with one sure cause name it; ambiguous ones stay generic or neutral.
+        cases=((dict(reason='KNOWN_OPENING_CONFLICT'),'有景点在安排的那天不开放','a stop is closed on its planned day'),
+               (dict(reason='EXPLICIT_CONSTRAINTS_INFEASIBLE'),'有一天的时间排不开','one of the days could not fit in time'),
+               (dict(reason='FIRST_DAY_LIGHT_RECIPE_REQUIRED'),'到达时间未定，第一天只能轻松安排','with no arrival time, day 1 must stay light'),
+               (dict(reason='EXPLICIT_CLOCK_OR_ZONE_REQUIRED'),'有一项安排（包括到达或离开）还缺具体时间',
+                'an arrangement (including arrival or departure) still has no exact time'),
+               (dict(reason='EDGE_WINDOWS_CONFLICT'),None,None),
+               (dict(error=DestinationUnresolved({})),'目的地还没能确认是哪座城市','I could not confirm which city you mean'),
+               (dict(error=PlaceSelectionBlocked('x')),'有地点没能确认是哪一处','I could not confirm which place a stop is'),
+               (dict(error=WordingUnavailable('x')),'整理行程文字时出了问题','something went wrong while writing up the plan'),
+               (dict(error=SourceRejected('f','r')),None,None),
+               (dict(reason='SOMETHING_NEW'),None,None))
+        for spec,zh,en in cases:
+            for locale,detail in (('zh',zh),('en',en)):
+                with self.subTest(spec=str(spec),locale=locale):
+                    host=SimpleNamespace(current=lambda _:None,_finish=lambda worker,binding,state,body,scene,lang:body)
+                    worker=SimpleNamespace(runs=SimpleNamespace(snapshot=lambda _:object()),
+                        _event=lambda binding,state,kind,value:state)
+                    prepared=SimpleNamespace(projection=SimpleNamespace(fields={}))
+                    capture=SimpleNamespace(basis=SimpleNamespace(day_count=3,start_date=None))
+                    with patch.multiple(generation,prepare_generation=unittest.mock.DEFAULT,
+                            retrieve_skeleton=unittest.mock.DEFAULT,compile_retrieved_plan=unittest.mock.DEFAULT,
+                            order_retrieved_plan=unittest.mock.DEFAULT,route_ordered_plan=unittest.mock.DEFAULT)as stages:
+                        stages['prepare_generation'].return_value=prepared
+                        stages['retrieve_skeleton'].return_value=({},(),capture)
+                        if 'reason' in spec:
+                            stages['order_retrieved_plan'].return_value=SimpleNamespace(content=None,status='CONFLICT',reason=spec['reason'])
+                        else:
+                            stages['compile_retrieved_plan'].side_effect=spec['error']
+                        body=PipelineGeneration().plan(host,worker,SimpleNamespace(run_id='r'),'view',locale=locale,
+                            effective={},prior_model_calls=1)
+                    self.assertIn('这次没能把完整方案保存'if locale=='zh'else'I could not save a complete plan',body)
+                    if detail:self.assertIn(detail,body)
+                    else:
+                        for wrong in ('之前保存','固定安排缺少','固定安排在时间','对不上','saved arrangements',
+                                      'fixed arrangement has','fixed arrangements do not fit','clashes'):
+                            self.assertNotIn(wrong,body)
+
+
 if __name__=='__main__':unittest.main()

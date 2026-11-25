@@ -295,9 +295,14 @@ final class LioTripHomeModel {
     /// Ends this trip on the phone: the profile and ticks go; saved plans and tool data stay where they are.
     /// Ending a trip that follows a saved plan remembers the plan, so a finished plan is not shown again as the
     /// current trip and the traveller gets a fresh start (#1667 review P2).
+    /// Ending a trip without a plan keeps the plans ended before, so they do not come back (#1668 review P2).
     func end(plan planID: String?) {
-        guard let planID, !planID.isEmpty, planID.utf8.count <= 256 else { return clear() }
-        let ended = Array(((cached.endedPlanIDs ?? []).filter { $0 != planID } + [planID]).suffix(LioTripHomeStore.Snapshot.maximumEndedPlans))
+        if unread { reload() }
+        var ended = cached.endedPlanIDs ?? []
+        if let planID, !planID.isEmpty, planID.utf8.count <= 256 {
+            ended = Array((ended.filter { $0 != planID } + [planID]).suffix(LioTripHomeStore.Snapshot.maximumEndedPlans))
+        }
+        guard !ended.isEmpty else { return clear() }
         write(.init(profile: nil, ticks: LioTripTicks(), endedPlanIDs: ended))
     }
 
