@@ -30,6 +30,10 @@ struct LioToolCatalogTests {
 
         let all = LioToolCatalog.visible(.init(taxi: true, currency: true, hotels: true, nearby: true))
         #expect(all == [.localSupport, .taxi, .hotels, .nearby, .currency, .metro, .payment, .translation, .phrases])
+
+        #expect(!none.contains(.transport))
+        let transport = LioToolCatalog.visible(.init(taxi: true, roadbook: true, transport: true))
+        #expect(transport == [.localSupport, .taxi, .roadbook, .transport, .metro, .payment, .translation, .phrases])
     }
 
     @Test func existingIdentifiersStayStableForAcceptanceScripts() {
@@ -41,6 +45,7 @@ struct LioToolCatalogTests {
         #expect(LioTool.translation.identifier == "lio.tools.translation")
         #expect(LioTool.phrases.identifier == "lio.tools.phrase-cards")
         #expect(LioTool.hotels.identifier == "lio.tools.hotels")
+        #expect(LioTool.transport.identifier == "lio.tools.transport")
     }
 
     @Test func accessibilityLabelReadsNameThenSummary() {
