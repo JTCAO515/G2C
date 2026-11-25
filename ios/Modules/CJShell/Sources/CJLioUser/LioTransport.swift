@@ -28,7 +28,8 @@ enum LioTransportMode: String, CaseIterable, Identifiable, Sendable {
     /// What we can and cannot promise about seats and prices; we never show live availability.
     func availabilityNote(_ language: LioLanguage) -> String {
         switch self {
-        case .rail: language.text("Seats left: check on 12306 before you go", "余票以 12306 为准")
+        case .rail: language.text("Some trains only. Seats and the full timetable: check on 12306",
+                                  "只列部分车次，余票和完整时刻以 12306 为准")
         case .flight: language.text("Prices change often; check the final price when booking", "价格随时变动，以订票页为准")
         case .bus: language.text("Times and fares: check at the bus station", "班次和票价以车站为准")
         }
