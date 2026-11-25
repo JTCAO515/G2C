@@ -3,8 +3,8 @@ import XCTest
 @MainActor final class LioTabBarUITests: XCTestCase {
     func testFourTabsAppearInOrderAndToolsStaysSelectedOnReturn() throws {
         continueAfterFailure = false
-        for (language, labels) in [("en", ["Chat", "Trips", "Tools", "Memory"]),
-                                  ("zh-Hans", ["聊天", "行程", "工具", "记忆"])] {
+        for (language, labels) in [("en", ["Chat", "Trips", "Tools", "Me"]),
+                                  ("zh-Hans", ["聊天", "行程", "工具", "我的"])] {
             let app = XCUIApplication(bundleIdentifier: "space.go2china.tab.acceptance")
             app.launchArguments = ["--lio-preview", "--lio-tab-order-acceptance", "-cj.ui.language.v1", language]
             app.launch()

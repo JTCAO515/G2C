@@ -95,9 +95,13 @@ private actor RetryTimingSample {
 }
 
 private struct RetryTimingSummary: View {
+    @State private var count = LioTimingLog().entries().count
+
     var body: some View {
-        Text(String(LioTimingLog().entries().count))
+        // Read again whenever the Me tab shows it: the tab stays alive, unlike the old chat menu sheet (#1452).
+        Text(String(count))
             .accessibilityIdentifier("fixture.timing.count")
+            .onAppear { count = LioTimingLog().entries().count }
     }
 }
 #endif

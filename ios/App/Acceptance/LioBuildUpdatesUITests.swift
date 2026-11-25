@@ -117,10 +117,7 @@ import XCTest
                 "-lio.ui.appearance.v1", "dark", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
             app.launch()
             defer { app.terminate() }
-            XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 12))
-            app.buttons["lio.menu"].tap()
-            XCTAssertTrue(app.buttons["lio.information"].waitForExistence(timeout: 5))
-            app.buttons["lio.information"].tap()
+            openInformation(app, chinese: chinese)
             for identifier in ["lio.updates.\(currentBuild).comparison.0", "lio.updates.\(currentBuild).service.0",
                                "lio.updates.\(previousBuild).changes.0"] {
                 reveal(app.textViews[identifier], app: app)
@@ -162,10 +159,7 @@ import XCTest
                                "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
         app.launch()
         defer { app.terminate() }
-        XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 12))
-        app.buttons["lio.menu"].tap()
-        XCTAssertTrue(app.buttons["lio.information"].waitForExistence(timeout: 5))
-        app.buttons["lio.information"].tap()
+        openInformation(app, chinese: chinese)
         let paragraph = app.textViews["lio.updates.\(build).\(section).0"]
         reveal(paragraph, app: app)
         XCTAssertFalse((paragraph.value as? String ?? "").isEmpty)
@@ -206,12 +200,7 @@ import XCTest
             reveal(agree, app: app)
             XCTAssertTrue(agree.isEnabled)
             agree.tap()
-            let menu = app.buttons["lio.menu"]
-            XCTAssertTrue(menu.waitForExistence(timeout: 10))
-            menu.tap()
-            let info = app.buttons["lio.information"]
-            XCTAssertTrue(info.waitForExistence(timeout: 5))
-            info.tap()
+            openInformation(app, chinese: chinese)
             XCTAssertTrue(consent.waitForExistence(timeout: 5))
             XCTAssertFalse(app.buttons["demo.invite.signin"].exists)
             let build = app.staticTexts["lio.updates.current-build"]
@@ -245,6 +234,18 @@ import XCTest
             XCTAssertTrue(info.waitForExistence(timeout: 5))
             app.terminate()
         }
+    }
+
+    /// #1452: the information page moved from the chat menu to the Me tab's settings and account rows.
+    private func openInformation(_ app: XCUIApplication, chinese: Bool) {
+        let me = app.tabBars.buttons[chinese ? "我的" : "Me"]
+        XCTAssertTrue(me.waitForExistence(timeout: 12))
+        me.tap()
+        let info = app.buttons["lio.information"]
+        XCTAssertTrue(info.waitForExistence(timeout: 5))
+        for _ in 0..<8 where !info.isHittable { app.swipeUp() }
+        XCTAssertTrue(info.isHittable, info.debugDescription)
+        info.tap()
     }
 
     private func reveal(_ element: XCUIElement, app: XCUIApplication) {

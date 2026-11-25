@@ -7,8 +7,8 @@ import CJLioUser
     func testNativeTabOrderWithToolsAndMemoryInBothLanguages() throws {
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
         let cases: [(LioLanguage, [String])] = [
-            (.english, ["Chat", "Trips", "Tools", "Memory"]),
-            (.chinese, ["聊天", "行程", "工具", "记忆"]),
+            (.english, ["Chat", "Trips", "Tools", "Me"]),
+            (.chinese, ["聊天", "行程", "工具", "我的"]),
         ]
         for (language, expected) in cases {
             let appeared = expectation(description: "Four-tab Lio Home appeared")

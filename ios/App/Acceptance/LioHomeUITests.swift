@@ -366,8 +366,9 @@ import CryptoKit
             let oldAnswer = app.staticTexts["lio.answer"]
             XCTAssertTrue(oldAnswer.waitForExistence(timeout: 8))
             XCTAssertTrue(oldAnswer.label.contains("Your earlier answer is still here."))
-            app.buttons["lio.menu"].tap()
+            showLioMe(app)
             app.buttons["fixture.read.fail"].tap()
+            showLioChat(app)
             XCUIDevice.shared.press(.home)
             app.activate()
             XCTAssertTrue(app.staticTexts["lio.read.failure"].waitForExistence(timeout: 5))
@@ -391,8 +392,9 @@ import CryptoKit
                 XCTAssertTrue(app.buttons["lio.read.retry"].isEnabled)
                 XCTAssertFalse(app.progressIndicators.firstMatch.exists)
                 try app.performAccessibilityAudit(for: .all)
-                app.buttons["lio.menu"].tap()
+                showLioMe(app)
                 app.buttons["fixture.read.restore"].tap()
+                showLioChat(app)
                 XCUIDevice.shared.press(.home)
                 app.activate()
                 XCTAssertTrue(app.staticTexts["lio.answer"].waitForExistence(timeout: 8))
@@ -576,17 +578,21 @@ import CryptoKit
             app.buttons["lio.send"].tap()
             let again = app.buttons["lio.askAgain"]
             XCTAssertTrue(again.waitForExistence(timeout: 8))
-            app.buttons["lio.menu"].tap()
+            showLioMe(app)
             let count = app.staticTexts["fixture.timing.count"]
             XCTAssertTrue(count.waitForExistence(timeout: 5))
             XCTAssertEqual(count.label, "0")
-            app.buttons[chinese ? "完成" : "Done"].tap()
+            showLioChat(app)
             again.tap()
             XCTAssertTrue(app.staticTexts["Here are some travel ideas."].waitForExistence(timeout: 8))
-            app.buttons["lio.menu"].tap()
+            showLioMe(app)
             XCTAssertTrue(count.waitForExistence(timeout: 5))
-            XCTAssertEqual(count.label, "1")
-            app.buttons[chinese ? "完成" : "Done"].tap()
+            let recorded = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", "1"), object: count)
+            XCTAssertEqual(XCTWaiter.wait(for: [recorded], timeout: 8), .completed, count.label)
+            showLioChat(app)
+            // Same chat-page audit as before #1452; wait for the tab switch to settle before sampling (#1501).
+            XCTAssertTrue(app.staticTexts["Here are some travel ideas."].waitForExistence(timeout: 8))
+            _ = XCTWaiter.wait(for: [XCTestExpectation(description: "settle after tab switch")], timeout: 1.5)
             try app.performAccessibilityAudit(for: .all)
             let image = XCTAttachment(screenshot: app.screenshot())
             image.name = "retry-timing-" + language
@@ -762,11 +768,12 @@ import CryptoKit
             let dark = chinese ? "深色" : "Dark"
             let light = chinese ? "浅色" : "Light"
             let system = chinese ? "跟随系统" : "System"
-            let done = chinese ? "完成" : "Done"
             app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language]
             app.launch()
-            XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 12))
-            app.buttons["lio.menu"].tap()
+            // #1452: language and appearance moved from the chat menu to the Me tab.
+            let me = app.tabBars.buttons[chinese ? "我的" : "Me"]
+            XCTAssertTrue(me.waitForExistence(timeout: 12))
+            me.tap()
             let appearance = app.buttons["lio.appearance"]
             let languagePicker = app.buttons["lio.language"]
             XCTAssertTrue(appearance.waitForExistence(timeout: 8))
@@ -774,7 +781,6 @@ import CryptoKit
             appearance.tap()
             app.buttons[dark].tap()
             XCTAssertTrue(appearance.label.contains(dark), appearance.debugDescription)
-            app.buttons[done].tap()
             let darkCapture = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
             darkCapture.name = "Lio-dark-" + language
             darkCapture.lifetime = .keepAlways
@@ -782,8 +788,9 @@ import CryptoKit
 
             app.terminate()
             app.launch()
-            XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 12))
-            app.buttons["lio.menu"].tap()
+            XCTAssertTrue(me.waitForExistence(timeout: 12))
+            me.tap()
+            XCTAssertTrue(appearance.waitForExistence(timeout: 8))
             XCTAssertTrue(appearance.label.contains(dark), appearance.debugDescription)
             let menuCapture = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
             menuCapture.name = "Lio-appearance-menu-" + language
@@ -792,13 +799,14 @@ import CryptoKit
             appearance.tap()
             app.buttons[light].tap()
             XCTAssertTrue(appearance.label.contains(light), appearance.debugDescription)
-            app.buttons[done].tap()
             let lightCapture = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
             lightCapture.name = "Lio-light-" + language
             lightCapture.lifetime = .keepAlways
             add(lightCapture)
-            app.buttons["lio.menu"].tap()
+            XCTAssertTrue(appearance.waitForExistence(timeout: 5))
             appearance.tap()
+            if !app.buttons[system].waitForExistence(timeout: 3) { appearance.tap() }
+            XCTAssertTrue(app.buttons[system].waitForExistence(timeout: 5))
             app.buttons[system].tap()
             XCTAssertTrue(appearance.label.contains(system), appearance.debugDescription)
             app.terminate()
@@ -884,7 +892,7 @@ import CryptoKit
         enterSampleQuestion(in: app, index: 0); app.buttons["lio.send"].tap()
         XCTAssertTrue(app.staticTexts["A separate reply."].waitForExistence(timeout: 12))
         composer.tap(); composer.typeText("My unsent follow-up")
-        menu.tap(); app.buttons["synthetic.chat.recreate"].tap()
+        showLioMe(app); app.buttons["synthetic.chat.recreate"].tap(); showLioChat(app)
         XCTAssertTrue(app.staticTexts["A separate reply."].waitForExistence(timeout: 12), app.debugDescription)
         XCTAssertFalse(app.staticTexts["An earlier reply."].exists)
         XCTAssertEqual(composer.value as? String, "My unsent follow-up")
@@ -920,7 +928,7 @@ import CryptoKit
         menu.tap(); app.buttons["lio.chat.new"].tap()
         XCTAssertTrue(app.buttons["lio.example.0"].waitForExistence(timeout: 8))
         enterSampleQuestion(in: app, index: 0); app.buttons["lio.send"].tap()
-        menu.tap(); app.buttons["synthetic.chat.recreate"].tap()
+        showLioMe(app); app.buttons["synthetic.chat.recreate"].tap(); showLioChat(app)
         let service = english ? "Our service is having a problem or is under maintenance. This isn’t your connection."
                               : "服务暂时出错或正在维护，不是你的网络问题。"
         XCTAssertTrue(app.staticTexts[service].waitForExistence(timeout: 12), app.debugDescription)
@@ -1184,8 +1192,7 @@ import CryptoKit
         ask(chinese ? "我适合住哪种酒店" : "What kind of hotel suits me?")
         reply(chinese ? "你喜欢安静的酒店。" : "You like quiet hotels.")
 
-        let memory = app.tabBars.buttons[chinese ? "记忆" : "Memory"]
-        memory.tap()
+        openLioMemory(app, chinese: chinese)
         let preference = chinese ? "你喜欢安静的酒店" : "You like quiet hotels"
         let editedPreference = chinese ? "你喜欢安静且靠近地铁的酒店" : "You like quiet hotels near the metro"
         let otherPreference = chinese ? "你偏好靠过道的座位" : "You prefer an aisle seat"
@@ -1240,6 +1247,7 @@ import CryptoKit
         XCTAssertTrue(otherMemory.waitForExistence(timeout: 8))
         XCTAssertEqual(otherMemory.value as? String, otherPreference)
         XCTAssertFalse(app.buttons["lio.memory.card.quiet-hotel"].exists)
+        closeLioMemory(app)
         chat.tap()
         ask(chinese ? "再说说我适合住哪种酒店" : "Remind me what kind of hotel suits me")
         reply(chinese ? "你喜欢什么样的酒店？" : "Tell me what kind of hotel you like.")
@@ -1318,9 +1326,7 @@ import CryptoKit
                     app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
                 }
                 app.launch()
-                let memory = app.tabBars.buttons[chinese ? "记忆" : "Memory"]
-                XCTAssertTrue(memory.waitForExistence(timeout: 12))
-                memory.tap()
+                openLioMemory(app, chinese: chinese)
                 let card = app.buttons["lio.memory.card.aisle-seat"]
                 XCTAssertTrue(card.waitForExistence(timeout: 8))
                 let original = chinese ? "你偏好靠过道的座位" : "You prefer an aisle seat"
@@ -1363,9 +1369,7 @@ import CryptoKit
                                    "--lio-memory-titled-acceptance", "-cj.ui.language.v1", language,
                                    "-lio.ui.appearance.v1", appearance]
             app.launch()
-            let memory = app.tabBars.buttons[chinese ? "记忆" : "Memory"]
-            XCTAssertTrue(memory.waitForExistence(timeout: 12))
-            memory.tap()
+            openLioMemory(app, chinese: chinese)
             let card = app.buttons["lio.memory.card.quiet-hotel"]
             XCTAssertTrue(card.waitForExistence(timeout: 8))
             let original = try XCTUnwrap(card.value as? String)
@@ -1408,9 +1412,7 @@ import CryptoKit
                                    "--lio-memory-titled-acceptance", "--lio-memory-titled-invalid-acceptance",
                                    "-cj.ui.language.v1", language]
             app.launch()
-            let memory = app.tabBars.buttons[chinese ? "记忆" : "Memory"]
-            XCTAssertTrue(memory.waitForExistence(timeout: 12))
-            memory.tap()
+            openLioMemory(app, chinese: chinese)
             XCTAssertTrue(app.staticTexts[chinese ? "暂时看不到你的记忆，下拉再试一次。"
                 : "Couldn’t show your memories. Pull down to try again."].waitForExistence(timeout: 8))
             XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "lio.memory.card.")).count, 0)
@@ -1431,9 +1433,7 @@ import CryptoKit
                     app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
                 }
                 app.launch()
-                let tab = app.tabBars.buttons[chinese ? "记忆" : "Memory"]
-                XCTAssertTrue(tab.waitForExistence(timeout: 12))
-                tab.tap()
+                openLioMemory(app, chinese: chinese)
                 let first = app.buttons["lio.memory.card.aisle-seat"]
                 let second = app.buttons["lio.memory.card.city-walks"]
                 XCTAssertTrue(first.waitForExistence(timeout: 8), app.debugDescription)
@@ -2238,7 +2238,7 @@ import CryptoKit
             }
             XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: settled, object: nil)], timeout: 12), .completed)
             try app.performAccessibilityAudit(for: .all)
-            app.buttons["lio.menu"].tap()
+            showLioMe(app)
             let stored = app.staticTexts["fixture.finished-timings"]
             XCTAssertTrue(stored.waitForExistence(timeout: 5))
             XCTAssertEqual(stored.label, "1")
@@ -2265,12 +2265,12 @@ import CryptoKit
         copyOpening.tap()
         XCTAssertTrue(copyOpening.waitForNonExistence(timeout: 5))
         func copiedDigest() -> String? {
-            app.buttons["lio.menu"].tap()
+            showLioMe(app)
             let probe = app.buttons["fixture.clipboard.probe"]
             XCTAssertTrue(probe.waitForExistence(timeout: 5))
             probe.tap()
             let digest = app.staticTexts["fixture.clipboard.digest"].value as? String
-            app.buttons["Done"].tap()
+            showLioChat(app)
             XCTAssertTrue(probe.waitForNonExistence(timeout: 5))
             return digest
         }
@@ -2384,7 +2384,7 @@ import CryptoKit
         func count(_ expected: Int, last: String? = nil) throws -> String {
             let menu = app.buttons["lio.menu"]
             ready(menu)
-            menu.tap()
+            showLioMe(app)
             let value = app.staticTexts["fixture.send-count"]
             XCTAssertTrue(value.waitForExistence(timeout: 5))
             XCTAssertEqual(value.label, String(expected))
@@ -2393,8 +2393,10 @@ import CryptoKit
             if let last { XCTAssertEqual(app.staticTexts["fixture.last-text"].label, last) }
             XCTAssertEqual(app.staticTexts["fixture.finished-timings"].label, String(expected))
             XCTAssertEqual(app.staticTexts["fixture.finished-timings"].value as? String, "complete")
-            try audit()
-            app.buttons[chinese ? "完成" : "Done"].tap()
+            // Before #1452 this audit covered the chat menu sheet, which only held these fixture rows. That sheet is
+            // gone; the rows sit in the Me tab, whose audit is #1496. The chat page is audited below without any
+            // tolerance. An audit right after switching tabs reported contrast on settled text (#1501), so none here.
+            showLioChat(app)
             XCTAssertTrue(value.waitForNonExistence(timeout: 5))
             ready(menu)
             return "lio.exploration." + messageID
@@ -2821,7 +2823,7 @@ import CryptoKit
   XCTAssertTrue(pending.waitForExistence(timeout:10),app.debugDescription)
   XCTAssertEqual(third.label,chinese ? "第 3 天":"Day 3")
   captureCalendarWire(app,"calendar-http-undone",chinese)
-  chat.tap(); app.buttons["lio.menu"].tap()
+  showLioMe(app)
   let counts = app.staticTexts["fixture.counts"]
   XCTAssertTrue(counts.waitForExistence(timeout:5))
   XCTAssertEqual(counts.label,"sends=2 undoPosts=1 undoReads=1 details=3")
@@ -2837,4 +2839,44 @@ import CryptoKit
 @MainActor private final class LioClipboardSnapshot {
     private let items = UIPasteboard.general.items
     func restore() { UIPasteboard.general.items = items }
+}
+
+/// #1452: Memory moved from its own tab into Me, where it opens as a sheet with a Done button.
+@MainActor private func openLioMemory(_ app: XCUIApplication, chinese: Bool) {
+    let me = app.tabBars.buttons[chinese ? "我的" : "Me"]
+    XCTAssertTrue(me.waitForExistence(timeout: 12))
+    me.tap()
+    let entry = app.buttons["lio.me.memory"]
+    XCTAssertTrue(entry.waitForExistence(timeout: 8))
+    entry.tap()
+}
+
+/// Close the Memory sheet before switching tabs, if it is open.
+@MainActor private func closeLioMemory(_ app: XCUIApplication) {
+    let done = app.buttons["lio.me.memory.done"]
+    guard done.exists else { return }
+    XCTAssertTrue(done.isHittable, done.debugDescription)
+    done.tap()
+}
+
+/// #1452: fixture controls passed to Lio as the menu content now show in the Me tab, not in the chat menu.
+/// Matched by label in both languages; the Tools tab is absent in some previews, so positions vary.
+@MainActor private func showLioMe(_ app: XCUIApplication) {
+    // The keyboard covers the tab bar: the chat menu button ends typing, then its sheet is closed again.
+    if app.keyboards.firstMatch.exists, app.buttons["lio.menu"].exists {
+        app.buttons["lio.menu"].tap()
+        let done = app.navigationBars.buttons.matching(NSPredicate(format: "label IN %@", ["Done", "完成"])).firstMatch
+        XCTAssertTrue(done.waitForExistence(timeout: 5), app.debugDescription)
+        done.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 5))
+    }
+    let me = app.tabBars.buttons.matching(NSPredicate(format: "label IN %@", ["Me", "我的"])).firstMatch
+    XCTAssertTrue(me.waitForExistence(timeout: 12), app.debugDescription)
+    me.tap()
+}
+
+@MainActor private func showLioChat(_ app: XCUIApplication) {
+    let chat = app.tabBars.buttons.matching(NSPredicate(format: "label IN %@", ["Chat", "聊天"])).firstMatch
+    XCTAssertTrue(chat.waitForExistence(timeout: 12), app.debugDescription)
+    chat.tap()
 }

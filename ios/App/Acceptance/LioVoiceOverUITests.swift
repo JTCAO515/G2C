@@ -84,14 +84,15 @@ import XCTest
             XCTAssertEqual(jointQuestions.count, 1)
 
             func readCount(_ expected: Int) throws -> String {
-                try activate(app.buttons["lio.menu"], spokenLabel: chinese ? "菜单" : "Menu")
+                // #1452: fixture controls moved from the chat menu to the Me tab.
+                try activate(app.tabBars.buttons.matching(NSPredicate(format: "label IN %@", ["Me", "我的"])).firstMatch, spokenLabel: chinese ? "我的" : "Me")
                 let count = app.staticTexts["fixture.send-count"]
                 XCTAssertTrue(count.waitForExistence(timeout: 8))
                 let exact = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", String(expected)), object: count)
                 XCTAssertEqual(XCTWaiter.wait(for: [exact], timeout: 8), .completed)
                 let id = try XCTUnwrap(count.value as? String)
                 XCTAssertFalse(id.isEmpty)
-                try activate(app.buttons[chinese ? "完成" : "Done"], spokenLabel: chinese ? "完成" : "Done")
+                try activate(app.tabBars.buttons.matching(NSPredicate(format: "label IN %@", ["Chat", "聊天"])).firstMatch, spokenLabel: chinese ? "聊天" : "Chat")
                 XCTAssertTrue(count.waitForNonExistence(timeout: 8))
                 return id
             }
