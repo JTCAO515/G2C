@@ -13,6 +13,9 @@ The key comes only from CJ_MODEL_API_KEY and is never printed.
 Usage:
   CJ_MODEL_API_KEY=... python -m eval.lio_entry_judge validate <acceptance.json> [--limit N]
   CJ_MODEL_API_KEY=... python -m eval.lio_entry_judge score <answers.json>
+
+JT 2026-11-26 chose option A: score only flags entry answers for human review; it is
+never a pass/fail gate and has no pass rate.
 """
 import argparse
 import json
@@ -172,18 +175,30 @@ def validate(rows, judge):
 
 
 def score_answers(answers, judge):
-    """entry_facts per entry case: True when the judge finds no contradiction."""
-    results, missing = {}, []
+    """Flag entry answers for human review (JT 2026-11-26, option A: flag only, never a gate).
+
+    Each entry case is consistent, flagged (with the contradicting sentence) or judge_failed.
+    There is no pass rate: the judge is not reliable enough to decide on its own
+    (acceptance 2026-11-26: 0.93-0.96 with both false alarms and misses).
+    """
+    cases, missing, review = {}, [], []
     for case, code in sorted(ENTRY_CASES.items()):
         if case not in answers:
             missing.append(case)
             continue
         value = answers[case]
         text = value['text'] if isinstance(value, dict) else value
-        contradicts, _ = judge(code, text)
-        results[case] = not contradicts
-    return dict(entry_facts=results, rate=round(sum(results.values()) / len(results), 3) if results else None,
-                missing=missing)
+        try:
+            contradicts, sentence = judge(code, text)
+        except Exception as error:  # a failed judgement is reviewed by a person, never a pass or fail
+            cases[case] = dict(status='judge_failed', error=type(error).__name__)
+            review.append(case)
+            continue
+        cases[case] = dict(status='flagged', sentence=sentence) if contradicts else dict(status='consistent')
+        if contradicts:
+            review.append(case)
+    return dict(cases=cases, flagged_for_review=review, missing=missing,
+                note='Model flags for human review only; not counted in any pass rate (JT 2026-11-26).')
 
 
 def main(argv=None):

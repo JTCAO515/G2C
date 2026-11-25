@@ -104,17 +104,27 @@ class EntryJudge(unittest.TestCase):
         self.assertEqual((unsure['judged'], unsure['ungrounded'], unsure['malformed']), (3, 1, 0))
         self.assertEqual(unsure['ungrounded_rows'], [dict(country='GB', text='ok')])
 
-    def test_score_answers_judges_only_entry_cases(self):
+    def test_score_only_flags_answers_for_human_review(self):
+        # JT 2026-11-26 chose A: the judge flags for human review and never gates a pass rate.
         seen = []
         def judge(country, text):
             seen.append(country)
+            if text == 'boom':
+                raise Ungrounded('no rule')
             return ('needs a visa' in text, 'needs a visa' if 'needs a visa' in text else '')
         answers = {'visa-uk-en': 'A plain 10-day trip needs a visa.', 'transit-visa-zh': dict(text='可以跨省。'),
                    'alipay-zh': '绑卡。'}
         result = score_answers(answers, judge)
         self.assertEqual(sorted(seen), ['GB', 'US'])
-        self.assertEqual(result['entry_facts'], {'transit-visa-zh': True, 'visa-uk-en': False})
-        self.assertEqual(result['rate'], 0.5)
+        self.assertEqual(result['cases'], {'transit-visa-zh': dict(status='consistent'),
+                                           'visa-uk-en': dict(status='flagged', sentence='needs a visa')})
+        self.assertEqual(result['flagged_for_review'], ['visa-uk-en'])
+        for gate in ('rate', 'entry_facts', 'passed'):
+            self.assertNotIn(gate, result)
+        self.assertIn('human review', result['note'])
+        failed = score_answers({'visa-uk-en': 'boom'}, judge)
+        self.assertEqual(failed['cases']['visa-uk-en'], dict(status='judge_failed', error='Ungrounded'))
+        self.assertEqual(failed['flagged_for_review'], ['visa-uk-en'])
         self.assertEqual(score_answers({'alipay-zh': 'x'}, judge)['missing'], ['transit-visa-zh', 'visa-uk-en'])
 
     def test_model_calls_retry_transient_failures(self):
