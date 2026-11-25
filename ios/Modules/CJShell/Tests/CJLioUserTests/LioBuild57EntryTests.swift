@@ -31,8 +31,11 @@ struct LioBuild57EntryTests {
         let before = LioToolCatalog.visible(.init(taxi: true, currency: true, hotels: true, nearby: true, roadbook: true,
                                                   transport: true))
         let after = LioToolCatalog.visible(.init(taxi: true, currency: true, hotels: true, nearby: true, roadbook: true,
-                                                 transport: true, arrival: true, attractionBooking: true))
-        #expect(after.filter { $0 != .arrival && $0 != .attractionBooking } == before)
+                                                 transport: true, arrival: true, attractionBooking: true, menuOrder: true,
+                                                 returnHotel: true))
+        let added: Set<LioTool> = [.arrival, .attractionBooking, .menuOrder, .returnHotel]
+        #expect(after.filter { !added.contains($0) } == before)
+        #expect(Array(after.prefix(2)) == [.returnHotel, .arrival])
         #expect(after.firstIndex(of: .attractionBooking) == after.firstIndex(of: .transport).map { $0 + 1 })
     }
 
@@ -62,6 +65,9 @@ struct LioBuild57EntryTests {
         #expect(LioToolCatalog.arrivalPlan([plan("past", "2026-11-20"), plan("undated", nil)], today: today)?.tripID == "past")
         #expect(LioToolCatalog.arrivalPlan([plan("today", "2026-12-01")], today: today)?.tripID == "today")
         #expect(LioToolCatalog.arrivalPlan([], today: today) == nil)
+        // Same first day: the one saved most recently (listed first).
+        let tie = [plan("newer", "2026-12-05"), plan("older", "2026-12-05")]
+        #expect(LioToolCatalog.arrivalPlan(tie, today: today)?.tripID == "newer")
     }
 
     @Test func flagValuesOtherThanYESKeepEverythingOff() {

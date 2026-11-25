@@ -28,6 +28,7 @@ struct LioToolsView: View {
         available.roadbook = LioRoadbookFeature.enabled(infoValue: Bundle.main.object(forInfoDictionaryKey: "G2CRoadbookEnabled"))
         available.transport = LioTransportService.fromBuild() != nil
         available.menuOrder = menuService != nil
+        available.returnHotel = LioReturnHotelTools.shownInTools
         available.arrival = LioArrivalFeature.enabled(infoValue: Bundle.main.object(forInfoDictionaryKey: LioArrivalFeature.infoKey))
         available.attractionBooking = LioAttractionBookingFeature.enabled(
             infoValue: Bundle.main.object(forInfoDictionaryKey: LioAttractionBookingFeature.infoKey))
@@ -151,6 +152,9 @@ struct LioToolsView: View {
             if let service = LioTransportService.fromBuild() {
                 LioTransportView(language: language, service: service)
             }
+        case .returnHotel:
+            LioReturnHotelTools.page(language: language, roadbookDirectory: roadbookDirectory, taxiEntry: taxiEntry,
+                                     isCurrent: sessionIsCurrent)
         case .arrival:
             LioArrivalView(language: language, hotels: arrivalTrip?.hotels ?? [], arrival: arrivalTrip?.arrival)
         case .attractionBooking:
@@ -165,6 +169,9 @@ struct LioToolsView: View {
         case .hotels:
             if let hotelSearch {
                 LioHotelOffersView(language: language, finder: hotelSearch)
+                    // "Set as my hotel" saves to Back to Hotel only while that tool is shown.
+                    .environment(\.lioReturnHotelStore, LioReturnHotelTools.storeForHotelSearch(
+                        shown: availability.returnHotel, roadbookDirectory: roadbookDirectory, isCurrent: sessionIsCurrent))
             } else {
                 hotelLinks
             }
