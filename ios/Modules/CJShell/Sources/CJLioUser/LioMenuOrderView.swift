@@ -4,6 +4,19 @@ import PhotosUI
 import SwiftUI
 import UIKit
 
+private struct LioMenuServiceKey: EnvironmentKey {
+    static let defaultValue: LioMenuService? = nil
+}
+
+extension EnvironmentValues {
+    /// Set by the host only when the build enables menu ordering (`G2CMenuOrderEnabled`, or Debug's
+    /// `--lio-menu-preview`); the Tools card is hidden while it is `nil`.
+    var lioMenuService: LioMenuService? {
+        get { self[LioMenuServiceKey.self] }
+        set { self[LioMenuServiceKey.self] = newValue }
+    }
+}
+
 /// Menu ordering (点餐模式): photograph a menu, read each dish with dietary flags, then show staff a Chinese
 /// order card. Behind `G2CMenuOrderEnabled`, hidden by default.
 struct LioMenuOrderView: View {
