@@ -18,10 +18,14 @@ struct LioCopyTests {
         }
     }
 
-    private func resourceStrings(_ value: Any) -> [String] {
+    /// Strings a resource shows. `skipping` leaves out proper names, such as metro station names
+    /// (Xi'an's 龙首原 is a place, not the banned "原操作").
+    private func resourceStrings(_ value: Any, skipping keys: Set<String> = []) -> [String] {
         if let text = value as? String { return [text] }
-        if let array = value as? [Any] { return array.flatMap(resourceStrings) }
-        if let object = value as? [String: Any] { return object.values.flatMap(resourceStrings) }
+        if let array = value as? [Any] { return array.flatMap { resourceStrings($0, skipping: keys) } }
+        if let object = value as? [String: Any] {
+            return object.filter { !keys.contains($0.key) }.values.flatMap { resourceStrings($0, skipping: keys) }
+        }
         return []
     }
 
@@ -47,7 +51,8 @@ struct LioCopyTests {
             let text = try String(contentsOf: file, encoding: .utf8)
             if file.pathExtension == "json" {
                 let object = try JSONSerialization.jsonObject(with: Data(text.utf8))
-                return resourceStrings(object).filter { value in
+                let names: Set<String> = file.lastPathComponent.hasPrefix("LioMetroMap.") ? ["nameZH", "nameEN"] : []
+                return resourceStrings(object, skipping: names).filter { value in
                     vocabulary.firstMatch(in: value, range: NSRange(value.startIndex..., in: value)) != nil
                 }.map { "\(file.lastPathComponent): \($0)" }
             }
