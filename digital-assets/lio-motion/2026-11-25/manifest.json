@@ -1,0 +1,60 @@
+{
+  "asset": "Lio 状态视频 · 三段试片",
+  "source": "基于 JT 认可的高清原件，Codex 内置图像生成九个完整姿势，ffmpeg 编码",
+  "files": {
+    "lio-greeting-still.png": {
+      "bytes": 300692,
+      "sha256": "26878da9eba3876442bb22308d6d4886f56a84b3c3bd989c828322cffc89d1aa",
+      "width": 720,
+      "height": 720
+    },
+    "lio-greeting.mp4": {
+      "bytes": 691330,
+      "sha256": "fe31196310ad289ceb0170d00647cde803b1849c50cebdc8d3b0d55336972573",
+      "width": 720,
+      "height": 720,
+      "fps": 30,
+      "codec": "h264",
+      "duration_ms": 1600,
+      "frames": 48
+    },
+    "lio-searching-still.png": {
+      "bytes": 292294,
+      "sha256": "b0e40916b4fa632c1ba9ce20edb438ba52cbc57f7339a8154366dbc0ad2a2ed4",
+      "width": 720,
+      "height": 720
+    },
+    "lio-searching.mp4": {
+      "bytes": 681268,
+      "sha256": "fa50045f38ccc62d619339ea8e7e5419c62eb053b0b67bbc7093472207314eca",
+      "width": 720,
+      "height": 720,
+      "fps": 30,
+      "codec": "h264",
+      "duration_ms": 1600,
+      "frames": 48
+    },
+    "lio-thinking-still.png": {
+      "bytes": 303931,
+      "sha256": "0455eec4ae3305b01a37e6422a18da40390766361a2659bed2c7ac0163bb3d66",
+      "width": 720,
+      "height": 720
+    },
+    "lio-thinking.mp4": {
+      "bytes": 707704,
+      "sha256": "d883903a0f3a12d1b856ffb86543299dfa01bef5586684032df6f2e2c7c4b067",
+      "width": 720,
+      "height": 720,
+      "fps": 30,
+      "codec": "h264",
+      "duration_ms": 1600,
+      "frames": 48
+    },
+    "lio-video-preview.png": {
+      "bytes": 195348,
+      "sha256": "1bd89f4d946e7fab06317e3f47e7e8a43e93c3c8264c4efb370a1b98d833c692",
+      "width": 948,
+      "height": 332
+    }
+  }
+}
