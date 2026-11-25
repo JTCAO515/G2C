@@ -204,6 +204,9 @@ struct LioTransportResultTests {
             let note = LioTransportMode.rail.availabilityNote(language)
             #expect(note.contains("12306"))
         }
+        // AMap lists a few trains around the morning only (#1521 smoke): never present it as the full timetable.
+        #expect(LioTransportMode.rail.availabilityNote(.chinese).contains("部分车次"))
+        #expect(LioTransportMode.rail.availabilityNote(.english).localizedStandardContains("some trains"))
         #expect(LioTransportMode.flight.availabilityNote(.english).localizedStandardContains("change"))
         #expect(!LioTransportMode.bus.availabilityNote(.chinese).isEmpty)
     }
