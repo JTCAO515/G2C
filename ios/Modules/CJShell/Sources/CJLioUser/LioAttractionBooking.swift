@@ -149,4 +149,9 @@ extension LioAttractionBookingRule {
 enum LioAttractionBookingFeature {
     static let infoKey = "G2CAttractionBookingEnabled"
     static func enabled(infoValue: Any?) -> Bool { infoValue as? String == "YES" }
+
+    #if DEBUG
+    /// Debug builds show the card with `--lio-attraction-booking-preview`, whatever the build flag says.
+    static var previewRequested: Bool { ProcessInfo.processInfo.arguments.contains("--lio-attraction-booking-preview") }
+    #endif
 }

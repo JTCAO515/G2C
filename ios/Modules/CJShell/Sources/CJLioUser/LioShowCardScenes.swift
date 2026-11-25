@@ -102,8 +102,8 @@ enum LioShowCardKind: String, CaseIterable, Identifiable, Sendable {
         case .extendStay: [.nights, .roomNumber]
         case .luggage: [.roomNumber, .pickUpTime]
         case .callTaxi: [.destination]
-        case .symptoms: [.symptoms, .symptomDays]
-        case .sameMedicine: [.medicineName]
+        case .symptoms: [.symptoms, .symptomDays, .conditions]
+        case .sameMedicine: [.medicineName, .conditions]
         case .drugAllergy: [.drugAllergies]
         case .noChilli: [.spice]
         case .foodAllergy: [.foodAllergies]
@@ -161,14 +161,17 @@ enum LioShowCardKind: String, CaseIterable, Identifiable, Sendable {
             }
             return card
         case .symptoms:
-            var card = LioShowCardContent(mainZH: "您好，我有以下症状：", english: ["Hello, I have these symptoms:"])
             let symptoms = LioSymptom.allCases.filter(input.symptoms.contains)
+            var card = symptoms.isEmpty
+                ? LioShowCardContent(mainZH: "您好，我身体不太舒服。", english: ["Hello, I'm not feeling well."])
+                : LioShowCardContent(mainZH: "您好，我有以下症状：", english: ["Hello, I have these symptoms:"])
             card.detailsZH += symptoms.map(\.chinese)
             card.english += symptoms.map(\.english)
             if let days = input.symptomDays {
                 card.detailsZH.append(days.chinese)
                 card.english.append(days.english)
             }
+            card.addConditions(input)
             card.detailsZH.append("请问有适合的非处方药吗？")
             card.english.append("Is there an over-the-counter product that might help?")
             return card.withPharmacyNote()
@@ -179,11 +182,18 @@ enum LioShowCardKind: String, CaseIterable, Identifiable, Sendable {
                 card.detailsZH.append("药名或成分：" + name)
                 card.english.append("Name or ingredient: " + name)
             }
+            card.addConditions(input)
             return card.withPharmacyNote()
         case .drugAllergy:
+            let allergies = LioDrugAllergen.allCases.filter(input.drugAllergies.contains)
+            guard !allergies.isEmpty else {
+                return LioShowCardContent(mainZH: "我对某些药物过敏。", detailsZH: ["给我药之前，请先跟我确认成分。"],
+                                          english: ["I'm allergic to some medicines.",
+                                                    "Please check the ingredients with me before giving me any medicine."])
+                    .withPharmacyNote()
+            }
             var card = LioShowCardContent(mainZH: "我对以下药物过敏，请帮我避开：",
                                           english: ["I'm allergic to these medicines. Please help me avoid them:"])
-            let allergies = LioDrugAllergen.allCases.filter(input.drugAllergies.contains)
             card.detailsZH += allergies.map(\.chinese)
             card.english += allergies.map(\.english)
             return card.withPharmacyNote()
@@ -198,6 +208,10 @@ enum LioShowCardKind: String, CaseIterable, Identifiable, Sendable {
             }
         case .foodAllergy:
             let allergies = LioFoodAllergen.allCases.filter(input.foodAllergies.contains)
+            guard !allergies.isEmpty else {
+                return LioShowCardContent(mainZH: "我对某些食物过敏，请先跟我确认配料。", detailsZH: ["谢谢！"],
+                                          english: ["I have food allergies. Please check the ingredients with me first. Thank you!"])
+            }
             return LioShowCardContent(
                 mainZH: "我对以下食物过敏，请不要放，包括调料、酱汁和高汤：",
                 detailsZH: allergies.map(\.chinese),
@@ -234,7 +248,7 @@ enum LioShowCardKind: String, CaseIterable, Identifiable, Sendable {
             if let amount = input.cleanAmount {
                 return LioShowCardContent(mainZH: "您好，我想把 \(amount) \(currency.chinese)换成人民币。",
                                           detailsZH: ["这是我的护照。"],
-                                          english: ["Hello, I'd like to exchange \(amount) \(currency.english) for Chinese yuan.", "Here is my passport."])
+                                          english: ["Hello, I'd like to exchange \(amount) \(currency.english(amount: amount)) for Chinese yuan.", "Here is my passport."])
             }
             return LioShowCardContent(mainZH: "您好，我想把\(currency.chinese)换成人民币。",
                                       detailsZH: ["这是我的护照。"],
@@ -251,22 +265,44 @@ enum LioShowCardKind: String, CaseIterable, Identifiable, Sendable {
             return card
         case .foreignCardATM:
             return LioShowCardContent(mainZH: "您好，请问这里的 ATM 可以用外国银行卡取人民币吗？",
-                                      detailsZH: ["我的卡是 Visa 或 Mastercard。"],
+                                      detailsZH: ["我的卡是外国银行卡（比如 Visa、Mastercard）。"],
                                       english: ["Hello, can I withdraw Chinese yuan with a foreign bank card at this ATM?",
-                                                "My card is Visa or Mastercard."])
+                                                "My card is from a foreign bank (for example Visa or Mastercard)."])
         }
     }
 }
 
 enum LioShowCardField: String, CaseIterable, Sendable {
     case bookingName, nights, roomNumber, pickUpTime, destination
-    case symptoms, symptomDays, medicineName, drugAllergies
+    case symptoms, symptomDays, conditions, medicineName, drugAllergies
     case spice, foodAllergies
     case place, nearest, hotel
     case amount, currency, atmLocation
 }
 
 private extension LioShowCardContent {
+    /// Pregnancy, breastfeeding or a child's medicine: shown only when the traveller ticks them (JT, 2026-11-25).
+    mutating func addConditions(_ input: LioShowCardInput) {
+        for condition in LioPharmacyCondition.allCases where input.conditions.contains(condition) {
+            switch condition {
+            case .pregnant:
+                detailsZH.append("我怀孕了。")
+                english.append("I'm pregnant.")
+            case .breastfeeding:
+                detailsZH.append("我在哺乳期。")
+                english.append("I'm breastfeeding.")
+            case .forChild:
+                if let age = input.cleanChildAge {
+                    detailsZH.append("这是给孩子用的，孩子 \(age) 岁。")
+                    english.append("This is for a child aged \(age).")
+                } else {
+                    detailsZH.append("这是给孩子用的。")
+                    english.append("This is for a child.")
+                }
+            }
+        }
+    }
+
     func withPharmacyNote() -> Self {
         var card = self
         card.noteZH = "本卡只说明症状和需求，不是诊断。用药请遵医嘱、咨询药师。"
@@ -293,6 +329,8 @@ struct LioShowCardInput: Equatable, Sendable {
     var symptoms: Set<LioSymptom> = []
     var symptomDays: LioSymptomDays?
     var medicineName: String?
+    var conditions: Set<LioPharmacyCondition> = []
+    var childAge: String?
     var drugAllergies: Set<LioDrugAllergen> = []
     var spice = LioSpiceLevel.none
     var foodAllergies: Set<LioFoodAllergen> = []
@@ -315,6 +353,13 @@ struct LioShowCardInput: Equatable, Sendable {
     var cleanMedicineName: String? { Self.clean(medicineName) }
     var cleanPlace: String? { Self.clean(placeZH) }
     var cleanATMLocation: String? { Self.clean(atmLocation) }
+    /// A child's age in whole years, 0–17.
+    var cleanChildAge: String? {
+        guard let value = Self.clean(childAge), value.count <= 2, value.allSatisfy({ $0.isASCII && $0.isNumber }),
+              let years = Int(value), years < 18 else { return nil }
+        return String(years)
+    }
+
     /// Digits, a decimal point and thousands separators only.
     var cleanAmount: String? {
         guard let value = Self.clean(amount),
@@ -386,7 +431,19 @@ enum LioSymptomDays: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
-enum LioDrugAllergen: String, CaseIterable, Identifiable, Sendable {
+enum LioPharmacyCondition: String, CaseIterable, Codable, Identifiable, Sendable {
+    case pregnant, breastfeeding, forChild
+    var id: Self { self }
+    func title(_ language: LioLanguage) -> String {
+        switch self {
+        case .pregnant: language.text("I'm pregnant", "我怀孕了")
+        case .breastfeeding: language.text("I'm breastfeeding", "我在哺乳期")
+        case .forChild: language.text("It's for a child", "给孩子用")
+        }
+    }
+}
+
+enum LioDrugAllergen: String, CaseIterable, Codable, Identifiable, Sendable {
     case penicillin, cephalosporins, sulfa, aspirin, ibuprofen, codeine
     var id: Self { self }
     var chinese: String {
@@ -411,7 +468,7 @@ enum LioDrugAllergen: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
-enum LioSpiceLevel: String, CaseIterable, Identifiable, Sendable {
+enum LioSpiceLevel: String, CaseIterable, Codable, Identifiable, Sendable {
     case none, mild
     var id: Self { self }
     func title(_ language: LioLanguage) -> String {
@@ -423,7 +480,7 @@ enum LioSpiceLevel: String, CaseIterable, Identifiable, Sendable {
 }
 
 /// Food allergens for the restaurant card. To be shared with the ordering line's card for the waiter.
-enum LioFoodAllergen: String, CaseIterable, Identifiable, Sendable {
+enum LioFoodAllergen: String, CaseIterable, Codable, Identifiable, Sendable {
     case peanut, treeNuts, shellfish, fish, egg, milk, wheat, soy, sesame
     var id: Self { self }
     var chinese: String {
@@ -477,9 +534,16 @@ enum LioNearestPlace: String, CaseIterable, Identifiable, Sendable {
         case .convenienceStore: "convenience store"
         }
     }
+    func title(_ language: LioLanguage) -> String {
+        guard language == .english else { return chinese }
+        switch self {
+        case .atm: return "ATM"
+        default: return english.prefix(1).uppercased() + english.dropFirst()
+        }
+    }
 }
 
-enum LioExchangeCurrency: String, CaseIterable, Identifiable, Sendable {
+enum LioExchangeCurrency: String, CaseIterable, Codable, Identifiable, Sendable {
     case usd, eur, gbp, jpy, krw, hkd, aud, cad, sgd
     var id: Self { self }
     var chinese: String {
@@ -506,6 +570,17 @@ enum LioExchangeCurrency: String, CaseIterable, Identifiable, Sendable {
         case .aud: "Australian dollars"
         case .cad: "Canadian dollars"
         case .sgd: "Singapore dollars"
+        }
+    }
+    func title(_ language: LioLanguage) -> String {
+        language == .english ? english.prefix(1).uppercased() + english.dropFirst() : chinese
+    }
+    /// "1 US dollar", "2 US dollars"; yen and won stay the same.
+    func english(amount: String) -> String {
+        guard amount == "1" else { return english }
+        switch self {
+        case .jpy, .krw: return english
+        default: return String(english.dropLast())
         }
     }
 }

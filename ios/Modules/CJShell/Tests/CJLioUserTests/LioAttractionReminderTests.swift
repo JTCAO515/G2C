@@ -67,6 +67,12 @@ struct LioAttractionReminderTests {
                                               language: .chinese) == nil)
     }
 
+    @Test func firstDayReminderAfterTheReviewDateIsNotSetEither() {
+        // Mao Memorial Hall: window only, no release time; a January visit would remind after the review date.
+        #expect(LioAttractionReminder.plan(for: rule("beijing.mao-mausoleum"),
+                                           visit: beijing(2027, 1, 10), now: beijing(2026, 11, 25)) == .stale)
+    }
+
     @Test func inTheTenMinutesBeforeReleaseItSaysTicketsOpenSoonNotAlreadyOpen() {
         // 28 Nov 19:55: the reminder time has passed but tickets for 5 Dec open at 20:00.
         let plan = LioAttractionReminder.plan(for: rule("beijing.palace-museum"),
