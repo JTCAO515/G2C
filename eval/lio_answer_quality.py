@@ -19,6 +19,7 @@ Usage:
     # answers map case id to text, or to {"text": ..., "actions": [...], "chips": [...]}
 """
 import argparse
+from functools import lru_cache
 import json
 from pathlib import Path
 import re
@@ -31,7 +32,7 @@ CASES = ROOT / 'lio_answer_quality_cases.v1.json'
 VERSION = 'LIO-answer-quality-checks.1'
 DETAIL = 'detail'
 ONE_SCREEN = 'one-screen'
-PROFILES = {DETAIL: VERSION, ONE_SCREEN: 'LIO-answer-quality-checks.2'}
+PROFILES = {DETAIL: VERSION, ONE_SCREEN: 'LIO-answer-quality-checks.3'}
 # Body budget per answer type (zh characters, en words), from the design table; None = unlimited.
 BUDGETS = {'greeting': (40, 25), 'task': (150, 90), 'nearby': (130, 80), 'compare': (180, 110),
            'plan': (200, 120), 'edit': (100, 60), 'emergency': None}
@@ -51,37 +52,76 @@ FIRST_PARAGRAPH_UNITS = (35, 20)
 BLANK_LINE = re.compile(r'\n[ \t\u3000]*\n')
 # Entry facts come from the landing-mode rules (single source, coordination 2026-11-25).
 ARRIVAL_RULES = ROOT.parent / 'ios/Modules/CJShell/Sources/CJLioUser/Resources/LioArrivalRules.v1.json'
-ENTRY_CASES = frozenset({'transit-visa-zh', 'visa-uk-en'})
+ENTRY_CASES = {'transit-visa-zh': 'US', 'visa-uk-en': 'GB'}
 
 
-def _entry_facts():
-    rules = json.loads(ARRIVAL_RULES.read_text())
-    transit = next(policy for policy in rules['policies'] if policy['id'] == 'transit-240h')
-    summary = transit['summary']['zh']
-    countries = ' '.join(source['publisher']['zh'] for source in transit['sources'])
-    return dict(ports=int(re.search(r'(\d+)\s*个开放口岸', summary)[1]),
-                provinces=int(re.search(r'(\d+)\s*个省份', summary)[1]),
-                countries=int(re.search(r'(\d+)\s*国', countries)[1]))
+@lru_cache(maxsize=1)
+def entry_facts():
+    """Entry facts from the landing-mode rules (single source, coordination 2026-11-25).
+
+    Read lazily, only for entry cases in the one-screen profile; the Chinese and English
+    summaries must agree, otherwise the data changed shape and scoring stops loudly.
+    """
+    try:
+        rules = json.loads(ARRIVAL_RULES.read_text())
+        policies = {policy['id']: policy for policy in rules['policies']}
+        transit = policies['transit-240h']
+        zh, en = transit['summary']['zh'], transit['summary']['en']
+        ports = {int(re.search(r'(\d+)\s*个开放口岸', zh)[1]), int(re.search(r'(\d+) open ports', en)[1])}
+        provinces = {int(re.search(r'(\d+)\s*个省份', zh)[1]), int(re.search(r'in (\d+) provinces', en)[1])}
+        countries = {int(re.search(r'(\d+)\s*国', source['publisher']['zh'])[1]) for source in transit['sources']
+                     if re.search(r'(\d+)\s*国', source['publisher']['zh'])}
+        if len(ports) != 1 or len(provinces) != 1 or len(countries) != 1:
+            raise ValueError('summaries disagree')
+        visa_free = {}
+        for country in rules['countries']:
+            days = [policies[key]['max_stay_days'] for key in country['policies'] if policies[key]['kind'] == 'visa_free']
+            if days:
+                visa_free[country['code']] = max(days)
+        return dict(ports=ports.pop(), provinces=provinces.pop(), countries=countries.pop(),
+                    transit_hours=24 * transit['max_stay_days'], visa_free_days=visa_free,
+                    data_version=rules['data_version'], checked_at=rules['checked_at'])
+    except (OSError, ValueError, KeyError, TypeError, StopIteration) as error:
+        raise ValueError('landing-mode rules unavailable or changed shape: ' + str(ARRIVAL_RULES.name)) from error
 
 
-ENTRY_FACTS = _entry_facts()
-# Statements the current rules contradict (cross-province stays are allowed in the permitted area).
-ENTRY_FALSE = re.compile(r'不得跨[市省]|不能跨[市省]|不可跨[市省]|只能(?:留|待|停留)在(?:入境|落地|所在)(?:的)?城市|'
-                         r'(?:must|have to) stay (?:in|within) the (?:same )?city|cannot (?:leave|travel outside) the (?:entry |same )?city', re.I)
-ENTRY_COUNTS = (('ports', re.compile(r'(\d+)\s*个?(?:开放)?口岸|(\d+)\s*(?:open )?(?:ports|border ports|entry ports)', re.I)),
-                ('provinces', re.compile(r'(\d+)\s*个?省(?:份|区|级)?|(\d+)\s*provinces', re.I)),
-                ('countries', re.compile(r'(\d+)\s*个?国家|(\d+)\s*国(?!内|际)|(\d+)\s*countries', re.I)))
+SENTENCE = re.compile(r'(?<=[。！？!?；;\n])|(?<=\.)\s+')
+# Statements the current rules contradict. A sentence correcting a myth ("其实", "actually") is exempt.
+ENTRY_FALSE = re.compile(
+    r'不得跨[市省]|(?<!能)不能跨[市省]|不可跨[市省]|只能(?:留|待|停留|在)(?:在)?(?:入境|落地|所在)(?:的)?城市|仅限(?:入境|落地)城市|'
+    r'不能离开(?:入境|落地)城市|原路返回|返回(?:出发|来源)国|'
+    r'(?:must|have to) (?:stay|remain) (?:in|within) the (?:same )?city|'
+    r"(?:cannot|can't|can not|not allowed to|may not) (?:leave|travel (?:outside|to other))|(?:back|return) to (?:your )?(?:home|origin) country", re.I)
+MYTH = re.compile(r'其实|并非|并不是|误以为|误解|actually|myth|not true', re.I)
+TRANSIT = re.compile(r'过境|transit|240', re.I)
+NEEDS_VISA = re.compile(r'(?:need|needs|require|requires|required)\b[^.。]{0,15}\bvisa|需要(?:办|申请)?签证', re.I)
+NEGATION = re.compile(r"n't|\bnot\b|\bno\b|never|without|不|无需|免", re.I)
 
 
-def _entry_facts_hold(text):
-    if ENTRY_FALSE.search(text):
-        return False
-    for key, pattern in ENTRY_COUNTS:
-        for match in pattern.finditer(text):
-            number = next(group for group in match.groups() if group)
-            if int(number) != ENTRY_FACTS[key]:
-                return False
+def _entry_facts_hold(text, country):
+    facts = entry_facts()
+    for sentence in (part for part in SENTENCE.split(text) if part and part.strip()):
+        if ENTRY_FALSE.search(sentence) and not MYTH.search(sentence):
+            return False
+        if TRANSIT.search(sentence):
+            for pattern, key in ((r'(\d+)\s*(?:个)?(?:小时|-?hours?\b)', 'transit_hours'),
+                                 (r'(\d+)\s*个?(?:开放)?口岸|(\d+)\s*(?:open |border |entry )?ports\b', 'ports'),
+                                 (r'(\d+)\s*个?国家|(\d+)\s*国(?![内际])|(\d+)\s*countries', 'countries')):
+                for match in re.finditer(pattern, sentence, re.I):
+                    if int(next(group for group in match.groups() if group)) != facts[key]:
+                        return False
+        days = facts['visa_free_days'].get(country)
+        if days is not None:
+            for match in NEEDS_VISA.finditer(sentence):
+                if not NEGATION.search(sentence[max(0, match.start() - 12):match.start() + 4]):
+                    return False
+            for match in re.finditer(r'(\d+)\s*(?:天|-?days?)\b[^.。]{0,20}(?:免签|visa-free)|(?:免签|visa-free)[^.。]{0,20}?(\d+)\s*(?:天|-?days?)',
+                                     sentence, re.I):
+                if int(next(group for group in match.groups() if group)) != days:
+                    return False
     return True
+
+
 # Openings that are not an answer: greetings, self-introductions and praise anywhere at the start;
 # assent words ("当然可以", "Sure") only when they stand alone as the whole first sentence.
 _END = r'(?![\w-])'
@@ -91,7 +131,6 @@ ASSENT = re.compile(r'\s*(?:当然可以|当然|没问题|好的|sure|of course|
 FIRST_SENTENCE = re.compile(r'\s*(.*?)([。！？!?\n]|\.(?=\s|$)|$)', re.S)
 LOCALES = ('zh', 'en')
 SCENARIOS = ('planning', 'practical', 'recommendation', 'emergency', 'chat', 'greeting', 'followup')
-
 # Fixed openings and self-introductions copied into non-greeting answers.
 TEMPLATE_PHRASES = re.compile(
     r'准备去哪儿玩|你好！?准备|Where are you off to|^\s*(?:你好|您好|Hey|Hi|Hello)\s*[!！,，]'
@@ -195,7 +234,7 @@ def check_answer(case, answer, profile=DETAIL):
             checks['first_paragraph'] = (len(parts) == 2 and bool(head) and '\n' not in head
                                          and count_units(head, locale) <= FIRST_PARAGRAPH_UNITS[LOCALES.index(locale)])
         if case['id'] in ENTRY_CASES:
-            checks['entry_facts'] = _entry_facts_hold(answer)
+            checks['entry_facts'] = _entry_facts_hold(answer, ENTRY_CASES[case['id']])
     else:
         if 'min_units' in case:
             checks['detail_length'] = units >= case['min_units']

@@ -239,7 +239,8 @@ class OneScreenTests(unittest.TestCase):
         import tempfile, os, io, contextlib
         result = summarize(list(self.cases.values()), {'visa-card-en': LONG_PAY_EN, 'plan-beijing-3d-zh': ONE_SCREEN_PLAN_ZH},
                            profile=ONE_SCREEN)
-        self.assertEqual(result['version'], 'LIO-answer-quality-checks.2')
+        # checks.3 since first_paragraph/entry_facts joined the one-screen profile (#1664).
+        self.assertEqual(result['version'], 'LIO-answer-quality-checks.3')
         self.assertEqual(result['answered'], 2)
         self.assertEqual(result['rates']['has_action'], 0.5)
         with tempfile.TemporaryDirectory() as folder:
@@ -289,17 +290,45 @@ class SplitAndEntryFacts(unittest.TestCase):
         self.assertNotIn('first_paragraph', check_answer(self.cases['alipay-zh'], '绑卡。'))  # detail profile unchanged
 
     def test_entry_facts_follow_the_landing_mode_rules(self):
-        from eval.lio_answer_quality import ENTRY_FACTS
-        self.assertEqual(ENTRY_FACTS, dict(ports=65, provinces=24, countries=57))
-        zh = '美国护照可以办 240 小时过境免签。\n\n需要去第三国的联程客票，从 24 个省份的 65 个口岸入境，可在允许区域内跨省活动。'
-        self.assertTrue(self.check('transit-visa-zh', zh)['checks']['entry_facts'])
-        for wrong in ('入境后不得跨市旅行。', '可以从 53 个口岸入境。', '只适用于 54 个国家。', '覆盖 20 个省份。'):
+        from eval.lio_answer_quality import entry_facts
+        facts = entry_facts()
+        self.assertEqual((facts['ports'], facts['provinces'], facts['countries'], facts['transit_hours']), (65, 24, 57, 240))
+        self.assertEqual(facts['visa_free_days']['GB'], 30)
+        self.assertNotIn('US', facts['visa_free_days'])
+        good_zh = ('美国护照可以办 240 小时过境免签。\n\n需要去第三国的联程客票，从 24 个省份的 65 个口岸入境，'
+                   '可在允许区域内跨省活动。很多人问能不能跨省：可以。其中 6 个省份只限官方列出的城市。')
+        self.assertTrue(self.check('transit-visa-zh', good_zh)['checks']['entry_facts'])
+        for wrong in ('入境后不得跨市旅行。', '只能在入境城市活动。', '不能离开入境城市。', '可以从 53 个口岸入境过境。',
+                      '过境免签适用于 54 个国家。', '可以办 144 小时过境免签。', '可以原路返回美国。'):
             with self.subTest(wrong=wrong):
-                text = '美国护照可以办 240 小时过境免签。\n\n' + wrong
+                text = '美国护照可以办过境免签。\n\n' + wrong
                 self.assertFalse(self.check('transit-visa-zh', text)['checks']['entry_facts'])
-        en_wrong = 'You can use 240-hour transit.\n\nYou must stay in the city where you land.'
-        self.assertFalse(self.check('visa-uk-en', en_wrong)['checks']['entry_facts'])
+        good_en = ('British passport holders can visit China visa-free for up to 30 days.\n\n'
+                   'A unilateral policy also covers 50 countries; check the NIA site before you fly.')
+        self.assertTrue(self.check('visa-uk-en', good_en)['checks']['entry_facts'])
+        for wrong in ('A plain 10-day trip normally needs a visa.', 'You must stay in the city where you land.',
+                      'You can stay visa-free for 15 days.', "You can't travel to other provinces on transit."):
+            with self.subTest(wrong=wrong):
+                text = 'You can visit China.\n\n' + wrong
+                self.assertFalse(self.check('visa-uk-en', text)['checks']['entry_facts'])
+        self.assertTrue(self.check('visa-uk-en', "You don't need a visa for 10 days.\n\nCheck the NIA site.")['checks']['entry_facts'])
         self.assertNotIn('entry_facts', self.check('alipay-zh', '绑卡。\n\n1. 下载。')['checks'])
+
+    def test_rules_load_lazily_with_a_clear_error(self):
+        import eval.lio_answer_quality as quality
+        from unittest.mock import patch
+        quality.entry_facts.cache_clear()
+        try:
+            with patch.object(quality, 'ARRIVAL_RULES', quality.ROOT / 'missing-rules.json'):
+                self.assertTrue(check_answer(self.cases['alipay-zh'], '绑卡。')['id'])  # detail profile never reads it
+                with self.assertRaisesRegex(ValueError, 'landing-mode rules'):
+                    quality.entry_facts()
+        finally:
+            quality.entry_facts.cache_clear()
+
+    def test_one_screen_profile_version_moves_with_the_new_checks(self):
+        from eval.lio_answer_quality import PROFILES
+        self.assertEqual(PROFILES[ONE_SCREEN], 'LIO-answer-quality-checks.3')
 
 
 if __name__ == '__main__':
