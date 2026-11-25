@@ -16,6 +16,14 @@
 <key>G2CNearbyEnabled</key><string>$(G2C_NEARBY_ENABLED)</string>
 <key>G2CHotelEnabled</key><string>$(G2C_HOTEL_ENABLED)</string>
 <key>G2CRoadbookEnabled</key><string>$(G2C_ROADBOOK_ENABLED)</string>
+<key>G2CTransportEnabled</key><string>$(G2C_TRANSPORT_ENABLED)</string>
+<key>G2CMetroNearbyEnabled</key><string>$(G2C_METRO_NEARBY_ENABLED)</string>
+<key>G2CNearbyEssentialsEnabled</key><string>$(G2C_NEARBY_ESSENTIALS_ENABLED)</string>
+<key>G2CArrivalModeEnabled</key><string>$(G2C_ARRIVAL_MODE_ENABLED)</string>
+<key>G2CAttractionBookingEnabled</key><string>$(G2C_ATTRACTION_BOOKING_ENABLED)</string>
+<key>G2CShowCardEnabled</key><string>$(G2C_SHOW_CARD_ENABLED)</string>
+<key>G2CMenuOrderEnabled</key><string>$(G2C_MENU_ORDER_ENABLED)</string>
+<key>G2CTripHomeEnabled</key><string>$(G2C_TRIP_HOME_ENABLED)</string>
 <key>LSApplicationQueriesSchemes</key><array><string>OneTravel</string></array>
 <key>ITSAppUsesNonExemptEncryption</key><false/>
 <key>UISupportedInterfaceOrientations</key><array>
