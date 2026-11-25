@@ -91,6 +91,14 @@ def verify_release_review(github, source, gate):
     if (not pr['merged'] or pr['head']['sha'] != head
             or (source != head and pr['merge_commit_sha'] != source)):
         raise ValueError('release source does not match the reviewed PR')
+    latest = _latest_review_decision(github, number, head)
+    if (latest is None or latest['id'] != comment_id
+            or latest['body'].partition('\n')[0] != f'Review: APPROVE {head}'):
+        raise ValueError('current exact-head R approval on the release PR required')
+
+
+def _latest_review_decision(github, number, head):
+    """The newest member `Review: APPROVE|REQUEST CHANGES <head>` comment on PR `number`, or None."""
     decision = re.compile(r'Review: (APPROVE|REQUEST CHANGES) ' + head)
     latest = None
     for page in range(1, 11):
@@ -102,12 +110,67 @@ def verify_release_review(github, source, gate):
                     and (latest is None or comment['id'] > latest['id'])):
                 latest = comment
         if len(comments) < 100:
+            return latest
+    raise ValueError('complete PR review inventory required')
+
+
+MERGE_TITLE = re.compile(r'Merge pull request #([0-9]+)(?:[ :].*)?')
+SQUASH_TITLE = re.compile(r'.*\(#([0-9]+)\)')
+
+
+def verify_release_range(github, previous, source, verified=frozenset()):
+    """Every PR merged into main after the live source carries a current exact-head approval.
+
+    The release PR and its listed supporting reviews are checked one by one; this closes the gap
+    where a PR merged in the same range but left off the list reached the host unreviewed
+    (#1450 事后核对, e66c34fc). The range is main's first-parent history from `previous`
+    (exclusive) to `source`; every commit on it must be the merge or squash commit of a merged
+    PR, and that PR's head must carry the newest member decision `Review: APPROVE <head>`.
+    `verified` holds (number, head) pairs already approved by verify_release_review.
+    Returning to a source that is an ancestor of the live one brings in no new PR.
+    Returns the PR numbers in the range, newest first.
+    """
+    if previous == source:
+        return []
+    commits = []
+    for page in range(1, 11):
+        response = github(f'compare/{previous}...{source}?per_page=100&page={page}')
+        if response['status'] == 'behind' and response['merge_base_commit']['sha'] == source:
+            return []
+        if response['status'] != 'ahead' or response['merge_base_commit']['sha'] != previous:
+            raise ValueError('release source must descend from the live source')
+        batch = response['commits']
+        commits.extend(batch)
+        if len(commits) >= response['total_commits'] or len(batch) < 100:
             break
-    else:
-        raise ValueError('complete PR review inventory required')
-    if (latest is None or latest['id'] != comment_id
-            or latest['body'].partition('\n')[0] != f'Review: APPROVE {head}'):
-        raise ValueError('current exact-head R approval on the release PR required')
+    by_sha = {commit['sha']: commit for commit in commits}
+    if len(by_sha) != len(commits) or len(commits) != response['total_commits']:
+        raise ValueError('complete release range inventory required')
+    merges = []
+    sha = source
+    while sha != previous:
+        commit = by_sha.pop(sha, None)
+        if commit is None or not commit['parents']:
+            raise ValueError('release range leaves main first-parent history')
+        title = commit['commit']['message'].partition('\n')[0]
+        match = (MERGE_TITLE.fullmatch(title) if len(commit['parents']) == 2
+                 else SQUASH_TITLE.fullmatch(title) if len(commit['parents']) == 1 else None)
+        if match is None:
+            raise ValueError(f'commit {sha} on main is not a merged PR')
+        merges.append((int(match[1]), sha))
+        sha = commit['parents'][0]['sha']
+    numbers = []
+    for number, merged in merges:
+        pr = github(f'pulls/{number}')
+        if not pr['merged'] or pr['merge_commit_sha'] != merged:
+            raise ValueError(f'commit {merged} on main is not the merge of PR #{number}')
+        head = pr['head']['sha']
+        if (number, head) not in verified:
+            latest = _latest_review_decision(github, number, head)
+            if latest is None or latest['body'].partition('\n')[0] != f'Review: APPROVE {head}':
+                raise ValueError(f'PR #{number} in the release range lacks a current exact-head R approval')
+        numbers.append(number)
+    return numbers
 
 
 def require_release_window(starts_at,ends_at,now):
@@ -148,6 +211,7 @@ def main(argv=None):
      with urlopen(Request(f'https://api.github.com/repos/{REPOSITORY}/'+path,headers={'Accept':'application/vnd.github+json'}),timeout=20) as r:return json.load(r)
     verify_release_ci(github,SOURCE)
     verify_release_review(github,SOURCE,gate)
+    verify_release_range(github,OLD,SOURCE,{(gate['pr_number'],gate['review_approved_head'])})
     lock=(ROOT/'probes/application-deploy.lock').open('a');os.chmod(lock.name,0o600);fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     require_release_window(gate['starts_at'],gate['ends_at'],datetime.now(timezone.utc))
     new=inspect('g2c-beta:'+SOURCE);assert new['Id']==gate['image_id']and new['Architecture']=='amd64'

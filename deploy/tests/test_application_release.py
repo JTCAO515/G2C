@@ -58,6 +58,9 @@ def test_arrival_after_ingress_close_recovers_only_api_without_old_dependencies(
     monkeypatch.setattr(application_release, 'verify_release_ci', lambda github, sha: evidence_order.append('ci'))
     monkeypatch.setattr(application_release, 'verify_release_review',
                         lambda github, sha, supplied: evidence_order.append('review'))
+    monkeypatch.setattr(application_release, 'verify_release_range',
+                        lambda github, live, sha, verified: evidence_order.append(
+                            ('range', live, sha, frozenset(verified))))
     commands=[];proofs=0;api_running=True
     def run(args,**unused):
         nonlocal proofs,api_running
@@ -81,7 +84,7 @@ def test_arrival_after_ingress_close_recovers_only_api_without_old_dependencies(
     monkeypatch.setattr(application_release.subprocess,'run',run)
     with pytest.raises(AssertionError,match='original arrived during ingress close'):
         application_release.main([str(gate),'--apply'])
-    assert evidence_order==['ci', 'review', 'lock']
+    assert evidence_order==['ci', 'review', ('range', previous, source, frozenset({(1, source)})), 'lock']
     assert api_running and proofs==2
     assert commands[-1][-4:]==['up','-d','--no-deps','api']
     assert all('migrate'not in command or '/export.py'in command for command in commands)
@@ -242,3 +245,119 @@ def test_release_review_requires_current_approval_on_reviewed_head(approval, wit
     else:
         with pytest.raises(ValueError, match='R approval'):
             application_release.verify_release_review(evidence.__getitem__, SOURCE, gate)
+
+
+LIVE = 'c' * 40
+
+
+def range_evidence(*entries):
+    """main's first-parent history LIVE -> ... -> newest entry; each entry is (number, kind, approval).
+
+    kind: 'merge' (two parents, GitHub merge title), 'squash' (one parent, "(#n)" title) or 'push'.
+    approval: list of (author_association, first line) comments on the PR head.
+    """
+    evidence, commits, parent = {}, [], LIVE
+    for index, (number, kind, approvals) in enumerate(entries):
+        sha, head = f'{index + 1:040x}', f'{index + 1:039x}f'
+        title = {'merge': f'Merge pull request #{number} from JTCAO515/topic',
+                 'squash': f'Topic change (#{number})', 'push': 'Direct change on main'}[kind]
+        parents = [{'sha': parent}, {'sha': head}] if kind == 'merge' else [{'sha': parent}]
+        commits.append(dict(sha=sha, parents=parents, commit={'message': title + '\n\nbody'}))
+        if kind == 'merge':
+            commits.append(dict(sha=head, parents=[{'sha': parent}], commit={'message': 'topic work'}))
+        evidence[f'pulls/{number}'] = dict(merged=True, merge_commit_sha=sha, head={'sha': head})
+        evidence[f'issues/{number}/comments?per_page=100&page=1'] = [
+            dict(id=100 + position, author_association=association, body=line.format(head=head) + '\nDetails')
+            for position, (association, line) in enumerate(approvals)]
+        parent = sha
+    evidence['compare'] = dict(status='ahead', merge_base_commit={'sha': LIVE},
+                               total_commits=len(commits), commits=commits)
+    return evidence, parent
+
+
+def range_lookup(evidence, seen=None):
+    def fetch(path):
+        if seen is not None:
+            seen.append(path)
+        if path.startswith('compare/'):
+            assert path.endswith('?per_page=100&page=1')
+            return evidence['compare']
+        return evidence[path]
+    return fetch
+
+
+APPROVED = [('MEMBER', 'Review: APPROVE {head}')]
+
+
+def test_release_range_accepts_merge_and_squash_prs_each_approved_on_their_exact_head():
+    evidence, source = range_evidence((1501, 'merge', APPROVED), (1502, 'squash', APPROVED),
+                                      (1503, 'merge', [('OWNER', 'Review: APPROVE {head}')]))
+    assert application_release.verify_release_range(range_lookup(evidence), LIVE, source) == [1503, 1502, 1501]
+
+
+@pytest.mark.parametrize('approvals', [
+    [],
+    [('MEMBER', 'Review: APPROVE ' + 'e' * 40)],
+    [('MEMBER', 'Review: APPROVE {head}'), ('MEMBER', 'Review: REQUEST CHANGES {head}')],
+    [('NONE', 'Review: APPROVE {head}')],
+    [('MEMBER', 'LGTM {head}\nReview: APPROVE {head}')],
+    [('MEMBER', 'Approved {head}')],
+], ids=['missing', 'other_head', 'withdrawn', 'non_member', 'not_first_line', 'no_decision'])
+def test_release_range_rejects_any_pr_in_the_range_without_a_current_exact_head_approval(approvals):
+    # The middle PR is the one an operator could leave off the supporting-review list.
+    evidence, source = range_evidence((1501, 'merge', APPROVED), (1502, 'merge', approvals),
+                                      (1503, 'merge', APPROVED))
+    with pytest.raises(ValueError, match='#1502'):
+        application_release.verify_release_range(range_lookup(evidence), LIVE, source)
+
+
+def test_release_range_rejects_a_direct_push_or_a_title_naming_another_pr():
+    evidence, source = range_evidence((1501, 'merge', APPROVED), (1502, 'push', APPROVED))
+    with pytest.raises(ValueError, match='not a merged PR'):
+        application_release.verify_release_range(range_lookup(evidence), LIVE, source)
+    evidence, source = range_evidence((1501, 'merge', APPROVED), (1502, 'squash', APPROVED))
+    evidence['pulls/1502']['merge_commit_sha'] = 'd' * 40
+    with pytest.raises(ValueError, match='not the merge of PR #1502'):
+        application_release.verify_release_range(range_lookup(evidence), LIVE, source)
+    evidence['pulls/1502'].update(merge_commit_sha=source, merged=False)
+    with pytest.raises(ValueError, match='not the merge of PR #1502'):
+        application_release.verify_release_range(range_lookup(evidence), LIVE, source)
+
+
+def test_release_range_reuses_only_the_exact_approvals_already_verified():
+    evidence, source = range_evidence((1501, 'merge', APPROVED), (1502, 'merge', []))
+    head = evidence['pulls/1502']['head']['sha']
+    seen = []
+    assert application_release.verify_release_range(
+        range_lookup(evidence, seen), LIVE, source, {(1502, head)}) == [1502, 1501]
+    assert 'issues/1502/comments?per_page=100&page=1' not in seen
+    assert 'issues/1501/comments?per_page=100&page=1' in seen
+    for stale in ({(1502, 'e' * 40)}, {(1503, head)}):
+        with pytest.raises(ValueError, match='#1502'):
+            application_release.verify_release_range(range_lookup(evidence), LIVE, source, stale)
+
+
+def test_release_range_requires_a_complete_descending_first_parent_history():
+    evidence, source = range_evidence((1501, 'merge', APPROVED), (1502, 'merge', APPROVED))
+    evidence['compare']['total_commits'] += 1
+    with pytest.raises(ValueError, match='complete release range'):
+        application_release.verify_release_range(range_lookup(evidence), LIVE, source)
+    evidence, source = range_evidence((1501, 'merge', APPROVED))
+    for status, base in (('diverged', 'd' * 40), ('ahead', 'd' * 40), ('behind', 'd' * 40)):
+        evidence['compare'].update(status=status, merge_base_commit={'sha': base})
+        with pytest.raises(ValueError, match='descend from the live source'):
+            application_release.verify_release_range(range_lookup(evidence), LIVE, source)
+    evidence, source = range_evidence((1501, 'merge', APPROVED))
+    evidence['compare']['commits'] = [row for row in evidence['compare']['commits'] if row['sha'] != source]
+    evidence['compare']['total_commits'] -= 1
+    with pytest.raises(ValueError, match='leaves main first-parent history'):
+        application_release.verify_release_range(range_lookup(evidence), LIVE, source)
+
+
+def test_release_range_is_empty_only_for_the_live_source_or_its_ancestor():
+    def unexpected(path):
+        pytest.fail(f'identical source needs no lookup: {path}')
+    assert application_release.verify_release_range(unexpected, LIVE, LIVE) == []
+    older = 'd' * 40
+    behind = dict(status='behind', merge_base_commit={'sha': older}, total_commits=0, commits=[])
+    assert application_release.verify_release_range(lambda path: behind, LIVE, older) == []

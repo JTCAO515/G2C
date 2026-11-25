@@ -18,6 +18,7 @@ if __package__:
         REPOSITORY,
         require_release_window,
         verify_release_ci,
+        verify_release_range,
         verify_release_review,
     )
 else:
@@ -27,6 +28,7 @@ else:
         REPOSITORY,
         require_release_window,
         verify_release_ci,
+        verify_release_range,
         verify_release_review,
     )
 
@@ -107,6 +109,15 @@ def verify_cutover_evidence(github, source, gate):
             "ahead",
         ):
             raise ValueError("supporting R-reviewed change is absent from candidate")
+    verify_release_range(
+        github,
+        gate["previous_source"],
+        source,
+        {
+            (row["pr_number"], row["review_approved_head"])
+            for row in (gate, *related_reviews)
+        },
+    )
 
 
 def recover_original_ingress(
