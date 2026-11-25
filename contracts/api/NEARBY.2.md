@@ -8,7 +8,7 @@
 ## 与 NEARBY.1 的兼容
 
 - `NEARBY.1` 冻结不改：服务端继续接受 `"version": "NEARBY.1"`，只认 `food`、`coffee`、`sights`、`shopping` 四个类别，行为不变。旧版 App 照旧使用 NEARBY.1。
-- `"version": "NEARBY.2"` 的请求可以使用下表全部八个类别。新版 App 统一发 NEARBY.2，包括只请求原有四类的时候。
+- `"version": "NEARBY.2"` 的请求可以使用下表全部八个类别。新版 App 请求必需品类别时发 NEARBY.2；只请求原有四类时继续发 NEARBY.1（也可以发 NEARBY.2，结果相同）。
 - 响应的 `version` 与请求一致。NEARBY.2 的响应结构与 NEARBY.1 完全相同，没有新增字段。
 - 逆地理接口 `POST /v1/tools/nearby/reverse` 不变，仍为 NEARBY.1。
 
@@ -64,7 +64,9 @@
 }
 ```
 
-- `type_code` 原样返回高德的 6 位类别码。`luggage` 的结果是按名称检索到的，各条的 `type_code` 是该地点自己的类别，可能各不相同。App 按**请求的类别**分组展示，不靠 `type_code` 判断类别。
+- `type_code` 原样返回高德的 6 位类别码。响应里没有类别字段，由 App 自己给每一条标类别：
+  - **只请求一个必需品类别时**（`atm`、`pharmacy`、`toilet`、`luggage` 中的一个），每一条都标成这个类别，不看 `type_code`。App 的「必需品」每次只请求一个类别，`luggage` 也只能单独请求。`luggage` 的结果是按名称检索到的，各条的 `type_code` 是该地点自己的类别，可能各不相同。
+  - **其余情况**（一次请求多个类别，或只请求一个吃喝玩逛类别），App 按 `type_code` 前缀标类别，与 NEARBY.1 的做法相同。按以下顺序比较，先匹配的为准：`1603` → `atm`，`090601` → `pharmacy`，`2003` → `toilet`，`0505` → `coffee`，其余 `05` → `food`，`11` → `sights`，`06` → `shopping`。哪个前缀都对不上的条目，不标类别。标出的类别可能不在本次请求的类别里，例如只请求 `food` 时，咖啡馆标为 `coffee`。
 - 没有结果时 `items` 为空数组；缺少必需字段的条数计入 `omitted_items`，规则同 NEARBY.1。
 
 ## 计次、额度与缓存
