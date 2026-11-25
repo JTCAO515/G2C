@@ -164,6 +164,25 @@ class OneScreenTests(unittest.TestCase):
         where = check_answer(self.cases['food-chengdu-zh'], dict(text='成都先吃火锅。', chips=['火锅', '小吃', '都想试']), profile=ONE_SCREEN)
         self.assertTrue(where['checks']['has_action'])
 
+    def test_action_required_only_where_the_first_whitelist_has_one(self):
+        # First whitelist (S contract, A confirmed 2026-11-25): open_guide payment-setup /
+        # payment-troubleshooting / taxi, and view_trip for a saved trip. Elsewhere 2-3 chips suffice.
+        from eval.lio_answer_quality import V1_ACTION_CASES
+        self.assertEqual(V1_ACTION_CASES, {'alipay-zh', 'visa-card-en', 'taxi-foreigner-zh', 'uber-taxi-en',
+                                           'plan-beijing-3d-zh', 'plan-chengdu-followup-zh', 'plan-xian-2d-en'})
+        def has_action(case_id, actions, chips):
+            return check_answer(self.cases[case_id], dict(text='先坐机场线到东直门。', actions=actions, chips=chips),
+                                profile=ONE_SCREEN)['checks']['has_action']
+        for case_id in ('metro-airport-zh', 'collapse-en', 'tipping-en', 'followup-hangzhou-zh'):
+            with self.subTest(case=case_id):
+                self.assertTrue(has_action(case_id, [], ['票价多少？', '要换乘几次？']))
+                self.assertFalse(has_action(case_id, [], ['票价多少？']))
+                self.assertTrue(has_action(case_id, ['Open guide'], []))
+        for case_id in sorted(V1_ACTION_CASES):
+            with self.subTest(case=case_id):
+                self.assertFalse(has_action(case_id, [], ['1', '2', '3']))
+                self.assertTrue(has_action(case_id, ['Open guide'], ['1', '2']))
+
     def test_review_followups_chip_cap_filler_boundaries_and_pinyin_prefix(self):
         # #1638 review + S contract (at most 3 chips per answer, 2026-11-25).
         from eval.lio_answer_quality import _within_budget
