@@ -1321,6 +1321,41 @@ class Boundaries(unittest.TestCase):
         self.assertIn('Answer the question directly; ask for the destination only when the answer depends on it, '
                       'and never reply with only a greeting unless the traveler only greets you.',system)
 
+    def test_lio_answer_closes_with_answer_first_and_locale_language(self):
+        # HK run -41 eval (2026-11-25): even with the question present and the
+        # no-greeting rule in the system, flash copied the persona greeting example
+        # for English questions (maglev, Visa card, Google) and answered an English
+        # Uber question in Chinese. A closing instruction restates both, except for
+        # a bare greeting, which keeps the persona's brief reply.
+        from cj_api.local_app import ISSUER,scope_for
+        subject='m4-synthetic-one';provider=self.provider(sse())
+        subjects=frozenset({subject});tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects))
+        binding=SimpleNamespace(scope=scope_for(ISSUER,subject),run_id='closing-original')
+        def system_for(question,locale):
+            systems=[]
+            class Worker:
+                lio_planning=None
+                def _model_history(self,*args):pass
+                def _registered_stream(self,original,key,registration,argument,**kwargs):
+                    systems.append(argument.system)
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='answer',answer=dict(zh='好。',en='OK.'),calls=[]))
+            worker=Worker();worker.provider=provider
+            list(tools.answer(worker,binding,[dict(role='user',content=question)],lio_locale=locale))
+            return systems[0]
+        english=('The traveler asked a question: start directly with the answer in English. Do not open with a greeting '
+                 'such as Hey or Hi, never reply with "Hey! Where are you off to?", and write the whole answer in English; '
+                 'Chinese appears only in the bold name brackets.')
+        chinese='The traveler asked a question: start directly with the answer. Do not open with a greeting such as 你好, and never reply with 你好！准备去哪儿玩？'
+        system=system_for('How do I get from Pudong Airport to the Bund?','en')
+        self.assertTrue(system.endswith(english) or english in system[-len(english)-80:],system[-300:])
+        self.assertNotIn(chinese,system)
+        system=system_for('外国游客在中国怎么用支付宝？','zh')
+        self.assertIn(chinese,system);self.assertNotIn(english,system)
+        for greeting,locale in (('Hi','en'),('Hey!','en'),('你好','zh'),('您好！','zh')):
+            with self.subTest(greeting=greeting):
+                system=system_for(greeting,locale)
+                self.assertNotIn(english,system);self.assertNotIn(chinese,system)
+
     def test_lio_saved_scene_is_only_in_model_system_not_public_answer(self):
         from cj_api.local_app import ISSUER,scope_for
         from cj_api.lio_scene import scene_prompt

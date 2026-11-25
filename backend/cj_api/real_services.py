@@ -224,6 +224,9 @@ def _asks_transit_policy(text):
     return bool(_TRANSIT_POLICY.search(text) or (_TRANSIT_TOPIC.search(text) and _TRANSIT_VISA.search(text)))
 
 
+_LIO_BARE_GREETING=re.compile(r'\s*(?:你好|您好|嗨|哈喽|hello|hi(?: there)?|hey(?: there)?)[!！。.?？~～\s]*',re.I)
+
+
 def _lio_transit_request(messages):
     question = messages[-1]['content']
     if _asks_transit_policy(question):
@@ -866,6 +869,14 @@ class RealTools:
             transit_request = _lio_transit_request(messages)
             if transit_request:
                 system += ' For current visa-free transit policy use the official entry notice before making policy claims.'
+            if _LIO_BARE_GREETING.fullmatch(messages[-1]['content']) is None:
+                # HK run -41 eval: flash copied the persona greeting example and answered an
+                # English question in Chinese; restate answer-first and the locale last.
+                system += (' The traveler asked a question: start directly with the answer. Do not open with a greeting '
+                           'such as 你好, and never reply with 你好！准备去哪儿玩？' if chinese else
+                           ' The traveler asked a question: start directly with the answer in English. Do not open with a greeting '
+                           'such as Hey or Hi, never reply with "Hey! Where are you off to?", and write the whole answer in English; '
+                           'Chinese appears only in the bold name brackets.')
         if binding.scope in self.buffered_streaming_scopes:profile=M4_NATIVE_TURN_BUFFERED
         elif binding.scope in self.streaming_scopes:profile=M4_NATIVE_TURN_STREAM
         else:profile=M4_NATIVE_TURN_PROFILE_V2
