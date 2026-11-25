@@ -47,8 +47,15 @@ struct LioResultEntrance<Content: View>: View {
             .allowsHitTesting(false)
             .accessibilityHidden(true)
         }
-        .onAppear { onScreen = true; started = .now; if active && reduceMotion && phase == .waiting { phase = .entering } }
-        .onDisappear { onScreen = false; started = nil }
+        // Visible in the chat, not merely inserted: a result that arrives while the reader is scrolled away waits.
+        .lioOnScreenChange { visible in
+            guard visible != onScreen else { return }
+            onScreen = visible
+            started = visible ? .now : nil
+            if visible, active, reduceMotion, phase == .waiting { phase = .entering }
+        }
+        // No reset on disappear: geometry reports only changes, so a tab switch must not clear a visible card.
+        // Covered tabs and sheets pause through `presentationActive`.
         .onChange(of: active) { _, active in
             if active { started = .now }
             else if phase == .entering { phase = .waiting }
