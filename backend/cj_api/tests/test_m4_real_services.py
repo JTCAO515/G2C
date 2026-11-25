@@ -1300,7 +1300,7 @@ class Boundaries(unittest.TestCase):
         self.assertNotIn('ask for the destination first',system)
         self.assertIn('No destination is confirmed. Do not call place or weather tools.',system)
         self.assertIn('Answer the question directly; ask for the destination only when the answer depends on it, '
-                      'and never reply with only a greeting.',system)
+                      'and never reply with only a greeting unless the traveler only greets you.',system)
 
     def test_lio_saved_scene_is_only_in_model_system_not_public_answer(self):
         from cj_api.local_app import ISSUER,scope_for
