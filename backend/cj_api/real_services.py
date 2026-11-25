@@ -854,9 +854,10 @@ class RealTools:
         if lio_locale is None:
             chinese=any('一'<=c<='鿿' for c in messages[-1]['content'])
         else:
-            from cj_message.lio_context import LioCitation, LioToolProgress, answer_prompt
+            from cj_message.lio_context import LioCitation, LioToolProgress, answer_prompt, asks_about_sources
             chinese = lio_locale == 'zh'
-            system += ' ' + answer_prompt(lio_locale,question=messages[-1]['content'],detailed=True,greeting_example=False)
+            system += ' ' + answer_prompt(lio_locale,question=messages[-1]['content'],detailed=True,greeting_example=False,
+                sources_example=asks_about_sources(messages[-1]['content']))
             if worker.lio_planning is not None:
                 system += worker.lio_planning.scene_context(binding,datetime.now(timezone.utc))
             today = lio_question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()

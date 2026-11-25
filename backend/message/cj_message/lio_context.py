@@ -180,12 +180,24 @@ class LioCitation:
 
 
 _GREETING_EXAMPLE = 'Greet briefly, only when the traveler only greets you: 你好！准备去哪儿玩？ / Hey! Where are you off to? '
+_SOURCES_EXAMPLE = ('If asked about sources, say 我综合了地图、天气等多方面的信息 / I combine maps, weather and other '
+                    'trusted information, then return to the travel question. ')
+_SOURCES_QUESTION = re.compile(r'(?:信息|数据|资料|消息)(?:的)?来源|来源是|你(?:是)?从哪(?:里|儿)?(?:来|得到|查到|找到|知道)|哪来的(?:信息|数据)|'
+                               r'\b(?:your|its) (?:sources?|information|data)\b|where do(?:es)? (?:you|lio) (?:get|find)\b|'
+                               r'how do you know', re.I)
 
 
-def answer_prompt(locale, question=None, *, detailed=False, greeting_example=True):
+def asks_about_sources(question):
+    return question is not None and _SOURCES_QUESTION.search(question) is not None
+
+
+def answer_prompt(locale, question=None, *, detailed=False, greeting_example=True, sources_example=True):
     identity = (_TRAVELER_IDENTITY_PROMPT if question is not None
                 and _TRAVELER_IDENTITY_QUESTION.fullmatch(question.strip()) else '')
     persona = PERSONA if greeting_example else PERSONA.replace(_GREETING_EXAMPLE, '', 1)
+    # HK B3 2026-11-25: answers copied quoted persona examples; the answer path keeps
+    # the sources sentence only for an actual sources question.
+    persona = persona if sources_example else persona.replace(_SOURCES_EXAMPLE, '', 1)
     return (persona + identity + (ANSWER_DETAIL if detailed else '')
             + (' Reply in Chinese.' if locale == 'zh' else ' Reply in English.'))
 

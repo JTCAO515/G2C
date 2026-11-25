@@ -1344,6 +1344,19 @@ class Boundaries(unittest.TestCase):
             list(tools.answer(worker,binding,[dict(role='user',content=question)],lio_locale=locale))
             return systems[0]
         english='Write the whole answer in English; Chinese appears only in the bold name brackets.'
+        # B3 (cd462f04): answers also opened with the persona's sources sentence; it is
+        # kept only for an actual sources question, with the provider rule always kept.
+        sources=('我综合了地图、天气等多方面的信息','I combine maps, weather and other trusted information')
+        for question,locale in (('你的信息来源是什么？','zh'),('Where does your information come from?','en')):
+            with self.subTest(question=question):
+                system=system_for(question,locale)
+                self.assertTrue(all(phrase in system for phrase in sources))
+        for question,locale in (('Can I use Google in China?','en'),('外国游客在中国怎么用支付宝？','zh'),
+                                ('手机数据流量怎么买？','zh'),('Where can I buy mobile data?','en')):
+            with self.subTest(question=question):
+                system=system_for(question,locale)
+                self.assertFalse(any(phrase in system for phrase in sources))
+                self.assertIn('keep internal identifiers, coordinates, providers and interfaces out of the answer.',system)
         for question,locale in (('How do I get from Pudong Airport to the Bund?','en'),('外国游客在中国怎么用支付宝？','zh')):
             with self.subTest(locale=locale):
                 system=system_for(question,locale)
