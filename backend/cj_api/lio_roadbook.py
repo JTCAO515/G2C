@@ -57,22 +57,24 @@ POI_ID = re.compile(r'[A-Za-z0-9]{1,32}')
 # Checks run on NFKC-normalized text, so full-width digits and colons count as ordinary ones.
 # 块 is also a measure word (一块石碑): only 块钱, or 块 not followed by a Chinese character other than
 # 左右/钱/以上/上下, is money.
-_UNIT = (r'(?:元|圆|块钱|块(?![\u4e00-\u9fff])|块(?=左右|钱|以上|上下)|人民币|港币|港元|欧元|美元|'
-         r'yuan|kuai|rmb|cny|usd|hkd|eur|bucks?|dollars?|€)')
+_UNIT = (r'(?:元|圆|块钱|块(?![\u4e00-\u9fff])|块(?=左右|钱|以上|上下|就)|人民币|港币|港元|欧元|美元|'
+         r'\b(?:yuan|kuai|rmb|cny|usd|hkd|eur|bucks?|dollars?)\b|€)')
 _CN_NUMBER = r'[零〇一二三四五六七八九十百千万两]'
-_EN_NUMBER = (r'\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty|'
-              r'fifty|sixty|seventy|eighty|ninety|hundred|thousand|[a-z]+teen|[a-z]+ty)\b')
+_EN_WORDS = (r'one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|'
+             r'seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand')
+_EN_NUMBER = r'\b(?:' + _EN_WORDS + r')\b'
 _NUMBER = r'(?:\d|' + _CN_NUMBER + r'|' + _EN_NUMBER + r')'
 _PRICE = re.compile(
-    r'(?:[¥$€]|us\$|rmb|cny|usd|hkd|eur|人民币|港币)\s*' + _NUMBER
-    + r'|' + _NUMBER + r'\s*(?:多|几|余)?\s*' + _UNIT + r'|' + _NUMBER + r'\s*(?:多|几|余)\s*块'
-    + r'|(?:门票|票价|ticket|tickets|fare|fares|price|costs?)\s*(?:[:：是为约]\s*)?\d+'
+    r'(?:[¥$€]|\bus\$|\b(?:rmb|cny|usd|hkd|eur)\b|人民币|港币)\s*' + _NUMBER
+    + r'|' + _NUMBER + r'\s*(?:多|几|余)?\s*' + _UNIT
+    + r'|(?:门票|票价|\b(?:ticket|tickets|fare|fares|price|costs?)\b)\s*(?:[:：是为约]\s*)?\d+(?!\d)'
       r'(?!\s*(?:天|日|周|个?小时|days?|weeks?|hours?))', re.IGNORECASE)
 _ANY_UNIT = re.compile(r'[¥$€]|' + _UNIT, re.IGNORECASE)
-# Unit-less amounts in tickets: Chinese numbers with 十/百/千, or English number words from ten up.
-_BIG_NUMBER = re.compile(r'[零〇一二三四五六七八九两]*[十百千万]' + _CN_NUMBER + r'*|'
-                         r'\b(?:ten|eleven|twelve|fifteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|'
-                         r'hundred|thousand|[a-z]+teen|[a-z]+ty)\b', re.IGNORECASE)
+# Unit-less amounts in tickets: Chinese numbers with 十/百/千/万 standing alone (成人六十，学生三十), not names or
+# counts followed by a character (十一黄金周、十三陵、十人以上), or English number words from ten up.
+_BIG_NUMBER = re.compile(r'[零〇一二三四五六七八九两]*[十百千万]' + _CN_NUMBER + r'*(?![\u4e00-\u9fff])|'
+                         r'\b(?:ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|'
+                         r'twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand)\b', re.IGNORECASE)
 _APPROX_RANGE = re.compile(
     r'(?:约|大约|大概|about|around|approximately|roughly)\s*(?:[¥$€]\s*)?(\d{1,4})(?:\s*' + _UNIT + r')?\s*'
     r'(?:–|—|-|~|至|到|to)\s*(?:[¥$€]\s*)?(\d{1,4})(?:\s*' + _UNIT + r')?', re.IGNORECASE)

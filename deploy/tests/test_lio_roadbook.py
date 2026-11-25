@@ -268,6 +268,9 @@ def test_unchecked_claims_become_official_notices(field, value):
     ('getting_there', 'A taxi is about €5', False),
     ('hours_booking', 'Book tickets 7 days in advance; check official sources.', True),
     ('summary', 'Recently restored, the hall shines again', True),
+    ('tickets', 'City pass holders and university students may get discounts', True),
+    ('hours_booking', 'Tickets 14 days ahead; check official sources.', True),
+    ('notes', 'A Starbucks is near the gate', True), ('summary', 'Built in 1900 by European architects', True),
 ])
 def test_english_claims_are_checked_the_same_way(field, value, kept):
     checked = checked_fields(json.dumps(dict(GOOD['en'], **{field: value}), ensure_ascii=False), FACTS, 'en')
@@ -279,7 +282,10 @@ def test_english_claims_are_checked_the_same_way(field, value, kept):
                                          ('summary', '元代始建，明清扩建'), ('why_go', '院中有一块明代石碑'),
                                          ('hours_booking', '０８：３０开门，以官方为准'), ('tickets', '免费，需提前预约'),
                                          ('tickets', '约 40–60 元，学生半价，提前一天预约'), ('notes', '一块石碑记载了历史'),
-                                         ('hours_booking', '门票需提前7天预约，以官方为准'), ('notes', '最近的入口是午门，周一闭馆')])
+                                         ('hours_booking', '门票需提前7天预约，以官方为准'), ('notes', '最近的入口是午门，周一闭馆'),
+                                         ('notes', '院里有十几块石碑'), ('summary', '殿内挂着三十多块匾额'),
+                                         ('tickets', '十一黄金周人多，约 40–60 元'), ('tickets', '十人以上可团体预约'),
+                                         ('hours_booking', '门票15天内有效，以官方为准')])
 def test_ordinary_text_is_not_mistaken_for_a_claim(field, value):
     assert checked_fields(json.dumps(dict(GOOD['zh'], **{field: value}), ensure_ascii=False), FACTS, 'zh')[field] == value
 
