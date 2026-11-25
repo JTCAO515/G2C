@@ -28,7 +28,8 @@ enum LioTransportMode: String, CaseIterable, Identifiable, Sendable {
     /// What we can and cannot promise about seats and prices; we never show live availability.
     func availabilityNote(_ language: LioLanguage) -> String {
         switch self {
-        case .rail: language.text("Seats left: check on 12306 before you go", "余票以 12306 为准")
+        case .rail: language.text("Some trains only. Seats and the full timetable: check on 12306",
+                                  "只列部分车次，余票和完整时刻以 12306 为准")
         case .flight: language.text("Prices change often; check the final price when booking", "价格随时变动，以订票页为准")
         case .bus: language.text("Times and fares: check at the bus station", "班次和票价以车站为准")
         }
@@ -208,7 +209,7 @@ struct LioTransportCity: Equatable, Hashable, Identifiable, Sendable {
 
 struct LioTransportQuery: Equatable, Sendable {
     enum Problem: Error, Equatable, Sendable {
-        case unknownFrom, unknownTo, sameCity, pastDate
+        case unknownFrom, unknownTo, sameCity, pastDate, tooFarAhead
 
         func message(_ language: LioLanguage) -> String {
             switch self {
@@ -220,6 +221,8 @@ struct LioTransportQuery: Equatable, Sendable {
                 language.text("Departure and destination are the same city.", "出发和到达是同一个城市。")
             case .pastDate:
                 language.text("Choose today or a later date.", "请选择今天或以后的日期。")
+            case .tooFarAhead:
+                language.text("Choose a date within the next 60 days.", "请选择 60 天以内的日期。")
             }
         }
     }
@@ -243,7 +246,17 @@ struct LioTransportQuery: Equatable, Sendable {
         guard origin != destination else { return .failure(.sameCity) }
         let day = dayString(date)
         guard day >= dayString(today) else { return .failure(.pastDate) }
+        guard day <= dayString(lastBookableDay(today: today)) else { return .failure(.tooFarAhead) }
         return .success(Self(from: origin, to: destination, day: day))
+    }
+
+    /// TRANSPORT.1 accepts today to 60 days ahead in China time.
+    static let daysAhead = 60
+
+    static func lastBookableDay(today: Date = Date()) -> Date {
+        let start = calendar.startOfDay(for: today)
+        return calendar.date(byAdding: .day, value: daysAhead, to: start)
+            .map { calendar.date(bySettingHour: 12, minute: 0, second: 0, of: $0) ?? $0 } ?? start
     }
 
     static func dayString(_ date: Date) -> String {
@@ -326,6 +339,11 @@ struct LioTransportResult: Equatable, Sendable {
     /// Debug preview data; the screen labels it as a sample.
     let isSample: Bool
 
+    /// What the page shows when a search fails: the guide and booking links still work.
+    static func guideOnly(for query: LioTransportQuery) -> LioTransportResult {
+        LioTransportResult(query: query, rail: .guideOnly, flight: .guideOnly, bus: .guideOnly, isSample: false)
+    }
+
     func result(for mode: LioTransportMode) -> LioTransportModeResult {
         switch mode {
         case .rail: rail
@@ -337,10 +355,22 @@ struct LioTransportResult: Equatable, Sendable {
 
 struct LioTransportService: Sendable {
     let search: @Sendable (LioTransportQuery) async throws -> LioTransportResult
+    /// Only the guide-only service gives way to the TRANSPORT.1 relay when the App host provides one.
+    var isGuideOnly = false
 
     /// The first version without a timetable source (#1518 plan A): guide, stations and booking links only.
-    static let guideOnly = LioTransportService { query in
+    static let guideOnly = LioTransportService(search: { query in
         LioTransportResult(query: query, rail: .guideOnly, flight: .guideOnly, bus: .guideOnly, isSample: false)
+    }, isGuideOnly: true)
+
+    static func relay(_ client: LioTransportRelayClient) -> LioTransportService {
+        LioTransportService { query in try await client.search(query) }
+    }
+
+    /// The service the page actually uses: the relay replaces the guide, never the Debug sample.
+    func upgraded(with relay: LioTransportRelayClient?) -> LioTransportService {
+        guard isGuideOnly, let relay else { return self }
+        return .relay(relay)
     }
 }
 
@@ -472,12 +502,14 @@ enum LioTransportFormat {
 extension LioTransportService {
     /// The service for this build, or `nil` to hide the tool. Off unless Info.plist sets
     /// `G2CTransportEnabled = YES` (JT decides when); Debug can show sample data with `--lio-transport-preview`.
+    /// With the TRANSPORT.1 relay (#1521) the page shows real trains and flights; without it, the guide only.
     static func fromBuild(arguments: [String] = ProcessInfo.processInfo.arguments,
-                          info: [String: Any]? = Bundle.main.infoDictionary) -> LioTransportService? {
+                          info: [String: Any]? = Bundle.main.infoDictionary,
+                          relay: LioTransportRelayClient? = nil) -> LioTransportService? {
         #if DEBUG
         if arguments.contains("--lio-transport-preview") { return .preview }
         #endif
         guard info?["G2CTransportEnabled"] as? String == "YES" else { return nil }
-        return .guideOnly
+        return LioTransportService.guideOnly.upgraded(with: relay)
     }
 }

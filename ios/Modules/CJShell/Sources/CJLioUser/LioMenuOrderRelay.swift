@@ -4,7 +4,7 @@ import Foundation
 
 /// Why reading a menu did not work, in words the page can show.
 enum LioMenuFailure: Error, Equatable, Sendable {
-    case signInRequired, notEnabled, alreadyUsed, quota, unavailable, timedOut, unreadablePhoto
+    case signInRequired, notEnabled, alreadyUsed, quota, unavailable, timedOut, offline, unreadablePhoto
 }
 
 /// MENU.1 (contracts/api/MENU.1.md): one menu photo out; checked dishes back. Nothing about the user is sent:
@@ -15,6 +15,7 @@ enum LioMenuWire {
     static let maximumPhoto = 3 * 1024 * 1024 - 4096
     static let maximumItems = 50
     static let maximumReply = 256 * 1024
+    static let timeout: TimeInterval = 100
 
     private struct Request: Encodable {
         let version: String
@@ -59,7 +60,7 @@ enum LioMenuWire {
     static func read(_ data: Data) throws -> LioMenuReading {
         guard data.count <= maximumReply else { throw LioMenuFailure.unavailable }
         var reader = StrictJSONReader<JSONPolicy>(bytes: Array(data))
-        try reader.check()
+        do { try reader.check() } catch { throw LioMenuFailure.unavailable }
         guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               Set(root.keys) == ["version", "truncated", "items"], root["version"] as? String == version,
               let truncated = root["truncated"] as? Bool, isBool(root["truncated"]),
@@ -102,8 +103,8 @@ enum LioMenuWire {
         if item["spice"] is NSNull {
             spice = nil
         } else {
-            guard let level = item["spice"] as? Int, !isBool(item["spice"]),
-                  let known = LioMenuSpice(rawValue: level) else { throw LioMenuFailure.unavailable }
+            guard let number = item["spice"] as? NSNumber, !isBool(number), !CFNumberIsFloatType(number),
+                  let known = LioMenuSpice(rawValue: number.intValue) else { throw LioMenuFailure.unavailable }
             spice = known
         }
         var contains: [LioMenuIngredient: LioMenuCertainty] = [:]
@@ -166,7 +167,9 @@ enum LioMenuWire {
         try Task.checkCancellation()
         guard isCurrent(), let token = bearer(), !token.isEmpty else { throw LioMenuFailure.signInRequired }
         let url = baseURL.appending(path: LioMenuWire.route)
-        var request = URLRequest(url: url, timeoutInterval: 60)
+        // Longer than the relay's worst case (a 45 s budget plus one supplier call) so a billed reading is not
+        // thrown away by the App while the server is still finishing it.
+        var request = URLRequest(url: url, timeoutInterval: LioMenuWire.timeout)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization")
@@ -178,8 +181,13 @@ enum LioMenuWire {
             (data, response) = try await exchange(request)
         } catch {
             try requireCurrentSession()
-            if (error as? URLError)?.code == .timedOut { throw LioMenuFailure.timedOut }
-            throw LioMenuFailure.unavailable
+            switch (error as? URLError)?.code {
+            case .timedOut?: throw LioMenuFailure.timedOut
+            case .notConnectedToInternet?, .networkConnectionLost?, .cannotFindHost?, .cannotConnectToHost?,
+                 .dnsLookupFailed?, .dataNotAllowed?:
+                throw LioMenuFailure.offline
+            default: throw error is LioMenuFailure ? error : LioMenuFailure.unavailable
+            }
         }
         try requireCurrentSession()
         guard let http = response as? HTTPURLResponse, http.url == url else { throw LioMenuFailure.unavailable }
@@ -209,7 +217,7 @@ extension LioMenuRelayClient {
               Bundle.main.object(forInfoDictionaryKey: "G2CMenuOrderEnabled") as? String == "YES" else { return nil }
         return LioMenuRelayClient(baseURL: endpoint.url, isCurrent: isCurrent, bearer: bearer) { request in
             let policy = URLSessionConfiguration.ephemeral
-            policy.timeoutIntervalForResource = 60
+            policy.timeoutIntervalForResource = LioMenuWire.timeout
             policy.urlCache = nil
             policy.httpCookieStorage = nil
             policy.urlCredentialStorage = nil

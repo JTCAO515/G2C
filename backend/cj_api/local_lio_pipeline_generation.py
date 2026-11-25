@@ -1,6 +1,9 @@
 """Explicit actual4 full generation; old protocols retain their own planner."""
 from threading import Event
+import hashlib
 import json
+import logging
+import re
 
 from cj_agent.draft import DraftRejected
 from cj_message.lio_plan_needs import lio_needs_id
@@ -21,6 +24,68 @@ from .local_lio_pipeline import (DestinationUnresolved,prepare_generation,retrie
     word_retrieved_plan,publish_retrieved_plan)
 
 
+_SAFE=re.compile(r'[A-Za-z0-9_.:*\-]{1,80}')
+
+
+def _safe(value):
+    text=str(value)
+    return text if _SAFE.fullmatch(text) else 'redacted'
+
+
+_FIELDS=None
+
+
+def _known_fields():
+    """Field names declared by the pipeline schemas; any other location key may be model-written."""
+    global _FIELDS
+    if _FIELDS is None:
+        from pydantic import BaseModel
+        from cj_message import lio_exploration_schema,lio_pipeline_schema,lio_plan_input_schema
+        names=set()
+        for module in (lio_exploration_schema,lio_pipeline_schema,lio_plan_input_schema):
+            for value in vars(module).values():
+                if isinstance(value,type)and issubclass(value,BaseModel):names.update(value.model_fields)
+        _FIELDS=frozenset(names)
+    return _FIELDS
+
+
+def _location(item):
+    parts=list(item.get('loc',()))
+    if item.get('type')=='extra_forbidden'and parts:parts[-1]='*'
+    return '.'.join(str(part)if type(part)is int or part=='*'or part in _known_fields()else'*'for part in parts)or'root'
+
+
+def _log_refusal(binding,stage,error=None,*,reason=None,capacity=False):
+    """Content-free diagnosis (HK run -42): stage, class, code fields and cause locations only.
+
+    Location keys outside the schema field names are written as "*": an extra or dict key
+    may be model-written and contain traveler text. Logging never changes the refusal.
+    """
+    try:
+        details=['run_id='+_safe(getattr(binding,'run_id','unknown')),'stage='+stage]
+        if error is not None:
+            details.append('error='+type(error).__name__)
+            try:details.append('message_sha256='+hashlib.sha256(str(error).encode()).hexdigest()[:12])
+            except Exception:details.append('message_sha256=unavailable')
+            for name in ('field','rule'):
+                if isinstance(getattr(error,name,None),str):details.append(name+'='+_safe(getattr(error,name)))
+            cause=error.__cause__
+            if cause is not None:
+                details.append('cause='+type(cause).__name__)
+                errors=getattr(cause,'errors',None)
+                if callable(errors):
+                    try:items=errors()
+                    except Exception:items=[]
+                    details.append('cause_errors='+','.join(
+                        _safe(_location(item))+':'+_safe(item.get('type','unknown'))for item in items[:8]))
+                    details.append('cause_error_count='+str(len(items)))
+        if reason:details.append('reason='+_safe(reason))
+        if capacity:details.append('capacity=1')
+        logging.getLogger('cj_usage.audit').info('LIO_PIPELINE_REFUSED '+' '.join(details))
+    except Exception:
+        logging.getLogger('cj_usage.audit').info('LIO_PIPELINE_REFUSED stage=%s error=log_unavailable',stage)
+
+
 class PipelineGeneration:
     def current(self,host,binding):
         """Independent rich read capability; never mutate the legacy reader."""
@@ -37,9 +102,11 @@ class PipelineGeneration:
         propagate unchanged: they are never retried or turned into successful
         receipts. A known validation/capacity refusal gives an honest next step.
         """
+        stage='prepare'
         try:
             prepared=prepare_generation(host,worker,binding,view,locale=locale,effective=effective,
                 prior_model_calls=prior_model_calls)
+            stage='retrieve'
             places,hotels,capture=retrieve_skeleton(prepared)
             count=capture.basis.day_count;dated=capture.basis.start_date is not None
             provisional=[dict(kind=kind,state='unknown'if dated else'not_checked',
@@ -48,19 +115,31 @@ class PipelineGeneration:
                 for kind in ('weather','day_opening')]
             party=prepared.projection.fields.get('party_size',{})
             subjects=('self',)if party.get('state')=='known'and party['value']==1 else('party',)
+            stage='compile'
             compiled=compile_retrieved_plan(prepared,places,hotels,capture,checks=provisional,
                 subjects=subjects,locale=locale)
+            stage='order'
             ordered=order_retrieved_plan(prepared,compiled,capture,locale=locale,stop=Event())
-            if ordered.content is None:return self._refused(host,worker,binding,locale,reason=ordered.reason)
+            if ordered.content is None:
+                _log_refusal(binding,stage,reason=ordered.reason)
+                return self._refused(host,worker,binding,locale,reason=ordered.reason)
+            stage='route'
             routed,capture=route_ordered_plan(prepared,json.loads(ordered.content))
+            stage='schedule'
             scheduled=schedule_retrieved_plan(prepared,compiled,capture,routed,locale=locale,stop=Event())
-            if scheduled.content is None:return self._refused(host,worker,binding,locale,reason=scheduled.reason)
+            if scheduled.content is None:
+                _log_refusal(binding,stage,reason=scheduled.reason)
+                return self._refused(host,worker,binding,locale,reason=scheduled.reason)
+            stage='word'
             worded=word_retrieved_plan(host,prepared,compiled,capture,scheduled,view,locale=locale)
+            stage='publish'
             _,receipt=publish_retrieved_plan(prepared,compiled,capture,worded)
-        except(CapacityExceeded,PipelineCapacity):
+        except(CapacityExceeded,PipelineCapacity)as error:
+            _log_refusal(binding,stage,error,capacity=True)
             return self._refused(host,worker,binding,locale,capacity=True)
         except(DraftRejected,InvalidInput,SourceRejected,SkeletonUnavailable,WordingUnavailable,
-                DestinationUnresolved,PlaceSelectionBlocked):
+                DestinationUnresolved,PlaceSelectionBlocked)as error:
+            _log_refusal(binding,stage,error)
             return self._refused(host,worker,binding,locale)
         state=worker.runs.snapshot(binding)
         unverified=('天气、当天开放情况和部分交通尚未确认'if worded.unknown_transfers else'天气和当天开放情况尚未确认')if locale=='zh'else(

@@ -16,8 +16,12 @@ struct LioNearbyPOI: Identifiable, Hashable, Sendable {
     let hours: String?
     let photo: URL?
 
-    /// Gaode type codes: 0505 coffee and tea houses, 05 food, 11 scenic spots, 06 shopping.
+    /// Gaode type codes: 0505 coffee and tea houses, 05 food, 11 scenic spots, 06 shopping;
+    /// 1603 ATMs, 090601 pharmacies, 2003 public toilets. Luggage storage has no code: it is found by name.
     static func category(typeCode: String) -> LioNearbyPlace.Category? {
+        if typeCode.hasPrefix("1603") { return .atm }
+        if typeCode.hasPrefix("090601") { return .pharmacy }
+        if typeCode.hasPrefix("2003") { return .toilet }
         if typeCode.hasPrefix("0505") { return .coffee }
         if typeCode.hasPrefix("05") { return .food }
         if typeCode.hasPrefix("11") { return .sights }
@@ -45,6 +49,12 @@ enum LioNearbyFailure: Error, Equatable {
 
 enum LioNearbyWire {
     private static let version = "NEARBY.1"
+    /// NEARBY.2 adds the essentials. Leisure searches stay on NEARBY.1, which the relay keeps accepting unchanged.
+    private static let essentialsVersion = "NEARBY.2"
+
+    static func version(for categories: Set<LioNearbyPlace.Category>) -> String {
+        categories.contains(where: \.isEssential) ? essentialsVersion : version
+    }
 
     private struct Center: Encodable {
         let lat: Double
@@ -148,11 +158,13 @@ enum LioNearbyWire {
     }
 
     static func encodeSearch(_ query: LioNearbyQuery, requestID: UUID) throws -> Data {
-        guard LioNearbyQuery.radii.contains(query.radius), !query.categories.isEmpty else {
+        guard LioNearbyQuery.radii.contains(query.radius), !query.categories.isEmpty, query.categories.count <= 4,
+              // Luggage storage is searched by name and only on its own.
+              !query.categories.contains(.luggage) || query.categories.count == 1 else {
             throw LioNearbyFailure.unavailable
         }
         let ordered = LioNearbyPlace.Category.allCases.filter(query.categories.contains).map(\.rawValue)
-        return try encoder.encode(SearchRequest(version: version, requestID: requestID.uuidString.lowercased(),
+        return try encoder.encode(SearchRequest(version: version(for: query.categories), requestID: requestID.uuidString.lowercased(),
                                                 center: Center(query.center), categories: ordered,
                                                 radiusM: query.radius, sort: query.nearest ? "distance" : "relevance"))
     }
@@ -162,9 +174,13 @@ enum LioNearbyWire {
                                           center: Center(center)))
     }
 
-    static func readPlaces(_ data: Data) throws -> [LioNearbyPOI] {
+    /// `requested` groups the results: an essentials search (one kind at a time) labels every place with that kind,
+    /// since luggage storage is found by name and its places carry their own type codes; leisure kinds are told
+    /// apart by type code as before.
+    static func readPlaces(_ data: Data, requested: Set<LioNearbyPlace.Category> = Set(LioNearbyPlace.Category.leisure)) throws -> [LioNearbyPOI] {
         let reply = try decoder.decode(SearchReply.self, from: data)
-        guard reply.version == version, reply.source == "Gaode" else { throw LioNearbyFailure.unavailable }
+        guard reply.version == version(for: requested), reply.source == "Gaode" else { throw LioNearbyFailure.unavailable }
+        let only = requested.count == 1 ? requested.first.flatMap { $0.isEssential ? $0 : nil } : nil
         return try reply.items.map { item in
             let name = item.nameZh.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !item.id.isEmpty, !name.isEmpty, item.coordinateSystem == "GCJ-02",
@@ -173,7 +189,7 @@ enum LioNearbyWire {
             }
             return LioNearbyPOI(
                 id: item.id, name: name, address: nonEmpty(item.addressZh),
-                category: LioNearbyPOI.category(typeCode: item.typeCode),
+                category: only ?? LioNearbyPOI.category(typeCode: item.typeCode),
                 coordinate: .init(latitude: item.lat, longitude: item.lng, referenceSystem: .gcj02),
                 meters: item.distanceM.flatMap { $0 >= 0 ? $0 : nil },
                 rating: nonEmpty(item.rating), cost: nonEmpty(item.costCny).map { "¥" + $0 },
@@ -241,7 +257,7 @@ enum LioNearbyWire {
     func search(_ query: LioNearbyQuery) async throws -> [LioNearbyPOI] {
         guard !query.categories.isEmpty else { return [] }
         let body = try LioNearbyWire.encodeSearch(query, requestID: newRequestID())
-        return try LioNearbyWire.readPlaces(try await post(.search, body: body))
+        return try LioNearbyWire.readPlaces(try await post(.search, body: body), requested: query.categories)
     }
 
     func reverse(_ center: LioTaxiPlace.Coordinate) async throws -> String? {

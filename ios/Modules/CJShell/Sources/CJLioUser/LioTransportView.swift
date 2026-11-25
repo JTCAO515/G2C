@@ -9,13 +9,14 @@ struct LioTransportView: View {
     let language: LioLanguage
     let service: LioTransportService
     @Environment(\.lioTaxiEntry) private var taxiEntry
+    @Environment(\.lioTransportRelay) private var relay
     @State private var fromText = ""
     @State private var toText = ""
     @State private var date = Date()
     @State private var problem: LioTransportQuery.Problem?
     @State private var pending: LioTransportQuery?
     @State private var result: LioTransportResult?
-    @State private var failed = false
+    @State private var failure: LioTransportRelayFailure?
     @State private var mode = LioTransportMode.rail
     @State private var driverHub: LioTransportHub?
     @FocusState private var focus: Field?
@@ -33,9 +34,8 @@ struct LioTransportView: View {
                     ProgressView(language.text("Comparing…", "正在比较…"))
                         .frame(maxWidth: .infinity)
                 }
-                if failed {
-                    Text(language.text("Couldn't compare right now. Try again, or check on 12306 and Trip.com.",
-                                       "暂时无法比较，请重试，或直接在 12306、Trip.com 查看。"))
+                if let failure {
+                    Text(failure.message(language))
                         .accessibilityIdentifier("lio.transport.failed")
                 }
                 if let result, pending == nil {
@@ -63,13 +63,16 @@ struct LioTransportView: View {
         .task(id: pending) {
             guard let pending else { return }
             do {
-                let found = try await service.search(pending)
+                let found = try await service.upgraded(with: relay).search(pending)
                 guard !Task.isCancelled, self.pending == pending else { return }
                 result = found
                 mode = Self.preferredMode(found)
             } catch {
                 guard !Task.isCancelled, self.pending == pending else { return }
-                failed = true
+                failure = (error as? LioTransportRelayFailure) ?? .unavailable
+                // Keep the booking links, tips and stations on screen even when the search fails.
+                result = .guideOnly(for: pending)
+                mode = .rail
             }
             self.pending = nil
         }
@@ -99,7 +102,7 @@ struct LioTransportView: View {
                 .accessibilityIdentifier("lio.transport.swap")
             }
             DatePicker(language.text("Date", "日期"), selection: $date,
-                       in: LioTransportQuery.calendar.startOfDay(for: Date())...,
+                       in: LioTransportQuery.calendar.startOfDay(for: Date())...LioTransportQuery.lastBookableDay(),
                        displayedComponents: [.date])
                 .frame(minHeight: 44)
                 .accessibilityIdentifier("lio.transport.date")
@@ -162,7 +165,7 @@ struct LioTransportView: View {
 
     private func compare() {
         focus = nil
-        failed = false
+        failure = nil
         switch LioTransportQuery.make(from: fromText, to: toText, date: date) {
         case .success(let query):
             problem = nil

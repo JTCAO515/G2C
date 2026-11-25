@@ -4,6 +4,19 @@ import PhotosUI
 import SwiftUI
 import UIKit
 
+private struct LioMenuServiceKey: EnvironmentKey {
+    static let defaultValue: LioMenuService? = nil
+}
+
+extension EnvironmentValues {
+    /// Set by the host only when the build enables menu ordering (`G2CMenuOrderEnabled`, or Debug's
+    /// `--lio-menu-preview`); the Tools card is hidden while it is `nil`.
+    var lioMenuService: LioMenuService? {
+        get { self[LioMenuServiceKey.self] }
+        set { self[LioMenuServiceKey.self] = newValue }
+    }
+}
+
 /// Menu ordering (点餐模式): photograph a menu, read each dish with dietary flags, then show staff a Chinese
 /// order card. Behind `G2CMenuOrderEnabled`, hidden by default.
 struct LioMenuOrderView: View {
@@ -111,11 +124,15 @@ struct LioMenuOrderView: View {
             failure = nil
             cameraProblem = nil
             do {
-                let jpeg = try await LioTranslationImageEncoder.jpeg(from: photo)
+                guard let jpeg = try? await LioTranslationImageEncoder.jpeg(from: photo) else {
+                    throw LioMenuFailure.unreadablePhoto
+                }
                 let found = try await service.read(jpeg)
                 guard !Task.isCancelled, self.photo == photo else { return }
                 reading = found
             } catch is CancellationError {
+                // A newer photo replaced this one, or the account changed: never keep this photo around.
+                if self.photo == photo { self.photo = nil }
                 return
             } catch {
                 guard !Task.isCancelled, self.photo == photo else { return }
@@ -130,12 +147,14 @@ struct LioMenuOrderView: View {
         switch failure {
         case .signInRequired: language.text("Sign in to read menus.", "登录后才能识别菜单。")
         case .notEnabled: language.text("Menu reading isn't available for this account yet.", "这个账号暂时还不能识别菜单。")
-        case .quota: language.text("You've read today's menus. Try again tomorrow.", "今天的菜单识别次数已用完，明天再试。")
+        case .quota: language.text("Menu reading has reached its limit for now. Try again later.",
+                                    "菜单识别暂时达到上限，请稍后再试。")
         case .timedOut: language.text("That took too long. Try again.", "识别超时了，请再试一次。")
+        case .offline: language.text("No connection. Check your network and try again.", "没有网络，请检查网络后再试。")
         case .unreadablePhoto: language.text("Couldn't open this photo. Try another one.", "这张照片打不开，请换一张。")
         case .alreadyUsed, .unavailable:
-            language.text("Couldn't read this menu. Try a clearer, flatter photo.",
-                          "暂时无法识别这份菜单，请换一张更清楚、更平整的照片。")
+            language.text("Couldn't read this menu right now. Try again, or take a clearer, flatter photo.",
+                          "暂时无法识别这份菜单。请再试一次，或换一张更清楚、更平整的照片。")
         }
     }
 

@@ -103,7 +103,7 @@
   {"id": "na090", "nameZH": "白马山", "nameEN": "Baimashan", "x": 71.8, "y": 428.9, "geo": [115.722486, 28.630675], "lines": ["na-4"]},
   {"id": "na091", "nameZH": "裕丰街", "nameEN": "Yufeng Jie", "x": 102.8, "y": 447.1, "geo": [115.730482, 28.620635], "lines": ["na-4"]},
   {"id": "na092", "nameZH": "璜溪", "nameEN": "Huangxi", "x": 137.1, "y": 467.0, "geo": [115.740447, 28.620206], "lines": ["na-4"]},
-  {"id": "na093", "nameZH": "中堡", "nameEN": "Zhongbu", "x": 171.4, "y": 486.8, "geo": [115.753264, 28.62331], "lines": ["na-4"]},
+  {"id": "na093", "nameZH": "中堡", "nameEN": "Zhongbao", "x": 171.4, "y": 486.8, "geo": [115.753264, 28.62331], "lines": ["na-4"]},
   {"id": "na094", "nameZH": "礼庄山", "nameEN": "Lizhuangshan", "x": 203.0, "y": 505.0, "geo": [115.771718, 28.62549], "lines": ["na-4"]},
   {"id": "na095", "nameZH": "怀玉山大道", "nameEN": "Huaiyushan Dadao", "x": 348.1, "y": 503.4, "geo": [115.799433, 28.615132], "lines": ["na-4"]},
   {"id": "na096", "nameZH": "安丰", "nameEN": "Anfeng", "x": 384.0, "y": 503.4, "geo": [115.809017, 28.610946], "lines": ["na-4"]},
