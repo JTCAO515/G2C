@@ -82,7 +82,13 @@ struct LioTransportQueryTests {
         let yesterday = LioTransportQuery.date(year: 2026, month: 11, day: 24)
         #expect(LioTransportQuery.make(from: "上海", to: "北京", date: yesterday, today: Self.today) == .failure(.pastDate))
         #expect((try? LioTransportQuery.make(from: "上海", to: "北京", date: Self.today, today: Self.today).get()) != nil)
-        for problem in [LioTransportQuery.Problem.unknownFrom, .unknownTo, .sameCity, .pastDate] {
+        // TRANSPORT.1 accepts today to 60 days ahead (China time); later dates are refused before any request.
+        let lastDay = LioTransportQuery.date(year: 2027, month: 1, day: 24)
+        #expect((try? LioTransportQuery.make(from: "上海", to: "北京", date: lastDay, today: Self.today).get())?.day == "2027-01-24")
+        let tooFar = LioTransportQuery.date(year: 2027, month: 1, day: 25)
+        #expect(LioTransportQuery.make(from: "上海", to: "北京", date: tooFar, today: Self.today) == .failure(.tooFarAhead))
+        #expect(LioTransportQuery.lastBookableDay(today: Self.today) == lastDay)
+        for problem in [LioTransportQuery.Problem.unknownFrom, .unknownTo, .sameCity, .pastDate, .tooFarAhead] {
             #expect(!problem.message(.english).isEmpty && !problem.message(.chinese).isEmpty)
         }
     }
@@ -200,6 +206,15 @@ struct LioTransportResultTests {
         }
         #expect(LioTransportMode.flight.availabilityNote(.english).localizedStandardContains("change"))
         #expect(!LioTransportMode.bus.availabilityNote(.chinese).isEmpty)
+    }
+
+    @Test func aFailedSearchStillLeavesTheGuideAndBookingLinks() throws {
+        let query = try LioTransportQuery.make(from: "上海", to: "北京",
+                                               date: LioTransportQuery.date(year: 2026, month: 12, day: 3),
+                                               today: LioTransportQuery.date(year: 2026, month: 11, day: 25)).get()
+        let fallback = LioTransportResult.guideOnly(for: query)
+        #expect(fallback.query == query && !fallback.isSample)
+        #expect(fallback.rail == .guideOnly && fallback.flight == .guideOnly && fallback.bus == .guideOnly)
     }
 
     @Test func guideOnlyServiceNeverInventsTimetables() async throws {
