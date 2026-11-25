@@ -1,10 +1,12 @@
 # CI per ADR-0004: every job blocks. Local equivalent: scripts/check.sh.
 # Pull requests skip jobs by changed path (.github/scripts/ci_paths.py, JT approved 2026-11-24);
 # a skipped job reports "skipped", which satisfies the required check. Pushes to main run every job.
-# Main verifies only its newest commit (JT approved 2026-11-24, #1445): a new main push cancels
-# the queued or running ci run of the previous main push; re-runs never cancel it. A cancelled
-# run is not re-run (ci-rerun.yml handles failures only), and its commit cannot be a release
-# source; releases use the main head of a merge freeze, whose push run nothing cancels.
+# Main verifies only its newest commit (JT approved 2026-11-24, #1445), but a main run that has
+# started always runs to the end: a new main push waits behind it and replaces the main push still
+# waiting, if any, which GitHub cancels before it starts. So the commits skipped under a burst of
+# merges never run, and each started run leaves a complete result a release can use. Re-runs never
+# wait on or replace a main push run. A cancelled run is not re-run (ci-rerun.yml handles failures
+# only), and its commit cannot be a release source.
 name: ci
 
 on:
@@ -16,12 +18,13 @@ permissions:
   contents: read
 
 concurrency:
-  # First attempts of main pushes share one group, so a newer main push cancels the older run.
-  # A re-run (manual or ci-rerun.yml) gets its own group per commit, so re-running an older
-  # commit never cancels the newest main run. Heads of the same PR still share their ref and
-  # replace obsolete PR runs, as before.
+  # First attempts of main pushes share one group. Main pushes never cancel the running run
+  # (cancel-in-progress is false for push); GitHub keeps at most one pending run per group and
+  # cancels the older pending one when a newer push queues. A re-run (manual or ci-rerun.yml)
+  # gets its own group per commit, so re-running an older commit never touches the newest main
+  # run. Heads of the same PR still share their ref and cancel obsolete PR runs, as before.
   group: ${{ github.event_name != 'push' && format('ci-{0}', github.ref) || github.run_attempt == '1' && 'ci-main-push' || format('ci-main-rerun-{0}', github.sha) }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name != 'push' }}
 
 env:
   CJ_ENV: local
