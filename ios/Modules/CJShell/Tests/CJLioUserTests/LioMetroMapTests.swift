@@ -147,7 +147,10 @@ struct LioMetroMapDataTests {
             ("ningbo", "鼓楼", ["1号线", "2号线"]), ("shaoxing", "梅山广场", ["1号线", "2号线"]),
             ("hefei", "合肥南站", ["1号线", "4号线", "5号线"]), ("fuzhou", "东街口", ["1号线", "4号线"]),
             ("xiamen", "吕厝", ["1号线", "2号线"]), ("nanchang", "八一广场", ["1号线", "2号线"]),
-            ("qingdao", "青岛北站", ["1号线", "3号线", "8号线"]), ("hangzhou", "奥体中心（6号线）", ["6号线", "7号线"]),
+            ("qingdao", "青岛北站", ["1号线", "3号线", "8号线"]), ("hangzhou", "奥体中心", ["6号线", "7号线"]),
+            ("changsha", "五一广场", ["1号线", "2号线"]), ("foshan", "魁奇路", ["佛山2号线", "广佛线"]),
+            ("dongguan", "市民中心", ["1号线", "2号线"]), ("nanning", "朝阳广场", ["1号线", "2号线"]),
+            ("guiyang", "喷水池", ["1号线", "2号线"]), ("kunming", "环城南路", ["1号线", "2号线"]),
         ]
         for (id, station, expected) in spotChecks {
             guard let city = LioMetroCity.named(id) else { continue }
@@ -168,7 +171,12 @@ struct LioMetroMapDataTests {
                                        ("ningbo", "长江路", "Changjiang Road"), ("hangzhou", "火车站", "Shaoxing Railway Station"),
                                        ("hangzhou", "之江文化中心", "Zhijiang Cultural Center"), ("hangzhou", "西文街", "Xiwen Street"),
                                        ("suzhou", "高铁苏州北站", "Suzhou North Railway Station"), ("ningbo", "丽园南路", "Liyuan South Road"),
-                                       ("kunming", "昆明南火车站", "Kunming South Railway Station")] {
+                                       ("kunming", "昆明南火车站", "Kunming South Railway Station"),
+                                       ("nanning", "安吉客运站", "Anji Coach Station"), ("dongguan", "虎门火车站", "Humen Railway Station"),
+                                       ("foshan", "林岳东(2号线)", "Linyue Dong (Line 2)"), ("hangzhou", "奥体中心", "Olympic Sports Center"),
+                                       ("foshan", "朝安", "Chao'an"), ("wuhan", "沌阳大道", "Zhuanyang Boulevard"),
+                                       ("changsha", "黄花机场T1T2", "Huanghua Jichang T1 T2"),
+                                       ("chongqing", "重庆东站", "Chongqing East Railway Station")] {
             guard let city = LioMetroCity.named(id) else { continue }
             #expect(try LioMetroMap.bundled(city).stations.first { $0.nameZH == station }?.nameEN == english, "\(id) \(station)")
         }

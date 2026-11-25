@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 import pytest
 
 from cj_api import lio_transport
-from cj_api.lio_transport import ROUTE, TransportService, rail_items, register_transport
+from cj_api.lio_transport import ROUTE, TransportService, rail_items, register_transport, validate_rail_items
 from cj_api.plugin_tools import PluginCalls, PluginError, SHANGHAI
 from cj_api.variflight_tools import ROUTE as FLIGHTS, VariFlight, register_flights
 from cj_auth.interfaces import AdmissionDecision, AdmissionReason, AdmissionStatus, TrustedPrincipal
@@ -174,6 +174,20 @@ def test_rail_goes_through_the_worker_relay_with_the_callers_own_bearer(tmp_path
         ('trip.com', 'https://www.trip.com/trains/china/route/shanghai-to-beijing/')]
 
 
+def test_non_rail_segments_with_an_empty_railway_object_are_skipped():
+    # Real AMap cross-city replies often carry "railway": {"alters": [], "spaces": []} on walking/metro segments.
+    reply = amap_reply(*DEFAULT_RAILS)
+    for transit in reply['route']['transits']:
+        transit['segments'].insert(0, dict(walking={'distance': '300'}, bus={}, railway=dict(alters=[], spaces=[])))
+        transit['segments'].append(dict(walking={}, bus={}, railway=dict(alters=[], spaces=[], trip='')))
+    assert rail_items(reply) == TRAINS
+
+
+def test_station_names_with_unpaired_surrogates_are_rejected():
+    with pytest.raises(ValueError):
+        rail_items(amap_reply(railway('G2', '上海\ud800虹桥', '北京南', '0800', '1228')))
+
+
 def test_rail_projection_keeps_only_known_seats_and_never_claims_availability():
     assert rail_items(amap_reply(*DEFAULT_RAILS)) == TRAINS
     assert rail_items(amap_reply()) == []
@@ -202,6 +216,51 @@ def test_rail_outcomes_only_affect_rail(tmp_path, outcome, status):
     body = response.json()
     assert body['rail']['status'] == status and body['rail']['items'] == []
     assert body['flight']['status'] == 'ok'
+
+
+def test_repeated_seat_codes_are_kept_once_so_valid_trains_stay_valid():
+    many = railway('G2', '上海虹桥', '北京南', '0800', '1228', tuple(('O', '626.0') for _ in range(8)) + (('M', '1006.0'),))
+    items = rail_items(amap_reply(many))
+    assert [seat['class_zh'] for seat in items[0]['seats']] == ['二等座', '一等座']
+    assert validate_rail_items(items)
+
+
+def test_worker_items_are_validated_at_the_api_boundary():
+    assert validate_rail_items(TRAINS) and validate_rail_items([])
+    assert validate_rail_items(rail_items(amap_reply(*DEFAULT_RAILS)))
+
+
+@pytest.mark.parametrize('items', [
+    [dict(TRAINS[0])] * 21,
+    {'items': TRAINS},
+    [dict(TRAINS[0], availability='有票')],
+    [dict(TRAINS[0], extra='x')],
+    [{key: value for key, value in TRAINS[0].items() if key != 'seats'}],
+    [dict(TRAINS[0], duration_min=True)],
+    [dict(TRAINS[0], duration_min=0)],
+    [dict(TRAINS[0], depart_time='8:00')],
+    [dict(TRAINS[0], number='G2; DROP')],
+    [dict(TRAINS[0], next_day='no')],
+    [dict(TRAINS[0], depart_station=dict(name_zh='站' * 42))],
+    [dict(TRAINS[0], depart_station=dict(name_en='Shanghai'))],
+    [dict(TRAINS[0], depart_station=dict(name_zh='上海站', city='上海'))],
+    [dict(TRAINS[0], seats=[dict(class_zh='包厢', class_en='Private room', price_cny_minor=100)])],
+    [dict(TRAINS[0], seats=[dict(class_zh='二等座', class_en='First class', price_cny_minor=100)])],
+    [dict(TRAINS[0], seats=[dict(class_zh='二等座', class_en='Second class', price_cny_minor=0)])],
+    [dict(TRAINS[0], seats=[dict(class_zh='二等座', class_en='Second class', price_cny_minor=1.5)])],
+    [dict(TRAINS[0], seats=[TRAINS[0]['seats'][0]] * 8)],
+    [dict(TRAINS[0], seats=[dict(class_zh=['二等座'], class_en='Second class', price_cny_minor=100)])],
+    [dict(TRAINS[0], seats=[dict(class_zh='二等座', class_en={'en': 1}, price_cny_minor=100)])],
+    [dict(TRAINS[0], depart_station=dict(name_zh=['上海站']))],
+    [dict(TRAINS[0], number=['G2'])],
+])
+def test_an_invalid_worker_reply_marks_only_rail_unavailable(tmp_path, items, caplog):
+    assert not validate_rail_items(items)
+    with make_client(tmp_path, rail=FakeRail(items), flights=flight_reply(DEFAULT_FLIGHTS)) as client:
+        body = client.post(ROUTE, json=BODY, headers=HEADERS).json()
+    assert body['rail']['status'] == 'unavailable' and body['rail']['items'] == []
+    assert body['flight']['status'] == 'ok'
+    assert 'transport_rail_reply_invalid' in caplog.text and '有票' not in caplog.text and 'DROP' not in caplog.text
 
 
 def test_a_changed_sign_in_fails_the_whole_request(tmp_path):
