@@ -9,8 +9,9 @@
 # group, and clusters listen on Unix sockets only, so lanes do not collide.
 #
 # Lane 0 prints live; the other lanes write to files that are printed when they finish, and
-# also on any exit of this script (failure, timeout or cancellation). Each lane is stopped
-# after PG_LANE_MINUTES (default 75) where `timeout` exists, which fails the job.
+# also on any other exit of this script (failure, timeout or cancellation), after the lanes
+# still running are stopped and given up to 5 seconds to exit. Each lane is stopped after
+# PG_LANE_MINUTES (default 75) where `timeout` exists, which fails the job.
 #
 # Usage: pg_lanes.sh SHARD SHARDS LANES   (run from the repository root)
 set -euo pipefail
@@ -36,8 +37,23 @@ print_lane() {
     fi
 }
 pids=()
+running() {  # a lane that has exited but is not yet reaped shows as a zombie (Z)
+    local pid state
+    for pid in "$@"; do
+        state=$(ps -o stat= -p "$pid" 2>/dev/null) || continue
+        if [[ $state != Z* ]]; then return 0; fi
+    done
+    return 1
+}
 print_rest() {
-    if ((${#pids[@]})); then kill "${pids[@]}" 2>/dev/null || true; fi
+    local tries
+    if ((${#pids[@]})); then
+        kill "${pids[@]}" 2>/dev/null || true
+        for ((tries = 0; tries < 50; tries++)); do
+            running "${pids[@]}" || break
+            sleep 0.1
+        done
+    fi
     for ((k = 1; k < lanes; k++)); do print_lane "$k" "log at exit"; done
 }
 trap print_rest EXIT
@@ -65,7 +81,11 @@ done
 status=0
 for ((k = 0; k < lanes; k++)); do
     if wait "${pids[k]}"; then result=0; else result=$?; status=1; fi
-    echo "=== pg lane $k of shard $shard/$shards finished (exit $result) ==="
-    if ((k > 0)); then print_lane "$k" "exit $result"; fi
+    if ((k == 0)); then
+        echo "=== pg lane 0 of shard $shard/$shards finished (exit $result) ==="
+    else
+        print_lane "$k" "finished, exit $result"
+    fi
 done
+pids=()  # every lane has been reaped; the exit trap has nothing left to stop
 exit "$status"
