@@ -47,6 +47,8 @@ UNDERSTANDING_SYSTEM=(
     'Use only the fourteen supplied factors; no age,nationality or monetary-budget factor. '
     'A hotel name or where the traveler stays is not lodging_tier, must_see or any other factor; omit it. '
     'duration_days value is an integer day count. '
+    'For a destination cite the destination name alone; for a stay duration cite the number and day unit alone. '
+    'For 我想去成都玩3天，帮我规划一下行程。 the exact quotes are 成都 and 3天. Never cite a departure city as the destination. '
     'Known values must be literal original spans or full affirmative canonical equivalents; '
     'a negative/question/quoted example is not an affirmative choice. Preserve other wording verbatim, '
     'never keyword-normalize dislike or a conditional. Duration is a literal positive day count; '

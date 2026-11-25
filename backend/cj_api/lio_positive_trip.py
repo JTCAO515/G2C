@@ -52,6 +52,12 @@ def known_destination(text):
 def destination_stay(quote, registered_city_terms):
     """Read a destination and stay length only when the whole quote assigns both roles."""
     clause = quote.strip().rstrip('。.!！').strip()
+    # A model may cite the full request, including the ordinary request to plan it.
+    # Strip only this explicit trailing request. Conditions, alternatives and origin
+    # statements must still fail the complete destination and duration grammar.
+    clause = re.sub(r"(?:[，,。.]\s*(?:请|麻烦)?帮我规划(?:一下)?行程[。.!！]?|"
+                    r"[,;]\s*please plan (?:my|our) (?:trip|itinerary)[.!]?)\s*$",
+                    "", clause.strip(), flags=re.I)
     match = re.fullmatch(
         r'(?:(?:我们|我)?(?:想去|要去|去))?\s*(.+?)\s*玩\s*(' + _NUMBER + r')\s*(?:天|日)',
         clause, re.I)
