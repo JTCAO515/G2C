@@ -170,7 +170,7 @@ import XCTest
         let done = app.buttons["lio.information.done"]
         XCTAssertTrue(done.isHittable)
         done.tap()
-        XCTAssertTrue(app.buttons["lio.information"].waitForExistence(timeout: 5))
+        _ = informationRow(app)
     }
 
     private func exercise(chinese: Bool, largest: Bool, appearances: [String] = ["light", "dark"]) throws {
@@ -232,7 +232,7 @@ import XCTest
             XCTAssertGreaterThanOrEqual(done.frame.height, 44)
             done.tap()
             // Closing the information page returns to the Me tab's row (#1452).
-            XCTAssertTrue(app.buttons["lio.information"].waitForExistence(timeout: 5))
+            _ = informationRow(app)
             app.terminate()
         }
     }
@@ -242,6 +242,10 @@ import XCTest
         let me = app.tabBars.buttons[chinese ? "我的" : "Me"]
         XCTAssertTrue(me.waitForExistence(timeout: 12))
         me.tap()
+        informationRow(app).tap()
+    }
+
+    private func informationRow(_ app: XCUIApplication) -> XCUIElement {
         let info = app.buttons["lio.information"]
         // Large text can leave this row outside the lazy list's current elements.
         for _ in 0..<8 {
@@ -249,7 +253,7 @@ import XCTest
             app.swipeUp()
         }
         XCTAssertTrue(info.isHittable, info.debugDescription)
-        info.tap()
+        return info
     }
 
     private func reveal(_ element: XCUIElement, app: XCUIApplication) {
@@ -270,11 +274,34 @@ import XCTest
         var returnedToHeading = false
         var covered: CGFloat = 0
         var paragraphSize: CGSize?
+        var distanceFromHeading: CGFloat?
         var previous: CGRect?
         var unchanged = 0
         for _ in 0..<80 {
             let exists = element.exists
-            let frame = exists ? element.frame : .zero
+            var frame = exists ? element.frame : .zero
+            if exists, !frame.isEmpty, element.elementType == .textView,
+               frame.height > viewport.height || paragraphSize != nil {
+                // XCTest can report just the on-screen portion of a long text view once
+                // its top is offscreen. The preceding heading scrolls with its first
+                // paragraph. Use its measured offset only if the clipped frame agrees.
+                let headingID = element.identifier.split(separator: ".").dropLast().joined(separator: ".")
+                let heading = app.staticTexts[headingID]
+                if heading.exists {
+                    let bottom = heading.frame.maxY
+                    if let size = paragraphSize, let offset = distanceFromHeading,
+                       abs(frame.width - size.width) < 1, abs(frame.minY - app.frame.minY) < 1 {
+                        let full = CGRect(origin: CGPoint(x: frame.minX, y: bottom + offset), size: size)
+                        let visible = full.intersection(app.frame)
+                        if full.minY < frame.minY, abs(visible.minY - frame.minY) < 1,
+                           abs(visible.maxY - frame.maxY) < 1 {
+                            frame = full
+                        }
+                    } else {
+                        distanceFromHeading = frame.minY - bottom
+                    }
+                }
+            }
             if !exists || frame.isEmpty {
                 if !returnedToHeading {
                     let heading = app.staticTexts["lio.updates.heading"]
