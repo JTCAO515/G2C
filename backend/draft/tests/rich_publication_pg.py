@@ -290,7 +290,8 @@ def exercise(root,conninfo,*,source_type=RichProviderContextSource,publisher_typ
             old=api.get('/v6/trip-structured',params={'trip_id':trip.trip_id},headers=bearer)
             assert old.status_code==503 and 'trip' not in old.json(),old.text
             foreign=api.get('/v7/trip-structured',params={'trip_id':trip.trip_id},headers=outsider)
-            assert foreign.status_code!=200 or foreign.json()['trip'] is None,foreign.text
+            # Invited but outside the exploration roster: refused before any Trip lookup.
+            assert foreign.status_code==503 and 'trip' not in foreign.json(),foreign.text
             assert api.get('/v7/trip-structured',params={'trip_id':trip.trip_id}).status_code==401
         print('PASS composed host /v7 read.3 returns each saved structured.4 byte-for-byte; /v6 refuses, others see none',flush=True)
     assert len(saved)==6 and len(rejected)==2 and len(writers)==72,(len(saved),len(rejected),len(writers))
