@@ -320,7 +320,7 @@ struct LioRoadbookView: View {
                     }
                     if address != nil {
                         Button { driverPlace = stop.place } label: {
-                            Label(language.text("Show driver", "给司机看"), systemImage: "text.below.photo")
+                            Label(language.text("Show driver", "给司机看"), systemImage: "person.text.rectangle")
                         }
                         .buttonStyle(LioSecondaryButtonStyle(fullWidth: false))
                         .accessibilityIdentifier("lio.roadbook.driver.\(stop.id)")
