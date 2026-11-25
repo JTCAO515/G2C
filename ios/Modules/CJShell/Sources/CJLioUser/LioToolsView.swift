@@ -26,9 +26,12 @@ struct LioToolsView: View {
         available.hotels = hotelSearch != nil
         available.roadbook = LioRoadbookFeature.enabled(infoValue: Bundle.main.object(forInfoDictionaryKey: "G2CRoadbookEnabled"))
         available.transport = LioTransportService.fromBuild() != nil
+        available.attractionBooking = LioAttractionBookingFeature.enabled(
+            infoValue: Bundle.main.object(forInfoDictionaryKey: LioAttractionBookingFeature.infoKey))
         #if DEBUG
         available.hotels = available.hotels || ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview")
         if LioRoadbookPreview.requested { available.roadbook = true }
+        if LioAttractionBookingFeature.previewRequested { available.attractionBooking = true }
         #endif
         return available
     }
@@ -132,6 +135,8 @@ struct LioToolsView: View {
             if let service = LioTransportService.fromBuild() {
                 LioTransportView(language: language, service: service)
             }
+        case .attractionBooking:
+            LioAttractionBookingView(language: language)
         case .roadbook:
             LioRoadbookLibraryView(language: language, store: roadbookStore, candidates: roadbookCandidates)
         case .hotels:

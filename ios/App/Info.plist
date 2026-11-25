@@ -16,6 +16,7 @@
 <key>G2CNearbyEnabled</key><string>$(G2C_NEARBY_ENABLED)</string>
 <key>G2CHotelEnabled</key><string>$(G2C_HOTEL_ENABLED)</string>
 <key>G2CRoadbookEnabled</key><string>$(G2C_ROADBOOK_ENABLED)</string>
+<key>G2CAttractionBookingEnabled</key><string>$(G2C_ATTRACTION_BOOKING_ENABLED)</string>
 <key>LSApplicationQueriesSchemes</key><array><string>OneTravel</string></array>
 <key>ITSAppUsesNonExemptEncryption</key><false/>
 <key>UISupportedInterfaceOrientations</key><array>

@@ -210,6 +210,7 @@ struct LioAttractionBookingDetail: View {
             DatePicker(language.text("Visit day", "参观日"), selection: $visit,
                        in: LioAttractionBookingRule.calendar.startOfDay(for: today)..., displayedComponents: .date)
                 .environment(\.calendar, LioAttractionBookingRule.calendar)
+                .environment(\.locale, Locale(identifier: language == .chinese ? "zh_CN" : "en_GB"))
                 .frame(minHeight: 44)
             if rule.closedOn(visit) {
                 Label(language.text("Closed on this day. Pick another day unless it is a public holiday.",
