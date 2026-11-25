@@ -346,9 +346,12 @@ def test_the_relay_answers_nearby2_and_a_luggage_mix_through_the_real_route(ledg
                 headers = {'Authorization': 'Bearer synthetic'}
                 mixed = browser.post(SEARCH, json=payload2(['luggage', 'atm']), headers=headers)
                 assert (mixed.status_code, mixed.json()) == (400, {'error': 'invalid_request'})
-                old_with_new = browser.post(SEARCH, json=payload(crs='GCJ-02', categories=['atm'], radius_m=500,
-                                                                  sort='distance'), headers=headers)
-                assert (old_with_new.status_code, old_with_new.json()) == (400, {'error': 'invalid_request'})
+                for category in ['atm', 'luggage']:  # NEARBY.1 is frozen: no new category, not even on its own
+                    old_with_new = browser.post(SEARCH, json=payload(crs='GCJ-02', categories=[category], radius_m=500,
+                                                                      sort='distance'), headers=headers)
+                    assert (old_with_new.status_code, old_with_new.json()) == (400, {'error': 'invalid_request'})
                 fine = browser.post(SEARCH, json=payload2(['atm']), headers=headers)
                 assert fine.status_code == 200 and fine.json()['version'] == 'NEARBY.2'
     assert [params.get('types') for _, params in supplier.calls] == ['160300']
+    # Only the one allowed search reached the ledger: the refused requests were never counted.
+    assert len(ledger.inspect()) == 1

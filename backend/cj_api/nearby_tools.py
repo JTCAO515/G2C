@@ -25,7 +25,6 @@ from .taxi_tools import WireModel
 VERSION = 'NEARBY.1'
 # NEARBY.2 (contracts/api/NEARBY.2.md, M4 entry 12 item 1, JT 2026-11-25): the same search with the
 # "essentials" — ATMs, pharmacies, public toilets and luggage storage found by name. NEARBY.1 is frozen.
-VERSIONS = ('NEARBY.1', 'NEARBY.2')
 SEARCH = '/v1/tools/nearby/search'
 REVERSE = '/v1/tools/nearby/reverse'
 HOST = 'restapi.amap.com'

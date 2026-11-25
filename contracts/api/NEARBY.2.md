@@ -42,7 +42,7 @@
 ```
 
 - `categories`：1–4 个，不重复。
-- **`luggage` 只能单独请求**：`["luggage"]` 合法；`luggage` 与任何其他类别同时出现时，返回 `400 invalid_request`，不调用供应商、不计次。这样每次查询仍只调用高德 1 次。
+- **`luggage` 只能单独请求**：`["luggage"]` 合法；`luggage` 与任何其他类别同时出现时，返回 `400 invalid_request`，不调用供应商、不计次。这样每次查询仍只有 1 次高德周边检索（中心点为 WGS-84 时另加 1 次坐标转换，同 NEARBY.1）。
 - 其余七个类别可以任意组合，组合后合并为一次 types 检索。
 - `center`、`radius_m`、`sort`、`request_id` 的规则同 NEARBY.1；未知字段一律拒绝（`400 invalid_request`）。
 - `"version": "NEARBY.1"` 的请求里出现 `atm`、`pharmacy`、`toilet`、`luggage` 中任何一个，返回 `400 invalid_request`。
@@ -94,11 +94,11 @@
 | 请求 | 结果 |
 |---|---|
 | NEARBY.2，`["atm"]` | 200，高德 types `160300` |
-| NEARBY.2，`["pharmacy", "toilet"]` | 200，高德 types `090601\|200300`，只调用 1 次 |
+| NEARBY.2，`["pharmacy", "toilet"]` | 200，高德 types `090601\|200300`，1 次周边检索 |
 | NEARBY.2，`["luggage"]` | 200，高德 keywords `行李寄存`，不带 types |
 | NEARBY.2，`["luggage", "toilet"]` | 400 `invalid_request`，不调用、不计次 |
 | NEARBY.2，`["food", "coffee"]` | 200，与 NEARBY.1 相同 |
-| NEARBY.1，`["atm"]` | 400 `invalid_request` |
+| NEARBY.1，`["atm"]` 或 `["luggage"]` | 400 `invalid_request`，不调用、不计次 |
 | NEARBY.1，`["food"]` | 200，行为不变 |
 | NEARBY.2，`["exchange"]` 或 `["bank"]` | 400 `invalid_request`（不提供） |
 | 当日第 101 次（或合计第 3,001 次） | 429 `quota_exceeded`，不调用 |
