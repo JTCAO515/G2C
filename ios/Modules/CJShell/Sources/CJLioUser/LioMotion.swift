@@ -57,6 +57,21 @@ extension View {
     }
 }
 
+#if os(iOS)
+extension View {
+    /// Whether any part of this view is inside the nearest scroll view's visible area. The chat stacks every
+    /// message eagerly (#1501), so `onAppear` no longer means "on screen" there.
+    func lioOnScreenChange(_ action: @escaping (Bool) -> Void) -> some View {
+        onGeometryChange(for: Bool.self) { proxy in
+            guard let visible = proxy.bounds(of: .scrollView) else { return true }
+            // A placeholder that is still empty (a result waiting for its entrance) counts by its position.
+            let size = CGSize(width: max(proxy.size.width, 1), height: max(proxy.size.height, 1))
+            return visible.intersects(CGRect(origin: .zero, size: size))
+        } action: { action($0) }
+    }
+}
+#endif
+
 /// Which part of a turn is still waiting for its entrance.
 struct LioEntranceKey: Hashable {
     enum Part: Hashable { case question, answer, card, memory }

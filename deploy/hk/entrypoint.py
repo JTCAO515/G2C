@@ -84,6 +84,8 @@ def api(runtime,*,app_smoke_api_manifest=None):
     register_hotel_route(app)
     from .hotel_relay import register_hotel_routes
     register_hotel_routes(app)
+    from .roadbook_relay import register_roadbook_routes
+    register_roadbook_routes(app)
     from .metro_relay import register_metro_routes
     register_metro_routes(app)
     @app.middleware('http')
@@ -128,10 +130,11 @@ def worker(runtime, *, tool_evidence=None,runtime_manifest=None,app_smoke_manife
     from .nearby_relay import active_nearby
     from .hotel_relay import active_hotel
     from .transit_relay import active_transit
+    from .roadbook_relay import active_roadbook
     from .metro_relay import active_metro
     with signing_socket(runtime), active_translation(runtime, authorization), active_nearby(runtime, authorization), \
             active_hotel(runtime, authorization), active_transit(runtime, authorization), \
-            active_metro(runtime, authorization):
+            active_roadbook(runtime, authorization), active_metro(runtime, authorization):
         _run_worker(runtime, tool_evidence=tool_evidence,runtime_manifest=runtime_manifest,app_smoke_manifest=app_smoke_manifest,
                     simulator_manifest=simulator_manifest,start_simulator=start_simulator)
 
