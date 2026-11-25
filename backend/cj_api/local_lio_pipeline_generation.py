@@ -86,6 +86,31 @@ def _log_refusal(binding,stage,error=None,*,reason=None,capacity=False):
         logging.getLogger('cj_usage.audit').info('LIO_PIPELINE_REFUSED stage=%s error=log_unavailable',stage)
 
 
+# Coordination 2026-11-26: a plan that still cannot be saved says why. Code reasons only.
+_REASON_DETAIL={
+    'KNOWN_OPENING_CONFLICT':('有景点在安排的那天不开放','a stop is closed on its planned day'),
+    'FIRST_DAY_LIGHT_RECIPE_REQUIRED':('到达时间未定，第一天只能轻松安排','with no arrival time, day 1 must stay light'),
+    'FIRST_DAY_MEAL_PERIOD_UNKNOWN':('到达时间未定，第一天只能轻松安排','with no arrival time, day 1 must stay light'),
+    'FIRST_DAY_DINNER_REQUIRED':('到达时间未定，第一天只能轻松安排','with no arrival time, day 1 must stay light'),
+    'EDGE_WINDOWS_CONFLICT':('到达或离开的时间和安排对不上','your arrival or departure time clashes with the plan'),
+    'EDGE_WINDOWS_UNKNOWN':('到达或离开的时间和安排对不上','your arrival or departure time clashes with the plan'),
+    'EDGE_CONSTRAINTS_UNCONFIRMED':('到达或离开的时间和安排对不上','your arrival or departure time clashes with the plan'),
+    'EXPLICIT_CLOCK_OR_ZONE_REQUIRED':('有固定安排缺少具体时间','a fixed arrangement has no exact time'),
+    'NEGATIVE_DECLARED_DURATION':('有固定安排的结束时间早于开始时间','a fixed arrangement ends before it starts'),
+    'EXPLICIT_CONSTRAINTS_INFEASIBLE':('你给的固定安排在时间上排不开','your fixed arrangements do not fit in time'),
+    'DECLARED_OCCUPANCY_OVERLAP':('你给的固定安排在时间上排不开','your fixed arrangements do not fit in time'),
+}
+_ERROR_DETAIL={
+    'DestinationUnresolved':('目的地还没能确认是哪座城市','I could not confirm which city you mean'),
+    'PlaceSelectionBlocked':('有几个地点没能确认是哪一处','I could not confirm which place some stops are'),
+    'SkeletonUnavailable':('整理行程文字时出了问题','something went wrong while writing up the plan'),
+    'WordingUnavailable':('整理行程文字时出了问题','something went wrong while writing up the plan'),
+    'DraftRejected':('整理行程文字时出了问题','something went wrong while writing up the plan'),
+    'SourceRejected':('和你之前保存的安排核对不上','it did not match your saved arrangements'),
+    'InvalidInput':('和你之前保存的安排核对不上','it did not match your saved arrangements'),
+}
+
+
 class PipelineGeneration:
     def current(self,host,binding):
         """Independent rich read capability; never mutate the legacy reader."""
@@ -140,11 +165,19 @@ class PipelineGeneration:
         except(DraftRejected,InvalidInput,SourceRejected,SkeletonUnavailable,WordingUnavailable,
                 DestinationUnresolved,PlaceSelectionBlocked)as error:
             _log_refusal(binding,stage,error)
-            return self._refused(host,worker,binding,locale)
+            return self._refused(host,worker,binding,locale,detail=_ERROR_DETAIL.get(type(error).__name__))
         state=worker.runs.snapshot(binding)
         unverified=('天气、当天开放情况和部分交通尚未确认'if worded.unknown_transfers else'天气和当天开放情况尚未确认')if locale=='zh'else(
             'Weather, opening information and some routes remain unverified'if worded.unknown_transfers else
             'Weather and opening information remain unverified')
+        far_days={day for day,_ in getattr(worded,'edge_far',())}
+        if 1 in far_days:
+            # JT 2026-11-26: a located hotel with day-1 sights outside walking range; saved and said.
+            unverified+=('；第一天的景点离酒店有一段距离，到达后建议打车过去；想换近一点的可以告诉我'if locale=='zh'else
+                ". Day 1's sights are some distance from the hotel; take a taxi after you arrive, or tell me to swap in somewhere closer")
+        elif far_days:
+            unverified+=('；最后一天的景点离酒店有一段距离，建议留出打车时间；想换近一点的可以告诉我'if locale=='zh'else
+                ". The last day's sights are some distance from the hotel; allow time for a taxi, or tell me to swap in somewhere closer")
         if worded.edge_proximity_unconfirmed:
             # JT 2026-11-25: saved without an observed lodging point; say so.
             unverified+=('；首末日的抵达或离开时间未定，已建议把活动安排在住处附近；补充酒店位置后可以再调整'if locale=='zh'else
@@ -155,7 +188,7 @@ class PipelineGeneration:
         return host._finish(worker,binding,state,body,Scene.ADJUSTMENT,locale)
 
     @staticmethod
-    def _refused(host,worker,binding,locale,*,capacity=False,reason=None):
+    def _refused(host,worker,binding,locale,*,capacity=False,reason=None,detail=None):
         state=worker.runs.snapshot(binding)
         state=worker._event(binding,state,'effect_committed',UNSAVED_PLAN_ANSWER)
         retained=host.current(binding)is not None
@@ -167,6 +200,8 @@ class PipelineGeneration:
             body=('这次没能完整生成并保存行程'+kept+'。想换成天数更少的方案吗？'if locale=='zh'else
                 'I could not generate and save the complete itinerary'+kept+'. Would you like a plan with fewer days?')
         else:
-            body=('这次没能把完整方案保存'+kept+'。想先讨论一个不保存的方案，还是核对固定安排？'if locale=='zh'else
-                'I could not save a complete plan'+kept+'. Would you like to discuss an unsaved outline or review the fixed arrangements?')
+            detail=detail or _REASON_DETAIL.get(reason)
+            why=''if detail is None else (('：'+detail[0])if locale=='zh'else(': '+detail[1]))
+            body=('这次没能把完整方案保存'+kept+why+'。想先讨论一个不保存的方案，还是核对固定安排？'if locale=='zh'else
+                'I could not save a complete plan'+kept+why+'. Would you like to discuss an unsaved outline or review the fixed arrangements?')
         return host._finish(worker,binding,state,body,Scene.ADJUSTMENT,locale)

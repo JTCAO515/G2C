@@ -52,6 +52,9 @@ class Assembly:
     # First/last-day stops whose hotel proximity stayed unknown because the host
     # had no observed lodging point (JT 2026-11-25: save and disclose, not refuse).
     edge_proximity_unconfirmed: tuple[str, ...] = ()
+    # (day_index, item_id) of first/last-day stops known to be outside walking range of
+    # the observed lodging point (JT 2026-11-26: save and disclose, not refuse).
+    edge_far: tuple[tuple[int, str], ...] = ()
 
 
 def _seconds(event):
@@ -97,7 +100,8 @@ def assemble_unconfirmed(document, *, source, facts, activities, edges: EdgeWind
     The host derives these IDs from the actual sealed outcomes and rechecks
     their coverage in the final source frame. This argument and the returned
     status grant no authority. Only unknown proximity for those IDs may remain
-    unconfirmed; known false proximity, hard conflicts and every other UNKNOWN
+    unconfirmed; hard conflicts and every other UNKNOWN (known false proximity is
+    returned in edge_far for disclosure, JT 2026-11-26)
     keep the normal refusal. No coordinates, route durations or facts are made up.
     """
     if type(unconfirmed_items) is not frozenset or not unconfirmed_items:
@@ -172,6 +176,7 @@ def _assemble(document, *, source, facts, activities, edges, phase, locale, limi
         sight=next(item for item in first if item['kind']=='sight')
         precedence=((sight['id'],meal['id']),)
     edge_unconfirmed=[]
+    edge_far=[]
     for item in (first if edges.first_unknown_recipe else []) + (last if edges.last_unknown_morning else []):
         nearby = bounds[item['id']].nearby
         if nearby is None:
@@ -183,7 +188,10 @@ def _assemble(document, *, source, facts, activities, edges, phase, locale, limi
                 continue
             return Assembly('UNKNOWN','EDGE_DAY_PROXIMITY_UNCONFIRMED')
         if not nearby:
-            return Assembly('CONFLICT','EDGE_DAY_NEARBY_REQUIRED')
+            # JT 2026-11-26 (extends #1545): a located hotel with an edge-day stop outside
+            # walking range saves and is disclosed; only this one blocker is relaxed.
+            edge_far.append((item['schedule']['start']['day_index'],item['id']))
+            continue
     if phase=='order' and any(leg['state']=='estimated' for leg in value['legs']):
         raise SourceRejected('assembly.phase','observed routes cannot survive a new ordering phase')
     visits=[]
@@ -230,4 +238,4 @@ def _assemble(document, *, source, facts, activities, edges, phase, locale, limi
     reason = 'TERMINAL_TOOL_UNCONFIRMED'if unconfirmed_items else result.reason
     return Assembly(status,reason,packed(value),result.unknown_transfers,
                     tuple(removed),brief(facts,locale=locale,first_day_full=bool(edges.override_explanations)),
-                    dated and changed,tuple(sorted(unconfirmed_items)),tuple(sorted(edge_unconfirmed)))
+                    dated and changed,tuple(sorted(unconfirmed_items)),tuple(sorted(edge_unconfirmed)),tuple(sorted(edge_far)))
