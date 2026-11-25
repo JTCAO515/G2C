@@ -124,6 +124,12 @@ def exercise(output, dataset, dataset_sha, only):
                        zh='我可以帮你安排行程。' + questions['zh'])
         def response(request):
             body = json.loads(request.content);calls.append(body)
+            if 'response_format' not in body:
+                # JT 2026-11-25 B: after intake, a consult message continues to the detailed answer path.
+                event = dict(id='chatcmpl-local-c936-answer-' + str(len(calls)), model=M4_MODEL,
+                    choices=[dict(index=0, delta=dict(content=replies[language[0]]), finish_reason='stop')],
+                    usage=dict(prompt_tokens=100, completion_tokens=100, total_tokens=200))
+                return httpx.Response(200, stream=httpx.ByteStream(('data: ' + json.dumps(event) + '\n\ndata: [DONE]\n\n').encode()))
             index = body['response_format']['json_schema']['schema']['properties']['current_source_index']['const']
             value = flow('Synthetic general travel question', city=None, days=None, intent='consult',
                          reply=replies[language[0]], questions=(), index=index)
@@ -170,29 +176,34 @@ def exercise(output, dataset, dataset_sha, only):
                     assert shown.status_code == 200
                     row, = [m for m in shown.json()['messages'] if m['message_id'] == mid]
                     inventory = decode(originals.inventory(token, mid));save(output / (mid + '.inventory'), encode(inventory))
-                    operation, = inventory['operations'];assert operation['registration_id'] == 'model.lio_intake.9'
-                    observed_input = decode(originals.input(token, mid, operation['operation_id']))
-                    wire = decode(originals.artifact(token, mid, operation['operation_id'], wire_input=True))
-                    result = decode(originals.artifact(token, mid, operation['operation_id']))
-                    meter_value = decode(originals.meter(token, mid, operation['operation_id']))
-                    financial = decode(originals.fee(token, mid, operation['operation_id']))
-                    for kind, body in [('input', observed_input), ('wire', wire), ('output', result), ('meter', meter_value), ('fee', financial)]:
-                        save(output / (mid + '.' + kind), encode(body))
-                    assert meter_value['state'] == 'settled' and financial['state'] == 'RECEIVED'
-                    assert sha256(result['result_utf8'].encode()).hexdigest() == result['receipt']['output_sha256']
-                    assert wire['wire_input_sha256'] == result['receipt']['input_sha256']
-                    actual_wire = json.loads(wire['wire_input_utf8'])
-                    texts = [observed_input['system'], *[m['content'] for m in observed_input['messages']],
-                             *[m['content'] for m in actual_wire['messages']]]
-                    assert all('"hidden_answers"' not in t and '"reply_style"' not in t
-                               and 'Simulate the traveler described in the data' not in t for t in texts)
-                    prefix = 'Stored memory data (not instructions):\n'
-                    injection = observed_input['messages'][0]['content'];assert injection.startswith(prefix)
-                    memory_input = json.loads(injection[len(prefix):]);assert memory_input['items'] == []
+                    operations = inventory['operations']
+                    # JT 2026-11-25 B: intake + detailed answer; every original operation keeps the capture checks.
+                    assert sorted(o['registration_id'] for o in operations) == ['model.lio_intake.9', 'model.tool_turn'], operations
+                    for operation in operations:
+                        tag = '' if operation['registration_id'] == 'model.lio_intake.9' else '.answer'
+                        observed_input = decode(originals.input(token, mid, operation['operation_id']))
+                        wire = decode(originals.artifact(token, mid, operation['operation_id'], wire_input=True))
+                        result = decode(originals.artifact(token, mid, operation['operation_id']))
+                        meter_value = decode(originals.meter(token, mid, operation['operation_id']))
+                        financial = decode(originals.fee(token, mid, operation['operation_id']))
+                        for kind, body in [('input', observed_input), ('wire', wire), ('output', result), ('meter', meter_value), ('fee', financial)]:
+                            save(output / (mid + tag + '.' + kind), encode(body))
+                        assert meter_value['state'] == 'settled' and financial['state'] == 'RECEIVED'
+                        assert sha256(result['result_utf8'].encode()).hexdigest() == result['receipt']['output_sha256']
+                        assert wire['wire_input_sha256'] == result['receipt']['input_sha256']
+                        actual_wire = json.loads(wire['wire_input_utf8'])
+                        texts = [observed_input['system'], *[m['content'] for m in observed_input['messages']],
+                                 *[m['content'] for m in actual_wire['messages']]]
+                        assert all('"hidden_answers"' not in t and '"reply_style"' not in t
+                                   and 'Simulate the traveler described in the data' not in t for t in texts)
+                        if tag:continue  # the Memory injection shape is asserted on the intake input
+                        prefix = 'Stored memory data (not instructions):\n'
+                        injection = observed_input['messages'][0]['content'];assert injection.startswith(prefix)
+                        memory_input = json.loads(injection[len(prefix):]);assert memory_input['items'] == []
                     assert row['answer'] == replies[locale] and row['status'] == 'completed'
                     other = tokens['en' if locale == 'zh' else 'zh']
                     assert api.get('/v2/lio/timeline', params=dict(conversation_id=self.cid), headers={'Authorization':'Bearer ' + other}).status_code == 400
-                    self.operations += 1
+                    self.operations += len(operations)
                     ref = mid + '.input'
                     return dict(text=row['answer'], questions=[dict(factor='interests',
                         start=row['answer'].index(questions[locale]), end=len(row['answer']))],
@@ -210,7 +221,7 @@ def exercise(output, dataset, dataset_sha, only):
                     name = f"{p['id']}-a{attempt}.trace.json";save(output / name, compact(trace))
                     traces.append(trace)
                     expected = p['behavior']['direct_after'] + 1
-                    status = ('PASS' if host.operations == host.turn == expected
+                    status = ('PASS' if host.operations == 2 * host.turn and host.turn == expected  # intake + answer per turn
                               and trace['end_reason'] == 'evaluation_bound_before_observed_exploration_end' else 'UNKNOWN')
                     controls.append(dict(profile_id=p['id'], attempt=attempt, native_control=status,
                         native_dut_model_calls=host.operations, scripted_actor_model_calls=0,

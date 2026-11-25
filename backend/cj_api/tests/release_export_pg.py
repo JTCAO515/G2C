@@ -47,6 +47,10 @@ def exercise(auth,conninfo):
  calls=[]
  def response(request):
   body=json.loads(request.content);calls.append(body)
+  if 'response_format' not in body:
+   # JT 2026-11-25 B: after intake, a consult message continues to the detailed answer path.
+   event=dict(id='chatcmpl-proof-answer-'+str(len(calls)),model=M4_MODEL,choices=[dict(index=0,delta=dict(content='Which places interest you?'),finish_reason='stop')],usage=dict(prompt_tokens=100,completion_tokens=100,total_tokens=200))
+   return httpx.Response(200,stream=httpx.ByteStream(('data: '+json.dumps(event)+'\n\ndata: [DONE]\n\n').encode()))
   index=body['response_format']['json_schema']['schema']['properties']['current_source_index']['const']
   value=flow('Synthetic question',city=None,days=None,intent='consult',reply='Which places interest you?',questions=(),index=index)
   value.update(version='LIO-planning-intake.8',planning_request_index=None,needs_tools=False)
@@ -76,10 +80,11 @@ def exercise(auth,conninfo):
   assert outcomes==['completed'],(outcomes,len(calls))
   completed=collect();record=completed['observations'][0]['message_record']
   assert completed['global_pending']==completed['global_active']==0 and record['status']=='completed'
-  assert len(record['operations'])==1 and record['operations'][0]['meter']['state']=='settled'
-  assert len(completed['shared_outflows'])==1 and all(x['state']=='RECEIVED'for x in completed['shared_outflows'].values())
- assert len(calls)==2
- print('PASS fresh signed M before RUN is status null with original pending/unchanged journal; original worker completion/ACK and settled Meter/fees readable in ledger formats1/2;2 fixture model HTTP/live0')
+  # JT 2026-11-25 B: intake + detailed answer, each settled and received.
+  assert len(record['operations'])==2 and all(op['meter']['state']=='settled'for op in record['operations'])
+  assert len(completed['shared_outflows'])==2 and all(x['state']=='RECEIVED'for x in completed['shared_outflows'].values())
+ assert len(calls)==4
+ print('PASS fresh signed M before RUN is status null with original pending/unchanged journal; original worker completion/ACK and settled Meter/fees readable in ledger formats1/2;4 fixture model HTTP/live0')
 
 
 if __name__=='__main__':

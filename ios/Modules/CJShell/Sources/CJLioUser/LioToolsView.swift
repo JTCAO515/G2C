@@ -13,6 +13,7 @@ struct LioToolsView: View {
     let sessionIsCurrent: @MainActor () -> Bool
     @Environment(\.lioTaxiEntry) private var taxiEntry
     @Environment(\.lioNearbyService) private var nearbyService
+    @Environment(\.lioHotelFinder) private var hotelFinder
     @Environment(\.dynamicTypeSize) private var typeSize
 
     private var availability: LioToolCatalog.Availability {
@@ -20,12 +21,22 @@ struct LioToolsView: View {
         available.taxi = taxiEntry != nil
         available.currency = currencyRelay != nil
         available.nearby = nearbyService != nil
+        available.hotels = hotelSearch != nil
         available.roadbook = LioRoadbookFeature.enabled(infoValue: Bundle.main.object(forInfoDictionaryKey: "G2CRoadbookEnabled"))
         #if DEBUG
+        available.hotels = available.hotels || ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview")
         if LioRoadbookPreview.requested { available.roadbook = true }
-        available.hotels = ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview")
         #endif
         return available
+    }
+
+    /// Hotel search (#1510) only when the build enables it (`G2CHotelEnabled`, off by default), or with the
+    /// Debug preview fixture (`--lio-hotel-search-preview`).
+    private var hotelSearch: LioHotelFinder? {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--lio-hotel-search-preview") { return .preview }
+        #endif
+        return hotelFinder
     }
 
     private var columns: [GridItem] {
@@ -69,6 +80,16 @@ struct LioToolsView: View {
         .tint(LioTheme.vermilion)
     }
 
+    /// Offline copies need the signed-in account's folder, which is wired with saved trips (#1453);
+    /// until then only Debug previews can keep copies.
+    private var roadbookStore: LioRoadbookStore? {
+        #if DEBUG
+        LioRoadbookPreview.requested ? try? LioRoadbookStore.preview() : nil
+        #else
+        nil
+        #endif
+    }
+
     /// Roadbooks that can be made now. Saved trips and Lio's plans are connected once #1453 lands; until then
     /// only Debug previews are offered.
     private var roadbookCandidates: [LioRoadbook] {
@@ -107,17 +128,24 @@ struct LioToolsView: View {
                 LioNearbyView(language: language, service: nearbyService)
             }
         case .roadbook:
-            LioRoadbookLibraryView(language: language, store: try? LioRoadbookStore.appDefault(),
-                                   candidates: roadbookCandidates)
+            LioRoadbookLibraryView(language: language, store: roadbookStore, candidates: roadbookCandidates)
         case .hotels:
-            #if DEBUG
-            let partial = ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview-partial")
-            LioHotelsView(language: language, service: .preview(unapplied: partial ? [.guests] : []),
-                          suggestedArea: LioHotelService.previewArea)
-            #else
-            EmptyView()
-            #endif
+            if let hotelSearch {
+                LioHotelOffersView(language: language, finder: hotelSearch)
+            } else {
+                hotelLinks
+            }
         }
+    }
+
+    @ViewBuilder private var hotelLinks: some View {
+        #if DEBUG
+        let partial = ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview-partial")
+        LioHotelsView(language: language, service: .preview(unapplied: partial ? [.guests] : []),
+                      suggestedArea: LioHotelService.previewArea)
+        #else
+        EmptyView()
+        #endif
     }
 }
 

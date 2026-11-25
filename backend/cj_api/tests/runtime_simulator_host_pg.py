@@ -84,6 +84,9 @@ def exercise(conninfo):
             payload=json.loads(body['messages'][1]['content']);profile=payload['profile']
             round_number=len(payload['history'])//2
             value=dict(answers=['interests'],action='direct' if round_number>=profile['behavior']['direct_after'] else 'continue')
+        elif 'response_format' not in body:
+            # JT 2026-11-25 B: after intake, a consult message continues to the detailed answer path.
+            value=None
         else:
             schema=body['response_format']['json_schema']['schema']
             index=schema['properties']['current_source_index']['const']
@@ -91,7 +94,7 @@ def exercise(conninfo):
                 reply='I can help plan your visit. What interests you?',questions=(),index=index)
             value.update(version='LIO-planning-intake.8',planning_request_index=None,needs_tools=False)
         event=dict(id='chatcmpl-host-fixture-'+str(len(sent)),model=M4_MODEL,
-            choices=[dict(index=0,delta=dict(content=json.dumps(value)),finish_reason='stop')],
+            choices=[dict(index=0,delta=dict(content='I can help plan your visit. What interests you?' if value is None else json.dumps(value)),finish_reason='stop')],
             usage=dict(prompt_tokens=100,completion_tokens=100,total_tokens=200))
         return httpx.Response(200,stream=httpx.ByteStream(('data: '+json.dumps(event)+'\n\ndata: [DONE]\n\n').encode()))
     model=MeteredDashScopeProvider(DashScopeConfig(M4_BASE,M4_MODEL,'fixture-only-not-live'),
@@ -161,7 +164,7 @@ def exercise(conninfo):
             assert trace['failure_owner'] is None,(trace,episode.last_cost_report,[(type(e).__name__,str(e)) for e in errors])
             assert trace['end_reason']=='evaluation_bound_before_observed_exploration_end'
             assert episode.last_cost_report['coverage']=='COMPLETE'
-            assert len(episode.last_cost_report['operations'])==3
+            assert len(episode.last_cost_report['operations'])==5  # JT 2026-11-25 B: DUT consult = intake + answer
             assert {x['role'] for x in episode.last_cost_report['operations']}=={'actor','dut'}
             assert len(episode.returns)==2
             assert trace['cost']['actual_paid_cny'] is None
@@ -169,13 +172,13 @@ def exercise(conninfo):
     finally:
         host.stopped=True;stop.set();thread.join(10);id_environment.stop()
     assert not thread.is_alive() and not errors,errors
-    assert len(sent)==6,len(sent)
+    assert len(sent)==10,len(sent)  # JT 2026-11-25 B: DUT consult = intake + answer
     from eval.lio_simulated_user.core import SIMULATOR_SYSTEM
     assert sum(SIMULATOR_SYSTEM in b['messages'][0]['content'] for b in sent)==2
     assert all('hidden_answers'not in compact(b).decode() for b in sent if SIMULATOR_SYSTEM not in b['messages'][0]['content'])
     print('PASS actual NativeSimulatorHost signed PG factory, ZH/EN original DUT→actor→DUT, '
-          'producer-return witnesses, separate six original fees and closed journal; '
-          '2 local slots, 6 fixture HTTP, live0, real60 UNRUN, observations incomplete')
+          'producer-return witnesses, separate ten original fees and closed journal; '
+          '2 local slots, 10 fixture HTTP, live0, real60 UNRUN, observations incomplete')
 
 
 if __name__=='__main__':

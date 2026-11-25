@@ -160,7 +160,13 @@ struct LioRoadbookView: View {
             }
         }
         .fullScreenCover(item: Binding(get: { driverPlace.map(DriverPlace.init) }, set: { driverPlace = $0?.place })) { item in
-            LioRoadbookDriverCard(place: item.place, language: language)
+            // The taxi page's card when the place has a checked coordinate; the roadbook's own card only
+            // for a checked address without one.
+            if let place = LioTaxiPlace(itineraryPlace: item.place) {
+                LioTaxiDriverCard(language: language, place: place)
+            } else {
+                LioRoadbookDriverCard(place: item.place, language: language)
+            }
         }
     }
 

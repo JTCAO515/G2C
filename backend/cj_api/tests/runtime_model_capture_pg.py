@@ -62,6 +62,12 @@ def exercise(root,conninfo):
     budget=AuthorizationBudget(root/'financial',clock=lambda:datetime(2026,11,12,tzinfo=timezone.utc));sent=[]
     def response(request):
         body=json.loads(request.content);sent.append(body)
+        if 'response_format' not in body:
+            # JT 2026-11-25 B: after intake, a consult message continues to the detailed answer path.
+            value=dict(id='chatcmpl-capture-answer-'+str(len(sent)),model=M4_MODEL,
+                choices=[dict(index=0,delta={'content':'I can help you plan a visit. Which places interest you?'},finish_reason='stop')],
+                usage=dict(prompt_tokens=100,completion_tokens=100,total_tokens=200))
+            return httpx.Response(200,stream=httpx.ByteStream(('data: '+json.dumps(value)+'\n\ndata: [DONE]\n\n').encode()))
         index=body['response_format']['json_schema']['schema']['properties']['current_source_index']['const']
         wire=flow('Synthetic general travel question',city=None,days=None,intent='consult',
             reply='I can help you plan a visit. Which places interest you?',questions=(),index=index)
@@ -90,47 +96,50 @@ def exercise(root,conninfo):
         else:request['conversation_id']=receipts[0].conversation_id
         receipt=boundary.receive_lio(token,encode(request),prepare_scope=database._provision_scope,version='LIO-message.2');receipts.append(receipt)
         assert [o.status for o in worker.process()]==['completed']
-    assert len(sent)==model.calls==2 and len(budget.inspect())==2
+    assert len(sent)==model.calls==4 and len(budget.inspect())==4  # JT 2026-11-25 B: each consult = intake + detailed answer
     assert all(row['state']=='RECEIVED'for row in budget.inspect())
-    assert len(observed_history)==2 and len(observed_history[-1].references.messages)==2,'intake9 must retain prior original MESSAGE references'
+    # JT 2026-11-25 B: per message intake then detailed answer; both keep the prior MESSAGE reference.
+    assert [len(h.references.messages) for h in observed_history]==[1,1,2,2],'intake9 and answer must retain prior original MESSAGE references'
     originals=RuntimeOriginals(boundary,database,budget,directory,query_original=lambda ctx,mid:ctx.query_lio_message(mid))
     for receipt in receipts:
-        inventory=decode(originals.inventory(token,receipt.message_id));operation,=inventory['operations']
-        assert operation['registration_id']=='model.lio_intake.9'
-        original=decode(originals.artifact(token,receipt.message_id,operation['operation_id']))
-        wire=decode(originals.artifact(token,receipt.message_id,operation['operation_id'],wire_input=True))
-        assert sha256(original['result_utf8'].encode()).hexdigest()==original['receipt']['output_sha256']
-        assert wire['wire_input_sha256']==original['receipt']['input_sha256']
-        meter=decode(originals.meter(token,receipt.message_id,operation['operation_id']))
-        assert meter['state']=='settled'and meter['receipt']is not None and not meter['cancelled']
-        # The exact runtime factory defers its native scope until after the
-        # transaction characteristics are established. The public read path
-        # must bind inside that READ ONLY transaction, without touching Meter.
-        from cj_usage.postgres import PostgresRepository,RepositoryUnavailable
-        from cj_run.step_usage import ledger_scope_for
-        account=ledger_scope_for(owner,context.current.meter)
-        original_receipt=boundary.with_history_context(token,lambda ctx:ctx.query_lio_message(receipt.message_id).receipt)
-        binding=worker._binding(original_receipt)
-        original_exit=LocalBudgetRouter(database).for_run(binding,worker.runs.snapshot(binding))
-        status=original_exit.resolve_meter(binding,account).repo
-        original_ledger=database.connect(owner,usage_profile=context.current)
-        with original_ledger as db:
-            before_status=db.execute('SELECT revision,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()
-        unbound=PostgresRepository(lambda:database.connect(owner,usage_profile=context.current),account)
-        try:unbound.read_status(operation['attempt_id'],guard=lambda:None,max_response_bytes=4096)
-        except RepositoryUnavailable:pass
-        else:raise AssertionError('unbound runtime read unexpectedly bypassed scope isolation')
-        view=decode(status.read_status(operation['attempt_id'],guard=lambda:None,max_response_bytes=4096,
-            expected_period=(context.current.meter.period_start,context.current.meter.period_end)))
-        assert view['status']=='settled'and view['receipt_id']is not None
-        with database.connect(owner,usage_profile=context.current)as db:
-            assert db.execute('SELECT revision,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()==before_status
-        calls_before=model.calls;fees_before=len(budget.inspect())
-        surfaces=decode(NativeSurfaceInventory(originals,lambda:token,guard=lambda:None).collect(receipt.message_id))
-        assert surfaces['evidence_status']=='COMPLETE'and surfaces['missing']==[]
-        raw=[base64.b64decode(s['bytes_base64'])for s in surfaces['surfaces']]
-        assert wire['wire_input_utf8'].encode()in raw and original['result_utf8'].encode()in raw
-        assert model.calls==calls_before and len(budget.inspect())==fees_before
+        inventory=decode(originals.inventory(token,receipt.message_id));operations=inventory['operations']
+        # JT 2026-11-25 B: intake + detailed answer; every original operation keeps the full capture checks.
+        assert sorted(o['registration_id'] for o in operations)==['model.lio_intake.9','model.tool_turn'],operations
+        for operation in operations:
+            original=decode(originals.artifact(token,receipt.message_id,operation['operation_id']))
+            wire=decode(originals.artifact(token,receipt.message_id,operation['operation_id'],wire_input=True))
+            assert sha256(original['result_utf8'].encode()).hexdigest()==original['receipt']['output_sha256']
+            assert wire['wire_input_sha256']==original['receipt']['input_sha256']
+            meter=decode(originals.meter(token,receipt.message_id,operation['operation_id']))
+            assert meter['state']=='settled'and meter['receipt']is not None and not meter['cancelled']
+            # The exact runtime factory defers its native scope until after the
+            # transaction characteristics are established. The public read path
+            # must bind inside that READ ONLY transaction, without touching Meter.
+            from cj_usage.postgres import PostgresRepository,RepositoryUnavailable
+            from cj_run.step_usage import ledger_scope_for
+            account=ledger_scope_for(owner,context.current.meter)
+            original_receipt=boundary.with_history_context(token,lambda ctx:ctx.query_lio_message(receipt.message_id).receipt)
+            binding=worker._binding(original_receipt)
+            original_exit=LocalBudgetRouter(database).for_run(binding,worker.runs.snapshot(binding))
+            status=original_exit.resolve_meter(binding,account).repo
+            original_ledger=database.connect(owner,usage_profile=context.current)
+            with original_ledger as db:
+                before_status=db.execute('SELECT revision,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()
+            unbound=PostgresRepository(lambda:database.connect(owner,usage_profile=context.current),account)
+            try:unbound.read_status(operation['attempt_id'],guard=lambda:None,max_response_bytes=4096)
+            except RepositoryUnavailable:pass
+            else:raise AssertionError('unbound runtime read unexpectedly bypassed scope isolation')
+            view=decode(status.read_status(operation['attempt_id'],guard=lambda:None,max_response_bytes=4096,
+                expected_period=(context.current.meter.period_start,context.current.meter.period_end)))
+            assert view['status']=='settled'and view['receipt_id']is not None
+            with database.connect(owner,usage_profile=context.current)as db:
+                assert db.execute('SELECT revision,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s',(account,)).fetchone()==before_status
+            calls_before=model.calls;fees_before=len(budget.inspect())
+            surfaces=decode(NativeSurfaceInventory(originals,lambda:token,guard=lambda:None).collect(receipt.message_id))
+            assert surfaces['evidence_status']=='COMPLETE'and surfaces['missing']==[]
+            raw=[base64.b64decode(s['bytes_base64'])for s in surfaces['surfaces']]
+            assert wire['wire_input_utf8'].encode()in raw and original['result_utf8'].encode()in raw
+            assert model.calls==calls_before and len(budget.inspect())==fees_before
     # Read the actual native original Meter/financial sources; no artifact or
     # successful-output dependency is required by this accounting reader.
     from runtime_adapter import Binding
@@ -144,14 +153,14 @@ def exercise(root,conninfo):
     calls_before=model.calls;fees_before=budget.inspect()
     cost_bytes=costs.collect(deadline=time.monotonic()+30);cost=decode(cost_bytes)
     assert cost['accounting_status']=='SETTLED'and cost['missing']==[]
-    assert cost['totals']['attempts']==cost['totals']['settled']==2
-    assert cost['totals']['known_estimated_cny_1e7']==7000
+    assert cost['totals']['attempts']==cost['totals']['settled']==4  # JT 2026-11-25 B: each consult = intake + detailed answer
+    assert cost['totals']['known_estimated_cny_1e7']==14000  # JT 2026-11-25 B: four fixture receipts of 100+100 tokens, 3500 each
     assert cost['totals']['known_parent_conservative_hold_cny_1e7']==cost['totals']['unknown_hold_attempts']==0
     assert costs.collect(deadline=time.monotonic()+30)==cost_bytes
     assert model.calls==calls_before and budget.inspect()==fees_before
-    print('PASS original preparation accounting: two native settled Meter/financial attempts, '
-        '7000 fixed-point estimated units, repeated reads zero new model/fee; supplier paid UNKNOWN')
-    assert len(list(directory.glob('*.json')))==4
+    print('PASS original preparation accounting: four native settled Meter/financial attempts, '
+        '14000 fixed-point estimated units, repeated reads zero new model/fee; supplier paid UNKNOWN')
+    assert len(list(directory.glob('*.json')))==8  # JT 2026-11-25 B: each consult = intake + detailed answer
     foreign_token=dev_auth.token(auth,foreign,30)
     try:originals.visible_original(foreign_token,receipts[0].message_id)
     except Unavailable:pass
