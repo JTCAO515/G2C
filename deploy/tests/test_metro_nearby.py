@@ -186,8 +186,62 @@ def test_the_station_table_is_the_apps_bundled_positions():
 
 def test_a_damaged_station_table_is_refused(tmp_path):
     for table in [{'guangzhou': {'gz012': [200, 23]}}, {'guangzhou': {'gz012': [113.3]}},
-                  {'Guangzhou': {'gz012': [113.3, 23.1]}}, {'guangzhou': {'012': [113.3, 23.1]}}]:
+                  {'Guangzhou': {'gz012': [113.3, 23.1]}}, {'guangzhou': {'012': [113.3, 23.1]}}, [1, 2]]:
         path = tmp_path / 'table.json'
         path.write_text(json.dumps(table))
         with pytest.raises(ValueError):
             load_stations(path)
+    # A station listed twice is refused rather than one position silently winning.
+    path = tmp_path / 'table.json'
+    path.write_text('{"guangzhou": {"gz012": [113.3, 23.1], "gz012": [113.4, 23.2]}}')
+    with pytest.raises(ValueError):
+        load_stations(path)
+
+
+class Timeout:
+    def __init__(self):
+        self.calls = 0
+
+    def query(self, operation, params, reserve):
+        reserve()
+        self.calls += 1
+        raise PluginError(504, 'supplier_timeout')
+
+
+def test_a_timed_out_search_keeps_its_intent_and_is_never_sent_again(ledger):
+    """Metered exit: the outcome of a sent search is unknown, so its request id is spent (409), not resent."""
+    supplier = Timeout()
+    service = service_for(ledger, supplier)
+    original = MetroNearbyRequest.model_validate(payload())
+    with pytest.raises(PluginError) as timed_out:
+        service.search('owner', original, lambda: None)
+    assert (timed_out.value.status, timed_out.value.code) == (504, 'supplier_timeout')
+    assert [row['state'] for row in ledger.inspect()] == ['INTENT']
+    with pytest.raises(PluginError) as duplicate:
+        service.search('owner', original, lambda: None)
+    assert (duplicate.value.status, duplicate.value.code) == (409, 'request_already_used')
+    assert supplier.calls == 1
+
+
+def test_an_unknown_ledger_refuses_before_the_supplier(tmp_path):
+    """Metered exit: outside the authorized period the ledger cannot vouch for a call, so none is made (503)."""
+    expired = AuthorizationBudget(tmp_path / 'shared', clock=lambda: datetime(2027, 6, 1, tzinfo=SHANGHAI))
+    supplier = Timeout()
+    service = MetroNearbyService(supplier, MetroNearbyBudget(expired), stations=dict(STATIONS))
+    with pytest.raises(PluginError) as unknown:
+        service.search('owner', MetroNearbyRequest.model_validate(payload()), lambda: None)
+    assert (unknown.value.status, unknown.value.code) == (503, 'unavailable')
+    assert supplier.calls == 0 and expired.inspect() == []
+
+
+def test_the_shared_cash_ceiling_refuses_before_the_supplier(ledger, monkeypatch):
+    """Metered exit: when the shared Gaode cash total is spent, station searches stop too (429)."""
+    from cj_usage import metro_nearby_budget
+
+    monkeypatch.setattr(metro_nearby_budget, 'TOOL_TOTAL_CNY', 0)
+    supplier = Timeout()
+    service = service_for(ledger, supplier)
+    with pytest.raises(PluginError) as ceiling:
+        service.search('owner', MetroNearbyRequest.model_validate(payload()), lambda: None)
+    assert (ceiling.value.status, ceiling.value.code) == (429, 'quota_exceeded')
+    assert supplier.calls == 0 and ledger.inspect() == []
