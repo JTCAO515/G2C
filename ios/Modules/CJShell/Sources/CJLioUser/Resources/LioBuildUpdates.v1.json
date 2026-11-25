@@ -52,15 +52,15 @@
           },
           "items": {
             "zh": [
-              "行程：点「先只做准备」，选到达日期和护照国籍看入境结论，点「去办」进工具再返回。",
+              "行程：点「先只做准备」，关掉「还没定日期」选到达日期，再选护照国籍看入境结论；点「去办」进工具再返回。",
               "回酒店：在「酒店」点「设为我的酒店」，再试打车回酒店、给司机看和全屏出示卡。点餐：拍中文菜单，勾忌口，选菜，打开点单卡（约 10–40 秒，每天最多 10 张）。",
               "景点预约：故宫选 7 天内的日期，点「提醒我」并允许通知。城际交通：查上海→北京，点「预订」。路书：打开北京三日路线，试打车、景点详情、离线保存和导出 PDF。附近：逐类查「必需品」。地铁：广州「体育西路」看周边。",
               "这是这些功能第一次真机联调，遇到问题请在内部测试群发截图、问题记录和发生时间。"
             ],
             "en": [
-              "Trips: tap Just prepare, set arrival date and passport for the entry result, open a tool with Do it and come back.",
-              "Back to Hotel: tap Set as my hotel in Hotels, then try Taxi back, Show the driver and a full-screen card. Menu Helper: photograph a Chinese menu, tick needs, pick dishes, open the order card (10-40 s; 10 a day).",
-              "Sight Bookings: Palace Museum, a day within 7 days, Remind me. Intercity Travel: Shanghai to Beijing, tap Book. Roadbook: Beijing three-day route; try taxi, sight details, Save offline, Export PDF. Nearby: each Essentials type. Metro: Guangzhou Tiyu Xilu.",
+              "Trips: tap Just get ready, turn off Dates not decided yet, set an arrival date and passport for the entry result, open a tool with Go and come back.",
+              "Back to Hotel: tap Set as my hotel in Hotels, then try Taxi back, Show the driver and a full-screen card. Menu Helper: photograph a Chinese menu, tick needs, pick dishes, open the order card (10-40 s; 10 menus a day).",
+              "Sight Bookings: Palace Museum, a day within 7 days, Remind me. Intercity Travel: Shanghai to Beijing, tap Book. Roadbook: Beijing three-day route; try taxi, sight details, Keep offline, Export PDF. Nearby: each Essentials type. Metro: Guangzhou Tiyu Xilu.",
               "First run on devices: share a screenshot, the issue record and the time in the testing group."
             ]
           }
@@ -73,16 +73,16 @@
           },
           "items": {
             "zh": [
-              "注销账号后，景点预约的提醒仍会弹出，下一版修；可先逐条「取消提醒」。",
-              "景点和入境规则过了复核期（12-16、12-25 起）只显示官方链接；跨过 12-31 的行程现在就只显示官方链接。",
+              "注销账号后，景点预约的提醒仍会弹出，下一版修；可先逐条「取消提醒」。本地协助暂不发送求助消息。",
+              "八达岭 12-16 起、其他景点和入境规则 12-25 起只显示官方链接；行程跨过 12-31 或之后入境的，入境结论现在就只显示官方链接。",
               "火车只列部分车次，完整时刻请到 12306。酒店价格为参考价，日期、人数和是否接待外国人请在 Trip.com 确认。",
-              "点餐只显示菜单上印清楚的价格；过敏标记按常见做法推断，请向服务员确认。路书补充信息每天最多 60 个地点。会员方案仍是预览，不扣费。"
+              "点餐只显示菜单上印清楚的价格；过敏标记按常见做法推断，请向服务员确认。路书补充信息每天最多 60 个地点、5 本路书。会员方案仍是预览，不扣费。"
             ],
             "en": [
-              "Sight reminders still fire after account deletion; fixed next build. Cancel them first if needed.",
-              "Sight and entry rules past their check date (Dec 16, Dec 25) show only official links; trips past Dec 31 already do.",
-              "Trains list some departures; see 12306. Hotel prices are reference only; confirm dates, guests and foreign guests on Trip.com.",
-              "Menu prices show only when clearly printed; allergy flags are typical recipes, so ask staff. Roadbook details: 60 places a day. Plans remain a preview."
+              "Sight reminders still fire after account deletion; to be fixed in the next build. Cancel them first if needed. Local Support does not send help requests yet.",
+              "Badaling from Dec 16, other sights and entry rules from Dec 25 show only official links; for trips past Dec 31 or arriving later, entry already does.",
+              "Trains list some departures; see 12306. Hotel prices are reference only; confirm dates, guests and whether foreigners are accepted on Trip.com.",
+              "Menu prices show only when clearly printed; allergy flags are typical recipes, so ask staff. Roadbook details: 60 places and 5 books a day. Plans remain a preview."
             ]
           }
         },
@@ -94,10 +94,10 @@
           },
           "items": {
             "zh": [
-              "以上新功能需要联网，只对已开通的内测账号开放。地点、酒店和火车来自高德，航班来自飞常准；点餐用阿里云百炼的 qwen-vl-ocr 和 qwen3.8-flash，不保存菜单照片。没有推广链接。"
+              "酒店、城际交通、路书补充、点餐、车站周边和必需品需要联网，只对已开通的内测账号开放。地点、酒店和火车来自高德，航班来自飞常准；点餐用阿里云百炼的 qwen-vl-ocr 和 qwen3.8-flash，服务端不保存菜单照片。没有推广链接。"
             ],
             "en": [
-              "These features need internet and an enabled tester account. Places, hotels and trains from AMap, flights from VariFlight; Menu Helper uses Alibaba Cloud Model Studio (qwen-vl-ocr, qwen3.8-flash) and keeps no photos. No promotion links."
+              "Hotels, Intercity Travel, roadbook details, Menu Helper, station surroundings and Essentials need internet and an enabled tester account. Places, hotels and trains from AMap, flights from VariFlight; Menu Helper uses Alibaba Cloud Model Studio (qwen-vl-ocr, qwen3.8-flash); our server keeps no menu photos. No promotion links."
             ]
           }
         }
