@@ -12,8 +12,8 @@ outside the repository, so the path is never written here. In order, it stops un
 3. the newest member `Review: APPROVE|REQUEST CHANGES <head>` comment approves that head;
 4. the newest ci.yml pull_request run of the head succeeded and every check on the head passed
    (success, skipped or neutral) with none still running;
-5. no commit that reached main after that ci run started touches a file (or shared area, see
-   pr_overlap.py) this PR touches. Each PR's CI tested it against main as it was then; a later
+5. no commit that reached main after that ci run started, and that the PR head does not already
+   contain, touches a file (or shared area, see pr_overlap.py) this PR touches. Each PR's CI tested it against main as it was then; a later
    main commit to the same files is what broke main in f687a32f (#1604 and #1616). When this stops
    the merge, bring the branch up to date with main, wait for its new CI and review, and run again.
 
@@ -157,20 +157,40 @@ def git(*args):
     raise RuntimeError(f"git {' '.join(args[:3])}: {result.stderr.strip()}")
 
 
-def main_changes_since(started):
-    """Files main changed since shortly before `started`, and a function listing the main
-    (first-parent) commits that changed given paths."""
-    git('fetch', '--quiet', 'origin', 'main')
+def is_ancestor(commit, head):
+    result = subprocess.run(['git', 'merge-base', '--is-ancestor', commit, head], capture_output=True, text=True)
+    if result.returncode not in (0, 1):
+        raise RuntimeError(f'git merge-base --is-ancestor {commit} {head}: {result.stderr.strip()}')
+    return result.returncode == 0
+
+
+def main_changes_since(started, number, head):
+    """Files changed by main (first-parent) commits from shortly before `started` that the PR head
+    does not already contain, and a function listing those commits that touch given paths.
+
+    A commit the head contains was tested by the PR's CI whatever its time, so it never counts;
+    #1627's merge sat inside the margin of #1636's CI run but was already in #1636's branch.
+    """
+    git('fetch', '--quiet', 'origin', 'main', f'+refs/pull/{number}/head:refs/merge-guard/pull/{number}')
+    fetched = git('rev-parse', f'refs/merge-guard/pull/{number}').strip()
+    if fetched != head:
+        raise Blocked(f'the PR head on GitHub is {fetched}, not {head}')
     since = (started - MARGIN).strftime('%Y-%m-%dT%H:%M:%SZ')
     base = git('rev-list', '-1', '--first-parent', f'--before={since}', 'origin/main').strip()
     if not base:
         raise RuntimeError(f'no main commit before {since}')
-    # --no-renames lists both sides of a rename on main; -z keeps spaces and non-ASCII paths intact.
-    files = set(filter(None, git('diff', '--no-renames', '-z', '--name-only', base, 'origin/main').split('\0')))
+    touched = {}  # main commit -> (its line in a message, the paths it changed against its first parent)
+    for line in git('log', '--first-parent', '--format=%H %h %s', f'{base}..origin/main').splitlines():
+        commit, short, subject = (line.split(' ', 2) + [''])[:3]
+        if is_ancestor(commit, head):
+            continue
+        # --no-renames lists both sides of a rename; -z keeps spaces and non-ASCII paths intact.
+        paths = set(filter(None, git('diff', '--no-renames', '-z', '--name-only', f'{commit}^1', commit).split('\0')))
+        touched[commit] = (f'  {short} {subject}', paths)
+    files = set().union(*(paths for _, paths in touched.values()))
 
-    def log_for(paths):
-        return git('--literal-pathspecs', 'log', '--no-renames', '--first-parent', '--format=  %h %s', f'{base}..origin/main',
-                   '--', *paths).rstrip()
+    def log_for(common):
+        return '\n'.join(line for line, paths in touched.values() if overlap(paths, common))
     return files, log_for
 
 
@@ -203,7 +223,7 @@ def guard(number, head, note, dry_run=False, fix_main=False):
     runs = gh(f'actions/workflows/ci.yml/runs?event=pull_request&head_sha={head}&per_page=20')['workflow_runs']
     run = check_ci(runs, paged(f'commits/{head}/check-runs?filter=latest', 'check_runs'))
     started = datetime.datetime.fromisoformat(run['created_at'].replace('Z', '+00:00'))
-    later, log_for = main_changes_since(started)
+    later, log_for = main_changes_since(started, number, head)
     check_overlap(paged(f'pulls/{number}/files'), later, log_for)
     print(f'#{number} {head}: main {state}, approved, CI green (run {run["id"]}), '
           f'no overlap with {len(later)} files main changed since that CI started')
