@@ -97,6 +97,15 @@ def _charged(db):
     return charged
 
 
+def _daily(db, operation):
+    """Requests (stage 00 rows) and new places this owner has used today."""
+    return db.execute(
+        """SELECT count(*),COALESCE(sum(json_extract(receipt,'$.places')),0) FROM attempt
+        WHERE id GLOB ? AND json_extract(receipt,'$.day')=?""",
+        (f'{SERVICE}:{operation.owner}:*:00', operation.day.isoformat()),
+    ).fetchone()
+
+
 def _refusal(db):
     """Why one more reserved call would not fit, or None."""
     reserve = LIMITS['model'][1] * CNY_SCALE
@@ -133,6 +142,19 @@ class RoadbookBudget:
             self.authorization.require_producer(db)
             return _refusal(db) is not None
 
+    def admits(self, operation):
+        """Read-only look before any Gaode call: would this request's first model call be allowed today?
+
+        `begin` checks again under the ledger lock; this only avoids paying for facts that cannot be used."""
+        self.authorization.check_date()
+        with self.authorization.connect() as db:
+            db.execute('BEGIN')
+            self.authorization.require_producer(db)
+            if _refusal(db) is not None:
+                return False
+            books, places = _daily(db, operation)
+            return books < DAILY_BOOKS and places + operation.places <= DAILY_PLACES
+
     def begin(self, operation, stage):
         """Reserve exactly one upstream call, using the parent ledger lock."""
         self.authorization.check_date()
@@ -144,11 +166,7 @@ class RoadbookBudget:
             if db.execute('SELECT 1 FROM attempt WHERE id=?', (attempt,)).fetchone():
                 raise RoadbookDuplicate('original roadbook call already reserved')
             if stage == 0:
-                books, places = db.execute(
-                    """SELECT count(*),COALESCE(sum(json_extract(receipt,'$.places')),0) FROM attempt
-                    WHERE id GLOB ? AND json_extract(receipt,'$.day')=?""",
-                    (f'{SERVICE}:{operation.owner}:*:00', operation.day.isoformat()),
-                ).fetchone()
+                books, places = _daily(db, operation)
                 if books >= DAILY_BOOKS or places + operation.places > DAILY_PLACES:
                     raise RoadbookLimit('daily roadbook allowance exhausted')
             elif not db.execute(
