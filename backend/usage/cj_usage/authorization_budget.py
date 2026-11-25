@@ -88,15 +88,33 @@ def _price_receipt(kind, raw):
             return None
         return prompt*MODEL_INPUT_PRICE+completion*MODEL_OUTPUT_PRICE
     endpoint=receipt.get('endpoint')
-    if kind=='place' and receipt.get('service')=='amap-nearby.1':
-        from .nearby_budget import OPERATIONS, ORIGIN
+    services=shared_place_services() if kind=='place' else {}
+    if receipt.get('service') in services:
+        origin,operations,_=services[receipt.get('service')]
         operation=receipt.get('operation')
-        if type(operation) is str and operation in OPERATIONS and endpoint==ORIGIN+OPERATIONS[operation]:
+        if type(operation) is str and operation in operations and endpoint==origin+operations[operation]:
             return AMAP_PRICE
         return None
     if kind in AMAP_ENDPOINTS and type(endpoint) is str and endpoint in AMAP_ENDPOINTS[kind]:
         return AMAP_PRICE
     return None
+
+
+def shared_place_services():
+    """Gaode services authorized apart from the Lio pipeline that share the tool cash ceiling.
+
+    service -> (origin, operations, counted separately from entry 3's place allowance).
+    Nearby (entry 12 item 1) has its own count; hotel search (entry 12 item 3) counts in entry 3 (#1523).
+    """
+    from . import hotel_budget,nearby_budget
+    return {nearby_budget.SERVICE:(nearby_budget.ORIGIN,nearby_budget.OPERATIONS,True),
+            hotel_budget.SERVICE:(hotel_budget.ORIGIN,hotel_budget.OPERATIONS,False)}
+
+
+def separately_counted_place(db):
+    """Place attempts that belong to a separately counted service, not the legacy allowance."""
+    return sum(db.execute("SELECT count(*) FROM attempt WHERE kind='place' AND id GLOB ?",(service+':*',)).fetchone()[0]
+               for service,(_,_,separate) in shared_place_services().items() if separate)
 
 
 def authorization_usage(db):
@@ -210,9 +228,9 @@ class AuthorizationBudget:
             counts,estimates,holds=authorization_usage(db)
             count=counts[kind]
             if kind=='place':
-                # The separately authorized Nearby counts share cash, not the
-                # legacy Lio place allowance.
-                count-=db.execute("SELECT count(*) FROM attempt WHERE kind='place' AND id GLOB 'amap-nearby.1:*'").fetchone()[0]
+                # Separately authorized place services (Nearby) share cash, not the
+                # legacy Lio place allowance; hotel search counts in it (JT 2026-11-25).
+                count-=separately_counted_place(db)
             if count>=LIMITS[kind][0]:raise BudgetUnknown('M4 call allowance exhausted')
             reserve=LIMITS[kind][1]*CNY_SCALE
             if kind=='model':
