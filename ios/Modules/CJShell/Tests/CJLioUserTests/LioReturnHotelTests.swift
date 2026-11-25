@@ -104,6 +104,19 @@ import Testing
         #expect(LioReturnHotelTools.hotelStore(roadbookDirectory: nil, isCurrent: { true }) == nil)
     }
 
+    @Test func aHotelSearchResultBecomesTheStayHotelWithItsChineseAddress() {
+        let offer = LioHotelOffer(id: "h1", nameZH: "全季酒店（北京东单店）", nameEN: nil,
+                                  addressZH: "北京市东城区东单北大街98号", addressEN: nil,
+                                  coordinate: .init(latitude: 39.91, longitude: 116.42, referenceSystem: .gcj02),
+                                  rating: nil, price: nil, metro: nil, foreignGuests: .unknown,
+                                  booking: URL(string: "https://hotel.example.invalid/out/h1")!)
+        let hotel = LioStayHotel(hotelSearchOffer: offer)
+        #expect(hotel.source == .hotelSearch && hotel.roomNumber == nil)
+        #expect(hotel.place == offer.taxiPlace)
+        #expect(hotel.place.addressZH == "北京市东城区东单北大街98号")
+        #expect(hotel.place.nameEN == "全季酒店（北京东单店）", "no English name: the Chinese name stands in")
+    }
+
     @Test func onlyAnExplicitYesTurnsTheBuildFlagOn() {
         #expect(LioShowCardFeature.enabled(infoValue: "YES"))
         for value: Any? in [nil, "", "NO", "yes", "$(G2C_SHOW_CARD_ENABLED)", true, false, 1] {

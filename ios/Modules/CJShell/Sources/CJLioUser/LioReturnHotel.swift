@@ -38,6 +38,13 @@ struct LioStayHotel: Codable, Equatable, Sendable {
     }
 }
 
+extension LioStayHotel {
+    /// "Set as my hotel" on a hotel search result (#1573): its GCJ-02 point and Chinese address, no room yet.
+    init(hotelSearchOffer offer: LioHotelOffer) {
+        self.init(place: offer.taxiPlace, roomNumber: nil, source: .hotelSearch)
+    }
+}
+
 enum LioReturnHotel {
     private static let hotelWordsZH = ["酒店", "宾馆", "饭店", "旅馆", "客栈", "民宿", "公寓", "招待所", "青旅", "旅舍"]
     private static let hotelWordsEN = ["hotel", "inn", "hostel", "guesthouse", "guest house", "resort", "apartment", "lodge"]
