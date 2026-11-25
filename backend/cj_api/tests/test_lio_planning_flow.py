@@ -314,6 +314,22 @@ class PlanningFlow(unittest.TestCase):
                 stored=context(events)
                 self.assertEqual((stored['authority'],stored['status']),('none','consult'))
 
+    def test_bare_greeting_gets_the_approved_copy_without_a_model_call(self):
+        # HK A/B (2026-11-25): the answer model copied the greeting example for real
+        # questions; bare greetings now get the approved copy from code, per locale.
+        from cj_message.lio_context import greeting_reply
+        for text,locale,reply in (('你好','zh','你好！准备去哪儿玩？'),('您好！','zh','你好！准备去哪儿玩？'),
+                                  ('Hi','en','Hey! Where are you off to?'),('hey there!','en','Hey! Where are you off to?'),
+                                  ('Hello','en','Hey! Where are you off to?')):
+            with self.subTest(text=text):
+                self.assertEqual(greeting_reply(text,locale),reply)
+                published,events,lookups,result=run(flow(text,city=None,days=None,questions=()),text,locale=locale)
+                self.assertIsNotNone(result)
+                self.assertEqual((published,lookups),([],[]))
+                self.assertEqual(answer(events),reply)
+        for text in ('你好，成都几月去最好？','Hi, can I pay by Visa?','Hello there, Chengdu?','谢谢','Hi Beijing'):
+            with self.subTest(text=text):self.assertIsNone(greeting_reply(text,'zh'))
+
     def test_missing_semantic_request_index_does_not_grant_save(self):
         text='去成都玩三天';wire=flow(text,questions=(),reply='成都适合安排街区散步。')
         wire.update(planning_request_index=None,needs_tools=False)
