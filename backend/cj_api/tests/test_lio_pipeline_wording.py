@@ -56,6 +56,22 @@ class FinalWording(unittest.TestCase):
             else:self.assertEqual(new,old)
         self.assertEqual(compiled.document,before)
 
+    def test_blank_reason_becomes_no_reason_not_an_unsavable_note(self):
+        # HK run 4fb238dc (2026-11-26, 春熙路): the schema allows an empty reason string, and an
+        # empty or blank note fails the saved itinerary's bounded-text check after wording.
+        from cj_trip.structured_v4 import _optional_text
+        compiled,items,_=self.case()
+        for reason in ('','  ','\n'):
+            with self.subTest(reason=repr(reason)):
+                reply=packed(dict(version=WORDING,items=[dict(item_id=row['item_id'],
+                    reason=reason,reason_refs=['interests'],tip=None)for row in items]))
+                result=apply_wording(compiled.document,((items,reply),),
+                    locale='en',facts=(ProfileFact('interests','known','history'),))
+                for item in result['items']:
+                    _optional_text(item['note'])
+                    if item['id']in {row['item_id']for row in items}:
+                        self.assertIsNone(item['note']);self.assertEqual(item['reason_refs'],[])
+
     def test_late_wording_cannot_make_saved_booking_or_internal_metadata_claims(self):
         compiled,items,_=self.case()
         for reason in ('I have booked your hotel.','行程已为你保存。','tool_call_id=private-example'):
