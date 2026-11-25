@@ -10,7 +10,7 @@ from cj_message.lio_exploration_schema import ProfileUpdate
 
 from .lio_exploration_factors import BY_KEY, LABELS, defaults
 from .lio_planning_grounding import NUMBERS,planning_withdrawn
-from .lio_positive_trip import supports as positive_trip_support
+from .lio_positive_trip import supports as positive_trip_support,trip_tokens,day_counts
 
 CONTEXT = 'lio_planning_context.2:'
 VERSION = 'lio_planning_context.2'
@@ -218,7 +218,23 @@ def _supported_source(update, clause, quote,registered_city_terms=()):
     return whole == part
 
 
-def _known_value(update, sources):
+def _trip_span(quote, key, registered_city_terms):
+    """The one city span or day count of a quote that is wholly a positive trip request.
+
+    HK run -45 (2026-11-26): the model quoted "我想去成都玩3天" whole for both city and
+    duration_days. Only the finite trip grammar may read it; any token outside it
+    (negation, a question word, a conjunction, a second city or count) gives None.
+    """
+    found = trip_tokens(quote, registered_city_terms=registered_city_terms)
+    if found is None:
+        return None
+    if key == 'city':
+        return found['city'][0] if found['city'] else None
+    counts = set(day_counts(found))
+    return counts.pop() if len(counts) == 1 else None
+
+
+def _known_value(update, sources, registered_city_terms=()):
     """Known values must be literal spans or canonical equivalents of those spans."""
     value = tuple(update.value) if isinstance(update.value, list) else update.value
     quotes = [source.quote for source in sources]
@@ -226,10 +242,13 @@ def _known_value(update, sources):
         pattern=r'([0-9]{1,3}|one|two|three|four|five|six|seven|eight|nine|ten|[一二两三四五六七八九十])(?:\s*|-)(?:天|日|days?)'
         def count(match):
             return int(match[1]) if match[1].isascii() and match[1].isdecimal() else NUMBERS[match[1].casefold()]
-        matches=[re.fullmatch(pattern,_positive_payload('duration_days',quote),re.I) for quote in quotes]
-        if any(match is None for match in matches):
-            raise InvalidInput('affirmative original duration required')
-        counts = {count(match) for match in matches}
+        counts = set()
+        for quote in quotes:
+            match = re.fullmatch(pattern,_positive_payload('duration_days',quote),re.I)
+            found = count(match) if match is not None else _trip_span(quote,'duration_days',registered_city_terms)
+            if found is None:
+                raise InvalidInput('affirmative original duration required')
+            counts.add(found)
         if type(value) is str:
             # A literal day-count span (for example "3天") states the same count
             # as an int; it is still accepted only when it equals the quote's count.
@@ -250,6 +269,10 @@ def _known_value(update, sources):
         expected = [_canonical(update.factor_key, quote) for quote in quotes]
         if all(value == candidate for candidate in expected):
             return value
+        if update.factor_key == 'city' and type(value) is str:
+            spans = [_trip_span(quote,'city',registered_city_terms) for quote in quotes]
+            if all(span is not None and span.casefold() == value.strip().casefold() for span in spans):
+                return spans[0]  # the exact original span
         if BY_KEY[update.factor_key].multiple and isinstance(value, tuple) and value and len(set(value)) == len(value):
             combined = tuple(dict.fromkeys(v for group in expected for v in group))
             if set(value) == set(combined):
@@ -295,7 +318,7 @@ def parse_updates(raw, originals,*,registered_city_terms=()):
                     factor.multiple and isinstance(value, tuple) and value and len(value) == len(set(value)) and set(value) <= allowed):
                 raise InvalidInput('bounded inferred factor value required')
         else:
-            value = _known_value(update, sources)
+            value = _known_value(update, sources, registered_city_terms)
         facts.append(Fact(factor.key, value, state, tuple(sources)))
     return tuple(facts)
 
