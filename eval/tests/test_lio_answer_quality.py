@@ -164,6 +164,42 @@ class OneScreenTests(unittest.TestCase):
         where = check_answer(self.cases['food-chengdu-zh'], dict(text='成都先吃火锅。', chips=['火锅', '小吃', '都想试']), profile=ONE_SCREEN)
         self.assertTrue(where['checks']['has_action'])
 
+    def test_review_followups_chip_cap_filler_boundaries_and_pinyin_prefix(self):
+        # #1638 review + S contract (at most 3 chips per answer, 2026-11-25).
+        from eval.lio_answer_quality import _within_budget
+        case = self.cases['alipay-zh']
+        def has_action(actions, chips, case=case):
+            return check_answer(case, dict(text='先把 Visa 卡绑到支付宝，用护照验证后扫码付款。', actions=actions, chips=chips),
+                                profile=ONE_SCREEN)['checks']['has_action']
+        self.assertTrue(has_action(['打开支付开通指南'], ['1', '2', '3']))
+        self.assertFalse(has_action(['打开支付开通指南'], ['1', '2', '3', '4']))
+        self.assertFalse(has_action([], ['1', '2', '3', '4'], self.cases['food-chengdu-zh']))
+        tipping = self.cases['tipping-en']
+        def first(text, case=tipping):
+            return check_answer(case, dict(text=text, actions=['Open etiquette tips']), profile=ONE_SCREEN)['checks']['first_answer']
+        for text in ('Of course not, tipping is not expected.', 'Hi-speed trains have no tipping either; tipping is not expected.',
+                     'Hello Kitty cafes do not expect tips either.', 'Sure-footed hikers tip guides, but tipping is not expected.'):
+            with self.subTest(passes=text):self.assertTrue(first(text))
+        for text in ('当然可以，把 Visa 绑到支付宝就能扫码付。', '没问题，外国游客可以直接用支付宝。', '你好像需要先绑卡，再扫码付款。'):
+            with self.subTest(passes=text):self.assertTrue(first(text, case))
+        for text in ('Sure! Tipping is not expected.', 'Absolutely. Tipping is not expected.', 'Of course! No tipping.'):
+            with self.subTest(fails=text):self.assertFalse(first(text))
+        for text in ('当然可以！把 Visa 绑到支付宝。', '没问题。先绑卡。'):
+            with self.subTest(fails=text):self.assertFalse(first(text, case))
+        # Pinyin annotations only stop counting once closed; the cut keeps the longest fitting prefix.
+        self.assertEqual(_within_budget('Try Peking duck (烤鸭 kao ya) today and tomorrow', 'en', 4),
+                         'Try Peking duck (烤鸭 kao ya) today')
+        self.assertEqual(_within_budget('成都火锅很辣', 'zh', 4), '成都火锅')
+
+    def test_default_profile_still_rejects_non_text_answers_up_front(self):
+        import tempfile, os
+        with tempfile.TemporaryDirectory() as folder:
+            path = os.path.join(folder, 'answers.json')
+            with open(path, 'w') as handle:
+                json.dump({'not-a-case': {'text': 'x'}}, handle)
+            with self.assertRaises(SystemExit):
+                main(['score', path])
+
     def test_greeting_and_emergency_budgets(self):
         greeting = check_answer(self.cases['greeting-zh'], '你好！准备去哪儿玩？', profile=ONE_SCREEN)
         self.assertTrue(greeting['passed'], greeting)

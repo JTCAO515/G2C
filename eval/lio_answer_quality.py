@@ -37,10 +37,13 @@ BUDGETS = {'greeting': (40, 25), 'task': (150, 90), 'nearby': (130, 80), 'compar
            'plan': (200, 120), 'edit': (100, 60), 'emergency': None}
 SCENARIO_KIND = {'planning': 'plan', 'practical': 'task', 'chat': 'task', 'recommendation': 'compare',
                  'greeting': 'greeting', 'followup': 'edit', 'emergency': 'emergency'}
-MAX_ACTIONS, MAX_CHIPS = 2, 4
-# Openings that are not an answer: greetings, self-introductions, praise and filler.
-PREFACE = re.compile(r'\s*(?:你好|您好|嗨|hey\b|hi\b|hello\b|我是\s*Lio|I[\'’]m Lio|好问题|这是个好问题|问得好|当然可以|当然|没问题|'
-                     r'great question|good question|sure\b|of course|absolutely|happy to help|glad you asked)', re.I)
+MAX_ACTIONS, MAX_CHIPS = 2, 3  # S contract: at most 3 chips per answer (2026-11-25)
+# Openings that are not an answer: greetings, self-introductions and praise anywhere at the start;
+# assent words ("当然可以", "Sure") only when they stand alone as the whole first sentence.
+_END = r'(?![\w-])'
+PREFACE = re.compile(r'\s*(?:(?:你好|您好|嗨)(?!像)|hey' + _END + r'|hi' + _END + r'(?!\s+[A-Z])|hello' + _END + r'(?!\s+[A-Z])|'
+                     r'我是\s*Lio|I[\'’]m Lio|好问题|这是个好问题|问得好|great question|good question|happy to help|glad you asked)', re.I)
+ASSENT = re.compile(r'\s*(?:当然可以|当然|没问题|好的|sure|of course|absolutely|certainly)\W*', re.I)
 FIRST_SENTENCE = re.compile(r'\s*(.*?)([。！？!?\n]|\.(?=\s|$)|$)', re.S)
 LOCALES = ('zh', 'en')
 SCENARIOS = ('planning', 'practical', 'recommendation', 'emergency', 'chat', 'greeting', 'followup')
@@ -94,14 +97,10 @@ def _within_budget(text, locale, budget):
     """The longest prefix of text whose unit count fits the budget."""
     if budget is None or count_units(text, locale) <= budget:
         return text
-    low, high = 0, len(text)
-    while low < high:
-        middle = (low + high + 1) // 2
-        if count_units(text[:middle], locale) <= budget:
-            low = middle
-        else:
-            high = middle - 1
-    return text[:low]
+    # English counts are not monotonic over prefixes (a pinyin annotation stops counting only once
+    # its bracket closes), so check every word end instead of bisecting; Chinese counts characters.
+    ends = range(1, len(text) + 1) if locale == 'zh' else [m.end() for m in re.finditer(r'\S+', text)]
+    return text[:max((end for end in ends if count_units(text[:end], locale) <= budget), default=0)]
 
 
 def _structured(answer, profile):
@@ -138,7 +137,8 @@ def check_answer(case, answer, profile=DETAIL):
         if case['scenario'] != 'greeting':
             first = FIRST_SENTENCE.match(answer)
             checks['first_answer'] = (bool(first.group(1).strip()) and first.group(2) not in ('?', '？')
-                                      and PREFACE.match(first.group(1)) is None)
+                                      and PREFACE.match(first.group(1)) is None
+                                      and ASSENT.fullmatch(first.group(1)) is None)
             visible = [a for a in actions if a.strip()]
             shown = [c for c in chips if c.strip()]
             checks['has_action'] = (len(visible) == len(actions) and len(shown) == len(chips)
@@ -205,7 +205,8 @@ def main(argv=None):
             print(case['id'], case['locale'], ' ⏎ '.join(case['turns']), sep='\t')
         return 0
     answers = strict_json(Path(args.answers).read_bytes())
-    if type(answers) is not dict:
+    if type(answers) is not dict or not all(
+            type(v) is str or args.profile == ONE_SCREEN and type(v) is dict for v in answers.values()):
         raise SystemExit('answers must map case id to answer text')
     try:
         result = summarize(cases, answers, args.profile)
