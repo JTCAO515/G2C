@@ -1,0 +1,24 @@
+{
+  "asset": "Lio 高清原件",
+  "source": "Codex 内置图像生成，参考 JT 2026-11-09 上传的 Lio 原件",
+  "files": {
+    "lio-master-full-2048.png": {
+      "bytes": 3354920,
+      "sha256": "f40d36e860803fc14a02ae5835479f8f847d342346ce465d1c22dc13c67823c3",
+      "width": 1365,
+      "height": 2048
+    },
+    "lio-master-head-2048.png": {
+      "bytes": 4514902,
+      "sha256": "911af7b810b60bc42f2ff88cbad6a29a5cdd33c3794391d8d3ecda54abc5018c",
+      "width": 2048,
+      "height": 2048
+    },
+    "lio-master-head-preview-faf6ef.png": {
+      "bytes": 3771493,
+      "sha256": "d186a65eb06acdd7a67a4f36bd94df6ae9cc529faef772b4e834c26c44cb191f",
+      "width": 2048,
+      "height": 2048
+    }
+  }
+}
