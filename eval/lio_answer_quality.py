@@ -7,7 +7,7 @@ case id to the visible answer text.
 
 Profiles:
   detail      (default, checks.1) the #1472 detail checks: minimum length, morning/afternoon per day.
-  one-screen  (checks.2) the one-screen structure JT chose on 2026-11-25 (strategy/lio-answer-design.md):
+  one-screen  (checks.3) the one-screen structure JT chose on 2026-11-25 (strategy/lio-answer-design.md):
               body within the per-type screen budget, the first sentence answers, one or two actions
               (or tappable follow-ups for "where to go"), and required elements counted only inside
               the budget, so a longer answer no longer earns more hits.
@@ -31,7 +31,7 @@ CASES = ROOT / 'lio_answer_quality_cases.v1.json'
 VERSION = 'LIO-answer-quality-checks.1'
 DETAIL = 'detail'
 ONE_SCREEN = 'one-screen'
-PROFILES = {DETAIL: VERSION, ONE_SCREEN: 'LIO-answer-quality-checks.2'}
+PROFILES = {DETAIL: VERSION, ONE_SCREEN: 'LIO-answer-quality-checks.3'}
 # Body budget per answer type (zh characters, en words), from the design table; None = unlimited.
 BUDGETS = {'greeting': (40, 25), 'task': (150, 90), 'nearby': (130, 80), 'compare': (180, 110),
            'plan': (200, 120), 'edit': (100, 60), 'emergency': None}
@@ -44,6 +44,11 @@ MAX_ACTIONS, MAX_CHIPS = 2, 3  # S contract: at most 3 chips per answer (2026-11
 # answer has no valid first-version button and ends with 2-3 tappable follow-ups
 # (docs/lio-voice.md §4.2, §9.1).
 V1_ACTION_CASES = frozenset({'alipay-zh', 'visa-card-en', 'taxi-foreigner-zh', 'uber-taxi-en'})
+# Two bubbles (JT 2026-11-25, docs/lio-voice.md §3.2): layout=split answers put only the answer
+# (or, in an emergency, the action) in the first paragraph, then a blank line.
+SPLIT_KINDS = frozenset({'task', 'nearby', 'compare', 'emergency'})
+FIRST_PARAGRAPH_UNITS = (35, 20)
+BLANK_LINE = re.compile(r'\n[ \t\u3000]*\n')
 # Openings that are not an answer: greetings, self-introductions and praise anywhere at the start;
 # assent words ("当然可以", "Sure") only when they stand alone as the whole first sentence.
 _END = r'(?![\w-])'
@@ -53,7 +58,6 @@ ASSENT = re.compile(r'\s*(?:当然可以|当然|没问题|好的|sure|of course|
 FIRST_SENTENCE = re.compile(r'\s*(.*?)([。！？!?\n]|\.(?=\s|$)|$)', re.S)
 LOCALES = ('zh', 'en')
 SCENARIOS = ('planning', 'practical', 'recommendation', 'emergency', 'chat', 'greeting', 'followup')
-
 # Fixed openings and self-introductions copied into non-greeting answers.
 TEMPLATE_PHRASES = re.compile(
     r'准备去哪儿玩|你好！?准备|Where are you off to|^\s*(?:你好|您好|Hey|Hi|Hello)\s*[!！,，]'
@@ -151,6 +155,11 @@ def check_answer(case, answer, profile=DETAIL):
                                     and len(actions) <= MAX_ACTIONS and len(chips) <= MAX_CHIPS
                                     and (bool(actions) if case['id'] in V1_ACTION_CASES
                                          else not actions and len(chips) >= 2))
+        if kind in SPLIT_KINDS:
+            parts = BLANK_LINE.split(answer.strip(), maxsplit=1)
+            head = parts[0].strip()
+            checks['first_paragraph'] = (len(parts) == 2 and bool(head) and '\n' not in head
+                                         and count_units(head, locale) <= FIRST_PARAGRAPH_UNITS[LOCALES.index(locale)])
     else:
         if 'min_units' in case:
             checks['detail_length'] = units >= case['min_units']
@@ -193,7 +202,7 @@ def summarize(cases, answers, profile=DETAIL):
             values = [ok for row in rows for name, ok in row['checks'].items() if names(name)]
             return round(sum(values) / len(values), 3) if values else None
         result['rates'] = {name: rate(lambda n, name=name: n == name)
-                           for name in ('screen_budget', 'first_answer', 'has_action')}
+                           for name in ('screen_budget', 'first_answer', 'has_action', 'first_paragraph')}
         result['rates']['elements_in_budget'] = rate(lambda n: n.startswith('element_'))
     return result
 
