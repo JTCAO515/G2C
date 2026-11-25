@@ -211,6 +211,17 @@ class PlanUnderstandingBoundary(unittest.TestCase):
                     else:
                         with self.assertRaises(InvalidInput):self.compile(value,turns)
 
+    def test_plan_understanding_prompt_omits_unstated_fields_and_lodging_areas(self):
+        # HK run 316fbf11 probe (2026-11-25): flash listed every unstated field as
+        # unknown with invented sources (and hit the 1536-token cap) and turned
+        # "住在春熙路附近的酒店" into a fixed arrangement, so the whole plan was refused.
+        from cj_api.lio_pipeline_model import PLAN_UNDERSTANDING_SYSTEM
+        self.assertIn('Omit observations that were never stated; never list an unmentioned field as unknown.',
+                      PLAN_UNDERSTANDING_SYSTEM)
+        self.assertIn('Where the traveler only says where they will stay, without a stated date or clock, '
+                      'is not a fixed arrangement.',PLAN_UNDERSTANDING_SYSTEM)
+        self.assertIn('Retain every fixed arrangement',PLAN_UNDERSTANDING_SYSTEM)
+
     def test_date_uses_its_source_mid_day_not_plan_trigger_day(self):
         result=parse_plan_understanding(packed(self.packet()),self.turns())
         self.assertEqual(result.observations[0].value,'2026-11-15')
