@@ -114,9 +114,12 @@ class RoadbookBudget:
     def cache_only(self):
         """True when one more call would not fit: 80% of the sublimit, or the shared model stop line.
 
-        A read-only look at the journal (no write lock, no control-file write)."""
+        A read-only look at one journal snapshot (no write lock, no control-file write), like
+        `sublimits.read`. Callers treat any exception here as cache only; `begin` checks again
+        under the ledger lock."""
         self.authorization.check_date()
         with self.authorization.connect() as db:
+            db.execute('BEGIN')
             self.authorization.require_producer(db)
             return _refusal(db) is not None
 
@@ -127,7 +130,6 @@ class RoadbookBudget:
             raise BudgetUnknown('invalid roadbook stage')
         attempt = operation.identifier(stage)
         metadata = operation.metadata(stage)
-        reserve = LIMITS['model'][1] * CNY_SCALE
         with self.authorization.mutation() as db:
             if db.execute('SELECT 1 FROM attempt WHERE id=?', (attempt,)).fetchone():
                 raise RoadbookDuplicate('original roadbook call already reserved')
