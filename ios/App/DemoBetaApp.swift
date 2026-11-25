@@ -30,6 +30,7 @@ struct DemoBetaRootView: View {
                    toolsRelay: trip.lioTranslationRelay, currencyRelay: trip.lioCurrencyRelay,
                    taxiRelay: trip.lioTaxiRelay, nearbyRelay: trip.lioNearbyRelay,
                    hotelRelay: trip.lioHotelRelay,
+                   transportRelay: trip.lioTransportRelay,
                    taxiRecentDirectory: trip.messages.lioTaxiRecentDirectory,
                    savedPlans: trip.messages.lioSavedPlans,
                    roadbookDirectory: trip.messages.lioRoadbookDirectory,
