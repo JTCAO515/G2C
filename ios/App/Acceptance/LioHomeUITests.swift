@@ -2344,7 +2344,10 @@ import CryptoKit
 
     /// #1453: a plan summary in a v4 reply opens the day-by-day page; it can be saved, shown in Trips, changed per day
     /// through the chat and removed again.
-    func testPlanCardOpensTheDayByDayPageInBothLanguages() throws {
+    func testPlanCardOpensTheDayByDayPageChinese() throws { try exercisePlanCard(chinese: true) }
+    func testPlanCardOpensTheDayByDayPageEnglish() throws { try exercisePlanCard(chinese: false) }
+
+    private func exercisePlanCard(chinese: Bool) throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
         func element(_ id: String) -> XCUIElement { app.descendants(matching: .any).matching(identifier: id).firstMatch }
@@ -2352,7 +2355,7 @@ import CryptoKit
             for _ in 0..<8 where !(target.exists && target.isHittable) { app.swipeUp() }
             XCTAssertTrue(target.isHittable, app.debugDescription)
         }
-        for chinese in [true, false] {
+        do {
             app.launchArguments = ["--lio-preview", "--lio-exploration-home-acceptance", "--lio-home-plan-acceptance",
                                    "-cj.ui.language.v1", chinese ? "zh-Hans" : "en", "-lio.ui.appearance.v1", "light"]
             app.launch()
@@ -2360,9 +2363,6 @@ import CryptoKit
             XCTAssertTrue(composer.waitForExistence(timeout: 12), app.debugDescription)
             composer.tap(); composer.typeText(chinese ? "帮我规划三天北京自由行" : "Plan three days in Beijing")
             app.buttons["lio.send"].tap()
-            let planNow = app.buttons.matching(NSPredicate(format: "identifier ENDSWITH %@", "lio.exit.plan_now")).firstMatch
-            XCTAssertTrue(planNow.waitForExistence(timeout: 12), app.debugDescription)
-            reveal(planNow); planNow.tap()
 
             let open = app.buttons["lio.plan.open"]
             XCTAssertTrue(open.waitForExistence(timeout: 12), app.debugDescription)

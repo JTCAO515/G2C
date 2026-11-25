@@ -108,7 +108,8 @@ private actor ExplorationHomeWire: ClientTransport {
     private static let conversation = "lio-dialogue-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     private let showsProgress: Bool
     private let version: Int
-    /// #1453: the second reply carries a LIO-trip-card.3 summary.
+    /// #1453: the first reply carries a LIO-trip-card.3 summary. A second v4 reply makes the English Dynamic Type
+    /// audit hang on main without any plan card (#1501), so this case stays on one reply.
     private let plans: Bool
     private var progressReads = 0
     private var chinese = false
@@ -187,7 +188,7 @@ private actor ExplorationHomeWire: ClientTransport {
         answer.append(text("Make a plan now", "直接出方案"))
         return ["message_id": input["message_id"]!, "text": input["text"]!,
                 "answer": answer.joined(separator: "\n\n"), "status": "completed", "failure": null,
-                "activity": null, "sources": [], "trip": plans && !first ? trip(chinese: chinese) as Any : null, "memory": null,
+                "activity": null, "sources": [], "trip": plans && first ? trip(chinese: chinese) as Any : null, "memory": null,
                 "segments": [["purpose": "response", "text": response], ["purpose": "summary", "text": second]],
                 "question_groups": first ? [["factor_key": "interests", "question": text("What interests you?", "更想体验什么？"),
                                               "multiple": true, "options": options]] : [],

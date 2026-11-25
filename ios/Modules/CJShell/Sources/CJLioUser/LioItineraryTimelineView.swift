@@ -19,6 +19,13 @@ struct LioItineraryTimelineView: View {
     var startDate: String?
     var actions = Actions()
     @State private var selectedDay = 1
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    /// Two buttons share a row at default sizes and stack once larger text would make them wrap.
+    private var buttonRow: AnyLayout {
+        typeSize > .large ? AnyLayout(VStackLayout(alignment: .leading, spacing: LioTheme.Spacing.xs))
+            : AnyLayout(HStackLayout(spacing: LioTheme.Spacing.xs))
+    }
 
     private var day: LioRichItinerary.Day? { itinerary.days.first { $0.number == selectedDay } ?? itinerary.days.first }
 
@@ -47,7 +54,7 @@ struct LioItineraryTimelineView: View {
             Text(itinerary.title).font(LioTheme.display(.title).weight(.bold))
             let stops = itinerary.days.reduce(0) { $0 + $1.stops.count }
             Text(summaryLine(stops: stops)).font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
-            HStack(spacing: LioTheme.Spacing.xs) {
+            buttonRow {
                 if actions.saved {
                     Label(language.text("Saved", "已保存"), systemImage: "bookmark.fill")
                         .font(.subheadline.weight(.semibold)).foregroundStyle(LioTheme.jade)
@@ -208,10 +215,10 @@ struct LioItineraryTimelineView: View {
 
     @ViewBuilder private func dayActions(_ day: LioRichItinerary.Day) -> some View {
         if actions.adjustDay != nil || actions.askLio != nil {
-            HStack(spacing: LioTheme.Spacing.xs) {
+            buttonRow {
                 if let adjust = actions.adjustDay {
                     Button { adjust(day.number) } label: {
-                        Label(language.text("Change this day", "调整这一天"), systemImage: "slider.horizontal.3")
+                        Label(language.text("Change day", "调整这一天"), systemImage: "slider.horizontal.3")
                     }
                     .accessibilityIdentifier("lio.plan.adjust-day")
                 }
