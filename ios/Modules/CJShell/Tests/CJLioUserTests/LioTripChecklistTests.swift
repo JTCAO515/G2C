@@ -428,4 +428,37 @@ struct LioTripChecklistTests {
         ticks.set("", done: true, at: Self.at("2026-11-26 10:00"))
         #expect(ticks.done.isEmpty)
     }
+
+    // MARK: - #1649 review, P3 follow-ups
+
+    @Test func nowAndTheDayByDayAgreeOnTodayWhenTheDatesDiffer() {
+        // The traveller lands 8 Dec; the saved plan starts 9 Dec. On 10 Dec (trip day 3) the plan's day is its day 2.
+        var input = Self.everything(Self.at("2026-12-10 08:00"))
+        input.plans = [Self.plan(start: "2026-12-09", days: [[("A", "09:00")], [("B", "09:00")], [("C", "09:00")]])]
+        let list = LioTripChecklist(input)
+        #expect(list.now == .today(day: 3, next: .init(name: "B", time: "09:00"), remaining: 1))
+        #expect(list.schedule.first?.number == 2)
+        #expect(list.schedule.first?.isToday == true)
+        #expect(list.schedule.filter(\.isToday).count == 1)
+    }
+
+    @Test func theLastDayKeepsItsOwnBookingOpen() throws {
+        var input = Self.everything(Self.at("2026-12-14 08:00"))
+        input.plans = [Self.plan(days: [[], [], [], [], [], [], [("故宫博物院", "09:00")]])]
+        let list = LioTripChecklist(input)
+        #expect(list.phase == .departureDay(day: 7))
+        let palace = try #require(list.tasks.first { $0.key == "booking.beijing.palace-museum.2026-12-14" })
+        #expect(palace.stage == .inChina)
+        #expect(!list.pastTasks.contains(palace))
+        #expect(list.schedule.first?.number == 7)
+    }
+
+    @Test func anUndatedPlansBookingStaysOpenDuringTheTrip() throws {
+        var input = Self.everything(Self.at("2026-12-09 10:00"))
+        input.plans = [Self.plan(start: nil, days: [[("故宫", "09:00")]])]
+        let list = LioTripChecklist(input)
+        let palace = try #require(list.tasks.first { $0.key == "booking.beijing.palace-museum.undated" })
+        #expect(palace.stage == .inChina)
+        #expect(!list.pastTasks.contains(palace))
+    }
 }

@@ -171,4 +171,40 @@ import Testing
         #expect(String(decoding: encoded, as: UTF8.self) == "\"2026-12-31\"")
         #expect(try JSONDecoder().decode(LioTripDay.self, from: encoded) == day)
     }
+
+    // MARK: - #1649 review, P3 follow-ups
+
+    @Test func anUnreadableFileIsNeverOverwrittenByAnEmptyScreen() throws {
+        let directory = try folder()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        // A folder where the file should be: reading fails with something other than "no such file".
+        let file = directory.appendingPathComponent(LioTripHomeStore.fileName)
+        try FileManager.default.createDirectory(at: file, withIntermediateDirectories: false)
+        let model = LioTripHomeModel(store: LioTripHomeStore(directory: directory, isCurrent: { true }))
+        #expect(model.profile == nil)
+        model.start(profile())
+        model.setTick("payment", done: true)
+        model.clear()
+        #expect(model.saveFailed)
+        #expect(model.profile == nil)
+        var isFolder: ObjCBool = false
+        #expect(FileManager.default.fileExists(atPath: file.path, isDirectory: &isFolder) && isFolder.boolValue)
+        // Once the file reads again, writes go through.
+        try FileManager.default.removeItem(at: file)
+        try LioTripHomeStore(directory: directory, isCurrent: { true }).save(.init(profile: profile()))
+        model.reload()
+        #expect(model.profile == profile())
+        model.setTick("payment", done: true)
+        #expect(!model.saveFailed)
+        #expect(try LioTripHomeStore(directory: directory, isCurrent: { true }).load().ticks.isDone("payment"))
+    }
+
+    @Test func theTripFolderIsPrivateToTheApp() throws {
+        let directory = try folder()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let folder = LioTripHomeStore.storageDirectory(inMessageDirectory: directory)
+        try LioTripHomeStore(directory: folder, isCurrent: { true }).save(.init(profile: profile()))
+        let permissions = try FileManager.default.attributesOfItem(atPath: folder.path)[.posixPermissions] as? NSNumber
+        #expect(permissions?.int16Value == 0o700)
+    }
 }
