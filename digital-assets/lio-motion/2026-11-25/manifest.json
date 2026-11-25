@@ -3,14 +3,14 @@
   "source": "基于 PR #1500 的 Lio 高清原件，由 Codex 内置图像生成和 Pillow 合成",
   "files": {
     "lio-greeting-still.png": {
-      "bytes": 263166,
-      "sha256": "ee33241ab3a7326a0be4b61d21ca9befbea7ddcbd3f73e79a3294894e0045fe5",
+      "bytes": 278714,
+      "sha256": "46dc53173ea0cc1089c0ae4230c92acd236d143d9b9e0c04ff0174510eea7c7a",
       "width": 512,
       "height": 512
     },
     "lio-greeting.gif": {
-      "bytes": 1264682,
-      "sha256": "b506177018c94241a32e97a496ef9670ce040909a827aed7bd930fe819f53332",
+      "bytes": 1299257,
+      "sha256": "31d5712c39427f454551900b7e94b953496827931dc988dfc56303303719e360",
       "width": 512,
       "height": 512,
       "frames": 11,
@@ -31,34 +31,34 @@
       "duration_ms": 1820
     },
     "lio-motion-preview.png": {
-      "bytes": 494734,
-      "sha256": "51a6b4ad72767ff750a724f15483d2605e3730cea8fd30fd7d45c611b3bafc5d",
+      "bytes": 496748,
+      "sha256": "552978c82823c0bf06a2470c1f62beb663e8adc6b06dab04a3eda8c829867e3f",
       "width": 1008,
       "height": 590
     },
     "lio-offline-still.png": {
-      "bytes": 266723,
-      "sha256": "78b6d32d1f103121eb80ce831db23cf797721b0b5d183277775b174c7675f5f2",
+      "bytes": 265428,
+      "sha256": "9e08ef2bf3b8c7c119a7101caa4cdef01125d1436d2512d20a4de51eb5ca7c1c",
       "width": 512,
       "height": 512
     },
     "lio-offline.gif": {
-      "bytes": 1069912,
-      "sha256": "1bc399dbdd996473a8e76f6c0ff00e0bd3ff21980e9785c7764c1047de925137",
+      "bytes": 1070782,
+      "sha256": "332454b79d2bbe9465f31b78aaee19ce5e1bd28c6b644d1ebc2e00a15517ea6e",
       "width": 512,
       "height": 512,
       "frames": 11,
       "duration_ms": 1870
     },
     "lio-planning-still.png": {
-      "bytes": 238456,
-      "sha256": "fc4c4974090f7fd6dacfe3bb7012f0d5159b1e4b78eff7853cfa4fbdb4fc1782",
+      "bytes": 239198,
+      "sha256": "bbc7e7a520f1df0161a9eae1690474bf15a114680158102df605ed24649d80a1",
       "width": 512,
       "height": 512
     },
     "lio-planning.gif": {
-      "bytes": 1007085,
-      "sha256": "f6e5676f94baca38a6eb8ae6bdcc6c1c4de82093e964c6e47ddab4fb7be82cea",
+      "bytes": 1007358,
+      "sha256": "71de80d3240ad916645e7dc9d476702a43fd21535fb7ba7c4a5f0c0f62714f45",
       "width": 512,
       "height": 512,
       "frames": 11,
@@ -79,42 +79,42 @@
       "duration_ms": 1870
     },
     "lio-searching-still.png": {
-      "bytes": 235275,
-      "sha256": "76cc65b47bce6ca69fdf6fa8bacbe6786e8ea3561f377b8789336dc6e4540ad2",
+      "bytes": 235354,
+      "sha256": "031c49d6640ad97cca085b867acdaa830393314fa4751a08571ca591504221d7",
       "width": 512,
       "height": 512
     },
     "lio-searching.gif": {
-      "bytes": 867407,
-      "sha256": "b0dcdc3e6db6c353d65b8d50484ed722ae8aadb9a5ab71ebfcfab4fe638b4aa5",
+      "bytes": 865367,
+      "sha256": "7480718851a2891aa28f833460d42fb3aeeaa4b4f37ff048b4dbfa92ddfc396e",
       "width": 512,
       "height": 512,
       "frames": 11,
       "duration_ms": 1870
     },
     "lio-taking-longer-still.png": {
-      "bytes": 266802,
-      "sha256": "96234a1cf6c8ef6160a5a0c8e5afebcab4de3e5eda21e27c731103421defe594",
+      "bytes": 268280,
+      "sha256": "acee1d2db4cf15f1f1b2980f0d2a3302fa770926426f9d688f3dc2295e2ff851",
       "width": 512,
       "height": 512
     },
     "lio-taking-longer.gif": {
-      "bytes": 1293744,
-      "sha256": "ca1e558b5c3e24aeb72593ee3b774fbb276708fe79b03ddd42bc90d7f9852e2a",
+      "bytes": 1249880,
+      "sha256": "0de4ccd6fc098937ee084215f5e01e47fe88816078f50bb38840755b0a3dc36b",
       "width": 512,
       "height": 512,
       "frames": 11,
       "duration_ms": 1870
     },
     "lio-thinking-still.png": {
-      "bytes": 267404,
-      "sha256": "258fc2a0390aad48dbc1c869f10f243b5b89ecf405630fc1644ccef1b57d68f7",
+      "bytes": 268539,
+      "sha256": "230144f163fe447d736bddab252498e122f7858ba396b46ad4c6f86cf5a653e6",
       "width": 512,
       "height": 512
     },
     "lio-thinking.gif": {
-      "bytes": 932253,
-      "sha256": "d438265d7de326249cf495274a3e2ea2b38426b47b156687ed96cebfa075baea",
+      "bytes": 934584,
+      "sha256": "bbd6d7739c05a54219163ad7cca805868cbd7ac94916c42d314244b461b3dc42",
       "width": 512,
       "height": 512,
       "frames": 11,
