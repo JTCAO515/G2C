@@ -130,14 +130,17 @@ def menu_lines(text):
     and came right after it}. A price-only line is never sent to the model; see `line_prices`."""
     lines = []
     for raw in text.splitlines():
-        for line in _segments(unicodedata.normalize('NFKC', raw).strip()):
+        segments = _segments(unicodedata.normalize('NFKC', raw).strip())
+        for line in segments:
             if len(line) > MAX_LINE_LENGTH or not _visible(line):
                 continue
             price = None
             match = _PRICE_TAIL.search(line)
             if match and re.search(r'\d', match.group(0)):
                 if match.start() == 0:
-                    if lines:
+                    # Only a whole recognised line can be part of a price column: a number cut from a line with
+                    # a dish in it ("1 宫保鸡丁", "¥38 宫保鸡丁") is a dish number or that dish's own price.
+                    if len(segments) == 1 and lines:
                         lines[-1]['prices_after'].append(line.strip())
                     continue
                 price, line = match.group(0).strip(), line[:match.start()].strip()

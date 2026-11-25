@@ -284,11 +284,27 @@ def test_a_column_of_prices_goes_back_to_the_column_of_names_before_it():
     ('热菜\n宫保鸡丁\n麻婆豆腐\n12\n38\n26', [None, None]),                # more prices than names
     ('宫保鸡丁 38\n麻婆豆腐\n26\n15', ['38', None]),                       # the priced line is not counted
     ('热菜\n15\n宫保鸡丁', [None]),                                        # a price after a heading is no one's
+    # A number cut from a line with a dish in it is a dish number or that dish's own price, never a price line.
+    ('1 宫保鸡丁\n2 麻婆豆腐\n3 蛋炒饭', [None, None, None]),
+    ('01 宫保鸡丁\n02 麻婆豆腐', [None, None]),
+    ('¥38 宫保鸡丁\n¥26 麻婆豆腐\n¥15 蛋炒饭', [None, None, None]),
+    ('38    宫保鸡丁\n26    麻婆豆腐', [None, None]),
 ])
 def test_a_price_column_is_used_only_when_it_matches_the_names_one_for_one(text, prices):
     model = columns_model()
     result, _ = explain(service(reader=Reader(text), model=model))
     assert [item['price_text'] for item in result['items']] == prices
+
+
+def test_a_cached_menu_gets_its_column_of_prices_too():
+    cache = MemoryMenuCache()
+    explain(service(reader=Reader(COLUMNS), model=columns_model(), cache=cache))
+    model = columns_model()
+    result, _ = explain(service(reader=Reader(COLUMNS), model=model, cache=cache))
+    # Only the unclear line is asked about again; every price still comes from the photo's text.
+    assert [len(json.loads(messages[1]['content'])) for messages in model.messages] == [1]
+    assert [item['price_text'] for item in result['items']] == [
+        '38', '26元', '32', '42元', '68', '30/份', '18', '15元', '26', '2元', '3元']
 
 
 def test_a_second_menu_with_the_same_dishes_uses_the_cache_and_no_model_call():
