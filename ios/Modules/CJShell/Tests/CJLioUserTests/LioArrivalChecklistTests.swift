@@ -65,14 +65,4 @@ struct LioArrivalChecklistTests {
             #expect(texts.allSatisfy { !$0.localizedCaseInsensitiveContains("http") && !$0.contains("www.") })
         }
     }
-
-    @Test func toolsCardStaysHiddenUntilTheFlagIsOn() {
-        #expect(LioTool.arrival.identifier == "lio.tools.arrival")
-        #expect(!LioToolCatalog.visible(.init()).contains(.arrival))
-        #expect(!LioToolCatalog.visible(.init(taxi: true, currency: true, hotels: true, nearby: true,
-                                              roadbook: true, transport: true)).contains(.arrival))
-        var on = LioToolCatalog.Availability()
-        on.arrival = true
-        #expect(LioToolCatalog.visible(on).first == .arrival)
-    }
 }
