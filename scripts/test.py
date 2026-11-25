@@ -56,6 +56,7 @@ def main():
     results = [run('default entry failure propagation',
                    ['-B', '-m', 'unittest', '-v', 'scripts.test_test_entry'])]
     results.append(run('backend/tests', [*pytest, 'backend/tests']))
+    results.append(run('jt', [*pytest, 'jt']))
     results.append(run('deploy boundaries', [*pytest, 'deploy/tests'],
                        extra_path=os.pathsep.join((str(ROOT),str(ROOT/'scripts')))))
     results.append(run('Supabase M4 boundaries', [*pytest, 'scripts/test_supabase_m4.py'],extra_path=ROOT/'scripts'))
