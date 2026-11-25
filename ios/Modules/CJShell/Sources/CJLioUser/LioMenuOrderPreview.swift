@@ -66,9 +66,6 @@ extension LioMenuReading {
     ], isSample: true)
 
     /// Memory rows the preview reads instead of the user's saved memory.
-    static let sampleDietNotes = [
-        LioMenuDietNote(slot: "diet.spicy", text: "不吃辣"),
-        LioMenuDietNote(slot: "diet.taste", text: "对花生过敏"),
-    ]
+    static let sampleMemory = [LioMenuDietNote(slot: "diet.spicy", text: "不吃辣")]
 }
 #endif

@@ -9,9 +9,11 @@ import UIKit
 struct LioMenuOrderView: View {
     let language: LioLanguage
     let service: LioMenuService
-    /// The user's food memory rows, matched on this device only.
-    let dietNotes: [LioMenuDietNote]
-    @State private var off: Set<LioMenuRestriction> = []
+    /// Saved food memory, or `nil` when memory is unavailable. Only `diet.spicy` is used, to pre-select
+    /// "no spicy food"; it stays in this page's memory and is never stored or sent.
+    let memoryNotes: [LioMenuDietNote]?
+    @State private var needs: [LioDietaryNeed] = []
+    @State private var appliedMemory = false
     @State private var photo: Data?
     @State private var reading: LioMenuReading?
     @State private var failed = false
@@ -21,17 +23,16 @@ struct LioMenuOrderView: View {
     @State private var showsCamera = false
     @State private var cameraProblem: String?
 
-    private var diet: LioMenuDiet.Read { LioMenuDiet.read(dietNotes) }
-    private var restrictions: [LioMenuRestriction] { diet.restrictions.filter { !off.contains($0) } }
+    private var spicyMemory: String? { memoryNotes.flatMap(LioMenuMemory.noSpicySource) }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: LioTheme.Spacing.md) {
                 if let reading {
-                    LioMenuResults(language: language, reading: reading, restrictions: restrictions,
+                    LioMenuResults(language: language, reading: reading, restrictions: needs,
                                    order: $order)
                 } else {
-                    LioMenuIntro(language: language, diet: diet, off: $off) { inputs }
+                    LioMenuIntro(language: language, needs: $needs, spicyMemory: spicyMemory) { inputs }
                     if photo != nil {
                         ProgressView(language.text("Reading the menu…", "正在识别菜单…"))
                             .frame(maxWidth: .infinity)
@@ -66,7 +67,7 @@ struct LioMenuOrderView: View {
         .safeAreaInset(edge: .bottom) {
             if reading != nil, !order.isEmpty {
                 Button {
-                    for note in LioMenuNote.suggested(for: restrictions) where !order.has(note) { order.toggle(note) }
+                    for note in LioMenuNote.suggested(for: needs) where !order.has(note) { order.toggle(note) }
                     showsCard = true
                 } label: {
                     Text(language.text("Show staff my order (\(order.count))", "给服务员看（\(order.count) 份）"))
@@ -91,6 +92,11 @@ struct LioMenuOrderView: View {
                 if let data { photo = data }
             }
             .ignoresSafeArea()
+        }
+        .onAppear {
+            guard !appliedMemory else { return }
+            appliedMemory = true
+            if spicyMemory != nil, !needs.contains(.noSpicy) { needs.insert(.noSpicy, at: 0) }
         }
         .onChange(of: pickerItem) { _, item in
             guard let item else { return }
@@ -161,8 +167,9 @@ struct LioMenuOrderView: View {
 
 struct LioMenuIntro<Actions: View>: View {
     let language: LioLanguage
-    let diet: LioMenuDiet.Read
-    @Binding var off: Set<LioMenuRestriction>
+    @Binding var needs: [LioDietaryNeed]
+    /// The memory words behind a pre-selected "no spicy food", if any.
+    let spicyMemory: String?
     @ViewBuilder let actions: Actions
 
     var body: some View {
@@ -175,55 +182,55 @@ struct LioMenuIntro<Actions: View>: View {
                     .foregroundStyle(LioTheme.inkSecondary)
             }
             VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
-                Text(language.text("Your dietary notes", "你的忌口"))
+                Text(language.text("What do you avoid?", "你有哪些忌口？"))
                     .font(.headline)
-                if diet.restrictions.isEmpty && diet.unmatched.isEmpty {
-                    Text(language.text("Nothing saved yet. Tell Lio in chat, for example \"I'm allergic to peanuts\".",
-                                       "还没有记录。可以在聊天里告诉 Lio，比如「我对花生过敏」。"))
-                        .font(.subheadline)
-                        .foregroundStyle(LioTheme.inkSecondary)
-                }
-                ForEach(diet.restrictions, id: \.self) { restriction in
-                    let on = !off.contains(restriction)
-                    Button {
-                        if on { off.insert(restriction) } else { off.remove(restriction) }
-                    } label: {
-                        HStack(alignment: .firstTextBaseline) {
-                            Image(systemName: on ? "checkmark.circle.fill" : "circle")
-                                .foregroundStyle(on ? LioTheme.vermilion : LioTheme.inkSecondary)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(restriction.text(language))
-                                if let source = diet.sources[restriction] {
-                                    Text(language.text("From your memory: \(source)", "来自「我的记忆」：\(source)"))
-                                        .font(.caption)
-                                        .foregroundStyle(LioTheme.inkSecondary)
-                                }
-                            }
-                            Spacer(minLength: 0)
-                        }
-                        .frame(minHeight: 44)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityAddTraits(on ? .isSelected : [])
-                    .accessibilityHint(language.text("Used to mark dishes", "用于标记菜品"))
-                    .accessibilityIdentifier("lio.menu.restriction.\(restriction.rawValue)")
-                }
-                ForEach(diet.unmatched, id: \.self) { note in
-                    Text(language.text("Also noted (not checked): \(note)", "其他记录（不参与标记）：\(note)"))
+                group(language.text("Diet", "饮食"), LioDietaryNeed.preferences)
+                if let spicyMemory, needs.contains(.noSpicy) {
+                    Text(language.text("No spicy food is ticked from your memory: \(spicyMemory)",
+                                       "「不吃辣」来自「我的记忆」：\(spicyMemory)"))
                         .font(.caption)
                         .foregroundStyle(LioTheme.inkSecondary)
+                        .accessibilityIdentifier("lio.menu.memory")
                 }
+                group(language.text("Allergies", "过敏"), LioDietaryNeed.allergies)
             }
             .padding(LioTheme.Spacing.md)
             .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
             actions
-            Text(language.text("The menu photo is sent only to our authorised model service to read it, and is not kept. Your dietary notes stay on this phone.",
-                               "菜单照片只发给已授权的模型服务识别，不保存；你的忌口只在本机比对，不上传。"))
+            Text(language.text("The menu photo is sent only to our authorised model service to read it, and is not kept. What you tick here stays on this phone.",
+                               "菜单照片只发给已授权的模型服务识别，不保存；你勾选的忌口只在本机比对，不上传。"))
                 .font(.footnote)
                 .foregroundStyle(LioTheme.inkSecondary)
                 .accessibilityIdentifier("lio.menu.privacy")
         }
+    }
+
+    private func group(_ title: String, _ options: [LioDietaryNeed]) -> some View {
+        VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+            Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(LioTheme.inkSecondary)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: LioTheme.Spacing.xs, alignment: .leading)],
+                      alignment: .leading, spacing: LioTheme.Spacing.xs) {
+                ForEach(options, id: \.self) { need in chip(need) }
+            }
+        }
+    }
+
+    private func chip(_ need: LioDietaryNeed) -> some View {
+        let on = needs.contains(need)
+        return Button {
+            if on { needs.removeAll { $0 == need } } else { needs.append(need) }
+        } label: {
+            Label(need.text(language), systemImage: on ? "checkmark.circle.fill" : "circle")
+                .font(.subheadline)
+                .foregroundStyle(on ? LioTheme.onVermilion : LioTheme.ink)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .padding(.horizontal, LioTheme.Spacing.sm)
+                .background(on ? LioTheme.vermilion : LioTheme.surfaceSunken,
+                            in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(on ? .isSelected : [])
+        .accessibilityIdentifier("lio.menu.need.\(need.rawValue)")
     }
 }
 
@@ -232,7 +239,7 @@ struct LioMenuIntro<Actions: View>: View {
 struct LioMenuResults: View {
     let language: LioLanguage
     let reading: LioMenuReading
-    let restrictions: [LioMenuRestriction]
+    let restrictions: [LioDietaryNeed]
     @Binding var order: LioMenuOrder
 
     var body: some View {
@@ -436,9 +443,13 @@ struct LioMenuCardContent: View {
                     Text(line).font(LioTheme.display(.largeTitle).weight(.bold))
                 }
                 if !card.notes.isEmpty {
-                    Text("备注：" + card.notes.joined(separator: "；"))
-                        .font(.title2.weight(.semibold))
-                        .accessibilityIdentifier("lio.menu.card.notes")
+                    VStack(alignment: .leading, spacing: LioTheme.Spacing.xxs) {
+                        Text("备注：").font(.title3.weight(.semibold)).foregroundStyle(LioTheme.inkSecondary)
+                        ForEach(card.notes, id: \.self) { note in
+                            Text(note).font(.title2.weight(.semibold))
+                        }
+                    }
+                    .accessibilityIdentifier("lio.menu.card.notes")
                 }
                 Text(card.closing).font(.title3.weight(.semibold)).foregroundStyle(LioTheme.inkSecondary)
             }
@@ -450,7 +461,7 @@ struct LioMenuCardContent: View {
             .accessibilityIdentifier("lio.menu.card")
             VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
                 Text(language.text("Add a note for staff", "加备注")).font(.headline)
-                ForEach(notes, id: \.self) { note in
+                ForEach(notes, id: \.id) { note in
                     Button { order.toggle(note) } label: {
                         HStack {
                             Image(systemName: order.has(note) ? "checkmark.circle.fill" : "circle")
@@ -467,7 +478,7 @@ struct LioMenuCardContent: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityIdentifier("lio.menu.note.\(note.rawValue)")
+                    .accessibilityIdentifier("lio.menu.note.\(note.id)")
                 }
             }
         }

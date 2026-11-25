@@ -3,41 +3,44 @@ import Testing
 @testable import CJLioUser
 
 /// Menu ordering (点餐模式): explain dishes, flag them against the user's dietary memory, build a waiter card.
-struct LioMenuDietTests {
-    private func note(_ text: String, slot: String = "diet.taste") -> LioMenuDietNote {
+struct LioMenuMemoryTests {
+    private func note(_ text: String, slot: String = "diet.spicy") -> LioMenuDietNote {
         LioMenuDietNote(slot: slot, text: text)
     }
 
-    @Test func mapsCommonChineseAndEnglishRestrictions() {
-        let read = LioMenuDiet.read([
-            note("不吃辣", slot: "diet.spicy"), note("对花生过敏"), note("I'm allergic to shellfish"),
-            note("清真"), note("Vegetarian"), note("不要香菜"),
-        ])
-        #expect(read.restrictions == [.noSpicy, .peanut, .shellfish, .halal, .vegetarian, .noCoriander])
-        #expect(read.unmatched.isEmpty)
-        #expect(read.sources[.peanut] == "对花生过敏")
+    @Test func spicyMemoryPreselectsNoSpicyIncludingCannotForms() {
+        for text in ["不吃辣", "不能吃辣", "不可以吃辣", "吃不了辣", "怕辣", "只能吃微辣", "No spicy food",
+                     "I can't eat spicy food", "Mild only, please", "不能吃辣，但爱吃麻"] {
+            #expect(LioMenuMemory.noSpicySource([note(text)]) == text, "\(text)")
+        }
     }
 
-    @Test func negatedOrPositiveStatementsAreNotTurnedIntoRestrictions() {
-        let read = LioMenuDiet.read([
-            note("能吃辣", slot: "diet.spicy"), note("I love spicy food", slot: "diet.spicy"),
-            note("没有过敏"), note("not allergic to peanuts"), note("喜欢海鲜"),
-        ])
-        // Shown as written under "other food notes", never turned into a restriction.
-        #expect(read.restrictions.isEmpty)
-        #expect(read.unmatched.count == 5)
+    @Test func spicyLoversAreNotMarked() {
+        for text in ["能吃辣", "不怕辣", "爱吃辣", "I love spicy food", "Spicy is fine"] {
+            #expect(LioMenuMemory.noSpicySource([note(text)]) == nil, "\(text)")
+        }
     }
 
-    @Test func unknownFoodNotesAreShownAsWrittenNotGuessed() {
-        let read = LioMenuDiet.read([note("少油少盐"), note("prefers window seats", slot: "trip.seat")])
-        #expect(read.restrictions.isEmpty)
-        #expect(read.unmatched == ["少油少盐"])
+    /// Health memory is sensitive and taste memory is not a restriction: neither is ever read.
+    @Test func onlyTheSpicySlotIsRead() {
+        for slot in ["diet.taste", "health.condition", "food.spice", "dietary", "trip.hotel"] {
+            #expect(LioMenuMemory.noSpicySource([note("不吃辣", slot: slot)]) == nil, "\(slot)")
+        }
+        #expect(LioMenuMemory.noSpicySource([note("对花生过敏", slot: "health.condition"), note("爱吃辣")]) == nil)
     }
+}
 
-    @Test func onlyFoodSlotsAreRead() {
-        let read = LioMenuDiet.read([note("对花生过敏", slot: "trip.hotel")])
-        #expect(read.restrictions.isEmpty)
-        #expect(read.unmatched.isEmpty)
+struct LioDietaryNeedTests {
+    @Test func everyNeedHasBothLanguagesAndAStaffSentence() {
+        #expect(Set(LioDietaryNeed.preferences + LioDietaryNeed.allergies) == Set(LioDietaryNeed.allCases))
+        for need in LioDietaryNeed.allCases {
+            #expect(!need.text(.english).isEmpty && !need.text(.chinese).isEmpty)
+            #expect(need.staffSentenceZH.hasSuffix("。"))
+            #expect(!need.staffSentenceEN.isEmpty)
+        }
+        #expect(LioDietaryNeed.peanut.staffSentenceZH == "我对花生过敏，请不要放，包括调料和高汤。")
+        #expect(LioDietaryNeed.peanut.text(.english) == "Peanut allergy")
+        #expect(LioDietaryNeed.noSpicy.staffSentenceZH == "请不要放辣椒。")
     }
 }
 
@@ -74,6 +77,19 @@ struct LioMenuFlagTests {
         #expect(LioMenuFlag.flags(for: dish(spice: .notSpicy), restrictions: [.noSpicy]).isEmpty)
     }
 
+    @Test func treeNutAllergyAlsoAsksAboutPeanuts() {
+        #expect(LioMenuFlag.flags(for: dish([.peanut: .likely]), restrictions: [.treeNut]) == [.mayContain(.treeNut)])
+        #expect(LioMenuFlag.flags(for: dish([.treeNut: .possible]), restrictions: [.treeNut]) == [.mayContain(.treeNut)])
+    }
+
+    @Test func blankNamesAreUnreadable() {
+        let blank = LioMenuDish(id: "b", nameZH: "  ", nameEN: "", summaryEN: "", summaryZH: "", ingredientsEN: "",
+                                ingredientsZH: "", methodEN: "", methodZH: "", portionEN: "", portionZH: "",
+                                spice: .hot, contains: [.peanut: .likely], priceText: nil)
+        #expect(!blank.isLegible)
+        #expect(LioMenuFlag.flags(for: blank, restrictions: [.peanut, .noSpicy]) == [.unreadable])
+    }
+
     @Test func unreadableDishesAskStaffAndAreNeverJudged() {
         let flags = LioMenuFlag.flags(for: dish([.peanut: .likely], legible: false), restrictions: [.peanut])
         #expect(flags == [.unreadable])
@@ -82,8 +98,8 @@ struct LioMenuFlagTests {
 
     @Test func noRestrictionsMeansNoFlagsAndNothingIsCalledSafe() {
         #expect(LioMenuFlag.flags(for: dish([.peanut: .likely]), restrictions: []).isEmpty)
-        let all = LioMenuRestriction.allCases.map { LioMenuFlag.check($0).text(.english) }
-            + LioMenuRestriction.allCases.map { LioMenuFlag.unsuitable($0).text(.english) }
+        let all = LioDietaryNeed.allCases.map { LioMenuFlag.check($0).text(.english) }
+            + LioDietaryNeed.allCases.map { LioMenuFlag.unsuitable($0).text(.english) }
         #expect(all.allSatisfy { !$0.localizedCaseInsensitiveContains("safe") })
     }
 
@@ -103,11 +119,11 @@ struct LioMenuOrderCardTests {
         order.add(kungPao)
         order.add(rice)
         order.add(rice)
-        order.toggle(.noSpicy)
-        order.toggle(.noCoriander)
+        order.toggle(.need(.noSpicy))
+        order.toggle(.need(.noCoriander))
         let card = order.card(in: reading)
         #expect(card.lines == ["宫保鸡丁 × 1", "蛋炒饭 × 2"])
-        #expect(card.notes == ["不要辣", "不要香菜"])
+        #expect(card.notes == ["请不要放辣椒。", "请不要放香菜。"])
         #expect(card.greeting == "您好，我想点这些菜：")
         #expect(order.count == 3)
     }
@@ -129,9 +145,18 @@ struct LioMenuOrderCardTests {
         #expect(order.isEmpty)
     }
 
-    @Test func suggestedNotesFollowRestrictions() {
-        #expect(LioMenuNote.suggested(for: [.noSpicy, .peanut, .vegetarian]) == [.noSpicy, .allergyPeanut, .vegetarian])
-        #expect(LioMenuNote.allergyPeanut.chinese == "我对花生过敏，请不要放花生")
+    @Test func duplicateDishIDsDoNotBreakTheCard() {
+        let twin = LioMenuReading.sample.dishes[0]
+        var order = LioMenuOrder()
+        order.add(twin)
+        let card = order.card(in: LioMenuReading(dishes: [twin, twin]))
+        #expect(card.lines == ["宫保鸡丁 × 1"])
+    }
+
+    @Test func suggestedNotesFollowNeeds() {
+        #expect(LioMenuNote.suggested(for: [.noSpicy, .peanut]) == [.need(.noSpicy), .need(.peanut)])
+        #expect(LioMenuNote.need(.peanut).chinese == "我对花生过敏，请不要放，包括调料和高汤。")
+        #expect(Set(LioMenuNote.common.map(\.id)).count == LioMenuNote.common.count)
     }
 }
 

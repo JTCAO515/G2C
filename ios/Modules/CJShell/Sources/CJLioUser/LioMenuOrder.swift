@@ -3,7 +3,7 @@ import Foundation
 // Menu ordering (点餐模式): photograph a menu, get each dish explained, see which dishes may not suit the
 // user's dietary memory, then show staff a Chinese order card. Behind `G2CMenuOrderEnabled`, hidden by default.
 //
-// Privacy: dietary memory is matched on this device only and never sent with the menu photo. The photo
+// Privacy: dietary needs are matched on this device only and never sent with the menu photo. The photo
 // goes only to the authorised model relay and is not kept.
 
 // MARK: - Dishes
@@ -57,7 +57,8 @@ struct LioMenuDish: Identifiable, Sendable, Equatable {
     /// The price exactly as printed, if any.
     let priceText: String?
 
-    var isLegible: Bool { nameZH != nil }
+    /// A missing or blank Chinese name is unreadable, whatever else came back.
+    var isLegible: Bool { !(nameZH ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 }
 
 struct LioMenuReading: Sendable, Equatable {
@@ -66,144 +67,38 @@ struct LioMenuReading: Sendable, Equatable {
     var isSample = false
 }
 
-// MARK: - Dietary memory
+// MARK: - Dietary needs
 
-/// One saved memory row, as `slot` and the user's own words. Only food slots are read.
+/// One saved memory row, as `slot` and the user's own words.
 struct LioMenuDietNote: Sendable, Equatable {
     let slot: String
     let text: String
 }
 
-enum LioMenuRestriction: String, Sendable, CaseIterable, Hashable {
-    case noSpicy, halal, vegetarian, noPork, noBeef, noAlcohol, noCoriander
-    case peanut, treeNut, shellfish, fish, egg, dairy, gluten, soy, sesame
+/// The user picks their needs on the page. Saved memory can only pre-select "no spicy food": the only food
+/// memory with that meaning is `diet.spicy`. `diet.taste` is taste and cuisine, not a restriction, and health
+/// memory is sensitive, so neither is ever read here. Nothing read here is stored or sent.
+enum LioMenuMemory {
+    static let spicySlot = "diet.spicy"
 
-    /// Allergies are only ever "may contain, check with staff".
-    var isAllergy: Bool {
-        switch self {
-        case .peanut, .treeNut, .shellfish, .fish, .egg, .dairy, .gluten, .soy, .sesame: true
-        default: false
-        }
+    /// The memory words that say the user avoids spicy food, or `nil`.
+    static func noSpicySource(_ notes: [LioMenuDietNote]) -> String? {
+        notes.first { $0.slot == spicySlot && avoidsSpice($0.text) }?.text
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    func text(_ language: LioLanguage) -> String {
-        switch self {
-        case .noSpicy: language.text("No spicy food", "不吃辣")
-        case .halal: language.text("Halal", "清真")
-        case .vegetarian: language.text("Vegetarian", "素食")
-        case .noPork: language.text("No pork", "不吃猪肉")
-        case .noBeef: language.text("No beef", "不吃牛肉")
-        case .noAlcohol: language.text("No alcohol", "不含酒")
-        case .noCoriander: language.text("No coriander", "不吃香菜")
-        case .peanut: language.text("Peanut allergy", "花生过敏")
-        case .treeNut: language.text("Tree nut allergy", "坚果过敏")
-        case .shellfish: language.text("Shellfish allergy", "海鲜（虾蟹贝）过敏")
-        case .fish: language.text("Fish allergy", "鱼类过敏")
-        case .egg: language.text("Egg allergy", "鸡蛋过敏")
-        case .dairy: language.text("Dairy allergy", "乳制品过敏")
-        case .gluten: language.text("Gluten allergy", "麸质过敏")
-        case .soy: language.text("Soy allergy", "大豆过敏")
-        case .sesame: language.text("Sesame allergy", "芝麻过敏")
-        }
-    }
+    private static let avoid = ["不吃辣", "不能吃辣", "不可以吃辣", "吃不了辣", "不要辣", "不辣", "忌辣", "怕辣", "少辣",
+                                "微辣", "no spicy", "not spicy", "non-spicy", "avoid spicy", "don't eat spicy",
+                                "do not eat spicy", "can't eat spicy", "cannot eat spicy", "can't handle spicy",
+                                "cannot handle spicy", "no chili", "no chilli", "mild"]
 
-    /// The allergen named in a "may contain" warning.
-    func allergen(_ language: LioLanguage) -> String {
-        switch self {
-        case .peanut: language.text("peanut", "花生")
-        case .treeNut: language.text("tree nuts", "坚果")
-        case .shellfish: language.text("shellfish", "虾蟹贝类")
-        case .fish: language.text("fish", "鱼")
-        case .egg: language.text("egg", "鸡蛋")
-        case .dairy: language.text("dairy", "乳制品")
-        case .gluten: language.text("gluten", "麸质")
-        case .soy: language.text("soy", "大豆")
-        case .sesame: language.text("sesame", "芝麻")
-        default: text(language)
-        }
-    }
-}
-
-/// Maps the user's own memory words to restrictions with a fixed bilingual word list. Anything it cannot map
-/// with confidence, including positive statements such as "能吃辣", is shown as written and not used.
-enum LioMenuDiet {
-    struct Read: Equatable, Sendable {
-        var restrictions: [LioMenuRestriction] = []
-        /// The memory words each restriction came from, shown next to it.
-        var sources: [LioMenuRestriction: String] = [:]
-        /// Food notes that are not mapped, shown as written.
-        var unmatched: [String] = []
-    }
-
-    static let foodSlotPrefixes = ["diet.", "food.", "health."]
-
-    static func read(_ notes: [LioMenuDietNote]) -> Read {
-        var read = Read()
-        for note in notes where foodSlotPrefixes.contains(where: note.slot.hasPrefix) {
-            let text = note.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !text.isEmpty else { continue }
-            let found = restrictions(in: text)
-            if found.isEmpty {
-                if !read.unmatched.contains(text) { read.unmatched.append(text) }
-                continue
-            }
-            for restriction in found where !read.restrictions.contains(restriction) {
-                read.restrictions.append(restriction)
-                read.sources[restriction] = text
-            }
-        }
-        return read
-    }
-
-    private static let positive = ["能吃", "可以吃", "爱吃", "不怕辣", "不过敏", "没有过敏", "无过敏", "不忌口", "没有忌口",
-                                   "not allergic", "no allerg", "love", "enjoy", "can eat", "fine with", "喜欢", " like "]
-    private static let avoidance = ["不吃", "不能吃", "不要", "不喝", "忌", "避免", "怕", "过敏", "不含",
-                                    "avoid", "allergic", "allergy", "intoleran", "no ", "not ", "don't", "do not",
-                                    "can't", "cannot", "without", "free"]
-    private static let words: [(LioMenuRestriction, [String])] = [
-        (.noSpicy, ["吃辣", "不辣", "辣", "spicy", "spice", "chili", "chilli", "mild"]),
-        (.halal, ["清真", "穆斯林", "halal", "muslim"]),
-        (.vegetarian, ["素食", "吃素", "纯素", "vegetarian", "vegan"]),
-        (.noPork, ["猪肉", "pork"]),
-        (.noBeef, ["牛肉", "beef"]),
-        (.noAlcohol, ["酒", "alcohol"]),
-        (.noCoriander, ["香菜", "芫荽", "coriander", "cilantro"]),
-        (.peanut, ["花生", "peanut"]),
-        (.treeNut, ["坚果", "核桃", "腰果", "杏仁", "tree nut", "nuts", "walnut", "cashew", "almond"]),
-        (.shellfish, ["海鲜", "虾", "蟹", "贝", "shellfish", "seafood", "shrimp", "prawn", "crab", "lobster"]),
-        (.fish, ["鱼", "fish"]),
-        (.egg, ["鸡蛋", "蛋", "egg"]),
-        (.dairy, ["牛奶", "乳制品", "乳糖", "奶", "dairy", "milk", "lactose"]),
-        (.gluten, ["麸质", "小麦", "面筋", "gluten", "wheat", "celiac", "coeliac"]),
-        (.soy, ["大豆", "黄豆", "豆制品", "soy"]),
-        (.sesame, ["芝麻", "sesame"]),
-    ]
-    /// Identity words that state a restriction on their own, without "no" or "allergic".
-    private static let standalone: Set<LioMenuRestriction> = [.halal, .vegetarian]
-
-    static func restrictions(in text: String) -> [LioMenuRestriction] {
-        var value = " " + text.lowercased()
-            .replacingOccurrences(of: "’", with: "'")
-            .replacingOccurrences(of: "不喜欢", with: "避免")
-            .replacingOccurrences(of: "don't like", with: "avoid")
-            .replacingOccurrences(of: "dislike", with: "avoid") + " "
-        if positive.contains(where: value.contains) { return [] }
-        let avoids = avoidance.contains(where: value.contains)
-        var found: [LioMenuRestriction] = []
-        for (restriction, forms) in words {
-            guard let form = forms.first(where: value.contains) else { continue }
-            let mild = restriction == .noSpicy && ["不辣", "mild"].contains(form)
-            guard avoids || mild || standalone.contains(restriction) else { continue }
-            found.append(restriction)
-            // "peanuts" must not also read as "nuts", nor "shellfish" as "fish"; "seafood" names fish too.
-            if restriction == .peanut || restriction == .shellfish {
-                value = value.replacingOccurrences(of: form, with: " ")
-            }
-            if restriction == .shellfish, ["海鲜", "seafood"].contains(form) { found.append(.fish) }
-        }
-        var unique: [LioMenuRestriction] = []
-        for restriction in found where !unique.contains(restriction) { unique.append(restriction) }
-        return unique
+    /// Any avoiding form counts, even beside a positive one ("不能吃辣" contains "能吃辣"): when unsure,
+    /// "no spicy" is the safer reading, and the user sees the memory words and can untick it.
+    static func avoidsSpice(_ text: String) -> Bool {
+        var value = text.lowercased().replacingOccurrences(of: "’", with: "'")
+        // "不怕辣" (not afraid of spice) contains "怕辣"; take it out before looking for negative forms.
+        value = value.replacingOccurrences(of: "不怕辣", with: "〇")
+        return avoid.contains(where: value.contains)
     }
 }
 
@@ -211,11 +106,11 @@ enum LioMenuDiet {
 
 enum LioMenuFlag: Hashable, Sendable {
     /// Clearly against a preference (spicy, pork for halal, meat for vegetarian).
-    case unsuitable(LioMenuRestriction)
+    case unsuitable(LioDietaryNeed)
     /// Might be against a preference; ask staff.
-    case check(LioMenuRestriction)
+    case check(LioDietaryNeed)
     /// Might contain an allergen; ask staff. Allergies never get a stronger or weaker wording.
-    case mayContain(LioMenuRestriction)
+    case mayContain(LioDietaryNeed)
     /// The dish name could not be read; ask staff.
     case unreadable
 
@@ -238,12 +133,12 @@ enum LioMenuFlag: Hashable, Sendable {
         }
     }
 
-    static func flags(for dish: LioMenuDish, restrictions: [LioMenuRestriction]) -> [LioMenuFlag] {
+    static func flags(for dish: LioMenuDish, restrictions: [LioDietaryNeed]) -> [LioMenuFlag] {
         guard dish.isLegible else { return [.unreadable] }
         return restrictions.compactMap { flag(for: dish, restriction: $0) }
     }
 
-    private static func flag(for dish: LioMenuDish, restriction: LioMenuRestriction) -> LioMenuFlag? {
+    private static func flag(for dish: LioMenuDish, restriction: LioDietaryNeed) -> LioMenuFlag? {
         let contains = dish.contains
         func graded(_ ingredients: Set<LioMenuIngredient>) -> LioMenuFlag? {
             let found = ingredients.compactMap { contains[$0] }
@@ -272,12 +167,15 @@ enum LioMenuFlag: Hashable, Sendable {
         case .noCoriander:
             // Coriander is a garnish staff can leave out.
             return contains[.coriander] != nil ? .check(restriction) : nil
-        case .peanut, .treeNut, .shellfish, .fish, .egg, .dairy, .gluten, .soy, .sesame:
+        case .treeNut:
+            // Many people with a nut allergy also avoid peanuts, and menus mix them up.
+            return contains[.treeNut] != nil || contains[.peanut] != nil ? .mayContain(restriction) : nil
+        case .peanut, .shellfish, .fish, .egg, .dairy, .gluten, .soy, .sesame:
             return contains[allergen(restriction)] != nil ? .mayContain(restriction) : nil
         }
     }
 
-    private static func allergen(_ restriction: LioMenuRestriction) -> LioMenuIngredient {
+    private static func allergen(_ restriction: LioDietaryNeed) -> LioMenuIngredient {
         switch restriction {
         case .peanut: .peanut
         case .treeNut: .treeNut
@@ -295,86 +193,45 @@ enum LioMenuFlag: Hashable, Sendable {
 // MARK: - Order card
 
 /// A Chinese note for staff, with its English meaning for the user.
-enum LioMenuNote: String, Sendable, CaseIterable, Hashable {
-    case noSpicy, lessSpicy, noCoriander, noScallion, noMSG, lessOil, vegetarian, halal, noPork, noAlcohol
-    case allergyPeanut, allergyTreeNut, allergyShellfish, allergyFish, allergyEgg, allergyDairy, allergyGluten,
-         allergySoy, allergySesame
+enum LioMenuNote: Hashable, Sendable {
+    case lessSpicy, noScallion, noMSG, lessOil
+    /// A dietary need, written as the shared staff sentence.
+    case need(LioDietaryNeed)
 
     /// Everyday requests offered on every card.
-    static let common: [LioMenuNote] = [.noSpicy, .lessSpicy, .noCoriander, .noScallion, .noMSG, .lessOil]
+    static let common: [LioMenuNote] = [.need(.noSpicy), .lessSpicy, .need(.noCoriander), .noScallion, .noMSG, .lessOil]
+
+    var id: String {
+        switch self {
+        case .lessSpicy: "lessSpicy"
+        case .noScallion: "noScallion"
+        case .noMSG: "noMSG"
+        case .lessOil: "lessOil"
+        case .need(let need): need.rawValue
+        }
+    }
 
     var chinese: String {
         switch self {
-        case .noSpicy: "不要辣"
-        case .lessSpicy: "少放辣"
-        case .noCoriander: "不要香菜"
-        case .noScallion: "不要葱"
-        case .noMSG: "不放味精"
-        case .lessOil: "少油"
-        case .vegetarian: "我吃素，请不要放肉，也不要用肉汤"
-        case .halal: "我只吃清真食品，请不要放猪肉和酒"
-        case .noPork: "我不吃猪肉"
-        case .noAlcohol: "请不要放酒"
-        case .allergyPeanut: "我对花生过敏，请不要放花生"
-        case .allergyTreeNut: "我对坚果过敏，请不要放坚果"
-        case .allergyShellfish: "我对虾蟹贝类过敏，请不要放"
-        case .allergyFish: "我对鱼过敏，请不要放鱼"
-        case .allergyEgg: "我对鸡蛋过敏，请不要放鸡蛋"
-        case .allergyDairy: "我对奶制品过敏，请不要放牛奶、黄油"
-        case .allergyGluten: "我对麸质过敏，请不要放小麦和面粉"
-        case .allergySoy: "我对大豆过敏，请不要放酱油和豆制品"
-        case .allergySesame: "我对芝麻过敏，请不要放芝麻和芝麻油"
+        case .lessSpicy: "请少放辣。"
+        case .noScallion: "请不要放葱。"
+        case .noMSG: "请不要放味精。"
+        case .lessOil: "请少放油。"
+        case .need(let need): need.staffSentenceZH
         }
     }
 
     var english: String {
         switch self {
-        case .noSpicy: "No chili"
-        case .lessSpicy: "Less chili"
-        case .noCoriander: "No coriander"
-        case .noScallion: "No spring onion"
-        case .noMSG: "No MSG"
-        case .lessOil: "Less oil"
-        case .vegetarian: "I'm vegetarian: no meat or meat broth"
-        case .halal: "I only eat halal: no pork or alcohol"
-        case .noPork: "I don't eat pork"
-        case .noAlcohol: "No alcohol in the food"
-        case .allergyPeanut: "I'm allergic to peanuts"
-        case .allergyTreeNut: "I'm allergic to tree nuts"
-        case .allergyShellfish: "I'm allergic to shellfish"
-        case .allergyFish: "I'm allergic to fish"
-        case .allergyEgg: "I'm allergic to eggs"
-        case .allergyDairy: "I'm allergic to dairy"
-        case .allergyGluten: "I'm allergic to gluten"
-        case .allergySoy: "I'm allergic to soy"
-        case .allergySesame: "I'm allergic to sesame"
+        case .lessSpicy: "Less chilli, please."
+        case .noScallion: "No spring onion, please."
+        case .noMSG: "No MSG, please."
+        case .lessOil: "Less oil, please."
+        case .need(let need): need.staffSentenceEN
         }
     }
 
-    func text(_ language: LioLanguage) -> String { language == .english ? english : chinese }
-
-    static func suggested(for restrictions: [LioMenuRestriction]) -> [LioMenuNote] {
-        restrictions.compactMap { restriction in
-            switch restriction {
-            case .noSpicy: .noSpicy
-            case .halal: .halal
-            case .vegetarian: .vegetarian
-            case .noPork: .noPork
-            case .noBeef: nil
-            case .noAlcohol: .noAlcohol
-            case .noCoriander: .noCoriander
-            case .peanut: .allergyPeanut
-            case .treeNut: .allergyTreeNut
-            case .shellfish: .allergyShellfish
-            case .fish: .allergyFish
-            case .egg: .allergyEgg
-            case .dairy: .allergyDairy
-            case .gluten: .allergyGluten
-            case .soy: .allergySoy
-            case .sesame: .allergySesame
-            }
-        }
-    }
+    static func suggested(for needs: [LioDietaryNeed]) -> [LioMenuNote] { needs.map { .need($0) } }
 }
 
 struct LioMenuOrder: Equatable, Sendable {
@@ -418,14 +275,14 @@ struct LioMenuOrder: Equatable, Sendable {
     struct Card: Equatable, Sendable {
         let greeting = "您好，我想点这些菜："
         let lines: [String]
+        /// Full sentences, one per line.
         let notes: [String]
         let closing = "谢谢！"
     }
 
     func card(in reading: LioMenuReading) -> Card {
-        let names = Dictionary(uniqueKeysWithValues: reading.dishes.compactMap { dish in
-            dish.nameZH.map { (dish.id, $0) }
-        })
+        let names = Dictionary(reading.dishes.filter(\.isLegible).map { ($0.id, $0.nameZH ?? "") },
+                               uniquingKeysWith: { first, _ in first })
         let lines = dishIDs.compactMap { id in names[id].map { "\($0) × \(quantities[id] ?? 0)" } }
         return Card(lines: lines, notes: notes.map(\.chinese))
     }

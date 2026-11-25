@@ -17,18 +17,19 @@ import UIKit
     }
 
     @Test func rendersIntroResultsAndCardInBothLanguages() throws {
-        let diet = LioMenuDiet.read(LioMenuReading.sampleDietNotes)
+        let needs: [LioDietaryNeed] = [.noSpicy, .peanut]
+        let spicyMemory = LioMenuMemory.noSpicySource(LioMenuReading.sampleMemory)
         var order = LioMenuOrder()
         let reading = LioMenuReading.sample
         for dish in reading.dishes where ["宫保鸡丁", "西红柿炒鸡蛋", "蛋炒饭"].contains(dish.nameZH ?? "") {
             order.add(dish)
         }
         order.add(reading.dishes[5])
-        for note in LioMenuNote.suggested(for: diet.restrictions) { order.toggle(note) }
-        order.toggle(.noCoriander)
+        for note in LioMenuNote.suggested(for: needs) { order.toggle(note) }
+        order.toggle(.need(.noCoriander))
         for language in [LioLanguage.chinese, .english] {
             let suffix = language == .chinese ? "zh" : "en"
-            try shot("1-intro-\(suffix)", LioMenuIntro(language: language, diet: diet, off: .constant([])) {
+            try shot("1-intro-\(suffix)", LioMenuIntro(language: language, needs: .constant(needs), spicyMemory: spicyMemory) {
                 // ImageRenderer cannot draw PhotosPicker; the same labels stand in for the two buttons.
                 HStack(spacing: LioTheme.Spacing.sm) {
                     Label(language.text("Photograph menu", "拍菜单"), systemImage: "camera")
@@ -42,7 +43,7 @@ import UIKit
                 }
             }.padding(18))
             try shot("2-dishes-\(suffix)", LioMenuResults(language: language, reading: reading,
-                                                          restrictions: diet.restrictions,
+                                                          restrictions: needs,
                                                           order: .constant(order)).padding(18))
             try shot("3-card-\(suffix)", LioMenuCardContent(language: language, card: order.card(in: reading),
                                                             order: .constant(order)).padding(24))
