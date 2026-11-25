@@ -5,6 +5,8 @@ import Foundation
 struct LioRichItinerary: Sendable {
     enum Kind: String, CaseIterable, Sendable {
         case sight, meal, hotel, transport, freeTime = "free_time"
+        /// A summary card (#1453) names places without a kind; it is shown without a kind label.
+        case unspecified
         var symbol: String {
             switch self {
             case .sight: "camera"
@@ -12,6 +14,7 @@ struct LioRichItinerary: Sendable {
             case .hotel: "bed.double"
             case .transport: "tram"
             case .freeTime: "leaf"
+            case .unspecified: "mappin"
             }
         }
         func title(_ language: LioLanguage) -> String {
@@ -21,6 +24,7 @@ struct LioRichItinerary: Sendable {
             case .hotel: language.text("Stay", "住宿")
             case .transport: language.text("Travel", "交通")
             case .freeTime: language.text("Free time", "自由活动")
+            case .unspecified: ""
             }
         }
     }

@@ -16,6 +16,7 @@ public struct LioHome<MenuContent: View>: View {
     private let taxiRelay: LioTaxiRelayClient?
     private let nearbyRelay: LioNearbyRelayClient?
     private let taxiRecentDirectory: URL?
+    private let savedPlansStore: LioSavedPlans?
     private let toolsSessionIsCurrent: @MainActor () -> Bool
     private let reconnect: (@MainActor () -> Void)?
     private let session: LioSessionAvailability?
@@ -41,6 +42,10 @@ public struct LioHome<MenuContent: View>: View {
     @State private var chatDrafts: [Data: String] = [:]
     @State private var questionDrafts: [Data: LioQuestionDraft] = [:]
     @State private var profileEdit: ProfileEdit?
+    /// #1453: the open day-by-day plan, plans saved on this device, and what the composer gets after the plan closes.
+    @State private var planSheet: LioPlanSummary?
+    @State private var savedPlans: LioSavedPlansModel
+    @State private var planFollowUp: String?
     @State private var menuOpen = false
     @State private var followsAnswer = true
     @State private var opening = Opening.beforeNext
@@ -127,6 +132,7 @@ public struct LioHome<MenuContent: View>: View {
                 currencyRelay: LioCurrencyRelayClient? = nil, taxiRelay: LioTaxiRelayClient? = nil,
                 nearbyRelay: LioNearbyRelayClient? = nil,
                 taxiRecentDirectory: URL? = nil,
+                savedPlans: LioSavedPlans? = nil,
                 toolsDraftStorage: LocalSupportDraftStorage? = nil,
                 toolsSessionIsCurrent: @escaping @MainActor () -> Bool = { true },
                 @ViewBuilder menu: () -> MenuContent) {
@@ -140,6 +146,18 @@ public struct LioHome<MenuContent: View>: View {
         self.taxiRelay = taxiRelay
         self.nearbyRelay = nearbyRelay
         self.taxiRecentDirectory = taxiRecentDirectory
+        var plans = savedPlans
+        #if DEBUG
+        // Acceptance and previews keep saved plans in their own folder; a signed-in build uses the account's.
+        if plans == nil, ProcessInfo.processInfo.arguments.contains("--lio-home-plan-acceptance") {
+            // One folder per launch, so a run that stopped early never starts the next one as saved.
+            plans = LioSavedPlans(directory: FileManager.default.temporaryDirectory
+                .appendingPathComponent("LioSavedPlansPreview-\(ProcessInfo.processInfo.processIdentifier)", isDirectory: true),
+                                  isCurrent: { true })
+        }
+        #endif
+        savedPlansStore = plans
+        _savedPlans = State(initialValue: LioSavedPlansModel(store: plans))
         self.toolsSessionIsCurrent = toolsSessionIsCurrent
         self.reconnect = reconnect
         self.session = session
@@ -227,7 +245,9 @@ public struct LioHome<MenuContent: View>: View {
                          tripPlan: tripPlan, currentPlan: tripPlan?.current(for: tripCard),
                          canUndo: canObserve && tripPlan?.requestedCard == tripCard,
                          recordedMap: recordedMap, sessionRevision: session?.revision,
-                         zoomNamespace: tripZoomNamespace, path: $tripPath) { tab = .chat }
+                         zoomNamespace: tripZoomNamespace, path: $tripPath,
+                         plans: savedPlans.plans, openPlan: { planSheet = $0 },
+                         removePlan: { savedPlans.remove($0) }) { tab = .chat }
                 .background(LioTabBarAppearance().frame(width: 0, height: 0))
                 .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
                 .tag(Tab.trips)
@@ -406,6 +426,44 @@ public struct LioHome<MenuContent: View>: View {
                 _ = sendQuestion(text)
             }
         }
+        .sheet(item: $planSheet, onDismiss: continuePlanInChat) { plan in
+            LioPlanSheet(plan: plan, language: language, actions: planActions(plan))
+        }
+        .task(id: savedPlansStore?.id) {
+            // Each host session (another account, or the same account after returning) brings its own store.
+            if savedPlans.storeID != savedPlansStore?.id { savedPlans = LioSavedPlansModel(store: savedPlansStore) }
+        }
+    }
+
+    private func planActions(_ plan: LioPlanSummary) -> LioItineraryTimelineView.Actions {
+        var actions = LioItineraryTimelineView.Actions()
+        if savedPlans.available {
+            actions.saved = savedPlans.isSaved(plan)
+            actions.save = { savedPlans.save(plan) }
+        }
+        // Changing a day goes back to the chat as an ordinary message the user finishes and sends. That is only
+        // offered in the chat that made the plan; a plan opened from Trips in another chat can be saved and shared.
+        guard conversation.turns.contains(where: { turn in
+            turn.exploration?.trip.map { LioPlanSummary($0).tripID } == plan.tripID
+        }) else { return actions }
+        actions.adjustDay = { day in
+            planFollowUp = language.text("Change day \(day) of “\(plan.title)”: ", "调整「\(plan.title)」第 \(day) 天：")
+            planSheet = nil
+        }
+        actions.askLio = {
+            planFollowUp = ""
+            planSheet = nil
+        }
+        return actions
+    }
+
+    private func continuePlanInChat() {
+        guard let followUp = planFollowUp else { return }
+        planFollowUp = nil
+        if draft.isEmpty { draft = followUp }
+        // From the chat the composer is focused; from Trips the chat opens with the text ready (switching tabs
+        // ends typing, and focusing during that transition is not reliable).
+        if tab == .chat { typing = true } else { tab = .chat }
     }
 
     @ViewBuilder
@@ -1076,6 +1134,10 @@ public struct LioHome<MenuContent: View>: View {
                 EmptyView()
             } else if let display = turn.exploration {
                 explorationReply(turn, display: display, scroll: scroll)
+                if let trip = display.trip {
+                    let plan = LioPlanSummary(trip)
+                    LioPlanCard(plan: plan, language: language) { planSheet = plan }
+                }
             } else if !turn.answer.isEmpty {
                 let answerKey = LioEntranceKey(turn: turn.id, part: .answer)
                 lioReply {
