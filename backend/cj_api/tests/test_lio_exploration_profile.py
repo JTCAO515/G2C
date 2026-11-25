@@ -130,6 +130,9 @@ class ExplorationProfileTests(unittest.TestCase):
         self.assertEqual([(f.key,f.value)for f in facts],[('city','重庆'),('duration_days',2)])
         # Still strict: a different value, a negated or non-grammar clause, or two counts.
         for key,value,quote,source in (
+                ('city','成都','从成都出发','从成都出发'),
+                ('city','Chengdu','Departing from Chengdu','Departing from Chengdu'),
+                ('duration_days',3,'departing from Chengdu in 3 days','departing from Chengdu in 3 days'),
                 ('city','上海','我想去成都玩3天',text),('duration_days',4,'我想去成都玩3天',text),
                 ('city','成都','我不想去成都玩3天','我不想去成都玩3天'),
                 ('duration_days',3,'我不想去成都玩3天','我不想去成都玩3天'),

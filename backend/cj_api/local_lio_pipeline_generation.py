@@ -3,6 +3,7 @@ from threading import Event
 import hashlib
 import json
 import logging
+import os
 import re
 
 from cj_agent.draft import DraftRejected
@@ -12,7 +13,7 @@ from cj_message.needs_binding import needs_scope_for
 from cj_needs.domain import InvalidInput
 from cj_trip.postgres import Repository
 from cj_trip.planning_context import read_current
-from cj_trip.structured import SourceRejected
+from cj_trip.structured import FieldRejected
 
 from .lio_exploration_policy import Scene
 from .lio_pipeline_skeleton import CapacityExceeded,SkeletonUnavailable
@@ -84,6 +85,26 @@ def _log_refusal(binding,stage,error=None,*,reason=None,capacity=False):
         logging.getLogger('cj_usage.audit').info('LIO_PIPELINE_REFUSED '+' '.join(details))
     except Exception:
         logging.getLogger('cj_usage.audit').info('LIO_PIPELINE_REFUSED stage=%s error=log_unavailable',stage)
+
+
+def _log_uncaught(binding,stage,error):
+    """Content-free record of an exception that keeps propagating (HK run 4fb238dc, 2026-11-26).
+
+    Names the stage, class and the innermost raising code line (file:line:function).
+    The message is hashed only; logging never changes the propagation.
+    """
+    try:
+        details=['run_id='+_safe(getattr(binding,'run_id','unknown')),'stage='+stage,'error='+_safe(type(error).__name__)]
+        try:details.append('message_sha256='+hashlib.sha256(str(error).encode()).hexdigest()[:12])
+        except Exception:details.append('message_sha256=unavailable')
+        frame=error.__traceback__
+        while frame is not None and frame.tb_next is not None:frame=frame.tb_next
+        if frame is not None:
+            code=frame.tb_frame.f_code
+            details.append('at='+_safe(os.path.basename(code.co_filename))+':'+str(frame.tb_lineno)+':'+_safe(code.co_name))
+        logging.getLogger('cj_usage.audit').info('LIO_PIPELINE_UNCAUGHT '+' '.join(details))
+    except Exception:
+        logging.getLogger('cj_usage.audit').info('LIO_PIPELINE_UNCAUGHT stage=%s error=log_unavailable',stage)
 
 
 # Coordination 2026-11-26: a plan that still cannot be saved says why. Code reasons only.
@@ -159,10 +180,15 @@ class PipelineGeneration:
         except(CapacityExceeded,PipelineCapacity)as error:
             _log_refusal(binding,stage,error,capacity=True)
             return self._refused(host,worker,binding,locale,capacity=True)
-        except(DraftRejected,InvalidInput,SourceRejected,SkeletonUnavailable,WordingUnavailable,
+        except(DraftRejected,InvalidInput,FieldRejected,SkeletonUnavailable,WordingUnavailable,
                 DestinationUnresolved,PlaceSelectionBlocked)as error:
+            # FieldRejected includes SourceRejected: any candidate shape/source check failing before
+            # commit is a refusal (HK run 4fb238dc: a plain FieldRejected left the RUN unknown).
             _log_refusal(binding,stage,error)
             return self._refused(host,worker,binding,locale,detail=_ERROR_DETAIL.get(type(error).__name__))
+        except Exception as error:
+            _log_uncaught(binding,stage,error)
+            raise
         state=worker.runs.snapshot(binding)
         unverified=('天气、当天开放情况和部分交通尚未确认'if worded.unknown_transfers else'天气和当天开放情况尚未确认')if locale=='zh'else(
             'Weather, opening information and some routes remain unverified'if worded.unknown_transfers else

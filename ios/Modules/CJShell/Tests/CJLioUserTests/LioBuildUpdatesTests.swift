@@ -5,20 +5,21 @@ import Testing
 struct LioBuildUpdatesTests {
     @Test func bundledBookKeepsOnlyCurrentAndPreviousAndBothLanguages() throws {
         let book = try LioBuildUpdates.bundled.get()
-        #expect(book.currentBuild == 56)
-        #expect(book.releases.map(\.build) == [56, 55])
-        let current = try book.release(for: 56)
-        let previous = try book.release(for: 55)
-        #expect(current.previousBuild == 55)
+        #expect(book.currentBuild == 57)
+        #expect(book.releases.map(\.build) == [57, 56])
+        let current = try book.release(for: 57)
+        let previous = try book.release(for: 56)
+        #expect(current.previousBuild == 56)
         #expect(current.sections.map(\.id) == [.changes, .comparison, .testing, .known, .service])
-        #expect(current.whatToTest(.chinese).contains("全国 41 个开通地铁的城市"))
-        #expect(current.whatToTest(.english).contains("all 41 mainland cities with a metro"))
-        #expect(current.whatToTest(.chinese).contains("按天展示的行程放在下一版"))
-        #expect(current.whatToTest(.english).contains("no longer makes the app stop responding"))
-        #expect(previous.whatToTest(.chinese).contains("底部改为「聊天 / 行程 / 工具 / 我的」"))
-        #expect(previous.whatToTest(.english).contains("Open in DiDi now opens DiDi"))
-        #expect(previous.whatToTest(.chinese).contains("用默认字号测中英界面"))
-        #expect(throws: LioBuildUpdates.Failure.unlistedBuild) { try book.release(for: 54) }
+        #expect(current.whatToTest(.chinese).contains("「工具」新增 7 个"))
+        #expect(current.whatToTest(.english).contains("Seven new tools"))
+        #expect(current.whatToTest(.chinese).contains("第一次真机联调"))
+        #expect(current.whatToTest(.english).contains("Sight reminders still fire after account deletion"))
+        #expect(current.whatToTest(.chinese).contains("App 内不下单、不付款"))
+        #expect(previous.whatToTest(.chinese).contains("全国 41 个开通地铁的城市"))
+        #expect(previous.whatToTest(.english).contains("all 41 mainland cities with a metro"))
+        #expect(previous.whatToTest(.chinese).contains("按天展示的行程放在下一版"))
+        #expect(throws: LioBuildUpdates.Failure.unlistedBuild) { try book.release(for: 55) }
     }
 
     @Test func malformedOrIncompleteReleaseContentIsNotAccepted() throws {

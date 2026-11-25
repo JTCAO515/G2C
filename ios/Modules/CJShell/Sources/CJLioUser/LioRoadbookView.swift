@@ -576,7 +576,13 @@ struct LioRoadbookView: View {
             // Keep the time the copy was first kept, not the route's own date.
             let book = roadbook.with(details: state.filled.wrappedValue)
             let keptAt = store.load().first { $0.id == book.id }?.createdAt ?? .now
-            try? store.save(book.kept(at: keptAt))
+            do {
+                try store.save(book.kept(at: keptAt))
+            } catch {
+                // Same notice as a failed first keep: the copy on the phone still lacks these places.
+                state.notice.wrappedValue = language.text("Couldn’t keep this roadbook on your phone. Try again.",
+                                                          "暂时无法离线保存，请重试。")
+            }
         }
     }
     #endif

@@ -58,7 +58,9 @@ def apply_wording(document,batches,*,facts,locale):
         if item['id']not in patches:continue
         text=patches[item['id']]
         note,refs,_=filter_reason_text(text['note'],text['reason_refs'],facts)
-        if not _public(note,locale):note,refs=None,()
-        tip=text['tip']if _public(text['tip'],locale)else None
+        # HK run 4fb238dc (2026-11-26): the schema admits "" for a reason; an empty or blank
+        # note fails the saved itinerary's bounded-text check, so it means no reason.
+        if not _public(note,locale)or note is not None and not note.strip():note,refs=None,()
+        tip=text['tip']if _public(text['tip'],locale)and(text['tip']is None or text['tip'].strip())else None
         item.update(note=note,reason_refs=list(refs),tip=tip)
     return value

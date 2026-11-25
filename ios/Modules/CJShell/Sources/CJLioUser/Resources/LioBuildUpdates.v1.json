@@ -1,7 +1,108 @@
 {
   "schema": 1,
-  "currentBuild": 56,
+  "currentBuild": 57,
   "releases": [
+    {
+      "build": 57,
+      "previousBuild": 56,
+      "sections": [
+        {
+          "id": "changes",
+          "title": {
+            "en": "New and improved",
+            "zh": "本版新增和修改"
+          },
+          "items": {
+            "zh": [
+              "「工具」新增 7 个：回酒店（排第一，打车回酒店、给司机看、出示卡）、落地模式（落地首日清单）、景点预约（15 个景点的预约规则和放票提醒）、点餐（拍菜单看懂每道菜，按忌口和过敏标出，生成中文点单卡）、酒店、城际交通（火车、航班、大巴）、路书（按天离线手册，可导出 PDF）。",
+              "附近新增「必需品」：ATM、药房、厕所、行李寄存。地铁图点车站可看周边。",
+              "聊天里请 Lio 规划行程，可按天查看并保存。",
+              "「行程」改为「这趟旅行」首页：出发前的准备清单、到达后的当天日程；以前的行程在右上角「所有行程」。",
+              "订票、订酒店都跳到官方渠道、12306、Trip.com 或 Klook，App 内不下单、不付款。"
+            ],
+            "en": [
+              "Seven new tools: Back to Hotel (first; taxi back, show the driver, show cards), Arrival Mode (first-day checklist), Sight Bookings (rules and reminders for 15 sights), Menu Helper (photograph a menu, flags for your diet and allergies, an order card in Chinese), Hotels, Intercity Travel (trains, flights, buses) and Roadbook (offline day-by-day book with PDF export).",
+              "Nearby adds Essentials: ATMs, pharmacies, toilets, luggage storage. Tap a metro station to see what is around it.",
+              "Ask Lio in Chat to plan a trip, then view it by day and save it.",
+              "Trips opens on This trip: a checklist before you go, today's schedule once there. Earlier trips are under All trips.",
+              "Bookings open the official site, 12306, Trip.com or Klook; nothing is bought in the app."
+            ]
+          }
+        },
+        {
+          "id": "comparison",
+          "title": {
+            "en": "Changes since the previous build",
+            "zh": "与上一版的区别"
+          },
+          "items": {
+            "zh": [
+              "构建 57 接续构建 56。以前的行程列表移到「所有行程」。"
+            ],
+            "en": [
+              "Build 57 follows build 56. The old trip list is now under All trips."
+            ]
+          }
+        },
+        {
+          "id": "testing",
+          "title": {
+            "en": "Suggested checks",
+            "zh": "建议怎么测"
+          },
+          "items": {
+            "zh": [
+              "行程：点「先只做准备」，关掉「还没定日期」选到达日期，再选护照国籍看入境结论；点「去办」进工具再返回。",
+              "回酒店：在「酒店」点「设为我的酒店」，再试打车回酒店、给司机看和全屏出示卡。点餐：拍中文菜单，勾忌口，选菜，打开点单卡（约 10–40 秒，每天最多 10 张）。",
+              "景点预约：故宫选 7 天内的日期，点「提醒我」并允许通知。城际交通：查上海→北京，点「去 12306 订票」或「去 Trip.com 订票」。路书：打开「北京三日经典路线」，试打车、景点详情、离线保存和导出 PDF。附近：逐类查「必需品」。地铁：广州「体育西路」看周边。",
+              "这是这些功能第一次真机联调，遇到问题请在内部测试群发截图、问题记录和发生时间。"
+            ],
+            "en": [
+              "Trips: tap Just get ready, turn off Dates not decided yet, set an arrival date and passport for the entry result, open a tool with Go and come back.",
+              "Back to Hotel: tap Set as my hotel in Hotels, then try Take a taxi back, Show the driver and a full-screen card. Menu Helper: photograph a Chinese menu, tick diet or allergy items, pick dishes, open the order card (10-40 s; 10 menus a day).",
+              "Sight Bookings: Palace Museum, a day within 7 days, Remind me. Intercity Travel: Shanghai to Beijing, tap Book on 12306 or Trip.com. Roadbook: Three classic days in Beijing; try a taxi, Place details, Keep offline, Export PDF. Nearby: each Essentials type. Metro: Guangzhou Tiyu Xilu.",
+              "First time on real devices: share a screenshot, the issue record and the time in the testing group."
+            ]
+          }
+        },
+        {
+          "id": "known",
+          "title": {
+            "en": "Known issues and checks to avoid",
+            "zh": "已知问题和暂不测试内容"
+          },
+          "items": {
+            "zh": [
+              "规划行程可能保存失败，请截图反馈。注销账号后，景点预约的提醒仍会弹出，下一版修；可先逐条「取消提醒」。本地协助暂不发送求助消息。",
+              "八达岭 12-16 起、其他景点和入境规则 12-25 起只显示官方链接；行程跨过 12-31 或之后入境的，入境结论现在就只显示官方链接。",
+              "火车只列部分车次，完整时刻请到 12306。酒店价格为参考价，日期、人数和是否接待外国人请在 Trip.com 确认。",
+              "点餐只显示菜单上印清楚的价格；过敏标记按常见做法推断，请向服务员确认。路书补充信息每天最多 60 个地点、5 本路书。会员方案仍是预览，不扣费。"
+            ],
+            "en": [
+              "Trip plans may fail to save; please send a screenshot. Sight reminders still fire after account deletion; to be fixed in the next build. Cancel them first if needed. Local Support does not send help requests yet.",
+              "Badaling from Dec 16, other sights and entry rules from Dec 25 show only official links; for trips past Dec 31 or arriving later, entry already does.",
+              "Trains list some departures; see 12306. Hotel prices are reference only; confirm dates, guests and whether foreigners are accepted on Trip.com.",
+              "Menu prices show only when clearly printed; allergy flags are typical recipes, so ask staff. Roadbook details: 60 places and 5 books a day. Plans remain a preview."
+            ]
+          }
+        },
+        {
+          "id": "service",
+          "title": {
+            "en": "Online service changes",
+            "zh": "在线服务变化"
+          },
+          "items": {
+            "zh": [
+              "酒店、城际交通、路书补充、点餐、车站周边和必需品需要联网，只对已开通的内测账号开放。地点、酒店和火车来自高德，航班来自飞常准；点餐用阿里云百炼的 qwen-vl-ocr 和 qwen3.8-flash，服务端不保存菜单照片。没有推广链接。"
+            ],
+            "en": [
+              "Hotels, Intercity Travel, roadbook details, Menu Helper, station surroundings and Essentials need internet and an enabled tester account. Places, hotels and trains from AMap, flights from VariFlight; Menu Helper uses Alibaba Cloud Model Studio (qwen-vl-ocr, qwen3.8-flash); our server keeps no menu photos. No promotion links."
+            ]
+          }
+        }
+      ]
+    },
     {
       "build": 56,
       "previousBuild": 55,
@@ -96,107 +197,6 @@
             "en": [
               "Nearby and taxi place search require internet access and an enabled tester account. Places come from DiDi and AMap.",
               "DiDi sets the final price and handles the ride. Metro line maps come with the app and work offline."
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "build": 55,
-      "previousBuild": 54,
-      "sections": [
-        {
-          "id": "changes",
-          "title": {
-            "en": "New and improved",
-            "zh": "本版新增和修改"
-          },
-          "items": {
-            "zh": [
-              "新增「附近」：查看身边的美食、景点、咖啡和购物，可打车前往、用高德地图导航或出示中文地址。",
-              "地铁指南新增广州。北京、上海、广州有可交互线路图：可缩放拖动、查找车站，点车站看中英站名、所属线路和换乘，可打车去这站或用高德地图导航；图下注明数据来源与核对日期。",
-              "底部改为「聊天 / 行程 / 工具 / 我的」。「我的」里有我的记忆、个人信息、设置与账号、帮助与反馈，以及会员方案预览。",
-              "打车：车型显示英文名，价格带「¥」和区间。点「在滴滴打开」会直接进入滴滴并带上起点和终点；没装滴滴时打开 App Store。",
-              "打车搜索太频繁、次数用完或选了港澳台城市时，提示更清楚。"
-            ],
-            "en": [
-              "New Nearby tool: find food, sights, coffee and shopping around you, then take a taxi, get directions in AMap or show the address in Chinese.",
-              "The Metro Guide adds Guangzhou. Beijing, Shanghai and Guangzhou have an interactive line map: zoom, drag and find a station, then see its names in both languages, its lines and transfers, take a taxi there or get directions in AMap. The map shows its source and check date.",
-              "The tabs are now Chat, Trips, Tools and Me. Me has your memory, profile, settings and account, help, and a preview of plans.",
-              "Taxi: ride options have English names and prices show yuan and ranges. Open in DiDi now opens DiDi with your pickup and destination, or the App Store if DiDi isn't installed.",
-              "Clearer messages when you search too often, reach the limit or choose a city outside mainland China."
-            ]
-          }
-        },
-        {
-          "id": "comparison",
-          "title": {
-            "en": "Changes since the previous build",
-            "zh": "与上一版的区别"
-          },
-          "items": {
-            "zh": [
-              "构建 55 接续构建 54。语言、外观、注销账号和退出登录从聊天菜单移到「我的」；「记忆」Tab 并入「我的」。修复切到后台再回来时，聊天里出现「暂时无法显示你的选择」。"
-            ],
-            "en": [
-              "Build 55 follows build 54. Language, appearance, account deletion and sign out moved from the chat menu to Me, and Memory is now inside Me. Fixed \"Couldn’t show your saved choice\" appearing in chat after returning to the app."
-            ]
-          }
-        },
-        {
-          "id": "testing",
-          "title": {
-            "en": "Suggested checks",
-            "zh": "建议怎么测"
-          },
-          "items": {
-            "zh": [
-              "用默认字号测中英界面：在「我的」查看我的记忆、会员方案和设置，切换语言。",
-              "打车：英文界面看车型英文名和价格；点「在滴滴打开」，已装滴滴应直接进入滴滴并带上起终点，只走到确认页，请勿下单；没装滴滴应打开 App Store。",
-              "附近：允许定位后切换分类、范围和排序，打开一个地点试打车、导航和出示地址。在聊天里问一个行程问题后把 App 切到后台再回来，确认不再出现「暂时无法显示你的选择」。地铁：在广州、上海或北京的线路图上缩放、查找一个车站，试打车去这站。",
-              "遇到问题，请在内部测试群发截图、问题记录及发生时间。"
-            ],
-            "en": [
-              "At the default text size, check both languages: open your memory, the plans preview and settings in Me, and switch language.",
-              "Taxi: in English, check ride option names and prices. Tap Open in DiDi: with DiDi installed it should open DiDi with your pickup and destination (stop at vehicle confirmation without ordering); without DiDi it should open the App Store.",
-              "Nearby: allow location, switch categories, distance and order, then open a place and try taxi, directions and the Chinese address. Ask Lio about a trip, leave the app and come back, and check that \"Couldn’t show your saved choice\" no longer appears. Metro: in Guangzhou, Shanghai or Beijing, zoom the line map, find a station and try a taxi there.",
-              "Share a screenshot, the copied issue record and the time it happened in the internal testing group."
-            ]
-          }
-        },
-        {
-          "id": "known",
-          "title": {
-            "en": "Known issues and checks to avoid",
-            "zh": "已知问题和暂不测试内容"
-          },
-          "items": {
-            "zh": [
-              "会员方案只是预览，不能购买，也不会扣费。个人信息暂时只能查看。",
-              "按天展示的结构化行程放在下一版。支付宝里的滴滴暂不能一键打开。地铁线路图为示意图，不显示真实地理位置。",
-              "酒店、千问朗读、天气、航班、上网卡、玩乐暂未开放。本地协助暂不发送求助消息。"
-            ],
-            "en": [
-              "Plans are a preview only: nothing can be bought or charged. Profile is view-only for now.",
-              "Day-by-day trip plans come in a later build. DiDi in Alipay can't be opened directly yet. The metro line map is a diagram, not a geographic map.",
-              "Hotels, Qwen voice playback, Weather, Flights, eSIM and Activities are unavailable. Local Support does not send help requests."
-            ]
-          }
-        },
-        {
-          "id": "service",
-          "title": {
-            "en": "Online service changes",
-            "zh": "在线服务变化"
-          },
-          "items": {
-            "zh": [
-              "附近和打车地点搜索需要联网，供已开通的内测账号使用。地点来自滴滴和高德。",
-              "滴滴决定实际价格。打车只在滴滴继续。"
-            ],
-            "en": [
-              "Nearby and taxi place search require internet access and an enabled tester account. Places come from DiDi and AMap.",
-              "DiDi sets the final price and handles the ride."
             ]
           }
         }

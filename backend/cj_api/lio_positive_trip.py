@@ -49,13 +49,27 @@ def known_destination(text):
     return mention if mention is not None and known_city_term(mention)else None
 
 
-def trip_tokens(clause,*,registered_city_terms=()):
-    """City, duration and party spans of a clause made only of finite positive trip tokens.
+def destination_stay(quote, registered_city_terms):
+    """Read a destination and stay length only when the whole quote assigns both roles."""
+    clause = quote.strip().rstrip('。.!！').strip()
+    match = re.fullmatch(
+        r'(?:(?:我们|我)?(?:想去|要去|去))?\s*(.+?)\s*玩\s*(' + _NUMBER + r')\s*(?:天|日)',
+        clause, re.I)
+    if match is None:
+        match = re.fullmatch(
+            r'(?:(?:I|we)\s+(?:want|would like)\s+to\s+)?(?:visit|go to|travel to)\s+'
+            r'(.+?)\s+for\s+(' + _NUMBER + r')\s+days?', clause, re.I)
+    if match is None:
+        return None
+    city, number = match.groups()
+    if not known_city_term(city) and city.casefold() not in {term.casefold() for term in registered_city_terms}:
+        return None
+    days = int(number) if number.isascii() and number.isdecimal() else NUMBERS[number.casefold()]
+    return city, days
 
-    None when any part of the clause is outside the grammar (negation, questions,
-    conjunctions, conditions) or it names more than one city. No fact is inferred
-    from a keyword inside other text.
-    """
+
+def supports(key,clause,quote,*,registered_city_terms=()):
+    if key not in ('city','duration_days','party_type'):return False
     # Only the source-owned catalogue is eligible. Model-proposed strings must
     # never become grammar tokens: a proposed city "not" could swallow negation.
     cities=tuple(sorted(_KNOWN_CITIES|set(registered_city_terms),key=len,reverse=True))
@@ -81,30 +95,17 @@ def trip_tokens(clause,*,registered_city_terms=()):
         if separator:position+=separator.end();continue
         if clause[position:] in ('?','？') and requested:break
         match=token.match(clause,position)
-        if match is None:return None
+        if match is None:return False
         if match.lastgroup=='request':requested=True
         if match.lastgroup in found:found[match.lastgroup].append(match[0])
         position=match.end()
-    if len(set(city.casefold() for city in found['city']))>1:return None
-    if found['city'] and not requested and found['city'][0].casefold() not in {city.casefold()for city in cities}:return None
-    return found
-
-
-def day_counts(found):
-    """The day counts of trip_tokens duration spans, in order."""
-    counts=[]
-    for word in found['duration']:
-        number=re.match(_NUMBER,word,re.I)[0]
-        counts.append(int(number) if number.isascii() and number.isdecimal() else NUMBERS[number.casefold()])
-    return counts
-
-
-def supports(key,clause,quote,*,registered_city_terms=()):
-    if key not in ('city','duration_days','party_type'):return False
-    found=trip_tokens(clause,registered_city_terms=registered_city_terms)
-    if found is None:return False
+    if len(set(city.casefold() for city in found['city']))>1:return False
+    if found['city'] and not requested and found['city'][0].casefold() not in {city.casefold()for city in cities}:return False
     if key=='city':return len(found['city'])==1 and found['city'][0].casefold()==quote.casefold()
     if key=='duration_days':
-        counts=day_counts(found)
+        counts=[]
+        for word in found['duration']:
+            number=re.match(_NUMBER,word,re.I)[0]
+            counts.append(int(number) if number.isascii() and number.isdecimal() else NUMBERS[number.casefold()])
         return bool(counts) and len(set(counts))==1 and quote.casefold() in {word.casefold() for word in found['duration']}
     return len(found['party'])==1 and found['party'][0].casefold()==quote.casefold()
