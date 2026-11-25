@@ -133,6 +133,7 @@ private var developmentHostEnvironment: [String: String] {
     let lioHotelRelay: LioHotelRelayClient?
     let lioTransportRelay: LioTransportRelayClient?
     let lioRoadbookRelay: LioRoadbookRelayClient?
+    let lioMenuRelay: LioMenuRelayClient?
     #endif
     let messages: DevelopmentMessageHost
     #if DEBUG
@@ -256,6 +257,9 @@ private var developmentHostEnvironment: [String: String] {
         // ROADBOOK.1 answers up to eight places per call (tens of KB); this endpoint allows 1 MB.
         lioRoadbookRelay = LioRoadbookRelayClient.internalBeta(endpoint: endpoint, isCurrent: relaySessionIsCurrent,
                                                                bearer: relayBearer)
+        // MENU.1 replies are capped at 256 KB by the client; the menu photo is the request body.
+        lioMenuRelay = LioMenuRelayClient.internalBeta(endpoint: endpoint, isCurrent: relaySessionIsCurrent,
+                                                       bearer: relayBearer)
         if tripEditingProfile != nil {
             lioTripLibrary = LioTripLibrary(list: {
                 var rows: [StructuredTripSummary] = []

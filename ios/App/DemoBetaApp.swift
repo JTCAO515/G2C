@@ -35,6 +35,7 @@ struct DemoBetaRootView: View {
                    savedPlans: trip.messages.lioSavedPlans,
                    roadbookDirectory: trip.messages.lioRoadbookDirectory,
                    roadbookRelay: trip.lioRoadbookRelay,
+                   menuRelay: trip.lioMenuRelay,
                    tripHomeStore: trip.messages.lioTripHomeStore,
                    messageDirectory: trip.messages.lioMessageDirectory,
                    toolsDraftStorage: root.localSupportDraftStorage(),

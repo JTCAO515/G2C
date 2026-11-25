@@ -1,7 +1,7 @@
 /// The Tools tab (formerly "插件"): one card per tool with an icon, a name and one sentence.
 /// Tools whose service is not enabled for this build are left out rather than shown disabled.
 enum LioTool: CaseIterable, Sendable {
-    case arrival, localSupport, taxi, hotels, roadbook, transport, attractionBooking, nearby, currency, metro, payment, translation, phrases
+    case arrival, localSupport, taxi, hotels, roadbook, transport, attractionBooking, menuOrder, nearby, currency, metro, payment, translation, phrases
 
     var symbol: String {
         switch self {
@@ -18,6 +18,7 @@ enum LioTool: CaseIterable, Sendable {
         case .transport: "train.side.front.car"
         case .arrival: "airplane.arrival"
         case .attractionBooking: "ticket"
+        case .menuOrder: "fork.knife"
         }
     }
 
@@ -36,6 +37,7 @@ enum LioTool: CaseIterable, Sendable {
         case .transport: "lio.tools.transport"
         case .arrival: "lio.tools.arrival"
         case .attractionBooking: "lio.tools.attraction-booking"
+        case .menuOrder: "lio.tools.menu-order"
         }
     }
 
@@ -54,6 +56,7 @@ enum LioTool: CaseIterable, Sendable {
         case .transport: language.text("Intercity Travel", "城际交通")
         case .arrival: language.text("Arrival Mode", "落地模式")
         case .attractionBooking: language.text("Sight Bookings", "景点预约")
+        case .menuOrder: language.text("Menu Helper", "点餐")
         }
     }
 
@@ -73,6 +76,7 @@ enum LioTool: CaseIterable, Sendable {
         case .transport: language.text("Compare trains, flights and buses", "比较火车、飞机和大巴")
         case .arrival: language.text("Your first hours in China, step by step", "落地首日要做的事")
         case .attractionBooking: language.text("When tickets open, with reminders", "预约规则与放票提醒")
+        case .menuOrder: language.text("Snap a menu, order in Chinese", "拍菜单，用中文点菜")
         }
     }
 
@@ -95,6 +99,8 @@ enum LioToolCatalog {
         var arrival = false
         /// #1591: `G2CAttractionBookingEnabled`, off unless the build says YES.
         var attractionBooking = false
+        /// #1606: `G2CMenuOrderEnabled` (the host injects the service only then), or Debug's `--lio-menu-preview`.
+        var menuOrder = false
     }
 
     static func title(_ language: LioLanguage) -> String {
@@ -112,8 +118,20 @@ enum LioToolCatalog {
             case .transport: availability.transport
             case .arrival: availability.arrival
             case .attractionBooking: availability.attractionBooking
+            case .menuOrder: availability.menuOrder
             case .localSupport, .metro, .payment, .translation, .phrases: true
             }
         }
+    }
+}
+
+extension LioToolCatalog {
+    /// The saved plan Arrival Mode starts from: the earliest one that has not started yet, whichever was saved
+    /// last; otherwise the most recently saved (`plans` is newest first).
+    static func arrivalPlan(_ plans: [LioPlanSummary], today: LioArrivalDay) -> LioPlanSummary? {
+        let upcoming = plans.compactMap { plan in plan.startDate.flatMap(LioArrivalDay.init).map { (plan, $0) } }
+            .filter { $0.1 >= today }
+            .min { $0.1 < $1.1 }?.0
+        return upcoming ?? plans.first
     }
 }

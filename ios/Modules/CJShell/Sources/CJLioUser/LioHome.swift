@@ -21,6 +21,7 @@ public struct LioHome<MenuContent: View>: View {
     private let savedPlansStore: LioSavedPlans?
     private let roadbookDirectory: URL?
     private let roadbookRelay: LioRoadbookRelayClient?
+    private let menuRelay: LioMenuRelayClient?
     /// #1647: the trip home (behind `G2CTripHomeEnabled`) and the account's message folder its tools read.
     private let tripHomeStore: LioTripHomeStore?
     private let messageDirectory: URL?
@@ -146,6 +147,7 @@ public struct LioHome<MenuContent: View>: View {
                 savedPlans: LioSavedPlans? = nil,
                 roadbookDirectory: URL? = nil,
                 roadbookRelay: LioRoadbookRelayClient? = nil,
+                menuRelay: LioMenuRelayClient? = nil,
                 tripHomeStore: LioTripHomeStore? = nil,
                 messageDirectory: URL? = nil,
                 toolsDraftStorage: LocalSupportDraftStorage? = nil,
@@ -176,6 +178,7 @@ public struct LioHome<MenuContent: View>: View {
         savedPlansStore = plans
         self.roadbookDirectory = roadbookDirectory
         self.roadbookRelay = roadbookRelay
+        self.menuRelay = menuRelay
         self.tripHomeStore = tripHomeStore
         self.messageDirectory = messageDirectory
         _savedPlans = State(initialValue: LioSavedPlansModel(store: plans))
@@ -278,10 +281,9 @@ public struct LioHome<MenuContent: View>: View {
                 .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
                 .tag(Tab.trips)
             } else if LioTripHomeFeature.enabledInBuild && !showsAllTrips {
-                LioTripHome(language: language, store: tripHomeStore, plans: savedPlans.plans,
-                            tools: .fromBuild(messageDirectory: messageDirectory, isCurrent: toolsSessionIsCurrent,
-                                              arrival: LioTripHomeArrival.fromBuild(language: language)),
-                            showAllTrips: { showsAllTrips = true }, openChat: { tab = .chat })
+                LioTripHomeTab(language: language, store: tripHomeStore, plans: savedPlans.plans,
+                               messageDirectory: messageDirectory, isCurrent: toolsSessionIsCurrent,
+                               showAllTrips: { showsAllTrips = true }, openChat: { tab = .chat })
                     .id(tripHomeStore?.id)
                     .background(LioTabBarAppearance().frame(width: 0, height: 0))
                     .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
@@ -326,6 +328,8 @@ public struct LioHome<MenuContent: View>: View {
         .environment(\.lioHotelFinder, hotelRelay.map { .internalBeta(relay: $0) })
         .environment(\.lioTransportRelay, transportRelay)
         .lioRoadbookEnricher(roadbookRelay.map { LioRoadbookEnricher.internalBeta(relay: $0) })
+        // Menu ordering (#1606): the signed-in relay when the build enables it, or Debug's `--lio-menu-preview`.
+        .environment(\.lioMenuService, LioMenuService.fromBuild(relay: menuRelay.map(LioMenuService.relay)))
         .tint(LioTheme.vermilion)
         .sensoryFeedback(.success, trigger: savedCelebrations)
         .disabled(chatControlsSuspended)
@@ -1462,6 +1466,43 @@ public struct LioHome<MenuContent: View>: View {
             }
         case .answering, .finished:
             EmptyView()
+        }
+    }
+}
+
+/// The trip home in the Trips tab. `LioHome` re-renders on every streamed answer, so the saved profile, the tools
+/// and the Arrival Mode rules are read once here (and again only when the language changes), not on each render.
+private struct LioTripHomeTab: View {
+    let language: LioLanguage
+    let store: LioTripHomeStore?
+    let plans: [LioPlanSummary]
+    let messageDirectory: URL?
+    let isCurrent: @MainActor () -> Bool
+    let showAllTrips: () -> Void
+    let openChat: () -> Void
+    @State private var loaded: Loaded?
+
+    private struct Loaded {
+        let language: LioLanguage
+        let model: LioTripHomeModel
+        let tools: LioTripHomeTools
+    }
+
+    var body: some View {
+        Group {
+            if let loaded, loaded.language == language {
+                LioTripHome(language: language, store: store, plans: plans, tools: loaded.tools,
+                            showAllTrips: showAllTrips, openChat: openChat, model: loaded.model)
+                    .id(loaded.language)
+            } else {
+                LioTheme.paper.ignoresSafeArea()
+            }
+        }
+        .task(id: language) {
+            guard loaded?.language != language else { return }
+            loaded = Loaded(language: language, model: loaded?.model ?? LioTripHomeModel(store: store),
+                            tools: .fromBuild(messageDirectory: messageDirectory, isCurrent: isCurrent,
+                                              arrival: LioTripHomeArrival.fromBuild(language: language)))
         }
     }
 }

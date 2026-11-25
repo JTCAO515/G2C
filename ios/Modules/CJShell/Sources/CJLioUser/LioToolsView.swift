@@ -17,6 +17,7 @@ struct LioToolsView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.lioRoadbookDirectory) private var roadbookDirectory
     @Environment(\.lioSavedPlans) private var savedPlans
+    @Environment(\.lioMenuService) private var menuService
 
     private var availability: LioToolCatalog.Availability {
         var available = LioToolCatalog.Availability()
@@ -26,6 +27,7 @@ struct LioToolsView: View {
         available.hotels = hotelSearch != nil
         available.roadbook = LioRoadbookFeature.enabled(infoValue: Bundle.main.object(forInfoDictionaryKey: "G2CRoadbookEnabled"))
         available.transport = LioTransportService.fromBuild() != nil
+        available.menuOrder = menuService != nil
         available.arrival = LioArrivalFeature.enabled(infoValue: Bundle.main.object(forInfoDictionaryKey: LioArrivalFeature.infoKey))
         available.attractionBooking = LioAttractionBookingFeature.enabled(
             infoValue: Bundle.main.object(forInfoDictionaryKey: LioAttractionBookingFeature.infoKey))
@@ -112,10 +114,9 @@ struct LioToolsView: View {
         #if DEBUG
         if LioArrivalPreview.requested { return (LioArrivalPreview.hotels, nil) }
         #endif
-        let plans = savedPlans?.plans ?? []
-        let today = LioArrivalDay(date: .now)
-        let upcoming = plans.first { plan in plan.startDate.flatMap(LioArrivalDay.init).map { $0 >= today } ?? false }
-        guard let plan = upcoming ?? plans.first else { return nil }
+        guard let plan = LioToolCatalog.arrivalPlan(savedPlans?.plans ?? [], today: LioArrivalDay(date: .now)) else {
+            return nil
+        }
         return (plan.itinerary.hotels, plan.startDate.flatMap(LioArrivalDay.init))
     }
 
@@ -154,6 +155,11 @@ struct LioToolsView: View {
             LioArrivalView(language: language, hotels: arrivalTrip?.hotels ?? [], arrival: arrivalTrip?.arrival)
         case .attractionBooking:
             LioAttractionBookingView(language: language)
+        case .menuOrder:
+            if let menuService {
+                // Dietary memory is not read by Tools yet; the first version asks the traveller to tick needs.
+                LioMenuOrderView(language: language, service: menuService, memoryNotes: nil)
+            }
         case .roadbook:
             LioRoadbookLibraryView(language: language, store: roadbookStore, candidates: roadbookCandidates)
         case .hotels:
