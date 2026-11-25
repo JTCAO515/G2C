@@ -105,7 +105,7 @@ def attempts(connection):
     rows=connection.execute('SELECT id,kind,input_sha,state,receipt FROM attempt ORDER BY id').fetchall()
     if not rows:raise ValueError('existing_nonempty_M4_shared_history_required')
     translation_prefix = SERVICE + ':'
-    contains_translation = False
+    contains_hk_only_rows = False
     for identity,kind,digest,state,receipt in rows:
         if (type(identity) is not str or not 1<=len(identity)<=128 or kind not in budget.LIMITS
                 or type(digest) is not str or re.fullmatch('[0-9a-f]{64}',digest) is None
@@ -113,17 +113,17 @@ def attempts(connection):
             raise ValueError('original_attempt_history_invalid')
         value = json.loads(receipt) if receipt is not None else None
         if identity.startswith(translation_prefix) or (type(value) is dict and value.get('service') == SERVICE):
-            contains_translation = True
+            contains_hk_only_rows = True
             valid = valid_translation_attempt(identity, kind, digest, state, receipt, value)
         elif identity.startswith('roadbook.') or (type(value) is dict and value.get('service') == roadbook_budget.SERVICE):
-            contains_translation = True
+            contains_hk_only_rows = True
             valid = valid_roadbook_attempt(identity, kind, digest, state, receipt, value)
         else:
             valid = ((state == 'INTENT') == (receipt is None)
                      and (receipt is None or type(value) is dict))
         if not valid:
             raise ValueError('original_attempt_history_invalid')
-    if contains_translation:
+    if contains_hk_only_rows:
         has_producer = connection.execute(
             "SELECT 1 FROM sqlite_master WHERE type='table' AND name='producer'").fetchone()
         if (not has_producer or connection.execute(
