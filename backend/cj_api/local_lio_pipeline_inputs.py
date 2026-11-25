@@ -45,18 +45,6 @@ def understand_constraints(host,worker,binding,view,*,locale):
     return PlanConstraints(parse_plan_understanding(raw,turns),turns)
 
 
-def understand_plan(host,worker,binding,view,*,locale,day_count,city_reference):
-    """Existing single-step callers retain their full destination checks.
-
-    The complete pipeline uses understand_constraints before its capacity gate,
-    then compiles that same result with the original city observation. This
-    wrapper does not introduce a second understanding or a supplier fallback.
-    """
-    return understand_constraints(host,worker,binding,view,locale=locale).compile(
-        day_count=day_count,city_reference=city_reference,
-        message_id=binding.message_id,run_id=binding.run_id)
-
-
 def planning_details(projection,city_reference,references):
     """Bridge compiled, sourced fields to the existing registration input.
 

@@ -43,14 +43,6 @@ def matched_place(name,reply):
     return _display_place(row['place'],row['source'])
 
 
-def lookup_places(skeleton,replies):
-    """replies are decoded original registered results keyed by code target."""
-    places={stop.item_id:matched_place(stop.name_zh,replies.get(stop.item_id))for stop in skeleton.stops}
-    hotels=tuple(matched_place(names[0],replies.get('lodging-candidate-'+str(index)))
-                 for index,names in enumerate(skeleton.hotels))
-    return places,hotels
-
-
 def lookup_selected_places(skeleton,source,binding,capture,*,endpoint_names=()):
     """Format C's issued selection under its actual current publication holder.
 

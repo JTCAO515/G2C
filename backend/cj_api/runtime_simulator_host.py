@@ -7,7 +7,6 @@ only the renderer's ordinary text; actor profile/system never become a DUT pin.
 from datetime import datetime, timezone
 from decimal import Decimal
 from hashlib import sha256
-import json
 from pathlib import Path
 import re
 import os

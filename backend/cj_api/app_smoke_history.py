@@ -3,7 +3,6 @@ from hashlib import sha256
 import re
 
 from cj_run.core import Binding
-from cj_usage.authorization_budget import canonical
 from runtime_adapter.contract import Unavailable
 
 VERSION='LIO-readonly-history-anchor.1'
