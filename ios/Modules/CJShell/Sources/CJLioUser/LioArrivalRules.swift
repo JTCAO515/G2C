@@ -119,6 +119,12 @@ struct LioArrivalCardNotice: Decodable, Equatable, Sendable {
 
 /// What the traveller tells us; nothing here leaves the device.
 struct LioArrivalTrip: Equatable, Sendable {
+    /// The passport country, shared with Local Support's embassy card and the trip home page.
+    static let nationalityStorageKey = "lio.local-support.nationality"
+    /// Days the entry form accepts.
+    static let formStayRange = 1...90
+    static func formStayDays(_ days: Int) -> Int { min(max(days, formStayRange.lowerBound), formStayRange.upperBound) }
+
     var countryCode: String
     var arrival: LioArrivalDay
     var stayDays: Int

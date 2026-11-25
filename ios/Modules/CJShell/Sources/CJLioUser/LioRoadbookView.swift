@@ -134,7 +134,11 @@ struct LioRoadbookView: View {
     @State private var filled: [String: LioRoadbookDetail] = [:]
     @State private var filling = false
     @State private var expanded: Set<String> = []
-    @State private var filler: Task<Void, Never>?
+    /// Owns the fill-in task: it is cancelled only when this roadbook screen goes away for good, not when
+    /// another screen (Local Support, the driver card) covers it, so a request in flight is never thrown away.
+    /// It starts as nil and is made in `fill()`: the view value the task captures then only holds nil,
+    /// so the task never keeps its own owner alive (#1631 review).
+    @State private var filler: LioRoadbookFillTask?
     @Environment(\.lioTaxiEntry) private var taxiEntry
     #if os(iOS)
     @Environment(\.lioRoadbookEnricher) private var enricher
@@ -187,10 +191,7 @@ struct LioRoadbookView: View {
         .sheet(item: $shared, onDismiss: LioRoadbookPDF.removeExports) { file in
             LioRoadbookShareSheet(items: [file.url]).ignoresSafeArea()
         }
-        .onDisappear {
-            LioRoadbookPDF.removeExports()
-            filler?.cancel()  // later batches are not sent once the roadbook closes
-        }
+        .onDisappear(perform: LioRoadbookPDF.removeExports)
         .sheet(item: $taxiPlace) { place in
             if let taxiEntry {
                 NavigationStack {
@@ -527,34 +528,55 @@ struct LioRoadbookView: View {
         filling = true
         notice = nil
         let batches = LioRoadbookWire.batches(book.placesToFillIn())
-        filler = Task {
-            defer { filling = false }
-            var limited = false, missing = false
-            for batch in batches {
-                guard !Task.isCancelled else { break }
-                do {
-                    let result = try await enricher.enrich(batch)
-                    for (id, status) in result {
-                        switch status {
-                        case .ready(let detail): filled[id] = detail
-                        case .limited: limited = true
-                        case .unavailable: missing = true
-                        }
+        let holder = LioRoadbookFillTask()
+        filler = holder
+        // The task gets only these bindings and values, never `self`: through its @State storage `self`
+        // reaches the holder, which would keep the task alive after the screen closes (#1631 review).
+        let state = LioRoadbookFillState(filled: $filled, notice: $notice, filling: $filling, kept: $kept)
+        let (roadbook, store, language) = (roadbook, store, language)
+        holder.task = Task {
+            await Self.fill(batches, enricher: enricher, roadbook: roadbook, store: store, language: language,
+                            state: state)
+        }
+    }
+
+    private static func fill(_ batches: [[LioRoadbookPlaceQuery]], enricher: LioRoadbookEnricher,
+                             roadbook: LioRoadbook, store: LioRoadbookStore?, language: LioLanguage,
+                             state: LioRoadbookFillState) async {
+        defer { state.filling.wrappedValue = false }
+        var limited = false, missing = false, notice: String?
+        for batch in batches {
+            guard !Task.isCancelled else { break }
+            do {
+                let result = try await enricher.enrich(batch)
+                for (id, status) in result {
+                    switch status {
+                    case .ready(let detail): state.filled.wrappedValue[id] = detail
+                    case .limited: limited = true
+                    case .unavailable: missing = true
                     }
-                } catch let failure as LioRoadbookFailure {
-                    notice = failure.message(language)
-                    break
-                } catch {
-                    notice = LioRoadbookFailure.unavailable.message(language)
-                    break
                 }
-                if limited { break }
+            } catch let failure as LioRoadbookFailure {
+                notice = failure.message(language)
+                break
+            } catch is CancellationError {
+                break  // the screen closed or the session changed: nothing to tell
+            } catch {
+                notice = LioRoadbookFailure.unavailable.message(language)
+                break
             }
-            if notice == nil, limited { notice = LioRoadbookFailure.limited.message(language) }
-            else if notice == nil, missing {
-                notice = language.text("Some places couldn’t be filled in.", "部分地点暂时无法补充。")
-            }
-            if kept, let store { try? store.save(book) }
+            if limited { break }
+        }
+        if notice == nil, limited { notice = LioRoadbookFailure.limited.message(language) }
+        else if notice == nil, missing {
+            notice = language.text("Some places couldn’t be filled in.", "部分地点暂时无法补充。")
+        }
+        if let notice { state.notice.wrappedValue = notice }
+        if state.kept.wrappedValue, let store {
+            // Keep the time the copy was first kept, not the route's own date.
+            let book = roadbook.with(details: state.filled.wrappedValue)
+            let keptAt = store.load().first { $0.id == book.id }?.createdAt ?? .now
+            try? store.save(book.kept(at: keptAt))
         }
     }
     #endif

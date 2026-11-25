@@ -1318,8 +1318,73 @@ class Boundaries(unittest.TestCase):
         system=systems[0]
         self.assertNotIn('ask for the destination first',system)
         self.assertIn('No destination is confirmed. Do not call place or weather tools.',system)
-        self.assertIn('Answer the question directly; ask for the destination only when the answer depends on it, '
-                      'and never reply with only a greeting unless the traveler only greets you.',system)
+        # Greeting handling moved to code (bare greetings) on the no-greeting branch;
+        # the answer system no longer mentions greetings at all.
+        self.assertIn('Answer the question directly; ask for the destination only when the answer depends on it.',system)
+        self.assertNotIn('greeting',system.split('No destination is confirmed.')[1].split('Only cite links')[0])
+
+    def test_sources_and_bare_greeting_detection_keep_ordinary_travel_questions(self):
+        # #1630 review: everyday "where do you get / how do you know if" travel questions must not
+        # bring back the persona sources sentence; greeting punctuation matches the plain forms.
+        from cj_message.lio_context import asks_about_sources,greeting_reply
+        for question in ('你的信息来源是什么？','你是从哪里查到这些信息的？','数据来源是哪里？','这些信息哪来的？',
+                         'Where does your information come from?','Where do you get your information?',
+                         'What are your sources?','How do you know that?','how do you know?'):
+            with self.subTest(sources=question):self.assertTrue(asks_about_sources(question))
+        for question in ('Where do you get a SIM card?','where do you find taxis','Where do you find good food in Chengdu?',
+                         'How do you know if a restaurant is halal?','What is your data plan advice?','水的来源是什么？',
+                         '手机数据流量怎么买？','Where can I buy mobile data?','外国游客在中国怎么用支付宝？'):
+            with self.subTest(ordinary=question):self.assertFalse(asks_about_sources(question))
+        for question,locale,reply in (('你好？','zh','你好！准备去哪儿玩？'),('嗨，','zh','你好！准备去哪儿玩？'),
+                                      ('你好呀','zh','你好！准备去哪儿玩？'),('hello?','en','Hey! Where are you off to?'),
+                                      ('Hi there!','en','Hey! Where are you off to?')):
+            with self.subTest(greeting=question):self.assertEqual(greeting_reply(question,locale),reply)
+        for question,locale in (('hi，成都三天怎么玩','zh'),('你好。我想去成都','zh'),('Hi Beijing','en'),('Hello there, Chengdu?','en'),
+                                ('你好吗？','zh')):
+            with self.subTest(not_greeting=question):self.assertIsNone(greeting_reply(question,locale))
+
+    def test_lio_answer_system_has_no_greeting_example_and_keeps_english(self):
+        # HK run -41 eval + three A/B rounds (2026-11-25): any greeting wording in the
+        # answer system pulled flash onto the persona greeting example (even quoted
+        # negatively). Bare greetings now get the approved copy from code before the
+        # model; the answer system carries neither the example nor greeting rules.
+        from cj_api.local_app import ISSUER,scope_for
+        subject='m4-synthetic-one';provider=self.provider(sse())
+        subjects=frozenset({subject});tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects))
+        binding=SimpleNamespace(scope=scope_for(ISSUER,subject),run_id='no-greeting-original')
+        def system_for(question,locale):
+            systems=[]
+            class Worker:
+                lio_planning=None
+                def _model_history(self,*args):pass
+                def _registered_stream(self,original,key,registration,argument,**kwargs):
+                    systems.append(argument.system)
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='answer',answer=dict(zh='好。',en='OK.'),calls=[]))
+            worker=Worker();worker.provider=provider
+            list(tools.answer(worker,binding,[dict(role='user',content=question)],lio_locale=locale))
+            return systems[0]
+        english='Write the whole answer in English; Chinese appears only in the bold name brackets.'
+        # B3 (cd462f04): answers also opened with the persona's sources sentence; it is
+        # kept only for an actual sources question, with the provider rule always kept.
+        sources=('我综合了地图、天气等多方面的信息','I combine maps, weather and other trusted information')
+        for question,locale in (('你的信息来源是什么？','zh'),('Where does your information come from?','en')):
+            with self.subTest(question=question):
+                system=system_for(question,locale)
+                self.assertTrue(all(phrase in system for phrase in sources))
+        for question,locale in (('Can I use Google in China?','en'),('外国游客在中国怎么用支付宝？','zh'),
+                                ('手机数据流量怎么买？','zh'),('Where can I buy mobile data?','en')):
+            with self.subTest(question=question):
+                system=system_for(question,locale)
+                self.assertFalse(any(phrase in system for phrase in sources))
+                self.assertIn('keep internal identifiers, coordinates, providers and interfaces out of the answer.',system)
+        for question,locale in (('How do I get from Pudong Airport to the Bund?','en'),('外国游客在中国怎么用支付宝？','zh')):
+            with self.subTest(locale=locale):
+                system=system_for(question,locale)
+                for phrase in ('你好！准备去哪儿玩？','Hey! Where are you off to?','only greets you','reply with only a greeting'):
+                    self.assertNotIn(phrase,system)
+                self.assertEqual(english in system,locale=='en')
+                self.assertIn('Do not call place or weather tools.',system)
+                self.assertIn('Answer the question directly; ask for the destination only when the answer depends on it.',system)
 
     def test_lio_saved_scene_is_only_in_model_system_not_public_answer(self):
         from cj_api.local_app import ISSUER,scope_for

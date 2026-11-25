@@ -311,11 +311,14 @@ import Testing
             #expect(request.httpMethod == "POST")
             #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer fixture-only")
             #expect(request.value(forHTTPHeaderField: "Content-Type") == "application/json")
+            // #1512: the Hong Kong relay gives Gaode and the translation 45 s, so the App waits a little longer.
+            #expect(request.timeoutInterval == 50)
             return (reply(items: fullItem), HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!)
         }
         let results = try await relay.search(try query())
         #expect(paths == ["/v1/tools/hotel/search"])
         #expect(results.offers.map(\.id) == ["B000H1"])
+        #expect(LioHotelRelayClient.timeout == 50)
     }
 
     @Test func relayNeedsACurrentSignedInSession() async throws {

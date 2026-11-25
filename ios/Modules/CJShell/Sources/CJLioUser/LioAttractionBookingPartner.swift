@@ -5,7 +5,7 @@ import Foundation
 /// sight's public English name goes into the link, when the user taps it. Booking and payment happen on
 /// the partner's site.
 enum LioAttractionPartner: Sendable, Equatable {
-    case tripCom
+    case tripCom, klook
 
     struct Link: Sendable, Equatable {
         let partner: LioAttractionPartner
@@ -29,15 +29,33 @@ enum LioAttractionPartner: Sendable, Equatable {
     func name(_ language: LioLanguage) -> String {
         switch self {
         case .tripCom: "Trip.com"
+        case .klook: "Klook"
         }
     }
 
     static func links(for rule: LioAttractionBookingRule) -> [Link] {
         guard rule.partnerLinks, !officialOnly.contains(rule.id) else { return [] }
         let term = searchTerms[rule.id] ?? rule.nameEN
-        var trip = URLComponents(string: "https://www.trip.com/things-to-do/list")!
-        trip.queryItems = [URLQueryItem(name: "keyword", value: term)]
-        return trip.url.map { [Link(partner: .tripCom, url: $0)] } ?? []
+        // Each partner's own public search page; the parameter name comes from the address itself.
+        let searches: [(LioAttractionPartner, String)] = [
+            (.tripCom, "https://www.trip.com/things-to-do/list?keyword="),
+            (.klook, "https://www.klook.com/search/result/?query="),
+        ]
+        return searches.compactMap { partner, address in
+            guard var components = URLComponents(string: address),
+                  let name = components.queryItems?.first?.name else { return nil }
+            components.queryItems = [URLQueryItem(name: name, value: term)]
+            return components.url.map { Link(partner: partner, url: $0) }
+        }
+    }
+
+    /// Where booking and payment happen: only the official channel when no third-party link is offered.
+    static func paymentNote(_ language: LioLanguage, for rule: LioAttractionBookingRule) -> String {
+        links(for: rule).isEmpty
+            ? language.text("Booking and payment happen on the official channel; Go2China does not sell tickets.",
+                            "预约和付款都在官方渠道完成，Go2China 不售票。")
+            : language.text("Booking and payment happen on the official channel or the ticket site; Go2China does not sell tickets.",
+                            "预约和付款在官方渠道或票务网站完成，Go2China 不售票。")
     }
 
     static func disclosure(_ language: LioLanguage, affiliate: Bool = affiliateLinks) -> String? {
