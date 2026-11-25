@@ -133,7 +133,8 @@ class TwoBubbleSplit(unittest.TestCase):
                        'at most 35 Chinese characters or 20 English words',
                        'no line break inside it',
                        'then one blank line',
-                       'In an emergency the first paragraph is only the action'):
+                       'any assumption you made, such as party size, pace or season, goes after it',
+                       'In an emergency the first paragraph is only the action, such as calling 110 or 120'):
             with self.subTest(clause=clause):
                 self.assertIn(clause, ONE_SCREEN_DETAIL)
         self.assertEqual(ONE_SCREEN_DETAIL.count('blank line'), 1)
@@ -153,6 +154,7 @@ class OneScreenEntryFacts(unittest.TestCase):
         for clause in ('For visa, entry and transit questions',
                        'only from supplied official facts',
                        'never state rule details such as permitted areas, ports or eligible countries from memory',
-                       'say where to confirm'):
+                       'say where to confirm',
+                       'If no official facts are supplied, say that the rule depends on the passport and trip'):
             with self.subTest(clause=clause):
                 self.assertIn(clause, ONE_SCREEN_DETAIL)
