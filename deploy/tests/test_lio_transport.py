@@ -218,6 +218,13 @@ def test_rail_outcomes_only_affect_rail(tmp_path, outcome, status):
     assert body['flight']['status'] == 'ok'
 
 
+def test_repeated_seat_codes_are_kept_once_so_valid_trains_stay_valid():
+    many = railway('G2', '上海虹桥', '北京南', '0800', '1228', tuple(('O', '626.0') for _ in range(8)) + (('M', '1006.0'),))
+    items = rail_items(amap_reply(many))
+    assert [seat['class_zh'] for seat in items[0]['seats']] == ['二等座', '一等座']
+    assert validate_rail_items(items)
+
+
 def test_worker_items_are_validated_at_the_api_boundary():
     assert validate_rail_items(TRAINS) and validate_rail_items([])
     assert validate_rail_items(rail_items(amap_reply(*DEFAULT_RAILS)))
@@ -242,6 +249,10 @@ def test_worker_items_are_validated_at_the_api_boundary():
     [dict(TRAINS[0], seats=[dict(class_zh='二等座', class_en='Second class', price_cny_minor=0)])],
     [dict(TRAINS[0], seats=[dict(class_zh='二等座', class_en='Second class', price_cny_minor=1.5)])],
     [dict(TRAINS[0], seats=[TRAINS[0]['seats'][0]] * 8)],
+    [dict(TRAINS[0], seats=[dict(class_zh=['二等座'], class_en='Second class', price_cny_minor=100)])],
+    [dict(TRAINS[0], seats=[dict(class_zh='二等座', class_en={'en': 1}, price_cny_minor=100)])],
+    [dict(TRAINS[0], depart_station=dict(name_zh=['上海站']))],
+    [dict(TRAINS[0], number=['G2'])],
 ])
 def test_an_invalid_worker_reply_marks_only_rail_unavailable(tmp_path, items, caplog):
     assert not validate_rail_items(items)
