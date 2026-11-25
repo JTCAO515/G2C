@@ -20,7 +20,9 @@ struct LioToolsView: View {
         available.taxi = taxiEntry != nil
         available.currency = currencyRelay != nil
         available.nearby = nearbyService != nil
+        available.roadbook = LioRoadbookFeature.enabled(infoValue: Bundle.main.object(forInfoDictionaryKey: "G2CRoadbookEnabled"))
         #if DEBUG
+        if LioRoadbookPreview.requested { available.roadbook = true }
         available.hotels = ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview")
         #endif
         return available
@@ -67,6 +69,16 @@ struct LioToolsView: View {
         .tint(LioTheme.vermilion)
     }
 
+    /// Roadbooks that can be made now. Saved trips and Lio's plans are connected once #1453 lands; until then
+    /// only Debug previews are offered.
+    private var roadbookCandidates: [LioRoadbook] {
+        #if DEBUG
+        LioRoadbookPreview.requested ? LioRoadbookPreview.library(language) : []
+        #else
+        []
+        #endif
+    }
+
     @ViewBuilder private func destination(_ tool: LioTool) -> some View {
         switch tool {
         case .localSupport:
@@ -94,6 +106,9 @@ struct LioToolsView: View {
             if let nearbyService {
                 LioNearbyView(language: language, service: nearbyService)
             }
+        case .roadbook:
+            LioRoadbookLibraryView(language: language, store: try? LioRoadbookStore.appDefault(),
+                                   candidates: roadbookCandidates)
         case .hotels:
             #if DEBUG
             let partial = ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview-partial")

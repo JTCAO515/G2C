@@ -150,3 +150,8 @@ extension LioRoadbook {
         return segments
     }
 }
+
+/// #1515: the Roadbook tool is shown only when the build's Info.plist sets `G2CRoadbookEnabled` to the string YES.
+enum LioRoadbookFeature {
+    static func enabled(infoValue: Any?) -> Bool { infoValue as? String == "YES" }
+}
