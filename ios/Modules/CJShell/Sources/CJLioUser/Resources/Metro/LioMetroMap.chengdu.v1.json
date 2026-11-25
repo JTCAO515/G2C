@@ -1,7 +1,7 @@
 {
  "schema": "lio.metro.v1",
  "city": "chengdu",
- "cityInfo": {"nameZH": "成都", "nameEN": "Chengdu", "provinceZH": "四川省", "region": "southwest", "order": 36},
+ "cityInfo": {"nameZH": "成都", "nameEN": "Chengdu", "provinceZH": "四川省", "featured": 5},
  "source": {"operatorZH": "成都地铁", "operatorEN": "Chengdu Metro", "urls": ["https://www.amap.com/ssr/subway/chengdu-5101"], "providerZH": "高德地图地铁线网图", "providerEN": "AMap metro network maps", "englishZH": "维基百科成都地铁车站列表；未收录的站用拼音", "englishEN": "Wikipedia list of Chengdu Metro stations; pinyin where it has none", "englishURL": "https://en.wikipedia.org/wiki/List_of_Chengdu_Metro_stations", "checkedOn": "2026-11-25"},
  "canvas": {"width": 1521, "height": 1163},
  "lines": [

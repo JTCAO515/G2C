@@ -66,10 +66,7 @@ import CryptoKit
                                            ("shanghai", english ? "People's Square" : "人民广场", english ? "Line 8" : "8号线"),
                                            ("beijing", english ? "Xizhimen" : "西直门", english ? "Line 13" : "13号线")] {
                 XCTAssertTrue(app.buttons["lio.metro.city.\(city)"].waitForExistence(timeout: 6))
-                app.buttons["lio.metro.city.\(city)"].tap()
-                let entry = app.buttons["lio.metro.interactive"]
-                XCTAssertTrue(entry.waitForExistence(timeout: 6))
-                entry.tap()
+                app.buttons["lio.metro.city.\(city)"].tap() // a city opens straight into its map
                 XCTAssertTrue(app.descendants(matching: .any)["lio.metro.map.canvas"].waitForExistence(timeout: 8))
                 let source = app.descendants(matching: .any)["lio.metro.map.source"]
                 XCTAssertTrue(source.exists)
@@ -103,7 +100,6 @@ import CryptoKit
                 }
                 app.swipeDown(velocity: .fast)
                 XCTAssertTrue(app.descendants(matching: .any)["lio.metro.map.canvas"].waitForExistence(timeout: 6))
-                app.navigationBars.buttons.element(boundBy: 0).tap() // back to the city
                 app.navigationBars.buttons.element(boundBy: 0).tap() // back to the city list
             }
         }
@@ -116,7 +112,7 @@ import CryptoKit
         add(screenshot)
     }
 
-    func testMetroGuideSwitchesCitiesAndShowsOfficialLinks() throws {
+    func testMetroCitiesOpenTheirMaps() throws {
         continueAfterFailure = false
         for language in ["en", "zh-Hans"] {
             for appearance in ["light", "dark"] {
@@ -130,14 +126,14 @@ import CryptoKit
                 XCTAssertTrue(tools.waitForExistence(timeout: 8))
                 tools.tap()
                 app.buttons["lio.tools.metro-guide"].tap()
-                // Choose a city first (#1421), then switch cities inside the guide.
+                // Choose a city first (#1421); its map opens next.
                 for city in ["beijing", "shanghai", "guangzhou", "shenzhen"] {
                     XCTAssertTrue(app.buttons["lio.metro.city.\(city)"].waitForExistence(timeout: 6))
                 }
                 // The city list runs on under the translucent tab bar, where contrast is measured through the bar
                 // rather than on the card. Only that case is set aside: contrast issues are collected during the
                 // audit (reading an element's frame inside the handler breaks the audit) and each must then lie
-                // under the tab bar. Every other audit runs, and the city page below gets the full audit.
+                // under the tab bar. Every other audit runs.
                 let tabBar = app.tabBars.firstMatch
                 XCTAssertTrue(tabBar.exists)
                 let tabBarTop = tabBar.frame.minY
@@ -150,29 +146,26 @@ import CryptoKit
                 for element in underTabBar {
                     XCTAssertGreaterThan(element.frame.maxY, tabBarTop, "contrast issue above the tab bar: \(element)")
                 }
-                app.buttons["lio.metro.city.beijing"].tap()
-                let picker = app.buttons["lio.metro.city"]
-                XCTAssertTrue(picker.waitForExistence(timeout: 6))
-                let english = language == "en"
-                for (region, city) in english ? [("East", "Shanghai"), ("South", "Guangzhou"), ("Northwest", "Xi'an"), ("North", "Beijing")]
-                    : [("华东", "上海"), ("华南", "广州"), ("西北", "西安"), ("华北", "北京")] {
-                    picker.tap()
-                    let regionItem = app.buttons[region] // the menu groups the cities by region
-                    XCTAssertTrue(regionItem.waitForExistence(timeout: 4))
-                    regionItem.tap()
-                    let cityItem = app.buttons[city]
-                    XCTAssertTrue(cityItem.waitForExistence(timeout: 4))
-                    cityItem.tap()
-                    XCTAssertTrue(picker.label.contains(city) || (picker.value as? String)?.contains(city) == true)
-                    XCTAssertTrue(app.staticTexts["lio.metro.ticket"].exists)
-                    XCTAssertTrue(app.staticTexts["lio.metro.security"].exists)
-                    XCTAssertTrue(app.staticTexts["lio.metro.gates"].exists)
-                    XCTAssertTrue(app.descendants(matching: .any)["lio.metro.map"].exists)
-                    XCTAssertTrue(app.descendants(matching: .any)["lio.metro.source"].exists)
-                }
-                try app.performAccessibilityAudit(for: .all)
+                let cities = XCTAttachment(screenshot: app.screenshot())
+                cities.name = "metro-cities-\(language)-\(appearance)"
+                cities.lifetime = .keepAlways
+                add(cities)
+                // A city card opens its map directly: no ticket or security steps (JT 2026-11-25).
+                app.buttons["lio.metro.city.shanghai"].tap()
+                let canvas = app.descendants(matching: .any)["lio.metro.map.canvas"]
+                XCTAssertTrue(canvas.waitForExistence(timeout: 8))
+                XCTAssertFalse(app.staticTexts["lio.metro.ticket"].exists)
+                app.navigationBars.buttons.element(boundBy: 0).tap()
+                // "Find a city" lists every city in the same order, searchable, and opens the chosen map.
+                let find = app.buttons["lio.metro.city.find"]
+                XCTAssertTrue(find.waitForExistence(timeout: 6))
+                find.tap()
+                let xian = app.buttons["lio.metro.find.xian"]
+                XCTAssertTrue(xian.waitForExistence(timeout: 6))
+                xian.tap()
+                XCTAssertTrue(canvas.waitForExistence(timeout: 8))
                 let screenshot = XCTAttachment(screenshot: app.screenshot())
-                screenshot.name = "metro-guide-\(language)-\(appearance)"
+                screenshot.name = "metro-map-\(language)-\(appearance)"
                 screenshot.lifetime = .keepAlways
                 add(screenshot)
             }

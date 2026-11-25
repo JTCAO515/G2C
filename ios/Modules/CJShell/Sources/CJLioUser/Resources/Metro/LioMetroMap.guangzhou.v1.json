@@ -1,7 +1,7 @@
 {
  "schema": "lio.metro.v1",
  "city": "guangzhou",
- "cityInfo": {"nameZH": "广州", "nameEN": "Guangzhou", "provinceZH": "广东省", "region": "south", "order": 30},
+ "cityInfo": {"nameZH": "广州", "nameEN": "Guangzhou", "provinceZH": "广东省", "featured": 3},
  "source": {"operatorZH": "广州地铁", "operatorEN": "Guangzhou Metro", "urls": ["https://wx.gzmtr.com:50443/#/index?language=Cn", "https://cs.gzmtr.com/ckfw/"], "checkedOn": "2026-11-24"},
  "canvas": {"width": 1340, "height": 1454},
  "lines": [

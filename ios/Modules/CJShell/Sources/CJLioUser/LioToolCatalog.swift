@@ -55,7 +55,7 @@ enum LioTool: CaseIterable, Sendable {
         case .taxi: language.text("Find a place and open DiDi", "搜地点，用滴滴打车")
         case .nearby: language.text("Food, sights and shops around you", "身边的美食和景点")
         case .currency: language.text("Convert yuan at ECB reference rates", "人民币外币参考换算")
-        case .metro: language.text("Tickets, entry and line maps", "买票、进站和线路图")
+        case .metro: language.text("Interactive line maps by city", "各城市可交互线路图")
         case .payment: language.text("Set up Alipay and Weixin Pay", "开通支付宝和微信支付")
         case .translation: language.text("Type, speak or snap a photo", "打字、说话或拍照翻译")
         case .phrases: language.text("Show or play common phrases", "常用语大字给对方看")

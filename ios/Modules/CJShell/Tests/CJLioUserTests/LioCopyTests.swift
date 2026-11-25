@@ -50,7 +50,7 @@ struct LioCopyTests {
         #expect(flagged(["stations": [station], "lines": [["nameZH": "原线", "nameEN": "Line 1"]]]) == ["原线"])
         #expect(flagged(["stations": [station], "water": [["nameZH": "原江", "nameEN": "River"]]]) == ["原江"])
         #expect(flagged(["stations": [station], "source": ["operatorZH": "太原地铁"]]).isEmpty)
-        #expect(flagged(["stations": [station], "cityInfo": ["nameZH": "太原", "provinceZH": "山西省", "region": "north"]]).isEmpty)
+        #expect(flagged(["stations": [station], "cityInfo": ["nameZH": "太原", "provinceZH": "山西省", "featured": 1]]).isEmpty)
         #expect(flagged(["stations": [station], "source": ["operatorZH": "太原地铁", "englishZH": "原来的拼音"]]) == ["原来的拼音"])
     }
 

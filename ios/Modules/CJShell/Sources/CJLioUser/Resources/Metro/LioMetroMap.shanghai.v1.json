@@ -1,7 +1,7 @@
 {
  "schema": "lio.metro.v1",
  "city": "shanghai",
- "cityInfo": {"nameZH": "上海", "nameEN": "Shanghai", "provinceZH": "上海市", "region": "east", "order": 13},
+ "cityInfo": {"nameZH": "上海", "nameEN": "Shanghai", "provinceZH": "上海市", "featured": 2},
  "source": {"operatorZH": "上海地铁", "operatorEN": "Shanghai Metro", "urls": ["https://service.shmetro.com/czxx/index.htm", "https://service.shmetro.com/en/czxx/index.htm"], "checkedOn": "2026-11-24"},
  "canvas": {"width": 1180, "height": 1579},
  "lines": [
