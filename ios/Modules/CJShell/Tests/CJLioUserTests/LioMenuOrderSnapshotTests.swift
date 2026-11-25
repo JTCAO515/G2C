@@ -16,6 +16,13 @@ import UIKit
         try #require(image.pngData()).write(to: URL(fileURLWithPath: folder).appendingPathComponent(name + ".png"))
     }
 
+    @Test func theToolStaysHiddenUntilTheHostSetsAService() {
+        var values = EnvironmentValues()
+        #expect(values.lioMenuService == nil)
+        values.lioMenuService = .preview
+        #expect(values.lioMenuService != nil)
+    }
+
     @Test func rendersIntroResultsAndCardInBothLanguages() throws {
         let needs: [LioDietaryNeed] = [.noSpicy, .peanut]
         let spicyMemory = LioMenuMemory.noSpicySource(LioMenuReading.sampleMemory)
