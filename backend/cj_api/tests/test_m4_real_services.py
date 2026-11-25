@@ -1318,19 +1318,20 @@ class Boundaries(unittest.TestCase):
         system=systems[0]
         self.assertNotIn('ask for the destination first',system)
         self.assertIn('No destination is confirmed. Do not call place or weather tools.',system)
-        self.assertIn('Answer the question directly; ask for the destination only when the answer depends on it, '
-                      'and never reply with only a greeting unless the traveler only greets you.',system)
+        # Greeting handling moved to code (bare greetings) on the no-greeting branch;
+        # the answer system no longer mentions greetings at all.
+        self.assertIn('Answer the question directly; ask for the destination only when the answer depends on it.',system)
+        self.assertNotIn('greeting',system.split('No destination is confirmed.')[1].split('Only cite links')[0])
 
-    def test_lio_answer_closes_with_answer_first_and_locale_language(self):
-        # HK run -41 eval (2026-11-25): even with the question present and the
-        # no-greeting rule in the system, flash copied the persona greeting example
-        # for English questions (maglev, Visa card, Google) and answered an English
-        # Uber question in Chinese. A closing instruction restates both, except for
-        # a bare greeting, which keeps the persona's brief reply.
+    def test_lio_answer_system_has_no_greeting_example_and_keeps_english(self):
+        # HK run -41 eval + three A/B rounds (2026-11-25): any greeting wording in the
+        # answer system pulled flash onto the persona greeting example (even quoted
+        # negatively). Bare greetings now get the approved copy from code before the
+        # model; the answer system carries neither the example nor greeting rules.
         from cj_api.local_app import ISSUER,scope_for
         subject='m4-synthetic-one';provider=self.provider(sse())
         subjects=frozenset({subject});tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects))
-        binding=SimpleNamespace(scope=scope_for(ISSUER,subject),run_id='closing-original')
+        binding=SimpleNamespace(scope=scope_for(ISSUER,subject),run_id='no-greeting-original')
         def system_for(question,locale):
             systems=[]
             class Worker:
@@ -1342,23 +1343,15 @@ class Boundaries(unittest.TestCase):
             worker=Worker();worker.provider=provider
             list(tools.answer(worker,binding,[dict(role='user',content=question)],lio_locale=locale))
             return systems[0]
-        # A/B on b19f2b00: quoting the example phrases primed copying them (alipay-zh 2/3),
-        # and an English bare greeting was answered in Chinese. Closings quote no example.
-        english=('The traveler asked a specific question: start with the answer itself, in English, with no greeting. '
-                 'Write the whole answer in English; Chinese appears only in the bold name brackets.')
-        chinese='旅行者提出了具体问题：直接给出答案本身，不要用问候语开头。'
-        greet_en='The traveler only greeted you: reply briefly in English.'
-        system=system_for('How do I get from Pudong Airport to the Bund?','en')
-        self.assertIn(english,system);self.assertNotIn(chinese,system);self.assertNotIn(greet_en,system)
-        system=system_for('外国游客在中国怎么用支付宝？','zh')
-        self.assertIn(chinese,system);self.assertNotIn(english,system)
-        for closing in (english,chinese,greet_en):
-            for phrase in ('Hey! Where are you off to?','你好！准备去哪儿玩？'):self.assertNotIn(phrase,closing)
-        for greeting,locale in (('Hi','en'),('Hey!','en'),('你好','zh'),('您好！','zh')):
-            with self.subTest(greeting=greeting):
-                system=system_for(greeting,locale)
-                self.assertNotIn(english,system);self.assertNotIn(chinese,system)
-                self.assertEqual(greet_en in system,locale=='en')
+        english='Write the whole answer in English; Chinese appears only in the bold name brackets.'
+        for question,locale in (('How do I get from Pudong Airport to the Bund?','en'),('外国游客在中国怎么用支付宝？','zh')):
+            with self.subTest(locale=locale):
+                system=system_for(question,locale)
+                for phrase in ('你好！准备去哪儿玩？','Hey! Where are you off to?','only greets you','reply with only a greeting'):
+                    self.assertNotIn(phrase,system)
+                self.assertEqual(english in system,locale=='en')
+                self.assertIn('Do not call place or weather tools.',system)
+                self.assertIn('Answer the question directly; ask for the destination only when the answer depends on it.',system)
 
     def test_lio_saved_scene_is_only_in_model_system_not_public_answer(self):
         from cj_api.local_app import ISSUER,scope_for

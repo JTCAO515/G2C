@@ -55,7 +55,8 @@ class AnswerStyle(unittest.TestCase):
     def test_answer_and_discussion_paths_request_detail(self):
         from pathlib import Path
         root = Path(__file__).resolve().parents[1]
-        self.assertIn("answer_prompt(lio_locale,question=messages[-1]['content'],detailed=True)",
+        # The answer path also drops the greeting example (bare greetings are answered in code).
+        self.assertIn("answer_prompt(lio_locale,question=messages[-1]['content'],detailed=True,greeting_example=False)",
                       (root / 'real_services.py').read_text())
         self.assertIn('answer_prompt(locale, turns[-1].text, detailed=True) + DISCUSSION_PROMPT',
                       (root / 'local_lio_planning.py').read_text())

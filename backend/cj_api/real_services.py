@@ -224,7 +224,6 @@ def _asks_transit_policy(text):
     return bool(_TRANSIT_POLICY.search(text) or (_TRANSIT_TOPIC.search(text) and _TRANSIT_VISA.search(text)))
 
 
-_LIO_BARE_GREETING=re.compile(r'\s*(?:你好|您好|嗨|哈喽|hello|hi(?: there)?|hey(?: there)?)[!！。.?？~～\s]*',re.I)
 
 
 def _lio_transit_request(messages):
@@ -857,7 +856,7 @@ class RealTools:
         else:
             from cj_message.lio_context import LioCitation, LioToolProgress, answer_prompt
             chinese = lio_locale == 'zh'
-            system += ' ' + answer_prompt(lio_locale,question=messages[-1]['content'],detailed=True)
+            system += ' ' + answer_prompt(lio_locale,question=messages[-1]['content'],detailed=True,greeting_example=False)
             if worker.lio_planning is not None:
                 system += worker.lio_planning.scene_context(binding,datetime.now(timezone.utc))
             today = lio_question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
@@ -865,19 +864,13 @@ class RealTools:
             tomorrow = today + timedelta(days=1)
             system += f' In China, today is {today.isoformat()} and tomorrow is {tomorrow.isoformat()}.'
             system += (' Use the confirmed destination timezone and administrative code for tools: '+city.name+' '+city.adcode+'.' if city is not None else ' Use Beijing calendar dates for legacy weather.' if not national else (' No destination is confirmed. Do not call place or weather tools. Answer the question directly; ask for the destination '
-                'only when the answer depends on it, and never reply with only a greeting unless the traveler only greets you.'))+' Only cite links supplied as public sources.'
+                'only when the answer depends on it.'))+' Only cite links supplied as public sources.'
             transit_request = _lio_transit_request(messages)
             if transit_request:
                 system += ' For current visa-free transit policy use the official entry notice before making policy claims.'
-            # HK run -41 eval: flash copied the persona greeting example and answered an
-            # English question in Chinese; restate answer-first and the locale last.
-            # Quoting the example phrase itself primed copying it (A/B), so none is quoted.
-            if _LIO_BARE_GREETING.fullmatch(messages[-1]['content']) is None:
-                system += (' 旅行者提出了具体问题：直接给出答案本身，不要用问候语开头。' if chinese else
-                           ' The traveler asked a specific question: start with the answer itself, in English, with no greeting. '
-                           'Write the whole answer in English; Chinese appears only in the bold name brackets.')
-            elif not chinese:
-                system += ' The traveler only greeted you: reply briefly in English.'
+            if not chinese:
+                # HK run -41 eval: an English Uber question was answered in Chinese.
+                system += ' Write the whole answer in English; Chinese appears only in the bold name brackets.'
         if binding.scope in self.buffered_streaming_scopes:profile=M4_NATIVE_TURN_BUFFERED
         elif binding.scope in self.streaming_scopes:profile=M4_NATIVE_TURN_STREAM
         else:profile=M4_NATIVE_TURN_PROFILE_V2
