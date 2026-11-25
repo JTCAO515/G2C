@@ -20,10 +20,18 @@ struct LioStayHotel: Codable, Equatable, Sendable {
         self.source = source
     }
 
-    /// The driver sign for going back: the hotel's Chinese name large, its Chinese address, the English name small.
-    var driverSign: LioShowCardContent {
-        .driver(nameZH: place.nameZH, nameEN: place.nameEN, addressZH: place.addressZH, requestZH: "请送我回这家酒店")
+    private enum CodingKeys: String, CodingKey { case place, roomNumber, source }
+
+    /// A file written by hand or by an older build goes through the same cleaning as a new hotel.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(place: try container.decode(LioTaxiPlace.self, forKey: .place),
+                  roomNumber: try container.decodeIfPresent(String.self, forKey: .roomNumber),
+                  source: try container.decode(Source.self, forKey: .source))
     }
+
+    /// The request above the hotel's name on the driver sign.
+    static let driverRequestZH = "请送我回这家酒店"
 
     var showCardHotel: LioShowCardInput.Hotel {
         LioShowCardInput.Hotel(nameZH: place.nameZH, addressZH: place.addressZH)
@@ -51,8 +59,12 @@ enum LioReturnHotel {
         let lower = text.lowercased()
         let chinese = ["回酒店", "回宾馆", "回饭店", "回旅馆", "回民宿", "回住处", "回住的地方"]
         if chinese.contains(where: text.contains) { return true }
-        return lower.range(of: #"\b(back|return)\b(\s+\w+){0,3}\s+(my\s+|the\s+)?(hotel|hostel|accommodation)\b"#,
-                           options: .regularExpression) != nil
+        let patterns = [
+            #"\b(go|get|going|getting|take me|head|heading|walk|ride)\s+back\s+to\s+(my\s+|the\s+)?(hotel|hostel)\b"#,
+            #"\breturn\s+to\s+(my\s+|the\s+)?(hotel|hostel)\b"#,
+            #"^\s*back\s+to\s+(my\s+|the\s+)?(hotel|hostel)\b"#,
+        ]
+        return patterns.contains { lower.range(of: $0, options: .regularExpression) != nil }
     }
 }
 
@@ -65,11 +77,11 @@ enum LioShowCardFeature {
 }
 
 /// The stay hotel for the signed-in account, in its message folder; account cleanup removes it.
-@MainActor struct LioReturnHotelStore {
-    static let directoryName = "return-hotel"
-    static let fileName = "return-hotel.json"
+@MainActor public struct LioReturnHotelStore {
+    nonisolated public static let directoryName = "return-hotel"
+    nonisolated public static let fileName = "return-hotel.json"
 
-    static func storageDirectory(inMessageDirectory directory: URL) -> URL {
+    nonisolated public static func storageDirectory(inMessageDirectory directory: URL) -> URL {
         directory.appendingPathComponent(directoryName, isDirectory: true)
     }
 
