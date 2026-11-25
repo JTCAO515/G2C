@@ -68,3 +68,66 @@ def test_only_read_only_tools_can_ever_be_called(tool):
     with pytest.raises(PluginError) as refused:
         provider.query(Lookup(tool), lambda *_: None)
     assert (refused.value.status, refused.value.code) == (503, 'unavailable') and seen == []
+
+
+# VariFlight getFlightList as observed on HK (run -42, #1521 comment 7164717828): a short non-JSON text block plus
+# structuredContent {"kind": "collection", "items": [...]}, items keyed fnum / dep / arr / departurePlanTime / ...
+def flight(fnum, dep, arr, depart, arrive, *, share=0, operating='', cn='东方航空', en='China Eastern Airlines'):
+    return dict(fnum=fnum, dep=dep, arr=arr, depAirport='上海虹桥', arrAirport='北京首都', departurePlanTime=depart,
+                arrivalPlanTime=arrive, departureEstimateTime='', departureActualTime='', airlineCnName=cn,
+                airlineName=en, airlinesCode=fnum[:2], isShare=share, shareFlight=operating, shareFlightList=[],
+                flightStatus='计划', date='2026-12-02', distance=1178, uuid='x')
+
+
+def collection(items):
+    def handler(http):
+        call = json.loads(http.content)
+        if call['method'] == 'initialize':
+            return httpx.Response(200, json=dict(jsonrpc='2.0', id=1, result={'protocolVersion': '2025-11-25'}))
+        if call['method'] == 'notifications/initialized':
+            return httpx.Response(202)
+        assert call['params'] == dict(name='getFlightList', arguments=dict(dep='SHA,PVG', arr='PEK,PKX', date='2026-12-02'))
+        return httpx.Response(200, json=dict(jsonrpc='2.0', id=2, result=dict(
+            isError=False, content=[dict(type='text', text='共找到 75 条航班信息，详见结构化数据')],
+            structuredContent=dict(kind='collection', items=items))))
+    return handler
+
+
+def transport_flights(items):
+    from cj_api.lio_transport import CITIES, TransportService
+    service = TransportService(flights=VariFlight(KEY, client=fixture_transport(collection(items))))
+    return service._flight(CITIES['shanghai'], CITIES['beijing'], '2026-12-02', lambda *_: None)
+
+
+def test_variflight_collection_items_become_flights_keeping_the_operating_carrier():
+    result = transport_flights([
+        flight('FM9101', 'SHA', 'PEK', '2026-12-02 07:30:00', '2026-12-02 09:40:00', share=1, operating='MU5101',
+               cn='上海航空', en='Shanghai Airlines'),
+        flight('MU5101', 'SHA', 'PEK', '2026-12-02 07:30:00', '2026-12-02 09:40:00'),
+        flight('CA1858', 'PVG', 'PKX', '2026-12-02 13:05', '2026-12-02 15:25', cn='中国国际航空', en='Air China'),
+        flight('HO1251', 'SHA', 'PEK', '1796171400', '1796179200', cn='吉祥航空', en='Juneyao Air'),
+        flight('MU5199', 'SHA', 'PEK', '2026-12-03 07:30:00', '2026-12-03 09:40:00'),
+        flight('BAD1', 'SHA', 'PEK', 'soon', '2026-12-02 12:00:00'),
+    ])
+    assert result['status'] == 'ok'
+    assert [(item['number'], item['depart_time'], item['arrive_time'], item['duration_min']) for item in result['items']] == [
+        ('MU5101', '07:30', '09:40', 130), ('HO1251', '08:30', '10:40', 130), ('CA1858', '13:05', '15:25', 140)]
+    mu = result['items'][0]
+    assert mu['carrier'] == dict(name_zh='东方航空', name_en='China Eastern Airlines')
+    assert mu['depart_airport']['iata'] == 'SHA' and mu['arrive_airport']['name_en'] == 'Beijing Capital International Airport'
+
+
+def test_all_flights_of_a_busy_route_reach_the_transport_list():
+    items = [flight(f'MU{5100 + n}', 'SHA', 'PEK', f'2026-12-02 {6 + n // 4:02d}:{(n % 4) * 15:02d}:00',
+                    f'2026-12-02 {8 + n // 4:02d}:{(n % 4) * 15:02d}:00') for n in range(64)]
+    provider = VariFlight(KEY, client=fixture_transport(collection(items)))
+    from cj_api.lio_transport import RouteLookup
+    projected = provider.query(RouteLookup('2026-12-02', 'SHA,PVG', 'PEK,PKX'), lambda *_: None)
+    assert len(projected['items']) == 64 and projected['more'] is False
+    result = transport_flights(items)
+    assert len(result['items']) == 20 and result['items'][0]['number'] == 'MU5100'
+
+
+def test_non_ascii_airline_name_is_not_shown_as_english():
+    result = transport_flights([flight('MU5101', 'SHA', 'PEK', '2026-12-02 07:30:00', '2026-12-02 09:40:00', en='东方航空')])
+    assert result['items'][0]['carrier'] == dict(name_zh='东方航空')
