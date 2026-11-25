@@ -190,7 +190,7 @@ enum LioTransportRelayFailure: Error, Equatable {
         }
         guard let departure = station(item.departStation), let arrival = station(item.arriveStation) else { return nil }
         let fares = item.seats.map { LioTransportFare(classZH: $0.classZh, classEN: $0.classEn, priceMinor: $0.priceCnyMinor) }
-        guard fares.count <= 7, fares.allSatisfy({ $0.priceMinor > 0 && !$0.classZH.isEmpty && !$0.classEN.isEmpty }) else {
+        guard fares.count <= 9, fares.allSatisfy({ $0.priceMinor > 0 && !$0.classZH.isEmpty && !$0.classEN.isEmpty }) else {
             return nil
         }
         return LioTransportOption(mode: .rail, number: item.number, carrierZH: nil, carrierEN: nil, departure: departure,
