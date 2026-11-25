@@ -131,6 +131,9 @@ struct LioMetroMapDataTests {
             ("chengdu", "天府广场", ["1号线", "2号线"]), ("tianjin", "西站", ["1号线", "4号线", "6号线"]), ("nanjing", "新街口", ["1号线", "2号线"]),
             ("wuhan", "洪山广场", ["2号线", "4号线"]), ("chongqing", "小什字", ["1号线", "6号线"]),
             ("hangzhou", "武林广场", ["1号线", "3号线"]), ("shenyang", "青年大街", ["1号线", "2号线"]),
+            ("shijiazhuang", "新百广场", ["1号线", "3号线"]), ("taiyuan", "大南门", ["1号线", "2号线"]),
+            ("huhehaote", "新华广场", ["1号线", "2号线"]), ("zhengzhou", "郑州大学", ["1号线", "8号线"]),
+            ("luoyang", "解放路", ["1号线", "2号线"]), ("jinan", "王府庄", ["1号线", "2号线"]),
         ]
         for (id, station, expected) in spotChecks {
             guard let city = LioMetroCity.named(id) else { continue }
