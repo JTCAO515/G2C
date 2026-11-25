@@ -370,6 +370,10 @@ struct LioShowCardEditor: View {
             multiSelect(language.text("Allergic to", "过敏的食物"), LioFoodAllergen.allCases, $input.foodAllergies) {
                 language == .chinese ? $0.chinese : $0.english
             }
+        case .wallet:
+            picker(language.text("I'm paying with", "我用的是"), LioPaymentWallet.allCases, optional: $input.wallet) {
+                $0.title(language)
+            }
         case .place:
             text(language.text("Place (Chinese name works best)", "地点（最好写中文名）"), $input.placeZH)
         case .nearest:
