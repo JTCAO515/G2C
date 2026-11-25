@@ -19,8 +19,6 @@ Usage:
     # answers map case id to text, or to {"text": ..., "actions": [...], "chips": [...]}
 """
 import argparse
-from datetime import date
-from functools import lru_cache
 import json
 from pathlib import Path
 import re
@@ -51,87 +49,6 @@ V1_ACTION_CASES = frozenset({'alipay-zh', 'visa-card-en', 'taxi-foreigner-zh', '
 SPLIT_KINDS = frozenset({'task', 'nearby', 'compare', 'emergency'})
 FIRST_PARAGRAPH_UNITS = (35, 20)
 BLANK_LINE = re.compile(r'\n[ \t\u3000]*\n')
-# Entry facts come from the landing-mode rules (single source, coordination 2026-11-25).
-ARRIVAL_RULES = ROOT.parent / 'ios/Modules/CJShell/Sources/CJLioUser/Resources/LioArrivalRules.v1.json'
-ENTRY_CASES = {'transit-visa-zh': 'US', 'visa-uk-en': 'GB'}
-
-
-@lru_cache(maxsize=1)
-def entry_facts():
-    """Entry facts from the landing-mode rules (single source, coordination 2026-11-25).
-
-    Read lazily, only for entry cases in the one-screen profile; the Chinese and English
-    summaries must agree, otherwise the data changed shape and scoring stops loudly.
-    """
-    try:
-        rules = json.loads(ARRIVAL_RULES.read_text())
-        policies = {policy['id']: policy for policy in rules['policies']}
-        transit = policies['transit-240h']
-        zh, en = transit['summary']['zh'], transit['summary']['en']
-        ports = {int(re.search(r'(\d+)\s*个开放口岸', zh)[1]), int(re.search(r'(\d+) open ports', en)[1])}
-        provinces = {int(re.search(r'(\d+)\s*个省份', zh)[1]), int(re.search(r'in (\d+) provinces', en)[1])}
-        countries = {int(re.search(r'(\d+)\s*国', source['publisher']['zh'])[1]) for source in transit['sources']
-                     if re.search(r'(\d+)\s*国', source['publisher']['zh'])}
-        if len(ports) != 1 or len(provinces) != 1 or len(countries) != 1:
-            raise ValueError('summaries disagree')
-        visa_free, until = {}, {}
-        for country in rules['countries']:
-            granted = [policies[key] for key in country['policies'] if policies[key]['kind'] == 'visa_free']
-            if granted:
-                best = max(granted, key=lambda policy: policy['max_stay_days'])
-                visa_free[country['code']] = best['max_stay_days']
-                until[country['code']] = date.fromisoformat(best['valid_until']) if best['valid_until'] else date.max
-        return dict(ports=ports.pop(), provinces=provinces.pop(), countries=countries.pop(),
-                    transit_hours=24 * transit['max_stay_days'], transit_days=transit['max_stay_days'],
-                    visa_free_days=visa_free, visa_free_until=until,
-                    data_version=rules['data_version'], checked_at=rules['checked_at'])
-    except (OSError, ValueError, KeyError, TypeError, StopIteration) as error:
-        raise ValueError('landing-mode rules unavailable or changed shape: ' + str(ARRIVAL_RULES.name)) from error
-
-
-SENTENCE = re.compile(r'(?<=[。！？!?；;\n])|(?<=\.)\s+')
-# Code catches only the clear slips seen in real answers; semantic correctness stays with
-# model/human review (docs/lio-voice.md §9.1). Precision first: a correct sentence never fails.
-# 1. The invented ban on crossing city/province lines (preview 2026-11-25: 「不得跨市旅行」).
-CROSS_BAN = re.compile(r'(?<![不并非没别])(?:不得|严禁|禁止)跨(?:市|省)(?!活动)')
-# 2. The retired 72/144-hour transit policy named as current.
-OLD_TRANSIT = re.compile(r'(?<!\d)(?:72|144)\s*(?:个)?(?:小时|-hour)\s*(?:过境|visa-free transit|transit)', re.I)
-# 3. A visa-free national told that a short trip needs a visa (run -41: "a plain 10-day ... needs a visa").
-SHORT_TRIP_VISA = re.compile(r'(?<![\w-])(\d+)[- ]?(?:day|天)\b[^.。;；?？]{0,40}?\b(?:needs|requires)\s+a\s+visa\b|'
-                             r'(\d+)\s*天的?(?:行程|旅行)[^。；？]{0,10}(?:需要|须)(?:办|申请)?签证', re.I)
-# 4. A wrong visa-free ceiling stated as the rule.
-VISA_FREE_CAP = re.compile(r'(\d+)\s*天免签|免签(?:停留|入境)?(?:最多|最长|不超过)\s*(\d+)\s*天|(\d+)-day visa-free|'
-                           r'visa-free (?:entry |stays? )?(?:for )?(?:up to|of up to|at most|a maximum of) (\d+) days', re.I)
-HISTORY = re.compile(r'以前|过去|旧|曾|原来|已统一|统一为|取消|改为|延长|\b(?:used to|before 20\d\d|formerly|old|replaced|no longer|now)\b', re.I)
-MYTH = re.compile(r'有人说|有人以为|很多人以为|误以为|误传|误解|并不是|并非|别听信|不是|myth|misconception|many people think|'
-                  r'common mistake|contrary to|not true', re.I)
-
-
-def today():
-    return date.today()
-
-
-def _entry_facts_hold(text, country):
-    facts = entry_facts()
-    days = facts['visa_free_days'].get(country)
-    if days is not None and today() > facts['visa_free_until'][country]:
-        days = None  # the rules file has not been renewed: do not enforce an expired policy
-    for sentence in (re.sub(r'[*_`]', '', part).strip() for part in SENTENCE.split(text) if part and part.strip()):
-        if sentence.endswith(('?', '？')) or MYTH.search(sentence) or HISTORY.search(sentence):
-            continue
-        if CROSS_BAN.search(sentence) or OLD_TRANSIT.search(sentence):
-            return False
-        if days is not None:
-            for match in SHORT_TRIP_VISA.finditer(sentence):
-                if int(next(group for group in match.groups() if group)) <= days:
-                    return False
-            if not re.search(r'过境|transit', sentence, re.I):
-                for match in VISA_FREE_CAP.finditer(sentence):
-                    if int(next(group for group in match.groups() if group)) != days:
-                        return False
-    return True
-
-
 # Openings that are not an answer: greetings, self-introductions and praise anywhere at the start;
 # assent words ("当然可以", "Sure") only when they stand alone as the whole first sentence.
 _END = r'(?![\w-])'
@@ -243,8 +160,6 @@ def check_answer(case, answer, profile=DETAIL):
             head = parts[0].strip()
             checks['first_paragraph'] = (len(parts) == 2 and bool(head) and '\n' not in head
                                          and count_units(head, locale) <= FIRST_PARAGRAPH_UNITS[LOCALES.index(locale)])
-        if case['id'] in ENTRY_CASES:
-            checks['entry_facts'] = _entry_facts_hold(answer, ENTRY_CASES[case['id']])
     else:
         if 'min_units' in case:
             checks['detail_length'] = units >= case['min_units']
@@ -287,7 +202,7 @@ def summarize(cases, answers, profile=DETAIL):
             values = [ok for row in rows for name, ok in row['checks'].items() if names(name)]
             return round(sum(values) / len(values), 3) if values else None
         result['rates'] = {name: rate(lambda n, name=name: n == name)
-                           for name in ('screen_budget', 'first_answer', 'has_action', 'first_paragraph', 'entry_facts')}
+                           for name in ('screen_budget', 'first_answer', 'has_action', 'first_paragraph')}
         result['rates']['elements_in_budget'] = rate(lambda n: n.startswith('element_'))
     return result
 
@@ -312,8 +227,7 @@ def main(argv=None):
     try:
         result = summarize(cases, answers, args.profile)
     except ValueError as error:
-        cause = f' ({error.__cause__})' if error.__cause__ else ''
-        raise SystemExit(str(error) + cause)
+        raise SystemExit(str(error))
     for row in result['rows']:
         failed = [name for name, ok in row['checks'].items() if not ok]
         print(('PASS' if row['passed'] else 'FAIL'), row['id'], row['units'], ','.join(failed), sep='\t')

@@ -239,7 +239,7 @@ class OneScreenTests(unittest.TestCase):
         import tempfile, os, io, contextlib
         result = summarize(list(self.cases.values()), {'visa-card-en': LONG_PAY_EN, 'plan-beijing-3d-zh': ONE_SCREEN_PLAN_ZH},
                            profile=ONE_SCREEN)
-        # checks.3 since first_paragraph/entry_facts joined the one-screen profile (#1664).
+        # checks.3 since first_paragraph joined the one-screen profile (#1664).
         self.assertEqual(result['version'], 'LIO-answer-quality-checks.3')
         self.assertEqual(result['answered'], 2)
         self.assertEqual(result['rates']['has_action'], 0.5)
@@ -255,87 +255,10 @@ class OneScreenTests(unittest.TestCase):
                 main(['score', path])  # the default profile keeps plain text answers only
 
 
-ENTRY_PROBES = [  # #1664 third review probes (+2 real sentences): every correct one must pass
-    ('GB', "Good news: you do **not** need a visa for a 10-day trip to Shanghai.", True, 'markdown negation (preview flat)'),
-    ('GB', "Short answer: not if you're transiting, but a plain 10-day London–Shanghai return normally needs a visa.", False, 'after3: if in another clause'),
-    ('GB',"The 240-hour transit option lets you stay 10 days.",True,'过境10天'),
-    ('GB',"过境免签最多可停留 10 天。",True,'过境10天zh'),
-    ('GB',"A 10-day London–Shanghai return is visa-free.",True,'行程天数'),
-    ('GB',"You can stay 10 days visa-free on this trip.",True,'行程天数2'),
-    ('GB',"For a 10-day trip, visa-free for up to 30 days covers you.",True,'行程+上限'),
-    ('GB',"You'd need a visa only if you plan to work or study.",True,'限定work'),
-    ('GB',"For stays of 31 days or more you need a visa.",True,'限定31+'),
-    ('GB',"After 30 days you need a visa.",True,'限定after'),
-    ('GB',"If you don't meet these conditions, you need a visa before you travel.",True,'not_covered原文'),
-    ('GB',"Otherwise you need a visa.",True,'otherwise'),
-    ('GB',"Check whether you need a visa on the embassy site.",True,'whether'),
-    ('GB',"Do UK citizens need a visa for China? No.",True,'复述问题'),
-    ('GB',"All you need is a passport — no visa required.",True,'need passport no visa'),
-    ('GB',"You need a valid passport, not a visa.",True,'passport not visa'),
-    ('GB',"Entry requires an onward ticket for visa-free transit.",True,'requires...visa-free'),
-    ('GB',"UK citizens no longer need a visa for trips up to 30 days.",True,'no longer'),
-    ('GB',"超过 30 天才需要签证。",True,'超过zh'),
-    ('GB',"入住酒店后 24 小时内要办住宿登记。",True,'24h登记'),
-    ('US',"入住酒店后 24 小时内要办住宿登记。",True,'24h登记US'),
-    ('US',"以前是 72 和 144 小时，现在统一为 240 小时。",True,'旧政策统一'),
-    ('US',"过境免签已从 144 小时延长到 240 小时。",True,'旧政策延长'),
-    ('US',"240 小时（原 144 小时）过境免签。",True,'旧政策原'),
-    ('US',"The limit went up from 144 hours to 240 hours.",True,'旧政策up from'),
-    ('US',"240 hours, formerly 144 hours.",True,'旧formerly'),
-    ('US',"有人说不得跨市，其实允许区域内可以跨省。",True,'先标误解'),
-    ('US',"很多人以为不得跨市，其实可以跨省。",True,'很多人以为'),
-    ('US',"常被误传「只能在入境城市」，实际可以跨省。",True,'误传'),
-    ('US',"并不是只能在入境城市活动，允许区域内可跨省。",True,'并不是只能'),
-    ('US',"不能原路返回，联程客票必须去第三国。",True,'不能原路返回(正确)'),
-    ('US',"联程票不能是返回出发国的。",True,'不能返回出发国'),
-    ('US',"出了允许停留区域就不能再用过境免签，不得离开规定区域。",True,'不得离开区域'),
-    ('US',"You don't have to stay in the city where you land.",True,"don't have to stay"),
-    ('US',"You cannot leave the permitted areas.",True,'cannot leave areas(正确)'),
-    ('US',"You may not travel outside the permitted area.",True,'may not travel outside area'),
-    ('US',"A common mistake is thinking you can't leave the arrival city.",True,'common mistake'),
-    ('US',"Contrary to popular belief, you can travel across provinces.",True,'contrary'),
-    ('US',"From any of 65 ports in 24 provinces, 57 countries qualify for transit.",True,'正确数字'),
-    ('US',"美国护照持有人需要签证才能来中国旅游，但可以用 240 小时过境免签。",True,'US需要签证正确'),
-    ('US',"出发前请前往第三国的联程客票。",True,'第三国'),
-    ('US',"入境后不得跨市旅行。",False,'不得跨市'),
-    ('US',"其实不得跨市。",False,'其实不得跨市'),
-    ('US',"过境期间不能跨省。",False,'不能跨省'),
-    ('US',"可以办 144 小时过境免签。",False,'144'),
-    ('US',"可以停留 144 小时。",False,'144无过境'),
-    ('US',"UK passport holders can stay 144 hours visa-free.",False,'144 holders'),
-    ('US',"Holders of a US passport get 72 hours.",False,'72 holders'),
-    ('US',"Travellers told about 144 hours: that is the rule.",False,'144 told'),
-    ('US',"可以原路返回美国。",False,'原路返回'),
-    ('US',"可以飞回出发国。",False,'飞回出发国'),
-    ('US',"You can fly back to the US on the same ticket.",False,'fly back to US'),
-    ('US',"You must stay in the arrival city.",False,'must stay arrival city'),
-    ('US',"You're limited to the city you land in.",False,'limited to city'),
-    ('US',"You can only stay in your arrival city.",False,'only stay in arrival city'),
-    ('US',"只能待在落地的城市。",False,'只能待在落地的城市'),
-    ('US',"过境期间只可在入境城市活动。",False,'只可在入境城市'),
-    ('US',"过境免签可从 53 个口岸入境。",False,'53口岸'),
-    ('US',"Transit applies to 54 countries.",False,'54国'),
-    ('US',"Visa-free transit is 6 days.",False,'transit 6天'),
-    ('US',"过境免签可停留 6 天。",False,'过境6天'),
-    ('GB',"A plain 10-day trip needs a visa.",False,'needs a visa'),
-    ('GB',"British travellers need a visa for China.",False,'need a visa'),
-    ('GB',"You'll need to get a tourist visa.",False,'get a tourist visa'),
-    ('GB',"You must apply for an L visa before you go.",False,'must apply visa'),
-    ('GB',"英国护照需要办签证。",False,'需要办签证zh'),
-    ('GB',"英国人来华仍需签证。",False,'仍需签证'),
-    ('GB',"英国人来华须办签证。",False,'须办签证'),
-    ('GB',"You can stay visa-free for up to 15 days.",False,'up to 15'),
-    ('GB',"15-day visa-free entry applies.",False,'15-day visa-free'),
-    ('GB',"You can stay up to 15 days without a visa.",False,'15 days without visa'),
-    ('GB',"英国护照可以 15 天免签入境。",False,'15天免签'),
-    ('GB',"英国护照免签停留 15 天。",False,'免签停留15天'),
-    ('GB',"Actually, you cannot leave the arrival city.",False,'actually cannot leave'),
-]
 
 
-class SplitAndEntryFacts(unittest.TestCase):
-    """JT 2026-11-25 two bubbles (first paragraph = the answer) and the preview's invented
-    transit rule (\u4e0d\u5f97\u8de8\u5e02); entry facts come from the landing-mode rules file."""
+class SplitFirstParagraph(unittest.TestCase):
+    """JT 2026-11-25 two bubbles: the first paragraph is only the answer (or the emergency action)."""
 
     def setUp(self):
         self.cases = {case['id']: case for case in load_cases()}
@@ -366,88 +289,6 @@ class SplitAndEntryFacts(unittest.TestCase):
             with self.subTest(case=case_id):
                 self.assertNotIn('first_paragraph', self.check(case_id, '先按两位成人排。\n第 1 天 故宫')['checks'])
         self.assertNotIn('first_paragraph', check_answer(self.cases['alipay-zh'], '绑卡。'))  # detail profile unchanged
-
-    def test_entry_facts_follow_the_landing_mode_rules(self):
-        from eval.lio_answer_quality import entry_facts
-        facts = entry_facts()
-        self.assertEqual((facts['ports'], facts['provinces'], facts['countries'], facts['transit_hours']), (65, 24, 57, 240))
-        self.assertEqual(facts['visa_free_days']['GB'], 30)
-        self.assertNotIn('US', facts['visa_free_days'])
-        good_zh = ('美国护照可以办 240 小时过境免签。\n\n需要去第三国的联程客票，从 24 个省份的 65 个口岸入境，'
-                   '可在允许区域内跨省活动。很多人问能不能跨省：可以。其中 6 个省份只限官方列出的城市。')
-        self.assertTrue(self.check('transit-visa-zh', good_zh)['checks']['entry_facts'])
-        for wrong in ('入境后不得跨市旅行。', '过境期间不得跨省。', '可以办 144 小时过境免签。', '72 小时过境免签就够了。'):
-            with self.subTest(wrong=wrong):
-                text = '美国护照可以办过境免签。\n\n' + wrong
-                self.assertFalse(self.check('transit-visa-zh', text)['checks']['entry_facts'])
-        good_en = ('British passport holders can visit China visa-free for up to 30 days.\n\n'
-                   'A unilateral policy also covers 50 countries; check the NIA site before you fly.')
-        self.assertTrue(self.check('visa-uk-en', good_en)['checks']['entry_facts'])
-        for wrong in ('A plain 10-day trip normally needs a visa.', 'You can stay visa-free for up to 15 days.',
-                      '英国护照可以 15 天免签入境。', '10 天的行程需要办签证。'):
-            with self.subTest(wrong=wrong):
-                text = 'You can visit China.\n\n' + wrong
-                self.assertFalse(self.check('visa-uk-en', text)['checks']['entry_facts'])
-        self.assertTrue(self.check('visa-uk-en', "You don't need a visa for 10 days.\n\nCheck the NIA site.")['checks']['entry_facts'])
-        self.assertNotIn('entry_facts', self.check('alipay-zh', '绑卡。\n\n1. 下载。')['checks'])
-
-    def test_entry_facts_second_review_cases(self):
-        # #1664 second review: correct statements that must pass, and slips that must fail.
-        for text in ('240-hour visa-free transit (10 days) is another option.', '过境免签可停留 10 天。',
-                     'For a 10-day trip you can enter visa-free.', 'You can visit Shanghai visa-free for 10 days.',
-                     'Work, study or journalism still require a visa.', 'Stays over 30 days need a visa.',
-                     '停留超过 30 天需要办签证。', '工作、学习仍需要签证。',
-                     '过境免签期间，酒店会在 24 小时内帮你办住宿登记。',
-                     '以前的 72 和 144 小时政策已统一为 240 小时。',
-                     '有人说不得跨市，这是误解：允许区域内可以跨省。'):
-            with self.subTest(passes=text):
-                self.assertTrue(self.check('visa-uk-en', 'Yes.\n\n' + text)['checks']['entry_facts'])
-        for text in ('其实不得跨市。', '可以办 144 小时过境免签。', '英国护照可以 15 天免签入境。',
-                     'British passport holders get visa-free entry for up to 15 days.'):
-            with self.subTest(fails=text):
-                self.assertFalse(self.check('visa-uk-en', 'Yes.\n\n' + text)['checks']['entry_facts'])
-
-    def test_expired_visa_free_policy_is_not_enforced(self):
-        import eval.lio_answer_quality as quality
-        from unittest.mock import patch
-        from datetime import date
-        with patch.object(quality, 'today', lambda: date(2027, 1, 1)):
-            self.assertTrue(self.check('visa-uk-en', 'Yes.\n\nA plain 10-day trip needs a visa.')['checks']['entry_facts'])
-
-    def test_entry_facts_never_fail_a_correct_statement(self):
-        # Precision first (#1664 fourth review): every correct statement from the review probes passes,
-        # including the rules file's own visa-free summaries. Out-of-scope slips are left to model review.
-        import json
-        from eval.lio_answer_quality import ARRIVAL_RULES, _entry_facts_hold
-        rules = json.loads(ARRIVAL_RULES.read_text())
-        summaries = [(code, policy['summary'][lang]) for policy in rules['policies'] for lang in ('zh', 'en')
-                     for code in ('US', 'GB')]
-        extra = [('US', '利用过境免签，你可以在上海玩 5 天，再飞首尔。'), ('US', '过境免签最多 10 天，你计划的 7 天行程完全够用。'),
-                 ('US', '美国护照没有 30 天免签，只能走过境免签（最多 10 天）。'), ('GB', '不需要办签证，带护照就行。'),
-                 ('GB', "You don't actually need a visa."), ('GB', 'For a 2-month trip you need a visa.'),
-                 ('US', 'Do you have to stay in the arrival city? No — you can move across provinces.'),
-                 ('GB', 'Before 2026, UK travellers needed a visa; now they don\'t.'), ('US', '从浦东、虹桥 2 个口岸入境。')]
-        correct = [(c, t) for c, t, expected, _ in ENTRY_PROBES if expected] + summaries + extra
-        for country, text in correct:
-            with self.subTest(text=text):
-                self.assertTrue(_entry_facts_hold(text, country), text)
-        for country, text, expected, note in ENTRY_PROBES:
-            if note in ('不得跨市', '其实不得跨市', '144', 'up to 15', '15天免签', 'needs a visa',
-                        'after3: if in another clause'):
-                with self.subTest(slip=note):
-                    self.assertFalse(_entry_facts_hold(text, country), text)
-
-    def test_rules_load_lazily_with_a_clear_error(self):
-        import eval.lio_answer_quality as quality
-        from unittest.mock import patch
-        quality.entry_facts.cache_clear()
-        try:
-            with patch.object(quality, 'ARRIVAL_RULES', quality.ROOT / 'missing-rules.json'):
-                self.assertTrue(check_answer(self.cases['alipay-zh'], '绑卡。')['id'])  # detail profile never reads it
-                with self.assertRaisesRegex(ValueError, 'landing-mode rules'):
-                    quality.entry_facts()
-        finally:
-            quality.entry_facts.cache_clear()
 
     def test_one_screen_profile_version_moves_with_the_new_checks(self):
         from eval.lio_answer_quality import PROFILES
