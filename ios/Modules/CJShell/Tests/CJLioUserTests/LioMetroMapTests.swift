@@ -2,14 +2,15 @@ import Foundation
 import Testing
 @testable import CJLioUser
 
-/// #1450 item 2: every bundled map (41 cities) is complete and consistent.
+/// #1450 item 2: every bundled map is complete and consistent.
 struct LioMetroMapDataTests {
     static let mapped: [LioMetroCity] = LioMetroCity.allCases
     /// Built from the operator's own data; the rest from AMap's network maps (JT 2026-11-25).
     static let fromOperators: Set<String> = ["beijing", "shanghai", "guangzhou", "shenzhen", "xian"]
 
     @Test func everyListedCityHasAMap() throws {
-        #expect(Self.mapped.count >= 6)
+        // The operator-built cities stay; any AMap-based city can be removed by deleting its file.
+        #expect(Self.fromOperators.isSubset(of: Set(Self.mapped.map(\.id))))
         for city in Self.mapped { #expect(throws: Never.self) { try LioMetroMap.bundled(city) } }
     }
 
@@ -34,6 +35,12 @@ struct LioMetroMapDataTests {
             #expect((0...map.width).contains(station.x) && (0...map.height).contains(station.y))
             // No capital inside a word ("ShaTian"): the operators' own style capitalises words only.
             #expect(station.nameEN.range(of: "[a-z][A-Z]", options: .regularExpression) == nil, "\(station.nameEN)")
+            // Names we generate (not an operator's own, like Beijing's "Sihui Dong(E)"): words start with a
+            // capital and a bracket stands apart, "Chengdu Yixueyuan (Xindu Xiaoqu)".
+            if map.source.provider != nil {
+                #expect(station.nameEN.range(of: #"^[a-z]|\S\(|\(\s*[a-z]|Railway$"#, options: .regularExpression) == nil,
+                        "\(station.nameEN)")
+            }
         }
         // Two stations never share an English name (Shenzhen's file once gave Buyong its neighbour's).
         let english = map.stations.map { $0.nameEN.lowercased() }
@@ -119,10 +126,9 @@ struct LioMetroMapDataTests {
         #expect(shenzhen.stations.first { $0.nameZH == "步涌" }?.nameEN == "Buyong")
         let guangzhou = try LioMetroMap.bundled(.guangzhou)
         #expect(guangzhou.stations.first { $0.nameZH == "广州南站" }?.nameEN == "Guangzhou South Railway Station")
-        #expect(try lines(.chengdu, "天府广场") == ["1号线", "2号线"])
         // Cities added in batches: checked while bundled, so removing one needs no test change.
         let spotChecks: [(String, String, [String])] = [
-            ("tianjin", "西站", ["1号线", "4号线", "6号线"]), ("nanjing", "新街口", ["1号线", "2号线"]),
+            ("chengdu", "天府广场", ["1号线", "2号线"]), ("tianjin", "西站", ["1号线", "4号线", "6号线"]), ("nanjing", "新街口", ["1号线", "2号线"]),
             ("wuhan", "洪山广场", ["2号线", "4号线"]), ("chongqing", "小什字", ["1号线", "6号线"]),
             ("hangzhou", "武林广场", ["1号线", "3号线"]), ("shenyang", "青年大街", ["1号线", "2号线"]),
         ]

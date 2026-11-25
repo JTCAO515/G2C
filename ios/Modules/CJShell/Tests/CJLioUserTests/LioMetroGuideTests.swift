@@ -2,22 +2,24 @@ import Foundation
 import Testing
 @testable import CJLioUser
 
-/// Cities the tests name. Each exists while its map is bundled; the operator-built ones always are.
+/// Cities the tests name: the five built from operator data, which stay bundled. Cities taken from AMap
+/// (Chengdu and the regional batches) are looked up with `named(_:)`, so removing one needs no test change.
 extension LioMetroCity {
     static var beijing: LioMetroCity { named("beijing")! }
     static var shanghai: LioMetroCity { named("shanghai")! }
     static var guangzhou: LioMetroCity { named("guangzhou")! }
     static var shenzhen: LioMetroCity { named("shenzhen")! }
     static var xian: LioMetroCity { named("xian")! }
-    static var chengdu: LioMetroCity { named("chengdu")! }
 }
 
 /// #1450: the city list is the bundled maps, grouped by region; six cities keep an operator-checked guide.
 struct LioMetroGuideTests {
     @Test func theListIsTheBundledMapsGroupedByRegion() throws {
         let cities = LioMetroCity.allCases
-        #expect(cities.count >= 6)
+        #expect(Set(["beijing", "shanghai", "guangzhou", "shenzhen", "xian"]).isSubset(of: Set(cities.map(\.id))))
         #expect(Set(cities.map(\.id)).count == cities.count)
+        // Every bundled map file made it into the list: none was skipped as unreadable or as a second copy.
+        #expect(LioMetroCity.mapFiles.count == cities.count)
         #expect(cities.first?.id == "beijing")
         for city in cities { #expect(throws: Never.self) { try LioMetroMap.bundled(city) } }
         // Grouped: once a region ends it does not come back.
@@ -41,7 +43,9 @@ struct LioMetroGuideTests {
 
     @Test func checkedGuidesKeepTheirOfficialLinks() {
         let guided = LioMetroCity.allCases.filter { $0.guide != nil }.map(\.id)
-        #expect(Set(guided) == ["beijing", "shanghai", "guangzhou", "shenzhen", "xian", "chengdu"])
+        let checked: Set<String> = ["beijing", "shanghai", "guangzhou", "shenzhen", "xian", "chengdu"]
+        #expect(Set(guided) == checked.intersection(LioMetroCity.allCases.map(\.id)))
+        #expect(Set(["beijing", "shanghai", "guangzhou", "shenzhen", "xian"]).isSubset(of: Set(guided)))
         #expect(LioMetroCity.beijing.guide?.mapURL.host == "map.bjsubway.com")
         #expect(LioMetroCity.shenzhen.guide?.mapURL.host == "www.szmc.net")
         for city in LioMetroCity.allCases {
@@ -84,7 +88,7 @@ struct LioMetroCityPickerTests {
         #expect(LioMetroCity.beijing.nativeName == "北京")
         #expect(LioMetroCity.guangzhou.nativeName == "广州")
         #expect(LioMetroCity.xian.nativeName == "西安")
-        #expect(LioMetroCity.chengdu.nativeName == "成都")
+        if let chengdu = LioMetroCity.named("chengdu") { #expect(chengdu.nativeName == "成都") }
         for city in LioMetroCity.allCases {
             for language in [LioLanguage.english, .chinese] {
                 let line = city.summary(in: language)

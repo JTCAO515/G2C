@@ -3,7 +3,7 @@ import CJRunClient
 import SwiftUI
 
 /// Metro guide (#1421): choose a city first, then read how to buy a ticket, pass security and use
-/// the gates. Every mainland metro city (41, #1450) opens an interactive line map; the cities whose
+/// the gates. Every bundled city (#1450) opens an interactive line map; the cities whose
 /// operator guidance was checked also link the official map and ticket guide.
 struct LioMetroGuideView: View {
     let language: LioLanguage

@@ -74,7 +74,7 @@ struct LioMetroCity: Hashable, Identifiable, Sendable {
 
 extension LioMetroCity {
     /// Every city in the bundled catalogue, grouped by region in catalogue order.
-    static let allCases: [LioMetroCity] = (try? catalogue()) ?? []
+    static let allCases: [LioMetroCity] = catalogue()
 
     static func named(_ id: String) -> LioMetroCity? { allCases.first { $0.id == id } }
 
@@ -91,12 +91,21 @@ extension LioMetroCity {
     }
 
     /// The catalogue is whatever maps are bundled: each map file carries its city's entry, so removing a
-    /// city means deleting its one file (`Resources/Metro/NOTICE.md`), with no code change.
-    static func catalogue() throws -> [LioMetroCity] {
-        let files = Bundle.module.urls(forResourcesWithExtension: "json", subdirectory: "Metro") ?? []
-        let cities = try files.filter { $0.lastPathComponent.hasPrefix("LioMetroMap.") }
-            .map { try read(entry: Data(contentsOf: $0)) }
-        return sorted(cities.map(\.city), order: Dictionary(uniqueKeysWithValues: cities.map { ($0.city.id, $0.order) }))
+    /// city means deleting its one file and regenerating `Resources/Metro/NOTICE.md`, with no code change.
+    /// A file whose entry does not read is left out rather than emptying the list; the data tests fail on it.
+    static func catalogue() -> [LioMetroCity] {
+        let entries = mapFiles.compactMap { try? read(entry: Data(contentsOf: $0)) }
+        // One entry per city: a second file naming the same city is ignored instead of crashing the list.
+        let order = Dictionary(entries.map { ($0.city.id, $0.order) }, uniquingKeysWith: { first, _ in first })
+        var seen = Set<String>()
+        return sorted(entries.map(\.city).filter { seen.insert($0.id).inserted }, order: order)
+    }
+
+    /// The bundled map files, one per city, in file-name order.
+    static var mapFiles: [URL] {
+        (Bundle.module.urls(forResourcesWithExtension: "json", subdirectory: "Metro") ?? [])
+            .filter { $0.lastPathComponent.hasPrefix("LioMetroMap.") }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
     }
 
     private struct Header: Decodable {

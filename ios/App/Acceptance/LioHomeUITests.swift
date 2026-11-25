@@ -131,7 +131,7 @@ import CryptoKit
                 tools.tap()
                 app.buttons["lio.tools.metro-guide"].tap()
                 // Choose a city first (#1421), then switch cities inside the guide.
-                for city in ["beijing", "shanghai", "guangzhou", "chengdu"] {
+                for city in ["beijing", "shanghai", "guangzhou", "shenzhen"] {
                     XCTAssertTrue(app.buttons["lio.metro.city.\(city)"].waitForExistence(timeout: 6))
                 }
                 // The city list runs on under the translucent tab bar, where contrast is measured through the bar
@@ -154,10 +154,10 @@ import CryptoKit
                 let picker = app.buttons["lio.metro.city"]
                 XCTAssertTrue(picker.waitForExistence(timeout: 6))
                 let english = language == "en"
-                for (region, city) in english ? [("East", "Shanghai"), ("South", "Guangzhou"), ("Southwest", "Chengdu"), ("North", "Beijing")]
-                    : [("华东", "上海"), ("华南", "广州"), ("西南", "成都"), ("华北", "北京")] {
+                for (region, city) in english ? [("East", "Shanghai"), ("South", "Guangzhou"), ("Northwest", "Xi'an"), ("North", "Beijing")]
+                    : [("华东", "上海"), ("华南", "广州"), ("西北", "西安"), ("华北", "北京")] {
                     picker.tap()
-                    let regionItem = app.buttons[region] // the menu groups the 41 cities by region
+                    let regionItem = app.buttons[region] // the menu groups the cities by region
                     XCTAssertTrue(regionItem.waitForExistence(timeout: 4))
                     regionItem.tap()
                     let cityItem = app.buttons[city]
