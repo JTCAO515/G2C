@@ -54,7 +54,8 @@ struct LioResultEntrance<Content: View>: View {
             started = visible ? .now : nil
             if visible, active, reduceMotion, phase == .waiting { phase = .entering }
         }
-        .onDisappear { onScreen = false; started = nil }
+        // No reset on disappear: geometry reports only changes, so a tab switch must not clear a visible card.
+        // Covered tabs and sheets pause through `presentationActive`.
         .onChange(of: active) { _, active in
             if active { started = .now }
             else if phase == .entering { phase = .waiting }

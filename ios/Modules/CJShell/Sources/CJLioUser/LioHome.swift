@@ -1167,7 +1167,7 @@ public struct LioHome<MenuContent: View>: View {
                     memorySuggestion(tag, turnID: turn.id, client: memoryActions)
                         .lioEntrance(.rise, active: entering.contains(LioEntranceKey(turn: turn.id, part: .memory))
                             && !seenMemoryTags.contains(tag) && scenePhase == .active)
-                        .lioOnScreenChange { visible in if visible, conversation === owner { seenMemoryTags.insert(tag) } }
+                        .onAppear { if conversation === owner { seenMemoryTags.insert(tag) } }
                 }
                 ForEach(memoryFeedback.values.filter {
                     $0.turnID == turn.id && ($0.kind.replacesPrompt || !turn.memoryTags.contains($0.tag))
