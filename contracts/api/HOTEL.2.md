@@ -33,6 +33,7 @@
 {
   "version": "HOTEL.2",
   "source": "Gaode",
+  "affiliate_links": false,
   "applied_filters": ["near"],
   "unapplied_filters": ["check_in", "check_out", "guests", "price"],
   "items": [
@@ -54,6 +55,7 @@
 }
 ```
 
+- `affiliate_links`：`booking_url` 跳转的 Trip.com 链接是否带联盟标识。只有为 `true` 时，App 才显示推广披露（文案按 #225，由 JT 确认）。第一步不带联盟 ID，所以为 `false`。
 - `applied_filters` 与 `unapplied_filters` 合起来正好是 `{near, check_in, check_out, guests, price}`，两者不重叠。App 会把未生效的条件告诉用户。
 - `source`：第一步是 `Gaode`，以后可能是 `Trip.com`。来源是 `Gaode` 时 `foreign_guests` 一律为 `unknown`，App 也一律显示「请在 Trip.com 确认」。来源是 `Trip.com` 时可能为 `accepted`、`not_accepted` 或 `unknown`。
 - 可选字段缺失时直接省略，不发 `null`：`name_en`、`address_en`（仅英文请求，来自千问英译，失败时省略）、`rating`（字符串）、`price_cny`、`price_kind`、`metro`（最近地铁站在 2 公里以内才给）。`price_kind` 为 `reference` 时是高德参考价，不是实时房价。
@@ -79,8 +81,8 @@
 | 503 | `unavailable` | 服务暂不可用 |
 | 504 | `supplier_timeout` | 供应商超时 |
 
-额度由服务端强制执行（JT 2026-11-25，#1523）：
+额度由服务端强制执行（JT 2026-11-25，#1523、#1534）：
 - 每个账号每天（上海时间）最多 50 次搜索，按 `request_id` 计。
 - 每次搜索最多调用高德 3 次：定位地标、列酒店、搜附近地铁站。
-- 这些调用计入条目 3 的高德地点次数，并与「附近」共用工具现金上限 ¥500。
+- 与「附近」一样单独计次：酒店搜索的高德调用总共最多 3000 次，不占条目 3 的地点次数，只与其他功能共用工具现金上限 ¥500（JT 2026-11-25 修订，#1534）。
 - 同一城市加地标的结果缓存 60 秒，命中缓存时不调用高德，也不计数。

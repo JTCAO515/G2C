@@ -1,8 +1,8 @@
 """Hotel search limits in the existing HK Gaode cash journal (M4 entry 12 item 3, #1511).
 
-JT 2026-11-25 (#1508, #1523): at most 50 hotel searches per account per day and at most three Gaode calls
-per search, counted in entry 3's place allowance and the shared ¥500 tool cash total (no new allowance).
-Unlike Nearby, hotel calls therefore stay in the legacy place count.
+JT 2026-11-25 (#1508, #1523, revised in #1534): at most 50 hotel searches per account per day and at most
+three Gaode calls per search. Like Nearby, hotel calls have their own count (at most 3000 Gaode calls), stay
+out of entry 3's place allowance and share only the ¥500 tool cash total.
 """
 
 import hashlib
@@ -10,7 +10,7 @@ from uuid import UUID
 from zoneinfo import ZoneInfo
 
 from .authorization_budget import (
-    CNY_SCALE, LIMITS, TOOL_STOP_CNY, TOOL_TOTAL_CNY, authorization_usage, canonical, separately_counted_place,
+    CNY_SCALE, LIMITS, TOOL_STOP_CNY, TOOL_TOTAL_CNY, authorization_usage, canonical,
 )
 from .metered_exit import BudgetUnknown
 from .sublimits import scope_hash
@@ -27,11 +27,12 @@ OPERATIONS = {
 }
 DAILY_SEARCH_LIMIT = 50
 CALLS_PER_SEARCH = 3
+M4_OPERATION_LIMIT = 3000
 SHANGHAI = ZoneInfo('Asia/Shanghai')
 
 
 class HotelLimit(BudgetUnknown):
-    """The approved hotel search count, the place allowance or the shared cash limit denied a call."""
+    """The approved hotel search or call count, or the shared cash limit, denied a call."""
 
 
 class HotelDuplicate(BudgetUnknown):
@@ -63,10 +64,11 @@ class HotelBudget:
                                    (f'{SERVICE}:{owner}:*:*:{day}',)).fetchall()
                 if len({row[0].split(':')[2] for row in today}) >= DAILY_SEARCH_LIMIT:
                     raise HotelLimit('daily hotel search count exhausted')
-            counts, estimates, holds = authorization_usage(db)
-            legacy = counts['place'] - separately_counted_place(db)
-            if legacy >= LIMITS['place'][0]:
-                raise HotelLimit('entry 3 place allowance exhausted')
+            total = db.execute("SELECT count(*) FROM attempt WHERE kind='place' AND id GLOB ?",
+                               (f'{SERVICE}:*',)).fetchone()[0]
+            if total >= M4_OPERATION_LIMIT:
+                raise HotelLimit('hotel search call count exhausted for M4')
+            _, estimates, holds = authorization_usage(db)
             used = sum(estimates[kind]+holds[kind] for kind in LIMITS if kind != 'model')
             if used + LIMITS['place'][1]*CNY_SCALE > min(TOOL_STOP_CNY, TOOL_TOTAL_CNY)*CNY_SCALE:
                 raise HotelLimit('original Gaode cash allowance exhausted')

@@ -369,7 +369,8 @@ class HotelSearchService:
                                     request.guests, request.language)
             item['booking_url'] = self.public_origin + HANDOFF_PATH + self.handoffs.put(target)
         authorize()
-        result = dict(version=VERSION, source='Gaode', applied_filters=list(APPLIED),
+        # The App shows the affiliate disclosure only when the hand-off carries an affiliate ID (#225).
+        result = dict(version=VERSION, source='Gaode', affiliate_links=False, applied_filters=list(APPLIED),
                       unapplied_filters=list(UNAPPLIED), items=items)
         if omitted:
             result['omitted_items'] = omitted

@@ -104,6 +104,7 @@ def test_landmark_search_geocodes_lists_hotels_and_measures_the_nearest_subway(l
                                         sortrule='distance', page_size=20, page_num=1, show_fields='business')
     assert supplier.calls[2][1]['types'] == '150500' and supplier.calls[2][1]['location'] == '116.410886,39.911521'
     assert result['version'] == VERSION == 'HOTEL.2' and result['source'] == 'Gaode'
+    assert result['affiliate_links'] is False  # no affiliate ID until JT hands over the credentials
     assert result['applied_filters'] == ['near']
     assert result['unapplied_filters'] == ['check_in', 'check_out', 'guests', 'price']
     hilton, ji, far = result['items']
@@ -247,7 +248,9 @@ def test_one_request_never_calls_gaode_twice_for_the_same_step(ledger):
         budget.begin('owner', request_id, 'hotels_text')  # a fourth Gaode call for one search
 
 
-def test_hotel_receipts_are_priced_and_count_in_the_entry_3_place_allowance(ledger, monkeypatch):
+def test_hotel_receipts_are_priced_and_counted_apart_from_entry_3(ledger, monkeypatch):
+    from cj_usage import hotel_budget
+
     budget = HotelBudget(ledger)
     attempt = budget.begin('owner', uuid4(), 'subway')
     with ledger.connect() as db:
@@ -257,13 +260,29 @@ def test_hotel_receipts_are_priced_and_count_in_the_entry_3_place_allowance(ledg
     with ledger.connect() as db:
         counts, estimates, holds = authorization_usage(db)
     assert estimates['place'] == AMAP_PRICE and holds['place'] == 0
-    # JT 2026-11-25: hotel calls count in entry 3's place allowance (unlike Nearby's separate count).
-    monkeypatch.setitem(LIMITS, 'place', (2, LIMITS['place'][1]))
-    ledger.begin('legacy-place', 'place', b'legacy input')
+    # JT 2026-11-25 (#1534): like Nearby, hotel calls stay out of entry 3's place allowance...
+    monkeypatch.setitem(LIMITS, 'place', (1, LIMITS['place'][1]))
+    ledger.begin('legacy-first-place', 'place', b'legacy input')
     with pytest.raises(BudgetUnknown, match='call allowance'):
         ledger.begin('legacy-second-place', 'place', b'legacy input')
-    with pytest.raises(BudgetUnknown):
+    budget.begin('owner', uuid4(), 'geocode')  # ...and a full entry 3 allowance does not stop hotel search
+    # ...but have their own M4 cap of 3000 calls.
+    monkeypatch.setattr(hotel_budget, 'M4_OPERATION_LIMIT', 2)
+    with pytest.raises(BudgetUnknown, match='M4'):
         budget.begin('owner', uuid4(), 'geocode')
+
+
+def test_exhausted_limits_answer_quota_exceeded_and_leave_no_intent(ledger, monkeypatch):
+    from cj_usage import hotel_budget
+
+    monkeypatch.setattr(hotel_budget, 'M4_OPERATION_LIMIT', 0)
+    supplier = Supplier()
+    with pytest.raises(PluginError) as limit:
+        service_for(ledger, supplier).search('owner-a', HotelSearchRequest.model_validate(payload()), lambda: None)
+    assert (limit.value.status, limit.value.code) == (429, 'quota_exceeded')
+    assert supplier.calls == []
+    with ledger.connect() as db:
+        assert db.execute("SELECT count(*) FROM attempt WHERE id GLOB 'amap-hotel.1:*'").fetchone()[0] == 0
 
 
 def test_hotel_and_nearby_share_the_tool_cash_ceiling(ledger, monkeypatch):
