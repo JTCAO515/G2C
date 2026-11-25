@@ -131,3 +131,18 @@ def test_all_flights_of_a_busy_route_reach_the_transport_list():
 def test_non_ascii_airline_name_is_not_shown_as_english():
     result = transport_flights([flight('MU5101', 'SHA', 'PEK', '2026-12-02 07:30:00', '2026-12-02 09:40:00', en='东方航空')])
     assert result['items'][0]['carrier'] == dict(name_zh='东方航空')
+
+
+def test_one_malformed_flight_is_skipped_not_the_whole_list(caplog):
+    import logging
+    caplog.set_level(logging.INFO)
+    good = flight('MU5101', 'SHA', 'PEK', '2026-12-02 07:30:00', '2026-12-02 09:40:00')
+    bad = dict(good, fnum='MU 5101; DROP', dep='shanghai')
+    result = transport_flights([bad, good])
+    assert [item['number'] for item in result['items']] == ['MU5101']
+    assert 'variflight_rows_skipped count=1' in caplog.text and 'DROP' not in caplog.text
+
+
+def test_a_reply_where_every_flight_is_malformed_is_still_a_supplier_failure():
+    bad = dict(flight('MU5101', 'SHA', 'PEK', '2026-12-02 07:30:00', '2026-12-02 09:40:00'), fnum='???')
+    assert transport_flights([bad, bad])['status'] == 'unavailable'
