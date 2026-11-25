@@ -105,6 +105,60 @@ import CryptoKit
         }
     }
 
+    /// #1450: the map page and the station sheet pass the full accessibility audit in both languages and
+    /// appearances, at the default text size and the largest accessibility size.
+    func testMetroMapPassesTheAccessibilityAudit() throws {
+        continueAfterFailure = false
+        for size in ["UICTContentSizeCategoryL", "UICTContentSizeCategoryAccessibilityXXXL"] {
+            for language in ["en", "zh-Hans"] {
+                for appearance in ["light", "dark"] {
+                    let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                    app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-taxi-preview", "-cj.ui.language.v1",
+                                           language, "-lio.ui.appearance.v1", appearance,
+                                           "-UIPreferredContentSizeCategoryName", size]
+                    app.launch()
+                    defer { app.terminate() }
+                    let english = language == "en"
+                    let label = "\(language)-\(appearance)-\(size.hasSuffix("XXXL") ? "ax5" : "default")"
+                    let tools = app.tabBars.buttons[english ? "Tools" : "工具"]
+                    XCTAssertTrue(tools.waitForExistence(timeout: 8))
+                    tools.tap()
+                    app.buttons["lio.tools.metro-guide"].tap()
+                    let city = app.buttons["lio.metro.city.guangzhou"]
+                    XCTAssertTrue(city.waitForExistence(timeout: 6))
+                    city.tap()
+                    XCTAssertTrue(app.descendants(matching: .any)["lio.metro.map.canvas"].waitForExistence(timeout: 8))
+                    try audit(app, "metro-map-\(label)")
+                    app.buttons["lio.metro.map.find"].tap()
+                    let search = app.searchFields.firstMatch
+                    XCTAssertTrue(search.waitForExistence(timeout: 6))
+                    search.tap()
+                    search.typeText(english ? "Tiyu Xilu" : "体育西路")
+                    let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", english ? "Tiyu Xilu" : "体育西路")).firstMatch
+                    XCTAssertTrue(row.waitForExistence(timeout: 6))
+                    row.tap()
+                    XCTAssertTrue(app.staticTexts["lio.metro.station.name-zh"].waitForExistence(timeout: 6))
+                    try audit(app, "metro-station-\(label)")
+                }
+            }
+        }
+    }
+
+    /// The full audit, reporting each issue with the element it is about. An element's details are read
+    /// after the audit: reading them inside the handler breaks the audit.
+    private func audit(_ app: XCUIApplication, _ name: String) throws {
+        var issues: [(String, XCUIElement?)] = []
+        try app.performAccessibilityAudit(for: .all) { issue in
+            issues.append((issue.compactDescription + ": " + issue.detailedDescription, issue.element))
+            return true
+        }
+        capture(app, name)
+        for (text, element) in issues {
+            let detail = element.map { "\($0.elementType.rawValue) \"\($0.identifier)\" \"\($0.label)\" \($0.frame)" } ?? "no element"
+            XCTFail("\(name): \(text) — \(detail)")
+        }
+    }
+
     private func capture(_ app: XCUIApplication, _ name: String) {
         let screenshot = XCTAttachment(screenshot: app.screenshot())
         screenshot.name = name
