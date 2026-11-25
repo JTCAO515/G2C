@@ -152,7 +152,7 @@ struct LioArrivalRulesTests {
         #expect(rules.evaluate(trip("US", days: 12, onward: true), today: Self.today).outcome == .visaRequired)
     }
 
-    /// Official notices count the stay from 00:00 the day after entry; we count calendar days including both ends.
+    /// Some official notices count the stay from 00:00 the day after entry; we count calendar days including both ends.
     /// Exactly one day over our limit is left to the official notice rather than answered either way.
     @Test func oneDayOverTheLimitIsLeftToOfficialSources() throws {
         let rules = try LioArrivalRules.bundled()
@@ -192,17 +192,36 @@ struct LioArrivalRulesTests {
     }
 
     @Test func pickedDayIsTheTravellersOwnCalendarDay() throws {
+        let tokyoZone = try #require(TimeZone(identifier: "Asia/Tokyo"))
         var tokyo = Calendar(identifier: .gregorian)
-        tokyo.timeZone = try #require(TimeZone(identifier: "Asia/Tokyo"))
+        tokyo.timeZone = tokyoZone
         // 00:30 on 1 January 2027 in Tokyo is still 31 December in Beijing.
         let picked = try #require(tokyo.date(from: DateComponents(year: 2027, month: 1, day: 1, hour: 0, minute: 30)))
-        #expect(LioArrivalDay(date: picked, calendar: tokyo) == Self.day("2027-01-01"))
+        #expect(LioArrivalDay(picked: picked, timeZone: tokyoZone) == Self.day("2027-01-01"))
         #expect(LioArrivalDay(date: picked) == Self.day("2026-12-31"))
         let rules = try LioArrivalRules.bundled()
-        let trip = LioArrivalTrip(countryCode: "JP", arrival: LioArrivalDay(date: picked, calendar: tokyo),
+        let trip = LioArrivalTrip(countryCode: "JP", arrival: LioArrivalDay(picked: picked, timeZone: tokyoZone),
                                   stayDays: 5, onwardToThirdCountry: false)
         #expect(rules.evaluate(trip, today: Self.today).outcome == .checkOfficial(.policyEnded))
-        #expect(Self.day("2027-01-01").date(in: tokyo) == tokyo.date(from: DateComponents(year: 2027, month: 1, day: 1)))
+        #expect(Self.day("2027-01-01").pickerDate(timeZone: tokyoZone)
+            == tokyo.date(from: DateComponents(year: 2027, month: 1, day: 1)))
+    }
+
+    /// A phone set to the Japanese or Buddhist calendar still picks Gregorian days.
+    @Test(arguments: [Calendar.Identifier.japanese, .buddhist])
+    func pickedDayIgnoresTheDevicesCalendarSystem(_ identifier: Calendar.Identifier) throws {
+        let tokyoZone = try #require(TimeZone(identifier: "Asia/Tokyo"))
+        var device = Calendar(identifier: identifier)
+        device.timeZone = tokyoZone
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = tokyoZone
+        let picked = try #require(gregorian.date(from: DateComponents(year: 2027, month: 1, day: 5, hour: 9)))
+        #expect(device.component(.year, from: picked) != 2027, "the device calendar numbers years differently")
+        let day = LioArrivalDay(picked: picked, timeZone: tokyoZone)
+        #expect(day == Self.day("2027-01-05"))
+        #expect(day.pickerDate(timeZone: tokyoZone) == gregorian.startOfDay(for: picked))
+        let trip = LioArrivalTrip(countryCode: "JP", arrival: day, stayDays: 5, onwardToThirdCountry: false)
+        #expect(try LioArrivalRules.bundled().evaluate(trip, today: Self.today).outcome == .checkOfficial(.policyEnded))
     }
 
     @Test func daysParseStrictlyAndCountForward() throws {

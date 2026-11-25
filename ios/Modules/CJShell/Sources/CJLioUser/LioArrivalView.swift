@@ -42,7 +42,7 @@ struct LioArrivalView: View {
 
     @ViewBuilder private func destination(_ step: LioArrivalStep) -> some View {
         switch step {
-        case .entry: LioArrivalEntryView(language: language, rules: rules, arrival: arrival?.date(in: .current) ?? .now)
+        case .entry: LioArrivalEntryView(language: language, rules: rules, arrival: arrival?.pickerDate() ?? .now)
         case .payment: LioPaymentGuideView(language: language)
         case .internet: LioArrivalInternetView(language: language)
         case .taxi: LioArrivalTaxiView(language: language, tripHotel: LioArrivalHotel(hotels: hotels))
@@ -134,7 +134,7 @@ struct LioArrivalEntryView: View {
     }
 
     private var trip: LioArrivalTrip {
-        LioArrivalTrip(countryCode: selection.wrappedValue, arrival: LioArrivalDay(date: arrival, calendar: .current),
+        LioArrivalTrip(countryCode: selection.wrappedValue, arrival: LioArrivalDay(picked: arrival),
                        stayDays: stayDays, onwardToThirdCountry: onward)
     }
 
@@ -295,8 +295,8 @@ private struct LioArrivalDecisionCard: View {
             language.text("Your trip runs past the published end date of the visa-free policy.",
                           "你的行程跨过了免签政策公布的截止日期。")
         case .stayAtLimit:
-            language.text("Your stay is one day over the limit as we count it (arrival and departure days included). Official notices count from 00:00 the day after arrival, so check the official notice for your dates.",
-                          "按我们的算法（入境和离境当天都算），你的停留比上限多一天。官方从入境次日零时起算，请按官方通知核对你的日期。")
+            language.text("Your stay is one day over the limit as we count it (arrival and departure days included). Some official notices count from 00:00 the day after arrival, so check the official notice for your dates.",
+                          "按我们的算法（入境和离境当天都算），你的停留比上限多一天。部分官方通知从入境次日零时起算，请按官方通知核对你的日期。")
         case .overdueForReview:
             language.text("These rules are due for a recheck, so we are not giving an answer from them.",
                           "这些规则已过核对期，暂不据此给出结论。")

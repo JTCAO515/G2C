@@ -19,16 +19,27 @@ struct LioArrivalDay: Comparable, Hashable, Sendable, CustomStringConvertible, D
     /// The Beijing calendar day of an instant (used for "today").
     init(date: Date) { self.init(date: date, calendar: Self.calendar) }
 
-    /// The day a person picked on their own calendar. A traveller in Tokyo who picks 1 January means 1 January,
-    /// even though it is still 31 December in Beijing at that instant.
-    init(date: Date, calendar: Calendar) {
+    /// The day a person picked in their own time zone. A traveller in Tokyo who picks 1 January means 1 January,
+    /// even though it is still 31 December in Beijing at that instant. Always Gregorian: a device set to the
+    /// Japanese or Buddhist calendar would otherwise give years such as 9 or 2570.
+    init(picked date: Date, timeZone: TimeZone = .current) {
+        self.init(date: date, calendar: Self.gregorian(timeZone))
+    }
+
+    /// Midnight of this day in the given time zone, for date pickers.
+    func pickerDate(timeZone: TimeZone = .current) -> Date {
+        Self.gregorian(timeZone).date(from: DateComponents(year: year, month: month, day: day))!
+    }
+
+    private init(date: Date, calendar: Calendar) {
         let parts = calendar.dateComponents([.year, .month, .day], from: date)
         year = parts.year!; month = parts.month!; day = parts.day!
     }
 
-    /// Midnight of this day on the given calendar, for date pickers.
-    func date(in calendar: Calendar) -> Date {
-        calendar.date(from: DateComponents(year: year, month: month, day: day))!
+    private static func gregorian(_ timeZone: TimeZone) -> Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        return calendar
     }
 
     init(from decoder: any Decoder) throws {
@@ -51,11 +62,7 @@ struct LioArrivalDay: Comparable, Hashable, Sendable, CustomStringConvertible, D
 
     private var date: Date { Self.calendar.date(from: DateComponents(year: year, month: month, day: day))! }
 
-    private static let calendar: Calendar = {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "Asia/Shanghai")!
-        return calendar
-    }()
+    private static let calendar = gregorian(TimeZone(identifier: "Asia/Shanghai")!)
 }
 
 struct LioArrivalText: Decodable, Equatable, Sendable {
@@ -124,7 +131,7 @@ struct LioArrivalTrip: Equatable, Sendable {
 struct LioArrivalDecision: Equatable, Sendable {
     enum Reason: Equatable, Sendable {
         case notCovered, notVerified, policyEnded, policyMayEndDuringTrip, overdueForReview
-        /// One day over the limit as we count it. Official notices count the stay from 00:00 the day after
+        /// One day over the limit as we count it. Some official notices count the stay from 00:00 the day after
         /// entry, so this may still fit; we do not decide that for the traveller.
         case stayAtLimit
     }
