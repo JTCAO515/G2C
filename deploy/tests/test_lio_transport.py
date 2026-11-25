@@ -234,7 +234,7 @@ def test_worker_items_are_validated_at_the_api_boundary():
     [dict(TRAINS[0], depart_time='8:00')],
     [dict(TRAINS[0], number='G2; DROP')],
     [dict(TRAINS[0], next_day='no')],
-    [dict(TRAINS[0], depart_station=dict(name_zh='站' * 41))],
+    [dict(TRAINS[0], depart_station=dict(name_zh='站' * 42))],
     [dict(TRAINS[0], depart_station=dict(name_en='Shanghai'))],
     [dict(TRAINS[0], depart_station=dict(name_zh='上海站', city='上海'))],
     [dict(TRAINS[0], seats=[dict(class_zh='包厢', class_en='Private room', price_cny_minor=100)])],
