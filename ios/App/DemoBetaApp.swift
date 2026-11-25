@@ -49,6 +49,7 @@ struct DemoBetaRootView: View {
                     }
                     Button(shell.language.text("Sign out", "退出登录"), action: signOut)
                 }
+                .modifier(LioInformationHost(shell: shell))
                 .lioMedicalCardStorage(root.localMedicalCardStorage())
                 .id(root.lioPresentationID)
             } else if root.accounts.isResuming {

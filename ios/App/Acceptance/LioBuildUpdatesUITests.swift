@@ -243,8 +243,11 @@ import XCTest
         XCTAssertTrue(me.waitForExistence(timeout: 12))
         me.tap()
         let info = app.buttons["lio.information"]
-        XCTAssertTrue(info.waitForExistence(timeout: 5))
-        for _ in 0..<8 where !info.isHittable { app.swipeUp() }
+        // Large text can leave this row outside the lazy list's current elements.
+        for _ in 0..<8 {
+            if info.exists && info.isHittable { break }
+            app.swipeUp()
+        }
         XCTAssertTrue(info.isHittable, info.debugDescription)
         info.tap()
     }

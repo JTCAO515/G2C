@@ -99,6 +99,9 @@ struct CJProbeApp: App {
                 #endif
             }
             #if G2C_LIO_APP
+            #if !G2C_DEMO_BETA
+            .modifier(LioInformationHost(shell: shell))
+            #endif
             .preferredColorScheme(appearance.colorScheme)
             #endif
         }
@@ -299,32 +302,62 @@ struct LioLanguagePicker: View {
     let shell: ShellState
 
     var body: some View {
-        Picker(shell.language.text("Language", "语言"),
-               selection: Binding(get: { shell.language }, set: { shell.selectLanguage($0) })) {
-            Text("English").tag(ShellLanguage.english)
-            Text("简体中文").tag(ShellLanguage.chinese)
+        Menu {
+            Picker(shell.language.text("Language", "语言"),
+                   selection: Binding(get: { shell.language }, set: { shell.selectLanguage($0) })) {
+                Text("English").tag(ShellLanguage.english)
+                Text("简体中文").tag(ShellLanguage.chinese)
+            }
+        } label: {
+            HStack {
+                RunReadableText(text: shell.language.text("Language", "语言"), color: LioTheme.ink)
+                Spacer(minLength: 8)
+                RunReadableText(text: shell.language.text("English", "简体中文"), color: LioTheme.inkSecondary)
+                    .fixedSize(horizontal: true, vertical: true)
+                Image(systemName: "chevron.up.chevron.down").font(.caption).accessibilityHidden(true)
+            }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
+        .accessibilityLabel(shell.language.text("Language", "语言"))
+        .accessibilityValue(shell.language.text("English", "简体中文"))
         .accessibilityIdentifier("lio.language")
     }
 }
 
 struct LioMenuSettings: View {
     let shell: ShellState
-    @State private var showingInformation = false
+    @Environment(LioInformationPresentation.self) private var information
 
     var body: some View {
         LioLanguagePicker(shell: shell)
         LioAppearancePicker(language: shell.language.lio)
-        Button(shell.language.text("Internal demo information", "内部演示说明")) { showingInformation = true }
+        Button(shell.language.text("Internal demo information", "内部演示说明")) { information.isPresented = true }
             .frame(minHeight: 44, alignment: .leading)
             .accessibilityIdentifier("lio.information")
-            .sheet(isPresented: $showingInformation) {
+    }
+}
+
+@Observable private final class LioInformationPresentation {
+    var isPresented = false
+}
+
+// The settings row leaves the lazy list when text size changes. Keep its presentation
+// on the signed-in home, so the sheet survives a reflow and closes with that session.
+struct LioInformationHost: ViewModifier {
+    let shell: ShellState
+    @State private var information = LioInformationPresentation()
+
+    func body(content: Content) -> some View {
+        content
+            .environment(information)
+            .sheet(isPresented: $information.isPresented) {
                 NavigationStack {
                     LioDemoNoticePage(language: shell.language.lio) { EmptyView() }
                         .safeAreaInset(edge: .top, spacing: 0) {
                             HStack {
                                 Spacer()
-                                Button { showingInformation = false } label: {
+                                Button { information.isPresented = false } label: {
                                     Text(shell.language.text("Done", "完成"))
                                         .font(.body)
                                         .foregroundStyle(LioTheme.ink)
