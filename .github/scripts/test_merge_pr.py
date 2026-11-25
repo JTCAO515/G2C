@@ -194,6 +194,8 @@ class MainChangesTests(unittest.TestCase):
             commit('side.swift', '2026-11-25T06:30:00Z', 'side work')
             git(work, 'checkout', '--quiet', 'main')
             commit('main.swift', '2026-11-25T07:10:00Z', 'after ci')
+            git(work, 'mv', 'old.swift', 'renamed old.swift')
+            git(work, 'commit', '--quiet', '-m', 'rename after ci', date='2026-11-25T07:12:00Z')
             git(work, 'merge', '--quiet', '--no-ff', '-m', 'Merge pull request #9', 'side', date='2026-11-25T07:20:00Z')
             git(work, 'push', '--quiet', 'origin', 'main')
             cwd = os.getcwd()
@@ -204,18 +206,39 @@ class MainChangesTests(unittest.TestCase):
                 side_log, main_log = log_for(['side.swift']), log_for(['main.swift'])
             finally:
                 os.chdir(cwd)
-        self.assertEqual(files, {'main.swift', 'side.swift'})
+        self.assertEqual(files, {'main.swift', 'side.swift', 'old.swift', 'renamed old.swift'})
         self.assertIn('Merge pull request #9', side_log)
         self.assertNotIn('after ci', side_log)
         self.assertIn('after ci', main_log)
 
 
+class MergeReadBackTests(unittest.TestCase):
+    def merge_with(self, reads):
+        done = mock.Mock(returncode=1, stderr='base branch policy prohibits the merge', stdout='')
+        with mock.patch.object(merge_pr.subprocess, 'run', return_value=done), \
+                mock.patch.object(merge_pr.time, 'sleep'), \
+                mock.patch.object(merge_pr, 'gh', side_effect=reads):
+            return merge_pr.merge(12, HEAD)
+
+    def test_merge_reported_as_error_but_done(self):
+        merged = {'merged': True, 'head': {'sha': HEAD}, 'merge_commit_sha': 'c' * 40}
+        self.assertEqual(self.merge_with([merged]), 'c' * 40)
+
+    def test_not_merged_is_blocked_and_unreadable_is_unknown(self):
+        with self.assertRaises(Blocked):
+            self.merge_with([{'merged': False, 'head': {'sha': HEAD}}] * 5)
+        with self.assertRaises(RuntimeError):
+            self.merge_with([RuntimeError('503')] * 5)
+
+
 class ArgumentTests(unittest.TestCase):
     def test_full_head_and_freeze_note_required(self):
-        with mock.patch.dict(os.environ, {'G2C_FREEZE_NOTE': ''}), self.assertRaises(SystemExit):
+        with mock.patch.dict(os.environ, {'G2C_FREEZE_NOTE': ''}), self.assertRaises(SystemExit) as stop:
             merge_pr.main(['12', '--head', HEAD])
-        with self.assertRaises(SystemExit):
+        self.assertEqual(stop.exception.code, 64)
+        with self.assertRaises(SystemExit) as stop:
             merge_pr.main(['12', '--head', HEAD[:8], '--freeze-note', 'x'])
+        self.assertEqual(stop.exception.code, 64)
 
     def test_frozen_main_stops_before_any_github_call(self):
         with mock.patch.object(merge_pr, 'gh', side_effect=AssertionError('no GitHub call when frozen')):

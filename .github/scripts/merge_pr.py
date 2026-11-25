@@ -19,7 +19,8 @@ outside the repository, so the path is never written here. In order, it stops un
 
 It then reads the freeze note again, merges with `gh pr merge --merge --match-head-commit` and
 reads the PR back. Exit codes: 0 merged (or would merge with --dry-run), 2 a condition is not met,
-3 main is frozen, 1 the check itself could not finish (GitHub or git unavailable).
+3 main is frozen, 1 the check could not finish or the merge result could not be read back (GitHub
+or git unavailable; look at the PR before running again), 64 bad arguments.
 """
 import argparse
 import datetime
@@ -159,26 +160,32 @@ def main_changes_since(started):
     base = git('rev-list', '-1', '--first-parent', f'--before={since}', 'origin/main').strip()
     if not base:
         raise RuntimeError(f'no main commit before {since}')
-    files = set(git('diff', '--name-only', base, 'origin/main').split())
+    # --no-renames lists both sides of a rename on main; -z keeps spaces and non-ASCII paths intact.
+    files = set(filter(None, git('diff', '--no-renames', '-z', '--name-only', base, 'origin/main').split('\0')))
 
     def log_for(paths):
-        return git('log', '--first-parent', '--format=  %h %s', f'{base}..origin/main', '--', *paths).rstrip()
+        return git('log', '--no-renames', '--first-parent', '--format=  %h %s', f'{base}..origin/main',
+                   '--', *paths).rstrip()
     return files, log_for
 
 
 def merge(number, head):
     result = subprocess.run(['gh', 'pr', 'merge', str(number), '-R', REPO, '--merge',
                              '--match-head-commit', head], capture_output=True, text=True)
+    read = False
     for delay in (0, 5, 10, 20, 30):  # gh may report an error for a merge that went through
         time.sleep(delay)
         try:
             pr = gh(f'pulls/{number}')
         except RuntimeError:
             continue
+        read = True
         if pr.get('merged'):
             if pr['head']['sha'] != head:
                 raise RuntimeError(f"PR merged with head {pr['head']['sha']}, not {head}")
             return pr['merge_commit_sha']
+    if not read:
+        raise RuntimeError('merge requested but the PR could not be read back; look at it before retrying')
     raise Blocked('merge did not go through: ' + (result.stderr.strip() or result.stdout.strip()))
 
 
@@ -201,8 +208,15 @@ def guard(number, head, note, dry_run=False, fix_main=False):
     return commit
 
 
+class Parser(argparse.ArgumentParser):
+    def error(self, message):  # 64 (EX_USAGE), so a usage error never reads as a merge condition
+        self.print_usage(sys.stderr)
+        print(f'{self.prog}: error: {message}', file=sys.stderr)
+        sys.exit(64)
+
+
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__.partition('\n\n')[0])
+    parser = Parser(description=__doc__.partition('\n\n')[0])
     parser.add_argument('pr', type=int)
     parser.add_argument('--head', required=True, help='the exact reviewed head SHA (40 hex)')
     parser.add_argument('--freeze-note', default=os.environ.get('G2C_FREEZE_NOTE'),

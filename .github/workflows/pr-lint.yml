@@ -29,8 +29,10 @@ jobs:
           print("Issue reference present")
           PYTHON
       - uses: actions/checkout@v4
+        continue-on-error: true  # the report below is optional; pr-lint never fails for it
         with:
           sparse-checkout: .github/scripts
+          persist-credentials: false
       - name: Report open PRs that touch the same files (report only, never fails)
         # Open PRs must not overlap (docs/plan/issue-plan.md 现行流程 3); merge_pr.py stops the
         # merge itself when main changed the same files after this PR's CI started.
