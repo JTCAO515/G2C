@@ -689,6 +689,16 @@ class PlanUnderstandingBoundary(unittest.TestCase):
             with self.subTest(language=language),self.assertRaises(InvalidInput):
                 parse_plan_understanding(packed(value),turns)
 
+    def test_instructions_inside_hotel_clause_are_not_discarded(self):
+        hotel='住在市区就好但头一天请排满晚上换到春熙路附近的酒店'
+        turns=(PlanningTurn(f'我想去成都玩3天，{hotel}，帮我规划一下行程。',date(2026,11,14)),
+               PlanningTurn('直接出方案',date(2026,11,16)))
+        value=self.packet()
+        value['observations']=[dict(field='first_day_full',state='known',value=True,note=None,
+            sources=[dict(source_index=0,quote='头一天请排满')])]
+        with self.assertRaises(InvalidInput):
+            parse_plan_understanding(packed(value),turns)
+
     def test_full_first_day_is_only_an_explicit_affirmative_request_and_missing_mode_stays_unresolved(self):
         from cj_api.local_lio_pipeline_inputs import planning_edges
         for text,accepted in (('第一天就排满',True),('Make the first day full',True),('不要第一天排满',False),

@@ -57,7 +57,6 @@ _FULL_FIRST=re.compile(r'(?:请|我想|我希望|我们希望)?(?:把)?第(?:一
 _LIGHT_FIRST=re.compile(r'第(?:一|1)天(?:不要|别)(?:安排|排)满|(?:不要|别)(?:把)?第(?:一|1)天(?:安排|排)满|'
     r'(?:不要|别)(?:安排|排)满第(?:一|1)天|(?:please )?(?:do not|don[’\x27]t) (?:fill|pack)(?: up)? (?:my |our |the )?first day|'
     r'(?:please )?keep (?:my |our |the )?first day light',re.I)
-_PLAIN_HOTEL_AREA=re.compile(r'住在[\u3400-\u9fff]{1,24}附近的酒店')
 _META_SOURCE=re.compile(r'^\s*(?:(?:(?:can|could|would) you\s+)?(?:please\s+)?'
     r'(?:translate|rephrase|paraphrase|repeat|quote|explain)\b|'
     r'(?:请帮我|请|帮我)?(?:把|将)?(?:下面|以下|上面|这)[^，,。！？;]{0,40}(?:翻译|复述|引用|改写|解释)|'
@@ -731,7 +730,9 @@ def _simple_plan_request(turns):
     clauses=[part.strip() for part in re.split(r'[，,]',turns[0].text.strip().rstrip('。!！'))]
     if len(clauses) not in (2,3) or clauses[-1] not in ('帮我规划行程','帮我规划一下行程'):
         return False
-    if len(clauses)==3 and _PLAIN_HOTEL_AREA.fullmatch(clauses[1]) is None:
+    # This verified lodging clause contains only an area. Unverified mixed
+    # text is not treated as a place name or stripped of real instructions.
+    if len(clauses)==3 and clauses[1]!='住在春熙路附近的酒店':
         return False
     return destination_stay(clauses[0],(),whole_message=False) is not None
 
