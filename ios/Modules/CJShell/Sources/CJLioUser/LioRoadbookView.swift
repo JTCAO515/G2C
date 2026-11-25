@@ -530,40 +530,53 @@ struct LioRoadbookView: View {
         let batches = LioRoadbookWire.batches(book.placesToFillIn())
         let holder = LioRoadbookFillTask()
         filler = holder
+        // The task gets only these bindings and values, never `self`: through its @State storage `self`
+        // reaches the holder, which would keep the task alive after the screen closes (#1631 review).
+        let state = LioRoadbookFillState(filled: $filled, notice: $notice, filling: $filling, kept: $kept)
+        let (roadbook, store, language) = (roadbook, store, language)
         holder.task = Task {
-            defer { filling = false }
-            var limited = false, missing = false
-            for batch in batches {
-                guard !Task.isCancelled else { break }
-                do {
-                    let result = try await enricher.enrich(batch)
-                    for (id, status) in result {
-                        switch status {
-                        case .ready(let detail): filled[id] = detail
-                        case .limited: limited = true
-                        case .unavailable: missing = true
-                        }
+            await Self.fill(batches, enricher: enricher, roadbook: roadbook, store: store, language: language,
+                            state: state)
+        }
+    }
+
+    private static func fill(_ batches: [[LioRoadbookPlaceQuery]], enricher: LioRoadbookEnricher,
+                             roadbook: LioRoadbook, store: LioRoadbookStore?, language: LioLanguage,
+                             state: LioRoadbookFillState) async {
+        defer { state.filling.wrappedValue = false }
+        var limited = false, missing = false, notice: String?
+        for batch in batches {
+            guard !Task.isCancelled else { break }
+            do {
+                let result = try await enricher.enrich(batch)
+                for (id, status) in result {
+                    switch status {
+                    case .ready(let detail): state.filled.wrappedValue[id] = detail
+                    case .limited: limited = true
+                    case .unavailable: missing = true
                     }
-                } catch let failure as LioRoadbookFailure {
-                    notice = failure.message(language)
-                    break
-                } catch is CancellationError {
-                    break  // the screen closed or the session changed: nothing to tell
-                } catch {
-                    notice = LioRoadbookFailure.unavailable.message(language)
-                    break
                 }
-                if limited { break }
+            } catch let failure as LioRoadbookFailure {
+                notice = failure.message(language)
+                break
+            } catch is CancellationError {
+                break  // the screen closed or the session changed: nothing to tell
+            } catch {
+                notice = LioRoadbookFailure.unavailable.message(language)
+                break
             }
-            if notice == nil, limited { notice = LioRoadbookFailure.limited.message(language) }
-            else if notice == nil, missing {
-                notice = language.text("Some places couldn’t be filled in.", "部分地点暂时无法补充。")
-            }
-            if kept, let store {
-                // Keep the time the copy was first kept, not the route's own date.
-                let keptAt = store.load().first { $0.id == book.id }?.createdAt ?? .now
-                try? store.save(book.kept(at: keptAt))
-            }
+            if limited { break }
+        }
+        if notice == nil, limited { notice = LioRoadbookFailure.limited.message(language) }
+        else if notice == nil, missing {
+            notice = language.text("Some places couldn’t be filled in.", "部分地点暂时无法补充。")
+        }
+        if let notice { state.notice.wrappedValue = notice }
+        if state.kept.wrappedValue, let store {
+            // Keep the time the copy was first kept, not the route's own date.
+            let book = roadbook.with(details: state.filled.wrappedValue)
+            let keptAt = store.load().first { $0.id == book.id }?.createdAt ?? .now
+            try? store.save(book.kept(at: keptAt))
         }
     }
     #endif
