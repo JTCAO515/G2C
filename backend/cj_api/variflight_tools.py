@@ -187,8 +187,18 @@ def _project(result, day, key):
         payload = supplier_json(block['text'], key)
     rows = _records(payload)
     # A busy route (e.g. Shanghai -> Beijing, both airports) lists about 75 flights; keep them all within a bound.
-    return dict(version=VERSION, source='VariFlight', date=day,
-                items=[_flight(row) for row in rows[:MAX_FLIGHTS]], more=len(rows) > MAX_FLIGHTS)
+    # One malformed row is skipped, not the whole answer; a reply with rows but none usable is still a failure.
+    items, skipped = [], 0
+    for row in rows[:MAX_FLIGHTS]:
+        try:
+            items.append(_flight(row))
+        except (AttributeError, KeyError, TypeError, ValueError):
+            skipped += 1
+    if skipped:
+        LOGGER.warning('variflight_rows_skipped count=%d', skipped)
+        if not items:
+            raise ValueError('no usable flight rows')
+    return dict(version=VERSION, source='VariFlight', date=day, items=items, more=len(rows) > MAX_FLIGHTS)
 
 
 class VariFlight:
