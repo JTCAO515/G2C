@@ -3,13 +3,33 @@ import Foundation
 struct LioNearbyPlace: Identifiable, Equatable {
     enum Category: String, CaseIterable {
         case food, sights, coffee, shopping
+        /// Essentials (NEARBY.2, #1621): searched one kind at a time; luggage storage only by name.
+        case atm, pharmacy, toilet, luggage
 
+        static let leisure: [Self] = [.food, .sights, .coffee, .shopping]
+        static let essentials: [Self] = [.atm, .pharmacy, .toilet, .luggage]
+        var isEssential: Bool { Self.essentials.contains(self) }
+
+        /// Short chip label.
         func title(_ language: LioLanguage) -> String {
             switch self {
             case .food: language.text("Food", "美食")
             case .sights: language.text("Sights", "景点")
             case .coffee: language.text("Coffee", "咖啡")
             case .shopping: language.text("Shopping", "购物")
+            case .atm: language.text("Bank ATMs", "银行 ATM")
+            case .pharmacy: language.text("Pharmacy", "药房")
+            case .toilet: language.text("Public toilets", "公共厕所")
+            case .luggage: language.text("Luggage storage", "行李寄存")
+            }
+        }
+
+        /// The fixed wording from NEARBY.2 shown with the results. Never say an ATM takes foreign cards.
+        func heading(_ language: LioLanguage) -> String {
+            switch self {
+            case .atm: language.text("Bank ATMs (check the machine's sign for foreign cards)", "银行 ATM（是否支持外卡请看机身标识）")
+            case .luggage: language.text("Luggage storage (found by name; some may be missing)", "行李寄存（按名称搜索，结果可能不全）")
+            default: title(language)
             }
         }
     }
@@ -27,6 +47,15 @@ struct LioNearbyPlace: Identifiable, Equatable {
             case .addToTrip: language.text("Add to trip", "加进行程")
             }
         }
+    }
+
+    /// Essentials (NEARBY.2) appear only when the build enables them (`G2CNearbyEssentialsEnabled`, off by default);
+    /// Debug previews can show them with `--lio-nearby-essentials`.
+    static var essentialsEnabled: Bool {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--lio-nearby-essentials") { return true }
+        #endif
+        return Bundle.main.object(forInfoDictionaryKey: "G2CNearbyEssentialsEnabled") as? String == "YES"
     }
 
     let id: String

@@ -42,7 +42,10 @@ struct LioNearbyView: View {
     @Environment(\.lioTaxiEntry) private var taxiEntry
     @State private var here: LioTaxiPlace?
     @State private var address: String?
-    @State private var categories = Set(LioNearbyPlace.Category.allCases)
+    @State private var categories = Set(LioNearbyPlace.Category.leisure)
+    /// Essentials are searched one kind at a time (luggage storage only on its own).
+    @State private var essential: LioNearbyPlace.Category?
+    private let essentialsEnabled = LioNearbyPlace.essentialsEnabled
     @State private var radius = 1000
     @State private var nearest = false
     @State private var places: [LioNearbyPOI] = []
@@ -51,7 +54,8 @@ struct LioNearbyView: View {
     @State private var camera: MapCameraPosition = .automatic
 
     private var query: LioNearbyQuery? {
-        here.map { LioNearbyQuery(center: $0.coordinate, categories: categories, radius: radius, nearest: nearest) }
+        here.map { LioNearbyQuery(center: $0.coordinate, categories: essential.map { [$0] } ?? categories,
+                                  radius: radius, nearest: nearest) }
     }
 
     var body: some View {
@@ -97,12 +101,24 @@ struct LioNearbyView: View {
 
     private var filters: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if essentialsEnabled {
+                Picker(language.text("Kind of places", "地点类型"), selection: Binding(
+                    get: { essential != nil },
+                    set: { essentials in essential = essentials ? (essential ?? .atm) : nil })) {
+                    Text(language.text("Eat & explore", "吃喝玩逛")).tag(false)
+                    Text(language.text("Essentials", "必需品")).tag(true)
+                }
+                .pickerStyle(.segmented)
+                .accessibilityIdentifier("lio.nearby.group")
+            }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(LioNearbyPlace.Category.allCases, id: \.self) { category in
-                        let on = categories.contains(category)
+                    ForEach(essential == nil ? LioNearbyPlace.Category.leisure : LioNearbyPlace.Category.essentials,
+                            id: \.self) { category in
+                        let on = essential.map { $0 == category } ?? categories.contains(category)
                         Button {
-                            if on { categories.remove(category) } else { categories.insert(category) }
+                            if essential != nil { essential = category }
+                            else if on { categories.remove(category) } else { categories.insert(category) }
                         } label: {
                             Text(category.title(language))
                                 .font(.subheadline.weight(.semibold))
@@ -178,8 +194,16 @@ struct LioNearbyView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
         case .ready:
+            if let essential {
+                // NEARBY.2 fixed wording: ATMs never claimed to take foreign cards; luggage found by name only.
+                Text(essential.heading(language))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(LioTheme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("lio.nearby.essential-heading")
+            }
             if places.isEmpty {
-                Text(categories.isEmpty ? language.text("Choose at least one kind of place.", "请至少选择一类地点。")
+                Text(essential == nil && categories.isEmpty ? language.text("Choose at least one kind of place.", "请至少选择一类地点。")
                                         : language.text("Nothing found in this range. Try a larger distance.",
                                                         "这个范围内没有找到，试试扩大范围。"))
                     .foregroundStyle(LioTheme.inkSecondary)
@@ -236,6 +260,10 @@ struct LioNearbyView: View {
         case .coffee: "cup.and.saucer.fill"
         case .sights: "camera.fill"
         case .shopping: "bag.fill"
+        case .atm: "banknote"
+        case .pharmacy: "cross.case.fill"
+        case .toilet: "toilet.fill"
+        case .luggage: "suitcase.fill"
         case nil: "mappin"
         }
     }
@@ -436,6 +464,18 @@ extension LioNearbyService {
                 .init(id: "3", name: "故宫博物院", address: "景山前街4号", category: .sights,
                       coordinate: .init(latitude: 39.9163, longitude: 116.3972, referenceSystem: .gcj02),
                       meters: 1250, rating: "4.9", cost: "¥60", hours: "08:30-17:00", photo: nil),
+                .init(id: "4", name: "示例银行ATM(王府井)", address: "王府井大街", category: .atm,
+                      coordinate: .init(latitude: 39.9125, longitude: 116.4108, referenceSystem: .gcj02),
+                      meters: 150, rating: nil, cost: nil, hours: nil, photo: nil),
+                .init(id: "5", name: "示例大药房", address: "金鱼胡同", category: .pharmacy,
+                      coordinate: .init(latitude: 39.9131, longitude: 116.4117, referenceSystem: .gcj02),
+                      meters: 310, rating: nil, cost: nil, hours: "08:00-22:00", photo: nil),
+                .init(id: "6", name: "公共厕所(王府井步行街)", address: "王府井步行街", category: .toilet,
+                      coordinate: .init(latitude: 39.9118, longitude: 116.4111, referenceSystem: .gcj02),
+                      meters: 90, rating: nil, cost: nil, hours: nil, photo: nil),
+                .init(id: "7", name: "示例行李寄存", address: "王府井大街", category: .luggage,
+                      coordinate: .init(latitude: 39.9140, longitude: 116.4100, referenceSystem: .gcj02),
+                      meters: 480, rating: nil, cost: nil, hours: nil, photo: nil),
             ]
             let matching = all.filter { $0.category.map(query.categories.contains) ?? false && ($0.meters ?? 0) <= query.radius }
             return query.nearest ? matching.sorted { ($0.meters ?? .max) < ($1.meters ?? .max) } : matching
