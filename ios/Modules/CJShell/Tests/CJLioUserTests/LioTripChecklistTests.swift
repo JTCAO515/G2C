@@ -461,4 +461,27 @@ struct LioTripChecklistTests {
         #expect(palace.stage == .inChina)
         #expect(!list.pastTasks.contains(palace))
     }
+
+    // MARK: - #1665 review
+
+    @Test func aPlanDayWithItsOwnDateIsTodayOnlyOnThatDate() {
+        // Landing 7 Dec; the plan starts 8 Dec. On 7 Dec nothing in the plan is today.
+        var input = Self.everything(Self.at("2026-12-07 16:00"))
+        input.profile = Self.profile(arrival: "2026-12-07", stayDays: 7)
+        let first = LioTripChecklist(input)
+        #expect(first.phase == .arrivalDay)
+        #expect(!first.schedule.contains { $0.isToday })
+        #expect(first.schedule.map(\.number) == [1, 2])
+        // On 8 Dec, trip day 2, the plan's day 1 is today.
+        input.now = Self.at("2026-12-08 10:00")
+        let second = LioTripChecklist(input)
+        #expect(second.schedule.first { $0.isToday }?.number == 1)
+        #expect(second.now == .today(day: 2, next: .init(name: "Hotel check-in", time: "15:00"), remaining: 1))
+    }
+
+    @Test func theReminderIDIsAttractionBookingsOwn() {
+        let rule = LioAttractionBookingRule.match(nameZH: "故宫博物院", nameEN: "")!
+        #expect(LioTripChecklist.reminderID(rule: rule, visit: Self.day("2026-12-09"))
+                == LioAttractionReminder.reminderID(for: rule, visit: Self.day("2026-12-09").start(in: Self.shanghai)))
+    }
 }

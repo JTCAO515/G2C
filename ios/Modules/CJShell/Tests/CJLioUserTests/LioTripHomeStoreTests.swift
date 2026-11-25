@@ -194,6 +194,7 @@ import Testing
         try LioTripHomeStore(directory: directory, isCurrent: { true }).save(.init(profile: profile()))
         model.reload()
         #expect(model.profile == profile())
+        #expect(!model.saveFailed)
         model.setTick("payment", done: true)
         #expect(!model.saveFailed)
         #expect(try LioTripHomeStore(directory: directory, isCurrent: { true }).load().ticks.isDone("payment"))

@@ -98,7 +98,10 @@ enum LioTripHomeCopy {
         case .visaFree(let days, let checked):
             language.text("Visa-free for up to \(days) days. Rules checked \(checkedText(checked, language)); official rules apply.",
                           "可免签入境，停留不超过 \(days) 天。规则核对于 \(checkedText(checked, language))，以官方为准。")
-        case .transit(let days, let checked):
+        case .transit(_, let checked, let summary?):
+            summary.text(language) + language.text(" Rules checked \(checkedText(checked, language)); official rules apply.",
+                                                   "规则核对于 \(checkedText(checked, language))，以官方为准。")
+        case .transit(let days, let checked, nil):
             language.text("Transit visa-free for up to \(days) days, with an onward ticket to a third country or region. Rules checked \(checkedText(checked, language)); official rules apply.",
                           "过境免签最多停留 \(days) 天，需有去第三国或地区的联程客票。规则核对于 \(checkedText(checked, language))，以官方为准。")
         case .visaRequired(let checked):

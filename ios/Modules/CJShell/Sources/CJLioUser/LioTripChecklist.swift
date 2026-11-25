@@ -38,10 +38,18 @@ enum LioTripEntryStatus: Equatable, Sendable {
     /// The passport nationality, the arrival day or the length of stay is still missing.
     case missingDetails
     case visaFree(maxDays: Int, checkedOn: String)
-    case transit(maxDays: Int, checkedOn: String)
+    /// `summary` is the policy's own sourced wording from Arrival Mode's rules, shown as it is.
+    case transit(maxDays: Int, checkedOn: String, summary: LioTripText? = nil)
     case visaRequired(checkedOn: String)
     /// Not covered, past or crossing a policy's end date, or the rules are overdue for review.
     case officialOnly
+}
+
+/// Wording in both languages that comes from a sourced rules file, shown as it is.
+struct LioTripText: Equatable, Sendable {
+    let en: String
+    let zh: String
+    func text(_ language: LioLanguage) -> String { language.text(en, zh) }
 }
 
 /// Arrival Mode's checklist as the traveller ticked it there, by step name (`entry`, `internet`, `taxi` …).
@@ -363,7 +371,7 @@ struct LioTripChecklist: Equatable, Sendable {
 
     /// The same identifier attraction booking gives the system reminder for this sight and day.
     static func reminderID(rule: LioAttractionBookingRule, visit: LioTripDay) -> String {
-        "g2c.attraction.\(rule.id).\(LioAttractionReminder.dayKey(visit.start(in: beijing)))"
+        LioAttractionReminder.reminderID(for: rule, visit: visit.start(in: beijing))
     }
 
     private static func releaseDay(_ timing: LioTripBookingTiming) -> LioTripDay? {
@@ -449,26 +457,30 @@ struct LioTripChecklist: Equatable, Sendable {
         // By date first (the day's own date, else counted from the plan's start), then by day number.
         let start = plan.startDate.flatMap(LioTripDay.init)
         let date = arrival?.tripDay(number) ?? today
-        if let dated = plan.days.first(where: { (($0.date.flatMap(LioTripDay.init)) ?? start?.tripDay($0.number)) == date }) {
-            return dated
-        }
-        return plan.days.first { $0.number == number }
+        func dayDate(_ day: LioPlanSummary.Day) -> LioTripDay? { day.date.flatMap(LioTripDay.init) ?? start?.tripDay(day.number) }
+        if let dated = plan.days.first(where: { dayDate($0) == date }) { return dated }
+        // A day with its own date is today only on that date (#1665 review P2-1); undated days go by number.
+        return plan.days.first { $0.number == number && dayDate($0) == nil }
     }
 
     /// Before the trip, the first two days; during it, today and tomorrow; after it, none.
     static func scheduleDays(plan: LioPlanSummary?, arrival: LioTripDay?, today: LioTripDay,
                              phase: LioTripPhase) -> [LioTripScheduleDay] {
         guard let plan else { return [] }
-        // Today's plan day is the one the "Now" card uses, so both always show the same day (#1649 review P3-1).
-        let todayNumber: Int?
+        // Today's plan day is the one the "Now" card uses, so both always show the same day (#1649 review P3-1);
+        // when the plan has no day for today, nothing is marked today (#1665 review P2-1).
+        let tripNumber: Int
         switch phase {
-        case .beforeTrip, .ended: todayNumber = nil
-        case .arrivalDay: todayNumber = planDay(plan, number: 1, today: today, arrival: arrival)?.number ?? 1
-        case .inChina(let day), .departureDay(let day):
-            todayNumber = planDay(plan, number: day, today: today, arrival: arrival)?.number ?? day
+        case .beforeTrip: tripNumber = 1
+        case .arrivalDay: tripNumber = 1
+        case .inChina(let day), .departureDay(let day): tripNumber = day
+        case .ended: return []
         }
-        if case .ended = phase { return [] }
-        let first = todayNumber ?? 1
+        let todayNumber: Int?
+        if case .beforeTrip = phase { todayNumber = nil } else {
+            todayNumber = planDay(plan, number: tripNumber, today: today, arrival: arrival)?.number
+        }
+        let first = todayNumber ?? tripNumber
         // Only dates the plan states; an undated plan's day N is shown as day N of the trip, without a date.
         let start = plan.startDate.flatMap(LioTripDay.init)
         return plan.days.filter { $0.number >= first && $0.number < first + 2 }.map { day in

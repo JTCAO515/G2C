@@ -263,6 +263,7 @@ final class LioTripHomeModel {
         guard let store, store.current, let snapshot = try? store.load() else { return }
         cached = snapshot
         unread = false
+        saveFailed = false
     }
 
     func start(_ profile: LioTripProfile) {

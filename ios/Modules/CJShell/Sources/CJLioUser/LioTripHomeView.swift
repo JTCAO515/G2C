@@ -15,7 +15,12 @@ struct LioTripHome: View {
     var fixedNow: Date?
     var timeZone: TimeZone = .current
     @State private var model: LioTripHomeModel
-    @AppStorage(LioTripHomeNationality.key) private var nationality = ""
+    @AppStorage(LioTripHomeNationality.key) private var sharedNationality = ""
+    /// Debug previews keep the passport in memory instead of the shared setting (#1665 review P3-3).
+    @State private var previewNationality = ""
+    /// Set by Debug previews only.
+    private let keepsSettingsInMemory: Bool
+    private var nationality: Binding<String> { keepsSettingsInMemory ? $previewNationality : $sharedNationality }
     @Environment(\.lioTaxiEntry) private var taxiEntry
     @Environment(\.lioMedicalCard) private var medicalCard
     @Environment(\.scenePhase) private var scenePhase
@@ -39,8 +44,10 @@ struct LioTripHome: View {
 
     init(language: LioLanguage, store: LioTripHomeStore?, plans: [LioPlanSummary], tools: LioTripHomeTools,
          showAllTrips: @escaping () -> Void, openChat: @escaping () -> Void,
-         fixedNow: Date? = nil, timeZone: TimeZone = .current, model: LioTripHomeModel? = nil) {
+         fixedNow: Date? = nil, timeZone: TimeZone = .current, model: LioTripHomeModel? = nil,
+         keepsSettingsInMemory: Bool = false) {
         self.language = language
+        self.keepsSettingsInMemory = keepsSettingsInMemory
         self.plans = plans
         self.tools = tools
         self.showAllTrips = showAllTrips
@@ -115,7 +122,7 @@ struct LioTripHome: View {
     private func checklist(at date: Date) -> LioTripChecklist {
         LioTripChecklist(.init(
             now: date, timeZone: timeZone, profile: model.profile, plans: plans, ticks: model.ticks,
-            entry: tools.arrival?.entry(model.profile, nationality, date),
+            entry: tools.arrival?.entry(model.profile, nationality.wrappedValue, date),
             arrivalChecklist: tools.arrival?.checklist(),
             hotelSaved: tools.hotelStore == nil ? nil : hotel != nil,
             showCards: tools.showCards,
@@ -126,7 +133,7 @@ struct LioTripHome: View {
     private func readTools() async {
         model.reload()
         hotel = tools.savedHotel()
-        if let scheduler = tools.reminders { reminders = await scheduler.center.pendingIDs() }
+        if let scheduler = tools.reminders { reminders = Set(await scheduler.scheduled().map(\.id)) }
     }
 
     private func tick(_ task: LioTripTask) {
@@ -464,7 +471,7 @@ struct LioTripHome: View {
     // MARK: - Day by day
 
     @ViewBuilder private func schedule(_ list: LioTripChecklist) -> some View {
-        if list.phase != .ended || list.plan == nil {
+        if list.phase != .ended {
             VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
                 Text(language.text("Day by day", "日程"))
                     .font(LioTheme.display(.title3).weight(.semibold))
@@ -618,7 +625,7 @@ struct LioTripHome: View {
         switch sheet {
         case .start, .edit:
             LioTripHomeStartSheet(language: language, initial: sheet == .edit ? model.profile : nil,
-                                  nationality: $nationality) { profile in
+                                  nationality: nationality) { profile in
                 if sheet == .edit { model.update { $0 = profile } } else { model.start(profile) }
             }
         case .taxi:
