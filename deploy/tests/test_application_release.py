@@ -197,6 +197,31 @@ def test_release_ci_rejects_a_runner_miss_left_in_the_final_attempt(workflow_evi
         application_release.verify_release_ci(github_fixture(evidence), SOURCE)
 
 
+def test_release_ci_accepts_a_successful_check_no_longer_in_ci_jobs(workflow_evidence):
+    # ios-app was folded into swift (#1670). A successful check run that the current CI_JOBS no
+    # longer lists, left on the source, must not stop the source from being released; the job
+    # set is judged on the source's own main-push ci.yml run only.
+    assert 'ios-app' not in application_release.CI_JOBS
+    workflow_evidence['check_runs'].append(dict(id=98, name='ios-app', head_sha=SOURCE, conclusion='success'))
+    application_release.verify_release_ci(github_fixture(workflow_evidence), SOURCE)
+
+
+def test_release_ci_rejects_a_failed_or_cancelled_check_no_longer_in_ci_jobs(workflow_evidence):
+    workflow_evidence['check_runs'].append(dict(id=98, name='ios-app', head_sha=SOURCE, conclusion='failure'))
+    with pytest.raises(ValueError):
+        application_release.verify_release_ci(github_fixture(workflow_evidence), SOURCE)
+
+
+def test_release_ci_rejects_a_run_that_still_has_the_old_job_set(workflow_evidence):
+    # A main run built from the old ci.yml (14 jobs, ios-app included) does not satisfy the new
+    # 13-job list; such a source is released with its own, older gate file.
+    old = dict(workflow_evidence['jobs'][0], id=97, name='ios-app')
+    workflow_evidence['jobs'].append(old)
+    workflow_evidence['check_runs'].append(old)
+    with pytest.raises(ValueError):
+        application_release.verify_release_ci(github_fixture(workflow_evidence), SOURCE)
+
+
 def test_release_ci_jobs_match_the_ci_workflow():
     # The gate must expect exactly the jobs ci.yml defines, including every postgres shard.
     body = (Path(__file__).resolve().parents[2] / application_release.CI_PATH).read_text(
