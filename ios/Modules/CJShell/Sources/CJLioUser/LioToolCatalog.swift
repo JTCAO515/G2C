@@ -1,7 +1,7 @@
 /// The Tools tab (formerly "插件"): one card per tool with an icon, a name and one sentence.
 /// Tools whose service is not enabled for this build are left out rather than shown disabled.
 enum LioTool: CaseIterable, Sendable {
-    case arrival, localSupport, taxi, hotels, roadbook, transport, attractionBooking, menuOrder, nearby, currency, metro, payment, translation, phrases
+    case returnHotel, arrival, localSupport, taxi, hotels, roadbook, transport, attractionBooking, menuOrder, nearby, currency, metro, payment, translation, phrases
 
     var symbol: String {
         switch self {
@@ -17,6 +17,7 @@ enum LioTool: CaseIterable, Sendable {
         case .roadbook: "book.closed"
         case .transport: "train.side.front.car"
         case .arrival: "airplane.arrival"
+        case .returnHotel: "house.and.flag"
         case .attractionBooking: "ticket"
         case .menuOrder: "fork.knife"
         }
@@ -36,6 +37,7 @@ enum LioTool: CaseIterable, Sendable {
         case .roadbook: "lio.tools.roadbook"
         case .transport: "lio.tools.transport"
         case .arrival: "lio.tools.arrival"
+        case .returnHotel: "lio.tools.return-hotel"
         case .attractionBooking: "lio.tools.attraction-booking"
         case .menuOrder: "lio.tools.menu-order"
         }
@@ -55,6 +57,7 @@ enum LioTool: CaseIterable, Sendable {
         case .roadbook: language.text("Roadbook", "路书")
         case .transport: language.text("Intercity Travel", "城际交通")
         case .arrival: language.text("Arrival Mode", "落地模式")
+        case .returnHotel: language.text("Back to Hotel", "回酒店")
         case .attractionBooking: language.text("Sight Bookings", "景点预约")
         case .menuOrder: language.text("Menu Helper", "点餐")
         }
@@ -75,6 +78,7 @@ enum LioTool: CaseIterable, Sendable {
         case .roadbook: language.text("Your trip day by day, offline", "按天离线看的旅行手册")
         case .transport: language.text("Compare trains, flights and buses", "比较火车、飞机和大巴")
         case .arrival: language.text("Your first hours in China, step by step", "落地首日要做的事")
+        case .returnHotel: language.text("Taxi back, show cards for locals", "打车回酒店、出示卡")
         case .attractionBooking: language.text("When tickets open, with reminders", "预约规则与放票提醒")
         case .menuOrder: language.text("Snap a menu, order in Chinese", "拍菜单，用中文点菜")
         }
@@ -101,6 +105,8 @@ enum LioToolCatalog {
         var attractionBooking = false
         /// #1606: `G2CMenuOrderEnabled` (the host injects the service only then), or Debug's `--lio-menu-preview`.
         var menuOrder = false
+        /// #1574: `G2CShowCardEnabled`, off unless the build says YES; first card when shown (JT).
+        var returnHotel = false
     }
 
     static func title(_ language: LioLanguage) -> String {
@@ -117,6 +123,7 @@ enum LioToolCatalog {
             case .roadbook: availability.roadbook
             case .transport: availability.transport
             case .arrival: availability.arrival
+            case .returnHotel: availability.returnHotel
             case .attractionBooking: availability.attractionBooking
             case .menuOrder: availability.menuOrder
             case .localSupport, .metro, .payment, .translation, .phrases: true
@@ -126,8 +133,10 @@ enum LioToolCatalog {
 }
 
 extension LioToolCatalog {
-    /// The saved plan Arrival Mode starts from: the earliest one that has not started yet, whichever was saved
-    /// last; otherwise the most recently saved (`plans` is newest first).
+    /// The saved plan Arrival Mode starts from: among plans whose first day is today or later, the one starting
+    /// soonest (on a tie, the one saved most recently, since `plans` is newest first); with none, the most recently
+    /// saved. Unlike the trip home's current plan, a trip already under way is skipped: Arrival Mode is about the
+    /// first day.
     static func arrivalPlan(_ plans: [LioPlanSummary], today: LioArrivalDay) -> LioPlanSummary? {
         let upcoming = plans.compactMap { plan in plan.startDate.flatMap(LioArrivalDay.init).map { (plan, $0) } }
             .filter { $0.1 >= today }
