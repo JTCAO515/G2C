@@ -26,9 +26,14 @@ struct LioToolsView: View {
         available.hotels = hotelSearch != nil
         available.roadbook = LioRoadbookFeature.enabled(infoValue: Bundle.main.object(forInfoDictionaryKey: "G2CRoadbookEnabled"))
         available.transport = LioTransportService.fromBuild() != nil
+        available.arrival = LioArrivalFeature.enabled(infoValue: Bundle.main.object(forInfoDictionaryKey: LioArrivalFeature.infoKey))
+        available.attractionBooking = LioAttractionBookingFeature.enabled(
+            infoValue: Bundle.main.object(forInfoDictionaryKey: LioAttractionBookingFeature.infoKey))
         #if DEBUG
         available.hotels = available.hotels || ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview")
         if LioRoadbookPreview.requested { available.roadbook = true }
+        if LioArrivalPreview.requested { available.arrival = true }
+        if LioAttractionBookingFeature.previewRequested { available.attractionBooking = true }
         #endif
         return available
     }
@@ -101,6 +106,19 @@ struct LioToolsView: View {
         return (savedPlans?.plans ?? []).map { LioRoadbook(savedPlan: $0) }
     }
 
+    /// Arrival mode (#1595) uses the next dated saved plan, else the first one. Summaries usually carry no
+    /// hotels or dates yet: the taxi step then asks for the hotel and the arrival day defaults to today.
+    private var arrivalTrip: (hotels: [LioRichItinerary.Hotel], arrival: LioArrivalDay?)? {
+        #if DEBUG
+        if LioArrivalPreview.requested { return (LioArrivalPreview.hotels, nil) }
+        #endif
+        let plans = savedPlans?.plans ?? []
+        let today = LioArrivalDay(date: .now)
+        let upcoming = plans.first { plan in plan.startDate.flatMap(LioArrivalDay.init).map { $0 >= today } ?? false }
+        guard let plan = upcoming ?? plans.first else { return nil }
+        return (plan.itinerary.hotels, plan.startDate.flatMap(LioArrivalDay.init))
+    }
+
     @ViewBuilder private func destination(_ tool: LioTool) -> some View {
         switch tool {
         case .localSupport:
@@ -132,6 +150,10 @@ struct LioToolsView: View {
             if let service = LioTransportService.fromBuild() {
                 LioTransportView(language: language, service: service)
             }
+        case .arrival:
+            LioArrivalView(language: language, hotels: arrivalTrip?.hotels ?? [], arrival: arrivalTrip?.arrival)
+        case .attractionBooking:
+            LioAttractionBookingView(language: language)
         case .roadbook:
             LioRoadbookLibraryView(language: language, store: roadbookStore, candidates: roadbookCandidates)
         case .hotels:

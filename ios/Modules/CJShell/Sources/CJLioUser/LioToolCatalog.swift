@@ -1,7 +1,7 @@
 /// The Tools tab (formerly "插件"): one card per tool with an icon, a name and one sentence.
 /// Tools whose service is not enabled for this build are left out rather than shown disabled.
 enum LioTool: CaseIterable, Sendable {
-    case localSupport, taxi, hotels, roadbook, transport, nearby, currency, metro, payment, translation, phrases
+    case arrival, localSupport, taxi, hotels, roadbook, transport, attractionBooking, nearby, currency, metro, payment, translation, phrases
 
     var symbol: String {
         switch self {
@@ -16,6 +16,8 @@ enum LioTool: CaseIterable, Sendable {
         case .hotels: "bed.double"
         case .roadbook: "book.closed"
         case .transport: "train.side.front.car"
+        case .arrival: "airplane.arrival"
+        case .attractionBooking: "ticket"
         }
     }
 
@@ -32,6 +34,8 @@ enum LioTool: CaseIterable, Sendable {
         case .hotels: "lio.tools.hotels"
         case .roadbook: "lio.tools.roadbook"
         case .transport: "lio.tools.transport"
+        case .arrival: "lio.tools.arrival"
+        case .attractionBooking: "lio.tools.attraction-booking"
         }
     }
 
@@ -48,6 +52,8 @@ enum LioTool: CaseIterable, Sendable {
         case .hotels: language.text("Hotels", "酒店")
         case .roadbook: language.text("Roadbook", "路书")
         case .transport: language.text("Intercity Travel", "城际交通")
+        case .arrival: language.text("Arrival Mode", "落地模式")
+        case .attractionBooking: language.text("Sight Bookings", "景点预约")
         }
     }
 
@@ -65,6 +71,8 @@ enum LioTool: CaseIterable, Sendable {
         case .hotels: language.text("Find hotels by city and dates", "按城市和日期找酒店")
         case .roadbook: language.text("Your trip day by day, offline", "按天离线看的旅行手册")
         case .transport: language.text("Compare trains, flights and buses", "比较火车、飞机和大巴")
+        case .arrival: language.text("Your first hours in China, step by step", "落地首日要做的事")
+        case .attractionBooking: language.text("When tickets open, with reminders", "预约规则与放票提醒")
         }
     }
 
@@ -83,6 +91,10 @@ enum LioToolCatalog {
         var roadbook = false
         /// #1519: `G2CTransportEnabled`, off unless the build says YES.
         var transport = false
+        /// #1595: `G2CArrivalModeEnabled`, off unless the build says YES.
+        var arrival = false
+        /// #1591: `G2CAttractionBookingEnabled`, off unless the build says YES.
+        var attractionBooking = false
     }
 
     static func title(_ language: LioLanguage) -> String {
@@ -98,6 +110,8 @@ enum LioToolCatalog {
             case .hotels: availability.hotels
             case .roadbook: availability.roadbook
             case .transport: availability.transport
+            case .arrival: availability.arrival
+            case .attractionBooking: availability.attractionBooking
             case .localSupport, .metro, .payment, .translation, .phrases: true
             }
         }
