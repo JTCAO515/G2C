@@ -249,10 +249,18 @@ enum LioNearbyWire {
         return try LioNearbyWire.readAddress(try await post(.reverse, body: body))
     }
 
+    /// Metro station surroundings (METRO-NEARBY.1, #1450): the same signed-in relay and limits, its own route.
+    func metroNearby(_ body: Data) async throws -> Data {
+        try await send(to: baseURL.appending(path: "v1/tools/metro/nearby"), body: body)
+    }
+
     private func post(_ operation: Operation, body: Data) async throws -> Data {
+        try await send(to: baseURL.appending(path: "v1/tools/nearby").appending(path: operation.rawValue), body: body)
+    }
+
+    private func send(to url: URL, body: Data) async throws -> Data {
         try Task.checkCancellation()
         guard isCurrent(), let token = bearer(), !token.isEmpty else { throw LioNearbyFailure.signInRequired }
-        let url = baseURL.appending(path: "v1/tools/nearby").appending(path: operation.rawValue)
         var request = URLRequest(url: url, timeoutInterval: 30)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")

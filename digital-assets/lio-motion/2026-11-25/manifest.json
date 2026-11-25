@@ -1,0 +1,148 @@
+{
+  "asset": "Lio 八个状态短视频",
+  "source": "基于获认可的 Lio 高清原件；各状态 64 张完整绘制的全身姿势，Practical-RIFE 4.26 本机补间，FFmpeg 编码",
+  "files": {
+    "lio-greeting-still.png": {
+      "bytes": 299367,
+      "sha256": "0765a92f41545f9356d7df217be50e940f937bfc76dc4368c01431f6ec0561fd",
+      "width": 720,
+      "height": 720
+    },
+    "lio-greeting.mp4": {
+      "bytes": 921695,
+      "sha256": "9073e8d064fa79fe4eae5714ffbe0612b3d65da7e1c058c6b53883ae2f569b4d",
+      "width": 720,
+      "height": 720,
+      "fps": 30,
+      "codec": "h264",
+      "duration_ms": 2000,
+      "frames": 60,
+      "keyframes": 64
+    },
+    "lio-idle-still.png": {
+      "bytes": 299353,
+      "sha256": "5a6074f59d7c8c11135b984c9028f79db42ca3b958af1465dfaceb8c189058e1",
+      "width": 720,
+      "height": 720
+    },
+    "lio-idle.mp4": {
+      "bytes": 940050,
+      "sha256": "621fe738ecd7ecbe931c6fe824fdc8a193f2d88929626291c6006e16667e3488",
+      "width": 720,
+      "height": 720,
+      "fps": 30,
+      "codec": "h264",
+      "duration_ms": 2000,
+      "frames": 60,
+      "keyframes": 64
+    },
+    "lio-offline-still.png": {
+      "bytes": 313169,
+      "sha256": "e577a074bd3eca47ac6f2af9375be111d0ecfda8492f20907b5d221245bd982a",
+      "width": 720,
+      "height": 720
+    },
+    "lio-offline.mp4": {
+      "bytes": 835874,
+      "sha256": "3133e12397382ede4fb6e7c40de5f9d12293c26e3c13712b7a2d3009743dcb95",
+      "width": 720,
+      "height": 720,
+      "fps": 30,
+      "codec": "h264",
+      "duration_ms": 2000,
+      "frames": 60,
+      "keyframes": 64
+    },
+    "lio-planning-still.png": {
+      "bytes": 323795,
+      "sha256": "75e6de478441a2bf9d17f1b7ff930daf66a944c372946fc38dec5de0d83c0cfa",
+      "width": 720,
+      "height": 720
+    },
+    "lio-planning.mp4": {
+      "bytes": 892728,
+      "sha256": "862795a376c9be14a0288a95ae408f26d35c0d29d1993d8fbb412870c3f7319a",
+      "width": 720,
+      "height": 720,
+      "fps": 30,
+      "codec": "h264",
+      "duration_ms": 2000,
+      "frames": 60,
+      "keyframes": 64
+    },
+    "lio-remembered-still.png": {
+      "bytes": 295914,
+      "sha256": "d9f403bf1ae49e19584863c5fdb9a53972ffbec11ce3ae8fe41b07a0ddf5f9b7",
+      "width": 720,
+      "height": 720
+    },
+    "lio-remembered.mp4": {
+      "bytes": 811494,
+      "sha256": "15e56b4bfcf4a98a9305f6008293a0e7a4e9f67694c8793475e27528deef9721",
+      "width": 720,
+      "height": 720,
+      "fps": 30,
+      "codec": "h264",
+      "duration_ms": 2000,
+      "frames": 60,
+      "keyframes": 64
+    },
+    "lio-searching-still.png": {
+      "bytes": 289249,
+      "sha256": "63211100e1838f647394b64de54464889d965c49dbf218540a6f0f25c371a601",
+      "width": 720,
+      "height": 720
+    },
+    "lio-searching.mp4": {
+      "bytes": 884873,
+      "sha256": "d2f00caf1cd7d3e70c5e416326cb14ced2f18a6e3ddb18905730ae45af9843d7",
+      "width": 720,
+      "height": 720,
+      "fps": 30,
+      "codec": "h264",
+      "duration_ms": 2000,
+      "frames": 60,
+      "keyframes": 64
+    },
+    "lio-taking-longer-still.png": {
+      "bytes": 303669,
+      "sha256": "4d9319581c45f644ae596ed15d898c088846a195916f721e7e73708f60263336",
+      "width": 720,
+      "height": 720
+    },
+    "lio-taking-longer.mp4": {
+      "bytes": 921374,
+      "sha256": "115280c116d6ac8bb863736437b3df12563c14e9625a2c182ed995d743759897",
+      "width": 720,
+      "height": 720,
+      "fps": 30,
+      "codec": "h264",
+      "duration_ms": 2000,
+      "frames": 60,
+      "keyframes": 64
+    },
+    "lio-thinking-still.png": {
+      "bytes": 302107,
+      "sha256": "90d7d8ba7eb2c0109e2a6ec35f8e19a80f84fcb1cc7e99343cfdf54436caa797",
+      "width": 720,
+      "height": 720
+    },
+    "lio-thinking.mp4": {
+      "bytes": 898390,
+      "sha256": "f0f15eaed71ed82b0165e1cee483ff0eb6a31337afbc17a829a4b18e1451c9f9",
+      "width": 720,
+      "height": 720,
+      "fps": 30,
+      "codec": "h264",
+      "duration_ms": 2000,
+      "frames": 60,
+      "keyframes": 64
+    },
+    "lio-video-preview.png": {
+      "bytes": 323926,
+      "sha256": "595b8a0436cda5fa86290496f421d8df876da4254f7edd42cd3057c1d2c78ae2",
+      "width": 1012,
+      "height": 566
+    }
+  }
+}

@@ -276,3 +276,82 @@ def test_nearby_http_relay_respects_internal_admission_and_closed_state(ledger, 
                 if enabled:
                     assert [item['name_zh'] for item in response.json()['items']] == ['咖啡厅']
     assert [operation for operation, _ in supplier.calls] == (['reverse', 'search'] if enabled else [])
+
+
+# NEARBY.2 (contracts/api/NEARBY.2.md, M4 entry 12 item 1, JT 2026-11-25): the essentials.
+
+def payload2(categories):
+    return dict(payload(crs='GCJ-02', categories=categories, radius_m=1000, sort='distance'), version='NEARBY.2')
+
+
+def test_essentials_search_by_gaode_category_in_one_call_and_echo_the_version(ledger):
+    supplier = Supplier()
+    service = NearbyService(supplier, NearbyBudget(ledger))
+    result = service.search('owner', NearbySearchRequest.model_validate(payload2(['pharmacy', 'atm', 'toilet'])),
+                            lambda: None)
+    assert result['version'] == 'NEARBY.2'
+    assert supplier.calls == [('search', {'location': '116.400000,39.910000', 'types': '160300|090601|200300',
+                                          'radius': 1000, 'sortrule': 'distance', 'page_size': 25, 'page_num': 1,
+                                          'show_fields': 'business,photos'})]
+    with ledger.connect() as db:
+        counts, _, _ = authorization_usage(db)
+    assert counts['place'] == 1  # Nearby's own count, nothing new
+
+
+def test_luggage_storage_is_a_fixed_name_search_on_its_own(ledger):
+    supplier = Supplier()
+    service = NearbyService(supplier, NearbyBudget(ledger))
+    service.search('owner', NearbySearchRequest.model_validate(payload2(['luggage'])), lambda: None)
+    operation, params = supplier.calls[0]
+    assert operation == 'search' and params['keywords'] == '行李寄存' and 'types' not in params
+    # A types search at the same spot is a different search, never answered from the name search's cache.
+    service.search('owner', NearbySearchRequest.model_validate(payload2(['toilet'])), lambda: None)
+    assert supplier.calls[1][1]['types'] == '200300' and len(supplier.calls) == 2
+
+
+@pytest.mark.parametrize('body', [
+    payload2(['luggage', 'toilet']),                                      # luggage only on its own
+    payload2(['exchange']), payload2(['bank']),                           # not offered
+    payload(crs='GCJ-02', categories=['atm'], radius_m=1000, sort='distance'),       # NEARBY.1 is frozen
+    payload(crs='GCJ-02', categories=['luggage'], radius_m=1000, sort='distance'),
+    payload2(['atm', 'atm']), payload2([]),
+])
+def test_nearby2_refuses_what_the_contract_does_not_offer(body):
+    with pytest.raises(ValueError):
+        NearbySearchRequest.model_validate(body)
+
+
+def test_nearby1_is_unchanged_and_never_shares_a_cache_entry_with_nearby2(ledger):
+    supplier = Supplier()
+    service = NearbyService(supplier, NearbyBudget(ledger))
+    old = service.search('owner', NearbySearchRequest.model_validate(
+        payload(crs='GCJ-02', categories=['coffee'], radius_m=1000, sort='distance')), lambda: None)
+    new = service.search('owner', NearbySearchRequest.model_validate(payload2(['coffee'])), lambda: None)
+    assert old['version'] == 'NEARBY.1' and new['version'] == 'NEARBY.2'
+    assert [params['types'] for _, params in supplier.calls] == ['050500', '050500']
+
+
+def test_the_relay_answers_nearby2_and_a_luggage_mix_through_the_real_route(ledger):
+    supplier = Supplier()
+    service = NearbyService(supplier, NearbyBudget(ledger))
+    accepted = AdmissionDecision(AdmissionStatus.ALLOWED, AdmissionReason.ACCEPTED,
+                                 SimpleNamespace(issuer='internal-issuer', subject='internal'))
+    checker = SimpleNamespace(check=lambda token: accepted)
+    with TemporaryDirectory(prefix='g2c-nearby-', dir='/tmp') as directory:
+        path = Path(directory) / 'area.sock'
+        with nearby_socket(service, checker, {'internal'}, path=path):
+            app = FastAPI()
+            register_nearby_routes(app, send=lambda action, token, raw: nearby_request(action, token, raw, path=path))
+            with TestClient(app) as browser:
+                headers = {'Authorization': 'Bearer synthetic'}
+                mixed = browser.post(SEARCH, json=payload2(['luggage', 'atm']), headers=headers)
+                assert (mixed.status_code, mixed.json()) == (400, {'error': 'invalid_request'})
+                for category in ['atm', 'luggage']:  # NEARBY.1 is frozen: no new category, not even on its own
+                    old_with_new = browser.post(SEARCH, json=payload(crs='GCJ-02', categories=[category], radius_m=500,
+                                                                      sort='distance'), headers=headers)
+                    assert (old_with_new.status_code, old_with_new.json()) == (400, {'error': 'invalid_request'})
+                fine = browser.post(SEARCH, json=payload2(['atm']), headers=headers)
+                assert fine.status_code == 200 and fine.json()['version'] == 'NEARBY.2'
+    assert [params.get('types') for _, params in supplier.calls] == ['160300']
+    # Only the one allowed search reached the ledger: the refused requests were never counted.
+    assert len(ledger.inspect()) == 1
