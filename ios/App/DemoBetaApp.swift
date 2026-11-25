@@ -31,6 +31,7 @@ struct DemoBetaRootView: View {
                    taxiRelay: trip.lioTaxiRelay, nearbyRelay: trip.lioNearbyRelay,
                    taxiRecentDirectory: trip.messages.lioTaxiRecentDirectory,
                    savedPlans: trip.messages.lioSavedPlans,
+                   roadbookDirectory: trip.messages.lioRoadbookDirectory,
                    toolsDraftStorage: root.localSupportDraftStorage(),
                    toolsSessionIsCurrent: {
                     guard case .signedIn = root.accounts.state else { return false }
