@@ -12,7 +12,7 @@ from typing import Annotated, Literal
 from urllib.parse import unquote, urlencode, urlsplit
 from uuid import UUID
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from cj_place.models import Coordinate
 from cj_strict_json import reject_duplicates
@@ -23,11 +23,19 @@ from .taxi_tools import WireModel
 
 
 VERSION = 'NEARBY.1'
+# NEARBY.2 (contracts/api/NEARBY.2.md, M4 entry 12 item 1, JT 2026-11-25): the same search with the
+# "essentials" — ATMs, pharmacies, public toilets and luggage storage found by name. NEARBY.1 is frozen.
+VERSIONS = ('NEARBY.1', 'NEARBY.2')
 SEARCH = '/v1/tools/nearby/search'
 REVERSE = '/v1/tools/nearby/reverse'
 HOST = 'restapi.amap.com'
 BODY_LIMIT = 256 * 1024
-CATEGORY_CODES = {'food': '050000', 'coffee': '050500', 'sights': '110000', 'shopping': '060000'}
+CATEGORY_CODES = {'food': '050000', 'coffee': '050500', 'sights': '110000', 'shopping': '060000',
+                  # Gaode POI code table V1.06: 自动提款机, 药房, 公共厕所. Gaode has no foreign-card data.
+                  'atm': '160300', 'pharmacy': '090601', 'toilet': '200300'}
+NEARBY1_CATEGORIES = frozenset({'food', 'coffee', 'sights', 'shopping'})
+# Gaode has no luggage storage category: a fixed keyword, asked for on its own so a search stays one call.
+LUGGAGE_KEYWORDS = '行李寄存'
 CACHE_SECONDS = 60
 CACHE_CAPACITY = 32
 _LOGGER = logging.getLogger(__name__)
@@ -53,7 +61,9 @@ class NearbyLocationRequest(WireModel):
 
 
 class NearbySearchRequest(NearbyLocationRequest):
-    categories: Annotated[list[Literal['food', 'coffee', 'sights', 'shopping']], Field(min_length=1, max_length=4)]
+    version: Literal['NEARBY.1', 'NEARBY.2']
+    categories: Annotated[list[Literal['food', 'coffee', 'sights', 'shopping', 'atm', 'pharmacy', 'toilet', 'luggage']],
+                          Field(min_length=1, max_length=4)]
     radius_m: Literal[500, 1000, 3000]
     sort: Literal['relevance', 'distance']
 
@@ -63,6 +73,14 @@ class NearbySearchRequest(NearbyLocationRequest):
         if len(values) != len(set(values)):
             raise ValueError('duplicate categories')
         return values
+
+    @model_validator(mode='after')
+    def known_to_the_version(self):
+        if self.version == 'NEARBY.1' and not set(self.categories) <= NEARBY1_CATEGORIES:
+            raise ValueError('NEARBY.1 has only the original four categories')
+        if 'luggage' in self.categories and len(self.categories) > 1:
+            raise ValueError('luggage storage is searched on its own')
+        return self
 
 
 class GaodeNearby:
@@ -195,8 +213,12 @@ class NearbyService:
     def search(self, scope, request, authorize):
         authorize()
         coords = f'{request.center.lng:.6f},{request.center.lat:.6f}'
-        types = '|'.join(CATEGORY_CODES[category] for category in sorted(request.categories))
-        key = (request.center.coordinate_system, coords, types, request.radius_m, request.sort)
+        if request.categories == ['luggage']:
+            what = dict(keywords=LUGGAGE_KEYWORDS)
+        else:
+            what = dict(types='|'.join(CATEGORY_CODES[category] for category in sorted(request.categories)))
+        key = (request.version, request.center.coordinate_system, coords, tuple(sorted(what.items())),
+               request.radius_m, request.sort)
         with self.cache_lock:
             if key in self.cache:
                 expires, cached = self.cache[key]
@@ -207,7 +229,7 @@ class NearbyService:
         try:
             location = self._point(scope, request, coords, authorize)
             value = self._query(scope, request, 'search', dict(
-                location=location, types=types, radius=request.radius_m,
+                location=location, **what, radius=request.radius_m,
                 sortrule='distance' if request.sort == 'distance' else 'weight', page_size=25,
                 page_num=1, show_fields='business,photos'), authorize)
         except (KeyError, ValueError):
@@ -225,7 +247,7 @@ class NearbyService:
                 items.append(_poi(row))
             except _InvalidPoi as error:
                 rejected[str(error)] += 1
-        result = dict(version=VERSION, source='Gaode', items=items)
+        result = dict(version=request.version, source='Gaode', items=items)
         if rejected:
             omitted = sum(rejected.values())
             _LOGGER.warning('G2C_NEARBY_POI_PROJECTION rows=%d omitted=%d reasons=%s',
