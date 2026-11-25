@@ -33,6 +33,12 @@ class EntryJudge(unittest.TestCase):
         self.assertIn('third country or region', system)
         self.assertIn('back to the country the trip started from', system)
         self.assertIn('separate policies', system)
+        # #1675 review: the complete-set premise covers mainland stays only, and the
+        # third-country condition belongs to the transit-240h policy.
+        self.assertIn('stays in mainland China', system)
+        self.assertIn('airside', system)
+        self.assertIn('Hong Kong', system)
+        self.assertIn('The transit-240h policy requires', system)
         self.assertIn('uk-canada-visa-free-2026', user)
         self.assertIn('<answer>\nA plain 10-day trip needs a visa.\n</answer>', user)
         self.assertNotIn('Authorization', json.dumps(body))
@@ -57,7 +63,15 @@ class EntryJudge(unittest.TestCase):
                 raise JudgeUnavailable('judge output is not JSON')
             return verdicts[text], ''
         partial = validate(rows, flaky)
-        self.assertEqual((partial['judged'], partial['unavailable'], partial['accuracy']), (3, 1, round(1 / 3, 3)))
+        # A malformed verdict is the judge's own failure: counted apart from call failures.
+        self.assertEqual((partial['judged'], partial['malformed'], partial['unavailable']), (3, 1, 0))
+        def offline(country, text):
+            import httpx
+            if text == 'bad':
+                raise httpx.ConnectError('EOF', request=httpx.Request('POST', 'https://x'))
+            return verdicts[text], ''
+        down = validate(rows, offline)
+        self.assertEqual((down['judged'], down['malformed'], down['unavailable']), (3, 0, 1))
 
     def test_score_answers_judges_only_entry_cases(self):
         seen = []
@@ -94,6 +108,23 @@ class EntryJudge(unittest.TestCase):
         with patch('httpx.post', always), patch('time.sleep', lambda seconds: None), self.assertRaises(httpx.ConnectError):
             model_judge('k')('GB', 'ok')
         self.assertEqual(len(calls), 3)
+        # 5xx retries; 4xx and read errors (the request may already be billed) do not.
+        for status, expected in ((500, 3), (503, 3), (400, 1), (401, 1), (429, 1)):
+            calls.clear()
+            def reply(*args, status=status, **kwargs):
+                calls.append(1)
+                return httpx.Response(status, request=httpx.Request('POST', 'https://x'))
+            with self.subTest(status=status), patch('httpx.post', reply), patch('time.sleep', lambda seconds: None):
+                with self.assertRaises(httpx.HTTPStatusError):
+                    model_judge('k')('GB', 'ok')
+                self.assertEqual(len(calls), expected)
+        calls.clear()
+        def read_error(*args, **kwargs):
+            calls.append(1)
+            raise httpx.ReadTimeout('slow', request=httpx.Request('POST', 'https://x'))
+        with patch('httpx.post', read_error), patch('time.sleep', lambda seconds: None), self.assertRaises(httpx.ReadTimeout):
+            model_judge('k')('GB', 'ok')
+        self.assertEqual(len(calls), 1)
 
     def test_cli_requires_the_key(self):
         with tempfile.TemporaryDirectory() as folder:
