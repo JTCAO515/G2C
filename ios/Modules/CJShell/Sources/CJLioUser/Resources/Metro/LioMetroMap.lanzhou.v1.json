@@ -1,0 +1,40 @@
+{
+ "schema": "lio.metro.v1",
+ "city": "lanzhou",
+ "cityInfo": {"nameZH": "兰州", "nameEN": "Lanzhou", "provinceZH": "甘肃省"},
+ "source": {"operatorZH": "兰州地铁", "operatorEN": "Lanzhou Metro", "urls": ["https://www.amap.com/ssr/subway/lanzhou-6201"], "providerZH": "高德地图地铁线网图", "providerEN": "AMap metro network maps", "englishZH": "站名拼音", "englishEN": "pinyin of the Chinese names", "englishURL": "https://www.amap.com/ssr/subway/lanzhou-6201", "checkedOn": "2026-11-25"},
+ "canvas": {"width": 897, "height": 253},
+ "lines": [
+  {"id": "la-1", "nameZH": "1号线", "nameEN": "Line 1", "color": "#0065B3", "loop": false, "segments": [["la001", "la002", "la003", "la004", "la005", "la006", "la007", "la008", "la009", "la010", "la011", "la012", "la013", "la014", "la015", "la016", "la017", "la018", "la019", "la020"]]},
+  {"id": "la-2", "nameZH": "2号线", "nameEN": "Line 2", "color": "#DF5914", "loop": false, "segments": [["la021", "la022", "la023", "la016", "la024", "la025", "la026", "la027", "la014"]]}
+ ],
+ "stations": [
+  {"id": "la001", "nameZH": "陈官营", "nameEN": "Chenguanying", "x": 60.0, "y": 136.6, "lines": ["la-1"]},
+  {"id": "la002", "nameZH": "奥体中心", "nameEN": "Aoti Zhongxin", "x": 97.2, "y": 136.6, "lines": ["la-1"]},
+  {"id": "la003", "nameZH": "兰州城市学院(省科技馆)", "nameEN": "Lanzhou Chengshi Xueyuan (Sheng Kejiguan)", "x": 135.3, "y": 136.6, "lines": ["la-1"]},
+  {"id": "la004", "nameZH": "兰州海关", "nameEN": "Lanzhou Haiguan", "x": 172.9, "y": 136.6, "lines": ["la-1"]},
+  {"id": "la005", "nameZH": "马滩", "nameEN": "Matan", "x": 211.4, "y": 136.6, "lines": ["la-1"]},
+  {"id": "la006", "nameZH": "土门墩", "nameEN": "Tumendun", "x": 248.6, "y": 136.6, "lines": ["la-1"]},
+  {"id": "la007", "nameZH": "兰州西站北广场", "nameEN": "Lanzhou Xizhan Bei Guangchang", "x": 286.7, "y": 137.0, "lines": ["la-1"]},
+  {"id": "la008", "nameZH": "西站什字", "nameEN": "Xizhan Shizi", "x": 319.6, "y": 137.0, "lines": ["la-1"]},
+  {"id": "la009", "nameZH": "七里河", "nameEN": "Qilihe", "x": 349.1, "y": 137.0, "lines": ["la-1"]},
+  {"id": "la010", "nameZH": "小西湖", "nameEN": "Xiaoxihu", "x": 378.6, "y": 136.6, "lines": ["la-1"]},
+  {"id": "la011", "nameZH": "文化宫", "nameEN": "Wenhuagong", "x": 408.1, "y": 136.6, "lines": ["la-1"]},
+  {"id": "la012", "nameZH": "西关", "nameEN": "Xiguan", "x": 438.9, "y": 137.0, "lines": ["la-1"]},
+  {"id": "la013", "nameZH": "省政府", "nameEN": "Shengzhengfu", "x": 468.9, "y": 137.0, "lines": ["la-1"]},
+  {"id": "la014", "nameZH": "东方红广场", "nameEN": "Dongfanghong Guangchang", "x": 499.2, "y": 137.0, "lines": ["la-1", "la-2"]},
+  {"id": "la015", "nameZH": "兰州大学", "nameEN": "Lanzhou Daxue", "x": 566.4, "y": 136.6, "lines": ["la-1"]},
+  {"id": "la016", "nameZH": "五里铺", "nameEN": "Wulipu", "x": 637.8, "y": 136.6, "lines": ["la-1", "la-2"]},
+  {"id": "la017", "nameZH": "省气象局", "nameEN": "Sheng Qixiangju", "x": 666.9, "y": 136.6, "lines": ["la-1"]},
+  {"id": "la018", "nameZH": "拱星墩", "nameEN": "Gongxingdun", "x": 697.7, "y": 136.6, "lines": ["la-1"]},
+  {"id": "la019", "nameZH": "焦家湾", "nameEN": "Jiaojiawan", "x": 763.6, "y": 136.6, "lines": ["la-1"]},
+  {"id": "la020", "nameZH": "东岗", "nameEN": "Donggang", "x": 836.7, "y": 136.6, "lines": ["la-1"]},
+  {"id": "la021", "nameZH": "雁白大桥", "nameEN": "Yanbai Daqiao", "x": 637.8, "y": 60.0, "lines": ["la-2"]},
+  {"id": "la022", "nameZH": "均家滩", "nameEN": "Junjiatan", "x": 637.8, "y": 86.5, "lines": ["la-2"]},
+  {"id": "la023", "nameZH": "张苏滩", "nameEN": "Zhangsutan", "x": 637.8, "y": 111.8, "lines": ["la-2"]},
+  {"id": "la024", "nameZH": "团结新村", "nameEN": "Tuanjie Xincun", "x": 637.8, "y": 166.5, "lines": ["la-2"]},
+  {"id": "la025", "nameZH": "红星巷", "nameEN": "Hongxing Xiang", "x": 613.0, "y": 192.6, "lines": ["la-2"]},
+  {"id": "la026", "nameZH": "兰州火车站", "nameEN": "Lanzhou Railway Station", "x": 569.0, "y": 192.2, "lines": ["la-2"]},
+  {"id": "la027", "nameZH": "邮电大楼", "nameEN": "Youdian Dalou", "x": 536.9, "y": 167.4, "lines": ["la-2"]}
+ ]
+}

@@ -76,6 +76,9 @@ def _price_receipt(kind, raw):
         if receipt.get('service') == 'translation.1':
             from .translation_budget import translation_price
             return translation_price(receipt)
+        if receipt.get('service') == 'roadbook.1':
+            from .roadbook_budget import roadbook_price
+            return roadbook_price(receipt)
         if (receipt.get('model_id')!='qwen3.8-flash' or receipt.get('region')!='cn-beijing'
                 or receipt.get('endpoint')!='https://dashscope.aliyuncs.com/compatible-mode/v1'):
             return None
@@ -88,11 +91,13 @@ def _price_receipt(kind, raw):
             return None
         return prompt*MODEL_INPUT_PRICE+completion*MODEL_OUTPUT_PRICE
     endpoint=receipt.get('endpoint')
-    services=shared_place_services() if kind=='place' else {}
+    services=shared_tool_services()
     if receipt.get('service') in services:
-        origin,operations,_=services[receipt.get('service')]
+        # Only on a row of the registered kind; a mismatched kind never falls back to AMAP_ENDPOINTS.
+        registered,origin,operations,_=services[receipt.get('service')]
         operation=receipt.get('operation')
-        if type(operation) is str and operation in operations and endpoint==origin+operations[operation]:
+        if (registered==kind and type(operation) is str and operation in operations
+                and endpoint==origin+operations[operation]):
             return AMAP_PRICE
         return None
     if kind in AMAP_ENDPOINTS and type(endpoint) is str and endpoint in AMAP_ENDPOINTS[kind]:
@@ -100,21 +105,35 @@ def _price_receipt(kind, raw):
     return None
 
 
-def shared_place_services():
+def shared_tool_services():
     """Gaode services authorized apart from the Lio pipeline that share the tool cash ceiling.
 
-    service -> (origin, operations, counted separately from entry 3's place allowance).
-    Nearby (entry 12 item 1) and hotel search (entry 12 item 3, revised in #1534) have their own counts.
+    service -> (kind, origin, operations, counted separately from entry 3's allowance of that kind).
+    Nearby (entry 12 item 1), hotel search (item 3, revised in #1534) and roadbook places (entry 18) are
+    place calls; intercity trains (item 4, #1520) are route calls. Each has its own count.
     """
-    from . import hotel_budget,nearby_budget
-    return {nearby_budget.SERVICE:(nearby_budget.ORIGIN,nearby_budget.OPERATIONS,True),
-            hotel_budget.SERVICE:(hotel_budget.ORIGIN,hotel_budget.OPERATIONS,True)}
+    from . import hotel_budget,nearby_budget,roadbook_budget,transit_budget
+    return {nearby_budget.SERVICE:('place',nearby_budget.ORIGIN,nearby_budget.OPERATIONS,True),
+            hotel_budget.SERVICE:('place',hotel_budget.ORIGIN,hotel_budget.OPERATIONS,True),
+            roadbook_budget.AMAP_SERVICE:('place',roadbook_budget.AMAP_ORIGIN,roadbook_budget.AMAP_OPERATIONS,True),
+            transit_budget.SERVICE:(transit_budget.KIND,transit_budget.ORIGIN,transit_budget.OPERATIONS,True)}
+
+
+def shared_place_services():
+    """The place services of `shared_tool_services`, in the original (origin, operations, separate) shape."""
+    return {service:(origin,operations,separate)
+            for service,(kind,origin,operations,separate) in shared_tool_services().items() if kind=='place'}
+
+
+def separately_counted(db,kind):
+    """Attempts of `kind` that belong to a separately counted service, not the legacy allowance."""
+    return sum(db.execute("SELECT count(*) FROM attempt WHERE kind=? AND id GLOB ?",(kind,service+':*')).fetchone()[0]
+               for service,(registered,_,_,separate) in shared_tool_services().items() if separate and registered==kind)
 
 
 def separately_counted_place(db):
     """Place attempts that belong to a separately counted service, not the legacy allowance."""
-    return sum(db.execute("SELECT count(*) FROM attempt WHERE kind='place' AND id GLOB ?",(service+':*',)).fetchone()[0]
-               for service,(_,_,separate) in shared_place_services().items() if separate)
+    return separately_counted(db,'place')
 
 
 def authorization_usage(db):
@@ -227,10 +246,10 @@ class AuthorizationBudget:
                 raise BudgetUnknown('M4 original attempt is read only')
             counts,estimates,holds=authorization_usage(db)
             count=counts[kind]
-            if kind=='place':
-                # Separately authorized place services (Nearby, hotel search) share
-                # cash, not the legacy Lio place allowance.
-                count-=separately_counted_place(db)
+            if kind in ('place','route'):
+                # Separately authorized services (Nearby, hotel search, intercity trains)
+                # share cash, not the legacy Lio place or route allowance.
+                count-=separately_counted(db,kind)
             if count>=LIMITS[kind][0]:raise BudgetUnknown('M4 call allowance exhausted')
             reserve=LIMITS[kind][1]*CNY_SCALE
             if kind=='model':

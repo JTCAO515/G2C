@@ -152,6 +152,14 @@ import CryptoKit
                 let cards = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'lio.metro.city.' AND identifier != 'lio.metro.city.find'"))
                 let cut = cards.allElementsBoundByIndex.filter { $0.frame.minY < tabBarTop && $0.frame.maxY > tabBarTop }
                 XCTAssertLessThanOrEqual(unresolved, cut.count * 2, "contrast issues without an element and no card under the tab bar")
+                if unresolved > 0 {
+                    // Record what the allowance was used for, for review and later checks.
+                    let note = XCTAttachment(string: "cards cut by the tab bar: \(cut.count) (\(cut.map(\.identifier).joined(separator: ", ")))\n"
+                        + "contrast issues without an element allowed: \(unresolved) of at most \(cut.count * 2)")
+                    note.name = "metro-cities-tab-bar-allowance-\(language)-\(appearance)"
+                    note.lifetime = .keepAlways
+                    add(note)
+                }
                 let cities = XCTAttachment(screenshot: app.screenshot())
                 cities.name = "metro-cities-\(language)-\(appearance)"
                 cities.lifetime = .keepAlways
@@ -2363,6 +2371,92 @@ import CryptoKit
     func testExplorationHomeEnglish() throws { try exerciseExplorationHome(chinese: false) }
     func testExplorationHomeChinese() throws { try exerciseExplorationHome(chinese: true) }
 
+    /// #1453: a plan summary in a v4 reply opens the day-by-day page; it can be saved, shown in Trips, changed per day
+    /// through the chat and removed again.
+    func testPlanCardOpensTheDayByDayPageChinese() throws { try exercisePlanCard(chinese: true) }
+    func testPlanCardOpensTheDayByDayPageEnglish() throws { try exercisePlanCard(chinese: false) }
+
+    private func exercisePlanCard(chinese: Bool) throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        func element(_ id: String) -> XCUIElement { app.descendants(matching: .any).matching(identifier: id).firstMatch }
+        func reveal(_ target: XCUIElement) {
+            for _ in 0..<8 where !(target.exists && target.isHittable) { app.swipeUp() }
+            XCTAssertTrue(target.isHittable, app.debugDescription)
+        }
+        do {
+            app.launchArguments = ["--lio-preview", "--lio-exploration-home-acceptance", "--lio-home-plan-acceptance",
+                                   "-cj.ui.language.v1", chinese ? "zh-Hans" : "en", "-lio.ui.appearance.v1", "light"]
+            app.launch()
+            let composer = element("lio.composer")
+            XCTAssertTrue(composer.waitForExistence(timeout: 12), app.debugDescription)
+            composer.tap(); composer.typeText(chinese ? "帮我规划三天北京自由行" : "Plan three days in Beijing")
+            app.buttons["lio.send"].tap()
+
+            let open = app.buttons["lio.plan.open"]
+            XCTAssertTrue(open.waitForExistence(timeout: 12), app.debugDescription)
+            reveal(open)
+            XCTAssertTrue(element("lio.plan.card").staticTexts[chinese ? "北京三日行" : "Three days in Beijing"].exists)
+            XCTAssertTrue(element("lio.plan.card").staticTexts[chinese ? "3 天 · 4 个地点" : "3 days · 4 stops"].exists)
+            open.tap()
+
+            let save = app.buttons["lio.plan.save"]
+            XCTAssertTrue(save.waitForExistence(timeout: 5), app.debugDescription)
+            XCTAssertTrue(app.staticTexts[chinese ? "故宫博物院" : "Palace Museum"].exists)
+            XCTAssertTrue(app.staticTexts[chinese ? "3 天 · 4 个地点 · 日期待定" : "3 days · 4 stops · dates not set"].exists)
+            XCTAssertTrue(app.buttons["lio.plan.share"].exists)
+            // A summary has no confirmed address: no taxi, map or driver actions, and no day map.
+            XCTAssertFalse(app.staticTexts[chinese ? "司机卡" : "Driver"].exists)
+            XCTAssertFalse(app.maps.firstMatch.exists)
+            try app.performAccessibilityAudit(for: .all) { issue in
+                let detail = XCTAttachment(string: issue.compactDescription + "\n" + issue.detailedDescription + "\n"
+                    + (issue.element?.debugDescription ?? "No element supplied"))
+                detail.name = "plan-page-audit"; detail.lifetime = .keepAlways; self.add(detail)
+                return false
+            }
+            let shot = XCTAttachment(screenshot: app.screenshot())
+            shot.name = "plan-day1-\(chinese ? "zh" : "en")"; shot.lifetime = .keepAlways; add(shot)
+
+            save.tap()
+            XCTAssertTrue(element("lio.plan.saved").waitForExistence(timeout: 5), app.debugDescription)
+            let dayThree = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", chinese ? "第 3 天" : "Day 3")).firstMatch
+            dayThree.tap()
+            XCTAssertTrue(element("lio.plan.empty-day").waitForExistence(timeout: 5), app.debugDescription)
+            let dayOne = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", chinese ? "第 1 天" : "Day 1")).firstMatch
+            dayOne.tap()
+            let adjust = app.buttons["lio.plan.adjust-day"]
+            reveal(adjust); adjust.tap()
+            XCTAssertTrue(save.waitForNonExistence(timeout: 5))
+            XCTAssertTrue(element("lio.plan.saved").waitForNonExistence(timeout: 5))
+            XCTAssertEqual(composer.value as? String,
+                           chinese ? "调整「北京三日行」第 1 天：" : "Change day 1 of “Three days in Beijing”: ")
+
+            showLioTab(app, ["Trips", "行程"])
+            let row = element("lio.plan.saved-row")
+            XCTAssertTrue(row.waitForExistence(timeout: 5), app.debugDescription)
+            row.tap()
+            XCTAssertTrue(element("lio.plan.saved").waitForExistence(timeout: 5), app.debugDescription)
+            app.buttons["lio.plan.done"].tap()
+            XCTAssertTrue(element("lio.plan.saved").waitForNonExistence(timeout: 5))
+            // From Trips, changing a day returns to the chat with the text ready; the earlier draft stays.
+            row.tap()
+            let adjustFromTrips = app.buttons["lio.plan.adjust-day"]
+            reveal(adjustFromTrips); adjustFromTrips.tap()
+            XCTAssertTrue(composer.waitForExistence(timeout: 5))
+            XCTAssertTrue(element("lio.plan.saved").waitForNonExistence(timeout: 5))
+            XCTAssertEqual(composer.value as? String,
+                           chinese ? "调整「北京三日行」第 1 天：" : "Change day 1 of “Three days in Beijing”: ")
+            showLioTab(app, ["Trips", "行程"])
+            XCTAssertTrue(row.waitForExistence(timeout: 5), app.debugDescription)
+            row.press(forDuration: 1.2)
+            let remove = app.buttons[chinese ? "从行程中移除" : "Remove from Trips"]
+            XCTAssertTrue(remove.waitForExistence(timeout: 5), app.debugDescription)
+            remove.tap()
+            XCTAssertTrue(row.waitForNonExistence(timeout: 5))
+            app.terminate()
+        }
+    }
+
     private func exerciseExplorationHome(chinese: Bool) throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
@@ -2882,7 +2976,9 @@ import CryptoKit
 
 /// #1452: fixture controls passed to Lio as the menu content now show in the Me tab, not in the chat menu.
 /// Matched by label in both languages; the Tools tab is absent in some previews, so positions vary.
-@MainActor private func showLioMe(_ app: XCUIApplication) {
+@MainActor private func showLioMe(_ app: XCUIApplication) { showLioTab(app, ["Me", "我的"]) }
+
+@MainActor private func showLioTab(_ app: XCUIApplication, _ labels: [String]) {
     // The keyboard covers the tab bar: the chat menu button ends typing, then its sheet is closed again.
     if app.keyboards.firstMatch.exists, app.buttons["lio.menu"].exists {
         app.buttons["lio.menu"].tap()
@@ -2891,9 +2987,9 @@ import CryptoKit
         done.tap()
         XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 5))
     }
-    let me = app.tabBars.buttons.matching(NSPredicate(format: "label IN %@", ["Me", "我的"])).firstMatch
-    XCTAssertTrue(me.waitForExistence(timeout: 12), app.debugDescription)
-    me.tap()
+    let tab = app.tabBars.buttons.matching(NSPredicate(format: "label IN %@", labels)).firstMatch
+    XCTAssertTrue(tab.waitForExistence(timeout: 12), app.debugDescription)
+    tab.tap()
 }
 
 @MainActor private func showLioChat(_ app: XCUIApplication) {

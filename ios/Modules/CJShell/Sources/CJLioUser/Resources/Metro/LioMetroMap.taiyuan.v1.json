@@ -9,7 +9,7 @@
   {"id": "ta-2", "nameZH": "2号线", "nameEN": "Line 2", "color": "#CC0000", "loop": false, "segments": [["ta025", "ta026", "ta027", "ta028", "ta029", "ta030", "ta031", "ta009", "ta032", "ta033", "ta034", "ta035", "ta036", "ta037", "ta038", "ta039", "ta040", "ta041", "ta042", "ta043", "ta044", "ta045", "ta046"]]}
  ],
  "stations": [
-  {"id": "ta001", "nameZH": "河龙湾", "nameEN": "He Longwan", "x": 60.0, "y": 324.0, "lines": ["ta-1"]},
+  {"id": "ta001", "nameZH": "河龙湾", "nameEN": "Helongwan", "x": 60.0, "y": 324.0, "lines": ["ta-1"]},
   {"id": "ta002", "nameZH": "西铭路", "nameEN": "Ximing Lu", "x": 122.6, "y": 324.0, "lines": ["ta-1"]},
   {"id": "ta003", "nameZH": "西客站", "nameEN": "Xike Zhan", "x": 181.3, "y": 324.4, "lines": ["ta-1"]},
   {"id": "ta004", "nameZH": "金阳路", "nameEN": "Jinyang Lu", "x": 240.4, "y": 324.4, "lines": ["ta-1"]},
@@ -29,7 +29,7 @@
   {"id": "ta018", "nameZH": "长风东街", "nameEN": "Changfeng Dongjie", "x": 825.0, "y": 450.9, "lines": ["ta-1"]},
   {"id": "ta019", "nameZH": "学府东街", "nameEN": "Xuefu Dongjie", "x": 825.0, "y": 485.6, "lines": ["ta-1"]},
   {"id": "ta020", "nameZH": "许坦东街", "nameEN": "Xutan Dongjie", "x": 825.4, "y": 534.0, "lines": ["ta-1"]},
-  {"id": "ta021", "nameZH": "太原南站", "nameEN": "Taiyuan Nanzhan", "x": 859.3, "y": 582.9, "lines": ["ta-1"]},
+  {"id": "ta021", "nameZH": "太原南站", "nameEN": "Taiyuan South Railway Station", "x": 859.3, "y": 582.9, "lines": ["ta-1"]},
   {"id": "ta022", "nameZH": "北营", "nameEN": "Beiying", "x": 891.4, "y": 625.3, "lines": ["ta-1"]},
   {"id": "ta023", "nameZH": "黄陵", "nameEN": "Huangling", "x": 891.4, "y": 657.4, "lines": ["ta-1"]},
   {"id": "ta024", "nameZH": "武宿1号2号航站楼", "nameEN": "Wusu 1 Hao 2 Hao Hangzhanlou", "x": 891.4, "y": 692.1, "lines": ["ta-1"]},

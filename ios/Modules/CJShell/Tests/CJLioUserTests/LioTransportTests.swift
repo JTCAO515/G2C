@@ -45,6 +45,15 @@ struct LioTransportCityTests {
         }
     }
 
+    @Test func driverSignAsksForTheStationOrAirportAndKeepsTheAirportCode() {
+        let hongqiao = LioTransportCity.resolve("上海")!.stations[0]
+        #expect(hongqiao.driverRequestZH == "请送我到这个火车站")
+        #expect(hongqiao.driverNameEN == "Shanghai Hongqiao Railway Station")
+        let capital = LioTransportCity.resolve("北京")!.airports[0]
+        #expect(capital.driverRequestZH == "请送我到这个机场")
+        #expect(capital.driverNameEN == "Beijing Capital International Airport (PEK)")
+    }
+
     @Test func hubsShowTheOtherLanguageUnderEnglishNames() {
         let hongqiao = LioTransportCity.resolve("上海")!.stations[0]
         #expect(hongqiao.name(in: .english) == "Shanghai Hongqiao Railway Station")
@@ -144,16 +153,31 @@ struct LioTransportResultTests {
                                            departure: Self.hongqiao, arrival: Self.beijingSouth, departTime: "19:45",
                                            arriveTime: "07:36", durationMinutes: 711, fares: [])
         #expect(overnight.arrivesNextDay && overnight.arrivalDayOffset == 1)
-        let twoNights = LioTransportOption(mode: .rail, number: "Z1", carrierZH: nil, carrierEN: nil,
+        let overThirtyHours = LioTransportOption(mode: .rail, number: "Z1", carrierZH: nil, carrierEN: nil,
                                            departure: Self.hongqiao, arrival: Self.beijingSouth, departTime: "08:00",
                                            arriveTime: "14:00", durationMinutes: 1800, fares: [])
-        #expect(twoNights.arrivesNextDay && twoNights.arrivalDayOffset == 1)
+        #expect(overThirtyHours.arrivesNextDay && overThirtyHours.arrivalDayOffset == 1)
         let longer = LioTransportOption(mode: .rail, number: "Z2", carrierZH: nil, carrierEN: nil,
                                         departure: Self.hongqiao, arrival: Self.beijingSouth, departTime: "22:00",
                                         arriveTime: "08:00", durationMinutes: 2040, fares: [])
         #expect(longer.arrivalDayOffset == 2)
         #expect(LioTransportFormat.arrival(longer, .english) == "08:00 +2")
         #expect(LioTransportFormat.arrival(overnight, .chinese) == "07:36 +1")
+        let midnight = LioTransportOption(mode: .rail, number: "G9", carrierZH: nil, carrierEN: nil,
+                                          departure: Self.hongqiao, arrival: Self.beijingSouth, departTime: "20:00",
+                                          arriveTime: "00:00", durationMinutes: 240, fares: [])
+        #expect(midnight.arrivalDayOffset == 1 && LioTransportFormat.arrival(midnight, .english) == "00:00 +1")
+        let unparsed = LioTransportOption(mode: .rail, number: "K1", carrierZH: nil, carrierEN: nil,
+                                          departure: Self.hongqiao, arrival: Self.beijingSouth, departTime: "late",
+                                          arriveTime: "06:00", durationMinutes: 600, fares: [])
+        #expect(unparsed.arrivalDayOffset == 0)
+        // VoiceOver reads the day change in words, not "plus one".
+        #expect(LioTransportFormat.arrivalSpoken(Self.train("G2", minutes: 268, fares: []), .english) == "Arrives 12:28")
+        #expect(LioTransportFormat.arrivalSpoken(Self.train("G2", minutes: 268, fares: []), .chinese) == "12:28 到达")
+        #expect(LioTransportFormat.arrivalSpoken(overnight, .english) == "Arrives 07:36 the next day")
+        #expect(LioTransportFormat.arrivalSpoken(overnight, .chinese) == "次日 07:36 到达")
+        #expect(LioTransportFormat.arrivalSpoken(longer, .english) == "Arrives 08:00, 2 days later")
+        #expect(LioTransportFormat.arrivalSpoken(longer, .chinese) == "2 天后 08:00 到达")
         #expect(LioTransportFormat.arrival(Self.train("G2", minutes: 268, fares: []), .english) == "12:28")
     }
 
