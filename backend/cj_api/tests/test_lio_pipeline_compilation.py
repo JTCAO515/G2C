@@ -240,6 +240,31 @@ class RetrievedCompilation(unittest.TestCase):
         self.assertTrue(all(order[i['id']].windows!=schedule[i['id']].windows for i in anchors))
         self.assertEqual(hotel,before)
 
+    def test_no_observed_lodging_marks_edge_days_for_disclosure_on_their_anchors(self):
+        # JT 2026-11-25 (via coordination, "照样保存并提示"): without an observed
+        # lodging point the first/last day are saved with a visible hint instead
+        # of refusing. An observed hotel keeps the original proximity evidence.
+        hints={'zh':('抵达时间未定，首日活动建议安排在住处附近；补充酒店位置后可再调整。',
+                     '离开时间未定，末日活动建议安排在住处附近；补充酒店位置后可再调整。'),
+               'en':('Arrival time is not set, so keep day-1 activities near where you stay; you can adjust after adding your hotel.',
+                     'Departure time is not set, so keep last-day activities near where you stay; you can adjust after adding your hotel.')}
+        hotel=deepcopy(next(i['place']for i in CASES['matched']['content']['items']if i['place']['state']=='matched'))
+        for locale,(first,last) in hints.items():
+            for observed in (None,hotel):
+                with self.subTest(locale=locale,observed=observed is not None):
+                    value=prepared()
+                    result=compile_retrieved(value,{s.item_id:None for s in value.skeleton.stops},(observed,None),
+                        checks=checks(3),subjects=('party',),locale=locale,retained=None)
+                    self.assertIs(result.lodging_unconfirmed,observed is None)
+                    notes={i['id']:i['note']for i in result.document['items']if i['kind']=='hotel'}
+                    self.assertEqual(len(notes),6)
+                    for key,note in notes.items():
+                        self.assertIn('未确认入住或预订'if locale=='zh'else'no stay or booking is confirmed',note)
+                        expected=(first if key=='compile-data-lodging-d1-out'else
+                                  last if key=='compile-data-lodging-d3-back'else None)
+                        for hint in (first,last):
+                            self.assertEqual(hint in note,observed is None and hint==expected,(key,note))
+
     def test_unknown_coordinates_do_not_become_nearby_and_meal_period_remains_typed(self):
         value=prepared();result=build(value)
         by_id={a.item_id:a for a in result.order_activities}

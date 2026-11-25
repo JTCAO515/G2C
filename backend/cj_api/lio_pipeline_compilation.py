@@ -24,6 +24,9 @@ class CompiledPlanData:
     order_activities:tuple[Activity,...]
     schedule_activities:tuple[Activity,...]
     proposed_subjects:dict
+    # True only when no lodging place was observed. C may then save unknown
+    # first/last-day proximity with the disclosed anchor hint (JT 2026-11-25).
+    lodging_unconfirmed:bool=False
 
 
 def _protected_activity(item):
@@ -109,6 +112,19 @@ def compile_retrieved(prepared,places,hotel_places,*,checks,subjects,locale,reta
     suggested=hotel if hotel is not None else unconfirmed_place(skeleton.hotels[0])
     anchors,anchor_order,anchor_schedule=lodging_anchors(suggested,prepared.edges,
         id_prefix=prepared.id_prefix,timezone=prepared.city.timezone,locale=locale)
+    lodging_unconfirmed=hotel is None
+    if lodging_unconfirmed:
+        # JT 2026-11-25: no observed lodging point; disclose instead of refusing.
+        last_day=len(prepared.edges.windows)
+        hints={f'{prepared.id_prefix}-lodging-d1-out':(prepared.edges.first_unknown_recipe,
+                   '抵达时间未定，首日活动建议安排在住处附近；补充酒店位置后可再调整。'if locale=='zh'else
+                   'Arrival time is not set, so keep day-1 activities near where you stay; you can adjust after adding your hotel.'),
+               f'{prepared.id_prefix}-lodging-d{last_day}-back':(prepared.edges.last_unknown_morning,
+                   '离开时间未定，末日活动建议安排在住处附近；补充酒店位置后可再调整。'if locale=='zh'else
+                   'Departure time is not set, so keep last-day activities near where you stay; you can adjust after adding your hotel.')}
+        for anchor in anchors:
+            applies,hint=hints.get(anchor['id'],(False,None))
+            if applies:anchor['note']+=(''if locale=='zh'else' ')+hint
     # fields_for binds destination-city metadata to both NEEDS edges. That is
     # not a traveler-supplied airport/station or a request for pickup service.
     projected=prepared.projected.fields
@@ -144,4 +160,4 @@ def compile_retrieved(prepared,places,hotel_places,*,checks,subjects,locale,reta
         for index,item in zip(positions,suggestions,strict=True):document['items'][index]=item
     document['legs']=unconfirmed_legs(document)
     representation_size(document) # Full observed UTF-8 bytes, including sources and all legs.
-    return CompiledPlanData(document,order,schedule,proposed)
+    return CompiledPlanData(document,order,schedule,proposed,lodging_unconfirmed)

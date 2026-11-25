@@ -303,12 +303,18 @@ class HotelSearchService:
                 region=city, city_limit='true', types=HOTEL_TYPES, page_size=PAGE_SIZE, page_num=1,
                 show_fields='business'), authorize)
         rows = _pois(listed, PAGE_SIZE)
-        items, rejected = [], Counter()
+        items, rejected, seen = [], Counter(), set()
         for row in rows:
             try:
-                items.append(_hotel(row, city))
+                item = _hotel(row, city)
             except _InvalidHotel as error:
                 rejected[str(error)] += 1
+                continue
+            if item['id'] in seen:
+                rejected['duplicate'] += 1  # the App rejects a page with repeated IDs
+                continue
+            seen.add(item['id'])
+            items.append(item)
         if rejected:
             _LOGGER.warning('G2C_HOTEL_POI_PROJECTION rows=%d omitted=%d reasons=%s',
                             len(rows), sum(rejected.values()), dict(rejected))

@@ -96,4 +96,38 @@ class GenerationWiring(unittest.TestCase):
                         self.assertEqual(len(events),1)
 
 
+    def test_saved_plan_discloses_unconfirmed_edge_day_proximity(self):
+        # JT 2026-11-25 (via coordination, "照样保存并提示"): a plan saved without an
+        # observed lodging point says so in the reply; other saves are unchanged.
+        from cj_api.local_lio_pipeline_generation import PipelineGeneration
+        import cj_api.local_lio_pipeline_generation as generation
+        hints={'zh':'首末日的抵达或离开时间未定，已建议把活动安排在住处附近；补充酒店位置后可以再调整',
+               'en':'Arrival or departure times are not set, so first- and last-day activities are kept near where you stay; you can adjust after adding your hotel'}
+        for locale,hint in hints.items():
+            for edges in ((),('stop-1','stop-9')):
+                with self.subTest(locale=locale,edges=edges):
+                    host=SimpleNamespace(current=lambda _:None,_finish=lambda worker,binding,state,body,scene,lang:body)
+                    worker=SimpleNamespace(runs=SimpleNamespace(snapshot=lambda _:object()),
+                        _event=lambda binding,state,kind,value:self.fail('saved plan emitted a refusal event'))
+                    prepared=SimpleNamespace(projection=SimpleNamespace(fields={'party_size':{'state':'known','value':1}}))
+                    capture=SimpleNamespace(basis=SimpleNamespace(day_count=3,start_date=None))
+                    with patch.multiple(generation,prepare_generation=unittest.mock.DEFAULT,
+                            retrieve_skeleton=unittest.mock.DEFAULT,compile_retrieved_plan=unittest.mock.DEFAULT,
+                            order_retrieved_plan=unittest.mock.DEFAULT,route_ordered_plan=unittest.mock.DEFAULT,
+                            schedule_retrieved_plan=unittest.mock.DEFAULT,word_retrieved_plan=unittest.mock.DEFAULT,
+                            publish_retrieved_plan=unittest.mock.DEFAULT)as stages:
+                        stages['prepare_generation'].return_value=prepared
+                        stages['retrieve_skeleton'].return_value=({},(),capture)
+                        stages['order_retrieved_plan'].return_value=SimpleNamespace(content='{}',status='CONDITIONAL_SCHEDULE',reason='')
+                        stages['route_ordered_plan'].return_value=({},capture)
+                        stages['schedule_retrieved_plan'].return_value=SimpleNamespace(content='{}',status='CONDITIONAL_SCHEDULE',reason='')
+                        stages['word_retrieved_plan'].return_value=SimpleNamespace(summary='Summary.',unknown_transfers=(),
+                            edge_proximity_unconfirmed=edges)
+                        stages['publish_retrieved_plan'].return_value=(None,SimpleNamespace(proposal_id='p'))
+                        body=PipelineGeneration().plan(host,worker,'binding','view',locale=locale,
+                            effective={},prior_model_calls=1)
+                        self.assertIn('行程已保存'if locale=='zh'else'The itinerary is saved',body)
+                        self.assertEqual(hint in body,bool(edges),body)
+
+
 if __name__=='__main__':unittest.main()

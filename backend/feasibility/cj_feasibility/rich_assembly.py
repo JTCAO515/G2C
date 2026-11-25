@@ -49,6 +49,9 @@ class Assembly:
     summary: str = ''
     date_checks_must_be_recomputed: bool = False
     unconfirmed_items: tuple[str, ...] = ()
+    # First/last-day stops whose hotel proximity stayed unknown because the host
+    # had no observed lodging point (JT 2026-11-25: save and disclose, not refuse).
+    edge_proximity_unconfirmed: tuple[str, ...] = ()
 
 
 def _seconds(event):
@@ -71,20 +74,24 @@ def _intersection(original, policy):
 
 
 def assemble(document, *, source, facts, activities, edges: EdgeWindows, phase,
-             locale, limits: Limits, stop):
+             locale, limits: Limits, stop, lodging_unconfirmed=False):
     """Return a bounded conditional candidate; never write or mark verified.
 
     phase='order': no observed legs allowed; regenerate unconfirmed adjacency.
     phase='schedule': keep every pair frozen and use its original route estimate.
     All protected source items must remain present and unchanged. Unknown edge
     proximity or clocks produce UNKNOWN, not an invented feasible schedule.
+    lodging_unconfirmed=True is the host's statement that it has no observed
+    lodging point: only unknown first/last-day proximity is then returned in
+    edge_proximity_unconfirmed for disclosure instead of refusing.
     """
     return _assemble(document,source=source,facts=facts,activities=activities,edges=edges,
-        phase=phase,locale=locale,limits=limits,stop=stop,unconfirmed_items=frozenset())
+        phase=phase,locale=locale,limits=limits,stop=stop,unconfirmed_items=frozenset(),
+        lodging_unconfirmed=lodging_unconfirmed)
 
 
 def assemble_unconfirmed(document, *, source, facts, activities, edges: EdgeWindows, phase,
-                         locale, limits: Limits, stop, unconfirmed_items):
+                         locale, limits: Limits, stop, unconfirmed_items, lodging_unconfirmed=False):
     """Conditional data after code-qualified terminal tool unavailability.
 
     The host derives these IDs from the actual sealed outcomes and rechecks
@@ -98,11 +105,14 @@ def assemble_unconfirmed(document, *, source, facts, activities, edges: EdgeWind
     if not unconfirmed_items <= {item['id']for item in document['items']}:
         raise ValueError('unavailable item outside this complete candidate')
     return _assemble(document,source=source,facts=facts,activities=activities,edges=edges,
-        phase=phase,locale=locale,limits=limits,stop=stop,unconfirmed_items=unconfirmed_items)
+        phase=phase,locale=locale,limits=limits,stop=stop,unconfirmed_items=unconfirmed_items,
+        lodging_unconfirmed=lodging_unconfirmed)
 
 
 def _assemble(document, *, source, facts, activities, edges, phase, locale, limits, stop,
-              unconfirmed_items):
+              unconfirmed_items, lodging_unconfirmed):
+    if type(lodging_unconfirmed) is not bool:
+        raise ValueError('explicit host lodging observation state required')
     if phase not in ('order','schedule') or locale not in ('zh','en'):
         raise ValueError('explicit phase and locale required')
     value = deepcopy(document)
@@ -161,10 +171,15 @@ def _assemble(document, *, source, facts, activities, edges, phase, locale, limi
             return Assembly('CONFLICT','FIRST_DAY_DINNER_REQUIRED')
         sight=next(item for item in first if item['kind']=='sight')
         precedence=((sight['id'],meal['id']),)
+    edge_unconfirmed=[]
     for item in (first if edges.first_unknown_recipe else []) + (last if edges.last_unknown_morning else []):
         nearby = bounds[item['id']].nearby
         if nearby is None:
             if item['id'] in unconfirmed_items:
+                continue
+            if lodging_unconfirmed:
+                # No observed lodging point: disclose, never assume nearby.
+                edge_unconfirmed.append(item['id'])
                 continue
             return Assembly('UNKNOWN','EDGE_DAY_PROXIMITY_UNCONFIRMED')
         if not nearby:
@@ -215,4 +230,4 @@ def _assemble(document, *, source, facts, activities, edges, phase, locale, limi
     reason = 'TERMINAL_TOOL_UNCONFIRMED'if unconfirmed_items else result.reason
     return Assembly(status,reason,packed(value),result.unknown_transfers,
                     tuple(removed),brief(facts,locale=locale,first_day_full=bool(edges.override_explanations)),
-                    dated and changed,tuple(sorted(unconfirmed_items)))
+                    dated and changed,tuple(sorted(unconfirmed_items)),tuple(sorted(edge_unconfirmed)))

@@ -2,12 +2,21 @@
 import CJRunClient
 import SwiftUI
 
-/// Metro guide (#1421): choose a city first, then read how to buy a ticket, pass security and use
-/// the gates, with the operator's official line map. Only cities with verified guidance are listed.
-/// Beijing, Shanghai and Guangzhou also open an interactive line map (#1450).
+/// Metro maps (#1421, #1450): choose a city and its interactive line map opens straight away. No ticket or
+/// security steps (JT 2026-11-25): tickets cannot be bought from here, and riders tap a bank card or use
+/// the transit code in Alipay or the operator's app at the gate.
 struct LioMetroGuideView: View {
     let language: LioLanguage
+    @State private var finding = false
+    @State private var found: LioMetroCity?
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    /// Two columns like the Tools page (JT 2026-11-25); one at accessibility text sizes.
+    private var columns: [GridItem] {
+        let count = typeSize.isAccessibilitySize ? 1 : 2
+        return Array(repeating: GridItem(.flexible(), spacing: LioTheme.Spacing.sm, alignment: .top), count: count)
+    }
 
     var body: some View {
         ScrollView {
@@ -16,185 +25,111 @@ struct LioMetroGuideView: View {
                     .font(LioTheme.display(.title2).weight(.semibold))
                     .foregroundStyle(LioTheme.ink)
                     .accessibilityAddTraits(.isHeader)
-                ForEach(LioMetroCity.allCases) { city in
-                    NavigationLink {
-                        LioMetroCityGuideView(language: language, city: city)
-                    } label: {
-                        cityCard(city)
+                // Cities only, no regions (JT 2026-11-25): the best-known first, then the rest by pinyin.
+                LazyVGrid(columns: columns, spacing: LioTheme.Spacing.sm) {
+                    ForEach(LioMetroCity.allCases) { city in
+                        NavigationLink {
+                            LioMetroMapScreen(language: language, city: city)
+                        } label: {
+                            LioMetroCityCard(city: city, language: language)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(city.name(in: language) + language.text(", ", "，") + city.detail(in: language))
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityIdentifier(city.identifier)
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(city.name(in: language) + language.text(", ", "，") + city.summary(in: language))
-                    .accessibilityAddTraits(.isButton)
-                    .accessibilityIdentifier(city.identifier)
                 }
             }
-            .padding(18)
+            .padding(.horizontal, LioTheme.Spacing.md)
+            .padding(.vertical, 18)
         }
         .background(LioTheme.paper)
         .modifier(LioMetroNavigationTitle(title: language.text("Metro Guide", "地铁指南"), colorScheme: colorScheme))
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { finding = true } label: {
+                    Label(language.text("Find a city", "查找城市"), systemImage: "magnifyingglass")
+                }
+                .accessibilityIdentifier("lio.metro.city.find")
+            }
+        }
+        .sheet(isPresented: $finding) {
+            LioMetroCityFinder(language: language) { city in
+                finding = false
+                found = city
+            }
+        }
+        .navigationDestination(item: $found) { city in
+            LioMetroMapScreen(language: language, city: city)
+        }
     }
+}
 
-    private func cityCard(_ city: LioMetroCity) -> some View {
-        HStack(spacing: LioTheme.Spacing.sm) {
-            Text(city.nativeName.prefix(1))
-                .font(LioTheme.display(.title2).weight(.bold))
+/// One city card, laid out like a Tools card: an icon, the city's name, and below it the
+/// Chinese name (to match signs) in English or the province in Chinese. Text wraps instead of truncating.
+private struct LioMetroCityCard: View {
+    let city: LioMetroCity
+    let language: LioLanguage
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+            // The Tools card's icon well. A Chinese initial here failed the Dynamic Type audit (#1450).
+            Image(systemName: "tram.fill")
+                .font(.title3.weight(.semibold))
                 .foregroundStyle(LioTheme.vermilion)
-                .frame(width: 48, height: 48)
+                .frame(width: 36, height: 36)
                 .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(city.name(in: language)).font(.headline)
-                    if language == .english {
-                        Text(city.nativeName).font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
-                    }
-                }
-                Text(city.summary(in: language))
-                    .font(.footnote)
-                    .foregroundStyle(LioTheme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer(minLength: 8)
-            Image(systemName: "chevron.forward")
-                .font(.footnote.weight(.semibold))
+            Text(city.name(in: language))
+                .font(.headline)
+                .foregroundStyle(LioTheme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(city.detail(in: language))
+                .font(.footnote)
                 .foregroundStyle(LioTheme.inkSecondary)
-                .accessibilityHidden(true)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
         }
-        .foregroundStyle(LioTheme.ink)
+        .multilineTextAlignment(.leading)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
         .padding(LioTheme.Spacing.md)
-        .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
         .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
         .contentShape(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
     }
 }
 
-/// One city's guide. The city can still be switched here without going back.
-struct LioMetroCityGuideView: View {
+/// Every metro city in list order, searchable by English or Chinese name or province.
+private struct LioMetroCityFinder: View {
     let language: LioLanguage
-    @State var city: LioMetroCity
-    @Environment(\.colorScheme) private var colorScheme
-
-    init(language: LioLanguage, city: LioMetroCity) {
-        self.language = language
-        _city = State(initialValue: city)
-    }
+    let onSelect: (LioMetroCity) -> Void
+    @State private var text = ""
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text(language.text("City", "城市"))
-                        .foregroundStyle(LioTheme.ink)
-                    Spacer(minLength: 8)
-                    Menu {
-                        ForEach(LioMetroCity.allCases) { option in
-                            Button(option.name(in: language)) { city = option }
-                        }
-                    } label: {
-                        Label(city.name(in: language), systemImage: "chevron.down")
-                            .frame(minWidth: 44, minHeight: 44)
-                            .contentShape(Rectangle())
+        NavigationStack {
+            List(LioMetroCity.cities(matching: text)) { city in
+                Button { onSelect(city) } label: {
+                    HStack {
+                        Text(city.name(in: language)).foregroundStyle(LioTheme.ink)
+                        Spacer(minLength: 8)
+                        Text(language == .english ? city.nameZH : city.provinceZH)
+                            .foregroundStyle(LioTheme.inkSecondary)
                     }
-                    .accessibilityIdentifier("lio.metro.city")
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
                 }
-
-                if city.mapResource != nil {
-                    NavigationLink {
-                        LioMetroMapScreen(language: language, city: city)
-                    } label: {
-                        interactiveMapCard
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("lio.metro.interactive")
-                }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Link(destination: city.mapURL) {
-                        Label(language.text("Official line map and stations", "官方线路图和车站"),
-                              systemImage: "map")
-                            .font(.headline)
-                            .foregroundStyle(LioTheme.ink)
-                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("lio.metro.map")
-                    Link(destination: city.guideURL) {
-                        Label(language.text("Official ticket guide", "官方票务指南"), systemImage: "arrow.up.right")
-                            .foregroundStyle(LioTheme.ink)
-                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("lio.metro.source")
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 4)
-                .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
-
-                ForEach(Array(LioMetroGuideSection.allCases.enumerated()), id: \.offset) { index, section in
-                    instruction(step: index + 1, section)
-                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("lio.metro.find." + city.id)
             }
-            .padding(18)
-        }
-        .background(LioTheme.paper)
-        .modifier(LioMetroNavigationTitle(title: city.name(in: language) + language.text(" Metro", "地铁"),
-                                          colorScheme: colorScheme))
-    }
-
-    /// #1450: the bundled, zoomable line map, drawn from the operator's own station data.
-    private var interactiveMapCard: some View {
-        HStack(spacing: LioTheme.Spacing.sm) {
-            Image(systemName: "point.3.connected.trianglepath.dotted")
-                .font(.title2.weight(.semibold))
-                .foregroundStyle(LioTheme.onVermilion)
-                .frame(width: 48, height: 48)
-                .background(LioTheme.vermilion, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(language.text("Interactive line map", "可交互线路图")).font(.headline)
-                Text(language.text("Zoom in, tap a station, then take a taxi or get directions.",
-                                   "缩放查看，点车站可打车或导航。"))
-                    .font(.footnote)
-                    .foregroundStyle(LioTheme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            .searchable(text: $text, placement: .navigationBarDrawer(displayMode: .always),
+                        prompt: language.text("City or province", "城市或省份"))
+            .navigationTitle(language.text("Find a city", "查找城市"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button(language.text("Close", "关闭")) { dismiss() } }
             }
-            Spacer(minLength: 8)
-            Image(systemName: "chevron.forward")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(LioTheme.inkSecondary)
-                .accessibilityHidden(true)
         }
-        .foregroundStyle(LioTheme.ink)
-        .padding(LioTheme.Spacing.md)
-        .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
-        .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
-        .contentShape(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
-    }
-
-    private func instruction(step: Int, _ section: LioMetroGuideSection) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                Text("\(step)")
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(LioTheme.onVermilion)
-                    .frame(width: 24, height: 24)
-                    .background(LioTheme.vermilion, in: Circle())
-                    .accessibilityHidden(true)
-                Label(section.title(in: language), systemImage: section.symbol)
-                    .font(.headline)
-                    .accessibilityAddTraits(.isHeader)
-            }
-            RunReadableText(text: section.text(for: city, in: language), color: LioTheme.ink)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .accessibilityIdentifier(section.identifier)
-        }
-        .foregroundStyle(LioTheme.ink)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
     }
 }
 

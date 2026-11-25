@@ -151,6 +151,28 @@ def test_unknown_landmark_and_empty_lists_are_explicit(ledger):
     assert empty['items'] == []
 
 
+def test_repeated_gaode_ids_become_one_card(ledger):
+    # The App rejects a page with repeated hotel IDs, so the server keeps only the first row of each.
+    supplier = Supplier(hotels=[HOTELS[0], dict(HOTELS[0], name='重复行'), HOTELS[1]])
+    result = service_for(ledger, supplier).search(
+        'owner-a', HotelSearchRequest.model_validate(payload()), lambda: None)
+    assert [item['id'] for item in result['items']] == ['B0H1', 'B0H2']
+    assert result['items'][0]['name_zh'] == '北京王府井希尔顿酒店'
+    assert result['omitted_items'] == 1
+
+
+def test_daily_limit_refuses_before_any_call_and_leaves_no_intent(ledger, monkeypatch):
+    from cj_usage import hotel_budget
+
+    monkeypatch.setattr(hotel_budget, 'DAILY_SEARCH_LIMIT', 0)
+    supplier = Supplier()
+    with pytest.raises(PluginError) as limit:
+        service_for(ledger, supplier).search('owner-a', HotelSearchRequest.model_validate(payload()), lambda: None)
+    assert (limit.value.status, limit.value.code) == (429, 'quota_exceeded') and supplier.calls == []
+    with ledger.connect() as db:
+        assert db.execute("SELECT count(*) FROM attempt WHERE id GLOB 'amap-hotel.1:*'").fetchone()[0] == 0
+
+
 def test_english_names_use_the_existing_translation_relay_and_fail_soft(ledger):
     seen = []
 
