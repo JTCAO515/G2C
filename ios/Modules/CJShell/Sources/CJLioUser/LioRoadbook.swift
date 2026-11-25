@@ -28,6 +28,8 @@ struct LioRoadbook: Identifiable, Sendable {
     let city: City?
     let createdAt: Date
     let itinerary: LioRichItinerary
+    /// Places filled in through ROADBOOK.1, by stop id; kept with the offline copy and printed in the PDF.
+    var details: [String: LioRoadbookDetail] = [:]
 
     func coverTitle(_ language: LioLanguage) -> String { city?.name(language) ?? itinerary.title }
 

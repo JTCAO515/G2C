@@ -106,9 +106,14 @@ import Testing
 
     @Test func detailsTravelWithTheOfflineCopyAndOlderCopiesStillOpen() throws {
         let detail = try #require(try LioRoadbookWire.read(Data(Self.reply.utf8), asked: Self.places.map(\.id))["d1s2"]?.detail)
-        let book = LioRoadbookTests.roadbook().with(details: ["d1s2": detail])
+        let base = LioRoadbookTests.roadbook()
+        let stopID = base.itinerary.days[0].stops[0].id
+        let book = base.with(details: [stopID: detail])
         let restored = try LioRoadbookArchive(book).roadbook()
-        #expect(restored.details["d1s2"] == detail)
+        #expect(restored.details[stopID] == detail)
+        #expect(throws: LioRoadbookArchive.Failure.self) {
+            try LioRoadbookArchive(base.with(details: ["no-such-stop": detail])).roadbook()
+        }
 
         var json = try #require(String(data: JSONEncoder().encode(LioRoadbookArchive(LioRoadbookTests.roadbook())), encoding: .utf8))
         json = json.replacingOccurrences(of: ",\"details\":[]", with: "").replacingOccurrences(of: "\"details\":[],", with: "")
