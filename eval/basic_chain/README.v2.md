@@ -156,5 +156,5 @@ JT邀请。只有另行核实目标构建/发行产物及所需App证据、真�
 CLI退出0仅表示real_gate_status=PASS；FAIL/UNKNOWN/UNRUN退出1，与发布许可分开。
 
 注入测试callback的执行始终标L0_CONTROL、real_gate_status=UNRUN、release_allowed=false。
-本地fixture的14个逻辑PASS不能生成真实发布证书。23:00–08:00不开始UI准备/新请求；
+本地fixture的14个逻辑PASS不能生成真实发布证书。按 [JT 决定](https://github.com/JTCAO515/G2C/issues/495#issuecomment-7042305501)，UI 准备和新请求均受 B 签发的窗口约束，可跨午夜。
 原件核对使用原授权、原ID，不能借fresh Memory种子恢复已收回用途。

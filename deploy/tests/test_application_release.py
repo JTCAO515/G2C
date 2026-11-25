@@ -3,6 +3,7 @@ from datetime import datetime,timedelta,timezone
 from hashlib import sha256
 import json
 from pathlib import Path
+import re
 from types import SimpleNamespace
 
 import pytest
@@ -194,6 +195,18 @@ def test_release_ci_rejects_a_runner_miss_left_in_the_final_attempt(workflow_evi
     evidence['workflow_runs'][0]['conclusion'] = 'failure'
     with pytest.raises(ValueError):
         application_release.verify_release_ci(github_fixture(evidence), SOURCE)
+
+
+def test_release_ci_jobs_match_the_ci_workflow():
+    # The gate must expect exactly the jobs ci.yml defines, including every postgres shard.
+    body = (Path(__file__).resolve().parents[2] / application_release.CI_PATH).read_text(
+        encoding='utf-8').split('\njobs:\n', 1)[1]
+    ids = set(re.findall(r'^  ([A-Za-z0-9_-]+):\s*$', body, re.M))
+    shards = re.search(r'^ +shard: \[([0-9, ]+)\]\s*$', body, re.M).group(1).split(',')
+    assert not re.search(r'^    name:', body, re.M)  # job check names are their ids
+    assert [int(s) for s in shards] == list(range(application_release.POSTGRES_SHARDS))
+    assert (ids - {'postgres-shard'}) | {f'postgres-shard ({int(s)})' for s in shards} \
+        == application_release.CI_JOBS
 
 
 def test_release_ci_accepts_skipped_monitor_with_all_required_jobs(workflow_evidence):

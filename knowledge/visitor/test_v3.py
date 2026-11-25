@@ -14,7 +14,7 @@ from validate_v2 import validate_entry_v2
 from validate_v3 import V3_CITIES, load_entries_v3, validate_entry_v3
 
 ROOT = Path(__file__).resolve().parent
-TODAY = date(2026, 11, 16)
+TODAY = date(2026, 11, 20)
 
 
 class NineCityContentTests(unittest.TestCase):
@@ -76,7 +76,8 @@ class NineCityContentTests(unittest.TestCase):
 
     def test_date_city_shape_and_version_boundaries_remain_strict(self):
         for patch in [{'cities': ['suzhou']}, {'cities': ['taizhou']},
-                      {'checked_on': '2026-11-17'}, {'expires_on': '2026-11-16'},
+                      {'checked_on': '2026-11-21'}, {'expires_on': '2026-11-19'},
+                      {'expires_on': TODAY.isoformat()},
                       {'format_version': 'visitor-entry.2'}, {'extra': True}]:
             with self.subTest(patch=patch), self.assertRaises(ValueError):
                 validate_entry_v3({**self.entry, **patch}, as_of=TODAY)

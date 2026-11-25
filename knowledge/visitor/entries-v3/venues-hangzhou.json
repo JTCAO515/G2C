@@ -6,8 +6,8 @@
     "cities": [
       "hangzhou"
     ],
-    "checked_on": "2026-11-17",
-    "expires_on": "2026-11-23",
+    "checked_on": "2026-11-20",
+    "expires_on": "2026-12-04",
     "source_urls": [
       "https://wgly.hangzhou.gov.cn/art/2024/7/12/art_1229505585_58956471.html",
       "https://www.trip.com/travel-guide/attraction/hangzhou/west-lake-82922"
@@ -64,8 +64,8 @@
     "entry_kind": "fact",
     "topic": "passport_booking",
     "cities": ["hangzhou"],
-    "checked_on": "2026-11-16",
-    "expires_on": "2026-11-23",
+    "checked_on": "2026-11-20",
+    "expires_on": "2026-12-04",
     "source_urls": [
       "https://wgly.hangzhou.gov.cn/art/2023/8/16/art_1229505585_58948381.html",
       "https://wgly.hangzhou.gov.cn/art/2022/5/11/art_1229505585_58940550.html"

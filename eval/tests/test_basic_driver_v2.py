@@ -1,5 +1,4 @@
 """Real-action orchestration boundaries tested without UI/native transports."""
-from datetime import datetime,timezone
 from copy import deepcopy
 from hashlib import sha256
 from pathlib import Path
@@ -63,8 +62,7 @@ def test_UI_preparation_precedes_server_checkpoint_and_guard_failure_admits_no_a
         if request['kind']=='checkpoint':raise Invalid('actual native source changed')
         assert request['kind']=='stop_new'
         return {'status':'READ'}
-    report=execute(plan,config,root,now=lambda:datetime(2026,11,16,2,tzinfo=timezone.utc),
-                   clock=clock,sleep=sleep,call=call)
+    report=execute(plan,config,root, clock=clock,sleep=sleep,call=call)
     assert events==['UI_PREPARED','checkpoint','stop_new']
     assert not(root/'00-admission.json').exists()
     assert report['totals']==dict(PASS=0,FAIL=0,UNKNOWN=1,UNRUN=13)
@@ -72,11 +70,16 @@ def test_UI_preparation_precedes_server_checkpoint_and_guard_failure_admits_no_a
     assert report['service_layer']=='L0_CONTROL'and report['real_gate_status']=='UNRUN'
 
 
-def test_night_refuses_even_UI_preparation_and_retains_full_denominator(tmp_path):
-    plan,config=inputs(tmp_path);calls=[]
-    report=execute(plan,config,tmp_path/'night',now=lambda:datetime(2026,11,16,15,tzinfo=timezone.utc),
-                   call=lambda name,request:calls.append((name,request['kind']))or{'status':'READ'})
-    assert calls==[('backend','stop_new')]
+def test_preparation_timeout_denies_admission_and_retains_full_denominator(tmp_path):
+    plan, config = inputs(tmp_path)
+    calls = []
+    root = tmp_path / 'run'
+    ticks = iter((0, config['ui_prepare_seconds']))
+    report = execute(plan, config, root, clock=lambda: next(ticks),
+                     call=lambda name, request: calls.append((name, request['kind'])) or {'status': 'READ'})
+    assert (root / '00-prepare.json').exists()
+    assert not (root / '00-admission.json').exists()
+    assert calls == [('backend', 'stop_new')]
     assert report['totals']==dict(PASS=0,FAIL=0,UNKNOWN=1,UNRUN=13)
     assert report['cost']['actual_paid_cny']is None and not report['release_allowed']
 
@@ -200,7 +203,7 @@ def test_standard_driver_bootstraps_old_chat_from_qualified_read_without_seed_or
             return host
         assert request['kind']=='stop_new'
         return {'status':'READ'}
-    report=execute(plan,config,root,now=lambda:datetime(2026,11,16,2,tzinfo=timezone.utc),clock=clock,sleep=sleep,call=call)
+    report=execute(plan,config,root,clock=clock,sleep=sleep,call=call)
     if fault in(None,'publication_pending'):
         assert report['totals']==dict(PASS=1,FAIL=0,UNKNOWN=1,UNRUN=12)
         assert report['rows'][0]['status']=='PASS'

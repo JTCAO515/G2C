@@ -6,6 +6,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from check_lio_read_window import main as check_read_window
 from lio_basic_ui_driver import compact
 from lio_basic_ui_projection import EvidenceUnknown
 from watch_lio_basic_smoke import AdmittedNativeUI, Coordinator, current_window, read_full_reply
@@ -58,6 +59,31 @@ class CoordinatorFences(unittest.TestCase):
         with patch.object(runner, 'client', side_effect=AssertionError('No UI allowed')):
             with self.assertRaises(EvidenceUnknown): runner.phase(path)
         self.assertFalse((self.root / '00-A-completed.json').exists())
+
+    def test_issued_interval_can_cross_beijing_midnight_and_still_expires(self):
+        config = dict(starts_at='2026-11-16T15:58:00Z', ends_at='2026-11-16T16:03:00Z')
+        start, end = (datetime.fromisoformat(config[key]) for key in ('starts_at', 'ends_at'))
+        for now in (start, datetime(2026, 11, 16, 16, tzinfo=timezone.utc)):
+            with self.subTest(now=now), patch('watch_lio_basic_smoke.datetime', wraps=datetime) as clock:
+                clock.now.return_value = now
+                current_window(config)
+        with patch('watch_lio_basic_smoke.datetime', wraps=datetime) as clock:
+            clock.now.return_value = end
+            with self.assertRaisesRegex(EvidenceUnknown, 'Outside the issued purpose interval'):
+                current_window(config)
+
+    def test_account_free_native_read_control_can_prepare_at_night(self):
+        output = self.root / 'native-read-control'
+        build = self.root / 'build'
+        argv = ['check', '--simulator', 'owned-control', '--output', str(output),
+                '--build-dir', str(build), '--case', 'snapshot']
+        with patch('sys.argv', argv), patch('check_lio_read_window.datetime', wraps=datetime) as clock, \
+                patch('check_lio_read_window.subprocess.run', return_value=SimpleNamespace(returncode=1)), \
+                patch('check_lio_read_window.exercise') as exercise:
+            clock.now.return_value = datetime(2026, 11, 16, 16, tzinfo=timezone.utc)
+            check_read_window()
+        exercise.assert_called_once_with(output.resolve() / 'snapshot', build.resolve(),
+                                         'owned-control', 'snapshot_in_window')
 
     def test_each_mutation_rechecks_authority_and_passes_the_original_interval(self):
         native = object.__new__(AdmittedNativeUI)

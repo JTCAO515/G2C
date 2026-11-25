@@ -13,7 +13,7 @@ import subprocess
 import time
 from zoneinfo import ZoneInfo
 
-from lio_basic_smoke_capture import artifact, day_guard, verify_installation
+from lio_basic_smoke_capture import artifact, verify_installation
 from lio_paginated_capture import PagedCapture
 from lio_basic_ui_driver import NativeUI, decode, write
 from lio_basic_ui_projection import EvidenceUnknown, semantic_nodes
@@ -49,7 +49,6 @@ def wait(path, deadline):
 
 
 def current_window(config):
-    day_guard()
     now = datetime.now(ZoneInfo('UTC'))
     start, end = (datetime.fromisoformat(config[key]) for key in ('starts_at', 'ends_at'))
     if start.tzinfo is None or end.tzinfo is None or not start <= now < end:
