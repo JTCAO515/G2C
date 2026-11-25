@@ -280,7 +280,8 @@ struct LioTransportOption: Equatable, Hashable, Identifiable, Sendable {
     /// duration (so trips longer than a day are counted correctly).
     var arrivalDayOffset: Int {
         let parts = departTime.split(separator: ":").compactMap { Int($0) }
-        guard parts.count == 2 else { return arriveTime < departTime ? 1 : 0 }
+        // An unreadable departure time never guesses a day change.
+        guard parts.count == 2, (0..<24).contains(parts[0]), (0..<60).contains(parts[1]) else { return 0 }
         return (parts[0] * 60 + parts[1] + durationMinutes) / 1440
     }
 
@@ -441,6 +442,16 @@ enum LioTransportFormat {
     static func arrival(_ option: LioTransportOption, _ language: LioLanguage) -> String {
         let offset = option.arrivalDayOffset
         return offset > 0 ? "\(option.arriveTime) +\(offset)" : option.arriveTime
+    }
+
+    /// What VoiceOver reads for the arrival: the day change in words rather than "+1".
+    static func arrivalSpoken(_ option: LioTransportOption, _ language: LioLanguage) -> String {
+        let time = option.arriveTime
+        switch option.arrivalDayOffset {
+        case 0: return language.text("Arrives \(time)", "\(time) 到达")
+        case 1: return language.text("Arrives \(time) the next day", "次日 \(time) 到达")
+        case let days: return language.text("Arrives \(time), \(days) days later", "\(days) 天后 \(time) 到达")
+        }
     }
 
     static func from(_ minor: Int, _ language: LioLanguage) -> String {
