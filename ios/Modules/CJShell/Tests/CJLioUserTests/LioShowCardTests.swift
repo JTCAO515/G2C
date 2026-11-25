@@ -7,7 +7,7 @@ struct LioShowCardTests {
     private let hotel = LioShowCardInput.Hotel(nameZH: "北京王府井希尔顿酒店", addressZH: "北京市东城区王府井东街8号")
 
     @Test func everySceneHasCardsAndEveryCardHasBothLanguages() {
-        #expect(LioShowCardScene.allCases == [.hotel, .pharmacy, .restaurant, .directions, .bank])
+        #expect(LioShowCardScene.allCases == [.hotel, .pharmacy, .restaurant, .payment, .directions, .bank])
         for scene in LioShowCardScene.allCases {
             #expect(!scene.cards.isEmpty)
             #expect(!scene.title(.english).isEmpty && !scene.title(.chinese).isEmpty)
@@ -160,6 +160,14 @@ struct LioShowCardTests {
             #expect(content.detailsZH.contains("这是给孩子用的，孩子 6 岁。"))
             #expect(content.english.contains("This is for a child aged 6."))
         }
+        for (age, shown) in [("0", "0"), ("17", "17"), ("07", "7")] {
+            input.childAge = age
+            #expect(LioShowCardKind.symptoms.content(input).detailsZH.contains("这是给孩子用的，孩子 \(shown) 岁。"), "\(age)")
+        }
+        for age in ["18", "-1", "１２", "1.5", "123"] {
+            input.childAge = age
+            #expect(input.cleanChildAge == nil, "\(age)")
+        }
         input.childAge = "six"
         #expect(LioShowCardKind.symptoms.content(input).detailsZH.contains("这是给孩子用的。"), "only digits make an age")
     }
@@ -182,6 +190,13 @@ struct LioShowCardTests {
         input.currency = .jpy
         input.amount = "1,000"
         #expect(LioShowCardKind.exchange.content(input).english.first == "Hello, I'd like to exchange 1,000 Japanese yen for Chinese yuan.")
+        input.amount = "1"
+        input.currency = .eur
+        #expect(LioShowCardKind.exchange.content(input).english.first == "Hello, I'd like to exchange 1 euro for Chinese yuan.")
+        input.currency = .gbp
+        #expect(LioShowCardKind.exchange.content(input).english.first == "Hello, I'd like to exchange 1 British pound for Chinese yuan.")
+        input.amount = "1.00"
+        #expect(LioShowCardKind.exchange.content(input).english.first == "Hello, I'd like to exchange 1.00 British pounds for Chinese yuan.")
         input.amount = "-5"
         #expect(input.cleanAmount == nil)
         input.amount = "abc"
@@ -207,6 +222,35 @@ struct LioShowCardTests {
         #expect(foreign.detailsZH == ["我的卡是外国银行卡（比如 Visa、Mastercard）。"])
     }
 
+    @Test func paymentCardsAskPolitelyAndOfferAnotherWay() {
+        #expect(LioShowCardScene.payment.cards == [.payCash, .payForeignCard, .scanMyCode, .paymentFailed])
+        var input = LioShowCardInput()
+        #expect(LioShowCardKind.payCash.content(input).mainZH == "您好，请问可以付现金吗？")
+        #expect(LioShowCardKind.payForeignCard.content(input).mainZH == "您好，请问可以刷外国银行卡吗？")
+        #expect(LioShowCardKind.payForeignCard.content(input).detailsZH == ["比如 Visa 或 Mastercard。"])
+        let scan = LioShowCardKind.scanMyCode.content(input)
+        #expect(scan.mainZH == "您好，请帮我扫一下我的付款码。")
+        #expect(!scan.detailsZH.contains { $0.contains("支付宝") || $0.contains("微信") }, "no wallet named until chosen")
+        input.wallet = .weixin
+        let weixin = LioShowCardKind.scanMyCode.content(input)
+        #expect(weixin.detailsZH == ["我用的是微信支付。"])
+        #expect(weixin.english == ["Hello, could you scan my payment code, please?", "I'm using Weixin Pay."])
+        input.wallet = .alipay
+        #expect(LioShowCardKind.scanMyCode.content(input).detailsZH == ["我用的是支付宝。"])
+        let failed = LioShowCardKind.paymentFailed.content(input)
+        #expect(failed.mainZH == "不好意思，我的付款没有成功。")
+        #expect(failed.detailsZH.contains("请先帮我看一下您那边有没有收到款，以免重复付款。"))
+        #expect(failed.detailsZH.contains("可以换一种方式付吗？比如现金、刷卡，或者您扫我的付款码。"))
+    }
+
+    @Test func theUsualWalletIsRemembered() {
+        var input = LioShowCardInput()
+        input.wallet = .alipay
+        var restored = LioShowCardInput()
+        LioShowCardDetails(input).apply(to: &restored)
+        #expect(restored.wallet == .alipay)
+    }
+
     private func filledInput() -> LioShowCardInput {
         var input = LioShowCardInput(hotel: hotel)
         input.roomNumber = "1208"
@@ -226,6 +270,7 @@ struct LioShowCardTests {
         input.atmLocation = "王府井大街 ATM"
         input.conditions = [.pregnant]
         input.childAge = "4"
+        input.wallet = .weixin
         return input
     }
 }

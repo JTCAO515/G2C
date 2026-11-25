@@ -90,22 +90,37 @@ import Testing
         #expect(hotel.place.nameEN.isEmpty, "a hotel without an English name is kept")
     }
 
-    @Test func featureIsOffUnlessTheBuildSaysYes() {
-        #expect(LioShowCardFeature.enabled(infoValue: nil) == false)
-        #expect(LioShowCardFeature.enabled(infoValue: "NO") == false)
-        #expect(LioShowCardFeature.enabled(infoValue: "") == false)
-        #expect(LioShowCardFeature.enabled(infoValue: "YES") == true)
-        #expect(LioShowCardFeature.enabled(infoValue: true) == true)
-        #expect(LioShowCardFeature.enabled(infoValue: false) == false)
+    @Test func storesShareTheAccountFolderThatSignOutCleans() throws {
+        // The Tools tab finds the message folder as the roadbook folder's parent; sign-out cleans that folder.
+        let root = URL(fileURLWithPath: "/accounts/a1", isDirectory: true)
+        let derived = try #require(LioReturnHotelTools.messageDirectory(roadbookDirectory:
+            LioAccountFolders.roadbooks(inMessageDirectory: root)))
+        #expect(derived.standardizedFileURL.path == root.standardizedFileURL.path)
+        let roadbooks = LioAccountFolders.roadbooks(inMessageDirectory: root)
+        let hotel = LioReturnHotelTools.hotelStore(roadbookDirectory: roadbooks, isCurrent: { true })
+        #expect(hotel?.directory.path == root.appendingPathComponent("return-hotel").path)
+        let details = LioReturnHotelTools.detailsStore(roadbookDirectory: roadbooks, isCurrent: { true })
+        #expect(details?.directory.path == root.appendingPathComponent("show-card-details").path)
+        #expect(LioReturnHotelTools.hotelStore(roadbookDirectory: nil, isCurrent: { true }) == nil)
+    }
+
+    @Test func onlyAnExplicitYesTurnsTheBuildFlagOn() {
+        #expect(LioShowCardFeature.enabled(infoValue: "YES"))
+        for value: Any? in [nil, "", "NO", "yes", "$(G2C_SHOW_CARD_ENABLED)", true, false, 1] {
+            #expect(!LioShowCardFeature.enabled(infoValue: value), "\(String(describing: value))")
+        }
     }
 
     @Test func lioRecognisesAskingToGoBackToTheHotel() {
         for text in ["回酒店", "我要回酒店", "怎么回酒店？", "带我回宾馆", "Take me back to my hotel",
-                     "back to hotel", "How do I get back to the hotel?"] {
+                     "back to hotel", "How do I get back to the hotel?", "Can you get me back to the hotel",
+                     "bring me back to my hotel", "drive us back to our hotel", "I want to go back to my accommodation",
+                     "I'm tired, back to my hotel please", "return to the hostel"] {
             #expect(LioReturnHotel.isReturnRequest(text), "\(text)")
         }
         for text in ["推荐酒店", "find a hotel near the Bund", "酒店早餐几点", "hotel prices in Shanghai",
-                     "We came back from the hotel", "How do I return the hotel key?"] {
+                     "We came back from the hotel", "How do I return the hotel key?",
+                     "go back to hotel search results", "back to hotel prices"] {
             #expect(!LioReturnHotel.isReturnRequest(text), "\(text)")
         }
     }
