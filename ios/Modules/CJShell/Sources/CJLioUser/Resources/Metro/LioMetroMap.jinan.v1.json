@@ -16,7 +16,7 @@
  ],
  "stations": [
   {"id": "ji001", "nameZH": "方特", "nameEN": "Fangte", "x": 211.6, "y": 686.0, "lines": ["ji-1"]},
-  {"id": "ji002", "nameZH": "济南西站", "nameEN": "Jinanxizhan", "x": 210.2, "y": 739.2, "lines": ["ji-1"]},
+  {"id": "ji002", "nameZH": "济南西站", "nameEN": "Jinan West Railway Station", "x": 210.2, "y": 739.2, "lines": ["ji-1"]},
   {"id": "ji003", "nameZH": "大杨", "nameEN": "Dayang", "x": 209.5, "y": 796.0, "lines": ["ji-1", "ji-5"]},
   {"id": "ji004", "nameZH": "王府庄", "nameEN": "Wangfuzhuang", "x": 210.9, "y": 852.0, "lines": ["ji-1", "ji-3"]},
   {"id": "ji005", "nameZH": "玉符河", "nameEN": "Yufuhe", "x": 159.9, "y": 865.7, "lines": ["ji-1"]},
@@ -82,7 +82,7 @@
   {"id": "ji065", "nameZH": "川流", "nameEN": "Chuanliu", "x": 1103.6, "y": 555.2, "lines": ["ji-4"]},
   {"id": "ji066", "nameZH": "曲家庄", "nameEN": "Qujiazhuang", "x": 1023.1, "y": 555.2, "lines": ["ji-4"]},
   {"id": "ji067", "nameZH": "滩头", "nameEN": "Tantou", "x": 930.4, "y": 555.2, "lines": ["ji-4"]},
-  {"id": "ji068", "nameZH": "济南东站", "nameEN": "Jinan Dongzhan", "x": 899.5, "y": 582.5, "lines": ["ji-4", "ji-6"]},
+  {"id": "ji068", "nameZH": "济南东站", "nameEN": "Jinan East Railway Station", "x": 899.5, "y": 582.5, "lines": ["ji-4", "ji-6"]},
   {"id": "ji069", "nameZH": "裴家营", "nameEN": "Peijiaying", "x": 900.2, "y": 623.5, "lines": ["ji-4"]},
   {"id": "ji070", "nameZH": "王舍人", "nameEN": "Wangsheren", "x": 800.3, "y": 645.7, "lines": ["ji-4"]},
   {"id": "ji071", "nameZH": "张马屯", "nameEN": "Zhangmatun", "x": 747.8, "y": 645.0, "lines": ["ji-4"]},

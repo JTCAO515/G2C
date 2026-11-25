@@ -51,7 +51,7 @@
   {"id": "su033", "nameZH": "陆慕", "nameEN": "Lumu", "x": 568.2, "y": 246.6, "lines": ["su-2"]},
   {"id": "su034", "nameZH": "平泷路东", "nameEN": "Pinglonglu Dong", "x": 568.2, "y": 260.8, "lines": ["su-2"]},
   {"id": "su035", "nameZH": "平河路", "nameEN": "Pinghe Lu", "x": 568.7, "y": 276.9, "lines": ["su-2", "su-6"]},
-  {"id": "su036", "nameZH": "苏州火车站", "nameEN": "Suzhou Huochezhan", "x": 528.4, "y": 312.5, "lines": ["su-2", "su-4"]},
+  {"id": "su036", "nameZH": "苏州火车站", "nameEN": "Suzhou Railway Station", "x": 528.4, "y": 312.5, "lines": ["su-2", "su-4"]},
   {"id": "su037", "nameZH": "山塘街", "nameEN": "Shantang Jie", "x": 492.4, "y": 369.3, "lines": ["su-2"]},
   {"id": "su038", "nameZH": "石路", "nameEN": "Shilu", "x": 492.4, "y": 396.8, "lines": ["su-2"]},
   {"id": "su039", "nameZH": "三香广场", "nameEN": "Sanxiang Guangchang", "x": 492.9, "y": 453.1, "lines": ["su-2"]},

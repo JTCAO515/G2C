@@ -38,7 +38,7 @@
   {"id": "wu026", "nameZH": "马料地", "nameEN": "Maliaodi", "x": 291.6, "y": 463.6, "lines": ["wu-2"]},
   {"id": "wu027", "nameZH": "平川路", "nameEN": "Pingchuan Lu", "x": 261.3, "y": 440.7, "lines": ["wu-2"]},
   {"id": "wu028", "nameZH": "九家湾", "nameEN": "Jiujiawan", "x": 233.9, "y": 421.5, "lines": ["wu-2"]},
-  {"id": "wu029", "nameZH": "乌鲁木齐站", "nameEN": "Ürümqi Zhan", "x": 215.6, "y": 359.0, "lines": ["wu-2"]},
+  {"id": "wu029", "nameZH": "乌鲁木齐站", "nameEN": "Ürümqi Railway Station", "x": 215.6, "y": 359.0, "lines": ["wu-2"]},
   {"id": "wu030", "nameZH": "华山街", "nameEN": "Huashan Jie", "x": 215.9, "y": 323.0, "lines": ["wu-2"]},
   {"id": "wu031", "nameZH": "国际机场北", "nameEN": "Guoji Jichang Bei", "x": 143.6, "y": 60.0, "lines": ["wu-3"]}
  ]
