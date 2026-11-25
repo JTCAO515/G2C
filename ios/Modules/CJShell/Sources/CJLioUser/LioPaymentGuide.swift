@@ -100,7 +100,7 @@ enum LioPaymentGuideProvider: String, CaseIterable, Identifiable {
                                                     "贵州省外办外籍人士指南（2024 年 12 月）"),
                                 url: URL(string: "https://www.eguizhou.gov.cn/2024-12/25/c_1059232.htm")!)),
             .init(id: "transfer", icon: "person.2.slash",
-                  title: language.text("Transfers and red packets", "转账和发红包用不了"),
+                  title: language.text("Transfers and red packets aren't supported", "转账和发红包用不了"),
                   detail: language.text("Weixin Pay states that international cards do not support transfers or red packets. To pay a person, you can pay in cash.",
                                         "微信支付写明，外卡不支持转账和发红包。需要给个人付钱时，可以改付现金。"),
                   source: weixinHelp),
