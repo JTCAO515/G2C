@@ -23,8 +23,15 @@ def previous_turn(events):
 
 class ReadOnlyAnswers(unittest.TestCase):
     def test_small_talk_and_plain_questions_go_to_the_ordinary_answer(self):
+        for locale,text,reply in (('zh','你好！','你好！准备去哪儿玩？'),('en','Hi there!','Hey! Where are you off to?')):
+            with self.subTest(locale=locale,text=text):
+                # A bare greeting is answered in code with the approved persona copy: no lookup, no model answer.
+                wire=flow(text,city=None,days=None,intent='consult',questions=(),reply='Intake reply')
+                wire.update(planning_request_index=None,needs_tools=False)
+                published,events,lookups,result=run(wire,text,locale=locale)
+                self.assertEqual((published,events,lookups),([],[('text_delta',reply),('completed','')],[]))
+                self.assertIsNotNone(result)
         for locale,text in (
-            ('zh','你好！'),('en','Hi there!'),
             ('zh','北京是中国的首都吗？'),('en','Is Beijing the capital of China?'),
             ('en','What is the capital of China?'),
             ('en','What is the capital of France?'),
