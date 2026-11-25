@@ -450,6 +450,10 @@ struct LioHotelFinder: Sendable {
 @MainActor public struct LioHotelRelayClient {
     typealias Exchange = @MainActor (URLRequest) async throws -> (Data, URLResponse)
 
+    /// The Hong Kong relay gives Gaode and the English translation 45 s (#1544), so the App waits a little
+    /// longer and shows the relay's own timeout answer instead of a bare network error (#1512).
+    static let timeout: TimeInterval = 50
+
     private let baseURL: URL
     private let isCurrent: @MainActor () -> Bool
     private let bearer: @MainActor () -> String?
@@ -469,7 +473,7 @@ struct LioHotelFinder: Sendable {
         try Task.checkCancellation()
         guard isCurrent(), let token = bearer(), !token.isEmpty else { throw LioHotelFailure.signInRequired }
         let url = baseURL.appending(path: "v1/tools/hotel/search")
-        var request = URLRequest(url: url, timeoutInterval: 30)
+        var request = URLRequest(url: url, timeoutInterval: Self.timeout)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization")
@@ -507,7 +511,7 @@ extension LioHotelRelayClient {
               Bundle.main.object(forInfoDictionaryKey: "G2CHotelEnabled") as? String == "YES" else { return nil }
         return LioHotelRelayClient(baseURL: endpoint.url, isCurrent: isCurrent, bearer: bearer) { request in
             let policy = URLSessionConfiguration.ephemeral
-            policy.timeoutIntervalForResource = 30
+            policy.timeoutIntervalForResource = timeout
             policy.urlCache = nil
             policy.httpCookieStorage = nil
             policy.urlCredentialStorage = nil
