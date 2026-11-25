@@ -7,6 +7,7 @@ struct LioMeView<Menu: View>: View {
     let language: LioLanguage
     let memory: AnyView?
     let menu: Menu
+    @State private var showingMemory = false
 
     var body: some View {
         NavigationStack {
@@ -15,12 +16,19 @@ struct LioMeView<Menu: View>: View {
                     .listRowBackground(Color.clear)
                     .listRowInsets(EdgeInsets())
                 Section {
-                    NavigationLink {
-                        if let memory { memory } else { unavailable }
-                    } label: {
-                        row(language.text("My memory", "我的记忆"), symbol: "bookmark",
-                            detail: language.text("What Lio remembers about you", "Lio 记住的你的偏好"))
+                    // The memory page owns its NavigationStack (it was a tab root), so it is presented on its
+                    // own instead of being pushed into this stack: no stack inside a stack (#1458 review).
+                    Button { showingMemory = true } label: {
+                        HStack {
+                            row(language.text("My memory", "我的记忆"), symbol: "bookmark",
+                                detail: language.text("What Lio remembers about you", "Lio 记住的你的偏好"))
+                            Spacer(minLength: 8)
+                            Image(systemName: "chevron.forward").font(.footnote.weight(.semibold))
+                                .foregroundStyle(LioTheme.inkSecondary).accessibilityHidden(true)
+                        }
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
                     .accessibilityIdentifier("lio.me.memory")
                     NavigationLink {
                         LioProfilePreview(language: language)
@@ -68,6 +76,28 @@ struct LioMeView<Menu: View>: View {
             .toolbarBackground(LioTheme.paper, for: .navigationBar)
         }
         .tint(LioTheme.vermilion)
+        .sheet(isPresented: $showingMemory) { memorySheet }
+    }
+
+    private var memorySheet: some View {
+        (memory ?? AnyView(unavailable))
+            .safeAreaInset(edge: .top, spacing: 0) {
+                HStack {
+                    Spacer()
+                    Button { showingMemory = false } label: {
+                        Text(language.text("Done", "完成"))
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(LioTheme.vermilion)
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("lio.me.memory.done")
+                }
+                .padding(.horizontal, 16)
+                .background(LioTheme.paper)
+            }
+            .tint(LioTheme.vermilion)
     }
 
     private var header: some View {
@@ -92,7 +122,7 @@ struct LioMeView<Menu: View>: View {
     }
 
     private var unavailable: some View {
-        Text(language.text("Sign in to see what Lio remembers.", "登录后可查看 Lio 记住的内容。"))
+        Text(language.text("Nothing saved yet.", "还没有记住的内容。"))
             .foregroundStyle(LioTheme.inkSecondary)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(LioTheme.paper)
