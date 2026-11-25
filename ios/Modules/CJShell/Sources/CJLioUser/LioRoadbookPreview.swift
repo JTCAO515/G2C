@@ -61,6 +61,28 @@ enum LioRoadbookPreview {
                      createdAt: Date(timeIntervalSince1970: 1_795_000_000), itinerary: itinerary)
     }
 
+    /// A stand-in relay for screenshots: every place gets fixture details shaped like ROADBOOK.1 (no network).
+    static let enricher = LioRoadbookEnricher(enrich: { places in
+        let items = places.map { place -> [String: Any] in
+            let zh: [String: String] = [
+                "summary": "\(place.nameZH)是\(place.city)的知名去处。", "why_go": "适合第一次来\(place.city)的游客。",
+                "time_needed": "约 2 小时", "hours_booking": "开放时间和预约方式以官方为准。",
+                "tickets": "约 30–60 元，以官方为准。", "getting_there": "乘地铁到附近站点后步行前往。",
+                "food_tip": "附近可就餐：示例餐馆（约 300 米）。", "notes": "节假日人多，建议早到。"]
+            let en: [String: String] = [
+                "summary": "A well-known stop in \(place.city).", "why_go": "A good first visit.",
+                "time_needed": "About 2 hours", "hours_booking": "Check opening hours and booking with official sources.",
+                "tickets": "About 30–60 yuan; check official sources.", "getting_there": "Take the metro and walk.",
+                "food_tip": "Places to eat nearby: 示例餐馆 (about 300 m).", "notes": "Busy on holidays; arrive early."]
+            return ["id": place.id, "status": "ready", "poi_id": "PREVIEW1", "content": ["zh": zh, "en": en],
+                    "metro": [["name_zh": "示例站", "distance_m": 500]],
+                    "restaurants": [["name_zh": "示例餐馆", "address_zh": "示例路1号", "lat": 39.91, "lng": 116.40,
+                                     "distance_m": 300]]]
+        }
+        let data = try JSONSerialization.data(withJSONObject: ["version": "ROADBOOK.1", "places": items])
+        return try LioRoadbookWire.read(data, asked: places.map(\.id))
+    })
+
     static func shanghai(_ language: LioLanguage) -> LioRoadbook {
         func t(_ en: String, _ zh: String) -> String { language.text(en, zh) }
         func place(_ zh: String, _ en: String, _ address: String, _ lat: Double, _ lng: Double) -> LioRichItinerary.Place {
