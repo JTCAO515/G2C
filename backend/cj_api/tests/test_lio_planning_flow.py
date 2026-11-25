@@ -296,6 +296,24 @@ class PlanningFlow(unittest.TestCase):
         self.assertEqual(destination_query('Go to Chengdu','Go to Chengdu'),'Chengdu')
         self.assertEqual(destination_query('去成都','去成都'),'成都')
 
+    def test_consult_questions_go_to_the_detailed_answer_path(self):
+        # JT 2026-11-25 B/D (via coordination): a consult question is answered by
+        # the detailed answer path, never by the intake side reply or a city question.
+        for text,tools,locale in (('外国游客在中国怎么用支付宝？',False,'zh'),
+                                  ('Can I pay with my Visa card in China?',False,'en'),
+                                  ('Can I pay with my Visa card in China?',True,'en'),
+                                  ('在中国吃饭有什么礼仪要注意吗？',True,'zh')):
+            with self.subTest(text=text,tools=tools):
+                wire=flow(text,city=None,days=None,intent='consult',questions=(),
+                          reply='你好！准备去哪儿玩？'if locale=='zh'else'Which city would you like to visit?')
+                wire.update(planning_request_index=None,needs_tools=tools)
+                published,events,lookups,result=run(wire,text,locale=locale)
+                self.assertIsNone(result)
+                self.assertEqual((published,lookups),([],[]))
+                self.assertEqual(answer(events),'')
+                stored=context(events)
+                self.assertEqual((stored['authority'],stored['status']),('none','consult'))
+
     def test_missing_semantic_request_index_does_not_grant_save(self):
         text='去成都玩三天';wire=flow(text,questions=(),reply='成都适合安排街区散步。')
         wire.update(planning_request_index=None,needs_tools=False)
@@ -313,10 +331,10 @@ class PlanningFlow(unittest.TestCase):
             wire.update(planning_request_index=None,needs_tools=False)
             published,events,lookups,result=run(wire,text)
             self.assertEqual((published,lookups),([],[]))
-            self.assertEqual(answer(events),wire['reply'])
+            self.assertEqual(answer(events),'')  # JT 2026-11-25 B: no intake side reply
             self.assertEqual(context(events)['authority'],'none')
             self.assertEqual(context(events)['nonplanning_message_ids'],['national-message'])
-            self.assertIsNotNone(result)
+            self.assertIsNone(result)  # JT 2026-11-25 B: continues to the answer path
 
     def test_preview_translation_cannot_publish_or_supply_later_execution_facts(self):
         from cj_api.lio_city import CityReference
@@ -335,7 +353,7 @@ class PlanningFlow(unittest.TestCase):
                 quoted.update(planning_request_index=None,needs_tools=False)
                 history=(original(first),original(text))
                 published,events,lookups,_=run(quoted,text,turns=history,previous=previous,resolution=resolution)
-                self.assertEqual((published,lookups),([],[]));self.assertEqual(answer(events),quoted['reply'])
+                self.assertEqual((published,lookups),([],[]));self.assertEqual(answer(events),'')  # JT 2026-11-25 B: no intake side reply
                 previous=context(events)
                 self.assertNotIn('start_date',previous['facts']);self.assertNotIn('party_size',previous['facts'])
                 self.assertIn('national-message',previous['nonplanning_message_ids'])
@@ -784,7 +802,7 @@ class PlanningFlow(unittest.TestCase):
             wire=flow(text,city=None,days=None,questions=(),reply=reply)
             wire['needs_tools']=False
             published,events,lookups,_=run(wire,text)
-            self.assertEqual((published,lookups),([],[]));self.assertEqual(answer(events),reply)
+            self.assertEqual((published,lookups),([],[]));self.assertEqual(answer(events),'')  # JT 2026-11-25 B: answered by the detailed answer path
 
     def test_unrelated_consultation_does_not_demand_execution_parameters_or_erase_pending_plan(self):
         text='酒店和青旅有什么区别？'
@@ -792,7 +810,7 @@ class PlanningFlow(unittest.TestCase):
         wire['needs_tools']=False
         previous=dict(authority='plan',status='needs_details')
         published,events,lookups,_=run(wire,text,previous=previous)
-        self.assertEqual((published,lookups),([],[]));self.assertEqual(answer(events),wire['reply'])
+        self.assertEqual((published,lookups),([],[]));self.assertEqual(answer(events),'')  # JT 2026-11-25 B: no intake side reply
         self.assertEqual(context(events)['authority'],'plan')
         self.assertEqual(context(events)['status'],'needs_details')
 
@@ -836,7 +854,7 @@ class PlanningFlow(unittest.TestCase):
             wire=flow(text,city=city,start='2026-11-20',party=2,reply=reply,questions=())
             wire.update(planning_request_index=None,needs_tools=False)
             published,events,lookups,_=run(wire,text)
-            self.assertEqual((published,lookups),([],[]));self.assertEqual(answer(events),reply)
+            self.assertEqual((published,lookups),([],[]));self.assertEqual(answer(events),'')  # JT 2026-11-25 B: no intake side reply
             self.assertEqual(context(events)['authority'],'none')
 
     def test_pending_plan_translation_cannot_supply_or_cache_execution_facts(self):
@@ -848,7 +866,7 @@ class PlanningFlow(unittest.TestCase):
         consult=flow(text,city=None,days=None,start='2026-11-20',party=2,index=1,questions=(),reply='Starting 2026-11-20, two people.')
         consult.update(planning_request_index=None,needs_tools=False)
         published,events,lookups,_=run(consult,text,turns=(original(first),original(text)),previous=previous)
-        self.assertEqual((published,lookups),([],[]));self.assertEqual(answer(events),consult['reply'])
+        self.assertEqual((published,lookups),([],[]));self.assertEqual(answer(events),'')  # JT 2026-11-25 B: no intake side reply
         retained=context(events)
         self.assertNotIn('start_date',retained['facts']);self.assertNotIn('party_size',retained['facts'])
         following='继续';next_wire=flow(following,city=None,days=None,index=2,questions=('start_date','party_size'))

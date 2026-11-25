@@ -87,13 +87,16 @@ def exercise(auth, conninfo):
             if actor_output[0] == 'unknown':
                 raise httpx.ReadError('fixture original transport interrupted')
             value = actor_output[0]
+        elif 'response_format' not in body:
+            # JT 2026-11-25 B: after intake, a consult message continues to the detailed answer path.
+            value = None
         else:
             index = body['response_format']['json_schema']['schema']['properties']['current_source_index']['const']
             value = flow('Synthetic general travel question', city=None, days=None, intent='consult',
                 reply='Which places interest you?', questions=(), index=index)
             value.update(version='LIO-planning-intake.8', planning_request_index=None, needs_tools=False)
         event = dict(id='chatcmpl-actor-'+str(len(sent)), model=M4_MODEL,
-            choices=[dict(index=0, delta=dict(content=json.dumps(value)), finish_reason='stop')],
+            choices=[dict(index=0, delta=dict(content='Which places interest you?' if value is None else json.dumps(value)), finish_reason='stop')],
             usage=dict(prompt_tokens=100, completion_tokens=100, total_tokens=200))
         return httpx.Response(200, stream=httpx.ByteStream(('data: '+json.dumps(event)+'\n\ndata: [DONE]\n\n').encode()))
     model = MeteredDashScopeProvider(config, budget, transport=httpx.MockTransport(response))
@@ -153,7 +156,7 @@ def exercise(auth, conninfo):
             print('fixture_sends', len(sent), 'financial_states', budget.inspect(), flush=True)
         raise
     assert choice == actor_output[0]
-    assert len(sent) == 2 and sent[-1]['max_tokens'] == 1024
+    assert len(sent) == 3 and sent[-1]['max_tokens'] == 1024  # JT 2026-11-25 B: intake + answer + actor
     assert sent[-1]['response_format'] == {'type':'json_object'} and 'tools' not in sent[-1]
     assert sent[-1]['messages'][1:] == messages[1:]
     assert sent[-1]['messages'][0]['content'] == (SIMULATOR_SYSTEM+
@@ -172,9 +175,9 @@ def exercise(auth, conninfo):
         stored = db.execute('SELECT format_version,ledger FROM cj_usage_ledger_candidate WHERE scope_id=%s', (account,)).fetchone()
         ledger = decode_stored(*stored)
         assert stored[0] == 2 and ledger.config.budget == 800 and ledger.run_profiles == {}
-        assert len(ledger.attempts) == 2 and ledger.attempts[row[1]].state == 'settled'
+        assert len(ledger.attempts) == 3 and ledger.attempts[row[1]].state == 'settled'  # JT 2026-11-25 B: each DUT consult = intake + answer
     with budget.connect() as db:
-        assert db.execute('SELECT count(*) FROM attempt').fetchone() == (2,)
+        assert db.execute('SELECT count(*) FROM attempt').fetchone() == (3,)  # JT 2026-11-25 B: each DUT consult = intake + answer
         assert db.execute('SELECT state FROM attempt WHERE id=?', (row[1],)).fetchone() == ('RECEIVED',)
     captures = [json.loads(path.read_bytes()) for path in artifacts.glob('*.json')]
     assert len(captures) == 2 and all(c['registration_id'] == REGISTRATION for c in captures)
@@ -199,7 +202,7 @@ def exercise(auth, conninfo):
     rebuilt = NativeActorHost(database, tools, host.source, spec, Authority(), directory,
         profile_id=profile['id'], attempt=1, dut_message=lambda: 'dut-original', deadline=0)
     recovered = rebuilt.recover(binding.message_id)
-    assert recovered.inspect().status == 'completed' and len(sent) == 2
+    assert recovered.inspect().status == 'completed' and len(sent) == 3  # JT 2026-11-25 B: each DUT consult = intake + answer
     recovered_reader = ActorOriginals(rebuilt, artifacts)
     assert recovered_reader.input(token, binding.message_id, op) == original.argument.original()
     assert recovered_reader.fee(token, binding.message_id, op) == reader.fee(token, binding.message_id, op)
@@ -242,7 +245,7 @@ def exercise(auth, conninfo):
     try:invalid.choose(simulator_messages(english, english_history, 2))
     except ActorChoiceInvalid:pass
     else:raise AssertionError('invalid paid actor choice silently repaired')
-    assert len(sent) == 4 and invalid.originals[0].inspect().status == 'completed'
+    assert len(sent) == 6 and invalid.originals[0].inspect().status == 'completed'  # JT 2026-11-25 B: each DUT consult = intake + answer
     new_dut('dut-unknown');actor_output[0] = 'unknown'
     uncertain = NativeActorHost(database, tools, host.source, spec, Authority(), directory,
         profile_id=profile['id'], attempt=3, dut_message=lambda: 'dut-unknown', deadline=time.monotonic()+120)
@@ -250,17 +253,17 @@ def exercise(auth, conninfo):
     try:uncertain.choose(simulator_messages(profile, history, 3))
     except Unavailable as error:assert str(error) == 'ACTOR_ORIGINAL_UNKNOWN'
     else:raise AssertionError('original actor UNKNOWN hidden')
-    assert len(sent) == 6 and uncertain.originals[0].inspect().status == 'unknown'
+    assert len(sent) == 9 and uncertain.originals[0].inspect().status == 'unknown'  # JT 2026-11-25 B: each DUT consult = intake + answer
     try:uncertain.choose(simulator_messages(profile, history, 3))
     except Unavailable as error:assert str(error) == 'ACTOR_ORIGINAL_ALREADY_CLAIMED_QUERY_ONLY'
     else:raise AssertionError('UNKNOWN actor blindly replayed')
-    assert len(sent) == 6 and len(uncertain.originals) == 1
+    assert len(sent) == 9 and len(uncertain.originals) == 1
     rebuilt_unknown = NativeActorHost(database, tools, host.source, spec, Authority(), directory,
         profile_id=profile['id'], attempt=3, dut_message=lambda: 'dut-unknown', deadline=0)
     unknown_id = uncertain.originals[0].argument.binding.message_id
-    assert rebuilt_unknown.recover(unknown_id).inspect().status == 'unknown' and len(sent) == 6
+    assert rebuilt_unknown.recover(unknown_id).inspect().status == 'unknown' and len(sent) == 9
     with budget.connect() as db:
-        assert db.execute('SELECT state,count(*) FROM attempt GROUP BY state ORDER BY state').fetchall() == [('INTENT',1),('RECEIVED',5)]
+        assert db.execute('SELECT state,count(*) FROM attempt GROUP BY state ORDER BY state').fetchall() == [('INTENT',1),('RECEIVED',8)]  # JT 2026-11-25 B: each DUT consult = intake + answer
     # Final-wire boundary controls for both R findings. The original paid INTENT
     # remains even though the fixture HTTP POST must not happen.
     actor_output[0] = dict(answers=['interests'], action='continue')
@@ -295,10 +298,11 @@ def exercise(auth, conninfo):
         send_allowed[0]=True
         assert controlled.originals[0].inspect().status==('unknown'if fault=='window'else'running')
 
-    # A separate fresh original one-call fixture account is spent by its DUT.
+    # A separate fresh original fixture account is spent by its DUT (JT 2026-11-25 B:
+    # a consult DUT now uses two calls, intake + answer, so the quota is two).
     # The actor must hit the real PG Meter ceiling without another financial
     # INTENT or HTTP send. No existing account/config/history is reset.
-    one = replace(context, current=replace(context.current,meter=replace(context.current.meter,budget=1)))
+    one = replace(context, current=replace(context.current,meter=replace(context.current.meter,budget=2)))
     local_run_context.provision_budget(conninfo,one,exhausted_subject)
     dev_auth.activate_travel(conninfo,exhausted_subject,one,ABI)
     limited_db = LocalDatabase(conninfo,run_context=one,travel_context=True,needs_context=True,trip_context=True)
@@ -328,18 +332,21 @@ def exercise(auth, conninfo):
     else:raise AssertionError('spent original Meter permitted actor')
     assert len(sent)==before_calls and budget.inspect()==before_financial
     assert limited.originals[0].inspect().budget_exhausted_stage=='answer'
-    assert len(sent)==9
+    assert len(sent)==15  # JT 2026-11-25 B: each DUT consult = intake + answer
     with budget.connect()as db:
-        assert db.execute('SELECT state,count(*) FROM attempt GROUP BY state ORDER BY state').fetchall()==[('INTENT',3),('RECEIVED',8)]
+        assert db.execute('SELECT state,count(*) FROM attempt GROUP BY state ORDER BY state').fetchall()==[('INTENT',3),('RECEIVED',14)]
     # Native erasure-state negative, private initializer only. This is not a
     # product deletion API test; it proves no raw-read fallback from the cache.
     from cj_run.payload_evidence import owner_digest, key_digest
     with psycopg.connect(**json.loads(conninfo.read_bytes())) as admin:
-        command = admin.execute('SELECT operation_key,command_bytes FROM cj_run_metered_operation '
-            'WHERE scope=%s AND run_id=%s', (scope, admitted.run_id)).fetchone()
-        digest = json.loads(bytes(command[1]))['input_digest']
-        admin.execute('INSERT INTO cj_run_payload_erasure VALUES(%s,%s,%s,%s,NULL,%s)',
-            (owner_digest(scope), 'input', key_digest('input','cj_run_metered_operation',admitted.run_id,command[0]),digest,'erased'))
+        # JT 2026-11-25 B: the DUT consult RUN now has two operations (intake + answer); erase each.
+        commands = admin.execute('SELECT operation_key,command_bytes FROM cj_run_metered_operation '
+            'WHERE scope=%s AND run_id=%s', (scope, admitted.run_id)).fetchall()
+        assert len(commands) == 2, commands
+        for command in commands:
+            digest = json.loads(bytes(command[1]))['input_digest']
+            admin.execute('INSERT INTO cj_run_payload_erasure VALUES(%s,%s,%s,%s,NULL,%s)',
+                (owner_digest(scope), 'input', key_digest('input','cj_run_metered_operation',admitted.run_id,command[0]),digest,'erased'))
         admin.execute('UPDATE cj_run_metered_operation SET input_bytes=NULL WHERE scope=%s AND run_id=%s', (scope,admitted.run_id))
     try:reader.input(token, binding.message_id, op)
     except Unavailable as error:assert str(error) == 'ACTOR_DUT_ORIGINAL_PAYLOAD_ERASED'
@@ -350,7 +357,7 @@ def exercise(auth, conninfo):
     try:original_charges(reader, token, binding.message_id, 'actor')
     except Unavailable as error:assert str(error) == 'ACTOR_DUT_ORIGINAL_PAYLOAD_ERASED'
     else:raise AssertionError('cost reader revived historical erased raw')
-    assert len(sent) == 9
+    assert len(sent) == 15
     (auth/'invited.json').write_text(json.dumps(['m4-synthetic-local-actor-foreign']))
     try:original.inspect()
     except Unavailable:pass
@@ -361,8 +368,8 @@ def exercise(auth, conninfo):
     try:recheck_charge_metadata(reader, token, charge_proof)
     except Unavailable:pass
     else:raise AssertionError('cost metadata escaped original AUTH revocation')
-    assert len(sent) == 9
-    print('PASS actor signed native source/RUN, v2 original800/unique fees, exact wire/output/reader, no actor MESSAGE/Memory, no replay/cross-slot/erased raw; final window revoke and real physical lease loss stop HTTP, spent original1 quota denies actor without new fee; 9 fixture HTTP attempts, 8 RECEIVED/3 INTENT in original journal, live0')
+    assert len(sent) == 15
+    print('PASS actor signed native source/RUN, v2 original800/unique fees, exact wire/output/reader, no actor MESSAGE/Memory, no replay/cross-slot/erased raw; final window revoke and real physical lease loss stop HTTP, spent original2 quota denies actor without new fee; 15 fixture HTTP attempts, 14 RECEIVED/3 INTENT in original journal, live0')
 
 
 if __name__ == '__main__':
