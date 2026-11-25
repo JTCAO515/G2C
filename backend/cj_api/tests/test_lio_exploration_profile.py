@@ -119,6 +119,25 @@ class ExplorationProfileTests(unittest.TestCase):
                 self.assertEqual(parse([packet('city','成都',quote)],text)[0].value,'成都')
         self.assertEqual(parse([packet('duration_days',3,'我想去成都玩3天')],text)[0].value,3)
         self.assertEqual(parse([packet('duration_days','3天','我想去成都玩3天')],text)[0].value,3)
+        for request,city in (('我想去成都玩3天。','成都'),
+                             ('I want to visit Chengdu for 3 days.','Chengdu'),
+                             ('我想去成都玩3天，帮我规划一下行程。','成都'),
+                             ('I want to visit Chengdu for 3 days, please plan my trip.','Chengdu')):
+            self.assertEqual(parse([packet('city',city,request)],request)[0].value,city)
+            self.assertEqual(parse([packet('duration_days',3,request)],request)[0].value,3)
+        for request in ('从成都出发，帮我规划一下行程。','我想去成都玩3天，但是别规划行程。'):
+            with self.subTest(request=request),self.assertRaises(InvalidInput):
+                parse([packet('city','成都',request)],request)
+        for quote,source,city in (
+                ('我想去成都玩3天，帮我规划一下行程','我想去成都玩3天，帮我规划一下行程这句话怎么翻译成英语？','成都'),
+                ('I want to visit Chengdu for 3 days, please plan my trip',
+                 'I want to visit Chengdu for 3 days, please plan my trip is the phrase to translate.','Chengdu')):
+            for key,value in (('city',city),('duration_days',3)):
+                with self.subTest(source=source,key=key),self.assertRaises(InvalidInput):
+                    parse([packet(key,value,quote)],source)
+        for city,source in (('成都','从成都出发，帮我规划一下行程。'),('Chengdu','Departing from Chengdu')):
+            with self.subTest(source=source),self.assertRaises(InvalidInput):
+                parse([packet('city',city,city)],source)
         english='I want to visit Chengdu for 3 days'
         self.assertEqual(parse([packet('city','Chengdu',english)],english)[0].value,'Chengdu')
         self.assertEqual(parse([packet('duration_days',3,english)],english)[0].value,3)
