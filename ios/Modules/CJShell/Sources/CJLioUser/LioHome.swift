@@ -17,6 +17,7 @@ public struct LioHome<MenuContent: View>: View {
     private let nearbyRelay: LioNearbyRelayClient?
     private let taxiRecentDirectory: URL?
     private let savedPlansStore: LioSavedPlans?
+    private let roadbookDirectory: URL?
     private let toolsSessionIsCurrent: @MainActor () -> Bool
     private let reconnect: (@MainActor () -> Void)?
     private let session: LioSessionAvailability?
@@ -133,6 +134,7 @@ public struct LioHome<MenuContent: View>: View {
                 nearbyRelay: LioNearbyRelayClient? = nil,
                 taxiRecentDirectory: URL? = nil,
                 savedPlans: LioSavedPlans? = nil,
+                roadbookDirectory: URL? = nil,
                 toolsDraftStorage: LocalSupportDraftStorage? = nil,
                 toolsSessionIsCurrent: @escaping @MainActor () -> Bool = { true },
                 @ViewBuilder menu: () -> MenuContent) {
@@ -157,6 +159,7 @@ public struct LioHome<MenuContent: View>: View {
         }
         #endif
         savedPlansStore = plans
+        self.roadbookDirectory = roadbookDirectory
         _savedPlans = State(initialValue: LioSavedPlansModel(store: plans))
         self.toolsSessionIsCurrent = toolsSessionIsCurrent
         self.reconnect = reconnect
@@ -258,6 +261,9 @@ public struct LioHome<MenuContent: View>: View {
                              enabled: !restoringChat && session?.available != false && scenePhase != .background,
                              sessionIsCurrent: toolsSessionIsCurrent)
                     .environment(\.lioLocalSupportDraft, activeSupportDraft)
+                    // Roadbooks (Tools) read the account's saved plans and keep copies in its folder.
+                    .environment(\.lioSavedPlans, savedPlans.available ? savedPlans : nil)
+                    .environment(\.lioRoadbookDirectory, roadbookDirectory)
                     .background(LioTabBarAppearance().frame(width: 0, height: 0))
                     .tabItem { Label(LioToolCatalog.title(language), systemImage: "square.grid.2x2") }
                     .tag(Tab.tools)
