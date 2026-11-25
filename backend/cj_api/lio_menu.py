@@ -153,32 +153,36 @@ def menu_lines(text):
 def line_prices(lines, results):
     """Each line's printed price: its own, or one from a column of prices read after a column of names.
 
-    Text recognition often reads a column of dish names and then that column's prices. A run of k price-only lines
-    goes, in order, to the dish or unclear lines right before it, when exactly k of them come in a row with no
+    Text recognition often reads a column of dish names and then that column's prices. A run of k >= 2 price-only
+    lines goes, in order, to the dish or unclear lines right before it, when exactly k of them come in a row with no
     price of their own; a heading, a priced line or an earlier price run ends that row.
 
-    If any run does not fit that way (a different count, or a run after a heading, a priced line or nothing), the
-    menu's price-only lines are not columns of prices (numbers or prices printed above each dish, say, or a price
-    left unread), and no line gets one: a wrong price is worse than none. A line's own price always stays."""
-    prices = [line['price'] for line in lines]
-    if lines and lines[0]['prices_before']:
-        return prices
-    columns = {}
+    A wrong price is worse than none, so the menu's price-only lines are used only if every run fits that way and
+    every dish or unclear line without its own price gets one. Anything else means they are not columns of prices:
+    a single price line after each dish reads the same as a price printed above each dish whose first one was
+    unread or cut off by the photo's edge; a run after a heading, a priced line or nothing, or of a different
+    count, is a number above each dish or a price left unread. A line's own price always stays."""
+    own = [line['price'] for line in lines]
+    if not any(line['prices_after'] for line in lines):
+        return own
+    if lines[0]['prices_before']:
+        return own
+    prices = list(own)
     for end, line in enumerate(lines):
         column = line['prices_after']
         if not column:
             continue
-        if results[end]['kind'] == 'other' or line['price'] is not None:
-            return prices
+        if len(column) < 2 or results[end]['kind'] == 'other' or line['price'] is not None:
+            return own
         start = end
         while (start > 0 and results[start - 1]['kind'] != 'other' and lines[start - 1]['price'] is None
                and not lines[start - 1]['prices_after']):
             start -= 1
         if end + 1 - start != len(column):
-            return prices
-        columns[start] = column
-    for start, column in columns.items():
-        prices[start:start + len(column)] = column
+            return own
+        prices[start:end + 1] = column
+    if any(price is None and results[index]['kind'] != 'other' for index, price in enumerate(prices)):
+        return own
     return prices
 
 

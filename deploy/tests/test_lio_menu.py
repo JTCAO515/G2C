@@ -279,8 +279,15 @@ def test_a_column_of_prices_goes_back_to_the_column_of_names_before_it():
 
 
 @pytest.mark.parametrize('text,prices', [
-    ('宫保鸡丁\n38\n麻婆豆腐\n26元', ['38', '26元']),                    # read row by row
-    ('宫保鸡丁 38\n麻婆豆腐\n26', ['38', '26']),                          # a line with its own price ends the column
+    # One price line after each dish reads the same as a price printed above each dish with the first one
+    # unread (or cut off by the photo's edge), so single price lines are never used.
+    ('宫保鸡丁\n38\n麻婆豆腐\n26元', [None, None]),
+    ('宫保鸡丁\n26\n麻婆豆腐\n15\n蛋炒饭', [None, None, None]),
+    ('宫保鸡丁\n26\n麻婆豆腐\n15\n蛋炒饭\n22', [None, None, None]),
+    ('热菜 1\n宫保鸡丁\n2\n麻婆豆腐\n3\n蛋炒饭', [None, None, None]),
+    ('宫保鸡丁 38\n麻婆豆腐\n鱼香肉丝\n26\n32', ['38', '26', '32']),          # a line with its own price ends the column
+    # Every dish without its own price must get one from a column, or the columns are doubtful.
+    ('宫保鸡丁\n麻婆豆腐\n38\n26\n蛋炒饭', [None, None, None]),
     ('宫保鸡丁\n麻婆豆腐\n蛋炒饭\n38\n26', [None, None, None]),            # one price unread: which one is unknown
     ('热菜\n宫保鸡丁\n麻婆豆腐\n12\n38\n26', [None, None]),                # more prices than names
     ('宫保鸡丁 38\n麻婆豆腐\n26\n15', ['38', None]),                       # the priced line is not counted
