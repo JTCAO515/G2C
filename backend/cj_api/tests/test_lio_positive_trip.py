@@ -45,6 +45,34 @@ class PositiveTripTests(unittest.TestCase):
                 parse(text,[update('city','北京' if '北京' in text else 'Beijing','北京' if '北京' in text else 'Beijing'),
                             update('duration_days',3,quote)])
 
+    def test_common_english_trip_requests_keep_city_and_duration(self):
+        # #1541 (HK V4 probe 2026-11-25): these everyday English requests failed the
+        # positive grammar, so the V4 understanding dropped or refused city/duration.
+        for text,city,days,quote in (
+                ("I'd like to spend 3 days in Chengdu",'Chengdu',3,'3 days'),
+                ("I\u2019d like to spend 3 days in Chengdu",'Chengdu',3,'3 days'),
+                ('I would like to spend three days in Chengdu','Chengdu',3,'three days'),
+                ('I want to spend 3 days in Chengdu','Chengdu',3,'3 days'),
+                ('We want to spend 4 days in Beijing','Beijing',4,'4 days'),
+                ("We'd like to visit Shanghai for 2 days",'Shanghai',2,'2 days'),
+                ('Plan 3 days in Chengdu for me','Chengdu',3,'3 days'),
+                ('Please plan 3 days in Chengdu for us','Chengdu',3,'3 days'),
+                ('Plan a 3-day trip to Chengdu','Chengdu',3,'3-day'),
+                ('A three-day trip to Hangzhou','Hangzhou',3,'three-day'),
+                ('a 5-day trip in Shanghai','Shanghai',5,'5-day'),
+                ('Spend 3 days in Chengdu','Chengdu',3,'3 days')):
+            with self.subTest(text=text):
+                facts={fact.key:fact for fact in parse(text,[update('city',city,city),update('duration_days',days,quote)])}
+                self.assertEqual((facts['city'].value,facts['duration_days'].value),(city,days))
+
+    def test_english_negative_question_conditional_and_quoted_requests_stay_refused(self):
+        for text in ("I don't want to spend 3 days in Chengdu","I'd not like to spend 3 days in Chengdu",
+                     'Do I want to spend 3 days in Chengdu?','If I spend 3 days in Chengdu',
+                     'Translate "spend 3 days in Chengdu"','Never spend 3 days in Chengdu',
+                     'I want to spend not 3 days in Chengdu',"Don't plan a 3-day trip to Chengdu"):
+            with self.subTest(text=text),self.assertRaises(InvalidInput):
+                parse(text,[update('city','Chengdu','Chengdu'),update('duration_days',3,'3-day' if '3-day' in text else '3 days')])
+
     def test_relative_days_are_not_reinterpreted_as_trip_duration(self):
         for text,quote in (('3天后开始','3天'),('in 3 days','3 days')):
             with self.subTest(text=text),self.assertRaises(InvalidInput):
