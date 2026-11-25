@@ -217,6 +217,54 @@ class GenerationWiring(unittest.TestCase):
             _log_refusal(SimpleNamespace(run_id='run-1'),'retrieve',extra)
         self.assertRegex(logs.output[0],r'days\.0\.\*:extra_forbidden')
 
+    def run_with_failure(self,stage,error):
+        from cj_api.local_lio_pipeline_generation import PipelineGeneration
+        import cj_api.local_lio_pipeline_generation as generation
+        order={'prepare':'prepare_generation','retrieve':'retrieve_skeleton','compile':'compile_retrieved_plan',
+               'order':'order_retrieved_plan','route':'route_ordered_plan','schedule':'schedule_retrieved_plan',
+               'word':'word_retrieved_plan','publish':'publish_retrieved_plan'}
+        host=SimpleNamespace(current=lambda _:None,_finish=lambda worker,binding,state,body,scene,lang:body)
+        worker=SimpleNamespace(runs=SimpleNamespace(snapshot=lambda _:object()),_event=lambda binding,state,kind,value:state)
+        capture=SimpleNamespace(basis=SimpleNamespace(day_count=3,start_date=None))
+        with patch.multiple(generation,**{f:unittest.mock.DEFAULT for f in order.values()})as stages:
+            stages['prepare_generation'].return_value=SimpleNamespace(projection=SimpleNamespace(fields={}))
+            stages['retrieve_skeleton'].return_value=({},(),capture)
+            stages['order_retrieved_plan'].return_value=SimpleNamespace(content='{}',status='OK',reason='')
+            stages['route_ordered_plan'].return_value=({},capture)
+            stages['schedule_retrieved_plan'].return_value=SimpleNamespace(content='{}',status='OK',reason='')
+            stages[order[stage]].side_effect=error
+            return PipelineGeneration().plan(host,worker,SimpleNamespace(run_id='run-45'),'view',locale='zh',
+                effective={},prior_model_calls=1)
+
+    def test_saved_document_shape_failure_is_a_refusal_not_an_unknown_run(self):
+        # HK run 4fb238dc (2026-11-26, 春熙路): a FieldRejected from the saved-document check is not a
+        # SourceRejected, escaped plan(), crashed the worker loop and left the RUN unknown (HTTP 503).
+        from cj_trip.structured import FieldRejected
+        with self.assertLogs('cj_usage.audit','INFO')as logs:
+            body=self.run_with_failure('publish',FieldRejected('items.tip','exact tip required'))
+        self.assertIn('这次没能把完整方案保存',body)
+        line=[l for l in logs.output if 'LIO_PIPELINE_REFUSED'in l]
+        self.assertEqual(len(line),1,logs.output)
+        for detail in ('stage=publish','error=FieldRejected','field=items.tip'):self.assertIn(detail,line[0])
+
+    def test_unexpected_failure_logs_stage_class_and_code_location_then_propagates(self):
+        # Coordination 2026-11-26: any other exception keeps its unchanged propagation, but the
+        # log first names the stage, class and raising code line, with no traveler content.
+        secret='春熙路附近的秘密酒店'
+        def raising():
+            raise ValueError('bounded explicit text required: '+secret)
+        try:raising()
+        except ValueError as caught:error=caught
+        with self.assertLogs('cj_usage.audit','INFO')as logs,self.assertRaises(ValueError)as raised:
+            self.run_with_failure('word',error)
+        self.assertIs(raised.exception,error)
+        line=[l for l in logs.output if 'LIO_PIPELINE_UNCAUGHT'in l]
+        self.assertEqual(len(line),1,logs.output)
+        for detail in ('run_id=run-45','stage=word','error=ValueError','at=test_lio_generation_wiring.py:'):
+            self.assertIn(detail,line[0])
+        self.assertIn(':raising',line[0])
+        self.assertNotIn(secret,line[0]);self.assertNotIn('春熙路',line[0])
+
     def test_refusal_log_never_raises(self):
         from cj_api.local_lio_pipeline_generation import _log_refusal
         class Broken(Exception):
