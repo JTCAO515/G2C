@@ -7,7 +7,7 @@ case id to the visible answer text.
 
 Profiles:
   detail      (default, checks.1) the #1472 detail checks: minimum length, morning/afternoon per day.
-  one-screen  (checks.2) the one-screen structure JT chose on 2026-11-25 (strategy/lio-answer-design.md):
+  one-screen  (checks.3) the one-screen structure JT chose on 2026-11-25 (strategy/lio-answer-design.md):
               body within the per-type screen budget, the first sentence answers, one or two actions
               (or tappable follow-ups for "where to go"), and required elements counted only inside
               the budget, so a longer answer no longer earns more hits.
@@ -19,6 +19,7 @@ Usage:
     # answers map case id to text, or to {"text": ..., "actions": [...], "chips": [...]}
 """
 import argparse
+from datetime import date
 from functools import lru_cache
 import json
 from pathlib import Path
@@ -73,52 +74,72 @@ def entry_facts():
                      if re.search(r'(\d+)\s*国', source['publisher']['zh'])}
         if len(ports) != 1 or len(provinces) != 1 or len(countries) != 1:
             raise ValueError('summaries disagree')
-        visa_free = {}
+        visa_free, until = {}, {}
         for country in rules['countries']:
-            days = [policies[key]['max_stay_days'] for key in country['policies'] if policies[key]['kind'] == 'visa_free']
-            if days:
-                visa_free[country['code']] = max(days)
+            granted = [policies[key] for key in country['policies'] if policies[key]['kind'] == 'visa_free']
+            if granted:
+                best = max(granted, key=lambda policy: policy['max_stay_days'])
+                visa_free[country['code']] = best['max_stay_days']
+                until[country['code']] = date.fromisoformat(best['valid_until']) if best['valid_until'] else date.max
         return dict(ports=ports.pop(), provinces=provinces.pop(), countries=countries.pop(),
-                    transit_hours=24 * transit['max_stay_days'], visa_free_days=visa_free,
+                    transit_hours=24 * transit['max_stay_days'], visa_free_days=visa_free, visa_free_until=until,
                     data_version=rules['data_version'], checked_at=rules['checked_at'])
     except (OSError, ValueError, KeyError, TypeError, StopIteration) as error:
         raise ValueError('landing-mode rules unavailable or changed shape: ' + str(ARRIVAL_RULES.name)) from error
 
 
 SENTENCE = re.compile(r'(?<=[。！？!?；;\n])|(?<=\.)\s+')
-# Statements the current rules contradict. A sentence correcting a myth ("其实", "actually") is exempt.
+# Statements the current rules contradict. Only a sentence that first marks a myth is exempt
+# ("有人说…", "误以为…", "the myth that…"); a bare 其实/actually is not enough.
 ENTRY_FALSE = re.compile(
     r'不得跨[市省]|(?<!能)不能跨[市省]|不可跨[市省]|只能(?:留|待|停留|在)(?:在)?(?:入境|落地|所在)(?:的)?城市|仅限(?:入境|落地)城市|'
     r'不能离开(?:入境|落地)城市|原路返回|返回(?:出发|来源)国|'
     r'(?:must|have to) (?:stay|remain) (?:in|within) the (?:same )?city|'
     r"(?:cannot|can't|can not|not allowed to|may not) (?:leave|travel (?:outside|to other))|(?:back|return) to (?:your )?(?:home|origin) country", re.I)
-MYTH = re.compile(r'其实|并非|并不是|误以为|误解|actually|myth|not true', re.I)
+MYTH = re.compile(r'有人说|有人以为|误以为|误解|以讹传讹|myth|misconception|not true|some people say', re.I)
+OLD_TRANSIT = re.compile(r'(?<!\d)(?:72|144)\s*(?:个)?(?:小时|-?hours?\b)', re.I)
+OLD_TRANSIT_EXPLAINED = re.compile(r'已统一|统一为|改为|取代|以前|旧|replaced|merged|used to|formerly|old', re.I)
 TRANSIT = re.compile(r'过境|transit|240', re.I)
-NEEDS_VISA = re.compile(r'(?:need|needs|require|requires|required)\b[^.。]{0,15}\bvisa|需要(?:办|申请)?签证', re.I)
+NEEDS_VISA = re.compile(r'(?:need|needs|require|requires|required)\b[^.。]{0,25}\bvisa|需要(?:办|申请)?签证', re.I)
 NEGATION = re.compile(r"n't|\bnot\b|\bno\b|never|without|不|无需|免", re.I)
+# Conditions under which a visa is still required for visa-free nationals (rules' not_covered).
+VISA_CONDITION = re.compile(r'超过|以上|工作|学习|留学|采访|就业|over\b|longer than|more than|exceed|beyond|'
+                            r'\bwork|stud(?:y|ies)|journalis', re.I)
+VISA_FREE_DAYS = re.compile(r'(\d+)\s*天免签|免签(?:停留|入境)?(?:最多|最长|不超过|可达)\s*(\d+)\s*天|'
+                            r'(\d+)-day visa-free|visa-free (?:entry |stays? )?(?:for )?(?:up to|of up to|at most|a maximum of) (\d+) days', re.I)
+
+
+def today():
+    return date.today()
 
 
 def _entry_facts_hold(text, country):
     facts = entry_facts()
+    days = facts['visa_free_days'].get(country)
+    if days is not None and today() > facts['visa_free_until'][country]:
+        days = None  # the rules file has not been renewed: do not enforce an expired policy
     for sentence in (part for part in SENTENCE.split(text) if part and part.strip()):
-        if ENTRY_FALSE.search(sentence) and not MYTH.search(sentence):
+        false = ENTRY_FALSE.search(sentence)
+        myth = MYTH.search(sentence)
+        if false and not (myth and myth.start() < false.start()):
+            return False
+        if OLD_TRANSIT.search(sentence) and not OLD_TRANSIT_EXPLAINED.search(sentence):
             return False
         if TRANSIT.search(sentence):
-            for pattern, key in ((r'(\d+)\s*(?:个)?(?:小时|-?hours?\b)', 'transit_hours'),
-                                 (r'(\d+)\s*个?(?:开放)?口岸|(\d+)\s*(?:open |border |entry )?ports\b', 'ports'),
+            for pattern, key in ((r'(\d+)\s*个?(?:开放)?口岸|(\d+)\s*(?:open |border |entry )?ports\b', 'ports'),
                                  (r'(\d+)\s*个?国家|(\d+)\s*国(?![内际])|(\d+)\s*countries', 'countries')):
                 for match in re.finditer(pattern, sentence, re.I):
                     if int(next(group for group in match.groups() if group)) != facts[key]:
                         return False
-        days = facts['visa_free_days'].get(country)
         if days is not None:
-            for match in NEEDS_VISA.finditer(sentence):
-                if not NEGATION.search(sentence[max(0, match.start() - 12):match.start() + 4]):
-                    return False
-            for match in re.finditer(r'(\d+)\s*(?:天|-?days?)\b[^.。]{0,20}(?:免签|visa-free)|(?:免签|visa-free)[^.。]{0,20}?(\d+)\s*(?:天|-?days?)',
-                                     sentence, re.I):
-                if int(next(group for group in match.groups() if group)) != days:
-                    return False
+            if not VISA_CONDITION.search(sentence):
+                for match in NEEDS_VISA.finditer(sentence):
+                    if not NEGATION.search(sentence[max(0, match.start() - 12):match.start() + 4]):
+                        return False
+            if not TRANSIT.search(sentence):
+                for match in VISA_FREE_DAYS.finditer(sentence):
+                    if int(next(group for group in match.groups() if group)) != days:
+                        return False
     return True
 
 
@@ -302,7 +323,8 @@ def main(argv=None):
     try:
         result = summarize(cases, answers, args.profile)
     except ValueError as error:
-        raise SystemExit(str(error))
+        cause = f' ({error.__cause__})' if error.__cause__ else ''
+        raise SystemExit(str(error) + cause)
     for row in result['rows']:
         failed = [name for name, ok in row['checks'].items() if not ok]
         print(('PASS' if row['passed'] else 'FAIL'), row['id'], row['units'], ','.join(failed), sep='\t')

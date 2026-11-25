@@ -307,12 +307,36 @@ class SplitAndEntryFacts(unittest.TestCase):
                    'A unilateral policy also covers 50 countries; check the NIA site before you fly.')
         self.assertTrue(self.check('visa-uk-en', good_en)['checks']['entry_facts'])
         for wrong in ('A plain 10-day trip normally needs a visa.', 'You must stay in the city where you land.',
-                      'You can stay visa-free for 15 days.', "You can't travel to other provinces on transit."):
+                      'You can stay visa-free for up to 15 days.', "You can't travel to other provinces on transit."):
             with self.subTest(wrong=wrong):
                 text = 'You can visit China.\n\n' + wrong
                 self.assertFalse(self.check('visa-uk-en', text)['checks']['entry_facts'])
         self.assertTrue(self.check('visa-uk-en', "You don't need a visa for 10 days.\n\nCheck the NIA site.")['checks']['entry_facts'])
         self.assertNotIn('entry_facts', self.check('alipay-zh', '绑卡。\n\n1. 下载。')['checks'])
+
+    def test_entry_facts_second_review_cases(self):
+        # #1664 second review: correct statements that must pass, and slips that must fail.
+        for text in ('240-hour visa-free transit (10 days) is another option.', '过境免签可停留 10 天。',
+                     'For a 10-day trip you can enter visa-free.', 'You can visit Shanghai visa-free for 10 days.',
+                     'Work, study or journalism still require a visa.', 'Stays over 30 days need a visa.',
+                     '停留超过 30 天需要办签证。', '工作、学习仍需要签证。',
+                     '过境免签期间，酒店会在 24 小时内帮你办住宿登记。',
+                     '以前的 72 和 144 小时政策已统一为 240 小时。',
+                     '有人说不得跨市，这是误解：允许区域内可以跨省。'):
+            with self.subTest(passes=text):
+                self.assertTrue(self.check('visa-uk-en', 'Yes.\n\n' + text)['checks']['entry_facts'])
+        for text in ('其实不得跨市。', '其实过境期间不能离开入境城市。', 'Actually, you cannot leave the arrival city.',
+                     '可以停留 144 小时，需要前往第三国。', 'You need to apply for a tourist visa first.',
+                     '英国护照可以 15 天免签入境。', 'British passport holders get visa-free entry for up to 15 days.'):
+            with self.subTest(fails=text):
+                self.assertFalse(self.check('visa-uk-en', 'Yes.\n\n' + text)['checks']['entry_facts'])
+
+    def test_expired_visa_free_policy_is_not_enforced(self):
+        import eval.lio_answer_quality as quality
+        from unittest.mock import patch
+        from datetime import date
+        with patch.object(quality, 'today', lambda: date(2027, 1, 1)):
+            self.assertTrue(self.check('visa-uk-en', 'Yes.\n\nYou need to apply for a visa.')['checks']['entry_facts'])
 
     def test_rules_load_lazily_with_a_clear_error(self):
         import eval.lio_answer_quality as quality
