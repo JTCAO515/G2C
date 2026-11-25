@@ -315,14 +315,22 @@ def drop_unquoted_updates(value):
     kept, dropped = [], []
     for update in updates:
         sources = update.get('sources')
-        if (isinstance(sources, list) and sources and all(isinstance(source, dict) and isinstance(source.get('quote'), str)
-                and source['quote'].strip() for source in sources)):
-            kept.append(update)
-        else:
+        # Only well-shaped sources (dicts with string quotes) can be "unquoted"; any other
+        # malformed update stays for the strict validator to reject the whole packet.
+        well_shaped = isinstance(sources, list) and all(
+            isinstance(source, dict) and isinstance(source.get('quote'), str) for source in sources)
+        if well_shaped and (not sources or any(not source['quote'].strip() for source in sources)):
             dropped.append(update.get('factor_key'))
+        else:
+            kept.append(update)
     if not dropped:
         return value, ()
     return {**value, 'updates': kept}, tuple(dropped)
+
+
+def drop_log_key(key):
+    """A factor key that is safe to log: a bank key, otherwise 'unknown' (never raises)."""
+    return key if isinstance(key, str) and key in BY_KEY else 'unknown'
 
 
 def dropped_shapes(raw, originals):
@@ -336,7 +344,7 @@ def dropped_shapes(raw, originals):
     shapes = {}
     for update in updates if isinstance(updates, list) else ():
         key = update.get('factor_key') if isinstance(update, dict) else None
-        if key not in BY_KEY or not isinstance(update.get('sources'), list):
+        if drop_log_key(key) == 'unknown' or not isinstance(update.get('sources'), list):
             continue
         offsets, found = [], []
         for source in update['sources']:

@@ -407,6 +407,33 @@ class UnquotedAndDroppedShapes(unittest.TestCase):
             with self.subTest(bad=bad):
                 self.assertEqual(drop_unquoted_updates(bad), (bad, ()))
 
+    def test_only_empty_string_quotes_are_dropped_other_malformed_updates_stay_strict(self):
+        # #1660 review: a non-list/non-dict source or a non-string quote is malformed, not unquoted.
+        from cj_api.lio_exploration_profile import drop_unquoted_updates
+        for update in (dict(factor_key='city', value='x', state='known', sources=None),
+                       dict(factor_key='city', value='x', state='known', sources='成都'),
+                       dict(factor_key='city', value='x', state='known'),
+                       dict(factor_key='city', value='x', state='known', sources=['成都']),
+                       dict(factor_key='city', value='x', state='known', sources=[dict(source_index=0)]),
+                       dict(factor_key='city', value='x', state='known', sources=[dict(source_index=0, quote=5)])):
+            with self.subTest(update=update):
+                value = dict(updates=[update])
+                self.assertEqual(drop_unquoted_updates(value), (value, ()))
+
+    def test_non_string_factor_keys_never_break_the_drop_log(self):
+        from cj_api.lio_exploration_profile import drop_unquoted_updates, dropped_shapes, drop_log_key
+        value = dict(updates=[dict(factor_key={'a': 1}, value=None, state='not_needed', sources=[dict(source_index=0, quote='')]),
+                              dict(factor_key=['x'], value=None, state='not_needed', sources=[]),
+                              dict(factor_key='秘密春熙路', value=None, state='not_needed', sources=[dict(source_index=0, quote=' ')])])
+        cleaned, dropped = drop_unquoted_updates(value)
+        self.assertEqual(cleaned['updates'], [])
+        self.assertEqual([drop_log_key(key) for key in dropped], ['unknown', 'unknown', 'unknown'])
+        self.assertEqual(drop_log_key('city'), 'city')
+        raw = json.dumps(dict(version='LIO-profile-update.1', updates=[
+            dict(factor_key={'a': 1}, value=1, state='known', sources=[dict(source_index=0, quote='x')]),
+            dict(factor_key=['x'], value=1, state='known', sources=[dict(source_index=0, quote='x')])]))
+        self.assertEqual(dropped_shapes(raw, (Original('mid-0', 1, 'x'),)), {})
+
     def test_dropped_update_shapes_are_content_free(self):
         from cj_api.lio_exploration_profile import dropped_shapes
         originals = (Original('mid-0', 1, '我想去成都玩3天'), Original('mid-1', 2, '直接出方案'))
