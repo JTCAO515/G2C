@@ -126,8 +126,7 @@ def register_hotel_routes(app, *, search=hotel_search_request, handoff=hotel_han
         return RedirectResponse(target, status_code=302, headers=headers)
 
 
-def _dispatch(incoming, service, handoffs, checker, roster, disabled):
-    action = incoming.read(1)
+def _dispatch(action, incoming, service, handoffs, checker, roster, disabled):
     if action == b'O':
         supplied = incoming.readline(64)
         handle = supplied[:-1].decode('ascii', 'replace') if supplied.endswith(b'\n') else ''
@@ -170,16 +169,22 @@ def hotel_socket(service, handoffs, checker, roster, *, path=SOCKET, disabled=Fa
     root = path.parent.lstat()
     if not stat.S_ISDIR(root.st_mode) or root.st_uid != os.getuid() or stat.S_IMODE(root.st_mode) != 0o700:
         raise ValueError('owned private hotel socket directory required')
-    slots = BoundedSemaphore(4)
+    # The bearer-less hand-off lookup must never starve signed-in searches, nor slow searches the hand-off.
+    search_slots, handoff_slots = BoundedSemaphore(4), BoundedSemaphore(4)
 
     class Handler(StreamRequestHandler):
         def handle(self):
             self.request.settimeout(5)
+            try:
+                action = self.rfile.read(1)
+            except OSError:
+                return
+            slots = handoff_slots if action == b'O' else search_slots
             if not slots.acquire(blocking=False):
                 status, body = 503, {'error': 'unavailable'}
             else:
                 try:
-                    status, body = 200, _dispatch(self.rfile, service, handoffs, checker, roster, disabled)
+                    status, body = 200, _dispatch(action, self.rfile, service, handoffs, checker, roster, disabled)
                 except PluginError as error:
                     status, body = error.status, {'error': error.code}
                 except (BudgetUnknown, psycopg.Error, sqlite3.Error, OSError, ValueError):

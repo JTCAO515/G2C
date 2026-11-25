@@ -68,6 +68,7 @@ def relay(tmp_path, *, enabled=True, supplier=None):
             register_hotel_routes(app, search=lambda token, raw: hotel_search_request(token, raw, path=path),
                                   handoff=lambda handle: hotel_handoff_request(handle, path=path))
             with TestClient(app, follow_redirects=False) as browser:
+                browser.socket_path = path
                 yield browser, supplier, handoffs
 
 
@@ -88,9 +89,8 @@ def test_search_relays_through_the_worker_and_hands_off_to_trip_com(tmp_path):
         out = browser.get(HANDOFF_PATH + handle)
         assert out.status_code == 302 and out.headers['location'].startswith(TRIP_LIST + '?cityId=1&')
         assert out.headers['cache-control'] == 'no-store' and out.headers['referrer-policy'] == 'no-referrer'
-        for unknown in ('A' * 22, 'short', 'B' * 22 + '..'):
-            missing = browser.get(HANDOFF_PATH + unknown)
-            assert missing.status_code == 404 and 'location' not in missing.headers
+        missing = browser.get(HANDOFF_PATH + 'A' * 22)
+        assert missing.status_code == 404 and 'location' not in missing.headers
     assert supplier.calls == ['geocode', 'hotels_around', 'subway']
 
 
@@ -119,12 +119,23 @@ def test_handoff_route_only_redirects_to_the_fixed_trip_com_pages():
     replies = {'A' * 22: (200, {'url': 'https://evil.example/hotels/list?x=1'}),
                'B' * 22: (200, {'url': TRIP_LIST + '?cityId=2'}),
                'C' * 22: (503, {'error': 'unavailable'})}
-    register_hotel_routes(app, search=None, handoff=lambda handle: replies[handle])
+    asked = []
+
+    def handoff(handle):
+        asked.append(handle)
+        return replies[handle]
+
+    register_hotel_routes(app, search=None, handoff=handoff)
     with TestClient(app, follow_redirects=False) as browser:
+        # Malformed handles are answered by the API alone; they never reach the worker socket.
+        for malformed in ('short', 'B' * 21 + '.', 'B' * 23, 'B' * 22 + '..'):
+            assert browser.get(HANDOFF_PATH + malformed).status_code == 404
+        assert asked == []
         assert browser.get(HANDOFF_PATH + 'A' * 22).status_code == 404
         good = browser.get(HANDOFF_PATH + 'B' * 22)
         assert good.status_code == 302 and good.headers['location'] == TRIP_LIST + '?cityId=2'
         assert browser.get(HANDOFF_PATH + 'C' * 22).status_code == 503
+    assert asked == ['A' * 22, 'B' * 22, 'C' * 22]
 
 
 def _hotel_roster(monkeypatch, subjects):
@@ -159,6 +170,7 @@ def test_hotel_accepts_the_authorized_internal_cohort_with_hotel_operations(monk
         service, handoffs, checker, roster, disabled = _hotel_roster(monkeypatch, subjects)
         assert service is not None and handoffs is service.handoffs and not disabled
         assert service.provider._operations == hotel_budget.OPERATIONS
+        assert service._english is not None and service._english.translator is not None
         assert service.public_origin == 'https://api-beta.go2china.space'
         assert roster == frozenset(subjects) and checker == ('checker', frozenset(subjects))
 
@@ -195,3 +207,39 @@ def test_unset_roster_keeps_the_route_closed(monkeypatch):
     with hotel_relay.active_hotel(SimpleNamespace(), None):
         pass
     assert opened == [(None, True)]
+
+
+def test_handoff_lookups_have_their_own_slots(tmp_path):
+    """Busy signed-in searches must not turn every "Book" tap into a 503, and vice versa."""
+    import socket as unix
+    from threading import Event, Lock
+
+    release, entered, lock = Event(), [], Lock()
+    all_in = Event()
+
+    class Slow(Supplier):
+        def query(self, operation, params, reserve):
+            with lock:
+                entered.append(operation)
+                if len(entered) == 4:
+                    all_in.set()
+            release.wait(10)
+            return super().query(operation, params, reserve)
+
+    with relay(tmp_path, supplier=Slow()) as (browser, _, handoffs):
+        held = []
+        try:
+            for _ in range(4):  # every search slot is held by a search waiting inside the supplier
+                connection = unix.socket(unix.AF_UNIX, unix.SOCK_STREAM)
+                connection.connect(str(browser.socket_path))
+                raw = json.dumps(payload()).encode()
+                connection.sendall(b'Ssynthetic\n' + len(raw).to_bytes(4, 'big') + raw)
+                held.append(connection)
+            assert all_in.wait(5)
+            handle = handoffs.put(TRIP_LIST + '?cityId=1')
+            out = browser.get(HANDOFF_PATH + handle)
+            assert out.status_code == 302 and out.headers['location'] == TRIP_LIST + '?cityId=1'
+        finally:
+            release.set()
+            for connection in held:
+                connection.close()
