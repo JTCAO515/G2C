@@ -1,4 +1,5 @@
 #if os(iOS)
+import CJRunClient
 import SwiftUI
 import UIKit
 
@@ -97,10 +98,8 @@ struct LioMetroMapScreen: View {
 
     private func sourceBar(_ map: LioMetroMap) -> some View {
         Link(destination: map.source.urls[0]) {
-            Text(map.sourceLine(in: language))
-                .font(.caption)
-                .foregroundStyle(LioTheme.inkSecondary)
-                .multilineTextAlignment(.leading)
+            // A label that wraps and grows with the text size: the plain Text was flagged as clipped (#1450).
+            RunReadableText(text: map.sourceLine(in: language), style: .caption, color: LioTheme.inkSecondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, LioTheme.Spacing.md)
                 .padding(.vertical, LioTheme.Spacing.xs)
@@ -108,6 +107,9 @@ struct LioMetroMapScreen: View {
         }
         .background(LioTheme.surface)
         .overlay(alignment: .top) { Rectangle().fill(LioTheme.hairline).frame(height: 1) }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(map.sourceLine(in: language))
+        .accessibilityAddTraits(.isLink)
         .accessibilityIdentifier("lio.metro.map.source")
     }
 }
@@ -242,6 +244,9 @@ struct LioMetroMapCanvas: View {
         .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
         .overlay { RoundedRectangle(cornerRadius: LioTheme.Radius.small).stroke(LioTheme.hairline) }
         .padding(LioTheme.Spacing.sm)
+        // Map controls keep their size, as system map controls do; at accessibility sizes a long press
+        // shows each one large (below). Unbounded, the icons overflowed their 44-point buttons.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 
     private func zoomButton(_ symbol: String, label: String, id: String, action: @escaping () -> Void) -> some View {
@@ -253,6 +258,7 @@ struct LioMetroMapCanvas: View {
                 .contentShape(Rectangle())
         }
         .accessibilityLabel(label)
+        .accessibilityShowsLargeContentViewer { Label(label, systemImage: symbol) }
         .accessibilityIdentifier(id)
     }
 
@@ -447,6 +453,13 @@ struct LioMetroStationSheet: View {
     let onTaxi: (LioTaxiPlace) -> Void
     @State private var searching = false
     @State private var notice: String?
+    @Environment(\.lioMetroNearby) private var nearby
+    @State private var category: LioNearbyPlace.Category = .sights
+    @State private var places: [LioMetroNearbyPlace]?
+    @State private var nearbyNotice: String?
+    @State private var chosen: LioMetroNearbyPlace?
+    /// The server has not opened surroundings for this account: the section is left out, not shown as broken.
+    @State private var nearbyClosed = false
 
     var body: some View {
         NavigationStack {
@@ -495,6 +508,11 @@ struct LioMetroStationSheet: View {
                         Text(notice).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
                             .accessibilityIdentifier("lio.metro.station.notice")
                     }
+                    // Station surroundings (#1450, M4 entry 12 item 5): only where the build enables them and
+                    // the station has a position; the request names the station, never a location.
+                    if let nearby, station.geo != nil, !nearbyClosed {
+                        surroundings(nearby)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(18)
@@ -502,6 +520,117 @@ struct LioMetroStationSheet: View {
             .background(LioTheme.paper)
             .foregroundStyle(LioTheme.ink)
             .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+
+    private static let categories: [LioNearbyPlace.Category] = [.sights, .shopping, .food, .coffee]
+
+    private func surroundings(_ nearby: LioMetroNearbyService) -> some View {
+        VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+            Text(language.text("Nearby", "周边")).font(.headline).accessibilityAddTraits(.isHeader)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: LioTheme.Spacing.xs) {
+                    ForEach(Self.categories, id: \.self) { option in
+                        Button { category = option } label: {
+                            Text(option.title(language))
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(option == category ? LioTheme.onVermilion : LioTheme.ink)
+                                .padding(.horizontal, LioTheme.Spacing.sm)
+                                .frame(minHeight: 44)
+                                .background(option == category ? LioTheme.vermilion : LioTheme.surface, in: Capsule())
+                                .overlay { Capsule().stroke(LioTheme.hairline).allowsHitTesting(false) }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(option == category ? .isSelected : [])
+                        .accessibilityIdentifier("lio.metro.nearby." + option.rawValue)
+                    }
+                }
+            }
+            if let places {
+                if places.isEmpty {
+                    Text(language.text("Nothing listed within 800 m.", "800 米内暂无结果。"))
+                        .font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
+                        .accessibilityIdentifier("lio.metro.nearby.empty")
+                }
+                ForEach(places.prefix(10)) { place in
+                    Button { chosen = place } label: { row(place) }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("lio.metro.nearby.place")
+                }
+            } else if let nearbyNotice {
+                Text(nearbyNotice).font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("lio.metro.nearby.notice")
+            } else {
+                ProgressView().frame(maxWidth: .infinity, minHeight: 44)
+            }
+            Text(language.text("From AMap. Distances are straight-line estimates.", "数据来自高德地图，距离按直线估算。"))
+                .font(.caption).foregroundStyle(LioTheme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .task(id: category) { await load(nearby) }
+        .confirmationDialog(chosen?.name(in: language) ?? "", isPresented: Binding(
+            get: { chosen != nil }, set: { if !$0 { chosen = nil } }), titleVisibility: .visible) {
+            if let place = chosen {
+                if taxiEntry != nil, map.city.taxiCity != nil {
+                    Button(language.text("Taxi here", "打车去这里")) { onTaxi(place.taxiPlace) }
+                }
+                Button(language.text("Directions in AMap", "用高德地图导航")) { directions(to: place) }
+            }
+        }
+    }
+
+    private func row(_ place: LioMetroNearbyPlace) -> some View {
+        HStack(spacing: LioTheme.Spacing.sm) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(place.name(in: language)).font(.body.weight(.semibold))
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(detail(place)).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 8)
+            Image(systemName: "chevron.forward").font(.footnote.weight(.semibold))
+                .foregroundStyle(LioTheme.inkSecondary).accessibilityHidden(true)
+        }
+        .foregroundStyle(LioTheme.ink)
+        .padding(LioTheme.Spacing.sm)
+        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+        .contentShape(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+    }
+
+    private func detail(_ place: LioMetroNearbyPlace) -> String {
+        var parts: [String] = []
+        if let kind = place.category { parts.append(kind.title(language)) }
+        if let minutes = place.walkingMinutes {
+            parts.append(language.text("about \(minutes) min walk", "步行约 \(minutes) 分钟"))
+        }
+        if let rating = place.rating { parts.append("★" + rating) }
+        if language == .english, place.nameEN != nil { parts.append(place.nameZH) }
+        return parts.joined(separator: language.text(" · ", " · "))
+    }
+
+    private func load(_ nearby: LioMetroNearbyService) async {
+        places = nil
+        nearbyNotice = nil
+        do {
+            places = try await nearby.search(map.city.id, station.id, [category], language)
+        } catch is CancellationError {
+            return
+        } catch LioNearbyFailure.notEnabled {
+            nearbyClosed = true
+        } catch LioNearbyFailure.signInRequired {
+            nearbyNotice = language.text("Sign in to see what is nearby.", "登录后可查看周边。")
+        } catch {
+            nearbyNotice = language.text("Nearby places are not available right now.", "周边暂不可用，请稍后再试。")
+        }
+    }
+
+    private func directions(to place: LioMetroNearbyPlace) {
+        let urls = LioMetroStationAction.directionURLs(cityZH: map.city.name(in: .chinese), name: place.nameZH)
+        Task { @MainActor in
+            for url in urls where await UIApplication.shared.open(url) { return }
+            notice = language.text("Install AMap or Apple Maps to get directions.", "请安装高德地图或苹果地图后再导航。")
         }
     }
 

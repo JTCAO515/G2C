@@ -36,6 +36,17 @@ enum LioRoadbookPDF {
         return name + language.text("-roadbook.pdf", "-路书.pdf")
     }
 
+    /// The one folder exports go to: the app's temporary folder, never the account's roadbook folder
+    /// (whose cleanup accepts only roadbook copies). Removed when sharing ends.
+    static var exportDirectory: URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("LioRoadbookExport", isDirectory: true)
+    }
+
+    /// Removes every exported PDF; a missing folder is fine.
+    static func removeExports() {
+        try? FileManager.default.removeItem(at: exportDirectory)
+    }
+
     /// Writes into a folder inside the app (normally its temporary folder) for the share sheet.
     /// Earlier exports in the folder are removed first so only the file being shared stays on the phone.
     static func write(_ roadbook: LioRoadbook, language: LioLanguage, to directory: URL) throws -> URL {
@@ -95,6 +106,18 @@ enum LioRoadbookPDF {
                 }
                 if let tip = stop.tip, !tip.isEmpty {
                     text.add(language.text("Reminder: ", "提醒：") + tip + language.text(" (check official sources)", "（以官方为准）"), .accentBody)
+                }
+                if let detail = roadbook.details[stop.id] {
+                    for field in LioRoadbookDetail.Field.allCases {
+                        text.add(field.title(language) + language.text(": ", "：") + detail.field(field, language), .body)
+                    }
+                    if !detail.metro.isEmpty {
+                        text.add(language.text("Metro nearby: ", "附近地铁：")
+                                 + detail.metro.map { $0.text(language) }.joined(separator: language.text("; ", "；")), .secondary)
+                    }
+                    for restaurant in detail.restaurants {
+                        text.add(restaurant.nameZH + "  " + restaurant.addressZH, .secondary)
+                    }
                 }
                 if let leg = entry.legAfter { text.add("↓ " + leg.description(language), .secondary) }
             }

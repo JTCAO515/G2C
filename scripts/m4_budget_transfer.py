@@ -11,7 +11,7 @@ import sqlite3
 import uuid
 
 from cj_usage import authorization_budget as budget
-from cj_usage import roadbook_budget
+from cj_usage import menu_budget, roadbook_budget
 from cj_usage.translation_budget import DAILY_LIMITS, FIRST_MODEL, SERVICE, TEXT_MODEL, TranslationOperation, translation_price
 
 MAC_ROOT=Path.home()/'.local/share/g2c/m4-real-services'
@@ -19,6 +19,7 @@ HK_ROOT=Path('/budget')
 SEALED='sealed-for-'+budget.HK_PRODUCER
 TRANSLATION_ATTEMPT = re.compile(re.escape(SERVICE) + r':([0-9a-f]{32}):([0-9a-f]{32}):([0-9]{2})')
 ROADBOOK_ATTEMPT = re.compile(re.escape(roadbook_budget.SERVICE) + r':([0-9a-f]{32}):([0-9a-f]{32}):([0-9]{2})')
+MENU_ATTEMPT = re.compile(re.escape(menu_budget.SERVICE) + r':([0-9a-f]{32}):([0-9a-f]{32}):([0-9]{2})')
 
 
 def checksum(path):
@@ -98,6 +99,36 @@ def valid_roadbook_attempt(identity, kind, digest, state, receipt, value):
             and roadbook_budget.roadbook_price(value) is not None)
 
 
+def valid_menu_attempt(identity, kind, digest, state, receipt, value):
+    """Menu rows (M4 item 19) carry their metadata from INTENT on, like roadbook rows."""
+    match = MENU_ATTEMPT.fullmatch(identity)
+    if not match or kind != 'model' or receipt is None:
+        return False
+    if type(value) is not dict or receipt != budget.canonical(value).decode():
+        return False
+    owner, request, stage_text = match.groups()
+    stage = int(stage_text)
+    calls, day = value.get('calls'), value.get('day')
+    if (type(calls) is not int or not 1 <= calls <= menu_budget.CALLS_PER_MENU
+            or type(day) is not str or stage >= calls):
+        return False
+    try:
+        operation = menu_budget.MenuOperation(owner, uuid.UUID(hex=request), date.fromisoformat(day), calls)
+    except ValueError:
+        return False
+    metadata = operation.metadata(stage)
+    if hashlib.sha256(budget.canonical(metadata)).hexdigest() != digest:
+        return False
+    if state == 'INTENT':
+        return receipt == budget.canonical(metadata).decode()
+    if set(value) != metadata.keys() | {'receipt_sha256', 'usage'}:
+        return False
+    return (budget.canonical({key: value[key] for key in metadata}) == budget.canonical(metadata)
+            and type(value['receipt_sha256']) is str
+            and re.fullmatch('[0-9a-f]{64}', value['receipt_sha256']) is not None
+            and menu_budget.menu_price(value) is not None)
+
+
 def attempts(connection):
     info=connection.execute('PRAGMA table_info(attempt)').fetchall()
     if [r[1] for r in info]!=['id','kind','input_sha','state','receipt'] or info[0][5]!=1:
@@ -118,6 +149,9 @@ def attempts(connection):
         elif identity.startswith('roadbook.') or (type(value) is dict and value.get('service') == roadbook_budget.SERVICE):
             contains_hk_only_rows = True
             valid = valid_roadbook_attempt(identity, kind, digest, state, receipt, value)
+        elif identity.startswith('menu.') or (type(value) is dict and value.get('service') == menu_budget.SERVICE):
+            contains_hk_only_rows = True
+            valid = valid_menu_attempt(identity, kind, digest, state, receipt, value)
         else:
             valid = ((state == 'INTENT') == (receipt is None)
                      and (receipt is None or type(value) is dict))

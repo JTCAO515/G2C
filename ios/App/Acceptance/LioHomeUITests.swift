@@ -105,6 +105,146 @@ import CryptoKit
         }
     }
 
+    /// #1450 station surroundings (M4 entry 12 item 5): the station sheet lists sights, shopping, food and coffee
+    /// around the station (sample places here), switches category, and offers a taxi or directions for a place.
+    func testMetroStationShowsWhatIsNearby() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-taxi-preview", "--lio-metro-nearby-preview",
+                                   "-cj.ui.language.v1", language, "-lio.ui.appearance.v1", "light",
+                                   "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+            app.launch()
+            defer { app.terminate() }
+            let english = language == "en"
+            let tools = app.tabBars.buttons[english ? "Tools" : "工具"]
+            XCTAssertTrue(tools.waitForExistence(timeout: 8))
+            tools.tap()
+            let metro = app.buttons["lio.tools.metro-guide"]
+            XCTAssertTrue(metro.waitForExistence(timeout: 6))
+            metro.tap()
+            app.buttons["lio.metro.city.guangzhou"].tap()
+            XCTAssertTrue(app.descendants(matching: .any)["lio.metro.map.canvas"].waitForExistence(timeout: 8))
+            app.buttons["lio.metro.map.find"].tap()
+            let search = app.searchFields.firstMatch
+            XCTAssertTrue(search.waitForExistence(timeout: 6))
+            search.tap()
+            search.typeText(english ? "Tiyu Xilu" : "体育西路")
+            let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", english ? "Tiyu Xilu" : "体育西路")).firstMatch
+            XCTAssertTrue(row.waitForExistence(timeout: 6))
+            row.tap()
+            XCTAssertTrue(app.staticTexts["lio.metro.station.name-zh"].waitForExistence(timeout: 6))
+            app.swipeUp()
+            let places = app.buttons.matching(identifier: "lio.metro.nearby.place")
+            XCTAssertTrue(places.firstMatch.waitForExistence(timeout: 6))
+            XCTAssertEqual(places.count, 2) // sample sights
+            XCTAssertTrue(places.firstMatch.label.contains(english ? "Sample Park" : "示例公园"))
+            XCTAssertTrue(app.buttons["lio.metro.nearby.sights"].isSelected)
+            capture(app, "metro-nearby-sights-\(language)")
+            app.buttons["lio.metro.nearby.shopping"].tap()
+            XCTAssertTrue(app.buttons["lio.metro.nearby.shopping"].isSelected)
+            XCTAssertTrue(places.firstMatch.waitForExistence(timeout: 6))
+            XCTAssertTrue(places.firstMatch.label.contains(english ? "Sample Shopping Centre" : "示例购物中心"))
+            places.firstMatch.tap()
+            XCTAssertTrue(app.buttons[english ? "Taxi here" : "打车去这里"].waitForExistence(timeout: 6))
+            XCTAssertTrue(app.buttons[english ? "Directions in AMap" : "用高德地图导航"].exists)
+            capture(app, "metro-nearby-actions-\(language)")
+        }
+    }
+
+    /// #1450 station surroundings: for an account the server has not opened (403 not_enabled) the station sheet
+    /// leaves the section out instead of showing it as broken; the rest of the sheet is unchanged.
+    func testMetroStationHidesSurroundingsWhenNotOpened() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-taxi-preview", "--lio-metro-nearby-preview-closed",
+                               "-cj.ui.language.v1", "en", "-lio.ui.appearance.v1", "light",
+                               "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+        app.launch()
+        defer { app.terminate() }
+        let tools = app.tabBars.buttons["Tools"]
+        XCTAssertTrue(tools.waitForExistence(timeout: 8))
+        tools.tap()
+        let metro = app.buttons["lio.tools.metro-guide"]
+        XCTAssertTrue(metro.waitForExistence(timeout: 6))
+        metro.tap()
+        app.buttons["lio.metro.city.guangzhou"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["lio.metro.map.canvas"].waitForExistence(timeout: 8))
+        app.buttons["lio.metro.map.find"].tap()
+        let search = app.searchFields.firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 6))
+        search.tap()
+        search.typeText("Tiyu Xilu")
+        let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Tiyu Xilu")).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 6))
+        row.tap()
+        XCTAssertTrue(app.staticTexts["lio.metro.station.name-zh"].waitForExistence(timeout: 6))
+        XCTAssertTrue(app.buttons["lio.metro.station.directions"].exists)
+        // The refusal arrives at once from the preview; give the sheet a moment, then the section must be gone.
+        let sights = app.buttons["lio.metro.nearby.sights"]
+        let gone = expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: sights)
+        wait(for: [gone], timeout: 6)
+        XCTAssertFalse(app.descendants(matching: .any)["lio.metro.nearby.notice"].exists)
+        capture(app, "metro-nearby-closed-en")
+    }
+
+    /// #1450: the map page and the station sheet pass the full accessibility audit in both languages and
+    /// appearances, at the default text size and the largest accessibility size.
+    func testMetroMapPassesTheAccessibilityAudit() throws {
+        continueAfterFailure = false
+        for size in ["UICTContentSizeCategoryL", "UICTContentSizeCategoryAccessibilityXXXL"] {
+            for language in ["en", "zh-Hans"] {
+                for appearance in ["light", "dark"] {
+                    let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                    app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-taxi-preview",
+                                           "--lio-metro-nearby-preview", "-cj.ui.language.v1",
+                                           language, "-lio.ui.appearance.v1", appearance,
+                                           "-UIPreferredContentSizeCategoryName", size]
+                    app.launch()
+                    defer { app.terminate() }
+                    let english = language == "en"
+                    let label = "\(language)-\(appearance)-\(size.hasSuffix("XXXL") ? "ax5" : "default")"
+                    let tools = app.tabBars.buttons[english ? "Tools" : "工具"]
+                    XCTAssertTrue(tools.waitForExistence(timeout: 8))
+                    tools.tap()
+                    app.buttons["lio.tools.metro-guide"].tap()
+                    let city = app.buttons["lio.metro.city.guangzhou"]
+                    XCTAssertTrue(city.waitForExistence(timeout: 6))
+                    city.tap()
+                    XCTAssertTrue(app.descendants(matching: .any)["lio.metro.map.canvas"].waitForExistence(timeout: 8))
+                    try audit(app, "metro-map-\(label)")
+                    app.buttons["lio.metro.map.find"].tap()
+                    let search = app.searchFields.firstMatch
+                    XCTAssertTrue(search.waitForExistence(timeout: 6))
+                    search.tap()
+                    search.typeText(english ? "Tiyu Xilu" : "体育西路")
+                    let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", english ? "Tiyu Xilu" : "体育西路")).firstMatch
+                    XCTAssertTrue(row.waitForExistence(timeout: 6))
+                    row.tap()
+                    XCTAssertTrue(app.staticTexts["lio.metro.station.name-zh"].waitForExistence(timeout: 6))
+                    // The station sheet includes its surroundings (sample places) in the audit.
+                    XCTAssertTrue(app.buttons["lio.metro.nearby.place"].firstMatch.waitForExistence(timeout: 6))
+                    try audit(app, "metro-station-\(label)")
+                }
+            }
+        }
+    }
+
+    /// The full audit, reporting each issue with the element it is about. An element's details are read
+    /// after the audit: reading them inside the handler breaks the audit.
+    private func audit(_ app: XCUIApplication, _ name: String) throws {
+        var issues: [(String, XCUIElement?)] = []
+        try app.performAccessibilityAudit(for: .all) { issue in
+            issues.append((issue.compactDescription + ": " + issue.detailedDescription, issue.element))
+            return true
+        }
+        capture(app, name)
+        for (text, element) in issues {
+            let detail = element.map { "\($0.elementType.rawValue) \"\($0.identifier)\" \"\($0.label)\" \($0.frame)" } ?? "no element"
+            XCTFail("\(name): \(text) — \(detail)")
+        }
+    }
+
     private func capture(_ app: XCUIApplication, _ name: String) {
         let screenshot = XCTAttachment(screenshot: app.screenshot())
         screenshot.name = name
@@ -2370,6 +2510,50 @@ import CryptoKit
 
     func testExplorationHomeEnglish() throws { try exerciseExplorationHome(chinese: false) }
     func testExplorationHomeChinese() throws { try exerciseExplorationHome(chinese: true) }
+
+    /// #1501: with two v4 replies the English chat used to stop responding once the text size changed.
+    func testExplorationHomeTwoRepliesFollowTextSizeChanges() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+        for language in ["en", "zh-Hans"] {
+            app.launchArguments = ["--lio-preview", "--lio-exploration-home-acceptance", "-cj.ui.language.v1", language,
+                                   "-lio.ui.appearance.v1", "light"]
+            app.launch()
+            let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+            XCTAssertTrue(composer.waitForExistence(timeout: 12), app.debugDescription)
+            composer.tap(); composer.typeText(language == "en" ? "Plan three days in Beijing" : "帮我规划三天北京自由行")
+            app.buttons["lio.send"].tap()
+            let planNow = app.buttons.matching(NSPredicate(format: "identifier ENDSWITH %@", "lio.exit.plan_now")).firstMatch
+            XCTAssertTrue(planNow.waitForExistence(timeout: 12), app.debugDescription)
+            for _ in 0..<6 where !planNow.isHittable { app.swipeUp() }
+            planNow.tap()
+            let segments = app.descendants(matching: .any).matching(identifier: "lio.segment.0")
+            let second = NSPredicate { _, _ in segments.count >= 2 }
+            XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: second, object: nil)], timeout: 12), .completed)
+            // Let the new reply finish its entrance fade before contrast is sampled.
+            sleep(2)
+            // Every reply stays in the accessibility tree; text scrolled out of the chat's visible area is clipped,
+            // and its contrast is measured against the controls it sits under. Only that contrast is set aside,
+            // and each one is recorded. Every other audit type, and contrast on visible text, must pass.
+            let viewport = app.scrollViews.firstMatch.frame
+            var setAside: [String] = []
+            try app.performAccessibilityAudit(for: .all) { issue in
+                if issue.auditType == .contrast, let element = issue.element, !viewport.contains(element.frame) {
+                    setAside.append("\(element.frame) \(element.label)")
+                    return true
+                }
+                let detail = XCTAttachment(string: issue.compactDescription + "\n" + issue.detailedDescription + "\n"
+                    + (issue.element?.debugDescription ?? "No element supplied"))
+                detail.name = "two-replies-audit-\(language)"; detail.lifetime = .keepAlways; self.add(detail)
+                return false
+            }
+            let note = XCTAttachment(string: "viewport \(viewport)\n" + setAside.joined(separator: "\n"))
+            note.name = "two-replies-clipped-contrast-\(language)"; note.lifetime = .keepAlways; add(note)
+            // Still responsive after the audit changed the text size.
+            XCTAssertTrue(composer.isHittable)
+            app.terminate()
+        }
+    }
 
     /// #1453: a plan summary in a v4 reply opens the day-by-day page; it can be saved, shown in Trips, changed per day
     /// through the chat and removed again.

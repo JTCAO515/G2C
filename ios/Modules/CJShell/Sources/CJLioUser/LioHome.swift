@@ -210,6 +210,16 @@ public struct LioHome<MenuContent: View>: View {
         #endif
     }
 
+    /// Metro station surroundings (#1450): the signed-in Nearby relay, when the build enables them.
+    private var metroNearby: LioMetroNearbyService? {
+        if let nearbyRelay { return .internalBeta(relay: nearbyRelay) }
+        #if DEBUG
+        return LioMetroNearbyService.previewFromArguments
+        #else
+        return nil
+        #endif
+    }
+
     private var taxiEntry: LioTaxiEntry? {
         if let taxiRelay, let taxiRecentDirectory {
             var seen = Set<LioTaxiPlace.ID>()
@@ -278,6 +288,7 @@ public struct LioHome<MenuContent: View>: View {
         }
         .environment(\.lioTaxiEntry, taxiEntry)
         .environment(\.lioNearbyService, nearbyService)
+        .environment(\.lioMetroNearby, metroNearby)
         .tint(LioTheme.vermilion)
         .sensoryFeedback(.success, trigger: savedCelebrations)
         .disabled(chatControlsSuspended)
@@ -532,14 +543,10 @@ public struct LioHome<MenuContent: View>: View {
                 floatingControls
                 GeometryReader { viewport in
                     ScrollView {
-                        Group {
-                            if dynamicTypeSize.isAccessibilitySize && !conversation.turns.contains(where: { $0.exploration != nil }) {
-                                // Eager measurement keeps a tall card's bottom reachable at accessibility sizes.
-                                VStack(alignment: .leading, spacing: 22) { chatMessages(scroll) }
-                            } else {
-                                LazyVStack(alignment: .leading, spacing: 22) { chatMessages(scroll) }
-                            }
-                        }
+                        // Eager stack: a lazy stack kept re-laying out without end when the text size changed once
+                        // the chat was taller than the screen (#1501). It also keeps a tall card's bottom reachable
+                        // at accessibility sizes, and reply views keep their state across text sizes.
+                        VStack(alignment: .leading, spacing: 22) { chatMessages(scroll) }
                         .frame(maxWidth: 680)
                         .padding(.horizontal, 18)
                         .padding(.top, 12)
