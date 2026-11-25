@@ -45,6 +45,8 @@ import Testing
         #expect(!LioAccountFolders.isRoadbookFileName(String(repeating: "A", count: 64) + ".json"))
         #expect(!LioAccountFolders.isRoadbookFileName(String(repeating: "a", count: 63) + ".json"))
         #expect(!LioAccountFolders.isRoadbookFileName(String(repeating: "a", count: 64) + ".txt"))
+        #expect(!LioAccountFolders.isRoadbookFileName(String(repeating: "b\u{0301}", count: 64) + ".json"))
+        #expect(!LioAccountFolders.isRoadbookFileName(String(repeating: "a", count: 64) + ".JSON"))
     }
 
     private func temporaryRoot() throws -> URL {

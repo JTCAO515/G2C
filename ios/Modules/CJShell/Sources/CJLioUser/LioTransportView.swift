@@ -1,6 +1,5 @@
 #if os(iOS)
 import SwiftUI
-import UIKit
 
 /// Intercity transport search (#1519): enter two cities and a date, compare trains, flights and buses,
 /// then book outside the app. Behind `G2CTransportEnabled`, hidden by default.
@@ -57,7 +56,10 @@ struct LioTransportView: View {
         .navigationBarTitleDisplayMode(.inline)
         .environment(\.calendar, LioTransportQuery.calendar)
         .environment(\.timeZone, LioTransportQuery.calendar.timeZone)
-        .sheet(item: $driverHub) { hub in LioTransportDriverCard(language: language, hub: hub) }
+        .sheet(item: $driverHub) { hub in
+            LioDriverSign(language: language, nameZH: hub.nameZH, nameEN: hub.driverNameEN,
+                          requestZH: hub.driverRequestZH, identifierPrefix: "lio.transport.driver")
+        }
         .task(id: pending) {
             guard let pending else { return }
             do {
@@ -608,49 +610,6 @@ private struct LioTransportTips: View {
         .padding(LioTheme.Spacing.md)
         .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
         .accessibilityIdentifier("lio.transport.tips")
-    }
-}
-
-private struct LioTransportDriverCard: View {
-    let language: LioLanguage
-    let hub: LioTransportHub
-    @Environment(\.dismiss) private var dismiss
-    @State private var priorIdleTimer: Bool?
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    Text(hub.kind == .airport ? "请送我到这个机场" : "请送我到这个火车站")
-                        .font(.title3)
-                    Text(hub.nameZH).font(LioTheme.display(.largeTitle).weight(.bold))
-                    if let code = hub.code { Text(code).font(.title2.weight(.semibold)) }
-                    Text(hub.nameEN).font(.body).foregroundStyle(LioTheme.inkSecondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(24)
-            }
-            .background(LioTheme.paper)
-            .foregroundStyle(LioTheme.ink)
-            .navigationTitle(language.text("Show the driver", "给司机看"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(language.text("Close", "关闭")) { dismiss() }
-                }
-            }
-        }
-        .onAppear {
-            guard priorIdleTimer == nil else { return }
-            priorIdleTimer = UIApplication.shared.isIdleTimerDisabled
-            UIApplication.shared.isIdleTimerDisabled = true
-        }
-        .onDisappear {
-            if let priorIdleTimer {
-                UIApplication.shared.isIdleTimerDisabled = priorIdleTimer
-                self.priorIdleTimer = nil
-            }
-        }
     }
 }
 

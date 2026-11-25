@@ -141,6 +141,13 @@ struct LioMetroMapDataTests {
             ("dalian", "西安路", ["1号线", "2号线"]), ("changchun", "人民广场", ["1号线", "5号线"]),
             ("haerbin", "博物馆", ["1号线", "2号线"]), ("lanzhou", "东方红广场", ["1号线", "2号线"]),
             ("wulumuqi", "南门", ["1号线", "2号线"]),
+            ("wuxi", "三阳广场", ["1号线", "2号线"]), ("xuzhou", "彭城广场", ["1号线", "2号线"]),
+            ("changzhou", "文化宫", ["1号线", "2号线"]), ("suzhou", "乐桥", ["1号线", "4号线"]),
+            ("nantong", "文峰", ["1号线", "2号线"]),
+            ("ningbo", "鼓楼", ["1号线", "2号线"]), ("shaoxing", "梅山广场", ["1号线", "2号线"]),
+            ("hefei", "合肥南站", ["1号线", "4号线", "5号线"]), ("fuzhou", "东街口", ["1号线", "4号线"]),
+            ("xiamen", "吕厝", ["1号线", "2号线"]), ("nanchang", "八一广场", ["1号线", "2号线"]),
+            ("qingdao", "青岛北站", ["1号线", "3号线", "8号线"]), ("hangzhou", "奥体中心（6号线）", ["6号线", "7号线"]),
         ]
         for (id, station, expected) in spotChecks {
             guard let city = LioMetroCity.named(id) else { continue }
@@ -151,9 +158,17 @@ struct LioMetroMapDataTests {
                                        ("zhengzhou", "祭城", "Zhaicheng"), ("tianjin", "人民医院", "Renminyiyuan"),
                                        ("tianjin", "泰达", "TEDA"), ("chengdu", "杉板桥", "Shabanqiao"),
                                        ("chengdu", "涌泉", "Yongquan"), ("zhengzhou", "南五里堡", "Nanwulibao"),
-                                       ("shijiazhuang", "柏林庄", "Bailinzhuang"), ("haerbin", "哈尔滨北站", "Harbin Beizhan"),
-                                       ("huhehaote", "呼和浩特东站", "Hohhot Dongzhan"), ("dalian", "革镇堡", "Gezhenpu"),
-                                       ("dalian", "和平路", "Heping Road"), ("wulumuqi", "大地窝堡", "Dadiwopu")] {
+                                       ("shijiazhuang", "柏林庄", "Bailinzhuang"), ("haerbin", "哈尔滨北站", "Harbin North Railway Station"),
+                                       ("huhehaote", "呼和浩特东站", "Hohhot East Railway Station"), ("dalian", "革镇堡", "Gezhenpu"),
+                                       ("dalian", "和平路", "Heping Road"), ("wulumuqi", "大地窝堡", "Dadiwopu"),
+                                       ("suzhou", "尹山湖", "Yinshanhu"), ("nanjing", "小行", "Xiaohang"),
+                                       ("nanjing", "湖北路·二中", "Hubeilu · Erzhong"),
+                                       ("nanjing", "南京站", "Nanjing Railway Station"), ("wuxi", "北栅口", "Beizhakou"),
+                                       ("hefei", "合肥南站", "Hefei South Railway Station"), ("chengdu", "火车北站", "Chengdu North Railway Station"),
+                                       ("ningbo", "长江路", "Changjiang Road"), ("hangzhou", "火车站", "Shaoxing Railway Station"),
+                                       ("hangzhou", "之江文化中心", "Zhijiang Cultural Center"), ("hangzhou", "西文街", "Xiwen Street"),
+                                       ("suzhou", "高铁苏州北站", "Suzhou North Railway Station"), ("ningbo", "丽园南路", "Liyuan South Road"),
+                                       ("kunming", "昆明南火车站", "Kunming South Railway Station")] {
             guard let city = LioMetroCity.named(id) else { continue }
             #expect(try LioMetroMap.bundled(city).stations.first { $0.nameZH == station }?.nameEN == english, "\(id) \(station)")
         }

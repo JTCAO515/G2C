@@ -13,9 +13,10 @@ public enum LioAccountFolders {
 
     /// The only file names a roadbook folder may hold; anything else keeps cleanup incomplete.
     public static func isRoadbookFileName(_ name: String) -> Bool {
-        guard name.hasSuffix(".json") else { return false }
-        let digest = name.dropLast(5)
-        return digest.count == 64 && digest.allSatisfy { ("0"..."9").contains($0) || ("a"..."f").contains($0) }
+        // Bytes, not characters: a hex letter followed by a combining mark must not pass.
+        let bytes = Array(name.utf8)
+        guard bytes.count == 69, bytes.suffix(5).elementsEqual(".json".utf8) else { return false }
+        return bytes.prefix(64).allSatisfy { (0x30...0x39).contains($0) || (0x61...0x66).contains($0) }
     }
 }
 

@@ -45,6 +45,15 @@ struct LioTransportCityTests {
         }
     }
 
+    @Test func driverSignAsksForTheStationOrAirportAndKeepsTheAirportCode() {
+        let hongqiao = LioTransportCity.resolve("上海")!.stations[0]
+        #expect(hongqiao.driverRequestZH == "请送我到这个火车站")
+        #expect(hongqiao.driverNameEN == "Shanghai Hongqiao Railway Station")
+        let capital = LioTransportCity.resolve("北京")!.airports[0]
+        #expect(capital.driverRequestZH == "请送我到这个机场")
+        #expect(capital.driverNameEN == "Beijing Capital International Airport (PEK)")
+    }
+
     @Test func hubsShowTheOtherLanguageUnderEnglishNames() {
         let hongqiao = LioTransportCity.resolve("上海")!.stations[0]
         #expect(hongqiao.name(in: .english) == "Shanghai Hongqiao Railway Station")
