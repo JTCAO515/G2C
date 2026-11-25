@@ -63,6 +63,8 @@ struct LioMenuDish: Identifiable, Sendable, Equatable {
 
 struct LioMenuReading: Sendable, Equatable {
     let dishes: [LioMenuDish]
+    /// The menu had more lines than one reading covers; only the first ones are shown.
+    var truncated = false
     /// Made-up Debug data; the screen says so.
     var isSample = false
 }
@@ -291,7 +293,7 @@ struct LioMenuOrder: Equatable, Sendable {
 // MARK: - Service
 
 struct LioMenuService: Sendable {
-    let read: @Sendable (Data) async throws -> LioMenuReading
+    let read: @MainActor @Sendable (Data) async throws -> LioMenuReading
 
     /// The service for this build, or `nil` to hide the tool. The real relay is connected after JT approves the
     /// model authorisation; until then only Debug's `--lio-menu-preview` shows sample data.

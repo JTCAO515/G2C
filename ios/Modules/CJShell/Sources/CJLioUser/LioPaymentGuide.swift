@@ -1,10 +1,17 @@
 import Foundation
 
 struct LioPaymentGuideStep: Identifiable {
+    /// An official page the advice comes from, shown as a link under the card.
+    struct Source {
+        let name: String
+        let url: URL
+    }
+
     let id: String
     let icon: String
     let title: String
     let detail: String
+    var source: Source?
 }
 
 enum LioPaymentGuideProvider: String, CaseIterable, Identifiable {
@@ -61,6 +68,47 @@ enum LioPaymentGuideProvider: String, CaseIterable, Identifiable {
                   title: language.text("Identity details rejected", "证件核验失败"),
                   detail: language.text("Check that the selected document type, name and number match your document. Follow any correction instructions in the official app.",
                                         "核对证件类型、姓名和号码是否与证件一致，按官方 App 的修正提示继续。")),
+        ]
+    }
+
+    /// When a payment fails (JT, 2026-11-25): only what an official or government page states, checked
+    /// 2026-11-25. Amounts can change, so every number points to the payment page.
+    static func paymentFailures(in language: LioLanguage) -> [LioPaymentGuideStep] {
+        let pbocNews = LioPaymentGuideStep.Source(
+            name: language.text("Guangdong government website: PBOC payment guide for foreign visitors (news, 2024)",
+                                "广东省政府网转载：人民银行发布外籍来华人员支付指南（2024）"),
+            url: URL(string: "https://www.gd.gov.cn/zwgk/zcjd/gnzcsd/content/post_4391477.html")!)
+        let weixinHelp = LioPaymentGuideStep.Source(
+            name: language.text("WeChat Help Center: international cards", "微信帮助中心：国际卡"),
+            url: URL(string: "https://help.wechat.com/cgi-bin/micromsg-bin/oshelpcenter?t=help_center%2Fw_topic_detail&opcode=2&id=2307252mur7f2307257zfyfe&lang=en&plat=ios&Channel=helpcenter")!)
+        return [
+            .init(id: "scan-fails", icon: "qrcode.viewfinder",
+                  title: language.text("If a QR payment won't go through", "扫码付不了时"),
+                  detail: language.text("At shops showing the Visa, Mastercard or UnionPay logo, you can pay with that card directly instead. If there is no logo, ask the cashier whether cards are accepted.",
+                                        "在有 Visa、Mastercard、银联等受理标识的商户，可以直接用对应的卡刷卡付款；没有标识的，可以问收银员能不能刷卡。"),
+                  source: pbocNews),
+            .init(id: "limit", icon: "gauge.with.dots.needle.67percent",
+                  title: language.text("Over the limit", "超过限额"),
+                  detail: language.text("Weixin Pay states that international cards can pay up to RMB 6,500 per payment, RMB 50,000 a month and RMB 65,000 a year. For Alipay's limit, check the payment page. For more, pay by card or in cash. Limits can change; check the payment page for the current one.",
+                                        "微信支付写明，外卡单笔最多 6,500 元、每月累计 50,000 元、每年累计 65,000 元；支付宝的外卡限额请看付款页面。超过时请刷卡或付现金。限额可能调整，以付款页面显示为准。"),
+                  source: weixinHelp),
+            .init(id: "fee", icon: "percent",
+                  title: language.text("A 3% fee was added", "多收了 3% 服务费"),
+                  detail: language.text("This applies to payments with an international card in Alipay or Weixin Pay: up to RMB 200 has no service fee, and above RMB 200 a 3% fee is added. It is not a failed payment. Check the payment page for the final fee.",
+                                        "这是支付宝、微信支付用外卡付款的规则：单笔不超过 200 元免服务费，超过 200 元收 3%。这不是付款失败；费用以付款页面显示为准。"),
+                  source: .init(name: language.text("Guizhou Foreign Affairs Office guide for foreigners (Dec 2024)",
+                                                    "贵州省外办外籍人士指南（2024 年 12 月）"),
+                                url: URL(string: "https://www.eguizhou.gov.cn/2024-12/25/c_1059232.htm")!)),
+            .init(id: "transfer", icon: "person.2.slash",
+                  title: language.text("Transfers and red packets aren't supported", "转账和发红包用不了"),
+                  detail: language.text("Weixin Pay states that international cards do not support transfers or red packets. To pay a person, you can pay in cash.",
+                                        "微信支付写明，外卡不支持转账和发红包。需要给个人付钱时，可以改付现金。"),
+                  source: weixinHelp),
+            .init(id: "cash", icon: "banknote",
+                  title: language.text("When you need cash", "需要现金时"),
+                  detail: language.text("Withdraw yuan with your bank card at an ATM showing its card network's logo, or exchange foreign cash at a bank branch, exchange counter or exchange machine showing the currency exchange sign.",
+                                        "可以用银行卡在有对应卡组织标识的 ATM 取人民币，也可以在有货币兑换标识的银行网点、兑换机构或自助兑换机，用外币现金换人民币。"),
+                  source: pbocNews),
         ]
     }
 

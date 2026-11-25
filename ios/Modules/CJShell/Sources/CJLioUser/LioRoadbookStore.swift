@@ -43,6 +43,7 @@ struct LioRoadbookArchive: Codable, Equatable, Sendable {
         let legs: [Leg]
     }
     struct Hotel: Codable, Equatable, Sendable { let id: String; let place: Place; let note: String? }
+    struct Detail: Codable, Equatable, Sendable { let stopID: String; let detail: LioRoadbookDetail }
 
     let version: Int
     let id: String
@@ -54,6 +55,8 @@ struct LioRoadbookArchive: Codable, Equatable, Sendable {
     let days: [Day]
     let lodgingArea: String
     let hotels: [Hotel]
+    /// Optional so copies kept before place details existed still open.
+    let details: [Detail]?
 
     init(_ roadbook: LioRoadbook) {
         func place(_ value: LioRichItinerary.Place) -> Place {
@@ -81,6 +84,8 @@ struct LioRoadbookArchive: Codable, Equatable, Sendable {
         }
         lodgingArea = itinerary.lodgingArea
         hotels = itinerary.hotels.map { Hotel(id: $0.id, place: place($0.place), note: $0.note) }
+        let entries = roadbook.details.sorted { $0.key < $1.key }.map { Detail(stopID: $0.key, detail: $0.value) }
+        details = entries.isEmpty ? nil : entries
     }
 
     func roadbook() throws -> LioRoadbook {
@@ -120,8 +125,14 @@ struct LioRoadbookArchive: Codable, Equatable, Sendable {
         }
         let hotels = try hotels.map { LioRichItinerary.Hotel(id: $0.id, place: try place($0.place), note: $0.note) }
         let itinerary = LioRichItinerary(title: title, undated: undated, days: days, lodgingArea: lodgingArea, hotels: hotels)
+        let stopIDs = Set(days.flatMap(\.stops).map(\.id))
+        var restored: [String: LioRoadbookDetail] = [:]
+        for entry in details ?? [] {
+            guard stopIDs.contains(entry.stopID), restored[entry.stopID] == nil else { throw Failure.invalidValue }
+            restored[entry.stopID] = entry.detail
+        }
         return LioRoadbook(id: id, source: source, city: city.map { .init(nameZH: $0.nameZH, nameEN: $0.nameEN) },
-                           createdAt: createdAt, itinerary: itinerary)
+                           createdAt: createdAt, itinerary: itinerary, details: restored)
     }
 }
 
