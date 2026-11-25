@@ -189,13 +189,3 @@ extension LioRoadbook {
         return Source.allCases.flatMap { source in all.filter { $0.source == source } }
     }
 }
-
-extension LioRoadbook {
-    /// The library order: kept copies replace the same roadbook offered again; then my trips, Lio's plans
-    /// and the popular routes (#1509), one card per id.
-    static func library(kept: [LioRoadbook], candidates: [LioRoadbook], language: LioLanguage) -> [LioRoadbook] {
-        var seen = Set<String>()
-        let all = (kept + candidates + LioRoadbookTemplates.all(language)).filter { seen.insert($0.id).inserted }
-        return Source.allCases.flatMap { source in all.filter { $0.source == source } }
-    }
-}
