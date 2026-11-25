@@ -13,6 +13,8 @@ enum LioAttractionReminder {
         case exact(opens: Date, fire: Date)
         /// Booking opens on `day`, at a time the venue does not publish; remind at `fire`.
         case firstDay(day: Date, fire: Date)
+        /// The reminder time has passed but tickets open at `opens`, within the next few minutes.
+        case opensSoon(opens: Date)
         case alreadyOpen, unknownWindow, notNeeded, pastVisit, stale
     }
 
@@ -38,10 +40,14 @@ enum LioAttractionReminder {
         if let time = rule.releaseTime {
             guard let opens = calendar.date(bySettingHour: time.hour, minute: time.minute, second: 0, of: firstDay),
                   let fire = calendar.date(byAdding: .minute, value: -leadMinutes, to: opens) else { return .unknownWindow }
-            return fire > now ? .exact(opens: opens, fire: fire) : .alreadyOpen
+            if opens <= now { return .alreadyOpen }
+            if fire <= now { return .opensSoon(opens: opens) }
+            return rule.isStale(on: fire) ? .stale : .exact(opens: opens, fire: fire)
         }
         guard let fire = calendar.date(bySettingHour: morningHour, minute: 0, second: 0, of: firstDay) else { return .unknownWindow }
-        return fire > now ? .firstDay(day: firstDay, fire: fire) : .alreadyOpen
+        if fire <= now { return .alreadyOpen }
+        // A reminder must not fire after the rule is due for review: it would repeat a number that may have changed.
+        return rule.isStale(on: fire) ? .stale : .firstDay(day: firstDay, fire: fire)
     }
 
     static func request(for rule: LioAttractionBookingRule, visit: Date, now: Date, language: LioLanguage) -> Request? {

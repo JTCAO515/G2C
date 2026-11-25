@@ -128,13 +128,14 @@ extension LioAttractionBookingRule {
     }
 
     /// Exact name or alias match only, so a café next to a museum does not inherit its rules.
+    /// The Chinese name is tried first: it is usually the more specific of the two.
     static func match(nameZH: String, nameEN: String) -> LioAttractionBookingRule? {
-        let keys = [nameZH, nameEN].map(normalized).filter { !$0.isEmpty }
-        guard !keys.isEmpty else { return nil }
-        return all.first { rule in
-            let names = ([rule.nameZH, rule.nameEN] + rule.aliases).map(normalized)
-            return keys.contains { names.contains($0) }
+        for key in [nameZH, nameEN].map(normalized) where !key.isEmpty {
+            if let rule = all.first(where: { ([$0.nameZH, $0.nameEN] + $0.aliases).map(normalized).contains(key) }) {
+                return rule
+            }
         }
+        return nil
     }
 
     private static func normalized(_ text: String) -> String {

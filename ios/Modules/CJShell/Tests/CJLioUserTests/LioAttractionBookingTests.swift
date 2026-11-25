@@ -25,7 +25,7 @@ struct LioAttractionBookingTests {
             }
             #expect(rule.officialChannel.url.scheme?.hasPrefix("http") == true)
             let checked = try #require(LioAttractionBookingRule.day(rule.checkedOn), "\(rule.id) check date")
-            #expect(checked <= LioAttractionBookingRule.day("2026-11-25")!)
+            #expect(checked >= LioAttractionBookingRule.day("2026-11-01")!, "\(rule.id): checks start with this table")
             for language in [LioLanguage.english, .chinese] {
                 #expect(!rule.name(language).isEmpty)
                 #expect(!rule.city(language).isEmpty)
@@ -91,6 +91,8 @@ struct LioAttractionBookingTests {
         #expect(LioAttractionBookingRule.match(nameZH: "上海博物馆东馆", nameEN: "")?.id == "shanghai.museum-east")
         #expect(LioAttractionBookingRule.match(nameZH: "上海博物馆", nameEN: "")?.id == "shanghai.museum-peoples-square")
         #expect(LioAttractionBookingRule.match(nameZH: "南锣鼓巷", nameEN: "Nanluoguxiang") == nil)
+        // The Chinese name is the more specific one; a generic English name does not override it.
+        #expect(LioAttractionBookingRule.match(nameZH: "上海博物馆东馆", nameEN: "Shanghai Museum")?.id == "shanghai.museum-east")
     }
 
     @Test func staleRulesHideTheirNumbers() {

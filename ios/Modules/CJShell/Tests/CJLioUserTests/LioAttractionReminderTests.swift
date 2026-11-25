@@ -59,6 +59,23 @@ struct LioAttractionReminderTests {
         #expect(LioAttractionReminder.plan(for: palace, visit: visit, now: late) == .stale)
     }
 
+    @Test func reminderThatWouldFireAfterTheRuleIsDueForReviewIsNotSet() {
+        // Checked 2026-11-25, due for review 30 days later; a February visit would remind in late January.
+        let palace = rule("beijing.palace-museum")
+        #expect(LioAttractionReminder.plan(for: palace, visit: beijing(2027, 2, 1), now: beijing(2026, 11, 25, 9)) == .stale)
+        #expect(LioAttractionReminder.request(for: palace, visit: beijing(2027, 2, 1), now: beijing(2026, 11, 25, 9),
+                                              language: .chinese) == nil)
+    }
+
+    @Test func inTheTenMinutesBeforeReleaseItSaysTicketsOpenSoonNotAlreadyOpen() {
+        // 28 Nov 19:55: the reminder time has passed but tickets for 5 Dec open at 20:00.
+        let plan = LioAttractionReminder.plan(for: rule("beijing.palace-museum"),
+                                              visit: beijing(2026, 12, 5), now: beijing(2026, 11, 28, 19, 55))
+        #expect(plan == .opensSoon(opens: beijing(2026, 11, 28, 20)))
+        #expect(LioAttractionReminder.plan(for: rule("beijing.palace-museum"),
+                                           visit: beijing(2026, 12, 5), now: beijing(2026, 11, 28, 20)) == .alreadyOpen)
+    }
+
     @Test func notificationIsLocalAndCarriesNoPersonalData() throws {
         let palace = rule("beijing.palace-museum")
         let request = try #require(LioAttractionReminder.request(for: palace, visit: beijing(2026, 12, 5),

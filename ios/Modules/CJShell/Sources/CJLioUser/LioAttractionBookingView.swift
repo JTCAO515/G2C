@@ -256,11 +256,15 @@ struct LioAttractionBookingDetail: View {
         case .firstDay(let day, _):
             return language.text("Booking opens on \(day.formatted(dayStyle)); the release time is not published, so Lio reminds you that morning.",
                                  "\(day.formatted(dayStyle)) 起可预约，官方未写放票时间，Lio 当天上午提醒你。")
+        case .opensSoon(let opens):
+            return language.text("Tickets open at \(opens.formatted(style)) Beijing time, in a few minutes.",
+                                 "北京时间 \(opens.formatted(style)) 放票，马上就到。")
         case .alreadyOpen: return language.text("Booking for this day is already open.", "这一天已经可以预约。")
         case .unknownWindow: return language.text("The booking window is not published, so no reminder can be set.", "官方未写提前几天放票，暂不能设提醒。")
         case .notNeeded: return language.text("No booking needed.", "不需要预约。")
         case .pastVisit: return language.text("Pick a future day.", "请选今天以后的日期。")
-        case .stale: return language.text("These rules are due for review; check the official channel.", "规则待复核，请查官方渠道。")
+        case .stale: return language.text("These rules are due for review before then; check the official channel nearer the time.",
+                                          "到那时规则可能已变化，请临近时查官方渠道。")
         }
     }
 
