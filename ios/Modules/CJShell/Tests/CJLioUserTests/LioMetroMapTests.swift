@@ -25,6 +25,9 @@ struct LioMetroMapDataTests {
             #expect(LioMetroMap.isColor(line.color), "\(line.id)")
             #expect(!line.nameZH.isEmpty && !line.nameEN.isEmpty)
             #expect(line.segments.allSatisfy { $0.count >= 2 })
+            // A station never follows itself (AMap once listed Zhengzhou's 新郑机场 twice in a row).
+            #expect(line.segments.allSatisfy { segment in zip(segment, segment.dropFirst()).allSatisfy { $0 != $1 } },
+                    "\(line.id)")
             #expect(line.edges.allSatisfy { map.station($0.0) != nil && map.station($0.1) != nil })
         }
         for station in map.stations {
@@ -131,10 +134,22 @@ struct LioMetroMapDataTests {
             ("chengdu", "天府广场", ["1号线", "2号线"]), ("tianjin", "西站", ["1号线", "4号线", "6号线"]), ("nanjing", "新街口", ["1号线", "2号线"]),
             ("wuhan", "洪山广场", ["2号线", "4号线"]), ("chongqing", "小什字", ["1号线", "6号线"]),
             ("hangzhou", "武林广场", ["1号线", "3号线"]), ("shenyang", "青年大街", ["1号线", "2号线"]),
+            ("shijiazhuang", "新百广场", ["1号线", "3号线"]), ("taiyuan", "大南门", ["1号线", "2号线"]),
+            ("huhehaote", "新华广场", ["1号线", "2号线"]), ("zhengzhou", "郑州大学", ["1号线", "8号线"]),
+            ("luoyang", "解放路", ["1号线", "2号线"]), ("jinan", "王府庄", ["1号线", "2号线"]),
+            ("zhengzhou", "南四环", ["2号线", "城郊线"]),
         ]
         for (id, station, expected) in spotChecks {
             guard let city = LioMetroCity.named(id) else { continue }
             #expect(try lines(city, station) == expected, "\(id) \(station)")
+        }
+        // Hand-checked English where AMap's pinyin was swapped or a character reads locally.
+        for (id, station, english) in [("jinan", "梁王", "Liangwang"), ("jinan", "梁王西", "Liangwang Xi"),
+                                       ("zhengzhou", "祭城", "Zhaicheng"), ("tianjin", "人民医院", "Renminyiyuan"),
+                                       ("tianjin", "泰达", "TEDA"), ("chengdu", "杉板桥", "Shabanqiao"),
+                                       ("chengdu", "涌泉", "Yongquan")] {
+            guard let city = LioMetroCity.named(id) else { continue }
+            #expect(try LioMetroMap.bundled(city).stations.first { $0.nameZH == station }?.nameEN == english, "\(id) \(station)")
         }
         if let chongqing = LioMetroCity.named("chongqing") {
             #expect(try LioMetroMap.bundled(chongqing).stations.first { $0.nameZH == "鱼嘴" }?.nameEN == "Yuzui")

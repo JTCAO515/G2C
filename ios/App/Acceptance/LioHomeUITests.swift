@@ -133,19 +133,25 @@ import CryptoKit
                 // The city list runs on under the translucent tab bar, where contrast is measured through the bar
                 // rather than on the card. Only that case is set aside: contrast issues are collected during the
                 // audit (reading an element's frame inside the handler breaks the audit) and each must then lie
-                // under the tab bar. Every other audit runs.
+                // under the tab bar. A card the bar cuts in two cannot be resolved, so its contrast issues come
+                // without an element: those are allowed only while such a card exists, at most one per line of
+                // its text (name and second line). Every other audit runs.
                 let tabBar = app.tabBars.firstMatch
                 XCTAssertTrue(tabBar.exists)
                 let tabBarTop = tabBar.frame.minY
                 var underTabBar: [XCUIElement] = []
+                var unresolved = 0
                 try app.performAccessibilityAudit(for: .all) { issue in
-                    guard issue.auditType == .contrast, let element = issue.element else { return false }
-                    underTabBar.append(element)
+                    guard issue.auditType == .contrast else { return false }
+                    if let element = issue.element { underTabBar.append(element) } else { unresolved += 1 }
                     return true
                 }
                 for element in underTabBar {
                     XCTAssertGreaterThan(element.frame.maxY, tabBarTop, "contrast issue above the tab bar: \(element)")
                 }
+                let cards = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'lio.metro.city.' AND identifier != 'lio.metro.city.find'"))
+                let cut = cards.allElementsBoundByIndex.filter { $0.frame.minY < tabBarTop && $0.frame.maxY > tabBarTop }
+                XCTAssertLessThanOrEqual(unresolved, cut.count * 2, "contrast issues without an element and no card under the tab bar")
                 let cities = XCTAttachment(screenshot: app.screenshot())
                 cities.name = "metro-cities-\(language)-\(appearance)"
                 cities.lifetime = .keepAlways

@@ -13,9 +13,13 @@ struct LioMetroGuideView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
 
     /// Two columns like the Tools page (JT 2026-11-25); one at accessibility text sizes.
-    private var columns: [GridItem] {
-        let count = typeSize.isAccessibilitySize ? 1 : 2
-        return Array(repeating: GridItem(.flexible(), spacing: LioTheme.Spacing.sm, alignment: .top), count: count)
+    private var columns: Int { typeSize.isAccessibilitySize ? 1 : 2 }
+
+    /// The cities in rows. A plain (not lazy) grid: every card is laid out, so accessibility checks can
+    /// find each one, including those still below the fold.
+    private var rows: [[LioMetroCity]] {
+        let cities = LioMetroCity.allCases
+        return stride(from: 0, to: cities.count, by: columns).map { Array(cities[$0..<min($0 + columns, cities.count)]) }
     }
 
     var body: some View {
@@ -26,18 +30,25 @@ struct LioMetroGuideView: View {
                     .foregroundStyle(LioTheme.ink)
                     .accessibilityAddTraits(.isHeader)
                 // Cities only, no regions (JT 2026-11-25): the best-known first, then the rest by pinyin.
-                LazyVGrid(columns: columns, spacing: LioTheme.Spacing.sm) {
-                    ForEach(LioMetroCity.allCases) { city in
-                        NavigationLink {
-                            LioMetroMapScreen(language: language, city: city)
-                        } label: {
-                            LioMetroCityCard(city: city, language: language)
+                Grid(horizontalSpacing: LioTheme.Spacing.sm, verticalSpacing: LioTheme.Spacing.sm) {
+                    ForEach(rows, id: \.self) { row in
+                        GridRow(alignment: .top) {
+                            ForEach(row) { city in
+                                NavigationLink {
+                                    LioMetroMapScreen(language: language, city: city)
+                                } label: {
+                                    LioMetroCityCard(city: city, language: language)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityElement(children: .ignore)
+                                .accessibilityLabel(city.name(in: language) + language.text(", ", "，") + city.detail(in: language))
+                                .accessibilityAddTraits(.isButton)
+                                .accessibilityIdentifier(city.identifier)
+                            }
+                            if row.count < columns {
+                                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+                            }
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(city.name(in: language) + language.text(", ", "，") + city.detail(in: language))
-                        .accessibilityAddTraits(.isButton)
-                        .accessibilityIdentifier(city.identifier)
                     }
                 }
             }
@@ -94,6 +105,7 @@ private struct LioMetroCityCard: View {
         .multilineTextAlignment(.leading)
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .padding(LioTheme.Spacing.md)
+        .frame(maxHeight: .infinity, alignment: .top)
         .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
         .contentShape(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
     }
