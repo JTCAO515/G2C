@@ -75,7 +75,9 @@ def test_unconfirmed_entry_does_not_cover_unexplained_unknown_or_known_false_pro
     assert result.status=='UNKNOWN'and result.content is None
     args['activities']=tuple(replace(a,nearby=False)for a in args['activities'])
     result=assemble_unconfirmed(case['content'],**args,unconfirmed_items=frozenset(a.item_id for a in args['activities']))
-    assert result.status=='CONFLICT'and result.content is None
+    # JT 2026-11-26: known-far edge days save with disclosure instead of CONFLICT; the
+    # unconfirmed entry still cannot cover unexplained UNKNOWN (asserted above).
+    assert result.status=='UNCONFIRMED_SKELETON'and result.edge_far
 
 
 def test_unconfirmed_entry_cannot_bypass_source_edge_conflicts_or_stop():
@@ -164,9 +166,12 @@ def test_unknown_arrival_first_day_recipe_and_last_day_proximity_are_enforced():
     value = json.loads(result.content)
     assert all(i['schedule']['start']['time']['value']>='12:00' for i in value['items'] if i['schedule']['start']['day_index']==1)
     assert next(i for i in value['items'] if i['id']=='item-5')['schedule']['end']['time']['value']<='12:00'
-    for nearby,expected in [(None,'UNKNOWN'),(False,'CONFLICT')]:
+    # JT 2026-11-26: known-far (False) now saves with item-5 disclosed; unknown stays UNKNOWN.
+    for nearby,expected in [(None,'UNKNOWN'),(False,'CONDITIONAL_SCHEDULE')]:
         modified=tuple(replace(a,nearby=nearby) if a.item_id=='item-5' else a for a in args['activities'])
-        assert assemble(case['content'],**dict(args,activities=modified)).status==expected
+        result=assemble(case['content'],**dict(args,activities=modified))
+        assert result.status==expected
+        assert result.edge_far==(((2,'item-5'),)if nearby is False else())
 
 
 def test_unknown_lodging_saves_edge_days_with_disclosed_unconfirmed_proximity():
@@ -185,13 +190,38 @@ def test_unknown_lodging_saves_edge_days_with_disclosed_unconfirmed_proximity():
     validate_candidate(json.loads(result.content),args['source'])
     assert assemble(case['content'],**args,lodging_unconfirmed=True).edge_proximity_unconfirmed==()
     false=tuple(replace(a,nearby=False) if a.item_id=='item-5' else a for a in unknown)
-    refused=assemble(case['content'],**dict(args,activities=false),lodging_unconfirmed=True)
-    assert (refused.status,refused.reason,refused.content)==('CONFLICT','EDGE_DAY_NEARBY_REQUIRED',None)
+    # JT 2026-11-26 extends #1545: known-far proximity also saves and is disclosed separately.
+    saved=assemble(case['content'],**dict(args,activities=false),lodging_unconfirmed=True)
+    assert saved.status=='CONDITIONAL_SCHEDULE'and saved.edge_far==((2,'item-5'),)
+    assert saved.edge_proximity_unconfirmed==('item-1',)
     ids=frozenset({'item-1'})
     combined=assemble_unconfirmed(case['content'],**dict(args,activities=unknown),unconfirmed_items=ids,lodging_unconfirmed=True)
     assert combined.status=='UNCONFIRMED_SKELETON'and combined.edge_proximity_unconfirmed==('item-5',)
     for flag in (None,1,'yes'):
         with pytest.raises(ValueError):assemble(case['content'],**args,lodging_unconfirmed=flag)
+
+
+
+def test_known_far_edge_day_saves_with_disclosure_and_nothing_else_relaxes():
+    # JT 2026-11-26 (coordination thread, option "照样保存并提示（推荐）"): with a located hotel,
+    # a first/last-day stop outside walking range no longer refuses the plan; it is returned
+    # in edge_far (day, item) for disclosure. Only EDGE_DAY_NEARBY_REQUIRED is relaxed.
+    case = light_case()
+    args = arguments(case,edges=activity_windows(2))
+    args['activities']=tuple(replace(a,windows=(Window(18*3600,21*3600),)) if a.item_id=='item-4' else a for a in args['activities'])
+    far=tuple(replace(a,nearby=False) if a.item_id in ('item-1','item-5') else a for a in args['activities'])
+    result=assemble(case['content'],**dict(args,activities=far))
+    assert result.status=='CONDITIONAL_SCHEDULE'and result.reason!='EDGE_DAY_NEARBY_REQUIRED'
+    assert result.edge_far==((1,'item-1'),(2,'item-5'))
+    assert result.edge_proximity_unconfirmed==()
+    validate_candidate(json.loads(result.content),args['source'])
+    assert assemble(case['content'],**args).edge_far==()
+    # Unknown proximity without the host's lodging statement still refuses as UNKNOWN.
+    unknown=tuple(replace(a,nearby=None) if a.item_id=='item-1' else a for a in far)
+    assert assemble(case['content'],**dict(args,activities=unknown)).reason=='EDGE_DAY_PROXIMITY_UNCONFIRMED'
+    # The light first-day recipe and every other check keep refusing.
+    heavy=deepcopy(CASES['unconfirmed'])
+    assert assemble(heavy['content'],**arguments(heavy,edges=activity_windows(2))).reason=='FIRST_DAY_LIGHT_RECIPE_REQUIRED'
 
 
 def test_first_day_full_override_is_disclosed_and_light_recipe_is_not_silently_imposed():
