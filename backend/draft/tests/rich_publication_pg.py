@@ -272,6 +272,27 @@ def exercise(root,conninfo,*,source_type=RichProviderContextSource,publisher_typ
                         account_admission=True,hk_demo_scopes=frozenset({scope}),lio_confirmation=signer)
                     expected='unknown'if rollback and step=='plan'else'completed'
                     assert [r.status for r in result]==[expected],result
+        # The composed exploration host serves every saved structured.4 through native read.3 only.
+        bearer={'Authorization':'Bearer '+dev_auth.token(auth,SUBJECT,3600)}
+        listing=api.get('/v3/trip-structured-list',params={'limit':'100'},headers=bearer)
+        assert listing.status_code==200,listing.text
+        rows={row['trip_id']:row for row in listing.json()['trips']}
+        outsider={'Authorization':'Bearer '+dev_auth.token(auth,OUTSIDE,3600)}
+        for trip,_ in saved:
+            content=bytes(trip.content)
+            detail=api.get('/v7/trip-structured',params={'trip_id':trip.trip_id},headers=bearer)
+            assert detail.status_code==200,detail.text
+            value=detail.json()
+            assert value['version']=='TRIP-structured-read.3' and packed(value['trip']['content'])==content
+            assert value['trip']['content_sha256']==sha256(content).hexdigest()
+            assert rows[trip.trip_id]['content_version']=='structured.4'
+            assert rows[trip.trip_id]['day_count']==len(value['trip']['content']['days'])
+            old=api.get('/v6/trip-structured',params={'trip_id':trip.trip_id},headers=bearer)
+            assert old.status_code==503 and 'trip' not in old.json(),old.text
+            foreign=api.get('/v7/trip-structured',params={'trip_id':trip.trip_id},headers=outsider)
+            assert foreign.status_code!=200 or foreign.json()['trip'] is None,foreign.text
+            assert api.get('/v7/trip-structured',params={'trip_id':trip.trip_id}).status_code==401
+        print('PASS composed host /v7 read.3 returns each saved structured.4 byte-for-byte; /v6 refuses, others see none',flush=True)
     assert len(saved)==6 and len(rejected)==2 and len(writers)==72,(len(saved),len(rejected),len(writers))
     assert all(w.closed and len(w.writes)==1 for w in writers)
     assert all(record['state']=='RECEIVED'for record in journal.inspect())
