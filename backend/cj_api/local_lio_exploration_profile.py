@@ -14,7 +14,7 @@ from cj_agent.provider import ProviderUnknown
 from cj_needs.domain import InvalidInput
 
 from .lio_exploration_factors import BY_KEY
-from .lio_exploration_profile import (CONTEXT, Original, merge, parse_supported_updates,default_proposals,
+from .lio_exploration_profile import (CONTEXT, Original, merge, parse_supported_updates,default_proposals,dropped_shapes,drop_log_key,
     decode_context, restore_context, memory_prefill, snapshot)
 
 
@@ -117,10 +117,13 @@ class ProfileContext:
             updates,dropped = parse_supported_updates(raw_updates,originals,registered_city_terms=view.city_terms)
         except InvalidInput as error:
             raise ProviderUnknown('sourced profile extraction unavailable') from error
+        shapes=dropped_shapes(raw_updates,originals) if dropped else {}
         for key,reason in dropped:
-            # Code-owned reason strings only; an unknown model key may contain traveler text.
-            logging.getLogger('cj_usage.audit').info('LIO_PROFILE_UPDATE_DROPPED run_id=%s factor=%s reason=%s',
-                binding.run_id,key if key in BY_KEY else 'unknown',reason)
+            # Code-owned reason strings and content-free shapes only (HK run -42 dropped
+            # city/duration with no clue why); an unknown model key may contain traveler text.
+            logging.getLogger('cj_usage.audit').info('LIO_PROFILE_UPDATE_DROPPED run_id=%s factor=%s reason=%s %s',
+                binding.run_id,drop_log_key(key),reason,
+                shapes.get(key,'shape=unavailable') if drop_log_key(key)!='unknown' else 'shape=unavailable')
         profile = merge(profile,updates,memory_prefill(worker.memory_run))
         if plan_now:
             profile.update({fact.key:fact for fact in default_proposals(profile,originals[-1])})
