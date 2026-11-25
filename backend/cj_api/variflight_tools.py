@@ -20,6 +20,7 @@ VERSION = 'FLIGHTS.1'
 DAILY_LIMIT = 50
 ENDPOINT = 'https://c-gw.variflight.com/chat_message/mcp/api'
 LOGGER = logging.getLogger(__name__)
+READ_ONLY_TOOLS = frozenset({'getFlightList', 'getFlightStatus'})
 PROTOCOLS = ('2025-11-25', '2025-06-18', '2025-03-26')
 SESSION = re.compile(r'[\x21-\x7e]{1,256}')
 NUMBER = r'[A-Z0-9]{2,3}[0-9]{1,4}[A-Z]?'
@@ -194,6 +195,10 @@ class VariFlight:
 
     def query(self, request, reserve):
         tool, arguments = request.tool_call()
+        # VariFlight also offers ordering, payment and follow tools; only these read-only lookups may be called.
+        if tool not in READ_ONLY_TOOLS:
+            LOGGER.error('variflight_tool_refused')
+            raise PluginError(503, 'unavailable')
         return self.cache.load((tool, tuple(arguments.items())), lambda: self._fetch(tool, arguments, reserve))
 
     def _post(self, client, headers, payload, reserve, deadline):
