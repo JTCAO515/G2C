@@ -170,6 +170,14 @@ def test_diet_labels_are_left_to_the_app(claim):
     assert entry['summary_en'] == '' and entry['summary_zh'] == ''
 
 
+@pytest.mark.parametrize('name,english', [('素包子', 'Vegetarian Buns'), ('清真牛肉面', 'Halal Beef Noodles'),
+                                          ('素鸡', 'Vegetarian "Chicken" (Tofu Skin)')])
+def test_dish_names_may_carry_diet_words_but_descriptions_may_not(name, english):
+    entry = checked_items(reply(dish(0, name, name_en=english, summary_en='A vegetarian favourite.')), [name])[0]
+    assert entry['kind'] == 'dish' and entry['name_en'] == english
+    assert entry['summary_en'] == ''
+
+
 @pytest.mark.parametrize('changes', [dict(spice=4), dict(spice='hot'), dict(spice=True), dict(contains=[]),
                                      dict(name_en=None), dict(name_zh=None)])
 def test_a_dish_with_a_bad_field_becomes_unclear(changes):

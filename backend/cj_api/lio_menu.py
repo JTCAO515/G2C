@@ -179,11 +179,11 @@ def messages_for(lines):
     return [dict(role='system', content=RULES), dict(role='user', content=json.dumps(rows, ensure_ascii=False))]
 
 
-def _field(value, language):
+def _field(value, language, *, claims_checked=True):
     if value is None:
         return ''
     if (type(value) is not str or len(value.strip()) > FIELD_LIMITS[language] or not _visible(value)
-            or _ABSENCE.search(unicodedata.normalize('NFKC', value))):
+            or claims_checked and _ABSENCE.search(unicodedata.normalize('NFKC', value))):
         return ''
     return value.strip()
 
@@ -196,7 +196,8 @@ def _dish(item, line):
     name = unicodedata.normalize('NFKC', name).strip()
     if not _CJK.search(name) or not _visible(name) or cache_key(name) not in cache_key(line):
         return None
-    name_en = _field(item.get('name_en'), 'en')
+    # A dish's name is a name, not a promise: "Vegetarian Buns" (素包子) stays readable. Descriptions are checked.
+    name_en = _field(item.get('name_en'), 'en', claims_checked=False)
     if not name_en:
         return None
     spice = item.get('spice')
