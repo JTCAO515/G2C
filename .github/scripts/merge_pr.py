@@ -98,6 +98,11 @@ def check_ci(runs, checks):
     run = max(runs, key=lambda r: (r['created_at'], r['id']))
     if run['status'] != 'completed' or run['conclusion'] != 'success':
         raise Blocked(f"ci run {run['id']} is {run['status']} {run['conclusion'] or ''}".strip())
+    newest = {}  # a re-run or a later pr-lint is a new check run of the same name; the newest counts
+    for c in checks:
+        if c['name'] not in newest or c['id'] > newest[c['name']]['id']:
+            newest[c['name']] = c
+    checks = newest.values()
     pending = sorted(c['name'] for c in checks if c['status'] != 'completed')
     if pending:
         raise Blocked('checks still running: ' + ', '.join(pending))
@@ -144,7 +149,7 @@ def paged(path, key=None):
 
 
 def git(*args):
-    for delay in (0, 5, 15) if args[0] == 'fetch' else (0,):
+    for delay in (0, 5, 15) if 'fetch' in args else (0,):
         time.sleep(delay)
         result = subprocess.run(['git', *args], capture_output=True, text=True)
         if result.returncode == 0:
@@ -164,7 +169,7 @@ def main_changes_since(started):
     files = set(filter(None, git('diff', '--no-renames', '-z', '--name-only', base, 'origin/main').split('\0')))
 
     def log_for(paths):
-        return git('log', '--no-renames', '--first-parent', '--format=  %h %s', f'{base}..origin/main',
+        return git('--literal-pathspecs', 'log', '--no-renames', '--first-parent', '--format=  %h %s', f'{base}..origin/main',
                    '--', *paths).rstrip()
     return files, log_for
 
@@ -186,11 +191,13 @@ def merge(number, head):
             return pr['merge_commit_sha']
     if not read:
         raise RuntimeError('merge requested but the PR could not be read back; look at it before retrying')
+    if result.returncode == 0:
+        raise RuntimeError('gh reported the merge done but the PR still reads unmerged; look at it')
     raise Blocked('merge did not go through: ' + (result.stderr.strip() or result.stdout.strip()))
 
 
 def guard(number, head, note, dry_run=False, fix_main=False):
-    check_freeze(note, fix_main)
+    state = check_freeze(note, fix_main)
     check_pr(gh(f'pulls/{number}'), head)
     check_review(paged(f'issues/{number}/comments'), head)
     runs = gh(f'actions/workflows/ci.yml/runs?event=pull_request&head_sha={head}&per_page=20')['workflow_runs']
@@ -198,7 +205,7 @@ def guard(number, head, note, dry_run=False, fix_main=False):
     started = datetime.datetime.fromisoformat(run['created_at'].replace('Z', '+00:00'))
     later, log_for = main_changes_since(started)
     check_overlap(paged(f'pulls/{number}/files'), later, log_for)
-    print(f'#{number} {head}: not frozen, approved, CI green (run {run["id"]}), '
+    print(f'#{number} {head}: main {state}, approved, CI green (run {run["id"]}), '
           f'no overlap with {len(later)} files main changed since that CI started')
     if dry_run:
         return None

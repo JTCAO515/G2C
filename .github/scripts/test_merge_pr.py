@@ -97,8 +97,11 @@ def run(id_, created, status='completed', conclusion='success'):
     return {'id': id_, 'created_at': created, 'status': status, 'conclusion': conclusion}
 
 
+_ids = iter(range(1, 10**6))
+
+
 def check(name, conclusion='success', status='completed'):
-    return {'name': name, 'status': status, 'conclusion': conclusion}
+    return {'id': next(_ids), 'name': name, 'status': status, 'conclusion': conclusion}
 
 
 GREEN = [check('python'), check('swift', 'skipped'), check('pr-lint'), check('Vercel Preview Comments', 'neutral')]
@@ -118,9 +121,19 @@ class CiTests(unittest.TestCase):
             check_ci([run(1, '2026-11-25T06:00:00Z', conclusion='failure')], GREEN)
         with self.assertRaises(Blocked):
             check_ci([run(1, '2026-11-25T06:00:00Z')], GREEN + [check('pr-lint', None, 'in_progress')])
+        with self.assertRaises(Blocked):  # a re-run that failed outranks the earlier success
+            check_ci([run(1, '2026-11-25T06:00:00Z')], GREEN + [check('python', 'failure')])
         for conclusion in ('failure', 'cancelled', 'timed_out', 'action_required', 'stale'):
             with self.assertRaises(Blocked):
                 check_ci([run(1, '2026-11-25T06:00:00Z')], GREEN + [check('ios-app', conclusion)])
+
+
+    def test_newest_check_of_a_name_counts(self):
+        # pushing then editing the PR body cancels one pr-lint run; the later pr-lint run decides
+        cancelled, later = check('pr-lint', 'cancelled'), check('pr-lint')
+        self.assertEqual(check_ci([run(1, '2026-11-25T06:00:00Z')], [later, cancelled, check('python')])['id'], 1)
+        with self.assertRaises(Blocked):
+            check_ci([run(1, '2026-11-25T06:00:00Z')], [check('pr-lint'), check('pr-lint', 'cancelled')])
 
 
 class OverlapTests(unittest.TestCase):
@@ -219,6 +232,14 @@ class MergeReadBackTests(unittest.TestCase):
                 mock.patch.object(merge_pr.time, 'sleep'), \
                 mock.patch.object(merge_pr, 'gh', side_effect=reads):
             return merge_pr.merge(12, HEAD)
+
+    def test_merge_reported_done_but_unmerged_is_unknown(self):
+        done = mock.Mock(returncode=0, stderr='', stdout='')
+        with mock.patch.object(merge_pr.subprocess, 'run', return_value=done), \
+                mock.patch.object(merge_pr.time, 'sleep'), \
+                mock.patch.object(merge_pr, 'gh', side_effect=[{'merged': False, 'head': {'sha': HEAD}}] * 5), \
+                self.assertRaises(RuntimeError):
+            merge_pr.merge(12, HEAD)
 
     def test_merge_reported_as_error_but_done(self):
         merged = {'merged': True, 'head': {'sha': HEAD}, 'merge_commit_sha': 'c' * 40}
