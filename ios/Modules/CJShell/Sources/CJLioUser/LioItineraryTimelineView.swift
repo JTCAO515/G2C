@@ -2,11 +2,22 @@
 import MapKit
 import SwiftUI
 
-/// #1453 proposal: a planned trip as day tabs, a day map and a timeline of stops with travel legs between them.
-/// It reads the existing `LioRichItinerary` view model; actions are shown for review and are not wired yet.
+/// #1453: a planned trip as day tabs, a day map and a timeline of stops with travel legs between them.
+/// It reads the existing `LioRichItinerary` view model. A summary has no kinds, map points, legs or lodging,
+/// so those parts stay hidden. Each action appears only when its caller supplies it; no button does nothing.
 struct LioItineraryTimelineView: View {
+    struct Actions {
+        /// Nil hides the button; `saved` shows the saved state instead.
+        var save: (@MainActor () -> Void)?
+        var saved = false
+        var adjustDay: (@MainActor (Int) -> Void)?
+        var askLio: (@MainActor () -> Void)?
+    }
+
     let itinerary: LioRichItinerary
     let language: LioLanguage
+    var startDate: String?
+    var actions = Actions()
     @State private var selectedDay = 1
 
     private var day: LioRichItinerary.Day? { itinerary.days.first { $0.number == selectedDay } ?? itinerary.days.first }
@@ -20,7 +31,7 @@ struct LioItineraryTimelineView: View {
                     dayHeader(day)
                     dayMap(day)
                     timeline(day)
-                    dayActions
+                    dayActions(day)
                 }
                 stayCard
             }
@@ -35,16 +46,31 @@ struct LioItineraryTimelineView: View {
         VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
             Text(itinerary.title).font(LioTheme.display(.title).weight(.bold))
             let stops = itinerary.days.reduce(0) { $0 + $1.stops.count }
-            Text(language.text("\(itinerary.days.count) days · \(stops) stops · dates not set",
-                               "\(itinerary.days.count) 天 · \(stops) 个地点 · 日期待定"))
-                .font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
+            Text(summaryLine(stops: stops)).font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
             HStack(spacing: LioTheme.Spacing.xs) {
-                Button { } label: { Label(language.text("Save to Trips", "保存到行程"), systemImage: "bookmark") }
-                    .buttonStyle(LioPrimaryButtonStyle())
-                Button { } label: { Label(language.text("Share", "分享"), systemImage: "square.and.arrow.up") }
-                    .buttonStyle(LioSecondaryButtonStyle(fullWidth: false))
+                if actions.saved {
+                    Label(language.text("Saved", "已保存"), systemImage: "bookmark.fill")
+                        .font(.subheadline.weight(.semibold)).foregroundStyle(LioTheme.jade)
+                        .frame(minHeight: 44)
+                        .accessibilityIdentifier("lio.plan.saved")
+                } else if let save = actions.save {
+                    Button { save() } label: { Label(language.text("Save to Trips", "保存到行程"), systemImage: "bookmark") }
+                        .buttonStyle(LioPrimaryButtonStyle())
+                        .accessibilityIdentifier("lio.plan.save")
+                }
+                ShareLink(item: itinerary.shareText(language)) {
+                    Label(language.text("Share", "分享"), systemImage: "square.and.arrow.up")
+                }
+                .buttonStyle(LioSecondaryButtonStyle(fullWidth: false))
+                .accessibilityIdentifier("lio.plan.share")
             }
         }
+    }
+
+    private func summaryLine(stops: Int) -> String {
+        let count = language.text("\(itinerary.days.count) days · \(stops) stops", "\(itinerary.days.count) 天 · \(stops) 个地点")
+        if let startDate { return count + language.text(" · from \(startDate)", " · \(startDate) 出发") }
+        return itinerary.undated ? count + language.text(" · dates not set", " · 日期待定") : count
     }
 
     private var dayPicker: some View {
@@ -55,7 +81,7 @@ struct LioItineraryTimelineView: View {
                     Button { selectedDay = item.number } label: {
                         VStack(spacing: 2) {
                             Text(language.text("Day \(item.number)", "第 \(item.number) 天")).font(.subheadline.weight(.semibold))
-                            Text(item.area).font(.caption).lineLimit(1)
+                            if !item.area.isEmpty { Text(item.area).font(.caption).lineLimit(1) }
                         }
                         .foregroundStyle(selected ? LioTheme.onVermilion : LioTheme.ink)
                         .padding(.horizontal, 14).padding(.vertical, 8)
@@ -68,18 +94,31 @@ struct LioItineraryTimelineView: View {
         }
     }
 
-    private func dayHeader(_ day: LioRichItinerary.Day) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(day.theme).font(.title3.weight(.semibold))
-            Label(day.area, systemImage: "mappin.and.ellipse").font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
+    @ViewBuilder private func dayHeader(_ day: LioRichItinerary.Day) -> some View {
+        if !day.theme.isEmpty || !day.area.isEmpty || day.date != nil {
+            VStack(alignment: .leading, spacing: 2) {
+                if !day.theme.isEmpty { Text(day.theme).font(.title3.weight(.semibold)) }
+                if !day.area.isEmpty {
+                    Label(day.area, systemImage: "mappin.and.ellipse").font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
+                }
+                if let date = day.date {
+                    Label(date, systemImage: "calendar").font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
+                }
+            }
         }
     }
 
-    private func dayMap(_ day: LioRichItinerary.Day) -> some View {
+    @ViewBuilder private func dayMap(_ day: LioRichItinerary.Day) -> some View {
         let points = day.stops.enumerated().compactMap { index, stop in
             stop.place.mapPoint.map { (index + 1, stop.place.displayName(language), $0) }
         }
-        return Map {
+        if !points.isEmpty {
+            dayMap(points)
+        }
+    }
+
+    private func dayMap(_ points: [(Int, String, LioItinerary.Point)]) -> some View {
+        Map {
             ForEach(points, id: \.0) { number, name, point in
                 Marker(name, monogram: Text("\(number)"),
                        coordinate: .init(latitude: point.latitude, longitude: point.longitude))
@@ -91,7 +130,12 @@ struct LioItineraryTimelineView: View {
         .allowsHitTesting(false)
     }
 
-    private func timeline(_ day: LioRichItinerary.Day) -> some View {
+    @ViewBuilder private func timeline(_ day: LioRichItinerary.Day) -> some View {
+        if day.stops.isEmpty {
+            Label(language.text("Nothing planned for this day yet.", "这一天还没有安排。"), systemImage: "leaf")
+                .font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
+                .accessibilityIdentifier("lio.plan.empty-day")
+        }
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(day.stops.enumerated()), id: \.element.id) { index, stop in
                 stopRow(stop, number: index + 1, last: index == day.stops.count - 1)
@@ -110,16 +154,22 @@ struct LioItineraryTimelineView: View {
                 Rectangle().fill(LioTheme.hairline).frame(width: 2).frame(maxHeight: .infinity).opacity(last ? 0 : 1)
             }
             VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 6) {
-                    Image(systemName: stop.kind.symbol).foregroundStyle(LioTheme.vermilion).font(.footnote)
-                    Text(stop.kind.title(language)).font(.caption.weight(.medium)).foregroundStyle(LioTheme.inkSecondary)
-                    if let note = stop.note {
-                        Text("· " + note).font(.caption).foregroundStyle(LioTheme.inkSecondary).lineLimit(1)
+                if stop.kind != .unspecified {
+                    HStack(spacing: 6) {
+                        Image(systemName: stop.kind.symbol).foregroundStyle(LioTheme.vermilion).font(.footnote)
+                        Text(stop.kind.title(language)).font(.caption.weight(.medium)).foregroundStyle(LioTheme.inkSecondary)
+                        if let note = stop.note {
+                            Text("· " + note).font(.caption).foregroundStyle(LioTheme.inkSecondary).lineLimit(1)
+                        }
                     }
                 }
                 Text(stop.place.displayName(language)).font(.headline)
-                if language == .english { Text(stop.place.nameZH).font(.subheadline).foregroundStyle(LioTheme.inkSecondary) }
-                Text(stop.text).font(.subheadline).foregroundStyle(LioTheme.ink).fixedSize(horizontal: false, vertical: true)
+                if language == .english, stop.place.nameZH != stop.place.nameEN {
+                    Text(stop.place.nameZH).font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
+                }
+                if !stop.text.isEmpty {
+                    Text(stop.text).font(.subheadline).foregroundStyle(LioTheme.ink).fixedSize(horizontal: false, vertical: true)
+                }
                 if let tip = stop.tip {
                     Label(tip, systemImage: "lightbulb").font(.footnote).foregroundStyle(LioTheme.inkSecondary)
                 }
@@ -156,12 +206,22 @@ struct LioItineraryTimelineView: View {
             .lineLimit(1)
     }
 
-    private var dayActions: some View {
-        HStack(spacing: LioTheme.Spacing.xs) {
-            Button { } label: { Label(language.text("Change this day", "调整这一天"), systemImage: "slider.horizontal.3") }
-            Button { } label: { Label(language.text("Ask Lio", "问 Lio"), systemImage: "bubble.left") }
+    @ViewBuilder private func dayActions(_ day: LioRichItinerary.Day) -> some View {
+        if actions.adjustDay != nil || actions.askLio != nil {
+            HStack(spacing: LioTheme.Spacing.xs) {
+                if let adjust = actions.adjustDay {
+                    Button { adjust(day.number) } label: {
+                        Label(language.text("Change this day", "调整这一天"), systemImage: "slider.horizontal.3")
+                    }
+                    .accessibilityIdentifier("lio.plan.adjust-day")
+                }
+                if let ask = actions.askLio {
+                    Button { ask() } label: { Label(language.text("Ask Lio", "问 Lio"), systemImage: "bubble.left") }
+                        .accessibilityIdentifier("lio.plan.ask")
+                }
+            }
+            .buttonStyle(LioSecondaryButtonStyle())
         }
-        .buttonStyle(LioSecondaryButtonStyle())
     }
 
     @ViewBuilder private var stayCard: some View {

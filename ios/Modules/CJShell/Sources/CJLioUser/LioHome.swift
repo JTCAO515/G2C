@@ -41,6 +41,10 @@ public struct LioHome<MenuContent: View>: View {
     @State private var chatDrafts: [Data: String] = [:]
     @State private var questionDrafts: [Data: LioQuestionDraft] = [:]
     @State private var profileEdit: ProfileEdit?
+    /// #1453: the open day-by-day plan, plans saved on this device, and what the composer gets after the plan closes.
+    @State private var planSheet: LioPlanSummary?
+    @State private var savedPlans = LioSavedPlansModel.appDefault()
+    @State private var planFollowUp: String?
     @State private var menuOpen = false
     @State private var followsAnswer = true
     @State private var opening = Opening.beforeNext
@@ -227,7 +231,9 @@ public struct LioHome<MenuContent: View>: View {
                          tripPlan: tripPlan, currentPlan: tripPlan?.current(for: tripCard),
                          canUndo: canObserve && tripPlan?.requestedCard == tripCard,
                          recordedMap: recordedMap, sessionRevision: session?.revision,
-                         zoomNamespace: tripZoomNamespace, path: $tripPath) { tab = .chat }
+                         zoomNamespace: tripZoomNamespace, path: $tripPath,
+                         plans: savedPlans.plans, openPlan: { planSheet = $0 },
+                         removePlan: { savedPlans.remove($0) }) { tab = .chat }
                 .background(LioTabBarAppearance().frame(width: 0, height: 0))
                 .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
                 .tag(Tab.trips)
@@ -406,6 +412,35 @@ public struct LioHome<MenuContent: View>: View {
                 _ = sendQuestion(text)
             }
         }
+        .sheet(item: $planSheet, onDismiss: continuePlanInChat) { plan in
+            LioPlanSheet(plan: plan, language: language, actions: planActions(plan))
+        }
+    }
+
+    private func planActions(_ plan: LioPlanSummary) -> LioItineraryTimelineView.Actions {
+        var actions = LioItineraryTimelineView.Actions()
+        if savedPlans.available {
+            actions.saved = savedPlans.isSaved(plan)
+            actions.save = { savedPlans.save(plan) }
+        }
+        // Changing a day goes back to the chat as an ordinary message the user finishes and sends.
+        actions.adjustDay = { day in
+            planFollowUp = language.text("Change day \(day) of “\(plan.title)”: ", "调整「\(plan.title)」第 \(day) 天：")
+            planSheet = nil
+        }
+        actions.askLio = {
+            planFollowUp = ""
+            planSheet = nil
+        }
+        return actions
+    }
+
+    private func continuePlanInChat() {
+        guard let followUp = planFollowUp else { return }
+        planFollowUp = nil
+        tab = .chat
+        if draft.isEmpty { draft = followUp }
+        typing = true
     }
 
     @ViewBuilder
@@ -1076,6 +1111,10 @@ public struct LioHome<MenuContent: View>: View {
                 EmptyView()
             } else if let display = turn.exploration {
                 explorationReply(turn, display: display, scroll: scroll)
+                if let trip = display.trip {
+                    let plan = LioPlanSummary(trip)
+                    LioPlanCard(plan: plan, language: language) { planSheet = plan }
+                }
             } else if !turn.answer.isEmpty {
                 let answerKey = LioEntranceKey(turn: turn.id, part: .answer)
                 lioReply {

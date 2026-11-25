@@ -84,7 +84,8 @@ private struct ExplorationHomeCounts: View {
         let arguments = ProcessInfo.processInfo.arguments
         let version = arguments.contains("--lio-home-legacy1-acceptance") ? 1
             : arguments.contains("--lio-home-legacy2-acceptance") ? 2 : 4
-        let wire = ExplorationHomeWire(showsProgress: arguments.contains("--lio-home-progress-acceptance"), version: version)
+        let wire = ExplorationHomeWire(showsProgress: arguments.contains("--lio-home-progress-acceptance"), version: version,
+                                       plans: arguments.contains("--lio-home-plan-acceptance"))
         self.wire = wire
         let recovery = MessageRecovery(storage: ExplorationHomeStorage())
         let scope = try StorageScope(environment: "synthetic", account: UUID().uuidString)
@@ -107,11 +108,15 @@ private actor ExplorationHomeWire: ClientTransport {
     private static let conversation = "lio-dialogue-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     private let showsProgress: Bool
     private let version: Int
+    /// #1453: the second reply carries a LIO-trip-card.3 summary.
+    private let plans: Bool
     private var progressReads = 0
     private var chinese = false
     private var messages: [[String: Any]] = []
     private var sent: [String] = []
-    init(showsProgress: Bool, version: Int) { self.showsProgress = showsProgress; self.version = version }
+    init(showsProgress: Bool, version: Int, plans: Bool = false) {
+        self.showsProgress = showsProgress; self.version = version; self.plans = plans
+    }
     func counts() -> (String, String, String) {
         ("\(sent.count)", sent.last ?? "", messages.last?["message_id"] as? String ?? "")
     }
@@ -182,7 +187,7 @@ private actor ExplorationHomeWire: ClientTransport {
         answer.append(text("Make a plan now", "直接出方案"))
         return ["message_id": input["message_id"]!, "text": input["text"]!,
                 "answer": answer.joined(separator: "\n\n"), "status": "completed", "failure": null,
-                "activity": null, "sources": [], "trip": null, "memory": null,
+                "activity": null, "sources": [], "trip": plans && !first ? trip(chinese: chinese) as Any : null, "memory": null,
                 "segments": [["purpose": "response", "text": response], ["purpose": "summary", "text": second]],
                 "question_groups": first ? [["factor_key": "interests", "question": text("What interests you?", "更想体验什么？"),
                                               "multiple": true, "options": options]] : [],
@@ -193,6 +198,29 @@ private actor ExplorationHomeWire: ClientTransport {
                                                 "observed_at": "2026-11-14T00:00:00Z"]]] : [],
                 "exits": [["id": "plan_now", "display_text": text("Make a plan now", "直接出方案"),
                            "send_text": text("Make a plan now", "直接出方案")]], "progress": null]
+    }
+
+    private func trip(chinese: Bool) -> [String: Any] {
+        func item(_ id: String, _ en: String, _ zh: String, _ start: String?, _ end: String?) -> [String: Any] {
+            ["item_id": id, "label": chinese ? zh : en, "start_time": start ?? NSNull(), "end_time": end ?? NSNull(), "fixed": false]
+        }
+        // Matches the contract's undated example: no day dates, and date checks are not run.
+        let unknown: [String: Any] = ["state": "not_checked", "day_indices": [1, 2, 3], "item_ids": [],
+                                      "reason": "date_not_set", "evidence_refs": []]
+        return ["version": "LIO-trip-card.3", "trip_id": "synthetic-plan-trip", "trip_version": 1,
+                "content_version": "structured.4", "content_sha256": String(repeating: "5", count: 64),
+                "title": chinese ? "北京三日行" : "Three days in Beijing",
+                "calendar": ["state": "undated"],
+                "days": [
+                    ["day_index": 1, "items": [
+                        item("d1a", "Tiananmen Square", "天安门广场", "08:30", "09:30"),
+                        item("d1b", "Palace Museum", "故宫博物院", "10:00", "13:00"),
+                        item("d1c", "Jingshan Park", "景山公园", "15:00", "16:30")]],
+                    ["day_index": 2, "items": [
+                        item("d2a", "Mutianyu Great Wall", "慕田峪长城", "09:00", "14:00")]],
+                    ["day_index": 3, "items": []]
+                ],
+                "date_checks": [unknown.merging(["kind": "weather"]) { $1 }, unknown.merging(["kind": "day_opening"]) { $1 }]]
     }
 }
 #endif

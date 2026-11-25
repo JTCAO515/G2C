@@ -139,6 +139,10 @@ struct LioTripsView: View {
     let sessionRevision: UUID?
     let zoomNamespace: Namespace.ID
     @Binding var path: [LioTripRoute]
+    /// Plans saved on this device (#1453), listed before the trips; each opens the day-by-day page.
+    var plans: [LioPlanSummary] = []
+    var openPlan: (LioPlanSummary) -> Void = { _ in }
+    var removePlan: (LioPlanSummary) -> Void = { _ in }
     let openChat: () -> Void
     @State private var saved: [LioTripLibrary.Entry]?
     @State private var listUnavailable = false
@@ -180,7 +184,7 @@ struct LioTripsView: View {
                         }
                     } else if let saved {
                         if saved.isEmpty {
-                            emptyTrips
+                            emptyOrPlans
                         } else {
                             tripList {
                                 ForEach(saved, id: \.tripID) { trip in
@@ -198,7 +202,7 @@ struct LioTripsView: View {
                         ProgressView()
                     }
                 } else if shownItineraries.isEmpty {
-                    emptyTrips
+                    emptyOrPlans
                 } else {
                     tripList {
                         ForEach(shownItineraries) { itinerary in
@@ -279,11 +283,35 @@ struct LioTripsView: View {
 
     private func tripList<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         ScrollView {
-            VStack(spacing: 16, content: content)
-                .padding(16)
+            VStack(spacing: 16) {
+                planRows
+                content()
+            }
+            .padding(16)
         }
         .clipped()
         .accessibilityIdentifier("lio.trip.list")
+    }
+
+    @ViewBuilder private var emptyOrPlans: some View {
+        if plans.isEmpty { emptyTrips } else { tripList { EmptyView() } }
+    }
+
+    private var planRows: some View {
+        ForEach(plans) { plan in
+            Button { openPlan(plan) } label: {
+                LioTripListCard(title: plan.title, itinerary: nil, language: language,
+                                calendar: plan.startDate.map { LioItinerary.CalendarState.dated(startDate: $0) } ?? .undated,
+                                dayCount: plan.days.count)
+            }
+            .buttonStyle(.plain)
+            .contextMenu {
+                Button(role: .destructive) { removePlan(plan) } label: {
+                    Label(language.text("Remove from Trips", "从行程中移除"), systemImage: "trash")
+                }
+            }
+            .accessibilityIdentifier("lio.plan.saved-row")
+        }
     }
 
     private var emptyTrips: some View {
