@@ -37,10 +37,24 @@ class FinalWording(unittest.TestCase):
 
     def test_default_reason_foreign_id_and_truncated_result_never_partially_change_plan(self):
         compiled,items,reply=self.case();before=deepcopy(compiled.document)
-        for response,facts in ((reply,(ProfileFact('interests','default','history'),)),
-                (b'{',()),(packed(dict(version=WORDING,items=[dict(item_id='foreign',reason=None,reason_refs=[],tip=None)])),())):
+        for response,facts in ((b'{',()),(packed(dict(version=WORDING,items=[dict(item_id='foreign',reason=None,reason_refs=[],tip=None)])),())):
             with self.assertRaises(WordingUnavailable):apply_wording(compiled.document,((items,response),),locale='en',facts=facts)
             self.assertEqual(compiled.document,before)
+
+    def test_reason_citing_a_default_factor_is_dropped_not_the_plan(self):
+        # HK run -43 (2026-11-25): this case used to refuse the whole plan (stage=word,
+        # "only existing known/memory reason factors allowed"). Now only the reason goes:
+        # a default factor never reaches public wording, and everything else is unchanged.
+        compiled,items,reply=self.case();before=deepcopy(compiled.document)
+        value=apply_wording(compiled.document,((items,reply),),locale='en',facts=(ProfileFact('interests','default','history'),))
+        selected={row['item_id']for row in items}
+        for old,new in zip(before['items'],value['items'],strict=True):
+            if old['id']in selected:
+                self.assertIsNone(new['note']);self.assertEqual(new['reason_refs'],[])
+                self.assertEqual({k:v for k,v in old.items()if k not in ('note','reason_refs','tip')},
+                    {k:v for k,v in new.items()if k not in ('note','reason_refs','tip')})
+            else:self.assertEqual(new,old)
+        self.assertEqual(compiled.document,before)
 
     def test_late_wording_cannot_make_saved_booking_or_internal_metadata_claims(self):
         compiled,items,_=self.case()

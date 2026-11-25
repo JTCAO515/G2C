@@ -82,6 +82,16 @@ import Testing
         #expect(throws: CancellationError.self) { try store.clear() }
     }
 
+    @Test func aFileWrittenBeforeTheWalletWasAddedStillReads() throws {
+        let directory = try folder()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = LioShowCardDetailsStore(directory: directory, isCurrent: { true })
+        let older = #"{"version":1,"details":{"bookingName":"SMITH JOHN","drugAllergies":["penicillin"],"foodAllergies":[],"conditions":[],"spice":"none","currency":"usd"}}"#
+        try Data(older.utf8).write(to: directory.appendingPathComponent(LioShowCardDetailsStore.fileName))
+        let details = try store.load()
+        #expect(details.bookingName == "SMITH JOHN" && details.drugAllergies == [.penicillin] && details.wallet == nil)
+    }
+
     @Test func aDamagedOrNewerFileReadsAsNothingRemembered() throws {
         let directory = try folder()
         defer { try? FileManager.default.removeItem(at: directory) }

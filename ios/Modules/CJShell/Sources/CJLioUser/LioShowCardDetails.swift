@@ -13,6 +13,8 @@ struct LioShowCardDetails: Codable, Equatable, Sendable {
     var childAge: String?
     var spice = LioSpiceLevel.none
     var currency = LioExchangeCurrency.usd
+    /// Added after the first version; optional so files written before it still read.
+    var wallet: LioPaymentWallet?
 
     init() {}
 
@@ -25,6 +27,7 @@ struct LioShowCardDetails: Codable, Equatable, Sendable {
         childAge = input.cleanChildAge
         spice = input.spice
         currency = input.currency
+        wallet = input.wallet
     }
 
     /// Replaces the remembered fields; everything else on the input stays as it is.
@@ -37,6 +40,7 @@ struct LioShowCardDetails: Codable, Equatable, Sendable {
         input.childAge = LioShowCardInput.clean(childAge)
         input.spice = spice
         input.currency = currency
+        input.wallet = wallet
     }
 }
 

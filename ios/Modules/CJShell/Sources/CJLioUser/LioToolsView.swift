@@ -17,6 +17,7 @@ struct LioToolsView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.lioRoadbookDirectory) private var roadbookDirectory
     @Environment(\.lioSavedPlans) private var savedPlans
+    @Environment(\.lioMenuService) private var menuService
 
     private var availability: LioToolCatalog.Availability {
         var available = LioToolCatalog.Availability()
@@ -26,9 +27,15 @@ struct LioToolsView: View {
         available.hotels = hotelSearch != nil
         available.roadbook = LioRoadbookFeature.enabled(infoValue: Bundle.main.object(forInfoDictionaryKey: "G2CRoadbookEnabled"))
         available.transport = LioTransportService.fromBuild() != nil
+        available.menuOrder = menuService != nil
+        available.arrival = LioArrivalFeature.enabled(infoValue: Bundle.main.object(forInfoDictionaryKey: LioArrivalFeature.infoKey))
+        available.attractionBooking = LioAttractionBookingFeature.enabled(
+            infoValue: Bundle.main.object(forInfoDictionaryKey: LioAttractionBookingFeature.infoKey))
         #if DEBUG
         available.hotels = available.hotels || ProcessInfo.processInfo.arguments.contains("--lio-hotels-preview")
         if LioRoadbookPreview.requested { available.roadbook = true }
+        if LioArrivalPreview.requested { available.arrival = true }
+        if LioAttractionBookingFeature.previewRequested { available.attractionBooking = true }
         #endif
         return available
     }
@@ -101,6 +108,18 @@ struct LioToolsView: View {
         return (savedPlans?.plans ?? []).map { LioRoadbook(savedPlan: $0) }
     }
 
+    /// Arrival mode (#1595) uses the next dated saved plan, else the first one. Summaries usually carry no
+    /// hotels or dates yet: the taxi step then asks for the hotel and the arrival day defaults to today.
+    private var arrivalTrip: (hotels: [LioRichItinerary.Hotel], arrival: LioArrivalDay?)? {
+        #if DEBUG
+        if LioArrivalPreview.requested { return (LioArrivalPreview.hotels, nil) }
+        #endif
+        guard let plan = LioToolCatalog.arrivalPlan(savedPlans?.plans ?? [], today: LioArrivalDay(date: .now)) else {
+            return nil
+        }
+        return (plan.itinerary.hotels, plan.startDate.flatMap(LioArrivalDay.init))
+    }
+
     @ViewBuilder private func destination(_ tool: LioTool) -> some View {
         switch tool {
         case .localSupport:
@@ -131,6 +150,15 @@ struct LioToolsView: View {
         case .transport:
             if let service = LioTransportService.fromBuild() {
                 LioTransportView(language: language, service: service)
+            }
+        case .arrival:
+            LioArrivalView(language: language, hotels: arrivalTrip?.hotels ?? [], arrival: arrivalTrip?.arrival)
+        case .attractionBooking:
+            LioAttractionBookingView(language: language)
+        case .menuOrder:
+            if let menuService {
+                // Dietary memory is not read by Tools yet; the first version asks the traveller to tick needs.
+                LioMenuOrderView(language: language, service: menuService, memoryNotes: nil)
             }
         case .roadbook:
             LioRoadbookLibraryView(language: language, store: roadbookStore, candidates: roadbookCandidates)

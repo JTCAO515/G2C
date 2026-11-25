@@ -150,35 +150,30 @@ jobs:
         run: python3 -B .github/scripts/swift_packages.py
 
   swift:
-    # Every package is tested on one runner, reusing locked compiler outputs.
-    # Inventory order builds the broad Shell graph first; Cleanup has a distinct
-    # locked swift-collections version and runs last to avoid repeated switches.
+    # The one macOS job (JT approved 2026-11-25): the App build and every Swift package test share a
+    # runner, so a run asks the scarce hosted macOS pool for one machine, not two. The job keeps the
+    # name swift, a required check; the old ios-app job is gone. Each half has its own step, and the
+    # package step runs even when the App build failed, so the log shows which half broke.
+    # Package tests reuse locked compiler outputs; inventory order builds the broad Shell graph first,
+    # and Cleanup has a distinct locked swift-collections version and runs last.
+    # App: arm64 only, as Swift 6.3.3 crashes in IRGen on the x86_64 slice of
+    # CJFeedbackClient/FeedbackView.swift.
     # Skipped for pull requests that touch nothing the App reads (app_changed=false).
     needs: [changes, swift-packages]
     if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' && needs.changes.outputs.app_changed != 'false' && needs.swift-packages.result == 'success' }}
     runs-on: macos-26
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - name: Verify Xcode toolchain
-        run: swift --version
-      - name: Package tests (macOS host)
-        run: python3 -B .github/scripts/swift_packages.py --run
-
-  ios-app:
-    # The App target with the CJShell four-tab shell and all iOS modules, built for the simulator.
-    # arm64 only: Swift 6.3.3 crashes in IRGen on the x86_64 slice of CJFeedbackClient/FeedbackView.swift.
-    # Skipped for pull requests that touch nothing the App reads (app_changed=false).
-    needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' && needs.changes.outputs.app_changed != 'false' }}
-    runs-on: macos-26
-    timeout-minutes: 25
-    steps:
-      - uses: actions/checkout@v4
-      - name: Verify Xcode toolchain
-        run: xcodebuild -version
-      - name: Build App for iOS Simulator
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: "iOS app: build for iOS Simulator"
         run: |
           xcodebuild -project ios/CJProbeApp.xcodeproj -scheme CJProbeApp \
             -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/dd" \
             ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO build
+      - name: "Swift packages: tests (macOS host)"
+        if: ${{ !cancelled() }}
+        run: python3 -B .github/scripts/swift_packages.py --run

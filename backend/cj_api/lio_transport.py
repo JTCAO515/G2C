@@ -20,7 +20,7 @@ from pydantic import field_validator, model_validator
 
 from .plugin_tools import SHANGHAI, PluginError, register_plugin
 from .taxi_tools import WireModel
-from .variflight_tools import ROUTE as FLIGHTS_ROUTE, DAILY_LIMIT as FLIGHTS_DAILY_LIMIT, FlightInput
+from .variflight_tools import ROUTE as FLIGHTS_ROUTE, DAILY_LIMIT as FLIGHTS_DAILY_LIMIT
 
 
 ROUTE = '/v1/tools/transport/search'
@@ -46,6 +46,15 @@ SEATS = {
     'O': ('二等座', 'Second class'), '4': ('软卧', 'Soft sleeper'), '3': ('硬卧', 'Hard sleeper'),
     '1': ('硬座', 'Hard seat'),
 }
+# AMap cross-city transit names its seat classes in Chinese (HK smoke run -42, #1521): 「火车」 prefix, berths per
+# sleeper (上/中/下铺). Berths fold into their sleeper class; 「不分仓位级别」 and anything else is dropped.
+SEAT_NAMES = {
+    '商务座': ('商务座', 'Business class'), '特等座': ('特等座', 'Premium class'), '一等座': ('一等座', 'First class'),
+    '二等座': ('二等座', 'Second class'), '软卧': ('软卧', 'Soft sleeper'), '硬卧': ('硬卧', 'Hard sleeper'),
+    '软座': ('软座', 'Soft seat'), '硬座': ('硬座', 'Hard seat'), '无座': ('无座', 'Standing (no seat)'),
+}
+SEAT_CLASSES = set(SEATS.values()) | set(SEAT_NAMES.values())
+SEAT_RANK = {pair: rank for rank, pair in enumerate(SEAT_NAMES.values())}
 
 
 @dataclass(frozen=True)
@@ -183,15 +192,34 @@ def _station(value):
     return station
 
 
-def _seats(spaces):
+SEAT_CODE = re.compile(r'[A-Za-z0-9]{1,8}')
+
+
+def _seat_class(code):
+    """The (zh, en) class for a 12306 letter code or an AMap Chinese seat name, or None."""
+    if type(code) is not str:
+        return None
+    if code in SEATS:
+        return SEATS[code]
+    name = code.removeprefix('火车')
+    for berth in ('上铺', '中铺', '下铺'):
+        name = name.removesuffix(berth)
+    return SEAT_NAMES.get(name)
+
+
+def _seats(spaces, dropped):
+    """One entry per seat class at its lowest listed price (AMap repeats classes and berths), cheapest first."""
     if spaces in (None, [], {}):
         return []
-    if type(spaces) is not list or len(spaces) > 16:
+    if type(spaces) is not list or len(spaces) > 32:
         raise ValueError('invalid seat list')
-    seats, seen = [], set()
+    lowest = {}
     for space in spaces:
-        if (type(space) is not dict or type(space.get('code')) is not str or space['code'] not in SEATS
-                or space['code'] in seen or type(space.get('cost')) is not str):
+        seat_class = _seat_class(space.get('code')) if type(space) is dict else None
+        if type(space) is dict and seat_class is None:
+            code = space.get('code')
+            dropped.append(code if type(code) is str and SEAT_CODE.fullmatch(code) else '?')
+        if seat_class is None or type(space.get('cost')) is not str:
             continue
         try:
             price = Decimal(space['cost'])
@@ -199,10 +227,11 @@ def _seats(spaces):
             continue
         if not price.is_finite() or not 0 < price <= 100000 or price != price.quantize(Decimal('0.01')):
             continue
-        seen.add(space['code'])
-        zh, en = SEATS[space['code']]
-        seats.append(dict(class_zh=zh, class_en=en, price_cny_minor=int(price * 100)))
-    return seats
+        minor = int(price * 100)
+        if seat_class not in lowest or minor < lowest[seat_class]:
+            lowest[seat_class] = minor
+    ordered = sorted(lowest.items(), key=lambda pair: (pair[1], SEAT_RANK.get(pair[0], -1)))
+    return [dict(class_zh=zh, class_en=en, price_cny_minor=minor) for (zh, en), minor in ordered]
 
 
 def rail_items(value):
@@ -211,7 +240,7 @@ def rail_items(value):
     transits = route.get('transits') if type(route) is dict else None
     if type(transits) is not list or len(transits) > 32:
         raise ValueError('bounded transit options required')
-    items, seen = [], set()
+    items, seen, dropped, without_seats = [], set(), [], 0
     for transit in transits:
         segments = transit.get('segments') if type(transit) is dict else None
         if type(segments) is not list or len(segments) > 64:
@@ -231,11 +260,18 @@ def rail_items(value):
             minutes, next_day = _span(depart, arrive)
             item = dict(number=number, depart_station=_station(departure['name']),
                         arrive_station=_station(arrival['name']), depart_time=depart_time, arrive_time=arrive_time,
-                        duration_min=minutes, next_day=next_day, seats=_seats(railway.get('spaces')),
+                        duration_min=minutes, next_day=next_day, seats=_seats(railway.get('spaces'), dropped),
                         availability=None)
+            if railway.get('spaces') in (None, [], {}):
+                without_seats += 1
             if (number, depart_time) not in seen:
                 seen.add((number, depart_time))
                 items.append(item)
+    # Content-free smoke diagnostics (#1521): supplier seat-class codes only, never names or prices.
+    if without_seats:
+        LOGGER.info('transport_rail_segments_without_seats count=%d', without_seats)
+    if dropped:
+        LOGGER.info('transport_rail_seat_codes_dropped codes=%s', ','.join(dict.fromkeys(dropped[:20])))
     items.sort(key=lambda item: (item['depart_time'], item['number']))
     return items[:MAX_ITEMS]
 
@@ -256,7 +292,7 @@ def validate_rail_items(items):
     """Whether a worker reply has exactly the shape `rail_items` produces; checked once where it enters the API."""
     if type(items) is not list or len(items) > MAX_ITEMS:
         return False
-    classes = set(SEATS.values())
+    classes = SEAT_CLASSES
     for item in items:
         if (type(item) is not dict or item.keys() != ITEM_KEYS or item['availability'] is not None
                 or type(item['number']) is not str or not TRAIN.fullmatch(item['number'])
@@ -265,7 +301,10 @@ def validate_rail_items(items):
                 or type(item['arrive_time']) is not str or not TIME.fullmatch(item['arrive_time'])
                 or type(item['duration_min']) is not int or not 0 < item['duration_min'] <= 7 * 1440
                 or type(item['next_day']) is not bool
-                or type(item['seats']) is not list or len(item['seats']) > len(SEATS)):
+                or type(item['seats']) is not list or len(item['seats']) > len(SEAT_CLASSES)):
+            return False
+        named = [(seat.get('class_zh'), seat.get('class_en')) for seat in item['seats'] if type(seat) is dict]
+        if len(set(map(str, named))) != len(item['seats']):
             return False
         for seat in item['seats']:
             if (type(seat) is not dict or seat.keys() != {'class_zh', 'class_en', 'price_cny_minor'}
@@ -277,6 +316,10 @@ def validate_rail_items(items):
 
 
 def _stamp(value):
+    """A VariFlight time as (day, HH:MM, minutes): 'YYYY-MM-DD HH:MM[:SS]' or 10-digit epoch seconds (China time)."""
+    if type(value) is str and re.fullmatch(r'[0-9]{10}', value):
+        moment = datetime.fromtimestamp(int(value), SHANGHAI)
+        return moment.date().isoformat(), moment.strftime('%H:%M'), moment.hour * 60 + moment.minute
     match = STAMP.fullmatch(value) if type(value) is str else None
     if match is None:
         raise ValueError('invalid flight time')
@@ -295,7 +338,8 @@ def _airport(code, fallback_zh, fallback_en):
 
 def _flight_items(rows, day):
     items, seen = [], set()
-    for row in rows:
+    # Operating flights first, so a codeshare with the same airports and times is the one dropped.
+    for row in sorted(rows, key=lambda row: row.get('codeshare') is True):
         try:
             depart_day, depart_time, depart = _stamp(row.get('planned_departure'))
             arrive_day, arrive_time, arrive = _stamp(row.get('planned_arrival'))
@@ -315,7 +359,7 @@ def _flight_items(rows, day):
         seen.add(key)
         item = dict(number=row['flight_number'])
         carrier = {name: row[field] for name, field in (('name_zh', 'airline_name_zh'), ('name_en', 'airline_name_en'))
-                   if field in row}
+                   if field in row and (name == 'name_zh' or row[field].isascii())}
         if carrier:
             item['carrier'] = carrier
         item.update(
@@ -343,6 +387,17 @@ def links(origin, destination, day, modes, wrap=lambda url: url):
         result.append(dict(mode='flight', provider='trip.com',
                            url=wrap('https://www.trip.com/flights/showfarefirst?' + query)))
     return result
+
+
+@dataclass(frozen=True)
+class RouteLookup:
+    """A VariFlight route lookup over all airports of both cities (codes come from CITIES, never from input)."""
+    date: str
+    departure: str
+    arrival: str
+
+    def tool_call(self):
+        return 'getFlightList', dict(dep=self.departure, arr=self.arrival, date=self.date)
 
 
 def _status(error):
@@ -391,20 +446,15 @@ class TransportService:
             reserve(FLIGHTS_ROUTE, FLIGHTS_DAILY_LIMIT)
         except PluginError as error:
             return dict(result, status=_status(error))
-        rows, failure = [], None
-        for departure, _, _ in origin.airports:
-            for arrival, _, _ in destination.airports:
-                request = FlightInput(version='FLIGHTS.1', date=day, departure=departure, arrival=arrival)
-                try:
-                    rows.extend(self.flights.query(request, reserve)['items'])
-                except PluginError as error:
-                    failure = _status(error)
-                    if failure == 'not_enabled':
-                        return dict(result, status=failure)
-                except (KeyError, TypeError):
-                    failure = 'unavailable'
-        if failure is not None and not rows:
-            return dict(result, status=failure)
+        # One getFlightList per search: VariFlight takes up to three airports per side, comma separated (#1521).
+        lookup = RouteLookup(day, ','.join(code for code, _, _ in origin.airports[:3]),
+                             ','.join(code for code, _, _ in destination.airports[:3]))
+        try:
+            rows = self.flights.query(lookup, reserve)['items']
+        except PluginError as error:
+            return dict(result, status=_status(error))
+        except (KeyError, TypeError):
+            return dict(result, status='unavailable')
         items = _flight_items(rows, day)
         return dict(result, status='ok' if items else 'empty', items=items)
 

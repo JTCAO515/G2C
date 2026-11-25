@@ -138,6 +138,37 @@ struct LioMenuOrderCardTests {
         #expect(order.count == 3)
     }
 
+    /// The waiter card is drawn by the shared show card (#1611): dishes largest, needs and thanks under them,
+    /// English for the traveller.
+    @Test func waiterCardBecomesTheSharedShowCard() throws {
+        var order = LioMenuOrder()
+        let reading = LioMenuReading.sample
+        order.add(try #require(reading.dishes.first { $0.nameZH == "宫保鸡丁" }))
+        let rice = try #require(reading.dishes.first { $0.nameZH == "蛋炒饭" })
+        order.add(rice)
+        order.add(rice)
+        order.toggle(.need(.peanut))
+        let content = order.card(in: reading).showCard
+        #expect(content.leadZH == "您好，我想点这些菜：")
+        #expect(content.mainZH == "宫保鸡丁 × 1\n蛋炒饭 × 2")
+        #expect(content.detailsZH == ["我对花生过敏，请不要放，包括调料和高汤。", "谢谢！"])
+        #expect(content.english == ["Hello, I'd like to order:", "Kung Pao Chicken × 1", "Egg Fried Rice × 2",
+                                    "I'm allergic to peanut. Please leave it out, including sauces and broth."])
+        #expect(content.noteZH == nil && content.noteEN == nil)
+    }
+
+    @Test func showCardNeverRepeatsTheGreetingAndFallsBackToChineseNames() throws {
+        let empty = LioMenuOrder().card(in: .sample).showCard
+        #expect(empty.leadZH == nil && empty.mainZH == "您好，我想点这些菜：")
+        let unnamed = LioMenuDish(id: "x", nameZH: "夫妻肺片", nameEN: "", summaryEN: "", summaryZH: "",
+                                  ingredientsEN: "", ingredientsZH: "", methodEN: "", methodZH: "", portionEN: "",
+                                  portionZH: "", spice: nil, contains: [:], priceText: nil)
+        var order = LioMenuOrder()
+        order.add(unnamed)
+        let card = order.card(in: LioMenuReading(dishes: [unnamed, unnamed]))
+        #expect(card.lines == ["夫妻肺片 × 1"] && card.englishLines == ["夫妻肺片 × 1"])
+    }
+
     @Test func quantitiesAreBoundedAndRemovable() throws {
         var order = LioMenuOrder()
         let dish = try #require(LioMenuReading.sample.dishes.first { $0.nameZH != nil })

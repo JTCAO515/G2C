@@ -131,6 +131,8 @@ struct LioShowCardsView: View {
     let detailsStore: LioShowCardDetailsStore?
     @State private var input: LioShowCardInput
     @State private var loaded = false
+    /// Saving starts only after a successful read, so a file that could not be read is never overwritten.
+    @State private var canSave = false
     @State private var confirmsClear = false
     @State private var notice: String?
 
@@ -179,10 +181,13 @@ struct LioShowCardsView: View {
                                            "你填的姓名、过敏等信息只保存在这台手机上。"))
                             .font(.footnote)
                             .foregroundStyle(LioTheme.inkSecondary)
-                        Button(language.text("Clear what I've entered", "清除我填过的信息"), role: .destructive) {
+                        Button(role: .destructive) {
                             confirmsClear = true
+                        } label: {
+                            Text(language.text("Clear what I've entered", "清除我填过的信息"))
+                                .frame(minHeight: 44)
+                                .contentShape(Rectangle())
                         }
-                        .frame(minHeight: 44)
                         .accessibilityIdentifier("lio.show-card.clear-details")
                     }
                 }
@@ -200,12 +205,21 @@ struct LioShowCardsView: View {
             guard !loaded else { return }
             loaded = true
             guard let detailsStore else { return }
-            try? detailsStore.load().apply(to: &input)
+            do {
+                try detailsStore.load().apply(to: &input)
+                canSave = true
+            } catch is CancellationError {
+                return
+            } catch {
+                notice = language.text("Your saved details could not be read, so changes here are not kept.",
+                                       "读不到之前保存的信息，这次填写的内容不会保存。")
+            }
         }
         .onChange(of: LioShowCardDetails(input)) { _, details in
-            guard loaded, let detailsStore else { return }
+            guard canSave, let detailsStore else { return }
             do {
-                try detailsStore.save(details)
+                // Nothing left to remember means no file, the same as after "Clear".
+                if details == LioShowCardDetails() { try detailsStore.clear() } else { try detailsStore.save(details) }
             } catch is CancellationError {
                 return
             } catch {
@@ -355,6 +369,10 @@ struct LioShowCardEditor: View {
         case .foodAllergies:
             multiSelect(language.text("Allergic to", "过敏的食物"), LioFoodAllergen.allCases, $input.foodAllergies) {
                 language == .chinese ? $0.chinese : $0.english
+            }
+        case .wallet:
+            picker(language.text("I'm paying with", "我用的是"), LioPaymentWallet.allCases, optional: $input.wallet) {
+                $0.title(language)
             }
         case .place:
             text(language.text("Place (Chinese name works best)", "地点（最好写中文名）"), $input.placeZH)

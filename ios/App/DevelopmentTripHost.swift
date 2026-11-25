@@ -132,6 +132,8 @@ private var developmentHostEnvironment: [String: String] {
     let lioNearbyRelay: LioNearbyRelayClient?
     let lioHotelRelay: LioHotelRelayClient?
     let lioTransportRelay: LioTransportRelayClient?
+    let lioRoadbookRelay: LioRoadbookRelayClient?
+    let lioMenuRelay: LioMenuRelayClient?
     #endif
     let messages: DevelopmentMessageHost
     #if DEBUG
@@ -252,6 +254,12 @@ private var developmentHostEnvironment: [String: String] {
                                                          bearer: relayBearer)
         lioTransportRelay = LioTransportRelayClient.internalBeta(endpoint: endpoint, isCurrent: relaySessionIsCurrent,
                                                                  bearer: relayBearer)
+        // ROADBOOK.1 answers up to eight places per call (tens of KB); this endpoint allows 1 MB.
+        lioRoadbookRelay = LioRoadbookRelayClient.internalBeta(endpoint: endpoint, isCurrent: relaySessionIsCurrent,
+                                                               bearer: relayBearer)
+        // MENU.1 replies are capped at 256 KB by the client; the menu photo is the request body.
+        lioMenuRelay = LioMenuRelayClient.internalBeta(endpoint: endpoint, isCurrent: relaySessionIsCurrent,
+                                                       bearer: relayBearer)
         if tripEditingProfile != nil {
             lioTripLibrary = LioTripLibrary(list: {
                 var rows: [StructuredTripSummary] = []
@@ -897,6 +905,9 @@ private var developmentHostEnvironment: [String: String] {
     let lioTaxiRecentDirectory: URL
     let lioSavedPlans: LioSavedPlans
     let lioRoadbookDirectory: URL
+    /// #1647: the trip home's profile and ticks, and the account's message folder for tools that keep files there.
+    let lioTripHomeStore: LioTripHomeStore
+    let lioMessageDirectory: URL
     private let lioPosition: LioChatContinuity
     private let lioPositionStore: LioChatPositionStore
     #endif
@@ -953,6 +964,8 @@ private var developmentHostEnvironment: [String: String] {
         lioTaxiRecentDirectory = LioTaxiRecentPlaces.storageDirectory(inMessageDirectory: root)
         lioSavedPlans = LioSavedPlans(directory: LioSavedPlans.storageDirectory(inMessageDirectory: root), isCurrent: isCurrent)
         lioRoadbookDirectory = LioAccountFolders.roadbooks(inMessageDirectory: root)
+        lioTripHomeStore = LioTripHomeStore(directory: LioTripHomeStore.storageDirectory(inMessageDirectory: root), isCurrent: isCurrent)
+        lioMessageDirectory = root
         lioTranslationHistory = LioTranslationHistory(
             directory: root.appendingPathComponent(LioTranslationHistory.directoryName, isDirectory: true),
             isCurrent: isCurrent)
@@ -1697,6 +1710,7 @@ private struct DevelopmentVerificationTransport: ClientTransport {
             try LioReturnHotelCleanup.erase(in: captured[0])
             try LioShowCardDetailsCleanup.erase(in: captured[0])
             try LioRoadbookCleanup.erase(in: captured[0])
+            try LioTripHomeCleanup.erase(in: captured[0])
             #endif
         case .tripPending:
             guard let url else { throw CleanupFailure.unavailable }

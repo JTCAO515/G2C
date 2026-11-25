@@ -18,7 +18,8 @@ import SwiftUI
 /// The other tools the trip home links to, each present only when its own switch is on in this build.
 @MainActor struct LioTripHomeTools {
     var arrival: LioTripHomeArrival?
-    /// Back to Hotel's store (`G2CShowCardEnabled`), in the same account folder.
+    /// Back to Hotel's store (`G2CShowCardEnabled`), read only: the same file its own page and the Tools tab use,
+    /// built with its own path functions from the account's message folder (agreed with the Back to Hotel line).
     var hotelStore: LioReturnHotelStore?
     /// What the traveller fills in on the show cards (name, allergies …), kept by Back to Hotel's own store.
     var detailsStore: LioShowCardDetailsStore?
@@ -33,7 +34,8 @@ import SwiftUI
     static func fromBuild(messageDirectory: URL?, isCurrent: @escaping @MainActor () -> Bool,
                           arrival: LioTripHomeArrival?) -> Self {
         let info = { (key: String) in Bundle.main.object(forInfoDictionaryKey: key) }
-        let showCards = LioShowCardFeature.enabled(infoValue: info("G2CShowCardEnabled"))
+        // Back to Hotel's own switch (#1632): `G2CShowCardEnabled`, or its Debug preview argument.
+        let showCards = LioReturnHotelTools.shownInTools
         let roadbooks = LioRoadbookFeature.enabled(infoValue: info("G2CRoadbookEnabled"))
         return Self(
             arrival: arrival,

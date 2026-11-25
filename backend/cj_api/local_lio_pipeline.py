@@ -5,6 +5,7 @@ composition. Provider retrieval, final scheduling/checks and sole publication
 are subsequent steps; the old preview factory is not replaced by preparation.
 """
 from dataclasses import dataclass,replace
+from copy import deepcopy
 import json
 
 from cj_message.lio_pipeline_schema import SKELETON,WORDING
@@ -249,6 +250,25 @@ def publish_retrieved_plan(prepared,compiled,capture,assembly):
         worker.drafts=previous
 
 
+FAR_EDGE_HINTS={
+    'zh':('第一天的景点离酒店有一段距离，到达后建议打车过去；想换近一点的可以告诉我。',
+          '最后一天的景点离酒店有一段距离，建议留出打车时间；想换近一点的可以告诉我。'),
+    'en':("Day 1's sights are some distance from the hotel; take a taxi after you arrive, or tell me to swap in somewhere closer.",
+          "The last day's sights are some distance from the hotel; allow time for a taxi, or tell me to swap in somewhere closer.")}
+
+
+def disclose_far_edges(document,edge_far,*,id_prefix,day_count,locale):
+    """JT 2026-11-26: note far first/last-day stops on the code-owned lodging anchors."""
+    value=deepcopy(document)
+    days={day for day,_ in edge_far}
+    targets={f'{id_prefix}-lodging-d1-out':(1 in days,FAR_EDGE_HINTS[locale][0]),
+             f'{id_prefix}-lodging-d{day_count}-back':(day_count!=1 and day_count in days,FAR_EDGE_HINTS[locale][1])}
+    for item in value['items']:
+        applies,hint=targets.get(item['id'],(False,None))
+        if applies:item['note']=(item['note']or'')+(''if locale=='zh'else' ')+hint
+    return value
+
+
 def word_retrieved_plan(host,prepared,compiled,capture,assembly,view,*,locale):
     """Spend only remaining model slots and retain every final item unchanged.
 
@@ -269,6 +289,8 @@ def word_retrieved_plan(host,prepared,compiled,capture,assembly,view,*,locale):
     results=prepared.calls.parallel(calls)
     value=apply_wording(document,tuple((batch,result.encode())for batch,result in zip(batches,results,strict=True)),
         facts=facts,locale=locale)
+    value=disclose_far_edges(value,getattr(assembly,'edge_far',()),id_prefix=prepared.id_prefix,
+        day_count=len(value['days']),locale=locale)
     representation_size(value)
     # Preserve every code-owned provenance group, using clause separators so
     # the saved overview stays within the 2–4-sentence reply tier.

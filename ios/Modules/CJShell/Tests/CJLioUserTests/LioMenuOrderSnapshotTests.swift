@@ -52,8 +52,10 @@ import UIKit
             try shot("2-dishes-\(suffix)", LioMenuResults(language: language, reading: reading,
                                                           restrictions: needs,
                                                           order: .constant(order)).padding(18))
-            try shot("3-card-\(suffix)", LioMenuCardContent(language: language, card: order.card(in: reading),
-                                                            order: .constant(order)).padding(24))
+            try shot("3-card-\(suffix)", VStack(alignment: .leading, spacing: LioTheme.Spacing.lg) {
+                LioShowCardFace(content: order.card(in: reading).showCard, identifierPrefix: "lio.menu.card")
+                LioMenuNoteToggles(language: language, order: .constant(order))
+            }.padding(24))
         }
     }
 }

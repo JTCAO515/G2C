@@ -3,6 +3,7 @@
 The host supplies accepted profile facts and exact code recipes/item IDs. Model
 text cannot create source records, change the recipe or authorize publication.
 """
+import logging
 from dataclasses import asdict
 
 from pydantic import ValidationError
@@ -82,11 +83,20 @@ def parse_wording(raw,items,*,allowed_reason_keys):
     if len(rows)!=len(value.items)or rows.keys()!=expected.keys():
         raise WordingUnavailable('exact wording batch item set required')
     projected={}
+    dropped=0
     for key,row in rows.items():
-        if len(set(row.reason_refs))!=len(row.reason_refs)or not set(row.reason_refs)<=allowed_reason_keys:
-            raise WordingUnavailable('only existing known/memory reason factors allowed')
+        note,refs=row.reason,list(row.reason_refs)
+        if len(set(refs))!=len(refs)or not set(refs)<=allowed_reason_keys:
+            # HK run -43 (2026-11-25): an unsupported reason factor dropped the whole plan.
+            # Drop only this reason; the factor never reaches public wording (JT 2026-11-25:
+            # unsupported parts are dropped, the rest is used).
+            note,refs=None,[]
+            dropped+=1
         # Rewording a tip does not authorize new facts: with no sourced tip the
         # host retains null, regardless of what the model proposed.
-        projected[key]=dict(note=row.reason,reason_refs=list(row.reason_refs),
+        projected[key]=dict(note=note,reason_refs=refs,
                             tip=row.tip if expected[key]['tip']is not None else None)
+    if dropped:
+        # Counts only: a model-written factor key may contain traveler text.
+        logging.getLogger('cj_usage.audit').info('LIO_WORDING_REASON_DROPPED items=%d of=%d',dropped,len(rows))
     return projected
