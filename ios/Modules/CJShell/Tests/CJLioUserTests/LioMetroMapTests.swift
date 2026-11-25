@@ -183,3 +183,63 @@ struct LioMetroMapBehaviourTests {
         #expect(name == "广州体育西路地铁站")
     }
 }
+
+/// Zoom and pan: gestures are drawn on top of a committed viewport and commit only when they end.
+struct LioMetroViewportTests {
+    private static func close(_ a: CGSize, _ b: CGSize) -> Bool {
+        abs(a.width - b.width) < 1e-9 && abs(a.height - b.height) < 1e-9
+    }
+
+    @Test func pinchKeepsThePointUnderTheFingersStill() {
+        let start = LioMetroViewport(zoom: 2, pan: CGSize(width: 30, height: -10))
+        let anchor = CGPoint(x: 80, y: 40)
+        let end = start.pinched(by: 1.5, about: anchor)
+        #expect(end.zoom == 3)
+        // A map point drawn at the anchor before the pinch is still drawn there afterwards.
+        let before = (x: (anchor.x - start.pan.width) / start.zoom, y: (anchor.y - start.pan.height) / start.zoom)
+        let after = (x: (anchor.x - end.pan.width) / end.zoom, y: (anchor.y - end.pan.height) / end.zoom)
+        #expect(abs(before.x - after.x) < 1e-9 && abs(before.y - after.y) < 1e-9)
+    }
+
+    @Test func zoomStaysBetweenTheWholeMapAndTheMaximum() {
+        #expect(LioMetroViewport().pinched(by: 0.2, about: .zero).zoom == 1)
+        #expect(LioMetroViewport(zoom: 10).pinched(by: 5, about: .zero).zoom == LioMetroViewport.maximumZoom)
+    }
+
+    /// The case review found: a pinch that ends while the drag is still live, then the drag ends.
+    @Test func endingOneGestureBeforeTheOtherNeverMovesThePicture() {
+        let committed = LioMetroViewport(zoom: 1.5, pan: CGSize(width: -40, height: 25))
+        let anchor = CGPoint(x: -60, y: 90), drag = CGSize(width: 33, height: -18)
+        let onScreen = committed.showing(magnification: 2, anchor: anchor, drag: drag)
+
+        // Pinch lifts first; the drag is still live, so the picture is the new viewport plus that drag.
+        let afterPinch = committed.endingPinch(by: 2, about: anchor, liveDrag: drag)
+        let stillDragging = afterPinch.showing(magnification: nil, anchor: .zero, drag: drag)
+        #expect(stillDragging.zoom == onScreen.zoom && Self.close(stillDragging.pan, onScreen.pan))
+        // Then the drag lifts and commits; nothing moves.
+        let afterDrag = afterPinch.dragged(by: drag)
+        #expect(afterDrag.zoom == onScreen.zoom && Self.close(afterDrag.pan, onScreen.pan))
+
+        // Drag lifts first instead; the live pinch is drawn on the moved viewport, then commits.
+        let dragFirst = committed.dragged(by: drag)
+        let stillPinching = dragFirst.showing(magnification: 2, anchor: anchor, drag: .zero)
+        #expect(stillPinching.zoom == onScreen.zoom && Self.close(stillPinching.pan, onScreen.pan))
+        let bothDone = dragFirst.endingPinch(by: 2, about: anchor, liveDrag: .zero)
+        #expect(bothDone.zoom == onScreen.zoom && Self.close(bothDone.pan, onScreen.pan))
+    }
+
+    @Test func aCancelledGestureLeavesTheCommittedViewport() {
+        let committed = LioMetroViewport(zoom: 3, pan: CGSize(width: 12, height: 8))
+        // While live the gesture is drawn on top; once cancelled nothing was committed.
+        #expect(committed.showing(magnification: 1.7, anchor: CGPoint(x: 5, y: 5), drag: CGSize(width: 9, height: 9)) != committed)
+        #expect(committed.showing(magnification: nil, anchor: .zero, drag: .zero) == committed)
+    }
+
+    @Test func panKeepsPartOfTheMapOnScreen() {
+        let view = CGSize(width: 400, height: 800), content = CGSize(width: 400, height: 300)
+        let far = LioMetroViewport(zoom: 2, pan: CGSize(width: 5000, height: -5000)).clamped(content: content, view: view)
+        #expect(far.pan == CGSize(width: 200 + 100, height: -200))
+        let near = LioMetroViewport(zoom: 2, pan: CGSize(width: 50, height: 20))
+        #expect(near.clamped(content: content, view: view) == near)
+    }
+}
