@@ -88,11 +88,15 @@ struct LioTaxiSearchQuery: Equatable, Sendable {
     let text: String
     let city: LioTaxiCity
     let near: LioTaxiPlace.Coordinate?
+    /// English screens ask the relay for optional English names and addresses (TAXI.1 `locale`, approved by
+    /// JT in #1459 and live in Hong Kong since #1450's build 55 readiness receipt).
+    let english: Bool
 
-    init(text: String, city: LioTaxiCity, near: LioTaxiPlace.Coordinate?) {
+    init(text: String, city: LioTaxiCity, near: LioTaxiPlace.Coordinate?, english: Bool = false) {
         self.text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         self.city = city
         self.near = near
+        self.english = english
     }
 }
 
