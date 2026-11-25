@@ -21,7 +21,7 @@ struct LioPaymentGuideTests {
     @Test func paymentFailuresAreBilingualSourcedAndDoNotRepeatTheSetupProblems() {
         for language in [LioLanguage.chinese, .english] {
             let failures = LioPaymentGuideProvider.paymentFailures(in: language)
-            #expect(failures.map(\.id) == ["declined", "limit", "unverified", "fee", "transfer", "cash"])
+            #expect(failures.map(\.id) == ["scan-fails", "limit", "fee", "transfer", "cash"])
             #expect(Set(failures.map(\.id)).isDisjoint(with: LioPaymentGuideProvider.problems(in: language).map(\.id)))
             for item in failures {
                 #expect(!item.title.isEmpty && !item.detail.isEmpty && !item.icon.isEmpty)
@@ -35,8 +35,8 @@ struct LioPaymentGuideTests {
             }
         }
         let hosts = LioPaymentGuideProvider.paymentFailures(in: .english).compactMap { $0.source?.url.host }
-        #expect(hosts == ["www.gd.gov.cn", "english.www.gov.cn", "blog.wechat.com", "www.szns.gov.cn", "help.wechat.com",
-                          "www.gd.gov.cn"])
+        // Sources checked against the pages on 2026-11-25 (review of #1623): each item states only what its page says.
+        #expect(hosts == ["www.gd.gov.cn", "help.wechat.com", "www.eguizhou.gov.cn", "help.wechat.com", "www.gd.gov.cn"])
     }
 
     @Test func theServiceFeeIsSaidToApplyToInternationalCardsInTheseAppsOnly() {
@@ -46,12 +46,17 @@ struct LioPaymentGuideTests {
         #expect(english.contains("Weixin Pay") && english.contains("Alipay") && english.contains("international card"))
     }
 
-    @Test func declinedCardAdviceStatesNoGuessAboutTheCause() {
-        // A (2026-11-25): the source says issuers verify card payments; it does not say how often they decline.
-        let chinese = LioPaymentGuideProvider.paymentFailures(in: .chinese).first { $0.id == "declined" }?.detail ?? ""
-        let english = LioPaymentGuideProvider.paymentFailures(in: .english).first { $0.id == "declined" }?.detail ?? ""
-        #expect(!chinese.contains("多半") && !chinese.contains("通常") && chinese.contains("发卡行验证"))
-        #expect(!english.contains("usually") && !english.contains("most") && english.contains("issuer's approval"))
+    @Test func adviceStaysWithinWhatTheSourcesSay() {
+        // Review of #1623: no claim about card issuers (the cited page has none), no unsourced RMB 15,000 figure,
+        // and the limit uses Weixin Pay's own numbers rather than the older policy announcement.
+        for language in [LioLanguage.chinese, .english] {
+            let text = LioPaymentGuideProvider.paymentFailures(in: language).map(\.detail).joined(separator: " ")
+            #expect(!text.contains("15,000") && !text.contains("5,000 美元") && !text.contains("US$5,000"))
+            #expect(!text.contains("多半") && !text.lowercased().contains("usually"))
+            #expect(!text.contains("发卡行") && !text.lowercased().contains("issuer"))
+        }
+        let limit = LioPaymentGuideProvider.paymentFailures(in: .chinese).first { $0.id == "limit" }?.detail ?? ""
+        #expect(limit.contains("6,500") && limit.contains("65,000") && limit.contains("支付宝请看付款页面"))
     }
 
     @Test func setupStepsKeepNoSource() {
