@@ -75,6 +75,16 @@ struct LioTransportHub: Equatable, Hashable, Sendable {
         Self(kind: kind, nameZH: nameZH, nameEN: nameEN, code: code, coordinate: coordinate)
     }
 
+    /// The Chinese request shown above the name on the shared driver sign (`LioDriverSign`).
+    var driverRequestZH: String {
+        kind == .airport ? "请送我到这个机场" : "请送我到这个火车站"
+    }
+
+    /// The English line under the Chinese name; airports keep their code, which is on every booking.
+    var driverNameEN: String {
+        code.map { "\(nameEN) (\($0))" } ?? nameEN
+    }
+
     /// A taxi destination when the hub has a coordinate; the driver sees the Chinese name.
     var taxiPlace: LioTaxiPlace? {
         guard let coordinate else { return nil }
