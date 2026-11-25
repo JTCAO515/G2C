@@ -252,7 +252,9 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
             message,=page.json()['messages'];tags=message['memory']['tags']
             assert message['status']=='completed'and message['trip']is None
             assert len(tags)==2 and {tag['text']for tag in tags}=={lodging,interest},message
-            assert len(wire)==1 and 'LIO-planning-intake.8'in wire[0]['messages'][0]['content'],wire
+            # JT 2026-11-25 B: a consult message is answered by the detailed answer path after intake.
+            assert len(wire)==2 and 'LIO-planning-intake.8'in wire[0]['messages'][0]['content'],wire
+            assert 'LIO-planning-intake'not in wire[1]['messages'][0]['content'],wire
             tag,=(tag for tag in tags if tag['text']==lodging)
             choice=json.dumps(dict(version='LIO-memory-action.1',action_id='native-pair-remember-'+locale,
                 operation='remember',target=tag['target']),separators=(',',':')).encode()
@@ -260,7 +262,7 @@ def exercise(root,conninfo,*,basic_memory=False,fallback_only=False,max_steps=24
             assert confirmed.status_code==200 and confirmed.json()['status']=='remembered',confirmed.text
             receipt=api.post('/v1/lio/memory/receipt',headers=headers,content=choice)
             assert receipt.status_code==200 and receipt.json()==confirmed.json(),receipt.text
-            assert len(wire)==1
+            assert len(wire)==2  # JT 2026-11-25 B: intake + detailed answer; remembering adds no model call
             with database.connect(scope)as db:
                 saved=db.execute("SELECT source_id,source_version,version FROM cj_memory_item WHERE scope=%s AND slot='lodging.style'",(scope,)).fetchone()
                 assert db.execute('SELECT slot,status FROM cj_memory_item WHERE scope=%s ORDER BY slot',(scope,)).fetchall()==[

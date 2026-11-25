@@ -102,9 +102,10 @@ def exercise(root,conninfo):
             outcomes=worker.process();assert[o.status for o in outcomes]==[expected],outcomes
             kinds=['memory'if 'MEMORY-EXTRACT@2'in body['messages'][0]['content']else
                 'intake'if 'LIO-planning-intake.8'in body['messages'][0]['content']else'generic'for body in sent[before:]]
-            assert kinds==dict(valid=['intake','memory'],invalid=['intake','generic','memory'],
+            # JT 2026-11-25 B: a valid consult intake now continues to the detailed answer path.
+            assert kinds==dict(valid=['intake','generic','memory'],invalid=['intake','generic','memory'],
                 **{'date-clarification':['intake'],'transport':['intake']})[name],(name,kinds)
-    assert len(sent)==model.calls==7 and len(captures)==1 and captures[0].status=='CAPTURED',dict(
+    assert len(sent)==model.calls==8 and len(captures)==1 and captures[0].status=='CAPTURED',dict(
         sends=len(sent),model_calls=model.calls,captures=[receipt.status for receipt in captures],
         request_kinds=['memory'if 'MEMORY-EXTRACT@2'in body['messages'][0]['content']else
             'intake'if 'LIO-planning-intake.8'in body['messages'][0]['content']else'generic'for body in sent])
@@ -137,10 +138,10 @@ def exercise(root,conninfo):
     try:originals.rejected_intake(token,'capture-invalid',stored['operation_id'],captures[0].reference,directory=directory)
     except Unavailable:pass
     else:raise AssertionError('revoked owner read private rejected output')
-    rows=budget.inspect();assert len(rows)==7
-    assert sum(row['state']=='RECEIVED'for row in rows)==6
+    rows=budget.inspect();assert len(rows)==8
+    assert sum(row['state']=='RECEIVED'for row in rows)==7
     assert files[0].stat().st_mode&0o777==0o600
-    print('PASS signed saved Memory + actual model input/native ACK: valid parse/date clarification no file; real schema reject exact private bytes then guarded generic+Memory outside capture; transport UNKNOWN no file/no replay; actual original Memory lifetime positive; historical/missing-holder/pause/config-missing denial; 7 fixture sends/6 RECEIVED/1 UNKNOWN and original financial rows, no live provider',flush=True)
+    print('PASS signed saved Memory + actual model input/native ACK: valid parse/date clarification no file; real schema reject exact private bytes then guarded generic+Memory outside capture; transport UNKNOWN no file/no replay; actual original Memory lifetime positive; historical/missing-holder/pause/config-missing denial; 8 fixture sends/7 RECEIVED/1 UNKNOWN and original financial rows, no live provider',flush=True)
 
 
 def main():
