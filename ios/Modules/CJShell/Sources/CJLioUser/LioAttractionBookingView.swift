@@ -300,9 +300,23 @@ struct LioAttractionBookingDetail: View {
                     .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             }
             .accessibilityIdentifier("lio.booking.official")
-            Text(language.text("Booking and payment happen on the official channel; Go2China does not sell tickets.",
-                               "预约和付款都在官方渠道完成，Go2China 不售票。"))
+            ForEach(LioAttractionPartner.links(for: rule), id: \.url) { link in
+                Link(destination: link.url) {
+                    Label(language.text("Tickets on \(link.partner.name(language))", "在 \(link.partner.name(language)) 看门票"),
+                          systemImage: "ticket")
+                        .foregroundStyle(LioTheme.vermilion)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                }
+                .accessibilityIdentifier("lio.booking.partner")
+            }
+            Text(language.text("Booking and payment happen on the official channel or the ticket site; Go2China does not sell tickets.",
+                               "预约和付款在官方渠道或票务网站完成，Go2China 不售票。"))
                 .font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if !LioAttractionPartner.links(for: rule).isEmpty, let disclosure = LioAttractionPartner.disclosure(language) {
+                Text(disclosure).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
