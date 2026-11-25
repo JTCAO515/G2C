@@ -187,6 +187,30 @@ def test_a_cut_off_answer_is_billed_but_neither_shown_nor_cached(ledger):
         assert db.execute("SELECT state FROM attempt WHERE id GLOB 'roadbook.1:*'").fetchall() == [('RECEIVED',)]
 
 
+@pytest.mark.parametrize('reply, finish, logged', [
+    ('not json', 'stop', 'reason=model_not_json'),
+    (json.dumps(['x']), 'stop', 'reason=model_not_object'),
+    (json.dumps(dict(GOOD['zh'], food_tip='推荐全聚德烤鸭'), ensure_ascii=False), 'stop',
+     'reason=model_fields missing=0 extra=1 food_tip=1'),
+    (json.dumps({'summary': '紫禁城'}, ensure_ascii=False), 'stop', 'reason=model_fields missing=6 extra=0 food_tip=0'),
+    (json.dumps(GOOD['zh'], ensure_ascii=False), 'length', 'reason=model_cut_off'),
+])
+def test_why_a_place_is_unavailable_is_logged_without_its_text(ledger, caplog, reply, finish, logged):
+    caplog.set_level('INFO', logger='cj_usage.audit')
+    flash = Flash({'zh': reply, 'en': GOOD['en']}, finish=finish)
+    place, = enrich(service(ledger, flash=flash), payload())['places']
+    assert place == dict(id='s1', status='unavailable')
+    line, = [record.getMessage() for record in caplog.records if 'ROADBOOK_PLACE_UNAVAILABLE' in record.getMessage()]
+    assert 'index=0 language=zh ' + logged in line
+    assert not any(text in caplog.text for text in ('紫禁城', '全聚德', '故宫', 'Palace'))
+
+
+def test_gaode_and_supplier_reasons_are_logged(ledger, caplog):
+    caplog.set_level('INFO', logger='cj_usage.audit')
+    enrich(service(ledger, Gaode(found=False)), payload())
+    assert 'language=- reason=gaode_no_place' in caplog.text
+
+
 def test_daily_limits_leave_places_limited(ledger, monkeypatch):
     monkeypatch.setattr(roadbook_budget, 'DAILY_PLACES', 1)
     body = payload(dict(id='s1', name_zh='故宫博物院', city='北京'), dict(id='s2', name_zh='景山公园', city='北京'))
