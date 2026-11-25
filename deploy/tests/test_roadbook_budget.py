@@ -304,3 +304,16 @@ def test_hk_proof_accepts_gaode_roadbook_rows(places):
     with places.authorization.connect() as db:
         db.execute('UPDATE producer SET identity=?', (HK_PRODUCER,))
         assert attempts(db) == journal_state(db)
+
+
+def test_admits_reads_the_same_daily_allowance_without_writing(budget):
+    first = budget.operation('scope-a', uuid4(), 20)
+    assert budget.admits(first)
+    for _ in range(3):
+        _call(budget, budget.operation('scope-a', uuid4(), 20), 0)
+    with budget.authorization.connect() as db:
+        before = journal_state(db)
+    assert not budget.admits(budget.operation('scope-a', uuid4(), 1))
+    assert budget.admits(budget.operation('scope-b', uuid4(), 20))
+    with budget.authorization.connect() as db:
+        assert journal_state(db) == before
