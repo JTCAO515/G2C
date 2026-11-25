@@ -37,7 +37,7 @@
           },
           "items": {
             "zh": [
-              "构建 57 接续构建 56。原来的行程列表移到「所有行程」。"
+              "构建 57 接续构建 56。以前的行程列表移到「所有行程」。"
             ],
             "en": [
               "Build 57 follows build 56. The old trip list is now under All trips."
@@ -59,9 +59,9 @@
             ],
             "en": [
               "Trips: tap Just get ready, turn off Dates not decided yet, set an arrival date and passport for the entry result, open a tool with Go and come back.",
-              "Back to Hotel: tap Set as my hotel in Hotels, then try Take a taxi back, Show the driver and a full-screen card. Menu Helper: photograph a Chinese menu, tick needs, pick dishes, open the order card (10-40 s; 10 menus a day).",
+              "Back to Hotel: tap Set as my hotel in Hotels, then try Take a taxi back, Show the driver and a full-screen card. Menu Helper: photograph a Chinese menu, tick diet or allergy items, pick dishes, open the order card (10-40 s; 10 menus a day).",
               "Sight Bookings: Palace Museum, a day within 7 days, Remind me. Intercity Travel: Shanghai to Beijing, tap Book on 12306 or Trip.com. Roadbook: Three classic days in Beijing; try a taxi, Place details, Keep offline, Export PDF. Nearby: each Essentials type. Metro: Guangzhou Tiyu Xilu.",
-              "First run on devices: share a screenshot, the issue record and the time in the testing group."
+              "First time on real devices: share a screenshot, the issue record and the time in the testing group."
             ]
           }
         },
