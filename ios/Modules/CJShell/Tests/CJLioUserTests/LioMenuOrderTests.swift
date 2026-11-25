@@ -42,6 +42,16 @@ struct LioDietaryNeedTests {
         #expect(LioDietaryNeed.peanut.text(.english) == "Peanut allergy")
         #expect(LioDietaryNeed.noSpicy.staffSentenceZH == "请不要放辣椒。")
     }
+
+    /// Travellers often don't know soy sauce has wheat in it; the show-staff cards print these examples.
+    @Test func hiddenSourcesAreSpelledOutWhereTravellersMissThem() {
+        #expect(LioDietaryNeed.gluten.examples(.chinese) == "小麦（面粉、面条、酱油等）")
+        #expect(LioDietaryNeed.gluten.examples(.english) == "Wheat (flour, noodles, soy sauce…)")
+        #expect(LioDietaryNeed.treeNut.examples(.chinese) == "坚果（核桃、杏仁、腰果等）")
+        #expect(LioDietaryNeed.treeNut.examples(.english) == "Tree nuts (walnuts, almonds, cashews…)")
+        let others = LioDietaryNeed.allCases.filter { ![.gluten, .treeNut].contains($0) }
+        #expect(others.allSatisfy { $0.examples(.chinese) == nil && $0.examples(.english) == nil })
+    }
 }
 
 struct LioMenuFlagTests {
