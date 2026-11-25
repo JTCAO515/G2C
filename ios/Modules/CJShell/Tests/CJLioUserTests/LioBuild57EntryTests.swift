@@ -36,6 +36,34 @@ struct LioBuild57EntryTests {
         #expect(after.firstIndex(of: .attractionBooking) == after.firstIndex(of: .transport).map { $0 + 1 })
     }
 
+    @Test func menuCardShowsOnlyWithAServiceAndFitsTheCard() {
+        #expect(!LioToolCatalog.visible(.init()).contains(.menuOrder))
+        #expect(LioToolCatalog.visible(.init(menuOrder: true)).contains(.menuOrder))
+        let all = LioToolCatalog.visible(.init(transport: true, attractionBooking: true, menuOrder: true))
+        #expect(all.firstIndex(of: .menuOrder) == all.firstIndex(of: .attractionBooking).map { $0 + 1 })
+        #expect(LioTool.menuOrder.identifier == "lio.tools.menu-order")
+        #expect(LioTool.menuOrder.symbol == "fork.knife")
+        #expect(LioTool.menuOrder.name(.chinese) == "点餐")
+        #expect(LioTool.menuOrder.name(.english) == "Menu Helper")
+        #expect(LioTool.menuOrder.summary(.chinese) == "拍菜单，用中文点菜")
+        #expect(LioTool.menuOrder.summary(.english) == "Snap a menu, order in Chinese")
+        #expect(LioMenuService.fromBuild(arguments: [], info: [:], relay: nil) == nil)
+        #expect(LioMenuService.fromBuild(arguments: [], info: ["G2CMenuOrderEnabled": "NO"], relay: .preview) == nil)
+    }
+
+    @Test func arrivalStartsFromTheEarliestUpcomingTripNotTheLastSaved() throws {
+        func plan(_ id: String, _ start: String?) -> LioPlanSummary {
+            LioPlanSummary(tripID: id, tripVersion: 1, title: id, startDate: start, undated: start == nil, days: [])
+        }
+        let today = try #require(LioArrivalDay("2026-12-01"))
+        // Newest first, as the saved list keeps them.
+        let plans = [plan("later", "2026-12-20"), plan("past", "2026-11-20"), plan("undated", nil), plan("sooner", "2026-12-05")]
+        #expect(LioToolCatalog.arrivalPlan(plans, today: today)?.tripID == "sooner")
+        #expect(LioToolCatalog.arrivalPlan([plan("past", "2026-11-20"), plan("undated", nil)], today: today)?.tripID == "past")
+        #expect(LioToolCatalog.arrivalPlan([plan("today", "2026-12-01")], today: today)?.tripID == "today")
+        #expect(LioToolCatalog.arrivalPlan([], today: today) == nil)
+    }
+
     @Test func flagValuesOtherThanYESKeepEverythingOff() {
         for value: Any? in [nil, "", "NO", "yes", "$(G2C_ARRIVAL_MODE_ENABLED)", true, 1] {
             #expect(!LioArrivalFeature.enabled(infoValue: value))
