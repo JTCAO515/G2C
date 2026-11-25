@@ -158,7 +158,8 @@ struct LioMetroMapDataTests {
                                        ("huhehaote", "呼和浩特东站", "Hohhot Dongzhan"), ("dalian", "革镇堡", "Gezhenpu"),
                                        ("dalian", "和平路", "Heping Road"), ("wulumuqi", "大地窝堡", "Dadiwopu"),
                                        ("suzhou", "尹山湖", "Yinshanhu"), ("nanjing", "小行", "Xiaohang"),
-                                       ("nanjing", "湖北路·二中", "Hubeilu · Erzhong")] {
+                                       ("nanjing", "湖北路·二中", "Hubeilu · Erzhong"),
+                                       ("nanjing", "南京站", "Nanjing Railway Station"), ("wuxi", "北栅口", "Beizhakou")] {
             guard let city = LioMetroCity.named(id) else { continue }
             #expect(try LioMetroMap.bundled(city).stations.first { $0.nameZH == station }?.nameEN == english, "\(id) \(station)")
         }
