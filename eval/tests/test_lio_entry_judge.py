@@ -12,10 +12,12 @@ from eval.lio_entry_judge import (ENTRY_CASES, JudgeUnavailable, country_rules, 
 
 class EntryJudge(unittest.TestCase):
     def test_country_rules_come_from_the_landing_mode_file(self):
-        uk, us = country_rules('GB'), country_rules('US')
-        self.assertIn('30', uk) and self.assertIn('transit-240h', uk)
-        self.assertIn('65', us)
-        self.assertNotIn('uk-canada-visa-free-2026', us)
+        uk, us = json.loads(country_rules('GB')), json.loads(country_rules('US'))
+        self.assertEqual([p['id'] for p in uk['policies']], ['uk-canada-visa-free-2026', 'transit-240h'])
+        self.assertEqual([p['id'] for p in us['policies']], ['transit-240h'])
+        self.assertEqual(us['otherwise'], 'visa_required')
+        self.assertIn('complete', us['note'])
+        self.assertIn('57', json.dumps(us['policies'][0]['sources'], ensure_ascii=False))
         self.assertEqual(ENTRY_CASES, {'transit-visa-zh': 'US', 'visa-uk-en': 'GB'})
 
     def test_request_carries_rules_and_answer_but_no_key(self):
@@ -24,14 +26,16 @@ class EntryJudge(unittest.TestCase):
         self.assertEqual(body['temperature'], 0)
         system, user = body['messages'][0]['content'], body['messages'][1]['content']
         self.assertIn('contradicts', system)
+        self.assertIn('complete set', system)
+        self.assertIn('144', system)
         self.assertIn('uk-canada-visa-free-2026', user)
-        self.assertIn('A plain 10-day trip needs a visa.', user)
+        self.assertIn('<answer>\nA plain 10-day trip needs a visa.\n</answer>', user)
         self.assertNotIn('Authorization', json.dumps(body))
 
     def test_verdict_parsing_is_strict(self):
         self.assertEqual(parse_verdict('{"contradicts": true, "sentence": "x"}'), (True, 'x'))
         self.assertEqual(parse_verdict('{"contradicts": false, "sentence": ""}'), (False, ''))
-        for raw in ('', 'yes', '{"contradicts": "true"}', '{"sentence": "x"}', '[1]'):
+        for raw in ('', 'yes', '{"contradicts": "true"}', '{"sentence": "x"}', '[1]', '{"contradicts": true, "sentence": 5}'):
             with self.subTest(raw=raw), self.assertRaises(JudgeUnavailable):
                 parse_verdict(raw)
 
@@ -42,6 +46,13 @@ class EntryJudge(unittest.TestCase):
         result = validate(rows, lambda country, text: (verdicts[text], ''))
         self.assertEqual((result['total'], result['accuracy'], result['false_alarms'], result['misses']), (4, 0.5, 1, 1))
         self.assertEqual(result['false_alarm_rows'], [dict(country='US', text='ok2')])
+        # A failed call is counted apart, never as a pass, and does not stop the run.
+        def flaky(country, text):
+            if text == 'bad':
+                raise JudgeUnavailable('judge output is not JSON')
+            return verdicts[text], ''
+        partial = validate(rows, flaky)
+        self.assertEqual((partial['judged'], partial['unavailable'], partial['accuracy']), (3, 1, round(1 / 3, 3)))
 
     def test_score_answers_judges_only_entry_cases(self):
         seen = []
@@ -54,8 +65,9 @@ class EntryJudge(unittest.TestCase):
         self.assertEqual(sorted(seen), ['GB', 'US'])
         self.assertEqual(result['entry_facts'], {'transit-visa-zh': True, 'visa-uk-en': False})
         self.assertEqual(result['rate'], 0.5)
+        self.assertEqual(score_answers({'alipay-zh': 'x'}, judge)['missing'], ['transit-visa-zh', 'visa-uk-en'])
 
-    def test_cli_requires_the_key_and_never_prints_it(self):
+    def test_cli_requires_the_key(self):
         with tempfile.TemporaryDirectory() as folder:
             path = os.path.join(folder, 'answers.json')
             with open(path, 'w') as handle:
