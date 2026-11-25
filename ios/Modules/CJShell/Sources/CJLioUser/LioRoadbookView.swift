@@ -134,7 +134,9 @@ struct LioRoadbookView: View {
     @State private var filled: [String: LioRoadbookDetail] = [:]
     @State private var filling = false
     @State private var expanded: Set<String> = []
-    @State private var filler: Task<Void, Never>?
+    /// Owns the fill-in task: it is cancelled only when this roadbook screen goes away for good, not when
+    /// another screen (Local Support, the driver card) covers it, so a request in flight is never thrown away.
+    @State private var filler = LioRoadbookFillTask()
     @Environment(\.lioTaxiEntry) private var taxiEntry
     #if os(iOS)
     @Environment(\.lioRoadbookEnricher) private var enricher
@@ -187,10 +189,7 @@ struct LioRoadbookView: View {
         .sheet(item: $shared, onDismiss: LioRoadbookPDF.removeExports) { file in
             LioRoadbookShareSheet(items: [file.url]).ignoresSafeArea()
         }
-        .onDisappear {
-            LioRoadbookPDF.removeExports()
-            filler?.cancel()  // later batches are not sent once the roadbook closes
-        }
+        .onDisappear(perform: LioRoadbookPDF.removeExports)
         .sheet(item: $taxiPlace) { place in
             if let taxiEntry {
                 NavigationStack {
@@ -527,7 +526,7 @@ struct LioRoadbookView: View {
         filling = true
         notice = nil
         let batches = LioRoadbookWire.batches(book.placesToFillIn())
-        filler = Task {
+        filler.task = Task {
             defer { filling = false }
             var limited = false, missing = false
             for batch in batches {
@@ -544,6 +543,8 @@ struct LioRoadbookView: View {
                 } catch let failure as LioRoadbookFailure {
                     notice = failure.message(language)
                     break
+                } catch is CancellationError {
+                    break  // the screen closed or the session changed: nothing to tell
                 } catch {
                     notice = LioRoadbookFailure.unavailable.message(language)
                     break
@@ -554,7 +555,11 @@ struct LioRoadbookView: View {
             else if notice == nil, missing {
                 notice = language.text("Some places couldn’t be filled in.", "部分地点暂时无法补充。")
             }
-            if kept, let store { try? store.save(book) }
+            if kept, let store {
+                // Keep the time the copy was first kept, not the route's own date.
+                let keptAt = store.load().first { $0.id == book.id }?.createdAt ?? .now
+                try? store.save(book.kept(at: keptAt))
+            }
         }
     }
     #endif
