@@ -149,11 +149,18 @@ class OneScreenEntryFacts(unittest.TestCase):
     """Preview 2026-11-25: a capped transit-visa answer invented "不得跨市旅行". Under one-screen,
     entry rules come only from supplied official facts (docs/lio-voice.md §4.3 item 9)."""
 
+    def test_the_memory_ban_holds_whether_or_not_facts_are_supplied(self):
+        # #1663 review: the ban must be its own sentence, not a tail of the "no facts" case.
+        from cj_message.lio_context import ONE_SCREEN_DETAIL
+        ban = 'Never state rule details such as permitted areas, ports or eligible countries from memory.'
+        self.assertIn(ban, ONE_SCREEN_DETAIL)
+        self.assertLess(ONE_SCREEN_DETAIL.index(ban), ONE_SCREEN_DETAIL.index('If no official facts are supplied'))
+
     def test_entry_answers_give_the_conclusion_and_where_to_confirm(self):
         from cj_message.lio_context import ONE_SCREEN_DETAIL
         for clause in ('For visa, entry and transit questions',
                        'only from supplied official facts',
-                       'never state rule details such as permitted areas, ports or eligible countries from memory',
+                       'rule details such as permitted areas, ports or eligible countries from memory',
                        'say where to confirm',
                        'If no official facts are supplied, say that the rule depends on the passport and trip'):
             with self.subTest(clause=clause):
