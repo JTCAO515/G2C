@@ -128,7 +128,7 @@ struct LioRoadbookArchive: Codable, Equatable, Sendable {
 /// Roadbooks kept on this phone inside the signed-in account's message folder (like taxi recents and
 /// translation history), so they go with the account's local data: protected on disk, left out of backups,
 /// never uploaded. One JSON file per roadbook, named by a hash so an id never becomes a path.
-struct LioRoadbookStore: Sendable {
+@MainActor struct LioRoadbookStore {
     enum Failure: Error, Equatable { case notCurrent }
 
     static let directoryName = "roadbooks"
@@ -139,9 +139,9 @@ struct LioRoadbookStore: Sendable {
 
     let directory: URL
     /// False once the account that owns the folder has signed out or changed.
-    let isCurrent: @Sendable () -> Bool
+    let isCurrent: @MainActor () -> Bool
 
-    init(directory: URL, isCurrent: @escaping @Sendable () -> Bool = { true }) {
+    init(directory: URL, isCurrent: @escaping @MainActor () -> Bool = { true }) {
         self.directory = directory
         self.isCurrent = isCurrent
     }

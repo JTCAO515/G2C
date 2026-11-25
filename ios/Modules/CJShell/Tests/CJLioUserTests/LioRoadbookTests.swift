@@ -5,7 +5,7 @@ import Testing
 
 /// #1514: the travel roadbook reads the same `LioRichItinerary` as the day-by-day plan (#1453),
 /// splits each day into morning / afternoon / evening, keeps an on-device copy and exports a PDF on the device.
-struct LioRoadbookTests {
+@MainActor struct LioRoadbookTests {
     static func place(_ zh: String, _ en: String, matched: Bool = true, address: String? = "北京市东城区景山前街4号",
                       point: LioItinerary.Point? = .init(latitude: 39.9163, longitude: 116.3972)) -> LioRichItinerary.Place {
         .init(nameZH: zh, nameEN: en, address: address, matched: matched, point: point)
@@ -246,7 +246,7 @@ struct LioRoadbookTests {
 }
 
 /// Review follow-ups on #1524: per-account folder, signed-out guard, tighter files, one export at a time.
-struct LioRoadbookStorageHardeningTests {
+@MainActor struct LioRoadbookStorageHardeningTests {
     @Test func copiesLiveInTheAccountsMessageFolder() {
         let account = URL(fileURLWithPath: "/tmp/account-a", isDirectory: true)
         #expect(LioRoadbookStore.storageDirectory(inMessageDirectory: account).lastPathComponent == "roadbooks")
