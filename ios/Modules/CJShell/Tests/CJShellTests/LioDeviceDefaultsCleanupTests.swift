@@ -37,22 +37,19 @@ struct LioDeviceDefaultsCleanupTests {
         }
     }
 
-    /// The cleanup names the keys the views actually store; a renamed key would otherwise survive deletion.
-    @Test func keysMatchTheStoredValuesInTheViews() throws {
+    /// The cleanup names the keys the app actually stores (as `@AppStorage` literals or named constants);
+    /// a renamed key would otherwise survive deletion.
+    @Test func keysMatchTheStoredValuesInTheApp() throws {
         var root = URL(fileURLWithPath: #filePath)
         for _ in 0..<3 { root.deleteLastPathComponent() }
         let sources = root.appendingPathComponent("Sources/CJLioUser")
-        let local = try String(contentsOf: sources.appendingPathComponent("LioLocalSupportView.swift"), encoding: .utf8)
-        let arrival = try String(contentsOf: sources.appendingPathComponent("LioArrivalView.swift"), encoding: .utf8)
-        #expect(local.contains("@AppStorage(\"lio.local-support.nationality\")"))
-        #expect(arrival.contains("@AppStorage(\"lio.arrival.progress.v1\")"))
-        #expect(arrival.contains("@AppStorage(\"lio.local-support.nationality\")"))
-        // No other view stores these values under a different key.
-        let all = try FileManager.default.contentsOfDirectory(atPath: sources.path).filter { $0.hasSuffix(".swift") }
-        for name in all {
-            let text = try String(contentsOf: sources.appendingPathComponent(name), encoding: .utf8)
-            #expect(!text.contains("lio.arrival.progress.v2"), "\(name)")
-            #expect(!text.contains("lio.local-support.nationality.v"), "\(name)")
+        let files = try FileManager.default.contentsOfDirectory(atPath: sources.path).filter { $0.hasSuffix(".swift") }
+        let text = try files.map { try String(contentsOf: sources.appendingPathComponent($0), encoding: .utf8) }.joined()
+        for key in LioDeviceDefaultsCleanup.keys {
+            #expect(text.contains("\"" + key + "\""), "\(key) is no longer stored by the app")
         }
+        // No other version of these values is stored that the cleanup would miss.
+        #expect(!text.contains("lio.arrival.progress.v2"))
+        #expect(!text.contains("lio.local-support.nationality.v"))
     }
 }
