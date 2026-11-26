@@ -220,6 +220,16 @@ class LioLayout:
 
 
 @dataclass(frozen=True)
+class LioDestination:
+    """The one place a map tool returned in this answer (#1727): data for a taxi button, never persisted
+    by itself. Only the worker's answer path asks for it; names and coordinates are the tool's, not the model's."""
+    name_zh: str
+    location: str  # "lng,lat" GCJ-02
+    address_zh: str | None = None
+    name_en: str | None = None
+
+
+@dataclass(frozen=True)
 class LioFollowups:
     """The answer's fixed action buttons and tap-to-ask chips (#1727); the payload is built by `lio_followups`."""
     payload: dict

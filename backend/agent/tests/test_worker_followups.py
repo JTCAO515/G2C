@@ -4,7 +4,7 @@ import os
 from unittest.mock import patch
 
 from cj_agent.worker import RunWorker
-from cj_message.lio_context import FOLLOWUPS_EFFECT, LAYOUT_EFFECT, LioLayout, LioOriginal
+from cj_message.lio_context import FOLLOWUPS_EFFECT, LAYOUT_EFFECT, LioDestination, LioLayout, LioOriginal
 from cj_run.core import Binding, Service
 from cj_run.fixture import MemoryRepository
 from test_worker_cancel import Drafts
@@ -30,19 +30,20 @@ class Messages(BaseMessages):
 class Tools:
     commits_layout = True
 
-    def __init__(self, layout, text):
-        self.layout, self.text = layout, text
+    def __init__(self, layout, text, destinations=()):
+        self.layout, self.text, self.destinations = layout, text, destinations
     def answer(self, worker, binding, inputs, **kwargs):
         self.kwargs = kwargs
         if self.layout is not None:
             yield LioLayout(self.layout)
+        yield from self.destinations
         yield self.text
 
 
-def run(question, answer, layout, locale='zh', issue=None):
+def run(question, answer, layout, locale='zh', issue=None, destinations=()):
     runs = Service(MemoryRepository(), lambda _: True)
     messages = Messages(question, issue)
-    worker = RunWorker(scope='scope', messages=messages, runs=runs, provider=None, tools=Tools(layout, answer),
+    worker = RunWorker(scope='scope', messages=messages, runs=runs, provider=None, tools=Tools(layout, answer, destinations),
                        drafts=Drafts(), lio_original=lambda binding: LioOriginal(locale, None))
     outcome, = worker.process()
     run.last_messages = messages
@@ -119,3 +120,32 @@ def test_a_question_with_chips_but_no_button_still_gets_a_followups_record():
     # a "taxi" question with no tool destination has the plain taxi button and taxi chips
     status, state = run('怎么打车去机场', '可以用滴滴。', 'split', issue=['d' * 43, 'e' * 43, 'f' * 43])
     assert status == 'completed' and payload(state)['chips'][0]['ticket'] == 'd' * 43
+
+
+PALACE = LioDestination('故宫博物院', '116.397026,39.918058', '景山前街4号', 'The Palace Museum')
+
+
+def taxi_params(state):
+    return payload(state)['actions'][-1]
+
+
+def test_one_place_from_the_map_tools_gives_the_taxi_button_its_destination():
+    status, state = run('怎么打车去故宫', '可以打车。', 'split', destinations=(PALACE,))
+    button = taxi_params(state)
+    assert status == 'completed' and button['tool'] == 'taxi' and button['label'] == '打车去这里'
+    assert button['parameters'] == {'destination': '故宫博物院', 'lat': '39.918058', 'lng': '116.397026',
+                                    'address': '景山前街4号', 'destinationEN': 'The Palace Museum'}
+    # the same place twice is still one place
+    assert taxi_params(run('怎么打车去故宫', '可以打车。', 'split', destinations=(PALACE, PALACE))[1])['label'] == '打车去这里'
+
+
+def test_two_different_places_or_none_give_the_plain_taxi_button():
+    other = LioDestination('景山公园', '116.396,39.926')
+    for places in ((), (PALACE, other)):
+        button = taxi_params(run('怎么打车去故宫', '可以打车。', 'split', destinations=places)[1])
+        assert (button['label'], button['parameters']) == ('打车', {})
+
+
+def test_a_place_does_not_make_a_button_for_a_question_that_is_not_about_a_taxi():
+    status, state = run('故宫几点开门', '九点。', 'split', destinations=(PALACE,))
+    assert status == 'completed' and state.effects == (LAYOUT_EFFECT + 'split',)
