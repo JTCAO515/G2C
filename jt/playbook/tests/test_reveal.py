@@ -58,6 +58,7 @@ def test_default_mask_and_successful_request_then_reveal_return_audit(scenario):
     assert result.audit.field_name is RevealField.CONTACT_PHONE
     assert result.audit.reason is REASON
     assert SYNTHETIC_VALUE not in repr(result) and SYNTHETIC_VALUE not in repr(result.audit)
+    assert str(approved.grant.grant_id) not in repr(approved)
     assert str(approved.grant.grant_id) not in repr(result.audit)
 
 

@@ -64,7 +64,7 @@ class RevealActor:
 
 @dataclass(frozen=True)
 class RevealGrant:
-    grant_id: UUID
+    grant_id: UUID = field(repr=False)
     case_id: UUID
     actor_id: str
     step_id: str
