@@ -49,12 +49,18 @@ struct LioHotelOffersView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var typeSize
 
-    /// `city` fills the city field when a route opens the page (#1724); nothing is searched until the traveller
-    /// taps search.
-    init(language: LioLanguage, finder: LioHotelFinder, city: String = "") {
+    /// `city` fills the city field when a route opens the page (#1724); `checkIn` and `nights` come from the
+    /// travel profile (#1739). Nothing is searched until the traveller taps search.
+    init(language: LioLanguage, finder: LioHotelFinder, city: String = "", checkIn: LioTripDay? = nil,
+         nights: Int? = nil) {
         self.language = language
         self.finder = finder
         _city = State(initialValue: city)
+        if let checkIn {
+            let start = checkIn.start(in: LioHotelSearch.calendar.timeZone)
+            _checkIn = State(initialValue: start)
+            _checkOut = State(initialValue: LioHotelSearch.calendar.date(byAdding: .day, value: max(nights ?? 1, 1), to: start) ?? start)
+        }
     }
 
     private var stacked: Bool { LioHotelLayout.stacksControls(at: typeSize) }

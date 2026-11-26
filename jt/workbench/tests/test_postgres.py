@@ -19,14 +19,16 @@ import pytest
 from fastapi.testclient import TestClient
 from psycopg.conninfo import make_conninfo
 
-from jt.synthetic import generate_dataset
+from jt.synthetic import generate_dataset, generate_demo_dataset
 from jt.workbench import __main__ as local_cli, production
 from jt.workbench.app import HEALTH_HOST, ProxyEntry, SESSION_COOKIE, create_app
 from jt.workbench.auth import SESSION_IDLE, AccessDenied, AccountAction, Auth, AuthenticationRequired, InvalidAccount
 from jt.workbench.postgres import PostgresStore, migrate
 from jt.workbench.queue import Review
-from jt.workbench.security import totp_at_step
-from jt.workbench.store import AuditAction, AuditEvent, AuditResult, CaseAuditDetail, MemoryStore
+from jt.workbench.security import new_token, token_digest, totp_at_step
+from jt.workbench.store import (
+    Account, AuditAction, AuditEvent, AuditResult, CaseAuditDetail, MemoryStore, OperationsAuditDetail, Role, Session,
+)
 
 
 ORIGIN = "https://127.0.0.1:8443"
@@ -254,15 +256,17 @@ def test_expired_session_cannot_return_after_clock_moves_back(database):
 
 
 
-def unix_request(path, host, target, *, proto=()):
+def unix_request(path, host, target, *, proto=(), session_token=None, body=False):
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
         sock.settimeout(3)
         sock.connect(str(path))
         forwarded = "".join(f"X-Forwarded-Proto: {value}\r\n" for value in proto)
-        sock.sendall(f"GET {target} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n{forwarded}\r\n".encode())
+        cookie = f"Cookie: {SESSION_COOKIE}={session_token}\r\n" if session_token else ""
+        sock.sendall(f"GET {target} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n{forwarded}{cookie}\r\n".encode())
         with sock.makefile("rb") as response:
-            head = response.read()
-    return head.split(b"\r\n\r\n", 1)[0].decode().lower()
+            raw = response.read()
+    head, _, content = raw.partition(b"\r\n\r\n")
+    return content.decode() if body else head.decode().lower()
 
 
 def test_production_commands_and_socket_boundary(database, monkeypatch):
@@ -323,6 +327,23 @@ def test_production_commands_and_socket_boundary(database, monkeypatch):
                     assert unix_request(path, host, "/login", proto=claimed).startswith("http/1.1 400 ")
                 assert unix_request(path, "outside.example", "/login", proto=("https",)).startswith("http/1.1 400 ")
                 assert unix_request(path, host, "/bootstrap-admin", proto=("https",)).startswith("http/1.1 404 ")
+                demo = generate_demo_dataset()
+                with psycopg.connect(runtime) as db:
+                    assert {row[0] for row in db.execute("SELECT signal_id FROM jt_workbench.signals")} == {
+                        item.signal_id for item in demo.signals
+                    }
+                store = PostgresStore(runtime)
+                token = new_token()
+                with store.locked():
+                    assert all(event.action != AuditAction.DECIDE for event in store.audit_events())
+                    store.save_account(Account("synthetic-operator", Role.OPERATOR))
+                    now = store.clock()
+                    store.save_session(token_digest(token),
+                                       Session("synthetic-operator", Role.OPERATOR, new_token(), now + 600, now + 600))
+                case_list = unix_request(path, host, "/cases", proto=("https",), session_token=token, body=True)
+                assert "广州商务陪同时段变更" in case_list and "演示数据" in case_list
+                for execution in demo.cases:
+                    assert f"/cases/{execution.case.case_id}/claim" in case_list
             finally:
                 server.terminate()
                 server.wait(timeout=8)
@@ -390,3 +411,52 @@ def test_case_audit_migrates_from_v1_and_remains_append_only(database):
     with pytest.raises(psycopg.errors.RaiseException, match="populated"):
         migrate(owner, down=True)
     reopened.check_ready()
+
+
+def test_demo_bootstrap_command_binds_web_and_operations_audit_persists(database, monkeypatch, capsys):
+    owner, runtime = database
+    # Model an upgrade from the case workbench that already had durable records.
+    migrations = Path(__file__).resolve().parents[1] / "migrations"
+    with psycopg.connect(owner) as db:
+        db.execute((migrations / "001_up.sql").read_text())
+        db.execute((migrations / "002_up.sql").read_text())
+    migrate(owner)
+    store = PostgresStore(runtime)
+    store.check_ready()
+    monkeypatch.setenv(production.DATABASE_VARIABLE, runtime)
+    monkeypatch.setattr(sys, "argv", ["production", "bootstrap-admin-code", "--username", ADMIN])
+    monkeypatch.setattr(production.sys.stdout, "isatty", lambda: False)
+    with pytest.raises(SystemExit) as non_interactive:
+        production.main()
+    assert non_interactive.value.code == 2
+    with store.locked():
+        assert store.accounts() == ()
+    monkeypatch.setattr(production.sys.stdout, "isatty", lambda: True)
+    production.main()
+    synthetic_setup_code = capsys.readouterr().out.splitlines()[-1]
+    auth = Auth(store, clock=store.clock, monotonic=store.clock)
+    with TestClient(create_app(auth), base_url=ORIGIN, follow_redirects=False) as browser:
+        setup = browser.get("/setup")
+        nonce = re.search(r'name="csrf" value="([^"]+)"', setup.text).group(1)
+        response = browser.post("/setup", headers={"Origin": ORIGIN}, data={
+            "username": ADMIN, "password": PASSWORD, "seed": seed_text(SEED),
+            "setup_code": synthetic_setup_code, "csrf": nonce,
+            "code": totp_at_step(SEED, int(time.time()) // 30),
+        })
+        assert "设置完成" in response.text
+        assert PASSWORD not in response.text and synthetic_setup_code not in response.text
+    with pytest.raises(SystemExit) as already_bound:
+        production.main()
+    assert already_bound.value.code == 1
+    assert synthetic_setup_code not in capsys.readouterr().out
+
+    detail = OperationsAuditDetail("request:accepted", "sr_demo_01")
+    with store.locked():
+        store.append_audit(AuditEvent(store.clock(), AuditAction.DECIDE, ADMIN, operations_detail=detail))
+    reopened = PostgresStore(runtime)
+    with reopened.locked():
+        assert reopened.audit_events()[-1].operations_detail == detail
+    with psycopg.connect(runtime, autocommit=True) as db:
+        assert db.execute("SELECT version FROM jt_workbench.case_audit_version").fetchall() == [(2,)]
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            db.execute("UPDATE jt_workbench.audit SET operations_action = 'request:completed'")

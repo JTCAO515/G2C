@@ -55,6 +55,12 @@ struct DemoBetaRootView: View {
                 .lioNationality(trip.messages.lioNationality)
                 // #1922: sight booking reminders are set and read under this account's own identifier prefix.
                 .lioReminderScope(trip.messages.lioReminderScope)
+                .lioToolServices(LioToolServices().with(LioTravelProfileSource.device(
+                    messageDirectory: trip.messages.lioMessageDirectory, savedPlans: trip.messages.lioSavedPlans,
+                    tripHome: trip.messages.lioTripHomeStore, isCurrent: {
+                        guard case .signedIn = root.accounts.state else { return false }
+                        return root.trip === trip
+                    })))
                 .id(root.lioPresentationID)
             } else if root.accounts.isResuming {
                 LioSessionRecoveryView(language: shell.language.lio,

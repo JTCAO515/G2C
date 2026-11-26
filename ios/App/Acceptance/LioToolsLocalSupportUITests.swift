@@ -123,11 +123,21 @@ import XCTest
                 for _ in 0..<6 where !entry.isHittable { app.swipeUp() }
                 XCTAssertTrue(entry.isHittable)
                 entry.tap()
-                let chinese = app.staticTexts["lio.support.help-card.chinese"]
+                // #1742: the help cards are Show Cards' help list; each opens the one full-screen show card.
+                let general = app.buttons["lio.support.help-card.message.assistance"]
+                XCTAssertTrue(general.waitForExistence(timeout: 6))
+                try app.performAccessibilityAudit(for: .all)
+                general.tap()
+                let chinese = app.staticTexts["lio.support.help-card.name"]
                 XCTAssertTrue(chinese.waitForExistence(timeout: 6))
                 XCTAssertEqual(chinese.label, "我需要帮助，可以帮我一下吗？")
-                app.buttons["lio.support.help-card.message"].tap()
-                app.buttons[language == "en" ? "Language help" : "语言协助"].tap()
+                XCTAssertTrue(app.staticTexts["lio.support.help-card.english"].exists)
+                app.buttons["lio.support.help-card.done"].tap()
+                let languageHelp = app.buttons["lio.support.help-card.message.interpreter"]
+                XCTAssertTrue(languageHelp.waitForExistence(timeout: 6))
+                XCTAssertTrue(languageHelp.label.contains(language == "en" ? "Language help" : "语言协助"), languageHelp.label)
+                languageHelp.tap()
+                XCTAssertTrue(chinese.waitForExistence(timeout: 6))
                 XCTAssertEqual(chinese.label, "我不会说中文，可以帮我找一位会说英语的人吗？")
                 XCTAssertTrue(app.staticTexts["lio.support.help-card.english"].exists)
                 XCTAssertFalse(app.buttons["lio.support.police"].isHittable)

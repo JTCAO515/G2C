@@ -92,10 +92,12 @@ def test_all_198_short_invites_map_to_distinct_subjects():
                for code,subject in zip(codes,subjects,strict=True))
 
 
-def test_approved_206_explicit_demo_subjects_remain_bounded(monkeypatch):
+def test_approved_256_explicit_demo_subjects_remain_bounded(monkeypatch):
+    # #1749: bound raised from 206 to 256 (coordinator 2026-11-26 under JT pre-authorization).
     from deploy.hk import configuration
+    assert configuration.MAX_DEMO_SUBJECTS==256
     monkeypatch.setattr(configuration,'local_database_target',lambda:True)
-    subjects=['m4-synthetic-demo-'+format(i,'012x') for i in range(205)]
+    subjects=['m4-synthetic-demo-'+format(i,'012x') for i in range(255)]
     monkeypatch.setenv('CJ_BETA_SUBJECTS_JSON',json.dumps(subjects))
     monkeypatch.setenv(configuration.DEMO_SUBJECTS,json.dumps(subjects))
     assert configuration.beta_subjects()==(subjects,frozenset(subjects))

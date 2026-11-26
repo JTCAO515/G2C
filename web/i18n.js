@@ -96,6 +96,19 @@ window.G2C = {
     ]
    },
    "credits": "Photo credits",
+   "privacyLink": "Privacy policy",
+   "privacyPage": {
+    "title": "Privacy policy",
+    "back": "Back to go2china.space",
+    "fallback": ""
+   },
+   "eaPolicy": {
+    "before": "By applying, you confirm you’ve read our ",
+    "link": "privacy policy",
+    "after": ". Your application is processed by Jotform in the United States."
+   },
+   "eaAbroad": "I agree to my information being processed outside mainland China (Hong Kong, China and the United States).",
+   "eaAbroadBad": "Please tick the box to agree to your information being processed outside mainland China (Hong Kong, China and the United States).",
    "online": "Your personal agent",
    "inputHint": "Ask anything about your trip…",
    "suggest": [
@@ -314,6 +327,19 @@ window.G2C = {
     ]
    },
    "credits": "图片来源",
+   "privacyLink": "隐私政策",
+   "privacyPage": {
+    "title": "隐私政策",
+    "back": "返回 go2china.space",
+    "fallback": ""
+   },
+   "eaPolicy": {
+    "before": "提交即表示你已阅读",
+    "link": "隐私政策",
+    "after": "，你的申请会由 Jotform（美国）处理。"
+   },
+   "eaAbroad": "我同意传到中国大陆以外（中国香港和美国）处理。",
+   "eaAbroadBad": "请勾选同意传到中国大陆以外（中国香港和美国）处理。",
    "online": "你的私人助理",
    "inputHint": "问问关于行程的任何事…",
    "suggest": [
@@ -532,6 +558,19 @@ window.G2C = {
     ]
    },
    "credits": "Авторы фотографий",
+   "privacyLink": "Политика конфиденциальности",
+   "privacyPage": {
+    "title": "Политика конфиденциальности",
+    "back": "Вернуться на go2china.space",
+    "fallback": "Политика конфиденциальности опубликована только на китайском и английском языках, поэтому она показана на английском."
+   },
+   "eaPolicy": {
+    "before": "Отправляя заявку, вы подтверждаете, что прочитали ",
+    "link": "политику конфиденциальности",
+    "after": ". Вашу заявку обрабатывает Jotform в США."
+   },
+   "eaAbroad": "Я согласен(на) на обработку моих данных за пределами материкового Китая (в Гонконге (Китай) и в США).",
+   "eaAbroadBad": "Отметьте согласие на обработку ваших данных за пределами материкового Китая (в Гонконге (Китай) и в США).",
    "online": "Ваш личный помощник",
    "inputHint": "Спросите о поездке…",
    "suggest": [
@@ -750,6 +789,19 @@ window.G2C = {
     ]
    },
    "credits": "Créditos de las fotos",
+   "privacyLink": "Política de privacidad",
+   "privacyPage": {
+    "title": "Política de privacidad",
+    "back": "Volver a go2china.space",
+    "fallback": "La política de privacidad solo se publica en chino e inglés, por eso se muestra en inglés."
+   },
+   "eaPolicy": {
+    "before": "Al enviar la solicitud confirmas que has leído nuestra ",
+    "link": "política de privacidad",
+    "after": ". Tu solicitud la procesa Jotform en Estados Unidos."
+   },
+   "eaAbroad": "Acepto que mis datos se traten fuera de China continental (en Hong Kong, China, y en Estados Unidos).",
+   "eaAbroadBad": "Marca la casilla para aceptar que tus datos se traten fuera de China continental (en Hong Kong, China, y en Estados Unidos).",
    "online": "Tu asistente personal",
    "inputHint": "Pregunta sobre tu viaje…",
    "suggest": [
@@ -968,6 +1020,19 @@ window.G2C = {
     ]
    },
    "credits": "Crédits photo",
+   "privacyLink": "Politique de confidentialité",
+   "privacyPage": {
+    "title": "Politique de confidentialité",
+    "back": "Retour à go2china.space",
+    "fallback": "La politique de confidentialité n’est publiée qu’en chinois et en anglais ; elle s’affiche donc en anglais."
+   },
+   "eaPolicy": {
+    "before": "En envoyant votre demande, vous confirmez avoir lu notre ",
+    "link": "politique de confidentialité",
+    "after": ". Votre demande est traitée par Jotform aux États-Unis."
+   },
+   "eaAbroad": "J’accepte que mes informations soient traitées hors de Chine continentale (à Hong Kong, Chine, et aux États-Unis).",
+   "eaAbroadBad": "Cochez la case pour accepter que vos informations soient traitées hors de Chine continentale (à Hong Kong, Chine, et aux États-Unis).",
    "online": "Votre assistant personnel",
    "inputHint": "Posez une question sur votre voyage…",
    "suggest": [
@@ -1186,6 +1251,19 @@ window.G2C = {
     ]
    },
    "credits": "مصادر الصور",
+   "privacyLink": "سياسة الخصوصية",
+   "privacyPage": {
+    "title": "سياسة الخصوصية",
+    "back": "العودة إلى go2china.space",
+    "fallback": "تُنشر سياسة الخصوصية باللغتين الصينية والإنجليزية فقط، لذلك تُعرض باللغة الإنجليزية."
+   },
+   "eaPolicy": {
+    "before": "بإرسال الطلب تؤكد أنك قرأت ",
+    "link": "سياسة الخصوصية",
+    "after": ". تعالج Jotform طلبك في الولايات المتحدة."
+   },
+   "eaAbroad": "أوافق على معالجة معلوماتي خارج البر الرئيسي الصيني (في هونغ كونغ، الصين، وفي الولايات المتحدة).",
+   "eaAbroadBad": "يرجى تحديد المربع للموافقة على معالجة معلوماتك خارج البر الرئيسي الصيني (في هونغ كونغ، الصين، وفي الولايات المتحدة).",
    "online": "مساعدك الشخصي",
    "inputHint": "اسأل عن رحلتك…",
    "suggest": [

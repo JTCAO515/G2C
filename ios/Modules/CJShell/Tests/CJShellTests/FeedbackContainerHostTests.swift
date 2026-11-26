@@ -215,7 +215,8 @@ private actor FeedbackHostTransport: ClientTransport {
         } else {
             guard case .case2 = model.receipt?.source else { Issue.record("General feedback acquired source"); return }
         }
-        #expect(try store.pending().first?.originalUTF8 == original.originalUTF8)
+        // #1855: the receipt matched the stored original, so the device's copy is removed; the recovery only ever read.
+        #expect(try store.pending().isEmpty)
         #expect(await t.calls.allSatisfy { $0.1 == .get }); #expect(await t.calls.count == 1)
     }
     @Test(arguments: ["null", "wrong-hash", "cancel"])

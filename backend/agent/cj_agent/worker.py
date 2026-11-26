@@ -294,7 +294,8 @@ class RunWorker:
         yield from self._stream_source(binding,source,draft=draft)
 
     def _registered_stream(self,binding,key,registration,argument,*,progress=None,message_refs=()):
-        if self.memory_history and registration=='model.lio_exploration.1':
+        # W2-8 (#1738): the task call also carries earlier originals, so its refs join the fence.
+        if self.memory_history and registration in ('model.lio_exploration.1','model.lio_tasks.1'):
             import json
             self._model_history(binding,json.loads(argument.messages),argument.system,message_refs=message_refs)
         if self.memory_history and registration in ('model.answer','model.draft','model.lio_intake.1','model.lio_intake.2','model.lio_intake.3','model.lio_intake.4','model.lio_intake.5','model.lio_intake.6','model.lio_intake.7','model.lio_intake.8','model.lio_intake.9'):

@@ -69,6 +69,8 @@ public struct LioHome<MenuContent: View>: View {
     @State private var feedbackPhases: [Data: LioAnswerFeedbackPhase] = [:]
     /// The text first sent for each answer's step, so a retry repeats it exactly (also after the host is rebuilt).
     @State private var feedbackTexts: [Data: [LioAnswerFeedbackStep: String]] = [:]
+    /// Lines the server confirmed, kept while this screen lives (the device's copy is removed once confirmed).
+    @State private var feedbackLedger = LioFeedbackLedger()
     @State private var feedbackDetails: FeedbackDetails?
     /// #1748: the account's in-app location choice, when the build asks for it (`G2CLocationConsentEnabled`).
     @State private var locationConsent: LioLocationConsent?
@@ -888,6 +890,9 @@ public struct LioHome<MenuContent: View>: View {
             RunReadableText(text: openingText, color: LioTheme.ink, lineSpacing: 4)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("lio.opening")
+                // #1893: the text is a UILabel, which takes no touches, so a long press never reached the menu.
+                // A clear SwiftUI layer over it receives the press; VoiceOver still reads the label underneath.
+                .overlay { Color.clear.contentShape(Rectangle()).accessibilityHidden(true) }
                 .contextMenu {
                     Button {
                         UIPasteboard.general.string = openingText
@@ -1370,6 +1375,8 @@ public struct LioHome<MenuContent: View>: View {
     private func sendFeedback(_ step: LioAnswerFeedbackStep, turnID: Data, messageID: String,
                               details: String? = nil, retry: Bool = false) {
         guard let answerFeedback, !feedbackBusy else { return }
+        let ledger = feedbackLedger
+        answerFeedback.onLineConfirmed = { messageID, text in ledger.record(messageID: messageID, text: text) }
         let text: String
         if retry {
             guard let first = feedbackTexts[turnID]?[step] else { return }
@@ -1377,6 +1384,10 @@ public struct LioHome<MenuContent: View>: View {
         } else {
             text = step == .notHelpful ? LioAnswerFeedbackFeature.problem(language) : (details ?? "")
             feedbackTexts[turnID, default: [:]][step] = text
+        }
+        if ledger.contains(messageID: messageID, text: text) {
+            feedbackPhases[turnID] = LioAnswerFeedbackPhase(.sent, after: step)
+            return
         }
         feedbackPhases[turnID] = .sending(step)
         Task { @MainActor in
@@ -1388,6 +1399,7 @@ public struct LioHome<MenuContent: View>: View {
             } else {
                 outcome = await answerFeedback.addDetails(messageID: messageID, text: text)
             }
+            if outcome == .sent { ledger.record(messageID: messageID, text: text) }
             feedbackPhases[turnID] = LioAnswerFeedbackPhase(outcome, after: step)
         }
     }

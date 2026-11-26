@@ -30,7 +30,7 @@ struct LioTool: Hashable, Sendable, RawRepresentable, CaseIterable {
     static let metro = LioTool("metro-guide")
     static let payment = LioTool("payment-guide")
     static let translation = LioTool("translation")
-    static let phrases = LioTool("phrase-cards")
+    static let showCards = LioTool("show-cards")
 
     private var entry: LioToolEntry? { LioToolRegistry.entry(for: self) }
 
@@ -195,7 +195,7 @@ enum LioToolRegistry {
             #if os(iOS)
             if let taxiEntry = context.taxiEntry {
                 LioTaxiView(language: context.language, service: taxiEntry.service, tripPlaces: taxiEntry.tripPlaces,
-                            recentStore: taxiEntry.recentStore)
+                            recentStore: taxiEntry.recentStore, destination: context.travelProfile().profile.taxiDestination)
             }
             #endif
         },
@@ -204,7 +204,10 @@ enum LioToolRegistry {
                      gate: .availability { $0.hotels }, parameters: ["city"]) { context, route in
             #if os(iOS)
             if let finder = context.hotelSearch {
-                LioHotelOffersView(language: context.language, finder: finder, city: route["city"] ?? "")
+                let (profile, today) = context.travelProfile()
+                let search = profile.hotelSearch(routeCity: route["city"], today: today)
+                LioHotelOffersView(language: context.language, finder: finder, city: search.city,
+                                   checkIn: search.checkIn, nights: search.nights)
                     // "Set as my hotel" saves to Back to Hotel only while that tool is shown.
                     .environment(\.lioReturnHotelStore, LioReturnHotelTools.storeForHotelSearch(
                         shown: LioReturnHotelTools.shownInTools, roadbookDirectory: context.roadbookDirectory,
@@ -228,8 +231,10 @@ enum LioToolRegistry {
                      gate: .availability { $0.transport }, parameters: ["from", "to"]) { context, route in
             #if os(iOS)
             if let service = LioTransportService.fromBuild() {
-                LioTransportView(language: context.language, service: service,
-                                 from: route["from"] ?? "", to: route["to"] ?? "")
+                let (profile, today) = context.travelProfile()
+                let trip = profile.transport(routeFrom: route["from"], routeTo: route["to"], today: today)
+                LioTransportView(language: context.language, service: service, from: trip.from, to: trip.to,
+                                 date: trip.date)
             }
             #endif
         },
@@ -238,7 +243,9 @@ enum LioToolRegistry {
                      summary: ("When tickets open, with reminders", "预约规则与放票提醒"),
                      gate: .availability { $0.attractionBooking }) { context, _ in
             #if os(iOS)
-            LioAttractionBookingView(language: context.language)
+            let (profile, today) = context.travelProfile()
+            let booking = profile.attractionBooking(today: today)
+            LioAttractionBookingView(language: context.language, tripCityZH: booking.cityZH, visit: booking.visit)
             #endif
         },
         LioToolEntry(.menuOrder, symbol: "fork.knife",
@@ -246,8 +253,9 @@ enum LioToolRegistry {
                      gate: .availability { $0.menuOrder }) { context, _ in
             #if os(iOS)
             if let menuService = context.menuService {
-                // Dietary memory is not read by Tools yet; the first version asks the traveller to tick needs.
-                LioMenuOrderView(language: context.language, service: menuService, memoryNotes: nil)
+                // Server memory is not read by Tools; the show-card allergies saved on this device are ticked (#1739).
+                LioMenuOrderView(language: context.language, service: menuService, memoryNotes: nil,
+                                 needs: context.travelProfile().profile.menuNeeds)
             }
             #endif
         },
@@ -292,10 +300,14 @@ enum LioToolRegistry {
             }, relay: context.translationRelay)
             #endif
         },
-        LioToolEntry(.phrases, symbol: "text.bubble",
-                     name: ("Phrase Cards", "常用语卡片"), summary: ("Show or play common phrases", "常用语大字给对方看")) { context, _ in
+        // #1742: one tool for everything shown to someone. It took over the Phrase Cards card and slot; phrases and
+        // help cards are always there, the cards with the traveller's details follow `G2CShowCardEnabled`.
+        LioToolEntry(.showCards, symbol: "person.text.rectangle",
+                     name: ("Show Cards", "出示卡"),
+                     summary: ("Phrases and help cards in large Chinese", "常用语和求助，给对方看")) { context, _ in
             #if os(iOS)
-            LioPhraseCardsView(language: context.language)
+            LioShowCardTool.page(language: context.language, roadbookDirectory: context.roadbookDirectory,
+                                 isCurrent: context.sessionIsCurrent)
             #endif
         },
     ]

@@ -343,7 +343,8 @@ def main(argv=None):
             or reply["status"] != "CONFIGURATION_VALID"
             or (reply["role"] != role)
             or (type(reply["demo_subjects"]) is not int)
-            or (not 1 <= reply["demo_subjects"] <= 206)
+            # Same bound as deploy/hk/configuration.py MAX_DEMO_SUBJECTS (#1749); a test keeps them equal.
+            or (not 1 <= reply["demo_subjects"] <= 256)
         ):
             raise ValueError("actual role configuration qualification required")
 
