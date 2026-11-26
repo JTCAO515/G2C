@@ -54,9 +54,16 @@ import XCTest
         let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
         settings.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         settings.launch()
-        let accessibility = settings.cells["Accessibility"]
+        // iOS 18 Settings labels the root row's button (identifier com.apple.settings.accessibility) and leaves
+        // its cell unlabelled, so `cells["Accessibility"]` never matched and the loop scrolled past the row (#1843).
+        // Earlier runtimes label the cell itself; both name exactly the Accessibility row.
+        let accessibility = settings.descendants(matching: .any).matching(NSPredicate(
+            format: "(elementType == %d AND identifier == %@) OR (elementType == %d AND label == %@)",
+            XCUIElement.ElementType.button.rawValue, "com.apple.settings.accessibility",
+            XCUIElement.ElementType.cell.rawValue, "Accessibility")).firstMatch
+        XCTAssertTrue(accessibility.waitForExistence(timeout: 8), settings.debugDescription)
         for _ in 0..<8 {
-            if accessibility.exists && accessibility.isHittable { break }
+            if accessibility.isHittable { break }
             settings.swipeUp()
         }
         XCTAssertTrue(accessibility.isHittable, settings.debugDescription)

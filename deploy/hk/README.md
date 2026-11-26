@@ -337,7 +337,7 @@ counter必须来自宿主持久control绑定，授权来自独立root只读绑�
 整套control（含oss-quota）是本轮不参与数据库恢复的连续信任锚；同时回退usage与全部intents的一致旧目录无法自检。
 禁止把该目录纳入恢复或更换；若它整体恢复、丢失或连续性不明，先由宿主root撤下OSS政策、人工核对原累计，不得凭旧签名重开额度。
 
-OSS授权续期（#1716）：允许的 `expires_at` 只来自 `backend/usage/cj_usage/authorization_deadlines.json` 的 `oss_backup`（北京时间，旧值留在 `previous`）。JT 批准新日期后先合并、部署读取新配置的日备镜像；旧文件在原到期前继续可用。之后宿主 root 只改 `oss.json` 的 `expires_at`（新值的 UTC 写法，如 `2026-12-31T16:00:00+00:00`），同目录临时文件 root:0644 后原子改名替换，其他字段一个字节都不改。新授权只把原 `authorization_sha256` 连同更早批准的到期值当作同一额度：原 usage/intents 继续计数，300 次、2GiB、10 元上限不变，不重开额度；其他字段变化、未列入配置的日期、或用过新授权后退回旧文件，都保持 HOLD。
+OSS授权续期（#1716）：允许的授权条款（`expires_at`、`request_limit`、付费模式的 `hold_limit_fen`）只来自 `deploy/hk/oss_allowance_terms.json`，到期值同时须在 `backend/usage/cj_usage/authorization_deadlines.json` 的 `oss_backup` 里；条款只能变大，不能缩回。批准后先合并、部署读取新条款的日备镜像（旧文件在原到期前继续可用），再由宿主 root 把 `oss.json` 换成新条款的那几个字段（UTC 写法，同目录临时文件 root:0644 后原子改名替换，`version`、`mode`、`source`、`byte_limit` 不动，旧文件留副本）。新授权把同一授权在更早条款下的 `authorization_sha256` 当作同一额度：原 usage/intents 继续计数，不重开额度、不清零；其他字段变化、未列入条款的组合、或用过新授权后退回旧文件，都保持 HOLD。现行条款：2026-12-31T16:00Z（北京 2027-01-01 零点）、600 次、2GiB、付费预留 ¥13（#1716）。
 
 恢复目标是**同一主机内全新、仅Unix socket的独立PG17集群**，由本次operator进程亲自initdb/启动并签名绑定system_identifier/data_directory；其PG数据在持久target-control/pg内，失败也保留。核服务端listen_addresses为空和仅演练数据库，不接受任意目标URI/旧共享集群，不创建新云项目。
 原集群中新空库仍有全局应用角色，会被明确拒绝；不重用角色、不给云角色扩权。
@@ -349,6 +349,13 @@ HK运行时每个业务事务在安装LOCAL scope前获取共享release事务锁
 独立cleanup事务同样先取共享锁，再由已获准runtime独立登录只读核库identity（cleanup未获schema元数据权限，不新增GRANT或用管理员执行删除）；恢复持独占锁，先关闭并轮换源identity，再签发隔离目标release，保持单一可写侧。
 recovery命令在同一进程内创建目标、恢复并验证，结束时先核目标完整行集/sequence均未变化，再关闭并轮换隔离目标，核源未变化后恢复源release。若活跃隔离侧接受了写入、注销或删除，拒绝切回旧源，保持源关闭；中间失败保留原PG数据、birth签名、release和控制记录；`--resume`只启动/核对该同一system ID并续结原演练，不重新initdb、COPY或恢复。临时COPY暂存库仍只供生成备份，从未获得release。
 隔离目标不自动替换现有云库或开放公网。
+
+## 告警：外部探活、日备心跳、磁盘（#1720）
+
+- **外部探活**：`.github/workflows/hk-readiness.yml` 全天每 10 分钟只读 `/health/live`、`/health/ready`（GitHub 繁忙时会推迟或丢弃定时运行）。需要仓库变量 `HK_READINESS_MONITOR_ENABLED=true` 才运行。探活状态变化时（正常→失败、失败→恢复）发到配置的渠道；没配渠道时只有失败的那次运行本身（GitHub 的工作流失败通知）。渠道：仓库 secret `HK_ALERT_WEBHOOK_URL`，格式变量 `HK_ALERT_WEBHOOK_FORMAT`（`text`/`wecom`/`feishu`/`dingtalk`）。`workflow_dispatch` 勾选 `notification_drill` 可演练，不请求服务器。
+- **宿主告警**：`deploy/hk/ops_alerts.py` 用宿主自带 python3（3.6，仅标准库）。日备单元成功后 `ExecStartPost` 写 `/srv/g2c-beta/ops/backup-heartbeat.json`；`g2c-beta-ops-alerts.timer` 每 15 分钟 `check`：超过 27 小时没有成功心跳、或 `/` 用量 ≥85% 即告警，持续时每 6 小时提醒一次，恢复时发一次；投递失败不算已通知，下次检查重发，单元标为失败。心跳写不出时日备单元会显示失败（数据不受影响）。消息只含条件和数字。
+- **渠道是配置**：`/srv/g2c-beta/ops/alert.env`（root:0600，未知键拒绝）：`ALERT_CHANNEL=none|webhook`、`ALERT_WEBHOOK_URL=https://…`、`ALERT_WEBHOOK_FORMAT`，可选 `ALERT_BACKUP_MAX_HOURS`、`ALERT_DISK_PERCENT`、`ALERT_DISK_PATHS`、`ALERT_REMIND_HOURS`。默认 `none`：告警写进 journal（`ALERT …`）并让单元失败。`python3 deploy/hk/ops_alerts.py drill` 发一条演练消息。
+- **安装**（宿主 root，不删除任何文件）：`ops_alerts.py` 放 `/srv/g2c-beta/deploy/hk/`；`g2c-beta-ops-alerts.{service,timer}` 放 `/etc/systemd/system/`。替换日备单元前先 `systemctl stop g2c-beta-backup.timer` 并确认 `g2c-beta-backup.service` 为 inactive，原单元另存副本，再用新的 `/etc/systemd/system/g2c-beta-backup.service` 原子替换（只多一行 `ExecStartPost`），`systemctl daemon-reload`、`systemctl start g2c-beta-backup.timer`；等下一次日备成功写出心跳后，再 `systemctl enable --now g2c-beta-ops-alerts.timer`（没有心跳时 `check` 会如实报 `backup_heartbeat`，不手写心跳）。
 
 ## 可选的手动 NEEDS
 

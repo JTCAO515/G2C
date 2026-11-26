@@ -1,0 +1,105 @@
+{
+  "submissions": [
+    {
+      "client_request_id": "sr-client-0001",
+      "service_type": "gz_business_escort_zh_en",
+      "service_date": "2026-12-10",
+      "time_window": "half_day_am",
+      "venue": "Canton Fair Complex Area A, Guangzhou",
+      "customer_name": "Ms. Example",
+      "contact_phone": "+85200000000",
+      "meeting_purpose": "Supplier meeting",
+      "counterpart": {
+        "company": "Example Trading Co.",
+        "name": "Mr. Wang"
+      },
+      "note": "",
+      "consents": {
+        "location_sensitive": true,
+        "share_with_escort": true,
+        "cross_border": true,
+        "text_version": "svc-consent-1"
+      }
+    },
+    {
+      "client_request_id": "sr-client-0002",
+      "service_type": "gz_business_escort_zh_en",
+      "service_date": "2026-12-10",
+      "time_window": "full_day",
+      "venue": "Canton Fair Complex Area A, Guangzhou",
+      "customer_name": "Ms. Example",
+      "contact_phone": "+85200000000",
+      "meeting_purpose": "",
+      "counterpart": null,
+      "note": "Prefer formal attire.",
+      "consents": {
+        "location_sensitive": true,
+        "share_with_escort": true,
+        "cross_border": true,
+        "text_version": "svc-consent-1"
+      }
+    }
+  ],
+  "transitions": [
+    [
+      "submitted",
+      "accepted",
+      "staff",
+      "staff_accept"
+    ],
+    [
+      "accepted",
+      "quoted",
+      "staff",
+      "quote"
+    ],
+    [
+      "quoted",
+      "quoted",
+      "staff",
+      "quote"
+    ],
+    [
+      "quoted",
+      "arranged",
+      "staff",
+      "arrangement"
+    ],
+    [
+      "arranged",
+      "in_progress",
+      "staff",
+      "arrival"
+    ],
+    [
+      "in_progress",
+      "completed",
+      "staff",
+      "completion_summary"
+    ],
+    [
+      "arranged",
+      "user_cancelled",
+      "user",
+      "cancellation"
+    ],
+    [
+      "in_progress",
+      "outcome_unknown",
+      "staff",
+      "unknown_reason"
+    ],
+    [
+      "outcome_unknown",
+      "completed",
+      "staff",
+      "completion_summary"
+    ],
+    [
+      "submitted",
+      "unavailable",
+      "staff",
+      "unavailable_reason"
+    ]
+  ]
+}
