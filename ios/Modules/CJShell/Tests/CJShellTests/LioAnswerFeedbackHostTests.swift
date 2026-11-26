@@ -127,7 +127,7 @@ private actor LioFeedbackServer: ClientTransport {
         #expect(action["problem"] as? String == problem && action["expectation"] as? String == "")
         let references = try #require(action["references"] as? [[String: String]])
         #expect(references == [["kind": "message", "id": "message-A"]], "no run, no chat text")
-        #expect(try f.store.pending().count == 1)
+        #expect(try f.store.pending().isEmpty, "confirmed by its receipt, so the device's copy is removed (#1855)")
         // The same answer again reuses the line that arrived; nothing new goes out.
         #expect(await f.host.notHelpful(messageID: "message-A", problem: problem) == .sent)
         #expect(await f.server.submitted.count == 1)
@@ -154,21 +154,28 @@ private actor LioFeedbackServer: ClientTransport {
         #expect(await f.host.retry(.notHelpful, messageID: "message-A", text: problem) == .sent)
         #expect(await f.server.submitted.count == 1, "never sent again under a new ID")
         #expect(await f.server.lookUps == [saved.actionID])
-        #expect(try f.store.pending().map(\.actionID) == [saved.actionID])
+        #expect(try f.store.pending().isEmpty, "confirmed, so removed")
     }
 
-    @Test func lineThatNeverArrivedStaysUnsentAndIsNeverReplaced() async throws {
+    @Test func lineThatNeverArrivedIsOnlyEverSentAgainUnderItsOwnIDOnTheTravellersRetry() async throws {
         let f = try LioFeedbackFixture()
         await f.server.set(.refuse)
         #expect(await f.host.notHelpful(messageID: "message-A", problem: problem) == .notSent)
         let saved = try #require(try f.store.pending().first)
-        await f.server.set(.accept)
-        // The server has no such line, which proves nothing: keep asking about the same one, send nothing new.
-        #expect(await f.host.retry(.notHelpful, messageID: "message-A", text: problem) == .notSent)
+        // A first tap on another answer looks the line up and sends nothing: not new lines, not a resend.
         #expect(await f.host.notHelpful(messageID: "message-B", problem: problem) == .notSent)
         #expect(await f.server.submitted.count == 1)
-        #expect(await f.server.lookUps == [saved.actionID, saved.actionID])
-        #expect(try f.store.pending().count == 1)
+        // The traveller's retry: the server has no such line, so the same line goes out again, same ID and bytes.
+        #expect(await f.host.retry(.notHelpful, messageID: "message-A", text: problem) == .notSent)
+        let submitted = await f.server.submitted
+        #expect(submitted.count == 2 && submitted[0] == submitted[1], "same ID, same bytes; never a new line")
+        #expect(try f.store.pending().map(\.actionID) == [saved.actionID])
+        // Now the server takes it: the line settles under its own ID and nothing else is made.
+        await f.server.set(.accept)
+        #expect(await f.host.retry(.notHelpful, messageID: "message-A", text: problem) == .sent)
+        let all = await f.server.submitted
+        #expect(all.count == 3 && Set(all).count == 1)
+        #expect(try f.store.pending().isEmpty)
     }
 
     @Test func olderSavedLinesAreLookedUpBeforeAnythingNew() async throws {
@@ -185,14 +192,24 @@ private actor LioFeedbackServer: ClientTransport {
         #expect(await f.server.lookUps.filter { $0 == second.actionID }.count == 2)
     }
 
-    @Test func fullStoreSendsNothing() async throws {
+    @Test func confirmedLinesAreRemovedSoTheCapRollsButUnremovableOnesStillCount() async throws {
         let f = try LioFeedbackFixture(maximumRecords: 2)
         _ = try await f.seed("old-1", arrived: true)
         _ = try await f.seed("old-2", arrived: true)
-        #expect(await f.host.notHelpful(messageID: "message-A", problem: problem) == .full)
-        #expect(await f.host.retry(.notHelpful, messageID: "message-A", text: problem) == .full)
-        #expect(await f.server.submitted.isEmpty)
-        #expect(try f.store.pending().count == 2)
+        // Both arrived: they are removed from the device, so there is room again (#1855).
+        #expect(await f.host.notHelpful(messageID: "message-A", problem: problem) == .sent)
+        #expect(await f.server.submitted.count == 1)
+        #expect(try f.store.pending().isEmpty)
+        // Lines that cannot be removed (the folder is read-only) keep their place; nothing new is sent.
+        let g = try LioFeedbackFixture(maximumRecords: 2)
+        _ = try await g.seed("old-1", arrived: true)
+        _ = try await g.seed("old-2", arrived: true)
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: g.directory.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: g.directory.path) }
+        #expect(await g.host.notHelpful(messageID: "message-A", problem: problem) == .full)
+        #expect(await g.host.retry(.notHelpful, messageID: "message-A", text: problem) == .full)
+        #expect(await g.server.submitted.isEmpty)
+        #expect(try g.store.pending().count == 2)
     }
 
     @Test func signedOutSendsNothing() async throws {
@@ -226,7 +243,49 @@ private actor LioFeedbackServer: ClientTransport {
         let again = f.rebuiltHost()
         #expect(await again.retry(.details, messageID: "message-A", text: "Wrong exit") == .sent)
         #expect(await f.server.submitted.count == 2)
-        #expect(Set(try f.store.pending().map(\.actionID)) == [saved.actionID, details.actionID])
+        #expect(try f.store.pending().isEmpty, "both lines confirmed, so both removed (#1855)")
+    }
+
+    @Test func linesFoundConfirmedWhileHandlingAnotherCallAreReportedSoARetryNeverResendsThem() async throws {
+        let f = try LioFeedbackFixture()
+        var confirmed: [String] = []
+        f.host.onLineConfirmed = { message, text in confirmed.append(message + "|" + text) }
+        // Answer A's result is unknown: the line arrived, the reply did not.
+        await f.server.set(.arriveWithoutReply)
+        #expect(await f.host.notHelpful(messageID: "message-A", problem: problem) == .notSent)
+        #expect(confirmed.isEmpty)
+        // A tap on answer B looks A's line up, finds it, and the device's copy is removed.
+        await f.server.set(.accept)
+        #expect(await f.host.notHelpful(messageID: "message-B", problem: problem) == .sent)
+        // The host reports the older line it found; B's own line is reported by LioHome from the outcome.
+        #expect(confirmed == ["message-A|" + problem])
+        #expect(try f.store.pending().isEmpty)
+        // A host made after the app came back cannot see A's line any more; LioHome's ledger now holds it, so the
+        // retry for A never reaches a host.
+    }
+
+    @Test func aLineConfirmedAndRemovedByAnotherSurfaceIsNeverSentAgainUnderANewID() async throws {
+        let f = try LioFeedbackFixture()
+        var confirmed: [String] = []
+        f.host.onLineConfirmed = { message, text in confirmed.append(message + "|" + text) }
+        await f.server.set(.arriveWithoutReply)
+        #expect(await f.host.notHelpful(messageID: "message-A", problem: problem) == .notSent)
+        // The engineering feedback surface shares the folder: it looks the line up, finds it and removes it.
+        let saved = try #require(try f.store.pending().first)
+        try f.store.remove(saved)
+        await f.server.set(.accept)
+        #expect(await f.host.retry(.notHelpful, messageID: "message-A", text: problem) == .sent)
+        #expect(await f.server.submitted.count == 1, "no new line for words that already arrived")
+        #expect(confirmed == ["message-A|" + problem])
+    }
+
+    @Test func aLineThatWasNeverSavedStillGetsANewLineOnRetry() async throws {
+        let f = try LioFeedbackFixture()
+        f.signedIn = false
+        #expect(await f.host.notHelpful(messageID: "message-A", problem: problem) == .unavailable)
+        f.signedIn = true
+        #expect(await f.host.retry(.notHelpful, messageID: "message-A", text: problem) == .sent)
+        #expect(await f.server.submitted.count == 1)
     }
 
     @Test func savedLineIsAdoptedOnlyForTheSameMessageAndText() async throws {

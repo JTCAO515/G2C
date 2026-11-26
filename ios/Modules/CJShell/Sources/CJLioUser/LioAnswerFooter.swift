@@ -92,6 +92,9 @@ public enum LioAnswerFeedbackOutcome: Equatable, Sendable { case sent, notSent, 
     func notHelpful(messageID: String, problem: String) async -> LioAnswerFeedbackOutcome
     /// What the traveller typed after "Not helpful" went through.
     func addDetails(messageID: String, text: String) async -> LioAnswerFeedbackOutcome
+    /// Called for every Lio line the server is found to have confirmed (this message, this exact text), including
+    /// older ones found while handling another call. `LioHome` keeps them (see `LioFeedbackLedger`).
+    var onLineConfirmed: (@MainActor (_ messageID: String, _ text: String) -> Void)? { get set }
     /// Tries the same step again with the text first sent for it. A line already saved on this device for this
     /// message and text is only looked up, never sent as a new one, even by a host made after the app came back.
     func retry(_ step: LioAnswerFeedbackStep, messageID: String, text: String) async -> LioAnswerFeedbackOutcome
@@ -123,6 +126,7 @@ enum LioAnswerFeedbackPhase: Equatable {
     }()
 
     private var failsNext: Bool
+    public var onLineConfirmed: (@MainActor (_ messageID: String, _ text: String) -> Void)?
     public init(failsFirst: Bool) { failsNext = failsFirst }
 
     public func notHelpful(messageID: String, problem: String) async -> LioAnswerFeedbackOutcome { await answer() }

@@ -82,7 +82,7 @@ enum LioPhraseCategory: String, CaseIterable, Identifiable {
             [
                 .init("business-quote", "请问可以报一下这款产品的价格吗？", "Could you give me a quote for this product?"),
                 .init("business-moq", "请问最小起订量是多少？", "What is the minimum order quantity?"),
-                .init("business-lead-time", "下单后大概多久可以交货？", "How long does delivery take after we place an order?"),
+                .init("business-lead-time", "下单后大概多久可以交货？", "How soon can you ship after we place an order?"),
                 .init("business-sample", "可以先提供样品吗？费用怎么算？", "Could you provide a sample first? How is it charged?"),
                 .init("business-payment", "请问付款方式是什么？可以先付定金吗？", "What are the payment terms? Can we pay a deposit first?"),
             ]

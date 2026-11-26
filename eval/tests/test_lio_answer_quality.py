@@ -313,5 +313,16 @@ def test_followup_cases_for_1728_load_and_score_on_the_last_answer():
     assert main(['cases', '--cases', str(ROOT / 'lio_followup_cases.v1.json')]) == 0
 
 
+
+def test_task_cases_for_1738_cover_travel_business_and_mixed():
+    # W2-8 (#1738): 30 mixed questions, half Chinese, every case with one require group per task.
+    from eval.lio_answer_quality import ROOT, load_cases
+    cases = load_cases(ROOT / 'lio_tasks_cases.v1.json')
+    assert len(cases) == 30
+    assert sum(case['locale'] == 'zh' for case in cases) == 15
+    assert sum(case['id'].startswith('tasks-biz-') for case in cases) == 10
+    assert sum(case['id'].startswith('tasks-mixed-') for case in cases) == 5
+    assert all(case['require'] for case in cases)
+
 if __name__ == '__main__':
     unittest.main()

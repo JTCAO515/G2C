@@ -16,7 +16,7 @@ from cj_cleanup.account_hooks import DomainHook,UsageHook,MESSAGE,RUN,NEEDS
 from cj_cleanup.device_bridge import DeviceHook
 from cj_cleanup.metadata_hook import MetadataHook
 from cj_feedback.lifecycle import FeedbackHook
-from cj_service_request.lifecycle import ServiceRequestHook
+from cj_service_request.lifecycle import ServiceRequestHook, ServiceStaffAuditHook
 from cj_message.service_session_cleanup import ServiceSessionHook
 from cj_message.needs_binding import needs_scope_for
 from cj_agent.draft import trip_scope_for
@@ -127,7 +127,8 @@ class Runtime:
                'business/usage':UsageHook(store,owner,ledgers),
                'business/feedback-private-actions':FeedbackHook(store,owner),
                'business/service-requests':ServiceRequestHook(store,owner),
-               'business/service-sessions':ServiceSessionHook(store,owner)}
+               'business/service-sessions':ServiceSessionHook(store,owner),
+               'business/service-staff-audit':ServiceStaffAuditHook(store,owner)}
         from cj_memory_jobs.cleanup import CleanupHook
         hooks['memory-derived']=CleanupHook(store,owner)
         devices=DeviceHook(GatewayStore(store),self.issuer)
