@@ -47,6 +47,48 @@ struct LioNewSignInTests {
         }
     }
 
+    /// Text on the sign-in screens keeps 4.5:1 in both appearances, on the plain page and where all three glows
+    /// overlap at their brightest (the worst case behind any text), and on the field colour used by cards.
+    @Test func textKeepsContrastOverTheGlows() {
+        typealias C = LioSignInColors
+        for dark in [false, true] {
+            func value(_ pair: C.Pair) -> UInt32 { dark ? pair.dark : pair.light }
+            let peak = dark ? C.glowPeakDark : C.glowPeakLight
+            var stacked = Self.rgb(value(C.base))
+            for glow in [C.ember, C.amber, C.iris] { stacked = Self.blend(Self.rgb(value(glow)), over: stacked, alpha: peak) }
+            for (name, text) in [("ink", C.ink), ("inkSecondary", C.inkSecondary)] {
+                let colour = Self.rgb(value(text))
+                for (backdrop, background) in [("page", Self.rgb(value(C.base))), ("glows", stacked),
+                                               ("field", Self.rgb(value(C.field)))] {
+                    let ratio = Self.contrast(colour, background)
+                    #expect(ratio >= 4.5, "\(name) on \(backdrop), dark \(dark): \(ratio)")
+                }
+            }
+            #expect(Self.contrast(Self.rgb(value(C.appleText)), Self.rgb(value(C.appleFill))) >= 4.5)
+            #expect(Self.contrast(Self.rgb(value(C.googleText)), Self.rgb(value(C.googleFill))) >= 4.5)
+        }
+    }
+
+    private static func rgb(_ hex: UInt32) -> [Double] {
+        [Double((hex >> 16) & 0xFF), Double((hex >> 8) & 0xFF), Double(hex & 0xFF)]
+    }
+
+    private static func blend(_ top: [Double], over bottom: [Double], alpha: Double) -> [Double] {
+        zip(top, bottom).map { alpha * $0 + (1 - alpha) * $1 }
+    }
+
+    private static func contrast(_ a: [Double], _ b: [Double]) -> Double {
+        func luminance(_ c: [Double]) -> Double {
+            let l = c.map { v -> Double in
+                let s = v / 255
+                return s <= 0.03928 ? s / 12.92 : pow((s + 0.055) / 1.055, 2.4)
+            }
+            return 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2]
+        }
+        let (x, y) = (luminance(a), luminance(b))
+        return (max(x, y) + 0.05) / (min(x, y) + 0.05)
+    }
+
     /// The placeholders only show a message: the screen has no networking, no sign-in frameworks and no stored
     /// input of its own.
     @Test func placeholdersSendAndKeepNothing() throws {

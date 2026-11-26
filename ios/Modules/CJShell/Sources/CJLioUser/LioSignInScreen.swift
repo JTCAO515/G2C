@@ -44,17 +44,49 @@ enum LioSignInChannel: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
+/// Colours of the sign-in screen as numbers, so a host test can check contrast in both appearances. Apple's and
+/// Google's button colours come from their brand guidelines and do not follow the Lio theme.
+enum LioSignInColors {
+    struct Pair: Sendable, Equatable {
+        let light: UInt32
+        let dark: UInt32
+    }
+
+    static let base = Pair(light: 0xF7F6F4, dark: 0x09090B)
+    static let ink = Pair(light: 0x0E0E11, dark: 0xF4F4F6)
+    static let inkSecondary = Pair(light: 0x3A3A42, dark: 0xD2D2DA)
+    /// Decorative outlines only; never used for text.
+    static let line = Pair(light: 0xDEDCD8, dark: 0x2A2A30)
+    /// The email button, the code field and small cards.
+    static let field = Pair(light: 0xFFFFFF, dark: 0x17171B)
+    static let ember = Pair(light: 0xFF5B3A, dark: 0xFF5B3A)
+    static let amber = Pair(light: 0xFFB34D, dark: 0xF2A23A)
+    static let iris = Pair(light: 0x8A6CFF, dark: 0x6E52FF)
+    /// The glows' opacity at their centre. Text can sit where all three overlap, so the test checks text against
+    /// all three stacked at this opacity.
+    static let glowPeakLight = 0.24
+    static let glowPeakDark = 0.28
+
+    // Apple: black on light backgrounds, white on dark (Sign in with Apple, Human Interface Guidelines).
+    static let appleFill = Pair(light: 0x000000, dark: 0xFFFFFF)
+    static let appleText = Pair(light: 0xFFFFFF, dark: 0x000000)
+    // Google: the light and dark themes of the Sign in with Google branding guidelines.
+    static let googleFill = Pair(light: 0xFFFFFF, dark: 0x131314)
+    static let googleStroke = Pair(light: 0x747775, dark: 0x8E918F)
+    static let googleText = Pair(light: 0x1F1F1F, dark: 0xE3E3E3)
+}
+
 #if os(iOS)
 import SwiftUI
 import UIKit
+import CJRunClient
 
 // MARK: - Palette
 
-/// Colours of the sign-in screen only. Apple's and Google's button colours come from their brand guidelines and
-/// must not follow the Lio theme.
+/// SwiftUI colours for `LioSignInColors`.
 enum LioSignInPalette {
-    static func dynamic(light: UInt32, dark: UInt32) -> Color {
-        Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? uiColor(dark) : uiColor(light) })
+    static func color(_ pair: LioSignInColors.Pair) -> Color {
+        Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? uiColor(pair.dark) : uiColor(pair.light) })
     }
 
     static func uiColor(_ hex: UInt32) -> UIColor {
@@ -62,38 +94,70 @@ enum LioSignInPalette {
                 blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
     }
 
-    static let base = dynamic(light: 0xF7F6F4, dark: 0x09090B)
-    static let ink = dynamic(light: 0x0E0E11, dark: 0xF4F4F6)
-    static let inkSecondary = dynamic(light: 0x55555F, dark: 0xA3A3AD)
-    /// Decorative outlines only; never used for text.
-    static let line = dynamic(light: 0xDEDCD8, dark: 0x2A2A30)
-    /// The email button and the code field.
-    static let field = dynamic(light: 0xFFFFFF, dark: 0x17171B)
+    static let base = color(LioSignInColors.base)
+    static let ink = color(LioSignInColors.ink)
+    static let inkSecondary = color(LioSignInColors.inkSecondary)
+    static let line = color(LioSignInColors.line)
+    static let field = color(LioSignInColors.field)
+    static let ember = color(LioSignInColors.ember)
+    static let amber = color(LioSignInColors.amber)
+    static let iris = color(LioSignInColors.iris)
+    static let appleFill = color(LioSignInColors.appleFill)
+    static let appleText = color(LioSignInColors.appleText)
+    static let googleFill = color(LioSignInColors.googleFill)
+    static let googleStroke = color(LioSignInColors.googleStroke)
+    static let googleText = color(LioSignInColors.googleText)
+}
 
-    static let ember = dynamic(light: 0xFF5B3A, dark: 0xFF5B3A)
-    static let amber = dynamic(light: 0xFFB34D, dark: 0xF2A23A)
-    static let iris = dynamic(light: 0x8A6CFF, dark: 0x6E52FF)
+// MARK: - Centered label
 
-    // Apple: black on light backgrounds, white on dark (Sign in with Apple, Human Interface Guidelines).
-    static let appleFill = dynamic(light: 0x000000, dark: 0xFFFFFF)
-    static let appleText = dynamic(light: 0xFFFFFF, dark: 0x000000)
-    // Google: the light and dark themes of the Sign in with Google branding guidelines.
-    static let googleFill = dynamic(light: 0xFFFFFF, dark: 0x131314)
-    static let googleStroke = dynamic(light: 0x747775, dark: 0x8E918F)
-    static let googleText = dynamic(light: 0x1F1F1F, dark: 0xE3E3E3)
+/// A centered multiline UIKit label. Like `RunReadableText`, it measures in UIKit so long text wraps fully at the
+/// largest accessibility size, where a SwiftUI `Text` over the backdrop failed the contrast audit.
+struct LioSignInCenteredText: UIViewRepresentable {
+    let text: String
+    let color: Color
+    @Environment(\.dynamicTypeSize) private var size
+
+    func makeUIView(context: Context) -> UILabel {
+        let label = UILabel()
+        label.numberOfLines = 0
+        label.lineBreakMode = .byWordWrapping
+        label.textAlignment = .center
+        label.adjustsFontForContentSizeCategory = true
+        label.setContentCompressionResistancePriority(.required, for: .vertical)
+        return label
+    }
+
+    func updateUIView(_ label: UILabel, context: Context) {
+        label.text = text
+        label.textColor = UIColor(color)
+        let preferred = UIFont.preferredFont(forTextStyle: .body,
+            compatibleWith: UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(size)))
+        let medium = preferred.fontDescriptor.addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: UIFont.Weight.medium]])
+        label.font = UIFont(descriptor: medium, size: preferred.pointSize)
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UILabel, context: Context) -> CGSize? {
+        guard let width = proposal.width, width.isFinite, width > 0 else { return nil }
+        let measured = uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+        return CGSize(width: width, height: measured.height)
+    }
 }
 
 // MARK: - Backdrop
 
-/// Soft drifting glows behind the content over a faint dot grid. Decorative only; still when Reduce Motion is on.
+enum LioSignInMotion {
+    /// Seconds the entrance takes; after that the screen is still.
+    static let settle: Double = 1.6
+}
+
+/// Soft glows behind the content. They drift into place once when the page appears and then
+/// stay still, so nothing keeps moving behind the text; no motion at all when Reduce Motion is on.
 struct LioSignInBackdrop: View {
     var quiet = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
     @State private var drift = false
-    private let glowBlur: CGFloat = 70
-    private let dotStep: CGFloat = 22
-    private let dotSize: CGFloat = 1.3
 
     var body: some View {
         GeometryReader { proxy in
@@ -107,7 +171,6 @@ struct LioSignInBackdrop: View {
                     .offset(x: drift ? width * 0.32 : width * 0.18, y: -height * (drift ? 0.38 : 0.30))
                 glow(LioSignInPalette.iris, size: width * 0.80)
                     .offset(x: drift ? width * 0.05 : width * 0.25, y: -height * (drift ? 0.16 : 0.22))
-                dots
             }
             .frame(width: width, height: height)
         }
@@ -116,53 +179,41 @@ struct LioSignInBackdrop: View {
         .allowsHitTesting(false)
         .onAppear {
             guard !reduceMotion else { return }
-            withAnimation(.easeInOut(duration: 9).repeatForever(autoreverses: true)) { drift = true }
+            withAnimation(.easeOut(duration: LioSignInMotion.settle)) { drift = true }
         }
     }
 
     private var glowOpacity: Double {
         let dark = colorScheme == .dark
-        let base: Double = dark ? 0.42 : 0.30
+        let base = dark ? LioSignInColors.glowPeakDark : LioSignInColors.glowPeakLight
         return quiet ? base * 0.55 : base
     }
 
+    /// A radial gradient rather than a blurred shape: it draws the same soft light without an offscreen blur layer.
     private func glow(_ color: Color, size: CGFloat) -> some View {
-        Circle().fill(color).frame(width: size, height: size).blur(radius: glowBlur).opacity(glowOpacity)
-    }
-
-    private var dots: some View {
-        Canvas { context, size in
-            var path = Path()
-            var y: CGFloat = dotStep / 2
-            while y < size.height {
-                var x: CGFloat = dotStep / 2
-                while x < size.width {
-                    path.addEllipse(in: CGRect(x: x, y: y, width: dotSize, height: dotSize))
-                    x += dotStep
-                }
-                y += dotStep
-            }
-            context.fill(path, with: .color(LioSignInPalette.ink.opacity(colorScheme == .dark ? 0.16 : 0.10)))
-        }
-        .mask(LinearGradient(colors: [.white, .white.opacity(0)], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.55)))
+        Circle()
+            .fill(RadialGradient(colors: [color.opacity(glowOpacity), color.opacity(glowOpacity * 0.45), color.opacity(0)],
+                                 center: .center, startRadius: .zero, endRadius: size * 0.75))
+            .frame(width: size * 1.5, height: size * 1.5)
     }
 }
 
 // MARK: - Emblem
 
-/// Lio's portrait in a slowly turning gradient ring.
+/// Lio's portrait in a gradient ring that turns once as the page appears.
 struct LioSignInEmblem: View {
     @ScaledMetric(relativeTo: .largeTitle) private var size: CGFloat = 76
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var turn = false
     private let ringWidth: CGFloat = 2.5
-    private let haloBlur: CGFloat = 18
 
     var body: some View {
         let portrait = min(size, 120)
         ZStack {
-            Circle().fill(ringColors.first ?? LioTheme.vermilion).opacity(0.35)
-                .frame(width: portrait, height: portrait).blur(radius: haloBlur)
+            Circle()
+                .fill(RadialGradient(colors: [LioSignInPalette.ember.opacity(0.30), LioSignInPalette.ember.opacity(0)],
+                                     center: .center, startRadius: portrait * 0.45, endRadius: portrait * 0.62))
+                .frame(width: portrait * 1.24, height: portrait * 1.24)
             Circle()
                 .stroke(AngularGradient(colors: ringColors, center: .center), lineWidth: ringWidth)
                 .frame(width: portrait + 10, height: portrait + 10)
@@ -173,7 +224,7 @@ struct LioSignInEmblem: View {
         .accessibilityHidden(true)
         .onAppear {
             guard !reduceMotion else { return }
-            withAnimation(.linear(duration: 14).repeatForever(autoreverses: false)) { turn = true }
+            withAnimation(.easeInOut(duration: LioSignInMotion.settle)) { turn = true }
         }
     }
 
@@ -186,7 +237,8 @@ struct LioSignInPressStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .opacity(isEnabled ? (configuration.isPressed ? 0.82 : 1) : 0.55)
+            // Disabled controls change colour instead of fading, so their text keeps its contrast.
+            .opacity(isEnabled && configuration.isPressed ? 0.82 : 1)
             .scaleEffect(configuration.isPressed && isEnabled ? 0.985 : 1)
             .animation(LioTheme.Motion.micro, value: configuration.isPressed)
     }
@@ -341,8 +393,6 @@ struct LioSignInWelcome<Settings: View>: View {
                 HStack(spacing: LioTheme.Spacing.xs) { wordmark; betaTag }
                 VStack(spacing: LioTheme.Spacing.xxs) { wordmark; betaTag }
             }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("Go2China Beta")
             Text(language.text("Your local helper in China", "你在中国的本地助手"))
                 .font(.system(.largeTitle, design: .default, weight: .bold))
                 .foregroundStyle(LioSignInPalette.ink)
@@ -350,25 +400,23 @@ struct LioSignInWelcome<Settings: View>: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
                 .accessibilityIdentifier("lio.signin.heading")
-            Text(language.text("Plans, transport, translation and everyday errands — just ask Lio.",
-                               "行程、交通、翻译和日常小事，随时问 Lio。"))
-                .font(.body)
-                .foregroundStyle(LioSignInPalette.inkSecondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
+            LioSignInCenteredText(text: language.text("Plans, transport, translation and everyday errands — just ask Lio.",
+                                                      "行程、交通、翻译和日常小事，随时问 Lio。"),
+                                  color: LioSignInPalette.inkSecondary)
         }
     }
 
+    // UIKit labels, as on the existing pages, so the wordmark follows every text size.
     private var wordmark: some View {
-        Text("Go2China").font(.subheadline.weight(.semibold)).tracking(0.6)
-            .foregroundStyle(LioSignInPalette.ink)
+        RunReadableText(text: "Go2China", style: .subheadlineSemibold, color: LioSignInPalette.ink)
+            .fixedSize()
     }
 
     private var betaTag: some View {
-        Text("BETA").font(.caption2.weight(.bold)).tracking(0.8)
-            .foregroundStyle(LioSignInPalette.inkSecondary)
+        RunReadableText(text: "BETA", style: .subheadlineSemibold, color: LioSignInPalette.inkSecondary)
+            .fixedSize()
             .padding(.horizontal, 6).padding(.vertical, 2)
-            .overlay { Capsule().stroke(LioSignInPalette.line, lineWidth: LioTheme.outlineWidth) }
+            .overlay { Capsule().stroke(LioSignInPalette.line, lineWidth: LioTheme.outlineWidth).accessibilityHidden(true) }
     }
 
     private var actions: some View {
@@ -475,13 +523,14 @@ struct LioInternalTestPage<Settings: View>: View {
         .background(LioSignInBackdrop(quiet: true))
         .navigationTitle(language.text("Internal testing", "内部测试"))
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
+        // A solid bar in the page colour, as on the existing page, so the title never sits on the glow.
+        .toolbarBackground(LioSignInPalette.base, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
         .toolbarColorScheme(colorScheme, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .principal) {
-                Text(language.text("Internal testing", "内部测试"))
-                    .font(.headline)
-                    .foregroundStyle(LioSignInPalette.ink)
+                RunReadableText(text: language.text("Internal testing", "内部测试"), style: .headline,
+                                color: LioSignInPalette.ink)
                     .fixedSize()
                     .accessibilityAddTraits(.isHeader)
                     .accessibilityIdentifier("lio.invite.heading")
@@ -498,24 +547,23 @@ struct LioInternalTestPage<Settings: View>: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
             HStack(spacing: 6) {
-                Image(systemName: "sparkles").accessibilityHidden(true)
-                Text(language.text("INVITE ONLY", "仅限受邀测试者")).tracking(language == .english ? 0.8 : 0)
+                Image(systemName: "sparkles").font(.caption.weight(.bold)).foregroundStyle(LioTheme.vermilion)
+                    .accessibilityHidden(true)
+                RunReadableText(text: language.text("Invite only", "仅限受邀测试者"), style: .subheadlineSemibold,
+                                color: LioSignInPalette.ink)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .font(.caption.weight(.bold))
-            .foregroundStyle(LioTheme.vermilion)
             .padding(.horizontal, 10).padding(.vertical, 5)
-            .background(LioTheme.vermilion.opacity(0.12), in: Capsule())
-            .accessibilityElement(children: .combine)
+            .background(LioSignInPalette.field, in: Capsule())
+            .overlay { Capsule().stroke(LioSignInPalette.line, lineWidth: LioTheme.outlineWidth).accessibilityHidden(true) }
             Text(language.text("Enter your invitation code", "输入邀请码"))
                 .font(.system(.title, design: .default, weight: .bold))
                 .foregroundStyle(LioSignInPalette.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
-            Text(language.text("Use the code the Go2China team sent you to start chatting with Lio.",
-                               "输入 Go2China 团队发给你的邀请码，开始和 Lio 聊你的旅行。"))
-                .font(.body)
-                .foregroundStyle(LioSignInPalette.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+            RunReadableText(text: language.text("Use the code the Go2China team sent you to start chatting with Lio.",
+                                                "输入 Go2China 团队发给你的邀请码，开始和 Lio 聊你的旅行。"),
+                            color: LioSignInPalette.inkSecondary)
         }
     }
 
@@ -523,20 +571,19 @@ struct LioInternalTestPage<Settings: View>: View {
         HStack(spacing: LioTheme.Spacing.sm) {
             Image(systemName: "key.fill").foregroundStyle(LioSignInPalette.inkSecondary).accessibilityHidden(true)
             SecureField(language.text("Invitation code", "邀请码"), text: $code,
-                        prompt: Text(language.text("Invitation code", "邀请码")).font(.body).foregroundColor(LioSignInPalette.inkSecondary))
+                        prompt: Text(language.text("Invitation code", "邀请码")).foregroundColor(LioSignInPalette.inkSecondary))
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .keyboardType(.asciiCapable)
-                .font(.body.monospaced())
                 .foregroundColor(LioSignInPalette.ink)
                 .focused(enteringCode)
                 .submitLabel(.continue)
                 .onSubmit { if canContinue { onContinue() } }
+                .frame(minHeight: fieldHeight)
                 .accessibilityIdentifier("demo.invite.code")
                 .background(LioInvitationInputTraits().accessibilityHidden(true))
         }
         .padding(.horizontal, LioTheme.Spacing.md)
-        .frame(minHeight: fieldHeight)
         .background(LioSignInPalette.field,
                     in: RoundedRectangle(cornerRadius: LioTheme.Radius.small, style: .continuous))
         .overlay {
@@ -546,8 +593,6 @@ struct LioInternalTestPage<Settings: View>: View {
                 .accessibilityHidden(true)
         }
         .animation(LioTheme.Motion.change, value: enteringCode.wrappedValue)
-        .contentShape(Rectangle())
-        .onTapGesture { enteringCode.wrappedValue = true }
     }
 
     private var canContinue: Bool { !code.isEmpty && !isBusy }
