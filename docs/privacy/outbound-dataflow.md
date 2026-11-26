@@ -46,14 +46,15 @@
 | 21 | Jotform Inc. | 服务端 API（由 Vercel 函数调用） | `api.jotform.com`（美国；Vercel 未设 `JOTFORM_API_BASE`，JT 2026-11-26 核对） | 官网「抢先体验」申请 | **称呼、邮箱**、得知渠道、所在国家、计划出行时间、目的地（含自填）、需求、备注 | `web/api/early-access.js:7-9, 19, 53-65, 135-160` |
 | 22 | Spacemail（Spaceship 旗下邮箱服务） | 邮箱 `hello@go2china.space`（MX `mx1/mx2.spacemail.com`，SPF `include:spf.spacemail.com`） | `spacemail.com` | 用户来信；人工回复抢先体验与（开放后）官网服务请求 | **邮箱地址**与邮件内容；官网服务请求开放后可能含时间、地点、电话 | DNS 记录（2026-11-26 查询）；JT 2026-11-26 定回复用该邮箱 |
 | — | Airalo | 无 | — | eSIM 预览（无链接） | 无 | `LioESIMPreviewView.swift:64-70` |
+| — | 阿里云邮件推送（DirectMail，新加坡） | 服务端 API | 新加坡（ap-southeast-1）；发信域名 `mail.go2china.space` 已建、未验证 | 59 正式登录的邮箱验证码（[#1883](https://github.com/JTCAO515/G2C/issues/1883)） | **邮箱地址**、验证码 | **未上线（#1883，59）**；按跨境传输处理（邮件推送没有香港地域）；地域由 JT 本人 2026-11-26 确认（此前转述的「杭州」作废）。上线前同 PR 补代码依据，并在隐私政策接收方表与跨境一节加入（与 Apple、Google 登录一起） |
 
 ## 2. 定位字段去向
 
 ### 2.1 现状（`27388ea7`）
 
 - App 读设备定位的代码只有一处：`ios/Modules/CJShell/Sources/CJLioUser/LioTaxiPickupLocation.swift`（`requestWhenInUseAuthorization` + 一次性 `requestLocation`，WGS-84 原始精度，`:15-46`）。**打车**和**附近**两个功能复用它。
-- **打车**：「当前位置」起点和搜索偏置 `near` → 香港 `/v1/tools/taxi/*` → 服务端转 GCJ-02、保留 6 位小数（约 0.1 米）、不降精度 → **滴滴 MCP**；滴滴返回的 `v.didi.cn` 叫车链接也带这组坐标，App 交给滴滴 App 打开。服务端不落盘、不写日志（`backend/cj_api/taxi_tools.py:252-261, 356-415`）。
-- **附近**：设备坐标 → 香港 `/v1/tools/nearby/*` → **高德 Web**（坐标转换、周边搜索、逆地理），6 位小数；服务端进程内缓存 60 秒 / 32 条，**缓存键含精确坐标**（`backend/cj_api/nearby_tools.py:206-270`）。
+- **打车**：「当前位置」起点 → 香港 `/v1/tools/taxi/*` → 服务端转 GCJ-02、保留 6 位小数（约 0.1 米） → **滴滴 MCP**，只用于该次请求；滴滴返回的 `v.didi.cn` 叫车链接也带这组坐标，App 交给滴滴 App 打开。搜索偏置 `near` 降到 3 位小数（约 100 米）。服务端不落盘、不写日志、不进缓存键（`backend/cj_api/taxi_tools.py`，#1875 合并 c5da5dab 起）。
+- **附近**：设备坐标 → 香港 `/v1/tools/nearby/*` → 降到 3 位小数（约 100 米）→ **高德 Web**（坐标转换、周边搜索、逆地理，三类请求都用降精度坐标，转换结果也再降一次）；服务端进程内缓存 60 秒 / 32 条，缓存键用降精度后的坐标（`backend/cj_api/nearby_tools.py` 的 `_coarse`，#1875 合并 c5da5dab 起）。
 - **没有**发现设备坐标进入百炼或任何模型、长期记忆、Trip.com、Klook、12306、飞常准、和风、ECB。
 - 用户自己在对话、翻译、搜索框里输入的地址和地名，会作为原文发给百炼（对话、翻译）、滴滴（打车搜索词）、高德（酒店地标、Lio 检索词）。
 - 两条 GPS 流都只对内部名单 G2C@01–99 开放（M4 授权条目 10、12）。
@@ -63,7 +64,7 @@
 
 #225 正式意见写明首轮「将 GPS 或由 GPS 推出的可关联位置发给香港后端、北京百炼或高德，当前均未放行」。上面两条 GPS 流超出这一边界；对内部名单属于 M4 授权范围。对外部开放前**至少**须完成 [#1832](https://github.com/JTCAO515/G2C/issues/1832)、[#1833](https://github.com/JTCAO515/G2C/issues/1833)、[#1748](https://github.com/JTCAO515/G2C/issues/1748)；这三张票是必要条件，不是放行结论。
 
-统筹 2026-11-26 按 JT 预授权决定的目标边界（由 #1833、#1748 落地，落地后本节改写为现状；三张票都落地前，下表写法与实际行为不一致）：
+统筹 2026-11-26 按 JT 预授权决定的边界。前三行由 #1833 落地（#1875 合并 c5da5dab，已部署到香港：用户 2026-11-26 告知；S 线读回证据随后补在 #1833），已是现状；「同意与撤回」一行由 #1748 落地，其开关默认关，打开前仍与实际不一致：
 
 | 流向 | 目标边界 |
 |---|---|
