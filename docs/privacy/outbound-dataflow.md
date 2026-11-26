@@ -128,6 +128,16 @@
 5. **高德 iOS SDK 与 Apple MapKit 实际上报的设备和位置信息**：闭源 SDK 与系统行为，未核实；TestFlight 构建是否带 `G2C_AMAP_LOCAL` 也需核对。
 6. **定位边界与 #225 的剩余差异**（第 2.2 节）：#1833 落地后，打车精确坐标仍到香港和滴滴、附近约 100 米坐标仍到高德。对外部测试者开放前，是改 #225 的边界（须 JT 本人），还是进一步收紧（例如打车只在 App 内用、不经香港；附近改为手选地点），由 JT 判断。
 
+## 4. 只到本方服务的新数据流（不出站）
+
+不发给任何第三方或模型、但属于新收集的数据，也在这里登记，供隐私政策和 App 隐私标签核对。
+
+| 功能 | 触发 | 发出的字段 | 接收方 | 开关与状态 | 出处 |
+|---|---|---|---|---|---|
+| 回答下的反馈入口（W4-9 [#1753](https://github.com/JTCAO515/G2C/issues/1753)） | 用户在一条 Lio 回答下点「没帮上」，可选填「补充说明」 | 复用现有 `POST /v1/feedback`，请求体固定为 `action_id`（客户端生成的提交编号）、`problem`、`expectation`、`references`（该回答的服务端 message id，可带匹配的 run id）。A 线提供的内容：固定文案「这条回答没帮上忙 / This answer didn't help.」与用户选填的补充说明（≤500 字，输入框提示不要填写个人信息），分别落在 `problem`、`expectation` 哪一个以 #1753 代码为准。不发聊天原文、位置、设备信息 | 只到本方香港服务，不转第三方或模型。服务端凭登录凭据识别账号，**按账号**存入香港 PostgreSQL `cj_feedback_action`：原始请求字节及其 sha256、提交时间，以及从被引用消息读出的会话、generation、sequence、run 编号、原始输入哈希和读取时的 run 状态；不复制对话原文或工具内容。无自动保留期，用户删除或注销账号时由 `FeedbackHook` 删除 | 开关 `G2CAnswerFeedbackEnabled`，默认关；**#1753 合并前不生效**，合并后按代码核对本行 | A 线 2026-11-26 提供；统筹 2026-11-26 按 JT 预授权决定。代码依据：`backend/cj_api/feedback_routes.py:53-65`、`backend/cj_api/FEEDBACK-WIRE.md`、`backend/feedback/cj_feedback/postgres.py:101`、`backend/feedback/cj_feedback/lifecycle.py:36-55`、`backend/storage-registry.json:220-232` |
+
+同一张票加的 AI 提示「由 AI 生成，可能有误，重要信息请自行确认」（开关 `G2CAIDisclosureEnabled`，默认关）不产生数据，不登记。
+
 ## 附录：逐供应商明细
 
 编号沿用底稿：第 2 节高德放在第 3 节滴滴之后；第 11–20 节为 App 侧；A–C 为定位逐跳细节（结论已汇总到正文第 2 节）。
