@@ -64,6 +64,19 @@ struct LioNewSignInTests {
                     #expect(ratio >= 4.5, "\(name) on \(backdrop), dark \(dark): \(ratio)")
                 }
             }
+            // The language switch (Lio theme ink colours) sits on a field-coloured chip at 70% over the glows.
+            func theme(_ name: String) -> [Double] {
+                let swatch = LioTheme.swatches.first { $0.name == name }!
+                return Self.rgb(dark ? swatch.dark : swatch.light)
+            }
+            let chip = Self.blend(Self.rgb(value(C.field)), over: stacked, alpha: 0.7)
+            for name in ["ink", "inkSecondary"] {
+                let ratio = Self.contrast(theme(name), chip)
+                #expect(ratio >= 4.5, "language \(name) on the chip, dark \(dark): \(ratio)")
+            }
+            // "Continue": disabled text on the line colour; enabled text on vermilion.
+            #expect(Self.contrast(Self.rgb(value(C.inkSecondary)), Self.rgb(value(C.line))) >= 4.5, "disabled, dark \(dark)")
+            #expect(Self.contrast(theme("onVermilion"), theme("vermilion")) >= 4.5, "enabled, dark \(dark)")
             #expect(Self.contrast(Self.rgb(value(C.appleText)), Self.rgb(value(C.appleFill))) >= 4.5)
             #expect(Self.contrast(Self.rgb(value(C.googleText)), Self.rgb(value(C.googleFill))) >= 4.5)
         }

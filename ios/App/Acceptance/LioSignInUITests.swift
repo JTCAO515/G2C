@@ -64,34 +64,31 @@ import XCTest
         XCTAssertTrue(app.staticTexts["lio.invite.heading"].waitForExistence(timeout: 10))
     }
 
-    /// Prints every issue with its element and fails on it, with two recorded exceptions:
-    /// - After a scroll, text partly under the status bar is measured against what it sits under, so contrast on an
-    ///   element not wholly inside the scroll view is set aside (as in LioHomeUITests).
-    /// - On the new sign-in screens the audit's contrast estimate is unreliable over the soft gradient backdrop: it
-    ///   flagged different, clearly legible elements on every run, even near-black text on near-white. Their
-    ///   contrast is proven instead by `LioNewSignInTests.textKeepsContrastOverTheGlows` (4.5:1 against all three
-    ///   glows stacked at full strength, in both appearances). Contrast there is set aside and recorded; every other
-    ///   audit type, including clipped text and Dynamic Type, must pass. The old page keeps the full audit.
-    /// Waits for the sign-in screen's one-time entrance (1.6 s) to settle first.
+    /// The old page keeps exactly its original audit: every issue fails the test.
+    ///
+    /// On the new sign-in screens one exception is recorded: the audit's contrast estimate is unreliable over the
+    /// soft gradient backdrop. It flagged different, clearly legible elements on every run, even near-black text on
+    /// near-white and near-white text on a solid dark card. Contrast there is proven instead by
+    /// `LioNewSignInTests.textKeepsContrastOverTheGlows` (4.5:1 against all three glows stacked at full strength,
+    /// in both appearances), so contrast issues are recorded as an attachment and do not fail. Every other audit type,
+    /// including clipped text and Dynamic Type, must pass. The audit waits for the one-time entrance (1.6 s) first.
     private func audit(_ app: XCUIApplication, _ name: String) throws {
+        guard newScreen else {
+            try app.performAccessibilityAudit(for: .all)
+            return
+        }
         _ = XCTWaiter.wait(for: [XCTestExpectation(description: "entrance settles")], timeout: 4)
-        // The old page is a Form with no scroll view; then the whole window is the visible area.
-        let scroll = app.scrollViews.firstMatch
-        let viewport = scroll.exists ? scroll.frame : app.windows.firstMatch.frame
         var setAside: [String] = []
         try app.performAccessibilityAudit(for: .all) { issue in
             if issue.auditType == .contrast {
-                let element = issue.element
-                if self.newScreen || (element.map { !viewport.contains($0.frame) } ?? false) {
-                    setAside.append("\(issue.compactDescription): \(element?.frame ?? .zero) \(element?.label ?? "<unavailable>")")
-                    return true
-                }
+                setAside.append("\(issue.compactDescription): \(issue.element?.frame ?? .zero) \(issue.element?.label ?? "<unavailable>")")
+                return true
             }
             print("AX_SIGNIN \(name): \(issue.compactDescription); element=\(issue.element?.label ?? "<unavailable>"); id=\(issue.element?.identifier ?? "<none>"); frame=\(issue.element?.frame ?? .zero)")
             return false
         }
         print("AX_SIGNIN_SET_ASIDE \(name): \(setAside.count)")
-        let note = XCTAttachment(string: "viewport \(viewport)\n" + setAside.joined(separator: "\n"))
+        let note = XCTAttachment(string: setAside.joined(separator: "\n"))
         note.name = "audit-set-aside-\(name)"
         note.lifetime = .keepAlways
         add(note)

@@ -123,7 +123,6 @@ struct LioSignInCenteredText: UIViewRepresentable {
         label.numberOfLines = 0
         label.lineBreakMode = .byWordWrapping
         label.textAlignment = .center
-        label.adjustsFontForContentSizeCategory = true
         label.setContentCompressionResistancePriority(.required, for: .vertical)
         return label
     }
@@ -255,7 +254,7 @@ struct LioSignInChannelButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 10) {
+            HStack(spacing: LioTheme.Spacing.xs) {
                 mark
                 Text(channel.title(language))
                     .font(.body.weight(.semibold))
@@ -416,7 +415,7 @@ struct LioSignInWelcome<Settings: View>: View {
     private var betaTag: some View {
         RunReadableText(text: "BETA", style: .subheadlineSemibold, color: LioSignInPalette.inkSecondary)
             .fixedSize()
-            .padding(.horizontal, 6).padding(.vertical, 2)
+            .padding(.horizontal, LioTheme.Spacing.xs).padding(.vertical, LioTheme.Spacing.xxs / 2)
             .overlay { Capsule().stroke(LioSignInPalette.line, lineWidth: LioTheme.outlineWidth).accessibilityHidden(true) }
     }
 
@@ -437,7 +436,7 @@ struct LioSignInWelcome<Settings: View>: View {
             .padding(.vertical, LioTheme.Spacing.xxs)
             .accessibilityHidden(true)
             Button(action: onInvite) {
-                HStack(spacing: 6) {
+                HStack(spacing: LioTheme.Spacing.xs) {
                     Image(systemName: "ticket").accessibilityHidden(true)
                     Text(language.text("Use an internal test invitation code", "使用内部测试邀请码"))
                         .multilineTextAlignment(.center)
@@ -524,6 +523,8 @@ struct LioInternalTestPage<Settings: View>: View {
         .background(LioSignInBackdrop(quiet: true))
         .navigationTitle(language.text("Internal testing", "内部测试"))
         .navigationBarTitleDisplayMode(.inline)
+        // A chevron-only back button: the sign-in page has no title, and the system's own "Back" is English only.
+        .toolbarRole(.editor)
         // A solid bar in the page colour, as on the existing page, so the title never sits on the glow.
         .toolbarBackground(LioSignInPalette.base, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
@@ -547,14 +548,14 @@ struct LioInternalTestPage<Settings: View>: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
-            HStack(spacing: 6) {
+            HStack(spacing: LioTheme.Spacing.xs) {
                 Image(systemName: "sparkles").font(.caption.weight(.bold)).foregroundStyle(LioTheme.vermilion)
                     .accessibilityHidden(true)
                 RunReadableText(text: language.text("Invite only", "仅限受邀测试者"), style: .subheadlineSemibold,
                                 color: LioSignInPalette.ink)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, 10).padding(.vertical, 5)
+            .padding(.horizontal, LioTheme.Spacing.sm).padding(.vertical, LioTheme.Spacing.xxs)
             .background(LioSignInPalette.field, in: Capsule())
             .overlay { Capsule().stroke(LioSignInPalette.line, lineWidth: LioTheme.outlineWidth).accessibilityHidden(true) }
             Text(language.text("Enter your invitation code", "输入邀请码"))
