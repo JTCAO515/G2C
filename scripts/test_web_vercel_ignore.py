@@ -67,6 +67,12 @@ class IgnoreCommandTests(unittest.TestCase):
     def assertBuilds(self, **kwargs):
         self.assertNotEqual(self.repo.ignore(**kwargs), 0)
 
+    def test_functions_run_in_hong_kong(self):
+        """Form data must not pass through Vercel's default US region (compliance, 2026-11-26)."""
+        config = json.loads((ROOT / 'web/vercel.json').read_text(encoding='utf-8'))
+        self.assertEqual(config['regions'], ['hkg1'])
+        self.assertNotIn('functions', config)  # no per-function override can move one back out
+
     def test_fits_vercel_length_limit(self):
         self.assertLessEqual(len(COMMAND), 256)
 
