@@ -12,7 +12,8 @@ private struct LioScrollFixture: View {
         } else if arguments.contains("--lio-display-guard-tool") {
             " Calling Amap Weather now."
         } else if arguments.contains("--lio-display-guard-markdown") {
-            " 查**询**后，暂时没有预报。"
+            // 查询 became an ordinary travel word in be5090ef; split a term the display check still withholds (#1843).
+            " 我看了高德天**气接**口，暂时没有预报。"
         } else if arguments.contains("--lio-display-guard-host") {
             " [Forecast](https://%EF%BD%81pi-beta.go2china.space%E3%80%82/)"
         } else if arguments.contains("--lio-display-guard-wrapped-host") {
