@@ -862,6 +862,15 @@ class Boundaries(unittest.TestCase):
         subject='m4-synthetic-one';subjects=frozenset({subject})
         provider=self.provider(sse())
         directory=Path(__file__).resolve().parents[3]/'knowledge/visitor/entries'
+        # Observe the maintained catalogue on its latest review day (#1717): the
+        # tool's server clock stays real in production, but the calendar passing
+        # an expiry must not turn every merge red; freshness is a maintenance alert.
+        import cj_fact.visitor as visitor_catalogue
+        checked_on=max(value['checked_on']for path in directory.glob('*.json')for value in json.loads(path.read_text()))
+        review_noon=datetime.fromisoformat(checked_on+'T12:00:00+08:00');real_lookup=visitor_catalogue.lookup
+        clock=patch('cj_fact.visitor.lookup',lambda folder,query,*,evaluated_at,request_ref:
+                    real_lookup(folder,query,evaluated_at=review_noon,request_ref=request_ref))
+        clock.start();self.addCleanup(clock.stop)
         tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects),
                         visitor_catalogue_directory=directory)
         city=CityReference('510100','成都市','四川省','成都市','city','Asia/Shanghai')

@@ -1,15 +1,22 @@
 """Visitor summaries are bounded local content, not synthetic/official excerpts."""
-from datetime import datetime,timezone
+from datetime import date,datetime,time,timezone
 import json
 from pathlib import Path
 import tempfile
 import unittest
+from zoneinfo import ZoneInfo
 
 from cj_fact.policy import FactFailure
 from cj_fact.visitor import Query,decode_query,lookup
 
 ROOT=Path(__file__).resolve().parents[3]
 NOW=datetime(2026,11,12,4,tzinfo=timezone.utc)
+
+
+def latest_review_noon(directory):
+    """Noon in China on the catalogue's latest checked_on day: the last review, not the calendar."""
+    day=max(value['checked_on']for path in directory.glob('*.json')for value in json.loads(path.read_text()))
+    return datetime.combine(date.fromisoformat(day),time(12),tzinfo=ZoneInfo('Asia/Shanghai'))
 
 
 def entry():
@@ -30,9 +37,11 @@ class VisitorFacts(unittest.TestCase):
         return json.loads(lookup(self.directory,Query('payment',city),evaluated_at=now,request_ref='original-run-tool-ref'))
 
     def test_first_batch_matches_topic_and_explicit_city_without_translation(self):
-        # Maintained real entries use today's observation clock; synthetic
-        # expiry/future-date cases below keep their explicit frozen NOW.
-        observed_at=datetime.now(timezone.utc)
+        # Maintained real entries are observed on the catalogue's latest review
+        # day, so a recheck needs no test edit and the calendar passing an
+        # expiry never turns every merge red (#1717); freshness is a maintenance
+        # alert, not a merge gate. Synthetic cases below keep their frozen NOW.
+        observed_at=latest_review_noon(ROOT/'knowledge/visitor/entries')
         for city in ('成都','510100','Chengdu'):
             raw=lookup(ROOT/'knowledge/visitor/entries',Query('payment',city),evaluated_at=observed_at,request_ref='original-ref')
             result=json.loads(raw)
