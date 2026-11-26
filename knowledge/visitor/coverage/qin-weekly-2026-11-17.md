@@ -15,3 +15,5 @@
 只新增精确URL，限西安、passport_booking、非空subject；与大雁塔一并做正反例，原有边界/日期拒绝不放宽。复核脚本保留完整subject、条件、来源、核对与失效日期。旧22条、旧格式/FACT wire不改，无新Wiki请求、坐标、凭据、付费或原件日志入库；现场和真实预约UNRUN。
 
 仍须11-22 18:00前复核，与原11/23短期组一致，不顺延未来维护。商业资料只补明确的普通周闭信息，不能把本地格式/R/CI通过当官方政策确认或当日现场成功。
+
+2026-11-26：`visitor.v3.xian.qin-mausoleum-museum` 已下线，未复核，与 App 景点预约表重复，场馆预约规则改以 `knowledge/attractions/booking-rules.v1.json` 为唯一来源（#1755；该表在 PR #1817，截至 2026-11-26 尚未合入 main），见 [复核记录](../reviews/2026-11-26-due.md)。

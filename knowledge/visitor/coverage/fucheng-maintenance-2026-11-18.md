@@ -7,3 +7,5 @@
 格式只增单一URL/浙江台州/passport_booking/非空subject许可及正反例，不扩整站、相邻ID、参数、子域或法律渠道。不取坐标，无新Wikidata、接口、交易、凭据或原件日志入库。
 
 本地锁定环境验证：H单元测试56项通过；v3格式36条通过；真实北京时间11-18的30天复核输出34条，含本条完整subject/conditions、两个来源及11-18/11-23日期。最终仍须新精确head独立R及CI，未合并不计交付。
+
+2026-11-26 复核：`visitor.v3.taizhou-zhejiang.fucheng-city-wall` 已下线（只剩百度地图、去哪儿两个平台来源），见 [复核记录](../reviews/2026-11-26-due.md)。
