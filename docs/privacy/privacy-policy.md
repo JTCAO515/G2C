@@ -49,7 +49,7 @@ This policy covers the Go2China iOS app, the website go2china.space, and any in-
 | 打车 | 搜索词、上车点和目的地；选「当前位置」时为设备精确位置 | 查询地点、估价、生成滴滴叫车链接 | 使用该功能时必需；位置单独同意 |
 | 附近 | 设备位置（发给地图服务前降到约 100 米精度） | 查找附近的地点 | 使用该功能时必需；位置单独同意 |
 | 其他工具 | 城市、地点名、航班号、日期等你输入的查询条件 | 查询地点、路线、航班、火车、酒店 | 使用该工具时必需 |
-| 真人服务 | 称呼、联系方式（App 内为电话号码，官网入口为邮箱）、服务时间与地点（官网入口只收日期，城市固定广州）、会面信息、备注；报价与支付状态、服务状态与凭据、服务纪要、你的评价 | 安排陪同、回复你的请求，见第 6 节 | 请求真人服务时必需 |
+| 真人服务 | 称呼、联系方式（App 内为电话号码，官网入口为邮箱）、服务时间与地点（官网入口单独收日期、城市固定广州，说明框里也可能写到时间、地点和会谈内容）、会面信息、备注；报价与支付状态、服务状态与凭据、服务纪要、你的评价 | 安排陪同、回复你的请求，见第 6 节 | 请求真人服务时必需 |
 | 官网抢先体验申请 | 称呼、邮箱、得知渠道、所在国家、计划出行时间、目的地、需求、备注 | 处理你的抢先体验申请 | 申请时必需（备注等可选） |
 | 用量与诊断 | 用量计数、错误记录 | 额度控制、排查故障 | 必需 |
 | 问题反馈 | 你主动提交的内容 | 处理问题 | 可选 |
@@ -64,7 +64,7 @@ This policy covers the Go2China iOS app, the website go2china.space, and any in-
 | Taxi | Search terms, pickup and destination; your precise device location when you choose "Current location" | Finding places, fare estimates, DiDi ride links | Required to use the feature; location needs separate consent |
 | Nearby | Your device location (reduced to about 100 m before it goes to the map service) | Finding places near you | Required to use the feature; location needs separate consent |
 | Other tools | City, place names, flight numbers, dates and other search terms you enter | Places, routes, flights, trains, hotels | Required to use the tool |
-| In-person services | Name to address you by, contact details (phone number in the app, email on the website form), service time and place (the website form takes only a date; the city is fixed to Guangzhou), meeting details, notes; quote and payment status, service status and records, service notes, your rating | Arranging a companion and replying to your request, see section 6 | Required to request a service |
+| In-person services | Name to address you by, contact details (phone number in the app, email on the website form), service time and place (the website form asks for a date and fixes the city to Guangzhou; the note box may also mention times, places and meeting topics), meeting details, notes; quote and payment status, service status and records, service notes, your rating | Arranging a companion and replying to your request, see section 6 | Required to request a service |
 | Website early access application | Name, email, how you heard of us, country, planned travel time, destinations, needs, notes | Handling your early access application | Required to apply (notes and some fields optional) |
 | Usage and diagnostics | Usage counts, error records | Quotas, troubleshooting | Required |
 | Feedback | What you choose to submit | Handling the issue | Optional |
@@ -103,7 +103,7 @@ We send each recipient only what the feature you use needs. Requests to Model St
 | 飞常准 / VariFlight | 中国大陆 / Mainland China | 航班号、机场、日期 / Flight number, airports, date | 航班查询 / Flight lookup |
 | 阿里云（香港）/ Alibaba Cloud (Hong Kong) | 中国香港 / Hong Kong, China | 服务器与备份上的全部数据 / All data on our servers and backups | 代我们托管 / Hosting on our behalf |
 | 真人服务陪同人员 / In-person companions | 广州 / Guangzhou | 见第 6 节 / See section 6 | 提供你请求的服务 / Providing the service you requested |
-| Vercel | 【待核对：函数区域，未配置时按 Vercel 默认】/ [To verify: function region; Vercel default if not set] | 官网页面访问，以及你在官网提交的表单内容（转发时不保存原文）/ Website visits and the forms you submit on the website (forwarded, not stored as text) | 代我们托管官网和表单接口 / Hosting the website and its form endpoints on our behalf |
+| Vercel | 【待落实：统筹已决定把 `/api/*` 固定到香港（hkg1），由 CI 评测线在 `web/vercel.json` 设置；落实前为 Vercel 默认区域】/ [Pending: `/api/*` to be pinned to Hong Kong (hkg1) in `web/vercel.json`; until then, Vercel's default region] | 官网页面访问，以及你在官网提交的表单内容（我们的接口代码转发时不保存原文；Vercel 平台会记录 IP、路径等访问信息）/ Website visits and the forms you submit on the website (our endpoint code forwards them without storing the text; the Vercel platform logs access information such as IP address and path) | 代我们托管官网和表单接口 / Hosting the website and its form endpoints on our behalf |
 | Jotform | 【待核对：美国或欧盟，按实际 API 区域】/ [To verify: US or EU, by the API region in use] | 抢先体验申请的全部字段 / All fields of the early access application | 代我们保存和管理抢先体验申请 / Storing and managing early access applications on our behalf |
 
 **你点开的第三方链接**：打开 Trip.com（酒店、火车、机票、景点）时，链接里会带上你查询的城市、酒店、日期和人数；打开高德地图或 Apple 地图导航时，链接里带目的地坐标；打开 Klook、12306 的链接不带你的信息。打开后由对方按其隐私政策处理。App 内地图由 Apple MapKit 显示。
@@ -117,7 +117,7 @@ We send each recipient only what the feature you use needs. Requests to Model St
 - 生成回答、翻译、识别菜单时，相关内容会从香港发送到中国大陆北京的阿里云百炼处理。
 - 使用地点、路线、打车、附近、航班工具时，查询条件会从香港发送到位于中国大陆的高德、滴滴、飞常准。
 - 你在中国大陆使用 App 时，你的信息会从大陆传到香港。
-- 你在官网提交表单时，内容先到 Vercel 的接口：真人服务请求再转到我们在香港的服务；抢先体验申请转到 Jotform。【待核对：Vercel 函数区域与 Jotform API 区域】
+- 你在官网提交表单时，内容先到 Vercel 的接口：真人服务请求再转到我们在香港的服务；抢先体验申请转到 Jotform。【待落实：Vercel 函数固定到香港；待核对：Jotform API 区域】
 - 你请求真人服务时，第 6 节所列信息会从香港提供给广州的陪同人员；陪同的服务纪要会传回香港。
 
 在首次把你的对话发送给 AI 模型前，以及首次使用位置、请求真人服务前，我们会在 App 内单独征得你的同意。【待 JT：出境所需的标准合同、认证或评估，按 #225 路径在对外开放前落实，并在此写明】
@@ -127,7 +127,7 @@ Your account, chats, trips, memories and service requests are stored on our serv
 - For replies, translation and menu reading, the relevant content goes from Hong Kong to Alibaba Cloud Model Studio in Beijing, mainland China.
 - For places, routes, taxi, nearby and flight tools, your search terms go from Hong Kong to AMap, DiDi and VariFlight in mainland China.
 - When you use the app in mainland China, your information is transferred from the mainland to Hong Kong.
-- When you submit a form on the website, it first reaches our endpoint on Vercel: in-person service requests then go on to our service in Hong Kong, and early access applications go to Jotform. [To verify: Vercel function region and Jotform API region]
+- When you submit a form on the website, it first reaches our endpoint on Vercel: in-person service requests then go on to our service in Hong Kong, and early access applications go to Jotform. [Pending: Vercel functions pinned to Hong Kong; to verify: Jotform API region]
 - When you request an in-person service, the information in section 6 is provided from Hong Kong to the companion in Guangzhou, and the companion's service notes come back to Hong Kong.
 
 We ask for your separate consent in the app before we first send your chats to the AI model, and before you first use location or request an in-person service. [JT: cross-border mechanisms (standard contract, certification or assessment) to be put in place under #225 before external launch and stated here]
@@ -142,7 +142,7 @@ We ask for your separate consent in the app before we first send your chats to t
 
 请只填写陪同需要知道的内容，不要在备注里填写健康、证件或宗教信息；如需填写会面对象的信息，请只填称呼和公司名。
 
-**通过官网提交**：你也可以在 go2china.space 的「需要真人帮忙」表单里提出广州中英商务陪同请求，填写称呼、邮箱、日期和说明（选填），并同意本政策。表单提交到同一网站的 `/api/service-request`，再转到我们自己的服务请求后端（与 App 内请求是同一套），不经过任何第三方表单服务；这个接口由 Vercel 代我们托管（见第 4 节）。我们通过邮件回复你，通常在 1 个工作日内（北京时间）。【待核对：回复邮件使用的邮件服务商】
+**通过官网提交**：你也可以在 go2china.space 的「广州中英商务陪同」表单里提出请求，填写称呼、邮箱、日期和说明（选填），并同意本政策。表单提交到同一网站的 `/api/service-request`，再转到我们自己的服务请求后端（与 App 内请求是同一套），不经过任何第三方表单服务；这个接口由 Vercel 代我们托管（见第 4 节）。我们通过邮件回复你，通常在 1 个工作日内（北京时间）。提交前，表单上会征得你的同意（方式见 PIPIA 增补「官网渠道」一节，待统筹定）。【待核对：回复邮件使用的邮件服务商】
 
 Some services are provided by real people. The first is an English–Chinese business companion in Guangzhou. Before you submit, the confirmation page lists the information we will share with the companion and states that the service is provided by a person, the companion's name, arrival time, cancellation rules and who handles refunds. We only submit after you give separate consent.
 
@@ -152,7 +152,7 @@ Companion services are paid per service, outside the app, not through Apple in-a
 
 Please include only what the companion needs to know. Do not put health, ID or religious information in the notes. If you mention the people you are meeting, include only their name and company.
 
-**Requests from the website**: You can also request the Guangzhou English–Chinese business companion through the "Need a person to help" form on go2china.space, giving your name, email, date and an optional note, and agreeing to this policy. The form posts to `/api/service-request` on the same website and goes on to our own service request backend (the same one the app uses), not through any third-party form service. Vercel hosts this endpoint on our behalf (see section 4). We reply by email, usually within 1 business day (Beijing time). [To verify: the email provider used for replies]
+**Requests from the website**: You can also make a request through the "A business companion in Guangzhou" form on go2china.space, giving your name, email, date and an optional note, and agreeing to this policy. The form posts to `/api/service-request` on the same website and goes on to our own service request backend (the same one the app uses), not through any third-party form service. Vercel hosts this endpoint on our behalf (see section 4). We reply by email, usually within 1 business day (Beijing time). The form asks for your consent before you submit (how is set out in the PIPIA addendum, website channel section, pending). [To verify: the email provider used for replies]
 
 ## 7. 保存多久 / How long we keep it
 
@@ -164,6 +164,7 @@ Please include only what the companion needs to know. Do not put health, ID or r
 - 离线行程：最后一次成功同步起最多 14 天可读，到期停止读取。
 - 真人服务：请求、状态与凭据在服务完成后 12 个月删除；服务纪要 90 天删除。官网提交的请求进同一套后端，按同样期限删除。
 - 抢先体验申请：【待 JT：保存期限】
+- 与你往来的邮件（官网请求的回复等）：【待统筹：邮箱保存期限】，不按真人服务请求的期限自动删除
 
 - Memories, chats and trips: kept until you delete them or close your account; we do not delete them for inactivity (ADR-0006). [JT: review each category for continued necessity]
 - Operational logs and diagnostics: 90-day policy target [to verify against the actual cleanup jobs].
@@ -171,6 +172,7 @@ Please include only what the companion needs to know. Do not put health, ID or r
 - Offline trips: readable for up to 14 days after the last successful sync, then reading stops.
 - In-person services: requests, status and records are deleted 12 months after the service; service notes after 90 days. Requests from the website go into the same backend and follow the same periods.
 - Early access applications: [JT: retention period]
+- Emails exchanged with you (such as replies to website requests): [Pending: mailbox retention period]; they are not deleted automatically on the in-person service schedule
 
 ## 8. 你的权利 / Your rights
 
