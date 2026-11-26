@@ -43,10 +43,10 @@ import CJLioUser
         await send(Key(message: Data(messageID.utf8), step: .details), messageID: messageID, problem: text)
     }
 
-    public func retry(_ step: LioAnswerFeedbackStep, messageID: String) async -> LioAnswerFeedbackOutcome {
-        let key = Key(message: Data(messageID.utf8), step: step)
-        guard let attempt = attempts[key] else { return .notSent }
-        return await send(key, messageID: attempt.messageID, problem: attempt.problem)
+    /// A host made after the app came back has no attempts yet: the text from `LioHome` lets it find the line
+    /// already saved for this message and step instead of leaving the retry dead or making a second line.
+    public func retry(_ step: LioAnswerFeedbackStep, messageID: String, text: String) async -> LioAnswerFeedbackOutcome {
+        await send(Key(message: Data(messageID.utf8), step: step), messageID: messageID, problem: text)
     }
 
     /// Callback-free: retires queued work when the session ends.
@@ -62,9 +62,14 @@ import CJLioUser
         if let id = attempt.actionID, arrived.contains(Data(id.utf8)) { return .sent }
         guard open(messageID: messageID) else { return .unavailable }
         guard let saved = await savedLines() else { return .notSent }
-        for id in saved where !arrived.contains(Data(id.utf8)) {
+        for id in saved.map(\.id) where !arrived.contains(Data(id.utf8)) {
             guard await lookUp(id) else { return .notSent }
             arrived.insert(Data(id.utf8))
+        }
+        if attempt.actionID == nil, let id = saved.first(where: { $0.matches(messageID: messageID, problem: attempt.problem) })?.id {
+            // Made by an earlier host for this message and text (the app went to the background, or reconnected).
+            attempt.actionID = id
+            attempts[key] = attempt
         }
         if let id = attempt.actionID {
             if arrived.contains(Data(id.utf8)) { return .sent }
@@ -91,12 +96,31 @@ import CJLioUser
         return presentation.state == .editing
     }
 
-    /// Every line saved on this device for the account, or nil when the store can't be read.
-    private func savedLines() async -> [String]? {
+    private struct SavedLine {
+        let id: String
+        /// Every reference, as kind and ID; Lio's lines carry exactly one, the message.
+        let references: [Data]
+        let problem: Data
+        let expectationIsEmpty: Bool
+
+        /// Only a line shaped like Lio's own: this message alone, this exact text, no expectation.
+        func matches(messageID: String, problem: String) -> Bool {
+            references == [Data("message:\(messageID)".utf8)] && self.problem == Data(problem.utf8) && expectationIsEmpty
+        }
+    }
+
+    /// Every line saved on this device for the account (in the store's own order), or nil when it can't be read.
+    private func savedLines() async -> [SavedLine]? {
         guard let work = presentation.prepareReload() else { return nil }
         await presentation.perform(work)
         guard presentation.state == .editing, presentation.original == nil else { return nil }
-        return presentation.pendingActions.map(\.actionID)
+        return presentation.pendingActions.map { pending in
+            let action = try? pending.action()
+            return SavedLine(id: pending.actionID,
+                             references: action?.references.map { Data("\($0.kind.rawValue):\($0.id)".utf8) } ?? [],
+                             problem: Data((action?.problem ?? "").utf8),
+                             expectationIsEmpty: action?.expectation.isEmpty ?? false)
+        }
     }
 
     /// True only when the server returns this exact line.

@@ -67,6 +67,8 @@ public struct LioHome<MenuContent: View>: View {
     private let answerFeedback: (any LioAnswerFeedbackSending)?
     /// Each answer's feedback, by turn, so it survives scrolling and re-rendering.
     @State private var feedbackPhases: [Data: LioAnswerFeedbackPhase] = [:]
+    /// The text first sent for each answer's step, so a retry repeats it exactly (also after the host is rebuilt).
+    @State private var feedbackTexts: [Data: [LioAnswerFeedbackStep: String]] = [:]
     @State private var feedbackDetails: FeedbackDetails?
     /// #1748: the account's in-app location choice, when the build asks for it (`G2CLocationConsentEnabled`).
     @State private var locationConsent: LioLocationConsent?
@@ -1372,16 +1374,23 @@ public struct LioHome<MenuContent: View>: View {
     private func sendFeedback(_ step: LioAnswerFeedbackStep, turnID: Data, messageID: String,
                               details: String? = nil, retry: Bool = false) {
         guard let answerFeedback, !feedbackBusy else { return }
-        let problem = LioAnswerFeedbackFeature.problem(language)
+        let text: String
+        if retry {
+            guard let first = feedbackTexts[turnID]?[step] else { return }
+            text = first
+        } else {
+            text = step == .notHelpful ? LioAnswerFeedbackFeature.problem(language) : (details ?? "")
+            feedbackTexts[turnID, default: [:]][step] = text
+        }
         feedbackPhases[turnID] = .sending(step)
         Task { @MainActor in
             let outcome: LioAnswerFeedbackOutcome
             if retry {
-                outcome = await answerFeedback.retry(step, messageID: messageID)
+                outcome = await answerFeedback.retry(step, messageID: messageID, text: text)
             } else if step == .notHelpful {
-                outcome = await answerFeedback.notHelpful(messageID: messageID, problem: problem)
+                outcome = await answerFeedback.notHelpful(messageID: messageID, problem: text)
             } else {
-                outcome = await answerFeedback.addDetails(messageID: messageID, text: details ?? "")
+                outcome = await answerFeedback.addDetails(messageID: messageID, text: text)
             }
             feedbackPhases[turnID] = LioAnswerFeedbackPhase(outcome, after: step)
         }
