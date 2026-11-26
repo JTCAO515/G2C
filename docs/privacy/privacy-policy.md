@@ -6,6 +6,14 @@
 方括号【待 JT】处是主体信息或需要 JT 决定的内容，起草时不填。
 每节中文在前、英文在后，两种语言内容一致；不一致时以【待 JT：哪种语言为准】为准。
 不写尚未实装的功能或未经验证的期限（#225 正式法律相关意见「文案」一节）。
+
+【发布前提】本稿描述的是下列各项落地后的状态。对外发布（官网或 App 内对外可见）前，逐项确认已落地并与文字核对；任一项未落地，对应段落要删去或改写成现状。首次对外公开另须 JT 本人确认（统筹转达）。
+- 第 3、4 节的位置写法：#1833（打车坐标只用于该次请求、不记日志不落盘不进缓存键；附近降到 3 位小数）、#1832（定位用途说明与隐私清单申报）、#1748（定位边界）。
+- 第 3、5 节的单独同意（AI 模型、记忆、位置、真人服务、出境）：#1747（同意界面）、#1772（真人服务确认页，分项勾选）。
+- 第 6 节真人服务：#1768（契约）、#1769（存储与清理）、#1771（运营台）、#1772（确认页）、#1775（陪同服务协议含委托处理条款，JT 负责）。
+- 第 7 节真人服务 12 个月 / 90 天：#1769 的清理钩子落地并验证。
+- 第 5 节出境机制：按 #225 落实后填写。
+- 第 6 节：PIPIA 增补第 11 节第 9 项（用户在聊天里主动说出的时间地点、会面对象会随聊天发给百炼）对外部用户的处理方式由 JT 本人定，定了以后在此补告知。
 -->
 
 - 版本：【待 JT：版本号】　生效日期：【待 JT】
@@ -39,7 +47,7 @@ This policy covers the Go2China iOS app, the website go2china.space, and any in-
 | 打车 | 搜索词、上车点和目的地；选「当前位置」时为设备精确位置 | 查询地点、估价、生成滴滴叫车链接 | 使用该功能时必需；位置单独同意 |
 | 附近 | 设备位置（发给地图服务前降到约 100 米精度） | 查找附近的地点 | 使用该功能时必需；位置单独同意 |
 | 其他工具 | 城市、地点名、航班号、日期等你输入的查询条件 | 查询地点、路线、航班、火车、酒店 | 使用该工具时必需 |
-| 真人服务 | 称呼、电话号码、服务时间与地点、会面信息、备注 | 安排陪同，见第 6 节 | 请求真人服务时必需 |
+| 真人服务 | 称呼、电话号码、服务时间与地点、会面信息、备注；报价与支付状态、服务状态与凭据、服务纪要、你的评价 | 安排陪同，见第 6 节 | 请求真人服务时必需 |
 | 用量与诊断 | 用量计数、错误记录 | 额度控制、排查故障 | 必需 |
 | 问题反馈 | 你主动提交的内容 | 处理问题 | 可选 |
 
@@ -53,7 +61,7 @@ This policy covers the Go2China iOS app, the website go2china.space, and any in-
 | Taxi | Search terms, pickup and destination; your precise device location when you choose "Current location" | Finding places, fare estimates, DiDi ride links | Required to use the feature; location needs separate consent |
 | Nearby | Your device location (reduced to about 100 m before it goes to the map service) | Finding places near you | Required to use the feature; location needs separate consent |
 | Other tools | City, place names, flight numbers, dates and other search terms you enter | Places, routes, flights, trains, hotels | Required to use the tool |
-| In-person services | Name to address you by, phone number, service time and place, meeting details, notes | Arranging a companion, see section 6 | Required to request a service |
+| In-person services | Name to address you by, phone number, service time and place, meeting details, notes; quote and payment status, service status and records, service notes, your rating | Arranging a companion, see section 6 | Required to request a service |
 | Usage and diagnostics | Usage counts, error records | Quotas, troubleshooting | Required |
 | Feedback | What you choose to submit | Handling the issue | Optional |
 
@@ -61,7 +69,7 @@ This policy covers the Go2China iOS app, the website go2china.space, and any in-
 
 **We do not collect**: passport or other ID numbers, payment card numbers, or your contacts. We read your device location only when you use Taxi or Nearby and have given separate consent. We read it once each time, never track you in the background, and never put your location into memory or send it to the AI model.
 
-<!-- 【发布前提】位置相关的写法对应统筹 2026-11-26 按 JT 预授权决定的边界（#1833：打车坐标只用于该次请求、不记日志不落盘不进缓存键；附近降到 3 位小数），以及 #1832（定位用途说明与隐私清单申报）、#1747（同意界面单列定位）。这三张票落地前，本节与现状不符，不能对外发布。 -->
+<!-- 位置相关的写法对应统筹 2026-11-26 按 JT 预授权决定的边界（#1833：打车坐标只用于该次请求、不记日志不落盘不进缓存键；附近降到 3 位小数），以及 #1832（定位用途说明与隐私清单申报）、#1747（同意界面单列定位）。这三张票落地前，本节与现状不符，不能对外发布。 -->
 
 我们不出售你的个人信息，也不用于广告。
 
@@ -69,22 +77,22 @@ We do not sell your personal information or use it for advertising.
 
 ## 4. 我们与谁共享 / Who we share with
 
-我们只把完成你所用功能需要的信息发给下列接收方；发给它们的请求不带你的账号、邮箱或手机号。【待核对：各接收方的签约主体全称】
+我们只把完成你所用功能需要的信息发给下列接收方。发给百炼、高德、滴滴、飞常准的请求不带你的账号、邮箱或手机号。【待核对：各接收方的签约主体全称】
 
-We send each recipient only what the feature you use needs. Requests to them do not include your account, email or phone number. [To verify: each recipient's contracting entity]
+We send each recipient only what the feature you use needs. Requests to Model Studio, AMap, DiDi and VariFlight do not include your account, email or phone number. [To verify: each recipient's contracting entity]
 
 | 接收方 / Recipient | 所在地 / Location | 收到什么 / What they receive | 用途 / Purpose |
 |---|---|---|---|
 | 阿里云百炼（通义千问）/ Alibaba Cloud Model Studio (Qwen) | 中国大陆北京 / Beijing, mainland China | 对话文字和行程内容；翻译的文字、语音、图片；菜单照片 / Chat text and trip content; text, voice and images for translation; menu photos | 生成回答、翻译、识别菜单 / Replies, translation, menu reading |
-| 高德地图开放平台 / AMap (Gaode) | 中国大陆 / Mainland China | 地点和路线查询词、城市；附近功能的约 100 米精度位置 / Place and route queries, city; location at about 100 m for Nearby | 地点、路线、天气、附近 / Places, routes, weather, Nearby |
+| 高德地图开放平台 / AMap (Gaode) | 中国大陆 / Mainland China | 地点和路线查询词、城市、酒店搜索的地标、火车出发日期；附近功能的约 100 米精度位置 / Place and route queries, city, landmarks for hotel search, train departure date; location at about 100 m for Nearby | 地点、路线、天气、酒店、火车、附近 / Places, routes, weather, hotels, trains, Nearby |
 | 滴滴出行 / DiDi | 中国大陆 / Mainland China | 打车搜索词、上车点（可为设备精确位置）、目的地 / Taxi search terms, pickup (may be precise device location), destination | 估价、生成叫车链接；你在滴滴 App 里下单付款 / Estimates and ride links; you book and pay in the DiDi app |
 | 飞常准 / VariFlight | 中国大陆 / Mainland China | 航班号、机场、日期 / Flight number, airports, date | 航班查询 / Flight lookup |
 | 阿里云（香港）/ Alibaba Cloud (Hong Kong) | 中国香港 / Hong Kong, China | 服务器与备份上的全部数据 / All data on our servers and backups | 代我们托管 / Hosting on our behalf |
 | 真人服务陪同人员 / In-person companions | 广州 / Guangzhou | 见第 6 节 / See section 6 | 提供你请求的服务 / Providing the service you requested |
 
-**你点开的第三方链接**：打开 Trip.com（酒店、火车、机票、景点）、Klook、12306、高德地图或 Apple 地图时，链接里会带上你查询的城市、酒店、日期、人数或目的地坐标，由对方按其隐私政策处理。App 内地图由 Apple MapKit 显示。
+**你点开的第三方链接**：打开 Trip.com（酒店、火车、机票、景点）时，链接里会带上你查询的城市、酒店、日期和人数；打开高德地图或 Apple 地图导航时，链接里带目的地坐标；打开 Klook、12306 的链接不带你的信息。打开后由对方按其隐私政策处理。App 内地图由 Apple MapKit 显示。
 
-**Third-party links you open**: When you open Trip.com (hotels, trains, flights, attractions), Klook, 12306, AMap or Apple Maps, the link carries the city, hotel, dates, number of guests or destination coordinates you searched for, and that service handles them under its own policy. In-app maps are shown by Apple MapKit.
+**Third-party links you open**: Trip.com links (hotels, trains, flights, attractions) carry the city, hotel, dates and number of guests you searched for. Navigation links to AMap or Apple Maps carry the destination coordinates. Links to Klook and 12306 carry none of your information. Once opened, that service handles your information under its own policy. In-app maps are shown by Apple MapKit.
 
 ## 5. 存放地点与跨境 / Where data is stored and cross-border transfers
 
@@ -112,7 +120,7 @@ We ask for your separate consent in the app before we first send your chats to t
 
 陪同人员受我们委托提供服务，按服务协议只为本次服务使用你的信息、服务结束后删除、不得转交他人。陪同只能看到完成本次服务需要的信息（称呼、语言、时间地点、会面信息、当天联系的电话号码），从服务安排好到服务结束后 24 小时内可见；看不到你的账号、对话、行程全文、记忆和报价。服务状态在 App 内更新。
 
-陪同服务按次收费，在 App 外付款，不通过 Apple App 内购买。【待 JT：收款方式与收款主体】
+陪同服务按次收费，在 App 外付款，不通过 Apple App 内购买。【待 JT：收款方式与收款主体】【待 JT：PIPIA 增补第 11 节第 9 项的告知】
 
 请只填写陪同需要知道的内容，不要在备注里填写健康、证件或宗教信息；如需填写会面对象的信息，请只填称呼和公司名。
 
@@ -120,7 +128,7 @@ Some services are provided by real people. The first is an English–Chinese bus
 
 Companions act on our behalf. Under their service agreement they use your information only for this service, delete it afterwards and do not pass it on. A companion sees only what is needed for this service (how to address you, language, time and place, meeting details, and a phone number for that day), from when the service is arranged until 24 hours after it ends. They cannot see your account, chats, full trips, memories or the price. Service status is updated in the app.
 
-Companion services are paid per service, outside the app, not through Apple in-app purchase. [JT: payment method and receiving entity]
+Companion services are paid per service, outside the app, not through Apple in-app purchase. [JT: payment method and receiving entity] [JT: notice for PIPIA addendum section 11 item 9]
 
 Please include only what the companion needs to know. Do not put health, ID or religious information in the notes. If you mention the people you are meeting, include only their name and company.
 
@@ -142,9 +150,9 @@ Please include only what the companion needs to know. Do not put health, ID or r
 
 ## 8. 你的权利 / Your rights
 
-你可以查阅、更正、删除你的信息，撤回同意，注销账号，并要求解释本政策。【按实际构建写入口：哪些在 App 内可做、哪些发邮件】请发邮件到 hello@go2china.space，我们会在【待 JT：时限】内回复。撤回同意不影响撤回前已进行的处理；已经发出的请求无法在传输途中召回，但我们会依法协助删除。持续断网的设备无法被远程清除，会在下次联网时清理。
+你可以查阅、更正、删除你的信息，撤回同意，注销账号，并要求解释本政策。【按实际构建写入口：哪些在 App 内可做、哪些发邮件】请发邮件到 hello@go2china.space，我们会在【待 JT：时限】内回复。撤回同意不影响撤回前已进行的处理；已经发出的请求无法在传输途中召回，但我们会依法协助删除。
 
-You can access, correct and delete your information, withdraw consent, close your account, and ask us to explain this policy. [In-app paths per the actual build] Email hello@go2china.space and we will reply within [JT: time limit]. Withdrawing consent does not affect processing before withdrawal. Requests already sent cannot be recalled in transit, but we will help delete them as the law requires. A device that stays offline cannot be wiped remotely; it is cleaned up the next time it connects.
+You can access, correct and delete your information, withdraw consent, close your account, and ask us to explain this policy. [In-app paths per the actual build] Email hello@go2china.space and we will reply within [JT: time limit]. Withdrawing consent does not affect processing before withdrawal. Requests already sent cannot be recalled in transit, but we will help delete them as the law requires.
 
 ## 9. 未成年人 / Children
 
