@@ -6,8 +6,11 @@ Reads only the review dates of the fact data the App and the server use:
 - the App's arrival rules: checked_at + review_every_days for the file and each policy, and each
   policy's valid_until (the official end date; the day after it the rule no longer holds).
 
-Each item gets a due day: the first day it is stale. Inside the window (default 14 days) it prints a
-GitHub ::warning annotation; on or after the due day an ::error annotation. Both show on the run
+Each item gets a due day (the first day it is stale) and its own review period (due day minus the
+day it was checked). The warning starts the shorter of 14 days and half that period before the due
+day (#1757, agreed with the coordinating thread 2026-11-26): an entry re-checked every 14 days, such
+as passport booking rules, warns in its last 7 days instead of from the day it was checked. Inside
+that lead time it prints a GitHub ::warning annotation; on or after the due day an ::error annotation. Both show on the run
 and the pull request, and a table goes to the job summary when GITHUB_STEP_SUMMARY is set. The exit
 code is 0 either way: an expiry is fixed by re-checking the source, not by holding every merge.
 It exits 1 only when a listed file cannot be read or a date is not YYYY-MM-DD, as the check is then
@@ -41,8 +44,9 @@ class DataError(Exception):
 class Item:
     path: str
     id: str
-    kind: str  # 'expires' | 'review' | 'policy_end'
-    due: str   # first stale day, YYYY-MM-DD
+    kind: str    # 'expires' | 'review' | 'policy_end'
+    due: str     # first stale day, YYYY-MM-DD
+    period: int  # days from the check to the due day; the warning lead is at most half of it
 
 
 def day(value, where):
@@ -76,7 +80,9 @@ def visitor_items(root):
                 where = f'{rel} entry {index}'
                 if not isinstance(record, dict) or not isinstance(record.get('id'), str):
                     raise DataError(f'{where}: no id')
-                items.append(Item(rel, record['id'], 'expires', day(record.get('expires_on'), where).isoformat()))
+                expires = day(record.get('expires_on'), where)
+                checked = day(record.get('checked_on'), where)
+                items.append(Item(rel, record['id'], 'expires', expires.isoformat(), (expires - checked).days))
     return items
 
 
@@ -86,14 +92,16 @@ def arrival_items(root):
     if not isinstance(every, int) or isinstance(every, bool) or every <= 0:
         raise DataError(f'{ARRIVAL_RULES}: review_every_days must be a positive integer')
     review = lambda checked, where: (day(checked, where) + timedelta(days=every)).isoformat()
-    items = [Item(ARRIVAL_RULES, 'arrival-rules', 'review', review(data.get('checked_at'), ARRIVAL_RULES))]
+    items = [Item(ARRIVAL_RULES, 'arrival-rules', 'review', review(data.get('checked_at'), ARRIVAL_RULES), every)]
     for index, policy in enumerate(data.get('policies') or []):
         where = f'{ARRIVAL_RULES} policy {index}'
         name = policy.get('id') if isinstance(policy.get('id'), str) else f'policy {index}'
-        items.append(Item(ARRIVAL_RULES, name, 'review', review(policy.get('checked_at'), where)))
+        checked = policy.get('checked_at')
+        items.append(Item(ARRIVAL_RULES, name, 'review', review(checked, where), every))
         if policy.get('valid_until') is not None:
             end = day(policy['valid_until'], where) + timedelta(days=1)
-            items.append(Item(ARRIVAL_RULES, name, 'policy_end', end.isoformat()))
+            # An official end date is not a review cycle: the full window applies.
+            items.append(Item(ARRIVAL_RULES, name, 'policy_end', end.isoformat(), 2 * WINDOW_DAYS))
     return items
 
 
@@ -101,11 +109,17 @@ def collect(root=ROOT):
     return visitor_items(root) + arrival_items(root)
 
 
+def lead_days(item, window=WINDOW_DAYS):
+    """Days before the due day the warning starts: the window, or half the item's period if shorter."""
+    return max(1, min(window, item.period // 2))
+
+
 def classify(items, *, as_of, window=WINDOW_DAYS):
-    """(expired, due soon): due on or before as_of, and due within the next `window` days."""
+    """(expired, due soon): due on or before as_of, and due within the item's lead time."""
     expired = sorted((i for i in items if i.due <= as_of.isoformat()), key=lambda i: (i.due, i.path, i.id))
-    last = (as_of + timedelta(days=window)).isoformat()
-    soon = sorted((i for i in items if as_of.isoformat() < i.due <= last), key=lambda i: (i.due, i.path, i.id))
+    soon = sorted((i for i in items
+                   if as_of.isoformat() < i.due <= (as_of + timedelta(days=lead_days(i, window))).isoformat()),
+                  key=lambda i: (i.due, i.path, i.id))
     return expired, soon
 
 
@@ -130,7 +144,7 @@ def annotations(expired, soon, *, as_of):
 
 def summary(expired, soon, *, as_of, window):
     rows = [f'### 事实数据到期预警（{as_of.isoformat()}，提前 {window} 天）', '',
-            f'已过期 {len(expired)} 项，{window} 天内到期 {len(soon)} 项。', '']
+            f'已过期 {len(expired)} 项，进入预警期 {len(soon)} 项（提前 {window} 天与复核周期一半取较短者）。', '']
     if expired or soon:
         rows += ['| 状态 | 失效日 | 类型 | 条目 | 文件 |', '|---|---|---|---|---|']
         rows += [f'| 已过期 | {i.due} | {LABEL[i.kind]} | `{i.id}` | `{i.path}` |' for i in expired]
@@ -141,7 +155,7 @@ def summary(expired, soon, *, as_of, window):
 def main(argv=None, root=ROOT):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--as-of', help='test clock YYYY-MM-DD; default is today in Asia/Shanghai')
-    parser.add_argument('--window', type=int, default=WINDOW_DAYS)
+    parser.add_argument('--window', type=int, default=WINDOW_DAYS, help='longest warning lead in days')
     parser.add_argument('--json', action='store_true', help='print the lists as JSON instead of annotations')
     args = parser.parse_args(argv)
     try:
@@ -157,7 +171,7 @@ def main(argv=None, root=ROOT):
         return 0
     for line in annotations(expired, soon, as_of=as_of):
         print(line)
-    print(f'fact expiry: {len(expired)} expired, {len(soon)} due within {args.window} days (as of {as_of})')
+    print(f'fact expiry: {len(expired)} expired, {len(soon)} in their warning lead (at most {args.window} days; as of {as_of})')
     target = os.environ.get('GITHUB_STEP_SUMMARY')
     if target:
         with open(target, 'a', encoding='utf-8') as handle:

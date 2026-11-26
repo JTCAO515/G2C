@@ -70,9 +70,12 @@ class FactExpiryTests(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
 
-    def set_entry_expiry(self, days):
+    def set_entry_expiry(self, days, period=30):
+        """Expire the first entry `days` after AS_OF, checked `period` days before that."""
         rel = self.fixture.first_entry_file()
-        self.fixture.edit(rel, lambda records: records[0].update(expires_on=(AS_OF + timedelta(days=days)).isoformat()))
+        expires = AS_OF + timedelta(days=days)
+        self.fixture.edit(rel, lambda records: records[0].update(
+            expires_on=expires.isoformat(), checked_on=(expires - timedelta(days=period)).isoformat()))
         return rel
 
     def test_real_repository_data_is_readable(self):
@@ -111,8 +114,20 @@ class FactExpiryTests(unittest.TestCase):
                 self.assertIn('::error file=', out)
                 self.assertIn('已过期', out)
 
+    def test_short_review_cycle_warns_for_half_its_period(self):
+        """A 14-day cycle (passport booking rules) warns in its last 7 days, not from the day it was checked."""
+        for days, warns in ((13, False), (8, False), (7, True), (1, True)):
+            self.set_entry_expiry(days, period=14)
+            out = self.fixture.run()[1]
+            with self.subTest(days=days):
+                self.assertEqual('::warning' in out, warns)
+        self.set_entry_expiry(1, period=1)
+        self.assertIn('::warning', self.fixture.run()[1])  # never a zero-day lead
+        self.set_entry_expiry(14, period=28)
+        self.assertIn('::warning', self.fixture.run()[1])  # half of 28 reaches the full window
+
     def test_window_is_configurable(self):
-        self.set_entry_expiry(20)
+        self.set_entry_expiry(20, period=60)
         self.assertNotIn('::warning', self.fixture.run()[1])
         self.assertIn('::warning', self.fixture.run('--window', '30')[1])
 
@@ -135,10 +150,11 @@ class FactExpiryTests(unittest.TestCase):
 
     def test_unreadable_date_fails_so_the_check_is_never_blind(self):
         rel = self.fixture.first_entry_file()
-        for bad in ('2026-1-01', None, '2026-02-30'):
-            self.fixture.edit(rel, lambda records: records[0].update(expires_on=bad))
+        for field, bad in (('expires_on', '2026-1-01'), ('expires_on', None), ('expires_on', '2026-02-30'),
+                           ('checked_on', '20261101')):
+            self.fixture.edit(rel, lambda records: records[0].update({field: bad}))
             code, out = self.fixture.run()
-            with self.subTest(bad=bad):
+            with self.subTest(field=field, bad=bad):
                 self.assertEqual(code, 1)
                 self.assertIn('::error title=', out)
 
@@ -153,10 +169,10 @@ class FactExpiryTests(unittest.TestCase):
             self.assertEqual(self.fixture.run()[0], 0)
         text = summary.read_text(encoding='utf-8')
         self.assertIn('将到期', text)
-        self.assertIn('提前 14 天', text)
+        self.assertIn('提前 14 天与复核周期一半取较短者', text)
 
     def test_annotation_text_is_escaped(self):
-        item = fact_expiry.Item('a.json', 'x%\ny', 'expires', '2026-12-02')
+        item = fact_expiry.Item('a.json', 'x%\ny', 'expires', '2026-12-02', 30)
         line = fact_expiry.annotations([], [item], as_of=AS_OF)[0]
         self.assertNotIn('\n', line)
         self.assertIn('x%25%0Ay', line)
