@@ -66,6 +66,15 @@ func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(forma
         guard LocalJournalFile.createExclusive(try name(pending.actionID), in: directory, bytes: bytes) else { throw FeedbackFailure.storageUnavailable }
         try validateDirectory()
     }
+    /// Deletes one record after the server's receipt for exactly this original was verified (#1855). The caller proves
+    /// that by calling this only from settlement. The stored bytes must still be the exact original, so nothing else can
+    /// be removed under its name; a failure leaves the record where it is, and a later look-up settles and removes it.
+    func remove(_ original: FeedbackPending) throws {
+        let proof = try requireOriginal(original)
+        try validateDirectory()
+        guard unlinkat(directory, proof.filename, 0) == 0 else { throw FeedbackFailure.storageUnavailable }
+        try validateDirectory()
+    }
     /// Retires this store before exact local erasure. No server receipt is implied.
     public func clearLocalFiles() throws { try cleanup.clear() }
     func validateDirectory() throws {

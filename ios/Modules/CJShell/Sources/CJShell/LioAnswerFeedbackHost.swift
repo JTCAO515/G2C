@@ -23,6 +23,7 @@ import CJLioUser
     private let presentation: FeedbackPresentation
     private let currentBinding: @MainActor () -> FeedbackBinding?
     private let maximumRecords: Int
+    /// Lines confirmed by the server this session (a confirmed line is removed from the device, so this is the memory).
     private var arrived: Set<Data> = []
     private var attempts: [Key: Attempt] = [:]
     private var busy = false
@@ -36,23 +37,25 @@ import CJLioUser
     }
 
     public func notHelpful(messageID: String, problem: String) async -> LioAnswerFeedbackOutcome {
-        await send(Key(message: Data(messageID.utf8), step: .notHelpful), messageID: messageID, problem: problem)
+        await send(Key(message: Data(messageID.utf8), step: .notHelpful), messageID: messageID, problem: problem, userRetry: false)
     }
 
     public func addDetails(messageID: String, text: String) async -> LioAnswerFeedbackOutcome {
-        await send(Key(message: Data(messageID.utf8), step: .details), messageID: messageID, problem: text)
+        await send(Key(message: Data(messageID.utf8), step: .details), messageID: messageID, problem: text, userRetry: false)
     }
 
     /// A host made after the app came back has no attempts yet: the text from `LioHome` lets it find the line
     /// already saved for this message and step instead of leaving the retry dead or making a second line.
     public func retry(_ step: LioAnswerFeedbackStep, messageID: String, text: String) async -> LioAnswerFeedbackOutcome {
-        await send(Key(message: Data(messageID.utf8), step: step), messageID: messageID, problem: text)
+        await send(Key(message: Data(messageID.utf8), step: step), messageID: messageID, problem: text, userRetry: true)
     }
 
     /// Callback-free: retires queued work when the session ends.
     public func invalidate() { presentation.replace(binding: nil) }
 
-    private func send(_ key: Key, messageID: String, problem: String) async -> LioAnswerFeedbackOutcome {
+    /// `userRetry` is true only for the traveller's own tap on "try again": then a saved line the server says it has no
+    /// record of is sent again under its own ID and exact bytes (#1855, once per such answer); a first tap never does.
+    private func send(_ key: Key, messageID: String, problem: String, userRetry: Bool) async -> LioAnswerFeedbackOutcome {
         guard !busy else { return .notSent }
         busy = true
         defer { busy = false }
@@ -63,7 +66,12 @@ import CJLioUser
         guard open(messageID: messageID) else { return .unavailable }
         guard let saved = await savedLines() else { return .notSent }
         for id in saved.map(\.id) where !arrived.contains(Data(id.utf8)) {
-            guard await lookUp(id) else { return .notSent }
+            switch await lookUp(id) {
+            case .arrived: break
+            case .noSuchLine:
+                guard userRetry, await resend(id) else { return .notSent }
+            case .unknown: return .notSent
+            }
             arrived.insert(Data(id.utf8))
         }
         if attempt.actionID == nil, let id = saved.first(where: { $0.matches(messageID: messageID, problem: attempt.problem) })?.id {
@@ -77,7 +85,9 @@ import CJLioUser
             attempt.actionID = nil
             attempts[key] = attempt
         }
-        guard saved.count < maximumRecords else { return .full }
+        // Lines the server confirmed were removed from this device, so the cap is counted again (#1855).
+        guard open(messageID: messageID), let remaining = await savedLines() else { return .notSent }
+        guard remaining.count < maximumRecords else { return .full }
         let (id, didArrive) = await submit(problem: attempt.problem)
         attempt.actionID = id
         attempts[key] = attempt
@@ -123,11 +133,23 @@ import CJLioUser
         }
     }
 
-    /// True only when the server returns this exact line.
-    private func lookUp(_ id: String) async -> Bool {
+    private enum LookUp { case arrived, noSuchLine, unknown }
+
+    /// `arrived` only when the server returns this exact line; `noSuchLine` only when it answers that it has none.
+    private func lookUp(_ id: String) async -> LookUp {
         presentation.selectPending(actionID: id)
         guard presentation.original.map({ Data($0.actionID.utf8) == Data(id.utf8) }) == true,
-              let work = presentation.prepareQuery() else { return false }
+              let work = presentation.prepareQuery() else { return .unknown }
+        await presentation.perform(work)
+        guard presentation.original.map({ Data($0.actionID.utf8) == Data(id.utf8) }) == true else { return .unknown }
+        if presentation.state == .submitted { return .arrived }
+        return presentation.state == .unknown && presentation.receipt == nil && presentation.canResendSelected ? .noSuchLine : .unknown
+    }
+
+    /// Sends the selected line again, same ID and bytes. True only when its receipt came back.
+    private func resend(_ id: String) async -> Bool {
+        guard presentation.original.map({ Data($0.actionID.utf8) == Data(id.utf8) }) == true,
+              let work = presentation.prepareResend() else { return false }
         await presentation.perform(work)
         return presentation.state == .submitted
             && presentation.original.map({ Data($0.actionID.utf8) == Data(id.utf8) }) == true
