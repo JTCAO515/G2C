@@ -208,7 +208,7 @@ window.G2C = {
        "link": "What the companion sees"
       },
       {
-       "text": "I agree that my request is sent to Hong Kong, China, for processing.",
+       "text": "I agree to my information being processed outside mainland China (Hong Kong, China and the United States).",
        "link": "Where data is stored"
       }
      ]
@@ -426,7 +426,7 @@ window.G2C = {
        "link": "陪同能看到什么"
       },
       {
-       "text": "我同意传到中国香港处理。",
+       "text": "我同意传到中国大陆以外（中国香港和美国）处理。",
        "link": "存放地点与跨境"
       }
      ]
@@ -644,7 +644,7 @@ window.G2C = {
        "link": "Что видит сопровождающий"
       },
       {
-       "text": "Я согласен(на), что мой запрос будет передан для обработки в Гонконг (Китай).",
+       "text": "Я согласен(на) на обработку моих данных за пределами материкового Китая (в Гонконге (Китай) и в США).",
        "link": "Где хранятся данные"
       }
      ]
@@ -862,7 +862,7 @@ window.G2C = {
        "link": "Qué ve el acompañante"
       },
       {
-       "text": "Acepto que mi solicitud se envíe a Hong Kong (China) para su tratamiento.",
+       "text": "Acepto que mis datos se traten fuera de China continental (en Hong Kong, China, y en Estados Unidos).",
        "link": "Dónde se guardan los datos"
       }
      ]
@@ -1080,7 +1080,7 @@ window.G2C = {
        "link": "Ce que voit l’accompagnateur"
       },
       {
-       "text": "J’accepte que ma demande soit envoyée à Hong Kong (Chine) pour y être traitée.",
+       "text": "J’accepte que mes informations soient traitées hors de Chine continentale (à Hong Kong, Chine, et aux États-Unis).",
        "link": "Où sont stockées les données"
       }
      ]
@@ -1298,7 +1298,7 @@ window.G2C = {
        "link": "ما الذي يراه المرافق"
       },
       {
-       "text": "أوافق على إرسال طلبي إلى هونغ كونغ (الصين) لمعالجته.",
+       "text": "أوافق على معالجة معلوماتي خارج البر الرئيسي الصيني (في هونغ كونغ، الصين، وفي الولايات المتحدة).",
        "link": "أين تُخزَّن البيانات"
       }
      ]
