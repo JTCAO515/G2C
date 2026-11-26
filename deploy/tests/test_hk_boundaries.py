@@ -818,3 +818,16 @@ def test_hk_roles_create_ops_console_without_login():
     ops=roles[2]
     assert ' NOLOGIN ' in ops and ' LOGIN ' not in ops and 'NOBYPASSRLS' in ops
     assert ops==sources[2].replace(' LOGIN ',' NOLOGIN ')  # every other attribute unchanged
+
+
+def test_hk_roles_before_0058_keep_exactly_two(monkeypatch):
+    # Chains cut before 0058 (hk_demo_local_check stops at 0050..0055) generate the two original roles.
+    from deploy.hk import schema
+    migrate=schema.migrate
+    full=migrate.load()
+    monkeypatch.setattr(migrate,'load',lambda:[m for m in full if m['version']<=55])
+    roles=schema.application_roles()
+    assert [r.split()[2] for r in roles]==['cj_m1_runtime','cj_local_cleanup']
+    assert all(' LOGIN ' in r for r in roles)
+    monkeypatch.setattr(migrate,'load',lambda:[m for m in full if m['version']!=11])  # a committed role missing
+    with pytest.raises(ValueError,match='exact_committed_application_roles_required'):schema.application_roles()

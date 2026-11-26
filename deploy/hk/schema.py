@@ -24,10 +24,12 @@ def application_roles():
     Hong Kong creates cj_ops_console only so the committed grants apply; it gets no login,
     no pg_hba/pg_ident entry and no credential (JT stop point). Local migrations keep LOGIN.
     """
-    roles=[]
-    for migration in migrate.load():
+    roles=[];migrations=migrate.load()
+    for migration in migrations:
         roles+=re.findall(r'^CREATE ROLE cj_(?:m1_runtime|local_cleanup|ops_console)\b[^\n]*;', (migrate.ROOT/migration['file']).read_text(),re.M)
-    if len(roles)!=3:raise ValueError('exact_committed_application_roles_required')
+    # The expected set follows the migrations actually loaded (a chain cut before 0058 has two).
+    expected=['cj_m1_runtime','cj_local_cleanup']+(['cj_ops_console'] if any(m['version']==58 for m in migrations) else [])
+    if [line.split()[2] for line in roles]!=expected:raise ValueError('exact_committed_application_roles_required')
     out=[]
     for line in roles:
         if line.startswith('CREATE ROLE cj_ops_console '):
