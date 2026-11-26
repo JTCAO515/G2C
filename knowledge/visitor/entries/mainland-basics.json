@@ -111,10 +111,10 @@
       "chongqing",
       "shenzhen"
     ],
-    "text_zh": "支付宝和微信支付可绑定 Visa、万事达等国际信用卡用于移动支付；银联、支付宝、微信都提供移动支付。绑卡能否成功和手续费以应用内说明为准。",
-    "text_en": "Alipay and WeChat Pay let foreign users link international credit cards such as Visa and Mastercard for mobile payment; UnionPay, Alipay and WeChat Pay all offer mobile payment. Whether a card links and any fees are shown in the app.",
+    "text_zh": "可在手机上安装微信、支付宝或云闪付，用境外或中国手机号注册后按提示绑定银行卡；可绑定带 Visa、万事达、银联、美国运通、JCB、大来或发现标识的银行卡。境外银行卡绑定须经发卡行验证，失败时咨询支付产品客服或发卡行；支持的卡种、限额和收费因产品而异，以产品页面提示和服务协议为准。",
+    "text_en": "Install WeChat, Alipay or UnionPay on your phone, register with a foreign or Chinese mobile number and follow the prompts to link a bank card; cards with Visa, Mastercard, UnionPay, American Express, JCB, Diners Club or Discover logos can be linked. Linking an overseas card needs verification by the issuer; if it fails, ask the payment product’s customer service or your bank. Supported card brands, limits and fees vary by product; see the product’s prompts and service agreement.",
     "source_urls": [
-      "https://english.www.gov.cn/news/202404/11/content_WS6617c858c6d0868f4e8e5f4d.html"
+      "https://english.www.gov.cn/2025special/bizexpatsinchina2025"
     ],
     "checked_on": "2026-11-26",
     "expires_on": "2026-12-26"
@@ -131,11 +131,10 @@
       "chongqing",
       "shenzhen"
     ],
-    "text_zh": "可在有兑换标识的银行网点、外币兑换点及入境口岸等处的自助兑换机把外币换成人民币现金；也可在有对应卡组织标识的 ATM 用银行卡取人民币。",
-    "text_en": "Foreign currency can be exchanged for RMB cash at bank outlets and money changers showing exchange signs, and at self-service exchange machines at entry ports and elsewhere. RMB can also be withdrawn with a bank card at ATMs showing the card network logo.",
+    "text_zh": "可在有兑换标识的商业银行网点、外币兑换点，以及国际机场、陆路口岸、港口等入境口岸和境内其他地方有兑换标识的自助兑换机，把外币换成人民币现金；也可用国际银行卡在 ATM 上取人民币现金。商业银行网点还可兑换小面额人民币。",
+    "text_en": "Foreign currency can be exchanged for RMB cash at commercial bank outlets, money changers and self-service exchange machines marked with an Exchange logo at international airports, land ports, seaports and other entry ports and elsewhere in China, and RMB cash can be withdrawn with an international bank card at ATMs. Commercial bank outlets also exchange small RMB notes.",
     "source_urls": [
-      "https://english.www.gov.cn/2025special/bizexpatsinchina2025",
-      "https://english.www.gov.cn/news/202404/11/content_WS6617c858c6d0868f4e8e5f4d.html"
+      "https://english.www.gov.cn/2025special/bizexpatsinchina2025"
     ],
     "checked_on": "2026-11-26",
     "expires_on": "2026-12-26"
