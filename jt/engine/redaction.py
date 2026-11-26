@@ -14,6 +14,10 @@ _VALUE_GAP = rf"{_SPACE}*(?:\r?\n{_SPACE}*)?"
 _FIELD_SEPARATOR = rf"{_SPACE}*(?:[:#=]{_SPACE}*|{_SPACE})"
 _END_ID = r"(?![A-Za-z0-9]|\.[0-9])"
 _START_NUMBER = r"(?<![A-Za-z0-9.+@])"
+_PASSPORT_ID_LABEL = rf"(?:\bpassport{_SPACE}+(?:number|no\.?|id)|护照(?:号码|号|编号)|護照(?:號碼|號|編號))"
+_BARE_PASSPORT_LABEL = r"(?:\bpassport\b|护照|護照)"
+_PASSPORT_LABEL = rf"(?:{_PASSPORT_ID_LABEL}|{_BARE_PASSPORT_LABEL})"
+_PASSPORT_MARKER = rf"{_SPACE}*(?:(?:\bis\b|是|为|為){_SPACE}*)?(?:#{_SPACE}*)?"
 
 _LETTER = r"[A-Za-zÀ-ÖØ-öø-ÿĀ-ſ]"
 _NAME_WORD = rf"{_LETTER}+(?:['’\-]{_LETTER}+)*"
@@ -44,9 +48,10 @@ _LATITUDE = r"[+-]?(?:[0-8]?[0-9]\.[0-9]{3,}|90\.0{3,})"
 _LONGITUDE = r"[+-]?(?:(?:[0-9]{1,2}|1[0-7][0-9])\.[0-9]{3,}|180\.0{3,})"
 _COMMA = rf"{_SPACE}*,{_SPACE}*"
 _COORDINATES = rf"(?:{_LATITUDE}{_COMMA}{_LONGITUDE}|{_LONGITUDE}{_COMMA}{_LATITUDE})"
+_CN_ADDRESS_NUMBER = r"[0-9零〇一二两兩三四五六七八九十百千]{1,6}"
 _CN_ADDRESS = (
-    rf"{_HAN}{{1,28}}?(?:路|街|大道|道|巷|弄){_SPACE}*[0-9]{{1,6}}[号號]"
-    rf"(?:{_SPACE}*(?:[0-9]{{1,6}}(?:栋|棟|幢|座|单元|單元|楼|樓|层|層|室|房)|[A-Za-z]座)){{0,5}}"
+    rf"{_HAN}{{1,28}}?(?:路|街|大道|道|巷|弄){_SPACE}*{_CN_ADDRESS_NUMBER}[号號]"
+    rf"(?:{_SPACE}*(?:{_CN_ADDRESS_NUMBER}(?:栋|棟|幢|座|单元|單元|楼|樓|层|層|室|房)|[A-Za-z]座)){{0,5}}"
 )
 _CN_LOCATION_LABEL = (
     rf"(?:现址|地址|位置|定位){_FIELD_SEPARATOR}|(?:我在|我住在|住在|位于){_SPACE}*"
@@ -70,10 +75,11 @@ _RULES = (
     (
         "PASSPORT",
         re.compile(
-            rf"(?:\bpassport(?:{_SPACE}+(?:number|no\.?|id))?|护照(?:号码|号|编号)?|護照(?:號碼|號|編號)?)"
-            rf"{_SPACE}*(?:(?:\bis\b|是|为|為){_SPACE}*)?(?:#{_SPACE}*)?[:=]?{_VALUE_GAP}"
+            rf"(?:{_PASSPORT_LABEL}{_PASSPORT_MARKER}[:=]{_VALUE_GAP}|"
+            rf"(?:{_PASSPORT_ID_LABEL}|^{_SPACE}*{_BARE_PASSPORT_LABEL}){_PASSPORT_MARKER}{_VALUE_GAP}|"
+            rf"{_PASSPORT_LABEL}{_PASSPORT_MARKER}{_SPACE}*)"
             r"((?=[A-Z0-9]{0,11}[0-9])[A-Z0-9]{6,12})(?![A-Z0-9])",
-            re.IGNORECASE,
+            re.IGNORECASE | re.MULTILINE,
         ),
     ),
     (
@@ -110,7 +116,7 @@ _RULES = (
     (
         "LOCATION",
         re.compile(
-            rf"(\b{_UNIT}|(?:房间|房間|客房|房号|房號){_SPACE}*[:#]?{_SPACE}*[0-9]{{1,6}}(?:号|號|室)?)",
+            rf"(\b{_UNIT}|(?:房间|房間|客房|房号|房號){_SPACE}*[:#]?{_SPACE}*{_CN_ADDRESS_NUMBER}[号號室]?)",
             re.IGNORECASE,
         ),
     ),
