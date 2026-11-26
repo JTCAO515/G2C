@@ -67,22 +67,29 @@ struct SupportInformationView: View {
             }
             Section {
                 NavigationLink(language.text("Help", "帮助"), value: MemoryRoute.help)
-                NavigationLink(language.text("Privacy notice (beta)", "隐私说明（内测版）"), value: MemoryRoute.privacy)
+                NavigationLink(PrivacySummary.title(language), value: MemoryRoute.privacy)
             }
         }.navigationTitle(language.text("Support", "支持"))
     }
 }
 
-struct PrivacyNoticeView: View {
+public struct PrivacyNoticeView: View {
     let language: ShellLanguage
-    var body: some View {
+    /// The engineering shell links on to its Support page; Lio's Me tab has no such route (#1880).
+    let showsSupportLink: Bool
+    public init(language: ShellLanguage, showsSupportLink: Bool = true) {
+        self.language = language
+        self.showsSupportLink = showsSupportLink
+    }
+    public var body: some View {
         List {
             Section {
-                if localAMapConfigured {
-                    Text(language.text("This build can load AMap after you explicitly agree. The other service connections and data controls below describe the planned beta service.", "此构建可在你明确同意后加载高德地图。下方其他服务连接与数据控制说明属于内测服务计划。"))
-                } else {
-                    Text(language.text("This beta notice describes the planned service. External service connections and the data controls described below are not yet available in this version.", "本内测说明介绍计划提供的服务。此版本尚未接入外部服务，以下数据控制功能也尚未开放。"))
-                }
+                Text(PrivacySummary.operatorLine(language))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("privacy.summary.operator")
+                Text(PrivacySummary.intro(language))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("privacy.summary.intro")
             }
             if localAMapConfigured {
                 Section(language.text("AMap in this build", "此构建中的高德地图")) {
@@ -92,37 +99,24 @@ struct PrivacyNoticeView: View {
                         .accessibilityIdentifier("privacy.amap.policy")
                 }
             }
-            Section(language.text("Provider", "服务方")) {
-                Text(language.text("Go2China is provided by Context Jump LLC, with local support from its affiliate Guangzhou Chuangjing Technology. Questions: hello@go2china.space.", "Go2China 由 Context Jump LLC 提供，关联公司广州创竞科技提供本地支持。如有疑问请联系 hello@go2china.space。"))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Section(language.text("What we process", "我们处理的数据")) {
-                Text(language.text("Your account email, the messages you send, trip plans and confirmations, memories you save, usage counts, and reports you choose to submit. Your language preference stays on this device.", "你的账号邮箱、你发送的消息、行程方案与确认记录、你保存的记忆、用量计数，以及你主动提交的问题反馈。语言偏好只保存在本设备。"))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Section(language.text("Service providers (planned)", "服务提供方（计划）")) {
-                Text(language.text("We do not sell your data or share it for advertising. To run the service we use providers that process data on our behalf: an AI model provider (Alibaba Cloud Qwen, processed in mainland China) to generate replies; cloud hosting and database (Singapore); an email service for sign-in verification; and Apple for in-app purchases. Only the data needed for each task is sent.", "我们不出售你的数据，也不用于广告共享。为提供服务，我们使用代我们处理数据的服务提供方：AI 模型服务（阿里云通义千问，处理地在中国大陆）用于生成回答；云主机与数据库（新加坡）；用于登录验证的邮件服务；以及用于 App 内购买的 Apple。每项任务只发送完成该任务所需的数据。"))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Section(language.text("Retention", "留存")) {
-                Text(language.text("Your trips, memories and chats are kept while your account exists. We never delete them because of inactivity or a plan change. When you delete an item or close your account, it is removed from active systems within 30 days and from backups within a further 30 days. Service logs are kept for up to 30 days; feedback reports for up to 180 days.", "账号存续期间，你的行程、记忆和对话会一直保存，不会因长期未使用或方案变更而被删除。你删除某条内容或注销账号后，相关数据会在 30 天内从在用系统中删除，并在其后 30 天内从备份中清除。服务日志最多保留 30 天；问题反馈最多保留 180 天。"))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Section(language.text("Offline (coming soon)", "离线（即将提供）")) {
-                Text(language.text("Your last synced trip can be viewed offline. The offline copy is stored encrypted on this device, shows when it was last synced, and is removed 30 days after the last sync, or when you sign out, switch or close your account. A device that stays offline cannot be wiped remotely; it is cleaned up the next time it connects.", "最近一次同步的正式行程可离线查看。离线副本加密保存在本设备，会显示最后同步时间；距最后同步满 30 天，或你退出、切换、注销账号时，离线副本会被删除。持续断网的设备无法被远程清除，会在下次联网时清理。"))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Section(language.text("Your choices", "你的选择")) {
-                Text(language.text("You can delete memories and close your account in the app when these features are available. Until then, email hello@go2china.space and we will handle your request.", "相关功能开放后，你可以在 App 内删除记忆和注销账号。在此之前，请发邮件至 hello@go2china.space，我们会处理你的请求。"))
-                    .fixedSize(horizontal: false, vertical: true)
+            // #1880: a short summary of the Go2China Privacy Policy 1.0 (approved by the coordinator under JT's
+            // pre-authorisation, 2026-11-26). The full page generated from the policy text comes with #1747.
+            ForEach(PrivacySummary.paragraphs(language), id: \.id) { paragraph in
+                Section(paragraph.title) {
+                    Text(paragraph.text)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("privacy.summary." + paragraph.id)
+                }
             }
             Section {
                 ContactRow(contact: .support, language: language)
-                NavigationLink(language.text("Support", "支持"), value: MemoryRoute.support)
+                if showsSupportLink {
+                    NavigationLink(language.text("Support", "支持"), value: MemoryRoute.support)
+                }
             }
         }
         .textSelection(.enabled)
-        .navigationTitle(language.text("Privacy notice (beta)", "隐私说明（内测版）"))
+        .navigationTitle(PrivacySummary.title(language))
     }
     private var localAMapConfigured: Bool {
         #if DEBUG && G2C_AMAP_LOCAL && canImport(MAMapKit) && !targetEnvironment(simulator)
