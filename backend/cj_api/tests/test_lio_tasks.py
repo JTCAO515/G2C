@@ -2,6 +2,7 @@
 import json
 import os
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from cj_api import lio_tasks
@@ -102,3 +103,120 @@ class Tasks(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class Dispatch(unittest.TestCase):
+    def run_dispatch(self, text, *, switch='1', handled=False, start_error=None, execute_error=None):
+        from cj_api.local_lio_exploration import ExplorationDispatch
+        order, closed = [], []
+        raw = plan(task('travel', '开通支付宝', '支付宝怎么开通', source_index=1),
+                   task('travel', '坐地铁', '地铁怎么坐', missing=['city'], source_index=1), index=1)
+
+        def stream():
+            try:
+                order.append('sent')
+                yield raw[:10]
+                yield raw[10:]
+            finally:
+                closed.append(True)
+
+        class Worker:
+            provider = object()
+            def _registered_stream(self, binding, key, registration, argument, message_refs=()):
+                order.append((key, registration, type(argument).__name__, message_refs))
+                if start_error is not None:
+                    raise start_error
+                return stream()
+
+        class Legacy:
+            def context(self, binding, current, answer_only=False):
+                return ('我在成都', current.text), ({'message_id': 'm0'},), None
+            def execute(self, *args):
+                order.append('execute')
+                if execute_error is not None:
+                    raise execute_error
+                return 'planned' if handled else None
+        original = SimpleNamespace(protocol='LIO-message.2', locale='zh', question_day=None)
+        dispatch = ExplorationDispatch(Legacy(), SimpleNamespace(enabled=False))
+        with patch.dict(os.environ, {'CJ_LIO_TASKS': switch, 'CJ_LIO_ENTRY_RULES': '0'}), \
+                patch.object(lio_tasks, 'load_switches', return_value=switches()):
+            try:
+                result = dispatch.execute(Worker(), SimpleNamespace(run_id='run-t'), 's', text, original)
+            except Exception as error:
+                result = error
+            reader = lio_tasks.take_pending('run-t')
+            guidance = reader() if reader is not None else None
+        return result, order, closed, guidance
+
+    def test_switch_off_sends_nothing(self):
+        result, order, closed, guidance = self.run_dispatch('支付宝怎么开通，另外地铁怎么坐', switch='0')
+        self.assertEqual((result, order, guidance), (None, ['execute'], None))
+
+    def test_short_follow_ups_skip_the_call(self):
+        result, order, closed, guidance = self.run_dispatch('第二个怎么去')
+        self.assertEqual((order, guidance), (['execute'], None))
+
+    def test_the_task_call_is_sent_before_intake_and_read_at_answer_time(self):
+        # Coordinator condition 1: the request goes out first, so both calls run at the same time.
+        result, order, closed, guidance = self.run_dispatch('支付宝怎么开通，另外地铁怎么坐')
+        self.assertIsNone(result)
+        self.assertEqual(order[0], ('lio.tasks.0', 'model.lio_tasks.1', 'TasksInput', ({'message_id': 'm0'},)))
+        self.assertEqual(order[1:], ['sent', 'execute'])
+        self.assertEqual([row.topic for row in guidance.tasks], ['开通支付宝', '坐地铁'])
+        self.assertEqual(guidance.question, (1, 'city'))
+        self.assertEqual(closed, [True])
+
+    def test_a_planning_or_code_reply_drops_the_task_result(self):
+        result, order, closed, guidance = self.run_dispatch('支付宝怎么开通，另外地铁怎么坐', handled=True)
+        self.assertEqual((result, guidance, closed), ('planned', None, [True]))
+
+    def test_failures_fall_back_to_the_single_intent_path(self):
+        # Coordinator condition 4: a failed task call never fails the answer.
+        from cj_usage.metered_exit import BudgetUnknown
+        result, order, closed, guidance = self.run_dispatch('支付宝怎么开通，另外地铁怎么坐', start_error=BudgetUnknown('x'))
+        self.assertEqual((result, guidance), (None, None))
+        self.assertIn('execute', order)
+        error = RuntimeError('intake failed')
+        result, order, closed, guidance = self.run_dispatch('支付宝怎么开通，另外地铁怎么坐', execute_error=error)
+        self.assertIs(result, error)
+        self.assertEqual((guidance, closed), (None, [True]))
+
+    def test_invalid_task_output_reads_as_none(self):
+        def broken():
+            yield '{"version":"LIO-tasks.1","current_source_index":0'
+        lio_tasks.put_pending('run-b', None)
+        lio_tasks.take_pending('run-b')
+        with patch.object(lio_tasks, 'load_switches', return_value=switches()):
+            self.assertIsNone(check_plan('{"version":"LIO-tasks.1","current_source_index":0', ['x']))
+
+
+class RealAnswerPath(unittest.TestCase):
+    def test_answer_prompt_gets_the_task_guidance_once(self):
+        from test_m4_real_services import KEY, Boundaries, sse
+        from cj_api.local_app import ISSUER, scope_for
+        from cj_api.real_services import RealServices, RealTools
+        fixture = Boundaries('test_native_tool_and_original_receipt')
+        fixture.setUp()
+        self.addCleanup(fixture.tearDown)
+        provider = fixture.provider(sse())
+        subjects = frozenset({'m4-synthetic-one'})
+        tools = RealTools(RealServices(provider, KEY, subjects, demo_subjects=subjects, national_subjects=subjects))
+        binding = SimpleNamespace(scope=scope_for(ISSUER, 'm4-synthetic-one'), run_id='tasks-original')
+        systems = []
+
+        class Worker:
+            lio_planning = None
+            def _model_history(self, *args): pass
+            def _registered_stream(self, original, key, registration, argument, **kwargs):
+                systems.append(argument.system)
+                yield json.dumps(dict(version='MODEL-tool-turn.1', kind='answer', answer=dict(zh='好。', en='OK.'), calls=[]))
+        worker = Worker()
+        worker.provider = provider
+        with patch.object(lio_tasks, 'load_switches', return_value=switches()):
+            guidance = check_plan(plan(task('travel', '开通支付宝', '支付宝怎么开通')), ['支付宝怎么开通'])
+        lio_tasks.put_pending('tasks-original', lambda: guidance)
+        list(tools.answer(worker, binding, [dict(role='user', content='支付宝怎么开通')], lio_locale='zh'))
+        self.assertEqual(systems[0].count("The traveler's message has these tasks:"), 1)
+        self.assertIsNone(lio_tasks.take_pending('tasks-original'))
+        list(tools.answer(worker, binding, [dict(role='user', content='支付宝怎么开通')], lio_locale='zh'))
+        self.assertNotIn("The traveler's message has these tasks:", systems[-1])

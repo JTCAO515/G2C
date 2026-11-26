@@ -413,6 +413,7 @@ class RealTools:
             'model.lio_intake.8':Registration('model',self._lio_intake_flow_input),
             'model.lio_intake.9':Registration('model',self._lio_intake_optional_input),
             'model.lio_exploration.1':Registration('model',self._lio_exploration_input),
+            'model.lio_tasks.1':Registration('model',self._lio_tasks_input),
             'tool.lio_city.1':Registration('tool',self._city_input),
             **pipeline,
             'memory.lio_extract.1':Registration('memory',self._lio_memory_input),
@@ -532,16 +533,27 @@ class RealTools:
         argument.origin.check(argument.origin.binding)
         return self._model_input(argument,national_intake=True,intake_profile=argument.profile)
 
+    def _lio_tasks_input(self,argument):
+        # W2-8 (#1738): one structured task-understanding call; data only, no tools or authority.
+        from cj_message.lio_tasks_schema import TASKS,TasksInput
+        if type(argument) is not TasksInput or argument.profile!=TASKS:
+            raise BudgetUnknown('explicit task understanding packet required')
+        return self._model_input(argument,national_intake=True,intake_profile=TASKS)
+
     def _model_input(self,argument,*,release_after_send=False,national_intake=False,intake_profile='LIO-planning-intake.1',answer_preparation=False):
         from cj_draft.grouped_plan import GroupedDraftInput,response_format_sha256 as grouped_schema_sha256
         from cj_message.lio_context import DiscussionPreviewInput,discussion_preview_format_sha256
         from cj_message.lio_exploration_schema import ExplorationInput,response_format_sha256 as exploration_sha
+        from cj_message.lio_tasks_schema import TasksInput
         exploration=type(argument) is ExplorationInput
+        # The task packet uses the same structured-output path as native4 profiles,
+        # without the native4 original-wire witness (it also serves .1/.2 originals).
+        tasks=type(argument) is TasksInput
         grouped=type(argument) is GroupedDraftInput
         discussion_preview=type(argument) is DiscussionPreviewInput
         native_turn = type(argument) is ModelInput
         indexed=intake_profile in ('LIO-planning-intake.3','LIO-planning-intake.4','LIO-planning-intake.5','LIO-planning-intake.6','LIO-planning-intake.7','LIO-planning-intake.8','LIO-planning-intake.9')
-        if exploration:
+        if exploration or tasks:
             if not national_intake or release_after_send or answer_preparation:
                 raise BudgetUnknown('explicit exploration registration required')
             messages,system,provider=json.loads(argument.messages),argument.system,argument.provider
@@ -586,7 +598,7 @@ class RealTools:
             if eligible:selected_tools=eligible
             else:final_answer=True
         if self.runtime_fragments is not None:
-            if exploration:raise BudgetUnknown('native4 is not a legacy national runtime text slot')
+            if exploration or tasks:raise BudgetUnknown('native4 is not a legacy national runtime text slot')
             from runtime_adapter.contract import decode,Invalid
             from runtime_adapter.profiles import render
             fragments=decode(self.runtime_fragments)
@@ -614,6 +626,7 @@ class RealTools:
                            **({'response_mode':'lio-memory-json.1'} if release_after_send else {}),
                            **({'structured_profile':intake_profile} if national_intake else {}),
                            **({'response_format_sha256':exploration_sha(intake_profile),'lio_origin':argument.origin.descriptor()} if exploration else {}),
+                           **({'response_format_sha256':exploration_sha(intake_profile)} if tasks else {}),
                            **({'response_format_sha256':SCHEMA_SHA256} if national_intake and intake_profile=='LIO-planning-intake.2' else {}),
                            **({'current_source_index':source_index,'response_format_sha256':
                                indexed_sha(source_index)}
@@ -664,7 +677,7 @@ class RealTools:
                         **({'discussion_reply':True} if discussion_handoff else {}),
                         lio_answer=inputs.get('answer_format_profile')=='lio-user.1',
                         **({'structured_profile':inputs['structured_profile']} if 'structured_profile' in inputs else {}),
-                        **({'exploration_schema_sha256':inputs['response_format_sha256']} if exploration else {}),
+                        **({'exploration_schema_sha256':inputs['response_format_sha256']} if exploration or tasks else {}),
                         **({'discussion_preview_days':inputs['discussion_preview_days'],
                             'discussion_preview_sha256':inputs['response_format_sha256']} if discussion_preview else {}),
                         **({'intake_source_index':inputs['current_source_index']} if 'current_source_index' in inputs else {}),
@@ -883,6 +896,11 @@ class RealTools:
                 if not chinese:
                     # HK run -41 eval: an English Uber question was answered in Chinese.
                     system += ' Write the whole answer in English; Chinese appears only in the bold name brackets.'
+        if lio_locale is not None:
+            # W2-8 (#1738): read the task call sent before intake; any failure keeps the old prompt.
+            from .lio_tasks import guidance_text,take_pending
+            reader=take_pending(binding.run_id)
+            if reader is not None:system+=guidance_text(reader(),lio_locale)
         if binding.scope in self.buffered_streaming_scopes:profile=M4_NATIVE_TURN_BUFFERED
         elif binding.scope in self.streaming_scopes:profile=M4_NATIVE_TURN_STREAM
         else:profile=M4_NATIVE_TURN_PROFILE_V2

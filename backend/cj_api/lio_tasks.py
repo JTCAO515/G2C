@@ -21,7 +21,7 @@ import threading
 
 from pydantic import ValidationError
 
-from cj_message.lio_tasks_schema import MISSING_FIELDS, TASKS, TaskPlan
+from cj_message.lio_tasks_schema import MISSING_FIELDS, TASKS, TaskPlan, TasksInput
 from .scene_pack_config import active_packs, city_enabled, load_switches
 
 # Code-chosen question order: the fact that changes the answer most comes first.
@@ -185,4 +185,48 @@ def take_pending(run_id):
 
 
 def log_outcome(run_id, outcome, count=0):
+    outcome = outcome if re.fullmatch(r'[A-Za-z_:]{1,64}', outcome) else 'unknown'
     logging.getLogger('cj_usage.audit').info('LIO_TASKS run_id=%s outcome=%s tasks=%d', run_id, outcome, count)
+
+
+def task_input(texts, provider):
+    """The packet: traveler originals with indices and the active packs' flows. No Memory, no tools."""
+    packs, _ = _packs()
+    data = dict(originals=[dict(source_index=index, text=text) for index, text in enumerate(texts)],
+                current_source_index=len(texts) - 1,
+                packs=[dict(pack=name, title=pack.title, flows=[dict(id=flow['id'], title=flow['title'])
+                                                                for flow in pack.flows])
+                       for name, pack in packs.items()])
+    messages = [dict(role='user', content=json.dumps(data, ensure_ascii=False, separators=(',', ':')))]
+    return TasksInput(json.dumps(messages, ensure_ascii=False, separators=(',', ':')).encode(), SYSTEM, provider)
+
+
+def start(worker, binding, texts, refs):
+    """Send the task call now and leave a reader for the answer step; reading never raises.
+
+    The request goes out before the planning intake or understanding call, so
+    both model calls run at the same time; the answer step reads the result.
+    """
+    stream = worker._registered_stream(binding, 'lio.tasks.0', 'model.lio_tasks.1',
+                                       task_input(texts, worker.provider), message_refs=tuple(refs))
+    try:
+        head = next(stream, '')
+    except Exception:
+        stream.close()
+        raise
+
+    def read():
+        try:
+            raw = head + ''.join(stream)
+        except Exception as error:
+            log_outcome(binding.run_id, 'failed:' + type(error).__name__)
+            return None
+        finally:
+            stream.close()
+        guidance = check_plan(raw, texts)
+        log_outcome(binding.run_id, 'ok' if guidance is not None else 'invalid',
+                    0 if guidance is None else len(guidance.tasks))
+        return guidance
+    read.close = stream.close
+    put_pending(binding.run_id, read)
+    return read

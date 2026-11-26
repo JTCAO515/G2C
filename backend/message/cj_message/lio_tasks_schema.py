@@ -6,6 +6,7 @@ to, an optional flow id from that pack and the facts still missing; the host
 validates every task against the traveler's own words and the active packs,
 then picks at most one question in code.
 """
+from dataclasses import dataclass
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -35,3 +36,13 @@ class TaskPlan(DTO):
     version: Literal['LIO-tasks.1']
     current_source_index: int = Field(ge=0)
     tasks: list[Task] = Field(max_length=4)
+
+
+
+@dataclass(frozen=True)
+class TasksInput:
+    """A server-prepared task-understanding packet, not a client-selectable flag."""
+    messages: bytes
+    system: str
+    provider: object
+    profile: str = TASKS

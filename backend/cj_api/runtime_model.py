@@ -36,7 +36,7 @@ class RuntimeModel:
         logical=decode(self.originals.input(token,message_id,operation_id))
         config=self.provider.config
         structured=logical.get('structured_profile')
-        if isinstance(structured,str) and structured.startswith('LIO-exploration-'):
+        if isinstance(structured,str) and (structured.startswith('LIO-exploration-') or structured in EXPLORATION_PROFILES):
             if (structured not in EXPLORATION_PROFILES or
                     logical.get('response_format_sha256')!=response_format_sha256(structured) or
                     body.get('response_format')!=response_format(structured)):
