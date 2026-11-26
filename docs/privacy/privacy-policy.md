@@ -80,12 +80,12 @@ This policy covers the Go2China iOS app and the website go2china.space.
 ## 4. 位置 / Location
 
 - 只有在你使用「打车」或「附近」时，App 才通过 iOS 系统权限读取设备位置；每次只读一次，不在后台持续定位。
-- 去向：位置先发到我们在香港的服务。打车时，上车点的精确位置转给滴滴，只用于这一次请求，不写日志、不保存；用来让搜索结果更靠近你的位置降到约 100 米。查找附近时，位置降到约 100 米精度后再发给高德。
+- 去向：位置先发到我们在香港的服务。打车时，上车点的精确位置只在这一次请求里发给滴滴，我们自己不写日志、不保存；用来让搜索结果更靠近你的位置降到约 100 米。查找附近时，位置降到约 100 米精度后再发给高德。
 - 位置不和你的账号一起保存，不写入记忆，也不发给 AI 模型。查找附近时，服务器会在内存里按降精度后的位置短暂缓存查询结果（约 1 分钟），不与账号关联。
 - 撤回：在 iOS「设置」里关闭 Go2China 的定位权限，或者不用这两个功能；其他功能照常可用，打车时可以手动选上车点。
 
 - The app reads your device location through the iOS permission only when you use Taxi or Nearby. It reads it once each time and never tracks you in the background.
-- Where it goes: your location first goes to our service in Hong Kong. For Taxi, the precise pickup location is passed to DiDi for that request only, and is not logged or stored; the location used to bring search results closer to you is reduced to about 100 m. For Nearby, your location is reduced to about 100 m before it goes to AMap.
+- Where it goes: your location first goes to our service in Hong Kong. For Taxi, the precise pickup location is sent to DiDi in that one request only, and we do not log or store it ourselves; the location used to bring search results closer to you is reduced to about 100 m. For Nearby, your location is reduced to about 100 m before it goes to AMap.
 - Your location is not stored with your account, not saved to memory, and not sent to the AI model. For Nearby, our server briefly caches results in memory by the reduced location (about 1 minute), not linked to your account.
 - To withdraw: turn off location access for Go2China in iOS Settings, or don't use these two features. Everything else keeps working, and for Taxi you can choose the pickup point by hand.
 
