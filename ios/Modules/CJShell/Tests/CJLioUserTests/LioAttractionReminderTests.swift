@@ -11,6 +11,9 @@ struct LioAttractionReminderTests {
         calendar.date(from: DateComponents(year: y, month: m, day: d, hour: h, minute: min))!
     }
 
+    /// The signed-in account these tests set reminders for; ids carry its hashed segment (#1922).
+    private let scope = LioAttractionReminderScope(account: "6F1B0C52-4F2E-4C58-9E57-0C1B8E6A7D01")
+
     private func rule(_ id: String) -> LioAttractionBookingRule {
         LioAttractionBookingRule.all.first { $0.id == id }!
     }
@@ -64,7 +67,7 @@ struct LioAttractionReminderTests {
         let palace = rule("beijing.palace-museum")
         #expect(LioAttractionReminder.plan(for: palace, visit: beijing(2027, 2, 1), now: beijing(2026, 11, 25, 9)) == .stale)
         #expect(LioAttractionReminder.request(for: palace, visit: beijing(2027, 2, 1), now: beijing(2026, 11, 25, 9),
-                                              language: .chinese) == nil)
+                                              language: .chinese, scope: scope) == nil)
     }
 
     @Test func firstDayReminderAfterTheReviewDateIsNotSetEither() {
@@ -85,13 +88,13 @@ struct LioAttractionReminderTests {
     @Test func notificationIsLocalAndCarriesNoPersonalData() throws {
         let palace = rule("beijing.palace-museum")
         let request = try #require(LioAttractionReminder.request(for: palace, visit: beijing(2026, 12, 5),
-                                                                 now: beijing(2026, 11, 25, 9), language: .english))
-        #expect(request.id == "g2c.attraction.beijing.palace-museum.2026-12-05")
+                                                                 now: beijing(2026, 11, 25, 9), language: .english, scope: scope))
+        #expect(request.id == "g2c.attraction.\(scope.segment).beijing.palace-museum.2026-12-05")
         #expect(request.fire == beijing(2026, 11, 28, 19, 50))
         #expect(request.title == "The Palace Museum: tickets open at 20:00")
         #expect(request.body.contains("5 Dec") && request.body.contains("official"))
         let zh = try #require(LioAttractionReminder.request(for: palace, visit: beijing(2026, 12, 5),
-                                                            now: beijing(2026, 11, 25, 9), language: .chinese))
+                                                            now: beijing(2026, 11, 25, 9), language: .chinese, scope: scope))
         #expect(zh.title == "故宫博物院 20:00 放票")
         #expect(zh.body.contains("12月5日") && zh.body.contains("以官方为准"))
     }
@@ -99,16 +102,16 @@ struct LioAttractionReminderTests {
     @Test func scheduledRemindersCanBeReadWithoutChangingThem() async throws {
         // The trip home page reads what is set; it never adds, removes or asks for permission.
         let center = FakeReminderCenter(granted: false, pending: [
-            "g2c.attraction.beijing.palace-museum.2026-12-05",
-            "g2c.attraction.beijing.mao-mausoleum.2026-12-09",
-            "g2c.attraction.nowhere.unknown-sight.2026-12-01",   // rule no longer in the table
-            "g2c.attraction.beijing.palace-museum.2026-13-40",   // not a date
+            scope.prefix + "beijing.palace-museum.2026-12-05",
+            scope.prefix + "beijing.mao-mausoleum.2026-12-09",
+            scope.prefix + "nowhere.unknown-sight.2026-12-01",   // rule no longer in the table
+            scope.prefix + "beijing.palace-museum.2026-13-40",   // not a date
             "g2c.other-feature.2026-12-01",                      // another feature's notification
         ])
-        let items = await LioAttractionReminderScheduler(center: center).scheduled()
+        let items = await LioAttractionReminderScheduler(center: center, scope: scope).scheduled()
         #expect(items.map(\.ruleID) == ["beijing.palace-museum", "beijing.mao-mausoleum"], "sorted by visit day")
         #expect(items.map(\.visit) == [beijing(2026, 12, 5), beijing(2026, 12, 9)])
-        #expect(items[0].id == "g2c.attraction.beijing.palace-museum.2026-12-05")
+        #expect(items[0].id == scope.prefix + "beijing.palace-museum.2026-12-05")
         #expect(items[0].rule?.nameZH == "故宫博物院")
         #expect(items[0].plan(now: beijing(2026, 11, 25, 9)) == .exact(opens: beijing(2026, 11, 28, 20), fire: beijing(2026, 11, 28, 19, 50)))
         #expect(items[1].plan(now: beijing(2026, 11, 25, 9)) == .firstDay(day: beijing(2026, 12, 3), fire: beijing(2026, 12, 3, 9)))
@@ -120,10 +123,10 @@ struct LioAttractionReminderTests {
     @Test func reminderIDsRoundTrip() throws {
         let palace = rule("beijing.palace-museum")
         let request = try #require(LioAttractionReminder.request(for: palace, visit: beijing(2026, 12, 5),
-                                                                 now: beijing(2026, 11, 25, 9), language: .english))
+                                                                 now: beijing(2026, 11, 25, 9), language: .english, scope: scope))
         // Other features (the trip home page) build the same identifier through this function.
-        #expect(LioAttractionReminder.reminderID(for: palace, visit: beijing(2026, 12, 5)) == request.id)
-        #expect(LioAttractionReminder.reminderID(for: palace, visit: beijing(2026, 12, 5, 23, 59)) == request.id,
+        #expect(LioAttractionReminder.reminderID(for: palace, visit: beijing(2026, 12, 5), scope: scope) == request.id)
+        #expect(LioAttractionReminder.reminderID(for: palace, visit: beijing(2026, 12, 5, 23, 59), scope: scope) == request.id,
                 "any time on the visit day gives the same identifier")
         let item = try #require(LioAttractionReminderItem(id: request.id))
         #expect(item.ruleID == palace.id && item.visit == beijing(2026, 12, 5))
@@ -133,10 +136,10 @@ struct LioAttractionReminderTests {
 
     @Test func schedulerAsksOnceThenAddsAndCancels() async throws {
         let center = FakeReminderCenter()
-        let scheduler = LioAttractionReminderScheduler(center: center)
+        let scheduler = LioAttractionReminderScheduler(center: center, scope: scope)
         let palace = rule("beijing.palace-museum")
         let request = try #require(LioAttractionReminder.request(for: palace, visit: beijing(2026, 12, 5),
-                                                                 now: beijing(2026, 11, 25, 9), language: .chinese))
+                                                                 now: beijing(2026, 11, 25, 9), language: .chinese, scope: scope))
         #expect(try await scheduler.schedule(request) == .scheduled)
         #expect(await center.added.map(\.id) == [request.id])
         #expect(await scheduler.isScheduled(request.id))
@@ -144,7 +147,7 @@ struct LioAttractionReminderTests {
         #expect(await !scheduler.isScheduled(request.id))
 
         let denied = FakeReminderCenter(granted: false)
-        #expect(try await LioAttractionReminderScheduler(center: denied).schedule(request) == .notAllowed)
+        #expect(try await LioAttractionReminderScheduler(center: denied, scope: scope).schedule(request) == .notAllowed)
         #expect(await denied.added.isEmpty)
     }
 }

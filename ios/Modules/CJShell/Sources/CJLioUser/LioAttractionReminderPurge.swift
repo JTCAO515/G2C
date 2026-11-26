@@ -16,29 +16,28 @@ public struct LioReminderSnapshot: Equatable, Sendable {
 
     public init(pending: Set<String>, delivered: Set<String>) { self.pending = pending; self.delivered = delivered }
 
-    /// Sight booking reminders still in either list.
-    public var residue: Set<String> {
-        pending.union(delivered).filter { $0.hasPrefix(LioAttractionReminderPurge.prefix) }
+    /// This account's sight booking reminders still in either list.
+    public func residue(of scope: LioAttractionReminderScope) -> Set<String> {
+        pending.union(delivered).filter(scope.owns)
     }
 
-    /// The same lists once the sight booking reminders are removed; other notifications as they were.
-    public var withoutSightReminders: Self {
-        Self(pending: pending.filter { !$0.hasPrefix(LioAttractionReminderPurge.prefix) },
-             delivered: delivered.filter { !$0.hasPrefix(LioAttractionReminderPurge.prefix) })
+    /// The same lists once this account's sight booking reminders are removed; every other notification as it was,
+    /// including another account's sight booking reminders.
+    public func withoutSightReminders(of scope: LioAttractionReminderScope) -> Self {
+        Self(pending: pending.filter { !scope.owns($0) }, delivered: delivered.filter { !scope.owns($0) })
     }
 }
 
-/// Account deletion removes the sight booking reminders this app set (#1689), waiting and already shown. Only
-/// identifiers with the sight booking prefix are touched; other notifications stay. Only `account_cleanup` runs it:
+/// Account deletion removes the sight booking reminders this account set (#1689, per account since #1922), waiting
+/// and already shown. Only identifiers that start with the account's own prefix (`g2c.attraction.<account>.`) are
+/// touched: another account's sight booking reminders, other notifications, and reminders set before #1922 (their
+/// identifier carries no account, so none can be told to be this one's) stay. Only `account_cleanup` runs it:
 /// switching accounts or a session found invalid keeps the reminders.
 ///
 /// The device cleanup steps are synchronous and run on the main actor, so the lists are read asynchronously
 /// beforehand (`read`) and the steps work from that snapshot; nothing waits on the main thread. A missing snapshot
 /// fails the step, which the cleanup records as unknown and retries.
 public enum LioAttractionReminderPurge {
-    /// Every sight booking reminder identifier starts with this (`g2c.attraction.<rule id>.<yyyy-MM-dd>`).
-    public static var prefix: String { LioAttractionReminderItem.prefix }
-
     public static func applies(to cleanupReason: String) -> Bool { cleanupReason == "account_cleanup" }
 
     public static func read(_ center: any LioReminderNotifications) async -> LioReminderSnapshot {
@@ -47,26 +46,27 @@ public enum LioAttractionReminderPurge {
         return await LioReminderSnapshot(pending: pending, delivered: delivered)
     }
 
-    /// Removes the sight booking reminders the snapshot found, from both lists. Running it again on a fresh
-    /// snapshot finds nothing and removes nothing.
-    public static func erase(_ snapshot: LioReminderSnapshot?, in center: any LioReminderNotifications) throws {
+    /// Removes this account's sight booking reminders the snapshot found, from both lists. Running it again on a
+    /// fresh snapshot finds nothing and removes nothing.
+    public static func erase(_ snapshot: LioReminderSnapshot?, of scope: LioAttractionReminderScope,
+                             in center: any LioReminderNotifications) throws {
         guard let snapshot else { throw Failure.unavailable }
-        let pending = snapshot.pending.filter { $0.hasPrefix(prefix) }.sorted()
-        let delivered = snapshot.delivered.filter { $0.hasPrefix(prefix) }.sorted()
+        let pending = snapshot.pending.filter(scope.owns).sorted()
+        let delivered = snapshot.delivered.filter(scope.owns).sorted()
         if !pending.isEmpty { center.removePending(pending) }
         if !delivered.isEmpty { center.removeDelivered(delivered) }
     }
 
-    /// Passes only when a snapshot was read and neither list holds a sight booking reminder.
-    public static func requireAbsent(_ snapshot: LioReminderSnapshot?) throws {
+    /// Passes only when a snapshot was read and neither list holds one of this account's sight booking reminders.
+    public static func requireAbsent(_ snapshot: LioReminderSnapshot?, of scope: LioAttractionReminderScope) throws {
         guard let snapshot else { throw Failure.unavailable }
-        guard snapshot.residue.isEmpty else { throw Failure.stillPresent }
+        guard snapshot.residue(of: scope).isEmpty else { throw Failure.stillPresent }
     }
 
     /// The whole step for an async caller: read, remove, read again and check both lists.
-    public static func purge(in center: any LioReminderNotifications) async throws {
-        try erase(await read(center), in: center)
-        try requireAbsent(await read(center))
+    public static func purge(of scope: LioAttractionReminderScope, in center: any LioReminderNotifications) async throws {
+        try erase(await read(center), of: scope, in: center)
+        try requireAbsent(await read(center), of: scope)
     }
 
     public enum Failure: Error, Equatable { case stillPresent, unavailable }

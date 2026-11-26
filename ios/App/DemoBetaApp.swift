@@ -53,6 +53,8 @@ struct DemoBetaRootView: View {
                 .lioMedicalCardStorage(root.localMedicalCardStorage())
                 // #1741: the passport nationality is kept per account; migrated from the device-wide key on first read.
                 .lioNationality(trip.messages.lioNationality)
+                // #1922: sight booking reminders are set and read under this account's own identifier prefix.
+                .lioReminderScope(trip.messages.lioReminderScope)
                 .id(root.lioPresentationID)
             } else if root.accounts.isResuming {
                 LioSessionRecoveryView(language: shell.language.lio,

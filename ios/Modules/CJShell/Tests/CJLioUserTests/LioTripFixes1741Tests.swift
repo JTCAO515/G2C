@@ -198,9 +198,11 @@ final class FakeReminderNotifications: LioReminderNotifications, @unchecked Send
 }
 
 struct LioAttractionReminderPurgeTests {
-    private let sight = "g2c.attraction.forbidden-city.2026-12-01"
-    private let otherSight = "g2c.attraction.summer-palace.2026-12-02"
-    private let shown = "g2c.attraction.great-wall.2026-11-20"
+    /// The account being deleted; its reminders carry this account's hashed segment (#1922).
+    private let scope = LioAttractionReminderScope(account: "6F1B0C52-4F2E-4C58-9E57-0C1B8E6A7D01")
+    private var sight: String { scope.prefix + "forbidden-city.2026-12-01" }
+    private var otherSight: String { scope.prefix + "summer-palace.2026-12-02" }
+    private var shown: String { scope.prefix + "great-wall.2026-11-20" }
     private let other = ["g2c.other.reminder", "medication.9am", "g2c.attractionx.1"]
 
     /// L0: after deletion neither the pending nor the delivered list has a sight booking reminder; the check reads
@@ -208,14 +210,14 @@ struct LioAttractionReminderPurgeTests {
     @Test func afterDeletionNoSightReminderIsPendingOrShown() async throws {
         let center = FakeReminderNotifications(pending: Set([sight, otherSight] + other), delivered: Set([shown, "medication.8am"]))
         #expect(throws: LioAttractionReminderPurge.Failure.stillPresent) {
-            try LioAttractionReminderPurge.requireAbsent(LioReminderSnapshot(pending: [], delivered: [shown]))
+            try LioAttractionReminderPurge.requireAbsent(LioReminderSnapshot(pending: [], delivered: [shown]), of: scope)
         }
-        try await LioAttractionReminderPurge.purge(in: center)
+        try await LioAttractionReminderPurge.purge(of: scope, in: center)
         let after = await LioAttractionReminderPurge.read(center)
-        #expect(after.residue.isEmpty)
-        try LioAttractionReminderPurge.requireAbsent(after)
+        #expect(after.residue(of: scope).isEmpty)
+        try LioAttractionReminderPurge.requireAbsent(after, of: scope)
         // Re-entrant: a resumed cleanup removes nothing more and still verifies.
-        try await LioAttractionReminderPurge.purge(in: center)
+        try await LioAttractionReminderPurge.purge(of: scope, in: center)
         #expect(center.removals.sorted() == [shown, sight, otherSight].sorted())
     }
 
@@ -224,9 +226,9 @@ struct LioAttractionReminderPurgeTests {
     @Test func theSnapshotStepsMatchAFreshRead() async throws {
         let center = FakeReminderNotifications(pending: [sight, "medication.9am"], delivered: [shown])
         let before = await LioAttractionReminderPurge.read(center)
-        try LioAttractionReminderPurge.erase(before, in: center)
-        try LioAttractionReminderPurge.requireAbsent(before.withoutSightReminders)
-        #expect(await LioAttractionReminderPurge.read(center) == before.withoutSightReminders)
+        try LioAttractionReminderPurge.erase(before, of: scope, in: center)
+        try LioAttractionReminderPurge.requireAbsent(before.withoutSightReminders(of: scope), of: scope)
+        #expect(await LioAttractionReminderPurge.read(center) == before.withoutSightReminders(of: scope))
     }
 
     /// L0: only `account_cleanup` clears; switching accounts or a session found invalid does not.
@@ -240,22 +242,22 @@ struct LioAttractionReminderPurgeTests {
     /// L0: notifications with other prefixes stay, waiting or shown.
     @Test func otherNotificationsAreUntouched() async throws {
         let center = FakeReminderNotifications(pending: Set([sight] + other), delivered: Set([shown] + other))
-        try await LioAttractionReminderPurge.purge(in: center)
+        try await LioAttractionReminderPurge.purge(of: scope, in: center)
         #expect(center.pending == Set(other))
         #expect(center.delivered == Set(other))
         #expect(Set(center.removals) == [sight, shown])
     }
 
     @Test func theIdentifierPrefixIsTheSchedulersOwn() {
-        #expect(LioAttractionReminderPurge.prefix == LioAttractionReminderItem.prefix)
-        #expect(LioAttractionReminderItem(id: sight) != nil)
+        #expect(scope.prefix.hasPrefix(LioAttractionReminderItem.prefix))
+        #expect(LioAttractionReminderItem(id: sight)?.account == scope.segment)
     }
 
     /// No snapshot read: both steps fail (recorded as unknown) instead of passing.
     @Test func withoutASnapshotTheStepFailsInsteadOfPassing() {
         let center = FakeReminderNotifications(pending: [sight])
-        #expect(throws: LioAttractionReminderPurge.Failure.unavailable) { try LioAttractionReminderPurge.erase(nil, in: center) }
-        #expect(throws: LioAttractionReminderPurge.Failure.unavailable) { try LioAttractionReminderPurge.requireAbsent(nil) }
+        #expect(throws: LioAttractionReminderPurge.Failure.unavailable) { try LioAttractionReminderPurge.erase(nil, of: scope, in: center) }
+        #expect(throws: LioAttractionReminderPurge.Failure.unavailable) { try LioAttractionReminderPurge.requireAbsent(nil, of: scope) }
         #expect(center.pending == [sight])
     }
 }

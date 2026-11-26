@@ -90,3 +90,18 @@ public extension View {
         return Binding(get: { store.value }, set: { store.value = $0 })
     }
 }
+
+private struct LioReminderScopeKey: EnvironmentKey { static let defaultValue: LioAttractionReminderScope? = nil }
+
+extension EnvironmentValues {
+    /// The signed-in account's sight booking reminder scope (#1922); nil outside a signed-in host (previews).
+    var lioReminderScope: LioAttractionReminderScope? {
+        get { self[LioReminderScopeKey.self] }
+        set { self[LioReminderScopeKey.self] = newValue }
+    }
+}
+
+public extension View {
+    /// The signed-in account every sight booking reminder below is set and read under (#1922).
+    func lioReminderScope(_ scope: LioAttractionReminderScope?) -> some View { environment(\.lioReminderScope, scope) }
+}

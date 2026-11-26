@@ -1,4 +1,33 @@
+import CryptoKit
 import Foundation
+
+/// Which account a sight booking reminder belongs to (#1922). Its notification identifiers read
+/// `g2c.attraction.<segment>.<rule id>.<yyyy-MM-dd>`, where the segment is the first 16 hex characters of a SHA-256
+/// over the account id: short, one-way, and nothing that identifies the person. Account deletion removes only the
+/// identifiers that start with this account's `prefix`, so a second account on the same phone keeps its own.
+public struct LioAttractionReminderScope: Equatable, Sendable {
+    /// Characters in the account segment.
+    static let segmentLength = 16
+
+    public let segment: String
+
+    /// `account` is the signed-in account's id (the same string the nationality key uses). Nil or empty (signed out,
+    /// previews) gives one shared segment that no account deletion ever targets.
+    public init(account: String?) {
+        let digest = SHA256.hash(data: Data(("g2c.attraction.account.v1:" + (account ?? "").lowercased()).utf8))
+        segment = digest.prefix(Self.segmentLength / 2).map { String(format: "%02x", $0) }.joined()
+    }
+
+    /// `g2c.attraction.<segment>.`: the trailing dot keeps one segment from being the start of another.
+    public var prefix: String { LioAttractionReminderItem.prefix + segment + "." }
+
+    public func owns(_ identifier: String) -> Bool { identifier.hasPrefix(prefix) }
+
+    /// A 16-character lowercase hex string, the shape of an account segment.
+    static func isSegment(_ text: Substring) -> Bool {
+        text.utf8.count == segmentLength && text.utf8.allSatisfy { ($0 >= 0x30 && $0 <= 0x39) || ($0 >= 0x61 && $0 <= 0x66) }
+    }
+}
 
 /// Local "tickets open soon" reminders. Computed on the phone in Beijing time and scheduled with
 /// the system's local notifications; nothing leaves the device.
@@ -50,8 +79,9 @@ enum LioAttractionReminder {
         return rule.isStale(on: fire) ? .stale : .firstDay(day: firstDay, fire: fire)
     }
 
-    static func request(for rule: LioAttractionBookingRule, visit: Date, now: Date, language: LioLanguage) -> Request? {
-        let id = reminderID(for: rule, visit: visit)
+    static func request(for rule: LioAttractionBookingRule, visit: Date, now: Date, language: LioLanguage,
+                        scope: LioAttractionReminderScope) -> Request? {
+        let id = reminderID(for: rule, visit: visit, scope: scope)
         let day = visitText(visit, language)
         let check = language.text("Book on the official channel; check the official rules.", "请到官方渠道预约，以官方为准。")
         switch plan(for: rule, visit: visit, now: now) {
@@ -72,10 +102,10 @@ enum LioAttractionReminder {
         }
     }
 
-    /// The notification identifier for a sight and visit day, `g2c.attraction.<rule id>.<yyyy-MM-dd>`.
+    /// The notification identifier for a sight and visit day, `g2c.attraction.<account>.<rule id>.<yyyy-MM-dd>`.
     /// Other features use it to tell whether a reminder is set, instead of building the format themselves.
-    static func reminderID(for rule: LioAttractionBookingRule, visit: Date) -> String {
-        LioAttractionReminderItem.prefix + "\(rule.id).\(dayKey(visit))"
+    static func reminderID(for rule: LioAttractionBookingRule, visit: Date, scope: LioAttractionReminderScope) -> String {
+        scope.prefix + "\(rule.id).\(dayKey(visit))"
     }
 
     static func dayKey(_ date: Date) -> String {
@@ -92,23 +122,35 @@ enum LioAttractionReminder {
 }
 
 /// One reminder that is set, read back from its notification identifier
-/// `g2c.attraction.<rule id>.<yyyy-MM-dd>`; nothing else is stored.
+/// `g2c.attraction.<account>.<rule id>.<yyyy-MM-dd>`; nothing else is stored. Reminders set before #1922 have no
+/// account segment (`g2c.attraction.<rule id>.<yyyy-MM-dd>`): they read back with `account == nil`.
 struct LioAttractionReminderItem: Equatable, Sendable {
     static let prefix = "g2c.attraction."
     let id: String
+    /// The account segment, or nil for the identifier shape before #1922.
+    let account: String?
     let ruleID: String
     /// The visit day, midnight Beijing time.
     let visit: Date
 
     init?(id: String) {
         guard id.hasPrefix(Self.prefix) else { return nil }
-        let rest = id.dropFirst(Self.prefix.count)
+        var rest = id.dropFirst(Self.prefix.count)
+        var account: String?
+        // Rule ids start with a city name, never 16 hex characters (a test holds the table to it).
+        if let dot = rest.firstIndex(of: "."), LioAttractionReminderScope.isSegment(rest[..<dot]) {
+            account = String(rest[..<dot])
+            rest = rest[rest.index(after: dot)...]
+        }
         guard let dot = rest.lastIndex(of: ".") else { return nil }
         let ruleID = String(rest[..<dot]), day = String(rest[rest.index(after: dot)...])
         guard !ruleID.isEmpty, let visit = LioAttractionBookingRule.day(day),
               LioAttractionReminder.dayKey(visit) == day else { return nil }
-        (self.id, self.ruleID, self.visit) = (id, ruleID, visit)
+        (self.id, self.account, self.ruleID, self.visit) = (id, account, ruleID, visit)
     }
+
+    /// The identifier the same sight and day had before #1922, `g2c.attraction.<rule id>.<yyyy-MM-dd>`.
+    var legacyID: String { Self.prefix + "\(ruleID).\(LioAttractionReminder.dayKey(visit))" }
 
     var rule: LioAttractionBookingRule? { LioAttractionBookingRule.all.first { $0.id == ruleID } }
 
@@ -129,20 +171,32 @@ protocol LioAttractionReminderCenter: Sendable {
 struct LioAttractionReminderScheduler: Sendable {
     enum Outcome: Equatable, Sendable { case scheduled, notAllowed }
     let center: any LioAttractionReminderCenter
+    /// The signed-in account every identifier this scheduler builds, reads or removes belongs to (#1922).
+    let scope: LioAttractionReminderScope
 
+    /// The reminder for a sight and visit day, with this account's identifier.
+    func request(for rule: LioAttractionBookingRule, visit: Date, now: Date, language: LioLanguage) -> LioAttractionReminder.Request? {
+        LioAttractionReminder.request(for: rule, visit: visit, now: now, language: language, scope: scope)
+    }
+
+    /// Sets the reminder. One set before #1922 for the same sight and day (no account segment, so no account can
+    /// claim it) is rebuilt here in the account's own shape: added first, then the old one removed, so it does not
+    /// fire twice and a failed add leaves it as it was.
     func schedule(_ request: LioAttractionReminder.Request) async throws -> Outcome {
         guard await center.requestAuthorization() else { return .notAllowed }
         try await center.add(request)
+        if let legacy = LioAttractionReminderItem(id: request.id)?.legacyID { await center.remove(legacy) }
         return .scheduled
     }
 
     func isScheduled(_ id: String) async -> Bool { await center.pendingIDs().contains(id) }
 
-    /// Read-only view of the reminders set on this phone, soonest visit first, for the trip home page.
-    /// It neither adds nor removes anything and does not ask for permission.
+    /// Read-only view of this account's reminders set on this phone, soonest visit first, for the trip home page.
+    /// It neither adds nor removes anything and does not ask for permission. Another account's reminders, and ones
+    /// set before #1922, are not listed.
     func scheduled() async -> [LioAttractionReminderItem] {
         await center.pendingIDs().compactMap(LioAttractionReminderItem.init(id:))
-            .filter { $0.rule != nil }
+            .filter { $0.account == scope.segment && $0.rule != nil }
             .sorted { ($0.visit, $0.ruleID) < ($1.visit, $1.ruleID) }
     }
 

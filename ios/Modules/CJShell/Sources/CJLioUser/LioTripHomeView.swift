@@ -145,7 +145,8 @@ struct LioTripHome: View {
             hotelSaved: tools.hotelStore == nil ? nil : hotel != nil,
             showCards: tools.showCards,
             attractionBooking: tools.reminders != nil,
-            scheduledReminders: reminders))
+            scheduledReminders: reminders,
+            reminderScope: tools.reminders?.scope ?? LioAttractionReminderScope(account: nil)))
     }
 
     private func readTools() async {

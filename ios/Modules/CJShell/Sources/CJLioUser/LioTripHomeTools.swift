@@ -46,7 +46,7 @@ extension LioTripHomeArrival {
 
     /// The tools as this build has them, for the signed-in account's message folder.
     static func fromBuild(messageDirectory: URL?, isCurrent: @escaping @MainActor () -> Bool,
-                          arrival: LioTripHomeArrival?) -> Self {
+                          arrival: LioTripHomeArrival?, reminderScope: LioAttractionReminderScope) -> Self {
         let info = { (key: String) in Bundle.main.object(forInfoDictionaryKey: key) }
         // Back to Hotel's own switch (#1632): `G2CShowCardEnabled`, or its Debug preview argument.
         let showCards = LioReturnHotelTools.shownInTools
@@ -62,7 +62,7 @@ extension LioTripHomeArrival {
             } : nil,
             showCards: showCards,
             reminders: LioAttractionBookingFeature.enabled(infoValue: info(LioAttractionBookingFeature.infoKey))
-                ? LioAttractionReminderScheduler(center: LioSystemReminderCenter()) : nil,
+                ? LioAttractionReminderScheduler(center: LioSystemReminderCenter(), scope: reminderScope) : nil,
             roadbookStore: roadbooks ? messageDirectory.map {
                 LioRoadbookStore(directory: LioAccountFolders.roadbooks(inMessageDirectory: $0), isCurrent: isCurrent)
             } : nil,
