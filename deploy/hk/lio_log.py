@@ -39,7 +39,7 @@ DAILY_CAP_BYTES = 8 * 1024 * 1024
 ROLES = ('api', 'worker')
 _NAME = re.compile(r'LIO_[A-Z0-9_]{1,64}')
 _TOKEN = re.compile(r'([a-z][a-z0-9_]{0,48})=(\S{0,400})')
-_SAFE = re.compile(r'[A-Za-z0-9_.:,/+-]{0,200}')
+_SAFE = re.compile(r'[A-Za-z0-9_.:,/+*-]{0,400}')
 _HASHED = frozenset({'run_id', 'message_id', 'conversation_id'})
 _DROPPED = frozenset({'subject', 'scope', 'user', 'user_id', 'text', 'content', 'prompt', 'reply', 'answer', 'detail'})
 _DROPPED_SUFFIXES = ('_subject', '_scope', '_text', '_content', '_prompt')

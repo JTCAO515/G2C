@@ -103,3 +103,13 @@ def test_compose_mounts_the_store_for_api_and_worker_only():
     from pathlib import Path
     compose = (Path(__file__).resolve().parents[2] / 'deploy/hk/compose.yaml').read_text()
     assert compose.count('/srv/g2c-beta/lio-log:/lio-log') == 2
+
+
+def test_real_refusal_lines_keep_their_schema_locations():
+    # Format of backend/cj_api/local_lio_pipeline_generation.py _log_refusal: '*' marks a location
+    # outside the schema, and up to 8 items are joined.
+    locations=','.join(f'days.{i}.items.*.extra:extra_forbidden' for i in range(8))
+    line=lio_log.sanitize('LIO_PIPELINE_REFUSED run_id=r stage=generation error=ValidationError '
+                          'message_sha256=abc123 cause=ValidationError cause_errors='+locations+' cause_error_count=8')
+    assert 'cause_errors='+locations in line and 'cause_error_count=8' in line and len(locations)>200
+    assert 'redacted' not in line
