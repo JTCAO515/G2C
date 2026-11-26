@@ -450,6 +450,22 @@
       "sha256": "8b50fddc511c2bbcdd758ce95f79494b3b89483c921880150320696e5fd54ba0",
       "down": "backend/migrations/down/0056_service_request.down.sql",
       "down_sha256": "97e9803716cbb8f0a89a72663cbdf25741b2cbde2506569cfe92bc3722adc9ef"
+    },
+    {
+      "version": 57,
+      "name": "service_conversation",
+      "file": "backend/migrations/0057_service_conversation.sql",
+      "sha256": "fd6135b1ace2e03cb001cb4bcc5169373aa924c59484ba9476ff650d45dc9522",
+      "down": "backend/migrations/down/0057_service_conversation.down.sql",
+      "down_sha256": "8960d15500e35cc54b6eb3726d1e64433bdd84079f7526c17d2eba59f39f7f20"
+    },
+    {
+      "version": 58,
+      "name": "service_ops_console",
+      "file": "backend/migrations/0058_service_ops_console.sql",
+      "sha256": "16368251f1b00dce8194cffbb638fbcbb5183b50161c67af7b4a94f521437817",
+      "down": "backend/migrations/down/0058_service_ops_console.down.sql",
+      "down_sha256": "3cb105f4b012ec53d5cf9d33ea9ce7b2ed82a82b38ff2a02bfb4d2de47446045"
     }
   ]
 }

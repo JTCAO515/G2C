@@ -150,18 +150,21 @@ class Repository:
 
     # -- reads -------------------------------------------------------------------
     def _row(self, cur, where, value, *, lock=False):
-        cur.execute('SELECT request_id,client_request_id,original_input,input_sha256,state,details,human_service,quote '
+        cur.execute('SELECT request_id,client_request_id,original_input,input_sha256,state,details,human_service,quote,'
+                    'note_cleared_at IS NOT NULL '
                     'FROM cj_service_request WHERE scope=%s AND ' + where + '=%s' + (' FOR UPDATE' if lock else ''),
                     (self.scope, value))
         row = cur.fetchone()
         if row is None:
             return None
-        rid, cid, raw, digest, state, details, human, quote = row
+        rid, cid, raw, digest, state, details, human, quote, cleared = row
         raw = bytes(raw)
-        if sha256(raw).hexdigest() != digest:
+        # A misreceived note cleared by the operations console (PIPIA 7, #1771) leaves the stored
+        # bytes without it; the digest of the original bytes still decides exact replay.
+        if not cleared and sha256(raw).hexdigest() != digest:
             raise Unavailable()
-        return dict(request_id=rid, client_request_id=cid, original=raw, state=state, details=details,
-                    human_service=human, quote=quote)
+        return dict(request_id=rid, client_request_id=cid, original=raw, digest=digest, cleared=cleared, state=state,
+                    details=details, human_service=human, quote=quote)
 
     def _project(self, cur, row):
         cur.execute('SELECT seq,from_state,to_state,' + _STAMP.format('at') + ',actor_kind '
@@ -202,7 +205,9 @@ class Repository:
         with self.transaction(cid, writing=True) as cur:
             old = self._row(cur, 'client_request_id', cid)
             if old is not None:
-                if old['original'] != submission.original:
+                same = (sha256(submission.original).hexdigest() == old['digest'] if old['cleared']
+                        else old['original'] == submission.original)
+                if not same:
                     raise Conflict()
                 return self._project(cur, old)
             # Only new submissions are gated; replays/reads above still answer.
@@ -224,6 +229,7 @@ class Repository:
                     "evidence_kind,evidence_body) VALUES(%s,%s,1,NULL,'user_confirmed','user','consent',%s),"
                     "(%s,%s,2,'user_confirmed','submitted','system','receipt',%s)",
                     (self.scope, rid, consent, self.scope, rid, sha256(submission.original).hexdigest()))
+        self._notify(cur, rid, 2, 'submitted', human)
         return self._project(cur, self._row(cur, 'request_id', rid))
 
     # -- transitions -------------------------------------------------------------
@@ -269,7 +275,34 @@ class Repository:
                      target in TERMINAL, self.scope, rid))
         if cur.rowcount != 1:
             raise Unavailable()
+        self._notify(cur, rid, seq, target, human)
         return self._project(cur, self._row(cur, 'request_id', rid))
+
+    # -- server-initiated messages (#1770, ADR-0009 section 3) -------------------
+    def _notify(self, cur, rid, seq, to_state, human):
+        """Same transaction as the state change: committed together or not at all.
+
+        Switched off, no service conversation is created; an existing one still receives the
+        message for a request being brought to an end ("existing requests can finish").
+        """
+        from cj_message.service_session import emit
+        return emit(cur, self.scope, rid, seq, to_state, human, create=self.flag())
+
+    def redeliver(self, request_id, seq):
+        """Idempotent retry for one recorded state change; a delivered change writes nothing."""
+        rid = _identifier(request_id, _REQUEST_ID, NotFound())
+        if type(seq) is not int or seq < 2:
+            raise InvalidInput('seq')
+        with self.transaction(writing=True) as cur:
+            row = self._row(cur, 'request_id', rid, lock=True)
+            if row is None:
+                raise NotFound()
+            cur.execute('SELECT to_state FROM cj_service_request_history WHERE scope=%s AND request_id=%s AND seq=%s',
+                        (self.scope, rid, seq))
+            found = cur.fetchone()
+            if found is None:
+                raise NotFound()
+            return self._notify(cur, rid, seq, found[0], row['human_service'])
 
     def cancel(self, request_id, client_request_id):
         """User cancel (contract section 6): idempotent, allowed while switched off."""

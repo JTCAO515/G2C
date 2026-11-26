@@ -4,7 +4,7 @@ import hmac
 import re
 from asyncio import to_thread
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime
 from typing import cast
 from urllib.parse import parse_qsl, urlencode
@@ -18,12 +18,13 @@ from jt.common import CaseExecution, Severity
 from jt.playbook.workflow import StaffAction
 from jt.synthetic import generate_dataset
 
-from . import case_pages, pages, queue_pages
+from . import case_pages, operations_pages, pages, queue_pages
 from .auth import SESSION_LIFETIME, AccessDenied, AccountAction, Auth, AuthenticationRequired, InvalidAccount
 from .cases import CaseWorkspace, workbench_audit
+from .operations import DemoOperations, EvidenceRequired, OperationConflict, OperationMissing, OperationsSource
 from .queue import MemoryQueue, QueueItem, QueueStore, Review, display_text
 from .security import TOKEN, USERNAME, new_token
-from .store import AuditAction, AuditEvent, AuditResult, CaseAuditDetail, Role, Session
+from .store import AuditAction, AuditEvent, AuditResult, CaseAuditDetail, OperationsAuditDetail, Role, Session
 
 
 SESSION_COOKIE = "__Host-jt-session"
@@ -36,6 +37,8 @@ REVIEW_FORM = ("signal", "actual_severity", "false_positive", "missed", "note", 
 SEVERITIES = ("P0", "P1", "P2", "P3", "P4")
 CASE_REVISION = re.compile(r"0|[1-9][0-9]{0,18}")
 CASE_FORM = ("action", "revision", "csrf")
+REQUEST_FORM = ("target", "seq", "evidence", "amount", "csrf")
+LEAD_FORM = ("target", "csrf")
 COOKIE_POLICY = {"path": "/", "secure": True, "httponly": True, "samesite": "strict"}
 HEALTH_HOST = "jt-workbench-health"
 
@@ -128,7 +131,7 @@ def evaluation_sample(item: QueueItem, review: Review) -> dict:
 
 def create_app(
     auth: Auth, *, port: int = 8443, queue: QueueStore | None = None, proxy: ProxyEntry | None = None,
-    cases: CaseWorkspace | None = None,
+    cases: CaseWorkspace | None = None, operations: OperationsSource | None = None,
 ) -> FastAPI:
     host = proxy.host if proxy else f"127.0.0.1:{port}"
     origin = f"https://{host}"
@@ -136,6 +139,7 @@ def create_app(
     signals = generate_dataset().signals
     work_queue = MemoryQueue(signals) if queue is None else queue
     workspace = CaseWorkspace.from_signals(signals) if cases is None else cases
+    ops = DemoOperations() if operations is None else operations
 
     @app.middleware("http")
     async def apply_security(request: Request, call_next) -> Response:
@@ -286,24 +290,38 @@ def create_app(
             raise HTTPException(404, "找不到该信号。")
         return selected
 
+    def with_demo_case(item: QueueItem) -> QueueItem:
+        case_id = workspace.case_for_signal(item.signal.signal_id)
+        return replace(item, case_id=case_id) if case_id and item.case_id is None else item
+
     @app.get("/queue")
     def queue_view(request: Request) -> Response:
-        with auth.store.locked():
+        with workspace.lock, auth.store.locked():
             session = queue_session(request)
             signal_type = request.query_params.get("type", "")
             status = request.query_params.get("status", "")
             if (signal_type and signal_type not in queue_pages.TYPE_LABELS) or (status and status not in queue_pages.STATUS_LABELS):
                 raise HTTPException(400, "筛选条件有误。")
             reference = request.query_params.get("signal", "")
-            selected = selected_item(reference) if reference else None
-            items = tuple(item for item in work_queue.snapshot()
+            selected = with_demo_case(selected_item(reference)) if reference else None
+            items = tuple(with_demo_case(item) for item in work_queue.snapshot()
                           if (not signal_type or item.signal.signal_type == signal_type)
                           and (not status or item.status == status))
             alerts = work_queue.alerts()
+            case_access = None
+            if (selected and session.role == Role.OPERATOR and not workspace.failed
+                    and selected.case_id == workspace.case_for_signal(selected.signal.signal_id)
+                    and selected.case_id is not None):
+                identifier = UUID(selected.case_id)
+                if workspace.owned(identifier, session.username) is not None:
+                    case_access = "owned"
+                elif workspace.unclaimed(identifier) is not None:
+                    case_access = "unclaimed"
             auth.store.append_audit(AuditEvent(auth.clock(), AuditAction.VIEW, session.username,
                                               selected.case_id if selected else None,
                                               signal_reference=selected.reference if selected else None))
-        return queue_pages.queue_page(session, items, selected, signal_type=signal_type, status=status, alerts=alerts)
+        return queue_pages.queue_page(session, items, selected, signal_type=signal_type, status=status,
+                                      alerts=alerts, case_access=case_access)
 
     @app.get("/queue/alerts")
     def queue_alerts(request: Request) -> Response:
@@ -433,5 +451,65 @@ def create_app(
         if result.audit.reason is not None:
             return case_pages.case_detail(session, cast(CaseExecution, result.execution), reason=result.audit.reason)
         return RedirectResponse(f"/cases/{identifier}", status_code=303)
+
+    def record_operations(token: str, csrf: str, detail: OperationsAuditDetail) -> None:
+        with auth.store.locked():
+            session = auth.require_session(token, role=Role.OPERATOR, csrf=csrf)
+            auth.store.append_audit(AuditEvent(auth.clock(), AuditAction.DECIDE, session.username,
+                                              operations_detail=detail))
+
+    @app.get("/operations")
+    def list_requests(request: Request) -> Response:
+        session = auth.require_session(session_token(request), role=Role.OPERATOR)
+        return operations_pages.request_list(session, ops.requests())
+
+    @app.get("/operations/requests/{request_id}")
+    def show_request(request: Request, request_id: str) -> Response:
+        session = auth.require_session(session_token(request), role=Role.OPERATOR)
+        item = ops.request(request_id)
+        if item is None:
+            raise HTTPException(404, "找不到演示请求。")
+        return operations_pages.request_detail(session, item)
+
+    @app.get("/operations/leads")
+    def list_leads(request: Request) -> Response:
+        session = auth.require_session(session_token(request), role=Role.OPERATOR)
+        return operations_pages.lead_list(session, ops.leads())
+
+    def apply_request(token: str, request_id: str, fields: dict[str, str]) -> Response:
+        auth.require_session(token, role=Role.OPERATOR, csrf=fields["csrf"], touch=False)
+        if not CASE_REVISION.fullmatch(fields["seq"]):
+            raise HTTPException(400, "演示请求版本有误。")
+        try:
+            ops.change_request(request_id, fields["target"], int(fields["seq"]), fields["evidence"], fields["amount"],
+                               lambda detail: record_operations(token, fields["csrf"], detail))
+        except OperationMissing:
+            raise HTTPException(404, "找不到演示请求。") from None
+        except OperationConflict:
+            raise HTTPException(409, "演示状态已更新或不允许此操作。") from None
+        except EvidenceRequired:
+            raise HTTPException(400, "请填写演示凭据，并在报价时提供有效金额。") from None
+        return RedirectResponse(f"/operations/requests/{request_id}", status_code=303)
+
+    @app.post("/operations/requests/{request_id}")
+    async def change_request(request: Request, request_id: str) -> Response:
+        fields = await read_form(request, origin, REQUEST_FORM)
+        return await to_thread(apply_request, session_token(request), request_id, fields)
+
+    def apply_lead(token: str, client_request_id: str, fields: dict[str, str]) -> Response:
+        auth.require_session(token, role=Role.OPERATOR, csrf=fields["csrf"], touch=False)
+        try:
+            ops.change_lead(client_request_id, fields["target"],
+                            lambda detail: record_operations(token, fields["csrf"], detail))
+        except OperationMissing:
+            raise HTTPException(404, "找不到演示线索。") from None
+        except OperationConflict:
+            raise HTTPException(409, "演示线索状态已更新或不允许此操作。") from None
+        return RedirectResponse("/operations/leads", status_code=303)
+
+    @app.post("/operations/leads/{client_request_id}")
+    async def change_lead(request: Request, client_request_id: str) -> Response:
+        fields = await read_form(request, origin, LEAD_FORM)
+        return await to_thread(apply_lead, session_token(request), client_request_id, fields)
 
     return app

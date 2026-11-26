@@ -27,6 +27,7 @@ struct CJProbeApp: App {
 
     #if DEBUG && targetEnvironment(simulator) && G2C_LIO_APP
     private let localMedicalCardPreview = Self.makeMedicalCardPreview()
+    private let travelProfilePreview = LioTravelProfilePreview.make()
     #endif
 
     init() {
@@ -127,16 +128,45 @@ struct CJProbeApp: App {
         } else {
             let home = LioHome(language: shell.language.lio, service: .demo, isDemo: true,
                                showsTools: ProcessInfo.processInfo.arguments.contains("--lio-tools-preview"),
-                               toolsRelay: translationRelayPreview, toolsDraftStorage: localSupportDraftPreview) {
+                               toolsRelay: translationRelayPreview,
+                               savedPlans: travelProfilePreview?.savedPlans,
+                               roadbookDirectory: travelProfilePreview.map { LioAccountFolders.roadbooks(inMessageDirectory: $0.messageDirectory) },
+                               tripHomeStore: travelProfilePreview?.tripHome,
+                               messageDirectory: travelProfilePreview?.messageDirectory,
+                               toolsDraftStorage: localSupportDraftPreview,
+                               answerFeedback: LioAnswerFeedbackPreview.launch) {
                 LioMenuSettings(shell: shell)
             }
             .lioMedicalCardStorage(localMedicalCardPreview)
+            .lioToolServices(LioToolServices().with(travelProfilePreview.map {
+                LioTravelProfileSource.device(messageDirectory: $0.messageDirectory, savedPlans: $0.savedPlans,
+                                              tripHome: $0.tripHome, isCurrent: { true })
+            }))
             if ProcessInfo.processInfo.arguments.contains("--lio-support-dial-preview"),
                let number = ProcessInfo.processInfo.environment["G2C_LOCAL_SUPPORT_TEST_PHONE"] {
                 LioSupportDialPreview(number: number, content: home)
             } else {
                 home
             }
+        }
+    }
+
+    /// `--lio-home-plan-acceptance` only: one throwaway account folder per launch (never the signed-in account's),
+    /// so the trip home, Back to Hotel and show-card details typed in the preview prefill the tools as on Beta.
+    private struct LioTravelProfilePreview {
+        let messageDirectory: URL
+        let savedPlans: LioSavedPlans
+        let tripHome: LioTripHomeStore
+
+        @MainActor static func make() -> Self? {
+            guard ProcessInfo.processInfo.arguments.contains("--lio-home-plan-acceptance") else { return nil }
+            let root = FileManager.default.temporaryDirectory
+                .appendingPathComponent("LioTravelProfilePreview-\(ProcessInfo.processInfo.processIdentifier)", isDirectory: true)
+            return Self(messageDirectory: root,
+                        savedPlans: LioSavedPlans(directory: LioSavedPlans.storageDirectory(inMessageDirectory: root),
+                                                  isCurrent: { true }),
+                        tripHome: LioTripHomeStore(directory: LioTripHomeStore.storageDirectory(inMessageDirectory: root),
+                                                   isCurrent: { true }))
         }
     }
 

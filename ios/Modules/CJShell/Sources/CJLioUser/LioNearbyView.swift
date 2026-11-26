@@ -384,7 +384,10 @@ struct LioNearbyPlaceView: View {
         .navigationTitle(place.name)
         .navigationBarTitleDisplayMode(.inline)
         .fullScreenCover(isPresented: $showsAddress) {
-            LioNearbyAddressCard(language: language, place: place)
+            LioShowCardSheet(language: language,
+                             content: .driver(nameZH: place.name, nameEN: nil, addressZH: place.address,
+                                              requestZH: "请带我去这里。"),
+                             title: language.text("Show the address", "出示中文地址"), identifierPrefix: "lio.nearby.address")
         }
     }
 
@@ -410,35 +413,6 @@ struct LioNearbyPlaceView: View {
             for url in urls { if await UIApplication.shared.open(url) { return } }
             directionsUnavailable = true
         }
-    }
-}
-
-private struct LioNearbyAddressCard: View {
-    let language: LioLanguage
-    let place: LioNearbyPOI
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    Text(place.name).font(LioTheme.display(.largeTitle).weight(.bold))
-                    if let address = place.address { Text(address).font(.title2.weight(.semibold)) }
-                    Text(language.text("Please take me here.", "请带我去这里。")).font(.title3)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(24)
-            }
-            .background(LioTheme.paper)
-            .foregroundStyle(LioTheme.ink)
-            .navigationTitle(language.text("Show the address", "出示中文地址"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) { Button(language.text("Close", "关闭")) { dismiss() } }
-            }
-        }
-        .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
-        .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
     }
 }
 
