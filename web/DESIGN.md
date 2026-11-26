@@ -47,3 +47,4 @@ Solid colours only: no gradients, glows, glass or blur.
 
 - No third-party requests from the browser: fonts, images and scripts are served from go2china.space.
 - The early access form posts to `/api/early-access` on the same domain; the server forwards it to Jotform.
+- The Guangzhou business companion request form (#1777, off until the privacy policy is public) posts to `/api/service-request` on the same domain. Its submit button is ink, not cinnabar, so Apply Early Access stays the one red call to action.

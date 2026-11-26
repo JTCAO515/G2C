@@ -796,6 +796,38 @@ def group_lio_failed_history():
 GROUPS.update(lio_failed_history=group_lio_failed_history)
 
 
+def group_service_request():
+    # #1769: SERVICE-REQUEST@1 store, state machine, retention and account hook on restricted PG.
+    return _fresh_runtime_check('service_request',55880,'cj1769_service',
+        f'/tmp/cj1769-service-{os.getpid()}','backend/service_request/tests/store_pg.py')
+
+
+GROUPS.update(service_request=group_service_request)
+
+
+def group_service_session():
+    # #1770: service conversation, server-initiated messages and their concurrency on restricted PG.
+    status = _fresh_runtime_check('service_session',55882,'cj1770_session',
+        f'/tmp/cj1770-session-{os.getpid()}','backend/service_request/tests/session_pg.py')
+    # 0056 on its own (migrated only to 56): nonempty down refused without 0057 in front.
+    with cluster('service_session_down56',port=55882,role='cj1770_down56',socket=f'/tmp/cj1770-down56-{os.getpid()}') as config:
+        path=WORK/'service_session_down56'/'conninfo.json';path.write_text(json.dumps(config))
+        status |= script('backend/service_request/tests/down56_pg.py',env=dict(clean_env(),CJ_E2E_CONNINFO=str(path)))
+    return status
+
+
+GROUPS.update(service_session=group_service_session)
+
+
+def group_service_ops():
+    # #1771: operations console (App session + staff roster, cj_ops_console role, staff audit) on restricted PG.
+    return _fresh_runtime_check('service_ops',55887,'cj1771_ops',
+        f'/tmp/cj1771-ops-{os.getpid()}','backend/service_request/tests/ops_pg.py')
+
+
+GROUPS.update(service_ops=group_service_ops)
+
+
 # CI minutes per group: median of ci runs 45380910374, 45390074551 and 45418513962 on
 # 2026-11-24 (ubuntu-latest, eatmydata; the last one with two lanes per runner). Groups under 0.2
 # minutes are left to DEFAULT_MINUTES. Used only to balance --shard; every group still runs on

@@ -19,7 +19,7 @@ class FirstBatchTests(unittest.TestCase):
     def test_first_batch_format_and_all_35_city_topic_cells(self):
         entries = load_entries(sorted((ROOT / "entries").glob("*.json")),
                                as_of=latest_review_day())
-        self.assertEqual(len(entries), 12)
+        self.assertEqual(len(entries), 18)
         actual = {(city, entry["topic"]) for entry in entries for city in entry["cities"]}
         self.assertEqual(actual, {(city, topic) for city in CITIES for topic in TOPICS})
         self.assertTrue(all(not entry["id"].startswith("visitor.example.") for entry in entries))

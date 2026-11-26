@@ -127,7 +127,7 @@ struct LioLocalSupportView: View {
 
     private var helpCard: some View {
         NavigationLink {
-            LioLocalHelpCardView(language: language)
+            LioShowCardHelpView(language: language)
         } label: {
             linkCard(language.text("Show a Local", "给当地人看"), symbol: "text.bubble",
                      detail: language.text("Large Chinese cards for asking for help", "大字中文求助卡"))

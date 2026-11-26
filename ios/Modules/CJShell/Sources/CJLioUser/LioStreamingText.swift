@@ -112,7 +112,10 @@ struct LioStreamingText: View {
                     Text("")
                 }
         }
-            .font(.body)
+            // #1869: SwiftUI sizes a Chinese reply's lines from the system (Latin) font, about 4 pt per line short of what
+            // the glyphs need, which the accessibility audit reports as clipped. PingFang carries the CJK line metrics.
+            // Still the body size, scaling with Dynamic Type.
+            .font(language == .chinese ? Font.custom("PingFangSC-Regular", size: 17, relativeTo: .body) : .body)
             .foregroundStyle(LioTheme.ink)
             .lineSpacing(4)
             .fixedSize(horizontal: false, vertical: true)

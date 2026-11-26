@@ -10,7 +10,7 @@ struct LioBuild57EntryTests {
         #expect(!LioToolCatalog.visible(.init()).contains(.arrival))
         var on = LioToolCatalog.Availability()
         on.arrival = true
-        #expect(LioToolCatalog.visible(on) == [.arrival, .localSupport, .metro, .payment, .translation, .phrases])
+        #expect(LioToolCatalog.visible(on) == [.arrival, .localSupport, .metro, .payment, .translation, .showCards])
         #expect(LioTool.arrival.name(.chinese) == "落地模式")
         #expect(LioTool.arrival.name(.english) == "Arrival Mode")
         #expect(LioTool.arrival.summary(.chinese) == "落地首日要做的事")

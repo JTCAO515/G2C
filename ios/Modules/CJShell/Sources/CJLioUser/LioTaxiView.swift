@@ -9,6 +9,10 @@ struct LioTaxiView: View {
     let tripPlaces: [LioTaxiPlace]
     let recentStore: LioTaxiRecentPlaces?
     @State var destination: LioTaxiPlace?
+    /// #1766: open the destination search at once, with this text in the search field (the Business section's cards).
+    var opensDestinationPicker = false
+    var initialSearch = ""
+    @State private var openedPicker = false
     @State private var pickup: LioTaxiPlace?
     @State private var recent: [LioTaxiPlace] = []
     @State private var fares: [LioTaxiFare] = []
@@ -70,6 +74,7 @@ struct LioTaxiView: View {
         }
         .task {
             if !seenGuide { sheet = .guide }
+            else if opensDestinationPicker, !openedPicker { openedPicker = true; sheet = .destination }
             do {
                 if let recentStore { recent = try recentStore.load() }
             } catch {
@@ -92,7 +97,8 @@ struct LioTaxiView: View {
                     LioTaxiPlacePicker(
                         language: language, destination: shown == .destination,
                         tripPlaces: tripPlaces, recent: recent, near: pickup?.coordinate,
-                        search: service.search
+                        search: service.search,
+                        initialQuery: shown == .destination ? initialSearch : ""
                     ) { place in
                         if shown == .destination {
                             if destination != place {
@@ -398,11 +404,13 @@ private struct LioTaxiPlacePicker: View {
     let recent: [LioTaxiPlace]
     let near: LioTaxiPlace.Coordinate?
     let search: @MainActor (LioTaxiSearchQuery) async throws -> [LioTaxiPlace]
+    var initialQuery = ""
     let select: (LioTaxiPlace) -> Void
     @Environment(\.dismiss) private var dismiss
     @AppStorage("lio.taxi.search-city.v1") private var storedCity = LioTaxiCity.beijing.rawValue
     @State private var city: LioTaxiCity?
     @State private var query = ""
+    @State private var filled = false
     @State private var submittedQuery: LioTaxiSearchQuery?
     @State private var result: [LioTaxiPlace] = []
     @State private var searchNotice: String?
@@ -461,6 +469,11 @@ private struct LioTaxiPlacePicker: View {
             }
         }
         .lioPage()
+        .onAppear {
+            guard !filled else { return }
+            filled = true
+            if query.isEmpty { query = initialQuery }
+        }
         .navigationTitle(destination ? language.text("Choose a destination", "选择终点")
                                      : language.text("Choose a pickup point", "选择起点"))
         .navigationBarTitleDisplayMode(.inline)

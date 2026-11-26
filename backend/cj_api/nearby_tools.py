@@ -38,6 +38,8 @@ LUGGAGE_KEYWORDS = '行李寄存'
 CACHE_SECONDS = 60
 CACHE_CAPACITY = 32
 _LOGGER = logging.getLogger(__name__)
+# #1833 (coordinator 2026-11-26 under JT pre-authorization): Nearby never needs more than ~100 m.
+COARSE_DECIMALS = 3
 
 
 class Position(WireModel):
@@ -179,6 +181,11 @@ def _poi(row):
     }
 
 
+def _coarse(lng, lat):
+    """Device position reduced to 3 decimals (about 100 m) before it reaches Gaode or the cache (#1833)."""
+    return f'{lng:.{COARSE_DECIMALS}f},{lat:.{COARSE_DECIMALS}f}'
+
+
 class NearbyService:
     def __init__(self, provider, budget, *, clock=monotonic):
         self.provider = provider
@@ -207,11 +214,12 @@ class NearbyService:
         if request.center.coordinate_system == 'GCJ-02':
             return coords
         value = self._query(scope, request, 'convert', {'locations': coords, 'coordsys': 'gps'}, authorize)
-        return Coordinate(value['locations']).raw
+        converted = Coordinate(value['locations'])
+        return _coarse(float(converted.longitude), float(converted.latitude))
 
     def search(self, scope, request, authorize):
         authorize()
-        coords = f'{request.center.lng:.6f},{request.center.lat:.6f}'
+        coords = _coarse(request.center.lng, request.center.lat)
         if request.categories == ['luggage']:
             what = dict(keywords=LUGGAGE_KEYWORDS)
         else:
@@ -263,7 +271,7 @@ class NearbyService:
         return result
 
     def reverse(self, scope, request, authorize):
-        coords = f'{request.center.lng:.6f},{request.center.lat:.6f}'
+        coords = _coarse(request.center.lng, request.center.lat)
         try:
             location = self._point(scope, request, coords, authorize)
             value = self._query(scope, request, 'reverse', {'location': location, 'extensions': 'base'}, authorize)
