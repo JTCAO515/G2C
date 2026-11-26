@@ -56,6 +56,7 @@ def main(config):
         assert conn.execute('SELECT max(version) FROM cj.schema_migrations').fetchone()[0] >= 56
     runtime = lambda: psycopg.connect(**dict(config, user='cj_m1_runtime'))
     owner = lambda: psycopg.connect(**config)
+    cleanup = lambda: psycopg.connect(**dict(config, user='cj_local_cleanup'))
     flag = {'on': True}
     repo = lambda scope: Repository(runtime, scope, policy=POLICY, flag=lambda: flag['on'])
     alice, bob = repo('local:test:alice'), repo('local:test:bob')
@@ -138,6 +139,11 @@ def main(config):
         conn.rollback()
     with runtime() as conn:
         conn.execute("SELECT set_config('cj.message_scope','local:test:alice',false)")
+        expect(psycopg.Error, conn.execute, 'DELETE FROM cj_service_request WHERE request_id=%s', (rid,))
+        conn.rollback()
+    with cleanup() as conn:
+        conn.execute("SELECT set_config('cj.cleanup_scope','local:test:alice',false),"
+                     "set_config('cj.cleanup_purpose','service_request_retention',false)")
         assert conn.execute('DELETE FROM cj_service_request WHERE request_id=%s', (rid,)).rowcount == 0
     print('PASS contract transitions/evidence/actors, quote and escort payloads, audited escort view, unknown->completed keeps first terminal time, append-only history, no runtime early delete, no staff ref/evidence in projection')
 
@@ -170,19 +176,42 @@ def main(config):
     # Retention: summary body 90 days, whole request 12 months, from first terminal time.
     with owner() as conn:
         conn.execute("UPDATE cj_service_request SET first_terminal_at=clock_timestamp()-interval '91 days' WHERE request_id=%s", (rid,))
-    assert alice.purge_expired() == {'summaries_erased': 1, 'requests_deleted': 0}
+    assert alice.purge_expired(cleanup) == {'summaries_erased': 1, 'requests_deleted': 0}
     with owner() as conn:
         assert conn.execute("SELECT evidence_body FROM cj_service_request_history WHERE request_id=%s AND evidence_kind='completion_summary'",
                             (rid,)).fetchone() == (None,)
         assert conn.execute("SELECT evidence_body FROM cj_service_request_history WHERE request_id=%s AND evidence_kind='arrival'",
                             (rid,)).fetchone() == ('arrived',)
         conn.execute("UPDATE cj_service_request SET first_terminal_at=clock_timestamp()-interval '13 months' WHERE request_id=%s", (rid,))
-    assert alice.purge_expired() == {'summaries_erased': 0, 'requests_deleted': 1}
+    assert alice.purge_expired(cleanup) == {'summaries_erased': 0, 'requests_deleted': 1}
     expect(NotFound, alice.get, rid)
     with owner() as conn:
         assert conn.execute('SELECT count(*) FROM cj_service_request_history WHERE request_id=%s', (rid,)).fetchone()[0] == 0
         assert conn.execute('SELECT count(*) FROM cj_service_request_view WHERE request_id=%s', (rid,)).fetchone()[0] == 0
     assert len(alice.list_own()) == 4 and bob.get(other['request_id'])['state'] == 'submitted'
+    # Cleanup-role retention DELETE negatives: cross-owner and runtime identity delete nothing.
+    expired_bob = bob.submit(body('bob-expired'))['request_id']
+    with owner() as conn:
+        conn.execute("UPDATE cj_service_request SET state='unavailable',first_terminal_at=clock_timestamp()-interval '13 months' "
+                     'WHERE request_id=%s', (expired_bob,))
+    with cleanup() as conn:
+        conn.execute("SELECT set_config('cj.cleanup_scope','local:test:alice',false),"
+                     "set_config('cj.cleanup_purpose','service_request_retention',false)")
+        assert conn.execute('DELETE FROM cj_service_request WHERE request_id=%s', (expired_bob,)).rowcount == 0
+        for table in ('cj_service_request_history', 'cj_service_request_view'):
+            assert conn.execute(f'DELETE FROM {table} WHERE request_id=%s', (expired_bob,)).rowcount == 0
+    with runtime() as conn:
+        conn.execute("SELECT set_config('cj.message_scope','local:test:bob',false)")
+        for table in ('cj_service_request', 'cj_service_request_history', 'cj_service_request_view'):
+            expect(psycopg.Error, conn.execute, f'DELETE FROM {table} WHERE request_id=%s', (expired_bob,))
+            conn.rollback()
+            conn.execute("SELECT set_config('cj.message_scope','local:test:bob',false)")
+    with owner() as conn:
+        assert conn.execute("SELECT count(*) FROM information_schema.role_table_grants WHERE grantee='cj_m1_runtime' "
+                            "AND table_name LIKE 'cj_service_request%%' AND privilege_type IN ('DELETE','TRUNCATE')").fetchone()[0] == 0
+        assert conn.execute('SELECT count(*) FROM cj_service_request WHERE request_id=%s', (expired_bob,)).fetchone()[0] == 1
+    assert bob.purge_expired(cleanup)['requests_deleted'] == 1
+    print('PASS cleanup-role retention DELETE: cross-owner and runtime identity delete nothing; own expired request deleted')
     print('PASS retention: completion_summary body erased after 90 days, request/history/evidence/view audit deleted after 12 months, others kept')
 
     # Account erasure hook: waits for an in-flight writer, erases everything, fences late writes.

@@ -249,7 +249,7 @@
             "escort view audit: viewer ref, shared field names, view time",
             "Irreversible nonsecret scope digest/retired fence; no plaintext identity in the fence"
           ],
-          "retention": "12 months after first terminal state (request, history, evidence); completion_summary body 90 days; cutoffs from DB clock via Repository.purge_expired, no scheduler (PIPIA service-request section 9)",
+          "retention": "12 months after first terminal state (request, history, evidence); completion_summary body 90 days; cutoffs from DB clock via Repository.purge_expired (summary bodies as runtime, 12-month deletion as cj_local_cleanup), no scheduler (PIPIA service-request section 9)",
           "cleanup_hook": "cj_service_request.lifecycle.ServiceRequestHook: same original account operation, scope-lock/irreversible fence then physical erasure of requests, history, evidence and view audit with verification and atomic original result; no revived writer",
           "restore_fence": "Replay retired scope digest before any service request read/write; trigger/row lock reject retired insertion or update; restrictive account_retired RLS",
           "owner_line": "service line",

@@ -447,7 +447,7 @@
       "version": 56,
       "name": "service_request",
       "file": "backend/migrations/0056_service_request.sql",
-      "sha256": "50e76c03e1a7da636d70c1a4188e235d6a1cc9bfe10cb834a2d32768bb9777a9",
+      "sha256": "8b50fddc511c2bbcdd758ce95f79494b3b89483c921880150320696e5fd54ba0",
       "down": "backend/migrations/down/0056_service_request.down.sql",
       "down_sha256": "97e9803716cbb8f0a89a72663cbdf25741b2cbde2506569cfe92bc3722adc9ef"
     }

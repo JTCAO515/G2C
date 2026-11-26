@@ -304,11 +304,12 @@ class Repository:
             return {k: (LANGUAGE if k == 'language' else details[k]) for k in fields}
 
     # -- retention (PIPIA section 9) ---------------------------------------------
-    def purge_expired(self):
+    def purge_expired(self, cleanup_connect):
         """Erase completion_summary bodies after 90 days and whole requests after 12 months.
 
         Cutoffs come from the database clock and the first terminal time, never the caller.
-        No scheduler is started here.
+        Bodies are cleared as the runtime; whole requests are deleted through cleanup_connect
+        (cj_local_cleanup; the runtime holds no DELETE grant). No scheduler is started here.
         """
         with self.transaction(writing=True) as cur:
             cur.execute("UPDATE cj_service_request_history h SET evidence_body=NULL WHERE h.scope=%s "
@@ -316,6 +317,22 @@ class Repository:
                         'SELECT 1 FROM cj_service_request r WHERE r.scope=h.scope AND r.request_id=h.request_id '
                         "AND r.first_terminal_at < clock_timestamp() - interval '90 days')", (self.scope,))
             summaries = cur.rowcount
+        conn = None
+        try:
+            conn = cleanup_connect()
+            cur = conn.cursor()
+            cur.execute("SELECT set_config('cj.cleanup_scope',%s,true),"
+                        "set_config('cj.cleanup_purpose','service_request_retention',true)", (self.scope,))
             cur.execute("DELETE FROM cj_service_request WHERE scope=%s AND first_terminal_at IS NOT NULL "
                         "AND first_terminal_at < clock_timestamp() - interval '12 months'", (self.scope,))
-            return {'summaries_erased': summaries, 'requests_deleted': cur.rowcount}
+            deleted = cur.rowcount
+            conn.commit()
+        except BaseException:
+            raise Unavailable() from None
+        finally:
+            if conn is not None:
+                try:
+                    conn.close()
+                except BaseException:
+                    pass
+        return {'summaries_erased': summaries, 'requests_deleted': deleted}
