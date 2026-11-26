@@ -11,6 +11,7 @@ from validate import load_entries, validate_entry
 from validate import CITIES
 from validate_v2 import CONDITION_FIELDS, load_entries_v2, validate_entry_v2
 from validate_names import load_names, validate_name
+from test_content import latest_review_day
 
 ROOT = Path(__file__).resolve().parent
 TODAY = date(2026, 11, 13)
@@ -67,10 +68,10 @@ class ConditionsTests(unittest.TestCase):
     def test_old_reader_and_old_catalog_are_preserved(self):
         with self.assertRaises(ValueError):
             validate_entry(self.entry, as_of=TODAY)
-        legacy = load_entries(sorted((ROOT / "entries").glob("*.json")), as_of=date(2026, 11, 20))
+        legacy = load_entries(sorted((ROOT / "entries").glob("*.json")), as_of=latest_review_day())
         self.assertEqual(len(legacy), 12)
         with self.assertRaises(ValueError):
-            validate_entry_v2(legacy[0], as_of=date(2026, 11, 20))
+            validate_entry_v2(legacy[0], as_of=latest_review_day())
 
     def test_real_optional_booking_window_is_not_a_minimum_lead_requirement(self):
         entries = load_entries_v2(sorted((ROOT / "entries-v2").glob("*.json")), as_of=date(2026, 11, 20))

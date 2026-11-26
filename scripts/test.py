@@ -96,6 +96,7 @@ def main():
                        ['-B', '-m', 'unittest', 'discover', '-s', 'tooling/training',
                         '-p', 'test_*.py', '-v']))
     results.append(run('tooling/training F schema', ['-B', 'tooling/training/check_f_dataset.py', '-v']))
+    results.append(run('tooling/release flags and script', ['-B', '-m', 'unittest', '-v', 'tooling.release.test_release']))
     results.append(run('ops/recovery-preflight', [*pytest, '.'], ROOT / 'ops/recovery-preflight'))
     results.append(run('web/vercel ignoreCommand', ['-B', '-m', 'unittest', '-v', 'scripts.test_web_vercel_ignore']))
     results.append(run('contracts/api proposal', ['-B', '-m', 'unittest', 'contracts/api/check_trip_content_v2_schema_proposal.py']))
