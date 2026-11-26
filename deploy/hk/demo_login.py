@@ -28,6 +28,8 @@ from cj_api.message_routes import BodyError,_error,_stream_octets,_token
 from cj_auth.interfaces import AdmissionStatus
 from cj_strict_json import reject_duplicates
 
+from .login_throttle import Throttle,client_key,CLIENT_WINDOW
+
 VERSION='DEMO-invite-session.1'
 ROLLING_VERSION='DEMO-invite-session.2'
 RENEW_VERSION='DEMO-session-renewal.1'
@@ -66,12 +68,25 @@ def _grant(runtime,subject,row,version,*,parent_expires_at=None):
         expires_at=datetime.fromtimestamp(claims['exp'],timezone.utc).isoformat().replace('+00:00','Z'))
 
 
+SHORT_CODES=tuple(f'{prefix}@{number:02d}' for prefix in ('G2C','CJ_Tester') for number in range(1,100))
+assert all(SHORT_CODE.fullmatch(code) for code in SHORT_CODES)
+
+
+def short_code_subject(code):
+    return 'm4-synthetic-demo-'+hashlib.sha256(code.encode('ascii')).hexdigest()[:12]
+
+
+# The short format is public, so these subjects and digests are public too (#1718).
+SHORT_CODE_SUBJECTS=frozenset(short_code_subject(code) for code in SHORT_CODES)
+SHORT_CODE_DIGESTS=frozenset(hashlib.sha256(code.encode('ascii')).hexdigest() for code in SHORT_CODES)
+
+
 def invitation_subject(code):
     match=CODE.fullmatch(code)
     if match is not None:
         suffix=match[1]
     elif SHORT_CODE.fullmatch(code) is not None:
-        suffix=hashlib.sha256(code.encode('ascii')).hexdigest()[:12]
+        return short_code_subject(code)
     else:
         return None
     return 'm4-synthetic-demo-'+suffix
@@ -196,10 +211,12 @@ def socket_renew(token):
     return _socket_request(command,ROLLING_VERSION)
 
 
-def register_demo_login(app):
-    def failure(request,status,code,en,zh):
-        category='input' if status==400 else 'access' if status==401 else 'dependency'
-        outcome='unknown' if status==503 else 'failed'
+def register_demo_login(app,*,throttle=None):
+    throttle=Throttle() if throttle is None else throttle
+
+    def failure(request,status,code,en,zh,*,category=None,outcome=None):
+        category=category or ('input' if status==400 else 'access' if status==401 else 'dependency')
+        outcome=outcome or ('unknown' if status==503 else 'failed')
         response=_error(request,status,code,category,outcome,'do_not_retry',message_en=en,message_zh=zh)
         response.headers['Cache-Control']='no-store'
         return response
@@ -224,14 +241,24 @@ def register_demo_login(app):
         except (BodyError,ValueError,UnicodeError):
             return failure(request,400,'INVALID_INPUT','Invalid request or demo rules not accepted','请求无效或未确认演示规则')
         code=value['invite_code']
+        # Every exchange counts as a failure until a session is granted (#1718).
+        # Refusals reuse the App's existing 503 mapping; the code is not checked.
+        ticket=throttle.reserve(client_key(request.headers),short=SHORT_CODE.fullmatch(code) is not None)
+        if ticket is None:
+            response=failure(request,503,'DEMO_LOGIN_UNAVAILABLE','Too many sign-in attempts; try again later',
+                             '尝试次数过多，请稍后再试',category='access',outcome='failed')
+            response.headers['Retry-After']=str(CLIENT_WINDOW)
+            return response
         if invitation_subject(code) is None:
             return failure(request,401,'DEMO_INVITE_DENIED','Invite code unavailable','邀请码不可用')
         try:
             result=await run_in_threadpool(socket_exchange,code,version=version)
         except (OSError,ValueError):
+            throttle.release(ticket)
             return failure(request,503,'DEMO_LOGIN_UNAVAILABLE','Sign-in is temporarily unavailable','登录服务暂不可用')
         if result is None:
             return failure(request,401,'DEMO_INVITE_DENIED','Invite code unavailable','邀请码不可用')
+        throttle.release(ticket)
         return JSONResponse(result,headers={'Cache-Control':'no-store'})
 
     @app.post('/v1/demo-invite-sessions')

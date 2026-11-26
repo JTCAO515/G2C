@@ -58,7 +58,7 @@
 <key>NSLocalNetworkUsageDescription</key><string>Connect to the development Mac for synthetic-data testing. / 连接开发机执行合成数据测试。</string>
 #endif
 #if G2C_DEMO_BETA_PLIST
-<key>NSLocationWhenInUseUsageDescription</key><string>Use your location when you open Taxi to set a pickup point. / 打开打车时使用你的位置设置起点。</string>
+<key>NSLocationWhenInUseUsageDescription</key><string>Go2China uses your location while you use the app, to set your pickup point in Taxi and to find places near you in Nearby. When you use these, your location is sent to our service and to the map and taxi providers (Amap, DiDi). / Go2China 在你使用 App 时读取位置，用于设置打车起点和查找附近的地点。使用这两项时，位置会发送到我们的服务，以及地图和打车服务商（高德、滴滴）。</string>
 #endif
 #if G2C_DEMO_BETA_PLIST || G2C_TOOLS_PREVIEW_PLIST
 <key>NSMicrophoneUsageDescription</key><string>Record what you want to translate. / 录下需要翻译的语音。</string>
