@@ -571,7 +571,7 @@ struct LioInternalTestPage<Settings: View>: View {
         HStack(spacing: LioTheme.Spacing.sm) {
             Image(systemName: "key.fill").foregroundStyle(LioSignInPalette.inkSecondary).accessibilityHidden(true)
             SecureField(language.text("Invitation code", "邀请码"), text: $code,
-                        prompt: Text(language.text("Invitation code", "邀请码")).foregroundColor(LioSignInPalette.inkSecondary))
+                        prompt: Text(language.text("Code", "邀请码")).foregroundColor(LioSignInPalette.inkSecondary))
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .keyboardType(.asciiCapable)
