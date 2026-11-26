@@ -43,6 +43,9 @@ extension LioTripHomeArrival {
     /// Roadbooks (`G2CRoadbookEnabled`): offline copies in the account folder.
     var roadbookStore: LioRoadbookStore?
     var roadbooks = false
+    /// Business trips (`G2CTripBusinessEnabled`, #1765): the bundled entries and steps. Nil keeps the checklist and
+    /// the trip settings exactly as they were.
+    var business: LioTripBusinessGuide?
 
     /// The tools as this build has them, for the signed-in account's message folder.
     static func fromBuild(messageDirectory: URL?, isCurrent: @escaping @MainActor () -> Bool,
@@ -66,7 +69,8 @@ extension LioTripHomeArrival {
             roadbookStore: roadbooks ? messageDirectory.map {
                 LioRoadbookStore(directory: LioAccountFolders.roadbooks(inMessageDirectory: $0), isCurrent: isCurrent)
             } : nil,
-            roadbooks: roadbooks)
+            roadbooks: roadbooks,
+            business: LioTripBusinessFeature.enabled(infoValue: info(LioTripBusinessFeature.infoKey)) ? .bundled() : nil)
     }
 
     /// A damaged hotel file reads as no hotel, as on Back to Hotel itself.
@@ -103,6 +107,9 @@ struct LioTripTaskPage: View {
             if let arrival = tools.arrival { arrival.checklistPage(profile) }
         case .checkIn:
             LioShowCardsView(language: language, hotel: tools.savedHotel(), detailsStore: tools.detailsStore)
+        case .business:
+            // Business items open the organizer's page or a tool through the router, never a page here.
+            EmptyView()
         }
     }
 }
