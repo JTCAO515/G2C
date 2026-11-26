@@ -58,7 +58,7 @@
 
 ### 2.2 与 #225 的关系和已定的边界
 
-#225 正式意见写明首轮「将 GPS 或由 GPS 推出的可关联位置发给香港后端、北京百炼或高德，当前均未放行」。上面两条 GPS 流超出这一边界；对内部名单属于 M4 授权范围，**对外部开放前须完成 [#1832](https://github.com/JTCAO515/G2C/issues/1832)、[#1833](https://github.com/JTCAO515/G2C/issues/1833)、[#1748](https://github.com/JTCAO515/G2C/issues/1748)**。
+#225 正式意见写明首轮「将 GPS 或由 GPS 推出的可关联位置发给香港后端、北京百炼或高德，当前均未放行」。上面两条 GPS 流超出这一边界；对内部名单属于 M4 授权范围。对外部开放前**至少**须完成 [#1832](https://github.com/JTCAO515/G2C/issues/1832)、[#1833](https://github.com/JTCAO515/G2C/issues/1833)、[#1748](https://github.com/JTCAO515/G2C/issues/1748)；这三张票是必要条件，不是放行结论。
 
 统筹 2026-11-26 按 JT 预授权决定的目标边界（由 #1833 落地，落地后本节改写为现状）：
 
@@ -67,6 +67,14 @@
 | 打车起点 → 滴滴 | 保留精确坐标，只用于该次请求；不写日志、不落盘、不进缓存键 |
 | 附近 → 高德 | 发给高德前降到 3 位小数（约 100 米）；缓存键也用降精度后的坐标 |
 | 两者 | 不进百炼，不进长期记忆 |
+
+目标边界落地后，与 #225 首轮边界**仍有差异**：
+
+- 打车仍把设备精确坐标发到香港后端，再转给滴滴；#225 写的是香港后端首轮不收自动获取的 GPS 及其可关联衍生字段。
+- 附近仍把由 GPS 推出的约 100 米坐标发给高德，并在香港进程内短暂缓存；#225 写的是高德即使取得书面许可也只接手选 POI、公开路线端点或城市，不带 GPS。
+- #225 还要求：联网定位另开契约红线票，取得接收方书面条件，做出境评估和拒绝、撤回等负例验收；MapKit 的用户位置标记是否向 Apple 传送可推知位置的区域先核清；高德 Web 的外部使用另有书面许可门槛。
+
+这些差异对外部测试者是否可以接受、要补哪些条件，见第 3.1 节第 6 项，交 JT 判断。
 
 配套：#1832（A 线）把定位用途说明改为覆盖打车和附近，并在 `PrivacyInfo.xcprivacy` 申报精确位置；同意界面（#1747）把定位单列一项，写明会发给滴滴（打车）和高德（附近）。
 
@@ -101,13 +109,14 @@
 | 3 | 高德 `/v3/config/district` 行政区目录 | `lio_city.py:18-19` | M4 条目 3 列地点/路线/天气/公交/周边，未列行政区划接口（无用户数据） |
 | 4 | 设备 GPS 精确坐标 → 滴滴 MCP（打车起点、搜索偏置 `near`） | `taxi_tools.py:252-261, 356-415`；`LioTaxiPickupLocation.swift` | M4 条目 10 列出了工具名，但未明说会发**设备实时坐标**；条目 12 只讲「附近」读定位 |
 | 5 | Apple MapKit 地图 + 「附近」地图 `UserAnnotation` + 打开 Apple 地图（带 POI 坐标） | `LioNearbyView.swift:157-165, 401-415`；`LioLocalSupportView.swift:340-358` | M4 只把 Apple/MapKit 作为对照提及；Apple 作为数据接收方未登记 |
-| 6 | 高德 App 深链 `iosamap://path|poi`（POI 坐标/站名，`sourceApplication=Go2China`） | `LioNearbyView.swift:404-407`；`LioMetroMap.swift:314-316` | M4 未提 |
+| 6 | 高德 App 深链 `iosamap://path`、`iosamap://poi`（POI 坐标/站名，`sourceApplication=Go2China`） | `LioNearbyView.swift:404-407`；`LioMetroMap.swift:314-316` | M4 未提 |
 | 7 | 飞常准 MCP `initialize` 发送 `clientInfo={name:'Go2China'}` | `variflight_tools.py:240-242` | 未提（无个人信息，仅品牌名） |
 | 8 | Let's Encrypt ACME、GitHub API（发布门禁）、GitHub Actions runner 探测健康检查、Docker/Debian 源 | 第 10 节 | 不在 M4（运维出站，无用户数据）；`MONITORING.md` 记录了 runner 探测 |
 | 9 | 旧 Supabase：代码默认 `CJ_BETA_DB_TARGET='supabase'`，运维脚本仍有远程分支；变量名 `CJ_SUPABASE_*_URI` 在本机 PG 模式下也沿用 | `deploy/hk/configuration.py:135-139`；`local_postgres.py:80-92`；`checkpoint.py:66-73`；`cloud_rehearsal.py:299-304` | architecture.md 仍画 Supabase Auth；storage-registry 未登记「新加坡冻结副本」这一物理位置 |
 | 10 | **storage-registry 未登记的服务端存储**：`m4-outflows.sqlite`（预算账本，哈希/元数据）；ToolEvidence 0700 目录（**完整模型请求体与工具输入/输出原文**）；`plugin_call` SQLite 与 `/plugin-state/{weather,flights}.sqlite`（计次）；翻译/菜单/路书账本；进程内缓存（菜单 5000、路书 5000、附近 60 s 含精确坐标、酒店、英译 4096、天气 120 s、航班 60 s、Trip.com 句柄 24 h）；访问日志 `access-YYYY-MM-DD.jsonl`；OSS 每日整库备份 | `tool_evidence.py:120-180`；`authorization_budget.py:182-190`；`plugin_tools.py:33-56`；`deploy/hk/access_log.py:1-15`；`oss_backup.py` | storage-registry 只有 business / checkpoints / memory-derived / device-cache / cleanup-control / external-processing 六类，以上均无对应 objects |
 | 11 | App `PrivacyInfo.xcprivacy` 未申报位置数据；`NSLocationWhenInUseUsageDescription` 只提打车 | `ios/App/PrivacyInfo.xcprivacy`；`ios/App/Info.plist:61` | 「附近」也读定位且坐标上传香港再转高德 |
 | 12 | 酒店服务端回包 `affiliate_links` 缺省按 `true` 显示推广披露，但代码无联盟 ID | `LioHotelOffers.swift:346, 423`；`lio_hotel_search.py:4-5` | 口径不一致（未核实服务端实际回填值） |
+| 13 | 服务端生成的高德公开链接 `uri.amap.com/navigation`（路线起终点坐标）与 `uri.amap.com/marker`（单个地点坐标），随工具结果返回 | `backend/cj_api/real_services.py:1000-1011` | 未登记。坐标来自 POI 或行程地点，不是设备 GPS，但可能反映用户行程；主对话界面是否渲染成可点链接未核实 |
 
 ### 3.1 需要统筹 / JT 判断的事项
 
@@ -116,6 +125,7 @@
 3. **旧 Supabase 是否仍在被连**：代码默认 `CJ_BETA_DB_TARGET='supabase'`，实际值在服务器 `common.env`，仓库看不到（附录第 8 节）。
 4. **ToolEvidence 在香港是否开启、对哪些主体开启**：由运维 manifest 决定，代码只说明能力（附录 1.1 第 5 点）。
 5. **高德 iOS SDK 与 Apple MapKit 实际上报的设备和位置信息**：闭源 SDK 与系统行为，未核实；TestFlight 构建是否带 `G2C_AMAP_LOCAL` 也需核对。
+6. **定位边界与 #225 的剩余差异**（第 2.2 节）：#1833 落地后，打车精确坐标仍到香港和滴滴、附近约 100 米坐标仍到高德。对外部测试者开放前，是改 #225 的边界（须 JT 本人），还是进一步收紧（例如打车只在 App 内用、不经香港；附近改为手选地点），由 JT 判断。
 
 ## 附录：逐供应商明细
 
@@ -202,7 +212,7 @@
    - 标识：请求体无用户/设备/邮箱/手机号；JSON-RPC `id` 固定为 1（`didi_mcp.py:47-48`）。
    - 日期时间：无。
 4. 鉴权：MCP Key 放在 URL 查询串 `?key=`（服务端环境变量 `DIDI_MCP_KEY`，`deploy/hk/taxi_runtime.py:15, 44`）；异常处理刻意不外泄 endpoint（`didi_mcp.py:93-95`）。App 不持有。
-5. 记录：`PluginCalls` SQLite 表 `plugin_call(day, owner=sha256(issuer,subject), operation, used)`，只计次数（`backend/cj_api/plugin_tools.py:33-56`）；日志仅 `ALERT didi_key_rejected`（`taxi_tools.py:74`）。英译结果进程内缓存 `ENGLISH_CACHE_CAPACITY=4096`，键为（中文名, 中文地址）（`taxi_tools.py:265, 280-298`）。App 端在本地保存「最近使用地点」（`LioTaxiRecentPlaces(directory:)`，`LioTaxiEntry.swift:28`）——是否含当前位置坐标**未核实**（未读 `LioTaxiRecentPlaces` 实现）。storage-registry：无条目。
+5. 记录：`PluginCalls` SQLite 表 `plugin_call(day, owner=sha256(issuer,subject), operation, used)`，只计次数（`backend/cj_api/plugin_tools.py:33-56`）；日志仅 `ALERT didi_key_rejected`（`taxi_tools.py:74`）。英译结果进程内缓存 `ENGLISH_CACHE_CAPACITY=4096`，键为（中文名, 中文地址）（`taxi_tools.py:265, 280-298`）。App 端在本地保存「最近使用地点」（`LioTaxiRecentPlaces(directory:)`，`LioTaxiEntry.swift:28`）——只记录用户选的目的地，不含当前位置（见附录 C1 第 5 点）。storage-registry：无条目。
 6. 代码依据：`backend/cj_api/didi_mcp.py:1-95`；`backend/cj_api/taxi_tools.py:1-35, 98-165, 230-420`；`deploy/hk/taxi_runtime.py:15-66`；App `LioTaxiEntry.swift`、`LioTaxiPickupLocation.swift`、`LioTaxiView.swift`、`LioTaxiWire.swift`。
 7. 限制：模块文档串「HK stays disabled until provider verification」（`taxi_tools.py:1`）；需同时配置 `DIDI_MCP_KEY` 与 `TAXI_INTERNAL_SUBJECTS`，名单必须恰为 G2C@01–99（`configured_plugin_subjects`，`deploy/hk/plugin_roster.py:13-23`；`taxi_runtime.py:44-51`）；每人每天每操作 50 次（`taxi_tools.py:31`）。授权：M4.md 条目 10（信息型，只用 `maps_*`、`taxi_estimate`、`taxi_generate_ride_app_link`）。
 8. 附带：英文模式下搜索结果的中文名/地址会经本方翻译中继发给 DashScope `qwen-mt-flash` 英译（见 1.2，`taxi_runtime.py:24-40`；`taxi_tools.py:301-345`）——发出的是滴滴返回的 POI 名称与地址，不是用户输入。
@@ -324,11 +334,11 @@
 | 目标 | 方式 | 发出内容 | 依据 | 备注 |
 |---|---|---|---|---|
 | GitHub API `api.github.com/repos/<REPOSITORY>/…` | 服务器上的发布脚本 `urlopen`，无 token | 只读请求仓库路径（CI 结果、PR 审查等发布门禁证据），不发用户数据 | `deploy/hk/application_release.py:213`；`deploy/hk/application_release_host.py:218-229` | 运维元数据，无用户数据 |
-| GitHub Actions 托管 runner → `https://api-beta.go2china.space/health/live|ready` | 工作流 `hk-readiness.yml` 调 `deploy/hk/readiness_monitor.py` | 只 GET 两个健康检查路由，UA `G2C-readiness-monitor/1`，不鉴权（`readiness_monitor.py:1, 9-10, 33-37`） | `deploy/hk/MONITORING.md:8-21` | 目标是本方域名；GitHub 可见结果（状态码/时延）。需仓库变量 `HK_READINESS_MONITOR_ENABLED=true` 才启用，2027-01-01 后跳过 |
+| GitHub Actions 托管 runner → `https://api-beta.go2china.space/health/live`、`/health/ready` | 工作流 `hk-readiness.yml` 调 `deploy/hk/readiness_monitor.py` | 只 GET 两个健康检查路由，UA `G2C-readiness-monitor/1`，不鉴权（`readiness_monitor.py:1, 9-10, 33-37`） | `deploy/hk/MONITORING.md:8-21` | 目标是本方域名；GitHub 可见结果（状态码/时延）。需仓库变量 `HK_READINESS_MONITOR_ENABLED=true` 才启用，2027-01-01 后跳过 |
 | Let's Encrypt ACME `acme-v02.api.letsencrypt.org` | Caddy 自动签证书 | 域名 `api-beta.go2china.space`、ACME 账户 | `deploy/hk/Caddyfile:10-11` | 不含用户数据；Caddyfile 全文未配置 ACME 联系邮箱，也无 `log` 指令（Caddy 默认不写访问日志） |
 | Docker CE 软件源 `download.docker.com`、Debian 源 `deb.debian.org` | 主机准备与镜像构建 | 软件包下载 | `deploy/hk/host-prepare.sh:31, 41`；`deploy/Dockerfile:2` | 构建期，无用户数据 |
 | 本机健康检查 `127.0.0.1:8765` | 容器内 | — | `deploy/hk/healthcheck.py:4`；`deploy/healthcheck.py:4` | 非外部 |
-| 告警 | 代码中告警为写 stderr 的 `ALERT …` 行（如 `translation_relay.py:266`、`taxi_runtime.py:61`） | — | — | **未发现**任何外部告警渠道（邮件/IM/Webhook/Sentry），grep `smtp|webhook|feishu|dingtalk|sentry` 在 deploy/backend 代码中无命中 |
+| 告警 | 代码中告警为写 stderr 的 `ALERT …` 行（如 `translation_relay.py:266`、`taxi_runtime.py:61`） | — | — | **未发现**任何外部告警渠道（邮件/IM/Webhook/Sentry），grep `smtp`、`webhook`、`feishu`、`dingtalk`、`sentry` 在 deploy/backend 代码中无命中 |
 | `169.254.169.254` | — | — | 只出现在测试与 SSRF 拒绝清单（`backend/fact/cj_fact/local_source.py:72` 等） | **不是**出站调用 |
 
 ---
