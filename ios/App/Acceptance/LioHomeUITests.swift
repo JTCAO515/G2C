@@ -357,7 +357,7 @@ import CryptoKit
                 tools.tap()
                 // #1742: phrases are part of Show Cards, which took over the Phrase Cards card.
                 app.buttons["lio.tools.show-cards"].tap()
-                for category in ["dining", "directions", "taxi", "shopping", "healthcare"] {
+                for category in ["dining", "directions", "taxi", "shopping", "healthcare", "business"] {
                     XCTAssertTrue(app.buttons["lio.phrases.category." + category].exists)
                 }
                 try app.performAccessibilityAudit(for: .all)
@@ -426,7 +426,7 @@ import CryptoKit
 
                 let dining = app.buttons["lio.phrases.category.dining"]
                 XCTAssertTrue(dining.waitForExistence(timeout: 6))
-                for category in ["directions", "taxi", "shopping", "healthcare"] {
+                for category in ["directions", "taxi", "shopping", "healthcare", "business"] {
                     XCTAssertTrue(app.buttons["lio.phrases.category." + category].exists)
                 }
                 let help = app.buttons["lio.show-card.help"]
@@ -464,6 +464,62 @@ import CryptoKit
                 try audit(app, "show-cards-6-help-full-screen-\(variant)")
                 app.buttons["lio.support.help-card.done"].tap()
                 XCTAssertTrue(medical.waitForExistence(timeout: 6))
+            }
+        }
+    }
+
+    /// #1767: the business phrases (quote, minimum order, lead time, sample, payment) open full screen, Chinese large
+    /// with the English under it, and can be read aloud, in both languages and both appearances.
+    func testBusinessPhrasesShowFullScreenInBothLanguages() throws {
+        continueAfterFailure = false
+        let phrases: [(id: String, zh: String, en: String)] = [
+            ("business-quote", "请问可以报一下这款产品的价格吗？", "Could you give me a quote for this product?"),
+            ("business-moq", "请问最小起订量是多少？", "What is the minimum order quantity?"),
+            ("business-lead-time", "下单后大概多久可以交货？", "How soon can you ship after we place an order?"),
+            ("business-sample", "可以先提供样品吗？费用怎么算？", "Could you provide a sample first? How is it charged?"),
+            ("business-payment", "请问付款方式是什么？可以先付定金吗？", "What are the payment terms? Can we pay a deposit first?"),
+        ]
+        for language in ["en", "zh-Hans"] {
+            let en = language == "en"
+            for appearance in ["light", "dark"] {
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
+                                       "-lio.ui.appearance.v1", appearance, "-UIPreferredContentSizeCategoryName",
+                                       "UICTContentSizeCategoryL"]
+                app.launch()
+                defer { app.terminate() }
+                let tools = app.tabBars.buttons[en ? "Tools" : "工具"]
+                XCTAssertTrue(tools.waitForExistence(timeout: 8))
+                tools.tap()
+                app.buttons["lio.tools.show-cards"].tap()
+                let business = app.buttons["lio.phrases.category.business"]
+                XCTAssertTrue(business.waitForExistence(timeout: 6))
+                for _ in 0..<6 where !business.isHittable { app.swipeUp() }
+                business.tap()
+                for phrase in phrases {
+                    let row = app.buttons["lio.phrases.card." + phrase.id]
+                    XCTAssertTrue(row.waitForExistence(timeout: 6), phrase.id)
+                    if phrase.id == "business-quote" {
+                        // The list is a scroll view and its last rows sit under the fold, which the audit reports as
+                        // clipped text; the dining list is not audited either. Every full-screen card below is.
+                        let list = XCTAttachment(screenshot: app.screenshot())
+                        list.name = "business-phrases-list-\(language)-\(appearance)"; list.lifetime = .keepAlways; add(list)
+                    }
+                    row.tap()
+                    let chinese = app.staticTexts["lio.phrases.name"]
+                    XCTAssertTrue(chinese.waitForExistence(timeout: 6), phrase.id)
+                    XCTAssertEqual(chinese.label, phrase.zh)
+                    XCTAssertEqual(app.staticTexts["lio.phrases.english"].label, phrase.en)
+                    XCTAssertTrue(app.buttons["lio.phrases.read.zh-CN"].isHittable)
+                    XCTAssertTrue(app.buttons["lio.phrases.read.en-US"].isHittable)
+                    if phrase.id == "business-quote" || phrase.id == "business-sample" {
+                        let full = XCTAttachment(screenshot: app.screenshot())
+                        full.name = "\(phrase.id)-full-screen-\(language)-\(appearance)"; full.lifetime = .keepAlways; add(full)
+                        try app.performAccessibilityAudit(for: .all)
+                    }
+                    app.buttons["lio.phrases.done"].tap()
+                    XCTAssertTrue(row.waitForExistence(timeout: 6))
+                }
             }
         }
     }
