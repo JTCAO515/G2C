@@ -12,7 +12,7 @@
 - 第 3、5 节的单独同意：AI 模型、记忆在 #1747（总同意界面，其中只写一句「定位另行询问」）；位置在 #1748（单独成页、需要时才弹出）；真人服务在 #1772（确认页，分项勾选）。出境告知随各项同意一起给出：AI 模型在 #1747、位置在 #1748、真人服务在 #1772。
 - 第 6 节真人服务：#1768（契约）、#1769（存储与清理）、#1771（运营台）、#1772（确认页）、#1775（陪同服务协议含委托处理条款，JT 负责）。
 - 第 7 节真人服务 12 个月 / 90 天：#1769 的清理钩子落地并验证。
-- 第 3、6 节官网接单入口：#1862（W10-3，开关 `SERVICE_REQUEST_ENABLED` 默认关）把去向从只写日志的替身换成服务线的服务请求后端（W9，#1768），并在官网 `/privacy` 公开本政策（JT 本人确认）；官网表单的同意方式见 PIPIA 增补「官网渠道」一节。
+- 第 3、6 节官网接单入口：#1862（W10-3，开关 `SERVICE_REQUEST_ENABLED` 默认关）把去向从只写日志的替身换成服务线的服务请求后端（W9，#1768），表单改为三项分项勾选并改说明框提示语（PIPIA 增补 13.4），`web/vercel.json` 把 `/api/*` 固定到香港，并在官网 `/privacy` 公开本政策（JT 本人确认）。
 - 第 4、5 节 Vercel 函数区域与 Jotform 实际 API 区域：按控制台配置核对后填写。
 - 第 5 节出境机制：按 #225 落实后填写。
 - 第 6 节：PIPIA 增补第 11 节第 9 项（用户在聊天里主动说出的时间地点、会面对象会随聊天发给百炼）对外部用户的处理方式由 JT 本人定，定了以后在此补告知。
@@ -142,7 +142,7 @@ We ask for your separate consent in the app before we first send your chats to t
 
 请只填写陪同需要知道的内容，不要在备注里填写健康、证件或宗教信息；如需填写会面对象的信息，请只填称呼和公司名。
 
-**通过官网提交**：你也可以在 go2china.space 的「广州中英商务陪同」表单里提出请求，填写称呼、邮箱、日期和说明（选填），并同意本政策。表单提交到同一网站的 `/api/service-request`，再转到我们自己的服务请求后端（与 App 内请求是同一套），不经过任何第三方表单服务；这个接口由 Vercel 代我们托管（见第 4 节）。我们通过邮件回复你，通常在 1 个工作日内（北京时间）。提交前，表单上会征得你的同意（方式见 PIPIA 增补「官网渠道」一节，待统筹定）。【待核对：回复邮件使用的邮件服务商】
+**通过官网提交**：你也可以在 go2china.space 的「广州中英商务陪同」表单里提出请求，填写称呼、邮箱、日期和说明（选填），并同意本政策。表单提交到同一网站的 `/api/service-request`，再转到我们自己的服务请求后端（与 App 内请求是同一套），不经过任何第三方表单服务；这个接口由 Vercel 代我们托管（见第 4 节）。我们通过邮件回复你，通常在 1 个工作日内（北京时间）。提交前，表单上会分三项征得你的同意：处理时间地点等行踪信息、提供给陪同人员、在 Vercel 与香港处理。具体时间、地点、会面对象和当天联系的电话号码，我们会在回复邮件里和你确认后再记录；在此之前，陪同人员看不到你的任何联系方式。【待核对：回复邮件使用的邮件服务商】
 
 Some services are provided by real people. The first is an English–Chinese business companion in Guangzhou. Before you submit, the confirmation page lists the information we will share with the companion and states that the service is provided by a person, the companion's name, arrival time, cancellation rules and who handles refunds. We only submit after you give separate consent.
 
@@ -152,7 +152,7 @@ Companion services are paid per service, outside the app, not through Apple in-a
 
 Please include only what the companion needs to know. Do not put health, ID or religious information in the notes. If you mention the people you are meeting, include only their name and company.
 
-**Requests from the website**: You can also make a request through the "A business companion in Guangzhou" form on go2china.space, giving your name, email, date and an optional note, and agreeing to this policy. The form posts to `/api/service-request` on the same website and goes on to our own service request backend (the same one the app uses), not through any third-party form service. Vercel hosts this endpoint on our behalf (see section 4). We reply by email, usually within 1 business day (Beijing time). The form asks for your consent before you submit (how is set out in the PIPIA addendum, website channel section, pending). [To verify: the email provider used for replies]
+**Requests from the website**: You can also make a request through the "A business companion in Guangzhou" form on go2china.space, giving your name, email, date and an optional note, and agreeing to this policy. The form posts to `/api/service-request` on the same website and goes on to our own service request backend (the same one the app uses), not through any third-party form service. Vercel hosts this endpoint on our behalf (see section 4). We reply by email, usually within 1 business day (Beijing time). Before you submit, the form asks for three separate consents: processing time and place information, sharing it with the companion, and processing on Vercel and in Hong Kong. We confirm the exact time, place, who you are meeting and a phone number for the day with you by email before recording them; until then the companion cannot see any of your contact details. [To verify: the email provider used for replies]
 
 ## 7. 保存多久 / How long we keep it
 
