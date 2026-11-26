@@ -19,6 +19,7 @@ Errors are short codes; tokens, invite codes and response bodies never appear in
 """
 import argparse
 from datetime import datetime, timezone
+import http.client
 import json
 import os
 from pathlib import Path
@@ -26,6 +27,7 @@ import stat
 import sys
 import time
 from urllib.parse import urlencode
+from urllib.error import HTTPError
 from urllib.request import Request, build_opener
 import uuid
 
@@ -39,6 +41,7 @@ TERMINAL = frozenset({'completed', 'failed', 'cancelled'})
 POLL_SECONDS = 0.5
 TURN_SECONDS = 420
 INVITE_VERSION = 'DEMO-invite-session.2'
+POLL_RETRIES = 3
 
 
 def _private_read(path, limit=8192):
@@ -53,35 +56,52 @@ def _private_read(path, limit=8192):
     return raw
 
 
-def _private_write(path, raw):
-    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+def _reserve(path):
+    """Create the private output first, so a run never spends calls it cannot record."""
+    return os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+
+
+def _finish(descriptor, raw):
     with os.fdopen(descriptor, 'wb') as output:
         output.write(raw)
         output.flush()
         os.fsync(output.fileno())
 
 
+def _private_write(path, raw):
+    _finish(_reserve(path), raw)
+
+
 def login(invite_file, session_out, *, opener=None):
     """Exchange the evaluation account's invite code for a rolling session (no output of either)."""
     code = _private_read(invite_file).decode('ascii').strip()
-    body = json.dumps(dict(version=INVITE_VERSION, invite_code=code, consent=True)).encode()
-    opener = opener or build_opener(NoRedirect())
+    descriptor = _reserve(session_out)  # before the exchange: an existing file costs no exchange
     try:
-        with opener.open(Request(ORIGIN + '/v2/demo-invite-sessions', data=body,
-                                 headers={'Content-Type': 'application/json', 'Accept': 'application/json'}),
-                         timeout=15) as response:
-            raw = response.read(65537)
-            status = response.status
-    except OSError:
-        raise SmokeResult('UNKNOWN', 'login_unavailable') from None
-    if status != 200 or len(raw) > 65536:
-        raise SmokeResult('FAIL', 'login_refused')
-    value = json.loads(raw, object_pairs_hook=reject_duplicates(ValueError, 'duplicate login field'))
-    if (type(value) is not dict or value.get('version') != INVITE_VERSION
-            or type(value.get('access_token')) is not str or type(value.get('expires_at')) is not str):
-        raise SmokeResult('FAIL', 'login_response_invalid')
-    _private_write(session_out, json.dumps(dict(access_token=value['access_token'],
-                                                expires_at=value['expires_at'])).encode())
+        body = json.dumps(dict(version=INVITE_VERSION, invite_code=code, consent=True)).encode()
+        opener = opener or build_opener(NoRedirect())
+        try:
+            with opener.open(Request(ORIGIN + '/v2/demo-invite-sessions', data=body,
+                                     headers={'Content-Type': 'application/json', 'Accept': 'application/json'}),
+                             timeout=15) as response:
+                raw = response.read(65537)
+                status = response.status
+        except HTTPError as error:
+            code_value = error.code
+            error.close()
+            raise SmokeResult('FAIL', f'login_http_{code_value}') from None
+        except (OSError, http.client.HTTPException):
+            raise SmokeResult('UNKNOWN', 'login_unavailable') from None
+        if status != 200 or len(raw) > 65536:
+            raise SmokeResult('FAIL', f'login_http_{status}')
+        value = json.loads(raw, object_pairs_hook=reject_duplicates(ValueError, 'duplicate login field'))
+        if (type(value) is not dict or value.get('version') != INVITE_VERSION
+                or type(value.get('access_token')) is not str or type(value.get('expires_at')) is not str):
+            raise SmokeResult('FAIL', 'login_response_invalid')
+    except BaseException:
+        os.close(descriptor)
+        os.unlink(session_out)
+        raise
+    _finish(descriptor, json.dumps(dict(access_token=value['access_token'], expires_at=value['expires_at'])).encode())
     return value['expires_at']
 
 
@@ -119,11 +139,23 @@ class HongKongSender:
             body['conversation_id'] = conversation
         started = self.clock()
         ack = self._call('/v4/lio/messages', body)
-        conversation = ack['conversation_id']
+        conversation = ack.get('conversation_id')
+        if type(conversation) is not str or not conversation:
+            raise ValueError('message_ack')
         first = None
+        misses = 0
         while self.clock() - started < self.turn_seconds:
             self.sleep(self.poll_seconds)
-            value = self._call('/v4/lio/timeline?' + urlencode({'conversation_id': conversation}))
+            try:
+                value = self._call('/v4/lio/timeline?' + urlencode({'conversation_id': conversation}))
+            except SmokeResult as error:
+                # A read is safe to repeat: tolerate a few transient poll failures in a row.
+                misses += 1
+                if misses > POLL_RETRIES or not (error.reason in ('http_timeout', 'http_incomplete_body',
+                                                                   'transport_unavailable') or error.reason.startswith('http_5')):
+                    raise
+                continue
+            misses = 0
             if value.get('version') != TIMELINE_VERSION:
                 raise ValueError('timeline_version')
             rows = [row for row in value.get('messages') or [] if row.get('message_id') == mid]
@@ -149,8 +181,10 @@ class HongKongSender:
                     return dict(empty, error='run_' + str(row.get('status')))
         except SmokeResult as error:
             return dict(empty, error=error.reason)
-        except (KeyError, TypeError, ValueError) as error:
+        except (KeyError, TypeError, ValueError, AttributeError) as error:
             return dict(empty, error='response_' + type(error).__name__)
+        except (OSError, http.client.HTTPException):
+            return dict(empty, error='transport_unavailable')
         answer = row.get('answer')
         return dict(text=answer if type(answer) is str else None,
                     first_token_ms=None if first is None else round((first - started) * 1000),
@@ -190,10 +224,16 @@ def main(argv=None):
     refusal = runner.REAL_REQUIRED if not args.real else runner.real_refusal(planned, args.max_calls, args.max_cost_cny)
     if refusal:
         raise SystemExit(refusal)
-    sender = HongKongSender(load_session(args.session_file), bank)
-    value = runner.execute(cases, sender, args.repeats, meta=dict(source_sha=args.source_sha, plan=planned),
-                           max_calls=args.max_calls)
-    _private_write(args.output, json.dumps(value, ensure_ascii=False, indent=2).encode())
+    token = load_session(args.session_file)
+    output = _reserve(args.output)  # fails before any call if the output exists or cannot be created
+    try:
+        value = runner.execute(cases, HongKongSender(token, bank), args.repeats,
+                               meta=dict(source_sha=args.source_sha, plan=planned), max_calls=args.max_calls)
+    except BaseException:
+        os.close(output)
+        os.unlink(args.output)
+        raise
+    _finish(output, json.dumps(value, ensure_ascii=False, indent=2).encode())
     errors = sum(1 for items in value['answers'].values() for item in items if item['error'])
     print(json.dumps(dict(result='RUN_WRITTEN', cases=len(cases), sends=len(cases) * args.repeats, errors=errors)))
     return 0

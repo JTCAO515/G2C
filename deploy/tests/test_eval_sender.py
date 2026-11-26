@@ -119,3 +119,78 @@ def test_login_writes_a_private_session_and_never_echoes_the_code(tmp_path, caps
     assert seen == [dict(version='DEMO-invite-session.2', invite_code='D1-' + 'a' * 12 + '.' + 'B' * 22, consent=True)]
     assert oct(out.stat().st_mode & 0o777) == '0o600' and json.loads(out.read_text())['access_token'] == 'tok'
     assert 'D1-' not in capsys.readouterr().out
+
+
+def _cli(tmp_path, monkeypatch, sent):
+    session = tmp_path / 'session.json'
+    session.write_text(json.dumps(dict(access_token='t', expires_at='2999-01-01T00:00:00Z')));session.chmod(0o600)
+    known = load_bank()[0]['id']
+    monkeypatch.setattr(eval_sender.HongKongSender, 'send',
+                        lambda self, case, turns: sent.append(case['id']) or dict(text='答', first_token_ms=1, total_ms=2, error=None))
+    return ['run', '--session-file', str(session), '--cases', known, '--real', '--max-calls', '1',
+            '--max-cost-cny', '1', '--cost-per-turn-cny', '0.01'], known
+
+
+def test_existing_or_unwritable_output_stops_before_any_call(tmp_path, monkeypatch):
+    sent = [];args, _ = _cli(tmp_path, monkeypatch, sent)
+    existing = tmp_path / 'out.json';existing.write_text('keep')
+    with pytest.raises(FileExistsError):eval_sender.main(args + ['--output', str(existing)])
+    with pytest.raises(FileNotFoundError):eval_sender.main(args + ['--output', str(tmp_path / 'missing' / 'out.json')])
+    assert sent == [] and existing.read_text() == 'keep'
+
+
+def test_cli_happy_path_writes_a_private_validated_run(tmp_path, monkeypatch, capsys):
+    sent = [];args, known = _cli(tmp_path, monkeypatch, sent)
+    out = tmp_path / 'out.json'
+    assert eval_sender.main(args + ['--output', str(out), '--source-sha', 'a' * 40]) == 0
+    value = json.loads(out.read_text())
+    assert sent == [known] and value['answers'][known][0]['text'] == '答' and value['run']['source_sha'] == 'a' * 40
+    assert oct(out.stat().st_mode & 0o777) == '0o600'
+    assert json.loads(capsys.readouterr().out.strip().splitlines()[-1]) == dict(result='RUN_WRITTEN', cases=1, sends=1, errors=0)
+
+
+class FlakyServer(Server):
+    def __init__(self, clock, failures, reason='http_503', **kw):
+        super().__init__(clock, **kw);self.failures, self.reason = failures, reason
+
+    def __call__(self, token, route, document=None, timeout=None):
+        if route.startswith('/v4/lio/timeline') and self.failures:
+            self.failures -= 1
+            raise SmokeResult('FAIL', self.reason)
+        return super().__call__(token, route, document, timeout)
+
+
+def test_transient_timeline_failures_are_retried_but_not_forever():
+    clock = Clock()
+    ok = sender(FlakyServer(clock, eval_sender.POLL_RETRIES), clock).send(CASE, ['一句'])
+    assert ok['error'] is None and ok['text'] == '答案'
+    clock = Clock()
+    bad = sender(FlakyServer(clock, eval_sender.POLL_RETRIES + 1), clock).send(CASE, ['一句'])
+    assert bad == dict(text=None, first_token_ms=None, total_ms=None, error='http_503')
+    clock = Clock()
+    denied = sender(FlakyServer(clock, 1, reason='http_401'), clock).send(CASE, ['一句'])
+    assert denied['error'] == 'http_401'
+
+
+def test_message_ack_without_conversation_is_an_error():
+    clock = Clock()
+    class NoConversation(Server):
+        def __call__(self, token, route, document=None, timeout=None):
+            if route == '/v4/lio/messages':return dict(), None
+            return super().__call__(token, route, document, timeout)
+    assert sender(NoConversation(clock), clock).send(CASE, ['一句'])['error'] == 'response_ValueError'
+
+
+def test_login_reports_http_status_and_never_spends_an_exchange_on_an_existing_file(tmp_path):
+    from urllib.error import HTTPError
+    invite = tmp_path / 'code';invite.write_text('D1-' + 'a' * 12 + '.' + 'B' * 22);invite.chmod(0o600)
+    calls = []
+    class Denied:
+        def open(self, request, timeout):
+            calls.append(1);raise HTTPError(request.full_url, 401, 'denied', {}, None)
+    out = tmp_path / 'session.json'
+    with pytest.raises(SmokeResult) as raised:eval_sender.login(invite, out, opener=Denied())
+    assert raised.value.reason == 'login_http_401' and not out.exists() and calls == [1]
+    out.write_text('existing');out.chmod(0o600)
+    with pytest.raises(FileExistsError):eval_sender.login(invite, out, opener=Denied())
+    assert calls == [1] and out.read_text() == 'existing'
