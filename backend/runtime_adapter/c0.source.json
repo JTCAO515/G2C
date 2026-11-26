@@ -122,7 +122,7 @@
     "backend/draft/cj_draft/rich_first.py": "f14e57dee9f4cd0a9e75e041a9ca2bcae1bdc87eab8f2d4e09517219748dc44e",
     "backend/draft/cj_draft/rich_provider_source.py": "844ff525a312e49c895752085f9c114fc6888aa3b452239a196131129589b19e",
     "backend/draft/cj_draft/rich_schema.py": "84926d1396c7cf2d714a836b17103da6a6a17ce78d633a46451fa9c3745ae102",
-    "backend/fact/cj_fact/visitor.py": "1338ac3044d8a8a8f158f4165151fa763bea5c32f7cdbfeb39b97b8efa91801c",
+    "backend/fact/cj_fact/visitor.py": "c1b47280fd6dd5a513974bfe4f8876f384c38ad34a6acf29427c0dbb871655e5",
     "backend/memory/cj_memory/epoch_projection.py": "29fd2a8d1ffe417680248b631ccaa1b98e36f68aeaab05baf116297f3d15774f",
     "backend/message/cj_message/demo_dialogue.py": "357aeadcd3cac08067bcadb40a5dfd90c4d6bbd7169232ca5cfa3607dfc1ce4c",
     "backend/message/cj_message/lio_context.py": "f786a7307eaacbbcbe15608b6438077bc13688ee4cd416f364a5487d65bedc4b",
@@ -137,7 +137,7 @@
     "eval/optimization/score_v2.py": "015fa9f21b418fe49a5ac07a5fb3027e0422620a6616029f2ba6438bfa1e9322",
     "tooling/optimization/uv.lock": "c3729fbcd04627cb07bde4f5f21b9c4fbfa4748b3d7468d550c7fc2af62bc343"
   },
-  "system_prompt_sha256": "0b2a14a18b2dd60b33d880bbe85b6ee959807261ed7067e146d6e336e8613cdf",
+  "system_prompt_sha256": "6e2434ce099de88c27c9be10b988a80ff9b0d271b4efa83e4100824afc09aaa0",
   "task_sha256": "9d4376ba7512d6f3c0741036ae1bd0dda99752bbc9f8b8fb8dd7025c61a530ec",
   "task_version": "G2C-dialogue-cases.2",
   "tool_implementation_sha256": "f5102d4797d3afd5627807a7806bb6fd8ca0cc3684e3ef1d26096b83f38aa3b7",
