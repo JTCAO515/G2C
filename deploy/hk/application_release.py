@@ -203,16 +203,22 @@ RELEASE_EVAL_DIR='release-eval'
 def release_eval(root,source,previous,now):
     """Optional post-release dialogue evaluation (#1761), only with G2C_RELEASE_EVAL=1.
 
-    It runs after CUTOVER_PASS, when the release is already complete, and nothing here can fail or
-    change the release. Until a reviewed evaluation sender exists (S line; no sender bypasses the
-    App's send permit), it only records UNRUN in the release-eval record and prints the stage.
+    Both release entries call it after CUTOVER_PASS, when the release is already complete, and
+    nothing here can fail or change the release. No evaluation sender runs on this host: the
+    operator runs deploy/hk/eval_sender.py (#1868) after the release, and this UNRUN record in
+    release-eval/ reminds them that this source has no evaluation report yet.
     """
     record=dict(version='G2C-release-eval.1',source=source,previous_source=previous,
         recorded_at=now.isoformat(timespec='seconds'),status='UNRUN',reason='EVAL_SENDER_NOT_CONNECTED')
     try:
-        folder=root/RELEASE_EVAL_DIR;folder.mkdir(mode=0o700,exist_ok=True)
-        with (folder/(source+'.json')).open('x')as f:json.dump(record,f,sort_keys=True)
-        record['record']=str(folder/(source+'.json'))
+        folder=root/RELEASE_EVAL_DIR;folder.mkdir(mode=0o700,exist_ok=True);os.chmod(folder,0o700)
+        path=folder/(source+'.json')
+        fd=os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
+        try:
+            with os.fdopen(fd,'w')as f:json.dump(record,f,sort_keys=True)
+        except BaseException:
+            path.unlink();raise
+        record['record']=str(path)
     except Exception as error:  # the release is done; a record problem is reported, never raised
         record.update(status='UNKNOWN',reason='EVAL_RECORD_NOT_WRITTEN:'+type(error).__name__)
     print(json.dumps(dict(stage='RELEASE_EVAL',**record)),flush=True)

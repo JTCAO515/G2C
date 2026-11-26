@@ -51,8 +51,8 @@ uv run --locked python -B -m eval.release_eval.report compare OLD_RUN.json NEW_R
 
 统筹 2026-11-26 按 JT 预授权决定：
 
-- 发布后挂点（已做）：`deploy/hk/application_release.py` 在 `CUTOVER_PASS` 之后，只有环境变量 `G2C_RELEASE_EVAL=1`（逐字等于 1）时才调用 `release_eval`；不设置时发布流程逐字不变。它在发布完成后运行，任何问题都只打印、不影响发布。发送端接入前，它只在服务器 `release-eval/<源提交>.json` 写一条 `UNRUN / EVAL_SENDER_NOT_CONNECTED` 记录，并打印 `RELEASE_EVAL` 一行。
-- 发送端：不新造绕过 App 发送许可的发送端（统筹 2026-11-26）。由 S 线说明当时 22 题的跑法能否入库；不能的话，倾向在 worker 侧做服务端内部的评测发送端，只接受仓库固定题集、只用评测专用账号、走现有发送许可，归 S 线，按红线审查。
+- 发布后挂点（#1858）：当前发布入口 `deploy/hk/application_release_host.py`（以及旧入口 `application_release.py`）在 `CUTOVER_PASS` 之后、只有环境变量 `G2C_RELEASE_EVAL` 逐字等于 `1` 时调用 `release_eval`；不设置时发布流程逐字不变。它不读输入、不跑命令、不联网，只在服务器 `release-eval/<源提交>.json`（目录 0700、文件 0600、不覆盖）写一条 `UNRUN / EVAL_SENDER_NOT_CONNECTED` 记录并打印 `RELEASE_EVAL` 一行，任何问题只打印不抛出。操作员发布时这样打开：`G2C_RELEASE_EVAL=1 python3 -B application_release_host.py <gate.json> --apply`。
+- 发送端（统筹 2026-11-26 定）：S 线的操作员评测驱动 `deploy/hk/eval_sender.py`（#1868，本票前置），走公网 `/v4` 对话路由、评测专用账号，会话由操作员现换、不入库；不在 worker 里做内部发送端。发布后由操作员运行它出对比报告；服务器上的 UNRUN 记录提醒「本次发布还没跑评测」。本票 L2 按「每次发布后都有对比报告」判。
 - 账号：先用 `deploy/hk` app_smoke 现有凭据，之后换「评测」类专用码。凭据只放服务器配置或 GitHub secret，不入库。
 - 费用：每月上限 ¥50；单次估算超过 ¥20 先报统筹；第一次真跑只跑 5 题 × 1 次。
 
