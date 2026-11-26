@@ -3,6 +3,9 @@ import SwiftUI
 import CJShell
 import CJLioUser
 
+// #1762 demonstration only, never merged: a compile error the Debug build cannot see.
+let demoBetaOnlyBreak: Int = "not an Int"
+
 struct DemoBetaRootView: View {
     let shell: ShellState
     let root: DevelopmentAccountRoot
