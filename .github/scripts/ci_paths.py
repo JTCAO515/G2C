@@ -11,14 +11,15 @@ still runs (fail open). A C-quoted path is treated as unknown and also runs ever
 - app_changed: some path can affect the Swift packages or the App build -> swift (the one macOS
                job: App build and package tests) runs; when false it skips. Swift tests read
                contracts/ and digital-assets/,
-               the package inventory lives in .github/, and .gitattributes changes checkouts.
+               the package inventory lives in .github/, .gitattributes changes checkouts, and
+               tooling/release/ holds the flag list and script of the Beta build step (#1762).
 """
 import re
 import sys
 
 DOCS = re.compile(r'^(docs/|HANDOFF\.md$)')
 IOS_OR_DOCS = re.compile(r'^(ios/|docs/|HANDOFF\.md$)')
-APP = re.compile(r'^(ios/|contracts/|digital-assets/|\.github/|\.gitattributes$)')
+APP = re.compile(r'^(ios/|contracts/|digital-assets/|\.github/|tooling/release/|\.gitattributes$)')
 
 
 def split(data):

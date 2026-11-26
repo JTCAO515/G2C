@@ -22,7 +22,9 @@ python3 -m http.server 8080 --directory web
 
 ## Vercel
 
-Root Directory 设为 `web`，Framework Preset 选 Other，Build Command 与 Output Directory 留空。`api/` 下的文件自动成为 Vercel Function（Node.js）。`vercel.json` 只设置缓存与安全响应头。
+Root Directory 设为 `web`，Framework Preset 选 Other，Build Command 与 Output Directory 留空。`api/` 下的文件自动成为 Vercel Function（Node.js）。`vercel.json` 设置缓存与安全响应头，以及跳过构建的判断 `ignoreCommand`。
+
+只在 `web/` 变化时部署（#1719）：`ignoreCommand` 在 `web/` 目录里比较本次提交与该分支上次成功部署（`VERCEL_GIT_PREVIOUS_SHA`）之间 `web/` 有没有变化，没变化就跳过构建。上次部署的提交不在 Vercel 的浅克隆里时，生产部署改为比较合并提交与它的第一个父提交（即整个 PR 的改动）；预览部署拿不到可比较的提交时照常构建。命令出错一律构建，不会漏部署。它会覆盖 Vercel 项目设置里的 Ignored Build Step，所以要改跳过规则就改这里。离线检查：`python3 -B -m unittest -v scripts.test_web_vercel_ignore`（`scripts/test.py` 会跑）。
 
 需要在 Vercel 项目 Settings → Environment Variables 配置（Production 与 Preview）：
 
