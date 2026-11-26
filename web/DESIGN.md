@@ -4,7 +4,7 @@ Read this before changing the page. It exists so the site keeps looking like a r
 
 ## Subject
 
-Foreign travellers in mainland China. The page sells one thing: a personal agent in your pocket (CJ Agent) with a team behind it (JT Agent and real people). Everything on the page should be about travelling in China; if a sentence would fit any other app's site, rewrite it.
+Foreign travellers in mainland China. The page sells one thing: a personal agent in your pocket (CJ Agent) and the tools in the app. It lists only what is live today (#1839); JT Agent's background follow-up, human help and redaction come back to the page when each one ships. Everything on the page should be about travelling in China; if a sentence would fit any other app's site, rewrite it.
 
 References that informed this direction: Mindtrip (real photography, big plain headlines, solid colour story panels), Flighty (the product's real UI as the hero), Layla and Wanderlog (one clear call to action).
 
@@ -17,7 +17,7 @@ References that informed this direction: Mindtrip (real photography, big plain h
 | Ink | `#1D1D1B` | Text, dark buttons |
 | Muted | `#62605B` | Secondary text |
 | Cinnabar | `#C41E24` | The CTA, CJ Agent, from the mascot's red |
-| Jade | `#0D6450` | JT Agent and the human team, from the mascot's jade |
+| Jade | `#0D6450` | The tools panel, from the mascot's jade |
 | Porcelain | `#1F3A68` | The privacy panel, after blue-and-white porcelain |
 | Gold | `#E0B04E` | Small highlights on dark panels only |
 
@@ -39,8 +39,8 @@ Solid colours only: no gradients, glows, glass or blur.
 
 ## Motion
 
-- Two demos move on their own because they show the product: the chat (typing, deleting, sending) and the redaction. The photo wall swaps one photo at a time.
-- Everything else moves only when the user does something (switching a scenario tab, submitting the form).
+- The chat demo moves on its own because it shows the product (typing, deleting, sending). The photo wall swaps one photo at a time. The redaction demo and the scenario tabs were removed in #1839: the site does not show or promise a capability the product does not have yet.
+- Everything else moves only when the user does something (submitting the form).
 - No fade-up on scroll. Respect `prefers-reduced-motion`: show final states, stop the photo swaps.
 
 ## China access
