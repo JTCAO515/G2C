@@ -101,7 +101,7 @@ window.G2C = {
    "suggest": [
     "Paying in China",
     "3 days in Beijing",
-    "Metro near me"
+    "Using the Shanghai metro"
    ],
    "chat": [
     {
@@ -166,8 +166,8 @@ window.G2C = {
    "toolsList": [
     "Show cards: big Chinese text for a taxi driver, the hotel front desk or a pharmacy.",
     "Ordering: photograph a menu and build your order in Chinese, with spice level and allergies.",
-    "Metro nearby: the closest stations and lines to where you are.",
-    "Sight bookings: which sights need a passport booking, how far ahead, and a reminder when booking opens."
+    "Metro guide: line maps for major cities, find stations in English or Chinese, and see lines, transfers and what’s around each station.",
+    "Sight bookings: which sights need booking ahead, whether your passport is accepted, how far ahead you can book, and a reminder when booking opens."
    ]
   },
   "zh": {
@@ -269,7 +269,7 @@ window.G2C = {
    "suggest": [
     "不带现金怎么付款",
     "北京 3 日游",
-    "附近地铁"
+    "上海地铁怎么坐"
    ],
    "chat": [
     {
@@ -334,8 +334,8 @@ window.G2C = {
    "toolsList": [
     "出示卡：大字中文，给出租车司机、酒店前台或药店看。",
     "点餐：拍下菜单，用中文点好菜，可以标注辣度和过敏。",
-    "附近地铁：离你最近的地铁站和线路。",
-    "景点预约：哪些景点要用护照预约、最多提前几天，放票时提醒你。"
+    "地铁指南：主要城市的线路图，用中文或英文找车站，看线路、换乘和站点周边。",
+    "景点预约：哪些景点要提前实名预约、能否用护照、最多提前几天，放票时提醒你。"
    ]
   },
   "ru": {
@@ -437,7 +437,7 @@ window.G2C = {
    "suggest": [
     "Оплата в Китае",
     "3 дня в Пекине",
-    "Метро рядом"
+    "Метро в Шанхае"
    ],
    "chat": [
     {
@@ -502,8 +502,8 @@ window.G2C = {
    "toolsList": [
     "Карточки для показа: крупный текст по-китайски для таксиста, ресепшена отеля или аптеки.",
     "Заказ еды: сфотографируйте меню и соберите заказ по-китайски, с остротой и аллергиями.",
-    "Метро рядом: ближайшие к вам станции и линии.",
-    "Достопримечательности: где нужна запись по паспорту, за сколько дней и напоминание, когда откроется запись."
+    "Метро: схемы линий крупных городов, поиск станций по-английски или по-китайски, линии, пересадки и что рядом со станцией.",
+    "Достопримечательности: где нужна предварительная запись, принимают ли паспорт, за сколько дней можно записаться, и напоминание, когда откроется запись."
    ]
   },
   "es": {
@@ -605,7 +605,7 @@ window.G2C = {
    "suggest": [
     "Pagar en China",
     "3 días en Pekín",
-    "Metro cercano"
+    "Metro de Shanghái"
    ],
    "chat": [
     {
@@ -670,8 +670,8 @@ window.G2C = {
    "toolsList": [
     "Tarjetas para enseñar: texto grande en chino para el taxista, la recepción del hotel o la farmacia.",
     "Pedir comida: fotografía la carta y prepara tu pedido en chino, con nivel de picante y alergias.",
-    "Metro cercano: las estaciones y líneas más próximas a ti.",
-    "Reservas de lugares: qué sitios piden reserva con pasaporte, con cuánta antelación y un aviso cuando abren las reservas."
+    "Guía del metro: planos de las principales ciudades, busca estaciones en inglés o chino y consulta líneas, transbordos y qué hay cerca de cada estación.",
+    "Reservas de lugares: qué sitios piden reserva previa, si aceptan pasaporte, con cuánta antelación se puede reservar y un aviso cuando abren las reservas."
    ]
   },
   "fr": {
@@ -773,7 +773,7 @@ window.G2C = {
    "suggest": [
     "Payer en Chine",
     "3 jours à Pékin",
-    "Métro proche"
+    "Métro de Shanghai"
    ],
    "chat": [
     {
@@ -838,8 +838,8 @@ window.G2C = {
    "toolsList": [
     "Cartes à montrer : un grand texte en chinois pour le chauffeur de taxi, la réception de l’hôtel ou la pharmacie.",
     "Commander : photographiez le menu et composez votre commande en chinois, avec le niveau de piment et les allergies.",
-    "Métro proche : les stations et lignes les plus proches de vous.",
-    "Réservations de sites : quels sites exigent une réservation avec passeport, combien de jours à l’avance, et un rappel à l’ouverture des réservations."
+    "Guide du métro : plans des grandes villes, recherche des stations en anglais ou en chinois, lignes, correspondances et alentours de chaque station.",
+    "Réservations de sites : quels sites demandent une réservation, si le passeport est accepté, combien de jours à l’avance, et un rappel à l’ouverture des réservations."
    ]
   },
   "ar": {
@@ -941,7 +941,7 @@ window.G2C = {
    "suggest": [
     "الدفع في الصين",
     "3 أيام في بكين",
-    "مترو قريب"
+    "مترو شنغهاي"
    ],
    "chat": [
     {
@@ -1006,8 +1006,8 @@ window.G2C = {
    "toolsList": [
     "بطاقات للعرض: نص صيني كبير لسائق سيارة الأجرة أو لاستقبال الفندق أو للصيدلية.",
     "الطلب في المطعم: صوّر قائمة الطعام وجهّز طلبك بالصينية، مع مستوى البهارات الحارة والحساسية.",
-    "مترو قريب: أقرب المحطات والخطوط إليك.",
-    "حجز المعالم: أي المعالم تحتاج حجزًا بجواز السفر، وكم يومًا مسبقًا، وتذكير عند فتح الحجز."
+    "دليل المترو: خرائط الخطوط في المدن الكبرى، والبحث عن المحطات بالإنجليزية أو الصينية، والخطوط والتحويلات وما حول كل محطة.",
+    "حجز المعالم: أي المعالم تحتاج حجزًا مسبقًا، وهل يُقبل جواز السفر، وكم يومًا مسبقًا يمكنك الحجز، وتذكير عند فتح الحجز."
    ]
   }
  },
