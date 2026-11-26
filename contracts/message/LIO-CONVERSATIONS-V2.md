@@ -10,6 +10,8 @@ Use the same signed internal-beta identity for both languages. A new Lio convers
 {"version":"LIO-message.2","message_id":"first-new-question","text":"What travel pace do I prefer?","locale":"en","new_conversation":true}
 ```
 
+`LIO-message.2` may also carry `chip_ticket`, the one-time ticket of a tap-to-ask chip, with `text` equal to that chip's label; see [LIO-ANSWER-FOLLOWUPS-V1.md](LIO-ANSWER-FOLLOWUPS-V1.md). No other field is added and no other version accepts it.
+
 The first accepted message creates the new conversation and returns its ID in the same transaction. Save the ID for reopening. Continue a conversation by sending `conversation_id` with a fresh message ID. Omitting both fields sends to the original default conversation. A blank conversation can be presented locally before the first send.
 
 ```json

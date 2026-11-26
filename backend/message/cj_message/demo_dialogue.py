@@ -37,6 +37,7 @@ class DialogueMessage:
     input_sha256: str
     protocol: str = MESSAGE_VERSION
     wire_input: bytes | None = None
+    chip_ticket: str | None = None  # LIO-message.2 only: a one-time tap-to-ask ticket (#1727)
 
     @classmethod
     def parse(cls, raw, *, version=MESSAGE_VERSION):
@@ -44,6 +45,8 @@ class DialogueMessage:
             value = json.loads(raw.decode('utf-8'), object_pairs_hook=unique_fields)
             required = {'version', 'message_id', 'text', 'locale'}
             optional = {'conversation_id'} if version == LIO_VERSION else {'conversation_id', 'new_conversation'}
+            if version == LIO_VERSION_V2:
+                optional = optional | {'chip_ticket'}
             if (type(value) is not dict or not required <= value.keys()
                     or value.keys() - required - optional
                     or value['version'] != version or value['locale'] not in ('zh', 'en')
@@ -57,9 +60,15 @@ class DialogueMessage:
             pattern = CHAT_PATTERN if version == MESSAGE_VERSION else LIO_CHAT_PATTERN
             if 'conversation_id' in value and (type(conversation) is not str or not pattern.fullmatch(conversation)):
                 raise InvalidInput('invalid dialogue conversation identifier')
+            ticket = value.get('chip_ticket')
+            if 'chip_ticket' in value and type(ticket) is not str:
+                raise InvalidInput('invalid dialogue chip ticket')
+            # A string that is not shaped like a ticket is just not a ticket: an ordinary question.
+            from .lio_followups import valid_ticket
+            ticket = ticket if valid_ticket(ticket) else None
             return cls(message_id(value['message_id']), text, value['locale'], conversation,
                        value.get('new_conversation', False), hashlib.sha256(raw).hexdigest(), value['version'],
-                       raw if version in (LIO_VERSION_V3,LIO_VERSION_V4) else None)
+                       raw if version in (LIO_VERSION_V3,LIO_VERSION_V4) else None, ticket)
         except (UnicodeError, ValueError) as exc:
             raise InvalidInput('invalid dialogue message') from exc
 
@@ -192,6 +201,12 @@ def _receive(service, command, *, prepare_scope=None):
         if command.protocol==LIO_VERSION_V3 and has_exploration_wire(tx,conversation,chat.generation):
             raise InvalidInput('exploration conversation requires the new Lio capability')
 
+        if command.chip_ticket is not None:
+            # #1727: spend the one-time ticket in this transaction. False (any reason) leaves an ordinary
+            # question; the daily count skips the receipt only when a ticket was actually spent here.
+            from .lio_followups import label_sha256
+            tx.cur.execute('SELECT public.cj_lio_chip_redeem(%s,%s,%s)',
+                           (command.chip_ticket, label_sha256(command.text), command.id))
         tx.cur.execute("SELECT set_config('cj.message_context_abi',%s,true)", (ABI,))
         selection = _travel(tx, service.repository)
         inner = Command.parse_v2(_json(dict(version='MESSAGE-send.2', conversation_id=conversation,

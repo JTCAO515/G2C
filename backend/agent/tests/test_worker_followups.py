@@ -1,4 +1,5 @@
 """W2-1 (#1727): the worker commits the layout before the text and fixed buttons after it."""
+import json
 import os
 from unittest.mock import patch
 
@@ -7,7 +8,23 @@ from cj_message.lio_context import FOLLOWUPS_EFFECT, LAYOUT_EFFECT, LioLayout, L
 from cj_run.core import Binding, Service
 from cj_run.fixture import MemoryRepository
 from test_worker_cancel import Drafts
-from test_worker_safety_lines import Messages
+from test_worker_safety_lines import Messages as BaseMessages
+
+
+class Messages(BaseMessages):
+    """The safety-lines message fake plus a chip store that records what the worker asks for."""
+    def __init__(self, text, issue=None):
+        super().__init__(text)
+        self.issued = []
+        self.issue = issue
+        if issue is not None:
+            self.issue_lio_chips = self._issue
+
+    def _issue(self, message_id, labels):
+        self.issued.append((message_id, list(labels)))
+        if isinstance(self.issue, Exception):
+            raise self.issue
+        return self.issue
 
 
 class Tools:
@@ -22,11 +39,13 @@ class Tools:
         yield self.text
 
 
-def run(question, answer, layout, locale='zh'):
+def run(question, answer, layout, locale='zh', issue=None):
     runs = Service(MemoryRepository(), lambda _: True)
-    worker = RunWorker(scope='scope', messages=Messages(question), runs=runs, provider=None, tools=Tools(layout, answer),
+    messages = Messages(question, issue)
+    worker = RunWorker(scope='scope', messages=messages, runs=runs, provider=None, tools=Tools(layout, answer),
                        drafts=Drafts(), lio_original=lambda binding: LioOriginal(locale, None))
     outcome, = worker.process()
+    run.last_messages = messages
     return outcome.status, runs.snapshot(Binding('scope', 'chat', 'g', 'm', 'r', 1))
 
 
@@ -69,3 +88,34 @@ def test_a_tools_object_that_does_not_declare_layout_is_never_given_the_argument
                        tools=tools, drafts=Drafts(), lio_original=lambda binding: LioOriginal('zh', None))
     worker.process()
     assert tools.kwargs['lio_layout'] is True
+
+
+def payload(state):
+    return json.loads(state.effects[1].removeprefix(FOLLOWUPS_EFFECT))
+
+
+def test_chips_get_stored_tickets_and_ride_in_the_followups_effect():
+    tickets = ['a' * 43, 'b' * 43, 'c' * 43]
+    status, state = run('外国游客怎么用支付宝？', '先绑定国际银行卡。\n\n再出示付款码。', 'split', issue=tickets)
+    assert status == 'completed'
+    assert run.last_messages.issued == [('m', ['付不了怎么办', '哪些地方不能用', '怎么开通地铁乘车码'])]
+    body = payload(state)
+    assert [chip['ticket'] for chip in body['chips']] == tickets and body['actions'][0]['tool'] == 'payment-guide'
+    assert isinstance(body['issued_at'], int)
+
+
+def test_a_failed_or_missing_ticket_store_leaves_the_buttons_and_no_chips():
+    for issue in (None, RuntimeError('db down')):
+        status, state = run('外国游客怎么用支付宝？', '先绑定国际银行卡。', 'split', issue=issue)
+        assert status == 'completed'
+        body = payload(state)
+        assert body['chips'] == [] and body['actions'][0]['tool'] == 'payment-guide'
+    # a store that cannot write all of them (returns None) also offers none
+    status, state = run('外国游客怎么用支付宝？', '先绑定国际银行卡。', 'split', issue=None)
+    assert payload(state)['chips'] == []
+
+
+def test_a_question_with_chips_but_no_button_still_gets_a_followups_record():
+    # a "taxi" question with no tool destination has the plain taxi button and taxi chips
+    status, state = run('怎么打车去机场', '可以用滴滴。', 'split', issue=['d' * 43, 'e' * 43, 'f' * 43])
+    assert status == 'completed' and payload(state)['chips'][0]['ticket'] == 'd' * 43
