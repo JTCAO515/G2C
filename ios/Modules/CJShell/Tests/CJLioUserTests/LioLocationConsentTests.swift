@@ -36,6 +36,16 @@ struct LioLocationConsentTests {
         #expect(!LioLocationConsentFeature.enabledInBuild, "the test bundle sets no flag")
     }
 
+    @Test func infoPlistReadsTheFlagFromABuildSettingThatNoConfigurationSets() throws {
+        let ios = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let plist = try String(contentsOf: ios.appendingPathComponent("App/Info.plist"), encoding: .utf8)
+        let project = try String(contentsOf: ios.appendingPathComponent("CJProbeApp.xcodeproj/project.pbxproj"), encoding: .utf8)
+        #expect(plist.contains("<key>G2CLocationConsentEnabled</key><string>$(G2C_LOCATION_CONSENT_ENABLED)</string>"))
+        #expect(!project.contains("G2C_LOCATION_CONSENT_ENABLED"), "off unless a release turns it on")
+    }
+
     @Test func nothingIsReadBeforeTheTravellerAllowsIt() async throws {
         let consent = LioLocationConsent(store: nil, isCurrent: { true })
         let reader = Reader()
