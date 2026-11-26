@@ -231,6 +231,53 @@
           "cleanup_protocol": "CLEANUP@1.1"
         },
         {
+          "id": "service-requests",
+          "owner": "W9-2 #1769 service line; cleanup CJ-024",
+          "objects": [
+            "cj_service_request",
+            "cj_service_request_history",
+            "cj_service_request_view",
+            "cj_service_request_scope"
+          ],
+          "source": "backend/migrations/0056_service_request.sql",
+          "status": "candidate/local_only; production_not_provisioned; CJ_SERVICE_REQUEST_ENABLED default off",
+          "principal_binding": "Server-resolved owner scope (cj.message_scope) bound per transaction; caller cannot supply owner/state/quote/staff fields; other owners indistinguishable from missing",
+          "sensitive_fields": [
+            "exact original SERVICE-REQUEST@1 UTF8 bytes and sha256: customer name, E.164 contact phone, venue, service date/time window, meeting purpose, counterpart company/name, note, consent text version",
+            "state, quote (amount, outside-app instructions), human_service (escort display name, arrival time/place, cancellation/refund texts)",
+            "append-only history: actor kind, server-only staff ref, evidence kind and body (completion summary, reasons)",
+            "escort view audit: viewer ref, shared field names, view time",
+            "Irreversible nonsecret scope digest/retired fence; no plaintext identity in the fence"
+          ],
+          "retention": "12 months after first terminal state (request, history, evidence); completion_summary body 90 days; cutoffs from DB clock via Repository.purge_expired (summary bodies as runtime, 12-month deletion as cj_local_cleanup), no scheduler (PIPIA service-request section 9)",
+          "cleanup_hook": "cj_service_request.lifecycle.ServiceRequestHook: same original account operation, scope-lock/irreversible fence then physical erasure of requests, history, evidence and view audit with verification and atomic original result; no revived writer",
+          "restore_fence": "Replay retired scope digest before any service request read/write; trigger/row lock reject retired insertion or update; restrictive account_retired RLS",
+          "owner_line": "service line",
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1"
+        },
+        {
+          "id": "service-sessions",
+          "owner": "W9-3 #1770 service line; cleanup CJ-024",
+          "objects": [
+            "cj_service_message",
+            "cj_service_message_authority"
+          ],
+          "source": "backend/migrations/0057_service_conversation.sql",
+          "status": "candidate/local_only; production_not_provisioned; CJ_SERVICE_REQUEST_ENABLED default off",
+          "principal_binding": "Server-resolved owner scope (cj.message_scope) bound per transaction; written only by the server on SERVICE-REQUEST state changes under the MESSAGE scope row lock; other owners see nothing",
+          "sensitive_fields": [
+            "server-initiated service conversation messages, not de-identified (ADR-0009 section 4): bilingual body that may name the human escort, arrival time and place; provided_by_human flag; conversation/sequence/message id",
+            "internal authority audit, never projected and not runtime-readable: service request id, history seq and target state that authorized each message"
+          ],
+          "retention": "Same as the service conversation (cj_message_chat); authority audit also ends with its SERVICE-REQUEST history row (12 months after first terminal state)",
+          "cleanup_hook": "cj_message.service_session_cleanup.ServiceSessionHook: verify-only after the original account fence; rows are erased by FOREIGN KEY ON DELETE CASCADE when business/message deletes cj_message_chat (authority also cascades from cj_service_request_history); no DELETE grant to cleanup; any remaining row refuses and blocks (fail-closed)",
+          "restore_fence": "Replay the account fence before reads; restrictive account_retired RLS and the cascade parent fence reject retired insertion",
+          "owner_line": "service line",
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1"
+        },
+        {
           "id": "cleanup-metadata",
           "owner": "CJ-024 / CJ-005",
           "objects": [

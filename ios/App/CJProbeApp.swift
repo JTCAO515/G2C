@@ -133,7 +133,8 @@ struct CJProbeApp: App {
                                roadbookDirectory: travelProfilePreview.map { LioAccountFolders.roadbooks(inMessageDirectory: $0.messageDirectory) },
                                tripHomeStore: travelProfilePreview?.tripHome,
                                messageDirectory: travelProfilePreview?.messageDirectory,
-                               toolsDraftStorage: localSupportDraftPreview) {
+                               toolsDraftStorage: localSupportDraftPreview,
+                               answerFeedback: LioAnswerFeedbackPreview.launch) {
                 LioMenuSettings(shell: shell)
             }
             .lioMedicalCardStorage(localMedicalCardPreview)
