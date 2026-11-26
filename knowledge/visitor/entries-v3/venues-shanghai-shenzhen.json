@@ -34,68 +34,6 @@
     "format_version": "visitor-entry.3",
     "entry_kind": "fact",
     "topic": "passport_booking",
-    "checked_on": "2026-11-20",
-    "expires_on": "2026-12-04",
-    "id": "visitor.v3.shanghai.museum-peoples-square",
-    "cities": [
-      "shanghai"
-    ],
-    "subject": {
-      "key": "shanghai.museum-peoples-square",
-      "name_zh": "上海博物馆人民广场馆",
-      "name_en": "Shanghai Museum, Peoples Square venue",
-      "wikidata_qid": null
-    },
-    "text_zh": "上海博物馆人民广场馆在当前美洲古代文明大展期间须按官网要求预约购票参观；通常周一闭馆，国定节假日除外。此条不把东馆基本陈列的免预约规则套到这里，提前预约窗口尚未核实。",
-    "text_en": "The Peoples Square venue of Shanghai Museum currently asks visitors to reserve and buy admission for its ancient American civilizations exhibition. Mondays are its usual closure day, except national statutory holidays. The East venues basic-gallery walk-in rule does not apply here; the advance booking window is unverified.",
-    "source_urls": [
-      "https://www.shanghaimuseum.cn/mu/frontend/pg/index"
-    ],
-    "conditions": {
-      "reservation_required": true,
-      "closed_weekdays": [
-        1
-      ],
-      "closed_weekdays_public_holiday_exception": true,
-      "advance_booking_days": null,
-      "advance_booking_rule": null
-    }
-  },
-  {
-    "format_version": "visitor-entry.3",
-    "entry_kind": "fact",
-    "topic": "passport_booking",
-    "checked_on": "2026-11-20",
-    "expires_on": "2026-12-04",
-    "id": "visitor.v3.shanghai.museum-east",
-    "cities": [
-      "shanghai"
-    ],
-    "subject": {
-      "key": "shanghai.museum-east",
-      "name_zh": "上海博物馆东馆（基本陈列）",
-      "name_en": "Shanghai Museum East, permanent galleries",
-      "wikidata_qid": null
-    },
-    "text_zh": "上海博物馆东馆基本陈列可免预约参观；通常周二闭馆，国定节假日除外。收费特展、团队、活动及临时调整需另核，不把东馆的开放规则套到人民广场馆。",
-    "text_en": "Individual visits to the permanent galleries at Shanghai Museum East need no advance reservation. Its regular weekly closure is Tuesday, with a statutory-holiday exception. Ticketed exhibitions, groups, events and temporary changes require separate checks; the Peoples Square venue follows different arrangements.",
-    "source_urls": [
-      "https://www.shanghaimuseum.cn/mu/frontend/pg/index"
-    ],
-    "conditions": {
-      "reservation_required": false,
-      "closed_weekdays": [
-        2
-      ],
-      "closed_weekdays_public_holiday_exception": true,
-      "advance_booking_days": null,
-      "advance_booking_rule": null
-    }
-  },
-  {
-    "format_version": "visitor-entry.3",
-    "entry_kind": "fact",
-    "topic": "passport_booking",
     "checked_on": "2026-11-26",
     "expires_on": "2026-12-10",
     "id": "visitor.v3.shenzhen.museum-history-folk",
