@@ -9,6 +9,9 @@ struct LioRoute: Hashable, Sendable, Identifiable {
     static let maximumParameters = 8
     static let maximumKeyLength = 32
     static let maximumValueLength = 200
+    /// Characters are counted as the user sees them, so a long run of combining marks passes the length check;
+    /// the byte bound catches it (server buttons and links reach routes, #1727).
+    static let maximumValueBytes = 800
 
     let tool: LioTool
     let parameters: [String: String]
@@ -25,7 +28,7 @@ struct LioRoute: Hashable, Sendable, Identifiable {
         for key in parameters.keys.sorted() where entry.parameters.contains(key) && key.count <= Self.maximumKeyLength {
             guard kept.count < Self.maximumParameters, let raw = parameters[key] else { break }
             let value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !value.isEmpty, value.count <= Self.maximumValueLength,
+            guard !value.isEmpty, value.count <= Self.maximumValueLength, value.utf8.count <= Self.maximumValueBytes,
                   !value.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }) else { continue }
             kept[key] = value
         }

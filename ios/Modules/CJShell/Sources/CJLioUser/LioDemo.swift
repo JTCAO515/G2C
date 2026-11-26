@@ -1,3 +1,4 @@
+import CJMessageHTTP
 import Foundation
 
 extension LioService {
@@ -15,10 +16,12 @@ extension LioService {
                             continuation.yield(.activity(activity))
                             try await Task.sleep(for: .milliseconds(650))
                         }
+                        if let layout = reply.layout { continuation.yield(.layout(layout.0, [])) }
                         for part in reply.parts {
                             try await Task.sleep(for: .milliseconds(220))
                             continuation.yield(.text(part))
                         }
+                        if let layout = reply.layout { continuation.yield(.layout(layout.0, layout.1)) }
                         if let source = reply.source { continuation.yield(.source(source)) }
                         if let itinerary = reply.itinerary {
                             await session.save(itinerary)
@@ -53,6 +56,8 @@ enum LioDemo {
         let parts: [String]
         var source: LioSource? = nil
         var itinerary: LioItinerary? = nil
+        /// Debug preview of #1727 (`--lio-answer-layout-preview`): the layout and the buttons.
+        var layout: (LioTimelineWire.AnswerLayout, [LioTimelineWire.Followup])? = nil
     }
 
     actor Session {
@@ -126,12 +131,22 @@ enum LioDemo {
         let lang = question.language
         let text = question.text.lowercased()
         if text.contains("metro") || text.contains("地铁") {
+            #if DEBUG
+            let preview = ProcessInfo.processInfo.arguments.contains("--lio-answer-layout-preview")
+            #else
+            let preview = false
+            #endif
             return Reply(activity: .directions, parts: [
                 lang.text("Start by finding the station nearest you. ", "先找离你最近的地铁站。"),
                 lang.text("Follow the line number and the name of the last stop to find the right platform. ",
                           "进站后，看线路编号和终点站名称，就能找到正确方向的站台。"),
                 lang.text("Tell me where you’re starting and where you want to go.", "告诉我你从哪儿出发、想去哪里吧。")
-            ], source: LioSource(id: "sample-metro", title: lang.text("Metro signs · Demo example", "地铁指示牌 · 演示示例"), url: nil))
+            ].enumerated().map { $0.offset == 1 && preview ? "\n\n" + $0.element : $0.element },
+            source: LioSource(id: "sample-metro", title: lang.text("Metro signs · Demo example", "地铁指示牌 · 演示示例"), url: nil),
+            layout: preview ? (.split, [
+                .init(tool: "payment-guide", parameters: [:], label: lang.text("Payment setup guide", "打开支付开通指南")),
+                .init(tool: "taxi", parameters: [:], label: lang.text("Get a taxi", "打车"))
+            ]) : nil)
         }
         if text.contains("chengdu") || text.contains("成都") {
             return Reply(activity: .places, parts: [

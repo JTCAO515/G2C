@@ -131,6 +131,31 @@ struct LioTimelineTransportTests {
         #expect(calls.map(\.body) == [original.originalUTF8, nil, nil, undo.originalUTF8, nil])
     }
 
+    /// #1727: `accepts` is a read-side declaration on the v2 timeline only; without it the request is as before.
+    @Test func answerLayoutIsDeclaredOnTheV2TimelineOnlyAndOnlyWhenAsked() async throws {
+        let endpoint = try endpoint()
+        let exit = LioExit()
+        let transport = try NoRedirectTransport(interceptedTransport: exit, messageEndpoint: endpoint,
+                                                validateMessage: {}, lio: true)
+        let conversation = "lio-dialogue-0123456789abcdef0123456789abcdef"
+        _ = try await transport.readLio(conversationID: conversation, before: nil, bearer: "fixture", version: .v2)
+        _ = try await transport.readLio(conversationID: conversation, before: "one", bearer: "fixture", version: .v2,
+                                        declaresAnswerLayout: true)
+        _ = try await transport.readLio(conversationID: conversation, before: nil, bearer: "fixture", version: .v2,
+                                        declaresAnswerLayout: true)
+        _ = try await transport.readLio(conversationID: nil, before: nil, bearer: "fixture", version: .v1,
+                                        declaresAnswerLayout: true)
+        _ = try await transport.readLio(conversationID: conversation, before: nil, bearer: "fixture", version: .v3,
+                                        declaresAnswerLayout: true)
+        let paths = await exit.calls.map(\.path)
+        #expect(paths == [
+            "/v2/lio/timeline?conversation_id=\(conversation)",
+            "/v2/lio/timeline?conversation_id=\(conversation)&before=one&accepts=LIO-answer-followups.1",
+            "/v2/lio/timeline?conversation_id=\(conversation)&accepts=LIO-answer-followups.1",
+            "/v1/lio/timeline", "/v3/lio/timeline?conversation_id=\(conversation)"
+        ], "other versions never carry it: the server answers 400 there")
+    }
+
     @Test func tripHistoryAndUndoUseOnlyTheirSignedRoutes() async throws {
         let endpoint = try endpoint()
         let exit = LioExit()

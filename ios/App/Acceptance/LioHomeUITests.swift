@@ -2542,6 +2542,57 @@ import CryptoKit
         }
     }
 
+    /// #1727: with `G2CAnswerLayoutEnabled` (Debug: `--lio-answer-layout-preview`, a fixture that sends nothing) the
+    /// answer is two bubbles cut at the first blank line, with the server's buttons under them; a button opens its tool.
+    /// Without the flag the same answer is one bubble and no buttons.
+    func testAnswerLayoutShowsTwoBubblesAndButtonsOnlyWithTheFlag() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            let en = language == "en"
+            for (flag, toolsShown) in [(true, true), (false, true), (true, false)] {
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language] + (flag ? ["--lio-answer-layout-preview"] : [])
+                    + (toolsShown ? ["--lio-tools-preview"] : [])
+                app.launch()
+                defer { app.terminate() }
+                XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 12))
+                app.buttons["lio.example.0"].tap()
+                let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+                let starter = composer.value as? String ?? ""
+                composer.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: starter.count)
+                                  + (en ? "How do I take the metro in Shanghai?" : "在上海怎么坐地铁？"))
+                app.buttons["lio.send"].tap()
+                let first = app.staticTexts["lio.answer"], second = app.staticTexts["lio.answer.2"]
+                XCTAssertTrue(first.waitForExistence(timeout: 8))
+                let payment = app.buttons["lio.answer.followup.0"], taxi = app.buttons["lio.answer.followup.1"]
+                guard flag else {
+                    _ = second.waitForExistence(timeout: 4)
+                    XCTAssertFalse(second.exists, "one bubble without the flag")
+                    XCTAssertFalse(payment.exists, "no buttons without the flag")
+                    continue
+                }
+                XCTAssertTrue(second.waitForExistence(timeout: 8), "the second bubble")
+                XCTAssertTrue(payment.waitForExistence(timeout: 12), app.debugDescription)
+                XCTAssertEqual(payment.label, en ? "Payment setup guide" : "打开支付开通指南")
+                XCTAssertEqual(taxi.label, en ? "Get a taxi" : "打车")
+                XCTAssertGreaterThanOrEqual(second.frame.minY, first.frame.maxY, "the second bubble is below the first")
+                XCTAssertGreaterThanOrEqual(payment.frame.minY, second.frame.maxY, "buttons are under the bubbles")
+                let shot = XCTAttachment(screenshot: app.screenshot())
+                shot.name = "answer-layout-\(language)"; shot.lifetime = .keepAlways; add(shot)
+                payment.tap()
+                if toolsShown {
+                    let tools = app.tabBars.buttons[en ? "Tools" : "工具"]
+                    XCTAssertTrue(tools.waitForExistence(timeout: 6))
+                    XCTAssertTrue(tools.isSelected, "the button opened its tool")
+                } else {
+                    // This build has no Tools tab: the button says so instead of failing.
+                    XCTAssertTrue(app.alerts.firstMatch.waitForExistence(timeout: 6), "not-in-this-version notice")
+                    XCTAssertTrue(app.alerts.firstMatch.label == (en ? "This tool isn't in this version yet." : "这个版本还没有这个工具。"))
+                }
+            }
+        }
+    }
+
     /// #1753 (W4-9): with `G2CAnswerFeedbackEnabled` (Debug: `--lio-answer-feedback-preview`, a fixture that sends
     /// nothing) a finished answer offers "Not helpful", then details. Independent of the AI line; without the flag,
     /// nothing changes.

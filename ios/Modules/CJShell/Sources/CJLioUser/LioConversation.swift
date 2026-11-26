@@ -51,6 +51,8 @@ enum LioEvent: Sendable {
     case text(String)
     case source(LioSource)
     case savedItinerary(LioItinerary)
+    /// Debug preview only (#1727): the answer's layout and buttons.
+    case layout(LioTimelineWire.AnswerLayout, [LioTimelineWire.Followup])
     case finished
     case failed(LioFailure)
 }
@@ -85,6 +87,9 @@ struct LioTurn: Identifiable {
     var itinerary: LioItinerary?
     var memoryTags: [LioMemoryWire.Tag] = []
     var exploration: LioExplorationDisplay?
+    /// #1727: how the server says this answer is shown, and its fixed buttons (empty unless the build asked for them).
+    var layout: LioTimelineWire.AnswerLayout?
+    var followups: [LioTimelineWire.Followup] = []
     var fromTimeline = false
     var readFailure: LioRequestProblem?
     var id: Data { question.id }
@@ -226,6 +231,9 @@ final class LioConversation {
                 }
             case .savedItinerary(let itinerary):
                 turns[index].itinerary = itinerary
+            case .layout(let layout, let followups):
+                turns[index].layout = layout
+                turns[index].followups = followups
             case .finished:
                 turns[index].status = .finished
                 return
@@ -336,6 +344,6 @@ final class LioConversation {
         let question = question ?? LioQuestion(messageID: row.messageID, text: row.text, language: .english)
         return LioTurn(question: question, status: row.status, answer: row.answer,
                        sources: row.sources, itinerary: row.itinerary, memoryTags: row.memoryTags,
-                       exploration: row.exploration, fromTimeline: true)
+                       exploration: row.exploration, layout: row.layout, followups: row.followups, fromTimeline: true)
     }
 }
