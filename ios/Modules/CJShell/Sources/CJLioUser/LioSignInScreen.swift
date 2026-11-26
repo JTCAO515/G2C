@@ -350,13 +350,14 @@ struct LioSignInWelcome<Settings: View>: View {
         GeometryReader { proxy in
             ScrollView {
                 VStack(spacing: 0) {
+                    // Top leading: the SOS button floats at the top trailing corner of the signed-out root.
                     if !typeSize.isAccessibilitySize {
                         HStack {
-                            Spacer(minLength: 0)
                             settings.fixedSize()
                                 .padding(.horizontal, LioTheme.Spacing.sm)
                                 .background(LioSignInPalette.field.opacity(0.7), in: Capsule())
                                 .overlay { Capsule().stroke(LioSignInPalette.line, lineWidth: LioTheme.outlineWidth).accessibilityHidden(true) }
+                            Spacer(minLength: 0)
                         }
                         .padding(.top, LioTheme.Spacing.xs)
                     }
