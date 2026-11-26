@@ -14,5 +14,6 @@
 | [0008 消息发送许可](0008-message-send-permit.md) | accepted | 服务端会话头 CAS 作为不可回退的首次发送证据；原子发送状态读取与结果未知判定表；App 激活条件；`MESSAGE-SEND@1` |
 | [0009 JT Agent 契约预留](0009-jt-agent-contract-reservation.md) | accepted | 只预留不实现：事件 outbox（只带引用）、主动助手消息推进同一会话头、服务会话类型、候选记忆来源；JT 存储不占位登记；M3 #23/#26/#27 约束 |
 | [0010 本地助手与场景包](0010-local-assistant-and-scene-packs.md) | accepted（以 JT 批准合并为准） | 一个 Lio、按任务分场景（tasks[]）；旅游、商务两份场景包（知识、工具、流程、风险规则、可承诺结果）与开关；第三方平台与真人服务两种履约分开显示；记忆按用途分开 |
+| [0011 正式登录与账号池](0011-formal-sign-in.md) | accepted（以统筹审定合并为准） | 香港自建：Apple / Google / 邮箱验证码由香港验证、沿用现有会话签发；预开户账号池加身份绑定；撞邮箱验证码确认后才关联；邀请码不变；新行为默认关 |
 
 依据是 CJ Planning（官方 `read_thread` 完整分页读取，线程 `01a15d68-fd8d-7473-991e-2d604486ae75`）、JT 本轮补充与 GitHub r3 Issue。较早三 Tab、弱化首批长记忆等建议已被后续明确确认替代。各 ADR 的验证项仅是未来任务，不在本轮试验。
