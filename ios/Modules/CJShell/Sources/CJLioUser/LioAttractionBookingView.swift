@@ -4,8 +4,13 @@ import SwiftUI
 /// 工具 → 景点预约: popular sights grouped by city, each with its booking rule in one line.
 struct LioAttractionBookingView: View {
     let language: LioLanguage
-    var reminders = LioAttractionReminderScheduler(center: LioSystemReminderCenter())
+    var center: any LioAttractionReminderCenter = LioSystemReminderCenter()
     var today: Date = .now
+    /// The signed-in account's reminders (#1922); outside a signed-in host (previews) the shared one.
+    @Environment(\.lioReminderScope) private var reminderScope
+    private var reminders: LioAttractionReminderScheduler {
+        LioAttractionReminderScheduler(center: center, scope: reminderScope ?? LioAttractionReminderScope(account: nil))
+    }
     /// #1739: the trip's city (Chinese name) is listed first, and its visit day fills each reminder's date.
     var tripCityZH: String? = nil
     var visit: LioTripDay? = nil
@@ -100,6 +105,21 @@ struct LioAttractionBookingBadge: View {
     }
 }
 
+/// Opens one sight's rule from a trip place (#1740). The reminders are set under the signed-in account's own
+/// identifier prefix (#1922), the same one the list uses, so a place opened from a trip cannot leak into the shared scope.
+struct LioAttractionBookingRouteDetail: View {
+    let rule: LioAttractionBookingRule
+    let language: LioLanguage
+    @Environment(\.lioReminderScope) private var reminderScope
+
+    var body: some View {
+        LioAttractionBookingDetail(
+            rule: rule, language: language,
+            reminders: LioAttractionReminderScheduler(
+                center: LioSystemReminderCenter(), scope: reminderScope ?? LioAttractionReminderScope(account: nil)))
+    }
+}
+
 struct LioAttractionBookingDetail: View {
     let rule: LioAttractionBookingRule
     let language: LioLanguage
@@ -122,7 +142,7 @@ struct LioAttractionBookingDetail: View {
 
     private var stale: Bool { rule.isStale(on: today) }
     private var request: LioAttractionReminder.Request? {
-        LioAttractionReminder.request(for: rule, visit: visit, now: today, language: language)
+        reminders.request(for: rule, visit: visit, now: today, language: language)
     }
 
     var body: some View {
@@ -404,7 +424,7 @@ struct LioAttractionBookingStopSample: View {
 #Preview("Detail") {
     NavigationStack {
         LioAttractionBookingDetail(rule: LioAttractionBookingRule.all[0], language: .english,
-                                   reminders: .init(center: LioSystemReminderCenter()),
+                                   reminders: .init(center: LioSystemReminderCenter(), scope: .init(account: nil)),
                                    today: LioAttractionBookingRule.day("2026-11-25")!,
                                    visit: LioAttractionBookingRule.day("2026-12-05")!)
     }

@@ -1549,6 +1549,7 @@ private struct LioTripHomeTab: View {
     let showAllTrips: () -> Void
     let openChat: () -> Void
     @State private var loaded: Loaded?
+    @Environment(\.lioReminderScope) private var reminderScope
 
     private struct Loaded {
         let language: LioLanguage
@@ -1569,7 +1570,8 @@ private struct LioTripHomeTab: View {
             guard loaded?.language != language else { return }
             loaded = Loaded(language: language, model: loaded?.model ?? LioTripHomeModel(store: store),
                             tools: .fromBuild(messageDirectory: messageDirectory, isCurrent: isCurrent,
-                                              arrival: LioTripHomeArrival.fromBuild(language: language)))
+                                              arrival: LioTripHomeArrival.fromBuild(language: language),
+                                              reminderScope: reminderScope ?? LioAttractionReminderScope(account: nil)))
         }
     }
 }

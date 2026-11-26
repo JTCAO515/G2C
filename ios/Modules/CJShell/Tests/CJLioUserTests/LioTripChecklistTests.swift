@@ -207,14 +207,14 @@ struct LioTripChecklistTests {
 
     @Test func aReminderSetInAttractionBookingShowsOnTheTask() {
         var input = Self.everything(Self.at("2026-11-26 10:00"))
-        input.scheduledReminders = ["g2c.attraction.beijing.palace-museum.2026-12-09"]
+        input.scheduledReminders = [input.reminderScope.prefix + "beijing.palace-museum.2026-12-09"]
         let palace = LioTripChecklist(input).tasks.first { $0.key == "booking.beijing.palace-museum.2026-12-09" }
         guard case .booking(_, _, _, let reminderSet)? = palace?.kind else { Issue.record("no booking"); return }
         #expect(reminderSet)
         let rule = LioAttractionBookingRule.match(nameZH: "故宫博物院", nameEN: "")!
-        #expect(LioTripChecklist.reminderID(rule: rule, visit: Self.day("2026-12-09"))
+        #expect(LioTripChecklist.reminderID(rule: rule, visit: Self.day("2026-12-09"), scope: input.reminderScope)
                 == LioAttractionReminder.request(for: rule, visit: Self.day("2026-12-09").start(in: Self.shanghai),
-                                                 now: Self.at("2026-11-26 10:00"), language: .english)?.id)
+                                                 now: Self.at("2026-11-26 10:00"), language: .english, scope: input.reminderScope)?.id)
     }
 
     @Test func releasesDuringTheTripAreGroupedInChina() throws {
@@ -481,8 +481,9 @@ struct LioTripChecklistTests {
 
     @Test func theReminderIDIsAttractionBookingsOwn() {
         let rule = LioAttractionBookingRule.match(nameZH: "故宫博物院", nameEN: "")!
-        #expect(LioTripChecklist.reminderID(rule: rule, visit: Self.day("2026-12-09"))
-                == LioAttractionReminder.reminderID(for: rule, visit: Self.day("2026-12-09").start(in: Self.shanghai)))
+        let scope = LioAttractionReminderScope(account: "account-a")
+        #expect(LioTripChecklist.reminderID(rule: rule, visit: Self.day("2026-12-09"), scope: scope)
+                == LioAttractionReminder.reminderID(for: rule, visit: Self.day("2026-12-09").start(in: Self.shanghai), scope: scope))
     }
 
     // MARK: - #1667 review P2

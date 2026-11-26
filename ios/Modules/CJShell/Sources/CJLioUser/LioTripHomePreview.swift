@@ -135,6 +135,8 @@ extension LioTripHomePreview {
         func remove(_ id: String) async {}
     }
 
+    private static let reminderScope = LioAttractionReminderScope(account: nil)
+
     @MainActor static func tools(_ scene: Scene, _ language: LioLanguage) -> LioTripHomeTools {
         let folder = FileManager.default.temporaryDirectory
             .appendingPathComponent("LioTripHomePreview-\(ProcessInfo.processInfo.processIdentifier)", isDirectory: true)
@@ -144,7 +146,8 @@ extension LioTripHomePreview {
             arrival: arrival(scene, language),
             hotelStore: store,
             showCards: true,
-            reminders: LioAttractionReminderScheduler(center: Reminders(pending: ["g2c.attraction.beijing.national-museum.2026-12-11"])),
+            reminders: LioAttractionReminderScheduler(
+                center: Reminders(pending: [reminderScope.prefix + "beijing.national-museum.2026-12-11"]), scope: reminderScope),
             roadbookStore: try? LioRoadbookStore.preview(),
             roadbooks: true)
     }

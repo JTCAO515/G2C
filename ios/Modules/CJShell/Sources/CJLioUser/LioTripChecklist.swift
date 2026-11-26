@@ -178,6 +178,8 @@ struct LioTripChecklistInput: Sendable {
     /// Attraction booking (`G2CAttractionBookingEnabled`) and the reminders already set with the system.
     var attractionBooking = false
     var scheduledReminders: Set<String> = []
+    /// The signed-in account the reminder identifiers above belong to (#1922).
+    var reminderScope = LioAttractionReminderScope(account: nil)
 }
 
 /// What the trip home shows, generated from the rules and the tools' state on this phone.
@@ -343,7 +345,7 @@ struct LioTripChecklist: Equatable, Sendable {
                 let key = "booking.\(rule.id).\(visit?.description ?? "undated")"
                 guard seen.insert(key).inserted else { continue }
                 guard let timing = bookingTiming(rule: rule, visit: visit, now: input.now) else { continue }
-                let reminderSet = visit.map { input.scheduledReminders.contains(reminderID(rule: rule, visit: $0)) } ?? false
+                let reminderSet = visit.map { input.scheduledReminders.contains(reminderID(rule: rule, visit: $0, scope: input.reminderScope)) } ?? false
                 let release = releaseDay(timing)
                 let stage: LioTripStage = {
                     guard let arrival else { return .beforeTrip }
@@ -377,8 +379,8 @@ struct LioTripChecklist: Equatable, Sendable {
     }
 
     /// The same identifier attraction booking gives the system reminder for this sight and day.
-    static func reminderID(rule: LioAttractionBookingRule, visit: LioTripDay) -> String {
-        LioAttractionReminder.reminderID(for: rule, visit: visit.start(in: beijing))
+    static func reminderID(rule: LioAttractionBookingRule, visit: LioTripDay, scope: LioAttractionReminderScope) -> String {
+        LioAttractionReminder.reminderID(for: rule, visit: visit.start(in: beijing), scope: scope)
     }
 
     private static func releaseDay(_ timing: LioTripBookingTiming) -> LioTripDay? {

@@ -924,6 +924,8 @@ private var developmentHostEnvironment: [String: String] {
     let lioMessageDirectory: URL
     /// #1741: the passport nationality, under a key scoped to this account.
     let lioNationality: LioNationalityStore
+    /// #1922: the sight booking reminders this account sets carry its (hashed) id; account deletion removes only those.
+    let lioReminderScope: LioAttractionReminderScope
     private let lioPosition: LioChatContinuity
     private let lioPositionStore: LioChatPositionStore
     #endif
@@ -983,6 +985,7 @@ private var developmentHostEnvironment: [String: String] {
         lioTripHomeStore = LioTripHomeStore(directory: LioTripHomeStore.storageDirectory(inMessageDirectory: root), isCurrent: isCurrent)
         lioMessageDirectory = root
         lioNationality = LioNationalityStore(account: configuration.accountID.uuidString)
+        lioReminderScope = LioAttractionReminderScope(account: configuration.accountID.uuidString)
         lioTranslationHistory = LioTranslationHistory(
             directory: root.appendingPathComponent(LioTranslationHistory.directoryName, isDirectory: true),
             isCurrent: isCurrent)
@@ -2046,10 +2049,12 @@ private func developmentCleanupHash(_ value: Data) -> String {
                 LioDeviceDefaultsCleanup.erase()
                 // #1741: the nationality now lives under this account's own key; only this account's is removed.
                 LioNationalityStore.erase(account: scope.account.uuidString)
-                // #1689: the sight booking reminders this app set, waiting and shown; other notifications stay.
+                // #1689 / #1922: the sight booking reminders this account set, waiting and shown; other notifications,
+                // other accounts' reminders and reminders set before #1922 stay.
                 // The lists were read asynchronously before this step (`reminderSnapshot`); none read: unknown.
-                try LioAttractionReminderPurge.erase(reminderSnapshot, in: LioSystemReminderNotifications())
-                reminderSnapshot = reminderSnapshot?.withoutSightReminders
+                let reminders = LioAttractionReminderScope(account: scope.account.uuidString)
+                try LioAttractionReminderPurge.erase(reminderSnapshot, of: reminders, in: LioSystemReminderNotifications())
+                reminderSnapshot = reminderSnapshot?.withoutSightReminders(of: reminders)
             }
         #endif
         default: try stores.eraseFiles(for: target)
@@ -2085,12 +2090,13 @@ private func developmentCleanupHash(_ value: Data) -> String {
                 guard LioNationalityStore.isAbsent(account: scope.account.uuidString) else { throw CleanupFailure.unavailable }
                 // A fresh snapshot (a resumed cleanup) that still lists a sight reminder removes it and leaves
                 // the step unknown, so the next pass reads again; the workflow also re-reads before the receipt.
-                if let snapshot = reminderSnapshot, !snapshot.residue.isEmpty {
-                    try LioAttractionReminderPurge.erase(snapshot, in: LioSystemReminderNotifications())
-                    reminderSnapshot = snapshot.withoutSightReminders
+                let reminders = LioAttractionReminderScope(account: scope.account.uuidString)
+                if let snapshot = reminderSnapshot, !snapshot.residue(of: reminders).isEmpty {
+                    try LioAttractionReminderPurge.erase(snapshot, of: reminders, in: LioSystemReminderNotifications())
+                    reminderSnapshot = snapshot.withoutSightReminders(of: reminders)
                     throw LioAttractionReminderPurge.Failure.stillPresent
                 }
-                try LioAttractionReminderPurge.requireAbsent(reminderSnapshot)
+                try LioAttractionReminderPurge.requireAbsent(reminderSnapshot, of: reminders)
             }
         #endif
         default: try layout.requireEmpty(for: target)
@@ -2249,9 +2255,12 @@ private func developmentCleanupHash(_ value: Data) -> String {
         #if G2C_DEMO_BETA
         guard case .invocation(let invocation, _) = device.state,
               LioAttractionReminderPurge.applies(to: invocation.reason.rawValue) else { return }
+        // The same account the native executor erased for: the manifest's scope.
+        guard let manifest else { throw CleanupFailure.unavailable }
+        let reminders = LioAttractionReminderScope(account: manifest.scope.account.uuidString)
         let snapshot = await LioAttractionReminderPurge.read(LioSystemReminderNotifications())
         try check()
-        do { try LioAttractionReminderPurge.requireAbsent(snapshot) } catch { throw CleanupFailure.unavailable }
+        do { try LioAttractionReminderPurge.requireAbsent(snapshot, of: reminders) } catch { throw CleanupFailure.unavailable }
         #endif
     }
 
