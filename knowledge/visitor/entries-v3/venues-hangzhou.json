@@ -36,11 +36,10 @@
     "cities": [
       "hangzhou"
     ],
-    "checked_on": "2026-11-17",
-    "expires_on": "2026-11-23",
+    "checked_on": "2026-11-26",
+    "expires_on": "2026-12-10",
     "source_urls": [
-      "https://wgly.hangzhou.gov.cn/art/2024/7/12/art_1229505585_58956471.html",
-      "https://www.traveloka.com/en-sg/activities/china/product/xixi-wetland-park-admission-ticket-peaceful-oasis-near-west-lake-7621127360134"
+      "https://wgly.hangzhou.gov.cn/art/2024/7/12/art_1229505585_58956471.html"
     ],
     "id": "visitor.v3.hangzhou.xixi-wetland-admission",
     "subject": {
@@ -51,13 +50,13 @@
     },
     "conditions": {
       "reservation_required": false,
-      "closed_weekdays": [],
-      "closed_weekdays_public_holiday_exception": false,
+      "closed_weekdays": null,
+      "closed_weekdays_public_holiday_exception": null,
       "advance_booking_days": null,
       "advance_booking_rule": null
     },
-    "text_zh": "杭州市文旅局入园通知将西溪湿地旅游区列为取消预约的景区，普通园区入园不需另行预约。Traveloka公开的西溪国家湿地公园入园产品列出周一至周日的常规营业表，正文另列整园冬夏每日安排；本条据这一商业平台说明记录普通每周无固定闭园日，不把它当主管机关的新公告。该页未标合作商资料更新时间，仍须核对行前最新通知。免预约不等于免门票、保证当天有票或所有项目都免约；内设文博场馆、游船及具体活动另查。平台换票时段不当整园开闭钟点，产品预订截止不当园方必须预约或提前购票窗口；本条提前窗口仍未核定，临时及局部关闭另查。",
-    "text_en": "Hangzhou’s culture and tourism bureau names Xixi Wetland among scenic areas whose ordinary park admission no longer needs a separate reservation. Traveloka’s public Xixi National Wetland Park admission product lists regular hours for Monday through Sunday and separately describes the whole park’s daily summer and winter arrangements. This entry uses that commercial platform information for no fixed ordinary weekly closure, rather than treating it as a new authority notice. The page has no partner-data update date; check current notices before travelling. Reservation-free admission does not mean free tickets, guaranteed availability or access to every facility without booking. Museums, boats and events have separate arrangements. Platform redemption hours are not the park’s gate hours, and the product’s booking deadline does not establish a park-wide reservation requirement or advance purchase window. The advance window remains unconfirmed; check temporary and local closures separately."
+    "text_zh": "杭州市文化广电旅游局2024年7月发布的入园通知把西溪湿地旅游区列入取消预约的A级景区，普通园区入园不需另行预约；法定节假日客流大时景区可能采取流量提示或错峰分流。免预约不等于免门票、保证当天有票或所有项目都免约；内设文博场馆、游船及具体活动另查。本条未核定常规每周闭园日和提前购票窗口，临时及局部关闭行前查看景区最新通知。",
+    "text_en": "A July 2024 notice from Hangzhou’s culture and tourism bureau lists Xixi Wetland among A-rated scenic areas whose ordinary park admission no longer needs a separate reservation; on busy statutory holidays the area may use crowd alerts or staggered entry. Reservation-free admission does not mean free tickets, guaranteed availability or booking-free access to every facility; museums, boats and events have separate arrangements. Regular weekly closures and any advance purchase window are not confirmed here; check the park’s latest notices for temporary and local closures before travelling."
   },
   {
     "format_version": "visitor-entry.3",

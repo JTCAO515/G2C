@@ -27,3 +27,5 @@
 ## 权限与验证
 
 两精确URL批准见[#702/6943458130](https://github.com/JTCAO515/G2C/issues/702#issuecomment-6943458130)。新增正反例覆盖允许与错城/多城/空subject/错主题/根站/相邻ID/参数/子域拒绝，不扩旧格式或FACT wire，不改其他目录。没有新付费调用、账号、凭据、云资源、登录、下单、微信、地图或外链访问。原件/运行日志不入Git；最终证据以各PR独立R、精确CI、锁head合并为准。
+
+2026-11-26 复核：`visitor.v3.suzhou-anhui.delta-park` 已下线（唯一来源为携程，且请求跳到另一 hostname）；西溪的周闭字段因只有 Traveloka 支撑已改回 null，见 [复核记录](../reviews/2026-11-26-due.md)。
