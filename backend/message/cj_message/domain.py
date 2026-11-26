@@ -262,6 +262,11 @@ class Service:
         chat = tx.chat(command.conversation_id)
         if (chat.generation, chat.last_sequence) != (command.expected_generation, command.expected_sequence):
             raise SequenceConflict()
+        # #1770: a service conversation never feeds a RUN or carries travel/trip/NEEDS data.
+        kind = getattr(tx, 'conversation_kind', None)
+        service = kind is not None and kind(command.conversation_id) == 'service'
+        if service and (travel or dialogue is not None):
+            raise Unavailable()
         if travel:
             from .travel_reference import require_producer
             if formal:
@@ -288,7 +293,8 @@ class Service:
                 insert_reference(tx, stored, command)
         else:
             tx.insert(stored)
-        tx.enqueue(receipt)
+        if not service:
+            tx.enqueue(receipt)
         return receipt
 
     def open_conversation(self, conversation_id):

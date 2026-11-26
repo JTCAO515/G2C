@@ -26,7 +26,7 @@ from jt.workbench.auth import SESSION_IDLE, AccessDenied, AccountAction, Auth, A
 from jt.workbench.postgres import PostgresStore, migrate
 from jt.workbench.queue import Review
 from jt.workbench.security import totp_at_step
-from jt.workbench.store import AuditAction, AuditEvent, AuditResult, MemoryStore
+from jt.workbench.store import AuditAction, AuditEvent, AuditResult, CaseAuditDetail, MemoryStore
 
 
 ORIGIN = "https://127.0.0.1:8443"
@@ -359,3 +359,34 @@ def test_socket_ownership_conflict_and_restart():
                 with production.private_listener(path):
                     pass
         assert not path.exists()
+
+
+
+def test_case_audit_migrates_from_v1_and_remains_append_only(database):
+    owner, runtime = database
+    migration = Path(__file__).resolve().parents[1] / "migrations" / "001_up.sql"
+    with psycopg.connect(owner) as db:
+        db.execute(migration.read_text())
+    with psycopg.connect(runtime) as db:
+        db.execute("INSERT INTO jt_workbench.audit (timestamp, action, result) VALUES (1, 'login_failed', 'denied')")
+    migrate(owner)
+    migrate(owner)
+    store = PostgresStore(runtime)
+    store.check_ready()
+    identifier = "654193d5-88f3-4e8b-ab21-e88630eaf7a8"
+    detail = CaseAuditDetail("confirm", "draft_itinerary_change", 3, "customer_consent_required")
+    with store.locked():
+        store.append_audit(AuditEvent(NOW, AuditAction.DECIDE, case_id=identifier,
+                                      result=AuditResult.DENIED, case_detail=detail))
+    reopened = PostgresStore(runtime)
+    with reopened.locked():
+        old, current = reopened.audit_events()
+        assert old.action == AuditAction.LOGIN_FAILED and old.case_detail is None
+        assert current.case_id == identifier and current.case_detail == detail
+    with psycopg.connect(runtime, autocommit=True) as db:
+        assert db.execute("SELECT version FROM jt_workbench.schema_version").fetchall() == [(1,)]
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            db.execute("UPDATE jt_workbench.audit SET case_action = 'advance'")
+    with pytest.raises(psycopg.errors.RaiseException, match="populated"):
+        migrate(owner, down=True)
+    reopened.check_ready()

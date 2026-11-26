@@ -224,7 +224,7 @@ def main():
         os.environ['CJ_BETA_RECOVERY_PUBLIC_B64']=base64.b64encode(recovery.public_key().public_bytes(Encoding.Raw,PublicFormat.Raw)).decode()
         root=Path(temp)
         with pg_suites.cluster('native4',port=55731,role='native4_initializer',root=root/'pg',socket=root/'s')as config:
-            with psycopg.connect(**config,autocommit=True)as db:migrate.up(db,migrate.load(),55)
+            with psycopg.connect(**config,autocommit=True)as db:migrate.up(db,migrate.load(),migrate.load()[-1]['version'])
             exercise(root,config)
 
 

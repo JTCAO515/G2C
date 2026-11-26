@@ -2423,6 +2423,116 @@ import CryptoKit
         }
     }
 
+    /// #1753 (W4-9): with `G2CAnswerFeedbackEnabled` (Debug: `--lio-answer-feedback-preview`, a fixture that sends
+    /// nothing) a finished answer offers "Not helpful", then details. Independent of the AI line; without the flag,
+    /// nothing changes.
+    func testAnswerFeedbackSendsThenTakesDetailsInBothLanguages() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            let en = language == "en"
+            for (feedback, disclosure) in [(true, false), (true, true), (false, true)] {
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language]
+                    + (feedback ? ["--lio-answer-feedback-preview"] : []) + (disclosure ? ["--lio-ai-disclosure-preview"] : [])
+                app.launch()
+                XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 12))
+                let notHelpful = app.buttons["lio.answer.feedback.not-helpful"]
+                let line = app.descendants(matching: .any)["lio.answer.ai-disclosure"]
+                XCTAssertFalse(notHelpful.exists, "nothing before an answer")
+                enterSampleQuestion(in: app, index: 0)
+                app.buttons["lio.send"].tap()
+                let answer = app.staticTexts["lio.answer"]
+                XCTAssertTrue(answer.waitForExistence(timeout: 8))
+                guard feedback else {
+                    XCTAssertTrue(line.waitForExistence(timeout: 12), "the AI line stands on its own")
+                    _ = notHelpful.waitForExistence(timeout: 4)
+                    XCTAssertFalse(notHelpful.exists, "off unless the build says YES")
+                    app.terminate()
+                    continue
+                }
+                XCTAssertTrue(notHelpful.waitForExistence(timeout: 12), app.debugDescription)
+                XCTAssertEqual(notHelpful.label, en ? "Not helpful" : "没帮上")
+                XCTAssertGreaterThanOrEqual(notHelpful.frame.minY, answer.frame.maxY)
+                if disclosure {
+                    XCTAssertTrue(line.exists)
+                    XCTAssertGreaterThanOrEqual(notHelpful.frame.minY, line.frame.maxY)
+                } else {
+                    XCTAssertFalse(line.exists, "the feedback flag does not turn on the AI line")
+                }
+                notHelpful.tap()
+                let sent = app.descendants(matching: .any)["lio.answer.feedback.sent"]
+                XCTAssertTrue(sent.waitForExistence(timeout: 8))
+                XCTAssertEqual(sent.label, en ? "Thanks, we got it." : "已收到，谢谢。")
+                XCTAssertFalse(notHelpful.exists)
+                let details = app.buttons["lio.answer.feedback.details"]
+                XCTAssertTrue(details.waitForExistence(timeout: 4))
+                XCTAssertEqual(details.label, en ? "Add details" : "补充说明")
+                try auditIgnoringAnswerClipping(app, name: "answer-feedback-sent-\(language)-\(disclosure)")
+                details.tap()
+                let field = app.descendants(matching: .any)["lio.answer.feedback.details.text"]
+                XCTAssertTrue(field.waitForExistence(timeout: 8))
+                XCTAssertEqual(field.placeholderValue, en ? "What went wrong? Don't include personal details."
+                                                          : "哪里不对？请不要填写个人信息。")
+                let send = app.buttons["lio.answer.feedback.details.send"]
+                XCTAssertFalse(send.isEnabled, "nothing to send yet")
+                field.typeText(en ? "The station name was wrong." : "站名不对。")
+                XCTAssertTrue(send.isEnabled)
+                let sheet = XCTAttachment(screenshot: app.screenshot())
+                sheet.name = "answer-feedback-details-\(language)"; sheet.lifetime = .keepAlways; add(sheet)
+                send.tap()
+                XCTAssertTrue(field.waitForNonExistence(timeout: 8))
+                XCTAssertTrue(sent.waitForExistence(timeout: 8))
+                XCTAssertTrue(details.waitForNonExistence(timeout: 8), "details go once")
+                XCTAssertEqual(sent.label, en ? "Thanks, we got it." : "已收到，谢谢。")
+                let shot = XCTAttachment(screenshot: app.screenshot())
+                shot.name = "answer-feedback-\(language)-\(disclosure)"; shot.lifetime = .keepAlways; add(shot)
+                app.terminate()
+            }
+        }
+    }
+
+    /// #1753: a line that did not go through says so, and tapping it tries the same line again.
+    func testAnswerFeedbackRetriesAfterNotSentInBothLanguages() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            let en = language == "en"
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-answer-feedback-preview", "--lio-answer-feedback-fail-once",
+                                   "-cj.ui.language.v1", language]
+            app.launch()
+            XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 12))
+            enterSampleQuestion(in: app, index: 0)
+            app.buttons["lio.send"].tap()
+            let notHelpful = app.buttons["lio.answer.feedback.not-helpful"]
+            XCTAssertTrue(notHelpful.waitForExistence(timeout: 20), app.debugDescription)
+            notHelpful.tap()
+            let retry = app.buttons["lio.answer.feedback.retry"]
+            XCTAssertTrue(retry.waitForExistence(timeout: 8))
+            XCTAssertEqual(retry.label, en ? "Not sent. Tap to try again." : "没发出去，点此重试。")
+            try auditIgnoringAnswerClipping(app, name: "answer-feedback-retry-\(language)")
+            let failed = XCTAttachment(screenshot: app.screenshot())
+            failed.name = "answer-feedback-not-sent-\(language)"; failed.lifetime = .keepAlways; add(failed)
+            retry.tap()
+            let sent = app.descendants(matching: .any)["lio.answer.feedback.sent"]
+            XCTAssertTrue(sent.waitForExistence(timeout: 8))
+            XCTAssertEqual(sent.label, en ? "Thanks, we got it." : "已收到，谢谢。")
+            XCTAssertFalse(retry.exists)
+            XCTAssertTrue(app.buttons["lio.answer.feedback.details"].exists)
+            app.terminate()
+        }
+    }
+
+    /// The answer body's own clipping warning predates #1753's footer (reported to the coordinator); it is recorded,
+    /// not hidden, and every other issue still fails the test.
+    private func auditIgnoringAnswerClipping(_ app: XCUIApplication, name: String) throws {
+        try app.performAccessibilityAudit(for: .all) { issue in
+            guard issue.auditType == .textClipped, issue.element?.identifier == "lio.answer" else { return false }
+            let note = XCTAttachment(string: "Pre-existing answer-body clipping: " + issue.compactDescription)
+            note.name = "answer-body-clipping-\(name)"; note.lifetime = .keepAlways; self.add(note)
+            return true
+        }
+    }
+
     private func exercise(_ language: String, question: String) throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
