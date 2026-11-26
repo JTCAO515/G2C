@@ -819,6 +819,15 @@ def group_service_session():
 GROUPS.update(service_session=group_service_session)
 
 
+def group_service_ops():
+    # #1771: operations console (App session + staff roster, cj_ops_console role, staff audit) on restricted PG.
+    return _fresh_runtime_check('service_ops',55887,'cj1771_ops',
+        f'/tmp/cj1771-ops-{os.getpid()}','backend/service_request/tests/ops_pg.py')
+
+
+GROUPS.update(service_ops=group_service_ops)
+
+
 # CI minutes per group: median of ci runs 45380910374, 45390074551 and 45418513962 on
 # 2026-11-24 (ubuntu-latest, eatmydata; the last one with two lanes per runner). Groups under 0.2
 # minutes are left to DEFAULT_MINUTES. Used only to balance --shard; every group still runs on

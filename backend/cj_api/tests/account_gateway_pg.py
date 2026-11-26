@@ -160,7 +160,7 @@ def exercise(root,conninfo):
         # must remain prepared/blocked, with neither revocation nor deletion.
         inventory=('business/message','business/usage','business/memory-authoritative','business/trip-authoritative',
             'business/needs-current-planning','business/feedback-private-actions','business/cleanup-metadata',
-            'business/memory-management-actions','business/service-requests','business/service-sessions','checkpoints/run','memory-derived',
+            'business/memory-management-actions','business/service-requests','business/service-sessions','business/service-staff-audit','checkpoints/run','memory-derived',
             'device-cache/encrypted-message-file','device-cache/sdk-session-keychain','device-cache/message-key-keychain',
             'device-cache/trip-pending-file','device-cache/offline-trip','device-cache/feedback-pending',
             'device-cache/feedback-key-keychain','device-cache/memory-manual-pending','device-cache/memory-lifecycle-pending',
