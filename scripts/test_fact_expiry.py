@@ -178,6 +178,11 @@ class FactExpiryTests(unittest.TestCase):
         self.assertNotIn('\n', line)
         self.assertIn('x%25%0Ay', line)
 
+    def test_arrival_rules_are_read_from_their_single_source(self):
+        """#1730: annotations must point at the file people edit, not a generated copy."""
+        from knowledge.arrival import sync_copies
+        self.assertEqual(ROOT / fact_expiry.ARRIVAL_RULES, sync_copies.SOURCE)
+
     def test_every_served_visitor_folder_is_watched(self):
         """A new live entry folder must be added to VISITOR_DIRS; candidates and examples are not served."""
         not_served = {'candidates', 'examples', 'tool-candidates', 'place-candidates', 'reviews', 'coverage'}
