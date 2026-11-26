@@ -48,6 +48,9 @@ from jt.engine.redaction import REDACTION_VERSION, ConversationRedactor
         ("地址：虛構東路十七號二棟三零五室。", "虛構東路十七號二棟三零五室", "地址：<LOCATION_1>。"),
         ("我在客房 305。", "客房 305", "我在<LOCATION_1>。"),
         ("房号三零五，请上楼。", "房号三零五", "<LOCATION_1>，请上楼。"),
+        ("房间三零五有一氧化碳。", "房间三零五", "<LOCATION_1>有一氧化碳。"),
+        ("房号：三零五在走廊尽头。", "房号：三零五", "<LOCATION_1>在走廊尽头。"),
+        ("房号三0五，请记下。", "房号三0五", "<LOCATION_1>，请记下。"),
         ("My address is 17 Example Road, Apt 4B.", "17 Example Road, Apt 4B",
          "My address is <LOCATION_1>."),
         ("I'm in Room 305.", "Room 305", "I'm in <LOCATION_1>."),
@@ -78,6 +81,7 @@ def test_redacts_identifiers_in_synthetic_messages(text, sensitive_text, expecte
         "邮箱格式：name@local。", "Use the email field shown as name@example.",
         "17号线到虚构东路。下一站是样例广场。", "Meet near Example Road in Guangzhou.",
         "房间一氧化碳报警器响了。", "房間一共有三人。", "客房一晚多少钱？",
+        "客房二十晚多少钱？",
         "时间是 22:30；区间 110–120。", "Price ranges are 22.10, 113.20.",
     ],
 )

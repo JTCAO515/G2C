@@ -54,8 +54,17 @@ _LONGITUDE = r"[+-]?(?:(?:[0-9]{1,2}|1[0-7][0-9])\.[0-9]{3,}|180\.0{3,})"
 _COMMA = rf"{_SPACE}*,{_SPACE}*"
 _COORDINATES = rf"(?:{_LATITUDE}{_COMMA}{_LONGITUDE}|{_LONGITUDE}{_COMMA}{_LATITUDE})"
 _CN_DIGITS = "零〇一二两兩三四五六七八九十百千"
-_CN_ADDRESS_NUMBER = rf"[0-9{_CN_DIGITS}]{{1,6}}"
-_CN_ROOM_NUMBER = rf"(?:[0-9]{{1,6}}[号號室]?(?![0-9])|[{_CN_DIGITS}]{{1,6}}(?:[号號室]|(?!{_HAN})))"
+_CN_NUMBER_CHAR = rf"[0-9{_CN_DIGITS}]"
+_CN_ADDRESS_NUMBER = rf"{_CN_NUMBER_CHAR}{{1,6}}"
+_CN_ROOM_NUMBER = (
+    rf"(?:[0-9]{{1,6}}[号號室]?(?!{_CN_NUMBER_CHAR})|"
+    rf"{_CN_ADDRESS_NUMBER}(?:[号號室]|(?![0-9\u3400-\u9fff]))|"
+    rf"{_CN_NUMBER_CHAR}{{2,6}}(?=有|请|請|内|內|起火|着火|著火|被困|求救|发生|發生))"
+)
+_CN_ROOM = (
+    rf"(?:房间|房間|客房|房号|房號){_SPACE}*(?:[:#=]{_SPACE}*{_CN_ADDRESS_NUMBER}[号號室]?"
+    rf"(?!{_CN_NUMBER_CHAR})|{_CN_ROOM_NUMBER})"
+)
 _CN_ADDRESS = (
     rf"{_HAN}{{1,28}}?(?:路|街|大道|道|巷|弄){_SPACE}*{_CN_ADDRESS_NUMBER}[号號]"
     rf"(?:{_SPACE}*(?:{_CN_ADDRESS_NUMBER}(?:栋|棟|幢|座|单元|單元|楼|樓|层|層|室|房)|[A-Za-z]座)){{0,5}}"
@@ -122,10 +131,7 @@ _RULES = (
     ),
     (
         "LOCATION",
-        re.compile(
-            rf"(\b{_UNIT}|(?:房间|房間|客房|房号|房號){_SPACE}*[:#]?{_SPACE}*{_CN_ROOM_NUMBER})",
-            re.IGNORECASE,
-        ),
+        re.compile(rf"(\b{_UNIT}|{_CN_ROOM})", re.IGNORECASE),
     ),
     (
         "NAME",
