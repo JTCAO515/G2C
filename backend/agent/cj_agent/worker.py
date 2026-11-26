@@ -573,15 +573,23 @@ class RunWorker:
                 chunks = self.tools.answer(self, binding, inputs, lio_locale=locale, lio_question_day=original.question_day,**({'message_refs':message_refs} if message_refs else {}),
                                            **({'lio_city':self.lio_city_context} if self.lio_city_context is not None else {}))
             phase='answer_stream'
+            answered = ''
             for chunk in chunks:
                 if isinstance(chunk, (LioCitation, LioToolProgress)):
                     state = self._event(binding, state, 'effect_committed', chunk.effect())
                     continue
                 buffer += chunk
+                answered += chunk
                 if len(buffer) >= FLUSH_CHARS:
                     state, buffer = self._event(binding, state, 'text_delta', buffer), ''
             if buffer:
                 state = self._event(binding, state, 'text_delta', buffer)
+            if locale is not None:
+                # W2-6 (#1733): fixed safety lines for missing essentials, behind a switch.
+                from cj_message.lio_safety import safety_lines_enabled, supplement
+                missing = supplement(text, answered, locale) if safety_lines_enabled() else ''
+                if missing:
+                    state = self._event(binding, state, 'text_delta', missing)
             if self.drafts is not None and command['creation_intent'] == 'consider_trip':
                 phase='draft'
                 state, proposal_id = self._draft(binding, state, text, stored)

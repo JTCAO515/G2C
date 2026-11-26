@@ -257,7 +257,10 @@ class ExplorationPlanning:
                 state=worker._event(binding,state,'effect_committed',chunk.effect())
             else:body.append(chunk)
         state=worker.runs.snapshot(binding)
-        return self._finish(worker,binding,state,''.join(body),scene,original.locale)
+        answer=''.join(body)
+        from cj_message.lio_safety import safety_lines_enabled,supplement
+        if safety_lines_enabled():answer+=supplement(text,answer,original.locale)  # W2-6 (#1733)
+        return self._finish(worker,binding,state,answer,scene,original.locale)
 
     def _plan(self,worker,binding,state,view,locale,*,prior_model_calls=0):
         effective=defaults(view.profile)

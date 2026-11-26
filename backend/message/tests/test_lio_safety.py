@@ -1,0 +1,79 @@
+"""W2-6 (#1733): safety essentials are appended by code when the answer misses them."""
+import os
+import unittest
+from unittest.mock import patch
+
+from cj_message.lio_safety import REQUIREMENTS, matched, safety_lines_enabled, supplement
+
+POLICE = ('110', '报警', '报案', '派出所', 'police')
+CONSULATE = ('使馆', '领馆', 'embassy', 'consulate')
+
+
+class SafetyLines(unittest.TestCase):
+    def test_lost_passport_answers_always_include_police_and_consulate(self):
+        # Acceptance: a lost-passport question ends with both essentials whatever the model wrote.
+        questions = {'zh': ('护照丢了怎么办', '我的护照被偷了', '在上海弄丢了护照', '证件丢了怎么补办'),
+                     'en': ('I lost my passport, what should I do?', 'My passport was stolen in Beijing',
+                            'Help, my passport is missing')}
+        answers = {'zh': ('', '别着急，先回想一下最后在哪里用过。', '先去派出所报案。', '联系你国家的大使馆。',
+                          '先报警，再联系驻华使馆。'),
+                   'en': ('', 'Stay calm and retrace your steps.', 'Go to the police first.',
+                          'Contact your embassy.', 'Call the police and then your consulate.')}
+        for locale in ('zh', 'en'):
+            for question in questions[locale]:
+                for answer in answers[locale]:
+                    with self.subTest(question=question, answer=answer):
+                        self.assertIn('lost_documents', matched(question))
+                        final = (answer + supplement(question, answer, locale)).casefold()
+                        self.assertTrue(any(word.casefold() in final for word in POLICE))
+                        self.assertTrue(any(word.casefold() in final for word in CONSULATE))
+
+    def test_only_missing_essentials_are_added(self):
+        both = '先去派出所报案，再联系你国家的驻华使馆。'
+        self.assertEqual(supplement('护照丢了怎么办', both, 'zh'), '')
+        police_only = supplement('护照丢了怎么办', '先去派出所报案。', 'zh')
+        self.assertIn('使馆或领馆', police_only)
+        self.assertNotIn('派出所报案并开具', police_only)
+
+    def test_other_safety_kinds(self):
+        for question, answer, locale, expected in (
+                ('我朋友晕倒了怎么办', '让他平躺。', 'zh', '120'),
+                ('My friend collapsed', 'Keep them lying down.', 'en', '120'),
+                ('发烧了去哪看病', '多喝水休息。', 'zh', '医院'),
+                ('I have a fever, where can I see a doctor?', 'Rest and drink water.', 'en', 'hospital'),
+                ('我对花生过敏，点菜要注意什么', '川菜常用花生。', 'zh', '告诉店员'),
+                ('I am vegetarian, what can I eat in Chengdu?', 'Try mapo tofu without meat.', 'en', 'tell the staff')):
+            with self.subTest(question=question):
+                self.assertIn(expected, supplement(question, answer, locale))
+
+    def test_complete_or_unrelated_answers_get_nothing(self):
+        self.assertEqual(supplement('我朋友晕倒了', '马上拨打 120。', 'zh'), '')
+        self.assertEqual(supplement('成都有什么好吃的', '火锅。', 'zh'), '')
+        self.assertEqual(supplement('护照丢了怎么办', '', 'fr'), '')
+
+    def test_several_kinds_in_one_question_and_no_duplicate_lines(self):
+        lines = supplement('护照丢了，而且发烧了', '', 'zh')
+        self.assertIn('派出所', lines)
+        self.assertIn('使馆', lines)
+        self.assertIn('医院', lines)
+        self.assertEqual(len(lines.strip().split('\n')), len(set(lines.strip().split('\n'))))
+
+    def test_every_fixed_line_satisfies_its_own_check(self):
+        for requirement in REQUIREMENTS:
+            for pattern, line in requirement.essentials:
+                for locale in ('zh', 'en'):
+                    with self.subTest(key=requirement.key, locale=locale):
+                        self.assertIsNotNone(pattern.search(line[locale]))
+
+    def test_switch_is_off_by_default_and_accepts_only_zero_or_one(self):
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop('CJ_LIO_SAFETY_LINES', None)
+            self.assertFalse(safety_lines_enabled())
+        with patch.dict(os.environ, {'CJ_LIO_SAFETY_LINES': '1'}):
+            self.assertTrue(safety_lines_enabled())
+        with patch.dict(os.environ, {'CJ_LIO_SAFETY_LINES': 'on'}), self.assertRaises(ValueError):
+            safety_lines_enabled()
+
+
+if __name__ == '__main__':
+    unittest.main()
