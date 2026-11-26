@@ -138,6 +138,7 @@ struct LioShowCardsView: View {
     @State private var canSave = false
     @State private var confirmsClear = false
     @State private var notice: String?
+    @Environment(\.lioTaxiEntry) private var taxiEntry
 
     init(language: LioLanguage, hotel: LioStayHotel?, detailsStore: LioShowCardDetailsStore? = nil,
          detailScenes: Bool = true) {
@@ -196,6 +197,39 @@ struct LioShowCardsView: View {
                             Divider().padding(.leading, LioTheme.Spacing.md)
                         }
                     }
+                }
+                section(language.text("Business", "商务"), symbol: "briefcase") {
+                    NavigationLink {
+                        LioMeetingCardView(language: language)
+                    } label: {
+                        LioShowCardRow(title: language.text("Meeting card", "会面卡"),
+                                       detail: language.text("Who you are meeting, when and where", "约见的人、时间和地点"))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("lio.business.meeting")
+                    Divider().padding(.leading, LioTheme.Spacing.md)
+                    if let taxiEntry {
+                        NavigationLink {
+                            LioTaxiView(language: language, service: taxiEntry.service, tripPlaces: taxiEntry.tripPlaces,
+                                        recentStore: taxiEntry.recentStore, opensDestinationPicker: true)
+                        } label: {
+                            LioShowCardRow(title: language.text("Show an address", "出示地址"),
+                                           detail: language.text("Find it on the map, show the driver, call a taxi",
+                                                                 "搜地点，给司机看，一键打车"))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("lio.business.address")
+                        Divider().padding(.leading, LioTheme.Spacing.md)
+                    }
+                    NavigationLink {
+                        LioShowCardPhraseList(category: .business, language: language)
+                    } label: {
+                        LioShowCardRow(title: language.text("Business phrases", "商务常用语"),
+                                       detail: language.text("Quote, minimum order, lead time, samples, payment",
+                                                             "报价、起订量、交期、样品、付款方式"))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("lio.business.phrases")
                 }
                 section(language.text("Asking for help", "求助"), symbol: "hand.raised") {
                     NavigationLink {

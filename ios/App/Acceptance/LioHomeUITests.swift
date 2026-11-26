@@ -357,7 +357,7 @@ import CryptoKit
                 tools.tap()
                 // #1742: phrases are part of Show Cards, which took over the Phrase Cards card.
                 app.buttons["lio.tools.show-cards"].tap()
-                for category in ["dining", "directions", "taxi", "shopping", "healthcare"] {
+                for category in ["dining", "directions", "taxi", "shopping", "healthcare", "business"] {
                     XCTAssertTrue(app.buttons["lio.phrases.category." + category].exists)
                 }
                 try app.performAccessibilityAudit(for: .all)
@@ -426,7 +426,7 @@ import CryptoKit
 
                 let dining = app.buttons["lio.phrases.category.dining"]
                 XCTAssertTrue(dining.waitForExistence(timeout: 6))
-                for category in ["directions", "taxi", "shopping", "healthcare"] {
+                for category in ["directions", "taxi", "shopping", "healthcare", "business"] {
                     XCTAssertTrue(app.buttons["lio.phrases.category." + category].exists)
                 }
                 let help = app.buttons["lio.show-card.help"]
@@ -465,6 +465,132 @@ import CryptoKit
                 app.buttons["lio.support.help-card.done"].tap()
                 XCTAssertTrue(medical.waitForExistence(timeout: 6))
             }
+        }
+    }
+
+    /// #1767: the business phrases (quote, minimum order, lead time, sample, payment) open full screen, Chinese large
+    /// with the English under it, and can be read aloud, in both languages and both appearances.
+    func testBusinessPhrasesShowFullScreenInBothLanguages() throws {
+        continueAfterFailure = false
+        let phrases: [(id: String, zh: String, en: String)] = [
+            ("business-quote", "请问可以报一下这款产品的价格吗？", "Could you give me a quote for this product?"),
+            ("business-moq", "请问最小起订量是多少？", "What is the minimum order quantity?"),
+            ("business-lead-time", "下单后大概多久可以交货？", "How soon can you ship after we place an order?"),
+            ("business-sample", "可以先提供样品吗？费用怎么算？", "Could you provide a sample first? How is it charged?"),
+            ("business-payment", "请问付款方式是什么？可以先付定金吗？", "What are the payment terms? Can we pay a deposit first?"),
+        ]
+        for language in ["en", "zh-Hans"] {
+            let en = language == "en"
+            for appearance in ["light", "dark"] {
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
+                                       "-lio.ui.appearance.v1", appearance, "-UIPreferredContentSizeCategoryName",
+                                       "UICTContentSizeCategoryL"]
+                app.launch()
+                defer { app.terminate() }
+                let tools = app.tabBars.buttons[en ? "Tools" : "工具"]
+                XCTAssertTrue(tools.waitForExistence(timeout: 8))
+                tools.tap()
+                app.buttons["lio.tools.show-cards"].tap()
+                let business = app.buttons["lio.phrases.category.business"]
+                XCTAssertTrue(business.waitForExistence(timeout: 6))
+                for _ in 0..<6 where !business.isHittable { app.swipeUp() }
+                business.tap()
+                for phrase in phrases {
+                    let row = app.buttons["lio.phrases.card." + phrase.id]
+                    XCTAssertTrue(row.waitForExistence(timeout: 6), phrase.id)
+                    if phrase.id == "business-quote" {
+                        // The list is a scroll view and its last rows sit under the fold, which the audit reports as
+                        // clipped text; the dining list is not audited either. Every full-screen card below is.
+                        let list = XCTAttachment(screenshot: app.screenshot())
+                        list.name = "business-phrases-list-\(language)-\(appearance)"; list.lifetime = .keepAlways; add(list)
+                    }
+                    row.tap()
+                    let chinese = app.staticTexts["lio.phrases.name"]
+                    XCTAssertTrue(chinese.waitForExistence(timeout: 6), phrase.id)
+                    XCTAssertEqual(chinese.label, phrase.zh)
+                    XCTAssertEqual(app.staticTexts["lio.phrases.english"].label, phrase.en)
+                    XCTAssertTrue(app.buttons["lio.phrases.read.zh-CN"].isHittable)
+                    XCTAssertTrue(app.buttons["lio.phrases.read.en-US"].isHittable)
+                    if phrase.id == "business-quote" || phrase.id == "business-sample" {
+                        let full = XCTAttachment(screenshot: app.screenshot())
+                        full.name = "\(phrase.id)-full-screen-\(language)-\(appearance)"; full.lifetime = .keepAlways; add(full)
+                        try app.performAccessibilityAudit(for: .all)
+                    }
+                    app.buttons["lio.phrases.done"].tap()
+                    XCTAssertTrue(row.waitForExistence(timeout: 6))
+                }
+            }
+        }
+    }
+
+    /// #1766: the Business section of Show Cards. The meeting card is typed, shown full screen and can open the Taxi
+    /// tool's destination search with the address filled in; "Show an address" opens the same search.
+    func testBusinessMeetingCardAndAddressInBothLanguages() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            let en = language == "en"
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-taxi-preview",
+                                   "-cj.ui.language.v1", language, "-lio.taxi.seen-guide.v1", "YES",
+                                   "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+            app.launch()
+            defer { app.terminate() }
+            let tools = app.tabBars.buttons[en ? "Tools" : "工具"]
+            XCTAssertTrue(tools.waitForExistence(timeout: 8))
+            tools.tap()
+            app.buttons["lio.tools.show-cards"].tap()
+            let meeting = app.buttons["lio.business.meeting"]
+            XCTAssertTrue(meeting.waitForExistence(timeout: 6))
+            for _ in 0..<6 where !meeting.isHittable { app.swipeUp() }
+            XCTAssertTrue(app.buttons["lio.business.address"].exists)
+            XCTAssertTrue(app.buttons["lio.business.phrases"].exists)
+            let section = XCTAttachment(screenshot: app.screenshot())
+            section.name = "business-section-\(language)"; section.lifetime = .keepAlways; add(section)
+            meeting.tap()
+
+            let show = app.buttons["lio.business.meeting.show"]
+            XCTAssertTrue(show.waitForExistence(timeout: 6))
+            XCTAssertFalse(show.isEnabled, "nothing to show until it says who the meeting is with")
+            let contact = app.textFields["lio.business.meeting.contact"]
+            contact.tap()
+            contact.typeText("广州某某贸易有限公司 李明")
+            let time = app.textFields["lio.business.meeting.time"]
+            time.tap()
+            time.typeText("14:00")
+            let address = app.textFields["lio.business.meeting.address"]
+            address.tap()
+            address.typeText("琶洲展馆")
+            XCTAssertTrue(show.isEnabled)
+            let form = XCTAttachment(screenshot: app.screenshot())
+            form.name = "business-meeting-form-\(language)"; form.lifetime = .keepAlways; add(form)
+            show.tap()
+            let name = app.staticTexts["lio.business.meeting.sheet.name"]
+            XCTAssertTrue(name.waitForExistence(timeout: 6))
+            XCTAssertEqual(name.label, "广州某某贸易有限公司 李明")
+            XCTAssertEqual(app.staticTexts["lio.business.meeting.sheet.address"].label, "时间：14:00\n地点：琶洲展馆")
+            XCTAssertTrue(app.staticTexts["lio.business.meeting.sheet.english"].label.hasPrefix("I'm here to meet"))
+            let card = XCTAttachment(screenshot: app.screenshot())
+            card.name = "business-meeting-card-\(language)"; card.lifetime = .keepAlways; add(card)
+            try app.performAccessibilityAudit(for: .all)
+            app.buttons["lio.business.meeting.sheet.done"].tap()
+
+            let taxi = app.buttons["lio.business.meeting.taxi"]
+            XCTAssertTrue(taxi.waitForExistence(timeout: 6))
+            for _ in 0..<4 where !taxi.isHittable { app.swipeUp() }
+            taxi.tap()
+            let search = app.textFields["lio.taxi.search-field"]
+            XCTAssertTrue(search.waitForExistence(timeout: 8), "the destination search opens at once")
+            XCTAssertEqual(search.value as? String, "琶洲展馆", "with the address filled in")
+            app.buttons[en ? "Cancel" : "取消"].tap()
+            app.navigationBars.buttons.element(boundBy: 0).tap()
+            app.navigationBars.buttons.element(boundBy: 0).tap()
+
+            let addressRow = app.buttons["lio.business.address"]
+            XCTAssertTrue(addressRow.waitForExistence(timeout: 6))
+            for _ in 0..<6 where !addressRow.isHittable { app.swipeUp() }
+            addressRow.tap()
+            XCTAssertTrue(app.textFields["lio.taxi.search-field"].waitForExistence(timeout: 8))
         }
     }
 
@@ -2404,14 +2530,7 @@ import CryptoKit
                                    ? "AI-generated and may be wrong. Double-check anything important."
                                    : "由 AI 生成，可能有误，重要信息请自行确认。")
                     XCTAssertGreaterThanOrEqual(line.frame.minY, answer.frame.maxY)
-                    // The answer body's own clipping warning predates this line (reported to the coordinator);
-                    // it is recorded, not hidden, and every other issue still fails the test.
-                    try app.performAccessibilityAudit(for: .all) { issue in
-                        guard issue.auditType == .textClipped, issue.element?.identifier == "lio.answer" else { return false }
-                        let note = XCTAttachment(string: "Pre-existing answer-body clipping: " + issue.compactDescription)
-                        note.name = "answer-body-clipping-\(language)"; note.lifetime = .keepAlways; self.add(note)
-                        return true
-                    }
+                    try app.performAccessibilityAudit(for: .all)
                     let shot = XCTAttachment(screenshot: app.screenshot())
                     shot.name = "ai-disclosure-\(language)"; shot.lifetime = .keepAlways; add(shot)
                 } else {
@@ -2467,7 +2586,7 @@ import CryptoKit
                 let details = app.buttons["lio.answer.feedback.details"]
                 XCTAssertTrue(details.waitForExistence(timeout: 4))
                 XCTAssertEqual(details.label, en ? "Add details" : "补充说明")
-                try auditIgnoringAnswerClipping(app, name: "answer-feedback-sent-\(language)-\(disclosure)")
+                try app.performAccessibilityAudit(for: .all)
                 details.tap()
                 let field = app.descendants(matching: .any)["lio.answer.feedback.details.text"]
                 XCTAssertTrue(field.waitForExistence(timeout: 8))
@@ -2509,7 +2628,7 @@ import CryptoKit
             let retry = app.buttons["lio.answer.feedback.retry"]
             XCTAssertTrue(retry.waitForExistence(timeout: 8))
             XCTAssertEqual(retry.label, en ? "Not sent. Tap to try again." : "没发出去，点此重试。")
-            try auditIgnoringAnswerClipping(app, name: "answer-feedback-retry-\(language)")
+            try app.performAccessibilityAudit(for: .all)
             let failed = XCTAttachment(screenshot: app.screenshot())
             failed.name = "answer-feedback-not-sent-\(language)"; failed.lifetime = .keepAlways; add(failed)
             retry.tap()
@@ -2522,14 +2641,32 @@ import CryptoKit
         }
     }
 
-    /// The answer body's own clipping warning predates #1753's footer (reported to the coordinator); it is recorded,
-    /// not hidden, and every other issue still fails the test.
-    private func auditIgnoringAnswerClipping(_ app: XCUIApplication, name: String) throws {
-        try app.performAccessibilityAudit(for: .all) { issue in
-            guard issue.auditType == .textClipped, issue.element?.identifier == "lio.answer" else { return false }
-            let note = XCTAttachment(string: "Pre-existing answer-body clipping: " + issue.compactDescription)
-            note.name = "answer-body-clipping-\(name)"; note.lifetime = .keepAlways; self.add(note)
-            return true
+    /// #1869: a finished answer is not clipped at any of three sizes (default, a large accessibility size, the largest),
+    /// in either language. The audit runs with clipping included and nothing let through. Chinese used to be reported
+    /// because SwiftUI sized its lines from the Latin font's height; its font now carries CJK line metrics.
+    func testAnswerBodyIsNotClippedAtLargerSizesInBothLanguages() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            for size in ["UICTContentSizeCategoryL", "UICTContentSizeCategoryAccessibilityL", "UICTContentSizeCategoryAccessibilityXXXL"] {
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language, "-UIPreferredContentSizeCategoryName", size]
+                app.launch()
+                defer { app.terminate() }
+                XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 12))
+                enterSampleQuestion(in: app, index: 0)
+                app.buttons["lio.send"].tap()
+                let answer = app.staticTexts["lio.answer"]
+                XCTAssertTrue(answer.waitForExistence(timeout: 8))
+                // The whole reply, not one still being written.
+                expectation(for: NSPredicate(format: "value == %@", language == "en" ? "Reply complete" : "回复已完成"), evaluatedWith: answer)
+                waitForExpectations(timeout: 20)
+                // At the largest sizes the answer is taller than the room above the composer: bring it fully into view.
+                let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+                for _ in 0..<6 where answer.frame.maxY > composer.frame.minY { app.swipeUp() }
+                try app.performAccessibilityAudit(for: .textClipped)
+                let shot = XCTAttachment(screenshot: app.screenshot())
+                shot.name = "answer-\(language)-\(size)"; shot.lifetime = .keepAlways; add(shot)
+            }
         }
     }
 

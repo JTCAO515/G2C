@@ -19,14 +19,16 @@ import pytest
 from fastapi.testclient import TestClient
 from psycopg.conninfo import make_conninfo
 
-from jt.synthetic import generate_dataset
+from jt.synthetic import generate_dataset, generate_demo_dataset
 from jt.workbench import __main__ as local_cli, production
 from jt.workbench.app import HEALTH_HOST, ProxyEntry, SESSION_COOKIE, create_app
 from jt.workbench.auth import SESSION_IDLE, AccessDenied, AccountAction, Auth, AuthenticationRequired, InvalidAccount
 from jt.workbench.postgres import PostgresStore, migrate
 from jt.workbench.queue import Review
-from jt.workbench.security import totp_at_step
-from jt.workbench.store import AuditAction, AuditEvent, AuditResult, CaseAuditDetail, MemoryStore, OperationsAuditDetail
+from jt.workbench.security import new_token, token_digest, totp_at_step
+from jt.workbench.store import (
+    Account, AuditAction, AuditEvent, AuditResult, CaseAuditDetail, MemoryStore, OperationsAuditDetail, Role, Session,
+)
 
 
 ORIGIN = "https://127.0.0.1:8443"
@@ -254,15 +256,17 @@ def test_expired_session_cannot_return_after_clock_moves_back(database):
 
 
 
-def unix_request(path, host, target, *, proto=()):
+def unix_request(path, host, target, *, proto=(), session_token=None, body=False):
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
         sock.settimeout(3)
         sock.connect(str(path))
         forwarded = "".join(f"X-Forwarded-Proto: {value}\r\n" for value in proto)
-        sock.sendall(f"GET {target} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n{forwarded}\r\n".encode())
+        cookie = f"Cookie: {SESSION_COOKIE}={session_token}\r\n" if session_token else ""
+        sock.sendall(f"GET {target} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n{forwarded}{cookie}\r\n".encode())
         with sock.makefile("rb") as response:
-            head = response.read()
-    return head.split(b"\r\n\r\n", 1)[0].decode().lower()
+            raw = response.read()
+    head, _, content = raw.partition(b"\r\n\r\n")
+    return content.decode() if body else head.decode().lower()
 
 
 def test_production_commands_and_socket_boundary(database, monkeypatch):
@@ -323,6 +327,23 @@ def test_production_commands_and_socket_boundary(database, monkeypatch):
                     assert unix_request(path, host, "/login", proto=claimed).startswith("http/1.1 400 ")
                 assert unix_request(path, "outside.example", "/login", proto=("https",)).startswith("http/1.1 400 ")
                 assert unix_request(path, host, "/bootstrap-admin", proto=("https",)).startswith("http/1.1 404 ")
+                demo = generate_demo_dataset()
+                with psycopg.connect(runtime) as db:
+                    assert {row[0] for row in db.execute("SELECT signal_id FROM jt_workbench.signals")} == {
+                        item.signal_id for item in demo.signals
+                    }
+                store = PostgresStore(runtime)
+                token = new_token()
+                with store.locked():
+                    assert all(event.action != AuditAction.DECIDE for event in store.audit_events())
+                    store.save_account(Account("synthetic-operator", Role.OPERATOR))
+                    now = store.clock()
+                    store.save_session(token_digest(token),
+                                       Session("synthetic-operator", Role.OPERATOR, new_token(), now + 600, now + 600))
+                case_list = unix_request(path, host, "/cases", proto=("https",), session_token=token, body=True)
+                assert "广州商务陪同时段变更" in case_list and "演示数据" in case_list
+                for execution in demo.cases:
+                    assert f"/cases/{execution.case.case_id}/claim" in case_list
             finally:
                 server.terminate()
                 server.wait(timeout=8)

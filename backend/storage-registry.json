@@ -1,5 +1,5 @@
 {
-  "version": "1.28.0",
+  "version": "1.29.0",
   "stores": [
     {
       "id": "business",
@@ -273,6 +273,26 @@
           "retention": "Same as the service conversation (cj_message_chat); authority audit also ends with its SERVICE-REQUEST history row (12 months after first terminal state)",
           "cleanup_hook": "cj_message.service_session_cleanup.ServiceSessionHook: verify-only after the original account fence; rows are erased by FOREIGN KEY ON DELETE CASCADE when business/message deletes cj_message_chat (authority also cascades from cj_service_request_history); no DELETE grant to cleanup; any remaining row refuses and blocks (fail-closed)",
           "restore_fence": "Replay the account fence before reads; restrictive account_retired RLS and the cascade parent fence reject retired insertion",
+          "owner_line": "service line",
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1"
+        },
+        {
+          "id": "service-staff-audit",
+          "owner": "W9-4 #1771 service line; cleanup CJ-024",
+          "objects": [
+            "cj_service_request_staff_audit"
+          ],
+          "source": "backend/migrations/0058_service_ops_console.sql",
+          "status": "candidate/local_only; production_not_provisioned; CJ_OPS_CONSOLE_ENABLED default off",
+          "principal_binding": "Written only by the operations console API as cj_ops_console after the App session subject matched the server-side staff roster; never projected to customers; not runtime-readable",
+          "sensitive_fields": [
+            "append-only staff audit: internal staff ref, action time, action (list, view, clear_note, staff transition target)",
+            "user-linkable owner scope and service request id (cleared on account erasure)"
+          ],
+          "retention": "Follows the service request (ON DELETE CASCADE at the 12-month deletion); on account erasure request id and owner scope are cleared, staff ref/time/action kept and deleted 12 months after the action via OpsConsole.purge_delinked_audit as cj_local_cleanup, no scheduler (统筹 2026-11-26, PIPIA service-request section 9)",
+          "cleanup_hook": "cj_service_request.lifecycle.ServiceStaffAuditHook: same original account operation; clears owner scope and request id of the erased owner and confirms none remain (ServiceRequestHook also de-links before deleting, so either order holds); deletes nothing",
+          "restore_fence": "Replay the service request scope fence before any read; the FOREIGN KEY to cj_service_request refuses linked audit rows for erased requests",
           "owner_line": "service line",
           "retention_category": "user_content",
           "cleanup_protocol": "CLEANUP@1.1"
@@ -1097,6 +1117,20 @@
       "restore_fence": "UNIMPLEMENTED; must replay revocations before reads",
       "owner_line": "B / provider owners",
       "retention_category": "external_unprovisioned"
+    }
+  ],
+  "staff_stores": [
+    {
+      "id": "jt-workbench-staff",
+      "owner": "JT Agent workbench / operations",
+      "status": "hk_staff_demo_only; no CJ or customer principal",
+      "principal_binding": "Dedicated JT username, assigned staff role and RFC 6238 enrollment. No CJ account or user UUID mapping.",
+      "sensitive_fields": "Staff usernames and authorization state, password hashes, TOTP enrollment material, setup and session digests, append-only audit, synthetic signals and reviews.",
+      "retention": "Staff credentials and sessions are erased on confirmed offboarding. Retain append-only audit under the staff access policy and keep the disabled username reserved for that audit. Initial backups are restricted to the dedicated instance-local directory. Off-host backup and local backup retention require a separate approved policy.",
+      "cleanup_hook": "deploy/hk/jt-workbench/offboard.py: dedicated owner only, requires an already disabled exact staff username, erases credentials, setup grants, throttling and sessions in one transaction. Audit remains append-only. This store has no CJ account cleanup target.",
+      "restore_fence": "Restore only into the isolated workbench database while its public route is disabled. Clear all restored sessions, passwords and enrollment grants and reconcile retired accounts against the latest staff roster before reopening; re-enroll current staff only.",
+      "owner_line": "JT2 and deployment operator",
+      "retention_category": "employee_access_and_append_only_audit"
     }
   ],
   "evidence_tree": "3c52f72daf1d8e2304c0c569b47e68d92a4b323e",

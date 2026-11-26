@@ -18,6 +18,27 @@ from deploy.recovery import pg_environment,checksum
 def migration_identity():return [dict(version=m['version'],sha256=m['sha256']) for m in migrate.load()]
 
 
+def application_roles():
+    """Committed CREATE ROLE lines; the operations console role (0058, #1771) is NOLOGIN here.
+
+    Hong Kong creates cj_ops_console only so the committed grants apply; it gets no login,
+    no pg_hba/pg_ident entry and no credential (JT stop point). Local migrations keep LOGIN.
+    """
+    roles=[];migrations=migrate.load()
+    for migration in migrations:
+        roles+=re.findall(r'^CREATE ROLE cj_(?:m1_runtime|local_cleanup|ops_console)\b[^\n]*;', (migrate.ROOT/migration['file']).read_text(),re.M)
+    # The expected set follows the migrations actually loaded (a chain cut before 0058 has two).
+    expected=['cj_m1_runtime','cj_local_cleanup']+(['cj_ops_console'] if any(m['version']==58 for m in migrations) else [])
+    if [line.split()[2] for line in roles]!=expected:raise ValueError('exact_committed_application_roles_required')
+    out=[]
+    for line in roles:
+        if line.startswith('CREATE ROLE cj_ops_console '):
+            if line.count(' LOGIN ')!=1:raise ValueError('exact_committed_application_roles_required')
+            line=line.replace(' LOGIN ',' NOLOGIN ')
+        out.append(line)
+    return out
+
+
 def generate(config,root):
     config=local_connection(config);root=Path(root);root.mkdir(mode=0o700)
     with psycopg.connect(**config) as connection:
@@ -29,11 +50,7 @@ def generate(config,root):
                 raise ValueError('schema_blueprint_must_have_no_business_data')
     from .staging import sequence_names
     with psycopg.connect(**config) as connection:sequences=sequence_names(connection)
-    roles=[]
-    for migration in migrate.load():
-        roles+=re.findall(r'^CREATE ROLE cj_(?:m1_runtime|local_cleanup)\b[^\n]*;', (migrate.ROOT/migration['file']).read_text(),re.M)
-    if len(roles)!=2:raise ValueError('exact_committed_application_roles_required')
-    (root/'roles.sql').write_text('\n'.join(roles)+'\n')
+    (root/'roles.sql').write_text('\n'.join(application_roles())+'\n')
     for section in ('pre-data','post-data'):
         with (root/(section+'.sql')).open('xb') as output:
             subprocess.run(['pg_dump','--schema-only','--no-owner','--section='+section],

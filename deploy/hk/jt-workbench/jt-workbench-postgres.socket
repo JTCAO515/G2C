@@ -1,0 +1,11 @@
+[Unit]
+Description=Private PostgreSQL socket for JT workbench
+
+[Socket]
+ListenStream=/srv/g2c-beta/jt-workbench/db/.s.PGSQL.5432
+SocketMode=0660
+ExecStartPost=/usr/bin/chown 0:10031 /srv/g2c-beta/jt-workbench/db/.s.PGSQL.5432
+RemoveOnStop=yes
+
+[Install]
+WantedBy=sockets.target

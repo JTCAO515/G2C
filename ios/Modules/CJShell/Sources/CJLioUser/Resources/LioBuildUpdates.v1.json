@@ -1,7 +1,110 @@
 {
   "schema": 1,
-  "currentBuild": 57,
+  "currentBuild": 58,
   "releases": [
+    {
+      "build": 58,
+      "previousBuild": 57,
+      "sections": [
+        {
+          "id": "changes",
+          "title": {
+            "en": "New and improved",
+            "zh": "本版新增和修改"
+          },
+          "items": {
+            "zh": [
+              "新登录页：打开 App 先看到新的登录页，上面有「通过 Apple 登录」「使用 Google 账号登录」「使用邮箱登录」三个入口，目前只是占位，还不能登录。内测账号仍用底部的「使用内部测试邀请码」登录。",
+              "聊天：Lio 的每条回答下面多一行「由 AI 生成，可能有误，重要信息请自行确认。」；长按 Lio 的开场白又可以复制。",
+              "「出示卡」成为「工具」里独立的一张卡（常用语和求助，给对方看），新增商务常用语（报价、起订量、交期、样品、付款方式），以及「商务」区：会面卡、出示地址、一键打车（有打车时显示）；本地协助卡片上的说明文字不再被截断。",
+              "路书：模板路书页新增「用作我的行程」，用作之后会出现在「这趟旅行」首页的日程里；英文界面下，模板行程显示英文地点名。",
+              "「我的」→「设置与账号」新增「隐私摘要」：几句话说明 App 收集什么、发到哪里，完整政策见 https://go2china.space/privacy 。"
+            ],
+            "en": [
+              "New sign-in screen: the app now opens on it, with Sign in with Apple, Sign in with Google and Sign in with email. These three are placeholders for now and cannot sign you in. Testers still sign in with Use an internal test invitation code at the bottom.",
+              "Chat: each Lio answer is followed by a line saying it is AI-generated and may be wrong, so double-check anything important. Long-pressing Lio's opening message copies it again.",
+              "Show Cards is now its own card in Tools (phrases and help cards to show to others), with new business phrases (quotes, minimum order, lead time, samples, payment terms) and a Business area: a meeting card, show an address, and one-tap taxi (shown when Taxi is available); the text on the Local Support cards is no longer cut off.",
+              "Roadbook: template roadbooks have Use as my trip; once used, the trip appears in the schedule on This trip. In English, template trips show English place names.",
+              "Me > Settings and account has a new Privacy summary: a few lines on what the app collects and where it goes; the full policy is at https://go2china.space/privacy ."
+            ]
+          }
+        },
+        {
+          "id": "comparison",
+          "title": {
+            "en": "Changes since the previous build",
+            "zh": "与上一版的区别"
+          },
+          "items": {
+            "zh": [
+              "构建 58 接续构建 57。登录页换成新界面；其余是上面列出的小改动。"
+            ],
+            "en": [
+              "Build 58 follows build 57. The sign-in screen is new; the rest is the small changes listed above."
+            ]
+          }
+        },
+        {
+          "id": "testing",
+          "title": {
+            "en": "Suggested checks",
+            "zh": "建议怎么测"
+          },
+          "items": {
+            "zh": [
+              "登录：退出登录后重新打开 App，确认看到新登录页；点三个占位入口，确认不会崩溃或卡住；再点底部的邀请码入口，输入邀请码能正常进入。",
+              "聊天：问 Lio 一个问题，确认回答下面有 AI 提示行；长按开场白，确认出现复制菜单。",
+              "把系统字号调到最大（含辅助功能字号），看登录页、回答和出示卡里的文字是否被截断。在「路书」打开一条模板路书点「用作我的行程」，回到「这趟旅行」看日程。",
+              "遇到问题，请在内部测试群发截图、问题记录和发生时间。"
+            ],
+            "en": [
+              "Sign-in: sign out and reopen the app, check the new sign-in screen; tap the three placeholders and check nothing crashes or hangs; then tap the invitation code entry at the bottom and enter your code.",
+              "Chat: ask Lio a question and check the AI line under the answer; long-press the opening message and check the copy menu appears.",
+              "Set the text size to the largest (accessibility sizes included) and check that nothing is cut off on the sign-in screen, in answers or on Show Cards. In Roadbook open a template, tap Use as my trip, and look for it on This trip.",
+              "Share a screenshot, the issue record and the time in the internal testing group."
+            ]
+          }
+        },
+        {
+          "id": "known",
+          "title": {
+            "en": "Known issues and checks to avoid",
+            "zh": "已知问题和暂不测试内容"
+          },
+          "items": {
+            "zh": [
+              "注销账号后，景点预约的提醒可能仍会弹出，请先逐条「取消提醒」。",
+              "同一台设备换账号后，景点预约提醒不区分账号：换号后请检查并取消不属于当前账号的提醒。",
+              "新登录页的 Apple、Google、邮箱三个入口还不能用，请用邀请码登录。",
+              "回答下面的反馈入口本版没有开放。本地协助暂不发送求助消息。",
+              "隐私政策网页计划 12 月 1 日公开，在此之前「隐私摘要」里的链接可能打不开。"
+            ],
+            "en": [
+              "After account deletion, sight reminders may still fire; cancel them one by one first.",
+              "On a device used with more than one account, sight reminders are not kept apart by account: after switching, check and cancel any that are not the current account's.",
+              "The Apple, Google and email entries on the new sign-in screen do not work yet; sign in with the invitation code.",
+              "The feedback entry under answers is not open in this build. Local Support does not send help requests yet.",
+              "The privacy policy page is planned to go public on December 1; until then the link in the Privacy summary may not open."
+            ]
+          }
+        },
+        {
+          "id": "service",
+          "title": {
+            "en": "Online service changes",
+            "zh": "在线服务变化"
+          },
+          "items": {
+            "zh": [
+              "本版没有新增要联网的功能，邀请码登录和已有的联网功能不变。"
+            ],
+            "en": [
+              "This build adds no new feature that requires internet access; invitation code sign-in and the existing online features are unchanged."
+            ]
+          }
+        }
+      ]
+    },
     {
       "build": 57,
       "previousBuild": 56,
@@ -98,105 +201,6 @@
             ],
             "en": [
               "Hotels, Intercity Travel, roadbook details, Menu Helper, station surroundings and Essentials need internet and an enabled tester account. Places, hotels and trains from AMap, flights from VariFlight; Menu Helper uses Alibaba Cloud Model Studio (qwen-vl-ocr, qwen3.8-flash); our server keeps no menu photos. No promotion links."
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "build": 56,
-      "previousBuild": 55,
-      "sections": [
-        {
-          "id": "changes",
-          "title": {
-            "en": "New and improved",
-            "zh": "本版新增和修改"
-          },
-          "items": {
-            "zh": [
-              "地铁指南扩到全国 41 个开通地铁的城市，新增西安等城市的可交互线路图。城市用双列卡片排列，可搜索，点城市直接打开线路图；线路图在缩放、拖动被打断后不再跳动。",
-              "「我的」里的「我的记忆」改为从底部弹出，在记忆列表点右上角「完成」关闭。",
-              "英文界面打车搜索地点时，显示英文地点名和地址。",
-              "聊天内容较长时调整系统字号，App 不再卡住。"
-            ],
-            "en": [
-              "The Metro Guide now covers all 41 mainland cities with a metro, adding interactive line maps such as Xi'an. Cities are shown as two-column cards you can search; tap a city to open its line map. The map no longer jumps after a zoom or drag is interrupted.",
-              "Your memory in Me now opens as a sheet; tap Done at the top right of the list to close it.",
-              "In English, taxi place search shows English place names and addresses.",
-              "Changing the system text size during a long chat no longer makes the app stop responding."
-            ]
-          }
-        },
-        {
-          "id": "comparison",
-          "title": {
-            "en": "Changes since the previous build",
-            "zh": "与上一版的区别"
-          },
-          "items": {
-            "zh": [
-              "构建 56 接续构建 55。地铁指南里的买票和安检说明页已移除，点城市直接看线路图。"
-            ],
-            "en": [
-              "Build 56 follows build 55. The ticket and security pages in the Metro Guide are gone; tapping a city opens its line map."
-            ]
-          }
-        },
-        {
-          "id": "testing",
-          "title": {
-            "en": "Suggested checks",
-            "zh": "建议怎么测"
-          },
-          "items": {
-            "zh": [
-              "地铁：在「工具」打开地铁指南，搜索一个新城市（如西安、哈尔滨），打开线路图后缩放、拖动并查找一个车站。",
-              "在「我的」打开我的记忆，进入一条记忆点「编辑」，修改后点「保存」（右上角「完成」只收起键盘），返回列表后点右上角「完成」关闭。",
-              "打车：英文界面搜索一个地点，有英文名的地点显示英文名和地址（没有英文名时显示中文）。把系统字号调大后回到一段较长的聊天，确认 App 仍可正常滚动和输入。",
-              "遇到问题，请在内部测试群发截图、问题记录及发生时间。"
-            ],
-            "en": [
-              "Metro: in Tools, open the Metro Guide, search a newly added city such as Xi'an or Harbin, then zoom, drag and find a station on its line map.",
-              "In Me, open your memory, open an entry, tap Edit, change it and tap Save (Done at the top right only hides the keyboard), then go back to the list and tap Done to close it.",
-              "Taxi: in English, search for a place; places with an English name show it in English (others stay in Chinese). Make the system text larger, return to a long chat and check that it still scrolls and accepts typing.",
-              "Share a screenshot, the copied issue record and the time it happened in the internal testing group."
-            ]
-          }
-        },
-        {
-          "id": "known",
-          "title": {
-            "en": "Known issues and checks to avoid",
-            "zh": "已知问题和暂不测试内容"
-          },
-          "items": {
-            "zh": [
-              "会员方案只是预览，不能购买，也不会扣费。个人信息暂时只能查看。",
-              "按天展示的行程放在下一版。支付宝里的滴滴暂不能一键打开。地铁线路图为示意图，不显示真实地理位置。",
-              "酒店、千问朗读、天气、航班、上网卡、玩乐暂未开放。本地协助暂不发送求助消息。"
-            ],
-            "en": [
-              "Plans are a preview only: nothing can be bought or charged. Profile is view-only for now.",
-              "Day-by-day trip plans come in a later build. DiDi in Alipay can't be opened directly yet. The metro line map is a diagram, not a geographic map.",
-              "Hotels, Qwen voice playback, Weather, Flights, eSIM and Activities are unavailable. Local Support does not send help requests."
-            ]
-          }
-        },
-        {
-          "id": "service",
-          "title": {
-            "en": "Online service changes",
-            "zh": "在线服务变化"
-          },
-          "items": {
-            "zh": [
-              "附近和打车地点搜索需要联网，供已开通的内测账号使用。地点来自滴滴和高德。",
-              "滴滴决定实际价格。打车只在滴滴继续。地铁线路图随 App 提供，不需要联网。"
-            ],
-            "en": [
-              "Nearby and taxi place search require internet access and an enabled tester account. Places come from DiDi and AMap.",
-              "DiDi sets the final price and handles the ride. Metro line maps come with the app and work offline."
             ]
           }
         }
