@@ -48,7 +48,6 @@
     renderFormOptions();
     renderWallCaptions();
     startChat();
-    startRedact();
   }
 
   $("#lang-select").addEventListener("change", (event) => {
@@ -115,7 +114,6 @@
   const clear = () => { timers.forEach(clearTimeout); timers = []; };
 
   const ICON_MEM = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2l1.8 3.7 4 .6-2.9 2.8.7 4L8 11.2 4.4 13l.7-4L2.2 6.3l4-.6z"/></svg>';
-  const ICON_SHIELD = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1.8l5 2v4c0 3-2.2 5.4-5 6.4-2.8-1-5-3.4-5-6.4v-4z"/><path d="M5.8 8.2l1.6 1.6 3-3.2"/></svg>';
 
   function scrollChat() {
     // Keep the latest message in view by trimming from the top.
@@ -135,16 +133,10 @@
     switch (step.t) {
       case "user":
         n = el("div", "msg user", esc(step.text));
-        if (step.secret) {
-          const m = el("span", "mask", esc(step.secret));
-          n.appendChild(m);
-          at(() => { m.textContent = step.ph; m.classList.add("on"); }, 900);
-        }
         break;
       case "hello":
       case "bot": n = el("div", "msg bot", esc(step.text) + (step.src ? `<span class="src">${esc(step.src)}</span>` : "")); break;
       case "mem": n = el("div", "chip mem", ICON_MEM + esc(step.text)); break;
-      case "shield": n = el("div", "chip shield", ICON_SHIELD + esc(step.text)); break;
       case "plan":
         n = el("div", "plan",
           `<header>${esc(step.title)}<small>${esc(step.tag)}</small></header><ul>` +
@@ -194,7 +186,7 @@
     later(tick, 450);
   }
   function composeAndSend(step, done) {
-    const full = step.text + (step.secret || "");
+    const full = step.text;
     pickSuggest(step.q);
     inputBox.classList.add("busy");
     typedEl.textContent = "";
@@ -214,7 +206,7 @@
     }, 500);
   }
 
-  const GAP = { hello: 900, user: 1500, bot: 1300, mem: 1100, plan: 2600, shield: 1300, ask: 1900, sys: 4200 };
+  const GAP = { hello: 900, user: 1500, bot: 1300, mem: 1100, plan: 2600, ask: 1900, sys: 4200 };
 
   function startChat() {
     clear();
@@ -243,37 +235,6 @@
       else go();
     };
     later(next, 500);
-  }
-
-  /* ---------- Redaction demo ---------- */
-  let redactTimers = [];
-  function startRedact() {
-    redactTimers.forEach(clearTimeout); redactTimers = [];
-    const parts = T[lang].redact;
-    const inEl = $("#redact-text"), outEl = $("#redact-out");
-    inEl.innerHTML = parts.map(([s, ph]) => ph ? `<span class="tok">${esc(s)}</span>` : esc(s)).join("");
-    const build = (stage) => parts.map(([s, ph], idx) => {
-      if (!ph) return esc(s);
-      const k = parts.slice(0, idx + 1).filter((p) => p[1]).length;
-      return k <= stage ? `<span class="tok ph" dir="ltr">${esc(ph)}</span>` : `<span class="tok">${esc(s)}</span>`;
-    }).join("");
-    const total = parts.filter((p) => p[1]).length;
-    outEl.innerHTML = build(reduced ? total : 0);
-    if (reduced) return;
-    const toks = () => inEl.querySelectorAll(".tok");
-    const cycle = () => {
-      outEl.innerHTML = build(0);
-      toks().forEach((t) => t.classList.remove("hot"));
-      for (let k = 1; k <= total; k++) {
-        redactTimers.push(setTimeout(() => {
-          toks().forEach((t, j) => t.classList.toggle("hot", j === k - 1));
-          outEl.innerHTML = build(k);
-        }, 900 * k));
-      }
-      redactTimers.push(setTimeout(() => toks().forEach((t) => t.classList.remove("hot")), 900 * total + 700));
-      redactTimers.push(setTimeout(cycle, 900 * total + 3400));
-    };
-    cycle();
   }
 
   /* ---------- Photo wall: one tile at a time swaps to a place not on screen ---------- */

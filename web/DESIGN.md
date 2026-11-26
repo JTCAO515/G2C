@@ -39,7 +39,7 @@ Solid colours only: no gradients, glows, glass or blur.
 
 ## Motion
 
-- Two demos move on their own because they show the product: the chat (typing, deleting, sending) and the redaction. The photo wall swaps one photo at a time.
+- The chat demo moves on its own because it shows the product (typing, deleting, sending). The photo wall swaps one photo at a time. The redaction demo was removed in #1839: the site does not show or promise a capability the product does not have yet.
 - Everything else moves only when the user does something (switching a scenario tab, submitting the form).
 - No fade-up on scroll. Respect `prefers-reduced-motion`: show final states, stop the photo swaps.
 

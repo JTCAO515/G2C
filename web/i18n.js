@@ -1,5 +1,5 @@
 /* Copy for go2china.space in six languages. Edit here; app.js only renders it.
-   Chat-demo, redaction and footer strings come from the previous page version. */
+   Chat-demo and footer strings come from the previous page version. */
 window.G2C = {
  "T": {
   "en": {
@@ -120,8 +120,8 @@ window.G2C = {
      "When a person helped, CJ Agent tells you what they did."
     ],
     [
-     "Need to know",
-     "Teammates see a case number and the few details the job needs, never your account."
+     "Your data",
+     "We don’t sell it, and you can delete your account in the app."
     ]
    ],
    "placesTitle": "Where are you headed?",
@@ -246,13 +246,7 @@ window.G2C = {
     {
      "t": "user",
      "q": 2,
-     "text": "Book the dumpling class for two. Passport ",
-     "secret": "E12345678",
-     "ph": "<PASSPORT_1>"
-    },
-    {
-     "t": "shield",
-     "text": "Redacted before any model sees it"
+     "text": "Book the dumpling class for two."
     },
     {
      "t": "ask",
@@ -266,50 +260,10 @@ window.G2C = {
      "done": "<b>Confirmed</b> · Sun 10:00 is on your trip"
     }
    ],
-   "redact": [
-    [
-     "Hi, I'm ",
-     null
-    ],
-    [
-     "Emma Clarke",
-     "<NAME_1>"
-    ],
-    [
-     ". Passport ",
-     null
-    ],
-    [
-     "E12345678",
-     "<PASSPORT_1>"
-    ],
-    [
-     ", call me on ",
-     null
-    ],
-    [
-     "+44 7700 900123",
-     "<PHONE_1>"
-    ],
-    [
-     ". I'm at ",
-     null
-    ],
-    [
-     "Gate 3, Hotel Lotus",
-     "<LOCATION_1>"
-    ],
-    [
-     ".",
-     null
-    ]
-   ],
-   "privLede": "Names, passport numbers, phone numbers, emails and exact locations are swapped for placeholders on our side before any model reads them.",
-   "priv1": "Teammates see masked cases under a random case ID, never your account.",
-   "priv2": "Revealing a field is limited to what the task needs, time-boxed and logged.",
+   "privLede": "To answer you, the messages you send are processed by the AI model service we use. Share only the personal details a task needs.",
+   "priv1": "We don’t sell your personal data.",
+   "priv2": "You can delete your account in the app at any time.",
    "priv3": "Your memory is yours: see it, correct it, delete it whenever you like.",
-   "you": "You",
-   "modelSees": "What the model sees",
    "footTag": "Your personal agent for China.",
    "companyName": "Guangzhou Chuangjing Technology Co., Ltd",
    "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China"
@@ -432,8 +386,8 @@ window.G2C = {
      "如果有真人帮忙，CJ Agent 会告诉你他们做了什么。"
     ],
     [
-     "只给必要的信息",
-     "团队成员只看到工单号和完成任务所需的少量信息，看不到你的账号。"
+     "你的数据",
+     "我们不出售你的数据，你也可以在 App 里删除账号。"
     ]
    ],
    "placesTitle": "你想去哪里？",
@@ -558,13 +512,7 @@ window.G2C = {
     {
      "t": "user",
      "q": 2,
-     "text": "帮我订两人的饺子课。护照 ",
-     "secret": "E12345678",
-     "ph": "<PASSPORT_1>"
-    },
-    {
-     "t": "shield",
-     "text": "已脱敏，模型看不到原文"
+     "text": "帮我订两人的饺子课。"
     },
     {
      "t": "ask",
@@ -578,50 +526,10 @@ window.G2C = {
      "done": "<b>已确认</b> · 周日 10:00 已加入行程"
     }
    ],
-   "redact": [
-    [
-     "你好，我是",
-     null
-    ],
-    [
-     "王小明",
-     "<NAME_1>"
-    ],
-    [
-     "，护照号 ",
-     null
-    ],
-    [
-     "E12345678",
-     "<PASSPORT_1>"
-    ],
-    [
-     "，电话 ",
-     null
-    ],
-    [
-     "138 0013 8000",
-     "<PHONE_1>"
-    ],
-    [
-     "，我在",
-     null
-    ],
-    [
-     "莲花酒店 3 号门",
-     "<LOCATION_1>"
-    ],
-    [
-     "。",
-     null
-    ]
-   ],
-   "privLede": "姓名、护照号、电话、邮箱和精确位置，在任何模型读取之前就已在我们这边替换为占位符。",
-   "priv1": "团队成员只看到打码的工单和随机工单号，看不到你的账号。",
-   "priv2": "揭示字段仅限任务所需，有时限，并全程留痕。",
+   "privLede": "为了回答你，你发出的消息会交给我们使用的 AI 模型服务处理。请只提供办事需要的个人信息。",
+   "priv1": "我们不出售你的个人数据。",
+   "priv2": "你可以随时在 App 里删除账号。",
    "priv3": "记忆归你所有：随时查看、更正或删除。",
-   "you": "你",
-   "modelSees": "模型看到的",
    "footTag": "你在中国的私人助理。",
    "companyName": "广州创竞科技有限公司",
    "companyAddress": "广州市天河区黄埔大道100号富力盈泰广场A座410室"
@@ -744,8 +652,8 @@ window.G2C = {
      "Если помогал человек, CJ Agent расскажет, что он сделал."
     ],
     [
-     "Только нужное",
-     "Сотрудник видит номер обращения и несколько нужных для дела данных, но не ваш аккаунт."
+     "Ваши данные",
+     "Мы их не продаём, а аккаунт можно удалить в приложении."
     ]
    ],
    "placesTitle": "Куда вы едете?",
@@ -870,13 +778,7 @@ window.G2C = {
     {
      "t": "user",
      "q": 2,
-     "text": "Забронируй урок на двоих. Паспорт ",
-     "secret": "E12345678",
-     "ph": "<PASSPORT_1>"
-    },
-    {
-     "t": "shield",
-     "text": "Личные данные скрыты до передачи модели"
+     "text": "Забронируй урок на двоих."
     },
     {
      "t": "ask",
@@ -890,50 +792,10 @@ window.G2C = {
      "done": "<b>Подтверждено</b> · воскресенье, 10:00 добавлено в план"
     }
    ],
-   "redact": [
-    [
-     "Здравствуйте, я ",
-     null
-    ],
-    [
-     "Анна Иванова",
-     "<NAME_1>"
-    ],
-    [
-     ". Паспорт ",
-     null
-    ],
-    [
-     "E12345678",
-     "<PASSPORT_1>"
-    ],
-    [
-     ", телефон ",
-     null
-    ],
-    [
-     "+44 7700 900123",
-     "<PHONE_1>"
-    ],
-    [
-     ". Я у ",
-     null
-    ],
-    [
-     "входа 3 отеля «Лотос»",
-     "<LOCATION_1>"
-    ],
-    [
-     ".",
-     null
-    ]
-   ],
-   "privLede": "Имена, номера паспортов, телефоны, почта и точные адреса заменяются метками до передачи модели.",
-   "priv1": "Сотрудники видят обезличенное обращение со случайным номером, а не ваш аккаунт.",
-   "priv2": "Данные раскрываются лишь по необходимости, на ограниченное время и с записью доступа.",
+   "privLede": "Чтобы ответить вам, ваши сообщения обрабатывает сервис ИИ-модели, которым мы пользуемся. Сообщайте только те личные данные, которые нужны для задачи.",
+   "priv1": "Мы не продаём ваши персональные данные.",
+   "priv2": "Вы можете в любой момент удалить аккаунт в приложении.",
    "priv3": "Вы можете просматривать, исправлять и удалять сохранённые сведения.",
-   "you": "Вы",
-   "modelSees": "Что видит модель",
    "footTag": "Ваш личный помощник в Китае.",
    "companyName": "Guangzhou Chuangjing Technology Co., Ltd",
    "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China"
@@ -1056,8 +918,8 @@ window.G2C = {
      "Si te ha ayudado una persona, CJ Agent te dice qué hizo."
     ],
     [
-     "Solo lo necesario",
-     "El equipo ve un número de caso y los pocos datos que requiere la tarea, nunca tu cuenta."
+     "Tus datos",
+     "No los vendemos, y puedes eliminar tu cuenta en la app."
     ]
    ],
    "placesTitle": "¿Adónde vas?",
@@ -1182,13 +1044,7 @@ window.G2C = {
     {
      "t": "user",
      "q": 2,
-     "text": "Reserva la clase para dos. Pasaporte ",
-     "secret": "E12345678",
-     "ph": "<PASSPORT_1>"
-    },
-    {
-     "t": "shield",
-     "text": "Datos ocultos antes de llegar al modelo"
+     "text": "Reserva la clase para dos."
     },
     {
      "t": "ask",
@@ -1202,50 +1058,10 @@ window.G2C = {
      "done": "<b>Confirmado</b> · domingo a las 10:00 añadido al viaje"
     }
    ],
-   "redact": [
-    [
-     "Hola, soy ",
-     null
-    ],
-    [
-     "Ana García",
-     "<NAME_1>"
-    ],
-    [
-     ". Pasaporte ",
-     null
-    ],
-    [
-     "E12345678",
-     "<PASSPORT_1>"
-    ],
-    [
-     ", teléfono ",
-     null
-    ],
-    [
-     "+44 7700 900123",
-     "<PHONE_1>"
-    ],
-    [
-     ". Estoy en ",
-     null
-    ],
-    [
-     "la puerta 3 del Hotel Lotus",
-     "<LOCATION_1>"
-    ],
-    [
-     ".",
-     null
-    ]
-   ],
-   "privLede": "Nombres, pasaportes, teléfonos, correos y ubicaciones precisas se sustituyen por etiquetas antes de que el modelo los lea.",
-   "priv1": "El equipo ve casos anonimizados con un número aleatorio, no tu cuenta.",
-   "priv2": "Los datos solo se revelan cuando son necesarios, por tiempo limitado y con registro de acceso.",
+   "privLede": "Para responderte, tus mensajes los procesa el servicio de modelos de IA que usamos. Comparte solo los datos personales que necesite cada gestión.",
+   "priv1": "No vendemos tus datos personales.",
+   "priv2": "Puedes eliminar tu cuenta en la app cuando quieras.",
    "priv3": "Puedes consultar, corregir o borrar lo que se recuerda de ti.",
-   "you": "Tú",
-   "modelSees": "Lo que ve el modelo",
    "footTag": "Tu asistente personal para China.",
    "companyName": "Guangzhou Chuangjing Technology Co., Ltd",
    "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China"
@@ -1368,8 +1184,8 @@ window.G2C = {
      "Quand une personne a aidé, CJ Agent vous dit ce qu’elle a fait."
     ],
     [
-     "Le strict nécessaire",
-     "L’équipe voit un numéro de dossier et les quelques informations utiles, jamais votre compte."
+     "Vos données",
+     "Nous ne les vendons pas, et vous pouvez supprimer votre compte dans l’app."
     ]
    ],
    "placesTitle": "Où allez-vous ?",
@@ -1494,13 +1310,7 @@ window.G2C = {
     {
      "t": "user",
      "q": 2,
-     "text": "Réserve le cours pour deux. Passeport ",
-     "secret": "E12345678",
-     "ph": "<PASSPORT_1>"
-    },
-    {
-     "t": "shield",
-     "text": "Données masquées avant l’envoi au modèle"
+     "text": "Réserve le cours pour deux."
     },
     {
      "t": "ask",
@@ -1514,50 +1324,10 @@ window.G2C = {
      "done": "<b>Confirmé</b> · dimanche à 10 h ajouté au voyage"
     }
    ],
-   "redact": [
-    [
-     "Bonjour, je suis ",
-     null
-    ],
-    [
-     "Emma Martin",
-     "<NAME_1>"
-    ],
-    [
-     ". Passeport ",
-     null
-    ],
-    [
-     "E12345678",
-     "<PASSPORT_1>"
-    ],
-    [
-     ", téléphone ",
-     null
-    ],
-    [
-     "+44 7700 900123",
-     "<PHONE_1>"
-    ],
-    [
-     ". Je suis à ",
-     null
-    ],
-    [
-     "l’entrée 3 de l’hôtel Lotus",
-     "<LOCATION_1>"
-    ],
-    [
-     ".",
-     null
-    ]
-   ],
-   "privLede": "Noms, passeports, téléphones, e-mails et positions précises sont remplacés par des balises avant que le modèle ne les lise.",
-   "priv1": "L’équipe voit un dossier anonymisé avec un numéro aléatoire, jamais votre compte.",
-   "priv2": "Un accès aux données n’est accordé que si nécessaire, pour une durée limitée et avec traçabilité.",
+   "privLede": "Pour vous répondre, vos messages sont traités par le service de modèle d’IA que nous utilisons. Ne partagez que les données personnelles nécessaires à la démarche.",
+   "priv1": "Nous ne vendons pas vos données personnelles.",
+   "priv2": "Vous pouvez supprimer votre compte dans l’app à tout moment.",
    "priv3": "Consultez, corrigez ou supprimez les informations mémorisées à tout moment.",
-   "you": "Vous",
-   "modelSees": "Ce que voit le modèle",
    "footTag": "Votre assistant personnel pour la Chine.",
    "companyName": "Guangzhou Chuangjing Technology Co., Ltd",
    "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China"
@@ -1680,8 +1450,8 @@ window.G2C = {
      "عندما يساعدك شخص، يخبرك CJ Agent بما فعله."
     ],
     [
-     "القدر اللازم فقط",
-     "يرى الفريق رقم الطلب والقليل من التفاصيل اللازمة للمهمة، ولا يرى حسابك أبدًا."
+     "بياناتك",
+     "لا نبيعها، ويمكنك حذف حسابك من التطبيق."
     ]
    ],
    "placesTitle": "إلى أين تتجه؟",
@@ -1806,13 +1576,7 @@ window.G2C = {
     {
      "t": "user",
      "q": 2,
-     "text": "احجز الدرس لشخصين. جواز السفر ",
-     "secret": "E12345678",
-     "ph": "<PASSPORT_1>"
-    },
-    {
-     "t": "shield",
-     "text": "تُحجب البيانات قبل إرسالها إلى النموذج"
+     "text": "احجز الدرس لشخصين."
     },
     {
      "t": "ask",
@@ -1826,50 +1590,10 @@ window.G2C = {
      "done": "<b>تم التأكيد</b> · أضيف الأحد الساعة 10:00 إلى رحلتك"
     }
    ],
-   "redact": [
-    [
-     "مرحبًا، أنا ",
-     null
-    ],
-    [
-     "سارة أحمد",
-     "<NAME_1>"
-    ],
-    [
-     ". جواز سفري ",
-     null
-    ],
-    [
-     "E12345678",
-     "<PASSPORT_1>"
-    ],
-    [
-     "، وهاتفي ",
-     null
-    ],
-    [
-     "+44 7700 900123",
-     "<PHONE_1>"
-    ],
-    [
-     ". أنا عند ",
-     null
-    ],
-    [
-     "البوابة 3 في فندق لوتس",
-     "<LOCATION_1>"
-    ],
-    [
-     ".",
-     null
-    ]
-   ],
-   "privLede": "تُستبدل الأسماء وأرقام الجوازات والهواتف والبريد والمواقع الدقيقة برموز قبل أن يقرأها النموذج.",
-   "priv1": "يرى الفريق طلبًا محجوب البيانات برقم عشوائي، ولا يرى حسابك.",
-   "priv2": "لا تُكشف البيانات إلا عند الحاجة ولمدة محدودة، مع تسجيل الوصول إليها.",
+   "privLede": "للإجابة عن أسئلتك، تُعالَج رسائلك لدى خدمة نموذج الذكاء الاصطناعي التي نستخدمها. شارك فقط البيانات الشخصية التي تحتاجها المهمة.",
+   "priv1": "لا نبيع بياناتك الشخصية.",
+   "priv2": "يمكنك حذف حسابك من التطبيق في أي وقت.",
    "priv3": "يمكنك عرض المعلومات المحفوظة وتصحيحها أو حذفها متى شئت.",
-   "you": "أنت",
-   "modelSees": "ما يراه النموذج",
    "footTag": "مساعدك الشخصي في الصين.",
    "companyName": "Guangzhou Chuangjing Technology Co., Ltd",
    "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China"
