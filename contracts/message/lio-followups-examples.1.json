@@ -56,6 +56,40 @@
           }
         ]
       }
+    },
+    {
+      "layout": "split",
+      "followups": {
+        "version": "LIO-answer-followups.1",
+        "chips": [
+          {
+            "label": "付不了怎么办",
+            "ticket": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+          },
+          {
+            "label": "哪些地方不能用",
+            "ticket": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ]
+      }
+    },
+    {
+      "layout": "split",
+      "followups": {
+        "version": "LIO-answer-followups.1",
+        "actions": [
+          {
+            "tool": "payment-guide",
+            "parameters": {},
+            "label": "打开支付开通指南"
+          }
+        ],
+        "chips": [
+          {
+            "label": "What if payment fails?"
+          }
+        ]
+      }
     }
   ],
   "invalid": [
@@ -168,6 +202,63 @@
             "tool": "taxi",
             "parameters": {},
             "label": "x"
+          }
+        ]
+      }
+    },
+    {
+      "layout": "split",
+      "followups": {
+        "version": "LIO-answer-followups.1"
+      }
+    },
+    {
+      "layout": "split",
+      "followups": {
+        "version": "LIO-answer-followups.1",
+        "chips": []
+      }
+    },
+    {
+      "layout": "split",
+      "followups": {
+        "version": "LIO-answer-followups.1",
+        "chips": [
+          {
+            "label": "x",
+            "ticket": "short"
+          }
+        ]
+      }
+    },
+    {
+      "layout": "split",
+      "followups": {
+        "version": "LIO-answer-followups.1",
+        "chips": [
+          {
+            "label": "x"
+          },
+          {
+            "label": "y"
+          },
+          {
+            "label": "z"
+          },
+          {
+            "label": "w"
+          }
+        ]
+      }
+    },
+    {
+      "layout": "split",
+      "followups": {
+        "version": "LIO-answer-followups.1",
+        "chips": [
+          {
+            "label": "x",
+            "send": "hi"
           }
         ]
       }

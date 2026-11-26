@@ -222,6 +222,21 @@ class Service:
         self.repository = repository
         self.new_run_id = new_run_id
 
+    def issue_lio_chips(self, message_id, labels):
+        """Store one-time tickets for the chips offered with an answer (#1727); the tickets, or None.
+
+        None when the rows were not all written (the answer is unknown here, or already has chips):
+        the caller then offers no chips. The labels' hashes and the tickets are the only data kept.
+        """
+        from .lio_followups import label_sha256, new_tickets
+        if not 1 <= len(labels) <= 3:
+            return None
+        tickets = new_tickets(len(labels))
+        hashes = [label_sha256(label) for label in labels]
+        with self.repository.transaction() as tx:
+            written = tx.cur.execute('SELECT public.cj_lio_chip_issue(%s,%s,%s)', (message_id, hashes, tickets)).fetchone()[0]
+        return tickets if written == len(labels) else None
+
     def receive(self, raw):
         return self._receive(raw, travel=False)
 

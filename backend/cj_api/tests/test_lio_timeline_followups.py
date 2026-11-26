@@ -22,7 +22,8 @@ def row(status, text, *effects, declared=True):
 
 
 SPLIT = LioLayout('split').effect()
-BUTTONS = LioFollowups((BUTTON,)).effect()
+NOW = 1_800_000_000
+BUTTONS = LioFollowups(dict(actions=[BUTTON], chips=[], issued_at=NOW)).effect()
 
 
 def test_a_poll_that_did_not_declare_gets_the_old_row_byte_for_byte():
@@ -54,15 +55,49 @@ def test_single_layout_and_unknown_values_never_carry_buttons():
     assert bad['layout'] == 'single' and 'followups' not in bad
 
 
+def stored(**payload):
+    return 'lio_followups:' + json.dumps(payload)
+
+
 def test_damaged_or_unlisted_buttons_are_dropped_on_read():
-    for stored in ('lio_followups:not json', 'lio_followups:{}', 'lio_followups:[]',
-                   'lio_followups:' + json.dumps([dict(tool='shell', parameters={}, label='x')]),
-                   'lio_followups:' + json.dumps([dict(tool='trip', parameters={}, label='查看行程')]),
-                   'lio_followups:' + json.dumps([dict(tool='taxi', parameters={'url': 'http://x'}, label='打车')]),
-                   'lio_followups:' + json.dumps([dict(tool='payment-guide', parameters={}, label='')])):
-        assert 'followups' not in row('completed', '好的', SPLIT, stored), stored
-    mixed = 'lio_followups:' + json.dumps([dict(tool='shell', parameters={}, label='x'), BUTTON])
+    for effect in ('lio_followups:not json', 'lio_followups:{}', 'lio_followups:[]', 'lio_followups:{"extra":1}',
+                   stored(actions=[dict(tool='shell', parameters={}, label='x')], issued_at=NOW),
+                   stored(actions=[dict(tool='trip', parameters={'trip_id': 'a'}, label='查看行程')], issued_at=NOW),
+                   stored(actions=[dict(tool='taxi', parameters={'url': 'http://x'}, label='打车')], issued_at=NOW),
+                   stored(actions=[dict(tool='payment-guide', parameters={}, label='')], issued_at=NOW)):
+        assert 'followups' not in row('completed', '好的', SPLIT, effect), effect
+    mixed = stored(actions=[dict(tool='shell', parameters={}, label='x'), BUTTON], issued_at=NOW)
     assert row('completed', '好的', SPLIT, mixed)['followups']['actions'] == [BUTTON]
+
+
+def test_chips_keep_their_ticket_for_24_hours_and_are_shown_without_it_afterwards():
+    from cj_message.lio_followups import TICKET_SECONDS, wire_followups
+    ticket = 'T' * 43
+    payload = dict(actions=[], chips=[dict(label='付不了怎么办', ticket=ticket), dict(label='哪些地方不能用', ticket=ticket)], issued_at=NOW)
+    fresh = wire_followups(payload, now=NOW + TICKET_SECONDS - 1)
+    assert fresh == dict(version=VERSION, chips=[dict(label='付不了怎么办', ticket=ticket), dict(label='哪些地方不能用', ticket=ticket)])
+    old = wire_followups(payload, now=NOW + TICKET_SECONDS)
+    assert old == dict(version=VERSION, chips=[dict(label='付不了怎么办'), dict(label='哪些地方不能用')])
+    assert wire_followups(payload, now=NOW - 1) == old    # a clock that has not reached the issue time offers no ticket
+
+
+def test_malformed_chips_and_tickets_never_reach_the_wire():
+    from cj_message.lio_followups import wire_followups
+    good = 'G' * 43
+    cases = [dict(label='x', ticket='short'), dict(label='x', ticket=7), dict(label='x', ticket='é' * 43), dict(label='', ticket=good),
+             dict(label='a\nb', ticket=good), dict(label='x' * 25, ticket=good), dict(label=' x ', ticket=good), dict(label='x', send='hi'),
+             'x', None, dict(ticket=good)]
+    for item in cases:
+        result = wire_followups(dict(actions=[], chips=[item], issued_at=NOW), now=NOW)
+        assert result is None or all('ticket' not in chip or chip['ticket'] == good for chip in result['chips']), item
+        if result is not None:
+            assert all(chip.get('ticket') in (None, good) for chip in result['chips']), item
+    assert wire_followups(dict(actions=[], chips=[dict(label='x', ticket='short')], issued_at=NOW), now=NOW) == dict(version=VERSION, chips=[dict(label='x')])
+    four = [dict(label=str(n), ticket=good) for n in range(4)]
+    assert len(wire_followups(dict(actions=[], chips=four, issued_at=NOW), now=NOW)['chips']) == 3
+    twice = [dict(label='x', ticket=good), dict(label='x', ticket=good)]
+    assert len(wire_followups(dict(actions=[], chips=twice, issued_at=NOW), now=NOW)['chips']) == 1
+    assert wire_followups(dict(actions=[], chips=[dict(label='x', ticket=good)], issued_at='now'), now=NOW) == dict(version=VERSION, chips=[dict(label='x')])
 
 
 def client():
@@ -101,11 +136,16 @@ def test_the_contract_examples_match_the_schema_and_the_servers_own_check():
     for value in examples['valid']:
         jsonschema.validate(value, schema)
         if 'followups' in value:
-            assert wire_followups(value['followups']['actions']) == value['followups']   # the server would send exactly this
+            body = value['followups']
+            stored_payload = dict(actions=body.get('actions', []), chips=body.get('chips', []), issued_at=1)
+            assert wire_followups(stored_payload, now=2) == body   # the server would send exactly this
     for value in examples['invalid']:
         assert not jsonschema.Draft202012Validator(schema).is_valid(value), value
-        if 'followups' in value and value['followups']['version'] == VERSION:
-            assert wire_followups(value['followups']['actions']) is None   # and the server's read would drop it
+        body = value.get('followups')
+        if body is not None and body.get('version') == VERSION and 'send' not in json.dumps(body):
+            stored_payload = dict(actions=body.get('actions', []), chips=body.get('chips', []), issued_at=1)
+            shown = wire_followups(stored_payload, now=2)
+            assert shown != body   # the server's read would drop or repair it, never pass it on as is
 
 
 def test_stored_values_with_whitespace_or_a_trip_card_never_split_or_carry_buttons():
@@ -115,3 +155,9 @@ def test_stored_values_with_whitespace_or_a_trip_card_never_split_or_carry_butto
     assert 'followups' not in with_trip and with_trip['layout'] == 'split'
     empty = row('completed', '', SPLIT, BUTTONS)
     assert 'followups' not in empty and empty['layout'] == 'split'   # no answer text, no buttons; the written value is kept
+
+
+def test_a_button_record_in_the_first_format_still_reads():
+    old = 'lio_followups:' + json.dumps([BUTTON])
+    assert row('completed', '好的', SPLIT, old)['followups'] == dict(version=VERSION, actions=[BUTTON])
+    assert 'followups' not in row('completed', '好的', SPLIT, 'lio_followups:' + json.dumps([dict(tool='shell', parameters={}, label='x')]))

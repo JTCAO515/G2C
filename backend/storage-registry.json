@@ -34,7 +34,8 @@
             "cj_message_trip_reference",
             "cj_message_edit_profile",
             "cj_message_edit_reference",
-            "cj_message_edit_result_profile"
+            "cj_message_edit_result_profile",
+            "cj_lio_chip"
           ],
           "source": "backend/message/sql/candidate.sql@b722281001f57cc7bc1c7df8dd38f2543e7dc250",
           "status": "candidate_or_local_only; production_not_provisioned",
@@ -48,7 +49,8 @@
             "travel context identity/version/active and original action/receipt bytes",
             "per-conversation selection_epoch and explicit travel/none reference; no Trip or Memory facts",
             "MESSAGE-SOURCE@1 explicit conversation end_id/generation/epoch/through and reserved conversation_type (travel only); source consent authority is owned by C, not inferred from this metadata",
-            "MSG3/4 copied source_content/hash physically erasable under original memory intent; retained original selection/raw chat are human history, not permission to reconstruct model context"
+            "MSG3/4 copied source_content/hash physically erasable under original memory intent; retained original selection/raw chat are human history, not permission to reconstruct model context",
+            "cj_lio_chip (#1727, migration 0059): one-time tap-to-ask tickets for an answer: random 43-character ticket, SHA-256 of the offered question text (never the text), chain level 1-4, 24 h expiry, and the messages that used and were made free by it (cj_message_receipt.demo_chip_free marks a free question); written by the server when an answer completes, spent in the transaction that records the traveler's question; erased by ON DELETE CASCADE from cj_message_chat and cj_message_receipt under the existing account hook (no DELETE grant, no new hook)"
           ],
           "retention": "Chat, drafts, travel context and action/association evidence until user/account deletion; profile/fence rows remain non-recyclable through cleanup",
           "cleanup_hook": "cj_cleanup.account_hooks.DomainHook; explicit code-owned tables, original persisted intent, account fence, verified physical erasure and atomic original result; no owner/C data guessing; memory purpose B-MEMORY-PAYLOAD@1 clears proven copied Trip/edit source caches and stops old delivery, preserving raw human chat; MESSAGE-history.5 explicitly reports erased source",

@@ -84,8 +84,38 @@
       ],
       "type": "object"
     },
+    "chip": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "maxLength": 24,
+          "minLength": 1,
+          "type": "string"
+        },
+        "ticket": {
+          "pattern": "^[A-Za-z0-9_-]{43}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label"
+      ],
+      "type": "object"
+    },
     "followups": {
       "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "actions"
+          ]
+        },
+        {
+          "required": [
+            "chips"
+          ]
+        }
+      ],
       "properties": {
         "actions": {
           "items": {
@@ -95,13 +125,20 @@
           "minItems": 1,
           "type": "array"
         },
+        "chips": {
+          "items": {
+            "$ref": "#/$defs/chip"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "type": "array"
+        },
         "version": {
           "const": "LIO-answer-followups.1"
         }
       },
       "required": [
-        "version",
-        "actions"
+        "version"
       ],
       "type": "object"
     },

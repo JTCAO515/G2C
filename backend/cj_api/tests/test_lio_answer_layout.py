@@ -163,5 +163,35 @@ class Actions(unittest.TestCase):
             self.assertEqual(followups.chips(raw, 'zh'), [])
 
 
+class Chips(unittest.TestCase):
+    def test_every_reviewed_chip_fits_the_limits_in_both_languages(self):
+        for topic, rows in followups.CHIP_TABLE.items():
+            self.assertLessEqual(len(rows), followups.MAX_CHIPS)
+            for zh, en in rows:
+                self.assertLessEqual(len(zh), 12, zh)
+                self.assertLessEqual(len(en), 24, en)
+            for index, locale in ((0, 'zh'), (1, 'en')):
+                labels = [row[index] for row in rows]
+                self.assertEqual(followups.chips(labels, locale), labels, topic)   # none is dropped by the checks
+
+    def test_chips_follow_the_first_topic_that_has_some(self):
+        self.assertEqual(followups.chips_for('外国游客在中国怎么用支付宝？', 'zh'), ['付不了怎么办', '哪些地方不能用', '怎么开通地铁乘车码'])
+        self.assertEqual(followups.chips_for('How do I pay with Alipay?', 'en')[0], 'What if payment fails?')
+        self.assertEqual(followups.chips_for('怎么打车去机场', 'zh')[0], '打车怎么付款')
+        self.assertEqual(followups.chips_for('支付宝怎么打车', 'zh')[0], '付不了怎么办')   # payment comes first
+        for question in ('成都有什么必吃的？', '你好', ''):
+            self.assertEqual(followups.chips_for(question, 'zh'), [])
+
+    def test_tickets_are_random_43_character_base64url_and_labels_hash_exactly(self):
+        tickets = followups.new_tickets(3)
+        self.assertEqual(len(set(tickets)), 3)
+        self.assertTrue(all(followups.valid_ticket(t) and len(t) == 43 for t in tickets))
+        for bad in ('', 'a' * 42, 'a' * 44, 'a' * 42 + '=', 'a' * 42 + '+', 'é' * 43, 7, None, ['a' * 43]):
+            self.assertFalse(followups.valid_ticket(bad), bad)
+        self.assertEqual(followups.label_sha256('付不了怎么办'), __import__('hashlib').sha256('付不了怎么办'.encode()).hexdigest())
+        self.assertNotEqual(followups.label_sha256('付不了怎么办'), followups.label_sha256('付不了怎么办 '))   # no normalisation
+        self.assertNotEqual(followups.label_sha256('Pay'), followups.label_sha256('pay'))
+
+
 if __name__ == '__main__':
     unittest.main()

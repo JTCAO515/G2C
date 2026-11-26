@@ -57,6 +57,7 @@ refuses any file whose bytes differ from the manifest.
 | 56 | service_request | `backend/migrations/0056_service_request.sql` (SERVICE-REQUEST@1 store, append-only history, escort view audit, retention/account fence; #1769) |
 | 57 | service_conversation | `backend/migrations/0057_service_conversation.sql` (conversation kind trip/service, server-initiated service messages, internal authority audit; cascades from chat/history; #1770) |
 | 58 | service_ops_console | `backend/migrations/0058_service_ops_console.sql` (operations console role `cj_ops_console`: SELECT service request tables only, note-clear-only UPDATE, append-only staff audit with erasure de-link; login used only by the ops API path; #1771) |
+| 59 | lio_chip_ticket | `backend/migrations/0059_lio_chip_ticket.sql` (one-time tap-to-ask tickets for Lio answers, RLS by message scope, INSERT/redeem-only; the daily question count skips the receipt a ticket was spent for in the same transaction; 20 free per Beijing day, one per answer, three levels; #1727) |
 
 Domain SQL stays in each domain directory so tests and the chain use the same bytes.
 Changing a registered file requires updating its manifest sha256 in the same PR; once a
