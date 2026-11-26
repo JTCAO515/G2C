@@ -42,6 +42,7 @@ services:
     <<: *workbench
     profiles: [operator]
     entrypoint: [python, -B, /run/jt-workbench-recover-admin.py]
+    logging: {driver: none}
     healthcheck: {disable: true}
     volumes:
       - /srv/g2c-beta/deploy/hk/jt-workbench/recover_admin.py:/run/jt-workbench-recover-admin.py:ro

@@ -138,7 +138,10 @@ restore_caddy() {
   cat "$home/Caddyfile.before" > "$config"
   docker kill --signal USR1 "$caddy" >/dev/null
 }
-if ! cmp -s "$config" "$candidate"; then
+if cmp -s "$config" "$candidate"; then
+  # A matching disk config may be left by an earlier signal whose result was unknown.
+  [[ -f $home/Caddyfile.before && ! -L $home/Caddyfile.before ]]
+else
   if [[ -e $home/Caddyfile.before ]]; then
     cmp -s "$config" "$home/Caddyfile.before"
   else
@@ -147,14 +150,12 @@ if ! cmp -s "$config" "$candidate"; then
   trap restore_caddy ERR
   # The running container uses a single-file bind mount, so retain its inode on the host.
   cat "$candidate" > "$config"
-  docker kill --signal USR1 "$caddy" >/dev/null
-  curl --noproxy '*' --fail --silent --show-error --retry 2 --max-time 6 \
-    --resolve api-beta.go2china.space:443:127.0.0.1 https://api-beta.go2china.space/health/ready >/dev/null
-  trap - ERR
-else
-  # If a previous signal was not applied, re-read the already validated exact candidate.
-  docker kill --signal USR1 "$caddy" >/dev/null
 fi
+trap restore_caddy ERR
+docker kill --signal USR1 "$caddy" >/dev/null
+curl --noproxy '*' --fail --silent --show-error --retry 2 --max-time 6 \
+  --resolve api-beta.go2china.space:443:127.0.0.1 https://api-beta.go2china.space/health/ready >/dev/null
+trap - ERR
 for attempt in {1..12}; do
   if login=$(curl --noproxy '*' --fail --silent --max-time 3 \
     --resolve jtadmin.go2china.space:443:127.0.0.1 https://jtadmin.go2china.space/login) &&
