@@ -24,6 +24,7 @@ OFFLINE_CASES = (
     ('tooling/optimization', ('tooling.optimization.test_optimization',)),
     ('tooling/training preflight', ('tooling/training', 'test_*.py')),
     ('tooling/training F schema', ('tooling/training/check_f_dataset.py',)),
+    ('web node tests', ('--test', 'scripts/test_web_early_access.cjs')),
 )
 
 
@@ -47,6 +48,8 @@ class EntryTests(unittest.TestCase):
                     self.assertEqual(argv[:4], ['uv', 'run', '--project', 'tooling/optimization'])
                     self.assertIn('--locked', argv)
                     self.assertEqual(kwargs['env']['PYTHONPATH'], str(entry.ROOT))
+                elif label == 'web node tests':
+                    self.assertEqual(argv[:2], ['node', '--test'])
                 else:
                     self.assertEqual(argv[0], sys.executable)
                 if label == 'tooling/datasets':
