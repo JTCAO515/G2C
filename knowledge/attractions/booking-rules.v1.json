@@ -60,7 +60,7 @@
         "https://ticket.dpm.org.cn/",
         "https://www.dpm.org.cn/Visit.html"
       ],
-      "checked_on": "2026-11-25"
+      "checked_on": "2026-11-26"
     },
     {
       "id": "beijing.national-museum",
@@ -408,7 +408,7 @@
       "requirement": "booking_or_on_site",
       "window_days": null,
       "release_time": null,
-      "passport": "not_stated",
+      "passport": "accepted",
       "closed_weekdays": [],
       "open_on_public_holidays": true,
       "limits": {
@@ -418,10 +418,12 @@
       "notes": {
         "en": [
           "Real-name booking and on-site tickets both work for ordinary daytime visits",
+          "Passports can be used to book in the Changcheng Neiwai (长城内外) mini program and at on-site ticketing and gates",
           "Sections may close temporarily in bad weather"
         ],
         "zh": [
           "日间常规游览：实名预约购票与现场购票并行",
+          "「长城内外」小程序可用护照订票，现场也可用护照购票、检票",
           "遇恶劣天气可能临时或局部关闭"
         ]
       },
@@ -434,7 +436,8 @@
       },
       "partner_links": true,
       "sources": [
-        "https://www.badaling.cn/"
+        "https://www.badaling.cn/",
+        "https://www.beijing.gov.cn/fuwu/lqfw/ztzl/jrfw/shrl/202407/t20240725_3758812.html"
       ],
       "checked_on": "2026-11-16"
     },
@@ -474,11 +477,11 @@
       },
       "notes": {
         "en": [
-          "International visitors can book with a passport",
+          "All visitors, including international visitors, must book with their real name on the official website or WeChat account; passports are accepted",
           "The Chinese and English pages list different opening hours; check on the day"
         ],
         "zh": [
-          "外籍观众可用护照预约购票",
+          "所有观众（含外籍观众）须在官方网站或官方微信公众号实名预约，可用护照",
           "中英文官网写的开放时间不一致，以现场为准"
         ]
       },
@@ -491,9 +494,10 @@
       },
       "partner_links": true,
       "sources": [
-        "https://www.bmy.com.cn/guide.html"
+        "https://www.bmy.com.cn/guide.html",
+        "https://www.bmy.com.cn/jingtai/bmyweb/ticketing.html"
       ],
-      "checked_on": "2026-11-25"
+      "checked_on": "2026-11-26"
     },
     {
       "id": "xian.shaanxi-history-museum",
@@ -632,26 +636,32 @@
         "Giant Panda Base",
         "Panda Base"
       ],
-      "requirement": "unknown",
-      "window_days": null,
+      "requirement": "required",
+      "window_days": 14,
       "release_time": null,
-      "passport": "not_stated",
+      "passport": "accepted",
       "closed_weekdays": null,
       "open_on_public_holidays": false,
       "limits": {
-        "en": [],
-        "zh": []
+        "en": [
+          "Capped at 85,000 visitors a day; tickets stop when sold out"
+        ],
+        "zh": [
+          "每日最大接待 8.5 万人次，当日门票售完即止"
+        ]
       },
       "notes": {
         "en": [
+          "Visitors aged 60 and over, and children under 6 or under 1.3 m, need no booking and enter with their ID",
+          "Bring the original ID used for booking; passports are accepted",
           "The No. 6 Panda Villa area closes on Mondays on a trial basis; the Panda Art Museum closes on Mondays for maintenance",
-          "The Panda Tower closes in bad weather",
-          "Ticket rules are on the base's ticketing page and are not listed here yet"
+          "The Panda Tower closes in bad weather"
         ],
         "zh": [
+          "60 周岁及以上老人、6 周岁或 1.3 米以下儿童免预约，凭本人证件入园",
+          "凭预约时用的身份证件实物入园，证件含护照",
           "六号别墅区域试行每周一闭馆，熊猫美术馆周一闭馆维护",
-          "熊猫塔遇特殊天气暂停开放",
-          "票务规则见官网票务页，这里暂未收录"
+          "熊猫塔遇特殊天气暂停开放"
         ]
       },
       "official_channel": {
@@ -663,9 +673,10 @@
       },
       "partner_links": true,
       "sources": [
+        "https://www.panda.org.cn/cn/service/ticket/",
         "https://www.panda.org.cn/cn/service/notice/"
       ],
-      "checked_on": "2026-11-25"
+      "checked_on": "2026-11-26"
     },
     {
       "id": "chengdu.museum",
@@ -680,28 +691,36 @@
       "aliases": [
         "成博"
       ],
-      "requirement": "unknown",
-      "window_days": null,
-      "release_time": null,
-      "passport": "not_stated",
+      "requirement": "required",
+      "window_days": 14,
+      "release_time": "19:00",
+      "passport": "accepted",
       "closed_weekdays": [
         "monday"
       ],
       "open_on_public_holidays": true,
       "limits": {
         "en": [
-          "Capped at 20,000 visitors a day"
+          "Capped at 20,000 visitors a day",
+          "Each WeChat account can make 2 bookings per visit day"
         ],
         "zh": [
-          "每日限流 2 万人"
+          "每日限流 2 万人",
+          "每个微信账号每个参观日最多预约 2 次"
         ]
       },
       "notes": {
         "en": [
-          "The visitor guide links to online booking; the booking rules are in the museum's ticket system and are not listed here yet"
+          "Book up to 14 days ahead; tickets for a new day open daily at 19:00 (museum notice, July 2024)",
+          "Visitors without WeChat can book by email in the English version of the booking system",
+          "If you booked with a passport, exchange it for a ticket at the ticket counter before entry",
+          "Visitors aged 60 and over can enter without booking at the ticket counter"
         ],
         "zh": [
-          "参观指南提供网上预约入口，具体预约规则见官方票务系统，这里暂未收录"
+          "可提前 14 天预约，每日 19:00 开放新一天门票（馆方 2024-07 公告）",
+          "没有微信的境外观众可在预约系统外语版用邮箱预约",
+          "用护照预约的观众，入馆前到票务咨询窗口换票",
+          "60 岁以上老年人可免预约，到票务咨询窗口换票入馆"
         ]
       },
       "official_channel": {
@@ -713,9 +732,11 @@
       },
       "partner_links": false,
       "sources": [
-        "https://www.cdmuseum.com/zhinan/"
+        "https://www.cdmuseum.com/zhinan/",
+        "https://www.cdmuseum.com/xinwen/202407/3690.html",
+        "https://www.cdmuseum.com/xinwen/202602/4250.html"
       ],
-      "checked_on": "2026-11-25"
+      "checked_on": "2026-11-26"
     },
     {
       "id": "shanghai.museum-peoples-square",

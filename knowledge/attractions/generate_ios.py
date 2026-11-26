@@ -116,7 +116,10 @@ def load(path=SOURCE):
             _url(url, f'{where}.sources')
         checked = rule['checked_on']
         _require(type(checked) is str and re.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}', checked), f'{where}.checked_on')
-        date.fromisoformat(checked)
+        try:
+            date.fromisoformat(checked)
+        except ValueError:
+            raise Invalid(f'{where}.checked_on: not a calendar day') from None
     return doc
 
 
