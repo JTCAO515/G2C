@@ -221,11 +221,11 @@ class LioLayout:
 
 @dataclass(frozen=True)
 class LioFollowups:
-    """The answer's fixed action buttons (#1727): [{tool, parameters, label}], at most two."""
-    actions: tuple
+    """The answer's fixed action buttons and tap-to-ask chips (#1727); the payload is built by `lio_followups`."""
+    payload: dict
 
     def effect(self):
-        return FOLLOWUPS_EFFECT + json.dumps(list(self.actions), ensure_ascii=False, separators=(',', ':'), sort_keys=True)
+        return FOLLOWUPS_EFFECT + json.dumps(self.payload, ensure_ascii=False, separators=(',', ':'), sort_keys=True)
 
 
 _GREETING_EXAMPLE = 'Greet briefly, only when the traveler only greets you: 你好！准备去哪儿玩？ / Hey! Where are you off to? '

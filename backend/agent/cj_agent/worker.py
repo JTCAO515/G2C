@@ -597,10 +597,20 @@ class RunWorker:
                     state = self._event(binding, state, 'text_delta', missing)
             if split_layout and (answered or state.text).strip():
                 # W2-1 (#1727): fixed action buttons for a two-bubble answer; none when nothing applies.
-                from cj_message.lio_followups import allowed_actions
+                from cj_message.lio_followups import allowed_actions, chips_for, followups_payload
                 actions = [action.wire() for action in allowed_actions(text, locale)]
-                if actions:
-                    state = self._event(binding, state, 'effect_committed', LioFollowups(tuple(actions)).effect())
+                # Tap-to-ask chips need a one-time ticket stored with the message; without one (no store,
+                # or the write failed) the chips are left out, never shown untappable.
+                labels = chips_for(text, locale)
+                tickets = None
+                if labels and hasattr(self.messages, 'issue_lio_chips'):
+                    try:
+                        tickets = self.messages.issue_lio_chips(binding.message_id, labels)
+                    except Exception as error:
+                        logging.getLogger('cj_usage.audit').info('LIO_CHIPS_UNAVAILABLE run_id=%s error=%s', binding.run_id, type(error).__name__)
+                if actions or tickets:
+                    state = self._event(binding, state, 'effect_committed',
+                                        LioFollowups(followups_payload(actions, zip(labels, tickets) if tickets else ())).effect())
             if self.drafts is not None and command['creation_intent'] == 'consider_trip':
                 phase='draft'
                 state, proposal_id = self._draft(binding, state, text, stored)

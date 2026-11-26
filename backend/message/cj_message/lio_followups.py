@@ -14,8 +14,11 @@ saved trip) is added together with the App, as a table row and a test, not befor
     {"tool": "taxi", "parameters": {} | {"destination", "lat", "lng", ...}, "label": "打车" | "打车去这里"}
 """
 from dataclasses import dataclass
+from hashlib import sha256
 import json
 import re
+import secrets
+import time
 
 VERSION = 'LIO-answer-followups.1'
 MAX_ACTIONS = 2
@@ -24,6 +27,8 @@ MAX_PARAMETERS = 8
 MAX_VALUE_CHARS = 200
 MAX_PARAMETERS_BYTES = 600
 CHIP_LABEL_LIMIT = {'zh': 12, 'en': 24}
+TICKET_SECONDS = 24 * 3600
+_TICKET = re.compile(r'[A-Za-z0-9_-]{43}')
 
 _CONTROL = re.compile(r'[\x00-\x1f\x7f-\x9f​-‏ -‮⁠-⁤﻿]')
 _LNG = re.compile(r'-?[0-9]{1,3}(?:\.[0-9]{1,6})?')
@@ -163,18 +168,82 @@ def chips(raw, locale, *, forbidden=()):
     return kept[:MAX_CHIPS]
 
 
-def wire_followups(actions):
-    """The `followups` object for a timeline row from stored actions, or None when nothing valid is left.
+# Tap-to-ask questions, chosen by the code from the topic of the traveler's question and reviewed here,
+# not written by the model. The App sends the label back as the next question; it is an ordinary
+# question to Lio, so a chip cannot ask for anything a typed question could not.
+CHIP_TABLE = {
+    'payment': (('付不了怎么办', 'What if payment fails?'), ('哪些地方不能用', "Where can't I use it?"),
+                ('怎么开通地铁乘车码', 'How do I ride the metro?')),
+    'taxi': (('打车怎么付款', 'How do I pay a taxi?'), ('怎么告诉司机去哪', 'How to tell the driver?'),
+             ('机场打车注意什么', 'Airport taxi tips')),
+}
 
-    The stored effect was written by the server; the read re-checks it anyway so a damaged record
-    can never put an unlisted tool or a bad parameter on the wire.
+
+def chips_for(question, locale):
+    """The chip labels for this question's first topic that has any, at most MAX_CHIPS, checked."""
+    index = 0 if locale == 'zh' else 1
+    for topic in topics(question):
+        rows = CHIP_TABLE.get(topic)
+        if rows:
+            return chips([row[index] for row in rows], locale)
+    return []
+
+
+def label_sha256(label):
+    """Exactly the bytes the App sends back as the question text; no normalisation."""
+    return sha256(label.encode('utf-8')).hexdigest()
+
+
+def new_tickets(count):
+    """Fresh one-time tickets: 32 random bytes, 43 characters of base64url."""
+    return [secrets.token_urlsafe(32) for _ in range(count)]
+
+
+def valid_ticket(value):
+    return type(value) is str and _TICKET.fullmatch(value) is not None
+
+
+def followups_payload(actions, chips_with_tickets, *, now=None):
+    """What the worker stores for a row: the buttons, the chips with their tickets and the issue time."""
+    return dict(actions=list(actions), chips=[dict(label=label, ticket=ticket) for label, ticket in chips_with_tickets],
+                issued_at=int(time.time() if now is None else now))
+
+
+def wire_followups(payload, *, now=None):
+    """The `followups` object for a timeline row from a stored payload, or None when nothing valid is left.
+
+    The stored record was written by the server; the read re-checks it anyway so a damaged record can
+    never put an unlisted tool, a bad parameter or a malformed ticket on the wire. A chip keeps its
+    ticket for 24 hours after it was offered; after that it is shown without one (not tappable).
     """
+    if type(payload) is list:
+        payload = dict(actions=payload)   # the first record format: buttons only
+    if type(payload) is not dict or set(payload) - {'actions', 'chips', 'issued_at'}:
+        return None
     kept = []
-    for item in actions if type(actions) is list else []:
+    for item in payload.get('actions') if type(payload.get('actions')) is list else []:
         if (type(item) is not dict or set(item) != {'tool', 'parameters', 'label'} or type(item['label']) is not str
                 or not item['label'] or len(item['label']) > 24 or _CONTROL.search(item['label'])):
             continue
         parameters = checked_parameters(item['tool'], item['parameters'])
         if parameters is not None and parameters == item['parameters']:
             kept.append(dict(tool=item['tool'], parameters=parameters, label=item['label']))
-    return dict(version=VERSION, actions=kept[:MAX_ACTIONS]) if kept else None
+    issued = payload.get('issued_at')
+    fresh = type(issued) is int and 0 <= int(time.time() if now is None else now) - issued < TICKET_SECONDS
+    shown = []
+    for item in payload.get('chips') if type(payload.get('chips')) is list else []:
+        if type(item) is not dict or set(item) - {'label', 'ticket'} or type(item.get('label')) is not str:
+            continue
+        label = item['label']
+        if not label or len(label) > 24 or _CONTROL.search(label) or label != ' '.join(label.split()) or any(c['label'] == label for c in shown):
+            continue
+        chip = dict(label=label)
+        if fresh and valid_ticket(item.get('ticket')):
+            chip['ticket'] = item['ticket']
+        shown.append(chip)
+    result = dict(version=VERSION)
+    if kept[:MAX_ACTIONS]:
+        result['actions'] = kept[:MAX_ACTIONS]
+    if shown[:MAX_CHIPS]:
+        result['chips'] = shown[:MAX_CHIPS]
+    return result if len(result) > 1 else None

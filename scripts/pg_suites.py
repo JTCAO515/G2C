@@ -819,6 +819,15 @@ def group_service_session():
 GROUPS.update(service_session=group_service_session)
 
 
+def group_lio_chip():
+    # #1727 part 2: one-time chip tickets and the daily question-quota exemption on restricted PG.
+    return _fresh_runtime_check('lio_chip',55883,'cj1727_chip',
+        f'/tmp/cj1727-chip-{os.getpid()}','backend/cj_api/tests/lio_chip_pg.py')
+
+
+GROUPS.update(lio_chip=group_lio_chip)
+
+
 def group_service_ops():
     # #1771: operations console (App session + staff roster, cj_ops_console role, staff audit) on restricted PG.
     return _fresh_runtime_check('service_ops',55887,'cj1771_ops',
@@ -852,7 +861,7 @@ MINUTES = {
     'message_source': 0.3, 'hk_cloud_rehearsal': 0.3, 'feasibility_runtime': 0.3,
     'background_limits': 0.3, 'runtime_fixture_boundary': 0.2, 'memory_payload': 0.2,
     'local_budget_exit': 0.2, 'domain_runners': 0.2, 'deploy_recovery': 0.2,
-    'background_jobs': 0.2,
+    'background_jobs': 0.2, 'lio_chip': 0.8,
 }
 DEFAULT_MINUTES = 0.1
 
