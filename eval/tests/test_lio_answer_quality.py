@@ -295,5 +295,23 @@ class SplitFirstParagraph(unittest.TestCase):
         self.assertEqual(PROFILES[ONE_SCREEN], 'LIO-answer-quality-checks.3')
 
 
+def test_followup_cases_for_1728_load_and_score_on_the_last_answer():
+    # W2-2 (#1728): ten follow-ups that refer to the previous Lio reply.
+    from eval.lio_answer_quality import ROOT, load_cases, main, summarize
+    cases = load_cases(ROOT / 'lio_followup_cases.v1.json')
+    assert len(cases) == 10
+    assert sorted(case['locale'] for case in cases) == ['en'] * 5 + ['zh'] * 5
+    assert all(case['scenario'] == 'followup' and len(case['turns']) == 2 and case['forbid'] for case in cases)
+    case = next(case for case in cases if case['id'] == 'followup-chengdu-food-first-zh')
+    good = ('钟水饺最地道的是总府路的老店，春熙路一带也有分店，地铁2号线春熙路站步行几分钟就到。'
+            '中午人多，建议错峰去，点一份红油钟水饺配甜水面，再加一碗赖汤圆。')
+    vague = '你指的是哪一个小吃呢？可以告诉我名字，我再推荐地方，成都的小吃很多，各个街区都有不同的店铺。'
+    rows = {row['id']: row for row in summarize([case], {case['id']: good})['rows']}
+    assert rows[case['id']]['passed']
+    rows = {row['id']: row for row in summarize([case], {case['id']: vague})['rows']}
+    assert not rows[case['id']]['checks']['uses_context']
+    assert main(['cases', '--cases', str(ROOT / 'lio_followup_cases.v1.json')]) == 0
+
+
 if __name__ == '__main__':
     unittest.main()

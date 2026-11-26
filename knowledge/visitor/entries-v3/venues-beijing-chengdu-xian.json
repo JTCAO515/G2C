@@ -15,8 +15,8 @@
       "name_en": "Chengdu Du Fu Thatched Cottage Museum",
       "wikidata_qid": null
     },
-    "text_zh": "杜甫草堂博物馆官方参观页提供实名预约购票，最多提前14天。14天是可购票窗口，不是必须提前14天；本条未核定普通散客是否必须提前预约，应另查馆方最新说明。学生集体免费参观的提前5个工作日规则不适用于普通散客。馆方开放时间页只列每日开闭馆时段、未列每周闭馆日，同站学生集体参观细则把参观安排在周一、周二；四川在线2025年2月采访报道也称该馆全年无休。本条据此记录整馆普通每周无固定闭馆日；重大节假日延时、临时闭馆及局部展厅安排行前仍查馆方通知。",
-    "text_en": "The Du Fu Thatched Cottage Museum visitor page offers real-name ticket booking up to 14 days ahead. This is a maximum booking window, not a 14-day minimum. This entry does not confirm mandatory advance booking for ordinary individual visitors; check current museum guidance. The separate five-working-day rule for free student-group visits does not apply to ordinary individuals. The museum’s opening-hours page lists daily opening times without a weekly closing day, and its student-group rules schedule visits on Mondays and Tuesdays; a February 2025 Sichuan Online report also describes the museum as open throughout the year. This entry records no fixed ordinary weekly closure of the museum as a whole. Check museum notices for extended holiday hours, temporary closures and individual galleries before travelling.",
+    "text_zh": "杜甫草堂博物馆官方参观页提供实名预约购票，最多提前14天。14天是可购票窗口，不是必须提前14天；本条未核定普通散客是否必须提前预约，应另查馆方最新说明。学生集体免费参观的提前5个工作日规则不适用于普通散客。馆方开放时间页只列每日开闭馆时段、未列每周闭馆日，同站学生集体参观细则把参观安排在周一、周二；四川在线2025年2月采访报道称该馆全年无休，但按本库来源分级，新闻报道不能单独支撑闭馆规则，因此每周是否有固定闭馆日本条未核定；重大节假日延时、临时闭馆及局部展厅安排行前查馆方通知。",
+    "text_en": "The Du Fu Thatched Cottage Museum visitor page offers real-name ticket booking up to 14 days ahead. This is a maximum booking window, not a 14-day minimum. This entry does not confirm mandatory advance booking for ordinary individual visitors; check current museum guidance. The separate five-working-day rule for free student-group visits does not apply to ordinary individuals. The museum’s opening-hours page lists daily opening times without a weekly closing day, and its student-group rules schedule visits on Mondays and Tuesdays; a February 2025 Sichuan Online report describes the museum as open throughout the year, but under this catalogue’s source tiers a news report cannot on its own establish a closing rule, so whether there is a fixed weekly closing day is not confirmed here. Check museum notices for extended holiday hours, temporary closures and individual galleries before travelling.",
     "source_urls": [
       "https://www.cddfct.cn/go-c19.htm",
       "https://www.cddfct.cn/go-c18.htm",
@@ -24,8 +24,8 @@
     ],
     "conditions": {
       "reservation_required": null,
-      "closed_weekdays": [],
-      "closed_weekdays_public_holiday_exception": false,
+      "closed_weekdays": null,
+      "closed_weekdays_public_holiday_exception": null,
       "advance_booking_days": 14,
       "advance_booking_rule": "window_max"
     }

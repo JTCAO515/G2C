@@ -6,6 +6,10 @@ from pathlib import Path
 
 REPOSITORY = 'JTCAO515/G2C'
 CI_PATH = '.github/workflows/ci.yml'
+# The external readiness probe (#1720) runs on a schedule against whatever main is at that
+# moment. Its result is about the live HK service, not about the source, so its runs and their
+# check runs are excluded by this exact path (#1830); every other workflow and check still counts.
+PROBE_PATH = '.github/workflows/hk-readiness.yml'
 # The postgres-shard matrix in ci.yml; must change in the same commit as that matrix.
 POSTGRES_SHARDS = 8
 CI_JOBS = frozenset({
@@ -61,6 +65,11 @@ def _runner_misses(github, run, latest):
 def verify_release_ci(github, source):
     workflows = _inventory(github, f'actions/runs?head_sha={source}', 'workflow_runs')
     checks = _inventory(github, f'commits/{source}/check-runs?filter=all', 'check_runs')
+    probes = [run for run in workflows if run['path'] == PROBE_PATH
+              and run['repository']['full_name'] == REPOSITORY and run['event'] in ('schedule', 'workflow_dispatch')]
+    probe_suites = {run['check_suite_id'] for run in probes}
+    workflows = [run for run in workflows if run not in probes]
+    checks = [check for check in checks if (check.get('check_suite') or {}).get('id') not in probe_suites]
     runs = [run for run in workflows if run['path'] == CI_PATH
             and run['event'] == 'push' and run['head_branch'] == 'main'
             and run['repository']['full_name'] == REPOSITORY

@@ -22,6 +22,7 @@ from .lio_national_intake import Intake,NONPERSISTENT,fields_for,fixed_sources_c
 from .lio_planning_grounding import PlanningTurn,standalone_question,NUMBER,_number,PLAN_REQUEST,discussion_reply
 from .local_lio_planning import InvalidDiscussionAnswer,PlanningDetails,register,discuss
 from .rejected_intake_capture import capture_rejected_intake
+from .lio_assistant_context import ASSISTANT_TURNS,assistant_context_enabled,interleave,read_replies
 
 CONTEXT='lio_planning_context.1:'
 CITY='lio_city_resolution.1:'
@@ -296,6 +297,10 @@ class NationalLioPlanning:
         current=PlanningTurn(messages[-1]['content'],datetime.now(ZoneInfo('Asia/Shanghai')).date())
         if standalone_question(current.text):return messages,()
         texts,refs,_=self.context(binding,current,answer_only=True)
+        if assistant_context_enabled():
+            # W2-2 (#1728): replies to originals already referenced; refs are unchanged.
+            replies=read_replies(self.database,binding,[ref['message_id']for ref in refs[-ASSISTANT_TURNS:]])
+            return interleave(messages[:-1],texts,refs,replies),refs
         return [*messages[:-1],*(dict(role='user',content=text) for text in texts)],refs
 
     def execute(self,worker,binding,state,text,original):

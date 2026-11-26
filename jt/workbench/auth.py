@@ -205,7 +205,7 @@ class Auth:
             return token
 
     def _require_session(
-        self, token: str, now: float, *, role: Role | None = None, csrf: str | None = None,
+        self, token: str, now: float, *, role: Role | None = None, csrf: str | None = None, touch: bool = True,
     ) -> Session:
         if not TOKEN.fullmatch(token):
             raise AuthenticationRequired
@@ -220,13 +220,17 @@ class Auth:
             raise AccessDenied
         if csrf is not None and (not TOKEN.fullmatch(csrf) or not hmac.compare_digest(session.csrf, csrf)):
             raise AccessDenied
+        if not touch:
+            return session
         renewed = replace(session, idle_until=min(now + SESSION_IDLE, session.expires_at))
         self.store.save_session(digest, renewed)
         return renewed
 
-    def require_session(self, token: str, *, role: Role | None = None) -> Session:
+    def require_session(
+        self, token: str, *, role: Role | None = None, csrf: str | None = None, touch: bool = True,
+    ) -> Session:
         with self.store.locked():
-            return self._require_session(token, self.monotonic(), role=role)
+            return self._require_session(token, self.monotonic(), role=role, csrf=csrf, touch=touch)
 
     def inspect_audit(self, token: str) -> tuple[Session, tuple[AuditEvent, ...]]:
         with self.store.locked():

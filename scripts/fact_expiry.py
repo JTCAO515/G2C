@@ -3,7 +3,7 @@
 Reads only the review dates of the fact data the App and the server use:
 - knowledge/visitor live entries (entries/, entries-v2/, entries-v3/, names/): expires_on, the day
   readers stop returning the entry;
-- the App's arrival rules: checked_at + review_every_days for the file and each policy, and each
+- the arrival rules (knowledge/arrival, the source of the App and server copies): checked_at + review_every_days for the file and each policy, and each
   policy's valid_until (the official end date; the day after it the rule no longer holds).
 
 Each item gets a due day (the first day it is stale) and its own review period (due day minus the
@@ -33,7 +33,8 @@ WINDOW_DAYS = 14
 # Live visitor knowledge; candidates/, examples/ and the other *-candidates/ folders are not served.
 VISITOR_DIRS = ('knowledge/visitor/entries', 'knowledge/visitor/entries-v2', 'knowledge/visitor/entries-v3',
                 'knowledge/visitor/names')
-ARRIVAL_RULES = 'ios/Modules/CJShell/Sources/CJLioUser/Resources/LioArrivalRules.v1.json'
+# The single source since #1730; the App and server copies are generated from it (knowledge/arrival/sync_copies.py).
+ARRIVAL_RULES = 'knowledge/arrival/arrival-rules.v1.json'
 
 
 class DataError(Exception):
