@@ -51,8 +51,9 @@ uv run --locked python -B -m eval.release_eval.report compare OLD_RUN.json NEW_R
 
 统筹 2026-11-26 按 JT 预授权决定：
 
-- 发布后挂点：由 CI 评测线之后在 `deploy/hk/application_release.py` 加可选步骤（默认关），等 S 线 #1808 部署后再做。
+- 发布后挂点（已做）：`deploy/hk/application_release.py` 在 `CUTOVER_PASS` 之后，只有环境变量 `G2C_RELEASE_EVAL=1`（逐字等于 1）时才调用 `release_eval`；不设置时发布流程逐字不变。它在发布完成后运行，任何问题都只打印、不影响发布。发送端接入前，它只在服务器 `release-eval/<源提交>.json` 写一条 `UNRUN / EVAL_SENDER_NOT_CONNECTED` 记录，并打印 `RELEASE_EVAL` 一行。
+- 发送端：不新造绕过 App 发送许可的发送端（统筹 2026-11-26）。由 S 线说明当时 22 题的跑法能否入库；不能的话，倾向在 worker 侧做服务端内部的评测发送端，只接受仓库固定题集、只用评测专用账号、走现有发送许可，归 S 线，按红线审查。
 - 账号：先用 `deploy/hk` app_smoke 现有凭据，之后换「评测」类专用码。凭据只放服务器配置或 GitHub secret，不入库。
 - 费用：每月上限 ¥50；单次估算超过 ¥20 先报统筹；第一次真跑只跑 5 题 × 1 次。
 
-仍待做：香港发题适配层（真实 Sender）、挂点实现和第一次真跑。真跑属于花钱停点，每次 `--real` 先问统筹。
+仍待做：香港发题适配层（真实 Sender，见上）、挂点接上跑批与对比报告、第一次真跑。真跑属于花钱停点，每次 `--real` 先问统筹。
