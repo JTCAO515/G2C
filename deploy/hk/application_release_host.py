@@ -16,6 +16,7 @@ from urllib.request import Request, urlopen
 if __package__:
     from .application_release import (
         REPOSITORY,
+        release_eval,
         require_release_window,
         verify_release_ci,
         verify_release_range,
@@ -26,6 +27,7 @@ else:
     # and invokes the host driver with the existing script/gate interface.
     from application_release import (
         REPOSITORY,
+        release_eval,
         require_release_window,
         verify_release_ci,
         verify_release_range,
@@ -642,6 +644,9 @@ def main(argv=None):
             command([*compose, "stop", "-t", "20", "api", "worker"])
             raise
         raise
+    # #1761: reached only after CUTOVER_PASS (every failure above raises). Off unless exactly "1".
+    if os.environ.get("G2C_RELEASE_EVAL") == "1":
+        release_eval(ROOT, source, previous_source, datetime.now(timezone.utc))
 
 
 if __name__ == "__main__":

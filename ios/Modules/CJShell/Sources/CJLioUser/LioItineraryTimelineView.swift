@@ -12,6 +12,8 @@ struct LioItineraryTimelineView: View {
         var saved = false
         var adjustDay: (@MainActor (Int) -> Void)?
         var askLio: (@MainActor () -> Void)?
+        /// Called after a place's button opened a tool (#1740), for example to close the sheet this page is in.
+        var openedTool: (@MainActor () -> Void)?
     }
 
     let itinerary: LioRichItinerary
@@ -180,13 +182,9 @@ struct LioItineraryTimelineView: View {
                 if let tip = stop.tip {
                     Label(tip, systemImage: "lightbulb").font(.footnote).foregroundStyle(LioTheme.inkSecondary)
                 }
-                if stop.place.driverAddress != nil {
-                    HStack(spacing: LioTheme.Spacing.xs) {
-                        chip(language.text("Taxi", "打车"), "car.fill")
-                        chip(language.text("Map", "导航"), "arrow.triangle.turn.up.right.diamond")
-                        chip(language.text("Driver", "司机卡"), "character.bubble")
-                    }
-                }
+                // #1740: taxi, driver card, directions and booking, each only when it works for this place.
+                LioPlaceActionRow(stop: stop, language: language, identifierPrefix: "lio.plan",
+                                  openedTool: actions.openedTool)
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -202,15 +200,6 @@ struct LioItineraryTimelineView: View {
             Label(leg.description(language), systemImage: leg.symbol)
                 .font(.footnote).foregroundStyle(LioTheme.inkSecondary)
         }
-    }
-
-    private func chip(_ title: String, _ symbol: String) -> some View {
-        Label(title, systemImage: symbol)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(LioTheme.vermilion)
-            .padding(.horizontal, 8).padding(.vertical, 5)
-            .background(LioTheme.vermilion.opacity(0.08), in: Capsule())
-            .lineLimit(1)
     }
 
     @ViewBuilder private func dayActions(_ day: LioRichItinerary.Day) -> some View {

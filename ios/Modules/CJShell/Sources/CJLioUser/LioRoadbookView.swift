@@ -341,7 +341,6 @@ struct LioRoadbookView: View {
 
     private func stopCard(_ entry: LioRoadbookEntry) -> some View {
         let stop = entry.stop
-        let destination = taxiEntry == nil ? nil : LioRoadbook.taxiDestination(stop.place)
         let address = LioRoadbook.driverAddress(stop.place)
         return VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
             HStack(alignment: .top, spacing: LioTheme.Spacing.sm) {
@@ -376,24 +375,8 @@ struct LioRoadbookView: View {
             if let detail = book.details[stop.id] {
                 detailSection(detail, stopID: stop.id)
             }
-            if destination != nil || address != nil {
-                HStack(spacing: LioTheme.Spacing.xs) {
-                    if let destination {
-                        Button { taxiPlace = destination } label: {
-                            Label(language.text("Taxi here", "打车去这里"), systemImage: "car.fill")
-                        }
-                        .buttonStyle(LioSecondaryButtonStyle(fullWidth: false))
-                        .accessibilityIdentifier("lio.roadbook.taxi.\(stop.id)")
-                    }
-                    if address != nil {
-                        Button { driverPlace = stop.place } label: {
-                            Label(language.text("Show driver", "给司机看"), systemImage: "person.text.rectangle")
-                        }
-                        .buttonStyle(LioSecondaryButtonStyle(fullWidth: false))
-                        .accessibilityIdentifier("lio.roadbook.driver.\(stop.id)")
-                    }
-                }
-            }
+            // #1740: taxi, driver card, directions and booking through the shared row and the tool router.
+            LioPlaceActionRow(stop: stop, language: language, identifierPrefix: "lio.roadbook")
         }
         .fixedSize(horizontal: false, vertical: true)
         .padding(LioTheme.Spacing.md)
