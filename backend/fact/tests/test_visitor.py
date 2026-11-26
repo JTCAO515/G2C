@@ -49,9 +49,11 @@ class VisitorFacts(unittest.TestCase):
             self.assertEqual(result['status'],'matched')
             self.assertEqual(result['data_origin'],'maintainer_summary')
             self.assertEqual(result['request_ref'],'original-ref')
-            self.assertEqual([v['id'] for v in result['entries']],['visitor.mainland.payment-options'])
+            self.assertEqual([v['id'] for v in result['entries']],['visitor.mainland.currency-exchange',
+                'visitor.mainland.mobile-pay-foreign-card','visitor.mainland.payment-options'])
             expected=json.loads((ROOT/'knowledge/visitor/entries/mainland-basics.json').read_text())[0]
-            self.assertEqual(result['entries'][0],expected)
+            self.assertEqual(expected['id'],'visitor.mainland.payment-options')
+            self.assertEqual(result['entries'][2],expected)
             self.assertNotIn('original_bytes',result);self.assertNotIn('original_value',result)
 
     def test_unknown_city_is_no_match_with_no_default(self):

@@ -46,10 +46,11 @@
 | 21 | Jotform Inc. | 服务端 API（由 Vercel 函数调用） | `api.jotform.com`（美国；Vercel 未设 `JOTFORM_API_BASE`，JT 2026-11-26 核对） | 官网「抢先体验」申请 | **称呼、邮箱**、得知渠道、所在国家、计划出行时间、目的地（含自填）、需求、备注 | `web/api/early-access.js:7-9, 19, 53-65, 135-160` |
 | 22 | Spacemail（Spaceship 旗下邮箱服务） | 邮箱 `hello@go2china.space`（MX `mx1/mx2.spacemail.com`，SPF `include:spf.spacemail.com`） | `spacemail.com` | 用户来信；人工回复抢先体验与（开放后）官网服务请求 | **邮箱地址**与邮件内容；官网服务请求开放后可能含时间、地点、电话 | DNS 记录（2026-11-26 查询）；JT 2026-11-26 定回复用该邮箱 |
 | — | Airalo | 无 | — | eSIM 预览（无链接） | 无 | `LioESIMPreviewView.swift:64-70` |
+| — | 阿里云邮件推送（DirectMail，新加坡） | 服务端 API | 新加坡（ap-southeast-1）；发信域名 `mail.go2china.space` 已建、未验证 | 59 正式登录的邮箱验证码（[#1883](https://github.com/JTCAO515/G2C/issues/1883)） | **邮箱地址**、验证码 | **未上线（#1883，59）**；按跨境传输处理（邮件推送没有香港地域）；地域由 JT 本人 2026-11-26 确认（此前转述的「杭州」作废）。上线前同 PR 补代码依据，并在隐私政策接收方表与跨境一节加入（与 Apple、Google 登录一起） |
 
 ## 2. 定位字段去向
 
-### 2.1 现状（`27388ea7`）
+### 2.1 现状（`27388ea7`；香港现网仍是 `4f81cad4`，S 线 2026-11-26 只读核对）
 
 - App 读设备定位的代码只有一处：`ios/Modules/CJShell/Sources/CJLioUser/LioTaxiPickupLocation.swift`（`requestWhenInUseAuthorization` + 一次性 `requestLocation`，WGS-84 原始精度，`:15-46`）。**打车**和**附近**两个功能复用它。
 - **打车**：「当前位置」起点和搜索偏置 `near` → 香港 `/v1/tools/taxi/*` → 服务端转 GCJ-02、保留 6 位小数（约 0.1 米）、不降精度 → **滴滴 MCP**；滴滴返回的 `v.didi.cn` 叫车链接也带这组坐标，App 交给滴滴 App 打开。服务端不落盘、不写日志（`backend/cj_api/taxi_tools.py:252-261, 356-415`）。
@@ -63,7 +64,7 @@
 
 #225 正式意见写明首轮「将 GPS 或由 GPS 推出的可关联位置发给香港后端、北京百炼或高德，当前均未放行」。上面两条 GPS 流超出这一边界；对内部名单属于 M4 授权范围。对外部开放前**至少**须完成 [#1832](https://github.com/JTCAO515/G2C/issues/1832)、[#1833](https://github.com/JTCAO515/G2C/issues/1833)、[#1748](https://github.com/JTCAO515/G2C/issues/1748)；这三张票是必要条件，不是放行结论。
 
-统筹 2026-11-26 按 JT 预授权决定的目标边界（由 #1833、#1748 落地，落地后本节改写为现状；三张票都落地前，下表写法与实际行为不一致）：
+统筹 2026-11-26 按 JT 预授权决定的目标边界（#1833 的代码已由 #1875 合并到 main，c5da5dab，但**尚未部署到香港**：S 线 2026-11-26 只读核对现网 `api-1`、`worker-1` 仍为 `4f81cad4`，不含 c5da5dab。部署并在 #1833 贴读回证据后，本节改写为现状；在此之前，下表写法与实际行为不一致）：
 
 | 流向 | 目标边界 |
 |---|---|

@@ -218,7 +218,7 @@ enum LioToolRegistry {
                      gate: .availability { $0.roadbook }) { context, _ in
             #if os(iOS)
             LioRoadbookLibraryView(language: context.language, store: context.roadbookStore,
-                                   candidates: context.roadbookCandidates)
+                                   candidates: context.roadbookCandidates, savedPlans: context.savedPlans)
             #endif
         },
         LioToolEntry(.transport, symbol: "train.side.front.car",
