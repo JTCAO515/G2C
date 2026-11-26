@@ -190,7 +190,8 @@ private final class LioSignedChatSessions {
     private func conversationService(_ destination: LioTimelineWire.V2Destination,
                          didCreate: @escaping @Sendable (String) async -> Void) -> LioService {
         let client = client, notes = notes
-        return LioService.signedConversation(client, destination: destination, version: version, readFailed: { error in
+        return LioService.signedConversation(client, destination: destination, version: version,
+                                             answerLayout: LioAnswerLayoutFeature.enabledInBuild, readFailed: { error in
             let observation = client.lastObservation.flatMap { $0.kind == .timeline ? $0 : nil }
             notes.record(error: error, stage: .timeline, observation: observation)
         }, didCreate: didCreate)

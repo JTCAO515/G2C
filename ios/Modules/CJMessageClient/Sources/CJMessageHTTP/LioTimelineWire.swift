@@ -243,7 +243,32 @@ public enum LioTimelineWire {
         public let sources: [Source]
         public let trip: SavedTrip?
         public let memoryTags: [LioMemoryWire.Tag]
+        /// LIO-answer-followups.1 (#1727), only on a v2 read that declared it; nil otherwise.
+        public let layout: AnswerLayout?
+        /// Fixed buttons under a finished answer; empty unless the server sent valid ones for a split answer.
+        public let followups: [Followup]
+
+        public init(id: String, question: String, answer: String, state: State, activity: Activity?, sources: [Source],
+                    trip: SavedTrip?, memoryTags: [LioMemoryWire.Tag], layout: AnswerLayout? = nil, followups: [Followup] = []) {
+            self.id = id; self.question = question; self.answer = answer; self.state = state; self.activity = activity
+            self.sources = sources; self.trip = trip; self.memoryTags = memoryTags; self.layout = layout; self.followups = followups
+        }
     }
+
+    /// How the server says an answer is shown: `split` means two bubbles cut at the first blank line.
+    public enum AnswerLayout: String, Sendable, Equatable { case split, single }
+
+    /// One fixed button the server chose from the App's tool registry: a tool, its string parameters and its label.
+    public struct Followup: Sendable, Equatable {
+        public let tool: String
+        public let parameters: [String: String]
+        public let label: String
+        public init(tool: String, parameters: [String: String], label: String) {
+            self.tool = tool; self.parameters = parameters; self.label = label
+        }
+    }
+
+    public static let answerFollowupsVersion = "LIO-answer-followups.1"
 
     public struct Page: Sendable, Equatable {
         public let conversationID: String?
@@ -311,8 +336,45 @@ public enum LioTimelineWire {
         guard tags.allSatisfy(\.isValid), Set(tags.map(\.id)).count == tags.count else {
             throw MessageHTTPFailure.invalidResponse
         }
+        let layout = wire.layout.flatMap(AnswerLayout.init(rawValue:))
+        // A layout the App does not know is read as no layout: the row is still shown as before.
+        let followups = (state == .completed && layout == .split) ? validFollowups(wire.followups) : []
         return Message(id: wire.messageID, question: wire.text, answer: wire.answer, state: state,
-                       activity: wire.activity, sources: sources, trip: trip, memoryTags: tags)
+                       activity: wire.activity, sources: sources, trip: trip, memoryTags: tags,
+                       layout: layout, followups: followups)
+    }
+
+    /// Buttons that do not pass the checks are dropped as a set: a damaged list never puts a partial or
+    /// unlisted button on screen, and never fails the page.
+    private static func validFollowups(_ wire: Snapshot.Row.Followups?) -> [Followup] {
+        guard let wire, wire.version == answerFollowupsVersion, (1...2).contains(wire.actions.count) else { return [] }
+        var result: [Followup] = []
+        for action in wire.actions {
+            guard validToken(action.tool, limit: 64), validText(action.label, limit: 60),
+                  action.parameters.count <= 8,
+                  action.parameters.allSatisfy({ validToken($0.key, limit: 64) && validText($0.value, limit: 200) }),
+                  (try? JSONSerialization.data(withJSONObject: action.parameters).count).map({ $0 <= 600 }) == true else { return [] }
+            result.append(Followup(tool: action.tool, parameters: action.parameters, label: action.label))
+        }
+        return result
+    }
+
+    private static func validToken(_ value: String, limit: Int) -> Bool {
+        !value.isEmpty && value.utf8.count <= limit
+            && value.utf8.allSatisfy { (48...57).contains($0) || (65...90).contains($0) || (97...122).contains($0) || $0 == 45 || $0 == 95 }
+    }
+
+    /// Non-empty after trimming, within the limit, and without control, separator, zero-width or bidirectional
+    /// format characters (the contract's rule for values and labels).
+    private static func validText(_ value: String, limit: Int) -> Bool {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed == value, !value.isEmpty, value.count <= limit, value.utf8.count <= limit * 4 else { return false }
+        return value.unicodeScalars.allSatisfy { scalar in
+            switch scalar.properties.generalCategory {
+            case .control, .format, .lineSeparator, .paragraphSeparator, .surrogate, .privateUse, .unassigned: return false
+            default: return scalar != "\u{2028}" && scalar != "\u{2029}"
+            }
+        }
     }
 
     static func validSavedTrip(_ trip: SavedTrip) -> Bool {
@@ -362,7 +424,31 @@ public enum LioTimelineWire {
             let trip: SavedTrip?
             let memory: Memory?
             struct Memory: Decodable { let tags: [LioMemoryWire.Tag] }
-            enum CodingKeys: String, CodingKey { case messageID = "message_id", text, answer, status, failure, activity, sources, trip, memory }
+            let layout: String?
+            let followups: Followups?
+            struct Followups: Decodable {
+                let version: String
+                let actions: [Action]
+                struct Action: Decodable {
+                    let tool: String
+                    let parameters: [String: String]
+                    let label: String
+                }
+            }
+            enum CodingKeys: String, CodingKey { case messageID = "message_id", text, answer, status, failure, activity, sources, trip, memory, layout, followups }
+            init(from decoder: Decoder) throws {
+                let c = try decoder.container(keyedBy: CodingKeys.self)
+                messageID = try c.decode(String.self, forKey: .messageID); text = try c.decode(String.self, forKey: .text)
+                answer = try c.decode(String.self, forKey: .answer); status = try c.decode(Status.self, forKey: .status)
+                failure = try c.decodeIfPresent(Failure.self, forKey: .failure)
+                activity = try c.decodeIfPresent(Activity.self, forKey: .activity)
+                sources = try c.decode([Citation].self, forKey: .sources)
+                trip = try c.decodeIfPresent(SavedTrip.self, forKey: .trip)
+                memory = try c.decodeIfPresent(Memory.self, forKey: .memory)
+                layout = try c.decodeIfPresent(String.self, forKey: .layout)
+                // The buttons are optional garnish: a malformed list reads as none and never fails the page.
+                followups = (try? c.decodeIfPresent(Followups.self, forKey: .followups)) ?? nil
+            }
         }
         let version: String
         let conversationID: String?
