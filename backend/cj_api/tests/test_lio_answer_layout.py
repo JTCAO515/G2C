@@ -193,5 +193,43 @@ class Chips(unittest.TestCase):
         self.assertNotEqual(followups.label_sha256('Pay'), followups.label_sha256('pay'))
 
 
+class TaxiDestination(unittest.TestCase):
+    PLACE = dict(name_zh='故宫博物院', address_zh=dict(state='present', value='景山前街4号'),
+                 coordinate=dict(state='present', value=dict(raw='116.397026,39.918058', longitude='116.397026', latitude='39.918058', crs='GCJ-02')),
+                 official_name_en=dict(state='present', value='The Palace Museum'))
+
+    def result(self, *places, routes=()):
+        return dict(places=list(places), routes=list(routes), provider_count=len(places))
+
+    def test_exactly_one_place_with_a_coordinate_is_the_destination(self):
+        from cj_api.real_services import _taxi_destination
+        found = _taxi_destination(self.result(self.PLACE))
+        self.assertEqual((found.name_zh, found.location, found.address_zh, found.name_en),
+                         ('故宫博物院', '116.397026,39.918058', '景山前街4号', 'The Palace Museum'))
+        absent = dict(self.PLACE, address_zh=dict(state='absent', value=None), official_name_en=dict(state='absent', value=None))
+        found = _taxi_destination(self.result(absent))
+        self.assertEqual((found.address_zh, found.name_en), (None, None))
+
+    def test_several_places_routes_or_no_coordinate_give_no_destination(self):
+        from cj_api.real_services import _taxi_destination
+        no_point = dict(self.PLACE, coordinate=dict(state='absent', value=None))
+        cut_off = dict(self.result(self.PLACE), provider_count=12)        # page_size 1 of a longer list
+        unknown_total = dict(places=[self.PLACE], routes=[])
+        for data in (self.result(), self.result(self.PLACE, self.PLACE), self.result(no_point), self.result(self.PLACE, routes=[{}]),
+                     cut_off, unknown_total, dict(places='x', routes=[]), dict(routes=[]), {}):
+            with self.subTest(data=str(data)[:40]):
+                self.assertIsNone(_taxi_destination(data))
+
+    def test_the_destination_feeds_the_taxi_button_through_the_same_checks(self):
+        from cj_api.real_services import _taxi_destination
+        action, = followups.allowed_actions('怎么打车去故宫', 'zh', destination=_taxi_destination(self.result(self.PLACE)))
+        self.assertEqual(action.label, '打车去这里')
+        self.assertEqual(action.parameters, {'destination': '故宫博物院', 'lat': '39.918058', 'lng': '116.397026',
+                                             'address': '景山前街4号', 'destinationEN': 'The Palace Museum'})
+        outside = dict(self.PLACE, coordinate=dict(state='present', value=dict(raw='2.0,39.9', longitude='2.0', latitude='39.9', crs='GCJ-02')))
+        action, = followups.allowed_actions('怎么打车去故宫', 'zh', destination=_taxi_destination(self.result(outside)))
+        self.assertEqual((action.label, action.parameters), ('打车', {}))
+
+
 if __name__ == '__main__':
     unittest.main()

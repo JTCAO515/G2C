@@ -220,6 +220,22 @@ class LioLayout:
 
 
 @dataclass(frozen=True)
+class LioDestination:
+    """The one place a map tool returned in this answer (#1727): data for a taxi button, never persisted
+    by itself. Only the worker's answer path asks for it; names and coordinates are the tool's, not the model's."""
+    name_zh: str
+    location: str  # "lng,lat" GCJ-02
+    address_zh: str | None = None
+    name_en: str | None = None
+
+
+@dataclass(frozen=True)
+class LioDestinationUnclear:
+    """A map result in this answer that is not exactly one place (several, a route, no coordinate, a cut-off
+    list): the answer then has no taxi destination, whatever other map results said (#1727)."""
+
+
+@dataclass(frozen=True)
 class LioFollowups:
     """The answer's fixed action buttons and tap-to-ask chips (#1727); the payload is built by `lio_followups`."""
     payload: dict
