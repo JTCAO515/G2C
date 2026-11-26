@@ -1,0 +1,130 @@
+{
+  "$defs": {
+    "action": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "parameters": {
+              "additionalProperties": false,
+              "maxProperties": 0,
+              "type": "object"
+            },
+            "tool": {
+              "const": "payment-guide"
+            }
+          }
+        },
+        {
+          "properties": {
+            "parameters": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "maxProperties": 0,
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "address": {
+                      "$ref": "#/$defs/text"
+                    },
+                    "destination": {
+                      "$ref": "#/$defs/text"
+                    },
+                    "destinationEN": {
+                      "$ref": "#/$defs/text"
+                    },
+                    "lat": {
+                      "pattern": "^-?[0-9]{1,2}(\\.[0-9]{1,6})?$",
+                      "type": "string"
+                    },
+                    "lng": {
+                      "pattern": "^-?[0-9]{1,3}(\\.[0-9]{1,6})?$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "destination",
+                    "lat",
+                    "lng"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "tool": {
+              "const": "taxi"
+            }
+          }
+        }
+      ],
+      "properties": {
+        "label": {
+          "maxLength": 24,
+          "minLength": 1,
+          "type": "string"
+        },
+        "parameters": {
+          "maxProperties": 8,
+          "type": "object"
+        },
+        "tool": {
+          "enum": [
+            "payment-guide",
+            "taxi"
+          ]
+        }
+      },
+      "required": [
+        "tool",
+        "parameters",
+        "label"
+      ],
+      "type": "object"
+    },
+    "followups": {
+      "additionalProperties": false,
+      "properties": {
+        "actions": {
+          "items": {
+            "$ref": "#/$defs/action"
+          },
+          "maxItems": 2,
+          "minItems": 1,
+          "type": "array"
+        },
+        "version": {
+          "const": "LIO-answer-followups.1"
+        }
+      },
+      "required": [
+        "version",
+        "actions"
+      ],
+      "type": "object"
+    },
+    "text": {
+      "maxLength": 200,
+      "minLength": 1,
+      "pattern": "^[^\\u0000-\\u001f\\u007f\\u2028\\u2029]*$",
+      "type": "string"
+    }
+  },
+  "$id": "LIO-answer-followups.1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "followups": {
+      "$ref": "#/$defs/followups"
+    },
+    "layout": {
+      "enum": [
+        "split",
+        "single"
+      ]
+    }
+  },
+  "title": "Additive keys on a LIO-timeline.2 message row for a poll that declared LIO-answer-followups.1",
+  "type": "object"
+}

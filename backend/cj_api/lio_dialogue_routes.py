@@ -8,11 +8,13 @@ from starlette.concurrency import run_in_threadpool
 
 from cj_message.demo_dialogue import LIO_CHAT_PATTERN, LIO_VERSION, LIO_VERSION_V2, LIO_VERSION_V3, message_id
 from cj_message.domain import InvalidInput
-from cj_message.lio_context import SOURCE_EFFECT, TOOL_EFFECT, UNSETTLED_VISIBLE_ANSWER, UNSAVED_PLAN_ANSWER, answer_locale, display_answer, self_description
+from cj_message.lio_context import FOLLOWUPS_EFFECT, LAYOUT_EFFECT, SOURCE_EFFECT, TOOL_EFFECT, UNSETTLED_VISIBLE_ANSWER, UNSAVED_PLAN_ANSWER, answer_locale, display_answer, self_description
 from cj_message.lio_plan_needs import BOUND_EFFECT, EDIT_BOUND_EFFECT
 from cj_run.core import Binding
 from cj_agent.run_timing import accepted
 from cj_run.display_snapshot import SnapshotTooLarge
+
+from cj_message.lio_followups import VERSION as FOLLOWUPS_VERSION, wire_followups
 
 from .local_lio_planning import ITINERARY_PREVIEW_VERSION,read_itinerary_preview
 from .lio_weather import CITY_EFFECT,reference as city_weather_reference
@@ -33,7 +35,7 @@ def _failure(status):
     return _json({'failure': 'quota' if status == 429 else 'unavailable'}, status)
 
 
-def _message(item, state, *, expired=False, trip=None, memory=None, identity=True):
+def _message(item, state, *, expired=False, trip=None, memory=None, identity=True, declared=False):
     failure = None
     locale = answer_locale(item.text, item.locale)
     if trip is not None:
@@ -54,6 +56,8 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
         failure = ('quota' if state.budget_exhausted_stage != 'none'
                    else 'unavailable')
     sources = []
+    layout = None
+    followups = None
     amap_weather = False
     weather_city = None
     activity = None
@@ -64,6 +68,13 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
                 sources.append(dict(title=citation['title'], url=citation['url'],
                                     observed_at=citation['observed_at']))
                 amap_weather |= citation['title'] in ('高德天气', 'Amap Weather') and citation['url'] is None
+            elif effect.startswith(LAYOUT_EFFECT):
+                layout = effect.removeprefix(LAYOUT_EFFECT)
+            elif effect.startswith(FOLLOWUPS_EFFECT):
+                try:
+                    followups = wire_followups(json.loads(effect.removeprefix(FOLLOWUPS_EFFECT)))
+                except ValueError:
+                    followups = None
             elif effect.startswith(CITY_EFFECT):
                 weather_city = json.loads(effect.removeprefix(CITY_EFFECT))
             elif status == 'answering' and effect.startswith(TOOL_EFFECT):
@@ -88,11 +99,20 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
         if status == 'completed' and trip is None:
             status, failure = 'failed', 'unavailable'
         answer = ''
-    return dict(message_id=item.message_id, text=item.text, answer=answer, status=status,
-                failure=failure, activity=activity, sources=sources, trip=trip, memory=memory)
+    row = dict(message_id=item.message_id, text=item.text, answer=answer, status=status,
+               failure=failure, activity=activity, sources=sources, trip=trip, memory=memory)
+    if declared:
+        # W2-1 (#1727), only for a poll that declared LIO-answer-followups.1. The layout is committed
+        # before an answer's first text, so any row with text or a final status carries the same value.
+        layout = layout if layout in ('split', 'single') else 'single'
+        if answer or status in ('completed', 'failed'):
+            row['layout'] = layout
+        if status == 'completed' and answer and followups is not None and trip is None and layout == 'split':
+            row['followups'] = followups
+    return row
 
 
-def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversation_id, before, multiple=False,calendar=False):
+def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversation_id, before, multiple=False,calendar=False,declared=False):
     def compose(context, page, bindings, snapshots):
         messages = []
         if page.messages:
@@ -110,7 +130,7 @@ def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversat
                         trip = trip_cards.read(token, binding)
                 memory = (memory_cards.project(context, token, item.message_id, binding.run_id)
                           if memory_cards is not None and state is not None and state.status == 'completed' else None)
-                messages.append(_message(item, state, expired=expired, trip=trip, memory=memory))
+                messages.append(_message(item, state, expired=expired, trip=trip, memory=memory, declared=declared))
         version = 'LIO-timeline.3' if calendar else 'LIO-timeline.2' if multiple else TIMELINE_VERSION
         response = _json(dict(version=version, conversation_id=page.conversation_id,
                               messages=messages, next_before=page.next_before))
@@ -190,7 +210,10 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
         if token is None:
             return _failure(401)
         try:
-            params = _query(request, (), ('conversation_id', 'before'))
+            params = _query(request, (), ('conversation_id', 'before', 'accepts'))
+            # W2-1 (#1727): only the v2 conversation timeline knows this declaration; any other value is refused.
+            if 'accepts' in params and (not multiple or calendar or params['accepts'] != FOLLOWUPS_VERSION):
+                raise ValueError('unsupported accepts')
             conversation = params.get('conversation_id')
             if conversation is not None and not LIO_CHAT_PATTERN.fullmatch(conversation):
                 raise InvalidInput('invalid Lio conversation identifier')
@@ -200,7 +223,7 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
         try:
             return await run_in_threadpool(_timeline, calendar_boundary if calendar else boundary, resolve_runs,
                                            calendar_cards if calendar else trip_cards, memory_cards, token,
-                                           conversation, before, multiple,calendar)
+                                           conversation, before, multiple,calendar, 'accepts' in params)
         except Exception as exc:
             return _failure(message_failure(request, exc, False).status_code)
 
