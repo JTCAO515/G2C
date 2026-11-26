@@ -356,8 +356,10 @@ class TaxiService:
             raise PluginError(422, 'out_of_service_area')
         params = dict(keywords=request.query, city=request.city)
         if request.near is not None:
+            # A search bias, not a pickup point: ~100 m is enough (#1833). Origin and
+            # destination keep full precision for the pickup and are used only for that call.
             lng, lat = _gcj_strings(request.near)
-            params['location'] = f'{lng},{lat}'
+            params['location'] = f'{float(lng):.3f},{float(lat):.3f}'
         reserve('didi:maps_textsearch', DAILY_LIMIT)
         result = self.provider.call(DiDiTool.TEXT_SEARCH, params, retry=False)
         items = _search_rows(result, request.city)

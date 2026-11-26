@@ -266,6 +266,11 @@ class SupabaseTestDatabase(LocalDatabase):
                                         min_size=0,max_size=pool_size,max_waiting=32,timeout=10,
                                         max_lifetime=900,max_idle=60,open=True,name='hk-beta-runtime')
 
+    @property
+    def pool_max_size(self):
+        """The runtime pool's connection limit, or None without a pool (W4-6 #1750 concurrency guard)."""
+        return None if self._pool is None else self._pool.max_size
+
     def __del__(self):
         self.close()
 

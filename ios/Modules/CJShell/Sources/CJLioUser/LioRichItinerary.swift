@@ -2,7 +2,7 @@ import Foundation
 
 /// Validated display values, not a structured decoder or a protected read/write source.
 /// The eventual protected read maps original structured.4 values into this view model.
-struct LioRichItinerary: Sendable {
+struct LioRichItinerary: Equatable, Sendable {
     enum Kind: String, CaseIterable, Sendable {
         case sight, meal, hotel, transport, freeTime = "free_time"
         /// A summary card (#1453) names places without a kind; it is shown without a kind label.
@@ -28,7 +28,7 @@ struct LioRichItinerary: Sendable {
             }
         }
     }
-    struct Place: Sendable {
+    struct Place: Equatable, Sendable {
         let nameZH: String
         let nameEN: String
         let address: String?
@@ -40,7 +40,7 @@ struct LioRichItinerary: Sendable {
         var driverAddress: String? { matched ? address : nil }
         var mapPoint: LioItinerary.Point? { matched ? point : nil }
     }
-    struct Stop: Identifiable, Sendable {
+    struct Stop: Identifiable, Equatable, Sendable {
         let id: String
         let kind: Kind
         let text: String
@@ -55,9 +55,9 @@ struct LioRichItinerary: Sendable {
             self.place = place; self.note = note; self.tip = tip; self.fixed = fixed
         }
     }
-    struct Leg: Sendable {
+    struct Leg: Equatable, Sendable {
         enum Mode: String, Sendable { case walking, transit, taxi }
-        struct Estimate: Sendable {
+        struct Estimate: Equatable, Sendable {
             let mode: Mode
             let seconds: Double
             let metres: Double
@@ -83,7 +83,7 @@ struct LioRichItinerary: Sendable {
             switch estimate?.mode { case .walking: "figure.walk"; case .transit: "tram"; case .taxi: "car"; case nil: "arrow.down" }
         }
     }
-    struct Day: Identifiable, Sendable {
+    struct Day: Identifiable, Equatable, Sendable {
         let number: Int
         let date: String?
         let theme: String
@@ -103,7 +103,7 @@ struct LioRichItinerary: Sendable {
             return legs.first { $0.fromID == stops[index].id && $0.toID == stops[index + 1].id }
         }
     }
-    struct Hotel: Identifiable, Sendable {
+    struct Hotel: Identifiable, Equatable, Sendable {
         let id: String
         let place: Place
         let note: String?
