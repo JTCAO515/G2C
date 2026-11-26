@@ -165,7 +165,8 @@ enum LioRoadbookFeature {
 }
 
 extension LioRoadbook {
-    /// A plan saved from the chat (#1547): names and times only, so no taxi, driver card or map is offered.
+    /// A saved trip (#1547 / #1723), from its stored itinerary: a chat plan has names and times only (no taxi,
+    /// driver card or map); a saved popular route keeps its checked places.
     /// One roadbook per saved version, so a kept copy of an older version stays beside a changed plan.
     init(savedPlan plan: LioPlanSummary, createdAt: Date = .now) {
         self.init(id: "saved.\(plan.tripID).v\(plan.tripVersion)", source: .saved, city: nil,

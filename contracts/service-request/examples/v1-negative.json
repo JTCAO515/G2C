@@ -1,0 +1,565 @@
+{
+  "submissions": [
+    {
+      "reason": "caller owner",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-12-10",
+        "time_window": "half_day_am",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "Ms. Example",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        },
+        "owner": "x"
+      }
+    },
+    {
+      "reason": "caller state",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-12-10",
+        "time_window": "half_day_am",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "Ms. Example",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        },
+        "state": "completed"
+      }
+    },
+    {
+      "reason": "other service",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "shanghai_escort",
+        "service_date": "2026-12-10",
+        "time_window": "half_day_am",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "Ms. Example",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
+    },
+    {
+      "reason": "bad date",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-13-01",
+        "time_window": "half_day_am",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "Ms. Example",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
+    },
+    {
+      "reason": "bad window",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-12-10",
+        "time_window": "evening",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "Ms. Example",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
+    },
+    {
+      "reason": "blank venue",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-12-10",
+        "time_window": "half_day_am",
+        "venue": "  ",
+        "customer_name": "Ms. Example",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
+    },
+    {
+      "reason": "blank name",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-12-10",
+        "time_window": "half_day_am",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
+    },
+    {
+      "reason": "phone not E.164",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-12-10",
+        "time_window": "half_day_am",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "Ms. Example",
+        "contact_phone": "13800000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
+    },
+    {
+      "reason": "too long purpose",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-12-10",
+        "time_window": "half_day_am",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "Ms. Example",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
+    },
+    {
+      "reason": "counterpart phone",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-12-10",
+        "time_window": "half_day_am",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "Ms. Example",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "A",
+          "name": "B",
+          "phone": "+861"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
+    },
+    {
+      "reason": "counterpart empty",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-12-10",
+        "time_window": "half_day_am",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "Ms. Example",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "",
+          "name": " "
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
+    },
+    {
+      "reason": "consent false",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-12-10",
+        "time_window": "half_day_am",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "Ms. Example",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": false,
+          "text_version": "svc-consent-1"
+        }
+      }
+    },
+    {
+      "reason": "consent missing",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-12-10",
+        "time_window": "half_day_am",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "Ms. Example",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
+    },
+    {
+      "reason": "consent truthy not true",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-12-10",
+        "time_window": "half_day_am",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "Ms. Example",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": 1,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
+    },
+    {
+      "reason": "bad id",
+      "submission": {
+        "client_request_id": "has space",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-12-10",
+        "time_window": "half_day_am",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "Ms. Example",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
+    },
+    {
+      "reason": "arabic-indic phone",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-12-10",
+        "time_window": "half_day_am",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "Ms. Example",
+        "contact_phone": "+8\u0665\u0662\u0660\u0660\u0660\u0660\u0660\u0660\u0660",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
+    },
+    {
+      "reason": "fullwidth date",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "\uff12\uff10\uff12\uff16-12-10",
+        "time_window": "half_day_am",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "Ms. Example",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
+    },
+    {
+      "reason": "impossible date",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-02-31",
+        "time_window": "half_day_am",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "Ms. Example",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
+    },
+    {
+      "reason": "zero-width venue",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-12-10",
+        "time_window": "half_day_am",
+        "venue": "\u200b\u200b",
+        "customer_name": "Ms. Example",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
+    },
+    {
+      "reason": "lone surrogate",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-12-10",
+        "time_window": "half_day_am",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "\ud800x",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
+    }
+  ],
+  "transitions": [
+    [
+      "submitted",
+      "completed",
+      "staff",
+      "completion_summary",
+      "skip to success"
+    ],
+    [
+      "completed",
+      "quoted",
+      "staff",
+      "quote",
+      "terminal"
+    ],
+    [
+      "user_cancelled",
+      "submitted",
+      "system",
+      "receipt",
+      "terminal"
+    ],
+    [
+      "submitted",
+      "accepted",
+      "user",
+      "staff_accept",
+      "user cannot accept"
+    ],
+    [
+      "arranged",
+      "in_progress",
+      "staff",
+      null,
+      "missing evidence"
+    ],
+    [
+      "in_progress",
+      "completed",
+      "staff",
+      "arrival",
+      "wrong evidence"
+    ],
+    [
+      "submitted",
+      "user_cancelled",
+      "system",
+      "cancellation",
+      "system cannot cancel"
+    ],
+    [
+      "in_progress",
+      "user_cancelled",
+      "user",
+      "cancellation",
+      "cancel after arrival"
+    ],
+    [
+      "accepted",
+      "quoted",
+      "robot",
+      "quote",
+      "unknown actor"
+    ],
+    [
+      "in_progress",
+      "completed",
+      "system",
+      "completion_summary",
+      "system cannot complete"
+    ],
+    [
+      "outcome_unknown",
+      "completed",
+      "system",
+      "completion_summary",
+      "system cannot complete after unknown"
+    ]
+  ]
+}

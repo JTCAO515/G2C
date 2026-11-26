@@ -69,7 +69,8 @@ import XCTest
         selectTaxiDestination(app, label: "Summer Palace")
         XCTAssertFalse(app.buttons["lio.taxi.estimate"].isEnabled)
         app.buttons["lio.taxi.pickup"].tap()
-        let field = app.textFields["Place name or address"]
+        // #1421 replaced the "Place name or address" placeholder with a per-city example; use the field's identifier (#1843).
+        let field = app.textFields["lio.taxi.search-field"]
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         field.tap()
         field.typeText("Palace Museum")
@@ -165,7 +166,8 @@ import XCTest
         let app = taxiFixture()
         defer { app.terminate() }
         app.buttons["lio.taxi.destination"].tap()
-        let field = app.textFields["Place name or address"]
+        // #1421 replaced the "Place name or address" placeholder with a per-city example; use the field's identifier (#1843).
+        let field = app.textFields["lio.taxi.search-field"]
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         field.tap()
         field.typeText("Summer Palace")

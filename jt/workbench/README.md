@@ -1,6 +1,6 @@
 # JT 工作台
 
-工作台在仓库根目录启动。阶段一只使用合成数据，进程监听 `127.0.0.1` 上的 HTTPS。账号、会话、队列复核和审计记录保存在进程内存中，退出后会清空。
+工作台在仓库根目录启动。阶段一只使用合成数据，进程监听 `127.0.0.1` 上的 HTTPS。默认的内存适配器在进程退出时清空数据。启用 PostgreSQL 后，员工账号、会话、限速、合成队列、复核和审计在工作台独立库内持久化。
 
 ## 本地启动
 
@@ -37,3 +37,14 @@ P0 横幅在打开队列时可见。页面每两秒刷新本机的告警数量�
 复核员可标注真实级别、误报、漏报与备注，并查看历史。误报样本的真实级别为空。导出按钮下载 `jt-review-samples.json`，使用 `jt-workbench-review-export.v1`。每个已复核信号取最后一条标注，包含信号类型、识别级别、脱敏证据与版本，以及 `review.actual_severity`、`review.false_positive`、`review.missed`、`review.note` 和 UTC 时间。Case 关联只使用 `case_id`，源事件引用、员工账号和内部信号编号均不进入导出。
 
 引擎联调通过 `jt.common.SignalSink` 调用 `MemoryQueue.publish(signal)`。同 ID 同内容的重复交付只入队一次，同 ID 不同内容会拒绝。阶段一的默认种子未建单。
+
+
+## 本地 PostgreSQL
+
+使用工作台专用的 `jt_workbench` 数据库，迁移角色为 `jt_workbench_owner`，应用角色为 `jt_workbench_runtime`。两个角色分别由部署侧预设，均为非超级用户，运行角色不加入迁移角色。连接串 `JT_WORKBENCH_DATABASE_URL` 显式指定 `host`、`dbname` 和 `user`。连接可以使用专用 Unix 套接字。
+
+- 启动迁移进程使用所有者的连接串，执行 `uv run --locked python -m jt.workbench.postgres up`。空库本地验证可运行同一命令的 `down`，已有业务数据时会拒绝。
+- 常驻应用用运行角色的连接串执行前面的启动命令。应用检查数据库、角色和审计权限，再加载确定性合成信号。已有管理员时可直接启动。迁移和常驻应用使用同一变量名，各进程只接收自己的连接串。
+- 运行角色对审计表仅有 SELECT 和 INSERT。身份、限速、会话和队列动作通过同一数据库级事务锁串行化，复核和审计使用同一事务提交。会话与限速时间使用数据库时钟，让多个进程共享同一时基。
+
+可通过 `JT_WORKBENCH_TEST_PG_BINDIR="$(pg_config --bindir)" uv run --locked python -B -m pytest -q -p no:cacheprovider jt/workbench` 运行工作台测试。集成测试自行建立临时 Unix 套接字数据库，禁止 TCP 监听，测试完成后清理临时集群。常规测试继续使用内存适配器。
