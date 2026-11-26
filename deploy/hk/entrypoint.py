@@ -278,6 +278,10 @@ def main():
         load_secret_environment(args.command)
         audit=logging.getLogger('cj_usage.audit');audit.setLevel(logging.INFO)
         audit.addHandler(logging.StreamHandler(sys.stderr));audit.propagate=False
+        if args.command in ('api','worker'):
+            # LIO_ lines also go to the host-mounted /lio-log store, kept across cutovers (#1828).
+            from .lio_log import install as install_lio_log
+            install_lio_log(args.command)
         runtime=Runtime.load('/tmp/g2c-beta',worker=args.command=='worker')
         if args.command=='worker':
             from cj_api.tool_evidence import ToolEvidence

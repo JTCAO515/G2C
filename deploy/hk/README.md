@@ -214,6 +214,14 @@ API、PG 等其他角色沿用各自原配置。该上限按容量轮转，不�
 回退不清理独立原件和已采集证据；容器轮转日志不能替代独立证据，按已批范围保留故障元数据。
 需要恢复原日志配置时用本次部署保存的原文件，不清账本或业务数据来通过验证。
 
+### LIO_ 诊断行单独留存（#1828）
+
+- `cj_usage.audit` 里以 `LIO_` 开头的行（管线拒绝、未捕获错误、首字计时等）除照常进容器日志外，另由 `deploy/hk/lio_log.py` 写进宿主目录 `/srv/g2c-beta/lio-log`（api、worker 都挂到 `/lio-log`）：每个角色每个 UTC 日一个 `lio-<role>-YYYY-MM-DD.jsonl`（0600），保留 30 天，每天上限 8MB。目录是宿主绑定挂载，容器切换后切换前的行仍在，发布前不必另外导出。
+- 只留 `key=value`：`run_id`、`message_id`、`conversation_id` 换成 12 位 SHA-256 前缀；`subject`、`scope`、`user`、`text`、`content`、`detail` 等键整个丢掉；其他值超出安全字符就记 `redacted`。不存对话内容和用户标识。
+- 部署前由宿主 root 建目录：`install -d -o 10001 -g 10001 -m 0700 /srv/g2c-beta/lio-log`，再同步带新挂载的 Compose 文件。目录不存在或权限不对时只打一行 `ALERT lio_log_directory_*`，不写文件、不影响服务。
+- 读取（只读）：`docker compose … run --rm --no-deps -v /srv/g2c-beta/lio-log:/lio-log:ro --entrypoint python worker -B -m deploy.hk.lio_log query --since 2026-11-26 --prefix LIO_PIPELINE_`。
+- 数据库连接计时改为每分钟每种连接一行 `M4_DB_CHECKOUT_SUMMARY`（count、p50、p95、max），单次 ≥500ms 另记 `M4_DB_CHECKOUT_SLOW`；不再每次借连接记一行。
+
 ## 配置与构建
 
 `*.env.example` 只有占位符。正式配置在服务器 `/srv/g2c-beta/`，目录0700，所有实际环境文件0600；
