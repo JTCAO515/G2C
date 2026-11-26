@@ -983,6 +983,7 @@ public struct LioHome<MenuContent: View>: View {
     private func preparePendingQuestion() {
         guard let question = conversation.pending else { return }
         entering.formUnion([LioEntranceKey(turn: question.id, part: .answer),
+                            LioEntranceKey(turn: question.id, part: .answerTail),
                             LioEntranceKey(turn: question.id, part: .card),
                             LioEntranceKey(turn: question.id, part: .memory)])
         if !question.isResend { entering.insert(LioEntranceKey(turn: question.id, part: .question)) }
@@ -999,7 +1000,8 @@ public struct LioHome<MenuContent: View>: View {
         sendCount += 1
         if let id = conversation.pending?.id {
             timing.start(id, language: timingLanguage)
-            entering.formUnion([LioEntranceKey(turn: id, part: .question), LioEntranceKey(turn: id, part: .answer)])
+            entering.formUnion([LioEntranceKey(turn: id, part: .question), LioEntranceKey(turn: id, part: .answer),
+                                LioEntranceKey(turn: id, part: .answerTail)])
         }
         preparePendingQuestion()
         if showedWelcome, let id = conversation.pending?.id { opening = .before(id) }
@@ -1210,9 +1212,10 @@ public struct LioHome<MenuContent: View>: View {
                 let answerKey = LioEntranceKey(turn: turn.id, part: .answer)
                 // #1727: with the build's flag on and the server's `split`, two bubbles cut at the first blank line.
                 let parts = (answerLayoutOn && turn.layout == .split) ? LioAnswerParts(turn.answer) : LioAnswerParts(whole: turn.answer)
-                let answerText: (String, String, Bool) -> LioStreamingText = { source, identifier, completes in
+                let tailKey = LioEntranceKey(turn: turn.id, part: .answerTail)
+                let answerText: (String, String, Bool, LioEntranceKey) -> LioStreamingText = { source, identifier, completes, key in
                     LioStreamingText(source: source, streaming: turn.status == .answering,
-                                     animate: entering.contains(answerKey), language: language,
+                                     animate: entering.contains(key), language: language,
                                      presentationActive: !chatFading && !menuOpen && tab == .chat,
                                      identifier: identifier,
                                      onFirstVisible: {
@@ -1228,11 +1231,11 @@ public struct LioHome<MenuContent: View>: View {
                         scroll.scrollTo("lio.bottom", anchor: .bottom)
                     })
                 }
-                lioReply { answerText(parts.head, "lio.answer", parts.tail == nil) }
+                lioReply { answerText(parts.head, "lio.answer", parts.tail == nil, answerKey) }
                     .lioEntrance(.fade, active: entering.contains(answerKey)) { entering.remove(answerKey) }
                 if let tail = parts.tail {
-                    lioReply(byline: false) { answerText(tail, "lio.answer.2", true) }
-                        .lioEntrance(.fade, active: entering.contains(answerKey)) { entering.remove(answerKey) }
+                    lioReply(byline: false) { answerText(tail, "lio.answer.2", true, tailKey) }
+                        .lioEntrance(.fade, active: entering.contains(tailKey)) { entering.remove(tailKey) }
                 }
                 if answerLayoutOn, turn.status == .finished, !(turn.followups.isEmpty && turn.chips.isEmpty) {
                     LioAnswerFollowups(actions: turn.followups, chips: turn.chips, open: { openFollowup($0) },
