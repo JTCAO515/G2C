@@ -80,3 +80,18 @@ def test_tampered_or_duplicate_manifests_fail_closed(tmp_path):
     data['category']='internal';data['members'][0]['subject']=demo_login.invitation_subject('CJ_Tester@01')
     path.write_text(json.dumps(data))
     with pytest.raises(ValueError,match='demo_batch_manifest_invalid'):demo_batches.manifests(out)
+    data['members'][0]['subject']=manifest['members'][0]['subject'];data['members'][1]['digest']=data['members'][0]['digest']
+    path.write_text(json.dumps(data))
+    with pytest.raises(ValueError,match='demo_batch_manifest_invalid'):demo_batches.manifests(out)
+    data['members'][1]['digest']=manifest['members'][1]['digest'];data['channel']=['internal-test']
+    path.write_text(json.dumps(data))
+    with pytest.raises(ValueError,match='demo_batch_manifest_invalid'):demo_batches.manifests(out)
+
+
+def test_release_host_role_check_uses_the_same_demo_bound():
+    # The host release script runs outside the app image, so the bound is a literal kept equal here.
+    from pathlib import Path
+    import re
+    from deploy.hk import configuration
+    text=(Path(__file__).resolve().parents[1]/'hk/application_release_host.py').read_text()
+    assert re.findall(r'not 1 <= reply\["demo_subjects"\] <= (\d+)',text)==[str(configuration.MAX_DEMO_SUBJECTS)]

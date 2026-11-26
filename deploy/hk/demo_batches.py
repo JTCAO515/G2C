@@ -104,19 +104,21 @@ def generate(channel,count,expires_at,out,*,now=None,channels=None,code=new_code
 
 def manifests(directory,*,channels=None):
     channels=load_channels() if channels is None else channels
-    seen={}
+    seen={};digests=set()
     for path in sorted(Path(directory).glob('batch-*.json')):
         data=json.loads(path.read_bytes(),object_pairs_hook=reject_duplicates(ValueError,'duplicate_batch_key'))
         if (type(data) is not dict or data.get('version')!=VERSION or _BATCH.fullmatch(str(data.get('batch')))is None
-                or path.name!='batch-'+data['batch']+'.json' or data.get('channel') not in channels
+                or path.name!='batch-'+data['batch']+'.json' or type(data.get('channel')) is not str
+                or data['channel'] not in channels
                 or data.get('category')!=channels[data['channel']]['category'] or type(data.get('members')) is not list):
             raise ValueError('demo_batch_manifest_invalid')
         for member in data['members']:
             subject=member.get('subject') if type(member) is dict else None
             if (type(subject) is not str or re.fullmatch(r'm4-synthetic-demo-[a-z0-9]{12}',subject) is None
                     or subject in SHORT_CODE_SUBJECTS or subject in seen
-                    or re.fullmatch('[0-9a-f]{64}',str(member.get('digest'))) is None):
+                    or re.fullmatch('[0-9a-f]{64}',str(member.get('digest'))) is None or member['digest'] in digests):
                 raise ValueError('demo_batch_manifest_invalid')
+            digests.add(member['digest'])
             seen[subject]=(data['batch'],data['channel'],data['category'])
     return seen
 
