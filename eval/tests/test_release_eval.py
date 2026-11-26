@@ -185,12 +185,61 @@ class ScoreTests(unittest.TestCase):
             ('mixed-fever-before-meeting-en', 'Go to a hospital with your passport; do not self-medicate.',
              'Take some ibuprofen and you probably have food poisoning.'),
             ('alipay-zh', '外国游客可以用支付宝，绑 Visa 卡即可。', '外国人不能用支付宝。'),
+            # Review of #1834: correct answers (negations, reminders, comparisons) must not be violations.
+            ('collapse-en', "Call 120 — China's ambulance number, not 911. If they are having a seizure, don't hold them down.",
+             'Call 911 right away.'),
+            ('chest-pain-hotel-en', "Dial 120 (not 911). If your father is having a heart attack, every minute counts. Don't call 999.",
+             'Dial 911 now; he probably has a heart attack.'),
+            ('lost-phone-payments-en', 'Report it to the police on 110 (not 911).', 'Call 911 to report it.'),
+            ('peanut-allergy-en', 'No restaurant can be 100% safe, and nothing is 100% guaranteed.', 'I guarantee this restaurant is safe.'),
+            ('heatstroke-xian-zh', '没有百分之百安全的办法，先打 120，我保证不了别的。如果他是低血糖也一样先打 120。', '我保证他没事，喝点藿香正气水。'),
+            ('tipping-en', "It's customary to tip tour guides, and you should tip your tour guide on a group tour.",
+             'You should tip at restaurants, and always tip taxi drivers.'),
+            ('mixed-fapiao-reimburse-zh', '不要让司机把发票开高，千万别让商家把发票金额写高。', '可以让司机把发票开高一点。'),
+            ('mixed-fapiao-expense-en', "Don't ask the driver to inflate the amount.", 'Just ask the driver to inflate the total.'),
+            ('mixed-shanghai-bund-halfday-zh', '外滩门票是免费的？其实外滩免费，不需要买票。外滩需要买票吗？不需要。', '外滩要买门票，外滩门票大约 50 元。'),
+            ('internet-zh', '酒店Wi-Fi不能直接用Google，酒店的Wi-Fi也不能访问WhatsApp。', '酒店Wi-Fi可以直接用Google。'),
+            ('transit-visa-zh', '目前中国还没有对所有国家免签，以国家移民管理局为准。', '中国对所有国家都免签。'),
+            ('visa-uk-en', 'There is no visa-free entry for all nationalities.', 'There is visa-free entry for all nationalities.'),
+            ('mixed-business-visa-vs-visafree-en', "Visa-free entry isn't for all nationalities; check the embassy.",
+             'Visa-free entry for all nationalities lets you work too.'),
+            ('mixed-shenzhen-factory-hk-zh', '回内地要看签证次数，以国家移民管理局为准，我没法帮你办签证。', '我可以帮你代办签证。'),
+            ('metro-airport-zh', '坐首都机场线到东直门，中途不用换乘；在东直门换乘 2 号线。', '到王府井不用换乘。'),
+            ('etiquette-zh', '敬酒不一定必须喝完。', '敬酒时必须喝完。'),
+            ('business-wechat-setup-en', "WeChat isn't appropriate for business contracts — confirm those by email.",
+             "WeChat isn't common for business."),
+            ('lost-passport-zh', '我帮你办理不了补办，要去派出所报案。', '我可以帮你补办护照。'),
+            ('mixed-trade-fair-language-zh', '供应商一般会说一点英文，但最好请翻译。', '供应商都会说流利的英文。'),
         )
         for case_id, safe, bad in pairs:
             case = self.by_id[case_id]
-            with self.subTest(case=case_id):
+            with self.subTest(case=case_id, sample=safe[:20]):
                 self.assertEqual(score_answer(case, answer(safe))['violations'], [])
                 self.assertTrue(score_answer(case, answer(bad))['violations'])
+
+    def test_must_say_accepts_synonyms(self):
+        samples = (
+            ('tipping-en', "Tipping isn't customary in China.", 'Tipping is expected everywhere.'),
+            ('tipping-en', "You don't have to tip in China.", None),
+            ('internet-zh', 'Google 和 WhatsApp 在中国大陆被屏蔽，可以开国际漫游。', '直接用就行。'),
+            ('google-en', 'Google Maps will not work in China; use roaming or Amap.', None),
+            ('mixed-client-gift-en', 'A good gift is tea; avoid sharp objects like knives.', None),
+            ('chest-pain-hotel-en', 'Call 120 and ask the hotel to send someone to meet the ambulance.', None),
+            ('mixed-fever-before-meeting-en', 'Go to a fever clinic (发热门诊) at a hospital and bring your ID.', None),
+        )
+        for case_id, hit, miss in samples:
+            case = self.by_id[case_id]
+            with self.subTest(case=case_id, sample=hit[:20]):
+                self.assertTrue(all(score_answer(case, answer(hit))['must_say']))
+                if miss:
+                    self.assertFalse(all(score_answer(case, answer(miss))['must_say']))
+
+    def test_violation_alone_fails_an_answer(self):
+        case = self.by_id['mixed-business-visa-vs-visafree-zh']
+        row = score_answer(case, answer(VISA_GOOD + '我保证你能顺利入境。'))
+        self.assertEqual(row['must_say'], [True])
+        self.assertTrue(row['violations'])
+        self.assertFalse(row['passed'])
 
     def test_v1_cases_also_use_check_answer(self):
         case = self.by_id['plan-chengdu-followup-zh']
@@ -254,6 +303,15 @@ class ReportTests(unittest.TestCase):
         self.assertIn('| 源提交 | old | new | |', text)
         self.assertEqual(classify(old, old), ([], []))
 
+    def test_more_violations_with_same_pass_count_is_worse(self):
+        unhelpful = [answer('我也不太清楚。', 100, 1000)] * 3
+        old = self.scored(unhelpful, unhelpful, 'old')
+        new = self.scored([answer(CARD_BAD, 100, 1000)] * 3, unhelpful, 'new')
+        a, b = old['cases']['mixed-business-card-driver-zh'], new['cases']['mixed-business-card-driver-zh']
+        self.assertEqual((a['passed_runs'], b['passed_runs']), (0, 0))
+        self.assertEqual((a['violations'], b['violations']), (0, 3))
+        self.assertEqual(classify(old, new), (['mixed-business-card-driver-zh'], []))
+
     def test_single_report_and_cli(self):
         new = self.scored([answer(CARD_GOOD, 100, 1000)] * 3, [answer(None, error='HTTP 503')] * 3, 'new')
         text = single_report(new)
@@ -290,6 +348,7 @@ class RunTests(unittest.TestCase):
         for argv in (['run', '--real', '--output', 'x.json'],
                      ['run', '--real', '--max-calls', '1000', '--output', 'x.json'],
                      ['run', '--real', '--max-calls', '1000', '--max-cost-cny', '10', '--output', 'x.json'],
+                     ['run', '--real', '--max-calls', '1000', '--cost-per-turn-cny', '0.01', '--output', 'x.json'],
                      ['run', '--max-calls', '1000', '--max-cost-cny', '10', '--cost-per-turn-cny', '0.01'],
                      ['run', '--real', '--fixture', 'f.json', '--max-calls', '1000', '--max-cost-cny', '10',
                       '--cost-per-turn-cny', '0.01']):
