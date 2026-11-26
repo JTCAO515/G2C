@@ -18,6 +18,7 @@ import sqlite3
 import uuid
 from zoneinfo import ZoneInfo
 
+from .authorization_deadlines import boundary,deadline
 from .metered_exit import BudgetUnknown
 
 # JT 2026-11-07, #495/6708986558. Keep the previous count limits and unit holds.
@@ -43,8 +44,9 @@ AMAP_ENDPOINTS={
 # five unresolved original holds. Keep the older 13-hold count cap above.
 M1_ESTIMATED=1294*MODEL_INPUT_PRICE+129*MODEL_OUTPUT_PRICE
 M1_UNRESOLVED_CNY=MODEL_M1_HOLD_CNY-8
-DEADLINE=datetime(2026,12,1,tzinfo=ZoneInfo('Asia/Shanghai'))
-DEMO_DEADLINE=datetime(2027,1,1,tzinfo=ZoneInfo('Asia/Shanghai'))
+# The original M4 period ends at a fixed boundary; Demo subjects continue to hk_demo.
+DEADLINE=boundary('m4_original_period_end')
+DEMO_DEADLINE=deadline('hk_demo')
 MAC_PRODUCER='codex-mac'
 HK_PRODUCER='hk-beta-47.83.147.176'
 HK_JOURNAL_ROOT=Path('/home/cj/.local/share/g2c/m4-real-services')
