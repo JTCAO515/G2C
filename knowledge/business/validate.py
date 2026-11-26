@@ -61,9 +61,10 @@ def _pairs(object_pairs):
     return dict(object_pairs)
 
 
-def load(path):
-    """Return the validated catalogue; raise Invalid on the first problem."""
-    doc = json.loads(Path(path).read_text(encoding='utf-8'), object_pairs_hook=_pairs)
+def load(path, raw=None):
+    """Return the validated catalogue (from `raw` bytes when given); raise Invalid on the first problem."""
+    text = (Path(path).read_bytes() if raw is None else raw).decode('utf-8')
+    doc = json.loads(text, object_pairs_hook=_pairs)
     _require(type(doc) is dict and doc.keys() == {'version', 'city', 'entries'}, 'document keys')
     _require(doc['version'] == VERSION, 'version')
     _require(doc['city'] in CITIES, 'city')
@@ -100,10 +101,15 @@ def _shown(path):
 
 
 def main(argv=()):
+    unknown = [arg for arg in argv if arg != '--write']
+    if unknown:
+        print(f'unknown argument {unknown[0]!r}; the only option is --write', file=sys.stderr)
+        return 2
     stale = False
     for path in CATALOGUES:
-        doc = load(path)
-        copy, raw = SERVER_COPIES[path], path.read_bytes()
+        raw = path.read_bytes()
+        doc = load(path, raw)
+        copy = SERVER_COPIES[path]
         if '--write' in argv:
             copy.write_bytes(raw)
             print(f'wrote {_shown(copy)}')

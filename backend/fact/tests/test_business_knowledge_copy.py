@@ -39,6 +39,22 @@ def test_validator_fails_on_a_stale_copy(tmp_path, capsys):
     assert 'out of date' in capsys.readouterr().err
 
 
+def test_validator_rejects_an_unknown_argument(capsys):
+    assert validator().main(['--wirte']) == 2
+    assert 'unknown argument' in capsys.readouterr().err
+
+
+def test_write_does_not_touch_the_copy_when_the_source_is_invalid(tmp_path):
+    module = validator()
+    source, copy = tmp_path / 'source.json', tmp_path / 'copy.json'
+    source.write_bytes(SOURCE.read_bytes().replace(b'"checked_on": "', b'"checked_on": "x', 1))
+    copy.write_bytes(b'previous')
+    module.CATALOGUES, module.SERVER_COPIES = (source,), {source: copy}
+    with pytest.raises(module.Invalid):
+        module.main(['--write'])
+    assert copy.read_bytes() == b'previous'
+
+
 def test_the_server_reads_what_the_validator_accepts():
     assert load_catalogue() == validator().load(SOURCE)
 
@@ -68,6 +84,9 @@ def test_entry_on_or_after_its_review_deadline_is_not_returned():
 
 @pytest.mark.parametrize('call', [
     lambda doc: by_topic(doc, 'visa_policy', today=date(2026, 11, 26)),
+    # A topic with no entries still checks the day (business_payment has none yet).
+    lambda doc: by_topic(doc, 'business_payment', today='2026-11-26'),
+    lambda doc: by_topic(doc, 'business_payment', today=None),
     lambda doc: by_topic(doc, None, today=date(2026, 11, 26)),
     lambda doc: by_topic(doc, 'visa_channel', today='2026-11-26'),
     lambda doc: by_id(doc, 'business.guangzhou.visa-channel', today='2026-11-26'),
@@ -92,13 +111,24 @@ def test_topics_match_the_validator():
     lambda raw: raw.replace(b'"source_urls": [', b'"source_urls": ["http://example.com/a", ', 1),
     lambda raw: raw.replace(b'"text_en": "', b'"text_en": " ', 1),
     lambda raw: raw.replace(b'"title"', b'"extra": 1, "title"', 1),
+    # Rules validate.py also enforces (#1912 review): the copy is read as strictly as the source.
+    lambda raw: raw.replace(b'"checked_on": "2026-11-26"', b'"checked_on": "2026-W48-4"', 1),
+    lambda raw: raw.replace(b'"expires_on": "2026-12-10"', b'"expires_on": "2027-03-01"', 1),
+    lambda raw: raw.replace(b'"text_en": "', b'"text_en": "line\\n', 1),
+    lambda raw: raw.replace(b'"source_urls": [\n        "', b'"source_urls": [\n        "https://gaj.gz.gov.cn/a", "https://gaj.gz.gov.cn/a", "', 1),
+    lambda raw: raw.replace(b'"business.guangzhou.', b'"business.guangzhou.Bad_', 1),
+    lambda raw: raw.replace(b'"source_urls": [\n        "', b'"source_urls": [\n        "https://", "', 1),
+    lambda raw: raw.replace(b'"source_urls": [\n        "', b'"source_urls": [\n        "https://gaj.gz.gov.cn/", "', 1),
+    lambda raw: raw.replace(b'"source_urls": [\n        "', b'"source_urls": [\n        "https://gaj.gz.gov.cn:8443/a", "', 1),
     lambda raw: raw[:-40],
     lambda raw: b'',
     lambda raw: b'NaN',
 ])
 def test_broken_copy_fails_closed(tmp_path, mutate):
     path = tmp_path / 'business.json'
-    path.write_bytes(mutate(CATALOGUE_PATH.read_bytes()))
+    broken = mutate(CATALOGUE_PATH.read_bytes())
+    assert broken != CATALOGUE_PATH.read_bytes(), 'mutation did not apply'
+    path.write_bytes(broken)
     with pytest.raises(FactFailure):
         load_catalogue(path)
 
