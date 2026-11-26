@@ -118,7 +118,7 @@ We send each recipient only what the feature you use needs. Requests to Alibaba 
 - 你在中国大陆使用 App 时，信息从大陆传到香港。
 - 生成回答、翻译、识别菜单时，相关内容从香港发到北京的阿里云百炼；使用地点、路线、打车、附近、航班工具时，查询条件从香港发到位于中国大陆的高德、滴滴、飞常准。
 - 官网抢先体验申请先传到中国香港处理（官网接口由 Vercel 托管，运行在香港区域），再转给位于美国的 Jotform；你和我们的邮件由位于美国的 Spacemail 收发，可能存储在中国境外。
-- 提交抢先体验申请前，请你勾选同意把信息传到中国境外（香港、美国）处理；不勾选无法提交。
+- 提交抢先体验申请前，请你勾选「同意传到中国大陆以外（中国香港和美国）处理」；不勾选无法提交。
 
 **依据**：上述传输是为向你提供你请求的服务、履行与你之间的约定所必需（《个人信息保护法》第十三条第一款第二项）；向境外提供个人信息，我们按《促进和规范数据跨境流动规定》中为订立、履行个人作为一方当事人的合同所必需的情形处理，并向你告知接收方、目的、方式和信息种类（见第 5 节）。其中设备位置和记忆建议目前只对受邀内部测试账号开放；对外部用户开放前，我们会另行取得你的单独同意（见第 12 节）。这些依据将在公开首发前另请法律意见复核。
 
@@ -129,7 +129,7 @@ Your account, chats, trips and memories are stored on our servers in Hong Kong, 
 - When you use the app in mainland China, your information goes from the mainland to Hong Kong.
 - For replies, translation and menu reading, the relevant content goes from Hong Kong to Alibaba Cloud Model Studio in Beijing; for places, routes, taxi, nearby and flight tools, your search terms go from Hong Kong to AMap, DiDi and VariFlight in mainland China.
 - Website early access applications are first transferred to Hong Kong, China for processing (the website endpoint is hosted by Vercel and runs in its Hong Kong region), then go to Jotform in the United States; emails between you and us go through Spacemail, a provider in the United States, and may be stored outside China.
-- Before you submit an early access application, you tick a box to agree that your information is transferred outside the Chinese mainland (Hong Kong and the United States) for processing. Without it, the application cannot be submitted.
+- Before you submit an early access application, you tick "I agree to my information being processed outside mainland China (Hong Kong, China and the United States)". Without it, the application cannot be submitted.
 
 **Basis**: These transfers are necessary to provide the services you ask for and to perform our arrangement with you (Article 13(1)(2) of the Personal Information Protection Law). For transfers outside the Chinese mainland we rely on the situation in the Provisions on Promoting and Regulating Cross-Border Data Flows where a transfer is necessary to conclude or perform a contract to which you are a party, and we tell you the recipients, purposes, methods and types of information (see section 5). Device location and memory suggestions are currently available only to invited internal test accounts; before they are offered to external users, we will ask for your separate consent (see section 12). These bases will be reviewed by legal counsel before public launch.
 
