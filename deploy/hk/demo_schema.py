@@ -5,6 +5,7 @@ import sys
 from uuid import uuid4
 
 import psycopg
+from psycopg import sql
 
 import migrate
 from . import checkpoint,demo_quota,local_postgres,staging
@@ -28,6 +29,8 @@ def _complete(marker,manifest,intent):
         dump_sha256=manifest['dump_sha256'],original_fences=intent['original_fences'])
     if 'quota_policy_sha256' in intent:
         complete['quota_policy_sha256']=intent['quota_policy_sha256']
+    if 'from_version' in intent:
+        complete['from_version']=intent['from_version']
     checkpoint.atomic(marker,complete)
 
 
@@ -53,6 +56,49 @@ def _require_original_schema54(control,lineage):
     prior=checkpoint.verified(control/'demo-schema54.json')
     if prior['state']!='COMPLETE'or prior['lineage']!=lineage:
         raise ValueError('complete original exploration-origin upgrade before schema55')
+
+
+# One reviewed multi-step upgrade: the 58.1 release carries 0056-0059 (#1769 #1770 #1771 #1727)
+# on a host at 55, and every original image accepts exactly its own chain, so 56..59 are applied
+# together under one signed anchor instead of one image per migration.
+CHAIN_FROM={59:55}
+
+
+def _require_original_schema55(control,lineage):
+    _require_original_schema54(control,lineage)
+    prior=checkpoint.verified(control/'demo-schema55.json')
+    if prior['state']!='COMPLETE'or prior['lineage']!=lineage:
+        raise ValueError('complete original native4 accounting upgrade before schema59')
+
+
+def _previous(target):
+    return list(range(1,CHAIN_FROM.get(target,target-1)+1))
+
+
+def _ops_console_nologin(db,*,apply):
+    """0058 creates cj_ops_console LOGIN for local runtimes; Hong Kong keeps it NOLOGIN.
+
+    Same rule as schema.application_roles for restores: the role exists only so the committed
+    grants apply, with no login, pg_hba/pg_ident entry or credential (JT stop point, #1925).
+    """
+    if apply:db.execute('ALTER ROLE cj_ops_console NOLOGIN')
+    if db.execute("SELECT rolcanlogin FROM pg_roles WHERE rolname='cj_ops_console'").fetchall()!=[(False,)]:
+        raise ValueError('HK operations console role must stay NOLOGIN')
+
+
+# Tables created by 0056-0059. Reverting 59 -> 55 drops them, so the Hong Kong rollback runbook
+# first proves each is empty (JT stop point: deleting real HK user data, 2026-11-27).
+ROLLBACK59_TABLES=('cj_service_request_scope','cj_service_request','cj_service_request_history',
+    'cj_service_request_view','cj_service_message','cj_service_message_authority',
+    'cj_service_request_staff_audit','cj_lio_chip')
+
+
+def rollback59_rows(db):
+    """Read-only row counts of the 0056-0059 tables; a nonzero count forbids the 59 -> 55 rollback."""
+    counts={name:db.execute(sql.SQL('SELECT count(*) FROM public.{}').format(sql.Identifier(name))).fetchone()[0]
+            for name in ROLLBACK59_TABLES}
+    if any(counts.values()):raise ValueError('rollback59_tables_hold_rows: stop and ask JT')
+    return counts
 
 
 def _migrate_quota_schema(db):
@@ -101,7 +147,7 @@ def upgrade(control,backups,*,target=49,schema_root=None):
     if not local_database_target():raise ValueError('HK local Demo upgrade required')
     local_postgres.require_serving(control)
     expected=checkpoint.versions()
-    if target not in (49,50,51,52,53,54,55) or expected!=list(range(1,target+1)):
+    if target not in (49,50,51,52,53,54,55,59) or expected!=list(range(1,target+1)):
         raise ValueError('exact Demo migration chain required')
     anchor=schema_anchor(target)
     marker=control/(anchor+'.json')
@@ -111,7 +157,7 @@ def upgrade(control,backups,*,target=49,schema_root=None):
         release=checkpoint.verified(control/'release.json')
         if (marker.exists() or destination.exists() or release.get('version')!='g2c-beta-release.1'
                 or checkpoint.identity(db)!=(release['instance'],release['lineage'])
-                or migrate.applied(db)!=expected[:-1]):
+                or migrate.applied(db)!=_previous(target)):
             raise ValueError('reconcile original Demo schema action before retry')
         if target==53:
             quota=checkpoint.verified(control/'demo-schema52.json')
@@ -119,9 +165,11 @@ def upgrade(control,backups,*,target=49,schema_root=None):
                 raise ValueError('complete original quota upgrade before schema53')
         if target==54:_require_original_schema53(control,release['lineage'])
         if target==55:_require_original_schema54(control,release['lineage'])
+        if target==59:_require_original_schema55(control,release['lineage'])
         _require_idle(db)
         intent=dict(state='INTENT',lineage=release['lineage'],original_fences=checkpoint.local.fence_state(db))
-        if target in (52,53,54,55):
+        if target in CHAIN_FROM:intent['from_version']=CHAIN_FROM[target]
+        if target in (52,53,54,55,59):
             latest=_original_latest(control)
             if latest is None:
                 if release['checkpoint']!='fresh':
@@ -143,6 +191,7 @@ def upgrade(control,backups,*,target=49,schema_root=None):
             _migrate_quota_schema(db)
         else:
             migrate.up(db,migrate.load(),target)
+            if target==59:_ops_console_nologin(db,apply=True)
     manifest=checkpoint.export(destination,control,schema_root=schema_root)
     _complete(marker,manifest,intent)
     if target==52:
@@ -209,6 +258,10 @@ def resume_schema55(control,backups,*,schema_root=None):
     return _resume_origin_schema(control,backups,target=55,schema_root=schema_root)
 
 
+def resume_schema59(control,backups,*,schema_root=None):
+    return _resume_origin_schema(control,backups,target=59,schema_root=schema_root)
+
+
 def _resume_origin_schema(control,backups,*,target,schema_root):
     """Reconcile the original signed wire-origin upgrade, never a new attempt."""
     if not local_database_target() or checkpoint.versions()!=list(range(1,target+1)):
@@ -224,6 +277,7 @@ def _resume_origin_schema(control,backups,*,target,schema_root):
         instance,lineage=checkpoint.identity(db)
         if target==54:_require_original_schema53(control,lineage)
         if target==55:_require_original_schema54(control,lineage)
+        if target==59:_require_original_schema55(control,lineage)
         applied=migrate.applied(db)
         expected=checkpoint.versions()
         if (intent['state']!='INTENT' or release['version']!='g2c-beta-release.1'
@@ -233,12 +287,16 @@ def _resume_origin_schema(control,backups,*,target,schema_root):
         _require_idle(db)
         original_release=(instance,release['instance'],release['checkpoint'])==(
             intent['original_instance'],intent['original_instance'],intent['original_checkpoint'])
-        if applied==expected[:-1]:
+        if target in CHAIN_FROM and intent.get('from_version')!=CHAIN_FROM[target]:
+            raise ValueError('original wire-origin upgrade state unavailable')
+        if applied==_previous(target):
             if not original_release or destination.exists() or _original_latest(control)!=intent['original_latest']:
                 raise ValueError('original rolled-back wire-origin state unavailable')
             migrate.up(db,migrate.load(),target)
+            if target==59:_ops_console_nologin(db,apply=True)
         elif applied!=expected:
             raise ValueError('original wire-origin schema unavailable')
+        elif target==59:_ops_console_nologin(db,apply=False)
         if not original_release:
             manifest=_resume_publication(db,control,destination,intent,release,instance)
             pending=marker.with_suffix('.tmp')
@@ -271,12 +329,19 @@ def daily_base(control,root,previous):
 if __name__=='__main__':
     try:
         arguments=sys.argv[1:]
-        if arguments not in ([],['--target','50'],['--target','51'],['--target','52'],['--target','53'],['--target','54'],['--target','55'],
-                             ['--resume-quota'],['--resume-schema53'],['--resume-schema54'],['--resume-schema55']):
+        if arguments not in ([],['--target','50'],['--target','51'],['--target','52'],['--target','53'],['--target','54'],['--target','55'],['--target','59'],
+                             ['--resume-quota'],['--resume-schema53'],['--resume-schema54'],['--resume-schema55'],
+                             ['--resume-schema59'],['--check-rollback-59']):
             raise ValueError('explicit Demo schema upgrade required')
         load_secret_environment('recovery')
         control=Path(os.environ['CJ_DEPLOY_CONTROL'])
-        if arguments==['--resume-quota']:
+        if arguments==['--check-rollback-59']:
+            if not local_database_target():raise ValueError('HK local Demo rollback check required')
+            with checkpoint.operator() as (db,_),db.transaction():
+                db.execute('SET TRANSACTION READ ONLY')
+                rollback59_rows(db)
+            print('PASS 0056-0059 tables hold no rows; 59 -> 55 rollback drops no data')
+        elif arguments==['--resume-quota']:
             resume_quota(control,Path('/backups'))
             print('PASS original HK quota backup resumed')
         elif arguments==['--resume-schema53']:
@@ -288,6 +353,9 @@ if __name__=='__main__':
         elif arguments==['--resume-schema55']:
             resume_schema55(control,Path('/backups'))
             print('PASS original HK native4 accounting backup resumed')
+        elif arguments==['--resume-schema59']:
+            resume_schema59(control,Path('/backups'))
+            print('PASS original HK service and chip backup resumed')
         else:
             upgrade(control,Path('/backups'),target=int(arguments[1]) if arguments else 49)
     except (OSError,ValueError,KeyError,psycopg.Error):
