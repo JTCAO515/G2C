@@ -155,3 +155,9 @@ def test_stored_values_with_whitespace_or_a_trip_card_never_split_or_carry_butto
     assert 'followups' not in with_trip and with_trip['layout'] == 'split'
     empty = row('completed', '', SPLIT, BUTTONS)
     assert 'followups' not in empty and empty['layout'] == 'split'   # no answer text, no buttons; the written value is kept
+
+
+def test_a_button_record_in_the_first_format_still_reads():
+    old = 'lio_followups:' + json.dumps([BUTTON])
+    assert row('completed', '好的', SPLIT, old)['followups'] == dict(version=VERSION, actions=[BUTTON])
+    assert 'followups' not in row('completed', '好的', SPLIT, 'lio_followups:' + json.dumps([dict(tool='shell', parameters={}, label='x')]))

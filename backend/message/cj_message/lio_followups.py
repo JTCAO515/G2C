@@ -216,6 +216,8 @@ def wire_followups(payload, *, now=None):
     never put an unlisted tool, a bad parameter or a malformed ticket on the wire. A chip keeps its
     ticket for 24 hours after it was offered; after that it is shown without one (not tappable).
     """
+    if type(payload) is list:
+        payload = dict(actions=payload)   # the first record format: buttons only
     if type(payload) is not dict or set(payload) - {'actions', 'chips', 'issued_at'}:
         return None
     kept = []

@@ -83,6 +83,14 @@ def main(config, conninfo):
                                (scope, mid)).fetchone()
         return row[0]
 
+    def free(mid, scope):
+        # Every demo receipt keeps its question day (readers use it); a free one is flagged instead.
+        with owner() as conn:
+            row = conn.execute('SELECT demo_question_day,demo_chip_free FROM cj_message_receipt WHERE scope=%s AND message_id=%s',
+                               (scope, mid)).fetchone()
+        assert row[0] is not None
+        return row[1] is True
+
     def chips(scope, answer):
         with owner() as conn:
             return conn.execute('SELECT chip_index,ticket,depth,redeemed_message_id FROM cj_lio_chip '
@@ -98,7 +106,7 @@ def main(config, conninfo):
 
     # --- issue ---------------------------------------------------------------------------------
     first = send(alice, '外国游客怎么用支付宝？')
-    assert day(first, alice) is not None            # an ordinary demo question counts
+    assert not free(first, alice)            # an ordinary demo question counts
     tickets = service(alice).issue_lio_chips(first, LABELS)
     assert tickets is not None and len(set(tickets)) == 3 and all(len(t) == 43 for t in tickets)
     rows = chips(alice, first)
@@ -116,29 +124,32 @@ def main(config, conninfo):
     print('PASS issue: three one-time tickets (43 characters) with label hashes and 24 h expiry; once per answer, own answers only')
 
     # --- redeem and the daily count --------------------------------------------------------------
-    free = send(alice, LABELS[0], tickets[0])
-    assert day(free, alice) is None                                                  # not counted
-    assert [r[3] for r in chips(alice, first)] == [free, None, None]
+    spent = send(alice, LABELS[0], tickets[0])
+    assert free(spent, alice)                                                  # not counted
+    assert [r[3] for r in chips(alice, first)] == [spent, None, None]
     sibling = send(alice, LABELS[1], tickets[1])
-    assert day(sibling, alice) is not None                                           # one free chip per answer
-    assert chips(alice, first)[1][3] is None
+    assert not free(sibling, alice)                                           # one free chip per answer
+    assert chips(alice, first)[1][3] is None                                  # not redeemed free, but used: it sets the next level
+    with owner() as conn:
+        assert conn.execute('SELECT used_message_id FROM cj_lio_chip WHERE scope=%s AND answer_message_id=%s AND chip_index=1',
+                            (alice, first)).fetchone()[0] == sibling
     reuse = send(alice, LABELS[0], tickets[0])
-    assert day(reuse, alice) is not None                                             # a spent ticket is an ordinary question
+    assert not free(reuse, alice)                                             # a spent ticket is an ordinary question
     wrong = send(alice, LABELS[2] + ' ', tickets[2])
-    assert day(wrong, alice) is not None and chips(alice, first)[2][3] is None       # text must be byte-identical
+    assert not free(wrong, alice) and chips(alice, first)[2][3] is None       # text must be byte-identical
     wrong = send(alice, LABELS[2].lower(), tickets[2])
-    assert day(wrong, alice) is not None
+    assert not free(wrong, alice)
     stranger = send(bob, LABELS[2], tickets[2])
-    assert day(stranger, bob) is not None and chips(alice, first)[2][3] is None      # another account's ticket does nothing
+    assert not free(stranger, bob) and chips(alice, first)[2][3] is None      # another account's ticket does nothing
     nothing = send(alice, LABELS[2], 'x' * 43)
-    assert day(nothing, alice) is not None
+    assert not free(nothing, alice)
     print('PASS redeem: exact text spends the ticket without counting; sibling, reuse, wrong text, other account, unknown ticket count as ordinary questions')
 
     # --- an idempotent retry does not spend or count twice -----------------------------------------
-    again = send(alice, LABELS[0], tickets[0], mid=free)
-    assert again == free and day(free, alice) is None
+    again = send(alice, LABELS[0], tickets[0], mid=spent)
+    assert again == spent and free(spent, alice)
     with owner() as conn:
-        assert conn.execute('SELECT count(*) FROM cj_message_receipt WHERE scope=%s AND message_id=%s', (alice, free)).fetchone()[0] == 1
+        assert conn.execute('SELECT count(*) FROM cj_message_receipt WHERE scope=%s AND message_id=%s', (alice, spent)).fetchone()[0] == 1
     print('PASS replay of the free question changes nothing')
 
     # --- expiry --------------------------------------------------------------------------------
@@ -150,21 +161,24 @@ def main(config, conninfo):
                      'WHERE scope=%s AND answer_message_id=%s', (alice, third))
         conn.execute('ALTER TABLE cj_lio_chip ENABLE TRIGGER cj_lio_chip_redeem_guard')
     late = send(alice, LABELS[0], expiring[0])
-    assert day(late, alice) is not None and chips(alice, third)[0][3] is None
+    assert not free(late, alice) and chips(alice, third)[0][3] is None
     print('PASS an expired ticket is an ordinary question')
 
-    # --- chain depth: three free levels, the fourth counts -------------------------------------------
+    # --- chain depth: three free levels, then every level counts and stays at level 4 -------------------------
     chain_root = send(alice, '外国游客怎么用微信支付？')
     level = chain_root
     seen = []
-    for expected_depth in (1, 2, 3, 4):
+    depths = []
+    for _ in range(6):
         offered = service(alice).issue_lio_chips(level, LABELS)
-        assert offered is not None and {r[2] for r in chips(alice, level)} == {expected_depth}
+        assert offered is not None
+        depths.append({r[2] for r in chips(alice, level)})
         question = send(alice, LABELS[0], offered[0])
-        seen.append(day(question, alice))
+        seen.append(free(question, alice))
         level = question
-    assert seen[:3] == [None, None, None] and seen[3] is not None                    # level 4 is an ordinary question
-    print('PASS chain: three consecutive levels are free, the fourth counts, levels are recorded 1..4')
+    assert depths == [{1}, {2}, {3}, {4}, {4}, {4}], depths
+    assert seen == [True, True, True, False, False, False], seen                    # the fourth level and beyond count
+    print('PASS chain: three consecutive levels are free; the fourth and every later one counts and stays at level 4')
 
     # --- twenty free questions per Beijing day --------------------------------------------------------
     with owner() as conn:
@@ -173,8 +187,8 @@ def main(config, conninfo):
     for _ in range(25):
         root = send(alice, '外国游客怎么用支付宝？')
         offered = service(alice).issue_lio_chips(root, LABELS)
-        free_days.append(day(send(alice, LABELS[0], offered[0]), alice))
-    assert free_days.count(None) == 20 - used and all(d is not None for d in free_days[20 - used:]), (used, free_days)
+        free_days.append(free(send(alice, LABELS[0], offered[0]), alice))
+    assert free_days.count(True) == 20 - used and not any(free_days[20 - used:]), (used, free_days)
     with owner() as conn:
         assert conn.execute('SELECT count(*) FROM cj_lio_chip WHERE scope=%s AND redeemed_at IS NOT NULL', (alice,)).fetchone()[0] == 20
     print('PASS daily cap: 20 free chip questions per Beijing day, then ordinary questions')
@@ -192,7 +206,7 @@ def main(config, conninfo):
     assert count >= 400
     expect('P5D01', lambda: send(carol, '再问一个'))
     free_at_limit = send(carol, LABELS[0], offered[0])
-    assert day(free_at_limit, carol) is None
+    assert free(free_at_limit, carol)
     expect('P5D01', lambda: send(carol, LABELS[1], offered[1]))                         # the sibling is not free
     print('PASS at the daily question limit a spent ticket still goes through; ordinary and sibling questions are refused (P5D01)')
 
@@ -200,9 +214,9 @@ def main(config, conninfo):
     race = send(bob, '怎么打车去机场')
     offered = service(bob).issue_lio_chips(race, LABELS)
     with ThreadPoolExecutor(4) as pool:
-        results = list(pool.map(lambda args: day(send(bob, *args), bob),
+        results = list(pool.map(lambda args: free(send(bob, *args), bob),
                                 [(LABELS[0], offered[0]), (LABELS[1], offered[1]), (LABELS[2], offered[2]), (LABELS[0], offered[0])]))
-    assert results.count(None) == 1, results
+    assert results.count(True) == 1, results
     redeemed = [r for r in chips(bob, race) if r[3] is not None]
     assert len(redeemed) == 1
     print('PASS concurrent chip sends: exactly one free question per answer')
@@ -220,6 +234,16 @@ def main(config, conninfo):
                 ("DELETE FROM cj_lio_chip WHERE scope=%s", (alice,)),
                 ("TRUNCATE cj_lio_chip", ())):
             expect('42501', lambda: conn.execute(statement, args))
+            conn.rollback()
+            conn.execute("SELECT set_config('cj.message_scope',%s,false)", (alice,))
+        # the free flag and the question day of a receipt cannot be rewritten from the runtime role either
+        for column, value in (('demo_chip_free', 'true'), ('demo_chip_free', 'NULL'), ('demo_question_day', 'NULL')):
+            try:
+                changed = conn.execute(f'UPDATE cj_message_receipt SET {column}={value} WHERE scope=%s', (alice,)).rowcount
+            except psycopg.Error as error:
+                assert error.sqlstate == '42501', error.sqlstate
+            else:
+                assert changed == 0, (column, changed)      # the row policy leaves no row to rewrite
             conn.rollback()
             conn.execute("SELECT set_config('cj.message_scope',%s,false)", (alice,))
         # a spent ticket cannot be spent again, a second chip of the same answer cannot be spent, the spend

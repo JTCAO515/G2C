@@ -1,5 +1,5 @@
 -- local runtime only: refuse to drop chip tickets while any exist (they hold redemption history that
--- the daily exemption count reads); restore the 0052 question-quota function.
+-- the daily exemption count reads); restore the 0052 question-quota function and drop the free flag.
 LOCK TABLE public.cj_lio_chip IN ACCESS EXCLUSIVE MODE;
 DO $$ BEGIN
  IF EXISTS(SELECT 1 FROM public.cj_lio_chip) THEN
@@ -28,6 +28,9 @@ BEGIN
     RETURN NEW;
 END;
 $$;
+DROP TRIGGER cj_demo_guard_chip_free ON public.cj_message_receipt;
+DROP FUNCTION public.cj_demo_guard_chip_free();
+ALTER TABLE public.cj_message_receipt DROP COLUMN demo_chip_free;
 DROP FUNCTION public.cj_lio_chip_redeem(text,text,text);
 DROP FUNCTION public.cj_lio_chip_issue(text,text[],text[]);
 DROP TABLE public.cj_lio_chip;
