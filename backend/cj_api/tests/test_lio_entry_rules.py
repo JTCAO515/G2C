@@ -45,7 +45,7 @@ class Detection(unittest.TestCase):
                                ('He is British', None), ('I am German and my husband is French', ('rules', 'DE')),
                                ('I have a US passport, my wife is Canadian', ('rules', 'US')),
                                # Review of #1856: no fragment of an unrelated phrase becomes a country.
-                               ('我持有效护照', None), ('我是美籍华人', ('rules', 'US'))):
+                               ('我持有效护照', None), ('我是美籍华人', ('rules', 'US')), ('我持美国和英国双重国籍', None)):
             with self.subTest(text=text):
                 self.assertEqual(stated_nationality([text], RULES), expected)
 
@@ -125,14 +125,17 @@ class FollowUp(unittest.TestCase):
     def test_a_reply_that_only_gives_a_nationality_answers_the_previous_visa_question(self):
         # Review of #1856: after Lio asks for the passport, "美国" or "American" alone gets the rules answer.
         for reply, locale in (('美国', 'zh'), ('我持美国护照', 'zh'), ('美国人', 'zh'), ('American', 'en'),
-                              ('an American', 'en'), ('US passport', 'en')):
+                              ('an American', 'en'), ('US passport', 'en'), ('I hold a US passport.', 'en')):
             with self.subTest(reply=reply):
                 question = '我需要签证吗？' if locale == 'zh' else 'Do I need a visa?'
                 answer = entry_turn(reply, [question], locale, TODAY, RULES)
                 self.assertIn('美国' if locale == 'zh' else 'United States', answer.text)
 
     def test_other_short_replies_are_not_entry_turns(self):
-        for reply, prior in (('好的', ['我需要签证吗？']), ('美国', ['成都有什么好吃的']), ('美国', [])):
+        # Re-review of #1856: a nationality plus a new question is the new question, not a visa follow-up.
+        for reply, prior in (('好的', ['我需要签证吗？']), ('美国', ['成都有什么好吃的']), ('美国', []),
+                             ('我是美国人，酒店怎么订', ['我需要签证吗？']), ('我是美国人，成都有什么好吃的？', ['我需要签证吗？']),
+                             ("I'm American, where to stay?", ['Do I need a visa?'])):
             with self.subTest(reply=reply, prior=prior):
                 self.assertIsNone(entry_turn(reply, prior, 'zh', TODAY, RULES))
 

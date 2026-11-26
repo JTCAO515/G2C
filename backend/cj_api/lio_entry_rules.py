@@ -67,7 +67,7 @@ _STATEMENTS = (
 _PLACE_WORDS = frozenset(('Airport', 'Station', 'Hotel', 'Street', 'Road', 'District', 'City', 'Province', 'Hostel',
                           'Terminal', 'Beijing', 'Shanghai', 'Chengdu', 'Guangzhou', 'Shenzhen', 'Hangzhou', "Xi'an",
                           'Hong', 'Kong', 'Macau', 'Taiwan', 'Pudong', 'Hongqiao', 'Daxing', 'Capital'))
-_ZH_NOT_COUNTRY = re.compile(r'中国|个|地|城|本|次|的|游|客|生|人|外|家|们|这|那|一|两|普通|自己|学|老|朋友|有效|过期|新|旧|护照|证件|籍|华|侨|裔|拿|持|用|张|本人')
+_ZH_NOT_COUNTRY = re.compile(r'中国|个|地|城|本|次|的|游|客|生|人|外|家|们|这|那|一|两|普通|自己|学|老|朋友|有效|过期|新|旧|护照|证件|籍|华|侨|裔|拿|持|用|张|本人|和|双|重|多')
 # 美籍华人 is a US national: X籍 takes the one- or two-character country abbreviation.
 _ZH_ABBREVIATION = {'美': 'US', '英': 'GB', '加': 'CA', '德': 'DE', '法': 'FR', '意': 'IT', '西': 'ES', '荷': 'NL',
                     '澳': 'AU', '新西兰': 'NZ', '日': 'JP', '韩': 'KR', '新加坡': 'SG', '新': 'SG'}
@@ -181,23 +181,22 @@ def stated_nationality(texts, rules):
     return latest
 
 
-def _bare_name(text, rules):
-    """A reply that is only a country name or demonym, such as 美国 or "American"."""
-    value = re.sub(r'^(?:我(?:们)?(?:是|持|用|拿)?\s*|(?:I am|I\'m|I’m)\s+(?:an?\s+)?|an?\s+)|[\s。.!！]+$|(?:的)?(?:人|护照)$|\s+(?:passport|citizen)$', '',
-                   text.strip(), flags=re.I).strip()
+_REPLY_PREFIX = re.compile(r'^(?:我(?:们)?(?:是|持|持有|用|拿|拿的是)?\s*|(?:I am|I\'m|I’m|I hold|I have|We are|We\'re|We’re|we are|we\'re)\s+(?:an?\s+)?|an?\s+)', re.I)
+_REPLY_SUFFIX = re.compile(r'(?:的)?(?:普通)?(?:人|护照|国籍)$|\s+(?:passport|citizen|national)s?$', re.I)
+
+
+def nationality_reply(text, rules):
+    """The nationality when the whole message is only that, such as 美国, 我持美国护照 or "American"."""
+    value = re.sub(r'[\s。.!！]+$', '', text.strip())
+    value = _REPLY_SUFFIX.sub('', _REPLY_PREFIX.sub('', value)).strip()
     names = _lookup(rules)
     if value in names:
         return 'rules', names[value]
     if value.casefold() in names:
         return 'rules', names[value.casefold()]
+    if value.endswith('s') and value[:-1].casefold() in names:
+        return 'rules', names[value[:-1].casefold()]
     return None
-
-
-def nationality_reply(text, rules):
-    """The nationality in a short reply that states only that, or None."""
-    if len(text.strip()) > 40 or entry_question(text) is not None:
-        return None
-    return stated_nationality([text], rules) or _bare_name(text, rules)
 
 
 def entry_turn(question, prior_texts, locale, today, rules=None):
@@ -260,7 +259,8 @@ def entry_reply(question, prior_texts, locale, today, rules=None):
     transit_first = re.search(r'过境|转机|\btransit\b|\blayover\b', question, re.I) is not None
     active.sort(key=lambda row: (row['kind'] != 'transit') if transit_first else (row['kind'] == 'transit'))
     name = country['name'][locale]
-    parts = [(f'持{name}普通护照：' if locale == 'zh' else f'With an ordinary {name} passport:')]
+    article = 'the ' if locale == 'en' and name in ('United States', 'United Kingdom', 'Netherlands') else ''
+    parts = [(f'持{name}普通护照：' if locale == 'zh' else f'With an ordinary passport issued by {article}{name}:')]
     citations = []
     for policy in active:
         parts.append(policy['summary'][locale] + ('' if locale == 'zh' else ' ') + policy['not_covered'][locale])
