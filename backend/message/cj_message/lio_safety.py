@@ -28,21 +28,27 @@ class Requirement:
 
 
 _I = re.I
+_EMERGENCY_LINE = ((re.compile(r'(?<![0-9])120(?![0-9]|\s*(?:元|块|分钟|公里|米|yuan|RMB|CNY|minutes?|km|m\b))', _I),
+                    {'zh': '紧急情况请立即拨打 120 叫救护车；需要警察请拨 110。',
+                     'en': 'In an emergency call 120 for an ambulance now; for the police call 110.'}),)
 REQUIREMENTS = (
+    # Unmistakable emergencies: always checked, whatever else the question asks.
     Requirement('emergency', re.compile(
-        r'晕倒|昏倒|晕过去|昏过去|晕厥|昏迷|不省人事|没(?:有)?呼吸|叫不醒|叫(?:他|她|了)?(?:都)?没(?:有)?反应|'
+        r'晕倒|昏倒|晕过去|昏过去|晕厥|昏迷|不省人事|没(?:有)?呼吸|叫不醒|叫(?:他|她)(?:都)?没(?:有)?反应|'
         r'(?:倒地|倒下|晕倒|昏倒|摔倒|摔下)[^。？！?!]{0,6}没(?:有)?反应|没(?:有)?反应[^。？！?!]{0,6}(?:呼吸|叫不醒)|'
-        r'心脏病|心梗|胸口疼|胸痛|胸闷|中风|大出血|抽搐|'
-        r'急救|救护车|噎住|溺水|中毒|被[^。？！?!]{0,4}撞(?!见|衫)(?:了|倒|伤)?|车祸|烫伤|烧伤|中暑|'
+        r'心脏病|心梗|胸口疼|胸痛|胸闷|中风|大出血|抽搐|急救|救护车|噎住|溺水|中毒|'
         r'\b(?:collaps\w*|faint(?:ed|ing|s)|unconscious|unresponsive|blacked out|not breathing|heart attack|seizure|choking|'
-        r'chest pain|hit by a (?:car|bus|motorbike|scooter)|car accident|heat ?stroke|badly burn(?:ed|t)|'
-        r'bleeding (?:a lot|heavily|badly)|ambulance|first aid|overdose|poison(?:ed|ing)|drown\w*)\b|'
+        r'chest pain|bleeding (?:a lot|heavily|badly)|ambulance|first aid|overdose|poison(?:ed|ing)|drown\w*)\b|'
         r'\bfeel(?:ing)? faint\b|\bpassed out\b(?! (?:from|with) laugh)|\b(?:having|had|has) a stroke\b', _I),
-        ((re.compile(r'(?<![0-9])120(?![0-9]|\s*(?:元|块|分钟|公里|米|yuan|RMB|CNY|minutes?|km|m\b))', _I),
-          {'zh': '紧急情况请立即拨打 120 叫救护车；需要警察请拨 110。',
-           'en': 'In an emergency call 120 for an ambulance now; for the police call 110.'}),),
-        # Prevention or general-knowledge questions are not an emergency happening now.
-        unless=re.compile(r'防|预防|避免|多吗|多不多|哪里买|在哪买|怎么买|药膏|\b(?:prevent\w*|avoid\w*|tips?|where (?:to|can I) buy)\b', _I)),
+        _EMERGENCY_LINE),
+    # Injuries that are also asked about in advance (heatstroke, burns, traffic): not for
+    # prevention, buying or general questions. 消防 is the fire service, not prevention.
+    Requirement('emergency', re.compile(
+        r'被(?:车|汽车|摩托车|电动车|电瓶车|自行车|公交车?|货车|出租车|滴滴)撞(?:了|倒|伤)?|车祸|烫伤|烧伤|中暑|'
+        r'\b(?:hit by a (?:car|bus|motorbike|scooter|bike)|car accident|heat ?stroke)\b|'
+        r'\bbadly burn(?:ed|t)\b|\bburn(?:ed|t) (?:my|his|her|their) \w+ (?:badly|severely)\b', _I),
+        _EMERGENCY_LINE,
+        unless=re.compile(r'(?<!消)防|预防|避免|多吗|多不多|哪里买|在哪买|怎么买|药膏|\b(?:prevent\w*|avoid\w*|tips?|where (?:to|can I) buy)\b', _I)),
     Requirement('lost_documents', re.compile(
         r'护照[^。？！?!]{0,6}(?:丢|掉|不见|被偷|被盗|被抢|遗失|找不到|没了)|'
         r'护照[^。？！?!]{0,4}(?:忘在|落在|丢在)[^。？！?!]{0,4}(?:出租车|出租|计程车|滴滴|车上|网约车|飞机|火车|高铁|地铁|公交|路上|餐厅|饭店|店里|景区)|'
@@ -95,8 +101,8 @@ def safety_lines_enabled():
 
 
 def matched(question):
-    return tuple(requirement.key for requirement in REQUIREMENTS if requirement.question.search(question)
-                 and not (requirement.unless is not None and requirement.unless.search(question)))
+    return tuple(dict.fromkeys(requirement.key for requirement in REQUIREMENTS if requirement.question.search(question)
+                               and not (requirement.unless is not None and requirement.unless.search(question))))
 
 
 def supplement(question, answer, locale):

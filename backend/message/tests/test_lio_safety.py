@@ -66,6 +66,18 @@ class SafetyLines(unittest.TestCase):
             with self.subTest(question=question):
                 self.assertEqual(matched(question), ())
 
+    def test_unmistakable_emergencies_ignore_the_prevention_exclusion(self):
+        # Third review of #1918: an exclusion word must not swallow a real emergency.
+        for question in ('My friend collapsed, any tips?', 'my dad is having a heart attack, what should I avoid doing',
+                         '朋友心脏病发作，附近哪里买药', '老人摔倒了没反应，要避免挪动吗', '朋友溺水了，消防电话多少',
+                         '朋友中暑了，消防电话多少', 'I burned my hand badly'):
+            with self.subTest(question=question):
+                self.assertIn('emergency', matched(question))
+                self.assertIn('120', supplement(question, '', 'en' if question.isascii() else 'zh'))
+        for question in ('打车软件叫了没反应怎么办', '被球撞了', '我的车被撞了', '防中暑要带什么', 'heatstroke prevention tips'):
+            with self.subTest(question=question):
+                self.assertEqual(matched(question), ())
+
     def test_negated_or_unrelated_mentions_do_not_count_as_present(self):
         # Review of #1863: "120 元", "别报警" and "这说明" are not the essentials.
         self.assertIn('120', supplement('朋友晕倒了', '打车大约 120 元。', 'zh'))
