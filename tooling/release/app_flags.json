@@ -72,6 +72,10 @@
     {
       "setting": "G2C_NEW_SIGN_IN_SCREEN_ENABLED",
       "plist": "G2CNewSignInScreenEnabled"
+    },
+    {
+      "setting": "G2C_ANSWER_LAYOUT_ENABLED",
+      "plist": "G2CAnswerLayoutEnabled"
     }
   ],
   "release": {
