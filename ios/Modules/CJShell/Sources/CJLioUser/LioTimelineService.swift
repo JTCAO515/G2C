@@ -13,6 +13,7 @@ struct LioTimelineTurn: Sendable {
     let exploration: LioExplorationDisplay?
     let layout: LioTimelineWire.AnswerLayout?
     let followups: [LioTimelineWire.Followup]
+    let chips: [LioTimelineWire.Chip]
 
     var isActive: Bool {
         switch status {
@@ -29,6 +30,7 @@ struct LioTimelineTurn: Sendable {
         exploration = nil
         layout = message.layout
         followups = message.followups
+        chips = message.chips
         memoryTags = message.memoryTags.filter { LioPublicDisplay.permitsText($0.text) }
         sources = Self.projectSources(message.sources.map { ($0.title, $0.link) }, messageID: message.id)
         status = Self.status(message.state, activity: message.activity, answer: message.answer)
@@ -41,6 +43,7 @@ struct LioTimelineTurn: Sendable {
         exploration = try LioExplorationDisplay(message)
         layout = nil
         followups = []
+        chips = []
         // Native calendar/rich summaries keep their actual type and binding in exploration.trip.
         itinerary = nil
         memoryTags = message.memoryTags.filter { LioPublicDisplay.permitsText($0.text) }
@@ -318,9 +321,11 @@ private actor LioTimelineSession {
         case (false, nil):
             let locale: LioTimelineWire.Locale = question.language == .english ? .english : .chinese
             if let destination {
+                // A chip's ticket rides only on LIO-message.2; any other version sends the words as typed.
                 original = try LioTimelineWire.Send(messageID: question.messageID, text: question.text, locale: locale,
                                                     destination: conversationID.map(LioTimelineWire.V2Destination.existing) ?? destination,
-                                                    version: messageVersion)
+                                                    version: messageVersion,
+                                                    chipTicket: messageVersion == .v2 ? question.chipTicket : nil)
             } else {
                 original = try LioTimelineWire.Send(messageID: question.messageID, text: question.text,
                                                     locale: locale, conversationID: conversationID)

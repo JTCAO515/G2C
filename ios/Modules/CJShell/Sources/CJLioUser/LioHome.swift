@@ -991,10 +991,10 @@ public struct LioHome<MenuContent: View>: View {
         }
     }
 
-    private func sendQuestion(_ text: String) -> Bool {
+    private func sendQuestion(_ text: String, chipTicket: String? = nil) -> Bool {
         guard !chatFading, scenePhase == .active else { return false }
         let showedWelcome = opening == .beforeNext && conversation.turns.isEmpty && conversation.hasLoadedTimeline
-        guard conversation.send(text, language: language) else { return false }
+        guard conversation.send(text, language: language, chipTicket: chipTicket) else { return false }
         followsAnswer = true
         sendCount += 1
         if let id = conversation.pending?.id {
@@ -1234,8 +1234,9 @@ public struct LioHome<MenuContent: View>: View {
                     lioReply(byline: false) { answerText(tail, "lio.answer.2", true) }
                         .lioEntrance(.fade, active: entering.contains(answerKey)) { entering.remove(answerKey) }
                 }
-                if answerLayoutOn, turn.status == .finished, !turn.followups.isEmpty {
-                    LioAnswerFollowups(actions: turn.followups) { openFollowup($0) }
+                if answerLayoutOn, turn.status == .finished, !(turn.followups.isEmpty && turn.chips.isEmpty) {
+                    LioAnswerFollowups(actions: turn.followups, chips: turn.chips, open: { openFollowup($0) },
+                                       ask: { chip in _ = sendQuestion(chip.label, chipTicket: chip.ticket) })
                 }
             }
             messageStatus(turn)

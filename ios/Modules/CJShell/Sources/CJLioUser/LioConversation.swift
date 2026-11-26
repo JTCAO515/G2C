@@ -15,6 +15,8 @@ struct LioQuestion: Identifiable, Equatable, Sendable {
     let text: String
     let language: LioLanguage
     var isResend = false
+    /// #1727: the ticket of a tap-to-ask chip; `text` is then the chip's label exactly.
+    var chipTicket: String?
 
     var id: Data { Data(messageID.utf8) }
 }
@@ -52,7 +54,7 @@ enum LioEvent: Sendable {
     case source(LioSource)
     case savedItinerary(LioItinerary)
     /// Debug preview only (#1727): the answer's layout and buttons.
-    case layout(LioTimelineWire.AnswerLayout, [LioTimelineWire.Followup])
+    case layout(LioTimelineWire.AnswerLayout, [LioTimelineWire.Followup], [LioTimelineWire.Chip])
     case finished
     case failed(LioFailure)
 }
@@ -90,6 +92,7 @@ struct LioTurn: Identifiable {
     /// #1727: how the server says this answer is shown, and its fixed buttons (empty unless the build asked for them).
     var layout: LioTimelineWire.AnswerLayout?
     var followups: [LioTimelineWire.Followup] = []
+    var chips: [LioTimelineWire.Chip] = []
     var fromTimeline = false
     var readFailure: LioRequestProblem?
     var id: Data { question.id }
@@ -166,10 +169,11 @@ final class LioConversation {
     }
 
     @discardableResult
-    func send(_ text: String, language: LioLanguage) -> Bool {
+    func send(_ text: String, language: LioLanguage, chipTicket: String? = nil) -> Bool {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !sessionSuspended, !text.isEmpty, pending == nil else { return false }
-        let question = LioQuestion(messageID: UUID().uuidString, text: text, language: language)
+        var question = LioQuestion(messageID: UUID().uuidString, text: text, language: language)
+        question.chipTicket = chipTicket
         turns.append(LioTurn(question: question))
         sendGeneration += 1
         pending = question
@@ -231,9 +235,10 @@ final class LioConversation {
                 }
             case .savedItinerary(let itinerary):
                 turns[index].itinerary = itinerary
-            case .layout(let layout, let followups):
+            case .layout(let layout, let followups, let chips):
                 turns[index].layout = layout
                 turns[index].followups = followups
+                turns[index].chips = chips
             case .finished:
                 turns[index].status = .finished
                 return
@@ -344,6 +349,7 @@ final class LioConversation {
         let question = question ?? LioQuestion(messageID: row.messageID, text: row.text, language: .english)
         return LioTurn(question: question, status: row.status, answer: row.answer,
                        sources: row.sources, itinerary: row.itinerary, memoryTags: row.memoryTags,
-                       exploration: row.exploration, layout: row.layout, followups: row.followups, fromTimeline: true)
+                       exploration: row.exploration, layout: row.layout, followups: row.followups, chips: row.chips,
+                       fromTimeline: true)
     }
 }

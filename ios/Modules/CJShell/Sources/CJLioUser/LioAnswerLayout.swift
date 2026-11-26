@@ -49,17 +49,47 @@ struct LioAnswerParts: Equatable {
 /// have shows "not in this version" instead of an error.
 struct LioAnswerFollowups: View {
     let actions: [LioTimelineWire.Followup]
+    var chips: [LioTimelineWire.Chip] = []
     let open: (LioTimelineWire.Followup) -> Void
+    var ask: (LioTimelineWire.Chip) -> Void = { _ in }
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
+        VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+            if !actions.isEmpty { row { buttons } }
+            if !chips.isEmpty { row { questions } }
+        }
+    }
+
+    @ViewBuilder private func row<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
         if typeSize.isAccessibilitySize {
-            VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) { buttons }
+            VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) { content() }
         } else {
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: LioTheme.Spacing.xs) { buttons }
-                VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) { buttons }
+                HStack(spacing: LioTheme.Spacing.xs) { content() }
+                VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) { content() }
             }
+        }
+    }
+
+    /// Short questions to send with a tap. One older than the server's ticket (24 hours) is shown but cannot be tapped.
+    private var questions: some View {
+        ForEach(chips.indices, id: \.self) { index in
+            let chip = chips[index]
+            Button { ask(chip) } label: {
+                Text(chip.label)
+                    .font(.subheadline)
+                    .foregroundStyle(chip.ticket == nil ? LioTheme.inkSecondary : LioTheme.ink)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, LioTheme.Spacing.md)
+                    .frame(minHeight: 44)
+                    .lioCard(Capsule())
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .disabled(chip.ticket == nil)
+            .accessibilityIdentifier("lio.answer.chip.\(index)")
         }
     }
 
