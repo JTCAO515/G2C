@@ -10,17 +10,17 @@ def test_fixed_seed_reproduces_cases_and_default_evaluation():
     cases = generate_eval_cases()
     assert cases == generate_eval_cases(EVAL_SEED)
     assert cases != generate_eval_cases(EVAL_SEED + 1)
-    assert len(cases) == len({case.case_id for case in cases}) == 62
+    assert len(cases) == len({case.case_id for case in cases}) == 67
 
     report = asyncio.run(run_evaluation())
     assert report.seed == EVAL_SEED
     assert report.cases == len(cases)
     assert report.p0_gate == "PASS"
-    assert report.p0_detected == report.p0_labeled == 27
+    assert report.p0_detected == report.p0_labeled == 29
     assert report.p0_missed == ()
     assert report.p0_recall == 1.0
-    assert report.classes["safety"].emitted == report.classes["safety"].correct == 12
-    assert report.classes["illness"].emitted == report.classes["illness"].correct == 15
+    assert report.classes["safety"].emitted == report.classes["safety"].correct == 13
+    assert report.classes["illness"].emitted == report.classes["illness"].correct == 16
     assert report.classes["complaint"].labeled == 2
     assert report.classes["complaint"].precision == "UNKNOWN"
     assert report.classes["complaint"].recall == "UNKNOWN"

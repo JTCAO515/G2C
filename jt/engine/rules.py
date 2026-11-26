@@ -46,12 +46,16 @@ _SAFETY = re.compile(
 )
 _EMERGENCY_SERVICE_ZH = r"(?:紧急|緊急|报警|報警|急救|消防)"
 _PHONE_LABEL_ZH = r"(?:电话|電話|热线|熱線|号码|號碼)"
+_DIAL_ACTION_ZH = (
+    rf"(?:[请請]\s*)?(?:拨打?|撥打?|打)(?:\s*[个個]?\s*{_EMERGENCY_SERVICE_ZH}?{_PHONE_LABEL_ZH})?"
+    r"(?:\s*[给給])?"
+)
 _DIAL_NUMBER = re.compile(
     r"(?:(?<![A-Za-z])(?:call|dial|ring|phone|contact)(?![A-Za-z])"
     r"(?:\s+(?:the|number|emergency|hotline|services|police|fire|department|ambulance|at)\b)*"
-    rf"|(?:[请請]\s*)?(?:拨打?|撥打?|打[给給]?)(?:\s*{_EMERGENCY_SERVICE_ZH}?{_PHONE_LABEL_ZH})?"
-    rf"|{_EMERGENCY_SERVICE_ZH}{_PHONE_LABEL_ZH}?)"
-    r"\s*[:#( ]*(110|119|120)(?![A-Za-z0-9]|[.-][0-9]|路|号线|號線)",
+    rf"|{_DIAL_ACTION_ZH}|{_EMERGENCY_SERVICE_ZH}{_PHONE_LABEL_ZH}?)"
+    r"\s*[:#( ]*(110|119|120)"
+    r"(?![A-Za-z0-9]|[.,-][0-9]|\s*(?:路|号线|號線|[个個]|通[电電][话話]|(?:calls|people|times)\b))",
     re.IGNORECASE,
 )
 _STANDALONE_NUMBER = re.compile(
