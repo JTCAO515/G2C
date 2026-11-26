@@ -24,11 +24,15 @@ def validate_name(entry: object, *, as_of: date) -> None:
         raise ValueError("name source must match the exact Wikidata QID")
 
 
-def load_names(paths: list[Path], *, as_of: date) -> list[dict]:
-    records = load_records(paths, validate_record=lambda entry: validate_name(entry, as_of=as_of))
+def check_unique_names(records: list[dict]) -> None:
     for field in ("place_key", "wikidata_qid"):
         if len({record[field] for record in records}) != len(records):
             raise ValueError(f"duplicate name {field} in batch")
+
+
+def load_names(paths: list[Path], *, as_of: date) -> list[dict]:
+    records = load_records(paths, validate_record=lambda entry: validate_name(entry, as_of=as_of))
+    check_unique_names(records)
     return records
 
 
