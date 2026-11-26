@@ -21,7 +21,7 @@ from psycopg.conninfo import conninfo_to_dict
 from psycopg.pq import TransactionStatus
 from psycopg_pool import ConnectionPool, PoolTimeout
 
-from cj_usage.authorization_deadlines import deadline
+from cj_usage.authorization_deadlines import deadline as authorization_deadline
 
 from .composition import CompositionUnavailable
 from .local_app import LocalDatabase,_require_unbound
@@ -31,8 +31,8 @@ SUPABASE_TEST_SCHEMA=48
 HOST='aws-0-ap-southeast-1.pooler.supabase.com'
 CA_SHA='807025ad50d4ed219d2c9c7d299c004f824eb00cf7f65afef607d07b72e6cafa'
 HK_SOCKET='/run/g2c-pg'
-DEADLINE=deadline('supabase_test')
-DEMO_DEADLINE=deadline('hk_demo')
+DEADLINE=authorization_deadline('supabase_test')
+DEMO_DEADLINE=authorization_deadline('hk_demo')
 _timing_log=logging.getLogger('cj_usage.audit')
 
 

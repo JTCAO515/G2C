@@ -1,4 +1,5 @@
 """One reviewed config holds every authorization end (#1716); copies must agree."""
+import ast
 from datetime import datetime,timedelta,timezone
 import json
 from pathlib import Path
@@ -36,12 +37,27 @@ def test_copies_outside_python_imports_match_the_config():
     assert '至 2026-12-31' in (ROOT/'deploy/supabase-test.md').read_text()
 
 
-@pytest.mark.parametrize('path',['backend/cj_api/supabase_test_database.py','backend/usage/cj_usage/authorization_budget.py',
+CALLERS=['backend/cj_api/supabase_test_database.py','backend/usage/cj_usage/authorization_budget.py',
     'deploy/hk/configuration.py','deploy/hk/demo_accounts.py','deploy/hk/secret_setup.py','deploy/hk/cloud_rehearsal.py',
-    'deploy/hk/oss_quota.py','scripts/provider_m4.py','scripts/supabase_m4.py'])
+    'deploy/hk/oss_quota.py','scripts/provider_m4.py','scripts/supabase_m4.py']
+
+
+@pytest.mark.parametrize('path',CALLERS)
 def test_no_scattered_authorization_dates_remain(path):
     text=(ROOT/path).read_text()
     assert re.search(r"datetime\(202[67],|'202[67]-[01][0-9]-[0-3][0-9](T|')",text) is None
+
+
+@pytest.mark.parametrize('path',CALLERS)
+def test_imported_deadline_readers_are_never_shadowed(path):
+    tree=ast.parse((ROOT/path).read_text())
+    imported={alias.asname or alias.name for node in ast.walk(tree) if isinstance(node,ast.ImportFrom)
+              and node.module in ('cj_usage.authorization_deadlines','.authorization_deadlines','authorization_deadlines')
+              for alias in node.names}
+    assert imported
+    stored={node.id for node in ast.walk(tree) if isinstance(node,ast.Name) and isinstance(node.ctx,ast.Store)}
+    stored|={node.arg for node in ast.walk(tree) if isinstance(node,ast.arg)}
+    assert not imported&stored
 
 
 @pytest.mark.parametrize('mutate,error',[
