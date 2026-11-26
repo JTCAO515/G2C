@@ -10,8 +10,8 @@
     "source_urls": [
       "https://www.beijing.gov.cn/fuwu/bmfw/sy/jrts/202506/t20250616_4113709.html"
     ],
-    "checked_on": "2026-11-16",
-    "expires_on": "2026-12-16"
+    "checked_on": "2026-11-26",
+    "expires_on": "2026-12-26"
   },
   {
     "id": "visitor.chengdu.metro-qr",
@@ -38,8 +38,8 @@
     "source_urls": [
       "https://www.shanghai.gov.cn/gwk/search/content/45e2177ec30648c696ad6f5b5b9739a1"
     ],
-    "checked_on": "2026-11-16",
-    "expires_on": "2026-12-16"
+    "checked_on": "2026-11-26",
+    "expires_on": "2026-12-26"
   },
   {
     "id": "visitor.chongqing.rail-physical-pass",
@@ -52,8 +52,8 @@
     "source_urls": [
       "https://www.cq.gov.cn/ywdt/jrcq/202501/t20250103_14043418.html"
     ],
-    "checked_on": "2026-11-16",
-    "expires_on": "2026-12-16"
+    "checked_on": "2026-11-26",
+    "expires_on": "2026-12-26"
   },
   {
     "id": "visitor.shenzhen.metro-pos-ticket",
@@ -66,8 +66,8 @@
     "source_urls": [
       "https://www.sz.gov.cn/en_szgov/news/infocus/SZCitywalk/NewsPolicies/Latestnews/content/post_11887532.html"
     ],
-    "checked_on": "2026-11-16",
-    "expires_on": "2026-12-16"
+    "checked_on": "2026-11-26",
+    "expires_on": "2026-12-26"
   },
   {
     "id": "visitor.beijing.badaling-passport",
@@ -80,8 +80,8 @@
     "source_urls": [
       "https://www.beijing.gov.cn/fuwu/lqfw/ztzl/jrfw/shrl/202407/t20240725_3758812.html"
     ],
-    "checked_on": "2026-11-16",
-    "expires_on": "2026-11-30"
+    "checked_on": "2026-11-26",
+    "expires_on": "2026-12-10"
   },
   {
     "id": "visitor.chongqing.three-gorges-passport",
@@ -94,7 +94,7 @@
     "source_urls": [
       "https://www.cq.gov.cn/ywdt/jrcq/202605/t20260517_15681262_app.html"
     ],
-    "checked_on": "2026-11-16",
-    "expires_on": "2026-11-30"
+    "checked_on": "2026-11-26",
+    "expires_on": "2026-12-10"
   }
 ]
