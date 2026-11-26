@@ -237,13 +237,27 @@ def _worker_loop(runtime,services,tools,database,lio_confirmation,bindings=None,
         time.sleep(1)
 
 
+def require_frozen_supabase_schema(connection,migrations):
+    """HK moved to its own PG and froze the Supabase source (local_postgres.freeze_supabase).
+
+    No later image may migrate it: a migration the source does not already have fails closed
+    here instead of running there (e.g. 0058 would create a login role that the freeze never
+    covered). With nothing pending, startup continues unchanged.
+    """
+    done=set(migrate.applied(connection))
+    if any(item['version'] not in done for item in migrations):
+        raise ValueError('supabase_source_frozen_pending_migrations')
+
+
 def initialize(runtime):
     with checkpoint.operator() as (connection,_):
         if local_database_target():
             checkpoint.require_release(connection,control())
             return
         if (control()/'release.json').exists():checkpoint.require_release(connection,control())
-        migrate.up(connection,migrate.load(),checkpoint.versions()[-1])
+        migrations=migrate.load()
+        require_frozen_supabase_schema(connection,migrations)
+        migrate.up(connection,migrations,checkpoint.versions()[-1])
     def seed(connection):
         with connection.transaction():
             for subject in run_worker.invited_subjects(runtime.auth):provision_budget_connection(connection,runtime.context,subject)
