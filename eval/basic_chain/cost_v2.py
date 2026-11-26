@@ -93,7 +93,7 @@ def _local(component,expected):
             and receipt['data_origin']=='maintainer_summary'
             and receipt['response_sha256']==artifact['response_sha256']
             and meter['receipt']['receipt_id']=='visitor-local:'+artifact['response_sha256']
-            and body['version']=='FACT-result.2'and body['data_origin']=='maintainer_summary'
+            and body['version']in('FACT-result.2','FACT-result.3')and body['data_origin']=='maintainer_summary'
             and is_sha(body['catalogue_sha256'])and body['query']==logical['query']
             and body['request_ref']==logical['request_ref'],'positive local zero-cost source/result proof required')
     require(component['fee']['status']=='UNAVAILABLE'

@@ -8,10 +8,10 @@ from cj_api.runtime_originals import RuntimeOriginals
 from runtime_adapter.contract import encode,Invalid,Unavailable
 
 
-def evidence():
-    query=dict(version='FACT-query.2',topic='payment',city='310100')
+def evidence(query=None,version='FACT-result.2'):
+    query=query or dict(version='FACT-query.2',topic='payment',city='310100')
     logical=dict(name='visitor_fact',query=query,request_ref='original-reference')
-    result=encode(dict(version='FACT-result.2',query=query,request_ref='original-reference',
+    result=encode(dict(version=version,query=query,request_ref='original-reference',
         data_origin='maintainer_summary',status='matched',catalogue_sha256='a'*64,
         evaluated_at='2026-11-13T01:00:00+08:00',entries=[{'text_zh':'本地已审阅说明'}])).decode()
     digest=sha256(result.encode()).hexdigest()
@@ -46,3 +46,13 @@ def test_unsettled_or_another_original_meter_never_authorizes_local_output():
     with pytest.raises(Unavailable,match='LOCAL_VISITOR_METER_RECEIPT'):reader._local_visitor('owner',None,row,usage,data)
     meter['state']='settled';meter['receipt']['attempt_id']='different-attempt'
     with pytest.raises(Unavailable,match='LOCAL_VISITOR_METER_RECEIPT'):reader._local_visitor('owner',None,row,usage,data)
+
+
+def test_visitor_result_version_answers_the_version_of_its_own_query():
+    v3=dict(version='FACT-query.3',topic='payment')
+    reader,row,usage,data,meter=evidence(v3,'FACT-result.3')
+    reader._local_visitor('owner',None,row,usage,data)  # a cityless v3 pair is accepted
+    for query,version in ((v3,'FACT-result.2'),(dict(version='FACT-query.2',topic='payment',city='310100'),'FACT-result.3'),
+                          (v3,'FACT-result.1'),(v3,None)):
+        reader,row,usage,data,meter=evidence(query,version)
+        with pytest.raises(Invalid,match='LOCAL_VISITOR_RESULT'):reader._local_visitor('owner',None,row,usage,data)

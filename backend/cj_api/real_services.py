@@ -141,9 +141,10 @@ for _tool in NATIONAL_TOOLS:
         _tool['function']['parameters']['properties']['city']={'type':'string','description':'Server-confirmed administrative code.'}
     elif _tool['function']['name']=='weather':
         _tool['function']['description']='Forecast for the server-confirmed administrative destination and ISO local dates. Returned provider dates only; never guaranteed.'
-VISITOR_TOOL=_function('visitor_fact','Read reviewed visitor guidance for the confirmed city: payment, passport booking, transport, internet or emergency. This is a local maintainer summary, not live policy or eligibility.',dict(
+VISITOR_TOOL=_function('visitor_fact','Read reviewed visitor guidance: payment, passport booking, transport, internet or emergency. With a server-confirmed city it returns that city\'s entries; without one, only nationwide entries. This is a local maintainer summary, not live policy or eligibility.',dict(
     topic=dict(type='string',enum=['payment','passport_booking','transport','internet','emergency']),
-    city=dict(type='string',minLength=1,maxLength=128,description='The server-confirmed city; no default city.')))
+    city=dict(type='string',minLength=1,maxLength=128,description='The server-confirmed city; omit it when no city is confirmed. There is no default city.')))
+VISITOR_TOOL['function']['parameters']['required']=['topic']
 NATIONAL_TOOLS.append(VISITOR_TOOL)
 NATIVE_TOOLS=frozenset(t['function']['name'] for t in TOOLS)
 NATIVE_REGISTRATION={'place_search':'place','place_detail':'place','place_route':'place','weather':'weather','fact':'fact'}
@@ -167,10 +168,18 @@ def canonical_tool(name,raw,*,city=None):
     """Native argument data → existing strict domain codec; no new wire version."""
     value=json.loads(raw)
     if name=='visitor_fact':
-        from cj_fact.visitor import decode_query as visitor_query
-        if type(value)is not dict or value.keys()!={'topic','city'}:raise ProviderUnknown('visitor fact argument fields invalid')
-        raw=canonical(dict(version='FACT-query.2',topic=value['topic'],city=city.adcode if city is not None else value['city']))
-        try:visitor_query(raw)
+        from cj_fact.visitor import decode_query as visitor_query,decode_query_v3 as visitor_query_v3
+        if type(value)is not dict or not {'topic'}<=value.keys()<={'topic','city'}:raise ProviderUnknown('visitor fact argument fields invalid')
+        if city is not None:
+            # A server-confirmed city keeps the FACT-query.2 request exactly as before.
+            raw=canonical(dict(version='FACT-query.2',topic=value['topic'],city=city.adcode))
+            decode=visitor_query
+        else:
+            # No confirmed city (#1756): FACT-query.3 without a city, only nationwide entries match.
+            # A city the model names is not confirmed by the server and is never used.
+            raw=canonical(dict(version='FACT-query.3',topic=value['topic']))
+            decode=visitor_query_v3
+        try:decode(raw)
         except FactFailure:raise ProviderUnknown('visitor fact arguments unavailable')from None
         return name,raw
     fields=next(t['function']['parameters']['required'] for t in TOOLS if t['function']['name']==name)
@@ -594,7 +603,7 @@ class RealTools:
                      modes_sha256 if intake_profile=='LIO-planning-intake.4' else response_format_sha256)
         selected_tools=(self.national_tools if argument.national else self.native_tools) if native_turn else None
         if native_turn and argument.national and not argument.confirmed_destination:
-            eligible=[tool for tool in selected_tools if tool['function']['name']=='fact']
+            eligible=[tool for tool in selected_tools if tool['function']['name']in('fact','visitor_fact')]
             if eligible:selected_tools=eligible
             else:final_answer=True
         if self.runtime_fragments is not None:
@@ -744,11 +753,18 @@ class RealTools:
 
     def _visitor_input(self,argument):
         from cj_fact.visitor import decode_query as visitor_query,lookup
-        raw_query,request_ref,city=argument
-        query=visitor_query(raw_query)
-        if query.city!=city.adcode:raise ProviderUnknown('visitor destination differs from original resolution')
+        raw_query,request_ref,*rest=argument
+        city=rest[0] if rest else None
+        if city is not None:
+            query=visitor_query(raw_query)
+            if query.city!=city.adcode:raise ProviderUnknown('visitor destination differs from original resolution')
+        else:
+            # No server-confirmed city: only the cityless FACT-query.3 request is accepted.
+            from cj_fact.visitor import decode_query_v3
+            query=decode_query_v3(raw_query)
+            if query.city is not None:raise ProviderUnknown('visitor destination differs from original resolution')
         original=canonical(dict(name='visitor_fact',query=json.loads(raw_query),request_ref=request_ref,
-                                destination_adcode=city.adcode,synthetic_only=True))
+                                synthetic_only=True,**({'destination_adcode':city.adcode}if city is not None else {})))
         metadata={}
         def bind(operation,guard):
             def checked():
@@ -977,7 +993,7 @@ class RealTools:
             for index,call in enumerate(turn.calls):
                 key='tool.'+str(round_index)+'.'+str(index)
                 ref='op-'+hashlib.sha256((binding.run_id+'\0'+key).encode()).hexdigest()
-                if national and city is None and call.name not in ('fact',):
+                if national and city is None and call.name not in ('fact','visitor_fact'):
                     logging.getLogger('cj_usage.audit').warning(
                         'LIO_TOOL_CALL_WITHHELD run_id=%s code=unconfirmed_destination tool=%s',binding.run_id,call.name)
                     raise ProviderUnknown('original destination must be confirmed before this tool')

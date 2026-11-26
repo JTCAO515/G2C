@@ -668,9 +668,10 @@ class Boundaries(unittest.TestCase):
         self.assertIn('code=unconfirmed_destination',' '.join(logs.output))
         self.assertNotIn('must-not-log',' '.join(logs.output));self.assertEqual(self.sent,[])
 
-    def test_unconfirmed_national_destination_only_offers_already_permitted_fact_tool(self):
+    def test_unconfirmed_national_destination_only_offers_the_fact_and_nationwide_visitor_tools(self):
         provider=self.provider(sse());services=RealServices(provider,KEY,frozenset({'m4-synthetic-one'}))
-        for allowed,expected in ((None,{'fact'}),(frozenset({'place_search'}),{'place_search'})):
+        # #1756: the visitor tool (nationwide entries only) is offered next to the immigration fact tool.
+        for allowed,expected in ((None,{'fact','visitor_fact'}),(frozenset({'place_search'}),{'place_search'})):
             with self.subTest(allowed=allowed):
                 tools=RealTools(services,**({}if allowed is None else dict(allowed_native=allowed)))
                 question=ModelInput([dict(role='user',content='Synthetic question')],TOOL_SYSTEM,provider,{},
@@ -931,6 +932,70 @@ class Boundaries(unittest.TestCase):
         self.assertIn(LioToolProgress('tool.0.0',None),chunks)
         self.assertFalse(any(isinstance(part,LioCitation)for part in chunks))
         self.assertEqual(self.sent,[])
+
+    def test_visitor_without_a_confirmed_city_asks_for_nationwide_entries_only(self):
+        # #1756 part 3: no confirmed city -> FACT-query.3 without a city; a model-named city is never used.
+        from cj_api.lio_city import CityReference
+        from cj_api.local_app import ISSUER,scope_for
+        subject='m4-synthetic-one';subjects=frozenset({subject});provider=self.provider(sse())
+        directory=Path(__file__).resolve().parents[3]/'knowledge/visitor/entries'
+        tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects),
+                        visitor_catalogue_directory=directory)
+        tool=next(t for t in tools.national_tools if t['function']['name']=='visitor_fact')
+        self.assertEqual(tool['function']['parameters']['required'],['topic'])
+        name,raw=canonical_tool('visitor_fact',json.dumps(dict(topic='payment')))
+        self.assertEqual((name,json.loads(raw)),('visitor_fact',dict(version='FACT-query.3',topic='payment')))
+        _,raw_named=canonical_tool('visitor_fact',json.dumps(dict(topic='payment',city='Beijing')))
+        self.assertEqual(raw_named,raw)  # the model's city is not a confirmed city
+        with self.assertRaises(ProviderUnknown):canonical_tool('visitor_fact',json.dumps(dict(city='Beijing')))
+        with self.assertRaises(ProviderUnknown):canonical_tool('visitor_fact',json.dumps(dict(topic='payment',extra=1)))
+        city=CityReference('510100','成都市','四川省','成都市','city','Asia/Shanghai')
+        _,confirmed=canonical_tool('visitor_fact',json.dumps(dict(topic='payment')),city=city)
+        self.assertEqual(json.loads(confirmed),dict(version='FACT-query.2',topic='payment',city='510100'))
+        prepared=tools.registrations['tool.visitor_fact'].prepare_input((raw,'original-ref'))
+        original=json.loads(prepared.original_bytes)
+        self.assertNotIn('destination_adcode',original);self.assertEqual(original['query'],json.loads(raw))
+        operation=SimpleNamespace(binding=SimpleNamespace(scope=scope_for(ISSUER,subject)))
+        result=json.loads(''.join(prepared.bind_operation(operation,lambda:True)()))
+        self.assertEqual(result['version'],'FACT-result.3')
+        self.assertEqual(result['query'],dict(version='FACT-query.3',topic='payment'))
+        self.assertTrue(all(len(entry['cities'])==7 for entry in result['entries']))
+        self.assertEqual(self.sent,[])
+        # A cityless route never accepts a v2 request or a request that names a city.
+        with self.assertRaises(FactFailure):tools.registrations['tool.visitor_fact'].prepare_input((confirmed,'original-ref'))
+        with self.assertRaises(ProviderUnknown):tools.registrations['tool.visitor_fact'].prepare_input((
+            json.dumps(dict(version='FACT-query.3',topic='payment',city='beijing')).encode(),'original-ref'))
+        # With a confirmed city the v2 request must still not be replaced by v3.
+        with self.assertRaises(FactFailure):tools.registrations['tool.visitor_fact'].prepare_input((raw,'original-ref',city))
+
+    def test_visitor_tool_is_offered_and_run_without_a_confirmed_city(self):
+        from cj_api.local_app import ISSUER,scope_for
+        from cj_fact.visitor import decode_query_v3,lookup
+        subject='m4-synthetic-one';subjects=frozenset({subject});provider=self.provider(sse())
+        tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects))
+        directory=Path(__file__).resolve().parents[3]/'knowledge/visitor/entries'
+        binding=SimpleNamespace(scope=scope_for(ISSUER,subject),run_id='visitor-no-city')
+        arguments=[]
+        class Worker:
+            lio_planning=None
+            def _model_history(self,*args):pass
+            def _registered_stream(self,original,key,registration,argument,**kwargs):
+                if registration=='tool.visitor_fact':
+                    arguments.append(argument)
+                    raw,ref=argument
+                    yield lookup(directory,decode_query_v3(raw),evaluated_at=datetime.now(timezone.utc),request_ref=ref).decode()
+                elif key=='model.tool_turn.0':
+                    argument.native_reply['assistant']=dict(tool_calls=[dict(id='visitor-no-city-tool')])
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='tool',answer=None,
+                        calls=[dict(name='visitor_fact',arguments=dict(topic='payment'))]))
+                else:
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='answer',calls=[],
+                        answer=dict(zh='好的。',en='Alipay or WeChat Pay work almost everywhere. Which city are you going to?')))
+        worker=Worker();worker.provider=provider
+        chunks=list(tools.answer(worker,binding,[dict(role='user',content='How can I pay in China?')],lio_locale='en',lio_city=None))
+        self.assertEqual(len(arguments),1);self.assertEqual(len(arguments[0]),2)
+        self.assertEqual(json.loads(arguments[0][0]),dict(version='FACT-query.3',topic='payment'))
+        self.assertEqual([part for part in chunks if type(part)is str][-1][:6],'Alipay')
 
     def test_invalid_visitor_resource_is_not_successful_no_match(self):
         from cj_api.lio_city import CityReference
