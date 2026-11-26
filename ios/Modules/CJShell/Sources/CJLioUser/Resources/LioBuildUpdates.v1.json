@@ -16,14 +16,14 @@
             "zh": [
               "新登录页：打开 App 先看到新的登录页，上面有「通过 Apple 登录」「使用 Google 账号登录」「使用邮箱登录」三个入口，目前只是占位，还不能登录。内测账号仍用底部的「使用内部测试邀请码」登录。",
               "聊天：Lio 的每条回答下面多一行「由 AI 生成，可能有误，重要信息请自行确认。」；长按 Lio 的开场白又可以复制。",
-              "「出示卡」成为「工具」里独立的一张卡（常用语和求助，给对方看）；本地协助卡片上的说明文字不再被截断。",
+              "「出示卡」成为「工具」里独立的一张卡（常用语和求助，给对方看），新增商务常用语（报价、起订量、交期、样品、付款方式）；本地协助卡片上的说明文字不再被截断。",
               "路书：模板路书页新增「用作我的行程」，用作之后会出现在「这趟旅行」首页的日程里；英文界面下，模板行程显示英文地点名。",
               "「我的」→「设置与账号」新增「隐私摘要」：几句话说明 App 收集什么、发到哪里，完整政策见 https://go2china.space/privacy 。"
             ],
             "en": [
               "New sign-in screen: the app now opens on it, with Sign in with Apple, Sign in with Google and Sign in with email. These three are placeholders for now and cannot sign you in. Testers still sign in with Use an internal test invitation code at the bottom.",
               "Chat: each Lio answer is followed by a line saying it is AI-generated and may be wrong, so double-check anything important. Long-pressing Lio's opening message copies it again.",
-              "Show Cards is now its own card in Tools (phrases and help cards to show to others); the text on the Local Support cards is no longer cut off.",
+              "Show Cards is now its own card in Tools (phrases and help cards to show to others), with new business phrases (quotes, minimum order, lead time, samples, payment terms); the text on the Local Support cards is no longer cut off.",
               "Roadbook: template roadbooks have Use as my trip; once used, the trip appears in the schedule on This trip. In English, template trips show English place names.",
               "Me > Settings and account has a new Privacy summary: a few lines on what the app collects and where it goes; the full policy is at https://go2china.space/privacy ."
             ]
