@@ -2,8 +2,9 @@
 
 from dataclasses import dataclass
 from hashlib import sha256
-from json import dumps
 from typing import cast
+
+from cj_strict_json import compact
 
 from jt.common import (
     DecisionContext, DecisionModel, EventRef, ModelObservation, Severity,
@@ -72,10 +73,12 @@ def _make_signal(
     rule_hits: tuple[str, ...],
     observations: tuple[ModelObservation, ...] = (),
 ) -> Signal:
-    key = dumps([signal_type, [ref.event_id for ref in refs]], separators=(",", ":"))
+    key = compact(
+        [signal_type, [ref.event_id for ref in refs]], ensure_ascii=True, sort_keys=False, allow_nan=False,
+    )
     return Signal(
         schema_version="jt-signal.v1",
-        signal_id=f"sig-jt-{sha256(key.encode()).hexdigest()}",
+        signal_id=f"sig-jt-{sha256(key).hexdigest()}",
         source_events=refs,
         # Synthetic event time is the local observation clock, so replays have the same content.
         detected_at=max(ref.occurred_at for ref in refs),
