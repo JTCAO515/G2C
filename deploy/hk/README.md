@@ -493,7 +493,7 @@ Typed 保存、管理及既有 `/v1/memory-erasures` 不安装 V1 记忆写入�
 
 ### Demo 邀请码
 
-按 #685 指定的代号配置 `CJ_BETA_DEMO_SUBJECTS_JSON`，至多 206 个
+按 #685 指定的代号配置 `CJ_BETA_DEMO_SUBJECTS_JSON`，至多 256 个（#1749 由 206 提高）
 `m4-synthetic-demo-<12位代号>`，同时纳入原邀请、Typed API 策略和 worker 记忆选择。
 创建 UID10001 所有的 0700 `/srv/g2c-beta/demo-auth-socket`，worker 保留原签名私钥，
 API 只读挂载 Unix socket 目录。公网 `POST /v1/demo-invite-sessions` 的接口见 #685。
@@ -525,7 +525,7 @@ worker 的双层运行策略可单独显式使用 `CJ_BETA_MEMORY_RUN_POLICY_GZI
 `CJ_BETA_MEMORY_RUN_POLICY_B64` 互斥，仅进入原 worker 0600 文件；API 不接受该字段。
 它复用相同限长解压，结果仍经原 TypedRuntimeConfiguration 和全部主体/selection 校验，
 不会从 API 策略推断 worker 权限。批量配置必须同时核对两个角色的完整策略及原有身份不变。
-第 206 个位置用于 JT 已批准的 L P0 新合成身份（#495/6879334775）；
+第 206 个位置用于 JT 已批准的 L P0 新合成身份（#495/6879334775），第 207–256 个留给 #1749 的外测批次；
 名单容量不创建账号、不改变每周期/每日额度或各线费用子额。
 实际增加名单前先预检完整环境文件及原策略边界，不能仅凭名单容量宣布账号已开通。
 先以原名单和原配置发布兼容新表示的应用，再由 B 在独立维护阶段备份并启用批量名单和策略。
@@ -571,6 +571,8 @@ composition 或计量。有效旧两小时凭据可升级；过期、撤销、�
 `demo_accounts bootstrap/rotate` 对短码主体必须显式加 `--internal-short-code`（只给内部测试者），
 默认（外测）拒绝短码主体和短码摘要。
 客户端在有效会话回前台且余期不超过一天时续期，未知时保留仍有效旧凭据。
+
+外测主体批次与渠道（#1749）：渠道登记在 `deploy/hk/demo_channels.json`（`internal-test` 发码；`ext-travel-content`、`ext-host-invite`、`ext-sourcing`、`ext-hotel` 只登记、不发码，等 JT 确认首次对外与合规包就位）。`python -B -m deploy.hk.demo_batches generate --channel internal-test --count N --expires-at … --out <0700 目录>` 生成一批长码：码只写进 `codes-<批次>.txt`（0600，交给操作员分发），`batch-<批次>.json`（0600）只有主体、摘要、渠道、类别和到期。每个成员用 `demo_accounts bootstrap <主体> --digest … --expires-at …` 开通，逐个撤销用 `demo_accounts revoke`。批次清单放宿主 `/srv/g2c-beta/demo-batches/`（root 0700），归因用 `demo_batches attribute --manifests … <主体>`。Demo 主体上限 256（`MAX_DEMO_SUBJECTS`），每个主体沿用现有 Demo 计量额度。新主体写入 `CJ_BETA_DEMO_SUBJECTS_JSON` 前，现役与回滚镜像都必须已支持 256（应用内 `MAX_DEMO_SUBJECTS` 与发版检查 `application_release_host.py` 的角色配置核对都取自该源），否则回滚后 worker 起不来、发版核对也会拒绝。码文件只留在操作员本机，不上传服务器；只有清单放 `/srv/g2c-beta/demo-batches/`。清单里没有的旧长码主体归因结果为空。
 
 `/v1` 和 `.1` 为旧内部构建保留原两小时上限，退出条件为旧构建退场。
 部署先核原资格、撤销与 session floor，原私钥和资格期限沿用。

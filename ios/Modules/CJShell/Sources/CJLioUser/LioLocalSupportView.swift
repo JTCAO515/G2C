@@ -28,7 +28,7 @@ struct LioLocalSupportView: View {
         self.compactEmergencyCards = compactEmergencyCards
     }
 
-    @AppStorage("lio.local-support.nationality") private var nationality = ""
+    @LioNationalityBinding private var nationality
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.openURL) private var openURL

@@ -11,6 +11,8 @@ struct LioArrivalView: View {
     var arrival: LioArrivalDay?
     var rules: LioArrivalRules? = try? LioArrivalRules.bundled()
     @AppStorage(LioArrivalProgress.storageKey) private var storedProgress = ""
+    /// Back to Hotel's store when that tool is on (#1741); the taxi step goes to "my hotel" when one is saved.
+    @Environment(\.lioReturnHotelStore) private var returnHotelStore
 
     private var progress: LioArrivalProgress { LioArrivalProgress(stored: storedProgress) }
 
@@ -46,7 +48,11 @@ struct LioArrivalView: View {
         case .payment: LioPaymentGuideView(language: language)
         case .internet: LioArrivalInternetView(language: language)
         case .transfer: LioArrivalTransferView(language: language)
-        case .taxi: LioArrivalTaxiView(language: language, tripHotel: LioArrivalHotel(hotels: hotels))
+        case .taxi:
+            // A damaged hotel file reads as no hotel, as on Back to Hotel itself.
+            LioArrivalTaxiView(language: language,
+                               tripHotel: LioArrivalHotel.destination(myHotel: (try? returnHotelStore?.load()) ?? nil,
+                                                                      tripHotels: hotels))
         case .emergency: LioLocalSupportView(language: language)
         }
     }
@@ -109,7 +115,7 @@ private struct LioArrivalStepRow<Destination: View>: View {
 struct LioArrivalEntryView: View {
     let language: LioLanguage
     let rules: LioArrivalRules?
-    @AppStorage(LioArrivalTrip.nationalityStorageKey) private var nationality = ""
+    @LioNationalityBinding private var nationality
     @State private var otherNationality = false
     @State private var arrival: Date
     @State private var stayDays: Int
@@ -415,7 +421,8 @@ private struct LioArrivalTaxiView: View {
             VStack(alignment: .leading, spacing: LioTheme.Spacing.md) {
                 VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
                     if let tripHotel {
-                        Text(language.text("From your trip", "来自你的行程")).font(.footnote)
+                        Text(tripHotel.source == .myHotel ? language.text("My hotel", "我的酒店")
+                                                          : language.text("From your trip", "来自你的行程")).font(.footnote)
                             .foregroundStyle(LioTheme.inkSecondary)
                         Text(tripHotel.nameZH).font(.title3.weight(.semibold))
                         if let address = tripHotel.addressZH { Text(address).font(.subheadline) }

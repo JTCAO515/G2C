@@ -62,9 +62,10 @@ struct LioArrivalProgress: Equatable, Sendable {
     }
 }
 
-/// Where the taxi step goes: the trip's first stay with a matched address, or what the traveller typed.
+/// Where the taxi step goes: the hotel saved as "my hotel" in Back to Hotel (#1741), else the trip's first stay with
+/// a matched address, else what the traveller typed.
 struct LioArrivalHotel: Equatable, Sendable {
-    enum Source: Equatable, Sendable { case trip, typed }
+    enum Source: Equatable, Sendable { case myHotel, trip, typed }
     let nameZH: String
     let nameEN: String?
     let addressZH: String?
@@ -81,6 +82,18 @@ struct LioArrivalHotel: Equatable, Sendable {
         guard let hotel = hotels.first(where: { $0.place.driverAddress?.isEmpty == false }) else { return nil }
         self.init(nameZH: hotel.place.nameZH, nameEN: hotel.place.nameEN, addressZH: hotel.place.driverAddress,
                   source: .trip)
+    }
+
+    /// "My hotel" from Back to Hotel. Its place was chosen from a search or the trip, so it is used as saved.
+    init(myHotel: LioStayHotel) {
+        self.init(nameZH: myHotel.place.nameZH, nameEN: myHotel.place.nameEN, addressZH: myHotel.place.addressZH,
+                  source: .myHotel)
+    }
+
+    /// The taxi step's destination: "my hotel" first; without one, the trip's stays as before.
+    static func destination(myHotel: LioStayHotel?, tripHotels: [LioRichItinerary.Hotel]) -> LioArrivalHotel? {
+        if let myHotel { return LioArrivalHotel(myHotel: myHotel) }
+        return LioArrivalHotel(hotels: tripHotels)
     }
 
     init?(typedName: String, address: String) {

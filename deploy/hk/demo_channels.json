@@ -1,0 +1,11 @@
+{
+  "version": "g2c-demo-channels.1",
+  "decision": "#1749 / W10-2: coordinator 2026-11-26 under JT pre-authorization. Only internal-test issues codes until JT confirms the first external opening and the compliance pack is in place.",
+  "channels": [
+    {"id": "internal-test", "category": "internal", "issuing": true, "label": "Internal testers"},
+    {"id": "ext-travel-content", "category": "external", "issuing": false, "label": "Travel content creators"},
+    {"id": "ext-host-invite", "category": "external", "issuing": false, "label": "Factories and exhibitors inviting visiting buyers"},
+    {"id": "ext-sourcing", "category": "external", "issuing": false, "label": "Sourcing agents and communities"},
+    {"id": "ext-hotel", "category": "external", "issuing": false, "label": "Hotels around Pazhou"}
+  ]
+}
