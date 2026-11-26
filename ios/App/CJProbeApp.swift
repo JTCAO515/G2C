@@ -127,7 +127,8 @@ struct CJProbeApp: App {
         } else {
             let home = LioHome(language: shell.language.lio, service: .demo, isDemo: true,
                                showsTools: ProcessInfo.processInfo.arguments.contains("--lio-tools-preview"),
-                               toolsRelay: translationRelayPreview, toolsDraftStorage: localSupportDraftPreview) {
+                               toolsRelay: translationRelayPreview, toolsDraftStorage: localSupportDraftPreview,
+                               answerFeedback: LioAnswerFeedbackPreview.launch) {
                 LioMenuSettings(shell: shell)
             }
             .lioMedicalCardStorage(localMedicalCardPreview)

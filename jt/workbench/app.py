@@ -1,25 +1,29 @@
 """FastAPI routes for the local, HTTPS-only workbench."""
 
 import hmac
+import re
 from asyncio import to_thread
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from typing import cast
 from urllib.parse import parse_qsl, urlencode
+from uuid import UUID
 
 import psycopg
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 
-from jt.common import Severity
+from jt.common import CaseExecution, Severity
+from jt.playbook.workflow import StaffAction
 from jt.synthetic import generate_dataset
 
-from . import pages, queue_pages
+from . import case_pages, pages, queue_pages
 from .auth import SESSION_LIFETIME, AccessDenied, AccountAction, Auth, AuthenticationRequired, InvalidAccount
+from .cases import CaseWorkspace, workbench_audit
 from .queue import MemoryQueue, QueueItem, QueueStore, Review, display_text
 from .security import TOKEN, USERNAME, new_token
-from .store import AuditAction, AuditEvent, AuditResult, Role, Session
+from .store import AuditAction, AuditEvent, AuditResult, CaseAuditDetail, Role, Session
 
 
 SESSION_COOKIE = "__Host-jt-session"
@@ -30,6 +34,8 @@ SETUP_FORM = ("username", "setup_code", "password", "seed", "code", "csrf")
 ACCOUNT_FORM = ("username", "role", "action", "csrf")
 REVIEW_FORM = ("signal", "actual_severity", "false_positive", "missed", "note", "csrf")
 SEVERITIES = ("P0", "P1", "P2", "P3", "P4")
+CASE_REVISION = re.compile(r"0|[1-9][0-9]{0,18}")
+CASE_FORM = ("action", "revision", "csrf")
 COOKIE_POLICY = {"path": "/", "secure": True, "httponly": True, "samesite": "strict"}
 HEALTH_HOST = "jt-workbench-health"
 
@@ -122,11 +128,14 @@ def evaluation_sample(item: QueueItem, review: Review) -> dict:
 
 def create_app(
     auth: Auth, *, port: int = 8443, queue: QueueStore | None = None, proxy: ProxyEntry | None = None,
+    cases: CaseWorkspace | None = None,
 ) -> FastAPI:
     host = proxy.host if proxy else f"127.0.0.1:{port}"
     origin = f"https://{host}"
     app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
-    work_queue = MemoryQueue(generate_dataset().signals) if queue is None else queue
+    signals = generate_dataset().signals
+    work_queue = MemoryQueue(signals) if queue is None else queue
+    workspace = CaseWorkspace.from_signals(signals) if cases is None else cases
 
     @app.middleware("http")
     async def apply_security(request: Request, call_next) -> Response:
@@ -338,5 +347,91 @@ def create_app(
              "samples": [evaluation_sample(item, item.reviews[-1]) for item in items if item.reviews]},
             headers={"Content-Disposition": 'attachment; filename="jt-review-samples.json"'},
         )
+
+    def case_identifier(value: str) -> UUID:
+        try:
+            parsed = UUID(value)
+        except ValueError:
+            raise HTTPException(404, "找不到该案件。") from None
+        if parsed.version != 4 or str(parsed) != value:
+            raise HTTPException(404, "找不到该案件。")
+        return parsed
+
+    def case_session(token: str, csrf: str | None = None) -> Session:
+        session = auth.require_session(token, role=Role.OPERATOR, csrf=csrf)
+        if workspace.failed:
+            raise HTTPException(503, "演练案件暂不可用。")
+        return session
+
+    def owned_case(case_id: UUID, session: Session) -> CaseExecution:
+        execution = workspace.owned(case_id, session.username)
+        if execution is None:
+            raise HTTPException(404, "找不到该案件。")
+        return execution
+
+    @app.get("/cases")
+    def list_cases(request: Request) -> Response:
+        with workspace.lock, auth.store.locked():
+            session = case_session(session_token(request))
+            entries = workspace.listing(session.username)
+            auth.store.append_audit(AuditEvent(auth.clock(), AuditAction.VIEW, session.username))
+        return case_pages.case_list(session, entries)
+
+    @app.get("/cases/{case_id}")
+    def show_case(request: Request, case_id: str) -> Response:
+        with workspace.lock, auth.store.locked():
+            session = case_session(session_token(request))
+            identifier = case_identifier(case_id)
+            execution = owned_case(identifier, session)
+            auth.store.append_audit(AuditEvent(auth.clock(), AuditAction.VIEW, session.username, str(identifier)))
+        return case_pages.case_detail(session, execution)
+
+    @app.post("/cases/{case_id}/claim")
+    async def claim_case(request: Request, case_id: str) -> Response:
+        fields = await read_form(request, origin, ("csrf",))
+        return await to_thread(record_claim, session_token(request), case_id, fields["csrf"])
+
+    def record_claim(token: str, case_id: str, csrf: str) -> Response:
+        with workspace.lock:
+            with auth.store.locked():
+                session = case_session(token, csrf)
+                identifier = case_identifier(case_id)
+                execution = workspace.unclaimed(identifier)
+                if execution is None:
+                    raise HTTPException(404, "找不到可认领的案件。")
+                auth.store.append_audit(AuditEvent(
+                    auth.clock(), AuditAction.DECIDE, session.username, str(identifier),
+                    case_detail=CaseAuditDetail("claim", revision=execution.revision),
+                ))
+            workspace.assign(identifier, session.username)
+        return RedirectResponse(f"/cases/{identifier}", status_code=303)
+
+    @app.post("/cases/{case_id}/action")
+    async def act_on_case(request: Request, case_id: str) -> Response:
+        fields = await read_form(request, origin, CASE_FORM)
+        return await to_thread(record_case_action, session_token(request), case_id, fields)
+
+    def record_case_action(token: str, case_id: str, fields: dict[str, str]) -> Response:
+        changed = False
+        with workspace.lock:
+            try:
+                with auth.store.locked():
+                    session = case_session(token, fields["csrf"])
+                    identifier = case_identifier(case_id)
+                    owned_case(identifier, session)
+                    action, revision = fields["action"], fields["revision"]
+                    if action not in ("advance", "confirm", "reject") or not CASE_REVISION.fullmatch(revision):
+                        raise HTTPException(400, "案件操作有误。")
+                    result = workspace.act(identifier, session.username, cast(StaffAction, action), int(revision))
+                    changed = result.audit.outcome == "applied"
+                    auth.store.append_audit(workbench_audit(result.audit))
+            except Exception:
+                # JT1's synthetic state is in-process. Never serve an applied but unaudited change.
+                if changed:
+                    workspace.failed = True
+                raise
+        if result.audit.reason is not None:
+            return case_pages.case_detail(session, cast(CaseExecution, result.execution), reason=result.audit.reason)
+        return RedirectResponse(f"/cases/{identifier}", status_code=303)
 
     return app
