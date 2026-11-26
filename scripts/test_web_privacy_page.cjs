@@ -158,6 +158,10 @@ test("a Chinese line that still mixes in English fails --strict and names the li
   assert.equal(warnings.length, 1);
   assert.match(warnings[0], /^line mixes Chinese and English and cannot be split; .*: 中英文如有不一致，以中文版为准 If the Chinese/);
   assert.match(build(FIXTURE.replace(/^- 中英文如有不一致.*$/m, "- 以中文版为准。/ The Chinese text（中文版）prevails.")).warnings[0], /line mixes Chinese and English/);
+  // Without a space after the slash the line is not split, only reported: the English stays off both pages' halves.
+  const noSpace = build(FIXTURE.replace(/^- 中英文如有不一致.*$/m, "- 中英文如有不一致，以中文版为准。/If the Chinese and English versions differ, the Chinese version prevails."));
+  assert.equal(noSpace.warnings.length, 1);
+  assert.match(noSpace.warnings[0], /^line mixes Chinese and English and cannot be split; .*: 中英文如有不一致，以中文版为准。\/If the Chinese/);
   // Brand names in a Chinese sentence are fine.
   assert.deepEqual(build(FIXTURE.replace("我们是 **Go2China**。", "我们是 Go2China iOS App 和网站。")).warnings, []);
 });
@@ -185,6 +189,9 @@ function strict(md) {
 
 test("--strict passes a clean policy and fails, naming the line, on a mixed line it cannot split", () => {
   assert.deepEqual(strict(FIXTURE), { code: 0, stderr: "" });
+  const noSpace = strict(FIXTURE.replace(/^- 中英文如有不一致.*$/m, "- 中英文如有不一致，以中文版为准。/If the versions differ, Chinese prevails."));
+  assert.equal(noSpace.code, 1);
+  assert.ok(noSpace.stderr.includes("以中文版为准。/If the versions differ, Chinese prevails."), noSpace.stderr);
   const line = "中英文如有不一致，以中文版为准 If the Chinese and English versions differ, the Chinese version prevails.";
   const result = strict(FIXTURE.replace(/^- 中英文如有不一致.*$/m, `- ${line}`));
   assert.equal(result.code, 1);
@@ -247,6 +254,30 @@ test("a link to an anchor lands on the text in the language shown, Chinese or En
       assert.equal(new Set(ids.map((n) => n.id)).size, ids.length);
     }
   }
+});
+
+test("a malformed anchor in the address is ignored", () => {
+  const { scrolled, articles } = openPage(build(FIXTURE).html, "zh", "#%E0%A4%A");
+  assert.deepEqual(scrolled, []);
+  assert.equal(articles.zh.hidden, false);
+});
+
+test("the published policy carries the anchors the website links to", () => {
+  // Policy 1.0 (#1877): section 5 is #recipients, section 6 is #cross-border, and the launch section's
+  // items on in-person services and the website form carry the form's other two anchors, in both languages.
+  assert.deepEqual(build(markdown).warnings, []);
+  const en = articleOf(page, "en"), zh = articleOf(page, "zh-CN");
+  assert.match(en, /<h2 id="recipients">5\. Who we share with<\/h2>/);
+  assert.match(zh, /<h2 data-anchor="recipients">5\. 我们与谁共享<\/h2>/);
+  assert.match(en, /<h2 id="cross-border">6\. Where data is stored and cross-border transfers<\/h2>/);
+  assert.match(zh, /<h2 data-anchor="cross-border">6\. 存放地点与跨境<\/h2>/);
+  for (const anchor of ["in-person-services", "website-requests"]) {
+    assert.match(en, new RegExp(`<li id="${anchor}">`), anchor);
+    assert.match(zh, new RegExp(`<li data-anchor="${anchor}">`), anchor);
+  }
+  // The language clause is on both pages, each in its own language.
+  assert.ok(text(en).includes("If the Chinese and English versions differ, the Chinese version prevails."));
+  assert.ok(text(zh).includes("中英文如有不一致，以中文版为准。") && !text(zh).includes("prevails"));
 });
 
 test("the page is in Chinese and English only; other languages fall back to English and say why", () => {

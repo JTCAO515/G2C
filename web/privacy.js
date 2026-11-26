@@ -59,7 +59,9 @@
   // the page has loaded.
   function jump() {
     if (location.hash.length < 2) return;
-    const target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    let id;
+    try { id = decodeURIComponent(location.hash.slice(1)); } catch (_) { return; } // malformed: stay at the top
+    const target = document.getElementById(id);
     if (target) target.scrollIntoView({ behavior: "instant", block: "start" });
   }
   jump();

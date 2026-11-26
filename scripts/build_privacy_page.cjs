@@ -52,10 +52,11 @@ function splitPair(text) {
 }
 
 // A Chinese line that still carries English after splitting would put English on the Chinese page and
-// leave the English page without it: an unsplit "/ English…" or a run of six or more English words.
+// leave the English page without it: a slash outside code followed by English (with or without a space;
+// only "/ " splits, so "中文。/English" is reported rather than split) or a run of six or more English words.
 function mixed(text) {
   const plain = text.replace(/`[^`]*`/g, " ");
-  return /\/\s+[A-Za-z]/.test(plain) || /[A-Za-z][A-Za-z'’-]*(?:[\s,;:()]+[A-Za-z][A-Za-z'’-]*){5,}/.test(plain);
+  return /\/\s*[A-Za-z]/.test(plain) || /[A-Za-z][A-Za-z'’-]*(?:[\s,;:()]+[A-Za-z][A-Za-z'’-]*){5,}/.test(plain);
 }
 
 function takeAnchor(text) {
