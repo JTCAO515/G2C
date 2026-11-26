@@ -143,6 +143,11 @@ struct LioSignInCenteredText: UIViewRepresentable {
     }
 }
 
+enum LioSignInLayout {
+    /// Text-only buttons. Above the 44 pt minimum so fractional layout never rounds a frame below it.
+    static let textButtonHeight: CGFloat = 48
+}
+
 // MARK: - Backdrop
 
 enum LioSignInMotion {
@@ -445,7 +450,7 @@ struct LioSignInWelcome<Settings: View>: View {
                 }
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(LioSignInPalette.ink)
-                .frame(maxWidth: .infinity, minHeight: 44)
+                .frame(maxWidth: .infinity, minHeight: LioSignInLayout.textButtonHeight)
                 .contentShape(Rectangle())
             }
             .buttonStyle(LioSignInPressStyle())
@@ -626,7 +631,7 @@ struct LioInternalTestPage<Settings: View>: View {
                 .foregroundStyle(isBusy ? LioSignInPalette.inkSecondary : LioSignInPalette.ink)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, minHeight: 44)
+                .frame(maxWidth: .infinity, minHeight: LioSignInLayout.textButtonHeight)
                 .contentShape(Rectangle())
         }
         .buttonStyle(LioSignInPressStyle())
