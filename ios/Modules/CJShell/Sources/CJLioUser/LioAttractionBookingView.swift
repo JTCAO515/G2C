@@ -6,13 +6,18 @@ struct LioAttractionBookingView: View {
     let language: LioLanguage
     var reminders = LioAttractionReminderScheduler(center: LioSystemReminderCenter())
     var today: Date = .now
+    /// #1739: the trip's city (Chinese name) is listed first, and its visit day fills each reminder's date.
+    var tripCityZH: String? = nil
+    var visit: LioTripDay? = nil
 
     private var cities: [(String, [LioAttractionBookingRule])] {
         var order: [String] = []
         var groups: [String: [LioAttractionBookingRule]] = [:]
         for rule in LioAttractionBookingRule.all {
             let city = rule.city(language)
-            if groups[city] == nil { order.append(city) }
+            if groups[city] == nil {
+                if rule.cityZH == tripCityZH { order.insert(city, at: 0) } else { order.append(city) }
+            }
             groups[city, default: []].append(rule)
         }
         return order.map { ($0, groups[$0] ?? []) }
@@ -37,7 +42,8 @@ struct LioAttractionBookingView: View {
                         Text(city).font(.headline).accessibilityAddTraits(.isHeader)
                         ForEach(rules) { rule in
                             NavigationLink {
-                                LioAttractionBookingDetail(rule: rule, language: language, reminders: reminders, today: today)
+                                LioAttractionBookingDetail(rule: rule, language: language, reminders: reminders, today: today,
+                                                           visit: visit?.start(in: LioAttractionBookingRule.calendar.timeZone))
                             } label: {
                                 row(rule)
                             }
