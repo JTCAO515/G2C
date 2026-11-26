@@ -81,6 +81,7 @@ def main():
     results.append(run('eval/lio_voice', [*pytest, 'eval/tests/test_lio_voice.py']))
     results.append(run('eval/lio_answer_quality', [*pytest, 'eval/tests/test_lio_answer_quality.py']))
     results.append(run('eval/lio_entry_judge', [*pytest, 'eval/tests/test_lio_entry_judge.py']))
+    results.append(run('eval/release_eval', [*pytest, 'eval/tests/test_release_eval.py']))
     results.append(run('eval/basic_chain', [*pytest, 'eval/tests/test_basic_chain.py','eval/tests/test_basic_cost_v2.py',
                        'eval/tests/test_basic_native_v2.py','eval/tests/test_basic_joint_v2.py','eval/tests/test_basic_driver_v2.py',
                        'eval/tests/test_basic_chain_sm06_prefixes.py']))
