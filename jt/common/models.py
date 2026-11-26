@@ -92,7 +92,7 @@ _EVENT_STATES: dict[EventType, type[_ContractModel]] = {
 
 
 class EventRef(_ContractModel):
-    schema_version: Literal["jt-event-ref.v1"] = "jt-event-ref.v1"
+    schema_version: Literal["jt-event-ref.v1"]
     event_id: Token
     conversation_id: Token
     message_id: Token | None = None
@@ -114,7 +114,7 @@ class EventRef(_ContractModel):
 
 
 class SyntheticEvent(_ContractModel):
-    schema_version: Literal["jt-synthetic-event.v1"] = "jt-synthetic-event.v1"
+    schema_version: Literal["jt-synthetic-event.v1"]
     ref: EventRef
     synthetic_fragment: str | None = None
 
@@ -147,7 +147,7 @@ class ModelObservation(_ContractModel):
 
 
 class Signal(_ContractModel):
-    schema_version: Literal["jt-signal.v1"] = "jt-signal.v1"
+    schema_version: Literal["jt-signal.v1"]
     signal_id: Token
     source_events: Annotated[tuple[EventRef, ...], Field(min_length=1)]
     detected_at: Timestamp
@@ -174,7 +174,7 @@ class PlaybookStep(_ContractModel):
 
 
 class Case(_ContractModel):
-    schema_version: Literal["jt-case.v1"] = "jt-case.v1"
+    schema_version: Literal["jt-case.v1"]
     case_id: UUID4
     signal_ids: Annotated[tuple[Token, ...], Field(min_length=1)]
     severity: Severity

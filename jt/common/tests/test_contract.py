@@ -22,6 +22,7 @@ NOW = datetime(2026, 1, 1, tzinfo=UTC)
 
 def event_ref(**changes):
     fields = {
+        "schema_version": "jt-event-ref.v1",
         "event_id": "evt-syn-001",
         "conversation_id": "conv-syn-001",
         "message_id": "msg-syn-001",
@@ -35,6 +36,7 @@ def event_ref(**changes):
 
 def signal(**changes):
     fields = {
+        "schema_version": "jt-signal.v1",
         "signal_id": "sig-syn-001",
         "source_events": (event_ref(),),
         "signal_type": "illness",
@@ -50,6 +52,7 @@ def signal(**changes):
 
 def case(**changes):
     fields = {
+        "schema_version": "jt-case.v1",
         "case_id": "7bd65b4c-79de-4cfb-a4ad-46d1b04f6210",
         "signal_ids": ("sig-syn-001",),
         "severity": "P0",
@@ -102,7 +105,11 @@ def test_event_ref_rejects_invalid_state_and_non_reference_fields(changes):
 
 
 def test_original_fragment_is_only_allowed_on_the_synthetic_message_envelope():
-    message = SyntheticEvent(ref=event_ref(), synthetic_fragment="Synthetic text")
+    message = SyntheticEvent(
+        schema_version="jt-synthetic-event.v1",
+        ref=event_ref(),
+        synthetic_fragment="Synthetic text",
+    )
     assert SyntheticEvent.model_validate_json(message.model_dump_json()) == message
     assert "synthetic_fragment" not in message.ref.model_dump()
 
@@ -113,7 +120,11 @@ def test_original_fragment_is_only_allowed_on_the_synthetic_message_envelope():
         event_state={"count": 2},
     )
     with pytest.raises(ValidationError):
-        SyntheticEvent(ref=failure, synthetic_fragment="Synthetic text")
+        SyntheticEvent(
+            schema_version="jt-synthetic-event.v1",
+            ref=failure,
+            synthetic_fragment="Synthetic text",
+        )
 
 
 @pytest.mark.parametrize("changes", [
@@ -158,6 +169,26 @@ def test_decision_rejects_invalid_or_authoritative_output(changes):
     fields = {"signal_type": "illness", "severity": "P0", "confidence": 0.9}
     with pytest.raises(ValidationError):
         DecisionOutput.model_validate(fields | changes)
+
+
+@pytest.mark.parametrize("record", [
+    event_ref(),
+    signal(),
+    case(),
+    SyntheticEvent(schema_version="jt-synthetic-event.v1", ref=event_ref()),
+])
+def test_record_rejects_an_omitted_schema_version(record):
+    data = record.model_dump_json(exclude={"schema_version"})
+    with pytest.raises(ValidationError, match="schema_version"):
+        type(record).model_validate_json(data)
+
+
+def test_signal_rejects_an_unversioned_nested_event():
+    data = signal().model_dump()
+    del data["source_events"][0]["schema_version"]
+
+    with pytest.raises(ValidationError, match="source_events.0.schema_version"):
+        Signal.model_validate(data)
 
 
 def test_decision_no_signal_and_minimum_confidence():

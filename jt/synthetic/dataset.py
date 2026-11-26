@@ -106,6 +106,7 @@ def generate_dataset(seed: int = DEFAULT_SEED) -> SyntheticDataset:
         conversation_id = f"conv-syn-{sample_id}"
         refs = [
             EventRef(
+                schema_version="jt-event-ref.v1",
                 event_id=f"evt-syn-{sample_id}-1",
                 conversation_id=conversation_id,
                 message_id=f"msg-syn-{sample_id}",
@@ -115,9 +116,14 @@ def generate_dataset(seed: int = DEFAULT_SEED) -> SyntheticDataset:
                 event_state=EmptyEventState(),
             )
         ]
-        events.append(SyntheticEvent(ref=refs[0], synthetic_fragment=fragment))
+        events.append(SyntheticEvent(
+            schema_version="jt-synthetic-event.v1",
+            ref=refs[0],
+            synthetic_fragment=fragment,
+        ))
         for offset, (event_type, event_state) in enumerate(scenario.related_events, start=2):
             ref = EventRef(
+                schema_version="jt-event-ref.v1",
                 event_id=f"evt-syn-{sample_id}-{offset}",
                 conversation_id=conversation_id,
                 occurred_at=occurred_at + timedelta(seconds=offset - 1),
@@ -125,7 +131,7 @@ def generate_dataset(seed: int = DEFAULT_SEED) -> SyntheticDataset:
                 event_state=event_state,
             )
             refs.append(ref)
-            events.append(SyntheticEvent(ref=ref))
+            events.append(SyntheticEvent(schema_version="jt-synthetic-event.v1", ref=ref))
         rule_hits: tuple[str, ...] = ()
         model_outputs: tuple[ModelObservation, ...] = ()
         if scenario.rule_id is not None:
@@ -143,6 +149,7 @@ def generate_dataset(seed: int = DEFAULT_SEED) -> SyntheticDataset:
                 ),
             )
         signals.append(Signal(
+            schema_version="jt-signal.v1",
             signal_id=f"sig-syn-{sample_id}",
             source_events=tuple(refs),
             detected_at=refs[-1].occurred_at + timedelta(seconds=1),
