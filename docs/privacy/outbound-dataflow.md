@@ -90,7 +90,7 @@
 | 9 | architecture.md 流程图 | 身份服务候选 Supabase Auth | 后端用本方签发者 `https://local.g2c.invalid` + worker 签名密钥；JWKS 传输仅测试引用；App 打包 supabase-swift 但未配置 | 第 8 节 6–7 点 |
 | 10 | architecture.md 流程图 | 持久执行候选 DBOS / AgentScope，记忆候选 ReMe | 后端/部署代码中无 `dbos`/`agentscope` 导入（只在 `scripts/provider_m4.py:216` 打印版本）；未发现 ReMe 导入（`git grep -w reme` 无命中）。均不涉及外部网络 | grep 结果 |
 | 11 | storage-registry `external-processing` | `status: not_provisioned`，保留期 UNDECIDED、「activation blocked」 | 实际上百炼、高德、滴滴、飞常准、和风（可配）、ECB、OSS 均已在香港代码中启用调用 | 第 1–9 节 |
-| 12 | M4 条目 3 | 「只用合成行程与合成查询，不发送真实用户内容」 | 代码开关 `CJ_M4_SYNTHETIC_ONLY=1` 只约束主体名必须形如 `m4-synthetic-*`；但 G2C@01–99 内部测试者的邀请码也被映射为 `m4-synthetic-demo-<后缀>`（`deploy/hk/demo_login.py:69-77`），所以**内部测试者自己输入的对话原文会照常发给百炼/高德**。「合成」是主体命名，不是内容保证 | `real_services.py:313-318, 351`；`demo_login.py:69-77` |
+| 12 | M4 条目 3 | 「只用合成行程与合成查询，不发送真实用户内容」 | 代码开关 `CJ_M4_SYNTHETIC_ONLY=1` 只约束主体名必须形如 `m4-synthetic-*`；但 Demo 名单（`CJ_BETA_DEMO_SUBJECTS_JSON`）里的账号——`G2C@01–99`、`CJ_Tester@01–99` 两组短码和 `D1-` 长码——都被映射为 `m4-synthetic-demo-<后缀>`（`deploy/hk/demo_login.py:35-37, 69-77`），Lio 对话对整个 Demo 名单开放（`deploy/hk/configuration.py:350-358`），所以**这些测试者自己输入的对话原文会照常发给百炼，对话中提到的地名可能进入发给高德的检索词**。「合成」是主体命名，不是内容保证 | `real_services.py:313-318, 351`；`demo_login.py:35-37, 69-77`；`configuration.py:350-358` |
 
 ### 乙、代码调用但文档没提（或未登记）
 
@@ -111,7 +111,7 @@
 
 ### 3.1 需要统筹 / JT 判断的事项
 
-1. **「合成」只约束账号名，不约束内容**（甲表第 12 行）：G2C@01–99 内部测试者也被映射为 `m4-synthetic-demo-*` 主体，他们自己输入的对话原文会照常发给百炼和高德。M4 条目 3 写的是「不发送真实用户内容」。需要判断这是否在授权范围内，或要求内部测试者只输入合成内容。
+1. **「合成」只约束账号名，不约束内容**（甲表第 12 行）：Demo 名单里 `G2C@`、`CJ_Tester@` 两组短码和 `D1-` 长码账号都被映射为 `m4-synthetic-demo-*` 主体，他们自己输入的对话原文会照常发给百炼，提到的地名可能进入高德检索词。M4 条目 3、4 写的是「不发送真实用户内容」。统筹已判断属于授权文档写法与事实不一致，更正稿见 PR #1842（待 JT 本人批准）；`CJ_Tester@` 组算内部还是外部测试者（#33）待统筹确认。
 2. **storage-registry 漏登的服务端存储**（乙表第 10 行），其中 ToolEvidence 目录能保存完整模型请求体和工具原文，附近缓存键含精确坐标。建议开票给 S 线补登或说明，并同 PR 交付清理钩子（ADR-0009 第 6 条）。
 3. **旧 Supabase 是否仍在被连**：代码默认 `CJ_BETA_DB_TARGET='supabase'`，实际值在服务器 `common.env`，仓库看不到（附录第 8 节）。
 4. **ToolEvidence 在香港是否开启、对哪些主体开启**：由运维 manifest 决定，代码只说明能力（附录 1.1 第 5 点）。
