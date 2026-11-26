@@ -1,6 +1,7 @@
 # ADR-0006：V2 会员分档与记忆保留
 
 - 状态：**用户决策 accepted**（JT 2026-10-27）；具体价格待 JT 确定
+- 修订：第 3 条按 JT 2026-11-26 决定加修订注记（[#1744](https://github.com/JTCAO515/G2C/issues/1744)，以 JT 批准合并为准），原文保留
 - 日期：2026-10-27
 - 适用版本：V2。V1 受邀内测期间所有用户仍按 [ADR-0001](0001-product-boundaries.md) 享有完整长记忆
 - 关联：[ADR-0005 主动式履约](0005-proactive-fulfillment.md)、[记忆规格](../memory.md)、[ADR-0001](0001-product-boundaries.md)
