@@ -20,6 +20,7 @@ from cj_api.supabase_test_database import SupabaseTestDatabase
 from cj_strict_json import reject_duplicates
 from cj_trip.confirmation import ConfirmationSigner
 from cj_usage.authorization_budget import DEADLINE,DEMO_DEADLINE
+from cj_usage.authorization_deadlines import deadline
 
 
 SECRET_FILES={
@@ -127,7 +128,7 @@ def authorization():
     try:end=datetime.fromisoformat(os.environ['CJ_TRIAL_VALID_UNTIL'])
     except (KeyError,ValueError):raise ValueError('verified_trial_expiry_required') from None
     from cj_api.supabase_test_database import hk_demo_enabled
-    cutoff=datetime(2026,12,31,16,tzinfo=timezone.utc) if hk_demo_enabled() else datetime(2026,11,30,16,tzinfo=timezone.utc)
+    cutoff=deadline('hk_demo') if hk_demo_enabled() else deadline('supabase_test')
     if end.tzinfo is None or datetime.now(timezone.utc)>=min(end,cutoff):
         raise ValueError('trial_or_database_authorization_expired')
 
