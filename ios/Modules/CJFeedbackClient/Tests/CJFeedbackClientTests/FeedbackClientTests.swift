@@ -17,16 +17,28 @@ import CJMessageHTTP
         guard case .submitted(let receipt) = try await client.submit(original, operation: op) else { Issue.record("missing receipt"); return }
         #expect(receipt.input_sha256 == digest(original.originalUTF8))
         #expect(receipt.submitted_at.timeIntervalSince1970 == 1792663200)
-        guard case .submitted(let replay) = try await client.queryOriginal(actionID: original.actionID, operation: op) else { Issue.record("missing original"); return }
-        #expect(replay == receipt)
         let calls = await wire.calls
-        #expect(calls.count == 2); #expect(calls[0].bytes == original.originalUTF8)
-        #expect(calls[0].operation == "submitFeedback"); #expect(calls[1].operation == "queryFeedbackAction")
-        #expect(calls[1].bytes.isEmpty); #expect(calls[1].path?.contains(original.actionID) == true)
+        #expect(calls.count == 1); #expect(calls[0].bytes == original.originalUTF8)
+        #expect(calls[0].operation == "submitFeedback")
         #expect(calls[0].authorization == "Bearer synthetic-test-token")
         let object = try #require(JSONSerialization.jsonObject(with: calls[0].bytes) as? [String: Any])
         #expect(Set(object.keys) == ["action_id", "problem", "expectation", "references"])
-        #expect(try client.pending(operation: op).count == 1)
+        // #1855: the receipt matched, so the device's copy is gone; a confirmed line has nothing left to look up.
+        #expect(try client.pending(operation: op).isEmpty)
+        await #expect(throws: FeedbackFailure.invalidInput) { try await client.queryOriginal(actionID: original.actionID, operation: op) }
+    }
+    @Test(arguments: [false, true]) func lookUpOfASavedLineReturnsItsReceiptThenRemovesIt(linked: Bool) async throws {
+        let h = try Harness(); defer { h.clean() }
+        let original = try pending(linked: linked); let store = try h.store(); try store.append(original)
+        let body = try receiptJSON(original)
+        let wire = Interceptor { _, _, _ in Reply(text: body) }
+        let client = try h.client(wire, store: store); let op = try client.begin(binding: h.binding)
+        guard case .submitted(let receipt) = try await client.queryOriginal(actionID: original.actionID, operation: op) else { Issue.record("missing original"); return }
+        #expect(receipt.input_sha256 == digest(original.originalUTF8))
+        let calls = await wire.calls
+        #expect(calls.count == 1 && calls[0].operation == "queryFeedbackAction" && calls[0].bytes.isEmpty)
+        #expect(calls[0].path?.contains(original.actionID) == true)
+        #expect(try store.pending().isEmpty)
     }
     @Test(arguments: ["2026-10-22T10:00:00Z", "2026-10-22T10:00:00.125Z"]) func officialUTC(date: String) async throws {
         let h = try Harness(); defer { h.clean() }; let original = try pending()

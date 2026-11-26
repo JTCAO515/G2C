@@ -372,7 +372,45 @@ class ExplorationDispatch:
         entry=self._entry(worker,binding,state,text,original)
         if entry is not None:return entry
         selected=self.exploration if original.protocol==LIO_VERSION_V4 and self.exploration.enabled else self.legacy
-        return selected.execute(worker,binding,state,text,original)
+        reader=self._tasks(worker,binding,text,original)
+        try:
+            result=selected.execute(worker,binding,state,text,original)
+        except BaseException:
+            if reader is not None:self._drop_tasks(binding,reader)
+            raise
+        # A planning or code reply ends the RUN without an answer prompt: the sent task
+        # call is still billed but its result is not used.
+        if result is not None and reader is not None:self._drop_tasks(binding,reader)
+        return result
+
+    def _tasks(self,worker,binding,text,original):
+        """W2-8 (#1738): send the task call before the intake/understanding call; never fails the RUN."""
+        from .lio_tasks import tasks_enabled,skip_reason,start,log_outcome
+        if not tasks_enabled():return None
+        reason=skip_reason(text)
+        if reason is not None:
+            log_outcome(binding.run_id,'skip:'+reason)
+            return None
+        from cj_message.domain import Unavailable
+        from cj_agent.provider import ProviderFailed
+        from cj_usage.metered_exit import BudgetExceeded,BudgetUnknown
+        from .lio_planning_grounding import PlanningTurn
+        try:
+            today=original.question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
+            texts,refs,_=self.legacy.context(binding,PlanningTurn(text,today),answer_only=True)
+            return start(worker,binding,list(texts),refs)
+        except (Unavailable,ProviderUnknown,ProviderFailed,BudgetExceeded,BudgetUnknown) as error:
+            # Coordinator condition 4: the task call is auxiliary. Its own outcome stays in the
+            # usage journal as recorded; the answer continues on the single-intent path.
+            log_outcome(binding.run_id,'failed:'+type(error).__name__)
+            return None
+
+    @staticmethod
+    def _drop_tasks(binding,reader):
+        from .lio_tasks import take_pending
+        take_pending(binding.run_id)
+        try:reader.close()
+        except Exception:pass
 
     def _entry(self,worker,binding,state,text,original):
         """W2-4 (#1731): entry questions answered from the App's arrival rules, behind a switch."""

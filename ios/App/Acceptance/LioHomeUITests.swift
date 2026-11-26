@@ -2460,14 +2460,7 @@ import CryptoKit
                                    ? "AI-generated and may be wrong. Double-check anything important."
                                    : "由 AI 生成，可能有误，重要信息请自行确认。")
                     XCTAssertGreaterThanOrEqual(line.frame.minY, answer.frame.maxY)
-                    // The answer body's own clipping warning predates this line (reported to the coordinator);
-                    // it is recorded, not hidden, and every other issue still fails the test.
-                    try app.performAccessibilityAudit(for: .all) { issue in
-                        guard issue.auditType == .textClipped, issue.element?.identifier == "lio.answer" else { return false }
-                        let note = XCTAttachment(string: "Pre-existing answer-body clipping: " + issue.compactDescription)
-                        note.name = "answer-body-clipping-\(language)"; note.lifetime = .keepAlways; self.add(note)
-                        return true
-                    }
+                    try app.performAccessibilityAudit(for: .all)
                     let shot = XCTAttachment(screenshot: app.screenshot())
                     shot.name = "ai-disclosure-\(language)"; shot.lifetime = .keepAlways; add(shot)
                 } else {
@@ -2523,7 +2516,7 @@ import CryptoKit
                 let details = app.buttons["lio.answer.feedback.details"]
                 XCTAssertTrue(details.waitForExistence(timeout: 4))
                 XCTAssertEqual(details.label, en ? "Add details" : "补充说明")
-                try auditIgnoringAnswerClipping(app, name: "answer-feedback-sent-\(language)-\(disclosure)")
+                try app.performAccessibilityAudit(for: .all)
                 details.tap()
                 let field = app.descendants(matching: .any)["lio.answer.feedback.details.text"]
                 XCTAssertTrue(field.waitForExistence(timeout: 8))
@@ -2565,7 +2558,7 @@ import CryptoKit
             let retry = app.buttons["lio.answer.feedback.retry"]
             XCTAssertTrue(retry.waitForExistence(timeout: 8))
             XCTAssertEqual(retry.label, en ? "Not sent. Tap to try again." : "没发出去，点此重试。")
-            try auditIgnoringAnswerClipping(app, name: "answer-feedback-retry-\(language)")
+            try app.performAccessibilityAudit(for: .all)
             let failed = XCTAttachment(screenshot: app.screenshot())
             failed.name = "answer-feedback-not-sent-\(language)"; failed.lifetime = .keepAlways; add(failed)
             retry.tap()
@@ -2578,14 +2571,32 @@ import CryptoKit
         }
     }
 
-    /// The answer body's own clipping warning predates #1753's footer (reported to the coordinator); it is recorded,
-    /// not hidden, and every other issue still fails the test.
-    private func auditIgnoringAnswerClipping(_ app: XCUIApplication, name: String) throws {
-        try app.performAccessibilityAudit(for: .all) { issue in
-            guard issue.auditType == .textClipped, issue.element?.identifier == "lio.answer" else { return false }
-            let note = XCTAttachment(string: "Pre-existing answer-body clipping: " + issue.compactDescription)
-            note.name = "answer-body-clipping-\(name)"; note.lifetime = .keepAlways; self.add(note)
-            return true
+    /// #1869: a finished answer is not clipped at any of three sizes (default, a large accessibility size, the largest),
+    /// in either language. The audit runs with clipping included and nothing let through. Chinese used to be reported
+    /// because SwiftUI sized its lines from the Latin font's height; its font now carries CJK line metrics.
+    func testAnswerBodyIsNotClippedAtLargerSizesInBothLanguages() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            for size in ["UICTContentSizeCategoryL", "UICTContentSizeCategoryAccessibilityL", "UICTContentSizeCategoryAccessibilityXXXL"] {
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language, "-UIPreferredContentSizeCategoryName", size]
+                app.launch()
+                defer { app.terminate() }
+                XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 12))
+                enterSampleQuestion(in: app, index: 0)
+                app.buttons["lio.send"].tap()
+                let answer = app.staticTexts["lio.answer"]
+                XCTAssertTrue(answer.waitForExistence(timeout: 8))
+                // The whole reply, not one still being written.
+                expectation(for: NSPredicate(format: "value == %@", language == "en" ? "Reply complete" : "回复已完成"), evaluatedWith: answer)
+                waitForExpectations(timeout: 20)
+                // At the largest sizes the answer is taller than the room above the composer: bring it fully into view.
+                let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+                for _ in 0..<6 where answer.frame.maxY > composer.frame.minY { app.swipeUp() }
+                try app.performAccessibilityAudit(for: .textClipped)
+                let shot = XCTAttachment(screenshot: app.screenshot())
+                shot.name = "answer-\(language)-\(size)"; shot.lifetime = .keepAlways; add(shot)
+            }
         }
     }
 

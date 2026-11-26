@@ -56,6 +56,7 @@ refuses any file whose bytes differ from the manifest.
 | 53 | lio_wire_origin | `backend/migrations/0053_lio_wire_origin.sql` (exact new LIO3 envelope, same receipt/RLS/cleanup) |
 | 56 | service_request | `backend/migrations/0056_service_request.sql` (SERVICE-REQUEST@1 store, append-only history, escort view audit, retention/account fence; #1769) |
 | 57 | service_conversation | `backend/migrations/0057_service_conversation.sql` (conversation kind trip/service, server-initiated service messages, internal authority audit; cascades from chat/history; #1770) |
+| 58 | service_ops_console | `backend/migrations/0058_service_ops_console.sql` (operations console role `cj_ops_console`: SELECT service request tables only, note-clear-only UPDATE, append-only staff audit with erasure de-link; login used only by the ops API path; #1771) |
 
 Domain SQL stays in each domain directory so tests and the chain use the same bytes.
 Changing a registered file requires updating its manifest sha256 in the same PR; once a
@@ -76,7 +77,8 @@ Known limits (decisions still open, not solved by this chain):
   provisioning decision across all domains.
 - Runtime access goes through the local-only role `cj_m1_runtime` (v11 onward: minimal
   grants plus ENABLE/FORCE RLS per table) and, for the #26/#27 cleanup paths only, the
-  local-only `cj_local_cleanup` role (v32). Neither is a production provisioning decision.
+  local-only `cj_local_cleanup` role (v32); the operations console API path alone logs in as
+  the local-only `cj_ops_console` role (v58). None is a production provisioning decision.
 - `down` files for versions 1–12 and 15 drop tables and their data unconditionally; later
   versions refuse to go down while data they introduced exists (ADR-0007). Use any down only on
   disposable databases; a rollback on a database holding user data needs explicit operator

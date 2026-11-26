@@ -35,6 +35,7 @@ public struct LioInvitationView<Settings: View>: View {
     @FocusState private var enteringCode: Bool
     @State private var invalidFormat = false
     @ScaledMetric(relativeTo: .body) private var codeHeight = 44
+    @State private var showingInvite = false
 
     public init(language: LioLanguage, isBusy: Bool, notice: String?,
                 onInvite: @escaping (String) -> Void, onRestore: @escaping () -> Void,
@@ -48,6 +49,36 @@ public struct LioInvitationView<Settings: View>: View {
     }
 
     public var body: some View {
+        if LioNewSignInFeature.enabledInBuild {
+            newScreen
+        } else {
+            legacyScreen
+        }
+    }
+
+    /// #1891: the new first screen and internal test page. Same state, checks, consent and callbacks as below.
+    private var newScreen: some View {
+        NavigationStack {
+            LioSignInWelcome(language: language, notice: showingInvite ? nil : notice,
+                             settings: settings, onInvite: { showingInvite = true })
+                .navigationDestination(isPresented: $showingInvite) {
+                    LioInternalTestPage(language: language, isBusy: isBusy, notice: notice,
+                                        invalidFormat: invalidFormat, code: $code, enteringCode: $enteringCode,
+                                        settings: settings, onContinue: continueWithCode,
+                                        onRestore: continueWithAccount)
+                }
+        }
+        .tint(LioTheme.vermilion)
+        .onChange(of: code) { _, _ in invalidFormat = false }
+        .sheet(item: $consent) { action in
+            NavigationStack {
+                consentPage(action)
+            }
+            .tint(LioTheme.vermilion)
+        }
+    }
+
+    private var legacyScreen: some View {
         NavigationStack {
             Form {
                 Group {
@@ -74,22 +105,14 @@ public struct LioInvitationView<Settings: View>: View {
                             .frame(minHeight: codeHeight)
                             .accessibilityIdentifier("demo.invite.code")
                             .background(LioInvitationInputTraits().accessibilityHidden(true))
-                        Button {
-                            enteringCode = false
-                            guard LioInvitationInput.accepts(code) else { invalidFormat = true; return }
-                            invalidFormat = false
-                            consent = .invite
-                        } label: {
+                        Button(action: continueWithCode) {
                             RunReadableText(text: language.text("Continue", "继续"),
                                 color: code.isEmpty || isBusy ? LioTheme.inkSecondary : LioTheme.vermilion)
                         }
                         .buttonStyle(LioInvitationActionStyle())
                         .disabled(code.isEmpty || isBusy)
                         .accessibilityIdentifier("demo.invite.continue")
-                        Button {
-                            enteringCode = false
-                            consent = .continueAccount
-                        } label: {
+                        Button(action: continueWithAccount) {
                             RunReadableText(text: language.text("Continue with your account", "继续使用账号"),
                                 color: isBusy ? LioTheme.inkSecondary : LioTheme.vermilion)
                         }
@@ -144,6 +167,18 @@ public struct LioInvitationView<Settings: View>: View {
             }
             .tint(LioTheme.vermilion)
         }
+    }
+
+    private func continueWithCode() {
+        enteringCode = false
+        guard LioInvitationInput.accepts(code) else { invalidFormat = true; return }
+        invalidFormat = false
+        consent = .invite
+    }
+
+    private func continueWithAccount() {
+        enteringCode = false
+        consent = .continueAccount
     }
 
     private func consentPage(_ action: Consent) -> some View {
