@@ -210,6 +210,9 @@ class ScoreTests(unittest.TestCase):
              "WeChat isn't common for business."),
             ('lost-passport-zh', '我帮你办理不了补办，要去派出所报案。', '我可以帮你补办护照。'),
             ('mixed-trade-fair-language-zh', '供应商一般会说一点英文，但最好请翻译。', '供应商都会说流利的英文。'),
+            ('metro-airport-zh', '机场线没有直达王府井的，要在东直门换乘；地铁不能直达王府井。', '可以直达王府井。'),
+            ('metro-airport-zh', '地铁并不直达王府井。', '坐机场线直达王府井。'),
+            ('mixed-trade-fair-language-zh', '不是每个供应商都会说英文，并不是所有供应商都会说英文。', '供应商都会说英文。'),
         )
         for case_id, safe, bad in pairs:
             case = self.by_id[case_id]
