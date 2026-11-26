@@ -14,6 +14,9 @@ still runs (fail open). A C-quoted path is treated as unknown and also runs ever
                follows app_changed as before (2026-11-26, the coordinating thread per JT's
                pre-authorization: the website is a static site plus Vercel functions that no
                backend test or App build reads). Any other path runs every job.
+               scripts/test_web_* is reserved for the website's offline checks: a script there
+               must not read backend/, deploy/ or the App, or a website-only pull request would
+               skip the shards that test what it reads.
 - app_changed: some path can affect the Swift packages or the App build -> swift (the one macOS
                job: App build and package tests) runs; when false it skips. Swift tests read
                contracts/ and digital-assets/,

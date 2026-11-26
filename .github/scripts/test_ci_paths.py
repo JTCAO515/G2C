@@ -46,6 +46,10 @@ class ClassifyTests(unittest.TestCase):
                     'scripts/test_web_vercel_ignore.py', 'docs/privacy/privacy-policy.md', 'HANDOFF.md'],
                    'false', 'false', 'false', web_only='true')
         self.check(['scripts/test_web_service_request.cjs'], 'false', 'false', 'false', web_only='true')
+        # Only a path that starts with one of the prefixes counts; a nested web/ or docs/ does not.
+        for nested in ('backend/web/a.py', 'eval/docs/a.md', 'deploy/scripts/test_web_a.py'):
+            with self.subTest(nested=nested):
+                self.assertEqual(classify([nested])['web_only'], 'false')
 
     def test_any_other_path_with_the_website_runs_every_job(self):
         """The coordinating thread's required counter-examples, plus the neighbours of each prefix."""
@@ -53,7 +57,8 @@ class ClassifyTests(unittest.TestCase):
                       '.github/scripts/ci_paths.py', 'scripts/test.py', 'scripts/test_test_entry.py',
                       'scripts/build_privacy_page.cjs', 'contracts/service-request/V1.md', 'deploy/hk/x.py',
                       'eval/release_eval/bank.v2.json', 'knowledge/visitor/x.json', 'uv.lock', 'webx/a.html',
-                      'scripts/test_web_x/inner.py', 'scripts/sub/test_web_a.cjs', 'tooling/release/app_flags.json'):
+                      'scripts/test_web_x/inner.py', 'scripts/sub/test_web_a.cjs', 'tooling/release/app_flags.json',
+                      'backend/web/a.py', 'ios/web/a.swift', 'eval/docs/a.md', 'deploy/scripts/test_web_a.py'):
             with self.subTest(other=other):
                 self.assertEqual(classify(['web/index.html', other])['web_only'], 'false')
         self.assertEqual(classify(['docs/a.md'])['web_only'], 'false')  # docs alone stays docs_only
