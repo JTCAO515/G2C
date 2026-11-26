@@ -52,6 +52,16 @@ def body(cid, **change):
     return json.dumps(value, ensure_ascii=False, separators=(',', ':')).encode()
 
 
+def redacted(merge):
+    return f"convert_to((convert_from(original_input,'UTF8')::jsonb||'{merge}'::jsonb)::text,'UTF8')"
+
+
+def clear(*, details='{"note":null}', original='{"note":null}'):
+    """Raw SQL shaped like a note clearing; the defaults are the one permitted change."""
+    return (f"UPDATE cj_service_request SET details=details||'{details}'::jsonb,note_cleared_at=now(),"
+            f"original_input={redacted(original)}")
+
+
 def raises(fn, *args):
     try:
         fn(*args)
@@ -209,6 +219,15 @@ def main(config):
                  "UPDATE cj_service_request SET details=details||'{\"venue\":\"x\"}'::jsonb",
                  "UPDATE cj_service_request SET details=details||'{\"note\":\"other\"}'::jsonb,note_cleared_at=now()",
                  "UPDATE cj_service_request SET details=details||'{\"note\":null}'::jsonb,note_cleared_at=now()",  # bytes kept
+                 # Riding the note-clear grant: other original keys, other details fields, other columns.
+                 clear(original='{"note":null,"venue":"x"}'),
+                 clear(details='{"note":null,"venue":"x"}'),
+                 clear() + ",state='completed'",
+                 clear() + ",input_sha256=repeat('0',64)",
+                 'UPDATE cj_service_request SET original_input=' + redacted('{"note":null}'),
+                 # Scope fence: lock-only grant, an actual UPDATE always fails.
+                 'UPDATE cj_service_request_scope SET scope_digest=scope_digest',
+                 'UPDATE cj_service_request_scope SET retired=true',
                  'UPDATE cj_service_request_history SET evidence_body=NULL',
                  'DELETE FROM cj_service_request', 'DELETE FROM cj_service_request_history',
                  'DELETE FROM cj_service_request_staff_audit', 'TRUNCATE cj_service_request_staff_audit',
@@ -221,6 +240,17 @@ def main(config):
             if sql.startswith('UPDATE cj_service_request SET'):
                 sql += f" WHERE request_id='{third}'"
             assert raises(conn.execute, sql), sql
+    with ops() as conn:  # control: the exact permitted shape succeeds, so the refusals above are the guard
+        assert conn.execute(clear() + ' WHERE request_id=%s', (fourth,)).rowcount == 1
+    # Second clearing through the raw grant touches nothing (policy: only an uncleared row).
+    read_second = "SELECT original_input,details,note_cleared_at FROM cj_service_request WHERE request_id=%s"
+    with owner() as conn:
+        before_second = conn.execute(read_second, (second,)).fetchone()
+    with ops() as conn:
+        assert conn.execute(clear() + ' WHERE request_id=%s', (second,)).rowcount == 0
+        conn.commit()
+    with owner() as conn:
+        assert conn.execute(read_second, (second,)).fetchone() == before_second
     with owner() as conn:
         assert conn.execute("SELECT count(*) FROM cj_service_request_history WHERE seq=99").fetchone()[0] == 0
         expect_note = conn.execute('SELECT details->>%s,note_cleared_at FROM cj_service_request WHERE request_id=%s',
@@ -228,7 +258,7 @@ def main(config):
         assert expect_note == (NOTE, None)
         assert raises(conn.execute, "UPDATE cj_service_request_staff_audit SET staff_ref='rewritten'")
     print('PASS cj_ops_console: no BYPASSRLS/DELETE/TRUNCATE/SECURITY DEFINER; no conversation/memory/trip/escort-audit read; '
-          'only note->null (with its stored bytes) writable; history/audit not rewritable')
+          'only note->null (with its stored bytes) writable, once; no other original key, details field or column; scope fence lock-only; history/audit not rewritable')
 
     # 8. Retention: the 12-month request deletion takes its audit rows (cascade).
     with owner() as conn:
