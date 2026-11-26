@@ -1,11 +1,16 @@
-"""Validate the business-pack knowledge catalogue (#1759): strict shape, approved hosts, dated review.
+"""Validate the business-pack knowledge catalogue (#1759) and keep its server copy in step (#1859).
 
 Each entry carries its official sources, the day they were read (`checked_on`, Beijing calendar) and
 its review deadline (`expires_on`). The scene pack (`backend/cj_api/scene_packs/business.json`)
 refers to these ids; nothing here reads a clock, so CI never turns red on a calendar day
 (expiry alerts are `scripts/fact_expiry.py`'s job, #1757).
 
-Usage (from the repository root):  python3 -B knowledge/business/validate.py
+The server copy `backend/fact/cj_fact/business_guangzhou.v1.json` (read by `cj_fact.business`
+for Lio's fact tool) must be byte-identical to `guangzhou.v1.json`; never edit it by hand.
+
+Usage (from the repository root):
+  python3 -B knowledge/business/validate.py           validate, and fail if the server copy is stale
+  python3 -B knowledge/business/validate.py --write   validate, then rewrite the server copy
 """
 from datetime import date
 import json
@@ -16,6 +21,8 @@ from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
 CATALOGUES = (ROOT / 'knowledge/business/guangzhou.v1.json',)
+# Server copy for Lio's fact tool (#1859): byte-identical to the Guangzhou catalogue.
+SERVER_COPIES = {CATALOGUES[0]: ROOT / 'backend/fact/cj_fact/business_guangzhou.v1.json'}
 VERSION = 'g2c-business-knowledge.1'
 CITIES = frozenset({'guangzhou'})
 TOPICS = frozenset({'trade_fair_registration', 'venue_transport', 'visa_channel', 'business_payment'})
@@ -54,9 +61,10 @@ def _pairs(object_pairs):
     return dict(object_pairs)
 
 
-def load(path):
-    """Return the validated catalogue; raise Invalid on the first problem."""
-    doc = json.loads(Path(path).read_text(encoding='utf-8'), object_pairs_hook=_pairs)
+def load(path, raw=None):
+    """Return the validated catalogue (from `raw` bytes when given); raise Invalid on the first problem."""
+    text = (Path(path).read_bytes() if raw is None else raw).decode('utf-8')
+    doc = json.loads(text, object_pairs_hook=_pairs)
     _require(type(doc) is dict and doc.keys() == {'version', 'city', 'entries'}, 'document keys')
     _require(doc['version'] == VERSION, 'version')
     _require(doc['city'] in CITIES, 'city')
@@ -88,16 +96,34 @@ def load(path):
     return doc
 
 
-def main():
+def _shown(path):
+    return path.relative_to(ROOT) if path.is_relative_to(ROOT) else path
+
+
+def main(argv=()):
+    unknown = [arg for arg in argv if arg != '--write']
+    if unknown:
+        print(f'unknown argument {unknown[0]!r}; the only option is --write', file=sys.stderr)
+        return 2
+    stale = False
     for path in CATALOGUES:
-        doc = load(path)
-        print(f'PASS: {len(doc["entries"])} entries in {path.relative_to(ROOT)}')
-    return 0
+        raw = path.read_bytes()
+        doc = load(path, raw)
+        copy = SERVER_COPIES[path]
+        if '--write' in argv:
+            copy.write_bytes(raw)
+            print(f'wrote {_shown(copy)}')
+        elif not copy.is_file() or copy.read_bytes() != raw:
+            print(f'{_shown(copy)} is out of date; run python3 -B knowledge/business/validate.py --write', file=sys.stderr)
+            stale = True
+            continue
+        print(f'PASS: {len(doc["entries"])} entries in {path.relative_to(ROOT)}, server copy identical')
+    return 1 if stale else 0
 
 
 if __name__ == '__main__':
     try:
-        sys.exit(main())
+        sys.exit(main(sys.argv[1:]))
     except Invalid as error:
         print(f'FAIL: {error}', file=sys.stderr)
         sys.exit(1)

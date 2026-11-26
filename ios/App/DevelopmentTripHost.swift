@@ -461,6 +461,10 @@ private var developmentHostEnvironment: [String: String] {
 @MainActor final class DevelopmentFeedbackHost {
     let answer: FeedbackContainerHost
     let general: FeedbackContainerHost
+    /// #1753: Lio's "Not helpful" under answers. Its own client over the same Answer folder and key as `answer`,
+    /// never `answer`'s client, so neither surface can retire the other's work.
+    let lioAnswer: LioAnswerFeedbackHost
+    private static let maximumRecords = 100
     private let keys: ScopedMessageKeyProvider
     init(configuration: DevelopmentSessionConfiguration, shell: ShellState, session: SessionLifecycle,
          operation: SessionOperation, isCurrent: @escaping @MainActor () -> Bool) throws {
@@ -491,23 +495,30 @@ private var developmentHostEnvironment: [String: String] {
         let endpoint = try FeedbackEndpoint(url: configuration.endpoint, maximumRequestBytes: 16384,
                                              maximumResponseBytes: 1_000_000, allowLoopbackHTTP: true)
         let generation = shell.generation
-        let makeBinding: @MainActor (FeedbackAnswerSource?) throws -> FeedbackContainerBinding = { source in
+        let makeCurrent: @MainActor (FeedbackAnswerSource?) -> (FeedbackBinding, @MainActor () -> FeedbackBinding?) = { source in
             let feedback = FeedbackBinding(environment: namespace.environment, account: namespace.account,
                                            generation: UUID(), selection: UUID())
-            let current: @MainActor () -> FeedbackBinding? = {
+            return (feedback, {
                 guard isCurrent(), session.isCurrent(operation), shell.generation == generation,
                       !shell.messageBindingBlocked else { return nil }
                 if let source, !source.isCurrent(session: session, operation: operation, generation: generation) { return nil }
                 guard isCurrent(), session.isCurrent(operation), shell.generation == generation,
                       !shell.messageBindingBlocked else { return nil }
                 return feedback
-            }
-            let store = try FeedbackPendingStore(directory: source == nil ? generalDirectory : answerDirectory,
-                maximumBytes: 32768, maximumRecords: 100, binding: feedback, expectedKeyID: key.id, provider: keys)
-            let client = try FeedbackClient(development: endpoint, credentials: { binding in
+            })
+        }
+        let makeClient: @MainActor (URL, FeedbackBinding, @escaping @MainActor () -> FeedbackBinding?) throws -> FeedbackClient = {
+            directory, feedback, current in
+            let store = try FeedbackPendingStore(directory: directory, maximumBytes: 32768, maximumRecords: Self.maximumRecords,
+                                                 binding: feedback, expectedKeyID: key.id, provider: keys)
+            return try FeedbackClient(development: endpoint, credentials: { binding in
                 guard current() == binding else { return nil }; return configuration.token
             }, currentBinding: current, session: session, sessionOperation: operation, pendingStore: store,
                 requestTimeout: 10, resourceTimeout: 20)
+        }
+        let makeBinding: @MainActor (FeedbackAnswerSource?) throws -> FeedbackContainerBinding = { source in
+            let (feedback, current) = makeCurrent(source)
+            let client = try makeClient(source == nil ? generalDirectory : answerDirectory, feedback, current)
             return FeedbackContainerBinding(client: client, feedback: feedback, shellGeneration: generation,
                 session: session, sessionOperation: operation, context: source?.context, runSource: source,
                 synthetic: false, currentBinding: current)
@@ -515,9 +526,12 @@ private var developmentHostEnvironment: [String: String] {
         answer = FeedbackContainerHost(shell: shell, surface: .answer, answerBinding: { try makeBinding($0) })
         general = FeedbackContainerHost(shell: shell, surface: .general)
         guard general.bind(try makeBinding(nil)) else { throw FeedbackFailure.staleBinding }
+        let (lioFeedback, lioCurrent) = makeCurrent(nil)
+        lioAnswer = LioAnswerFeedbackHost(client: try makeClient(answerDirectory, lioFeedback, lioCurrent),
+                                          currentBinding: lioCurrent, maximumRecords: Self.maximumRecords)
         self.keys = keys
     }
-    func invalidate() { answer.invalidate(); general.invalidate(); keys.invalidate() }
+    func invalidate() { lioAnswer.invalidate(); answer.invalidate(); general.invalidate(); keys.invalidate() }
 }
 
 /// Only an explicit DEBUG Simulator manual-v1 root activates these old HTTP

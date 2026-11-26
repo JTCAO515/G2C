@@ -8,6 +8,8 @@ struct LioTripHome: View {
     let language: LioLanguage
     /// Plans saved on this device (#1453), newest first.
     let plans: [LioPlanSummary]
+    /// Saved trips are on this phone but were written by a newer app; they are kept, not shown as none.
+    var plansUnreadable = false
     let tools: LioTripHomeTools
     let showAllTrips: () -> Void
     let openChat: () -> Void
@@ -42,13 +44,15 @@ struct LioTripHome: View {
         var id: Self { self }
     }
 
-    init(language: LioLanguage, store: LioTripHomeStore?, plans: [LioPlanSummary], tools: LioTripHomeTools,
+    init(language: LioLanguage, store: LioTripHomeStore?, plans: [LioPlanSummary], plansUnreadable: Bool = false,
+         tools: LioTripHomeTools,
          showAllTrips: @escaping () -> Void, openChat: @escaping () -> Void,
          fixedNow: Date? = nil, timeZone: TimeZone = .current, model: LioTripHomeModel? = nil,
          keepsSettingsInMemory: Bool = false) {
         self.language = language
         self.keepsSettingsInMemory = keepsSettingsInMemory
         self.plans = plans
+        self.plansUnreadable = plansUnreadable
         self.tools = tools
         self.showAllTrips = showAllTrips
         self.openChat = openChat
@@ -63,6 +67,7 @@ struct LioTripHome: View {
                 let list = checklist(at: fixedNow ?? context.date)
                 ScrollView {
                     VStack(alignment: .leading, spacing: LioTheme.Spacing.lg) {
+                        if plansUnreadable { newerPlansNotice }
                         if list.hasTrip {
                             header(list)
                             if let now = list.now { nowCard(now, list) }
@@ -74,7 +79,7 @@ struct LioTripHome: View {
                             if !list.showsScheduleFirst { schedule(list) }
                             shortcuts
                             pastStages(list)
-                        } else {
+                        } else if !plansUnreadable {
                             LioTripHomeStart(language: language, openChat: openChat) { sheet = .start }
                         }
                         if model.saveFailed {
@@ -119,6 +124,15 @@ struct LioTripHome: View {
             Text(language.text("This clears the trip’s dates, city and ticks on this phone. Saved plans and what you keep in the tools stay.",
                                "会清掉这趟旅行在手机上的日期、城市和勾选。已保存的行程和各工具里的内容都保留。"))
         }
+    }
+
+    /// The saved trips need a newer app; they stay on this phone untouched.
+    private var newerPlansNotice: some View {
+        Label(language.text("Your saved trips were saved by a newer version of the app. Update the app to see them; they stay on this phone.",
+                            "已保存的行程来自更新版本的 App。请更新 App 后查看；行程仍保存在手机上。"),
+              systemImage: "arrow.down.app")
+            .font(.subheadline).foregroundStyle(LioTheme.ink)
+            .accessibilityIdentifier("lio.trip-home.plans-newer-version")
     }
 
     // MARK: - State
@@ -245,7 +259,7 @@ struct LioTripHome: View {
     @ViewBuilder private func todayCard(day: Int, next: LioTripStopRef?, remaining: Int, list: LioTripChecklist) -> some View {
         let todayStops = list.schedule.first { $0.isToday }?.stops ?? []
         if let next {
-            nowText([next.time, next.name].compactMap { $0 }.joined(separator: " "),
+            nowText([next.time, next.name(language)].compactMap { $0 }.joined(separator: " "),
                     language.text("Today · Day \(day) · \(remaining) more \(remaining == 1 ? "place" : "places")",
                                   "今天 · 第 \(day) 天 · 还有 \(remaining) 个地点"))
             primary(language.text("See today", "查看今天"), "lio.trip-home.now.today") { path.append(.schedule) }
@@ -526,7 +540,7 @@ struct LioTripHome: View {
                         .font(.footnote.monospacedDigit())
                         .foregroundStyle(LioTheme.inkSecondary)
                         .frame(minWidth: 44, alignment: .leading)
-                    Text(stop.name).font(.body).foregroundStyle(LioTheme.ink)
+                    Text(stop.name(language)).font(.body).foregroundStyle(LioTheme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .accessibilityElement(children: .combine)
