@@ -452,6 +452,7 @@ public struct LioHome<MenuContent: View>: View {
             }
         } else if LioTripHomeFeature.enabledInBuild && !showsAllTrips {
             LioTripHomeTab(language: language, store: tripHomeStore, plans: savedPlans.plans,
+                           plansUnreadable: savedPlans.unreadable,
                            messageDirectory: messageDirectory, isCurrent: toolsSessionIsCurrent,
                            showAllTrips: { showsAllTrips = true }, openChat: { tab = .chat })
                 .id(tripHomeStore?.id)
@@ -469,7 +470,7 @@ public struct LioHome<MenuContent: View>: View {
 
     private func planActions(_ plan: LioPlanSummary) -> LioItineraryTimelineView.Actions {
         var actions = LioItineraryTimelineView.Actions()
-        if savedPlans.available {
+        if savedPlans.writable {
             actions.saved = savedPlans.isSaved(plan)
             actions.save = { savedPlans.save(plan) }
         }
@@ -1451,6 +1452,7 @@ private struct LioTripHomeTab: View {
     let language: LioLanguage
     let store: LioTripHomeStore?
     let plans: [LioPlanSummary]
+    let plansUnreadable: Bool
     let messageDirectory: URL?
     let isCurrent: @MainActor () -> Bool
     let showAllTrips: () -> Void
@@ -1466,8 +1468,8 @@ private struct LioTripHomeTab: View {
     var body: some View {
         Group {
             if let loaded {
-                LioTripHome(language: language, store: store, plans: plans, tools: loaded.tools,
-                            showAllTrips: showAllTrips, openChat: openChat, model: loaded.model)
+                LioTripHome(language: language, store: store, plans: plans, plansUnreadable: plansUnreadable,
+                            tools: loaded.tools, showAllTrips: showAllTrips, openChat: openChat, model: loaded.model)
             } else {
                 LioTheme.paper.ignoresSafeArea()
             }
