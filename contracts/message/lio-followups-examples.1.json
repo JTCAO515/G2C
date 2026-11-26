@@ -1,0 +1,176 @@
+{
+  "synthetic": true,
+  "valid": [
+    {
+      "layout": "single"
+    },
+    {
+      "layout": "split"
+    },
+    {
+      "layout": "split",
+      "followups": {
+        "version": "LIO-answer-followups.1",
+        "actions": [
+          {
+            "tool": "payment-guide",
+            "parameters": {},
+            "label": "打开支付开通指南"
+          }
+        ]
+      }
+    },
+    {
+      "layout": "split",
+      "followups": {
+        "version": "LIO-answer-followups.1",
+        "actions": [
+          {
+            "tool": "payment-guide",
+            "parameters": {},
+            "label": "Payment setup guide"
+          },
+          {
+            "tool": "taxi",
+            "parameters": {},
+            "label": "Get a taxi"
+          }
+        ]
+      }
+    },
+    {
+      "layout": "split",
+      "followups": {
+        "version": "LIO-answer-followups.1",
+        "actions": [
+          {
+            "tool": "taxi",
+            "parameters": {
+              "destination": "故宫博物院",
+              "lat": "39.918058",
+              "lng": "116.397026",
+              "address": "景山前街4号",
+              "destinationEN": "The Palace Museum"
+            },
+            "label": "打车去这里"
+          }
+        ]
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "layout": "wide"
+    },
+    {
+      "layout": "split",
+      "followups": {
+        "version": "LIO-answer-followups.1",
+        "actions": []
+      }
+    },
+    {
+      "layout": "split",
+      "followups": {
+        "version": "LIO-answer-followups.1",
+        "actions": [
+          {
+            "tool": "shell",
+            "parameters": {},
+            "label": "x"
+          }
+        ]
+      }
+    },
+    {
+      "layout": "split",
+      "followups": {
+        "version": "LIO-answer-followups.1",
+        "actions": [
+          {
+            "tool": "trip",
+            "parameters": {
+              "trip_id": "a"
+            },
+            "label": "查看行程"
+          }
+        ]
+      }
+    },
+    {
+      "layout": "split",
+      "followups": {
+        "version": "LIO-answer-followups.1",
+        "actions": [
+          {
+            "tool": "payment-guide",
+            "parameters": {
+              "section": "troubleshooting"
+            },
+            "label": "支付遇到问题"
+          }
+        ]
+      }
+    },
+    {
+      "layout": "split",
+      "followups": {
+        "version": "LIO-answer-followups.1",
+        "actions": [
+          {
+            "tool": "taxi",
+            "parameters": {
+              "destination": "故宫"
+            },
+            "label": "打车"
+          }
+        ]
+      }
+    },
+    {
+      "layout": "split",
+      "followups": {
+        "version": "LIO-answer-followups.1",
+        "actions": [
+          {
+            "tool": "taxi",
+            "parameters": {
+              "url": "http://x"
+            },
+            "label": "打车"
+          }
+        ]
+      }
+    },
+    {
+      "layout": "split",
+      "followups": {
+        "version": "LIO-answer-followups.1",
+        "actions": [
+          {
+            "tool": "taxi",
+            "parameters": {
+              "destination": "故宫",
+              "lat": "39.1234567",
+              "lng": "116.4"
+            },
+            "label": "打车"
+          }
+        ]
+      }
+    },
+    {
+      "layout": "split",
+      "followups": {
+        "version": "LIO-answer-followups.2",
+        "actions": [
+          {
+            "tool": "taxi",
+            "parameters": {},
+            "label": "x"
+          }
+        ]
+      }
+    }
+  ]
+}

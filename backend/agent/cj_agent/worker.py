@@ -546,7 +546,7 @@ class RunWorker:
         buffer = ''
         phase='answer_preparation'
         try:
-            from cj_message.lio_context import LioCitation, LioToolProgress, answer_prompt
+            from cj_message.lio_context import LioCitation, LioFollowups, LioLayout, LioToolProgress, answer_prompt
 
             if lio_replacement:
                 phase='lio_edit'
@@ -571,15 +571,17 @@ class RunWorker:
             elif self.tools is None:
                 chunks = self._stream(binding, inputs, system=answer_prompt(locale,question=text,detailed=True), answer=True)
             else:
-                chunks = self.tools.answer(self, binding, inputs, lio_locale=locale, lio_question_day=original.question_day,**({'message_refs':message_refs} if message_refs else {}),
+                chunks = self.tools.answer(self, binding, inputs, lio_locale=locale, lio_question_day=original.question_day,**({'lio_layout':True} if getattr(self.tools,'commits_layout',False) else {}),**({'message_refs':message_refs} if message_refs else {}),
                                            **({'lio_city':self.lio_city_context} if self.lio_city_context is not None else {}))
             # W2-6 (#1733): read the safety-lines switch before any model call.
             from cj_message.lio_safety import safety_lines_enabled, supplement
             safety_lines = locale is not None and safety_lines_enabled()
             phase='answer_stream'
             answered = ''
+            split_layout = False
             for chunk in chunks:
-                if isinstance(chunk, (LioCitation, LioToolProgress)):
+                if isinstance(chunk, (LioCitation, LioToolProgress, LioLayout)):
+                    split_layout |= isinstance(chunk, LioLayout) and chunk.value == 'split'
                     state = self._event(binding, state, 'effect_committed', chunk.effect())
                     continue
                 buffer += chunk
@@ -593,6 +595,12 @@ class RunWorker:
                 missing = supplement(text, answered, locale)
                 if missing:
                     state = self._event(binding, state, 'text_delta', missing)
+            if split_layout and (answered or state.text).strip():
+                # W2-1 (#1727): fixed action buttons for a two-bubble answer; none when nothing applies.
+                from cj_message.lio_followups import allowed_actions
+                actions = [action.wire() for action in allowed_actions(text, locale)]
+                if actions:
+                    state = self._event(binding, state, 'effect_committed', LioFollowups(tuple(actions)).effect())
             if self.drafts is not None and command['creation_intent'] == 'consider_trip':
                 phase='draft'
                 state, proposal_id = self._draft(binding, state, text, stored)
