@@ -21,7 +21,7 @@ Memory fence、原动作只读恢复均继续生效。默认 local/Fake 路径�
 原387停线只作为显式历史测试保留。地点/路线/天气每 intent保守占用¥1。
 JT于2026-11-05在C会话把工具停止线改为¥10000（[#495记录](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6644812116)），
 原工具总预算¥200未提高，实际出口按停止线与总预算的较小值拒绝新付费意图，因此当前最多保守占用¥200。
-各分类同时保持M4的1200/600/200/240次数上限，事实页保守占用0，2026-11-30到期；UNKNOWN不释放占用。
+各分类同时保持M4的1200/600/200/240次数上限，事实页保守占用0，原M4期2026-11-30结束（固定分界 `m4_original_period_end`）；Demo 主体按 `hk_demo` 延续至2026-12-31，两者都只在 `backend/usage/cj_usage/authorization_deadlines.json`（#1716）；UNKNOWN不释放占用。
 提高额度只改变未来新intent门禁；原SQLite路径、全部历史intent/receipt和既有验收批次保持原样，不迁移或清零。
 完整 receipt 的 `provider_call=1` 只证明完成一次调用，绝不表示人民币实付已知；实际账单 UNKNOWN。
 模型 receipt 身份只取供应商ID的hash，独立于token用量；授权账本跨attempt拒绝重用ID，第二次保持UNKNOWN。
