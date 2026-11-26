@@ -74,7 +74,9 @@ extension View {
 
 /// Which part of a turn is still waiting for its entrance.
 struct LioEntranceKey: Hashable {
-    enum Part: Hashable { case question, answer, card, memory }
+    /// `answerTail` is the second bubble of a two-bubble answer (#1727): its own fade, so the first bubble finishing
+    /// does not end the second one's.
+    enum Part: Hashable { case question, answer, answerTail, card, memory }
     let turn: Data
     let part: Part
 }
