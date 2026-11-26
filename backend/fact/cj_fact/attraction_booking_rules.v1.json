@@ -1,0 +1,853 @@
+{
+  "version": "attraction-booking-rules.1",
+  "review_days": 30,
+  "rules": [
+    {
+      "id": "beijing.palace-museum",
+      "name": {
+        "en": "The Palace Museum",
+        "zh": "故宫博物院"
+      },
+      "city": {
+        "en": "Beijing",
+        "zh": "北京"
+      },
+      "aliases": [
+        "故宫",
+        "紫禁城",
+        "Palace Museum",
+        "Forbidden City"
+      ],
+      "requirement": "required",
+      "window_days": 7,
+      "release_time": "20:00",
+      "passport": "accepted",
+      "closed_weekdays": [
+        "monday"
+      ],
+      "open_on_public_holidays": true,
+      "limits": {
+        "en": [
+          "One ticket per ID per visit day",
+          "No same-day tickets",
+          "3 no-shows within 180 days blocks booking for 60 days"
+        ],
+        "zh": [
+          "同一证件每个参观日只能约 1 张",
+          "不售当日票",
+          "180 天内累计爽约 3 次，60 天内不能预约"
+        ]
+      },
+      "notes": {
+        "en": [
+          "Morning and afternoon entry slots",
+          "Individual tickets are sold only through the museum's own channel; it authorises no third-party agents"
+        ],
+        "zh": [
+          "每日分上午、下午两个入场时段",
+          "个人票只在故宫官方渠道出售，官方未授权任何第三方代理"
+        ]
+      },
+      "official_channel": {
+        "name": {
+          "en": "Palace Museum ticketing",
+          "zh": "故宫博物院官方购票"
+        },
+        "url": "https://ticket.dpm.org.cn/"
+      },
+      "partner_links": false,
+      "sources": [
+        "https://ticket.dpm.org.cn/",
+        "https://www.dpm.org.cn/Visit.html"
+      ],
+      "checked_on": "2026-11-26"
+    },
+    {
+      "id": "beijing.national-museum",
+      "name": {
+        "en": "National Museum of China",
+        "zh": "中国国家博物馆"
+      },
+      "city": {
+        "en": "Beijing",
+        "zh": "北京"
+      },
+      "aliases": [
+        "国家博物馆",
+        "国博",
+        "National Museum"
+      ],
+      "requirement": "required",
+      "window_days": 7,
+      "release_time": "17:00",
+      "passport": "not_stated",
+      "closed_weekdays": [
+        "monday"
+      ],
+      "open_on_public_holidays": true,
+      "limits": {
+        "en": [
+          "Each account can book once a week, up to 5 people",
+          "Each ID once a day and at most 4 times a month",
+          "3 no-shows blocks booking for 30 days"
+        ],
+        "zh": [
+          "每个账号每周最多约 1 次，每次最多 5 人",
+          "同一证件每天 1 次、每月最多 4 次",
+          "累计 3 次未履约，30 天内不能预约"
+        ]
+      },
+      "notes": {
+        "en": [
+          "The museum says visits can be booked within 7 days and tickets are released daily at 17:00",
+          "The rules ask for a valid ID; they do not mention passports",
+          "Cancel by 15:00 on the visit day"
+        ],
+        "zh": [
+          "官方写「可提前 7 日内预约，每日 17:00 放票」",
+          "官方只写「有效身份证件」，未提护照",
+          "退票截止参观当日 15:00"
+        ]
+      },
+      "official_channel": {
+        "name": {
+          "en": "National Museum of China",
+          "zh": "中国国家博物馆官网"
+        },
+        "url": "https://www.chnmuseum.cn/"
+      },
+      "partner_links": false,
+      "sources": [
+        "https://www.chnmuseum.cn/gbgg/202507/t20250725_272247.shtml"
+      ],
+      "checked_on": "2026-11-25"
+    },
+    {
+      "id": "beijing.mao-mausoleum",
+      "name": {
+        "en": "Chairman Mao Memorial Hall",
+        "zh": "毛主席纪念堂"
+      },
+      "city": {
+        "en": "Beijing",
+        "zh": "北京"
+      },
+      "aliases": [
+        "毛主席纪念堂",
+        "Mao Mausoleum",
+        "Chairman Mao Mausoleum",
+        "Mausoleum of Mao Zedong"
+      ],
+      "requirement": "required",
+      "window_days": 6,
+      "release_time": null,
+      "passport": "not_stated",
+      "closed_weekdays": [
+        "monday"
+      ],
+      "open_on_public_holidays": false,
+      "limits": {
+        "en": [],
+        "zh": []
+      },
+      "notes": {
+        "en": [
+          "Open Tuesday to Sunday, 08:00–12:00; holiday hours are announced separately",
+          "Book 1 to 6 days ahead; the release time is not published",
+          "The rules ask for a valid ID; they do not mention passports",
+          "May close at short notice for Tian'anmen Square events"
+        ],
+        "zh": [
+          "周二至周日 8:00–12:00 开放，节假日另行通知",
+          "可提前 1–6 天预约，官方未写放票时间",
+          "官方只写「有效身份证件」，未提护照",
+          "遇广场管控可能临时停止开放"
+        ]
+      },
+      "official_channel": {
+        "name": {
+          "en": "Memorial Hall page on People's Daily Online",
+          "zh": "人民网毛主席纪念堂专题"
+        },
+        "url": "https://cpc.people.com.cn/GB/143527/143528/index.html"
+      },
+      "partner_links": false,
+      "sources": [
+        "https://cpc.people.com.cn/GB/143527/143528/index.html",
+        "http://cpc.people.com.cn/n1/2023/1118/c143528-40121116.html"
+      ],
+      "checked_on": "2026-11-25"
+    },
+    {
+      "id": "beijing.tiananmen-rostrum",
+      "name": {
+        "en": "Tian'anmen Rostrum",
+        "zh": "天安门城楼"
+      },
+      "city": {
+        "en": "Beijing",
+        "zh": "北京"
+      },
+      "aliases": [
+        "Tiananmen Rostrum",
+        "Tiananmen Gate Tower",
+        "Tian'anmen Gate Tower"
+      ],
+      "requirement": "required",
+      "window_days": 7,
+      "release_time": "17:00",
+      "passport": "not_stated",
+      "closed_weekdays": [
+        "monday"
+      ],
+      "open_on_public_holidays": false,
+      "limits": {
+        "en": [
+          "Book at least one day ahead"
+        ],
+        "zh": [
+          "至少提前 1 天预约"
+        ]
+      },
+      "notes": {
+        "en": [
+          "Per the Beijing government notice of 6 Sep 2025: tickets for 7 days later are released daily at 17:00",
+          "Book on the official website or the official WeChat account; the notice asks for a valid ID"
+        ],
+        "zh": [
+          "据北京市政府 2025-09-06 通知：每日 17:00 放出 7 天后的票",
+          "在官网或官方微信公众号预约，通知只写「有效证件」"
+        ]
+      },
+      "official_channel": {
+        "name": {
+          "en": "Tian'anmen Rostrum booking",
+          "zh": "天安门城楼参观预约"
+        },
+        "url": "https://www.tiananmenchenglou.com/"
+      },
+      "partner_links": false,
+      "sources": [
+        "https://english.beijing.gov.cn/latest/news/202509/t20250906_4192380.html"
+      ],
+      "checked_on": "2026-11-25"
+    },
+    {
+      "id": "beijing.tiananmen-square",
+      "name": {
+        "en": "Tian'anmen Square",
+        "zh": "天安门广场"
+      },
+      "city": {
+        "en": "Beijing",
+        "zh": "北京"
+      },
+      "aliases": [
+        "Tiananmen Square"
+      ],
+      "requirement": "required",
+      "window_days": 7,
+      "release_time": null,
+      "passport": "not_stated",
+      "closed_weekdays": null,
+      "open_on_public_holidays": false,
+      "limits": {
+        "en": [
+          "Without a booking you cannot join the flag-raising ceremony"
+        ],
+        "zh": [
+          "未预约无法参加升旗仪式等活动"
+        ]
+      },
+      "notes": {
+        "en": [
+          "Book 1 to 7 days ahead in the official mini program (Beijing government notice, 23 Sep 2024)"
+        ],
+        "zh": [
+          "在官方小程序提前 1–7 天预约（北京市政府 2024-09-23 通知）"
+        ]
+      },
+      "official_channel": {
+        "name": {
+          "en": "Beijing government notice",
+          "zh": "北京市政府说明"
+        },
+        "url": "https://english.beijing.gov.cn/latest/news/202409/t20240923_3903395.html"
+      },
+      "partner_links": false,
+      "sources": [
+        "https://english.beijing.gov.cn/latest/news/202409/t20240923_3903395.html"
+      ],
+      "checked_on": "2026-11-25"
+    },
+    {
+      "id": "beijing.prince-gong-mansion",
+      "name": {
+        "en": "Prince Gong's Mansion",
+        "zh": "恭王府博物馆"
+      },
+      "city": {
+        "en": "Beijing",
+        "zh": "北京"
+      },
+      "aliases": [
+        "恭王府",
+        "Prince Gong Mansion",
+        "Prince Kung's Mansion",
+        "Prince Gong's Mansion Museum"
+      ],
+      "requirement": "required",
+      "window_days": 10,
+      "release_time": "20:00",
+      "passport": "accepted",
+      "closed_weekdays": [
+        "monday"
+      ],
+      "open_on_public_holidays": true,
+      "limits": {
+        "en": [
+          "One ticket per ID per visit day",
+          "Up to 5 tickets per order, 2 orders per user per day",
+          "3 no-shows within 60 days blocks booking"
+        ],
+        "zh": [
+          "同一证件每个入馆日限 1 张",
+          "每单最多 5 张，每个用户每天最多 2 单",
+          "60 天内累计爽约 3 次将无法预约"
+        ]
+      },
+      "notes": {
+        "en": [
+          "Passport holders exchange the booking for an entry pass at the service centre on the day"
+        ],
+        "zh": [
+          "持护照预约的观众，入馆当天到综合服务处换取入馆凭证"
+        ]
+      },
+      "official_channel": {
+        "name": {
+          "en": "Prince Gong's Mansion Museum",
+          "zh": "恭王府博物馆官网"
+        },
+        "url": "https://www.pgm.org.cn/"
+      },
+      "partner_links": false,
+      "sources": [
+        "https://www.pgm.org.cn/",
+        "https://www.pgm.org.cn/pgm/pwfw/202307/3cbdbeee2c9d4c6584c6a8afbab7b21a.shtml"
+      ],
+      "checked_on": "2026-11-25"
+    },
+    {
+      "id": "beijing.mutianyu",
+      "name": {
+        "en": "Mutianyu Great Wall",
+        "zh": "慕田峪长城"
+      },
+      "city": {
+        "en": "Beijing",
+        "zh": "北京"
+      },
+      "aliases": [
+        "慕田峪",
+        "Mutianyu"
+      ],
+      "requirement": "required",
+      "window_days": 30,
+      "release_time": null,
+      "passport": "accepted",
+      "closed_weekdays": null,
+      "open_on_public_holidays": false,
+      "limits": {
+        "en": [
+          "One ticket per ID per day"
+        ],
+        "zh": [
+          "同一证件每天限购 1 张"
+        ]
+      },
+      "notes": {
+        "en": [
+          "If you book with a passport, show the same passport at the gate; no ticket exchange needed",
+          "Refunds or changes until midnight on the visit day"
+        ],
+        "zh": [
+          "用护照下单的游客，凭下单时用的护照检票，无需换票",
+          "参观日当天 24 点前可退改"
+        ]
+      },
+      "official_channel": {
+        "name": {
+          "en": "Mutianyu Great Wall",
+          "zh": "慕田峪长城官网"
+        },
+        "url": "https://www.mutianyugreatwall.com/"
+      },
+      "partner_links": true,
+      "sources": [
+        "https://www.mutianyugreatwall.com/",
+        "https://www.mutianyugreatwall.com/cnInformation",
+        "https://www.mutianyugreatwall.com/cndetailcon3450"
+      ],
+      "checked_on": "2026-11-25"
+    },
+    {
+      "id": "beijing.badaling",
+      "name": {
+        "en": "Badaling Great Wall",
+        "zh": "八达岭长城"
+      },
+      "city": {
+        "en": "Beijing",
+        "zh": "北京"
+      },
+      "aliases": [
+        "八达岭",
+        "Badaling"
+      ],
+      "requirement": "booking_or_on_site",
+      "window_days": null,
+      "release_time": null,
+      "passport": "accepted",
+      "closed_weekdays": [],
+      "open_on_public_holidays": true,
+      "limits": {
+        "en": [],
+        "zh": []
+      },
+      "notes": {
+        "en": [
+          "Real-name booking and on-site tickets both work for ordinary daytime visits",
+          "Passports can be used to book in the Changcheng Neiwai (长城内外) mini program and at on-site ticketing and gates",
+          "Sections may close temporarily in bad weather"
+        ],
+        "zh": [
+          "日间常规游览：实名预约购票与现场购票并行",
+          "「长城内外」小程序可用护照订票，现场也可用护照购票、检票",
+          "遇恶劣天气可能临时或局部关闭"
+        ]
+      },
+      "official_channel": {
+        "name": {
+          "en": "Badaling Great Wall",
+          "zh": "八达岭长城官网"
+        },
+        "url": "https://www.badaling.cn/"
+      },
+      "partner_links": true,
+      "sources": [
+        "https://www.badaling.cn/",
+        "https://www.beijing.gov.cn/fuwu/lqfw/ztzl/jrfw/shrl/202407/t20240725_3758812.html"
+      ],
+      "checked_on": "2026-11-16"
+    },
+    {
+      "id": "xian.qin-mausoleum-museum",
+      "name": {
+        "en": "Emperor Qinshihuang's Mausoleum Site Museum (Terracotta Warriors)",
+        "zh": "秦始皇帝陵博物院（兵马俑）"
+      },
+      "city": {
+        "en": "Xi'an",
+        "zh": "西安"
+      },
+      "aliases": [
+        "兵马俑",
+        "秦始皇兵马俑",
+        "秦始皇帝陵博物院",
+        "秦始皇陵",
+        "Terracotta Warriors",
+        "Terracotta Army",
+        "Terra-cotta Warriors",
+        "Emperor Qinshihuang's Mausoleum Site Museum"
+      ],
+      "requirement": "required",
+      "window_days": null,
+      "release_time": null,
+      "passport": "accepted",
+      "closed_weekdays": null,
+      "open_on_public_holidays": false,
+      "limits": {
+        "en": [
+          "Ticket sales stop when the site reaches 65,000 visitors a day"
+        ],
+        "zh": [
+          "景区每日最大承载量 6.5 万人，达到上限停止售票"
+        ]
+      },
+      "notes": {
+        "en": [
+          "All visitors, including international visitors, must book with their real name on the official website or WeChat account; passports are accepted",
+          "The Chinese and English pages list different opening hours; check on the day"
+        ],
+        "zh": [
+          "所有观众（含外籍观众）须在官方网站或官方微信公众号实名预约，可用护照",
+          "中英文官网写的开放时间不一致，以现场为准"
+        ]
+      },
+      "official_channel": {
+        "name": {
+          "en": "Emperor Qinshihuang's Mausoleum Site Museum",
+          "zh": "秦始皇帝陵博物院官网"
+        },
+        "url": "https://www.bmy.com.cn/guide.html"
+      },
+      "partner_links": true,
+      "sources": [
+        "https://www.bmy.com.cn/guide.html",
+        "https://www.bmy.com.cn/jingtai/bmyweb/ticketing.html"
+      ],
+      "checked_on": "2026-11-26"
+    },
+    {
+      "id": "xian.shaanxi-history-museum",
+      "name": {
+        "en": "Shaanxi History Museum",
+        "zh": "陕西历史博物馆"
+      },
+      "city": {
+        "en": "Xi'an",
+        "zh": "西安"
+      },
+      "aliases": [
+        "陕历博",
+        "陕西历史博物馆本馆"
+      ],
+      "requirement": "required",
+      "window_days": 5,
+      "release_time": "17:00",
+      "passport": "accepted",
+      "closed_weekdays": [
+        "monday"
+      ],
+      "open_on_public_holidays": true,
+      "limits": {
+        "en": [
+          "Each ID: one order a day, at most 4 in 30 days",
+          "Each WeChat account: at most 3 orders in 7 days",
+          "Up to 5 visitors per order",
+          "A no-show blocks booking for 180 days"
+        ],
+        "zh": [
+          "同一证件每天 1 单、30 天内最多 4 张",
+          "同一微信号 7 天内最多 3 单",
+          "每单最多 5 位参观人",
+          "爽约后 180 天内无法预约"
+        ]
+      },
+      "notes": {
+        "en": [
+          "Book in the museum's official WeChat account",
+          "The Qin and Han gallery is open without booking and closes on Tuesdays",
+          "The Tang mural exhibition is ticketed separately"
+        ],
+        "zh": [
+          "通过微信公众号「陕西历史博物馆」预约",
+          "秦汉馆免预约，周二闭馆",
+          "唐代壁画珍品展需单独购票"
+        ]
+      },
+      "official_channel": {
+        "name": {
+          "en": "Shaanxi History Museum",
+          "zh": "陕西历史博物馆官网"
+        },
+        "url": "https://www.sxhm.com/guide.html"
+      },
+      "partner_links": false,
+      "sources": [
+        "https://www.sxhm.com/",
+        "https://www.sxhm.com/guide.html"
+      ],
+      "checked_on": "2026-11-25"
+    },
+    {
+      "id": "xian.beilin-museum",
+      "name": {
+        "en": "Xi'an Beilin Museum",
+        "zh": "西安碑林博物馆"
+      },
+      "city": {
+        "en": "Xi'an",
+        "zh": "西安"
+      },
+      "aliases": [
+        "碑林",
+        "西安碑林",
+        "碑林博物馆",
+        "Beilin Museum",
+        "Forest of Stone Steles",
+        "Forest of Steles"
+      ],
+      "requirement": "required",
+      "window_days": 5,
+      "release_time": null,
+      "passport": "not_stated",
+      "closed_weekdays": [],
+      "open_on_public_holidays": true,
+      "limits": {
+        "en": [
+          "Timed entry slots"
+        ],
+        "zh": [
+          "分时预约、错峰参观"
+        ]
+      },
+      "notes": {
+        "en": [
+          "The booking page mentions only Chinese ID cards; a passport is listed for entry",
+          "The museum's pages give two different daily capacities, so none is shown here"
+        ],
+        "zh": [
+          "预约页只写身份证，入馆证件含护照",
+          "官网两处写的日承载量不一致，这里不写人数"
+        ]
+      },
+      "official_channel": {
+        "name": {
+          "en": "Xi'an Beilin Museum",
+          "zh": "西安碑林博物馆官网"
+        },
+        "url": "https://www.beilin-museum.com/"
+      },
+      "partner_links": false,
+      "sources": [
+        "http://www.beilin-museum.com/",
+        "https://www.beilin-museum.com/index.php?m=home&c=Lists&a=index&tid=68"
+      ],
+      "checked_on": "2026-11-25"
+    },
+    {
+      "id": "chengdu.panda-base",
+      "name": {
+        "en": "Chengdu Research Base of Giant Panda Breeding",
+        "zh": "成都大熊猫繁育研究基地"
+      },
+      "city": {
+        "en": "Chengdu",
+        "zh": "成都"
+      },
+      "aliases": [
+        "熊猫基地",
+        "大熊猫基地",
+        "成都熊猫基地",
+        "成都大熊猫基地",
+        "Chengdu Panda Base",
+        "Giant Panda Base",
+        "Panda Base"
+      ],
+      "requirement": "required",
+      "window_days": 14,
+      "release_time": null,
+      "passport": "accepted",
+      "closed_weekdays": null,
+      "open_on_public_holidays": false,
+      "limits": {
+        "en": [
+          "Capped at 85,000 visitors a day; tickets stop when sold out"
+        ],
+        "zh": [
+          "每日最大接待 8.5 万人次，当日门票售完即止"
+        ]
+      },
+      "notes": {
+        "en": [
+          "Visitors aged 60 and over, and children under 6 or under 1.3 m, need no booking and enter with their ID",
+          "Bring the original ID used for booking; passports are accepted",
+          "The No. 6 Panda Villa area closes on Mondays on a trial basis; the Panda Art Museum closes on Mondays for maintenance",
+          "The Panda Tower closes in bad weather"
+        ],
+        "zh": [
+          "60 周岁及以上老人、6 周岁或 1.3 米以下儿童免预约，凭本人证件入园",
+          "凭预约时用的身份证件实物入园，证件含护照",
+          "六号别墅区域试行每周一闭馆，熊猫美术馆周一闭馆维护",
+          "熊猫塔遇特殊天气暂停开放"
+        ]
+      },
+      "official_channel": {
+        "name": {
+          "en": "Chengdu Panda Base",
+          "zh": "成都大熊猫繁育研究基地官网"
+        },
+        "url": "https://www.panda.org.cn/"
+      },
+      "partner_links": true,
+      "sources": [
+        "https://www.panda.org.cn/cn/service/ticket/",
+        "https://www.panda.org.cn/cn/service/notice/"
+      ],
+      "checked_on": "2026-11-26"
+    },
+    {
+      "id": "chengdu.museum",
+      "name": {
+        "en": "Chengdu Museum",
+        "zh": "成都博物馆"
+      },
+      "city": {
+        "en": "Chengdu",
+        "zh": "成都"
+      },
+      "aliases": [
+        "成博"
+      ],
+      "requirement": "required",
+      "window_days": 14,
+      "release_time": "19:00",
+      "passport": "accepted",
+      "closed_weekdays": [
+        "monday"
+      ],
+      "open_on_public_holidays": true,
+      "limits": {
+        "en": [
+          "Capped at 20,000 visitors a day",
+          "Each WeChat account can make 2 bookings per visit day"
+        ],
+        "zh": [
+          "每日限流 2 万人",
+          "每个微信账号每个参观日最多预约 2 次"
+        ]
+      },
+      "notes": {
+        "en": [
+          "Book up to 14 days ahead; tickets for a new day open daily at 19:00 (museum notice, July 2024)",
+          "Visitors without WeChat can book by email in the English version of the booking system",
+          "If you booked with a passport, exchange it for a ticket at the ticket counter before entry",
+          "Visitors aged 60 and over can enter without booking at the ticket counter"
+        ],
+        "zh": [
+          "可提前 14 天预约，每日 19:00 开放新一天门票（馆方 2024-07 公告）",
+          "没有微信的境外观众可在预约系统外语版用邮箱预约",
+          "用护照预约的观众，入馆前到票务咨询窗口换票",
+          "60 岁以上老年人可免预约，到票务咨询窗口换票入馆"
+        ]
+      },
+      "official_channel": {
+        "name": {
+          "en": "Chengdu Museum visitor guide",
+          "zh": "成都博物馆参观指南"
+        },
+        "url": "https://www.cdmuseum.com/zhinan/"
+      },
+      "partner_links": false,
+      "sources": [
+        "https://www.cdmuseum.com/zhinan/",
+        "https://www.cdmuseum.com/xinwen/202407/3690.html",
+        "https://www.cdmuseum.com/xinwen/202602/4250.html"
+      ],
+      "checked_on": "2026-11-26"
+    },
+    {
+      "id": "shanghai.museum-peoples-square",
+      "name": {
+        "en": "Shanghai Museum (People's Square)",
+        "zh": "上海博物馆人民广场馆"
+      },
+      "city": {
+        "en": "Shanghai",
+        "zh": "上海"
+      },
+      "aliases": [
+        "上海博物馆",
+        "上博",
+        "上博人民广场馆",
+        "Shanghai Museum",
+        "Shanghai Museum People's Square"
+      ],
+      "requirement": "required",
+      "window_days": null,
+      "release_time": null,
+      "passport": "not_stated",
+      "closed_weekdays": [
+        "monday"
+      ],
+      "open_on_public_holidays": true,
+      "limits": {
+        "en": [
+          "Entry is limited when the museum reaches capacity"
+        ],
+        "zh": [
+          "达到最大承载量时限流"
+        ]
+      },
+      "notes": {
+        "en": [
+          "Book tickets before visiting during the Ancient Americas exhibition (9 Jul 2026 – 14 Nov 2027)",
+          "The museum says international visitors can book on Trip.com",
+          "Bring the original ID you booked with"
+        ],
+        "zh": [
+          "美洲古代文明大展期间（2026-07-09 至 2027-11-14）请预约购票后参观",
+          "官方写明境外观众可通过 Trip.com 预约购票",
+          "入馆请带预约时用的有效证件实物"
+        ]
+      },
+      "official_channel": {
+        "name": {
+          "en": "Shanghai Museum",
+          "zh": "上海博物馆官网"
+        },
+        "url": "https://www.shanghaimuseum.cn/mu/frontend/pg/service/visit-west"
+      },
+      "partner_links": true,
+      "sources": [
+        "https://www.shanghaimuseum.cn/mu/frontend/pg/service/visit-west"
+      ],
+      "checked_on": "2026-11-25"
+    },
+    {
+      "id": "shanghai.museum-east",
+      "name": {
+        "en": "Shanghai Museum East",
+        "zh": "上海博物馆东馆"
+      },
+      "city": {
+        "en": "Shanghai",
+        "zh": "上海"
+      },
+      "aliases": [
+        "上博东馆"
+      ],
+      "requirement": "not_required",
+      "window_days": null,
+      "release_time": null,
+      "passport": "not_stated",
+      "closed_weekdays": [
+        "tuesday"
+      ],
+      "open_on_public_holidays": true,
+      "limits": {
+        "en": [
+          "Entry is limited when the museum reaches capacity"
+        ],
+        "zh": [
+          "达到最大承载量时限流"
+        ]
+      },
+      "notes": {
+        "en": [
+          "Bring the original ID",
+          "The Ancient Civilisations Discovery Hall and the Digital Gallery still need booking"
+        ],
+        "zh": [
+          "入馆请带有效身份证件实物",
+          "古代文明探索宫、数字馆仍需提前预约"
+        ]
+      },
+      "official_channel": {
+        "name": {
+          "en": "Shanghai Museum booking notice",
+          "zh": "上海博物馆预约公告"
+        },
+        "url": "https://reservation.shanghaimuseum.net/"
+      },
+      "partner_links": false,
+      "sources": [
+        "https://reservation.shanghaimuseum.net/",
+        "https://www.shanghaimuseum.net/"
+      ],
+      "checked_on": "2026-11-25"
+    }
+  ]
+}
