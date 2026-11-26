@@ -49,6 +49,8 @@ class PreparedPlan:
     preflight_size:tuple[int,int,int]
     id_prefix:str
     endpoint_names:tuple
+    # W1-2 (#1722): traveler-stated fields left out as unconfirmed (degraded path only).
+    unconfirmed:frozenset=frozenset()
 
 
 def prepare_generation(host,worker,binding,view,*,locale,effective,prior_model_calls=0):
@@ -85,7 +87,7 @@ def prepare_generation(host,worker,binding,view,*,locale,effective,prior_model_c
     source=capture_pipeline_sources(host,worker,binding,view,fields,city,day_count=day_count,
         start_date=start['value']if start['state']=='known'else None)
     return PreparedPlan(skeleton,projected,projection,planning_edges(projection,day_count),
-        calls,source,city,size,prefix,endpoints)
+        calls,source,city,size,prefix,endpoints,constraints.compiled_unconfirmed(city))
 
 
 def retrieve_skeleton(prepared):
