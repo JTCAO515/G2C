@@ -571,7 +571,7 @@ class RunWorker:
             elif self.tools is None:
                 chunks = self._stream(binding, inputs, system=answer_prompt(locale,question=text,detailed=True), answer=True)
             else:
-                chunks = self.tools.answer(self, binding, inputs, lio_locale=locale, lio_question_day=original.question_day,**({'message_refs':message_refs} if message_refs else {}),
+                chunks = self.tools.answer(self, binding, inputs, lio_locale=locale, lio_question_day=original.question_day,**({'lio_layout':True} if getattr(self.tools,'commits_layout',False) else {}),**({'message_refs':message_refs} if message_refs else {}),
                                            **({'lio_city':self.lio_city_context} if self.lio_city_context is not None else {}))
             # W2-6 (#1733): read the safety-lines switch before any model call.
             from cj_message.lio_safety import safety_lines_enabled, supplement

@@ -11,9 +11,12 @@ from test_worker_safety_lines import Messages
 
 
 class Tools:
+    commits_layout = True
+
     def __init__(self, layout, text):
         self.layout, self.text = layout, text
     def answer(self, worker, binding, inputs, **kwargs):
+        self.kwargs = kwargs
         if self.layout is not None:
             yield LioLayout(self.layout)
         yield self.text
@@ -50,3 +53,19 @@ def test_split_answer_without_a_matching_topic_gets_a_layout_but_no_buttons():
 def test_english_buttons_use_the_fixed_english_labels():
     status, state = run('How do I pay with Alipay?', 'Link your card.\n\nThen show the code.', 'split', locale='en')
     assert 'Payment setup guide' in state.effects[1]
+
+
+def test_a_tools_object_that_does_not_declare_layout_is_never_given_the_argument():
+    class Strict:
+        def answer(self, worker, binding, inputs, *, lio_locale, lio_question_day):
+            yield '好的。'
+    runs = Service(MemoryRepository(), lambda _: True)
+    worker = RunWorker(scope='scope', messages=Messages('你好'), runs=runs, provider=None, tools=Strict(),
+                       drafts=Drafts(), lio_original=lambda binding: LioOriginal('zh', None))
+    outcome, = worker.process()
+    assert outcome.status == 'completed'
+    tools = Tools('split', '好的。')
+    worker = RunWorker(scope='scope', messages=Messages('你好'), runs=Service(MemoryRepository(), lambda _: True), provider=None,
+                       tools=tools, drafts=Drafts(), lio_original=lambda binding: LioOriginal('zh', None))
+    worker.process()
+    assert tools.kwargs['lio_layout'] is True

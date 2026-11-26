@@ -1005,7 +1005,7 @@ class Boundaries(unittest.TestCase):
         subject='m4-synthetic-demo-aaaaaaaaaaaa';second='m4-synthetic-demo-bbbbbbbbbbbb'
         subjects=frozenset({subject,second});provider=self.provider(sse())
         tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects))
-        def run(account,question,mode):
+        def run(account,question,mode,*,layout=True,template='0'):
             systems=[]
             class Worker:
                 lio_planning=None
@@ -1016,9 +1016,9 @@ class Boundaries(unittest.TestCase):
                         answer=dict(zh='好的。',en='Alipay works almost everywhere.')))
             worker=Worker();worker.provider=provider
             binding=SimpleNamespace(scope=scope_for(ISSUER,account),run_id='layout-'+mode)
-            env=dict(CJ_LIO_ANSWER_LAYOUT=mode,CJ_LIO_ANSWER_LAYOUT_SUBJECTS_JSON=json.dumps([subject]))
+            env=dict(CJ_LIO_ANSWER_LAYOUT=mode,CJ_LIO_ANSWER_LAYOUT_SUBJECTS_JSON=json.dumps([subject]),CJ_LIO_PROMPT_TEMPLATE=template)
             with patch.dict(os.environ,env):
-                chunks=list(tools.answer(worker,binding,[dict(role='user',content=question)],lio_locale='en'))
+                chunks=list(tools.answer(worker,binding,[dict(role='user',content=question)],lio_locale='en',**({'lio_layout':True} if layout else {})))
             return chunks,systems[0]
         flat_chunks,flat_system=run(subject,'How do I pay with Alipay?','flat')
         self.assertFalse(any(isinstance(part,LioLayout)for part in flat_chunks))
@@ -1027,6 +1027,15 @@ class Boundaries(unittest.TestCase):
         self.assertIn('Fit the answer on one phone screen',split_system);self.assertNotIn('Fit the answer on one phone screen',flat_system)
         listed_other,other_system=run(second,'How do I pay with Alipay?','one-screen')
         self.assertEqual(listed_other[0],LioLayout('single'));self.assertEqual(other_system,flat_system)
+        # A caller that does not opt in (the exploration answer) never sees a layout chunk or the one-screen prompt.
+        silent,silent_system=run(subject,'How do I pay with Alipay?','one-screen',layout=False)
+        self.assertFalse(any(isinstance(part,LioLayout)for part in silent));self.assertEqual(silent_system,flat_system)
+        # The single prompt template path carries the layout too, and flat stays the same there.
+        template_flat,template_flat_system=run(subject,'How do I pay with Alipay?','flat',template='1')
+        template_split,template_split_system=run(subject,'How do I pay with Alipay?','one-screen',template='1')
+        self.assertEqual(template_split[0],LioLayout('split'))
+        self.assertIn('Fit the answer on one phone screen',template_split_system)
+        self.assertNotIn('Fit the answer on one phone screen',template_flat_system)
         identity,identity_system=run(subject,'who are you','one-screen')
         self.assertEqual(identity[0],LioLayout('single'));self.assertEqual(identity_system,flat_system)
         self.assertEqual(self.sent,[])

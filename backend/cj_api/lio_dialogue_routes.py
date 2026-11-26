@@ -107,7 +107,7 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
         layout = layout if layout in ('split', 'single') else 'single'
         if answer or status in ('completed', 'failed'):
             row['layout'] = layout
-        if status == 'completed' and followups is not None and trip is None and layout == 'split':
+        if status == 'completed' and answer and followups is not None and trip is None and layout == 'split':
             row['followups'] = followups
     return row
 

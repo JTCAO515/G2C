@@ -80,7 +80,7 @@
     "backend/agent/cj_agent/lio_intake_schema.py": "10fb2f6ac2effe75ee33aacd75d9000090342c75538b316d5bdfede599cb2311",
     "backend/agent/cj_agent/lio_intake_start_schema.py": "553ca376c75d9e718a5013902c02c5e348fbe942991fd298a8a48452f99012b1",
     "backend/agent/cj_agent/provider.py": "a0be205a7bee5318d6c23cf74cc3e4f7f8a6dfe1cd0a970a43e7146f184543c5",
-    "backend/agent/cj_agent/worker.py": "1de517f9bd5aaf9a2079c6dc89b1d9a56ff28d8b704049ea526f3dbfc626b765",
+    "backend/agent/cj_agent/worker.py": "cf0086f481875a82a15cd212eea159c19925c25fe37a3fd4dfade9bc8a36be34",
     "backend/cj_api/lio_calendar_edit.py": "a692bf79cda0c5928fccbd4904f0291302bd805d965a23c8c9061099d5d3b4b4",
     "backend/cj_api/lio_calendar_ordinals.py": "f7f34103c4db79c5cb85e61f723f2869c91196fb71f181dd2609cc767dab09c3",
     "backend/cj_api/lio_city.py": "b4aec7b89e869a5f5619927dbd0120eb54ef20806d3be8689e26495738f15fe5",
@@ -114,7 +114,7 @@
     "backend/cj_api/local_lio_rich_checks.py": "9be1935d74b241f67a5d37dad3d835e0ebff1f318fdf540615ca98707f7f7321",
     "backend/cj_api/local_lio_rich_source.py": "c9faf8b1688ef76be0879fd9dc0eddb92dad00c00f2ab87b4e0f5d94474eb04a",
     "backend/cj_api/local_memory_history.py": "c7bbe834c80b004aea4c5d31a51a9e77cbeaa197806a5b41e2b0b8c22acd5674",
-    "backend/cj_api/real_services.py": "3216cd7bf4277856e0b86fc7ab235cb6eb79698a73d898ea8f40a25dc7172510",
+    "backend/cj_api/real_services.py": "132fb2c5a53fb12ac409532db6d45c23713f7a6a338be3cd2f828ecd4da93304",
     "backend/cj_api/tool_evidence.py": "b223e97e4419949a0a36b618469d669eccf3e97c15fc9ebc54c8d987a7a7867a",
     "backend/draft/cj_draft/grouped_plan.py": "1b7fbada1331ac101bb2572e4b885d114e157b240f49d623f0062eacd1509f05",
     "backend/draft/cj_draft/lio_plan.py": "9985c0e3d117f98fd953a97e5b457dfc811592c7cf1b0a6c94d57c5890ba8fa9",
@@ -137,10 +137,10 @@
     "eval/optimization/score_v2.py": "015fa9f21b418fe49a5ac07a5fb3027e0422620a6616029f2ba6438bfa1e9322",
     "tooling/optimization/uv.lock": "c3729fbcd04627cb07bde4f5f21b9c4fbfa4748b3d7468d550c7fc2af62bc343"
   },
-  "system_prompt_sha256": "e859f2a51c71b149c7b17fc6d4521cef7b27259036ceaa84b9fd492e1e964a81",
+  "system_prompt_sha256": "d024b87601262ecd0914ef003ae6df6fe26118bc1dc7785021b2bfb7827e8fde",
   "task_sha256": "9d4376ba7512d6f3c0741036ae1bd0dda99752bbc9f8b8fb8dd7025c61a530ec",
   "task_version": "G2C-dialogue-cases.2",
-  "tool_implementation_sha256": "3216cd7bf4277856e0b86fc7ab235cb6eb79698a73d898ea8f40a25dc7172510",
+  "tool_implementation_sha256": "132fb2c5a53fb12ac409532db6d45c23713f7a6a338be3cd2f828ecd4da93304",
   "tool_schema_sha256": "e08e14ac24ec89a18222c1546a57112c8daeb28b725e91aa98ab4cab0b47ec0a",
   "version": "G2C-runtime-adapter.1"
 }

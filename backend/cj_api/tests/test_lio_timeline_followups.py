@@ -106,3 +106,12 @@ def test_the_contract_examples_match_the_schema_and_the_servers_own_check():
         assert not jsonschema.Draft202012Validator(schema).is_valid(value), value
         if 'followups' in value and value['followups']['version'] == VERSION:
             assert wire_followups(value['followups']['actions']) is None   # and the server's read would drop it
+
+
+def test_stored_values_with_whitespace_or_a_trip_card_never_split_or_carry_buttons():
+    assert row('completed', '好的', 'lio_layout:split ', BUTTONS)['layout'] == 'single'
+    assert row('completed', '好的', ' lio_layout:split', BUTTONS)['layout'] == 'single'
+    with_trip = _message(item(), state('completed', '好的', SPLIT, BUTTONS), trip={'trip_id': 'trip:a'}, declared=True)
+    assert 'followups' not in with_trip and with_trip['layout'] == 'split'
+    empty = row('completed', '', SPLIT, BUTTONS)
+    assert 'followups' not in empty and empty['layout'] == 'split'   # no answer text, no buttons; the written value is kept

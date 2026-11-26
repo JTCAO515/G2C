@@ -13,7 +13,7 @@ Additive to `LIO-timeline.2` (`LIO-CONVERSATIONS-V2.md`). A poll that does not d
 
 For a declared poll each message row may carry two more keys; a row without the keys is a row the server has nothing to say about yet.
 
-- `layout`: `"split"` or `"single"`. `split` means the App shows the answer in two bubbles, cut at the first blank line (`\n\n`); with no blank line, one bubble. The server fixes the value before the answer's first text, so every row of one message that has answer text, or a final status (`completed` or `failed`), carries the same value; a queued row (`sending`) before the answer starts may omit it. An account that is not on the server's list, a flat server, the code-written self description, and every non-answer reply (plans, edits, failures) read `single`.
+- `layout`: `"split"` or `"single"`. `split` means the App shows the answer in two bubbles, cut at the first blank line (`\n\n`); with no blank line, one bubble. The server fixes the value before the answer's first text, so every row of one message that has answer text, or a final status (`completed` or `failed`), carries the same value; a queued row (`sending`) before the answer starts may omit it. An account that is not on the server's list, a flat server, the code-written self description, and every reply that is not a normal answer (plans, edits) read `single`. A message that failed after the value was written keeps that value; the server never changes it afterwards.
 - `followups`: only on a `completed` row whose `layout` is `split`, and only when the server has at least one button. `{"version": "LIO-answer-followups.1", "actions": [{"tool": …, "parameters": {…}, "label": …}]}` with one or two actions.
 
 ## Actions

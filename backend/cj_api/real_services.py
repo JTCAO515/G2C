@@ -868,7 +868,9 @@ class RealTools:
             return invoke
         return InvocationInput(original,None,bind,_receipt(metadata))
 
-    def answer(self,worker,binding,messages,*,lio_locale=None,lio_question_day=None,message_refs=(),lio_city=None):
+    commits_layout=True  # the worker may pass lio_layout=True (#1727); other callers never do
+
+    def answer(self,worker,binding,messages,*,lio_locale=None,lio_question_day=None,message_refs=(),lio_city=None,lio_layout=False):
         self.services.require_scope(binding.scope)
         messages=list(messages);seen=set()
         city=lio_city
@@ -894,7 +896,9 @@ class RealTools:
             # W2-1 (#1727): the answer layout is fixed before the first text; off (flat) writes nothing.
             from .lio_answer_layout import answer_layout,prompt_layout
             subject=next((s for s in self.services.demo_subjects if scope_for(ISSUER,s)==binding.scope),None)
-            layout=answer_layout(subject,question)
+            # Only the worker's answer path commits and reads it (`lio_layout=True`); any other caller
+            # (the exploration answer) neither receives a LioLayout chunk nor the one-screen prompt.
+            layout=answer_layout(subject,question) if lio_layout else None
             if layout is not None:yield LioLayout(layout)
             if template_enabled():
                 # W2-5 (#1732): every answer rule once, from the single template.
