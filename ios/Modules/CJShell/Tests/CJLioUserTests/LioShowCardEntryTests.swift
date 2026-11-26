@@ -14,7 +14,7 @@ struct LioShowCardEntryTests {
     @Test func comesFirstWhenEnabled() {
         var availability = LioToolCatalog.Availability()
         availability.returnHotel = true
-        #expect(LioToolCatalog.visible(availability) == [.returnHotel, .localSupport, .metro, .payment, .translation, .phrases])
+        #expect(LioToolCatalog.visible(availability) == [.returnHotel, .localSupport, .metro, .payment, .translation, .showCards])
     }
 
     @Test func cardCopy() {

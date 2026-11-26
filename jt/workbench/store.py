@@ -73,6 +73,12 @@ class CaseAuditDetail:
 
 
 @dataclass(frozen=True)
+class OperationsAuditDetail:
+    action: str
+    reference: str
+
+
+@dataclass(frozen=True)
 class AuditEvent:
     timestamp: float
     action: AuditAction
@@ -82,6 +88,7 @@ class AuditEvent:
     staff_target: str | None = None
     signal_reference: str | None = field(default=None, repr=False)
     case_detail: CaseAuditDetail | None = None
+    operations_detail: OperationsAuditDetail | None = None
 
 
 @dataclass(frozen=True)

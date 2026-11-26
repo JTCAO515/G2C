@@ -4,7 +4,8 @@ import SwiftUI
 import UIKit
 
 /// The full-screen card a traveller turns towards someone (#1572): Chinese large, English small, screen kept awake.
-/// Same layout as the driver sign (#1550); accessibility identifiers are `<prefix>.request`, `<prefix>.name`,
+/// It is the app's only "show it to someone" screen (#1742): driver signs, show cards, phrases, help cards, the
+/// ordering card and Nearby's address all present it. Accessibility identifiers are `<prefix>.request`, `<prefix>.name`,
 /// `<prefix>.address`, `<prefix>.english`, `<prefix>.note` and `<prefix>.done`, matching the driver sign's.
 /// An optional accessory (for example the ordering card's note checklist) sits under the card.
 struct LioShowCardSheet<Accessory: View>: View {
@@ -122,13 +123,15 @@ struct LioShowCardFace: View {
     }
 }
 
-/// Scenes and their cards (#1572). Details typed here stay on this screen; the hotel and room come from
-/// the saved stay hotel (#1573).
+/// The Show Cards page (#1742): the cards with the traveller's details by scene (#1572), then common phrases and
+/// help cards. Details typed here stay on this screen; the hotel and room come from the saved stay hotel (#1573).
 struct LioShowCardsView: View {
     let language: LioLanguage
     let hotel: LioStayHotel?
     /// Remembers the booking name, allergies and similar on this device (JT, 2026-11-25); nil keeps nothing.
     let detailsStore: LioShowCardDetailsStore?
+    /// The cards with the traveller's own details (#1572), shown only with Back to Hotel's switch on.
+    let detailScenes: Bool
     @State private var input: LioShowCardInput
     @State private var loaded = false
     /// Saving starts only after a successful read, so a file that could not be read is never overwritten.
@@ -136,10 +139,12 @@ struct LioShowCardsView: View {
     @State private var confirmsClear = false
     @State private var notice: String?
 
-    init(language: LioLanguage, hotel: LioStayHotel?, detailsStore: LioShowCardDetailsStore? = nil) {
+    init(language: LioLanguage, hotel: LioStayHotel?, detailsStore: LioShowCardDetailsStore? = nil,
+         detailScenes: Bool = true) {
         self.language = language
         self.hotel = hotel
         self.detailsStore = detailsStore
+        self.detailScenes = detailScenes
         var input = LioShowCardInput(hotel: hotel?.showCardHotel)
         input.roomNumber = hotel?.roomNumber
         _input = State(initialValue: input)
@@ -148,11 +153,14 @@ struct LioShowCardsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: LioTheme.Spacing.lg) {
-                Text(language.text("Pick a card, add your details, then turn the screen towards the other person.",
-                                   "选一张卡，填上你的信息，再把屏幕转给对方看。"))
+                Text(detailScenes
+                     ? language.text("Pick a card, add your details, then turn the screen towards the other person.",
+                                     "选一张卡，填上你的信息，再把屏幕转给对方看。")
+                     : language.text("Pick a card, then turn the screen towards the other person.",
+                                     "选一张卡，再把屏幕转给对方看。"))
                     .font(.subheadline)
                     .foregroundStyle(LioTheme.inkSecondary)
-                ForEach(LioShowCardScene.allCases) { scene in
+                ForEach(detailScenes ? LioShowCardScene.allCases : []) { scene in
                     VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
                         Label(scene.title(language), systemImage: scene.symbol)
                             .font(.headline)
@@ -175,7 +183,31 @@ struct LioShowCardsView: View {
                         .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
                     }
                 }
-                if detailsStore != nil {
+                section(language.text("Common phrases", "常用语"), symbol: "text.bubble") {
+                    ForEach(LioPhraseCategory.allCases) { category in
+                        NavigationLink {
+                            LioShowCardPhraseList(category: category, language: language)
+                        } label: {
+                            LioShowCardRow(title: category.title(in: language), symbol: category.icon)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("lio.phrases.category." + category.rawValue)
+                        if category != LioPhraseCategory.allCases.last {
+                            Divider().padding(.leading, LioTheme.Spacing.md)
+                        }
+                    }
+                }
+                section(language.text("Asking for help", "求助"), symbol: "hand.raised") {
+                    NavigationLink {
+                        LioShowCardHelpView(language: language)
+                    } label: {
+                        LioShowCardRow(title: language.text("Show a Local", "给当地人看"),
+                                       detail: language.text("Large Chinese cards for asking for help", "大字中文求助卡"))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("lio.show-card.help")
+                }
+                if detailScenes, detailsStore != nil {
                     VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
                         Text(language.text("Your name, allergies and similar details are kept on this phone only.",
                                            "你填的姓名、过敏等信息只保存在这台手机上。"))
@@ -232,6 +264,17 @@ struct LioShowCardsView: View {
         } message: {
             Text(language.text("Your name, allergies, usual medicine and similar details are removed from this phone. Your hotel stays.",
                                "姓名、过敏、常用药等信息会从这台手机上删除，酒店不受影响。"))
+        }
+    }
+
+    private func section<Rows: View>(_ title: String, symbol: String, @ViewBuilder rows: () -> Rows) -> some View {
+        VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+            Label(title, systemImage: symbol)
+                .font(.headline)
+                .foregroundStyle(LioTheme.ink)
+                .accessibilityAddTraits(.isHeader)
+            VStack(spacing: 0) { rows() }
+                .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
         }
     }
 

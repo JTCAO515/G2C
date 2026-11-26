@@ -7,6 +7,7 @@ import re
 import signal
 import socket
 import stat
+import sys
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
@@ -18,7 +19,7 @@ from jt.synthetic import generate_dataset
 
 from .__main__ import bootstrap_admin
 from .app import HEALTH_HOST, ProxyEntry, create_app
-from .auth import Auth
+from .auth import AccessDenied, Auth, InvalidAccount
 from .postgres import DATABASE_VARIABLE, PostgresStore, migrate
 
 
@@ -92,8 +93,14 @@ def serve_workbench(store: PostgresStore, auth: Auth) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="JT 工作台容器入口")
-    parser.add_argument("command", choices=("migrate", "bootstrap-admin", "serve", "healthcheck"))
-    command = parser.parse_args().command
+    parser.add_argument("command", choices=("migrate", "bootstrap-admin", "bootstrap-admin-code", "serve", "healthcheck"))
+    parser.add_argument("--username", help="只用于签发首个管理员设置码")
+    args = parser.parse_args()
+    command = args.command
+    if (command == "bootstrap-admin-code") != (args.username is not None):
+        parser.error("bootstrap-admin-code 必须提供 --username。")
+    if command == "bootstrap-admin-code" and not sys.stdout.isatty():
+        parser.error("请在私有交互式终端签发设置码。")
     try:
         if command == "healthcheck":
             if not probe_health(socket_path()):
@@ -114,9 +121,13 @@ def main() -> None:
             if already_configured:
                 parser.error("工作台管理员已经引导。")
             bootstrap_admin(auth, parser)
+        elif command == "bootstrap-admin-code":
+            code = auth.issue_initial_admin_setup(args.username)
+            print("请私下交给账号本人。在登录页选择首次设置，设置码有效 15 分钟。")
+            print(code)
         else:
             serve_workbench(store, auth)
-    except (OSError, RuntimeError, psycopg.Error):
+    except (AccessDenied, InvalidAccount, OSError, RuntimeError, psycopg.Error):
         parser.exit(1, f"工作台 {command} 未完成。请核对运行配置和数据库权限。\n")
 
 
