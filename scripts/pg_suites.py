@@ -796,6 +796,15 @@ def group_lio_failed_history():
 GROUPS.update(lio_failed_history=group_lio_failed_history)
 
 
+def group_service_request():
+    # #1769: SERVICE-REQUEST@1 store, state machine, retention and account hook on restricted PG.
+    return _fresh_runtime_check('service_request',55880,'cj1769_service',
+        f'/tmp/cj1769-service-{os.getpid()}','backend/service_request/tests/store_pg.py')
+
+
+GROUPS.update(service_request=group_service_request)
+
+
 # CI minutes per group: median of ci runs 45380910374, 45390074551 and 45418513962 on
 # 2026-11-24 (ubuntu-latest, eatmydata; the last one with two lanes per runner). Groups under 0.2
 # minutes are left to DEFAULT_MINUTES. Used only to balance --shard; every group still runs on

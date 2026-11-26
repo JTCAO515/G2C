@@ -12,7 +12,7 @@ BACKEND = ROOT / 'backend'
 
 # Domain pytest suites that need no database (feasibility/needs/trip run in pg_suites.py).
 DOMAINS = ('agent', 'auth', 'cleanup', 'draft', 'fact', 'feedback', 'manual_edit', 'memory_jobs',
-           'memory_withdrawal', 'message', 'place', 'run', 'usage')
+           'memory_withdrawal', 'message', 'place', 'run', 'service_request', 'usage')
 # cj_api wire checks that need a PostgreSQL config run in pg_suites.py.
 PG_WIRE_CHECKS = {'feasibility_wire_checks.py', 'needs_cohost_checks.py',
                   'memory_management_wire_checks.py', 'memory_cohost_checks.py'}
