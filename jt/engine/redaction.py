@@ -17,7 +17,8 @@ _START_NUMBER = r"(?<![A-Za-z0-9.+@])"
 _PASSPORT_ID_LABEL = rf"(?:\bpassport{_SPACE}+(?:number|no\.?|id)|护照(?:号码|号|编号)|護照(?:號碼|號|編號))"
 _BARE_PASSPORT_LABEL = r"(?:\bpassport\b|护照|護照)"
 _PASSPORT_LABEL = rf"(?:{_PASSPORT_ID_LABEL}|{_BARE_PASSPORT_LABEL})"
-_PASSPORT_MARKER = rf"{_SPACE}*(?:(?:\bis\b|是|为|為){_SPACE}*)?(?:#{_SPACE}*)?"
+_PASSPORT_CONNECTOR = rf"{_SPACE}*(?:(?:\bis\b|是|为|為){_SPACE}*)?"
+_PASSPORT_MARKER = rf"(?:#{_SPACE}*[:=]?|[:=])"
 
 _LETTER = r"[A-Za-zÀ-ÖØ-öø-ÿĀ-ſ]"
 _NAME_WORD = rf"{_LETTER}+(?:['’\-]{_LETTER}+)*"
@@ -27,9 +28,13 @@ _NAME_STOP = (
 )
 _LATIN_NAME = rf"(?!{_NAME_STOP}){_NAME_WORD}(?:{_SPACE}+(?!{_NAME_STOP}){_NAME_WORD}){{0,4}}"
 _HAN = r"[\u3400-\u9fff]"
+_HAN_COMPANION = (
+    r"(?:和|跟|与|與)(?:(?:自己|我|我们|我們|他|她)的|几位|幾位|两位|兩位)?"
+    r"(?:朋友|同伴|家人|家属|家屬|同事|同行者|同行人|孩子|父母)"
+)
 _HAN_NAME = (
     rf"{_HAN}{{2,4}}?(?=我?(?:今天|明天|现在|現在|正在|刚才|剛才|迷路|走失|遇险|遇險|"
-    rf"受伤|受傷|被困|需要|急需|救命|求救)|(?:和|跟|与|與)(?:朋友|同伴|家人|家属|家屬|同事))"
+    rf"受伤|受傷|被困|需要|急需|救命|求救)|{_HAN_COMPANION})"
     rf"|{_HAN}{{2,4}}(?!{_HAN})|"
     rf"{_HAN}{{2,4}}?(?=在|住|的|请|請|我|他|她)"
 )
@@ -48,7 +53,9 @@ _LATITUDE = r"[+-]?(?:[0-8]?[0-9]\.[0-9]{3,}|90\.0{3,})"
 _LONGITUDE = r"[+-]?(?:(?:[0-9]{1,2}|1[0-7][0-9])\.[0-9]{3,}|180\.0{3,})"
 _COMMA = rf"{_SPACE}*,{_SPACE}*"
 _COORDINATES = rf"(?:{_LATITUDE}{_COMMA}{_LONGITUDE}|{_LONGITUDE}{_COMMA}{_LATITUDE})"
-_CN_ADDRESS_NUMBER = r"[0-9零〇一二两兩三四五六七八九十百千]{1,6}"
+_CN_DIGITS = "零〇一二两兩三四五六七八九十百千"
+_CN_ADDRESS_NUMBER = rf"[0-9{_CN_DIGITS}]{{1,6}}"
+_CN_ROOM_NUMBER = rf"(?:[0-9]{{1,6}}[号號室]?(?![0-9])|[{_CN_DIGITS}]{{1,6}}(?:[号號室]|(?!{_HAN})))"
 _CN_ADDRESS = (
     rf"{_HAN}{{1,28}}?(?:路|街|大道|道|巷|弄){_SPACE}*{_CN_ADDRESS_NUMBER}[号號]"
     rf"(?:{_SPACE}*(?:{_CN_ADDRESS_NUMBER}(?:栋|棟|幢|座|单元|單元|楼|樓|层|層|室|房)|[A-Za-z]座)){{0,5}}"
@@ -75,9 +82,9 @@ _RULES = (
     (
         "PASSPORT",
         re.compile(
-            rf"(?:{_PASSPORT_LABEL}{_PASSPORT_MARKER}[:=]{_VALUE_GAP}|"
-            rf"(?:{_PASSPORT_ID_LABEL}|^{_SPACE}*{_BARE_PASSPORT_LABEL}){_PASSPORT_MARKER}{_VALUE_GAP}|"
-            rf"{_PASSPORT_LABEL}{_PASSPORT_MARKER}{_SPACE}*)"
+            rf"(?:{_PASSPORT_LABEL}{_PASSPORT_CONNECTOR}{_PASSPORT_MARKER}{_VALUE_GAP}|"
+            rf"(?:{_PASSPORT_ID_LABEL}|^{_SPACE}*{_BARE_PASSPORT_LABEL}){_PASSPORT_CONNECTOR}{_VALUE_GAP}|"
+            rf"{_PASSPORT_LABEL}{_PASSPORT_CONNECTOR}{_SPACE}*)"
             r"((?=[A-Z0-9]{0,11}[0-9])[A-Z0-9]{6,12})(?![A-Z0-9])",
             re.IGNORECASE | re.MULTILINE,
         ),
@@ -116,7 +123,7 @@ _RULES = (
     (
         "LOCATION",
         re.compile(
-            rf"(\b{_UNIT}|(?:房间|房間|客房|房号|房號){_SPACE}*[:#]?{_SPACE}*{_CN_ADDRESS_NUMBER}[号號室]?)",
+            rf"(\b{_UNIT}|(?:房间|房間|客房|房号|房號){_SPACE}*[:#]?{_SPACE}*{_CN_ROOM_NUMBER})",
             re.IGNORECASE,
         ),
     ),
