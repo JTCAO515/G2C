@@ -552,6 +552,16 @@ composition 或计量。有效旧两小时凭据可升级；过期、撤销、�
 `DEMO_SESSION_DENIED/access/failed/do_not_retry`，503 为
 `DEMO_SESSION_UNAVAILABLE/dependency/unknown/do_not_retry`。
 邀请码 401/503 沿用 `DEMO_INVITE_DENIED`、`DEMO_LOGIN_UNAVAILABLE`。
+
+邀请码登录失败限速（#1718，`deploy/hk/login_throttle.py`）：每次换取先按一次失败计入，签发成功才撤回；
+同一客户端（Caddy 写入的 `X-Forwarded-For` 单一地址，其他情况合用一个 `unattributed` 桶）15 分钟 5 次、
+短码格式全局 1 小时 10 次、全部 1 小时 60 次。超限返回 503 `DEMO_LOGIN_UNAVAILABLE/access/failed/do_not_retry`
+（App 已有映射）并带 `Retry-After`，不再询问签名 socket。计数只在 API 进程内存，不落盘、不进访问日志；
+签名服务不可用不计入，续期不限速。
+
+外测只发长邀请码（`D1-<12 位>.<22 位>`）。短码格式是公开的，198 个短码对应的主体与摘要也就是公开的：
+`demo_accounts bootstrap/rotate` 对短码主体必须显式加 `--internal-short-code`（只给内部测试者），
+默认（外测）拒绝短码主体和短码摘要。
 客户端在有效会话回前台且余期不超过一天时续期，未知时保留仍有效旧凭据。
 
 `/v1` 和 `.1` 为旧内部构建保留原两小时上限，退出条件为旧构建退场。
