@@ -21,6 +21,7 @@ struct LioMeView<Menu: View>: View {
     let memory: AnyView?
     let menu: Menu
     @State private var showingMemory = false
+    @Environment(\.lioLocationConsent) private var locationConsent
 
     var body: some View {
         NavigationStack {
@@ -50,6 +51,17 @@ struct LioMeView<Menu: View>: View {
                             detail: language.text("Name, home country, travel style", "称呼、常住国家、出行偏好"))
                     }
                     .accessibilityIdentifier("lio.me.profile")
+                    // #1748: where the in-app location choice is turned off (or on again).
+                    if let locationConsent {
+                        NavigationLink {
+                            LioLocationSettingsView(language: language, consent: locationConsent)
+                        } label: {
+                            row(language.text("Location", "位置"), symbol: "location",
+                                detail: locationConsent.allowed ? language.text("On for Taxi and Nearby", "打车和附近可使用")
+                                                                : language.text("Off", "已关闭"))
+                        }
+                        .accessibilityIdentifier("lio.me.location")
+                    }
                 }
                 .lioRow()
                 Section {

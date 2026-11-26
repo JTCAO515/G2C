@@ -252,9 +252,7 @@
     ],
     "notes": "以英文服务页为主要来源；中文服务项目页（/mu/frontend/pg/service/services）已读取并用于补充细节。馆方未见独立“无障碍服务”专页，信息分散在服务与设施栏目。",
     "conflicts": [],
-    "related_entries": [
-      "visitor.v3.shanghai.museum-east"
-    ]
+    "related_entries": []
   },
   {
     "format_version": "visitor-candidate.1",

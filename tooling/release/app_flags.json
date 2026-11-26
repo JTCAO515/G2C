@@ -56,6 +56,10 @@
     {
       "setting": "G2C_TRIP_HOME_ENABLED",
       "plist": "G2CTripHomeEnabled"
+    },
+    {
+      "setting": "G2C_LOCATION_CONSENT_ENABLED",
+      "plist": "G2CLocationConsentEnabled"
     }
   ],
   "release": {
