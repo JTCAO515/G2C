@@ -70,12 +70,14 @@ This policy covers the Go2China iOS app, the website go2china.space, and any in-
 - 去向：精确位置发到我们的香港服务；打车时转给滴滴；查找附近时降到约 100 米精度后发给高德。
 - 不和你的账号一起保存，不写入记忆，也不发给 AI 模型。
 - 撤回：在「我的 → 位置」里关闭，或在系统设置里关闭 Go2China 的定位权限。
+- 你的定位同意记录按账号保存在本机，同一台设备上的其他账号读不到；退出登录时保留，注销账号时删除。
 
 **We do not collect**: passport or other ID numbers, payment card numbers, or your contacts. We read your device location only when you use Taxi or Nearby and have given separate consent. We ask for location consent on its own, the first time you need it, not as part of the consent at first launch. We read it once each time and never track you in the background.
 
 - Where it goes: your precise location goes to our service in Hong Kong; for Taxi it is passed to DiDi; for Nearby it is reduced to about 100 m before it goes to AMap.
 - It is not stored with your account, not saved to memory, and not sent to the AI model.
 - To withdraw: turn it off in Me → Location, or turn off location access for Go2China in system Settings.
+- Your location consent is stored on this device per account, and other accounts on the same device cannot read it. It is kept when you sign out and deleted when you close your account.
 
 <!-- 位置相关的写法以文首「发布前提」第一条为准：#1833（打车坐标只用于该次请求、不记日志不落盘不进缓存键；附近发给高德的坐标转换、周边搜索、逆地理三类请求都降到 3 位小数）、#1832（定位用途说明与隐私清单申报）、#1748（定位单独成页、需要时才弹出、撤回入口）。三张票都落地前，本节与现状不符，不能对外发布。 -->
 
