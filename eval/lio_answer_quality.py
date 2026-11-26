@@ -210,12 +210,15 @@ def summarize(cases, answers, profile=DETAIL):
 def main(argv=None):
     parser = argparse.ArgumentParser(prog='python -m eval.lio_answer_quality')
     sub = parser.add_subparsers(dest='command', required=True)
-    sub.add_parser('cases')
+    listing = sub.add_parser('cases')
     score = sub.add_parser('score')
     score.add_argument('--profile', choices=sorted(PROFILES), default=DETAIL)
+    for command in (listing, score):
+        # Another case file of the same version, e.g. eval/lio_followup_cases.v1.json (#1728).
+        command.add_argument('--cases', default=str(CASES))
     score.add_argument('answers')
     args = parser.parse_args(argv)
-    cases = load_cases()
+    cases = load_cases(args.cases)
     if args.command == 'cases':
         for case in cases:
             print(case['id'], case['locale'], ' ⏎ '.join(case['turns']), sep='\t')

@@ -337,7 +337,7 @@ counter必须来自宿主持久control绑定，授权来自独立root只读绑�
 整套control（含oss-quota）是本轮不参与数据库恢复的连续信任锚；同时回退usage与全部intents的一致旧目录无法自检。
 禁止把该目录纳入恢复或更换；若它整体恢复、丢失或连续性不明，先由宿主root撤下OSS政策、人工核对原累计，不得凭旧签名重开额度。
 
-OSS授权续期（#1716）：允许的 `expires_at` 只来自 `backend/usage/cj_usage/authorization_deadlines.json` 的 `oss_backup`（北京时间，旧值留在 `previous`）。JT 批准新日期后先合并、部署读取新配置的日备镜像；旧文件在原到期前继续可用。之后宿主 root 只改 `oss.json` 的 `expires_at`（新值的 UTC 写法，如 `2026-12-31T16:00:00+00:00`），同目录临时文件 root:0644 后原子改名替换，其他字段一个字节都不改。新授权只把原 `authorization_sha256` 连同更早批准的到期值当作同一额度：原 usage/intents 继续计数，300 次、2GiB、10 元上限不变，不重开额度；其他字段变化、未列入配置的日期、或用过新授权后退回旧文件，都保持 HOLD。
+OSS授权续期（#1716）：允许的授权条款（`expires_at`、`request_limit`、付费模式的 `hold_limit_fen`）只来自 `deploy/hk/oss_allowance_terms.json`，到期值同时须在 `backend/usage/cj_usage/authorization_deadlines.json` 的 `oss_backup` 里；条款只能变大，不能缩回。批准后先合并、部署读取新条款的日备镜像（旧文件在原到期前继续可用），再由宿主 root 把 `oss.json` 换成新条款的那几个字段（UTC 写法，同目录临时文件 root:0644 后原子改名替换，`version`、`mode`、`source`、`byte_limit` 不动，旧文件留副本）。新授权把同一授权在更早条款下的 `authorization_sha256` 当作同一额度：原 usage/intents 继续计数，不重开额度、不清零；其他字段变化、未列入条款的组合、或用过新授权后退回旧文件，都保持 HOLD。现行条款：2026-12-31T16:00Z（北京 2027-01-01 零点）、600 次、2GiB、付费预留 ¥13（#1716）。
 
 恢复目标是**同一主机内全新、仅Unix socket的独立PG17集群**，由本次operator进程亲自initdb/启动并签名绑定system_identifier/data_directory；其PG数据在持久target-control/pg内，失败也保留。核服务端listen_addresses为空和仅演练数据库，不接受任意目标URI/旧共享集群，不创建新云项目。
 原集群中新空库仍有全局应用角色，会被明确拒绝；不重用角色、不给云角色扩权。
