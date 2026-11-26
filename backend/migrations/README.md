@@ -54,6 +54,7 @@ refuses any file whose bytes differ from the manifest.
 | 46 | formal_memory_activation | `backend/migrations/0046_formal_memory_activation.sql` |
 | 47 | device_erasure_journals | `backend/migrations/0047_device_erasure_journals.sql` |
 | 53 | lio_wire_origin | `backend/migrations/0053_lio_wire_origin.sql` (exact new LIO3 envelope, same receipt/RLS/cleanup) |
+| 56 | service_request | `backend/migrations/0056_service_request.sql` (SERVICE-REQUEST@1 store, append-only history, escort view audit, retention/account fence; #1769) |
 
 Domain SQL stays in each domain directory so tests and the chain use the same bytes.
 Changing a registered file requires updating its manifest sha256 in the same PR; once a

@@ -427,7 +427,7 @@ def assembly_cleanup(database):
     key_id='hk-beta-assembly'
     inventory=('business/message','business/usage','business/memory-authoritative','business/trip-authoritative',
         'business/needs-current-planning','business/feedback-private-actions','business/cleanup-metadata',
-        'business/memory-management-actions','checkpoints/run','memory-derived',*TARGETS,'external-processing')
+        'business/memory-management-actions','business/service-requests','checkpoints/run','memory-derived',*TARGETS,'external-processing')
     config=Configuration({key_id:decoded('CJ_BETA_CLEANUP_B64',length=32)},key_id,3600,inventory,
         Path(__file__).resolve().parents[2]/'backend/storage-registry.json',extra_hooks=account_hooks,control_records=True)
     local=local_database_target()
