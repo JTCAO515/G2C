@@ -98,5 +98,126 @@
     ],
     "checked_on": "2026-11-12",
     "expires_on": "2027-02-10"
+  },
+  {
+    "id": "visitor.mainland.mobile-pay-foreign-card",
+    "topic": "payment",
+    "cities": [
+      "beijing",
+      "chengdu",
+      "xian",
+      "shanghai",
+      "hangzhou",
+      "chongqing",
+      "shenzhen"
+    ],
+    "text_zh": "支付宝和微信支付可绑定 Visa、万事达等国际信用卡用于移动支付；银联、支付宝、微信都提供移动支付。绑卡能否成功和手续费以应用内说明为准。",
+    "text_en": "Alipay and WeChat Pay let foreign users link international credit cards such as Visa and Mastercard for mobile payment; UnionPay, Alipay and WeChat Pay all offer mobile payment. Whether a card links and any fees are shown in the app.",
+    "source_urls": [
+      "https://english.www.gov.cn/news/202404/11/content_WS6617c858c6d0868f4e8e5f4d.html"
+    ],
+    "checked_on": "2026-11-26",
+    "expires_on": "2026-12-26"
+  },
+  {
+    "id": "visitor.mainland.currency-exchange",
+    "topic": "payment",
+    "cities": [
+      "beijing",
+      "chengdu",
+      "xian",
+      "shanghai",
+      "hangzhou",
+      "chongqing",
+      "shenzhen"
+    ],
+    "text_zh": "可在有兑换标识的银行网点、外币兑换点及入境口岸等处的自助兑换机把外币换成人民币现金；也可在有对应卡组织标识的 ATM 用银行卡取人民币。",
+    "text_en": "Foreign currency can be exchanged for RMB cash at bank outlets and money changers showing exchange signs, and at self-service exchange machines at entry ports and elsewhere. RMB can also be withdrawn with a bank card at ATMs showing the card network logo.",
+    "source_urls": [
+      "https://english.www.gov.cn/2025special/bizexpatsinchina2025",
+      "https://english.www.gov.cn/news/202404/11/content_WS6617c858c6d0868f4e8e5f4d.html"
+    ],
+    "checked_on": "2026-11-26",
+    "expires_on": "2026-12-26"
+  },
+  {
+    "id": "visitor.mainland.ride-hailing",
+    "topic": "transport",
+    "cities": [
+      "beijing",
+      "chengdu",
+      "xian",
+      "shanghai",
+      "hangzhou",
+      "chongqing",
+      "shenzhen"
+    ],
+    "text_zh": "可用支付宝（出行→打车）、微信（我→服务→出行）或滴滴国际版叫网约车；滴滴国际版支持用境外手机号和国际信用卡注册。",
+    "text_en": "Ride-hailing can be booked in Alipay (Transport → Taxi), WeChat (Me → Services → Mobility) or the Didi-Greater China app, which accepts foreign phone numbers and international credit cards for sign-up.",
+    "source_urls": [
+      "https://english.www.gov.cn/2025special/bizexpatsinchina2025"
+    ],
+    "checked_on": "2026-11-26",
+    "expires_on": "2026-12-26"
+  },
+  {
+    "id": "visitor.mainland.rail-change-refund",
+    "topic": "transport",
+    "cities": [
+      "beijing",
+      "chengdu",
+      "xian",
+      "shanghai",
+      "hangzhou",
+      "chongqing",
+      "shenzhen"
+    ],
+    "text_zh": "火车票可在 12306 英文网站、12306 应用或车站售票窗口改签和退票；按改签、退票时间可能收取手续费。",
+    "text_en": "Rail tickets can be changed or refunded on the 12306 English website, the 12306 app or at a station ticket office. Service fees may apply depending on when you change or cancel.",
+    "source_urls": [
+      "https://english.www.gov.cn/2025special/bizexpatsinchina2025"
+    ],
+    "checked_on": "2026-11-26",
+    "expires_on": "2026-12-26"
+  },
+  {
+    "id": "visitor.mainland.passport-loss",
+    "topic": "emergency",
+    "cities": [
+      "beijing",
+      "chengdu",
+      "xian",
+      "shanghai",
+      "hangzhou",
+      "chongqing",
+      "shenzhen"
+    ],
+    "text_zh": "护照丢失请立即向当地派出所报案。在车站售票窗口、代售点或车上购买火车票时，可使用护照报失证明，或本国驻华使领馆签发并附有效签证或停留证件的临时旅行证件。",
+    "text_en": "If you lose your passport, report it to the local police station immediately. For rail tickets at station ticket offices, agents or on trains, a passport loss report certificate, or a temporary travel document from your embassy or consulate in China with a valid visa or stay certificate, can be used.",
+    "source_urls": [
+      "https://english.www.gov.cn/2025special/bizexpatsinchina2025"
+    ],
+    "checked_on": "2026-11-26",
+    "expires_on": "2026-12-26"
+  },
+  {
+    "id": "visitor.mainland.mobile-data",
+    "topic": "internet",
+    "cities": [
+      "beijing",
+      "chengdu",
+      "xian",
+      "shanghai",
+      "hangzhou",
+      "chongqing",
+      "shenzhen"
+    ],
+    "text_zh": "手机套餐的流量通常有限；用量少时可在不用时关闭移动数据，用量大时向运营商咨询合适的流量套餐。",
+    "text_en": "Mobile plans often include limited data. If you use little, switch mobile data off when not needed; if you need a lot, ask the telecom operator for a suitable data plan.",
+    "source_urls": [
+      "https://english.www.gov.cn/2025special/bizexpatsinchina2025"
+    ],
+    "checked_on": "2026-11-26",
+    "expires_on": "2026-12-26"
   }
 ]
