@@ -1,18 +1,29 @@
 from copy import deepcopy
 from datetime import date
-import json
-from pathlib import Path
 import unittest
 
 from validate_v3 import validate_entry_v3
 
-ROOT = Path(__file__).resolve().parent
 TODAY = date(2026, 11, 20)
+# Synthetic Beijing venue fact with fixed dates, shaped like the former first catalogue record
+# (palace-museum, retired 2026-11-26), so the source-scope probes do not depend on live entries.
+SYNTHETIC_VENUE = {
+    'format_version': 'visitor-entry.3', 'entry_kind': 'fact', 'topic': 'passport_booking',
+    'id': 'visitor.example.v3-venue', 'cities': ['beijing'],
+    'subject': {'key': 'beijing.example-venue', 'name_zh': '合成场馆',
+                'name_en': 'Synthetic venue', 'wikidata_qid': None},
+    'conditions': {'reservation_required': True, 'closed_weekdays': [1],
+                   'closed_weekdays_public_holiday_exception': True,
+                   'advance_booking_days': None, 'advance_booking_rule': None},
+    'text_zh': '合成格式样例，不是已核对的游客须知。', 'text_en': 'Synthetic format sample, not reviewed visitor guidance.',
+    'source_urls': ['https://www.dpm.org.cn/example-visit.html'],
+    'checked_on': '2026-11-20', 'expires_on': '2026-12-04',
+}
 
 
 class VenueSourceScopeTests(unittest.TestCase):
     def setUp(self):
-        self.venue = json.loads((ROOT / 'entries-v3/venues-beijing-chengdu-xian.json').read_text())[0]
+        self.venue = deepcopy(SYNTHETIC_VENUE)
 
     def test_approved_institution_does_not_authorize_other_city_topic_or_city_wide_rule(self):
         validate_entry_v3(self.venue, as_of=TODAY)
