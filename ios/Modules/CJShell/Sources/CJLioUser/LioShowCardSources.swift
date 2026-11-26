@@ -6,29 +6,33 @@ import SwiftUI
 /// `LioShowCardSheet`: the one "show it to someone" screen. The cards with the traveller's own details (#1572)
 /// stay behind Back to Hotel's switch (`G2CShowCardEnabled`, off by default), as before.
 @MainActor enum LioShowCardTool {
+    /// `section` is the part of the page a route asks for (`section=business`, #1765); nil opens it at the top.
     @ViewBuilder static func page(language: LioLanguage, roadbookDirectory: URL?,
-                                  isCurrent: @escaping @MainActor () -> Bool) -> some View {
+                                  isCurrent: @escaping @MainActor () -> Bool,
+                                  section: LioShowCardSection? = nil) -> some View {
         #if DEBUG
         if LioReturnHotelPreview.requested {
-            LioShowCardsView(language: language, hotel: LioReturnHotelPreview.hotel)
+            LioShowCardsView(language: language, hotel: LioReturnHotelPreview.hotel, section: section)
         } else {
-            built(language: language, roadbookDirectory: roadbookDirectory, isCurrent: isCurrent)
+            built(language: language, roadbookDirectory: roadbookDirectory, isCurrent: isCurrent, section: section)
         }
         #else
-        built(language: language, roadbookDirectory: roadbookDirectory, isCurrent: isCurrent)
+        built(language: language, roadbookDirectory: roadbookDirectory, isCurrent: isCurrent, section: section)
         #endif
     }
 
     @ViewBuilder private static func built(language: LioLanguage, roadbookDirectory: URL?,
-                                           isCurrent: @escaping @MainActor () -> Bool) -> some View {
+                                           isCurrent: @escaping @MainActor () -> Bool,
+                                           section: LioShowCardSection?) -> some View {
         if LioReturnHotelTools.shownInTools {
             let store = LioReturnHotelTools.hotelStore(roadbookDirectory: roadbookDirectory, isCurrent: isCurrent)
             // A damaged hotel file reads as no hotel, as on Back to Hotel itself.
             LioShowCardsView(language: language, hotel: (try? store?.load()) ?? nil,
                              detailsStore: LioReturnHotelTools.detailsStore(roadbookDirectory: roadbookDirectory,
-                                                                            isCurrent: isCurrent))
+                                                                            isCurrent: isCurrent),
+                             section: section)
         } else {
-            LioShowCardsView(language: language, hotel: nil, detailScenes: false)
+            LioShowCardsView(language: language, hotel: nil, detailScenes: false, section: section)
         }
     }
 }

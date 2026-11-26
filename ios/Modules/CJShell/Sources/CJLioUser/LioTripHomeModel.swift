@@ -84,20 +84,24 @@ struct LioTripProfile: Codable, Equatable, Sendable {
     var planID: String?
     /// Whether the traveller flies on to a third country; the transit visa-free rules depend on it.
     var onwardToThirdCountry: Bool?
+    /// Leisure or business (#1765), chosen in the trip settings while `G2CTripBusinessEnabled` is on. Nil, as in every
+    /// file written before it existed, is a leisure trip.
+    var purpose: LioTripPurpose?
     let startedAt: Date
 
     init(arrival: LioTripDay?, stayDays: Int?, cityID: String?, planID: String? = nil,
-         onwardToThirdCountry: Bool? = nil, startedAt: Date) {
+         onwardToThirdCountry: Bool? = nil, purpose: LioTripPurpose? = nil, startedAt: Date) {
         self.arrival = arrival
         self.stayDays = stayDays.map { min(max($0, 1), Self.maximumStayDays) }
         self.cityID = cityID.flatMap { $0.isEmpty || $0.utf8.count > 64 ? nil : $0 }
         self.planID = planID.flatMap { $0.isEmpty || $0.utf8.count > 256 ? nil : $0 }
         self.onwardToThirdCountry = onwardToThirdCountry
+        self.purpose = purpose
         self.startedAt = startedAt
     }
 
     private enum CodingKeys: String, CodingKey {
-        case arrival, stayDays, cityID, planID, onwardToThirdCountry, startedAt
+        case arrival, stayDays, cityID, planID, onwardToThirdCountry, purpose, startedAt
     }
 
     /// The file is read back through the same limits as a new profile.
@@ -108,8 +112,13 @@ struct LioTripProfile: Codable, Equatable, Sendable {
                   cityID: try container.decodeIfPresent(String.self, forKey: .cityID),
                   planID: try container.decodeIfPresent(String.self, forKey: .planID),
                   onwardToThirdCountry: try container.decodeIfPresent(Bool.self, forKey: .onwardToThirdCountry),
+                  // A purpose this version does not know (written by a newer app) reads as leisure, not as a damaged trip.
+                  purpose: (try? container.decodeIfPresent(String.self, forKey: .purpose)).flatMap { $0 }
+                      .flatMap(LioTripPurpose.init(rawValue:)),
                   startedAt: try container.decode(Date.self, forKey: .startedAt))
     }
+
+    var isBusiness: Bool { purpose == .business }
 
     /// The day the traveller leaves China, when both the arrival and the length are known.
     var lastDay: LioTripDay? {

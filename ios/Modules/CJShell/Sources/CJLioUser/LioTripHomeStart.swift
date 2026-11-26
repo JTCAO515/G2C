@@ -88,6 +88,9 @@ struct LioTripHomeStartSheet: View {
     let language: LioLanguage
     let initial: LioTripProfile?
     @Binding var nationality: String
+    /// Asks "Leisure or business?" (#1765) only while `G2CTripBusinessEnabled` is on; otherwise the form is unchanged
+    /// and a purpose saved before is kept as it was.
+    let offersBusiness: Bool
     let save: (LioTripProfile) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var datesSet: Bool
@@ -95,13 +98,16 @@ struct LioTripHomeStartSheet: View {
     @State private var stayDays: Int
     @State private var cityID: String?
     @State private var passport: String
+    @State private var purpose: LioTripPurpose
 
-    init(language: LioLanguage, initial: LioTripProfile?, nationality: Binding<String>,
+    init(language: LioLanguage, initial: LioTripProfile?, nationality: Binding<String>, offersBusiness: Bool = false,
          save: @escaping (LioTripProfile) -> Void) {
         self.language = language
         self.initial = initial
         _nationality = nationality
+        self.offersBusiness = offersBusiness
         self.save = save
+        _purpose = State(initialValue: initial?.purpose ?? .leisure)
         let defaultArrival = LioTripDay(date: .now).adding(days: 14)
         // A new trip starts with no dates, so nothing the traveller did not pick is saved (#1665 review P3-2).
         _datesSet = State(initialValue: initial?.arrival != nil)
@@ -120,7 +126,8 @@ struct LioTripHomeStartSheet: View {
         }
         return LioTripProfile(arrival: datesSet ? LioTripDay(date: arrival) : nil, stayDays: datesSet ? stayDays : nil,
                               cityID: cityID, planID: initial?.planID,
-                              onwardToThirdCountry: initial?.onwardToThirdCountry, startedAt: started)
+                              onwardToThirdCountry: initial?.onwardToThirdCountry,
+                              purpose: offersBusiness ? purpose : initial?.purpose, startedAt: started)
     }
 
     var body: some View {
@@ -165,6 +172,20 @@ struct LioTripHomeStartSheet: View {
                                       ?? language.text("Not decided", "还没定"))
                         }
                         .accessibilityIdentifier("lio.trip-home.form.city")
+                    }
+                    if offersBusiness {
+                        question(4, language.text("What kind of trip is it?", "这趟是什么行程？")) {
+                            Picker(language.text("Trip type", "行程类型"), selection: $purpose) {
+                                Text(language.text("Leisure", "旅游")).tag(LioTripPurpose.leisure)
+                                Text(language.text("Business", "商务")).tag(LioTripPurpose.business)
+                            }
+                            .pickerStyle(.segmented)
+                            .frame(minHeight: 44)
+                            .accessibilityIdentifier("lio.trip-home.form.purpose")
+                            Text(language.text("Business adds trade fair and meeting tasks to your checklist.",
+                                               "选商务会在清单里加上参展和会面要办的事。"))
+                                .font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                        }
                     }
                     Label(language.text("These answers stay on this phone and are not sent anywhere.",
                                         "这些回答只存在这台手机上，不会发出去。"), systemImage: "lock")

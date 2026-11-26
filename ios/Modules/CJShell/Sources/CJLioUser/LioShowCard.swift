@@ -132,6 +132,9 @@ struct LioShowCardsView: View {
     let detailsStore: LioShowCardDetailsStore?
     /// The cards with the traveller's own details (#1572), shown only with Back to Hotel's switch on.
     let detailScenes: Bool
+    /// The section a route asked for (#1765); the page scrolls to it once when it opens.
+    let opensAt: LioShowCardSection?
+    @State private var scrolledToSection = false
     @State private var input: LioShowCardInput
     @State private var loaded = false
     /// Saving starts only after a successful read, so a file that could not be read is never overwritten.
@@ -141,17 +144,31 @@ struct LioShowCardsView: View {
     @Environment(\.lioTaxiEntry) private var taxiEntry
 
     init(language: LioLanguage, hotel: LioStayHotel?, detailsStore: LioShowCardDetailsStore? = nil,
-         detailScenes: Bool = true) {
+         detailScenes: Bool = true, section: LioShowCardSection? = nil) {
         self.language = language
         self.hotel = hotel
         self.detailsStore = detailsStore
         self.detailScenes = detailScenes
+        self.opensAt = section
         var input = LioShowCardInput(hotel: hotel?.showCardHotel)
         input.roomNumber = hotel?.roomNumber
         _input = State(initialValue: input)
     }
 
     var body: some View {
+        ScrollViewReader { proxy in
+            page
+                .task {
+                    guard let opensAt, !scrolledToSection else { return }
+                    scrolledToSection = true
+                    // After the first layout, so the section exists to scroll to.
+                    await Task.yield()
+                    proxy.scrollTo(opensAt, anchor: .top)
+                }
+        }
+    }
+
+    private var page: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: LioTheme.Spacing.lg) {
                 Text(detailScenes
@@ -231,6 +248,7 @@ struct LioShowCardsView: View {
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("lio.business.phrases")
                 }
+                .id(LioShowCardSection.business)
                 section(language.text("Asking for help", "求助"), symbol: "hand.raised") {
                     NavigationLink {
                         LioShowCardHelpView(language: language)

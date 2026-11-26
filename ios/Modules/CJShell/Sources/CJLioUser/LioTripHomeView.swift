@@ -30,6 +30,8 @@ struct LioTripHome: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(LioRouter.self) private var router: LioRouter?
+    @Environment(\.openURL) private var openURL
     @State private var path: [Page] = []
     @State private var refresh = 0
     @State private var hotel: LioStayHotel?
@@ -149,7 +151,18 @@ struct LioTripHome: View {
             showCards: tools.showCards,
             attractionBooking: tools.reminders != nil,
             scheduledReminders: reminders,
-            reminderScope: tools.reminders?.scope ?? LioAttractionReminderScope(account: nil)))
+            reminderScope: tools.reminders?.scope ?? LioAttractionReminderScope(account: nil),
+            business: tools.business,
+            routableTools: tools.business == nil ? [] : routableTools))
+    }
+
+    /// The tools the router can open here (#1765), as trip places decide it (#1740): the Tools tab must be shown and
+    /// the tool visible in this build.
+    private var routableTools: Set<LioTool> {
+        guard router?.toolsShown == true else { return [] }
+        var context = LioToolContext(language: language)
+        context.taxiEntry = taxiEntry
+        return Set(LioToolCatalog.visible(context.availability()))
     }
 
     private func readTools() async {
@@ -168,11 +181,24 @@ struct LioTripHome: View {
     }
 
     private func open(_ task: LioTripTask) {
-        if case .medicalCard = task.kind, medicalCard != nil {
+        if case .business(let business) = task.kind {
+            switch business.action {
+            case .officialPage(let url): openURL(url)
+            case .route(let route): router?.open(route)
+            case nil: return
+            }
+        } else if case .medicalCard = task.kind, medicalCard != nil {
             showsMedicalCard = true
         } else {
             path.append(.task(task.key))
         }
+    }
+
+    /// Every task has "Go" except business items with nothing to open (#1765): the business cards item, the visa
+    /// item (its official links are the way) and a tool this build does not show.
+    private func hasGo(_ task: LioTripTask) -> Bool {
+        if case .business(let business) = task.kind { return business.action != nil }
+        return true
     }
 
     // MARK: - Header
@@ -228,7 +254,7 @@ struct LioTripHome: View {
                 nowText(language.text("\(done) of \(total) ready", "准备进度 \(done)/\(total)"),
                         next.map { language.text("Next: \(LioTripHomeCopy.title($0, language))", "下一件：\(LioTripHomeCopy.title($0, language))") })
                 progress(done, total)
-                if let next { primary(LioTripHomeCopy.go(language), "lio.trip-home.now.go") { open(next) } }
+                if let next, hasGo(next) { primary(LioTripHomeCopy.go(language), "lio.trip-home.now.go") { open(next) } }
             case .ready:
                 nowText(language.text("All set before you fly", "出发前的事都办好了"),
                         LioTripHomeCopy.phase(list.phase, language))
@@ -242,7 +268,7 @@ struct LioTripHome: View {
                 nowText(language.text("Today: \(done) of \(total) done", "今天要办 \(done)/\(total)"),
                         next.map { language.text("Next: \(LioTripHomeCopy.title($0, language))", "下一件：\(LioTripHomeCopy.title($0, language))") })
                 progress(done, total)
-                if let next { primary(LioTripHomeCopy.go(language), "lio.trip-home.now.go") { open(next) } }
+                if let next, hasGo(next) { primary(LioTripHomeCopy.go(language), "lio.trip-home.now.go") { open(next) } }
             case .today(let day, let next, let remaining):
                 todayCard(day: day, next: next, remaining: remaining, list: list)
             case .backToHotel(let saved):
@@ -420,18 +446,20 @@ struct LioTripHome: View {
                 taskText(task)
             }
             if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
-            Button { open(task) } label: {
-                Text(task.isDone ? language.text("View", "查看") : LioTripHomeCopy.go(language))
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(task.isDone ? LioTheme.inkSecondary : LioTheme.vermilion)
-                    .padding(.horizontal, LioTheme.Spacing.sm)
-                    .frame(minWidth: 44, minHeight: 44)
-                    .background(LioTheme.surfaceSunken, in: Capsule())
+            if hasGo(task) {
+                Button { open(task) } label: {
+                    Text(task.isDone ? language.text("View", "查看") : LioTripHomeCopy.go(language))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(task.isDone ? LioTheme.inkSecondary : LioTheme.vermilion)
+                        .padding(.horizontal, LioTheme.Spacing.sm)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .background(LioTheme.surfaceSunken, in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel((task.isDone ? language.text("View: ", "查看：") : language.text("Go: ", "去办："))
+                                    + LioTripHomeCopy.title(task, language))
+                .accessibilityIdentifier("lio.trip-home.go.\(task.key)")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel((task.isDone ? language.text("View: ", "查看：") : language.text("Go: ", "去办："))
-                                + LioTripHomeCopy.title(task, language))
-            .accessibilityIdentifier("lio.trip-home.go.\(task.key)")
         }
         .padding(LioTheme.Spacing.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -464,7 +492,17 @@ struct LioTripHome: View {
         }
     }
 
+    /// The task's words, read as one element; a sourced business item adds its official links under them (#1765).
     private func taskText(_ task: LioTripTask) -> some View {
+        VStack(alignment: .leading, spacing: LioTheme.Spacing.xxs) {
+            taskWords(task)
+            if case .business(let business) = task.kind, let source = business.source {
+                businessSources(source, key: task.key)
+            }
+        }
+    }
+
+    private func taskWords(_ task: LioTripTask) -> some View {
         VStack(alignment: .leading, spacing: LioTheme.Spacing.xxs) {
             Text(LioTripHomeCopy.title(task, language))
                 .font(.headline)
@@ -488,6 +526,25 @@ struct LioTripHome: View {
             }
         }
         .accessibilityElement(children: .combine)
+    }
+
+    /// A sourced business item's check day and its official pages (#1765), each opened in the browser.
+    private func businessSources(_ source: LioTripBusinessTask.Source, key: String) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(LioTripHomeCopy.businessSource(source, language))
+                .font(.caption).foregroundStyle(LioTheme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            ForEach(Array(source.urls.enumerated()), id: \.offset) { index, url in
+                Link(destination: url) {
+                    Label(url.host ?? url.absoluteString, systemImage: "arrow.up.right.square")
+                        .font(.caption)
+                        .frame(minHeight: 44, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .foregroundStyle(LioTheme.vermilion)
+                .accessibilityIdentifier("lio.trip-home.source.\(key).\(index)")
+            }
+        }
     }
 
     // MARK: - Day by day
@@ -648,7 +705,7 @@ struct LioTripHome: View {
         switch sheet {
         case .start, .edit:
             LioTripHomeStartSheet(language: language, initial: sheet == .edit ? model.profile : nil,
-                                  nationality: nationality) { profile in
+                                  nationality: nationality, offersBusiness: tools.business != nil) { profile in
                 if sheet == .edit { model.update { $0 = profile } } else { model.start(profile) }
             }
         case .taxi:
