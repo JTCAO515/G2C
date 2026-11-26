@@ -45,6 +45,9 @@
     renderFormOptions();
     renderWallCaptions();
     startChat();
+    // Other page scripts (service-request.js) render their own copy for the current language.
+    window.G2C.lang = lang;
+    document.dispatchEvent(new CustomEvent("g2c:lang"));
   }
 
   $("#lang-select").addEventListener("change", (event) => {
