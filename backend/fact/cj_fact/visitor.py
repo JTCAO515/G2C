@@ -18,6 +18,9 @@ from .policy import FactFailure,canonical_url
 
 QUERY_VERSION='FACT-query.2'
 RESULT_VERSION='FACT-result.2'
+# Additive v3 (#1756): city is optional; without one only nationwide entries match.
+QUERY_VERSION_3='FACT-query.3'
+RESULT_VERSION_3='FACT-result.3'
 TOPICS=frozenset({'payment','passport_booking','transport','internet','emergency'})
 CITIES=frozenset({'beijing','chengdu','xian','shanghai','hangzhou','chongqing','shenzhen'})
 # JT-approved exact-host inventory: #843/6818584957. No subdomain expansion.
@@ -69,7 +72,17 @@ def _day(value):
 @dataclass(frozen=True)
 class Query:
     topic:str
-    city:str
+    city:str|None
+    version:str=QUERY_VERSION
+
+
+def decode_query_v3(raw):
+    """FACT-query.3: version and topic, plus an optional explicit city; no default city is inferred."""
+    value=_load(raw,1024)
+    if type(value)is not dict or value.get('version')!=QUERY_VERSION_3 or not {'version','topic'}<=value.keys()<={'version','topic','city'}:
+        raise FactFailure('invalid_visitor_query')
+    if type(value['topic'])is not str or value['topic']not in TOPICS:raise FactFailure('invalid_visitor_topic')
+    return Query(value['topic'],_text(value['city'],128)if 'city' in value else None,QUERY_VERSION_3)
 
 
 def decode_query(raw):
@@ -120,9 +133,14 @@ class Entry:
 
 
 def lookup(directory:Path,query:Query,*,evaluated_at,request_ref):
-    """One bounded public-file read; expired entries are omitted, malformed data fails."""
+    """One bounded public-file read; expired entries are omitted, malformed data fails.
+
+    A FACT-query.3 query without a city matches only nationwide entries (those naming every city).
+    """
     aware(evaluated_at)
     reference=_text(request_ref,256)
+    if query.version not in (QUERY_VERSION,QUERY_VERSION_3) or (query.city is None and query.version!=QUERY_VERSION_3):
+        raise FactFailure('invalid_visitor_query')
     today=evaluated_at.astimezone(CHINA).date()
     try:
         paths=sorted(directory.glob('*.json'))
@@ -141,10 +159,16 @@ def lookup(directory:Path,query:Query,*,evaluated_at,request_ref):
                 if entry.entry_id in ids:raise FactFailure('duplicate_visitor_id')
                 ids.add(entry.entry_id);entries.append(entry)
     except OSError:raise FactFailure('visitor_catalogue_unavailable')from None
-    city=ALIASES.get(query.city.casefold())
-    matched=sorted((entry for entry in entries if entry.topic==query.topic and city in entry.cities
+    if query.city is None:
+        # Nationwide only: an entry that names every catalogue city, never a city-specific one.
+        eligible=lambda entry:set(entry.cities)==CITIES
+    else:
+        city=ALIASES.get(query.city.casefold())
+        eligible=lambda entry:city in entry.cities
+    matched=sorted((entry for entry in entries if entry.topic==query.topic and eligible(entry)
                     and today<entry.expires_on),key=lambda entry:entry.entry_id)
-    result=dict(version=RESULT_VERSION,request_ref=reference,query=dict(version=QUERY_VERSION,topic=query.topic,city=query.city),
+    public_query=dict(version=query.version,topic=query.topic,**({}if query.city is None else {'city':query.city}))
+    result=dict(version=RESULT_VERSION if query.version==QUERY_VERSION else RESULT_VERSION_3,request_ref=reference,query=public_query,
         data_origin='maintainer_summary',status='matched'if matched else'no_match',
         evaluated_at=evaluated_at.isoformat(timespec='microseconds'),
         catalogue_sha256=sha256(compact(manifest)).hexdigest(),entries=[entry.public_value()for entry in matched])
