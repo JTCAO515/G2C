@@ -110,14 +110,16 @@ class Auth:
             account = self.store.account(username)
             try:
                 setup_code = self._manage_account(session, action, account, username, role, now)
-            except InvalidAccount:
+            except InvalidAccount as error:
+                rejection = error
                 self.store.append_audit(AuditEvent(self.clock(), ACCOUNT_ACTIONS[action], session.username,
                                                    result=AuditResult.DENIED,
                                                    staff_target=account.username if account else None))
-                raise
-            self.store.append_audit(AuditEvent(self.clock(), ACCOUNT_ACTIONS[action], session.username,
-                                               staff_target=username))
-            return setup_code
+            else:
+                self.store.append_audit(AuditEvent(self.clock(), ACCOUNT_ACTIONS[action], session.username,
+                                                   staff_target=username))
+                return setup_code
+        raise rejection
 
     def _manage_account(
         self, session: Session, action: AccountAction, account: Account | None, username: str, role: str, now: float,

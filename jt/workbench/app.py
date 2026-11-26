@@ -265,8 +265,11 @@ def create_app(auth: Auth, *, port: int, queue: QueueStore | None = None) -> Fas
     @app.post("/queue/review")
     async def add_review(request: Request) -> Response:
         fields = await read_form(request, origin, REVIEW_FORM)
+        return await to_thread(record_review, session_token(request), fields)
+
+    def record_review(token: str, fields: dict[str, str]) -> Response:
         with auth.store.locked():
-            session = auth.require_session(session_token(request), role=Role.REVIEWER, csrf=fields["csrf"])
+            session = auth.require_session(token, role=Role.REVIEWER, csrf=fields["csrf"])
             item = selected_item(fields["signal"])
             timestamp = auth.clock()
             review = review_input(fields, session.username, timestamp)
