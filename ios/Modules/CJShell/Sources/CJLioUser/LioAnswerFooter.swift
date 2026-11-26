@@ -45,6 +45,17 @@ enum LioAnswerFeedbackFeature {
         language.text("This answer didn't help.", "这条回答没帮上忙。")
     }
 
+    /// What is sent for the typed details: control characters other than line breaks and tabs removed (the
+    /// server counts U+001C–U+001F as blank, so a line of only those would be refused for good), then trimmed.
+    /// Empty means there is nothing to send.
+    static func cleanedDetails(_ text: String) -> String {
+        var scalars = String.UnicodeScalarView()
+        scalars.append(contentsOf: text.unicodeScalars.filter {
+            $0 == "\n" || $0 == "\t" || $0.properties.generalCategory != .control
+        })
+        return limitedDetails(String(scalars).trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
     /// Details stay within 500 characters and 6000 UTF-8 bytes, whichever comes first.
     static func limitedDetails(_ text: String) -> String {
         var value = String(text.prefix(detailsCharacterLimit))
@@ -81,8 +92,9 @@ public enum LioAnswerFeedbackOutcome: Equatable, Sendable { case sent, notSent, 
     func notHelpful(messageID: String, problem: String) async -> LioAnswerFeedbackOutcome
     /// What the traveller typed after "Not helpful" went through.
     func addDetails(messageID: String, text: String) async -> LioAnswerFeedbackOutcome
-    /// Tries the same step again. A line that was already saved is only looked up, never sent as a new one.
-    func retry(_ step: LioAnswerFeedbackStep, messageID: String) async -> LioAnswerFeedbackOutcome
+    /// Tries the same step again with the text first sent for it. A line already saved on this device for this
+    /// message and text is only looked up, never sent as a new one, even by a host made after the app came back.
+    func retry(_ step: LioAnswerFeedbackStep, messageID: String, text: String) async -> LioAnswerFeedbackOutcome
 }
 
 /// Where one answer's feedback stands. Kept by `LioHome` per turn, so it survives scrolling and re-rendering.
@@ -115,7 +127,9 @@ enum LioAnswerFeedbackPhase: Equatable {
 
     public func notHelpful(messageID: String, problem: String) async -> LioAnswerFeedbackOutcome { await answer() }
     public func addDetails(messageID: String, text: String) async -> LioAnswerFeedbackOutcome { await answer() }
-    public func retry(_ step: LioAnswerFeedbackStep, messageID: String) async -> LioAnswerFeedbackOutcome { await answer() }
+    public func retry(_ step: LioAnswerFeedbackStep, messageID: String, text: String) async -> LioAnswerFeedbackOutcome {
+        await answer()
+    }
 
     private func answer() async -> LioAnswerFeedbackOutcome {
         try? await Task.sleep(for: .milliseconds(300))
@@ -237,7 +251,7 @@ struct LioAnswerFeedbackDetailsSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var typeSize
 
-    private var trimmed: String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
+    private var trimmed: String { LioAnswerFeedbackFeature.cleanedDetails(text) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -300,7 +314,7 @@ struct LioAnswerFeedbackDetailsSheet: View {
 
     private func send() {
         guard !trimmed.isEmpty else { return }
-        onSend(LioAnswerFeedbackFeature.limitedDetails(trimmed))
+        onSend(trimmed)
         dismiss()
     }
 }

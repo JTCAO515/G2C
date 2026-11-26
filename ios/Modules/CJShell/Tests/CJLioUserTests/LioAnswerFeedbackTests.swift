@@ -5,6 +5,14 @@ import Testing
 /// #1753 (W4-9): "Not helpful" under answers is off unless the build says YES, reads the approved wording,
 /// and keeps details within 500 characters and 6000 UTF-8 bytes.
 struct LioAnswerFeedbackTests {
+    @Test func detailsAreCleanedOfControlCharactersTheServerCountsAsBlank() {
+        // Python's str.strip() treats U+001C–U+001F as blank; Foundation's trimming does not.
+        #expect(LioAnswerFeedbackFeature.cleanedDetails("\u{1C}\u{1D} \u{1E}\n\u{1F}").isEmpty)
+        #expect(LioAnswerFeedbackFeature.cleanedDetails("  Wrong\u{1F} exit\nat Line 2\t ") == "Wrong exit\nat Line 2")
+        #expect(LioAnswerFeedbackFeature.cleanedDetails("\u{7}站名\u{0}不对") == "站名不对")
+        #expect(LioAnswerFeedbackFeature.cleanedDetails(String(repeating: "字", count: 600)).count == 500)
+    }
+
     @Test func flagIsOffUnlessTheBuildSaysYes() {
         #expect(LioAnswerFeedbackFeature.infoKey == "G2CAnswerFeedbackEnabled")
         #expect(!LioAnswerFeedbackFeature.enabled(infoValue: nil))

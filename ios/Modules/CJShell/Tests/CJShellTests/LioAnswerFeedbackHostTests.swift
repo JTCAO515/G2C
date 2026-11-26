@@ -66,6 +66,9 @@ private actor LioFeedbackServer: ClientTransport {
     let directory: URL
     let store: FeedbackPendingStore
     let host: LioAnswerFeedbackHost
+    private let client: FeedbackClient
+    private let current: @MainActor () -> FeedbackBinding?
+    private let maximumRecords: Int
     private let session: Session
     var signedIn: Bool {
         get { session.signedIn }
@@ -88,6 +91,13 @@ private actor LioFeedbackServer: ClientTransport {
                                                                    maximumRequestBytes: 16384, maximumResponseBytes: 100_000),
             credentials: { _ in "SYNTHETIC" }, currentBinding: current, pendingStore: store, interceptedTransport: server)
         host = LioAnswerFeedbackHost(client: client, currentBinding: current, maximumRecords: maximumRecords)
+        self.client = client; self.current = current; self.maximumRecords = maximumRecords
+    }
+
+    /// The host the app makes when it comes back from the background: same client and store, no attempts.
+    func rebuiltHost() -> LioAnswerFeedbackHost {
+        host.invalidate()
+        return LioAnswerFeedbackHost(client: client, currentBinding: current, maximumRecords: maximumRecords)
     }
     deinit { try? FileManager.default.removeItem(at: directory) }
 
@@ -141,7 +151,7 @@ private actor LioFeedbackServer: ClientTransport {
         #expect(await f.host.notHelpful(messageID: "message-A", problem: problem) == .notSent)
         let saved = try #require(try f.store.pending().first)
         await f.server.set(.accept)
-        #expect(await f.host.retry(.notHelpful, messageID: "message-A") == .sent)
+        #expect(await f.host.retry(.notHelpful, messageID: "message-A", text: problem) == .sent)
         #expect(await f.server.submitted.count == 1, "never sent again under a new ID")
         #expect(await f.server.lookUps == [saved.actionID])
         #expect(try f.store.pending().map(\.actionID) == [saved.actionID])
@@ -154,7 +164,7 @@ private actor LioFeedbackServer: ClientTransport {
         let saved = try #require(try f.store.pending().first)
         await f.server.set(.accept)
         // The server has no such line, which proves nothing: keep asking about the same one, send nothing new.
-        #expect(await f.host.retry(.notHelpful, messageID: "message-A") == .notSent)
+        #expect(await f.host.retry(.notHelpful, messageID: "message-A", text: problem) == .notSent)
         #expect(await f.host.notHelpful(messageID: "message-B", problem: problem) == .notSent)
         #expect(await f.server.submitted.count == 1)
         #expect(await f.server.lookUps == [saved.actionID, saved.actionID])
@@ -168,7 +178,7 @@ private actor LioFeedbackServer: ClientTransport {
         #expect(await f.server.submitted.isEmpty, "nothing new while an older line is unsettled")
         #expect(Set(await f.server.lookUps) == [first.actionID, second.actionID])
         await f.server.receive(second)
-        #expect(await f.host.retry(.notHelpful, messageID: "message-A") == .sent)
+        #expect(await f.host.retry(.notHelpful, messageID: "message-A", text: problem) == .sent)
         #expect(await f.server.submitted.count == 1)
         // old-1 arrived on the first pass and is not asked about again.
         #expect(await f.server.lookUps.filter { $0 == first.actionID }.count == 1)
@@ -180,7 +190,7 @@ private actor LioFeedbackServer: ClientTransport {
         _ = try await f.seed("old-1", arrived: true)
         _ = try await f.seed("old-2", arrived: true)
         #expect(await f.host.notHelpful(messageID: "message-A", problem: problem) == .full)
-        #expect(await f.host.retry(.notHelpful, messageID: "message-A") == .full)
+        #expect(await f.host.retry(.notHelpful, messageID: "message-A", text: problem) == .full)
         #expect(await f.server.submitted.isEmpty)
         #expect(try f.store.pending().count == 2)
     }
@@ -192,7 +202,40 @@ private actor LioFeedbackServer: ClientTransport {
         #expect(await f.server.submitted.isEmpty)
         #expect(await f.server.lookUps.isEmpty)
         #expect(try f.store.pending().isEmpty)
-        #expect(await f.host.retry(.details, messageID: "message-A") == .notSent, "no details were ever asked for")
+        #expect(await f.host.retry(.details, messageID: "message-A", text: "Late") == .unavailable)
+        #expect(await f.server.submitted.isEmpty)
+    }
+
+    @Test func hostMadeAfterComingBackFindsTheSavedLineInsteadOfMakingAnother() async throws {
+        let f = try LioFeedbackFixture()
+        await f.server.set(.arriveWithoutReply)
+        #expect(await f.host.notHelpful(messageID: "message-A", problem: problem) == .notSent)
+        let saved = try #require(try f.store.pending().first)
+        await f.server.set(.accept)
+        let host = f.rebuiltHost()
+        #expect(await host.retry(.notHelpful, messageID: "message-A", text: problem) == .sent)
+        #expect(await f.server.submitted.count == 1, "the line that arrived is adopted, not sent again")
+        #expect(await f.server.lookUps == [saved.actionID])
+        // Details typed before the app went away are retried with the same text and go as their own line.
+        await f.server.set(.refuse)
+        #expect(await host.addDetails(messageID: "message-A", text: "Wrong exit") == .notSent)
+        let details = try #require(try f.store.pending().last)
+        await f.server.receive(details)
+        await f.server.set(.accept)
+        let again = f.rebuiltHost()
+        #expect(await again.retry(.details, messageID: "message-A", text: "Wrong exit") == .sent)
+        #expect(await f.server.submitted.count == 2)
+        #expect(try f.store.pending().map(\.actionID) == [saved.actionID, details.actionID])
+    }
+
+    @Test func savedLineIsAdoptedOnlyForTheSameMessageAndText() async throws {
+        let f = try LioFeedbackFixture()
+        #expect(await f.host.notHelpful(messageID: "message-A", problem: problem) == .sent)
+        let host = f.rebuiltHost()
+        #expect(await host.retry(.notHelpful, messageID: "message-B", text: problem) == .sent)
+        #expect(await host.retry(.details, messageID: "message-A", text: "Something else") == .sent)
+        let actions = try await f.actions()
+        #expect(actions.count == 3, "another message, or other text, is a line of its own")
     }
 
     @Test func invalidatedHostSendsNothing() async throws {
