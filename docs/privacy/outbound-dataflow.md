@@ -99,7 +99,7 @@
 | 9 | architecture.md 流程图 | 身份服务候选 Supabase Auth | 后端用本方签发者 `https://local.g2c.invalid` + worker 签名密钥；JWKS 传输仅测试引用；App 打包 supabase-swift 但未配置 | 第 8 节 6–7 点 |
 | 10 | architecture.md 流程图 | 持久执行候选 DBOS / AgentScope，记忆候选 ReMe | 后端/部署代码中无 `dbos`/`agentscope` 导入（只在 `scripts/provider_m4.py:216` 打印版本）；未发现 ReMe 导入（`git grep -w reme` 无命中）。均不涉及外部网络 | grep 结果 |
 | 11 | storage-registry `external-processing` | `status: not_provisioned`，保留期 UNDECIDED、「activation blocked」 | 实际上百炼、高德、滴滴、飞常准、和风（可配）、ECB、OSS 均已在香港代码中启用调用 | 第 1–9 节 |
-| 12 | M4 条目 3 | 「只用合成行程与合成查询，不发送真实用户内容」 | 代码开关 `CJ_M4_SYNTHETIC_ONLY=1` 只约束主体名必须形如 `m4-synthetic-*`；但 Demo 名单（`CJ_BETA_DEMO_SUBJECTS_JSON`）里的账号——`G2C@01–99`、`CJ_Tester@01–99` 两组短码和 `D1-` 长码——都被映射为 `m4-synthetic-demo-<后缀>`（`deploy/hk/demo_login.py:36-37, 69-77`），Lio 对话对整个 Demo 名单开放（`deploy/hk/configuration.py:350-358`），所以**Demo 名单 206 个账号（#1051）本人输入的对话原文会照常发给百炼，对话中提到的地名可能进入发给高德的检索词**；持有者身份待 JT 确认（#33 记录外测 0 邀请、0 分发，未核实，不作定论）。「合成」是主体命名，不是内容保证 | `real_services.py:313-318, 351`；`demo_login.py:36-37, 69-77`；`configuration.py:350-358` |
+| 12 | M4 条目 3 | 「只用合成行程与合成查询，不发送真实用户内容」 | 代码开关 `CJ_M4_SYNTHETIC_ONLY=1` 只约束主体名必须形如 `m4-synthetic-*`；但 Demo 名单（`CJ_BETA_DEMO_SUBJECTS_JSON`）里的账号——`G2C@01–99`、`CJ_Tester@01–99` 两组短码和 `D1-` 长码——都被映射为 `m4-synthetic-demo-<后缀>`（`deploy/hk/demo_login.py:36-37, 69-77`），Lio 对话对整个 Demo 名单开放（`deploy/hk/configuration.py:350-358`），所以**Demo 名单 206 个账号（#1051）本人输入的对话原文会照常发给百炼，对话中提到的地名可能进入发给高德的检索词**；JT 2026-11-26 确认均为内部团队账号；不再使用的 `CJ_Tester@` 和 `D1-` 账号已由 S 线撤销登录资格（只撤登录、不删数据），撤销后可登录 104 个：`G2C@01–99` 共 99 个、`CJ_Tester@12`、4 个 `D1-` 长码；名单主体数仍为 206（S 线 2026-11-26 核对，[#1720 评论](https://github.com/JTCAO515/G2C/issues/1720#issuecomment-7182561865)）。「合成」是主体命名，不是内容保证 | `real_services.py:313-318, 351`；`demo_login.py:36-37, 69-77`；`configuration.py:350-358` |
 
 ### 乙、代码调用但文档没提（或未登记）
 
@@ -121,7 +121,7 @@
 
 ### 3.1 需要统筹 / JT 判断的事项
 
-1. **「合成」只约束账号名，不约束内容**（甲表第 12 行）：Demo 名单里 `G2C@`、`CJ_Tester@` 两组短码和 `D1-` 长码账号都被映射为 `m4-synthetic-demo-*` 主体，他们自己输入的对话原文会照常发给百炼，提到的地名可能进入高德检索词。M4 条目 3、4 写的是「不发送真实用户内容」。统筹已判断属于授权文档写法与事实不一致，更正稿见 PR #1842（待 JT 本人批准）；Demo 名单 206 个账号的持有者身份（尤其 `CJ_Tester@` 组与 `D1-` 长码）待 JT 确认；若其中有外部持有者，本项须 JT 按 #225 定，并列为最高优先。
+1. **「合成」只约束账号名，不约束内容**（甲表第 12 行）：Demo 名单里 `G2C@`、`CJ_Tester@` 两组短码和 `D1-` 长码账号都被映射为 `m4-synthetic-demo-*` 主体，他们自己输入的对话原文会照常发给百炼，提到的地名可能进入高德检索词。M4 条目 3、4 写的是「不发送真实用户内容」。统筹已判断属于授权文档写法与事实不一致，更正稿见 PR #1842（待 JT 本人批准）；持有者身份：JT 2026-11-26 确认均为内部团队账号；不再使用的 `CJ_Tester@` 和 `D1-` 账号已由 S 线撤销登录资格（只撤登录、不删数据），撤销后可登录 104 个：`G2C@01–99` 共 99 个、`CJ_Tester@12`、4 个 `D1-` 长码；名单主体数仍为 206（S 线 2026-11-26 核对，[#1720 评论](https://github.com/JTCAO515/G2C/issues/1720#issuecomment-7182561865)）。仍可登录的 `CJ_Tester@12` 和 4 个 `D1-` 账号是否撤销，待统筹决定。
 2. **storage-registry 漏登的服务端存储**（乙表第 10 行），其中 ToolEvidence 目录能保存完整模型请求体和工具原文，附近缓存键含精确坐标。建议开票给 S 线补登或说明，并同 PR 交付清理钩子（ADR-0009 第 6 条）。
 3. **旧 Supabase 是否仍在被连**：代码默认 `CJ_BETA_DB_TARGET='supabase'`，实际值在服务器 `common.env`，仓库看不到（附录第 8 节）。
 4. **ToolEvidence 在香港是否开启、对哪些主体开启**：由运维 manifest 决定，代码只说明能力（附录 1.1 第 5 点）。
@@ -134,7 +134,7 @@
 
 | 功能 | 触发 | 发出的字段 | 接收方 | 开关与状态 | 出处 |
 |---|---|---|---|---|---|
-| 回答下的反馈入口（W4-9 [#1753](https://github.com/JTCAO515/G2C/issues/1753)） | 用户在一条 Lio 回答下点「没帮上」，可选填「补充说明」 | 复用现有 `POST /v1/feedback`，请求体固定为 `action_id`（客户端生成的提交编号）、`problem`、`expectation`、`references`（该回答的服务端 message id，可带匹配的 run id）。A 线提供的内容：固定文案「这条回答没帮上忙 / This answer didn't help.」与用户选填的补充说明（≤500 字，输入框提示不要填写个人信息），分别落在 `problem`、`expectation` 哪一个以 #1753 代码为准。不发聊天原文、位置、设备信息 | 只到本方香港服务，不转第三方或模型。服务端凭登录凭据识别账号，**按账号**存入香港 PostgreSQL `cj_feedback_action`：原始请求字节及其 sha256、提交时间，以及从被引用消息读出的会话、generation、sequence、run 编号、原始输入哈希和读取时的 run 状态；不复制对话原文或工具内容。无自动保留期，用户删除或注销账号时由 `FeedbackHook` 删除 | 开关 `G2CAnswerFeedbackEnabled`，默认关；**#1753 合并前不生效**，合并后按代码核对本行 | A 线 2026-11-26 提供；统筹 2026-11-26 按 JT 预授权决定。代码依据：`backend/cj_api/feedback_routes.py:53-65`、`backend/cj_api/FEEDBACK-WIRE.md`、`backend/feedback/cj_feedback/postgres.py:101`、`backend/feedback/cj_feedback/lifecycle.py:36-55`、`backend/storage-registry.json:220-232` |
+| 回答下的反馈入口（W4-9 [#1753](https://github.com/JTCAO515/G2C/issues/1753)） | 用户在一条 Lio 回答下点「没帮上」，可选填「补充说明」 | 复用现有 `POST /v1/feedback`，请求体固定为 `action_id`（客户端生成的提交编号）、`problem`、`expectation`、`references`（该回答的服务端 message id，可带匹配的 run id）。A 线提供的内容：固定文案「这条回答没帮上忙 / This answer didn't help.」与用户选填的补充说明（≤500 字，输入框提示不要填写个人信息），分别落在 `problem`、`expectation` 哪一个以 #1753 代码为准。不发聊天原文、位置、设备信息 | 只到本方香港服务，不转第三方或模型。服务端凭登录凭据识别账号，**按账号**存入香港 PostgreSQL `cj_feedback_action`：原始请求字节及其 sha256、提交时间，以及从被引用消息读出的会话、generation、sequence、run 编号、原始输入哈希和读取时的 run 状态；不复制对话原文或工具内容。无自动保留期，只在注销（删除）账号时由 `FeedbackHook` 删除；没有删除单条反馈的入口 | 开关 `G2CAnswerFeedbackEnabled`，默认关；**#1753 合并前不生效**，合并后按代码核对本行 | A 线 2026-11-26 提供；统筹 2026-11-26 按 JT 预授权决定。代码依据：`backend/cj_api/feedback_routes.py:53-65`、`backend/cj_api/FEEDBACK-WIRE.md`、`backend/feedback/cj_feedback/postgres.py:101`、`backend/feedback/cj_feedback/lifecycle.py:36-55`、`backend/storage-registry.json:220-232` |
 
 同一张票加的 AI 提示「由 AI 生成，可能有误，重要信息请自行确认」（开关 `G2CAIDisclosureEnabled`，默认关）不产生数据，不登记。
 
