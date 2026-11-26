@@ -20,7 +20,7 @@ from test_oss_sdk_contract import Session,service
 READ_AUTHORITY=oss_quota.read_authority
 
 
-def allowance(root,monkeypatch,*,mode='paid_capped',requests=0,size=0,expires_at='2026-11-30T16:00:00+00:00'):
+def allowance(root,monkeypatch,*,mode='paid_capped',requests=0,size=0,expires_at='2026-11-30T16:00:00+00:00',request_limit=300,hold=1000):
     activate(monkeypatch);key=Ed25519PrivateKey.generate();root.mkdir(mode=0o700)
     monkeypatch.setenv('CJ_BETA_RECOVERY_PRIVATE_B64',base64.b64encode(key.private_bytes(serialization.Encoding.Raw,serialization.PrivateFormat.Raw,serialization.NoEncryption())).decode())
     monkeypatch.setenv('CJ_BETA_RECOVERY_PUBLIC_B64',base64.b64encode(key.public_key().public_bytes(serialization.Encoding.Raw,serialization.PublicFormat.Raw)).decode())
@@ -28,8 +28,8 @@ def allowance(root,monkeypatch,*,mode='paid_capped',requests=0,size=0,expires_at
         @classmethod
         def now(cls,tz=None):return datetime(2026,11,4,tzinfo=timezone.utc)
     monkeypatch.setattr(oss_quota,'datetime',Clock)
-    policy=dict(version='g2c-beta-oss-authorization.1',mode=mode,source='synthetic offline fixture; not JT approval',request_limit=300,byte_limit=2*GIB,
-        hold_limit_fen=1000 if mode=='paid_capped' else 0,expires_at=expires_at)
+    policy=dict(version='g2c-beta-oss-authorization.1',mode=mode,source='synthetic offline fixture; not JT approval',request_limit=request_limit,byte_limit=2*GIB,
+        hold_limit_fen=hold if mode=='paid_capped' else 0,expires_at=expires_at)
     # Substitute only this test's root-policy reader boundary; no real root
     # authority or cloud identity is created by an offline test.
     monkeypatch.setattr(oss_quota,'read_authority',lambda:policy)
@@ -170,6 +170,45 @@ def clock(monkeypatch,when):
 
 def test_approved_expiries_come_from_the_reviewed_deadline_config():
     assert oss_quota.APPROVED_EXPIRIES==('2026-11-30T16:00:00+00:00',RENEWED)
+    assert oss_quota.TERMS==(('2026-11-30T16:00:00+00:00',300,1000),(RENEWED,300,1000),(RENEWED,600,1300))
+
+
+def test_600_request_term_keeps_the_original_counter_and_stops_at_600(tmp_path,monkeypatch):
+    root=tmp_path/'control';policy=allowance(root,monkeypatch,requests=599,expires_at=RENEWED)
+    original=checkpoint.verified(root/'usage.json')['authorization_sha256']
+    raised=renew(monkeypatch,policy,request_limit=600,hold_limit_fen=1300);clock(monkeypatch,datetime(2026,12,15,tzinfo=timezone.utc))
+    session=Session();client=Client(service(session),root=root)
+    with pytest.raises(oss.exceptions.OperationError):client.head_object(HEAD)
+    state=checkpoint.verified(root/'usage.json')
+    assert state['requests']==600 and state['authorization_sha256']==raised!=original
+    with pytest.raises(ValueError,match='OSS_allowance_exhausted'):client.head_object(HEAD)
+    assert len(session.calls)==1
+
+
+def test_hold_cap_of_13_yuan_still_binds_before_600_requests(tmp_path,monkeypatch):
+    # 2 fen per request plus 2 yuan per GiB: with 2 GiB reserved the CNY13 cap binds at 450 requests.
+    root=tmp_path/'control';policy=allowance(root,monkeypatch,requests=449,size=2*GIB,expires_at=RENEWED)
+    renew(monkeypatch,policy,request_limit=600,hold_limit_fen=1300);session=Session();client=Client(service(session),root=root)
+    with pytest.raises(oss.exceptions.OperationError):client.head_object(HEAD)
+    with pytest.raises(ValueError,match='OSS_allowance_exhausted'):client.head_object(HEAD)
+    assert len(session.calls)==1
+
+
+@pytest.mark.parametrize('changes',[dict(request_limit=600),dict(request_limit=600,hold_limit_fen=1000),
+    dict(request_limit=601,hold_limit_fen=1300),dict(request_limit=600,hold_limit_fen=1400)])
+def test_unapproved_limits_are_not_an_allowance(tmp_path,monkeypatch,changes):
+    root=tmp_path/'control';policy=allowance(root,monkeypatch)
+    renew(monkeypatch,policy,**changes)
+    with pytest.raises(ValueError,match='explicit_JT_OSS_allowance_required'):oss_quota.policy()
+
+
+def test_terms_may_only_grow(tmp_path):
+    import json as _json
+    base=_json.loads(oss_quota.TERMS_PATH.read_text())
+    for mutate in (lambda d:d['terms'].reverse(),lambda d:d['terms'][-1].update(request_limit=200),
+                   lambda d:d['terms'][-1].update(expires_at='2027-01-31T16:00:00+00:00'),lambda d:d['terms'].clear()):
+        data=_json.loads(_json.dumps(base));mutate(data);path=tmp_path/'terms.json';path.write_text(_json.dumps(data))
+        with pytest.raises(ValueError):oss_quota.load_terms(path)
 
 
 def test_renewal_changing_only_expiry_keeps_the_original_counter(tmp_path,monkeypatch):

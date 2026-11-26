@@ -2,10 +2,11 @@
 
 Approval is a root-owned read-only host file outside runtime's writable control.
 The recovery signer can record consumption, never install the fee authority.
-Approved expiries come from the reviewed deadline config (#1716). A root renewal
-that changes only ``expires_at`` to a later approved end keeps the original
-counter: records bound to the same authority with an earlier approved end stay
-valid, so a renewal never opens a new allowance.
+Approved terms (end, request limit, paid hold cap) come from the reviewed
+``oss_allowance_terms.json`` (#1716); every end is also in the deadline config.
+A root renewal that moves the authority to a later approved term keeps the
+original counter: records bound to the same authority under an earlier term
+stay valid, so a renewal never opens a new allowance or resets usage.
 """
 from datetime import datetime,timezone
 import hashlib
@@ -24,6 +25,33 @@ GIB=1024**3
 ROOT=Path('/control/oss-quota')
 AUTHORITY=Path('/run/authorizations/oss.json')
 APPROVED_EXPIRIES=approved_utc_texts('oss_backup')
+TERMS_PATH=Path(__file__).with_name('oss_allowance_terms.json')
+
+
+def load_terms(path=TERMS_PATH):
+    data=json.loads(path.read_bytes(),object_pairs_hook=reject_duplicates(ValueError,'duplicate_OSS_term'))
+    if type(data) is not dict or set(data)!={'version','terms'} or data['version']!='g2c-beta-oss-allowance-terms.1':
+        raise ValueError('OSS_terms_invalid')
+    terms=[]
+    for item in data['terms'] if type(data['terms']) is list else ():
+        if (type(item) is not dict or set(item)!={'expires_at','request_limit','paid_hold_limit_fen','approval'}
+                or item['expires_at'] not in APPROVED_EXPIRIES or type(item['approval']) is not str or not item['approval']
+                or any(type(item[k]) is not int or not 1<=item[k]<=100000 for k in ('request_limit','paid_hold_limit_fen'))):
+            raise ValueError('OSS_terms_invalid')
+        terms.append((item['expires_at'],item['request_limit'],item['paid_hold_limit_fen']))
+    if (not terms or len(set(terms))!=len(terms) or terms[-1][0]!=APPROVED_EXPIRIES[-1]
+            or any(APPROVED_EXPIRIES.index(a[0])>APPROVED_EXPIRIES.index(b[0]) or a[1]>b[1] or a[2]>b[2]
+                   for a,b in zip(terms,terms[1:]))):
+        raise ValueError('OSS_terms_must_only_grow')
+    return tuple(terms)
+
+
+TERMS=load_terms()
+
+
+def term_fields(term,mode):
+    end,requests,hold=term
+    return dict(expires_at=end,request_limit=requests,hold_limit_fen=hold if mode=='paid_capped' else 0)
 
 
 def require_persistent_control():
@@ -58,13 +86,12 @@ def policy():
     if (set(value)!={'version','mode','source','request_limit','byte_limit','hold_limit_fen','expires_at'}
             or value['version']!='g2c-beta-oss-authorization.1' or value['mode'] not in ('paid_capped','free_confirmed')
             or type(value['source']) is not str or not 1<=len(value['source'])<=1024
-            or value['request_limit']!=300 or value['byte_limit']!=2*GIB
-            or type(value['hold_limit_fen']) is not int or value['hold_limit_fen']!=(1000 if value['mode']=='paid_capped' else 0)
-            or value['expires_at'] not in APPROVED_EXPIRIES):
+            or value['byte_limit']!=2*GIB):
         raise ValueError('explicit_JT_OSS_allowance_required')
+    current=[i for i,term in enumerate(TERMS) if all(value[k]==v for k,v in term_fields(term,value['mode']).items())]
+    if len(current)!=1:raise ValueError('explicit_JT_OSS_allowance_required')
     if datetime.now(timezone.utc)>=datetime.fromisoformat(value['expires_at']):raise ValueError('OSS_allowance_expired')
-    earlier=APPROVED_EXPIRIES[:APPROVED_EXPIRIES.index(value['expires_at'])+1]
-    lineage=frozenset(identity({**value,'expires_at':end}) for end in earlier)
+    lineage=frozenset(identity({**value,**term_fields(term,value['mode'])}) for term in TERMS[:current[0]+1])
     return value,identity(value),lineage
 
 
@@ -97,7 +124,8 @@ class Client:
             if (set(state)!={'version','authorization_sha256','requests','reserved_bytes','tip'}
                     or state['version']!='g2c-beta-oss-usage.1' or state['authorization_sha256'] not in lineage
                     or type(state['tip']) is not str or re.fullmatch('[0-9a-f]{64}',state['tip']) is None
-                    or any(type(state[name]) is not int or not 0<=state[name]<=limit for name,limit in (('requests',300),('reserved_bytes',2*GIB)))):
+                    or any(type(state[name]) is not int or not 0<=state[name]<=limit
+                           for name,limit in (('requests',allowed['request_limit']),('reserved_bytes',2*GIB)))):
                 raise ValueError('original_OSS_usage_required')
             expected={f'{i:06d}.json' for i in range(1,state['requests']+1)}
             if {p.name for p in history.iterdir()}!=expected:raise ValueError('HOLD_original_OSS_intents_differ')
@@ -113,7 +141,7 @@ class Client:
             if total!=state['reserved_bytes'] or tip!=state['tip']:raise ValueError('HOLD_original_OSS_counter_regressed')
             count=state['requests']+1;size=total+byte_count
             hold=2*count+(size*200+GIB-1)//GIB if allowed['mode']=='paid_capped' else 0
-            if count>300 or size>2*GIB or hold>allowed['hold_limit_fen']:raise ValueError('OSS_allowance_exhausted')
+            if count>allowed['request_limit'] or size>2*GIB or hold>allowed['hold_limit_fen']:raise ValueError('OSS_allowance_exhausted')
             intent=dict(version='g2c-beta-oss-intent.1',authorization_sha256=current,sequence=count,previous=tip,kind=kind,
                 object_sha256=hashlib.sha256(checkpoint.canonical(dict(bucket=request.bucket,key=request.key))).hexdigest(),bytes=byte_count)
             descriptor=os.open(history/f'{count:06d}.json',os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o400)
