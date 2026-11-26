@@ -3,14 +3,15 @@
 事实数据线维护；#1755（W5-1）把原先两份规则合成这一份。
 
 - `booking-rules.v1.json`：唯一数据源。每条规则写明官方来源 `sources` 和核对日 `checked_on`（北京时间、实际重读来源的日期）；`review_days` 是复核期限，必须等于 App 的 `LioAttractionBookingRule.reviewDays`。过期后 App 不再显示数字和提醒，只指向官方渠道。
-- `generate_ios.py`：校验数据源，并生成 `ios/Modules/CJShell/Sources/CJLioUser/LioAttractionBookingRules.swift`。Swift 文件不要手改。
-- CI：`backend/tests/test_attraction_rules_source.py` 会重新生成并逐字比对；数据改了却没重新生成，`python` job 就会失败。
+- `generate_ios.py`：校验数据源，生成 `ios/Modules/CJShell/Sources/CJLioUser/LioAttractionBookingRules.swift`，同时把数据源逐字节写到服务端副本 `backend/fact/cj_fact/attraction_booking_rules.v1.json`（#1826）。这两份都不要手改。
+- 服务端读取：`cj_fact.attraction` 的 `load_rules()`、`match(doc, 中文名, 英文名, today=...)`。匹配方式与 App 相同，只认精确的名称或别名；超过复核期限的规则不返回。Lio 的事实工具由对话线接入。
+- CI：`backend/tests/test_attraction_rules_source.py` 重新生成 Swift 表并逐字比对；`backend/fact/tests/test_attraction_rules.py` 比对服务端副本是否逐字节一致。数据改了却没重新生成，`python` job 就会失败。
 
 ## 改规则
 
 1. 重读官方来源（场馆官网或政府网站）。第三方攻略只能当线索，不写进来源。
 2. 修改 JSON，`checked_on` 改为重读当天。来源没写的值保持 `null` 或不写，不推断。
-3. 在仓库根目录运行 `python3 -B knowledge/attractions/generate_ios.py`，把 JSON 和 Swift 一起提交。
+3. 在仓库根目录运行 `python3 -B knowledge/attractions/generate_ios.py`，把 JSON、Swift 和服务端副本一起提交。改到 Swift 的 PR 受 `ios/**` 冻结约束，以 `coord/main-freeze.md` 为准。
 4. 在 `reviews/` 下记录逐条依据。
 
 字段含义见 `LioAttractionBooking.swift` 里 `LioAttractionBookingRule` 的注释。`closed_weekdays` 为 `null` 表示来源未写，`[]` 表示来源写明没有固定闭馆日。

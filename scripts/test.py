@@ -4,6 +4,7 @@ Usage: uv run --locked python -B scripts/test.py
 """
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 
@@ -81,6 +82,7 @@ def main():
     results.append(run('eval/lio_voice', [*pytest, 'eval/tests/test_lio_voice.py']))
     results.append(run('eval/lio_answer_quality', [*pytest, 'eval/tests/test_lio_answer_quality.py']))
     results.append(run('eval/lio_entry_judge', [*pytest, 'eval/tests/test_lio_entry_judge.py']))
+    results.append(run('eval/release_eval', [*pytest, 'eval/tests/test_release_eval.py']))
     results.append(run('eval/basic_chain', [*pytest, 'eval/tests/test_basic_chain.py','eval/tests/test_basic_cost_v2.py',
                        'eval/tests/test_basic_native_v2.py','eval/tests/test_basic_joint_v2.py','eval/tests/test_basic_driver_v2.py',
                        'eval/tests/test_basic_chain_sm06_prefixes.py']))
@@ -102,6 +104,13 @@ def main():
     # #1757: annotates facts due within 14 days (warning) or expired (error); exits 0 on any date.
     results.append(run('fact expiry alarm', ['-B', 'scripts/fact_expiry.py']))
     results.append(run('web/vercel ignoreCommand', ['-B', '-m', 'unittest', '-v', 'scripts.test_web_vercel_ignore']))
+    # The website's offline checks (#1862): every scripts/test_*.cjs under node's built-in test runner.
+    node_tests = sorted(path.relative_to(ROOT).as_posix() for path in (ROOT / 'scripts').glob('test_*.cjs'))
+    if shutil.which('node') is None:
+        print('web node tests: node not found', flush=True)
+        results.append(('web node tests', 1))
+    else:
+        results.append(run('web node tests', ['--test', *node_tests], executable='node'))
     results.append(run('contracts/api proposal', ['-B', '-m', 'unittest', 'contracts/api/check_trip_content_v2_schema_proposal.py']))
     results.append(run('contracts/trip structured3', ['-B', 'contracts/trip/check_structured_v3.py']))
     results.append(run('contracts/trip structured4', ['-B', 'contracts/trip/check_structured_v4.py']))

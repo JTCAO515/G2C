@@ -1,4 +1,4 @@
-"""Validate the attraction booking rules and generate the App's bundled Swift table (#1755).
+"""Validate the attraction booking rules; generate the App's Swift table and the server copy (#1755, #1826).
 
 `booking-rules.v1.json` is the only source. `LioAttractionBookingRules.swift` is generated from
 it and must never be edited by hand; `backend/tests/test_attraction_rules_source.py` fails CI
@@ -19,6 +19,8 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / 'knowledge/attractions/booking-rules.v1.json'
 SWIFT = ROOT / 'ios/Modules/CJShell/Sources/CJLioUser/LioAttractionBookingRules.swift'
 MODEL = ROOT / 'ios/Modules/CJShell/Sources/CJLioUser/LioAttractionBooking.swift'
+# Server copy for Lio's fact tool (#1826): byte-identical to SOURCE, read by cj_fact.attraction.
+SERVER_COPY = ROOT / 'backend/fact/cj_fact/attraction_booking_rules.v1.json'
 VERSION = 'attraction-booking-rules.1'
 
 REQUIREMENTS = {'required': 'required', 'booking_or_on_site': 'bookingOrOnSite',
@@ -185,14 +187,22 @@ def main(argv):
     doc = load()
     _require(doc['review_days'] == app_review_days(), 'review_days differs from the App reviewDays constant')
     text = render(doc)
+    raw = SOURCE.read_bytes()
     if '--check' in argv:
+        failed = False
         if SWIFT.read_text(encoding='utf-8') != text:
             print(f'{SWIFT.relative_to(ROOT)} is out of date; run knowledge/attractions/generate_ios.py', file=sys.stderr)
+            failed = True
+        if not SERVER_COPY.is_file() or SERVER_COPY.read_bytes() != raw:
+            print(f'{SERVER_COPY.relative_to(ROOT)} is out of date; run knowledge/attractions/generate_ios.py', file=sys.stderr)
+            failed = True
+        if failed:
             return 1
-        print(f'OK: {len(doc["rules"])} rules match {SWIFT.relative_to(ROOT)}')
+        print(f'OK: {len(doc["rules"])} rules match {SWIFT.relative_to(ROOT)} and {SERVER_COPY.relative_to(ROOT)}')
         return 0
     SWIFT.write_text(text, encoding='utf-8')
-    print(f'wrote {len(doc["rules"])} rules to {SWIFT.relative_to(ROOT)}')
+    SERVER_COPY.write_bytes(raw)
+    print(f'wrote {len(doc["rules"])} rules to {SWIFT.relative_to(ROOT)} and {SERVER_COPY.relative_to(ROOT)}')
     return 0
 
 

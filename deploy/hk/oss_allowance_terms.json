@@ -1,0 +1,11 @@
+{
+  "version": "g2c-beta-oss-allowance-terms.1",
+  "terms": [
+    {"expires_at": "2026-11-30T16:00:00+00:00", "request_limit": 300, "paid_hold_limit_fen": 1000,
+     "approval": "JT #495 comment6645049572: CNY10, 300 requests, 2GiB"},
+    {"expires_at": "2026-12-31T16:00:00+00:00", "request_limit": 300, "paid_hold_limit_fen": 1000,
+     "approval": "JT 2026-11-26 #1716: expiry to 2027-01-01 00:00 Asia/Shanghai, limits unchanged"},
+    {"expires_at": "2026-12-31T16:00:00+00:00", "request_limit": 600, "paid_hold_limit_fen": 1300,
+     "approval": "600 requests: JT 2026-11-26 via coordinator; CNY13 hold cap: coordinator 2026-11-26 under JT pre-authorization (#1716)"}
+  ]
+}
