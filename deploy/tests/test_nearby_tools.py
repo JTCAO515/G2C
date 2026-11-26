@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timedelta
 import json
 from pathlib import Path
@@ -57,8 +58,9 @@ def test_nearby_converts_then_searches_once_and_reuses_short_cache(ledger):
     assert result['items'][0]['distance_m'] == 26 and result['items'][0]['coordinate_system'] == 'GCJ-02'
     assert result['items'][0]['opening_hours'] is None
     assert supplier.calls == [
-        ('convert', {'locations': '116.400000,39.910000', 'coordsys': 'gps'}),
-        ('search', {'location': '116.406171,39.911230', 'types': '050500|110000', 'radius': 500,
+        # #1833: device position reaches Gaode (convert and search) at 3 decimals only.
+        ('convert', {'locations': '116.400,39.910', 'coordsys': 'gps'}),
+        ('search', {'location': '116.406,39.911', 'types': '050500|110000', 'radius': 500,
                     'sortrule': 'distance', 'page_size': 25, 'page_num': 1, 'show_fields': 'business,photos'}),
     ]
     later = NearbySearchRequest.model_validate(payload(**args))
@@ -290,7 +292,7 @@ def test_essentials_search_by_gaode_category_in_one_call_and_echo_the_version(le
     result = service.search('owner', NearbySearchRequest.model_validate(payload2(['pharmacy', 'atm', 'toilet'])),
                             lambda: None)
     assert result['version'] == 'NEARBY.2'
-    assert supplier.calls == [('search', {'location': '116.400000,39.910000', 'types': '160300|090601|200300',
+    assert supplier.calls == [('search', {'location': '116.400,39.910', 'types': '160300|090601|200300',
                                           'radius': 1000, 'sortrule': 'distance', 'page_size': 25, 'page_num': 1,
                                           'show_fields': 'business,photos'})]
     with ledger.connect() as db:
@@ -355,3 +357,17 @@ def test_the_relay_answers_nearby2_and_a_luggage_mix_through_the_real_route(ledg
     assert [params.get('types') for _, params in supplier.calls] == ['160300']
     # Only the one allowed search reached the ledger: the refused requests were never counted.
     assert len(ledger.inspect()) == 1
+
+
+def test_nearby_positions_within_100m_share_one_coarse_request_and_cache_entry(ledger):
+    # #1833: the cache key and every Gaode call carry the 3-decimal position, never the device's.
+    supplier = Supplier()
+    service = NearbyService(supplier, NearbyBudget(ledger))
+    args = dict(categories=['coffee', 'sights'], radius_m=500, sort='distance')
+    first = NearbySearchRequest.model_validate(payload(**args))
+    service.search('owner-a', first, lambda: None)
+    near = payload(**args); near['center'] = dict(near['center'], lng=116.40012, lat=39.91041)
+    service.search('owner-b', NearbySearchRequest.model_validate(near), lambda: None)
+    assert len(supplier.calls) == 2
+    assert all('116.4001' not in str(params) and '39.9104' not in str(params) for _, params in supplier.calls)
+    assert all(re.fullmatch(r'-?[0-9]+\.[0-9]{3},-?[0-9]+\.[0-9]{3}', key[2]) for key in service.cache)

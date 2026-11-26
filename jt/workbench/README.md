@@ -48,3 +48,34 @@ P0 横幅在打开队列时可见。页面每两秒刷新本机的告警数量�
 - 运行角色对审计表仅有 SELECT 和 INSERT。身份、限速、会话和队列动作通过同一数据库级事务锁串行化，复核和审计使用同一事务提交。会话与限速时间使用数据库时钟，让多个进程共享同一时基。
 
 可通过 `JT_WORKBENCH_TEST_PG_BINDIR="$(pg_config --bindir)" uv run --locked python -B -m pytest -q -p no:cacheprovider jt/workbench` 运行工作台测试。集成测试自行建立临时 Unix 套接字数据库，禁止 TCP 监听，测试完成后清理临时集群。常规测试继续使用内存适配器。
+
+## 容器入口与 S 线接入
+
+从仓库根目录构建。传入由同一 `pyproject.toml` / `uv.lock` 构建的、S 线已批准的 G2C Python 运行镜像。工作台镜像仅新增 JT 源码与迁移，运行入口和 UID 与 CJ 运行容器分开。
+
+```sh
+docker build --pull=false --network=none \
+  --build-arg JT_WORKBENCH_RUNTIME_IMAGE="$JT_APPROVED_RUNTIME_IMAGE" \
+  -f jt/workbench/Dockerfile -t jt-workbench:local .
+```
+
+| 入口命令 | 配置 | 用途 |
+| --- | --- | --- |
+| `migrate` | 所有者的 `JT_WORKBENCH_DATABASE_URL` | 一次性启动任务，应用工作台迁移，成功后才启动常驻应用 |
+| `bootstrap-admin` | 运行角色的 `JT_WORKBENCH_DATABASE_URL` | 在受控终端首次引导，重复执行拒绝 |
+| `serve`（默认） | 运行角色的 `JT_WORKBENCH_DATABASE_URL`、`JT_WORKBENCH_PUBLIC_HOST=jtadmin.go2china.space`、`JT_WORKBENCH_HTTP_SOCKET=/run/jt-workbench/http.sock` | 通过 Unix socket 处理工作台 HTTP |
+| `healthcheck` | `JT_WORKBENCH_HTTP_SOCKET` | 走同一 socket 上的内部 Host 检查数据库，不托管公开健康路由 |
+
+迁移任务和常驻应用各接收自己的 600 环境文件，连接串显式包含 `host`、`dbname=jt_workbench` 与角色名。迁移用 `jt_workbench_owner`，常驻和受控引导用 `jt_workbench_runtime`。现有 PostgreSQL 的角色、库、认证规则、备份和恢复由 S 线接入。应用连接只授独立库 CONNECT、工作台 schema USAGE 和迁移列出的表权限。运行角色对审计仅有 SELECT/INSERT，不加入所有者或 CJ 角色。数据库认证应按库与角色限定，保留 CJ 的 peer 映射并阻断工作台使用它。Docker 默认工作台 UID/GID 为 10031，接入时核对与 CJ peer 映射无冲突。
+
+将独立 HTTP socket 目录挂给这两个服务。工作台写入、Caddy 只读，目录归工作台 UID 所有，建议 0750，Caddy 用共享 GID 访问；socket 为 0660。Caddy 的 HTTPS 站点将 `unix//run/jt-workbench/http.sock` 作为上游，显式传送规范 Host，并用 HTTPS 站点的单个 `X-Forwarded-Proto: https` 覆盖来路同名值。常驻应用仅在 Unix socket 接收 HTTP，无 TCP 监听及端口映射。数据库使用另一条专用 Unix socket 挂载。
+
+本机单进程导入与 scrypt 峰值约 186 MiB。ARM64 的离线容器启动与健康检查峰值约 192–200 MiB，建议在 S 线部署验证时以 256 MiB 单容器上限作为起点，按现有主机监控和并发验收调整。此值为本地估算。首个管理员引导由 S 线在目标库私有环境完成。生产访问的公网负例和同机 CJ 回归属于 #1886 Part 2。
+
+## 演练案件
+
+值班处理员登录后可从「案件」认领一个未分配的合成案件。详情、动作与已认领列表都按当前员工隔离。管理员通过只读审计查看操作，复核员继续使用信号队列。
+
+案件详情由 `jt.playbook.CaseWorkflow` 计算当前步骤与版本。员工可以推进、生成合成草稿、确认或驳回。涉及改行程或付费的步骤显示独立客户同意门槛，员工页面没有录入客户同意的接口。客户同意只由可信本地演练入口录入。动作审计记录案件、员工、步骤、版本、结果和固定拒绝原因，未授权请求也不会进入 playbook。
+
+演练案件与认领状态沿用 JT1 的进程内模型，重启后生成新的一套合成案件。启用 PostgreSQL 后，历史审计独立保留。审计写入失败后停止展示本实例演练案件，避免返回未登记的步骤变化。迁移 002 追加案件审计字段并保留原有基础 schema 标记，原入口可继续读取原字段。
