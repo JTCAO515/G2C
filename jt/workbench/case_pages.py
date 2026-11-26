@@ -48,7 +48,7 @@ def case_list(session: Session, records: tuple[tuple[CaseExecution, bool], ...])
                     f'<td>{CASE_STATUS_LABELS[case.status]}</td><td>{link}</td></tr>')
     content = ''.join(rows) or '<tr><td colspan="5">暂无可用演练案件。</td></tr>'
     return pages.page("演练案件", f'''
-        <div class="page-heading"><h1>演练案件</h1></div>
+        <div class="page-heading"><h1>演练案件</h1>{pages.DEMO_BADGE}</div>
         <section class="panel table-panel" aria-label="演练案件">
           <table>
             <thead><tr><th scope="col">级别</th><th scope="col">处理流程</th><th scope="col">案件编号</th>
@@ -109,7 +109,7 @@ def case_detail(session: Session, execution: CaseExecution, *, reason: str | Non
         <a href="/cases" class="case-back">返回演练案件</a>
         <div class="page-heading case-heading">
           <div><h1>{title}</h1><p class="muted">案件编号 <code>{case.case_id}</code></p></div>
-          <div>{severity_label(case.severity)} <span>{CASE_STATUS_LABELS[case.status]}</span></div>
+          <div>{pages.DEMO_BADGE} {severity_label(case.severity)} <span>{CASE_STATUS_LABELS[case.status]}</span></div>
         </div>
         {notice}
         <div class="case-layout">

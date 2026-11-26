@@ -84,7 +84,7 @@ def review_form(session: Session, item: QueueItem) -> str:
     '''
 
 
-def detail_panel(session: Session, item: QueueItem | None) -> str:
+def detail_panel(session: Session, item: QueueItem | None, case_access: str | None = None) -> str:
     if item is None:
         return '<h2>信号详情</h2><p class="muted">从队列选择一条信号。</p>'
     signal = item.signal
@@ -97,6 +97,11 @@ def detail_panel(session: Session, item: QueueItem | None) -> str:
                  if output.signal_type else '未建议信号')
         models.append(f'<li><code>{visible_text(observation.model_version)}</code><span>{label}</span><strong>{output.confidence:.1%}</strong></li>')
     case = f'<code>{escape(item.case_id)}</code>' if item.case_id else '未建单'
+    if case_access == "owned":
+        case += f' · <a href="/cases/{escape(item.case_id)}">查看案件</a>'
+    elif case_access == "unclaimed":
+        case += (f'<form method="post" action="/cases/{escape(item.case_id)}/claim">'
+                 f'{pages.csrf_field(session.csrf)}<button type="submit">认领并查看案件</button></form>')
     review_section = ''
     if session.role == Role.REVIEWER:
         history = ''.join(f'''
@@ -129,14 +134,14 @@ def detail_panel(session: Session, item: QueueItem | None) -> str:
 
 def queue_page(
     session: Session, items: tuple[QueueItem, ...], selected: QueueItem | None,
-    *, signal_type: str, status: str, alerts: tuple[int, int], invalid_review: bool = False,
+    *, signal_type: str, status: str, alerts: tuple[int, int], invalid_review: bool = False, case_access: str | None = None,
 ) -> HTMLResponse:
     count, revision = alerts
     urgent = ' urgent' if count else ''
     export = '<a class="export-link" href="/queue/export">导出评测样本</a>' if session.role == Role.REVIEWER else ''
     error = '<p class="error" role="alert">请核对真实级别、误报、漏报和备注。备注最多 500 字。</p>' if invalid_review else ''
     response = pages.page("待办队列", f'''
-        <div class="page-heading"><h1>待办队列</h1>{export}</div>
+        <div class="page-heading"><h1>待办队列</h1><div>{pages.DEMO_BADGE} {export}</div></div>
         <section class="queue-alert{urgent}" data-queue-alert data-revision="{revision}" aria-live="polite">
           <div><strong>P0 待复核 <span data-alert-count>{count}</span></strong>
             <span class="alert-status" data-alert-status></span><span class="alert-status" data-alert-transport></span>
@@ -158,7 +163,7 @@ def queue_page(
             <div class="queue-list-heading"><h2>信号</h2><span class="muted">{len(items)} 项 · 北京时间</span></div>
             {queue_rows(items, selected, signal_type, status)}
           </section>
-          <section class="panel queue-detail" aria-label="信号详情">{detail_panel(session, selected)}</section>
+          <section class="panel queue-detail" aria-label="信号详情">{detail_panel(session, selected, case_access)}</section>
         </div>
     ''', session=session, script=ALERT_SCRIPT, status=400 if invalid_review else 200)
     response.headers["Content-Security-Policy"] = QUEUE_CSP

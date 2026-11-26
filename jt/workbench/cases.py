@@ -15,6 +15,8 @@ class CaseWorkspace:
     def __init__(self, workflow: CaseWorkflow, case_ids: tuple[UUID, ...]) -> None:
         self.workflow = workflow
         self._assignments = dict.fromkeys(case_ids)
+        self._signal_cases = {signal_id: str(case_id) for case_id in case_ids
+                              for signal_id in workflow.get(case_id).case.signal_ids}
         self.lock = RLock()
         self.failed = False
 
@@ -24,6 +26,9 @@ class CaseWorkspace:
         case_ids = dict.fromkeys(workflow.ingest(signal).execution.case.case_id
                                   for signal in signals if signal.signal_type in PLAYBOOKS_BY_SIGNAL)
         return cls(workflow, tuple(case_ids))
+
+    def case_for_signal(self, signal_id: str) -> str | None:
+        return self._signal_cases.get(signal_id)
 
     def listing(self, actor: str) -> tuple[tuple[CaseExecution, bool], ...]:
         cases = []

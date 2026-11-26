@@ -17,13 +17,13 @@ from jt.common import Signal
 from .auth import ExpiredSession
 from .queue import QueueItem, Review, SignalConflict, response_deadline
 from .security import PasswordHash, new_token
-from .store import Account, AuditAction, AuditEvent, AuditResult, CaseAuditDetail, Failures, Role, Session, SetupGrant
+from .store import Account, AuditAction, AuditEvent, AuditResult, CaseAuditDetail, Failures, OperationsAuditDetail, Role, Session, SetupGrant
 
 
 DATABASE_VARIABLE = "JT_WORKBENCH_DATABASE_URL"
 MIGRATION_ROLE = "jt_workbench_owner"
 RUNTIME_ROLE = "jt_workbench_runtime"
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 LOCK_ID = 0x4A54574F524B
 ACCOUNT_COLUMNS = (
     "username, role, password_salt, password_digest, totp_seed, last_totp_step, "
@@ -49,12 +49,13 @@ def _guard_role(db: Connection, role: str) -> None:
 
 def _installed_versions(db: Connection) -> list[int]:
     versions = [version for version, in db.execute("SELECT version FROM jt_workbench.schema_version ORDER BY version")]
-    has_extension, = db.execute("SELECT to_regclass('jt_workbench.case_audit_version') IS NOT NULL").fetchone()
-    if has_extension:
-        extension = db.execute("SELECT version FROM jt_workbench.case_audit_version").fetchall()
-        if extension != [(2,)]:
-            raise RuntimeError("unsupported case audit schema version")
-        versions.append(2)
+    for table, number in (("case_audit_version", 2), ("operations_audit_version", 3)):
+        qualified = f"jt_workbench.{table}"
+        has_extension, = db.execute("SELECT to_regclass(%s) IS NOT NULL", (qualified,)).fetchone()
+        if has_extension:
+            if db.execute(f"SELECT version FROM {qualified}").fetchall() != [(number,)]:
+                raise RuntimeError("unsupported workbench audit schema version")
+            versions.append(number)
     return versions
 
 
@@ -207,26 +208,29 @@ class PostgresStore:
 
     def append_audit(self, event: AuditEvent) -> None:
         detail = event.case_detail
+        operations = event.operations_detail
         self._db().execute("""
             INSERT INTO jt_workbench.audit (
                 timestamp, action, actor, case_id, result, staff_target, signal_reference,
-                case_action, case_step, case_revision, case_reason
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                case_action, case_step, case_revision, case_reason, operations_action, operations_reference
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (event.timestamp, event.action, event.actor, event.case_id, event.result, event.staff_target,
               event.signal_reference, detail.action if detail else None, detail.step_id if detail else None,
-              detail.revision if detail else None, detail.reason if detail else None))
+              detail.revision if detail else None, detail.reason if detail else None,
+              operations.action if operations else None, operations.reference if operations else None))
 
     def audit_events(self) -> tuple[AuditEvent, ...]:
         events = []
         for row in self._db().execute("""
             SELECT timestamp, action, actor, case_id, result, staff_target, signal_reference,
-                   case_action, case_step, case_revision, case_reason
+                   case_action, case_step, case_revision, case_reason, operations_action, operations_reference
             FROM jt_workbench.audit ORDER BY id
         """):
             timestamp, action, actor, case_id, result, staff_target, reference, *fields = row
-            detail = CaseAuditDetail(*fields) if fields[0] else None
+            detail = CaseAuditDetail(*fields[:4]) if fields[0] else None
+            operations = OperationsAuditDetail(*fields[4:]) if fields[4] else None
             events.append(AuditEvent(timestamp, AuditAction(action), actor, str(case_id) if case_id else None,
-                                     AuditResult(result), staff_target, reference, detail))
+                                     AuditResult(result), staff_target, reference, detail, operations))
         return tuple(events)
 
     def seed(self, signals: tuple[Signal, ...]) -> None:
