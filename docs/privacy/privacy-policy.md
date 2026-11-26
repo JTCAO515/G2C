@@ -98,7 +98,7 @@ We send each recipient only what the feature you use needs. Requests to Alibaba 
 | 接收方 / Recipient | 所在地 / Location | 收到什么 / What they receive | 用途 / Purpose |
 |---|---|---|---|
 | 阿里云（中国香港）/ Alibaba Cloud (Hong Kong) | 中国香港 / Hong Kong, China | 服务器与每日备份上的全部数据 / All data on our servers and daily backups | 代我们托管 / Hosting on our behalf |
-| 阿里云百炼（通义千问）/ Alibaba Cloud Model Studio (Qwen) | 中国大陆北京 / Beijing, mainland China | 对话文字和行程内容；翻译的文字、语音、图片；菜单照片 / Chat text and trip content; text, voice and images for translation; menu photos | 生成回答、翻译、识别菜单 / Replies, translation, menu reading |
+| 阿里云百炼（通义千问）/ Alibaba Cloud Model Studio (Qwen) | 中国大陆北京 / Beijing, mainland China | 对话文字和行程内容；翻译的文字、语音、图片；菜单照片；打车、酒店、地铁周边的搜索结果里的地点名和地址（用于生成英文名）；路书里的地点名、营业时间和地铁站名 / Chat text and trip content; text, voice and images for translation; menu photos; place names and addresses in taxi, hotel and metro-nearby search results (to produce English names); place names, opening hours and station names in roadbooks | 生成回答、翻译、识别菜单、生成地点和路书的英文内容 / Replies, translation, menu reading, English content for places and roadbooks |
 | 高德地图开放平台 / AMap (Gaode) | 中国大陆 / Mainland China | 地点和路线查询词、城市、酒店地标、火车出发日期；附近功能降到约 100 米精度的设备位置 / Place and route queries, city, hotel landmarks, train departure dates; your device location reduced to about 100 m for Nearby | 地点、路线、天气、酒店、火车、附近 / Places, routes, weather, hotels, trains, Nearby |
 | 滴滴出行 / DiDi | 中国大陆 / Mainland China | 打车搜索词、上车点（可为设备精确位置）、目的地 / Taxi search terms, pickup (may be your precise device location), destination | 估价、生成叫车链接；你在滴滴 App 里下单付款 / Estimates and ride links; you book and pay in the DiDi app |
 | 飞常准 / VariFlight | 中国大陆 / Mainland China | 航班号、机场、日期 / Flight number, airports, date | 航班查询 / Flight lookup |
