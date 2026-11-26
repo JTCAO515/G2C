@@ -2,7 +2,7 @@
 
 No credential files, provider calls or existing simulator data are used. The
 transport template is reused from the Root regression; product parsing stays
-unchanged. Every invocation creates and then shuts down its own simulator.
+unchanged. Every invocation creates its own simulator and deletes it at the end.
 """
 import argparse
 import base64
@@ -222,6 +222,8 @@ def main():
     finally:
         server.shutdown(); server.server_close(); save()
         subprocess.run(['xcrun', 'simctl', 'shutdown', simulator], capture_output=True)
+        # The simulator exists only for this run; delete it so they don't pile up on disk (JT 2026-11-26).
+        subprocess.run(['xcrun', 'simctl', 'delete', simulator], capture_output=True)
 
 
 if __name__ == '__main__': main()
