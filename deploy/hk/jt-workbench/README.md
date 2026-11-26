@@ -1,6 +1,6 @@
 # 香港员工工作台上线（#1886 Part 2）
 
-上线源须为已审合并提交，同时记录 SHA、CI、同机 CJ 就绪证据与现场负责人。将该提交的 `git archive` 和 SHA-256 通过既有验签 SSH 送至只含本次资源的 0700 暂存目录。先核对实际主机文件、现役镜像和维护状态，再在主机用 `bash <源码>/deploy/hk/jt-workbench/install.sh <源码> <提交 SHA>`。使用已有镜像和锁定依赖，在无构建网络的条件下构建独立工作台镜像。脚本持有 CJ 既有部署锁，若备份运行、资源不足或 Caddy 现役不是预期基线则停在公网站点切换之前。
+上线源须为已审合并提交，同时记录 SHA、CI、同机 CJ 就绪证据与现场负责人。将该提交的 `git archive` 和 SHA-256 通过既有验签 SSH 送至只含本次资源的 0700 暂存目录。归档只需 `jt/`、本工作台部署目录、`deploy/hk/Caddyfile` 和存储登记。验证 SHA-256 后，在该私有目录中用 `tar --extract --gzip --file=source.tar.gz --same-permissions --no-same-owner` 解包，保留 Git 文件读取权限。这样构建时的容器 UID 10031 才能读取 `jt/`。先核对实际主机文件、现役镜像和维护状态，再在主机用 `bash <源码>/deploy/hk/jt-workbench/install.sh <源码> <提交 SHA>`。使用已有镜像和锁定依赖，在无构建网络的条件下构建独立工作台镜像。脚本持有 CJ 既有部署锁，若备份运行、资源不足或 Caddy 现役不是预期基线则停在公网站点切换之前。
 
 PostgreSQL 沿用服务器上的现有实例。现有套接字权限、CJ 的 HBA 行及角色保持原样。systemd 的 Unix 代理只打开独立的组控套接字。工作台两个登录仅限专用数据库和 SCRAM，应用只能挂运行角色连接文件。迁移角色单独执行，连接文件为各目标容器 UID 600。工作台容器没有网络或公开端口。Caddy 沿用现有 `/config` 绑定，在专用子目录仅具组读与查找权限，只有工作台 UID 能更改目录。服务器原有配置原地追加新域名，Caddy 2.11 SIGUSR1 热重载保留旧监听。接下来从公网用有效证书访问 `/login`，检查 `/queue`、`/cases` 与 `/operations` 未登录重定向，同时复查既有 CJ `/health/ready`。
 
