@@ -45,6 +45,8 @@ struct LioNearbyQuery: Equatable, Sendable {
 
 enum LioNearbyFailure: Error, Equatable {
     case locationDenied, signInRequired, notEnabled, quotaExceeded, rateLimited, timedOut, unavailable
+    /// #1748: the in-app location choice has not been made (or was turned off).
+    case consentNeeded
 }
 
 enum LioNearbyWire {

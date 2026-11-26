@@ -13,6 +13,8 @@ struct LioTaxiView: View {
     @State private var recent: [LioTaxiPlace] = []
     @State private var fares: [LioTaxiFare] = []
     @State private var pickupNotice: String?
+    /// #1748: the in-app location choice has not been made; the pickup is typed, or chosen after "Use my location".
+    @State private var needsLocationConsent = false
     @State private var recentNotice: String?
     @State private var failure: RequestFailure?
     @State private var requests = LioTaxiRequestState()
@@ -43,6 +45,12 @@ struct LioTaxiView: View {
             VStack(alignment: .leading, spacing: 16) {
                 routeCard
                 if let pickupNotice { Text(pickupNotice).foregroundStyle(LioTheme.inkSecondary) }
+                if needsLocationConsent && pickup == nil {
+                    LioLocationConsentButton(language: language) {
+                        needsLocationConsent = false
+                        Task { await locatePickup() }
+                    }
+                }
                 if let recentNotice { Text(recentNotice).foregroundStyle(LioTheme.inkSecondary) }
                 estimateCard
             }
@@ -67,15 +75,7 @@ struct LioTaxiView: View {
             } catch {
                 recentNotice = language.text("Recent places are unavailable.", "最近地点暂不可用。")
             }
-            guard pickup == nil else { return }
-            do {
-                let location = try await service.currentPickup()
-                guard pickup == nil, !Task.isCancelled else { return }
-                selectPickup(location)
-            } catch {
-                guard pickup == nil, !Task.isCancelled else { return }
-                pickupNotice = message(error)
-            }
+            await locatePickup()
         }
         .onDisappear { requests.retire() }
         .onChange(of: scenePhase) { _, phase in
@@ -272,12 +272,29 @@ struct LioTaxiView: View {
         requests.start(action, route: route)
     }
 
+    private func locatePickup() async {
+        guard pickup == nil else { return }
+        do {
+            let location = try await service.currentPickup()
+            guard pickup == nil, !Task.isCancelled else { return }
+            selectPickup(location)
+        } catch is LioLocationConsentFailure {
+            guard pickup == nil, !Task.isCancelled else { return }
+            needsLocationConsent = true
+            pickupNotice = language.text("Choose a pickup point, or use your location.", "请选择起点，或使用你的位置。")
+        } catch {
+            guard pickup == nil, !Task.isCancelled else { return }
+            pickupNotice = message(error)
+        }
+    }
+
     private func selectPickup(_ place: LioTaxiPlace) {
         if pickup != place {
             retireRouteRequest()
             pickup = place
         }
         pickupNotice = nil
+        needsLocationConsent = false
     }
 
     private func retireRouteRequest() {
