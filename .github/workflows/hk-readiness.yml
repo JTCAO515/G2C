@@ -45,13 +45,21 @@ jobs:
         # Channel is configuration (#1720): without HK_ALERT_WEBHOOK_URL only the failed run
         # itself notifies (GitHub's own workflow-failure email). Sends no server request.
         if: always()
+        # Notification trouble must never turn a probe result into a failed check on main.
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
           OUTCOME: ${{ job.status }}
+          NOTIFICATION_DRILL: ${{ inputs.notification_drill == true && 'true' || 'false' }}
           ALERT_CHANNEL: ${{ secrets.HK_ALERT_WEBHOOK_URL != '' && 'webhook' || 'none' }}
           ALERT_WEBHOOK_URL: ${{ secrets.HK_ALERT_WEBHOOK_URL }}
           ALERT_WEBHOOK_FORMAT: ${{ vars.HK_ALERT_WEBHOOK_FORMAT || 'text' }}
         run: |
+          if [ "$NOTIFICATION_DRILL" = true ]; then
+            python3 -B deploy/hk/ops_alerts.py probe-transition "$OUTCOME" unknown drill
+            exit 0
+          fi
+          # The last completed scheduled run; manual drills are not a probe state.
           previous=$(gh run list -R "$GITHUB_REPOSITORY" --workflow hk-readiness.yml --branch main \
-            --status completed --limit 1 --json conclusion -q '.[0].conclusion' || echo unknown)
+            --event schedule --status completed --limit 1 --json conclusion -q '.[0].conclusion' || echo unknown)
           python3 -B deploy/hk/ops_alerts.py probe-transition "$OUTCOME" "${previous:-unknown}"

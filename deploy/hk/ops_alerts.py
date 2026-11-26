@@ -19,6 +19,7 @@ A condition notifies when it starts, every ``ALERT_REMIND_HOURS`` while it lasts
 and once when it clears. Messages carry only the condition and a number:
 never URLs, keys, subjects or file contents.
 """
+import http.client
 import json
 import os
 import shutil
@@ -116,7 +117,7 @@ def send(config, text, opener=None):
             response.read(4096)
             if not 200 <= response.status < 300:
                 raise OSError('webhook_status')
-    except (OSError, ValueError):
+    except (OSError, ValueError, http.client.HTTPException):
         sys.stderr.write('ALERT alert_delivery_failed ' + text.replace('\n', ' | ') + '\n')
         return 'delivery_failed'
     return 'delivered'
@@ -168,30 +169,48 @@ def conditions(config, now, heartbeat_path=HEARTBEAT, usage=shutil.disk_usage):
 
 
 def check(config, now=None, state_path=STATE, deliver=send, **probes):
-    """Notify on start, on reminder interval and on clear; returns the number of active alerts."""
+    """Notify on start, on reminder interval and on clear.
+
+    Returns (active alerts, failed deliveries). A failed delivery is not recorded
+    as notified: the start or recovery message is retried on the next check.
+    """
     now = int(now or time.time())
     active = conditions(config, now, **probes)
     previous = _read_json(state_path) or {}
     previous = previous.get('alerts') if isinstance(previous.get('alerts'), dict) else {}
     state = {}
+    failed = 0
     for key, message in sorted(active.items()):
         last = previous.get(key)
         sent = last.get('notified_at') if isinstance(last, dict) else None
-        if not isinstance(sent, int) or now - sent >= config['remind_seconds']:
+        sent = sent if isinstance(sent, int) and not isinstance(sent, bool) else None
+        if sent is None or now - sent >= config['remind_seconds']:
             prefix = 'G2C %s ALERT' % HOST if sent is None else 'G2C %s STILL' % HOST
-            deliver(config, prefix + ': ' + message)
-            sent = now
+            if deliver(config, prefix + ': ' + message) == 'delivery_failed':
+                failed += 1
+            else:
+                sent = now
         state[key] = dict(notified_at=sent)
     for key in sorted(set(previous) - set(active)):
-        deliver(config, 'G2C %s RECOVERED: %s' % (HOST, key))
+        if deliver(config, 'G2C %s RECOVERED: %s' % (HOST, key)) == 'delivery_failed':
+            failed += 1
+            state[key] = dict(notified_at=None, recovered_pending=True)
     _atomic_json(state_path, dict(version='g2c-beta-alert-state.1', checked_at=now, alerts=state))
-    return len(active)
+    return len(active), failed
 
 
-def probe_transition(config, outcome, previous, deliver=send):
-    """External readiness probe: notify only when the public state flips."""
-    failed = outcome != 'success'
-    was_failed = previous in ('failure', 'cancelled', 'timed_out')
+def probe_transition(config, outcome, previous, deliver=send, drill=False):
+    """External readiness probe: notify only when the public state flips.
+
+    Cancelled runs are neither failures nor recoveries; a drill says so and is
+    excluded from the previous-run lookup by the workflow.
+    """
+    if drill:
+        return 'alerted' if deliver(config, 'G2C %s DRILL: readiness notification path test, no action needed' % HOST) != 'delivery_failed' else 'delivery_failed'
+    if outcome not in ('success', 'failure'):
+        return 'unchanged'
+    failed = outcome == 'failure'
+    was_failed = previous in ('failure', 'timed_out')
     if failed and not was_failed:
         deliver(config, 'G2C %s ALERT: public readiness probe failed (GitHub Actions)' % HOST)
         return 'alerted'
@@ -202,13 +221,13 @@ def probe_transition(config, outcome, previous, deliver=send):
 
 
 def main(argv):
-    if len(argv) == 3 and argv[0] == 'probe-transition':
+    if len(argv) in (3, 4) and argv[0] == 'probe-transition' and argv[3:] in ([], ['drill']):
         try:
             config = load_config(path=None, environ=os.environ)
         except ConfigError as error:
             sys.stderr.write('ALERT alert_config_invalid %s\n' % error)
             return 1
-        print(json.dumps(dict(result=probe_transition(config, argv[1], argv[2]))))
+        print(json.dumps(dict(result=probe_transition(config, argv[1], argv[2], drill=argv[3:] == ['drill']))))
         return 0
     if argv == ['backup-succeeded']:
         backup_succeeded()
@@ -225,9 +244,9 @@ def main(argv):
         result = send(config, 'G2C %s DRILL: notification path test, no action needed' % HOST)
         print(json.dumps(dict(result=result)))
         return 0 if result == 'delivered' else 1
-    active = check(config)
-    print(json.dumps(dict(active_alerts=active, channel=config['ALERT_CHANNEL'])))
-    return 1 if active and config['ALERT_CHANNEL'] == 'none' else 0
+    active, failed = check(config)
+    print(json.dumps(dict(active_alerts=active, failed_deliveries=failed, channel=config['ALERT_CHANNEL'])))
+    return 1 if failed or (active and config['ALERT_CHANNEL'] == 'none') else 0
 
 
 if __name__ == '__main__':

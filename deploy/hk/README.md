@@ -351,9 +351,9 @@ recovery命令在同一进程内创建目标、恢复并验证，结束时先核
 ## 告警：外部探活、日备心跳、磁盘（#1720）
 
 - **外部探活**：`.github/workflows/hk-readiness.yml` 全天每 10 分钟只读 `/health/live`、`/health/ready`（GitHub 繁忙时会推迟或丢弃定时运行）。需要仓库变量 `HK_READINESS_MONITOR_ENABLED=true` 才运行。探活状态变化时（正常→失败、失败→恢复）发到配置的渠道；没配渠道时只有失败的那次运行本身（GitHub 的工作流失败通知）。渠道：仓库 secret `HK_ALERT_WEBHOOK_URL`，格式变量 `HK_ALERT_WEBHOOK_FORMAT`（`text`/`wecom`/`feishu`/`dingtalk`）。`workflow_dispatch` 勾选 `notification_drill` 可演练，不请求服务器。
-- **宿主告警**：`deploy/hk/ops_alerts.py` 用宿主自带 python3（3.6，仅标准库）。日备单元成功后 `ExecStartPost` 写 `/srv/g2c-beta/ops/backup-heartbeat.json`；`g2c-beta-ops-alerts.timer` 每 15 分钟 `check`：超过 27 小时没有成功心跳、或 `/` 用量 ≥85% 即告警，持续时每 6 小时提醒一次，恢复时发一次。消息只含条件和数字。
+- **宿主告警**：`deploy/hk/ops_alerts.py` 用宿主自带 python3（3.6，仅标准库）。日备单元成功后 `ExecStartPost` 写 `/srv/g2c-beta/ops/backup-heartbeat.json`；`g2c-beta-ops-alerts.timer` 每 15 分钟 `check`：超过 27 小时没有成功心跳、或 `/` 用量 ≥85% 即告警，持续时每 6 小时提醒一次，恢复时发一次；投递失败不算已通知，下次检查重发，单元标为失败。心跳写不出时日备单元会显示失败（数据不受影响）。消息只含条件和数字。
 - **渠道是配置**：`/srv/g2c-beta/ops/alert.env`（root:0600，未知键拒绝）：`ALERT_CHANNEL=none|webhook`、`ALERT_WEBHOOK_URL=https://…`、`ALERT_WEBHOOK_FORMAT`，可选 `ALERT_BACKUP_MAX_HOURS`、`ALERT_DISK_PERCENT`、`ALERT_DISK_PATHS`、`ALERT_REMIND_HOURS`。默认 `none`：告警写进 journal（`ALERT …`）并让单元失败。`python3 deploy/hk/ops_alerts.py drill` 发一条演练消息。
-- **安装**（宿主 root，不删除任何文件）：复制 `ops_alerts.py`、`g2c-beta-ops-alerts.{service,timer}`，用新的 `g2c-beta-backup.service` 替换旧单元（只多一行 `ExecStartPost`），`systemctl daemon-reload`；等下一次日备成功写出心跳后，再 `systemctl enable --now g2c-beta-ops-alerts.timer`（没有心跳时 `check` 会如实报 `backup_heartbeat`，不手写心跳）。
+- **安装**（宿主 root，不删除任何文件）：`ops_alerts.py` 放 `/srv/g2c-beta/deploy/hk/`；`g2c-beta-ops-alerts.{service,timer}` 放 `/etc/systemd/system/`。替换日备单元前先 `systemctl stop g2c-beta-backup.timer` 并确认 `g2c-beta-backup.service` 为 inactive，原单元另存副本，再用新的 `/etc/systemd/system/g2c-beta-backup.service` 原子替换（只多一行 `ExecStartPost`），`systemctl daemon-reload`、`systemctl start g2c-beta-backup.timer`；等下一次日备成功写出心跳后，再 `systemctl enable --now g2c-beta-ops-alerts.timer`（没有心跳时 `check` 会如实报 `backup_heartbeat`，不手写心跳）。
 
 ## 可选的手动 NEEDS
 

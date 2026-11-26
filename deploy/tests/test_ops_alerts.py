@@ -30,7 +30,7 @@ def test_host_script_stays_python36_and_stdlib_only():
     tree=ast.parse(source,feature_version=(3,6))
     modules={alias.name.split('.')[0] for node in ast.walk(tree) if isinstance(node,ast.Import) for alias in node.names}
     modules|={node.module.split('.')[0] for node in ast.walk(tree) if isinstance(node,ast.ImportFrom)}
-    assert modules<={'json','os','shutil','ssl','sys','time','urllib'}
+    assert modules<={'http','json','os','shutil','ssl','sys','time','urllib'}
     assert 'fromisoformat' not in source and 'capture_output' not in source
 
 
@@ -68,12 +68,26 @@ def test_alert_starts_reminds_and_recovers_once(tmp_path):
     ops_alerts.backup_succeeded(now=0,path=str(beat))
     def run(now,percent):
         return ops_alerts.check(value,now=now,state_path=str(state),deliver=inbox,heartbeat_path=beat,usage=usage(percent))
-    assert run(HOUR,90)==1 and inbox.messages==['G2C api-beta ALERT: Disk /: 90% used (threshold 85%)']
-    assert run(2*HOUR,90)==1 and len(inbox.messages)==1
-    assert run(7*HOUR,90)==1 and inbox.messages[-1].startswith('G2C api-beta STILL: Disk /')
+    assert run(HOUR,90)==(1,0) and inbox.messages==['G2C api-beta ALERT: Disk /: 90% used (threshold 85%)']
+    assert run(2*HOUR,90)==(1,0) and len(inbox.messages)==1
+    assert run(7*HOUR,90)==(1,0) and inbox.messages[-1].startswith('G2C api-beta STILL: Disk /')
     ops_alerts.backup_succeeded(now=8*HOUR,path=str(beat))
-    assert run(8*HOUR,50)==0 and inbox.messages[-1]=='G2C api-beta RECOVERED: disk:/'
-    assert run(9*HOUR,50)==0 and len(inbox.messages)==3
+    assert run(8*HOUR,50)==(0,0) and inbox.messages[-1]=='G2C api-beta RECOVERED: disk:/'
+    assert run(9*HOUR,50)==(0,0) and len(inbox.messages)==3
+
+
+def test_failed_delivery_is_retried_for_start_and_recovery(tmp_path):
+    beat=tmp_path/'beat.json';state=tmp_path/'state.json';value=config();sent=[];down=[True]
+    def deliver(config,text):
+        sent.append(text);return 'delivery_failed' if down[0] else 'delivered'
+    ops_alerts.backup_succeeded(now=0,path=str(beat))
+    def run(now,percent):
+        return ops_alerts.check(value,now=now,state_path=str(state),deliver=deliver,heartbeat_path=beat,usage=usage(percent))
+    assert run(60,90)==(1,1) and run(120,90)==(1,1) and len(sent)==2 and all('ALERT:' in s for s in sent)
+    down[0]=False;assert run(180,90)==(1,0) and sent[-1].startswith('G2C api-beta ALERT:')
+    down[0]=True;assert run(240,50)==(0,1)
+    down[0]=False;assert run(300,50)==(0,0) and sent[-1]=='G2C api-beta RECOVERED: disk:/'
+    assert run(360,50)==(0,0) and len(sent)==5
 
 
 @pytest.mark.parametrize('changes,error',[
@@ -126,8 +140,10 @@ def test_webhook_delivery_posts_json_and_never_echoes_the_url(capsys):
 
 def test_none_channel_writes_journal_alert_and_marks_check_failed(tmp_path,monkeypatch,capsys):
     monkeypatch.setattr(ops_alerts,'CONFIG',str(tmp_path/'absent.env'))
-    monkeypatch.setattr(ops_alerts,'check',lambda value:1)
+    monkeypatch.setattr(ops_alerts,'check',lambda value:(1,0))
     assert ops_alerts.main(['check'])==1
+    monkeypatch.setattr(ops_alerts,'check',lambda value:(0,0))
+    assert ops_alerts.main(['check'])==0
     assert ops_alerts.send(config(),'G2C api-beta ALERT: x')=='journal_only'
     assert 'ALERT G2C api-beta ALERT: x' in capsys.readouterr().err
 
@@ -138,10 +154,15 @@ def test_probe_notifies_only_on_state_changes():
     assert ops_alerts.probe_transition(value,'failure','success',deliver=inbox)=='alerted'
     assert ops_alerts.probe_transition(value,'failure','failure',deliver=inbox)=='unchanged'
     assert ops_alerts.probe_transition(value,'success','failure',deliver=inbox)=='recovered'
+    assert ops_alerts.probe_transition(value,'cancelled','success',deliver=inbox)=='unchanged'
+    assert ops_alerts.probe_transition(value,'success','cancelled',deliver=inbox)=='unchanged'
     assert len(inbox.messages)==2
+    assert ops_alerts.probe_transition(value,'failure','unknown',deliver=inbox,drill=True)=='alerted'
+    assert inbox.messages[-1].startswith('G2C api-beta DRILL:')
 
 
 def test_readiness_workflow_runs_all_day_and_reports_transitions():
     workflow=(ROOT/'.github/workflows/hk-readiness.yml').read_text()
     assert "- cron: '7,17,27,37,47,57 * * * *'" in workflow
     assert 'ops_alerts.py probe-transition' in workflow and 'secrets.HK_ALERT_WEBHOOK_URL' in workflow
+    assert 'continue-on-error: true' in workflow and '--event schedule' in workflow
