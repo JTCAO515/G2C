@@ -23,7 +23,7 @@ struct LioToolRegistryTests {
     @Test func registryKeepsTheCardOrderAndNamesFromBeforeTheRegistry() {
         #expect(LioTool.allCases == [.returnHotel, .arrival, .localSupport, .taxi, .hotels, .roadbook, .transport,
                                      .attractionBooking, .menuOrder, .nearby, .currency, .metro, .payment,
-                                     .translation, .phrases])
+                                     .translation, .showCards])
         #expect(Set(LioTool.allCases.map(\.rawValue)).count == LioTool.allCases.count)
         #expect(LioTool.metro.name(.chinese) == "地铁指南")
         #expect(LioTool.transport.summary(.english) == "Compare trains, flights and buses")
