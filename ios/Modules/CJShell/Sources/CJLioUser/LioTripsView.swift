@@ -15,7 +15,6 @@ struct LioItineraryCard<Actions: View>: View {
     @State private var savedAppeared = false
     @State private var selectedDay: Int?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.dynamicTypeSize) private var typeSize
     private var day: LioItinerary.Day? {
         itinerary.days.first { $0.number == selectedDay } ?? itinerary.days.first
     }
@@ -35,14 +34,11 @@ struct LioItineraryCard<Actions: View>: View {
                 Text(language.text("\(itinerary.days.count) days · \(itinerary.days.reduce(0) { $0 + $1.stops.count }) stops",
                                    "\(itinerary.days.count) 天 · \(itinerary.days.reduce(0) { $0 + $1.stops.count }) 项安排"))
                     .font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
-                if typeSize.isAccessibilitySize {
-                    VStack(alignment: .leading, spacing: 8) { dayChips }
-                } else {
-                    ScrollView(.horizontal) {
-                        HStack(spacing: 8) { dayChips }.padding(.vertical, 2)
-                    }
-                    .scrollIndicators(.hidden)
-                }
+                // #1899: one layout at every text size. The chips used to be a sideways ScrollView, swapped for a plain
+                // VStack at accessibility sizes. When the audit raised the text size the chips were replaced by new
+                // views, and it reported "Dynamic Type font sizes are partially unsupported" on the Chat page once the
+                // card had been touched. The chips wrap onto further lines instead, so nothing scrolls or is swapped.
+                LioChipFlow(spacing: 8) { dayChips }
                 if let day {
                     if day.stops.isEmpty {
                         Text(language.text("No plans for this day yet.", "这一天还没有安排。"))
@@ -94,6 +90,43 @@ struct LioItineraryCard<Actions: View>: View {
             .accessibilityAddTraits(day?.number == choice.number ? [.isSelected] : [])
             .accessibilityIdentifier("lio.trip.day.\(choice.number)")
         }
+    }
+}
+
+/// Lays chips out left to right and starts a new line when the next one no longer fits.
+private struct LioChipFlow: Layout {
+    var spacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        arrange(width: proposal.width ?? .infinity, subviews).size
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let arranged = arrange(width: bounds.width, subviews)
+        for (index, frame) in arranged.frames.enumerated() {
+            subviews[index].place(at: CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY),
+                                  proposal: ProposedViewSize(frame.size))
+        }
+    }
+
+    private func arrange(width: CGFloat, _ subviews: Subviews) -> (frames: [CGRect], size: CGSize) {
+        var frames: [CGRect] = []
+        var x: CGFloat = 0, y: CGFloat = 0, rowHeight: CGFloat = 0, widest: CGFloat = 0
+        for subview in subviews {
+            var size = subview.sizeThatFits(.unspecified)
+            // A chip wider than the line wraps its own text rather than running off the card.
+            if size.width > width { size = subview.sizeThatFits(ProposedViewSize(width: width, height: nil)) }
+            if x > 0, x + size.width > width {
+                x = 0
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            frames.append(CGRect(origin: CGPoint(x: x, y: y), size: size))
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+            widest = max(widest, x - spacing)
+        }
+        return (frames, CGSize(width: widest, height: y + rowHeight))
     }
 }
 
@@ -542,6 +575,7 @@ private struct LioDayStops: View {
     let day: LioItinerary.Day
     let language: LioLanguage
     var maximumStops: Int? = nil
+    @ScaledMetric(relativeTo: .caption) private var markerSize: CGFloat = 20
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -550,7 +584,7 @@ private struct LioDayStops: View {
                     Image(systemName: stop.fixed == true ? "lock.fill" : "circle.fill")
                         .font(.caption)
                         .foregroundStyle(stop.fixed == true ? LioTheme.jade : LioTheme.inkSecondary)
-                        .frame(width: 20, height: 20)
+                        .frame(width: markerSize, height: markerSize)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
                         let ending = stop.endingText(language)
