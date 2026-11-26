@@ -47,7 +47,8 @@ async def read_form(request: Request, origin: str, names: tuple[str, ...]) -> di
     except ValueError:
         raise HTTPException(400, "表单有误。") from None
     fields = dict(pairs)
-    if len(pairs) != len(names) or set(fields) != set(names):
+    if (len(pairs) != len(names) or set(fields) != set(names)
+            or any("\0" in value for value in fields.values())):
         raise HTTPException(400, "表单有误。")
     if (len(fields.get("username", "")) > 32 or len(fields.get("password", "")) > 128
             or len(fields.get("code", "")) > 6 or len(fields.get("seed", "")) > 40):
@@ -265,8 +266,11 @@ def create_app(auth: Auth, *, port: int, queue: QueueStore | None = None) -> Fas
     @app.post("/queue/review")
     async def add_review(request: Request) -> Response:
         fields = await read_form(request, origin, REVIEW_FORM)
+        return await to_thread(record_review, session_token(request), fields)
+
+    def record_review(token: str, fields: dict[str, str]) -> Response:
         with auth.store.locked():
-            session = auth.require_session(session_token(request), role=Role.REVIEWER, csrf=fields["csrf"])
+            session = auth.require_session(token, role=Role.REVIEWER, csrf=fields["csrf"])
             item = selected_item(fields["signal"])
             timestamp = auth.clock()
             review = review_input(fields, session.username, timestamp)
