@@ -30,6 +30,7 @@ import psycopg
 from psycopg.conninfo import conninfo_to_dict
 from cj_api.supabase_test_database import SUPABASE_TEST_SCHEMA
 from cj_strict_json import reject_duplicates
+from cj_usage.authorization_deadlines import deadline
 
 REF='sajkhvjpllldfyfryalx'
 REGION='ap-southeast-1'
@@ -38,7 +39,7 @@ AUTH='https://'+REF+'.supabase.co/auth/v1'
 CA_SHA='807025ad50d4ed219d2c9c7d299c004f824eb00cf7f65afef607d07b72e6cafa'
 STATE=Path.home()/'.local/share/g2c/m4-supabase-auth'
 SCHEMA_STATE=Path.home()/'.local/share/g2c/m4-supabase-schema'
-DEADLINE=datetime(2026,12,1,tzinfo=ZoneInfo('Asia/Shanghai'))
+DEADLINE=deadline('supabase_test')
 
 
 class TestUnavailable(Exception):pass

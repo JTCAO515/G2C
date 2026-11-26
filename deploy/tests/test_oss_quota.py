@@ -20,7 +20,7 @@ from test_oss_sdk_contract import Session,service
 READ_AUTHORITY=oss_quota.read_authority
 
 
-def allowance(root,monkeypatch,*,mode='paid_capped',requests=0,size=0):
+def allowance(root,monkeypatch,*,mode='paid_capped',requests=0,size=0,expires_at='2026-11-30T16:00:00+00:00'):
     activate(monkeypatch);key=Ed25519PrivateKey.generate();root.mkdir(mode=0o700)
     monkeypatch.setenv('CJ_BETA_RECOVERY_PRIVATE_B64',base64.b64encode(key.private_bytes(serialization.Encoding.Raw,serialization.PrivateFormat.Raw,serialization.NoEncryption())).decode())
     monkeypatch.setenv('CJ_BETA_RECOVERY_PUBLIC_B64',base64.b64encode(key.public_key().public_bytes(serialization.Encoding.Raw,serialization.PublicFormat.Raw)).decode())
@@ -29,7 +29,7 @@ def allowance(root,monkeypatch,*,mode='paid_capped',requests=0,size=0):
         def now(cls,tz=None):return datetime(2026,11,4,tzinfo=timezone.utc)
     monkeypatch.setattr(oss_quota,'datetime',Clock)
     policy=dict(version='g2c-beta-oss-authorization.1',mode=mode,source='synthetic offline fixture; not JT approval',request_limit=300,byte_limit=2*GIB,
-        hold_limit_fen=1000 if mode=='paid_capped' else 0,expires_at='2026-11-30T16:00:00+00:00')
+        hold_limit_fen=1000 if mode=='paid_capped' else 0,expires_at=expires_at)
     # Substitute only this test's root-policy reader boundary; no real root
     # authority or cloud identity is created by an offline test.
     monkeypatch.setattr(oss_quota,'read_authority',lambda:policy)
@@ -42,6 +42,7 @@ def allowance(root,monkeypatch,*,mode='paid_capped',requests=0,size=0):
         path=history/f'{i:06d}.json';path.write_text(json.dumps(checkpoint.envelope(value)));path.chmod(0o400)
         tip=hashlib.sha256(checkpoint.canonical(value)).hexdigest()
     checkpoint.atomic(root/'usage.json',dict(version='g2c-beta-oss-usage.1',authorization_sha256=identity,requests=requests,reserved_bytes=size,tip=tip))
+    return policy
 
 
 def test_actual_sdk_counts_every_request_before_send_and_readonly_get_is_free_of_new_dispatch(tmp_path,monkeypatch):
@@ -149,3 +150,75 @@ def test_recovery_signed_document_is_not_platform_root_authority(tmp_path,monkey
     # a UID0/0644 authority file nor a root read-only authority mount.
     monkeypatch.setattr(oss_quota,'read_authority',READ_AUTHORITY)
     with pytest.raises(ValueError):oss_quota.policy()
+
+
+RENEWED='2026-12-31T16:00:00+00:00'
+HEAD=oss.HeadObjectRequest(bucket=oss_backup.BUCKET,key='backups/20261104T000000Z-'+'a'*64+'/database.dump')
+
+
+def renew(monkeypatch,policy,**changes):
+    renewed={**policy,'expires_at':RENEWED,**changes};monkeypatch.setattr(oss_quota,'read_authority',lambda:renewed)
+    return hashlib.sha256(checkpoint.canonical(renewed)).hexdigest()
+
+
+def clock(monkeypatch,when):
+    class Clock(datetime):
+        @classmethod
+        def now(cls,tz=None):return when
+    monkeypatch.setattr(oss_quota,'datetime',Clock)
+
+
+def test_approved_expiries_come_from_the_reviewed_deadline_config():
+    assert oss_quota.APPROVED_EXPIRIES==('2026-11-30T16:00:00+00:00',RENEWED)
+
+
+def test_renewal_changing_only_expiry_keeps_the_original_counter(tmp_path,monkeypatch):
+    root=tmp_path/'control';policy=allowance(root,monkeypatch,requests=5,size=1000)
+    original=checkpoint.verified(root/'usage.json')['authorization_sha256']
+    renewed=renew(monkeypatch,policy);clock(monkeypatch,datetime(2026,12,15,tzinfo=timezone.utc))
+    session=Session();client=Client(service(session),root=root)
+    for expected in (6,7):
+        with pytest.raises(oss.exceptions.OperationError):client.head_object(HEAD)
+        state=checkpoint.verified(root/'usage.json')
+        assert state['requests']==expected and state['reserved_bytes']==1000 and state['authorization_sha256']==renewed!=original
+    assert checkpoint.verified(root/'intents/000005.json')['authorization_sha256']==original
+    assert checkpoint.verified(root/'intents/000007.json')['authorization_sha256']==renewed and len(session.calls)==2
+
+
+def test_renewal_does_not_reopen_an_exhausted_allowance(tmp_path,monkeypatch):
+    root=tmp_path/'control';policy=allowance(root,monkeypatch,requests=300)
+    renew(monkeypatch,policy);session=Session();client=Client(service(session),root=root)
+    with pytest.raises(ValueError,match='OSS_allowance_exhausted'):client.head_object(HEAD)
+    assert session.calls==[] and checkpoint.verified(root/'usage.json')['requests']==300
+
+
+@pytest.mark.parametrize('changes',[dict(source='a different approval text'),dict(mode='free_confirmed',hold_limit_fen=0)])
+def test_renewal_that_changes_anything_but_expiry_holds(tmp_path,monkeypatch,changes):
+    root=tmp_path/'control';policy=allowance(root,monkeypatch,requests=5)
+    renew(monkeypatch,policy,**changes);session=Session();client=Client(service(session),root=root)
+    with pytest.raises(ValueError,match='original_OSS_usage_required'):client.head_object(HEAD)
+    assert session.calls==[] and checkpoint.verified(root/'usage.json')['requests']==5
+
+
+def test_unapproved_expiry_is_not_an_allowance(tmp_path,monkeypatch):
+    root=tmp_path/'control';policy=allowance(root,monkeypatch)
+    renew(monkeypatch,policy,expires_at='2027-01-31T16:00:00+00:00')
+    with pytest.raises(ValueError,match='explicit_JT_OSS_allowance_required'):oss_quota.policy()
+
+
+def test_reverting_to_the_older_authority_after_renewed_use_holds(tmp_path,monkeypatch):
+    root=tmp_path/'control';policy=allowance(root,monkeypatch,requests=5)
+    renew(monkeypatch,policy);session=Session();client=Client(service(session),root=root)
+    with pytest.raises(oss.exceptions.OperationError):client.head_object(HEAD)
+    monkeypatch.setattr(oss_quota,'read_authority',lambda:policy)
+    with pytest.raises(ValueError,match='original_OSS_usage_required'):client.head_object(HEAD)
+    assert len(session.calls)==1 and checkpoint.verified(root/'usage.json')['requests']==6
+
+
+def test_old_expiry_still_closes_at_its_own_end_until_root_renews(tmp_path,monkeypatch):
+    root=tmp_path/'control';policy=allowance(root,monkeypatch,requests=5)
+    clock(monkeypatch,datetime(2026,11,30,16,tzinfo=timezone.utc))
+    with pytest.raises(ValueError,match='OSS_allowance_expired'):oss_quota.policy()
+    renew(monkeypatch,policy);assert oss_quota.policy()[0]['expires_at']==RENEWED
+    clock(monkeypatch,datetime(2026,12,31,16,tzinfo=timezone.utc))
+    with pytest.raises(ValueError,match='OSS_allowance_expired'):oss_quota.policy()

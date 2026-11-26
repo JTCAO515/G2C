@@ -23,6 +23,7 @@ from agentscope.credential import OpenAICredential
 from agentscope.message import Msg, UserMsg, TextBlock, ToolCallBlock, ToolResultBlock
 from agentscope.model import OpenAIChatModel, FinishedReason
 from agentscope.tool import ToolChoice
+from cj_usage.authorization_deadlines import deadline
 from openai import APITimeoutError
 
 TARGETS = {
@@ -56,7 +57,7 @@ class Journal:
         return db
 
     def reserve(self, attempt, wire):
-        if datetime.now(timezone.utc).date().isoformat() > '2026-11-30':
+        if datetime.now(timezone.utc) >= deadline('mac_provider_acceptance'):
             raise ValueError('authorization_expired')
         with self.connect() as db:
             db.execute('BEGIN IMMEDIATE')

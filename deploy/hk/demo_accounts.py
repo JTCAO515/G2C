@@ -7,11 +7,12 @@ from pathlib import Path
 import re
 
 from cj_api.local_app import ISSUER,scope_for
+from cj_usage.authorization_deadlines import deadline
 from . import assembly_profiles,checkpoint
 from .configuration import Runtime,load_secret_environment,local_database_target
 
 DECISION='JT #495/6730538594 demo subject'
-DEADLINE=datetime.fromisoformat('2027-01-01T00:00:00+08:00')
+DEADLINE=deadline('hk_demo')
 
 
 def invitation_class(subject,digest,internal_short_code):

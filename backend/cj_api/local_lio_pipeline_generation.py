@@ -129,6 +129,43 @@ _ERROR_DETAIL={
 }
 
 
+# W1-2 (#1722): names for fields the degraded path saved as unconfirmed. Field
+# names are schema constants, so the log line stays content-free.
+_UNCONFIRMED_LABELS=(
+    (('start_date','arrival.date'),('出发日期','start date')),
+    (('arrival.time',),('到达时间','arrival time')),
+    (('arrival.place',),('到达地点','arrival place')),
+    (('departure.date',),('离开日期','departure date')),
+    (('departure.time',),('离开时间','departure time')),
+    (('departure.place',),('离开地点','departure place')),
+    (('departure.mode',),('离开方式','departure mode')),
+    (('party_size',),('人数','party size')),
+    (('first_day_full',),('第一天的安排松紧','how full day 1 should be')),
+    (('pace',),('节奏','pace')),
+    (('budget_currency','budget_total','budget_per_person','budget_paid','budget_basis','budget_includes'),('预算','budget')),
+)
+
+
+def unconfirmed_note(fields,locale):
+    """One sentence naming the unconfirmed fields; empty when nothing was left out."""
+    if not fields:return''
+    labels=[];covered=set()
+    for names,label in _UNCONFIRMED_LABELS:
+        if fields&set(names):
+            labels.append(label[0]if locale=='zh'else label[1]);covered.update(names)
+    if fields-covered:labels.append('其他细节'if locale=='zh'else'other details')
+    if locale=='zh':return '；这些信息没能确认，先按未确认保存：'+'、'.join(labels)+'，可以随时补充'
+    return '. Not confirmed yet, so saved as unconfirmed: '+', '.join(labels)+'; you can add them any time'
+
+
+def _log_degraded(binding,fields):
+    try:
+        logging.getLogger('cj_usage.audit').info('LIO_PIPELINE_DEGRADED run_id=%s fields=%s',
+            _safe(getattr(binding,'run_id','unknown')),','.join(_safe(field)for field in sorted(fields)))
+    except Exception:
+        logging.getLogger('cj_usage.audit').info('LIO_PIPELINE_DEGRADED error=log_unavailable')
+
+
 class PipelineGeneration:
     def current(self,host,binding):
         """Independent rich read capability; never mutate the legacy reader."""
@@ -190,6 +227,7 @@ class PipelineGeneration:
             _log_uncaught(binding,stage,error)
             raise
         state=worker.runs.snapshot(binding)
+        if prepared.unconfirmed:_log_degraded(binding,prepared.unconfirmed)
         unverified=('天气、当天开放情况和部分交通尚未确认'if worded.unknown_transfers else'天气和当天开放情况尚未确认')if locale=='zh'else(
             'Weather, opening information and some routes remain unverified'if worded.unknown_transfers else
             'Weather and opening information remain unverified')
@@ -208,6 +246,7 @@ class PipelineGeneration:
             unverified+=('；首末日的抵达或离开时间未定，已建议把活动安排在住处附近；补充酒店位置后可以再调整'if locale=='zh'else
                 '. Arrival or departure times are not set, so first- and last-day activities are kept near where you stay; '
                 'you can adjust after adding your hotel')
+        unverified+=unconfirmed_note(prepared.unconfirmed,locale)
         body=(worded.summary+'\n\n'+('行程已保存；'+unverified+'。想先看哪一天？'if locale=='zh'else
             'The itinerary is saved. '+unverified+'. Which day would you like to see first?'))
         return host._finish(worker,binding,state,body,Scene.ADJUSTMENT,locale)
