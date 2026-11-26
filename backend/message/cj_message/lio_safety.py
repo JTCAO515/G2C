@@ -30,19 +30,25 @@ class Requirement:
 _I = re.I
 REQUIREMENTS = (
     Requirement('emergency', re.compile(
-        r'晕倒|昏倒|晕过去|昏过去|晕厥|昏迷|不省人事|没(?:有)?呼吸|心脏病|心梗|中风|大出血|抽搐|急救|救护车|噎住|溺水|中毒|'
-        r'\b(?:collaps\w*|faint\w*|unconscious|passed out|blacked out|not breathing|heart attack|seizure|choking|'
+        r'晕倒|昏倒|晕过去|昏过去|晕厥|昏迷|不省人事|没(?:有)?呼吸|'
+        r'(?:人|他|她|朋友|同伴|孩子|小孩|老人|家人|妈妈|爸爸|老公|老婆|丈夫|妻子)[^。？！?!]{0,4}没(?:有)?反应|叫不醒|心脏病|心梗|胸口疼|胸痛|胸闷|中风|大出血|抽搐|'
+        r'急救|救护车|噎住|溺水|中毒|被车撞|车祸|烫伤|烧伤|中暑|'
+        r'\b(?:collaps\w*|faint(?:ed|ing|s)|unconscious|unresponsive|blacked out|not breathing|heart attack|seizure|choking|'
+        r'chest pain|hit by a (?:car|bus|motorbike|scooter)|car accident|heat ?stroke|badly burn(?:ed|t)|'
         r'bleeding (?:a lot|heavily|badly)|ambulance|first aid|overdose|poison(?:ed|ing)|drown\w*)\b|'
-        r'\b(?:having|had|has) a stroke\b', _I),
+        r'\bfeel(?:ing)? faint\b|\bpassed out\b(?! (?:from|with) laugh)|\b(?:having|had|has) a stroke\b', _I),
         ((re.compile(r'(?<![0-9])120(?![0-9]|\s*(?:元|块|分钟|公里|米|yuan|RMB|CNY|minutes?|km|m\b))', _I),
           {'zh': '紧急情况请立即拨打 120 叫救护车；需要警察请拨 110。',
            'en': 'In an emergency call 120 for an ambulance now; for the police call 110.'}),)),
     Requirement('lost_documents', re.compile(
-        r'护照[^。？！?!]{0,6}(?:丢|掉|不见|被偷|被盗|遗失|找不到|没了|忘在|落在)|'
+        r'护照[^。？！?!]{0,6}(?:丢|掉|不见|被偷|被盗|被抢|遗失|找不到|没了)|'
+        r'护照[^。？！?!]{0,4}(?:忘在|落在)[^。？！?!]{0,4}(?:出租车|车上|网约车|飞机|火车|高铁|地铁|公交|路上|餐厅|饭店|店里|景区)|'
         r'(?:丢|掉|弄丢|遗失|找不到)[^。？！?!]{0,4}(?:护照|证件|签证)|证件[^。？！?!]{0,4}(?:丢|不见|被偷|找不到)|'
-        r'\b(?:lost|lose|losing|missing|stolen|misplac\w*|left|forgot)\b[^.?!]{0,20}\bpassport\b|'
+        r'\b(?:lost|lose|losing|missing|stolen|misplac\w*)\b[^.?!]{0,20}\bpassport\b|'
+        r'\bleft (?:my|our|his|her) passport (?:in|on|at) (?:a |the )?(?:taxi|cab|car|didi|train|plane|flight|bus|metro|subway|restaurant|bar|shop|store)\b|'
+        r'\b(?:someone|somebody|they|he|she) (?:took|stole|has taken)\b[^.?!]{0,10}\bpassport\b|'
         r'\b(?:can[’\x27]?t|cannot|couldn[’\x27]?t) find\b[^.?!]{0,10}\bpassport\b|'
-        r'\bpassport\b[^.?!]{0,20}\b(?:lost|missing|stolen|gone)\b', _I),
+        r'\bpassport\b[^.?!]{0,20}\b(?:lost|missing|stolen|gone|taken)\b', _I),
         ((re.compile(r'110|报警|报案|派出所|公安|\bpolice\b', _I),
           {'zh': '护照丢失请先到附近派出所报案并开具报失证明，或拨打 110。',
            'en': 'Report the lost passport at the nearest police station and get a loss report, or call 110.'}),
@@ -51,7 +57,7 @@ REQUIREMENTS = (
            'en': "Then contact your country's embassy or consulate in China for a replacement passport or emergency travel document."}))),
     Requirement('medical', re.compile(
         r'看病|看医生|就医|医院|诊所|发烧|发热|腹泻|拉肚子|呕吐|生病|不舒服|受伤|摔伤|牙疼|'
-        r'\b(?:see a doctor|doctor|hospital|clinic|fever|diarrh\w*|vomit\w*|injur\w*|toothache)\b|'
+        r'\b(?:see a doctor|doctor|hospital|clinic|(?<!hay )fever|diarrh\w*|vomit\w*|injur\w*|toothache)\b|'
         r'\b(?:I[’\x27]m|I am|feel(?:ing)?|got|getting|fell|became) (?:really |very )?(?:sick|ill|unwell)\b(?! of)|'
         r'\bhurt (?:my|myself|his|her)\b', _I),
         ((re.compile(r'医院|诊所|急诊|门诊|\bhospital\b|\bclinic\b|\bemergency room\b|\bER\b', _I),

@@ -44,6 +44,21 @@ class SafetyLines(unittest.TestCase):
             with self.subTest(question=question):
                 self.assertEqual(matched(question), ())
 
+    def test_pre_switch_detection_fixes(self):
+        # #1733 review follow-up (before turning the switch on): more emergencies, no false lost-passport lines.
+        for question, kind in (('我朋友没反应了', 'emergency'), ('朋友叫不醒', 'emergency'), ('胸口疼得厉害', 'emergency'),
+                               ('被车撞了', 'emergency'), ('手被烫伤了', 'emergency'), ('好像中暑了', 'emergency'),
+                               ('I feel faint', 'emergency'), ('she passed out', 'emergency'), ('chest pain', 'emergency'),
+                               ('someone took my passport', 'lost_documents'), ('护照被抢了', 'lost_documents'),
+                               ('I left my passport in a taxi', 'lost_documents'), ('护照忘在出租车上了', 'lost_documents')):
+            with self.subTest(question=question):
+                self.assertIn(kind, matched(question))
+        for question in ('I forgot my passport number', 'I forgot to bring my passport', '护照落在酒店前台登记了',
+                         'I left my passport at the hotel front desk', 'where to buy hay fever medicine',
+                         'there is a faint smell', 'I passed out from laughing', '支付宝没反应了'):
+            with self.subTest(question=question):
+                self.assertEqual(matched(question), ())
+
     def test_negated_or_unrelated_mentions_do_not_count_as_present(self):
         # Review of #1863: "120 元", "别报警" and "这说明" are not the essentials.
         self.assertIn('120', supplement('朋友晕倒了', '打车大约 120 元。', 'zh'))
