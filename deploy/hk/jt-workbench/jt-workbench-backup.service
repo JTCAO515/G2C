@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily private JT workbench database backup
+After=docker.service jt-workbench-postgres.socket g2c-beta-backup.service
+Requires=docker.service jt-workbench-postgres.socket
+
+[Service]
+Type=oneshot
+UMask=0077
+TimeoutStartSec=210
+ExecStart=/usr/bin/docker compose --env-file /srv/g2c-beta/jt-workbench/images.env -f /srv/g2c-beta/deploy/hk/jt-workbench/compose.yaml --profile operator run --rm --no-deps -T backup

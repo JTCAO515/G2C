@@ -181,7 +181,7 @@ def restore(target,base,safety,source_control,target_control,*,schema_root=None)
         with psycopg.connect(**target,autocommit=True) as connection:
             staging.require_isolated(connection,target)
             if migrate.inventory(connection):raise ValueError('new_empty_isolation_database_required')
-            if connection.execute("SELECT 1 FROM pg_catalog.pg_roles WHERE rolname IN ('cj_m1_runtime','cj_local_cleanup') LIMIT 1").fetchone():
+            if connection.execute("SELECT 1 FROM pg_catalog.pg_roles WHERE rolname IN ('cj_m1_runtime','cj_local_cleanup','cj_ops_console') LIMIT 1").fetchone():
                 raise ValueError('new_isolated_cluster_without_application_roles_required')
         # The source remains behind the exclusive release barrier until the
         # isolated target is released. A later deletion/write invalidates this

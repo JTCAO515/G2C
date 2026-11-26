@@ -127,7 +127,8 @@ struct CJProbeApp: App {
         } else {
             let home = LioHome(language: shell.language.lio, service: .demo, isDemo: true,
                                showsTools: ProcessInfo.processInfo.arguments.contains("--lio-tools-preview"),
-                               toolsRelay: translationRelayPreview, toolsDraftStorage: localSupportDraftPreview) {
+                               toolsRelay: translationRelayPreview, toolsDraftStorage: localSupportDraftPreview,
+                               answerFeedback: LioAnswerFeedbackPreview.launch) {
                 LioMenuSettings(shell: shell)
             }
             .lioMedicalCardStorage(localMedicalCardPreview)
@@ -335,6 +336,12 @@ struct LioMenuSettings: View {
         Button(shell.language.text("Internal demo information", "内部演示说明")) { information.isPresented = true }
             .frame(minHeight: 44, alignment: .leading)
             .accessibilityIdentifier("lio.information")
+        // #1880: the privacy summary (policy 1.0), reachable from Me in every Lio build.
+        NavigationLink(PrivacySummary.title(shell.language)) {
+            PrivacyNoticeView(language: shell.language, showsSupportLink: false)
+        }
+        .frame(minHeight: 44, alignment: .leading)
+        .accessibilityIdentifier("lio.privacy-summary")
     }
 }
 

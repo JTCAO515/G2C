@@ -44,6 +44,40 @@ class SafetyLines(unittest.TestCase):
             with self.subTest(question=question):
                 self.assertEqual(matched(question), ())
 
+    def test_pre_switch_detection_fixes(self):
+        # #1733 review follow-up (before turning the switch on): more emergencies, no false lost-passport lines.
+        for question, kind in (('叫他没反应', 'emergency'), ('她倒地后没反应', 'emergency'), ('朋友叫不醒', 'emergency'), ('胸口疼得厉害', 'emergency'),
+                               ('被车撞了', 'emergency'), ('手被烫伤了', 'emergency'), ('好像中暑了', 'emergency'),
+                               ('I feel faint', 'emergency'), ('she passed out', 'emergency'), ('chest pain', 'emergency'),
+                               ('someone stole my passport', 'lost_documents'), ('护照落在滴滴上了', 'lost_documents'), ('I forgot my passport in a taxi', 'lost_documents'), ('被摩托车撞了', 'emergency'), ('护照被抢了', 'lost_documents'),
+                               ('I left my passport in a taxi', 'lost_documents'), ('护照忘在出租车上了', 'lost_documents')):
+            with self.subTest(question=question):
+                self.assertIn(kind, matched(question))
+        for question in ('I forgot my passport number', 'I forgot to bring my passport', '护照落在酒店前台登记了',
+                         'I left my passport at the hotel front desk', 'where to buy hay fever medicine',
+                         'there is a faint smell', 'I passed out from laughing', '支付宝没反应了',
+                         # Second review of #1918: passport handed over or photographed, messages not answered,
+                         # prevention questions and pet allergies are not safety questions.
+                         'where can I get my passport photo taken', 'my passport was taken by the hotel for registration',
+                         'they took my passport to make a copy', 'he took my passport at check-in',
+                         '我给房东发消息他没反应怎么办', '叫了滴滴，司机他一直没反应', '朋友微信没反应', '客服人员没反应',
+                         '工作人员没反应', '孩子对熊猫没反应', '我妈妈对川菜没反应', '防中暑要带什么', '车祸多吗',
+                         '烫伤膏哪里买', 'heatstroke prevention tips', 'allergic to cats', '我被他撞见了'):
+            with self.subTest(question=question):
+                self.assertEqual(matched(question), ())
+
+    def test_unmistakable_emergencies_ignore_the_prevention_exclusion(self):
+        # Third review of #1918: an exclusion word must not swallow a real emergency.
+        for question in ('My friend collapsed, any tips?', 'my dad is having a heart attack, what should I avoid doing',
+                         '朋友心脏病发作，附近哪里买药', '老人摔倒了没反应，要避免挪动吗', '朋友溺水了，消防电话多少',
+                         '朋友中暑了，消防电话多少', 'I burned my hand badly'):
+            with self.subTest(question=question):
+                self.assertIn('emergency', matched(question))
+                self.assertIn('120', supplement(question, '', 'en' if question.isascii() else 'zh'))
+        for question in ('打车软件叫了没反应怎么办', '被球撞了', '我的车被撞了', '防中暑要带什么', 'heatstroke prevention tips'):
+            with self.subTest(question=question):
+                self.assertEqual(matched(question), ())
+
     def test_negated_or_unrelated_mentions_do_not_count_as_present(self):
         # Review of #1863: "120 元", "别报警" and "这说明" are not the essentials.
         self.assertIn('120', supplement('朋友晕倒了', '打车大约 120 元。', 'zh'))

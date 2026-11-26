@@ -11,11 +11,13 @@ Pool guard: one plan save can hold about PEAK_CONNECTIONS database connections
 at once (Hong Kong run -46 exhausted a pool of 6). The number of scopes that
 run at the same time is capped at pool_size // PEAK_CONNECTIONS (at least one),
 so turning the switch on with the current pool of 8 keeps one scope at a time
-instead of starving each other; a pool of 16 allows two.
+instead of starving each other; a pool of 16 allows two. Without a bounded pool
+scopes also stay one at a time.
 
 The default is 1, which is the old sequential loop byte for byte.
 """
 from concurrent.futures import ThreadPoolExecutor
+import contextvars
 import logging
 import os
 import re
@@ -34,9 +36,13 @@ def configured_concurrency():
 
 
 def effective_concurrency(configured, pool_size):
-    """Cap by the connection pool: each running scope may need a full plan-save peak."""
+    """Cap by the connection pool: each running scope may need a full plan-save peak.
+
+    Without a bounded pool there is nothing to guard direct connections with, so
+    scopes stay one at a time (review of #1873).
+    """
     if configured == 1 or pool_size is None:
-        return configured
+        return 1
     return max(1, min(configured, pool_size // PEAK_CONNECTIONS))
 
 
@@ -70,7 +76,9 @@ def run_scopes(scopes, run_scope, *, pool_size):
                     failure = error
         return results, failure
     with ThreadPoolExecutor(max_workers=workers, thread_name_prefix='cj-scope') as pool:
-        futures = [pool.submit(run_scope, scope) for scope in scopes]
+        # Each scope runs in a copy of the caller's context (for example the
+        # rejected-intake capture set by the entrypoint), as the sequential loop did.
+        futures = [pool.submit(contextvars.copy_context().run, run_scope, scope) for scope in scopes]
         for future in futures:
             try:
                 results += future.result()

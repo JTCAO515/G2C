@@ -9,7 +9,7 @@ public enum FeedbackState: Equatable, Sendable {
 
 /// Opaque one-use work, captured in the button/lifecycle callback before its Task is queued.
 public struct FeedbackWork: Sendable {
-    fileprivate enum Kind: Sendable { case reload, submit(FeedbackPending), query(FeedbackPending) }
+    fileprivate enum Kind: Sendable { case reload, submit(FeedbackPending), query(FeedbackPending), resend(FeedbackPending) }
     fileprivate let owner: UUID
     fileprivate let lifetime: UUID
     fileprivate let request: UUID
@@ -113,6 +113,14 @@ public struct FeedbackWork: Sendable {
         guard let original, let work = prepare(.query(original)) else { return nil }
         state = .reconciling; return work
     }
+    /// True when the selected line's last look-up answered "no such line" and its one resend is still unspent.
+    public var canResendSelected: Bool { original.map { client?.canResend(actionID: $0.actionID) == true } ?? false }
+    /// After a look-up answered "no such line": sends that saved line again under its own ID and exact bytes, once.
+    public func prepareResend() -> FeedbackWork? {
+        guard state == .unknown, receipt == nil, let original, client?.canResend(actionID: original.actionID) == true,
+              let work = prepare(.resend(original)) else { return nil }
+        state = .submitting; return work
+    }
     private func matches(_ work: FeedbackWork) -> Bool {
         work.owner == owner && work.lifetime == lifetime && work.request == request
     }
@@ -141,6 +149,9 @@ public struct FeedbackWork: Sendable {
                 try publish(result, original: original, work: work)
             case .query(let original):
                 let result = try await client.queryOriginal(actionID: original.actionID, operation: work.operation)
+                try publish(result, original: original, work: work)
+            case .resend(let original):
+                let result = try await client.resend(actionID: original.actionID, operation: work.operation)
                 try publish(result, original: original, work: work)
             }
         } catch {

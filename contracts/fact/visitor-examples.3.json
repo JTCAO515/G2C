@@ -1,0 +1,154 @@
+{
+  "note": "Synthetic wire examples for FACT@3 (#1756); not facts, never loaded as a catalogue.",
+  "cases": [
+    {
+      "id": "query-with-city",
+      "valid": true,
+      "value": {
+        "version": "FACT-query.3",
+        "topic": "payment",
+        "city": "chengdu"
+      }
+    },
+    {
+      "id": "query-without-city",
+      "valid": true,
+      "value": {
+        "version": "FACT-query.3",
+        "topic": "payment"
+      }
+    },
+    {
+      "id": "empty-city-rejected",
+      "valid": false,
+      "value": {
+        "version": "FACT-query.3",
+        "topic": "payment",
+        "city": ""
+      }
+    },
+    {
+      "id": "null-city-rejected",
+      "valid": false,
+      "value": {
+        "version": "FACT-query.3",
+        "topic": "payment",
+        "city": null
+      }
+    },
+    {
+      "id": "v2-query-not-v3",
+      "valid": false,
+      "value": {
+        "version": "FACT-query.2",
+        "topic": "payment"
+      }
+    },
+    {
+      "id": "unknown-topic-rejected",
+      "valid": false,
+      "value": {
+        "version": "FACT-query.3",
+        "topic": "visa"
+      }
+    },
+    {
+      "id": "authority-field-rejected",
+      "valid": false,
+      "value": {
+        "version": "FACT-query.3",
+        "topic": "payment",
+        "owner": "foreign"
+      }
+    },
+    {
+      "id": "nationwide-empty-result",
+      "valid": true,
+      "value": {
+        "version": "FACT-result.3",
+        "query": {
+          "version": "FACT-query.3",
+          "topic": "payment"
+        },
+        "status": "no_match",
+        "entries": [],
+        "request_ref": "synthetic-format-original-ref",
+        "data_origin": "maintainer_summary",
+        "evaluated_at": "2026-11-26T04:00:00.000000+00:00",
+        "catalogue_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "nationwide-matched-result",
+      "valid": true,
+      "value": {
+        "version": "FACT-result.3",
+        "query": {
+          "version": "FACT-query.3",
+          "topic": "payment"
+        },
+        "status": "matched",
+        "entries": [
+          {
+            "id": "visitor.synthetic.nationwide-payment",
+            "topic": "payment",
+            "cities": [
+              "beijing",
+              "chengdu",
+              "xian",
+              "shanghai",
+              "hangzhou",
+              "chongqing",
+              "shenzhen"
+            ],
+            "text_zh": "合成格式样例，不是支付指引。",
+            "text_en": "Synthetic format example, not payment guidance.",
+            "source_urls": [
+              "https://english.www.gov.cn/synthetic-format-example"
+            ],
+            "checked_on": "2026-11-26",
+            "expires_on": "2026-12-26"
+          }
+        ],
+        "request_ref": "synthetic-format-original-ref",
+        "data_origin": "maintainer_summary",
+        "evaluated_at": "2026-11-26T04:00:00.000000+00:00",
+        "catalogue_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "matched-needs-entries",
+      "valid": false,
+      "value": {
+        "version": "FACT-result.3",
+        "query": {
+          "version": "FACT-query.3",
+          "topic": "payment"
+        },
+        "status": "matched",
+        "entries": [],
+        "request_ref": "synthetic-format-original-ref",
+        "data_origin": "maintainer_summary",
+        "evaluated_at": "2026-11-26T04:00:00.000000+00:00",
+        "catalogue_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "result-must-be-v3",
+      "valid": false,
+      "value": {
+        "version": "FACT-result.2",
+        "query": {
+          "version": "FACT-query.3",
+          "topic": "payment"
+        },
+        "status": "no_match",
+        "entries": [],
+        "request_ref": "synthetic-format-original-ref",
+        "data_origin": "maintainer_summary",
+        "evaluated_at": "2026-11-26T04:00:00.000000+00:00",
+        "catalogue_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    }
+  ]
+}

@@ -62,6 +62,16 @@ public struct LioHome<MenuContent: View>: View {
     @State private var router: LioRouter
     /// #1753: the AI line under finished answers (`G2CAIDisclosureEnabled`, off unless the build says YES).
     private let showsAIDisclosure = LioAIDisclosureFeature.enabledInBuild
+    /// #1753: "Not helpful" under finished answers (`G2CAnswerFeedbackEnabled`, off unless the build says YES).
+    /// Nil whenever the build hides it; the host handles one answer at a time.
+    private let answerFeedback: (any LioAnswerFeedbackSending)?
+    /// Each answer's feedback, by turn, so it survives scrolling and re-rendering.
+    @State private var feedbackPhases: [Data: LioAnswerFeedbackPhase] = [:]
+    /// The text first sent for each answer's step, so a retry repeats it exactly (also after the host is rebuilt).
+    @State private var feedbackTexts: [Data: [LioAnswerFeedbackStep: String]] = [:]
+    /// Lines the server confirmed, kept while this screen lives (the device's copy is removed once confirmed).
+    @State private var feedbackLedger = LioFeedbackLedger()
+    @State private var feedbackDetails: FeedbackDetails?
     /// #1748: the account's in-app location choice, when the build asks for it (`G2CLocationConsentEnabled`).
     @State private var locationConsent: LioLocationConsent?
     private var tab: LioTab {
@@ -109,6 +119,10 @@ public struct LioHome<MenuContent: View>: View {
         let plan: ObjectIdentifier?
     }
     private enum Opening: Equatable { case beforeNext, before(Data), hidden }
+    private struct FeedbackDetails: Identifiable {
+        let id: Data
+        let messageID: String
+    }
     private struct ProfileEdit: Identifiable {
         let id = UUID()
         let owner: LioConversation
@@ -143,6 +157,7 @@ public struct LioHome<MenuContent: View>: View {
                 messageDirectory: URL? = nil,
                 toolsDraftStorage: LocalSupportDraftStorage? = nil,
                 toolsSessionIsCurrent: @escaping @MainActor () -> Bool = { true },
+                answerFeedback: (any LioAnswerFeedbackSending)? = nil,
                 @ViewBuilder menu: () -> MenuContent) {
         self.language = language
         self.isDemo = isDemo
@@ -180,6 +195,7 @@ public struct LioHome<MenuContent: View>: View {
             }, isCurrent: toolsSessionIsCurrent) : nil)
         _savedPlans = State(initialValue: LioSavedPlansModel(store: plans))
         self.toolsSessionIsCurrent = toolsSessionIsCurrent
+        self.answerFeedback = LioAnswerFeedbackFeature.enabledInBuild ? answerFeedback : nil
         self.reconnect = reconnect
         self.session = session
         self.runtimeService = service
@@ -440,6 +456,11 @@ public struct LioHome<MenuContent: View>: View {
                 _ = sendQuestion(text)
             }
         }
+        .sheet(item: $feedbackDetails) { details in
+            LioAnswerFeedbackDetailsSheet(language: language) { text in
+                sendFeedback(.details, turnID: details.id, messageID: details.messageID, details: text)
+            }
+        }
         .sheet(item: $planSheet, onDismiss: continuePlanInChat) { plan in
             LioPlanSheet(plan: plan, language: language, actions: planActions(plan))
         }
@@ -462,6 +483,7 @@ public struct LioHome<MenuContent: View>: View {
             }
         } else if LioTripHomeFeature.enabledInBuild && !showsAllTrips {
             LioTripHomeTab(language: language, store: tripHomeStore, plans: savedPlans.plans,
+                           plansUnreadable: savedPlans.unreadable,
                            messageDirectory: messageDirectory, isCurrent: toolsSessionIsCurrent,
                            showAllTrips: { showsAllTrips = true }, openChat: { tab = .chat })
                 .id(tripHomeStore?.id)
@@ -479,7 +501,7 @@ public struct LioHome<MenuContent: View>: View {
 
     private func planActions(_ plan: LioPlanSummary) -> LioItineraryTimelineView.Actions {
         var actions = LioItineraryTimelineView.Actions()
-        if savedPlans.available {
+        if savedPlans.writable {
             actions.saved = savedPlans.isSaved(plan)
             actions.save = { savedPlans.save(plan) }
         }
@@ -869,6 +891,9 @@ public struct LioHome<MenuContent: View>: View {
             RunReadableText(text: openingText, color: LioTheme.ink, lineSpacing: 4)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("lio.opening")
+                // #1893: the text is a UILabel, which takes no touches, so a long press never reached the menu.
+                // A clear SwiftUI layer over it receives the press; VoiceOver still reads the label underneath.
+                .overlay { Color.clear.contentShape(Rectangle()).accessibilityHidden(true) }
                 .contextMenu {
                     Button {
                         UIPasteboard.general.string = openingText
@@ -1199,7 +1224,7 @@ public struct LioHome<MenuContent: View>: View {
             }
             messageStatus(turn)
             if answerShown(turn) {
-                LioAnswerFooter(language: language, showsDisclosure: showsAIDisclosure)
+                LioAnswerFooter(language: language, showsDisclosure: showsAIDisclosure, feedback: feedbackControl(turn))
             }
             if let memoryActions {
                 ForEach(turn.memoryTags.filter { !handledTags.contains($0) }) { tag in
@@ -1329,6 +1354,55 @@ public struct LioHome<MenuContent: View>: View {
     private func answerShown(_ turn: LioTurn) -> Bool {
         guard turn.status == .finished, turn.exploration != nil || !turn.answer.isEmpty else { return false }
         return cardBodyReady(turn)
+    }
+
+    /// #1753: the feedback control for a shown answer, when the build has it.
+    private func feedbackControl(_ turn: LioTurn) -> LioAnswerFooter.Feedback? {
+        guard answerFeedback != nil else { return nil }
+        let id = turn.id, messageID = turn.question.messageID
+        return LioAnswerFooter.Feedback(phase: feedbackPhases[id] ?? .ready, enabled: !feedbackBusy, notHelpful: {
+            sendFeedback(.notHelpful, turnID: id, messageID: messageID)
+        }, addDetails: {
+            guard !feedbackBusy, feedbackPhases[id] == .sent else { return }
+            feedbackDetails = FeedbackDetails(id: id, messageID: messageID)
+        }, retry: {
+            guard case .notSent(let step) = feedbackPhases[id] else { return }
+            sendFeedback(step, turnID: id, messageID: messageID, retry: true)
+        })
+    }
+
+    private var feedbackBusy: Bool { feedbackPhases.values.contains { $0.isSending } }
+
+    private func sendFeedback(_ step: LioAnswerFeedbackStep, turnID: Data, messageID: String,
+                              details: String? = nil, retry: Bool = false) {
+        guard let answerFeedback, !feedbackBusy else { return }
+        let ledger = feedbackLedger
+        answerFeedback.onLineConfirmed = { messageID, text in ledger.record(messageID: messageID, text: text) }
+        let text: String
+        if retry {
+            guard let first = feedbackTexts[turnID]?[step] else { return }
+            text = first
+        } else {
+            text = step == .notHelpful ? LioAnswerFeedbackFeature.problem(language) : (details ?? "")
+            feedbackTexts[turnID, default: [:]][step] = text
+        }
+        if ledger.contains(messageID: messageID, text: text) {
+            feedbackPhases[turnID] = LioAnswerFeedbackPhase(.sent, after: step)
+            return
+        }
+        feedbackPhases[turnID] = .sending(step)
+        Task { @MainActor in
+            let outcome: LioAnswerFeedbackOutcome
+            if retry {
+                outcome = await answerFeedback.retry(step, messageID: messageID, text: text)
+            } else if step == .notHelpful {
+                outcome = await answerFeedback.notHelpful(messageID: messageID, problem: text)
+            } else {
+                outcome = await answerFeedback.addDetails(messageID: messageID, text: text)
+            }
+            if outcome == .sent { ledger.record(messageID: messageID, text: text) }
+            feedbackPhases[turnID] = LioAnswerFeedbackPhase(outcome, after: step)
+        }
     }
 
     private func cardBodyReady(_ turn: LioTurn) -> Bool {
@@ -1470,6 +1544,7 @@ private struct LioTripHomeTab: View {
     let language: LioLanguage
     let store: LioTripHomeStore?
     let plans: [LioPlanSummary]
+    let plansUnreadable: Bool
     let messageDirectory: URL?
     let isCurrent: @MainActor () -> Bool
     let showAllTrips: () -> Void
@@ -1485,8 +1560,8 @@ private struct LioTripHomeTab: View {
     var body: some View {
         Group {
             if let loaded {
-                LioTripHome(language: language, store: store, plans: plans, tools: loaded.tools,
-                            showAllTrips: showAllTrips, openChat: openChat, model: loaded.model)
+                LioTripHome(language: language, store: store, plans: plans, plansUnreadable: plansUnreadable,
+                            tools: loaded.tools, showAllTrips: showAllTrips, openChat: openChat, model: loaded.model)
             } else {
                 LioTheme.paper.ignoresSafeArea()
             }

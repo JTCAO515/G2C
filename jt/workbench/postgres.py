@@ -17,13 +17,13 @@ from jt.common import Signal
 from .auth import ExpiredSession
 from .queue import QueueItem, Review, SignalConflict, response_deadline
 from .security import PasswordHash, new_token
-from .store import Account, AuditAction, AuditEvent, AuditResult, Failures, Role, Session, SetupGrant
+from .store import Account, AuditAction, AuditEvent, AuditResult, CaseAuditDetail, Failures, OperationsAuditDetail, Role, Session, SetupGrant
 
 
 DATABASE_VARIABLE = "JT_WORKBENCH_DATABASE_URL"
 MIGRATION_ROLE = "jt_workbench_owner"
 RUNTIME_ROLE = "jt_workbench_runtime"
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 3
 LOCK_ID = 0x4A54574F524B
 ACCOUNT_COLUMNS = (
     "username, role, password_salt, password_digest, totp_seed, last_totp_step, "
@@ -47,8 +47,20 @@ def _guard_role(db: Connection, role: str) -> None:
         raise RuntimeError("workbench database or role is not authorized")
 
 
+def _installed_versions(db: Connection) -> list[int]:
+    versions = [version for version, in db.execute("SELECT version FROM jt_workbench.schema_version ORDER BY version")]
+    for table, number in (("case_audit_version", 2), ("operations_audit_version", 3)):
+        qualified = f"jt_workbench.{table}"
+        has_extension, = db.execute("SELECT to_regclass(%s) IS NOT NULL", (qualified,)).fetchone()
+        if has_extension:
+            if db.execute(f"SELECT version FROM {qualified}").fetchall() != [(number,)]:
+                raise RuntimeError("unsupported workbench audit schema version")
+            versions.append(number)
+    return versions
+
+
 def _check_version(db: Connection) -> None:
-    if db.execute("SELECT version FROM jt_workbench.schema_version").fetchall() != [(SCHEMA_VERSION,)]:
+    if _installed_versions(db) != list(range(1, SCHEMA_VERSION + 1)):
         raise RuntimeError("unsupported workbench schema version")
 
 
@@ -58,12 +70,13 @@ def migrate(dsn: str, *, down: bool = False) -> None:
         _guard_role(db, MIGRATION_ROLE)
         db.execute("SELECT pg_advisory_xact_lock(%s)", (LOCK_ID,))
         exists, = db.execute("SELECT to_regclass('jt_workbench.schema_version') IS NOT NULL").fetchone()
-        if exists:
-            _check_version(db)
-            if down:
-                db.execute((directory / "001_down.sql").read_text())
-        elif not down:
-            db.execute((directory / "001_up.sql").read_text())
+        versions = _installed_versions(db) if exists else []
+        if len(versions) > SCHEMA_VERSION or versions != list(range(1, len(versions) + 1)) or (exists and not versions):
+            raise RuntimeError("unsupported workbench schema version")
+        order = reversed(versions) if down else range(len(versions) + 1, SCHEMA_VERSION + 1)
+        direction = "down" if down else "up"
+        for version in order:
+            db.execute((directory / f"{version:03}_{direction}.sql").read_text())
 
 
 def _load_account(row) -> Account:
@@ -194,21 +207,31 @@ class PostgresStore:
         self._db().execute("DELETE FROM jt_workbench.sessions WHERE username = %s", (username,))
 
     def append_audit(self, event: AuditEvent) -> None:
+        detail = event.case_detail
+        operations = event.operations_detail
         self._db().execute("""
-            INSERT INTO jt_workbench.audit (timestamp, action, actor, case_id, result, staff_target, signal_reference)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO jt_workbench.audit (
+                timestamp, action, actor, case_id, result, staff_target, signal_reference,
+                case_action, case_step, case_revision, case_reason, operations_action, operations_reference
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (event.timestamp, event.action, event.actor, event.case_id, event.result, event.staff_target,
-              event.signal_reference))
+              event.signal_reference, detail.action if detail else None, detail.step_id if detail else None,
+              detail.revision if detail else None, detail.reason if detail else None,
+              operations.action if operations else None, operations.reference if operations else None))
 
     def audit_events(self) -> tuple[AuditEvent, ...]:
-        return tuple(
-            AuditEvent(timestamp, AuditAction(action), actor, str(case_id) if case_id else None,
-                       AuditResult(result), staff_target, reference)
-            for timestamp, action, actor, case_id, result, staff_target, reference in self._db().execute("""
-                SELECT timestamp, action, actor, case_id, result, staff_target, signal_reference
-                FROM jt_workbench.audit ORDER BY id
-            """)
-        )
+        events = []
+        for row in self._db().execute("""
+            SELECT timestamp, action, actor, case_id, result, staff_target, signal_reference,
+                   case_action, case_step, case_revision, case_reason, operations_action, operations_reference
+            FROM jt_workbench.audit ORDER BY id
+        """):
+            timestamp, action, actor, case_id, result, staff_target, reference, *fields = row
+            detail = CaseAuditDetail(*fields[:4]) if fields[0] else None
+            operations = OperationsAuditDetail(*fields[4:]) if fields[4] else None
+            events.append(AuditEvent(timestamp, AuditAction(action), actor, str(case_id) if case_id else None,
+                                     AuditResult(result), staff_target, reference, detail, operations))
+        return tuple(events)
 
     def seed(self, signals: tuple[Signal, ...]) -> None:
         with self.locked():

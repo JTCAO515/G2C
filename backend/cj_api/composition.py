@@ -106,7 +106,8 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
                         usage_status_configuration=None,resolve_usage_status=None,
                         original_usage_configuration=None,resolve_original_usage_run=None,
                         cleanup_progress_configuration=None,resolve_cleanup_progress=None,
-                        run_events_configuration=None, resolve_travel_repository=None,formal_memory_producer=None):
+                        run_events_configuration=None, resolve_travel_repository=None,formal_memory_producer=None,
+                        ops_console=None, ops_roster=None):
     """No zero-argument/public production configuration exists."""
     if type(max_body_bytes) is not int or max_body_bytes <= 0:
         raise CompositionUnavailable('Explicit positive body byte limit required')
@@ -209,6 +210,15 @@ def create_composed_app(*, environment, jwt_configuration, verification_keys,
         from cj_feedback.diagnostics import DiagnosticReader
         from .feedback_diagnostic_routes import register_feedback_diagnostic_routes
         register_feedback_diagnostic_routes(app,DiagnosticReader(feedback_boundary,boundary,resolve_feedback_run))
+    if ops_console is not None or ops_roster is not None:
+        # #1771 internal operations console: the App's own admission checker + server roster;
+        # CJ_OPS_CONSOLE_ENABLED (default off) gates mounting and every request.
+        from cj_service_request.ops import console_enabled
+        from .ops_console_routes import register_ops_console_routes
+        if ops_console is None or ops_roster is None:
+            raise CompositionUnavailable('Complete operations console configuration required')
+        if console_enabled():
+            register_ops_console_routes(app, boundary.checker, ops_console, ops_roster, enabled=console_enabled)
     return app
 
 
