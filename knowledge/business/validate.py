@@ -6,7 +6,9 @@ refers to these ids; nothing here reads a clock, so CI never turns red on a cale
 (expiry alerts are `scripts/fact_expiry.py`'s job, #1757).
 
 The server copy `backend/fact/cj_fact/business_guangzhou.v1.json` (read by `cj_fact.business`
-for Lio's fact tool) must be byte-identical to `guangzhou.v1.json`; never edit it by hand.
+for Lio's fact tool) and the App's bundled copy `LioBusinessGuangzhou.v1.json` must be
+byte-identical to `guangzhou.v1.json`; never edit them by hand. The App copy is checked here, in
+the Python job, because a PR that only changes `knowledge/` does not run the Swift job.
 
 Usage (from the repository root):
   python3 -B knowledge/business/validate.py           validate, and fail if the server copy is stale
@@ -23,6 +25,9 @@ ROOT = Path(__file__).resolve().parents[2]
 CATALOGUES = (ROOT / 'knowledge/business/guangzhou.v1.json',)
 # Server copy for Lio's fact tool (#1859): byte-identical to the Guangzhou catalogue.
 SERVER_COPIES = {CATALOGUES[0]: ROOT / 'backend/fact/cj_fact/business_guangzhou.v1.json'}
+# App copy (the trip lane's #1963): must match whenever it exists. Until that file lands on main it is
+# absent and not created here (`--write` leaves an absent App copy alone); make it required then.
+APP_COPIES = {CATALOGUES[0]: ROOT / 'ios/Modules/CJShell/Sources/CJLioUser/Resources/LioBusinessGuangzhou.v1.json'}
 VERSION = 'g2c-business-knowledge.1'
 CITIES = frozenset({'guangzhou'})
 TOPICS = frozenset({'trade_fair_registration', 'venue_transport', 'visa_channel', 'business_payment'})
@@ -100,6 +105,14 @@ def _shown(path):
     return path.relative_to(ROOT) if path.is_relative_to(ROOT) else path
 
 
+def stale_copies(raw, server, app):
+    """Copies that differ from the source bytes: the server copy must exist, the App copy only when present."""
+    out = [server] if not server.is_file() or server.read_bytes() != raw else []
+    if app.is_file() and app.read_bytes() != raw:
+        out.append(app)
+    return out
+
+
 def main(argv=()):
     unknown = [arg for arg in argv if arg != '--write']
     if unknown:
@@ -109,15 +122,21 @@ def main(argv=()):
     for path in CATALOGUES:
         raw = path.read_bytes()
         doc = load(path, raw)
-        copy = SERVER_COPIES[path]
+        server, app = SERVER_COPIES[path], APP_COPIES[path]
         if '--write' in argv:
-            copy.write_bytes(raw)
-            print(f'wrote {_shown(copy)}')
-        elif not copy.is_file() or copy.read_bytes() != raw:
-            print(f'{_shown(copy)} is out of date; run python3 -B knowledge/business/validate.py --write', file=sys.stderr)
-            stale = True
-            continue
-        print(f'PASS: {len(doc["entries"])} entries in {path.relative_to(ROOT)}, server copy identical')
+            server.write_bytes(raw)
+            print(f'wrote {_shown(server)}')
+            if app.is_file():
+                app.write_bytes(raw)
+                print(f'wrote {_shown(app)}')
+        else:
+            out_of_date = stale_copies(raw, server, app)
+            for copy in out_of_date:
+                print(f'{_shown(copy)} is out of date; run python3 -B knowledge/business/validate.py --write', file=sys.stderr)
+            if out_of_date:
+                stale = True
+                continue
+        print(f'PASS: {len(doc["entries"])} entries in {_shown(path)}, copies identical')
     return 1 if stale else 0
 
 
