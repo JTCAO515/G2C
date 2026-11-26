@@ -18,7 +18,7 @@ struct LioNewSignInTests {
         }
     }
 
-    @Test func flagIsListedAndStaysOffInTheRelease() throws {
+    @Test func flagIsListedAndOnInTheRelease() throws {
         let plist = try String(contentsOf: Self.ios.appendingPathComponent("App/Info.plist"), encoding: .utf8)
         #expect(plist.contains("<key>G2CNewSignInScreenEnabled</key><string>$(G2C_NEW_SIGN_IN_SCREEN_ENABLED)</string>"))
         let project = try String(contentsOf: Self.ios.appendingPathComponent("CJProbeApp.xcodeproj/project.pbxproj"),
@@ -30,7 +30,9 @@ struct LioNewSignInTests {
         #expect(flags.contains(["setting": "G2C_NEW_SIGN_IN_SCREEN_ENABLED", "plist": "G2CNewSignInScreenEnabled"]))
         let release = try #require(manifest["release"] as? [String: Any])
         let on = try #require(release["on"] as? [String])
-        #expect(!on.contains("G2C_NEW_SIGN_IN_SCREEN_ENABLED"), "turning it on is a separate decision")
+        // On for the internal build since the coordinator's approval (2026-11-26); the setting itself stays unset in the
+        // project, so Debug and CI builds are unchanged.
+        #expect(on.contains("G2C_NEW_SIGN_IN_SCREEN_ENABLED"))
     }
 
     @Test func channelsUseTheProvidersWordingInBothLanguages() {
