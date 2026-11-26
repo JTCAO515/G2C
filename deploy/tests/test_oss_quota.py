@@ -261,3 +261,35 @@ def test_old_expiry_still_closes_at_its_own_end_until_root_renews(tmp_path,monke
     renew(monkeypatch,policy);assert oss_quota.policy()[0]['expires_at']==RENEWED
     clock(monkeypatch,datetime(2026,12,31,16,tzinfo=timezone.utc))
     with pytest.raises(ValueError,match='OSS_allowance_expired'):oss_quota.policy()
+
+
+@pytest.mark.parametrize('changes',[dict(request_limit=600.0,hold_limit_fen=1300),dict(request_limit=600,hold_limit_fen=1300.0),
+    dict(request_limit=600,hold_limit_fen=True),dict(byte_limit=float(2*GIB),request_limit=600,hold_limit_fen=1300)])
+def test_limits_must_be_exact_integers(tmp_path,monkeypatch,changes):
+    root=tmp_path/'control';policy=allowance(root,monkeypatch)
+    renew(monkeypatch,policy,**changes)
+    with pytest.raises(ValueError,match='explicit_JT_OSS_allowance_required'):oss_quota.policy()
+
+
+def test_reverting_from_600_to_300_after_use_holds(tmp_path,monkeypatch):
+    root=tmp_path/'control';policy=allowance(root,monkeypatch,requests=5,expires_at=RENEWED)
+    renew(monkeypatch,policy,request_limit=600,hold_limit_fen=1300);clock(monkeypatch,datetime(2026,12,15,tzinfo=timezone.utc))
+    session=Session();client=Client(service(session),root=root)
+    with pytest.raises(oss.exceptions.OperationError):client.head_object(HEAD)
+    monkeypatch.setattr(oss_quota,'read_authority',lambda:policy)
+    with pytest.raises(ValueError,match='original_OSS_usage_required'):client.head_object(HEAD)
+    assert len(session.calls)==1 and checkpoint.verified(root/'usage.json')['requests']==6
+
+
+def test_free_mode_600_term_and_multi_step_renewal_keep_counting(tmp_path,monkeypatch):
+    root=tmp_path/'control';policy=allowance(root,monkeypatch,mode='free_confirmed',requests=3)
+    session=Session();client=Client(service(session),root=root)
+    clock(monkeypatch,datetime(2026,11,20,tzinfo=timezone.utc))
+    with pytest.raises(oss.exceptions.OperationError):client.head_object(HEAD)
+    step=renew(monkeypatch,policy)
+    clock(monkeypatch,datetime(2026,12,10,tzinfo=timezone.utc))
+    with pytest.raises(oss.exceptions.OperationError):client.head_object(HEAD)
+    final=renew(monkeypatch,policy,request_limit=600)
+    with pytest.raises(oss.exceptions.OperationError):client.head_object(HEAD)
+    state=checkpoint.verified(root/'usage.json')
+    assert state['requests']==6 and state['authorization_sha256']==final!=step and len(session.calls)==3

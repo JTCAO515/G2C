@@ -86,7 +86,8 @@ def policy():
     if (set(value)!={'version','mode','source','request_limit','byte_limit','hold_limit_fen','expires_at'}
             or value['version']!='g2c-beta-oss-authorization.1' or value['mode'] not in ('paid_capped','free_confirmed')
             or type(value['source']) is not str or not 1<=len(value['source'])<=1024
-            or value['byte_limit']!=2*GIB):
+            or value['byte_limit']!=2*GIB
+            or any(type(value[k]) is not int for k in ('request_limit','byte_limit','hold_limit_fen'))):
         raise ValueError('explicit_JT_OSS_allowance_required')
     current=[i for i,term in enumerate(TERMS) if all(value[k]==v for k,v in term_fields(term,value['mode']).items())]
     if len(current)!=1:raise ValueError('explicit_JT_OSS_allowance_required')
