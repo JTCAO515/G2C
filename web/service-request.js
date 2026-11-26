@@ -1,6 +1,6 @@
 // Request form for an English–Chinese business companion in Guangzhou (#1777).
 // While SERVICE_REQUEST_ENABLED is false this script stops at the first line: the page has no form,
-// no navigation entry, and sends nothing. api/service-request.js has the same switch (and answers 404
+// no entry link (header or hero), and sends nothing. api/service-request.js has the same switch (and answers 404
 // while it is off); scripts/test_web_service_request.cjs checks that the two agree.
 //
 // Keep it false until all of these are true:
@@ -27,9 +27,16 @@
   const $ = (s, r = document) => r.querySelector(s);
   const startedAt = Date.now();
 
+  // Two ways in: the header navigation (hidden on narrow screens) and a link under the hero text,
+  // which shows on every screen size.
   const nav = document.createElement("a");
   nav.href = "#service-request";
   $(".links").appendChild(nav);
+
+  const entry = document.createElement("a");
+  entry.className = "svc-entry";
+  entry.href = "#service-request";
+  $(".hero-text").appendChild(entry);
 
   const section = document.createElement("section");
   section.className = "svc";
@@ -64,11 +71,16 @@
 
   const form = $("#sr-form"), msg = $("#sr-msg"), submit = $("#sr-submit");
   const pick = (d, path) => path.split(".").reduce((o, k) => (o == null ? o : o[k]), d);
-  const copy = () => T[window.G2C.lang || "en"].sr;
+  // app.js owns the language picker and applies the language first (its listener was added first);
+  // this script follows the picker's value and leaves app.js as it is.
+  const langSelect = $("#lang-select");
+  const currentLang = () => (T[langSelect.value] ? langSelect.value : "en");
+  const copy = () => T[currentLang()].sr;
 
   function render() {
     const d = copy();
     nav.textContent = d.nav;
+    entry.textContent = d.entry;
     section.querySelectorAll("[data-sr]").forEach((n) => { n.textContent = pick(d, n.dataset.sr) || ""; });
     const facts = $(".svc-facts", section);
     facts.replaceChildren(...d.rows.flatMap(([term, value]) => {
@@ -101,7 +113,7 @@
       consent: form.elements.consent.checked,
       website: form.elements.website.value,
       elapsedMs: Date.now() - startedAt,
-      lang: window.G2C.lang || "en"
+      lang: currentLang()
     };
     form.querySelectorAll(".field-l").forEach((f) => f.classList.remove("bad"));
     const bad = [];
@@ -133,7 +145,7 @@
     }
   });
 
-  document.addEventListener("g2c:lang", render);
+  langSelect.addEventListener("change", render);
   render();
   // The section is added after load, so the browser could not follow a link to it yet.
   if (location.hash === "#service-request") section.scrollIntoView();

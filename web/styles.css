@@ -235,8 +235,10 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--i
 .svc-consent > span { display: flex; align-items: flex-start; gap: 10px; font-weight: 400; }
 .svc-consent input { flex: none; width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--ink); }
 .svc-consent a { color: var(--jade); font-weight: 600; }
-.bad input[type="checkbox"] { outline: 2px solid var(--cinnabar); outline-offset: 2px; }
-.bad textarea { border-color: var(--cinnabar); }
+.svc-entry { display: inline-block; margin-top: 14px; color: var(--jade); font-size: 16px; font-weight: 600; text-underline-offset: 3px; }
+.svc-entry::after { content: " →"; }
+:dir(rtl) .svc-entry::after { content: " ←"; }
+#sr-form .bad input[type="checkbox"] { outline: 2px solid var(--cinnabar); outline-offset: 2px; }
 #sr-form.sent > :not(.submit-row) { display: none; }
 #sr-form.sent #sr-submit { display: none; }
 #sr-form.sent .form-msg { font-size: 20px; font-weight: 500; color: var(--ink); }

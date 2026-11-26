@@ -10,7 +10,8 @@ const { test } = require("node:test");
 
 const WEB = path.join(__dirname, "..", "web");
 const handler = require("../web/api/service-request");
-const { createHandler, SERVICE } = handler;
+const { createHandler, SERVICE, validate } = handler;
+const earlyAccess = require("../web/api/early-access");
 const { DEFAULT_DESTINATION, LOG_ONLY } = require("../web/api/_service-request-destination");
 
 const pageScript = fs.readFileSync(path.join(WEB, "service-request.js"), "utf8");
@@ -99,15 +100,95 @@ test("switched off, the endpoint answers 404 to everything and reads nothing", a
   if (!handler.SERVICE_REQUEST_ENABLED) await expectSwitchedOff(t, handler, DEFAULT_DESTINATION);
 });
 
+const withSwitch = (on) =>
+  pageScript.replace(/const SERVICE_REQUEST_ENABLED = (true|false);/, `const SERVICE_REQUEST_ENABLED = ${on};`);
+
+function loadCopy() {
+  const w = {};
+  new Function("window", fs.readFileSync(path.join(WEB, "i18n.js"), "utf8"))(w);
+  return w.G2C;
+}
+
+// Just enough of a page to run service-request.js: every element records what is set on it, where it
+// is appended and which listeners it gets; anything else it is asked for is another such element.
+function fakePage(lang) {
+  const created = [];
+  const known = {};
+  const make = (label) => {
+    const state = { label, listeners: {} };
+    const methods = {
+      appendChild(child) { child.parentLabel = label; return child; },
+      addEventListener(type, fn) { (state.listeners[type] ||= []).push(fn); },
+      querySelector(selector) { return find(`${label} ${selector}`); },
+      querySelectorAll() { return []; }
+    };
+    return new Proxy(() => {}, {
+      get(_, key) {
+        if (key in methods) return methods[key];
+        if (key in state) return state[key];
+        if (typeof key === "symbol") return undefined;
+        return (state[key] = make(`${label}.${key}`));
+      },
+      set(_, key, value) { state[key] = value; return true; },
+      apply() { return make(`${label}()`); }
+    });
+  };
+  const find = (selector) => (known[selector] ||= make(selector));
+  find("#lang-select").value = lang;
+  const document = {
+    createElement(tag) { const node = make(tag); created.push(node); return node; },
+    querySelector: find
+  };
+  return { created, document, find };
+}
+
+function runPage(on, lang = "en") {
+  const G2C = loadCopy();
+  const page = fakePage(lang);
+  new Function("window", "document", "location", "fetch", withSwitch(on))(
+    { G2C }, page.document, { hash: "" }, () => { throw new Error("no requests while rendering"); });
+  return { ...page, T: G2C.T };
+}
+
 test("switched off, the page script stops before touching the page", () => {
-  const off = pageScript.replace(/const SERVICE_REQUEST_ENABLED = (true|false);/, "const SERVICE_REQUEST_ENABLED = false;");
   const untouchable = new Proxy({}, { get() { throw new Error("the page was touched"); } });
-  new Function("window", "document", "fetch", off)(untouchable, untouchable, untouchable);
+  new Function("window", "document", "fetch", withSwitch(false))(untouchable, untouchable, untouchable);
+  assert.equal(runPage(false).created.length, 0, "no form, no entry links");
 });
 
-test("switched off, the page HTML has no form and no navigation entry", () => {
-  assert.doesNotMatch(indexHtml, /sr-form|service-request"|#service-request|\/api\/service-request/);
+test("switched on, the header and the hero both link to the form", () => {
+  const { created, find, T } = runPage(true);
+  const links = created.filter((n) => n.href === "#service-request");
+  assert.deepEqual(links.map((n) => n.parentLabel).sort(), [".hero-text", ".links"]);
+  const entry = links.find((n) => n.parentLabel === ".hero-text");
+  assert.equal(entry.className, "svc-entry");
+  assert.equal(entry.textContent, T.en.sr.entry);
+  const section = created.find((n) => n.label === "section");
+  assert.equal(section.id, "service-request");
+  assert.equal(section.parentLabel, "main");
+  assert.match(section.innerHTML, /<form id="sr-form"/);
+  // Follows the language picker that app.js owns.
+  find("#lang-select").value = "ar";
+  find("#lang-select").listeners.change.forEach((fn) => fn());
+  assert.equal(entry.textContent, T.ar.sr.entry);
+});
+
+test("switched off, the page HTML has no form and no entry link", () => {
+  assert.doesNotMatch(indexHtml, /sr-form|svc-entry|service-request"|#service-request|\/api\/service-request/);
   assert.equal(indexHtml.match(/<script src="service-request\.js" defer><\/script>/g).length, 1);
+});
+
+test("app.js knows nothing about the service request", () => {
+  assert.doesNotMatch(fs.readFileSync(path.join(WEB, "app.js"), "utf8"), /service|g2c:lang|G2C\.lang/i);
+});
+
+test("styles for the service request stay inside its own form and section", () => {
+  const css = fs.readFileSync(path.join(WEB, "styles.css"), "utf8");
+  const start = css.indexOf("/* Service request");
+  const block = css.slice(start, css.indexOf("/* Footer */", start));
+  for (const rule of block.split("\n").filter((line) => line.includes("{"))) {
+    assert.match(rule.trim(), /^(\.svc|#sr-form|#sr-|:dir\(rtl\) \.svc)/, rule);
+  }
 });
 
 test("a valid request is delivered once, with the city and service set by the server", async (t) => {
@@ -142,7 +223,7 @@ test("rejects missing or invalid fields without delivering", async (t) => {
   assert.equal(delivered.length, 2);
 });
 
-test("trims, strips control characters and caps lengths", async () => {
+test("trims, strips control characters and cuts long text to the limit, like the early access endpoint", async () => {
   const { delivered, destination } = recorder();
   const fn = createHandler({ enabled: true, destination, now: () => NOW });
   const body = { ...request, name: "  Sam\u0007 ", note: "n".repeat(1500), lang: "de" };
@@ -150,6 +231,15 @@ test("trims, strips control characters and caps lengths", async () => {
   assert.equal(delivered[0].name, "Sam");
   assert.equal(delivered[0].note.length, 1000);
   assert.equal(delivered[0].lang, "en");
+  // early-access.js cuts over-long text to its limit instead of rejecting it; this endpoint does the same.
+  const early = earlyAccess.validate({ name: "x".repeat(150), email: "guest@example.com", source: "Search", note: "n".repeat(1500) });
+  assert.equal(early.ok, true);
+  assert.equal(early.data.name.length, 100);
+  assert.equal(early.data.note.length, 1000);
+  const ours = validate({ ...request, name: "x".repeat(150), note: "n".repeat(1500) }, NOW);
+  assert.equal(ours.ok, true);
+  assert.equal(ours.data.name.length, 100);
+  assert.equal(ours.data.note.length, 1000);
 });
 
 test("spam traps answer ok and deliver nothing", async () => {
@@ -189,15 +279,17 @@ test("a failed delivery answers 502 and keeps the request out of the logs", asyn
   assert.doesNotMatch(JSON.stringify(logs.error.mock.calls[0].arguments), /guest@example\.com|Sam/);
 });
 
-test("the log-only stand-in logs lengths and a digest, never the request itself", async (t) => {
+test("the log-only stand-in logs field lengths only, nothing that could identify the visitor", async (t) => {
   const logs = silenceLogs(t);
   const fn = createHandler({ enabled: true, destination: LOG_ONLY, now: () => NOW });
   assert.equal((await submit(fn, { body: request })).status, 200);
   assert.equal(logs.info.mock.callCount(), 1);
-  const line = JSON.stringify(logs.info.mock.calls[0].arguments);
-  for (const value of ["Sam", "guest@example.com", "2026-12-03", "Panyu"]) assert.ok(!line.includes(value), value);
-  assert.match(line, /nameLength\\":3/);
-  assert.match(line, /digest\\":\\"[0-9a-f]{12}\\"/);
+  const [label, detail] = logs.info.mock.calls[0].arguments;
+  assert.equal(label, "service-request: received (log-only destination)");
+  assert.deepEqual(JSON.parse(detail), {
+    service: SERVICE, city: "Guangzhou", lang: "zh",
+    nameLength: 3, emailLength: 17, noteLength: request.note.length, hasDate: true
+  });
 });
 
 test("every language has the full form copy and says only what the form does", () => {

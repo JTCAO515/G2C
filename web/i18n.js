@@ -171,6 +171,7 @@ window.G2C = {
    ],
    "sr": {
     "nav": "Guangzhou companion",
+    "entry": "In Guangzhou for business? Request an English–Chinese business companion",
     "title": "A business companion in Guangzhou",
     "lede": "Meeting suppliers or partners in Guangzhou? Ask for an English–Chinese business companion. A person on our team reads each request. Sending one doesn’t book or charge anything.",
     "rows": [
@@ -374,6 +375,7 @@ window.G2C = {
    ],
    "sr": {
     "nav": "广州商务陪同",
+    "entry": "来广州谈生意？申请一位中英商务陪同",
     "title": "广州中英商务陪同",
     "lede": "在广州见供应商或合作伙伴？可以申请一位中英商务陪同。每条申请都由我们团队的真人查看。提交申请不会产生预订，也不会收费。",
     "rows": [
@@ -577,6 +579,7 @@ window.G2C = {
    ],
    "sr": {
     "nav": "Сопровождение в Гуанчжоу",
+    "entry": "Едете в Гуанчжоу по делам? Запросите делового сопровождающего",
     "title": "Деловое сопровождение в Гуанчжоу",
     "lede": "Встречи с поставщиками или партнёрами в Гуанчжоу? Запросите делового сопровождающего с английским и китайским. Каждый запрос читает человек из нашей команды. Запрос ничего не бронирует и ничего не стоит.",
     "rows": [
@@ -780,6 +783,7 @@ window.G2C = {
    ],
    "sr": {
     "nav": "Acompañante en Cantón",
+    "entry": "¿Viaje de negocios a Cantón? Pide un acompañante de negocios en inglés y chino",
     "title": "Un acompañante de negocios en Cantón",
     "lede": "¿Reuniones con proveedores o socios en Cantón (Guangzhou)? Pide un acompañante de negocios en inglés y chino. Una persona de nuestro equipo lee cada solicitud. Enviarla no reserva ni cobra nada.",
     "rows": [
@@ -983,6 +987,7 @@ window.G2C = {
    ],
    "sr": {
     "nav": "Accompagnateur à Canton",
+    "entry": "En voyage d’affaires à Canton ? Demandez un accompagnateur anglais–chinois",
     "title": "Un accompagnateur d’affaires à Canton",
     "lede": "Des rendez-vous avec des fournisseurs ou des partenaires à Canton (Guangzhou) ? Demandez un accompagnateur d’affaires anglais–chinois. Une personne de notre équipe lit chaque demande. L’envoyer ne réserve et ne facture rien.",
     "rows": [
@@ -1186,6 +1191,7 @@ window.G2C = {
    ],
    "sr": {
     "nav": "مرافق في قوانغتشو",
+    "entry": "في رحلة عمل إلى قوانغتشو؟ اطلب مرافق أعمال بالإنجليزية والصينية",
     "title": "مرافق أعمال في قوانغتشو",
     "lede": "لديك اجتماعات مع موردين أو شركاء في قوانغتشو؟ اطلب مرافق أعمال يتحدث الإنجليزية والصينية. يقرأ كل طلب شخص من فريقنا. إرسال الطلب لا يحجز شيئًا ولا يفرض أي رسوم.",
     "rows": [
