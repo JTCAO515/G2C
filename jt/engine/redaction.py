@@ -62,8 +62,8 @@ _CN_ROOM_NUMBER = (
     rf"{_CN_NUMBER_CHAR}{{2,6}}(?=有|请|請|内|內|起火|着火|著火|被困|求救|发生|發生))"
 )
 _CN_ROOM = (
-    rf"(?:房间|房間|客房|房号|房號){_SPACE}*(?:[:#=]{_SPACE}*{_CN_ADDRESS_NUMBER}[号號室]?"
-    rf"(?!{_CN_NUMBER_CHAR})|{_CN_ROOM_NUMBER})"
+    rf"(?:(?:房号|房號){_SPACE}*[:#=]{_SPACE}*{_CN_NUMBER_CHAR}{{2,6}}[号號室]?(?!{_CN_NUMBER_CHAR})|"
+    rf"(?:房间|房間|客房|房号|房號){_SPACE}*[:#=]?{_SPACE}*{_CN_ROOM_NUMBER})"
 )
 _CN_ADDRESS = (
     rf"{_HAN}{{1,28}}?(?:路|街|大道|道|巷|弄){_SPACE}*{_CN_ADDRESS_NUMBER}[号號]"
