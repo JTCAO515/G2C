@@ -901,6 +901,15 @@ class RealTools:
             from .lio_tasks import guidance_text,take_pending
             reader=take_pending(binding.run_id)
             if reader is not None:system+=guidance_text(reader(),lio_locale)
+            # W2 #1826/#1859: reviewed attraction-booking and Guangzhou business facts, read by code;
+            # any read failure leaves the prompt as it was.
+            from .lio_fact_blocks import collect,fact_blocks_enabled,prompt_text
+            if fact_blocks_enabled():
+                blocks=collect(messages[-1]['content'],lio_locale)
+                if blocks:
+                    system+=prompt_text(blocks,lio_locale)
+                    for block in blocks:
+                        for key,title,url in block.sources:yield LioCitation(key,title,url,None)
         if binding.scope in self.buffered_streaming_scopes:profile=M4_NATIVE_TURN_BUFFERED
         elif binding.scope in self.streaming_scopes:profile=M4_NATIVE_TURN_STREAM
         else:profile=M4_NATIVE_TURN_PROFILE_V2
