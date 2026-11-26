@@ -6,8 +6,8 @@
 事实来源：出站数据流登记表 docs/privacy/outbound-dataflow.md；PIPIA 增补 docs/privacy/pipia-service-request.md；#225 正式法律相关意见。
 发布：JT 本人定 2026-12-01 正式公开（统筹转达）。公开首发（App Store 上架）前另请法律意见复核本文。
 运营主体出处：JT 2026-11-09 更正为广州创竞科技有限公司（#225 正文「JT 2026-11-09 事实更正 · 运营主体」、docs/scope.md「处理方与地域」行）；此前 #159 与构建 57 App 内说明写的 Context Jump LLC 是主体假设。#225 正式意见以美国主体为前提的段落是否需补充意见，见 #33 放行清单「需要 JT 确认」第 3 项。
-公开页不出现占位（官网生成器 `scripts/build_privacy_page.cjs --strict`）。尚未确认、待补进正文的：
-- 运营主体的营业执照全称、英文名称、注册地址（统筹已转 JT）；JT 回复后补进第 1 节。
+营业执照信息：JT 本人 2026-11-26 提供（统筹转达）。英文名称 JT 原写「Guangzhou Chuangjing Technology Co.LTd」，按通行写法规范为「Guangzhou Chuangjing Technology Co., Ltd.」，只是格式规范，不是改名。
+公开页不出现占位（官网生成器 `scripts/build_privacy_page.cjs --strict`）。
 依赖（统筹 2026-11-26 按 JT 预授权决定，随 12-01 一起上线）：
 - 第 5、6 节 Vercel 香港区域：#1872（`web/vercel.json` 固定 `/api/*` 到 hkg1）须在公开前合并。
 - 第 6 节抢先体验申请的境外处理勾选：#1878（政策页与勾选框）随政策一起合并。
@@ -21,9 +21,9 @@
 
 ## 1. 我们是谁 / Who we are
 
-Go2China（以下简称「我们」）是帮助外国人在中国办事的本地助手，包括 Go2China iOS App 和网站 go2china.space。运营主体：广州创竞科技有限公司。联系我们：hello@go2china.space。
+Go2China（以下简称「我们」）是帮助外国人在中国办事的本地助手，包括 Go2China iOS App 和网站 go2china.space。运营主体：广州创竞科技有限公司，注册地址：广州市天河区黄埔大道西100号富力盈泰广场A座410A室。联系我们：hello@go2china.space。
 
-Go2China ("we") is a local assistant that helps foreigners get things done in China, made up of the Go2China iOS app and the website go2china.space. Operator: Guangzhou Chuangjing Technology Co., Ltd. Contact: hello@go2china.space.
+Go2China ("we") is a local assistant that helps foreigners get things done in China, made up of the Go2China iOS app and the website go2china.space. Operator: Guangzhou Chuangjing Technology Co., Ltd., registered at Room 410A, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue West, Tianhe District, Guangzhou, China. Contact: hello@go2china.space.
 
 ## 2. 适用范围与当前状态 / Scope and current status
 
@@ -190,7 +190,7 @@ We post new versions and their effective dates on this page. For material change
 以下能力还没有开放。开放时我们会先更新本政策，在 App 或官网上单独征得你的同意，再开始处理相关信息。
 
 - **真人服务**（首个是广州中英商务陪同）：由真人提供，提交前确认页会列出将与陪同人员共享的信息并分项征得同意；陪同人员受我们委托、只看到完成本次服务需要的信息；按次收费，在 App 外付款。 {#in-person-services}
-- **官网真人服务请求表**：在官网「广州中英商务陪同」表单提出请求，收集称呼、邮箱、日期和说明（选填），提交到我们自己的服务请求后端，不经过第三方表单服务。提交前请你确认已阅读本政策，并分三项征得你的同意：处理时间地点等行踪信息；提供给陪同人员；传到中国香港处理（官网接口由 Vercel 托管，运行在香港区域；App 服务在阿里云香港）。具体时间、地点、会面对象和当天联系电话，我们在回复邮件里和你确认后再记录，在此之前陪同人员看不到你的任何联系方式。 {#website-requests}
+- **官网真人服务请求表**：在官网「广州中英商务陪同」表单提出请求，收集称呼、邮箱、日期和说明（选填），提交到我们自己的后端，由工作人员通过邮件跟进，不经过第三方表单服务；谈妥后再转成正式的服务请求。提交前请你确认已阅读本政策，并分三项征得你的同意：处理时间地点等行踪信息；提供给陪同人员；传到中国大陆以外（中国香港和美国）处理（官网接口由 Vercel 托管，运行在香港区域；App 服务在阿里云香港；回复邮件由美国的 Spacemail 收发）。具体时间、地点、会面对象和当天联系电话，我们在回复邮件里和你确认后再记录，在此之前陪同人员看不到你的任何联系方式。 {#website-requests}
 - **App 内同意界面与定位单独询问页**：首次启动时的总同意，以及使用位置前的单独询问和「我的 → 位置」撤回入口。
 - **位置精度调整**：查找附近时，发给高德前把位置降到约 100 米精度。
 - **App 内问题反馈**：在 Lio 的回答下点「没帮上」并可选填补充说明，发到我们在香港的服务，按账号保存，注销账号时删除。
@@ -198,7 +198,7 @@ We post new versions and their effective dates on this page. For material change
 The following are not launched yet. Before launching any of them, we will update this policy and ask for your separate consent in the app or on the website before processing the related information.
 
 - **In-person services** (the first is an English–Chinese business companion in Guangzhou): provided by real people. Before you submit, a confirmation page lists the information to be shared with the companion and asks for separate consents. Companions act on our behalf and see only what this service needs. Paid per service, outside the app. {#in-person-services}
-- **Website in-person service request form**: request a companion through the "A business companion in Guangzhou" form on the website by giving your name, email, a date and an optional note. It goes to our own service request backend, not through any third-party form service. Before you submit, the form asks you to confirm you have read this policy and to give three separate consents: processing time and place information; sharing it with the companion; and transfer to Hong Kong, China for processing (the website endpoint is hosted by Vercel and runs in its Hong Kong region; the app service runs on Alibaba Cloud Hong Kong). We confirm the exact time, place, who you are meeting and a phone number for the day with you by email before recording them; until then the companion cannot see any of your contact details. {#website-requests}
+- **Website in-person service request form**: request a companion through the "A business companion in Guangzhou" form on the website by giving your name, email, a date and an optional note. It goes to our own backend, where our staff follow up by email, not through any third-party form service; once details are agreed, it becomes a formal service request. Before you submit, the form asks you to confirm you have read this policy and to give three separate consents: processing time and place information; sharing it with the companion; and processing outside mainland China (Hong Kong, China and the United States) (the website endpoint is hosted by Vercel and runs in its Hong Kong region; the app service runs on Alibaba Cloud Hong Kong; reply emails go through Spacemail in the United States). We confirm the exact time, place, who you are meeting and a phone number for the day with you by email before recording them; until then the companion cannot see any of your contact details. {#website-requests}
 - **In-app consent screens and a separate location prompt**: a consent screen at first launch, a separate prompt before location is used, and a Me → Location switch to withdraw.
 - **Location precision**: for Nearby, location reduced to about 100 m before it goes to AMap.
 - **In-app feedback**: tap "Didn't help" under a Lio answer and optionally add a note. It goes to our service in Hong Kong, is stored with your account and is deleted when you close your account.
