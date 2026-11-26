@@ -4,6 +4,7 @@
 
 - `guangzhou.v1.json`（`g2c-business-knowledge.1`）：每条有 `id`、`topic`、中英文标题和正文、官方来源 `source_urls`、核对日 `checked_on`、复核期限 `expires_on`。商务场景包（`backend/cj_api/scene_packs/business.json`，S 线）的 `knowledge` 按 `id` 引用这些条目，`verified_on` / `review_by` 分别对应 `checked_on` / `expires_on`。
 - `validate.py`：严格校验，包括未知或重复的键、主题、城市、中英文缺失、复核期限 1–90 天，以及来源必须是下面已批准 hostname 上的具体 https 页面。CI 由 `backend/tests/test_business_knowledge.py` 运行。校验不读系统时钟，到期提醒由 `scripts/fact_expiry.py`（#1757）负责。
+- 服务端副本（#1859）：`backend/fact/cj_fact/business_guangzhou.v1.json`，与 `guangzhou.v1.json` 逐字节一致，随 `cj_fact` 包打进香港后端镜像，不要手改。读取入口是 `cj_fact.business` 的 `load_catalogue()`、`by_topic(doc, 主题, today=...)`、`by_id(doc, id, today=...)`；`today` 是服务端的北京日期，到 `expires_on` 当天起条目不再返回。Lio 的事实工具由对话线接入。CI 由 `backend/fact/tests/test_business_knowledge_copy.py` 比对副本，数据改了却没重写副本，`python` job 会失败。
 
 ## 口径
 
@@ -25,4 +26,4 @@
 
 ## 改条目
 
-先重读官方来源，再改 JSON，`checked_on` 写重读当天。在仓库根目录运行 `python3 -B knowledge/business/validate.py`，然后在 `reviews/` 下记录逐条依据。
+先重读官方来源，再改 JSON，`checked_on` 写重读当天。在仓库根目录运行 `python3 -B knowledge/business/validate.py --write`（校验并重写服务端副本），把 JSON 和副本一起提交，然后在 `reviews/` 下记录逐条依据。
