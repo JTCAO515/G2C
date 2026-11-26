@@ -19,5 +19,5 @@ python3 tooling/release/build_app.py upload --record-dir <记录目录>   # 只�
 ```
 
 - `archive` 先核对源提交的 main push CI 全绿，再用 `git worktree` 在 `--work-dir`（默认 `$TMPDIR/g2c-app-build<N>`）检出源提交，确认干净后按 Beta 配置签名归档。
-- `verify-archive` / `verify-ipa` 核对包名、版本、构建号、团队、最低系统、开关值、Beta 标记与 Beta API 地址、地图链接、出口合规与权限说明、App 内发布说明与源码一致且首两条是本构建和上一构建；IPA 另核对发布签名、`get-task-allow` 关闭、只限内部测试。
+- `verify-archive` / `verify-ipa` 核对包名、版本、构建号、团队、最低系统、开关值、Beta 标记与 Beta API 地址、地图链接、出口合规与权限说明、App 内发布说明与源码一致，且正好两条：本构建和上一构建（App 只解码两条）；IPA 另核对发布签名、`get-task-allow` 关闭、只限内部测试。
 - `archive --rehearsal` 是预演：发布说明的构建号不强制（只记录），`upload` 拒绝。用来在发布说明还没更新时确认脚本能打出下一构建。

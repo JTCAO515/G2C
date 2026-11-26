@@ -140,7 +140,9 @@ class CheckTests(unittest.TestCase):
     def test_release_notes_must_name_this_build_first(self):
         build_app.check_notes({'currentBuild': 58, 'releases': [{'build': 58}, {'build': 57}]}, 58, 57)
         for book in ({'currentBuild': 57, 'releases': [{'build': 57}, {'build': 56}]},
-                     {'currentBuild': 58, 'releases': [{'build': 58}, {'build': 56}]}):
+                     {'currentBuild': 58, 'releases': [{'build': 58}, {'build': 56}]},
+                     {'currentBuild': 58, 'releases': [{'build': 58}, {'build': 57}, {'build': 56}]},
+                     {'currentBuild': 58, 'releases': [{'build': 58}]}):
             with self.subTest(book=book), self.assertRaises(build_app.ReleaseError):
                 build_app.check_notes(book, 58, 57)
 

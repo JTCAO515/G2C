@@ -93,8 +93,9 @@ def check_flags(info, expected):
 
 def check_notes(book, build, previous):
     require(book.get('currentBuild') == build, f"release notes currentBuild is {book.get('currentBuild')}, not {build}")
-    builds = [x['build'] for x in book.get('releases', [])][:2]
-    require(builds == [build, previous], f'release notes start with builds {builds}, not {[build, previous]}')
+    # The App decodes exactly two releases (this build and the previous one), as build 57 checked.
+    builds = [x['build'] for x in book.get('releases', [])]
+    require(builds == [build, previous], f'release notes list builds {builds}, not {[build, previous]}')
 
 
 def archive_command(manifest, archive, derived, packages):
