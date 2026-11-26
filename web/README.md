@@ -1,11 +1,11 @@
 # go2china.space 网页
 
-G2C 官网落地页：介绍 CJ Agent / JT Agent 的分工与协作，推荐 App，唯一 CTA 为 `Apply Early Access`（所有语言固定使用该文案）。纯静态页面加一个 Vercel Function，无构建步骤、无前端依赖。改页面前先读 [DESIGN.md](DESIGN.md)。
+G2C 官网落地页：介绍 CJ Agent 和 App 里已上线的工具，推荐 App，唯一 CTA 为 `Apply Early Access`（所有语言固定使用该文案）。纯静态页面加一个 Vercel Function，无构建步骤、无前端依赖。改页面前先读 [DESIGN.md](DESIGN.md)。
 
 - `index.html` — 页面结构
 - `styles.css` — 样式（字体自托管，见 `assets/fonts/`）
-- `i18n.js` — 六种语言文案（英、简中、俄、西、阿、法），含聊天演示、协作场景、照片墙地名、表单选项。隐私说明和「怎么运作」只写已实现的能力：脱敏、后台工单、真人同事接手的承诺与演示已于 #1839 撤下，真正上线后再写回
-- `app.js` — 渲染与交互：聊天演示（预设问题打字/删除，仅动效）、协作场景切换、照片墙轮换、报名表单
+- `i18n.js` — 六种语言文案（英、简中、俄、西、阿、法），含聊天演示、工具清单、照片墙地名、表单选项。整页只写已上线的能力（#1839）：脱敏、JT Agent 后台跟进、工单与真人同事接手的承诺和演示已撤下，每项上线后再写回
+- `app.js` — 渲染与交互：聊天演示（预设问题打字/删除，仅动效）、照片墙轮换、报名表单
 - `api/early-access.js` — 报名接口：校验后经 Jotform 官方 API 写入现有 Jotform 表单
 - `credits.html`、`assets/sights/CREDITS.md` — 景点照片作者与许可（CC BY / BY-SA 需署名，勿删）
 - `assets/` — LOGO、吉祥物、景点照片、字体

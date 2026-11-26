@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const { T, SCENES, PLACES } = window.G2C;
+  const { T, PLACES } = window.G2C;
   const LANGUAGES = ["en", "zh", "ru", "es", "ar", "fr"];
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -41,10 +41,7 @@
     document.querySelectorAll("[data-list]").forEach((n) => { n.innerHTML = d[n.dataset.list].map((x) => `<li>${esc(x)}</li>`).join(""); });
     $("[data-place='jinshanling']").textContent = HERO_PLACE[lang];
     $("#lang-select").value = lang;
-    renderWatch();
     renderRules();
-    renderTabs();
-    renderScene();
     renderFormOptions();
     renderWallCaptions();
     startChat();
@@ -56,55 +53,10 @@
     applyLang();
   });
 
-  /* ---------- How it works: table and rules ---------- */
-  function renderWatch() {
-    const d = T[lang];
-    $("#watch-head").innerHTML = d.cols.map((c) => `<th scope="col">${esc(c)}</th>`).join("");
-    $("#watch-body").innerHTML = d.watch.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join("");
-  }
+  /* ---------- How it works: rules ---------- */
   function renderRules() {
     $("#rules").innerHTML = T[lang].rules.map(([h, p]) => `<div><h4>${esc(h)}</h4><p>${esc(p)}</p></div>`).join("");
   }
-
-  /* ---------- Scenario tabs (move only when the visitor picks a tab) ---------- */
-  const SCENE_KEYS = ["hotel", "train", "sos"];
-  let scene = "hotel";
-  function renderTabs() {
-    const tabs = $("#scene-tabs");
-    tabs.innerHTML = T[lang].tabs.map((label, i) => {
-      const on = SCENE_KEYS[i] === scene;
-      return `<button type="button" role="tab" id="tab-${SCENE_KEYS[i]}" aria-controls="scene" aria-selected="${on}" tabindex="${on ? 0 : -1}" data-scene="${SCENE_KEYS[i]}">${esc(label)}</button>`;
-    }).join("");
-  }
-  function renderScene() {
-    const d = T[lang];
-    const texts = d.scenes[scene].steps;
-    $("#scene").setAttribute("aria-labelledby", "tab-" + scene);
-    $("#scene-steps").innerHTML = SCENES[scene].map((s, i) => {
-      const lane = s.lane === "back" ? "back" : "chat";
-      const card = s.card ? `<div class="zh-card" lang="zh-CN">${esc(s.card)}</div>` : "";
-      return `<li class="step ${lane} ${s.who}" style="grid-row:${i + 1};animation-delay:${reduced ? 0 : i * 90}ms">` +
-        `<div class="actor ${s.who}">${esc(d.who[s.who])}</div><div class="bubble">${esc(texts[i])}</div>${card}</li>`;
-    }).join("");
-    $("#scene-note").textContent = d.scenes[scene].note;
-  }
-  $("#scene-tabs").addEventListener("click", (e) => {
-    const b = e.target.closest("button[data-scene]");
-    if (!b || b.dataset.scene === scene) return;
-    scene = b.dataset.scene;
-    renderTabs(); renderScene();
-    $(`#tab-${scene}`).focus();
-  });
-  $("#scene-tabs").addEventListener("keydown", (e) => {
-    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
-    e.preventDefault();
-    let i = SCENE_KEYS.indexOf(scene);
-    const step = (document.documentElement.dir === "rtl" ? -1 : 1) * (e.key === "ArrowRight" ? 1 : -1);
-    if (e.key === "Home") i = 0; else if (e.key === "End") i = SCENE_KEYS.length - 1; else i = (i + step + SCENE_KEYS.length) % SCENE_KEYS.length;
-    scene = SCENE_KEYS[i];
-    renderTabs(); renderScene();
-    $(`#tab-${scene}`).focus();
-  });
 
   /* ---------- Chat demo (scripted animation, no real conversation) ---------- */
   const chat = $("#chat");
@@ -142,14 +94,6 @@
           `<header>${esc(step.title)}<small>${esc(step.tag)}</small></header><ul>` +
           step.rows.map(([d, x]) => `<li><b>${esc(d)}</b><span>${esc(x)}</span></li>`).join("") +
           `</ul><footer>${esc(step.foot)}</footer>`);
-        break;
-      case "ask":
-        n = el("div", "msg bot", `${esc(step.text)}<div class="actions"><span class="yes">${esc(step.yes)}</span><span>${esc(step.no)}</span></div>`);
-        at(() => { const y = n.querySelector(".yes"); if (y) y.classList.add("pressed"); }, 1300);
-        break;
-      case "sys":
-        n = el("div", "sys", `<span class="spin"></span><span class="txt">${step.text}</span>`);
-        at(() => { n.classList.add("done"); n.querySelector(".txt").innerHTML = step.done; }, 2400);
         break;
     }
     chat.appendChild(n);
@@ -206,7 +150,7 @@
     }, 500);
   }
 
-  const GAP = { hello: 900, user: 1500, bot: 1300, mem: 1100, plan: 2600, ask: 1900, sys: 4200 };
+  const GAP = { hello: 900, user: 1500, bot: 1300, mem: 1100, plan: 2600 };
 
   function startChat() {
     clear();
@@ -230,7 +174,7 @@
       }
       const s = steps[i++];
       const go = () => { render(s); later(next, GAP[s.t] || 1300); };
-      if (s.t === "bot" || s.t === "plan" || s.t === "ask") typing(go, s.t === "plan" ? 1200 : 850);
+      if (s.t === "bot" || s.t === "plan") typing(go, s.t === "plan" ? 1200 : 850);
       else if (s.t === "user") composeAndSend(s, () => { render(s); later(next, 700); });
       else go();
     };
