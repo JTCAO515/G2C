@@ -572,6 +572,9 @@ class RunWorker:
             else:
                 chunks = self.tools.answer(self, binding, inputs, lio_locale=locale, lio_question_day=original.question_day,**({'message_refs':message_refs} if message_refs else {}),
                                            **({'lio_city':self.lio_city_context} if self.lio_city_context is not None else {}))
+            # W2-6 (#1733): read the safety-lines switch before any model call.
+            from cj_message.lio_safety import safety_lines_enabled, supplement
+            safety_lines = locale is not None and safety_lines_enabled()
             phase='answer_stream'
             answered = ''
             for chunk in chunks:
@@ -584,10 +587,9 @@ class RunWorker:
                     state, buffer = self._event(binding, state, 'text_delta', buffer), ''
             if buffer:
                 state = self._event(binding, state, 'text_delta', buffer)
-            if locale is not None:
-                # W2-6 (#1733): fixed safety lines for missing essentials, behind a switch.
-                from cj_message.lio_safety import safety_lines_enabled, supplement
-                missing = supplement(text, answered, locale) if safety_lines_enabled() else ''
+            if safety_lines:
+                # W2-6 (#1733): fixed safety lines for missing essentials.
+                missing = supplement(text, answered, locale)
                 if missing:
                     state = self._event(binding, state, 'text_delta', missing)
             if self.drafts is not None and command['creation_intent'] == 'consider_trip':

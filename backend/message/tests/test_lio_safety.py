@@ -28,6 +28,30 @@ class SafetyLines(unittest.TestCase):
                         self.assertTrue(any(word.casefold() in final for word in POLICE))
                         self.assertTrue(any(word.casefold() in final for word in CONSULATE))
 
+    def test_review_detection_cases(self):
+        # Review of #1863: common lost-passport and fainting phrasings; idioms and medicine are not safety questions.
+        for question, kind in (('护照找不到了怎么办', 'lost_documents'), ('找不到护照了', 'lost_documents'),
+                               ('护照没了', 'lost_documents'), ('护照忘在出租车上了', 'lost_documents'),
+                               ("I can't find my passport anywhere", 'lost_documents'),
+                               ('I misplaced my passport', 'lost_documents'), ('I left my passport in a taxi', 'lost_documents'),
+                               ('my friend fainted', 'emergency'), ('她晕过去了', 'emergency'), ('朋友昏过去了', 'emergency'),
+                               ('he had a stroke', 'emergency'), ('I feel sick', 'medical'),
+                               ('我对花生过敏', 'dietary'), ('I am allergic to peanuts', 'dietary')):
+            with self.subTest(question=question):
+                self.assertIn(kind, matched(question))
+        for question in ("I'm sick of rice", 'that was ill-advised', 'what a stroke of luck', '过敏性鼻炎药哪里买',
+                         '护照照片怎么拍', 'visa card'):
+            with self.subTest(question=question):
+                self.assertEqual(matched(question), ())
+
+    def test_negated_or_unrelated_mentions_do_not_count_as_present(self):
+        # Review of #1863: "120 元", "别报警" and "这说明" are not the essentials.
+        self.assertIn('120', supplement('朋友晕倒了', '打车大约 120 元。', 'zh'))
+        self.assertIn('派出所', supplement('护照丢了', '别报警，先联系大使馆。', 'zh'))
+        self.assertNotIn('使馆或领馆', supplement('护照丢了', '别报警，先联系大使馆。', 'zh'))
+        self.assertIn('告诉店员', supplement('我对花生过敏', '这说明花生很常见。', 'zh'))
+        self.assertIn('police', supplement('I lost my passport', "Don't call the police yet; contact your embassy.", 'en'))
+
     def test_only_missing_essentials_are_added(self):
         both = '先去派出所报案，再联系你国家的驻华使馆。'
         self.assertEqual(supplement('护照丢了怎么办', both, 'zh'), '')
