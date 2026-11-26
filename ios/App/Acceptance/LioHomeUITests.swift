@@ -2252,6 +2252,47 @@ import CryptoKit
         }
     }
 
+    /// #1753 (W4-9): with `G2CAIDisclosureEnabled` (Debug: `--lio-ai-disclosure-preview`) a finished answer is
+    /// followed by one AI line; without it, nothing changes.
+    func testAIDisclosureFollowsFinishedAnswersInBothLanguages() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            for shown in [true, false] {
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language] + (shown ? ["--lio-ai-disclosure-preview"] : [])
+                app.launch()
+                XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 12))
+                let line = app.descendants(matching: .any)["lio.answer.ai-disclosure"]
+                XCTAssertFalse(line.exists, "nothing before an answer")
+                enterSampleQuestion(in: app, index: 0)
+                app.buttons["lio.send"].tap()
+                let answer = app.staticTexts["lio.answer"]
+                XCTAssertTrue(answer.waitForExistence(timeout: 8))
+                if shown {
+                    XCTAssertTrue(line.waitForExistence(timeout: 12), app.debugDescription)
+                    XCTAssertEqual(line.label, language == "en"
+                                   ? "AI-generated and may be wrong. Double-check anything important."
+                                   : "由 AI 生成，可能有误，重要信息请自行确认。")
+                    XCTAssertGreaterThanOrEqual(line.frame.minY, answer.frame.maxY)
+                    // The answer body's own clipping warning predates this line (reported to the coordinator);
+                    // it is recorded, not hidden, and every other issue still fails the test.
+                    try app.performAccessibilityAudit(for: .all) { issue in
+                        guard issue.auditType == .textClipped, issue.element?.identifier == "lio.answer" else { return false }
+                        let note = XCTAttachment(string: "Pre-existing answer-body clipping: " + issue.compactDescription)
+                        note.name = "answer-body-clipping-\(language)"; note.lifetime = .keepAlways; self.add(note)
+                        return true
+                    }
+                    let shot = XCTAttachment(screenshot: app.screenshot())
+                    shot.name = "ai-disclosure-\(language)"; shot.lifetime = .keepAlways; add(shot)
+                } else {
+                    _ = line.waitForExistence(timeout: 4)
+                    XCTAssertFalse(line.exists, "off unless the build says YES")
+                }
+                app.terminate()
+            }
+        }
+    }
+
     private func exercise(_ language: String, question: String) throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
