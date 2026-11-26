@@ -247,8 +247,7 @@ enum LioToolRegistry {
             #if os(iOS)
             // A trip place (#1740) opens its sight's rule; otherwise the list, with this trip's city first (#1739).
             if let rule = LioAttractionBookingRule.rule(route: route) {
-                LioAttractionBookingDetail(rule: rule, language: context.language,
-                                           reminders: LioAttractionReminderScheduler(center: LioSystemReminderCenter()))
+                LioAttractionBookingRouteDetail(rule: rule, language: context.language)
             } else {
                 let (profile, today) = context.travelProfile()
                 let booking = profile.attractionBooking(today: today)

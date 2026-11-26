@@ -105,6 +105,21 @@ struct LioAttractionBookingBadge: View {
     }
 }
 
+/// Opens one sight's rule from a trip place (#1740). The reminders are set under the signed-in account's own
+/// identifier prefix (#1922), the same one the list uses, so a place opened from a trip cannot leak into the shared scope.
+struct LioAttractionBookingRouteDetail: View {
+    let rule: LioAttractionBookingRule
+    let language: LioLanguage
+    @Environment(\.lioReminderScope) private var reminderScope
+
+    var body: some View {
+        LioAttractionBookingDetail(
+            rule: rule, language: language,
+            reminders: LioAttractionReminderScheduler(
+                center: LioSystemReminderCenter(), scope: reminderScope ?? LioAttractionReminderScope(account: nil)))
+    }
+}
+
 struct LioAttractionBookingDetail: View {
     let rule: LioAttractionBookingRule
     let language: LioLanguage
