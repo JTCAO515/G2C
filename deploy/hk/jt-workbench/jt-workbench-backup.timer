@@ -1,0 +1,9 @@
+[Unit]
+Description=Schedule JT workbench backup after the daily CJ backup
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 Asia/Shanghai
+Persistent=true
+
+[Install]
+WantedBy=timers.target

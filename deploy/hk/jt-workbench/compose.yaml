@@ -1,0 +1,63 @@
+name: jt-workbench
+x-workbench: &workbench
+  image: ${JT_WORKBENCH_IMAGE:?reviewed workbench image required}
+  pull_policy: never
+  entrypoint: ["/bin/sh", "-ec", 'export JT_WORKBENCH_DATABASE_URL="$$(cat /run/jt-workbench-connection)"; exec python -B -m jt.workbench.production "$$@"', "jt-workbench"]
+  network_mode: none
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  read_only: true
+  tmpfs: [/tmp]
+  mem_limit: 256m
+  logging: {driver: local, options: {max-size: 5m, max-file: "3"}}
+services:
+  migrate:
+    <<: *workbench
+    command: [migrate]
+    healthcheck: {disable: true}
+    volumes:
+      - /srv/g2c-beta/jt-workbench/owner.dsn:/run/jt-workbench-connection:ro
+      - /srv/g2c-beta/jt-workbench/db:/run/jt-workbench-db:ro
+  app:
+    <<: *workbench
+    restart: unless-stopped
+    environment:
+      JT_WORKBENCH_PUBLIC_HOST: jtadmin.go2china.space
+      JT_WORKBENCH_HTTP_SOCKET: /run/jt-workbench/http.sock
+    command: [serve]
+    volumes:
+      - /srv/g2c-beta/jt-workbench/runtime.dsn:/run/jt-workbench-connection:ro
+      - /srv/g2c-beta/jt-workbench/db:/run/jt-workbench-db:ro
+      - /srv/g2c-beta/caddy-config/jt-workbench:/run/jt-workbench
+  offboard:
+    <<: *workbench
+    profiles: [operator]
+    entrypoint: [python, -B, /run/jt-workbench-offboard.py]
+    healthcheck: {disable: true}
+    volumes:
+      - /srv/g2c-beta/deploy/hk/jt-workbench/offboard.py:/run/jt-workbench-offboard.py:ro
+      - /srv/g2c-beta/jt-workbench/owner.dsn:/run/jt-workbench-connection:ro
+      - /srv/g2c-beta/jt-workbench/db:/run/jt-workbench-db:ro
+  backup:
+    profiles: [operator]
+    image: ${JT_WORKBENCH_BACKUP_IMAGE:?installed reviewed operator image required}
+    pull_policy: never
+    entrypoint: [python, -B, /run/jt-workbench-backup.py]
+    command: [daily]
+    user: "10001:10001"
+    group_add: ["10031"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: [/tmp]
+    mem_limit: 192m
+    env_file: [/srv/g2c-beta/common.env]
+    volumes:
+      - /srv/g2c-beta/deploy/hk/jt-workbench/backup.py:/run/jt-workbench-backup.py:ro
+      - /srv/g2c-beta/jt-workbench/db:/run/jt-workbench-db:ro
+      - /srv/g2c-beta/jt-workbench/backup.dsn:/run/jt-workbench-connection:ro
+      - /srv/g2c-beta/jt-workbench/backups:/jt-backups
+      - /srv/g2c-beta/operator.env:/run/secrets/operator.env:ro
+      - /srv/g2c-beta/backup.env:/run/secrets/backup.env:ro
+      - /srv/g2c-beta/authorizations:/run/authorizations:ro
+      - /srv/g2c-beta/control:/control
