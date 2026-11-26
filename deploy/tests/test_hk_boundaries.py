@@ -178,7 +178,7 @@ def test_compressed_policy_enters_only_through_api_owned_secret_file(tmp_path):
         configuration.load_secret_environment('worker',root=tmp_path)
 
 
-@pytest.mark.parametrize('count',[205,206])
+@pytest.mark.parametrize('count',[205,206,256])
 def test_full_profile_policy_fits_secret_bound_without_changing_permissions(tmp_path,count):
     from cj_memory.typed_local import TypedConfiguration
     profile=dict(subjects=['self'],extents=['long_term','current'],context_ids=[],slots={
