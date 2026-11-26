@@ -248,6 +248,25 @@ test("the server answers 400 and delivers nothing unless all four boxes are true
   assert.deepEqual(delivered[0].consents, CONSENTS);
 });
 
+test("the reply address hello@go2china.space is shown as plain, selectable text in every language", async () => {
+  const ADDRESS = "hello@go2china.space";
+  const G2C = loadCopy();
+  for (const [lang, d] of Object.entries(G2C.T)) {
+    // Where the page says we reply by email, and where it offers email as the fallback.
+    for (const [where, text] of [["reply row", d.sr.rows[2][1]], ["sent", d.sr.ok], ["failed", d.sr.fail]]) {
+      assert.ok(text.includes(ADDRESS), `${lang} ${where}`);
+    }
+  }
+  // Rendered as text content, not only inside a mailto link.
+  const { created } = runPage(true);
+  const reply = created.filter((n) => n.label === "dd").map((n) => n.textContent);
+  assert.ok(reply.includes(G2C.T.en.sr.rows[2][1]), "reply row is text");
+  assert.doesNotMatch(created.find((n) => n.label === "section").innerHTML, /mailto:/);
+  const sent = await submitPage(CONSENTS);
+  assert.ok(sent.message.includes(ADDRESS), "sent message is text");
+  assert.doesNotMatch(fs.readFileSync(path.join(WEB, "styles.css"), "utf8"), /user-select:\s*none/);
+});
+
 test("a valid request is delivered once, with the city and service set by the server", async (t) => {
   const { delivered, destination } = recorder();
   const fn = createHandler({ enabled: true, destination, now: () => NOW });

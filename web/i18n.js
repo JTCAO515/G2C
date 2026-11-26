@@ -185,7 +185,7 @@ window.G2C = {
      ],
      [
       "Reply",
-      "We usually reply by email within 1 business day (Beijing time)."
+      "We usually reply by email from hello@go2china.space within 1 business day (Beijing time)."
      ]
     ],
     "f": {
@@ -215,7 +215,7 @@ window.G2C = {
     },
     "submit": "Send request",
     "sending": "Sending…",
-    "ok": "Thanks, we’ve got your request. We usually reply by email within 1 business day (Beijing time).",
+    "ok": "Thanks, we’ve got your request. We usually reply by email from hello@go2china.space within 1 business day (Beijing time).",
     "bad": "Please add what to call you, a valid email and a date, and tick all four boxes.",
     "fail": "We couldn’t send your request just now. Please try again in a minute, or email hello@go2china.space."
    }
@@ -403,7 +403,7 @@ window.G2C = {
      ],
      [
       "回复",
-      "我们通常会在 1 个工作日内（北京时间）通过邮件回复。"
+      "我们通常会在 1 个工作日内（北京时间）通过邮件回复，发件地址是 hello@go2china.space。"
      ]
     ],
     "f": {
@@ -433,7 +433,7 @@ window.G2C = {
     },
     "submit": "提交申请",
     "sending": "正在提交…",
-    "ok": "已收到你的申请。我们通常会在 1 个工作日内（北京时间）通过邮件回复。",
+    "ok": "已收到你的申请。我们通常会在 1 个工作日内（北京时间）通过邮件回复，发件地址是 hello@go2china.space。",
     "bad": "请填写称呼、有效的邮箱和日期，并勾选全部四项。",
     "fail": "暂时没能提交，请稍后再试，或发邮件到 hello@go2china.space。"
    }
@@ -621,7 +621,7 @@ window.G2C = {
      ],
      [
       "Ответ",
-      "Обычно мы отвечаем по почте в течение 1 рабочего дня (по пекинскому времени)."
+      "Обычно мы отвечаем по почте с адреса hello@go2china.space в течение 1 рабочего дня (по пекинскому времени)."
      ]
     ],
     "f": {
@@ -651,7 +651,7 @@ window.G2C = {
     },
     "submit": "Отправить запрос",
     "sending": "Отправляем…",
-    "ok": "Спасибо, запрос получен. Обычно мы отвечаем по почте в течение 1 рабочего дня (по пекинскому времени).",
+    "ok": "Спасибо, запрос получен. Обычно мы отвечаем по почте с адреса hello@go2china.space в течение 1 рабочего дня (по пекинскому времени).",
     "bad": "Укажите, как к вам обращаться, корректную почту и дату, и отметьте все четыре пункта.",
     "fail": "Не удалось отправить запрос. Попробуйте через минуту или напишите на hello@go2china.space."
    }
@@ -839,7 +839,7 @@ window.G2C = {
      ],
      [
       "Respuesta",
-      "Solemos responder por correo en 1 día laborable (hora de Pekín)."
+      "Solemos responder por correo desde hello@go2china.space en 1 día laborable (hora de Pekín)."
      ]
     ],
     "f": {
@@ -869,7 +869,7 @@ window.G2C = {
     },
     "submit": "Enviar solicitud",
     "sending": "Enviando…",
-    "ok": "Gracias, hemos recibido tu solicitud. Solemos responder por correo en 1 día laborable (hora de Pekín).",
+    "ok": "Gracias, hemos recibido tu solicitud. Solemos responder por correo desde hello@go2china.space en 1 día laborable (hora de Pekín).",
     "bad": "Indica cómo te llamamos, un correo válido y una fecha, y marca las cuatro casillas.",
     "fail": "No hemos podido enviar tu solicitud. Inténtalo de nuevo en un minuto o escribe a hello@go2china.space."
    }
@@ -1057,7 +1057,7 @@ window.G2C = {
      ],
      [
       "Réponse",
-      "Nous répondons en général par e-mail sous 1 jour ouvré (heure de Pékin)."
+      "Nous répondons en général par e-mail depuis hello@go2china.space sous 1 jour ouvré (heure de Pékin)."
      ]
     ],
     "f": {
@@ -1087,7 +1087,7 @@ window.G2C = {
     },
     "submit": "Envoyer la demande",
     "sending": "Envoi…",
-    "ok": "Merci, nous avons bien reçu votre demande. Nous répondons en général par e-mail sous 1 jour ouvré (heure de Pékin).",
+    "ok": "Merci, nous avons bien reçu votre demande. Nous répondons en général par e-mail depuis hello@go2china.space sous 1 jour ouvré (heure de Pékin).",
     "bad": "Indiquez comment vous appeler, un e-mail valide et une date, et cochez les quatre cases.",
     "fail": "Votre demande n’a pas pu être envoyée. Réessayez dans une minute ou écrivez à hello@go2china.space."
    }
@@ -1275,7 +1275,7 @@ window.G2C = {
      ],
      [
       "الرد",
-      "نرد عادةً بالبريد الإلكتروني خلال يوم عمل واحد (بتوقيت بكين)."
+      "نرد عادةً بالبريد الإلكتروني من العنوان hello@go2china.space خلال يوم عمل واحد (بتوقيت بكين)."
      ]
     ],
     "f": {
@@ -1305,7 +1305,7 @@ window.G2C = {
     },
     "submit": "إرسال الطلب",
     "sending": "جارٍ الإرسال…",
-    "ok": "شكرًا، استلمنا طلبك. نرد عادةً بالبريد الإلكتروني خلال يوم عمل واحد (بتوقيت بكين).",
+    "ok": "شكرًا، استلمنا طلبك. نرد عادةً بالبريد الإلكتروني من العنوان hello@go2china.space خلال يوم عمل واحد (بتوقيت بكين).",
     "bad": "أدخل الاسم الذي نناديك به وبريدًا إلكترونيًا صحيحًا وتاريخًا، وحدّد المربعات الأربعة كلها.",
     "fail": "تعذّر إرسال طلبك الآن. حاول مرة أخرى بعد دقيقة أو راسلنا على hello@go2china.space."
    }
