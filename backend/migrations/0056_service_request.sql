@@ -1,6 +1,6 @@
 -- local runtime only: SERVICE-REQUEST@1 store, append-only history, escort view audit (#1769).
 -- Owner scope is server-resolved (cj.message_scope); callers never supply owner/state/quote/staff.
--- Retention (PIPIA 9): 12 months after first terminal state; completion_summary body 90 days.
+-- Retention (PIPIA 9): 12 months after first terminal state (cleanup role); completion_summary body 90 days (runtime).
 -- Account erasure: irreversible scope fence, then physical delete by cj_local_cleanup only.
 CREATE TABLE cj_service_request_scope (
  scope_digest text PRIMARY KEY CHECK(scope_digest ~ '^[0-9a-f]{64}$'),
@@ -66,10 +66,7 @@ GRANT SELECT,INSERT(scope_digest),UPDATE(scope_digest) ON cj_service_request_sco
 CREATE POLICY service_request_runtime ON cj_service_request TO cj_m1_runtime
  USING(scope=nullif(current_setting('cj.message_scope',true),''))
  WITH CHECK(scope=nullif(current_setting('cj.message_scope',true),''));
--- Retention erasure only: the database clock, never a caller cutoff, gates runtime DELETE.
-CREATE POLICY service_request_retention ON cj_service_request AS RESTRICTIVE FOR DELETE TO cj_m1_runtime
- USING(first_terminal_at IS NOT NULL AND first_terminal_at < clock_timestamp() - interval '12 months');
-GRANT SELECT,INSERT,DELETE ON cj_service_request TO cj_m1_runtime;
+GRANT SELECT,INSERT ON cj_service_request TO cj_m1_runtime;
 GRANT UPDATE(state,quote,human_service,arranged_at,first_terminal_at) ON cj_service_request TO cj_m1_runtime;
 CREATE POLICY service_request_runtime ON cj_service_request_history TO cj_m1_runtime
  USING(scope=nullif(current_setting('cj.message_scope',true),''))
@@ -97,6 +94,15 @@ CREATE POLICY service_request_cleanup ON cj_service_request TO cj_local_cleanup
  USING(scope=nullif(current_setting('cj.cleanup_scope',true),'') AND current_setting('cj.cleanup_purpose',true)='account'
   AND EXISTS(SELECT 1 FROM cj_cleanup_operation o WHERE o.subject_digest=nullif(current_setting('cj.cleanup_subject',true),'')
    AND o.operation_id=nullif(current_setting('cj.cleanup_operation',true),'') AND o.purpose='account' AND NOT o.blocked));
+-- 12-month retention: cleanup role only, gated by the database clock, never a caller cutoff.
+-- History and view audit follow through ON DELETE CASCADE. The runtime holds no DELETE grant.
+CREATE POLICY service_request_retention ON cj_service_request FOR DELETE TO cj_local_cleanup
+ USING(scope=nullif(current_setting('cj.cleanup_scope',true),'')
+  AND current_setting('cj.cleanup_purpose',true)='service_request_retention'
+  AND first_terminal_at IS NOT NULL AND first_terminal_at < clock_timestamp() - interval '12 months');
+CREATE POLICY service_request_retention_read ON cj_service_request FOR SELECT TO cj_local_cleanup
+ USING(scope=nullif(current_setting('cj.cleanup_scope',true),'')
+  AND current_setting('cj.cleanup_purpose',true)='service_request_retention');
 GRANT SELECT,DELETE ON cj_service_request TO cj_local_cleanup;
 CREATE POLICY service_request_cleanup ON cj_service_request_history TO cj_local_cleanup
  USING(scope=nullif(current_setting('cj.cleanup_scope',true),'') AND current_setting('cj.cleanup_purpose',true)='account'
