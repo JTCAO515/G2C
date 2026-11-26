@@ -1,5 +1,5 @@
 {
-  "version": "1.28.0",
+  "version": "1.29.0",
   "stores": [
     {
       "id": "business",
@@ -1117,6 +1117,20 @@
       "restore_fence": "UNIMPLEMENTED; must replay revocations before reads",
       "owner_line": "B / provider owners",
       "retention_category": "external_unprovisioned"
+    }
+  ],
+  "staff_stores": [
+    {
+      "id": "jt-workbench-staff",
+      "owner": "JT Agent workbench / operations",
+      "status": "hk_staff_demo_only; no CJ or customer principal",
+      "principal_binding": "Dedicated JT username, assigned staff role and RFC 6238 enrollment. No CJ account or user UUID mapping.",
+      "sensitive_fields": "Staff usernames and authorization state, password hashes, TOTP enrollment material, setup and session digests, append-only audit, synthetic signals and reviews.",
+      "retention": "Staff credentials and sessions are erased on confirmed offboarding. Retain append-only audit under the staff access policy and keep the disabled username reserved for that audit. Initial backups are restricted to the dedicated instance-local directory. Off-host backup and local backup retention require a separate approved policy.",
+      "cleanup_hook": "deploy/hk/jt-workbench/offboard.py: dedicated owner only, requires an already disabled exact staff username, erases credentials, setup grants, throttling and sessions in one transaction. Audit remains append-only. This store has no CJ account cleanup target.",
+      "restore_fence": "Restore only into the isolated workbench database while its public route is disabled. Clear all restored sessions, passwords and enrollment grants and reconcile retired accounts against the latest staff roster before reopening; re-enroll current staff only.",
+      "owner_line": "JT2 and deployment operator",
+      "retention_category": "employee_access_and_append_only_audit"
     }
   ],
   "evidence_tree": "3c52f72daf1d8e2304c0c569b47e68d92a4b323e",
