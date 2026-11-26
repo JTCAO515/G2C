@@ -2,10 +2,14 @@ import CJMessageHTTP
 import Foundation
 import Observation
 
-/// #1453: a planned trip as the summary card carries it (LIO-trip-card.2/.3): title, calendar state and each
-/// day's places and times. It has no place kind, address, coordinate, travel leg or lodging; those come from the
-/// rich detail read, which is not available yet. The summary maps to `LioRichItinerary` without inventing them.
-struct LioPlanSummary: Codable, Equatable, Identifiable, Sendable {
+/// #1453 / #1723: the one trip object a saved plan is. The day-by-day page, the roadbook and the trip home all
+/// read its stored `itinerary`; `days` is only a view of that itinerary for the trip home's rules.
+/// A chat card (LIO-trip-card.2/.3) carries names and times only, so its places are unconfirmed (`matched=false`:
+/// no map marker, taxi or driver card). A popular-route template (#1725) carries checked addresses and GCJ-02 points.
+struct LioPlanSummary: Equatable, Identifiable, Sendable {
+    /// Where the trip came from: the chat (the server's trip, by id and version) or a popular-route template.
+    enum Source: String, Codable, Sendable { case chat, template }
+
     struct Item: Codable, Equatable, Sendable {
         let id: String
         let label: String
@@ -21,18 +25,39 @@ struct LioPlanSummary: Codable, Equatable, Identifiable, Sendable {
 
     let tripID: String
     let tripVersion: Int64
-    let title: String
+    let source: Source
     /// Nil for an undated plan.
     let startDate: String?
-    let undated: Bool
-    let days: [Day]
+    let itinerary: LioRichItinerary
 
     var id: String { tripID }
-    var stopCount: Int { days.reduce(0) { $0 + $1.items.count } }
+    var title: String { itinerary.title }
+    var undated: Bool { itinerary.undated }
+    /// The itinerary's days as names and times (Chinese names, as the booking rules match them).
+    var days: [Day] {
+        itinerary.days.map { day in
+            Day(number: day.number, date: day.date, items: day.stops.map {
+                Item(id: $0.id, label: $0.place.nameZH, startTime: $0.time, endTime: nil, fixed: $0.fixed)
+            })
+        }
+    }
+    var stopCount: Int { itinerary.days.reduce(0) { $0 + $1.stops.count } }
 
+    init(tripID: String, tripVersion: Int64, source: Source, startDate: String?, itinerary: LioRichItinerary) {
+        self.tripID = tripID; self.tripVersion = tripVersion; self.source = source
+        self.startDate = startDate; self.itinerary = itinerary
+    }
+
+    /// A chat plan: names and times only, every place unconfirmed.
     init(tripID: String, tripVersion: Int64, title: String, startDate: String?, undated: Bool, days: [Day]) {
-        self.tripID = tripID; self.tripVersion = tripVersion; self.title = title
-        self.startDate = startDate; self.undated = undated; self.days = days
+        self.init(tripID: tripID, tripVersion: tripVersion, source: .chat, startDate: startDate,
+                  itinerary: LioRichItinerary(title: title, undated: undated, days: days.map { day in
+            LioRichItinerary.Day(number: day.number, date: day.date, theme: "", area: "", stops: day.items.map { item in
+                LioRichItinerary.Stop(id: item.id, kind: .unspecified, text: "", time: item.startTime,
+                                      place: .init(nameZH: item.label, nameEN: item.label, address: nil, matched: false, point: nil),
+                                      note: nil, tip: nil, fixed: item.fixed)
+            }, legs: [])
+        }, lodgingArea: "", hotels: []))
     }
 
     init(_ trip: LioExplorationWire.Trip) {
@@ -44,6 +69,16 @@ struct LioPlanSummary: Codable, Equatable, Identifiable, Sendable {
         }
     }
 
+    /// #1723 / #1725: a popular route saved as the traveller's trip, with its checked places (taxi and the
+    /// driver card work). Id `template:<route>`, version 0; it stays on this phone only.
+    init(template roadbook: LioRoadbook) {
+        let route = roadbook.id.hasPrefix("template.") ? String(roadbook.id.dropFirst("template.".count)) : roadbook.id
+        self.init(tripID: Self.templatePrefix + route, tripVersion: 0, source: .template, startDate: nil,
+                  itinerary: roadbook.itinerary)
+    }
+
+    static let templatePrefix = "template:"
+
     private init(id: String, version: Int64, title: String, calendar: LioCalendarTripCard.CalendarState?,
                  days: [LioCalendarTripCard.Day]) {
         let start: String?
@@ -54,17 +89,6 @@ struct LioPlanSummary: Codable, Equatable, Identifiable, Sendable {
                 Item(id: $0.id, label: $0.label, startTime: $0.startTime, endTime: $0.endTime, fixed: $0.fixed)
             })
         })
-    }
-
-    /// Display values only: summary places are unconfirmed, so no map marker, taxi or driver card is offered.
-    var itinerary: LioRichItinerary {
-        LioRichItinerary(title: title, undated: undated, days: days.map { day in
-            LioRichItinerary.Day(number: day.number, date: day.date, theme: "", area: "", stops: day.items.map { item in
-                LioRichItinerary.Stop(id: item.id, kind: .unspecified, text: "", time: item.startTime,
-                                      place: .init(nameZH: item.label, nameEN: item.label, address: nil, matched: false, point: nil),
-                                      note: nil, tip: nil, fixed: item.fixed)
-            }, legs: [])
-        }, lodgingArea: "", hotels: [])
     }
 }
 
@@ -111,20 +135,78 @@ extension LioRichItinerary {
 
     var current: Bool { isCurrent() }
 
-    private struct Record: Codable {
+    /// v1 (#1453): the summary only. Read so nothing saved earlier is lost; its places are unconfirmed.
+    private struct RecordV1: Codable {
+        struct Plan: Codable {
+            let tripID: String
+            let tripVersion: Int64
+            let title: String
+            let startDate: String?
+            let undated: Bool
+            let days: [LioPlanSummary.Day]
+        }
         let savedAt: Date
-        let plan: LioPlanSummary
+        let plan: Plan
     }
-    private struct Archive: Codable {
-        let version: Int
-        let records: [Record]
+    /// v2 (#1723): the whole trip, in the roadbook copy's place, stop and day encoding.
+    private struct Record: Codable {
+        struct Trip: Codable {
+            let title: String
+            let undated: Bool
+            let days: [LioRoadbookArchive.Day]
+            let lodgingArea: String
+            let hotels: [LioRoadbookArchive.Hotel]
+        }
+        let savedAt: Date
+        let tripID: String
+        let tripVersion: Int64
+        let source: LioPlanSummary.Source
+        let startDate: String?
+        let trip: Trip
+
+        init(savedAt: Date, plan: LioPlanSummary) {
+            self.savedAt = savedAt
+            tripID = plan.tripID; tripVersion = plan.tripVersion; source = plan.source; startDate = plan.startDate
+            let itinerary = plan.itinerary
+            trip = Trip(title: itinerary.title, undated: itinerary.undated, days: LioRoadbookArchive.days(itinerary),
+                        lodgingArea: itinerary.lodgingArea, hotels: LioRoadbookArchive.hotels(itinerary))
+        }
+
+        func plan() throws -> LioPlanSummary {
+            guard !tripID.isEmpty else { throw LioRoadbookArchive.Failure.invalidValue }
+            return LioPlanSummary(tripID: tripID, tripVersion: tripVersion, source: source, startDate: startDate,
+                                  itinerary: try LioRoadbookArchive.itinerary(title: trip.title, undated: trip.undated,
+                                                                              days: trip.days, lodgingArea: trip.lodgingArea,
+                                                                              hotels: trip.hotels))
+        }
     }
+    private struct Header: Codable { let version: Int }
+    private struct ArchiveV1: Codable { let version: Int; let records: [RecordV1] }
+    /// A record that cannot be read is skipped rather than hiding every other saved trip.
+    private struct Lenient<Value: Decodable>: Decodable {
+        let value: Value?
+        init(from decoder: Decoder) throws { value = try? Value(from: decoder) }
+    }
+    private struct ArchiveV2Read: Decodable { let version: Int; let records: [Lenient<Record>] }
+    private struct Archive: Encodable { let version: Int; let records: [Record] }
+    static let currentVersion = 2
 
     func load() throws -> [LioPlanSummary] { try records().map(\.plan) }
 
+    /// Keeps one copy per trip, the highest version; an older version never replaces a newer one.
     func save(_ plan: LioPlanSummary, at date: Date = Date()) throws {
-        let others = try records().filter { $0.plan.tripID != plan.tripID }
-        try write(Array(([Record(savedAt: date, plan: plan)] + others).prefix(Self.maximumCount)))
+        let all = try records()
+        if let kept = all.first(where: { $0.plan.tripID == plan.tripID }), kept.plan.tripVersion > plan.tripVersion { return }
+        let others = all.filter { $0.plan.tripID != plan.tripID }
+        try write(Array(([(savedAt: date, plan: plan)] + others).prefix(Self.maximumCount)))
+    }
+
+    /// #1725: saves a popular route as the traveller's trip (`template:<route>`, version 0, checked places).
+    @discardableResult
+    func saveTemplate(_ roadbook: LioRoadbook, at date: Date = Date()) throws -> LioPlanSummary {
+        let plan = LioPlanSummary(template: roadbook)
+        try save(plan, at: date)
+        return plan
     }
 
     func remove(_ tripID: String) throws {
@@ -133,18 +215,42 @@ extension LioRichItinerary {
         try write(all.filter { $0.plan.tripID != tripID })
     }
 
-    private func records() throws -> [Record] {
+    private func records() throws -> [(savedAt: Date, plan: LioPlanSummary)] {
         guard isCurrent() else { throw CancellationError() }
+        let data: Data
         do {
-            let archive = try JSONDecoder().decode(Archive.self, from: Data(contentsOf: file))
-            guard archive.version == 1 else { return [] }
-            return archive.records.sorted { $0.savedAt > $1.savedAt }
+            data = try Data(contentsOf: file)
         } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
             return []
         }
+        let decoder = JSONDecoder()
+        let found: [(savedAt: Date, plan: LioPlanSummary)]
+        switch try decoder.decode(Header.self, from: data).version {
+        case 1:
+            found = try decoder.decode(ArchiveV1.self, from: data).records.map { record in
+                let plan = record.plan
+                return (record.savedAt, LioPlanSummary(tripID: plan.tripID, tripVersion: plan.tripVersion, title: plan.title,
+                                                       startDate: plan.startDate, undated: plan.undated, days: plan.days))
+            }
+        case Self.currentVersion:
+            found = try decoder.decode(ArchiveV2Read.self, from: data).records.compactMap { entry in
+                guard let record = entry.value, let plan = try? record.plan() else { return nil }
+                return (record.savedAt, plan)
+            }
+        default:
+            return []
+        }
+        // One copy per trip, the highest version (newest saved on a tie).
+        var best: [String: (savedAt: Date, plan: LioPlanSummary)] = [:]
+        for entry in found {
+            if let kept = best[entry.plan.tripID],
+               (kept.plan.tripVersion, kept.savedAt) >= (entry.plan.tripVersion, entry.savedAt) { continue }
+            best[entry.plan.tripID] = entry
+        }
+        return best.values.sorted { $0.savedAt != $1.savedAt ? $0.savedAt > $1.savedAt : $0.plan.tripID < $1.plan.tripID }
     }
 
-    private func write(_ records: [Record]) throws {
+    private func write(_ records: [(savedAt: Date, plan: LioPlanSummary)]) throws {
         guard isCurrent() else { throw CancellationError() }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
                                                 attributes: [.posixPermissions: 0o700])
@@ -152,7 +258,8 @@ extension LioRichItinerary {
         var attributes = URLResourceValues()
         attributes.isExcludedFromBackup = true
         try storedDirectory.setResourceValues(attributes)
-        let data = try JSONEncoder().encode(Archive(version: 1, records: records))
+        let data = try JSONEncoder().encode(Archive(version: Self.currentVersion,
+                                                                records: records.map { Record(savedAt: $0.savedAt, plan: $0.plan) }))
         #if os(iOS)
         try data.write(to: file, options: [.atomic, .completeFileProtection])
         #else
@@ -186,6 +293,17 @@ final class LioSavedPlansModel {
             try store.save(plan)
             cached = try store.load()
         } catch {}
+    }
+
+    /// #1725: saves a popular route as a trip with checked places; nil when nothing was saved.
+    @discardableResult
+    func saveTemplate(_ roadbook: LioRoadbook) -> LioPlanSummary? {
+        guard let store else { return nil }
+        do {
+            let plan = try store.saveTemplate(roadbook)
+            cached = try store.load()
+            return cached.contains(plan) ? plan : nil
+        } catch { return nil }
     }
 
     func remove(_ plan: LioPlanSummary) {

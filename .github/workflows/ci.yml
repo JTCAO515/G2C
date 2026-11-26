@@ -41,6 +41,7 @@ jobs:
     outputs:
       docs_only: ${{ steps.diff.outputs.docs_only }}
       ios_only: ${{ steps.diff.outputs.ios_only }}
+      web_only: ${{ steps.diff.outputs.web_only }}
       app_changed: ${{ steps.diff.outputs.app_changed }}
     steps:
       - uses: actions/checkout@v4
@@ -86,9 +87,9 @@ jobs:
 
   postgres-shard:
     # Fresh private Unix-socket clusters only; migrations up/down/up plus every PG-backed suite.
-    # Skipped for docs-only and iOS-only pull requests.
+    # Skipped for docs-only, iOS-only and website-only pull requests.
     needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' && needs.changes.outputs.ios_only != 'true' }}
+    if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' && needs.changes.outputs.ios_only != 'true' && needs.changes.outputs.web_only != 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
@@ -124,7 +125,7 @@ jobs:
 
   postgres:
     # Stable required check. Passes only if every shard passed, or all were skipped for a
-    # docs-only or iOS-only pull request.
+    # docs-only, iOS-only or website-only pull request.
     needs: [changes, postgres-shard]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
@@ -133,9 +134,10 @@ jobs:
       - env:
           DOCS_ONLY: ${{ needs.changes.outputs.docs_only }}
           IOS_ONLY: ${{ needs.changes.outputs.ios_only }}
+          WEB_ONLY: ${{ needs.changes.outputs.web_only }}
           RESULT: ${{ needs.postgres-shard.result }}
         run: |
-          test "$RESULT" = success || { { test "$DOCS_ONLY" = true || test "$IOS_ONLY" = true; } && test "$RESULT" = skipped; }
+          test "$RESULT" = success || { { test "$DOCS_ONLY" = true || test "$IOS_ONLY" = true || test "$WEB_ONLY" = true; } && test "$RESULT" = skipped; }
 
   swift-packages:
     needs: changes
