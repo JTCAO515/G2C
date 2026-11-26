@@ -1,6 +1,6 @@
 # #30：指定 Supabase 测试项目
 
-仅 `G2C / sajkhvjpllldfyfryalx / ap-southeast-1`，至 2026-11-30；合成数据。
+仅 `G2C / sajkhvjpllldfyfryalx / ap-southeast-1`，至 2026-12-31（JT 2026-11-09 [#495](https://github.com/JTCAO515/G2C/issues/495#issuecomment-6730489918) 由 11-30 延长；代码到期值只在 `backend/usage/cj_usage/authorization_deadlines.json` 的 `supabase_test`，#1716）；合成数据。
 M1 条目2及 JT 本轮付费测试授权、两个合成 Auth 账号的服务端 key 授权均记在 #495。
 不部署托管 API/worker、不操作域名、不升级套餐或买备份、不写真实用户数据。
 

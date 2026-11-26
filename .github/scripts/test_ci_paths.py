@@ -28,7 +28,8 @@ class ClassifyTests(unittest.TestCase):
 
     def test_paths_the_app_reads_keep_app_jobs(self):
         for path in ('contracts/message/x.json', 'digital-assets/ios-avatar/a.png',
-                     '.github/workflows/ci.yml', '.github/swift-packages.json', '.gitattributes'):
+                     '.github/workflows/ci.yml', '.github/swift-packages.json', '.gitattributes',
+                     'tooling/release/app_flags.json', 'tooling/release/build_app.py'):
             with self.subTest(path=path):
                 self.check([path, 'backend/a.py'], 'false', 'false', 'true')
 
@@ -41,7 +42,8 @@ class ClassifyTests(unittest.TestCase):
     def test_prefixes_are_anchored(self):
         self.check(['backend/ios/a.py'], 'false', 'false', 'false')
         self.check(['docs-old/a.md'], 'false', 'false', 'false')
-        for path in ('iosx/a', '.github-old/x', 'contracts-v2/x', 'digital-assets-old/x', '.gitattributes.bak'):
+        for path in ('iosx/a', '.github-old/x', 'contracts-v2/x', 'digital-assets-old/x', '.gitattributes.bak',
+                     'tooling/releases/x', 'tooling/datasets/x'):
             with self.subTest(path=path):
                 self.check([path], 'false', 'false', 'false')
 

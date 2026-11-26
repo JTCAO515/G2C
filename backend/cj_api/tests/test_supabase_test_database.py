@@ -84,7 +84,10 @@ class SupabaseBoundaries(unittest.TestCase):
             create_local_app(conninfo_path=None,auth_dir='unused',database=obj,cleanup_configuration=object())
 
     def test_authorization_expiry_is_checked(self):
-        with patch.object(boundary,'datetime',SimpleNamespace(now=lambda tz:datetime(2026,12,1,tzinfo=timezone.utc))),patch.dict(os.environ,dict(CJ_ENV='local'),clear=True),self.assertRaises(CompositionUnavailable):decode_uri(uri())
+        # The end comes from the reviewed deadline config (#1716): 2027-01-01 00:00 Asia/Shanghai.
+        self.assertEqual(boundary.DEADLINE,datetime(2026,12,31,16,tzinfo=timezone.utc))
+        with patch.object(boundary,'datetime',SimpleNamespace(now=lambda tz:boundary.DEADLINE)),patch.dict(os.environ,dict(CJ_ENV='local'),clear=True),self.assertRaises(CompositionUnavailable):decode_uri(uri())
+        with patch.object(boundary,'datetime',SimpleNamespace(now=lambda tz:datetime(2026,12,31,15,59,59,tzinfo=timezone.utc))),patch.dict(os.environ,dict(CJ_ENV='local'),clear=True):decode_uri(uri())
 
 
 if __name__=='__main__':unittest.main()
