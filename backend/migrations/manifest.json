@@ -471,9 +471,9 @@
       "version": 59,
       "name": "lio_chip_ticket",
       "file": "backend/migrations/0059_lio_chip_ticket.sql",
-      "sha256": "3ebbd1dd5d83fe642f9dc7591b80ad44561e6fbb10ba1ee8ca321a33f09566f1",
+      "sha256": "2b5173107c2a6e127d555749b98b2d1703f698f9955980e99f71c2c52920638b",
       "down": "backend/migrations/down/0059_lio_chip_ticket.down.sql",
-      "down_sha256": "a20ac236d9ccd81b809a09c8ce4cfaa864c0e2d7bd8bc5ea185e5d95f63d564f"
+      "down_sha256": "30e3f65e3395e3a85ecb7f87565df2694bfa5dd83f933bb6e91e84f7b05065d9"
     }
   ]
 }

@@ -94,6 +94,20 @@ $$;
 REVOKE EXECUTE ON FUNCTION public.cj_lio_chip_redeem_guard() FROM PUBLIC;
 CREATE TRIGGER cj_lio_chip_redeem_guard BEFORE UPDATE ON public.cj_lio_chip
  FOR EACH ROW EXECUTE FUNCTION public.cj_lio_chip_redeem_guard();
+-- A ticket is born unused: no INSERT can arrive already used or already free.
+CREATE FUNCTION public.cj_lio_chip_born_unused() RETURNS trigger
+ LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,public,pg_temp AS $$
+BEGIN
+    IF NEW.used_message_id IS NOT NULL OR NEW.used_at IS NOT NULL OR NEW.redeemed_message_id IS NOT NULL
+       OR NEW.redeemed_at IS NOT NULL OR NEW.redeemed_xid IS NOT NULL THEN
+        RAISE EXCEPTION USING ERRCODE='42501', MESSAGE='chip ticket must be issued unused';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+REVOKE EXECUTE ON FUNCTION public.cj_lio_chip_born_unused() FROM PUBLIC;
+CREATE TRIGGER cj_lio_chip_born_unused BEFORE INSERT ON public.cj_lio_chip
+ FOR EACH ROW EXECUTE FUNCTION public.cj_lio_chip_born_unused();
 CREATE FUNCTION public.cj_lio_chip_reject_truncate() RETURNS trigger
  LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,public,pg_temp AS $$
 BEGIN

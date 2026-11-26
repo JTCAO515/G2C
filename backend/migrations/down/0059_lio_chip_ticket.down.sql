@@ -34,5 +34,6 @@ ALTER TABLE public.cj_message_receipt DROP COLUMN demo_chip_free;
 DROP FUNCTION public.cj_lio_chip_redeem(text,text,text);
 DROP FUNCTION public.cj_lio_chip_issue(text,text[],text[]);
 DROP TABLE public.cj_lio_chip;
+DROP FUNCTION public.cj_lio_chip_born_unused();
 DROP FUNCTION public.cj_lio_chip_reject_truncate();
 DROP FUNCTION public.cj_lio_chip_redeem_guard();

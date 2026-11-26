@@ -137,7 +137,7 @@ def main(config, conninfo):
     assert not free(reuse, alice)                                             # a spent ticket is an ordinary question
     wrong = send(alice, LABELS[2] + ' ', tickets[2])
     assert not free(wrong, alice) and chips(alice, first)[2][3] is None       # text must be byte-identical
-    wrong = send(alice, LABELS[2].lower(), tickets[2])
+    wrong = send(alice, LABELS[2].replace('开通', '开 通'), tickets[2])
     assert not free(wrong, alice)
     stranger = send(bob, LABELS[2], tickets[2])
     assert not free(stranger, bob) and chips(alice, first)[2][3] is None      # another account's ticket does nothing
@@ -234,6 +234,15 @@ def main(config, conninfo):
                 ("DELETE FROM cj_lio_chip WHERE scope=%s", (alice,)),
                 ("TRUNCATE cj_lio_chip", ())):
             expect('42501', lambda: conn.execute(statement, args))
+            conn.rollback()
+            conn.execute("SELECT set_config('cj.message_scope',%s,false)", (alice,))
+        # a ticket cannot be inserted already used or already free
+        for columns, values in (("used_message_id,used_at", "'m-x',now()"),
+                                ("used_message_id,used_at,redeemed_message_id,redeemed_at,redeemed_xid",
+                                 "'m-y',now(),'m-y',now(),pg_current_xact_id()")):
+            expect('42501', lambda: conn.execute(
+                f'INSERT INTO cj_lio_chip(scope,conversation_id,generation,answer_message_id,chip_index,ticket,label_sha256,depth,'
+                f"expires_at,{columns}) VALUES(%s,'c','g','m',2,%s,%s,1,now()+interval '1 hour',{values})", (alice, 'y' * 43, DIGEST)))
             conn.rollback()
             conn.execute("SELECT set_config('cj.message_scope',%s,false)", (alice,))
         # the free flag and the question day of a receipt cannot be rewritten from the runtime role either
