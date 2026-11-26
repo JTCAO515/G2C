@@ -45,9 +45,16 @@ def make_report(drill: Drill) -> dict:
                                 if execution.case.status == "closed"
                                 and event.case_detail.revision == execution.revision
                                 and event.case_detail.action in ("advance", "confirm")), default=None)
-            blockers = list(dict.fromkeys(event.case_detail.reason for event in relevant
-                                          if event.result == AuditResult.DENIED and event.case_detail
-                                          and event.case_detail.reason))
+            denied = []
+            for event in relevant:
+                if event.result != AuditResult.DENIED:
+                    continue
+                detail = event.case_detail
+                if detail and detail.reason:
+                    denied.append(f"{detail.step_id or detail.action}/{detail.reason}")
+                elif event.action == AuditAction.ANNOTATE:
+                    denied.append("review_denied")
+            blockers = list(dict.fromkeys(denied))
             for timestamp, reason in ((injected, "not_injected"), (viewed, "not_viewed"), (finished, "not_completed")):
                 if timestamp is None:
                     blockers.append(reason)

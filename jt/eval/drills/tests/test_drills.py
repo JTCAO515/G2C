@@ -120,6 +120,11 @@ def test_actual_workbench_audit_supplies_five_level_drill_example():
                 _workflow(drill, operator, UUID(identifier), _csrf(detail))
             else:
                 assert arrival.signal.severity == "P3"
+                rejected = _post(
+                    reviewer, "/queue/review", _csrf(detail), signal=item.reference, actual_severity="",
+                    false_positive="0", missed="0", note="合成演练漏填真实级别",
+                )
+                assert rejected.status_code == 400
                 response = _post(
                     reviewer, "/queue/review", _csrf(detail), signal=item.reference, actual_severity="P3",
                     false_positive="0", missed="0", note="合成演练已复核",
@@ -134,7 +139,11 @@ def test_actual_workbench_audit_supplies_five_level_drill_example():
         "p0_assistance", "document_loss", "flight_change", "ai_failure",
     }
     assert rows["P3"]["playbook"] is None
-    assert rows["P2"]["blockers"] == ["customer_consent_required"]
+    assert rows["P2"]["blockers"] == [
+        "draft_itinerary_change/customer_consent_required",
+        "simulate_paid_rebooking/customer_consent_required",
+    ]
+    assert rows["P3"]["blockers"] == ["review_denied"]
     consent_steps = [
         event.case_detail.step_id for event in drill.store.audit_events()
         if event.case_detail and event.case_detail.action == "record_customer_consent"
