@@ -54,6 +54,7 @@ struct LioTripTimeline: View {
     @State private var mapUnavailable = false
     @State private var selectedTaxiPlace: LioTaxiPlace?
     @Environment(\.lioTaxiEntry) private var taxiEntry
+    @ScaledMetric(relativeTo: .footnote) private var numberBadge: CGFloat = 28
 
     private var taxiPlaces: [LioTaxiPlace] {
         var seen = Set<LioTaxiPlace.ID>()
@@ -158,7 +159,7 @@ struct LioTripTimeline: View {
                 Text("\(number)")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(LioTheme.onVermilion)
-                    .frame(width: 28, height: 28)
+                    .frame(width: numberBadge, height: numberBadge)
                     .background(LioTheme.vermilion, in: Circle())
                 if !last { Rectangle().fill(LioTheme.hairline).frame(width: 1).frame(maxHeight: .infinity) }
             }

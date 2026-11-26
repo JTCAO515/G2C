@@ -488,7 +488,7 @@ public struct LioHome<MenuContent: View>: View {
             }
         } else if LioTripHomeFeature.enabledInBuild && !showsAllTrips {
             LioTripHomeTab(language: language, store: tripHomeStore, plans: savedPlans.plans,
-                           plansUnreadable: savedPlans.unreadable,
+                           plansUnreadable: savedPlans.unreadable, savedPlans: savedPlans,
                            messageDirectory: messageDirectory, isCurrent: toolsSessionIsCurrent,
                            showAllTrips: { showsAllTrips = true }, openChat: { tab = .chat })
                 .id(tripHomeStore?.id)
@@ -1569,6 +1569,7 @@ private struct LioTripHomeTab: View {
     let store: LioTripHomeStore?
     let plans: [LioPlanSummary]
     let plansUnreadable: Bool
+    let savedPlans: LioSavedPlansModel
     let messageDirectory: URL?
     let isCurrent: @MainActor () -> Bool
     let showAllTrips: () -> Void
@@ -1586,7 +1587,7 @@ private struct LioTripHomeTab: View {
         Group {
             if let loaded {
                 LioTripHome(language: language, store: store, plans: plans, plansUnreadable: plansUnreadable,
-                            tools: loaded.tools, showAllTrips: showAllTrips, openChat: openChat, model: loaded.model)
+                            savedPlans: savedPlans, tools: loaded.tools, showAllTrips: showAllTrips, openChat: openChat, model: loaded.model)
             } else {
                 LioTheme.paper.ignoresSafeArea()
             }
