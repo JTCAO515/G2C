@@ -28,6 +28,7 @@
 <key>G2CAIDisclosureEnabled</key><string>$(G2C_AI_DISCLOSURE_ENABLED)</string>
 <key>G2CAnswerFeedbackEnabled</key><string>$(G2C_ANSWER_FEEDBACK_ENABLED)</string>
 <key>G2CNewSignInScreenEnabled</key><string>$(G2C_NEW_SIGN_IN_SCREEN_ENABLED)</string>
+<key>G2CAnswerLayoutEnabled</key><string>$(G2C_ANSWER_LAYOUT_ENABLED)</string>
 <key>G2CChatTripPlacesEnabled</key><string>$(G2C_CHAT_TRIP_PLACES_ENABLED)</string>
 <key>LSApplicationQueriesSchemes</key><array><string>OneTravel</string></array>
 <key>ITSAppUsesNonExemptEncryption</key><false/>

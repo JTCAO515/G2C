@@ -74,6 +74,10 @@
       "plist": "G2CNewSignInScreenEnabled"
     },
     {
+      "setting": "G2C_ANSWER_LAYOUT_ENABLED",
+      "plist": "G2CAnswerLayoutEnabled"
+    },
+    {
       "setting": "G2C_CHAT_TRIP_PLACES_ENABLED",
       "plist": "G2CChatTripPlacesEnabled"
     }

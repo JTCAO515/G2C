@@ -74,6 +74,9 @@ public struct LioHome<MenuContent: View>: View {
     @State private var feedbackTexts: [Data: [LioAnswerFeedbackStep: String]] = [:]
     /// Lines the server confirmed, kept while this screen lives (the device's copy is removed once confirmed).
     @State private var feedbackLedger = LioFeedbackLedger()
+    /// #1727: shown when a button's tool is not in this build.
+    @State private var followupUnavailable = false
+    private let answerLayoutOn = LioAnswerLayoutFeature.enabledInBuild
     @State private var feedbackDetails: FeedbackDetails?
     /// #1748: the account's in-app location choice, when the build asks for it (`G2CLocationConsentEnabled`).
     @State private var locationConsent: LioLocationConsent?
@@ -459,6 +462,9 @@ public struct LioHome<MenuContent: View>: View {
                 guard canRespond(to: edit.turnID, in: edit.owner) else { return }
                 _ = sendQuestion(text)
             }
+        }
+        .alert(LioAnswerLayoutFeature.unavailableText(language), isPresented: $followupUnavailable) {
+            Button(language.text("OK", "好")) {}
         }
         .sheet(item: $feedbackDetails) { details in
             LioAnswerFeedbackDetailsSheet(language: language) { text in
@@ -925,9 +931,9 @@ public struct LioHome<MenuContent: View>: View {
 
     /// A Lio turn: a small avatar and name, then the reply in a `surface` bubble whose corner nearest the
     /// avatar is tucked in. JT 2026-11-11 kept bubbles for Lio's replies instead of plain page text (D2).
-    private func lioReply<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+    private func lioReply<Content: View>(byline: Bool = true, @ViewBuilder _ content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
-            lioByline
+            if byline { lioByline }
             content()
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
@@ -1221,15 +1227,18 @@ public struct LioHome<MenuContent: View>: View {
                 }
             } else if !turn.answer.isEmpty {
                 let answerKey = LioEntranceKey(turn: turn.id, part: .answer)
-                lioReply {
-                    LioStreamingText(source: turn.answer, streaming: turn.status == .answering,
+                // #1727: with the build's flag on and the server's `split`, two bubbles cut at the first blank line.
+                let parts = (answerLayoutOn && turn.layout == .split) ? LioAnswerParts(turn.answer) : LioAnswerParts(whole: turn.answer)
+                let answerText: (String, String, Bool) -> LioStreamingText = { source, identifier, completes in
+                    LioStreamingText(source: source, streaming: turn.status == .answering,
                                      animate: entering.contains(answerKey), language: language,
                                      presentationActive: !chatFading && !menuOpen && tab == .chat,
+                                     identifier: identifier,
                                      onFirstVisible: {
                         guard conversation === owner, !chatFading else { return }
                         timing.mark(.firstText, turn.id)
                     }, onComplete: {
-                        guard conversation === owner, !chatFading else { return }
+                        guard completes, conversation === owner, !chatFading else { return }
                         timing.mark(.finished, turn.id)
                         completedBodies.insert(turn.id)
                     }, onLayout: {
@@ -1238,7 +1247,15 @@ public struct LioHome<MenuContent: View>: View {
                         scroll.scrollTo("lio.bottom", anchor: .bottom)
                     })
                 }
-                .lioEntrance(.fade, active: entering.contains(answerKey)) { entering.remove(answerKey) }
+                lioReply { answerText(parts.head, "lio.answer", parts.tail == nil) }
+                    .lioEntrance(.fade, active: entering.contains(answerKey)) { entering.remove(answerKey) }
+                if let tail = parts.tail {
+                    lioReply(byline: false) { answerText(tail, "lio.answer.2", true) }
+                        .lioEntrance(.fade, active: entering.contains(answerKey)) { entering.remove(answerKey) }
+                }
+                if answerLayoutOn, turn.status == .finished, !turn.followups.isEmpty {
+                    LioAnswerFollowups(actions: turn.followups) { openFollowup($0) }
+                }
             }
             messageStatus(turn)
             if answerShown(turn) {
@@ -1387,6 +1404,14 @@ public struct LioHome<MenuContent: View>: View {
             guard case .notSent(let step) = feedbackPhases[id] else { return }
             sendFeedback(step, turnID: id, messageID: messageID, retry: true)
         })
+    }
+
+    /// #1727: a server button opens its tool through the router; a tool this build does not have says so.
+    private func openFollowup(_ action: LioTimelineWire.Followup) {
+        guard let route = LioRoute(tool: LioTool(action.tool), parameters: action.parameters), router.open(route) else {
+            followupUnavailable = true
+            return
+        }
     }
 
     private var feedbackBusy: Bool { feedbackPhases.values.contains { $0.isSending } }

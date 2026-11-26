@@ -82,6 +82,71 @@ struct LioTimelineWireTests {
         }
     }
 
+    // MARK: LIO-answer-followups.1 (#1727)
+
+    private func v2Row(status: String = "completed", extra: String) -> String {
+        """
+        {"message_id":"m1","text":"Q","answer":"One.\\n\\nTwo.","status":"\(status)","sources":[]\(extra)}
+        """
+    }
+
+    private func v2Page(_ rows: String) -> Data {
+        Data("""
+            {"version":"LIO-timeline.2","conversation_id":"\(conversation)","messages":[\(rows)],"next_before":null}
+            """.utf8)
+    }
+
+    private let buttons = """
+        ,"layout":"split","followups":{"version":"LIO-answer-followups.1","actions":[
+        {"tool":"payment-guide","parameters":{},"label":"打开支付开通指南"},
+        {"tool":"taxi","parameters":{"destination":"故宫博物院","lat":"39.918058","lng":"116.397026"},"label":"打车去这里"}]}
+        """
+
+    @Test func rowsWithoutTheNewKeysReadAsBefore() throws {
+        let page = try LioTimelineWire.decodePage(v2Page(v2Row(extra: "")), for: conversation, version: .v2)
+        let message = try #require(page.messages.first)
+        #expect(message.layout == nil && message.followups.isEmpty)
+    }
+
+    @Test func layoutAndFollowupsAreProjectedForACompletedSplitAnswer() throws {
+        let page = try LioTimelineWire.decodePage(v2Page(v2Row(extra: buttons)), for: conversation, version: .v2)
+        let message = try #require(page.messages.first)
+        #expect(message.layout == .split)
+        #expect(message.followups.map(\.tool) == ["payment-guide", "taxi"])
+        #expect(message.followups[0].parameters.isEmpty && message.followups[0].label == "打开支付开通指南")
+        #expect(message.followups[1].parameters == ["destination": "故宫博物院", "lat": "39.918058", "lng": "116.397026"])
+    }
+
+    @Test func buttonsOnlyAppearOnACompletedSplitRow() throws {
+        let answering = try LioTimelineWire.decodePage(v2Page(v2Row(status: "answering", extra: buttons)), for: conversation, version: .v2)
+        #expect(answering.messages[0].layout == .split && answering.messages[0].followups.isEmpty)
+        let single = buttons.replacingOccurrences(of: "\"split\"", with: "\"single\"")
+        let page = try LioTimelineWire.decodePage(v2Page(v2Row(extra: single)), for: conversation, version: .v2)
+        #expect(page.messages[0].layout == .single && page.messages[0].followups.isEmpty)
+    }
+
+    @Test(arguments: [
+        #","layout":"split","followups":{"version":"LIO-answer-followups.2","actions":[{"tool":"taxi","parameters":{},"label":"打车"}]}"#,
+        #","layout":"split","followups":{"version":"LIO-answer-followups.1","actions":[]}"#,
+        #","layout":"split","followups":{"version":"LIO-answer-followups.1","actions":[{"tool":"a","parameters":{},"label":"1"},{"tool":"b","parameters":{},"label":"2"},{"tool":"c","parameters":{},"label":"3"}]}"#,
+        #","layout":"split","followups":{"version":"LIO-answer-followups.1","actions":[{"tool":"taxi","parameters":{"lat":39.9},"label":"打车"}]}"#,
+        #","layout":"split","followups":{"version":"LIO-answer-followups.1","actions":[{"tool":"taxi bad","parameters":{},"label":"打车"}]}"#,
+        #","layout":"split","followups":{"version":"LIO-answer-followups.1","actions":[{"tool":"taxi","parameters":{},"label":" 打车"}]}"#,
+        #","layout":"split","followups":{"version":"LIO-answer-followups.1","actions":[{"tool":"taxi","parameters":{},"label":"打\u200b车"}]}"#,
+        #","layout":"split","followups":{"version":"LIO-answer-followups.1","actions":[{"tool":"taxi","parameters":{"k":""},"label":"打车"}]}"#,
+        #","layout":"split","followups":"nope""#,
+    ]) func aDamagedButtonListReadsAsNoButtonsAndNeverFailsThePage(extra: String) throws {
+        let page = try LioTimelineWire.decodePage(v2Page(v2Row(extra: extra)), for: conversation, version: .v2)
+        #expect(page.messages[0].layout == .split)
+        #expect(page.messages[0].followups.isEmpty, "all or nothing")
+        #expect(page.messages[0].answer == "One.\n\nTwo.")
+    }
+
+    @Test func anUnknownLayoutReadsAsNoLayout() throws {
+        let page = try LioTimelineWire.decodePage(v2Page(v2Row(extra: #","layout":"triple""#)), for: conversation, version: .v2)
+        #expect(page.messages[0].layout == nil && page.messages[0].followups.isEmpty)
+    }
+
     private func page(_ rows: String) -> Data {
         Data("""
             {"version":"LIO-timeline.1","conversation_id":"\(conversation)","messages":[\(rows)],"next_before":null}

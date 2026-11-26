@@ -300,11 +300,15 @@ public final class LioTimelineHTTP {
         return .accepted(id, bytes)
     }
 
+    /// `declaresAnswerLayout` adds `accepts=LIO-answer-followups.1` to a v2 read (#1727); without it the request is
+    /// exactly what it was before.
     public func timeline(conversationID: String? = nil, before: String? = nil,
-                         version: LioTimelineWire.Version = .v1) async throws -> LioTimelineWire.Page {
+                         version: LioTimelineWire.Version = .v1,
+                         declaresAnswerLayout: Bool = false) async throws -> LioTimelineWire.Page {
         observe(.timeline)
         let token = try await bearer()
         let (response, body) = try await transport.readLio(conversationID: conversationID, before: before, bearer: token, version: version,
+            declaresAnswerLayout: declaresAnswerLayout,
             observedResponse: { [self] response in if !Task.isCancelled { observe(.timeline, response) } })
         observe(.timeline, response)
         guard response.status.code == 200 else { throw MessageHTTPFailure.invalidResponse }

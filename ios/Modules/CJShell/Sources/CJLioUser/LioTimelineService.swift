@@ -11,6 +11,8 @@ struct LioTimelineTurn: Sendable {
     let itinerary: LioItinerary?
     let memoryTags: [LioMemoryWire.Tag]
     let exploration: LioExplorationDisplay?
+    let layout: LioTimelineWire.AnswerLayout?
+    let followups: [LioTimelineWire.Followup]
 
     var isActive: Bool {
         switch status {
@@ -25,6 +27,8 @@ struct LioTimelineTurn: Sendable {
         answer = message.answer
         itinerary = message.trip.map(LioItinerary.init)
         exploration = nil
+        layout = message.layout
+        followups = message.followups
         memoryTags = message.memoryTags.filter { LioPublicDisplay.permitsText($0.text) }
         sources = Self.projectSources(message.sources.map { ($0.title, $0.link) }, messageID: message.id)
         status = Self.status(message.state, activity: message.activity, answer: message.answer)
@@ -35,6 +39,8 @@ struct LioTimelineTurn: Sendable {
         text = message.question
         answer = message.answer
         exploration = try LioExplorationDisplay(message)
+        layout = nil
+        followups = []
         // Native calendar/rich summaries keep their actual type and binding in exploration.trip.
         itinerary = nil
         memoryTags = message.memoryTags.filter { LioPublicDisplay.permitsText($0.text) }
@@ -118,13 +124,15 @@ extension LioService {
 
     public static func signedConversation(_ client: LioTimelineHTTP, destination: LioTimelineWire.V2Destination,
                                           version: LioTimelineWire.Version = .v2,
+                                          answerLayout: Bool = false,
                                           readFailed: (@MainActor @Sendable (any Error) -> Void)? = nil,
                                           didCreate: @escaping @Sendable (String) async -> Void) -> LioService {
         timeline(send: { original in
             try await signedSend(client, original, readFailed: readFailed)
         }, read: { id, before in
             try await noted(readFailed) {
-                try await client.timeline(conversationID: id, before: before, version: version)
+                try await client.timeline(conversationID: id, before: before, version: version,
+                                          declaresAnswerLayout: answerLayout)
             }
         }, destination: destination, scopedVersion: version, recoverFirst: { id in
             try await noted(readFailed, stage: .firstSendLookup) {
