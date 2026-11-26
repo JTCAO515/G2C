@@ -64,6 +64,10 @@
     {
       "setting": "G2C_AI_DISCLOSURE_ENABLED",
       "plist": "G2CAIDisclosureEnabled"
+    },
+    {
+      "setting": "G2C_ANSWER_FEEDBACK_ENABLED",
+      "plist": "G2CAnswerFeedbackEnabled"
     }
   ],
   "release": {

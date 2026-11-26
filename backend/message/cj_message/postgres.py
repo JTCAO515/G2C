@@ -5,7 +5,7 @@ from .domain import Chat, CommitUnknown, Receipt, Stored, Unavailable, ChatSumma
 
 
 class Repository:
-    def __init__(self, connect, scope, *, bind_needs=False, local_run_mode=None, registered_usage=False, travel_mode=False, travel_metadata=False, trip_mode=False, trip_metadata=False,edit_mode=False,edit_metadata=False):
+    def __init__(self, connect, scope, *, bind_needs=False, local_run_mode=None, registered_usage=False, travel_mode=False, travel_metadata=False, trip_mode=False, trip_metadata=False,edit_mode=False,edit_metadata=False,service_sessions=False):
         # Explicit local host opt-in; legacy callers remain unbound. Required mode
         # never falls back when selection/revision is missing or unreadable.
         # Internal partition key, NOT a principal schema or client-supplied owner.
@@ -31,6 +31,10 @@ class Repository:
         if type(trip_mode) is not bool or type(trip_metadata) is not bool:
             raise ValueError('explicit formal Trip configuration required')
         self.travel_metadata=travel_metadata
+        if type(service_sessions) is not bool:
+            raise ValueError('explicit service session capability required')
+        # #1770: only schemas with migration 0057 know conversation kinds.
+        self.service_sessions=service_sessions
         self.connect, self.scope, self.bind_needs = connect, scope, bind_needs
 
     @contextmanager
@@ -67,7 +71,7 @@ class Repository:
                     bind_scope(cur)
                 if validate_connection is not None:
                     validate_connection(cur)
-                yield Transaction(cur, self.scope, bind_needs=self.bind_needs, local_run_mode=self.local_run_mode, registered_usage=self.registered_usage,travel_mode=self.travel_mode,travel_metadata=self.travel_metadata,trip_mode=self.trip_mode,trip_metadata=self.trip_metadata,edit_mode=self.edit_mode,edit_metadata=self.edit_metadata)
+                yield Transaction(cur, self.scope, bind_needs=self.bind_needs, local_run_mode=self.local_run_mode, registered_usage=self.registered_usage,travel_mode=self.travel_mode,travel_metadata=self.travel_metadata,trip_mode=self.trip_mode,trip_metadata=self.trip_metadata,edit_mode=self.edit_mode,edit_metadata=self.edit_metadata,service_sessions=self.service_sessions)
             except BaseException:
                 outcome = 'body_failed'
                 cleanup(conn.rollback, 'rollback')
@@ -88,7 +92,7 @@ class Repository:
 
 
 class Transaction:
-    def __init__(self, cursor, scope, *, bind_needs=False, local_run_mode=None, registered_usage=False, travel_mode=False, travel_metadata=False, trip_mode=False, trip_metadata=False,edit_mode=False,edit_metadata=False):
+    def __init__(self, cursor, scope, *, bind_needs=False, local_run_mode=None, registered_usage=False, travel_mode=False, travel_metadata=False, trip_mode=False, trip_metadata=False,edit_mode=False,edit_metadata=False,service_sessions=False):
         self.cur, self.scope, self.bind_needs = cursor, scope, bind_needs
         self.local_run_mode=local_run_mode
         self.registered_usage=registered_usage
@@ -98,6 +102,8 @@ class Transaction:
         self.trip_mode=trip_mode
         self.travel_mode=travel_mode
         self.travel_metadata=travel_metadata
+        self.service_sessions=service_sessions
+        self._service_chats=set()
 
     def local_execution(self, message_id=None, run_id=None):
         # None is the domain repository seam, never installed by LocalDatabase.
@@ -129,6 +135,20 @@ class Transaction:
                 or type(row[2]) is not int or row[2] < 0):
             raise Unavailable()
         return Chat(*row)
+
+    def conversation_kind(self, cid):
+        # #1770: read after the caller locked the active head; unknown kinds fail closed.
+        # Without the capability every chat is a trip chat; 0057 triggers still refuse a
+        # delivery/reference/NEEDS row for a service chat.
+        if not self.service_sessions:
+            return 'trip'
+        self.cur.execute('SELECT conversation_kind FROM cj_message_chat WHERE scope = %s AND conversation_id = %s AND active', (self.scope, cid))
+        row = self.cur.fetchone()
+        if row is None or row[0] not in ('trip', 'service'):
+            raise Unavailable()
+        if row[0] == 'service':
+            self._service_chats.add(cid)
+        return row[0]
 
     def open_chat(self, cid, generation):
         self.local_execution()
@@ -165,7 +185,7 @@ class Transaction:
         if protected:
             from .local_protection import capture as capture_requirement
             capture_requirement(self.cur,self.scope,stored,self.registered_usage)
-        if self.bind_needs:
+        if self.bind_needs and r.conversation_id not in self._service_chats:
             from .needs_binding import capture
             capture(self.cur, self.scope, stored, command=command)
         self.cur.execute('UPDATE cj_message_chat SET last_sequence = %s WHERE scope = %s AND conversation_id = %s AND generation = %s AND active', (r.sequence, self.scope, r.conversation_id, r.generation))
