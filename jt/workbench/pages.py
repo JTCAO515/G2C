@@ -31,6 +31,7 @@ ACTION_LABELS = {
     AuditAction.TOTP_REBIND_AUTHORIZED: "授权重绑",
     AuditAction.VIEW: "查看",
     AuditAction.ANNOTATE: "标注",
+    AuditAction.EXPORT: "导出评测",
     AuditAction.REVEAL: "揭示",
     AuditAction.DECIDE: "人工决策",
 }
@@ -43,24 +44,26 @@ def csrf_field(token: str) -> str:
 
 def page(
     title: str, content: str, *, session: Session | None = None, login: bool = False, status: int = 200,
+    script: str = "",
 ) -> HTMLResponse:
     nav = ''
     if session is not None:
-        admin_nav = ''
+        sections = '<a href="/queue">待办队列</a>'
         if session.role == Role.ADMIN:
-            admin_nav = '<a href="/admin/accounts">账号管理</a><a href="/admin/audit">审计日志</a>'
+            sections = '<a href="/admin/accounts">账号管理</a><a href="/admin/audit">审计日志</a>'
         nav = (
-            f'<nav aria-label="工作台导航"><a href="/">首页</a>{admin_nav}</nav>'
+            f'<nav aria-label="工作台导航"><a href="/">首页</a>{sections}</nav>'
             f'<form method="post" action="/logout">{csrf_field(session.csrf)}'
             '<button type="submit" class="secondary">退出登录</button></form>'
         )
     main_class = ' class="login-layout"' if login else ''
+    script_tag = f"<script>{script}</script>" if script else ""
     return HTMLResponse(
         '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         f'<title>{escape(title)} · JT 工作台</title><style>{STYLE}</style></head>'
         '<body><header><div class="bar"><strong class="wordmark">JT 工作台</strong>'
-        f'{nav}</div></header><main{main_class}>{content}</main></body></html>',
+        f'{nav}</div></header><main{main_class}>{content}</main>{script_tag}</body></html>',
         status_code=status,
     )
 
