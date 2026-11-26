@@ -9,12 +9,12 @@
         "zh": "广交会境外采购商预登记",
         "en": "Canton Fair overseas buyer pre-registration"
       },
-      "text_zh": "境外采购商须持采购商证件进入广交会展馆。请在广交会官网或 App 的采购商服务系统（buyer.cantonfair.org.cn）预登记：首次到会先注册账号、填写到会意向，再按需申请采购商证件和邀请函；已到过会的采购商登录后按需申请邀请函。领证时带有效证件原件和名片，可在白云机场、广州南站、琶洲港澳客运码头等馆外办证点或展馆登记处领取。每届的开放时间和办证点时段以官网当届通知为准。",
-      "text_en": "Overseas buyers need a Buyer Badge to enter the Canton Fair Complex. Pre-register in the Buyer Service System on the official Canton Fair website or app (buyer.cantonfair.org.cn): first-time attendees create an account, complete their attendance intent, then apply for a Buyer Badge and invitation letter as needed; returning buyers log in and apply for an invitation letter as needed. Bring your original valid ID and a business card to collect the badge at an off-site registration office such as Guangzhou Baiyun International Airport, Guangzhou South Railway Station or the Pazhou-Hong Kong-Macao Ferry Terminal, or at the registration offices at the Complex. Opening dates and office hours for each session follow that session’s official notice.",
+      "text_zh": "所有到会的境外采购商都应在广交会官网或 App 的采购商服务系统（buyer.cantonfair.org.cn）预登记，预登记全年开放：首次到会先注册账号、填写到会意向，再按需申请采购商证件和邀请函；已到过会的采购商登录后填写到会意向，按需申请邀请函。预登记后可在白云机场、广州南站、琶洲港澳客运码头、广州指定酒店及广交会驻香港办事处等馆外办证点免费领证，也可在展馆采购商登记处领证。馆外办证点只受理外国护照和港澳台居民来往内地通行证；持中国护照加境外永久居留证或签证的华侨须到展馆登记处领证。各届日期和办证点时段以官网当届通知为准。",
+      "text_en": "All overseas buyers attending the fair onsite should pre-register in the Buyer Service System on the Canton Fair website or app (buyer.cantonfair.org.cn); pre-registration opens year-round. First-time attendees create an account, complete their attendance intent, then apply for a Buyer Badge and invitation letter as needed; returning buyers log in, complete their attendance intent and apply for an invitation letter as needed. After pre-registering, badges can be collected free of charge at alternative registration offices such as Guangzhou Baiyun International Airport, Guangzhou South Railway Station, the Pazhou Ferry Terminal, designated hotels in Guangzhou and the Canton Fair Hong Kong Representative Office, or at the buyer registration offices at the Complex. Alternative offices only serve holders of foreign passports or Mainland Travel Permits for Hong Kong, Macao and Taiwan residents; overseas Chinese with a Chinese passport plus an overseas permanent residence permit or visa must collect their badge at the Complex. Dates and office hours for each session follow that session’s official notice.",
       "source_urls": [
+        "https://www.cantonfair.org.cn/en-US/pages/598494791797825536",
         "https://www.cantonfair.org.cn/en-US/posts/986850846736556032",
-        "https://www.cantonfair.org.cn/en-US/pages/790884271194980352",
-        "https://www.cantonfair.org.cn/en-US/posts/872129062058213376"
+        "https://www.cantonfair.org.cn/en-US/pages/790884271194980352"
       ],
       "checked_on": "2026-11-26",
       "expires_on": "2026-12-10"
@@ -26,11 +26,10 @@
         "zh": "去琶洲广交会展馆",
         "en": "Getting to the Canton Fair Complex in Pazhou"
       },
-      "text_zh": "去琶洲广交会展馆，官方建议乘地铁：8 号线琶洲站或新港东站，或 11 号线琶洲站。展馆的采购商登记处在新港东站 A 口、琶洲站 A/B 口和 C 口。展会期间展馆周边实施交通管制，出租车和网约车在指定上客点上车，具体地点和时段以广州市公安局当届公告为准。",
-      "text_en": "For the Canton Fair Complex in Pazhou, officials recommend the metro: Pazhou or Xingangdong station on Line 8, or Pazhou station on Line 11. The buyer registration offices at the Complex are at Exit A of Xingangdong station and Exits A/B and C of Pazhou station. During the fair, traffic around the Complex is controlled and taxis and ride-hailing cars pick up at designated points; the places and hours follow the Guangzhou Public Security Bureau’s notice for that session.",
+      "text_zh": "去琶洲广交会展馆，广州市公安局建议乘地铁：8 号线琶洲站或新港东站，或 11 号线琶洲站，也可乘公交。展会期间展馆周边实施交通管制，出租车和网约车在指定上客点上车，具体地点和时段以广州市公安局当届公告为准。",
+      "text_en": "For the Canton Fair Complex in Pazhou, the Guangzhou Public Security Bureau recommends the metro (Pazhou or Xingangdong station on Line 8, or Pazhou station on Line 11) or buses. During the fair, traffic around the Complex is controlled and taxis and ride-hailing cars pick up at designated points; the places and hours follow the bureau’s notice for that session.",
       "source_urls": [
-        "https://gaj.gz.gov.cn/zzzq/jwzx/content/post_11044631.html",
-        "https://www.cantonfair.org.cn/en-US/posts/872129062058213376"
+        "https://gaj.gz.gov.cn/zzzq/jwzx/content/post_11044631.html"
       ],
       "checked_on": "2026-11-26",
       "expires_on": "2026-12-10"
@@ -50,21 +49,6 @@
       ],
       "checked_on": "2026-11-26",
       "expires_on": "2026-12-26"
-    },
-    {
-      "id": "business.guangzhou.fair-payment",
-      "topic": "business_payment",
-      "title": {
-        "zh": "在广交会付款",
-        "en": "Paying at the Canton Fair"
-      },
-      "text_zh": "据广州市政府 2025 年 4 月（第 137 届广交会前）发布，广交会展馆内商户都接受境外银行卡、移动支付和现金，机场、酒店、展馆等处增设了 ATM 和外币兑换点。之后各届的安排以当届公布为准。",
-      "text_en": "According to the Guangzhou government in April 2025 (before the 137th Canton Fair), all vendors in the exhibition halls accept foreign bank cards, mobile payments and cash, and ATMs and currency exchange points were added at airport terminals, hotels and exhibition venues. Arrangements for later sessions follow their own announcements.",
-      "source_urls": [
-        "https://www.gz.gov.cn/guangzhouinternational/the137thcantonfair/content/post_10207422.html"
-      ],
-      "checked_on": "2026-11-26",
-      "expires_on": "2026-12-10"
     }
   ]
 }

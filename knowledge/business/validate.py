@@ -68,7 +68,7 @@ def load(path):
         _require(re.fullmatch(rf"business\.{doc['city']}\.[a-z0-9-]+", where) is not None, f'{where}: id prefix')
         _require(where not in seen, f'{where}: duplicate id')
         seen.add(where)
-        _require(entry['topic'] in TOPICS, f'{where}: topic')
+        _require(type(entry['topic']) is str and entry['topic'] in TOPICS, f'{where}: topic')
         title = entry['title']
         _require(type(title) is dict and title.keys() == {'zh', 'en'}, f'{where}: title zh/en')
         for key in ('zh', 'en'):
@@ -79,7 +79,7 @@ def load(path):
         _require(type(urls) is list and urls and len(set(urls)) == len(urls), f'{where}: unique non-empty sources')
         for url in urls:
             parts = urlsplit(_text(url, f'{where}.source_urls'))
-            _require(parts.scheme == 'https' and parts.hostname in HOSTS and parts.path not in ('', '/')
+            _require(parts.scheme == 'https' and parts.hostname in HOSTS and parts.port is None and parts.path not in ('', '/')
                      and not parts.username and not parts.password and not parts.fragment,
                      f'{where}: source {url} is not a page on an approved https host')
         checked = _day(entry['checked_on'], f'{where}.checked_on')

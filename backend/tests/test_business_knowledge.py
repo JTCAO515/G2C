@@ -12,10 +12,11 @@ _spec.loader.exec_module(knowledge)
 CATALOGUE = ROOT / 'knowledge/business/guangzhou.v1.json'
 
 
-def test_catalogue_is_valid_and_covers_the_four_business_topics():
+def test_catalogue_is_valid_and_covers_the_sourced_business_topics():
     doc = knowledge.load(CATALOGUE)
     assert doc['city'] == 'guangzhou'
-    assert {entry['topic'] for entry in doc['entries']} == knowledge.TOPICS
+    # Fair payment has no S1 source yet (only a republished media story), so it is not kept (#1759 review).
+    assert {entry['topic'] for entry in doc['entries']} == {'trade_fair_registration', 'venue_transport', 'visa_channel'}
     for entry in doc['entries']:
         assert entry['source_urls'] and entry['checked_on'] < entry['expires_on'], entry['id']
 
@@ -40,6 +41,8 @@ def _broken(tmp_path, change):
     lambda doc, entry: entry.update(source_urls=['https://www.trip.com/travel-guide/guangzhou/canton-fair']),
     lambda doc, entry: entry.update(source_urls=['http://www.cantonfair.org.cn/en-US/posts/1']),
     lambda doc, entry: entry.update(source_urls=['https://www.cantonfair.org.cn/']),
+    lambda doc, entry: entry.update(source_urls=['https://www.cantonfair.org.cn:8443/en-US/posts/1']),
+    lambda doc, entry: entry.update(topic=['venue_transport']),
     lambda doc, entry: entry.update(checked_on='2026-12-10'),
     lambda doc, entry: entry.update(expires_on='2027-06-01'),
     lambda doc, entry: entry.update(checked_on='2026-02-30'),
