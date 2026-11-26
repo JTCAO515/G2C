@@ -14,7 +14,7 @@ struct LioBuildUpdatesTests {
         #expect(current.whatToTest(.chinese).contains("新登录页"))
         #expect(current.whatToTest(.english).contains("New sign-in screen"))
         #expect(current.whatToTest(.chinese).contains("由 AI 生成，可能有误"))
-        #expect(current.whatToTest(.english).contains("After account deletion, sight reminders may still fire"))
+        #expect(current.whatToTest(.english).contains("in the old format, may still fire after account deletion"))
         #expect(current.whatToTest(.chinese).contains("本版没有开放"))
         #expect(previous.whatToTest(.chinese).contains("「工具」新增 7 个"))
         #expect(previous.whatToTest(.english).contains("Seven new tools"))
