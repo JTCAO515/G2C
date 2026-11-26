@@ -22,7 +22,7 @@
 | 1a | 同上 | 服务端 API | 同上 + `dashscope-result-bj.oss-cn-beijing.aliyuncs.com`（TTS 结果下载） | 翻译插件（文字/语音/图片/TTS） | 原文、媒体（语音、照片，已去 EXIF） | `backend/cj_api/translation.py:30, 47-49, 304-421` |
 | 1b | 同上 | 服务端 API | 同上 | 点餐（OCR + 解释） | 媒体（菜单照片）、OCR 文字 | `backend/cj_api/lio_menu.py:298-330` |
 | 1c | 同上 | 服务端 API | 同上 | 路书 | 无（公开地点名/营业时间/地铁站） | `backend/cj_api/lio_roadbook.py:255-258, 343-380` |
-| 1d | 同上 | 服务端 API | 同上 | 打车/附近/酒店/地铁周边英文名 | 无（供应商返回的 POI 名称地址） | `backend/cj_api/taxi_tools.py:301-345` |
+| 1d | 同上 | 服务端 API | 同上 | 打车/酒店/地铁周边英文名（附近不走英译） | 无（供应商返回的 POI 名称地址） | `backend/cj_api/taxi_tools.py:301-345` |
 | 2 | 高德 Web 服务 | 服务端 API | `restapi.amap.com` | Lio 管线、行政区、天气、路书、**附近**、酒店、地铁周边、城际火车 | **GPS**（附近：坐标转换/周边/逆地理）、原文（Lio 检索词、酒店地标）、POI、城市、日期（火车） | `backend/cj_api/nearby_tools.py:206-270`；`backend/place/cj_place/gaode*.py`；`lio_hotel_search.py:287-330`；`lio_transport_rail.py:34-50` |
 | 3 | 滴滴 | 服务端 MCP | `mcp.didichuxing.com` | 打车搜索/预估/叫车链接 | **GPS**（起点、搜索偏置）、原文（搜索词）、POI | `backend/cj_api/didi_mcp.py:45-55`；`taxi_tools.py:252-415` |
 | 3a | 滴滴 | 链接跳转（App 打开） | `v.didi.cn` → 滴滴 App；`apps.apple.com` | 叫车 | **GPS**（链接参数中的起点坐标）、POI | `taxi_tools.py:30-34, 230-249`；`LioTaxiEntry.swift:20-27` |

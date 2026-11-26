@@ -98,7 +98,7 @@ We send each recipient only what the feature you use needs. Requests to Alibaba 
 | 接收方 / Recipient | 所在地 / Location | 收到什么 / What they receive | 用途 / Purpose |
 |---|---|---|---|
 | 阿里云（中国香港）/ Alibaba Cloud (Hong Kong) | 中国香港 / Hong Kong, China | 服务器与每日备份上的全部数据 / All data on our servers and daily backups | 代我们托管 / Hosting on our behalf |
-| 阿里云百炼（通义千问）/ Alibaba Cloud Model Studio (Qwen) | 中国大陆北京 / Beijing, mainland China | 对话文字和行程内容；翻译的文字、语音、图片；菜单照片 / Chat text and trip content; text, voice and images for translation; menu photos | 生成回答、翻译、识别菜单 / Replies, translation, menu reading |
+| 阿里云百炼（通义千问）/ Alibaba Cloud Model Studio (Qwen) | 中国大陆北京 / Beijing, mainland China | 对话文字和行程内容；翻译的文字、语音、图片；菜单照片；打车、酒店、地铁周边的搜索结果里的地点名和地址（用于生成英文名）；路书里的地点名、营业时间和地铁站名 / Chat text and trip content; text, voice and images for translation; menu photos; place names and addresses in taxi, hotel and metro-nearby search results (to produce English names); place names, opening hours and station names in roadbooks | 生成回答、翻译、识别菜单、生成地点英文名和路书地点说明 / Replies, translation, menu reading, English place names and roadbook place descriptions |
 | 高德地图开放平台 / AMap (Gaode) | 中国大陆 / Mainland China | 地点和路线查询词、城市、酒店地标、火车出发日期；附近功能降到约 100 米精度的设备位置 / Place and route queries, city, hotel landmarks, train departure dates; your device location reduced to about 100 m for Nearby | 地点、路线、天气、酒店、火车、附近 / Places, routes, weather, hotels, trains, Nearby |
 | 滴滴出行 / DiDi | 中国大陆 / Mainland China | 打车搜索词、上车点（可为设备精确位置）、目的地 / Taxi search terms, pickup (may be your precise device location), destination | 估价、生成叫车链接；你在滴滴 App 里下单付款 / Estimates and ride links; you book and pay in the DiDi app |
 | 飞常准 / VariFlight | 中国大陆 / Mainland China | 航班号、机场、日期 / Flight number, airports, date | 航班查询 / Flight lookup |
@@ -116,7 +116,7 @@ We send each recipient only what the feature you use needs. Requests to Alibaba 
 你的账号、对话、行程和记忆存放在我们位于中国香港的服务器，每日备份存放在中国香港的对象存储。你的信息会在中国大陆与境外之间传输：
 
 - 你在中国大陆使用 App 时，信息从大陆传到香港。
-- 生成回答、翻译、识别菜单时，相关内容从香港发到北京的阿里云百炼；使用地点、路线、打车、附近、航班工具时，查询条件从香港发到位于中国大陆的高德、滴滴、飞常准。
+- 生成回答、翻译、识别菜单、生成地点英文名和路书地点说明时，相关内容从香港发到北京的阿里云百炼；使用地点、路线、打车、附近、航班工具时，查询条件从香港发到位于中国大陆的高德、滴滴、飞常准。
 - 官网抢先体验申请先传到中国香港处理（官网接口由 Vercel 托管，运行在香港区域），再转给位于美国的 Jotform；你和我们的邮件由位于美国的 Spacemail 收发，可能存储在中国境外。
 - 提交抢先体验申请前，请你勾选「同意传到中国大陆以外（中国香港和美国）处理」；不勾选无法提交。
 
@@ -127,7 +127,7 @@ We send each recipient only what the feature you use needs. Requests to Alibaba 
 Your account, chats, trips and memories are stored on our servers in Hong Kong, China, with daily backups in object storage in Hong Kong. Your information moves between the Chinese mainland and places outside it:
 
 - When you use the app in mainland China, your information goes from the mainland to Hong Kong.
-- For replies, translation and menu reading, the relevant content goes from Hong Kong to Alibaba Cloud Model Studio in Beijing; for places, routes, taxi, nearby and flight tools, your search terms go from Hong Kong to AMap, DiDi and VariFlight in mainland China.
+- For replies, translation, menu reading, English place names and roadbook place descriptions, the relevant content goes from Hong Kong to Alibaba Cloud Model Studio in Beijing; for places, routes, taxi, nearby and flight tools, your search terms go from Hong Kong to AMap, DiDi and VariFlight in mainland China.
 - Website early access applications are first transferred to Hong Kong, China for processing (the website endpoint is hosted by Vercel and runs in its Hong Kong region), then go to Jotform in the United States; emails between you and us go through Spacemail, a provider in the United States, and may be stored outside China.
 - Before you submit an early access application, you tick "I agree to my information being processed outside mainland China (Hong Kong, China and the United States)". Without it, the application cannot be submitted.
 
@@ -158,12 +158,14 @@ Your account, chats, trips and memories are stored on our servers in Hong Kong, 
 你可以查阅、更正、删除你的信息，撤回同意，注销账号，并要求我们解释本政策。
 
 - 在 App 内：在「我的」里查看、修改和删除记忆，或注销账号。
+- 撤回 AI 处理（App 内同意界面开放后适用，见第 12 节）：在「我的」→「隐私」里关闭。关闭后，聊天、行程规划、翻译和点餐停用，不再向阿里云百炼发送新的内容，其他功能照常（打车、酒店、地铁周边的地点名只显示中文，路书不生成地点说明）；已经发出的请求无法在传输途中召回，但我们会依法协助删除。
 - 其他请求（包括删除抢先体验申请、邮件往来）：发邮件到 hello@go2china.space。我们会先核对你就是当时提交信息时使用的邮箱或账号，在 15 个工作日内答复，最迟 30 天内处理完。
 - 撤回同意不影响撤回前已进行的处理；已经发出的请求无法在传输途中召回，但我们会依法协助删除。
 
 You can access, correct and delete your information, withdraw consent, close your account, and ask us to explain this policy.
 
 - In the app: under Me, view, edit and delete memories, or close your account.
+- Withdrawing AI processing (applies once the in-app consent screens launch, see section 12): turn it off under Me → Privacy. Once it is off, chat, trip planning, translation and the menu helper stop and no new content is sent to Alibaba Cloud Model Studio; everything else keeps working (place names in taxi, hotel and metro-nearby results show in Chinese only, and roadbooks have no generated place descriptions). Requests already sent cannot be recalled in transit, but we will help delete them as the law requires.
 - Other requests (including deleting an early access application or emails with us): email hello@go2china.space. We first check that you are using the same email address or account you used when you gave us the information, reply within 15 business days, and complete the request within 30 days at the latest.
 - Withdrawing consent does not affect processing before withdrawal. Requests already sent cannot be recalled in transit, but we will help delete them as the law requires.
 
@@ -191,12 +193,12 @@ We post new versions and their effective dates on this page. For material change
 
 - **真人服务**（首个是广州中英商务陪同）：由真人提供，提交前确认页会列出将与陪同人员共享的信息并分项征得同意；陪同人员受我们委托、只看到完成本次服务需要的信息；按次收费，在 App 外付款。 {#in-person-services}
 - **官网真人服务请求表**：在官网「广州中英商务陪同」表单提出请求，收集称呼、邮箱、日期和说明（选填），提交到我们自己的后端，由工作人员通过邮件跟进，不经过第三方表单服务；谈妥后再转成正式的服务请求。提交前请你确认已阅读本政策，并分三项征得你的同意：处理时间地点等行踪信息；提供给陪同人员；传到中国大陆以外（中国香港和美国）处理（官网接口由 Vercel 托管，运行在香港区域；App 服务在阿里云香港；回复邮件由美国的 Spacemail 收发）。具体时间、地点、会面对象和当天联系电话，我们在回复邮件里和你确认后再记录，在此之前陪同人员看不到你的任何联系方式。 {#website-requests}
-- **App 内同意界面与定位单独询问页**：首次启动时的总同意，以及使用位置前的单独询问和「我的 → 位置」撤回入口。
+- **App 内同意界面与定位单独询问页**：首次启动时先请你同意把数据存放在我们位于中国香港的服务器，并由你选择是否开启 AI 处理（不开启也能使用 App，只是聊天、行程规划、翻译和点餐不可用，可随时在「我的」→「隐私」里开启或关闭）；第一次要生成记忆建议之前，以及使用位置之前，另行单独询问；位置可在「我的 → 位置」撤回。
 - **App 内问题反馈**：在 Lio 的回答下点「没帮上」并可选填补充说明，发到我们在香港的服务，按账号保存，注销账号时删除。
 
 The following are not launched yet. Before launching any of them, we will update this policy and ask for your separate consent in the app or on the website before processing the related information.
 
 - **In-person services** (the first is an English–Chinese business companion in Guangzhou): provided by real people. Before you submit, a confirmation page lists the information to be shared with the companion and asks for separate consents. Companions act on our behalf and see only what this service needs. Paid per service, outside the app. {#in-person-services}
 - **Website in-person service request form**: request a companion through the "A business companion in Guangzhou" form on the website by giving your name, email, a date and an optional note. It goes to our own backend, where our staff follow up by email, not through any third-party form service; once details are agreed, it becomes a formal service request. Before you submit, the form asks you to confirm you have read this policy and to give three separate consents: processing time and place information; sharing it with the companion; and processing outside mainland China (Hong Kong, China and the United States) (the website endpoint is hosted by Vercel and runs in its Hong Kong region; the app service runs on Alibaba Cloud Hong Kong; reply emails go through Spacemail in the United States). We confirm the exact time, place, who you are meeting and a phone number for the day with you by email before recording them; until then the companion cannot see any of your contact details. {#website-requests}
-- **In-app consent screens and a separate location prompt**: a consent screen at first launch, a separate prompt before location is used, and a Me → Location switch to withdraw.
+- **In-app consent screens and a separate location prompt**: at first launch we first ask you to agree to your data being stored on our servers in Hong Kong, China, and let you choose whether to turn on AI processing (you can use the app without it; chat, trip planning, translation and the menu helper will not be available; you can turn it on or off at any time under Me → Privacy). We ask separately before memory suggestions are first generated and before location is used; location can be withdrawn under Me → Location.
 - **In-app feedback**: tap "Didn't help" under a Lio answer and optionally add a note. It goes to our service in Hong Kong, is stored with your account and is deleted when you close your account.
