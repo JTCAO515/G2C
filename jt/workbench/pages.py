@@ -46,6 +46,8 @@ CASE_DENIAL_LABELS = {
 }
 
 
+DEMO_BADGE = '<span class="demo-badge">演示数据</span>'
+
 def csrf_field(token: str) -> str:
     return f'<input type="hidden" name="csrf" value="{escape(token, quote=True)}">'
 
@@ -58,7 +60,7 @@ def page(
     if session is not None:
         sections = '<a href="/queue">待办队列</a>'
         if session.role == Role.OPERATOR:
-            sections += '<a href="/cases">案件</a>'
+            sections += '<a href="/cases">案件</a><a href="/operations">运营台</a>'
         if session.role == Role.ADMIN:
             sections = '<a href="/admin/accounts">账号管理</a><a href="/admin/audit">审计日志</a>'
         nav = (
@@ -223,6 +225,9 @@ def audit_page(session: Session, events: tuple[AuditEvent, ...], filters: dict[s
             revision = f' · 版本 {detail.revision}' if detail.revision is not None else ''
             reason = f'<br>{CASE_DENIAL_LABELS.get(detail.reason, "操作被拒绝。")}' if detail.reason else ''
             action = f'案件 {CASE_ACTION_LABELS[detail.action]}{step}{revision}{reason}'
+        operations = event.operations_detail
+        if operations is not None:
+            action = f'演示操作 <code>{escape(operations.action)} · {escape(operations.reference)}</code>'
         rows.append(f'<tr><td><time>{timestamp}</time></td><td>{action}</td><td>{actor}</td>'
                     f'<td>{target}</td><td>{case_id}</td><td>{RESULT_LABELS[event.result]}</td></tr>')
     return page("审计日志", f'''
