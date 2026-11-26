@@ -111,12 +111,15 @@ def workflow_evidence():
               head_sha=SOURCE, status='completed', conclusion='success',
               repository=repo, head_repository=repo)
     monitor = dict(ci, id=2, path='.github/workflows/hk-readiness.yml', event='schedule',
-                   conclusion='skipped')
+                   conclusion='skipped', check_suite_id=502)
+    lint = dict(ci, id=4, path='.github/workflows/pr-lint.yml', event='push', conclusion='success',
+                check_suite_id=504)
     jobs = [dict(id=i + 10, name=name, run_id=1, head_sha=SOURCE, status='completed',
                  conclusion='success', steps=[{'conclusion': 'success'}])
             for i, name in enumerate(sorted(application_release.CI_JOBS))]
-    return dict(workflow_runs=[ci, monitor],
-                check_runs=[*jobs, dict(id=3, name='observe', head_sha=SOURCE, conclusion='skipped')],
+    return dict(workflow_runs=[ci, monitor, lint],
+                check_runs=[*jobs, dict(id=3, name='observe', head_sha=SOURCE, conclusion='skipped', check_suite={'id': 502}),
+                            dict(id=5, name='lint', head_sha=SOURCE, conclusion='success', check_suite={'id': 504})],
                 jobs=jobs, state='success')
 
 
@@ -245,7 +248,7 @@ def test_release_ci_accepts_skipped_monitor_with_all_required_jobs(workflow_evid
 ])
 def test_release_ci_rejects_missing_evidence_and_explicit_failures(workflow_evidence, mutation):
     evidence = workflow_evidence
-    ci, monitor = evidence['workflow_runs']
+    ci, monitor, lint = evidence['workflow_runs']
     jobs = evidence['jobs']
     if mutation == 'missing_ci':
         evidence['workflow_runs'].remove(ci)
@@ -260,11 +263,55 @@ def test_release_ci_rejects_missing_evidence_and_explicit_failures(workflow_evid
     elif mutation == 'empty_required_job':
         jobs[0]['steps'] = []
     elif mutation == 'unrelated_failed_job':
+        # Retargeted from the probe's check by #1830: any non-probe check still blocks.
         evidence['check_runs'][-1]['conclusion'] = 'failure'
     elif mutation == 'unrelated_cancelled_run':
-        monitor['conclusion'] = 'cancelled'
+        lint['conclusion'] = 'cancelled'
     elif mutation == 'commit_status_failure':
         evidence['state'] = 'failure'
+    with pytest.raises(ValueError):
+        application_release.verify_release_ci(github_fixture(evidence), SOURCE)
+
+
+@pytest.mark.parametrize('conclusion', sorted(application_release.BLOCKING_CONCLUSIONS))
+def test_release_ci_ignores_a_failed_external_readiness_probe(workflow_evidence, conclusion):
+    # #1830: a scheduled or drill probe run reports the live HK service, not the source.
+    evidence = workflow_evidence
+    monitor = evidence['workflow_runs'][1]
+    monitor['conclusion'] = conclusion
+    evidence['check_runs'][-2]['conclusion'] = conclusion
+    for index in range(3):
+        suite = 600 + index
+        evidence['workflow_runs'].append(dict(monitor, id=700 + index, check_suite_id=suite,
+                                              event='workflow_dispatch' if index else 'schedule'))
+        evidence['check_runs'].append(dict(id=800 + index, name='observe', head_sha=SOURCE,
+                                           conclusion=conclusion, check_suite={'id': suite}))
+    application_release.verify_release_ci(github_fixture(evidence), SOURCE)
+
+
+@pytest.mark.parametrize('job', sorted(application_release.CI_JOBS))
+def test_release_ci_still_blocks_on_any_failed_ci_job_with_a_failed_probe(workflow_evidence, job):
+    evidence = workflow_evidence
+    evidence['workflow_runs'][1]['conclusion'] = 'failure'
+    evidence['check_runs'][-2]['conclusion'] = 'failure'
+    failed = next(row for row in evidence['check_runs'] if row['name'] == job)
+    failed['conclusion'] = 'failure'
+    with pytest.raises(ValueError):
+        application_release.verify_release_ci(github_fixture(evidence), SOURCE)
+
+
+@pytest.mark.parametrize('change', [
+    dict(path='.github/workflows/hk-readiness.yml.bak'), dict(path='.github/workflows/hk-readiness-2.yml'),
+    dict(path='.github/workflows/ci.yml', event='schedule'), dict(event='push'), dict(event='pull_request'),
+    dict(repository={'full_name': 'someone/fork'}),
+])
+def test_probe_exclusion_matches_only_that_workflow(workflow_evidence, change):
+    # A failing run that is not exactly this repository's scheduled/drill probe still blocks.
+    evidence = workflow_evidence
+    other = dict(evidence['workflow_runs'][1], id=900, check_suite_id=901, conclusion='failure', **change)
+    evidence['workflow_runs'].append(other)
+    evidence['check_runs'].append(dict(id=902, name='observe', head_sha=SOURCE, conclusion='failure',
+                                       check_suite={'id': 901}))
     with pytest.raises(ValueError):
         application_release.verify_release_ci(github_fixture(evidence), SOURCE)
 

@@ -1,5 +1,5 @@
 /* Copy for go2china.space in six languages. Edit here; app.js only renders it.
-   Chat-demo, redaction and footer strings come from the previous page version. */
+   Chat-demo and footer strings come from the previous page version. */
 window.G2C = {
  "T": {
   "en": {
@@ -9,106 +9,16 @@ window.G2C = {
     "privacy": "Privacy"
    },
    "heroTitle": "A personal agent for every day in China.",
-   "heroLede": "Ask CJ Agent anything about getting around, paying, eating and booking. When a problem needs a phone call or a local check, JT Agent brings in a real person.",
+   "heroLede": "Ask CJ Agent anything about getting around, paying, eating and booking, in English or Chinese.",
    "heroNote": "Coming to iPhone first. We’re inviting travellers in small groups.",
-   "howTitle": "How CJ Agent and JT Agent work together",
-   "howLede": "CJ Agent is the one you talk to. JT Agent works in the background: it keeps an eye on your trip, opens a case when something goes wrong, and hands the steps AI can’t finish to a teammate.",
+   "howTitle": "What it does today",
+   "howLede": "Ask CJ Agent in the chat, or open a tool when you need to show someone something in Chinese.",
    "cjRole": "In your chat",
-   "jtRole": "Behind the scenes",
    "cjList": [
     "Answers questions about payments, transport, food and tickets, with sources you can check.",
     "Plans your days around what it remembers about you, and keeps confirmed plans in place.",
-    "Prepares bookings and changes, then waits for your yes before anything is paid or moved.",
     "Shows phrases and booking details in Chinese when you need to show someone.",
     "Speaks English and Chinese in the same conversation."
-   ],
-   "jtList": [
-    "Follows your bookings, trains, flights and check-ins.",
-    "Notices when something goes wrong, or when a question keeps going round in circles.",
-    "Opens a case with only the details the next step needs.",
-    "Passes calls and local checks to a teammate, and follows them through to the end.",
-    "Sends the result back through CJ Agent, so everything stays in one chat."
-   ],
-   "scTitle": "What it looks like on the road",
-   "tabs": [
-    "The hotel can’t find your booking",
-    "Your train is cancelled",
-    "You need help fast"
-   ],
-   "laneChat": "In your chat",
-   "laneBack": "Behind the scenes",
-   "who": {
-    "you": "You",
-    "cj": "CJ Agent",
-    "jt": "JT Agent",
-    "mate": "Teammate"
-   },
-   "scenes": {
-    "hotel": {
-     "steps": [
-      "The front desk says they can’t find my booking.",
-      "Show them this card. I’m also asking a teammate to call the hotel.",
-      "Booking not found at check-in. Handled as a trip disruption.",
-      "Case opened with the hotel name, booking number and dates. Passport and account details stay out.",
-      "Called the front desk in Chinese. The booking was filed under CLARKE EMMA.",
-      "All sorted: it was under “CLARKE EMMA”. Your room is ready. A teammate called the hotel to confirm."
-     ],
-     "note": "If there had been no room, CJ Agent would show you nearby options with prices and book one only after you choose."
-    },
-    "train": {
-     "steps": [
-      "Status check: the 14:05 train to Xi’an is cancelled.",
-      "Checks what depends on it: tonight’s hotel check-in and tomorrow’s 9:00 entry tickets.",
-      "Your 14:05 train to Xi’an is cancelled. The 15:20 train arrives at 19:58 and keeps tonight’s hotel and tomorrow’s tickets. Book it?",
-      "Yes, book the 15:20.",
-      "Rebooked the ticket and told the hotel you’ll arrive around 20:30.",
-      "Done. Your new ticket and updated plan are in your trip."
-     ],
-     "note": "Nothing was paid or changed until you said yes."
-    },
-    "sos": {
-     "steps": [
-      "I fell on the stairs and can’t stand on my ankle.",
-      "If it’s serious, call 120 for an ambulance now. Show this to the driver or anyone nearby:",
-      "Safety signal. Emergency steps went out straight away, without waiting for a case.",
-      "On-call teammate alerted to help by message.",
-      "A teammate is following up with you here. The nearest hospital with English-speaking staff is 2 km away."
-     ],
-     "note": "Emergency help is open to every user and covers guidance and message support. If you’re in danger, always call 110 (police), 120 (ambulance) or 119 (fire)."
-    }
-   },
-   "watchTitle": "What JT Agent keeps an eye on",
-   "cols": [
-    "Situation",
-    "For example",
-    "What happens"
-   ],
-   "watch": [
-    [
-     "Your safety",
-     "Injury, sudden illness, getting lost.",
-     "Emergency numbers and phrases straight away, then a teammate helps by message."
-    ],
-    [
-     "Documents and money",
-     "A lost passport, a blocked card, a payment that won’t go through.",
-     "Steps for reporting and replacing come first; a teammate checks the details."
-    ],
-    [
-     "Disruptions",
-     "A changed flight, a hotel that can’t find you, a closed attraction.",
-     "Works out what else is affected, then proposes a fix."
-    ],
-    [
-     "Changes you ask for",
-     "Switch hotels, move a day, add a city.",
-     "CJ Agent drafts options. Nothing changes until you confirm."
-    ],
-    [
-     "When the AI gets stuck",
-     "The same question going unanswered, a tool that keeps failing.",
-     "A teammate sorts it out in the background and CJ Agent tells you the result."
-    ]
    ],
    "rules": [
     [
@@ -117,11 +27,11 @@ window.G2C = {
     ],
     [
      "You’ll know",
-     "When a person helped, CJ Agent tells you what they did."
+     "Answers about rules and opening hours come with sources you can check."
     ],
     [
-     "Need to know",
-     "Teammates see a case number and the few details the job needs, never your account."
+     "Your data",
+     "We don’t sell it, and you can delete your account in the app."
     ]
    ],
    "placesTitle": "Where are you headed?",
@@ -191,7 +101,7 @@ window.G2C = {
    "suggest": [
     "Paying in China",
     "3 days in Beijing",
-    "Book a class"
+    "Using the Shanghai metro"
    ],
    "chat": [
     {
@@ -242,77 +152,23 @@ window.G2C = {
       ]
      ],
      "foot": "Sources: official opening hours · transit times"
-    },
-    {
-     "t": "user",
-     "q": 2,
-     "text": "Book the dumpling class for two. Passport ",
-     "secret": "E12345678",
-     "ph": "<PASSPORT_1>"
-    },
-    {
-     "t": "shield",
-     "text": "Redacted before any model sees it"
-    },
-    {
-     "t": "ask",
-     "text": "Sunday 10:00, about ¥300 for two. Shall I go ahead?",
-     "yes": "Confirm",
-     "no": "Not now"
-    },
-    {
-     "t": "sys",
-     "text": "<b>JT Agent</b> · a teammate is confirming with the venue",
-     "done": "<b>Confirmed</b> · Sun 10:00 is on your trip"
     }
    ],
-   "redact": [
-    [
-     "Hi, I'm ",
-     null
-    ],
-    [
-     "Emma Clarke",
-     "<NAME_1>"
-    ],
-    [
-     ". Passport ",
-     null
-    ],
-    [
-     "E12345678",
-     "<PASSPORT_1>"
-    ],
-    [
-     ", call me on ",
-     null
-    ],
-    [
-     "+44 7700 900123",
-     "<PHONE_1>"
-    ],
-    [
-     ". I'm at ",
-     null
-    ],
-    [
-     "Gate 3, Hotel Lotus",
-     "<LOCATION_1>"
-    ],
-    [
-     ".",
-     null
-    ]
-   ],
-   "privLede": "Names, passport numbers, phone numbers, emails and exact locations are swapped for placeholders on our side before any model reads them.",
-   "priv1": "Teammates see masked cases under a random case ID, never your account.",
-   "priv2": "Revealing a field is limited to what the task needs, time-boxed and logged.",
+   "privLede": "To answer you, the messages you send are processed by the AI model service we use. Share only the personal details a task needs.",
+   "priv1": "We don’t sell your personal data.",
+   "priv2": "You can delete your account in the app at any time.",
    "priv3": "Your memory is yours: see it, correct it, delete it whenever you like.",
-   "you": "You",
-   "modelSees": "What the model sees",
    "footTag": "Your personal agent for China.",
    "companyName": "Guangzhou Chuangjing Technology Co., Ltd",
-   "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China"
+   "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China",
+   "toolsName": "Tools",
+   "toolsRole": "In the app",
+   "toolsList": [
+    "Show cards: big Chinese text for a taxi driver, the hotel front desk or a pharmacy.",
+    "Ordering: photograph a menu and build your order in Chinese, with spice level and allergies.",
+    "Metro guide: line maps for major cities, find stations in English or Chinese, and see lines, transfers and what’s around each station.",
+    "Sight bookings: which sights need booking ahead, whether your passport is accepted, how far ahead you can book, and a reminder when booking opens."
+   ]
   },
   "zh": {
    "nav": {
@@ -321,106 +177,16 @@ window.G2C = {
     "privacy": "隐私"
    },
    "heroTitle": "在中国的每一天，都有你的私人助理。",
-   "heroLede": "出行、支付、吃饭、预订，有问题就问 CJ Agent。需要打电话或到当地核实时，JT Agent 会请真人来处理。",
+   "heroLede": "出行、支付、吃饭、预订，有问题就用中文或英文问 CJ Agent。",
    "heroNote": "首先登陆 iPhone，正在分批邀请旅行者体验。",
-   "howTitle": "CJ Agent 和 JT Agent 如何配合",
-   "howLede": "CJ Agent 负责和你对话。JT Agent 在后台工作：留意你的行程，出了状况就建立工单，把 AI 办不了的步骤交给团队成员。",
+   "howTitle": "现在能帮你做什么",
+   "howLede": "在对话里问 CJ Agent；需要给别人看中文时，打开工具。",
    "cjRole": "在对话里",
-   "jtRole": "在后台",
    "cjList": [
     "回答支付、交通、餐饮和门票问题，并附上可以核对的来源。",
     "根据它记住的你来安排每天的行程，已确认的安排不会被打乱。",
-    "准备好预订和改动，付款或调整前一定先等你同意。",
     "需要给别人看时，用中文显示短句和预订信息。",
     "同一段对话里，中英文随时切换。"
-   ],
-   "jtList": [
-    "跟进你的预订、火车、航班和入住。",
-    "发现出了问题，或同一个问题反复没解决。",
-    "建立工单，只带下一步需要的信息。",
-    "把电话和当地核实交给团队成员，并跟进到底。",
-    "结果通过 CJ Agent 告诉你，一切都在同一个对话里。"
-   ],
-   "scTitle": "旅途中的真实场景",
-   "tabs": [
-    "酒店查不到你的预订",
-    "你的火车停运了",
-    "你需要紧急帮助"
-   ],
-   "laneChat": "你的对话",
-   "laneBack": "后台",
-   "who": {
-    "you": "你",
-    "cj": "CJ Agent",
-    "jt": "JT Agent",
-    "mate": "团队成员"
-   },
-   "scenes": {
-    "hotel": {
-     "steps": [
-      "前台说查不到我的预订。",
-      "把这张卡片给前台看。我也请团队成员给酒店打电话了。",
-      "入住时查不到预订，按行程中断处理。",
-      "建立工单，只包含酒店名、预订号和日期；护照和账号信息不在其中。",
-      "用中文致电前台，预订登记在 CLARKE EMMA 名下。",
-      "搞定了：预订登记在“CLARKE EMMA”名下，房间已经准备好。团队成员刚才打电话向酒店确认过。"
-     ],
-     "note": "如果没有房间，CJ Agent 会给你看附近的选择和价格，等你选好再预订。"
-    },
-    "train": {
-     "steps": [
-      "状态检查：14:05 开往西安的火车停运。",
-      "检查受影响的安排：今晚的酒店入住、明天 9:00 的门票。",
-      "你 14:05 去西安的火车停运了。15:20 那班 19:58 到，今晚的酒店和明天的门票都不受影响。要订吗？",
-      "好，订 15:20 那班。",
-      "已改签车票，并告诉酒店你大约 20:30 到。",
-      "好了，新车票和更新后的安排都在你的行程里。"
-     ],
-     "note": "在你同意之前，没有付款，也没有任何改动。"
-    },
-    "sos": {
-     "steps": [
-      "我在楼梯上摔倒了，脚踝站不起来。",
-      "如果情况严重，请马上拨打 120 叫救护车。把这段话给司机或身边的人看：",
-      "安全信号：紧急步骤立即发出，不等工单。",
-      "已通知值班团队成员，通过消息协助。",
-      "团队成员会在这里继续跟进。最近有英语服务的医院在 2 公里外。"
-     ],
-     "note": "紧急协助向所有用户开放，提供指引和消息协助。遇到危险，请直接拨打 110（报警）、120（急救）或 119（火警）。"
-    }
-   },
-   "watchTitle": "JT Agent 留意哪些情况",
-   "cols": [
-    "情况",
-    "例如",
-    "怎么处理"
-   ],
-   "watch": [
-    [
-     "人身安全",
-     "受伤、突发疾病、走失。",
-     "立即给出紧急电话和中文短句，再由团队成员通过消息协助。"
-    ],
-    [
-     "证件与资金",
-     "护照丢失、银行卡被冻结、付款失败。",
-     "先给出报失和补办步骤，再由团队成员核实细节。"
-    ],
-    [
-     "行程中断",
-     "航班变动、酒店查不到预订、景点临时关闭。",
-     "先弄清还影响哪些安排，再给出解决办法。"
-    ],
-    [
-     "你提出的改动",
-     "换酒店、调整某一天、加一个城市。",
-     "CJ Agent 起草方案，你确认之前什么都不会变。"
-    ],
-    [
-     "AI 卡住时",
-     "同一个问题一直没解决、工具反复出错。",
-     "团队成员在后台处理，CJ Agent 告诉你结果。"
-    ]
    ],
    "rules": [
     [
@@ -429,11 +195,11 @@ window.G2C = {
     ],
     [
      "让你知道",
-     "如果有真人帮忙，CJ Agent 会告诉你他们做了什么。"
+     "关于规定和开放时间的回答，附上你可以核对的来源。"
     ],
     [
-     "只给必要的信息",
-     "团队成员只看到工单号和完成任务所需的少量信息，看不到你的账号。"
+     "你的数据",
+     "我们不出售你的数据，你也可以在 App 里删除账号。"
     ]
    ],
    "placesTitle": "你想去哪里？",
@@ -503,7 +269,7 @@ window.G2C = {
    "suggest": [
     "不带现金怎么付款",
     "北京 3 日游",
-    "帮我预订"
+    "上海地铁怎么坐"
    ],
    "chat": [
     {
@@ -554,77 +320,23 @@ window.G2C = {
       ]
      ],
      "foot": "来源：官方开放时间 · 交通时长"
-    },
-    {
-     "t": "user",
-     "q": 2,
-     "text": "帮我订两人的饺子课。护照 ",
-     "secret": "E12345678",
-     "ph": "<PASSPORT_1>"
-    },
-    {
-     "t": "shield",
-     "text": "已脱敏，模型看不到原文"
-    },
-    {
-     "t": "ask",
-     "text": "周日 10:00，两人约 ¥300。要我继续吗？",
-     "yes": "确认",
-     "no": "暂不"
-    },
-    {
-     "t": "sys",
-     "text": "<b>JT Agent</b> · 团队成员正在与商家确认",
-     "done": "<b>已确认</b> · 周日 10:00 已加入行程"
     }
    ],
-   "redact": [
-    [
-     "你好，我是",
-     null
-    ],
-    [
-     "王小明",
-     "<NAME_1>"
-    ],
-    [
-     "，护照号 ",
-     null
-    ],
-    [
-     "E12345678",
-     "<PASSPORT_1>"
-    ],
-    [
-     "，电话 ",
-     null
-    ],
-    [
-     "138 0013 8000",
-     "<PHONE_1>"
-    ],
-    [
-     "，我在",
-     null
-    ],
-    [
-     "莲花酒店 3 号门",
-     "<LOCATION_1>"
-    ],
-    [
-     "。",
-     null
-    ]
-   ],
-   "privLede": "姓名、护照号、电话、邮箱和精确位置，在任何模型读取之前就已在我们这边替换为占位符。",
-   "priv1": "团队成员只看到打码的工单和随机工单号，看不到你的账号。",
-   "priv2": "揭示字段仅限任务所需，有时限，并全程留痕。",
+   "privLede": "为了回答你，你发出的消息会交给我们使用的 AI 模型服务处理。请只提供办事需要的个人信息。",
+   "priv1": "我们不出售你的个人数据。",
+   "priv2": "你可以随时在 App 里删除账号。",
    "priv3": "记忆归你所有：随时查看、更正或删除。",
-   "you": "你",
-   "modelSees": "模型看到的",
    "footTag": "你在中国的私人助理。",
    "companyName": "广州创竞科技有限公司",
-   "companyAddress": "广州市天河区黄埔大道100号富力盈泰广场A座410室"
+   "companyAddress": "广州市天河区黄埔大道100号富力盈泰广场A座410室",
+   "toolsName": "工具",
+   "toolsRole": "在 App 里",
+   "toolsList": [
+    "出示卡：大字中文，给出租车司机、酒店前台或药店看。",
+    "点餐：拍下菜单，用中文点好菜，可以标注辣度和过敏。",
+    "地铁指南：主要城市的线路图，用中文或英文找车站，看线路、换乘和站点周边。",
+    "景点预约：哪些景点要提前实名预约、能否用护照、最多提前几天，放票时提醒你。"
+   ]
   },
   "ru": {
    "nav": {
@@ -633,106 +345,16 @@ window.G2C = {
     "privacy": "Конфиденциальность"
    },
    "heroTitle": "Личный помощник на каждый день в Китае.",
-   "heroLede": "Спрашивайте CJ Agent обо всём: как передвигаться, платить, где поесть и что забронировать. Если нужен звонок или проверка на месте, JT Agent подключает живого человека.",
+   "heroLede": "Спрашивайте CJ Agent обо всём: как передвигаться, платить, где поесть и что забронировать — по-английски или по-китайски.",
    "heroNote": "Сначала на iPhone. Приглашаем путешественников небольшими группами.",
-   "howTitle": "Как CJ Agent и JT Agent работают вместе",
-   "howLede": "С CJ Agent вы общаетесь. JT Agent работает в фоне: следит за поездкой, открывает обращение, если что-то пошло не так, и передаёт сотруднику то, с чем ИИ не справится.",
+   "howTitle": "Что уже умеет",
+   "howLede": "Спрашивайте CJ Agent в чате или откройте инструмент, когда нужно показать что-то по-китайски.",
    "cjRole": "В вашем чате",
-   "jtRole": "За кадром",
    "cjList": [
     "Отвечает на вопросы об оплате, транспорте, еде и билетах и даёт проверяемые источники.",
     "Планирует дни с учётом того, что помнит о вас, и сохраняет подтверждённые планы.",
-    "Готовит бронирования и изменения и ждёт вашего согласия, прежде чем что-то оплатить или перенести.",
     "Показывает фразы и данные брони по-китайски, когда их нужно кому-то показать.",
     "Говорит по-английски и по-китайски в одном чате."
-   ],
-   "jtList": [
-    "Следит за бронированиями, поездами, рейсами и заселением.",
-    "Замечает, когда что-то идёт не так или вопрос ходит по кругу.",
-    "Открывает обращение только с теми данными, которые нужны для следующего шага.",
-    "Передаёт звонки и проверки на месте сотруднику и доводит дело до конца.",
-    "Возвращает результат через CJ Agent, и всё остаётся в одном чате."
-   ],
-   "scTitle": "Как это выглядит в поездке",
-   "tabs": [
-    "Отель не может найти бронь",
-    "Ваш поезд отменён",
-    "Нужна срочная помощь"
-   ],
-   "laneChat": "В вашем чате",
-   "laneBack": "За кадром",
-   "who": {
-    "you": "Вы",
-    "cj": "CJ Agent",
-    "jt": "JT Agent",
-    "mate": "Сотрудник"
-   },
-   "scenes": {
-    "hotel": {
-     "steps": [
-      "На ресепшене говорят, что не могут найти мою бронь.",
-      "Покажите им эту карточку. Я также попросил сотрудника позвонить в отель.",
-      "Бронь не найдена при заселении. Обрабатывается как сбой в поездке.",
-      "Открыто обращение: название отеля, номер брони и даты. Паспорт и данные аккаунта не передаются.",
-      "Позвонил на ресепшен по-китайски. Бронь оформлена на CLARKE EMMA.",
-      "Готово: бронь была на имя «CLARKE EMMA». Номер ждёт вас. Сотрудник позвонил в отель и всё подтвердил."
-     ],
-     "note": "Если бы мест не было, CJ Agent показал бы варианты поблизости с ценами и забронировал бы только после вашего выбора."
-    },
-    "train": {
-     "steps": [
-      "Проверка статуса: поезд в 14:05 до Сианя отменён.",
-      "Проверяет, что от него зависит: заселение сегодня вечером и билеты на завтра на 9:00.",
-      "Ваш поезд в 14:05 до Сианя отменён. Поезд в 15:20 прибывает в 19:58, отель и завтрашние билеты сохраняются. Бронировать?",
-      "Да, бронируй на 15:20.",
-      "Билет переоформлен, отель предупреждён, что вы приедете около 20:30.",
-      "Готово. Новый билет и обновлённый план уже в вашей поездке."
-     ],
-     "note": "Ничего не оплачивалось и не менялось, пока вы не согласились."
-    },
-    "sos": {
-     "steps": [
-      "Я упал на лестнице и не могу наступить на ногу.",
-      "Если всё серьёзно, сразу звоните 120, это скорая помощь. Покажите это водителю или людям рядом:",
-      "Сигнал безопасности. Инструкции отправлены сразу, без ожидания обращения.",
-      "Дежурный сотрудник подключён для помощи в переписке.",
-      "Сотрудник продолжит помогать вам здесь. Ближайшая больница с англоговорящим персоналом в 2 км."
-     ],
-     "note": "Экстренная помощь доступна всем пользователям: подсказки и поддержка в переписке. При опасности всегда звоните 110 (полиция), 120 (скорая) или 119 (пожарные)."
-    }
-   },
-   "watchTitle": "За чем следит JT Agent",
-   "cols": [
-    "Ситуация",
-    "Например",
-    "Что происходит"
-   ],
-   "watch": [
-    [
-     "Ваша безопасность",
-     "Травма, внезапная болезнь, вы потерялись.",
-     "Сразу номера экстренных служб и фразы по-китайски, затем сотрудник помогает в переписке."
-    ],
-    [
-     "Документы и деньги",
-     "Потерянный паспорт, заблокированная карта, платёж не проходит.",
-     "Сначала шаги по заявлению и восстановлению, затем сотрудник проверяет детали."
-    ],
-    [
-     "Сбои в поездке",
-     "Изменённый рейс, отель не находит бронь, закрытая достопримечательность.",
-     "Выясняет, что ещё затронуто, и предлагает решение."
-    ],
-    [
-     "Изменения по вашей просьбе",
-     "Сменить отель, перенести день, добавить город.",
-     "CJ Agent готовит варианты. Ничего не меняется без вашего подтверждения."
-    ],
-    [
-     "Когда ИИ застрял",
-     "Вопрос остаётся без ответа, инструмент раз за разом даёт сбой.",
-     "Сотрудник решает вопрос в фоне, а CJ Agent сообщает результат."
-    ]
    ],
    "rules": [
     [
@@ -741,11 +363,11 @@ window.G2C = {
     ],
     [
      "Вы в курсе",
-     "Если помогал человек, CJ Agent расскажет, что он сделал."
+     "Ответы о правилах и часах работы приходят с источниками, которые можно проверить."
     ],
     [
-     "Только нужное",
-     "Сотрудник видит номер обращения и несколько нужных для дела данных, но не ваш аккаунт."
+     "Ваши данные",
+     "Мы их не продаём, а аккаунт можно удалить в приложении."
     ]
    ],
    "placesTitle": "Куда вы едете?",
@@ -815,7 +437,7 @@ window.G2C = {
    "suggest": [
     "Оплата в Китае",
     "3 дня в Пекине",
-    "Забронировать занятие"
+    "Метро в Шанхае"
    ],
    "chat": [
     {
@@ -866,77 +488,23 @@ window.G2C = {
       ]
      ],
      "foot": "Источники: часы работы · время в пути"
-    },
-    {
-     "t": "user",
-     "q": 2,
-     "text": "Забронируй урок на двоих. Паспорт ",
-     "secret": "E12345678",
-     "ph": "<PASSPORT_1>"
-    },
-    {
-     "t": "shield",
-     "text": "Личные данные скрыты до передачи модели"
-    },
-    {
-     "t": "ask",
-     "text": "Воскресенье, 10:00, около ¥300 за двоих. Продолжить?",
-     "yes": "Подтвердить",
-     "no": "Не сейчас"
-    },
-    {
-     "t": "sys",
-     "text": "<b>JT Agent</b> · сотрудник уточняет бронь",
-     "done": "<b>Подтверждено</b> · воскресенье, 10:00 добавлено в план"
     }
    ],
-   "redact": [
-    [
-     "Здравствуйте, я ",
-     null
-    ],
-    [
-     "Анна Иванова",
-     "<NAME_1>"
-    ],
-    [
-     ". Паспорт ",
-     null
-    ],
-    [
-     "E12345678",
-     "<PASSPORT_1>"
-    ],
-    [
-     ", телефон ",
-     null
-    ],
-    [
-     "+44 7700 900123",
-     "<PHONE_1>"
-    ],
-    [
-     ". Я у ",
-     null
-    ],
-    [
-     "входа 3 отеля «Лотос»",
-     "<LOCATION_1>"
-    ],
-    [
-     ".",
-     null
-    ]
-   ],
-   "privLede": "Имена, номера паспортов, телефоны, почта и точные адреса заменяются метками до передачи модели.",
-   "priv1": "Сотрудники видят обезличенное обращение со случайным номером, а не ваш аккаунт.",
-   "priv2": "Данные раскрываются лишь по необходимости, на ограниченное время и с записью доступа.",
+   "privLede": "Чтобы ответить вам, ваши сообщения обрабатывает сервис ИИ-модели, которым мы пользуемся. Сообщайте только те личные данные, которые нужны для задачи.",
+   "priv1": "Мы не продаём ваши персональные данные.",
+   "priv2": "Вы можете в любой момент удалить аккаунт в приложении.",
    "priv3": "Вы можете просматривать, исправлять и удалять сохранённые сведения.",
-   "you": "Вы",
-   "modelSees": "Что видит модель",
    "footTag": "Ваш личный помощник в Китае.",
    "companyName": "Guangzhou Chuangjing Technology Co., Ltd",
-   "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China"
+   "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China",
+   "toolsName": "Инструменты",
+   "toolsRole": "В приложении",
+   "toolsList": [
+    "Карточки для показа: крупный текст по-китайски для таксиста, ресепшена отеля или аптеки.",
+    "Заказ еды: сфотографируйте меню и соберите заказ по-китайски, с остротой и аллергиями.",
+    "Метро: схемы линий крупных городов, поиск станций по-английски или по-китайски, линии, пересадки и что рядом со станцией.",
+    "Достопримечательности: где нужна предварительная запись, принимают ли паспорт, за сколько дней можно записаться, и напоминание, когда откроется запись."
+   ]
   },
   "es": {
    "nav": {
@@ -945,106 +513,16 @@ window.G2C = {
     "privacy": "Privacidad"
    },
    "heroTitle": "Tu asistente para cada día en China.",
-   "heroLede": "Pregunta a CJ Agent cómo moverte, pagar, comer y reservar. Si un problema requiere una llamada o una comprobación en el lugar, JT Agent recurre a una persona real.",
+   "heroLede": "Pregunta a CJ Agent cómo moverte, pagar, comer y reservar, en inglés o en chino.",
    "heroNote": "Primero en iPhone. Estamos invitando a viajeros en pequeños grupos.",
-   "howTitle": "Cómo trabajan juntos CJ Agent y JT Agent",
-   "howLede": "CJ Agent es con quien hablas. JT Agent trabaja en segundo plano: sigue tu viaje, abre un caso cuando algo falla y pasa a una persona del equipo lo que la IA no puede resolver.",
+   "howTitle": "Lo que hace hoy",
+   "howLede": "Pregunta a CJ Agent en el chat o abre una herramienta cuando necesites enseñar algo en chino.",
    "cjRole": "En tu chat",
-   "jtRole": "En segundo plano",
    "cjList": [
     "Responde sobre pagos, transporte, comida y entradas, con fuentes que puedes comprobar.",
     "Planifica tus días según lo que recuerda de ti y respeta lo que ya confirmaste.",
-    "Prepara reservas y cambios, y espera tu sí antes de pagar o mover nada.",
     "Te muestra frases y datos de la reserva en chino cuando tienes que enseñárselos a alguien.",
     "Habla en inglés y en chino dentro de la misma conversación."
-   ],
-   "jtList": [
-    "Sigue tus reservas, trenes, vuelos y llegadas al hotel.",
-    "Detecta cuando algo sale mal o una pregunta da vueltas sin resolverse.",
-    "Abre un caso solo con los datos que necesita el siguiente paso.",
-    "Pasa las llamadas y comprobaciones locales a una persona del equipo y las sigue hasta el final.",
-    "Te devuelve el resultado a través de CJ Agent, todo en el mismo chat."
-   ],
-   "scTitle": "Así se ve durante el viaje",
-   "tabs": [
-    "El hotel no encuentra tu reserva",
-    "Han cancelado tu tren",
-    "Necesitas ayuda urgente"
-   ],
-   "laneChat": "En tu chat",
-   "laneBack": "En segundo plano",
-   "who": {
-    "you": "Tú",
-    "cj": "CJ Agent",
-    "jt": "JT Agent",
-    "mate": "Equipo"
-   },
-   "scenes": {
-    "hotel": {
-     "steps": [
-      "En recepción dicen que no encuentran mi reserva.",
-      "Enséñales esta tarjeta. También he pedido a una persona del equipo que llame al hotel.",
-      "Reserva no encontrada al llegar. Se trata como una incidencia del viaje.",
-      "Caso abierto con el nombre del hotel, el número de reserva y las fechas. El pasaporte y los datos de la cuenta quedan fuera.",
-      "Llamada a recepción en chino. La reserva estaba a nombre de CLARKE EMMA.",
-      "Resuelto: la reserva estaba como «CLARKE EMMA». Tu habitación está lista. Una persona del equipo llamó al hotel para confirmarlo."
-     ],
-     "note": "Si no hubiera habitación, CJ Agent te mostraría opciones cercanas con precios y solo reservaría cuando eligieras."
-    },
-    "train": {
-     "steps": [
-      "Comprobación de estado: el tren de las 14:05 a Xi’an está cancelado.",
-      "Revisa lo que depende de él: la llegada al hotel esta noche y las entradas de mañana a las 9:00.",
-      "Han cancelado tu tren de las 14:05 a Xi’an. El de las 15:20 llega a las 19:58 y mantiene el hotel de esta noche y las entradas de mañana. ¿Lo reservo?",
-      "Sí, reserva el de las 15:20.",
-      "Billete cambiado y aviso al hotel de que llegarás sobre las 20:30.",
-      "Listo. Tu nuevo billete y el plan actualizado ya están en tu viaje."
-     ],
-     "note": "No se pagó ni cambió nada hasta que dijiste que sí."
-    },
-    "sos": {
-     "steps": [
-      "Me he caído en las escaleras y no puedo apoyar el tobillo.",
-      "Si es grave, llama ya al 120 para pedir una ambulancia. Enseña esto al conductor o a quien tengas cerca:",
-      "Señal de seguridad. Los pasos de emergencia se enviaron al momento, sin esperar a abrir un caso.",
-      "Aviso a la persona de guardia para ayudar por mensaje.",
-      "Una persona del equipo seguirá ayudándote aquí. El hospital más cercano con personal que habla inglés está a 2 km."
-     ],
-     "note": "La ayuda de emergencia está abierta a todos los usuarios: orientación y apoyo por mensaje. Ante un peligro, llama siempre al 110 (policía), 120 (ambulancia) o 119 (bomberos)."
-    }
-   },
-   "watchTitle": "Qué vigila JT Agent",
-   "cols": [
-    "Situación",
-    "Por ejemplo",
-    "Qué pasa"
-   ],
-   "watch": [
-    [
-     "Tu seguridad",
-     "Una lesión, una enfermedad repentina, perderte.",
-     "Números de emergencia y frases en chino al momento; después, una persona del equipo te ayuda por mensaje."
-    ],
-    [
-     "Documentos y dinero",
-     "Un pasaporte perdido, una tarjeta bloqueada, un pago que no pasa.",
-     "Primero, los pasos para denunciar y reponer; después, el equipo comprueba los detalles."
-    ],
-    [
-     "Imprevistos",
-     "Un vuelo cambiado, un hotel que no encuentra tu reserva, una atracción cerrada.",
-     "Averigua qué más se ve afectado y propone una solución."
-    ],
-    [
-     "Cambios que pides",
-     "Cambiar de hotel, mover un día, añadir una ciudad.",
-     "CJ Agent prepara opciones. Nada cambia hasta que lo confirmas."
-    ],
-    [
-     "Cuando la IA se atasca",
-     "Una pregunta que sigue sin respuesta, una herramienta que falla una y otra vez.",
-     "Una persona del equipo lo resuelve en segundo plano y CJ Agent te cuenta el resultado."
-    ]
    ],
    "rules": [
     [
@@ -1053,11 +531,11 @@ window.G2C = {
     ],
     [
      "Lo sabrás",
-     "Si te ha ayudado una persona, CJ Agent te dice qué hizo."
+     "Las respuestas sobre normas y horarios incluyen fuentes que puedes comprobar."
     ],
     [
-     "Solo lo necesario",
-     "El equipo ve un número de caso y los pocos datos que requiere la tarea, nunca tu cuenta."
+     "Tus datos",
+     "No los vendemos, y puedes eliminar tu cuenta en la app."
     ]
    ],
    "placesTitle": "¿Adónde vas?",
@@ -1127,7 +605,7 @@ window.G2C = {
    "suggest": [
     "Pagar en China",
     "3 días en Pekín",
-    "Reservar una clase"
+    "Metro de Shanghái"
    ],
    "chat": [
     {
@@ -1178,77 +656,23 @@ window.G2C = {
       ]
      ],
      "foot": "Fuentes: horarios oficiales · tiempos de traslado"
-    },
-    {
-     "t": "user",
-     "q": 2,
-     "text": "Reserva la clase para dos. Pasaporte ",
-     "secret": "E12345678",
-     "ph": "<PASSPORT_1>"
-    },
-    {
-     "t": "shield",
-     "text": "Datos ocultos antes de llegar al modelo"
-    },
-    {
-     "t": "ask",
-     "text": "Domingo a las 10:00, unos ¥300 para dos. ¿Sigo?",
-     "yes": "Confirmar",
-     "no": "Ahora no"
-    },
-    {
-     "t": "sys",
-     "text": "<b>JT Agent</b> · el equipo confirma con el local",
-     "done": "<b>Confirmado</b> · domingo a las 10:00 añadido al viaje"
     }
    ],
-   "redact": [
-    [
-     "Hola, soy ",
-     null
-    ],
-    [
-     "Ana García",
-     "<NAME_1>"
-    ],
-    [
-     ". Pasaporte ",
-     null
-    ],
-    [
-     "E12345678",
-     "<PASSPORT_1>"
-    ],
-    [
-     ", teléfono ",
-     null
-    ],
-    [
-     "+44 7700 900123",
-     "<PHONE_1>"
-    ],
-    [
-     ". Estoy en ",
-     null
-    ],
-    [
-     "la puerta 3 del Hotel Lotus",
-     "<LOCATION_1>"
-    ],
-    [
-     ".",
-     null
-    ]
-   ],
-   "privLede": "Nombres, pasaportes, teléfonos, correos y ubicaciones precisas se sustituyen por etiquetas antes de que el modelo los lea.",
-   "priv1": "El equipo ve casos anonimizados con un número aleatorio, no tu cuenta.",
-   "priv2": "Los datos solo se revelan cuando son necesarios, por tiempo limitado y con registro de acceso.",
+   "privLede": "Para responderte, tus mensajes los procesa el servicio de modelos de IA que usamos. Comparte solo los datos personales que necesite cada gestión.",
+   "priv1": "No vendemos tus datos personales.",
+   "priv2": "Puedes eliminar tu cuenta en la app cuando quieras.",
    "priv3": "Puedes consultar, corregir o borrar lo que se recuerda de ti.",
-   "you": "Tú",
-   "modelSees": "Lo que ve el modelo",
    "footTag": "Tu asistente personal para China.",
    "companyName": "Guangzhou Chuangjing Technology Co., Ltd",
-   "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China"
+   "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China",
+   "toolsName": "Herramientas",
+   "toolsRole": "En la app",
+   "toolsList": [
+    "Tarjetas para enseñar: texto grande en chino para el taxista, la recepción del hotel o la farmacia.",
+    "Pedir comida: fotografía la carta y prepara tu pedido en chino, con nivel de picante y alergias.",
+    "Guía del metro: planos de las principales ciudades, busca estaciones en inglés o chino y consulta líneas, transbordos y qué hay cerca de cada estación.",
+    "Reservas de lugares: qué sitios piden reserva previa, si aceptan pasaporte, con cuánta antelación se puede reservar y un aviso cuando abren las reservas."
+   ]
   },
   "fr": {
    "nav": {
@@ -1257,106 +681,16 @@ window.G2C = {
     "privacy": "Confidentialité"
    },
    "heroTitle": "Votre assistant pour chaque jour en Chine.",
-   "heroLede": "Demandez à CJ Agent comment vous déplacer, payer, manger et réserver. Quand un problème demande un appel ou une vérification sur place, JT Agent fait intervenir une vraie personne.",
+   "heroLede": "Demandez à CJ Agent comment vous déplacer, payer, manger et réserver, en anglais ou en chinois.",
    "heroNote": "D’abord sur iPhone. Nous invitons les voyageurs par petits groupes.",
-   "howTitle": "Comment CJ Agent et JT Agent travaillent ensemble",
-   "howLede": "CJ Agent est celui à qui vous parlez. JT Agent travaille en coulisses : il suit votre voyage, ouvre un dossier quand quelque chose se passe mal et confie à un membre de l’équipe ce que l’IA ne peut pas terminer.",
+   "howTitle": "Ce qu’il fait aujourd’hui",
+   "howLede": "Posez vos questions à CJ Agent dans la conversation, ou ouvrez un outil quand vous devez montrer quelque chose en chinois.",
    "cjRole": "Dans votre conversation",
-   "jtRole": "En coulisses",
    "cjList": [
     "Répond sur les paiements, les transports, la cuisine et les billets, avec des sources vérifiables.",
     "Organise vos journées selon ce qu’il sait de vous et garde intact ce qui est confirmé.",
-    "Prépare réservations et modifications, et attend votre accord avant de payer ou de déplacer quoi que ce soit.",
     "Affiche des phrases et les détails de réservation en chinois quand vous devez les montrer.",
     "Parle anglais et chinois dans la même conversation."
-   ],
-   "jtList": [
-    "Suit vos réservations, trains, vols et arrivées à l’hôtel.",
-    "Remarque quand quelque chose tourne mal ou qu’une question tourne en rond.",
-    "Ouvre un dossier avec les seules informations utiles à l’étape suivante.",
-    "Confie appels et vérifications sur place à un membre de l’équipe et suit l’affaire jusqu’au bout.",
-    "Vous transmet le résultat via CJ Agent, dans la même conversation."
-   ],
-   "scTitle": "En voyage, concrètement",
-   "tabs": [
-    "L’hôtel ne trouve pas votre réservation",
-    "Votre train est annulé",
-    "Vous avez besoin d’aide, vite"
-   ],
-   "laneChat": "Dans votre conversation",
-   "laneBack": "En coulisses",
-   "who": {
-    "you": "Vous",
-    "cj": "CJ Agent",
-    "jt": "JT Agent",
-    "mate": "Équipe"
-   },
-   "scenes": {
-    "hotel": {
-     "steps": [
-      "La réception dit qu’elle ne trouve pas ma réservation.",
-      "Montrez-leur cette carte. J’ai aussi demandé à un membre de l’équipe d’appeler l’hôtel.",
-      "Réservation introuvable à l’arrivée. Traitée comme une perturbation du voyage.",
-      "Dossier ouvert avec le nom de l’hôtel, le numéro de réservation et les dates. Passeport et compte restent hors du dossier.",
-      "Appel à la réception en chinois. La réservation était au nom de CLARKE EMMA.",
-      "C’est réglé : la réservation était au nom de « CLARKE EMMA ». Votre chambre est prête. Un membre de l’équipe a appelé l’hôtel pour confirmer."
-     ],
-     "note": "S’il n’y avait plus de chambre, CJ Agent vous montrerait des options à proximité avec leurs prix et ne réserverait qu’après votre choix."
-    },
-    "train": {
-     "steps": [
-      "Vérification : le train de 14 h 05 pour Xi’an est annulé.",
-      "Regarde ce qui en dépend : l’arrivée à l’hôtel ce soir et les billets de demain à 9 h.",
-      "Votre train de 14 h 05 pour Xi’an est annulé. Celui de 15 h 20 arrive à 19 h 58 et conserve l’hôtel de ce soir et les billets de demain. Je le réserve ?",
-      "Oui, réserve celui de 15 h 20.",
-      "Billet échangé et hôtel prévenu de votre arrivée vers 20 h 30.",
-      "C’est fait. Votre nouveau billet et le programme mis à jour sont dans votre voyage."
-     ],
-     "note": "Rien n’a été payé ni modifié avant votre accord."
-    },
-    "sos": {
-     "steps": [
-      "Je suis tombé dans l’escalier et je ne peux plus poser le pied.",
-      "Si c’est grave, appelez tout de suite le 120 pour une ambulance. Montrez ceci au chauffeur ou aux personnes autour de vous :",
-      "Signal de sécurité. Les consignes d’urgence sont parties aussitôt, sans attendre l’ouverture d’un dossier.",
-      "Membre de l’équipe de garde prévenu pour aider par message.",
-      "Un membre de l’équipe continue de vous aider ici. L’hôpital le plus proche avec du personnel anglophone est à 2 km."
-     ],
-     "note": "L’aide d’urgence est ouverte à tous les utilisateurs : conseils et soutien par message. En cas de danger, appelez toujours le 110 (police), le 120 (ambulance) ou le 119 (pompiers)."
-    }
-   },
-   "watchTitle": "Ce que surveille JT Agent",
-   "cols": [
-    "Situation",
-    "Par exemple",
-    "Ce qui se passe"
-   ],
-   "watch": [
-    [
-     "Votre sécurité",
-     "Une blessure, un malaise soudain, vous êtes perdu.",
-     "Numéros d’urgence et phrases en chinois tout de suite, puis un membre de l’équipe aide par message."
-    ],
-    [
-     "Papiers et argent",
-     "Un passeport perdu, une carte bloquée, un paiement refusé.",
-     "D’abord les démarches de déclaration et de remplacement, puis l’équipe vérifie les détails."
-    ],
-    [
-     "Imprévus",
-     "Un vol modifié, un hôtel qui ne trouve pas votre réservation, un site fermé.",
-     "Identifie ce qui est touché par ricochet, puis propose une solution."
-    ],
-    [
-     "Changements demandés",
-     "Changer d’hôtel, déplacer une journée, ajouter une ville.",
-     "CJ Agent prépare des options. Rien ne change sans votre confirmation."
-    ],
-    [
-     "Quand l’IA bloque",
-     "Une question qui reste sans réponse, un outil qui échoue encore et encore.",
-     "Un membre de l’équipe règle le problème en coulisses et CJ Agent vous donne le résultat."
-    ]
    ],
    "rules": [
     [
@@ -1365,11 +699,11 @@ window.G2C = {
     ],
     [
      "Vous êtes informé",
-     "Quand une personne a aidé, CJ Agent vous dit ce qu’elle a fait."
+     "Les réponses sur les règles et les horaires citent des sources que vous pouvez vérifier."
     ],
     [
-     "Le strict nécessaire",
-     "L’équipe voit un numéro de dossier et les quelques informations utiles, jamais votre compte."
+     "Vos données",
+     "Nous ne les vendons pas, et vous pouvez supprimer votre compte dans l’app."
     ]
    ],
    "placesTitle": "Où allez-vous ?",
@@ -1439,7 +773,7 @@ window.G2C = {
    "suggest": [
     "Payer en Chine",
     "3 jours à Pékin",
-    "Réserver un cours"
+    "Métro de Shanghai"
    ],
    "chat": [
     {
@@ -1490,77 +824,23 @@ window.G2C = {
       ]
      ],
      "foot": "Sources : horaires officiels · temps de trajet"
-    },
-    {
-     "t": "user",
-     "q": 2,
-     "text": "Réserve le cours pour deux. Passeport ",
-     "secret": "E12345678",
-     "ph": "<PASSPORT_1>"
-    },
-    {
-     "t": "shield",
-     "text": "Données masquées avant l’envoi au modèle"
-    },
-    {
-     "t": "ask",
-     "text": "Dimanche à 10 h, environ ¥300 pour deux. Je continue ?",
-     "yes": "Confirmer",
-     "no": "Pas maintenant"
-    },
-    {
-     "t": "sys",
-     "text": "<b>JT Agent</b> · l’équipe vérifie auprès du lieu",
-     "done": "<b>Confirmé</b> · dimanche à 10 h ajouté au voyage"
     }
    ],
-   "redact": [
-    [
-     "Bonjour, je suis ",
-     null
-    ],
-    [
-     "Emma Martin",
-     "<NAME_1>"
-    ],
-    [
-     ". Passeport ",
-     null
-    ],
-    [
-     "E12345678",
-     "<PASSPORT_1>"
-    ],
-    [
-     ", téléphone ",
-     null
-    ],
-    [
-     "+44 7700 900123",
-     "<PHONE_1>"
-    ],
-    [
-     ". Je suis à ",
-     null
-    ],
-    [
-     "l’entrée 3 de l’hôtel Lotus",
-     "<LOCATION_1>"
-    ],
-    [
-     ".",
-     null
-    ]
-   ],
-   "privLede": "Noms, passeports, téléphones, e-mails et positions précises sont remplacés par des balises avant que le modèle ne les lise.",
-   "priv1": "L’équipe voit un dossier anonymisé avec un numéro aléatoire, jamais votre compte.",
-   "priv2": "Un accès aux données n’est accordé que si nécessaire, pour une durée limitée et avec traçabilité.",
+   "privLede": "Pour vous répondre, vos messages sont traités par le service de modèle d’IA que nous utilisons. Ne partagez que les données personnelles nécessaires à la démarche.",
+   "priv1": "Nous ne vendons pas vos données personnelles.",
+   "priv2": "Vous pouvez supprimer votre compte dans l’app à tout moment.",
    "priv3": "Consultez, corrigez ou supprimez les informations mémorisées à tout moment.",
-   "you": "Vous",
-   "modelSees": "Ce que voit le modèle",
    "footTag": "Votre assistant personnel pour la Chine.",
    "companyName": "Guangzhou Chuangjing Technology Co., Ltd",
-   "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China"
+   "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China",
+   "toolsName": "Outils",
+   "toolsRole": "Dans l’app",
+   "toolsList": [
+    "Cartes à montrer : un grand texte en chinois pour le chauffeur de taxi, la réception de l’hôtel ou la pharmacie.",
+    "Commander : photographiez le menu et composez votre commande en chinois, avec le niveau de piment et les allergies.",
+    "Guide du métro : plans des grandes villes, recherche des stations en anglais ou en chinois, lignes, correspondances et alentours de chaque station.",
+    "Réservations de sites : quels sites demandent une réservation, si le passeport est accepté, combien de jours à l’avance, et un rappel à l’ouverture des réservations."
+   ]
   },
   "ar": {
    "nav": {
@@ -1569,106 +849,16 @@ window.G2C = {
     "privacy": "الخصوصية"
    },
    "heroTitle": "مساعدك الشخصي في كل يوم في الصين.",
-   "heroLede": "اسأل CJ Agent عن التنقل والدفع والطعام والحجز. وعندما تحتاج مشكلة إلى مكالمة هاتفية أو تحقق محلي، يستعين JT Agent بشخص حقيقي.",
+   "heroLede": "اسأل CJ Agent عن التنقل والدفع والطعام والحجز، بالإنجليزية أو بالصينية.",
    "heroNote": "يصل أولًا إلى iPhone. ندعو المسافرين على دفعات صغيرة.",
-   "howTitle": "كيف يعمل CJ Agent وJT Agent معًا",
-   "howLede": "CJ Agent هو من تتحدث معه. أما JT Agent فيعمل في الخلفية: يتابع رحلتك، ويفتح طلب متابعة عندما يحدث خلل، ويسلّم إلى أحد أفراد الفريق ما لا يستطيع الذكاء الاصطناعي إنجازه.",
+   "howTitle": "ما الذي يفعله اليوم",
+   "howLede": "اسأل CJ Agent في المحادثة، أو افتح أداة عندما تحتاج إلى أن تُري أحدًا شيئًا بالصينية.",
    "cjRole": "في محادثتك",
-   "jtRole": "في الخلفية",
    "cjList": [
     "يجيب عن الدفع والمواصلات والطعام والتذاكر، مع مصادر يمكنك التحقق منها.",
     "ينظم أيامك وفق ما يتذكره عنك، ويحافظ على الخطط التي أكّدتها.",
-    "يجهّز الحجوزات والتعديلات، ولا يدفع أو يغيّر شيئًا قبل موافقتك.",
     "يعرض عبارات وتفاصيل الحجز بالصينية عندما تحتاج إلى إظهارها لأحد.",
     "يتحدث الإنجليزية والصينية في المحادثة نفسها."
-   ],
-   "jtList": [
-    "يتابع حجوزاتك وقطاراتك ورحلاتك الجوية وتسجيل الوصول.",
-    "يلاحظ عندما يحدث خلل أو يبقى سؤال دون حل.",
-    "يفتح طلب متابعة بالمعلومات اللازمة للخطوة التالية فقط.",
-    "يسلّم المكالمات والتحقق المحلي إلى أحد أفراد الفريق ويتابعها حتى النهاية.",
-    "يعيد إليك النتيجة عبر CJ Agent، في المحادثة نفسها."
-   ],
-   "scTitle": "كيف يبدو ذلك أثناء الرحلة",
-   "tabs": [
-    "الفندق لا يجد حجزك",
-    "أُلغي قطارك",
-    "تحتاج إلى مساعدة عاجلة"
-   ],
-   "laneChat": "في محادثتك",
-   "laneBack": "في الخلفية",
-   "who": {
-    "you": "أنت",
-    "cj": "CJ Agent",
-    "jt": "JT Agent",
-    "mate": "الفريق"
-   },
-   "scenes": {
-    "hotel": {
-     "steps": [
-      "يقول موظف الاستقبال إنه لا يجد حجزي.",
-      "أرِهم هذه البطاقة. وطلبتُ أيضًا من أحد أفراد الفريق الاتصال بالفندق.",
-      "لم يُعثر على الحجز عند الوصول. يُعامَل كتعطّل في الرحلة.",
-      "فُتح طلب متابعة يتضمن اسم الفندق ورقم الحجز والتواريخ، دون جواز السفر أو بيانات الحساب.",
-      "اتصال بالاستقبال بالصينية. الحجز مسجّل باسم CLARKE EMMA.",
-      "تم الحل: الحجز مسجّل باسم «CLARKE EMMA». غرفتك جاهزة. اتصل أحد أفراد الفريق بالفندق للتأكيد."
-     ],
-     "note": "لو لم تكن هناك غرفة، لعرض عليك CJ Agent خيارات قريبة بأسعارها، ولن يحجز إلا بعد أن تختار."
-    },
-    "train": {
-     "steps": [
-      "فحص الحالة: أُلغي قطار الساعة 14:05 إلى شيآن.",
-      "يتحقق مما يعتمد عليه: تسجيل الوصول إلى الفندق الليلة وتذاكر الغد الساعة 9:00.",
-      "أُلغي قطارك إلى شيآن الساعة 14:05. قطار الساعة 15:20 يصل الساعة 19:58 ويحافظ على فندق الليلة وتذاكر الغد. هل أحجزه؟",
-      "نعم، احجز قطار 15:20.",
-      "تم تغيير التذكرة وإبلاغ الفندق بأنك ستصل نحو الساعة 20:30.",
-      "تم. تذكرتك الجديدة وخطتك المحدثة موجودتان في رحلتك."
-     ],
-     "note": "لم يُدفع شيء ولم يتغير شيء قبل موافقتك."
-    },
-    "sos": {
-     "steps": [
-      "سقطت على الدرج ولا أستطيع الوقوف على كاحلي.",
-      "إذا كانت الحالة خطيرة، اتصل فورًا بالرقم 120 لطلب سيارة إسعاف. أرِ هذا للسائق أو لمن حولك:",
-      "إشارة سلامة. أُرسلت خطوات الطوارئ فورًا دون انتظار فتح طلب متابعة.",
-      "تم تنبيه أحد أفراد الفريق المناوب للمساعدة عبر الرسائل.",
-      "سيتابع معك أحد أفراد الفريق هنا. أقرب مستشفى فيه موظفون يتحدثون الإنجليزية على بعد 2 كم."
-     ],
-     "note": "المساعدة الطارئة متاحة لجميع المستخدمين: إرشاد ودعم عبر الرسائل. عند الخطر، اتصل دائمًا بالرقم 110 (الشرطة) أو 120 (الإسعاف) أو 119 (الإطفاء)."
-    }
-   },
-   "watchTitle": "ما الذي يراقبه JT Agent",
-   "cols": [
-    "الحالة",
-    "أمثلة",
-    "ما الذي يحدث"
-   ],
-   "watch": [
-    [
-     "سلامتك",
-     "إصابة، مرض مفاجئ، الضياع.",
-     "أرقام الطوارئ وعبارات بالصينية فورًا، ثم يساعدك أحد أفراد الفريق عبر الرسائل."
-    ],
-    [
-     "الوثائق والمال",
-     "جواز سفر مفقود، بطاقة محظورة، دفعة لا تمر.",
-     "خطوات الإبلاغ والاستبدال أولًا، ثم يتحقق الفريق من التفاصيل."
-    ],
-    [
-     "تعطّل الرحلة",
-     "رحلة جوية تغيّرت، فندق لا يجد حجزك، معلم سياحي مغلق.",
-     "يحدد ما الذي يتأثر أيضًا، ثم يقترح حلًا."
-    ],
-    [
-     "تغييرات تطلبها",
-     "تغيير الفندق، نقل يوم، إضافة مدينة.",
-     "يجهّز CJ Agent الخيارات. لا يتغير شيء قبل تأكيدك."
-    ],
-    [
-     "عندما يتعثر الذكاء الاصطناعي",
-     "سؤال يبقى بلا جواب، أداة تتعطل مرارًا.",
-     "يحل أحد أفراد الفريق المشكلة في الخلفية، ويخبرك CJ Agent بالنتيجة."
-    ]
    ],
    "rules": [
     [
@@ -1677,11 +867,11 @@ window.G2C = {
     ],
     [
      "ستعرف",
-     "عندما يساعدك شخص، يخبرك CJ Agent بما فعله."
+     "تأتي الإجابات عن القواعد ومواعيد العمل مع مصادر يمكنك التحقق منها."
     ],
     [
-     "القدر اللازم فقط",
-     "يرى الفريق رقم الطلب والقليل من التفاصيل اللازمة للمهمة، ولا يرى حسابك أبدًا."
+     "بياناتك",
+     "لا نبيعها، ويمكنك حذف حسابك من التطبيق."
     ]
    ],
    "placesTitle": "إلى أين تتجه؟",
@@ -1751,7 +941,7 @@ window.G2C = {
    "suggest": [
     "الدفع في الصين",
     "3 أيام في بكين",
-    "حجز درس"
+    "مترو شنغهاي"
    ],
    "chat": [
     {
@@ -1802,156 +992,24 @@ window.G2C = {
       ]
      ],
      "foot": "المصادر: أوقات العمل الرسمية · أوقات التنقل"
-    },
-    {
-     "t": "user",
-     "q": 2,
-     "text": "احجز الدرس لشخصين. جواز السفر ",
-     "secret": "E12345678",
-     "ph": "<PASSPORT_1>"
-    },
-    {
-     "t": "shield",
-     "text": "تُحجب البيانات قبل إرسالها إلى النموذج"
-    },
-    {
-     "t": "ask",
-     "text": "الأحد الساعة 10:00، نحو ¥300 لشخصين. هل أتابع؟",
-     "yes": "تأكيد",
-     "no": "ليس الآن"
-    },
-    {
-     "t": "sys",
-     "text": "<b>JT Agent</b> · يتواصل الفريق مع المكان للتأكيد",
-     "done": "<b>تم التأكيد</b> · أضيف الأحد الساعة 10:00 إلى رحلتك"
     }
    ],
-   "redact": [
-    [
-     "مرحبًا، أنا ",
-     null
-    ],
-    [
-     "سارة أحمد",
-     "<NAME_1>"
-    ],
-    [
-     ". جواز سفري ",
-     null
-    ],
-    [
-     "E12345678",
-     "<PASSPORT_1>"
-    ],
-    [
-     "، وهاتفي ",
-     null
-    ],
-    [
-     "+44 7700 900123",
-     "<PHONE_1>"
-    ],
-    [
-     ". أنا عند ",
-     null
-    ],
-    [
-     "البوابة 3 في فندق لوتس",
-     "<LOCATION_1>"
-    ],
-    [
-     ".",
-     null
-    ]
-   ],
-   "privLede": "تُستبدل الأسماء وأرقام الجوازات والهواتف والبريد والمواقع الدقيقة برموز قبل أن يقرأها النموذج.",
-   "priv1": "يرى الفريق طلبًا محجوب البيانات برقم عشوائي، ولا يرى حسابك.",
-   "priv2": "لا تُكشف البيانات إلا عند الحاجة ولمدة محدودة، مع تسجيل الوصول إليها.",
+   "privLede": "للإجابة عن أسئلتك، تُعالَج رسائلك لدى خدمة نموذج الذكاء الاصطناعي التي نستخدمها. شارك فقط البيانات الشخصية التي تحتاجها المهمة.",
+   "priv1": "لا نبيع بياناتك الشخصية.",
+   "priv2": "يمكنك حذف حسابك من التطبيق في أي وقت.",
    "priv3": "يمكنك عرض المعلومات المحفوظة وتصحيحها أو حذفها متى شئت.",
-   "you": "أنت",
-   "modelSees": "ما يراه النموذج",
    "footTag": "مساعدك الشخصي في الصين.",
    "companyName": "Guangzhou Chuangjing Technology Co., Ltd",
-   "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China"
+   "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China",
+   "toolsName": "الأدوات",
+   "toolsRole": "في التطبيق",
+   "toolsList": [
+    "بطاقات للعرض: نص صيني كبير لسائق سيارة الأجرة أو لاستقبال الفندق أو للصيدلية.",
+    "الطلب في المطعم: صوّر قائمة الطعام وجهّز طلبك بالصينية، مع مستوى البهارات الحارة والحساسية.",
+    "دليل المترو: خرائط الخطوط في المدن الكبرى، والبحث عن المحطات بالإنجليزية أو الصينية، والخطوط والتحويلات وما حول كل محطة.",
+    "حجز المعالم: أي المعالم تحتاج حجزًا مسبقًا، وهل يُقبل جواز السفر، وكم يومًا مسبقًا يمكنك الحجز، وتذكير عند فتح الحجز."
+   ]
   }
- },
- "SCENES": {
-  "hotel": [
-   {
-    "lane": "chat",
-    "who": "you"
-   },
-   {
-    "lane": "chat",
-    "who": "cj",
-    "card": "您好，我在贵酒店有预订。\n预订号：HB-48213\n入住：11月14日，共2晚"
-   },
-   {
-    "lane": "back",
-    "who": "jt"
-   },
-   {
-    "lane": "back",
-    "who": "jt"
-   },
-   {
-    "lane": "back",
-    "who": "mate"
-   },
-   {
-    "lane": "chat",
-    "who": "cj"
-   }
-  ],
-  "train": [
-   {
-    "lane": "back",
-    "who": "jt"
-   },
-   {
-    "lane": "back",
-    "who": "jt"
-   },
-   {
-    "lane": "chat",
-    "who": "cj"
-   },
-   {
-    "lane": "chat",
-    "who": "you"
-   },
-   {
-    "lane": "back",
-    "who": "mate"
-   },
-   {
-    "lane": "chat",
-    "who": "cj"
-   }
-  ],
-  "sos": [
-   {
-    "lane": "chat",
-    "who": "you"
-   },
-   {
-    "lane": "chat",
-    "who": "cj",
-    "card": "我脚踝受伤了，请帮我叫救护车。"
-   },
-   {
-    "lane": "back",
-    "who": "jt"
-   },
-   {
-    "lane": "back",
-    "who": "jt"
-   },
-   {
-    "lane": "chat",
-    "who": "cj"
-   }
-  ]
  },
  "PLACES": [
   {
