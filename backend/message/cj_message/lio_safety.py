@@ -30,25 +30,28 @@ class Requirement:
 _I = re.I
 REQUIREMENTS = (
     Requirement('emergency', re.compile(
-        r'晕倒|昏倒|晕过去|昏过去|晕厥|昏迷|不省人事|没(?:有)?呼吸|'
-        r'(?:人|他|她|朋友|同伴|孩子|小孩|老人|家人|妈妈|爸爸|老公|老婆|丈夫|妻子)[^。？！?!]{0,4}没(?:有)?反应|叫不醒|心脏病|心梗|胸口疼|胸痛|胸闷|中风|大出血|抽搐|'
-        r'急救|救护车|噎住|溺水|中毒|被车撞|车祸|烫伤|烧伤|中暑|'
+        r'晕倒|昏倒|晕过去|昏过去|晕厥|昏迷|不省人事|没(?:有)?呼吸|叫不醒|叫(?:他|她|了)?(?:都)?没(?:有)?反应|'
+        r'(?:倒地|倒下|晕倒|昏倒|摔倒|摔下)[^。？！?!]{0,6}没(?:有)?反应|没(?:有)?反应[^。？！?!]{0,6}(?:呼吸|叫不醒)|'
+        r'心脏病|心梗|胸口疼|胸痛|胸闷|中风|大出血|抽搐|'
+        r'急救|救护车|噎住|溺水|中毒|被[^。？！?!]{0,4}撞(?!见|衫)(?:了|倒|伤)?|车祸|烫伤|烧伤|中暑|'
         r'\b(?:collaps\w*|faint(?:ed|ing|s)|unconscious|unresponsive|blacked out|not breathing|heart attack|seizure|choking|'
         r'chest pain|hit by a (?:car|bus|motorbike|scooter)|car accident|heat ?stroke|badly burn(?:ed|t)|'
         r'bleeding (?:a lot|heavily|badly)|ambulance|first aid|overdose|poison(?:ed|ing)|drown\w*)\b|'
         r'\bfeel(?:ing)? faint\b|\bpassed out\b(?! (?:from|with) laugh)|\b(?:having|had|has) a stroke\b', _I),
         ((re.compile(r'(?<![0-9])120(?![0-9]|\s*(?:元|块|分钟|公里|米|yuan|RMB|CNY|minutes?|km|m\b))', _I),
           {'zh': '紧急情况请立即拨打 120 叫救护车；需要警察请拨 110。',
-           'en': 'In an emergency call 120 for an ambulance now; for the police call 110.'}),)),
+           'en': 'In an emergency call 120 for an ambulance now; for the police call 110.'}),),
+        # Prevention or general-knowledge questions are not an emergency happening now.
+        unless=re.compile(r'防|预防|避免|多吗|多不多|哪里买|在哪买|怎么买|药膏|\b(?:prevent\w*|avoid\w*|tips?|where (?:to|can I) buy)\b', _I)),
     Requirement('lost_documents', re.compile(
         r'护照[^。？！?!]{0,6}(?:丢|掉|不见|被偷|被盗|被抢|遗失|找不到|没了)|'
-        r'护照[^。？！?!]{0,4}(?:忘在|落在)[^。？！?!]{0,4}(?:出租车|车上|网约车|飞机|火车|高铁|地铁|公交|路上|餐厅|饭店|店里|景区)|'
+        r'护照[^。？！?!]{0,4}(?:忘在|落在|丢在)[^。？！?!]{0,4}(?:出租车|出租|计程车|滴滴|车上|网约车|飞机|火车|高铁|地铁|公交|路上|餐厅|饭店|店里|景区)|'
         r'(?:丢|掉|弄丢|遗失|找不到)[^。？！?!]{0,4}(?:护照|证件|签证)|证件[^。？！?!]{0,4}(?:丢|不见|被偷|找不到)|'
         r'\b(?:lost|lose|losing|missing|stolen|misplac\w*)\b[^.?!]{0,20}\bpassport\b|'
-        r'\bleft (?:my|our|his|her) passport (?:in|on|at) (?:a |the )?(?:taxi|cab|car|didi|train|plane|flight|bus|metro|subway|restaurant|bar|shop|store)\b|'
-        r'\b(?:someone|somebody|they|he|she) (?:took|stole|has taken)\b[^.?!]{0,10}\bpassport\b|'
+        r'\b(?:left|forgot) (?:my|our|his|her) passport (?:in|on|at) (?:a |the )?(?:taxi|cab|car|didi|train|plane|flight|bus|metro|subway|restaurant|bar|shop|store)\b|'
+        r'\b(?:someone|somebody|they|he|she) (?:stole|has stolen|robbed)\b[^.?!]{0,10}\bpassport\b|'
         r'\b(?:can[’\x27]?t|cannot|couldn[’\x27]?t) find\b[^.?!]{0,10}\bpassport\b|'
-        r'\bpassport\b[^.?!]{0,20}\b(?:lost|missing|stolen|gone|taken)\b', _I),
+        r'\bpassport\b[^.?!]{0,20}\b(?:lost|missing|stolen|gone)\b', _I),
         ((re.compile(r'110|报警|报案|派出所|公安|\bpolice\b', _I),
           {'zh': '护照丢失请先到附近派出所报案并开具报失证明，或拨打 110。',
            'en': 'Report the lost passport at the nearest police station and get a loss report, or call 110.'}),
@@ -72,7 +75,7 @@ REQUIREMENTS = (
                      r'\bshow (?:the |them )?(?:staff|waiter|server|card|note)|\blet (?:the )?(?:staff|waiter|server)s? know\b', _I),
           {'zh': '点餐时把忌口明确告诉店员，也可以写下来出示给店员看；严重过敏请随身带好药品。',
            'en': 'When ordering, tell the staff clearly about your restriction or show it to them in writing; if an allergy is severe, carry your medication.'}),),
-        unless=re.compile(r'药|鼻炎|皮肤|花粉|皮疹|\b(?:medicine|medication|pills?|hay fever|rash|pollen)\b', _I)),
+        unless=re.compile(r'药|鼻炎|皮肤|花粉|皮疹|猫|狗|宠物|尘螨|灰尘|\b(?:medicine|medication|pills?|hay fever|rash|pollen|cats?|dogs?|pets?|dust)\b', _I)),
 )
 # "别报警" or "don't call the police" does not count as advising it.
 _NEGATION = re.compile(r'(?:别|不要|不用|无需|不必|没必要)\s*$|\b(?:don[’\x27]t|do not|no need to|never)\s+(?:\w+\s+){0,2}$', _I)
