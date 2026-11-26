@@ -9,16 +9,22 @@ from jt.engine.redaction import REDACTION_VERSION, ConversationRedactor
     ("text", "sensitive_text", "expected"),
     [
         ("我叫顾演宁，请帮忙。", "顾演宁", "我叫<NAME_1>，请帮忙。"),
+        ("姓名：顾演和。", "顾演和", "姓名：<NAME_1>。"),
+        ("我叫顾演宁迷路了。", "顾演宁", "我叫<NAME_1>迷路了。"),
+        ("我叫陆禾求救。", "陆禾", "我叫<NAME_1>求救。"),
         ("我叫顾演宁我被困住了。", "顾演宁", "我叫<NAME_1>我被困住了。"),
         ("我的姓名是陆示禾。我迷路了。", "陆示禾", "我的姓名是<NAME_1>。我迷路了。"),
         ("My name is Élia O’Quill and I need help.", "Élia O’Quill",
          "My name is <NAME_1> and I need help."),
         ("Guest name: mira quill", "mira quill", "Guest name: <NAME_1>"),
+        ("Guest name:\nMira Quill", "Mira Quill", "Guest name:\n<NAME_1>"),
         ("护照号码是：XZ0000015。", "XZ0000015", "护照号码是：<PASSPORT_1>。"),
         ("护照编号：XZ0000015。", "XZ0000015", "护照编号：<PASSPORT_1>。"),
         ("護照號碼：XZ0000015。", "XZ0000015", "護照號碼：<PASSPORT_1>。"),
         ("Passport No. is XZ0000026.", "XZ0000026", "Passport No. is <PASSPORT_1>."),
         ("Passport #: 000000123", "000000123", "Passport #: <PASSPORT_1>"),
+        ("Passport number\nXZ0000015", "XZ0000015", "Passport number\n<PASSPORT_1>"),
+        ("护照号\nXZ0000015", "XZ0000015", "护照号\n<PASSPORT_1>"),
         ("电话：＋８６ １３８ ００００ ００００。", "＋８６ １３８ ００００ ００００",
          "电话：<PHONE_1>。"),
         ("请拨138 0000 0000。", "138 0000 0000", "请拨<PHONE_1>。"),
@@ -31,6 +37,7 @@ from jt.engine.redaction import REDACTION_VERSION, ConversationRedactor
          "Email: <EMAIL_1>."),
         ("我在虚构东路17号2栋305室。", "虚构东路17号2栋305室", "我在<LOCATION_1>。"),
         ("地址：虚构东路17号A座305室。", "虚构东路17号A座305室", "地址：<LOCATION_1>。"),
+        ("地址：虛構東路17號2棟305室。", "虛構東路17號2棟305室", "地址：<LOCATION_1>。"),
         ("我在客房 305。", "客房 305", "我在<LOCATION_1>。"),
         ("My address is 17 Example Road, Apt 4B.", "17 Example Road, Apt 4B",
          "My address is <LOCATION_1>."),
@@ -88,6 +95,9 @@ def test_numbers_and_emails_reuse_placeholders_across_formatting():
         "+1 (202) 555-0147, sample@example.invalid, 202-555-0199, other@example.invalid"
     ) == "<PHONE_1>, <EMAIL_1>, <PHONE_2>, <EMAIL_2>"
     assert redactor.redact("＋１２０２５５５０１４７，SAMPLE@example.invalid") == "<PHONE_1>，<EMAIL_1>"
+    assert redactor.redact("202-555-0147") == "<PHONE_1>"
+    assert redactor.redact("电话：138 0000 0000") == "电话：<PHONE_3>"
+    assert redactor.redact("电话：+86 138-0000-0000") == "电话：<PHONE_3>"
 
 
 def test_overlap_never_exposes_the_rest_of_an_identifier():
