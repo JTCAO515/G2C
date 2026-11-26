@@ -30,6 +30,7 @@ _EXAMPLES: tuple[tuple[str, SignalType | None, Severity | None, str], ...] = (
     ("en-missing", "safety", "P0", "My daughter went missing in the station."),
     ("en-trapped", "safety", "P0", "We're trapped inside the lift."),
     ("en-police", "safety", "P0", "Please dial 110 now."),
+    ("en-police-punctuated", "safety", "P0", "Dial: 110!"),
     ("en-standalone", "safety", "P0", "119!"),
     ("zh-air", "illness", "P0", "在房号：三零五，有人不能呼吸。"),
     ("zh-carbon", "illness", "P0", "房间：一氧化碳报警器响了。"),
@@ -39,6 +40,7 @@ _EXAMPLES: tuple[tuple[str, SignalType | None, Severity | None, str], ...] = (
     ("en-faint", "illness", "P0", "My friend passed out just now."),
     ("en-breath", "illness", "P0", "He's having trouble breathing."),
     ("en-medical-number", "illness", "P0", "Dial (120), please."),
+    ("en-medical-short", "illness", "P0", "120, please!"),
     ("en-poisoning", "illness", "P0", "We think we have carbon monoxide poisoning."),
     ("en-injury", "illness", "P0", "I am injured and cannot get up."),
     ("zh-document", "document_loss", "P1", "我的护照被偷了。"),
@@ -59,6 +61,7 @@ _EXAMPLES: tuple[tuple[str, SignalType | None, Severity | None, str], ...] = (
     ("en-exit", None, None, "Where is the fire exit on this floor plan?"),
     ("en-flight-code", None, None, "The flight number is CA119 and the boarding time is 11:00."),
     ("en-room", None, None, "The room number is 120 and breakfast is on floor 2."),
+    ("en-reservation-code", None, None, "The reservation code is 119, please record it."),
     ("en-info", None, None, "What is the emergency number in China?"),
     ("en-ambulance-info", None, None, "What does insurance cover for an ambulance?"),
 )

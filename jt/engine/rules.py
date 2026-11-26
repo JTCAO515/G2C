@@ -45,12 +45,14 @@ _SAFETY = re.compile(
     re.IGNORECASE,
 )
 _DIAL_NUMBER = re.compile(
-    r"(?:(?<![A-Za-z])(?:call|dial|ring|phone|contact)\s+(?:(?:the|number|emergency)\s+)*"
+    r"(?:(?<![A-Za-z])(?:call|dial|ring|phone|contact)(?![A-Za-z])\s*(?:(?:the|number|emergency)\s+)*"
     r"|请?拨(?:打)?\s*|請?撥(?:打)?\s*|报警(?:电话)?\s*|報警(?:電話)?\s*|紧急电话\s*|緊急電話\s*)"
     r"[:#( ]*(110|119|120)(?![A-Za-z0-9]|[.-][0-9])",
     re.IGNORECASE,
 )
-_STANDALONE_NUMBER = re.compile(r"\s*(110|119|120)[\s.!?。！？]*\Z")
+_STANDALONE_NUMBER = re.compile(
+    r"\s*(110|119|120)(?:[,\s]+(?:please|请|請))?[\s.!?。！？]*\Z", re.IGNORECASE,
+)
 _EMERGENCY_HITS = {
     "110": RuleHit("p0_emergency_110", "safety", "P0"),
     "119": RuleHit("p0_emergency_119", "safety", "P0"),
