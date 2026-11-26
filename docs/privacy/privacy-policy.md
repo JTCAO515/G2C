@@ -11,7 +11,7 @@
 依赖（统筹 2026-11-26 按 JT 预授权决定，随 12-01 一起上线）：
 - 第 5、6 节 Vercel 香港区域：#1872（`web/vercel.json` 固定 `/api/*` 到 hkg1）须在公开前合并。
 - 第 6 节抢先体验申请的境外处理勾选：#1878（政策页与勾选框）随政策一起合并。
-- 第 4 节位置精度：#1875（#1833）已合并（c5da5dab）并已部署到香港（用户 2026-11-26 告知已上线；S 线读回证据随后补在 #1833），附近发给高德前降到 3 位小数。
+- 第 4、12 节位置精度：#1875（#1833）已合并到 main（c5da5dab），但香港现网仍是 4f81cad4（S 线 2026-11-26 只读核对），所以正文按现状写精确位置。**公开门槛**：只有 S 线把香港读回证据（发布源提交、读回时间、附近请求 3 位小数实测、日志无打车坐标）贴到 #1833 后，才改为附近降到约 100 米。
 锚点按生成器写法写在对应行的行尾（生成器只给英文版写 id，所以第 12 节中英两条都写）：recipients（第 5 节，避免生成器按节号默认给第 5 节 cross-border）、cross-border（第 6 节）、in-person-services、website-requests（第 12 节）。
 -->
 
@@ -49,7 +49,7 @@ This policy covers the Go2China iOS app and the website go2china.space.
 | 翻译 | 你输入的文字、录下的语音、拍摄或选择的图片（上传前去掉照片里的位置等元数据） | 翻译、朗读 |
 | 点餐 | 菜单照片（服务器不保存照片） | 识别并解释菜品 |
 | 打车 | 搜索词、上车点和目的地；选「当前位置」时为设备精确位置 | 查询地点、估价、生成滴滴叫车链接 |
-| 附近 | 设备位置（发给地图服务前降到约 100 米精度） | 查找附近的地点、「我在哪」 |
+| 附近 | 设备精确位置 | 查找附近的地点、「我在哪」 |
 | 其他工具 | 城市、地点名、酒店地标、航班号、出行日期等你输入的查询条件 | 查询地点、路线、天气、汇率、航班、火车、酒店 |
 | 景点预约提醒 | 你选的景点和日期 | 在你的设备上按时提醒（本机通知，不发给我们的服务器） |
 | 问题反馈 | App 内目前没有提交反馈的入口；受邀测试者在内部测试群里发截图、问题记录和发生时间 | 处理问题 |
@@ -65,7 +65,7 @@ This policy covers the Go2China iOS app and the website go2china.space.
 | Translation | Text you type, voice you record, photos you take or choose (location and other metadata removed before upload) | Translating and reading aloud |
 | Menu | Menu photos (our server does not keep them) | Reading and explaining dishes |
 | Taxi | Search terms, pickup and destination; your precise device location when you choose "Current location" | Finding places, fare estimates, DiDi ride links |
-| Nearby | Your device location (reduced to about 100 m before it goes to the map service) | Finding places near you, "Where am I" |
+| Nearby | Your precise device location | Finding places near you, "Where am I" |
 | Other tools | City, place names, hotel landmarks, flight numbers, travel dates and other search terms you enter | Places, routes, weather, exchange rates, flights, trains, hotels |
 | Sight booking reminders | The sight and date you choose | Reminders on your device (local notifications, not sent to our servers) |
 | Feedback | There is no way to submit feedback in the app yet; invited testers share screenshots, the issue record and the time in the internal testing group | Handling the issue |
@@ -80,13 +80,13 @@ This policy covers the Go2China iOS app and the website go2china.space.
 ## 4. 位置 / Location
 
 - 只有在你使用「打车」或「附近」时，App 才通过 iOS 系统权限读取设备位置；每次只读一次，不在后台持续定位。
-- 去向：位置先发到我们在香港的服务。打车时，上车点的精确位置转给滴滴，只用于这一次请求，不写日志、不保存；用来让搜索结果更靠近你的位置降到约 100 米。查找附近时，位置降到约 100 米精度后再发给高德。
-- 位置不和你的账号一起保存，不写入记忆，也不发给 AI 模型。查找附近时，服务器会在内存里按降精度后的位置短暂缓存查询结果（约 1 分钟），不与账号关联。
+- 去向：精确位置发到我们在香港的服务；打车时转给滴滴，查找附近时转给高德。
+- 位置不和你的账号一起保存，不写入记忆，也不发给 AI 模型。查找附近时，服务器会在内存里按位置短暂缓存查询结果（约 1 分钟），不与账号关联。
 - 撤回：在 iOS「设置」里关闭 Go2China 的定位权限，或者不用这两个功能；其他功能照常可用，打车时可以手动选上车点。
 
 - The app reads your device location through the iOS permission only when you use Taxi or Nearby. It reads it once each time and never tracks you in the background.
-- Where it goes: your location first goes to our service in Hong Kong. For Taxi, the precise pickup location is passed to DiDi for that request only, and is not logged or stored; the location used to bring search results closer to you is reduced to about 100 m. For Nearby, your location is reduced to about 100 m before it goes to AMap.
-- Your location is not stored with your account, not saved to memory, and not sent to the AI model. For Nearby, our server briefly caches results in memory by the reduced location (about 1 minute), not linked to your account.
+- Where it goes: your precise location goes to our service in Hong Kong; for Taxi it is passed to DiDi, and for Nearby to AMap.
+- Your location is not stored with your account, not saved to memory, and not sent to the AI model. For Nearby, our server briefly caches results in memory by location (about 1 minute), not linked to your account.
 - To withdraw: turn off location access for Go2China in iOS Settings, or don't use these two features. Everything else keeps working, and for Taxi you can choose the pickup point by hand.
 
 ## 5. 我们与谁共享 / Who we share with {#recipients}
@@ -99,7 +99,7 @@ We send each recipient only what the feature you use needs. Requests to Alibaba 
 |---|---|---|---|
 | 阿里云（中国香港）/ Alibaba Cloud (Hong Kong) | 中国香港 / Hong Kong, China | 服务器与每日备份上的全部数据 / All data on our servers and daily backups | 代我们托管 / Hosting on our behalf |
 | 阿里云百炼（通义千问）/ Alibaba Cloud Model Studio (Qwen) | 中国大陆北京 / Beijing, mainland China | 对话文字和行程内容；翻译的文字、语音、图片；菜单照片 / Chat text and trip content; text, voice and images for translation; menu photos | 生成回答、翻译、识别菜单 / Replies, translation, menu reading |
-| 高德地图开放平台 / AMap (Gaode) | 中国大陆 / Mainland China | 地点和路线查询词、城市、酒店地标、火车出发日期；附近功能降到约 100 米精度的设备位置 / Place and route queries, city, hotel landmarks, train departure dates; your device location reduced to about 100 m for Nearby | 地点、路线、天气、酒店、火车、附近 / Places, routes, weather, hotels, trains, Nearby |
+| 高德地图开放平台 / AMap (Gaode) | 中国大陆 / Mainland China | 地点和路线查询词、城市、酒店地标、火车出发日期；附近功能的设备位置 / Place and route queries, city, hotel landmarks, train departure dates; your device location for Nearby | 地点、路线、天气、酒店、火车、附近 / Places, routes, weather, hotels, trains, Nearby |
 | 滴滴出行 / DiDi | 中国大陆 / Mainland China | 打车搜索词、上车点（可为设备精确位置）、目的地 / Taxi search terms, pickup (may be your precise device location), destination | 估价、生成叫车链接；你在滴滴 App 里下单付款 / Estimates and ride links; you book and pay in the DiDi app |
 | 飞常准 / VariFlight | 中国大陆 / Mainland China | 航班号、机场、日期 / Flight number, airports, date | 航班查询 / Flight lookup |
 | Vercel Inc. | 美国公司；官网接口运行在 Vercel 香港区域，静态页面与平台访问日志不受该区域设置控制 / A US company; website endpoints run in Vercel's Hong Kong region, while static pages and platform access logs are not bound to that region | 官网访问，以及你在官网提交的申请（我们的接口代码转发时不保存原文；Vercel 平台记录 IP、路径等访问信息）/ Website visits and applications you submit (our endpoint code forwards them without storing the text; the Vercel platform logs access details such as IP address and path) | 代我们托管官网和表单接口 / Hosting the website and its form endpoints on our behalf |
@@ -192,6 +192,7 @@ We post new versions and their effective dates on this page. For material change
 - **真人服务**（首个是广州中英商务陪同）：由真人提供，提交前确认页会列出将与陪同人员共享的信息并分项征得同意；陪同人员受我们委托、只看到完成本次服务需要的信息；按次收费，在 App 外付款。 {#in-person-services}
 - **官网真人服务请求表**：在官网「广州中英商务陪同」表单提出请求，收集称呼、邮箱、日期和说明（选填），提交到我们自己的后端，由工作人员通过邮件跟进，不经过第三方表单服务；谈妥后再转成正式的服务请求。提交前请你确认已阅读本政策，并分三项征得你的同意：处理时间地点等行踪信息；提供给陪同人员；传到中国大陆以外（中国香港和美国）处理（官网接口由 Vercel 托管，运行在香港区域；App 服务在阿里云香港；回复邮件由美国的 Spacemail 收发）。具体时间、地点、会面对象和当天联系电话，我们在回复邮件里和你确认后再记录，在此之前陪同人员看不到你的任何联系方式。 {#website-requests}
 - **App 内同意界面与定位单独询问页**：首次启动时的总同意，以及使用位置前的单独询问和「我的 → 位置」撤回入口。
+- **位置精度调整**：查找附近时，发给高德前把位置降到约 100 米精度。
 - **App 内问题反馈**：在 Lio 的回答下点「没帮上」并可选填补充说明，发到我们在香港的服务，按账号保存，注销账号时删除。
 
 The following are not launched yet. Before launching any of them, we will update this policy and ask for your separate consent in the app or on the website before processing the related information.
@@ -199,4 +200,5 @@ The following are not launched yet. Before launching any of them, we will update
 - **In-person services** (the first is an English–Chinese business companion in Guangzhou): provided by real people. Before you submit, a confirmation page lists the information to be shared with the companion and asks for separate consents. Companions act on our behalf and see only what this service needs. Paid per service, outside the app. {#in-person-services}
 - **Website in-person service request form**: request a companion through the "A business companion in Guangzhou" form on the website by giving your name, email, a date and an optional note. It goes to our own backend, where our staff follow up by email, not through any third-party form service; once details are agreed, it becomes a formal service request. Before you submit, the form asks you to confirm you have read this policy and to give three separate consents: processing time and place information; sharing it with the companion; and processing outside mainland China (Hong Kong, China and the United States) (the website endpoint is hosted by Vercel and runs in its Hong Kong region; the app service runs on Alibaba Cloud Hong Kong; reply emails go through Spacemail in the United States). We confirm the exact time, place, who you are meeting and a phone number for the day with you by email before recording them; until then the companion cannot see any of your contact details. {#website-requests}
 - **In-app consent screens and a separate location prompt**: a consent screen at first launch, a separate prompt before location is used, and a Me → Location switch to withdraw.
+- **Location precision**: for Nearby, location reduced to about 100 m before it goes to AMap.
 - **In-app feedback**: tap "Didn't help" under a Lio answer and optionally add a note. It goes to our service in Hong Kong, is stored with your account and is deleted when you close your account.
