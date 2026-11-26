@@ -19,6 +19,7 @@ OFFLINE_CASES = (
     ('eval/basic_chain', ('eval/tests/test_basic_chain.py',)),
     ('eval/lio_calendar_transitions', ('eval/tests/test_lio_calendar_transitions.py',)),
     ('eval/optimization', ('eval.optimization.test_score',)),
+    ('eval/release_eval', ('eval/tests/test_release_eval.py',)),
     ('tooling/datasets', ('tooling/datasets', 'test_*.py')),
     ('tooling/optimization', ('tooling.optimization.test_optimization',)),
     ('tooling/training preflight', ('tooling/training', 'test_*.py')),
