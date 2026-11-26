@@ -5,7 +5,7 @@ const { Readable } = require("node:stream");
 const { test } = require("node:test");
 const handler = require("../web/api/early-access");
 
-const application = { name: "Test Guest", email: "guest@example.com", source: "Search" };
+const application = { name: "Test Guest", email: "guest@example.com", source: "Search", consentAbroad: true };
 
 async function submit({ body, chunks = [], headers = {} }) {
   const request = Object.assign(Readable.from(chunks), {
@@ -98,4 +98,49 @@ test("upstream errors keep application content out of logs", async (t) => {
   assert.deepEqual(await submit({ body: application }), { status: 502, result: { ok: false, error: "upstream" } });
   assert.equal(log.mock.callCount(), 1);
   assert.doesNotMatch(JSON.stringify(log.mock.calls[0].arguments), /guest@example\.com/);
+});
+
+test("requires the consent to processing outside China and never forwards it", async (t) => {
+  configure(t);
+  const outbound = t.mock.method(globalThis, "fetch", async () => Response.json({ responseCode: 200 }));
+  for (const consentAbroad of [undefined, false, "true", 1, null]) {
+    assert.deepEqual(await submit({ body: { ...application, consentAbroad } }),
+      { status: 400, result: { ok: false, error: "consent_required", field: "consentAbroad" } }, String(consentAbroad));
+  }
+  assert.equal(outbound.mock.callCount(), 0);
+  assert.deepEqual(await submit({ body: application }), { status: 200, result: { ok: true } });
+  assert.equal(outbound.mock.callCount(), 1);
+  // The Jotform form has no question for the consent: only known question ids are sent.
+  const sent = [...outbound.mock.calls[0].arguments[1].body.keys()];
+  assert.ok(sent.every((key) => /^submission\[\d+\](\[\]|\[other\])?$/.test(key)), sent.join(","));
+  assert.doesNotMatch(outbound.mock.calls[0].arguments[1].body.toString(), /consent/i);
+});
+
+test("spam traps still answer ok without the consent and forward nothing", async (t) => {
+  configure(t);
+  const outbound = t.mock.method(globalThis, "fetch", async () => Response.json({ responseCode: 200 }));
+  const { consentAbroad, ...withoutConsent } = application;
+  assert.deepEqual(await submit({ body: { ...withoutConsent, website: "http://spam.example" } }), { status: 200, result: { ok: true } });
+  assert.equal(outbound.mock.callCount(), 0);
+});
+
+test("the page asks for the consent, blocks without it and links the privacy policy", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const web = path.join(__dirname, "..", "web");
+  const html = fs.readFileSync(path.join(web, "index.html"), "utf8");
+  const app = fs.readFileSync(path.join(web, "app.js"), "utf8");
+  const form = html.slice(html.indexOf('<form id="ea-form"'), html.indexOf("</form>"));
+  assert.match(form, /<input name="consentAbroad" type="checkbox" required>/);
+  assert.match(form, /<a href="\/privacy" data-i18n="eaPolicy.link">/);
+  assert.match(app, /consentAbroad: form\.elements\.consentAbroad\.checked/);
+  assert.match(app, /if \(!data\.consentAbroad\) bad\.push\("consentAbroad"\);/);
+  const w = {};
+  new Function("window", fs.readFileSync(path.join(web, "i18n.js"), "utf8"))(w);
+  for (const [lang, d] of Object.entries(w.G2C.T)) {
+    for (const key of ["eaAbroad", "eaAbroadBad", "privacyLink"]) assert.ok(d[key] && d[key].trim(), `${lang} ${key}`);
+    assert.ok(d.eaPolicy.before && d.eaPolicy.link && d.eaPolicy.after.includes("Jotform"), lang);
+  }
+  assert.equal(w.G2C.T.zh.eaPolicy.before + w.G2C.T.zh.eaPolicy.link + w.G2C.T.zh.eaPolicy.after,
+    "提交即表示你已阅读隐私政策，你的申请会由 Jotform（美国）处理。");
 });

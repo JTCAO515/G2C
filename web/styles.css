@@ -210,6 +210,11 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--i
 .chips input:checked + span { background: var(--ink); border-color: var(--ink); color: #fff; }
 .chips input:focus-visible + span { outline: 3px solid var(--gold); outline-offset: 2px; }
 .other { margin-top: 10px; max-width: 320px; }
+.ea-abroad > span { display: flex; align-items: flex-start; gap: 10px; font-weight: 400; }
+.ea-abroad input { flex: none; width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--ink); }
+#ea-form .bad input[type="checkbox"] { outline: 2px solid var(--cinnabar); outline-offset: 2px; }
+.ea-policy { margin: 0; font-size: 14px; color: var(--muted); max-width: 62ch; }
+.ea-policy a { color: var(--jade); font-weight: 600; }
 .hp { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .submit-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding-top: 4px; }
 .form-msg { margin: 0; font-size: 16px; color: var(--jade); max-width: 46ch; }
@@ -280,4 +285,25 @@ address a:hover { text-decoration: underline; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
   html { scroll-behavior: auto; }
+}
+
+/* Privacy policy page (privacy.html, generated from docs/privacy/privacy-policy.md) */
+.policy { max-width: 820px; margin: 0 auto; padding: 56px 24px 96px; }
+.policy h1 { font-size: clamp(34px, 5vw, 52px); line-height: 1.06; }
+.policy-note { margin: 20px 0 0; padding: 12px 16px; border-radius: 12px; background: var(--stone); font-size: 16px; }
+.policy-text { margin-top: 12px; }
+.policy-text h2 { font-size: 26px; line-height: 1.2; margin: 48px 0 12px; }
+.policy-text p, .policy-text li { font-size: 17px; }
+.policy-text p { margin: 0 0 14px; }
+.policy-text ul { margin: 0 0 14px; padding-inline-start: 22px; display: grid; gap: 6px; }
+.policy-text code { font-size: .9em; background: var(--stone); padding: 1px 5px; border-radius: 6px; }
+.policy-text .table { margin: 0 0 18px; overflow-x: auto; }
+.policy-text table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 15px; line-height: 1.45; }
+.policy-text th, .policy-text td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line); text-align: start; vertical-align: top; }
+.policy-text th { font-weight: 600; }
+.policy-back { margin: 48px 0 0; }
+.policy-back a { color: var(--jade); font-weight: 600; }
+@media (max-width: 720px) {
+  .policy { padding: 36px 16px 72px; }
+  .policy-text h2 { font-size: 22px; margin-top: 36px; }
 }

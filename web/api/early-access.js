@@ -129,6 +129,12 @@ async function handler(req, res) {
   // Spam traps: answer as if accepted so bots learn nothing, but forward nothing.
   if (body && typeof body === "object" && looksLikeBot(body)) return send(res, 200, { ok: true });
 
+  // The visitor must agree that the application is processed outside China (by Jotform in the United
+  // States). The Jotform form has no question for it, so the answer is checked here and not forwarded.
+  if (body && typeof body === "object" && !Array.isArray(body) && body.consentAbroad !== true) {
+    return send(res, 400, { ok: false, error: "consent_required", field: "consentAbroad" });
+  }
+
   const checked = validate(body);
   if (!checked.ok) return send(res, 422, { ok: false, error: "invalid", field: checked.field });
 

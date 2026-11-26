@@ -290,6 +290,8 @@
       destOther: fd.get("destOtherOn") ? String(fd.get("destOther") || "").trim() : "",
       needs: fd.getAll("needs").map(String),
       note: String(fd.get("note") || "").trim(),
+      // Required: the application goes to Jotform in the United States. Checked again by the server, not forwarded.
+      consentAbroad: form.elements.consentAbroad.checked,
       website: String(fd.get("website") || ""),
       elapsedMs: Date.now() - startedAt,
       lang
@@ -299,10 +301,12 @@
     if (!data.name) bad.push("name");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(data.email)) bad.push("email");
     if (!data.source) bad.push("source");
+    if (!data.consentAbroad) bad.push("consentAbroad");
     msg.classList.remove("err");
     if (bad.length) {
       bad.forEach((n) => form.elements[n].closest(".field-l").classList.add("bad"));
-      msg.classList.add("err"); msg.textContent = d.bad; form.elements[bad[0]].focus();
+      const text = [bad.some((n) => n !== "consentAbroad") ? d.bad : "", data.consentAbroad ? "" : d.eaAbroadBad];
+      msg.classList.add("err"); msg.textContent = text.filter(Boolean).join(lang === "zh" ? "" : " "); form.elements[bad[0]].focus();
       return;
     }
     submit.disabled = true; msg.textContent = d.sending;
