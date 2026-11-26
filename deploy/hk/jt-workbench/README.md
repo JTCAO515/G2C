@@ -25,6 +25,12 @@ docker compose --env-file jt-workbench/images.env -f deploy/hk/jt-workbench/comp
 docker compose --env-file jt-workbench/images.env -f deploy/hk/jt-workbench/compose.yaml --profile operator run --rm --no-deps -T offboard '<username>'
 ```
 
-故障时持现有部署锁，先在原 inode 恢复 `jt-workbench/Caddyfile.before` 后发 SIGUSR1，确认 CJ 就绪。可停止工作台 app 和每日备份的工作台 drop-in，保留已产生的工作台数据、审计及备份，以便原地恢复。成员已开始使用后从备份恢复须先走员工状态核对。实存数据库、角色和备份的进一步删除另由 JT 授权。
+## 现场验证和回滚
+
+上线前确认同机 CJ 的维护窗口与快测资格，保留切换前 API/worker 版本、公开健康返回和备份服务状态。切换后先读回工作台 HTTPS 登录页、三条匿名重定向以及 CJ 现役版本和健康返回，再按 [CJ API 快速冒烟](../SERVER-SMOKE.md) 用获准合成会话执行问答、文字翻译、滴滴链接。保留原回执。快测 `FAIL` 即执行回滚，`HOLD` 或 `UNRUN` 保持为待验收。
+
+工作台端由 JT 完成首管理员绑定并登录，再用独立获准的测试员工验证队列、案件和运营台。用可停用的独立测试账号验证错误 TOTP 与连续失败锁定，用复核员会话验证运营写操作拒绝。验收记录只留状态和脱敏截图。备份读回检查同一每日任务的实际工作台 `pg_dump`、归档清单以及哈希。
+
+故障时持既有部署锁，读回当前站点、应用和备份状态。在原 inode 恢复 `jt-workbench/Caddyfile.before` 后发 SIGUSR1，确认 CJ 就绪并复测失败项。停工作台 app、工作台备份与转发 socket，撤下工作台的每日备份 drop-in，重载 systemd 并读回 CJ 原日备配置和工作台路由已下线。保留工作台数据、审计及备份，以便原地恢复。实存数据库、角色和备份的进一步删除另由 JT 授权。
 
 若 JT 批准永久撤下，先停入口、工作台容器与备份接入，验证导出的工作台备份及其 SHA-256，并由 JT 移除 Spaceship 的 `jtadmin` A 记录。只有在导出和审批均确认后，才以数据库管理员在现有 PostgreSQL 的管理库删除 `jt_workbench`，随后删除 `jt_workbench_runtime`、`jt_workbench_owner`，及仅针对二者的 HBA 规则后热重载。此步骤不会删除或修改 CJ 数据库、角色和备份。
