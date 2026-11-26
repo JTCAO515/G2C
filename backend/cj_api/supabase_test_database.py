@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 import re
 import tempfile
+import threading
 from time import monotonic
 from zoneinfo import ZoneInfo
 
@@ -34,6 +35,37 @@ HK_SOCKET='/run/g2c-pg'
 DEADLINE=authorization_deadline('supabase_test')
 DEMO_DEADLINE=authorization_deadline('hk_demo')
 _timing_log=logging.getLogger('cj_usage.audit')
+
+
+class _CheckoutTiming:
+    """Pool checkout timing as one summary per window, plus single lines only for slow checkouts (#1828).
+
+    Per-checkout lines (about 530k per 20 hours on HK) rotated the worker log within days and buried
+    the LIO_ diagnostics. The summary keeps count, p50, p95 and max per pooled flag.
+    """
+    WINDOW_SECONDS=60
+    SLOW_MS=500.0
+
+    def __init__(self,clock=monotonic):
+        self.clock=clock;self.lock=threading.Lock();self.started=None;self.samples={True:[],False:[]}
+
+    def record(self,pid,pooled,elapsed_ms):
+        if elapsed_ms>=self.SLOW_MS:
+            _timing_log.info('M4_DB_CHECKOUT_SLOW pid=%d pooled=%s elapsed_ms=%.3f',pid,str(pooled).lower(),elapsed_ms)
+        with self.lock:
+            now=self.clock()
+            if self.started is None:self.started=now
+            self.samples[pooled].append(elapsed_ms)
+            if now-self.started<self.WINDOW_SECONDS:return
+            window,self.samples,self.started=self.samples,{True:[],False:[]},now
+        for flag,values in window.items():
+            if values:
+                values.sort()
+                _timing_log.info('M4_DB_CHECKOUT_SUMMARY pooled=%s count=%d p50_ms=%.3f p95_ms=%.3f max_ms=%.3f',
+                    str(flag).lower(),len(values),values[len(values)//2],values[min(len(values)-1,int(len(values)*0.95))],values[-1])
+
+
+_checkout_timing=_CheckoutTiming()
 
 
 def hk_demo_enabled():
@@ -234,6 +266,11 @@ class SupabaseTestDatabase(LocalDatabase):
                                         min_size=0,max_size=pool_size,max_waiting=32,timeout=10,
                                         max_lifetime=900,max_idle=60,open=True,name='hk-beta-runtime')
 
+    @property
+    def pool_max_size(self):
+        """The runtime pool's connection limit, or None without a pool (W4-6 #1750 concurrency guard)."""
+        return None if self._pool is None else self._pool.max_size
+
     def __del__(self):
         self.close()
 
@@ -272,8 +309,7 @@ class SupabaseTestDatabase(LocalDatabase):
         try:
             connection.autocommit = True
             self._prepare_session(connection)
-            _timing_log.info('M4_DB_CHECKOUT_TIMING pid=%d pooled=true elapsed_ms=%.3f',
-                             connection.info.backend_pid,(monotonic()-started)*1000)
+            _checkout_timing.record(connection.info.backend_pid,True,(monotonic()-started)*1000)
             return lease
         except BaseException:
             connection.close()
@@ -291,8 +327,7 @@ class SupabaseTestDatabase(LocalDatabase):
             self._prepare_session(conn)
             current_authorization(local_socket=self._local_socket);require_environment()
             if self._pool is not None:
-                _timing_log.info('M4_DB_CHECKOUT_TIMING pid=%d pooled=false elapsed_ms=%.3f',
-                                 conn.info.backend_pid,(monotonic()-started)*1000)
+                _checkout_timing.record(conn.info.backend_pid,False,(monotonic()-started)*1000)
             return conn
         except BaseException:
             conn.close()

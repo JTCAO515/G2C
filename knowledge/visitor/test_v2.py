@@ -69,7 +69,7 @@ class ConditionsTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_entry(self.entry, as_of=TODAY)
         legacy = load_entries(sorted((ROOT / "entries").glob("*.json")), as_of=latest_review_day())
-        self.assertEqual(len(legacy), 12)
+        self.assertEqual(len(legacy), 18)
         with self.assertRaises(ValueError):
             validate_entry_v2(legacy[0], as_of=latest_review_day())
 
