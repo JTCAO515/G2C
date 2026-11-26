@@ -62,6 +62,10 @@
       "plist": "G2CLocationConsentEnabled"
     },
     {
+      "setting": "G2C_AI_DISCLOSURE_ENABLED",
+      "plist": "G2CAIDisclosureEnabled"
+    },
+    {
       "setting": "G2C_NEW_SIGN_IN_SCREEN_ENABLED",
       "plist": "G2CNewSignInScreenEnabled"
     }
