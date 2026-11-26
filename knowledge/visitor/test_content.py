@@ -1,4 +1,5 @@
 from datetime import date
+import json
 from pathlib import Path
 from urllib.parse import urlsplit
 import unittest
@@ -8,10 +9,16 @@ from validate import CITIES, TOPICS, load_entries
 ROOT = Path(__file__).resolve().parent
 
 
+def latest_review_day():
+    """Observe the legacy catalogue on its latest review day, not the calendar (#1717)."""
+    return max(date.fromisoformat(value["checked_on"])
+               for path in (ROOT / "entries").glob("*.json") for value in json.loads(path.read_text()))
+
+
 class FirstBatchTests(unittest.TestCase):
     def test_first_batch_format_and_all_35_city_topic_cells(self):
         entries = load_entries(sorted((ROOT / "entries").glob("*.json")),
-                               as_of=date(2026, 11, 20))
+                               as_of=latest_review_day())
         self.assertEqual(len(entries), 12)
         actual = {(city, entry["topic"]) for entry in entries for city in entry["cities"]}
         self.assertEqual(actual, {(city, topic) for city in CITIES for topic in TOPICS})
@@ -23,7 +30,7 @@ class FirstBatchTests(unittest.TestCase):
                  for line in (ROOT / "SOURCES.md").read_text().splitlines()
                  if line.startswith("| ") and line.split("|")[2].strip().startswith("https://")}
         entries = load_entries(sorted((ROOT / "entries").glob("*.json")),
-                               as_of=date(2026, 11, 20))
+                               as_of=latest_review_day())
         for entry in entries:
             for url in entry["source_urls"]:
                 with self.subTest(id=entry["id"], url=url):

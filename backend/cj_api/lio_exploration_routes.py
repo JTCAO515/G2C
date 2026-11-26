@@ -8,6 +8,7 @@ from starlette.concurrency import run_in_threadpool
 from cj_message.demo_dialogue import LIO_VERSION_V4,LIO_CHAT_PATTERN,message_id
 from cj_message.domain import InvalidInput,Unavailable
 from cj_run.core import Binding
+from cj_agent.run_timing import accepted
 from pydantic import BaseModel,ConfigDict,Field,ValidationError
 from cj_needs.domain import decode,InvalidInput as InvalidProfileInput
 from cj_trip.domain import Conflict as TripConflict,Denied as TripDenied
@@ -176,6 +177,7 @@ def register_lio_exploration_routes(app,boundary,resolve_runs,trip_cards,profile
             receipt=await run_in_threadpool(boundary.receive_lio,token,raw,prepare_scope=prepare_scope,version=LIO_VERSION_V4)
         except BodyError as error:return _failure(error.status)
         except Exception as error:return _failure(message_failure(request,error,True).status_code)
+        accepted(receipt.message_id)
         return _json(dict(version='LIO-message-receipt.4',message_id=receipt.message_id,conversation_id=receipt.conversation_id))
 
     @app.get('/v4/lio/messages')
