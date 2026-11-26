@@ -398,5 +398,8 @@ test("every language has the full form copy and says only what the form does", (
     assert.equal(f.consents.length, 3, lang);
   }
   assert.equal(w.G2C.T.zh.sr.f.consentBefore + w.G2C.T.zh.sr.f.consentLink, "我已阅读隐私政策");
+  // The third consent is the short form of the policy's wording: processing in Hong Kong, China.
+  assert.equal(w.G2C.T.zh.sr.f.consents[2].text, "我同意传到中国香港处理。");
+  assert.equal(en.f.consents[2].text, "I agree that my request is sent to Hong Kong, China, for processing.");
   assert.match(pageScript, /const PRIVACY_URL = "\/privacy";/);
 });
