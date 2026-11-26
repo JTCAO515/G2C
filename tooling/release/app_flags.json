@@ -1,0 +1,83 @@
+{
+  "about": "App feature flags (#1760, #1762). Each flag is a build setting that fills an Info.plist key in the Beta configuration; the App reads the key at run time and treats only \"YES\" as on. CI builds the Beta configuration for the simulator with every flag on; tooling/release/build_app.py archives a TestFlight build with the flags in release.on. A new flag is added here, in ios/App/Info.plist and in the Swift code in the same PR; tooling/release/test_release.py checks the three agree.",
+  "flags": [
+    {
+      "setting": "G2C_TAXI_ENABLED",
+      "plist": "G2CTaxiEnabled"
+    },
+    {
+      "setting": "G2C_IMAGE_LAYOUT_ENABLED",
+      "plist": "G2CImageLayoutEnabled"
+    },
+    {
+      "setting": "G2C_CURRENCY_ENABLED",
+      "plist": "G2CCurrencyEnabled"
+    },
+    {
+      "setting": "G2C_NEARBY_ENABLED",
+      "plist": "G2CNearbyEnabled"
+    },
+    {
+      "setting": "G2C_HOTEL_ENABLED",
+      "plist": "G2CHotelEnabled"
+    },
+    {
+      "setting": "G2C_ROADBOOK_ENABLED",
+      "plist": "G2CRoadbookEnabled"
+    },
+    {
+      "setting": "G2C_TRANSPORT_ENABLED",
+      "plist": "G2CTransportEnabled"
+    },
+    {
+      "setting": "G2C_METRO_NEARBY_ENABLED",
+      "plist": "G2CMetroNearbyEnabled"
+    },
+    {
+      "setting": "G2C_NEARBY_ESSENTIALS_ENABLED",
+      "plist": "G2CNearbyEssentialsEnabled"
+    },
+    {
+      "setting": "G2C_ARRIVAL_MODE_ENABLED",
+      "plist": "G2CArrivalModeEnabled"
+    },
+    {
+      "setting": "G2C_ATTRACTION_BOOKING_ENABLED",
+      "plist": "G2CAttractionBookingEnabled"
+    },
+    {
+      "setting": "G2C_SHOW_CARD_ENABLED",
+      "plist": "G2CShowCardEnabled"
+    },
+    {
+      "setting": "G2C_MENU_ORDER_ENABLED",
+      "plist": "G2CMenuOrderEnabled"
+    },
+    {
+      "setting": "G2C_TRIP_HOME_ENABLED",
+      "plist": "G2CTripHomeEnabled"
+    }
+  ],
+  "release": {
+    "about": "The TestFlight build tooling/release/build_app.py makes. The coordinating thread updates build, previous and on before each release; turning a flag on for a build is JT's decision.",
+    "build": 58,
+    "previous": 57,
+    "marketing_version": "0.1.0",
+    "on": [
+      "G2C_TAXI_ENABLED",
+      "G2C_IMAGE_LAYOUT_ENABLED",
+      "G2C_CURRENCY_ENABLED",
+      "G2C_NEARBY_ENABLED",
+      "G2C_HOTEL_ENABLED",
+      "G2C_ROADBOOK_ENABLED",
+      "G2C_TRANSPORT_ENABLED",
+      "G2C_METRO_NEARBY_ENABLED",
+      "G2C_NEARBY_ESSENTIALS_ENABLED",
+      "G2C_ARRIVAL_MODE_ENABLED",
+      "G2C_ATTRACTION_BOOKING_ENABLED",
+      "G2C_SHOW_CARD_ENABLED",
+      "G2C_MENU_ORDER_ENABLED",
+      "G2C_TRIP_HOME_ENABLED"
+    ]
+  }
+}

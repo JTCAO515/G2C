@@ -19,9 +19,10 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa,ed25519
 from cj_api.supabase_test_database import decode_uri,decode_cleanup_uri
 from cj_strict_json import reject_duplicates
+from cj_usage.authorization_deadlines import boundary
 
 ROOT=Path('/host')
-DEADLINE=datetime(2026,11,30,16,tzinfo=timezone.utc)
+DEADLINE=boundary('m4_original_period_end')
 ENV_FILES=('api.env','worker.env','operator.env','backup.env','rehearsal.env','common.env')
 
 
