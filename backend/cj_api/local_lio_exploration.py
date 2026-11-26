@@ -372,19 +372,25 @@ class ExplorationDispatch:
 
     def _entry(self,worker,binding,state,text,original):
         """W2-4 (#1731): entry questions answered from the App's arrival rules, behind a switch."""
-        from .lio_entry_rules import entry_question,entry_reply,entry_rules_enabled
-        if not entry_rules_enabled() or entry_question(text) is None:return None
+        from .lio_entry_rules import entry_question,entry_turn,entry_rules_enabled,nationality_reply
+        if not entry_rules_enabled():return None
         from cj_fact.policy import FactFailure
+        from cj_fact.arrival import load_rules
+        from cj_message.domain import Unavailable
         from .lio_planning_grounding import PlanningTurn
-        today=original.question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
-        # Nationality only from the traveler's own originals in this conversation.
-        texts,_,_=self.legacy.context(binding,PlanningTurn(text,today),answer_only=True)
-        try:reply=entry_reply(text,texts[:-1],original.locale,today)
-        except FactFailure as error:
+        try:
+            # Read prior originals only for an entry question or a reply that gives just a nationality.
+            if entry_question(text) is None and nationality_reply(text,load_rules()) is None:return None
+            today=original.question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
+            # Nationality only from the traveler's own originals in this conversation.
+            texts,_,_=self.legacy.context(binding,PlanningTurn(text,today),answer_only=True)
+            reply=entry_turn(text,texts[:-1],original.locale,today)
+        except (FactFailure,Unavailable) as error:
+            code=error.args[0] if isinstance(error,FactFailure) and error.args and isinstance(error.args[0],str) else type(error).__name__
             logging.getLogger('cj_usage.audit').info('LIO_ENTRY_RULES_UNAVAILABLE run_id=%s code=%s',
-                binding.run_id,error.args[0] if error.args and isinstance(error.args[0],str)
-                and re.fullmatch(r'[a-z_]{1,64}',error.args[0]) else 'unknown')
+                binding.run_id,code if re.fullmatch(r'[A-Za-z_]{1,64}',code) else 'unknown')
             return None
+        if reply is None:return None
         for key,title,url in reply.citations:
             state=worker._event(binding,state,'effect_committed',LioCitation(key,title,url,None).effect())
         return self.legacy._reply(worker,binding,state,reply.text)

@@ -21,9 +21,15 @@ import re
 
 from cj_fact.arrival import load_rules, review_due
 
-_VISA = re.compile(r'签证|免签|过境|入境(?:政策|要求|条件|规定|材料|手续)|能不能入境|怎么入境|'
-                   r'\bvisas?\b|visa[- ]free|\btransit\b|\blayover\b|\bentry (?:requirements?|rules?|polic(?:y|ies))\b|'
-                   r'\benter(?:ing)? China\b', re.I)
+_VISA = re.compile(r'签证|免签|入境(?:政策|要求|条件|规定|材料|手续|需要|要带|要准备|要办)|能不能入境|怎么入境|能入境吗|'
+                   r'\bvisas?\b|visa[- ]free|\bentry (?:requirements?|rules?|polic(?:y|ies))\b|'
+                   r'\b(?:need|require|allowed|can I|how (?:do|can) I)\b[^.?!]{0,30}\benter China\b|\bto enter China\b', re.I)
+# A transit or layover only counts together with an entry or visa word.
+_TRANSIT = re.compile(r'过境|转机|中转|\btransit\b|\blayover\b|\bstopover\b', re.I)
+_TRANSIT_ENTRY = re.compile(r'签|入境|出机场|出关|\bvisa|\bimmigration\b|\bleave the airport\b|\b24[- ]?hour|\b240\b', re.I)
+# A card payment brand is not a visa.
+_PAYMENT_VISA = re.compile(r'\bVisa\b\s*(?:card|credit|debit|or Mastercard)|\b(?:pay|paying|paid|accept\w*|use|using|with)\b[^.?!]{0,15}\bVisa\b|'
+                           r'\bMastercard\b|\bAmex\b', re.I)
 _CARD = re.compile(r'入境卡|入境登记卡|\barrival card\b|\bentry card\b|\blanding card\b', re.I)
 _PLAN = re.compile(r'规划|行程|攻略|玩\s*[0-9一二三四五六七八九十两]+\s*天|[0-9一二三四五六七八九十两]+\s*天|'
                    r'\bitinerar\w*|\bplan\b|\b\d+\s*days?\b', re.I)
@@ -48,6 +54,7 @@ _STATEMENTS = (
     (re.compile(r'持(?:有)?' + _NAME_ZH + r'(?:的)?(?:普通)?护照'), True),
     (re.compile(_NAME_ZH + r'(?:的)?(?:普通)?护照'), True),
     (re.compile(_NAME_ZH + r'国籍'), True),
+    (re.compile(r'我(?:们)?是' + r'([\u4e00-\u9fff]{1,3}籍)'), True),
     (re.compile(r'国籍(?:是|为|[:：])\s*([\u4e00-\u9fff]{2,6})' + _ZH_TAIL), True),
     (re.compile(r'我(?:们)?来自([\u4e00-\u9fff]{2,6})' + _ZH_TAIL), True),
     # "I'm Tom" is not a nationality: a bare "I am X" only counts for a known demonym or name.
@@ -60,11 +67,18 @@ _STATEMENTS = (
 _PLACE_WORDS = frozenset(('Airport', 'Station', 'Hotel', 'Street', 'Road', 'District', 'City', 'Province', 'Hostel',
                           'Terminal', 'Beijing', 'Shanghai', 'Chengdu', 'Guangzhou', 'Shenzhen', 'Hangzhou', "Xi'an",
                           'Hong', 'Kong', 'Macau', 'Taiwan', 'Pudong', 'Hongqiao', 'Daxing', 'Capital'))
-_ZH_NOT_COUNTRY = re.compile(r'中国|个|地|城|本|次|的|游|客|生|人|外|家|们|这|那|一|两|普通|自己|学|老|朋友')
+_ZH_NOT_COUNTRY = re.compile(r'中国|个|地|城|本|次|的|游|客|生|人|外|家|们|这|那|一|两|普通|自己|学|老|朋友|有效|过期|新|旧|护照|证件|籍|华|侨|裔|拿|持|用|张|本人')
+# 美籍华人 is a US national: X籍 takes the one- or two-character country abbreviation.
+_ZH_ABBREVIATION = {'美': 'US', '英': 'GB', '加': 'CA', '德': 'DE', '法': 'FR', '意': 'IT', '西': 'ES', '荷': 'NL',
+                    '澳': 'AU', '新西兰': 'NZ', '日': 'JP', '韩': 'KR', '新加坡': 'SG', '新': 'SG'}
 _EN_WORDS = frozenset(('Chinese', 'China', 'Going', 'Planning', 'Travelling', 'Traveling', 'Visiting', 'Not',
                        'Here', 'Lio', 'Hello', 'Hi', 'Sorry', 'Ok', 'OK', 'Thanks', 'Ready', 'Back', 'New', 'Just',
                        'Also', 'Still', 'Staying', 'Arriving', 'Leaving', 'Flying', 'The', 'My', 'Our'))
 _NEGATED = re.compile(r'不是|并非|\bnot\b|\bno longer\b|\bisn[’\x27]t\b|\baren[’\x27]t\b', re.I)
+# Somebody else's nationality never stands in for the traveler's own.
+_OTHER_PERSON = re.compile(r'朋友|同事|同伴|家人|妻子|老婆|丈夫|老公|太太|先生|孩子|儿子|女儿|父母|爸爸|妈妈|父亲|母亲|他们|她们|他|她|'
+                           r'\b(?:my|our) (?:friend|wife|husband|partner|colleague|son|daughter|child|children|kids?|parents?|'
+                           r'mother|father|mum|mom|dad|family|boyfriend|girlfriend|companion)s?\b|\b(?:he|she|they|his|her|their)\b', re.I)
 
 
 def entry_rules_enabled():
@@ -87,7 +101,9 @@ def entry_question(text):
         return None
     if _CARD.search(text):
         return 'card'
-    if _VISA.search(text):
+    if _PAYMENT_VISA.search(text) and not re.search(r'签证|免签|visa[- ]free|\bvisas\b|\btourist visa\b|\bvisa (?:on arrival|application|requirement)', text, re.I):
+        return None
+    if _VISA.search(text) or (_TRANSIT.search(text) and _TRANSIT_ENTRY.search(text)):
         return 'visa'
     return None
 
@@ -103,9 +119,21 @@ def _lookup(rules):
     return names
 
 
-def _clause_negated(text, start):
+def _clause_before(text, start):
     clause_start = max(text.rfind(mark, 0, start) for mark in '，,。.!！?？;；\n')
-    return _NEGATED.search(text[clause_start + 1:start]) is not None
+    return text[clause_start + 1:start]
+
+
+def _clause_negated(text, start):
+    return _NEGATED.search(_clause_before(text, start)) is not None
+
+
+def _someone_else(text, start, end):
+    """The statement is about another person (a friend's or a spouse's passport)."""
+    clause_end = min([position for position in (text.find(mark, end) for mark in '，,。.!！?？;；\n') if position >= 0]
+                     or [len(text)])
+    after = re.split(r'\s(?:and|but|while|whereas)\s|和|而|但', text[end:clause_end], maxsplit=1, flags=re.I)[0]
+    return _OTHER_PERSON.search(_clause_before(text, start) + text[start:end] + after) is not None
 
 
 def _classify(name, names):
@@ -115,6 +143,9 @@ def _classify(name, names):
     if name.casefold() in names:
         return 'rules', names[name.casefold()]
     if re.fullmatch(r'[\u4e00-\u9fff]+', name):
+        if '籍' in name:
+            prefix = name.split('籍')[0]
+            return ('rules', _ZH_ABBREVIATION[prefix]) if prefix in _ZH_ABBREVIATION else None
         for known, code in sorted(names.items(), key=lambda row: -len(row[0])):
             if len(known) >= 2 and re.fullmatch(r'[\u4e00-\u9fff]+', known) and (name.startswith(known) or name.endswith(known)):
                 return 'rules', code
@@ -140,7 +171,7 @@ def stated_nationality(texts, rules):
         found = []
         for pattern, other in _STATEMENTS:
             for match in pattern.finditer(text):
-                if _clause_negated(text, match.start()):
+                if _clause_negated(text, match.start()) or _someone_else(text, match.start(), match.end()):
                     continue
                 value = _classify(match.group(1).strip(), names)
                 if value is not None and (other or value[0] == 'rules'):
@@ -148,6 +179,38 @@ def stated_nationality(texts, rules):
         if found:
             latest = max(found)[1]
     return latest
+
+
+def _bare_name(text, rules):
+    """A reply that is only a country name or demonym, such as 美国 or "American"."""
+    value = re.sub(r'^(?:我(?:们)?(?:是|持|用|拿)?\s*|(?:I am|I\'m|I’m)\s+(?:an?\s+)?|an?\s+)|[\s。.!！]+$|(?:的)?(?:人|护照)$|\s+(?:passport|citizen)$', '',
+                   text.strip(), flags=re.I).strip()
+    names = _lookup(rules)
+    if value in names:
+        return 'rules', names[value]
+    if value.casefold() in names:
+        return 'rules', names[value.casefold()]
+    return None
+
+
+def nationality_reply(text, rules):
+    """The nationality in a short reply that states only that, or None."""
+    if len(text.strip()) > 40 or entry_question(text) is not None:
+        return None
+    return stated_nationality([text], rules) or _bare_name(text, rules)
+
+
+def entry_turn(question, prior_texts, locale, today, rules=None):
+    """entry_reply for this message, or for the previous visa question when this one only gives a nationality."""
+    if entry_question(question) is not None:
+        return entry_reply(question, prior_texts, locale, today, rules)
+    rules = load_rules() if rules is None else rules
+    if not prior_texts or entry_question(prior_texts[-1]) != 'visa' or nationality_reply(question, rules) is None:
+        return None
+    nationality = nationality_reply(question, rules)
+    statement = ('我是' + next(row['name']['zh'] for row in rules['countries'] if row['code'] == nationality[1]) + '人'
+                 if nationality[0] == 'rules' else question)
+    return entry_reply(prior_texts[-1], (*prior_texts[:-1], statement), locale, today, rules)
 
 
 def _active(policy, today):

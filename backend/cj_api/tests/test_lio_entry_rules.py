@@ -6,7 +6,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from cj_api.lio_entry_rules import entry_question, entry_reply, entry_rules_enabled, stated_nationality
+from cj_api.lio_entry_rules import entry_question, entry_reply, entry_rules_enabled, entry_turn, stated_nationality
 from cj_fact.arrival import load_rules, review_due
 from cj_fact.policy import FactFailure
 
@@ -17,10 +17,16 @@ TODAY = date.fromisoformat(RULES['checked_at'])
 class Detection(unittest.TestCase):
     def test_entry_questions_and_plan_requests(self):
         for text, kind in (('我需要签证吗？', 'visa'), ('美国人入境中国要办签证吗', 'visa'), ('过境北京能免签吗', 'visa'),
-                           ('Do I need a visa for China?', 'visa'), ('I have a layover in Shanghai', 'visa'),
+                           ('Do I need a visa for China?', 'visa'), ('I have a layover in Shanghai', None), ('I have a layover in Shanghai, do I need a visa?', 'visa'),
                            ('入境卡怎么填？', 'card'), ('How do I fill in the arrival card?', 'card'),
                            ('去北京玩3天需要签证吗', None), ('Plan 3 days in Beijing, do I need a visa?', None),
-                           ('故宫门票多少钱', None), ('Where can I buy a SIM card?', None)):
+                           ('故宫门票多少钱', None), ('Where can I buy a SIM card?', None),
+                           # Review of #1856: card payments, public transport and post-arrival travel are not entry questions.
+                           ('Can I pay with Visa?', None), ('Do you accept Visa or Mastercard?', None),
+                           ('Public transit in Beijing?', None), ('After entering China how do I get to the city?', None),
+                           ('北京地铁换乘', None), ('入境需要什么', 'visa'), ('转机需要签证吗', 'visa'),
+                           ('I have a layover in Shanghai, can I leave the airport?', 'visa'),
+                           ('Do I need a visa to enter China?', 'visa'), ('Can I get a visa on arrival?', 'visa')):
             with self.subTest(text=text):
                 self.assertEqual(entry_question(text), kind)
 
@@ -33,7 +39,13 @@ class Detection(unittest.TestCase):
                                ("I'm from Mexico", ('other', 'Mexico')), ('我是巴西人', ('other', '巴西')),
                                ('Japanese food is great', None), ('Do you have an English menu?', None), ('I am Tom', None),
                                ('I am from Pudong Airport', None), ('我是本地人', None), ('我不是美国人', None),
-                               ("I'm not Canadian", None), ('我是美国人，朋友是英国人', ('rules', 'US'))):
+                               ("I'm not Canadian", None), ('我是美国人，朋友是英国人', ('rules', 'US')),
+                               # Review of #1856: someone else's passport never stands in for the traveler's.
+                               ('我是巴西人，我朋友持英国护照', ('other', '巴西')), ('my wife has a British passport', None),
+                               ('He is British', None), ('I am German and my husband is French', ('rules', 'DE')),
+                               ('I have a US passport, my wife is Canadian', ('rules', 'US')),
+                               # Review of #1856: no fragment of an unrelated phrase becomes a country.
+                               ('我持有效护照', None), ('我是美籍华人', ('rules', 'US'))):
             with self.subTest(text=text):
                 self.assertEqual(stated_nationality([text], RULES), expected)
 
@@ -109,14 +121,33 @@ class Answers(unittest.TestCase):
             entry_rules_enabled()
 
 
+class FollowUp(unittest.TestCase):
+    def test_a_reply_that_only_gives_a_nationality_answers_the_previous_visa_question(self):
+        # Review of #1856: after Lio asks for the passport, "美国" or "American" alone gets the rules answer.
+        for reply, locale in (('美国', 'zh'), ('我持美国护照', 'zh'), ('美国人', 'zh'), ('American', 'en'),
+                              ('an American', 'en'), ('US passport', 'en')):
+            with self.subTest(reply=reply):
+                question = '我需要签证吗？' if locale == 'zh' else 'Do I need a visa?'
+                answer = entry_turn(reply, [question], locale, TODAY, RULES)
+                self.assertIn('美国' if locale == 'zh' else 'United States', answer.text)
+
+    def test_other_short_replies_are_not_entry_turns(self):
+        for reply, prior in (('好的', ['我需要签证吗？']), ('美国', ['成都有什么好吃的']), ('美国', [])):
+            with self.subTest(reply=reply, prior=prior):
+                self.assertIsNone(entry_turn(reply, prior, 'zh', TODAY, RULES))
+
+
 class Dispatch(unittest.TestCase):
-    def run_dispatch(self, text, *, switch, prior=(), failure=False):
+    def run_dispatch(self, text, *, switch, prior=(), failure=False, unavailable=False):
         from cj_api.local_lio_exploration import ExplorationDispatch
         events, delegated = [], []
 
         class Legacy:
             def context(self, binding, current, answer_only=False):
                 assert answer_only
+                if unavailable:
+                    from cj_message.domain import Unavailable
+                    raise Unavailable('original nationwide context was erased')
                 return (*prior, current.text), (), None
             def _reply(self, worker, binding, state, reply):
                 events.append(('text_delta', reply))
@@ -134,6 +165,10 @@ class Dispatch(unittest.TestCase):
                     result = dispatch.execute(worker, SimpleNamespace(run_id='r1'), 's', text, original)
                 self.assertEqual(logs.output, ['INFO:cj_usage.audit:LIO_ENTRY_RULES_UNAVAILABLE run_id=r1 '
                                                'code=arrival_rules_unavailable'])
+            elif unavailable:
+                with self.assertLogs('cj_usage.audit', logging.INFO) as logs:
+                    result = dispatch.execute(worker, SimpleNamespace(run_id='r1'), 's', text, original)
+                self.assertEqual(logs.output, ['INFO:cj_usage.audit:LIO_ENTRY_RULES_UNAVAILABLE run_id=r1 code=Unavailable'])
             else:
                 result = dispatch.execute(worker, SimpleNamespace(run_id='r1'), 's', text, original)
         return result, events, delegated
@@ -150,6 +185,15 @@ class Dispatch(unittest.TestCase):
         kinds = [kind for kind, _ in events]
         self.assertEqual(kinds[-1], 'text_delta')
         self.assertTrue(kinds[:-1] and set(kinds[:-1]) == {'effect_committed'})
+        self.assertIn('持美国普通护照', events[-1][1])
+
+    def test_unreadable_context_falls_back_to_the_old_path(self):
+        result, events, delegated = self.run_dispatch('我需要签证吗？', switch='1', unavailable=True)
+        self.assertEqual((result, events, len(delegated)), ('delegated', [], 1))
+
+    def test_nationality_reply_after_a_visa_question_is_answered_from_rules(self):
+        result, events, delegated = self.run_dispatch('美国', switch='1', prior=('我需要签证吗？',))
+        self.assertEqual((result, delegated), ('done', []))
         self.assertIn('持美国普通护照', events[-1][1])
 
     def test_unreadable_rules_fall_back_to_the_old_path(self):
