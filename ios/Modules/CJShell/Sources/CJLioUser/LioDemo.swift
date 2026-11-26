@@ -16,12 +16,12 @@ extension LioService {
                             continuation.yield(.activity(activity))
                             try await Task.sleep(for: .milliseconds(650))
                         }
-                        if let layout = reply.layout { continuation.yield(.layout(layout.0, [])) }
+                        if let layout = reply.layout { continuation.yield(.layout(layout.0, [], [])) }
                         for part in reply.parts {
                             try await Task.sleep(for: .milliseconds(220))
                             continuation.yield(.text(part))
                         }
-                        if let layout = reply.layout { continuation.yield(.layout(layout.0, layout.1)) }
+                        if let layout = reply.layout { continuation.yield(.layout(layout.0, layout.1, layout.2)) }
                         if let source = reply.source { continuation.yield(.source(source)) }
                         if let itinerary = reply.itinerary {
                             await session.save(itinerary)
@@ -57,7 +57,7 @@ enum LioDemo {
         var source: LioSource? = nil
         var itinerary: LioItinerary? = nil
         /// Debug preview of #1727 (`--lio-answer-layout-preview`): the layout and the buttons.
-        var layout: (LioTimelineWire.AnswerLayout, [LioTimelineWire.Followup])? = nil
+        var layout: (LioTimelineWire.AnswerLayout, [LioTimelineWire.Followup], [LioTimelineWire.Chip])? = nil
     }
 
     actor Session {
@@ -146,6 +146,9 @@ enum LioDemo {
             layout: preview ? (.split, [
                 .init(tool: "payment-guide", parameters: [:], label: lang.text("Payment setup guide", "打开支付开通指南")),
                 .init(tool: "taxi", parameters: [:], label: lang.text("Get a taxi", "打车"))
+            ], [
+                .init(label: lang.text("What if payment fails?", "付不了怎么办"), ticket: String(repeating: "a", count: 43)),
+                .init(label: lang.text("Older question", "更早的问题"), ticket: nil)
             ]) : nil)
         }
         if text.contains("chengdu") || text.contains("成都") {

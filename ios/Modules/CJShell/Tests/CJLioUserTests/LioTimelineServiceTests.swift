@@ -366,6 +366,30 @@ struct LioTimelineServiceTests {
         #expect(await fixture.sent.map(\.messageID) == [question.messageID])
     }
 
+    /// #1727: a chip's ticket rides on LIO-message.2 only; `text` stays the label, and a plain question carries nothing.
+    @Test func aChipTicketIsSentOnTheSecondMessageVersionAndNeverOnOthers() async throws {
+        let ticket = String(repeating: "b", count: 43)
+        for version in [LioTimelineWire.Version.v2, .v3] {
+            let fixture = TimelineFixture()
+            let service = LioService.timeline(
+                send: { try await fixture.submit($0) }, read: { try await fixture.read($0, before: $1, version: version) },
+                destination: .existing(fixture.conversationID), scopedVersion: version,
+                pollInterval: .milliseconds(1), observationWindow: .seconds(2))
+            let model = LioConversation(service: service)
+            #expect(model.send("付不了怎么办", language: .chinese, chipTicket: ticket))
+            await model.receive(try #require(model.pending))
+            #expect(model.send("An ordinary question", language: .english))
+            await model.receive(try #require(model.pending))
+            let sent = await fixture.sent
+            try #require(sent.count == 2)
+            let chip = try #require(JSONSerialization.jsonObject(with: sent[0].originalUTF8) as? [String: Any])
+            let plain = try #require(JSONSerialization.jsonObject(with: sent[1].originalUTF8) as? [String: Any])
+            #expect(chip["text"] as? String == "付不了怎么办")
+            #expect(chip["chip_ticket"] as? String == (version == .v2 ? ticket : nil), "only LIO-message.2 carries it")
+            #expect(plain["chip_ticket"] == nil)
+        }
+    }
+
     private func service(_ fixture: TimelineFixture) -> LioService {
         .timeline(send: { try await fixture.submit($0) }, read: { try await fixture.read($0, before: $1) },
                   pollInterval: .milliseconds(1), observationWindow: .seconds(2))

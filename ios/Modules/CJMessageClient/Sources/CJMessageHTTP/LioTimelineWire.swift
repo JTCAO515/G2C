@@ -30,9 +30,14 @@ public enum LioTimelineWire {
             startsNewChat = false
         }
 
+        /// `chipTicket` is the one optional extra of a tap-to-ask question (LIO-message.2 only, #1727): `text` must then be
+        /// the chip's label exactly. Without it the bytes are exactly what they were before.
         public init(messageID: String, text: String, locale: Locale, destination: V2Destination,
-                    version: Version = .v2) throws {
+                    version: Version = .v2, chipTicket: String? = nil) throws {
             guard version == .v2 || version == .v3 || version == .v4 else { throw MessageHTTPFailure.invalidConfiguration }
+            if let chipTicket {
+                guard version == .v2, LioTimelineWire.validTicket(chipTicket) else { throw MessageHTTPFailure.invalidConfiguration }
+            }
             let conversationID: String?
             let newConversation: Bool?
             switch destination {
@@ -42,7 +47,8 @@ public enum LioTimelineWire {
             }
             try Self.validate(messageID, text, conversationID)
             let bytes = try JSONEncoder().encode(VersionedQuestion(version: "LIO-message.\(version.rawValue)", messageID: messageID, text: text, locale: locale.rawValue,
-                                                            conversationID: conversationID, newConversation: newConversation))
+                                                            conversationID: conversationID, newConversation: newConversation,
+                                                            chipTicket: chipTicket))
             guard bytes.count <= 16_384 else { throw MessageHTTPFailure.invalidConfiguration }
             self.messageID = messageID
             self.conversationID = conversationID
@@ -107,10 +113,17 @@ public enum LioTimelineWire {
             let locale: String
             let conversationID: String?
             let newConversation: Bool?
+            let chipTicket: String?
+
+            init(version: String, messageID: String, text: String, locale: String, conversationID: String?,
+                 newConversation: Bool?, chipTicket: String? = nil) {
+                self.version = version; self.messageID = messageID; self.text = text; self.locale = locale
+                self.conversationID = conversationID; self.newConversation = newConversation; self.chipTicket = chipTicket
+            }
 
             enum CodingKeys: String, CodingKey {
                 case version, messageID = "message_id", text, locale
-                case conversationID = "conversation_id", newConversation = "new_conversation"
+                case conversationID = "conversation_id", newConversation = "new_conversation", chipTicket = "chip_ticket"
             }
         }
 
@@ -247,11 +260,15 @@ public enum LioTimelineWire {
         public let layout: AnswerLayout?
         /// Fixed buttons under a finished answer; empty unless the server sent valid ones for a split answer.
         public let followups: [Followup]
+        /// Tap-to-ask questions under the answer (at most 3); a chip without a ticket is shown but not offered for a tap.
+        public let chips: [Chip]
 
         public init(id: String, question: String, answer: String, state: State, activity: Activity?, sources: [Source],
-                    trip: SavedTrip?, memoryTags: [LioMemoryWire.Tag], layout: AnswerLayout? = nil, followups: [Followup] = []) {
+                    trip: SavedTrip?, memoryTags: [LioMemoryWire.Tag], layout: AnswerLayout? = nil,
+                    followups: [Followup] = [], chips: [Chip] = []) {
             self.id = id; self.question = question; self.answer = answer; self.state = state; self.activity = activity
-            self.sources = sources; self.trip = trip; self.memoryTags = memoryTags; self.layout = layout; self.followups = followups
+            self.sources = sources; self.trip = trip; self.memoryTags = memoryTags; self.layout = layout
+            self.followups = followups; self.chips = chips
         }
     }
 
@@ -266,6 +283,13 @@ public enum LioTimelineWire {
         public init(tool: String, parameters: [String: String], label: String) {
             self.tool = tool; self.parameters = parameters; self.label = label
         }
+    }
+
+    /// One short question the traveller can send with a tap; `ticket` is there for 24 hours after the answer.
+    public struct Chip: Sendable, Equatable {
+        public let label: String
+        public let ticket: String?
+        public init(label: String, ticket: String?) { self.label = label; self.ticket = ticket }
     }
 
     public static let answerFollowupsVersion = "LIO-answer-followups.1"
@@ -338,25 +362,40 @@ public enum LioTimelineWire {
         }
         let layout = wire.layout.flatMap(AnswerLayout.init(rawValue:))
         // A layout the App does not know is read as no layout: the row is still shown as before.
-        let followups = (state == .completed && layout == .split) ? validFollowups(wire.followups) : []
+        let shown = (state == .completed && layout == .split) ? validFollowups(wire.followups) : ([], [])
         return Message(id: wire.messageID, question: wire.text, answer: wire.answer, state: state,
                        activity: wire.activity, sources: sources, trip: trip, memoryTags: tags,
-                       layout: layout, followups: followups)
+                       layout: layout, followups: shown.0, chips: shown.1)
     }
 
     /// Buttons that do not pass the checks are dropped as a set: a damaged list never puts a partial or
     /// unlisted button on screen, and never fails the page.
-    private static func validFollowups(_ wire: Snapshot.Row.Followups?) -> [Followup] {
-        guard let wire, wire.version == answerFollowupsVersion, (1...2).contains(wire.actions.count) else { return [] }
-        var result: [Followup] = []
-        for action in wire.actions {
+    private static func validFollowups(_ wire: Snapshot.Row.Followups?) -> ([Followup], [Chip]) {
+        guard let wire, wire.version == answerFollowupsVersion else { return ([], []) }
+        let actions = wire.actions ?? [], chips = wire.chips ?? []
+        // Each list is optional on the wire but the object carries at least one, at most 2 actions and 3 chips.
+        guard actions.count <= 2, chips.count <= 3, !(actions.isEmpty && chips.isEmpty) else { return ([], []) }
+        var buttons: [Followup] = []
+        for action in actions {
             guard validToken(action.tool, limit: 64), validText(action.label, limit: 60),
                   action.parameters.count <= 8,
                   action.parameters.allSatisfy({ validToken($0.key, limit: 64) && validText($0.value, limit: 200) }),
-                  (try? JSONSerialization.data(withJSONObject: action.parameters).count).map({ $0 <= 600 }) == true else { return [] }
-            result.append(Followup(tool: action.tool, parameters: action.parameters, label: action.label))
+                  (try? JSONSerialization.data(withJSONObject: action.parameters).count).map({ $0 <= 600 }) == true else { return ([], []) }
+            buttons.append(Followup(tool: action.tool, parameters: action.parameters, label: action.label))
         }
-        return result
+        var questions: [Chip] = []
+        for chip in chips {
+            guard validText(chip.label, limit: 24), chip.ticket.map(validTicket) ?? true else { return ([], []) }
+            questions.append(Chip(label: chip.label, ticket: chip.ticket))
+        }
+        return (buttons, questions)
+    }
+
+    /// A chip's ticket: 43 characters of the URL-safe base64 alphabet.
+    static func validTicket(_ value: String) -> Bool {
+        value.utf8.count == 43 && value.utf8.allSatisfy {
+            (48...57).contains($0) || (65...90).contains($0) || (97...122).contains($0) || $0 == 45 || $0 == 95
+        }
     }
 
     private static func validToken(_ value: String, limit: Int) -> Bool {
@@ -428,12 +467,17 @@ public enum LioTimelineWire {
             let followups: Followups?
             struct Followups: Decodable {
                 let version: String
-                let actions: [Action]
                 struct Action: Decodable {
                     let tool: String
                     let parameters: [String: String]
                     let label: String
                 }
+                struct ChipRow: Decodable {
+                    let label: String
+                    let ticket: String?
+                }
+                let actions: [Action]?
+                let chips: [ChipRow]?
             }
             enum CodingKeys: String, CodingKey { case messageID = "message_id", text, answer, status, failure, activity, sources, trip, memory, layout, followups }
             init(from decoder: Decoder) throws {

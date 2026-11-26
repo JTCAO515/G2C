@@ -2579,6 +2579,25 @@ import CryptoKit
                 XCTAssertGreaterThanOrEqual(payment.frame.minY, second.frame.maxY, "buttons are under the bubbles")
                 let shot = XCTAttachment(screenshot: app.screenshot())
                 shot.name = "answer-layout-\(language)"; shot.lifetime = .keepAlways; add(shot)
+                // Tap-to-ask chips: one with a ticket is tappable and sends its label; one without is shown, not tappable.
+                let chip = app.buttons["lio.answer.chip.0"], older = app.buttons["lio.answer.chip.1"]
+                XCTAssertTrue(chip.waitForExistence(timeout: 6))
+                XCTAssertEqual(chip.label, en ? "What if payment fails?" : "付不了怎么办")
+                XCTAssertTrue(chip.isEnabled && older.exists && !older.isEnabled, "no ticket: shown but not offered")
+                if toolsShown {
+                    chip.tap()
+                    let asked = app.staticTexts[en ? "What if payment fails?" : "付不了怎么办"]
+                    XCTAssertTrue(asked.waitForExistence(timeout: 8), "the chip's label went out as a question")
+                    app.terminate(); app.launch()
+                    XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 12))
+                    app.buttons["lio.example.0"].tap()
+                    let composer2 = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+                    let starter2 = composer2.value as? String ?? ""
+                    composer2.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: starter2.count)
+                                       + (en ? "How do I take the metro in Shanghai?" : "在上海怎么坐地铁？"))
+                    app.buttons["lio.send"].tap()
+                    XCTAssertTrue(payment.waitForExistence(timeout: 12))
+                }
                 payment.tap()
                 if toolsShown {
                     let tools = app.tabBars.buttons[en ? "Tools" : "工具"]

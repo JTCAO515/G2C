@@ -142,6 +142,74 @@ struct LioTimelineWireTests {
         #expect(page.messages[0].answer == "One.\n\nTwo.")
     }
 
+    // MARK: tap-to-ask chips (#1727, part 2)
+
+    private let ticket = String(repeating: "a", count: 42) + "-"
+
+    private func chipsExtra(_ followups: String) -> String { ",\"layout\":\"split\",\"followups\":" + followups }
+
+    @Test func chipsAreProjectedWithOrWithoutATicketAndActionsAreOptional() throws {
+        let only = chipsExtra("""
+            {"version":"LIO-answer-followups.1","chips":[{"label":"付不了怎么办","ticket":"\(ticket)"},{"label":"Older question"}]}
+            """)
+        let message = try #require(try LioTimelineWire.decodePage(v2Page(v2Row(extra: only)), for: conversation, version: .v2).messages.first)
+        #expect(message.followups.isEmpty)
+        #expect(message.chips == [.init(label: "付不了怎么办", ticket: ticket), .init(label: "Older question", ticket: nil)])
+        let both = chipsExtra("""
+            {"version":"LIO-answer-followups.1","actions":[{"tool":"taxi","parameters":{},"label":"打车"}],"chips":[{"label":"A","ticket":"\(ticket)"}]}
+            """)
+        let mixed = try #require(try LioTimelineWire.decodePage(v2Page(v2Row(extra: both)), for: conversation, version: .v2).messages.first)
+        #expect(mixed.followups.map(\.tool) == ["taxi"] && mixed.chips.count == 1)
+    }
+
+    @Test(arguments: [
+        #"{"version":"LIO-answer-followups.1"}"#,
+        #"{"version":"LIO-answer-followups.1","actions":[],"chips":[]}"#,
+        #"{"version":"LIO-answer-followups.1","chips":[{"label":"1"},{"label":"2"},{"label":"3"},{"label":"4"}]}"#,
+        #"{"version":"LIO-answer-followups.1","chips":[{"label":"ok","ticket":"short"}]}"#,
+        #"{"version":"LIO-answer-followups.1","chips":[{"label":"ok","ticket":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+"}]}"#,
+        #"{"version":"LIO-answer-followups.1","chips":[{"label":"这个问题的字数超过了二十四个字符的上限这个问题的字数超过了二十四个"}]}"#,
+        #"{"version":"LIO-answer-followups.1","chips":[{"label":" lead"}]}"#,
+        #"{"version":"LIO-answer-followups.1","chips":[{"label":"a\nb"}]}"#,
+        #"{"version":"LIO-answer-followups.1","chips":[{"label":""}]}"#,
+    ]) func aDamagedChipListReadsAsNothingAndNeverFailsThePage(followups: String) throws {
+        let page = try LioTimelineWire.decodePage(v2Page(v2Row(extra: chipsExtra(followups))), for: conversation, version: .v2)
+        #expect(page.messages[0].chips.isEmpty && page.messages[0].followups.isEmpty)
+        #expect(page.messages[0].answer == "One.\n\nTwo.")
+    }
+
+    @Test func chipsOnlyShowOnACompletedSplitRow() throws {
+        let json = chipsExtra(#"{"version":"LIO-answer-followups.1","chips":[{"label":"ok"}]}"#)
+        let answering = try LioTimelineWire.decodePage(v2Page(v2Row(status: "answering", extra: json)), for: conversation, version: .v2)
+        #expect(answering.messages[0].chips.isEmpty)
+    }
+
+    // MARK: sending a chip
+
+    @Test func aChipQuestionCarriesItsTicketAsOneExtraFieldAndNothingElseChanges() throws {
+        let plain = try LioTimelineWire.Send(messageID: "m1", text: "付不了怎么办", locale: .chinese, destination: .existing(conversation))
+        let chip = try LioTimelineWire.Send(messageID: "m1", text: "付不了怎么办", locale: .chinese, destination: .existing(conversation),
+                                            chipTicket: ticket)
+        let plainObject = try #require(JSONSerialization.jsonObject(with: plain.originalUTF8) as? [String: Any])
+        let chipObject = try #require(JSONSerialization.jsonObject(with: chip.originalUTF8) as? [String: Any])
+        #expect(plainObject["chip_ticket"] == nil, "without a ticket the bytes are what they were")
+        #expect(chipObject["chip_ticket"] as? String == ticket)
+        #expect(chipObject.filter { $0.key != "chip_ticket" }.map(\.key).sorted() == plainObject.keys.sorted())
+        #expect(chipObject["text"] as? String == "付不了怎么办", "the label, byte for byte")
+    }
+
+    @Test func aTicketIsRefusedOnEveryVersionButTheSecondAndWhenMalformed() throws {
+        for version in [LioTimelineWire.Version.v3, .v4] {
+            #expect(throws: MessageHTTPFailure.self) {
+                _ = try LioTimelineWire.Send(messageID: "m1", text: "Q", locale: .english, destination: .existing(conversation),
+                                             version: version, chipTicket: ticket)
+            }
+        }
+        #expect(throws: MessageHTTPFailure.self) {
+            _ = try LioTimelineWire.Send(messageID: "m1", text: "Q", locale: .english, destination: .existing(conversation), chipTicket: "short")
+        }
+    }
+
     @Test func anUnknownLayoutReadsAsNoLayout() throws {
         let page = try LioTimelineWire.decodePage(v2Page(v2Row(extra: #","layout":"triple""#)), for: conversation, version: .v2)
         #expect(page.messages[0].layout == nil && page.messages[0].followups.isEmpty)
