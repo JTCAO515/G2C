@@ -593,6 +593,7 @@ import CryptoKit
         waitForStreamingControl(toggle); toggle.tap()
         XCTAssertEqual(count.label, "1")
         XCTAssertTrue(card.exists)
+        waitForStillScreen(app)
         try app.performAccessibilityAudit(for: .all)
         app.terminate()
     }
@@ -698,6 +699,21 @@ import CryptoKit
         XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: stable, object: nil)], timeout: 8), .completed)
     }
 
+    /// The contrast audit samples a screenshot. Taken while a fade, cross-fade, press highlight or scroll is still
+    /// running, it measures a half-drawn frame and reports contrast on text that is fine once settled (#1843).
+    /// Wait until two consecutive screenshots are identical before auditing. The audit and its thresholds are unchanged.
+    private func waitForStillScreen(_ app: XCUIApplication, timeout: TimeInterval = 10) {
+        var previous: Data?
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            let current = app.screenshot().pngRepresentation
+            if current == previous { return }
+            previous = current
+            Thread.sleep(forTimeInterval: 0.25)
+        }
+        XCTFail("The screen was still changing after \(timeout)s, so the accessibility audit would sample a moving frame")
+    }
+
     func testWaitingReportsOnlyWhileVisibleAndActive() throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
@@ -786,9 +802,16 @@ import CryptoKit
         let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
         settings.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         settings.launch()
-        let accessibility = settings.cells["Accessibility"]
+        // iOS 18 Settings labels the root row's button (identifier com.apple.settings.accessibility) and leaves
+        // its cell unlabelled, so `cells["Accessibility"]` never matched and the loop scrolled past the row (#1843).
+        // Earlier runtimes label the cell itself; both name exactly the Accessibility row.
+        let accessibility = settings.descendants(matching: .any).matching(NSPredicate(
+            format: "(elementType == %d AND identifier == %@) OR (elementType == %d AND label == %@)",
+            XCUIElement.ElementType.button.rawValue, "com.apple.settings.accessibility",
+            XCUIElement.ElementType.cell.rawValue, "Accessibility")).firstMatch
+        XCTAssertTrue(accessibility.waitForExistence(timeout: 8), settings.debugDescription)
         for _ in 0..<8 {
-            if accessibility.exists && accessibility.isHittable { break }
+            if accessibility.isHittable { break }
             settings.swipeUp()
         }
         XCTAssertTrue(accessibility.isHittable, settings.debugDescription)
@@ -1789,6 +1812,7 @@ import CryptoKit
         if fixedStatus.frame.maxY > app.tabBars.firstMatch.frame.minY - 12 { app.swipeUp() }
         XCTAssertTrue(fixedStatus.isHittable)
         XCTAssertLessThanOrEqual(fixedStatus.frame.maxY, app.tabBars.firstMatch.frame.minY)
+        waitForStillScreen(app)
         try app.performAccessibilityAudit(for: .all)
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "trip-timeline-\(language)-\(appearance)-\(largest ? "largest" : "normal")"
@@ -2700,6 +2724,7 @@ import CryptoKit
             XCTAssertEqual(XCTWaiter.wait(for: [condition], timeout: 15), .completed)
         }
         func audit() throws {
+            waitForStillScreen(app)
             try app.performAccessibilityAudit(for: .all) { issue in
                 let detail = XCTAttachment(string: issue.compactDescription + "\n" + issue.detailedDescription + "\n"
                     + (issue.element?.debugDescription ?? "No element supplied") + "\n" + app.debugDescription)
@@ -2955,7 +2980,9 @@ import CryptoKit
             let sendControl = app.buttons["lio.profile.edit.send"]
             XCTAssertTrue(sendControl.waitForExistence(timeout: 5))
             XCTAssertGreaterThanOrEqual(sendControl.frame.height, 44)
-            let field = app.textViews["lio.profile.edit.text"]
+            // A vertical-axis SwiftUI TextField is reported as a text field on iOS 18 and a text view on other
+            // runtimes; match it by identifier as exerciseExplorationHome does (#1843).
+            let field = app.descendants(matching: .any).matching(identifier: "lio.profile.edit.text").firstMatch
             XCTAssertTrue(field.waitForExistence(timeout: 5))
             XCTAssertTrue(field.isEnabled)
             field.tap()
@@ -2998,7 +3025,9 @@ import CryptoKit
             let sendControl = app.buttons["lio.profile.edit.send"]
             XCTAssertTrue(sendControl.waitForExistence(timeout: 5))
             XCTAssertGreaterThanOrEqual(sendControl.frame.height, 44)
-            let field = app.textViews["lio.profile.edit.text"]
+            // A vertical-axis SwiftUI TextField is reported as a text field on iOS 18 and a text view on other
+            // runtimes; match it by identifier as exerciseExplorationHome does (#1843).
+            let field = app.descendants(matching: .any).matching(identifier: "lio.profile.edit.text").firstMatch
             XCTAssertTrue(field.waitForExistence(timeout: 5))
             field.tap()
             field.typeText(" changed")
@@ -3125,6 +3154,7 @@ import CryptoKit
    XCTAssertTrue(control.isHittable,app.debugDescription)
   }
   func audit() throws {
+   waitForStillScreen(app)
    try app.performAccessibilityAudit(for: .all) { issue in
     let detail = XCTAttachment(string: issue.compactDescription + "\n" + issue.detailedDescription + "\n" + (issue.element?.debugDescription ?? "No element supplied") + "\n" + app.debugDescription)
     detail.name = "calendar-wire-audit"; detail.lifetime = .keepAlways; self.add(detail)
