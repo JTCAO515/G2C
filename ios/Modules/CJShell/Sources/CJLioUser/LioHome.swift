@@ -65,6 +65,9 @@ public struct LioHome<MenuContent: View>: View {
     /// #1753: "Not helpful" under finished answers (`G2CAnswerFeedbackEnabled`, off unless the build says YES).
     /// Nil whenever the build hides it; the host handles one answer at a time.
     private let answerFeedback: (any LioAnswerFeedbackSending)?
+    /// #1723 PR-2: reads a chat plan's places before saving it (`G2CChatTripPlacesEnabled`, off unless the build
+    /// says YES). Nil whenever the build has it off: saving is then the summary save it always was.
+    private let chatTripPlaces: LioChatTripPlaces?
     /// Each answer's feedback, by turn, so it survives scrolling and re-rendering.
     @State private var feedbackPhases: [Data: LioAnswerFeedbackPhase] = [:]
     /// The text first sent for each answer's step, so a retry repeats it exactly (also after the host is rebuilt).
@@ -158,6 +161,7 @@ public struct LioHome<MenuContent: View>: View {
                 toolsDraftStorage: LocalSupportDraftStorage? = nil,
                 toolsSessionIsCurrent: @escaping @MainActor () -> Bool = { true },
                 answerFeedback: (any LioAnswerFeedbackSending)? = nil,
+                chatTripPlaces: LioChatTripPlaces? = nil,
                 @ViewBuilder menu: () -> MenuContent) {
         self.language = language
         self.isDemo = isDemo
@@ -196,6 +200,7 @@ public struct LioHome<MenuContent: View>: View {
         _savedPlans = State(initialValue: LioSavedPlansModel(store: plans))
         self.toolsSessionIsCurrent = toolsSessionIsCurrent
         self.answerFeedback = LioAnswerFeedbackFeature.enabledInBuild ? answerFeedback : nil
+        self.chatTripPlaces = chatTripPlaces?.enabled == true ? chatTripPlaces : nil
         self.reconnect = reconnect
         self.session = session
         self.runtimeService = service
@@ -501,8 +506,15 @@ public struct LioHome<MenuContent: View>: View {
     private func planActions(_ plan: LioPlanSummary) -> LioItineraryTimelineView.Actions {
         var actions = LioItineraryTimelineView.Actions()
         if savedPlans.writable {
-            actions.saved = savedPlans.isSaved(plan)
-            actions.save = { savedPlans.save(plan) }
+            if let places = chatTripPlaces, let reference = chatTripReference(for: plan) {
+                // #1723 PR-2: the card's trip is read for its places first; the summary is saved on any doubt.
+                actions.saved = savedPlans.hasSavedCopy(of: plan)
+                actions.saving = savedPlans.isSaving(plan)
+                actions.save = { Task { await savedPlans.save(plan, reference: reference, places: places) } }
+            } else {
+                actions.saved = savedPlans.isSaved(plan)
+                actions.save = { savedPlans.save(plan) }
+            }
         }
         // Changing a day goes back to the chat as an ordinary message the user finishes and sends. That is only
         // offered in the chat that made the plan; a plan opened from Trips in another chat can be saved and shared.
@@ -518,6 +530,13 @@ public struct LioHome<MenuContent: View>: View {
             planSheet = nil
         }
         return actions
+    }
+
+    /// The id, version and content hash of the chat card this plan came from (LIO-trip-card.3 only).
+    private func chatTripReference(for plan: LioPlanSummary) -> LioChatTripReference? {
+        guard plan.source == .chat else { return nil }
+        return conversation.turns.lazy.compactMap { $0.exploration?.trip.flatMap { LioChatTripReference($0) } }
+            .first { $0.tripID == plan.tripID && $0.tripVersion == plan.tripVersion }
     }
 
     private func continuePlanInChat() {
