@@ -82,7 +82,7 @@ import XCTest
         try app.performAccessibilityAudit(for: .all) { issue in
             if issue.auditType == .contrast {
                 let element = issue.element
-                if newScreen || (element.map { !viewport.contains($0.frame) } ?? false) {
+                if self.newScreen || (element.map { !viewport.contains($0.frame) } ?? false) {
                     setAside.append("\(issue.compactDescription): \(element?.frame ?? .zero) \(element?.label ?? "<unavailable>")")
                     return true
                 }
