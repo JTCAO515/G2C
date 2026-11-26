@@ -1,6 +1,6 @@
 [Unit]
 Description=Daily private JT workbench database backup
-After=docker.service network-online.target jt-workbench-postgres.socket
+After=docker.service jt-workbench-postgres.socket g2c-beta-backup.service
 Requires=docker.service jt-workbench-postgres.socket
 
 [Service]

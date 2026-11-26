@@ -4,13 +4,11 @@ Requires=jt-workbench-postgres.socket
 After=jt-workbench-postgres.socket
 
 [Service]
-User=10001
-Group=10001
 BindReadOnlyPaths=/srv/g2c-beta/local-pg-socket:/run/jt-workbench-upstream
-ExecStart=/usr/lib/systemd/systemd-socket-proxyd /run/jt-workbench-upstream/.s.PGSQL.5432
+ExecStart=/usr/bin/setpriv --reuid=10001 --regid=10001 --clear-groups /usr/lib/systemd/systemd-socket-proxyd /run/jt-workbench-upstream/.s.PGSQL.5432
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
 PrivateTmp=yes
 RestrictAddressFamilies=AF_UNIX
-CapabilityBoundingSet=
+CapabilityBoundingSet=CAP_SETUID CAP_SETGID

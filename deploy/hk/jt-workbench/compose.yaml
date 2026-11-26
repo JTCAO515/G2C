@@ -43,21 +43,16 @@ services:
     image: ${JT_WORKBENCH_BACKUP_IMAGE:?installed reviewed operator image required}
     pull_policy: never
     entrypoint: [python, -B, /run/jt-workbench-backup.py]
-    command: [daily]
     user: "10001:10001"
     group_add: ["10031"]
+    network_mode: none
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     read_only: true
     tmpfs: [/tmp]
     mem_limit: 192m
-    env_file: [/srv/g2c-beta/common.env]
     volumes:
       - /srv/g2c-beta/deploy/hk/jt-workbench/backup.py:/run/jt-workbench-backup.py:ro
       - /srv/g2c-beta/jt-workbench/db:/run/jt-workbench-db:ro
       - /srv/g2c-beta/jt-workbench/backup.dsn:/run/jt-workbench-connection:ro
       - /srv/g2c-beta/jt-workbench/backups:/jt-backups
-      - /srv/g2c-beta/operator.env:/run/secrets/operator.env:ro
-      - /srv/g2c-beta/backup.env:/run/secrets/backup.env:ro
-      - /srv/g2c-beta/authorizations:/run/authorizations:ro
-      - /srv/g2c-beta/control:/control

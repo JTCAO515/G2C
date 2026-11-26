@@ -23,7 +23,7 @@ systemctl is-active --quiet g2c-beta-backup.timer
 [[ $(docker inspect --format '{{json .Config.Cmd}}' "$caddy") == '["caddy","run","--config","/etc/caddy/Caddyfile","--adapter","caddyfile"]' ]]
 [[ $(docker inspect --format '{{json .HostConfig.CapAdd}} {{json .HostConfig.CapDrop}} {{.Config.User}}' "$caddy") == '["NET_BIND_SERVICE"] ["ALL"] ' ]]
 [[ -r $bundle/compose.yaml && -r $config && ! -L $config && -S $root/local-pg-socket/.s.PGSQL.5432 ]]
-[[ -x /usr/lib/systemd/systemd-socket-proxyd ]]
+[[ -x /usr/lib/systemd/systemd-socket-proxyd && -x /usr/bin/setpriv ]]
 awk '/^MemTotal:/{total=$2} /^MemAvailable:/{available=$2} END{exit !(available > total/5+512*1024)}' /proc/meminfo
 [[ $(df -Pm "$root" | awk 'END{print $4}') -ge 4096 ]]
 
@@ -113,7 +113,7 @@ connections = [urlsplit((root / (purpose + ".dsn")).read_text().strip()) for pur
 json.dump({item.username: item.password for item in connections}, sys.stdout)
 PY
 trap - ERR
-for unit in jt-workbench-postgres.service jt-workbench-postgres.socket jt-workbench-backup.service jt-workbench-backup.timer; do
+for unit in jt-workbench-postgres.service jt-workbench-postgres.socket jt-workbench-backup.service; do
   install -m 0644 "$bundle/$unit" "/etc/systemd/system/$unit"
 done
 systemctl daemon-reload
@@ -124,9 +124,11 @@ compose run --rm --no-deps -T migrate
 compose up -d --no-deps --wait --wait-timeout 35 app
 [[ $(docker inspect --format '{{.State.Health.Status}}' "$api") == healthy ]]
 
-# Prove the real daily job before accounts can be enrolled, including the original private upload receipt.
+# Verify the private PostgreSQL dump from the same unit the daily backup will launch.
 systemctl start jt-workbench-backup.service
-systemctl enable --now jt-workbench-backup.timer
+install -d -m 0755 /etc/systemd/system/g2c-beta-backup.service.d
+install -m 0644 "$bundle/g2c-beta-backup.workbench.conf" /etc/systemd/system/g2c-beta-backup.service.d/70-jt-workbench.conf
+systemctl daemon-reload
 
 restore_caddy() {
   cat "$home/Caddyfile.before" > "$config"
@@ -143,4 +145,14 @@ if ! cmp -s "$config" "$candidate"; then
     --resolve api-beta.go2china.space:443:127.0.0.1 https://api-beta.go2china.space/health/ready >/dev/null
   trap - ERR
 fi
-printf '%s\n' "WorkBench bootstrap finished; verify the public HTTPS endpoint before staff enrollment."
+for attempt in {1..12}; do
+  if login=$(curl --noproxy '*' --fail --silent --max-time 3 \
+    --resolve jtadmin.go2china.space:443:127.0.0.1 https://jtadmin.go2china.space/login) &&
+    [[ $login == *'首次设置或重绑验证器'* ]]; then
+    printf '%s\n' 'JT workbench login ready with a trusted HTTPS certificate.'
+    exit 0
+  fi
+  sleep 3
+done
+printf '%s\n' 'JT workbench still waiting for HTTPS or login readback.' >&2
+exit 2

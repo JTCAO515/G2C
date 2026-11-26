@@ -38,10 +38,10 @@ def provision(passwords):
             for role in ROLES:
                 identity = sql.Identifier(role)
                 verifier = db.pgconn.encrypt_password(passwords[role].encode(), role.encode(), b"scram-sha-256").decode()
-                present = db.execute("SELECT rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls, rolinherit FROM pg_roles WHERE rolname=%s", (role,)).fetchone()
+                present = db.execute("SELECT rolcanlogin, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls, rolinherit FROM pg_roles WHERE rolname=%s", (role,)).fetchone()
                 if present is None:
                     db.execute(sql.SQL("CREATE ROLE {} LOGIN NOINHERIT PASSWORD {}").format(identity, sql.Literal(verifier)))
-                elif present != (False,) * 6 or db.execute("SELECT 1 FROM pg_auth_members WHERE member = (SELECT oid FROM pg_roles WHERE rolname=%s)", (role,)).fetchone():
+                elif present != (True,) + (False,) * 6 or db.execute("SELECT 1 FROM pg_auth_members WHERE member = (SELECT oid FROM pg_roles WHERE rolname=%s)", (role,)).fetchone():
                     raise RuntimeError("unexpected privileges on an existing workbench role")
         existing = db.execute("SELECT pg_get_userbyid(datdba) FROM pg_database WHERE datname=%s", (DATABASE,)).fetchone()
         if existing is None:
