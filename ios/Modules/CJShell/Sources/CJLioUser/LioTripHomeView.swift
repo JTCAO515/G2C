@@ -17,7 +17,7 @@ struct LioTripHome: View {
     var fixedNow: Date?
     var timeZone: TimeZone = .current
     @State private var model: LioTripHomeModel
-    @AppStorage(LioTripHomeNationality.key) private var sharedNationality = ""
+    @LioNationalityBinding private var sharedNationality
     /// Debug previews keep the passport in memory instead of the shared setting (#1665 review P3-3).
     @State private var previewNationality = ""
     /// Set by Debug previews only.
@@ -116,6 +116,8 @@ struct LioTripHome: View {
         .confirmationDialog(language.text("End this trip?", "结束这趟旅行？"), isPresented: $confirmsEnd, titleVisibility: .visible) {
             Button(language.text("End trip", "结束旅行"), role: .destructive) {
                 model.end(plan: checklist(at: fixedNow ?? .now).plan?.tripID)
+                // #1741: a new trip starts with Arrival Mode's checklist unticked.
+                tools.arrival?.clearProgress()
             }
             Button(language.text("Cancel", "取消"), role: .cancel) {}
         } message: {

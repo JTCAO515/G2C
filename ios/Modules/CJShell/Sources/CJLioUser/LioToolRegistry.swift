@@ -176,6 +176,10 @@ enum LioToolRegistry {
             #if os(iOS)
             let trip = context.arrivalTrip
             LioArrivalView(language: context.language, hotels: trip?.hotels ?? [], arrival: trip?.arrival)
+                // #1741: the taxi step goes to Back to Hotel's "my hotel", read only, while that tool is shown.
+                .environment(\.lioReturnHotelStore, LioReturnHotelTools.storeForHotelSearch(
+                    shown: LioReturnHotelTools.shownInTools, roadbookDirectory: context.roadbookDirectory,
+                    isCurrent: context.sessionIsCurrent))
             #endif
         },
         LioToolEntry(.localSupport, symbol: "lifepreserver",

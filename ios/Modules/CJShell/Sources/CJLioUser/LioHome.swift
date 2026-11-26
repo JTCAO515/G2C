@@ -256,9 +256,8 @@ public struct LioHome<MenuContent: View>: View {
 
     private var taxiEntry: LioTaxiEntry? {
         if let taxiRelay, let taxiRecentDirectory {
-            var seen = Set<LioTaxiPlace.ID>()
-            let places = conversation.itineraries.flatMap { $0.days.flatMap { $0.stops.compactMap(\.taxiDestination) } }
-                .filter { seen.insert($0.id).inserted }
+            // #1741: the formal saved trip's confirmed places, not the chat's draft itineraries.
+            let places = LioTaxiTripPlaces.confirmed(in: savedPlans.plans)
             return LioTaxiEntry.internalBeta(relay: taxiRelay, recentDirectory: taxiRecentDirectory,
                                              tripPlaces: places).requiringLocationConsent(locationConsent)
         }
