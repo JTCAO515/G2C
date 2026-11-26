@@ -435,34 +435,36 @@ def run_once(database, model, auth_dir, *, memory_configuration=None,memory_conf
     run_credential_scopes=hk_assembly_run_credential_scopes
     if hk_beta_b_run_credential:
         run_credential_scopes=run_credential_scopes|{scope_for(ISSUER,'m4-synthetic-beta-b')}
-    for scope in pending_scopes:
-        # One scope's unreconciled run (for example an unresolved original quota
-        # period) must not starve every later scope; it is still raised below.
-        try:
-            selected_memory=(memory_configuration if memory_configuration_for_scope is None
-                             else memory_configuration_for_scope(scope))
-            assembly_planning=scope in planning_scopes
-            if assembly_planning and type(selected_memory) is not TypedRuntimeConfiguration:
-                raise CompositionUnavailable('assembly planning requires original Typed runtime')
-            run_credential = (scope in run_credential_scopes and account_checker_builder is not None
-                and type(selected_memory) is TypedRuntimeConfiguration
-                and database.run_context.current.meter.max_seconds == 600)
-            results += _worker_for_scope(database,model,auth_dir,scope,checker,
-                                         memory_configuration=selected_memory,tools_configuration=tools_configuration,
-                                         draft_profile='needs-structured.1' if assembly_planning else draft_profile,
-                                         place_draft_configuration=place_draft_configuration,formal_memory_configuration=formal_memory_configuration,
-                                         account_checker_builder=account_checker_builder,run_credential=run_credential,
-                                         assembly_planning=assembly_planning,demo_planning=scope in hk_demo_scopes,
-                                         lio_confirmation=lio_confirmation,
-                                         lio_generation_factory=lio_generation_factory,
-                                         runtime_registrations_for_run=runtime_registrations_for_run,
-                                         runtime_reflection=runtime_reflection,
-                                         runtime_exit_observer_for_run=runtime_exit_observer_for_run,
-                                         lio_memory_enabled=scope in hk_demo_scopes,
-                                         national_planning=real_services is not None and scope in {
-                                             scope_for(ISSUER,s) for s in real_services.national_subjects}).process()
-        except Exception as error:
-            if failure is None: failure = error
+    def run_scope(scope):
+        selected_memory=(memory_configuration if memory_configuration_for_scope is None
+                         else memory_configuration_for_scope(scope))
+        assembly_planning=scope in planning_scopes
+        if assembly_planning and type(selected_memory) is not TypedRuntimeConfiguration:
+            raise CompositionUnavailable('assembly planning requires original Typed runtime')
+        run_credential = (scope in run_credential_scopes and account_checker_builder is not None
+            and type(selected_memory) is TypedRuntimeConfiguration
+            and database.run_context.current.meter.max_seconds == 600)
+        return _worker_for_scope(database,model,auth_dir,scope,checker,
+                                 memory_configuration=selected_memory,tools_configuration=tools_configuration,
+                                 draft_profile='needs-structured.1' if assembly_planning else draft_profile,
+                                 place_draft_configuration=place_draft_configuration,formal_memory_configuration=formal_memory_configuration,
+                                 account_checker_builder=account_checker_builder,run_credential=run_credential,
+                                 assembly_planning=assembly_planning,demo_planning=scope in hk_demo_scopes,
+                                 lio_confirmation=lio_confirmation,
+                                 lio_generation_factory=lio_generation_factory,
+                                 runtime_registrations_for_run=runtime_registrations_for_run,
+                                 runtime_reflection=runtime_reflection,
+                                 runtime_exit_observer_for_run=runtime_exit_observer_for_run,
+                                 lio_memory_enabled=scope in hk_demo_scopes,
+                                 national_planning=real_services is not None and scope in {
+                                     scope_for(ISSUER,s) for s in real_services.national_subjects}).process()
+    # One scope's unreconciled run (for example an unresolved original quota
+    # period) must not starve every later scope; it is still raised below.
+    # W4-6 (#1750): CJ_WORKER_SCOPE_CONCURRENCY>1 runs different scopes at once,
+    # one thread per scope, capped by the connection pool; 1 is the old loop.
+    from cj_api.worker_concurrency import run_scopes
+    scope_results,failure=run_scopes(list(pending_scopes),run_scope,pool_size=getattr(database,'pool_max_size',None))
+    results+=scope_results
     if background_jobs is not None:results+=background_jobs.run_once(model)
     if failure is not None: raise failure
     return results

@@ -1,5 +1,6 @@
 """Shared JT Agent models and interfaces."""
 
+from .case_execution import CaseExecution
 from .models import (
     Case,
     CountEventState,
@@ -22,6 +23,7 @@ from .protocols import DecisionModel, SignalSink
 
 __all__ = [
     "Case",
+    "CaseExecution",
     "CountEventState",
     "DecisionContext",
     "DecisionModel",
