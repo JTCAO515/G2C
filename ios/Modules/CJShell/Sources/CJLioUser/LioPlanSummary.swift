@@ -16,6 +16,11 @@ struct LioPlanSummary: Equatable, Identifiable, Sendable {
         let startTime: String?
         let endTime: String?
         let fixed: Bool?
+        /// The English name, for a template's checked places only; nil for a chat plan, whose one name is
+        /// shown in both languages.
+        var labelEN: String? = nil
+
+        func label(_ language: LioLanguage) -> String { language == .chinese ? label : (labelEN ?? label) }
     }
     struct Day: Codable, Equatable, Sendable {
         let number: Int
@@ -33,11 +38,13 @@ struct LioPlanSummary: Equatable, Identifiable, Sendable {
     var id: String { tripID }
     var title: String { itinerary.title }
     var undated: Bool { itinerary.undated }
-    /// The itinerary's days as names and times (Chinese names, as the booking rules match them).
+    /// The itinerary's days as names and times (Chinese names, as the booking rules match them; a template's
+    /// English names ride along for the English trip home).
     var days: [Day] {
         itinerary.days.map { day in
             Day(number: day.number, date: day.date, items: day.stops.map {
-                Item(id: $0.id, label: $0.place.nameZH, startTime: $0.time, endTime: nil, fixed: $0.fixed)
+                Item(id: $0.id, label: $0.place.nameZH, startTime: $0.time, endTime: nil, fixed: $0.fixed,
+                     labelEN: source == .template ? $0.place.nameEN : nil)
             })
         }
     }
@@ -191,6 +198,10 @@ extension LioRichItinerary {
     private struct Archive: Encodable { let version: Int; let records: [Record] }
     static let currentVersion = 2
 
+    /// The file was written by a newer app (a version this build does not know). It is never rewritten:
+    /// reading throws this, so saving and removing stop before they write, and the newer trips stay on disk.
+    struct UnsupportedVersion: Error, Equatable { let version: Int }
+
     func load() throws -> [LioPlanSummary] { try records().map(\.plan) }
 
     /// Keeps one copy per trip, the highest version; an older version never replaces a newer one.
@@ -237,8 +248,8 @@ extension LioRichItinerary {
                 guard let record = entry.value, let plan = try? record.plan() else { return nil }
                 return (record.savedAt, plan)
             }
-        default:
-            return []
+        case let unknown:
+            throw UnsupportedVersion(version: unknown)
         }
         // One copy per trip, the highest version (newest saved on a tie).
         var best: [String: (savedAt: Date, plan: LioPlanSummary)] = [:]
@@ -274,43 +285,64 @@ extension LioRichItinerary {
 final class LioSavedPlansModel {
     private let store: LioSavedPlans?
     private var cached: [LioPlanSummary]
+    /// The saved-plans file is from a newer app: its trips are kept on disk but cannot be shown or changed
+    /// here, so the list is not "no trips" and nothing is offered as saveable.
+    private(set) var newerVersion = false
 
     init(store: LioSavedPlans?) {
         self.store = store
-        cached = (try? store?.load()) ?? []
+        cached = []
+        reload()
     }
 
     var storeID: UUID? { store?.id }
     var available: Bool { store?.current == true }
+    /// Saving needs a store this build can write: never over a newer app's file.
+    var writable: Bool { available && !newerVersion }
+    var unreadable: Bool { available && newerVersion }
     var plans: [LioPlanSummary] { available ? cached : [] }
+
+    private func reload() {
+        guard let store else { return }
+        do {
+            cached = try store.load()
+            newerVersion = false
+        } catch is LioSavedPlans.UnsupportedVersion {
+            newerVersion = true
+        } catch {}
+    }
 
     /// The same version of the same trip; a newer version of a saved trip can be saved again.
     func isSaved(_ plan: LioPlanSummary) -> Bool { plans.contains(plan) }
+
+    /// #1725: the popular route is saved as a trip (in either language; the id is the route's).
+    func isSavedTemplate(_ roadbook: LioRoadbook) -> Bool {
+        let id = LioPlanSummary(template: roadbook).tripID
+        return plans.contains { $0.tripID == id }
+    }
 
     func save(_ plan: LioPlanSummary) {
         guard let store else { return }
         do {
             try store.save(plan)
-            cached = try store.load()
         } catch {}
+        reload()
     }
 
     /// #1725: saves a popular route as a trip with checked places; nil when nothing was saved.
     @discardableResult
     func saveTemplate(_ roadbook: LioRoadbook) -> LioPlanSummary? {
         guard let store else { return nil }
-        do {
-            let plan = try store.saveTemplate(roadbook)
-            cached = try store.load()
-            return cached.contains(plan) ? plan : nil
-        } catch { return nil }
+        let saved = try? store.saveTemplate(roadbook)
+        reload()
+        return saved.flatMap { cached.contains($0) ? $0 : nil }
     }
 
     func remove(_ plan: LioPlanSummary) {
         guard let store else { return }
         do {
             try store.remove(plan.tripID)
-            cached = try store.load()
         } catch {}
+        reload()
     }
 }

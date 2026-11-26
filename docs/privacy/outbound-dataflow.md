@@ -46,10 +46,11 @@
 | 21 | Jotform Inc. | 服务端 API（由 Vercel 函数调用） | `api.jotform.com`（美国；Vercel 未设 `JOTFORM_API_BASE`，JT 2026-11-26 核对） | 官网「抢先体验」申请 | **称呼、邮箱**、得知渠道、所在国家、计划出行时间、目的地（含自填）、需求、备注 | `web/api/early-access.js:7-9, 19, 53-65, 135-160` |
 | 22 | Spacemail（Spaceship 旗下邮箱服务） | 邮箱 `hello@go2china.space`（MX `mx1/mx2.spacemail.com`，SPF `include:spf.spacemail.com`） | `spacemail.com` | 用户来信；人工回复抢先体验与（开放后）官网服务请求 | **邮箱地址**与邮件内容；官网服务请求开放后可能含时间、地点、电话 | DNS 记录（2026-11-26 查询）；JT 2026-11-26 定回复用该邮箱 |
 | — | Airalo | 无 | — | eSIM 预览（无链接） | 无 | `LioESIMPreviewView.swift:64-70` |
+| — | 阿里云邮件推送（DirectMail，新加坡） | 服务端 API | 新加坡（ap-southeast-1）；发信域名 `mail.go2china.space` 已建、未验证 | 59 正式登录的邮箱验证码（[#1883](https://github.com/JTCAO515/G2C/issues/1883)） | **邮箱地址**、验证码 | **未上线（#1883，59）**；按跨境传输处理（邮件推送没有香港地域）；地域由 JT 本人 2026-11-26 确认（此前转述的「杭州」作废）。上线前同 PR 补代码依据，并在隐私政策接收方表与跨境一节加入（与 Apple、Google 登录一起） |
 
 ## 2. 定位字段去向
 
-### 2.1 现状（`27388ea7`）
+### 2.1 现状（`27388ea7`；香港现网仍是 `4f81cad4`，S 线 2026-11-26 只读核对）
 
 - App 读设备定位的代码只有一处：`ios/Modules/CJShell/Sources/CJLioUser/LioTaxiPickupLocation.swift`（`requestWhenInUseAuthorization` + 一次性 `requestLocation`，WGS-84 原始精度，`:15-46`）。**打车**和**附近**两个功能复用它。
 - **打车**：「当前位置」起点和搜索偏置 `near` → 香港 `/v1/tools/taxi/*` → 服务端转 GCJ-02、保留 6 位小数（约 0.1 米）、不降精度 → **滴滴 MCP**；滴滴返回的 `v.didi.cn` 叫车链接也带这组坐标，App 交给滴滴 App 打开。服务端不落盘、不写日志（`backend/cj_api/taxi_tools.py:252-261, 356-415`）。
@@ -63,7 +64,7 @@
 
 #225 正式意见写明首轮「将 GPS 或由 GPS 推出的可关联位置发给香港后端、北京百炼或高德，当前均未放行」。上面两条 GPS 流超出这一边界；对内部名单属于 M4 授权范围。对外部开放前**至少**须完成 [#1832](https://github.com/JTCAO515/G2C/issues/1832)、[#1833](https://github.com/JTCAO515/G2C/issues/1833)、[#1748](https://github.com/JTCAO515/G2C/issues/1748)；这三张票是必要条件，不是放行结论。
 
-统筹 2026-11-26 按 JT 预授权决定的目标边界（由 #1833、#1748 落地，落地后本节改写为现状；三张票都落地前，下表写法与实际行为不一致）：
+统筹 2026-11-26 按 JT 预授权决定的目标边界（#1833 的代码已由 #1875 合并到 main，c5da5dab，但**尚未部署到香港**：S 线 2026-11-26 只读核对现网 `api-1`、`worker-1` 仍为 `4f81cad4`，不含 c5da5dab。部署并在 #1833 贴读回证据后，本节改写为现状；在此之前，下表写法与实际行为不一致）：
 
 | 流向 | 目标边界 |
 |---|---|
@@ -137,7 +138,7 @@
 
 | 功能 | 触发 | 发出的字段 | 接收方 | 开关与状态 | 出处 |
 |---|---|---|---|---|---|
-| 回答下的反馈入口（W4-9 [#1753](https://github.com/JTCAO515/G2C/issues/1753)） | 用户在一条 Lio 回答下点「没帮上」，可选填「补充说明」 | 复用现有 `POST /v1/feedback`，请求体固定为 `action_id`（客户端生成的提交编号）、`problem`、`expectation`、`references`（该回答的服务端 message id，可带匹配的 run id）。A 线提供的内容：固定文案「这条回答没帮上忙 / This answer didn't help.」与用户选填的补充说明（≤500 字，输入框提示不要填写个人信息），分别落在 `problem`、`expectation` 哪一个以 #1753 代码为准。不发聊天原文、位置、设备信息 | 只到本方香港服务，不转第三方或模型。服务端凭登录凭据识别账号，**按账号**存入香港 PostgreSQL `cj_feedback_action`：原始请求字节及其 sha256、提交时间，以及从被引用消息读出的会话、generation、sequence、run 编号、原始输入哈希和读取时的 run 状态；不复制对话原文或工具内容。无自动保留期，只在注销（删除）账号时由 `FeedbackHook` 删除；没有删除单条反馈的入口 | 开关 `G2CAnswerFeedbackEnabled`，默认关；**#1753 合并前不生效**，合并后按代码核对本行 | A 线 2026-11-26 提供；统筹 2026-11-26 按 JT 预授权决定。代码依据：`backend/cj_api/feedback_routes.py:53-65`、`backend/cj_api/FEEDBACK-WIRE.md`、`backend/feedback/cj_feedback/postgres.py:101`、`backend/feedback/cj_feedback/lifecycle.py:36-55`、`backend/storage-registry.json:220-232` |
+| 回答下的反馈入口（W4-9 [#1753](https://github.com/JTCAO515/G2C/issues/1753)） | 用户在一条 Lio 回答下点「没帮上」，可选填「补充说明」 | 复用现有 `POST /v1/feedback`，请求体固定为 `action_id`（客户端生成的提交编号）、`problem`、`expectation`、`references`（只有这条回答所对应提问消息的服务端 message id，不带 run id）。A 线提供的内容：固定文案「这条回答没帮上忙 / This answer didn't help.」与用户选填的补充说明（≤500 字，输入框提示不要填写个人信息），各作为一条独立提交、都放在 `problem`，`expectation` 为空字符串（代码：`ios/Modules/CJShell/Sources/CJShell/LioAnswerFeedbackHost.swift` 的 `submit`、`open`）。不发聊天原文、位置、设备信息 | 只到本方香港服务，不转第三方或模型。服务端凭登录凭据识别账号，**按账号**存入香港 PostgreSQL `cj_feedback_action`：原始请求字节及其 sha256、提交时间，以及从被引用消息读出的会话、generation、sequence、run 编号、原始输入哈希和读取时的 run 状态；不复制对话原文或工具内容。无自动保留期，只在注销（删除）账号时由 `FeedbackHook` 删除；没有删除单条反馈的入口 | 开关 `G2CAnswerFeedbackEnabled`，默认关；**#1753 合并前不生效**，合并后按代码核对本行 | A 线 2026-11-26 提供；统筹 2026-11-26 按 JT 预授权决定。代码依据：`backend/cj_api/feedback_routes.py:53-65`、`backend/cj_api/FEEDBACK-WIRE.md`、`backend/feedback/cj_feedback/postgres.py:101`、`backend/feedback/cj_feedback/lifecycle.py:36-55`、`backend/storage-registry.json:220-232` |
 | 官网真人服务请求（W10-3 [#1777](https://github.com/JTCAO515/G2C/issues/1777)，PR #1862） | 访客在官网「广州中英商务陪同」区块提交 | 称呼、邮箱、日期、说明（选填）、页面语言 `lang`（浏览器传，服务器按白名单校验）；四个必勾项：已阅读隐私政策，加三项单独同意（行踪信息、提供给陪同、传到中国香港处理），缺一项返回 400、不转交；服务器写入服务、城市（广州）和收到时间 `receivedAt` | 浏览器 → Vercel 函数 `/api/service-request` → 本方服务请求后端（W9，#1768）；不经第三方表单服务。人工经 Spacemail 邮箱回复（总表第 22 行） | 开关 `SERVICE_REQUEST_ENABLED` 默认关；**未开放**。开放前提（`web/api/service-request.js:5-10`）：隐私政策在 `/privacy` 公开（JT 本人确认）；去向换成 W9 后端；统筹指定收件人并做一次测试请求（#32）。另：`/api/*` 固定到香港（#1872） | 统筹 2026-11-26 按 JT 预授权决定；依据 #1862 head `a8741c63`（`web/api/service-request.js:28-70`）。字段、防滥用、保留期见 PIPIA 增补第 13 节（#1871） |
 
 同一张票加的 AI 提示「由 AI 生成，可能有误，重要信息请自行确认」（开关 `G2CAIDisclosureEnabled`，默认关）不产生数据，不登记。

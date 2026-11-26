@@ -48,7 +48,7 @@ struct HelpView: View {
                     .accessibilityIdentifier("help.account.deletion")
                 paragraph("No immediate remote wipe of a disconnected device is promised. Check the offline expiry and cleanup status on the relevant screen. Previous-product data is outside these local cleanup actions.",
                           "不承诺即时远程擦除断网设备。请在相应页面查看离线截止时间和清理状态。旧产品数据不属于这些本机清理操作的范围。")
-                NavigationLink(language.text("Privacy notice (beta)", "隐私说明（内测版）"), value: MemoryRoute.privacy)
+                NavigationLink(PrivacySummary.title(language), value: MemoryRoute.privacy)
                 NavigationLink(language.text("Support and contact", "支持与联系"), value: MemoryRoute.support)
             }
             LaunchInformationSection(language: language)

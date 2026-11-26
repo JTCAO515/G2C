@@ -78,7 +78,7 @@ class ScopeConcurrency(unittest.TestCase):
         self.assertEqual(run(tracker, ['a', 'b', 'c'], switch='4', pool=8), ['outcome-a', 'outcome-b', 'outcome-c'])
         self.assertEqual(tracker.peak, 1)
         self.assertEqual([effective_concurrency(4, size) for size in (6, 8, 13, 14, 16, 21, 28, 64, None)],
-                         [1, 1, 1, 2, 2, 3, 4, 4, 4])
+                         [1, 1, 1, 2, 2, 3, 4, 4, 1])
 
     def test_results_keep_scope_order_and_each_scope_runs_once(self):
         tracker = Tracker(delay={'a': 0.2})
@@ -96,6 +96,31 @@ class ScopeConcurrency(unittest.TestCase):
             run(tracker, ['a', 'b', 'c'], switch='2', pool=16, background=Background())
         self.assertEqual(sorted(tracker.processed), ['a', 'b', 'c'])
         self.assertEqual(Background.calls, 1)
+
+    def test_without_a_bounded_pool_scopes_stay_one_at_a_time(self):
+        # Review of #1873: direct connections have no pool to guard them.
+        tracker = Tracker()
+        self.assertEqual(run(tracker, ['a', 'b', 'c'], switch='4', pool=None), ['outcome-a', 'outcome-b', 'outcome-c'])
+        self.assertEqual(tracker.peak, 1)
+
+    def test_each_scope_sees_the_callers_context(self):
+        # Review of #1873: e.g. the rejected-intake capture set before run_once.
+        import contextvars
+        marker = contextvars.ContextVar('marker', default=None)
+        seen = []
+        original = Tracker.worker
+
+        def worker(tracker, *args, **kwargs):
+            seen.append(marker.get())
+            return original(tracker, *args, **kwargs)
+        tracker = Tracker(barrier=threading.Barrier(2))
+        token = marker.set('entrypoint')
+        try:
+            with mock.patch.object(Tracker, 'worker', worker):
+                run(tracker, ['a', 'b'], switch='2', pool=16)
+        finally:
+            marker.reset(token)
+        self.assertEqual(seen, ['entrypoint', 'entrypoint'])
 
     def test_switch_accepts_only_one_to_four(self):
         for value in ('0', '5', 'two', ''):

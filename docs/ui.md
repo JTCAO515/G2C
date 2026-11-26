@@ -75,6 +75,12 @@ App 对外名称统一为 **Go2China**（JT 2026-11-13）；桌面名称和用�
 - 地点只来自香港 `NEARBY.1` 中转（`/v1/tools/nearby/search`、`/reverse`），App 不持有高德 Web Key；照片链接只接受高德域名。地点页显示名称、地址、营业时间、评分和人均，提供「打车去这里」（预填打车终点）、「用高德地图导航」（未安装时改用苹果地图）和全屏「出示中文地址」。
 - 定位被拒时提示并提供「打开设置」；额度、超时和服务不可用分别提示并可重试。
 
+### 回答下的 AI 提示（#1753，W4-9）
+
+- 开关 `G2CAIDisclosureEnabled`。代码默认关闭；统筹 2026-11-26 按 JT 预授权批准从构建 58 起对内测打开（写进 `tooling/release/app_flags.json` 的 `release.on`）。Debug 可以用 `--lio-ai-disclosure-preview` 预览。
+- 每条已完成的回答下面（正文全部出来之后；失败、空回答、流式输出中的回答不显示）有一行脚注：「由 AI 生成，可能有误，重要信息请自行确认。 / AI-generated and may be wrong. Double-check anything important.」。图标拼在文字里，整行是一个能换行的文字元素，读屏只读文案。
+- 没有出站数据，也不在本机存储。
+
 ### 定位单独同意（#1748，W4-4）
 
 - 开关 `G2CLocationConsentEnabled`，默认关闭；等服务端不按账号留存坐标（#1833）部署到香港后再打开。关闭时行为与以前相同。Debug 可用 `--lio-location-consent-preview` 预览（不写文件，只在本次运行内存里）。
