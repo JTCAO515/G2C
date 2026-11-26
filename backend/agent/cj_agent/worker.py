@@ -546,7 +546,7 @@ class RunWorker:
         buffer = ''
         phase='answer_preparation'
         try:
-            from cj_message.lio_context import LioCitation, LioDestination, LioFollowups, LioLayout, LioToolProgress, answer_prompt
+            from cj_message.lio_context import LioCitation, LioDestination, LioDestinationUnclear, LioFollowups, LioLayout, LioToolProgress, answer_prompt
 
             if lio_replacement:
                 phase='lio_edit'
@@ -581,7 +581,7 @@ class RunWorker:
             split_layout = False
             destinations = []
             for chunk in chunks:
-                if isinstance(chunk, LioDestination):
+                if isinstance(chunk, (LioDestination, LioDestinationUnclear)):
                     destinations.append(chunk)
                     continue
                 if isinstance(chunk, (LioCitation, LioToolProgress, LioLayout)):
@@ -603,7 +603,7 @@ class RunWorker:
                 # W2-1 (#1727): fixed action buttons for a two-bubble answer; none when nothing applies.
                 from cj_message.lio_followups import allowed_actions, chips_for, followups_payload
                 # A taxi destination only when the answer's map tools returned exactly one distinct place.
-                destination = destinations[0] if destinations and len(set(destinations)) == 1 else None
+                destination = destinations[0] if destinations and len(set(destinations)) == 1 and isinstance(destinations[0], LioDestination) else None
                 actions = [action.wire() for action in allowed_actions(text, locale, destination=destination)]
                 # Tap-to-ask chips need a one-time ticket stored with the message; without one (no store,
                 # or the write failed) the chips are left out, never shown untappable.

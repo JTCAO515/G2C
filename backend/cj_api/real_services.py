@@ -168,7 +168,8 @@ def _taxi_destination(data):
     """#1727: the taxi button's destination from a map result that returned exactly one place with a coordinate."""
     from cj_message.lio_context import LioDestination
     places=data.get('places')
-    if data.get('routes') or type(places) is not list or len(places)!=1:return None
+    # One place, and the provider says that is all of them (a page_size of 1 can cut a longer list).
+    if data.get('routes') or data.get('provider_count')!=1 or type(places) is not list or len(places)!=1:return None
     place=places[0];point=place['coordinate']['value']
     if point is None or type(point.get('raw')) is not str or type(place['name_zh']) is not str:return None
     return LioDestination(place['name_zh'],point['raw'],place['address_zh']['value'],place['official_name_en']['value'])
@@ -893,7 +894,7 @@ class RealTools:
         if lio_locale is None:
             chinese=any('一'<=c<='鿿' for c in messages[-1]['content'])
         else:
-            from cj_message.lio_context import LioCitation, LioDestination, LioLayout, LioToolProgress, answer_prompt, asks_about_sources
+            from cj_message.lio_context import LioCitation, LioDestination, LioDestinationUnclear, LioLayout, LioToolProgress, answer_prompt, asks_about_sources
             from cj_message.lio_prompt import render, template_enabled
             chinese = lio_locale == 'zh'
             question = messages[-1]['content']
@@ -1044,8 +1045,8 @@ class RealTools:
                 if name=='place' and data.get('provider_code')=='10012':
                     raise ProviderFailed('place service permission denied; operator action required')
                 if name=='place' and lio_layout and lio_locale is not None:
-                    destination=_taxi_destination(data)
-                    if destination is not None:yield destination
+                    # A map result that is not exactly one place also means "no single destination" for the answer.
+                    yield _taxi_destination(data) or LioDestinationUnclear()
                 if name == 'place':
                     place_source = data.get('source')
                     source = place_source['endpoint'] if place_source is not None else None

@@ -199,7 +199,7 @@ class TaxiDestination(unittest.TestCase):
                  official_name_en=dict(state='present', value='The Palace Museum'))
 
     def result(self, *places, routes=()):
-        return dict(places=list(places), routes=list(routes))
+        return dict(places=list(places), routes=list(routes), provider_count=len(places))
 
     def test_exactly_one_place_with_a_coordinate_is_the_destination(self):
         from cj_api.real_services import _taxi_destination
@@ -213,8 +213,10 @@ class TaxiDestination(unittest.TestCase):
     def test_several_places_routes_or_no_coordinate_give_no_destination(self):
         from cj_api.real_services import _taxi_destination
         no_point = dict(self.PLACE, coordinate=dict(state='absent', value=None))
+        cut_off = dict(self.result(self.PLACE), provider_count=12)        # page_size 1 of a longer list
+        unknown_total = dict(places=[self.PLACE], routes=[])
         for data in (self.result(), self.result(self.PLACE, self.PLACE), self.result(no_point), self.result(self.PLACE, routes=[{}]),
-                     dict(places='x', routes=[]), dict(routes=[]), {}):
+                     cut_off, unknown_total, dict(places='x', routes=[]), dict(routes=[]), {}):
             with self.subTest(data=str(data)[:40]):
                 self.assertIsNone(_taxi_destination(data))
 

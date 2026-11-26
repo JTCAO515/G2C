@@ -4,7 +4,7 @@ import os
 from unittest.mock import patch
 
 from cj_agent.worker import RunWorker
-from cj_message.lio_context import FOLLOWUPS_EFFECT, LAYOUT_EFFECT, LioDestination, LioLayout, LioOriginal
+from cj_message.lio_context import FOLLOWUPS_EFFECT, LAYOUT_EFFECT, LioDestination, LioDestinationUnclear, LioLayout, LioOriginal
 from cj_run.core import Binding, Service
 from cj_run.fixture import MemoryRepository
 from test_worker_cancel import Drafts
@@ -149,3 +149,10 @@ def test_two_different_places_or_none_give_the_plain_taxi_button():
 def test_a_place_does_not_make_a_button_for_a_question_that_is_not_about_a_taxi():
     status, state = run('故宫几点开门', '九点。', 'split', destinations=(PALACE,))
     assert status == 'completed' and state.effects == (LAYOUT_EFFECT + 'split',)
+
+
+def test_a_later_unclear_map_result_cancels_the_destination_whatever_the_order():
+    unclear = LioDestinationUnclear()
+    for places in ((PALACE, unclear), (unclear, PALACE), (PALACE, unclear, PALACE), (unclear,)):
+        button = taxi_params(run('怎么打车去故宫', '可以打车。', 'split', destinations=places)[1])
+        assert (button['label'], button['parameters']) == ('打车', {}), places

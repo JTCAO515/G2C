@@ -230,6 +230,12 @@ class LioDestination:
 
 
 @dataclass(frozen=True)
+class LioDestinationUnclear:
+    """A map result in this answer that is not exactly one place (several, a route, no coordinate, a cut-off
+    list): the answer then has no taxi destination, whatever other map results said (#1727)."""
+
+
+@dataclass(frozen=True)
 class LioFollowups:
     """The answer's fixed action buttons and tap-to-ask chips (#1727); the payload is built by `lio_followups`."""
     payload: dict

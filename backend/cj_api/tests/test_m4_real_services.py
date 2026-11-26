@@ -1640,7 +1640,7 @@ class Boundaries(unittest.TestCase):
     def test_a_single_place_result_is_offered_as_the_taxi_destination_only_when_the_worker_asks(self):
         # #1727: the destination chunk exists only for the worker's answer path (lio_layout=True).
         from cj_api.local_app import ISSUER,scope_for
-        from cj_message.lio_context import LioDestination
+        from cj_message.lio_context import LioDestination, LioDestinationUnclear
 
         provider = self.provider(sse())
         subject = 'm4-synthetic-one'
@@ -1662,7 +1662,7 @@ class Boundaries(unittest.TestCase):
                         yield progress
                         yield json.dumps(dict(source=dict(endpoint='https://restapi.amap.com/v3/place/text',
                             received_at=dict(iso8601='2026-11-09T12:00:00+00:00',fold=0)),
-                            places=places, query=dict(kind='Search'), outcome='found', routes=[]))
+                            places=places, query=dict(kind='Search'), outcome='found', routes=[], provider_count=len(places)))
                     elif key == 'model.tool_turn.0':
                         argument.native_reply['assistant'] = dict(tool_calls=[dict(id='synthetic-place')])
                         yield json.dumps(dict(version='MODEL-tool-turn.1',kind='tool',answer=None,calls=[request]))
@@ -1673,14 +1673,15 @@ class Boundaries(unittest.TestCase):
             worker = Worker()
             worker.provider = provider
             return [c for c in tools.answer(worker,binding,[dict(role='user',content='Taxi to the Palace Museum')],
-                                            lio_locale='en',**options) if isinstance(c,LioDestination)]
+                                            lio_locale='en',**options) if isinstance(c,(LioDestination,LioDestinationUnclear))]
 
         self.assertEqual(run([palace],lio_layout=True),
                          [LioDestination('故宫博物院','116.397026,39.918058','景山前街4号',None)])
         self.assertEqual(run([palace]),[])                                 # a caller that did not ask gets no chunk
-        self.assertEqual(run([palace,palace],lio_layout=True),[])          # two results: no single destination
+        self.assertEqual(run([palace,palace],lio_layout=True),[LioDestinationUnclear()])   # two results: no single destination
         no_point = dict(palace,coordinate=dict(state='absent',value=None))
-        self.assertEqual(run([no_point],lio_layout=True),[])
+        self.assertEqual(run([no_point],lio_layout=True),[LioDestinationUnclear()])
+        self.assertEqual(run([],lio_layout=True),[LioDestinationUnclear()])
         self.assertEqual(self.sent,[])
 
     def test_lio_observed_route_links_the_registered_endpoints(self):
