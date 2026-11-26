@@ -5,7 +5,13 @@
 原则：只写已经上线的事。尚未开放的能力放在第 12 节「开放后适用」，开放前不对外承诺。
 事实来源：出站数据流登记表 docs/privacy/outbound-dataflow.md；PIPIA 增补 docs/privacy/pipia-service-request.md；#225 正式法律相关意见。
 发布：JT 本人定 2026-12-01 正式公开（统筹转达）。公开首发（App Store 上架）前另请法律意见复核本文。
-【待补】处是尚未确认的主体信息，公开前须补齐或由统筹决定保留占位。
+公开页不出现占位（官网生成器 `scripts/build_privacy_page.cjs --strict`）。尚未确认、待补进正文的：
+- 运营主体的营业执照全称、英文名称、注册地址（统筹已转 JT）；JT 回复后补进第 1 节。
+依赖（统筹 2026-11-26 按 JT 预授权决定，随 12-01 一起上线）：
+- 第 5、6 节 Vercel 香港区域：#1872（`web/vercel.json` 固定 `/api/*` 到 hkg1）须在公开前合并。
+- 第 6 节抢先体验申请的境外处理勾选：#1878（政策页与勾选框）随政策一起合并。
+- 第 4、12 节位置精度：#1875 若在 11-30 18:00 前上线，改为附近降到约 100 米。
+锚点按生成器写法写在对应行的行尾（生成器只给英文版写 id，所以第 12 节中英两条都写）：recipients（第 5 节，避免生成器按节号默认给第 5 节 cross-border）、cross-border（第 6 节）、in-person-services、website-requests（第 12 节）。
 -->
 
 - 版本：1.0　生效日期：2026 年 12 月 1 日
@@ -14,9 +20,9 @@
 
 ## 1. 我们是谁 / Who we are
 
-Go2China（以下简称「我们」）是帮助外国人在中国办事的本地助手，包括 Go2China iOS App 和网站 go2china.space。运营主体：广州创竞科技有限公司【待补：营业执照全称、英文名称、注册地址】。联系我们：hello@go2china.space。
+Go2China（以下简称「我们」）是帮助外国人在中国办事的本地助手，包括 Go2China iOS App 和网站 go2china.space。运营主体：广州创竞科技有限公司。联系我们：hello@go2china.space。
 
-Go2China ("we") is a local assistant that helps foreigners get things done in China, made up of the Go2China iOS app and the website go2china.space. Operator: Guangzhou Chuangjing Technology Co., Ltd. [to be added: full registered name, English name, registered address]. Contact: hello@go2china.space.
+Go2China ("we") is a local assistant that helps foreigners get things done in China, made up of the Go2China iOS app and the website go2china.space. Operator: Guangzhou Chuangjing Technology Co., Ltd. Contact: hello@go2china.space.
 
 ## 2. 适用范围与当前状态 / Scope and current status
 
@@ -82,7 +88,7 @@ This policy covers the Go2China iOS app and the website go2china.space.
 - Your location is not stored with your account, not saved to memory, and not sent to the AI model. For Nearby, our server briefly caches results in memory by location (about 1 minute), not linked to your account.
 - To withdraw: turn off location access for Go2China in iOS Settings, or don't use these two features. Everything else keeps working, and for Taxi you can choose the pickup point by hand.
 
-## 5. 我们与谁共享 / Who we share with
+## 5. 我们与谁共享 / Who we share with {#recipients}
 
 我们只把完成你所用功能需要的信息发给下列接收方。发给阿里云百炼、高德、滴滴、飞常准的请求不带你的账号、邮箱或手机号。
 
@@ -95,7 +101,7 @@ We send each recipient only what the feature you use needs. Requests to Alibaba 
 | 高德地图开放平台 / AMap (Gaode) | 中国大陆 / Mainland China | 地点和路线查询词、城市、酒店地标、火车出发日期；附近功能的设备位置 / Place and route queries, city, hotel landmarks, train departure dates; your device location for Nearby | 地点、路线、天气、酒店、火车、附近 / Places, routes, weather, hotels, trains, Nearby |
 | 滴滴出行 / DiDi | 中国大陆 / Mainland China | 打车搜索词、上车点（可为设备精确位置）、目的地 / Taxi search terms, pickup (may be your precise device location), destination | 估价、生成叫车链接；你在滴滴 App 里下单付款 / Estimates and ride links; you book and pay in the DiDi app |
 | 飞常准 / VariFlight | 中国大陆 / Mainland China | 航班号、机场、日期 / Flight number, airports, date | 航班查询 / Flight lookup |
-| Vercel Inc. | 中国香港（官网接口运行在 Vercel 香港区域 hkg1）【#1872 合并前为待落实】/ Hong Kong, China (website endpoints run in Vercel's Hong Kong region, hkg1) [pending until #1872 is merged] | 官网访问，以及你在官网提交的申请（我们的接口代码转发时不保存原文；Vercel 平台记录 IP、路径等访问信息）/ Website visits and applications you submit (our endpoint code forwards them without storing the text; the Vercel platform logs access details such as IP address and path) | 代我们托管官网和表单接口 / Hosting the website and its form endpoints on our behalf |
+| Vercel Inc. | 中国香港（官网接口运行在 Vercel 香港区域）/ Hong Kong, China (website endpoints run in Vercel's Hong Kong region) | 官网访问，以及你在官网提交的申请（我们的接口代码转发时不保存原文；Vercel 平台记录 IP、路径等访问信息）/ Website visits and applications you submit (our endpoint code forwards them without storing the text; the Vercel platform logs access details such as IP address and path) | 代我们托管官网和表单接口 / Hosting the website and its form endpoints on our behalf |
 | Jotform Inc. | 美国 / United States | 抢先体验申请的全部字段 / All fields of the early access application | 代我们保存和管理抢先体验申请 / Storing and managing early access applications on our behalf |
 | Spacemail（Spaceship 旗下邮箱服务）/ Spacemail (Spaceship's email service) | 服务商位于美国，邮件可能存储在中国境外 / Provider based in the United States; emails may be stored outside China | 你和 hello@go2china.space 之间的邮件 / Emails between you and hello@go2china.space | 收发邮件 / Sending and receiving email |
 | Apple | 美国等 / United States and elsewhere | 通过 TestFlight 分发 App；你在 TestFlight 里提交的反馈和崩溃报告；App 内地图由 Apple MapKit 显示 / App distribution through TestFlight; feedback and crash reports you submit in TestFlight; in-app maps shown by Apple MapKit | 按 Apple 的隐私政策处理 / Handled under Apple's privacy policy |
@@ -104,25 +110,25 @@ We send each recipient only what the feature you use needs. Requests to Alibaba 
 
 **Third-party links you open**: Trip.com links (hotels, trains, flights) carry the city, hotel, dates and number of guests you searched for. DiDi ride links carry the pickup and destination coordinates. Navigation links to AMap or Apple Maps carry the destination coordinates or station name. Links to Klook, 12306 and attraction sites carry none of your information. Once opened, that service handles your information under its own policy.
 
-<a id="cross-border"></a>
+## 6. 存放地点与跨境 / Where data is stored and cross-border transfers {#cross-border}
 
-## 6. 存放地点与跨境 / Where data is stored and cross-border transfers
-
-你的账号、对话、行程、记忆和反馈存放在我们位于中国香港的服务器，每日备份存放在中国香港的对象存储。你的信息会传到中国大陆以外的地方：
+你的账号、对话、行程、记忆和反馈存放在我们位于中国香港的服务器，每日备份存放在中国香港的对象存储。你的信息会在中国大陆与境外之间传输：
 
 - 你在中国大陆使用 App 时，信息从大陆传到香港。
 - 生成回答、翻译、识别菜单时，相关内容从香港发到北京的阿里云百炼；使用地点、路线、打车、附近、航班工具时，查询条件从香港发到位于中国大陆的高德、滴滴、飞常准。
 - 官网抢先体验申请先传到中国香港处理（官网接口由 Vercel 托管，运行在香港区域），再转给位于美国的 Jotform；你和我们的邮件由位于美国的 Spacemail 收发，可能存储在中国境外。
+- 提交抢先体验申请前，请你勾选同意把信息传到中国境外（香港、美国）处理；不勾选无法提交。
 
 **依据**：上述传输是为向你提供你请求的服务、履行与你之间的约定所必需（《个人信息保护法》第十三条第一款第二项）；向境外提供个人信息，我们按《促进和规范数据跨境流动规定》中为订立、履行个人作为一方当事人的合同所必需的情形处理，并向你告知接收方、目的、方式和信息种类（见第 5 节）。这些依据将在公开首发前另请法律意见复核。
 
 **你的权利**：你可以向我们或境外接收方行使查阅、更正、删除等权利，方式见第 8 节；对跨境提供有疑问，可以发邮件到 hello@go2china.space。
 
-Your account, chats, trips, memories and feedback are stored on our servers in Hong Kong, China, with daily backups in object storage in Hong Kong. Your information is transferred outside mainland China:
+Your account, chats, trips, memories and feedback are stored on our servers in Hong Kong, China, with daily backups in object storage in Hong Kong. Your information moves between the Chinese mainland and places outside it:
 
 - When you use the app in mainland China, your information goes from the mainland to Hong Kong.
 - For replies, translation and menu reading, the relevant content goes from Hong Kong to Alibaba Cloud Model Studio in Beijing; for places, routes, taxi, nearby and flight tools, your search terms go from Hong Kong to AMap, DiDi and VariFlight in mainland China.
 - Website early access applications are first transferred to Hong Kong, China for processing (the website endpoint is hosted by Vercel and runs in its Hong Kong region), then go to Jotform in the United States; emails between you and us go through Spacemail, a provider in the United States, and may be stored outside China.
+- Before you submit an early access application, you tick a box to agree that your information is transferred outside the Chinese mainland (Hong Kong and the United States) for processing. Without it, the application cannot be submitted.
 
 **Basis**: These transfers are necessary to provide the services you ask for and to perform our arrangement with you (Article 13(1)(2) of the Personal Information Protection Law). For transfers outside the Chinese mainland we rely on the situation in the Provisions on Promoting and Regulating Cross-Border Data Flows where a transfer is necessary to conclude or perform a contract to which you are a party, and we tell you the recipients, purposes, methods and types of information (see section 5). These bases will be reviewed by legal counsel before public launch.
 
@@ -150,13 +156,13 @@ Your account, chats, trips, memories and feedback are stored on our servers in H
 
 你可以查阅、更正、删除你的信息，撤回同意，注销账号，并要求我们解释本政策。
 
-- 在 App 内：在「我的」里查看、修改和删除记忆，删除记忆与注销账号。
+- 在 App 内：在「我的」里查看、修改和删除记忆，或注销账号。
 - 其他请求（包括抢先体验申请、邮件往来、问题反馈的删除）：发邮件到 hello@go2china.space。我们会先核对你就是当时提交信息时使用的邮箱或账号，在 15 个工作日内答复，最迟 30 天内处理完。
 - 撤回同意不影响撤回前已进行的处理；已经发出的请求无法在传输途中召回，但我们会依法协助删除。
 
 You can access, correct and delete your information, withdraw consent, close your account, and ask us to explain this policy.
 
-- In the app: under Me, view, edit and delete memories, and delete memories and close your account.
+- In the app: under Me, view, edit and delete memories, or close your account.
 - Other requests (including deleting an early access application, emails with us, or feedback): email hello@go2china.space. We first check that you are using the same email address or account you used when you gave us the information, reply within 15 business days, and complete the request within 30 days at the latest.
 - Withdrawing consent does not affect processing before withdrawal. Requests already sent cannot be recalled in transit, but we will help delete them as the law requires.
 
@@ -182,18 +188,14 @@ We post new versions and their effective dates on this page. For material change
 
 以下能力还没有开放。开放时我们会先更新本政策，在 App 或官网上单独征得你的同意，再开始处理相关信息。
 
-<a id="in-person-services"></a>
-
-- **真人服务**（首个是广州中英商务陪同）：由真人提供，提交前确认页会列出将与陪同人员共享的信息并分项征得同意；陪同人员受我们委托、只看到完成本次服务需要的信息；按次收费，在 App 外付款。
-<a id="website-requests"></a>
-
-- **官网真人服务请求表**：在官网「广州中英商务陪同」表单提出请求，收集称呼、邮箱、日期和说明（选填），提交到我们自己的服务请求后端，不经过第三方表单服务。提交前分三项征得你的同意：处理时间地点等行踪信息；提供给陪同人员；传到中国香港处理（官网接口由 Vercel 托管，运行在香港区域；App 服务在阿里云香港）。具体时间、地点、会面对象和当天联系电话，我们在回复邮件里和你确认后再记录，在此之前陪同人员看不到你的任何联系方式。
+- **真人服务**（首个是广州中英商务陪同）：由真人提供，提交前确认页会列出将与陪同人员共享的信息并分项征得同意；陪同人员受我们委托、只看到完成本次服务需要的信息；按次收费，在 App 外付款。 {#in-person-services}
+- **官网真人服务请求表**：在官网「广州中英商务陪同」表单提出请求，收集称呼、邮箱、日期和说明（选填），提交到我们自己的服务请求后端，不经过第三方表单服务。提交前请你确认已阅读本政策，并分三项征得你的同意：处理时间地点等行踪信息；提供给陪同人员；传到中国香港处理（官网接口由 Vercel 托管，运行在香港区域；App 服务在阿里云香港）。具体时间、地点、会面对象和当天联系电话，我们在回复邮件里和你确认后再记录，在此之前陪同人员看不到你的任何联系方式。 {#website-requests}
 - **App 内同意界面与定位单独询问页**：首次启动时的总同意，以及使用位置前的单独询问和「我的 → 位置」撤回入口。
 - **位置精度调整**：查找附近时，发给高德前把位置降到约 100 米精度。
 
 The following are not launched yet. Before launching any of them, we will update this policy and ask for your separate consent in the app or on the website before processing the related information.
 
-- **In-person services** (the first is an English–Chinese business companion in Guangzhou): provided by real people. Before you submit, a confirmation page lists the information to be shared with the companion and asks for separate consents. Companions act on our behalf and see only what this service needs. Paid per service, outside the app.
-- **Website in-person service request form**: request a companion through the "A business companion in Guangzhou" form on the website by giving your name, email, a date and an optional note. It goes to our own service request backend, not through any third-party form service. Before you submit, the form asks for three separate consents: processing time and place information; sharing it with the companion; and transfer to Hong Kong, China for processing (the website endpoint is hosted by Vercel and runs in its Hong Kong region; the app service runs on Alibaba Cloud Hong Kong). We confirm the exact time, place, who you are meeting and a phone number for the day with you by email before recording them; until then the companion cannot see any of your contact details.
+- **In-person services** (the first is an English–Chinese business companion in Guangzhou): provided by real people. Before you submit, a confirmation page lists the information to be shared with the companion and asks for separate consents. Companions act on our behalf and see only what this service needs. Paid per service, outside the app. {#in-person-services}
+- **Website in-person service request form**: request a companion through the "A business companion in Guangzhou" form on the website by giving your name, email, a date and an optional note. It goes to our own service request backend, not through any third-party form service. Before you submit, the form asks you to confirm you have read this policy and to give three separate consents: processing time and place information; sharing it with the companion; and transfer to Hong Kong, China for processing (the website endpoint is hosted by Vercel and runs in its Hong Kong region; the app service runs on Alibaba Cloud Hong Kong). We confirm the exact time, place, who you are meeting and a phone number for the day with you by email before recording them; until then the companion cannot see any of your contact details. {#website-requests}
 - **In-app consent screens and a separate location prompt**: a consent screen at first launch, a separate prompt before location is used, and a Me → Location switch to withdraw.
 - **Location precision**: for Nearby, location reduced to about 100 m before it goes to AMap.
