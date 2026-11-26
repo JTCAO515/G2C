@@ -1,0 +1,34 @@
+{
+  "scene_pack": "business",
+  "flows": [
+    {
+      "id": "trade-fair-preparation",
+      "title": {
+        "en": "Trade fair preparation",
+        "zh": "参展准备"
+      },
+      "steps": [
+        {
+          "en": "Confirm the fair dates and the venue address from the organizer.",
+          "zh": "按主办方信息确认展期和场馆地址。"
+        },
+        {
+          "en": "Choose a hotel and save its address card.",
+          "zh": "选好酒店，保存酒店地址卡。"
+        },
+        {
+          "en": "Prepare business phrase cards and a translation shortcut.",
+          "zh": "准备商务常用语卡和翻译入口。"
+        },
+        {
+          "en": "Set up mobile payment before arrival.",
+          "zh": "到达前设置好移动支付。"
+        },
+        {
+          "en": "Save the venue as a taxi destination.",
+          "zh": "把场馆存为打车目的地。"
+        }
+      ]
+    }
+  ]
+}

@@ -89,6 +89,8 @@ struct LioTripTask: Identifiable, Equatable, Sendable {
         case medicalCard
         case landing
         case checkIn
+        /// A business trip's item (#1765), only when the traveller chose "Business" and the build has it.
+        case business(LioTripBusinessTask)
     }
 
     enum Done: Equatable, Sendable {
@@ -180,6 +182,11 @@ struct LioTripChecklistInput: Sendable {
     var scheduledReminders: Set<String> = []
     /// The signed-in account the reminder identifiers above belong to (#1922).
     var reminderScope = LioAttractionReminderScope(account: nil)
+    /// Business items (`G2CTripBusinessEnabled`, #1765): the bundled entries and scene pack steps; nil when off.
+    var business: LioTripBusinessGuide?
+    /// Tools the router can open in this build (the Tools tab is shown and the tool is visible); business items
+    /// open tools only through it.
+    var routableTools: Set<LioTool> = []
 }
 
 /// What the trip home shows, generated from the rules and the tools' state on this phone.
@@ -322,6 +329,10 @@ struct LioTripChecklist: Equatable, Sendable {
         }
         if input.showCards {
             manual("check-in", .arrivalDay, .checkIn)
+        }
+        for (stage, task) in LioTripBusinessTask.tasks(guide: input.business, profile: input.profile, now: input.now,
+                                                        routable: input.routableTools) {
+            manual(task.item.key, stage, .business(task))
         }
         // Stable order: by stage, then the table's order; booking tasks by when tickets open.
         return result.enumerated().sorted { lhs, rhs in

@@ -68,6 +68,7 @@ enum LioTripHomeCopy {
         case .medicalCard: language.text("Fill in your medical card", "填医疗卡和紧急联系人")
         case .landing: language.text("Passport control, data, hotel", "过关、上网、去酒店")
         case .checkIn: language.text("Check in at your hotel", "办理入住")
+        case .business(let business): businessTitle(business, language)
         }
     }
 
@@ -87,7 +88,51 @@ enum LioTripHomeCopy {
                           "过敏、用药和紧急联系人，只存在这台手机。")
         case .landing: language.text("Follow the arrival checklist step by step.", "跟着落地清单一步步来。")
         case .checkIn: language.text("Show the front desk the check-in card.", "给前台看「办理入住」卡。")
+        case .business(let business): businessDetail(business, language)
         }
+    }
+
+    // MARK: - Business items (#1765)
+
+    /// Sourced titles are shown as they are; the visa item is only ever "the official channels".
+    static func businessTitle(_ task: LioTripBusinessTask, _ language: LioLanguage) -> String {
+        if let title = task.title { return title.text(language) }
+        switch task.item {
+        case .visa: return language.text("Check the official visa channels", "查看官方签证渠道")
+        case .meeting: return language.text("Make a meeting card", "准备会面卡")
+        case .cards: return language.text("Bring your business cards", "带上名片")
+        case .registration: return language.text("Pre-register as a buyer", "采购商预登记")
+        case .phrases: return language.text("Business phrases and translation", "商务常用语和翻译")
+        case .venue: return language.text("Getting to the venue", "去展馆")
+        }
+    }
+
+    /// An entry's own text while it is within its review period; afterwards only "go by the official notice".
+    /// Items without an entry describe the tool they open and state no facts.
+    static func businessDetail(_ task: LioTripBusinessTask, _ language: LioLanguage) -> String {
+        if task.source?.officialOnly == true {
+            return language.text("This may have changed since it was checked. Go by the latest official notice; the official pages are below.",
+                                 "核对后可能有变化，以官方最新通知为准，官方页面在下面。")
+        }
+        if let text = task.text { return text.text(language) }
+        switch task.item {
+        case .meeting:
+            return language.text("Who you are meeting, when and where, in large Chinese for the driver or the front desk.",
+                                 "约见的人、时间和地点，用大字中文给司机或前台看。")
+        case .cards:
+            return language.text("For the fair and your meetings. Tick it when they are packed.", "展会和会面时用，收好后自己勾上。")
+        case .phrases:
+            return language.text("Translation is in Tools; business phrases are under Show Cards › Business.",
+                                 "翻译在工具里；商务常用语在「出示卡」的「商务」里。")
+        case .registration, .visa, .venue:
+            return language.text("Go by the latest official notice.", "以官方最新通知为准。")
+        }
+    }
+
+    /// Under every sourced business item: official rules apply, and the day the entry was checked.
+    static func businessSource(_ source: LioTripBusinessTask.Source, _ language: LioLanguage) -> String {
+        let checked = dayText(source.checkedOn, language)
+        return language.text("Official notices apply · checked \(checked)", "以官方为准 · 核对于 \(checked)")
     }
 
     static func entry(_ status: LioTripEntryStatus, _ language: LioLanguage) -> String {

@@ -14,7 +14,8 @@ struct LioShowCardToolTests {
         #expect(LioTool.showCards.summary(.english) == "Phrases and help cards in large Chinese")
         #expect(LioTool.showCards.summary(.chinese) == "常用语和求助，给对方看")
         #expect(LioTool.showCards.symbol == "person.text.rectangle")
-        #expect(LioToolRegistry.entry(for: .showCards)?.parameters == [])
+        // #1765: only `section` (the Business section for the trip home's meeting item).
+        #expect(LioToolRegistry.entry(for: .showCards)?.parameters == ["section"])
     }
 
     @Test func theCardsWithTravellerDetailsStillFollowTheirOwnSwitch() {

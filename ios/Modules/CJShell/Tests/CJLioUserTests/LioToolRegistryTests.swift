@@ -30,9 +30,11 @@ struct LioToolRegistryTests {
         #expect(LioTool.hotels.symbol == "bed.double")
     }
 
-    @Test func onlyTaxiHotelsTransportAndBookingTakeParametersSoFar() {
+    @Test func onlyTaxiHotelsTransportBookingAndShowCardsTakeParametersSoFar() {
         let taking = LioToolRegistry.entries.filter { !$0.parameters.isEmpty }
-        #expect(taking.map(\.tool) == [.taxi, .hotels, .transport, .attractionBooking])
+        #expect(taking.map(\.tool) == [.taxi, .hotels, .transport, .attractionBooking, .showCards])
+        // #1765: the trip home's meeting item lands on Show Cards' Business section.
+        #expect(LioToolRegistry.entry(for: .showCards)?.parameters == ["section"])
         // #1740: a trip place opens the taxi with its destination and the booking tool with its sight.
         #expect(LioToolRegistry.entry(for: .taxi)?.parameters == ["destination", "destinationEN", "address", "lat", "lng"])
         #expect(LioToolRegistry.entry(for: .attractionBooking)?.parameters == ["sight"])
