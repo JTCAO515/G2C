@@ -80,6 +80,71 @@ import XCTest
         XCTAssertTrue(app.buttons["lio.taxi.estimate"].isEnabled)
     }
 
+    /// #1748 (W4-4): with the in-app location choice on, Taxi reads nothing until the traveller allows it; "Not now"
+    /// leaves the pickup to be chosen by hand; turning it off in Me → Location asks again next time.
+    @objc func testLocationConsentGatesTaxiPickupInBothLanguages() {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            let en = language == "en"
+            let app = taxiFixture(language: language, extraArguments: ["--lio-location-consent-preview"])
+            func shot(_ name: String) {
+                let a = XCTAttachment(screenshot: app.screenshot()); a.name = "location-consent-\(name)-\(language)"
+                a.lifetime = .keepAlways; add(a)
+            }
+            let pickup = app.buttons["lio.taxi.pickup"]
+            let use = app.buttons["lio.location.use"]
+            XCTAssertTrue(use.waitForExistence(timeout: 6), app.debugDescription)
+            XCTAssertTrue(app.staticTexts[en ? "Choose a pickup point, or use your location." : "请选择起点，或使用你的位置。"].exists)
+            XCTAssertFalse(pickup.label.contains(en ? "Beijing Railway Station" : "北京站"), "nothing read before the choice")
+            shot("1-taxi-before")
+
+            use.tap()
+            let allow = app.buttons["lio.location-consent.allow"]
+            XCTAssertTrue(allow.waitForExistence(timeout: 5), app.debugDescription)
+            for point in ["purpose", "when", "where", "keep", "change", "without"] {
+                XCTAssertTrue(app.descendants(matching: .any)["lio.location-consent.\(point)"].exists, point)
+            }
+            XCTAssertTrue(app.staticTexts[en ? "Use your location?" : "使用你的位置？"].exists)
+            shot("2-choice")
+            app.buttons["lio.location-consent.decline"].tap()
+            XCTAssertTrue(allow.waitForNonExistence(timeout: 5))
+            XCTAssertTrue(use.waitForExistence(timeout: 5), "declining keeps the manual pickup and the button")
+            XCTAssertFalse(pickup.label.contains(en ? "Beijing Railway Station" : "北京站"))
+
+            use.tap()
+            XCTAssertTrue(allow.waitForExistence(timeout: 5))
+            allow.tap()
+            let located = NSPredicate(format: "label CONTAINS %@", en ? "Beijing Railway Station" : "北京站")
+            XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: located, object: pickup)], timeout: 8),
+                           .completed, app.debugDescription)
+            XCTAssertFalse(use.exists)
+            shot("3-taxi-after-allow")
+
+            app.tabBars.buttons[en ? "Me" : "我的"].tap()
+            let row = app.buttons["lio.me.location"]
+            XCTAssertTrue(row.waitForExistence(timeout: 5), app.debugDescription)
+            row.tap()
+            let off = app.buttons["lio.location-settings.off"]
+            XCTAssertTrue(off.waitForExistence(timeout: 5), app.debugDescription)
+            shot("4-me-location-on")
+            off.tap()
+            XCTAssertTrue(app.buttons["lio.location.use"].waitForExistence(timeout: 5), "turned off: the page offers it again")
+            XCTAssertTrue(app.descendants(matching: .any)["lio.location-settings.status"].label
+                .contains(en ? "Location is off" : "位置已关闭"))
+            shot("5-me-location-off")
+
+            app.tabBars.buttons[en ? "Tools" : "工具"].tap()
+            let back = app.navigationBars.buttons.element(boundBy: 0)
+            if back.waitForExistence(timeout: 3) && !app.buttons["lio.tools.taxi"].exists { back.tap() }
+            XCTAssertTrue(app.buttons["lio.tools.taxi"].waitForExistence(timeout: 5), app.debugDescription)
+            app.buttons["lio.tools.taxi"].tap()
+            XCTAssertTrue(app.buttons["lio.location.use"].waitForExistence(timeout: 6), "asks again after turning it off")
+            XCTAssertFalse(app.buttons["lio.taxi.pickup"].label.contains(en ? "Beijing Railway Station" : "北京站"))
+            shot("6-taxi-asks-again")
+            app.terminate()
+        }
+    }
+
     @objc func testTaxiFirstUseGuideCanBeOpenedAgain() {
         continueAfterFailure = false
         let app = taxiFixture(showGuide: true)
@@ -130,12 +195,14 @@ import XCTest
     }
 
     private func taxiFixture(language: String = "en", appearance: String = "light",
-                             scenario: String? = nil, showGuide: Bool = false) -> XCUIApplication {
+                             scenario: String? = nil, showGuide: Bool = false,
+                             extraArguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
         app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-taxi-preview",
                                "-cj.ui.language.v1", language, "-lio.ui.appearance.v1", appearance,
                                "-lio.taxi.seen-guide.v1", showGuide ? "NO" : "YES"]
         if let scenario { app.launchArguments.append("--lio-taxi-preview-\(scenario)") }
+        app.launchArguments += extraArguments
         app.launch()
         let tools = app.tabBars.buttons[language == "en" ? "Tools" : "工具"]
         XCTAssertTrue(tools.waitForExistence(timeout: 8))

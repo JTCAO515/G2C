@@ -28,6 +28,7 @@ class AuditAction(StrEnum):
     TOTP_REBIND_AUTHORIZED = "totp_rebind_authorized"
     VIEW = "view"
     ANNOTATE = "annotate"
+    EXPORT = "export"
     REVEAL = "reveal"
     DECIDE = "decide"
 
@@ -71,6 +72,7 @@ class AuditEvent:
     case_id: str | None = None
     result: AuditResult = AuditResult.SUCCESS
     staff_target: str | None = None
+    signal_reference: str | None = field(default=None, repr=False)
 
 
 @dataclass(frozen=True)

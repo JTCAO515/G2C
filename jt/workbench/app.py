@@ -3,15 +3,20 @@
 import hmac
 from asyncio import to_thread
 from datetime import UTC, date, datetime
-from urllib.parse import parse_qsl
+from typing import cast
+from urllib.parse import parse_qsl, urlencode
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import RedirectResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 
-from . import pages
+from jt.common import Severity
+from jt.synthetic import generate_dataset
+
+from . import pages, queue_pages
 from .auth import SESSION_LIFETIME, AccessDenied, AccountAction, Auth, AuthenticationRequired, InvalidAccount
+from .queue import MemoryQueue, QueueItem, QueueStore, Review, display_text
 from .security import TOKEN, USERNAME, new_token
-from .store import AuditAction, AuditResult
+from .store import AuditAction, AuditEvent, AuditResult, Role, Session
 
 
 SESSION_COOKIE = "__Host-jt-session"
@@ -20,6 +25,8 @@ FORM_LIMIT = 8192
 LOGIN_FORM = ("username", "password", "code", "csrf")
 SETUP_FORM = ("username", "setup_code", "password", "seed", "code", "csrf")
 ACCOUNT_FORM = ("username", "role", "action", "csrf")
+REVIEW_FORM = ("signal", "actual_severity", "false_positive", "missed", "note", "csrf")
+SEVERITIES = ("P0", "P1", "P2", "P3", "P4")
 COOKIE_POLICY = {"path": "/", "secure": True, "httponly": True, "samesite": "strict"}
 
 
@@ -66,10 +73,47 @@ def require_pre_login_csrf(request: Request, csrf: str) -> None:
         raise AccessDenied
 
 
-def create_app(auth: Auth, *, port: int) -> FastAPI:
+def review_input(fields: dict[str, str], actor: str, timestamp: float) -> Review | None:
+    severity = fields["actual_severity"]
+    false_positive = fields["false_positive"]
+    missed = fields["missed"]
+    note = fields["note"].strip()
+    if false_positive not in ("0", "1") or missed not in ("0", "1") or len(note) > 500:
+        return None
+    if false_positive == "1":
+        if severity or missed == "1":
+            return None
+    elif severity not in SEVERITIES:
+        return None
+    return Review(cast(Severity | None, severity or None), false_positive == "1", missed == "1",
+                  display_text(note), actor, datetime.fromtimestamp(timestamp, UTC))
+
+
+def evaluation_sample(item: QueueItem, review: Review) -> dict:
+    signal = item.signal
+    return {
+        "case_id": item.case_id,
+        "signal_type": signal.signal_type,
+        "detected_severity": signal.severity,
+        "detected_at": signal.detected_at.isoformat(),
+        "redacted_fragments": [display_text(fragment) for fragment in signal.redacted_fragments],
+        "rule_hits": [display_text(hit) for hit in signal.rule_hits],
+        "signal_schema_version": signal.schema_version,
+        "rules_version": display_text(signal.rules_version),
+        "redaction_version": display_text(signal.redaction_version),
+        "model_outputs": [{"model_version": display_text(observation.model_version),
+                           "output": observation.output.model_dump(mode="json")}
+                          for observation in signal.model_outputs],
+        "review": {"actual_severity": review.actual_severity, "false_positive": review.false_positive,
+                   "missed": review.missed, "note": review.note, "recorded_at": review.recorded_at.isoformat()},
+    }
+
+
+def create_app(auth: Auth, *, port: int, queue: QueueStore | None = None) -> FastAPI:
     host = f"127.0.0.1:{port}"
     origin = f"https://{host}"
     app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
+    work_queue = MemoryQueue(generate_dataset().signals) if queue is None else queue
 
     @app.middleware("http")
     async def apply_security(request: Request, call_next) -> Response:
@@ -78,7 +122,7 @@ def create_app(auth: Auth, *, port: int) -> FastAPI:
         else:
             response = await call_next(request)
         response.headers["Cache-Control"] = "no-store"
-        response.headers["Content-Security-Policy"] = pages.CSP
+        response.headers.setdefault("Content-Security-Policy", pages.CSP)
         # Native form POSTs need their same-origin Origin header for CSRF validation.
         response.headers["Referrer-Policy"] = "same-origin"
         response.headers["X-Content-Type-Options"] = "nosniff"
@@ -179,5 +223,76 @@ def create_app(auth: Auth, *, port: int) -> FastAPI:
             and (result is None or event.result == result)
         ))
         return pages.audit_page(session, selected, filters)
+
+    def queue_session(request: Request, *, touch: bool = True) -> Session:
+        session = auth.require_session(session_token(request), touch=touch)
+        if session.role not in (Role.OPERATOR, Role.REVIEWER):
+            raise AccessDenied
+        return session
+
+    def selected_item(reference: str) -> QueueItem:
+        selected = work_queue.item(reference) if TOKEN.fullmatch(reference) else None
+        if selected is None:
+            raise HTTPException(404, "找不到该信号。")
+        return selected
+
+    @app.get("/queue")
+    def queue_view(request: Request) -> Response:
+        with auth.store.locked():
+            session = queue_session(request)
+            signal_type = request.query_params.get("type", "")
+            status = request.query_params.get("status", "")
+            if (signal_type and signal_type not in queue_pages.TYPE_LABELS) or (status and status not in queue_pages.STATUS_LABELS):
+                raise HTTPException(400, "筛选条件有误。")
+            reference = request.query_params.get("signal", "")
+            selected = selected_item(reference) if reference else None
+            items = tuple(item for item in work_queue.snapshot()
+                          if (not signal_type or item.signal.signal_type == signal_type)
+                          and (not status or item.status == status))
+            alerts = work_queue.alerts()
+            auth.store.append_audit(AuditEvent(auth.clock(), AuditAction.VIEW, session.username,
+                                              selected.case_id if selected else None,
+                                              signal_reference=selected.reference if selected else None))
+        return queue_pages.queue_page(session, items, selected, signal_type=signal_type, status=status, alerts=alerts)
+
+    @app.get("/queue/alerts")
+    def queue_alerts(request: Request) -> Response:
+        with auth.store.locked():
+            queue_session(request, touch=False)
+            pending, revision = work_queue.alerts()
+        return JSONResponse({"pending": pending, "revision": revision})
+
+    @app.post("/queue/review")
+    async def add_review(request: Request) -> Response:
+        fields = await read_form(request, origin, REVIEW_FORM)
+        with auth.store.locked():
+            session = auth.require_session(session_token(request), role=Role.REVIEWER, csrf=fields["csrf"])
+            item = selected_item(fields["signal"])
+            timestamp = auth.clock()
+            review = review_input(fields, session.username, timestamp)
+            event = AuditEvent(timestamp, AuditAction.ANNOTATE, session.username, item.case_id,
+                               AuditResult.SUCCESS if review else AuditResult.DENIED,
+                               signal_reference=item.reference)
+            if review is not None:
+                work_queue.append_review(item, review)
+            auth.store.append_audit(event)
+            if review is None:
+                items, alerts = work_queue.snapshot(), work_queue.alerts()
+        if review is None:
+            return queue_pages.queue_page(session, items, item, signal_type="", status="", alerts=alerts,
+                                          invalid_review=True)
+        return RedirectResponse(f"/queue?{urlencode({'signal': item.reference})}", status_code=303)
+
+    @app.get("/queue/export")
+    def queue_export(request: Request) -> Response:
+        with auth.store.locked():
+            session = auth.require_session(session_token(request), role=Role.REVIEWER)
+            items = work_queue.snapshot()
+            auth.store.append_audit(AuditEvent(auth.clock(), AuditAction.EXPORT, session.username))
+        return JSONResponse(
+            {"schema_version": "jt-workbench-review-export.v1",
+             "samples": [evaluation_sample(item, item.reviews[-1]) for item in items if item.reviews]},
+            headers={"Content-Disposition": 'attachment; filename="jt-review-samples.json"'},
+        )
 
     return app
