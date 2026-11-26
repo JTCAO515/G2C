@@ -150,18 +150,21 @@ class Repository:
 
     # -- reads -------------------------------------------------------------------
     def _row(self, cur, where, value, *, lock=False):
-        cur.execute('SELECT request_id,client_request_id,original_input,input_sha256,state,details,human_service,quote '
+        cur.execute('SELECT request_id,client_request_id,original_input,input_sha256,state,details,human_service,quote,'
+                    'note_cleared_at IS NOT NULL '
                     'FROM cj_service_request WHERE scope=%s AND ' + where + '=%s' + (' FOR UPDATE' if lock else ''),
                     (self.scope, value))
         row = cur.fetchone()
         if row is None:
             return None
-        rid, cid, raw, digest, state, details, human, quote = row
+        rid, cid, raw, digest, state, details, human, quote, cleared = row
         raw = bytes(raw)
-        if sha256(raw).hexdigest() != digest:
+        # A misreceived note cleared by the operations console (PIPIA 7, #1771) leaves the stored
+        # bytes without it; the digest of the original bytes still decides exact replay.
+        if not cleared and sha256(raw).hexdigest() != digest:
             raise Unavailable()
-        return dict(request_id=rid, client_request_id=cid, original=raw, state=state, details=details,
-                    human_service=human, quote=quote)
+        return dict(request_id=rid, client_request_id=cid, original=raw, digest=digest, cleared=cleared, state=state,
+                    details=details, human_service=human, quote=quote)
 
     def _project(self, cur, row):
         cur.execute('SELECT seq,from_state,to_state,' + _STAMP.format('at') + ',actor_kind '
@@ -202,7 +205,9 @@ class Repository:
         with self.transaction(cid, writing=True) as cur:
             old = self._row(cur, 'client_request_id', cid)
             if old is not None:
-                if old['original'] != submission.original:
+                same = (sha256(submission.original).hexdigest() == old['digest'] if old['cleared']
+                        else old['original'] == submission.original)
+                if not same:
                     raise Conflict()
                 return self._project(cur, old)
             # Only new submissions are gated; replays/reads above still answer.

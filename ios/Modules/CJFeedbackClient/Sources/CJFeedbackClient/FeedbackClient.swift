@@ -24,6 +24,12 @@ public struct FeedbackOperation: Sendable {
     private let owner = UUID()
     private var generation = UUID()
     private var confirmed = Set<Data>()
+    /// Confirmed originals already removed from the store (#1855); a confirmed original never goes out again.
+    private var cleaned = Set<Data>()
+    /// IDs whose last look-up answered "no such line". One user-triggered resend of the same ID and bytes is allowed
+    /// per such answer, never more (the server returns the original receipt for the same ID and bytes, and refuses
+    /// the same ID with other bytes).
+    private var mayResend = Set<Data>()
     private var uncertainCreation = false
 
     public init(endpoint: FeedbackEndpoint, credentials: @escaping FeedbackCredentialCallback,
@@ -84,6 +90,12 @@ public struct FeedbackOperation: Sendable {
     /// All external resources return before the final callback-free durability check.
     func verify(_ original: FeedbackPending, operation: FeedbackOperation, allowCancelled: Bool = false) throws {
         guard let store else { throw FeedbackFailure.unconfigured }
+        if cleaned.contains(Data(original.actionID.utf8)) {
+            // Settled and removed: the receipt was verified against the stored original before the record went.
+            try store.validate(operation.binding)
+            if allowCancelled { guard owns(operation) else { throw FeedbackFailure.staleBinding } } else { try check(operation) }
+            return
+        }
         try store.validate(operation.binding)
         let proof = try store.requireOriginal(original)
         if allowCancelled { guard owns(operation) else { throw FeedbackFailure.staleBinding } }
@@ -129,7 +141,8 @@ public struct FeedbackOperation: Sendable {
         try original.validate()
         guard original.originalUTF8.count <= endpoint.maximumRequestBytes else { throw FeedbackFailure.invalidInput }
         let existing = try pending(operation: operation)
-        guard !uncertainCreation, !existing.contains(where: { same($0.actionID, original.actionID) }),
+        guard !uncertainCreation, !confirmed.contains(Data(original.actionID.utf8)),
+              !existing.contains(where: { same($0.actionID, original.actionID) }),
               existing.allSatisfy({ confirmed.contains(Data($0.actionID.utf8)) }) else { throw FeedbackFailure.pendingRequiresQuery }
         // Set BEFORE any key/store callback: failed/unknown append never grants another attempt.
         uncertainCreation = true
@@ -143,6 +156,9 @@ public struct FeedbackOperation: Sendable {
         }
     }
     public func queryOriginal(actionID: String, operation: FeedbackOperation) async throws -> FeedbackResult {
+        // Only this look-up's own "no such line" may allow a resend: any earlier permission is spent here, so a look-up
+        // that fails, is cancelled or returns something else leaves none behind.
+        mayResend.remove(Data(actionID.utf8))
         guard let original = try pending(operation: operation).first(where: { same($0.actionID, actionID) }) else { throw FeedbackFailure.invalidInput }
         let api = try await api(original, operation)
         let output = try await exchange(operation) { try await api.queryFeedbackAction(query: .init(action_id: original.actionID)) }
@@ -152,15 +168,41 @@ public struct FeedbackOperation: Sendable {
             case .FeedbackReceipt(let receipt): return try settle(receipt, original: original, operation: operation)
             case .case2(let null):
                 guard null.value == nil else { throw FeedbackFailure.invalidResponse }
-                try verify(original, operation: operation); return .notObserved
+                try verify(original, operation: operation)
+                mayResend.insert(Data(original.actionID.utf8))
+                return .notObserved
             }
         case .default(let status, _): throw FeedbackFailure.rejected(status)
         }
     }
+    /// Sends the stored original of a line the server just said it has no record of, under its own ID and exact bytes.
+    /// Allowed once per "no such line" answer; its outcome is read the usual way (a receipt, or another look-up).
+    public func resend(actionID: String, operation: FeedbackOperation) async throws -> FeedbackResult {
+        _ = try requireStore(operation)
+        guard allowsWrites else { throw FeedbackFailure.liveWriteUnavailable }
+        let key = Data(actionID.utf8)
+        guard let original = try pending(operation: operation).first(where: { same($0.actionID, actionID) }),
+              mayResend.contains(key), !confirmed.contains(key) else { throw FeedbackFailure.pendingRequiresQuery }
+        // Spent before anything that can fail or wait: a second resend needs a second "no such line".
+        mayResend.remove(key)
+        try original.validate()
+        guard original.originalUTF8.count <= endpoint.maximumRequestBytes else { throw FeedbackFailure.invalidInput }
+        let api = try await api(original, operation)
+        let result = try await exchange(operation) { try await api.submitFeedback(body: .binary(HTTPBody(original.originalUTF8))) }
+        switch result {
+        case .ok(let value): return try settle(value.body.json.receipt, original: original, operation: operation)
+        case .default(let status, _): throw FeedbackFailure.rejected(status)
+        }
+    }
+    public func canResend(actionID: String) -> Bool { mayResend.contains(Data(actionID.utf8)) && !confirmed.contains(Data(actionID.utf8)) }
     private func settle(_ receipt: Components.Schemas.FeedbackReceipt, original: FeedbackPending, operation: FeedbackOperation) throws -> FeedbackResult {
         try validateReceipt(receipt, original: original)
         try verify(original, operation: operation)
-        confirmed.insert(Data(original.actionID.utf8)); uncertainCreation = false
+        let key = Data(original.actionID.utf8)
+        confirmed.insert(key); mayResend.remove(key); uncertainCreation = false
+        // Only now, with a verified receipt for exactly these bytes, is the local copy removed. A failed removal changes
+        // nothing about what is known: the record stays, and the next look-up settles and removes it. Nothing is resent.
+        if (try? store?.remove(original)) != nil { cleaned.insert(key) }
         return .submitted(receipt)
     }
 }

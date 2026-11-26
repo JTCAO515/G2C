@@ -1,5 +1,6 @@
 """In-process case workflow for stage 2 synthetic exercises."""
 
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from threading import RLock
@@ -8,7 +9,7 @@ from uuid import UUID, uuid4
 
 from jt.common import Case, CaseExecution, PlaybookStep, Signal, SignalType
 
-from .catalog import PLAYBOOKS_BY_SIGNAL
+from .catalog import PLAYBOOKS_BY_SIGNAL, Playbook
 
 StaffAction = Literal["advance", "confirm", "reject"]
 StepAction = StaffAction | Literal["record_customer_consent"]
@@ -89,6 +90,7 @@ def _transition(
     step: PlaybookStep,
     action: StepAction,
     consent_step_id: str | None,
+    drafts: Mapping[str, str],
 ) -> CaseExecution | Denial:
     if action == "record_customer_consent":
         if consent_step_id != step.step_id:
@@ -106,7 +108,8 @@ def _transition(
     if action == "advance" and step.mode == "ai_draft_human_confirm":
         if current.draft is not None:
             return "draft_pending"
-        return _update(current, step_index=current.step_index, draft=f"合成演练草稿 · {step.step_id}")
+        draft = drafts.get(step.step_id, f"合成演练草稿 · {step.step_id}")
+        return _update(current, step_index=current.step_index, draft=draft)
     if action in ("confirm", "reject") and current.draft is None:
         return "draft_required"
     if action == "reject":
@@ -119,8 +122,19 @@ def _transition(
 class CaseWorkflow:
     """Own case creation and transitions. Consumers own identity checks and the audit store."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        playbooks: Mapping[SignalType, Playbook] = PLAYBOOKS_BY_SIGNAL,
+        clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+        case_id_factory: Callable[[], UUID] = uuid4,
+        drafts: Mapping[str, str] | None = None,
+    ) -> None:
         self._lock = RLock()
+        self._playbooks = dict(playbooks)
+        self._clock = clock
+        self._case_id_factory = case_id_factory
+        self._drafts = dict(drafts) if drafts is not None else {}
         self._cases: dict[UUID, CaseExecution] = {}
         self._signal_cases: dict[str, tuple[Signal, UUID]] = {}
         self._latest_by_key: dict[CaseKey, UUID] = {}
@@ -134,12 +148,12 @@ class CaseWorkflow:
                     raise IntakeDenied("conflicting content for an accepted signal ID")
                 return CaseIntake(self._cases[case_id], audit=None)
 
-            playbook = PLAYBOOKS_BY_SIGNAL.get(signal.signal_type)
+            playbook = self._playbooks.get(signal.signal_type)
             if playbook is None:
                 raise IntakeDenied("no playbook for this signal type")
             key = _case_key(signal)
             case_id = self._latest_by_key.get(key)
-            now = datetime.now(UTC)
+            now = self._clock()
             if case_id is not None and self._cases[case_id].case.status != "closed":
                 current = self._cases[case_id]
                 linked_case = current.case.model_copy(
@@ -150,7 +164,7 @@ class CaseWorkflow:
                 )
                 action = "merge"
             else:
-                case_id = uuid4()
+                case_id = self._case_id_factory()
                 case = Case(
                     schema_version="jt-case.v1",
                     case_id=case_id,
@@ -215,14 +229,14 @@ class CaseWorkflow:
             elif step is None:
                 reason = "case_closed"
             else:
-                result = _transition(current, step, action, consent_step_id)
+                result = _transition(current, step, action, consent_step_id, self._drafts)
                 if isinstance(result, CaseExecution):
                     current = result
                     self._cases[case_id] = current
                 else:
                     reason = result
             audit = CaseAuditEvent(
-                occurred_at=datetime.now(UTC),
+                occurred_at=self._clock(),
                 action=action,
                 case_id=case_id,
                 actor_id=actor_id,

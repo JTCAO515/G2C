@@ -13,6 +13,16 @@ struct LioAnswerFeedbackTests {
         #expect(LioAnswerFeedbackFeature.cleanedDetails(String(repeating: "字", count: 600)).count == 500)
     }
 
+    @MainActor @Test func ledgerRemembersConfirmedLinesByMessageAndExactText() {
+        let ledger = LioFeedbackLedger()
+        #expect(!ledger.contains(messageID: "m1", text: "This answer didn't help."))
+        ledger.record(messageID: "m1", text: "This answer didn't help.")
+        #expect(ledger.contains(messageID: "m1", text: "This answer didn't help."))
+        #expect(!ledger.contains(messageID: "m2", text: "This answer didn't help."), "another answer")
+        #expect(!ledger.contains(messageID: "m1", text: "This answer didn't help"), "other words")
+        #expect(!ledger.contains(messageID: "m1", text: "Wrong exit"), "details are their own line")
+    }
+
     @Test func flagIsOffUnlessTheBuildSaysYes() {
         #expect(LioAnswerFeedbackFeature.infoKey == "G2CAnswerFeedbackEnabled")
         #expect(!LioAnswerFeedbackFeature.enabled(infoValue: nil))

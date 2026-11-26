@@ -97,7 +97,8 @@ import Observation
         model.startAnother()
         #expect(model.problem.isEmpty && model.expectation.isEmpty && model.original == nil && model.state == .editing)
         #expect(await wire.calls.count == 1)
-        #expect(try h.store().pending().count == 1)
+        // #1855: a line the server confirmed is removed from the device; nothing unconfirmed is left behind.
+        #expect(try h.store().pending().isEmpty)
     }
     @Test func confirmationComesOnlyFromReceipt() async throws {
         let h = try Harness(); defer { h.clean() }
@@ -112,11 +113,12 @@ import Observation
         let first = try #require(model.original)
         model.startAnother()
         #expect(model.state == .editing && model.original == nil && model.problem.isEmpty && model.expectation.isEmpty)
-        #expect(try h.store().pending().first?.originalUTF8 == first.originalUTF8)
+        // Confirmed by its receipt, then removed from the device (#1855).
+        #expect(try h.store().pending().isEmpty)
         model.edit(problem: "Second voluntary feedback", expectation: "")
         await model.perform(try #require(model.prepareSubmit()))
         #expect(model.state == .submitted && model.original?.actionID != first.actionID)
-        #expect(try h.store().pending().count == 2)
+        #expect(try h.store().pending().isEmpty)
         #expect(await wire.calls.count == 2)
     }
 }
