@@ -159,8 +159,8 @@ window.G2C = {
    "priv2": "You can delete your account in the app at any time.",
    "priv3": "Your memory is yours: see it, correct it, delete it whenever you like.",
    "footTag": "Your personal agent for China.",
-   "companyName": "Guangzhou Chuangjing Technology Co., Ltd",
-   "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China",
+   "companyName": "Guangzhou Chuangjing Technology Co., Ltd.",
+   "companyAddress": "Room 410A, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue West, Tianhe District, Guangzhou, China",
    "toolsName": "Tools",
    "toolsRole": "In the app",
    "toolsList": [
@@ -378,7 +378,7 @@ window.G2C = {
    "priv3": "记忆归你所有：随时查看、更正或删除。",
    "footTag": "你在中国的私人助理。",
    "companyName": "广州创竞科技有限公司",
-   "companyAddress": "广州市天河区黄埔大道100号富力盈泰广场A座410室",
+   "companyAddress": "广州市天河区黄埔大道西100号富力盈泰广场A座410A室",
    "toolsName": "工具",
    "toolsRole": "在 App 里",
    "toolsList": [
@@ -595,8 +595,8 @@ window.G2C = {
    "priv2": "Вы можете в любой момент удалить аккаунт в приложении.",
    "priv3": "Вы можете просматривать, исправлять и удалять сохранённые сведения.",
    "footTag": "Ваш личный помощник в Китае.",
-   "companyName": "Guangzhou Chuangjing Technology Co., Ltd",
-   "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China",
+   "companyName": "Guangzhou Chuangjing Technology Co., Ltd.",
+   "companyAddress": "Room 410A, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue West, Tianhe District, Guangzhou, China",
    "toolsName": "Инструменты",
    "toolsRole": "В приложении",
    "toolsList": [
@@ -813,8 +813,8 @@ window.G2C = {
    "priv2": "Puedes eliminar tu cuenta en la app cuando quieras.",
    "priv3": "Puedes consultar, corregir o borrar lo que se recuerda de ti.",
    "footTag": "Tu asistente personal para China.",
-   "companyName": "Guangzhou Chuangjing Technology Co., Ltd",
-   "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China",
+   "companyName": "Guangzhou Chuangjing Technology Co., Ltd.",
+   "companyAddress": "Room 410A, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue West, Tianhe District, Guangzhou, China",
    "toolsName": "Herramientas",
    "toolsRole": "En la app",
    "toolsList": [
@@ -1031,8 +1031,8 @@ window.G2C = {
    "priv2": "Vous pouvez supprimer votre compte dans l’app à tout moment.",
    "priv3": "Consultez, corrigez ou supprimez les informations mémorisées à tout moment.",
    "footTag": "Votre assistant personnel pour la Chine.",
-   "companyName": "Guangzhou Chuangjing Technology Co., Ltd",
-   "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China",
+   "companyName": "Guangzhou Chuangjing Technology Co., Ltd.",
+   "companyAddress": "Room 410A, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue West, Tianhe District, Guangzhou, China",
    "toolsName": "Outils",
    "toolsRole": "Dans l’app",
    "toolsList": [
@@ -1249,8 +1249,8 @@ window.G2C = {
    "priv2": "يمكنك حذف حسابك من التطبيق في أي وقت.",
    "priv3": "يمكنك عرض المعلومات المحفوظة وتصحيحها أو حذفها متى شئت.",
    "footTag": "مساعدك الشخصي في الصين.",
-   "companyName": "Guangzhou Chuangjing Technology Co., Ltd",
-   "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China",
+   "companyName": "Guangzhou Chuangjing Technology Co., Ltd.",
+   "companyAddress": "Room 410A, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue West, Tianhe District, Guangzhou, China",
    "toolsName": "الأدوات",
    "toolsRole": "في التطبيق",
    "toolsList": [
