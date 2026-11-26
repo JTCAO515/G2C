@@ -3,13 +3,18 @@
 import argparse
 import sys
 import warnings
+from os import environ
 from getpass import GetPassWarning, getpass
 from pathlib import Path
 
+import psycopg
 import uvicorn
 
+from jt.synthetic import generate_dataset
+
 from .app import create_app
-from .auth import Auth, InvalidAccount
+from .auth import AccessDenied, Auth, InvalidAccount
+from .postgres import DATABASE_VARIABLE, PostgresStore
 from .store import MemoryStore
 
 
@@ -22,9 +27,30 @@ def main() -> None:
     if not 1024 <= args.port <= 65535 or not args.cert.is_file() or not args.key.is_file():
         parser.error("请提供有效的端口（1024 至 65535）和本地 TLS 文件。")
 
+    queue = None
+    if DATABASE_VARIABLE in environ:
+        queue = PostgresStore(environ[DATABASE_VARIABLE])
+        try:
+            queue.check_ready()
+            queue.seed(generate_dataset().signals)
+            with queue.locked():
+                needs_admin = not queue.accounts()
+        except (psycopg.Error, RuntimeError):
+            parser.error("工作台数据库未就绪或权限不符合要求。")
+        auth = Auth(queue, clock=queue.clock, monotonic=queue.clock)
+    else:
+        auth = Auth(MemoryStore())
+        needs_admin = True
+    if needs_admin:
+        bootstrap_admin(auth, parser)
+    print(f"登录：https://127.0.0.1:{args.port}/login （使用验证器下一组验证码）", flush=True)
+    uvicorn.run(create_app(auth, port=args.port, queue=queue), host="127.0.0.1", port=args.port,
+                ssl_certfile=str(args.cert), ssl_keyfile=str(args.key), proxy_headers=False, access_log=False)
+
+
+def bootstrap_admin(auth: Auth, parser: argparse.ArgumentParser) -> None:
     if not sys.stdin.isatty():
         parser.error("请在交互式终端中创建本地管理员。")
-    auth = Auth(MemoryStore())
     username = input("管理员账号：").strip()
     with warnings.catch_warnings():
         warnings.simplefilter("error", GetPassWarning)
@@ -36,12 +62,9 @@ def main() -> None:
             parser.error("终端无法隐藏输入。")
     try:
         auth.bootstrap_admin(username, password, seed, code)
-    except InvalidAccount:
+    except (InvalidAccount, AccessDenied):
         parser.error("无法创建管理员。请核对账号、密码及验证器设置。")
     del password, seed, code
-    print(f"登录：https://127.0.0.1:{args.port}/login （使用验证器下一组验证码）", flush=True)
-    uvicorn.run(create_app(auth, port=args.port), host="127.0.0.1", port=args.port,
-                ssl_certfile=str(args.cert), ssl_keyfile=str(args.key), proxy_headers=False, access_log=False)
 
 
 if __name__ == "__main__":

@@ -401,9 +401,10 @@ import CryptoKit
         try app.performAccessibilityAudit(for: .all)
         backFrom(label("Help", "帮助"))
         businessTap("memory.privacy")
-        let provider = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Context Jump LLC"))
+        let provider = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@",
+                                                            label("Guangzhou Chuangjing Technology Co., Ltd.", "广州创竞科技有限公司")))
         XCTAssertTrue(provider.firstMatch.waitForExistence(timeout: 10))
-        backFrom(label("Privacy notice (beta)", "隐私说明（内测版）"))
+        backFrom(label("Privacy summary", "隐私摘要"))
         businessTap("memory.support")
         XCTAssertTrue(businessElement("support.email").label.contains("hello@go2china.space"))
         backFrom(label("Support", "支持"))

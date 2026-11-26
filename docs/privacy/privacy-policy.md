@@ -1,183 +1,204 @@
-# Go2China 隐私政策 / Privacy Policy（草稿）
+# Go2China 隐私政策 / Privacy Policy
 
 <!--
-状态：草稿，待 JT 批准；未对外发布。Issue #1746（W4-2，总票 #1714）。
-同源：本文件是官网与 App 隐私政策的唯一文本来源。官网页（web/，W0-4 之后由官网线接入）与 App 内隐私页（替换 PublicInformation.swift 的内测说明，W4-3 #1747）都从本文件生成，不各自手写。生成方式在接入票里定。
-方括号【待 JT】处是主体信息或需要 JT 决定的内容，起草时不填。
-每节中文在前、英文在后，两种语言内容一致；不一致时以【待 JT：哪种语言为准】为准。
-不写尚未实装的功能或未经验证的期限（#225 正式法律相关意见「文案」一节）。
-
-【发布前提】本稿描述的是下列各项落地后的状态。对外发布（官网或 App 内对外可见）前，逐项确认已落地并与文字核对；任一项未落地，对应段落要删去或改写成现状。首次对外公开另须 JT 本人确认（统筹转达）。
-- 第 3、4 节的位置写法：#1833（打车坐标只用于该次请求、不记日志不落盘不进缓存键；附近发给高德的坐标转换、周边搜索、逆地理三类请求都降到 3 位小数）、#1832（定位用途说明与隐私清单申报）、#1748（定位单独成页、需要时才弹出，撤回入口「我的 → 位置」；统筹 2026-11-26 按 JT 预授权决定）。三张票都落地前，这些写法与实际行为不一致。总同意（#1747）里只写一句「定位另行询问」。
-- 第 3、5 节的单独同意：AI 模型、记忆在 #1747（总同意界面，其中只写一句「定位另行询问」）；位置在 #1748（单独成页、需要时才弹出）；真人服务在 #1772（确认页，分项勾选）。出境告知随各项同意一起给出：AI 模型在 #1747、位置在 #1748、真人服务在 #1772。
-- 第 6 节真人服务：#1768（契约）、#1769（存储与清理）、#1771（运营台）、#1772（确认页）、#1775（陪同服务协议含委托处理条款，JT 负责）。
-- 第 7 节真人服务 12 个月 / 90 天：#1769 的清理钩子落地并验证。
-- 第 5 节出境机制：按 #225 落实后填写。
-- 第 6 节：PIPIA 增补第 11 节第 9 项（用户在聊天里主动说出的时间地点、会面对象会随聊天发给百炼）对外部用户的处理方式由 JT 本人定，定了以后在此补告知。
+同源：本文件是官网 go2china.space/privacy 与 App 内隐私页的唯一文本来源，两处都从这里生成，不各自手写。
+原则：只写已经上线的事。尚未开放的能力放在第 12 节「开放后适用」，开放前不对外承诺。
+事实来源：出站数据流登记表 docs/privacy/outbound-dataflow.md；PIPIA 增补 docs/privacy/pipia-service-request.md；#225 正式法律相关意见。
+发布：JT 本人定 2026-12-01 正式公开（统筹转达）。公开首发（App Store 上架）前另请法律意见复核本文。
+运营主体出处：JT 2026-11-09 更正为广州创竞科技有限公司（#225 正文「JT 2026-11-09 事实更正 · 运营主体」、docs/scope.md「处理方与地域」行）；此前 #159 与构建 57 App 内说明写的 Context Jump LLC 是主体假设。#225 正式意见以美国主体为前提的段落是否需补充意见，见 #33 放行清单「需要 JT 确认」第 3 项。
+营业执照信息：JT 本人 2026-11-26 提供（统筹转达）。英文名称 JT 原写「Guangzhou Chuangjing Technology Co.LTd」，按通行写法规范为「Guangzhou Chuangjing Technology Co., Ltd.」，只是格式规范，不是改名。
+公开页不出现占位（官网生成器 `scripts/build_privacy_page.cjs --strict`）。
+依赖（统筹 2026-11-26 按 JT 预授权决定，随 12-01 一起上线）：
+- 第 5、6 节 Vercel 香港区域：#1872（`web/vercel.json` 固定 `/api/*` 到 hkg1）须在公开前合并。
+- 第 6 节抢先体验申请的境外处理勾选：#1878（政策页与勾选框）随政策一起合并。
+- 第 4、12 节位置精度：#1875（#1833）已合并到 main（c5da5dab），但香港现网仍是 4f81cad4（S 线 2026-11-26 只读核对），所以正文按现状写精确位置。**公开门槛**：只有 S 线把香港读回证据（发布源提交、读回时间、附近请求 3 位小数实测、日志无打车坐标）贴到 #1833 后，才改为附近降到约 100 米。
+锚点按生成器写法写在对应行的行尾（生成器只给英文版写 id，所以第 12 节中英两条都写）：recipients（第 5 节，避免生成器按节号默认给第 5 节 cross-border）、cross-border（第 6 节）、in-person-services、website-requests（第 12 节）。
 -->
 
-- 版本：【待 JT：版本号】　生效日期：【待 JT】
-- Version: [JT: version]　Effective date: [JT]
-
-<!-- 首次对外公开（官网或 App 内对外可见）须 JT 本人确认，由统筹转达。公开首发（M5）前另请法律意见复核本文。 -->
+- 版本：1.0　生效日期：2026 年 12 月 1 日
+- Version: 1.0　Effective date: 1 December 2026
+- 中英文如有不一致，以中文版为准。/ If the Chinese and English versions differ, the Chinese version prevails.
 
 ## 1. 我们是谁 / Who we are
 
-Go2China（以下简称「我们」）是帮助外国人在中国办事的本地助手 App 与网站 go2china.space。运营主体：【待 JT：营业执照全称、英文名称、注册地址】。如有疑问，请联系 hello@go2china.space。
+Go2China（以下简称「我们」）是帮助外国人在中国办事的本地助手，包括 Go2China iOS App 和网站 go2china.space。运营主体：广州创竞科技有限公司，注册地址：广州市天河区黄埔大道西100号富力盈泰广场A座410A室。联系我们：hello@go2china.space。
 
-Go2China ("we") is a local assistant app and website (go2china.space) that helps foreigners get things done in China. Operator: [JT: full legal name, English name, registered address]. Questions: hello@go2china.space.
+Go2China ("we") is a local assistant that helps foreigners get things done in China, made up of the Go2China iOS app and the website go2china.space. Operator: Guangzhou Chuangjing Technology Co., Ltd., registered at Room 410A, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue West, Tianhe District, Guangzhou, China. Contact: hello@go2china.space.
 
-## 2. 适用范围 / Scope
+## 2. 适用范围与当前状态 / Scope and current status
 
-本政策适用于 Go2China iOS App、官网 go2china.space，以及你通过它们请求的真人服务。你通过我们跳转到第三方平台（例如滴滴、Trip.com、Klook、12306）后，由该平台按其隐私政策处理你的信息。
+本政策适用于 Go2China iOS App 和官网 go2china.space。
 
-This policy covers the Go2China iOS app, the website go2china.space, and any in-person services you request through them. When we link you to a third-party platform (for example DiDi, Trip.com, Klook or 12306), that platform handles your information under its own privacy policy.
+- App 目前只通过 Apple TestFlight 向受邀测试者提供，还没有在 App Store 上架。
+- 官网目前提供产品介绍和「抢先体验」申请表。
+- 你通过我们跳转到第三方平台（例如滴滴、Trip.com、Klook、12306、景点官网）后，由该平台按其隐私政策处理你的信息。
+
+This policy covers the Go2China iOS app and the website go2china.space.
+
+- The app is currently offered only to invited testers through Apple TestFlight. It is not yet on the App Store.
+- The website currently offers product information and an early access application form.
+- When we send you to a third-party platform (for example DiDi, Trip.com, Klook, 12306 or an attraction's official site), that platform handles your information under its own privacy policy.
 
 ## 3. 我们处理哪些信息、为什么 / What we process and why
 
-<!-- 事实来源：docs/privacy/outbound-dataflow.md（#1743）。随登记表更新。 -->
+| 功能 | 信息 | 目的 |
+|---|---|---|
+| 账号 | 邀请码、账号标识；登录凭据保存在你设备的钥匙串里 | 登录、区分账号 |
+| 和 Lio 对话、规划行程 | 你发送的文字；Lio 的回答；你保存的行程 | 生成回答、规划和保存行程 |
+| 记忆 | Lio 会根据对话提出可以记住的偏好与事实（为此对话内容会发给 AI 模型）。这些候选随你的账号保存在服务器上；你点「记住」后才成为记忆、用于以后的对话 | 跨对话记住你，你可以查看、修改和删除记忆 |
+| 翻译 | 你输入的文字、录下的语音、拍摄或选择的图片（上传前去掉照片里的位置等元数据） | 翻译、朗读 |
+| 点餐 | 菜单照片（服务器不保存照片） | 识别并解释菜品 |
+| 打车 | 搜索词、上车点和目的地；选「当前位置」时为设备精确位置 | 查询地点、估价、生成滴滴叫车链接 |
+| 附近 | 设备精确位置 | 查找附近的地点、「我在哪」 |
+| 其他工具 | 城市、地点名、酒店地标、航班号、出行日期等你输入的查询条件 | 查询地点、路线、天气、汇率、航班、火车、酒店 |
+| 景点预约提醒 | 你选的景点和日期 | 在你的设备上按时提醒（本机通知，不发给我们的服务器） |
+| 问题反馈 | App 内目前没有提交反馈的入口；受邀测试者在内部测试群里发截图、问题记录和发生时间 | 处理问题 |
+| 用量与诊断 | 用量计数、错误记录 | 额度控制、排查故障 |
+| 官网抢先体验申请 | 称呼、邮箱、得知渠道、所在国家、计划出行时间、目的地、需求、备注 | 处理你的申请、通过邮件联系你 |
+| 和我们的邮件往来 | 你发给 hello@go2china.space 的邮件内容与邮箱地址 | 回复你 |
 
-| 功能 | 信息 | 目的 | 必需或可选 |
-|---|---|---|---|
-| 账号 | 邀请码、账号标识；登录凭据保存在你设备的钥匙串里 | 登录、区分账号 | 必需 |
-| 和 Lio 对话 | 你发送的文字；Lio 的回答；你保存的行程 | 生成回答、规划行程 | 使用该功能时必需 |
-| 记忆 | 你同意保存的偏好与事实 | 跨对话记住你 | 可选，单独同意 |
-| 翻译 | 你输入的文字、录下的语音、拍摄或选择的图片（上传前去掉照片里的位置等元数据） | 翻译、朗读 | 使用该功能时必需 |
-| 点餐 | 菜单照片 | 识别并解释菜品 | 使用该功能时必需 |
-| 打车 | 搜索词、上车点和目的地；选「当前位置」时为设备精确位置 | 查询地点、估价、生成滴滴叫车链接 | 使用该功能时必需；位置单独同意 |
-| 附近 | 设备位置（发给地图服务前降到约 100 米精度） | 查找附近的地点 | 使用该功能时必需；位置单独同意 |
-| 其他工具 | 城市、地点名、航班号、日期等你输入的查询条件 | 查询地点、路线、航班、火车、酒店 | 使用该工具时必需 |
-| 真人服务 | 称呼、电话号码、服务时间与地点、会面信息、备注；报价与支付状态、服务状态与凭据、服务纪要、你的评价 | 安排陪同，见第 6 节 | 请求真人服务时必需 |
-| 用量与诊断 | 用量计数、错误记录 | 额度控制、排查故障 | 必需 |
-| 问题反馈 | 你主动提交的内容 | 处理问题 | 可选 |
+| Feature | Information | Purpose |
+|---|---|---|
+| Account | Invite code, account identifier; sign-in credentials stay in your device keychain | Sign-in, keeping accounts apart |
+| Chatting with Lio, planning trips | Text you send; Lio's replies; trips you save | Replies, planning and saving trips |
+| Memory | Lio suggests preferences and facts it could remember from your chats (the chat content goes to the AI model for this). These suggestions are stored on our servers with your account; they become memories used in later chats only when you tap Remember | Remembering you across chats; you can view, edit and delete memories |
+| Translation | Text you type, voice you record, photos you take or choose (location and other metadata removed before upload) | Translating and reading aloud |
+| Menu | Menu photos (our server does not keep them) | Reading and explaining dishes |
+| Taxi | Search terms, pickup and destination; your precise device location when you choose "Current location" | Finding places, fare estimates, DiDi ride links |
+| Nearby | Your precise device location | Finding places near you, "Where am I" |
+| Other tools | City, place names, hotel landmarks, flight numbers, travel dates and other search terms you enter | Places, routes, weather, exchange rates, flights, trains, hotels |
+| Sight booking reminders | The sight and date you choose | Reminders on your device (local notifications, not sent to our servers) |
+| Feedback | There is no way to submit feedback in the app yet; invited testers share screenshots, the issue record and the time in the internal testing group | Handling the issue |
+| Usage and diagnostics | Usage counts, error records | Quotas, troubleshooting |
+| Website early access application | Name, email, how you heard of us, country, planned travel time, destinations, needs, notes | Handling your application and contacting you by email |
+| Emails with us | The content of emails you send to hello@go2china.space and your email address | Replying to you |
 
-| Feature | Information | Purpose | Required or optional |
-|---|---|---|---|
-| Account | Invite code, account identifier; sign-in credentials stay in your device keychain | Sign-in, keeping accounts apart | Required |
-| Chatting with Lio | Text you send; Lio's replies; trips you save | Replies and trip planning | Required to use the feature |
-| Memory | Preferences and facts you agree to save | Remembering you across chats | Optional, separate consent |
-| Translation | Text you type, voice you record, photos you take or choose (location and other metadata removed before upload) | Translating and reading aloud | Required to use the feature |
-| Menu | Menu photos | Reading and explaining dishes | Required to use the feature |
-| Taxi | Search terms, pickup and destination; your precise device location when you choose "Current location" | Finding places, fare estimates, DiDi ride links | Required to use the feature; location needs separate consent |
-| Nearby | Your device location (reduced to about 100 m before it goes to the map service) | Finding places near you | Required to use the feature; location needs separate consent |
-| Other tools | City, place names, flight numbers, dates and other search terms you enter | Places, routes, flights, trains, hotels | Required to use the tool |
-| In-person services | Name to address you by, phone number, service time and place, meeting details, notes; quote and payment status, service status and records, service notes, your rating | Arranging a companion, see section 6 | Required to request a service |
-| Usage and diagnostics | Usage counts, error records | Quotas, troubleshooting | Required |
-| Feedback | What you choose to submit | Handling the issue | Optional |
+**我们不收集**护照号等证件号码、支付卡号和你的通讯录；App 内不付款。我们不出售你的个人信息，也不用于广告。请不要在对话、翻译或申请表里填写健康、证件、宗教等敏感信息，或可识别他人的信息。
 
-**我们不收集**：护照号等证件号码、支付卡号、你的通讯录。只有在你使用打车或附近、并单独同意后，我们才读取设备位置。位置的同意单独询问，在你第一次需要时才弹出，不在首次启动时一并勾选。每次只读一次，不在后台持续定位。
+**We do not collect** passport or other ID numbers, payment card numbers, or your contacts, and nothing is paid for in the app. We do not sell your personal information or use it for advertising. Please do not enter health, ID or religious information, or information that identifies other people, in chats, translation or application forms.
 
-- 去向：精确位置发到我们的香港服务；打车时转给滴滴；查找附近时降到约 100 米精度后发给高德。
-- 不和你的账号一起保存，不写入记忆，也不发给 AI 模型。
-- 撤回：在「我的 → 位置」里关闭，或在系统设置里关闭 Go2China 的定位权限。
-- 你的定位同意记录按账号保存在本机，同一台设备上的其他账号读不到；退出登录时保留，注销账号时删除。
+## 4. 位置 / Location
 
-**We do not collect**: passport or other ID numbers, payment card numbers, or your contacts. We read your device location only when you use Taxi or Nearby and have given separate consent. We ask for location consent on its own, the first time you need it, not as part of the consent at first launch. We read it once each time and never track you in the background.
+- 只有在你使用「打车」或「附近」时，App 才通过 iOS 系统权限读取设备位置；每次只读一次，不在后台持续定位。
+- 去向：精确位置发到我们在香港的服务；打车时转给滴滴，查找附近时转给高德。
+- 位置不和你的账号一起保存，不写入记忆，也不发给 AI 模型。查找附近时，服务器会在内存里按位置短暂缓存查询结果（约 1 分钟），不与账号关联。
+- 撤回：在 iOS「设置」里关闭 Go2China 的定位权限，或者不用这两个功能；其他功能照常可用，打车时可以手动选上车点。
 
-- Where it goes: your precise location goes to our service in Hong Kong; for Taxi it is passed to DiDi; for Nearby it is reduced to about 100 m before it goes to AMap.
-- It is not stored with your account, not saved to memory, and not sent to the AI model.
-- To withdraw: turn it off in Me → Location, or turn off location access for Go2China in system Settings.
-- Your location consent is stored on this device per account, and other accounts on the same device cannot read it. It is kept when you sign out and deleted when you close your account.
+- The app reads your device location through the iOS permission only when you use Taxi or Nearby. It reads it once each time and never tracks you in the background.
+- Where it goes: your precise location goes to our service in Hong Kong; for Taxi it is passed to DiDi, and for Nearby to AMap.
+- Your location is not stored with your account, not saved to memory, and not sent to the AI model. For Nearby, our server briefly caches results in memory by location (about 1 minute), not linked to your account.
+- To withdraw: turn off location access for Go2China in iOS Settings, or don't use these two features. Everything else keeps working, and for Taxi you can choose the pickup point by hand.
 
-<!-- 位置相关的写法以文首「发布前提」第一条为准：#1833（打车坐标只用于该次请求、不记日志不落盘不进缓存键；附近发给高德的坐标转换、周边搜索、逆地理三类请求都降到 3 位小数）、#1832（定位用途说明与隐私清单申报）、#1748（定位单独成页、需要时才弹出、撤回入口）。三张票都落地前，本节与现状不符，不能对外发布。 -->
+## 5. 我们与谁共享 / Who we share with {#recipients}
 
-我们不出售你的个人信息，也不用于广告。
+我们只把完成你所用功能需要的信息发给下列接收方。发给阿里云百炼、高德、滴滴、飞常准的请求不带你的账号、邮箱或手机号。
 
-We do not sell your personal information or use it for advertising.
-
-## 4. 我们与谁共享 / Who we share with
-
-我们只把完成你所用功能需要的信息发给下列接收方。发给百炼、高德、滴滴、飞常准的请求不带你的账号、邮箱或手机号。【待核对：各接收方的签约主体全称】
-
-We send each recipient only what the feature you use needs. Requests to Model Studio, AMap, DiDi and VariFlight do not include your account, email or phone number. [To verify: each recipient's contracting entity]
+We send each recipient only what the feature you use needs. Requests to Alibaba Cloud Model Studio, AMap, DiDi and VariFlight do not include your account, email or phone number.
 
 | 接收方 / Recipient | 所在地 / Location | 收到什么 / What they receive | 用途 / Purpose |
 |---|---|---|---|
+| 阿里云（中国香港）/ Alibaba Cloud (Hong Kong) | 中国香港 / Hong Kong, China | 服务器与每日备份上的全部数据 / All data on our servers and daily backups | 代我们托管 / Hosting on our behalf |
 | 阿里云百炼（通义千问）/ Alibaba Cloud Model Studio (Qwen) | 中国大陆北京 / Beijing, mainland China | 对话文字和行程内容；翻译的文字、语音、图片；菜单照片 / Chat text and trip content; text, voice and images for translation; menu photos | 生成回答、翻译、识别菜单 / Replies, translation, menu reading |
-| 高德地图开放平台 / AMap (Gaode) | 中国大陆 / Mainland China | 地点和路线查询词、城市、酒店搜索的地标、火车出发日期；附近功能的约 100 米精度位置 / Place and route queries, city, landmarks for hotel search, train departure date; location at about 100 m for Nearby | 地点、路线、天气、酒店、火车、附近 / Places, routes, weather, hotels, trains, Nearby |
-| 滴滴出行 / DiDi | 中国大陆 / Mainland China | 打车搜索词、上车点（可为设备精确位置）、目的地 / Taxi search terms, pickup (may be precise device location), destination | 估价、生成叫车链接；你在滴滴 App 里下单付款 / Estimates and ride links; you book and pay in the DiDi app |
+| 高德地图开放平台 / AMap (Gaode) | 中国大陆 / Mainland China | 地点和路线查询词、城市、酒店地标、火车出发日期；附近功能的设备位置 / Place and route queries, city, hotel landmarks, train departure dates; your device location for Nearby | 地点、路线、天气、酒店、火车、附近 / Places, routes, weather, hotels, trains, Nearby |
+| 滴滴出行 / DiDi | 中国大陆 / Mainland China | 打车搜索词、上车点（可为设备精确位置）、目的地 / Taxi search terms, pickup (may be your precise device location), destination | 估价、生成叫车链接；你在滴滴 App 里下单付款 / Estimates and ride links; you book and pay in the DiDi app |
 | 飞常准 / VariFlight | 中国大陆 / Mainland China | 航班号、机场、日期 / Flight number, airports, date | 航班查询 / Flight lookup |
-| 阿里云（香港）/ Alibaba Cloud (Hong Kong) | 中国香港 / Hong Kong, China | 服务器与备份上的全部数据 / All data on our servers and backups | 代我们托管 / Hosting on our behalf |
-| 真人服务陪同人员 / In-person companions | 广州 / Guangzhou | 见第 6 节 / See section 6 | 提供你请求的服务 / Providing the service you requested |
+| Vercel Inc. | 美国公司；官网接口运行在 Vercel 香港区域，静态页面与平台访问日志不受该区域设置控制 / A US company; website endpoints run in Vercel's Hong Kong region, while static pages and platform access logs are not bound to that region | 官网访问，以及你在官网提交的申请（我们的接口代码转发时不保存原文；Vercel 平台记录 IP、路径等访问信息）/ Website visits and applications you submit (our endpoint code forwards them without storing the text; the Vercel platform logs access details such as IP address and path) | 代我们托管官网和表单接口 / Hosting the website and its form endpoints on our behalf |
+| Jotform Inc. | 美国 / United States | 抢先体验申请的全部字段 / All fields of the early access application | 代我们保存和管理抢先体验申请 / Storing and managing early access applications on our behalf |
+| Spacemail（Spaceship 旗下邮箱服务）/ Spacemail (Spaceship's email service) | 服务商位于美国，邮件可能存储在中国境外 / Provider based in the United States; emails may be stored outside China | 你和 hello@go2china.space 之间的邮件 / Emails between you and hello@go2china.space | 收发邮件 / Sending and receiving email |
+| Apple | 美国等 / United States and elsewhere | 通过 TestFlight 分发 App；你在 TestFlight 里提交的反馈和崩溃报告；App 内地图由 Apple MapKit 显示 / App distribution through TestFlight; feedback and crash reports you submit in TestFlight; in-app maps shown by Apple MapKit | 按 Apple 的隐私政策处理 / Handled under Apple's privacy policy |
 
-**你点开的第三方链接**：打开 Trip.com（酒店、火车、机票、景点）时，链接里会带上你查询的城市、酒店、日期和人数；打开高德地图或 Apple 地图导航时，链接里带目的地坐标；打开 Klook、12306 的链接不带你的信息。打开后由对方按其隐私政策处理。App 内地图由 Apple MapKit 显示。
+**你点开的第三方链接**：打开 Trip.com（酒店、火车、机票、景点）时，链接里会带上你查询的城市、酒店、日期和人数；打开滴滴叫车链接时带上车点和目的地坐标；打开高德地图或 Apple 地图导航时带目的地坐标或站名；打开 Klook、12306 和景点官网的链接不带你的信息。打开后由对方按其隐私政策处理。
 
-**Third-party links you open**: Trip.com links (hotels, trains, flights, attractions) carry the city, hotel, dates and number of guests you searched for. Navigation links to AMap or Apple Maps carry the destination coordinates. Links to Klook and 12306 carry none of your information. Once opened, that service handles your information under its own policy. In-app maps are shown by Apple MapKit.
+**Third-party links you open**: Trip.com links (hotels, trains, flights, attractions) carry the city, hotel, dates and number of guests you searched for. DiDi ride links carry the pickup and destination coordinates. Navigation links to AMap or Apple Maps carry the destination coordinates or station name. Links to Klook, 12306 and attraction sites carry none of your information. Once opened, that service handles your information under its own policy.
 
-## 5. 存放地点与跨境 / Where data is stored and cross-border transfers
+## 6. 存放地点与跨境 / Where data is stored and cross-border transfers {#cross-border}
 
-你的账号、对话、行程、记忆和服务请求存放在我们位于中国香港的服务器（阿里云中国香港），每日备份存放在中国香港的对象存储。
+你的账号、对话、行程和记忆存放在我们位于中国香港的服务器，每日备份存放在中国香港的对象存储。你的信息会在中国大陆与境外之间传输：
 
-- 生成回答、翻译、识别菜单时，相关内容会从香港发送到中国大陆北京的阿里云百炼处理。
-- 使用地点、路线、打车、附近、航班工具时，查询条件会从香港发送到位于中国大陆的高德、滴滴、飞常准。
-- 你在中国大陆使用 App 时，你的信息会从大陆传到香港。
-- 你请求真人服务时，第 6 节所列信息会从香港提供给广州的陪同人员；陪同的服务纪要会传回香港。
+- 你在中国大陆使用 App 时，信息从大陆传到香港。
+- 生成回答、翻译、识别菜单时，相关内容从香港发到北京的阿里云百炼；使用地点、路线、打车、附近、航班工具时，查询条件从香港发到位于中国大陆的高德、滴滴、飞常准。
+- 官网抢先体验申请先传到中国香港处理（官网接口由 Vercel 托管，运行在香港区域），再转给位于美国的 Jotform；你和我们的邮件由位于美国的 Spacemail 收发，可能存储在中国境外。
+- 提交抢先体验申请前，请你勾选「同意传到中国大陆以外（中国香港和美国）处理」；不勾选无法提交。
 
-在首次把你的对话发送给 AI 模型前，以及首次使用位置、请求真人服务前，我们会在 App 内单独征得你的同意。【待 JT：出境所需的标准合同、认证或评估，按 #225 路径在对外开放前落实，并在此写明】
+**依据**：上述传输是为向你提供你请求的服务、履行与你之间的约定所必需（《个人信息保护法》第十三条第一款第二项）；向境外提供个人信息，我们按《促进和规范数据跨境流动规定》中为订立、履行个人作为一方当事人的合同所必需的情形处理，并向你告知接收方、目的、方式和信息种类（见第 5 节）。其中设备位置和记忆建议目前只对受邀内部测试账号开放；对外部用户开放前，我们会另行取得你的单独同意（见第 12 节）。这些依据将在公开首发前另请法律意见复核。
 
-Your account, chats, trips, memories and service requests are stored on our servers in Hong Kong, China (Alibaba Cloud Hong Kong), with daily backups in object storage in Hong Kong.
+**你的权利**：你可以向我们或境外接收方行使查阅、更正、删除等权利，方式见第 8 节；对跨境提供有疑问，可以发邮件到 hello@go2china.space。
 
-- For replies, translation and menu reading, the relevant content goes from Hong Kong to Alibaba Cloud Model Studio in Beijing, mainland China.
-- For places, routes, taxi, nearby and flight tools, your search terms go from Hong Kong to AMap, DiDi and VariFlight in mainland China.
-- When you use the app in mainland China, your information is transferred from the mainland to Hong Kong.
-- When you request an in-person service, the information in section 6 is provided from Hong Kong to the companion in Guangzhou, and the companion's service notes come back to Hong Kong.
+Your account, chats, trips and memories are stored on our servers in Hong Kong, China, with daily backups in object storage in Hong Kong. Your information moves between the Chinese mainland and places outside it:
 
-We ask for your separate consent in the app before we first send your chats to the AI model, and before you first use location or request an in-person service. [JT: cross-border mechanisms (standard contract, certification or assessment) to be put in place under #225 before external launch and stated here]
+- When you use the app in mainland China, your information goes from the mainland to Hong Kong.
+- For replies, translation and menu reading, the relevant content goes from Hong Kong to Alibaba Cloud Model Studio in Beijing; for places, routes, taxi, nearby and flight tools, your search terms go from Hong Kong to AMap, DiDi and VariFlight in mainland China.
+- Website early access applications are first transferred to Hong Kong, China for processing (the website endpoint is hosted by Vercel and runs in its Hong Kong region), then go to Jotform in the United States; emails between you and us go through Spacemail, a provider in the United States, and may be stored outside China.
+- Before you submit an early access application, you tick "I agree to my information being processed outside mainland China (Hong Kong, China and the United States)". Without it, the application cannot be submitted.
 
-## 6. 真人服务 / In-person services
+**Basis**: These transfers are necessary to provide the services you ask for and to perform our arrangement with you (Article 13(1)(2) of the Personal Information Protection Law). For transfers outside the Chinese mainland we rely on the situation in the Provisions on Promoting and Regulating Cross-Border Data Flows where a transfer is necessary to conclude or perform a contract to which you are a party, and we tell you the recipients, purposes, methods and types of information (see section 5). Device location and memory suggestions are currently available only to invited internal test accounts; before they are offered to external users, we will ask for your separate consent (see section 12). These bases will be reviewed by legal counsel before public launch.
 
-部分服务由真人提供，首个是广州的中英商务陪同。提交前，确认页会列出将与陪同人员共享的信息，并写明服务由真人提供、陪同人员称呼、到场时间、取消规则和由谁退款。你单独同意后我们才会提交。
-
-陪同人员受我们委托提供服务，按服务协议只为本次服务使用你的信息、服务结束后删除、不得转交他人。陪同只能看到完成本次服务需要的信息（称呼、语言、时间地点、会面信息、当天联系的电话号码），从服务安排好到服务结束后 24 小时内可见；看不到你的账号、对话、行程全文、记忆和报价。服务状态在 App 内更新。
-
-陪同服务按次收费，在 App 外付款，不通过 Apple App 内购买。【待 JT：收款方式与收款主体】【待 JT：PIPIA 增补第 11 节第 9 项的告知】
-
-请只填写陪同需要知道的内容，不要在备注里填写健康、证件或宗教信息；如需填写会面对象的信息，请只填称呼和公司名。
-
-Some services are provided by real people. The first is an English–Chinese business companion in Guangzhou. Before you submit, the confirmation page lists the information we will share with the companion and states that the service is provided by a person, the companion's name, arrival time, cancellation rules and who handles refunds. We only submit after you give separate consent.
-
-Companions act on our behalf. Under their service agreement they use your information only for this service, delete it afterwards and do not pass it on. A companion sees only what is needed for this service (how to address you, language, time and place, meeting details, and a phone number for that day), from when the service is arranged until 24 hours after it ends. They cannot see your account, chats, full trips, memories or the price. Service status is updated in the app.
-
-Companion services are paid per service, outside the app, not through Apple in-app purchase. [JT: payment method and receiving entity] [JT: notice for PIPIA addendum section 11 item 9]
-
-Please include only what the companion needs to know. Do not put health, ID or religious information in the notes. If you mention the people you are meeting, include only their name and company.
+**Your rights**: You can exercise your rights to access, correct and delete your information with us or with the overseas recipients, as set out in section 8. For questions about cross-border transfers, email hello@go2china.space.
 
 ## 7. 保存多久 / How long we keep it
 
-【按 #225 意见逐类核对后定稿，不沿用旧内测文案的 30/30/30/180 天。以下为已确认或已实装的口径：】
-
-- 记忆、对话、行程：保存到你删除或注销账号；系统不会因长期未使用而删除（ADR-0006）。【待 JT：按 PIPL 第 19、47 条逐类审核是否有持续必要】
-- 运行日志与诊断：政策目标 90 天【待核对实际清理任务覆盖范围】。
-- 备份：按对象创建时间滚动 30 天；恢复时先重放删除标记，已删除的数据不会因恢复而重新出现。
+- 记忆、对话、行程：保存到你删除或注销账号；系统不会因为长期未使用而删除。
+- 记忆候选：随账号保存，注销账号时删除。
+- 运行日志与诊断：政策目标 90 天。
+- 备份：按对象创建时间滚动保存 30 天；恢复时先重放删除记录，已删除的数据不会因恢复而重新出现。
 - 离线行程：最后一次成功同步起最多 14 天可读，到期停止读取。
-- 真人服务：请求、状态与凭据在服务完成后 12 个月删除；服务纪要 90 天删除。
+- 抢先体验申请：收集后 12 个月删除。
+- 和我们的邮件往来：形成服务的，服务完成后 12 个月删除；没有形成服务的询问，最后一次往来后 6 个月删除。
 
-- Memories, chats and trips: kept until you delete them or close your account; we do not delete them for inactivity (ADR-0006). [JT: review each category for continued necessity]
-- Operational logs and diagnostics: 90-day policy target [to verify against the actual cleanup jobs].
+- Memories, chats and trips: kept until you delete them or close your account; we do not delete them for inactivity.
+- Memory suggestions: stored with your account and deleted when you close your account.
+- Operational logs and diagnostics: 90-day policy target.
 - Backups: rolling 30 days from object creation; restores replay deletions first, so deleted data does not come back.
 - Offline trips: readable for up to 14 days after the last successful sync, then reading stops.
-- In-person services: requests, status and records are deleted 12 months after the service; service notes after 90 days.
+- Early access applications: deleted 12 months after collection.
+- Emails with us: if they led to a service, deleted 12 months after the service is completed; other enquiries, 6 months after the last message.
 
 ## 8. 你的权利 / Your rights
 
-你可以查阅、更正、删除你的信息，撤回同意，注销账号，并要求解释本政策。【按实际构建写入口：哪些在 App 内可做、哪些发邮件】请发邮件到 hello@go2china.space，我们会在【待 JT：时限】内回复。撤回同意不影响撤回前已进行的处理；已经发出的请求无法在传输途中召回，但我们会依法协助删除。
+你可以查阅、更正、删除你的信息，撤回同意，注销账号，并要求我们解释本政策。
 
-You can access, correct and delete your information, withdraw consent, close your account, and ask us to explain this policy. [In-app paths per the actual build] Email hello@go2china.space and we will reply within [JT: time limit]. Withdrawing consent does not affect processing before withdrawal. Requests already sent cannot be recalled in transit, but we will help delete them as the law requires.
+- 在 App 内：在「我的」里查看、修改和删除记忆，或注销账号。
+- 其他请求（包括删除抢先体验申请、邮件往来）：发邮件到 hello@go2china.space。我们会先核对你就是当时提交信息时使用的邮箱或账号，在 15 个工作日内答复，最迟 30 天内处理完。
+- 撤回同意不影响撤回前已进行的处理；已经发出的请求无法在传输途中召回，但我们会依法协助删除。
+
+You can access, correct and delete your information, withdraw consent, close your account, and ask us to explain this policy.
+
+- In the app: under Me, view, edit and delete memories, or close your account.
+- Other requests (including deleting an early access application or emails with us): email hello@go2china.space. We first check that you are using the same email address or account you used when you gave us the information, reply within 15 business days, and complete the request within 30 days at the latest.
+- Withdrawing consent does not affect processing before withdrawal. Requests already sent cannot be recalled in transit, but we will help delete them as the law requires.
 
 ## 9. 未成年人 / Children
 
-Go2China 面向成年人。我们不会在知情的情况下收集未满【待 JT：年龄】周岁者的个人信息。
+Go2China 面向 18 周岁及以上的成年人。我们不会在知情的情况下收集未满 18 周岁者的个人信息；发现后会删除。
 
-Go2China is for adults. We do not knowingly collect personal information from anyone under [JT: age].
+Go2China is for adults aged 18 and over. We do not knowingly collect personal information from anyone under 18, and we delete it if we find out.
 
 ## 10. 安全 / Security
 
-传输加密；服务密钥只放在服务器，不在 App 里；真人服务上线后，员工按名单登录运营台，查看留审计；陪同人员只看到最少必要信息。
+传输加密；服务密钥只放在服务器，不在 App 里；照片上传前去掉位置等元数据；发给地图、打车、航班服务商的请求不带账号信息。
 
-Data is encrypted in transit; service keys are kept on our servers, never in the app; once in-person services launch, staff sign in to the operations console from an approved list and every view is logged; companions see only the minimum they need.
+Data is encrypted in transit; service keys are kept on our servers, never in the app; location and other metadata are removed from photos before upload; requests to map, taxi and flight providers carry no account details.
 
 ## 11. 政策更新 / Changes
 
-我们会在本页公布新版本和生效日期。涉及处理目的、接收方或跨境的重大变化，会在 App 内提示，需要时重新征得你的同意。
+我们会在本页公布新版本和生效日期。涉及处理目的、接收方或跨境的重大变化，会在 App 内或通过邮件提示，需要时重新征得你的同意。
 
-We post new versions and their effective dates on this page. For material changes to purposes, recipients or cross-border transfers, we notify you in the app and ask for consent again where required.
+We post new versions and their effective dates on this page. For material changes to purposes, recipients or cross-border transfers, we notify you in the app or by email and ask for consent again where required.
+
+## 12. 开放后适用 / Applies once launched
+
+以下能力还没有开放。开放时我们会先更新本政策，在 App 或官网上单独征得你的同意，再开始处理相关信息。
+
+- **真人服务**（首个是广州中英商务陪同）：由真人提供，提交前确认页会列出将与陪同人员共享的信息并分项征得同意；陪同人员受我们委托、只看到完成本次服务需要的信息；按次收费，在 App 外付款。 {#in-person-services}
+- **官网真人服务请求表**：在官网「广州中英商务陪同」表单提出请求，收集称呼、邮箱、日期和说明（选填），提交到我们自己的后端，由工作人员通过邮件跟进，不经过第三方表单服务；谈妥后再转成正式的服务请求。提交前请你确认已阅读本政策，并分三项征得你的同意：处理时间地点等行踪信息；提供给陪同人员；传到中国大陆以外（中国香港和美国）处理（官网接口由 Vercel 托管，运行在香港区域；App 服务在阿里云香港；回复邮件由美国的 Spacemail 收发）。具体时间、地点、会面对象和当天联系电话，我们在回复邮件里和你确认后再记录，在此之前陪同人员看不到你的任何联系方式。 {#website-requests}
+- **App 内同意界面与定位单独询问页**：首次启动时的总同意，以及使用位置前的单独询问和「我的 → 位置」撤回入口。
+- **位置精度调整**：查找附近时，发给高德前把位置降到约 100 米精度。
+- **App 内问题反馈**：在 Lio 的回答下点「没帮上」并可选填补充说明，发到我们在香港的服务，按账号保存，注销账号时删除。
+
+The following are not launched yet. Before launching any of them, we will update this policy and ask for your separate consent in the app or on the website before processing the related information.
+
+- **In-person services** (the first is an English–Chinese business companion in Guangzhou): provided by real people. Before you submit, a confirmation page lists the information to be shared with the companion and asks for separate consents. Companions act on our behalf and see only what this service needs. Paid per service, outside the app. {#in-person-services}
+- **Website in-person service request form**: request a companion through the "A business companion in Guangzhou" form on the website by giving your name, email, a date and an optional note. It goes to our own backend, where our staff follow up by email, not through any third-party form service; once details are agreed, it becomes a formal service request. Before you submit, the form asks you to confirm you have read this policy and to give three separate consents: processing time and place information; sharing it with the companion; and processing outside mainland China (Hong Kong, China and the United States) (the website endpoint is hosted by Vercel and runs in its Hong Kong region; the app service runs on Alibaba Cloud Hong Kong; reply emails go through Spacemail in the United States). We confirm the exact time, place, who you are meeting and a phone number for the day with you by email before recording them; until then the companion cannot see any of your contact details. {#website-requests}
+- **In-app consent screens and a separate location prompt**: a consent screen at first launch, a separate prompt before location is used, and a Me → Location switch to withdraw.
+- **Location precision**: for Nearby, location reduced to about 100 m before it goes to AMap.
+- **In-app feedback**: tap "Didn't help" under a Lio answer and optionally add a note. It goes to our service in Hong Kong, is stored with your account and is deleted when you close your account.

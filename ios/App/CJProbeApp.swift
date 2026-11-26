@@ -335,6 +335,12 @@ struct LioMenuSettings: View {
         Button(shell.language.text("Internal demo information", "内部演示说明")) { information.isPresented = true }
             .frame(minHeight: 44, alignment: .leading)
             .accessibilityIdentifier("lio.information")
+        // #1880: the privacy summary (policy 1.0), reachable from Me in every Lio build.
+        NavigationLink(PrivacySummary.title(shell.language)) {
+            PrivacyNoticeView(language: shell.language, showsSupportLink: false)
+        }
+        .frame(minHeight: 44, alignment: .leading)
+        .accessibilityIdentifier("lio.privacy-summary")
     }
 }
 
