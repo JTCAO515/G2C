@@ -125,6 +125,10 @@ struct LioTripTask: Identifiable, Equatable, Sendable {
 struct LioTripStopRef: Equatable, Sendable {
     let name: String
     let time: String?
+    /// A template's English name (#1725); nil for a chat plan.
+    var nameEN: String? = nil
+
+    func name(_ language: LioLanguage) -> String { language == .chinese ? name : (nameEN ?? name) }
 }
 
 /// One day of the plan as the trip home shows it.
@@ -334,7 +338,7 @@ struct LioTripChecklist: Equatable, Sendable {
             // Only dates the plan itself states; an undated plan has no visit day to count releases from.
             let visit = day.date.flatMap(LioTripDay.init) ?? start?.tripDay(day.number)
             for item in day.items {
-                guard let rule = LioAttractionBookingRule.match(nameZH: item.label, nameEN: item.label),
+                guard let rule = LioAttractionBookingRule.match(nameZH: item.label, nameEN: item.labelEN ?? item.label),
                       rule.requirement == .required else { continue }
                 let key = "booking.\(rule.id).\(visit?.description ?? "undated")"
                 guard seen.insert(key).inserted else { continue }
@@ -421,7 +425,7 @@ struct LioTripChecklist: Equatable, Sendable {
             // Places without a time keep their order and count as still to come. Times are `HH:mm[:ss]`.
             let upcoming = stops.drop(while: { item in item.startTime.map { $0.prefix(5) < clock } ?? false })
             if stops.isEmpty || !upcoming.isEmpty {
-                let next = upcoming.first.map { LioTripStopRef(name: $0.label, time: $0.startTime) }
+                let next = upcoming.first.map { LioTripStopRef(name: $0.label, time: $0.startTime, nameEN: $0.labelEN) }
                 return .today(day: day, next: next, remaining: upcoming.count)
             }
             if case .inChina = phase, let saved = input.hotelSaved { return .backToHotel(saved: saved) }
@@ -489,7 +493,7 @@ struct LioTripChecklist: Equatable, Sendable {
         return plan.days.filter { $0.number >= first && $0.number < first + 2 }.map { day in
             let date = day.date.flatMap(LioTripDay.init) ?? start?.tripDay(day.number)
             return LioTripScheduleDay(number: day.number, date: date, isToday: day.number == todayNumber,
-                                      stops: day.items.map { LioTripStopRef(name: $0.label, time: $0.startTime) })
+                                      stops: day.items.map { LioTripStopRef(name: $0.label, time: $0.startTime, nameEN: $0.labelEN) })
         }
     }
 }

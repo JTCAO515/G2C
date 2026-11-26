@@ -4,6 +4,7 @@ Usage: uv run --locked python -B scripts/test.py
 """
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 
@@ -12,7 +13,7 @@ BACKEND = ROOT / 'backend'
 
 # Domain pytest suites that need no database (feasibility/needs/trip run in pg_suites.py).
 DOMAINS = ('agent', 'auth', 'cleanup', 'draft', 'fact', 'feedback', 'manual_edit', 'memory_jobs',
-           'memory_withdrawal', 'message', 'place', 'run', 'usage')
+           'memory_withdrawal', 'message', 'place', 'run', 'service_request', 'usage')
 # cj_api wire checks that need a PostgreSQL config run in pg_suites.py.
 PG_WIRE_CHECKS = {'feasibility_wire_checks.py', 'needs_cohost_checks.py',
                   'memory_management_wire_checks.py', 'memory_cohost_checks.py'}
@@ -103,6 +104,13 @@ def main():
     # #1757: annotates facts due within 14 days (warning) or expired (error); exits 0 on any date.
     results.append(run('fact expiry alarm', ['-B', 'scripts/fact_expiry.py']))
     results.append(run('web/vercel ignoreCommand', ['-B', '-m', 'unittest', '-v', 'scripts.test_web_vercel_ignore']))
+    # The website's offline checks (#1862): every scripts/test_*.cjs under node's built-in test runner.
+    node_tests = sorted(path.relative_to(ROOT).as_posix() for path in (ROOT / 'scripts').glob('test_*.cjs'))
+    if shutil.which('node') is None:
+        print('web node tests: node not found', flush=True)
+        results.append(('web node tests', 1))
+    else:
+        results.append(run('web node tests', ['--test', *node_tests], executable='node'))
     results.append(run('contracts/api proposal', ['-B', '-m', 'unittest', 'contracts/api/check_trip_content_v2_schema_proposal.py']))
     results.append(run('contracts/trip structured3', ['-B', 'contracts/trip/check_structured_v3.py']))
     results.append(run('contracts/trip structured4', ['-B', 'contracts/trip/check_structured_v4.py']))

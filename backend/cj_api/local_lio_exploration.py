@@ -249,6 +249,8 @@ class ExplorationPlanning:
         messages.insert(0,dict(role='system',content=system))
         # The current traveler text remains last for the old fact/tool router.
         messages=[*messages[:-1],dict(role='user',content=text)]
+        from cj_message.lio_safety import safety_lines_enabled,supplement
+        safety_lines=safety_lines_enabled()  # read before the model call (#1733 review)
         body=[]
         for chunk in worker.tools.answer(worker,binding,messages,lio_locale=original.locale,
                 lio_question_day=original.question_day,message_refs=view.references):
@@ -257,7 +259,9 @@ class ExplorationPlanning:
                 state=worker._event(binding,state,'effect_committed',chunk.effect())
             else:body.append(chunk)
         state=worker.runs.snapshot(binding)
-        return self._finish(worker,binding,state,''.join(body),scene,original.locale)
+        answer=''.join(body)
+        if safety_lines:answer+=supplement(text,answer,original.locale)  # W2-6 (#1733)
+        return self._finish(worker,binding,state,answer,scene,original.locale)
 
     def _plan(self,worker,binding,state,view,locale,*,prior_model_calls=0):
         effective=defaults(view.profile)
@@ -365,8 +369,77 @@ class ExplorationDispatch:
     def answer_context(self,binding,messages):return self.legacy.answer_context(binding,messages)
     def readonly_answer_context(self,binding,messages):return self.legacy.readonly_answer_context(binding,messages)
     def execute(self,worker,binding,state,text,original):
+        entry=self._entry(worker,binding,state,text,original)
+        if entry is not None:return entry
         selected=self.exploration if original.protocol==LIO_VERSION_V4 and self.exploration.enabled else self.legacy
-        return selected.execute(worker,binding,state,text,original)
+        reader=self._tasks(worker,binding,text,original)
+        try:
+            result=selected.execute(worker,binding,state,text,original)
+        except BaseException:
+            if reader is not None:self._drop_tasks(binding,reader)
+            raise
+        # A planning or code reply ends the RUN without an answer prompt: the sent task
+        # call is still billed but its result is not used.
+        if result is not None and reader is not None:self._drop_tasks(binding,reader)
+        return result
+
+    def _tasks(self,worker,binding,text,original):
+        """W2-8 (#1738): send the task call before the intake/understanding call; never fails the RUN."""
+        from .lio_tasks import tasks_enabled,skip_reason,start,log_outcome
+        if not tasks_enabled():return None
+        reason=skip_reason(text)
+        if reason is not None:
+            log_outcome(binding.run_id,'skip:'+reason)
+            return None
+        from cj_message.domain import Unavailable
+        from cj_agent.provider import ProviderFailed
+        from cj_usage.metered_exit import BudgetExceeded,BudgetUnknown
+        from .lio_planning_grounding import PlanningTurn
+        try:
+            today=original.question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
+            texts,refs,_=self.legacy.context(binding,PlanningTurn(text,today),answer_only=True)
+            return start(worker,binding,list(texts),refs)
+        except (Unavailable,ProviderUnknown,ProviderFailed,BudgetExceeded,BudgetUnknown) as error:
+            # Coordinator condition 4: the task call is auxiliary. Its own outcome stays in the
+            # usage journal as recorded; the answer continues on the single-intent path.
+            log_outcome(binding.run_id,'failed:'+type(error).__name__)
+            return None
+
+    @staticmethod
+    def _drop_tasks(binding,reader):
+        from .lio_tasks import take_pending
+        take_pending(binding.run_id)
+        try:reader.close()
+        except Exception:pass
+
+    def _entry(self,worker,binding,state,text,original):
+        """W2-4 (#1731): entry questions answered from the App's arrival rules, behind a switch."""
+        from .lio_entry_rules import entry_question,entry_turn,entry_rules_enabled,nationality_reply
+        if not entry_rules_enabled():return None
+        from cj_message.lio_safety import matched as safety_matched
+        # A lost passport, an emergency or an illness with a visa word stays on the
+        # answer path, where the safety essentials are kept (#1856 review).
+        if safety_matched(text):return None
+        from cj_fact.policy import FactFailure
+        from cj_fact.arrival import load_rules
+        from cj_message.domain import Unavailable
+        from .lio_planning_grounding import PlanningTurn
+        try:
+            # Read prior originals only for an entry question or a reply that gives just a nationality.
+            if entry_question(text) is None and nationality_reply(text,load_rules()) is None:return None
+            today=original.question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
+            # Nationality only from the traveler's own originals in this conversation.
+            texts,_,_=self.legacy.context(binding,PlanningTurn(text,today),answer_only=True)
+            reply=entry_turn(text,texts[:-1],original.locale,today)
+        except (FactFailure,Unavailable) as error:
+            code=error.args[0] if isinstance(error,FactFailure) and error.args and isinstance(error.args[0],str) else type(error).__name__
+            logging.getLogger('cj_usage.audit').info('LIO_ENTRY_RULES_UNAVAILABLE run_id=%s code=%s',
+                binding.run_id,code if re.fullmatch(r'[A-Za-z_]{1,64}',code) else 'unknown')
+            return None
+        if reply is None:return None
+        for key,title,url in reply.citations:
+            state=worker._event(binding,state,'effect_committed',LioCitation(key,title,url,None).effect())
+        return self.legacy._reply(worker,binding,state,reply.text)
 
 
 class ExplorationEditDispatch:

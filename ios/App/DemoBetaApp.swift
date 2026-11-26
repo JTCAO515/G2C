@@ -42,7 +42,7 @@ struct DemoBetaRootView: View {
                    toolsSessionIsCurrent: {
                     guard case .signedIn = root.accounts.state else { return false }
                     return root.trip === trip
-                }) {
+                }, answerFeedback: trip.feedback?.lioAnswer) {
                     LioMenuSettings(shell: shell)
                     NavigationLink(shell.language.text("Delete account", "注销账号")) {
                         LioAccountDeletion(shell: shell, root: root)
@@ -51,6 +51,12 @@ struct DemoBetaRootView: View {
                 }
                 .modifier(LioInformationHost(shell: shell))
                 .lioMedicalCardStorage(root.localMedicalCardStorage())
+                .lioToolServices(LioToolServices().with(LioTravelProfileSource.device(
+                    messageDirectory: trip.messages.lioMessageDirectory, savedPlans: trip.messages.lioSavedPlans,
+                    tripHome: trip.messages.lioTripHomeStore, isCurrent: {
+                        guard case .signedIn = root.accounts.state else { return false }
+                        return root.trip === trip
+                    })))
                 .id(root.lioPresentationID)
             } else if root.accounts.isResuming {
                 LioSessionRecoveryView(language: shell.language.lio,

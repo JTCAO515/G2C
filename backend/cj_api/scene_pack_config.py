@@ -23,7 +23,7 @@ DIRECTORY=Path(__file__).with_name('scene_packs')
 PACKS=('travel','business')
 # The app's tool registry ids (ios/.../LioToolRegistry.swift, #1724); a test keeps them equal.
 KNOWN_TOOLS=frozenset({'arrival','attraction-booking','currency','hotels','local-support','menu-order','metro-guide',
-    'nearby','payment-guide','phrase-cards','return-hotel','roadbook','taxi','translation','transport'})
+    'nearby','payment-guide','return-hotel','roadbook','show-cards','taxi','translation','transport'})
 KNOWN_CITIES=frozenset({'beijing','shanghai','guangzhou','shenzhen','chengdu','chongqing','guilin'})
 _ID=re.compile(r'[a-z][a-z0-9-]{0,47}')
 

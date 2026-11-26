@@ -96,6 +96,19 @@ window.G2C = {
     ]
    },
    "credits": "Photo credits",
+   "privacyLink": "Privacy policy",
+   "privacyPage": {
+    "title": "Privacy policy",
+    "back": "Back to go2china.space",
+    "fallback": ""
+   },
+   "eaPolicy": {
+    "before": "By applying, you confirm you’ve read our ",
+    "link": "privacy policy",
+    "after": ". Your application is processed by Jotform in the United States."
+   },
+   "eaAbroad": "I agree to my information being processed outside mainland China (Hong Kong, China and the United States).",
+   "eaAbroadBad": "Please tick the box to agree to your information being processed outside mainland China (Hong Kong, China and the United States).",
    "online": "Your personal agent",
    "inputHint": "Ask anything about your trip…",
    "suggest": [
@@ -159,8 +172,8 @@ window.G2C = {
    "priv2": "You can delete your account in the app at any time.",
    "priv3": "Your memory is yours: see it, correct it, delete it whenever you like.",
    "footTag": "Your personal agent for China.",
-   "companyName": "Guangzhou Chuangjing Technology Co., Ltd",
-   "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China",
+   "companyName": "Guangzhou Chuangjing Technology Co., Ltd.",
+   "companyAddress": "Room 410A, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue West, Tianhe District, Guangzhou, China",
    "toolsName": "Tools",
    "toolsRole": "In the app",
    "toolsList": [
@@ -168,7 +181,57 @@ window.G2C = {
     "Ordering: photograph a menu and build your order in Chinese, with spice level and allergies.",
     "Metro guide: line maps for major cities, find stations in English or Chinese, and see lines, transfers and what’s around each station.",
     "Sight bookings: which sights need booking ahead, whether your passport is accepted, how far ahead you can book, and a reminder when booking opens."
-   ]
+   ],
+   "sr": {
+    "nav": "Guangzhou companion",
+    "entry": "In Guangzhou for business? Request an English–Chinese business companion",
+    "title": "A business companion in Guangzhou",
+    "lede": "Meeting suppliers or partners in Guangzhou? Ask for an English–Chinese business companion. A person on our team reads each request. Sending one doesn’t book or charge anything.",
+    "rows": [
+     [
+      "Service",
+      "English–Chinese business companion"
+     ],
+     [
+      "City",
+      "Guangzhou"
+     ],
+     [
+      "Reply",
+      "We usually reply by email from hello@go2china.space within 1 business day (Beijing time)."
+     ]
+    ],
+    "f": {
+     "name": "What should we call you?",
+     "email": "Email",
+     "date": "Date",
+     "note": "What do you need?",
+     "optional": "optional",
+     "noteHint": "Briefly tell us what you need. We’ll confirm the time and place with you by email. Please don’t include ID numbers or health details.",
+     "consentBefore": "I have read the ",
+     "consentLink": "privacy policy",
+     "consentAfter": ".",
+     "consents": [
+      {
+       "text": "I agree to provide the date, place and other details of where I’ll be, to arrange the companion.",
+       "link": "How we use them"
+      },
+      {
+       "text": "I agree that what the service needs is shared with the companion.",
+       "link": "What the companion sees"
+      },
+      {
+       "text": "I agree to my information being processed outside mainland China (Hong Kong, China and the United States).",
+       "link": "Where data is stored"
+      }
+     ]
+    },
+    "submit": "Send request",
+    "sending": "Sending…",
+    "ok": "Thanks, we’ve got your request. We usually reply by email from hello@go2china.space within 1 business day (Beijing time).",
+    "bad": "Please add what to call you, a valid email and a date, and tick all four boxes.",
+    "fail": "We couldn’t send your request just now. Please try again in a minute, or email hello@go2china.space."
+   }
   },
   "zh": {
    "nav": {
@@ -264,6 +327,19 @@ window.G2C = {
     ]
    },
    "credits": "图片来源",
+   "privacyLink": "隐私政策",
+   "privacyPage": {
+    "title": "隐私政策",
+    "back": "返回 go2china.space",
+    "fallback": ""
+   },
+   "eaPolicy": {
+    "before": "提交即表示你已阅读",
+    "link": "隐私政策",
+    "after": "，你的申请会由 Jotform（美国）处理。"
+   },
+   "eaAbroad": "我同意传到中国大陆以外（中国香港和美国）处理。",
+   "eaAbroadBad": "请勾选同意传到中国大陆以外（中国香港和美国）处理。",
    "online": "你的私人助理",
    "inputHint": "问问关于行程的任何事…",
    "suggest": [
@@ -328,7 +404,7 @@ window.G2C = {
    "priv3": "记忆归你所有：随时查看、更正或删除。",
    "footTag": "你在中国的私人助理。",
    "companyName": "广州创竞科技有限公司",
-   "companyAddress": "广州市天河区黄埔大道100号富力盈泰广场A座410室",
+   "companyAddress": "广州市天河区黄埔大道西100号富力盈泰广场A座410A室",
    "toolsName": "工具",
    "toolsRole": "在 App 里",
    "toolsList": [
@@ -336,7 +412,57 @@ window.G2C = {
     "点餐：拍下菜单，用中文点好菜，可以标注辣度和过敏。",
     "地铁指南：主要城市的线路图，用中文或英文找车站，看线路、换乘和站点周边。",
     "景点预约：哪些景点要提前实名预约、能否用护照、最多提前几天，放票时提醒你。"
-   ]
+   ],
+   "sr": {
+    "nav": "广州商务陪同",
+    "entry": "来广州谈生意？申请一位中英商务陪同",
+    "title": "广州中英商务陪同",
+    "lede": "在广州见供应商或合作伙伴？可以申请一位中英商务陪同。每条申请都由我们团队的真人查看。提交申请不会产生预订，也不会收费。",
+    "rows": [
+     [
+      "服务",
+      "中英商务陪同"
+     ],
+     [
+      "城市",
+      "广州"
+     ],
+     [
+      "回复",
+      "我们通常会在 1 个工作日内（北京时间）通过邮件回复，发件地址是 hello@go2china.space。"
+     ]
+    ],
+    "f": {
+     "name": "怎么称呼你？",
+     "email": "邮箱",
+     "date": "日期",
+     "note": "需要什么帮助？",
+     "optional": "选填",
+     "noteHint": "简单说说你需要什么帮助，我们会通过邮件和你确认时间和地点。请不要填写证件号、健康信息。",
+     "consentBefore": "我已阅读",
+     "consentLink": "隐私政策",
+     "consentAfter": "。",
+     "consents": [
+      {
+       "text": "我同意提供服务日期、地点等行踪信息，用于安排陪同。",
+       "link": "如何使用"
+      },
+      {
+       "text": "我同意把服务所需的信息提供给陪同人员。",
+       "link": "陪同能看到什么"
+      },
+      {
+       "text": "我同意传到中国大陆以外（中国香港和美国）处理。",
+       "link": "存放地点与跨境"
+      }
+     ]
+    },
+    "submit": "提交申请",
+    "sending": "正在提交…",
+    "ok": "已收到你的申请。我们通常会在 1 个工作日内（北京时间）通过邮件回复，发件地址是 hello@go2china.space。",
+    "bad": "请填写称呼、有效的邮箱和日期，并勾选全部四项。",
+    "fail": "暂时没能提交，请稍后再试，或发邮件到 hello@go2china.space。"
+   }
   },
   "ru": {
    "nav": {
@@ -432,6 +558,19 @@ window.G2C = {
     ]
    },
    "credits": "Авторы фотографий",
+   "privacyLink": "Политика конфиденциальности",
+   "privacyPage": {
+    "title": "Политика конфиденциальности",
+    "back": "Вернуться на go2china.space",
+    "fallback": "Политика конфиденциальности опубликована только на китайском и английском языках, поэтому она показана на английском."
+   },
+   "eaPolicy": {
+    "before": "Отправляя заявку, вы подтверждаете, что прочитали ",
+    "link": "политику конфиденциальности",
+    "after": ". Вашу заявку обрабатывает Jotform в США."
+   },
+   "eaAbroad": "Я согласен(на) на обработку моих данных за пределами материкового Китая (в Гонконге (Китай) и в США).",
+   "eaAbroadBad": "Отметьте согласие на обработку ваших данных за пределами материкового Китая (в Гонконге (Китай) и в США).",
    "online": "Ваш личный помощник",
    "inputHint": "Спросите о поездке…",
    "suggest": [
@@ -495,8 +634,8 @@ window.G2C = {
    "priv2": "Вы можете в любой момент удалить аккаунт в приложении.",
    "priv3": "Вы можете просматривать, исправлять и удалять сохранённые сведения.",
    "footTag": "Ваш личный помощник в Китае.",
-   "companyName": "Guangzhou Chuangjing Technology Co., Ltd",
-   "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China",
+   "companyName": "Guangzhou Chuangjing Technology Co., Ltd.",
+   "companyAddress": "Room 410A, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue West, Tianhe District, Guangzhou, China",
    "toolsName": "Инструменты",
    "toolsRole": "В приложении",
    "toolsList": [
@@ -504,7 +643,57 @@ window.G2C = {
     "Заказ еды: сфотографируйте меню и соберите заказ по-китайски, с остротой и аллергиями.",
     "Метро: схемы линий крупных городов, поиск станций по-английски или по-китайски, линии, пересадки и что рядом со станцией.",
     "Достопримечательности: где нужна предварительная запись, принимают ли паспорт, за сколько дней можно записаться, и напоминание, когда откроется запись."
-   ]
+   ],
+   "sr": {
+    "nav": "Сопровождение в Гуанчжоу",
+    "entry": "Едете в Гуанчжоу по делам? Запросите делового сопровождающего",
+    "title": "Деловое сопровождение в Гуанчжоу",
+    "lede": "Встречи с поставщиками или партнёрами в Гуанчжоу? Запросите делового сопровождающего с английским и китайским. Каждый запрос читает человек из нашей команды. Запрос ничего не бронирует и ничего не стоит.",
+    "rows": [
+     [
+      "Услуга",
+      "Деловое сопровождение, английский и китайский"
+     ],
+     [
+      "Город",
+      "Гуанчжоу"
+     ],
+     [
+      "Ответ",
+      "Обычно мы отвечаем по почте с адреса hello@go2china.space в течение 1 рабочего дня (по пекинскому времени)."
+     ]
+    ],
+    "f": {
+     "name": "Как к вам обращаться?",
+     "email": "Эл. почта",
+     "date": "Дата",
+     "note": "Что вам нужно?",
+     "optional": "необязательно",
+     "noteHint": "Коротко напишите, чем мы можем помочь. Время и место мы подтвердим с вами по почте. Не указывайте номера документов и сведения о здоровье.",
+     "consentBefore": "Я прочитал(а) ",
+     "consentLink": "политику конфиденциальности",
+     "consentAfter": ".",
+     "consents": [
+      {
+       "text": "Я согласен(на) сообщить дату, место и другие сведения о том, где я буду, чтобы организовать сопровождение.",
+       "link": "Как мы их используем"
+      },
+      {
+       "text": "Я согласен(на), что нужные для услуги сведения будут переданы сопровождающему.",
+       "link": "Что видит сопровождающий"
+      },
+      {
+       "text": "Я согласен(на) на обработку моих данных за пределами материкового Китая (в Гонконге (Китай) и в США).",
+       "link": "Где хранятся данные"
+      }
+     ]
+    },
+    "submit": "Отправить запрос",
+    "sending": "Отправляем…",
+    "ok": "Спасибо, запрос получен. Обычно мы отвечаем по почте с адреса hello@go2china.space в течение 1 рабочего дня (по пекинскому времени).",
+    "bad": "Укажите, как к вам обращаться, корректную почту и дату, и отметьте все четыре пункта.",
+    "fail": "Не удалось отправить запрос. Попробуйте через минуту или напишите на hello@go2china.space."
+   }
   },
   "es": {
    "nav": {
@@ -600,6 +789,19 @@ window.G2C = {
     ]
    },
    "credits": "Créditos de las fotos",
+   "privacyLink": "Política de privacidad",
+   "privacyPage": {
+    "title": "Política de privacidad",
+    "back": "Volver a go2china.space",
+    "fallback": "La política de privacidad solo se publica en chino e inglés, por eso se muestra en inglés."
+   },
+   "eaPolicy": {
+    "before": "Al enviar la solicitud confirmas que has leído nuestra ",
+    "link": "política de privacidad",
+    "after": ". Tu solicitud la procesa Jotform en Estados Unidos."
+   },
+   "eaAbroad": "Acepto que mis datos se traten fuera de China continental (en Hong Kong, China, y en Estados Unidos).",
+   "eaAbroadBad": "Marca la casilla para aceptar que tus datos se traten fuera de China continental (en Hong Kong, China, y en Estados Unidos).",
    "online": "Tu asistente personal",
    "inputHint": "Pregunta sobre tu viaje…",
    "suggest": [
@@ -663,8 +865,8 @@ window.G2C = {
    "priv2": "Puedes eliminar tu cuenta en la app cuando quieras.",
    "priv3": "Puedes consultar, corregir o borrar lo que se recuerda de ti.",
    "footTag": "Tu asistente personal para China.",
-   "companyName": "Guangzhou Chuangjing Technology Co., Ltd",
-   "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China",
+   "companyName": "Guangzhou Chuangjing Technology Co., Ltd.",
+   "companyAddress": "Room 410A, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue West, Tianhe District, Guangzhou, China",
    "toolsName": "Herramientas",
    "toolsRole": "En la app",
    "toolsList": [
@@ -672,7 +874,57 @@ window.G2C = {
     "Pedir comida: fotografía la carta y prepara tu pedido en chino, con nivel de picante y alergias.",
     "Guía del metro: planos de las principales ciudades, busca estaciones en inglés o chino y consulta líneas, transbordos y qué hay cerca de cada estación.",
     "Reservas de lugares: qué sitios piden reserva previa, si aceptan pasaporte, con cuánta antelación se puede reservar y un aviso cuando abren las reservas."
-   ]
+   ],
+   "sr": {
+    "nav": "Acompañante en Cantón",
+    "entry": "¿Viaje de negocios a Cantón? Pide un acompañante de negocios en inglés y chino",
+    "title": "Un acompañante de negocios en Cantón",
+    "lede": "¿Reuniones con proveedores o socios en Cantón (Guangzhou)? Pide un acompañante de negocios en inglés y chino. Una persona de nuestro equipo lee cada solicitud. Enviarla no reserva ni cobra nada.",
+    "rows": [
+     [
+      "Servicio",
+      "Acompañante de negocios en inglés y chino"
+     ],
+     [
+      "Ciudad",
+      "Cantón (Guangzhou)"
+     ],
+     [
+      "Respuesta",
+      "Solemos responder por correo desde hello@go2china.space en 1 día laborable (hora de Pekín)."
+     ]
+    ],
+    "f": {
+     "name": "¿Cómo te llamamos?",
+     "email": "Correo electrónico",
+     "date": "Fecha",
+     "note": "¿Qué necesitas?",
+     "optional": "opcional",
+     "noteHint": "Cuéntanos brevemente qué necesitas. Confirmaremos contigo la hora y el lugar por correo. No incluyas números de documentos ni información de salud.",
+     "consentBefore": "He leído la ",
+     "consentLink": "política de privacidad",
+     "consentAfter": ".",
+     "consents": [
+      {
+       "text": "Acepto facilitar la fecha, el lugar y otros datos de dónde estaré, para organizar el acompañante.",
+       "link": "Cómo los usamos"
+      },
+      {
+       "text": "Acepto que lo que necesita el servicio se comparta con el acompañante.",
+       "link": "Qué ve el acompañante"
+      },
+      {
+       "text": "Acepto que mis datos se traten fuera de China continental (en Hong Kong, China, y en Estados Unidos).",
+       "link": "Dónde se guardan los datos"
+      }
+     ]
+    },
+    "submit": "Enviar solicitud",
+    "sending": "Enviando…",
+    "ok": "Gracias, hemos recibido tu solicitud. Solemos responder por correo desde hello@go2china.space en 1 día laborable (hora de Pekín).",
+    "bad": "Indica cómo te llamamos, un correo válido y una fecha, y marca las cuatro casillas.",
+    "fail": "No hemos podido enviar tu solicitud. Inténtalo de nuevo en un minuto o escribe a hello@go2china.space."
+   }
   },
   "fr": {
    "nav": {
@@ -768,6 +1020,19 @@ window.G2C = {
     ]
    },
    "credits": "Crédits photo",
+   "privacyLink": "Politique de confidentialité",
+   "privacyPage": {
+    "title": "Politique de confidentialité",
+    "back": "Retour à go2china.space",
+    "fallback": "La politique de confidentialité n’est publiée qu’en chinois et en anglais ; elle s’affiche donc en anglais."
+   },
+   "eaPolicy": {
+    "before": "En envoyant votre demande, vous confirmez avoir lu notre ",
+    "link": "politique de confidentialité",
+    "after": ". Votre demande est traitée par Jotform aux États-Unis."
+   },
+   "eaAbroad": "J’accepte que mes informations soient traitées hors de Chine continentale (à Hong Kong, Chine, et aux États-Unis).",
+   "eaAbroadBad": "Cochez la case pour accepter que vos informations soient traitées hors de Chine continentale (à Hong Kong, Chine, et aux États-Unis).",
    "online": "Votre assistant personnel",
    "inputHint": "Posez une question sur votre voyage…",
    "suggest": [
@@ -831,8 +1096,8 @@ window.G2C = {
    "priv2": "Vous pouvez supprimer votre compte dans l’app à tout moment.",
    "priv3": "Consultez, corrigez ou supprimez les informations mémorisées à tout moment.",
    "footTag": "Votre assistant personnel pour la Chine.",
-   "companyName": "Guangzhou Chuangjing Technology Co., Ltd",
-   "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China",
+   "companyName": "Guangzhou Chuangjing Technology Co., Ltd.",
+   "companyAddress": "Room 410A, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue West, Tianhe District, Guangzhou, China",
    "toolsName": "Outils",
    "toolsRole": "Dans l’app",
    "toolsList": [
@@ -840,7 +1105,57 @@ window.G2C = {
     "Commander : photographiez le menu et composez votre commande en chinois, avec le niveau de piment et les allergies.",
     "Guide du métro : plans des grandes villes, recherche des stations en anglais ou en chinois, lignes, correspondances et alentours de chaque station.",
     "Réservations de sites : quels sites demandent une réservation, si le passeport est accepté, combien de jours à l’avance, et un rappel à l’ouverture des réservations."
-   ]
+   ],
+   "sr": {
+    "nav": "Accompagnateur à Canton",
+    "entry": "En voyage d’affaires à Canton ? Demandez un accompagnateur anglais–chinois",
+    "title": "Un accompagnateur d’affaires à Canton",
+    "lede": "Des rendez-vous avec des fournisseurs ou des partenaires à Canton (Guangzhou) ? Demandez un accompagnateur d’affaires anglais–chinois. Une personne de notre équipe lit chaque demande. L’envoyer ne réserve et ne facture rien.",
+    "rows": [
+     [
+      "Service",
+      "Accompagnateur d’affaires anglais–chinois"
+     ],
+     [
+      "Ville",
+      "Canton (Guangzhou)"
+     ],
+     [
+      "Réponse",
+      "Nous répondons en général par e-mail depuis hello@go2china.space sous 1 jour ouvré (heure de Pékin)."
+     ]
+    ],
+    "f": {
+     "name": "Comment devons-nous vous appeler ?",
+     "email": "E-mail",
+     "date": "Date",
+     "note": "De quoi avez-vous besoin ?",
+     "optional": "facultatif",
+     "noteHint": "Dites-nous brièvement ce dont vous avez besoin. Nous confirmerons l’heure et le lieu avec vous par e-mail. N’indiquez pas de numéro de pièce d’identité ni d’informations de santé.",
+     "consentBefore": "J’ai lu la ",
+     "consentLink": "politique de confidentialité",
+     "consentAfter": ".",
+     "consents": [
+      {
+       "text": "J’accepte de fournir la date, le lieu et d’autres informations sur l’endroit où je serai, pour organiser l’accompagnement.",
+       "link": "Comment nous les utilisons"
+      },
+      {
+       "text": "J’accepte que ce dont le service a besoin soit communiqué à l’accompagnateur.",
+       "link": "Ce que voit l’accompagnateur"
+      },
+      {
+       "text": "J’accepte que mes informations soient traitées hors de Chine continentale (à Hong Kong, Chine, et aux États-Unis).",
+       "link": "Où sont stockées les données"
+      }
+     ]
+    },
+    "submit": "Envoyer la demande",
+    "sending": "Envoi…",
+    "ok": "Merci, nous avons bien reçu votre demande. Nous répondons en général par e-mail depuis hello@go2china.space sous 1 jour ouvré (heure de Pékin).",
+    "bad": "Indiquez comment vous appeler, un e-mail valide et une date, et cochez les quatre cases.",
+    "fail": "Votre demande n’a pas pu être envoyée. Réessayez dans une minute ou écrivez à hello@go2china.space."
+   }
   },
   "ar": {
    "nav": {
@@ -936,6 +1251,19 @@ window.G2C = {
     ]
    },
    "credits": "مصادر الصور",
+   "privacyLink": "سياسة الخصوصية",
+   "privacyPage": {
+    "title": "سياسة الخصوصية",
+    "back": "العودة إلى go2china.space",
+    "fallback": "تُنشر سياسة الخصوصية باللغتين الصينية والإنجليزية فقط، لذلك تُعرض باللغة الإنجليزية."
+   },
+   "eaPolicy": {
+    "before": "بإرسال الطلب تؤكد أنك قرأت ",
+    "link": "سياسة الخصوصية",
+    "after": ". تعالج Jotform طلبك في الولايات المتحدة."
+   },
+   "eaAbroad": "أوافق على معالجة معلوماتي خارج البر الرئيسي الصيني (في هونغ كونغ، الصين، وفي الولايات المتحدة).",
+   "eaAbroadBad": "يرجى تحديد المربع للموافقة على معالجة معلوماتك خارج البر الرئيسي الصيني (في هونغ كونغ، الصين، وفي الولايات المتحدة).",
    "online": "مساعدك الشخصي",
    "inputHint": "اسأل عن رحلتك…",
    "suggest": [
@@ -999,8 +1327,8 @@ window.G2C = {
    "priv2": "يمكنك حذف حسابك من التطبيق في أي وقت.",
    "priv3": "يمكنك عرض المعلومات المحفوظة وتصحيحها أو حذفها متى شئت.",
    "footTag": "مساعدك الشخصي في الصين.",
-   "companyName": "Guangzhou Chuangjing Technology Co., Ltd",
-   "companyAddress": "Room 410, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue, Tianhe District, Guangzhou, China",
+   "companyName": "Guangzhou Chuangjing Technology Co., Ltd.",
+   "companyAddress": "Room 410A, Tower A, R&F Yingtai Plaza, No. 100 Huangpu Avenue West, Tianhe District, Guangzhou, China",
    "toolsName": "الأدوات",
    "toolsRole": "في التطبيق",
    "toolsList": [
@@ -1008,7 +1336,57 @@ window.G2C = {
     "الطلب في المطعم: صوّر قائمة الطعام وجهّز طلبك بالصينية، مع مستوى البهارات الحارة والحساسية.",
     "دليل المترو: خرائط الخطوط في المدن الكبرى، والبحث عن المحطات بالإنجليزية أو الصينية، والخطوط والتحويلات وما حول كل محطة.",
     "حجز المعالم: أي المعالم تحتاج حجزًا مسبقًا، وهل يُقبل جواز السفر، وكم يومًا مسبقًا يمكنك الحجز، وتذكير عند فتح الحجز."
-   ]
+   ],
+   "sr": {
+    "nav": "مرافق في قوانغتشو",
+    "entry": "في رحلة عمل إلى قوانغتشو؟ اطلب مرافق أعمال بالإنجليزية والصينية",
+    "title": "مرافق أعمال في قوانغتشو",
+    "lede": "لديك اجتماعات مع موردين أو شركاء في قوانغتشو؟ اطلب مرافق أعمال يتحدث الإنجليزية والصينية. يقرأ كل طلب شخص من فريقنا. إرسال الطلب لا يحجز شيئًا ولا يفرض أي رسوم.",
+    "rows": [
+     [
+      "الخدمة",
+      "مرافق أعمال بالإنجليزية والصينية"
+     ],
+     [
+      "المدينة",
+      "قوانغتشو"
+     ],
+     [
+      "الرد",
+      "نرد عادةً بالبريد الإلكتروني من العنوان hello@go2china.space خلال يوم عمل واحد (بتوقيت بكين)."
+     ]
+    ],
+    "f": {
+     "name": "بماذا نناديك؟",
+     "email": "البريد الإلكتروني",
+     "date": "التاريخ",
+     "note": "ماذا تحتاج؟",
+     "optional": "اختياري",
+     "noteHint": "أخبرنا باختصار بما تحتاجه. سنؤكد معك الوقت والمكان بالبريد الإلكتروني. يرجى عدم كتابة أرقام الهوية أو معلومات صحية.",
+     "consentBefore": "قرأت ",
+     "consentLink": "سياسة الخصوصية",
+     "consentAfter": ".",
+     "consents": [
+      {
+       "text": "أوافق على تقديم التاريخ والمكان وغيرهما من معلومات أماكن وجودي، لترتيب المرافق.",
+       "link": "كيف نستخدمها"
+      },
+      {
+       "text": "أوافق على مشاركة ما تحتاجه الخدمة مع المرافق.",
+       "link": "ما الذي يراه المرافق"
+      },
+      {
+       "text": "أوافق على معالجة معلوماتي خارج البر الرئيسي الصيني (في هونغ كونغ، الصين، وفي الولايات المتحدة).",
+       "link": "أين تُخزَّن البيانات"
+      }
+     ]
+    },
+    "submit": "إرسال الطلب",
+    "sending": "جارٍ الإرسال…",
+    "ok": "شكرًا، استلمنا طلبك. نرد عادةً بالبريد الإلكتروني من العنوان hello@go2china.space خلال يوم عمل واحد (بتوقيت بكين).",
+    "bad": "أدخل الاسم الذي نناديك به وبريدًا إلكترونيًا صحيحًا وتاريخًا، وحدّد المربعات الأربعة كلها.",
+    "fail": "تعذّر إرسال طلبك الآن. حاول مرة أخرى بعد دقيقة أو راسلنا على hello@go2china.space."
+   }
   }
  },
  "PLACES": [

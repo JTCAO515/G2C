@@ -214,6 +214,14 @@ API、PG 等其他角色沿用各自原配置。该上限按容量轮转，不�
 回退不清理独立原件和已采集证据；容器轮转日志不能替代独立证据，按已批范围保留故障元数据。
 需要恢复原日志配置时用本次部署保存的原文件，不清账本或业务数据来通过验证。
 
+### LIO_ 诊断行单独留存（#1828）
+
+- `cj_usage.audit` 里以 `LIO_` 开头的行（管线拒绝、未捕获错误、首字计时等）除照常进容器日志外，另由 `deploy/hk/lio_log.py` 写进宿主目录 `/srv/g2c-beta/lio-log`（api、worker 都挂到 `/lio-log`）：每个角色每个 UTC 日一个 `lio-<role>-YYYY-MM-DD.jsonl`（0600），保留 30 天，每天上限 8MB。目录是宿主绑定挂载，容器切换后切换前的行仍在，发布前不必另外导出。
+- 只留 `key=value`：`run_id`、`message_id`、`conversation_id` 换成 12 位 SHA-256 前缀；`subject`、`scope`、`user`、`text`、`content`、`detail` 等键整个丢掉；其他值超出安全字符就记 `redacted`。不存对话内容和用户标识。
+- 部署前由宿主 root 建目录：`install -d -o 10001 -g 10001 -m 0700 /srv/g2c-beta/lio-log`，再同步带新挂载的 Compose 文件。目录不存在或权限不对时只打一行 `ALERT lio_log_directory_*`，不写文件、不影响服务。
+- 读取（只读，不挂其他文件、不联网）：`docker run --rm --network=none --read-only --user 10001:10001 -v /srv/g2c-beta/lio-log:/lio-log:ro --entrypoint python g2c-beta:<现役源> -B -m deploy.hk.lio_log query --since 2026-11-26 --prefix LIO_PIPELINE_`。目录资格只在进程启动时检查，修正目录属主后需重启 api、worker 才开始写。
+- 数据库连接计时改为每分钟每种连接一行 `M4_DB_CHECKOUT_SUMMARY`（count、p50、p95、max），单次 ≥500ms 另记 `M4_DB_CHECKOUT_SLOW`；不再每次借连接记一行。
+
 ## 配置与构建
 
 `*.env.example` 只有占位符。正式配置在服务器 `/srv/g2c-beta/`，目录0700，所有实际环境文件0600；
@@ -350,6 +358,13 @@ HK运行时每个业务事务在安装LOCAL scope前获取共享release事务锁
 recovery命令在同一进程内创建目标、恢复并验证，结束时先核目标完整行集/sequence均未变化，再关闭并轮换隔离目标，核源未变化后恢复源release。若活跃隔离侧接受了写入、注销或删除，拒绝切回旧源，保持源关闭；中间失败保留原PG数据、birth签名、release和控制记录；`--resume`只启动/核对该同一system ID并续结原演练，不重新initdb、COPY或恢复。临时COPY暂存库仍只供生成备份，从未获得release。
 隔离目标不自动替换现有云库或开放公网。
 
+## 告警：外部探活、日备心跳、磁盘（#1720）
+
+- **外部探活**：`.github/workflows/hk-readiness.yml` 全天每 10 分钟只读 `/health/live`、`/health/ready`（GitHub 繁忙时会推迟或丢弃定时运行）。需要仓库变量 `HK_READINESS_MONITOR_ENABLED=true` 才运行。探活状态变化时（正常→失败、失败→恢复）发到配置的渠道；没配渠道时只有失败的那次运行本身（GitHub 的工作流失败通知）。渠道：仓库 secret `HK_ALERT_WEBHOOK_URL`，格式变量 `HK_ALERT_WEBHOOK_FORMAT`（`text`/`wecom`/`feishu`/`dingtalk`）。`workflow_dispatch` 勾选 `notification_drill` 可演练，不请求服务器。
+- **宿主告警**：`deploy/hk/ops_alerts.py` 用宿主自带 python3（3.6，仅标准库）。日备单元成功后 `ExecStartPost` 写 `/srv/g2c-beta/ops/backup-heartbeat.json`；`g2c-beta-ops-alerts.timer` 每 15 分钟 `check`：超过 27 小时没有成功心跳、或 `/` 用量 ≥85% 即告警，持续时每 6 小时提醒一次，恢复时发一次；投递失败不算已通知，下次检查重发，单元标为失败。心跳写不出时日备单元会显示失败（数据不受影响）。消息只含条件和数字。
+- **渠道是配置**：`/srv/g2c-beta/ops/alert.env`（root:0600，未知键拒绝）：`ALERT_CHANNEL=none|webhook`、`ALERT_WEBHOOK_URL=https://…`、`ALERT_WEBHOOK_FORMAT`，可选 `ALERT_BACKUP_MAX_HOURS`、`ALERT_DISK_PERCENT`、`ALERT_DISK_PATHS`、`ALERT_REMIND_HOURS`。默认 `none`：告警写进 journal（`ALERT …`）并让单元失败。`python3 deploy/hk/ops_alerts.py drill` 发一条演练消息。
+- **安装**（宿主 root，不删除任何文件）：`ops_alerts.py` 放 `/srv/g2c-beta/deploy/hk/`；`g2c-beta-ops-alerts.{service,timer}` 放 `/etc/systemd/system/`。替换日备单元前先 `systemctl stop g2c-beta-backup.timer` 并确认 `g2c-beta-backup.service` 为 inactive，原单元另存副本，再用新的 `/etc/systemd/system/g2c-beta-backup.service` 原子替换（只多一行 `ExecStartPost`），`systemctl daemon-reload`、`systemctl start g2c-beta-backup.timer`；等下一次日备成功写出心跳后，再 `systemctl enable --now g2c-beta-ops-alerts.timer`（没有心跳时 `check` 会如实报 `backup_heartbeat`，不手写心跳）。
+
 ## 可选的手动 NEEDS
 
 在已授权测试实例的 `common.env` 显式设置 `CJ_LOCAL_NEEDS_PROFILE=manual-v1` 后，
@@ -478,7 +493,7 @@ Typed 保存、管理及既有 `/v1/memory-erasures` 不安装 V1 记忆写入�
 
 ### Demo 邀请码
 
-按 #685 指定的代号配置 `CJ_BETA_DEMO_SUBJECTS_JSON`，至多 206 个
+按 #685 指定的代号配置 `CJ_BETA_DEMO_SUBJECTS_JSON`，至多 256 个（#1749 由 206 提高）
 `m4-synthetic-demo-<12位代号>`，同时纳入原邀请、Typed API 策略和 worker 记忆选择。
 创建 UID10001 所有的 0700 `/srv/g2c-beta/demo-auth-socket`，worker 保留原签名私钥，
 API 只读挂载 Unix socket 目录。公网 `POST /v1/demo-invite-sessions` 的接口见 #685。
@@ -510,7 +525,7 @@ worker 的双层运行策略可单独显式使用 `CJ_BETA_MEMORY_RUN_POLICY_GZI
 `CJ_BETA_MEMORY_RUN_POLICY_B64` 互斥，仅进入原 worker 0600 文件；API 不接受该字段。
 它复用相同限长解压，结果仍经原 TypedRuntimeConfiguration 和全部主体/selection 校验，
 不会从 API 策略推断 worker 权限。批量配置必须同时核对两个角色的完整策略及原有身份不变。
-第 206 个位置用于 JT 已批准的 L P0 新合成身份（#495/6879334775）；
+第 206 个位置用于 JT 已批准的 L P0 新合成身份（#495/6879334775），第 207–256 个留给 #1749 的外测批次；
 名单容量不创建账号、不改变每周期/每日额度或各线费用子额。
 实际增加名单前先预检完整环境文件及原策略边界，不能仅凭名单容量宣布账号已开通。
 先以原名单和原配置发布兼容新表示的应用，再由 B 在独立维护阶段备份并启用批量名单和策略。
@@ -556,6 +571,8 @@ composition 或计量。有效旧两小时凭据可升级；过期、撤销、�
 `demo_accounts bootstrap/rotate` 对短码主体必须显式加 `--internal-short-code`（只给内部测试者），
 默认（外测）拒绝短码主体和短码摘要。
 客户端在有效会话回前台且余期不超过一天时续期，未知时保留仍有效旧凭据。
+
+外测主体批次与渠道（#1749）：渠道登记在 `deploy/hk/demo_channels.json`（`internal-test` 发码；`ext-travel-content`、`ext-host-invite`、`ext-sourcing`、`ext-hotel` 只登记、不发码，等 JT 确认首次对外与合规包就位）。`python -B -m deploy.hk.demo_batches generate --channel internal-test --count N --expires-at … --out <0700 目录>` 生成一批长码：码只写进 `codes-<批次>.txt`（0600，交给操作员分发），`batch-<批次>.json`（0600）只有主体、摘要、渠道、类别和到期。每个成员用 `demo_accounts bootstrap <主体> --digest … --expires-at …` 开通，逐个撤销用 `demo_accounts revoke`。批次清单放宿主 `/srv/g2c-beta/demo-batches/`（root 0700），归因用 `demo_batches attribute --manifests … <主体>`。Demo 主体上限 256（`MAX_DEMO_SUBJECTS`），每个主体沿用现有 Demo 计量额度。新主体写入 `CJ_BETA_DEMO_SUBJECTS_JSON` 前，现役与回滚镜像都必须已支持 256（应用内 `MAX_DEMO_SUBJECTS` 与发版检查 `application_release_host.py` 的角色配置核对都取自该源），否则回滚后 worker 起不来、发版核对也会拒绝。码文件只留在操作员本机，不上传服务器；只有清单放 `/srv/g2c-beta/demo-batches/`。清单里没有的旧长码主体归因结果为空。
 
 `/v1` 和 `.1` 为旧内部构建保留原两小时上限，退出条件为旧构建退场。
 部署先核原资格、撤销与 session floor，原私钥和资格期限沿用。

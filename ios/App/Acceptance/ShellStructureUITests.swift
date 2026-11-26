@@ -43,7 +43,7 @@ import Foundation
             "Delete account":"memory.accountDeletion", "注销账号":"memory.accountDeletion",
             "Language":"memory.language", "语言":"memory.language",
             "Help":"memory.help", "帮助":"memory.help",
-            "Privacy notice (beta)":"memory.privacy", "隐私说明（内测版）":"memory.privacy",
+            "Privacy summary":"memory.privacy", "隐私摘要":"memory.privacy",
             "Support":"memory.support", "支持":"memory.support"]
         let identifier = routes[label] ?? label
         let element: XCUIElement
@@ -160,9 +160,10 @@ import Foundation
                 XCTAssertTrue(paragraph.label.contains(expected), identifier)
             }
             app.navigationBars.buttons.element(boundBy: 0).tap()
-            tap(chinese ? "隐私说明（内测版）" : "Privacy notice (beta)")
-            XCTAssertTrue(app.navigationBars[chinese ? "隐私说明（内测版）" : "Privacy notice (beta)"].exists)
-            let provider = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Context Jump LLC")).firstMatch
+            tap(chinese ? "隐私摘要" : "Privacy summary")
+            XCTAssertTrue(app.navigationBars[chinese ? "隐私摘要" : "Privacy summary"].exists)
+            let provider = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@",
+                chinese ? "广州创竞科技有限公司" : "Guangzhou Chuangjing Technology Co., Ltd.")).firstMatch
             XCTAssertTrue(provider.waitForExistence(timeout: 5))
             capture("privacy-provider-" + language)
             let support = app.buttons[chinese ? "支持" : "Support"]
@@ -226,10 +227,10 @@ import Foundation
                     : mode == "failed" ? (chinese ? "无法读取分组" : "Could not load groups")
                     : (chinese ? "记忆尚未配置" : "Memory is not configured")
                 text(expected)
-                for label in (chinese ? ["账号", "语言", "帮助", "隐私说明（内测版）"] : ["Account", "Language", "Help", "Privacy notice (beta)"]) {
+                for label in (chinese ? ["账号", "语言", "帮助", "隐私摘要"] : ["Account", "Language", "Help", "Privacy summary"]) {
                     tap(label)
-                    let title = label == "Privacy notice (beta)" ? "Privacy notice (beta)"
-                        : label == "隐私说明（内测版）" ? "隐私说明（内测版）" : label
+                    let title = label == "Privacy summary" ? "Privacy summary"
+                        : label == "隐私摘要" ? "隐私摘要" : label
                     XCTAssertTrue(app.navigationBars[title].exists, title)
                     if label == "Account" || label == "账号" {
                         text(chinese ? "尚无已验证的账号会话。" : "No verified account session.")

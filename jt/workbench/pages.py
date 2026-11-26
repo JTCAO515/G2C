@@ -36,7 +36,17 @@ ACTION_LABELS = {
     AuditAction.DECIDE: "人工决策",
 }
 RESULT_LABELS = {AuditResult.SUCCESS: "成功", AuditResult.DENIED: "拒绝"}
+CASE_ACTION_LABELS = {"claim": "认领", "advance": "推进", "confirm": "确认草稿", "reject": "驳回草稿"}
+CASE_DENIAL_LABELS = {
+    "stale_revision": "案件已更新，请按当前步骤重新操作。",
+    "case_closed": "案件已经关闭。",
+    "draft_required": "当前步骤还没有待确认草稿。",
+    "draft_pending": "请先处理当前草稿。",
+    "customer_consent_required": "当前步骤仍需独立的客户同意。",
+}
 
+
+DEMO_BADGE = '<span class="demo-badge">演示数据</span>'
 
 def csrf_field(token: str) -> str:
     return f'<input type="hidden" name="csrf" value="{escape(token, quote=True)}">'
@@ -49,6 +59,8 @@ def page(
     nav = ''
     if session is not None:
         sections = '<a href="/queue">待办队列</a>'
+        if session.role == Role.OPERATOR:
+            sections += '<a href="/cases">案件</a><a href="/operations">运营台</a>'
         if session.role == Role.ADMIN:
             sections = '<a href="/admin/accounts">账号管理</a><a href="/admin/audit">审计日志</a>'
         nav = (
@@ -206,7 +218,17 @@ def audit_page(session: Session, events: tuple[AuditEvent, ...], filters: dict[s
         actor = escape(event.actor) if event.actor is not None else '—'
         case_id = escape(event.case_id) if event.case_id is not None else '—'
         target = escape(event.staff_target) if event.staff_target is not None else '—'
-        rows.append(f'<tr><td><time>{timestamp}</time></td><td>{ACTION_LABELS[event.action]}</td><td>{actor}</td>'
+        action = ACTION_LABELS[event.action]
+        detail = event.case_detail
+        if detail is not None:
+            step = f' · <code>{escape(detail.step_id)}</code>' if detail.step_id else ''
+            revision = f' · 版本 {detail.revision}' if detail.revision is not None else ''
+            reason = f'<br>{CASE_DENIAL_LABELS.get(detail.reason, "操作被拒绝。")}' if detail.reason else ''
+            action = f'案件 {CASE_ACTION_LABELS[detail.action]}{step}{revision}{reason}'
+        operations = event.operations_detail
+        if operations is not None:
+            action = f'演示操作 <code>{escape(operations.action)} · {escape(operations.reference)}</code>'
+        rows.append(f'<tr><td><time>{timestamp}</time></td><td>{action}</td><td>{actor}</td>'
                     f'<td>{target}</td><td>{case_id}</td><td>{RESULT_LABELS[event.result]}</td></tr>')
     return page("审计日志", f'''
         <h1>审计日志</h1>

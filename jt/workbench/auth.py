@@ -23,6 +23,12 @@ class AuthenticationRequired(Exception):
     pass
 
 
+class ExpiredSession(AuthenticationRequired):
+    def __init__(self, digest: bytes) -> None:
+        super().__init__()
+        self.digest = digest
+
+
 class AccessDenied(Exception):
     pass
 
@@ -91,6 +97,31 @@ class Auth:
             self.store.save_account(Account(username, Role.ADMIN, PasswordHash.make(password), secret, step))
             self.store.append_audit(AuditEvent(timestamp, AuditAction.ACCOUNT_CREATED, staff_target=username))
 
+    def issue_initial_admin_setup(self, username: str) -> str:
+        if not USERNAME.fullmatch(username):
+            raise InvalidAccount
+        with self.store.locked():
+            accounts = self.store.accounts()
+            if accounts:
+                account = accounts[0]
+                if (len(accounts) != 1 or account.username != username or account.role != Role.ADMIN
+                        or not account.enabled or account.password is not None or account.totp_seed is not None
+                        or account.setup is None):
+                    raise AccessDenied
+            else:
+                account = Account(username, Role.ADMIN)
+            setup_code = self._issue_setup(account, self.monotonic())
+            action = AuditAction.TOTP_REBIND_AUTHORIZED if accounts else AuditAction.ACCOUNT_CREATED
+            self.store.append_audit(AuditEvent(self.clock(), action, staff_target=username))
+            return setup_code
+
+    def _issue_setup(self, account: Account, now: float) -> str:
+        setup_code = new_token()
+        grant = SetupGrant(token_digest(setup_code), now + SETUP_LIFETIME)
+        self.store.save_account(replace(account, totp_seed=None, last_totp_step=-1, setup=grant))
+        self.store.revoke_staff_sessions(account.username)
+        return setup_code
+
     def inspect_accounts(self, token: str) -> tuple[Session, tuple[AccountStatus, ...]]:
         with self.store.locked():
             now = self.monotonic()
@@ -110,14 +141,16 @@ class Auth:
             account = self.store.account(username)
             try:
                 setup_code = self._manage_account(session, action, account, username, role, now)
-            except InvalidAccount:
+            except InvalidAccount as error:
+                rejection = error
                 self.store.append_audit(AuditEvent(self.clock(), ACCOUNT_ACTIONS[action], session.username,
                                                    result=AuditResult.DENIED,
                                                    staff_target=account.username if account else None))
-                raise
-            self.store.append_audit(AuditEvent(self.clock(), ACCOUNT_ACTIONS[action], session.username,
-                                               staff_target=username))
-            return setup_code
+            else:
+                self.store.append_audit(AuditEvent(self.clock(), ACCOUNT_ACTIONS[action], session.username,
+                                                   staff_target=username))
+                return setup_code
+        raise rejection
 
     def _manage_account(
         self, session: Session, action: AccountAction, account: Account | None, username: str, role: str, now: float,
@@ -129,11 +162,7 @@ class Auth:
         elif account is None or not account.enabled or account.username == session.username:
             raise InvalidAccount
         if action in (AccountAction.CREATE, AccountAction.REBIND):
-            setup_code = new_token()
-            grant = SetupGrant(token_digest(setup_code), now + SETUP_LIFETIME)
-            self.store.save_account(replace(account, totp_seed=None, last_totp_step=-1, setup=grant))
-            self.store.revoke_staff_sessions(username)
-            return setup_code
+            return self._issue_setup(account, now)
         if action == AccountAction.UNLOCK:
             self.store.save_failures(username, Failures())
         elif action == AccountAction.DISABLE:
@@ -215,7 +244,7 @@ class Auth:
             raise AuthenticationRequired
         if now >= min(session.expires_at, session.idle_until):
             self.store.revoke_session(digest)
-            raise AuthenticationRequired
+            raise ExpiredSession(digest)
         if role is not None and session.role != role:
             raise AccessDenied
         if csrf is not None and (not TOKEN.fullmatch(csrf) or not hmac.compare_digest(session.csrf, csrf)):

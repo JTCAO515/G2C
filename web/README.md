@@ -7,6 +7,7 @@ G2C 官网落地页：介绍 CJ Agent 和 App 里已上线的工具，推荐 App
 - `i18n.js` — 六种语言文案（英、简中、俄、西、阿、法），含聊天演示、工具清单、照片墙地名、表单选项。整页只写已上线的能力（#1839）：脱敏、JT Agent 后台跟进、工单与真人同事接手的承诺和演示已撤下，每项上线后再写回
 - `app.js` — 渲染与交互：聊天演示（预设问题打字/删除，仅动效）、照片墙轮换、报名表单
 - `api/early-access.js` — 报名接口：校验后经 Jotform 官方 API 写入现有 Jotform 表单
+- `service-request.js`、`api/service-request.js`、`api/_service-request-destination.js` — 广州中英商务陪同的申请表与接口（#1777），开关默认关，见下文「服务申请入口」
 - `credits.html`、`assets/sights/CREDITS.md` — 景点照片作者与许可（CC BY / BY-SA 需署名，勿删）
 - `assets/` — LOGO、吉祥物、景点照片、字体
 
@@ -18,7 +19,7 @@ python3 -m http.server 8080 --directory web
 
 静态预览下 `/api/early-access` 不可用，提交会显示失败提示和备用表单链接；完整流程以 Vercel Preview 为准。
 
-报名接口离线回归检查：`node --test scripts/test_web_early_access.cjs`（在仓库根目录运行）。
+报名接口离线回归检查：`node --test scripts/test_web_early_access.cjs`；服务申请入口：`node --test scripts/test_web_service_request.cjs`（都在仓库根目录运行）。
 
 ## Vercel
 
@@ -48,6 +49,25 @@ Jotform 自身的页面在中国大陆经常打不开（Jotform 支持论坛与 
 
 页面其余资源（字体、图片、脚本）全部来自本域，不请求 Google Fonts 等第三方服务。
 
+## 服务申请入口（#1777，默认关）
+
+申请一位广州的中英商务陪同：称呼、邮箱、日期、说明（选填，提示简单说需要什么帮助、时间地点由我们邮件确认、不要填证件号和健康信息），以及四个必勾的勾选框：已阅读隐私政策，和三项分项同意（行踪信息、提供给陪同人员、传到中国大陆以外（中国香港和美国）处理；PIPIA 增补 13.4），每项链接到隐私政策对应段落（`/privacy#website-requests`、`#in-person-services`、`#cross-border`，锚点由合规文档线在 12-01 定稿里补上）。四项缺任一项，页面拦下，服务器返回 400。城市固定广州，服务只有「中英商务陪同」一项，城市由服务器写入，不由浏览器提交。页面写明通常在 1 个工作日内（北京时间）从 hello@go2china.space 邮件回复（JT 2026-11-26 定）；这个地址在回复说明、提交成功和失败提示里都以可选中的普通文字显示，不只做成 mailto 链接。不经过 Jotform。服务器校验与报名接口一致：超出长度上限的文字截断到上限，请求体超过 16 KB 拒绝（413）。
+
+开关打开时有两个入口：顶部导航（窄屏随导航一起隐藏）和首屏文字下方的链接（所有屏宽可见），都跳到表单区块。
+
+开关是仓库常量 `SERVICE_REQUEST_ENABLED`，页面（`service-request.js`）和函数（`api/service-request.js`）各有一份，离线测试检查两者一致。不用 Vercel 后台设置。关着时：
+
+- `service-request.js` 第一行就返回：页面没有表单，顶部导航和首屏文字下方都没有入口链接，不发任何请求。`index.html` 里只有这个脚本的 `<script>` 标签，`app.js` 不知道这个入口的存在（语言由 `service-request.js` 自己跟随语言选择框）。
+- `/api/service-request` 对任何请求返回 404，不读请求体，不记日志，不转发。
+
+申请经 `api/_service-request-destination.js` 的「去向」送出（下划线开头，Vercel 不把它当作单独的函数）。现在只有一个只写日志的替身 `LOG_ONLY`：只记字段长度和是否填了日期，不记称呼、邮箱、日期和说明原文，也不记由它们算出的哈希。开关打开而去向仍是 `LOG_ONLY` 时离线测试失败。
+
+打开开关前须全部满足（打开时只改两处常量，并把去向换成真实实现）：
+
+1. 隐私政策（草稿 `docs/privacy/privacy-policy.md`）已在官网 `/privacy` 公开。表单里的隐私政策链接指向 `/privacy`，现在这个页面还不存在。隐私政策首次公开须 JT 本人确认。
+2. `DEFAULT_DESTINATION` 换成服务线的服务请求后端（W9，契约 #1768）。
+3. 统筹指定收件人，并有一条测试申请到达人工（#32）。
+
 ## 图片
 
 `assets/sights/` 共 36 张景点照片，来自 rawpixel（CC0）与 Flickr（CC BY 2.0 / CC BY-SA 2.0），经 Openverse 检索，仅缩放并转为 WebP。页脚“Photo credits”链接到 `credits.html` 列出作者与许可。新增照片须补充署名。
@@ -59,3 +79,15 @@ Jotform 自身的页面在中国大陆经常打不开（Jotform 支持论坛与 
 ## 字体
 
 Onest（拉丁、西里尔）与 IBM Plex Sans Arabic 来自 Fontsource，均为 SIL Open Font License 1.1，许可证见 `assets/fonts/`。中文使用系统字体。
+
+## 隐私政策页（`/privacy`）
+
+- `privacy.html` 由 `scripts/build_privacy_page.cjs` 从 `docs/privacy/privacy-policy.md` 生成，不手改。改政策后在仓库根目录运行 `node scripts/build_privacy_page.cjs`；`--check` 检查页面是否与政策一致，`--strict` 另外要求没有【待…】、`[JT: …]` 这类占位符，也没有下面列出的拆分或锚点问题（公开前用）。离线测试：`node --test scripts/test_web_privacy_page.cjs`（页面与政策不一致就失败）。
+- 政策是中英双语（每节先中文后英文）。生成时按有没有汉字把段落、列表项分到中文和英文两份；写成「中文 / English」一行的标题、表格单元格、段落和列表项按斜杠拆成中英两条（斜杠后面要有空格，代码里的路径不算）。拆不开、仍然中英混排的行会报出原文，`--strict` 失败。Markdown 里的 HTML 注释是起草说明，不上页面；H1 由页面标题代替。
+- 页面只出中文和英文：网站语言选中文时显示中文，其他语言显示英文；选俄、西、法、阿语时页面写明政策只有中英文版本（`privacy.js`，文案在 `i18n.js` 的 `privacyPage`）。
+- 锚点只认政策里写的：标题、段落或列表项行尾的 ` {#锚点名}`。双语标题写一次，中英两份都有；段落和列表项要在中文和英文那条各写一次。服务申请表（#1862）链接的 `#website-requests`、`#in-person-services`、`#cross-border` 缺任何一个，或者只在一种语言里有、在同一种语言里出现两次，都会报出来，`--strict` 失败。页面上只有当前显示的那份带 `id`（切换语言时脚本把 `id` 移过去，页面加载完再跳一次），所以选中文或英文时 `/privacy#cross-border` 都能跳到对应段落。
+- 页脚有「隐私政策」链接（`/privacy`，`cleanUrls` 会把它对应到 `privacy.html`）。
+
+## Early Access 的中国大陆以外处理同意
+
+报名表在提交按钮上方写明「提交即表示你已阅读隐私政策，你的申请会由 Jotform（美国）处理」，并加一个必勾的勾选框「我同意传到中国大陆以外（中国香港和美国）处理」（统筹 2026-11-26 定）。不勾时页面拦下；服务端 `api/early-access.js` 要求 `consentAbroad === true`，否则返回 400 `consent_required`，不转发 Jotform。Jotform 表单里没有对应题目，所以这个同意只在服务端校验，不写进 Jotform。

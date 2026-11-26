@@ -44,6 +44,7 @@ ASSEMBLY_RUN_CREDENTIAL_SUBJECTS='CJ_BETA_ASSEMBLY_RUN_CREDENTIAL_SUBJECTS_JSON'
 ASSEMBLY_MODEL_STREAM_SUBJECTS='CJ_BETA_ASSEMBLY_MODEL_STREAM_SUBJECTS_JSON'
 ASSEMBLY_PROBE_MESSAGE='CJ_BETA_ASSEMBLY_PROBE_MESSAGE_ID'
 DEMO_SUBJECTS='CJ_BETA_DEMO_SUBJECTS_JSON'
+MAX_DEMO_SUBJECTS=256
 TRANSLATION_INTERNAL_SUBJECTS='CJ_TRANSLATION_INTERNAL_SUBJECTS_JSON'
 NEARBY_INTERNAL_SUBJECTS='CJ_NEARBY_INTERNAL_SUBJECTS_JSON'
 HOTEL_INTERNAL_SUBJECTS='CJ_HOTEL_INTERNAL_SUBJECTS_JSON'
@@ -170,9 +171,11 @@ def beta_subjects():
             or len(set(subjects))!=len(subjects)):
         raise ValueError('explicit_unique_beta_synthetic_subjects_required')
     demo=json.loads(os.environ.get(DEMO_SUBJECTS,'[]'))
-    # JT's 2026-11-14 P0 regression adds one fresh L identity to the existing
-    # 205. This bound is not a quota increase or account provisioning action.
-    if (type(demo) is not list or len(demo)>206
+    # JT's 2026-11-14 P0 regression added one fresh L identity to the existing 205 (206).
+    # #1749: the coordinator raised the bound to 256 on 2026-11-26 under JT's pre-authorization
+    # (external-tester batches, first 5 then 30-50). Not a quota increase: each subject keeps the
+    # existing Demo metering, and only internal-test codes are issued until JT opens external testing.
+    if (type(demo) is not list or len(demo)>MAX_DEMO_SUBJECTS
             or any(type(s) is not str or re.fullmatch(r'm4-synthetic-demo-[a-z0-9]{12}',s) is None for s in demo)
             or len(set(demo))!=len(demo)
             or set(demo)!={s for s in subjects if s.startswith('m4-synthetic-demo-')}
@@ -427,7 +430,7 @@ def assembly_cleanup(database):
     key_id='hk-beta-assembly'
     inventory=('business/message','business/usage','business/memory-authoritative','business/trip-authoritative',
         'business/needs-current-planning','business/feedback-private-actions','business/cleanup-metadata',
-        'business/memory-management-actions','checkpoints/run','memory-derived',*TARGETS,'external-processing')
+        'business/memory-management-actions','business/service-requests','business/service-sessions','business/service-staff-audit','checkpoints/run','memory-derived',*TARGETS,'external-processing')
     config=Configuration({key_id:decoded('CJ_BETA_CLEANUP_B64',length=32)},key_id,3600,inventory,
         Path(__file__).resolve().parents[2]/'backend/storage-registry.json',extra_hooks=account_hooks,control_records=True)
     local=local_database_target()

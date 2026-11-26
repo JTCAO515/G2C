@@ -15,3 +15,17 @@ api-beta.go2china.space {
 		flush_interval -1
 	}
 }
+
+jtadmin.go2china.space {
+	tls {
+		issuer acme {
+			dir https://acme-v02.api.letsencrypt.org/directory
+		}
+	}
+	reverse_proxy unix//config/jt-workbench/http.sock {
+		header_up Host jtadmin.go2china.space
+		header_up X-Forwarded-Proto https
+		header_up -X-Forwarded-For
+		header_up -X-Forwarded-Host
+	}
+}

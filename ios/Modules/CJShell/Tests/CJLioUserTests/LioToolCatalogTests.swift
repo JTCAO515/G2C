@@ -25,15 +25,15 @@ struct LioToolCatalogTests {
 
     @Test func hiddenToolsAreLeftOut() {
         let none = LioToolCatalog.visible(.init())
-        #expect(none == [.localSupport, .metro, .payment, .translation, .phrases])
+        #expect(none == [.localSupport, .metro, .payment, .translation, .showCards])
         #expect(!none.contains(.taxi) && !none.contains(.currency) && !none.contains(.hotels) && !none.contains(.nearby))
 
         let all = LioToolCatalog.visible(.init(taxi: true, currency: true, hotels: true, nearby: true))
-        #expect(all == [.localSupport, .taxi, .hotels, .nearby, .currency, .metro, .payment, .translation, .phrases])
+        #expect(all == [.localSupport, .taxi, .hotels, .nearby, .currency, .metro, .payment, .translation, .showCards])
 
         #expect(!none.contains(.transport))
         let transport = LioToolCatalog.visible(.init(taxi: true, roadbook: true, transport: true))
-        #expect(transport == [.localSupport, .taxi, .roadbook, .transport, .metro, .payment, .translation, .phrases])
+        #expect(transport == [.localSupport, .taxi, .roadbook, .transport, .metro, .payment, .translation, .showCards])
     }
 
     @Test func existingIdentifiersStayStableForAcceptanceScripts() {
@@ -43,7 +43,7 @@ struct LioToolCatalogTests {
         #expect(LioTool.metro.identifier == "lio.tools.metro-guide")
         #expect(LioTool.payment.identifier == "lio.tools.payment-guide")
         #expect(LioTool.translation.identifier == "lio.tools.translation")
-        #expect(LioTool.phrases.identifier == "lio.tools.phrase-cards")
+        #expect(LioTool.showCards.identifier == "lio.tools.show-cards")
         #expect(LioTool.hotels.identifier == "lio.tools.hotels")
         #expect(LioTool.transport.identifier == "lio.tools.transport")
     }
