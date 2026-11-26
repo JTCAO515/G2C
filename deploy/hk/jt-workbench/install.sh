@@ -21,7 +21,11 @@ systemctl is-active --quiet g2c-beta-backup.timer
 [[ $(docker inspect --format '{{.State.Health.Status}}' "$api") == healthy ]]
 [[ $(docker exec "$caddy" caddy version | cut -d ' ' -f 1) == v2.11.* ]]
 [[ $(docker inspect --format '{{json .Config.Cmd}}' "$caddy") == '["caddy","run","--config","/etc/caddy/Caddyfile","--adapter","caddyfile"]' ]]
-[[ $(docker inspect --format '{{json .HostConfig.CapAdd}} {{json .HostConfig.CapDrop}} {{.Config.User}}' "$caddy") == '["NET_BIND_SERVICE"] ["ALL"] ' ]]
+caps=$(docker inspect --format '{{json .HostConfig.CapAdd}} {{json .HostConfig.CapDrop}} {{.Config.User}}' "$caddy")
+case "$caps" in
+  '["NET_BIND_SERVICE"] ["ALL"] '|'["CAP_NET_BIND_SERVICE"] ["ALL"] ') ;;
+  *) exit 1 ;;
+esac
 [[ -r $bundle/compose.yaml && -r $config && ! -L $config && -S $root/local-pg-socket/.s.PGSQL.5432 ]]
 [[ -x /usr/lib/systemd/systemd-socket-proxyd && -x /usr/bin/setpriv ]]
 awk '/^MemTotal:/{total=$2} /^MemAvailable:/{available=$2} END{exit !(available > total/5+512*1024)}' /proc/meminfo
@@ -33,7 +37,7 @@ install -d -o 0 -g 10031 -m 0750 "$home/db"
 install -d -o 10001 -g 10001 -m 0700 "$home/backups"
 install -d -o 10031 -g 0 -m 2750 "$root/caddy-config/jt-workbench"
 install -d -m 0755 "$host_bundle"
-for file in compose.yaml backup.py offboard.py; do install -m 0644 "$bundle/$file" "$host_bundle/$file"; done
+for file in compose.yaml backup.py offboard.py recover_admin.py; do install -m 0644 "$bundle/$file" "$host_bundle/$file"; done
 python3 - "$home" <<'PY'
 import os, secrets, stat, sys
 from pathlib import Path
@@ -135,8 +139,11 @@ restore_caddy() {
   docker kill --signal USR1 "$caddy" >/dev/null
 }
 if ! cmp -s "$config" "$candidate"; then
-  [[ ! -e $home/Caddyfile.before ]]
-  cp "$config" "$home/Caddyfile.before"
+  if [[ -e $home/Caddyfile.before ]]; then
+    cmp -s "$config" "$home/Caddyfile.before"
+  else
+    cp "$config" "$home/Caddyfile.before"
+  fi
   trap restore_caddy ERR
   # The running container uses a single-file bind mount, so retain its inode on the host.
   cat "$candidate" > "$config"
@@ -144,6 +151,9 @@ if ! cmp -s "$config" "$candidate"; then
   curl --noproxy '*' --fail --silent --show-error --retry 2 --max-time 6 \
     --resolve api-beta.go2china.space:443:127.0.0.1 https://api-beta.go2china.space/health/ready >/dev/null
   trap - ERR
+else
+  # If a previous signal was not applied, re-read the already validated exact candidate.
+  docker kill --signal USR1 "$caddy" >/dev/null
 fi
 for attempt in {1..12}; do
   if login=$(curl --noproxy '*' --fail --silent --max-time 3 \
