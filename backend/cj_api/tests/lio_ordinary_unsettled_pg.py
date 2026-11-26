@@ -99,8 +99,10 @@ def check_ordinary(api, headers, database, auth, subject, scope, memory, root):
                     return
                 if case == 'transit':
                     assert 'use the official entry notice' in system
-                expected_tool = M4_TURN_FUNCTION_V2 if profile=='compact'else'fact'
-                assert [tool['function']['name'] for tool in packet['tools']]==[expected_tool]
+                # #1756: with no confirmed destination the model is offered the immigration fact tool and the
+                # nationwide-only visitor tool, nothing else.
+                expected_tools = [M4_TURN_FUNCTION_V2] if profile=='compact'else['fact','visitor_fact']
+                assert [tool['function']['name'] for tool in packet['tools']]==expected_tools
                 attempts.append('answer')
                 yield _M4_REQUEST_SENT
                 observation['http_status'] = 200

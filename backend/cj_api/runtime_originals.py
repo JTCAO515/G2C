@@ -27,6 +27,14 @@ from runtime_adapter.contract import Unavailable,decode as original_json,require
 from .runtime_private import read_private,PrivateFileError
 
 
+_VISITOR_RESULT={'FACT-query.2':'FACT-result.2','FACT-query.3':'FACT-result.3'}
+
+
+def visitor_result_matches(query,version):
+    """A visitor result carries the version that answers the version of its own query (v3 adds nationwide-only)."""
+    return type(query) is dict and type(version) is str and _VISITOR_RESULT.get(query.get('version'))==version
+
+
 class RuntimeOriginals:
     def __init__(self,message_boundary,database,budget,artifact_directory,*,query_original=None,rejected_memory_lifetime=None):
         if type(message_boundary) is not Boundary:
@@ -251,7 +259,7 @@ class RuntimeOriginals:
             receipt.get('response_sha256')==data['response_sha256'],'ORIGINAL_LOCAL_VISITOR_SOURCE')
         logical=original_json(usage.input_bytes);result=original_json(data['result_utf8'])
         require(type(logical) is dict and logical.get('name')=='visitor_fact' and
-            type(result) is dict and result.get('version')=='FACT-result.2' and
+            type(result) is dict and visitor_result_matches(logical.get('query'),result.get('version')) and
             type(result.get('catalogue_sha256')) is str and re.fullmatch('[a-f0-9]{64}',result['catalogue_sha256']) is not None and
             result.get('query')==logical.get('query') and result.get('request_ref')==logical.get('request_ref') and
             result.get('data_origin')=='maintainer_summary' and type(result.get('evaluated_at')) is str,
