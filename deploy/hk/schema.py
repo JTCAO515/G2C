@@ -18,6 +18,25 @@ from deploy.recovery import pg_environment,checksum
 def migration_identity():return [dict(version=m['version'],sha256=m['sha256']) for m in migrate.load()]
 
 
+def application_roles():
+    """Committed CREATE ROLE lines; the operations console role (0058, #1771) is NOLOGIN here.
+
+    Hong Kong creates cj_ops_console only so the committed grants apply; it gets no login,
+    no pg_hba/pg_ident entry and no credential (JT stop point). Local migrations keep LOGIN.
+    """
+    roles=[]
+    for migration in migrate.load():
+        roles+=re.findall(r'^CREATE ROLE cj_(?:m1_runtime|local_cleanup|ops_console)\b[^\n]*;', (migrate.ROOT/migration['file']).read_text(),re.M)
+    if len(roles)!=3:raise ValueError('exact_committed_application_roles_required')
+    out=[]
+    for line in roles:
+        if line.startswith('CREATE ROLE cj_ops_console '):
+            if line.count(' LOGIN ')!=1:raise ValueError('exact_committed_application_roles_required')
+            line=line.replace(' LOGIN ',' NOLOGIN ')
+        out.append(line)
+    return out
+
+
 def generate(config,root):
     config=local_connection(config);root=Path(root);root.mkdir(mode=0o700)
     with psycopg.connect(**config) as connection:
@@ -29,11 +48,7 @@ def generate(config,root):
                 raise ValueError('schema_blueprint_must_have_no_business_data')
     from .staging import sequence_names
     with psycopg.connect(**config) as connection:sequences=sequence_names(connection)
-    roles=[]
-    for migration in migrate.load():
-        roles+=re.findall(r'^CREATE ROLE cj_(?:m1_runtime|local_cleanup)\b[^\n]*;', (migrate.ROOT/migration['file']).read_text(),re.M)
-    if len(roles)!=2:raise ValueError('exact_committed_application_roles_required')
-    (root/'roles.sql').write_text('\n'.join(roles)+'\n')
+    (root/'roles.sql').write_text('\n'.join(application_roles())+'\n')
     for section in ('pre-data','post-data'):
         with (root/(section+'.sql')).open('xb') as output:
             subprocess.run(['pg_dump','--schema-only','--no-owner','--section='+section],

@@ -804,3 +804,17 @@ def test_existing_quota_inspection_accepts_both_formats_without_reset(monkeypatc
             return SimpleNamespace(fetchone=lambda:(version,asdict(ledger)))
     keys,count,next_count=demo_quota._existing_ledgers(Database(),approved_budget,resume=True)
     assert keys==seen and len(set(keys))==2 and(count,next_count)==(1,1)
+
+
+def test_hk_roles_create_ops_console_without_login():
+    # #1771: Hong Kong creates cj_ops_console only for the committed grants, never as a login.
+    from deploy.hk import schema
+    roles=schema.application_roles()
+    migrate=schema.migrate
+    sources=[line for m in migrate.load()
+             for line in (migrate.ROOT/m['file']).read_text().splitlines() if line.startswith('CREATE ROLE ')]
+    assert [r.split()[2] for r in roles]==['cj_m1_runtime','cj_local_cleanup','cj_ops_console']
+    assert roles[:2]==sources[:2]  # the two existing roles stay exactly as committed
+    ops=roles[2]
+    assert ' NOLOGIN ' in ops and ' LOGIN ' not in ops and 'NOBYPASSRLS' in ops
+    assert ops==sources[2].replace(' LOGIN ',' NOLOGIN ')  # every other attribute unchanged
