@@ -1,6 +1,7 @@
 """In-process case workflow for stage 2 synthetic exercises."""
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterator, Mapping
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from threading import RLock
@@ -194,6 +195,12 @@ class CaseWorkflow:
     def get(self, case_id: UUID) -> CaseExecution | None:
         with self._lock:
             return self._cases.get(case_id)
+
+    @contextmanager
+    def locked_case(self, case_id: UUID) -> Iterator[CaseExecution | None]:
+        """Read the current case while excluding concurrent playbook transitions."""
+        with self._lock:
+            yield self._cases.get(case_id)
 
     def advance(self, case_id: UUID, *, expected_revision: int, actor_id: str) -> CaseActionResult:
         return self._apply(case_id, expected_revision, "advance", actor_id)
