@@ -361,6 +361,126 @@
           "text_version": "svc-consent-1"
         }
       }
+    },
+    {
+      "reason": "arabic-indic phone",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-12-10",
+        "time_window": "half_day_am",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "Ms. Example",
+        "contact_phone": "+8\u0665\u0662\u0660\u0660\u0660\u0660\u0660\u0660\u0660",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
+    },
+    {
+      "reason": "fullwidth date",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "\uff12\uff10\uff12\uff16-12-10",
+        "time_window": "half_day_am",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "Ms. Example",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
+    },
+    {
+      "reason": "impossible date",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-02-31",
+        "time_window": "half_day_am",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "Ms. Example",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
+    },
+    {
+      "reason": "zero-width venue",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-12-10",
+        "time_window": "half_day_am",
+        "venue": "\u200b\u200b",
+        "customer_name": "Ms. Example",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
+    },
+    {
+      "reason": "lone surrogate",
+      "submission": {
+        "client_request_id": "sr-client-0001",
+        "service_type": "gz_business_escort_zh_en",
+        "service_date": "2026-12-10",
+        "time_window": "half_day_am",
+        "venue": "Canton Fair Complex Area A, Guangzhou",
+        "customer_name": "\ud800x",
+        "contact_phone": "+85200000000",
+        "meeting_purpose": "Supplier meeting",
+        "counterpart": {
+          "company": "Example Trading Co.",
+          "name": "Mr. Wang"
+        },
+        "note": "",
+        "consents": {
+          "location_sensitive": true,
+          "share_with_escort": true,
+          "cross_border": true,
+          "text_version": "svc-consent-1"
+        }
+      }
     }
   ],
   "transitions": [
@@ -426,6 +546,20 @@
       "robot",
       "quote",
       "unknown actor"
+    ],
+    [
+      "in_progress",
+      "completed",
+      "system",
+      "completion_summary",
+      "system cannot complete"
+    ],
+    [
+      "outcome_unknown",
+      "completed",
+      "system",
+      "completion_summary",
+      "system cannot complete after unknown"
     ]
   ]
 }

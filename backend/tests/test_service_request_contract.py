@@ -31,7 +31,7 @@ def test_positive_submission(value):
 @pytest.mark.parametrize('case', NEG['submissions'], ids=lambda c: c['reason'])
 def test_negative_submission(case):
     with pytest.raises(InvalidInput):
-        parse_submission(raw(case['submission']))
+        parse_submission(json.dumps(case['submission']).encode('ascii'))
 
 
 @pytest.mark.parametrize('body', [

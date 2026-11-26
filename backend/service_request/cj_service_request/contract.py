@@ -4,8 +4,10 @@ No storage, no I/O. W9-2 (#1769) builds the repository on these definitions.
 """
 from __future__ import annotations
 
+import datetime
 import json
 import re
+import unicodedata
 from dataclasses import dataclass
 
 SERVICE_TYPE = 'gz_business_escort_zh_en'
@@ -33,8 +35,8 @@ SHAREABLE = ('customer_name', 'language', 'service_date', 'time_window', 'venue'
 
 _ID = re.compile(r'[A-Za-z0-9_-]{1,128}')
 _VERSION = re.compile(r'[A-Za-z0-9._-]{1,32}')
-_DATE = re.compile(r'\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])')
-_PHONE = re.compile(r'\+[1-9]\d{7,14}')
+_DATE = re.compile(r'[0-9]{4}-[0-9]{2}-[0-9]{2}', re.ASCII)
+_PHONE = re.compile(r'\+[1-9][0-9]{7,14}', re.ASCII)
 _KEYS = {'client_request_id', 'service_type', 'service_date', 'time_window', 'venue', 'customer_name',
          'contact_phone', 'meeting_purpose', 'counterpart', 'note', 'consents'}
 _CONSENTS = {'location_sensitive', 'share_with_escort', 'cross_border', 'text_version'}
@@ -60,7 +62,9 @@ def _no_dupes(pairs):
 def _text(value, limit, *, nonblank=False):
     if not isinstance(value, str) or '\x00' in value or len(value) > limit:
         raise InvalidInput('text')
-    if nonblank and not value.strip():
+    if any(0xD800 <= ord(ch) <= 0xDFFF for ch in value):
+        raise InvalidInput('lone surrogate')
+    if nonblank and not ''.join(ch for ch in value if unicodedata.category(ch) not in ('Cf', 'Zs', 'Zl', 'Zp', 'Cc')).strip():
         raise InvalidInput('blank')
     return value
 
@@ -100,6 +104,10 @@ def parse_submission(original: bytes) -> Submission:
         raise InvalidInput('service_type')
     if not isinstance(value['service_date'], str) or not _DATE.fullmatch(value['service_date']):
         raise InvalidInput('service_date')
+    try:
+        datetime.date.fromisoformat(value['service_date'])
+    except ValueError as exc:
+        raise InvalidInput('service_date') from exc
     if value['time_window'] not in ('half_day_am', 'half_day_pm', 'full_day'):
         raise InvalidInput('time_window')
     _text(value['venue'], 200, nonblank=True)
@@ -134,6 +142,8 @@ def check_transition(current: str, target: str, actor: str, evidence_kind: str |
         raise InvalidTransition(f'{current} -> {target}')
     if target == 'user_cancelled' and actor == 'system':
         raise InvalidTransition('system cannot cancel for the user')
+    if target == 'completed' and actor != 'staff':
+        raise InvalidTransition('only staff may complete')
     if actor == 'user' and target != 'user_cancelled':
         raise InvalidTransition('user may only cancel')
     if evidence_kind != EVIDENCE[target]:
