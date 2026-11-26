@@ -8,11 +8,11 @@ class Connection:
     pass
 
 
-def _initialize(monkeypatch, tmp_path, applied, migrations):
+def _initialize(monkeypatch, tmp_path, applied, migrations, calls=None):
     monkeypatch.setenv('CJ_ENV', 'local')
     from deploy.hk import entrypoint
     connection = Connection()
-    calls = []
+    calls = [] if calls is None else calls
 
     @contextmanager
     def operator():
@@ -37,7 +37,14 @@ def _migrations(top):
 def test_supabase_target_with_a_pending_migration_fails_closed_before_migrating(monkeypatch, tmp_path):
     calls = []
     with pytest.raises(ValueError, match='supabase_source_frozen_pending_migrations'):
-        calls = _initialize(monkeypatch, tmp_path, applied=range(1, 58), migrations=_migrations(58))
+        _initialize(monkeypatch, tmp_path, applied=range(1, 58), migrations=_migrations(58), calls=calls)
+    assert calls == []  # neither migrate.up nor bootstrap ran before the refusal
+
+
+def test_supabase_target_without_a_migration_ledger_fails_closed(monkeypatch, tmp_path):
+    calls = []
+    with pytest.raises(ValueError, match='supabase_source_frozen_pending_migrations'):
+        _initialize(monkeypatch, tmp_path, applied=[], migrations=_migrations(55), calls=calls)
     assert calls == []
 
 
