@@ -883,6 +883,16 @@ class RealTools:
                 if not chinese:
                     # HK run -41 eval: an English Uber question was answered in Chinese.
                     system += ' Write the whole answer in English; Chinese appears only in the bold name brackets.'
+        if lio_locale is not None:
+            # W2 #1826/#1859: reviewed attraction-booking and Guangzhou business facts, read by code;
+            # any read failure leaves the prompt as it was.
+            from .lio_fact_blocks import collect,fact_blocks_enabled,prompt_text
+            if fact_blocks_enabled():
+                blocks=collect(messages[-1]['content'],lio_locale)
+                if blocks:
+                    system+=prompt_text(blocks,lio_locale)
+                    for block in blocks:
+                        for key,title,url in block.sources:yield LioCitation(key,title,url,None)
         if binding.scope in self.buffered_streaming_scopes:profile=M4_NATIVE_TURN_BUFFERED
         elif binding.scope in self.streaming_scopes:profile=M4_NATIVE_TURN_STREAM
         else:profile=M4_NATIVE_TURN_PROFILE_V2

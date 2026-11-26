@@ -48,12 +48,13 @@ class ScenePackTests(unittest.TestCase):
         self.assertTrue(config.city_enabled(business,'guangzhou',switches,self.directory))
         self.assertFalse(config.city_enabled(business,'beijing',switches,self.directory))
 
-    def test_runtime_does_not_read_packs_yet_so_build57_behaviour_is_unchanged(self):
-        # Until W2-8 (#1738) consumes packs, no runtime module may import them.
-        readers=[path.relative_to(ROOT) for base in ('backend','deploy','scripts') for path in (ROOT/base).rglob('*.py')
-                 if 'tests' not in path.parts and path.name!='scene_pack_config.py'
-                 and re.search(r'\bscene_pack_config\b',path.read_text(errors='ignore'))]
-        self.assertEqual(readers,[])
+    def test_only_listed_runtime_modules_read_packs_so_build57_behaviour_is_unchanged(self):
+        # Each ticket that reads packs adds its own module here; any other reader still fails this test.
+        allowed=['backend/cj_api/lio_fact_blocks.py']  # #1859 business facts, behind CJ_LIO_FACT_BLOCKS (default off)
+        readers=sorted(str(path.relative_to(ROOT)) for base in ('backend','deploy','scripts') for path in (ROOT/base).rglob('*.py')
+                       if 'tests' not in path.parts and path.name!='scene_pack_config.py'
+                       and re.search(r'\bscene_pack_config\b',path.read_text(errors='ignore')))
+        self.assertEqual(readers,allowed)
 
     def test_tool_ids_match_the_app_registry(self):
         registry=set(re.findall(r'LioTool\("([a-z-]+)"\)',REGISTRY.read_text()))
