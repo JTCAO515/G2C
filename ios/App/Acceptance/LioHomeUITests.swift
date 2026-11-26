@@ -475,7 +475,7 @@ import CryptoKit
         let phrases: [(id: String, zh: String, en: String)] = [
             ("business-quote", "请问可以报一下这款产品的价格吗？", "Could you give me a quote for this product?"),
             ("business-moq", "请问最小起订量是多少？", "What is the minimum order quantity?"),
-            ("business-lead-time", "下单后大概多久可以交货？", "How long does delivery take after we place an order?"),
+            ("business-lead-time", "下单后大概多久可以交货？", "How soon can you ship after we place an order?"),
             ("business-sample", "可以先提供样品吗？费用怎么算？", "Could you provide a sample first? How is it charged?"),
             ("business-payment", "请问付款方式是什么？可以先付定金吗？", "What are the payment terms? Can we pay a deposit first?"),
         ]
