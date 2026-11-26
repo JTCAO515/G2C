@@ -295,10 +295,6 @@ class SplitFirstParagraph(unittest.TestCase):
         self.assertEqual(PROFILES[ONE_SCREEN], 'LIO-answer-quality-checks.3')
 
 
-if __name__ == '__main__':
-    unittest.main()
-
-
 def test_followup_cases_for_1728_load_and_score_on_the_last_answer():
     # W2-2 (#1728): ten follow-ups that refer to the previous Lio reply.
     from eval.lio_answer_quality import ROOT, load_cases, main, summarize
@@ -315,3 +311,7 @@ def test_followup_cases_for_1728_load_and_score_on_the_last_answer():
     rows = {row['id']: row for row in summarize([case], {case['id']: vague})['rows']}
     assert not rows[case['id']]['checks']['uses_context']
     assert main(['cases', '--cases', str(ROOT / 'lio_followup_cases.v1.json')]) == 0
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -48,29 +48,52 @@ class AssistantContext(unittest.TestCase):
         with self.assertRaises(ValueError):
             interleave([], ('a', 'b'), (), {})
 
-    def test_reader_returns_completed_text_per_message_in_this_conversation(self):
-        calls = []
+    def database(self, *, withdrawn=False, erased=False, fail=False, calls=None):
+        calls = [] if calls is None else calls
+        rows = [('m1', '你好，'), ('m1', '成都'), ('m2', 'OK')]
+
+        class Connection:
+            def __enter__(self): return self
+            def __exit__(self, *args): return False
+            def execute(self, sql, params):
+                calls.append((sql, params))
+                if 'cj_memory_item' in sql:
+                    if fail:
+                        from psycopg import errors
+                        raise errors.InsufficientPrivilege('denied')
+                    return SimpleNamespace(fetchone=lambda: (withdrawn, erased))
+                return SimpleNamespace(fetchall=lambda: rows)
 
         class Database:
             def connect(self, scope):
                 calls.append(scope)
-                rows = [('m1', '你好，'), ('m1', '成都'), ('m2', 'OK')]
-
-                class Connection:
-                    def __enter__(self): return self
-                    def __exit__(self, *args): return False
-                    def execute(self, sql, params):
-                        calls.append((sql, params))
-                        return SimpleNamespace(fetchall=lambda: rows)
                 return Connection()
+        return Database()
+
+    def test_reader_returns_completed_text_per_message_in_this_conversation(self):
+        calls = []
         binding = SimpleNamespace(scope='s', conversation_id='c', generation='g', message_sequence=5)
-        self.assertEqual(read_replies(Database(), binding, ['m1', 'm2']), {'m1': '你好，成都', 'm2': 'OK'})
-        sql, params = calls[1]
+        self.assertEqual(read_replies(self.database(calls=calls), binding, ['m1', 'm2']), {'m1': '你好，成都', 'm2': 'OK'})
+        memory_sql, memory_params = calls[1]
+        self.assertIn("status IN ('disabled','withdrawn')", memory_sql)
+        self.assertIn('cj_memory_erasure_fence WHERE scope_digest=%s', memory_sql)
+        from hashlib import sha256
+        self.assertEqual(memory_params, ('s', sha256(b's').hexdigest()))
+        sql, params = calls[3]
         for clause in ("r.status='completed'", "e.kind='text_delta'", 'm.conversation_id=%s', 'm.sequence<%s',
                        'm.message_id=ANY(%s)'):
             self.assertIn(clause, sql)
         self.assertEqual(params, ('s', 'c', 'g', 5, ['m1', 'm2']))
-        self.assertEqual(read_replies(Database(), binding, []), {})
+        self.assertEqual(read_replies(self.database(), binding, []), {})
+
+    def test_no_reply_once_any_memory_was_paused_withdrawn_or_erased_or_unreadable(self):
+        # Review of #1827: a reply may repeat a Memory item that was later stopped or erased.
+        binding = SimpleNamespace(scope='s', conversation_id='c', generation='g', message_sequence=5)
+        for state in (dict(withdrawn=True), dict(erased=True), dict(fail=True)):
+            with self.subTest(**state):
+                calls = []
+                self.assertEqual(read_replies(self.database(calls=calls, **state), binding, ['m1']), {})
+                self.assertFalse(any('text_delta' in call[0] for call in calls if isinstance(call, tuple)))
 
 
 class NationalAnswerContext(unittest.TestCase):

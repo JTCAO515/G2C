@@ -11,8 +11,19 @@ references handed to the model-history fence stay exactly the same: a reply is
 derived from its own original message. A reply is data the model wrote; it is
 never a source for planning facts, saving or authority, and it is not added to
 the planning or intake paths.
+
+A reply may repeat saved Memory that was injected into its RUN. The erasure
+fence only covers an item's source originals, so once this traveler has ever
+paused, withdrawn or erased a Memory item, no earlier reply is added at all
+(review of #1827; docs/memory.md: stopping use excludes later context). The
+erasure fence rows are never deleted, so an erased-and-cleaned item still
+counts. A read failure also adds no reply.
 """
+from hashlib import sha256
+import logging
 import os
+
+from psycopg import Error as DatabaseError
 
 ASSISTANT_TURNS = 3
 REPLY_CHARACTERS = 400
@@ -32,9 +43,23 @@ def shorten(text, limit=REPLY_CHARACTERS):
     return text if len(text) <= limit else text[:limit - 1].rstrip() + ELLIPSIS
 
 
+def memory_ever_withdrawn(database, binding):
+    """True when any Memory item of this scope was paused, withdrawn or erased, or the read fails."""
+    try:
+        with database.connect(binding.scope) as db:
+            disabled, erased = db.execute(
+                "SELECT EXISTS(SELECT 1 FROM cj_memory_item WHERE scope=%s AND status IN ('disabled','withdrawn')),"
+                'EXISTS(SELECT 1 FROM cj_memory_erasure_fence WHERE scope_digest=%s)',
+                (binding.scope, sha256(binding.scope.encode()).hexdigest())).fetchone()
+        return bool(disabled or erased)
+    except DatabaseError:
+        logging.getLogger('cj_usage.audit').info('LIO_ASSISTANT_CONTEXT_SKIPPED reason=memory_state_unavailable')
+        return True
+
+
 def read_replies(database, binding, message_ids):
     """Visible text of completed RUNs answering these originals, in this conversation only."""
-    if not message_ids:
+    if not message_ids or memory_ever_withdrawn(database, binding):
         return {}
     with database.connect(binding.scope) as db:
         rows = db.execute(
