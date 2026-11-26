@@ -8,8 +8,8 @@
 不写尚未实装的功能或未经验证的期限（#225 正式法律相关意见「文案」一节）。
 
 【发布前提】本稿描述的是下列各项落地后的状态。对外发布（官网或 App 内对外可见）前，逐项确认已落地并与文字核对；任一项未落地，对应段落要删去或改写成现状。首次对外公开另须 JT 本人确认（统筹转达）。
-- 第 3、4 节的位置写法：#1833（打车坐标只用于该次请求、不记日志不落盘不进缓存键；附近降到 3 位小数）、#1832（定位用途说明与隐私清单申报）、#1748（定位边界）。
-- 第 3、5 节的单独同意（AI 模型、记忆、位置、真人服务、出境）：#1747（同意界面）、#1772（真人服务确认页，分项勾选）。
+- 第 3、4 节的位置写法：#1833（打车坐标只用于该次请求、不记日志不落盘不进缓存键；附近发给高德的坐标转换、周边搜索、逆地理三类请求都降到 3 位小数）、#1832（定位用途说明与隐私清单申报）、#1748（定位单独成页、需要时才弹出，撤回入口「我的 → 位置」；统筹 2026-11-26 按 JT 预授权决定）。三张票都落地前，这些写法与实际行为不一致。总同意（#1747）里只写一句「定位另行询问」。
+- 第 3、5 节的单独同意：AI 模型、记忆在 #1747（总同意界面，其中只写一句「定位另行询问」）；位置在 #1748（单独成页、需要时才弹出）；真人服务在 #1772（确认页，分项勾选）。出境告知随各项同意一起给出：AI 模型在 #1747、位置在 #1748、真人服务在 #1772。
 - 第 6 节真人服务：#1768（契约）、#1769（存储与清理）、#1771（运营台）、#1772（确认页）、#1775（陪同服务协议含委托处理条款，JT 负责）。
 - 第 7 节真人服务 12 个月 / 90 天：#1769 的清理钩子落地并验证。
 - 第 5 节出境机制：按 #225 落实后填写。
@@ -65,11 +65,21 @@ This policy covers the Go2China iOS app, the website go2china.space, and any in-
 | Usage and diagnostics | Usage counts, error records | Quotas, troubleshooting | Required |
 | Feedback | What you choose to submit | Handling the issue | Optional |
 
-**我们不收集**：护照号等证件号码、支付卡号、你的通讯录。只有在你使用打车或附近、并单独同意后，我们才读取设备位置；每次只读一次，不在后台持续定位，也不把位置写入记忆或发给 AI 模型。
+**我们不收集**：护照号等证件号码、支付卡号、你的通讯录。只有在你使用打车或附近、并单独同意后，我们才读取设备位置。位置的同意单独询问，在你第一次需要时才弹出，不在首次启动时一并勾选。每次只读一次，不在后台持续定位。
 
-**We do not collect**: passport or other ID numbers, payment card numbers, or your contacts. We read your device location only when you use Taxi or Nearby and have given separate consent. We read it once each time, never track you in the background, and never put your location into memory or send it to the AI model.
+- 去向：精确位置发到我们的香港服务；打车时转给滴滴；查找附近时降到约 100 米精度后发给高德。
+- 不和你的账号一起保存，不写入记忆，也不发给 AI 模型。
+- 撤回：在「我的 → 位置」里关闭，或在系统设置里关闭 Go2China 的定位权限。
+- 你的定位同意记录按账号保存在本机，同一台设备上的其他账号读不到；退出登录时保留，注销账号时删除。
 
-<!-- 位置相关的写法对应统筹 2026-11-26 按 JT 预授权决定的边界（#1833：打车坐标只用于该次请求、不记日志不落盘不进缓存键；附近降到 3 位小数），以及 #1832（定位用途说明与隐私清单申报）、#1747（同意界面单列定位）。这三张票落地前，本节与现状不符，不能对外发布。 -->
+**We do not collect**: passport or other ID numbers, payment card numbers, or your contacts. We read your device location only when you use Taxi or Nearby and have given separate consent. We ask for location consent on its own, the first time you need it, not as part of the consent at first launch. We read it once each time and never track you in the background.
+
+- Where it goes: your precise location goes to our service in Hong Kong; for Taxi it is passed to DiDi; for Nearby it is reduced to about 100 m before it goes to AMap.
+- It is not stored with your account, not saved to memory, and not sent to the AI model.
+- To withdraw: turn it off in Me → Location, or turn off location access for Go2China in system Settings.
+- Your location consent is stored on this device per account, and other accounts on the same device cannot read it. It is kept when you sign out and deleted when you close your account.
+
+<!-- 位置相关的写法以文首「发布前提」第一条为准：#1833（打车坐标只用于该次请求、不记日志不落盘不进缓存键；附近发给高德的坐标转换、周边搜索、逆地理三类请求都降到 3 位小数）、#1832（定位用途说明与隐私清单申报）、#1748（定位单独成页、需要时才弹出、撤回入口）。三张票都落地前，本节与现状不符，不能对外发布。 -->
 
 我们不出售你的个人信息，也不用于广告。
 
