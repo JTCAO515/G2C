@@ -10,6 +10,8 @@ struct LioTripHome: View {
     let plans: [LioPlanSummary]
     /// Saved trips are on this phone but were written by a newer app; they are kept, not shown as none.
     var plansUnreadable = false
+    /// The saved-trips store, so a template opened from this Roadbook entry can be used as my trip (#1725).
+    var savedPlans: LioSavedPlansModel? = nil
     let tools: LioTripHomeTools
     let showAllTrips: () -> Void
     let openChat: () -> Void
@@ -45,7 +47,7 @@ struct LioTripHome: View {
     }
 
     init(language: LioLanguage, store: LioTripHomeStore?, plans: [LioPlanSummary], plansUnreadable: Bool = false,
-         tools: LioTripHomeTools,
+         savedPlans: LioSavedPlansModel? = nil, tools: LioTripHomeTools,
          showAllTrips: @escaping () -> Void, openChat: @escaping () -> Void,
          fixedNow: Date? = nil, timeZone: TimeZone = .current, model: LioTripHomeModel? = nil,
          keepsSettingsInMemory: Bool = false) {
@@ -53,6 +55,7 @@ struct LioTripHome: View {
         self.keepsSettingsInMemory = keepsSettingsInMemory
         self.plans = plans
         self.plansUnreadable = plansUnreadable
+        self.savedPlans = savedPlans
         self.tools = tools
         self.showAllTrips = showAllTrips
         self.openChat = openChat
@@ -636,7 +639,8 @@ struct LioTripHome: View {
             LioReturnHotelView(language: language, store: tools.hotelStore, detailsStore: tools.detailsStore, taxiEntry: taxiEntry)
         case .roadbook:
             LioRoadbookLibraryView(language: language, store: tools.roadbookStore,
-                                   candidates: plans.map { LioRoadbook(savedPlan: $0) })
+                                   candidates: plans.map { LioRoadbook(savedPlan: $0) },
+                                   savedPlans: savedPlans)
         }
     }
 
