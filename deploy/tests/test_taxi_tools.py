@@ -1,3 +1,4 @@
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 import json
@@ -83,7 +84,8 @@ def test_search_calls_expected_city_and_normalized_coordinates(app_context):
     assert outside.status_code == 403 and seen == []
     response = client.post(SEARCH, headers=AUTH, json=body)
     assert response.status_code == 200
-    assert seen == [('maps_textsearch', dict(city='北京市', keywords='天安门', location='116.410244,39.916404'))]
+    # #1833: the search bias is reduced to 3 decimals; pickup points keep full precision.
+    assert seen == [('maps_textsearch', dict(city='北京市', keywords='天安门', location='116.410,39.916'))]
     assert response.json() == dict(version='TAXI.1', items=[
         dict(name_zh='天安门', address_zh='东长安街', city='北京市', lat=39.916404, lng=116.410244,
              coordinate_system='GCJ-02')])
@@ -109,6 +111,17 @@ def test_fixture_estimate_and_link_allow_no_identity_fields(app_context):
         ('taxi_estimate', dict(GCJ, from_name='经核对的公共地点', to_name='经核对的公共地点')),
         ('taxi_generate_ride_app_link', GCJ),
     ]
+
+
+def test_pickup_coordinates_are_used_for_the_call_only_never_logged(app_context, caplog):
+    # #1833: exact origin/destination reach DiDi for this estimate and link, and nowhere else.
+    client, seen, _ = app_context
+    with caplog.at_level(logging.DEBUG):
+        assert client.post(ESTIMATE, headers=AUTH, json=payload()).status_code == 200
+        assert client.post(LINK, headers=AUTH, json=dict(payload(), vehicle_category='1')).status_code == 200
+    assert ('maps_regeocode', dict(location='116.410244,39.916404')) in seen
+    for text in ('116.410244', '39.916404', '116.40', '39.91'):
+        assert text not in caplog.text
 
 
 @pytest.mark.parametrize('method', ['taxi_create_order', 'taxi_cancel_order', 'taxi_query_order',

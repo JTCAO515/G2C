@@ -2,7 +2,7 @@
 
 - Issue：[#1743](https://github.com/JTCAO515/G2C/issues/1743)（W4-1，总票 [#1714](https://github.com/JTCAO515/G2C/issues/1714)）
 - 依据代码：`origin/main` `27388ea7`（逐行核对）；已复查到 `81a47879`，之间的提交没有新增出站主机（新增的 `*.gov.cn` 链接只是入境规则数据里的来源引用，不是网络调用）。行号指 `27388ea7`。
-- 方法：只读代码；没有运行任何调用外部服务的脚本。「未核实」表示只看代码无法确认，原因写在条目里。
+- 方法：只读代码；没有运行任何调用外部服务的脚本。首版只核对了 `backend/`、`deploy/`、`ios/`；官网 `web/` 的出站在 2026-11-26 补入（总表第 20–22 行、附录第 22–24 节）。「未核实」表示只看代码无法确认，原因写在条目里。
 - 用途：隐私政策（[#1746](https://github.com/JTCAO515/G2C/issues/1746)）、PIPIA（`docs/privacy/pipia-service-request.md`，[#1745](https://github.com/JTCAO515/G2C/issues/1745)）、App Store 隐私标签和同意界面（[#1747](https://github.com/JTCAO515/G2C/issues/1747)）的事实来源。
 - 状态：本表记录**现状**，不是放行结论。现状里有超出 [#225 正式法律相关意见](https://github.com/JTCAO515/G2C/issues/225#issuecomment-6735366219)首轮边界的地方，见第 2 节，对外部测试者开放前须先处理。
 
@@ -42,11 +42,15 @@
 | 17 | Klook | 链接跳转 | `www.klook.com` | 景点预约 | 无（内置景点英文名） | `LioAttractionBookingPartner.swift:42` |
 | 18 | 12306 | 链接跳转 | `www.12306.cn` | 交通 | 无（首页链接） | `lio_transport.py:379`；`ios/.../LioTransport.swift:449` |
 | 19 | 官方/政府/帮助类静态外链 | 链接跳转 | 故宫、上博、`english.beijing.gov.cn`、`s.nia.gov.cn`、财付通等 | 各信息页 | 无 | 第 19 节 |
+| 20 | Vercel Inc. | 官网托管；Vercel 函数（`/api/early-access`、`/api/service-request`） | `go2china.space`（Vercel 平台） | 官网访问；官网表单提交 | 访客 IP、路径等访问信息（平台记录）；表单全部字段（我们的函数代码转发、不保存原文） | `web/vercel.json`；`web/api/early-access.js`；`web/api/service-request.js`（#1862） |
+| 21 | Jotform Inc. | 服务端 API（由 Vercel 函数调用） | `api.jotform.com`（美国；Vercel 未设 `JOTFORM_API_BASE`，JT 2026-11-26 核对） | 官网「抢先体验」申请 | **称呼、邮箱**、得知渠道、所在国家、计划出行时间、目的地（含自填）、需求、备注 | `web/api/early-access.js:7-9, 19, 53-65, 135-160` |
+| 22 | Spacemail（Spaceship 旗下邮箱服务） | 邮箱 `hello@go2china.space`（MX `mx1/mx2.spacemail.com`，SPF `include:spf.spacemail.com`） | `spacemail.com` | 用户来信；人工回复抢先体验与（开放后）官网服务请求 | **邮箱地址**与邮件内容；官网服务请求开放后可能含时间、地点、电话 | DNS 记录（2026-11-26 查询）；JT 2026-11-26 定回复用该邮箱 |
 | — | Airalo | 无 | — | eSIM 预览（无链接） | 无 | `LioESIMPreviewView.swift:64-70` |
+| — | 阿里云邮件推送（DirectMail，新加坡） | 服务端 API | 新加坡（ap-southeast-1）；发信域名 `mail.go2china.space` 已建、未验证 | 59 正式登录的邮箱验证码（[#1883](https://github.com/JTCAO515/G2C/issues/1883)） | **邮箱地址**、验证码 | **未上线（#1883，59）**；按跨境传输处理（邮件推送没有香港地域）；地域由 JT 本人 2026-11-26 确认（此前转述的「杭州」作废）。上线前同 PR 补代码依据，并在隐私政策接收方表与跨境一节加入（与 Apple、Google 登录一起） |
 
 ## 2. 定位字段去向
 
-### 2.1 现状（`27388ea7`）
+### 2.1 现状（`27388ea7`；香港现网仍是 `4f81cad4`，S 线 2026-11-26 只读核对）
 
 - App 读设备定位的代码只有一处：`ios/Modules/CJShell/Sources/CJLioUser/LioTaxiPickupLocation.swift`（`requestWhenInUseAuthorization` + 一次性 `requestLocation`，WGS-84 原始精度，`:15-46`）。**打车**和**附近**两个功能复用它。
 - **打车**：「当前位置」起点和搜索偏置 `near` → 香港 `/v1/tools/taxi/*` → 服务端转 GCJ-02、保留 6 位小数（约 0.1 米）、不降精度 → **滴滴 MCP**；滴滴返回的 `v.didi.cn` 叫车链接也带这组坐标，App 交给滴滴 App 打开。服务端不落盘、不写日志（`backend/cj_api/taxi_tools.py:252-261, 356-415`）。
@@ -60,7 +64,7 @@
 
 #225 正式意见写明首轮「将 GPS 或由 GPS 推出的可关联位置发给香港后端、北京百炼或高德，当前均未放行」。上面两条 GPS 流超出这一边界；对内部名单属于 M4 授权范围。对外部开放前**至少**须完成 [#1832](https://github.com/JTCAO515/G2C/issues/1832)、[#1833](https://github.com/JTCAO515/G2C/issues/1833)、[#1748](https://github.com/JTCAO515/G2C/issues/1748)；这三张票是必要条件，不是放行结论。
 
-统筹 2026-11-26 按 JT 预授权决定的目标边界（由 #1833、#1748 落地，落地后本节改写为现状；三张票都落地前，下表写法与实际行为不一致）：
+统筹 2026-11-26 按 JT 预授权决定的目标边界（#1833 的代码已由 #1875 合并到 main，c5da5dab，但**尚未部署到香港**：S 线 2026-11-26 只读核对现网 `api-1`、`worker-1` 仍为 `4f81cad4`，不含 c5da5dab。部署并在 #1833 贴读回证据后，本节改写为现状；在此之前，下表写法与实际行为不一致）：
 
 | 流向 | 目标边界 |
 |---|---|
@@ -99,7 +103,7 @@
 | 9 | architecture.md 流程图 | 身份服务候选 Supabase Auth | 后端用本方签发者 `https://local.g2c.invalid` + worker 签名密钥；JWKS 传输仅测试引用；App 打包 supabase-swift 但未配置 | 第 8 节 6–7 点 |
 | 10 | architecture.md 流程图 | 持久执行候选 DBOS / AgentScope，记忆候选 ReMe | 后端/部署代码中无 `dbos`/`agentscope` 导入（只在 `scripts/provider_m4.py:216` 打印版本）；未发现 ReMe 导入（`git grep -w reme` 无命中）。均不涉及外部网络 | grep 结果 |
 | 11 | storage-registry `external-processing` | `status: not_provisioned`，保留期 UNDECIDED、「activation blocked」 | 实际上百炼、高德、滴滴、飞常准、和风（可配）、ECB、OSS 均已在香港代码中启用调用 | 第 1–9 节 |
-| 12 | M4 条目 3 | 「只用合成行程与合成查询，不发送真实用户内容」 | 代码开关 `CJ_M4_SYNTHETIC_ONLY=1` 只约束主体名必须形如 `m4-synthetic-*`；但 Demo 名单（`CJ_BETA_DEMO_SUBJECTS_JSON`）里的账号——`G2C@01–99`、`CJ_Tester@01–99` 两组短码和 `D1-` 长码——都被映射为 `m4-synthetic-demo-<后缀>`（`deploy/hk/demo_login.py:36-37, 69-77`），Lio 对话对整个 Demo 名单开放（`deploy/hk/configuration.py:350-358`），所以**Demo 名单 206 个账号（#1051）本人输入的对话原文会照常发给百炼，对话中提到的地名可能进入发给高德的检索词**；持有者身份待 JT 确认（#33 记录外测 0 邀请、0 分发，未核实，不作定论）。「合成」是主体命名，不是内容保证 | `real_services.py:313-318, 351`；`demo_login.py:36-37, 69-77`；`configuration.py:350-358` |
+| 12 | M4 条目 3 | 「只用合成行程与合成查询，不发送真实用户内容」 | 代码开关 `CJ_M4_SYNTHETIC_ONLY=1` 只约束主体名必须形如 `m4-synthetic-*`；但 Demo 名单（`CJ_BETA_DEMO_SUBJECTS_JSON`）里的账号——`G2C@01–99`、`CJ_Tester@01–99` 两组短码和 `D1-` 长码——都被映射为 `m4-synthetic-demo-<后缀>`（`deploy/hk/demo_login.py:36-37, 69-77`），Lio 对话对整个 Demo 名单开放（`deploy/hk/configuration.py:350-358`），所以**Demo 名单 206 个账号（#1051）本人输入的对话原文会照常发给百炼，对话中提到的地名可能进入发给高德的检索词**；JT 2026-11-26 确认均为内部团队账号（`G2C@01–99` 另为原有内部测试名单）。S 线撤销了近 30 天无提问的 `CJ_Tester@` 与 `D1-` 账号登录资格（只撤登录、不删数据），撤销后可登录 104 个：`G2C@01–99` 共 99 个、`CJ_Tester@12`、4 个 `D1-` 长码；名单主体数仍为 206（S 线 2026-11-26 核对，[#1720 评论](https://github.com/JTCAO515/G2C/issues/1720#issuecomment-7182561865)）。其中 5 个（`CJ_Tester@12` 与 4 个 `D1-`）近 30 天仍有内部测试活动，保留，内部测试使用（统筹 2026-11-26 定）。「合成」是主体命名，不是内容保证 | `real_services.py:313-318, 351`；`demo_login.py:36-37, 69-77`；`configuration.py:350-358` |
 
 ### 乙、代码调用但文档没提（或未登记）
 
@@ -121,7 +125,7 @@
 
 ### 3.1 需要统筹 / JT 判断的事项
 
-1. **「合成」只约束账号名，不约束内容**（甲表第 12 行）：Demo 名单里 `G2C@`、`CJ_Tester@` 两组短码和 `D1-` 长码账号都被映射为 `m4-synthetic-demo-*` 主体，他们自己输入的对话原文会照常发给百炼，提到的地名可能进入高德检索词。M4 条目 3、4 写的是「不发送真实用户内容」。统筹已判断属于授权文档写法与事实不一致，更正稿见 PR #1842（待 JT 本人批准）；Demo 名单 206 个账号的持有者身份（尤其 `CJ_Tester@` 组与 `D1-` 长码）待 JT 确认；若其中有外部持有者，本项须 JT 按 #225 定，并列为最高优先。
+1. **「合成」只约束账号名，不约束内容**（甲表第 12 行）：Demo 名单里 `G2C@`、`CJ_Tester@` 两组短码和 `D1-` 长码账号都被映射为 `m4-synthetic-demo-*` 主体，他们自己输入的对话原文会照常发给百炼，提到的地名可能进入高德检索词。M4 条目 3、4 写的是「不发送真实用户内容」。统筹已判断属于授权文档写法与事实不一致，已由 #1842 更正（JT 本人 2026-11-26 批准）；持有者身份：JT 2026-11-26 确认均为内部团队账号（`G2C@01–99` 另为原有内部测试名单）。S 线撤销了近 30 天无提问的 `CJ_Tester@` 与 `D1-` 账号登录资格（只撤登录、不删数据），撤销后可登录 104 个：`G2C@01–99` 共 99 个、`CJ_Tester@12`、4 个 `D1-` 长码；名单主体数仍为 206（S 线 2026-11-26 核对，[#1720 评论](https://github.com/JTCAO515/G2C/issues/1720#issuecomment-7182561865)）。其中 5 个（`CJ_Tester@12` 与 4 个 `D1-`）近 30 天仍有内部测试活动，保留，内部测试使用（统筹 2026-11-26 定）。
 2. **storage-registry 漏登的服务端存储**（乙表第 10 行），其中 ToolEvidence 目录能保存完整模型请求体和工具原文，附近缓存键含精确坐标。建议开票给 S 线补登或说明，并同 PR 交付清理钩子（ADR-0009 第 6 条）。
 3. **旧 Supabase 是否仍在被连**：代码默认 `CJ_BETA_DB_TARGET='supabase'`，实际值在服务器 `common.env`，仓库看不到（附录第 8 节）。
 4. **ToolEvidence 在香港是否开启、对哪些主体开启**：由运维 manifest 决定，代码只说明能力（附录 1.1 第 5 点）。
@@ -134,7 +138,8 @@
 
 | 功能 | 触发 | 发出的字段 | 接收方 | 开关与状态 | 出处 |
 |---|---|---|---|---|---|
-| 回答下的反馈入口（W4-9 [#1753](https://github.com/JTCAO515/G2C/issues/1753)） | 用户在一条 Lio 回答下点「没帮上」，可选填「补充说明」 | 复用现有 `POST /v1/feedback`，请求体固定为 `action_id`（客户端生成的提交编号）、`problem`、`expectation`、`references`（该回答的服务端 message id，可带匹配的 run id）。A 线提供的内容：固定文案「这条回答没帮上忙 / This answer didn't help.」与用户选填的补充说明（≤500 字，输入框提示不要填写个人信息），分别落在 `problem`、`expectation` 哪一个以 #1753 代码为准。不发聊天原文、位置、设备信息 | 只到本方香港服务，不转第三方或模型。服务端凭登录凭据识别账号，**按账号**存入香港 PostgreSQL `cj_feedback_action`：原始请求字节及其 sha256、提交时间，以及从被引用消息读出的会话、generation、sequence、run 编号、原始输入哈希和读取时的 run 状态；不复制对话原文或工具内容。无自动保留期，用户删除或注销账号时由 `FeedbackHook` 删除 | 开关 `G2CAnswerFeedbackEnabled`，默认关；**#1753 合并前不生效**，合并后按代码核对本行 | A 线 2026-11-26 提供；统筹 2026-11-26 按 JT 预授权决定。代码依据：`backend/cj_api/feedback_routes.py:53-65`、`backend/cj_api/FEEDBACK-WIRE.md`、`backend/feedback/cj_feedback/postgres.py:101`、`backend/feedback/cj_feedback/lifecycle.py:36-55`、`backend/storage-registry.json:220-232` |
+| 回答下的反馈入口（W4-9 [#1753](https://github.com/JTCAO515/G2C/issues/1753)） | 用户在一条 Lio 回答下点「没帮上」，可选填「补充说明」 | 复用现有 `POST /v1/feedback`，请求体固定为 `action_id`（客户端生成的提交编号）、`problem`、`expectation`、`references`（该回答的服务端 message id，可带匹配的 run id）。A 线提供的内容：固定文案「这条回答没帮上忙 / This answer didn't help.」与用户选填的补充说明（≤500 字，输入框提示不要填写个人信息），分别落在 `problem`、`expectation` 哪一个以 #1753 代码为准。不发聊天原文、位置、设备信息 | 只到本方香港服务，不转第三方或模型。服务端凭登录凭据识别账号，**按账号**存入香港 PostgreSQL `cj_feedback_action`：原始请求字节及其 sha256、提交时间，以及从被引用消息读出的会话、generation、sequence、run 编号、原始输入哈希和读取时的 run 状态；不复制对话原文或工具内容。无自动保留期，只在注销（删除）账号时由 `FeedbackHook` 删除；没有删除单条反馈的入口 | 开关 `G2CAnswerFeedbackEnabled`，默认关；**#1753 合并前不生效**，合并后按代码核对本行 | A 线 2026-11-26 提供；统筹 2026-11-26 按 JT 预授权决定。代码依据：`backend/cj_api/feedback_routes.py:53-65`、`backend/cj_api/FEEDBACK-WIRE.md`、`backend/feedback/cj_feedback/postgres.py:101`、`backend/feedback/cj_feedback/lifecycle.py:36-55`、`backend/storage-registry.json:220-232` |
+| 官网真人服务请求（W10-3 [#1777](https://github.com/JTCAO515/G2C/issues/1777)，PR #1862） | 访客在官网「广州中英商务陪同」区块提交 | 称呼、邮箱、日期、说明（选填）、页面语言 `lang`（浏览器传，服务器按白名单校验）；四个必勾项：已阅读隐私政策，加三项单独同意（行踪信息、提供给陪同、传到中国香港处理），缺一项返回 400、不转交；服务器写入服务、城市（广州）和收到时间 `receivedAt` | 浏览器 → Vercel 函数 `/api/service-request` → 本方服务请求后端（W9，#1768）；不经第三方表单服务。人工经 Spacemail 邮箱回复（总表第 22 行） | 开关 `SERVICE_REQUEST_ENABLED` 默认关；**未开放**。开放前提（`web/api/service-request.js:5-10`）：隐私政策在 `/privacy` 公开（JT 本人确认）；去向换成 W9 后端；统筹指定收件人并做一次测试请求（#32）。另：`/api/*` 固定到香港（#1872） | 统筹 2026-11-26 按 JT 预授权决定；依据 #1862 head `a8741c63`（`web/api/service-request.js:28-70`）。字段、防滥用、保留期见 PIPIA 增补第 13 节（#1871） |
 
 同一张票加的 AI 提示「由 AI 生成，可能有误，重要信息请自行确认」（开关 `G2CAIDisclosureEnabled`，默认关）不产生数据，不登记。
 
@@ -466,3 +471,28 @@
 - `backend/**`、`deploy/**`：无任何 Airalo/Impact 主机、密钥变量或路由（`git grep -i airalo` 只命中 iOS 一个文件）。
 - `ios/Modules/CJShell/Sources/CJLioUser/LioESIMPreviewView.swift`：静态「上网卡」预览页，点「在 Airalo 查看」只弹出提示「示例套餐没有购买链接」（`:64-70, 93`），**不打开任何 URL、不发请求**。
 - 结论：M4.md 条目 16 已批准但未实现；当前不向 Airalo 发送任何数据。
+
+### 22. Vercel（官网托管与表单函数）
+
+1. 接入：官网 `web/` 部署在 Vercel；`/api/early-access`、`/api/service-request`（#1862，开关默认关）是 Vercel 函数。
+2. 触发：访问官网；提交「抢先体验」申请；（开放后）提交官网服务请求。
+3. 收到：平台层面的访问信息（IP、路径、时间等，由 Vercel 记录）；函数收到的表单全部字段。我们的函数代码转发时不保存原文，`early-access.js` 只在失败时记「Jotform rejected / request failed」和状态码，`service-request.js` 只记「delivery failed」。
+4. 区域：`web/vercel.json` 目前没有 `regions`，函数按 Vercel 默认区域运行；统筹 2026-11-26 决定把 `/api/*` 固定到香港 `hkg1`（#1872，CI 评测线）。落实后本节改为现状。
+5. 角色：代我们托管（受托）。数据处理条款【待核对】。
+
+### 23. Jotform（抢先体验申请）
+
+1. 接入：Vercel 函数 `web/api/early-access.js` 用 Jotform 官方 API 提交，访客只与 go2china.space 通信（`:2-4`）。环境变量 `JOTFORM_API_KEY`（必需）、`JOTFORM_FORM_ID`（可选）、`JOTFORM_API_BASE`（可选）在 Vercel（`:7-9, 135-145`）。主机默认 `https://api.jotform.com`，可配 `eu-api.jotform.com` 或 `hipaa-api.jotform.com`（`:13-14, 140`）；实际配置在 Vercel 环境变量，仓库看不到。
+2. 发出字段（`:19, 26, 36-65`）：称呼（≤100）、邮箱（≤254）、得知渠道、所在国家（≤80）、计划出行时间、目的地（多选 + 自填 ≤80）、需求（多选）、备注（≤1000）。防滥用同 `service-request.js`：蜜罐 `website`、最短 2.5 秒（`:28, 69-70`）。
+3. 区域与出境：Vercel 未设置 `JOTFORM_API_BASE`，使用默认主机 `api.jotform.com`（美国数据中心），申请内容（含称呼、邮箱）传到美国（JT 2026-11-26 在 Vercel 后台核对，统筹转达）。
+4. 角色：代我们保存和管理申请（受托）。
+5. 日志（`early-access.js`）：只在失败时记「Jotform rejected the submission」及状态码、「Jotform request failed」，以及两条配置错误（未设密钥、主机无效），都不含用户数据。
+6. 保存：在 Jotform 账号里；收集后 12 个月删除（统筹 2026-11-26 按 JT 预授权决定，见隐私政策 1.0 定稿口径），删除在 Jotform 后台执行。
+7. 状态：**线上在用**。首版登记表遗漏，2026-11-26 补入。
+
+### 24. Spacemail（hello@go2china.space）
+
+1. 接入：域名 `go2china.space` 的 MX 为 `mx1.spacemail.com`、`mx2.spacemail.com`，SPF 为 `include:spf.spacemail.com`（2026-11-26 DNS 查询）。JT 2026-11-26 定回复客户用 `hello@go2china.space`。
+2. 内容：用户来信与人工回复；官网服务请求开放后，回复里会有时间、地点、电话（PIPIA 增补第 13 节）。
+3. 区域：服务商位于美国，邮件可能存储在中国境外；具体存储区域【待 JT 在 Spacemail 后台确认】。
+4. 保存：形成服务的，服务完成后 12 个月删除；未形成服务的询问，最后一次往来后 6 个月删除（统筹 2026-11-26 决定）。

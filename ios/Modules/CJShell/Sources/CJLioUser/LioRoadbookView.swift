@@ -8,6 +8,8 @@ struct LioRoadbookLibraryView: View {
     let store: LioRoadbookStore?
     /// Roadbooks that can be made now (saved trips, Lio's plans, routes). Kept ones replace these by id.
     let candidates: [LioRoadbook]
+    /// The account's saved trips (#1725): a popular route can be used as my trip from its page.
+    var savedPlans: LioSavedPlansModel? = nil
     @State private var kept: [LioRoadbook] = []
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.lioRoadbookEnricher) private var injectedEnricher
@@ -46,7 +48,8 @@ struct LioRoadbookLibraryView: View {
                 LazyVGrid(columns: columns, spacing: LioTheme.Spacing.sm) {
                     ForEach(books) { book in
                         NavigationLink {
-                            LioRoadbookView(roadbook: book, language: language, store: store, onChange: reload)
+                            LioRoadbookView(roadbook: book, language: language, store: store, savedPlans: savedPlans,
+                                            onChange: reload)
                                 .environment(\.lioRoadbookEnricher, enricher)
                         } label: {
                             LioRoadbookCard(roadbook: book, language: language, kept: kept.contains { $0.id == book.id })
@@ -123,7 +126,10 @@ struct LioRoadbookView: View {
     let roadbook: LioRoadbook
     let language: LioLanguage
     let store: LioRoadbookStore?
+    /// Saved trips (#1725); a template's page offers "Use as my trip" when they can be written.
+    var savedPlans: LioSavedPlansModel? = nil
     var onChange: () -> Void = {}
+    @Environment(LioRouter.self) private var router: LioRouter?
     @State private var selectedDay: Int?
     @State private var kept = false
     @State private var notice: String?
@@ -247,6 +253,7 @@ struct LioRoadbookView: View {
                 .accessibilityIdentifier("lio.roadbook.pdf")
             }
             .padding(.top, LioTheme.Spacing.xs)
+            useAsTrip
             #if os(iOS)
             if enricher != nil, !book.placesToFillIn().isEmpty {
                 Button { fill() } label: {
@@ -508,6 +515,39 @@ struct LioRoadbookView: View {
     }
 
     // MARK: actions
+
+    /// #1725: a popular route becomes the traveller's trip (its checked places, on this phone only).
+    @ViewBuilder private var useAsTrip: some View {
+        if roadbook.source == .template, let savedPlans, savedPlans.writable {
+            if savedPlans.isSavedTemplate(roadbook) {
+                HStack(spacing: LioTheme.Spacing.xs) {
+                    Label(language.text("Saved as my trip", "已用作我的行程"), systemImage: "checkmark.circle.fill")
+                        .font(.subheadline.weight(.semibold)).foregroundStyle(LioTheme.jade)
+                        .frame(minHeight: 44)
+                        .accessibilityIdentifier("lio.roadbook.template-saved")
+                    if let router {
+                        Button(language.text("Open Trips", "查看行程")) { router.tab = .trips }
+                            .buttonStyle(LioSecondaryButtonStyle(fullWidth: false))
+                            .accessibilityIdentifier("lio.roadbook.template-open-trips")
+                    }
+                }
+            } else {
+                Button { useTemplate(savedPlans) } label: {
+                    Label(language.text("Use as my trip", "用作我的行程"), systemImage: "calendar.badge.plus")
+                }
+                .buttonStyle(LioSecondaryButtonStyle(fullWidth: false))
+                .accessibilityIdentifier("lio.roadbook.use-template")
+            }
+        }
+    }
+
+    private func useTemplate(_ savedPlans: LioSavedPlansModel) {
+        if savedPlans.saveTemplate(roadbook) != nil {
+            notice = nil
+        } else {
+            notice = language.text("Couldn’t save this route as your trip. Try again.", "暂时无法用作我的行程，请重试。")
+        }
+    }
 
     private func keep() {
         guard let store else { return }

@@ -1,0 +1,11 @@
+[Unit]
+Description=Check G2C synthetic beta host alerts every 15 minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=15min
+Persistent=true
+Unit=g2c-beta-ops-alerts.service
+
+[Install]
+WantedBy=timers.target
