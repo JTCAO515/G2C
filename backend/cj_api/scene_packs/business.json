@@ -1,0 +1,36 @@
+{
+  "version": "g2c-scene-pack.1",
+  "scene_pack": "business",
+  "title": {"en": "Business", "zh": "商务"},
+  "note": "First business pack: Guangzhou, English and Chinese (ADR-0010). Reuses existing tools only.",
+  "languages": ["en", "zh"],
+  "cities": ["guangzhou"],
+  "knowledge": [],
+  "tools": ["phrase-cards", "taxi", "translation", "return-hotel", "nearby", "metro-guide", "payment-guide", "currency"],
+  "flows": [
+    {"id": "trade-fair-preparation",
+     "title": {"en": "Trade fair preparation", "zh": "参展准备"},
+     "steps": [
+       {"en": "Confirm the fair dates and the venue address from the organizer.", "zh": "按主办方信息确认展期和场馆地址。"},
+       {"en": "Choose a hotel and save its address card.", "zh": "选好酒店，保存酒店地址卡。"},
+       {"en": "Prepare business phrase cards and a translation shortcut.", "zh": "准备商务常用语卡和翻译入口。"},
+       {"en": "Set up mobile payment before arrival.", "zh": "到达前设置好移动支付。"},
+       {"en": "Save the venue as a taxi destination.", "zh": "把场馆存为打车目的地。"}
+     ]}
+  ],
+  "risk_rules": [
+    {"id": "no-signing-or-paying",
+     "rule": {"en": "Never sign, negotiate or pay on the user's behalf.", "zh": "不代表用户签约、谈判或付款。"}},
+    {"id": "no-supplier-judgement",
+     "rule": {"en": "No factory visits, inspections or supplier qualification judgements.",
+              "zh": "不组织工厂参访、不验货、不评价供应商资质。"}},
+    {"id": "escort-only-when-arranged",
+     "rule": {"en": "A human escort is shown as arranged only after the escort and the user have both confirmed time and place.",
+              "zh": "陪同人员与用户双方确认时间地点后，才显示「已安排」。"}}
+  ],
+  "commitments": [
+    {"id": "preparation",
+     "upto": {"en": "Checklist, phrase cards and addresses prepared.", "zh": "准备完成：清单、常用语卡、地址。"},
+     "evidence": {"en": "What the user can see in the app.", "zh": "用户在 App 里看到的内容。"}}
+  ]
+}

@@ -4,12 +4,10 @@
     "entry_kind": "fact",
     "topic": "passport_booking",
     "cities": ["shenzhen"],
-    "checked_on": "2026-11-20",
-    "expires_on": "2026-12-04",
+    "checked_on": "2026-11-26",
+    "expires_on": "2026-12-10",
     "source_urls": [
-      "https://cgj.sz.gov.cn/xsmh/gysz/twf/zpq/content/post_10840227.html",
-      "https://sz.bendibao.com/xiuxian/20261012/1014588.shtm",
-      "https://you.ctrip.com/sight/shenzhen26/50541.html"
+      "https://cgj.sz.gov.cn/xsmh/gysz/twf/zpq/content/post_10840227.html"
     ],
     "id": "visitor.v3.shenzhen.lianhua-hill-park",
     "subject": {
@@ -19,13 +17,13 @@
       "wikidata_qid": null
     },
     "conditions": {
-      "reservation_required": false,
-      "closed_weekdays": [],
-      "closed_weekdays_public_holiday_exception": false,
+      "reservation_required": null,
+      "closed_weekdays": null,
+      "closed_weekdays_public_holiday_exception": null,
       "advance_booking_days": null,
       "advance_booking_rule": null
     },
-    "text_zh": "深圳市城管局的莲花山公园资料列示开放时段为6:00至23:00，22:30停止入园。本地宝2026年10月12日的秋季游园资讯另明确普通游园免费、无需预约。携程整园主记录的独立营业栏列出全年统一开放安排，据此记录普通每周无固定闭园日；该平台未标营业资料独立更新时间，并提示部分内容来自用户上传，只作平台资料，不冒公园主管部门确认。本条仅指普通步行游园，不含停车、献花报备、活动报名或园内专项设施，不据推荐或点评推规则，也不保证当天或全园每个区域开放。行前另核天气、临时关闭及最新公告；提前预约窗口仍未核定，停车或活动预约不替代普通入园规则。",
-    "text_en": "Shenzhen’s urban management bureau lists Lianhua Hill Park’s hours as 6 am to 11 pm, with last entry at 10:30 pm. Bendibao’s autumn guide dated 12 October 2026 separately states that ordinary park visits are free and need no reservation. Ctrip’s whole-park main record lists a uniform year-round opening schedule in its separate business-hours section, supporting no fixed ordinary weekly closure here. It has no independent business-data update date and warns that some content is user-uploaded; this is platform information, not confirmation from the park authority. This record covers ordinary walking only, excluding parking, flower-laying arrangements, events and individual facilities. Recommendations and reviews do not establish rules or guarantee access that day or to every area. Check weather, temporary closures and current notices before travelling. An advance-booking window remains unconfirmed; parking and event bookings do not establish ordinary admission requirements."
+    "text_zh": "深圳市城市管理和综合执法局的莲花山公园资料列示开放时段为6:00至23:00，22:30停止入园。本条仅指普通步行游园，不含停车、献花报备、活动报名或园内专项设施，也不保证当天或全园每个区域开放；行前另核天气、临时关闭及最新公告。普通游园是否须预约、有无常规每周闭园日及提前预约窗口，本条均未经官方来源核定，不能把开放时段当作免预约或每天开放的保证。",
+    "text_en": "Shenzhen’s urban management bureau lists Lianhua Hill Park’s hours as 6 am to 11 pm, with last entry at 10:30 pm. This record covers ordinary walking only, excluding parking, flower-laying arrangements, events and individual facilities, and does not guarantee access that day or to every area. Check weather, temporary closures and current notices before travelling. Whether ordinary visits need a reservation, whether there is a regular weekly closing day and any advance-booking window are not confirmed by an official source here; the listed hours do not establish reservation-free or daily access."
   }
 ]

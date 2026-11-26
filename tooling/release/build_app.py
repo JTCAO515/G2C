@@ -10,6 +10,7 @@ Usage (run outside the command sandbox: xcodebuild and git write outside the che
   python3 tooling/release/build_app.py verify-ipa --record-dir DIR
   python3 tooling/release/build_app.py upload --record-dir DIR
   python3 tooling/release/build_app.py check-app APP [--all-flags]
+  python3 tooling/release/build_app.py simulator --derived-data DIR   (CI, #1762)
 
 SHA must be a main commit whose push CI passed. Build, previous build, marketing version and the
 flags turned on come from release in app_flags.json. --record-dir keeps the commands, logs and
@@ -17,6 +18,9 @@ verification results of one build (outside the repository); --work-dir holds the
 archive and IPA (default: $TMPDIR/g2c-app-build<N>). --rehearsal makes a build that may not upload:
 the release-notes check is reported instead of enforced, and upload refuses.
 upload runs once and refuses if a result already exists.
+simulator builds the Beta configuration for the iOS Simulator with every flag on, unsigned, then
+runs check-app on the result: code behind G2C_DEMO_BETA and every flag's Info.plist entry are
+compiled and checked on each pull request, not first at release.
 """
 import argparse
 import hashlib
@@ -259,20 +263,42 @@ def export(destination, record):
     print(f"{destination.upper()} SUCCEEDED for build {state['release']['build']}")
 
 
+def simulator_command(manifest, derived):
+    return ['xcodebuild', '-project', 'ios/CJProbeApp.xcodeproj', '-scheme', 'G2CBeta', '-configuration', 'Beta',
+            '-destination', 'generic/platform=iOS Simulator', '-derivedDataPath', str(derived),
+            'ARCHS=arm64', 'ONLY_ACTIVE_ARCH=YES', 'CODE_SIGNING_ALLOWED=NO',
+            *flag_build_settings(manifest, all_flags=True), 'build']
+
+
+def simulator(derived):
+    manifest = load_manifest()
+    cmd = simulator_command(manifest, derived)
+    print('+ ' + ' '.join(cmd), flush=True)
+    require(subprocess.run(cmd, cwd=ROOT).returncode == 0, 'the Beta simulator build failed')
+    _, result = inspect_app(derived / 'Build/Products/Beta-iphonesimulator/CJProbeApp.app',
+                            expected_flags(manifest, all_flags=True))
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('step', choices=['archive', 'verify-archive', 'export', 'verify-ipa', 'upload', 'check-app'])
+    parser.add_argument('step', choices=['archive', 'verify-archive', 'export', 'verify-ipa', 'upload', 'check-app', 'simulator'])
     parser.add_argument('target', nargs='?', help='archive: source SHA; check-app: path to the built .app')
     parser.add_argument('--record-dir')
     parser.add_argument('--work-dir')
     parser.add_argument('--rehearsal', action='store_true')
     parser.add_argument('--all-flags', action='store_true', help='check-app: expect every flag on (CI)')
+    parser.add_argument('--derived-data', help='simulator: xcodebuild derived data directory')
     args = parser.parse_args(argv)
     try:
         if args.step == 'check-app':
             require(args.target, 'give the .app path')
             _, result = inspect_app(Path(args.target), expected_flags(load_manifest(), args.all_flags))
             print(json.dumps(result, indent=2, ensure_ascii=False))
+            return 0
+        if args.step == 'simulator':
+            require(args.derived_data, '--derived-data is required')
+            simulator(Path(args.derived_data).resolve())
             return 0
         require(args.record_dir, '--record-dir is required')
         record = Record(args.record_dir)

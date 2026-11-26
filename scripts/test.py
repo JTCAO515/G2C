@@ -81,6 +81,7 @@ def main():
     results.append(run('eval/lio_voice', [*pytest, 'eval/tests/test_lio_voice.py']))
     results.append(run('eval/lio_answer_quality', [*pytest, 'eval/tests/test_lio_answer_quality.py']))
     results.append(run('eval/lio_entry_judge', [*pytest, 'eval/tests/test_lio_entry_judge.py']))
+    results.append(run('eval/release_eval', [*pytest, 'eval/tests/test_release_eval.py']))
     results.append(run('eval/basic_chain', [*pytest, 'eval/tests/test_basic_chain.py','eval/tests/test_basic_cost_v2.py',
                        'eval/tests/test_basic_native_v2.py','eval/tests/test_basic_joint_v2.py','eval/tests/test_basic_driver_v2.py',
                        'eval/tests/test_basic_chain_sm06_prefixes.py']))
@@ -98,6 +99,10 @@ def main():
     results.append(run('tooling/training F schema', ['-B', 'tooling/training/check_f_dataset.py', '-v']))
     results.append(run('tooling/release flags and script', ['-B', '-m', 'unittest', '-v', 'tooling.release.test_release']))
     results.append(run('ops/recovery-preflight', [*pytest, '.'], ROOT / 'ops/recovery-preflight'))
+    results.append(run('fact expiry checks', ['-B', '-m', 'unittest', '-v', 'scripts.test_fact_expiry']))
+    # #1757: annotates facts due within 14 days (warning) or expired (error); exits 0 on any date.
+    results.append(run('fact expiry alarm', ['-B', 'scripts/fact_expiry.py']))
+    results.append(run('web/vercel ignoreCommand', ['-B', '-m', 'unittest', '-v', 'scripts.test_web_vercel_ignore']))
     results.append(run('contracts/api proposal', ['-B', '-m', 'unittest', 'contracts/api/check_trip_content_v2_schema_proposal.py']))
     results.append(run('contracts/trip structured3', ['-B', 'contracts/trip/check_structured_v3.py']))
     results.append(run('contracts/trip structured4', ['-B', 'contracts/trip/check_structured_v4.py']))

@@ -102,6 +102,15 @@ class CommandTests(unittest.TestCase):
         args = build_app.flag_build_settings(self.manifest, all_flags=True)
         self.assertTrue(args and all(a.endswith('=YES') for a in args))
 
+    def test_simulator_build_is_beta_unsigned_with_every_flag_on(self):
+        cmd = build_app.simulator_command(self.manifest, Path('d'))
+        self.assertEqual(cmd[cmd.index('-configuration') + 1], 'Beta')
+        self.assertEqual(cmd[cmd.index('-scheme') + 1], 'G2CBeta')
+        self.assertEqual(cmd[cmd.index('-destination') + 1], 'generic/platform=iOS Simulator')
+        self.assertIn('CODE_SIGNING_ALLOWED=NO', cmd)
+        flags = [a for a in cmd if a.startswith('G2C_')]
+        self.assertEqual(flags, [f"{f['setting']}=YES" for f in self.manifest['flags']])
+
     def test_export_stays_internal(self):
         self.assertIs(build_app.export_options('upload')['testFlightInternalTestingOnly'], True)
 

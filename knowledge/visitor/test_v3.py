@@ -1,13 +1,13 @@
 from copy import deepcopy
-from datetime import date, datetime
+from datetime import date
 import json
 from pathlib import Path
 import subprocess
 import sys
 import unittest
-from zoneinfo import ZoneInfo
 
 from review_due import FORMATS, expiring_entries
+from test_content import latest_review_day
 from validate import CITIES, TOPICS, validate_entry
 from validate_names import validate_name
 from validate_v2 import validate_entry_v2
@@ -19,7 +19,8 @@ TODAY = date(2026, 11, 20)
 
 class NineCityContentTests(unittest.TestCase):
     def setUp(self):
-        self.observed_on = datetime.now(ZoneInfo('Asia/Shanghai')).date()
+        # Observe the real catalog on its latest review day, not the wall clock (#1717, as #1806).
+        self.observed_on = latest_review_day('entries-v3')
         self.records = load_entries_v3(sorted((ROOT / 'entries-v3').glob('*.json')), as_of=self.observed_on)
         self.entry = deepcopy(self.records[0])
         # Boundary probes retain their fixed clock; the real catalog is checked above.
@@ -55,7 +56,7 @@ class NineCityContentTests(unittest.TestCase):
     def test_explicit_place_conditions_preserve_optional_booking_meaning(self):
         entry = json.loads((ROOT / 'entries-v2/venue-conditions.json').read_text())[0]
         entry['format_version'] = 'visitor-entry.3'
-        validate_entry_v3(entry, as_of=self.observed_on)
+        validate_entry_v3(entry, as_of=latest_review_day('entries-v2'))
         self.assertFalse(entry['conditions']['reservation_required'])
         self.assertEqual(entry['conditions']['advance_booking_rule'], 'window_max')
 

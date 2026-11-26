@@ -9,10 +9,10 @@ from validate import CITIES, TOPICS, load_entries
 ROOT = Path(__file__).resolve().parent
 
 
-def latest_review_day():
-    """Observe the legacy catalogue on its latest review day, not the calendar (#1717)."""
+def latest_review_day(catalogue="entries"):
+    """Observe a real catalogue on its latest review day, not the calendar (#1717)."""
     return max(date.fromisoformat(value["checked_on"])
-               for path in (ROOT / "entries").glob("*.json") for value in json.loads(path.read_text()))
+               for path in (ROOT / catalogue).glob("*.json") for value in json.loads(path.read_text()))
 
 
 class FirstBatchTests(unittest.TestCase):
