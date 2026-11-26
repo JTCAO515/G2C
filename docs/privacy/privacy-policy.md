@@ -98,7 +98,7 @@ We send each recipient only what the feature you use needs. Requests to Alibaba 
 | 接收方 / Recipient | 所在地 / Location | 收到什么 / What they receive | 用途 / Purpose |
 |---|---|---|---|
 | 阿里云（中国香港）/ Alibaba Cloud (Hong Kong) | 中国香港 / Hong Kong, China | 服务器与每日备份上的全部数据 / All data on our servers and daily backups | 代我们托管 / Hosting on our behalf |
-| 阿里云百炼（通义千问）/ Alibaba Cloud Model Studio (Qwen) | 中国大陆北京 / Beijing, mainland China | 对话文字和行程内容；翻译的文字、语音、图片；菜单照片；打车、酒店、地铁周边的搜索结果里的地点名和地址（用于生成英文名）；路书里的地点名、营业时间和地铁站名 / Chat text and trip content; text, voice and images for translation; menu photos; place names and addresses in taxi, hotel and metro-nearby search results (to produce English names); place names, opening hours and station names in roadbooks | 生成回答、翻译、识别菜单、生成地点和路书的英文内容 / Replies, translation, menu reading, English content for places and roadbooks |
+| 阿里云百炼（通义千问）/ Alibaba Cloud Model Studio (Qwen) | 中国大陆北京 / Beijing, mainland China | 对话文字和行程内容；翻译的文字、语音、图片；菜单照片；打车、酒店、地铁周边的搜索结果里的地点名和地址（用于生成英文名）；路书里的地点名、营业时间和地铁站名 / Chat text and trip content; text, voice and images for translation; menu photos; place names and addresses in taxi, hotel and metro-nearby search results (to produce English names); place names, opening hours and station names in roadbooks | 生成回答、翻译、识别菜单、生成地点英文名和路书地点说明 / Replies, translation, menu reading, English place names and roadbook place descriptions |
 | 高德地图开放平台 / AMap (Gaode) | 中国大陆 / Mainland China | 地点和路线查询词、城市、酒店地标、火车出发日期；附近功能降到约 100 米精度的设备位置 / Place and route queries, city, hotel landmarks, train departure dates; your device location reduced to about 100 m for Nearby | 地点、路线、天气、酒店、火车、附近 / Places, routes, weather, hotels, trains, Nearby |
 | 滴滴出行 / DiDi | 中国大陆 / Mainland China | 打车搜索词、上车点（可为设备精确位置）、目的地 / Taxi search terms, pickup (may be your precise device location), destination | 估价、生成叫车链接；你在滴滴 App 里下单付款 / Estimates and ride links; you book and pay in the DiDi app |
 | 飞常准 / VariFlight | 中国大陆 / Mainland China | 航班号、机场、日期 / Flight number, airports, date | 航班查询 / Flight lookup |
@@ -116,7 +116,7 @@ We send each recipient only what the feature you use needs. Requests to Alibaba 
 你的账号、对话、行程和记忆存放在我们位于中国香港的服务器，每日备份存放在中国香港的对象存储。你的信息会在中国大陆与境外之间传输：
 
 - 你在中国大陆使用 App 时，信息从大陆传到香港。
-- 生成回答、翻译、识别菜单时，相关内容从香港发到北京的阿里云百炼；使用地点、路线、打车、附近、航班工具时，查询条件从香港发到位于中国大陆的高德、滴滴、飞常准。
+- 生成回答、翻译、识别菜单、生成地点英文名和路书地点说明时，相关内容从香港发到北京的阿里云百炼；使用地点、路线、打车、附近、航班工具时，查询条件从香港发到位于中国大陆的高德、滴滴、飞常准。
 - 官网抢先体验申请先传到中国香港处理（官网接口由 Vercel 托管，运行在香港区域），再转给位于美国的 Jotform；你和我们的邮件由位于美国的 Spacemail 收发，可能存储在中国境外。
 - 提交抢先体验申请前，请你勾选「同意传到中国大陆以外（中国香港和美国）处理」；不勾选无法提交。
 
@@ -127,7 +127,7 @@ We send each recipient only what the feature you use needs. Requests to Alibaba 
 Your account, chats, trips and memories are stored on our servers in Hong Kong, China, with daily backups in object storage in Hong Kong. Your information moves between the Chinese mainland and places outside it:
 
 - When you use the app in mainland China, your information goes from the mainland to Hong Kong.
-- For replies, translation and menu reading, the relevant content goes from Hong Kong to Alibaba Cloud Model Studio in Beijing; for places, routes, taxi, nearby and flight tools, your search terms go from Hong Kong to AMap, DiDi and VariFlight in mainland China.
+- For replies, translation, menu reading, English place names and roadbook place descriptions, the relevant content goes from Hong Kong to Alibaba Cloud Model Studio in Beijing; for places, routes, taxi, nearby and flight tools, your search terms go from Hong Kong to AMap, DiDi and VariFlight in mainland China.
 - Website early access applications are first transferred to Hong Kong, China for processing (the website endpoint is hosted by Vercel and runs in its Hong Kong region), then go to Jotform in the United States; emails between you and us go through Spacemail, a provider in the United States, and may be stored outside China.
 - Before you submit an early access application, you tick "I agree to my information being processed outside mainland China (Hong Kong, China and the United States)". Without it, the application cannot be submitted.
 
@@ -158,14 +158,14 @@ Your account, chats, trips and memories are stored on our servers in Hong Kong, 
 你可以查阅、更正、删除你的信息，撤回同意，注销账号，并要求我们解释本政策。
 
 - 在 App 内：在「我的」里查看、修改和删除记忆，或注销账号。
-- 撤回 AI 处理（App 内同意界面开放后适用，见第 12 节）：在「我的」→「隐私」里关闭。关闭后，聊天、行程规划、翻译和点餐停用，不再向阿里云百炼发送新的内容，其他功能照常；已经发出的请求无法在传输途中召回。
+- 撤回 AI 处理（App 内同意界面开放后适用，见第 12 节）：在「我的」→「隐私」里关闭。关闭后，聊天、行程规划、翻译和点餐停用，不再向阿里云百炼发送新的内容，其他功能照常（打车、酒店、地铁周边的地点名只显示中文，路书不生成地点说明）；已经发出的请求无法在传输途中召回，但我们会依法协助删除。
 - 其他请求（包括删除抢先体验申请、邮件往来）：发邮件到 hello@go2china.space。我们会先核对你就是当时提交信息时使用的邮箱或账号，在 15 个工作日内答复，最迟 30 天内处理完。
 - 撤回同意不影响撤回前已进行的处理；已经发出的请求无法在传输途中召回，但我们会依法协助删除。
 
 You can access, correct and delete your information, withdraw consent, close your account, and ask us to explain this policy.
 
 - In the app: under Me, view, edit and delete memories, or close your account.
-- Withdrawing AI processing (applies once the in-app consent screens launch, see section 12): turn it off under Me → Privacy. Once it is off, chat, trip planning, translation and the menu helper stop and no new content is sent to Alibaba Cloud Model Studio; everything else keeps working. Requests already sent cannot be recalled in transit.
+- Withdrawing AI processing (applies once the in-app consent screens launch, see section 12): turn it off under Me → Privacy. Once it is off, chat, trip planning, translation and the menu helper stop and no new content is sent to Alibaba Cloud Model Studio; everything else keeps working (place names in taxi, hotel and metro-nearby results show in Chinese only, and roadbooks have no generated place descriptions). Requests already sent cannot be recalled in transit, but we will help delete them as the law requires.
 - Other requests (including deleting an early access application or emails with us): email hello@go2china.space. We first check that you are using the same email address or account you used when you gave us the information, reply within 15 business days, and complete the request within 30 days at the latest.
 - Withdrawing consent does not affect processing before withdrawal. Requests already sent cannot be recalled in transit, but we will help delete them as the law requires.
 
