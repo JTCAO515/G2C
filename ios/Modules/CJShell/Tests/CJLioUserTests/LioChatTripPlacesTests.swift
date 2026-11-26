@@ -4,12 +4,51 @@ import CJMessageHTTP
 import CJTripClient
 @testable import CJLioUser
 
-/// A scripted `/v7/trip-structured` transport: answers in order, counts calls, can hang until cancelled.
+/// One-shot event a test waits on instead of the wall clock; firing first is remembered. A cancelled wait (the
+/// test's time limit) stops waiting, so a regression fails the test rather than hanging it.
+@MainActor private final class Signal {
+    private var fired = false
+    private var waiter: CheckedContinuation<Void, Never>?
+    func fire() { fired = true; waiter?.resume(); waiter = nil }
+    func wait() async {
+        if fired { return }
+        await withTaskCancellationHandler {
+            await withCheckedContinuation { waiter = $0 }
+        } onCancel: {
+            Task { @MainActor in self.fire() }
+        }
+    }
+}
+
+/// A deadline the test completes by hand (`fire()`), standing in for `Task.sleep` so nothing here depends on how
+/// fast the machine runs the rest of the suite. Cancelling the wait ends it, as cancelling a sleep does.
+@MainActor private final class ManualDeadline {
+    private(set) var requested: [Duration] = []
+    /// Fires once the product is waiting on the deadline, and when that wait is cancelled.
+    let armed = Signal(), cancelled = Signal()
+    private let release = AsyncStream<Void>.makeStream()
+
+    func wait(_ duration: Duration) async throws {
+        requested.append(duration)
+        armed.fire()
+        for await _ in release.stream { return }
+        cancelled.fire()
+        throw CancellationError()
+    }
+    func fire() { release.continuation.yield() }
+}
+
+/// A scripted `/v7/trip-structured` transport: answers in order, counts calls, can hang until cancelled, or hang
+/// without looking at cancellation until the test lets it go.
 @MainActor private final class ScriptedTripRead {
-    enum Step { case respond(LioTimelineHTTP.TripStructuredResponse), fail, hang }
+    enum Step { case respond(LioTimelineHTTP.TripStructuredResponse), fail, hang, hangIgnoringCancellation }
     var steps: [Step]
     private(set) var calls: [String] = []
     private(set) var pauses: [Duration] = []
+    private(set) var cancelledReads = 0
+    private var held: [CheckedContinuation<Void, Never>] = []
+    /// Fires when a read starts waiting, and when a hanging read ends (cancelled, or let go).
+    let started = Signal(), ended = Signal()
 
     init(_ steps: [Step]) { self.steps = steps }
 
@@ -20,14 +59,37 @@ import CJTripClient
         case .respond(let response): return response
         case .fail: throw URLError(.notConnectedToInternet)
         case .hang:
-            try await Task.sleep(for: .seconds(30))
+            started.fire()
+            defer { ended.fire() }
+            do {
+                try await Task.sleep(for: .seconds(30))
+            } catch {
+                cancelledReads += 1
+                throw error
+            }
+            throw URLError(.timedOut)
+        case .hangIgnoringCancellation:
+            started.fire()
+            defer { ended.fire() }
+            await withCheckedContinuation { held.append($0) }
             throw URLError(.timedOut)
         }
     }
 
-    func places(enabled: Bool = true, timeout: Duration = .seconds(8)) -> LioChatTripPlaces {
-        LioChatTripPlaces(enabled: enabled, read: { try await self.read($0) }, timeout: timeout,
-                          pause: { duration in await MainActor.run { self.pauses.append(duration) } })
+    /// Lets the reads that ignore cancellation finish.
+    func release() {
+        let waiting = held
+        held = []
+        for continuation in waiting { continuation.resume() }
+    }
+
+    func places(enabled: Bool = true, timeout: Duration = .seconds(8), deadline: ManualDeadline? = nil) -> LioChatTripPlaces {
+        let pause: @Sendable (Duration) async throws -> Void = { duration in await MainActor.run { self.pauses.append(duration) } }
+        guard let deadline else {
+            return LioChatTripPlaces(enabled: enabled, read: { try await self.read($0) }, timeout: timeout, pause: pause)
+        }
+        return LioChatTripPlaces(enabled: enabled, read: { try await self.read($0) }, timeout: timeout, pause: pause,
+                                 waitForDeadline: { try await deadline.wait($0) })
     }
 }
 
@@ -301,14 +363,59 @@ import CJTripClient
         #expect(saved == [try summary(content)])
     }
 
-    @Test func noAnswerBeforeTheDeadlineSavesTheSummaryPromptly() async throws {
+    /// The deadline is completed by hand, so this says what happens at the deadline, not how long it took on the
+    /// machine that ran it (the whole suite shares one main actor; a wall-clock bound failed on a slow runner).
+    @Test(.timeLimit(.minutes(1))) func noAnswerBeforeTheDeadlineSavesTheSummaryPromptly() async throws {
         let content = try content("matched")
-        let read = ScriptedTripRead([.hang])
-        let clock = ContinuousClock(), started = clock.now
-        let (outcome, saved) = try await save(read, content: content, timeout: .milliseconds(200))
-        #expect(outcome == .failed(.timeout))
-        #expect(clock.now - started < .seconds(5))
-        #expect(saved == [try summary(content)])
+        let (model, store) = model()
+        let read = ScriptedTripRead([.hang]), deadline = ManualDeadline()
+        let places = read.places(deadline: deadline)
+        let card = try summary(content), reference = try reference(content)
+        async let outcome = model.save(card, reference: reference, places: places)
+        await read.started.wait()
+        await deadline.armed.wait()
+        #expect(model.isSaving(card), "still waiting: the read has not answered and the deadline has not passed")
+        #expect(try store.load().isEmpty)
+        deadline.fire()
+        #expect(await outcome == .failed(.timeout))
+        #expect(deadline.requested == [.seconds(8)])
+        #expect(!model.isSaving(card))
+        #expect(try store.load() == [card], "the summary is saved without waiting for the hanging read")
+        // The hanging read was cancelled, not waited for.
+        await read.ended.wait()
+        #expect(read.cancelledReads == 1 && read.calls.count == 1)
+    }
+
+    @Test(.timeLimit(.minutes(1))) func aReadThatIgnoresCancellationDoesNotHoldTheSave() async throws {
+        let content = try content("matched")
+        let (model, store) = model()
+        let read = ScriptedTripRead([.hangIgnoringCancellation]), deadline = ManualDeadline()
+        let places = read.places(deadline: deadline)
+        let card = try summary(content), reference = try reference(content)
+        async let outcome = model.save(card, reference: reference, places: places)
+        await read.started.wait()
+        await deadline.armed.wait()
+        deadline.fire()
+        // The save finishes while the read is still stuck: nothing on the save path waits for it.
+        #expect(await outcome == .failed(.timeout))
+        #expect(try store.load() == [card])
+        #expect(!model.isSaving(card))
+        read.release()
+        await read.ended.wait()
+        // Its late end changes nothing.
+        #expect(try store.load() == [card] && read.calls.count == 1)
+    }
+
+    @Test(.timeLimit(.minutes(1))) func anAnswerBeforeTheDeadlineCancelsTheDeadline() async throws {
+        let content = try content("matched")
+        let (model, store) = model()
+        let read = ScriptedTripRead([ok(try body(content))]), deadline = ManualDeadline()
+        let places = read.places(deadline: deadline)
+        let outcome = await model.save(try summary(content), reference: try reference(content), places: places)
+        #expect(outcome == .confirmed)
+        // Waiting on the deadline ends once the answer is used, instead of running on until it passes.
+        await deadline.cancelled.wait()
+        #expect(try store.load().first.map(stops)?["item-1"]?.place.matched == true)
     }
 
     @Test func theDefaultDeadlineAndRetriesAreBounded() {
@@ -381,16 +488,18 @@ import CJTripClient
         #expect(!model.isSaved(card) && model.hasSavedCopy(of: card))
     }
 
-    @Test func aSecondSaveWhileReadingStartsNothing() async throws {
+    @Test(.timeLimit(.minutes(1))) func aSecondSaveWhileReadingStartsNothing() async throws {
         let content = try content("matched")
         let (model, _) = model()
-        let read = ScriptedTripRead([.hang])
-        let places = read.places(timeout: .milliseconds(300))
+        let read = ScriptedTripRead([.hang]), deadline = ManualDeadline()
+        let places = read.places(deadline: deadline)
         let card = try summary(content), reference = try reference(content)
         async let first = model.save(card, reference: reference, places: places)
-        await Task.yield()
+        await read.started.wait()
         #expect(model.isSaving(card))
         #expect(await model.save(card, reference: reference, places: places) == nil)
+        await deadline.armed.wait()
+        deadline.fire()
         #expect(await first == .failed(.timeout))
         #expect(read.calls.count == 1 && !model.isSaving(card))
     }

@@ -70,6 +70,7 @@ struct LioChatTripReference: Equatable, Sendable {
     let timeout: Duration
     private let read: Read
     private let pause: @Sendable (Duration) async throws -> Void
+    private let waitForDeadline: @Sendable (Duration) async throws -> Void
 
     /// The signed reader; on only when the build turns `G2CChatTripPlacesEnabled` on.
     public static func signed(_ client: LioTimelineHTTP) -> Self {
@@ -77,12 +78,14 @@ struct LioChatTripReference: Equatable, Sendable {
     }
 
     init(enabled: Bool, read: @escaping Read, maximumRetries: Int = 2, timeout: Duration = .seconds(8),
-         pause: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }) {
+         pause: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) },
+         waitForDeadline: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }) {
         self.enabled = enabled
         self.read = read
         self.maximumRetries = maximumRetries
         self.timeout = timeout
         self.pause = pause
+        self.waitForDeadline = waitForDeadline
     }
 
     /// The plan to save for this card, and how it was decided. Always returns a plan.
@@ -90,7 +93,7 @@ struct LioChatTripReference: Equatable, Sendable {
         guard enabled, summary.source == .chat, summary.tripID == reference.tripID,
               summary.tripVersion == reference.tripVersion else { return (summary, .notRead) }
         let tripID = reference.tripID
-        let fetched = await LioDeadline.run(timeout: timeout) { [self] in await fetch(tripID) }
+        let fetched = await LioDeadline.run(timeout: timeout, wait: waitForDeadline) { [self] in await fetch(tripID) }
         switch fetched {
         case nil: return (summary, .failed(.timeout))
         case .failure(let failure)?: return (summary, .failed(failure))
@@ -170,20 +173,23 @@ struct LioChatTripReference: Equatable, Sendable {
 }
 
 /// Resolves with the work's value, or nil once `timeout` passes first (the work is then cancelled and its late
-/// value ignored). A transport that ignores cancellation cannot hold the caller past the deadline.
+/// value ignored). A transport that ignores cancellation cannot hold the caller past the deadline. `wait` is how the
+/// deadline is measured (`Task.sleep` in the app); a test hands it one it completes by hand.
 @MainActor private final class LioDeadline<Value: Sendable> {
     private var continuation: CheckedContinuation<Value?, Never>?
     private var worker: Task<Void, Never>?
     private var timer: Task<Void, Never>?
 
-    static func run(timeout: Duration, _ work: @escaping @MainActor @Sendable () async -> Value) async -> Value? {
+    static func run(timeout: Duration, wait: @escaping @Sendable (Duration) async throws -> Void,
+                    _ work: @escaping @MainActor @Sendable () async -> Value) async -> Value? {
         let deadline = LioDeadline<Value>()
         return await withCheckedContinuation { continuation in
-            Task { @MainActor in deadline.start(continuation, timeout: timeout, work) }
+            Task { @MainActor in deadline.start(continuation, timeout: timeout, wait: wait, work) }
         }
     }
 
     private func start(_ continuation: CheckedContinuation<Value?, Never>, timeout: Duration,
+                       wait: @escaping @Sendable (Duration) async throws -> Void,
                        _ work: @escaping @MainActor @Sendable () async -> Value) {
         self.continuation = continuation
         worker = Task { @MainActor in
@@ -191,7 +197,7 @@ struct LioChatTripReference: Equatable, Sendable {
             self.resolve(value, timedOut: false)
         }
         timer = Task { @MainActor in
-            try? await Task.sleep(for: timeout)
+            try? await wait(timeout)
             guard !Task.isCancelled else { return }
             self.resolve(nil, timedOut: true)
         }
