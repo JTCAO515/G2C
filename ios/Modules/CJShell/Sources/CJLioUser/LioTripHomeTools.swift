@@ -3,7 +3,8 @@ import SwiftUI
 
 /// What the trip home asks of Arrival Mode, as closures, so the home compiles without Arrival Mode's types.
 /// `LioTripHomeArrival.fromBuild()` (in the Arrival Mode adapter) fills it when `G2CArrivalModeEnabled` is YES.
-/// Everything is read on this phone; the only write is ticking one of Arrival Mode's own checklist steps.
+/// Everything is read on this phone; the only writes are ticking one of Arrival Mode's own checklist steps and
+/// clearing those ticks when the trip ends.
 @MainActor struct LioTripHomeArrival {
     /// The sourced entry decision for this traveller, or `.missingDetails`.
     var entry: @MainActor (_ profile: LioTripProfile?, _ nationality: String, _ today: Date) -> LioTripEntryStatus
@@ -13,6 +14,19 @@ import SwiftUI
     var entryPage: @MainActor (_ profile: LioTripProfile?) -> AnyView
     var internetPage: @MainActor () -> AnyView
     var checklistPage: @MainActor (_ profile: LioTripProfile?) -> AnyView
+    /// Ending the trip (#1741) clears Arrival Mode's ticked steps, and nothing else of Arrival Mode.
+    var clearProgress: @MainActor () -> Void = {}
+}
+
+extension LioTripHomeArrival {
+    /// Arrival Mode's checklist page reading Back to Hotel's "my hotel" for its taxi step (#1741), read only.
+    func readingMyHotel(from store: LioReturnHotelStore?) -> Self {
+        guard let store else { return self }
+        var arrival = self
+        let page = checklistPage
+        arrival.checklistPage = { profile in AnyView(page(profile).environment(\.lioReturnHotelStore, store)) }
+        return arrival
+    }
 }
 
 /// The other tools the trip home links to, each present only when its own switch is on in this build.
@@ -37,11 +51,12 @@ import SwiftUI
         // Back to Hotel's own switch (#1632): `G2CShowCardEnabled`, or its Debug preview argument.
         let showCards = LioReturnHotelTools.shownInTools
         let roadbooks = LioRoadbookFeature.enabled(infoValue: info("G2CRoadbookEnabled"))
+        let hotelStore = showCards ? messageDirectory.map {
+            LioReturnHotelStore(directory: LioReturnHotelStore.storageDirectory(inMessageDirectory: $0), isCurrent: isCurrent)
+        } : nil
         return Self(
-            arrival: arrival,
-            hotelStore: showCards ? messageDirectory.map {
-                LioReturnHotelStore(directory: LioReturnHotelStore.storageDirectory(inMessageDirectory: $0), isCurrent: isCurrent)
-            } : nil,
+            arrival: arrival.map { $0.readingMyHotel(from: hotelStore) },
+            hotelStore: hotelStore,
             detailsStore: showCards ? messageDirectory.map {
                 LioShowCardDetailsStore(directory: LioShowCardDetailsStore.storageDirectory(inMessageDirectory: $0), isCurrent: isCurrent)
             } : nil,
@@ -56,11 +71,6 @@ import SwiftUI
 
     /// A damaged hotel file reads as no hotel, as on Back to Hotel itself.
     func savedHotel() -> LioStayHotel? { (try? hotelStore?.load()) ?? nil }
-}
-
-/// The passport nationality Local Support and Arrival Mode already share; the trip home reads and sets the same one.
-enum LioTripHomeNationality {
-    static let key = "lio.local-support.nationality"
 }
 
 /// Opens the tool page that does a task ("Go"). Pages are the tools' own; nothing here edits their data.

@@ -908,6 +908,8 @@ private var developmentHostEnvironment: [String: String] {
     /// #1647: the trip home's profile and ticks, and the account's message folder for tools that keep files there.
     let lioTripHomeStore: LioTripHomeStore
     let lioMessageDirectory: URL
+    /// #1741: the passport nationality, under a key scoped to this account.
+    let lioNationality: LioNationalityStore
     private let lioPosition: LioChatContinuity
     private let lioPositionStore: LioChatPositionStore
     #endif
@@ -966,6 +968,7 @@ private var developmentHostEnvironment: [String: String] {
         lioRoadbookDirectory = LioAccountFolders.roadbooks(inMessageDirectory: root)
         lioTripHomeStore = LioTripHomeStore(directory: LioTripHomeStore.storageDirectory(inMessageDirectory: root), isCurrent: isCurrent)
         lioMessageDirectory = root
+        lioNationality = LioNationalityStore(account: configuration.accountID.uuidString)
         lioTranslationHistory = LioTranslationHistory(
             directory: root.appendingPathComponent(LioTranslationHistory.directoryName, isDirectory: true),
             isCurrent: isCurrent)
@@ -1898,6 +1901,10 @@ private func developmentCleanupHash(_ value: Data) -> String {
     private var execution: DevelopmentNativeExecution?
     private var executionBytes: Data?
     private var usable = true
+    #if G2C_DEMO_BETA
+    /// #1689: the notification lists, read asynchronously just before each native run; nil outside one.
+    var reminderSnapshot: LioReminderSnapshot?
+    #endif
 
     init(manifest: DevelopmentNativeManifest, manifestStore: KeychainSessionStore,
          executionStore: KeychainSessionStore, sdkStore: KeychainSessionStore,
@@ -2021,7 +2028,15 @@ private func developmentCleanupHash(_ value: Data) -> String {
             try stores.clearLocalSupportDraft()
             // Nationality and arrival progress sit in shared UserDefaults. JT 2026-11-25 approved clearing them
             // when the account is deleted only, not when a session is found invalid or offline data expires.
-            if LioDeviceDefaultsCleanup.applies(to: reason.rawValue) { LioDeviceDefaultsCleanup.erase() }
+            if LioDeviceDefaultsCleanup.applies(to: reason.rawValue) {
+                LioDeviceDefaultsCleanup.erase()
+                // #1741: the nationality now lives under this account's own key; only this account's is removed.
+                LioNationalityStore.erase(account: scope.account.uuidString)
+                // #1689: the sight booking reminders this app set, waiting and shown; other notifications stay.
+                // The lists were read asynchronously before this step (`reminderSnapshot`); none read: unknown.
+                try LioAttractionReminderPurge.erase(reminderSnapshot, in: LioSystemReminderNotifications())
+                reminderSnapshot = reminderSnapshot?.withoutSightReminders
+            }
         #endif
         default: try stores.eraseFiles(for: target)
         }
@@ -2050,6 +2065,18 @@ private func developmentCleanupHash(_ value: Data) -> String {
                 // keeps an interrupted deletion from ending as unknown.
                 LioDeviceDefaultsCleanup.erase()
                 try LioDeviceDefaultsCleanup.requireAbsent()
+                // #1741 / #1689: the same holds for the account's nationality and the sight booking reminders:
+                // remove again (harmless), then read back and fail the step if anything is left.
+                LioNationalityStore.erase(account: scope.account.uuidString)
+                guard LioNationalityStore.isAbsent(account: scope.account.uuidString) else { throw CleanupFailure.unavailable }
+                // A fresh snapshot (a resumed cleanup) that still lists a sight reminder removes it and leaves
+                // the step unknown, so the next pass reads again; the workflow also re-reads before the receipt.
+                if let snapshot = reminderSnapshot, !snapshot.residue.isEmpty {
+                    try LioAttractionReminderPurge.erase(snapshot, in: LioSystemReminderNotifications())
+                    reminderSnapshot = snapshot.withoutSightReminders
+                    throw LioAttractionReminderPurge.Failure.stillPresent
+                }
+                try LioAttractionReminderPurge.requireAbsent(reminderSnapshot)
             }
         #endif
         default: try layout.requireEmpty(for: target)
@@ -2190,6 +2217,30 @@ private func developmentCleanupHash(_ value: Data) -> String {
             }
         }
     }
+    /// Every native run goes through here (#1689): the notification lists are read asynchronously first, so the
+    /// synchronous cleanup steps never wait on the main thread for the system.
+    private func executeNative(_ device: DeviceCleanupClient) async throws -> DeviceCleanupNativeOutcome {
+        let executor = try nativeExecutor()
+        #if G2C_DEMO_BETA
+        executor.reminderSnapshot = await LioAttractionReminderPurge.read(LioSystemReminderNotifications())
+        defer { executor.reminderSnapshot = nil }
+        try check()
+        #endif
+        return try device.executeNative(using: executor)
+    }
+
+    /// Before a device receipt is reported for account deletion: read both notification lists again and stop
+    /// (recorded as unknown) while any sight booking reminder is still there. Other reasons are not checked.
+    private func requireSightRemindersCleared(_ device: DeviceCleanupClient) async throws {
+        #if G2C_DEMO_BETA
+        guard case .invocation(let invocation, _) = device.state,
+              LioAttractionReminderPurge.applies(to: invocation.reason.rawValue) else { return }
+        let snapshot = await LioAttractionReminderPurge.read(LioSystemReminderNotifications())
+        try check()
+        do { try LioAttractionReminderPurge.requireAbsent(snapshot) } catch { throw CleanupFailure.unavailable }
+        #endif
+    }
+
     private func nativeExecutor() throws -> DevelopmentDeviceNativeExecutor {
         if let executor { return executor }
         try check(); try quiesce(); try check()
@@ -2316,8 +2367,11 @@ private func developmentCleanupHash(_ value: Data) -> String {
                 _ = try await device.perform(device.prepareSessionInvalidation()); try check()
             }
             if case .invocation = device.state {
-                _ = try device.executeNative(using: nativeExecutor()); try check()
-                if try device.canPrepareReceipt { _ = try await device.perform(device.prepareReceipt()); try check() }
+                _ = try await executeNative(device); try check()
+                if try device.canPrepareReceipt {
+                    try await requireSightRemindersCleared(device)
+                    _ = try await device.perform(device.prepareReceipt()); try check()
+                }
             }
             refresh()
         } catch { unknown = true }
@@ -2363,10 +2417,12 @@ private func developmentCleanupHash(_ value: Data) -> String {
                     }
                     _ = try await device.perform(work); try check()
                 }
-                _ = try device.executeNative(using: nativeExecutor()); try check()
+                _ = try await executeNative(device); try check()
+                try await requireSightRemindersCleared(device)
                 _ = try await device.perform(device.prepareReceipt()); try check()
             } else if command == .reportDevice {
                 guard let device else { throw CleanupFailure.unavailable }
+                try await requireSightRemindersCleared(device)
                 _ = try await device.perform(device.prepareReceipt()); try check()
             } else if command == .checkDevice {
                 guard let device else { throw CleanupFailure.unavailable }
@@ -2374,7 +2430,7 @@ private func developmentCleanupHash(_ value: Data) -> String {
                 else {
                     _ = try await device.perform(device.prepareOriginalInvocationQuery()); try check()
                     if case .invocation(_, local: .unknown) = device.state {
-                        _ = try device.executeNative(using: nativeExecutor()); try check()
+                        _ = try await executeNative(device); try check()
                     }
                 }
             }
@@ -2393,7 +2449,8 @@ private func developmentCleanupHash(_ value: Data) -> String {
         }
         guard let device, let manifest else { throw CleanupFailure.unavailable }
         guard case .invocation(let invocation, .confirmed) = device.state, invocation.state == .confirmed else { throw CleanupFailure.unavailable }
-        guard try device.executeNative(using: nativeExecutor()) == .confirmed else { throw CleanupFailure.unavailable }
+        guard try await executeNative(device) == .confirmed else { throw CleanupFailure.unavailable }
+        try await requireSightRemindersCleared(device)
         guard case .completion(let completion) = try await device.perform(device.prepareCompletionQuery()) else { throw CleanupFailure.unavailable }
         try check()
         guard completion.scope == manifest.scope, completion.permitsAccountRecordFinalization else {

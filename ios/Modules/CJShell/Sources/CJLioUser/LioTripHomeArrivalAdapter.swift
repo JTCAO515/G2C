@@ -1,3 +1,5 @@
+import Foundation
+
 #if os(iOS)
 import SwiftUI
 
@@ -37,7 +39,8 @@ extension LioTripHomeArrival {
             internetPage: { AnyView(LioArrivalView(language: language, rules: rules)) },
             checklistPage: { profile in
                 AnyView(LioArrivalView(language: language, arrival: arrivalDay(profile), rules: rules))
-            })
+            },
+            clearProgress: { LioTripHomeArrivalRules.clearProgress(in: defaults) })
     }
 }
 #endif
@@ -65,6 +68,11 @@ enum LioTripHomeArrivalRules {
         case .checkOfficial:
             return .officialOnly
         }
+    }
+
+    /// Ending the trip (#1741): only Arrival Mode's progress key goes; the nationality and everything else stay.
+    static func clearProgress(in defaults: UserDefaults) {
+        defaults.removeObject(forKey: LioArrivalProgress.storageKey)
     }
 
     /// Arrival Mode's ticked steps, by step name, from its own stored progress.
