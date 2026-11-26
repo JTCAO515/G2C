@@ -59,10 +59,6 @@ struct LioRoadbookArchive: Codable, Equatable, Sendable {
     let details: [Detail]?
 
     init(_ roadbook: LioRoadbook) {
-        func place(_ value: LioRichItinerary.Place) -> Place {
-            Place(nameZH: value.nameZH, nameEN: value.nameEN, address: value.address, matched: value.matched,
-                  latitude: value.point?.latitude, longitude: value.point?.longitude)
-        }
         let itinerary = roadbook.itinerary
         version = Self.currentVersion
         id = roadbook.id
@@ -71,7 +67,36 @@ struct LioRoadbookArchive: Codable, Equatable, Sendable {
         createdAt = roadbook.createdAt
         title = itinerary.title
         undated = itinerary.undated
-        days = itinerary.days.map { day in
+        days = Self.days(itinerary)
+        lodgingArea = itinerary.lodgingArea
+        hotels = Self.hotels(itinerary)
+        let entries = roadbook.details.sorted { $0.key < $1.key }.map { Detail(stopID: $0.key, detail: $0.value) }
+        details = entries.isEmpty ? nil : entries
+    }
+
+    func roadbook() throws -> LioRoadbook {
+        guard version == Self.currentVersion else { throw Failure.unsupportedVersion }
+        guard !id.isEmpty, let source = LioRoadbook.Source(rawValue: source) else { throw Failure.invalidValue }
+        let itinerary = try Self.itinerary(title: title, undated: undated, days: days, lodgingArea: lodgingArea, hotels: hotels)
+        let stopIDs = Set(itinerary.days.flatMap(\.stops).map(\.id))
+        var restored: [String: LioRoadbookDetail] = [:]
+        for entry in details ?? [] {
+            guard stopIDs.contains(entry.stopID), restored[entry.stopID] == nil else { throw Failure.invalidValue }
+            restored[entry.stopID] = entry.detail
+        }
+        return LioRoadbook(id: id, source: source, city: city.map { .init(nameZH: $0.nameZH, nameEN: $0.nameEN) },
+                           createdAt: createdAt, itinerary: itinerary, details: restored)
+    }
+
+    // MARK: - The trip snapshot, shared with saved plans (#1723)
+
+    static func place(_ value: LioRichItinerary.Place) -> Place {
+        Place(nameZH: value.nameZH, nameEN: value.nameEN, address: value.address, matched: value.matched,
+              latitude: value.point?.latitude, longitude: value.point?.longitude)
+    }
+
+    static func days(_ itinerary: LioRichItinerary) -> [Day] {
+        itinerary.days.map { day in
             Day(number: day.number, date: day.date, theme: day.theme, area: day.area,
                 stops: day.stops.map {
                     Stop(id: $0.id, kind: $0.kind.rawValue, text: $0.text, time: $0.time, place: place($0.place),
@@ -82,26 +107,26 @@ struct LioRoadbookArchive: Codable, Equatable, Sendable {
                         seconds: $0.estimate?.seconds, metres: $0.estimate?.metres)
                 })
         }
-        lodgingArea = itinerary.lodgingArea
-        hotels = itinerary.hotels.map { Hotel(id: $0.id, place: place($0.place), note: $0.note) }
-        let entries = roadbook.details.sorted { $0.key < $1.key }.map { Detail(stopID: $0.key, detail: $0.value) }
-        details = entries.isEmpty ? nil : entries
     }
 
-    func roadbook() throws -> LioRoadbook {
-        guard version == Self.currentVersion else { throw Failure.unsupportedVersion }
-        guard !id.isEmpty, let source = LioRoadbook.Source(rawValue: source) else { throw Failure.invalidValue }
-        func place(_ value: Place) throws -> LioRichItinerary.Place {
-            let point: LioItinerary.Point?
-            switch (value.latitude, value.longitude) {
-            case let (latitude?, longitude?):
-                guard (-90...90).contains(latitude), (-180...180).contains(longitude) else { throw Failure.invalidValue }
-                point = .init(latitude: latitude, longitude: longitude)
-            case (nil, nil): point = nil
-            default: throw Failure.invalidValue
-            }
-            return .init(nameZH: value.nameZH, nameEN: value.nameEN, address: value.address, matched: value.matched, point: point)
+    static func hotels(_ itinerary: LioRichItinerary) -> [Hotel] {
+        itinerary.hotels.map { Hotel(id: $0.id, place: place($0.place), note: $0.note) }
+    }
+
+    static func place(_ value: Place) throws -> LioRichItinerary.Place {
+        let point: LioItinerary.Point?
+        switch (value.latitude, value.longitude) {
+        case let (latitude?, longitude?):
+            guard (-90...90).contains(latitude), (-180...180).contains(longitude) else { throw Failure.invalidValue }
+            point = .init(latitude: latitude, longitude: longitude)
+        case (nil, nil): point = nil
+        default: throw Failure.invalidValue
         }
+        return .init(nameZH: value.nameZH, nameEN: value.nameEN, address: value.address, matched: value.matched, point: point)
+    }
+
+    static func itinerary(title: String, undated: Bool, days: [Day], lodgingArea: String,
+                          hotels: [Hotel]) throws -> LioRichItinerary {
         let days = try days.map { day in
             let stops = try day.stops.map { stop in
                 guard let kind = LioRichItinerary.Kind(rawValue: stop.kind) else { throw Failure.invalidValue }
@@ -124,15 +149,7 @@ struct LioRoadbookArchive: Codable, Equatable, Sendable {
                                         stops: stops, legs: legs)
         }
         let hotels = try hotels.map { LioRichItinerary.Hotel(id: $0.id, place: try place($0.place), note: $0.note) }
-        let itinerary = LioRichItinerary(title: title, undated: undated, days: days, lodgingArea: lodgingArea, hotels: hotels)
-        let stopIDs = Set(days.flatMap(\.stops).map(\.id))
-        var restored: [String: LioRoadbookDetail] = [:]
-        for entry in details ?? [] {
-            guard stopIDs.contains(entry.stopID), restored[entry.stopID] == nil else { throw Failure.invalidValue }
-            restored[entry.stopID] = entry.detail
-        }
-        return LioRoadbook(id: id, source: source, city: city.map { .init(nameZH: $0.nameZH, nameEN: $0.nameEN) },
-                           createdAt: createdAt, itinerary: itinerary, details: restored)
+        return LioRichItinerary(title: title, undated: undated, days: days, lodgingArea: lodgingArea, hotels: hotels)
     }
 }
 
