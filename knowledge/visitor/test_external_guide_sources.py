@@ -1,9 +1,8 @@
 """Exact public-source permissions do not grant an entire website."""
 from datetime import date
-import json
-from pathlib import Path
 import unittest
 
+from test_venue_sources import SYNTHETIC_VENUE
 from validate_v3 import validate_entry_v3
 
 
@@ -71,10 +70,8 @@ class ExternalGuideSourceScopeTests(unittest.TestCase):
                           page.replace('m.panda.org.cn', 'other.panda.org.cn')))
 
     def _check_venue_source_scope(self, *, page, city, wrong_city, invalid_urls):
-        root = Path(__file__).resolve().parent
         # Explicit source fixtures, independent of the implementation's allowlist.
-        record = json.loads((root / 'entries-v3/venues-beijing-chengdu-xian.json').read_text())[0]
-        record = {**record, 'cities': [city], 'source_urls': [page],
+        record = {**SYNTHETIC_VENUE, 'cities': [city], 'source_urls': [page],
                   'subject': {'key': f'{city}.example-venue', 'name_zh': '合成场馆',
                               'name_en': 'Synthetic venue', 'wikidata_qid': None}}
         with self.subTest(allowed=page):

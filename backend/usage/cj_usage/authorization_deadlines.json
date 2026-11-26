@@ -1,0 +1,18 @@
+{
+  "version": "g2c-authorization-deadlines.2",
+  "approval": "JT 2026-11-26 #1716: extend to 2027-01-01 00:00 Asia/Shanghai with limits unchanged; supplier and Supabase rows already 2026-12-31 since JT 2026-11-09 #495/6730489918",
+  "deadlines": {
+    "oss_backup": "2027-01-01T00:00:00+08:00",
+    "supabase_test": "2027-01-01T00:00:00+08:00",
+    "mac_provider_acceptance": "2027-01-01T00:00:00+08:00",
+    "hk_demo": "2027-01-01T00:00:00+08:00"
+  },
+  "previous": {
+    "oss_backup": ["2026-12-01T00:00:00+08:00"],
+    "supabase_test": ["2026-12-01T00:00:00+08:00"],
+    "mac_provider_acceptance": ["2026-12-01T08:00:00+08:00"]
+  },
+  "boundaries": {
+    "m4_original_period_end": "2026-12-01T00:00:00+08:00"
+  }
+}

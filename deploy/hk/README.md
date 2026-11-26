@@ -337,6 +337,8 @@ counter必须来自宿主持久control绑定，授权来自独立root只读绑�
 整套control（含oss-quota）是本轮不参与数据库恢复的连续信任锚；同时回退usage与全部intents的一致旧目录无法自检。
 禁止把该目录纳入恢复或更换；若它整体恢复、丢失或连续性不明，先由宿主root撤下OSS政策、人工核对原累计，不得凭旧签名重开额度。
 
+OSS授权续期（#1716）：允许的 `expires_at` 只来自 `backend/usage/cj_usage/authorization_deadlines.json` 的 `oss_backup`（北京时间，旧值留在 `previous`）。JT 批准新日期后先合并、部署读取新配置的日备镜像；旧文件在原到期前继续可用。之后宿主 root 只改 `oss.json` 的 `expires_at`（新值的 UTC 写法，如 `2026-12-31T16:00:00+00:00`），同目录临时文件 root:0644 后原子改名替换，其他字段一个字节都不改。新授权只把原 `authorization_sha256` 连同更早批准的到期值当作同一额度：原 usage/intents 继续计数，300 次、2GiB、10 元上限不变，不重开额度；其他字段变化、未列入配置的日期、或用过新授权后退回旧文件，都保持 HOLD。
+
 恢复目标是**同一主机内全新、仅Unix socket的独立PG17集群**，由本次operator进程亲自initdb/启动并签名绑定system_identifier/data_directory；其PG数据在持久target-control/pg内，失败也保留。核服务端listen_addresses为空和仅演练数据库，不接受任意目标URI/旧共享集群，不创建新云项目。
 原集群中新空库仍有全局应用角色，会被明确拒绝；不重用角色、不给云角色扩权。
 恢复按镜像规范pre-data → 最新检查点DATA（fence先行）→ 原post-data执行单事务，
@@ -543,6 +545,16 @@ composition 或计量。有效旧两小时凭据可升级；过期、撤销、�
 `DEMO_SESSION_DENIED/access/failed/do_not_retry`，503 为
 `DEMO_SESSION_UNAVAILABLE/dependency/unknown/do_not_retry`。
 邀请码 401/503 沿用 `DEMO_INVITE_DENIED`、`DEMO_LOGIN_UNAVAILABLE`。
+
+邀请码登录失败限速（#1718，`deploy/hk/login_throttle.py`）：每次换取先按一次失败计入，签发成功才撤回；
+同一客户端（Caddy 写入的 `X-Forwarded-For` 单一地址，其他情况合用一个 `unattributed` 桶）15 分钟 5 次、
+短码格式全局 1 小时 10 次、全部 1 小时 60 次。超限返回 503 `DEMO_LOGIN_UNAVAILABLE/access/failed/do_not_retry`
+（App 已有映射）并带 `Retry-After`，不再询问签名 socket。计数只在 API 进程内存，不落盘、不进访问日志；
+签名服务不可用不计入，续期不限速。
+
+外测只发长邀请码（`D1-<12 位>.<22 位>`）。短码格式是公开的，198 个短码对应的主体与摘要也就是公开的：
+`demo_accounts bootstrap/rotate` 对短码主体必须显式加 `--internal-short-code`（只给内部测试者），
+默认（外测）拒绝短码主体和短码摘要。
 客户端在有效会话回前台且余期不超过一天时续期，未知时保留仍有效旧凭据。
 
 `/v1` 和 `.1` 为旧内部构建保留原两小时上限，退出条件为旧构建退场。

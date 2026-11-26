@@ -227,6 +227,12 @@ def answer_prompt(locale, question=None, *, detailed=False, greeting_example=Tru
                   layout='flat'):
     if layout not in LAYOUTS:
         raise ValueError('unknown answer layout')
+    from .lio_prompt import render, template_enabled
+    if template_enabled():
+        # W2-5 (#1732): one template; the sources sentence only for an actual sources question.
+        return render(locale, layout=layout, detailed=detailed, sources=asks_about_sources(question),
+                      traveler_question=question is not None
+                      and _TRAVELER_IDENTITY_QUESTION.fullmatch(question.strip()) is not None)
     identity = (_TRAVELER_IDENTITY_PROMPT if question is not None
                 and _TRAVELER_IDENTITY_QUESTION.fullmatch(question.strip()) else '')
     persona = PERSONA if greeting_example else PERSONA.replace(_GREETING_EXAMPLE, '', 1)

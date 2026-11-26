@@ -9,10 +9,11 @@ from decimal import Decimal
 from dataclasses import dataclass
 from hashlib import sha256
 import json
+import os
 import re
 from pydantic import ValidationError
 
-from cj_message.lio_plan_input_schema import PlanUnderstanding
+from cj_message.lio_plan_input_schema import PLAN_FIELDS,PlanUnderstanding
 from cj_needs.domain import InvalidInput,decode,validate_fields,money
 from .lio_flat_intake import _observations
 from .lio_national_intake import _current_date_source,_current_date_anchors,_WEEK_SOURCE,ZONE_LITERAL,fields_for,fixed_sources_complete
@@ -397,9 +398,10 @@ def _edge_option_source(field,value,references,turns):
         for match in matches:_edge_option_at(field,value,original,*match.span())
 
 
-def _latest_edge_options(value,turns):
+def _latest_edge_options(value,turns,*,fields=('departure.mode','first_day_full')):
     """Later explicit options win; a model omission cannot restore an old one."""
     for field,options in (('departure.mode',('flight','train')),('first_day_full',(True,False))):
+        if field not in fields:continue
         latest=None
         for index,turn in enumerate(turns):
             for position,end,quote in _original_clauses(turn.text):
@@ -418,8 +420,8 @@ def _latest_edge_options(value,turns):
             raise InvalidInput('latest original edge option was omitted or replaced')
 
 
-def _latest_event_clocks(value,turns):
-    for field in ('arrival.time','departure.time'):
+def _latest_event_clocks(value,turns,*,fields=('arrival.time','departure.time')):
+    for field in fields:
         latest=None
         for index,turn in enumerate(turns):
             for match in _PRECISE_CLOCK.finditer(turn.text):
@@ -482,29 +484,25 @@ def _require_start_sources(value,turns):
         raise InvalidInput('latest explicit original trip date was omitted by planning understanding')
 
 
-def prepare_plan_fields(value,turns):
+def prepare_plan_fields(value,turns,*,start_unconfirmed=False):
     """City-free data for complete graph preflight, never a source capability.
 
     Reject omitted explicit dates or fixed declarations before spending on city
     resolution. Full destination, fixed values and window checks still run
     after the actual city result; no timezone or missing calendar is defaulted.
+    start_unconfirmed is only for the degraded path, which already removed every
+    start/arrival date observation; the plan then stays undated.
     """
     from .lio_national_intake import fixed_declarations_complete
-    _require_start_sources(value,turns)
+    if not start_unconfirmed:_require_start_sources(value,turns)
     projection=project_plan_fields(value)
     if not fixed_declarations_complete(projection.fields,turns,rich_phrases=True):
         raise InvalidInput('complete original fixed declarations required before lookup')
     return projection
 
 
-def compile_plan_fields(value,turns,*,day_count,city_reference,message_id,run_id):
-    """Compile stated fields through the retained literal/window guards.
-
-    day_count/city_reference must come from the protected profile and actual
-    registered city result. Their code-default provenance belongs to source4,
-    never a fabricated original quote or an old data8 source capability.
-    """
-    _require_start_sources(value,turns)
+def _clock_zone_problems(value,turns,city_reference):
+    """Yield (field, refusal) for an event clock whose timezone needs clarification."""
     projection=project_plan_fields(value)
     for row in value.observations:
         if row.field not in ('arrival.time','departure.time')or row.state!='known':continue
@@ -520,13 +518,31 @@ def compile_plan_fields(value,turns,*,day_count,city_reference,message_id,run_id
             for zone in zones:
                 if zone==city_reference.timezone:continue
                 if china and zone.upper()in ('UTC+08:00','GMT+08:00','UTC+0800','GMT+0800'):continue
-                raise InvalidInput('explicit original clock timezone requires clarification')
+                yield row.field,'explicit original clock timezone requires clarification'
             if offsets and not (china and all(value in ('+08:00','+0800')for value in offsets)):
-                raise InvalidInput('explicit original clock offset requires clarification')
+                yield row.field,'explicit original clock offset requires clarification'
     for edge in ('arrival','departure'):
         event=projection.fields.get(edge,{})
         if event.get('time',{}).get('state')=='known'and event.get('timezone',{}).get('state')in ('unknown','uncertain'):
-            raise InvalidInput('explicitly unresolved local clock timezone requires clarification')
+            yield edge+'.time','explicitly unresolved local clock timezone requires clarification'
+
+
+def clock_zone_unconfirmed(value,turns,city_reference):
+    """Degraded path only: event clocks that would otherwise need a timezone clarification."""
+    return frozenset(field for field,_ in _clock_zone_problems(value,turns,city_reference))
+
+
+def compile_plan_fields(value,turns,*,day_count,city_reference,message_id,run_id,start_unconfirmed=False):
+    """Compile stated fields through the retained literal/window guards.
+
+    day_count/city_reference must come from the protected profile and actual
+    registered city result. Their code-default provenance belongs to source4,
+    never a fabricated original quote or an old data8 source capability.
+    """
+    if not start_unconfirmed:_require_start_sources(value,turns)
+    projection=project_plan_fields(value)
+    for _,refusal in _clock_zone_problems(value,turns,city_reference):
+        raise InvalidInput(refusal)
     data=_PlanningFieldsData(dict(version='NEEDS-extraction.1',fields=projection.fields,
         unresolved=[],long_term_requests=[]),projection.sources,projection.start_date,day_count)
     fields,_=fields_for(data,city_reference,message_id=message_id,run_id=run_id,
@@ -737,66 +753,71 @@ def _simple_plan_request(turns):
     return destination_stay(clauses[0],(),whole_message=False) is not None
 
 
-def parse_plan_understanding(raw,turns):
+def _decode_bound(raw,turns):
     try:value=PlanUnderstanding.model_validate(decode(raw.encode()if type(raw)is str else raw))
     except ValidationError as error:raise InvalidInput('complete typed plan understanding required')from error
     if value.current_source_index!=len(turns)-1:
         raise InvalidInput('plan understanding must bind the latest original')
+    return value
 
+
+def _quote_check(turns):
     def check(reference):
         if reference.source_index>=len(turns)or reference.quote not in turns[reference.source_index].text:
             raise InvalidInput('planning quote is not in its original traveler message')
         if _META_SOURCE.search(turns[reference.source_index].text):
             raise InvalidInput('translation or explanation data is not an original traveler constraint')
+    return check
 
-    seen=set()
-    observations=[]
-    for observation in value.observations:
-        if observation.field in seen:raise InvalidInput('one explicit planning observation per field required')
-        seen.add(observation.field)
-        for reference in observation.sources:check(reference)
-        # A plain two-message plan request supplies no first-day option.
-        # For other requests keep the original semantic validation.
-        if (observation.field=='first_day_full' and observation.state=='known'
-                and type(observation.value)is bool and observation.note is None
-                and _simple_plan_request(turns)):
-            continue
-        observations.append(observation)
-        if observation.state=='known':
-            if observation.value is None or observation.note is not None:
-                raise InvalidInput('known observation requires a value without uncertainty')
-            if observation.field=='party_size':
-                if type(observation.value)is not int or not 1<=observation.value<=100000:
-                    raise InvalidInput('explicit bounded party count required')
-                _party_source(observation.value,observation.sources,turns)
-            elif observation.field in ('departure.mode','first_day_full'):
-                _edge_option_source(observation.field,observation.value,
-                    tuple((ref.source_index,ref.quote)for ref in observation.sources),turns)
-            elif observation.field=='budget_includes':
-                if type(observation.value)is not list or not all(type(v)is str and v.strip()for v in observation.value):
-                    raise InvalidInput('explicit budget inclusion list required')
-            elif type(observation.value)is not str or not observation.value.strip():
-                raise InvalidInput('explicit planning text value required')
-            if observation.field=='start_date'or observation.field.endswith('.date'):
-                if type(observation.value)is not str:raise InvalidInput('explicit ISO date required')
-                try:date.fromisoformat(observation.value)
-                except ValueError as error:raise InvalidInput('explicit ISO date required')from error
-                _current_date_source(observation.value,[ref.model_dump()for ref in observation.sources],turns,
-                                     departure=observation.field=='departure.date')
-                _date_event_source(observation.field,observation.sources,turns)
-            elif observation.field.endswith('.time'):
-                _clock_source(observation.field,observation.value,observation.sources,turns)
-            elif observation.field.endswith('.place'):
-                _place_source(observation.field,observation.value,observation.sources,turns)
-            elif observation.field not in ('party_size','departure.mode','first_day_full'):
-                _constraint_source(observation,turns)
-        else:
-            if observation.value is not None:raise InvalidInput('unknown planning value cannot also be known')
-            if observation.state=='uncertain':
-                if not observation.note or not any(observation.note in ref.quote for ref in observation.sources):
-                    raise InvalidInput('original planning uncertainty note required')
-            elif observation.note is not None:raise InvalidInput('unknown observation has no model uncertainty note')
 
+def _skipped_first_day(observation,turns):
+    # A plain two-message plan request supplies no first-day option.
+    # For other requests keep the original semantic validation.
+    return (observation.field=='first_day_full' and observation.state=='known'
+            and type(observation.value)is bool and observation.note is None
+            and _simple_plan_request(turns))
+
+
+def _check_observation(observation,turns,check):
+    for reference in observation.sources:check(reference)
+    if observation.state=='known':
+        if observation.value is None or observation.note is not None:
+            raise InvalidInput('known observation requires a value without uncertainty')
+        if observation.field=='party_size':
+            if type(observation.value)is not int or not 1<=observation.value<=100000:
+                raise InvalidInput('explicit bounded party count required')
+            _party_source(observation.value,observation.sources,turns)
+        elif observation.field in ('departure.mode','first_day_full'):
+            _edge_option_source(observation.field,observation.value,
+                tuple((ref.source_index,ref.quote)for ref in observation.sources),turns)
+        elif observation.field=='budget_includes':
+            if type(observation.value)is not list or not all(type(v)is str and v.strip()for v in observation.value):
+                raise InvalidInput('explicit budget inclusion list required')
+        elif type(observation.value)is not str or not observation.value.strip():
+            raise InvalidInput('explicit planning text value required')
+        if observation.field=='start_date'or observation.field.endswith('.date'):
+            if type(observation.value)is not str:raise InvalidInput('explicit ISO date required')
+            try:date.fromisoformat(observation.value)
+            except ValueError as error:raise InvalidInput('explicit ISO date required')from error
+            _current_date_source(observation.value,[ref.model_dump()for ref in observation.sources],turns,
+                                 departure=observation.field=='departure.date')
+            _date_event_source(observation.field,observation.sources,turns)
+        elif observation.field.endswith('.time'):
+            _clock_source(observation.field,observation.value,observation.sources,turns)
+        elif observation.field.endswith('.place'):
+            _place_source(observation.field,observation.value,observation.sources,turns)
+        elif observation.field not in ('party_size','departure.mode','first_day_full'):
+            _constraint_source(observation,turns)
+    else:
+        if observation.value is not None:raise InvalidInput('unknown planning value cannot also be known')
+        if observation.state=='uncertain':
+            if not observation.note or not any(observation.note in ref.quote for ref in observation.sources):
+                raise InvalidInput('original planning uncertainty note required')
+        elif observation.note is not None:raise InvalidInput('unknown observation has no model uncertainty note')
+
+
+def _check_details(value,turns,check):
+    """Companions, fixed arrangements and temporary conditions; always strict."""
     companions=set()
     for companion in value.companions:
         if companion.companion_id in companions:raise InvalidInput('distinct declared companions required')
@@ -831,8 +852,107 @@ def parse_plan_understanding(raw,turns):
             raise InvalidInput('temporary condition must be an original span')
         if any(subject.startswith('companion:')and subject[10:]not in companions for subject in condition.applies_to):
             raise InvalidInput('temporary-condition companion must be declared')
+
+
+def parse_plan_understanding(raw,turns):
+    value=_decode_bound(raw,turns)
+    check=_quote_check(turns)
+    seen=set()
+    observations=[]
+    for observation in value.observations:
+        if observation.field in seen:raise InvalidInput('one explicit planning observation per field required')
+        seen.add(observation.field)
+        for reference in observation.sources:check(reference)
+        if _skipped_first_day(observation,turns):continue
+        observations.append(observation)
+        _check_observation(observation,turns,check)
+    _check_details(value,turns,check)
     value=value.model_copy(update=dict(observations=observations))
     _latest_edge_options(value,turns)
     _latest_event_clocks(value,turns)
     _latest_party(value,turns)
     return _ground_fixed_places(value,turns)
+
+
+# W1-2 (#1722): a data field the host cannot verify against the traveler's own
+# words is left out ("unconfirmed") instead of refusing the whole plan. Fields of
+# one group are dropped together so a partial budget or a lone start/arrival date
+# cannot be compiled. Schema shape, the latest-original binding, companions, fixed
+# arrangements and temporary conditions stay strict; every save authority, refusal
+# and publication hold is decided elsewhere and is unchanged by this path.
+_FIELD_GROUPS=(frozenset(field for field in PLAN_FIELDS if field.startswith('budget_')),
+               frozenset(('start_date','arrival.date')))
+
+
+def _group_of(field):
+    for group in _FIELD_GROUPS:
+        if field in group:return group
+    return frozenset((field,))
+
+
+def without_fields(value,fields):
+    return value.model_copy(update=dict(observations=[row for row in value.observations if row.field not in fields]))
+
+
+@dataclass(frozen=True)
+class _TimezoneReference:
+    timezone:str
+
+
+_CHINA_TIME_REFERENCE=_TimezoneReference('Asia/Shanghai')
+
+
+def degraded_save_enabled():
+    """Server switch for W1-2 degraded saving; off unless explicitly set to 1."""
+    flag=os.environ.get('CJ_LIO_PLAN_DEGRADED_SAVE','0')
+    if flag not in ('0','1'):raise InvalidInput('explicit degraded-save switch value required')
+    return flag=='1'
+
+
+def parse_plan_understanding_degraded(raw,turns):
+    """Return (value, unconfirmed fields): strict data first, then drop only unverifiable fields.
+
+    The strict parser runs first, so an understanding that passes today is used
+    unchanged. Dropped fields become missing (never a default or a stale earlier
+    value); the caller must disclose them as unconfirmed.
+    """
+    try:value=parse_plan_understanding(raw,turns)
+    except InvalidInput:pass
+    else:
+        fields=frozenset()
+        try:_require_start_sources(value,turns)
+        except InvalidInput:fields=_group_of('start_date')
+        fields|=clock_zone_unconfirmed(without_fields(value,fields),turns,_CHINA_TIME_REFERENCE)
+        return without_fields(value,fields),fields
+    value=_decode_bound(raw,turns)
+    check=_quote_check(turns)
+    counts={}
+    for observation in value.observations:counts[observation.field]=counts.get(observation.field,0)+1
+    dropped={field for field,count in counts.items()if count>1}
+    observations=[]
+    for observation in value.observations:
+        if observation.field in dropped:continue
+        if _skipped_first_day(observation,turns):continue
+        try:_check_observation(observation,turns,check)
+        except InvalidInput:
+            dropped.add(observation.field);continue
+        observations.append(observation)
+    _check_details(value,turns,check)
+    value=value.model_copy(update=dict(observations=observations))
+    for field,latest in (('departure.mode',lambda v:_latest_edge_options(v,turns,fields=('departure.mode',))),
+                         ('first_day_full',lambda v:_latest_edge_options(v,turns,fields=('first_day_full',))),
+                         ('arrival.time',lambda v:_latest_event_clocks(v,turns,fields=('arrival.time',))),
+                         ('departure.time',lambda v:_latest_event_clocks(v,turns,fields=('departure.time',))),
+                         ('party_size',lambda v:_latest_party(v,turns))):
+        if field in dropped:continue
+        try:latest(value)
+        except InvalidInput:dropped.add(field)
+    try:_require_start_sources(without_fields(value,{field for group in dropped for field in _group_of(group)}),turns)
+    except InvalidInput:dropped.add('start_date')
+    fields=frozenset(field for name in dropped for field in _group_of(name))
+    value=without_fields(value,fields)
+    # Decide clock timezones before any projection is used, against China time.
+    # A destination outside it (Hong Kong, Macau, Taipei) is still checked
+    # strictly after city resolution and refuses as before.
+    zones=clock_zone_unconfirmed(value,turns,_CHINA_TIME_REFERENCE)
+    return _ground_fixed_places(without_fields(value,zones),turns),fields|zones

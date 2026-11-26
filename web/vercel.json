@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "ignoreCommand": "p=\"$VERCEL_GIT_PREVIOUS_SHA\"; if git cat-file -e \"$p^{commit}\"; then git diff --quiet \"$p\" HEAD -- .; elif [ \"$VERCEL_ENV\" = production ]; then git diff --quiet HEAD^ HEAD -- .; else exit 1; fi",
   "cleanUrls": true,
   "trailingSlash": false,
   "headers": [

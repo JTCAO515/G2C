@@ -74,7 +74,8 @@ class ConditionsTests(unittest.TestCase):
             validate_entry_v2(legacy[0], as_of=latest_review_day())
 
     def test_real_optional_booking_window_is_not_a_minimum_lead_requirement(self):
-        entries = load_entries_v2(sorted((ROOT / "entries-v2").glob("*.json")), as_of=date(2026, 11, 20))
+        entries = load_entries_v2(sorted((ROOT / "entries-v2").glob("*.json")),
+                                  as_of=latest_review_day("entries-v2"))
         self.assertEqual(len(entries), 3)
         venue = next(entry for entry in entries if entry["entry_kind"] == "fact")
         self.assertIs(venue["conditions"]["reservation_required"], False)

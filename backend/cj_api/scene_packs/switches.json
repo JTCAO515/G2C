@@ -1,0 +1,9 @@
+{
+  "version": "g2c-scene-switches.1",
+  "note": "#1737 / ADR-0010. New switches start off; turning one on is a reviewed PR with the coordinator's decision recorded.",
+  "scene_packs": {"travel": true, "business": false},
+  "cities": {"business": {"guangzhou": false}},
+  "human_service": false,
+  "payments": false,
+  "medical": false
+}

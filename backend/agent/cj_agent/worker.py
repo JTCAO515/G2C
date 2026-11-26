@@ -27,6 +27,7 @@ from cj_memory.runtime import RuntimeDenied, RuntimeUnknown
 from cj_place.draft_source import PlaceSourceUnavailable
 
 from .draft import DRAFT_SYSTEM, DraftRejected
+from .run_timing import RunTiming
 from .provider import CompleteUnsettledAnswer, FakeProvider, MeteredDashScopeProvider, ProviderFailed, ProviderUnknown
 
 FLUSH_CHARS = 24
@@ -133,6 +134,7 @@ class RunWorker:
         self.lio_memory = lio_memory
         self._lio_active = False
         self.runtime_reflection = runtime_reflection
+        self.run_timing = None  # W2-3 (#1729): set per executed RUN by _one; logging only
 
     def process(self, limit=20):
         outcomes = []
@@ -160,7 +162,10 @@ class RunWorker:
                 mutation is not None or kind in {'text_delta','completed','draft_outcome'})
             travel_effect=self.message_context is not None and kind in {'started','text_delta','completed','effect_committed'}
             if not memory_effect and not travel_effect and mutation is None:
-                return self.runs.apply(event)
+                updated = self.runs.apply(event)
+                if self.run_timing is not None:
+                    self.run_timing.observe(kind, value)
+                return updated
             with ExitStack() as leases:
                 with self.runs.repository.transaction() as tx:
                     old = tx.get(binding)
@@ -173,6 +178,8 @@ class RunWorker:
                     if check_memory is not None:check_memory()
                     if mutation is not None:mutation(tx.cur)
                     tx.put(updated)
+            if self.run_timing is not None:
+                self.run_timing.observe(kind, value)
             return updated
         except Conflict:
             current = self.runs.snapshot(binding)
@@ -431,10 +438,18 @@ class RunWorker:
                               lio_memory=self.lio_memory,
                               runtime_reflection=self.runtime_reflection,
                               runs=Service(OwnedRepository(), runs.valid))
-            if self.edit_publisher is not None:
-                with self.message_context.worker_repository(owned.runs.repository):
-                    return owned._owned(receipt,binding)
-            return owned._owned(receipt, binding)
+            owned.run_timing = RunTiming(binding)
+            status = 'exception'
+            try:
+                if self.edit_publisher is not None:
+                    with self.message_context.worker_repository(owned.runs.repository):
+                        outcome = owned._owned(receipt,binding)
+                else:
+                    outcome = owned._owned(receipt, binding)
+                status = outcome.status
+                return outcome
+            finally:
+                owned.run_timing.log(status)
 
     def _owned(self, receipt, binding):
         try:

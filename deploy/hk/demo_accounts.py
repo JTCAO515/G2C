@@ -7,11 +7,21 @@ from pathlib import Path
 import re
 
 from cj_api.local_app import ISSUER,scope_for
+from cj_usage.authorization_deadlines import deadline
 from . import assembly_profiles,checkpoint
 from .configuration import Runtime,load_secret_environment,local_database_target
 
 DECISION='JT #495/6730538594 demo subject'
-DEADLINE=datetime.fromisoformat('2027-01-01T00:00:00+08:00')
+DEADLINE=deadline('hk_demo')
+
+
+def invitation_class(subject,digest,internal_short_code):
+    """External testers only get long codes; a public short code needs an explicit internal flag (#1718)."""
+    from .demo_login import SHORT_CODE_DIGESTS,SHORT_CODE_SUBJECTS
+    if (subject in SHORT_CODE_SUBJECTS)!=internal_short_code:
+        raise ValueError('explicit_internal_short_code_choice_required')
+    if not internal_short_code and digest in SHORT_CODE_DIGESTS:
+        raise ValueError('long_invite_code_required_for_external_testers')
 
 
 def invitation(digest,expires_at):
@@ -86,6 +96,8 @@ def main():
     parser.add_argument('subject')
     parser.add_argument('--digest')
     parser.add_argument('--expires-at')
+    parser.add_argument('--internal-short-code',action='store_true',
+        help='issue a public-format short code to an internal tester; external testers never get one')
     args=parser.parse_args()
     runtime=None
     try:
@@ -93,7 +105,10 @@ def main():
         worker=args.mode in ('bootstrap','insert')
         if worker:load_secret_environment('worker')
         runtime=Runtime.load('/tmp/g2c-demo-operator',worker=worker)
-        new=invitation(args.digest,args.expires_at) if args.mode in ('bootstrap','rotate') else None
+        new=None
+        if args.mode in ('bootstrap','rotate'):
+            invitation_class(args.subject,args.digest,args.internal_short_code)
+            new=invitation(args.digest,args.expires_at)
         result=manage(runtime,args.mode,args.subject,Path(os.environ['CJ_DEPLOY_CONTROL']),Path('/operation'),new)
         print(json.dumps(dict(subject=args.subject,result=result)))
     except Exception as error:

@@ -1,0 +1,23 @@
+{
+  "version": "g2c-scene-pack.1",
+  "scene_pack": "travel",
+  "title": {"en": "Travel", "zh": "旅游"},
+  "note": "Inherits build 57 unchanged; build 58 only regresses and fixes it (ADR-0010).",
+  "languages": ["en", "zh"],
+  "cities": [],
+  "knowledge": [],
+  "tools": ["arrival", "attraction-booking", "currency", "hotels", "local-support", "menu-order", "metro-guide",
+            "nearby", "payment-guide", "phrase-cards", "return-hotel", "roadbook", "taxi", "translation", "transport"],
+  "flows": [],
+  "risk_rules": [
+    {"id": "platform-owns-orders",
+     "rule": {"en": "Third-party platforms own orders, delivery and after-sales; never promise a ticket or a room.",
+              "zh": "第三方平台负责订单、交付和售后；不承诺票和房。"}}
+  ],
+  "commitments": [
+    {"id": "preparation",
+     "upto": {"en": "Information and hand-off prepared (plan, roadbook, cards, links).",
+              "zh": "准备完成：行程、路书、出示卡、跳转链接。"},
+     "evidence": {"en": "What the user can see in the app.", "zh": "用户在 App 里看到的内容。"}}
+  ]
+}

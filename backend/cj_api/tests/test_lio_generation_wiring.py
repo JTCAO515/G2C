@@ -76,7 +76,7 @@ class GenerationWiring(unittest.TestCase):
                         _finish=lambda worker,binding,state,body,scene,lang:body)
                     worker=SimpleNamespace(runs=SimpleNamespace(snapshot=lambda _:object()),
                         _event=lambda binding,state,kind,value:events.append((kind,value))or state)
-                    prepared=SimpleNamespace(projection=SimpleNamespace(fields={'party_size':{'state':'known','value':1}}))
+                    prepared=SimpleNamespace(projection=SimpleNamespace(fields={'party_size':{'state':'known','value':1}}),unconfirmed=frozenset())
                     capture=SimpleNamespace(basis=SimpleNamespace(day_count=3,start_date=None))
                     with patch.multiple(generation,prepare_generation=unittest.mock.DEFAULT,
                             retrieve_skeleton=unittest.mock.DEFAULT,compile_retrieved_plan=unittest.mock.DEFAULT,
@@ -109,7 +109,7 @@ class GenerationWiring(unittest.TestCase):
                     host=SimpleNamespace(current=lambda _:None,_finish=lambda worker,binding,state,body,scene,lang:body)
                     worker=SimpleNamespace(runs=SimpleNamespace(snapshot=lambda _:object()),
                         _event=lambda binding,state,kind,value:self.fail('saved plan emitted a refusal event'))
-                    prepared=SimpleNamespace(projection=SimpleNamespace(fields={'party_size':{'state':'known','value':1}}))
+                    prepared=SimpleNamespace(projection=SimpleNamespace(fields={'party_size':{'state':'known','value':1}}),unconfirmed=frozenset())
                     capture=SimpleNamespace(basis=SimpleNamespace(day_count=3,start_date=None))
                     with patch.multiple(generation,prepare_generation=unittest.mock.DEFAULT,
                             retrieve_skeleton=unittest.mock.DEFAULT,compile_retrieved_plan=unittest.mock.DEFAULT,
@@ -166,7 +166,7 @@ class GenerationWiring(unittest.TestCase):
                 host=SimpleNamespace(current=lambda _:None,_finish=lambda worker,binding,state,body,scene,lang:body)
                 worker=SimpleNamespace(runs=SimpleNamespace(snapshot=lambda _:object()),
                     _event=lambda binding,state,kind,value:state)
-                prepared=SimpleNamespace(projection=SimpleNamespace(fields={}))
+                prepared=SimpleNamespace(projection=SimpleNamespace(fields={}),unconfirmed=frozenset())
                 capture=SimpleNamespace(basis=SimpleNamespace(day_count=3,start_date=None))
                 with patch.multiple(generation,**{f:unittest.mock.DEFAULT for f in order.values()})as stages:
                     stages['prepare_generation'].return_value=prepared
@@ -227,7 +227,7 @@ class GenerationWiring(unittest.TestCase):
         worker=SimpleNamespace(runs=SimpleNamespace(snapshot=lambda _:object()),_event=lambda binding,state,kind,value:state)
         capture=SimpleNamespace(basis=SimpleNamespace(day_count=3,start_date=None))
         with patch.multiple(generation,**{f:unittest.mock.DEFAULT for f in order.values()})as stages:
-            stages['prepare_generation'].return_value=SimpleNamespace(projection=SimpleNamespace(fields={}))
+            stages['prepare_generation'].return_value=SimpleNamespace(projection=SimpleNamespace(fields={}),unconfirmed=frozenset())
             stages['retrieve_skeleton'].return_value=({},(),capture)
             stages['order_retrieved_plan'].return_value=SimpleNamespace(content='{}',status='OK',reason='')
             stages['route_ordered_plan'].return_value=({},capture)
@@ -282,7 +282,7 @@ class GenerationWiring(unittest.TestCase):
                 compile_retrieved_plan=unittest.mock.DEFAULT,order_retrieved_plan=unittest.mock.DEFAULT,
                 route_ordered_plan=unittest.mock.DEFAULT,schedule_retrieved_plan=unittest.mock.DEFAULT,
                 word_retrieved_plan=unittest.mock.DEFAULT,publish_retrieved_plan=unittest.mock.DEFAULT)as stages:
-            stages['prepare_generation'].return_value=SimpleNamespace(projection=SimpleNamespace(fields={}))
+            stages['prepare_generation'].return_value=SimpleNamespace(projection=SimpleNamespace(fields={}),unconfirmed=frozenset())
             stages['retrieve_skeleton'].return_value=({},(),capture)
             stages['order_retrieved_plan'].return_value=SimpleNamespace(content='{}',status='CONDITIONAL_SCHEDULE',reason='')
             stages['route_ordered_plan'].return_value=({},capture)
@@ -325,7 +325,7 @@ class GenerationWiring(unittest.TestCase):
                     host=SimpleNamespace(current=lambda _:None,_finish=lambda worker,binding,state,body,scene,lang:body)
                     worker=SimpleNamespace(runs=SimpleNamespace(snapshot=lambda _:object()),
                         _event=lambda binding,state,kind,value:self.fail('saved plan emitted a refusal event'))
-                    prepared=SimpleNamespace(projection=SimpleNamespace(fields={}))
+                    prepared=SimpleNamespace(projection=SimpleNamespace(fields={}),unconfirmed=frozenset())
                     capture=SimpleNamespace(basis=SimpleNamespace(day_count=3,start_date=None))
                     with patch.multiple(generation,prepare_generation=unittest.mock.DEFAULT,
                             retrieve_skeleton=unittest.mock.DEFAULT,compile_retrieved_plan=unittest.mock.DEFAULT,
@@ -371,7 +371,7 @@ class GenerationWiring(unittest.TestCase):
                     host=SimpleNamespace(current=lambda _:None,_finish=lambda worker,binding,state,body,scene,lang:body)
                     worker=SimpleNamespace(runs=SimpleNamespace(snapshot=lambda _:object()),
                         _event=lambda binding,state,kind,value:state)
-                    prepared=SimpleNamespace(projection=SimpleNamespace(fields={}))
+                    prepared=SimpleNamespace(projection=SimpleNamespace(fields={}),unconfirmed=frozenset())
                     capture=SimpleNamespace(basis=SimpleNamespace(day_count=3,start_date=None))
                     with patch.multiple(generation,prepare_generation=unittest.mock.DEFAULT,
                             retrieve_skeleton=unittest.mock.DEFAULT,compile_retrieved_plan=unittest.mock.DEFAULT,

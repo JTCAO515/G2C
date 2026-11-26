@@ -347,7 +347,7 @@ JT 决定：Lio 用户版（[#495/6736601057](https://github.com/JTCAO515/G2C/is
 - #495 汇总全部 JT 决策和资源；各线遇到对应停点在 #495 写一行，跳到本线下一项，不结束 goal。
 - #33 受邀内测最后执行，前置是 #29、#32 通过、#225 定案、#495 的分发与准入完成。
 - #32 目标网络（JT 2026-11-06）：以现有 Codex 开发 Mac（境内网络 + VPN）访问 `https://api-beta.go2china.space` 的实测为准，由 C 执行；不再要求境内、海外各一台独立客户端，证据记为“境内 Mac + VPN”，不写成海外客户端。A 在指定 iPhone 上接 api-beta 的结果只算 #498/#4/#29 真机证据，如实记录网络条件，不补 #32 网络格；A 现有队列与授权不变。
-- M1 授权条目 1（DashScope）、2（Supabase 测试项目）有效至 2026-11-30，只用合成数据。
+- M1 授权条目 1（DashScope）、2（Supabase 测试项目）只用合成数据，有效期以 [docs/authorizations/M1.md](../authorizations/M1.md) 为准（当前至 2026-12-31，JT 2026-11-09 由 11-30 延长）。
 - 高德 SDK 只进本机构建配置，CI 的 arm64 模拟器构建不能因此失败。
 
 - A（2026-11-08，本 Goal 整线阻塞交接）已交指定真机候选 65/66、注销 69 本机 31 域、离线 77、锁屏 81、系统时区 105、WGS84 131。PR642 锁 head 合并，精确 CI 全部通过。恢复顺序和剩余层级见 [#29](https://github.com/JTCAO515/G2C/issues/29)、[#605](https://github.com/JTCAO515/G2C/issues/605) 和 handoff。历史 FAIL、UNRUN 和 UNKNOWN 保留。

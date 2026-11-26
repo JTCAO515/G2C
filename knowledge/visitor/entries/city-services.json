@@ -19,13 +19,13 @@
     "cities": [
       "chengdu"
     ],
-    "text_zh": "成都公交和地铁提供支付宝、云闪付绑定境外卡后扫码乘车的方式；开通时按应用指引选择当地交通服务。",
-    "text_en": "For Chengdu buses and metro, Alipay and the UnionPay app (云闪付) offer travel QR codes linked to overseas bank cards. Follow the app instructions for the local transport service.",
+    "text_zh": "成都地铁和城市公交已开通电子支付，境外游客可用支付宝绑定境外银行卡，在全线网车站购票乘车；具体操作按应用指引。",
+    "text_en": "Chengdu Metro and city buses accept electronic payment: overseas visitors can link an overseas bank card to Alipay and use it to pay for rides at any metro station. Follow the app instructions.",
     "source_urls": [
-      "https://www.shanghai.gov.cn/nw4411/20240302/7979c0d640d04cd89075ca826218f0ae.html"
+      "https://www.sc.gov.cn/10462/c105710n/2025/1/14/f0abd0aee8264f0b803e710bcf753628.shtml"
     ],
-    "checked_on": "2026-11-16",
-    "expires_on": "2026-12-16"
+    "checked_on": "2026-11-26",
+    "expires_on": "2026-12-10"
   },
   {
     "id": "visitor.shanghai.metro-service-center",

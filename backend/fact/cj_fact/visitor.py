@@ -23,7 +23,9 @@ CITIES=frozenset({'beijing','chengdu','xian','shanghai','hangzhou','chongqing','
 # JT-approved exact-host inventory: #843/6818584957. No subdomain expansion.
 SOURCE_HOSTS=frozenset({'english.www.gov.cn','www.beijing.gov.cn','www.chengdu.gov.cn',
     'www.cq.gov.cn','www.hangzhou.gov.cn','www.mfa.gov.cn','www.miit.gov.cn','www.mot.gov.cn',
-    'www.nia.gov.cn','www.nra.gov.cn','www.pbc.gov.cn','www.shanghai.gov.cn','www.sz.gov.cn','www.xa.gov.cn'})
+    'www.nia.gov.cn','www.nra.gov.cn','www.pbc.gov.cn','www.shanghai.gov.cn','www.sz.gov.cn','www.xa.gov.cn',
+    # Coordinator 2026-11-26 under JT's delegation (#702/7179170339): Chengdu metro QR entry only.
+    'www.sc.gov.cn'})
 ALIASES={alias.casefold():city for city,aliases in (
     ('beijing',('beijing','北京','北京市','110000')),
     ('chengdu',('chengdu','成都','成都市','510100')),
