@@ -29,6 +29,15 @@ def test_server_copy_is_byte_identical_to_the_catalogue():
     assert validator().SERVER_COPIES == {SOURCE: CATALOGUE_PATH}
 
 
+def test_app_copy_matches_the_catalogue_whenever_it_exists():
+    """The App bundles a copy (#1963). A PR that changes only knowledge/ skips the Swift job, so check it here."""
+    module = validator()
+    app = module.APP_COPIES[SOURCE]
+    assert app == ROOT / 'ios/Modules/CJShell/Sources/CJLioUser/Resources/LioBusinessGuangzhou.v1.json'
+    if app.is_file():
+        assert app.read_bytes() == SOURCE.read_bytes(), 'App copy differs; run python3 -B knowledge/business/validate.py --write'
+
+
 def test_validator_fails_on_a_stale_copy(tmp_path, capsys):
     module = validator()
     assert module.main([]) == 0
@@ -37,6 +46,27 @@ def test_validator_fails_on_a_stale_copy(tmp_path, capsys):
     module.SERVER_COPIES = {SOURCE: stale}
     assert module.main([]) == 1
     assert 'out of date' in capsys.readouterr().err
+
+
+def test_validator_fails_on_a_stale_app_copy_and_write_repairs_it(tmp_path, capsys):
+    module = validator()
+    server, app = tmp_path / 'server.json', tmp_path / 'app.json'
+    server.write_bytes(SOURCE.read_bytes())
+    app.write_bytes(SOURCE.read_bytes().replace(b'2026-11', b'2026-10', 1))  # a source change the App copy missed
+    module.SERVER_COPIES, module.APP_COPIES = {SOURCE: server}, {SOURCE: app}
+    assert module.main([]) == 1
+    assert 'app.json is out of date' in capsys.readouterr().err
+    assert module.main(['--write']) == 0
+    assert app.read_bytes() == SOURCE.read_bytes()
+    assert module.main([]) == 0
+
+
+def test_an_app_copy_that_does_not_exist_yet_is_neither_required_nor_created(tmp_path):
+    module = validator()
+    server, app = tmp_path / 'server.json', tmp_path / 'absent' / 'app.json'
+    module.SERVER_COPIES, module.APP_COPIES = {SOURCE: server}, {SOURCE: app}
+    assert module.main(['--write']) == 0 and not app.exists()
+    assert module.main([]) == 0
 
 
 def test_validator_rejects_an_unknown_argument(capsys):
