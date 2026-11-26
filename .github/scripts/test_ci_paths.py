@@ -11,9 +11,9 @@ SCRIPT = Path(__file__).resolve().parent / 'ci_paths.py'
 
 
 class ClassifyTests(unittest.TestCase):
-    def check(self, paths, docs_only, ios_only, app_changed):
+    def check(self, paths, docs_only, ios_only, app_changed, web_only='false'):
         self.assertEqual(classify(paths), {
-            'docs_only': docs_only, 'ios_only': ios_only, 'app_changed': app_changed})
+            'docs_only': docs_only, 'ios_only': ios_only, 'web_only': web_only, 'app_changed': app_changed})
 
     def test_docs_only(self):
         self.check(['docs/plan/issue-plan.md', 'HANDOFF.md'], 'true', 'false', 'false')
@@ -38,6 +38,35 @@ class ClassifyTests(unittest.TestCase):
                      'iosx/a', 'README.md', 'scripts/build-ios.sh'):
             with self.subTest(path=path):
                 self.assertEqual(classify(['ios/App/a.swift', path])['ios_only'], 'false')
+
+    def test_website_only_skips_postgres_but_keeps_python(self):
+        """Approved 2026-11-26: web/, scripts/test_web_* and docs only -> no PostgreSQL shards."""
+        self.check(['web/index.html'], 'false', 'false', 'false', web_only='true')
+        self.check(['web/api/early-access.js', 'web/i18n.js', 'scripts/test_web_early_access.cjs',
+                    'scripts/test_web_vercel_ignore.py', 'docs/privacy/privacy-policy.md', 'HANDOFF.md'],
+                   'false', 'false', 'false', web_only='true')
+        self.check(['scripts/test_web_service_request.cjs'], 'false', 'false', 'false', web_only='true')
+        # Only a path that starts with one of the prefixes counts; a nested web/ or docs/ does not.
+        for nested in ('backend/web/a.py', 'eval/docs/a.md', 'deploy/scripts/test_web_a.py'):
+            with self.subTest(nested=nested):
+                self.assertEqual(classify([nested])['web_only'], 'false')
+
+    def test_any_other_path_with_the_website_runs_every_job(self):
+        """The coordinating thread's required counter-examples, plus the neighbours of each prefix."""
+        for other in ('backend/cj_api/app.py', 'ios/App/A.swift', '.github/workflows/ci.yml',
+                      '.github/scripts/ci_paths.py', 'scripts/test.py', 'scripts/test_test_entry.py',
+                      'scripts/build_privacy_page.cjs', 'contracts/service-request/V1.md', 'deploy/hk/x.py',
+                      'eval/release_eval/bank.v2.json', 'knowledge/visitor/x.json', 'uv.lock', 'webx/a.html',
+                      'scripts/test_web_x/inner.py', 'scripts/sub/test_web_a.cjs', 'tooling/release/app_flags.json',
+                      'backend/web/a.py', 'ios/web/a.swift', 'eval/docs/a.md', 'deploy/scripts/test_web_a.py'):
+            with self.subTest(other=other):
+                self.assertEqual(classify(['web/index.html', other])['web_only'], 'false')
+        self.assertEqual(classify(['docs/a.md'])['web_only'], 'false')  # docs alone stays docs_only
+        self.assertEqual(classify(['"web/\\346.html"'])['web_only'], 'false')  # unknown path: every job
+
+    def test_website_only_still_runs_swift_when_the_app_reads_a_path(self):
+        self.assertEqual(classify(['web/index.html', 'contracts/x.json'])['app_changed'], 'true')
+        self.assertEqual(classify(['web/index.html', 'contracts/x.json'])['web_only'], 'false')
 
     def test_prefixes_are_anchored(self):
         self.check(['backend/ios/a.py'], 'false', 'false', 'false')
@@ -76,7 +105,7 @@ class ClassifyTests(unittest.TestCase):
         ok = subprocess.run([sys.executable, '-B', str(SCRIPT)], input='ios/a.swift\0',
                             capture_output=True, text=True)
         self.assertEqual(ok.returncode, 0)
-        self.assertEqual(ok.stdout, 'docs_only=false\nios_only=true\napp_changed=true\n')
+        self.assertEqual(ok.stdout, 'docs_only=false\nios_only=true\nweb_only=false\napp_changed=true\n')
         empty = subprocess.run([sys.executable, '-B', str(SCRIPT)], input='',
                                capture_output=True, text=True)
         self.assertNotEqual(empty.returncode, 0)
