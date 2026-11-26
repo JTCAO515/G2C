@@ -524,6 +524,76 @@ import CryptoKit
         }
     }
 
+    /// #1766: the Business section of Show Cards. The meeting card is typed, shown full screen and can open the Taxi
+    /// tool's destination search with the address filled in; "Show an address" opens the same search.
+    func testBusinessMeetingCardAndAddressInBothLanguages() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            let en = language == "en"
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-taxi-preview",
+                                   "-cj.ui.language.v1", language, "-lio.taxi.seen-guide.v1", "YES",
+                                   "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+            app.launch()
+            defer { app.terminate() }
+            let tools = app.tabBars.buttons[en ? "Tools" : "工具"]
+            XCTAssertTrue(tools.waitForExistence(timeout: 8))
+            tools.tap()
+            app.buttons["lio.tools.show-cards"].tap()
+            let meeting = app.buttons["lio.business.meeting"]
+            XCTAssertTrue(meeting.waitForExistence(timeout: 6))
+            for _ in 0..<6 where !meeting.isHittable { app.swipeUp() }
+            XCTAssertTrue(app.buttons["lio.business.address"].exists)
+            XCTAssertTrue(app.buttons["lio.business.phrases"].exists)
+            let section = XCTAttachment(screenshot: app.screenshot())
+            section.name = "business-section-\(language)"; section.lifetime = .keepAlways; add(section)
+            meeting.tap()
+
+            let show = app.buttons["lio.business.meeting.show"]
+            XCTAssertTrue(show.waitForExistence(timeout: 6))
+            XCTAssertFalse(show.isEnabled, "nothing to show until it says who the meeting is with")
+            let contact = app.textFields["lio.business.meeting.contact"]
+            contact.tap()
+            contact.typeText("广州某某贸易有限公司 李明")
+            let time = app.textFields["lio.business.meeting.time"]
+            time.tap()
+            time.typeText("14:00")
+            let address = app.textFields["lio.business.meeting.address"]
+            address.tap()
+            address.typeText("琶洲展馆")
+            XCTAssertTrue(show.isEnabled)
+            let form = XCTAttachment(screenshot: app.screenshot())
+            form.name = "business-meeting-form-\(language)"; form.lifetime = .keepAlways; add(form)
+            show.tap()
+            let name = app.staticTexts["lio.business.meeting.sheet.name"]
+            XCTAssertTrue(name.waitForExistence(timeout: 6))
+            XCTAssertEqual(name.label, "广州某某贸易有限公司 李明")
+            XCTAssertEqual(app.staticTexts["lio.business.meeting.sheet.address"].label, "时间：14:00\n地点：琶洲展馆")
+            XCTAssertTrue(app.staticTexts["lio.business.meeting.sheet.english"].label.hasPrefix("I'm here to meet"))
+            let card = XCTAttachment(screenshot: app.screenshot())
+            card.name = "business-meeting-card-\(language)"; card.lifetime = .keepAlways; add(card)
+            try app.performAccessibilityAudit(for: .all)
+            app.buttons["lio.business.meeting.sheet.done"].tap()
+
+            let taxi = app.buttons["lio.business.meeting.taxi"]
+            XCTAssertTrue(taxi.waitForExistence(timeout: 6))
+            for _ in 0..<4 where !taxi.isHittable { app.swipeUp() }
+            taxi.tap()
+            let search = app.textFields["lio.taxi.search-field"]
+            XCTAssertTrue(search.waitForExistence(timeout: 8), "the destination search opens at once")
+            XCTAssertEqual(search.value as? String, "琶洲展馆", "with the address filled in")
+            app.buttons[en ? "Cancel" : "取消"].tap()
+            app.navigationBars.buttons.element(boundBy: 0).tap()
+            app.navigationBars.buttons.element(boundBy: 0).tap()
+
+            let addressRow = app.buttons["lio.business.address"]
+            XCTAssertTrue(addressRow.waitForExistence(timeout: 6))
+            for _ in 0..<6 where !addressRow.isHittable { app.swipeUp() }
+            addressRow.tap()
+            XCTAssertTrue(app.textFields["lio.taxi.search-field"].waitForExistence(timeout: 8))
+        }
+    }
+
     func testToolsTextReportsOfflineUnavailableOnIOS17() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
