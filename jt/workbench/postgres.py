@@ -14,6 +14,7 @@ from psycopg.types.json import Jsonb
 
 from jt.common import Signal
 
+from .auth import ExpiredSession
 from .queue import QueueItem, Review, SignalConflict, response_deadline
 from .security import PasswordHash, new_token
 from .store import Account, AuditAction, AuditEvent, AuditResult, Failures, Role, Session, SetupGrant
@@ -34,7 +35,7 @@ def _connect(dsn: str, role: str) -> Connection:
     target = conninfo_to_dict(dsn)
     if target.get("dbname") != "jt_workbench" or target.get("user") != role or not target.get("host"):
         raise RuntimeError("workbench connection must name its dedicated database, role and host")
-    return psycopg.connect(dsn, connect_timeout=5, options="-c search_path=pg_catalog")
+    return psycopg.connect(dsn, connect_timeout=5, options="-c search_path=pg_catalog -c TimeZone=UTC")
 
 
 def _guard_role(db: Connection, role: str) -> None:
@@ -84,13 +85,21 @@ class PostgresStore:
         if self._transaction.get(None) is not None:
             yield
             return
+        expired = None
         with _connect(self._dsn, RUNTIME_ROLE) as db:
             db.execute("SELECT pg_advisory_xact_lock(%s)", (LOCK_ID,))
             token = self._transaction.set(db)
             try:
-                yield
+                with db.transaction():
+                    yield
+            except ExpiredSession as error:
+                # Roll back the operation, then commit revocation while still holding the lock.
+                self.revoke_session(error.digest)
+                expired = error
             finally:
                 self._transaction.reset(token)
+        if expired is not None:
+            raise expired
 
     def _db(self) -> Connection:
         return self._transaction.get()

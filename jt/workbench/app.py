@@ -47,7 +47,8 @@ async def read_form(request: Request, origin: str, names: tuple[str, ...]) -> di
     except ValueError:
         raise HTTPException(400, "表单有误。") from None
     fields = dict(pairs)
-    if len(pairs) != len(names) or set(fields) != set(names):
+    if (len(pairs) != len(names) or set(fields) != set(names)
+            or any("\0" in value for value in fields.values())):
         raise HTTPException(400, "表单有误。")
     if (len(fields.get("username", "")) > 32 or len(fields.get("password", "")) > 128
             or len(fields.get("code", "")) > 6 or len(fields.get("seed", "")) > 40):

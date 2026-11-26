@@ -18,7 +18,7 @@ from psycopg.conninfo import make_conninfo
 
 from jt.synthetic import generate_dataset
 from jt.workbench.app import SESSION_COOKIE, create_app
-from jt.workbench.auth import AccessDenied, AccountAction, Auth, AuthenticationRequired, InvalidAccount
+from jt.workbench.auth import SESSION_IDLE, AccessDenied, AccountAction, Auth, AuthenticationRequired, InvalidAccount
 from jt.workbench.postgres import PostgresStore, migrate
 from jt.workbench.queue import Review
 from jt.workbench.security import totp_at_step
@@ -171,6 +171,9 @@ def test_limits_and_lockouts_are_shared(database):
 
 
 def test_seed_review_export_and_audit_survive_restart(database):
+    owner, _ = database
+    with psycopg.connect(owner, autocommit=True) as db:
+        db.execute("ALTER DATABASE jt_workbench SET TimeZone = 'Asia/Hong_Kong'")
     store, runtime = prepare(database)
     signals = generate_dataset().signals
     store.seed(signals)
@@ -193,9 +196,12 @@ def test_seed_review_export_and_audit_survive_restart(database):
     with TestClient(app, base_url=ORIGIN, follow_redirects=False) as browser:
         response = browser.get("/login")
         csrf = re.search(r'name="csrf" value="([^"]+)"', response.text).group(1)
-        login = browser.post("/login", headers={"Origin": ORIGIN}, data={
+        credentials = {
             "username": STAFF, "password": PASSWORD, "code": totp_at_step(STAFF_SEED, (NOW + 30) // 30), "csrf": csrf,
-        })
+        }
+        assert browser.post("/login", headers={"Origin": ORIGIN},
+                            data={**credentials, "username": STAFF + "\0"}).status_code == 400
+        login = browser.post("/login", headers={"Origin": ORIGIN}, data=credentials)
         assert login.status_code == 303 and SESSION_COOKIE in browser.cookies
         detail = browser.get("/queue", params={"signal": reference})
         csrf = re.search(r'name="csrf" value="([^"]+)"', detail.text).group(1)
@@ -205,7 +211,9 @@ def test_seed_review_export_and_audit_survive_restart(database):
         })
         assert review.status_code == 303
         assert browser.get("/admin/audit").status_code == 403
-        assert browser.get("/queue/export").json()["samples"][0]["review"]["note"] == "合成复核"
+        sample = browser.get("/queue/export").json()["samples"][0]["review"]
+        assert sample["note"] == "合成复核"
+        assert sample["recorded_at"].endswith("+00:00")
 
     reopened = PostgresStore(runtime)
     assert reopened.item(reference).reviews[0].actor == STAFF
@@ -229,3 +237,13 @@ def test_review_and_audit_rollback_together(database):
     assert after.item(item.reference).reviews == ()
     with after.locked():
         assert tuple(event.action for event in after.audit_events()) == (AuditAction.ACCOUNT_CREATED,)
+
+
+def test_expired_session_cannot_return_after_clock_moves_back(database):
+    store, runtime = prepare(database)
+    token = account_auth(store).login(ADMIN, PASSWORD, totp_at_step(SEED, NOW // 30))
+    another = PostgresStore(runtime)
+    with pytest.raises(AuthenticationRequired):
+        account_auth(another, NOW + SESSION_IDLE).require_session(token)
+    with pytest.raises(AuthenticationRequired):
+        account_auth(store).require_session(token)

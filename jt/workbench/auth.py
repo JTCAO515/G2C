@@ -23,6 +23,12 @@ class AuthenticationRequired(Exception):
     pass
 
 
+class ExpiredSession(AuthenticationRequired):
+    def __init__(self, digest: bytes) -> None:
+        super().__init__()
+        self.digest = digest
+
+
 class AccessDenied(Exception):
     pass
 
@@ -217,7 +223,7 @@ class Auth:
             raise AuthenticationRequired
         if now >= min(session.expires_at, session.idle_until):
             self.store.revoke_session(digest)
-            raise AuthenticationRequired
+            raise ExpiredSession(digest)
         if role is not None and session.role != role:
             raise AccessDenied
         if csrf is not None and (not TOKEN.fullmatch(csrf) or not hmac.compare_digest(session.csrf, csrf)):
