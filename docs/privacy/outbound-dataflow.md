@@ -43,7 +43,7 @@
 | 18 | 12306 | 链接跳转 | `www.12306.cn` | 交通 | 无（首页链接） | `lio_transport.py:379`；`ios/.../LioTransport.swift:449` |
 | 19 | 官方/政府/帮助类静态外链 | 链接跳转 | 故宫、上博、`english.beijing.gov.cn`、`s.nia.gov.cn`、财付通等 | 各信息页 | 无 | 第 19 节 |
 | 20 | Vercel Inc. | 官网托管；Vercel 函数（`/api/early-access`、`/api/service-request`） | `go2china.space`（Vercel 平台） | 官网访问；官网表单提交 | 访客 IP、路径等访问信息（平台记录）；表单全部字段（我们的函数代码转发、不保存原文） | `web/vercel.json`；`web/api/early-access.js`；`web/api/service-request.js`（#1862） |
-| 21 | Jotform Inc. | 服务端 API（由 Vercel 函数调用） | `api.jotform.com`（代码默认；可配 `eu-api` / `hipaa-api`） | 官网「抢先体验」申请 | **称呼、邮箱**、得知渠道、所在国家、计划出行时间、目的地（含自填）、需求、备注 | `web/api/early-access.js:7-9, 19, 53-65, 135-160` |
+| 21 | Jotform Inc. | 服务端 API（由 Vercel 函数调用） | `api.jotform.com`（美国；Vercel 未设 `JOTFORM_API_BASE`，JT 2026-11-26 核对） | 官网「抢先体验」申请 | **称呼、邮箱**、得知渠道、所在国家、计划出行时间、目的地（含自填）、需求、备注 | `web/api/early-access.js:7-9, 19, 53-65, 135-160` |
 | 22 | Spacemail（Spaceship 旗下邮箱服务） | 邮箱 `hello@go2china.space`（MX `mx1/mx2.spacemail.com`，SPF `include:spf.spacemail.com`） | `spacemail.com` | 用户来信；人工回复抢先体验与（开放后）官网服务请求 | **邮箱地址**与邮件内容；官网服务请求开放后可能含时间、地点、电话 | DNS 记录（2026-11-26 查询）；JT 2026-11-26 定回复用该邮箱 |
 | — | Airalo | 无 | — | eSIM 预览（无链接） | 无 | `LioESIMPreviewView.swift:64-70` |
 
@@ -483,7 +483,7 @@
 
 1. 接入：Vercel 函数 `web/api/early-access.js` 用 Jotform 官方 API 提交，访客只与 go2china.space 通信（`:2-4`）。环境变量 `JOTFORM_API_KEY`（必需）、`JOTFORM_FORM_ID`（可选）、`JOTFORM_API_BASE`（可选）在 Vercel（`:7-9, 135-145`）。主机默认 `https://api.jotform.com`，可配 `eu-api.jotform.com` 或 `hipaa-api.jotform.com`（`:13-14, 140`）；实际配置在 Vercel 环境变量，仓库看不到。
 2. 发出字段（`:19, 26, 36-65`）：称呼（≤100）、邮箱（≤254）、得知渠道、所在国家（≤80）、计划出行时间、目的地（多选 + 自填 ≤80）、需求（多选）、备注（≤1000）。防滥用同 `service-request.js`：蜜罐 `website`、最短 2.5 秒（`:28, 69-70`）。
-3. 区域与出境：默认主机 `api.jotform.com` 对应美国数据中心，申请内容（含称呼、邮箱）因此传到美国；实际用哪个主机由 Vercel 环境变量决定，【待核对】（统筹已转 JT）。
+3. 区域与出境：Vercel 未设置 `JOTFORM_API_BASE`，使用默认主机 `api.jotform.com`（美国数据中心），申请内容（含称呼、邮箱）传到美国（JT 2026-11-26 在 Vercel 后台核对，统筹转达）。
 4. 角色：代我们保存和管理申请（受托）。
 5. 日志（`early-access.js`）：只在失败时记「Jotform rejected the submission」及状态码、「Jotform request failed」，以及两条配置错误（未设密钥、主机无效），都不含用户数据。
 6. 保存：在 Jotform 账号里；收集后 12 个月删除（统筹 2026-11-26 按 JT 预授权决定，见隐私政策 1.0 定稿口径），删除在 Jotform 后台执行。
