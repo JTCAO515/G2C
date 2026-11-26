@@ -96,8 +96,8 @@
     "format_version": "visitor-entry.3",
     "entry_kind": "fact",
     "topic": "passport_booking",
-    "checked_on": "2026-11-20",
-    "expires_on": "2026-12-04",
+    "checked_on": "2026-11-26",
+    "expires_on": "2026-12-10",
     "id": "visitor.v3.shenzhen.museum-history-folk",
     "cities": [
       "shenzhen"
@@ -194,8 +194,8 @@
     "cities": [
       "shenzhen"
     ],
-    "checked_on": "2026-11-20",
-    "expires_on": "2026-12-04",
+    "checked_on": "2026-11-26",
+    "expires_on": "2026-12-10",
     "subject": {
       "key": "shenzhen.window-of-the-world",
       "name_zh": "世界之窗",
@@ -204,16 +204,15 @@
     },
     "conditions": {
       "reservation_required": false,
-      "closed_weekdays": [],
-      "closed_weekdays_public_holiday_exception": false,
+      "closed_weekdays": null,
+      "closed_weekdays_public_holiday_exception": null,
       "advance_booking_days": null,
       "advance_booking_rule": null
     },
-    "text_zh": "深圳政府公开说明将世界之窗列为购票后无需另外预约入园的景区，线上购票者可凭电子票入园；免预约不等于免门票或保证有票。Headout品牌商业指南列出年内周一至周日的营业表，并说明公园通常每日营业；本条据此记录整园普通每周无固定闭园日。这不是园方新公告，页面未标资料更新时间，仍须行前核对临时安排。表演及个别项目可能因季节、节假日、维修、天气或活动调整，不将整园周规则当每日都有表演或所有项目开放的保证。提前购票窗口仍未核定，日场和夜场票的入园范围分别核对。",
-    "text_en": "Shenzhen government guidance lists Window of the World among attractions where ticket holders do not need an additional entry reservation; online buyers can use their electronic tickets. No separate reservation does not mean free admission or guaranteed availability. A Headout-branded commercial guide lists Monday-to-Sunday hours throughout the year and says the park generally operates daily. This entry uses that guide for no fixed ordinary weekly closure of the whole park. It is not a new park-authority notice and has no content update date; check temporary arrangements before travelling. Performances and individual attractions may change with seasons, public holidays, maintenance, weather or events. The whole-park weekly rule does not guarantee shows every day or access to all facilities. The advance purchase window remains unconfirmed; check the admission scope of day and night tickets separately.",
+    "text_zh": "深圳政府在线2024年7月转载市文化广电旅游体育局消息称，世界之窗等A级景区购票后凭票入园，线上购票者无需另行预约、凭电子票入园；免预约不等于免门票或保证有票。常规每周开放安排、表演场次和提前购票窗口本条均未核定；表演及个别项目可能因季节、节假日、维修、天气或活动调整，日场和夜场票的入园范围分别核对，行前查园方最新安排。",
+    "text_en": "A July 2024 item on the Shenzhen government portal, from the city’s culture and tourism bureau, says ticket holders at A-rated attractions including Window of the World enter with their tickets, and online buyers need no separate reservation and can use their electronic tickets. No separate reservation does not mean free admission or guaranteed availability. Regular weekly opening arrangements, show schedules and any advance purchase window are not confirmed here. Performances and individual attractions may change with seasons, public holidays, maintenance, weather or events; check the admission scope of day and night tickets and the park’s latest arrangements before travelling.",
     "source_urls": [
-      "https://www.sz.gov.cn/cn/xxgk/zfxxgj/bmdt/content/post_11451373.html",
-      "https://www.shenzhen-tickets.com/window-of-the-world/timings-opening-hours/"
+      "https://www.sz.gov.cn/cn/xxgk/zfxxgj/bmdt/content/post_11451373.html"
     ]
   }
 ]

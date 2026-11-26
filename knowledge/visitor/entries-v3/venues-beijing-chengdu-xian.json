@@ -98,8 +98,8 @@
     "format_version": "visitor-entry.3",
     "entry_kind": "fact",
     "topic": "passport_booking",
-    "checked_on": "2026-11-20",
-    "expires_on": "2026-12-04",
+    "checked_on": "2026-11-26",
+    "expires_on": "2026-12-10",
     "id": "visitor.v3.chengdu.du-fu-thatched-cottage",
     "cities": [
       "chengdu"
@@ -110,10 +110,11 @@
       "name_en": "Chengdu Du Fu Thatched Cottage Museum",
       "wikidata_qid": null
     },
-    "text_zh": "杜甫草堂博物馆官方参观页提供实名预约购票，最多提前14天。14天是可购票窗口，不是必须提前14天；本条未核定普通散客是否必须提前预约，应另查馆方最新说明。学生集体免费参观的提前5个工作日规则不适用于普通散客。四川在线2025年2月对多馆普通周一制度的采访报道将杜甫草堂博物馆列为全年无休，并引述该馆负责人说明清场后的维护安排。本条据此记录整馆普通每周无固定闭馆日；这不是2026年馆方新公告，临时闭馆及局部展厅安排行前仍查馆方通知。",
-    "text_en": "The Du Fu Thatched Cottage Museum visitor page offers real-name ticket booking up to 14 days ahead. This is a maximum booking window, not a 14-day minimum. This entry does not confirm mandatory advance booking for ordinary individual visitors; check current museum guidance. The separate five-working-day rule for free student-group visits does not apply to ordinary individuals. A February 2025 Sichuan Online report on museums' ordinary Monday arrangements describes Du Fu Thatched Cottage Museum as open throughout the year without regular days off and quotes the director of the museum's exhibition-design department on maintenance after visitors leave. This entry uses that report for no fixed ordinary weekly closure of the museum as a whole. It is not a new museum announcement in 2026; check museum notices for temporary closures and individual galleries before travelling.",
+    "text_zh": "杜甫草堂博物馆官方参观页提供实名预约购票，最多提前14天。14天是可购票窗口，不是必须提前14天；本条未核定普通散客是否必须提前预约，应另查馆方最新说明。学生集体免费参观的提前5个工作日规则不适用于普通散客。馆方开放时间页只列每日开闭馆时段、未列每周闭馆日，同站学生集体参观细则把参观安排在周一、周二；四川在线2025年2月采访报道也称该馆全年无休。本条据此记录整馆普通每周无固定闭馆日；重大节假日延时、临时闭馆及局部展厅安排行前仍查馆方通知。",
+    "text_en": "The Du Fu Thatched Cottage Museum visitor page offers real-name ticket booking up to 14 days ahead. This is a maximum booking window, not a 14-day minimum. This entry does not confirm mandatory advance booking for ordinary individual visitors; check current museum guidance. The separate five-working-day rule for free student-group visits does not apply to ordinary individuals. The museum’s opening-hours page lists daily opening times without a weekly closing day, and its student-group rules schedule visits on Mondays and Tuesdays; a February 2025 Sichuan Online report also describes the museum as open throughout the year. This entry records no fixed ordinary weekly closure of the museum as a whole. Check museum notices for extended holiday hours, temporary closures and individual galleries before travelling.",
     "source_urls": [
       "https://www.cddfct.cn/go-c19.htm",
+      "https://www.cddfct.cn/go-c18.htm",
       "https://sichuan.scol.com.cn/ggxw/202502/82903345.html"
     ],
     "conditions": {
@@ -246,8 +247,8 @@
       "https://www.panda.org.cn/cn/service/notice/",
       "https://www.panda.org.cn/en/service/notice/"
     ],
-    "checked_on": "2026-11-20",
-    "expires_on": "2026-12-04"
+    "checked_on": "2026-11-26",
+    "expires_on": "2026-12-10"
   },
   {
     "format_version": "visitor-entry.3",
@@ -278,7 +279,7 @@
       "https://www.panda.org.cn/cn/service/notice/",
       "https://www.panda.org.cn/en/service/notice/"
     ],
-    "checked_on": "2026-11-20",
-    "expires_on": "2026-12-04"
+    "checked_on": "2026-11-26",
+    "expires_on": "2026-12-10"
   }
 ]
