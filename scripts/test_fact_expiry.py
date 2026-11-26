@@ -136,7 +136,8 @@ class FactExpiryTests(unittest.TestCase):
             data['checked_at'] = (AS_OF - timedelta(days=data['review_every_days'] - 5)).isoformat()
         self.fixture.edit(fact_expiry.ARRIVAL_RULES, review_due_soon)
         out = self.fixture.run()[1]
-        self.assertIn('arrival-rules', out)
+        self.assertIn('arrival-rules 将于 ' + (AS_OF + timedelta(days=5)).isoformat(), out)
+        self.assertIn('还剩 5 天', out)
         self.assertIn('复核到期', out)
 
         def policy_ends_soon(data):
