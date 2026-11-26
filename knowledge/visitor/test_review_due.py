@@ -86,15 +86,15 @@ class ReviewDueTests(unittest.TestCase):
     def test_real_batch_cli_reports_ten_due_entries(self):
         paths = sorted((ROOT / "entries").glob("*.json"))
         result = subprocess.run([sys.executable, "-B", str(ROOT / "review_due.py"),
-                                 "--as-of", "2026-11-16", *map(str, paths)],
+                                 "--as-of", "2026-11-26", *map(str, paths)],
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
         self.assertEqual(report["count"], 10)
         self.assertEqual(report["window_days"], 30)
-        self.assertEqual(report["as_of"], "2026-11-16")
-        self.assertEqual(report["entries"][0]["expires_on"], "2026-11-30")
-        self.assertEqual(report["entries"][-1]["expires_on"], "2026-12-16")
+        self.assertEqual(report["as_of"], "2026-11-26")
+        self.assertEqual(report["entries"][0]["expires_on"], "2026-12-10")
+        self.assertEqual(report["entries"][-1]["expires_on"], "2026-12-26")
 
 
 if __name__ == "__main__":

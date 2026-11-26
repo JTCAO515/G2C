@@ -96,6 +96,7 @@ def main():
                        ['-B', '-m', 'unittest', 'discover', '-s', 'tooling/training',
                         '-p', 'test_*.py', '-v']))
     results.append(run('tooling/training F schema', ['-B', 'tooling/training/check_f_dataset.py', '-v']))
+    results.append(run('tooling/release flags and script', ['-B', '-m', 'unittest', '-v', 'tooling.release.test_release']))
     results.append(run('ops/recovery-preflight', [*pytest, '.'], ROOT / 'ops/recovery-preflight'))
     results.append(run('fact expiry checks', ['-B', '-m', 'unittest', '-v', 'scripts.test_fact_expiry']))
     # #1757: annotates facts due within 14 days (warning) or expired (error); exits 0 on any date.
