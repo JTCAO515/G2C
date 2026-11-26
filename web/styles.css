@@ -173,8 +173,7 @@ p, li { text-wrap: pretty; }
 .actor { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
 .actor::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
 .actor.cj::before { background: var(--cinnabar); }
-.actor.jt::before, .actor.mate::before { background: var(--jade); }
-.actor.mate { color: var(--jade); }
+.actor.jt::before { background: var(--jade); }
 .bubble { display: inline-block; max-width: 100%; padding: 11px 15px; border-radius: 16px; font-size: 16px; line-height: 1.45; }
 .step.you .bubble { background: var(--ink); color: #fff; }
 .step.cj .bubble { background: var(--stone); }

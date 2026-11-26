@@ -9,10 +9,10 @@ window.G2C = {
     "privacy": "Privacy"
    },
    "heroTitle": "A personal agent for every day in China.",
-   "heroLede": "Ask CJ Agent anything about getting around, paying, eating and booking. When a problem needs a phone call or a local check, JT Agent brings in a real person.",
+   "heroLede": "Ask CJ Agent anything about getting around, paying, eating and booking, in English or Chinese.",
    "heroNote": "Coming to iPhone first. We’re inviting travellers in small groups.",
    "howTitle": "How CJ Agent and JT Agent work together",
-   "howLede": "CJ Agent is the one you talk to. JT Agent works in the background: it keeps an eye on your trip, opens a case when something goes wrong, and hands the steps AI can’t finish to a teammate.",
+   "howLede": "CJ Agent is the one you talk to. JT Agent works in the background: it keeps an eye on your trip and, when something goes wrong, works out what’s affected so CJ Agent can suggest a fix.",
    "cjRole": "In your chat",
    "jtRole": "Behind the scenes",
    "cjList": [
@@ -25,9 +25,8 @@ window.G2C = {
    "jtList": [
     "Follows your bookings, trains, flights and check-ins.",
     "Notices when something goes wrong, or when a question keeps going round in circles.",
-    "Opens a case with only the details the next step needs.",
-    "Passes calls and local checks to a teammate, and follows them through to the end.",
-    "Sends the result back through CJ Agent, so everything stays in one chat."
+    "Works out what else a problem affects, such as tonight’s hotel or tomorrow’s tickets.",
+    "Sends what it finds through CJ Agent, so everything stays in one chat."
    ],
    "scTitle": "What it looks like on the road",
    "tabs": [
@@ -40,41 +39,38 @@ window.G2C = {
    "who": {
     "you": "You",
     "cj": "CJ Agent",
-    "jt": "JT Agent",
-    "mate": "Teammate"
+    "jt": "JT Agent"
    },
    "scenes": {
     "hotel": {
      "steps": [
       "The front desk says they can’t find my booking.",
-      "Show them this card. I’m also asking a teammate to call the hotel.",
+      "Show them this card with your booking number and dates in Chinese.",
       "Booking not found at check-in. Handled as a trip disruption.",
-      "Case opened with the hotel name, booking number and dates. Passport and account details stay out.",
-      "Called the front desk in Chinese. The booking was filed under CLARKE EMMA.",
-      "All sorted: it was under “CLARKE EMMA”. Your room is ready. A teammate called the hotel to confirm."
+      "Checks what depends on it: tonight’s room and tomorrow’s plans.",
+      "If they still can’t find it, I can show you nearby hotels with prices. Nothing is booked until you choose."
      ],
-     "note": "If there had been no room, CJ Agent would show you nearby options with prices and book one only after you choose."
+     "note": "Nothing is booked or paid until you choose."
     },
     "train": {
      "steps": [
       "Status check: the 14:05 train to Xi’an is cancelled.",
       "Checks what depends on it: tonight’s hotel check-in and tomorrow’s 9:00 entry tickets.",
-      "Your 14:05 train to Xi’an is cancelled. The 15:20 train arrives at 19:58 and keeps tonight’s hotel and tomorrow’s tickets. Book it?",
-      "Yes, book the 15:20.",
-      "Rebooked the ticket and told the hotel you’ll arrive around 20:30.",
-      "Done. Your new ticket and updated plan are in your trip."
+      "Your 14:05 train to Xi’an is cancelled. The 15:20 train arrives at 19:58 and keeps tonight’s hotel and tomorrow’s tickets. Switch to it?",
+      "Yes, switch to the 15:20.",
+      "Done. Your plan now uses the 15:20 train, arriving at 19:58."
      ],
-     "note": "Nothing was paid or changed until you said yes."
+     "note": "Nothing changes until you say yes."
     },
     "sos": {
      "steps": [
       "I fell on the stairs and can’t stand on my ankle.",
       "If it’s serious, call 120 for an ambulance now. Show this to the driver or anyone nearby:",
-      "Safety signal. Emergency steps went out straight away, without waiting for a case.",
-      "On-call teammate alerted to help by message.",
-      "A teammate is following up with you here. The nearest hospital with English-speaking staff is 2 km away."
+      "Safety signal. Emergency steps went out straight away.",
+      "Looks up hospitals nearby with English-speaking staff.",
+      "The nearest hospital with English-speaking staff is 2 km away. I can show you how to get there."
      ],
-     "note": "Emergency help is open to every user and covers guidance and message support. If you’re in danger, always call 110 (police), 120 (ambulance) or 119 (fire)."
+     "note": "If you’re in danger, always call 110 (police), 120 (ambulance) or 119 (fire)."
     }
    },
    "watchTitle": "What JT Agent keeps an eye on",
@@ -87,12 +83,12 @@ window.G2C = {
     [
      "Your safety",
      "Injury, sudden illness, getting lost.",
-     "Emergency numbers and phrases straight away, then a teammate helps by message."
+     "Emergency numbers and phrases in Chinese straight away."
     ],
     [
      "Documents and money",
      "A lost passport, a blocked card, a payment that won’t go through.",
-     "Steps for reporting and replacing come first; a teammate checks the details."
+     "Steps for reporting and replacing, in order."
     ],
     [
      "Disruptions",
@@ -103,11 +99,6 @@ window.G2C = {
      "Changes you ask for",
      "Switch hotels, move a day, add a city.",
      "CJ Agent drafts options. Nothing changes until you confirm."
-    ],
-    [
-     "When the AI gets stuck",
-     "The same question going unanswered, a tool that keeps failing.",
-     "A teammate sorts it out in the background and CJ Agent tells you the result."
     ]
    ],
    "rules": [
@@ -117,7 +108,7 @@ window.G2C = {
     ],
     [
      "You’ll know",
-     "When a person helped, CJ Agent tells you what they did."
+     "Answers about rules and opening hours come with sources you can check."
     ],
     [
      "Your data",
@@ -256,8 +247,8 @@ window.G2C = {
     },
     {
      "t": "sys",
-     "text": "<b>JT Agent</b> · a teammate is confirming with the venue",
-     "done": "<b>Confirmed</b> · Sun 10:00 is on your trip"
+     "text": "<b>CJ Agent</b> · adding it to your trip",
+     "done": "<b>Added</b> · Sun 10:00 is on your trip"
     }
    ],
    "privLede": "To answer you, the messages you send are processed by the AI model service we use. Share only the personal details a task needs.",
@@ -275,10 +266,10 @@ window.G2C = {
     "privacy": "隐私"
    },
    "heroTitle": "在中国的每一天，都有你的私人助理。",
-   "heroLede": "出行、支付、吃饭、预订，有问题就问 CJ Agent。需要打电话或到当地核实时，JT Agent 会请真人来处理。",
+   "heroLede": "出行、支付、吃饭、预订，有问题就用中文或英文问 CJ Agent。",
    "heroNote": "首先登陆 iPhone，正在分批邀请旅行者体验。",
    "howTitle": "CJ Agent 和 JT Agent 如何配合",
-   "howLede": "CJ Agent 负责和你对话。JT Agent 在后台工作：留意你的行程，出了状况就建立工单，把 AI 办不了的步骤交给团队成员。",
+   "howLede": "CJ Agent 负责和你对话。JT Agent 在后台工作：留意你的行程，出了状况就弄清影响了哪些安排，再由 CJ Agent 给你建议。",
    "cjRole": "在对话里",
    "jtRole": "在后台",
    "cjList": [
@@ -291,8 +282,7 @@ window.G2C = {
    "jtList": [
     "跟进你的预订、火车、航班和入住。",
     "发现出了问题，或同一个问题反复没解决。",
-    "建立工单，只带下一步需要的信息。",
-    "把电话和当地核实交给团队成员，并跟进到底。",
+    "弄清问题还影响哪些安排，比如今晚的酒店、明天的门票。",
     "结果通过 CJ Agent 告诉你，一切都在同一个对话里。"
    ],
    "scTitle": "旅途中的真实场景",
@@ -306,41 +296,38 @@ window.G2C = {
    "who": {
     "you": "你",
     "cj": "CJ Agent",
-    "jt": "JT Agent",
-    "mate": "团队成员"
+    "jt": "JT Agent"
    },
    "scenes": {
     "hotel": {
      "steps": [
       "前台说查不到我的预订。",
-      "把这张卡片给前台看。我也请团队成员给酒店打电话了。",
+      "把这张卡片给前台看，上面有中文的预订号和日期。",
       "入住时查不到预订，按行程中断处理。",
-      "建立工单，只包含酒店名、预订号和日期；护照和账号信息不在其中。",
-      "用中文致电前台，预订登记在 CLARKE EMMA 名下。",
-      "搞定了：预订登记在“CLARKE EMMA”名下，房间已经准备好。团队成员刚才打电话向酒店确认过。"
+      "检查受影响的安排：今晚的房间和明天的计划。",
+      "如果还是查不到，我可以给你看附近的酒店和价格。你选好之前不会预订。"
      ],
-     "note": "如果没有房间，CJ Agent 会给你看附近的选择和价格，等你选好再预订。"
+     "note": "你选好之前，不会预订，也不会付款。"
     },
     "train": {
      "steps": [
       "状态检查：14:05 开往西安的火车停运。",
       "检查受影响的安排：今晚的酒店入住、明天 9:00 的门票。",
-      "你 14:05 去西安的火车停运了。15:20 那班 19:58 到，今晚的酒店和明天的门票都不受影响。要订吗？",
-      "好，订 15:20 那班。",
-      "已改签车票，并告诉酒店你大约 20:30 到。",
-      "好了，新车票和更新后的安排都在你的行程里。"
+      "你 14:05 去西安的火车停运了。15:20 那班 19:58 到，今晚的酒店和明天的门票都不受影响。要换成这班吗？",
+      "好，换成 15:20 那班。",
+      "好了，你的行程已改为 15:20 那班，19:58 到。"
      ],
-     "note": "在你同意之前，没有付款，也没有任何改动。"
+     "note": "在你同意之前，什么都不会改。"
     },
     "sos": {
      "steps": [
       "我在楼梯上摔倒了，脚踝站不起来。",
       "如果情况严重，请马上拨打 120 叫救护车。把这段话给司机或身边的人看：",
-      "安全信号：紧急步骤立即发出，不等工单。",
-      "已通知值班团队成员，通过消息协助。",
-      "团队成员会在这里继续跟进。最近有英语服务的医院在 2 公里外。"
+      "安全信号：紧急步骤立即发出。",
+      "查找附近有英语服务的医院。",
+      "最近有英语服务的医院在 2 公里外，我可以告诉你怎么去。"
      ],
-     "note": "紧急协助向所有用户开放，提供指引和消息协助。遇到危险，请直接拨打 110（报警）、120（急救）或 119（火警）。"
+     "note": "遇到危险，请直接拨打 110（报警）、120（急救）或 119（火警）。"
     }
    },
    "watchTitle": "JT Agent 留意哪些情况",
@@ -353,12 +340,12 @@ window.G2C = {
     [
      "人身安全",
      "受伤、突发疾病、走失。",
-     "立即给出紧急电话和中文短句，再由团队成员通过消息协助。"
+     "立即给出紧急电话和中文短句。"
     ],
     [
      "证件与资金",
      "护照丢失、银行卡被冻结、付款失败。",
-     "先给出报失和补办步骤，再由团队成员核实细节。"
+     "按顺序给出报失和补办步骤。"
     ],
     [
      "行程中断",
@@ -369,11 +356,6 @@ window.G2C = {
      "你提出的改动",
      "换酒店、调整某一天、加一个城市。",
      "CJ Agent 起草方案，你确认之前什么都不会变。"
-    ],
-    [
-     "AI 卡住时",
-     "同一个问题一直没解决、工具反复出错。",
-     "团队成员在后台处理，CJ Agent 告诉你结果。"
     ]
    ],
    "rules": [
@@ -383,7 +365,7 @@ window.G2C = {
     ],
     [
      "让你知道",
-     "如果有真人帮忙，CJ Agent 会告诉你他们做了什么。"
+     "关于规定和开放时间的回答，附上你可以核对的来源。"
     ],
     [
      "你的数据",
@@ -522,8 +504,8 @@ window.G2C = {
     },
     {
      "t": "sys",
-     "text": "<b>JT Agent</b> · 团队成员正在与商家确认",
-     "done": "<b>已确认</b> · 周日 10:00 已加入行程"
+     "text": "<b>CJ Agent</b> · 正在加入行程",
+     "done": "<b>已加入</b> · 周日 10:00 已加入行程"
     }
    ],
    "privLede": "为了回答你，你发出的消息会交给我们使用的 AI 模型服务处理。请只提供办事需要的个人信息。",
@@ -541,10 +523,10 @@ window.G2C = {
     "privacy": "Конфиденциальность"
    },
    "heroTitle": "Личный помощник на каждый день в Китае.",
-   "heroLede": "Спрашивайте CJ Agent обо всём: как передвигаться, платить, где поесть и что забронировать. Если нужен звонок или проверка на месте, JT Agent подключает живого человека.",
+   "heroLede": "Спрашивайте CJ Agent обо всём: как передвигаться, платить, где поесть и что забронировать — по-английски или по-китайски.",
    "heroNote": "Сначала на iPhone. Приглашаем путешественников небольшими группами.",
    "howTitle": "Как CJ Agent и JT Agent работают вместе",
-   "howLede": "С CJ Agent вы общаетесь. JT Agent работает в фоне: следит за поездкой, открывает обращение, если что-то пошло не так, и передаёт сотруднику то, с чем ИИ не справится.",
+   "howLede": "С CJ Agent вы общаетесь. JT Agent работает в фоне: следит за поездкой и, если что-то пошло не так, выясняет, что затронуто, чтобы CJ Agent предложил решение.",
    "cjRole": "В вашем чате",
    "jtRole": "За кадром",
    "cjList": [
@@ -557,9 +539,8 @@ window.G2C = {
    "jtList": [
     "Следит за бронированиями, поездами, рейсами и заселением.",
     "Замечает, когда что-то идёт не так или вопрос ходит по кругу.",
-    "Открывает обращение только с теми данными, которые нужны для следующего шага.",
-    "Передаёт звонки и проверки на месте сотруднику и доводит дело до конца.",
-    "Возвращает результат через CJ Agent, и всё остаётся в одном чате."
+    "Выясняет, что ещё затронуто: например, отель на сегодня или билеты на завтра.",
+    "Передаёт найденное через CJ Agent, и всё остаётся в одном чате."
    ],
    "scTitle": "Как это выглядит в поездке",
    "tabs": [
@@ -572,41 +553,38 @@ window.G2C = {
    "who": {
     "you": "Вы",
     "cj": "CJ Agent",
-    "jt": "JT Agent",
-    "mate": "Сотрудник"
+    "jt": "JT Agent"
    },
    "scenes": {
     "hotel": {
      "steps": [
       "На ресепшене говорят, что не могут найти мою бронь.",
-      "Покажите им эту карточку. Я также попросил сотрудника позвонить в отель.",
+      "Покажите им эту карточку: в ней номер брони и даты по-китайски.",
       "Бронь не найдена при заселении. Обрабатывается как сбой в поездке.",
-      "Открыто обращение: название отеля, номер брони и даты. Паспорт и данные аккаунта не передаются.",
-      "Позвонил на ресепшен по-китайски. Бронь оформлена на CLARKE EMMA.",
-      "Готово: бронь была на имя «CLARKE EMMA». Номер ждёт вас. Сотрудник позвонил в отель и всё подтвердил."
+      "Проверяет, что от этого зависит: номер на сегодня и планы на завтра.",
+      "Если бронь так и не найдут, я покажу отели поблизости с ценами. Ничего не бронируется, пока вы не выберете."
      ],
-     "note": "Если бы мест не было, CJ Agent показал бы варианты поблизости с ценами и забронировал бы только после вашего выбора."
+     "note": "Ничего не бронируется и не оплачивается, пока вы не выберете."
     },
     "train": {
      "steps": [
       "Проверка статуса: поезд в 14:05 до Сианя отменён.",
       "Проверяет, что от него зависит: заселение сегодня вечером и билеты на завтра на 9:00.",
-      "Ваш поезд в 14:05 до Сианя отменён. Поезд в 15:20 прибывает в 19:58, отель и завтрашние билеты сохраняются. Бронировать?",
-      "Да, бронируй на 15:20.",
-      "Билет переоформлен, отель предупреждён, что вы приедете около 20:30.",
-      "Готово. Новый билет и обновлённый план уже в вашей поездке."
+      "Ваш поезд в 14:05 до Сианя отменён. Поезд в 15:20 прибывает в 19:58, отель и завтрашние билеты сохраняются. Перейти на него?",
+      "Да, переходим на 15:20.",
+      "Готово: в плане теперь поезд в 15:20 с прибытием в 19:58."
      ],
-     "note": "Ничего не оплачивалось и не менялось, пока вы не согласились."
+     "note": "Ничего не меняется, пока вы не согласитесь."
     },
     "sos": {
      "steps": [
       "Я упал на лестнице и не могу наступить на ногу.",
       "Если всё серьёзно, сразу звоните 120, это скорая помощь. Покажите это водителю или людям рядом:",
-      "Сигнал безопасности. Инструкции отправлены сразу, без ожидания обращения.",
-      "Дежурный сотрудник подключён для помощи в переписке.",
-      "Сотрудник продолжит помогать вам здесь. Ближайшая больница с англоговорящим персоналом в 2 км."
+      "Сигнал безопасности. Инструкции отправлены сразу.",
+      "Ищет ближайшие больницы с англоговорящим персоналом.",
+      "Ближайшая больница с англоговорящим персоналом в 2 км. Могу подсказать, как туда добраться."
      ],
-     "note": "Экстренная помощь доступна всем пользователям: подсказки и поддержка в переписке. При опасности всегда звоните 110 (полиция), 120 (скорая) или 119 (пожарные)."
+     "note": "При опасности всегда звоните 110 (полиция), 120 (скорая) или 119 (пожарные)."
     }
    },
    "watchTitle": "За чем следит JT Agent",
@@ -619,12 +597,12 @@ window.G2C = {
     [
      "Ваша безопасность",
      "Травма, внезапная болезнь, вы потерялись.",
-     "Сразу номера экстренных служб и фразы по-китайски, затем сотрудник помогает в переписке."
+     "Сразу номера экстренных служб и фразы по-китайски."
     ],
     [
      "Документы и деньги",
      "Потерянный паспорт, заблокированная карта, платёж не проходит.",
-     "Сначала шаги по заявлению и восстановлению, затем сотрудник проверяет детали."
+     "Пошаговые инструкции, как заявить о потере и восстановить документы или карту."
     ],
     [
      "Сбои в поездке",
@@ -635,11 +613,6 @@ window.G2C = {
      "Изменения по вашей просьбе",
      "Сменить отель, перенести день, добавить город.",
      "CJ Agent готовит варианты. Ничего не меняется без вашего подтверждения."
-    ],
-    [
-     "Когда ИИ застрял",
-     "Вопрос остаётся без ответа, инструмент раз за разом даёт сбой.",
-     "Сотрудник решает вопрос в фоне, а CJ Agent сообщает результат."
     ]
    ],
    "rules": [
@@ -649,7 +622,7 @@ window.G2C = {
     ],
     [
      "Вы в курсе",
-     "Если помогал человек, CJ Agent расскажет, что он сделал."
+     "Ответы о правилах и часах работы приходят с источниками, которые можно проверить."
     ],
     [
      "Ваши данные",
@@ -788,8 +761,8 @@ window.G2C = {
     },
     {
      "t": "sys",
-     "text": "<b>JT Agent</b> · сотрудник уточняет бронь",
-     "done": "<b>Подтверждено</b> · воскресенье, 10:00 добавлено в план"
+     "text": "<b>CJ Agent</b> · добавляю в план",
+     "done": "<b>Добавлено</b> · воскресенье, 10:00 в вашем плане"
     }
    ],
    "privLede": "Чтобы ответить вам, ваши сообщения обрабатывает сервис ИИ-модели, которым мы пользуемся. Сообщайте только те личные данные, которые нужны для задачи.",
@@ -807,10 +780,10 @@ window.G2C = {
     "privacy": "Privacidad"
    },
    "heroTitle": "Tu asistente para cada día en China.",
-   "heroLede": "Pregunta a CJ Agent cómo moverte, pagar, comer y reservar. Si un problema requiere una llamada o una comprobación en el lugar, JT Agent recurre a una persona real.",
+   "heroLede": "Pregunta a CJ Agent cómo moverte, pagar, comer y reservar, en inglés o en chino.",
    "heroNote": "Primero en iPhone. Estamos invitando a viajeros en pequeños grupos.",
    "howTitle": "Cómo trabajan juntos CJ Agent y JT Agent",
-   "howLede": "CJ Agent es con quien hablas. JT Agent trabaja en segundo plano: sigue tu viaje, abre un caso cuando algo falla y pasa a una persona del equipo lo que la IA no puede resolver.",
+   "howLede": "CJ Agent es con quien hablas. JT Agent trabaja en segundo plano: sigue tu viaje y, cuando algo falla, averigua qué se ve afectado para que CJ Agent te proponga una solución.",
    "cjRole": "En tu chat",
    "jtRole": "En segundo plano",
    "cjList": [
@@ -823,9 +796,8 @@ window.G2C = {
    "jtList": [
     "Sigue tus reservas, trenes, vuelos y llegadas al hotel.",
     "Detecta cuando algo sale mal o una pregunta da vueltas sin resolverse.",
-    "Abre un caso solo con los datos que necesita el siguiente paso.",
-    "Pasa las llamadas y comprobaciones locales a una persona del equipo y las sigue hasta el final.",
-    "Te devuelve el resultado a través de CJ Agent, todo en el mismo chat."
+    "Averigua qué más se ve afectado, como el hotel de esta noche o las entradas de mañana.",
+    "Te lo cuenta a través de CJ Agent, todo en el mismo chat."
    ],
    "scTitle": "Así se ve durante el viaje",
    "tabs": [
@@ -838,41 +810,38 @@ window.G2C = {
    "who": {
     "you": "Tú",
     "cj": "CJ Agent",
-    "jt": "JT Agent",
-    "mate": "Equipo"
+    "jt": "JT Agent"
    },
    "scenes": {
     "hotel": {
      "steps": [
       "En recepción dicen que no encuentran mi reserva.",
-      "Enséñales esta tarjeta. También he pedido a una persona del equipo que llame al hotel.",
+      "Enséñales esta tarjeta: lleva el número de reserva y las fechas en chino.",
       "Reserva no encontrada al llegar. Se trata como una incidencia del viaje.",
-      "Caso abierto con el nombre del hotel, el número de reserva y las fechas. El pasaporte y los datos de la cuenta quedan fuera.",
-      "Llamada a recepción en chino. La reserva estaba a nombre de CLARKE EMMA.",
-      "Resuelto: la reserva estaba como «CLARKE EMMA». Tu habitación está lista. Una persona del equipo llamó al hotel para confirmarlo."
+      "Revisa lo que depende de ella: la habitación de esta noche y los planes de mañana.",
+      "Si siguen sin encontrarla, te enseño hoteles cercanos con precios. No se reserva nada hasta que elijas."
      ],
-     "note": "Si no hubiera habitación, CJ Agent te mostraría opciones cercanas con precios y solo reservaría cuando eligieras."
+     "note": "No se reserva ni se paga nada hasta que eliges."
     },
     "train": {
      "steps": [
       "Comprobación de estado: el tren de las 14:05 a Xi’an está cancelado.",
       "Revisa lo que depende de él: la llegada al hotel esta noche y las entradas de mañana a las 9:00.",
-      "Han cancelado tu tren de las 14:05 a Xi’an. El de las 15:20 llega a las 19:58 y mantiene el hotel de esta noche y las entradas de mañana. ¿Lo reservo?",
-      "Sí, reserva el de las 15:20.",
-      "Billete cambiado y aviso al hotel de que llegarás sobre las 20:30.",
-      "Listo. Tu nuevo billete y el plan actualizado ya están en tu viaje."
+      "Han cancelado tu tren de las 14:05 a Xi’an. El de las 15:20 llega a las 19:58 y mantiene el hotel de esta noche y las entradas de mañana. ¿Lo cambio?",
+      "Sí, cambia al de las 15:20.",
+      "Hecho: tu plan ya usa el tren de las 15:20, que llega a las 19:58."
      ],
-     "note": "No se pagó ni cambió nada hasta que dijiste que sí."
+     "note": "No cambia nada hasta que dices que sí."
     },
     "sos": {
      "steps": [
       "Me he caído en las escaleras y no puedo apoyar el tobillo.",
       "Si es grave, llama ya al 120 para pedir una ambulancia. Enseña esto al conductor o a quien tengas cerca:",
-      "Señal de seguridad. Los pasos de emergencia se enviaron al momento, sin esperar a abrir un caso.",
-      "Aviso a la persona de guardia para ayudar por mensaje.",
-      "Una persona del equipo seguirá ayudándote aquí. El hospital más cercano con personal que habla inglés está a 2 km."
+      "Señal de seguridad. Los pasos de emergencia se enviaron al momento.",
+      "Busca hospitales cercanos con personal que habla inglés.",
+      "El hospital más cercano con personal que habla inglés está a 2 km. Puedo indicarte cómo llegar."
      ],
-     "note": "La ayuda de emergencia está abierta a todos los usuarios: orientación y apoyo por mensaje. Ante un peligro, llama siempre al 110 (policía), 120 (ambulancia) o 119 (bomberos)."
+     "note": "Ante un peligro, llama siempre al 110 (policía), 120 (ambulancia) o 119 (bomberos)."
     }
    },
    "watchTitle": "Qué vigila JT Agent",
@@ -885,12 +854,12 @@ window.G2C = {
     [
      "Tu seguridad",
      "Una lesión, una enfermedad repentina, perderte.",
-     "Números de emergencia y frases en chino al momento; después, una persona del equipo te ayuda por mensaje."
+     "Números de emergencia y frases en chino al momento."
     ],
     [
      "Documentos y dinero",
      "Un pasaporte perdido, una tarjeta bloqueada, un pago que no pasa.",
-     "Primero, los pasos para denunciar y reponer; después, el equipo comprueba los detalles."
+     "Los pasos para denunciar y reponer, en orden."
     ],
     [
      "Imprevistos",
@@ -901,11 +870,6 @@ window.G2C = {
      "Cambios que pides",
      "Cambiar de hotel, mover un día, añadir una ciudad.",
      "CJ Agent prepara opciones. Nada cambia hasta que lo confirmas."
-    ],
-    [
-     "Cuando la IA se atasca",
-     "Una pregunta que sigue sin respuesta, una herramienta que falla una y otra vez.",
-     "Una persona del equipo lo resuelve en segundo plano y CJ Agent te cuenta el resultado."
     ]
    ],
    "rules": [
@@ -915,7 +879,7 @@ window.G2C = {
     ],
     [
      "Lo sabrás",
-     "Si te ha ayudado una persona, CJ Agent te dice qué hizo."
+     "Las respuestas sobre normas y horarios incluyen fuentes que puedes comprobar."
     ],
     [
      "Tus datos",
@@ -1054,8 +1018,8 @@ window.G2C = {
     },
     {
      "t": "sys",
-     "text": "<b>JT Agent</b> · el equipo confirma con el local",
-     "done": "<b>Confirmado</b> · domingo a las 10:00 añadido al viaje"
+     "text": "<b>CJ Agent</b> · añadiéndolo a tu viaje",
+     "done": "<b>Añadido</b> · domingo a las 10:00 en tu viaje"
     }
    ],
    "privLede": "Para responderte, tus mensajes los procesa el servicio de modelos de IA que usamos. Comparte solo los datos personales que necesite cada gestión.",
@@ -1073,10 +1037,10 @@ window.G2C = {
     "privacy": "Confidentialité"
    },
    "heroTitle": "Votre assistant pour chaque jour en Chine.",
-   "heroLede": "Demandez à CJ Agent comment vous déplacer, payer, manger et réserver. Quand un problème demande un appel ou une vérification sur place, JT Agent fait intervenir une vraie personne.",
+   "heroLede": "Demandez à CJ Agent comment vous déplacer, payer, manger et réserver, en anglais ou en chinois.",
    "heroNote": "D’abord sur iPhone. Nous invitons les voyageurs par petits groupes.",
    "howTitle": "Comment CJ Agent et JT Agent travaillent ensemble",
-   "howLede": "CJ Agent est celui à qui vous parlez. JT Agent travaille en coulisses : il suit votre voyage, ouvre un dossier quand quelque chose se passe mal et confie à un membre de l’équipe ce que l’IA ne peut pas terminer.",
+   "howLede": "CJ Agent est celui à qui vous parlez. JT Agent travaille en coulisses : il suit votre voyage et, quand quelque chose se passe mal, identifie ce qui est touché pour que CJ Agent vous propose une solution.",
    "cjRole": "Dans votre conversation",
    "jtRole": "En coulisses",
    "cjList": [
@@ -1089,9 +1053,8 @@ window.G2C = {
    "jtList": [
     "Suit vos réservations, trains, vols et arrivées à l’hôtel.",
     "Remarque quand quelque chose tourne mal ou qu’une question tourne en rond.",
-    "Ouvre un dossier avec les seules informations utiles à l’étape suivante.",
-    "Confie appels et vérifications sur place à un membre de l’équipe et suit l’affaire jusqu’au bout.",
-    "Vous transmet le résultat via CJ Agent, dans la même conversation."
+    "Identifie ce qui est touché par ricochet, comme l’hôtel de ce soir ou les billets de demain.",
+    "Vous le transmet via CJ Agent, dans la même conversation."
    ],
    "scTitle": "En voyage, concrètement",
    "tabs": [
@@ -1104,41 +1067,38 @@ window.G2C = {
    "who": {
     "you": "Vous",
     "cj": "CJ Agent",
-    "jt": "JT Agent",
-    "mate": "Équipe"
+    "jt": "JT Agent"
    },
    "scenes": {
     "hotel": {
      "steps": [
       "La réception dit qu’elle ne trouve pas ma réservation.",
-      "Montrez-leur cette carte. J’ai aussi demandé à un membre de l’équipe d’appeler l’hôtel.",
+      "Montrez-leur cette carte : elle donne le numéro de réservation et les dates en chinois.",
       "Réservation introuvable à l’arrivée. Traitée comme une perturbation du voyage.",
-      "Dossier ouvert avec le nom de l’hôtel, le numéro de réservation et les dates. Passeport et compte restent hors du dossier.",
-      "Appel à la réception en chinois. La réservation était au nom de CLARKE EMMA.",
-      "C’est réglé : la réservation était au nom de « CLARKE EMMA ». Votre chambre est prête. Un membre de l’équipe a appelé l’hôtel pour confirmer."
+      "Regarde ce qui en dépend : la chambre de ce soir et le programme de demain.",
+      "S’ils ne la trouvent toujours pas, je vous montre des hôtels proches avec leurs prix. Rien n’est réservé avant votre choix."
      ],
-     "note": "S’il n’y avait plus de chambre, CJ Agent vous montrerait des options à proximité avec leurs prix et ne réserverait qu’après votre choix."
+     "note": "Rien n’est réservé ni payé avant votre choix."
     },
     "train": {
      "steps": [
       "Vérification : le train de 14 h 05 pour Xi’an est annulé.",
       "Regarde ce qui en dépend : l’arrivée à l’hôtel ce soir et les billets de demain à 9 h.",
-      "Votre train de 14 h 05 pour Xi’an est annulé. Celui de 15 h 20 arrive à 19 h 58 et conserve l’hôtel de ce soir et les billets de demain. Je le réserve ?",
-      "Oui, réserve celui de 15 h 20.",
-      "Billet échangé et hôtel prévenu de votre arrivée vers 20 h 30.",
-      "C’est fait. Votre nouveau billet et le programme mis à jour sont dans votre voyage."
+      "Votre train de 14 h 05 pour Xi’an est annulé. Celui de 15 h 20 arrive à 19 h 58 et conserve l’hôtel de ce soir et les billets de demain. On passe sur celui-ci ?",
+      "Oui, passe sur celui de 15 h 20.",
+      "C’est fait : votre programme utilise maintenant le train de 15 h 20, arrivée à 19 h 58."
      ],
-     "note": "Rien n’a été payé ni modifié avant votre accord."
+     "note": "Rien ne change avant votre accord."
     },
     "sos": {
      "steps": [
       "Je suis tombé dans l’escalier et je ne peux plus poser le pied.",
       "Si c’est grave, appelez tout de suite le 120 pour une ambulance. Montrez ceci au chauffeur ou aux personnes autour de vous :",
-      "Signal de sécurité. Les consignes d’urgence sont parties aussitôt, sans attendre l’ouverture d’un dossier.",
-      "Membre de l’équipe de garde prévenu pour aider par message.",
-      "Un membre de l’équipe continue de vous aider ici. L’hôpital le plus proche avec du personnel anglophone est à 2 km."
+      "Signal de sécurité. Les consignes d’urgence sont parties aussitôt.",
+      "Cherche les hôpitaux proches avec du personnel anglophone.",
+      "L’hôpital le plus proche avec du personnel anglophone est à 2 km. Je peux vous indiquer comment y aller."
      ],
-     "note": "L’aide d’urgence est ouverte à tous les utilisateurs : conseils et soutien par message. En cas de danger, appelez toujours le 110 (police), le 120 (ambulance) ou le 119 (pompiers)."
+     "note": "En cas de danger, appelez toujours le 110 (police), le 120 (ambulance) ou le 119 (pompiers)."
     }
    },
    "watchTitle": "Ce que surveille JT Agent",
@@ -1151,12 +1111,12 @@ window.G2C = {
     [
      "Votre sécurité",
      "Une blessure, un malaise soudain, vous êtes perdu.",
-     "Numéros d’urgence et phrases en chinois tout de suite, puis un membre de l’équipe aide par message."
+     "Numéros d’urgence et phrases en chinois tout de suite."
     ],
     [
      "Papiers et argent",
      "Un passeport perdu, une carte bloquée, un paiement refusé.",
-     "D’abord les démarches de déclaration et de remplacement, puis l’équipe vérifie les détails."
+     "Les démarches de déclaration et de remplacement, dans l’ordre."
     ],
     [
      "Imprévus",
@@ -1167,11 +1127,6 @@ window.G2C = {
      "Changements demandés",
      "Changer d’hôtel, déplacer une journée, ajouter une ville.",
      "CJ Agent prépare des options. Rien ne change sans votre confirmation."
-    ],
-    [
-     "Quand l’IA bloque",
-     "Une question qui reste sans réponse, un outil qui échoue encore et encore.",
-     "Un membre de l’équipe règle le problème en coulisses et CJ Agent vous donne le résultat."
     ]
    ],
    "rules": [
@@ -1181,7 +1136,7 @@ window.G2C = {
     ],
     [
      "Vous êtes informé",
-     "Quand une personne a aidé, CJ Agent vous dit ce qu’elle a fait."
+     "Les réponses sur les règles et les horaires citent des sources que vous pouvez vérifier."
     ],
     [
      "Vos données",
@@ -1320,8 +1275,8 @@ window.G2C = {
     },
     {
      "t": "sys",
-     "text": "<b>JT Agent</b> · l’équipe vérifie auprès du lieu",
-     "done": "<b>Confirmé</b> · dimanche à 10 h ajouté au voyage"
+     "text": "<b>CJ Agent</b> · ajout à votre voyage",
+     "done": "<b>Ajouté</b> · dimanche à 10 h dans votre voyage"
     }
    ],
    "privLede": "Pour vous répondre, vos messages sont traités par le service de modèle d’IA que nous utilisons. Ne partagez que les données personnelles nécessaires à la démarche.",
@@ -1339,10 +1294,10 @@ window.G2C = {
     "privacy": "الخصوصية"
    },
    "heroTitle": "مساعدك الشخصي في كل يوم في الصين.",
-   "heroLede": "اسأل CJ Agent عن التنقل والدفع والطعام والحجز. وعندما تحتاج مشكلة إلى مكالمة هاتفية أو تحقق محلي، يستعين JT Agent بشخص حقيقي.",
+   "heroLede": "اسأل CJ Agent عن التنقل والدفع والطعام والحجز، بالإنجليزية أو بالصينية.",
    "heroNote": "يصل أولًا إلى iPhone. ندعو المسافرين على دفعات صغيرة.",
    "howTitle": "كيف يعمل CJ Agent وJT Agent معًا",
-   "howLede": "CJ Agent هو من تتحدث معه. أما JT Agent فيعمل في الخلفية: يتابع رحلتك، ويفتح طلب متابعة عندما يحدث خلل، ويسلّم إلى أحد أفراد الفريق ما لا يستطيع الذكاء الاصطناعي إنجازه.",
+   "howLede": "CJ Agent هو من تتحدث معه. أما JT Agent فيعمل في الخلفية: يتابع رحلتك، وعندما يحدث خلل يحدد ما الذي تأثر ليقترح عليك CJ Agent حلًا.",
    "cjRole": "في محادثتك",
    "jtRole": "في الخلفية",
    "cjList": [
@@ -1355,9 +1310,8 @@ window.G2C = {
    "jtList": [
     "يتابع حجوزاتك وقطاراتك ورحلاتك الجوية وتسجيل الوصول.",
     "يلاحظ عندما يحدث خلل أو يبقى سؤال دون حل.",
-    "يفتح طلب متابعة بالمعلومات اللازمة للخطوة التالية فقط.",
-    "يسلّم المكالمات والتحقق المحلي إلى أحد أفراد الفريق ويتابعها حتى النهاية.",
-    "يعيد إليك النتيجة عبر CJ Agent، في المحادثة نفسها."
+    "يحدد ما الذي يتأثر أيضًا، مثل فندق الليلة أو تذاكر الغد.",
+    "يخبرك بما وجده عبر CJ Agent، في المحادثة نفسها."
    ],
    "scTitle": "كيف يبدو ذلك أثناء الرحلة",
    "tabs": [
@@ -1370,41 +1324,38 @@ window.G2C = {
    "who": {
     "you": "أنت",
     "cj": "CJ Agent",
-    "jt": "JT Agent",
-    "mate": "الفريق"
+    "jt": "JT Agent"
    },
    "scenes": {
     "hotel": {
      "steps": [
       "يقول موظف الاستقبال إنه لا يجد حجزي.",
-      "أرِهم هذه البطاقة. وطلبتُ أيضًا من أحد أفراد الفريق الاتصال بالفندق.",
+      "أرِهم هذه البطاقة: فيها رقم الحجز والتواريخ بالصينية.",
       "لم يُعثر على الحجز عند الوصول. يُعامَل كتعطّل في الرحلة.",
-      "فُتح طلب متابعة يتضمن اسم الفندق ورقم الحجز والتواريخ، دون جواز السفر أو بيانات الحساب.",
-      "اتصال بالاستقبال بالصينية. الحجز مسجّل باسم CLARKE EMMA.",
-      "تم الحل: الحجز مسجّل باسم «CLARKE EMMA». غرفتك جاهزة. اتصل أحد أفراد الفريق بالفندق للتأكيد."
+      "يتحقق مما يعتمد عليه: غرفة الليلة وخطط الغد.",
+      "إذا لم يجدوه بعد، أعرض عليك فنادق قريبة بأسعارها. لا يُحجز شيء قبل أن تختار."
      ],
-     "note": "لو لم تكن هناك غرفة، لعرض عليك CJ Agent خيارات قريبة بأسعارها، ولن يحجز إلا بعد أن تختار."
+     "note": "لا يُحجز شيء ولا يُدفع قبل أن تختار."
     },
     "train": {
      "steps": [
       "فحص الحالة: أُلغي قطار الساعة 14:05 إلى شيآن.",
       "يتحقق مما يعتمد عليه: تسجيل الوصول إلى الفندق الليلة وتذاكر الغد الساعة 9:00.",
-      "أُلغي قطارك إلى شيآن الساعة 14:05. قطار الساعة 15:20 يصل الساعة 19:58 ويحافظ على فندق الليلة وتذاكر الغد. هل أحجزه؟",
-      "نعم، احجز قطار 15:20.",
-      "تم تغيير التذكرة وإبلاغ الفندق بأنك ستصل نحو الساعة 20:30.",
-      "تم. تذكرتك الجديدة وخطتك المحدثة موجودتان في رحلتك."
+      "أُلغي قطارك إلى شيآن الساعة 14:05. قطار الساعة 15:20 يصل الساعة 19:58 ويحافظ على فندق الليلة وتذاكر الغد. هل أنقلك إليه؟",
+      "نعم، انقلني إلى قطار 15:20.",
+      "تم: خطتك الآن على قطار الساعة 15:20 الذي يصل الساعة 19:58."
      ],
-     "note": "لم يُدفع شيء ولم يتغير شيء قبل موافقتك."
+     "note": "لا يتغير شيء قبل موافقتك."
     },
     "sos": {
      "steps": [
       "سقطت على الدرج ولا أستطيع الوقوف على كاحلي.",
       "إذا كانت الحالة خطيرة، اتصل فورًا بالرقم 120 لطلب سيارة إسعاف. أرِ هذا للسائق أو لمن حولك:",
-      "إشارة سلامة. أُرسلت خطوات الطوارئ فورًا دون انتظار فتح طلب متابعة.",
-      "تم تنبيه أحد أفراد الفريق المناوب للمساعدة عبر الرسائل.",
-      "سيتابع معك أحد أفراد الفريق هنا. أقرب مستشفى فيه موظفون يتحدثون الإنجليزية على بعد 2 كم."
+      "إشارة سلامة. أُرسلت خطوات الطوارئ فورًا.",
+      "يبحث عن مستشفيات قريبة فيها موظفون يتحدثون الإنجليزية.",
+      "أقرب مستشفى فيه موظفون يتحدثون الإنجليزية على بعد 2 كم. يمكنني أن أدلّك على الطريق."
      ],
-     "note": "المساعدة الطارئة متاحة لجميع المستخدمين: إرشاد ودعم عبر الرسائل. عند الخطر، اتصل دائمًا بالرقم 110 (الشرطة) أو 120 (الإسعاف) أو 119 (الإطفاء)."
+     "note": "عند الخطر، اتصل دائمًا بالرقم 110 (الشرطة) أو 120 (الإسعاف) أو 119 (الإطفاء)."
     }
    },
    "watchTitle": "ما الذي يراقبه JT Agent",
@@ -1417,12 +1368,12 @@ window.G2C = {
     [
      "سلامتك",
      "إصابة، مرض مفاجئ، الضياع.",
-     "أرقام الطوارئ وعبارات بالصينية فورًا، ثم يساعدك أحد أفراد الفريق عبر الرسائل."
+     "أرقام الطوارئ وعبارات بالصينية فورًا."
     ],
     [
      "الوثائق والمال",
      "جواز سفر مفقود، بطاقة محظورة، دفعة لا تمر.",
-     "خطوات الإبلاغ والاستبدال أولًا، ثم يتحقق الفريق من التفاصيل."
+     "خطوات الإبلاغ والاستبدال بالترتيب."
     ],
     [
      "تعطّل الرحلة",
@@ -1433,11 +1384,6 @@ window.G2C = {
      "تغييرات تطلبها",
      "تغيير الفندق، نقل يوم، إضافة مدينة.",
      "يجهّز CJ Agent الخيارات. لا يتغير شيء قبل تأكيدك."
-    ],
-    [
-     "عندما يتعثر الذكاء الاصطناعي",
-     "سؤال يبقى بلا جواب، أداة تتعطل مرارًا.",
-     "يحل أحد أفراد الفريق المشكلة في الخلفية، ويخبرك CJ Agent بالنتيجة."
     ]
    ],
    "rules": [
@@ -1447,7 +1393,7 @@ window.G2C = {
     ],
     [
      "ستعرف",
-     "عندما يساعدك شخص، يخبرك CJ Agent بما فعله."
+     "تأتي الإجابات عن القواعد ومواعيد العمل مع مصادر يمكنك التحقق منها."
     ],
     [
      "بياناتك",
@@ -1586,8 +1532,8 @@ window.G2C = {
     },
     {
      "t": "sys",
-     "text": "<b>JT Agent</b> · يتواصل الفريق مع المكان للتأكيد",
-     "done": "<b>تم التأكيد</b> · أضيف الأحد الساعة 10:00 إلى رحلتك"
+     "text": "<b>CJ Agent</b> · أضيفه إلى رحلتك",
+     "done": "<b>تمت الإضافة</b> · الأحد الساعة 10:00 في رحلتك"
     }
    ],
    "privLede": "للإجابة عن أسئلتك، تُعالَج رسائلك لدى خدمة نموذج الذكاء الاصطناعي التي نستخدمها. شارك فقط البيانات الشخصية التي تحتاجها المهمة.",
@@ -1619,10 +1565,6 @@ window.G2C = {
     "who": "jt"
    },
    {
-    "lane": "back",
-    "who": "mate"
-   },
-   {
     "lane": "chat",
     "who": "cj"
    }
@@ -1643,10 +1585,6 @@ window.G2C = {
    {
     "lane": "chat",
     "who": "you"
-   },
-   {
-    "lane": "back",
-    "who": "mate"
    },
    {
     "lane": "chat",
