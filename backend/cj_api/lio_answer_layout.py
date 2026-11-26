@@ -1,25 +1,19 @@
-"""One-screen answer layout switch and per-answer layout (W2-1, #1727), behind CJ_LIO_ANSWER_LAYOUT.
+"""One-screen answer layout switch (W2-1, #1727), behind CJ_LIO_ANSWER_LAYOUT.
 
-Three conditions must all hold for the two-bubble answer (`split`): the server switch is
-`one-screen`, the account is in CJ_LIO_ANSWER_LAYOUT_SUBJECTS_JSON, and the request declared
-`accepts: ["LIO-answer-followups.1"]`. A request that did not declare it gets no layout at all
-(`None`: the response stays byte-identical to today's). A request that declared it always gets
-`split` or `single`, decided before the answer starts and fixed for the whole message.
-
-Nothing here reads a request or a response; the wire parts come with the contract change. The
-switch defaults to `flat`: nothing changes until it is set to `one-screen` with a subject list.
+`flat` (the default) changes nothing: no layout is committed and the answer prompt is the one in
+use today. With `one-screen`, an account named in CJ_LIO_ANSWER_LAYOUT_SUBJECTS_JSON gets the
+two-bubble answer (`split`) and every other account a `single` bubble; the layout is committed
+before the answer's first text, so every row of one message reads the same value. Whether a timeline
+row shows it is the reader's business: only a poll that declared LIO-answer-followups.1 sees it.
 """
 import json
 import os
 import re
 
-from cj_message.lio_followups import VERSION
-
 LAYOUTS = ('flat', 'one-screen')
-_SUBJECT = re.compile(r'G2C@(?:0[1-9]|[1-9][0-9])')
-# Replies the code writes itself, edits and confirmations, a plan body (one sentence, the cards carry
-# the rest), failures and limits are one bubble. An emergency takes the normal answer path (split).
-SINGLE_ROUTES = frozenset({'greeting', 'self_description', 'change', 'confirm', 'plan', 'failure', 'limit'})
+# The server's account names for the invite cohort (`G2C@NN` codes map to these); the deploy side
+# checks that every name belongs to the 99-account roster before it writes the variable.
+_SUBJECT = re.compile(r'm4-synthetic-demo-[a-z0-9]{12}')
 
 
 def layout_mode():
@@ -31,7 +25,7 @@ def layout_mode():
 
 
 def subjects():
-    """The accounts the layout is on for: a non-empty list of distinct G2C@01–99 names, read only
+    """The accounts the layout is on for: a non-empty list of distinct invite-cohort names, read only
     while the switch is `one-screen` (an unset or invalid list then fails loudly, never silently on)."""
     if layout_mode() != 'one-screen':
         return frozenset()
@@ -41,27 +35,23 @@ def subjects():
         raise ValueError('answer layout subjects must be a JSON list') from None
     if (type(values) is not list or not values or len(set(values)) != len(values)
             or any(type(value) is not str or _SUBJECT.fullmatch(value) is None for value in values)):
-        raise ValueError('answer layout subjects must be distinct G2C@01 to G2C@99 names')
+        raise ValueError('answer layout subjects must be distinct invite-cohort account names')
     return frozenset(values)
 
 
-def accepted(accepts):
-    """True when the request declared this follow-ups version; other values are ignored."""
-    return type(accepts) is list and VERSION in accepts
+def answer_layout(subject, question):
+    """The layout committed before an answer's first text, or None while the switch is `flat`.
 
-
-def layout_for(subject, *, accepts, route='answer'):
-    """`'split'`, `'single'` or `None` (no field) for one answer.
-
-    `subject` is the account's name (G2C@NN). `accepts` is the request's declared list or None.
+    Decided from the account and the question alone (no request field), so every row of the
+    message, from the first `answering` row to `completed`, reads the same value. Code-written
+    self-descriptions are one bubble; an emergency is a normal answer and splits.
     """
-    if not accepted(accepts):
+    if layout_mode() != 'one-screen':
         return None
-    if route in SINGLE_ROUTES:
+    from cj_message.lio_context import self_description
+    if subject not in subjects() or self_description(question, 'zh') is not None or self_description(question, 'en') is not None:
         return 'single'
-    if route != 'answer':
-        raise ValueError('unknown answer route')
-    return 'split' if layout_mode() == 'one-screen' and subject in subjects() else 'single'
+    return 'split'
 
 
 def prompt_layout(layout):

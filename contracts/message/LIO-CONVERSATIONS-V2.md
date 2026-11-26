@@ -22,7 +22,7 @@ If a send is retried, use the same message ID and exact bytes. The ID is unique 
 
 ## Read and undo
 
-- `GET /v2/lio/timeline?conversation_id=…&before=…` returns `LIO-timeline.2` with the v1 timeline fields. Omit the conversation ID to read the default. An explicit ID selects a Lio conversation owned by the signed identity. The cursor must be a message from that conversation. A foreign conversation ID or cursor returns 400.
+- `GET /v2/lio/timeline?conversation_id=…&before=…` returns `LIO-timeline.2` with the v1 timeline fields. Omit the conversation ID to read the default. An explicit ID selects a Lio conversation owned by the signed identity. The cursor must be a message from that conversation. A foreign conversation ID or cursor returns 400. With `accepts=LIO-answer-followups.1` the rows may also carry `layout` and `followups`; see [LIO-ANSWER-FOLLOWUPS-V1.md](LIO-ANSWER-FOLLOWUPS-V1.md). Without it the rows are unchanged.
 - `GET /v2/lio/trip?conversation_id=…` returns `LIO-trip-history.2`, with the v1 history fields and the selected conversation ID. Send the same ID with `before` for pagination. An ID with no itinerary for the signed owner yields an empty history.
 - `POST /v2/lio/trip/undo` accepts `LIO-trip-undo.2` with the original `action_id`, opaque `target`, and the selected `conversation_id`. `GET /v2/lio/trip/undo` accepts those three values as query parameters. Both return `LIO-trip-undo-receipt.2` with `action_id`, `conversation_id`, and `committed`. A target from another conversation returns 403. Keep the same action ID, target, and conversation ID to check an uncertain result.
 

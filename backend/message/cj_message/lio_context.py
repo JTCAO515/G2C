@@ -180,6 +180,8 @@ _TRAVELER_IDENTITY_PROMPT = (
 
 SOURCE_EFFECT = 'lio_source:'
 TOOL_EFFECT = 'lio_tool:'
+LAYOUT_EFFECT = 'lio_layout:'
+FOLLOWUPS_EFFECT = 'lio_followups:'
 UNSAVED_PLAN_ANSWER = 'lio_unsaved_plan_answer.1'
 UNSETTLED_VISIBLE_ANSWER = 'lio_unsettled_visible_answer.1'
 
@@ -204,6 +206,26 @@ class LioCitation:
     def effect(self):
         value = dict(key=self.key, title=self.title, url=self.url, observed_at=self.observed_at)
         return SOURCE_EFFECT + json.dumps(value, ensure_ascii=False, separators=(',', ':'))
+
+
+@dataclass(frozen=True)
+class LioLayout:
+    """The answer layout, committed once before the first text (#1727): `split` or `single`."""
+    value: str
+
+    def effect(self):
+        if self.value not in ('split', 'single'):
+            raise ValueError('unknown answer layout')
+        return LAYOUT_EFFECT + self.value
+
+
+@dataclass(frozen=True)
+class LioFollowups:
+    """The answer's fixed action buttons (#1727): [{tool, parameters, label}], at most two."""
+    actions: tuple
+
+    def effect(self):
+        return FOLLOWUPS_EFFECT + json.dumps(list(self.actions), ensure_ascii=False, separators=(',', ':'), sort_keys=True)
 
 
 _GREETING_EXAMPLE = 'Greet briefly, only when the traveler only greets you: 你好！准备去哪儿玩？ / Hey! Where are you off to? '

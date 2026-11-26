@@ -546,7 +546,7 @@ class RunWorker:
         buffer = ''
         phase='answer_preparation'
         try:
-            from cj_message.lio_context import LioCitation, LioToolProgress, answer_prompt
+            from cj_message.lio_context import LioCitation, LioFollowups, LioLayout, LioToolProgress, answer_prompt
 
             if lio_replacement:
                 phase='lio_edit'
@@ -578,8 +578,10 @@ class RunWorker:
             safety_lines = locale is not None and safety_lines_enabled()
             phase='answer_stream'
             answered = ''
+            split_layout = False
             for chunk in chunks:
-                if isinstance(chunk, (LioCitation, LioToolProgress)):
+                if isinstance(chunk, (LioCitation, LioToolProgress, LioLayout)):
+                    split_layout |= isinstance(chunk, LioLayout) and chunk.value == 'split'
                     state = self._event(binding, state, 'effect_committed', chunk.effect())
                     continue
                 buffer += chunk
@@ -593,6 +595,12 @@ class RunWorker:
                 missing = supplement(text, answered, locale)
                 if missing:
                     state = self._event(binding, state, 'text_delta', missing)
+            if split_layout and (answered or state.text).strip():
+                # W2-1 (#1727): fixed action buttons for a two-bubble answer; none when nothing applies.
+                from cj_message.lio_followups import allowed_actions
+                actions = [action.wire() for action in allowed_actions(text, locale)]
+                if actions:
+                    state = self._event(binding, state, 'effect_committed', LioFollowups(tuple(actions)).effect())
             if self.drafts is not None and command['creation_intent'] == 'consider_trip':
                 phase='draft'
                 state, proposal_id = self._draft(binding, state, text, stored)

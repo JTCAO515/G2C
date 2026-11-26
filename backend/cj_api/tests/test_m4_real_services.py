@@ -5,6 +5,7 @@ import gzip
 import hashlib
 import json
 import logging
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -996,6 +997,39 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(len(arguments),1);self.assertEqual(len(arguments[0]),2)
         self.assertEqual(json.loads(arguments[0][0]),dict(version='FACT-query.3',topic='payment'))
         self.assertEqual([part for part in chunks if type(part)is str][-1][:6],'Alipay')
+
+    def test_one_screen_layout_is_committed_first_and_changes_only_the_prompt(self):
+        # W2-1 (#1727): off writes nothing and keeps the prompt; on commits the layout before any text.
+        from cj_api.local_app import ISSUER,scope_for
+        from cj_message.lio_context import LioLayout
+        subject='m4-synthetic-demo-aaaaaaaaaaaa';second='m4-synthetic-demo-bbbbbbbbbbbb'
+        subjects=frozenset({subject,second});provider=self.provider(sse())
+        tools=RealTools(RealServices(provider,KEY,subjects,demo_subjects=subjects,national_subjects=subjects))
+        def run(account,question,mode):
+            systems=[]
+            class Worker:
+                lio_planning=None
+                def _model_history(self,*args):pass
+                def _registered_stream(self,original,key,registration,argument,**kwargs):
+                    systems.append(argument.system)
+                    yield json.dumps(dict(version='MODEL-tool-turn.1',kind='answer',calls=[],
+                        answer=dict(zh='好的。',en='Alipay works almost everywhere.')))
+            worker=Worker();worker.provider=provider
+            binding=SimpleNamespace(scope=scope_for(ISSUER,account),run_id='layout-'+mode)
+            env=dict(CJ_LIO_ANSWER_LAYOUT=mode,CJ_LIO_ANSWER_LAYOUT_SUBJECTS_JSON=json.dumps([subject]))
+            with patch.dict(os.environ,env):
+                chunks=list(tools.answer(worker,binding,[dict(role='user',content=question)],lio_locale='en'))
+            return chunks,systems[0]
+        flat_chunks,flat_system=run(subject,'How do I pay with Alipay?','flat')
+        self.assertFalse(any(isinstance(part,LioLayout)for part in flat_chunks))
+        split_chunks,split_system=run(subject,'How do I pay with Alipay?','one-screen')
+        self.assertEqual(split_chunks[0],LioLayout('split'))
+        self.assertIn('Fit the answer on one phone screen',split_system);self.assertNotIn('Fit the answer on one phone screen',flat_system)
+        listed_other,other_system=run(second,'How do I pay with Alipay?','one-screen')
+        self.assertEqual(listed_other[0],LioLayout('single'));self.assertEqual(other_system,flat_system)
+        identity,identity_system=run(subject,'who are you','one-screen')
+        self.assertEqual(identity[0],LioLayout('single'));self.assertEqual(identity_system,flat_system)
+        self.assertEqual(self.sent,[])
 
     def test_invalid_visitor_resource_is_not_successful_no_match(self):
         from cj_api.lio_city import CityReference

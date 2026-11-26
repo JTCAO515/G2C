@@ -881,7 +881,7 @@ class RealTools:
         if lio_locale is None:
             chinese=any('一'<=c<='鿿' for c in messages[-1]['content'])
         else:
-            from cj_message.lio_context import LioCitation, LioToolProgress, answer_prompt, asks_about_sources
+            from cj_message.lio_context import LioCitation, LioLayout, LioToolProgress, answer_prompt, asks_about_sources
             from cj_message.lio_prompt import render, template_enabled
             chinese = lio_locale == 'zh'
             question = messages[-1]['content']
@@ -891,10 +891,15 @@ class RealTools:
             weather_day = _lio_weather_day(question, today)
             tomorrow = today + timedelta(days=1)
             transit_request = _lio_transit_request(messages)
+            # W2-1 (#1727): the answer layout is fixed before the first text; off (flat) writes nothing.
+            from .lio_answer_layout import answer_layout,prompt_layout
+            subject=next((s for s in self.services.demo_subjects if scope_for(ISSUER,s)==binding.scope),None)
+            layout=answer_layout(subject,question)
+            if layout is not None:yield LioLayout(layout)
             if template_enabled():
                 # W2-5 (#1732): every answer rule once, from the single template.
                 from cj_message.lio_context import _TRAVELER_IDENTITY_QUESTION
-                system = render(lio_locale, detailed=True, sources=asks_about_sources(question),
+                system = render(lio_locale, layout=prompt_layout(layout), detailed=True, sources=asks_about_sources(question),
                     traveler_question=_TRAVELER_IDENTITY_QUESTION.fullmatch(question.strip()) is not None,
                     tools=True, transit=transit_request, dates=(today.isoformat(), tomorrow.isoformat()),
                     destination=(city.name, city.adcode) if city is not None else None,
@@ -902,7 +907,7 @@ class RealTools:
                     scene=scene)
             else:
                 system += ' ' + answer_prompt(lio_locale,question=messages[-1]['content'],detailed=True,greeting_example=False,
-                    sources_example=asks_about_sources(messages[-1]['content']))
+                    sources_example=asks_about_sources(messages[-1]['content']),layout=prompt_layout(layout))
                 system += scene
                 system += f' In China, today is {today.isoformat()} and tomorrow is {tomorrow.isoformat()}.'
                 system += (' Use the confirmed destination timezone and administrative code for tools: '+city.name+' '+city.adcode+'.' if city is not None else ' Use Beijing calendar dates for legacy weather.' if not national else (' No destination is confirmed. Do not call place or weather tools. Answer the question directly; ask for the destination '
