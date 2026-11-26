@@ -100,7 +100,7 @@ test("upstream errors keep application content out of logs", async (t) => {
   assert.doesNotMatch(JSON.stringify(log.mock.calls[0].arguments), /guest@example\.com/);
 });
 
-test("requires the consent to processing outside China and never forwards it", async (t) => {
+test("requires the consent to processing outside mainland China and never forwards it", async (t) => {
   configure(t);
   const outbound = t.mock.method(globalThis, "fetch", async () => Response.json({ responseCode: 200 }));
   for (const consentAbroad of [undefined, false, "true", 1, null]) {
@@ -143,4 +143,8 @@ test("the page asks for the consent, blocks without it and links the privacy pol
   }
   assert.equal(w.G2C.T.zh.eaPolicy.before + w.G2C.T.zh.eaPolicy.link + w.G2C.T.zh.eaPolicy.after,
     "提交即表示你已阅读隐私政策，你的申请会由 Jotform（美国）处理。");
+  // The consent wording decided on 2026-11-26: outside mainland China, naming Hong Kong and the United States.
+  assert.equal(w.G2C.T.zh.eaAbroad, "我同意传到中国大陆以外（中国香港和美国）处理。");
+  assert.equal(w.G2C.T.en.eaAbroad, "I agree to my information being processed outside mainland China (Hong Kong, China and the United States).");
+  assert.match(form, /data-i18n="eaAbroad">I agree to my information being processed outside mainland China \(Hong Kong, China and the United States\)\.</);
 });

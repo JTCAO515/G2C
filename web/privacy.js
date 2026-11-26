@@ -54,9 +54,14 @@
   });
 
   apply();
-  // The ids may have moved to the Chinese article after the browser looked for the anchor.
-  if (location.hash.length > 1) {
+  // The ids may have moved to the Chinese article after the browser looked for the anchor, and the
+  // browser's own load-time scrolling can undo an early jump, so jump again (without animation) once
+  // the page has loaded.
+  function jump() {
+    if (location.hash.length < 2) return;
     const target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
-    if (target) target.scrollIntoView();
+    if (target) target.scrollIntoView({ behavior: "instant", block: "start" });
   }
+  jump();
+  if (document.readyState !== "complete") window.addEventListener("load", jump, { once: true });
 })();

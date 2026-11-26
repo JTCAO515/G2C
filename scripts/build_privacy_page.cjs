@@ -5,15 +5,19 @@
 // Usage (repository root):
 //   node scripts/build_privacy_page.cjs            write web/privacy.html
 //   node scripts/build_privacy_page.cjs --check    exit 1 if web/privacy.html is out of date
-//   node scripts/build_privacy_page.cjs --strict   also exit 1 while the policy still has placeholders
+//   node scripts/build_privacy_page.cjs --strict   also exit 1 on placeholders or anchor problems
 //
 // The policy gives each section in Chinese, then in English. The page shows one of the two: Chinese for
 // visitors who chose Chinese, English for everyone else (see web/privacy.js). Blocks are sorted by script:
 // a paragraph or list item with Chinese characters is Chinese, otherwise English. Headings and tables
-// written as "中文 / English" are split at the slash after which no Chinese follows.
+// written as "中文 / English" are split at the slash after which no Chinese follows, and so are paragraphs
+// and list items written that way in one line; a Chinese line that still mixes in English is reported.
 // HTML comments in the Markdown are drafting notes and never reach the page; the H1 is replaced by the
-// page title. Anchors: "## 5." is #cross-border and "## 6." is #in-person-services unless the policy sets
-// them itself; any heading, paragraph or list item can set its own with a trailing {#anchor}.
+// page title. Anchors come only from the policy: a heading, paragraph or list item ending in {#name}.
+// A bilingual heading gives the anchor to both languages; a paragraph or list item belongs to one
+// language, so the policy writes the anchor on the Chinese and on the English one. The service request
+// form (#1862) links to REQUIRED_ANCHORS; a missing one, one present in only one language, or one used
+// twice in a language is reported (and fails --strict).
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -21,8 +25,8 @@ const path = require("node:path");
 const ROOT = path.join(__dirname, "..");
 const SOURCE = path.join(ROOT, "docs/privacy/privacy-policy.md");
 const TARGET = path.join(ROOT, "web/privacy.html");
-// Anchors the website links to (#1777) when the policy does not set them itself, by section number.
-const SECTION_ANCHORS = { 5: "cross-border", 6: "in-person-services" };
+// Anchors the website links to: the service request form's consent links (#1862).
+const REQUIRED_ANCHORS = ["website-requests", "in-person-services", "cross-border"];
 const HAN = /[㐀-鿿]/;
 const PLACEHOLDER = /【[^】]*】|\[(?:JT|To verify|Pending|In-app)[^\]]*\]/g;
 
@@ -35,13 +39,23 @@ function inline(text) {
     : esc(part).replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>"))).join("");
 }
 
-// "中文 / English" -> [zh, en]; null when the text is not written that way.
+// "中文 / English" -> [zh, en]; null when the text is not written that way. The split is a slash followed
+// by a space, outside code, with Chinese before it and only non-Chinese text (with letters) after it,
+// so paths such as `/api/service-request` never split a line.
 function splitPair(text) {
   for (let i = text.indexOf("/"); i !== -1; i = text.indexOf("/", i + 1)) {
+    if (!/\s/.test(text[i + 1] || "") || (text.slice(0, i).match(/`/g) || []).length % 2) continue;
     const zh = text.slice(0, i).trim(), en = text.slice(i + 1).trim();
-    if (hasHan(zh) && en && !hasHan(en)) return [zh, en];
+    if (hasHan(zh) && /[A-Za-z]/.test(en) && !hasHan(en)) return [zh, en];
   }
   return null;
+}
+
+// A Chinese line that still carries English after splitting would put English on the Chinese page and
+// leave the English page without it: an unsplit "/ English…" or a run of six or more English words.
+function mixed(text) {
+  const plain = text.replace(/`[^`]*`/g, " ");
+  return /\/\s+[A-Za-z]/.test(plain) || /[A-Za-z][A-Za-z'’-]*(?:[\s,;:()]+[A-Za-z][A-Za-z'’-]*){5,}/.test(plain);
 }
 
 function takeAnchor(text) {
@@ -83,33 +97,39 @@ function parse(markdown) {
   return blocks;
 }
 
+// A paragraph or list item: English, Chinese, or written as "中文 / English" in one line (split in two).
+function byLanguage(text, warnings) {
+  if (!hasHan(text)) return [["en", text]];
+  const pair = splitPair(text);
+  if (pair) return [["zh", pair[0]], ["en", pair[1]]];
+  if (mixed(text)) warnings.push(`line mixes Chinese and English and cannot be split; write it as "中文 / English" or as two lines: ${text}`);
+  return [["zh", text]];
+}
+
 // Splits the blocks into the Chinese and the English page.
 function split(blocks) {
   const out = { zh: [], en: [] };
   const warnings = [];
-  const set = new Set();
   for (const block of blocks) {
     if (block.type === "h") {
       if (block.level === 1) continue;
       const [full, own] = takeAnchor(block.text);
       // "5. 中文 / English": the section number goes in front of both titles.
-      const [, prefix = "", number, text] = full.match(/^((\d+)\.\s+)?(.*)$/);
+      const [, prefix = "", text] = full.match(/^(\d+\.\s+)?(.*)$/);
       const pair = (splitPair(text) || (warnings.push(`heading not written as "中文 / English": ${text}`), [text, text]))
         .map((t) => prefix + t);
-      const anchor = own || SECTION_ANCHORS[number] || (number ? `section-${number}` : null);
-      if (anchor) set.add(anchor);
+      const anchor = own;
       out.zh.push({ type: "h", level: block.level, text: pair[0], anchor });
       out.en.push({ type: "h", level: block.level, text: pair[1], anchor });
     } else if (block.type === "p") {
       const [text, anchor] = takeAnchor(block.text);
-      if (anchor) set.add(anchor);
-      out[hasHan(text) ? "zh" : "en"].push({ type: "p", text, anchor });
+      for (const [lang, part] of byLanguage(text, warnings)) out[lang].push({ type: "p", text: part, anchor });
     } else if (block.type === "ul") {
-      for (const lang of ["zh", "en"]) {
-        const items = block.items.map(takeAnchor).filter(([text]) => hasHan(text) === (lang === "zh"));
-        if (items.length) out[lang].push({ type: "ul", items });
+      const items = { zh: [], en: [] };
+      for (const [text, anchor] of block.items.map(takeAnchor)) {
+        for (const [lang, part] of byLanguage(text, warnings)) items[lang].push([part, anchor]);
       }
-      block.items.forEach((item) => { const a = takeAnchor(item)[1]; if (a) set.add(a); });
+      for (const lang of ["zh", "en"]) if (items[lang].length) out[lang].push({ type: "ul", items: items[lang] });
     } else if (block.type === "table") {
       const header = block.rows[0];
       if (header.every((c) => !hasHan(c))) out.en.push({ type: "table", rows: block.rows });
@@ -125,10 +145,23 @@ function split(blocks) {
       } else out.zh.push({ type: "table", rows: block.rows });
     }
   }
-  for (const anchor of Object.values(SECTION_ANCHORS)) {
-    if (!set.has(anchor)) warnings.push(`anchor #${anchor} is missing`);
+  // Each anchor once per language, in both languages; the ones the website links to must exist.
+  const count = (lang) => {
+    const seen = {};
+    for (const b of out[lang]) for (const a of b.type === "ul" ? b.items.map(([, x]) => x) : [b.anchor]) if (a) seen[a] = (seen[a] || 0) + 1;
+    return seen;
+  };
+  const zh = count("zh"), en = count("en");
+  const anchors = [...new Set([...Object.keys(en), ...Object.keys(zh)])];
+  for (const a of anchors) {
+    if (zh[a] > 1 || en[a] > 1) warnings.push(`anchor #${a} is used more than once in one language`);
+    if (!zh[a]) warnings.push(`anchor #${a} is only on the English text: add {#${a}} to the Chinese one too`);
+    if (!en[a]) warnings.push(`anchor #${a} is only on the Chinese text: add {#${a}} to the English one too`);
   }
-  return { ...out, anchors: [...set], warnings };
+  for (const a of REQUIRED_ANCHORS) {
+    if (!anchors.includes(a)) warnings.push(`anchor #${a} is missing: the service request form (#1862) links to /privacy#${a}; end the matching heading or paragraph with {#${a}} in both languages`);
+  }
+  return { ...out, anchors, warnings };
 }
 
 // The English article carries the real ids; the Chinese one carries them as data-anchor until
@@ -233,4 +266,4 @@ function main() {
 }
 
 if (require.main === module) main();
-module.exports = { build, parse, split, splitPair, SOURCE, TARGET };
+module.exports = { build, parse, split, splitPair, mixed, REQUIRED_ANCHORS, SOURCE, TARGET };

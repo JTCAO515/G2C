@@ -62,12 +62,12 @@ Onest（拉丁、西里尔）与 IBM Plex Sans Arabic 来自 Fontsource，均为
 
 ## 隐私政策页（`/privacy`）
 
-- `privacy.html` 由 `scripts/build_privacy_page.cjs` 从 `docs/privacy/privacy-policy.md` 生成，不手改。改政策后在仓库根目录运行 `node scripts/build_privacy_page.cjs`；`--check` 检查页面是否与政策一致，`--strict` 另外要求政策里没有【待…】、`[JT: …]` 这类占位符（公开前用）。离线测试：`node --test scripts/test_web_privacy_page.cjs`（页面与政策不一致就失败）。
-- 政策是中英双语（每节先中文后英文）。生成时按有没有汉字把段落、列表项分到中文和英文两份；「中文 / English」写法的标题和表格按斜杠拆开。Markdown 里的 HTML 注释是起草说明，不上页面；H1 由页面标题代替。
+- `privacy.html` 由 `scripts/build_privacy_page.cjs` 从 `docs/privacy/privacy-policy.md` 生成，不手改。改政策后在仓库根目录运行 `node scripts/build_privacy_page.cjs`；`--check` 检查页面是否与政策一致，`--strict` 另外要求没有【待…】、`[JT: …]` 这类占位符，也没有下面列出的拆分或锚点问题（公开前用）。离线测试：`node --test scripts/test_web_privacy_page.cjs`（页面与政策不一致就失败）。
+- 政策是中英双语（每节先中文后英文）。生成时按有没有汉字把段落、列表项分到中文和英文两份；写成「中文 / English」一行的标题、表格单元格、段落和列表项按斜杠拆成中英两条（斜杠后面要有空格，代码里的路径不算）。拆不开、仍然中英混排的行会报出原文，`--strict` 失败。Markdown 里的 HTML 注释是起草说明，不上页面；H1 由页面标题代替。
 - 页面只出中文和英文：网站语言选中文时显示中文，其他语言显示英文；选俄、西、法、阿语时页面写明政策只有中英文版本（`privacy.js`，文案在 `i18n.js` 的 `privacyPage`）。
-- 锚点：第 5 节是 `#cross-border`，第 6 节是 `#in-person-services`，其他节是 `#section-N`；政策里任何标题、段落或列表项可以在行尾写 ` {#锚点名}` 自己定（例如官网请求那段写 ` {#website-requests}`），写了就以政策为准。只有当前显示的那份带 `id`，所以 `/privacy#cross-border` 中英文都能跳到。
+- 锚点只认政策里写的：标题、段落或列表项行尾的 ` {#锚点名}`。双语标题写一次，中英两份都有；段落和列表项要在中文和英文那条各写一次。服务申请表（#1862）链接的 `#website-requests`、`#in-person-services`、`#cross-border` 缺任何一个，或者只在一种语言里有、在同一种语言里出现两次，都会报出来，`--strict` 失败。页面上只有当前显示的那份带 `id`（切换语言时脚本把 `id` 移过去，页面加载完再跳一次），所以选中文或英文时 `/privacy#cross-border` 都能跳到对应段落。
 - 页脚有「隐私政策」链接（`/privacy`，`cleanUrls` 会把它对应到 `privacy.html`）。
 
-## Early Access 的境外处理同意
+## Early Access 的中国大陆以外处理同意
 
-报名表在提交按钮上方写明「提交即表示你已阅读隐私政策，你的申请会由 Jotform（美国）处理」，并加一个必勾的勾选框「我同意我的申请传到中国境外处理」。不勾时页面拦下；服务端 `api/early-access.js` 要求 `consentAbroad === true`，否则返回 400 `consent_required`，不转发 Jotform。Jotform 表单里没有对应题目，所以这个同意只在服务端校验，不写进 Jotform。
+报名表在提交按钮上方写明「提交即表示你已阅读隐私政策，你的申请会由 Jotform（美国）处理」，并加一个必勾的勾选框「我同意传到中国大陆以外（中国香港和美国）处理」（统筹 2026-11-26 定）。不勾时页面拦下；服务端 `api/early-access.js` 要求 `consentAbroad === true`，否则返回 400 `consent_required`，不转发 Jotform。Jotform 表单里没有对应题目，所以这个同意只在服务端校验，不写进 Jotform。

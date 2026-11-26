@@ -107,8 +107,8 @@ window.G2C = {
     "link": "privacy policy",
     "after": ". Your application is processed by Jotform in the United States."
    },
-   "eaAbroad": "I agree that my application is sent outside China for processing.",
-   "eaAbroadBad": "Please tick the box to agree that your application is processed outside China.",
+   "eaAbroad": "I agree to my information being processed outside mainland China (Hong Kong, China and the United States).",
+   "eaAbroadBad": "Please tick the box to agree to your information being processed outside mainland China (Hong Kong, China and the United States).",
    "online": "Your personal agent",
    "inputHint": "Ask anything about your trip…",
    "suggest": [
@@ -288,8 +288,8 @@ window.G2C = {
     "link": "隐私政策",
     "after": "，你的申请会由 Jotform（美国）处理。"
    },
-   "eaAbroad": "我同意我的申请传到中国境外处理。",
-   "eaAbroadBad": "请勾选同意你的申请传到中国境外处理。",
+   "eaAbroad": "我同意传到中国大陆以外（中国香港和美国）处理。",
+   "eaAbroadBad": "请勾选同意传到中国大陆以外（中国香港和美国）处理。",
    "online": "你的私人助理",
    "inputHint": "问问关于行程的任何事…",
    "suggest": [
@@ -469,8 +469,8 @@ window.G2C = {
     "link": "политику конфиденциальности",
     "after": ". Вашу заявку обрабатывает Jotform в США."
    },
-   "eaAbroad": "Я согласен(на), что моя заявка будет передана для обработки за пределы Китая.",
-   "eaAbroadBad": "Отметьте согласие на обработку заявки за пределами Китая.",
+   "eaAbroad": "Я согласен(на) на обработку моих данных за пределами материкового Китая (в Гонконге (Китай) и в США).",
+   "eaAbroadBad": "Отметьте согласие на обработку ваших данных за пределами материкового Китая (в Гонконге (Китай) и в США).",
    "online": "Ваш личный помощник",
    "inputHint": "Спросите о поездке…",
    "suggest": [
@@ -650,8 +650,8 @@ window.G2C = {
     "link": "política de privacidad",
     "after": ". Tu solicitud la procesa Jotform en Estados Unidos."
    },
-   "eaAbroad": "Acepto que mi solicitud se envíe fuera de China para su tratamiento.",
-   "eaAbroadBad": "Marca la casilla para aceptar que tu solicitud se trate fuera de China.",
+   "eaAbroad": "Acepto que mis datos se traten fuera de China continental (en Hong Kong, China, y en Estados Unidos).",
+   "eaAbroadBad": "Marca la casilla para aceptar que tus datos se traten fuera de China continental (en Hong Kong, China, y en Estados Unidos).",
    "online": "Tu asistente personal",
    "inputHint": "Pregunta sobre tu viaje…",
    "suggest": [
@@ -831,8 +831,8 @@ window.G2C = {
     "link": "politique de confidentialité",
     "after": ". Votre demande est traitée par Jotform aux États-Unis."
    },
-   "eaAbroad": "J’accepte que ma demande soit envoyée hors de Chine pour y être traitée.",
-   "eaAbroadBad": "Cochez la case pour accepter que votre demande soit traitée hors de Chine.",
+   "eaAbroad": "J’accepte que mes informations soient traitées hors de Chine continentale (à Hong Kong, Chine, et aux États-Unis).",
+   "eaAbroadBad": "Cochez la case pour accepter que vos informations soient traitées hors de Chine continentale (à Hong Kong, Chine, et aux États-Unis).",
    "online": "Votre assistant personnel",
    "inputHint": "Posez une question sur votre voyage…",
    "suggest": [
@@ -1012,8 +1012,8 @@ window.G2C = {
     "link": "سياسة الخصوصية",
     "after": ". تعالج Jotform طلبك في الولايات المتحدة."
    },
-   "eaAbroad": "أوافق على إرسال طلبي إلى خارج الصين لمعالجته.",
-   "eaAbroadBad": "يرجى تحديد المربع للموافقة على معالجة طلبك خارج الصين.",
+   "eaAbroad": "أوافق على معالجة معلوماتي خارج البر الرئيسي الصيني (في هونغ كونغ، الصين، وفي الولايات المتحدة).",
+   "eaAbroadBad": "يرجى تحديد المربع للموافقة على معالجة معلوماتك خارج البر الرئيسي الصيني (في هونغ كونغ، الصين، وفي الولايات المتحدة).",
    "online": "مساعدك الشخصي",
    "inputHint": "اسأل عن رحلتك…",
    "suggest": [
