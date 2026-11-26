@@ -7,7 +7,7 @@
   "cities": [],
   "knowledge": [],
   "tools": ["arrival", "attraction-booking", "currency", "hotels", "local-support", "menu-order", "metro-guide",
-            "nearby", "payment-guide", "phrase-cards", "return-hotel", "roadbook", "taxi", "translation", "transport"],
+            "nearby", "payment-guide", "return-hotel", "roadbook", "show-cards", "taxi", "translation", "transport"],
   "flows": [],
   "risk_rules": [
     {"id": "platform-owns-orders",

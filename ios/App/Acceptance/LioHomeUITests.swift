@@ -232,17 +232,33 @@ import CryptoKit
 
     /// The full audit, reporting each issue with the element it is about. An element's details are read
     /// after the audit: reading them inside the handler breaks the audit.
-    private func audit(_ app: XCUIApplication, _ name: String, for types: XCUIAccessibilityAuditType = .all) throws {
+    /// `ignoring` names one known issue to let through; every other issue fails the test. Each one let through is
+    /// attached to the result, so it stays visible.
+    private func audit(_ app: XCUIApplication, _ name: String, for types: XCUIAccessibilityAuditType = .all,
+                       ignoring known: ((XCUIAccessibilityAuditIssue) -> Bool)? = nil) throws {
         var issues: [(String, XCUIElement?)] = []
+        var letThrough: [String] = []
         try app.performAccessibilityAudit(for: types) { issue in
-            issues.append((issue.compactDescription + ": " + issue.detailedDescription, issue.element))
+            let text = issue.compactDescription + ": " + issue.detailedDescription
+            if let known, known(issue) { letThrough.append(text) } else { issues.append((text, issue.element)) }
             return true
+        }
+        if !letThrough.isEmpty {
+            let note = XTCAttachmentText(name + " known issues let through", letThrough.joined(separator: "\n"))
+            add(note)
         }
         capture(app, name)
         for (text, element) in issues {
             let detail = element.map { "\($0.elementType.rawValue) \"\($0.identifier)\" \"\($0.label)\" \($0.frame)" } ?? "no element"
             XCTFail("\(name): \(text) — \(detail)")
         }
+    }
+
+    private func XTCAttachmentText(_ name: String, _ text: String) -> XCTAttachment {
+        let attachment = XCTAttachment(string: text)
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        return attachment
     }
 
     private func capture(_ app: XCUIApplication, _ name: String) {
@@ -374,11 +390,12 @@ import CryptoKit
                                        ("light", "UICTContentSizeCategoryAccessibilityXXXL")] {
                 let variant = "\(language)-\(appearance)-\(size.hasSuffix("XXXL") ? "largest" : "default")"
                 let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-                // Temporary, tracked on #1894: restore contrast at the largest size once #1894 is resolved.
-                // At the largest size the Tools page's lower cards sit under the system tab bar, and contrast is then
-                // measured against the bar (main reports the same: Metro Guide, English). So the largest size checks
-                // every other audit type; both default sizes check all of them.
-                let types: XCUIAccessibilityAuditType = size.hasSuffix("XXXL") ? XCUIAccessibilityAuditType.all.subtracting(.contrast) : .all
+                // Temporary, tracked on #1894: restore contrast here once #1894 is resolved. Only the two Tools page
+                // steps at the largest size leave contrast out: there the lower cards sit under the system tab bar and
+                // contrast is measured against the bar (main reports the same: Metro Guide, English). Every other
+                // step, at every size, runs the full audit.
+                let toolsPageTypes: XCUIAccessibilityAuditType = size.hasSuffix("XXXL")
+                    ? XCUIAccessibilityAuditType.all.subtracting(.contrast) : .all
                 app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
                                        "-lio.ui.appearance.v1", appearance, "-UIPreferredContentSizeCategoryName", size]
                 app.launch()
@@ -390,7 +407,7 @@ import CryptoKit
                 XCTAssertTrue(support.waitForExistence(timeout: 6))
                 XCTAssertEqual(support.label, en ? "Local Support, Emergency numbers, embassies, help cards"
                                                  : "本地协助，急救、使领馆和求助卡")
-                try audit(app, "show-cards-1-tools-top-\(variant)", for: types)
+                try audit(app, "show-cards-1-tools-top-\(variant)", for: toolsPageTypes)
                 let card = app.buttons["lio.tools.show-cards"]
                 XCTAssertTrue(card.waitForExistence(timeout: 6))
                 XCTAssertFalse(app.buttons["lio.tools.phrase-cards"].exists)
@@ -398,15 +415,12 @@ import CryptoKit
                                               : "出示卡，常用语和求助，给对方看")
                 for _ in 0..<12 where !card.isHittable { app.swipeUp() }
                 XCTAssertTrue(card.isHittable)
-                if size.hasSuffix("XXXL") {
-                    // Temporary, tracked on #1894: restore this audit once #1894 is resolved. Cause not yet known.
-                    // Scrolled to the last card at the largest size, the audit reports Dynamic Type "unsupported"
-                    // without naming an element. main has no such report here, but there the lazy grid has already
-                    // dropped the off-screen cards. The top of this page, with every card's text, was audited above,
-                    // so this step only records the screenshot.
-                    capture(app, "show-cards-2-tools-entry-\(variant)")
-                } else {
-                    try audit(app, "show-cards-2-tools-entry-\(variant)", for: types)
+                // Temporary, tracked on #1894: cause not yet known (原因未查明，待 #1894); restore once #1894 is resolved.
+                // Scrolled to the last card at the largest size, the audit reports Dynamic Type "unsupported" without
+                // naming an element. Only that report is let through: a Dynamic Type issue with no element. Any other
+                // issue here still fails.
+                try audit(app, "show-cards-2-tools-entry-\(variant)", for: toolsPageTypes) { issue in
+                    size.hasSuffix("XXXL") && issue.auditType == .dynamicType && issue.element == nil
                 }
                 card.tap()
 
@@ -418,7 +432,7 @@ import CryptoKit
                 let help = app.buttons["lio.show-card.help"]
                 XCTAssertTrue(help.exists)
                 XCTAssertFalse(app.buttons["lio.show-card.checkIn"].exists, "detail cards stay behind G2CShowCardEnabled")
-                try audit(app, "show-cards-3-page-\(variant)", for: types)
+                try audit(app, "show-cards-3-page-\(variant)")
 
                 dining.tap()
                 let phrase = app.buttons["lio.phrases.card.dining-menu"]
@@ -430,7 +444,7 @@ import CryptoKit
                 XCTAssertEqual(app.staticTexts["lio.phrases.english"].label, "Is there a menu in English?")
                 XCTAssertTrue(app.buttons["lio.phrases.read.zh-CN"].exists)
                 XCTAssertTrue(app.buttons["lio.phrases.read.en-US"].exists)
-                try audit(app, "show-cards-4-phrase-full-screen-\(variant)", for: types)
+                try audit(app, "show-cards-4-phrase-full-screen-\(variant)")
                 app.buttons["lio.phrases.done"].tap()
                 XCTAssertTrue(phrase.waitForExistence(timeout: 6))
                 app.navigationBars.buttons.element(boundBy: 0).tap()
@@ -440,14 +454,14 @@ import CryptoKit
                 help.tap()
                 let medical = app.buttons["lio.support.help-card.message.medical"]
                 XCTAssertTrue(medical.waitForExistence(timeout: 6))
-                try audit(app, "show-cards-5-help-list-\(variant)", for: types)
+                try audit(app, "show-cards-5-help-list-\(variant)")
                 medical.tap()
                 let helpChinese = app.staticTexts["lio.support.help-card.name"]
                 XCTAssertTrue(helpChinese.waitForExistence(timeout: 6))
                 XCTAssertEqual(helpChinese.label, "我需要看医生，可以告诉我该去哪里吗？")
                 XCTAssertEqual(app.staticTexts["lio.support.help-card.english"].label,
                                "I need to see a doctor. Could you show me where to go?")
-                try audit(app, "show-cards-6-help-full-screen-\(variant)", for: types)
+                try audit(app, "show-cards-6-help-full-screen-\(variant)")
                 app.buttons["lio.support.help-card.done"].tap()
                 XCTAssertTrue(medical.waitForExistence(timeout: 6))
             }
