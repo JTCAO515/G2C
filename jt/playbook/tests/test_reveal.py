@@ -161,3 +161,27 @@ def test_read_without_a_server_recorded_grant_returns_no_value(scenario):
     assert result.audit.denial == "grant_not_found"
     assert result.value is None
     lookup.assert_not_called()
+
+
+def test_utc_rollback_cannot_restore_an_expired_grant(scenario):
+    _, case, now, rule = scenario
+    opened_at = now[0]
+    approved = request(rule, case)
+    lookup = Mock(return_value=SYNTHETIC_VALUE)
+    now[0] = approved.grant.expires_at
+    assert reveal(rule, case, approved.grant.grant_id, lookup).audit.denial == "grant_expired"
+    now[0] = opened_at
+    assert reveal(rule, case, approved.grant.grant_id, lookup).audit.denial == "grant_not_found"
+    lookup.assert_not_called()
+
+
+def test_elapsed_expiry_applies_when_utc_clock_has_moved_back(scenario):
+    workflow, case, now, _ = scenario
+    elapsed = [10.0]
+    rule = RevealWorkflow(workflow, clock=lambda: now[0], elapsed_clock=lambda: elapsed[0])
+    approved = request(rule, case)
+    now[0] -= REVEAL_TTL
+    elapsed[0] += REVEAL_TTL.total_seconds()
+    lookup = Mock(return_value=SYNTHETIC_VALUE)
+    assert reveal(rule, case, approved.grant.grant_id, lookup).audit.denial == "grant_expired"
+    lookup.assert_not_called()

@@ -4,6 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
+from time import monotonic
 from typing import Literal
 from uuid import UUID, uuid4
 
@@ -75,6 +76,12 @@ class RevealGrant:
 
 
 @dataclass(frozen=True)
+class _IssuedGrant:
+    grant: RevealGrant
+    deadline: float
+
+
+@dataclass(frozen=True)
 class RevealAudit:
     occurred_at: datetime
     action: Literal["request_reveal", "reveal"]
@@ -116,11 +123,22 @@ class RevealWorkflow:
     """Issue and redeem in-memory grants against the same live case workflow."""
 
     def __init__(
-        self, workflow: CaseWorkflow, *, clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+        self,
+        workflow: CaseWorkflow,
+        *,
+        clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+        elapsed_clock: Callable[[], float] = monotonic,
     ) -> None:
         self._workflow = workflow
         self._clock = clock
-        self._grants: dict[UUID, RevealGrant] = {}
+        self._elapsed_clock = elapsed_clock
+        self._grants: dict[UUID, _IssuedGrant] = {}
+
+    def _expired(self, issued: _IssuedGrant, now: datetime) -> bool:
+        if now < issued.grant.expires_at and self._elapsed_clock() < issued.deadline:
+            return False
+        self._grants.pop(issued.grant.grant_id, None)
+        return True
 
     def request(
         self, case_id: UUID, *, actor: RevealActor, field_name: str, reason: str,
@@ -142,7 +160,9 @@ class RevealWorkflow:
                         uuid4(), case_id, actor.actor_id, step.step_id, current.revision,
                         candidate, required_reason, now + REVEAL_TTL,
                     )
-                    self._grants[grant.grant_id] = grant
+                    self._grants[grant.grant_id] = _IssuedGrant(
+                        grant, self._elapsed_clock() + REVEAL_TTL.total_seconds(),
+                    )
             audit = RevealAudit(
                 now, "request_reveal", case_id, actor.actor_id, step.step_id if step else None,
                 candidate, required_reason, "applied" if grant else "denied", denial,
@@ -161,23 +181,24 @@ class RevealWorkflow:
             now = self._clock()
             step = current.active_step if current is not None else None
             denial = _access_denial(actor, current)
-            grant = self._grants.get(grant_id)
-            if grant is not None and (grant.case_id != case_id or grant.actor_id != actor.actor_id):
-                grant = None
+            issued = self._grants.get(grant_id)
+            if issued is not None and (issued.grant.case_id != case_id or issued.grant.actor_id != actor.actor_id):
+                issued = None
+            grant = issued.grant if issued is not None else None
             value = None
             if denial is None and current is not None and step is not None:
-                if grant is None:
+                if issued is None:
                     denial = "grant_not_found"
-                elif now >= grant.expires_at:
+                elif self._expired(issued, now):
                     denial = "grant_expired"
-                elif current.revision != grant.revision or step.step_id != grant.step_id:
+                elif current.revision != issued.grant.revision or step.step_id != issued.grant.step_id:
                     denial = "case_changed"
-                elif not _field_allowed(current, step.step_id, grant.field_name):
+                elif not _field_allowed(current, step.step_id, issued.grant.field_name):
                     denial = "field_not_allowed"
                 else:
-                    value = lookup(case_id, grant.field_name)
+                    value = lookup(case_id, issued.grant.field_name)
                     now = self._clock()
-                    if now >= grant.expires_at:
+                    if self._expired(issued, now):
                         value = None
                         denial = "grant_expired"
                     elif value is None:
