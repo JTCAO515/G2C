@@ -257,6 +257,27 @@
           "cleanup_protocol": "CLEANUP@1.1"
         },
         {
+          "id": "service-sessions",
+          "owner": "W9-3 #1770 service line; cleanup CJ-024",
+          "objects": [
+            "cj_service_message",
+            "cj_service_message_authority"
+          ],
+          "source": "backend/migrations/0057_service_conversation.sql",
+          "status": "candidate/local_only; production_not_provisioned; CJ_SERVICE_REQUEST_ENABLED default off",
+          "principal_binding": "Server-resolved owner scope (cj.message_scope) bound per transaction; written only by the server on SERVICE-REQUEST state changes under the MESSAGE scope row lock; other owners see nothing",
+          "sensitive_fields": [
+            "server-initiated service conversation messages, not de-identified (ADR-0009 section 4): bilingual body that may name the human escort, arrival time and place; provided_by_human flag; conversation/sequence/message id",
+            "internal authority audit, never projected and not runtime-readable: service request id, history seq and target state that authorized each message"
+          ],
+          "retention": "Same as the service conversation (cj_message_chat); authority audit also ends with its SERVICE-REQUEST history row (12 months after first terminal state)",
+          "cleanup_hook": "cj_message.service_session_cleanup.ServiceSessionHook: verify-only after the original account fence; rows are erased by FOREIGN KEY ON DELETE CASCADE when business/message deletes cj_message_chat (authority also cascades from cj_service_request_history); no DELETE grant to cleanup; any remaining row refuses and blocks (fail-closed)",
+          "restore_fence": "Replay the account fence before reads; restrictive account_retired RLS and the cascade parent fence reject retired insertion",
+          "owner_line": "service line",
+          "retention_category": "user_content",
+          "cleanup_protocol": "CLEANUP@1.1"
+        },
+        {
           "id": "cleanup-metadata",
           "owner": "CJ-024 / CJ-005",
           "objects": [

@@ -224,6 +224,7 @@ class Repository:
                     "evidence_kind,evidence_body) VALUES(%s,%s,1,NULL,'user_confirmed','user','consent',%s),"
                     "(%s,%s,2,'user_confirmed','submitted','system','receipt',%s)",
                     (self.scope, rid, consent, self.scope, rid, sha256(submission.original).hexdigest()))
+        self._notify(cur, rid, 2, 'submitted', human)
         return self._project(cur, self._row(cur, 'request_id', rid))
 
     # -- transitions -------------------------------------------------------------
@@ -269,7 +270,34 @@ class Repository:
                      target in TERMINAL, self.scope, rid))
         if cur.rowcount != 1:
             raise Unavailable()
+        self._notify(cur, rid, seq, target, human)
         return self._project(cur, self._row(cur, 'request_id', rid))
+
+    # -- server-initiated messages (#1770, ADR-0009 section 3) -------------------
+    def _notify(self, cur, rid, seq, to_state, human):
+        """Same transaction as the state change: committed together or not at all.
+
+        Switched off, no service conversation is created; an existing one still receives the
+        message for a request being brought to an end ("existing requests can finish").
+        """
+        from cj_message.service_session import emit
+        return emit(cur, self.scope, rid, seq, to_state, human, create=self.flag())
+
+    def redeliver(self, request_id, seq):
+        """Idempotent retry for one recorded state change; a delivered change writes nothing."""
+        rid = _identifier(request_id, _REQUEST_ID, NotFound())
+        if type(seq) is not int or seq < 2:
+            raise InvalidInput('seq')
+        with self.transaction(writing=True) as cur:
+            row = self._row(cur, 'request_id', rid, lock=True)
+            if row is None:
+                raise NotFound()
+            cur.execute('SELECT to_state FROM cj_service_request_history WHERE scope=%s AND request_id=%s AND seq=%s',
+                        (self.scope, rid, seq))
+            found = cur.fetchone()
+            if found is None:
+                raise NotFound()
+            return self._notify(cur, rid, seq, found[0], row['human_service'])
 
     def cancel(self, request_id, client_request_id):
         """User cancel (contract section 6): idempotent, allowed while switched off."""
