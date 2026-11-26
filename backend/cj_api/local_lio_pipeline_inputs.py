@@ -12,7 +12,7 @@ from cj_feasibility.rich_edges import activity_windows
 
 from .lio_pipeline_model import PLAN_UNDERSTANDING_SYSTEM
 from .lio_plan_understanding import (original_plan_turns,parse_plan_understanding,compile_plan_fields,prepare_plan_fields,
-    degraded_save_enabled,parse_plan_understanding_degraded,clock_zone_unconfirmed,without_fields)
+    degraded_save_enabled,parse_plan_understanding_degraded)
 from .lio_planning_grounding import PlanningTurn
 from .local_lio_planning import PlanningDetails
 
@@ -31,20 +31,13 @@ class PlanConstraints:
         """Complete source-covered fields without a city or source lease."""
         return prepare_plan_fields(self.value,self.turns,start_unconfirmed='start_date'in self.unconfirmed)
 
-    def compiled_unconfirmed(self,city_reference):
-        """Every unconfirmed field, including event clocks whose timezone needs clarification."""
-        if not self.degraded:return self.unconfirmed
-        return self.unconfirmed|clock_zone_unconfirmed(self.value,self.turns,city_reference)
-
     def compile(self,*,day_count,city_reference,message_id,run_id):
         """Only after complete-graph preflight and genuine city resolution.
 
         Keep all destination/date/fixed-window checks in their original
         compiler. Extracted data never substitutes for a confirmed city result.
         """
-        value=self.value
-        if self.degraded:value=without_fields(value,clock_zone_unconfirmed(value,self.turns,city_reference))
-        return compile_plan_fields(value,self.turns,day_count=day_count,city_reference=city_reference,
+        return compile_plan_fields(self.value,self.turns,day_count=day_count,city_reference=city_reference,
             message_id=message_id,run_id=run_id,start_unconfirmed='start_date'in self.unconfirmed)
 
 

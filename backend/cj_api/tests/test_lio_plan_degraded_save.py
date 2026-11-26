@@ -114,16 +114,41 @@ class DegradedUnderstanding(unittest.TestCase):
         with self.assertRaises(InvalidInput):
             parse_plan_understanding_degraded(packed(packet(fixed_items=[fixed])),original)
 
-    def test_an_event_clock_needing_timezone_clarification_is_unconfirmed(self):
-        text='I arrive at 10:00 Asia/Tokyo'
+    def test_an_event_clock_needing_timezone_clarification_is_unconfirmed_before_any_projection(self):
+        # Review of #1805: the pre-city projection feeds the transfer items, so the clock
+        # must already be gone there, not only after city resolution.
+        for text in ('I arrive at 10:00 Asia/Tokyo','I arrive at 10:00 UTC+09:00'):
+            with self.subTest(text=text):
+                value=packet(observation('arrival.time','10:00',text))
+                original=turns(text)
+                strict=PlanConstraints(parse_plan_understanding(packed(value),original),original)
+                with self.assertRaises(InvalidInput):compiled(strict)
+                degraded,unconfirmed=parse_plan_understanding_degraded(packed(value),original)
+                self.assertEqual(unconfirmed,frozenset({'arrival.time'}))
+                constraints=PlanConstraints(degraded,original,unconfirmed,True)
+                self.assertEqual(constraints.project().fields.get('arrival',{}).get('time',dict(state='missing'))['state'],'missing')
+                self.assertEqual(compiled(constraints).fields['arrival']['time']['state'],'missing')
+
+    def test_a_clock_in_china_time_is_kept_and_other_destinations_stay_strict(self):
+        text='I arrive at 10:00 Asia/Shanghai'
         value=packet(observation('arrival.time','10:00',text))
         original=turns(text)
-        strict=PlanConstraints(parse_plan_understanding(packed(value),original),original)
-        with self.assertRaises(InvalidInput):compiled(strict)
         degraded,unconfirmed=parse_plan_understanding_degraded(packed(value),original)
-        constraints=PlanConstraints(degraded,original,unconfirmed,True)
-        self.assertEqual(constraints.compiled_unconfirmed(BEIJING),frozenset({'arrival.time'}))
-        self.assertEqual(compiled(constraints).fields['arrival']['time']['state'],'missing')
+        self.assertEqual(unconfirmed,frozenset())
+        hong_kong=CityReference('810000','香港特别行政区','香港特别行政区',None,'province','Asia/Hong_Kong')
+        with self.assertRaises(InvalidInput):
+            PlanConstraints(degraded,original,unconfirmed,True).compile(day_count=3,city_reference=hong_kong,
+                message_id='m',run_id='r')
+
+    def test_an_unconfirmed_start_never_inherits_a_dated_current_trip(self):
+        # Review of #1805: with a dated Trip the old dates would be saved under an "unconfirmed" reply.
+        from cj_api.local_lio_pipeline import require_start_not_inherited
+        dated=dict(calendar=dict(state='dated'));undated=dict(calendar=dict(state='undated'))
+        with self.assertRaises(InvalidInput):require_start_not_inherited(frozenset({'start_date','arrival.date'}),dated)
+        for unconfirmed,retained in ((frozenset({'start_date','arrival.date'}),undated),
+                                     (frozenset({'start_date','arrival.date'}),None),
+                                     (frozenset({'party_size'}),dated)):
+            require_start_not_inherited(unconfirmed,retained)
 
     def test_degraded_data_keeps_only_strictly_checked_fields(self):
         # Degrading only removes fields; every remaining field passes the strict field check.

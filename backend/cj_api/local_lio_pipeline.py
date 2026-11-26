@@ -14,6 +14,7 @@ from cj_place.models import Coordinate
 from cj_feasibility.rich_assembly import assemble,assemble_unconfirmed
 from cj_feasibility.rich_solver import Limits,Window
 from cj_agent.draft import DraftRejected
+from cj_needs.domain import InvalidInput
 from cj_trip.domain import packed
 from cj_trip.rich_reasons import brief
 
@@ -53,6 +54,16 @@ class PreparedPlan:
     unconfirmed:frozenset=frozenset()
 
 
+def require_start_not_inherited(unconfirmed,retained):
+    """Degraded path (#1722): an unconfirmed start must not inherit a dated current Trip.
+
+    The plan would otherwise be saved on the old dates while the reply says the
+    start date is unconfirmed. Refuse exactly as the strict path does.
+    """
+    if 'start_date'in unconfirmed and retained is not None and retained.get('calendar',{}).get('state')=='dated':
+        raise InvalidInput('latest explicit original trip date was omitted by planning understanding')
+
+
 def prepare_generation(host,worker,binding,view,*,locale,effective,prior_model_calls=0):
     """One understanding, one skeleton, whole graph, then city/source binding.
 
@@ -74,6 +85,7 @@ def prepare_generation(host,worker,binding,view,*,locale,effective,prior_model_c
     skeleton=parse_skeleton(raw.encode(),expected,id_prefix=prefix)
     current=host.current(binding)
     retained=None if current is None else json.loads(current.trip.content)
+    require_start_not_inherited(constraints.unconfirmed,retained)
     size,resolution=admit_city_lookup(skeleton,projected,edges,calls,id_prefix=prefix,locale=locale,retained=retained,
         query=dict(query=effective['city'],normalized_name=None,province=None))
     if resolution['status']!='resolved':raise DestinationUnresolved(resolution)
@@ -87,7 +99,7 @@ def prepare_generation(host,worker,binding,view,*,locale,effective,prior_model_c
     source=capture_pipeline_sources(host,worker,binding,view,fields,city,day_count=day_count,
         start_date=start['value']if start['state']=='known'else None)
     return PreparedPlan(skeleton,projected,projection,planning_edges(projection,day_count),
-        calls,source,city,size,prefix,endpoints,constraints.compiled_unconfirmed(city))
+        calls,source,city,size,prefix,endpoints,constraints.unconfirmed)
 
 
 def retrieve_skeleton(prepared):

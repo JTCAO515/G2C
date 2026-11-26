@@ -894,6 +894,14 @@ def without_fields(value,fields):
     return value.model_copy(update=dict(observations=[row for row in value.observations if row.field not in fields]))
 
 
+@dataclass(frozen=True)
+class _TimezoneReference:
+    timezone:str
+
+
+_CHINA_TIME_REFERENCE=_TimezoneReference('Asia/Shanghai')
+
+
 def degraded_save_enabled():
     """Server switch for W1-2 degraded saving; off unless explicitly set to 1."""
     flag=os.environ.get('CJ_LIO_PLAN_DEGRADED_SAVE','0')
@@ -911,11 +919,11 @@ def parse_plan_understanding_degraded(raw,turns):
     try:value=parse_plan_understanding(raw,turns)
     except InvalidInput:pass
     else:
+        fields=frozenset()
         try:_require_start_sources(value,turns)
-        except InvalidInput:
-            fields=_group_of('start_date')
-            return without_fields(value,fields),fields
-        return value,frozenset()
+        except InvalidInput:fields=_group_of('start_date')
+        fields|=clock_zone_unconfirmed(without_fields(value,fields),turns,_CHINA_TIME_REFERENCE)
+        return without_fields(value,fields),fields
     value=_decode_bound(raw,turns)
     check=_quote_check(turns)
     counts={}
@@ -942,4 +950,9 @@ def parse_plan_understanding_degraded(raw,turns):
     try:_require_start_sources(without_fields(value,{field for group in dropped for field in _group_of(group)}),turns)
     except InvalidInput:dropped.add('start_date')
     fields=frozenset(field for name in dropped for field in _group_of(name))
-    return _ground_fixed_places(without_fields(value,fields),turns),fields
+    value=without_fields(value,fields)
+    # Decide clock timezones before any projection is used, against China time.
+    # A destination outside it (Hong Kong, Macau, Taipei) is still checked
+    # strictly after city resolution and refuses as before.
+    zones=clock_zone_unconfirmed(value,turns,_CHINA_TIME_REFERENCE)
+    return _ground_fixed_places(without_fields(value,zones),turns),fields|zones
