@@ -30,6 +30,7 @@ from cj_api.local_cleanup import Configuration
 from cj_api.local_account_admission_v2 import account_checker_for,subject_digest
 from cj_api.supabase_cleanup import SupabaseCleanupConfiguration,SupabaseCleanupRuntime
 from cj_api.supabase_test_database import SupabaseTestDatabase
+from cj_usage.authorization_deadlines import deadline as authorization_deadline
 from cj_auth.interfaces import AdmissionStatus
 from cj_cleanup.core import encode,digest
 from cj_cleanup.memory_payloads import hooks,hold_payloads
@@ -71,7 +72,7 @@ class Host:
         self.app=create_local_app(conninfo_path=None,auth_dir=self.auth,database=self.database,run_context=self.runtime.context,
             travel_context=True,trip_context=True,cleanup_configuration=self.cleanup_configuration,account_admission=True)
         self.item='rehearsal-item-'+self.nonce
-        deadline=min(datetime.now(timezone.utc)+timedelta(hours=2),datetime(2026,11,30,16,tzinfo=timezone.utc))
+        deadline=min(datetime.now(timezone.utc)+timedelta(hours=2),authorization_deadline('supabase_test'))
         profile=dict(subjects=['self'],slots={'diet.spicy':dict(kind='preference',collection_allowed=True,semantic_resolved=True)},extents=['long_term'],context_ids=[])
         collection=dict(version='local-memory-typed.1',collection=dict(version='local-memory-policy.1',expires_at=deadline.isoformat(),
             profiles={subject:profile for subject in selected}),travel_contexts={subject:[] for subject in selected})

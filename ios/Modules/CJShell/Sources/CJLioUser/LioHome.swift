@@ -58,7 +58,12 @@ public struct LioHome<MenuContent: View>: View {
     @State private var menuOpen = false
     @State private var followsAnswer = true
     @State private var opening = Opening.beforeNext
-    @State private var tab = Tab.initial
+    /// The selected tab and the Tools tab's open pages (#1724); the tab container shows them.
+    @State private var router: LioRouter
+    private var tab: LioTab {
+        get { router.tab }
+        nonmutating set { router.tab = newValue }
+    }
     @State private var tripPath: [LioTripRoute] = []
     /// With the trip home on, the Trips tab shows "All trips" (the trip list) instead of the home.
     @State private var showsAllTrips = false
@@ -99,25 +104,6 @@ public struct LioHome<MenuContent: View>: View {
         let card: LioTripCard?
         let plan: ObjectIdentifier?
     }
-    private enum Tab {
-        case chat, trips, tools, me
-
-        /// Chat, except that Debug builds accept `--lio-initial-tab tools` for local screenshots.
-        static var initial: Tab {
-            #if DEBUG
-            let arguments = ProcessInfo.processInfo.arguments
-            if let index = arguments.firstIndex(of: "--lio-initial-tab"), index + 1 < arguments.count {
-                switch arguments[index + 1] {
-                case "trips": return .trips
-                case "tools": return .tools
-                case "memory", "me": return .me
-                default: break
-                }
-            }
-            #endif
-            return .chat
-        }
-    }
     private enum Opening: Equatable { case beforeNext, before(Data), hidden }
     private struct ProfileEdit: Identifiable {
         let id = UUID()
@@ -157,6 +143,7 @@ public struct LioHome<MenuContent: View>: View {
         self.language = language
         self.isDemo = isDemo
         self.showsTools = showsTools
+        _router = State(initialValue: LioRouter(toolsShown: showsTools))
         self.toolsHistory = toolsHistory
         self.toolsDraftStorage = toolsDraftStorage
         self.toolsRelay = toolsRelay
@@ -263,65 +250,23 @@ public struct LioHome<MenuContent: View>: View {
         let canObserve = scenePhase == .active && pending == nil && !restoringChat && session?.available != false
         let tripCard = latestTripCard
         let tripPlan = tripPlan
-        TabView(selection: $tab) {
+        LioTabContainer(language: language, router: router) {
             chat
-                .background(LioTabBarAppearance().frame(width: 0, height: 0))
-                .tabItem { Label(language.text("Chat", "聊天"), systemImage: "bubble.left") }
-                .tag(Tab.chat)
-            if LioTripHomePreview.requested {
-                // #1647 screenshots only (Debug launch argument; always false in Release): the trip home with sample data.
-                LioTripHomePreview.home(language: language) { tab = .chat }
-                    .background(LioTabBarAppearance().frame(width: 0, height: 0))
-                    .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
-                    .tag(Tab.trips)
-            } else if LioItineraryTimelineView.previewRequested {
-                // #1453 proposal screenshots only (Debug launch argument).
-                NavigationStack {
-                    LioItineraryTimelineView(itinerary: LioItineraryTimelineView.beijingPreview(language), language: language)
-                }
-                .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
-                .tag(Tab.trips)
-            } else if LioTripHomeFeature.enabledInBuild && !showsAllTrips {
-                LioTripHomeTab(language: language, store: tripHomeStore, plans: savedPlans.plans,
-                               messageDirectory: messageDirectory, isCurrent: toolsSessionIsCurrent,
-                               showAllTrips: { showsAllTrips = true }, openChat: { tab = .chat })
-                    .id(tripHomeStore?.id)
-                    .background(LioTabBarAppearance().frame(width: 0, height: 0))
-                    .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
-                    .tag(Tab.trips)
-            } else {
-            LioTripsView(itineraries: conversation.itineraries, language: language, library: tripLibrary,
-                         tripPlan: tripPlan, currentPlan: tripPlan?.current(for: tripCard),
-                         canUndo: canObserve && tripPlan?.requestedCard == tripCard,
-                         recordedMap: recordedMap, sessionRevision: session?.revision,
-                         zoomNamespace: tripZoomNamespace, path: $tripPath,
-                         plans: savedPlans.plans, openPlan: { planSheet = $0 },
-                         removePlan: { savedPlans.remove($0) },
-                         backToTripHome: LioTripHomeFeature.enabledInBuild ? { showsAllTrips = false; tripPath = [] } : nil) { tab = .chat }
-                .background(LioTabBarAppearance().frame(width: 0, height: 0))
-                .tabItem { Label(language.text("Trips", "行程"), systemImage: "suitcase") }
-                .tag(Tab.trips)
-            }
-            if showsTools {
-                LioToolsView(language: language, history: toolsHistory, relay: toolsRelay,
-                             currencyRelay: currencyRelay,
-                             enabled: !restoringChat && session?.available != false && scenePhase != .background,
-                             sessionIsCurrent: toolsSessionIsCurrent)
-                    .environment(\.lioLocalSupportDraft, activeSupportDraft)
-                    // Roadbooks (Tools) read the account's saved plans and keep copies in its folder.
-                    .environment(\.lioSavedPlans, savedPlans.available ? savedPlans : nil)
-                    .environment(\.lioRoadbookDirectory, roadbookDirectory)
-                    .background(LioTabBarAppearance().frame(width: 0, height: 0))
-                    .tabItem { Label(LioToolCatalog.title(language), systemImage: "square.grid.2x2") }
-                    .tag(Tab.tools)
-            }
-            // #1452: Memory moves into Me, together with the settings and account rows from the chat menu.
+        } trips: {
+            tripsTab(tripCard: tripCard, tripPlan: tripPlan, canObserve: canObserve)
+        } tools: {
+            LioToolsView(language: language, history: toolsHistory, relay: toolsRelay,
+                         currencyRelay: currencyRelay,
+                         enabled: !restoringChat && session?.available != false && scenePhase != .background,
+                         sessionIsCurrent: toolsSessionIsCurrent)
+                .environment(\.lioLocalSupportDraft, activeSupportDraft)
+                // Roadbooks (Tools) read the account's saved plans and keep copies in its folder.
+                .environment(\.lioSavedPlans, savedPlans.available ? savedPlans : nil)
+                .environment(\.lioRoadbookDirectory, roadbookDirectory)
+        } me: {
             LioMeView(language: language,
                       memory: savedMemory.map { AnyView($0.environment(\.lioMemorySuggestions, memorySuggestions)) },
                       menu: menu)
-                .background(LioTabBarAppearance().frame(width: 0, height: 0))
-                .tabItem { Label(language.text("Me", "我的"), systemImage: "person.crop.circle") }
-                .tag(Tab.me)
         }
         .environment(\.lioTaxiEntry, taxiEntry)
         .environment(\.lioNearbyService, nearbyService)
@@ -491,6 +436,34 @@ public struct LioHome<MenuContent: View>: View {
         .task(id: savedPlansStore?.id) {
             // Each host session (another account, or the same account after returning) brings its own store.
             if savedPlans.storeID != savedPlansStore?.id { savedPlans = LioSavedPlansModel(store: savedPlansStore) }
+        }
+    }
+
+    /// The Trips tab: the trip home when the build has it, else the trip list (also "All trips" from the home).
+    @ViewBuilder
+    private func tripsTab(tripCard: LioTripCard?, tripPlan: LioTripPlan?, canObserve: Bool) -> some View {
+        if LioTripHomePreview.requested {
+            // #1647 screenshots only (Debug launch argument; always false in Release): the trip home with sample data.
+            LioTripHomePreview.home(language: language) { tab = .chat }
+        } else if LioItineraryTimelineView.previewRequested {
+            // #1453 proposal screenshots only (Debug launch argument).
+            NavigationStack {
+                LioItineraryTimelineView(itinerary: LioItineraryTimelineView.beijingPreview(language), language: language)
+            }
+        } else if LioTripHomeFeature.enabledInBuild && !showsAllTrips {
+            LioTripHomeTab(language: language, store: tripHomeStore, plans: savedPlans.plans,
+                           messageDirectory: messageDirectory, isCurrent: toolsSessionIsCurrent,
+                           showAllTrips: { showsAllTrips = true }, openChat: { tab = .chat })
+                .id(tripHomeStore?.id)
+        } else {
+            LioTripsView(itineraries: conversation.itineraries, language: language, library: tripLibrary,
+                         tripPlan: tripPlan, currentPlan: tripPlan?.current(for: tripCard),
+                         canUndo: canObserve && tripPlan?.requestedCard == tripCard,
+                         recordedMap: recordedMap, sessionRevision: session?.revision,
+                         zoomNamespace: tripZoomNamespace, path: $tripPath,
+                         plans: savedPlans.plans, openPlan: { planSheet = $0 },
+                         removePlan: { savedPlans.remove($0) },
+                         backToTripHome: LioTripHomeFeature.enabledInBuild ? { showsAllTrips = false; tripPath = [] } : nil) { tab = .chat }
         }
     }
 
