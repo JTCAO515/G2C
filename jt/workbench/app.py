@@ -2,10 +2,13 @@
 
 import hmac
 from asyncio import to_thread
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from typing import cast
 from urllib.parse import parse_qsl, urlencode
 
+import psycopg
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 
@@ -28,6 +31,13 @@ ACCOUNT_FORM = ("username", "role", "action", "csrf")
 REVIEW_FORM = ("signal", "actual_severity", "false_positive", "missed", "note", "csrf")
 SEVERITIES = ("P0", "P1", "P2", "P3", "P4")
 COOKIE_POLICY = {"path": "/", "secure": True, "httponly": True, "samesite": "strict"}
+HEALTH_HOST = "jt-workbench-health"
+
+
+@dataclass(frozen=True)
+class ProxyEntry:
+    host: str
+    check_ready: Callable[[], None]
 
 
 async def read_form(request: Request, origin: str, names: tuple[str, ...]) -> dict[str, str]:
@@ -48,7 +58,7 @@ async def read_form(request: Request, origin: str, names: tuple[str, ...]) -> di
         raise HTTPException(400, "表单有误。") from None
     fields = dict(pairs)
     if (len(pairs) != len(names) or set(fields) != set(names)
-            or any("\0" in value for value in fields.values())):
+            or any("\0" in value for name, value in fields.items() if name != "password")):
         raise HTTPException(400, "表单有误。")
     if (len(fields.get("username", "")) > 32 or len(fields.get("password", "")) > 128
             or len(fields.get("code", "")) > 6 or len(fields.get("seed", "")) > 40):
@@ -110,28 +120,58 @@ def evaluation_sample(item: QueueItem, review: Review) -> dict:
     }
 
 
-def create_app(auth: Auth, *, port: int, queue: QueueStore | None = None) -> FastAPI:
-    host = f"127.0.0.1:{port}"
+def create_app(
+    auth: Auth, *, port: int = 8443, queue: QueueStore | None = None, proxy: ProxyEntry | None = None,
+) -> FastAPI:
+    host = proxy.host if proxy else f"127.0.0.1:{port}"
     origin = f"https://{host}"
     app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
     work_queue = MemoryQueue(generate_dataset().signals) if queue is None else queue
 
     @app.middleware("http")
     async def apply_security(request: Request, call_next) -> Response:
-        if request.url.scheme != "https" or request.headers.get("host") != host:
-            response = Response(status_code=400)
-        else:
+        hosts = request.headers.getlist("host")
+        scheme = request.scope["scheme"]
+        forwarded = request.headers.getlist("x-forwarded-proto")
+        via_socket = request.scope.get("client") is None and scheme == "http"
+        if proxy and via_socket and hosts == [HEALTH_HOST] and not forwarded and (
+            request.method == "GET" and request.scope["path"] == "/healthz"
+        ):
+            try:
+                await to_thread(proxy.check_ready)
+            except (psycopg.Error, RuntimeError):
+                response = Response(status_code=503)
+            else:
+                response = Response(status_code=200)
+        elif hosts == [host] and (
+            via_socket and forwarded == ["https"] if proxy else scheme == "https"
+        ):
+            if proxy:
+                request.scope["scheme"] = "https"
             response = await call_next(request)
+        else:
+            response = Response(status_code=400)
         response.headers["Cache-Control"] = "no-store"
         response.headers.setdefault("Content-Security-Policy", pages.CSP)
         # Native form POSTs need their same-origin Origin header for CSRF validation.
         response.headers["Referrer-Policy"] = "same-origin"
         response.headers["X-Content-Type-Options"] = "nosniff"
+        if proxy:
+            response.headers["X-Robots-Tag"] = "noindex"
+            if via_socket and hosts == [host] and forwarded == ["https"]:
+                response.headers["Strict-Transport-Security"] = "max-age=31536000"
         return response
 
+    @app.exception_handler(psycopg.Error)
+    async def database_unavailable(_request: Request, _error: psycopg.Error) -> Response:
+        return pages.page("工作台暂不可用", "<h1>工作台暂不可用</h1><p>请稍后重试。</p>", status=503)
+
     @app.exception_handler(AuthenticationRequired)
-    async def no_session(_request: Request, _error: AuthenticationRequired) -> Response:
-        response = pages.denied_page()
+    async def no_session(request: Request, _error: AuthenticationRequired) -> Response:
+        if proxy and request.scope["path"] != "/queue/alerts":
+            response = RedirectResponse("/login", status_code=303)
+        else:
+            response = pages.denied_page()
         response.delete_cookie(SESSION_COOKIE, **COOKIE_POLICY)
         return response
 
