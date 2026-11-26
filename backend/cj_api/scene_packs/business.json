@@ -6,7 +6,7 @@
   "languages": ["en", "zh"],
   "cities": ["guangzhou"],
   "knowledge": [],
-  "tools": ["phrase-cards", "taxi", "translation", "return-hotel", "nearby", "metro-guide", "payment-guide", "currency"],
+  "tools": ["show-cards", "taxi", "translation", "return-hotel", "nearby", "metro-guide", "payment-guide", "currency"],
   "flows": [
     {"id": "trade-fair-preparation",
      "title": {"en": "Trade fair preparation", "zh": "参展准备"},

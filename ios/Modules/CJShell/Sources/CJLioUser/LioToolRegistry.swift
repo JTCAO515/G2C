@@ -30,7 +30,7 @@ struct LioTool: Hashable, Sendable, RawRepresentable, CaseIterable {
     static let metro = LioTool("metro-guide")
     static let payment = LioTool("payment-guide")
     static let translation = LioTool("translation")
-    static let phrases = LioTool("phrase-cards")
+    static let showCards = LioTool("show-cards")
 
     private var entry: LioToolEntry? { LioToolRegistry.entry(for: self) }
 
@@ -292,10 +292,14 @@ enum LioToolRegistry {
             }, relay: context.translationRelay)
             #endif
         },
-        LioToolEntry(.phrases, symbol: "text.bubble",
-                     name: ("Phrase Cards", "常用语卡片"), summary: ("Show or play common phrases", "常用语大字给对方看")) { context, _ in
+        // #1742: one tool for everything shown to someone. It took over the Phrase Cards card and slot; phrases and
+        // help cards are always there, the cards with the traveller's details follow `G2CShowCardEnabled`.
+        LioToolEntry(.showCards, symbol: "person.text.rectangle",
+                     name: ("Show Cards", "出示卡"),
+                     summary: ("Phrases and help cards in large Chinese", "常用语和求助，给对方看")) { context, _ in
             #if os(iOS)
-            LioPhraseCardsView(language: context.language)
+            LioShowCardTool.page(language: context.language, roadbookDirectory: context.roadbookDirectory,
+                                 isCurrent: context.sessionIsCurrent)
             #endif
         },
     ]

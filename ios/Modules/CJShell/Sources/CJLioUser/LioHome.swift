@@ -888,6 +888,9 @@ public struct LioHome<MenuContent: View>: View {
             RunReadableText(text: openingText, color: LioTheme.ink, lineSpacing: 4)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("lio.opening")
+                // #1893: the text is a UILabel, which takes no touches, so a long press never reached the menu.
+                // A clear SwiftUI layer over it receives the press; VoiceOver still reads the label underneath.
+                .overlay { Color.clear.contentShape(Rectangle()).accessibilityHidden(true) }
                 .contextMenu {
                     Button {
                         UIPasteboard.general.string = openingText
