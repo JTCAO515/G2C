@@ -66,16 +66,28 @@ _NEAR_BEFORE = re.compile(r'(?:near|next to|around|close to|opposite|beside)\s+(
 
 
 def _names_the_place(folded, name):
-    """The name is in the question and not only as a landmark ("near the museum", 故宫旁边)."""
+    """Length of the name when the question names this place, else 0.
+
+    Not a landmark mention (故宫旁边, near the museum), and not part of another place's name:
+    a Han character right before a Han name (沈阳故宫, 台北故宫) or a letter before a Latin name
+    makes it somebody else's.
+    """
     if len(name) < 2:
-        return False
+        return 0
+    han = re.compile(r'[\u4e00-\u9fff]')
     start = folded.find(name)
     while start >= 0:
         end = start + len(name)
-        if not (_NEAR.match(folded[end:end + 4]) or _NEAR_BEFORE.search(folded[max(0, start - 14):start])):
-            return True
+        before = folded[start - 1] if start else ''
+        if han.match(name[0]):
+            part_of_other = bool(before) and bool(han.match(before)) and before not in '去到逛看游玩的和及与、，,'
+        else:
+            part_of_other = bool(before) and before.isalpha()
+        near = _NEAR.match(folded[end:end + 4]) or _NEAR_BEFORE.search(folded[max(0, start - 14):start])
+        if not part_of_other and not near:
+            return len(name)
         start = folded.find(name, end)
-    return False
+    return 0
 
 
 def attraction_blocks(question, locale, *, today=None, doc=None):
@@ -83,28 +95,41 @@ def attraction_blocks(question, locale, *, today=None, doc=None):
     today = _today(today)
     doc = load_rules() if doc is None else doc
     folded = question.casefold()
-    blocks = []
+    hits = []
     for rule in doc['rules']:
-        if not any(_names_the_place(folded, normalized(name)) for name in _names(rule)):
-            continue
+        best = max(((_names_the_place(folded, normalized(name)), normalized(name)) for name in _names(rule)), default=(0, ''))
+        if best[0]:
+            hits.append((best[1], rule))
+    # One building can answer to a shorter alias of another (上海博物馆 / 上海博物馆东馆): drop a hit
+    # whose matched name sits inside a longer name matched for a different rule.
+    hits = [(name, rule) for name, rule in hits
+            if not any(other is not rule and name != other_name and name in other_name for other_name, other in hits)]
+    blocks = []
+    for _, rule in hits:
         current = match_rule(doc, rule['name']['zh'], today=today)
         if current is None:
             continue  # past its review date: no conclusion, the model says to check the official channel
         zh = locale == 'zh'
-        limits = '；'.join(current['limits']['zh' if zh else 'en'])
-        notes = '；'.join(current['notes']['zh' if zh else 'en'])
+        limits = '；'.join(current['limits']['zh' if zh else 'en']) or 'none listed'
+        notes = '；'.join(current['notes']['zh' if zh else 'en']) or 'none listed'
         channel = current['official_channel']
+        closed = current['closed_weekdays']
+        # null: the data does not say, so nothing is said; []: reviewed as no fixed closing day.
+        closing = '' if closed is None else ('closed on=' + (','.join(closed) if closed else 'no fixed closing day') + '; ')
+        def field(label, value):
+            # A field the data does not give is left out, never written as None or "none".
+            return '' if value is None or value == '' else f'{label}={value}; '
         text = (f"[{current['name']['zh' if zh else 'en']} / {current['city']['zh' if zh else 'en']}] "
-                f"requirement={current['requirement']}; booking window={current['window_days']} days ahead; "
-                f"release time={current['release_time']}; passport={current['passport']}; "
-                f"closed on={','.join(current['closed_weekdays']) or 'none'}; "
-                f"open on public holidays={current['open_on_public_holidays']}. Limits: {limits}. Notes: {notes}. "
+                + field('requirement', current['requirement'])
+                + field('booking window', None if current['window_days'] is None else f"{current['window_days']} days ahead")
+                + field('release time', current['release_time']) + field('passport', current['passport']) + closing
+                + field('open on public holidays', current['open_on_public_holidays'])
+                + f"Limits: {limits}. Notes: {notes}. "
                 f"Official channel: {channel['name']['zh' if zh else 'en']} {channel['url']}. Checked on {current['checked_on']}.")
-        sources = tuple((f"attraction:{current['id']}:{index}", row.get('title', {}).get('zh' if zh else 'en')
-                         or channel['name']['zh' if zh else 'en'], row['url'])
-                        for index, row in enumerate(current['sources'])
-                        if isinstance(row, dict) and 'url' in row) or \
-            ((f"attraction:{current['id']}:0", channel['name']['zh' if zh else 'en'], channel['url']),)
+        name = channel['name']['zh' if zh else 'en']
+        urls = [channel['url'], *[url for url in current['sources'] if isinstance(url, str) and url != channel['url']]]
+        sources = tuple((f"attraction:{current['id']}:{index}", name if index == 0 else f"{name}（{urlsplit(url).hostname}）", url)
+                        for index, url in enumerate(urls) if url.startswith('https://'))
         blocks.append(FactBlock('attraction', current['id'], text, sources))
         if len(blocks) == MAX_BLOCKS:
             break
@@ -142,11 +167,16 @@ def business_blocks(question, locale, *, today=None, catalogue=None):
 
 
 def collect(question, locale, *, today=None):
-    """Blocks for this question, or [] on any read failure (the answer then uses the old prompt)."""
+    """Blocks for this question, or [] on any failure: the answer then uses the old prompt.
+
+    Failures are the data files (FactFailure, malformed rows) and the scene pack files
+    (ScenePackError); the log line carries only an error class or code, never question text.
+    """
     try:
         return [*attraction_blocks(question, locale, today=today), *business_blocks(question, locale, today=today)][:MAX_BLOCKS]
-    except FactFailure as error:
-        code = error.args[0] if error.args and isinstance(error.args[0], str) and re.fullmatch(r'[a-z_]{1,64}', error.args[0]) else 'unknown'
+    except Exception as error:
+        code = (error.args[0] if isinstance(error, FactFailure) and error.args and isinstance(error.args[0], str)
+                and re.fullmatch(r'[a-z_]{1,64}', error.args[0]) else type(error).__name__)
         logging.getLogger('cj_usage.audit').info('LIO_FACT_BLOCKS_UNAVAILABLE code=%s', code)
         return []
 

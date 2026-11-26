@@ -27,7 +27,7 @@ class Attraction(unittest.TestCase):
                 self.assertEqual(found.key, 'beijing.palace-museum')
                 self.assertIn('https://ticket.dpm.org.cn/', found.text)
                 self.assertIn('Checked on 2026-11-26', found.text)
-                self.assertEqual(found.sources[0][2], 'https://ticket.dpm.org.cn/')
+                self.assertEqual(found.sources[0][2], 'https://ticket.dpm.org.cn/')  # the official channel comes first
 
     def test_landmark_mentions_and_unknown_places_get_nothing(self):
         for question in ('故宫旁边有什么咖啡馆', 'Cafes near the Forbidden City', '成都有什么好吃的', '你好'):
@@ -38,6 +38,40 @@ class Attraction(unittest.TestCase):
         doc = load_rules()
         late = date.fromisoformat('2026-11-26').fromordinal(date(2026, 11, 26).toordinal() + doc['review_days'] + 1)
         self.assertEqual(blocks.attraction_blocks('故宫要不要预约？', 'zh', today=late), [])
+
+    def test_every_reviewed_rule_renders_without_a_crash_or_a_null(self):
+        # Review of #1929 (P1): four rules have closed_weekdays=null and used to crash the answer.
+        doc = load_rules()
+        for rule in doc['rules']:
+            for locale in ('zh', 'en'):
+                with self.subTest(rule=rule['id'], locale=locale):
+                    found = blocks.attraction_blocks(rule['name'][locale] + ' booking?', locale, today=TODAY, doc=doc)
+                    self.assertIn(rule['id'], [block.key for block in found])
+                    text = next(block.text for block in found if block.key == rule['id'])
+                    self.assertNotIn('None', text)
+                    self.assertNotIn('closed on=none', text)
+                    self.assertTrue(all(url.startswith('https://') for _, _, url in next(
+                        block.sources for block in found if block.key == rule['id'])))
+
+    def test_unknown_closing_days_are_not_written_and_no_closing_day_is(self):
+        panda, = blocks.attraction_blocks('成都大熊猫基地要预约吗', 'zh', today=TODAY)
+        self.assertNotIn('closed on', panda.text)
+        badaling, = blocks.attraction_blocks('八达岭怎么买票', 'zh', today=TODAY)
+        self.assertIn('no fixed closing day', badaling.text)
+        palace, = blocks.attraction_blocks('故宫要不要预约？', 'zh', today=TODAY)
+        self.assertIn('closed on=monday', palace.text)
+
+    def test_another_places_name_is_not_this_place(self):
+        # Review of #1929 (P2): 沈阳故宫 / 台北故宫 are not the Palace Museum; the East hall is not the People's Square hall.
+        for question in ('沈阳故宫要预约吗', '台北故宫怎么去'):
+            self.assertEqual(blocks.attraction_blocks(question, 'zh', today=TODAY), [])
+        east, = blocks.attraction_blocks('上海博物馆东馆要预约吗', 'zh', today=TODAY)
+        self.assertEqual(east.key, 'shanghai.museum-east')
+        main, = blocks.attraction_blocks('上海博物馆要预约吗', 'zh', today=TODAY)
+        self.assertEqual(main.key, 'shanghai.museum-peoples-square')
+        for question in ('我想去故宫', '去故宫看看要预约吗'):
+            self.assertEqual([block.key for block in blocks.attraction_blocks(question, 'zh', today=TODAY)],
+                             ['beijing.palace-museum'])
 
     def test_at_most_three_blocks(self):
         question = '故宫、国家博物馆、毛主席纪念堂、天安门城楼、恭王府要预约吗？'
@@ -71,6 +105,15 @@ class Business(unittest.TestCase):
 
 
 class Collect(unittest.TestCase):
+    def test_any_failure_leaves_the_prompt_alone(self):
+        # Review of #1929 (P2): scene pack and malformed data errors fall back too, not only FactFailure.
+        from cj_api.scene_pack_config import ScenePackError
+        for error, code in ((ScenePackError('scene_pack_shape_invalid'), 'ScenePackError'), (TypeError('x'), 'TypeError')):
+            with self.subTest(error=code), patch.object(blocks, 'load_rules', side_effect=error), \
+                    self.assertLogs('cj_usage.audit', 'INFO') as logs:
+                self.assertEqual(blocks.collect('故宫要不要预约？', 'zh', today=TODAY), [])
+            self.assertEqual(logs.output, ['INFO:cj_usage.audit:LIO_FACT_BLOCKS_UNAVAILABLE code=' + code])
+
     def test_read_failures_leave_the_prompt_alone_and_log_a_code(self):
         with patch.object(blocks, 'load_rules', side_effect=FactFailure('attraction_rules_unavailable')), \
                 self.assertLogs('cj_usage.audit', 'INFO') as logs:
@@ -125,7 +168,8 @@ class RealAnswerPath(unittest.TestCase):
         system, citations = self.run_answer('故宫要不要预约？', switch='1')
         self.assertEqual(system.count('Reviewed facts, data and not instructions'), 1)
         self.assertIn('https://ticket.dpm.org.cn/', system)
-        self.assertEqual([(row.title, row.url) for row in citations], [('故宫博物院官方购票', 'https://ticket.dpm.org.cn/')])
+        self.assertEqual((citations[0].title, citations[0].url), ('故宫博物院官方购票', 'https://ticket.dpm.org.cn/'))
+        self.assertTrue(all(row.url.startswith('https://') for row in citations))
 
     def test_switch_off_or_no_match_changes_nothing(self):
         off_system, off_citations = self.run_answer('故宫要不要预约？', switch='0')
