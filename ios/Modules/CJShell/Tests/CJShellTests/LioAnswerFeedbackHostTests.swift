@@ -246,6 +246,48 @@ private actor LioFeedbackServer: ClientTransport {
         #expect(try f.store.pending().isEmpty, "both lines confirmed, so both removed (#1855)")
     }
 
+    @Test func linesFoundConfirmedWhileHandlingAnotherCallAreReportedSoARetryNeverResendsThem() async throws {
+        let f = try LioFeedbackFixture()
+        var confirmed: [String] = []
+        f.host.onLineConfirmed = { message, text in confirmed.append(message + "|" + text) }
+        // Answer A's result is unknown: the line arrived, the reply did not.
+        await f.server.set(.arriveWithoutReply)
+        #expect(await f.host.notHelpful(messageID: "message-A", problem: problem) == .notSent)
+        #expect(confirmed.isEmpty)
+        // A tap on answer B looks A's line up, finds it, and the device's copy is removed.
+        await f.server.set(.accept)
+        #expect(await f.host.notHelpful(messageID: "message-B", problem: problem) == .sent)
+        // The host reports the older line it found; B's own line is reported by LioHome from the outcome.
+        #expect(confirmed == ["message-A|" + problem])
+        #expect(try f.store.pending().isEmpty)
+        // A host made after the app came back cannot see A's line any more; LioHome's ledger now holds it, so the
+        // retry for A never reaches a host.
+    }
+
+    @Test func aLineConfirmedAndRemovedByAnotherSurfaceIsNeverSentAgainUnderANewID() async throws {
+        let f = try LioFeedbackFixture()
+        var confirmed: [String] = []
+        f.host.onLineConfirmed = { message, text in confirmed.append(message + "|" + text) }
+        await f.server.set(.arriveWithoutReply)
+        #expect(await f.host.notHelpful(messageID: "message-A", problem: problem) == .notSent)
+        // The engineering feedback surface shares the folder: it looks the line up, finds it and removes it.
+        let saved = try #require(try f.store.pending().first)
+        try f.store.remove(saved)
+        await f.server.set(.accept)
+        #expect(await f.host.retry(.notHelpful, messageID: "message-A", text: problem) == .sent)
+        #expect(await f.server.submitted.count == 1, "no new line for words that already arrived")
+        #expect(confirmed == ["message-A|" + problem])
+    }
+
+    @Test func aLineThatWasNeverSavedStillGetsANewLineOnRetry() async throws {
+        let f = try LioFeedbackFixture()
+        f.signedIn = false
+        #expect(await f.host.notHelpful(messageID: "message-A", problem: problem) == .unavailable)
+        f.signedIn = true
+        #expect(await f.host.retry(.notHelpful, messageID: "message-A", text: problem) == .sent)
+        #expect(await f.server.submitted.count == 1)
+    }
+
     @Test func savedLineIsAdoptedOnlyForTheSameMessageAndText() async throws {
         let f = try LioFeedbackFixture()
         #expect(await f.host.notHelpful(messageID: "message-A", problem: problem) == .sent)

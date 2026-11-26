@@ -7,6 +7,11 @@ import CJMessageKeys
 
 /// #1855: a confirmed line is removed from the device only after its receipt matched; a line the server has no
 /// record of can be sent again once per "no such line" answer, under its own ID and exact bytes; the cap rolls.
+private actor LookUpAnswers {
+    private var count = -1
+    func next() -> Int { count += 1; return count }
+}
+
 @MainActor struct ResendAndCleanupTests {
     private func receiptEcho() -> Interceptor {
         Interceptor { _, bytes, operation in
@@ -135,6 +140,29 @@ import CJMessageKeys
         let submits = await wire.calls.filter { $0.operation == "submitFeedback" }
         #expect(submits.count == 2 && submits.allSatisfy { $0.bytes == original.originalUTF8 })
         #expect(try store.pending().map(\.actionID) == [original.actionID])
+    }
+
+    @Test func aLaterLookUpThatFailsOrIsNotNullLeavesNoPermissionBehind() async throws {
+        let h = try Harness(); defer { h.clean() }
+        let original = try pending(); let store = try h.store(); try store.append(original)
+        let state = LookUpAnswers()
+        let wire = Interceptor { _, _, operation in
+            if operation == "submitFeedback" { return Reply(text: try receiptJSON(original)) }
+            switch await state.next() {
+            case 0: return Reply(text: nullResponse)
+            case 1: throw URLError(.networkConnectionLost)
+            default: return Reply(text: "{}", status: 503)
+            }
+        }
+        let client = try h.client(wire, store: store); let op = try client.begin(binding: h.binding)
+        _ = try await client.queryOriginal(actionID: original.actionID, operation: op)
+        #expect(client.canResend(actionID: original.actionID))
+        await #expect(throws: (any Error).self) { try await client.queryOriginal(actionID: original.actionID, operation: op) }
+        #expect(!client.canResend(actionID: original.actionID), "the failed look-up spent the earlier permission")
+        await #expect(throws: FeedbackFailure.pendingRequiresQuery) { try await client.resend(actionID: original.actionID, operation: op) }
+        await #expect(throws: (any Error).self) { try await client.queryOriginal(actionID: original.actionID, operation: op) }
+        #expect(!client.canResend(actionID: original.actionID))
+        #expect(await wire.calls.filter { $0.operation == "submitFeedback" }.isEmpty)
     }
 
     @Test func aReceiptOrAnotherLaunchClearsThePermission() async throws {

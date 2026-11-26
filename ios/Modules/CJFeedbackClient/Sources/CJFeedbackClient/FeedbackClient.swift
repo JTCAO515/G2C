@@ -156,6 +156,9 @@ public struct FeedbackOperation: Sendable {
         }
     }
     public func queryOriginal(actionID: String, operation: FeedbackOperation) async throws -> FeedbackResult {
+        // Only this look-up's own "no such line" may allow a resend: any earlier permission is spent here, so a look-up
+        // that fails, is cancelled or returns something else leaves none behind.
+        mayResend.remove(Data(actionID.utf8))
         guard let original = try pending(operation: operation).first(where: { same($0.actionID, actionID) }) else { throw FeedbackFailure.invalidInput }
         let api = try await api(original, operation)
         let output = try await exchange(operation) { try await api.queryFeedbackAction(query: .init(action_id: original.actionID)) }

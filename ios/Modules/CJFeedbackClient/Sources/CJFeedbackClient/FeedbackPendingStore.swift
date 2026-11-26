@@ -7,7 +7,9 @@ import CJMessageKeys
 
 func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() }
 
-/// Immutable, exclusive encrypted records. Reopening grants query only; no resend API. Explicit account cleanup is separate.
+/// Immutable, exclusive encrypted records. Reopening grants query only; a record is removed only by settlement after a
+/// verified receipt (#1855), and the only send of a stored record again is `FeedbackClient.resend`. Explicit account
+/// cleanup is separate.
 @MainActor public final class FeedbackPendingStore {
     private let cleanup: FeedbackLocalJournalCleanup
     private let root: URL
@@ -73,7 +75,7 @@ func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(forma
         let proof = try requireOriginal(original)
         try validateDirectory()
         guard unlinkat(directory, proof.filename, 0) == 0 else { throw FeedbackFailure.storageUnavailable }
-        try validateDirectory()
+        // Removed: nothing after this may report a failure, or a line already gone would look unsettled.
     }
     /// Retires this store before exact local erasure. No server receipt is implied.
     public func clearLocalFiles() throws { try cleanup.clear() }

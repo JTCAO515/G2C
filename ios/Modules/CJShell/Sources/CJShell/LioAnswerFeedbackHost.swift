@@ -20,11 +20,15 @@ import CJLioUser
         var actionID: String?
     }
 
+    public var onLineConfirmed: (@MainActor (_ messageID: String, _ text: String) -> Void)?
     private let presentation: FeedbackPresentation
     private let currentBinding: @MainActor () -> FeedbackBinding?
     private let maximumRecords: Int
     /// Lines confirmed by the server this session (a confirmed line is removed from the device, so this is the memory).
     private var arrived: Set<Data> = []
+    /// Lines this host has seen saved on the device. One that is gone later, with no receipt seen here, was confirmed and
+    /// removed by another surface sharing the folder (the engineering feedback surface lists the same records).
+    private var seenSaved: Set<Data> = []
     private var attempts: [Key: Attempt] = [:]
     private var busy = false
 
@@ -65,11 +69,13 @@ import CJLioUser
         if let id = attempt.actionID, arrived.contains(Data(id.utf8)) { return .sent }
         guard open(messageID: messageID) else { return .unavailable }
         guard let saved = await savedLines() else { return .notSent }
+        for line in saved { seenSaved.insert(Data(line.id.utf8)) }
         for id in saved.map(\.id) where !arrived.contains(Data(id.utf8)) {
             switch await lookUp(id) {
-            case .arrived: break
+            case .arrived: if let line = saved.first(where: { $0.id == id }) { report(line) }
             case .noSuchLine:
                 guard userRetry, await resend(id) else { return .notSent }
+                if let line = saved.first(where: { $0.id == id }) { report(line) }
             case .unknown: return .notSent
             }
             arrived.insert(Data(id.utf8))
@@ -81,6 +87,13 @@ import CJLioUser
         }
         if let id = attempt.actionID {
             if arrived.contains(Data(id.utf8)) { return .sent }
+            if seenSaved.contains(Data(id.utf8)), !saved.contains(where: { $0.id == id }) {
+                // Seen saved before and gone now, with no receipt seen here: confirmed and removed elsewhere. Never send it
+                // again under a new ID.
+                arrived.insert(Data(id.utf8))
+                onLineConfirmed?(attempt.messageID, attempt.problem)
+                return .sent
+            }
             // Saving comes before sending, so a line that never reached this device's store never left it.
             attempt.actionID = nil
             attempts[key] = attempt
@@ -91,9 +104,22 @@ import CJLioUser
         let (id, didArrive) = await submit(problem: attempt.problem)
         attempt.actionID = id
         attempts[key] = attempt
-        guard didArrive, let id else { return .notSent }
+        guard didArrive, let id else {
+            // Note whether the line was saved, so a later call can tell "never saved" from "confirmed and removed elsewhere".
+            if let id, open(messageID: messageID), let after = await savedLines(), after.contains(where: { $0.id == id }) {
+                seenSaved.insert(Data(id.utf8))
+            }
+            return .notSent
+        }
         arrived.insert(Data(id.utf8))
         return .sent
+    }
+
+    /// Tells `LioHome` a Lio line is confirmed, so it can answer a later retry for it itself (the line is removed from
+    /// this device once confirmed, and a host made later cannot find it).
+    private func report(_ line: SavedLine) {
+        guard let messageID = line.messageID else { return }
+        onLineConfirmed?(messageID, line.problem)
     }
 
     /// Points the shared presentation at this answer's message (message only, no run).
@@ -108,14 +134,14 @@ import CJLioUser
 
     private struct SavedLine {
         let id: String
-        /// Every reference, as kind and ID; Lio's lines carry exactly one, the message.
-        let references: [Data]
-        let problem: Data
-        let expectationIsEmpty: Bool
+        /// The message of a line shaped like Lio's own (this message alone, no expectation); nil for any other line.
+        let messageID: String?
+        let problem: String
 
         /// Only a line shaped like Lio's own: this message alone, this exact text, no expectation.
         func matches(messageID: String, problem: String) -> Bool {
-            references == [Data("message:\(messageID)".utf8)] && self.problem == Data(problem.utf8) && expectationIsEmpty
+            self.messageID.map { Data($0.utf8) == Data(messageID.utf8) } == true
+                && Data(self.problem.utf8) == Data(problem.utf8)
         }
     }
 
@@ -126,10 +152,12 @@ import CJLioUser
         guard presentation.state == .editing, presentation.original == nil else { return nil }
         return presentation.pendingActions.map { pending in
             let action = try? pending.action()
-            return SavedLine(id: pending.actionID,
-                             references: action?.references.map { Data("\($0.kind.rawValue):\($0.id)".utf8) } ?? [],
-                             problem: Data((action?.problem ?? "").utf8),
-                             expectationIsEmpty: action?.expectation.isEmpty ?? false)
+            let own = action.flatMap { action -> String? in
+                guard action.expectation.isEmpty, action.references.count == 1, let only = action.references.first,
+                      only.kind == .message else { return nil }
+                return only.id
+            }
+            return SavedLine(id: pending.actionID, messageID: own, problem: action?.problem ?? "")
         }
     }
 
