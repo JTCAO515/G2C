@@ -378,6 +378,10 @@ class ExplorationDispatch:
         """W2-4 (#1731): entry questions answered from the App's arrival rules, behind a switch."""
         from .lio_entry_rules import entry_question,entry_turn,entry_rules_enabled,nationality_reply
         if not entry_rules_enabled():return None
+        from cj_message.lio_safety import matched as safety_matched
+        # A lost passport, an emergency or an illness with a visa word stays on the
+        # answer path, where the safety essentials are kept (#1856 review).
+        if safety_matched(text):return None
         from cj_fact.policy import FactFailure
         from cj_fact.arrival import load_rules
         from cj_message.domain import Unavailable

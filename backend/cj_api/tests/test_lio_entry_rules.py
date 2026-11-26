@@ -190,6 +190,14 @@ class Dispatch(unittest.TestCase):
         self.assertTrue(kinds[:-1] and set(kinds[:-1]) == {'effect_committed'})
         self.assertIn('持美国普通护照', events[-1][1])
 
+    def test_safety_questions_with_entry_words_stay_on_the_answer_path(self):
+        # Review of #1856: with #1863 on, these must keep 120 / police / embassy / doctor lines.
+        for text in ('I fainted during my layover, can I leave the airport?', 'I lost my passport and visa',
+                     '我的护照和签证都丢了', '护照被偷了，签证怎么办', '免签入境后生病了去哪看病'):
+            with self.subTest(text=text):
+                result, events, delegated = self.run_dispatch(text, switch='1', prior=('I am German',))
+                self.assertEqual((result, events, len(delegated)), ('delegated', [], 1))
+
     def test_unreadable_context_falls_back_to_the_old_path(self):
         result, events, delegated = self.run_dispatch('我需要签证吗？', switch='1', unavailable=True)
         self.assertEqual((result, events, len(delegated)), ('delegated', [], 1))
