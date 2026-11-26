@@ -46,9 +46,11 @@ struct LioToolsView: View {
         return Binding(get: { router.toolsPath }, set: { router.toolsPath = $0 })
     }
 
-    private var columns: [GridItem] {
-        let count = typeSize.isAccessibilitySize ? 1 : 2
-        return Array(repeating: GridItem(.flexible(), spacing: LioTheme.Spacing.sm, alignment: .top), count: count)
+    private var columnCount: Int { typeSize.isAccessibilitySize ? 1 : 2 }
+
+    /// The cards in rows of `columnCount`.
+    private func rows(_ tools: [LioTool]) -> [[LioTool]] {
+        stride(from: 0, to: tools.count, by: columnCount).map { Array(tools[$0..<min($0 + columnCount, tools.count)]) }
     }
 
     var body: some View {
@@ -62,17 +64,16 @@ struct LioToolsView: View {
                         .foregroundStyle(LioTheme.ink)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .accessibilityAddTraits(.isHeader)
-                    LazyVGrid(columns: columns, spacing: LioTheme.Spacing.sm) {
-                        ForEach(visible, id: \.self) { tool in
-                            if let route = LioRoute(tool: tool) {
-                                NavigationLink(value: route) {
-                                    LioToolCard(tool: tool, language: language)
+                    // An eager grid (#1742): a lazy one dropped the cards that a larger text size pushed off screen,
+                    // and the Dynamic Type audit then reported their text as not scaling. Cards in a row share its
+                    // height.
+                    Grid(horizontalSpacing: LioTheme.Spacing.sm, verticalSpacing: LioTheme.Spacing.sm) {
+                        ForEach(rows(visible), id: \.self) { row in
+                            GridRow(alignment: .top) {
+                                ForEach(row, id: \.self) { tool in card(tool) }
+                                if row.count < columnCount {
+                                    Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
                                 }
-                                .buttonStyle(LioToolCardStyle())
-                                .accessibilityElement(children: .ignore)
-                                .accessibilityLabel(tool.accessibilityLabel(language))
-                                .accessibilityAddTraits(.isButton)
-                                .accessibilityIdentifier(tool.identifier)
                             }
                         }
                     }
@@ -90,6 +91,19 @@ struct LioToolsView: View {
             }
         }
         .tint(LioTheme.vermilion)
+    }
+
+    @ViewBuilder private func card(_ tool: LioTool) -> some View {
+        if let route = LioRoute(tool: tool) {
+            NavigationLink(value: route) {
+                LioToolCard(tool: tool, language: language)
+            }
+            .buttonStyle(LioToolCardStyle())
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(tool.accessibilityLabel(language))
+            .accessibilityAddTraits(.isButton)
+            .accessibilityIdentifier(tool.identifier)
+        }
     }
 
     /// The route's page; a tool this build does not show opens a short notice instead.
@@ -134,20 +148,20 @@ struct LioToolCard: View {
                 .frame(width: iconTile, height: iconTile)
                 .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
                 .accessibilityHidden(true)
+            // No line limit (#1821): at larger text sizes the name and summary wrap and the card grows, so nothing
+            // is cut off. The text size is never reduced.
             Text(tool.name(language))
                 .font(.headline)
                 .foregroundStyle(LioTheme.ink)
-                .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
             Text(tool.summary(language))
                 .font(.footnote)
                 .foregroundStyle(LioTheme.inkSecondary)
-                .lineLimit(3)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
         .multilineTextAlignment(.leading)
-        .frame(maxWidth: .infinity, minHeight: 108, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 108, maxHeight: .infinity, alignment: .topLeading)
         .padding(LioTheme.Spacing.md)
         .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
         .contentShape(RoundedRectangle(cornerRadius: LioTheme.Radius.card))

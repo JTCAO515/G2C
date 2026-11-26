@@ -20,6 +20,45 @@ struct LioShowCardContent: Equatable, Sendable {
              detailsZH: [addressZH?.nonEmpty].compactMap { $0 },
              english: [nameEN?.nonEmpty].compactMap { $0 }.filter { $0 != nameZH })
     }
+
+    /// A phrase card (#1742, formerly the Phrase Cards tool): the Chinese sentence large, the English under it.
+    static func phrase(_ phrase: LioTravelPhrase) -> Self {
+        Self(mainZH: phrase.chinese, english: [phrase.english])
+    }
+}
+
+/// The help cards (#1742, formerly Local Support's own help card page): one request each, Chinese large.
+enum LioShowCardHelp: String, CaseIterable, Identifiable, Sendable {
+    case assistance, interpreter, medical, police
+
+    var id: Self { self }
+
+    var identifier: String { "lio.support.help-card.message." + rawValue }
+
+    func title(_ language: LioLanguage) -> String {
+        switch self {
+        case .assistance: language.text("General help", "一般求助")
+        case .interpreter: language.text("Language help", "语言协助")
+        case .medical: language.text("Medical help", "就医求助")
+        case .police: language.text("Police help", "警方协助")
+        }
+    }
+
+    var content: LioShowCardContent {
+        switch self {
+        case .assistance:
+            LioShowCardContent(mainZH: "我需要帮助，可以帮我一下吗？", english: ["I need help. Could you assist me, please?"])
+        case .interpreter:
+            LioShowCardContent(mainZH: "我不会说中文，可以帮我找一位会说英语的人吗？",
+                               english: ["I don't speak Chinese. Could you help me find someone who speaks English?"])
+        case .medical:
+            LioShowCardContent(mainZH: "我需要看医生，可以告诉我该去哪里吗？",
+                               english: ["I need to see a doctor. Could you show me where to go?"])
+        case .police:
+            LioShowCardContent(mainZH: "我需要帮助，可以帮我联系警方吗？",
+                               english: ["I need help. Could you contact the police for me?"])
+        }
+    }
 }
 
 /// The places a traveller shows a card in.

@@ -9,9 +9,9 @@ struct LioRoadbookEntryTests {
     }
 
     @Test func roadbookCardFollowsHotelsWhenEnabled() {
-        #expect(LioToolCatalog.visible(.init(roadbook: true)) == [.localSupport, .roadbook, .metro, .payment, .translation, .phrases])
+        #expect(LioToolCatalog.visible(.init(roadbook: true)) == [.localSupport, .roadbook, .metro, .payment, .translation, .showCards])
         let all = LioToolCatalog.visible(.init(taxi: true, currency: true, hotels: true, nearby: true, roadbook: true))
-        #expect(all == [.localSupport, .taxi, .hotels, .roadbook, .nearby, .currency, .metro, .payment, .translation, .phrases])
+        #expect(all == [.localSupport, .taxi, .hotels, .roadbook, .nearby, .currency, .metro, .payment, .translation, .showCards])
     }
 
     @Test func roadbookCardCopy() {
