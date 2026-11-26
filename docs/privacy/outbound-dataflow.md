@@ -43,7 +43,7 @@
 | 18 | 12306 | 链接跳转 | `www.12306.cn` | 交通 | 无（首页链接） | `lio_transport.py:379`；`ios/.../LioTransport.swift:449` |
 | 19 | 官方/政府/帮助类静态外链 | 链接跳转 | 故宫、上博、`english.beijing.gov.cn`、`s.nia.gov.cn`、财付通等 | 各信息页 | 无 | 第 19 节 |
 | 20 | Vercel Inc. | 官网托管；Vercel 函数（`/api/early-access`、`/api/service-request`） | `go2china.space`（Vercel 平台） | 官网访问；官网表单提交 | 访客 IP、路径等访问信息（平台记录）；表单全部字段（我们的函数代码转发、不保存原文） | `web/vercel.json`；`web/api/early-access.js`；`web/api/service-request.js`（#1862） |
-| 21 | Jotform Inc. | 服务端 API（由 Vercel 函数调用） | `api.jotform.com`（代码默认；可配 `eu-api` / `hipaa-api`） | 官网「抢先体验」申请 | **称呼、邮箱**、得知渠道、所在国家、计划出行时间、目的地（含自填）、需求、备注 | `web/api/early-access.js:7-9, 19, 53-60, 135-160` |
+| 21 | Jotform Inc. | 服务端 API（由 Vercel 函数调用） | `api.jotform.com`（代码默认；可配 `eu-api` / `hipaa-api`） | 官网「抢先体验」申请 | **称呼、邮箱**、得知渠道、所在国家、计划出行时间、目的地（含自填）、需求、备注 | `web/api/early-access.js:7-9, 19, 53-65, 135-160` |
 | 22 | Spacemail（Spaceship 旗下邮箱服务） | 邮箱 `hello@go2china.space`（MX `mx1/mx2.spacemail.com`，SPF `include:spf.spacemail.com`） | `spacemail.com` | 用户来信；人工回复抢先体验与（开放后）官网服务请求 | **邮箱地址**与邮件内容；官网服务请求开放后可能含时间、地点、电话 | DNS 记录（2026-11-26 查询）；JT 2026-11-26 定回复用该邮箱 |
 | — | Airalo | 无 | — | eSIM 预览（无链接） | 无 | `LioESIMPreviewView.swift:64-70` |
 
@@ -138,7 +138,7 @@
 | 功能 | 触发 | 发出的字段 | 接收方 | 开关与状态 | 出处 |
 |---|---|---|---|---|---|
 | 回答下的反馈入口（W4-9 [#1753](https://github.com/JTCAO515/G2C/issues/1753)） | 用户在一条 Lio 回答下点「没帮上」，可选填「补充说明」 | 复用现有 `POST /v1/feedback`，请求体固定为 `action_id`（客户端生成的提交编号）、`problem`、`expectation`、`references`（该回答的服务端 message id，可带匹配的 run id）。A 线提供的内容：固定文案「这条回答没帮上忙 / This answer didn't help.」与用户选填的补充说明（≤500 字，输入框提示不要填写个人信息），分别落在 `problem`、`expectation` 哪一个以 #1753 代码为准。不发聊天原文、位置、设备信息 | 只到本方香港服务，不转第三方或模型。服务端凭登录凭据识别账号，**按账号**存入香港 PostgreSQL `cj_feedback_action`：原始请求字节及其 sha256、提交时间，以及从被引用消息读出的会话、generation、sequence、run 编号、原始输入哈希和读取时的 run 状态；不复制对话原文或工具内容。无自动保留期，只在注销（删除）账号时由 `FeedbackHook` 删除；没有删除单条反馈的入口 | 开关 `G2CAnswerFeedbackEnabled`，默认关；**#1753 合并前不生效**，合并后按代码核对本行 | A 线 2026-11-26 提供；统筹 2026-11-26 按 JT 预授权决定。代码依据：`backend/cj_api/feedback_routes.py:53-65`、`backend/cj_api/FEEDBACK-WIRE.md`、`backend/feedback/cj_feedback/postgres.py:101`、`backend/feedback/cj_feedback/lifecycle.py:36-55`、`backend/storage-registry.json:220-232` |
-| 官网真人服务请求（W10-3 [#1777](https://github.com/JTCAO515/G2C/issues/1777)，PR #1862） | 访客在官网「广州中英商务陪同」区块提交 | 称呼、邮箱、日期、说明（选填）、同意；服务器写入服务、城市（广州）、页面语言、收到时间 | 浏览器 → Vercel 函数 `/api/service-request` → 本方服务请求后端（W9，#1768）；不经第三方表单服务。人工经 Spacemail 邮箱回复（总表第 22 行） | 开关 `SERVICE_REQUEST_ENABLED` 默认关；**未开放**。开放前提：去向换成 W9 后端、表单改三项分项勾选与提示语、`/api/*` 固定到香港（#1872）、隐私政策公开 | 统筹 2026-11-26 按 JT 预授权决定；字段、防滥用、保留期见 PIPIA 增补第 13 节 |
+| 官网真人服务请求（W10-3 [#1777](https://github.com/JTCAO515/G2C/issues/1777)，PR #1862） | 访客在官网「广州中英商务陪同」区块提交 | 称呼、邮箱、日期、说明（选填）、页面语言 `lang`（浏览器传，服务器按白名单校验）；四个必勾项：已阅读隐私政策，加三项单独同意（行踪信息、提供给陪同、传到中国香港处理），缺一项返回 400、不转交；服务器写入服务、城市（广州）和收到时间 `receivedAt` | 浏览器 → Vercel 函数 `/api/service-request` → 本方服务请求后端（W9，#1768）；不经第三方表单服务。人工经 Spacemail 邮箱回复（总表第 22 行） | 开关 `SERVICE_REQUEST_ENABLED` 默认关；**未开放**。开放前提（`web/api/service-request.js:5-10`）：隐私政策在 `/privacy` 公开（JT 本人确认）；去向换成 W9 后端；统筹指定收件人并做一次测试请求（#32）。另：`/api/*` 固定到香港（#1872） | 统筹 2026-11-26 按 JT 预授权决定；依据 #1862 head `a8741c63`（`web/api/service-request.js:28-70`）。字段、防滥用、保留期见 PIPIA 增补第 13 节（#1871） |
 
 同一张票加的 AI 提示「由 AI 生成，可能有误，重要信息请自行确认」（开关 `G2CAIDisclosureEnabled`，默认关）不产生数据，不登记。
 
@@ -481,10 +481,13 @@
 
 ### 23. Jotform（抢先体验申请）
 
-1. 接入：Vercel 函数 `web/api/early-access.js` 用 Jotform 官方 API 提交，访客只与 go2china.space 通信（`:2-4`）。密钥 `JOTFORM_API_KEY` 在 Vercel 环境变量（`:135`）。主机默认 `https://api.jotform.com`，可配 `eu-api.jotform.com` 或 `hipaa-api.jotform.com`（`:7-9, 13-14, 140`）；实际配置在 Vercel 环境变量，仓库看不到。
-2. 发出字段（`:19, 26, 36-60`）：称呼（≤100）、邮箱（≤254）、得知渠道、所在国家（≤80）、计划出行时间、目的地（多选 + 自填 ≤80）、需求（多选）、备注（≤1000）。防滥用同 `service-request.js`：蜜罐 `website`、最短 2.5 秒（`:28, 69-70`）。
-3. 保存：在 Jotform 账号里；统筹 2026-11-26 定收集后 12 个月删除（删除在 Jotform 后台执行）。
-4. 状态：**线上在用**。首版登记表遗漏，2026-11-26 补入。
+1. 接入：Vercel 函数 `web/api/early-access.js` 用 Jotform 官方 API 提交，访客只与 go2china.space 通信（`:2-4`）。环境变量 `JOTFORM_API_KEY`（必需）、`JOTFORM_FORM_ID`（可选）、`JOTFORM_API_BASE`（可选）在 Vercel（`:7-9, 135-145`）。主机默认 `https://api.jotform.com`，可配 `eu-api.jotform.com` 或 `hipaa-api.jotform.com`（`:13-14, 140`）；实际配置在 Vercel 环境变量，仓库看不到。
+2. 发出字段（`:19, 26, 36-65`）：称呼（≤100）、邮箱（≤254）、得知渠道、所在国家（≤80）、计划出行时间、目的地（多选 + 自填 ≤80）、需求（多选）、备注（≤1000）。防滥用同 `service-request.js`：蜜罐 `website`、最短 2.5 秒（`:28, 69-70`）。
+3. 区域与出境：默认主机 `api.jotform.com` 对应美国数据中心，申请内容（含称呼、邮箱）因此传到美国；实际用哪个主机由 Vercel 环境变量决定，【待核对】（统筹已转 JT）。
+4. 角色：代我们保存和管理申请（受托）。
+5. 日志（`early-access.js`）：只在失败时记「Jotform rejected the submission」及状态码、「Jotform request failed」，以及两条配置错误（未设密钥、主机无效），都不含用户数据。
+6. 保存：在 Jotform 账号里；收集后 12 个月删除（统筹 2026-11-26 按 JT 预授权决定，见隐私政策 1.0 定稿口径），删除在 Jotform 后台执行。
+7. 状态：**线上在用**。首版登记表遗漏，2026-11-26 补入。
 
 ### 24. Spacemail（hello@go2china.space）
 
