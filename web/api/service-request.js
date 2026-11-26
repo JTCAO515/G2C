@@ -29,6 +29,9 @@ const MIN_FILL_MS = 2500;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BEIJING_OFFSET_MS = 8 * 60 * 60 * 1000;
 const MAX_DAYS_AHEAD = 365;
+// Every box on the form must be ticked (PIPIA addendum 13.4): read the privacy policy, plus three separate
+// consents. Each must be literally true; a missing box answers 400 and nothing is forwarded.
+const CONSENTS = ["readPolicy", "consentTravel", "consentCompanion", "consentCrossBorder"];
 
 const text = (v, max) => (typeof v === "string" ? v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").trim().slice(0, max) : "");
 const beijingDate = (ms) => new Date(ms + BEIJING_OFFSET_MS).toISOString().slice(0, 10);
@@ -42,9 +45,12 @@ function checkDate(value, nowMs) {
   return value;
 }
 
-// Validates the browser payload once, here at the trust boundary. Returns { ok, data } or { ok: false, field }.
+// Validates the browser payload once, here at the trust boundary.
+// Returns { ok, data }, or { ok: false, status, error, field }: 400 for a missing consent, 422 otherwise.
 function validate(body, nowMs = Date.now()) {
-  if (!body || typeof body !== "object" || Array.isArray(body)) return { ok: false, field: "body" };
+  if (!body || typeof body !== "object" || Array.isArray(body)) return { ok: false, status: 422, error: "invalid", field: "body" };
+  const unticked = CONSENTS.find((name) => body[name] !== true);
+  if (unticked) return { ok: false, status: 400, error: "consent_required", field: unticked };
   const data = {
     service: SERVICE,
     city: CITY,
@@ -52,13 +58,14 @@ function validate(body, nowMs = Date.now()) {
     email: text(body.email, LIMITS.email),
     date: checkDate(body.date, nowMs),
     note: text(body.note, LIMITS.note),
-    lang: LANGUAGES.includes(body.lang) ? body.lang : "en"
+    lang: LANGUAGES.includes(body.lang) ? body.lang : "en",
+    consents: [...CONSENTS]
   };
-  if (body.service !== SERVICE) return { ok: false, field: "service" };
-  if (!data.name) return { ok: false, field: "name" };
-  if (!EMAIL.test(data.email)) return { ok: false, field: "email" };
-  if (!data.date) return { ok: false, field: "date" };
-  if (body.consent !== true) return { ok: false, field: "consent" };
+  const invalid = (field) => ({ ok: false, status: 422, error: "invalid", field });
+  if (body.service !== SERVICE) return invalid("service");
+  if (!data.name) return invalid("name");
+  if (!EMAIL.test(data.email)) return invalid("email");
+  if (!data.date) return invalid("date");
   return { ok: true, data };
 }
 
@@ -131,7 +138,7 @@ function createHandler({ enabled, destination, now = Date.now }) {
     if (body && typeof body === "object" && looksLikeBot(body)) return send(res, 200, { ok: true });
 
     const checked = validate(body, now());
-    if (!checked.ok) return send(res, 422, { ok: false, error: "invalid", field: checked.field });
+    if (!checked.ok) return send(res, checked.status, { ok: false, error: checked.error, field: checked.field });
 
     try {
       await destination.deliver({ ...checked.data, receivedAt: new Date(now()).toISOString() });
@@ -147,5 +154,6 @@ function createHandler({ enabled, destination, now = Date.now }) {
 module.exports = createHandler({ enabled: SERVICE_REQUEST_ENABLED, destination: DEFAULT_DESTINATION });
 module.exports.SERVICE_REQUEST_ENABLED = SERVICE_REQUEST_ENABLED;
 module.exports.SERVICE = SERVICE;
+module.exports.CONSENTS = CONSENTS;
 module.exports.createHandler = createHandler;
 module.exports.validate = validate;

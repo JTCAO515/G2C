@@ -17,6 +17,16 @@
 
   // Where the website will publish the privacy policy. Not live yet; see the list above.
   const PRIVACY_URL = "/privacy";
+  // PIPIA addendum 13.4: besides "I have read the privacy policy" (readPolicy), three separate consents,
+  // each linking to its part of the policy. The policy has no anchors yet; these names are the ones the
+  // compliance docs lane is asked to add (#1777): website-requests (section 6, requests from the website),
+  // in-person-services (section 6), cross-border (section 5). The server requires all four to be true.
+  const CONSENTS = [
+    { name: "consentTravel", anchor: "website-requests" },
+    { name: "consentCompanion", anchor: "in-person-services" },
+    { name: "consentCrossBorder", anchor: "cross-border" }
+  ];
+  const BOXES = ["readPolicy", ...CONSENTS.map((c) => c.name)];
   // Must match SERVICE in api/service-request.js, which rejects any other value.
   const SERVICE = "English–Chinese business companion";
   const MAX_LEN = { name: 100, email: 254, note: 1000 };
@@ -58,8 +68,10 @@
         <label class="field-l"><span><span data-sr="f.note"></span> <em data-sr="f.optional"></em></span>
           <textarea name="note" rows="4" maxlength="${MAX_LEN.note}" aria-describedby="sr-note-hint"></textarea>
           <small class="svc-hint" id="sr-note-hint" data-sr="f.noteHint"></small></label>
-        <label class="field-l svc-consent"><span><input name="consent" type="checkbox" required>
+        <label class="field-l svc-consent"><span><input name="readPolicy" type="checkbox" required>
           <span><span data-sr="f.consentBefore"></span><a href="${PRIVACY_URL}" data-sr="f.consentLink"></a><span data-sr="f.consentAfter"></span></span></span></label>
+${CONSENTS.map((c, i) => `        <label class="field-l svc-consent"><span><input name="${c.name}" type="checkbox" required>
+          <span><span data-sr="f.consents.${i}.text"></span> <a href="${PRIVACY_URL}#${c.anchor}" data-sr="f.consents.${i}.link"></a></span></span></label>`).join("\n")}
         <div class="hp" aria-hidden="true"><label>Website <input name="website" type="text" tabindex="-1" autocomplete="off"></label></div>
         <div class="submit-row">
           <button class="btn btn-ink" type="submit" id="sr-submit"></button>
@@ -110,7 +122,7 @@
       email: form.elements.email.value.trim(),
       date: dateInput.value,
       note: form.elements.note.value.trim(),
-      consent: form.elements.consent.checked,
+      ...Object.fromEntries(BOXES.map((name) => [name, form.elements[name].checked === true])),
       website: form.elements.website.value,
       elapsedMs: Date.now() - startedAt,
       lang: currentLang()
@@ -120,7 +132,7 @@
     if (!data.name) bad.push("name");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(data.email)) bad.push("email");
     if (!data.date || data.date < dateInput.min || data.date > dateInput.max) bad.push("date");
-    if (!data.consent) bad.push("consent");
+    BOXES.forEach((name) => { if (!data[name]) bad.push(name); });
     msg.classList.remove("err");
     if (bad.length) {
       bad.forEach((n) => form.elements[n].closest(".field-l").classList.add("bad"));

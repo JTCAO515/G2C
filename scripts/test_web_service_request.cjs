@@ -10,7 +10,7 @@ const { test } = require("node:test");
 
 const WEB = path.join(__dirname, "..", "web");
 const handler = require("../web/api/service-request");
-const { createHandler, SERVICE, validate } = handler;
+const { createHandler, SERVICE, CONSENTS, validate } = handler;
 const earlyAccess = require("../web/api/early-access");
 const { DEFAULT_DESTINATION, LOG_ONLY } = require("../web/api/_service-request-destination");
 
@@ -21,7 +21,8 @@ const indexHtml = fs.readFileSync(path.join(WEB, "index.html"), "utf8");
 const NOW = Date.parse("2026-11-26T20:00:00Z");
 const request = {
   service: SERVICE, name: "Sam", email: "guest@example.com", date: "2026-12-03",
-  note: "Factory visit in Panyu, two meetings", consent: true, lang: "zh"
+  note: "Factory visit in Panyu, two meetings", lang: "zh",
+  readPolicy: true, consentTravel: true, consentCompanion: true, consentCrossBorder: true
 };
 
 async function submit(fn, { body, chunks = [], headers = {}, method = "POST" }) {
@@ -145,9 +146,24 @@ function fakePage(lang) {
 function runPage(on, lang = "en") {
   const G2C = loadCopy();
   const page = fakePage(lang);
-  new Function("window", "document", "location", "fetch", withSwitch(on))(
-    { G2C }, page.document, { hash: "" }, () => { throw new Error("no requests while rendering"); });
-  return { ...page, T: G2C.T };
+  const requests = [];
+  const fetch = async (url, options) => { requests.push({ url, body: JSON.parse(options.body) }); return Response.json({ ok: true }); };
+  new Function("window", "document", "location", "fetch", withSwitch(on))({ G2C }, page.document, { hash: "" }, fetch);
+  return { ...page, requests, T: G2C.T };
+}
+
+// Fills the form on the fake page with valid answers, ticks only the given boxes and submits it.
+async function submitPage(ticked) {
+  const page = runPage(true);
+  const form = page.find("#sr-form");
+  Object.assign(form.elements.name, { value: "Sam" });
+  Object.assign(form.elements.email, { value: "guest@example.com" });
+  Object.assign(form.elements.note, { value: "" });
+  Object.assign(form.elements.website, { value: "" });
+  form.elements.date.value = form.elements.date.min;
+  for (const name of CONSENTS) form.elements[name].checked = ticked.includes(name);
+  for (const fn of form.listeners.submit) await fn({ preventDefault() {} });
+  return { ...page, message: page.find("#sr-msg").textContent };
 }
 
 test("switched off, the page script stops before touching the page", () => {
@@ -191,6 +207,47 @@ test("styles for the service request stay inside its own form and section", () =
   }
 });
 
+test("the form asks for all four boxes, each linking to its part of the privacy policy", () => {
+  assert.deepEqual(CONSENTS, ["readPolicy", "consentTravel", "consentCompanion", "consentCrossBorder"]);
+  const { created } = runPage(true);
+  const html = created.find((n) => n.label === "section").innerHTML;
+  for (const name of CONSENTS) assert.match(html, new RegExp(`<input name="${name}" type="checkbox" required>`));
+  for (const anchor of ["website-requests", "in-person-services", "cross-border"]) {
+    assert.match(html, new RegExp(`<a href="/privacy#${anchor}"`));
+  }
+  assert.match(html, /<a href="\/privacy" data-sr="f.consentLink">/);
+});
+
+test("the page stops a request with any box unticked, and sends one with all four", async () => {
+  for (const missing of CONSENTS) {
+    const { requests, message, T } = await submitPage(CONSENTS.filter((name) => name !== missing));
+    assert.equal(requests.length, 0, missing);
+    assert.equal(message, T.en.sr.bad, missing);
+  }
+  const { requests, message, T } = await submitPage(CONSENTS);
+  assert.equal(message, T.en.sr.ok);
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].url, "/api/service-request");
+  for (const name of CONSENTS) assert.equal(requests[0].body[name], true, name);
+  // What the page sends is what the server accepts.
+  assert.equal(validate(requests[0].body).ok, true);
+});
+
+test("the server answers 400 and delivers nothing unless all four boxes are true", async () => {
+  const { delivered, destination } = recorder();
+  const fn = createHandler({ enabled: true, destination, now: () => NOW });
+  for (const name of CONSENTS) {
+    for (const value of [undefined, false, "true", 1]) {
+      const { status, result } = await submit(fn, { body: { ...request, [name]: value } });
+      assert.deepEqual({ status, result }, { status: 400, result: { ok: false, error: "consent_required", field: name } },
+        `${name}=${value}`);
+    }
+  }
+  assert.equal(delivered.length, 0);
+  assert.equal((await submit(fn, { body: request })).status, 200);
+  assert.deepEqual(delivered[0].consents, CONSENTS);
+});
+
 test("a valid request is delivered once, with the city and service set by the server", async (t) => {
   const { delivered, destination } = recorder();
   const fn = createHandler({ enabled: true, destination, now: () => NOW });
@@ -199,7 +256,9 @@ test("a valid request is delivered once, with the city and service set by the se
     { ok: true });
   assert.deepEqual(delivered, [{
     service: SERVICE, city: "Guangzhou", name: "Sam", email: "guest@example.com", date: "2026-12-03",
-    note: "Factory visit in Panyu, two meetings", lang: "zh", receivedAt: "2026-11-26T20:00:00.000Z"
+    note: "Factory visit in Panyu, two meetings", lang: "zh",
+    consents: ["readPolicy", "consentTravel", "consentCompanion", "consentCrossBorder"],
+    receivedAt: "2026-11-26T20:00:00.000Z"
   }]);
 });
 
@@ -209,7 +268,7 @@ test("rejects missing or invalid fields without delivering", async (t) => {
   const cases = [
     [{ name: " " }, "name"], [{ email: "guest@example" }, "email"],
     [{ date: "2026-11-26" }, "date"], [{ date: "2026-02-30" }, "date"], [{ date: "2027-11-28" }, "date"],
-    [{ date: "3 December" }, "date"], [{ consent: "true" }, "consent"], [{ consent: undefined }, "consent"],
+    [{ date: "3 December" }, "date"],
     [{ service: "Airport pickup" }, "service"]
   ];
   for (const [change, field] of cases) {
@@ -311,6 +370,14 @@ test("every language has the full form copy and says only what the form does", (
   }
   assert.match(w.G2C.T.zh.sr.rows[2][1], /1 个工作日内（北京时间）通过邮件回复/);
   assert.match(w.G2C.T.zh.sr.f.noteHint, /不要填写证件号、健康信息/);
-  assert.match(en.f.noteHint, /ID numbers or health information/);
+  assert.equal(w.G2C.T.zh.sr.f.noteHint, "简单说说你需要什么帮助，我们会通过邮件和你确认时间和地点。请不要填写证件号、健康信息。");
+  assert.equal(en.f.noteHint, "Briefly tell us what you need. We’ll confirm the time and place with you by email. Please don’t include ID numbers or health details.");
+  for (const lang of languages) {
+    const f = w.G2C.T[lang].sr.f;
+    // The note hint no longer asks for places or meeting topics.
+    assert.doesNotMatch(f.noteHint, /meetings are about|For example|会谈内容/);
+    assert.equal(f.consents.length, 3, lang);
+  }
+  assert.equal(w.G2C.T.zh.sr.f.consentBefore + w.G2C.T.zh.sr.f.consentLink, "我已阅读隐私政策");
   assert.match(pageScript, /const PRIVACY_URL = "\/privacy";/);
 });
