@@ -98,15 +98,18 @@ import CJLioUser
 
     private struct SavedLine {
         let id: String
-        let messageIDs: [Data]
+        /// Every reference, as kind and ID; Lio's lines carry exactly one, the message.
+        let references: [Data]
         let problem: Data
+        let expectationIsEmpty: Bool
 
+        /// Only a line shaped like Lio's own: this message alone, this exact text, no expectation.
         func matches(messageID: String, problem: String) -> Bool {
-            messageIDs == [Data(messageID.utf8)] && self.problem == Data(problem.utf8)
+            references == [Data("message:\(messageID)".utf8)] && self.problem == Data(problem.utf8) && expectationIsEmpty
         }
     }
 
-    /// Every line saved on this device for the account, in saved order, or nil when the store can't be read.
+    /// Every line saved on this device for the account (in the store's own order), or nil when it can't be read.
     private func savedLines() async -> [SavedLine]? {
         guard let work = presentation.prepareReload() else { return nil }
         await presentation.perform(work)
@@ -114,8 +117,9 @@ import CJLioUser
         return presentation.pendingActions.map { pending in
             let action = try? pending.action()
             return SavedLine(id: pending.actionID,
-                             messageIDs: action?.references.filter { $0.kind == .message }.map { Data($0.id.utf8) } ?? [],
-                             problem: Data((action?.problem ?? "").utf8))
+                             references: action?.references.map { Data("\($0.kind.rawValue):\($0.id)".utf8) } ?? [],
+                             problem: Data((action?.problem ?? "").utf8),
+                             expectationIsEmpty: action?.expectation.isEmpty ?? false)
         }
     }
 

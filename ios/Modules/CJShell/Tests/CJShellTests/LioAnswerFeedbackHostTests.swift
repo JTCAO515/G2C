@@ -219,13 +219,14 @@ private actor LioFeedbackServer: ClientTransport {
         // Details typed before the app went away are retried with the same text and go as their own line.
         await f.server.set(.refuse)
         #expect(await host.addDetails(messageID: "message-A", text: "Wrong exit") == .notSent)
-        let details = try #require(try f.store.pending().last)
+        // The store lists lines by a hash of their ID, not by when they were saved.
+        let details = try #require(try f.store.pending().first { $0.actionID != saved.actionID })
         await f.server.receive(details)
         await f.server.set(.accept)
         let again = f.rebuiltHost()
         #expect(await again.retry(.details, messageID: "message-A", text: "Wrong exit") == .sent)
         #expect(await f.server.submitted.count == 2)
-        #expect(try f.store.pending().map(\.actionID) == [saved.actionID, details.actionID])
+        #expect(Set(try f.store.pending().map(\.actionID)) == [saved.actionID, details.actionID])
     }
 
     @Test func savedLineIsAdoptedOnlyForTheSameMessageAndText() async throws {
@@ -236,6 +237,20 @@ private actor LioFeedbackServer: ClientTransport {
         #expect(await host.retry(.details, messageID: "message-A", text: "Something else") == .sent)
         let actions = try await f.actions()
         #expect(actions.count == 3, "another message, or other text, is a line of its own")
+    }
+
+    @Test func onlyALineShapedLikeLiosOwnIsAdopted() async throws {
+        let f = try LioFeedbackFixture()
+        let withExpectation = try FeedbackPending(problem: problem, expectation: "Something else",
+                                                  context: FeedbackContext(messageID: "message-A"), actionID: "other-1")
+        let withRun = try FeedbackPending(problem: problem, expectation: "",
+                                          context: FeedbackContext(messageID: "message-A", runID: "run-A"), actionID: "other-2")
+        for line in [withExpectation, withRun] {
+            try f.store.append(line)
+            await f.server.receive(line)
+        }
+        #expect(await f.host.notHelpful(messageID: "message-A", problem: problem) == .sent)
+        #expect(await f.server.submitted.count == 1, "neither saved line is Lio's, so a line of its own goes out")
     }
 
     @Test func invalidatedHostSendsNothing() async throws {
