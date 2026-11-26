@@ -49,6 +49,14 @@ struct LioHotelOffersView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var typeSize
 
+    /// `city` fills the city field when a route opens the page (#1724); nothing is searched until the traveller
+    /// taps search.
+    init(language: LioLanguage, finder: LioHotelFinder, city: String = "") {
+        self.language = language
+        self.finder = finder
+        _city = State(initialValue: city)
+    }
+
     private var stacked: Bool { LioHotelLayout.stacksControls(at: typeSize) }
     /// Label beside its control, or above it at accessibility text sizes.
     private var row: AnyLayout {

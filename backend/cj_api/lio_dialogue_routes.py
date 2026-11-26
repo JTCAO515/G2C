@@ -11,6 +11,7 @@ from cj_message.domain import InvalidInput
 from cj_message.lio_context import SOURCE_EFFECT, TOOL_EFFECT, UNSETTLED_VISIBLE_ANSWER, UNSAVED_PLAN_ANSWER, answer_locale, display_answer, self_description
 from cj_message.lio_plan_needs import BOUND_EFFECT, EDIT_BOUND_EFFECT
 from cj_run.core import Binding
+from cj_agent.run_timing import accepted
 from cj_run.display_snapshot import SnapshotTooLarge
 
 from .local_lio_planning import ITINERARY_PREVIEW_VERSION,read_itinerary_preview
@@ -180,6 +181,7 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
             return _failure(exc.status)
         except Exception as exc:
             return _failure(message_failure(request, exc, True).status_code)
+        accepted(receipt.message_id)
         return _json(dict(version=receipt_version, message_id=receipt.message_id,
                           conversation_id=receipt.conversation_id))
 

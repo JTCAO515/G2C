@@ -22,6 +22,15 @@ struct LioTransportView: View {
     @State private var driverHub: LioTransportHub?
     @FocusState private var focus: Field?
 
+    /// `from` and `to` fill the two city fields when a route opens the page (#1724); nothing is searched until
+    /// the traveller taps search.
+    init(language: LioLanguage, service: LioTransportService, from: String = "", to: String = "") {
+        self.language = language
+        self.service = service
+        _fromText = State(initialValue: from)
+        _toText = State(initialValue: to)
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: LioTheme.Spacing.md) {
