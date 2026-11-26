@@ -110,6 +110,7 @@ def test_login_bootstrap_hash_and_cookie_policy(local):
         assert login.status_code == 200
         assert 'lang="zh-CN"' in login.text
         assert "no-store" == login.headers["cache-control"]
+        assert "same-origin" == login.headers["referrer-policy"]
         assert "default-src 'none'" in login.headers["content-security-policy"]
         assert PRE_LOGIN_COOKIE in login.headers["set-cookie"]
         response = sign_in(browser, clock)
@@ -180,6 +181,7 @@ def test_login_rejects_invalid_totp_replay_and_csrf(local):
         form = {"csrf": nonce, "username": ADMIN, "password": ADMIN_PASSWORD, "code": clock.code()}
         assert post(browser, "/login", form, "https://outside.example.test").status_code == 403
         assert browser.post("/login", data=form).status_code == 403
+        assert post(browser, "/login", form, "null").status_code == 403
         assert post(browser, "/login", {**form, "csrf": "tampered"}).status_code == 403
         wrong_code = str((int(clock.code()) + 1) % 1_000_000).zfill(6)
         assert sign_in(browser, clock, code=wrong_code).status_code == 401

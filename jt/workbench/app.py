@@ -79,7 +79,8 @@ def create_app(auth: Auth, *, port: int) -> FastAPI:
             response = await call_next(request)
         response.headers["Cache-Control"] = "no-store"
         response.headers["Content-Security-Policy"] = pages.CSP
-        response.headers["Referrer-Policy"] = "no-referrer"
+        # Native form POSTs need their same-origin Origin header for CSRF validation.
+        response.headers["Referrer-Policy"] = "same-origin"
         response.headers["X-Content-Type-Options"] = "nosniff"
         return response
 
