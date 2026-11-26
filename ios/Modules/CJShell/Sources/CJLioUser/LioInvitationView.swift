@@ -35,8 +35,7 @@ public struct LioInvitationView<Settings: View>: View {
     @FocusState private var enteringCode: Bool
     @State private var invalidFormat = false
     @ScaledMetric(relativeTo: .body) private var codeHeight = 44
-    @State private var showingInvite = LioSignInDebug.opensInvite
-    private let signInStyle = LioSignInStyle.current
+    @State private var showingInvite = false
 
     public init(language: LioLanguage, isBusy: Bool, notice: String?,
                 onInvite: @escaping (String) -> Void, onRestore: @escaping () -> Void,
@@ -60,10 +59,10 @@ public struct LioInvitationView<Settings: View>: View {
     /// #1891: the new first screen and internal test page. Same state, checks, consent and callbacks as below.
     private var newScreen: some View {
         NavigationStack {
-            LioSignInWelcome(language: language, style: signInStyle, notice: showingInvite ? nil : notice,
+            LioSignInWelcome(language: language, notice: showingInvite ? nil : notice,
                              settings: settings, onInvite: { showingInvite = true })
                 .navigationDestination(isPresented: $showingInvite) {
-                    LioInternalTestPage(language: language, style: signInStyle, isBusy: isBusy, notice: notice,
+                    LioInternalTestPage(language: language, isBusy: isBusy, notice: notice,
                                         invalidFormat: invalidFormat, code: $code, enteringCode: $enteringCode,
                                         settings: settings, onContinue: continueWithCode,
                                         onRestore: continueWithAccount)

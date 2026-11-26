@@ -18,39 +18,6 @@ enum LioNewSignInFeature {
     }
 }
 
-/// Two looks for JT to choose from (design draft). `aurora` is the default; Debug can show `paper`.
-enum LioSignInStyle: Sendable {
-    case aurora, paper
-
-    static var current: LioSignInStyle {
-        #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("--lio-signin-paper") { return .paper }
-        #endif
-        return .aurora
-    }
-}
-
-/// Debug-only launch arguments that open a given state for screenshots.
-enum LioSignInDebug {
-    static var opensInvite: Bool {
-        #if DEBUG
-        return ProcessInfo.processInfo.arguments.contains("--lio-signin-open-invite")
-        #else
-        return false
-        #endif
-    }
-
-    static var comingSoon: LioSignInChannel? {
-        #if DEBUG
-        let arguments = ProcessInfo.processInfo.arguments
-        if let index = arguments.firstIndex(of: "--lio-signin-soon"), arguments.indices.contains(index + 1) {
-            return LioSignInChannel(rawValue: arguments[index + 1])
-        }
-        #endif
-        return nil
-    }
-}
-
 /// The sign-in channels shown as placeholders in build 58.
 enum LioSignInChannel: String, CaseIterable, Identifiable, Sendable {
     case apple, google, email
@@ -95,22 +62,13 @@ enum LioSignInPalette {
                 blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
     }
 
-    static func base(_ style: LioSignInStyle) -> Color {
-        style == .paper ? LioTheme.paper : dynamic(light: 0xF7F6F4, dark: 0x09090B)
-    }
-    static func ink(_ style: LioSignInStyle) -> Color {
-        style == .paper ? LioTheme.ink : dynamic(light: 0x0E0E11, dark: 0xF4F4F6)
-    }
-    static func inkSecondary(_ style: LioSignInStyle) -> Color {
-        style == .paper ? LioTheme.inkSecondary : dynamic(light: 0x55555F, dark: 0xA3A3AD)
-    }
-    static func line(_ style: LioSignInStyle) -> Color {
-        style == .paper ? LioTheme.hairline : dynamic(light: 0xDEDCD8, dark: 0x2A2A30)
-    }
+    static let base = dynamic(light: 0xF7F6F4, dark: 0x09090B)
+    static let ink = dynamic(light: 0x0E0E11, dark: 0xF4F4F6)
+    static let inkSecondary = dynamic(light: 0x55555F, dark: 0xA3A3AD)
+    /// Decorative outlines only; never used for text.
+    static let line = dynamic(light: 0xDEDCD8, dark: 0x2A2A30)
     /// The email button and the code field.
-    static func field(_ style: LioSignInStyle) -> Color {
-        style == .paper ? LioTheme.surface : dynamic(light: 0xFFFFFF, dark: 0x17171B)
-    }
+    static let field = dynamic(light: 0xFFFFFF, dark: 0x17171B)
 
     static let ember = dynamic(light: 0xFF5B3A, dark: 0xFF5B3A)
     static let amber = dynamic(light: 0xFFB34D, dark: 0xF2A23A)
@@ -127,10 +85,8 @@ enum LioSignInPalette {
 
 // MARK: - Backdrop
 
-/// Soft drifting glows behind the content, with a faint dot grid in the aurora look. Decorative only; still when
-/// Reduce Motion is on.
+/// Soft drifting glows behind the content over a faint dot grid. Decorative only; still when Reduce Motion is on.
 struct LioSignInBackdrop: View {
-    let style: LioSignInStyle
     var quiet = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
@@ -144,21 +100,14 @@ struct LioSignInBackdrop: View {
             let width = proxy.size.width
             let height = proxy.size.height
             ZStack {
-                LioSignInPalette.base(style)
-                if style == .aurora {
-                    glow(LioSignInPalette.ember, size: width * 0.95)
-                        .offset(x: drift ? -width * 0.30 : -width * 0.12, y: -height * (drift ? 0.30 : 0.36))
-                    glow(LioSignInPalette.amber, size: width * 0.70)
-                        .offset(x: drift ? width * 0.32 : width * 0.18, y: -height * (drift ? 0.38 : 0.30))
-                    glow(LioSignInPalette.iris, size: width * 0.80)
-                        .offset(x: drift ? width * 0.05 : width * 0.25, y: -height * (drift ? 0.16 : 0.22))
-                    dots
-                } else {
-                    glow(LioTheme.vermilion, size: width * 1.1)
-                        .offset(x: -width * 0.15, y: -height * 0.36)
-                    glow(LioTheme.gold, size: width * 0.8)
-                        .offset(x: width * 0.30, y: -height * 0.30)
-                }
+                LioSignInPalette.base
+                glow(LioSignInPalette.ember, size: width * 0.95)
+                    .offset(x: drift ? -width * 0.30 : -width * 0.12, y: -height * (drift ? 0.30 : 0.36))
+                glow(LioSignInPalette.amber, size: width * 0.70)
+                    .offset(x: drift ? width * 0.32 : width * 0.18, y: -height * (drift ? 0.38 : 0.30))
+                glow(LioSignInPalette.iris, size: width * 0.80)
+                    .offset(x: drift ? width * 0.05 : width * 0.25, y: -height * (drift ? 0.16 : 0.22))
+                dots
             }
             .frame(width: width, height: height)
         }
@@ -166,14 +115,14 @@ struct LioSignInBackdrop: View {
         .accessibilityHidden(true)
         .allowsHitTesting(false)
         .onAppear {
-            guard !reduceMotion, style == .aurora else { return }
+            guard !reduceMotion else { return }
             withAnimation(.easeInOut(duration: 9).repeatForever(autoreverses: true)) { drift = true }
         }
     }
 
     private var glowOpacity: Double {
         let dark = colorScheme == .dark
-        let base: Double = style == .paper ? (dark ? 0.16 : 0.10) : (dark ? 0.42 : 0.30)
+        let base: Double = dark ? 0.42 : 0.30
         return quiet ? base * 0.55 : base
     }
 
@@ -193,7 +142,7 @@ struct LioSignInBackdrop: View {
                 }
                 y += dotStep
             }
-            context.fill(path, with: .color(LioSignInPalette.ink(style).opacity(colorScheme == .dark ? 0.16 : 0.10)))
+            context.fill(path, with: .color(LioSignInPalette.ink.opacity(colorScheme == .dark ? 0.16 : 0.10)))
         }
         .mask(LinearGradient(colors: [.white, .white.opacity(0)], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.55)))
     }
@@ -203,7 +152,6 @@ struct LioSignInBackdrop: View {
 
 /// Lio's portrait in a slowly turning gradient ring.
 struct LioSignInEmblem: View {
-    let style: LioSignInStyle
     @ScaledMetric(relativeTo: .largeTitle) private var size: CGFloat = 76
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var turn = false
@@ -229,11 +177,7 @@ struct LioSignInEmblem: View {
         }
     }
 
-    private var ringColors: [Color] {
-        style == .aurora
-            ? [LioSignInPalette.ember, LioSignInPalette.amber, LioSignInPalette.iris, LioSignInPalette.ember]
-            : [LioTheme.vermilion, LioTheme.gold, LioTheme.vermilion]
-    }
+    private let ringColors = [LioSignInPalette.ember, LioSignInPalette.amber, LioSignInPalette.iris, LioSignInPalette.ember]
 }
 
 // MARK: - Buttons
@@ -252,7 +196,6 @@ struct LioSignInPressStyle: ButtonStyle {
 struct LioSignInChannelButton: View {
     let channel: LioSignInChannel
     let language: LioLanguage
-    let style: LioSignInStyle
     let action: () -> Void
     @ScaledMetric(relativeTo: .body) private var height: CGFloat = 52
     @ScaledMetric(relativeTo: .body) private var logo: CGFloat = 19
@@ -297,21 +240,21 @@ struct LioSignInChannelButton: View {
         switch channel {
         case .apple: LioSignInPalette.appleFill
         case .google: LioSignInPalette.googleFill
-        case .email: LioSignInPalette.field(style)
+        case .email: LioSignInPalette.field
         }
     }
     private var stroke: Color {
         switch channel {
         case .apple: .clear
         case .google: LioSignInPalette.googleStroke
-        case .email: LioSignInPalette.line(style)
+        case .email: LioSignInPalette.line
         }
     }
     private var text: Color {
         switch channel {
         case .apple: LioSignInPalette.appleText
         case .google: LioSignInPalette.googleText
-        case .email: LioSignInPalette.ink(style)
+        case .email: LioSignInPalette.ink
         }
     }
 }
@@ -319,33 +262,24 @@ struct LioSignInChannelButton: View {
 /// A status line in a soft card, for the format hint and the sign-in notice.
 struct LioSignInMessage: View {
     let text: String
-    let style: LioSignInStyle
     let symbol: String
+    let identifier: String
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: LioTheme.Spacing.xs) {
             Image(systemName: symbol).foregroundStyle(LioTheme.vermilion).accessibilityHidden(true)
-            Text(text).font(.subheadline).foregroundStyle(LioSignInPalette.ink(style))
+            Text(text).font(.subheadline).foregroundStyle(LioSignInPalette.ink)
                 .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier(identifier)
             Spacer(minLength: 0)
         }
         .padding(LioTheme.Spacing.sm)
-        .background(LioSignInPalette.field(style).opacity(0.85),
+        .background(LioSignInPalette.field.opacity(0.85),
                     in: RoundedRectangle(cornerRadius: LioTheme.Radius.small, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: LioTheme.Radius.small, style: .continuous)
-                .stroke(LioSignInPalette.line(style), lineWidth: LioTheme.outlineWidth).accessibilityHidden(true)
+                .stroke(LioSignInPalette.line, lineWidth: LioTheme.outlineWidth).accessibilityHidden(true)
         }
-        .accessibilityElement(children: .combine)
-    }
-}
-
-private extension LioSignInStyle {
-    func headline() -> Font {
-        self == .paper ? LioTheme.display(.largeTitle).weight(.semibold) : .system(.largeTitle, design: .default, weight: .bold)
-    }
-    func title() -> Font {
-        self == .paper ? LioTheme.display(.title).weight(.semibold) : .system(.title, design: .default, weight: .bold)
     }
 }
 
@@ -354,11 +288,10 @@ private extension LioSignInStyle {
 /// The first screen: who Lio is, the three channels (placeholders), and the small internal-test entry.
 struct LioSignInWelcome<Settings: View>: View {
     let language: LioLanguage
-    let style: LioSignInStyle
     let notice: String?
     let settings: Settings
     let onInvite: () -> Void
-    @State private var comingSoon: LioSignInChannel? = LioSignInDebug.comingSoon
+    @State private var comingSoon: LioSignInChannel?
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
@@ -370,8 +303,8 @@ struct LioSignInWelcome<Settings: View>: View {
                             Spacer(minLength: 0)
                             settings.fixedSize()
                                 .padding(.horizontal, LioTheme.Spacing.sm)
-                                .background(LioSignInPalette.field(style).opacity(0.7), in: Capsule())
-                                .overlay { Capsule().stroke(LioSignInPalette.line(style), lineWidth: LioTheme.outlineWidth).accessibilityHidden(true) }
+                                .background(LioSignInPalette.field.opacity(0.7), in: Capsule())
+                                .overlay { Capsule().stroke(LioSignInPalette.line, lineWidth: LioTheme.outlineWidth).accessibilityHidden(true) }
                         }
                         .padding(.top, LioTheme.Spacing.xs)
                     }
@@ -388,7 +321,7 @@ struct LioSignInWelcome<Settings: View>: View {
             }
             .scrollBounceBehavior(.basedOnSize)
         }
-        .background(LioSignInBackdrop(style: style))
+        .background(LioSignInBackdrop())
         .toolbar(.hidden, for: .navigationBar)
         .alert(language.text("Coming soon", "即将开放"),
                isPresented: Binding(get: { comingSoon != nil }, set: { if !$0 { comingSoon = nil } }),
@@ -403,7 +336,7 @@ struct LioSignInWelcome<Settings: View>: View {
 
     private var header: some View {
         VStack(spacing: LioTheme.Spacing.md) {
-            LioSignInEmblem(style: style)
+            LioSignInEmblem()
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: LioTheme.Spacing.xs) { wordmark; betaTag }
                 VStack(spacing: LioTheme.Spacing.xxs) { wordmark; betaTag }
@@ -411,8 +344,8 @@ struct LioSignInWelcome<Settings: View>: View {
             .accessibilityElement(children: .combine)
             .accessibilityLabel("Go2China Beta")
             Text(language.text("Your local helper in China", "你在中国的本地助手"))
-                .font(style.headline())
-                .foregroundStyle(LioSignInPalette.ink(style))
+                .font(.system(.largeTitle, design: .default, weight: .bold))
+                .foregroundStyle(LioSignInPalette.ink)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
@@ -420,7 +353,7 @@ struct LioSignInWelcome<Settings: View>: View {
             Text(language.text("Plans, transport, translation and everyday errands — just ask Lio.",
                                "行程、交通、翻译和日常小事，随时问 Lio。"))
                 .font(.body)
-                .foregroundStyle(LioSignInPalette.inkSecondary(style))
+                .foregroundStyle(LioSignInPalette.inkSecondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -428,29 +361,28 @@ struct LioSignInWelcome<Settings: View>: View {
 
     private var wordmark: some View {
         Text("Go2China").font(.subheadline.weight(.semibold)).tracking(0.6)
-            .foregroundStyle(LioSignInPalette.ink(style))
+            .foregroundStyle(LioSignInPalette.ink)
     }
 
     private var betaTag: some View {
         Text("BETA").font(.caption2.weight(.bold)).tracking(0.8)
-            .foregroundStyle(LioSignInPalette.inkSecondary(style))
+            .foregroundStyle(LioSignInPalette.inkSecondary)
             .padding(.horizontal, 6).padding(.vertical, 2)
-            .overlay { Capsule().stroke(LioSignInPalette.line(style), lineWidth: LioTheme.outlineWidth) }
+            .overlay { Capsule().stroke(LioSignInPalette.line, lineWidth: LioTheme.outlineWidth) }
     }
 
     private var actions: some View {
         VStack(spacing: LioTheme.Spacing.sm) {
             if let notice {
-                LioSignInMessage(text: notice, style: style, symbol: "info.circle")
-                    .accessibilityIdentifier("lio.signin.status")
+                LioSignInMessage(text: notice, symbol: "info.circle", identifier: "lio.signin.status")
                     .padding(.bottom, LioTheme.Spacing.xxs)
             }
             ForEach(LioSignInChannel.allCases) { channel in
-                LioSignInChannelButton(channel: channel, language: language, style: style) { comingSoon = channel }
+                LioSignInChannelButton(channel: channel, language: language) { comingSoon = channel }
             }
             HStack(spacing: LioTheme.Spacing.sm) {
                 rule
-                Text(language.text("or", "或")).font(.footnote).foregroundStyle(LioSignInPalette.inkSecondary(style))
+                Text(language.text("or", "或")).font(.footnote).foregroundStyle(LioSignInPalette.inkSecondary)
                 rule
             }
             .padding(.vertical, LioTheme.Spacing.xxs)
@@ -464,7 +396,7 @@ struct LioSignInWelcome<Settings: View>: View {
                     Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).accessibilityHidden(true)
                 }
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(style == .paper ? LioTheme.vermilion : LioSignInPalette.ink(style))
+                .foregroundStyle(LioSignInPalette.ink)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .contentShape(Rectangle())
             }
@@ -474,7 +406,7 @@ struct LioSignInWelcome<Settings: View>: View {
             if typeSize.isAccessibilitySize {
                 settings
                     .padding(.horizontal, LioTheme.Spacing.md)
-                    .background(LioSignInPalette.field(style).opacity(0.85),
+                    .background(LioSignInPalette.field.opacity(0.85),
                                 in: RoundedRectangle(cornerRadius: LioTheme.Radius.small, style: .continuous))
                     .padding(.top, LioTheme.Spacing.md)
             }
@@ -482,7 +414,7 @@ struct LioSignInWelcome<Settings: View>: View {
     }
 
     private var rule: some View {
-        Rectangle().fill(LioSignInPalette.line(style)).frame(height: LioTheme.outlineWidth)
+        Rectangle().fill(LioSignInPalette.line).frame(height: LioTheme.outlineWidth)
     }
 }
 
@@ -492,7 +424,6 @@ struct LioSignInWelcome<Settings: View>: View {
 /// step and the sign-in stay with `LioInvitationView`.
 struct LioInternalTestPage<Settings: View>: View {
     let language: LioLanguage
-    let style: LioSignInStyle
     let isBusy: Bool
     let notice: String?
     let invalidFormat: Bool
@@ -507,36 +438,41 @@ struct LioInternalTestPage<Settings: View>: View {
     private let focusWidth: CGFloat = 1.5
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: LioTheme.Spacing.lg) {
-                header
-                VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
-                    field
-                    if invalidFormat {
-                        LioSignInMessage(text: LioInvitationInput.formatMessage(language), style: style,
-                                         symbol: "exclamationmark.circle")
-                            .accessibilityIdentifier("demo.invite.format")
+        GeometryReader { proxy in
+            ScrollView {
+                // The form sits about a third of the way down; the language row stays at the bottom.
+                VStack(alignment: .leading, spacing: 0) {
+                    Spacer(minLength: LioTheme.Spacing.md)
+                    VStack(alignment: .leading, spacing: LioTheme.Spacing.lg) {
+                        header
+                        VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
+                            field
+                            if invalidFormat {
+                                LioSignInMessage(text: LioInvitationInput.formatMessage(language),
+                                                 symbol: "exclamationmark.circle", identifier: "demo.invite.format")
+                            }
+                            if let notice {
+                                LioSignInMessage(text: notice, symbol: "info.circle", identifier: "demo.invite.status")
+                            }
+                        }
+                        VStack(spacing: LioTheme.Spacing.xs) {
+                            primary
+                            restore
+                        }
                     }
-                    if let notice {
-                        LioSignInMessage(text: notice, style: style, symbol: "info.circle")
-                            .accessibilityIdentifier("demo.invite.status")
-                    }
+                    Spacer(minLength: LioTheme.Spacing.xl)
+                    Spacer(minLength: 0)
+                    settingsRow
                 }
-                VStack(spacing: LioTheme.Spacing.xs) {
-                    primary
-                    restore
-                }
-                settingsRow
+                .frame(maxWidth: 480, alignment: .leading)
+                .padding(.horizontal, LioTheme.Spacing.lg)
+                .padding(.bottom, LioTheme.Spacing.md)
+                .frame(maxWidth: .infinity, minHeight: proxy.size.height)
             }
-            .frame(maxWidth: 480, alignment: .leading)
-            .padding(.horizontal, LioTheme.Spacing.lg)
-            .padding(.top, LioTheme.Spacing.md)
-            .padding(.bottom, LioTheme.Spacing.xl)
-            .frame(maxWidth: .infinity)
         }
         .scrollDismissesKeyboard(.interactively)
         .scrollBounceBehavior(.basedOnSize)
-        .background(LioSignInBackdrop(style: style, quiet: true))
+        .background(LioSignInBackdrop(quiet: true))
         .navigationTitle(language.text("Internal testing", "内部测试"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
@@ -545,7 +481,7 @@ struct LioInternalTestPage<Settings: View>: View {
             ToolbarItem(placement: .principal) {
                 Text(language.text("Internal testing", "内部测试"))
                     .font(.headline)
-                    .foregroundStyle(LioSignInPalette.ink(style))
+                    .foregroundStyle(LioSignInPalette.ink)
                     .fixedSize()
                     .accessibilityAddTraits(.isHeader)
                     .accessibilityIdentifier("lio.invite.heading")
@@ -571,28 +507,28 @@ struct LioInternalTestPage<Settings: View>: View {
             .background(LioTheme.vermilion.opacity(0.12), in: Capsule())
             .accessibilityElement(children: .combine)
             Text(language.text("Enter your invitation code", "输入邀请码"))
-                .font(style.title())
-                .foregroundStyle(LioSignInPalette.ink(style))
+                .font(.system(.title, design: .default, weight: .bold))
+                .foregroundStyle(LioSignInPalette.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
             Text(language.text("Use the code the Go2China team sent you to start chatting with Lio.",
                                "输入 Go2China 团队发给你的邀请码，开始和 Lio 聊你的旅行。"))
                 .font(.body)
-                .foregroundStyle(LioSignInPalette.inkSecondary(style))
+                .foregroundStyle(LioSignInPalette.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     private var field: some View {
         HStack(spacing: LioTheme.Spacing.sm) {
-            Image(systemName: "key.fill").foregroundStyle(LioSignInPalette.inkSecondary(style)).accessibilityHidden(true)
+            Image(systemName: "key.fill").foregroundStyle(LioSignInPalette.inkSecondary).accessibilityHidden(true)
             SecureField(language.text("Invitation code", "邀请码"), text: $code,
-                        prompt: Text(language.text("Invitation code", "邀请码")).font(.body).foregroundColor(LioSignInPalette.inkSecondary(style)))
+                        prompt: Text(language.text("Invitation code", "邀请码")).font(.body).foregroundColor(LioSignInPalette.inkSecondary))
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .keyboardType(.asciiCapable)
                 .font(.body.monospaced())
-                .foregroundColor(LioSignInPalette.ink(style))
+                .foregroundColor(LioSignInPalette.ink)
                 .focused(enteringCode)
                 .submitLabel(.continue)
                 .onSubmit { if canContinue { onContinue() } }
@@ -601,11 +537,11 @@ struct LioInternalTestPage<Settings: View>: View {
         }
         .padding(.horizontal, LioTheme.Spacing.md)
         .frame(minHeight: fieldHeight)
-        .background(LioSignInPalette.field(style),
+        .background(LioSignInPalette.field,
                     in: RoundedRectangle(cornerRadius: LioTheme.Radius.small, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: LioTheme.Radius.small, style: .continuous)
-                .stroke(enteringCode.wrappedValue ? LioTheme.vermilion : LioSignInPalette.line(style),
+                .stroke(enteringCode.wrappedValue ? LioTheme.vermilion : LioSignInPalette.line,
                         lineWidth: enteringCode.wrappedValue ? focusWidth : LioTheme.outlineWidth)
                 .accessibilityHidden(true)
         }
@@ -625,10 +561,10 @@ struct LioInternalTestPage<Settings: View>: View {
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .foregroundStyle(canContinue || isBusy ? LioTheme.onVermilion : LioSignInPalette.inkSecondary(style))
+            .foregroundStyle(canContinue || isBusy ? LioTheme.onVermilion : LioSignInPalette.inkSecondary)
             .padding(.vertical, LioTheme.Spacing.xs)
             .frame(maxWidth: .infinity, minHeight: buttonHeight)
-            .background(canContinue || isBusy ? LioTheme.vermilion : LioSignInPalette.line(style), in: Capsule())
+            .background(canContinue || isBusy ? LioTheme.vermilion : LioSignInPalette.line, in: Capsule())
             .contentShape(Capsule())
         }
         .buttonStyle(LioSignInPressStyle())
@@ -640,7 +576,7 @@ struct LioInternalTestPage<Settings: View>: View {
         Button(action: onRestore) {
             Text(language.text("Continue with your account", "继续使用账号"))
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(isBusy ? LioSignInPalette.inkSecondary(style) : LioSignInPalette.ink(style))
+                .foregroundStyle(isBusy ? LioSignInPalette.inkSecondary : LioSignInPalette.ink)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, minHeight: 44)
@@ -654,11 +590,11 @@ struct LioInternalTestPage<Settings: View>: View {
     private var settingsRow: some View {
         settings
             .padding(.horizontal, LioTheme.Spacing.md)
-            .background(LioSignInPalette.field(style).opacity(0.85),
+            .background(LioSignInPalette.field.opacity(0.85),
                         in: RoundedRectangle(cornerRadius: LioTheme.Radius.small, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: LioTheme.Radius.small, style: .continuous)
-                    .stroke(LioSignInPalette.line(style), lineWidth: LioTheme.outlineWidth).accessibilityHidden(true)
+                    .stroke(LioSignInPalette.line, lineWidth: LioTheme.outlineWidth).accessibilityHidden(true)
             }
     }
 }

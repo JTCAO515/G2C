@@ -43,6 +43,7 @@ def main():
     parser.add_argument('--appearance', choices=('light', 'dark'), default='light')
     parser.add_argument('--scenario', choices=('valid', 'malformed'), default='valid')
     parser.add_argument('--baseline-client', action='store_true')
+    parser.add_argument('--new-signin', action='store_true', help='turn on G2CNewSignInScreenEnabled (#1891)')
     args = parser.parse_args()
     output, build = args.output.resolve(), args.build_dir.resolve()
     if output.is_relative_to(ROOT) or build.is_relative_to(ROOT):
@@ -53,6 +54,7 @@ def main():
         'com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro', 'com.apple.CoreSimulator.SimRuntime.iOS-17-5'], text=True).strip()
     report = dict(layer='local actual invite client/Root + synthetic HTTP only', simulator=simulator,
                   language=args.language, appearance=args.appearance, scenario=args.scenario, baseline_client=args.baseline_client,
+                  new_signin=args.new_signin,
                   source=before, real_service='UNRUN', requests=[])
     lock = threading.Lock()
 
@@ -149,6 +151,9 @@ def main():
         tests = (HERE / 'LioSignInUITests.swift').read_text().replace('__SIGNIN_ENDPOINT__', endpoint)
         tests = tests.replace('__SIGNIN_LANGUAGE__', args.language).replace('__SIGNIN_SCENARIO__', args.scenario)
         tests = tests.replace('__SIGNIN_APPEARANCE__', args.appearance)
+        tests = tests.replace('__SIGNIN_NEW_SCREEN__', '1' if args.new_signin else '0')
+        tests = tests.replace('__SIGNIN_OK__', '好' if args.language == 'zh-Hans' else 'OK')
+        tests = tests.replace('__SIGNIN_SOON_TEXT__', '即将开放' if args.language == 'zh-Hans' else 'coming soon')
         tests = tests.replace('__SIGNIN_ERROR_TEXT__', '登录暂未完成' if args.language == 'zh-Hans' else 'Sign-in could not be completed')
         (output / 'G2CControl.swift').write_text(tests)
         # Reuse the existing fail-closed B691 HTTP transport, extending only this
@@ -182,7 +187,9 @@ def main():
         text = text.replace(json.dumps(str(host)), json.dumps(str(generated_host)))
         text = text.replace('space.go2china.foundation.local', 'space.go2china.app').replace('space.go2china.foundation.control', 'space.go2china.signin.control')
         info = output / 'SignIn.Info.plist'; values = plistlib.loads((ROOT / 'ios/App/Info.plist').read_bytes())
-        values.update(G2CDemoBeta=True, G2CB691LocalFixture=True); info.write_bytes(plistlib.dumps(values))
+        values.update(G2CDemoBeta=True, G2CB691LocalFixture=True)
+        if args.new_signin: values['G2CNewSignInScreenEnabled'] = 'YES'
+        info.write_bytes(plistlib.dumps(values))
         text = text.replace(json.dumps(str(ROOT / 'ios/App/Info.plist')), json.dumps(str(info)))
         entitlements = output / 'SignIn.entitlements'
         entitlements.write_bytes(plistlib.dumps({'application-identifier': 'space.go2china.app', 'keychain-access-groups': ['space.go2china.app']}))
@@ -202,9 +209,13 @@ def main():
         assert report['source_unchanged'], 'Source changed during the test; preserve result without qualifying it'
         summary = subprocess.check_output(['xcrun', 'xcresulttool', 'get', 'test-results', 'summary', '--path', str(output / 'signin.xcresult')])
         (output / 'summary.json').write_bytes(summary); value = json.loads(summary)
-        assert value['passedTests'] == 1 and value['failedTests'] == value['skippedTests'] == 0
+        # The largest-text case runs only with --new-signin and is skipped otherwise.
+        assert value['passedTests'] == (2 if args.new_signin else 1) and value['failedTests'] == 0
+        assert value['skippedTests'] == (0 if args.new_signin else 1)
         routes = [(r['method'], r['path']) for r in report['requests']]
         assert routes.count(('POST', '/v2/demo-invite-sessions')) == 1
+        # #1891: the placeholder channels send nothing, so the invitation is the first request.
+        if args.new_signin: assert routes[0] == ('POST', '/v2/demo-invite-sessions'), routes[:3]
         assert not any(p.startswith(('/v1/conversations', '/v1/needs', '/v1/travel-context-actions')) for _, p in routes)
         assert not any(method == 'POST' and path not in ('/v2/demo-invite-sessions', '/v4/cleanup-devices') for method, path in routes)
         if args.scenario == 'malformed': assert len(routes) == 1
