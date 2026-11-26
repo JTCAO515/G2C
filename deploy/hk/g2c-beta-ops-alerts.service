@@ -1,0 +1,12 @@
+[Unit]
+Description=G2C synthetic beta host alerts: daily-backup heartbeat and disk (#1720)
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/srv/g2c-beta
+UMask=0077
+ExecStart=/usr/bin/python3 -B /srv/g2c-beta/deploy/hk/ops_alerts.py check
+TimeoutStartSec=120
+StandardOutput=journal
+StandardError=journal

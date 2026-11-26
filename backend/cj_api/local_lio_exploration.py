@@ -249,6 +249,8 @@ class ExplorationPlanning:
         messages.insert(0,dict(role='system',content=system))
         # The current traveler text remains last for the old fact/tool router.
         messages=[*messages[:-1],dict(role='user',content=text)]
+        from cj_message.lio_safety import safety_lines_enabled,supplement
+        safety_lines=safety_lines_enabled()  # read before the model call (#1733 review)
         body=[]
         for chunk in worker.tools.answer(worker,binding,messages,lio_locale=original.locale,
                 lio_question_day=original.question_day,message_refs=view.references):
@@ -257,7 +259,9 @@ class ExplorationPlanning:
                 state=worker._event(binding,state,'effect_committed',chunk.effect())
             else:body.append(chunk)
         state=worker.runs.snapshot(binding)
-        return self._finish(worker,binding,state,''.join(body),scene,original.locale)
+        answer=''.join(body)
+        if safety_lines:answer+=supplement(text,answer,original.locale)  # W2-6 (#1733)
+        return self._finish(worker,binding,state,answer,scene,original.locale)
 
     def _plan(self,worker,binding,state,view,locale,*,prior_model_calls=0):
         effective=defaults(view.profile)

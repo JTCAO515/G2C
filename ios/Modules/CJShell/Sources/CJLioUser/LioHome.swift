@@ -60,6 +60,10 @@ public struct LioHome<MenuContent: View>: View {
     @State private var opening = Opening.beforeNext
     /// The selected tab and the Tools tab's open pages (#1724); the tab container shows them.
     @State private var router: LioRouter
+    /// #1753: the AI line under finished answers (`G2CAIDisclosureEnabled`, off unless the build says YES).
+    private let showsAIDisclosure = LioAIDisclosureFeature.enabledInBuild
+    /// #1748: the account's in-app location choice, when the build asks for it (`G2CLocationConsentEnabled`).
+    @State private var locationConsent: LioLocationConsent?
     private var tab: LioTab {
         get { router.tab }
         nonmutating set { router.tab = newValue }
@@ -169,6 +173,11 @@ public struct LioHome<MenuContent: View>: View {
         self.menuService = LioMenuService.fromBuild(relay: menuRelay.map(LioMenuService.relay))
         self.tripHomeStore = tripHomeStore
         self.messageDirectory = messageDirectory
+        _locationConsent = State(initialValue: LioLocationConsentFeature.enabledInBuild ? LioLocationConsent(
+            store: messageDirectory.map {
+                LioLocationConsentStore(directory: LioLocationConsentStore.storageDirectory(inMessageDirectory: $0),
+                                        isCurrent: toolsSessionIsCurrent)
+            }, isCurrent: toolsSessionIsCurrent) : nil)
         _savedPlans = State(initialValue: LioSavedPlansModel(store: plans))
         self.toolsSessionIsCurrent = toolsSessionIsCurrent
         self.reconnect = reconnect
@@ -211,9 +220,9 @@ public struct LioHome<MenuContent: View>: View {
     }
 
     private var nearbyService: LioNearbyService? {
-        if let nearbyRelay { return .internalBeta(relay: nearbyRelay) }
+        if let nearbyRelay { return LioNearbyService.internalBeta(relay: nearbyRelay).requiringLocationConsent(locationConsent) }
         #if DEBUG
-        return LioNearbyService.previewFromArguments
+        return LioNearbyService.previewFromArguments?.requiringLocationConsent(locationConsent)
         #else
         return nil
         #endif
@@ -234,11 +243,11 @@ public struct LioHome<MenuContent: View>: View {
             var seen = Set<LioTaxiPlace.ID>()
             let places = conversation.itineraries.flatMap { $0.days.flatMap { $0.stops.compactMap(\.taxiDestination) } }
                 .filter { seen.insert($0.id).inserted }
-            return .internalBeta(relay: taxiRelay, recentDirectory: taxiRecentDirectory,
-                                 tripPlaces: places)
+            return LioTaxiEntry.internalBeta(relay: taxiRelay, recentDirectory: taxiRecentDirectory,
+                                             tripPlaces: places).requiringLocationConsent(locationConsent)
         }
         #if DEBUG
-        return LioTaxiEntry.previewFromArguments
+        return LioTaxiEntry.previewFromArguments?.requiringLocationConsent(locationConsent)
         #else
         return nil
         #endif
@@ -269,6 +278,7 @@ public struct LioHome<MenuContent: View>: View {
                       menu: menu)
         }
         .environment(\.lioTaxiEntry, taxiEntry)
+        .environment(\.lioLocationConsent, locationConsent)
         .environment(\.lioNearbyService, nearbyService)
         .environment(\.lioMetroNearby, metroNearby)
         .environment(\.lioHotelFinder, hotelRelay.map { .internalBeta(relay: $0) })
@@ -1189,6 +1199,9 @@ public struct LioHome<MenuContent: View>: View {
                 .lioEntrance(.fade, active: entering.contains(answerKey)) { entering.remove(answerKey) }
             }
             messageStatus(turn)
+            if answerShown(turn) {
+                LioAnswerFooter(language: language, showsDisclosure: showsAIDisclosure)
+            }
             if let memoryActions {
                 ForEach(turn.memoryTags.filter { !handledTags.contains($0) }) { tag in
                     memorySuggestion(tag, turnID: turn.id, client: memoryActions)
@@ -1311,6 +1324,12 @@ public struct LioHome<MenuContent: View>: View {
 
     private func canRespond(to turnID: Data, in owner: LioConversation) -> Bool {
         conversation === owner && conversation.turns.last?.id == turnID && canSwitchChat
+    }
+
+    /// #1753: a finished answer whose text has fully appeared (failed and empty turns have none).
+    private func answerShown(_ turn: LioTurn) -> Bool {
+        guard turn.status == .finished, turn.exploration != nil || !turn.answer.isEmpty else { return false }
+        return cardBodyReady(turn)
     }
 
     private func cardBodyReady(_ turn: LioTurn) -> Bool {

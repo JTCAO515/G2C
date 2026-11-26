@@ -50,7 +50,7 @@ struct MemoryShell: View {
                 } header: { ShellSectionHeading(title: language.text("Me", "我的")) }
                 Section {
                     route(language.text("Help", "帮助"), to: .help, identifier: "memory.help")
-                    route(language.text("Privacy notice (beta)", "隐私说明（内测版）"), to: .privacy, identifier: "memory.privacy")
+                    route(PrivacySummary.title(language), to: .privacy, identifier: "memory.privacy")
                     route(language.text("Support", "支持"), to: .support, identifier: "memory.support")
                     route(language.text("Feedback", "问题反馈"), to: .feedback(feedbackHost.captureEntry()), identifier: "memory.feedback")
                 } header: { ShellSectionHeading(title: language.text("Information", "说明")) }

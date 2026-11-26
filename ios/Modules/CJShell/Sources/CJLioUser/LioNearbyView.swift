@@ -180,6 +180,9 @@ struct LioNearbyView: View {
         case .failed(let failure):
             VStack(alignment: .leading, spacing: 8) {
                 Text(message(failure)).accessibilityIdentifier("lio.nearby.problem")
+                if failure == .consentNeeded {
+                    LioLocationConsentButton(language: language) { Task { await locate() } }
+                }
                 HStack {
                     if failure == .locationDenied {
                         Button(language.text("Open Settings", "打开设置")) {
@@ -319,6 +322,7 @@ struct LioNearbyView: View {
         case .rateLimited: language.text("Too many lookups right now. Try again later.", "查找太频繁，请稍后再试。")
         case .timedOut: language.text("This took too long. Try again.", "查找超时，请重试。")
         case .unavailable: language.text("Nearby isn’t available right now. Try again.", "附近暂时不可用，请重试。")
+        case .consentNeeded: language.text("Use your location to see places around you.", "使用你的位置，才能显示周围的地点。")
         }
     }
 }

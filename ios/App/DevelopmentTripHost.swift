@@ -1711,6 +1711,7 @@ private struct DevelopmentVerificationTransport: ClientTransport {
             try LioShowCardDetailsCleanup.erase(in: captured[0])
             try LioRoadbookCleanup.erase(in: captured[0])
             try LioTripHomeCleanup.erase(in: captured[0])
+            try LioLocationConsentCleanup.erase(in: captured[0])
             #endif
         case .tripPending:
             guard let url else { throw CleanupFailure.unavailable }
