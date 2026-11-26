@@ -187,11 +187,11 @@ enum LioToolRegistry {
         },
         LioToolEntry(.taxi, symbol: "car.fill",
                      name: ("Taxi", "打车"), summary: ("Find a place and open DiDi", "搜地点，用滴滴打车"),
-                     gate: .availability { $0.taxi }) { context, _ in
+                     gate: .availability { $0.taxi }, parameters: LioTaxiPlace.routeParameters) { context, route in
             #if os(iOS)
             if let taxiEntry = context.taxiEntry {
                 LioTaxiView(language: context.language, service: taxiEntry.service, tripPlaces: taxiEntry.tripPlaces,
-                            recentStore: taxiEntry.recentStore)
+                            recentStore: taxiEntry.recentStore, destination: LioTaxiPlace(route: route))
             }
             #endif
         },
@@ -232,9 +232,15 @@ enum LioToolRegistry {
         LioToolEntry(.attractionBooking, symbol: "ticket",
                      name: ("Sight Bookings", "景点预约"),
                      summary: ("When tickets open, with reminders", "预约规则与放票提醒"),
-                     gate: .availability { $0.attractionBooking }) { context, _ in
+                     gate: .availability { $0.attractionBooking }, parameters: ["sight"]) { context, route in
             #if os(iOS)
-            LioAttractionBookingView(language: context.language)
+            // A trip place (#1740) opens its sight's rule; otherwise the list.
+            if let rule = LioAttractionBookingRule.rule(route: route) {
+                LioAttractionBookingDetail(rule: rule, language: context.language,
+                                           reminders: LioAttractionReminderScheduler(center: LioSystemReminderCenter()))
+            } else {
+                LioAttractionBookingView(language: context.language)
+            }
             #endif
         },
         LioToolEntry(.menuOrder, symbol: "fork.knife",

@@ -404,16 +404,10 @@ struct LioNearbyPlaceView: View {
 
     /// AMap first (GCJ-02 coordinates, `dev=0`), then Apple Maps; nothing is sent to our servers.
     private func directions() {
-        let lat = place.coordinate.latitude, lng = place.coordinate.longitude
-        var amap = URLComponents(string: "iosamap://path")!
-        amap.queryItems = [.init(name: "sourceApplication", value: "Go2China"), .init(name: "dlat", value: "\(lat)"),
-                           .init(name: "dlon", value: "\(lng)"), .init(name: "dname", value: place.name),
-                           .init(name: "dev", value: "0"), .init(name: "t", value: "0")]
-        var apple = URLComponents(string: "https://maps.apple.com/")!
-        apple.queryItems = [.init(name: "daddr", value: "\(lat),\(lng)"), .init(name: "q", value: place.name)]
+        let urls = LioPlaceActions.directionURLs(latitude: place.coordinate.latitude,
+                                                 longitude: place.coordinate.longitude, name: place.name)
         Task { @MainActor in
-            if let url = amap.url, await UIApplication.shared.open(url) { return }
-            if let url = apple.url, await UIApplication.shared.open(url) { return }
+            for url in urls { if await UIApplication.shared.open(url) { return } }
             directionsUnavailable = true
         }
     }

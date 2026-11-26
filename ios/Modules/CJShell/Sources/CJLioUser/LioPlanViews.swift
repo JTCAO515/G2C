@@ -37,9 +37,17 @@ struct LioPlanSheet: View {
     let actions: LioItineraryTimelineView.Actions
     @Environment(\.dismiss) private var dismiss
 
+    /// A tool opened from a place (#1740) shows in the Tools tab, so this sheet closes.
+    private var closingOnTool: LioItineraryTimelineView.Actions {
+        var actions = actions
+        actions.openedTool = { dismiss() }
+        return actions
+    }
+
     var body: some View {
         NavigationStack {
-            LioItineraryTimelineView(itinerary: plan.itinerary, language: language, startDate: plan.startDate, actions: actions)
+            LioItineraryTimelineView(itinerary: plan.itinerary, language: language, startDate: plan.startDate,
+                                     actions: closingOnTool)
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
                         Button { dismiss() } label: {
