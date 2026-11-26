@@ -15,6 +15,7 @@ PLAYBOOK_LABELS = {
     "p0_assistance": "紧急协助",
     "document_loss": "护照丢失",
     "flight_change": "航班变动",
+    "demo_itinerary_change": "广州商务陪同时段变更",
     "ai_failure": "助手反复失败",
 }
 STEP_LABELS = {
@@ -26,6 +27,8 @@ STEP_LABELS = {
     "draft_document_guidance": "拟定证件补办指引",
     "summarize_flight_change": "整理航班变动",
     "draft_itinerary_change": "拟定行程变更草稿",
+    "prepare_change_options": "整理陪同时段选项",
+    "draft_guangzhou_adjustment": "拟定广州陪同调整方案",
     "simulate_paid_rebooking": "模拟付费改订",
     "summarize_repeated_failure": "整理反复失败情况",
     "verify_unresolved_request": "人工核实未解决请求",

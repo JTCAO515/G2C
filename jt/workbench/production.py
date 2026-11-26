@@ -15,11 +15,12 @@ from pathlib import Path
 import psycopg
 import uvicorn
 
-from jt.synthetic import generate_dataset
+from jt.synthetic import generate_demo_dataset
 
 from .__main__ import bootstrap_admin
 from .app import HEALTH_HOST, ProxyEntry, create_app
 from .auth import AccessDenied, Auth, InvalidAccount
+from .cases import CaseWorkspace
 from .postgres import DATABASE_VARIABLE, PostgresStore, migrate
 
 
@@ -77,8 +78,10 @@ def serve_workbench(store: PostgresStore, auth: Auth) -> None:
     if not HOSTNAME.fullmatch(host):
         raise RuntimeError("invalid workbench public hostname")
     path = socket_path()
-    store.seed(generate_dataset().signals)
-    app = create_app(auth, queue=store, proxy=ProxyEntry(host, store.check_ready))
+    demo = generate_demo_dataset()
+    store.seed(demo.signals)
+    cases = CaseWorkspace(demo.workflow, tuple(execution.case.case_id for execution in demo.cases))
+    app = create_app(auth, queue=store, proxy=ProxyEntry(host, store.check_ready), cases=cases)
     config = uvicorn.Config(app, proxy_headers=False, access_log=False, server_header=False)
     with private_listener(path) as listener:
         server = uvicorn.Server(config)
