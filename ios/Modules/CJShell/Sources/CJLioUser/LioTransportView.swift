@@ -24,11 +24,14 @@ struct LioTransportView: View {
 
     /// `from` and `to` fill the two city fields when a route opens the page (#1724); nothing is searched until
     /// the traveller taps search.
-    init(language: LioLanguage, service: LioTransportService, from: String = "", to: String = "") {
+    init(language: LioLanguage, service: LioTransportService, from: String = "", to: String = "",
+         date: LioTripDay? = nil) {
         self.language = language
         self.service = service
         _fromText = State(initialValue: from)
         _toText = State(initialValue: to)
+        // #1739: the next trip day from the travel profile, else today.
+        if let date { _date = State(initialValue: date.start()) }
     }
 
     var body: some View {

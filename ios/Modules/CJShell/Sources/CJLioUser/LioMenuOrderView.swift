@@ -36,6 +36,14 @@ struct LioMenuOrderView: View {
     @State private var showsCamera = false
     @State private var cameraProblem: String?
 
+    /// `needs` are ticked when the page opens (#1739: the show-card food allergies); the traveller can untick them.
+    init(language: LioLanguage, service: LioMenuService, memoryNotes: [LioMenuDietNote]?, needs: [LioDietaryNeed] = []) {
+        self.language = language
+        self.service = service
+        self.memoryNotes = memoryNotes
+        _needs = State(initialValue: needs)
+    }
+
     private var spicyMemory: String? { memoryNotes.flatMap(LioMenuMemory.noSpicySource) }
 
     var body: some View {
