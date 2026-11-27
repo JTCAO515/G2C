@@ -12,6 +12,10 @@ struct LioItineraryTimelineView: View {
         var saved = false
         /// #1723 PR-2: the save is reading the trip's places; the button waits.
         var saving = false
+        /// #1976: the last save did not reach this phone; nothing is shown as saved.
+        var saveFailed = false
+        /// #1976: after a save, goes to the Trips tab where the trip now is. Nil hides the button.
+        var openTrips: (@MainActor () -> Void)?
         var adjustDay: (@MainActor (Int) -> Void)?
         var askLio: (@MainActor () -> Void)?
         /// Called after a place's button opened a tool (#1740), for example to close the sheet this page is in.
@@ -60,10 +64,17 @@ struct LioItineraryTimelineView: View {
             Text(summaryLine(stops: stops)).font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
             buttonRow {
                 if actions.saved {
-                    Label(language.text("Saved", "已保存"), systemImage: "bookmark.fill")
+                    Label(language.text("Saved to Trips", "已保存到行程"), systemImage: "bookmark.fill")
                         .font(.subheadline.weight(.semibold)).foregroundStyle(LioTheme.jade)
                         .frame(minHeight: 44)
                         .accessibilityIdentifier("lio.plan.saved")
+                    if let openTrips = actions.openTrips {
+                        Button { openTrips() } label: {
+                            Label(language.text("View in Trips", "到行程里看"), systemImage: "suitcase")
+                        }
+                        .buttonStyle(LioSecondaryButtonStyle(fullWidth: false))
+                        .accessibilityIdentifier("lio.plan.open-trips")
+                    }
                 } else if let save = actions.save {
                     Button { save() } label: {
                         Label(actions.saving ? language.text("Saving…", "正在保存…") : language.text("Save to Trips", "保存到行程"),
@@ -78,6 +89,12 @@ struct LioItineraryTimelineView: View {
                 }
                 .buttonStyle(LioSecondaryButtonStyle(fullWidth: false))
                 .accessibilityIdentifier("lio.plan.share")
+            }
+            if actions.saveFailed, !actions.saved {
+                Label(language.text("This trip could not be saved on this phone. Try again.", "这份行程没能存到手机上，请再试一次。"),
+                      systemImage: "exclamationmark.triangle")
+                    .font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                    .accessibilityIdentifier("lio.plan.save-failed")
             }
         }
     }
@@ -181,6 +198,10 @@ struct LioItineraryTimelineView: View {
                 Text(stop.place.displayName(language)).font(.headline)
                 if language == .english, stop.place.nameZH != stop.place.nameEN {
                     Text(stop.place.nameZH).font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
+                }
+                if let unconfirmed = stop.unconfirmedNote(language) {
+                    Text(unconfirmed).font(.caption).foregroundStyle(LioTheme.inkSecondary)
+                        .accessibilityIdentifier("lio.plan.unconfirmed")
                 }
                 if !stop.text.isEmpty {
                     Text(stop.text).font(.subheadline).foregroundStyle(LioTheme.ink).fixedSize(horizontal: false, vertical: true)

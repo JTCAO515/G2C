@@ -114,3 +114,11 @@ struct LioRichItinerary: Equatable, Sendable {
     let lodgingArea: String
     let hotels: [Hotel]
 }
+
+extension LioRichItinerary.Stop {
+    /// #1976: a place the server could not check (a summary save, or a degraded save that left the field out) is
+    /// shown as not confirmed instead of looking like a checked address. Nil for a checked place.
+    func unconfirmedNote(_ language: LioLanguage) -> String? {
+        place.matched ? nil : language.text("Place not confirmed", "地点未确认")
+    }
+}
