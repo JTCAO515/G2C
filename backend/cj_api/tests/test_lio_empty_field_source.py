@@ -192,6 +192,100 @@ class LoggedShape(unittest.TestCase):
             parse_flow(json.dumps(value), (original(self.TEXT),), (), 'm', None, schema=OptionalIntake)
 
 
+class NullQuote(unittest.TestCase):
+    """Hong Kong run 30aa955a (v3, 2026-11-28, after #2112): `field_sources` held `{field: start_date, quote: "null"}` for a start date
+    that was itself null; `quote` is a string that is not in the traveler's words, so `field_source_binding` refused the whole plan."""
+    TEXT = '帮我规划一个北京2天的行程：第一天故宫和景山，第二天颐和园。'
+
+    def logged(self, **changes):
+        value = flow(self.TEXT, city='北京', days=2, intent='plan', questions=('start_date', 'party_size'), reply='好的，请问哪天出发、几个人？')
+        value.update(version='LIO-planning-intake.8', planning_request_index=0, needs_tools=True, unknown_fields=['start_date', 'party_size'])
+        value['field_sources'] = [dict(field='start_date', source_index=0, quote='null'), dict(field='duration_days', source_index=0, quote='2天')]
+        value.update(changes)
+        return value
+
+    def parse(self, value):
+        return parse_flow(json.dumps(value), (original(self.TEXT),), (), 'current', None, schema=OptionalIntake)
+
+    def test_the_logged_output_is_planned(self):
+        from test_lio_planning_flow import context, run
+        saved, events, lookups, _ = run(self.logged(), self.TEXT)
+        state = context(events)
+        self.assertEqual((state['status'], state['authority']), ('plan_preview', 'plan'))
+        self.assertEqual(state['facts']['duration_days']['value'], 2)
+        self.assertNotIn('start_date', state['facts'])
+
+    def test_a_source_for_an_absent_fact_is_dropped_whatever_it_quotes(self):
+        for quote in ('null', 'None', 'unknown', 'N/A', '未指定', self.TEXT[:4], '2天'):
+            for field in ('start_date', 'party_size'):
+                with self.subTest(quote=quote, field=field):
+                    value = self.logged(field_sources=[dict(field=field, source_index=0, quote=quote), dict(field='duration_days', source_index=0, quote='2天')])
+                    _, _, facts = self.parse(value)
+                    self.assertNotIn(field, facts)
+                    self.assertEqual(facts['duration_days']['value'], 2)
+
+    def test_a_present_date_or_party_whose_quote_is_not_the_travelers_words_is_still_refused_whole(self):
+        # Invented evidence for a value that IS stated is not repaired and not trusted: the plan is refused as before.
+        for change in (dict(start_date='2026-12-01'), dict(party_size=2)):
+            field = next(iter(change))
+            with self.subTest(field=field):
+                value = self.logged(**change, unknown_fields=[], field_sources=[dict(field=field, source_index=0, quote='as stated earlier'),
+                                                                                  dict(field='duration_days', source_index=0, quote='2天')])
+                with self.assertRaises(InvalidInput):
+                    self.parse(value)
+
+    def test_a_quote_that_is_in_the_travelers_words_is_left_to_the_normal_checks(self):
+        value = self.logged(party_size=2, unknown_fields=['start_date'],
+                            field_sources=[dict(field='party_size', source_index=0, quote='北京'), dict(field='duration_days', source_index=0, quote='2天')])
+        _, _, facts = self.parse(value)
+        self.assertEqual(facts['party_size']['sources'][0]['quote'], '北京')       # the source check is unchanged (it never judged meaning)
+
+    def test_a_missing_or_non_string_quote_for_an_optional_fact_is_dropped_and_for_a_required_one_still_refused(self):
+        value = self.logged(field_sources=[dict(field='start_date', source_index=0, quote=None), dict(field='duration_days', source_index=0, quote='2天')])
+        self.assertEqual(self.parse(value)[2]['duration_days']['value'], 2)
+        refused = self.logged(field_sources=[dict(field='duration_days', source_index=0, quote='not in the message')])
+        with self.assertRaises(InvalidInput):
+            self.parse(refused)
+
+
+def wish(label, quote, **changes):
+    value = dict(label=label, kind='intent', quote=quote, source_index=0, detail_refs=[], applies_to=['self'], locked=None, booking_evidence=None,
+                 start_date=None, start_time=None, start_timezone=None, start_place=None, end_date=None, end_time=None, end_timezone=None, end_place=None,
+                 unknown_fields=['start_date', 'start_time', 'end_time', 'locked'], uncertain_fields={})
+    value.update(changes)
+    return value
+
+
+class WishItems(unittest.TestCase):
+    """Hong Kong run 869c104a (v2, 2026-11-28): day-by-day sightseeing wishes came back as `intent` fixed items and the plan stopped to
+    ask for their participants, dates and clocks. An item with nothing that says it is fixed is dropped, as if not provided."""
+    TEXT = NullQuote.TEXT
+
+    def test_the_two_hong_kong_shapes_plan_instead_of_asking(self):
+        from test_lio_planning_flow import context, run
+        for changes in ({}, dict(locked=False)):
+            with self.subTest(changes=changes):
+                value = NullQuote().logged()
+                value['fixed_items'] = [wish('故宫和景山', '第一天故宫和景山', **changes), wish('颐和园', '第二天颐和园', **changes)]
+                _, events, lookups, _ = run(value, self.TEXT)
+                state = context(events)
+                self.assertEqual((state['status'], state['authority']), ('plan_preview', 'plan'))
+                self.assertEqual(len(lookups), 1)
+
+    def test_an_item_with_anything_that_says_it_is_fixed_is_kept(self):
+        from cj_api.lio_flow_intake import _drop_wish_items
+        keep = [wish('故宫', '第一天故宫', locked=True), wish('故宫', '第一天故宫', booking_status='booked'), wish('故宫', '第一天故宫', start_time='09:00'),
+                wish('故宫', '第一天故宫', start_date='2026-12-01'), wish('故宫', '第一天故宫', start_place='东门'),
+                wish('故宫', '第一天故宫已预约'), wish('故宫（固定安排）', '第一天故宫'), wish('故宫', '第一天故宫', detail_refs=[dict(source_index=0, quote='x')]),
+                wish('故宫', '第一天故宫', kind='appointment'), wish('酒店', '第一天酒店', kind='hotel'), wish('机票', '第一天航班', kind='transport')]
+        items = [dict(item) for item in keep]
+        self.assertEqual(_drop_wish_items(items), 0)
+        self.assertEqual(items, keep)
+        mixed = [wish('故宫', '第一天故宫'), wish('酒店集合', '第一天9点酒店集合', kind='hotel', locked=True)]
+        self.assertEqual(_drop_wish_items(mixed), 1)
+        self.assertEqual([item['kind'] for item in mixed], ['hotel'])
+
+
 class EndToEnd(unittest.TestCase):
     def test_the_whole_plan_goes_through_like_the_same_plan_without_the_empty_source(self):
         # Through the real intake runner: the empty quote changes nothing about what is planned or stored.
