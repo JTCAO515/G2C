@@ -101,13 +101,16 @@ def _value(form, text):
 
 
 def allows_pilot_preference_write(command):
+    # #2038 (decided 2026-11-28, privacy first): every slot, the two older ones included, takes a write only when the
+    # text is a supported statement of that slot (`_value`), and never when it is sensitive. Text that is not a health or
+    # faith word but has nothing to do with the slot ("my stomach hurts" in diet.spicy) is not written: one missed
+    # preference costs a tap, a wrong one costs trust.
     if sensitive(command.text):
         return False
-    if command.slot in _EXISTING_SLOTS:
-        return True
     form = _FORMS.get(command.slot)
-    return (form is not None and command.kind == 'preference'
-            and _value(form, command.text) is not None)
+    if form is None or _value(form, command.text) is None:
+        return False
+    return command.slot in _EXISTING_SLOTS or command.kind == 'preference'
 
 
 def explicit_pilot_preference(text, slots):
