@@ -14,7 +14,7 @@ from cj_feasibility.trip_time_v3 import evaluate
 
 from .calendar_plan import compose, FIRST_PLAN, REPLAN_DELTA, DAY_SYSTEM
 from .calendar_source import CalendarContextSource
-from .lio_plan import LioPlanPublisher
+from .lio_plan import LioPlanPublisher, lio_autosave
 from .needs_publisher import NeedsDraftPublisher
 from .needs_context import ContextPublisher
 from .calendar_commit import commit
@@ -67,6 +67,7 @@ class LioCalendarPublisher(LioPlanPublisher):
             raise ValueError('original signer and read-only date-evidence source required')
         repository = Repository(original.repository.connect, original.repository.scope, confirmation,
                                 structured=True, calendar=True)
+        repository.autosave = lio_autosave(original)
         source = CalendarContextSource(original.source, original_needs, calendar_reader, repository)
         NeedsDraftPublisher.__init__(self, repository, source, original.clock)
         self.check_lio_original = check_lio_original

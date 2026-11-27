@@ -63,8 +63,11 @@ class LioCalendarEdit:
                     worker.message_context.active_original(binding),selected.request.raw,selected.edit,capture,
                     limits=limits,before_publish=worker._publication_check)
 
-            state,_=worker._step(binding,publish,lambda receipt:'trip_proposal:'+receipt.proposal_id,
-                                 draft=True,publication_deadline=deadline)
+            from cj_agent.trip_autosave import publish as autosave_publish
+            from cj_trip.lio_history import edit_action_id
+            state,_=autosave_publish(worker,binding,publisher.repository,edit_action_id(binding.run_id),
+                lambda:worker._step(binding,publish,lambda receipt:'trip_proposal:'+receipt.proposal_id,
+                                    draft=True,publication_deadline=deadline))
         except DraftRejected:
             state=worker._event(binding,worker.runs.snapshot(binding),'draft_outcome','validation_failed')
             return answer(worker,binding,state,locale,'这次没能更新行程，原安排保留。想调整哪一项？',

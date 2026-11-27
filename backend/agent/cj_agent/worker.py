@@ -397,8 +397,12 @@ class RunWorker:
                              else self.messages.query(binding.message_id))
                     return self.drafts.publish_for_message(binding,original,current,reply,sources,
                         **({'before_publish':check} if check is not None else {}))
-                state, draft = self._step(binding, publish,
-                    lambda value: 'trip_proposal:' + value.proposal_id, draft=True)
+                # ADR-0012: receipt effects around a Lio plan write while its repository has autosave on.
+                from cj_trip.lio_history import plan_action_id
+                from .trip_autosave import publish as autosave_publish
+                state, draft = autosave_publish(self, binding, getattr(self.drafts, 'repository', None),
+                    plan_action_id(binding.run_id), lambda: self._step(binding, publish,
+                    lambda value: 'trip_proposal:' + value.proposal_id, draft=True))
         except BudgetExceeded:
             return self._budget_rejection(binding,'draft'), None
         except (DraftRejected, ProviderFailed, ProviderUnknown) as error:
