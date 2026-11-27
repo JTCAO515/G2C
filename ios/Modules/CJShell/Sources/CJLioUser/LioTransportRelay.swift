@@ -12,6 +12,8 @@ enum LioTransportRelayFailure: Error, Equatable {
     case offline
     case timedOut
     case unavailable
+    /// A flight-number lookup the supplier could not answer (FLIGHTS.1 502/503/504).
+    case lookupUnavailable
 
     func message(_ language: LioLanguage) -> String {
         switch self {
@@ -29,6 +31,9 @@ enum LioTransportRelayFailure: Error, Equatable {
         case .unavailable:
             language.text("Couldn't compare right now. Try again, or check on 12306 and Trip.com.",
                           "暂时无法比较，请重试，或直接在 12306、Trip.com 查看。")
+        case .lookupUnavailable:
+            language.text("Couldn't look up this flight right now. Try again later, or check the airline's app or site.",
+                          "暂时查不到这个航班，请稍后再试，或在航空公司 App 或官网查看。")
         }
     }
 }
@@ -40,6 +45,7 @@ enum LioTransportRelayFailure: Error, Equatable {
     static let maximumResponseBytes = 131_072
     private static let maximumItems = 20
     private let url: URL
+    private let flightsURL: URL
     private let isCurrent: @MainActor () -> Bool
     private let bearer: @MainActor () -> String?
     private let exchange: Exchange
@@ -47,6 +53,7 @@ enum LioTransportRelayFailure: Error, Equatable {
     init(baseURL: URL, isCurrent: @escaping @MainActor () -> Bool,
          bearer: @escaping @MainActor () -> String?, exchange: @escaping Exchange) {
         url = baseURL.appending(path: "v1/tools/transport/search")
+        flightsURL = baseURL.appending(path: "v1/tools/flights")
         self.isCurrent = isCurrent
         self.bearer = bearer
         self.exchange = exchange
@@ -94,6 +101,77 @@ enum LioTransportRelayFailure: Error, Equatable {
         case 429: throw LioTransportRelayFailure.quotaExceeded
         default: throw LioTransportRelayFailure.unavailable
         }
+    }
+
+    /// FLIGHTS.1 (#2007): one flight by number and day. One POST with the caller's own bearer; the reply is
+    /// checked here before any of it reaches a view.
+    func flightStatus(_ query: LioFlightQuery) async throws -> LioFlightLookupResult {
+        try Task.checkCancellation()
+        guard isCurrent(), let token = bearer(), !token.isEmpty else {
+            throw LioTransportRelayFailure.signInRequired
+        }
+        var request = URLRequest(url: flightsURL, timeoutInterval: 30)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "version": Self.flightsVersion, "date": query.day, "flight_number": query.number,
+        ], options: [.sortedKeys])
+
+        let body: Data
+        let response: URLResponse
+        do {
+            (body, response) = try await exchange(request)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            try requireCurrentSession()
+            switch (error as? URLError)?.code {
+            case .notConnectedToInternet, .networkConnectionLost: throw LioTransportRelayFailure.offline
+            case .timedOut: throw LioTransportRelayFailure.timedOut
+            default: throw LioTransportRelayFailure.lookupUnavailable
+            }
+        }
+        try requireCurrentSession()
+        guard let http = response as? HTTPURLResponse, http.url == flightsURL, body.count <= Self.maximumResponseBytes else {
+            throw LioTransportRelayFailure.lookupUnavailable
+        }
+        switch http.statusCode {
+        case 200:
+            guard let result = Self.decodeFlights(body, for: query) else { throw LioTransportRelayFailure.lookupUnavailable }
+            return result
+        case 401: throw LioTransportRelayFailure.signInRequired
+        case 403: throw LioTransportRelayFailure.unavailableForAccount
+        case 429: throw LioTransportRelayFailure.quotaExceeded
+        default: throw LioTransportRelayFailure.lookupUnavailable
+        }
+    }
+
+    static let flightsVersion = "FLIGHTS.1"
+    private static let maximumFlights = 100
+
+    private struct FlightsReply: Decodable {
+        let version: String
+        let source: String
+        let date: String
+        let more: Bool
+        let items: [LioFlightStatus]
+    }
+
+    static func decodeFlights(_ body: Data, for query: LioFlightQuery) -> LioFlightLookupResult? {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        guard let reply = try? decoder.decode(FlightsReply.self, from: body), reply.version == flightsVersion,
+              reply.date == query.day, reply.items.count <= maximumFlights else { return nil }
+        let valid = reply.items.allSatisfy { item in
+            item.flightNumber.range(of: LioFlightQuery.pattern, options: .regularExpression) != nil
+                && [item.departure, item.arrival].allSatisfy { code in
+                    code.map { $0.range(of: #"^[A-Z]{3}$"#, options: .regularExpression) != nil } ?? true
+                }
+        }
+        guard valid else { return nil }
+        return LioFlightLookupResult(query: query, flights: reply.items, more: reply.more)
     }
 
     private func requireCurrentSession() throws {
