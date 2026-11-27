@@ -4,7 +4,7 @@ import XCTest
     @objc func testMedicalCardRequiresDisclosureAndCanBeShownAndCleared() throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", "en",
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-tools-all-cards", "-cj.ui.language.v1", "en",
                                "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
         app.launchEnvironment["G2C_LIO_MEDICAL_CARD_FIXTURE"] = UUID().uuidString
         app.launch()
@@ -54,7 +54,7 @@ import XCTest
     @objc func testLocalSupportShowsVerifiedConsularDistricts() throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", "en",
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-tools-all-cards", "-cj.ui.language.v1", "en",
                                "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
         app.launch()
         defer { app.terminate() }
@@ -81,7 +81,7 @@ import XCTest
     @objc func testUnlistedConsularDistrictShowsOfficialAlternativeWithoutInventingData() throws {
         for language in ["en", "zh-Hans"] {
             let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
+            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-tools-all-cards", "-cj.ui.language.v1", language,
                                    "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
             app.launch()
             defer { app.terminate() }
@@ -113,7 +113,7 @@ import XCTest
         for language in ["en", "zh-Hans"] {
             for appearance in ["light", "dark"] {
                 let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-                app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
+                app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-tools-all-cards", "-cj.ui.language.v1", language,
                                        "-lio.ui.appearance.v1", appearance, "-UIPreferredContentSizeCategoryName",
                                        "UICTContentSizeCategoryL"]
                 app.launch()
@@ -151,7 +151,7 @@ import XCTest
         for language in ["en", "zh-Hans"] {
             for appearance in ["light", "dark"] {
                 let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-                app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
+                app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-tools-all-cards", "-cj.ui.language.v1", language,
                                        "-lio.ui.appearance.v1", appearance]
                 app.launch()
                 defer { app.terminate() }
@@ -185,7 +185,7 @@ import XCTest
     @objc func testLocalSupportShowsVerifiedJapanCanadaAndEmptySearchInBothLanguages() {
         for language in ["en", "zh-Hans"] {
             let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
+            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-tools-all-cards", "-cj.ui.language.v1", language,
                                    "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
             app.launch()
             defer { app.terminate() }
@@ -225,7 +225,7 @@ import XCTest
     @objc func testLocalSupportSearchesNationalitiesAndRestoresOnlyTheSelectedEmbassy() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", "en"]
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-tools-all-cards", "-cj.ui.language.v1", "en"]
         app.launch()
         defer { app.terminate() }
         openLocalSupport(app)
@@ -273,7 +273,7 @@ import XCTest
     @objc func testLocalSupportDraftReopensAndClearsWithoutSending() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", "en"]
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-tools-all-cards", "-cj.ui.language.v1", "en"]
         app.launchEnvironment["G2C_LIO_SUPPORT_DRAFT_FIXTURE"] = UUID().uuidString
         let editor = app.descendants(matching: .any).matching(identifier: "lio.support.draft").firstMatch
 
@@ -315,7 +315,7 @@ import XCTest
     @objc func testLocalSupportDraftRejectsOverflowAtLargestTextSize() throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", "en", "-UIPreferredContentSizeCategoryName",
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-tools-all-cards", "-cj.ui.language.v1", "en", "-UIPreferredContentSizeCategoryName",
                                "UICTContentSizeCategoryAccessibilityXXXL"]
         app.launchEnvironment["G2C_LIO_SUPPORT_DRAFT_FIXTURE"] = UUID().uuidString
         let editor = app.descendants(matching: .any).matching(identifier: "lio.support.draft").firstMatch
@@ -444,7 +444,7 @@ import XCTest
     @objc func testLocalSupportShowsConsumerContactsAtLargestTextSize() throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", "en",
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-tools-all-cards", "-cj.ui.language.v1", "en",
                                "-lio.ui.appearance.v1", "dark", "-UIPreferredContentSizeCategoryName",
                                "UICTContentSizeCategoryAccessibilityXXXL"]
         app.launch()
@@ -468,7 +468,7 @@ import XCTest
     @objc func testDebugDialUsesTheConfiguredNumberWithoutCalling() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-support-dial-preview",
+        app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-tools-all-cards", "--lio-support-dial-preview",
                                "-cj.ui.language.v1", "en"]
         app.launchEnvironment["G2C_LOCAL_SUPPORT_TEST_PHONE"] = "__LOCAL_SUPPORT_TEST_PHONE__"
         app.launch()

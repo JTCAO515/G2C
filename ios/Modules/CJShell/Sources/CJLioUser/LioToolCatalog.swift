@@ -18,6 +18,8 @@ enum LioToolCatalog {
         var menuOrder = false
         /// #1574: `G2CShowCardEnabled`, off unless the build says YES; first card when shown (JT).
         var returnHotel = false
+        /// #1980: Nearby Essentials has its own card: the nearby service, with `G2CNearbyEssentialsEnabled` on.
+        var convenience = false
         /// #1724: tools whose entry is gated by `.build(infoKey:)`, on in this build.
         var enabled: Set<LioTool> = []
     }
@@ -26,15 +28,27 @@ enum LioToolCatalog {
         language.text("Tools", "工具")
     }
 
-    /// The tools shown as cards, in registry order (#1724).
+    /// The tools this build has, in registry order (#1724): every tool whose gate is open, cards or not. A route
+    /// opens exactly these (#1980: route-only tools such as `payment-guide` stay reachable).
     static func visible(_ availability: Availability, entries: [LioToolEntry] = LioToolRegistry.entries) -> [LioTool] {
-        entries.filter { entry in
-            switch entry.gate {
-            case .always: true
-            case .availability(let shown): shown(availability)
-            case .build: availability.enabled.contains(entry.tool)
+        entries.filter { isShown($0, availability, entries: entries) }.map(\.tool)
+    }
+
+    /// The cards on the Tools tab (#1980): the available tools that are cards, in registry order.
+    static func cards(_ availability: Availability, entries: [LioToolEntry] = LioToolRegistry.entries) -> [LioTool] {
+        entries.filter { $0.placement == .card && isShown($0, availability, entries: entries) }.map(\.tool)
+    }
+
+    private static func isShown(_ entry: LioToolEntry, _ availability: Availability, entries: [LioToolEntry]) -> Bool {
+        switch entry.gate {
+        case .always: true
+        case .availability(let shown): shown(availability)
+        case .build: availability.enabled.contains(entry.tool)
+        case .anyOf(let tools):
+            tools.contains { tool in
+                entries.first { $0.tool == tool }.map { $0.tool != entry.tool && isShown($0, availability, entries: entries) } ?? false
             }
-        }.map(\.tool)
+        }
     }
 }
 
