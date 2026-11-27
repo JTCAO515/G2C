@@ -33,13 +33,14 @@ def used_enabled():
     return value == 'on'
 
 
-def used_item_ids(run):
+def used_item_ids(run, keep=None):
     """`(item_ids, total)` of the items this run's payload carried, in the payload's order; ids are those of the run's
     own snapshot, so a source id the snapshot does not know is skipped. `([], 0)` when there is nothing."""
     try:
         payload = json.loads(bytes(run.payload).decode('utf-8'))
         sources = [item['source_id'] for item in payload['items']]
-        by_source = {item.command.source_id: item.command.item_id for item in run.snapshot.items}
+        by_source = {item.command.source_id: item.command.item_id for item in run.snapshot.items
+                     if keep is None or keep(item.command)}
     except Exception:
         return [], 0
     ids = []
@@ -50,11 +51,11 @@ def used_item_ids(run):
     return ids[:MAX_USED], min(len(ids), MAX_TOTAL)
 
 
-def used_effect(run):
+def used_effect(run, keep=None):
     """The effect string for a finished answer, or None (switch off, no run, nothing used)."""
     if not used_enabled() or run is None:
         return None
-    ids, total = used_item_ids(run)
+    ids, total = used_item_ids(run, keep)
     if not ids:
         return None
     return USED_EFFECT + json.dumps(dict(item_ids=ids, total=total), separators=(',', ':'), sort_keys=True)
