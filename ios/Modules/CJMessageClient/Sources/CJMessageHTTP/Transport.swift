@@ -232,6 +232,7 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
 
     func readLio(conversationID: String?, before: String?, bearer: String,
                  version: LioTimelineWire.Version = .v1, declaresAnswerLayout: Bool = false,
+                 declaresAnswerRich: Bool = false,
                  observedResponse: (@MainActor @Sendable (HTTPResponse) -> Void)? = nil) async throws -> (HTTPResponse, HTTPBody?) {
         var query: [URLQueryItem] = []
         if let conversationID {
@@ -242,9 +243,11 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
             guard LioTimelineWire.validMessageID(before) else { throw MessageHTTPFailure.invalidConfiguration }
             query.append(URLQueryItem(name: "before", value: before))
         }
-        // LIO-answer-followups.1 (#1727): read-side only, and the server accepts it on the v2 timeline alone.
-        if declaresAnswerLayout, version == .v2 {
-            query.append(URLQueryItem(name: "accepts", value: LioTimelineWire.answerFollowupsVersion))
+        // LIO-answer-followups.1 (#1727) and LIO-answer-rich.1 (#1991): read-side only, the server accepts them on the
+        // v2 timeline alone, and takes exactly one value. Rich includes what followups.1 gives.
+        if version == .v2, declaresAnswerRich || declaresAnswerLayout {
+            query.append(URLQueryItem(name: "accepts", value: declaresAnswerRich ? LioTimelineWire.answerRichVersion
+                                                                                  : LioTimelineWire.answerFollowupsVersion))
         }
         return try await lioRead(path: "/v\(version.rawValue)/lio/timeline", query: query,
                                  operation: "readLioTimelineV\(version.rawValue)", bearer: bearer, observedResponse: observedResponse)
