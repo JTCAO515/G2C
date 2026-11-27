@@ -141,6 +141,8 @@ class LoggedShape(unittest.TestCase):
                 ('spend 3 days waiting for my visa, plan Chengdu', 3), ('stay 3 days in quarantine', 3),
                 ('for 3 days I will be away, plan Chengdu', 3), ('规划3天的预算', 3), ('我想住3天的酒店', 3), ('stay 3 days at the hotel', 3),
                 ('玩3天', 3),   # not a plan request on its own
+                # fifth review round: 「3日」 is usually the 3rd of the month; only 「N日游」 or a Chinese numeral counts
+                ('帮我规划北京3日的行程', 3), ('帮我规划3日的行程', 3), ('帮我规划北京3日', 3), ('帮我规划北京2日的行程', 2),
                 # fifth review round: no punctuation to cut the clause, and a destination that is not this plan's
                 ('帮我规划北京行程我在深圳待3天再过去', 3), ('帮我规划北京行程 我先在上海玩3天', 3), ('帮我规划北京行程 我在医院住3天', 3),
                 ('帮我规划成都行程 展会排3天', 3), ('帮我规划北京行程我爸来北京住3天', 3),
@@ -166,7 +168,7 @@ class LoggedShape(unittest.TestCase):
                 ('帮我规划一个北京2天的行程：第一天故宫和景山，第二天颐和园。', 2, '2天', '北京'), ('去成都玩三天', 3, '三天', '成都'),
                 ('我想去成都玩3天，预算1000', 3, '3天', '成都'), ('去成都玩3天但是预算1000', 3, '3天', '成都'),
                 ('帮我规划成都三天的行程，不要太累', 3, '三天', '成都'), ('规划北京三日游', 3, '三日', '北京'),
-                ('规划北京3日行程', 3, '3日', '北京'), ('规划成都三天两晚', 3, '三天', '成都'), ('去成都玩十天', 10, '十天', '成都'),
+                ('规划北京3日游', 3, '3日', '北京'), ('帮我规划北京三日的行程', 3, '三日', '北京'), ('规划成都三天两晚', 3, '三天', '成都'), ('去成都玩十天', 10, '十天', '成都'),
                 ('帮我规划无锡3天的行程', 3, '3天', '无锡'),
                 ('帮我规划成都行程 3天', 3, None, '成都'),
                 ('Plan 3 days in Chengdu', 3, '3 days', 'Chengdu'), ('Plan a 3-day trip', 3, '3-day', None),

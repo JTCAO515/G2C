@@ -385,7 +385,7 @@ def _drop_empty_field_sources(value):
 # is left to the normal refusal.
 _ZH_NUMBER_CHARS='零〇一二两三四五六七八九十百'
 _NUM=r'[0-9]{1,3}|[一二两三四五六七八九十]|one|two|three|four|five|six|seven|eight|nine|ten'
-_LOOSE_SPAN=re.compile(r'(?<![第每])(?P<n>'+_NUM+r')\s*(?:天|日)|\b(?P<m>'+_NUM+r')(?:\s+|-)days?\b',re.I)
+_LOOSE_SPAN=re.compile(r'(?<![第每])(?:(?P<n>'+_NUM+r')\s*天|(?P<n2>[一二两三四五六七八九十])\s*日|(?P<n3>[0-9]{1,3})\s*日(?=游))|\b(?P<m>'+_NUM+r')(?:\s+|-)days?\b',re.I)
 _ZH_BEFORE=re.compile(r'(?:玩|游|待|逛|住|共|共计|一共|总共|行程|规划|安排|旅行|旅游|计划|排)\s*$')
 _ZH_AFTER=re.compile(r'\s*(?:天|日)\s*(?:(?:的|之)\s*)?(?:行程|旅行|旅游|游|之旅|攻略|计划|路线)|\s*日游|\s*(?:天|日)\s*[0-9一二两三四五六七八九十]\s*(?:夜|晚)')
 _EN_BEFORE=re.compile(r'\b(?:for|spend|spending|stay|staying|plan|planning|visit|visiting)\s+(?:a\s+|an\s+)?$',re.I)
@@ -438,7 +438,7 @@ def _duration_quote(text,days,city=None):
     loose=list(_LOOSE_SPAN.finditer(text))
     if len(loose)!=1:return None
     match=loose[0]
-    group='n'if match['n']else'm'
+    group=next(name for name in('n','n2','n3','m')if match[name])
     number=match[group]
     count=int(number)if number.isdecimal()else NUMBERS.get(number.casefold())
     if count!=days:return None
