@@ -38,11 +38,12 @@ Origin rules (:func:`item_origins`): an item that was ``user`` in the previous v
 still present stays ``user``. Lio write: new items and previous ``lio`` items are ``lio``. User
 write: a new item or one whose bytes changed (``packed(item)``) is ``user``, an unchanged one keeps
 its origin. Undo: each item keeps the origin of the restored version, except that an item that was
-``user`` in the undone version stays ``user``. An undo that kept fixed points (``protect_fixed``) is
-still an undo, not a person's write (ADR-0012 decision 5): points equal to the restored version take
-its origin, points the undo kept unchanged from the undone version keep theirs, anything else is
-``user``, and no tombstone is written. An item without a record (any version committed before 0061)
-counts as ``user``. A withdrawal (ADR-0012 revision 1) appends the bytes of version 1 as
+``user`` in the undone version stays ``user``. Today every undo entry appends the exact bytes of
+version-1 (``protect_fixed`` refuses an undo that would change a fixed point instead of keeping it).
+Defensively, an undo-basis commit whose bytes differ is still an undo, not a person's write (ADR-0012
+decision 5): points equal to the restored version take its origin, points kept unchanged from the
+undone version keep theirs, anything else is ``user``, and no tombstone is written. An item without
+a record (any version committed before 0061) counts as ``user``. A withdrawal (ADR-0012 revision 1) appends the bytes of version 1 as
 version 2 and keeps every origin of version 1.
 
 Tombstones block a removed point from coming back: a removed point with a Gaode id blocks that
@@ -283,7 +284,7 @@ def record_commit(repository, cur, proposal, previous_content):
         else:
             kind = USER
     elif kind == UNDO:
-        # Undo appends version-1, possibly keeping fixed points of the undone version (protect_fixed).
+        # Undo appends the bytes of version-1 (every entry today); a differing undo is handled defensively.
         # The basis is server-signed by the undo paths only. Without the restored revision it cannot
         # be told apart, so it is treated as a person's write (conservative).
         restored_content = _accepted_content(repository, cur, proposal.trip_id, proposal.expected_version - 1)

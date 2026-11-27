@@ -57,7 +57,8 @@ def test_undo_restores_previous_origins_but_never_turns_user_back_to_lio():
 
 
 def test_an_undo_that_kept_fixed_points_is_still_an_undo_not_a_person_write():
-    # #2041 P2: protect_fixed keeps a fixed point of the undone version, so the bytes differ from version-1.
+    # #2041 P2 (defensive; every undo entry appends version-1 exactly today): an undo-basis commit that
+    # differs from version-1, e.g. one keeping a point of the undone version, is still an undo.
     undone = [item('a', 'Lio moved'), item('f', 'fixed by Lio'), item('n')]
     undone_origins = {'a': LIO, 'f': LIO, 'n': LIO}
     restored_version = [item('a'), item('f', 'before')]
