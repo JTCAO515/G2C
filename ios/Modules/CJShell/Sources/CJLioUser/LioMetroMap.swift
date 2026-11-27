@@ -365,3 +365,68 @@ struct LioMetroViewport: Equatable {
                                             height: min(max(pan.height, -limitY), limitY)))
     }
 }
+
+// MARK: Opening view (#2008)
+
+extension LioMetroMap {
+    /// Where the map opens: the centre of the city at a readable size, rather than the whole network squeezed to
+    /// a phone (C5 advice: a first-time visitor needs the central stations legible; "Whole map" is one tap away).
+    struct Focus: Equatable, Sendable {
+        let x: Double
+        let y: Double
+        let zoom: Double
+    }
+
+    /// Networks with fewer stations than this fit a phone whole and open that way.
+    static let centreFocusMinimumStations = 80
+    static let centreFocusZoom = 2.6
+
+    /// Stations whose middle is "the centre" for the best-known cities (C5, 2026-11-27): Beijing inside the
+    /// Line 2 ring, Shanghai People's Square to Lujiazui, Guangzhou around the Pearl River, Shenzhen Futian to
+    /// Luohu, Chengdu Tianfu Square, Chongqing Jiefangbei to Liangluhou. Other cities use their densest
+    /// cluster of interchanges.
+    static let centreStations: [String: [String]] = [
+        "beijing": ["西直门", "东直门", "崇文门", "宣武门"],
+        "shanghai": ["人民广场", "陆家嘴"],
+        "guangzhou": ["体育西路", "珠江新城", "公园前", "昌岗"],
+        "shenzhen": ["福田", "老街", "购物公园", "会展中心"],
+        "chengdu": ["天府广场"],
+        "chongqing": ["两路口", "较场口", "小什字"],
+    ]
+
+    /// `nil` for a small network, which opens whole.
+    var centreFocus: Focus? {
+        guard stations.count >= Self.centreFocusMinimumStations else { return nil }
+        let named = (Self.centreStations[city.id] ?? []).compactMap { name in stations.first { $0.nameZH == name } }
+        if !named.isEmpty {
+            return Focus(x: named.map(\.x).reduce(0, +) / Double(named.count),
+                         y: named.map(\.y).reduce(0, +) / Double(named.count), zoom: Self.centreFocusZoom)
+        }
+        let interchanges = stations.filter(\.isInterchange)
+        guard !interchanges.isEmpty else { return nil }
+        let reach = max(width, height) * 0.15
+        let densest = interchanges.max { lhs, rhs in
+            func crowd(_ station: Station) -> Int {
+                interchanges.filter { hypot($0.x - station.x, $0.y - station.y) <= reach }.count
+            }
+            return crowd(lhs) < crowd(rhs)
+        }
+        return densest.map { Focus(x: $0.x, y: $0.y, zoom: Self.centreFocusZoom) }
+    }
+}
+
+#if canImport(CoreGraphics)
+import CoreGraphics
+
+extension LioMetroViewport {
+    /// The viewport that puts `focus` in the middle of a view, zoomed as the focus asks.
+    static func opening(on focus: LioMetroMap.Focus, map: LioMetroMap, view: CGSize) -> Self {
+        let fit = min(view.width / map.width, view.height / map.height)
+        guard fit.isFinite, fit > 0 else { return Self() }
+        let zoom = min(max(CGFloat(focus.zoom), 1), maximumZoom)
+        let unclamped = Self(zoom: zoom, pan: CGSize(width: -(focus.x - map.width / 2) * fit * zoom,
+                                                     height: -(focus.y - map.height / 2) * fit * zoom))
+        return unclamped.clamped(content: CGSize(width: map.width * fit, height: map.height * fit), view: view)
+    }
+}
+#endif
