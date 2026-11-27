@@ -10,7 +10,7 @@ from cj_agent.lio_intake_flat_schema import DTO,City
 from cj_needs.domain import InvalidInput,decode
 from .lio_sourced_intake import parse_sourced,BookingSourceUnclear
 from .lio_positive_trip import destination_query,known_city_term
-from .lio_planning_grounding import NUMBER,NUMBERS,OPEN_PLAN
+from .lio_planning_grounding import NUMBER,NUMBERS,OPEN_PLAN,PLAN_REQUEST
 from .lio_national_intake import ZONE_LITERAL,_clock_zone_marker
 
 CORE=('start_date','duration_days','party_size')
@@ -397,6 +397,25 @@ _BAD_AFTER=re.compile(r'\s*(?:[.．][0-9]|半|多|余|来|左右|上下|以?内|
                       r'(?:ago|later|left|remaining|from|before|after|earlier|to|or|and|in advance|in total|a row)\b)',re.I)
 
 
+# Second red-line round: the whitelist above says what a trip length looks like, not whose trip it is. So the message itself must
+# be a plan request (the existing request grammar, or 「去…玩N天」), and the clause that holds the count must not be negated, past,
+# somebody else's, or about something that is not a trip (meeting, visa, quarantine, budget...). Leftovers are refused as before.
+_ZH_REQUEST=re.compile(r'\s*(?:我想|我要|我们想|我们要|想|要)?去[^，,。.！!？?；;]{1,16}?玩\s*(?:'+_NUM+r')\s*天',re.I)
+_CLAUSE_BREAK=re.compile(r'[，,。.！!？?；;:：\n]|\bbut\b|\bthen\b|\band\b|但是?|可是|不过|然后',re.I)
+_CLAUSE_VETO=re.compile(
+    r'不|别|没|无|未|勿|取消|算了|免|上次|去年|前年|以前|从前|曾|刚|昨天|前天|朋友|同事|家人|亲戚|他们|她们|他|她|别人|老板|客户|'
+    r'会议|开会|出差|上班|值班|班|隔离|签证|转机|预算|费用|价格|酒店|住宿|机票|航班|工作|培训|考试|学习|休假|请假|'
+    r"\b(?:not|no|never|neither|nor|without|cancel\w*|forget|last|previous\w*|ago|friend|friends|colleague\w*|boss|client\w*|"
+    r"meeting\w*|work|working|conference|business|quarantine|isolation|visa|layover|budget|cost|price|hotel|flight|training|exam|"
+    r"he|she|they|his|her|their|don'?t|doesn'?t|didn'?t|won'?t|can'?t|cannot|wouldn'?t|shouldn'?t|couldn'?t)\b",re.I)
+
+
+def _clause_of(text,start,end):
+    left=max((m.end()for m in _CLAUSE_BREAK.finditer(text[:start])),default=0)
+    right=next((start+m.start()for m in _CLAUSE_BREAK.finditer(text[start:])if start+m.start()>=end),len(text))
+    return text[left:right]
+
+
 def _duration_quote(text,days):
     """The one exact span of `text` that states `days` as the length of the trip, or None. See the rules above."""
     loose=list(_LOOSE_SPAN.finditer(text))
@@ -411,6 +430,9 @@ def _duration_quote(text,days):
     plain=text.strip().strip('，,。.！!？? ')==match[0].strip()
     if not(plain or _ZH_BEFORE.search(before[-6:])or _ZH_AFTER.match(tail)or _EN_BEFORE.search(before[-16:])or _EN_AFTER.match(tail)):
         return None
+    if not plain:
+        if not(PLAN_REQUEST.match(text)or _ZH_REQUEST.match(text)or OPEN_PLAN.match(text)):return None
+        if _CLAUSE_VETO.search(_clause_of(text,match.start(),match.end())):return None
     return match[0]
 
 
