@@ -292,13 +292,23 @@ class WishItems(unittest.TestCase):
                 wish('故宫', '第一天故宫，已经付款了'), wish('故宫', '交了定金'), wish('Palace Museum', 'already paid'), wish('Palace Museum', 'deposit sent'),
                 wish('故宫', '已经报名了故宫'), wish('Palace Museum', 'signed up for the Palace Museum'), wish('故宫', '第一天故宫上午场'),
                 wish('故宫', '故宫讲解员'), wish('故宫', '故宫名额已经拿到'), wish('故宫', '第一天开会，会议'),
+                # fourth review round: times, dates, payments and orders written other ways; any number that is not a day ordinal keeps the item
+                wish('Palace Museum', 'Day 1 Palace Museum at nine'), wish('Palace Museum', 'Palace Museum 0900'), wish('Palace Museum', 'Palace Museum at 09h30'),
+                wish('故宫', '故宫14h'), wish('故宫', '上午9-11故宫'), wish('故宫', '9到11故宫'), wish('故宫', '12.1故宫'), wish('故宫', '1日故宫'),
+                wish('故宫', '下周一故宫'), wish('故宫', '周六故宫'), wish('Palace Museum', 'on the 1st Palace Museum'), wish('Palace Museum', '1 December Palace Museum'),
+                wish('Palace Museum', 'on Saturday Palace Museum'), wish('Palace Museum', 'Dec. 1st Palace Museum'), wish('故宫', '12-01故宫'),
+                wish('故宫', '付过钱了'), wish('故宫', '已支付'), wish('故宫', '已经买单'), wish('故宫', '已经下单'), wish('Palace Museum', 'already purchased'),
+                wish('Palace Museum', 'I bought entry'), wish('Palace Museum', 'order placed'), wish('Palace Museum', 'I have a pass'),
+                wish('Palace Museum', 'I have an appointment'), wish('故宫', '已约'), wish('故宫', '约了故宫'), wish('故宫', '预留了故宫'), wish('故宫', '订单号123456'),
+                wish('故宫', '已经订上了'), wish('故宫', '订到了故宫'), wish('故宫', '买到了故宫'), wish('故宫', '入场券到手'), wish('故宫', '已核销'),
+                wish('Palace Museum', 'scheduled'), wish('Palace Museum', 'all set'), wish('故宫', '第一天故宫，三个人'), wish('故宫', '一号故宫'),
                 wish('故宫', '第一天9:30故宫'), wish('故宫', '第一天上午9点故宫'), wish('故宫', '12月1日故宫'), wish('故宫', '2026-12-01 故宫'), wish('故宫', '第一天故宫', detail_refs=[dict(source_index=0, quote='x')]),
                 wish('故宫', '第一天故宫', kind='appointment'), wish('酒店', '第一天酒店', kind='hotel'), wish('机票', '第一天航班', kind='transport')]
         items = [dict(item) for item in keep]
         self.assertEqual(_drop_wish_items(items), 0)
         self.assertEqual(items, keep)
-        for plain in ('第一天故宫和景山', '第二天颐和园', '第一天去故宫，一定要去', '想去故宫转转', 'I want to see the Palace Museum on day 1',
-                      '第一天上午故宫', '下午逛景山'):
+        for plain in ('第一天故宫和景山', '第二天颐和园', '想去故宫转转', 'I want to see the Palace Museum on day 1',
+                      '第一天上午故宫', '下午逛景山', 'Day 2 Jinli and the old street'):
             with self.subTest(plain=plain):
                 only = [wish('故宫', plain)]
                 self.assertEqual(_drop_wish_items(only), 1, plain)

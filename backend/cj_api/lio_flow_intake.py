@@ -296,6 +296,10 @@ _FIXED_HINT=re.compile(r'订好|订了|买好|买了|订票|订位|订房|预订
                        # paid, signed up, a slot, a session, a meeting (red-line review of #2125)
                        r'付款|付了|已付|交了|定金|订金|押金|paid|deposit|payment|报名|报了名|signed up|登记|名额|\bslot|讲解员|搞定|会议|meeting|'
                        r'上午场|下午场|晚场|'
+                       # bought, paid, ordered, appointment, weekday and day words (third review round)
+                       r'付过|已支付|支付|买单|下单|订单|已约|约了|预留|订上|订到|买到|到手|核销|入场券|purchas|bought|\border|\bpass\b|appointment|scheduled|all set|'
+                       r'周[一二三四五六日天末]|星期|礼拜|周末|下周|本周|明天|后天|今天|today|tomorrow|weekend|'
+                       r'monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|june|july|august|september|october|november|december|'
                        # a clock or a date written another way: 「at 9」「nine am」「12/1」「十二月一号」「Dec 1」
                        r'\bat\s+[0-9]{1,2}\b|\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s*(?:am|pm|a\.m\.|p\.m\.)|'
                        r'[0-9]{1,2}\s+in\s+the\s+(?:morning|afternoon|evening)|[0-9]{1,2}\s*/\s*[0-9]{1,2}\b|'
@@ -303,6 +307,17 @@ _FIXED_HINT=re.compile(r'订好|订了|买好|买了|订票|订位|订房|预订
                        r'[0-9]{1,2}\s*[:：点时]|[0-9]{1,2}\s*(?:am|pm)\b|[0-9]{4}[-/.][0-9]{1,2}[-/.][0-9]{1,2}|[0-9]{1,2}\s*月\s*[0-9]{1,2}\s*[日号]|'
                        # clocks spelled out: 「下午两点」「早上八点半」「十点」, noon, o'clock
                        r'[一二三四五六七八九十两]{1,3}\s*[点时]|\bnoon\b|midnight|o.?clock|中午|正午|午夜',re.I)
+
+
+_ORDINAL=re.compile(r'第\s*[一二三四五六七八九十0-9]+\s*天|\bday\s*(?:[0-9]+|one|two|three|four|five|six|seven|eight|nine|ten)\b',re.I)
+_NUMERAL=re.compile(r'[0-9０-９零〇一二两三四五六七八九十百]|\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fifteen|twenty|thirty|half|quarter|hundred|dozen)\b',re.I)
+
+
+def _has_number(text):
+    """Any digit or Chinese numeral left once the day ordinals (「第一天」「Day 2」) are taken out: a clock, a date, an amount, an
+    order number, a head count. None of those is a wish, whatever way it is written (third review round of #2125: a list of
+    written-out forms cannot be completed, a number is the common mark)."""
+    return _NUMERAL.search(_ORDINAL.sub(' ',text))is not None
 
 
 def _drop_wish_items(items):
@@ -315,7 +330,8 @@ def _drop_wish_items(items):
         return (type(item)is dict and item.get('kind')=='intent' and item.get('locked')is not True and item.get('booking_status')is None
                 and not item.get('detail_refs')and all(item.get(key)is None for key in _WHEN_WHERE)
                 and not _FIXED_MARK.search(str(item.get('quote'))+' '+str(item.get('label')))
-                and not _FIXED_HINT.search(str(item.get('quote'))+' '+str(item.get('label'))))
+                and not _FIXED_HINT.search(str(item.get('quote'))+' '+str(item.get('label')))
+                and not _has_number(str(item.get('quote'))+' '+str(item.get('label'))))
     kept=[item for item in items if not wish(item)]
     dropped=len(items)-len(kept)
     items[:]=kept
