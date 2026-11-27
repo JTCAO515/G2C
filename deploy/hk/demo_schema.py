@@ -1,6 +1,7 @@
 """One reviewed additive local PG upgrade, followed by a new signed backup base."""
 import os
 from pathlib import Path
+import re
 import sys
 from uuid import uuid4
 
@@ -71,6 +72,25 @@ def _require_original_schema55(control,lineage):
         raise ValueError('complete original native4 accounting upgrade before schema59')
 
 
+# After the one reviewed 55 -> 59 chain, every later migration is appended one at a time
+# (0060 #1973, 0061 #1994, ...): one image, one signed anchor demo-schemaN, from N-1.
+FIRST_SINGLE=60
+
+
+def _require_original_schema(control,lineage,target):
+    """Every original anchor below a target >= 60: 52..55, the 59 chain from 55, then 60..target-1."""
+    _require_original_schema55(control,lineage)
+    for prior_target in range(59,target):
+        prior=checkpoint.verified(control/(schema_anchor(prior_target)+'.json'))
+        if (prior['state']!='COMPLETE' or prior['lineage']!=lineage
+                or prior.get('from_version')!=CHAIN_FROM.get(prior_target)):
+            raise ValueError(f'complete original schema{prior_target} upgrade before schema{target}')
+
+
+def _supported(target):
+    return target in (49,50,51,52,53,54,55,59) or target>=FIRST_SINGLE
+
+
 def _previous(target):
     return list(range(1,CHAIN_FROM.get(target,target-1)+1))
 
@@ -91,6 +111,40 @@ def _ops_console_nologin(db,*,apply):
 ROLLBACK59_TABLES=('cj_service_request_scope','cj_service_request','cj_service_request_history',
     'cj_service_request_view','cj_service_message','cj_service_message_authority',
     'cj_service_request_staff_audit','cj_lio_chip')
+
+
+_DROP_TABLE=re.compile(r'^DROP TABLE (?:public\.)?([a-z_][a-z0-9_]*);$')
+_ANY_DROP_TABLE=re.compile(r'\bDROP\s+TABLE\b',re.IGNORECASE)
+_UNCHECKED=re.compile(r'\b(?:DROP\s+(?:SCHEMA|OWNED|DATABASE)|TRUNCATE|DELETE\s+FROM)\b',re.IGNORECASE)
+
+
+def rollback_tables(target):
+    """Tables that the committed down script of migration `target` drops (target -> target-1).
+
+    Only plain single-line `DROP TABLE [public.]name;` statements are recognised. Every
+    `DROP TABLE` anywhere in the file (any case, spacing, line split, inside DO blocks or
+    comments) must be one of those lines, and DROP SCHEMA/OWNED/DATABASE, TRUNCATE and
+    DELETE FROM are refused: the read-only check fails closed whenever it cannot prove
+    which rows the step would delete.
+    """
+    if target<FIRST_SINGLE:raise ValueError('use --check-rollback-59 for the reviewed 55 -> 59 chain')
+    found=[m for m in migrate.load() if m['version']==target]
+    if len(found)!=1:raise ValueError('exact Demo migration required for rollback check')
+    text=(migrate.ROOT/found[0]['down']).read_text()
+    if _UNCHECKED.search(text):raise ValueError('down script deletes rows outside DROP TABLE; check by hand')
+    tables=tuple(match[1] for match in map(_DROP_TABLE.fullmatch,(line.strip() for line in text.splitlines()))
+                 if match is not None)
+    if len(_ANY_DROP_TABLE.findall(text))!=len(tables):
+        raise ValueError('unrecognised DROP TABLE in down script; check by hand')
+    return tables
+
+
+def rollback_rows(db,target):
+    """Read-only row counts of the tables migration `target` created; nonzero forbids its down."""
+    counts={name:db.execute(sql.SQL('SELECT count(*) FROM public.{}').format(sql.Identifier(name))).fetchone()[0]
+            for name in rollback_tables(target)}
+    if any(counts.values()):raise ValueError(f'rollback{target}_tables_hold_rows: stop and ask JT')
+    return counts
 
 
 def rollback59_rows(db):
@@ -147,7 +201,7 @@ def upgrade(control,backups,*,target=49,schema_root=None):
     if not local_database_target():raise ValueError('HK local Demo upgrade required')
     local_postgres.require_serving(control)
     expected=checkpoint.versions()
-    if target not in (49,50,51,52,53,54,55,59) or expected!=list(range(1,target+1)):
+    if not _supported(target) or expected!=list(range(1,target+1)):
         raise ValueError('exact Demo migration chain required')
     anchor=schema_anchor(target)
     marker=control/(anchor+'.json')
@@ -166,10 +220,11 @@ def upgrade(control,backups,*,target=49,schema_root=None):
         if target==54:_require_original_schema53(control,release['lineage'])
         if target==55:_require_original_schema54(control,release['lineage'])
         if target==59:_require_original_schema55(control,release['lineage'])
+        if target>=FIRST_SINGLE:_require_original_schema(control,release['lineage'],target)
         _require_idle(db)
         intent=dict(state='INTENT',lineage=release['lineage'],original_fences=checkpoint.local.fence_state(db))
         if target in CHAIN_FROM:intent['from_version']=CHAIN_FROM[target]
-        if target in (52,53,54,55,59):
+        if target in (52,53,54,55) or target>=59:
             latest=_original_latest(control)
             if latest is None:
                 if release['checkpoint']!='fresh':
@@ -191,7 +246,7 @@ def upgrade(control,backups,*,target=49,schema_root=None):
             _migrate_quota_schema(db)
         else:
             migrate.up(db,migrate.load(),target)
-            if target==59:_ops_console_nologin(db,apply=True)
+            if target>=59:_ops_console_nologin(db,apply=target==59)
     manifest=checkpoint.export(destination,control,schema_root=schema_root)
     _complete(marker,manifest,intent)
     if target==52:
@@ -262,6 +317,12 @@ def resume_schema59(control,backups,*,schema_root=None):
     return _resume_origin_schema(control,backups,target=59,schema_root=schema_root)
 
 
+def resume_schema(control,backups,*,target,schema_root=None):
+    """Reconcile the original single-step upgrade to a target >= 60, never a new attempt."""
+    if target<FIRST_SINGLE:raise ValueError('explicit Demo schema resume required')
+    return _resume_origin_schema(control,backups,target=target,schema_root=schema_root)
+
+
 def _resume_origin_schema(control,backups,*,target,schema_root):
     """Reconcile the original signed wire-origin upgrade, never a new attempt."""
     if not local_database_target() or checkpoint.versions()!=list(range(1,target+1)):
@@ -278,6 +339,7 @@ def _resume_origin_schema(control,backups,*,target,schema_root):
         if target==54:_require_original_schema53(control,lineage)
         if target==55:_require_original_schema54(control,lineage)
         if target==59:_require_original_schema55(control,lineage)
+        if target>=FIRST_SINGLE:_require_original_schema(control,lineage,target)
         applied=migrate.applied(db)
         expected=checkpoint.versions()
         if (intent['state']!='INTENT' or release['version']!='g2c-beta-release.1'
@@ -293,10 +355,10 @@ def _resume_origin_schema(control,backups,*,target,schema_root):
             if not original_release or destination.exists() or _original_latest(control)!=intent['original_latest']:
                 raise ValueError('original rolled-back wire-origin state unavailable')
             migrate.up(db,migrate.load(),target)
-            if target==59:_ops_console_nologin(db,apply=True)
+            if target>=59:_ops_console_nologin(db,apply=target==59)
         elif applied!=expected:
             raise ValueError('original wire-origin schema unavailable')
-        elif target==59:_ops_console_nologin(db,apply=False)
+        elif target>=59:_ops_console_nologin(db,apply=False)
         if not original_release:
             manifest=_resume_publication(db,control,destination,intent,release,instance)
             pending=marker.with_suffix('.tmp')
@@ -326,16 +388,40 @@ def daily_base(control,root,previous):
     return base
 
 
+def single_command(arguments):
+    """`--target N`, `--resume-schemaN` or `--check-rollback N` for N >= 60, else None."""
+    number=r'[1-9][0-9]{1,3}'
+    if len(arguments)==2 and arguments[0] in ('--target','--check-rollback') and re.fullmatch(number,arguments[1]):
+        command,target=arguments[0][2:],int(arguments[1])
+    elif len(arguments)==1 and (match:=re.fullmatch(r'--resume-schema('+number+')',arguments[0])):
+        command,target='resume-schema',int(match[1])
+    else:
+        return None
+    return (command,target) if target>=FIRST_SINGLE else None
+
+
 if __name__=='__main__':
     try:
         arguments=sys.argv[1:]
-        if arguments not in ([],['--target','50'],['--target','51'],['--target','52'],['--target','53'],['--target','54'],['--target','55'],['--target','59'],
+        single=single_command(arguments)
+        if single is None and arguments not in ([],['--target','50'],['--target','51'],['--target','52'],['--target','53'],['--target','54'],['--target','55'],['--target','59'],
                              ['--resume-quota'],['--resume-schema53'],['--resume-schema54'],['--resume-schema55'],
                              ['--resume-schema59'],['--check-rollback-59']):
             raise ValueError('explicit Demo schema upgrade required')
         load_secret_environment('recovery')
         control=Path(os.environ['CJ_DEPLOY_CONTROL'])
-        if arguments==['--check-rollback-59']:
+        if single is not None and single[0]=='check-rollback':
+            if not local_database_target():raise ValueError('HK local Demo rollback check required')
+            with checkpoint.operator() as (db,_),db.transaction():
+                db.execute('SET TRANSACTION READ ONLY')
+                counts=rollback_rows(db,single[1])
+            print(f'PASS {len(counts)} table(s) dropped by migration {single[1]} hold no rows (columns are its down guard)')
+        elif single is not None and single[0]=='resume-schema':
+            resume_schema(control,Path('/backups'),target=single[1])
+            print(f'PASS original HK schema{single[1]} backup resumed')
+        elif single is not None:
+            upgrade(control,Path('/backups'),target=single[1])
+        elif arguments==['--check-rollback-59']:
             if not local_database_target():raise ValueError('HK local Demo rollback check required')
             with checkpoint.operator() as (db,_),db.transaction():
                 db.execute('SET TRANSACTION READ ONLY')
