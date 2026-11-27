@@ -4,7 +4,8 @@
 
 * server copy: `backend/fact/cj_fact/places_<city>.v1.json`, byte-identical to the source;
 * App copy: one slim file `ios/Modules/CJShell/Sources/CJLioUser/Resources/LioPlaces.v1.json` with what
-  the App shows before it asks the server (names, aliases, GCJ-02 point, one-line intro, thumbnail).
+  the App shows before it asks the server (names, aliases, GCJ-02 point, Amap id, a hotel's price band / star / accepts-foreigners flag, one-line
+  intro, thumbnail).
 
 Neither copy is edited by hand. `validate.py` checks them (byte for byte) and `validate.py --write`
 rewrites them. A copy without a source (a city that was removed, or the App file when no city exists)
@@ -28,7 +29,8 @@ LAYOUT = Layout(
     placelib.PLACES_DIR / 'images/manifest.v1.json',
 )
 APP_KEYS = ('id', 'city', 'category', 'kind', 'tier', 'rank', 'name_zh', 'name_en', 'aliases_zh', 'aliases_en',
-            'lat', 'lng', 'amap_id', 'intro_short_zh', 'intro_short_en', 'thumb')
+            'lat', 'lng', 'amap_id', 'price_band', 'star', 'accepts_foreigners', 'intro_short_zh', 'intro_short_en',
+            'thumb')
 
 
 def server_copy(layout, city):
@@ -44,6 +46,9 @@ def app_place(entry, thumb):
         'name_zh': entry['name_zh'], 'name_en': entry['name_en'],
         'aliases_zh': entry['aliases_zh'], 'aliases_en': entry['aliases_en'],
         'lat': point['lat'], 'lng': point['lng'], 'amap_id': entry['location']['amap_id'],
+        # Hotels only (null for every other category): "Stay" filters on these and intersects with Amap results.
+        'price_band': entry.get('price_band'), 'star': entry.get('star'),
+        'accepts_foreigners': entry.get('accepts_foreigners'),
         'intro_short_zh': entry.get('intro_short_zh'), 'intro_short_en': entry.get('intro_short_en'),
         'thumb': thumb,
     }
