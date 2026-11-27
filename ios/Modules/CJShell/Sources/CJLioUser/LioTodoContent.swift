@@ -15,7 +15,8 @@ struct LioTodoContent: Equatable, Sendable {
     static let maximumBytes = 256 * 1024
     /// The chip groups' step names in G4's file, in the order of `LioTripTask.stepKeys`.
     static let chipStepNames = ["entry", "arrival", "stay", "money", "network", "local_transit"]
-    static let cities = ["beijing", "shanghai", "guangzhou", "shenzhen", "chengdu", "chongqing"]
+    /// The cities a metro button may name; a city left out of a button simply gets no button (Chengdu, 11-28: its C9 link is a Wuhan page).
+    static let cities = Set(["beijing", "shanghai", "guangzhou", "shenzhen", "chengdu", "chongqing"])
 
     struct Text: Equatable, Sendable {
         let zh: String
@@ -305,10 +306,10 @@ extension LioTodoContent {
             return .openHubGuide
         case "open_city_metro_guide":
             guard Set(object.keys) == ["kind", "source_by_city", "url_by_city"],
-                  let byCity = object["source_by_city"] as? [String: String], Set(byCity.keys) == Set(cities),
+                  let byCity = object["source_by_city"] as? [String: String], !byCity.isEmpty, Set(byCity.keys).isSubset(of: cities),
                   byCity.values.allSatisfy({ sources.contains($0) }),
-                  let urls = object["url_by_city"] as? [String: String], Set(urls.keys) == Set(cities) else {
-                throw fail(key, "open_city_metro_guide has the six cities, each with a source and an address")
+                  let urls = object["url_by_city"] as? [String: String], Set(urls.keys) == Set(byCity.keys) else {
+                throw fail(key, "open_city_metro_guide has cities among the six, each with a source and an address")
             }
             var resolved: [String: URL] = [:]
             for (city, text) in urls {

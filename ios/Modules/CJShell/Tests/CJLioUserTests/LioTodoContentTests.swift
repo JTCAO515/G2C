@@ -188,6 +188,11 @@ struct LioTodoContentTests {
         #expect(beijing.destination.host == "english.beijing.gov.cn")
         #expect(try item(6, 3, .init(now: now, cityID: "shanghai")).button?.destination.host == "english.shanghai.gov.cn")
         #expect(try item(6, 3, .init(now: now, cityID: "xian")).button == nil)
+        // Chengdu has no metro button (its source link was the wrong page); the short text stays.
+        let chengdu = try item(6, 3, .init(now: now, cityID: "chengdu"))
+        #expect(chengdu.button == nil)
+        #expect(chengdu.body.zh.contains("地铁"))
+        #expect(!(try String(contentsOf: Self.resourceURL, encoding: .utf8)).contains("wuhan.gov.cn"))
         // A plain link button always shows.
         #expect(try item(3, 4, plain).button?.destination.host == "www.nia.gov.cn")
     }
@@ -198,7 +203,8 @@ struct LioTodoContentTests {
                 switch entry.action {
                 case .openURL(let url): #expect(url.scheme == "https" && url.host?.isEmpty == false, "\(entry.key)")
                 case .openCityMetroGuide(let urls):
-                    #expect(Set(urls.keys) == Set(LioTodoContent.cities), "\(entry.key)")
+                    // Chengdu is left out on purpose: its C9 link is a Wuhan page (coordinator, 11-28).
+                    #expect(Set(urls.keys) == LioTodoContent.cities.subtracting(["chengdu"]), "\(entry.key)")
                     #expect(urls.values.allSatisfy { $0.scheme == "https" && $0.host?.isEmpty == false })
                 case .openHubGuide: break
                 case nil: Issue.record("\(entry.key) has no action")
