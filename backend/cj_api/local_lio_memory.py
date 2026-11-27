@@ -46,7 +46,7 @@ def pilot_write_configuration(configuration, subjects):
     return replace(configuration, collection=collection)
 
 
-def lio_candidates(database, boundary, subjects, configuration):
+def lio_candidates(database, boundary, subjects, configuration, *, scope=None):
     def repository(principal, scope):
         if principal.subject not in subjects:
             raise Unavailable('Lio memory owner unavailable')
@@ -71,11 +71,15 @@ def lio_candidates(database, boundary, subjects, configuration):
 
     service = CollectionService(boundary, repository, collection)
 
-    def titles(scope, item_ids):
+    def titles(read_scope, item_ids):
         # #2001 (M-3): read-only, in the account's own scope; the timeline reader asks for the titles of the memories an
         # answer used, and gets back only those that are still active with a valid source (`cj_memory.titles`).
+        # #2077: the same roster as `repository()` above. This reader is built for the one scope whose memory configuration
+        # the roster admitted (`scope`); a read for any other scope, or from a reader built without one, is refused.
+        if scope is None or read_scope != scope:
+            return {}
         from cj_memory.titles import memory_titles
-        return memory_titles(Repository(lambda: database.connect(scope), scope, typed_context=True,
+        return memory_titles(Repository(lambda: database.connect(read_scope), read_scope, typed_context=True,
                                         transaction_binder=lambda connection, cursor: connection.bind_scope(cursor)), item_ids)
 
     service.titles = titles
