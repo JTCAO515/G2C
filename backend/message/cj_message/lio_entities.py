@@ -11,10 +11,10 @@ holds only human-approved places, and holds none until the first review is merge
 linker returns nothing.
 """
 from hashlib import sha256
-from functools import lru_cache
 import json
 import os
 import re
+import time
 import unicodedata
 
 ENTITIES_EFFECT = 'lio_entities:'
@@ -210,19 +210,36 @@ def library_docs(city):
         return []
 
 
-@lru_cache(maxsize=1)
+_APPROVED = {'ids': None, 'until': 0.0}
+RETRY_SECONDS = 30.0   # a library that could not be read completely is read again after this long, not for the life of the process
+
+
 def approved_ids():
-    """Every approved place id of the library as a frozenset (the read-side check)."""
+    """Every approved place id of the library as a frozenset (the read-side check).
+
+    A complete read is kept for the life of the process. A read where any city document could not be loaded (a
+    missing or damaged file, a library that is empty today) is kept only RETRY_SECONDS, so a temporary failure
+    does not leave the process without entities until it restarts."""
+    now = time.monotonic()
+    if _APPROVED['ids'] is not None and now < _APPROVED['until']:
+        return _APPROVED['ids']
     from cj_fact.places import CITIES, load_city
     from cj_fact.policy import FactFailure
-    found = set()
+    found, complete = set(), True
     for city in CITIES:
         try:
             doc = load_city(city)
         except FactFailure:
+            complete = False
             continue
         found.update(place['id'] for place in doc['places'] if _approved(place))
-    return frozenset(found)
+    _APPROVED['ids'], _APPROVED['until'] = frozenset(found), (float('inf') if complete else now + RETRY_SECONDS)
+    return _APPROVED['ids']
+
+
+def forget_approved_ids():
+    """Drop the kept read (tests, and a library that was just replaced)."""
+    _APPROVED['ids'], _APPROVED['until'] = None, 0.0
 
 
 def entity_effect(answer, adcode, docs=None):
