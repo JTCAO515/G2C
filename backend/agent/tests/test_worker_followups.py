@@ -197,3 +197,16 @@ def test_the_missing_fact_the_answer_asks_about_gets_answer_chips_first():
     assert labels[:2] == ['我 12 月 5 日到', '还没定哪天到']
     # the hint is not text: the answer is exactly what the model wrote
     assert runs.snapshot(Binding('scope', 'chat', 'g', 'm', 'r', 1)).text == '好的。\n\n大概哪几天去？'
+
+
+def test_the_answer_chips_survive_the_safety_lines_switch():
+    # the safety-lines supplement used to share a variable name with the hint and overwrite it
+    with patch.dict(os.environ, {'CJ_LIO_SAFETY_LINES': '1'}):
+        runs = Service(MemoryRepository(), lambda _: True)
+        messages = Messages('我想去北京玩', TICKETS)
+        worker = RunWorker(scope='scope', messages=messages, runs=runs, provider=None, tools=HintTools('split', '好的。\n\n大概哪几天去？'),
+                           drafts=Drafts(), lio_original=lambda binding: LioOriginal('zh', None))
+        outcome, = worker.process()
+    assert outcome.status == 'completed'
+    (_, labels), = messages.issued
+    assert labels[:2] == ['我 12 月 5 日到', '还没定哪天到']

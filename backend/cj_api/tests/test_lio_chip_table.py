@@ -126,6 +126,11 @@ class Selection(unittest.TestCase):
             with self.subTest(text=text):
                 self.assertFalse(requests_save(text))
 
+    def test_odd_question_text_never_raises(self):
+        for question in ('', '   ', 'x' * 100000, '\ud800坏', '😀' * 50):
+            labels = followups.chips_for(question, 'zh')
+            self.assertTrue(followups.MIN_CHIPS <= len(labels) <= followups.MAX_CHIPS)
+
     def test_hint_is_data_only(self):
         self.assertEqual(followups.FollowupHint('dates').missing, 'dates')
         with self.assertRaises(Exception):

@@ -240,7 +240,7 @@ def _spread(rows, question, count, *, skip=()):
     always show the same first rows but the same question always shows the same ones (testable)."""
     if not rows:
         return []
-    start = int.from_bytes(sha256(question.encode('utf-8')).digest()[:4], 'big') % len(rows)
+    start = int.from_bytes(sha256(question.encode('utf-8', 'replace')).digest()[:4], 'big') % len(rows)
     picked = []
     for offset in range(len(rows)):
         label = rows[(start + offset) % len(rows)]

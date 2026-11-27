@@ -581,13 +581,13 @@ class RunWorker:
             answered = ''
             split_layout = False
             destinations = []
-            missing = None
+            hint_missing = None
             for chunk in chunks:
                 if isinstance(chunk, (LioDestination, LioDestinationUnclear)):
                     destinations.append(chunk)
                     continue
                 if isinstance(chunk, FollowupHint):
-                    missing = chunk.missing
+                    hint_missing = chunk.missing
                     continue
                 if isinstance(chunk, (LioCitation, LioToolProgress, LioLayout)):
                     split_layout |= isinstance(chunk, LioLayout) and chunk.value == 'split'
@@ -612,7 +612,7 @@ class RunWorker:
                 actions = [action.wire() for action in allowed_actions(text, locale, destination=destination)]
                 # Tap-to-ask chips need a one-time ticket stored with the message; without one (no store,
                 # or the write failed) the chips are left out, never shown untappable.
-                labels = chips_for(text, locale, missing=missing)
+                labels = chips_for(text, locale, missing=hint_missing)
                 tickets = None
                 if labels and hasattr(self.messages, 'issue_lio_chips'):
                     try:
