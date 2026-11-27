@@ -24,3 +24,9 @@ def test_cutover_moves_the_backup_pin_with_the_selectors_before_the_service_star
     assert "'backup.image.before'" in PROGRAM and "os.O_EXCL" in PROGRAM[selectors:pin]
     assert "'g2c-beta-operator:'+SOURCE+' '+gate['operator_image_id']" in PROGRAM
     assert "daily_backup_image.py" in PROGRAM[pin:start]
+    # The selector reads a relative path: the readback must run from ROOT and refuse an empty selection.
+    assert "cwd=str(ROOT)" in PROGRAM[pin:start] and "if not selected or" in PROGRAM[pin:start]
+
+
+def test_backup_idle_refuses_any_state_but_a_known_idle_one():
+    assert "if state not in ('inactive','failed')" in PROGRAM

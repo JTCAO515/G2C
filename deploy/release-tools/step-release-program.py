@@ -175,8 +175,9 @@ def main(arguments=None):
     def backup_idle():
         state=subprocess.run(['systemctl','is-active','g2c-beta-backup.service'],stdout=subprocess.PIPE,
             universal_newlines=True).stdout.strip()
-        if state in ('active','activating','deactivating','reloading'):
-            raise ValueError('daily backup is running; retry after it finishes')
+        # Only a known idle state passes; anything else, including an unreadable state, refuses.
+        if state not in ('inactive','failed'):
+            raise ValueError('daily backup must be idle (state %r); retry after it finishes'%state)
     backup_idle()
     window();unchanged()
     print(json.dumps(dict(stage='STEP%d_PREFLIGHT_PASS'%TARGET,ledger=before['ledger'],source=SOURCE)),flush=True)
@@ -231,8 +232,11 @@ def main(arguments=None):
             fd=os.open(str(pending),os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,pin_meta.st_mode&0o777)
             with os.fdopen(fd,'wb')as f:f.write(pin);f.flush();os.fsync(f.fileno())
             os.chown(str(pending),pin_meta.st_uid,pin_meta.st_gid);pending.replace(backup_pin)
-            selected=command(['python3','-B',str(ROOT/'deploy/hk/daily_backup_image.py')]).strip()
-            if selected!=pin.strip():raise ValueError('daily backup pin readback differs')
+            # daily_backup_image.py reads the relative path backup.image: run it from ROOT, and an empty
+            # selection (file not found) is a failure, never a match (#2121 review P1).
+            selected=subprocess.check_output(['python3','-B',str(ROOT/'deploy/hk/daily_backup_image.py')],
+                cwd=str(ROOT),stderr=subprocess.PIPE,timeout=60).strip()
+            if not selected or selected!=pin.strip():raise ValueError('daily backup pin readback differs')
             save('backup-image.json',dict(before=previous_pin.decode().strip(),after=pin.decode().strip()))
         directory_fd=os.open(str(ROOT),os.O_RDONLY|os.O_DIRECTORY)
         try:os.fsync(directory_fd)

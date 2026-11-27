@@ -100,7 +100,8 @@ else
     # Let the original backup container finish first (bounded), so the source is not reopened
     # under a running export; past the bound the source is reopened anyway, with an alert.
     waited=0
-    limit=${CJ_BACKUP_ACTIVE_WAIT_SECONDS:-600}
+    # Bounded well inside the unit's TimeoutStartSec=900 together with the export itself.
+    limit=${CJ_BACKUP_ACTIVE_WAIT_SECONDS:-300}
     while active_backup=$(compose --profile operator ps --all -q --status running --status restarting --status paused backup) &&
         [ -n "$active_backup" ] && [ "$waited" -lt "$limit" ]; do
         sleep 5
