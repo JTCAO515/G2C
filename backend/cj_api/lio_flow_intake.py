@@ -379,29 +379,39 @@ def _drop_empty_field_sources(value):
     return dropped
 
 
-# Only a count that is plainly a trip length (red-line review of #2112). Not a count: 「第一天」「每天」, a date (「2天后」「12月2日」
-# 「in 2 days」「3 days ago」), part of a longer number (「十二天」「2.5天」「一两天」), a past or leading stretch (「过去3天」「前3天」).
-# 「日」 counts only in 「三日游」「3日行程」 form, never as the day of a month.
+# A trip length is restored only from a message with exactly ONE day-count-like span, and only when that span is plainly the
+# length of the trip being planned (red-line review of #2112: a list of exclusions cannot be closed, so this is a whitelist).
+# Anything else (a second count, a range, a half day, a negation, a visa or jet-lag or "next 3 days", an ordinal 「第3天」)
+# is left to the normal refusal.
 _ZH_NUMBER_CHARS='零〇一二两三四五六七八九十百'
-_DURATION_SPAN=re.compile(
-    r'(?<![第每月前近上头首末后0-9.．'+_ZH_NUMBER_CHARS+r'])(?<!过去)(?<!最近)(?<!接下来的)'
-    r'(?:(?P<n>'+NUMBER+r')\s*天(?![0-9.．]|之?后|以后|之?前|以前|内|以内)'
-    r'|(?P<d>'+NUMBER+r')\s*日(?=游|的?行程|的?旅行|的?旅游|之旅))'
-    r'|(?<![0-9.．])(?<!\bin )(?<!\bwithin )(?<!\bafter )(?<!\blast )(?<!\bpast )(?<!\bfirst )(?<!\bover )'
-    r'\b(?P<m>'+NUMBER+r')(?:\s+|-)days?\b(?![.．]?[0-9])(?!\s+(?:ago|later|from now|before|after|earlier))',re.I)
+_NUM=r'[0-9]{1,3}|[一二两三四五六七八九十]|one|two|three|four|five|six|seven|eight|nine|ten'
+_LOOSE_SPAN=re.compile(r'(?<![第每])(?P<n>'+_NUM+r')\s*(?:天|日)|\b(?P<m>'+_NUM+r')(?:\s+|-)days?\b',re.I)
+_ZH_BEFORE=re.compile(r'(?:玩|游|待|逛|住|共|共计|一共|总共|行程|规划|安排|旅行|旅游|计划|排)\s*$')
+_ZH_AFTER=re.compile(r'\s*(?:天|日)\s*(?:(?:的|之)\s*)?(?:行程|旅行|旅游|游|之旅|攻略|计划|路线)|\s*日游|\s*(?:天|日)\s*[0-9一二两三四五六七八九十]\s*(?:夜|晚)')
+_EN_BEFORE=re.compile(r'\b(?:for|spend|spending|stay|staying|plan|planning|visit|visiting)\s+(?:a\s+|an\s+)?$',re.I)
+_EN_AFTER=re.compile(r'(?:\s+|-)days?\s+(?:trip|itinerary|tour|visit|vacation|holiday|getaway|stay|journey)\b',re.I)
+_BAD_BEFORE=re.compile(r'(?:[0-9.．~～\-–—到至或和与、'+_ZH_NUMBER_CHARS+r']|第|每|前|近|上|头|首|末|后|这|不是|不要|不想|不用|别|没有|没|无|过去的?|最近|未来|接下来的?|'
+                       r'\b(?:not|no|never|without|dont|don\'t|in|within|after|over|last|past|first|next|every|each|about|around|under|only)|'
+                       r'\bto|\bor|\band)\s*$',re.I)
+_BAD_AFTER=re.compile(r'\s*(?:[.．][0-9]|半|多|余|来|左右|上下|以?内|之?[后前]|以[后前]|[~～\-–—到至或和与、][0-9一二两三四五六七八九十]|'
+                      r'(?:ago|later|left|remaining|from|before|after|earlier|to|or|and|in advance|in total|a row)\b)',re.I)
 
 
 def _duration_quote(text,days):
-    """The one exact span of `text` that states `days` travel days (「2天」, 「3 days」), or None. 「第一天」 and 「每天」 are
-    not counts. A message that states two different counts, or the same count in two different spans, is not recovered."""
-    spans=[]
-    for match in _DURATION_SPAN.finditer(text):
-        number=match['n']or match['d']or match['m']
-        count=int(number)if number.isdecimal()else NUMBERS.get(number.casefold())
-        if count is None:return None
-        spans.append((count,match[0]))
-    if not spans or {count for count,_ in spans}!={days}or len({span.casefold()for _,span in spans})!=1:return None
-    return spans[0][1]
+    """The one exact span of `text` that states `days` as the length of the trip, or None. See the rules above."""
+    loose=list(_LOOSE_SPAN.finditer(text))
+    if len(loose)!=1:return None
+    match=loose[0]
+    group='n'if match['n']else'm'
+    number=match[group]
+    count=int(number)if number.isdecimal()else NUMBERS.get(number.casefold())
+    if count!=days:return None
+    before,tail=text[:match.start()],text[match.end(group):]
+    if _BAD_BEFORE.search(before[-10:])or _BAD_AFTER.match(text[match.end():match.end()+12]):return None
+    plain=text.strip().strip('，,。.！!？? ')==match[0].strip()
+    if not(plain or _ZH_BEFORE.search(before[-6:])or _ZH_AFTER.match(tail)or _EN_BEFORE.search(before[-16:])or _EN_AFTER.match(tail)):
+        return None
+    return match[0]
 
 
 def _restore_duration_source(value,turns):

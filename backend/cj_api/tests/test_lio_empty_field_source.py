@@ -98,7 +98,7 @@ class LoggedShape(unittest.TestCase):
         from cj_api.lio_flow_intake import _duration_quote
         self.assertEqual(_duration_quote(self.TEXT, 2), '2天')
         self.assertEqual(_duration_quote('plan 3 days in Chengdu', 3), '3 days')
-        self.assertEqual(_duration_quote('规划成都三天', 3), '三天')
+        self.assertEqual(_duration_quote('去成都玩三天', 3), '三天')
         self.assertIsNone(_duration_quote('第一天故宫，第二天颐和园', 2))                 # 第一天 / 第二天 are ordinals, not counts
         self.assertIsNone(_duration_quote('每天走两万步', 2))
         self.assertIsNone(_duration_quote('玩2天，再玩3天', 2))                           # two different counts
@@ -109,22 +109,35 @@ class LoggedShape(unittest.TestCase):
                       'booked 2 days ago', '2 days later we arrive', 'within 3 days'):   # dates, not a trip length
             with self.subTest(dated=dated):
                 self.assertIsNone(_duration_quote(dated, 2) or _duration_quote(dated, 3))
-        self.assertEqual(_duration_quote('2天后出发，玩3天', 3), '3天')
+        self.assertIsNone(_duration_quote('2天后出发，玩3天', 3))                          # two count-like spans: not recovered, even if one is a date
         self.assertEqual(_duration_quote('3-day trip to Beijing', 3), '3-day')
         self.assertEqual(_duration_quote('规划北京三日游', 3), '三日')
 
     def test_inputs_found_by_the_red_line_review_are_never_restored_as_a_trip_length(self):
         from cj_api.lio_flow_intake import _duration_quote
-        for text, claimed in (('2天后出发去成都', 2), ('两天后出发去成都', 2), ('2日后出发去成都', 2), ('3天前订好了酒店', 3),
-                              ('leave in 3 days, plan Chengdu', 3), ('booked 3 days ago', 3), ('12月2日出发去成都', 2),
-                              ('去成都玩十二天', 2), ('去成都二十天', 10), ('去成都玩2.5天', 5), ('去成都玩2.5天', 2),
-                              ('过去3天很累，去成都', 3), ('前3天去成都', 3), ('最近3天', 3), ('一两天去成都', 2), ('一两天去成都', 1),
-                              ('第3天去成都', 3), ('每天2小时', 2), ('玩2天，再玩3天', 2), ('玩2天，再玩3天', 3), ('2号出发规划北京', 2),
-                              ('3天内到', 3)):
+        for text, claimed in (
+                # dates and past or leading stretches
+                ('2天后出发去成都', 2), ('两天后出发去成都', 2), ('2日后出发去成都', 2), ('3天前订好了酒店', 3), ('leave in 3 days, plan Chengdu', 3),
+                ('booked 3 days ago', 3), ('12月2日出发去成都', 2), ('2号出发规划北京', 2), ('3天内到', 3), ('过去3天很累，去成都', 3),
+                ('前3天去成都', 3), ('最近3天', 3), ('未来3天', 3), ('接下来3天', 3), ('这3天', 3), ('next 3 days', 3), ('3 days from today', 3),
+                ('within the 3 days', 3), ('3 days left', 3),
+                # pieces of longer numbers, ranges, fractions
+                ('去成都玩十二天', 2), ('去成都二十天', 10), ('去成都玩2.5天', 5), ('去成都玩2.5天', 2), ('一两天去成都', 2), ('一两天去成都', 1),
+                ('去成都玩3-4天', 4), ('去成都玩3-4天', 3), ('3到4天', 4), ('3~4天', 4), ('3至4天', 4), ('3 to 4 days', 4), ('3-4 days', 4),
+                ('3 or 4 days', 4), ('去成都玩一天半', 1), ('3天半', 3), ('三天半', 3),
+                # ordinals, each, negation, spaces that slipped past a prefix list
+                ('第3天去成都', 3), ('每天2小时', 2), ('去成都，不是3天', 3), ('不要3天', 3), ('去成都，第 3 天', 3), ('每 3 天', 3), ('前 3天', 3),
+                ('过去 3天', 3), ('过去的3天', 3), ('in  3 days', 3),
+                # other days of the traveler's life
+                ('签证只有15天，帮我规划成都', 15), ('上次去北京玩了3天，这次规划成都', 3), ('倒时差要2天', 2), ('3天的时差', 3),
+                # two counts in one message
+                ('玩2天，再玩3天', 2), ('玩2天，再玩3天', 3)):
             with self.subTest(text=text, claimed=claimed):
                 self.assertIsNone(_duration_quote(text, claimed))
-        for text, claimed, quote in (('规划北京三日游', 3, '三日'), ('规划北京3日行程', 3, '3日'), ('三天两晚成都', 3, '三天'),
-                                     ('2晚3天成都', 3, '3天'), ('规划成都两天', 2, '两天'), ('Spend ten days in Beijing', 10, 'ten days')):
+        for text, claimed, quote in (('规划北京三日游', 3, '三日'), ('规划北京3日行程', 3, '3日'), ('三天两晚成都', 3, '三天'), ('三天', 3, '三天'),
+                                     ('3 days', 3, '3 days'), ('玩3天', 3, '3天'), ('Plan a 3-day trip', 3, '3-day'),
+                                     ('Spend ten days in Beijing', 10, 'ten days'), ('去成都玩十天', 10, '十天'),
+                                     ('Plan 3 days in Chengdu', 3, '3 days')):
             with self.subTest(text=text, claimed=claimed):
                 self.assertEqual(_duration_quote(text, claimed), quote)
 
