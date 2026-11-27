@@ -228,10 +228,10 @@ class PlanningFlow(unittest.TestCase):
                 wire.update(unknown_fields=['start_date','party_size'],needs_tools=False,
                             reply='Got it! A relaxed three-day trip to Chengdu.')
                 wire['city'].update(source_index=0,quote=first,normalized_name='成都')
-                # r06: the supplier attached locators that are not in the message to two optional unknowns (still refused).
-                wire['field_sources']=[dict(field='start_date',quote='not said',source_index=0),
-                    dict(field='party_size',quote='not said either',source_index=0),
-                    dict(field='duration_days',quote=last,source_index=1)]
+                # r06: the supplier's duration locator is not in the message (still refused whole: a required fact needs real evidence).
+                wire['field_sources']=[dict(field='start_date',quote='',source_index=0),
+                    dict(field='party_size',quote='',source_index=0),
+                    dict(field='duration_days',quote='not said',source_index=1)]
                 published,events,lookups,result=run(wire,last,turns=(original(first),original(last)),
                                                      previous=previous,locale=locale)
                 self.assertIsNotNone(result)
@@ -478,7 +478,6 @@ class PlanningFlow(unittest.TestCase):
                 self.assertEqual(fields['departure']['date']['value'], '2026-11-14')
                 for conflict in (
                     dict(party_size=3),
-                    dict(field_sources=[*wire['field_sources'], dict(field='party_size', source_index=0, quote=first)]),
                     dict(unknown_fields=['party_size', 'party_size']),
                     dict(unknown_fields=['party_size', 'start_date'],
                          uncertain_fields={'party_size': note, 'start_date': 'Uncertain date'}),
@@ -486,6 +485,11 @@ class PlanningFlow(unittest.TestCase):
                     rejected, _, _, _ = run(dict(wire, **conflict), second, turns=(original(first), original(second)),
                                               previous=previous, locale=locale)
                     self.assertEqual(rejected, [])
+                # A source for the absent party size is no evidence (2026-11-28 P0): dropped, the size stays unknown, the plan goes on.
+                withsource = dict(wire, field_sources=[*wire['field_sources'], dict(field='party_size', source_index=0, quote=first)])
+                again, _, _, _ = run(withsource, second, turns=(original(first), original(second)), previous=previous, locale=locale)
+                self.assertEqual(len(again), 1)
+                self.assertEqual(again[0][3].fields['party_size'], {'state': 'unknown'})
 
     def test_dated_followup_preserves_only_the_travelers_own_hotel_meetup(self):
         for first, date_reply, meetup, place_unknown, request, city, duration, locale in (
@@ -831,9 +835,16 @@ class PlanningFlow(unittest.TestCase):
         parsed,_,_=parse_flow(json.dumps(wire),(original(text),),(),'current',foreign)
         self.assertEqual(parsed.start_date,{'state':'missing'})
         for unknown in (['start_date'],[]):
+            # A source (here one pointing at no message of this conversation) for a start date that is absent is no evidence:
+            # since the 2026-11-28 P0 it is dropped, and nothing is recovered from it. The date stays missing.
             value=deepcopy(wire);value['unknown_fields']=unknown
             value['field_sources'].append(dict(field='start_date',source_index=99,quote='2026-11-20'))
-            with self.assertRaises(InvalidInput):parse_flow(json.dumps(value),(original(text),),(),'current',None)
+            again,_,_=parse_flow(json.dumps(value),(original(text),),(),'current',None)
+            self.assertEqual(again.start_date,{'state':'unknown'if unknown else'missing'})    # as declared; never the dropped source's date
+        # A value that IS stated with a source that points at no message is still refused whole.
+        value=deepcopy(wire);value.update(start_date='2026-11-20',unknown_fields=[])
+        value['field_sources'].append(dict(field='start_date',source_index=99,quote='2026-11-20'))
+        with self.assertRaises(InvalidInput):parse_flow(json.dumps(value),(original(text),),(),'current',None)
 
     def test_profiles_are_explicit_and_source_index_exact(self):
         text='去成都玩三天';wire=flow(text)

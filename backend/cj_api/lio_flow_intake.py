@@ -10,7 +10,7 @@ from cj_agent.lio_intake_flat_schema import DTO,City
 from cj_needs.domain import InvalidInput,decode
 from .lio_sourced_intake import parse_sourced,BookingSourceUnclear
 from .lio_positive_trip import destination_query,known_city_term
-from .lio_planning_grounding import NUMBER,NUMBERS,OPEN_PLAN,PLAN_REQUEST
+from .lio_planning_grounding import FIXED as _FIXED_MARK,NUMBER,NUMBERS,OPEN_PLAN,PLAN_REQUEST
 from .lio_national_intake import ZONE_LITERAL,_clock_zone_marker
 
 CORE=('start_date','duration_days','party_size')
@@ -286,6 +286,30 @@ def _normalize_city_phrase(city,turns):
     if known_city_term(name):city.update(query=name,quote=name)
 
 
+_WHEN_WHERE=('start_date','start_time','start_timezone','start_place','end_date','end_time','end_timezone','end_place')
+# Anything that says an item is fixed, booked or timed keeps it out of the wish rule (red-line review of #2123: the shared FIXED words are
+# narrow, so 「已经订好票」「booked」 and a clock or date in the quote are added here; a larger set only drops fewer items).
+_FIXED_HINT=re.compile(r'订好|订了|买好|买了|订票|订位|订房|预订|预约|预定|已定|定好|锁定|固定|确定|票|门票|reserv|booked|booking|ticket|confirmed|fixed|locked|'
+                       r'[0-9]{1,2}\s*[:：点时]|[0-9]{1,2}\s*(?:am|pm)\b|[0-9]{4}[-/.][0-9]{1,2}[-/.][0-9]{1,2}|[0-9]{1,2}\s*月\s*[0-9]{1,2}\s*[日号]',re.I)
+
+
+def _drop_wish_items(items):
+    """A sightseeing wish is not a fixed arrangement. Hong Kong run 869c104a (v2, 2026-11-28): 「第一天故宫和景山，第二天颐和园」 came
+    back as `intent` items and the plan stopped to ask for their participants, dates and clocks. An item is dropped, as if it had
+    not been provided, only when nothing in it says it is fixed: kind `intent`, not locked, no booking status, no date, clock,
+    zone or place, no later detail, and neither its quote nor its label carries a 「fixed / booked / locked」 word. Anything else
+    keeps its normal handling. Returns the number dropped."""
+    def wish(item):
+        return (type(item)is dict and item.get('kind')=='intent' and item.get('locked')is not True and item.get('booking_status')is None
+                and not item.get('detail_refs')and all(item.get(key)is None for key in _WHEN_WHERE)
+                and not _FIXED_MARK.search(str(item.get('quote'))+' '+str(item.get('label')))
+                and not _FIXED_HINT.search(str(item.get('quote'))+' '+str(item.get('label'))))
+    kept=[item for item in items if not wish(item)]
+    dropped=len(items)-len(kept)
+    items[:]=kept
+    return dropped
+
+
 def _normalize_optional_fixed_items(items,turns):
     paths=('start_place','end_place')
     endpoints=tuple(edge+'_'+part for edge in ('start','end') for part in ('date','time','timezone','place'))
@@ -359,20 +383,32 @@ def _drop_unsourced_hotel_endpoint_aliases(data,turns):
             data['extra_unknown_fields'].remove(key)
 
 
+_OPTIONAL_FACTS=('start_date','party_size')
+
+
 def _drop_empty_field_sources(value):
-    """A source reference whose quote is empty is no evidence at all (the hong kong run of 2026-11-28 lost a whole plan to
-    one of them: `field_sources:string_too_short`). Drop such references before the schema sees them; a date or party size
-    left with no evidence is then unknown (optional by design), never kept without a source. The count of dropped
-    references is returned. A field that is required for planning (city, duration) keeps its normal checks."""
+    """Drop the field_sources references that cannot be evidence, before the schema sees them. Two Hong Kong runs of 2026-11-28
+    lost a whole plan to them: an empty quote (`field_sources:string_too_short`) and the string "null" quoted for a start date
+    that was itself null (`field_source_binding`). Dropped: an empty or blank quote; for a date or party size, any reference
+    to a fact that is absent (whatever it quotes: an absent fact has no evidence) and a quote that is not a string. A date or
+    party size left with a value but no evidence is then unknown (optional by design), never kept without a source.
+    A date or party size that HAS a value and a quote that is not the traveler's words is still refused whole, as before:
+    invented evidence for a value is not repaired and not silently trusted. Required facts (city, duration) keep their normal
+    checks. Returns the number dropped."""
     refs=value.get('field_sources')if type(value)is dict else None
     if type(refs)is not list:return 0
-    kept=[ref for ref in refs if not(type(ref)is dict and type(ref.get('quote'))is str and not ref['quote'].strip())]
+    def unusable(ref):
+        if type(ref)is not dict:return False
+        quote,field=ref.get('quote'),ref.get('field')
+        if type(quote)is str and not quote.strip():return True
+        return field in _OPTIONAL_FACTS and(value.get(field)is None or type(quote)is not str)
+    kept=[ref for ref in refs if not unusable(ref)]
     dropped=len(refs)-len(kept)
     if not dropped:return 0
     value['field_sources']=kept
     sourced={ref.get('field')for ref in kept if type(ref)is dict}
     unknown=value.get('unknown_fields')
-    for field in('start_date','party_size'):
+    for field in _OPTIONAL_FACTS:
         if value.get(field)is not None and field not in sourced:
             value[field]=None
             if type(unknown)is list and field not in unknown:unknown.append(field)
@@ -521,6 +557,10 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_off
                 and 'start_date' not in data['uncertain_fields']
                 and any(ref['field']=='start_date'for ref in data['field_sources'])):
             unknown[:]=[field for field in unknown if field!='start_date']
+        wishes=_drop_wish_items(data['fixed_items'])
+        if wishes:
+            import logging
+            logging.getLogger('cj_usage.audit').info('LIO_INTAKE_WISH_ITEMS_DROPPED message_id=%s count=%s',message_id,wishes)
         _normalize_optional_fixed_items(data['fixed_items'],turns)
         _drop_unsourced_hotel_endpoint_aliases(data,turns)
         _normalize_city_phrase(data['city'],turns)
