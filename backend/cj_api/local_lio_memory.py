@@ -70,6 +70,15 @@ def lio_candidates(database, boundary, subjects, configuration):
         return extraction, configuration.policy(principal.subject), lambda entry: (None, None)
 
     service = CollectionService(boundary, repository, collection)
+
+    def titles(scope, item_ids):
+        # #2001 (M-3): read-only, in the account's own scope; the timeline reader asks for the titles of the memories an
+        # answer used, and gets back only those that are still active with a valid source (`cj_memory.titles`).
+        from cj_memory.titles import memory_titles
+        return memory_titles(Repository(lambda: database.connect(scope), scope, typed_context=True,
+                                        transaction_binder=lambda connection, cursor: connection.bind_scope(cursor)), item_ids)
+
+    service.titles = titles
     return LioCandidates(service, subjects, original_allows=supported_preference)
 
 
