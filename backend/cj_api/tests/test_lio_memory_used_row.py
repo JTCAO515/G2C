@@ -148,6 +148,30 @@ class PlanRow(unittest.TestCase):
     def test_a_row_without_the_declaration_is_unchanged(self):
         self.assertEqual(self.row(SPLIT, effect(['a']), declared=False), _message(item(), state(SPLIT, effect(['a'])), declared=False))
 
+    def test_a_row_with_a_used_effect_goes_through_the_v3_route_with_rich_and_without_it(self):
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+        from cj_api.lio_dialogue_routes import register_lio_dialogue_routes
+        row_item = SimpleNamespace(message_id='m1', text='推荐几家酒店', locale='zh', run_id='r1', sequence=1, protocol='LIO-message.4')
+        page = SimpleNamespace(messages=(row_item,), conversation_id='lio-c', generation='g1', next_before=None, requires_new_lio=False)
+        context = SimpleNamespace(scope='scope', lio_timeline=lambda *args, **kwargs: page,
+                                  with_lio_timeline_projection=lambda fn: fn())
+        boundary = SimpleNamespace(with_history_context=lambda token, project: project(context))
+        runs = SimpleNamespace(lio_timeline=lambda bindings: [(state(SPLIT, effect(['a', 'b'])), False)])
+        memory = SimpleNamespace(project=lambda *args, **kwargs: None, used_allowed=lambda scope: True,
+                                 used_titles=lambda scope, ids, checked=False: {'a': '节奏慢', 'b': 'Quiet hotels'})
+        app = FastAPI()
+        register_lio_dialogue_routes(app, boundary, lambda scope: runs, None, prepare_scope=None, memory_cards=memory,
+                                     calendar_cards=object(), calendar_boundary=boundary)
+        http, headers = TestClient(app), {'Authorization': 'Bearer t'}
+        plain = http.get('/v3/lio/timeline', headers=headers).json()['messages'][0]
+        declared = http.get('/v3/lio/timeline?accepts=' + RICH_VERSION, headers=headers).json()['messages'][0]
+        self.assertNotIn('rich', plain)
+        self.assertEqual({k: v for k, v in declared.items() if k != 'rich'}, plain)           # only `rich` is added
+        self.assertEqual([used['title'] for used in declared['rich']['memory']['used']], ['节奏慢', 'Quiet hotels'])
+        with mock.patch.dict(os.environ, {'CJ_LIO_ANSWER_RICH': 'off'}):
+            self.assertEqual(http.get('/v3/lio/timeline?accepts=' + RICH_VERSION, headers=headers).json()['messages'][0], plain)
+
     def test_the_route_takes_rich_on_v3_and_refuses_every_other_declaration_there(self):
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
