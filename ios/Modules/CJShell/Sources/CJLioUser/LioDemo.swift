@@ -23,6 +23,7 @@ extension LioService {
                         }
                         if let layout = reply.layout { continuation.yield(.layout(layout.0, layout.1, layout.2)) }
                         if let places = reply.places { continuation.yield(.places(places)) }
+                        if let cards = reply.cards { continuation.yield(.cards(cards)) }
                         if let source = reply.source { continuation.yield(.source(source)) }
                         if let itinerary = reply.itinerary {
                             await session.save(itinerary)
@@ -61,6 +62,8 @@ enum LioDemo {
         var layout: (LioTimelineWire.AnswerLayout, [LioTimelineWire.Followup], [LioTimelineWire.Chip])? = nil
         /// Debug preview of #1991 (`--lio-answer-rich-preview`): the places named in the answer.
         var places: [LioPlaceSpan]? = nil
+        /// Debug preview of #1993: the tool cards under the answer.
+        var cards: [LioTimelineWire.Card]? = nil
     }
 
     #if DEBUG
@@ -82,7 +85,13 @@ enum LioDemo {
         }
         return Reply(parts: [first, "\n\n" + second],
                      layout: (.split, [], []),
-                     places: LioPlaceMentions.resolve(answer: answer, entities: entities, in: .samples))
+                     places: LioPlaceMentions.resolve(answer: answer, entities: entities, in: .samples),
+                     cards: [
+                        .init(kind: .taxi, parameters: ["destination": "故宫博物院", "lat": "39.918058", "lng": "116.397026",
+                                                        "destinationEN": "The Palace Museum"]),
+                        .init(kind: .metro, detail: .metro(city: .init(id: "beijing", zh: "北京", en: "Beijing"))),
+                        .init(kind: .currency, detail: .currency(quote: "USD", cnyPerUnit: "7.1234", asOf: "2026-11-26")),
+                     ])
     }
     #endif
 
